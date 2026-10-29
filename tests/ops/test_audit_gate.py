@@ -1814,3 +1814,53 @@ def test_gh_output_is_read_as_utf8_whatever_the_locale(monkeypatch: pytest.Monke
     monkeypatch.setattr(ag.subprocess, "run", fake)
     assert ag._gh("repos/x/y/pulls") == [{"body": "before — after \u0081"}]
     assert seen["encoding"] == "utf-8"
+
+
+# ------------------------------------------- scripts are money path by what they run (#439)
+def _files_tree(root: Path, files: dict[str, str]) -> Path:
+    for rel, body in files.items():
+        p = root / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(body)
+    return root
+
+
+def test_a_script_is_money_path_only_when_it_runs_the_money_path(tmp_path: Path) -> None:
+    """2026-10-29: every .ps1 under desks/mt5/scripts/ was money path by directory, and the
+    replay imports only Python, so a CRO lane installer (#439) was UNMEASURED forever."""
+    base = _files_tree(tmp_path / "base", {
+        "desks/mt5/research/run_gateway_loop.py": "from mt5desk import gateway\n",
+        "desks/mt5/mt5desk/__init__.py": "",
+        "desks/mt5/mt5desk/gateway.py": "",
+        "desks/mt5/scripts/install_e8_tasks.ps1": "& $py research\\run_gateway_loop.py\n",
+        "desks/mt5/scripts/by_module.cmd": "python -m mt5desk.gateway\n",
+        "desks/mt5/scripts/venue.ps1": "Start-Process terminal64.exe\n",
+        "desks/mt5/scripts/calls_money.ps1": ". (Join-Path $PSScriptRoot 'install_e8_tasks.ps1')\n",
+        "desks/mt5/scripts/cro_lane.ps1": "# not E8_ or FTMO\n<# fusion #>\nRegister-X\n",
+        "desks/mt5/scripts/tail_name.ps1": "& $py scripts\\offsite_gateway.py\n",
+        "desks/mt5/scripts/was_money.ps1": "Start-Process terminal64.exe\n",
+    })
+    head = _files_tree(tmp_path / "head", {"desks/mt5/scripts/was_money.ps1": "Write-Output hi\n"})
+    closure = rs.import_closure(base)
+    money = rs.money_scripts((base, head), closure)
+    for f in ("install_e8_tasks.ps1", "by_module.cmd", "venue.ps1", "calls_money.ps1",
+              "was_money.ps1"):  # fmt: skip
+        assert f"desks/mt5/scripts/{f}" in money, f
+    for f in ("cro_lane.ps1", "tail_name.ps1"):
+        assert f"desks/mt5/scripts/{f}" not in money, f
+        assert not rs.is_money(f"desks/mt5/scripts/{f}", closure, money)
+    # data, state and config under the money directories stay money whatever they say
+    for f in ("desks/mt5/scripts/knobs.json", "desks/mt5/ops/CPU_SHAPE.json",
+              "desks/mt5/data/sleeves.json"):  # fmt: skip
+        assert rs.is_money(f, closure, money), f
+
+
+def test_the_live_lane_installers_are_not_money_and_the_book_installers_are() -> None:
+    """On the real tree: #439's CRO lane scripts name no money-path file, and every installer
+    of a task that sizes or places orders is money path."""
+    closure = rs.import_closure(ROOT)
+    money = rs.money_scripts((ROOT,), closure)
+    for f in ("install_e8_tasks.ps1", "install_ftmo_follower_task.ps1",
+              "Install-QuantWindows.ps1"):  # fmt: skip
+        assert f"desks/mt5/scripts/{f}" in money, f
+    assert "desks/mt5/scripts/install_cro_cycle_tasks.ps1" not in money

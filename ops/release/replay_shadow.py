@@ -17,7 +17,8 @@ MERGES). It also FAILS when:
   file, another book): nothing here measured it, and an unmeasured change is never a pass. The
   money path is DERIVED from the base, not listed by hand: the static import closure (an AST
   walk, nothing run) of every entry point the box's tasks run to size or place orders, plus the
-  desk's scripts, ops, books and state directories (#457 audit MF2);
+  desk's books and state directories, plus every script that runs or names any of it
+  (`money_scripts`; a script that names none is reported, not measured) (#457 audit MF2);
 - it changes a module-level UPPER_CASE constant in a money-path file (a knob: a rail count, a
   margin, a grace) that ops/release/ceilings.json does not already bound. A grid exercises the
   knobs it reaches; this catches the ones it does not (#457 audit MF1);
@@ -61,6 +62,20 @@ ENTRY_POINTS = (
     "desks/mt5/prop/e8_executor.py", "desks/mt5/prop/e8_gold.py", "desks/mt5/prop/e8_book.py",
     "desks/mt5/prop/ftmo_follower.py",
 )  # fmt: skip
+#: SCRIPTS ARE MONEY PATH BY WHAT THEY RUN, NOT BY WHERE THEY SIT (2026-10-29). The replay only
+#: imports Python, so a .ps1 under desks/mt5/scripts/ could never be "imported" and every change
+#: to one was UNMEASURED forever (#439, a CRO lane installer that runs no order code). A script
+#: under these directories is money path when its base OR PR text names a money-path Python file
+#: (the import closure or an entry point, by file name or dotted module), a word of the venue
+#: (MONEY_WORDS), or another money-path script, to a fixed point. Every other script is listed
+#: as `not_money_scripts` in the report, never silently passed. Data, state and config files
+#: under MONEY_PATH stay money path whatever they say.
+SCRIPT_EXTS = (".ps1", ".psm1", ".cmd", ".bat", ".sh")
+SCRIPT_DIRS = ("desks/mt5/scripts/", "desks/mt5/ops/")
+MONEY_WORDS = re.compile(
+    r"terminal64|metatrader|autotrading|mt5[-_]gateway|ftmo|fusion|\be8[-_]|order_send",
+    re.IGNORECASE,
+)
 #: Where `import x` resolves on the box: the repository root and the desk.
 IMPORT_ROOTS = ("", "desks/mt5")
 KNOB = re.compile(r"^[A-Z][A-Z0-9_]*$")
@@ -231,7 +246,55 @@ def import_closure(tree: Path, entries: tuple[str, ...] = ENTRY_POINTS) -> set[s
     return seen
 
 
-def is_money(path: str, closure: set[str]) -> bool:
+def is_script(path: str) -> bool:
+    return path.startswith(SCRIPT_DIRS) and path.lower().endswith(SCRIPT_EXTS)
+
+
+_BLOCK_COMMENT = re.compile(r"<#.*?#>", re.DOTALL)
+_LINE_COMMENT = re.compile(r"^[ \t]*(?:#|rem\b|::).*$", re.IGNORECASE | re.MULTILINE)
+
+
+def _code(src: str) -> str:
+    """A script's text without its comments, lower-cased: prose that mentions the venue runs
+    nothing. A `#` after code on the same line is kept (it may sit inside a string)."""
+    return _LINE_COMMENT.sub("", _BLOCK_COMMENT.sub("", src)).lower()
+
+
+def _names_any(text: str, names: set[str]) -> bool:
+    """Any name as a whole path segment or module (`\\e8_gold.py`, `-m mt5desk.gateway`), never
+    as the tail of a longer name (`backup.py` inside `offsite_backup.py`)."""
+    return any(re.search(r"(?<![\w.-])" + re.escape(n) + r"(?![\w])", text) for n in names)
+
+
+def money_scripts(trees: tuple[Path, ...], closure: set[str]) -> set[str]:
+    """The scripts under SCRIPT_DIRS that run, or name, the money path in ANY of `trees` (the base
+    and the PR: a script that was money path stays so whatever the PR rewrites it to)."""
+    py = {*closure, *ENTRY_POINTS}
+    names = {Path(f).name.lower() for f in py if Path(f).name != "__init__.py"}
+    for f in py:  # `-m mt5desk.gateway` as well as `mt5desk\gateway.py`
+        for root in IMPORT_ROOTS:
+            if root and f.startswith(root + "/"):
+                f = f[len(root) + 1 :]
+        dotted = f[:-3].replace("/", ".").lower()
+        if f.endswith(".py") and not f.endswith("__init__.py") and "." in dotted:
+            names.add(dotted)  # package-qualified only: a bare `config` is in every script
+    text: dict[str, str] = {}
+    for tree in trees:
+        for f in tree_files(tree):
+            if is_script(f):
+                text[f] = text.get(f, "") + "\n" + _code(read(tree, f) or "")
+    money = {f for f, t in text.items() if MONEY_WORDS.search(t) or _names_any(t, names)}
+    while True:  # a script that calls a money-path script is one
+        called = {Path(f).name.lower() for f in money}
+        more = {f for f, t in text.items() if f not in money and _names_any(t, called)}
+        if not more:
+            return money
+        money |= more
+
+
+def is_money(path: str, closure: set[str], scripts: set[str] | None = None) -> bool:
+    if scripts is not None and is_script(path):
+        return path in scripts
     return path.startswith(MONEY_PATH) or path in closure
 
 
@@ -414,7 +477,9 @@ def compare(
     if not placed:
         problems.append("UNMEASURED: the base tree placed nothing anywhere on the grid")
     closure = import_closure(base)
-    uncovered = sorted(f for f in changed if is_money(f, closure) and f not in imported)
+    scripts = money_scripts((base, head), closure)
+    uncovered = sorted(f for f in changed if is_money(f, closure, scripts) and f not in imported)
+    not_money = sorted(f for f in changed if is_script(f) and f not in scripts)
     problems += [
         f"UNMEASURED money-path change (the replay never imported it): {f}" for f in uncovered
     ]
@@ -425,6 +490,8 @@ def compare(
         "steps": len(grid) * len(HOURS),
         "intents_compared": placed,
         "problems": problems,
+        # changed scripts that name no money-path file, venue word or money-path script
+        "not_money_scripts": not_money,
     }
 
 
