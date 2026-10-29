@@ -250,6 +250,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "measurability": {
+   "hypothesis": "Dating every UNMEASURED (subject, field) on every certificate and LIVE sleeve, and naming its converter, turns unmeasured fields into dated work orders, so the count of unmeasured fields falls as the converters run.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "n_unmeasured",
+    "better": "down",
+    "organ": "report:MEASURABILITY.json"
+   },
+   "falsifier": {
+    "metric": "n_subjects",
+    "op": "==",
+    "threshold": 0,
+    "after": "24h window on the box: the fence judged no certificate or LIVE sleeve, so it is not reading the canon it claims to watch"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

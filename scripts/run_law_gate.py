@@ -473,6 +473,11 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # have. A STATE fence: off the trading box nothing advances a clock and the verdict is
     # NOT_APPLICABLE, a real answer about the host and not a pass.
     ("check_certificate_clock_law.py", ()),
+    # NEVER UNMEASURED PAST ONE CYCLE (principal 2026-10-13). Every certificate and LIVE sleeve,
+    # every field, read from the artifact that owns it; RED when one has stayed UNMEASURED
+    # beyond two hours, with its converter named. NOT_APPLICABLE off the box, which is why it is
+    # a STATE fence: a clean checkout has no canon to judge.
+    ("check_measurability.py", ()),
     # LAWS 5c -- everything ingested is exploited; the exploitation floor ratchets UP, the
     # DATA STRANDING count ratchets DOWN, and no qualified datum sits in storage without a
     # defined downstream state. A STATE fence: on a clean checkout the ingestion artifact is

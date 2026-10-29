@@ -633,7 +633,8 @@ LEG_LAYER: dict[str, str] = {
     "excursions": "exit", "exit_accounts": "exit",
     "state_replay_audit": "execution", "why_not_report": "execution",
     "forward_calibration": "prediction",
-    "certificate_clock_law": "meta", "desk_self_heal": "meta", "mission_control": "meta",
+    "certificate_clock_law": "meta", "measurability": "meta", "desk_self_heal": "meta",
+    "mission_control": "meta",
     "tier5_acceptance": "meta",
 }
 
