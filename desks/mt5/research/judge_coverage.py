@@ -4174,6 +4174,10 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
                 commit_reached = True
                 _txn.commit()
             return rows, doc
+        # THE ORDERING STEPS AFTER build ARE BOUNDED TOO (audit of v5): the deadline was read
+        # only between build's phases, so a hang in the screen, the split or the write held the
+        # docket lane past it. Each step checks it; a timeout ships the rows as they arrived.
+        _check_budget("order_filter")
         quota = {str(k): int(v) for k, v in (doc.get("quota") or {}).items()}
         banned = banned_from_capital()
         judged_cells, _, _ = judged_index(now=now)
@@ -4215,6 +4219,7 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
             "rule": ("rows parked as build_input_missing, and rows the pre-build screen removed "
                      "under CANON, stay in the trial census (effective_trials reads them beside "
                      "the docket): neither parking nor screening moves a charge")}
+        _check_budget("order_prescreen")
         judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
         study = [r for r in rows if str(r.get("family") or "") in banned]
         # CHARGE VARIANTS AGAINST THEIR PARENT. The split marks the rows; the two orders below
@@ -4240,6 +4245,7 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
                 "min_never_fires": SIBLING_NEVER_FIRES_MIN,
                 "rule": ("a (family, symbol) with this many parked never-firing cells and no "
                          "verdict with a named gate ranks after every other row; nothing dropped")}
+        _check_budget("order_split")
         ordered_j, doc["fireability"] = fireability_order(ordered_j)
         ordered = ordered_j + study
         was, now_ = _unseen_in_prefix(before, cap), _unseen_in_prefix(ordered_j, cap)
@@ -4284,6 +4290,7 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
         for row in ordered:
             for _k in ("_cell", "_variant", "_keff", "_occ", "_orth", "_famdup"):
                 row.pop(_k, None)
+        _check_budget("order_write")
         if publish:
             commit_reached = True
             write(doc)

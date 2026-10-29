@@ -1080,6 +1080,9 @@ NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
     "daily": {DAILY_CYCLE_HOLDER_HUNG: "HOLDER_HUNG",
               DAILY_CYCLE_STAMP_UNREADABLE: "STAMP_UNREADABLE",
               DAILY_CYCLE_STAMP_UNREADABLE_PERSISTENT: "STAMP_UNREADABLE_PERSISTENT"},
+    # scripts/check_job_locks.py EXIT_WEDGED: a held lock's owner tree made no CPU progress for
+    # 30 min. A stage that is not running, so a failure -- named, never read as a crash.
+    "job_lock_health": {2: "OWNER_WEDGED"},
 }
 
 

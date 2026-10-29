@@ -323,11 +323,26 @@ def _owner_state(path: Path) -> str:
 
 
 def _owner_cpu_s(pid: int) -> float | None:
+    """CPU seconds of the owner's WHOLE TREE: itself, its reaped children, its live descendants.
+
+    A parent that holds the lock while a child does the work (hourly_cycle holding
+    `miner_candidate_compiler` around a compile child; warm_gauntlet_cache's pool) uses almost no
+    CPU of its own. Counting only its own time read it WEDGED while the child burned (audit of
+    v5, MF1: 0.02 s parent against 3.9 s child). `children_*` carries reaped children on POSIX
+    (zero on Windows); a descendant that exits makes the sum DROP, which `owner_progress` reads
+    as the tree changing -- activity, never a stall."""
     try:
         import psutil
 
-        t = psutil.Process(pid).cpu_times()
-        return float(t.user + t.system)
+        proc = psutil.Process(pid)
+        t = proc.cpu_times()
+        total = float(t.user + t.system + getattr(t, "children_user", 0.0)
+                      + getattr(t, "children_system", 0.0))
+        for child in proc.children(recursive=True):
+            with suppress(Exception):
+                c = child.cpu_times()
+                total += float(c.user + c.system)
+        return total
     except Exception:
         return None
 
@@ -338,7 +353,7 @@ def _progress_path(lock: Path) -> Path:
 
 def owner_progress(lock: Path, *, now: float | None = None,
                    cpu_of=None) -> dict:
-    """PROGRESSING / IDLE / WEDGED / UNMEASURED for a lock's owner, from its CPU time.
+    """PROGRESSING / IDLE / WEDGED / UNMEASURED for a lock's owner, from its TREE's CPU time.
 
     Each observer records the owner's CPU seconds and the last time they advanced in a sidecar
     beside the lock (keyed on the lock's token, so a new owner starts afresh). WEDGED means the
@@ -359,17 +374,17 @@ def owner_progress(lock: Path, *, now: float | None = None,
         prev = json.loads(side.read_text("utf-8"))
     except (OSError, ValueError):
         prev = None
+    base_cpu = float(prev.get("cpu_s") or 0.0) if isinstance(prev, dict) else 0.0
     if (not isinstance(prev, dict) or prev.get("token") != token
-            or cpu >= float(prev.get("cpu_s") or 0.0) + PROGRESS_CPU_S):
+            or cpu >= base_cpu + PROGRESS_CPU_S or cpu < base_cpu - 1e-6):
         rec = {"token": token, "cpu_s": cpu, "cpu_at": t}
-        try:
+        with suppress(OSError):
             side.write_text(json.dumps(rec), "utf-8")
-        except OSError:
-            pass
         first = not isinstance(prev, dict) or prev.get("token") != token
         out.update(status="UNMEASURED" if first else "PROGRESSING", cpu_s=cpu, idle_s=0.0,
                    why=("first observation of this owner" if first
-                        else "owner CPU time advanced since the last observation"))
+                        else "a descendant exited, so the owner's tree changed" if cpu < base_cpu
+                        else "the owner tree's CPU time advanced since the last observation"))
         return out
     at = prev.get("cpu_at")
     idle = t - (float(at) if isinstance(at, (int, float)) else t)
@@ -382,26 +397,29 @@ def owner_progress(lock: Path, *, now: float | None = None,
     return out
 
 
-def _publish_health(name: str, health: dict, *, now: float | None = None) -> None:
-    """One row per contended lock in JOB_LOCK_HEALTH.json; RED when any row is WEDGED.
+#: Auto-stops kept in JOB_LOCK_HEALTH.json across passes, newest last.
+STOP_HISTORY_MAX = 50
 
-    An unlocked read-modify-write: two writers at once can drop each other's row. Benign for a
-    report -- the hourly `job_lock_health` leg rewrites every held lock's row each pass."""
-    t = time.time() if now is None else now
+
+def _read_health() -> dict:
     try:
         doc = json.loads(HEALTH_REPORT.read_text("utf-8"))
-        if not isinstance(doc, dict):
-            doc = {}
     except (OSError, ValueError):
-        doc = {}
-    locks = doc.get("locks") if isinstance(doc.get("locks"), dict) else {}
-    locks[name] = {**health, "observed_at": datetime.fromtimestamp(t, UTC).isoformat(
-        timespec="seconds")}
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def _write_health(locks: dict, stops: list, t: float) -> None:
     wedged = sorted(k for k, v in locks.items()
                     if isinstance(v, dict) and v.get("status") == "WEDGED")
-    doc.update(locks=locks, wedged=wedged, status="RED" if wedged else "OK",
-               rule=(f"an owner alive with no CPU progress for {WEDGED_AFTER_S // 60} min is "
-                     "WEDGED; it is never reclaimed automatically, it is stopped by an operator"))
+    doc = {"at": datetime.fromtimestamp(t, UTC).isoformat(timespec="seconds"),
+           "locks": locks, "wedged": wedged, "status": "RED" if wedged else "OK",
+           "stops": stops[-STOP_HISTORY_MAX:],
+           "rule": (f"an owner whose process tree is alive with no CPU progress for "
+                    f"{WEDGED_AFTER_S // 60} min is WEDGED; it is never reclaimed by a "
+                    "contender. The hourly job_lock_health leg stops an allowlisted research "
+                    "owner after its tree has made no progress for two hours, and names every "
+                    "other one RED for an operator")}
     try:
         HEALTH_REPORT.parent.mkdir(parents=True, exist_ok=True)
         tmp = HEALTH_REPORT.with_name(f"{HEALTH_REPORT.name}.{os.getpid()}.tmp")
@@ -417,6 +435,36 @@ def _publish_health(name: str, health: dict, *, now: float | None = None) -> Non
                 tmp.unlink()
     except Exception:
         pass                              # bookkeeping never blocks the lock decision
+
+
+def _stamp(health: dict, t: float) -> dict:
+    return {**health, "observed_at": datetime.fromtimestamp(t, UTC).isoformat(
+        timespec="seconds")}
+
+
+def _publish_health(name: str, health: dict, *, now: float | None = None) -> None:
+    """One contender's row in JOB_LOCK_HEALTH.json; RED when any row is WEDGED.
+
+    An unlocked read-modify-write: two writers at once can drop each other's row. Benign for a
+    report -- the hourly `job_lock_health` leg rewrites the WHOLE report each pass
+    (`write_health_report`), dropping rows for locks no longer held."""
+    t = time.time() if now is None else now
+    doc = _read_health()
+    locks = doc.get("locks") if isinstance(doc.get("locks"), dict) else {}
+    locks[name] = _stamp(health, t)
+    stops = doc.get("stops") if isinstance(doc.get("stops"), list) else []
+    _write_health(locks, stops, t)
+
+
+def write_health_report(rows: dict, *, now: float | None = None,
+                        new_stops: list | None = None) -> None:
+    """The hourly leg's FULL report: exactly the locks held now, written every pass -- also when
+    none is held, so a quiet hour reads fresh and a WEDGED row whose owner died is gone (audit
+    of v5, MF3). Auto-stops accumulate in `stops`, so a kill outlives the pass that made it."""
+    t = time.time() if now is None else now
+    prior = _read_health().get("stops")
+    stops = (prior if isinstance(prior, list) else []) + list(new_stops or [])
+    _write_health({k: _stamp(v, t) for k, v in rows.items()}, stops, t)
 
 
 def free_mb() -> int | None:

@@ -41,7 +41,11 @@ REPLACE_TAIL_S = 60.0
 #: in the steps that follow it, holding the docket writer lane while every intake refused. Past
 #: this many seconds the coverage build stops uncommitted (JudgeCoverageTimeout) and the rows ship
 #: in the order they arrived: an ordering organ may cost the order, never the docket.
+#: Without a leg cap this is the limit; under hourly_cycle `_order_budget_s` cuts it to what the
+#: cap leaves, or the leg is tree-killed before the ordering ever times out (audit of v5).
 ORDER_BUDGET_S = float(os.environ.get("MERGE_ORDER_BUDGET_S", "2700") or 2700)
+#: Seconds kept back after the ordering for serialising and replacing the docket.
+ORDER_WRITE_RESERVE_S = 120.0
 #: A docket temp file older than this belongs to a pass that was killed mid-write.
 ORPHAN_TMP_AGE_S = 2 * 3600.0
 
@@ -50,14 +54,29 @@ def _replace_wait_s() -> float:
     """The replace's retry budget: DEFAULT_MAX_WAIT_S, cut to what the leg cap
     (`QUANT_LEG_BUDGET_S`) leaves after this pass's elapsed time and a reporting tail -- a wait
     the parent kills mid-way would leave the old docket AND a 1.5M-row temp file behind."""
-    try:
-        cap = float(os.environ.get("QUANT_LEG_BUDGET_S") or 0)
-    except ValueError:
-        cap = 0.0
+    cap = _leg_cap_s()
     if cap <= 0:
         return DEFAULT_MAX_WAIT_S
     left = cap - (time.monotonic() - _T0) - REPLACE_TAIL_S
     return max(5.0, min(DEFAULT_MAX_WAIT_S, left))
+
+
+def _leg_cap_s() -> float:
+    try:
+        return float(os.environ.get("QUANT_LEG_BUDGET_S") or 0)
+    except ValueError:
+        return 0.0
+
+
+def _order_budget_s() -> float:
+    """The ordering's limit: ORDER_BUDGET_S, cut to what the leg cap (`QUANT_LEG_BUDGET_S`)
+    leaves after this pass's elapsed time, the docket write and the reporting tail -- so the
+    timeout fires and the docket ships, instead of the parent killing the leg mid-order."""
+    cap = _leg_cap_s()
+    if cap <= 0:
+        return ORDER_BUDGET_S
+    left = cap - (time.monotonic() - _T0) - REPLACE_TAIL_S - ORDER_WRITE_RESERVE_S
+    return max(5.0, min(ORDER_BUDGET_S, left))
 
 
 def sweep_orphan_temps(target: Path | None = None, *, now: float | None = None) -> list[str]:
@@ -1150,10 +1169,10 @@ def main() -> int:
         if str(BASE) not in _sys.path:
             _sys.path.insert(0, str(BASE))
         from research.judge_coverage import order_docket
-        _o0 = time.monotonic()
-        rows_out, coverage = order_docket(rows_out, deadline=(_o0, _o0 + ORDER_BUDGET_S))
+        _o0, _ob = time.monotonic(), _order_budget_s()
+        rows_out, coverage = order_docket(rows_out, deadline=(_o0, _o0 + _ob))
         if str(coverage.get("why") or "").startswith("JudgeCoverageTimeout"):
-            print(f"   judge coverage stopped at its {ORDER_BUDGET_S:.0f}s budget -- the docket "
+            print(f"   judge coverage stopped at its {_ob:.0f}s budget -- the docket "
                   "ships in arrival order this pass")
     except Exception as exc:
         print(f"   judge coverage unavailable ({type(exc).__name__}: {exc}) -- falling back to "
@@ -1333,6 +1352,11 @@ def main() -> int:
                                   "every prefix of the docket is family-balanced"),
                         "families_ordered": len({str(r.get("family")) for r in rows_out}),
                         "applied": bool(coverage.get("families")),
+                        # The ordering's own verdict, durable here: a timeout or fault reads
+                        # UNMEASURED with its why, never as null totals beside a stale report.
+                        "verdict": (coverage.get("verdict") if coverage else "UNMEASURED"),
+                        "why": (coverage.get("why") if coverage
+                                else "judge coverage unavailable; least-judged-family order"),
                         "fallback_basis": "judgements already spent per docket row, least first",
                         "coverage": {k: (coverage.get("totals") or {}).get(k) for k in
                                      ("families_with_backlog", "families_queued",
