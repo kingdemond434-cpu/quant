@@ -213,7 +213,9 @@ def test_a_mismatched_pair_is_red_and_published(tmp_path, monkeypatch) -> None:
     from research import allocator_liveness as AL
     from research import missed_growth as MG
     proof = tmp_path / "ALLOCATOR_PROOF.json"
-    monkeypatch.setattr(AL, "PROOF_PATHS", (proof, tmp_path / "absent.json"))
+    import allocator_liveness as AL_bare  # missed_growth's import name
+    for mod in (AL, AL_bare):
+        monkeypatch.setattr(mod, "PROOF_PATHS", (proof, tmp_path / "absent.json"))
     alloc = {"book": {"a": 0.1}}
     assert AL.certificate_pair(alloc)["status"] == AL.UNMEASURED
     proof.write_text(json.dumps({"passed": True}), "utf-8")
