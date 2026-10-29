@@ -454,6 +454,10 @@ def checks(
 # ------------------------------------------------------------------------ the GitHub side
 
 
+#: Seconds any one gh call may take before the gate gives up on it.
+GH_TIMEOUT_S = 120
+
+
 def _gh(*args: str, data: Mapping[str, Any] | None = None) -> Any:
     cmd = ["gh", "api", *args]
     if data is not None:
@@ -468,6 +472,9 @@ def _gh(*args: str, data: Mapping[str, Any] | None = None) -> Any:
         encoding="utf-8",
         errors="replace",
         check=False,
+        # A hung gh held the box sweep's mutex from 13:53Z on 2026-10-29 and no sweep ran after:
+        # every call ends, and a timeout is an error the sweep logs (it never merges on one).
+        timeout=GH_TIMEOUT_S,
     )
     if p.returncode != 0:
         raise RuntimeError(f"gh api {' '.join(args)}: {p.stderr.strip()[:300]}")
@@ -579,10 +586,14 @@ def _is_state_path() -> Callable[[str], bool] | None:
             return None
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
-        fn = mod.is_state_path
+        state, governed = mod.is_state_path, mod.is_governed_state
     except Exception:  # any failure is "code": the PR must merge the base in
         return None
-    return fn if callable(fn) else None
+    if not (callable(state) and callable(governed)):
+        return None
+    # #521 audit MF1: a sign row, a pin, the survivor canon, the allocator proof or a switch is
+    # state that governs code: a PR tested against the old copy merges the base in first.
+    return lambda rel: bool(state(rel)) and not governed(rel)
 
 
 def state_only_lag(base_ref: str, head: str) -> int | None:
@@ -911,7 +922,7 @@ def run(
         except RuntimeError as exc:
             _summary(f"(quarantine label not removed: {exc})")
     if p.get("draft"):
-        subprocess.run(["gh", "pr", "ready", str(pr), "-R", repo], check=True)
+        subprocess.run(["gh", "pr", "ready", str(pr), "-R", repo], check=True, timeout=GH_TIMEOUT_S)
     _gh(
         f"repos/{repo}/pulls/{pr}/merge",
         "-X",
@@ -945,7 +956,7 @@ def sweep(repo: str, base: str, approvals_issue: int = APPROVALS_ISSUE) -> int:
         n = int(p["number"])
         try:
             rc = max(rc, run(repo, n, base, 0.0, box=True, approvals_issue=approvals_issue))
-        except (RuntimeError, subprocess.CalledProcessError) as exc:
+        except (RuntimeError, subprocess.SubprocessError) as exc:
             _summary(f"#{n}: the box gate failed: {exc}")
             rc = 1
     return rc
@@ -976,7 +987,7 @@ def main(argv: list[str] | None = None) -> int:
             box=a.box,
             approvals_issue=a.approvals_issue,
         )
-    except (RuntimeError, subprocess.CalledProcessError) as exc:
+    except (RuntimeError, subprocess.SubprocessError) as exc:
         _summary(f"#{a.pr}: the gate failed: {exc}")
         return 1
 

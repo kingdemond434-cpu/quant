@@ -15,6 +15,15 @@ on:
   pull_request_target:
     types: [opened, labeled, synchronize, reopened, ready_for_review]
     branches: ["claude/llm-auto-upgrade-verify-gcjac3"]
+  # THE SECOND MERGER (#521, 2026-10-29). The run above looks once, when the PR moves; a PR whose
+  # checks finish later was merged only by the box sweep, and the box sweep was dead from 13:14Z
+  # (a cp1252 crash, then a hung gh holding its mutex) with nothing saying so. When a ci or
+  # release-gates run on a PR completes, the gate looks at that PR again. GitHub runs a
+  # workflow_run trigger from the DEFAULT branch's copy of this file (master, synced from LIVE by
+  # ci.yml's promote job), so this starts once a promote has carried it there.
+  workflow_run:
+    workflows: ["ci", "release-gates"]
+    types: [completed]
 
 permissions:
   contents: write        # the merge
@@ -59,3 +68,39 @@ jobs:
           --pr "${{ github.event.pull_request.number }}"
           --base "${{ github.event.pull_request.base.ref }}"
           --wait-min 0
+
+  after-checks:
+    # A completed check run on a PR: the same gate, same rule, one look per PR the run names.
+    # The gate's code and the base come from LIVE, never from the PR; the PR numbers are the
+    # event's own integers.
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    concurrency:
+      group: audit-gate-after-${{ github.event.workflow_run.head_sha }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/llm-auto-upgrade-verify-gcjac3
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Look again at each PR this run completed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRS: ${{ toJSON(github.event.workflow_run.pull_requests) }}
+        run: |
+          rc=0
+          for n in $(jq -r '.[] | select(.base.ref == "claude/llm-auto-upgrade-verify-gcjac3") | .number' <<<"$PRS"); do
+            python .github/scripts/audit_gate.py --repo "${{ github.repository }}" --pr "$n" \
+              --base claude/llm-auto-upgrade-verify-gcjac3 --wait-min 0 || rc=1
+          done
+          exit $rc

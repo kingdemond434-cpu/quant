@@ -54,6 +54,14 @@ LIVE_RED_H = 6.0
 REVIEWER_FP_MIN_FAILS = 3
 REVIEWER_FP_RED = 0.5
 REVIEWER = "independent-review"
+#: Every check a no-comment merge needs (audit_gate GATING_JOBS + AUTO_JOBS).
+ALL_CHECKS = (
+    "quality", "mt5-money-path", "coverage-floor",
+    "risk-invariants", "replay-shadow", "independent-review",
+)  # fmt: skip
+GATE_STATUS = "audit/clear"
+SWEEP_STALE_MIN = 30.0
+SWEEP_WEDGED_RUNS = 2
 TRUSTED = ("OWNER", "MEMBER", "COLLABORATOR")
 #: Matched with ALL whitespace removed: zuck's CLEARs arrive with the sha wrapped over lines.
 CLEAR_RE = re.compile(r"AUDITCLEAR([0-9a-f]{7,40})", re.I)
@@ -97,8 +105,14 @@ def assess(
     queued_runs: list[Mapping[str, Any]],
     running: int,
     live_commits: list[Mapping[str, Any]],
+    ready: Mapping[int, str] | None = None,
+    beat: Mapping[str, Any] | None = None,
+    beat_expected: bool = False,
 ) -> dict[str, Any]:
-    """The report, from already-fetched data (pure: the tests drive this)."""
+    """The report, from already-fetched data (pure: the tests drive this). `ready`: PR -> when
+    its last required check went green, for heads the gate has marked mergeable (audit/clear
+    success). `beat`: the box sweep's heartbeat (logs/workflow_gate.json), when it is read."""
+    ready = ready or {}
     heads = {str(p["head"]["ref"]): str(p["head"]["sha"]) for p in prs}
     stale = [
         r
@@ -118,6 +132,8 @@ def assess(
         qmax = max(ages, default=None)
         cat = clears.get(n)
         cage = _age_min(now, cat)
+        rat = ready.get(n)
+        rage = _age_min(now, rat)
         review = next(
             (c.get("conclusion") for c in checks.get(head, []) if c.get("name") == REVIEWER), None
         )
@@ -131,12 +147,15 @@ def assess(
                 "clear_at": cat,
                 "clear_age_h": None if cage is None else round(cage / 60.0, 2),
                 "review": review,
+                "green_since": rat,
             }
         )
         if qmax is not None and qmax > QUEUED_RED_MIN:
             red.append(f"CI_QUEUED #{n}: a check queued {qmax:.0f} min on {head[:9]}")
         if cage is not None and cage / 60.0 > CLEAR_RED_H:
             red.append(f"CLEAR_WAITING #{n}: CLEARed {cage / 60.0:.1f} h ago, still open")
+        if rage is not None and rage / 60.0 > CLEAR_RED_H:  # how #516 sat: green, eligible, open
+            red.append(f"GREEN_WAITING #{n}: mergeable and green {rage / 60.0:.1f} h, still open")
     fails = [r for r in rows if r["review"] == "failure"]
     fp = [r["pr"] for r in fails if r["clear_at"]]
     fp_rate = round(len(fp) / len(fails), 2) if fails else None
@@ -150,9 +169,23 @@ def assess(
     )
     code_at = None if code is None else code["commit"]["committer"]["date"]
     code_age = _age_min(now, code_at)
-    if any(r["clear_at"] for r in rows) and (code_age is None or code_age / 60.0 > LIVE_RED_H):
+    waiting = any(r["clear_at"] or r["green_since"] for r in rows)
+    if waiting and (code_age is None or code_age / 60.0 > LIVE_RED_H):
         hours = "an unknown number of" if code_age is None else f"{code_age / 60.0:.1f}"
-        red.append(f"LIVE_STALLED: no code on LIVE for {hours} h while CLEARed work waits")
+        red.append(f"LIVE_STALLED: no code on LIVE for {hours} h while mergeable work waits")
+    sweep: dict[str, Any] | None = None
+    if beat_expected:
+        if not beat:
+            red.append("SWEEP_BLIND: the box sweep's heartbeat could not be read")
+        else:
+            bage = _age_min(now, str(beat.get("at") or ""))
+            held = int(beat.get("mutex_held_runs") or 0)
+            sweep = {"at": beat.get("at"), "age_min": bage, "rc": beat.get("rc"),
+                     "note": beat.get("note"), "mutex_held_runs": held}  # fmt: skip
+            if bage is None or bage > SWEEP_STALE_MIN:
+                red.append(f"SWEEP_STALE: the box sweep last beat {bage} min ago")
+            if held > SWEEP_WEDGED_RUNS:
+                red.append(f"SWEEP_WEDGED: the sweep's mutex refused {held} runs in a row")
     return {
         "at": now.isoformat(timespec="seconds"),
         "status": "RED" if red else "GREEN",
@@ -165,6 +198,7 @@ def assess(
             "superseded_run_ids": [r.get("id") for r in stale][:50],
         },
         "reviewer": {"fails": len(fails), "cleared_fails": fp, "fp_rate": fp_rate},
+        "sweep": sweep,
         "live": {
             "last_code_commit": None if code is None else str(code["sha"])[:9],
             "last_code_at": code_at,
@@ -205,7 +239,7 @@ def _runs(repo: str, status: str, pages: int = 5) -> list[dict[str, Any]]:
     return out
 
 
-def collect(repo: str, base: str = LIVE) -> dict[str, Any]:
+def collect(repo: str, base: str = LIVE, heartbeat: Path | None = None) -> dict[str, Any]:
     now = datetime.now(UTC)
     prs: list[dict[str, Any]] = []
     for page in range(1, 11):  # 231 PRs were open on 2026-10-29: one page of 100 is not all
@@ -215,16 +249,33 @@ def collect(repo: str, base: str = LIVE) -> dict[str, Any]:
             break
     checks: dict[str, list[Mapping[str, Any]]] = {}
     clears: dict[int, str | None] = {}
+    ready: dict[int, str] = {}
     for p in prs:
         head = str(p["head"]["sha"])
         got = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100")
         checks[head] = list(got.get("check_runs") or [])
         comments = _gh(f"repos/{repo}/issues/{p['number']}/comments?per_page=100")
         clears[int(p["number"])] = clear_at(comments, head)
+        done = {c.get("name"): c for c in checks[head] if c.get("status") == "completed"}
+        if all(done.get(k, {}).get("conclusion") == "success" for k in ALL_CHECKS):
+            st = _gh(f"repos/{repo}/commits/{head}/status")
+            if any(
+                x.get("context") == GATE_STATUS and x.get("state") == "success"
+                for x in st.get("statuses") or []
+            ):
+                ready[int(p["number"])] = max(str(done[k].get("completed_at")) for k in ALL_CHECKS)
     queued = _runs(repo, "queued")
     running = len(_runs(repo, "in_progress", pages=1))
     live = _gh(f"repos/{repo}/commits?sha={base}&per_page=100")
-    return assess(now, prs, checks, clears, queued, running, live)
+    beat: dict[str, Any] | None = None
+    if heartbeat is not None:
+        try:
+            beat = json.loads(heartbeat.read_text(encoding="utf-8-sig"))
+        except (OSError, ValueError):
+            beat = None
+    return assess(
+        now, prs, checks, clears, queued, running, live, ready, beat, heartbeat is not None
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -233,9 +284,31 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--base", default=LIVE)
     ap.add_argument("--out", type=Path, default=REPORT)
     ap.add_argument("--print", action="store_true", help="stdout only, write nothing")
+    ap.add_argument("--heartbeat", type=Path, help="the box sweep's logs/workflow_gate.json")
+    ap.add_argument(
+        "--min-interval-min", type=float, default=25.0,
+        help="skip when --out is younger (the sweep calls this every 10 min; ~2 calls per open PR)",
+    )  # fmt: skip
     a = ap.parse_args(argv)
+    if not a.print and a.min_interval_min > 0:
+        try:
+            prev = json.loads(a.out.read_text(encoding="utf-8"))
+            age = _age_min(datetime.now(UTC), str(prev.get("at") or ""))
+        except (OSError, ValueError):
+            age = None
+        held = 0
+        if a.heartbeat is not None:
+            try:
+                held = int(
+                    json.loads(a.heartbeat.read_text("utf-8-sig")).get("mutex_held_runs") or 0
+                )
+            except (OSError, ValueError):
+                held = 0
+        if age is not None and age < a.min_interval_min and held <= SWEEP_WEDGED_RUNS:
+            print(f"fresh ({age:.0f} min old): not re-read")
+            return 0
     try:
-        rep = collect(a.repo, a.base)
+        rep = collect(a.repo, a.base, a.heartbeat)
     except (RuntimeError, ValueError) as exc:
         # no data is not GREEN: the report says the watcher itself could not see
         rep = {

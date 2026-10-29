@@ -11,6 +11,7 @@ Four leaks, one test each, plus the RED that puts a clock on "queued":
 from __future__ import annotations
 
 import importlib.util
+import json
 import re
 import subprocess
 from datetime import UTC, datetime, timedelta
@@ -19,7 +20,13 @@ from typing import Any
 
 import pytest
 
-from libs.ops.release import STATE_FILES, STATE_PREFIXES
+from libs.ops.release import (
+    GOVERNED_STATE_FILES,
+    GOVERNED_STATE_GLOBS,
+    STATE_FILES,
+    STATE_PREFIXES,
+    is_governed_state,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 WF = ROOT / ".github" / "workflows"
@@ -37,21 +44,43 @@ ag = _load("audit_gate_tp", ".github/scripts/audit_gate.py")
 mp = _load("merge_pipeline_watch", "scripts/merge_pipeline_watch.py")
 
 
-def _push_ignores() -> list[str]:
+def _push_paths() -> list[str]:
     text = (WF / "ci.yml").read_text(encoding="utf-8")
-    block = text.split("paths-ignore:", 1)[1].split("pull_request:", 1)[0]
+    block = text.split("    paths:", 1)[1].split("pull_request:", 1)[0]
     return re.findall(r'^\s+- "([^"]+)"', block, flags=re.M)
 
 
-def test_ci_push_ignores_exactly_the_box_state_paths() -> None:
-    want = {p + "**" for p in STATE_PREFIXES} | set(STATE_FILES)
-    assert set(_push_ignores()) == want
+def _runs_on_push(changed: list[str]) -> bool:
+    """GitHub's rule for `paths` with `!`: a path counts when the LAST pattern it matches is
+    positive; the push runs when any changed path counts. `*` stays in one directory."""
+
+    def match(path: str, pat: str) -> bool:
+        rx = re.escape(pat).replace(r"\*\*", "\0").replace(r"\*", "[^/]*").replace("\0", ".*")
+        return re.fullmatch(rx, path) is not None
+
+    def counts(path: str) -> bool:
+        keep = False
+        for pat in _push_paths():
+            neg = pat.startswith("!")
+            if match(path, pat.lstrip("!")):
+                keep = not neg
+        return keep
+
+    return any(counts(p) for p in changed)
 
 
-def test_a_code_path_is_never_ignored() -> None:
-    import fnmatch
+def test_ci_push_paths_are_exactly_the_state_classification() -> None:
+    pats = _push_paths()
+    assert pats[0] == "**"
+    neg = {p[1:] for p in pats if p.startswith("!")}
+    assert neg == {p + "**" for p in STATE_PREFIXES} | set(STATE_FILES)
+    pos = [p for p in pats[1:] if not p.startswith("!")]
+    assert set(pos) == set(GOVERNED_STATE_FILES) | set(GOVERNED_STATE_GLOBS)
+    assert pats.index(pos[0]) > max(i for i, p in enumerate(pats) if p.startswith("!"))
 
-    pats = _push_ignores()
+
+def test_a_state_only_push_skips_and_code_or_governed_state_runs() -> None:
+    assert not _runs_on_push(["desks/mt5/data/sleeves.json", "desks/mt5/reports/X.json"])
     for code in (
         "desks/mt5/gateway.py",
         "libs/ops/release.py",
@@ -59,7 +88,16 @@ def test_a_code_path_is_never_ignored() -> None:
         "desks/mt5/scripts/x.ps1",
         "scripts/merge_pipeline_watch.py",
     ):
-        assert not any(fnmatch.fnmatch(code, p.replace("**", "*")) for p in pats), code
+        assert _runs_on_push(["desks/mt5/data/sleeves.json", code]), code
+    for gov in (
+        "desks/mt5/data/IMMUTABLE_MANIFEST.json",
+        "desks/mt5/data/GENERIC_EXEC_ENABLED",
+        "desks/mt5/data/MARGIN_CLAUSE_DISABLED.json",
+        "desks/mt5/reports/ALLOCATOR_PROOF.json",
+    ):
+        assert _runs_on_push([gov]), gov
+        assert is_governed_state(gov), gov
+    assert not is_governed_state("desks/mt5/data/sub/X_ENABLED")  # one directory, both sides
 
 
 def test_the_actions_gate_looks_once() -> None:
@@ -138,6 +176,15 @@ def test_a_github_change_on_live_is_never_state(repo: Any) -> None:
     live_commit(".github/ci.yml", "v2\n")
     clone()
     assert ag.up_to_date(ag.LIVE, head)[0] is False
+
+
+def test_a_governed_state_lag_still_needs_the_merge(repo: Any) -> None:
+    """#521 audit MF1: a sign row alone on LIVE (IMMUTABLE_MANIFEST) is not a state-only lag."""
+    head, live_commit, clone = repo
+    live_commit("desks/mt5/data/IMMUTABLE_MANIFEST.json", '{"sign": 2}\n')
+    clone()
+    ok, why = ag.up_to_date(ag.LIVE, head)
+    assert not ok and "behind" in why
 
 
 def test_no_classifier_means_every_path_is_code(repo: Any, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -249,3 +296,70 @@ def test_reviewer_fails_the_audit_cleared_are_a_red_rate() -> None:
     assert any(r.startswith("REVIEWER_FP") for r in rep["red"])
     rep = mp.assess(NOW, prs, checks, {1: _iso(10)}, [], 0, [_commit("fix", 1)])
     assert not any(r.startswith("REVIEWER_FP") for r in rep["red"])
+
+
+def test_green_and_mergeable_but_open_past_2h_is_red() -> None:
+    """How #516 sat: AUTO, every check green, the gate's status success, nobody merging."""
+    prs = [_pr(516, "1" * 40, "ftmo")]
+    rep = mp.assess(NOW, prs, {}, {}, [], 0, [_commit("fix", 30)], ready={516: _iso(130)})
+    assert [r.split()[0] for r in rep["red"]] == ["GREEN_WAITING"]
+    rep = mp.assess(NOW, prs, {}, {}, [], 0, [_commit("fix", 30)], ready={516: _iso(60)})
+    assert rep["status"] == "GREEN"
+
+
+def test_live_stalls_on_green_work_too() -> None:
+    prs = [_pr(516, "1" * 40, "ftmo")]
+    rep = mp.assess(NOW, prs, {}, {}, [], 0, [_commit("fix", 7 * 60)], ready={516: _iso(10)})
+    assert any(r.startswith("LIVE_STALLED") for r in rep["red"])
+
+
+def test_the_sweep_heartbeat_reds_when_stale_wedged_or_unread() -> None:
+    live = [_commit("fix", 1)]
+    ok = {"at": _iso(5), "rc": 0, "mutex_held_runs": 0}
+    assert mp.assess(NOW, [], {}, {}, [], 0, live, beat=ok, beat_expected=True)["status"] == "GREEN"
+    stale = dict(ok, at=_iso(45))
+    wedged = dict(ok, rc=4, mutex_held_runs=3)
+    for beat, kind in ((stale, "SWEEP_STALE"), (wedged, "SWEEP_WEDGED"), (None, "SWEEP_BLIND")):
+        rep = mp.assess(NOW, [], {}, {}, [], 0, live, beat=beat, beat_expected=True)
+        assert [r.split(":")[0] for r in rep["red"]] == [kind]
+
+
+def test_a_fresh_report_is_not_re_read_unless_the_sweep_is_wedged(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    out, beat = tmp_path / "MP.json", tmp_path / "wg.json"
+    out.write_text(json.dumps({"at": datetime.now(UTC).isoformat(), "status": "GREEN", "red": []}))
+    beat.write_text('{"at": "x", "mutex_held_runs": 0}')
+    monkeypatch.setattr(mp, "collect", lambda *a, **k: pytest.fail("re-read a fresh report"))
+    assert mp.main(["--repo", "o/r", "--out", str(out), "--heartbeat", str(beat)]) == 0
+    beat.write_text('{"at": "x", "mutex_held_runs": 3}')
+    seen: list[Any] = []
+
+    def collect(*a: Any, **k: Any) -> dict[str, Any]:
+        seen.append(a)
+        return {"at": "now", "status": "RED", "red": ["SWEEP_WEDGED: 3"]}
+
+    monkeypatch.setattr(mp, "collect", collect)
+    assert mp.main(["--repo", "o/r", "--out", str(out), "--heartbeat", str(beat)]) == 2 and seen
+
+
+def test_a_second_merger_looks_when_checks_complete() -> None:
+    text = (WF / "audit-gate.yml").read_text(encoding="utf-8")
+    assert "workflow_run:" in text and 'workflows: ["ci", "release-gates"]' in text
+    job = text.split("  after-checks:", 1)[1]
+    assert "--wait-min 0" in job and "ref: claude/llm-auto-upgrade-verify-gcjac3" in job
+    assert "github.event.workflow_run.event == 'pull_request'" in job
+
+
+def test_every_gh_call_of_the_gate_can_time_out() -> None:
+    src = (ROOT / ".github/scripts/audit_gate.py").read_text(encoding="utf-8")
+    assert "timeout=GH_TIMEOUT_S" in src.split("def _gh(", 1)[1].split("\ndef ", 1)[0]
+    assert '"pr", "ready"' in src and "check=True, timeout=GH_TIMEOUT_S" in src
+
+
+def test_the_box_sweep_never_exits_silently_on_a_held_mutex() -> None:
+    ps = (ROOT / "ops/box/workflow_gate.ps1").read_text(encoding="utf-8")
+    held = ps.split("if (-not $mutex.WaitOne(0)) {", 1)[1].split("\n}", 1)[0]
+    assert "Say " in held and "Beat 4" in held and "exit 4" in held and "Watch" in held
+    assert "exit 0 }" not in ps.split("$mutex = New-Object", 1)[1].split("\n", 2)[1]
+    assert "merge_pipeline_watch.py" in ps and "--heartbeat $beat" in ps
