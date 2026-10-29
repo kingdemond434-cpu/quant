@@ -220,10 +220,11 @@ def test_the_state_may_raise_the_target_and_may_cut_it_to_the_certified_floor() 
     assert v.state == "regime=trend" and v.state_worlds == 80
     held = resolve(0.26, curve=GOOD, state="regime=fused", curves=down)
     assert held.total_heat == pytest.approx(HEAT_TARGET) and held.binding == "state_growth"
-    # And the band is still the band, whatever the curve says.
+    # NO FIXED CAP (principal 2026-10-29 19:02Z, D-20261029-012): a curve still rising at its
+    # last measured point is followed to that point -- here the grid's 35% edge, past the old 30%.
     assert resolve(0.21, curve=GOOD, state="regime=trend",
                    curves={"regime=trend": StateCurve("regime=trend", _curve(0.9), 80)},
-                   ).total_heat == pytest.approx(HEAT_HARD_CEILING)
+                   ).total_heat == pytest.approx(0.35)
 
 
 def test_the_effective_ceiling_binds_the_state_conditioned_target_too() -> None:
