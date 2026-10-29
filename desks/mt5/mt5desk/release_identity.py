@@ -87,6 +87,11 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/reports/BOX_STATE_FLOW.json",
     "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
     "desks/mt5/reports/DESK_HEALTH.json",
+    # Which scheduled organs are FAILING / NOT_SCHEDULED (ops/process_health.py, N14
+    # 2026-10-13): the scorecard counted them, nobody off the box could name them.
+    "desks/mt5/reports/process_health.json",
+    # Backup and restore-drill state, scheme only (ops/backup_state.py, v5f).
+    "desks/mt5/reports/BACKUP_STATE.json",
     "desks/mt5/data/tier_s/box_evidence.json",
     "desks/mt5/data/tier_s/live_door.json",
     "desks/mt5/reports/NULL_LAB.json",
