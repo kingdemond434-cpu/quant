@@ -342,6 +342,8 @@ def desk(tmp_path, monkeypatch):
     alloc = tmp_path / "reports" / "pf_allocation.json"
     monkeypatch.setattr(promoter, "SHADOW_DIR", shadow_dir)
     monkeypatch.setattr(promoter, "SLEEVES_FILE", tmp_path / "data" / "sleeves.json")
+    # A restore asks the principal stops beside the roster and refuses an absent record.
+    (tmp_path / "data" / "PRINCIPAL_STOPS.json").write_text('{"stops": []}', encoding="utf-8")
     monkeypatch.setattr(promoter, "LEDGER", tmp_path / "data" / "live_ledger.jsonl")
     monkeypatch.setattr(promoter, "LOG", tmp_path / "logs" / "promoter.log")
     monkeypatch.setattr(promoter, "GOLD_RETIRED_FILE", tmp_path / "data" / "GOLD_RETIRED.json")
