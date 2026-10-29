@@ -1027,6 +1027,38 @@ def admission_cadence_line(alloc: dict[str, Any]) -> dict[str, Any]:
             "unpriced": "longer reuse of the heavy growth curve on normal/fast passes"}
 
 
+#: The fence's counterfactual ledger (research/fence_missed_trades.py), one row per refused leg.
+FENCE_MISSED = BASE / "reports" / "fence_missed_trades.jsonl"
+
+
+def cross_account_fence_line(path: Path | None = None) -> dict[str, Any]:
+    """What the cross-account opposite-side fence cost (or saved), as a published line.
+
+    Bills sum(counterfactual R x risk_usd) over every refused leg priced from bars. Positive =
+    the refused legs would have made money (COSTS_GROWTH); negative = the fence avoided losses
+    (EARNS_ITS_PLACE). No ledger = UNMEASURED; rows that carry no geometry are counted unpriced,
+    never as a zero."""
+    path = FENCE_MISSED if path is None else path
+    if not path.exists():
+        return {"verdict": UNMEASURED, "why": f"no reports/{path.name}: the organ has not run"}
+    rows = []
+    for ln in path.read_text("utf-8").splitlines():
+        try:
+            r = json.loads(ln)
+        except ValueError:
+            continue
+        if isinstance(r, dict):
+            rows.append(r)
+    priced = [r for r in rows if _num(r.get("missed_usd")) is not None]
+    total = sum(float(r["missed_usd"]) for r in priced)
+    verdict = (NOT_BINDING if not rows else UNMEASURED if not priced
+               else COSTS if total > 0 else EARNS if total < 0 else NOT_BINDING)
+    return {"verdict": verdict, "source": f"reports/{path.name}", "rows": len(rows),
+            "priced": len(priced), "unpriced": len(rows) - len(priced),
+            "missed_usd": round(total, 4),
+            "sum_r": round(sum(float(r.get("r") or 0) for r in priced), 6)}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -1154,7 +1186,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         unspilled=JUDGE_PRIORITY_RECORDS),
                                     "deepening_memory_guard": organ_published_lines(
                                         DEEPENING_GUARD),
-                                    "admission_scan_cadence": admission_cadence_line(alloc)},
+                                    "admission_scan_cadence": admission_cadence_line(alloc),
+                                    "cross_account_fence": cross_account_fence_line()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

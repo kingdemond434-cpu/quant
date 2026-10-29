@@ -250,6 +250,36 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "fence_planner": {
+   "hypothesis": "Choosing one direction set per symbol and day across E8, FTMO and Fusion by combined E[log W] under the cross-account fence removes accidental half-brackets and raises combined forward E[log W] above the leg-by-leg fence outcome.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "validation_score",
+    "better": "up",
+    "organ": "report:FENCE_PLAN.json"
+   },
+   "falsifier": {
+    "metric": "validation_score",
+    "op": "==",
+    "threshold": 0,
+    "after": "14d on the trading box: no fenced symbol-day on which the plan differs from what the accounts actually carried, so the planner buys nothing"
+   }
+  },
+  "fence_missed_trades": {
+   "hypothesis": "Pricing every leg the cross-account fence refused from bars measures what the fence costs in forward growth, so the fence's design can be judged by Rule 1 rather than asserted.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "validation_score",
+    "better": "up",
+    "organ": "report:FENCE_MISSED_TRADES.json"
+   },
+   "falsifier": {
+    "metric": "validation_score",
+    "op": "==",
+    "threshold": 0,
+    "after": "14d on the trading box: every refused leg stays UNMEASURED (no geometry or no bars), so the bill is never priced"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
