@@ -336,3 +336,62 @@ def test_gap_requests_name_one_symbol_per_row(tmp_path: Path) -> None:
     out = pca.write_gap_requests(uni, datetime.now(tz=UTC), tmp_path / "g.jsonl")
     rows = [json.loads(x) for x in (tmp_path / "g.jsonl").read_text().splitlines()]
     assert out["rows"] == 3 and all(len(r["symbols"]) == 1 for r in rows)
+
+
+# ------------------------------------------------------------------ the empty book (2026-10-29)
+
+def _slow_world(mu: float = 0.25) -> tuple[pca.World, dict[str, np.ndarray]]:
+    """A positive edge, and a later phase that never funds inside the horizon: J is 0 at every
+    size, as it was at 15:33Z when phase 1 was too slow for the chain to fund within H."""
+    rng = np.random.default_rng(3)
+    solve_w, _ = pca.make_worlds(rng.normal(mu, 1.0, (8, 256, 1)), 300, 160, 0)
+    never = {"est": np.full(300, np.inf), "halved": np.full(300, np.inf)}
+    return solve_w, never
+
+
+def test_a_flat_zero_j_still_sizes_the_largest_survivable_book() -> None:
+    """The 15:33Z defect: J exactly 0 everywhere feasible left the search on the zero book, and
+    the zero deployed over an admitted sleeve. Progress to the target breaks the tie."""
+    solve_w, never = _slow_world()
+    st = pca.AccountState()
+    h, v = pca.search(solve_w, R, "phase1", st, never, 0.05, np.random.default_rng(0), 0.04)
+    assert v == 0.0 and h[0] > 0
+    assert pca.evaluate(solve_w, h, R, "phase1", st, never)["risk"] <= 0.04
+
+
+def test_the_tie_break_never_sizes_a_negative_edge() -> None:
+    solve_w, never = _slow_world(mu=-0.2)
+    h, _ = pca.search(solve_w, R, "phase1", pca.AccountState(), never, 0.05,
+                      np.random.default_rng(0), 0.04)
+    assert h[0] == 0.0
+
+
+def test_an_empty_book_with_a_feasible_size_is_a_search_defect_not_a_zero() -> None:
+    solve_w, never = _slow_world()
+    hit = pca.empty_book_probe(solve_w, np.array([0.009]), R, "phase1", pca.AccountState(),
+                               never, 0.05, 0.04)
+    assert hit is not None and hit["risk"] <= 0.04 and hit["progress"] > 0
+    neg, never = _slow_world(mu=-0.2)
+    assert pca.empty_book_probe(neg, np.array([0.009]), R, "phase1", pca.AccountState(),
+                                never, 0.05, 0.04) is None
+
+
+def test_a_search_defect_never_deploys(tmp_path: Path, monkeypatch) -> None:
+    """The guard behind the fix: a phase block flagged EMPTY_BOOK_SEARCH_DEFECT is not deployable,
+    so apply_book leaves the principal's block as it stands."""
+    solve_w, never = _slow_world()
+    monkeypatch.setattr(pca, "search", lambda w, rules, phase, st, cont, cap, rng, margin: (
+        (np.zeros(1), 0.0) if margin is not None else (np.array([0.009]), 0.13)))
+    monkeypatch.setattr(pca, "build_universe", lambda seed: {
+        "status": "OK", "cols": ["gold_asia"], "r": np.random.default_rng(3).normal(
+            0.25, 1.0, (8, 256, 1)), "caps": {"gold_asia": 0.009}, "columns": {}})
+    monkeypatch.setattr(pca, "write_gap_requests", lambda uni, now: {})
+    st = pca.AccountState(phase="phase2", status="MEASURED")
+    doc = pca.solve("ftmo", n_paths=300, state=st)
+    assert doc["status"].startswith("EMPTY_BOOK_SEARCH_DEFECT") and doc["deployable"] is False
+    armed = tmp_path / "ARMED"
+    armed.touch()
+    book = tmp_path / "CERT_BOOK_LIVE.json"
+    book.write_text(json.dumps({"enabled": True, "ftmo": {"gold_asia": 0.009}}))
+    assert pca.apply_book(doc, book, armed)["applied"] is False
+    assert json.loads(book.read_text())["ftmo"] == {"gold_asia": 0.009}
