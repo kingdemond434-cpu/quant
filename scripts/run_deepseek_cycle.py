@@ -174,6 +174,22 @@ def main(argv: list[str] | None = None) -> int:
               f"{result.get('n_findings', 0)} finding(s), "
               f"{result.get('capability_walks_proposed', 0)} capability walk(s), "
               f"{result.get('why', '')}")
+    return red_exit(result)
+
+
+def red_exit(result: dict) -> int:
+    """1 when the cycle reached the model and came back with NOTHING, else 0.
+
+    A CALL that fails, or an OK with zero findings, is a cycle that produced no proposal. From
+    2026-10-20 the box ran this hourly at rc 0 while every call 404'd on a retired model id, and
+    nothing read it as a failure. Holds that are states rather than faults (a dark seat, a spent
+    budget, a policy block) keep their own codes and never reach here as a failure.
+    """
+    status = str(result.get("status") or "")
+    if status == "CALL_FAILED":
+        return 1
+    if status == "OK" and int(result.get("n_findings") or 0) == 0:
+        return 1
     return 0
 
 

@@ -717,11 +717,14 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
 
     ls_seat = llm_seat.Seat(name=f"deepseek_{'deep' if deep else 'bulk'}",
                             base_url=e.get("DEEPSEEK_BASE_URL", "https://openrouter.ai/api/v1"),
-                            key=resolve_key(e)[0], model=model)
+                            key=resolve_key(e)[0], model=model, lock_vendor=True)
     text, err = llm_seat.chat(user, system=system, seat=ls_seat,
                               max_tokens=(16000 if deep else 4000))
     if err:
         return {"status": "CALL_FAILED", "role": role_name, "model": model, "why": err}
+    # A retired pin is swapped inside llm_seat for a listed DeepSeek id; every record below
+    # names the id that ANSWERED, never the pin.
+    model = llm_seat.last_resolved(ls_seat) or model
 
     rid = run_id or f"{role_name}_{_now()}"
     sealed = seal(rid, role=role_name, phase_a_output=text, policy_hash=str(gate["policy_hash"]),

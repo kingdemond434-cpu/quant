@@ -25,6 +25,7 @@ LISTED = ["deepseek/deepseek-chat-v3.1:free", "deepseek/deepseek-r1-0528:free",
 def _free(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("QUANT_LLM_LAB_PAID", raising=False)
     monkeypatch.setattr(llm_seat, "free_tier_only", lambda: True)
+    monkeypatch.setattr(llm_seat, "_RESOLVED", {})
 
 
 def _seat(model: str = DEAD) -> llm_seat.Seat:
@@ -136,3 +137,36 @@ def test_a_swap_that_also_fails_returns_the_error_and_does_not_loop(monkeypatch)
     text, err = llm_seat.chat("hi", seat=_seat())
     assert text == "" and err and "No endpoints found" in err
     assert sent == [DEAD]
+
+
+def test_last_resolved_names_the_model_that_answered_not_the_pin(monkeypatch):
+    _listing(monkeypatch, LISTED)
+
+    def post(url: str, key: str, req: dict[str, Any], *, timeout: float):
+        if req["model"] == DEAD:
+            return {}, _404
+        return {"choices": [{"message": {"content": "ok"}}], "usage": {}}, None
+    monkeypatch.setattr(llm_seat, "_post_with_degrade", post)
+    monkeypatch.setattr(llm_seat, "_record_spend", lambda s, m, b: None)
+    seat = _seat()
+    assert llm_seat.chat("hi", seat=seat) == ("ok", None)
+    got = llm_seat.last_resolved(seat)
+    assert got.startswith("deepseek/") and got != DEAD
+
+
+def test_a_vendor_locked_seat_never_crosses_to_another_family(monkeypatch):
+    _listing(monkeypatch, ["qwen/qwen3-235b-a22b:free", "openai/gpt-5"])
+    llm_seat.note_dead(_seat(), DEAD, _404)
+    locked = llm_seat.Seat(name="deepseek_bulk", base_url=OR, key="k", model=DEAD,
+                           lock_vendor=True)
+    model, err = llm_seat.discover_model(locked)
+    assert model == "" and err and "vendor-locked" in err
+
+
+def test_the_deepseek_cycle_goes_red_on_zero_proposals():
+    from scripts.run_deepseek_cycle import red_exit
+    assert red_exit({"status": "CALL_FAILED", "why": _404}) == 1
+    assert red_exit({"status": "OK", "n_findings": 0}) == 1
+    assert red_exit({"status": "OK", "n_findings": 3}) == 0
+    for hold in ("DARK", "BUDGET_EXHAUSTED", "MODEL_UNAVAILABLE", "BLOCKED_POLICY"):
+        assert red_exit({"status": hold}) == 0

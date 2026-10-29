@@ -198,6 +198,10 @@ class Seat:
     key: str = field(repr=False)
     model: str = ""
     source: str = ""
+    #: A seat whose measurement is ONE VENDOR's (the DeepSeek flywheel). When its pinned id is
+    #: retired it may move to another id of that vendor, never to another family: a silent
+    #: substitution would corrupt the very thing the seat exists to measure.
+    lock_vendor: bool = False
 
     @property
     def redacted(self) -> str:
@@ -311,6 +315,10 @@ def discover_model(seat: Seat, *, timeout: float = 20.0) -> tuple[str, str | Non
         if swap:
             _note_swap(seat, seat.model, swap)
             return swap, None
+        if getattr(seat, "lock_vendor", False):
+            return "", (f"{seat.model} is no longer served and {_vendor(seat.model)!r} lists no "
+                        "replacement in its tier; this seat is vendor-locked, so nothing else "
+                        "is substituted")
     guarded = openrouter_guard.refusal(f"{seat.base_url}/chat/completions",
                                        {"model": ""}) is not None
     if free_tier_only() or guarded or (pin_dead and _is_free(seat.model)):
@@ -477,6 +485,19 @@ def _same_vendor(pin: str, ids: list[str]) -> str:
     return max(ranked)[1] if ranked else sorted(pool)[0]
 
 
+#: (base_url, seat name) -> the id that last ANSWERED for that seat in this process.
+_RESOLVED: dict[tuple[str, str], str] = {}
+
+
+def last_resolved(seat: Seat) -> str:
+    """The model id that last answered a `chat`/`chat_messages` call on this seat, or "".
+
+    A caller that credits work to a model reads this rather than `seat.model`: after a retired
+    pin is swapped, the pin is the one model that certainly did NOT answer.
+    """
+    return _RESOLVED.get((seat.base_url, seat.name), "")
+
+
 def _post_live(s: Seat, model: str, req: dict[str, Any], *, timeout: float
                ) -> tuple[dict[str, Any], str | None, str]:
     """POST; if the provider says the model id is not served, learn it, swap once, retry once.
@@ -486,6 +507,8 @@ def _post_live(s: Seat, model: str, req: dict[str, Any], *, timeout: float
     url = f"{s.base_url}/chat/completions"
     body, err = _post_with_degrade(url, s.key, req, timeout=timeout)
     if not is_dead_endpoint(err):
+        if err is None:
+            _RESOLVED[(s.base_url, s.name)] = model
         return body, err, model
     note_dead(s, model, str(err))
     alt, aerr = discover_model(s, timeout=timeout)
@@ -493,6 +516,8 @@ def _post_live(s: Seat, model: str, req: dict[str, Any], *, timeout: float
         return body, err, model
     req = {**req, "model": alt}
     body, err = _post_with_degrade(url, s.key, req, timeout=timeout)
+    if err is None:
+        _RESOLVED[(s.base_url, s.name)] = alt
     return body, err, alt
 
 
