@@ -1,0 +1,5 @@
+{
+ "schema": "mining_digest/1",
+ "generated_at": null,
+ "status": "UNMEASURED: written by the hourly global_mining leg on the box; tracked so the capture commit carries it"
+}
