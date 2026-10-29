@@ -1139,7 +1139,8 @@ def _late_main(tmp_path, monkeypatch, mt5) -> dict:
 def _e8_claimed(side: str, minutes_before: float) -> None:
     _e8_fills(ga._DAY, side)
     days, _ = oco.read_directions()
-    days[ga._DAY]["claimed_at"] = (ga._WHEN - timedelta(minutes=minutes_before)).isoformat()
+    # claimed_at is a real UTC stamp; the harness wall clock is _WHEN_UTC (_WHEN is the broker clock).
+    days[ga._DAY]["claimed_at"] = (ga._WHEN_UTC - timedelta(minutes=minutes_before)).isoformat()
     oco._save_days(days, ga._DAY)
 
 

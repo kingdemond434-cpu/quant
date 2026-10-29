@@ -36,6 +36,7 @@ for _p in (str(_DESK), str(_ROOT), str(_DESK / "tests")):
         sys.path.insert(0, _p)
 
 from mt5desk import cross_account as xa  # noqa: E402
+from mt5desk.broker_clock import broker_to_utc  # noqa: E402
 from mt5desk import decision_core as dc  # noqa: E402
 from mt5desk import kelly_sizing  # noqa: E402
 
@@ -721,7 +722,9 @@ def _fusion_main_at(tmp_path, monkeypatch, when):
     class _Clock(datetime):
         @classmethod
         def now(cls, tz=None):
-            return when.astimezone(tz) if tz else when.replace(tzinfo=None)
+            # The wall clock is real UTC; `when` (and tick.time) is on the broker clock.
+            real = broker_to_utc(when).to_pydatetime()
+            return real.astimezone(tz) if tz else real.replace(tzinfo=None)
 
     mt5 = _At(rows, mid - 0.05, mid + 0.05)
     ns = adapter._main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
