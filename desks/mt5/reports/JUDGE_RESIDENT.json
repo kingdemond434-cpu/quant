@@ -17,7 +17,7 @@
  "uptime_s": 192396.7,
  "last_sweep_ended_utc": "2026-10-29T22:07:51+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-10-29T23:20:17+00:00",
+ "heartbeat_utc": "2026-10-29T23:35:02+00:00",
  "sweep_phase": {
   "pid": 8812,
   "sweep_started_utc": "2026-10-29T22:08:19+00:00",
@@ -82,32 +82,37 @@
      }
     },
     "prewarm": {
-     "samples": 263,
+     "samples": 359,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 259,
-       "share": 0.985
+       "n": 347,
+       "share": 0.967
+      },
+      {
+       "stack": "external_gauntlet.py:_submit_next:2072 < external_gauntlet.py:_prewarm_cache:2119 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
+       "n": 5,
+       "share": 0.014
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
-       "n": 3,
+       "n": 4,
        "share": 0.011
       },
       {
        "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
-       "n": 1,
-       "share": 0.004
+       "n": 3,
+       "share": 0.008
       }
      ],
      "process": {
-      "cpu_s": 235.6,
-      "page_faults": 6728644.0,
-      "read_bytes": 3392641.0,
-      "write_bytes": 7885038303.0,
-      "sampled_s": 2620.0,
+      "cpu_s": 314.9,
+      "page_faults": 9576665.0,
+      "read_bytes": 4682084.0,
+      "write_bytes": 11211873035.0,
+      "sampled_s": 3580.0,
       "rss_mb_max": 3185.0,
-      "cpu_share_of_wall": 0.09
+      "cpu_share_of_wall": 0.088
      }
     }
    }
