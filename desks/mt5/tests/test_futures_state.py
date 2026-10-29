@@ -315,7 +315,101 @@ def test_registry_names_every_unmeasured_fx_input() -> None:
     g = fs.gaps(reg, {}, [])
     assert "fx_options_risk_reversals" in g["missed_growth_unmeasured"]
     held = {h["id"] for h in g["held_or_unconfirmed_venues"]}
-    assert {"mof_japan_intervention", "cls_fx_volumes", "mt5_fx_tick_tape"} <= held
+    assert {"cls_fx_volumes", "mt5_fx_tick_tape"} <= held
+    assert "mof_japan_intervention" not in held, "the MoF collector is built"
     for m in reg["cftc_markets"]:
         assert bool(m.get("names")) != bool(m.get("like")), m["id"]
         assert "/" not in str(m.get("like", "")), "a cross must be named, never patterned"
+
+
+def _mof_csv(n_quarters: int = 40) -> str:
+    """The MoF historical CSV's shape: day rows (year only on a quarter's first row) and one
+    total row per quarter, including quarters with no intervention."""
+    lines = ["財務省,,,,,,,,", "Foreign Exchange Intervention Operations,,,,,,,,",
+             "年,月,日,Year,Month,Day,金額(amount),売買通貨,Currency pairs"]
+    mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    q_start = pd.Timestamp("2000-01-01")
+    for i in range(n_quarters):
+        qs = q_start + pd.DateOffset(months=3 * i)
+        qe = qs + pd.offsets.QuarterEnd(0)
+        if i % 3 == 0:
+            sold = "the US dollar (bought) the Japanese yen (sold)"
+            bought = "the US dollar (sold) the Japanese yen (bought)"
+            lines.append(f"x,,,{qs.year},{mon[qs.month - 1]},5,\"1,{i:03d}\",x,{sold}")
+            lines.append(f",,,,{mon[qs.month]},{6 + i % 20},{100 + 7 * i},x,{bought}")
+        label = f"{qs.strftime('%B')} - {qe.strftime('%B')} {qe.year}"
+        lines.append(f"x,,,{label},,,0,,")
+    lines += ["", "(note2) As the figures in each days are rounded off, they do not add up."]
+    return "\n".join(lines)
+
+
+def test_mof_csv_is_signed_by_direction_and_every_quarter_is_measured() -> None:
+    days, quarters = fs.mof_days(_mof_csv(40))
+    assert len(quarters) == 40 and quarters[0] == pd.Timestamp("2000-03-31")
+    first = days.iloc[0]
+    assert first["day"] == pd.Timestamp("2000-01-05") and first["amount"] == 1000.0
+    assert first["sign"] == -1.0 and days.iloc[1]["sign"] == 1.0
+    q = fs.mof_quarterly(days, quarters)
+    assert len(q) == 40
+    assert q.loc["2000-03-31", "mof_q_net"] == -1000.0 + 100.0
+    assert q.loc["2000-06-30", "mof_q_gross"] == 0.0
+    assert q.loc["2000-09-30", "mof_q_since_last"] == 2
+    assert fs.mof_sign("the euro (bought) the US dollar (sold)") == 0.0
+
+
+def test_mof_monthly_page_amounts_and_periods() -> None:
+    pe, amt = fs.mof_monthly_page("<p>Total amount ... for the period from April 26, 2024 "
+                                  "through May 29, 2024</p><p>¥\u3000 9,788.5 billion</p>")
+    assert pe == pd.Timestamp("2024-05-29") and amt == pytest.approx(97885.0)
+    assert fs.mof_monthly_page("January 30, 2024 through February 27, 2024 ¥ 0")[1] == 0.0
+    assert fs.mof_monthly_page("<html>maintenance</html>") is None
+
+
+def test_mof_rows_are_stamped_at_disclosure_never_at_intervention(tmp_desk: Path) -> None:
+    import urllib.error
+
+    csv = _mof_csv(40)
+    page = "from x through December 27, 2009 ¥ 1,234 billion"
+
+    def get_text(url: str) -> str:
+        if url.endswith("robots.txt"):
+            raise urllib.error.HTTPError(url, 404, "nf", None, None)  # type: ignore[arg-type]
+        if url.endswith(".csv"):
+            return csv
+        if url.endswith("monthly/index.html"):
+            return '<a href="https://h/feio/monthly/20091230e.html">x</a>'
+        return page
+
+    reg = {"sources": [{"id": "mof_japan_intervention", "adapter": "mof_feio", "terms": "OPEN",
+                        "csv_url": "https://h/feio/x.csv",
+                        "monthly_index_url": "https://h/feio/monthly/index.html",
+                        "targets": ["USDJPY"]}]}
+    built, frames, _n = fs.build_market_series(reg, get=None, state={}, bars=lambda s: None,
+                                               get_text=get_text)
+    q, m = frames["mof_jpy_q"], frames["mof_jpy_m"]
+    lag = pd.to_datetime(q["available_time"]) - pd.to_datetime(q["event_time"])
+    assert (lag >= pd.Timedelta(days=fs.MOF_QUARTER_LAG_DAYS)).all()
+    # Months before the first readable release come from the CSV, stamped at disclosure; the
+    # release month is stamped at its publication date.
+    rel = m[pd.to_datetime(m["event_time"]) == pd.Timestamp("2009-12-27", tz="UTC")]
+    assert len(rel) == 1 and str(rel["available_time"].iloc[0]).startswith("2009-12-30 23:00")
+    assert rel["mof_m_gross"].iloc[0] == pytest.approx(12340.0)
+    early = m[pd.to_datetime(m["event_time"]) < pd.Timestamp("2009-12-01", tz="UTC")]
+    assert ((pd.to_datetime(early["available_time"]) - pd.to_datetime(early["event_time"]))
+            >= pd.Timedelta(days=fs.MOF_QUARTER_LAG_DAYS)).all()
+    assert built["mof_jpy_q"]["targets"] == ["USDJPY"]
+    assert "mof_q_net" in fs._feature_cols(q)
+
+
+def test_mof_is_not_fetched_when_robots_disallows(tmp_desk: Path) -> None:
+    calls: list[str] = []
+
+    def get_text(url: str) -> str:
+        calls.append(url)
+        return "User-agent: *\nDisallow: /\n"
+
+    notes: list = []
+    fs.mof_collect({"id": "mof_japan_intervention", "terms": "OPEN", "csv_url": "https://h/a.csv",
+                    "monthly_index_url": "https://h/m/index.html"}, get_text, {}, notes)
+    assert calls == ["https://h/robots.txt"]
+    assert notes[0]["why"] == "robots disallows"

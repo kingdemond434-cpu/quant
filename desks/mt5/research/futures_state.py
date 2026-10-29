@@ -14,7 +14,9 @@ WHAT THIS ORGAN DOES, end to end, and every stage publishes a number:
      book), EIA's republished NYMEX contracts 1-4 (WTI, Henry Hub: a dated curve from a
      public-domain source now that Yahoo is IDEAS_ONLY), and Deribit's public read-only API (BTC
      and ETH futures term structure, perpetual funding, option OI, implied vol, a dealer-gamma
-     proxy). Every other venue is a row with its terms state (TO_CONFIRM / HELD / IDEAS_ONLY /
+     proxy), and Japan's MoF intervention record (every intervention day since 1991, signed,
+     stamped at its quarterly disclosure; monthly totals stamped at their release). Every other
+     venue is a row with its terms state (TO_CONFIRM / HELD / IDEAS_ONLY /
      OWNED_ELSEWHERE) and is COUNTED as a named gap, never fetched.
 
   2. HONEST ACCESS. One User-Agent that says who we are, no retries, and 401/403/429/451 is a
@@ -548,6 +550,196 @@ def deribit_dvol_history(currency: str, get: Callable[[str], Any], now: datetime
                      index=pd.to_datetime([int(r[0]) for r in rows], unit="ms", utc=True))
 
 
+# ----------------------------------------------------------------------- Japan MoF intervention
+
+#: MoF publishes intervention two ways. The historical CSV holds every intervention DAY since
+#: April 1991 with its amount and direction, but a quarter's days are disclosed only after the
+#: quarter ends (the CSV read 2026-10-29 ended at June 2026). The monthly release gives the
+#: period's TOTAL, undirected, at the month's last business day. The intervention date is never
+#: the availability time: a day is stamped when its quarter was disclosed, a monthly total when
+#: its page was published.
+MOF_QUARTER_LAG_DAYS = 62     # quarter end -> disclosure; the Q2 2026 rows were not out at +29
+MOF_PAGES_PER_PASS = 12       # monthly pages are immutable and cached; a few per pass is polite
+_MOF_MON = {m: i for i, m in enumerate(("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug",
+                                        "Sep", "Oct", "Nov", "Dec"), start=1)}
+
+
+def fetch_text(url: str, timeout: float = 40.0) -> str:
+    """One honest GET of a page or file. Same rules as `fetch_json`: no retry, hard stop."""
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            raw: bytes = r.read()
+    except urllib.error.HTTPError as exc:
+        if exc.code in HARD_STOP:
+            raise HardStop(exc.code, url) from exc
+        raise
+    for enc in ("utf-8-sig", "cp932"):
+        try:
+            return raw.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    return raw.decode("utf-8", errors="replace")
+
+
+def robots_allow(url: str, get_text: Callable[[str], str]) -> bool:
+    """robots.txt for the URL's host, read with our own UA. A missing file (404) allows, as the
+    standard says; any other failure to read it does NOT allow, so an unread policy is never
+    treated as a yes."""
+    import urllib.robotparser
+    p = urllib.parse.urlsplit(url)
+    rp = urllib.robotparser.RobotFileParser()
+    try:
+        rp.parse(get_text(f"{p.scheme}://{p.netloc}/robots.txt").splitlines())
+    except urllib.error.HTTPError as exc:
+        return exc.code == 404
+    return rp.can_fetch(UA, url)
+
+
+def mof_sign(pair: str) -> float:
+    """+1 when the yen was BOUGHT (support), -1 when sold, 0 for an operation not against yen."""
+    p = pair.lower()
+    if "japanese yen (bought)" in p:
+        return 1.0
+    if "japanese yen (sold)" in p:
+        return -1.0
+    return 0.0
+
+
+def mof_days(text: str) -> tuple[pd.DataFrame, list[pd.Timestamp]]:
+    """The historical CSV -> one row per intervention day (amount in 100 million yen, signed by
+    direction) and the list of quarters it covers, read from its own quarter-total rows so a
+    quarter with no intervention is a measured zero, never a missing row."""
+    import csv
+    import io
+    days, quarters, year = [], [], None
+    for row in csv.reader(io.StringIO(text)):
+        row = [c.strip() for c in row] + [""] * 9
+        if row[3] and " - " in row[3] and not row[4]:
+            try:
+                q_end = pd.Timestamp(row[3].split(" - ")[1].strip()) + pd.offsets.MonthEnd(0)
+            except ValueError:
+                continue
+            quarters.append(q_end)
+            continue
+        if row[3].isdigit():
+            year = int(row[3])
+        if year is None or row[4] not in _MOF_MON or not row[5].isdigit():
+            continue
+        try:
+            amt = float(row[6].replace(",", ""))
+        except ValueError:
+            continue
+        days.append({"day": pd.Timestamp(year, _MOF_MON[row[4]], int(row[5])),
+                     "amount": amt, "sign": mof_sign(row[8])})
+    return pd.DataFrame(days, columns=["day", "amount", "sign"]), sorted(set(quarters))
+
+
+def mof_quarterly(days: pd.DataFrame, quarters: Sequence[pd.Timestamp]) -> pd.DataFrame:
+    """Per disclosed quarter: signed net, gross, days, trailing-year net, quarters since the
+    last intervention. Indexed by quarter end."""
+    idx = pd.DatetimeIndex(sorted(quarters))
+    if days.empty or not len(idx):
+        return pd.DataFrame()
+    d = days.assign(q=days["day"] + pd.offsets.QuarterEnd(0),
+                    net=days["amount"] * days["sign"])
+    g = d.groupby("q")
+    out = pd.DataFrame({"mof_q_net": g["net"].sum(), "mof_q_gross": g["amount"].sum(),
+                        "mof_q_days": g.size()}).reindex(idx).fillna(0.0)
+    out["mof_net_4q"] = out["mof_q_net"].rolling(4, min_periods=1).sum()
+    active = out["mof_q_gross"] > 0
+    out["mof_q_since_last"] = (~active).groupby(active.cumsum()).cumsum().astype(float)
+    return out
+
+
+_MOF_PERIOD = r"through\s+([A-Z][a-z]+\.?\s+\d{1,2},\s+\d{4})"
+_MOF_AMOUNT = r"[¥￥]\s*([\d,]+(?:\.\d+)?)\s*(trillion|billion|million)?"
+
+
+def mof_monthly_page(html: str) -> tuple[pd.Timestamp, float] | None:
+    """A monthly release -> (period end, total in 100 million yen). None when unparseable."""
+    import re
+    txt = re.sub(r"<[^>]+>", " ", html).replace("　", " ").replace("&nbsp;", " ")
+    pe, am = re.search(_MOF_PERIOD, txt), re.search(_MOF_AMOUNT, txt)
+    if not pe or not am:
+        return None
+    scale = {"trillion": 1e4, "billion": 10.0, "million": 0.01, None: 1e-8}[am.group(2)]
+    try:
+        amount = float(am.group(1).replace(",", "")) * scale
+        return pd.Timestamp(pe.group(1).replace(".", "")), amount
+    except ValueError:
+        return None
+
+
+def mof_monthly(pages: Mapping[str, Mapping[str, Any]], days: pd.DataFrame,
+                quarters: Sequence[pd.Timestamp]) -> pd.DataFrame:
+    """Monthly gross intervention as it was known. A month with a fetched release is stamped at
+    its publication; a month before the first release this organ can read comes from the CSV,
+    stamped when its quarter was disclosed. Columns: event_time, available, mof_m_gross,
+    mof_m_since_last."""
+    rows = [{"event_time": pd.Timestamp(v["period_end"]), "mof_m_gross": float(v["total"]),
+             "available": pd.Timestamp(k, tz="UTC").normalize() + pd.Timedelta(hours=23)}
+            for k, v in pages.items()]
+    first = min((r["event_time"] for r in rows), default=None)
+    if not days.empty and quarters:
+        months = pd.date_range(pd.Timestamp(min(quarters)) - pd.offsets.MonthEnd(2),
+                               max(quarters), freq="ME")
+        g = (days.assign(m=days["day"] + pd.offsets.MonthEnd(0)).groupby("m")["amount"].sum()
+             .reindex(months).fillna(0.0))
+        for m, v in g.items():
+            if first is not None and m >= first:
+                break
+            q_end = m + pd.offsets.QuarterEnd(0)
+            rows.append({"event_time": m, "mof_m_gross": float(v),
+                         "available": pd.Timestamp(q_end, tz="UTC").normalize()
+                         + pd.Timedelta(days=MOF_QUARTER_LAG_DAYS, hours=23)})
+    if not rows:
+        return pd.DataFrame()
+    out = pd.DataFrame(rows).sort_values("event_time").drop_duplicates("event_time", keep="first")
+    active = out["mof_m_gross"] > 0
+    out["mof_m_since_last"] = (~active).groupby(active.cumsum()).cumsum().astype(float)
+    return out.reset_index(drop=True)
+
+
+def mof_collect(src: Mapping[str, Any], get_text: Callable[[str], str] | None,
+                state: dict[str, Any], notes: list[dict[str, Any]]
+                ) -> tuple[pd.DataFrame, list[pd.Timestamp], dict[str, Any]]:
+    """Fetch (when allowed) and cache the CSV and new monthly pages; return what is held."""
+    import re
+    sid = str(src["id"])
+    csv_path, pages_path = RAW / "mof_intervention.csv", RAW / "mof_monthly_pages.json"
+    pages: dict[str, Any] = _read(pages_path, {}) or {}
+    if get_text is not None and src.get("terms") == "OPEN" and \
+            sid not in state.get("hard_stops", {}):
+        try:
+            if not robots_allow(str(src["csv_url"]), get_text):
+                notes.append({"source": sid, "status": "UNMEASURED", "why": "robots disallows"})
+            else:
+                text = get_text(str(src["csv_url"]))
+                if mof_days(text)[1]:
+                    csv_path.parent.mkdir(parents=True, exist_ok=True)
+                    csv_path.write_text(text, encoding="utf-8")
+                index = get_text(str(src["monthly_index_url"]))
+                base = str(src["monthly_index_url"]).rsplit("/", 1)[0]
+                links = sorted(set(re.findall(r"monthly/(\d{8}e?)\.html", index)) |
+                               set(re.findall(r'href="(\d{8}e?)\.html"', index)))
+                todo = [ln for ln in links if ln[:8] not in pages][-MOF_PAGES_PER_PASS:]
+                for ln in todo:
+                    got = mof_monthly_page(get_text(f"{base}/{ln}.html"))
+                    if got is None:
+                        notes.append({"source": sid, "page": ln, "status": "UNPARSED"})
+                        continue
+                    pages[ln[:8]] = {"period_end": str(got[0].date()), "total": got[1]}
+                _write(pages_path, pages)
+        except HardStop as hs:
+            state.setdefault("hard_stops", {})[sid] = {"code": hs.code, "at": _now()}
+        except Exception as exc:
+            notes.append({"source": sid, "error": f"{type(exc).__name__}"})
+    text = csv_path.read_text(encoding="utf-8") if csv_path.exists() else ""
+    days, quarters = mof_days(text) if text else (pd.DataFrame(), [])
+    return days, quarters, pages
+
+
 # ----------------------------------------------------------------------------- build
 
 def _now() -> str:
@@ -579,7 +771,8 @@ def _feature_cols(frame: pd.DataFrame) -> list[str]:
 
 
 def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any] | None,
-                        state: dict[str, Any], bars: Callable[[str], pd.DataFrame | None]
+                        state: dict[str, Any], bars: Callable[[str], pd.DataFrame | None],
+                        get_text: Callable[[str], str] | None = None
                         ) -> tuple[dict[str, dict[str, Any]], dict[str, pd.DataFrame],
                                     list[dict[str, Any]]]:
     """Every OPEN source -> stamped feature frames. `get=None` means offline (held raw only)."""
@@ -731,6 +924,33 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
         else:
             notes.append({"source": sid, "status": "ACCRUING", "snapshots": len(snaps),
                           "need": MIN_ROWS})
+
+    mof = sources.get("mof_japan_intervention") or {}
+    if mof.get("adapter") == "mof_feio":
+        days, quarters, pages = mof_collect(mof, get_text, state, notes)
+        targets = list(mof.get("targets") or [])
+        q = mof_quarterly(days, quarters)
+        if len(q) >= MIN_ROWS:
+            feat = dynamics(q, ["mof_q_net", "mof_net_4q"], window=40)
+            feat[["mof_q_gross", "mof_q_days", "mof_q_since_last"]] = \
+                q[["mof_q_gross", "mof_q_days", "mof_q_since_last"]]
+            at = (pd.to_datetime(pd.Series(q.index), utc=True).dt.normalize()
+                  + pd.Timedelta(days=MOF_QUARTER_LAG_DAYS, hours=23))
+            frames["mof_jpy_q"] = stamped(feat.reset_index(drop=True), at, "mof_jpy_q",
+                                          pd.Series(q.index))
+            built["mof_jpy_q"] = {"targets": targets, "kind": "mof_intervention_quarterly",
+                                  "rows": len(q), "last_event": str(q.index.max())}
+        mm = mof_monthly(pages, days, quarters)
+        if len(mm) >= MIN_ROWS:
+            feat = dynamics(mm[["mof_m_gross"]], ["mof_m_gross"], window=60)
+            feat["mof_m_since_last"] = mm["mof_m_since_last"]
+            frames["mof_jpy_m"] = stamped(feat, mm["available"], "mof_jpy_m", mm["event_time"])
+            built["mof_jpy_m"] = {"targets": targets, "kind": "mof_intervention_monthly",
+                                  "rows": len(mm), "release_pages": len(pages),
+                                  "last_event": str(mm["event_time"].max())}
+        if "mof_jpy_q" not in built:
+            notes.append({"source": "mof_japan_intervention", "status": "UNMEASURED",
+                          "why": "no historical CSV held yet"})
 
     for tr in registry.get("transmissions") or []:
         a, b = frames.get(str(tr["a"])), frames.get(str(tr["b"]))
@@ -904,7 +1124,8 @@ def build(*, dry_run: bool = False, offline: bool = False) -> dict[str, Any]:
         def bars(sym: str) -> pd.DataFrame | None:
             return None
     built, frames, notes = build_market_series(
-        registry, get=None if offline else fetch_json, state=state, bars=bars)
+        registry, get=None if offline else fetch_json, state=state, bars=bars,
+        get_text=None if offline else fetch_text)
     if not dry_run:
         for sid, f in frames.items():
             _write_series(sid, f)

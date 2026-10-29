@@ -149,10 +149,21 @@
   },
   {
    "id": "mof_japan_intervention",
-   "adapter": "none",
+   "adapter": "mof_feio",
    "terms": "OPEN",
-   "url": "https://www.mof.go.jp/english/policy/international_policy/reference/feio/",
-   "note": "actual intervention prints (monthly/quarterly). Public government data; parser NOT BUILT yet -> gap"
+   "url": "https://www.mof.go.jp/english/policy/international_policy/reference/feio/index.html",
+   "csv_url": "https://www.mof.go.jp/english/policy/international_policy/reference/feio/foreign_exchange_intervention_operations.csv",
+   "monthly_index_url": "https://www.mof.go.jp/english/policy/international_policy/reference/feio/monthly/index.html",
+   "targets": [
+    "USDJPY",
+    "EURJPY",
+    "GBPJPY",
+    "AUDJPY",
+    "CADJPY",
+    "CHFJPY",
+    "NZDJPY"
+   ],
+   "note": "Public government data. Historical CSV = every intervention day since 1991-04 with amount (100m yen) and direction, disclosed quarterly (stamped quarter end + 62d). Monthly release = undirected period total, stamped at its publication (pages listed from 2023). Robots checked with our UA."
   },
   {
    "id": "fx_options_risk_reversals",
