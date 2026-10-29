@@ -29,18 +29,19 @@ from __future__ import annotations
 import html
 import json
 import re
+import sys as _sys
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 
-try:
-    from libs.data import polite_fetch as _pf
-except ImportError:  # run as a script: the repo root is not on the path
-    import sys as _sys
-    from pathlib import Path as _Path
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
-    from libs.data import polite_fetch as _pf
+# THIS TREE'S repo root first, before anything imports `libs`: run as a script the root is not on
+# the path, and a `libs` found elsewhere on it (another checkout) would be a different door.
+_ROOT = str(Path(__file__).resolve().parents[3])
+if _ROOT not in _sys.path[:1]:
+    _sys.path.insert(0, _ROOT)
+from libs.data import polite_fetch as _pf  # noqa: E402
+
 DESK_UA = _pf.DESK_UA
 
 BASE = Path(__file__).resolve().parent.parent
