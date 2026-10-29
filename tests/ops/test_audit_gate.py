@@ -1864,3 +1864,27 @@ def test_the_live_lane_installers_are_not_money_and_the_book_installers_are() ->
               "Install-QuantWindows.ps1"):  # fmt: skip
         assert f"desks/mt5/scripts/{f}" in money, f
     assert "desks/mt5/scripts/install_cro_cycle_tasks.ps1" not in money
+
+
+def test_a_python_tool_is_money_path_only_when_it_runs_or_names_the_money_path(
+        tmp_path: Path) -> None:
+    """#508: a stand-alone .py under desks/mt5/scripts/ was money path by directory too, and the
+    replay never imports it, so every backup or report tool there was UNMEASURED."""
+    base = _files_tree(tmp_path / "base", {
+        "desks/mt5/research/run_gateway_loop.py": "from mt5desk import gateway\n",
+        "desks/mt5/mt5desk/__init__.py": "",
+        "desks/mt5/mt5desk/gateway.py": "",
+        "desks/mt5/scripts/imports_gateway.py": "from mt5desk import gateway\n",
+        "desks/mt5/scripts/venue.py": "import MetaTrader5 as mt5\n",
+        "desks/mt5/scripts/writes_sleeves.py": "open('data/sleeves.json', 'w')\n",
+        "desks/mt5/scripts/broken.py": "def (:\n",
+        "desks/mt5/scripts/backup.py": "import shutil\nshutil.copy('a', 'b')\n",
+        "desks/mt5/scripts/runs_tool.ps1": "& $py scripts\\imports_gateway.py\n",
+    })
+    closure = rs.import_closure(base)
+    money = rs.money_scripts((base,), closure)
+    for f in ("imports_gateway.py", "venue.py", "writes_sleeves.py", "broken.py",
+              "runs_tool.ps1"):  # fmt: skip
+        assert f"desks/mt5/scripts/{f}" in money, f
+    assert "desks/mt5/scripts/backup.py" not in money
+    assert not rs.is_money("desks/mt5/scripts/backup.py", closure, money)

@@ -65,7 +65,9 @@ ENTRY_POINTS = (
 #: SCRIPTS ARE MONEY PATH BY WHAT THEY RUN, NOT BY WHERE THEY SIT (2026-10-29). The replay only
 #: imports Python, so a .ps1 under desks/mt5/scripts/ could never be "imported" and every change
 #: to one was UNMEASURED forever (#439, a CRO lane installer that runs no order code). A script
-#: under these directories is money path when its base OR PR text names a money-path Python file
+#: under these directories (shell, or a stand-alone Python tool) is money path when it is a Python
+#: tool that imports the money path or MetaTrader5, or when its base OR PR text (shell scripts;
+#: comments stripped) names a money-path Python file
 #: (the import closure or an entry point, by file name or dotted module), a word of the venue
 #: (MONEY_WORDS), or another money-path script, to a fixed point. Every other script is listed
 #: as `not_money_scripts` in the report, never silently passed. Data, state and config files
@@ -74,6 +76,13 @@ SCRIPT_EXTS = (".ps1", ".psm1", ".cmd", ".bat", ".sh")
 SCRIPT_DIRS = ("desks/mt5/scripts/", "desks/mt5/ops/")
 MONEY_WORDS = re.compile(
     r"terminal64|metatrader|autotrading|mt5[-_]gateway|ftmo|fusion|\be8[-_]|order_send",
+    re.IGNORECASE,
+)
+#: The gateway's own switches and books, by file name: a tool that names one may write it, which
+#: changes what the live book does without importing a line of it.
+STATE_WORDS = re.compile(
+    r"sleeves\.json|gateway_state|gateway_paused|cashcarry_kill|deadman|\bfreeze\b|live_door"
+    r"|sleeve_registry|account_state",
     re.IGNORECASE,
 )
 #: Where `import x` resolves on the box: the repository root and the desk.
@@ -247,7 +256,29 @@ def import_closure(tree: Path, entries: tuple[str, ...] = ENTRY_POINTS) -> set[s
 
 
 def is_script(path: str) -> bool:
-    return path.startswith(SCRIPT_DIRS) and path.lower().endswith(SCRIPT_EXTS)
+    """A shell script or a stand-alone Python tool under SCRIPT_DIRS: judged by what it runs."""
+    return path.startswith(SCRIPT_DIRS) and path.lower().endswith((*SCRIPT_EXTS, ".py"))
+
+
+def _py_runs_money(tree: Path, f: str, closure: set[str]) -> bool:
+    """A Python tool is money path when it is in the closure, statically imports anything in it,
+    imports the venue's own module, or names the venue or a gateway switch or book anywhere in
+    its text (docstrings too: the safe side). Unparseable is money path (fail closed)."""
+    if f in closure or f in ENTRY_POINTS:
+        return True
+    src = read(tree, f) or ""
+    if MONEY_WORDS.search(src) or STATE_WORDS.search(src):
+        return True
+    try:
+        node = ast.parse(src)
+    except (SyntaxError, ValueError):
+        return True
+    for n in ast.walk(node):
+        mods = ([a.name for a in n.names] if isinstance(n, ast.Import)
+                else [n.module or ""] if isinstance(n, ast.ImportFrom) else [])
+        if any(m.split(".")[0].lower() == "metatrader5" for m in mods):
+            return True
+    return bool((import_closure(tree, (f,)) - {f}) & closure)
 
 
 _BLOCK_COMMENT = re.compile(r"<#.*?#>", re.DOTALL)
@@ -279,11 +310,17 @@ def money_scripts(trees: tuple[Path, ...], closure: set[str]) -> set[str]:
         if f.endswith(".py") and not f.endswith("__init__.py") and "." in dotted:
             names.add(dotted)  # package-qualified only: a bare `config` is in every script
     text: dict[str, str] = {}
+    money: set[str] = set()
     for tree in trees:
         for f in tree_files(tree):
-            if is_script(f):
-                text[f] = text.get(f, "") + "\n" + _code(read(tree, f) or "")
-    money = {f for f, t in text.items() if MONEY_WORDS.search(t) or _names_any(t, names)}
+            if not is_script(f):
+                continue
+            if f.endswith(".py"):
+                if _py_runs_money(tree, f, closure):
+                    money.add(f)
+                continue  # a tool's prose (docstrings) names things it does not run
+            text[f] = text.get(f, "") + "\n" + _code(read(tree, f) or "")
+    money |= {f for f, t in text.items() if MONEY_WORDS.search(t) or _names_any(t, names)}
     while True:  # a script that calls a money-path script is one
         called = {Path(f).name.lower() for f in money}
         more = {f for f, t in text.items() if f not in money and _names_any(t, called)}
@@ -344,11 +381,12 @@ def bounded() -> dict[str, set[str]]:
     return out
 
 
-def knob_changes(base: Path, head: Path, changed: list[str], closure: set[str]) -> list[str]:
+def knob_changes(base: Path, head: Path, changed: list[str], closure: set[str],
+                 scripts: set[str] | None = None) -> list[str]:
     problems = []
     held = bounded()
     for f in changed:
-        if not f.endswith(".py") or not is_money(f, closure):
+        if not f.endswith(".py") or not is_money(f, closure, scripts):
             continue
         try:
             was = knobs(read(base, f) or "")
@@ -483,7 +521,7 @@ def compare(
     problems += [
         f"UNMEASURED money-path change (the replay never imported it): {f}" for f in uncovered
     ]
-    problems += knob_changes(base, head, changed, closure)
+    problems += knob_changes(base, head, changed, closure, scripts)
     return {
         "verdict": "FAIL" if problems else "PASS",
         "scenarios": len(grid),
