@@ -41,6 +41,13 @@ def duration_min(text: str | None) -> float | None:
     return total or None
 
 
+def _is_zero(text: str) -> bool:
+    """A well-formed duration that totals zero (PT0S, P0D): the scheduler's "no limit"."""
+    m = _DURATION.match(text.strip().upper())
+    return bool(m and any(m.groupdict().values())
+                and not any(float(v) for v in m.groupdict().values() if v))
+
+
 def _find(root: ET.Element, path: str) -> ET.Element | None:
     hit = root.find("/".join(f"{NS}{p}" for p in path.split("/")))
     return hit if hit is not None else root.find(path)
@@ -76,10 +83,17 @@ def parse_limits(data: bytes) -> dict[str, Any]:
             for hit in _LOG_REDIRECT.findall((el.text or "") if el is not None else ""):
                 logs.append(hit.strip())
     raw_limit = (limit.text or "").strip() if limit is not None else ""
+    limit_min = duration_min(raw_limit or "PT72H")
+    why = ""
+    if raw_limit and limit_min is None and not _is_zero(raw_limit):
+        # non-empty, not PT0S, and not a duration this reads (`4320`, `P1W`): the limit is
+        # UNKNOWN, never silently "no limit"
+        why = f"ExecutionTimeLimit {raw_limit!r} unparseable"
     return {
+        "why": why,
         # Absent is the scheduler's own default of 72 h; PT0S is "no limit" (a daemon).
         "execution_time_limit": raw_limit or "PT72H (default)",
-        "execution_time_limit_min": duration_min(raw_limit or "PT72H"),
+        "execution_time_limit_min": limit_min,
         "interval_min": interval,
         "multiple_instances": (policy.text or "").strip() if policy is not None else "",
         "logs": logs,
@@ -96,6 +110,7 @@ def task_limits(name: str, base: Path | None = None) -> dict[str, Any]:
         return {**empty, "why": "no task name"}
     path = base.joinpath(*parts)
     try:
-        return {**parse_limits(path.read_bytes()), "why": ""}
-    except (OSError, ValueError, SyntaxError) as exc:   # ET.ParseError is a SyntaxError
+        return parse_limits(path.read_bytes())
+    # ET.ParseError is a SyntaxError; an unknown declared encoding ("x-bogus") is a LookupError
+    except (OSError, ValueError, SyntaxError, LookupError) as exc:
         return {**empty, "why": f"task definition unreadable: {type(exc).__name__}"}

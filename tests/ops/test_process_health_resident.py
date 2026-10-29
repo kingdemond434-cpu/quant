@@ -325,3 +325,46 @@ def test_a_definition_carrying_a_doctype_is_refused_before_parsing(
     (tmp_path / "MT5-Bomb").write_bytes(bomb.encode(enc))
     lim = tl.task_limits("\\MT5-Bomb", tmp_path)
     assert lim["execution_time_limit_min"] is None and "unreadable" in lim["why"]
+
+
+# --- Auditor HOLD on #510 v2 (43b98b484) -------------------------------------------------------
+
+def test_an_end_of_run_artifact_mid_run_inside_its_limit_is_not_hung(
+    monkeypatch: pytest.MonkeyPatch, box: Path,
+) -> None:
+    # MF probe: limit 90, interval 60, contract 180, artifact 125 min old (written at the END of
+    # the last run), current run 70 min in -> was HUNG while the contract still holds
+    _task(box, "MT5-EndWriter", log_age_min=1, limit="PT90M")
+    _art(box, "end.json", 125)
+    monkeypatch.setattr(ph, "_contracts", lambda: {"MT5-EndWriter": ("end.json", 180, "x")})
+    doc = _build(monkeypatch, _row("MT5-EndWriter"))
+    row = _by(doc)["MT5-EndWriter"]
+    assert row["verdict"] == "RESIDENT_RUNNING", row["why"]
+    assert doc["status"] == "OK" and doc["hung"] == []
+    # past limit + interval (150 min) it IS hung, contract or not
+    _art(box, "end.json", 160)
+    monkeypatch.setattr(ph, "_contracts", lambda: {"MT5-EndWriter": ("end.json", 600, "x")})
+    assert _by(_build(monkeypatch, _row("MT5-EndWriter")))["MT5-EndWriter"]["verdict"] == "HUNG"
+
+
+def test_an_unknown_xml_encoding_never_raises(tmp_path: Path) -> None:
+    # SF1: LookupError from ET on encoding="x-bogus" broke NEVER RAISES
+    (tmp_path / "MT5-Bogus").write_bytes(b'<?xml version="1.0" encoding="x-bogus"?><Task/>')
+    lim = tl.task_limits("\\MT5-Bogus", tmp_path)
+    assert lim["execution_time_limit_min"] is None and "unreadable" in lim["why"]
+
+
+@pytest.mark.parametrize("raw", ["4320", "P1W"])
+def test_an_unparseable_execution_limit_is_a_why_and_reads_unmeasured(
+    monkeypatch: pytest.MonkeyPatch, box: Path, raw: str,
+) -> None:
+    # SF2: a non-empty unparseable limit was silently PT0S, so HUNG could never fire
+    lim = tl.parse_limits(_xml("X", "a.log", raw))
+    assert lim["execution_time_limit_min"] is None and raw in lim["why"]
+    _task(box, "MT5-OddLimit", log_age_min=1, limit=raw)
+    _art(box, "odd.json", 5)
+    monkeypatch.setattr(ph, "_contracts", lambda: {"MT5-OddLimit": ("odd.json", 60, "x")})
+    doc = _build(monkeypatch, _row("MT5-OddLimit"))
+    row = _by(doc)["MT5-OddLimit"]
+    assert row["verdict"] == "RESIDENT_UNMEASURED" and raw in row["why"]
+    assert row["cure"] == ph.RESIDENT_LIMITS_CURE and doc["status"] == "ATTENTION"

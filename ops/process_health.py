@@ -434,10 +434,11 @@ RESIDENT_UNMEASURED_CURE = ("declare a log or contract an artifact: give the tas
                             "`>> \"...\\<Task>.log\" 2>&1` redirect (or write "
                             "desks/mt5/logs/<Task>.log), or add its output to "
                             "ops/organ_contract.CONTRACTS")
-#: The task definition could not be read (missing, garbled, DOCTYPE refused): bounds unknown.
+#: The definition is unreadable (missing, garbled, DOCTYPE) or its limit unparseable.
 RESIDENT_LIMITS_CURE = ("make the task definition readable: re-register the task (its install_*"
                         "_task.ps1) so C:\\Windows\\System32\\Tasks\\<Task> is a well-formed "
-                        "task XML that MT5-ProcessHealth's account can read")
+                        "task XML, with an ISO-8601 ExecutionTimeLimit (PT20M, PT0S), that "
+                        "MT5-ProcessHealth's account can read")
 #: PT0S, no contract and no repetition interval: nothing says how old its output may be.
 RESIDENT_UNBOUNDED_CURE = ("bound the resident: give it an ExecutionTimeLimit or a repetition "
                            "interval, or add its output to ops/organ_contract.CONTRACTS")
@@ -504,10 +505,19 @@ def judge_resident(name: str, artifact: str, artifact_age: float | None,
         "limits_why": limits_why or None,
         "cure": None,
     }
-    if judged is not None and limit is not None and judged[0] > limit:
+    # THE HUNG THRESHOLD (Auditor MF, #510 v2). A log is appended DURING a run, so past the
+    # limit it is hung. A contracted artifact may be written only at the END of a run: mid-run it
+    # is legitimately up to one cadence plus one full run old. So its threshold is
+    # limit + interval, or max(limit, contract) when there is no repetition interval.
+    hung_after = limit
+    if limit is not None and artifact:
+        hung_after = limit + interval if interval else max(limit, float(max_age or 0))
+    facts["hung_after_min"] = hung_after
+    if judged is not None and hung_after is not None and judged[0] > hung_after:
         return "HUNG", (f"HUNG: {name} is Running with no output for {judged[0]:.0f} min, past "
                         f"its own ExecutionTimeLimit {lim.get('execution_time_limit')} "
-                        f"({limit:g} min); judged on {judged[1]}"), facts
+                        f"({limit:g} min; HUNG after {hung_after:g} min); judged on "
+                        f"{judged[1]}"), facts
     if artifact and artifact_age is None:
         return "NO_ARTIFACT", f"{artifact} does not exist (resident instance running)", facts
     if artifact and max_age and artifact_age is not None and artifact_age > max_age:
