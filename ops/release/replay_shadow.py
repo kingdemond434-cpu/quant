@@ -451,11 +451,32 @@ def bounded() -> dict[str, set[str]]:
     return out
 
 
+#: A NEW knob whose name says it sizes or risks money is never measured by a clean replay alone:
+#: it needs a ceiling (ceilings.json) or the manual path.
+SIZING_NAME = re.compile(
+    r"LOT|RISK|SIZE|SIZING|LEVERAGE|MARGIN|EXPOSURE|KELLY|FRAC|NOTIONAL|VOLUME|DRAWDOWN|LOSS"
+    r"|EQUITY|HEAT|MULT|SCALE|BOOST|CAP\b|CEILING",
+    re.IGNORECASE,
+)
+
+
 def knob_changes(
-    base: Path, head: Path, changed: list[str], closure: set[str], exempt: set[str] | None = None
+    base: Path,
+    head: Path,
+    changed: list[str],
+    closure: set[str],
+    exempt: set[str] | None = None,
+    replayed: set[str] | None = None,
 ) -> list[str]:
+    """Knobs a money-path file changed that no ceiling bounds. `replayed`: money files the
+    replay ran (imported by the base or the head) on a grid where every decision matched. A knob
+    NEW in such a file (absent from the base) is measured by that replay, unless its name says
+    it sizes or risks money (SIZING_NAME): a new fence's windows, labels, flag paths and None
+    defaults ship inert or the orders would differ (#545: 16 such knobs, 200 orders identical).
+    A knob the base already had is never measured this way: a changed rail needs its ceiling."""
     problems = []
     held = bounded()
+    replayed = replayed or set()
     for f in changed:
         if not f.endswith(".py") or not is_money(f, closure, exempt=exempt):
             continue
@@ -466,6 +487,9 @@ def knob_changes(
             problems.append(f"{f}: cannot be parsed ({exc.msg}); its knobs are unmeasured")
             continue
         for name in sorted(set(was) | set(now)):
+            new = name not in was
+            if new and f in replayed and not SIZING_NAME.search(name):
+                continue  # measured: a new knob the clean replay ran
             if was.get(name) != now.get(name) and name not in held.get(f, set()):
                 problems.append(
                     f"{f}: the money-path knob {name} changed; knobs the ceilings do not bound "
@@ -554,6 +578,8 @@ def compare(
     grid = [{**who, **sc} for sc in grid]
     problems: list[str] = []
     imported: set[str] = set()
+    imported_head: set[str] = set()  # a module only the PR has is imported by its tree alone
+    differs = 0
     placed = 0
     for sc in grid:
         b, h = run_tree(base, sc), run_tree(head, sc)
@@ -569,6 +595,12 @@ def compare(
             for f in b["imported"]
             if f.startswith(base_root + "/")
         )
+        head_root = str(head.resolve())
+        imported_head.update(
+            Path(f).relative_to(head_root).as_posix()
+            for f in h.get("imported") or []
+            if f.startswith(head_root + "/")
+        )
         for bs, hs in zip(b["steps"], h["steps"], strict=True):
             if bs.get("error"):
                 problems.append(f"UNMEASURED {sc['id']} @{bs['hour']}: base raised {bs['error']}")
@@ -576,6 +608,7 @@ def compare(
             placed += sum(1 for r in bs.get("intents") or [] if isinstance(r, dict))
             db, dh = decisions(bs), decisions(hs)
             if db != dh:
+                differs += 1
                 keys = sorted(k for k in db if db.get(k) != dh.get(k))
                 was = json.dumps({k: db.get(k) for k in keys})[:400]
                 now = json.dumps({k: dh.get(k) for k in keys})[:400]
@@ -585,16 +618,22 @@ def compare(
                 )
     if not placed:
         problems.append("UNMEASURED: the base tree placed nothing anywhere on the grid")
+    # the grid ran on both trees, placed orders, and every decision matched: nothing crashed,
+    # nothing was unmeasured, nothing differed
+    clean = not problems and not differs
     closure = import_closure(base)
     exempt = exempt_scripts((base, head), closure)
-    uncovered = sorted(
-        f for f in changed if is_money(f, closure, exempt=exempt) and f not in imported
-    )
+    # a module NEW in the PR is measured when the PR's own tree imported it in the replay (#545:
+    # a new fence module read UNMEASURED although every order matched); a module the base has
+    # must still be imported by the base run
+    new_files = {f for f in changed if read(base, f) is None}
+    ran = imported | (imported_head & new_files)
+    uncovered = sorted(f for f in changed if is_money(f, closure, exempt=exempt) and f not in ran)
     not_money = sorted(f for f in changed if is_script(f) and f in exempt)
     problems += [
         f"UNMEASURED money-path change (the replay never imported it): {f}" for f in uncovered
     ]
-    problems += knob_changes(base, head, changed, closure, exempt)
+    problems += knob_changes(base, head, changed, closure, exempt, ran if clean else set())
     return {
         "verdict": "FAIL" if problems else "PASS",
         "scenarios": len(grid),

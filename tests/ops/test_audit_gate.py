@@ -1969,9 +1969,7 @@ def test_an_unreadable_listed_script_is_money_path(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     real = rs.read
-    monkeypatch.setattr(
-        rs, "read", lambda t, f: None if f.endswith("backup.ps1") else real(t, f)
-    )
+    monkeypatch.setattr(rs, "read", lambda t, f: None if f.endswith("backup.ps1") else real(t, f))
     assert "desks/mt5/scripts/backup.ps1" in _money(tmp_path, {})
 
 
@@ -2002,3 +2000,57 @@ def test_formerly_protected_files_merge_only_on_every_auto_check(auto_hub: Any, 
 def test_a_secrets_path_never_merges(auto_hub: Any) -> None:
     h = auto_hub(files=("data/secrets/k.txt",), runs=_auto_green())
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 1 and _merges(h) == []
+
+
+# ------------------------------- a new fence that ships OFF is measured by the replay (#545)
+
+_FENCE = """
+from pathlib import Path
+FLAG = Path(__file__).parent / "news_fence_ON.flag"
+DEFAULT_PRE_MIN = 15
+RAIL = "e8_news_fence"
+
+
+def blocked(now=None, flag_path=None):
+    return (flag_path or FLAG).exists() and False
+"""
+
+
+def _fenced(book: str = _BOOK) -> str:
+    imp = "import json\nfrom prop import news_fence\nNEWS_RAIL = 'x'"
+    call = "    news_fence.blocked()\n    t = mt5"
+    return book.replace("import json", imp).replace("    t = mt5", call)
+
+
+def test_a_new_off_fence_module_and_its_new_knobs_are_measured_when_orders_match(
+    tmp_path: Path,
+) -> None:
+    """#545: a new news fence (default OFF) read UNMEASURED and its 16 new knobs unbounded,
+    though all 200 replayed orders matched base."""
+    base = _tree(tmp_path / "base")
+    head = _tree(tmp_path / "head", _fenced())
+    (head / "desks/mt5/prop/news_fence.py").write_text(_FENCE, "utf-8")
+    changed = ["desks/mt5/prop/e8_gold.py", "desks/mt5/prop/news_fence.py"]
+    rep = rs.compare(base, head, changed, _grid())
+    assert rep["verdict"] == "PASS", rep["problems"]
+    # a NEW knob named for sizing still needs its ceiling, however clean the replay
+    (head / "desks/mt5/prop/news_fence.py").write_text(_FENCE + "MAX_LOT_IN_NEWS = 5\n", "utf-8")
+    rep = rs.compare(base, head, changed, _grid())
+    assert rep["verdict"] == "FAIL" and "MAX_LOT_IN_NEWS" in " ".join(rep["problems"])
+    # an EXISTING knob changed is never measured by a clean replay
+    head2 = _tree(tmp_path / "head2", _fenced().replace("a long sentence", "a sentence"))
+    (head2 / "desks/mt5/prop/news_fence.py").write_text(_FENCE, "utf-8")
+    rep = rs.compare(base, head2, changed, _grid())
+    assert rep["verdict"] == "FAIL" and "WORDS changed" in " ".join(rep["problems"])
+    # orders that differ: nothing new is measured either
+    head3 = _tree(tmp_path / "head3", _fenced().replace('"lot": LOT', '"lot": LOT * 2'))
+    (head3 / "desks/mt5/prop/news_fence.py").write_text(_FENCE, "utf-8")
+    rep = rs.compare(base, head3, changed, _grid())
+    assert rep["verdict"] == "FAIL" and "DEFAULT_PRE_MIN" in " ".join(rep["problems"])
+
+
+def test_a_new_money_module_the_head_never_imported_stays_unmeasured(tmp_path: Path) -> None:
+    base, head = _tree(tmp_path / "base"), _tree(tmp_path / "head")
+    (head / "desks/mt5/prop/news_fence.py").write_text(_FENCE, "utf-8")
+    rep = rs.compare(base, head, ["desks/mt5/prop/news_fence.py"], _grid())
+    assert rep["verdict"] == "FAIL" and "news_fence.py" in " ".join(rep["problems"])
