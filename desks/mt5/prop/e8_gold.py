@@ -2096,7 +2096,9 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             act["why"] = dec["why"]
             log(f"[{name}] {side} dropped leg abandoned: {dec['why']}")
             doc["actions"].append(act)
-            if dec["why"] != "the other leg filled":
+            if dec["why"] != "the other leg filled" and not leg.get("news_held"):
+                # A leg the news fence was holding when its window ran out was already billed
+                # under e8_news_fence; billing it again here would count one leg twice.
                 # EACH ABANDONED RETRY IS BILLED (audit r6 MUST-FIX 2): the leg's own risk is
                 # the growth forgone. The OCO cancelling a filled bracket's twin forgoes nothing.
                 _record({"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
@@ -2171,10 +2173,14 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                              "missed_growth_risk_usd": leg_missed_usd(leg), "armed": armed,
                              "retry_of": leg.get("first_at")})
                 if news_why is not None:
+                    # Marked, so a window that EXPIRES while the fence holds the leg is billed
+                    # once (here), never again as gold_retry_abandoned / gold_late_send (v4).
+                    leg["news_held"] = now.isoformat(timespec="seconds")
                     act.update({"ok": False, "why": news_why, "rail": NEWS_RAIL})
                     doc["actions"].append(act)
                     log(f"[{name}] {side} re-send held: {news_why}")
                     continue
+            leg.pop("news_held", None)          # sent for real: a later abandon is billed again
             try:
                 # THE RETRY IS FENCED TOO (audit round 2, must-fix 1): the same cross-account
                 # check and placement lock as a first send. A fenced leg stays dropped, is not

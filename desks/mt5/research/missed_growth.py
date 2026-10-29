@@ -828,7 +828,9 @@ def _news_fence_blindness(rows: list[dict[str, Any]],
     carries a parseable date; and the calendar has no gap over the journal's span. A missing
     key, a stale or undated report, or an undated row is blindness (audit v3), never clean."""
     out: dict[str, Any] = {}
-    rep = _json(E8_GOLD_REPORT) or {}
+    rep = _json(E8_GOLD_REPORT)
+    if not isinstance(rep, dict):                 # a list / scalar report is no verdict (v4)
+        rep = {}
     nfv = rep.get("news_fence")
     now = now or datetime.now(tz=UTC)
     try:
@@ -1144,11 +1146,33 @@ MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measu
 
 
 # --------------------------------------------------------------------------- the ledger
-def _rows() -> list[dict]:
+def _rows_counted() -> tuple[list[dict], int]:
+    """The ledger's rows and how many lines were skipped as torn or not a JSON object. Parsed
+    line by line (v4 SHOULD): one bad line used to return [] for the whole ledger, so a repair
+    run believed no day had been sampled and appended the same day again."""
     try:
-        return [json.loads(ln) for ln in LEDGER.read_text("utf-8").splitlines() if ln.strip()]
-    except (OSError, ValueError):
-        return []
+        text = LEDGER.read_text("utf-8", errors="replace")
+    except OSError:
+        return [], 0
+    rows: list[dict] = []
+    bad = 0
+    for ln in text.splitlines():
+        if not ln.strip():
+            continue
+        try:
+            row = json.loads(ln)
+        except ValueError:
+            bad += 1
+            continue
+        if isinstance(row, dict):
+            rows.append(row)
+        else:
+            bad += 1
+    return rows, bad
+
+
+def _rows() -> list[dict]:
+    return _rows_counted()[0]
 
 
 def _verdict_from_samples(samples: list[float]) -> tuple[str, dict[str, Any]]:
@@ -1169,7 +1193,7 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
     fv = _veto_evidence()
     day = today or datetime.now(tz=UTC).date().isoformat()
     # 1. today's samples, appended once per day per rail
-    existing = _rows()
+    existing, skipped_lines = _rows_counted()
     have_today = {(r.get("rail"), r.get("day")) for r in existing}
     new = []
     live: dict[str, dict[str, Any]] = {}
@@ -1180,7 +1204,7 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
             new.append({"day": day, "rail": r.name,
                         "value": float(m.get("value_logw_per_day", 0.0)),
                         "at": datetime.now(tz=UTC).isoformat()})
-    append_failed = _append_ledger(new) if new and write else None
+    append_failed, torn_tail = _append_ledger(new) if new and write else (None, 0)
     if append_failed is not None:
         new = []                       # nothing was recorded, so no sample is claimed
     rows = existing + new
@@ -1249,6 +1273,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
     doc = {"generated_utc": datetime.now(tz=UTC).isoformat(), "day": day,
            "ledger_rows": len(rows), "new_samples": len(new), "rails": verdicts,
            **({"ledger_append_failed": append_failed} if append_failed else {}),
+           **({"ledger_lines_skipped": skipped_lines} if skipped_lines else {}),
+           **({"ledger_torn_tail": torn_tail} if torn_tail else {}),
            "veto_evidence_source": fv.get("source"),
            "costs_growth": sorted(k for k, v in verdicts.items() if v.get("verdict") == COSTS),
            "earns": sorted(k for k, v in verdicts.items() if v.get("verdict") == EARNS),
@@ -1279,30 +1305,51 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
     return doc
 
 
-def _append_ledger(new: list[dict[str, Any]]) -> str | None:
-    """Append `new` to the ledger as ONE write, after cutting any torn trailing fragment back to
-    the last newline (a crash mid-line must not glue the next row onto it). Returns None, or why
-    it failed -- a full disk never kills the bill; the doc says so and claims no new sample."""
+def _last_line_tail(fh: Any, size: int, chunk: int = 65536) -> bytes:
+    """The bytes after the file's LAST newline (the whole file when it has none), scanning back
+    in chunks however long the final line is."""
+    pos, buf = size, b""
+    while pos > 0:
+        step = min(chunk, pos)
+        pos -= step
+        fh.seek(pos)
+        buf = fh.read(step) + buf
+        cut = buf.rfind(b"\n")
+        if cut >= 0:
+            return buf[cut + 1:]
+    return buf
+
+
+def _append_ledger(new: list[dict[str, Any]]) -> tuple[str | None, int]:
+    """Append `new` as ONE write. Never cuts and never glues (audit v4 MUST): when the file does
+    not end in a newline, its last line is KEPT and closed with a newline first -- a complete
+    JSON object is a real row that only lost its terminator; anything else is counted as a torn
+    line (returned) and left for `_rows_counted` to skip. Returns (why it failed or None, torn)."""
+    torn = 0
     try:
         LEDGER.parent.mkdir(parents=True, exist_ok=True)
         with LEDGER.open("a+b") as fh:
             fh.seek(0, 2)
             size = fh.tell()
+            lead = b""
             if size:
-                fh.seek(max(0, size - 65536))
-                tail = fh.read()
-                if not tail.endswith(b"\n"):
-                    cut = tail.rfind(b"\n")
-                    fh.truncate((size - len(tail) + cut + 1) if cut >= 0 else
-                                (0 if size <= 65536 else size))
+                fh.seek(size - 1)
+                if fh.read(1) != b"\n":
+                    tail = _last_line_tail(fh, size)
+                    try:
+                        ok = isinstance(json.loads(tail.decode("utf-8")), dict)
+                    except ValueError:
+                        ok = False
+                    torn = 0 if ok else 1
+                    lead = b"\n"
             fh.seek(0, 2)
-            fh.write("".join(json.dumps(r) + "\n" for r in new).encode("utf-8"))
+            fh.write(lead + "".join(json.dumps(r) + "\n" for r in new).encode("utf-8"))
             fh.flush()
-        return None
+        return None, torn
     except (OSError, ValueError) as exc:
         why = f"{type(exc).__name__}: {exc}"[:200]
         print(f"missed_growth: ledger append failed ({why})", file=sys.stderr)
-        return why
+        return why, torn
 
 
 def main() -> int:

@@ -275,3 +275,40 @@ def test_v3_blind_states_read_unmeasured(tmp_path: Path, monkeypatch: pytest.Mon
         rep.write_text(json.dumps({"news_fence": {"calendar_ok": True}}), "utf-8")
         assert mg.published_news_fence_lines()["stale_verdict_age_h"] is None
     assert mg.published_news_fence_lines()["verdict"] == mg.UNMEASURED
+
+
+def test_a_leg_held_by_the_fence_is_not_billed_again_when_its_window_expires(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    held = _retry_pass(tmp_path / "held", monkeypatch, on=True, legs={"buy_stop": dict(_LEG)})
+    assert [r["status"] for r in held[:-1]] == ["RAIL_BLOCKED"]
+    import test_e8_gold_guard_and_open_risk as h
+    from prop import e8_gold as g
+    st = json.loads(g.STATE.read_text("utf-8")) if g.STATE.exists() else {}
+    leg = {**_LEG, "news_held": "2026-10-15T14:30:00+00:00"}
+    st.setdefault("windows", {})["afternoon"] = {"placed_hour": 17.0, "position_id": None,
+                                                 "shadow": False, "orders": {},
+                                                 "failed": {"buy_stop": leg}}
+    doc: dict[str, object] = {"actions": []}
+    # Past the cancel hour: retry_decisions abandons the leg.
+    g._retry_failed_legs(h._Venue(), st, doc, hour=23.0,
+                         now=datetime(2026, 10, 15, 20, 0, tzinfo=UTC), open_orders=[],
+                         orders_ok=True, filled={}, xau_positions=[], positions_ok=True,
+                         stood_down=False, armed=True, hist_rows=[], history_ok=True,
+                         instrument_id=6102, mt5=h._MT5())
+    rows = [json.loads(x) for x in (tmp_path / "held" / "intents.json").read_text(
+        "utf-8").splitlines() if x.strip()]
+    assert not [r for r in rows if r.get("rail") in ("gold_retry_abandoned", "gold_late_send")]
+    assert "buy_stop" in st["windows"]["afternoon"]["abandoned"]
+
+
+def test_a_report_that_is_not_an_object_is_no_verdict(tmp_path: Path,
+                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    from research import missed_growth as mg
+    j = tmp_path / "e8_gold_intents.jsonl"
+    rep = tmp_path / "E8_GOLD.json"
+    monkeypatch.setattr(mg, "E8_INTENTS", j)
+    monkeypatch.setattr(mg, "E8_GOLD_REPORT", rep)
+    j.write_text("", "utf-8")
+    rep.write_text("[1, 2, 3]", "utf-8")
+    out = mg.published_news_fence_lines()
+    assert out["verdict"] == mg.UNMEASURED and "why_verdict" in out
