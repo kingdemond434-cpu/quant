@@ -439,7 +439,8 @@ try {
 # point (libs/ops/box_shaper.py), on this task's clock: it measures every process with psutil,
 # writes desks\mt5\reports\BOX_BOTTLENECKS.json, and applies only what that file says inside the
 # rails the module enforces (nothing above AboveNormal; money path, judge and protected writers
-# only ever raised; mining never below BelowNormal; nothing killed). No arguments are passed.
+# only ever raised; mining never below BelowNormal; nothing stopped but an exact duplicate of a
+# loop that CPU_SHAPE.json's dedupe.allow names, oldest kept). No arguments are passed.
 # Once a pass has MEASURED, the hand tasks it replaces are DISABLED (never deleted), so two
 # shapers never fight over one mask; re-enabling one by hand is still possible.
 $cpuShape = $null

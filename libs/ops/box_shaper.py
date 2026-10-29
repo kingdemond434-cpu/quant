@@ -24,7 +24,10 @@ re-run). It takes no arguments and reads no queue: what it may do is this file p
        * memecoin's mask is narrowed to its `max_box_share` of the box;
        * any other single process above `share_cap.threshold_cores` for `sustained_runs`
          consecutive passes is pinned to `share_cap.mask`;
-       * nothing is killed, nothing is deleted.
+       * nothing is deleted, and nothing is killed EXCEPT an exact duplicate (same exe, same
+         command line, unrelated launchers) of a run-once loop that `dedupe.allow` names, seen on
+         two consecutive passes; the oldest instance is always kept (`plan_dedupe`). The allow
+         list is empty by default, so on a fresh rules file duplicates are only reported.
   3. APPLY (Windows only) and write desks/mt5/reports/BOX_BOTTLENECKS.json: the top consumers,
      the judge's share, memecoin's share, and every action with whether it landed.
 
@@ -68,6 +71,12 @@ _PSUTIL_CLASS = {
 RAISE_ONLY = frozenset({"money", "judge", "protected"})
 #: Groups no rule or cap touches at all.
 UNTOUCHED = frozenset({"system"})
+#: The only groups an exact duplicate may be stopped in. Money, judge, memecoin, protected
+#: writers (tick recorders, ledgers, certificates, tape) and system processes never are.
+DEDUPE_GROUPS = frozenset({"mining", "other"})
+#: Pool workers share one command line by design; they are never duplicates.
+_WORKER_MARKERS: tuple[str, ...] = ("multiprocessing", "spawn_main", "joblib", "loky",
+                                    "shard_worker")
 TOP_N = 25
 _SECRET = re.compile(r"(?i)(key|token|secret|passw\w*|auth\w*)([=:\s]+)\S+")
 
@@ -160,6 +169,9 @@ def validate_rules(data: Mapping[str, Any]) -> None:
         share = rule.get("max_box_share")
         if share is not None and not 0 < float(share) <= 1:
             raise ValueError(f"rule {name}: max_box_share {share!r} outside (0, 1]")
+    for pattern in (data.get("dedupe") or {}).get("allow", []):
+        if not isinstance(pattern, str) or len(pattern.strip()) < 6:
+            raise ValueError(f"dedupe.allow entry {pattern!r} is too broad (6+ characters)")
     cap = data.get("share_cap") or {}
     if cap:
         cap_cores = bin(int(cap["mask"], 16)).count("1")
@@ -305,6 +317,48 @@ def plan(procs: Sequence[Proc], rules: Mapping[str, Any], n_cpu: int, *, judge_s
     return out
 
 
+def plan_dedupe(procs: Sequence[Proc], cfg: Mapping[str, Any],
+                previous_duplicates: Sequence[str] = (),
+                ) -> tuple[list[Action], list[dict[str, Any]]]:
+    """Exact duplicates of a run-once loop: report all, stop only the allow-listed. Pure.
+
+    A duplicate is a second live process with the SAME exe and the SAME full command line whose
+    launcher is unrelated to the first's: neither is the other's parent and no two share a
+    parent (a pool, or a launcher's own shards, share one -- and Task Scheduler's svchost parent
+    is shared by two scheduled starts, which IgnoreNew serialises). The oldest is kept. A stop is
+    planned only when an allow pattern names the command line AND the same duplicate (pid and
+    creation time) was already reported on the previous pass.
+    """
+    allow = [str(a).lower() for a in cfg.get("allow", [])]
+    seen_before = set(previous_duplicates)
+    buckets: dict[tuple[str, str], list[Proc]] = {}
+    for p in procs:
+        if p.group not in DEDUPE_GROUPS or not p.cmdline.strip():
+            continue
+        if any(m in p.cmdline.lower() for m in _WORKER_MARKERS):
+            continue
+        buckets.setdefault((p.exe.lower(), p.cmdline), []).append(p)
+    stops: list[Action] = []
+    report: list[dict[str, Any]] = []
+    for members in buckets.values():
+        if len(members) < 2:
+            continue
+        pids = {m.pid for m in members}
+        parents = [m.ppid for m in members]
+        if any(pp in pids for pp in parents) or len(set(parents)) < len(parents):
+            continue
+        members = sorted(members, key=lambda m: (m.create_time, m.pid))
+        keeper = members[0]
+        allowed = any(a in keeper.haystack for a in allow)
+        for dup in members[1:]:
+            report.append({"keep": keeper.key, "duplicate": dup.key, "name": dup.name,
+                           "group": dup.group, "allowed": allowed, "cmd": _short_cmd(dup)})
+            if allowed and dup.key in seen_before:
+                stops.append(Action(dup.pid, dup.name, dup.group, "dedupe", "stop", dup.key,
+                                    f"stopped; kept {keeper.key}"))
+    return stops, report
+
+
 def _affinity_refusal(p: Proc, cpus: Sequence[int], judge_starved: bool,
                       floor_cores: int) -> str | None:
     if not cpus:
@@ -388,7 +442,13 @@ def apply(actions: Sequence[Action], n_cpu: int) -> None:
             continue
         try:
             pr = psutil.Process(a.pid)
-            if a.kind == "priority":
+            if a.kind == "stop":
+                # THE PID MUST STILL BE THE PROCESS THAT WAS MEASURED: a reused pid is refused.
+                if f"{a.pid}:{int(pr.create_time())}" != str(a.before):
+                    a.error = "pid reused since measurement; not stopped"
+                    continue
+                pr.terminate()
+            elif a.kind == "priority":
                 pr.nice(getattr(psutil, _PSUTIL_CLASS[str(a.after)]))
             else:
                 pr.cpu_affinity(mask_to_cpus(str(a.after), n_cpu))
@@ -410,10 +470,10 @@ def _row(p: Proc) -> dict[str, Any]:
             "cmd": _short_cmd(p)}
 
 
-def _previous_heavy(path: Path) -> list[str]:
+def _previous(path: Path, key: str) -> list[Any]:
     try:
-        return list(json.loads(path.read_text(encoding="utf-8")).get("heavy") or [])
-    except (OSError, ValueError, AttributeError):
+        return list(json.loads(path.read_text(encoding="utf-8")).get(key) or [])
+    except (OSError, ValueError, AttributeError, TypeError):
         return []
 
 
@@ -445,7 +505,12 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH) 
     classify(procs, rules.get("groups", {}))
     summary = summarize(procs, n_cpu, box_pct, rules.get("judge_starved", {}))
     the_plan = plan(procs, rules, n_cpu, judge_starved=summary["judge"]["starved"],
-                    previous_heavy=_previous_heavy(report_path))
+                    previous_heavy=_previous(report_path, "heavy"))
+    stops, duplicates = plan_dedupe(
+        procs, rules.get("dedupe") or {},
+        [str(d.get("duplicate")) for d in _previous(report_path, "duplicates")
+         if isinstance(d, dict)])
+    the_plan.actions.extend(stops)
     apply(the_plan.actions, n_cpu)
     vm = psutil.virtual_memory()
     top = sorted(procs, key=lambda p: p.cpu_pct, reverse=True)[:TOP_N]
@@ -457,13 +522,14 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH) 
         disk_free_gb=_disk_free_gb(), **summary,
         top=[_row(p) for p in top],
         actions=[asdict(a) for a in the_plan.actions], refused=the_plan.refused,
-        heavy=the_plan.heavy,
+        heavy=the_plan.heavy, duplicates=duplicates,
         line=(f"CPU SHAPE: box {box_pct}% on {n_cpu} cores; judge "
               f"{summary['judge']['share_of_box']:.0%} of box"
               f"{' (STARVED)' if summary['judge']['starved'] else ''}; memecoin "
               f"{summary['memecoin']['share_of_box']:.0%}; top {top[0].name if top else '-'} "
               f"{round(top[0].cpu_pct) if top else 0}%; {landed}/{len(the_plan.actions)} changes "
-              f"applied, {len(the_plan.refused)} refused"))
+              f"applied, {len(the_plan.refused)} refused; {len(duplicates)} exact duplicate(s), "
+              f"{sum(1 for a in stops if a.applied)} stopped"))
     _write(report_path, report)
     return report
 

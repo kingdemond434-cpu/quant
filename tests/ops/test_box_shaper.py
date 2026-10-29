@@ -176,3 +176,59 @@ def test_a_real_pass_measures_this_host_and_writes_the_report(tmp_path: Path) ->
     doc = json.loads(report_path.read_text())
     assert {"top", "judge", "memecoin", "actions", "refused", "ram", "disk_free_gb"} <= set(doc)
     assert doc["line"].startswith("CPU SHAPE: box ")
+
+
+# ------------------------------------------------------------------------------------ dedupe
+def _dupes() -> list[Proc]:
+    loop = r"python.exe C:\opt\quant\desks\mt5\research\some_loop.py"
+    procs = [
+        Proc(40, "python.exe", ppid=400, exe="py.exe", cmdline=loop, create_time=10),
+        Proc(41, "python.exe", ppid=401, exe="py.exe", cmdline=loop, create_time=20),
+        # pool siblings: one launcher, one command line -- never duplicates
+        Proc(50, "python.exe", ppid=500, exe="py.exe", cmdline="python.exe pool_child.py",
+             create_time=5),
+        Proc(51, "python.exe", ppid=500, exe="py.exe", cmdline="python.exe pool_child.py",
+             create_time=6),
+        # parent and child with one command line -- never duplicates
+        Proc(60, "python.exe", ppid=1, exe="py.exe", cmdline="python.exe nest.py", create_time=1),
+        Proc(61, "python.exe", ppid=60, exe="py.exe", cmdline="python.exe nest.py", create_time=2),
+        # protected writer and memecoin doubled: reported nowhere, stopped never
+        Proc(70, "python.exe", ppid=700, exe="py.exe", cmdline="python.exe moat_recorder.py"),
+        Proc(71, "python.exe", ppid=701, exe="py.exe", cmdline="python.exe moat_recorder.py"),
+        Proc(80, "node.exe", ppid=800, exe=r"C:\memecoin\node.exe", cmdline="node bot.js"),
+        Proc(81, "node.exe", ppid=801, exe=r"C:\memecoin\node.exe", cmdline="node bot.js"),
+    ]
+    bs.classify(procs, RULES["groups"])
+    return procs
+
+
+def test_dedupe_is_deny_by_default_and_reports_only_true_duplicates() -> None:
+    assert RULES["dedupe"]["allow"] == []
+    stops, seen = bs.plan_dedupe(_dupes(), RULES["dedupe"], previous_duplicates=["41:20"])
+    assert stops == []
+    assert [(d["keep"], d["duplicate"], d["allowed"]) for d in seen] == [("40:10", "41:20", False)]
+
+
+def test_an_allowed_duplicate_is_stopped_only_on_its_second_sighting_and_the_oldest_kept() -> None:
+    cfg = {"allow": ["some_loop.py"]}
+    first, seen = bs.plan_dedupe(_dupes(), cfg)
+    assert first == [] and seen[0]["allowed"] is True
+    second, _ = bs.plan_dedupe(_dupes(), cfg, previous_duplicates=[seen[0]["duplicate"]])
+    assert [(a.pid, a.kind, a.before) for a in second] == [(41, "stop", "41:20")]
+
+
+def test_no_allow_pattern_reaches_a_protected_group() -> None:
+    cfg = {"allow": ["moat_recorder", "node bot.js", "memecoin"]}
+    procs = _dupes()
+    _, seen = bs.plan_dedupe(procs, cfg)
+    keys = [d["duplicate"] for d in seen]
+    stops, _ = bs.plan_dedupe(procs, cfg, previous_duplicates=keys)
+    assert {a.pid for a in stops} <= {41}
+    assert not any(d["duplicate"].startswith(("71:", "81:")) for d in seen)
+
+
+def test_a_too_broad_allow_pattern_is_refused() -> None:
+    rules = copy.deepcopy(RULES)
+    rules["dedupe"]["allow"] = ["py"]
+    with pytest.raises(ValueError):
+        bs.validate_rules(rules)
