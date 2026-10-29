@@ -424,9 +424,23 @@ def test_a_hold_after_green_ci_but_before_the_merge_stops_it(hub: Any) -> None:
     assert ag.run("o/r", 7, ag.LIVE, wait_min=5, poll_s=0) == 0 and _merges(h) == []
 
 
-def test_pending_ci_past_the_wait_gives_up_without_merging(hub: Any) -> None:
+def test_pending_ci_past_the_wait_gives_up_without_merging(
+    hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
     h = hub(comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")], runs=_green()[:2])
-    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0) == 1 and _merges(h) == []
+    clock = iter([0.0, 10_000.0])  # the deadline is set, then the first look is past it
+    monkeypatch.setattr(ag.time, "monotonic", lambda: next(clock))
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=5, poll_s=0) == 1 and _merges(h) == []
+
+
+def test_with_no_wait_a_cleared_pr_never_holds_a_runner(
+    hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """2026-10-29: CLEARed PRs' gates polled up to 300 min on the runners their checks needed.
+    The Actions run looks once; pending CI is the box sweep's to look at again, never a fail."""
+    h = hub(comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")], runs=_green()[:2])
+    monkeypatch.setattr(ag.time, "sleep", lambda s: pytest.fail("the gate waited"))
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0) == 0 and _merges(h) == []
 
 
 # --------------------------------------------------------------- workflow-file PRs: the box
@@ -591,24 +605,25 @@ def _f(name: str, **kw: Any) -> dict[str, Any]:
         ([_f(DOC)], 2, set(), "PROTECTED"),  # the count does not add up
         ([], 0, set(), "PROTECTED"),
         ([_f(DOC)], 1, {DOC}, "AUTO"),  # a program reads it
-        ([_f("docs/LAWS.md")], 1, set(), "PROTECTED"),  # a governing document
-        ([_f("docs/ops/prompt_notes.md")], 1, set(), "PROTECTED"),
+        ([_f("docs/LAWS.md")], 1, set(), "AUTO"),  # a governing document, never LOW
+        ([_f("docs/ops/prompt_notes.md")], 1, set(), "AUTO"),
         ([_f(CODE)], 1, set(), "AUTO"),  # code
         ([_f("docs/research/x.json")], 1, set(), "AUTO"),  # data
         ([_f("tests/test_x.py")], 1, set(), "AUTO"),
         ([_f("libs/risk/sizing.py")], 1, set(), "AUTO"),  # risk and sizing are AUTO, not LOW
         ([_f(DOC), _f("libs/risk/x.py")], 2, set(), "AUTO"),
-        # PROTECTED: the controller, workflows, ceilings, release machinery, agent instructions
+        # PROTECTED: only what defines or runs a check that judges the PR (#532); the rest of the
+        # old floor (release machinery, box, agent instructions) is AUTO, never LOW
         ([_f(".github/scripts/audit_gate.py")], 1, set(), "PROTECTED"),
         ([_f(".github/workflows/ci.yml")], 1, set(), "PROTECTED"),
         ([_f("ops/release/ceilings.json")], 1, set(), "PROTECTED"),
-        ([_f("ops/box/workflow_gate.ps1")], 1, set(), "PROTECTED"),
-        ([_f("CODEOWNERS")], 1, set(), "PROTECTED"),
-        ([_f("docs/x/CLAUDE.md")], 1, set(), "PROTECTED"),
-        ([_f("desks/mt5/scripts/smoke_release.py")], 1, set(), "PROTECTED"),
-        ([_f("desks/mt5/mt5desk/release_identity.py")], 1, set(), "PROTECTED"),
-        ([_f("libs/ops/release_promotion.py")], 1, set(), "PROTECTED"),
-        ([_f("desks/mt5/data/secrets/k.txt")], 1, set(), "PROTECTED"),
+        ([_f("ops/box/workflow_gate.ps1")], 1, set(), "AUTO"),
+        ([_f("CODEOWNERS")], 1, set(), "AUTO"),
+        ([_f("docs/x/CLAUDE.md")], 1, set(), "AUTO"),
+        ([_f("desks/mt5/scripts/smoke_release.py")], 1, set(), "AUTO"),
+        ([_f("desks/mt5/mt5desk/release_identity.py")], 1, set(), "AUTO"),
+        ([_f("libs/ops/release_promotion.py")], 1, set(), "AUTO"),
+        ([_f("desks/mt5/data/secrets/k.txt")], 1, set(), "REFUSED"),  # never merges
         ([_f(DOC), _f(CODE), _f(".github/CODEOWNERS")], 3, set(), "PROTECTED"),  # strictest wins
         # a rename out of a protected path is protected
         (
@@ -780,7 +795,8 @@ def test_an_auto_tier_pr_with_a_hold_never_merges(auto_hub: Any) -> None:
 
 
 def test_a_protected_pr_never_takes_a_no_comment_path(auto_hub: Any) -> None:
-    for name in (".github/workflows/ci.yml", "ops/release/ceilings.json", "CLAUDE.md"):
+    """#532 audit MF2: a PR that changes a check that judges it never merges on that check."""
+    for name in (".github/workflows/ci.yml", "ops/release/ceilings.json", "tests/conftest.py"):
         h = auto_hub(files=(name,), runs=_auto_green())
         assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
         assert _merges(h) == []
@@ -969,12 +985,18 @@ def test_a_stale_github_tree_takes_the_manual_path(
         "ops/gates.sh",
         "pyproject.toml",
         "tests/conftest.py",
-        "docs/research/FULL_SWEEP_PREREGISTRATION.md",  # governing prose is PROTECTED, not AUTO
+        "docs/research/FULL_SWEEP_PREREGISTRATION.md",  # governing prose: AUTO, never LOW
+        "docs/cro/CRO_CYCLE.md",
+        "docs/cro/QUANT_REFERENCE.md",
         "desks/mt5/docs/ops_policy.txt",
     ],
 )
-def test_what_only_zuck_may_change_is_protected(name: str) -> None:
-    assert ag.tier([_f(name)], 1, lambda n: False)[0] == "PROTECTED"
+def test_what_only_zuck_used_to_change_takes_the_auto_path(name: str) -> None:
+    """zuck 2026-10-29 18:44Z: "remove all protected ... always". The old floor merges with no
+    comment but always on every AUTO job, never LOW (#532 audit MF1); what judges the PR itself
+    (test configuration, ops/release/) stays PROTECTED (#532 audit MF2)."""
+    want = "PROTECTED" if ag.is_protected(name) else "AUTO"
+    assert ag.tier([_f(name)], 1, lambda n: False)[0] == want
 
 
 def test_up_to_date_needs_the_base_tip_and_the_same_github_tree(
@@ -1029,9 +1051,10 @@ def test_the_manual_path_neither_waits_on_nor_fails_by_the_auto_jobs() -> None:
     assert ag.checks(runs, ag.GATING_JOBS + ag.AUTO_JOBS)[0] == "fail"
 
 
-def test_every_rail_is_on_the_protected_list() -> None:
-    """A LAWS 5m rail (risk-limit authority, live promotion, the sealed judge...) never merges
-    without zuck, and the list on disk is what the generator makes."""
+def test_every_rail_is_on_the_auto_floor() -> None:
+    """A LAWS 5m rail (risk-limit authority, live promotion, the sealed judge...) is on the list
+    the controller reads as the AUTO floor (every AUTO job, never LOW; zuck 2026-10-29), and the
+    list on disk is what the generator makes."""
     sys.path.insert(0, str(ROOT))
     from libs.research import immutable_rails as IR
 
@@ -1040,6 +1063,7 @@ def test_every_rail_is_on_the_protected_list() -> None:
     for r in IR.immutable_rails():
         name = IR.norm(r.path).rstrip("/") + ("/x.json" if r.path.endswith("/") else "")
         assert ag.is_protected(name, extra), r.path
+        assert ag.tier([_f(name)], 1, lambda n: False)[0] in ("AUTO", "PROTECTED"), r.path
     gen = subprocess.run(
         [sys.executable, "-I", str(ROOT / "ops/release/gen_protected_paths.py"), "--check"],
         capture_output=True,
@@ -1065,8 +1089,9 @@ def test_every_rail_is_on_the_protected_list() -> None:
         "libs/research/immutable_rails.py",
     ],
 )
-def test_control_and_rail_files_are_protected(name: str) -> None:
-    assert ag.tier([_f(name)], 1, lambda n: False)[0] == "PROTECTED"
+def test_control_and_rail_files_are_never_low(name: str) -> None:
+    want = "PROTECTED" if ag.is_protected(name) else "AUTO"
+    assert ag.tier([_f(name)], 1, lambda n: False)[0] == want
 
 
 def test_an_unreadable_protected_list_makes_everything_protected(
@@ -1524,8 +1549,9 @@ def test_the_reviewer_sees_both_sides_of_every_file() -> None:
     "name", ["desks/mt5/research/Promoter.py", "tests/Conftest.py", "LIBS/validation/gauntlet.py"]
 )
 def test_the_protected_list_is_case_blind(name: str) -> None:
-    """#456 audit MF2: NTFS folds case, so the list does too."""
-    assert ag.tier([_f(name)], 1, lambda n: False)[0] == "PROTECTED"
+    """#456 audit MF2: NTFS folds case, so the lists do too."""
+    want = "PROTECTED" if ag.is_protected(name) else "AUTO"
+    assert ag.tier([_f(name)], 1, lambda n: False)[0] == want
 
 
 @pytest.mark.parametrize(
@@ -1822,19 +1848,24 @@ def _scripted(answers: list[tuple[int, str, str]], calls: list[list[str]]) -> An
         calls.append(cmd)
         rc, out, err = answers.pop(0) if answers else (0, "{}", "")
         return subprocess.CompletedProcess(cmd, rc, out, err)
+
     return fake
 
 
 def test_the_review_retries_a_github_5xx_and_then_answers(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[list[str]] = []
-    monkeypatch.setattr(ir.subprocess, "run", _scripted(
-        [(1, "", "gh: HTTP 503"), (1, "", "gh: HTTP 502"), (0, "ok", "")], calls))
+    monkeypatch.setattr(
+        ir.subprocess,
+        "run",
+        _scripted([(1, "", "gh: HTTP 503"), (1, "", "gh: HTTP 502"), (0, "ok", "")], calls),
+    )
     assert ir._gh("repos/x/y/pulls/1", sleep=lambda s: None) == "ok"
     assert len(calls) == 3
 
 
 def test_a_review_github_never_answers_is_unavailable_not_fail(
-        monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     """The job that failed #492 at 15:19Z: a 503 on pulls/492 is GitHub's fault, so it is exit
     75 (queued for a re-run), never exit 1 (a FAIL, and a quarantine on the no-comment path)."""
     monkeypatch.setattr(ir.subprocess, "run", _scripted([(1, "", "gh: HTTP 503")] * 10, []))
@@ -1854,17 +1885,17 @@ def test_a_review_404_is_not_retried(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_the_gate_retries_a_read_but_never_a_write(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[list[str]] = []
-    monkeypatch.setattr(ag.subprocess, "run", _scripted(
-        [(1, "", "gh: HTTP 503"), (0, '{"n": 1}', "")], calls))
+    monkeypatch.setattr(
+        ag.subprocess, "run", _scripted([(1, "", "gh: HTTP 503"), (0, '{"n": 1}', "")], calls)
+    )
     assert ag._gh("repos/x/y/pulls/1", sleep=lambda s: None) == {"n": 1}
     assert len(calls) == 2
     for write in (("repos/x/y/pulls/1/merge", "-X", "PUT"), ("repos/x/y/labels", "-f", "a=b")):
         calls.clear()
-        monkeypatch.setattr(ag.subprocess, "run", _scripted([(1, "", "gh: HTTP 503")] * 4,
-                                                            calls))
+        monkeypatch.setattr(ag.subprocess, "run", _scripted([(1, "", "gh: HTTP 503")] * 4, calls))
         with pytest.raises(RuntimeError):
             ag._gh(*write, sleep=lambda s: None)
-        assert len(calls) == 1, write      # a write that got a 5xx may have happened
+        assert len(calls) == 1, write  # a write that got a 5xx may have happened
     calls.clear()
     monkeypatch.setattr(ag.subprocess, "run", _scripted([(1, "", "gh: HTTP 503")] * 4, calls))
     with pytest.raises(RuntimeError):
@@ -1876,14 +1907,17 @@ def test_the_gate_and_the_review_agree_on_what_is_transient() -> None:
     assert ag._TRANSIENT.pattern == ir.TRANSIENT.pattern
 
 
-@pytest.mark.parametrize("err, transient", [
-    ("gh: API rate limit exceeded for installation ID 1. (HTTP 403)", True),
-    ("gh: You have exceeded a secondary rate limit. (HTTP 403)", True),
-    ("gh: Resource not accessible by integration (HTTP 403)", False),
-    ("gh: HTTP 401: Bad credentials", False),
-    ("gh: unexpected EOF", True),
-    ("gh: Not Found (HTTP 404) for geoffrey", False),
-])
+@pytest.mark.parametrize(
+    "err, transient",
+    [
+        ("gh: API rate limit exceeded for installation ID 1. (HTTP 403)", True),
+        ("gh: You have exceeded a secondary rate limit. (HTTP 403)", True),
+        ("gh: Resource not accessible by integration (HTTP 403)", False),
+        ("gh: HTTP 401: Bad credentials", False),
+        ("gh: unexpected EOF", True),
+        ("gh: Not Found (HTTP 404) for geoffrey", False),
+    ],
+)
 def test_rate_limits_are_transient_and_a_real_403_is_not(err: str, transient: bool) -> None:
     """#498 audit MF1/S1: GitHub's rate limits answer 403, and a bare `EOF` matched inside
     names. Both patterns, one answer."""
@@ -1892,16 +1926,42 @@ def test_rate_limits_are_transient_and_a_real_403_is_not(err: str, transient: bo
 
 
 def test_a_rate_limited_review_is_unavailable_and_a_refused_one_raises_at_once(
-        monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     calls: list[list[str]] = []
-    monkeypatch.setattr(ir.subprocess, "run", _scripted(
-        [(1, "", "gh: API rate limit exceeded (HTTP 403)")] * 4, calls))
+    monkeypatch.setattr(
+        ir.subprocess,
+        "run",
+        _scripted([(1, "", "gh: API rate limit exceeded (HTTP 403)")] * 4, calls),
+    )
     with pytest.raises(ir.Unavailable):
         ir._gh("repos/x/y/pulls/1", sleep=lambda s: None)
     assert len(calls) == ir.GH_TRIES
     calls.clear()
-    monkeypatch.setattr(ir.subprocess, "run", _scripted(
-        [(1, "", "gh: Resource not accessible by integration (HTTP 403)")], calls))
+    monkeypatch.setattr(
+        ir.subprocess,
+        "run",
+        _scripted([(1, "", "gh: Resource not accessible by integration (HTTP 403)")], calls),
+    )
     with pytest.raises(RuntimeError) as exc:
         ir._gh("repos/x/y/pulls/1", sleep=lambda s: None)
     assert not isinstance(exc.value, ir.Unavailable) and len(calls) == 1
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["docs/RESEARCH.md", "docs/cro/CRO_CYCLE.md", "scripts/run_deadman_switch.py",
+     "desks/mt5/research/heat_policy.py", "CLAUDE.md", "ops/box/workflow_gate.ps1"],
+)  # fmt: skip
+def test_formerly_protected_files_merge_only_on_every_auto_check(auto_hub: Any, name: str) -> None:
+    """zuck 2026-10-29: no comment needed, but a missing or failed AUTO job is never a pass."""
+    h = auto_hub(files=(name,), runs=_green())
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+    h = auto_hub(files=(name,), runs=_auto_green())
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    assert len(_merges(h)) == 1
+
+
+def test_a_secrets_path_never_merges(auto_hub: Any) -> None:
+    h = auto_hub(files=("data/secrets/k.txt",), runs=_auto_green())
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 1 and _merges(h) == []
