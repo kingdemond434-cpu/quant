@@ -455,6 +455,29 @@ def _frame_rows(frame) -> int:
         return 0
 
 
+#: A SHARING COLLISION IS NOT MISSING DATA (measured 2026-10-29). The universe parquets are
+#: rewritten in place while a sweep reads them, and Windows refuses an open that lands on the
+#: rewrite with PermissionError [Errno 13]. Two of fifteen build shards died on exactly that
+#: (US500_H1, XAUAUD_H1), each throwing away hours of work and costing a full retry wall; earlier
+#: waves lost one to four shards the same way and every one recovered on its first retry. So the
+#: read is retried with a short backoff before it is allowed to fail. An error that outlasts the
+#: retries is RAISED exactly as before -- never turned into "no bars", which would block cells.
+PARQUET_READ_ATTEMPTS = max(1, int(os.environ.get("GAUNTLET_PARQUET_READ_ATTEMPTS", "6") or 6))
+PARQUET_READ_BACKOFF_S = 0.5
+
+
+def _read_parquet_shared(pq: Path, *, sleep=time.sleep):
+    """`pd.read_parquet(pq)`, retried on OSError (a file another process holds mid-rewrite)."""
+    for attempt in range(1, PARQUET_READ_ATTEMPTS + 1):
+        try:
+            return pd.read_parquet(pq)
+        except OSError:
+            if attempt >= PARQUET_READ_ATTEMPTS:
+                raise
+            sleep(PARQUET_READ_BACKOFF_S * (2 ** (attempt - 1)))
+    raise AssertionError("unreachable")
+
+
 def _bars_for(sym: str, timeframe: str = "H1"):
     """Replay bars on their native clock, from parquet or the promotion-authority terminal.
 
@@ -477,7 +500,7 @@ def _bars_for(sym: str, timeframe: str = "H1"):
         # `families._h1` no longer FORCES an hourly clock: it normalises a frame that already is a
         # chart and hands it back on that chart (it used to resample an M15 parquet of 100,000 bars
         # into 25,001 H1 bars, silently). Same call, byte-identical H1 result, M5 stays M5.
-        frame = families._h1(pd.read_parquet(pq))
+        frame = families._h1(_read_parquet_shared(pq))
     if not isinstance(frame.index, pd.DatetimeIndex) or len(frame) == 0:
         return None
     _FRAME_CACHE[key] = frame
@@ -968,6 +991,11 @@ def partition_at_economic_prior(specs: list[dict],
     """
     eligible: list[dict] = []
     rejected: list[dict] = []
+    # ONCE PER SYMBOL AND PER CHART, NOT PER CELL (box plan profile 2026-10-29: the docket holds
+    # ~1.55M cells on ~100 symbols, and each one stat'ed the H1 parquet and, off H1, loaded a
+    # whole frame just to learn it was not None). Both answers depend only on the key here.
+    _tradeable: dict[str, tuple[bool, str]] = {}
+    _has_chart: dict[tuple[str, str], bool] = {}
     for spec in specs:
         if meta is not None:
             # NORMALISE BEFORE JUDGING, and keep the canonical spelling on the spec: everything
@@ -976,7 +1004,9 @@ def partition_at_economic_prior(specs: list[dict],
             canon = canonical_symbol(str(spec.get("sym") or ""), meta)
             if canon != spec.get("sym"):
                 spec["sym"] = canon
-            ok, why = symbol_is_tradeable(canon, meta)
+            if canon not in _tradeable:
+                _tradeable[canon] = symbol_is_tradeable(canon, meta)
+            ok, why = _tradeable[canon]
             if ok:
                 # AND THE CELL'S OWN CHART HAS TO EXIST. Registry membership says the broker
                 # quotes it and the H1 parquet says a clock can replay it; neither says this
@@ -984,7 +1014,9 @@ def partition_at_economic_prior(specs: list[dict],
                 # spends the other nine gates and then fails to build with "parquet missing" --
                 # a message about the wrong file, at the wrong stage, after the compute is spent.
                 _tf = timeframe_of(spec.get("params"), str(spec.get("family") or ""))
-                if _tf != "H1" and _bars_for(canon, _tf) is None:
+                if _tf != "H1" and (canon, _tf) not in _has_chart:
+                    _has_chart[(canon, _tf)] = _bars_for(canon, _tf) is not None
+                if _tf != "H1" and not _has_chart[(canon, _tf)]:
                     ok, why = False, (f"symbol {canon!r} has no {canon}_{_tf}.parquet; the chart "
                                       f"this cell was hunted on is not on this box")
             if not ok:
@@ -3607,11 +3639,19 @@ def main():
     blocked_build: list[dict] = list(_modifier_blocked)
     _build_t0 = time.time()
     # Yesterday's keys die with yesterday's data-day; prune so the cache never grows unbounded.
+    # ONE DIRECTORY SCAN, NOT A STAT PER FILE (box plan profile 2026-10-29: this prune took 787 s
+    # of a 1,753 s plan). On Windows `os.scandir` hands back each entry's mtime from the listing
+    # itself, where `Path.stat` opened every file again. `fnmatch` matches "*.npz" with the
+    # platform's case rule, as the glob did.
     try:
+        import fnmatch as _fn
         import time as _t
-        for _f in CACHE_DIR.glob("*.npz"):
-            if _t.time() - _f.stat().st_mtime > 3 * 86400:
-                _f.unlink(missing_ok=True)
+        with os.scandir(CACHE_DIR) as _it:
+            for _e in _it:
+                if not _fn.fnmatch(_e.name, "*.npz"):
+                    continue
+                if _t.time() - _e.stat().st_mtime > 3 * 86400:
+                    Path(_e.path).unlink(missing_ok=True)
     except OSError:
         pass
     # SYMBOL ORDER IS A PERFORMANCE CONTRACT, NOT A PREFERENCE. build_cell -> resolve_inputs
@@ -3681,10 +3721,17 @@ def main():
     # BANNED FAMILIES ARE SET ASIDE BEFORE ANYTHING IS ORDERED (2026-09-16): the hour they would
     # have taken goes to every other mechanism, which is the principal's order verbatim.
     try:
-        from research.family_policy import ban_reason, family_banned
-        _set_aside = [sp for sp in eligible_specs if family_banned(sp.get("family"))]
+        from research.family_policy import ban_reason, banned_families
+        # THE LIST IS READ ONCE (box plan profile 2026-10-29: `family_banned` re-reads
+        # banned_families.json on every call, twice per cell over ~1.55M cells). Same predicate.
+        _banned = {k.lower() for k in banned_families()}
+
+        def _is_banned(fam: object) -> bool:
+            f = str(fam or "").strip().lower()
+            return bool(f) and f in _banned
+        _set_aside = [sp for sp in eligible_specs if _is_banned(sp.get("family"))]
         if _set_aside:
-            eligible_specs = [sp for sp in eligible_specs if not family_banned(sp.get("family"))]
+            eligible_specs = [sp for sp in eligible_specs if not _is_banned(sp.get("family"))]
             _fams = sorted({str(sp.get("family") or "") for sp in _set_aside})
             print(f"  banned families: {len(_set_aside)} cell(s) set aside "
                   f"({'; '.join(ban_reason(f) for f in _fams)})")
@@ -4607,6 +4654,7 @@ def shard_worker(shard_dir: Path | str, k: int, phase: str = "build") -> dict:
     # does -- so a shard finds the pool's cells cached and defers what the pool did not reach, for
     # the same reason and with the same status. Only the per-cell work after the pool is split.
     built_syms: set[str] = set()
+    last_days: dict = {}
     acc: dict = {"cell_objs": [], "deferred": [], "cache_hits": 0, "built_fresh": 0,
                  "mem_deferred": 0}
     blocked: list[dict] = []
@@ -4618,7 +4666,7 @@ def shard_worker(shard_dir: Path | str, k: int, phase: str = "build") -> dict:
         acc = _build_specs([sp], meta, build_t0, s0, s0v, built_syms, blocked,
                            cell_objs=acc["cell_objs"], deferred=acc["deferred"],
                            cache_hits=acc["cache_hits"], built_fresh=acc["built_fresh"],
-                           _mem_deferred=acc["mem_deferred"])
+                           _mem_deferred=acc["mem_deferred"], last_days=last_days)
         if len(acc["cell_objs"]) > n_cells:
             kind, obj = "cell", acc["cell_objs"][-1]
         elif len(acc["deferred"]) > n_def:
@@ -4847,10 +4895,45 @@ def run_sharded(n_shards: int, dispatch, shard_dir: Path | str | None = None,
             return 0
 
 
+def _parquet_signature(sym: str, timeframe: str) -> tuple[int, int] | None:
+    """(mtime_ns, size) of the chart's parquet, or None when there is none (the terminal path)."""
+    try:
+        st = (UNI / f"{sym}_{str(timeframe).upper()}.parquet").stat()
+    except OSError:
+        return None
+    return (int(st.st_mtime_ns), int(st.st_size))
+
+
+def _chart_last_day(sym: str, timeframe: str, memo: dict | None = None):
+    """The chart's last bar, normalised to its day, or None when the chart has no bars.
+
+    WHY A SHARD MEMOISES IT (box read 2026-10-29): the plan is ordered by priority, which
+    interleaves symbols, so the bounded frame cache evicted every chart before its next spec and
+    each of a shard's ~19,700 specs re-read and re-normalised a parquet (66-130 ms each) only to
+    learn the day that keys its cache entry -- 945 replayed cells took 3,123 s alone. With `memo`
+    each chart is read once per parquet version: the key carries the file's (mtime_ns, size), so
+    a parquet rewritten mid-shard is read again, exactly as an evicted frame would have been.
+    """
+    if memo is None:
+        frame = _bars_for(sym, timeframe)
+        if frame is None or len(frame) == 0:
+            return None
+        return frame.index[-1].normalize()
+    mkey = (str(sym), str(timeframe).upper())
+    sig = _parquet_signature(sym, timeframe)
+    hit = memo.get(mkey)
+    if hit is not None and hit[0] == sig:
+        return hit[1]
+    day = _chart_last_day(sym, timeframe)
+    memo[mkey] = (sig, day)
+    return day
+
+
 def _build_specs(eligible_specs: list, meta: dict, _build_t0: float, _stage0: dict,
                  _stage0_verdicts: dict, _built_syms: set, blocked_build: list, *,
                  cell_objs: list | None = None, deferred: list | None = None,
-                 cache_hits: int = 0, built_fresh: int = 0, _mem_deferred: int = 0) -> dict:
+                 cache_hits: int = 0, built_fresh: int = 0, _mem_deferred: int = 0,
+                 last_days: dict | None = None) -> dict:
     """THE BUILD LOOP, MOVED VERBATIM OUT OF `main` so a shard runs the same lines.
 
     Every spec leaves in exactly one of three places -- `cell_objs` (cached or freshly built),
@@ -4858,6 +4941,9 @@ def _build_specs(eligible_specs: list, meta: dict, _build_t0: float, _stage0: di
     the lists and counters are passed in and handed back, so a caller may drive it over the
     whole docket (the unsharded sweep) or one spec at a time (`shard_worker`) and read which
     list grew. Nothing in the loop reads another spec's outcome.
+
+    `last_days` (a shard passes its own dict; every other caller passes nothing and runs the old
+    lines) remembers each chart's data-day so a cached or deferred spec needs no frame at all.
     """
     cell_objs = [] if cell_objs is None else cell_objs
     deferred = [] if deferred is None else deferred
@@ -4868,13 +4954,12 @@ def _build_specs(eligible_specs: list, meta: dict, _build_t0: float, _stage0: di
         # and the boundary `_series_trim_partial` drops the partial day at; taking it from H1 for
         # an M5 cell would key the cell to a day its own tape may not have reached and trim its
         # series at a boundary from a different feed.
-        frame = _bars_for(spec["sym"], spec_tf)
-        if frame is None or len(frame) == 0:
+        last_day = _chart_last_day(spec["sym"], spec_tf, last_days)
+        if last_day is None:
             print(f"  SKIP {key}: {spec_tf} parquet missing")
             blocked_build.append({**spec, "downstream_status": "NOT_RUN_DATA_MISSING",
                                   "why": f"point-in-time {spec_tf} parquet is missing or empty"})
             continue
-        last_day = frame.index[-1].normalize()
         ckey = _cache_key(spec["sym"], spec["family"], spec["params"] or {}, str(last_day.date()),
                           spec_tf)
         cached = cache_load(ckey)
