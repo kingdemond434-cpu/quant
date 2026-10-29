@@ -193,6 +193,53 @@ SOURCE_POLICY: dict[str, dict[str, Any]] = {
                                       "purpose without our express, prior permission.")}}},
     "paywall_proxy": {"hosts": ("12ft.io",), "status": METHOD_BLOCKED, "reason": "paywall",
                       "why": "a proxy whose purpose is to get around paywalls"},
+    # THE TOR METRICS LANE (2026-10-29; principal 2026-10-13: lawful public onion sites and ugly
+    # public data are in). LIVE input: the clause below is the site's own data licence, read
+    # verbatim from its footer on 2026-10-29, and it waives every right in the data (CC0).
+    # Read by `research/tor_metrics.py` (`terms_verdict("tor_metrics") == "confirmed"`).
+    "tor_metrics": {"hosts": ("metrics.torproject.org",), "status": PUBLIC_PAGE,
+                    "sources": ("tor_metrics",), "source_prefixes": ("tor_metrics_",),
+                    "use": "LIVE",
+                    "why": ("Tor Project's per-country relay and bridge user estimates; its data "
+                            "is CC0 (clause quoted), so the CSVs are LIVE input, fetched politely "
+                            "(robots decides, honest DESK_UA)"),
+                    "terms": {"url": "https://metrics.torproject.org/",
+                              "checked_at": "2026-10-29",
+                              "clauses": {
+                                  "cc0": ("Data on this site is freely available under a CC0 no "
+                                          "copyright declaration:"),
+                                  "waiver": ("To the extent possible under law, the Tor Project "
+                                             "has waived all copyright and related or "
+                                             "neighboring rights in the data."),
+                                  "graphs": ("Graphs are licensed under a Creative Commons "
+                                             "Attribution 3.0 United States License")},
+                              "reading": ("the DATA (the CSVs) is CC0: no condition on automated "
+                                          "access or internal research use; only the rendered "
+                                          "graphs carry CC-BY, and the desk reads no graph")}},
+    # THE ONION ALLOWLIST (2026-10-29). Every .onion host resolves HERE, so no onion page is ever
+    # live input (IDEAS_ONLY), whatever it serves. Fetching is narrower still: only the addresses
+    # in desks/mt5/data/onion_allowlist.json (lawful public mirrors, each citing its publisher's
+    # own announcement page), only through QUANT_TOR_SOCKS, and only after the auditor rules on
+    # Tor egress (reports/audit/2026-10-29/ONION_LANE.md). Markets, carding/hub forums, leak
+    # sites, stolen data and MNPI are OUT, always: the allowlist validator refuses them.
+    "onion_mirrors": {"hosts": ("onion",), "status": IDEAS_ONLY,
+                      "sources": ("onion_mirrors",), "source_prefixes": ("onion_",),
+                      "routes": ("onion_mirrors",),
+                      "why": ("allowlisted public onion mirrors read for ideas only, never live "
+                              "input; off until the auditor rules on Tor egress versus the "
+                              "no-egress-rotation rule"),
+                      "unblock": ("the auditor's ruling on Tor egress (ONION_LANE.md), then a "
+                                  "per-mirror terms clause quoted here for any LIVE use"),
+                      "missed_growth": {"delta_elogw": "UNMEASURED",
+                                        "cause": ("no onion mirror has been fetched (NEEDS_TOR, "
+                                                  "awaiting the auditor's egress ruling), so "
+                                                  "the ideas forgone are UNMEASURED, never "
+                                                  "zero")},
+                      "terms": {"url": "https://onion.torproject.org/",
+                                "checked_at": "2026-10-29",
+                                "unread": {"per-mirror": ("each mirror's publisher terms are "
+                                                          "UNREAD here: IDEAS_ONLY, fail "
+                                                          "closed")}}},
 }
 
 

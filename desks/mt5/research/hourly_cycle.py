@@ -1105,6 +1105,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
                      # free public POS/card/location/satellite proxies as PIT series
                      "alt_proxies",
+                     # Tor Metrics per-country usage / censorship events as PIT series
+                     "tor_metrics",
                      # the alt seats' readings as PIT series the compiler mints cells from
                      "alt_seat_cells",
                      # walking inside a registered ground's own door is collection, like the
@@ -1983,6 +1985,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "alt_seat_cells": 300,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
+    # tor_metrics stops fetching at 70% of --budget-s 240 and writes; cap above it.
+    "tor_metrics": 330,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
     "replication_civilization": 1_000,
@@ -5340,6 +5344,13 @@ def main() -> None:
     # reports/ALT_PROXIES_ALLOCATION_INTEL.json. After the collector, before the forge.
     alp = _costed("alt_proxies", lambda: _producer(
         "alt_proxies", "research/alt_proxies.py", "--once", "--budget-s", "300"))
+    # TOR METRICS (2026-10-29): CC0 per-country Tor relay/bridge users -> users z, censorship
+    # events (users outside the detector's range) and a 28-day stress state, PIT-stamped by the
+    # measured publication lag, through the lake / axis door / registry cells. Its report also
+    # carries the onion allowlist fetcher, which stays OFF until QUANT_TOR_SOCKS and the
+    # auditor's egress ruling both exist (every row UNMEASURED:NEEDS_TOR otherwise).
+    tmx = _costed("tor_metrics", lambda: _producer(
+        "tor_metrics", "research/tor_metrics.py", "--once", "--budget-s", "240"))
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
     # webmaster's variants tried and the Wayback copy located (`research/source_fixer.py`).
     sfx = _costed("source_fixer", lambda: _producer("source_fixer", "research/source_fixer.py"))
@@ -5954,6 +5965,7 @@ def main() -> None:
                     "sge_premium": sge,
                     "asia_collector": aco,
                     "alt_proxies": alp,
+                    "tor_metrics": tmx,
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,

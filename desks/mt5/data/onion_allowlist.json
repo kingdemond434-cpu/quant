@@ -1,0 +1,37 @@
+{
+ "about": "THE ONION ALLOWLIST. The ONLY .onion addresses research/onion_mirrors.py may request. Each entry is a lawful public mirror that its own publisher announces on its own clearnet page (announced_at). Scope (principal 2026-10-13): lawful public onion sites and ugly public data are IN; darknet markets, hub/carding forums, ransomware leak sites, stolen data and MNPI are OUT, always -- the validator refuses any entry whose category is not in allowed_categories or whose text names an out-of-scope kind. No crawling beyond these URLs, no link following. Fetching stays OFF until the auditor rules on Tor egress (reports/audit/2026-10-29/ONION_LANE.md). Every onion host is IDEAS_ONLY in libs/data/terms_fence.SOURCE_POLICY['onion_mirrors']: never live input.",
+ "allowed_categories": ["news", "public_institution", "open_data_project"],
+ "verified_at": "2026-10-29",
+ "entries": [
+  {
+   "id": "tor_metrics_onion",
+   "publisher": "The Tor Project",
+   "category": "open_data_project",
+   "url": "http://hctxrvjzfpvmzh2jllqhgvvkoepxb4kfzdjm6h7egcwlumggtktiftid.onion/",
+   "clearnet_twin": "https://metrics.torproject.org/",
+   "announced_at": "https://onion.torproject.org/",
+   "why": "the CC0 Tor Metrics site's own onion service; the same per-country user estimates research/tor_metrics.py reads over clearnet"
+  },
+  {
+   "id": "tor_project_www_onion",
+   "publisher": "The Tor Project",
+   "category": "open_data_project",
+   "url": "http://2gzyxa5ihm7nsggfxnu52rck2vv4rvmdlkiu3zzui5du4xyclen53wid.onion/",
+   "clearnet_twin": "https://www.torproject.org/",
+   "announced_at": "https://onion.torproject.org/",
+   "why": "the Tor Project's home page onion service"
+  },
+  {
+   "id": "tor_project_blog_onion",
+   "publisher": "The Tor Project",
+   "category": "open_data_project",
+   "url": "http://pzhdfe7jraknpj2qgu5cz2u3i4deuyfwmonvzu5i3nyw4t4bmg7o5pad.onion/",
+   "clearnet_twin": "https://blog.torproject.org/",
+   "announced_at": "https://onion.torproject.org/",
+   "why": "the Tor Project blog: censorship-event write-ups (country blocks, bridge surges) as mechanism ideas"
+  }
+ ],
+ "candidates_not_added": {
+  "news_outlet_mirrors": "news outlets' onion mirrors (BBC, NYT, DW, RFE/RL, VOA, ProPublica) are wanted, but their announcement pages were SITE_BLOCKED to the build sandbox's reader on 2026-10-29, so no address could be verified from the publisher's own page; none is added until one is"
+ }
+}
