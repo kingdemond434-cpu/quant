@@ -134,7 +134,8 @@ class _GraphStub:
         return []
 
 
-def _run_main(tmp_path, monkeypatch, rows_by_source: dict[str, list[dict]]) -> dict:
+def _run_main(tmp_path, monkeypatch, rows_by_source: dict[str, list[dict]],
+              *, prior_sample_gaps: dict[str, str] | None = None) -> dict:
     """Drive `main()` end to end against a temporary tree: no graph, no real universe."""
     import libs.research.hypothesis_graph as hg
     root = tmp_path / "intel"
@@ -147,7 +148,8 @@ def _run_main(tmp_path, monkeypatch, rows_by_source: dict[str, list[dict]]) -> d
     monkeypatch.setattr(mcc, "DEEPENED", tmp_path / "deepened.json")
     monkeypatch.setattr(mcc, "CURSOR", tmp_path / "cursor.json")
     monkeypatch.setattr(mcc, "known_symbols", lambda: set(UNI))
-    monkeypatch.setattr(mcc, "structurally_untestable_families", dict)
+    monkeypatch.setattr(mcc, "structurally_untestable_families",
+                        lambda: prior_sample_gaps or {})
     monkeypatch.setattr(mcc, "expand_axes", lambda rows: rows)
     monkeypatch.setattr(hg, "Graph", _GraphStub)
     monkeypatch.setattr(hg, "record_candidates", lambda *a, **k: 0)
@@ -290,3 +292,26 @@ def test_the_scorer_rewards_disagreement_and_leaves_a_lone_task_where_it_was() -
     assert contested > agreed, "settling a disagreement is worth more than confirming an echo"
     assert score(dict(base, n_independent_sources=1)) == lone, \
         "one source multiplies by 1.0: an uncontested task sits exactly where it sat"
+
+
+def test_prior_family_sample_gap_cannot_veto_complete_source_recipes(tmp_path, monkeypatch):
+    modes = ('off', 'source_shift', 'session_relative')
+    rows = [{'kind': 'exact_recipe', 'symbol': 'XAUUSD', 'family': 'lvc_asia_london',
+             'params': {'bias_mode': mode, 'ttl_bars': 288},
+             'title': f'exact LVC {mode}',
+             'mechanism': 'Asia range breakout with explicitly preserved source bias rule'}
+            for mode in modes]
+    result = _run_main(tmp_path, monkeypatch, {'scheduled_chatgpt': rows},
+                       prior_sample_gaps={'lvc_asia_london': 'past batch lacked 60 days'})
+    cells = result['out']['hypotheses']
+    assert len(cells) == 3
+    assert {c['params']['bias_mode'] for c in cells} == set(modes)
+    assert all(c['params']['ttl_bars'] == 288 for c in cells)
+    assert all(c['prior_family_build_gap'] == 'past batch lacked 60 days' for c in cells)
+    assert all(c.get(k) for c in cells for k in
+               ('available_time', 'ingested_time', 'payload_hash', 'source_version'))
+    stats = result['out']['per_source']['scheduled_chatgpt']
+    assert stats['convertible_rows'] == stats['converted_rows'] == 3
+    assert stats['owes_convertible_rows'] == 0
+    assert result['out']['conversion_contract']['silent_loss'] == 0
+    assert result['deepen']['tasks'] == []
