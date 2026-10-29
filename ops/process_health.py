@@ -465,6 +465,45 @@ def account_key_backup() -> dict[str, Any]:
         return {"state": "UNMEASURED", "why": type(exc).__name__}
 
 
+#: THE DEPENDENCY-LIVENESS VERDICT (Rule 23, 2026-10-29). Written by MT5-AxisIngest
+#: (desks/mt5/research/axis_ingest_all.py) on every pass: RED when any external source or series
+#: has delivered no data for more than two consecutive passes. A task's exit code cannot carry
+#: this -- the ingest exits 0 when ANY axis lands, which is why FRED's empty returns read "OK"
+#: here from 2026-09-12 to 2026-10-29 -- so the board reads the streak itself.
+DEPENDENCY_LIVENESS = ROOT / "desks" / "mt5" / "reports" / "DEPENDENCY_LIVENESS.json"
+
+
+def dependency_liveness(path: Path | None = None) -> dict[str, Any]:
+    """The streak verdict, summarised: RED / GREEN / UNMEASURED and which dependencies are RED.
+    Absent or unreadable is UNMEASURED (a host that never ran the ingest), never GREEN."""
+    p = path or DEPENDENCY_LIVENESS
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"verdict": "UNMEASURED", "why": f"{p.name} absent or unreadable on this host"}
+    if not isinstance(doc, dict) or doc.get("verdict") not in ("RED", "GREEN", "UNMEASURED"):
+        return {"verdict": "UNMEASURED", "why": f"{p.name} carries no verdict"}
+    deps = doc.get("dependencies") or {}
+    return {
+        "verdict": doc["verdict"],
+        "at": doc.get("at"),
+        "red_after_runs": doc.get("red_after_runs"),
+        "red": [{"dependency": k, "empty_streak": (deps.get(k) or {}).get("empty_streak"),
+                 "since": (deps.get(k) or {}).get("first_empty_at"),
+                 "reason": (deps.get(k) or {}).get("last_reason")}
+                for k in (doc.get("red") or [])],
+        # EVERY DEPENDENCY NOT DELIVERING, RED OR NOT YET, WITH ITS CAUSE. DEPENDENCY_LIVENESS.json
+        # itself stays on the box (`**/reports/*` is ignored); this board is published, so the
+        # per-series reason (TIMEOUT, RESET, HTTP_4xx, EMPTY, NEEDS_KEY) reaches every reader.
+        "not_delivering": {k: {"empty_streak": d.get("empty_streak"),
+                               "reason": str(d.get("last_reason") or "")[:240]}
+                           for k, d in sorted(deps.items())
+                           if isinstance(d, dict) and d.get("verdict") in ("RED", "AMBER")},
+        "sources": doc.get("sources") or {},
+        "artifact": "desks/mt5/reports/DEPENDENCY_LIVENESS.json",
+    }
+
+
 def build() -> dict[str, Any]:
     contracts = _contracts()
     now = datetime.now(tz=UTC)
@@ -602,11 +641,13 @@ def build() -> dict[str, Any]:
     backup = account_key_backup()
     key_fault = key.get("state") in KEY_FAULT_STATES
     backup_fault = backup.get("state") in BACKUP_FAULT_STATES
+    deps = dependency_liveness()
+    dep_fault = deps.get("verdict") == "RED"
     status = ("UNMEASURED" if not rows or not scheduler_status.startswith("OK ")
               else ("ATTENTION" if brief_faults else "UNMEASURED")
               if not run_history_read
               else "OK" if not bad else "ATTENTION")
-    if key_fault or backup_fault:
+    if key_fault or backup_fault or dep_fault:
         status = "ATTENTION"   # a definite fault: the worst finding wins over UNMEASURED too
     return {
         "at": now.isoformat(timespec="seconds"),
@@ -627,11 +668,13 @@ def build() -> dict[str, Any]:
         # fails closed (account_key None), and fail-closed must never be silent.
         "status": status,
         "run_history": "MEASURED" if run_history_read else "UNMEASURED",
-        "n_needing_attention": len(bad) + int(key_fault) + int(backup_fault),
+        "n_needing_attention": len(bad) + int(key_fault) + int(backup_fault) + int(dep_fault),
         "account_key_file": key,
         # THE BACKUP (v5e): present, size, and whether it matches the live key -- a hash compare
         # done in-process; no hash is ever printed or written. Missing or mismatched: ATTENTION.
         "account_key_backup": backup,
+        # A PUBLISHER THAT RETURNS NOTHING, PASS AFTER PASS, WHILE ITS TASK EXITS 0 (Rule 23).
+        "dependency_liveness": deps,
         # WHICH READ TIMED OUT, ITS BOUND, AND THE MEMORY THEN (v5f), each figure stamped with
         # the host it was read on and that host's total. Empty when every read answered.
         "scheduler_timeouts": list(TIMEOUTS),
