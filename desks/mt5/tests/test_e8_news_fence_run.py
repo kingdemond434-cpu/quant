@@ -99,7 +99,7 @@ def test_on_cancels_a_resting_bracket_once_billed(monkeypatch, tmp_path) -> None
         def cancel(self, order_id: int) -> bool:
             cancelled.append(int(order_id))
             return True
-    doc = g.run(V(stops={555: 4310.5, 556: 4289.5}), h._MT5(), armed=False)
+    doc = g.run(V(stops={555: 4310.5, 556: 4289.5}), h._MT5(), armed=True)
     assert sorted(cancelled) >= [555, 556]
     acts = [a for a in doc["actions"] if a.get("act") == "news_cancel"]
     assert {a["order_id"] for a in acts} == {555, 556} and all(a["ok"] for a in acts)
@@ -118,7 +118,7 @@ def test_a_failed_cancel_inside_a_window_raises_an_alert(monkeypatch, tmp_path) 
     class V(h._Venue):
         def cancel(self, order_id: int) -> bool:
             return False
-    doc = g.run(V(stops={555: 4310.5}), h._MT5(), armed=False)
+    doc = g.run(V(stops={555: 4310.5}), h._MT5(), armed=True)
     assert any("NOT cancelled" in a for a in doc.get("alerts", []))
 
 

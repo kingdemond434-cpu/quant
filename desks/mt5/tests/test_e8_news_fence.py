@@ -78,10 +78,11 @@ def test_resting_entry_legs_skip_filled_windows_and_gone_orders() -> None:
 def test_the_lane_is_wired_to_the_fence_on_placement_retry_and_resting_legs() -> None:
     src = (_DESK / "prop" / "e8_gold.py").read_text("utf-8")
     assert "from mt5desk import news_fence as _nf" in src
-    assert "news = _nf.verdict(now)" in src
+    assert "news = news_verdict(now)" in src and "_nf.verdict(now)" in src
     assert "news_why=(" in src                                 # the retry path
-    assert "_nf.resting_entry_legs(" in src                    # the resting-leg cancel
-    assert src.count("_nf.SHADOW_STATUS") >= 2                 # billed when OFF, both paths
+    assert "resting_entry_legs(state, open_ids, filled)" in src  # the resting-leg cancel
+    assert src.count("else NEWS_SHADOW") >= 2                  # billed when OFF, both paths
+    assert '"status": NEWS_SHADOW' in src                      # ... and on held re-sends
 
 
 def test_missed_growth_publishes_both_sides_of_the_bill(tmp_path, monkeypatch) -> None:
