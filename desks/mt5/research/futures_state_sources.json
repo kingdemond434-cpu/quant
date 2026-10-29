@@ -1,0 +1,1019 @@
+{
+ "_doc": "Futures-state source registry. One row per public source, one row per market. Rows, never code: add a market or a venue here and futures_state.py picks it up on the next pass. terms: OPEN = fetched; TO_CONFIRM / HELD / IDEAS_ONLY = never fetched, counted as a named gap. 401/403/429/451 is a HARD STOP for that source until source_fixer releases it.",
+ "sources": [
+  {
+   "id": "cftc_legacy_combined",
+   "adapter": "cftc",
+   "terms": "OPEN",
+   "url": "https://publicreporting.cftc.gov/resource/jun7-fc8e.json",
+   "note": "Legacy futures+options combined; with the futures-only set it isolates delta-adjusted options-on-futures positioning"
+  },
+  {
+   "id": "cftc_legacy_futonly",
+   "adapter": "cftc",
+   "terms": "OPEN",
+   "url": "https://publicreporting.cftc.gov/resource/6dca-aqww.json"
+  },
+  {
+   "id": "cftc_disagg_combined",
+   "adapter": "cftc",
+   "terms": "OPEN",
+   "url": "https://publicreporting.cftc.gov/resource/kh3c-gbw2.json"
+  },
+  {
+   "id": "cftc_disagg_futonly",
+   "adapter": "cftc",
+   "terms": "OPEN",
+   "url": "https://publicreporting.cftc.gov/resource/72hh-3qpy.json"
+  },
+  {
+   "id": "cftc_tff_combined",
+   "adapter": "cftc",
+   "terms": "OPEN",
+   "url": "https://publicreporting.cftc.gov/resource/yw9f-hn96.json"
+  },
+  {
+   "id": "cftc_tff_futonly",
+   "adapter": "cftc",
+   "terms": "OPEN",
+   "url": "https://publicreporting.cftc.gov/resource/gpe5-46if.json"
+  },
+  {
+   "id": "eia_futures",
+   "adapter": "eia",
+   "terms": "OPEN",
+   "key_env": [
+    "EIA_API_KEY",
+    "EIA_KEY"
+   ],
+   "url": "https://api.eia.gov/v2/",
+   "note": "NYMEX contracts 1-4 as republished by EIA (public domain US government data)"
+  },
+  {
+   "id": "fred_rates",
+   "adapter": "fred",
+   "terms": "OPEN",
+   "key_env": [
+    "FRED_API_KEY",
+    "FRED_KEY"
+   ],
+   "url": "https://api.stlouisfed.org/fred/series/observations",
+   "note": "US Treasury H.15 nominal and real yields and breakevens (public domain). The rates curve the futures side trades on, and a PIT rates factor while UST10Y bars on the box end 2025-12-31"
+  },
+  {
+   "id": "deribit_public",
+   "adapter": "none",
+   "terms": "OWNED_ELSEWHERE",
+   "note": "Crypto venue data may only inform an MT5 instrument, and the one organ allowed to read it is desks/mt5/research/shadow_institutional.py (its sensors declare MT5 consumers; scripts/check_mt5_purity.py allowlists it). Basis, funding and DVOL state belong there as sensors, not here."
+  },
+  {
+   "id": "cboe_vix_history",
+   "adapter": "none",
+   "terms": "TO_CONFIRM",
+   "url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv",
+   "note": "VIX index and VX futures settlements; site terms not yet confirmed for automated use"
+  },
+  {
+   "id": "fred_vixcls",
+   "adapter": "none",
+   "terms": "TO_CONFIRM",
+   "url": "https://api.stlouisfed.org/fred/series/observations?series_id=VIXCLS",
+   "note": "Cboe-owned series on FRED; third-party copyright terms not yet confirmed"
+  },
+  {
+   "id": "binance_futures_public",
+   "adapter": "none",
+   "terms": "OWNED_ELSEWHERE",
+   "note": "Crypto venue data may only inform an MT5 instrument, and the one organ allowed to read it is desks/mt5/research/shadow_institutional.py (its sensors declare MT5 consumers; scripts/check_mt5_purity.py allowlists it). Basis, funding and DVOL state belong there as sensors, not here."
+  },
+  {
+   "id": "okx_public",
+   "adapter": "none",
+   "terms": "OWNED_ELSEWHERE",
+   "note": "Crypto venue data may only inform an MT5 instrument, and the one organ allowed to read it is desks/mt5/research/shadow_institutional.py (its sensors declare MT5 consumers; scripts/check_mt5_purity.py allowlists it). Basis, funding and DVOL state belong there as sensors, not here."
+  },
+  {
+   "id": "bybit_public",
+   "adapter": "none",
+   "terms": "OWNED_ELSEWHERE",
+   "note": "Crypto venue data may only inform an MT5 instrument, and the one organ allowed to read it is desks/mt5/research/shadow_institutional.py (its sensors declare MT5 consumers; scripts/check_mt5_purity.py allowlists it). Basis, funding and DVOL state belong there as sensors, not here."
+  },
+  {
+   "id": "cme_settlements",
+   "adapter": "none",
+   "terms": "HELD",
+   "url": "https://www.cmegroup.com/",
+   "note": "CME/COMEX/NYMEX settlement and volume pages: terms restrict automated access (F2)"
+  },
+  {
+   "id": "lme",
+   "adapter": "none",
+   "terms": "HELD",
+   "url": "https://www.lme.com/",
+   "note": "F2"
+  },
+  {
+   "id": "jpx_osaka",
+   "adapter": "none",
+   "terms": "HELD",
+   "url": "https://www.jpx.co.jp/",
+   "note": "F4"
+  },
+  {
+   "id": "yahoo_futures",
+   "adapter": "none",
+   "terms": "IDEAS_ONLY",
+   "url": "https://query1.finance.yahoo.com/",
+   "note": "fetch_futures_curves.py source; IDEAS_ONLY, not a live input"
+  },
+  {
+   "id": "cn_exchanges",
+   "adapter": "none",
+   "terms": "OWNED_ELSEWHERE",
+   "url": "https://www.shfe.com.cn/",
+   "note": "SHFE/DCE/CZCE/INE member positioning and curves are the asia lane's (asia-cn-futures-positioning); not duplicated here"
+  },
+  {
+   "id": "oecd_rates_on_fred",
+   "adapter": "fred",
+   "terms": "OPEN",
+   "note": "OECD MEI 3M interbank rates via FRED (OECD data CC BY 4.0, attribute OECD)"
+  },
+  {
+   "id": "imf_reserves_on_fred",
+   "adapter": "fred",
+   "terms": "OPEN",
+   "note": "IMF IFS total reserves ex gold via FRED (IMF data free reuse with attribution)"
+  },
+  {
+   "id": "mof_japan_intervention",
+   "adapter": "mof_feio",
+   "terms": "OPEN",
+   "url": "https://www.mof.go.jp/english/policy/international_policy/reference/feio/index.html",
+   "csv_url": "https://www.mof.go.jp/english/policy/international_policy/reference/feio/foreign_exchange_intervention_operations.csv",
+   "monthly_index_url": "https://www.mof.go.jp/english/policy/international_policy/reference/feio/monthly/index.html",
+   "targets": [
+    "USDJPY",
+    "EURJPY",
+    "GBPJPY",
+    "AUDJPY",
+    "CADJPY",
+    "CHFJPY",
+    "NZDJPY"
+   ],
+   "note": "Public government data. Historical CSV = every intervention day since 1991-04 with amount (100m yen) and direction, disclosed quarterly (stamped quarter end + 62d). Monthly release = undirected period total, stamped at its publication (pages listed from 2023). Robots checked with our UA."
+  },
+  {
+   "id": "fx_options_risk_reversals",
+   "adapter": "none",
+   "terms": "NO_LICENSED_FREE_SOURCE",
+   "missed_growth": true,
+   "note": "25d risk reversals and ATM vols are vendor data (Bloomberg/Refinitiv/CME DataMine). UNMEASURED. Partial proxy in place: CFTC combined-minus-futures-only gives the options-on-FX-futures book per class"
+  },
+  {
+   "id": "cls_fx_volumes",
+   "adapter": "none",
+   "terms": "HELD",
+   "missed_growth": true,
+   "note": "CLS FX settlement volume/flow data is a paid product"
+  },
+  {
+   "id": "bis_triennial_fx",
+   "adapter": "none",
+   "terms": "IDEAS_ONLY",
+   "note": "BIS triennial turnover is public but every 3 years: structure context only, too sparse to condition a bar"
+  },
+  {
+   "id": "cme_fx_curves_forward_points",
+   "adapter": "none",
+   "terms": "HELD",
+   "note": "CME FX futures settlements fall under F2 terms. Forward points and CIP are proxied by the rate-differential sets plus the MT5 swap (GAP_MAP row 64)"
+  },
+  {
+   "id": "mt5_fx_tick_tape",
+   "adapter": "none",
+   "terms": "OWNED_ELSEWHERE",
+   "note": "tick moat recorder and tape families (LCR, Breadth, Judge); not duplicated here"
+  }
+ ],
+ "cftc_markets": [
+  {
+   "id": "gold",
+   "like": "GOLD - COMMODITY EXCHANGE%",
+   "targets": [
+    "XAUUSD",
+    "XAUEUR",
+    "XAUAUD",
+    "XAGUSD",
+    "AUDUSD",
+    "USDJPY"
+   ]
+  },
+  {
+   "id": "silver",
+   "like": "SILVER - COMMODITY EXCHANGE%",
+   "targets": [
+    "XAGUSD",
+    "XAGEUR",
+    "XAUUSD"
+   ]
+  },
+  {
+   "id": "copper",
+   "like": "COPPER%COMMODITY EXCHANGE%",
+   "targets": [
+    "XCUUSD",
+    "AUDUSD",
+    "USDCNH",
+    "XALUSD",
+    "XZNUSD",
+    "XNIUSD"
+   ]
+  },
+  {
+   "id": "platinum",
+   "like": "PLATINUM - NEW YORK MERCANTILE%",
+   "targets": [
+    "XPTUSD",
+    "USDZAR",
+    "XPDUSD"
+   ]
+  },
+  {
+   "id": "palladium",
+   "like": "PALLADIUM - NEW YORK MERCANTILE%",
+   "targets": [
+    "XPDUSD",
+    "XPTUSD",
+    "USDRUB"
+   ]
+  },
+  {
+   "id": "wti",
+   "like": "WTI-PHYSICAL - NEW YORK MERCANTILE%",
+   "targets": [
+    "XTIUSD",
+    "XBRUSD",
+    "USDCAD",
+    "CADJPY",
+    "USDMXN",
+    "CA60"
+   ]
+  },
+  {
+   "id": "brent",
+   "like": "BRENT LAST DAY - NEW YORK MERCANTILE%",
+   "targets": [
+    "XBRUSD",
+    "XTIUSD"
+   ]
+  },
+  {
+   "id": "natgas",
+   "like": "NAT GAS NYME - NEW YORK MERCANTILE%",
+   "targets": [
+    "XNGUSD"
+   ]
+  },
+  {
+   "id": "rbob",
+   "like": "GASOLINE RBOB - NEW YORK MERCANTILE%",
+   "targets": [
+    "XTIUSD",
+    "XBRUSD"
+   ]
+  },
+  {
+   "id": "ulsd",
+   "like": "NY HARBOR ULSD - NEW YORK MERCANTILE%",
+   "targets": [
+    "XBRUSD",
+    "XTIUSD"
+   ]
+  },
+  {
+   "id": "corn",
+   "like": "CORN - CHICAGO BOARD OF TRADE%",
+   "targets": [
+    "CORN",
+    "WHEAT",
+    "SOYBEAN"
+   ]
+  },
+  {
+   "id": "wheat_srw",
+   "like": "WHEAT-SRW - CHICAGO BOARD OF TRADE%",
+   "targets": [
+    "WHEAT",
+    "CORN"
+   ]
+  },
+  {
+   "id": "soybeans",
+   "like": "SOYBEANS - CHICAGO BOARD OF TRADE%",
+   "targets": [
+    "SOYBEAN",
+    "CORN",
+    "USDBRL"
+   ]
+  },
+  {
+   "id": "sugar",
+   "like": "SUGAR NO. 11 - ICE FUTURES U.S.%",
+   "targets": [
+    "SUGAR",
+    "USDBRL"
+   ]
+  },
+  {
+   "id": "coffee",
+   "like": "COFFEE C - ICE FUTURES U.S.%",
+   "targets": [
+    "COFARA",
+    "COFROB",
+    "USDBRL"
+   ]
+  },
+  {
+   "id": "cocoa",
+   "like": "COCOA - ICE FUTURES U.S.%",
+   "targets": [
+    "USCOCOA",
+    "UKCOCOA"
+   ]
+  },
+  {
+   "id": "cotton",
+   "like": "COTTON NO. 2 - ICE FUTURES U.S.%",
+   "targets": [
+    "COTTON"
+   ]
+  },
+  {
+   "id": "fcoj",
+   "like": "%ORANGE JUICE%ICE FUTURES U.S.%",
+   "targets": [
+    "OJ"
+   ]
+  },
+  {
+   "id": "sp500",
+   "targets": [
+    "US500",
+    "NAS100",
+    "US30",
+    "USDJPY"
+   ],
+   "names": [
+    "E-MINI S&P 500 STOCK INDEX - CHICAGO MERCANTILE EXCHANGE",
+    "E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE"
+   ]
+  },
+  {
+   "id": "nasdaq",
+   "targets": [
+    "NAS100",
+    "US500"
+   ],
+   "names": [
+    "NASDAQ-100 STOCK INDEX (MINI) - CHICAGO MERCANTILE EXCHANGE",
+    "NASDAQ MINI - CHICAGO MERCANTILE EXCHANGE"
+   ]
+  },
+  {
+   "id": "djia",
+   "like": "DJIA x $5 - CHICAGO BOARD OF TRADE%",
+   "targets": [
+    "US30"
+   ]
+  },
+  {
+   "id": "russell",
+   "like": "RUSSELL E-MINI - CHICAGO MERCANTILE%",
+   "targets": [
+    "US2000"
+   ]
+  },
+  {
+   "id": "nikkei",
+   "like": "NIKKEI STOCK AVERAGE YEN DENOM%",
+   "targets": [
+    "JPN225",
+    "USDJPY"
+   ]
+  },
+  {
+   "id": "vix",
+   "like": "VIX FUTURES - CBOE FUTURES EXCHANGE%",
+   "targets": [
+    "US500",
+    "NAS100",
+    "USDJPY",
+    "XAUUSD",
+    "AUDJPY"
+   ]
+  },
+  {
+   "id": "ust10y",
+   "like": "UST 10Y NOTE - CHICAGO BOARD OF TRADE%",
+   "targets": [
+    "UST10Y",
+    "USDJPY",
+    "XAUUSD",
+    "US500"
+   ]
+  },
+  {
+   "id": "ust5y",
+   "like": "UST 5Y NOTE - CHICAGO BOARD OF TRADE%",
+   "targets": [
+    "UST05Y",
+    "USDJPY"
+   ]
+  },
+  {
+   "id": "bitcoin",
+   "like": "BITCOIN - CHICAGO MERCANTILE%",
+   "targets": [
+    "BTCUSD",
+    "ETHUSD",
+    "SOLUSD",
+    "NAS100"
+   ]
+  },
+  {
+   "id": "ether",
+   "like": "ETHER CASH SETTLED - CHICAGO MERCANTILE%",
+   "targets": [
+    "ETHUSD",
+    "BTCUSD"
+   ]
+  },
+  {
+   "id": "eur",
+   "targets": [
+    "EURUSD",
+    "EURJPY",
+    "EURGBP"
+   ],
+   "names": [
+    "EURO FX - CHICAGO MERCANTILE EXCHANGE"
+   ]
+  },
+  {
+   "id": "jpy",
+   "targets": [
+    "USDJPY",
+    "EURJPY",
+    "GBPJPY",
+    "AUDJPY"
+   ],
+   "sign": -1,
+   "names": [
+    "JAPANESE YEN - CHICAGO MERCANTILE EXCHANGE"
+   ]
+  },
+  {
+   "id": "gbp",
+   "targets": [
+    "GBPUSD",
+    "EURGBP"
+   ],
+   "names": [
+    "BRITISH POUND STERLING - CHICAGO MERCANTILE EXCHANGE",
+    "BRITISH POUND - CHICAGO MERCANTILE EXCHANGE"
+   ]
+  },
+  {
+   "id": "cad",
+   "like": "CANADIAN DOLLAR - CHICAGO MERCANTILE%",
+   "targets": [
+    "USDCAD",
+    "CADJPY"
+   ],
+   "sign": -1
+  },
+  {
+   "id": "chf",
+   "like": "SWISS FRANC - CHICAGO MERCANTILE%",
+   "targets": [
+    "USDCHF",
+    "EURCHF"
+   ],
+   "sign": -1
+  },
+  {
+   "id": "aud",
+   "like": "AUSTRALIAN DOLLAR - CHICAGO MERCANTILE%",
+   "targets": [
+    "AUDUSD",
+    "AUDJPY",
+    "AUDNZD"
+   ]
+  },
+  {
+   "id": "nzd",
+   "targets": [
+    "NZDUSD",
+    "NZDJPY"
+   ],
+   "names": [
+    "NEW ZEALAND DOLLAR - CHICAGO MERCANTILE EXCHANGE",
+    "NZ DOLLAR - CHICAGO MERCANTILE EXCHANGE"
+   ]
+  },
+  {
+   "id": "mxn",
+   "like": "MEXICAN PESO - CHICAGO MERCANTILE%",
+   "targets": [
+    "USDMXN",
+    "MXNJPY"
+   ],
+   "sign": -1
+  },
+  {
+   "id": "brl",
+   "like": "BRAZILIAN REAL - CHICAGO MERCANTILE%",
+   "targets": [
+    "USDBRL"
+   ],
+   "sign": -1
+  },
+  {
+   "id": "zar",
+   "like": "SO AFRICAN RAND - CHICAGO MERCANTILE%",
+   "targets": [
+    "USDZAR",
+    "ZARJPY"
+   ],
+   "sign": -1
+  },
+  {
+   "id": "usd_index",
+   "like": "USD INDEX - ICE FUTURES U.S.%",
+   "targets": [
+    "USDX",
+    "EURUSD",
+    "XAUUSD"
+   ]
+  },
+  {
+   "id": "eurjpy_x",
+   "names": [
+    "EURO FX/JAPANESE YEN XRATE - CHICAGO MERCANTILE EXCHANGE"
+   ],
+   "targets": [
+    "EURJPY"
+   ]
+  },
+  {
+   "id": "eurgbp_x",
+   "names": [
+    "EURO FX/BRITISH POUND XRATE - CHICAGO MERCANTILE EXCHANGE"
+   ],
+   "targets": [
+    "EURGBP"
+   ]
+  }
+ ],
+ "eia_curves": [
+  {
+   "id": "wti",
+   "route": "petroleum/pri/fut",
+   "series": [
+    "RCLC1",
+    "RCLC2",
+    "RCLC3",
+    "RCLC4"
+   ],
+   "targets": [
+    "XTIUSD",
+    "XBRUSD",
+    "USDCAD",
+    "CADJPY",
+    "CA60"
+   ]
+  },
+  {
+   "id": "natgas",
+   "route": "natural-gas/pri/fut",
+   "series": [
+    "RNGC1",
+    "RNGC2",
+    "RNGC3",
+    "RNGC4"
+   ],
+   "targets": [
+    "XNGUSD"
+   ]
+  }
+ ],
+ "transmissions": [
+  {
+   "id": "gold_silver_mm",
+   "a": "cot_gold",
+   "b": "cot_silver",
+   "column": "disagg_m_money_net_oi",
+   "op": "spread",
+   "targets": [
+    "XAGUSD",
+    "XAUUSD"
+   ],
+   "why": "managed money crowding into one metal and not the other precedes the ratio's move"
+  },
+  {
+   "id": "copper_gold_mm",
+   "a": "cot_copper",
+   "b": "cot_gold",
+   "column": "disagg_m_money_net_oi",
+   "op": "spread",
+   "targets": [
+    "AUDUSD",
+    "XCUUSD",
+    "AUDJPY",
+    "UST10Y"
+   ],
+   "why": "growth-vs-haven positioning: the copper/gold positioning spread is the futures-side risk barometer"
+  },
+  {
+   "id": "wti_brent_mm",
+   "a": "cot_wti",
+   "b": "cot_brent",
+   "column": "disagg_m_money_net_oi",
+   "op": "spread",
+   "targets": [
+    "XTIUSD",
+    "XBRUSD"
+   ]
+  },
+  {
+   "id": "spx_vix_levmoney",
+   "a": "cot_sp500",
+   "b": "cot_vix",
+   "column": "tff_lev_money_net_oi",
+   "op": "spread",
+   "targets": [
+    "US500",
+    "NAS100",
+    "USDJPY"
+   ],
+   "why": "leveraged funds long equity futures and short VIX futures at once is a one-sided crowd"
+  },
+  {
+   "id": "crude_curve_vs_mm",
+   "a": "eia_wti",
+   "b": "cot_wti",
+   "column_a": "roll_yield_12",
+   "column_b": "disagg_m_money_net_oi",
+   "op": "zgap",
+   "targets": [
+    "XTIUSD",
+    "XBRUSD",
+    "USDCAD"
+   ],
+   "why": "curve backwardation without speculative length (or the reverse) is physical tightness the crowd has not priced"
+  },
+  {
+   "id": "real_yield_vs_gold_mm",
+   "a": "fred_ust_real",
+   "b": "cot_gold",
+   "column_a": "y_DFII10",
+   "column_b": "disagg_m_money_net_oi",
+   "op": "zgap",
+   "targets": [
+    "XAUUSD",
+    "XAGUSD"
+   ],
+   "why": "speculative gold length that real yields do not justify (or the reverse) is the crowd ahead of or behind the rate driver"
+  },
+  {
+   "id": "usdjpy_carry_vs_lev",
+   "a": "fred_rdiff3m_usdjpy",
+   "b": "cot_jpy",
+   "column_a": "diff",
+   "column_b": "tff_lev_money_net_oi",
+   "op": "zgap",
+   "targets": [
+    "USDJPY",
+    "EURJPY",
+    "AUDJPY"
+   ],
+   "why": "carry that leveraged funds are not positioned for (or crowded beyond) is where yen carry unwinds start; cot_jpy is already signed to USDJPY"
+  }
+ ],
+ "fred_curves": [
+  {
+   "id": "ust",
+   "series": [
+    "DGS3MO",
+    "DGS2",
+    "DGS5",
+    "DGS10",
+    "DGS30"
+   ],
+   "tenors": [
+    0.25,
+    2,
+    5,
+    10,
+    30
+   ],
+   "targets": [
+    "UST10Y",
+    "UST05Y",
+    "USDJPY",
+    "XAUUSD",
+    "US500",
+    "NAS100",
+    "EURUSD",
+    "USDX"
+   ]
+  },
+  {
+   "id": "ust_real",
+   "series": [
+    "DFII5",
+    "DFII10"
+   ],
+   "tenors": [
+    5,
+    10
+   ],
+   "targets": [
+    "XAUUSD",
+    "XAGUSD",
+    "USDJPY",
+    "NAS100"
+   ]
+  },
+  {
+   "id": "breakeven",
+   "series": [
+    "T5YIE",
+    "T10YIE"
+   ],
+   "tenors": [
+    5,
+    10
+   ],
+   "targets": [
+    "XAUUSD",
+    "XTIUSD",
+    "UST10Y",
+    "USDJPY"
+   ]
+  }
+ ],
+ "fred_sets": [
+  {
+   "id": "rdiff3m",
+   "mode": "pairs",
+   "avail_lag_days": 76,
+   "window": 60,
+   "note": "monthly 3M interbank differential (OECD MEI); available 76 days after the month's first day",
+   "pairs": [
+    {
+     "id": "EURUSD",
+     "base": "IR3TIB01EZM156N",
+     "quote": "IR3TIB01USM156N",
+     "targets": [
+      "EURUSD"
+     ]
+    },
+    {
+     "id": "GBPUSD",
+     "base": "IR3TIB01GBM156N",
+     "quote": "IR3TIB01USM156N",
+     "targets": [
+      "GBPUSD"
+     ]
+    },
+    {
+     "id": "AUDUSD",
+     "base": "IR3TIB01AUM156N",
+     "quote": "IR3TIB01USM156N",
+     "targets": [
+      "AUDUSD"
+     ]
+    },
+    {
+     "id": "NZDUSD",
+     "base": "IR3TIB01NZM156N",
+     "quote": "IR3TIB01USM156N",
+     "targets": [
+      "NZDUSD"
+     ]
+    },
+    {
+     "id": "USDJPY",
+     "base": "IR3TIB01USM156N",
+     "quote": "IR3TIB01JPM156N",
+     "targets": [
+      "USDJPY"
+     ]
+    },
+    {
+     "id": "USDCAD",
+     "base": "IR3TIB01USM156N",
+     "quote": "IR3TIB01CAM156N",
+     "targets": [
+      "USDCAD"
+     ]
+    },
+    {
+     "id": "USDCHF",
+     "base": "IR3TIB01USM156N",
+     "quote": "IR3TIB01CHM156N",
+     "targets": [
+      "USDCHF"
+     ]
+    },
+    {
+     "id": "USDMXN",
+     "base": "IR3TIB01USM156N",
+     "quote": "IR3TIB01MXM156N",
+     "targets": [
+      "USDMXN"
+     ]
+    },
+    {
+     "id": "USDZAR",
+     "base": "IR3TIB01USM156N",
+     "quote": "IR3TIB01ZAM156N",
+     "targets": [
+      "USDZAR"
+     ]
+    },
+    {
+     "id": "EURJPY",
+     "base": "IR3TIB01EZM156N",
+     "quote": "IR3TIB01JPM156N",
+     "targets": [
+      "EURJPY"
+     ]
+    },
+    {
+     "id": "AUDJPY",
+     "base": "IR3TIB01AUM156N",
+     "quote": "IR3TIB01JPM156N",
+     "targets": [
+      "AUDJPY"
+     ]
+    },
+    {
+     "id": "GBPJPY",
+     "base": "IR3TIB01GBM156N",
+     "quote": "IR3TIB01JPM156N",
+     "targets": [
+      "GBPJPY"
+     ]
+    },
+    {
+     "id": "EURGBP",
+     "base": "IR3TIB01EZM156N",
+     "quote": "IR3TIB01GBM156N",
+     "targets": [
+      "EURGBP"
+     ]
+    },
+    {
+     "id": "EURCHF",
+     "base": "IR3TIB01EZM156N",
+     "quote": "IR3TIB01CHM156N",
+     "targets": [
+      "EURCHF"
+     ]
+    },
+    {
+     "id": "AUDNZD",
+     "base": "IR3TIB01AUM156N",
+     "quote": "IR3TIB01NZM156N",
+     "targets": [
+      "AUDNZD"
+     ]
+    },
+    {
+     "id": "CADJPY",
+     "base": "IR3TIB01CAM156N",
+     "quote": "IR3TIB01JPM156N",
+     "targets": [
+      "CADJPY"
+     ]
+    },
+    {
+     "id": "NZDJPY",
+     "base": "IR3TIB01NZM156N",
+     "quote": "IR3TIB01JPM156N",
+     "targets": [
+      "NZDJPY"
+     ]
+    },
+    {
+     "id": "MXNJPY",
+     "base": "IR3TIB01MXM156N",
+     "quote": "IR3TIB01JPM156N",
+     "targets": [
+      "MXNJPY"
+     ]
+    },
+    {
+     "id": "ZARJPY",
+     "base": "IR3TIB01ZAM156N",
+     "quote": "IR3TIB01JPM156N",
+     "targets": [
+      "ZARJPY"
+     ]
+    },
+    {
+     "id": "EURAUD",
+     "base": "IR3TIB01EZM156N",
+     "quote": "IR3TIB01AUM156N",
+     "targets": [
+      "EURAUD"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "rdiff_on",
+   "mode": "pairs",
+   "window": 252,
+   "note": "daily overnight differentials: SOFR vs ESTR and SONIA",
+   "pairs": [
+    {
+     "id": "EURUSD",
+     "base": "ECBESTRVOLWGTTRMDMNRT",
+     "quote": "SOFR",
+     "targets": [
+      "EURUSD",
+      "EURJPY"
+     ]
+    },
+    {
+     "id": "GBPUSD",
+     "base": "IUDSOIA",
+     "quote": "SOFR",
+     "targets": [
+      "GBPUSD",
+      "GBPJPY"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "reserves",
+   "mode": "levels",
+   "avail_lag_days": 120,
+   "window": 60,
+   "note": "IMF total reserves ex gold; the monthly change is the intervention proxy; available 120 days after the month's first day",
+   "series": [
+    "TRESEGCNM052N",
+    "TRESEGJPM052N",
+    "TRESEGCHM052N",
+    "TRESEGINM052N",
+    "TRESEGKRM052N",
+    "TRESEGBRM052N",
+    "TRESEGMXM052N",
+    "TRESEGZAM052N",
+    "TRESEGTRM052N",
+    "TRESEGSGM052N"
+   ],
+   "targets_by_series": {
+    "TRESEGCNM052N": [
+     "USDCNH",
+     "AUDUSD"
+    ],
+    "TRESEGJPM052N": [
+     "USDJPY",
+     "EURJPY"
+    ],
+    "TRESEGCHM052N": [
+     "USDCHF",
+     "EURCHF"
+    ],
+    "TRESEGINM052N": [
+     "USDINR"
+    ],
+    "TRESEGKRM052N": [
+     "USDKRW"
+    ],
+    "TRESEGBRM052N": [
+     "USDBRL"
+    ],
+    "TRESEGMXM052N": [
+     "USDMXN"
+    ],
+    "TRESEGZAM052N": [
+     "USDZAR"
+    ],
+    "TRESEGTRM052N": [
+     "USDTRY",
+     "EURTRY"
+    ],
+    "TRESEGSGM052N": [
+     "USDSGD"
+    ]
+   }
+  }
+ ]
+}
