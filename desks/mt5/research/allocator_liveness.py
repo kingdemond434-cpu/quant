@@ -383,7 +383,7 @@ def _judge_coverage(now: float) -> dict[str, Any]:
     not judged since. UNMEASURED when the live ledger is absent; GAP names every unjudged key."""
     try:
         from libs.ops.live_ledger_view import ledger_path
-        ledger = Path(ledger_path(DATA / LIVE_LEDGER_NAME))
+        ledger = ledger_path(DATA / LIVE_LEDGER_NAME)      # the corrected view, not a bare Path
     except Exception:
         ledger = DATA / LIVE_LEDGER_NAME
     try:
@@ -404,20 +404,30 @@ def _judge_coverage(now: float) -> dict[str, Any]:
         if t is not None and now - JUDGE_WINDOW_S < t <= now - JUDGE_GRACE_S:
             k = str(r["sleeve"])[:_STEM]
             traded[k] = max(traded.get(k, 0.0), t)
-    if not traded:
-        return {"status": "OK", "n_traded": 0, "unjudged": [],
-                "why": "no live close in the judging window"}
     live = _read(DATA / DECAY_LIVE_NAME) or {}
     zero = _read(DATA / DECAY_ZERO_NAME) or {}
-    checked = _ts(live.get("checked_at")) or 0.0
-    judged = {str(k)[:_STEM] for k in (live.get("verdicts") or {})}
-    judged |= {str(k)[:_STEM] for k in (zero.get("judged") or {})}
-    unjudged = sorted(k for k, t in traded.items() if checked < t or k not in judged)
-    return {"status": "GAP" if unjudged else "OK", "n_traded": len(traded),
-            "n_judged": len(judged), "decay_checked_at": live.get("checked_at"),
-            "unjudged": unjudged,
-            "why": (f"{len(unjudged)} key(s) closed live trades the decay monitor has not judged "
-                    f"since: {', '.join(unjudged[:8])}" if unjudged
+    # Each file is judged by ITS OWN clock (#494 audit MF4b): a LIVE verdict by decay_live's
+    # checked_at, a book-key judgement by DECAY_ZERO's.
+    live_at = _ts(live.get("checked_at")) or 0.0
+    zero_at = _ts(zero.get("checked_at")) or 0.0
+    by_live = {str(k)[:_STEM] for k in (live.get("verdicts") or {})}
+    by_zero = {str(k)[:_STEM] for part in ("judged", "unmeasured", "flags", "zeros")
+               for k in (zero.get(part) or {})}
+    unjudged = sorted(k for k, t in traded.items()
+                      if not ((k in by_live and live_at >= t) or (k in by_zero and zero_at >= t)))
+    # STALE ZEROS (#494 audit S1): zeros the gateway is honouring from a file no pass rewrote. A
+    # zeroed key no longer trades, so this is checked whether or not anything closed.
+    stale = (f"DECAY_ZERO.json holds {len(zero['zeros'])} zero(s) last rewritten "
+             f"{(now - zero_at) / 3600:.1f}h ago"
+             if zero.get("zeros") and zero_at and now - zero_at > JUDGE_GRACE_S else "")
+    problems = unjudged + ([stale] if stale else [])
+    return {"status": "GAP" if problems else "OK", "n_traded": len(traded),
+            "n_judged": len(by_live | by_zero), "decay_checked_at": live.get("checked_at"),
+            "zero_checked_at": zero.get("checked_at"), "unjudged": unjudged, "stale": stale,
+            "why": ("; ".join(x for x in (
+                        (f"{len(unjudged)} key(s) closed live trades the decay monitor has not "
+                         f"judged since: {', '.join(unjudged[:8])}") if unjudged else "",
+                        stale) if x) if problems
                     else f"every one of {len(traded)} traded key(s) was judged after its close")}
 
 

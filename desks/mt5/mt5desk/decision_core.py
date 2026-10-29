@@ -705,6 +705,9 @@ def cert_book_zero(name: object, venue: str = "fusion") -> bool:
 #: The decay monitor's zeros for keys that trade outside the LIVE roster (research/decay_monitor,
 #: DECAY_ZERO). Read at call time so a test or the box may point it elsewhere.
 DECAY_ZERO_FILE = _DESK / "data" / "DECAY_ZERO.json"
+#: THE KILL SWITCH (#494 audit MF5): while this file exists, `decay_zero` names nothing and every
+#: key trades exactly as it did before the decay zero existed. Created by hand, on the box.
+DECAY_ZERO_DISABLED = _DESK / "data" / "DECAY_ZERO_DISABLED"
 #: The live ledger's sleeve stem: the venue truncates "DW" + name to 29 characters (measured on
 #: the venue as gateway.COMMENT_MAX), so the stem is 29 - 2; decay_monitor.LEDGER_NAME_MAX.
 _LEDGER_STEM = 27
@@ -718,6 +721,8 @@ def decay_zero(name: object) -> str | None:
     monitor knows it by. An absent, torn or malformed file names nothing: the zero is a
     measurement, and no measurement is not a zero (L1.28a) -- the key keeps every other gate."""
     if not name:
+        return None
+    if Path(DECAY_ZERO_DISABLED).exists():
         return None
     try:
         zeros = json.loads(Path(DECAY_ZERO_FILE).read_text("utf-8")).get("zeros") or {}
