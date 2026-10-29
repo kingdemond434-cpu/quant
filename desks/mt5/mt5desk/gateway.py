@@ -4162,7 +4162,8 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             else:
                 _e8_book, _e8_why = _xa.read_book("e8")
                 _xwhy = _xa.opposite_block(_e8_book, s["symbol"], side, account="e8",
-                                           why_absent=_e8_why)
+                                           why_absent=_e8_why) \
+                    or _xa.ftmo_block(s["symbol"], side)
             # THE GOLD DIRECTION LOCK (OCO v2s, MF-A): an XAU send here asks the bracket path's
             # own gate, under this same lock -- the day's direction and every gold lane (FTMO
             # included), fail closed.
@@ -4694,7 +4695,8 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             else:
                 _e8_book, _e8_why = _xa.read_book("e8")
                 _xwhy = _xa.opposite_block(_e8_book, s["symbol"], side, account="e8",
-                                           why_absent=_e8_why)
+                                           why_absent=_e8_why) \
+                    or _xa.ftmo_block(s["symbol"], side)
             # THE GOLD DIRECTION LOCK (OCO v2s, MF-A), as on the family lane: the same gate as
             # the bracket path, under this same lock.
             _owhy = gold_oco_send_refusal(s["symbol"], side, tick) \
@@ -5708,7 +5710,8 @@ def main() -> None:
                     _e8_book, _e8_why = _xa.read_book("e8")
                     for _leg in ("buy_stop", "sell_stop"):
                         _w = _xa.opposite_block(_e8_book, s["symbol"], _leg, account="e8",
-                                                why_absent=_e8_why)
+                                                why_absent=_e8_why) \
+                            or _xa.ftmo_block(s["symbol"], _leg)
                         if _w:
                             _xblocked[_leg] = _w
                 # THE GOLD DIRECTION LOCK (mt5desk.gold_oco): read under the same lock, every
