@@ -1,57 +1,21 @@
 {
  "schema": 1,
- "started_at": "2026-10-29T21:58:44+00:00",
- "pid": 12528,
- "phase": "applied",
- "phase_at": "2026-10-29T22:03:35+00:00",
- "done": true,
+ "started_at": "2026-10-29T23:09:53+00:00",
+ "pid": 10884,
+ "phase": "measure_box",
+ "phase_at": "2026-10-29T23:09:53+00:00",
+ "done": false,
  "phases": [
   {
    "phase": "started",
-   "at": "2026-10-29T21:58:44+00:00",
+   "at": "2026-10-29T23:09:53+00:00",
    "elapsed_s": 0.0
   },
   {
    "phase": "measure_box",
-   "at": "2026-10-29T21:58:44+00:00",
-   "elapsed_s": 0.0
-  },
-  {
-   "phase": "queue",
-   "at": "2026-10-29T21:59:57+00:00",
-   "elapsed_s": 73.2
-  },
-  {
-   "phase": "plan",
-   "at": "2026-10-29T21:59:57+00:00",
-   "elapsed_s": 73.3
-  },
-  {
-   "phase": "rate",
-   "at": "2026-10-29T21:59:57+00:00",
-   "elapsed_s": 73.3
-  },
-  {
-   "phase": "rate_written",
-   "at": "2026-10-29T22:01:59+00:00",
-   "elapsed_s": 195.4
-  },
-  {
-   "phase": "task_limit",
-   "at": "2026-10-29T22:01:59+00:00",
-   "elapsed_s": 195.4
-  },
-  {
-   "phase": "written",
-   "at": "2026-10-29T22:02:04+00:00",
-   "elapsed_s": 200.5
-  },
-  {
-   "phase": "applied",
-   "at": "2026-10-29T22:03:35+00:00",
-   "elapsed_s": 290.9
+   "at": "2026-10-29T23:09:53+00:00",
+   "elapsed_s": 0.6
   }
  ],
- "rule": "the phase named here is the one this pass ENTERED last; a marker newer than JUDGING_RATE.json's `at` past the leg budget is a pass that died there, and JUDGING_RATE.json reads STALE with that reason",
- "seconds": 290.9
+ "rule": "the phase named here is the one this pass ENTERED last; a marker newer than JUDGING_RATE.json's `at` past the leg budget is a pass that died there, and JUDGING_RATE.json reads STALE with that reason"
 }
