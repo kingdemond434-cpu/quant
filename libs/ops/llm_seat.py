@@ -284,8 +284,11 @@ def discover_model(seat: Seat, *, timeout: float = 20.0) -> tuple[str, str | Non
     than at each return.
     """
     model, err = _discover(seat, timeout=timeout)
+    # A distill carries another family's weights under this vendor's slug, so on the
+    # `sorted(free_ids)[0]` fallback it must not pass the lock either (audit S3).
     if (not err and model and getattr(seat, "lock_vendor", False) and seat.model
-            and _vendor(model) != _vendor(seat.model)):
+            and (_vendor(model) != _vendor(seat.model)
+                 or ("distill" in model.lower() and "distill" not in seat.model.lower()))):
         return "", (f"{seat.model} cannot be served and no {_vendor(seat.model)!r} id is listed "
                     f"in its tier (best other: {model}); this seat is vendor-locked, so nothing "
                     "else is substituted")
@@ -434,9 +437,15 @@ def is_dead_endpoint(err: str | None, model: str = "") -> bool:
     if _NOT_RETIRED.search(err):
         return False
     mid = re.escape(model.lower())
-    end = r"(?![\w/:-])"
-    return bool(re.search(rf"no endpoints found for {mid}{end}|{mid}{end}\W{{0,3}}\s*is not a "
-                          r"valid model id", err.lower()))
+    # The id must stand alone on both sides: `openai/gpt-4` is not `openai/gpt-4.1`, `m` is not
+    # `other/m`. And "No endpoints found for <id>" must END there (full stop, closing quote or
+    # end of message): "... for <id> that support tool use" is a capability refusal of a live
+    # model, not a retirement (audit MF1, 2026-10-29).
+    start = r"(?<![\w/:.-])"
+    end = r"(?![\w/:-]|\.\w)"
+    stop = r"""["'`]?\s*\.?\s*(?:$|["'`}\],])"""
+    return bool(re.search(rf"no endpoints found for {start}{mid}{end}{stop}"
+                          rf"|{start}{mid}{end}\W{{0,3}}\s*is not a valid model id", err.lower()))
 
 
 #: (path, mtime_ns, size) -> parsed rows: a dead pin is consulted on every call for a day, and
@@ -588,7 +597,9 @@ def _post_live(s: Seat, model: str, req: dict[str, Any], *, timeout: float
         return body, err, model
     alt, aerr = discover_model(s, timeout=timeout)
     if aerr or not alt or alt == model:
-        return body, err, model
+        # Carry WHY there is no replacement (a vendor lock reads "vendor-locked"), so the caller
+        # labels the call MODEL_RETIRED rather than a generic failure (audit S2).
+        return body, (f"{err} | no replacement: {aerr}" if aerr else err), model
     req = {**req, "model": alt}
     body, err = _post_with_degrade(url, s.key, req, timeout=timeout)
     if err is None:

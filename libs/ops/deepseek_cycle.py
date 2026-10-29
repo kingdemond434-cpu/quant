@@ -39,6 +39,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -685,7 +686,10 @@ def call_status(err: str) -> str:
         return "BUDGET_EXHAUSTED"
     if "vendor-locked" in low:
         return "MODEL_RETIRED"
-    if "429" in low:
+    # The HTTP status, not the digits anywhere: a 500 carrying "req_id=ab4291" is a failure,
+    # and reading it as a rate limit would exit 0 while failing (audit S1, 2026-10-29).
+    if re.search(r"(?:\bhttp\s*|\bstatus[\s:=]*|\berror\s*)429\b|\btoo many requests\b|"
+                 r"\brate[- ]limit", low):
         return "RATE_LIMITED"
     return "CALL_FAILED"
 

@@ -280,3 +280,51 @@ def test_a_failed_call_maps_to_a_hold_or_a_red_status():
     assert red_exit({"status": "MODEL_RETIRED"}) == 1
     assert red_exit({"status": "RATE_LIMITED"}) == 0
     assert red_exit({"status": "BUDGET_EXHAUSTED"}) == 0
+
+
+@pytest.mark.parametrize(("err", "model"), [
+    # a capability-qualified 404 names a LIVE model (audit MF1, 2026-10-29)
+    ("HTTP 404: No endpoints found for x/m:free that support tool use.", "x/m:free"),
+    # '.' continues an id: gpt-4 is not gpt-4.1, x/model is not x/model.1
+    ("HTTP 404: No endpoints found for openai/gpt-4.1.", "openai/gpt-4"),
+    ("HTTP 404: No endpoints found for x/model.1", "x/model"),
+    # a left boundary: pin "m" is not "other/m"
+    ("HTTP 400: other/m is not a valid model ID", "m"),
+])
+def test_a_refusal_that_does_not_retire_this_exact_id(err: str, model: str) -> None:
+    assert not llm_seat.is_dead_endpoint(err, model)
+
+
+@pytest.mark.parametrize(("err", "model"), [
+    ("HTTP 404: No endpoints found for x/m:free.", "x/m:free"),
+    ("HTTP 404: No endpoints found for x/m:free", "x/m:free"),
+    ('HTTP 404: {"error":{"message":"No endpoints found for x/m:free.","code":404}}', "x/m:free"),
+    ('HTTP 400: "x/m" is not a valid model ID', "x/m"),
+])
+def test_a_refusal_that_retires_this_exact_id(err: str, model: str) -> None:
+    assert llm_seat.is_dead_endpoint(err, model)
+
+
+def test_a_429_is_the_status_not_any_digits():
+    from libs.ops.deepseek_cycle import call_status
+    assert call_status("HTTP 500: upstream error req_id=ab4291") == "CALL_FAILED"
+    assert call_status("HTTP 429: Too Many Requests") == "RATE_LIMITED"
+
+
+def test_the_vendor_lock_refuses_a_same_slug_distill(monkeypatch):
+    monkeypatch.setattr(llm_seat, "_discover", lambda seat, timeout: (
+        "deepseek/deepseek-r1-distill-llama-70b:free", None))
+    seat = llm_seat.Seat(name="deepseek", base_url=OR, key="k", model=DEAD, lock_vendor=True)
+    model, err = llm_seat.discover_model(seat)
+    assert model == "" and err and "vendor-locked" in err
+
+
+def test_a_locked_seat_with_no_replacement_is_labelled_retired(monkeypatch):
+    from libs.ops.deepseek_cycle import call_status
+    monkeypatch.setattr(llm_seat, "_post_with_degrade",
+                        lambda *a, **k: ({}, f"HTTP 404: No endpoints found for {DEAD}."))
+    monkeypatch.setattr(llm_seat, "discover_model", lambda s, timeout=20.0: (
+        "", "no deepseek id listed; this seat is vendor-locked, so nothing else is substituted"))
+    seat = llm_seat.Seat(name="deepseek", base_url=OR, key="k", model=DEAD, lock_vendor=True)
+    _body, err, used = llm_seat._post_live(seat, DEAD, {"model": DEAD}, timeout=1.0)
+    assert used == DEAD and err and call_status(err) == "MODEL_RETIRED"
