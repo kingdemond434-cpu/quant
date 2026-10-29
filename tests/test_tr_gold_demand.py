@@ -167,7 +167,7 @@ def test_key_travels_in_the_header_through_polite_fetch(
     assert len(seen) == 1 and seen[0]["live_input"] is True
     assert seen[0]["headers"] == {G.EVDS_KEY_HEADER: FAKE_KEY}
     assert FAKE_KEY not in seen[0]["url"] and "series=TP.MK.KUL.YTL" in seen[0]["url"]
-    assert rec["parsed"] >= 10
+    assert rec["parsed"] == 9                           # 14 days - 4 weekend - 1 empty
     vaulted = "".join(p.read_text("utf-8", "replace") for p in (tmp_path / "desk").rglob("*")
                       if p.is_file())
     assert FAKE_KEY not in vaulted
