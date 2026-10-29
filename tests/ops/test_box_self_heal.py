@@ -411,6 +411,28 @@ def test_a_fresh_gate_heartbeat_is_left_alone_and_an_absent_one_is_refused(tmp_p
     assert fb.started == []
 
 
+def test_a_fresh_beat_from_runs_refused_by_a_held_mutex_is_still_a_dead_sweep(
+        tmp_path: Path) -> None:
+    """rc 4 + mutex_held_runs keeps the beat fresh while nothing merges; with no gate run alive
+    (the holder died) that is a dead sweep, and with a live holder the wedge rule judges it."""
+    fb = FakeBox(tmp_path, [], beat_age_s=None)
+    fb.beat.write_text(json.dumps({"at": datetime.fromtimestamp(NOW - 60, tz=UTC).isoformat(),
+                                   "rc": 4, "mutex_held_runs": 5}), "utf-8")
+    doc = bsh.run(box=fb.box(), now=NOW, report=tmp_path / "r.json",
+                  ledger=tmp_path / "l.jsonl", state=tmp_path / "s.json")
+    assert fb.started == ["Quant-WorkflowGate"]
+    assert rows(doc, "workflow_gate_restart")[-1]["verdict"] == "STARTED"
+    (tmp_path / "b").mkdir()
+    fb2 = FakeBox(tmp_path / "b", _gate_tree(age_s=10 * MIN), beat_age_s=None)
+    fb2.beat.write_text(json.dumps({"at": datetime.fromtimestamp(NOW - 60, tz=UTC).isoformat(),
+                                    "rc": 4, "mutex_held_runs": 5}), "utf-8")
+    doc = bsh.run(box=fb2.box(), now=NOW, report=tmp_path / "r2.json",
+                  ledger=tmp_path / "l2.jsonl", state=tmp_path / "s2.json")
+    assert fb2.started == []
+    held = rows(doc, "workflow_gate_restart")[0]
+    assert held["verdict"] == "RUN_IN_PROGRESS" and held["mutex_held_runs"] == 5
+
+
 # ------------------------------------------------------------------------------- the report
 def test_a_quiet_pass_is_ok_and_the_report_carries_the_table(tmp_path: Path) -> None:
     fb = FakeBox(tmp_path, [], beat_age_s=60)

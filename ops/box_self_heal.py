@@ -110,7 +110,8 @@ PROGRESS_MAX_GAP_S = 30 * 60
 
 #: Gate restarts: the first may happen once the heartbeat is GATE_STALE_S old; each later one
 #: waits twice as long as the one before; never more than MAX_RESTARTS_PER_DAY per UTC day.
-GATE_STALE_S = 30 * 60
+GATE_CADENCE_S = 10 * 60
+GATE_STALE_S = 3 * GATE_CADENCE_S
 RESTART_BACKOFF_S = 30 * 60
 MAX_RESTARTS_PER_DAY = 4
 
@@ -670,6 +671,7 @@ class Pass:
 
     def gate_restart_rule(self, rule: Rule) -> None:
         beat = self.box.gate_beat
+        doc: Any = None
         try:
             doc = json.loads(beat.read_text("utf-8-sig"))
             at = _parse_iso(doc.get("at")) if isinstance(doc, dict) else None
@@ -686,9 +688,18 @@ class Pass:
                 self.red(rule.key, "UNMEASURED", f"{beat.name} is unreadable; nothing done")
                 return
         age = self.now - at
+        # A FRESH BEAT IS NOT A SWEEP (workflow_gate.ps1, 2026-10-29): a run refused by a held
+        # mutex stamps rc 4 and `mutex_held_runs`, so the beat stays fresh while nothing merges.
+        # Its age as a SWEEP is at least the held runs times the 10-minute cadence. A live holder
+        # is judged by the workflow_gate rule; this only fires when no gate run is alive at all.
+        held = 0
+        if isinstance(doc, dict) and doc.get("rc") == 4:
+            with contextlib.suppress(TypeError, ValueError):
+                held = max(0, int(doc.get("mutex_held_runs") or 0))
+        age = max(age, held * GATE_CADENCE_S)
         last = max(self.restarts) if self.restarts else None
         facts = {"heartbeat_age_s": round(age), "stale_after_s": GATE_STALE_S,
-                 "last_restart": _iso(last) if last else None}
+                 "mutex_held_runs": held, "last_restart": _iso(last) if last else None}
         if last is not None:
             facts["restart_proved"] = at > last
         if age <= GATE_STALE_S:
