@@ -55,6 +55,8 @@ ROUTES: list[tuple[str, object]] = [
     ("example-ir.jp/ir/library/2026q1", "ir_doc_q1.synthetic.html"),
     ("example-ir.jp/ir/2025q4", "ir_doc_q4.synthetic.html"),
     ("example-ir.jp/ir/", "ir_page.synthetic.html"),
+    # robots read before the gtrends route (audit 0b66b08de MF5): an open file allows it
+    ("trends.google.com/robots.txt", lambda: b"User-agent: *\nDisallow: /search\n"),
     ("trends.google.com/trends/api/explore", "trends_explore.synthetic.txt"),
     ("trends.google.com/trends/api/widgetdata", "trends_multiline.synthetic.txt"),
     ("disclosures-clerk.house.gov", _house_zip),

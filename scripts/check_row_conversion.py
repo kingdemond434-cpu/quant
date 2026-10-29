@@ -57,8 +57,16 @@ COMPILER_REPORT = DESK / "data" / "hypotheses" / "miner_candidates.json"
 TERMINAL_CELL = ("EXACT_RECIPE", "STRUCTURED_COT", "STRUCTURED_EVENT", "STRUCTURED_CARRY",
                  "STRUCTURED_LEAD_LAG", "STRUCTURED_CROSS_ASSET_RESIDUAL",
                  "STRUCTURED_RELATIVE_VALUE", "STRUCTURED_CALENDAR", "STRUCTURED_HYPOTHESIS",
-                 "STRUCTURED_CB_SPEECH", "STRUCTURED_TRACK_RECORD", "TEXT_EXTRACTED")
-TERMINAL_REFUSAL = ("OPERATIONAL_ROW", "EMPTY_CAPTURE")
+                 "STRUCTURED_CB_SPEECH", "STRUCTURED_TRACK_RECORD", "TEXT_EXTRACTED",
+                 "STRUCTURED_ALT_STATE")
+#: The alt seats' named refusals (research/alt_seat_cells.py REFUSALS): a constant 13F notice,
+#: an impossible survey reading, a share CFD the two-lane mandate keeps off a statistical family.
+TERMINAL_REFUSAL = ("OPERATIONAL_ROW", "EMPTY_CAPTURE", "ALT_SEAT_NO_INFORMATION",
+                    "ALT_SEAT_IMPOSSIBLE_READING", "ALT_SEAT_LANE_EVENT_ONLY")
+#: PENDING, not owed: an alt-seat reading already written into its seat's PIT series, whose
+#: column has too short a history for the conditioner's z-score. Its cell is minted the pass the
+#: column reaches `alt_seat_cells.MIN_POINTS`; deepening it would extract a rule that is not there.
+PENDING = ("SERIES_ACCRUING",)
 #: NOT terminal. Work, waiting to be done, and the number that must ratchet DOWN.
 BACKLOG = ("NEEDS_SYMBOL_EXTRACTION", "NEEDS_EXACT_RULE_EXTRACTION")
 
@@ -268,6 +276,8 @@ def audit(limit: int | None = None) -> dict[str, Any]:
             p["invalid_cells"] += len(c) - good
             if d in TERMINAL_REFUSAL or d == "BANNED_FAMILY":
                 p["valid_refusals"] += 1
+            elif d in PENDING:
+                pass
             else:
                 # Every evidence-bearing row is convertible.  It is converted only when at
                 # least one fully specified AlphaCell exists; a disposition label alone cannot

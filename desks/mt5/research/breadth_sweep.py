@@ -237,6 +237,56 @@ def _banned(family: str) -> bool:
         return False
 
 
+#: Families whose whole grid is PREREGISTERED and charged by their own producer, so a default
+#: sweep here would charge the same hypothesis a second time (audit 2026-10-14, MF4; audit
+#: 0b66b08de, MF3). An explicit, named set. A family joins by name when its own preregistered
+#: grid is shown to contain this sweep's default cell.
+PREREGISTERED_ELSEWHERE: dict[str, str] = {
+    "idio_volume_reversal": "F1's 21 cells are preregistered and charged once by "
+                            "market_ecology.donate_f1 (docs/research/"
+                            "F1_IDIO_VOLUME_PREREGISTRATION.md)",
+    "style_premia": "style_premia_sweep charges its whole (instrument x style/combo x entry x "
+                    "hold) grid itself, and this sweep's default H1 cell IS that grid's "
+                    "(trend, entry 1.0, hold 24) cell -- identical signals, 317/317 on XAUUSD "
+                    "and 306/306 on EURUSD (audit 0b66b08de p3); sweeping it here charged it "
+                    "twice",
+}
+
+#: Families of `orthogonal_sweep.NOT_SOURCED_HERE` that produce NO signal at their default
+#: parameters, so a default cell is void: it tests nothing and can only inflate the trial count
+#: and the coverage count (audit 0b66b08de, MF1 family by family: 0 signals through the
+#: gauntlet's `resolve` path, re-measured 2026-10-14 on XAUUSD and EURUSD H1). Their hypotheses
+#: are minted by the producer that names their input. MISSED GROWTH: none -- a cell with zero
+#: signals has no trade, so setting it aside loses no test. A family leaves this set (and is swept
+#: again) the moment its defaults fire; `test_breadth_void_defaults` re-measures that on fixture
+#: bars.
+_VOID = ("0 signals at default parameters (audit 0b66b08de p2): its input is named by its own "
+         "producer -- {why}")
+VOID_AT_DEFAULTS: dict[str, str] = {
+    "alt_conditioned": _VOID.format(why="the alt-seat regime series comes from alt_seat_cells"),
+    "alt_series_momentum": _VOID.format(why="the alt series comes from alt_seat_cells"),
+    "crisis_only_class_defensive": _VOID.format(why="the class peer set comes from the "
+                                                     "cross-sectional class-book runner"),
+    "cross_sectional_class_low_vol": _VOID.format(why="the class peer set comes from the "
+                                                       "cross-sectional class-book runner"),
+    "cross_sectional_class_momentum": _VOID.format(why="the class peer set comes from the "
+                                                        "cross-sectional class-book runner"),
+    "cross_sectional_class_reversal": _VOID.format(why="the class peer set comes from the "
+                                                        "cross-sectional class-book runner"),
+    "cross_sectional_class_value": _VOID.format(why="the class peer set comes from the "
+                                                     "cross-sectional class-book runner"),
+    "lead_lag_class_catchup": _VOID.format(why="the class peer set comes from the "
+                                                "cross-sectional class-book runner"),
+    "exit_operated": _VOID.format(why="the base cell is named by the exit operator's producer"),
+    "exogenous_conditioner": _VOID.format(why="the exogenous series is named by its seat"),
+    "regime_split": _VOID.format(why="the base family and regime come from regime_split_miner"),
+    "triangle": _VOID.format(why="the legs come from triangle_miner.closed_triangles"),
+    "world_macro_state": _VOID.format(why="the world series comes from world_macro_proposer"),
+    "lead_lag": ("UNRUNNABLE at defaults (audit 0b66b08de p2): no driver series -- the driver "
+                 "and lag are measured by cross_asset_graph, which mints its own cells"),
+}
+
+
 def default_families() -> tuple[dict[str, str], dict[str, str]]:
     """(sweepable, blocked): EVERY registered family the desk can call on bars alone, with its
     default parameters, and the ones it cannot with the reason (principal 2026-09-16: "make them
@@ -264,6 +314,12 @@ def default_families() -> tuple[dict[str, str], dict[str, str]]:
     blocked: dict[str, str] = {}
     for name, fn in sorted(names.items()):
         if name in READY:
+            continue
+        if name in PREREGISTERED_ELSEWHERE:  # charged once by its own preregistered grid
+            blocked[name] = f"preregistered elsewhere: {PREREGISTERED_ELSEWHERE[name]}"
+            continue
+        if name in VOID_AT_DEFAULTS:         # no signal at defaults: a void cell, not a test
+            blocked[name] = f"void at defaults: {VOID_AT_DEFAULTS[name]}"
             continue
         if name in NOT_A_FAMILY:
             blocked[name] = "a constructor that builds families from a spec, not a family"

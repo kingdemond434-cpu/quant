@@ -785,6 +785,10 @@ $reportPaths = @(
     # the resident judge's heartbeat (2026-10-13): sweeps, last exit code, backoff, uptime --
     # the only off-box evidence of whether the judge is running between its verdicts
     "desks/mt5/reports/JUDGE_RESIDENT.json",
+    # the alt seats' conversion (convertible vs converted per seat, refusals by name) and the
+    # Form 4 lane's fetch/cluster/cell summary (2026-10-14)
+    "desks/mt5/reports/ALT_SEAT_CELLS.json",
+    "desks/mt5/reports/FORM4_LANE.json",
     # the judge stall pager's last reading (2026-10-21): open incidents, page outcome, and by its
     # age whether the pager itself is still running on MT5-BoxHeartbeat
     "desks/mt5/reports/JUDGE_STALL.json",

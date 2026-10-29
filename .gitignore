@@ -522,6 +522,8 @@ desks/mt5/data/hypotheses/prescreen_sources_state.json.*.tmp
 !desks/mt5/reports/FORWARD_CLOCK_LEDGER.json
 !desks/mt5/reports/shadow/precert_shadow_state.json
 !desks/mt5/reports/LEDGER_VIEW_ADOPTION.json
+!desks/mt5/reports/ALT_SEAT_CELLS.json
+!desks/mt5/reports/FORM4_LANE.json
 !desks/mt5/reports/LOGIN_FENCE.json
 # the judge speed switch's daily drift monitor (daily_cycle:vector_families_check, 2026-10-28)
 !desks/mt5/reports/VECTOR_FAMILIES_CHECK.json
@@ -533,6 +535,12 @@ desks/mt5/data/VECTOR_FAMILIES_MISMATCH.json.tmp
 desks/mt5/data/hypotheses/unrunnable_specs.json
 desks/mt5/data/hypotheses/unrunnable_specs.json.tmp
 desks/mt5/data/hypotheses/conversion_handoff.json
+# The Form 4 lane's box state (research/form4_lane.py): parsed transactions, the cluster store the
+# insider_cluster_drift family reads, and the fetch cursor. Read on the box; its summary is
+# reports/FORM4_LANE.json. And F1's donation ledger (market_ecology.donate_f1).
+desks/mt5/data/form4/
+desks/mt5/data/f1_idio_volume_state.json
+desks/mt5/data/google_trends_block.json
 # judge_coverage's one-pass transaction (desks/mt5/research/judge_coverage.py, `_Txn`): staged
 # copies of judge-owned state (bank, handoff, priors, report, ratchet), the commit manifests,
 # a set-aside unreadable manifest, and the atomic-write siblings. Transient box state, written

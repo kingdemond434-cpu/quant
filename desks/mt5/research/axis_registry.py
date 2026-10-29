@@ -185,7 +185,7 @@ _FAMILY_GROUPS: dict[str, str] = {
     # The Alpha Capture substitute (2026-09-30): a dated public view ABOUT the instrument drifts
     # because holders under-react (trend_persistence's payer); another market's view leads the
     # instrument because the slow venue reprices late (cross_market_lead's payer).
-    "trend_persistence event market": "analyst_revision_drift",
+    "trend_persistence event market": "analyst_revision_drift insider_cluster_drift",
     "cross_market_lead event market": "analyst_cross_market_lead",
     # The class books of 2026-09-30 (`mt5desk.families_cross_sectional`): each leg is ranked
     # against its own peer class on the same date.
@@ -207,7 +207,9 @@ _FAMILY_GROUPS: dict[str, str] = {
     "execution_microstructure microstructure limit": "execution_state moat_spread_window"
                                                      " spread_state",
     "gamma_hedging_state microstructure market": "liquidity_gamma_reversal",
-    "inventory_shock microstructure market": "volume_spike",
+    # F1 (2026-10-14): a tick-volume burst peculiar to one instrument, net of the cross-sectional
+    # activity factor and the hour-of-week rhythm, is inventory the dealer lays off -- faded.
+    "inventory_shock microstructure market": "volume_spike idio_volume_reversal",
     # NO MECHANISM NAMED, AND THAT IS THE MEASUREMENT. `discovered` is the desk's own generated
     # family and dominates the docket; `generic`/`formula`/`ensemble`/`joint_genome` are spec
     # constructors. All map to UNKNOWN so the count is visible rather than assumed away.

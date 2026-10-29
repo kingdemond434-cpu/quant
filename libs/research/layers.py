@@ -274,6 +274,10 @@ LEG_LAYER: dict[str, str] = {
     "alpha_capture": "information",
     # free public alt-data proxies turned into PIT series: what the desk knows before it predicts
     "alt_proxies": "information",
+    # the alt seats' readings as PIT series, and Form 4 filings as clusters + a breadth series:
+    # both turn a public source into a dated input the families condition on (2026-10-14)
+    "alt_seat_cells": "information",
+    "form4_lane": "information",
     "counterexample_agent": "meta",
     "search_paradigm_census": "meta",
     "source_registry": "information", "synthetic_regimes": "meta",

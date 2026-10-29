@@ -1257,6 +1257,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
                      # free public POS/card/location/satellite proxies as PIT series
                      "alt_proxies",
+                     # the alt seats' readings as PIT series the compiler mints cells from
+                     "alt_seat_cells",
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
@@ -1337,7 +1339,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # the macro-conditioned dip sweep, read point-in-time through the store
                      "macro_conditioned_sweep",
                      # the Alpha Capture substitute: public analyst views -> PIT events
-                     "alpha_capture"), "macro"),
+                     "alpha_capture",
+                     # Form 4 insider purchase clusters -> index breadth state + share-CFD
+                     # event lane (research/form4_lane.py)
+                     "form4_lane"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "why_not_report", "state_replay_audit",
                      "excursions", "exit_accounts",
@@ -2127,6 +2132,12 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "event_surprise": 400,
     # Stops itself at --budget-s 300 (60% of it collecting); the cap sits above it.
     "alpha_capture": 420,
+    # form4_lane stops its fetch at 80% of --budget-s 300 (round-robin issuers, 8 req/s) and then
+    # scores and writes; the cap sits above its own budget.
+    "form4_lane": 420,
+    # alt_seat_cells reads every seat file once, writes six small CSVs and one report, and reads
+    # the compiler's last output for the identities it minted: seconds, not minutes.
+    "alt_seat_cells": 300,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
     "counterexample_agent": 700,
@@ -3989,6 +4000,14 @@ def main() -> None:
     # E8 reads this fail-closed input every five minutes. The full Tier S research pass
     # runs much later and can hit its budget before reaching the review/door organs.
     tdoor = _costed("tier_s_door", tier_s_door)
+    # THE ALT SEATS' SERIES BEFORE THE CATCH-UP COMPILE (2026-10-14). youtube, sec_edgar,
+    # shipping, fear_greed, aaii and google_trends wrote rows every hour and emitted zero cells:
+    # a reading is not a rule. `alt_seat_cells` writes each seat's PIT series to the lake and the
+    # compiler (next line) mints exogenous_conditioner cells from it, so a row that arrived this
+    # hour is a cell this hour. Fenced by check_conversion_debt (a seat holding convertible rows
+    # past one cycle is RED); the report is reports/ALT_SEAT_CELLS.json.
+    asc = _costed("alt_seat_cells", lambda: _producer(
+        "alt_seat_cells", "research/alt_seat_cells.py", "--once"))
     # Drain existing intake before the long research legs. The later pipeline still
     # compiles and merges discoveries generated during this pass.
     _costed("intake_catchup", catch_up_intake)
@@ -4278,6 +4297,13 @@ def main() -> None:
     # inside the organ, so an hourly leg fetches only what is due.
     acap = _costed("alpha_capture", lambda: _producer(
         "alpha_capture", "research/alpha_capture.py", "--once", "--budget-s", "300"))
+    # THE FORM 4 LANE (2026-10-14): `libs/research/form4.py` was imported by its test and nothing
+    # else. Form 4 filings for the Fusion US share CFDs (QUANT_EDGAR_UA, never printed), scored
+    # into P-code insider clusters dated at SEC acceptance, published as the index breadth series
+    # `form4_breadth` (exogenous_conditioner on US500/NAS100/US2000) and the share-CFD event lane
+    # (insider_cluster_drift), each cell donated once. Report: reports/FORM4_LANE.json.
+    f4l = _costed("form4_lane", lambda: _producer(
+        "form4_lane", "research/form4_lane.py", "--once", "--budget-s", "300"))
     # THE ADVERSARY THAT ATTACKS A HYPOTHESIS BEFORE A TRIAL IS SPENT ON IT (W6): placebo
     # symbol, placebo date, sign flip, neighbouring parameter, excluded window. It records
     # evidence on the registry row and changes no status: the sealed gauntlet and the
@@ -6106,7 +6132,8 @@ def main() -> None:
                     "engine_registry": engr,
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
-                    "event_surprise": esur, "alpha_capture": acap,
+                    "event_surprise": esur, "alpha_capture": acap, "form4_lane": f4l,
+                    "alt_seat_cells": asc,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
