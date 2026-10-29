@@ -157,7 +157,468 @@ REPLACEMENTS: dict[str, str] = {
                  "reads a causal graph frozen since 2026-09-08 (causal_graph leg)",
     "literature": "academic -- academic_miner and seed_miners arxiv_qfin, the same "
                   "papers-with-a-mechanism ground; literature was a one-off 2026-09-16 hand seed",
+    # THE SEATS WITH NO WRITER LEFT, measured 2026-10-29 (PRODUCER_YIELD 11:43Z, intel-ship/send
+    # history, and a grep of the tree for each seat's writer). Each names the live organ on the
+    # same ground; none had a declared successor, which is why they read NONE DECLARED.
+    "recombinants": "alpha_recombination -- research/alpha_recombination.py, the box leg, writes "
+                    "the alpha_recombination seat; `recombinants` was the retired side_channels "
+                    "writer's seat, last shipped from the VPS 2026-10-14",
+    "anomalies": "anomaly_factory -- the same anomaly_miner.scan over the desk's bars, deflated "
+                 "and donated; `anomalies` was the VPS discovery cycle's raw dump",
+    "lab_crossasset": "dislocation_lab -- the cross-asset shock ground; no writer of this seat "
+                      "is left in the tree",
+    "lab_microstructure": "microstructure_miner -- the H1 spread/tick-volume surfaces, now on the "
+                          "box's proposer_rotation; no writer of this seat is left in the tree",
+    "mechanism_genome": "alpha_genome -- the mechanism genome is a field on every alpha_genome "
+                        "row (alpha_genome.py:150); no writer of this seat is left in the tree",
+    "frontier": "global_frontier -- the frontier_supervisor's live seat (scout_roster names both); "
+                "this one holds a single 2026-09-12 file from the VPS",
+    "firm_mining": "fund_playbook -- the declared institutional mechanism claims; firm_mining was "
+                   "a one-off 2026-09-27 hand seed (scripts/max_audit.py)",
 }
+
+
+# ------------------------------------------------ WHY A PRODUCER IS DEAD (2026-10-29, principal)
+#
+# THE SYMPTOM IS NOT THE CAUSE. PRODUCER_YIELD of 2026-10-29T11:43Z read 91 of 137 producers DEAD
+# and 10 UNMEASURED, and 75 of the dead said "replacement: NONE DECLARED" -- which names the
+# symptom and leaves the remedy to whoever reads it. Read against the box's own artifacts the
+# hundred-odd rows had about six causes, each with a different fix, so every DEAD or UNMEASURED
+# row now carries exactly one `cause`, the `cause_detail` that named it and the `cause_evidence`
+# it was read from. The vocabulary is fixed; nothing here guesses, and a producer whose evidence
+# this host cannot read is UNMEASURED_CAUSE (L1.28a), never the likeliest-looking cause.
+#
+#   BACKPRESSURE_GATE   its leg stood down on a judge-backlog / admission / memory gate. A
+#                       judge-capacity ask, never a reason to loosen trial charging or cut mining.
+#   FETCH_FAILURE       its ground refuses it: a recorded wall (robots, 403, anti-bot), a blocked
+#                       source, a platform whose last fetch failed and never yielded. These are
+#                       person-released and are NEVER bypassed here.
+#   KEY_MISSING         it needs a credential this host does not hold (existence only; no key is
+#                       ever read, printed or copied).
+#   SCHEDULE            no clock on THIS host runs it, its clock lives on another host whose
+#                       transport has gone silent, its leg did not run inside the window, or its
+#                       leg was killed at its budget before it wrote.
+#   UPSTREAM_DEAD       it consumes bars or ticks and BARS_STATE says that input is stale.
+#   WRITES_ELSEWHERE    it produces where the seat count does not look. Rescued in place: the row
+#                       becomes PRODUCING with `basis` naming where the output was found.
+#   RETIRED_SUPERSEDED  no clock here, and REPLACEMENTS names the organ that took its ground.
+#   UNMEASURED_CAUSE    clocked here, but nothing this host recorded says which of the above.
+CAUSES: tuple[str, ...] = ("BACKPRESSURE_GATE", "FETCH_FAILURE", "KEY_MISSING", "SCHEDULE",
+                           "UPSTREAM_DEAD", "WRITES_ELSEWHERE", "RETIRED_SUPERSEDED",
+                           "UNMEASURED_CAUSE")
+UNMEASURED_CAUSE = "UNMEASURED_CAUSE"
+#: Bumped whenever the rule changes what a seat verdict means. 3 = seats followed through each
+#: module's SOURCE and declared file aliases, registry cells count as output, and every DEAD or
+#: UNMEASURED row carries a cause from CAUSES.
+SEAT_RULE = 3
+
+HOURLY_CYCLE = DESK / "research" / "hourly_cycle.py"
+HOURLY_DISCOVERY = DESK / "research" / "hourly_discovery.py"
+SEED_MINERS = DESK / "side_channels" / "seed_miners.py"
+MODULE_ROOTS: tuple[Path, ...] = (DESK / "research", DESK / "side_channels")
+COMPUTE_LEDGER = DESK / "data" / "compute_ledger.jsonl"
+#: The ledger is append-only and grows without bound on the box; the classifier needs only the
+#: window, so it reads the TAIL. 64 MB holds weeks of hourly rows at ~600 bytes a row.
+LEDGER_TAIL_BYTES = 64 * 1024 * 1024
+ALT_DATA_YIELD = DESK / "reports" / "ALT_DATA_YIELD.json"
+BLOCKED_SOURCES = DESK / "data" / "intelligence" / "blocked_sources.json"
+BARS_STATE = DESK / "data" / "BARS_STATE.json"
+#: The VPS -> box transport for the VPS's seats (desks/mt5/scripts/intel_ship_adopt.ps1 fetches
+#: it into this dedicated ref on every MT5-IntelShip run).
+SHIP_REF = "refs/remotes/intel-ship/send"
+#: Any other clone sees the same branch under the ordinary remote-tracking name.
+SHIP_REF_FALLBACK = "refs/remotes/origin/intel-ship/send"
+#: An input older than this is stale for UPSTREAM_DEAD. Bars refresh hourly and the tape every few
+#: minutes; a day without either is not a slow feed, it is a dead one.
+UPSTREAM_STALE_H = 24.0
+
+#: A producer whose output lands in ANOTHER seat's directory under its own file prefix. The
+#: seat-name aliases (asia_plane -> asia, ...) are handled in `audit`; this is the finer case,
+#: where the seat is shared and only the file name says who wrote it. deep_forest_miner writes
+#: data/intelligence/world/discoveries_deepforest_*.json (deep_forest_miner.WORLD, line ~1594), so
+#: counting a `deep_forest` seat that does not exist left it UNMEASURED beside 2,490 rows a week.
+SEAT_FILE_ALIASES: dict[str, tuple[str, str]] = {
+    "deep_forest_miner": ("world", "discoveries_deepforest_"),
+}
+
+#: Seats written by a MULTI-SOURCE leg, keyed by the leg that actually runs the writer. A roster
+#: that merely LISTS a seat (scout_roster, producer_breadth) is not its clock, and the productivity
+#: census's `clock` column credits exactly those -- `amarkets` read `hourly_cycle:scout_roster`
+#: while nothing on the box had fetched it since 2026-09-12. tests/test_producer_yield_fence.py
+#: pins `seed_miners` against seed_miners.MINERS and `external_miners` against run_all_miners.
+LEG_SEATS: dict[str, tuple[str, ...]] = {
+    "seed_miners": (
+        "global_frontier", "regional_survivors", "mql5_survivors", "mql5_signals",
+        "myfxbook_outlook", "darwinex", "tradingview_scripts", "fxblue", "collective2",
+        "quantconnect", "forexpeacearmy", "ff_calendar_vintage", "forextsd_cdx", "quant_se",
+        "arxiv_qfin", "bis_speeches", "broker_swaps", "github_topics", "propfirm_boards",
+        # regional_survivor_hunters, called by mine_regional_survivors, writes one seat per
+        # platform plus the FBS tape (regional_survivor_hunters.py:931 and :954)
+        "amarkets", "duplitrade", "equiti_copy", "fbs_tape", "followme_cn", "hfm_pamm",
+        "instaforex_copy", "litefinance", "minfx_jp", "mylivefx_br", "octa_masters",
+        "readitrades_africa", "roboforex_copyfx", "share4you", "trading_latam"),
+    "external_miners": (
+        "youtube", "github", "mql5", "tradingview", "quantconnect", "reddit", "central_banks",
+        "forexfactory", "cot", "sec_edgar", "earnings", "aaii", "fear_greed", "investing",
+        "google_trends", "academic", "correlations", "seasonality", "weather", "shipping",
+        "china", "korea"),
+}
+
+#: Producers that consume the desk's own bars or tape. Declared, because "reads a parquet" is
+#: not visible from outside the organ. With BARS_STATE fresh none of these fire, which is the
+#: point: the classifier only says UPSTREAM_DEAD when the input it names is actually stale.
+UPSTREAM: dict[str, str] = {
+    **dict.fromkeys(("plumbing_miner", "transition_alpha", "weak_signal_compiler",
+                     "style_premia_sweep", "cross_asset_graph", "anomaly_factory",
+                     "tail_alpha_search", "factor_model_coevolution", "alpha_evolution",
+                     "expression_factory", "factor_residual"), "bars"),
+    "microstructure_miner": "bars",
+}
+
+#: Producers that need a credential, and where the credential lives. EXISTENCE ONLY: the file is
+#: stat'ed and the variable tested for being set; neither is ever opened, read or printed.
+KEYED: dict[str, tuple[str, str]] = {
+    "scheduled_chatgpt": ("data/secrets/llm_panel.json", "OPENROUTER_API_KEY"),
+    "kimi": ("data/secrets/llm_panel.json", "OPENROUTER_API_KEY"),
+    "deepseek": ("data/secrets/llm_panel.json", "OPENROUTER_API_KEY"),
+}
+
+#: Seats whose NAME collides with a leg that does not write them. `frontier` is both a dead seat
+#: (one 2026-09-12 VPS file) and the hourly leg running frontier_miner, which writes reports, not
+#: that seat; without this the leg's clean runs would be read as the seat's clock.
+LEG_NAME_COLLISIONS: frozenset[str] = frozenset({"frontier"})
+
+#: Clock spellings that name no schedule on THIS host. systemd units and cron lines are the VPS's
+#: (the trading box runs neither); an import or a library call is not a clock at all.
+_OFF_BOX = (".timer", ".service")
+_OFF_BOX_PREFIX = ("quant-", "systemd:", "cron:", "full-pipeline")
+_NOT_A_CLOCK = ("invoked:", "import:")
+
+
+def seat_of(producer: str, roots: tuple[Path, ...] | None = None) -> str | None:
+    """The seat a module donates into: its own `SOURCE = "..."` (or `SEAT = "..."`), read from the
+    source text so a renamed seat is followed, never imported. None when it declares neither."""
+    import re
+    for root in roots or MODULE_ROOTS:
+        try:
+            src = (root / f"{producer}.py").read_text(encoding="utf-8")
+        except OSError:
+            continue
+        m = re.search(r'^(?:SOURCE|SEAT)\s*(?::\s*str\s*)?=\s*["\']([A-Za-z0-9_]+)["\']', src,
+                      re.M)
+        return m.group(1) if m else None
+    return None
+
+
+def seats_written_by(stem: str, roots: tuple[Path, ...] | None = None) -> set[str]:
+    """Every seat a module names as its own: its `SOURCE`/`SEAT` constant and any module-level
+    output constant pointing into `intelligence/<seat>`. Read, never imported. This is how
+    `mathlab` is found to be math_lab.py's seat and `factor_residual` factor_residual_engine.py's."""
+    import re
+    for root in roots or MODULE_ROOTS:
+        try:
+            src = (root / f"{stem}.py").read_text(encoding="utf-8")
+        except OSError:
+            continue
+        out = {m.group(1) for m in re.finditer(
+            r'^(?:SOURCE|SEAT)\s*(?::\s*str\s*)?=\s*["\']([A-Za-z0-9_]+)["\']', src, re.M)}
+        # An OUTPUT path is a module-level constant named for output (INTEL, _OUT, SEAT_DIR, ...).
+        # An inline `intelligence / "x"` is as often a READ (tier_s reads alpha_evolution's seat),
+        # and a reader is not a clock for the seat it reads.
+        out |= {m.group(1) for m in re.finditer(
+            r'^_?[A-Z_]*(?:INTEL|OUT|SEAT_DIR|OUT_DIR)\s*=\s*[^\n]*["\']intelligence["\']\s*/\s*'
+            r'["\']([A-Za-z0-9_]+)["\']', src, re.M)}
+        return out
+    return set()
+
+
+def box_legs(src: str | None = None) -> dict[str, set[str]]:
+    """producer-or-module -> the hourly_cycle LEG names (the `_costed` names the compute ledger
+    keys on) that run it. Read from hourly_cycle's text, never imported.
+
+    Three spellings, because the cycle uses all three:
+        _costed("leg", lambda: _producer("name", "research/module.py", ...))
+        def fn(): ... return _producer("name", "research/module.py")   +   _costed("leg", fn)
+        _costed("leg", fn)  where the leg name IS the producer
+    """
+    import re
+    if src is None:
+        try:
+            src = HOURLY_CYCLE.read_text(encoding="utf-8")
+        except OSError:
+            return {}
+    out: dict[str, set[str]] = {}
+
+    def _add(key: str, leg: str) -> None:
+        out.setdefault(key, set()).add(leg)
+
+    for m in re.finditer(r'_costed\(\s*"([A-Za-z0-9_]+)"', src):
+        _add(m.group(1), m.group(1))
+    lam = re.compile(r'_costed\(\s*"([A-Za-z0-9_]+)",\s*lambda[^:]*:\s*_producer\(\s*'
+                     r'"([A-Za-z0-9_]+)",\s*"[A-Za-z0-9_/]*?([A-Za-z0-9_]+)\.py"', re.S)
+    for m in lam.finditer(src):
+        _add(m.group(2), m.group(1))
+        _add(m.group(3), m.group(1))
+    fn_prod: dict[str, tuple[str, str]] = {}
+    for m in re.finditer(r'^def ([A-Za-z0-9_]+)\(\)[^\n]*\n(.*?)(?=^def |\Z)', src, re.S | re.M):
+        p = re.search(r'_producer\(\s*"([A-Za-z0-9_]+)",\s*"[A-Za-z0-9_/]*?([A-Za-z0-9_]+)\.py"',
+                      m.group(2))
+        if p:
+            fn_prod[m.group(1)] = (p.group(1), p.group(2))
+    for m in re.finditer(r'_costed\(\s*"([A-Za-z0-9_]+)",\s*([A-Za-z0-9_]+)\s*\)', src):
+        if m.group(2) in fn_prod:
+            name, stem = fn_prod[m.group(2)]
+            _add(name, m.group(1))
+            _add(stem, m.group(1))
+    return out
+
+
+def box_rotation(path: Path | None = None) -> set[str]:
+    """hourly_discovery.BOX_ROTATION, read from the module's text (the leg `proposer_rotation`)."""
+    import ast
+    try:
+        tree = ast.parse((path or HOURLY_DISCOVERY).read_text(encoding="utf-8"))
+    except (OSError, SyntaxError):
+        return set()
+    for node in tree.body:
+        tgt = node.target if isinstance(node, ast.AnnAssign) else (
+            node.targets[0] if isinstance(node, ast.Assign) and node.targets else None)
+        if isinstance(tgt, ast.Name) and tgt.id == "BOX_ROTATION":
+            val = getattr(node, "value", None)
+            if isinstance(val, (ast.Tuple, ast.List)):
+                return {e.value for e in val.elts
+                        if isinstance(e, ast.Constant) and isinstance(e.value, str)}
+    return set()
+
+
+def source_walls(path: Path | None = None) -> dict[str, str]:
+    """seed_miners.SOURCE_WALLS as {source: verdict}, read from the text (importing seed_miners
+    imports every miner). A wall is a recorded refusal -- robots, 403, anti-bot -- and the miner
+    re-probes it on its own cadence; it is evidence here, never something this fence lifts."""
+    import re
+    try:
+        s = (path or SEED_MINERS).read_text(encoding="utf-8")
+        i = s.index("SOURCE_WALLS")
+        j = s.index("\n}\n", i)
+    except (OSError, ValueError):
+        return {}
+    return {m.group(1): m.group(2) for m in re.finditer(
+        r'^    "([A-Za-z0-9_]+)": \{\s*\n\s*"verdict": "([A-Z_0-9]+)"', s[i:j], re.M)}
+
+
+def _ledger_last(window_h: float, path: Path | None = None) -> dict[str, Any]:
+    """{"available": bool, "last": {leg: {"at", "outcome"}}} from the compute ledger's tail.
+
+    `available` is False when the ledger is absent or holds no row inside the window: then no
+    leg can be convicted of not running, because the silence is the ledger's (L1.28a).
+    """
+    p = path or COMPUTE_LEDGER
+    out: dict[str, Any] = {"available": False, "last": {}, "path": _rel(p)}
+    cutoff = (datetime.now(UTC) - timedelta(hours=window_h)).isoformat(timespec="seconds")
+    try:
+        with open(p, "rb") as fh:
+            fh.seek(0, os.SEEK_END)
+            size = fh.tell()
+            fh.seek(max(0, size - LEDGER_TAIL_BYTES))
+            blob = fh.read().decode("utf-8", errors="replace")
+    except OSError:
+        return out
+    last: dict[str, dict[str, str]] = {}
+    seen_in_window = False
+    for line in blob.splitlines():
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(r, dict):
+            continue
+        at = str(r.get("at") or r.get("finished_at") or "")
+        leg = str(r.get("run") or "")
+        if not leg or at < cutoff:
+            continue
+        seen_in_window = True
+        if at >= last.get(leg, {}).get("at", ""):
+            last[leg] = {"at": at, "outcome": str(r.get("outcome") or "")[:200]}
+    out.update({"available": seen_in_window, "last": last})
+    return out
+
+
+def _ship_state(root: Path | None = None) -> dict[str, Any]:
+    """The VPS -> box transport's last commit time, from the local ref. No network: the ref is
+    whatever MT5-IntelShip last fetched. UNMEASURED (None) when git or the ref is absent."""
+    import subprocess
+    for ref in (SHIP_REF, SHIP_REF_FALLBACK):
+        try:
+            r = subprocess.run(["git", "log", "-1", "--format=%cI", ref, "--"],
+                               cwd=str(root or ROOT), capture_output=True, text=True,
+                               timeout=20, check=False)
+        except (OSError, subprocess.SubprocessError):
+            continue
+        stamp = (r.stdout or "").strip() if r.returncode == 0 else ""
+        if stamp:
+            return {"ref": ref, "last_commit": stamp}
+    return {"ref": SHIP_REF, "last_commit": None}
+
+
+def _age_h(stamp: Any) -> float | None:
+    try:
+        t = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=UTC)
+    return (datetime.now(UTC) - t).total_seconds() / 3600.0
+
+
+def cause_evidence(window_days: float, cells: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Everything `cause_of` reads, gathered once per audit. Every reader degrades to empty."""
+    alt = _read(ALT_DATA_YIELD, default={})
+    plats = ((alt.get("platforms") or {}).get("rows_by_platform") or {}) if isinstance(
+        alt, dict) else {}
+    blocked = _read(BLOCKED_SOURCES, default={})
+    bars = _read(BARS_STATE, default={})
+    clocks: dict[str, set[str]] = {}
+    for r in ((cells or {}).get("producers") or []):
+        if isinstance(r, dict) and r.get("clock"):
+            clocks.setdefault(_base(str(r.get("key") or r.get("producer") or "")),
+                              set()).add(str(r["clock"]))
+    seat_leg: dict[str, set[str]] = {}
+    for leg, seats in LEG_SEATS.items():
+        for s in seats:
+            seat_leg.setdefault(s, set()).add(leg)
+    legs = box_legs()
+    for p in box_rotation():
+        legs.setdefault(p, set()).add("proposer_rotation")
+    # REVERSE: the seats each clocked module writes, so a SEAT row (mathlab, factor_residual)
+    # finds the leg that runs its writer even though the leg is named after the module.
+    for stem, ls in list(legs.items()):
+        for seat in seats_written_by(stem):
+            if seat != stem:
+                seat_leg.setdefault(seat, set()).update(ls)
+    return {
+        "window_h": window_days * 24.0,
+        "legs": legs,
+        "seat_legs": seat_leg,
+        "clocks": clocks,
+        "ledger": _ledger_last(window_days * 24.0),
+        "ship": _ship_state(),
+        "walls": source_walls(),
+        "platforms": plats if isinstance(plats, dict) else {},
+        "blocked": ((blocked.get("sources") or {}) if isinstance(blocked, dict) else {}),
+        "bars": (bars.get("summary") or {}) if isinstance(bars, dict) else {},
+    }
+
+
+def _base(key: str) -> str:
+    """`miner:qd_frontier:explorer` -> `qd_frontier`; `leg:x`, `seat:x`, `daily:x` -> `x`."""
+    k = str(key)
+    for pre in ("miner:", "seat:", "leg:", "daily:", "fence:"):
+        if k.startswith(pre):
+            k = k[len(pre):]
+            break
+    return k.split(":", 1)[0]
+
+
+def _cause(cause: str, detail: str, evidence: str, **extra: Any) -> dict[str, Any]:
+    assert cause in CAUSES, cause
+    return {"cause": cause, "cause_detail": detail, "cause_evidence": evidence, **extra}
+
+
+def cause_of(name: str, seat: str | None, ev: dict[str, Any]) -> dict[str, Any]:
+    """One named cause from CAUSES for a DEAD/UNMEASURED producer, with its evidence. Never raises.
+
+    Tested in a fixed order, most binding first: a retired producer needs no clock; a walled
+    ground stays dark however often it is clocked; a stale input starves a producer that runs.
+    Only then is the CLOCK asked about, and a clock that ran cleanly without writing is named
+    UNMEASURED_CAUSE with what it did, rather than dressed as any of the others.
+    """
+    keys = {name} | ({seat} if seat else set())
+    legs = set().union(*(ev["legs"].get(k, set()) for k in keys),
+                       *(ev["seat_legs"].get(k, set()) for k in keys))
+    clocks = set().union(*(ev["clocks"].get(k, set()) for k in keys))
+    off_box = sorted(c for c in clocks if c.endswith(_OFF_BOX) or c.startswith(_OFF_BOX_PREFIX))
+    box_tasks = sorted(c for c in clocks if c.startswith("MT5-"))
+    rep = REPLACEMENTS.get(name) or (REPLACEMENTS.get(seat) if seat else None)
+
+    if name in LEG_NAME_COLLISIONS:
+        legs = set()
+    if rep and not legs and not box_tasks:
+        return _cause("RETIRED_SUPERSEDED", "REPLACEMENT_DECLARED",
+                      "no clock on this host runs it; REPLACEMENTS names its successor",
+                      replacement=rep)
+    keyed = KEYED.get(name)
+    if keyed:
+        f, var = keyed
+        if not (ROOT / f).exists() and not os.environ.get(var):
+            return _cause("KEY_MISSING", "CREDENTIAL_ABSENT",
+                          f"neither {f} nor ${var} is present on this host (existence checked; "
+                          "nothing read)")
+    for k in sorted(keys):
+        wall = ev["walls"].get(k)
+        if wall:
+            return _cause("FETCH_FAILURE", f"SOURCE_WALL:{wall}",
+                          f"seed_miners.SOURCE_WALLS['{k}'] = {wall}: a recorded refusal the "
+                          "miner re-probes itself; person-released, never bypassed here")
+        plat = ev["platforms"].get(k)
+        if isinstance(plat, dict):
+            state = str(plat.get("last_state") or "")
+            best = plat.get("best_rows")
+            if state and state != "ok" and not best:
+                return _cause("FETCH_FAILURE", f"PLATFORM:{state}",
+                              f"ALT_DATA_YIELD: last_state {state} at {plat.get('last_attempt')}, "
+                              f"best_rows {best}: the ground has never yielded a record")
+        blk = ev["blocked"].get(k)
+        if isinstance(blk, dict):
+            return _cause("FETCH_FAILURE", f"BLOCKED:{blk.get('diagnosis') or 'BLOCKED'}",
+                          f"blocked_sources.json: {blk.get('diagnosis')} -- "
+                          f"{str(blk.get('fix_hint') or '')[:120]}")
+    up = UPSTREAM.get(name)
+    if up:
+        age = ev["bars"].get("newest_bar_age_h" if up == "bars" else "newest_tick_age_h")
+        if isinstance(age, (int, float)) and age > UPSTREAM_STALE_H:
+            return _cause("UPSTREAM_DEAD", f"{up.upper()}_STALE",
+                          f"BARS_STATE: newest {up} is {age:.1f}h old (> {UPSTREAM_STALE_H:g}h)")
+
+    if legs:
+        led = ev["ledger"]
+        if not led.get("available"):
+            return _cause(UNMEASURED_CAUSE, "LEDGER_UNREADABLE",
+                          f"clocked here by {sorted(legs)}, but {led.get('path')} holds no row "
+                          "inside the window, so no run can be read")
+        runs = [(led["last"][g], g) for g in sorted(legs) if g in led["last"]]
+        if not runs:
+            return _cause("SCHEDULE", "LEG_NOT_RUN_IN_WINDOW",
+                          f"leg(s) {sorted(legs)} have no compute-ledger row in "
+                          f"{ev['window_h']:g}h: rotated out, outside every plan, or its task "
+                          "did not start")
+        last, leg = max(runs, key=lambda rg: rg[0]["at"])
+        out = last["outcome"]
+        if "STOOD_DOWN" in out.upper() or "STOOD DOWN" in out.upper():
+            return _cause("BACKPRESSURE_GATE", "LEG_STOOD_DOWN",
+                          f"{leg} at {last['at']}: {out}")
+        if out.upper().startswith("TIMEOUT") or "TIMEOUTEXPIRED" in out.upper():
+            return _cause("SCHEDULE", "BUDGET_KILLED_BEFORE_WRITE",
+                          f"{leg} at {last['at']}: {out} -- killed at its cap before it wrote")
+        if out and out != "ok":
+            return _cause(UNMEASURED_CAUSE, "LEG_FAILED", f"{leg} at {last['at']}: {out}")
+        return _cause(UNMEASURED_CAUSE, "RAN_OK_WROTE_NOTHING",
+                      f"{leg} ran ok at {last['at']} and wrote no seat row and no registry "
+                      "cell: read its own report for the empty screen")
+    if box_tasks:
+        return _cause(UNMEASURED_CAUSE, "BOX_TASK_UNREAD",
+                      f"clocked by box task(s) {box_tasks}; their run record is not read here")
+    if off_box:
+        ship = ev["ship"].get("last_commit")
+        age = _age_h(ship) if ship else None
+        if age is not None and age > ev["window_h"]:
+            return _cause("SCHEDULE", "OFF_BOX_CLOCK_TRANSPORT_SILENT",
+                          f"only clock(s) {off_box} are off this host, and the transport "
+                          f"{ev['ship'].get('ref')} last committed {ship} ({age:.0f}h ago)")
+        return _cause("SCHEDULE", "OFF_BOX_CLOCK",
+                      f"only clock(s) {off_box} are off this host"
+                      + (f"; transport {SHIP_REF} last committed {ship}" if ship else
+                         f"; transport {SHIP_REF} unreadable here"))
+    return _cause("SCHEDULE", "NO_CLOCK", "no leg, task or timer names it on any host")
 
 
 def _rel(p: Path) -> str:
@@ -200,8 +661,33 @@ def _seat_output(window_days: float) -> dict[str, int]:
     return dict(out)
 
 
-def audit(window_days: float = 3.0) -> dict[str, Any]:
+def _alias_output(window_days: float) -> dict[str, int]:
+    """Rows each SEAT_FILE_ALIASES producer wrote inside the window: its own file prefix inside the
+    shared seat, measured off file mtime exactly as `_seat_output` measures a whole seat."""
+    cutoff = time.time() - window_days * 86400.0
+    out: dict[str, int] = {}
+    for producer, (seat, prefix) in SEAT_FILE_ALIASES.items():
+        for root in (DESK / "data" / "intelligence", ROOT / "data" / "intelligence"):
+            for f in glob.glob(str(root / seat / f"{prefix}*")):
+                try:
+                    if os.path.getmtime(f) < cutoff:
+                        out.setdefault(producer, 0)
+                        continue
+                    with open(f, encoding="utf-8", errors="replace") as fh:
+                        n = sum(1 for _ in fh)
+                except OSError:
+                    continue
+                out[producer] = out.get(producer, 0) + max(n, 1)
+    return out
+
+
+def audit(window_days: float = 3.0, cells: dict[str, Any] | None = None,
+          evidence: dict[str, Any] | None = None) -> dict[str, Any]:
+    """The seat half. `cells` (this pass's `yield_audit`) lets a producer whose seat is empty but
+    whose cells reached the registry read as PRODUCING, and supplies the productivity census's
+    clock column to the cause classifier; `evidence` overrides `cause_evidence` (tests)."""
     seats = _seat_output(window_days)
+    any_seat = bool(seats)
     rows: list[dict[str, Any]] = []
 
     # THE PROPOSERS, from the daily cycle's own list rather than a copy of it. A list that can
@@ -225,14 +711,58 @@ def audit(window_days: float = 3.0) -> dict[str, Any]:
                            ("deep_forest_miner", "deep_forest")):
         if producer not in seats and seat in seats:
             seats[producer] = seats[seat]
-
     universe = list(seats.values())
+
+    # AND THE REST ARE FOLLOWED, NOT LISTED (2026-10-29). A proposer's seat is its module's own
+    # `SOURCE`: plumbing_miner donates into `plumbing/`, weak_signal_compiler into
+    # `weak_signal_ensemble/`, microstructure_miner into `microstructure/`. Read by module name,
+    # ten proposers sat UNMEASURED beside the seat that records them. A proposer whose seat has
+    # never been written, on a host that has seats at all, is a measured zero (DEAD).
+    seat_for: dict[str, str] = {}
+    basis: dict[str, str] = {}
+    for producer, n_alias in _alias_output(window_days).items():
+        if seats.get(producer) is None or (n_alias and not seats.get(producer)):
+            seats[producer] = n_alias
+            seat_for[producer] = SEAT_FILE_ALIASES[producer][0]
+            basis[producer] = (f"seat_file_alias:{SEAT_FILE_ALIASES[producer][0]}/"
+                               f"{SEAT_FILE_ALIASES[producer][1]}*")
+    for producer in sorted(set(proposers) | set(REPLACEMENTS)):
+        own = seat_of(producer)
+        if not own or producer in seat_for:
+            continue
+        if own == producer:
+            # Its seat IS its name and has never been written: a measured zero on a host that
+            # has seats at all, never an absence of measurement.
+            if seats.get(producer) is None and any_seat:
+                seats[producer] = 0
+            continue
+        seat_for[producer] = own
+        if seats.get(producer) is None or (seats.get(own) and not seats.get(producer)):
+            if own in seats:
+                seats[producer] = seats[own]
+                basis[producer] = f"seat_source:{own}"
+            elif any_seat:
+                seats[producer] = 0
+
+    # CELLS ARE OUTPUT TOO. An organ that writes cells straight to the registry has an empty seat
+    # by construction; the cells half measured its emission, so DEAD would be a false negative.
+    emitted: dict[str, float] = {}
+    for r in ((cells or {}).get("producers") or []):
+        if isinstance(r, dict):
+            b = _base(str(r.get("key") or r.get("producer") or ""))
+            emitted[b] = emitted.get(b, 0.0) + float(r.get("cells_emitted_per_hour") or 0.0)
+    ev = evidence if evidence is not None else cause_evidence(window_days, cells)
     median = sorted(universe)[len(universe) // 2] if universe else 0
 
     for name in sorted(set(proposers) | set(seats) | set(REPLACEMENTS)):
         n = seats.get(name)
         rec: dict[str, Any] = {"producer": name, "rows_in_window": n,
                                "window_days": window_days}
+        if name in seat_for:
+            rec["seat"] = seat_for[name]
+        if name in basis and n:
+            rec["basis"] = basis[name]
+            rec["resolved_cause"] = "WRITES_ELSEWHERE"
         if n is None:
             rec.update({"verdict": "UNMEASURED",
                         "why": ("no intelligence seat records this producer's output. It may "
@@ -251,6 +781,24 @@ def audit(window_days: float = 3.0) -> dict[str, Any]:
                                 f"problem, NOT a reason to replace the producer.")})
         else:
             rec["verdict"] = "PRODUCING"
+        cells_h = emitted.get(name, 0.0) + (emitted.get(seat_for[name], 0.0)
+                                            if name in seat_for else 0.0)
+        if rec["verdict"] in ("DEAD", "UNMEASURED") and cells_h > 0:
+            rec.update({"verdict": "PRODUCING", "basis": "registry_cells",
+                        "resolved_cause": "WRITES_ELSEWHERE",
+                        "why": (f"its seat is empty, but it emitted {cells_h:.2f} cell(s)/h to "
+                                "the registry inside the cells window: output, written "
+                                "elsewhere")})
+            rec.pop("replacement", None)
+        if rec["verdict"] in ("DEAD", "UNMEASURED"):
+            try:
+                rec.update(cause_of(name, seat_for.get(name), ev))
+            except Exception as exc:                      # a classifier bug never kills the fence
+                rec.update({"cause": UNMEASURED_CAUSE, "cause_detail": "CLASSIFIER_ERROR",
+                            "cause_evidence": f"{type(exc).__name__}: {exc}"[:200]})
+            # A RETIREMENT IS ITS OWN DECLARATION: `cause_of` returns the successor it read as
+            # `replacement`, so a seat retired through its module's seat name no longer reads
+            # NONE DECLARED.
         rows.append(rec)
 
     census = Counter(str(r["verdict"]) for r in rows)
@@ -266,6 +814,18 @@ def audit(window_days: float = 3.0) -> dict[str, Any]:
         "n_producers": len(rows),
         "census": dict(census),
         "dead_without_a_declared_replacement": undeclared,
+        # WHY, NOT ONLY WHAT (2026-10-29): every DEAD/UNMEASURED row's cause, counted.
+        "seat_rule": SEAT_RULE,
+        "causes": dict(Counter(str(r["cause"]) for r in rows if r.get("cause"))),
+        "cause_vocabulary": list(CAUSES),
+        "resolved_writes_elsewhere": sorted(r["producer"] for r in rows
+                                            if r.get("resolved_cause") == "WRITES_ELSEWHERE"),
+        "cause_inputs": {
+            "ledger": {k: v for k, v in (ev.get("ledger") or {}).items() if k != "last"},
+            "ship": ev.get("ship"),
+            "n_walls": len(ev.get("walls") or {}),
+            "n_platforms": len(ev.get("platforms") or {}),
+        },
         "producers": sorted(rows, key=lambda r: (r["verdict"], -(r["rows_in_window"] or 0))),
     }
 
@@ -661,8 +1221,11 @@ def main(argv: list[str] | None = None) -> int:
                     help="judge only EVERY PRODUCER OWES CELLS (the law-gate half)")
     args = ap.parse_args(argv)
 
-    doc = audit(window_days=args.window_days)
-    doc["cells_owed"] = yld = yield_audit(window_hours=args.yield_window_hours)
+    # THE CELLS HALF FIRST: the seat half reads its per-producer emission (a seat that is empty
+    # while its cells reach the registry is PRODUCING) and its clock column (the cause classifier).
+    yld = yield_audit(window_hours=args.yield_window_hours)
+    doc = audit(window_days=args.window_days, cells=yld)
+    doc["cells_owed"] = yld
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, indent=1), encoding="utf-8")
 
@@ -683,7 +1246,12 @@ def main(argv: list[str] | None = None) -> int:
         for r in rs[:12]:
             tail = (f" -> {str(r.get('replacement'))[:60]}" if v == "DEAD"
                     else f"  {str(r.get('why'))[:60]}")
+            if r.get("cause"):
+                tail = f"  [{r['cause']}:{r.get('cause_detail')}]" + tail
             print(f"    {str(r['producer'])[:26]:26} {r['rows_in_window']!s:>7}{tail}")
+    if doc.get("causes"):
+        print(f"\n  causes {doc['causes']}   resolved (writes elsewhere) "
+              f"{len(doc.get('resolved_writes_elsewhere') or [])}")
     print(f"\nEVERY PRODUCER OWES CELLS ({yld['window_hours']:g}h): {yld['n_producers']} producer(s), "
           f"{yld['n_owing']} owing, {yld['n_declared']} declared")
     print(f"  cells to judge/h {yld['cells_to_judge_per_hour']}   orthogonal equivalent/h "

@@ -390,23 +390,11 @@ def main() -> int:
     return 0
 
 
+# THE SCRIPT ENTRY POINT MUST WRITE (2026-10-29). `hourly_cycle.periodic_table` runs this file as
+# a script, and until today `__main__` built the table in memory, printed a demo and exited 0
+# without ever calling `run()`: `elements.json`, `mechanism_matrix.csv` and
+# reports/ALPHA_PERIODIC_TABLE.json were never rewritten, so PRODUCER_YIELD read the seat DEAD
+# while the leg's ledger row said `ok` every hour -- a silent exit-0 skip. `main()` (added
+# 2026-09-09 for exactly this leg) does the write; the entry point now calls it.
 if __name__ == "__main__":
-    table = AlphaPeriodicTable()
-
-    print("Research Targets (empty cells):")
-    for mech, axis in table.get_research_targets()[:20]:
-        print(f"  {mech} × {axis.value}")
-
-    print("\nDiscovered Cells:")
-    for mech, axis in table.get_discovered():
-        cell = table.cells[(mech, axis)]
-        print(f"  {mech} × {axis.value}: {cell.metadata.get('description', '')[:60]}")
-
-    print("\nResearch Priorities:")
-    for mech, axis, priority in table.get_research_priorities(15):
-        print(f"  {mech} × {axis.value}: {priority}")
-
-    df = table.to_dataframe()
-    print(f"\nMatrix shape: {df.shape}")
-    print(f"Empty: {(df['status'] == 'empty').sum()}")
-    print(f"Discovered: {(df['status'] == 'discovered').sum()}")
+    raise SystemExit(main())
