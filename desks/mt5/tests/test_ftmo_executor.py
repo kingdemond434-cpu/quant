@@ -407,3 +407,78 @@ def test_the_ftmo_book_is_published_for_the_other_lanes_fence(world, monkeypatch
     fx.ALLOCATOR.unlink()
     assert fx.run(world.mt5, armed=True, now=NOW)["status"] == "NO_BOOK"
     assert seen["published"][-1] == "ftmo"                     # published with nothing to trade
+
+
+# ============================================================ the audit of 67121b8f7 (2026-10-29)
+
+def test_a_rewritten_comment_falls_back_to_the_hold_kept_at_the_send(world) -> None:
+    """MUST-FIX 1: the broker rewrote the comment; the exit kept by ticket still closes it."""
+    fx.run(world.mt5, armed=True, now=NOW)
+    (pos,) = world.mt5.positions
+    pos.comment = "[tp 1.11]"
+    assert fx.exit_epoch(pos) is None
+    world.mt5.tick_epoch = SERVER.timestamp() + 8 * 3600
+    doc = fx.run(world.mt5, armed=True, now=NOW + timedelta(hours=8))
+    assert any(a["act"] == "close" and "time exit" in a["why"] for a in doc["actions"])
+
+
+def test_a_position_with_no_readable_exit_is_never_silent(world) -> None:
+    world.mt5.positions.append(SimpleNamespace(
+        ticket=55, symbol="AUDNZD", type=0, magic=fx.MAGIC, volume=0.5, price_open=1.1,
+        sl=1.09, comment="FX6H", time=int(SERVER.timestamp())))
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    assert any("#55" in m for m in doc["manage_unmeasured"])
+    assert any("#55" in a and "unmanaged" in a for a in doc["alerts"])
+
+
+def test_the_forming_bar_is_read_off_the_frame(world) -> None:
+    """SF1: after a gap (a weekend, a Monday D1) the last closed bar is not one bar before the
+    forming one; the forming bar the feed carries decides, so the signal is not lost."""
+    real = world.mt5.copy_rates_from_pos
+
+    def gapped(sym: str, tf: int, start: int, n: int) -> list:
+        rows = real(sym, tf, start, n)
+        for r in rows[:-1]:
+            r["time"] -= 48 * 3600                   # every closed bar two days earlier
+        return rows
+    world.mt5.copy_rates_from_pos = gapped
+    world.sigs["list"] = [SimpleNamespace(**dict(vars(_sig()), time=BAR - pd.Timedelta(hours=48)))]
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    assert doc["sleeves"][0]["status"] == "SENT"
+
+
+def test_a_trimmed_order_that_is_sent_is_billed(world, monkeypatch) -> None:
+    """SF2: the part the lot cap trimmed is missed growth even though the order went."""
+    import missed_growth as mg
+    monkeypatch.setattr(fx._fw, "lot_cap", lambda *a, **k: (0.5, "declared max_lot 0.5"))
+    fx.run(world.mt5, armed=True, now=NOW)
+    (req,) = world.mt5.sent
+    assert req["volume"] == pytest.approx(0.5)
+    monkeypatch.setattr(mg, "FTMO_EXEC_INTENTS", Path(fx.INTENTS))
+    line = mg.published_ftmo_executor_lines()["rails"][fx._fw.LOT_CAP_RAIL]
+    assert line["statuses"] == ["SENT"] and line["undeployed_risk_usd"] == pytest.approx(
+        0.48 * 306.0)
+
+
+def test_a_vetoed_pass_leaves_a_row(world) -> None:
+    """SF3: a pass vetoed as a whole still leaves Rule 1 a line."""
+    world.mt5.tick_epoch = NOW.timestamp()                      # CLOCK_MISMATCH
+    fx.run(world.mt5, armed=True, now=NOW)
+    (row,) = [r for r in _rows() if r.get("rail") == fx.PASS_RAIL]
+    assert row["status"] == "CLOCK_MISMATCH" and row["sleeve"] == KEY
+
+
+def test_an_empty_block_is_not_billed_as_a_veto(world) -> None:
+    world.cert.write_text(json.dumps({"enabled": True, "excluded": {},
+                                      "ftmo": {"gold_asia": 0.002}}))
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    assert doc["status"] == "NO_BOOK"
+    assert not fx.INTENTS.exists() or not [r for r in _rows() if r.get("rail") == fx.PASS_RAIL]
+
+
+def test_a_nan_solve_never_reads_as_no_limit(world) -> None:
+    """SF5: min(block, nan) is the block; a NaN solve trades nothing."""
+    fx.ALLOCATOR.write_text(fx.ALLOCATOR.read_text().replace(
+        '"' + KEY + '": 0.003}', '"' + KEY + '": NaN}'))
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    assert world.mt5.sent == [] and doc["status"] == "NO_BOOK"
