@@ -12,7 +12,8 @@ rewrites `reports/JOB_LOCK_HEALTH.json` in full every pass, and exits
 
 THE CURE, UNDER THE ITEM-21 RAILS. WEDGED is called after `job_lock.WEDGED_AFTER_S` (30 min) of
 no progress (or a beaten phase's own longer limit). A lock on the research allowlist whose owner
-has then made no progress for `AUTO_STOP_AFTER_S` (two hours) is stopped with its descendants:
+has then made no progress for `AUTO_STOP_AFTER_S` (two hours; a beaten phase also needs twice its
+limit and a tree that is not busy -- `stoppable`) is stopped with its descendants:
 the tree is frozen, listed until nothing new appears, then terminated children first. Never by bare pid: the owner must be a Python
 interpreter whose argv carries the lock's own script as an ELEMENT (a path or a `-m` module, not
 a substring of some other argument), and it must have been created no later than the lock's
@@ -80,8 +81,9 @@ def _locks(root: Path) -> list[Path]:
                   if not p.name.endswith((".peaks.json", ".progress.json", ".beat.json")))
 
 
-#: Interpreter options whose value is the NEXT argv element (`-W ignore`, `-X utf8`).
-_OPTS_WITH_ARG = frozenset({"-W", "-X", "--check-hash-based-pycs"})
+#: Long interpreter options whose value is the NEXT argv element (short `-W`/`-X` are parsed
+#: flag by flag in `runs_script`).
+_OPTS_WITH_ARG = frozenset({"--check-hash-based-pycs"})
 
 
 def _leaf(arg: str) -> str:
@@ -100,22 +102,32 @@ def runs_script(argv: list[str], scripts: tuple[str, ...]) -> bool:
     # `.py` is an argument to it (`python other.py --in merge_hypotheses.py`). An option that
     # takes a SEPARATE argument consumes it (audit of v7, MF1): hourly_cycle launches every leg
     # as `python -u -W ignore <script>`, and reading `ignore` as the script refused every owner.
+    # Short flags combine as CPython parses them (audit of v8, SF3): `-uW ignore` consumes the
+    # next element, `-Wignore`/`-cCODE`/`-mMOD` carry their value inline, `-` is stdin. A path
+    # with spaces is one element like any other: argv[0] already has to be the interpreter.
     rest = argv[1:]
     i = 0
     while i < len(rest):
         arg = rest[i]
-        if arg == "-m":
-            return i + 1 < len(rest) and rest[i + 1].rsplit(".", 1)[-1] in scripts
-        if arg == "-c":
+        if arg == "-":
             return False
-        if arg in _OPTS_WITH_ARG:
-            i += 2
+        if arg.startswith("--"):
+            i += 2 if arg in _OPTS_WITH_ARG else 1
             continue
-        if arg.startswith("-"):
-            i += 1
-            continue
-        return arg.endswith(".py") and not any(c.isspace() for c in arg) \
-            and _leaf(arg) in scripts
+        if not arg.startswith("-"):
+            return arg.endswith(".py") and _leaf(arg) in scripts
+        flags, step = arg[1:], 1
+        for k, ch in enumerate(flags):
+            tail = flags[k + 1:]
+            if ch == "c":
+                return False
+            if ch == "m":
+                mod = tail or (rest[i + 1] if i + 1 < len(rest) else "")
+                return bool(mod) and mod.rsplit(".", 1)[-1] in scripts
+            if ch in "WX":
+                step = 1 if tail else 2       # the value is inline, or the next element
+                break
+        i += step
     return False
 
 
@@ -146,11 +158,13 @@ def _stop(pid: int, scripts: tuple[str, ...], started_at: object = None) -> dict
         # nothing new, so nothing can be born after the tree is known.
         tree: list[Any] = []
         suspended: list[Any] = []
+        terminated: list[int] = []
         capped = True
         # EVERY SUSPEND IS UNDONE, whatever raises (audit of v7, MF2): an AccessDenied while
         # listing or freezing left the owner SIGSTOPped holding its lock, refused on every
-        # later pass -- a lane frozen for good. The resume also delivers SIGTERM on POSIX,
-        # which waits on a stopped process until SIGCONT.
+        # later pass -- a lane frozen for good. On the stop path the resume is also what
+        # delivers SIGTERM on POSIX, which waits on a stopped process until SIGCONT; on a
+        # refusal nothing was terminated and the resume only thaws the tree.
         try:
             proc.suspend()
             suspended.append(proc)
@@ -169,7 +183,15 @@ def _stop(pid: int, scripts: tuple[str, ...], started_at: object = None) -> dict
             for p in reversed(tree):      # deepest descendants first, the owner last
                 with contextlib.suppress(psutil.NoSuchProcess):
                     p.terminate()
+                    terminated.append(p.pid)
             proc.terminate()
+            terminated.append(proc.pid)
+        except Exception as exc:
+            # A PARTIAL KILL IS NAMED (audit of v8, SF2): which pids did die matters to whoever
+            # finds the lane half-stopped.
+            return {"stopped": False, "terminated": terminated,
+                    "why": (f"stop refused after terminating {len(terminated)} pid(s): "
+                            f"{type(exc).__name__}: {exc}")[:200]}
         finally:
             for p in suspended:
                 with contextlib.suppress(Exception):
@@ -196,6 +218,21 @@ def _journal(name: str, health: dict[str, Any]) -> None:
         print(f"job_lock_health: JOB_LOCK_STOPPED not journaled ({type(exc).__name__}: {exc})")
 
 
+def stoppable(health: dict[str, Any]) -> bool:
+    """May a WEDGED owner be stopped? A CPU-judged owner: after AUTO_STOP_AFTER_S with no tree
+    progress. A BEAT-judged owner (audit of v8, SF1 -- a progressing phase is never killed): only
+    once its phase has run max(AUTO_STOP_AFTER_S, 2 x its limit) with no beat AND its tree is not
+    busy -- measured CPU below `job_lock.BUSY_CPU_RATE` cores over the hour. The 2026-10-29
+    spinner used ~0.04 of a core; real work uses most of one. An unmeasured rate never stops."""
+    idle = float(health.get("idle_s") or 0.0)
+    if health.get("signal") != "beat":
+        return idle >= AUTO_STOP_AFTER_S
+    limit = float(health.get("limit_s") or 0.0)
+    rate = health.get("cpu_rate")
+    return (idle >= max(AUTO_STOP_AFTER_S, 2.0 * limit)
+            and isinstance(rate, (int, float)) and rate < J.BUSY_CPU_RATE)
+
+
 def run(*, root: Path | None = None, now: float | None = None, stop=_stop,
         cpu_of=None) -> dict[str, Any]:
     lock_root = root or J.LOCK_ROOT
@@ -211,8 +248,7 @@ def run(*, root: Path | None = None, now: float | None = None, stop=_stop,
             continue
         health = J.owner_progress(lock, now=t, cpu_of=cpu_of)
         if (health.get("status") == "WEDGED" and name in AUTO_STOP_JOBS
-                and name not in NEVER_STOP
-                and float(health.get("idle_s") or 0.0) >= AUTO_STOP_AFTER_S
+                and name not in NEVER_STOP and stoppable(health)
                 and isinstance(health.get("pid"), int)):
             health["auto_stop"] = stop(health["pid"], AUTO_STOP_JOBS[name],
                                        health.get("started_at"))

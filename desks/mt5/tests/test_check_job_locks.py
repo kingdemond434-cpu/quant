@@ -418,3 +418,63 @@ def test_a_beat_limit_is_clamped_and_a_future_beat_is_unreadable(root: Path) -> 
     out = J.owner_progress(lock, now=100.0, cpu_of=lambda pid: 1.0)
     assert out["signal"] == "cpu"                # a beat from the future vouches for nothing
     assert not list(root.glob("*.tmp"))
+
+
+# --- audit of v8 (should-fixes) --------------------------------------------------------------
+def test_a_beaten_phase_that_is_busy_is_never_stopped(root: Path) -> None:
+    lock = _own_lock(root)
+    J.heartbeat("merge_hypotheses", "families", expect_s=3600, now=0.0)
+    cpu = iter(float(k * 3000) for k in range(100))   # ~0.8 of a core, working hard
+    stops: list[int] = []
+
+    def stop(pid, frags, started_at=None):
+        stops.append(pid)
+        return {"stopped": True, "why": "t"}
+    for now in (600.0, 3700.0, 7300.0, 11_000.0, 20_000.0):
+        out = C.run(root=root, now=now, stop=stop, cpu_of=lambda pid: next(cpu))
+    assert out["locks"]["merge_hypotheses"]["status"] == "WEDGED"     # named RED ...
+    assert out["locks"]["merge_hypotheses"]["cpu_rate"] > J.BUSY_CPU_RATE
+    assert not stops                                                    # ... never killed
+    assert not C.stoppable({"signal": "beat", "idle_s": 9e9, "limit_s": 60, "cpu_rate": None})
+
+
+def test_sf3_combined_and_inline_flags_parse_like_cpython() -> None:
+    m = ("merge_hypotheses",)
+    assert not C.runs_script(["python", "-cimport x", "merge_hypotheses.py"], m)
+    assert not C.runs_script(["python", "-uW", "merge_hypotheses.py", "other.py"], m)
+    assert not C.runs_script(["python", "-", "merge_hypotheses.py"], m)
+    assert C.runs_script(["python", "-uW", "ignore", "merge_hypotheses.py"], m)
+    assert C.runs_script(["python", "-mresearch.merge_hypotheses"], m)
+    assert C.runs_script(["python", "-u", "C:\\Program Files\\q\\merge_hypotheses.py"], m)
+    assert C.runs_script(["python", "-u", "-W", "ignore", "merge_hypotheses.py"], m)
+
+
+def test_sf2_a_partial_kill_names_the_pids_it_terminated(tmp_path: Path, monkeypatch) -> None:
+    script = tmp_path / "merge_hypotheses.py"
+    script.write_text(_PARENT_WAITS_ON_BUSY_CHILD, "utf-8")
+    proc = subprocess.Popen([sys.executable, str(script)])
+    try:
+        kids = _wait_children(proc.pid, 1)
+        real = psutil.Process.terminate
+
+        def refuse_owner(self):
+            if self.pid == proc.pid:
+                raise psutil.AccessDenied(self.pid)
+            return real(self)
+        monkeypatch.setattr(psutil.Process, "terminate", refuse_owner)
+        res = C._stop(proc.pid, ("merge_hypotheses",), datetime.now(UTC).isoformat())
+        assert res["stopped"] is False and res["terminated"] == [kids[0].pid]
+        assert psutil.Process(proc.pid).status() != psutil.STATUS_STOPPED
+    finally:
+        monkeypatch.undo()
+        for k in psutil.Process(proc.pid).children(recursive=True):
+            k.kill()
+        proc.kill()
+        proc.wait()
+
+
+def test_sf4_a_nan_beat_vouches_for_nothing(root: Path) -> None:
+    lock = _own_lock(root)
+    (root / "merge_hypotheses.beat.json").write_text(
+        '{"token": "mine", "phase": "x", "at": NaN, "expect_s": null}', "utf-8")
+    assert J.owner_progress(lock, now=100.0, cpu_of=lambda pid: 1.0)["signal"] == "cpu"

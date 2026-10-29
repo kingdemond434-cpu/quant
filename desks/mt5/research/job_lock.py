@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import math
 import os
 import socket
 import sys
@@ -360,6 +361,8 @@ def _progress_path(lock: Path) -> Path:
 
 #: A beaten phase's limit is clamped here, so an infinite budget can never disable WEDGED.
 BEAT_EXPECT_MAX_S = 6 * 3600.0
+#: Cores of tree CPU at or above which a beaten owner is BUSY, and is never auto-stopped.
+BUSY_CPU_RATE = 0.25
 #: A beat stamped further ahead than this is unreadable, never PROGRESSING forever.
 BEAT_FUTURE_SLACK_S = 120.0
 
@@ -390,8 +393,8 @@ def heartbeat(name: str, phase: str, *, expect_s: float | None = None,
                             if expect_s and expect_s > 0 else None)}
         dst = _beat_path(lock)
         tmp = dst.with_name(f"{dst.name}.{os.getpid()}.tmp")
-        tmp.write_text(json.dumps(rec), "utf-8")
         try:
+            tmp.write_text(json.dumps(rec), "utf-8")
             os.replace(tmp, dst)          # a reader holding it open refuses on Windows: the
         except OSError:                   # next beat lands; this one is simply skipped
             with suppress(OSError):
@@ -400,6 +403,27 @@ def heartbeat(name: str, phase: str, *, expect_s: float | None = None,
         return True
     except Exception:
         return False
+
+
+def _cpu_rate(lock: Path, token: str, cpu: float | None, t: float) -> float | None:
+    """Cores of tree CPU since the previous observation of this owner (sidecar `obs_*`), or
+    None on the first observation or an unreadable reading -- never a guessed zero."""
+    side = _progress_path(lock)
+    try:
+        prev = json.loads(side.read_text("utf-8"))
+    except (OSError, ValueError):
+        prev = {}
+    if not isinstance(prev, dict) or prev.get("token") != token:
+        prev = {"token": token}
+    rate = None
+    pc, pt = prev.get("obs_cpu"), prev.get("obs_t")
+    if (cpu is not None and isinstance(pc, (int, float)) and isinstance(pt, (int, float))
+            and t > pt and cpu >= pc):
+        rate = round((cpu - pc) / (t - pt), 4)
+    if cpu is not None:
+        with suppress(OSError):
+            side.write_text(json.dumps({**prev, "obs_cpu": cpu, "obs_t": t}), "utf-8")
+    return rate
 
 
 def _beat_progress(lock: Path, token: str, t: float,
@@ -412,7 +436,8 @@ def _beat_progress(lock: Path, token: str, t: float,
     if not isinstance(beat, dict) or beat.get("token") != token:
         return None
     at = beat.get("at")
-    if not isinstance(at, (int, float)) or float(at) > t + BEAT_FUTURE_SLACK_S:
+    if (not isinstance(at, (int, float)) or not math.isfinite(float(at))
+            or float(at) > t + BEAT_FUTURE_SLACK_S):
         return None
     expect = beat.get("expect_s")
     limit = max(float(WEDGED_AFTER_S),
@@ -447,6 +472,8 @@ def owner_progress(lock: Path, *, now: float | None = None,
     out: dict[str, Any] = {"pid": pid, "started_at": row.get("started_at")}
     beaten = _beat_progress(lock, token, t, out)
     if beaten is not None:
+        if isinstance(pid, int):          # every observation seeds the rate's baseline
+            beaten["cpu_rate"] = _cpu_rate(lock, token, (cpu_of or _owner_cpu_s)(pid), t)
         return beaten
     out["signal"] = "cpu"
     cpu = (cpu_of or _owner_cpu_s)(pid) if isinstance(pid, int) else None
