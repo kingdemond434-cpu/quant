@@ -48,6 +48,14 @@ def mine_calendar() -> list[dict]:
     for url in [CALENDAR_URL, CALENDAR_NEXT_URL]:
         try:
             resp = requests.get(url, headers=HEADERS, timeout=15)
+            # THE NEXT-WEEK FILE IS NOT ALWAYS PUBLISHED. Measured 2026-10-06 over the 53 capture
+            # files in git: its 404s all fall on one day (2026-09-10) and the other days read it,
+            # so a 404 there is "not published yet", a state, never a fetch error and never a
+            # reason to drop the source.
+            if url == CALENDAR_NEXT_URL and getattr(resp, "status_code", 200) == 404:
+                discoveries.append({"source": "forexfactory", "kind": "not_published",
+                                    "url": url, "status": 404})
+                continue
             resp.raise_for_status()
             events = resp.json()
 

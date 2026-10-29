@@ -346,6 +346,19 @@ ONTOLOGY: dict[str, KindSpec] = {
          _e("Soft Commodity", "days", "inventory term_of_trade"),
          _e("Bonds", "days", "rates_path real_yields")),
         (), (0.30, 0.55, 0.15)),
+    # ASIA-1412 (2026-10-06): a state changing the rules on cross-border money is NOT a default.
+    # India moves FPI limits, the LRS cap, ECB ceilings and FEMA routes several times a year;
+    # China, Argentina, Nigeria and Turkey move theirs at stress. Filed under sovereign_default
+    # these read as solvency news and nudged the wrong components.
+    "capital_flow_measure": KindSpec(
+        "a state tightens or loosens the rules on cross-border capital: portfolio-investment "
+        "limits, remittance caps, surrender or repatriation rules, outflow taxes", False,
+        (_e("Forex Exotics", "minutes", "liquidity carry credit_spread positioning",
+            "USDINR USDCNH USDTRY USDBRL"),
+         _e("Indices", "hours", "risk_appetite positioning liquidity", "CHINAH HK50"),
+         _e("Bonds", "days", "credit_spread rates_path"),
+         _e("Forex", "hours", "usd_state carry")),
+        (), (0.30, 0.50, 0.20)),
     "other": KindSpec(
         "a document the ontology cannot classify -- a verdict, never a silent drop", False,
         (), (), (0.0, 1.0, 0.0)),
@@ -450,15 +463,33 @@ supply_disruption ko 송유관|정유소|생산 중단|불가항력|항만 폐�
 supply_disruption ru трубопровод остановл|нпз|добыча приостановл|форс-мажор|порт закрыт|пролив
 +сокращение добычи|перебои с поставками
 supply_disruption zh 管道中断|炼厂|停产|不可抗力|港口关闭|海峡|减产|出口终端|供应中断
-sovereign_default de zahlungsausfall|umschuldung|herabstufung|kapitalverkehrskontroll
+sovereign_default de zahlungsausfall|umschuldung|herabstufung
 sovereign_default en default on its debt|missed a coupon|debt restructuring|downgraded to junk
-+imf bailout|capital controls|moratorium on payments|credit rating cut
++imf bailout|moratorium on payments|credit rating cut
 sovereign_default es impago de su deuda|reestructuración de deuda|rebaja de calificación
-+control de capitales
-sovereign_default ja デフォルト|債務再編|格下げ|imf支援|資本規制
-sovereign_default ko 채무 불이행|채무 재조정|신용등급 강등|자본 통제
-sovereign_default ru дефолт|реструктуризация долга|понижение рейтинга|валютные ограничен
-sovereign_default zh 债务违约|重组债务|评级下调|国际货币基金组织救助|资本管制
+sovereign_default ja デフォルト|債務再編|格下げ|imf支援
+sovereign_default ko 채무 불이행|채무 재조정|신용등급 강등
+sovereign_default ru дефолт|реструктуризация долга|понижение рейтинга
+sovereign_default zh 债务违约|重组债务|评级下调|国际货币基金组织救助
+capital_flow_measure ar ضوابط رأس المال|قيود على تحويل العملات|قيود على حركة رؤوس الأموال
+capital_flow_measure de kapitalverkehrskontroll|devisenkontroll|kapitalabflussbeschränk
+capital_flow_measure en capital controls|capital control measures|fpi limit|fpi investment limit
++foreign portfolio investment limit|foreign portfolio investors limit
++liberalised remittance scheme|liberalized remittance scheme|outward remittance limit
++repatriation rules|repatriation of profits|surrender requirement|export proceeds surrender
++currency controls|exchange controls|outflow curbs|curbs on capital outflows
++capital outflow restrictions|foreign exchange management act|under fema|fema rules
++voluntary retention route|fully accessible route|external commercial borrowing limit
++tax on capital outflows|foreign investment cap|foreign ownership limit
+capital_flow_measure es control de capitales|controles cambiarios|cepo cambiario
++restricciones a la salida de capitales
+capital_flow_measure hi पूंजी नियंत्रण|विदेशी पोर्टफोलियो निवेश सीमा|उदारीकृत प्रेषण योजना
++विदेशी मुद्रा प्रबंधन अधिनियम
+capital_flow_measure ja 資本規制|資本流出規制|為替管理|外資規制
+capital_flow_measure ko 자본 통제|외환 규제|자본 유출 규제|외국인 투자 한도
+capital_flow_measure ru валютные ограничен|контроль за движением капитала
++ограничения на вывод капитала|обязательная продажа валютной выручки
+capital_flow_measure zh 资本管制|外汇管制|资本外流限制|跨境资金流动管理|外资持股上限
 natural_disaster de erdbeben|hurrikan|taifun|überschwemmung|dürre|frost|waldbrand|vulkanausbruch
 +tsunami
 natural_disaster en earthquake|magnitude quake|hurricane|typhoon|cyclone|flooding hit|drought
@@ -693,7 +724,9 @@ COUNTRIES: tuple[Country, ...] = (
        "gold", "", "", "", "banks pharma"),
     _k("TR", "turkey|turkish|ankara|istanbul|土耳其|トルコ|турци|تركيا|turquía|türkei", "TRY",
        "", "crude natgas", "", "", "manufacturing"),
-    _k("IN", "india|indian|delhi|mumbai|印度|インド|инди|الهند|india|indien", "INR", "cotton",
+    _k("IN", "india|indian|delhi|mumbai|reserve bank of india|rbi governor|rbi said|"
+       "rbi raises|rbi cuts|rbi eases|rbi tightens|sebi|rupee|भारत|印度|インド|инди|الهند|"
+       "indien", "INR", "cotton",
        "crude gold natgas", "", "", "technology refining"),
     _k("KR", "south korea|korea|seoul|韩国|韓国|한국|коре|كوريا|corea del sur|südkorea",
        "KRW", "",

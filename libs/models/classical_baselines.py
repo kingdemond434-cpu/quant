@@ -87,7 +87,7 @@ def _seconds(value: Any) -> float:
 
 
 class HawkesIntensity:
-    """Exponential Hawkes reference fitted by a small deterministic likelihood grid."""
+    """Exponential Hawkes reference: exact MLE via the shared `libs.quant_models.hawkes`."""
 
     def __init__(self) -> None:
         self.state: dict[str, Any] = {"fitted": False, "verdict": "UNMEASURED"}
@@ -103,32 +103,18 @@ class HawkesIntensity:
             self.state = {"fitted": False, "verdict": "UNMEASURED",
                           "why": f"{int(times.size)} usable event times; need at least 3"}
             return self
+        # ONE HAWKES MODULE (2026-10-06): the 5x40 likelihood grid that lived here is replaced by
+        # the shared exact MLE in `libs.quant_models.hawkes`; the state keys are unchanged.
+        from libs.quant_models import hawkes
         times = times - times[0]
-        duration = float(times[-1])
-        rate = float(times.size) / duration
-        median_dt = max(float(np.median(np.diff(times))), duration / (1000 * times.size), 1e-9)
-        beta0 = math.log(2.0) / median_dt
-        best: tuple[float, float, float, float] | None = None
-        for beta in (beta0 / 4, beta0 / 2, beta0, beta0 * 2, beta0 * 4):
-            for branching in np.linspace(0.0, 0.95, 40):
-                mu = max(1e-12, (1.0 - float(branching)) * rate)
-                alpha = float(branching) * beta
-                excitation = loglik = previous = 0.0
-                for stamp in times:
-                    excitation *= math.exp(-beta * max(0.0, float(stamp) - previous))
-                    loglik += math.log(max(1e-12, mu + alpha * excitation))
-                    excitation += 1.0
-                    previous = float(stamp)
-                integral = mu * duration + (alpha / beta) * float(
-                    np.sum(1.0 - np.exp(-beta * (duration - times))))
-                candidate = (integral - loglik, float(branching), beta, mu)
-                if best is None or candidate[0] < best[0]:
-                    best = candidate
-        assert best is not None
-        nll, fitted_branching, fitted_beta, fitted_mu = best
+        got = hawkes.fit(times, t0=0.0, t_end=float(times[-1]), min_events=3)
+        if not isinstance(got, hawkes.HawkesFit):
+            self.state = {"fitted": False, "verdict": "UNMEASURED", "why": got.get("why")}
+            return self
+        p = got.params
         self.state = {"fitted": True, "verdict": "MEASURED", "n_events": int(times.size),
-                      "branching_ratio": fitted_branching,
-                      "decay_halflife": math.log(2.0) / fitted_beta,
-                      "mu": fitted_mu, "alpha": fitted_branching * fitted_beta,
-                      "beta": fitted_beta, "loglik": -nll}
+                      "branching_ratio": p.branching_ratio, "decay_halflife": p.half_life,
+                      "mu": float(p.mu[0]), "alpha": float(p.alpha[0, 0]),
+                      "beta": float(p.beta), "loglik": got.loglik,
+                      "lr_stat_vs_poisson": got.lr_stat, "method": got.method}
         return self

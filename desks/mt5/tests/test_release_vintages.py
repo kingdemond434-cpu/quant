@@ -207,6 +207,12 @@ def test_ff_consensus_pairs_are_stored_but_held_from_the_gauntlet(
     monkeypatch.setattr(rv, "CLEARANCES", tmp_path / "terms_clearances.json")
     out = rv.build(now=NOW, vintages=vint, alfred=alfred)
     rows = out["rows"]
+    # under the ruling on prohibition (j) ALFRED itself is held from fitted models: with nothing
+    # cleared, nothing ships; a quoted ALFRED clearance lets the nowcast ship alone
+    assert es.terms_filter(rows)[0] == []
+    alfred_ok = {"status": "CLEARED", "by": "terms review", "terms_url": "https://example.test/a",
+                 "terms_quote": "machine use for models permitted"}
+    (tmp_path / "terms_clearances.json").write_text(json.dumps({"alfred": alfred_ok}), "utf-8")
     assert any(r["provides"] == "both" and r["expectation_kind"] == "consensus_median"
                for r in rows)                              # stored
     assert out["census"]["terms"]["gauntlet"] == "HELD"
@@ -217,11 +223,22 @@ def test_ff_consensus_pairs_are_stored_but_held_from_the_gauntlet(
     assert all("HELD_TERMS" in w for w in held["why"].values())
     # a recorded clearance admits them; a non-CLEARED record does not
     (tmp_path / "terms_clearances.json").write_text(
-        json.dumps({"ff_calendar": {"status": "PENDING"}}), "utf-8")
+        json.dumps({"ff_calendar": {"status": "PENDING"}, "alfred": alfred_ok}), "utf-8")
     assert rv.gauntlet_terms("ff_calendar_vintage+alfred:PAYEMS")[0] is False
     (tmp_path / "terms_clearances.json").write_text(
-        json.dumps({"ff_calendar": {"status": "CLEARED", "by": "terms review"}}), "utf-8")
+        json.dumps({"ff_calendar": {"status": "CLEARED", "by": "terms review",
+                                    "terms_url": "https://example.test/terms",
+                                    "terms_quote": "machine use permitted"},
+                    "alfred": alfred_ok}), "utf-8")
     kept, held = es.terms_filter(rows)
     assert len(kept) == len(rows) and held["n"] == 0
-    # the nowcast source was never held, and an unknown source is not whitelisted away
-    assert rv.gauntlet_terms("alfred:PAYEMS") == (True, "")
+    # a bare CLEARED with no quoted clause admits nothing (audit #211)
+    (tmp_path / "terms_clearances.json").write_text(
+        json.dumps({"ff_calendar": {"status": "CLEARED", "by": "terms review"},
+                    "alfred": alfred_ok}), "utf-8")
+    assert rv.gauntlet_terms("ff_calendar_vintage+alfred:PAYEMS")[0] is False
+    # the nowcast rides only a quoted ALFRED clearance; an unknown source fails closed
+    assert rv.gauntlet_terms("alfred:PAYEMS")[0] is True
+    (tmp_path / "terms_clearances.json").write_text("{}", "utf-8")
+    assert rv.gauntlet_terms("alfred:PAYEMS")[0] is False
+    assert rv.gauntlet_terms("some_new_calendar")[0] is False

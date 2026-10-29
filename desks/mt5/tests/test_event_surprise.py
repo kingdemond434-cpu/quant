@@ -56,6 +56,21 @@ REGISTRY: dict[str, dict[str, Any]] = {
     "APPLE": {"asset_class": "Equities"},
 }
 START = datetime(2024, 1, 2, 0, 0, tzinfo=UTC)
+
+
+@pytest.fixture(autouse=True)
+def _synthetic_source_is_cleared(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The synthetic pairs carry `alfred:SYNTH`. ALFRED is held from fitted models (ruling on
+    prohibition (j), 2026-10-07), so these tests record a quoted test-only clearance for it in
+    `tmp_path`; the box's clearances file is never read or written."""
+    from macro import release_vintages as rv
+    path = tmp_path / "terms_clearances.json"
+    path.write_text(json.dumps({"alfred:synth": {
+        "status": "CLEARED", "by": "test", "terms_url": "https://example.test/terms",
+        "terms_quote": "synthetic test data, no third-party terms"}}), "utf-8")
+    monkeypatch.setattr(rv, "CLEARANCES", path)
+
+
 #: Bar noise and the planted bump. 5bp of hourly noise against a 30bp planted drift: a signal a
 #: correct organ cannot miss and an incorrect one cannot manufacture.
 NOISE_SD = 0.0005
@@ -104,7 +119,7 @@ def _pairs(release: str, kind: str, symbol: str, *, n: int = N_PRINTS,
                     "at": when.isoformat(timespec="seconds"),
                     "period": f"{when:%Y-%m}-{i}", "consensus": 100.0,
                     "actual": 100.0 + cycle[i % len(cycle)], "instruments": [symbol],
-                    "source_id": "test"})
+                    "source_id": "alfred:SYNTH"})
     return out
 
 

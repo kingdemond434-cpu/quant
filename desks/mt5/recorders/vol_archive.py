@@ -80,6 +80,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import sys
 import urllib.parse
 import urllib.request
@@ -155,6 +156,20 @@ TENOR_DAYS: dict[str, int] = {"^VIX9D": 9, "^VIX": 30, "^VIX3M": 91, "^VIX6M": 1
                               "^GVZ": 30, "^OVX": 30, "^VXN": 30, "^VXD": 30, "^EVZ": 30}
 
 
+YAHOO_SOURCE = "yahoo:cboe_indices"
+
+
+def terms_admit(source: str) -> bool:
+    """The one terms gate (libs.data.terms_hold); an unreadable gate admits nothing."""
+    try:
+        if str(_DESK.parents[1]) not in sys.path:
+            sys.path.insert(0, str(_DESK.parents[1]))
+        from libs.data.terms_hold import gauntlet_terms
+        return bool(gauntlet_terms(source)[0])
+    except Exception:
+        return False
+
+
 class VolSource(Protocol):
     """Where a daily implied-vol series comes from. One method, so a fake is trivial."""
 
@@ -191,13 +206,21 @@ class YahooVolSource:
     rather than any one member of it.
     """
 
-    def __init__(self, timeout: int = 20, range_: str = "10y", fresh_range: str = "1mo") -> None:
+    def __init__(self, timeout: int = 20, range_: str = "10y", fresh_range: str = "1mo",
+                 admit: Any = None) -> None:
         self.timeout = timeout
         self.range = range_
         self.fresh_range = fresh_range
         self._fred_ok = True
+        self.admit = admit or terms_admit
+        self.held: dict[str, str] = {}
 
     def series(self, ticker: str) -> dict[str, float] | None:
+        # TERMS FAIL CLOSED (coordinator, 2026-10-07): a source the terms gate holds is never
+        # fetched. Yahoo's chart API and FRED's copies of the CBOE indices are both held today.
+        if not self.admit(YAHOO_SOURCE):
+            self.held[ticker] = YAHOO_SOURCE
+            return self._fred(ticker)
         history = self._chart(ticker, self.range)
         if history is None:
             try:
@@ -249,6 +272,9 @@ class YahooVolSource:
                "^VXD": "VXDCLS", "^EVZ": "EVZCLS", "^VIX3M": "VXVCLS"}.get(ticker)
         if not sid or not self._fred_ok:
             return None
+        if not self.admit(f"fred:{sid}"):
+            self.held[ticker] = f"{self.held.get(ticker, '')} fred:{sid}".strip()
+            return None
         try:
             from research import free_data as fd
             got = fd.fred_series(sid, start="2015-01-01")
@@ -256,6 +282,42 @@ class YahooVolSource:
             self._fred_ok = False
             return None
         return {str(k): float(v) for k, v in got.items()} if got else None
+
+
+class RecordingSource:
+    """Wraps a source and keeps every series it answered with, so the cycle's 10-year REFERENCE
+    history (fetched anyway, then discarded) is written once for the state engines to read. The
+    reference is public, restated history -- never the desk's vintage -- and is labelled so."""
+
+    def __init__(self, inner: VolSource) -> None:
+        self.inner = inner
+        self.seen: dict[str, dict[str, float]] = {}
+
+    def series(self, ticker: str) -> dict[str, float] | None:
+        got = self.inner.series(ticker)
+        if got:
+            self.seen[ticker] = dict(got)
+        return got
+
+
+REFERENCE = _DESK / "data" / "vol_archive" / "reference"
+
+
+def write_reference(seen: dict[str, dict[str, float]], root: Path = REFERENCE,
+                    now: datetime | None = None) -> int:
+    """One JSON per ticker: {fetched_at, kind: reference, series}. Overwritten each cycle."""
+    at = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
+    n = 0
+    for ticker, series in seen.items():
+        root.mkdir(parents=True, exist_ok=True)
+        path = root / (ticker.replace("^", "") + ".json")
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"ticker": ticker, "fetched_at": at, "kind": "reference",
+                                   "note": "public restated history; not the desk's vintage",
+                                   "series": dict(sorted(series.items()))}), "utf-8")
+        os.replace(tmp, path)
+        n += 1
+    return n
 
 
 class FakeVolSource:
@@ -545,6 +607,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=REPORT)
     ap.add_argument("--archive", type=Path, default=ARCHIVE)
     ap.add_argument("--universe", type=Path, default=_DESK / "data" / "universe")
+    ap.add_argument("--no-fetch", action="store_true",
+                    help="fetch no index at all; the broker's realised vol is still observed")
     args = ap.parse_args(argv)
 
     try:
@@ -556,7 +620,11 @@ def main(argv: list[str] | None = None) -> int:
               "instrument id this desk cannot confirm it trades (that is how a foreign alias "
               "becomes a node). Observing WITHOUT the join.")
 
-    cycle = observe(YahooVolSource(), registry, args.universe)
+    inner: VolSource = FakeVolSource() if args.no_fetch else YahooVolSource()
+    source = RecordingSource(inner)
+    cycle = observe(source, registry, args.universe)
+    if not args.dry_run:
+        write_reference(source.seen)
     rows = read_archive(args.archive)
     if not args.dry_run:
         append(cycle, args.archive)

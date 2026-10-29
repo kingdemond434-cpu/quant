@@ -154,6 +154,8 @@ NUDGE: dict[str, dict[str, float]] = {
     "strike": {"energy_supply": -0.5, "trade_friction": 0.5, "inflation_pressure": 0.3},
     "cyber_attack": {"liquidity_shock": 1.0, "vol_shock": 0.6, "risk_off": 0.4},
     "pandemic": {"risk_off": 0.9, "vol_shock": 0.7, "trade_friction": 0.6, "energy_supply": -0.3},
+    "capital_flow_measure": {"liquidity_shock": 0.7, "sovereign_stress": 0.6, "vol_shock": 0.5,
+                             "usd_liquidity": -0.4, "risk_off": 0.3},
     "other": {},
 }
 
@@ -177,6 +179,7 @@ SHOCK_CORR: dict[str, tuple[tuple[str, str, float], ...]] = {
     "political_instability": (("Forex Exotics", "Commodities", 0.20), ("Indices", "Forex", 0.15)),
     "cyber_attack": (("Indices", "Forex", 0.20), ("Indices", "Bonds", 0.15)),
     "pandemic": (("Indices", "Energy", 0.30), ("Indices", "Forex", 0.25)),
+    "capital_flow_measure": (("Forex Exotics", "Indices", 0.25), ("Forex Exotics", "Bonds", 0.20)),
 }
 #: How far tail dependence rises with the correlation shock. One number per kind; absent means
 #: the kind has no declared shock structure and the model says UNMEASURED for it.
@@ -186,6 +189,7 @@ TAIL_LIFT: dict[str, float] = {"war_escalation": 0.30, "sovereign_default": 0.40
                                "tariffs": 0.20, "fx_intervention": 0.20,
                                "sanctions": 0.20, "political_instability": 0.20,
                                "inflation_surprise": 0.20, "labour_surprise": 0.15,
+                               "capital_flow_measure": 0.20,
                                "ceasefire": -0.15}
 
 #: Which ladder tier a seat, host or source id sits on. Matched as a substring, longest first, so

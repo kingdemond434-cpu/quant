@@ -813,6 +813,24 @@ $reportPaths = @(
     # THE UNIVERSAL SENSOR LEDGER'S DIGEST (2026-10-06): its day shards are box-local and
     # gitignored, so this hourly summary (leg sensor_ledger) is what readers off the box get.
     "desks/mt5/reports/SENSOR_LEDGER.json",
+    "desks/mt5/reports/WORLD_SENSOR_INTAKE.json",
+    "desks/mt5/reports/MARKET_STATE.json",
+    "desks/mt5/reports/PHYSICAL_STATE.json",
+    "desks/mt5/reports/VOL_CONDITIONER.json",
+    "desks/mt5/reports/SENSOR_CONTRACTS.json",
+    "desks/mt5/reports/OPTION_CHAINS.json",
+    "desks/mt5/reports/PRICED_IN.json",
+    "desks/mt5/reports/NAME_SENTIMENT.json",
+    "desks/mt5/reports/MODEL_DISAGREEMENT.json",
+    "desks/mt5/reports/REGIME_PROBABILITIES.json",
+    "desks/mt5/reports/NEWS_HAWKES.json",
+    "desks/mt5/reports/LATENT_STATES.json",
+    "desks/mt5/reports/IMPLIED_MOVE.json",
+    "desks/mt5/reports/OWN_RISK_INDEX.json",
+    "desks/mt5/reports/TAIWAN_OPTIONS.json",
+    "desks/mt5/reports/PIT_AUDIT.json",
+    "desks/mt5/reports/alfred_vintages.json",
+    "desks/mt5/reports/WORLD_CAUSAL_GRAPH.json",
     # THE COST AND TAPE STATE THE BOX MEASURES (2026-10-20). Each was fresh on the box while the
     # branch held the 2026-09-23 copy carried in by the orphan root, because no list here named
     # it: every reader off the box (pf_allocator, entry_timing, stop_geometry_derivation,

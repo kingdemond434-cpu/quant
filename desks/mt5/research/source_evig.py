@@ -59,6 +59,7 @@ organ adds is the PRICE that act was previously taken without.
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import math
 import sys
@@ -77,8 +78,15 @@ REGISTRY = DESK / "data" / "asia_sources.json"
 STATE = DESK / "data" / "lake" / "collector_state.json"
 VAULT = DESK / "data" / "lake" / "vault"
 FOUND = DESK / "data" / "intelligence" / "asia_endpoints"
+#: PROVIDER CARDS FROM DONOR TERMINALS (principal 2026-10-05, "OPENTERMINAL"): the EliteQuant
+#: miner reads a donor's provider list (ErTasselli/OpenTerminal first) and writes one card per
+#: provider here; this organ prices each as a candidate source. Schema per row: id, name, url,
+#: targets, observable, mechanism, cadence, access (public|keyed|paid), licence,
+#: machine_use_allowed. A donor is a LIST OF PLACES TO LOOK, never code or data copied in.
+DONORS = DESK / "data" / "intelligence" / "provider_donors"
 POSTERIOR = DESK / "reports" / "POSTERIOR_ALPHA.json"
 OUT = DESK / "reports" / "SOURCE_EVIG.json"
+UNMEASURED = "UNMEASURED"
 
 #: Declared cadence -> the seconds of desk attention one attempt costs, before measured seconds
 #: replace it. A daily portal is attempted thirty times more often than a monthly one, so the
@@ -126,7 +134,111 @@ def _derived() -> list[dict[str, Any]]:
                         "cadence": r.get("cadence") or "irregular", "plane": r.get("plane"),
                         "access": r.get("access") or "public", "derived": True,
                         "machine_use_allowed": r.get("machine_use_allowed")})
+    try:
+        cards = sorted(DONORS.glob("*/providers_*.json"), reverse=True)
+    except OSError:
+        cards = []
+    for f in cards:
+        doc = _read(f, {})
+        rows = doc.get("providers") if isinstance(doc, dict) else doc
+        for r in rows or []:
+            if not isinstance(r, dict):
+                continue
+            sid = f"donor:{f.parent.name}:{r.get('id') or r.get('name') or r.get('url') or ''}"
+            if sid.endswith(":") or sid in seen:
+                continue
+            seen.add(sid)
+            out.append({"id": sid, "url": r.get("url"), "targets": r.get("targets") or [],
+                        "cadence": r.get("cadence") or "irregular",
+                        "plane": r.get("plane") or "donor_provider",
+                        "country": r.get("country"), "observable": r.get("observable"),
+                        "mechanism": r.get("mechanism") or r.get("name"),
+                        "access": r.get("access") or "unknown", "licence": r.get("licence"),
+                        "derived": True, "donor": f.parent.name,
+                        "machine_use_allowed": r.get("machine_use_allowed")})
     return out
+
+
+def provider_cards() -> dict[str, Any]:
+    """Whether the donor provider cards were read at all (audit #211 item 2). No folder, no card
+    file, or no readable provider is UNMEASURED with its reason, never an empty success."""
+    try:
+        files = sorted(DONORS.glob("*/providers_*.json"))
+    except OSError as exc:
+        return {"status": UNMEASURED, "why": f"donor folder unreadable: {type(exc).__name__}",
+                "files": 0, "providers": 0}
+    if not files:
+        return {"status": UNMEASURED, "files": 0, "providers": 0,
+                "why": f"no provider card under {DONORS.name}/*/providers_*.json: the donor "
+                       "terminals' provider lists have not been written on this host"}
+    n, bad = 0, []
+    for f in files:
+        doc = _read(f, None)
+        rows = doc.get("providers") if isinstance(doc, dict) else doc
+        if not isinstance(rows, list):
+            bad.append(f.name)
+            continue
+        n += sum(1 for r in rows if isinstance(r, dict))
+    if n == 0:
+        return {"status": UNMEASURED, "files": len(files), "providers": 0, "unreadable": bad,
+                "why": "provider card files hold no readable provider"}
+    return {"status": "MEASURED", "files": len(files), "providers": n, "unreadable": bad}
+
+
+def _terms_evidence(row: dict[str, Any]) -> str | None:
+    """The positive terms evidence a source card carries, or None: a declared
+    `machine_use_allowed: true`, a quoted permitting clause on the card, a `confirmed` verdict in
+    alt_proxies.TERMS, or admission by the one terms gate (libs.data.terms_hold)."""
+    if row.get("machine_use_allowed") is True:
+        return "machine_use_allowed: true on its card"
+    if str(row.get("terms_url") or "").strip() and str(row.get("terms_quote") or "").strip():
+        return "quoted terms on its card"
+    sid = str(row.get("id") or "")
+    try:
+        import alt_proxies  # type: ignore[import-not-found]
+        verdict = alt_proxies.TERMS.get(sid)
+        if verdict and verdict[0] == "confirmed":
+            return f"alt_proxies.TERMS: {verdict[1]}"
+    except Exception:  # an unreadable verdict table is no evidence, never a pass
+        pass
+    try:
+        from libs.data.terms_hold import gauntlet_terms
+        ok, _why = gauntlet_terms(sid)
+        if ok:
+            return "terms gate admits the id"
+    except Exception:  # an unreadable gate is no evidence, never a pass
+        pass
+    return None
+
+
+def acquisition_gate(row: dict[str, Any]) -> str | None:
+    """Why a source may NOT be proposed for acquisition, or None. FAILS CLOSED (audit #211,
+    2026-10-07): paid ground, a declared `machine_use_allowed: false`, a source the terms fence
+    blocks, a fence that cannot be consulted, and a source with NO positive terms evidence are
+    never proposed. They stay priced and visible (rows, `terms_review`), but the collector is
+    never pointed at them until their terms are read and quoted."""
+    if str(row.get("access") or "").lower() == "paid":
+        return "paid access: blocked by the data-access rule (public or licensed only)"
+    if row.get("machine_use_allowed") is False:
+        return "machine_use_allowed: false on its card"
+    tf: Any = None
+    try:
+        tf = importlib.import_module("libs.data.terms_fence")
+    except ModuleNotFoundError as exc:
+        if exc.name != "libs.data.terms_fence":
+            return f"terms fence unavailable ({type(exc).__name__}): held"
+    except Exception as exc:
+        return f"terms fence unavailable ({type(exc).__name__}): held"
+    if tf is not None:
+        try:
+            fenced = tf.fenced_source(str(row.get("id") or ""))
+        except Exception as exc:
+            return f"terms fence failed ({type(exc).__name__}): held"
+        if fenced:
+            return f"terms fence: {fenced}"
+    if _terms_evidence(row) is None:
+        return "terms UNMEASURED: no permitting evidence on its card (held for terms review)"
+    return None
 
 
 def _posterior_sd() -> tuple[dict[str, float], str]:
@@ -298,7 +410,9 @@ def price(sources: list[dict[str, Any]], state: dict[str, Any],
         evig = u * max(n_share, 0.05) * p_usable * w / cost
         rows.append({
             "id": sid, "plane": s.get("plane"), "cadence": s.get("cadence"),
-            "access": s.get("access"), "role": s.get("role") or "mechanism",
+            "access": s.get("access"), "donor": s.get("donor"), "role": s.get("role") or "mechanism",
+            "machine_use_allowed": s.get("machine_use_allowed"),
+            "acquisition_gate": acquisition_gate(s),
             "derived": bool(s.get("derived")),
             "targets": targets, "novel_targets": novel,
             "u_prior_sd": round(u, 6), "u_status": ("MEASURED" if prior
@@ -349,12 +463,18 @@ def build(budget_s: float = 120.0) -> dict[str, Any]:
     sd, sd_why = _posterior_sd()
     sources = [*_sources(), *_derived()]
     rows = price(sources, state, sd)
-    proposals = [r for r in rows if r["never_collected"]][:20]
+    proposals = [r for r in rows if r["never_collected"] and not r["acquisition_gate"]][:20]
+    cards = provider_cards()
     return {
         "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "status": "OK" if rows else "UNMEASURED",
         "n_sources": len(rows), "n_registered": len(_sources()),
         "n_derived": sum(1 for r in rows if r["derived"]),
+        "provider_cards": cards,
+        "n_gated_from_proposals": sum(1 for r in rows if r["never_collected"]
+                                      and r["acquisition_gate"]),
+        "terms_review": [r["id"] for r in rows if r["never_collected"]
+                         and str(r["acquisition_gate"] or "").startswith("terms UNMEASURED")][:20],
         "n_never_collected": sum(1 for r in rows if r["never_collected"]),
         "prior_basis": ("POSTERIOR_ALPHA mean mu_sd per symbol" if sd
                         else f"flat prior 1.0: {sd_why}"),
