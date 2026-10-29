@@ -40,6 +40,9 @@ for _p in (str(ROOT), str(ROOT / "desks" / "mt5"), str(ROOT / "desks" / "mt5" / 
 
 import job_lock as J  # noqa: E402
 
+#: The leg's artifact, `job_lock.HEALTH_REPORT`, bound by name so the component registry and the
+#: runtime attestation can see what this organ writes (a test pins the two equal).
+OUT = ROOT / "desks" / "mt5" / "reports" / "JOB_LOCK_HEALTH.json"
 #: The exit while any owner is WEDGED. A failure, named (hourly_cycle.NAMED_FAILURE_EXITS), not
 #: a verdict: a wedged lock is a stage that is not running.
 EXIT_WEDGED = 2

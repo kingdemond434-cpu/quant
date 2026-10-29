@@ -248,3 +248,7 @@ def test_red_exits_with_a_named_failure(root: Path, monkeypatch) -> None:
     from research import hourly_cycle as hc
     assert hc._exit_outcome("job_lock_health", 2) == "exit_code=2:OWNER_WEDGED"
     assert 2 not in hc.VERDICT_EXITS.get("job_lock_health", ())
+
+
+def test_the_bound_artifact_is_the_report_job_lock_writes() -> None:
+    assert C.OUT.resolve() == J.HEALTH_REPORT.resolve()

@@ -27,10 +27,10 @@
   "STALE": 46,
   "MISSING": 47,
   "NEVER": 793,
-  "UNMEASURED": 43
+  "UNMEASURED": 44
  },
  "scope": {
-  "attested": 1017,
+  "attested": 1018,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -464,6 +464,16 @@
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
      "leg:prop_challenge_allocator"
+    ]
+   },
+   {
+    "at": "2026-10-29T18:52:16+00:00",
+    "host": "vm",
+    "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:job_lock_health"
     ]
    }
   ]
@@ -26497,6 +26507,36 @@
    "measured_on": "vm",
    "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
    "measured_at": "2026-10-29T01:09:30+00:00"
+  },
+  {
+   "organ": "leg:job_lock_health",
+   "kind": "leg",
+   "code": [
+    "scripts/check_job_locks.py"
+   ],
+   "clock": "hourly_cycle:job_lock_health",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "UNMEASURED",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/JOB_LOCK_HEALTH.json",
+   "artifact_declared": "desks/mt5/reports/JOB_LOCK_HEALTH.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 1554,
+   "artifact_bytes": 336,
+   "artifact_sha256": "7cb39a0fad8b76956d12451443bba1561534ddc39098755161b42b892d3fae34",
+   "summary": {
+    "status": "OK"
+   },
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-29T18:52:16+00:00"
   }
  ],
  "ratchet": {
