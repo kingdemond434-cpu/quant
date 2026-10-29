@@ -435,7 +435,10 @@ def test_cnx_rows_hold_their_whole_exchange_host_each_on_its_own_row() -> None:
 
 
 def test_cnx_host_holds_do_not_catch_other_hosts() -> None:
-    for url in ("https://www.sge.com.cn/sjzx/mrhq", "https://www.chinamoney.com.cn/r/x.json",
+    # sge.com.cn has its OWN row since 2026-10-29 (`sge`, IDEAS_ONLY on unread terms), never a
+    # China-exchange hold
+    assert tf.input_source("https://www.sge.com.cn/sjzx/mrhq") == "sge"
+    for url in ("https://www.chinamoney.com.cn/r/x.json",
                 "https://mine.cn/", "https://www.notshfe.com.cn/", "https://shfe.com.cn.example/",
                 "https://www.example.org/www.shfe.com.cn/", "https://www.dce.com/",
                 "https://www.cffex.com.cn.example.org/"):
