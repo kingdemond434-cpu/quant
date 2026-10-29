@@ -974,6 +974,13 @@ PRODUCER_ROUTES: dict[str, dict[str, Any]] = {
         "basis": "a family library: `macro` / `spread_series` arrive already aligned by the "
                  "certificate path's providers (`orthogonal_sweep._macro_series`, "
                  "`family_inputs`); its own joins are bar-to-bar (peer closes, its own ATR)"},
+    # ---- landed on LIVE after the producer floor was sealed (found at the 2026-10-29 merge)
+    "libs/research/bar_clock_release.py": {
+        "route": "event_time", "sources": ("event_calendar",),
+        "basis": "a clock CALIBRATION, not a feature join: each release instant is stamped in "
+                 "genuine UTC by the calendar (`event_date` carries its own offset) and its "
+                 "searchsorted only locates the bar it would sit in to measure the broker "
+                 "offset; no macro value reaches a cell"},
     "desks/mt5/research/event_surprise.py": {
         "route": "event_time", "sources": ("event_calendar",),
         "basis": "a release's surprise is known at the release instant `at`, and each event is "

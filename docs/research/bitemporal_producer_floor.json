@@ -11,11 +11,13 @@
   "desks/mt5/research/event_response_atlas.py",
   "desks/mt5/research/event_surprise.py",
   "desks/mt5/research/free_stack_hunter.py",
+  "desks/mt5/research/macro_state_engine.py",
   "desks/mt5/research/pf_allocator.py",
   "desks/mt5/research/run_macro_swing_sweep.py",
   "desks/mt5/research/world_dataset_hunter.py",
   "desks/mt5/research/world_model.py",
   "libs/regime/state_admission.py",
+  "libs/research/bar_clock_release.py",
   "libs/research/country_lab.py",
   "libs/research/lead_schema.py"
  ]
