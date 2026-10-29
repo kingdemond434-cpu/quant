@@ -1,11 +1,11 @@
 {
- "at": "2026-10-29T00:44:23+00:00",
+ "at": "2026-10-29T01:39:46+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
  "population": {
   "certificates": 1163,
-  "forward_rows": 1733,
+  "forward_rows": 1741,
   "spec_book": [
    "dow_effect",
    "mean_reversion_rsi",
@@ -24,226 +24,9 @@
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "AUDNZD.overnight_gap_decay.p=01c9a5a1c680a3f7",
-   "certificate": "external.AUDNZD.overnight_gap_decay.p=01c9a5a1c680a3f7",
-   "fp": "61271059dc6e7580",
-   "symbol": "AUDNZD",
-   "family": "overnight_gap_decay",
-   "verdict": "REPLICATED",
-   "why": [
-    "in-sample Sharpe comes back: rebuilt +0.207 vs recorded +0.210 on 837 fill(s)"
-   ],
-   "ours": {
-    "sharpe": 0.2074,
-    "n_fills": 837,
-    "n_days": 837,
-    "cost_price_units": 0.00010846639999999999,
-    "cost_basis": "universe_registry",
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
-    "params": {
-     "gap_atr": 0.75,
-     "atr_n": 20,
-     "stop_atr": 1.5,
-     "rr": 1.0,
-     "ttl_bars": 8
-    }
-   },
-   "theirs": {
-    "sharpe": 0.2105,
-    "days": 369
-   }
-  },
-  {
-   "lane": "certificate",
-   "key": "EURNOK.overnight_gap_decay.p=fa049d05ce61b04e",
-   "certificate": "external.EURNOK.overnight_gap_decay.p=fa049d05ce61b04e",
-   "fp": "ce426f9dd8c9ec59",
-   "symbol": "EURNOK",
-   "family": "overnight_gap_decay",
-   "verdict": "REPLICATED",
-   "why": [
-    "in-sample Sharpe comes back: rebuilt +0.472 vs recorded +0.313 on 757 fill(s)"
-   ],
-   "ours": {
-    "sharpe": 0.4721,
-    "n_fills": 757,
-    "n_days": 757,
-    "cost_price_units": 0.0020181824,
-    "cost_basis": "universe_registry",
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
-    "params": {
-     "gap_atr": 0.75,
-     "atr_n": 20,
-     "stop_atr": 1.5,
-     "rr": 1.0,
-     "ttl_bars": 8
-    }
-   },
-   "theirs": {
-    "sharpe": 0.3131,
-    "days": 330
-   }
-  },
-  {
-   "lane": "certificate",
-   "key": "EURSEK.overnight_gap_decay.p=fa049d05ce61b04e",
-   "certificate": "external.EURSEK.overnight_gap_decay.p=fa049d05ce61b04e",
-   "fp": "8e1701da3b714fcd",
-   "symbol": "EURSEK",
-   "family": "overnight_gap_decay",
-   "verdict": "REPLICATED",
-   "why": [
-    "in-sample Sharpe comes back: rebuilt +0.271 vs recorded +0.197 on 775 fill(s)"
-   ],
-   "ours": {
-    "sharpe": 0.2715,
-    "n_fills": 775,
-    "n_days": 775,
-    "cost_price_units": 0.0016050732,
-    "cost_basis": "universe_registry",
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
-    "params": {
-     "gap_atr": 0.75,
-     "atr_n": 20,
-     "stop_atr": 1.5,
-     "rr": 1.0,
-     "ttl_bars": 8
-    }
-   },
-   "theirs": {
-    "sharpe": 0.1969,
-    "days": 358
-   }
-  },
-  {
-   "lane": "certificate",
-   "key": "EURSGD.overnight_gap_decay.p=de9ed752775ac9b5",
-   "certificate": "external.EURSGD.overnight_gap_decay.p=de9ed752775ac9b5",
-   "fp": "71c5e7832a3be60c",
-   "symbol": "EURSGD",
-   "family": "overnight_gap_decay",
-   "verdict": "REPLICATED",
-   "why": [
-    "in-sample Sharpe comes back: rebuilt +0.175 vs recorded +0.213 on 432 fill(s)"
-   ],
-   "ours": {
-    "sharpe": 0.1751,
-    "n_fills": 432,
-    "n_days": 432,
-    "cost_price_units": 7.7254e-05,
-    "cost_basis": "universe_registry",
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
-    "params": {
-     "gap_atr": 0.75,
-     "atr_n": 20,
-     "stop_atr": 1.5,
-     "rr": 1.0,
-     "ttl_bars": 8
-    }
-   },
-   "theirs": {
-    "sharpe": 0.2135,
-    "days": 201
-   }
-  },
-  {
-   "lane": "certificate",
-   "key": "EURSGD.overnight_gap_decay.p=fa049d05ce61b04e",
-   "certificate": "external.EURSGD.overnight_gap_decay.p=fa049d05ce61b04e",
-   "fp": "c87a59ead82663b7",
-   "symbol": "EURSGD",
-   "family": "overnight_gap_decay",
-   "verdict": "REPLICATED",
-   "why": [
-    "in-sample Sharpe comes back: rebuilt +0.175 vs recorded +0.213 on 432 fill(s)"
-   ],
-   "ours": {
-    "sharpe": 0.1751,
-    "n_fills": 432,
-    "n_days": 432,
-    "cost_price_units": 7.7254e-05,
-    "cost_basis": "universe_registry",
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
-    "params": {
-     "gap_atr": 0.75,
-     "atr_n": 20,
-     "stop_atr": 1.5,
-     "rr": 1.0,
-     "ttl_bars": 8
-    }
-   },
-   "theirs": {
-    "sharpe": 0.2135,
-    "days": 201
-   }
-  },
-  {
-   "lane": "certificate",
-   "key": "NZDCAD.overnight_gap_decay.p=fa049d05ce61b04e",
-   "certificate": "external.NZDCAD.overnight_gap_decay.p=fa049d05ce61b04e",
-   "fp": "3a0817a4fc2c1eb3",
-   "symbol": "NZDCAD",
-   "family": "overnight_gap_decay",
-   "verdict": "REPLICATED",
-   "why": [
-    "in-sample Sharpe comes back: rebuilt +0.311 vs recorded +0.309 on 503 fill(s)"
-   ],
-   "ours": {
-    "sharpe": 0.3107,
-    "n_fills": 503,
-    "n_days": 503,
-    "cost_price_units": 7.426799999999999e-05,
-    "cost_basis": "universe_registry",
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
-    "params": {
-     "gap_atr": 0.75,
-     "atr_n": 20,
-     "stop_atr": 1.5,
-     "rr": 1.0,
-     "ttl_bars": 8
-    }
-   },
-   "theirs": {
-    "sharpe": 0.3091,
-    "days": 236
-   }
-  },
-  {
-   "lane": "certificate",
-   "key": "NZDCHF.overnight_gap_decay.p=fa049d05ce61b04e",
-   "certificate": "external.NZDCHF.overnight_gap_decay.p=fa049d05ce61b04e",
-   "fp": "bde64190881e9002",
-   "symbol": "NZDCHF",
-   "family": "overnight_gap_decay",
-   "verdict": "REPLICATED",
-   "why": [
-    "in-sample Sharpe comes back: rebuilt +0.365 vs recorded +0.432 on 661 fill(s)"
-   ],
-   "ours": {
-    "sharpe": 0.3653,
-    "n_fills": 661,
-    "n_days": 661,
-    "cost_price_units": 5.683559999999999e-05,
-    "cost_basis": "universe_registry",
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
-    "params": {
-     "gap_atr": 0.75,
-     "atr_n": 20,
-     "stop_atr": 1.5,
-     "rr": 1.0,
-     "ttl_bars": 8
-    }
-   },
-   "theirs": {
-    "sharpe": 0.4317,
-    "days": 308
-   }
-  },
-  {
-   "lane": "certificate",
-   "key": "SGDJPY.overnight_gap_decay.p=de9ed752775ac9b5",
-   "certificate": "external.SGDJPY.overnight_gap_decay.p=de9ed752775ac9b5",
-   "fp": "afa588f9794e6728",
+   "key": "SGDJPY.overnight_gap_decay.p=fa049d05ce61b04e",
+   "certificate": "external.SGDJPY.overnight_gap_decay.p=fa049d05ce61b04e",
+   "fp": "f52d522370bcb2bc",
    "symbol": "SGDJPY",
    "family": "overnight_gap_decay",
    "verdict": "REPLICATED",
@@ -271,9 +54,226 @@
    }
   },
   {
+   "lane": "certificate",
+   "key": "USDSEK.overnight_gap_decay.p=fa049d05ce61b04e",
+   "certificate": "external.USDSEK.overnight_gap_decay.p=fa049d05ce61b04e",
+   "fp": "0834ec48976e6075",
+   "symbol": "USDSEK",
+   "family": "overnight_gap_decay",
+   "verdict": "REPLICATED",
+   "why": [
+    "in-sample Sharpe comes back: rebuilt +0.528 vs recorded +0.342 on 452 fill(s)"
+   ],
+   "ours": {
+    "sharpe": 0.5282,
+    "n_fills": 452,
+    "n_days": 452,
+    "cost_price_units": 0.0018050732,
+    "cost_basis": "universe_registry",
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
+    "params": {
+     "gap_atr": 0.75,
+     "atr_n": 20,
+     "stop_atr": 1.5,
+     "rr": 1.0,
+     "ttl_bars": 8
+    }
+   },
+   "theirs": {
+    "sharpe": 0.3418,
+    "days": 235
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "AUDCAD.overnight_gap_decay.p=931687e6633f8f8b",
+   "certificate": "external.AUDCAD.overnight_gap_decay.p=931687e6633f8f8b",
+   "fp": "c0b16bbbe7249059",
+   "symbol": "AUDCAD",
+   "family": "overnight_gap_decay",
+   "verdict": "REPLICATED",
+   "why": [
+    "in-sample Sharpe comes back: rebuilt +0.270 vs recorded +0.312 on 500 fill(s)"
+   ],
+   "ours": {
+    "sharpe": 0.2703,
+    "n_fills": 500,
+    "n_days": 500,
+    "cost_price_units": 8.272039999999998e-05,
+    "cost_basis": "universe_registry",
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
+    "params": {
+     "gap_atr": 0.75,
+     "atr_n": 20,
+     "stop_atr": 1.5,
+     "rr": 1.0,
+     "ttl_bars": 8
+    }
+   },
+   "theirs": {
+    "sharpe": 0.3121,
+    "days": 204
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "CHFDKK.overnight_gap_decay.p=931687e6633f8f8b",
+   "certificate": "external.CHFDKK.overnight_gap_decay.p=931687e6633f8f8b",
+   "fp": "5a3dfe907b689aa8",
+   "symbol": "CHFDKK",
+   "family": "overnight_gap_decay",
+   "verdict": "REPLICATED",
+   "why": [
+    "in-sample Sharpe comes back: rebuilt +0.448 vs recorded +0.491 on 904 fill(s)"
+   ],
+   "ours": {
+    "sharpe": 0.4477,
+    "n_fills": 904,
+    "n_days": 903,
+    "cost_price_units": 0.0009390032,
+    "cost_basis": "universe_registry",
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
+    "params": {
+     "gap_atr": 0.75,
+     "atr_n": 20,
+     "stop_atr": 1.5,
+     "rr": 1.0,
+     "ttl_bars": 8
+    }
+   },
+   "theirs": {
+    "sharpe": 0.4913,
+    "days": 390
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "CHFSGD.overnight_gap_decay.p=931687e6633f8f8b",
+   "certificate": "external.CHFSGD.overnight_gap_decay.p=931687e6633f8f8b",
+   "fp": "9e1929c84ee99d4d",
+   "symbol": "CHFSGD",
+   "family": "overnight_gap_decay",
+   "verdict": "REPLICATED",
+   "why": [
+    "in-sample Sharpe comes back: rebuilt +0.293 vs recorded +0.327 on 478 fill(s)"
+   ],
+   "ours": {
+    "sharpe": 0.2931,
+    "n_fills": 478,
+    "n_days": 478,
+    "cost_price_units": 9.7254e-05,
+    "cost_basis": "universe_registry",
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
+    "params": {
+     "gap_atr": 0.75,
+     "atr_n": 20,
+     "stop_atr": 1.5,
+     "rr": 1.0,
+     "ttl_bars": 8
+    }
+   },
+   "theirs": {
+    "sharpe": 0.3268,
+    "days": 323
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "EURSEK.overnight_gap_decay.p=44136fa355b3678a",
+   "certificate": "external.EURSEK.overnight_gap_decay.p=44136fa355b3678a",
+   "fp": "861801149d70b120",
+   "symbol": "EURSEK",
+   "family": "overnight_gap_decay",
+   "verdict": "REPLICATED",
+   "why": [
+    "in-sample Sharpe comes back: rebuilt +0.272 vs recorded +0.197 on 776 fill(s)"
+   ],
+   "ours": {
+    "sharpe": 0.2716,
+    "n_fills": 776,
+    "n_days": 776,
+    "cost_price_units": 0.0016050732,
+    "cost_basis": "universe_registry",
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
+    "params": {
+     "gap_atr": 0.75,
+     "atr_n": 20,
+     "stop_atr": 1.5,
+     "rr": 1.0,
+     "ttl_bars": 8
+    }
+   },
+   "theirs": {
+    "sharpe": 0.1969,
+    "days": 358
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "EURSGD.overnight_gap_decay.p=931687e6633f8f8b",
+   "certificate": "external.EURSGD.overnight_gap_decay.p=931687e6633f8f8b",
+   "fp": "446d83d79614cdb8",
+   "symbol": "EURSGD",
+   "family": "overnight_gap_decay",
+   "verdict": "REPLICATED",
+   "why": [
+    "in-sample Sharpe comes back: rebuilt +0.175 vs recorded +0.213 on 432 fill(s)"
+   ],
+   "ours": {
+    "sharpe": 0.1751,
+    "n_fills": 432,
+    "n_days": 432,
+    "cost_price_units": 7.7254e-05,
+    "cost_basis": "universe_registry",
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
+    "params": {
+     "gap_atr": 0.75,
+     "atr_n": 20,
+     "stop_atr": 1.5,
+     "rr": 1.0,
+     "ttl_bars": 8
+    }
+   },
+   "theirs": {
+    "sharpe": 0.2135,
+    "days": 201
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "EURSGD.overnight_gap_decay.p=44136fa355b3678a",
+   "certificate": "external.EURSGD.overnight_gap_decay.p=44136fa355b3678a",
+   "fp": "184438963ffb4b5b",
+   "symbol": "EURSGD",
+   "family": "overnight_gap_decay",
+   "verdict": "REPLICATED",
+   "why": [
+    "in-sample Sharpe comes back: rebuilt +0.175 vs recorded +0.213 on 432 fill(s)"
+   ],
+   "ours": {
+    "sharpe": 0.1751,
+    "n_fills": 432,
+    "n_days": 432,
+    "cost_price_units": 7.7254e-05,
+    "cost_basis": "universe_registry",
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
+    "params": {
+     "gap_atr": 0.75,
+     "atr_n": 20,
+     "stop_atr": 1.5,
+     "rr": 1.0,
+     "ttl_bars": 8
+    }
+   },
+   "theirs": {
+    "sharpe": 0.2135,
+    "days": 201
+   }
+  },
+  {
    "lane": "forward",
-   "key": "GBPJPY.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=36",
-   "symbol": "GBPJPY",
+   "key": "USDPLN.cross_asset_residual.asia@M30#factor_symbols=['AVAXUSD']_session=ny_ttl_bars=6",
+   "symbol": "USDPLN",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
    "why": [
@@ -285,8 +285,8 @@
   },
   {
    "lane": "forward",
-   "key": "GBPJPY.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=16",
-   "symbol": "GBPJPY",
+   "key": "USDPLN.cross_asset_residual.asia@M30#factor_symbols=['AVAXUSD']_ttl_bars=6",
+   "symbol": "USDPLN",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
    "why": [
@@ -298,8 +298,8 @@
   },
   {
    "lane": "forward",
-   "key": "GBPJPY.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=4",
-   "symbol": "GBPJPY",
+   "key": "USDPLN.cross_asset_residual.asia@M30#factor_symbols=['BCHUSD']_ttl_bars=6",
+   "symbol": "USDPLN",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
    "why": [
@@ -311,8 +311,8 @@
   },
   {
    "lane": "forward",
-   "key": "GBPJPY.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=4",
-   "symbol": "GBPJPY",
+   "key": "USDPLN.cross_asset_residual.asia@M30#factor_symbols=['BNBUSD']_session=ny_ttl_bars=6",
+   "symbol": "USDPLN",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
    "why": [
@@ -324,8 +324,8 @@
   },
   {
    "lane": "forward",
-   "key": "GBPJPY.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=4",
-   "symbol": "GBPJPY",
+   "key": "USDPLN.cross_asset_residual.asia@M30#factor_symbols=['BNBUSD']_ttl_bars=6",
+   "symbol": "USDPLN",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
    "why": [
@@ -337,8 +337,8 @@
   },
   {
    "lane": "forward",
-   "key": "GBPJPY.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_session=london_side_mode=revert_ttl_bars=144",
-   "symbol": "GBPJPY",
+   "key": "USDPLN.cross_asset_residual.asia@M30#factor_symbols=['CADCHF']_ttl_bars=6",
+   "symbol": "USDPLN",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
    "why": [
@@ -350,8 +350,8 @@
   },
   {
    "lane": "forward",
-   "key": "GBPJPY.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_session=london_side_mode=revert_ttl_bars=36",
-   "symbol": "GBPJPY",
+   "key": "USDPLN.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_session=ny_side_mode=revert_ttl_bars=72",
+   "symbol": "USDPLN",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
    "why": [
@@ -363,12 +363,12 @@
   },
   {
    "lane": "forward",
-   "key": "GBPZAR.carry.asia@M15",
-   "symbol": "GBPZAR",
-   "family": "carry",
+   "key": "USDPLN.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_session=ny_side_in_high=1_ttl_bars=96",
+   "symbol": "USDPLN",
+   "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'carry'"
+    "no written specification in the spec book for family 'macro_conditional'"
    ],
    "ours": {},
    "theirs": {},
@@ -378,36 +378,36 @@
  "quarantined": [],
  "unmeasured": [
   {
-   "what": "GBPJPY.cross_asset_residual.asia@M30#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=36",
+   "what": "USDPLN.cross_asset_residual.asia@M30#factor_symbols=['AVAXUSD']_session=ny_ttl_bars=6",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "GBPJPY.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=16",
+   "what": "USDPLN.cross_asset_residual.asia@M30#factor_symbols=['AVAXUSD']_ttl_bars=6",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "GBPJPY.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=4",
+   "what": "USDPLN.cross_asset_residual.asia@M30#factor_symbols=['BCHUSD']_ttl_bars=6",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "GBPJPY.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=4",
+   "what": "USDPLN.cross_asset_residual.asia@M30#factor_symbols=['BNBUSD']_session=ny_ttl_bars=6",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "GBPJPY.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=4",
+   "what": "USDPLN.cross_asset_residual.asia@M30#factor_symbols=['BNBUSD']_ttl_bars=6",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "GBPJPY.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_session=london_side_mode=revert_ttl_bars=144",
+   "what": "USDPLN.cross_asset_residual.asia@M30#factor_symbols=['CADCHF']_ttl_bars=6",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "GBPJPY.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_session=london_side_mode=revert_ttl_bars=36",
+   "what": "USDPLN.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_session=ny_side_mode=revert_ttl_bars=72",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "GBPZAR.carry.asia@M15",
-   "why": "no written specification in the spec book for family 'carry'"
+   "what": "USDPLN.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_session=ny_side_in_high=1_ttl_bars=96",
+   "why": "no written specification in the spec book for family 'macro_conditional'"
   }
  ],
  "recorded": {
@@ -416,8 +416,8 @@
   "candidates": 0
  },
  "cursor": {
-  "forward": 1658,
-  "at": "2026-10-28T23:38:16+00:00",
+  "forward": 1666,
+  "at": "2026-10-29T00:44:23+00:00",
   "certificates": 979
  },
  "notes": [],
@@ -435,24 +435,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDNZD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURNOK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\SGDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSEK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFDKK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFSGD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURSEK_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURSGD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\SGDJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPZAR_M15.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDPLN_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDPLN_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDPLN_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDPLN_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDPLN_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDPLN_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDPLN_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDPLN_M5.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 180.4
+ "seconds": 17.79
 }
