@@ -252,9 +252,11 @@ def says_risk_up(words: str) -> bool:
 #: A FAIL that names no defect: every finding hedges ("could increase risk", "increases
 #: complexity", "purpose unclear") and none points at a place (file:line). #506, #516 and #439
 #: failed on such boilerplate from one 7b model while the diff was sound (Desk health 10-29).
+#: Only the named boilerplate: a generic modal ("may lose money", "could martingale") is NOT a
+#: hedge, so a FAIL worded that way stays a FAIL whatever the flags say (#538 audit v3 MF-1).
 _HEDGE = re.compile(
-    r"\b(could|may|might|potentially|possibly|perhaps|unclear|not clear|complexity|complex"
-    r"|without sufficient|insufficient|introduces? new (variables|logic|code|functionality))\b",
+    r"\b(unclear|not clear|complexity|complex|without sufficient|insufficient"
+    r"|introduces? new (variables|logic|code|functionality|behaviou?r))\b",
     re.IGNORECASE,
 )
 _PLACE = re.compile(r"[\w/.-]+\.\w+:\d+|\bline \d+", re.IGNORECASE)
@@ -278,14 +280,26 @@ VAGUE_NOTE = (
 )
 
 
+_PLACE_KEYS = ("file", "path", "location", "line")
+
+
 def _finding_text(x: Any) -> str:
-    """A finding as words: a structured one ({"file", "line", ...}) reads as `file:line ...`, so
-    a place it names is seen (#538 audit SF-a)."""
+    """A finding as words; a structured one ({"file", "line", ...}) without its place keys,
+    which _names_place() reads (#538 audit SF-a, v3 SF-2)."""
     if isinstance(x, dict):
-        place = f"{x.get('file', '')}:{x.get('line', '')}" if x.get("file") else ""
-        rest = " ".join(str(v) for k, v in x.items() if k not in ("file", "line"))
-        return f"{place} {rest}".strip()
+        return " ".join(str(v) for k, v in x.items() if k not in _PLACE_KEYS)
     return str(x)
+
+
+def _names_place(x: Any) -> bool:
+    """A structured finding names a place: any file, path or location, or a numeric line."""
+    if not isinstance(x, dict):
+        return False
+    line = x.get("line")
+    numeric = (isinstance(line, int) and not isinstance(line, bool)) or str(
+        line or ""
+    ).strip().isdigit()
+    return numeric or any(str(x.get(k) or "").strip() for k in ("file", "path", "location"))
 
 
 def vague_fail(answer: dict[str, Any]) -> bool:
@@ -299,11 +313,17 @@ def vague_fail(answer: dict[str, Any]) -> bool:
         return False
     if answer.get("risk_increasing") is not False or answer.get("touches_control") is not False:
         return False
-    found = [_finding_text(x) for x in answer.get("findings") or []]
+    raw = list(answer.get("findings") or [])
+    if any(_names_place(x) for x in raw):
+        return False
+    found = [_finding_text(x) for x in raw]
     words = " ".join([str(answer.get("summary", "")), *found])
     words = unicodedata.normalize("NFKC", words)
     if _hidden(words):  # a mixed-script word hides from the lists: never vague
         return False
+    for word in _SCRIPT.findall(words):  # any letter outside the fold counts too (v3 SF-1)
+        if any(c.isascii() for c in word) and any(not c.isascii() for c in word):
+            return False
     words = words.translate(_CONFUSABLE)
     if says_risk_up(words) or _MECHANISM.search(words) or _PLACE.search(words):
         return False
@@ -324,13 +344,20 @@ def decide(answer: dict[str, Any]) -> tuple[bool, str]:
     return True, "PASS"
 
 
+def _no_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    keys = [k for k, _ in pairs]
+    if len(keys) != len(set(keys)):
+        raise ValueError(f"duplicate keys in {sorted(keys)}")
+    return dict(pairs)
+
+
 def parse(text: str) -> dict[str, Any] | None:
     """The one JSON object the rubric asks for, or None (no vote) when the answer is not one."""
     start, end = text.find("{"), text.rfind("}")
     if start < 0 or end <= start:
         return None
-    try:
-        doc = json.loads(text[start : end + 1])
+    try:  # a key given twice is no answer: the last copy would win silently (v3 SF-3)
+        doc = json.loads(text[start : end + 1], object_pairs_hook=_no_duplicates)
     except ValueError:
         return None
     if not isinstance(doc, dict) or any(k not in doc for k in KEYS):

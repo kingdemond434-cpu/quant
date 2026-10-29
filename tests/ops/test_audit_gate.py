@@ -2069,3 +2069,43 @@ def test_an_abstaining_family_skips_its_other_models() -> None:
 def test_the_reask_notes_sentences_are_screened_in_a_diff(line: str) -> None:
     """#538 audit SF-c."""
     assert ir.addressed_to_reviewer(f"diff --git a/x.py b/x.py\n{line}\n")
+
+
+@pytest.mark.parametrize(
+    "finding",
+    [  # #538 audit v3 MF-1: generic modals with BOTH flags False still FAIL
+        "could increase notional", "could change SL/TP", "may use full kelly", "could martingale",
+        "might pyramid", "could average down", "may leave it uncapped", "may talk to the broker",
+        "might change the gateway", "could download code", "may lose money", "could liquidate",
+        "might affect live trading", "may go all-in", "could pip install", "may use os.system",
+    ],
+)  # fmt: skip
+def test_a_generic_modal_is_never_a_hedge_even_with_both_flags_false(finding: str) -> None:
+    ans = json.dumps({**json.loads(_VAGUE_506), "findings": [finding]})
+    assert not ir.vague_fail(json.loads(ans))
+    v, _ = _vote([("qwen", "q1", _model(ans, ans)), ("llama", "l1", _model(_PASS))])
+    assert v == "FAIL"
+
+
+@pytest.mark.parametrize("word", ["could raise the \u029fot", "may touch the \u13deot size"])
+def test_any_mixed_script_word_is_never_vague(word: str) -> None:
+    """#538 audit v3 SF-1: letters outside the confusable fold."""
+    assert not ir.vague_fail({**json.loads(_VAGUE_506), "findings": [word, "unclear"]})
+
+
+@pytest.mark.parametrize(
+    "finding",
+    [{"path": "x.py", "line": 5, "why": "unclear"}, {"file": "", "line": 5, "why": "unclear"},
+     {"location": "gateway", "why": "unclear"}, {"file": "x.py", "line": 3, "why": "unclear"}],
+)  # fmt: skip
+def test_a_structured_finding_with_any_place_is_not_vague(finding: dict[str, Any]) -> None:
+    """#538 audit v3 SF-2."""
+    assert not ir.vague_fail({**json.loads(_VAGUE_506), "findings": [finding]})
+
+
+def test_an_answer_with_a_key_twice_is_unreadable() -> None:
+    """#538 audit v3 SF-3: {"risk_increasing": true, "risk_increasing": false} is no answer."""
+    dup = _PASS.replace(
+        '"risk_increasing": false', '"risk_increasing": true, "risk_increasing": false'
+    )
+    assert dup != _PASS and ir.parse(dup) is None
