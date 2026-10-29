@@ -5597,6 +5597,12 @@ def main() -> None:
     # forecasts and each source's leave-one-out incremental value. Measures; adapts nothing.
     fsc = _costed("forecast_scoring", lambda: _producer(
         "forecast_scoring", "research/forecast_scoring.py"))
+    # EACH ALLOCATOR INPUT AGAINST THE PLAIN SOLVE, OUT OF SAMPLE (zuck 2026-10-27). Its own leg:
+    # the daily chain is killed at 900 s and its proposers alone measured 9,056 s. The organ
+    # stops itself at 600 s inside the 720 s default cap and caches every solved window, so the
+    # backlog shrinks each hour and an hour with no new window costs a few cache reads.
+    iab = _costed("input_ablation", lambda: _producer(
+        "input_ablation", "research/input_ablation.py", "--budget-s", "600"))
     exo = _costed("exogenous_search", exogenous_search)
     srx = _costed("stop_reverse", stop_reverse_census)
     fwr = _costed("forward_reconcile", forward_reconcile_leg)
@@ -6226,7 +6232,7 @@ def main() -> None:
                     "kelly_survival": kls,
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "drift_monitor": drm,
-                    "forecast_scoring": fsc,
+                    "forecast_scoring": fsc, "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,

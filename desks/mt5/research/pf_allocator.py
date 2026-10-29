@@ -669,7 +669,7 @@ def live_days_by_sleeve() -> dict[str, int]:
     return {k: len(v) for k, v in days.items()}
 
 
-def regime_state(daily: pd.DataFrame,
+def regime_state(daily: pd.DataFrame, asof: str | None = None,
                  ) -> tuple[tuple[str, ...], tuple[tuple[str, float], ...], dict[str, Any]]:
     """Per-day regime label over the matrix's own clock, and the regime mix to SIZE AGAINST.
 
@@ -696,6 +696,10 @@ def regime_state(daily: pd.DataFrame,
     be trending while gold ranges. A per-asset regime hierarchy is the next piece of work; this
     function's contract does not change when it arrives. Returns empty tuples when the engine
     cannot fit, in which case `sample_worlds` draws unconditioned worlds and says so.
+
+    `asof` (an ISO date) fits on the closes up to and including that day only, so a replay
+    (`research.input_ablation`) sees exactly what a pass on that day could have seen. None is
+    today's pass, unchanged.
     """
     diag: dict[str, Any] = {}
     try:
@@ -710,6 +714,8 @@ def regime_state(daily: pd.DataFrame,
         idx = pd.to_datetime(px[tcol] if tcol else px.index, utc=True, errors="coerce")
         close = pd.Series(px[col].to_numpy(dtype=float), index=idx).dropna()
         close = close.groupby(close.index.date).last()
+        if asof is not None:
+            close = close[[str(d) <= str(asof)[:10] for d in close.index]]
         if close.size < 250:
             raise ValueError(f"only {close.size} daily closes; refusing to fit a regime on that")
 
