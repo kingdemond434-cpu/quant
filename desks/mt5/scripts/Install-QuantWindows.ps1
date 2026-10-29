@@ -355,6 +355,31 @@ $tasks = @(
 # MISSING and the cause is one Join-Path away from where anyone looks.
 $RepoRoot = (Resolve-Path (Join-Path $DeskRoot "..\..")).Path
 
+# THE MANIFEST IS THE CADENCE (2026-10-14). This installer registered MT5-QQuantGatesCertify DAILY
+# at 23:00 and MT5-RiskUnitsFence DAILY at 06:20 while desks\mt5\ops\box_tasks.manifest -- the
+# DR floor, read off the box -- says every hour at :27 and :02. A reinstall would have turned the
+# certifier's 180-minute organ contract (ops\organ_contract.py) permanently red and starved the
+# promoter of certificates for 23 hours a day. A task registered here through New-ManifestTrigger
+# takes its period and minute from its own manifest line, so the two cannot drift apart again;
+# scripts\check_box_tasks.py fails when any installer's trigger disagrees with the manifest.
+# Shape: a DAILY trigger whose Repetition is copied from a one-day -Once trigger (the shape
+# install_adopt_release_task.ps1 measured: a long -Once duration EXPIRES; a daily one re-arms).
+function New-ManifestTrigger([string]$TaskName) {
+    $manifest = Join-Path $RepoRoot "desks\mt5\ops\box_tasks.manifest"
+    $line = Select-String -Path $manifest -Pattern ('^TASK name="' + [regex]::Escape($TaskName) + '"') |
+        Select-Object -First 1
+    if (-not $line) { throw "$TaskName has no line in $manifest" }
+    $m = [regex]::Match($line.Line, 'trigger="every (\d+) (minute|hour)s?, at :(\d\d)"')
+    if (-not $m.Success) { throw "$TaskName manifest trigger is not 'every N minutes|hours, at :MM'" }
+    $n = [int]$m.Groups[1].Value
+    $interval = if ($m.Groups[2].Value -eq "hour") { New-TimeSpan -Hours $n } else { New-TimeSpan -Minutes $n }
+    $at = (Get-Date).Date.AddMinutes([int]$m.Groups[3].Value)
+    $trigger = New-ScheduledTaskTrigger -Daily -At $at
+    $trigger.Repetition = (New-ScheduledTaskTrigger -Once -At $at `
+        -RepetitionInterval $interval -RepetitionDuration (New-TimeSpan -Days 1)).Repetition
+    return $trigger
+}
+
 foreach ($t in $tasks) {
     $script = $null
     foreach ($root in @($DeskRoot, $RepoRoot)) {
@@ -633,13 +658,13 @@ Write-Host "  [OK  ] MT5-ArtifactSync intentionally not registered (Hetzner deco
 # TEST COLLECTION forced a manual trace. The desk's own enforcement matrix (build_enforcement_
 # matrix.py) counts a fence as "ENFORCED" the moment the file exists, and cannot see the
 # difference between that and a fence that actually runs -- this is what closes that gap for L1.67
-# specifically. Daily cadence: sizing correctness does not drift minute to minute, and the fence's
-# own universe-snapshot staleness check already tolerates up to 30 days.
+# specifically. Cadence: its manifest line (hourly at :02, as the box runs it), via
+# New-ManifestTrigger; the daily 06:20 this used to register disagreed with the box.
 $fenceQuantRoot = Split-Path -Parent (Split-Path -Parent $DeskRoot)
 $riskUnitsFence = Join-Path $fenceQuantRoot "scripts\check_risk_units.py"
 if (Test-Path $riskUnitsFence) {
     if ($WhatIfOnly) {
-        Write-Host "  [DRY ] MT5-RiskUnitsFence daily L1.67 sizing-path audit"
+        Write-Host "  [DRY ] MT5-RiskUnitsFence L1.67 sizing-path audit (manifest cadence)"
     } else {
         try {
             # cmd /c wraps the redirect: Task Scheduler has no shell, so `>>` passed directly
@@ -649,7 +674,7 @@ if (Test-Path $riskUnitsFence) {
             $fenceCmd = "/d /s /c `"`"$Python`" $pyArgs`"$riskUnitsFence`" >> `"$fenceLog`" 2>&1`""
             $fenceAction = New-ScheduledTaskAction -Execute "cmd.exe" -Argument $fenceCmd `
                 -WorkingDirectory $fenceQuantRoot
-            $fenceTrigger = New-ScheduledTaskTrigger -Daily -At "06:20"
+            $fenceTrigger = New-ManifestTrigger "MT5-RiskUnitsFence"
             $fenceSettings = New-ScheduledTaskSettingsSet `
                 -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
                 -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 5) `
@@ -660,7 +685,7 @@ if (Test-Path $riskUnitsFence) {
                 -Confirm:$false -ErrorAction SilentlyContinue
             Register-ScheduledTask -TaskName "MT5-RiskUnitsFence" -Action $fenceAction `
                 -Trigger $fenceTrigger -Settings $fenceSettings -Principal $fencePrincipal `
-                -Description "L1.67 daily fence: no sizing call site may price a stop from another instrument's constants." | Out-Null
+                -Description "L1.67 fence (manifest cadence): no sizing call site may price a stop from another instrument's constants." | Out-Null
             Write-Host "  [OK  ] MT5-RiskUnitsFence registered"
         } catch {
             Write-Host ("  [FAIL] MT5-RiskUnitsFence {0}" -f $_.Exception.Message)
@@ -677,14 +702,14 @@ if (Test-Path $riskUnitsFence) {
 # Verified live on this box 2026-08-23: neither QQUANT_GATES.json nor REAL_SURVIVORS.json existed
 # at all -- the certificate step had never been run here, not merely gone stale. Running it once by
 # hand answers today's question; running it daily is what stops today's question from recurring
-# every time shadow accrues enough evidence for a sleeve to be worth re-checking. 23:00 UTC: after
-# the 22:00 UTC gateway/shadow_forward/promoter cycle has written the day's shadow state, so the
-# certification run sees the freshest evidence rather than racing it.
+# every time shadow accrues enough evidence for a sleeve to be worth re-checking. Its cadence is its
+# manifest line's (hourly at :27, New-ManifestTrigger above); the daily 23:00 this used to register
+# left the 180-minute organ contract red for 21 hours a day.
 $qquantGates = Join-Path $DeskRoot "research\qquant_gates.py"
 $qquantLauncher = Join-Path $DeskRoot "research\certifier_launcher.py"
 if (Test-Path $qquantGates) {
     if ($WhatIfOnly) {
-        Write-Host "  [DRY ] MT5-QQuantGatesCertify daily original 10-gate certification run"
+        Write-Host "  [DRY ] MT5-QQuantGatesCertify original 10-gate certification (manifest cadence)"
     } else {
         try {
             $qgLog = Join-Path $logDir "MT5-QQuantGatesCertify.log"
@@ -692,7 +717,7 @@ if (Test-Path $qquantGates) {
             $qgCmd = "/d /s /c `"`"$Python`" $pyArgs`"$qgEntrypoint`" >> `"$qgLog`" 2>&1`""
             $qgAction = New-ScheduledTaskAction -Execute "cmd.exe" -Argument $qgCmd `
                 -WorkingDirectory $DeskRoot
-            $qgTrigger = New-ScheduledTaskTrigger -Daily -At "23:00"
+            $qgTrigger = New-ManifestTrigger "MT5-QQuantGatesCertify"
             $qgSettings = New-ScheduledTaskSettingsSet `
                 -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
                 -RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 10) `
@@ -706,7 +731,7 @@ if (Test-Path $qquantGates) {
                 -Confirm:$false -ErrorAction SilentlyContinue
             Register-ScheduledTask -TaskName "MT5-QQuantGatesCertify" -Action $qgAction `
                 -Trigger $qgTrigger -Settings $qgSettings -Principal $qgPrincipal `
-                -Description "Daily original-10-gate certification (QQUANT_GATES.json) -- the only thing promoter.py accepts for live promotion." | Out-Null
+                -Description "Hourly (manifest cadence) original-10-gate certification (QQUANT_GATES.json) -- the only thing promoter.py accepts for live promotion." | Out-Null
             Write-Host "  [OK  ] MT5-QQuantGatesCertify registered"
         } catch {
             Write-Host ("  [FAIL] MT5-QQuantGatesCertify {0}" -f $_.Exception.Message)
