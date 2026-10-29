@@ -322,6 +322,11 @@ def test_a_pass_killed_in_the_graph_pass_has_already_published(
     monkeypatch.setattr(mcc, "expand_axes", lambda rows: rows)
     monkeypatch.setattr(hg, "Graph", _GraphStub)
     monkeypatch.setattr(ri, "request_repair", lambda reason, **kw: False)
+    # Keep the pass inside tmp_path: the build-failure bank and the lineage sidecar otherwise
+    # write desks/mt5/data/build_failures.jsonl and lineage.sqlite in the working tree.
+    from research import build_failure_bank as bfb
+    monkeypatch.setattr(bfb, "LEDGER", tmp_path / "build_failures.jsonl")
+    monkeypatch.setattr(mcc, "_lineage", lambda out: None)
 
     def _die():
         raise _Killed()
