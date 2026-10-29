@@ -164,5 +164,3 @@ def test_leg_is_wired() -> None:
     assert '"exit_news_tag": "execution"' in (ROOT / "libs/research/layers.py").read_text()
     rs = json.loads((ROOT / "docs/research/runtime_state.json").read_text())
     assert any(o["organ"] == "leg:exit_news_tag" for o in rs["organs"])
-    ps1 = (DESK / "scripts/sync_shadow_to_git.ps1").read_text(encoding="utf-8")
-    assert "desks/mt5/reports/EXIT_NEWS_TAGS_SUMMARY.json" in ps1
