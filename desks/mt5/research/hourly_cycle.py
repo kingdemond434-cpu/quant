@@ -375,7 +375,26 @@ def record_tape() -> dict:
             results[f"{label}_exit_code"] = rc
             codes.append(int(rc))
     results["exit_code"] = max(codes) if codes else 1
+    # THE THIRD FATE (2026-10-29): is what was just written READABLE and JUDGED? The recorder
+    # ran green for weeks while every tape reader opened the wrong files. Its own key, never
+    # folded into exit_code: a blind reader must not read as a failed recording, nor hide one.
+    try:
+        results["liveness_exit_code"] = _tape_liveness_main()
+    except Exception as exc:
+        print(f"tick tape liveness FAILED: {type(exc).__name__}: {exc}", flush=True)
+        results["liveness_error"] = f"{type(exc).__name__}: {exc}"
     return results
+
+
+def _tape_liveness_main() -> int:
+    import importlib.util
+    path = BASE / "moat" / "tape_liveness.py"
+    spec = importlib.util.spec_from_file_location("tape_liveness", path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"cannot load {path}")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return int(mod.main())
 
 
 def publish_state() -> dict:

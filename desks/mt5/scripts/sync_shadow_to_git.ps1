@@ -830,6 +830,9 @@ $reportPaths = @(
     # against the original loops on this box's pandas/numpy, read-only; no credential
     "desks/mt5/reports/VECTOR_FAMILIES_CHECK.json",
     "desks/mt5/data/tape/tape_state.json",
+    # the tape's writer -> reader -> judge verdict (2026-10-29, moat/tape_liveness.py): symbol
+    # names, ages and counts only; no credential
+    "desks/mt5/reports/TAPE_LIVENESS.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,
     # so REAL_YIELD_10Y is empty for every reader off the box and on CI. FRED is reachable

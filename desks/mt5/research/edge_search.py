@@ -454,16 +454,14 @@ def resolve_inputs(symbol: str, index, all_symbols: list[str]) -> dict:
     # --- the venue's own book: spread and a signed-move proxy from the tick tape --------------
     tape_dir = BASE / "data" / "tape" / "ticks" / symbol
     if tape_dir.exists():
-        frames = []
-        for f in sorted(tape_dir.glob("*.parquet"))[-30:]:
-            try:
-                frames.append(pd.read_parquet(f, columns=["ts", "bid", "ask"]))
-            except Exception:
-                continue
-        if frames:
-            tk = pd.concat(frames, ignore_index=True).dropna(subset=["bid", "ask"])
-            tk["ts"] = pd.to_datetime(tk["ts"], utc=True)
-            tk = tk.sort_values("ts").set_index("ts")
+        # Last 30 tape DAYS from either writer (mt5desk.tape_days; name-sorting read only the
+        # moat silver's ts-less files, 2026-10-29).
+        import sys as _sys
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
+        from mt5desk.tape_days import recent_quotes
+        tk = recent_quotes(tape_dir, 30)
+        if tk is not None:
             extra["book_spread"] = (tk["ask"] - tk["bid"]).resample("1h").mean()
             mid = (tk["ask"] + tk["bid"]) / 2.0
             extra["book_flow"] = np.sign(mid.diff()).resample("1h").sum()

@@ -184,18 +184,14 @@ def _tick_features(symbol: str, index: pd.DatetimeIndex, freq: str) -> dict[str,
     tdir = TICKS / symbol
     if not tdir.is_dir():
         return None
-    files = sorted(p for p in tdir.glob("*.parquet"))[-MAX_TICK_DAYS:]
-    if not files:
+    # Newest days by DATE, one writer per day (mt5desk.tape_days): name order put the moat
+    # silver's compact names last and read stale days ahead of fresh ones (2026-10-29).
+    from mt5desk.tape_days import day_files, recent_quotes
+    files = day_files(tdir, MAX_TICK_DAYS)
+    got = recent_quotes(tdir, MAX_TICK_DAYS)
+    if got is None:
         return None
-    frames: list[pd.DataFrame] = []
-    for p in files:
-        try:
-            frames.append(pd.read_parquet(p, columns=["time_msc", "bid", "ask"]))
-        except (OSError, ValueError, KeyError):
-            continue
-    if not frames:
-        return None
-    t = pd.concat(frames, ignore_index=True)
+    t = got.reset_index(drop=True)[["time_msc", "bid", "ask"]]
     t = t[(t["bid"] > 0) & (t["ask"] >= t["bid"])]
     if t.empty:
         return None
