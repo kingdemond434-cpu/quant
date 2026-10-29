@@ -234,3 +234,245 @@ def test_the_fall_back_instant_is_where_the_calendar_says() -> None:
     before = datetime.fromtimestamp((FALL_BACK - 1000) / 1000, tz=UTC)
     after = datetime.fromtimestamp((FALL_BACK + 1000) / 1000, tz=UTC)
     assert utc_offset_h(before) == 3 and utc_offset_h(after) == 2
+
+
+# ------------------------------------------------- audit 2026-10-29 (HOLD on 288c77417) --
+WED = int(pd.Timestamp("2026-10-14 06:00", tz="UTC").timestamp() * 1000)
+
+
+class _Glitchy(Broker):
+    """The auditor's broker: can drop the terminal, and can misreport its clock for a cycle."""
+
+    def __init__(self, *a, **k) -> None:
+        super().__init__(*a, **k)
+        self.clock_bias: dict[int, int] = {}     # now_true -> ms added to the clock reading
+        self.frozen_at: int | None = None
+
+    def server_now_ms(self, symbols: list[str]) -> int | None:
+        if not self.is_alive:
+            return None
+        v = super().server_now_ms(symbols)
+        if v is None:
+            return None
+        if self.frozen_at is not None:
+            v = min(v, self.frozen_at)
+        return v + self.clock_bias.get(self.now_true, 0)
+
+
+def _rec(tmp: Path, src: Broker) -> TickRecorder:
+    return TickRecorder(src, RecorderConfig(tape_root=tmp, cold_start_days=0,
+                                            disk_floor_bytes=0, measure_broker_clock=True,
+                                            seal_after_hours=48))
+
+
+def _gap_rows(rec: TickRecorder, sym: str) -> list[dict]:
+    import json
+    seen: dict[tuple, dict] = {}
+    for f in sorted((rec.store.gaps_dir / sym).glob("*.jsonl")):
+        for line in f.read_text("utf-8").splitlines():
+            if line.strip():
+                r = json.loads(line)
+                seen[(r["from_ms"], r["to_ms"], r["reason"], r.get("cycle_id"))] = r
+    return list(seen.values())
+
+
+def _run(rec: TickRecorder, src: Broker, t0: int, t1: int, down=None, skip=None,
+         step_ms: int = 60_000) -> list[CycleReport]:
+    reps = []
+    for t in range(t0 + 5_000, t1, step_ms):
+        src.now_true = t
+        src.is_alive = not (down and down[0] <= t < down[1])
+        if skip and skip[0] <= t < skip[1]:
+            continue                                    # the recorder is not running at all
+        reps.append(rec.run_once(now_ms=t))
+    return reps
+
+
+def test_mf1_a_terminal_outage_is_accounted_on_the_broker_clock(tmp_path: Path) -> None:
+    """MF1: v2 wrote 2 of 2 SOURCE_UNAVAILABLE rows reversed (-179/-164 min) and no closing
+    row for a 30-minute outage, because the fallback clock was UTC, 3 h behind the broker."""
+    t0, t1 = WED, WED + 90 * 60_000
+    down = (WED + 30 * 60_000, WED + 60 * 60_000)
+    src = _Glitchy("BTCUSD", t0, t1, lambda t: 3 * H)
+    rec = _rec(tmp_path, src)
+    marks = []
+    for t in range(t0 + 5_000, t1, 60_000):
+        src.now_true = t
+        src.is_alive = not (down[0] <= t < down[1])
+        rec.run_once(now_ms=t)
+        marks.append(rec.store.read_state("recorder")["last_cycle_end_ms"])
+    rows = _gap_rows(rec, "BTCUSD")
+    assert all(r["to_ms"] >= r["from_ms"] for r in rows), "a reversed gap row"
+    su = [r for r in rows if r["reason"] == "SOURCE_UNAVAILABLE"]
+    assert su and all(r["to_ms"] > r["from_ms"] for r in su)
+    # The closing row is the episode in full, on the broker clock (venue = UTC + 3 h).
+    full = max(su, key=lambda r: r["to_ms"] - r["from_ms"])
+    assert full["from_ms"] <= down[0] + 3 * H and full["to_ms"] >= down[1] + 3 * H - 62_000
+    assert not [r for r in rows if r["reason"] == "RECORDER_DOWN"], "spurious RECORDER_DOWN"
+    assert marks == sorted(marks), "last_cycle_end_ms moved backwards"
+    want = _expected(src, t0 + 70_000, t1 - 70_000)
+    assert not (want - _recorded(rec, "BTCUSD"))
+
+
+@pytest.mark.parametrize("a_min,b_min", [(-30, 60), (-20, 70)])
+def test_mf2_an_outage_across_the_fall_back_loses_nothing_and_is_named(
+        tmp_path: Path, a_min: int, b_min: int) -> None:
+    """MF2: v2 saw the step only when the clock fell below its last reading, so an hour-long
+    outage across the fall-back hid it: 1,738 (-30..+60) and 2,338 (-20..+70) ticks lost, and
+    the RECORDER_DOWN row named 08:30-09:00 while the lost ticks were the repeated 08:00-08:30."""
+    def lead(t: int) -> int:
+        return 3 * H if t < FALL_BACK else 2 * H
+
+    t0, t1 = FALL_BACK - 90 * 60_000, FALL_BACK + 150 * 60_000
+    src = _Glitchy("BTCUSD", t0, t1, lead)
+    rec = _rec(tmp_path, src)
+    skip = (FALL_BACK + a_min * 60_000, FALL_BACK + b_min * 60_000)
+    reps = _run(rec, src, t0, t1, skip=skip)
+    want = _expected(src, t0 + 70_000, t1 - 70_000)
+    missing = want - _recorded(rec, "BTCUSD")
+    assert not missing, f"{len(missing)} of {len(want)} ticks lost"
+    assert len([r for r in reps if r.clock_stepped_back_ms]) == 1
+    # The outage row covers the repeated stretch on the new clock and was backfilled.
+    rep_lo = FALL_BACK + 2 * H                              # first new-clock stamp
+    rep_hi = skip[0] + 3 * H                                # last old-clock stamp recorded
+    rows = _gap_rows(rec, "BTCUSD")
+    down = [r for r in rows if r["reason"] == "RECORDER_DOWN"]
+    assert any(r["from_ms"] <= rep_lo and r["to_ms"] >= rep_hi for r in down), down
+    resolved = {(r["from_ms"], r["to_ms"]) for r in rows if r["reason"] == "RESOLVED"}
+    assert all((r["from_ms"], r["to_ms"]) in resolved for r in down)
+
+
+@pytest.mark.parametrize("glitch_s", [10, 30, 59, 90])
+def test_s1_a_forward_glitched_stamp_loses_nothing(tmp_path: Path, glitch_s: int) -> None:
+    """S1: v2 took the stamp as the window end; +10/+30/+59/+90 s lost 2/22/51/82 of 3,461."""
+    t0, t1 = WED, WED + 60 * 60_000
+    src = _Glitchy("BTCUSD", t0, t1, lambda t: 3 * H)
+    src.clock_bias = {t0 + 5_000 + 20 * 60_000: glitch_s * 1000}
+    rec = _rec(tmp_path, src)
+    _run(rec, src, t0, t1)
+    want = _expected(src, t0 + 70_000, t1 - 70_000)
+    missing = want - _recorded(rec, "BTCUSD")
+    assert not missing, f"{len(missing)} of {len(want)} ticks lost to a +{glitch_s}s stamp"
+
+
+def test_s1_a_persistent_rise_is_believed_on_the_second_cycle(tmp_path: Path) -> None:
+    """The glitch hold must not pin the clock: a lead that RISES and stays (spring-forward) is
+    taken on the second cycle, so the window is late by one cycle at most."""
+    t0, t1 = WED, WED + 20 * 60_000
+    jump = t0 + 5_000 + 10 * 60_000
+    src = _Glitchy("BTCUSD", t0, t1, lambda t: 2 * H if t < jump else 3 * H)
+    rec = _rec(tmp_path, src)
+    reps = _run(rec, src, t0, t1)
+    assert reps[-1].window_ms[1] == src.server_now_ms(["BTCUSD"]) - rec.config.settle_ms
+
+
+def test_s2_a_dip_every_ten_cycles_never_rewinds(tmp_path: Path) -> None:
+    """S2: v2 rewound on every dip, unbounded -- 120 rewinds and 82x the disk."""
+    t0, t1 = WED, WED + 200 * 60_000
+    base = _Glitchy("BTCUSD", t0, t1, lambda t: 3 * H)
+    rec0 = _rec(tmp_path / "base", base)
+    _run(rec0, base, t0, t1)
+    src = _Glitchy("BTCUSD", t0, t1, lambda t: 3 * H)
+    src.clock_bias = {t0 + 5_000 + k * 60_000: -2 * H for k in range(9, 190, 10)}
+    rec = _rec(tmp_path / "dip", src)
+    reps = _run(rec, src, t0, t1)
+    assert sum(1 for r in reps if r.clock_stepped_back_ms) == 0
+    b0 = sum(f.stat().st_size for f in (tmp_path / "base").rglob("*") if f.is_file())
+    b1 = sum(f.stat().st_size for f in (tmp_path / "dip").rglob("*") if f.is_file())
+    assert b1 <= 1.25 * b0, f"{b1 / b0:.1f}x the disk"
+    want = _expected(src, t0 + 70_000, t1 - 70_000)
+    assert not (want - _recorded(rec, "BTCUSD"))
+
+
+def test_s2_a_quiet_frozen_clock_never_rewinds(tmp_path: Path) -> None:
+    t0, t1 = WED, WED + 40 * 60_000
+    src = _Glitchy("BTCUSD", t0, t1, lambda t: 3 * H)
+    rec = _rec(tmp_path, src)
+    reps = []
+    for t in range(t0 + 5_000, t1, 60_000):
+        src.now_true = t
+        quiet = t0 + 10 * 60_000 <= t < t0 + 25 * 60_000
+        src.frozen_at = int(src.stamp[(t0 + 10 * 60_000 - t0) // 1000]) if quiet else None
+        reps.append(rec.run_once(now_ms=t))
+    assert sum(1 for r in reps if r.clock_stepped_back_ms) == 0
+
+
+def test_s2_a_sustained_large_step_rewinds_at_most_the_cap(tmp_path: Path) -> None:
+    t0, t1 = WED, WED + 30 * 60_000
+    jump = t0 + 5_000 + 10 * 60_000
+    src = _Glitchy("BTCUSD", t0, t1, lambda t: 3 * H if t < jump else 0)
+    rec = _rec(tmp_path, src)
+    reps = _run(rec, src, t0, t1)
+    steps = [r.clock_stepped_back_ms for r in reps if r.clock_stepped_back_ms]
+    assert steps == [rec.config.clock_rewind_cap_ms]
+    st = rec.store.read_state("recorder")["last_clock_step"]
+    assert st["from_ms"] - st["cursors_rewound_to_ms"] <= rec.config.clock_rewind_cap_ms + 2_000
+
+
+def test_s3_the_recorder_follows_a_late_broker_flip(tmp_path: Path) -> None:
+    """The measured clock, not the calendar: a broker that flips 30 min after New York does."""
+    flip = FALL_BACK + 30 * 60_000
+
+    def lead(t: int) -> int:
+        return 3 * H if t < flip else 2 * H
+
+    t0, t1 = FALL_BACK - 30 * 60_000, FALL_BACK + 150 * 60_000
+    src = _Glitchy("BTCUSD", t0, t1, lead)
+    rec = _rec(tmp_path, src)
+    _run(rec, src, t0, t1)
+    want = _expected(src, t0 + 70_000, t1 - 70_000)
+    assert not (want - _recorded(rec, "BTCUSD"))
+
+
+def test_s3_the_silver_tape_follows_an_early_broker_flip(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """S3: v2's silver rewind followed the calendar; a broker flipping 30 h early lost 3,001 of
+    126,000 ticks. The measured offset now drives it."""
+    from mt5desk import tape
+
+    flip = FALL_BACK - 30 * H
+
+    def lead(t: int) -> int:
+        return 3 * H if t < flip else 2 * H
+
+    t0, t1 = FALL_BACK - 32 * H, FALL_BACK + 3 * H
+    src = Broker("BTCUSD", t0, t1, lead)
+    fake = types.ModuleType("MetaTrader5")
+    fake.COPY_TICKS_ALL = 1
+    fake.copy_ticks_range = lambda sym, s, e, f: src.ticks(
+        sym, int(s.timestamp() * 1000), int(e.timestamp() * 1000))
+    fake.symbol_info_tick = lambda sym: types.SimpleNamespace(
+        time_msc=src.server_now_ms([sym]))
+    monkeypatch.setitem(sys.modules, "MetaTrader5", fake)
+    monkeypatch.setattr(tape, "TAPE", tmp_path)
+    monkeypatch.setattr(tape, "TICKS", tmp_path / "ticks")
+    monkeypatch.setattr(tape, "STATE", tmp_path / "tape_state.json")
+    # The CALENDAR: New York flips at FALL_BACK, 30 h after this broker did.
+    monkeypatch.setattr(tape, "_venue_lead_h",
+                        lambda now: 3 if now.timestamp() * 1000 < FALL_BACK else 2)
+    monkeypatch.setattr(tape, "_utcnow",
+                        lambda: datetime.fromtimestamp(src.now_true / 1000, tz=UTC))
+    (tmp_path / "tape_state.json").write_text(
+        f'{{"BTCUSD": {{"last_tick_ms": {int(src.stamp[0]) - 1}, "lead_h": 3}}}}', "utf-8")
+    for t in range(t0 + 600_000, t1, 600_000):
+        src.now_true = t
+        tape.record_ticks(["BTCUSD"])
+    got: set[int] = set()
+    for f in (tmp_path / "ticks" / "BTCUSD").glob("*.parquet"):
+        got |= {round(float((b - BASE) / PT)) for b in pd.read_parquet(f)["bid"].to_numpy()}
+    want = _expected(src, t0, src.now_true)
+    missing = want - got
+    assert not missing, f"{len(missing)} of {len(want)} ticks lost to an early broker flip"
+
+
+def test_s1_the_mt5_source_reads_a_robust_clock() -> None:
+    """One symbol's forward-glitched `symbol_info_tick` cannot set the clock: second-newest."""
+    from recorders import tick_source
+    stamps = {"A": 1_000_000, "B": 1_000_500, "C": 1_090_000}        # C is +90 s
+    fake = types.SimpleNamespace(
+        symbol_info_tick=lambda s: types.SimpleNamespace(time_msc=stamps[s]))
+    assert tick_source._robust_clock([stamps[s] for s in stamps]) == 1_000_500
+    src = tick_source.Mt5TickSource.__new__(tick_source.Mt5TickSource)
+    src._mt5 = lambda: fake                                         # type: ignore[method-assign]
+    assert src.server_now_ms(list(stamps)) == 1_000_500
+    assert tick_source._robust_clock([5]) == 5 and tick_source._robust_clock([]) is None

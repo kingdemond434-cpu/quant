@@ -303,3 +303,19 @@ def test_the_leg_is_wired_contracted_and_published() -> None:
     assert f"!{rel}" in (ROOT / ".gitignore").read_text("utf-8")
     from libs.ops import release
     assert rel in release.NON_CODE
+
+
+def test_an_unregistered_dead_symbol_on_saturday_is_not_fresh(tmp_path: Path) -> None:
+    """S4 (audit 2026-10-29): a symbol missing from universe.json got the FX week, so a dead
+    crypto CFD read CLOSED on Saturday and the tape read FRESH."""
+    sat = datetime(2026, 10, 17, 12, 0, tzinfo=UTC)
+    rep = fence.build(_ages(tmp_path, sat, BTCUSD=0.1, SOLUSD=30.0), sat,
+                      sess={"BTCUSD": SESS["BTCUSD"]})
+    assert rep["status"] == "RED"
+    for row in rep["tapes"]:
+        assert row["status"] != "FRESH" and row["unmeasured"] == ["SOLUSD"]
+        assert row["symbols"]["SOLUSD"]["unregistered"] is True
+    # ...and an unregistered symbol that IS live is simply fresh, any day.
+    live = fence.build(_ages(tmp_path / "b", sat, BTCUSD=0.1, SOLUSD=0.2), sat,
+                       sess={"BTCUSD": SESS["BTCUSD"]})
+    assert live["status"] == "GREEN"

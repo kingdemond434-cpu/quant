@@ -267,8 +267,16 @@ class RecorderConfig:
     #:
     #: Library default False keeps the clock-free tests' arithmetic; `main()` sets True.
     measure_broker_clock: bool = False
-    #: A measured broker clock this far BELOW the last one is a step back, not noise.
+    #: A measured broker clock this far BELOW where its reference offset predicts it (the
+    #: freshest reading's offset from the wall clock, carried forward) is a step back.
     clock_step_ms: int = 60_000
+    #: THE DEEPEST A STEP MAY REWIND (audit 2026-10-29, S2). A daylight-time step is exactly one
+    #: hour; the slack covers a stale reading. A "step" bigger than this is not the fall-back,
+    #: and rewinding by all of it on every dip re-wrote 82x the tape in the auditor's probe.
+    clock_rewind_cap_ms: int = 65 * 60_000
+    #: A measured clock this far ABOVE the reference is held for one cycle before it is
+    #: believed (S1). Under SETTLE+OVERLAP (7 s), so an accepted jitter can never lose a tick.
+    clock_glitch_ms: int = 5_000
 
 
 @dataclass
@@ -308,6 +316,9 @@ class CycleReport:
     clock_stepped_back_ms: int = 0
     #: Where this cycle's window end came from: "broker" (measured) or "utc" (fallback).
     clock_source: str = "utc"
+    #: A step back seen on this cycle but not yet confirmed (S2): the rewind waits one cycle for
+    #: the step to persist on a MOVING clock, so a one-cycle dip or a quiet market never rewinds.
+    clock_step_pending_ms: int = 0
     paused: str = ""
     errors: dict[str, str] = field(default_factory=dict)
     budget_exhausted: bool = False
@@ -383,8 +394,18 @@ class TickRecorder:
         # from the broker when `measure_broker_clock`, else UTC-now (see RecorderConfig).
         cursors = self._cursors()
         state = self._recorder_state()
-        tick_now, clock_source = self._broker_now(now_ms, cursors)
+        tick_now, clock_source = self._broker_now(now_ms, cursors, state)
         end_ms = tick_now - self.config.settle_ms
+        # THE ACCOUNTING CLOCK (audit 2026-10-29, MF1). Pulls may fall back to UTC-now when the
+        # broker cannot be measured -- late, never lossy -- but gap rows and `last_cycle_end_ms`
+        # live on the broker's clock, and UTC is two or three hours BEHIND it: pause rows ended
+        # before they started and the closing row was skipped. Gaps are accounted on the broker
+        # clock extrapolated from its reference offset; on UTC only when it was never measured.
+        acct_end = end_ms
+        if clock_source != "broker":
+            ext = self._extrapolated_now(state, now_ms)
+            if ext is not None:
+                acct_end = ext - self.config.settle_ms
         self._tick_now = tick_now
         self._cycle += 1
         cycle_id = f"{now_ms}-{self._cycle}"
@@ -401,16 +422,23 @@ class TickRecorder:
         if clock_source == "broker":
             rep.clock_stepped_back_ms = self._rewind_for_clock_step(
                 state, cursors, tick_now, now_ms)
+            rep.clock_step_pending_ms = int(
+                (state.get("clock_step_pending") or {}).get("step_ms") or 0)
         active = [s for s, c in cursors.items() if c.get("active", True)]
 
         # -- THE OUTAGE CHECK COMES FIRST, BEFORE ANY PULL. A recorder that backfills and then
         # decides whether it was down has already made the hole invisible to itself.
         last_end = int(state.get("last_cycle_end_ms") or 0)
         last_finished = int(state.get("last_cycle_finished_ms") or last_end)
+        # AN OUTAGE ACROSS THE FALL-BACK (MF2): the instant the recorder stopped is `last_end` on
+        # the OLD clock, which sits the step's size lower on the new one. Without this the row
+        # named only the outage's tail and nothing named the repeated hour's ticks.
+        if last_end and rep.clock_step_pending_ms:
+            last_end -= min(rep.clock_step_pending_ms, self.config.clock_rewind_cap_ms)
         down_window: tuple[int, int] | None = None
         max_gap_ms = self.config.cycle_s * 1000 * MAX_CYCLE_GAP_MULT
-        if last_end and (now_ms - last_finished) > max_gap_ms and end_ms > last_end:
-            down_window = (last_end, end_ms)
+        if last_end and (now_ms - last_finished) > max_gap_ms and acct_end > last_end:
+            down_window = (last_end, acct_end)
             for sym in active:
                 g = GapRecord(
                     symbol=sym, from_ms=down_window[0], to_ms=down_window[1],
@@ -431,10 +459,10 @@ class TickRecorder:
         if not alive:
             rep.paused = "source not connected"
             rep.gaps_recorded += self._note_pause(
-                state, cursors, active, GAP_SOURCE_UNAVAILABLE, last_end, end_ms, cycle_id,
+                state, cursors, active, GAP_SOURCE_UNAVAILABLE, last_end, acct_end, cycle_id,
                 "terminal not connected on this cycle")
             rep.symbols_seen = len(active)
-            self._finish(rep, state, end_ms, t_start, cursors, now_ms)
+            self._finish(rep, state, end_ms, t_start, cursors, now_ms, acct_end)
             return rep
 
         # -- DISK FLOOR. Pause, say so, keep saying so. Never delete tape.
@@ -443,13 +471,13 @@ class TickRecorder:
             rep.paused = (f"free space {free/1e9:.1f}GB below the "
                           f"{self.config.disk_floor_bytes/1e9:.1f}GB floor")
             rep.gaps_recorded += self._note_pause(
-                state, cursors, active, GAP_DISK_FLOOR, last_end, end_ms, cycle_id, rep.paused)
+                state, cursors, active, GAP_DISK_FLOOR, last_end, acct_end, cycle_id, rep.paused)
             rep.symbols_seen = len(active)
-            self._finish(rep, state, end_ms, t_start, cursors, now_ms)
+            self._finish(rep, state, end_ms, t_start, cursors, now_ms, acct_end)
             return rep
 
         # -- A PAUSE THAT HAS ENDED IS WRITTEN IN FULL, exactly like a quiet run.
-        rep.gaps_recorded += self._close_pause(state, cursors, end_ms, cycle_id)
+        rep.gaps_recorded += self._close_pause(state, cursors, acct_end, cycle_id)
 
         # -- THE UNIVERSE IS WHATEVER THE TERMINAL SAYS IT IS, RIGHT NOW.
         last_uni = float(state.get("universe_at_ms") or 0)
@@ -513,7 +541,7 @@ class TickRecorder:
             if probe:
                 self.store.record_clock(probe[0], probe[1], probe_sym)
 
-        self._finish(rep, state, end_ms, t_start, cursors, now_ms)
+        self._finish(rep, state, end_ms, t_start, cursors, now_ms, acct_end)
         return rep
 
     # ------------------------------------------------------------- internals --
@@ -565,12 +593,21 @@ class TickRecorder:
             if after <= cur:
                 todo.remove(sym)
 
-    def _broker_now(self, wall_ms: int,
-                    cursors: dict[str, dict[str, Any]]) -> tuple[int, str]:
+    def _broker_now(self, wall_ms: int, cursors: dict[str, dict[str, Any]],
+                    state: dict[str, Any] | None = None) -> tuple[int, str]:
         """(tick-clock now, source). The broker's measured clock when configured and readable,
-        else UTC-now -- which on this venue is two or three hours LATE, and so never lossy."""
+        else UTC-now -- which on this venue is two or three hours LATE, and so never lossy.
+
+        THE REFERENCE OFFSET (audit 2026-10-29). `state["broker_offset_ms"]` is the freshest
+        reading's offset from the wall clock: a stamp is only ever in the past, so stale readings
+        LOWER the offset and the maximum is the best estimate of the broker's true lead. It is
+        what an outage is accounted on (MF1), what a step back is measured against (MF2), and
+        what a forward-glitched stamp is checked against (S1): a reading more than
+        `clock_glitch_ms` above it is held for one cycle, and believed only when it persists
+        (the spring-forward does; a glitch does not)."""
         if not self.config.measure_broker_clock:
             return wall_ms, "utc"
+        st = state if state is not None else {}
         fn = getattr(self.source, "server_now_ms", None)
         measured: int | None = None
         if callable(fn):
@@ -592,25 +629,76 @@ class TickRecorder:
             lead = int(utc_offset_h(pd.Timestamp(wall_ms, unit="ms", tz="UTC"))) * 3_600_000
         except Exception:
             pass
-        return min(measured, wall_ms + lead + 120_000), "broker"
+        raw = min(measured, wall_ms + lead + 120_000)
+        off = raw - wall_ms
+        ref = st.get("broker_offset_ms")
+        if not isinstance(ref, int):
+            st["broker_offset_ms"] = off
+            st.pop("clock_rise_pending_ms", None)
+            return raw, "broker"
+        if off > ref + self.config.clock_glitch_ms:
+            pend = st.get("clock_rise_pending_ms")
+            if isinstance(pend, int) and pend > ref + self.config.clock_glitch_ms:
+                # Persisted two cycles: a real rise (spring-forward, a box clock stepped back).
+                st["broker_offset_ms"] = min(off, pend)
+                st.pop("clock_rise_pending_ms", None)
+                return min(raw, wall_ms + st["broker_offset_ms"]), "broker"
+            # One cycle above the reference: held. The window ends at the reference's now,
+            # which a glitched stamp cannot move.
+            st["clock_rise_pending_ms"] = off
+            return min(raw, wall_ms + ref), "broker"
+        st.pop("clock_rise_pending_ms", None)
+        if off > ref:
+            st["broker_offset_ms"] = off
+        return raw, "broker"
+
+    def _extrapolated_now(self, state: dict[str, Any], wall_ms: int) -> int | None:
+        """The broker clock carried forward from its reference offset, for ACCOUNTING only (MF1):
+        gap rows and `last_cycle_end_ms` while the terminal cannot be measured. None when the
+        broker was never measured."""
+        if not self.config.measure_broker_clock:
+            return None
+        ref = state.get("broker_offset_ms")
+        return wall_ms + ref if isinstance(ref, int) else None
 
     def _rewind_for_clock_step(self, state: dict[str, Any], cursors: dict[str, dict[str, Any]],
                                tick_now: int, wall_ms: int) -> int:
         """Rewind every cursor when the broker's clock has stepped BACK (the fall-back hour).
 
         After a step back the broker stamps new ticks LOWER than ticks already recorded, so a
-        cursor left where it was would never query them. The step landed no later than
-        `tick_now - (wall elapsed since the last reading)`, so every cursor is pulled back to
-        there; the re-query also returns the first occurrence's ticks, which dedupe on read.
-        Returns the step in ms (0 when none)."""
+        cursor left where it was would never query them.
+
+        DETECTED AGAINST THE EXPECTED ADVANCE (audit 2026-10-29, MF2): step = reference offset
+        minus this reading's offset, i.e. `prev + (wall - prev_wall) - tick_now`. v2 compared the
+        raw clock with its last reading and missed the fall-back whenever the recorder or the
+        terminal was out for about an hour across it (the clock had advanced, just an hour less
+        than the wall): 1,738 of 12,461 ticks lost on the -30..+60 min replay.
+
+        CONFIRMED ON THE NEXT CYCLE, CAPPED IN DEPTH (S2): a step is acted on only when it
+        persists on a second cycle and the clock MOVED in between, so a one-cycle dip or a quiet
+        (frozen) market never rewinds; and the depth is at most `clock_rewind_cap_ms`. Deferring
+        loses nothing: while the step is pending the window ends below every cursor, so no pull
+        advances. The rewind lands at the last pre-step reading minus the step: the first new
+        stamp can be no lower than that. Returns the step in ms (0 when none was confirmed)."""
+        cfg = self.config
+        ref = state.get("broker_offset_ms")
+        off = tick_now - wall_ms
+        step = (int(ref) - off) if isinstance(ref, int) else 0
         prev = int(state.get("broker_clock_ms") or 0)
-        prev_wall = int(state.get("broker_clock_wall_ms") or 0)
-        state["broker_clock_ms"] = tick_now
-        state["broker_clock_wall_ms"] = wall_ms
-        if not prev or tick_now >= prev - self.config.clock_step_ms:
+        if step < cfg.clock_step_ms or not prev:
+            state.pop("clock_step_pending", None)
+            state["broker_clock_ms"] = tick_now
+            state["broker_clock_wall_ms"] = wall_ms
             return 0
-        elapsed = max(0, wall_ms - prev_wall) if prev_wall else 0
-        landed = tick_now - elapsed - self.config.settle_ms
+        pend = dict(state.get("clock_step_pending") or {})
+        if not pend or tick_now <= int(pend.get("tick_ms") or 0):
+            # First sight, or a clock that has not moved since: hold, never rewind yet.
+            pend = {"tick_ms": tick_now, "wall_ms": wall_ms,
+                    "step_ms": max(step, int(pend.get("step_ms") or 0))}
+            state["clock_step_pending"] = pend
+            return 0
+        step = min(max(step, int(pend.get("step_ms") or 0)), cfg.clock_rewind_cap_ms)
+        landed = prev - step - cfg.settle_ms
         for row in cursors.values():
             if int(row.get("cursor_ms") or 0) > landed:
                 row["cursor_ms"] = landed
@@ -619,9 +707,17 @@ class TickRecorder:
                 if int(row.get("enrolled_ms") or 0) > landed:
                     row["enrolled_ms"] = landed
                 row["clock_rewound_at"] = wall_ms
+        # The accounting mark follows the clock down ONLY here, on a confirmed step; everywhere
+        # else it never moves backwards (MF1).
+        if int(state.get("last_cycle_end_ms") or 0) > landed:
+            state["last_cycle_end_ms"] = landed
         state["last_clock_step"] = {"at_wall_ms": wall_ms, "from_ms": prev, "to_ms": tick_now,
-                                    "cursors_rewound_to_ms": landed}
-        return prev - tick_now
+                                    "step_ms": step, "cursors_rewound_to_ms": landed}
+        state["broker_offset_ms"] = off
+        state["broker_clock_ms"] = tick_now
+        state["broker_clock_wall_ms"] = wall_ms
+        state.pop("clock_step_pending", None)
+        return step
 
     def _sync_universe(self, listed: list[str], cursors: dict[str, dict[str, Any]],
                        now_ms: int, cycle_id: str, rep: CycleReport) -> None:
@@ -869,6 +965,11 @@ class TickRecorder:
         else:
             n = 0
         from_ms = int(ep["from_ms"])
+        if end_ms <= from_ms:
+            # NEVER A REVERSED ROW (MF1). The accounting clock cannot place this cycle after
+            # the episode's start; the episode is kept and stated once the clock passes it.
+            state["pause_episode"] = ep
+            return n
         ep["to_ms"] = end_ms
         ep["symbols"] = sorted({*(ep.get("symbols") or []), *active})
         due = (not ep.get("recorded_to_ms")
@@ -1054,7 +1155,8 @@ class TickRecorder:
         return sealed
 
     def _finish(self, rep: CycleReport, state: dict[str, Any], end_ms: int, t_start: float,
-                cursors: dict[str, dict[str, Any]], wall_ms: int | None = None) -> None:
+                cursors: dict[str, dict[str, Any]], wall_ms: int | None = None,
+                acct_end_ms: int | None = None) -> None:
         rep.elapsed_s = round(time.monotonic() - t_start, 3)
         # A completed slow cycle is not an outage. Keep capture-window time separate from
         # liveness; otherwise its gap writes consume the next budget and repeat indefinitely.
@@ -1066,7 +1168,11 @@ class TickRecorder:
             timespec="seconds"
         )
         rep.window_ms = (int(state.get("last_cycle_end_ms") or 0), end_ms)
-        state["last_cycle_end_ms"] = end_ms
+        # NEVER BACKWARDS (MF1): a UTC fallback or a dip would otherwise park the mark hours
+        # behind the broker and the next measured cycle would file a spurious RECORDER_DOWN.
+        # Only a confirmed clock step lowers it (`_rewind_for_clock_step`).
+        acct = end_ms if acct_end_ms is None else acct_end_ms
+        state["last_cycle_end_ms"] = max(int(state.get("last_cycle_end_ms") or 0), acct)
         state["last_cycle_finished_ms"] = finished_ms
         state["cycles"] = int(state.get("cycles") or 0) + 1
         state["last_report"] = asdict(rep)

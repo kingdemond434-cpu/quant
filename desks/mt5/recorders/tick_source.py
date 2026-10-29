@@ -71,6 +71,17 @@ TICK_DTYPE = np.dtype([
 COPY_TICKS_ALL = 3
 
 
+def _robust_clock(stamps: list[int]) -> int | None:
+    """The broker's clock from every symbol's last stamp: the SECOND-newest (audit 2026-10-29,
+    S1). The newest alone let one forward-glitched stamp end the window in the future -- +10/+30/
+    +59/+90 s lost 2/22/51/82 of 3,461 ticks. On a live broker the two newest are within a
+    second, so this is late by that much at most, and late is lossless. One stamp: that one."""
+    vals = sorted(v for v in stamps if v > 0)
+    if not vals:
+        return None
+    return vals[-2] if len(vals) >= 2 else vals[-1]
+
+
 class TickSourceError(RuntimeError):
     """The source could not answer. ALWAYS a recorded gap, never a silent zero."""
 
@@ -229,14 +240,16 @@ class Mt5TickSource:
         window ending here cannot outrun ticks the server has not stamped yet. None when no
         symbol answers -- the recorder then falls back to its late, lossless bound."""
         mt5 = self._mt5()
-        best = 0
+        got: list[int] = []
         for sym in symbols:
             try:
                 t = mt5.symbol_info_tick(sym)
             except Exception:
                 continue
-            best = max(best, int(getattr(t, "time_msc", 0) or 0) if t is not None else 0)
-        return best or None
+            v = int(getattr(t, "time_msc", 0) or 0) if t is not None else 0
+            if v > 0:
+                got.append(v)
+        return _robust_clock(got)
 
     def clock_probe(self, symbol: str) -> tuple[int, int] | None:
         mt5 = self._mt5()

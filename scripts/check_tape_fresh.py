@@ -202,8 +202,22 @@ def judge(path: Path, sess: dict[str, set[int]], now: datetime) -> dict[str, Any
     v_now = now.replace(tzinfo=None) + venue_lead(now)
     # The tape's OWN enrolment is judged: a symbol the tape never carried is a coverage
     # question, not a freshness one, and is counted beside the verdict, never hidden.
-    rows = {sym: judge_symbol(per.get(sym), sess.get(sym) or class_slots(None), v_now)
-            for sym in sorted(per)}
+    # AN UNREGISTERED SYMBOL HAS NO KNOWN SESSION (audit 2026-10-29, S4). It used to get the FX
+    # week, so a dead crypto CFD missing from universe.json read CLOSED on Saturday and the tape
+    # read FRESH: a false all-clear. It is judged 24/7 now -- FRESH when it is live, and when it
+    # is not, UNMEASURED (RED) with the reason, never a silent CLOSED.
+    rows: dict[str, dict[str, Any]] = {}
+    for sym in sorted(per):
+        if sym in sess:
+            rows[sym] = judge_symbol(per.get(sym), sess.get(sym) or class_slots(None), v_now)
+            continue
+        r = judge_symbol(per.get(sym), set(range(168)), v_now)
+        if r["status"] != "FRESH":
+            r = {**r, "status": "UNMEASURED",
+                 "why": ("not in data/universe/universe.json, so its session cannot be judged, "
+                         "and it has no tick within the last "
+                         f"{MAX_AGE_H:g} h -- register it or it stays RED")}
+        rows[sym] = {**r, "unregistered": True}
     not_enrolled = sorted(set(sess) - set(per))
     by: dict[str, list[str]] = {}
     for sym, r in rows.items():
