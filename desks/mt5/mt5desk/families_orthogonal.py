@@ -817,6 +817,7 @@ def family_overnight_gap_decay(
     stop_atr: float = 1.5,
     rr: float = 1.0,
     ttl_bars: int = 8,
+    entry_hour: int = -1,
 ) -> list[Signal]:
     """Fade the OVERNIGHT component specifically -- a different return than the intraday one.
 
@@ -824,6 +825,16 @@ def family_overnight_gap_decay(
     liquidity provision, position squaring) and have different statistical properties. Fading an
     outsized overnight gap is therefore a distinct bet from anything an intraday range family
     holds: it is closed before the session the breakout book trades even begins.
+
+    `entry_hour` (broker hour, -1 = the next bar, the certified default) SHIFTS THE FILL to the
+    first bar of the same day that opens at that hour, keeping the gap, stop and target measured
+    at the day's first bar. The default fill lands at broker hour 01, where the exotic crosses
+    quote 4-6x their pooled spread (USDZAR p50 1,496 pts against 329 pooled; EURZAR 1,438
+    against 312, `data/cost_surface.json`), and the live venue refused every ZAR order there
+    because the ask already sat past the certified target. A shifted fill (London open 10, the
+    NY overlap 15) asks whether the fade survives an executable book. If the gap has already
+    closed by then the next-open entry is past the target and the engine records the signal as
+    an unfilled geometry rejection, not as a trade.
     """
     d = _h1(df)
     atr = _atr(d, atr_n)
@@ -845,7 +856,19 @@ def family_overnight_gap_decay(
             continue
         side = -1 if gap > 0 else 1     # fade it back toward the prior close
         px = float(_a_d_open[i])
-        signals.append(Signal(time=d.index[i], side=side, stop=px - side * stop_atr * a,
+        at = i
+        if entry_hour >= 0:
+            # The signal sits on the bar BEFORE the entry hour, so the next-open fill is the
+            # first bar opening at `entry_hour` on this day; no such bar means no trade.
+            k = i + 1
+            while (k < len(d) - 1 and not bool(_a_first_bar[k])
+                   and d.index[k].hour < entry_hour):
+                k += 1
+            if (k >= len(d) - 1 or bool(_a_first_bar[k])
+                    or d.index[k].hour != entry_hour):
+                continue
+            at = k - 1
+        signals.append(Signal(time=d.index[at], side=side, stop=px - side * stop_atr * a,
                               target=px + side * abs(gap) * rr, ttl_bars=ttl_bars,
                               tag="overnight_gap_decay", trigger=None, wait_bars=1))
     return signals
