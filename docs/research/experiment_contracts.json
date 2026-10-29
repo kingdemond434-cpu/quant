@@ -250,6 +250,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "cost_state_fresh": {
+   "hypothesis": "Reading the cost surface, the carry table and the triangle tape by their own stamps on the box that writes them, every hour, turns a cost producer that silently stopped (its runner swallowed the exit) into a named RED row within one cycle, so no trade is priced against a weeks-old spread or financing table unnoticed.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "n_not_fresh",
+    "better": "down",
+    "organ": "report:COST_STATE_FRESHNESS.json"
+   },
+   "falsifier": {
+    "metric": "n_unmeasured",
+    "op": ">=",
+    "threshold": 2,
+    "after": "30 days in which two or more of the three cost artifacts stay UNMEASURED on the box: the fence reads nothing and the producers it watches are not writing where it looks"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

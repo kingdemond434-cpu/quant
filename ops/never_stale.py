@@ -76,6 +76,9 @@ DIAGNOSIS = {
         "in the organ's own health artifact and enrol them -- this never means restart."),
 }
 
+#: The exit of a pass that ran to the end and left something needing a human.
+ESCALATED = 3
+
 #: REMEDIES THAT ONLY MAKE SENSE FOR ONE ORGAN, keyed (task, code).
 #:
 #: `DIAGNOSIS` above is keyed by exit code ALONE, which works for the Windows scheduler codes --
@@ -92,6 +95,12 @@ DIAGNOSIS = {
 #: THE RULE THIS ENCODES: a remedy discovered once is written down here, not re-derived. The
 #: escalation message already says so; it had nowhere to say it TO.
 TASK_DIAGNOSIS = {
+    ("MT5-NeverStale", ESCALATED): (
+        "the watchdog RAN and escalated: read desks/mt5/reports/NEVER_STALE.json `escalated` for "
+        "the rows that need a human. Nothing to restart here -- the board is the finding."),
+    ("MT5-NeverStale", 1): (
+        "the watchdog itself CRASHED (an uncaught traceback, or process_health.py failing in the "
+        "same wrapper): read the tail of desks/mt5/logs/MT5-NeverStale.log."),
     ("MT5-Shadow", 1): (
         "check `errors` in desks/mt5/reports/shadow/shadow_health.json BEFORE restarting. If it "
         "is empty the cycle SUCCEEDED and this is the pre-2026-09-13 build collapsing an "
@@ -327,7 +336,10 @@ def main(argv: list[str] | None = None) -> int:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, indent=1), encoding="utf-8")
     print(f"-> {OUT}")
-    return 0 if doc["status"] in ("OK",) else 1
+    # THE WATCHDOG'S VERDICT IS NOT ITS CRASH (audit of #401, 2026-10-14). A pass that ran and
+    # found something to escalate exits ESCALATED; an uncaught traceback exits 1 as Python does.
+    # The two used to share code 1, so MT5-NeverStale FAILING could not say which it was.
+    return 0 if doc["status"] in ("OK",) else ESCALATED
 
 
 if __name__ == "__main__":
