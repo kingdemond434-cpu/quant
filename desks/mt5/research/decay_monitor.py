@@ -77,6 +77,24 @@ ACTIONS = BASE / "data" / "decay_actions.jsonl"
 #: Names the gateway must close out on its next pass: a sleeve that leaves the roster leaves the
 #: book (gateway.close_retired_positions reads and drains this).
 CLOSE_QUEUE = BASE / "data" / "RETIRED_CLOSE_QUEUE.json"
+#: THE DECAY ZERO FOR KEYS THAT TRADE OUTSIDE THE LIVE ROSTER (zuck 2026-10-29: "if a strat
+#: starts decaying losing etc does our allocators notice n replace it"). Every live order since
+#: the gold-only order of 2026-09-16 has gone out through a BOOK key (the principal's cert book,
+#: the Fusion min-lot book, the gold windows), whose roster row is STANDBY or RETIRED -- so the
+#: LIVE-only verdict loop below judged nothing, and the promoter's own retirement never touches
+#: a RETIRED row. Measured: usdnok_carry_asia_p_ff35bb7, RETIRED on the roster since September,
+#: closed 23 live trades in October for -9.36R and kept sending until a principal zero (#425).
+#: This file names every key that TRADED in the trailing window and now fails the promoter's own
+#: retirement bars on its live record; `decision_core.decay_zero` reads it and the gateway sends
+#: nothing for a named key, with a missed-growth line. Rebuilt in full every pass.
+DECAY_ZERO = BASE / "data" / "DECAY_ZERO.json"
+#: promoter.RETIRE_MIN_N / RETIRE_MAX_DD / RETIRE_MIN_EXP and its roll-20 window, mirrored (the
+#: promoter imports the terminal bindings; this organ runs without them). Pinned equal by
+#: test_decay_traded_keys.py, so the two retirement doors can never disagree.
+BOOK_RETIRE_MIN_N = 10
+BOOK_RETIRE_MAX_DD = -25.0
+BOOK_RETIRE_MIN_EXP = 0.05
+BOOK_RETIRE_ROLL = 20
 #: The forward clocks' own ledgers, the model's fallback series while the live ledger is thin:
 #: a promoted sleeve's shadow clock keeps running (promoter.py never stops it), so its forward
 #: rows are the longest untouched expectancy series the desk holds for that sleeve.
@@ -142,6 +160,28 @@ def _read_json(p: Path, default):
         return json.loads(p.read_text("utf-8"))
     except (OSError, ValueError):
         return default
+
+
+def _write_atomic(p: Path, doc: Any) -> None:
+    """Write `doc` as JSON through a temp file and `os.replace`, so the gateway never reads a
+    torn file. On Windows a reader holding the destination open makes `os.replace` raise
+    PermissionError; the replace is retried a few times before the error stands."""
+    import os
+    import time as _t
+    tmp = p.with_name(f".{p.name}.{os.getpid()}.tmp")
+    try:
+        tmp.write_text(json.dumps(doc, indent=2), "utf-8")
+        for attempt in range(5):
+            try:
+                os.replace(tmp, p)
+                break
+            except PermissionError:
+                if attempt == 4:
+                    raise
+                _t.sleep(0.2 * (attempt + 1))
+    finally:
+        if tmp.exists():
+            tmp.unlink()
 
 
 def sleeve_trades(name: str) -> list[dict]:
@@ -291,6 +331,372 @@ def pooled_verdicts(live: dict[str, dict], trades: Any = None) -> dict[str, dict
                               f"inside the band; fades stand as they are")
         out[key] = {**s, "verdict": v, "why": why, "sleeves": sorted(names)}
     return out
+
+
+def unattributed(sleeve: str) -> bool:
+    """A ledger `sleeve` that is the BROKER'S rewrite of the order comment ("[sl 4300.69]",
+    "[tp ...]", "#222731812 by #222705155"), not a sleeve: it names no key a zero could reach."""
+    return sleeve.startswith(("[", "#"))
+
+
+def traded_names() -> list[str]:
+    """Every sleeve name the live ledger holds a closed deal for inside the trailing window."""
+    if not LEDGER.exists():
+        return []
+    cutoff = datetime.now(tz=UTC) - timedelta(days=TRAIL_DAYS)
+    seen: dict[str, None] = {}
+    for line in LEDGER.read_text("utf-8").splitlines():
+        try:
+            r = json.loads(line) if line.strip() else None
+        except ValueError:
+            continue
+        if not isinstance(r, dict) or not r.get("sleeve") or unattributed(str(r["sleeve"])):
+            continue
+        try:
+            ts = datetime.fromisoformat(str(r.get("time", "")).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if (ts if ts.tzinfo else ts.replace(tzinfo=UTC)) >= cutoff:
+            seen[str(r["sleeve"])] = None
+    return list(seen)
+
+
+def degenerate(rs: list[float]) -> str:
+    """`promoter.degenerate_evidence` on a bare series (mirrored; pinned equal by
+    test_decay_traded_keys): why the series cannot support a retirement, or "".
+
+    A constant or near-constant r-series is the signature of a broken r_multiple computation
+    (gold_asia was retired twice on one in September), so no door below fires on it."""
+    if len(rs) < 2:
+        return ""
+    if len({round(x, 9) for x in rs}) == 1:
+        return (f"every one of {len(rs)} r_multiples is exactly {rs[0]:+.3f} -- a constant series "
+                f"is a computation defect, not performance; refusing to retire on it")
+    if all(x == 0.0 for x in rs):
+        return f"all {len(rs)} r_multiples are 0.0 -- risk_per_lot was unmeasurable on every fill"
+    counts: dict[float, int] = {}
+    for x in rs:
+        counts[round(x, 9)] = counts.get(round(x, 9), 0) + 1
+    value, hits = max(counts.items(), key=lambda kv: kv[1])
+    if hits / len(rs) >= 0.80:
+        return (f"{hits} of {len(rs)} r_multiples are exactly {value:+.3f} "
+                f"({100 * hits / len(rs):.0f}%) -- a near-constant series is a computation "
+                f"defect, not performance; a real "
+                f"sleeve's losses differ in size. Refusing to retire on it")
+    return ""
+
+
+def _promoter_dd(rs: list[float]) -> float:
+    """The drawdown exactly as `promoter.sleeve_forward_stats` measures it: the peak starts at the
+    first cumulative value, not at zero."""
+    cum, out, peak = 0.0, 0.0, None
+    for r in rs:
+        cum += r
+        peak = cum if peak is None else max(peak, cum)
+        out = min(out, cum - peak)
+    return round(out, 3)
+
+
+def book_key_verdict(rs: list[float]) -> tuple[str, str, dict]:
+    """The PROMOTER'S retirement bars on a key's trailing live record: ZERO, HEALTHY or
+    UNMEASURED (no measurable trade, or a degenerate series the promoter would refuse).
+
+    The same guard and the same three doors `promoter.run` applies to a LIVE or STANDBY row, in
+    the same order: `degenerate_evidence` first; then the roll-20 expectancy at or below 0R once
+    10 trades exist; a drawdown past -25R at any n (measured as the promoter measures it); a
+    50-trade expectancy under 0.05R. No new threshold is introduced.
+
+    GROWTH GOVERNANCE, RULE 1. A key that trips a door has a measured live expectancy at or below
+    zero (or a drawdown the forward verdicts already call ruinous), so every unit of risk it is
+    given lowers E[log W] in expectation: the zero raises robust forward growth rather than
+    trading it away. The forgone risk is still billed as a missed-growth line by the gateway.
+    """
+    n = len(rs)
+    s = stats(rs)
+    s["max_dd_r"] = _promoter_dd(rs)
+    roll = rs[-BOOK_RETIRE_ROLL:]
+    roll_exp = sum(roll) / len(roll) if roll else 0.0
+    facts = {**s, "roll20_exp": round(roll_exp, 4)}
+    if n == 0:
+        return "UNMEASURED", "no trade with a measurable R in the window", facts
+    bad = degenerate(rs)
+    if bad:
+        return "UNMEASURED", bad, facts
+    # THE HARD RAIL FIRST (#540 audit MF-A): a -25R drawdown is an unconditional zero, and must
+    # never be reported as a soft roll-20 door that a later test can hold or flag.
+    if s["max_dd_r"] < BOOK_RETIRE_MAX_DD:
+        return "ZERO", f"live maxDD {s['max_dd_r']:.1f}R < {BOOK_RETIRE_MAX_DD}R", facts
+    if n >= BOOK_RETIRE_MIN_N and roll_exp <= 0.0:
+        return "ZERO", f"roll20 exp {roll_exp:.3f}R <= 0 over n={n}", facts
+    if n >= 50 and s["exp_r"] < BOOK_RETIRE_MIN_EXP:
+        return "ZERO", f"n={n} exp {s['exp_r']:.3f}R < {BOOK_RETIRE_MIN_EXP}R", facts
+    return "HEALTHY", f"n={n}, roll20 exp {roll_exp:.3f}R, maxDD {s['max_dd_r']}R", facts
+
+
+#: THE ONLY FLAG-INSTEAD-OF-ZERO KEYS (zuck 2026-10-29 15:55Z: "zeroing is allowed pin is only fr
+#: gold Asia one temporarily only"). A key here that trips the bars is FLAGGED to the principal
+#: while no LIVE (promoted) row on its symbol exists; once one does, the exemption ends and the
+#: key is zeroed like any other. Every other key, principal-pinned book or not, is zeroed.
+TEMPORARY_EXEMPT: frozenset[str] = frozenset({"gold_asia"})
+
+
+def _stem(name: object) -> str:
+    """A key as the ledger knows it: lowercased, `_v<n>` dropped, cut to the 27-char stem."""
+    import re
+    return re.sub(r"_v\d+$", "", str(name or "").strip()).lower()[:LEDGER_NAME_MAX]
+
+
+def replacement_for(name: str, symbol: str, roster: dict[str, dict],
+                    statuses: tuple[str, ...] = ("LIVE", "STANDBY")) -> str | None:
+    """A certified roster row that could take `name`'s place: another row on the same symbol
+    under a different book name, in one of `statuses`. None when there is none. Recorded on
+    every zero; for a TEMPORARY_EXEMPT key only a LIVE (promoted) row ends the exemption."""
+    me = _stem(name)
+    for k, row in roster.items():
+        if _stem(k) == me or not isinstance(row, dict):
+            continue
+        if str(row.get("status") or "").upper() in statuses \
+                and _norm_symbol(row.get("symbol")) == _norm_symbol(symbol):
+            return str(k)
+    return None
+
+
+#: THE CERTIFICATE'S OWN BAD STREAKS (zuck 2026-10-29 15:21Z: "sometimes false decay can be
+#: observed cuz of regime or js bad days"). A key whose live roll-20 run is no worse than the
+#: STREAK_PCT-th percentile of the roll-20 runs its own forward clock already lived through is
+#: inside its certified variance, and is HELD, not zeroed. DERIVATION: the 5th percentile is the
+#: conventional one-sided 5% level -- a run worse than 95% of the certificate's own windows is
+#: the evidence of decay, a run inside them is a bad stretch the edge has survived before. The
+#: forward clock needs STREAK_MIN_N trades so that it holds at least a few distinct roll-20 windows.
+STREAK_PCT = 5.0
+STREAK_MIN_N = 40
+
+
+def _norm_symbol(symbol: object) -> str:
+    """`XAUUSD.r`, `xauusd-ecn` and `XAUUSD` are one instrument (audit S: symbol suffixes)."""
+    import re
+    return re.split(r"[.\-_]", str(symbol or "").upper(), maxsplit=1)[0]
+
+
+def _forward_r(name: str, row: dict | None, symbol: str) -> list[float]:
+    """The key's forward-clock R series (the certificate's own out-of-sample record), oldest
+    first, from the shadow ledger keyed `SYMBOL_family_window`, else `SYMBOL_window`."""
+    row = row or {}
+    asia = "_asia" in str(name).lower() or str(row.get("window") or "") == "asia"
+    window = "asia" if asia else "continuous"
+    sym = _norm_symbol(symbol or row.get("symbol"))
+    fam = str(row.get("family") or "")
+    # A family-bearing key reads ITS family's clock only; the symbol-only clock is the gold
+    # windows' (no family), never a fallback for another mechanism (#540 audit MF4).
+    for key in ([f"{sym}_{fam}_{window}"] if fam else [f"{sym}_{window}"]):
+        rs = [_row_r(r) for r in _shadow_ledger_rows(key)]
+        out = [float(x) for x in rs if isinstance(x, (int, float))]
+        if out:
+            return out
+    return []
+
+
+#: THE SOFT-DOOR TEST (#540 audit MF-B, re-fitted on the Auditor's v3 HOLD MF-1). A promoter soft
+#: door (roll-20 <= 0, a weak 50-trade mean) zeroes only when the key's WHOLE live record -- not
+#: the trailing window the doors read -- has a mean reliably below zero on a TIME-UNIFORM test:
+#: the normal-mixture confidence sequence  sum(r) <= -s * sqrt((n + RHO) * ln((n + RHO) /
+#: (RHO * ALPHA^2))). It is valid at every n at once, so judging it every hour adds no false
+#: zeros, and its state (n, sum r, sum r^2, the deals folded) is kept per key in DECAY_ZERO.json
+#: so a trade is counted exactly once and never ages out. v3 tested every prefix of the sliding
+#: 60-trade window, re-judged hourly: the Auditor measured 46-60% false zeros on a +0.10R sleeve
+#: by 120 trades. DERIVATION (scratch simc4.py, 2,000 paths per cell, normal and 1:1/2:1/3:1
+#: brackets): ALPHA 0.30, RHO 20 give false zeros of 1-8% on a +0.10R sleeve by 300 trades (the
+#: Auditor's bar, <= 10%) and detect a -0.20R sleeve 47-66% by 120 trades, 72-95% by 300. A
+#: true-zero-mean sleeve may be zeroed (10-18% by 300): it adds no E[log W], so Rule 1 loses
+#: nothing.
+DECAY_ALPHA = 0.30
+DECAY_RHO = 20.0
+#: Live trades before the soft doors may zero: N_MIN_VERDICT, the desk's own verdict count.
+DECAY_MIN_N = N_MIN_VERDICT
+#: Deal ids remembered per key, so a trade still in the window is never folded twice; well past
+#: the window's own TRAIL_MAX_TRADES.
+SEQ_KEEP_DEALS = 4 * TRAIL_MAX_TRADES
+
+
+def _deal_id(t: dict) -> str:
+    d = t.get("deal") or t.get("position_id") or t.get("order")
+    return str(d) if d not in (None, "") else f"{t.get('time')}|{t.get('r_multiple')}"
+
+
+def fold_sequential(state: dict | None, trades: list[dict]) -> dict:
+    """The key's cumulative live record with every trade in `trades` it has not yet seen folded in
+    once (by deal id): {"n", "sum", "sumsq", "deals"}. Never shrinks as trades leave the window."""
+    st = state if isinstance(state, dict) else {}
+    n, sx, sxx = int(st.get("n") or 0), float(st.get("sum") or 0.0), float(st.get("sumsq") or 0.0)
+    deals = [str(d) for d in (st.get("deals") or [])]
+    seen = set(deals)
+    for t in trades:
+        d = _deal_id(t)
+        if d in seen:
+            continue
+        r = float(t["r_multiple"])
+        n, sx, sxx = n + 1, sx + r, sxx + r * r
+        deals.append(d)
+        seen.add(d)
+    return {"n": n, "sum": round(sx, 10), "sumsq": round(sxx, 10),
+            "deals": deals[-SEQ_KEEP_DEALS:]}
+
+
+def sequential_decay_verdict(state: dict, door: str) -> tuple[str, str]:
+    """ZERO, HOLD or FLAG for a key a soft promoter door tripped, judged on its cumulative live
+    record (`fold_sequential`): ZERO when the sum of its R sits below the time-uniform boundary;
+    HOLD when it does not; FLAG below DECAY_MIN_N live trades (too few to judge)."""
+    import math
+    n = int(state.get("n") or 0)
+    if n < DECAY_MIN_N:
+        return "FLAG", (f"{door}, but n={n} < {DECAY_MIN_N} live trades: too few to test the live "
+                        f"mean; flagged, not zeroed")
+    sx, sxx = float(state["sum"]), float(state["sumsq"])
+    sd = math.sqrt(max((sxx - sx * sx / n) / (n - 1), 0.09))
+    w = n + DECAY_RHO
+    bound = sd * math.sqrt(w * math.log(w / (DECAY_RHO * DECAY_ALPHA ** 2)))
+    mean = sx / n
+    if sx <= -bound:
+        return "ZERO", (f"{door}; over its whole live record (n={n}) the mean {mean:+.3f}R is "
+                        f"reliably below zero (sum {sx:+.2f}R <= -{bound:.2f}R, time-uniform "
+                        f"alpha {DECAY_ALPHA}): the edge is gone, not resting")
+    return "HOLD", (f"{door}, but over its whole live record (n={n}) the mean {mean:+.3f}R is not "
+                    f"reliably below zero (sum {sx:+.2f}R > -{bound:.2f}R): a bad stretch, not "
+                    f"decay")
+
+
+def cert_streak_band(forward: list[float]) -> float | None:
+    """The STREAK_PCT-th percentile of the forward clock's roll-20 means, or None (UNMEASURED)."""
+    if len(forward) < STREAK_MIN_N:
+        return None
+    w = BOOK_RETIRE_ROLL
+    means = sorted(sum(forward[i:i + w]) / w for i in range(len(forward) - w + 1))
+    k = max(0, min(len(means) - 1, int(len(means) * STREAK_PCT / 100.0)))
+    return means[k]
+
+
+def _union_sequential(a: object, b: object) -> dict:
+    """Both copies' cumulative live records, the longer one per key (a truncated primary can
+    never shorten a record the last good copy holds)."""
+    out: dict[str, dict] = {}
+    for src in (a, b):
+        for k, v in (src.items() if isinstance(src, dict) else ()):
+            if (isinstance(v, dict)
+                    and int(v.get("n") or 0) >= int((out.get(k) or {}).get("n") or 0)):
+                out[k] = v
+    return out
+
+
+def _traded_recently(name: str) -> bool:
+    """A replacement must actually TRADE before it ends the gold_asia exemption (audit S)."""
+    return bool(sleeve_trades(name))
+
+
+def _cert_of(name: str, roster: dict[str, dict]) -> str | None:
+    """The certificate the roster row for `name` (matched by stem) carries, or None."""
+    me = _stem(name)
+    for k, row in roster.items():
+        if _stem(k) == me and isinstance(row, dict):
+            c = row.get("certificate") or row.get("cert")
+            if c:
+                return str(c)
+    return None
+
+
+def decay_zero_doc(live: dict[str, dict], now: str, roster: dict[str, dict] | None = None,
+                   prev: dict | None = None) -> dict:
+    """DECAY_ZERO.json: every key that traded in the window outside the LIVE roster rows the loop
+    in `main` already judges, the keys the promoter's bars ZERO, and the keys they would zero
+    but are FLAGGED to the principal instead.
+
+    ZUCK'S RULES (2026-10-29 15:21Z):
+      * A ZERO IS ONE-WAY. It never re-arms because losses age out of the window and never lifts
+        itself; re-entry is a NEW certified key, exactly like the promoter's one-way retirement.
+      * ZEROING IS ALLOWED ON EVERY KEY (15:55Z ruling), principal-pinned books included, except
+        the TEMPORARY_EXEMPT keys (gold_asia only): those are FLAGGED while no promoted
+        replacement exists on their symbol, and zeroed once one does.
+    Only live-account rows count (a demo fill is not live evidence); an UNMEASURED key (no
+    measurable R, or a degenerate series) is listed apart and moves nothing.
+    """
+    roster = roster or {}
+    prev_zeros = dict((prev or {}).get("zeros") or {})
+    prev_seq = dict((prev or {}).get("sequential") or {})
+    sequential: dict[str, dict] = {k: v for k, v in prev_seq.items() if isinstance(v, dict)}
+    exempt = {_stem(k) for k in TEMPORARY_EXEMPT}
+    judged: dict[str, dict] = {}
+    unmeasured: dict[str, dict] = {}
+    zeros: dict[str, dict] = {}
+    flags: dict[str, dict] = {}
+    lifted: dict[str, dict] = {}
+    live_stems = {str(k)[:LEDGER_NAME_MAX] for k in live}
+    for name in traded_names():
+        if name in live or name in live_stems:
+            continue                                  # the LIVE loop judges it, on its own bars
+        trades = [t for t in sleeve_trades(name)
+                  if str(t.get("account_kind") or "live").lower() == "live"]
+        rs = [float(t["r_multiple"]) for t in trades]
+        v, why, facts = book_key_verdict(rs)
+        sequential[name] = fold_sequential(prev_seq.get(name), trades)
+        facts["live_record_n"] = sequential[name]["n"]
+        symbol = next((str(t.get("symbol")) for t in reversed(trades) if t.get("symbol")), "")
+        # The certificate's own forward bad-streak band is REPORTED beside the verdict (a fact for
+        # the reader and for the regime work to come); the verdict is the live record's own test.
+        own = next((r for k, r in roster.items() if _stem(k) == _stem(name)), None)
+        fwd = _forward_r(name, own, symbol)
+        band = cert_streak_band(fwd)
+        facts["cert_streak_band_r"] = None if band is None else round(band, 4)
+        if v == "ZERO" and not why.startswith("live maxDD"):
+            # A SOFT DOOR IS A QUESTION, NOT A VERDICT (#540 audit MF4/MF-B, Rule 1). A raw roll-20
+            # <= 0 at n=10 zeroes a +0.20R sleeve with p~0.42; so a soft-door ZERO stands only when
+            # the sequential live-mean test rejects (sequential_decay_verdict), and below
+            # DECAY_MIN_N live trades the key is FLAGGED. The -25R drawdown stays a hard zero.
+            v, why = sequential_decay_verdict(sequential[name], why)
+        row = {**facts, "verdict": v, "why": why}
+        if v == "UNMEASURED":
+            unmeasured[name] = row
+            continue
+        judged[name] = row
+        if v not in ("ZERO", "FLAG"):
+            continue
+        repl = replacement_for(name, symbol, roster)
+        stem_rows = sorted(k for k in roster if _stem(k) == _stem(name))
+        entry = {"why": why, "n": facts["n"], "exp_r": facts["exp_r"],
+                 "roll20_exp": facts["roll20_exp"], "max_dd_r": facts["max_dd_r"],
+                 "symbol": symbol, "roster_rows": stem_rows, "since": now,
+                 "certificate": _cert_of(name, roster)}
+        live_repl = replacement_for(name, symbol, roster, ("LIVE",))
+        if v == "FLAG":
+            flags[name] = {**entry, "replacement": repl, "flag": why}
+        elif _stem(name) in exempt and not (live_repl and _traded_recently(live_repl)):
+            flags[name] = {**entry, "replacement": repl,
+                           "flag": (f"temporary exemption (zuck 2026-10-29): no promoted "
+                                    f"replacement on {symbol} yet; the principal decides")}
+        else:
+            zeros[name] = {**entry, "replacement": repl}
+    # ONE-WAY: every earlier zero stands unless its row's certificate changed since.
+    for k, z in prev_zeros.items():
+        if not isinstance(z, dict):
+            continue
+        # ONE-WAY, NO AUTOMATIC LIFT (#540 audit MF2): a certificate gaining a field, or a
+        # sibling row sharing the stem, must never re-arm a zeroed key. Re-entry is a NEW key
+        # (a fresh certification under its own name), never this one.
+        zeros.setdefault(k, z)
+        if isinstance(zeros[k], dict):
+            zeros[k]["since"] = z.get("since") or now
+        flags.pop(k, None)
+    return {"checked_at": now, "trail_days": TRAIL_DAYS, "zeros": zeros, "flags": flags,
+            "lifted": lifted, "judged": judged, "unmeasured": unmeasured,
+            "sequential": sequential,
+            "zeroed_heat_redeployed": False,
+            "rule": (f"a key that closed a live trade in the last {TRAIL_DAYS} days and is not a "
+                     f"LIVE roster row is judged on the promoter's retirement bars "
+                     f"(degenerate series refused; roll{BOOK_RETIRE_ROLL} exp <= 0R at n >= "
+                     f"{BOOK_RETIRE_MIN_N}; maxDD < {BOOK_RETIRE_MAX_DD}R; n >= 50 and exp < "
+                     f"{BOOK_RETIRE_MIN_EXP}R). A tripped key is ZEROED; only "
+                     f"{sorted(TEMPORARY_EXEMPT)} "
+                     f"is FLAGGED instead while no promoted replacement exists. A zero "
+                     f"is one-way and never lifts itself. The zeroed key's heat is "
+                     f"not redeployed by this file; the allocator's next solve decides it")}
 
 
 def queue_close(names: list[str], path: Path | None = None) -> None:
@@ -714,16 +1120,77 @@ def main(write_queue: bool = True) -> int:
     rows_seen = roster_rows(doc)
     shape_note = None
     if rows_seen and not live:
-        shape_note = (f"the roster holds {len(rows_seen)} row(s) in the LIST shape "
-                      f"promoter.save_sleeves writes; the verdict loop reads a DICT-shaped roster "
-                      f"and judged none of them (a standing defect, reported here and NOT "
-                      f"changed by the model half -- fixing it arms a demotion path)")
+        # The loop reads both shapes since 2026-09-16; what it finds is no LIVE row. The keys that
+        # trade anyway (book keys on STANDBY or RETIRED rows) are judged into DECAY_ZERO below.
+        shape_note = (f"the roster holds {len(rows_seen)} row(s) and none is LIVE, so the "
+                      f"verdict loop judged none; every key that traded is judged against the "
+                      f"promoter's retirement bars into {DECAY_ZERO.name} instead")
+    # THE BOOK KEYS, every pass the roster was read: rebuilt in full, keeping the first `since`.
+    zero_doc = None
+    # Beside whatever roster this run judges (as `queue_close`): a test that redirects
+    # SLEEVES_FILE can never write the desk's real DECAY_ZERO.json.
+    zero_path = SLEEVES_FILE.parent / DECAY_ZERO.name
+    # A TORN ZERO FILE IS NEVER READ AS "NO ZEROS" (#494 audit MF1). It exists and cannot be
+    # read: this pass refuses to rewrite it (the zeros it held would be lost), keeps the file for
+    # inspection, publishes zero_file UNREADABLE (allocator liveness turns it RED) and exits
+    # non-zero; the gateway keeps honouring the last good copy.
+    _prim0 = _read_json(zero_path, None) if zero_path.exists() else None
+    _good0 = _read_json(zero_path.with_name(zero_path.stem + ".last_good.json"), None)
+    # A primary that is a dict but has LOST its `zeros` key, with no good copy holding them,
+    # is as unreadable as a torn one (#540 v3 audit SF): rewriting it would drop every zero.
+    zero_unreadable = zero_path.exists() and (
+        not isinstance(_prim0, dict)
+        or (not isinstance(_prim0.get("zeros"), dict)
+            and not (isinstance(_good0, dict) and isinstance(_good0.get("zeros"), dict))))
+    if source != "UNMEASURED" and zero_unreadable:
+        print(f"decay monitor: {zero_path.name} exists and is unreadable -- NOT rewritten; the "
+              f"gateway reads {zero_path.name.replace('.json', '.last_good.json')}")
+    if source != "UNMEASURED" and not zero_unreadable:
+        # NEVER DROP A ZERO SILENTLY (#540 audit MF3): a missing primary, or one without a
+        # `zeros` key, is seeded from the last good copy, so deleting the file cannot re-arm a key.
+        prim = _read_json(zero_path, None)
+        good = _read_json(zero_path.with_name(zero_path.stem + ".last_good.json"), None)
+        prim = prim if isinstance(prim, dict) else {}
+        good = good if isinstance(good, dict) else {}
+        # The UNION of both copies' zeros (#540 audit S3): an empty or truncated primary can never
+        # wipe a zero the last good copy still holds.
+        prev_doc = {**good, **prim,
+                    "zeros": {**(good.get("zeros") if isinstance(good.get("zeros"), dict) else {}),
+                              **(prim.get("zeros") if isinstance(prim.get("zeros"), dict) else {})},
+                    "flags": prim.get("flags") or good.get("flags") or {},
+                    "sequential": _union_sequential(good.get("sequential"),
+                                                    prim.get("sequential"))}
+        zero_doc = decay_zero_doc(live, now, roster_rows(doc), prev_doc)
+        before_z, before_f = set(prev_doc.get("zeros") or {}), set(prev_doc.get("flags") or {})
+        for k, z in zero_doc["zeros"].items():
+            if k not in before_z:
+                actions.append({"at": now, "sleeve": k, "action": "BOOK_ZERO", "why": z["why"],
+                                "replacement": z.get("replacement")})
+        for k, f_ in zero_doc["flags"].items():
+            if k not in before_f:
+                actions.append({"at": now, "sleeve": k, "action": "BOOK_FLAG", "why": f_["why"],
+                                "flag": f_["flag"]})
+        _write_atomic(zero_path, zero_doc)
+        # The last good copy, written after the primary, so a later torn primary has a fallback.
+        _write_atomic(zero_path.with_name(zero_path.stem + ".last_good.json"), zero_doc)
+        new_actions = [a for a in actions
+                       if a["action"] in ("BOOK_ZERO", "BOOK_FLAG")]
+        if new_actions:
+            with ACTIONS.open("a", encoding="utf-8") as f:
+                for a in new_actions:
+                    f.write(json.dumps(a) + "\n")
 
     OUT.write_text(json.dumps({
         "checked_at": now,
         "live_sleeves": None if source == "UNMEASURED" else len(live),
         "roster_state": source, "roster_why": source_why,
         "roster_rows_seen": len(rows_seen), "roster_shape_note": shape_note,
+        "zero_file": "UNREADABLE" if zero_unreadable else "OK",
+        "book_keys": (None if zero_doc is None else
+                      {"judged": len(zero_doc["judged"]), "zeroed": sorted(zero_doc["zeros"]),
+                       "flagged": sorted(zero_doc["flags"]),
+                       "unmeasured": sorted(zero_doc["unmeasured"]),
+                       "file": DECAY_ZERO.name}),
         "verdicts": report, "actions_taken": actions,
         "decay_model": models, "successor_hunts": hunts, "queue": queue,
         "model_rule": (
@@ -756,8 +1223,11 @@ def main(write_queue: bool = True) -> int:
           f"{sum(1 for r in report.values() if r['verdict'] != 'HEALTHY')} flagged, "
           f"{len(actions)} action(s); model: {len(models)} row(s), "
           f"{sum(1 for m in models.values() if m['status'] == 'MEASURED')} half-life(s) "
-          f"measured, {len(hunts)} successor hunt(s) -- {queue['why']}")
-    return 0
+          f"measured, {len(hunts)} successor hunt(s) -- {queue['why']}; book keys: "
+          f"{len(zero_doc['judged']) if zero_doc else 0} judged, "
+          f"{len(zero_doc['zeros']) if zero_doc else 0} zeroed, "
+          f"{len(zero_doc['flags']) if zero_doc else 0} flagged to the principal")
+    return 1 if zero_unreadable else 0
 
 
 if __name__ == "__main__":

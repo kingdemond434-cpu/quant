@@ -334,3 +334,16 @@ def test_the_join_fix_can_only_raise_a_live_row_never_lower_it() -> None:
         assert key == "gold_afternoon"
         assert clamp_risk_frac(book_frac) >= clamp_risk_frac(row["risk_frac"]) - 1e-12 or \
             clamp_risk_frac(book_frac) == BASE_RISK_FRAC
+
+
+def test_a_trading_key_the_decay_monitor_has_not_judged_breaks_liveness(
+        desk: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """zuck 2026-10-29: book keys closed live trades for six weeks while the decay monitor judged
+    none. That reading is now a breach (the judging itself is pinned in test_decay_traded_keys)."""
+    monkeypatch.setattr(AL, "_judge_coverage",
+                        lambda now: {"status": "GAP", "why": "usdnok_carry unjudged"})
+    rep = AL.measure()
+    assert {"check": "DECAY_UNJUDGED", "why": "usdnok_carry unjudged"} in rep["breaches"]
+    assert rep["ok"] is False and rep["decay_judging"]["status"] == "GAP"
+    monkeypatch.setattr(AL, "_judge_coverage", lambda now: {"status": "UNMEASURED", "why": "-"})
+    assert AL.measure()["ok"] is True

@@ -88,6 +88,7 @@ from mt5desk.decision_core import (  # noqa: E402
     BRACKET_TTL_HOURS,
     CANCEL_HOUR,
     CLOSE_HOUR,
+    decay_zero,
     window_end_hour,
 )
 from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book  # noqa: E402
@@ -1108,6 +1109,20 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
     v = _oco.gate(LANE, side, key=key, date=today)
     if not v.allowed:
         _skip(doc, st, "gold_oco", v.why, today=today, now=now)
+        return
+    # THE DECAY ZERO REACHES EVERY VENUE (#494 audit MF3): a key the decay monitor zeroed on its
+    # live record sends nothing here either.
+    _dz = decay_zero(CERT_KEY)
+    if _dz is not None:
+        _book = load_cert_book(CERT_BOOK_FILE, "ftmo") or {}
+        try:
+            _eq = float(mt5.account_info().equity)
+        except Exception:
+            _eq = None
+        _f = _book.get(CERT_KEY)
+        _skip(doc, st, "decay_zero", f"decay zero on {CERT_KEY} ({_dz})", today=today, now=now,
+              missed_usd=(round(_eq * float(_f), 2)
+                          if _eq is not None and isinstance(_f, (int, float)) else None))
         return
     book = load_cert_book(CERT_BOOK_FILE, "ftmo")
     frac = (book or {}).get(CERT_KEY)

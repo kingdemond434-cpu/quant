@@ -40,5 +40,11 @@
     "sha256": "1210ea62370de67094a8cf4ca004fc156bf53062bd30826f94baa831a145726d",
     "original_sha256": "4ee5040830fdb4cfde98d3a92721cba0bf9227a864a17c9582469b80641d2aa5",
     "redacted": true
+  },
+  "PR #494": {
+    "path": "docs/cro/evidence/20261029/journal-archives/pr_494.txt",
+    "sha256": "21c1e319deae007f5dece741025d50bcdff0f1224d11268366e8734f61d00de6",
+    "original_sha256": "21c1e319deae007f5dece741025d50bcdff0f1224d11268366e8734f61d00de6",
+    "redacted": false
   }
 }

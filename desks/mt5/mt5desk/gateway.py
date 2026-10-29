@@ -326,6 +326,9 @@ from mt5desk.decision_core import (  # the principal's zeros, in code (audit r5 
     SCALP_LANE_ZERO as SCALP_LANE_ZERO,
     book_name as book_name,
     cert_zero_row as cert_zero_row,
+    DECAY_ZERO_DISABLED as DECAY_ZERO_DISABLED,
+    DECAY_ZERO_FILE as DECAY_ZERO_FILE,
+    decay_zero as decay_zero,
     principal_zero as principal_zero,
 )
 from mt5desk.decision_core import (
@@ -5249,7 +5252,23 @@ def main() -> None:
             _s["risk_frac"] = float(_book[_key])
             _s["sized_by"] = "allocator_book"
             _s["book_key"] = _key
-        if cert_zero_row(_s):
+        _dz_fn = globals().get("decay_zero")          # looked up: exec harnesses slice main
+        _dz_why = (_dz_fn(_s["name"]) or _dz_fn(_key)) if _dz_fn else None
+        if _dz_why is not None:
+            # ITS OWN LIVE RECORD FAILED THE PROMOTER'S RETIREMENT BARS (decay_monitor
+            # DECAY_ZERO): nothing on every lane and path, billed once per sleeve per day.
+            _forgone = (float(_book.get(_key) or 0.0) if from_book
+                        else float(_s.get("risk_frac") or 0.0))  # billed BEFORE the zero
+            _s["risk_frac"], _s["sized_by"] = 0.0, "allocator_book"
+            _s["decay_zero"] = _dz_why
+            from mt5desk import fusion_rails as _rails
+            _rails.line_once("decay_zero",
+                             f"{_s['name']}/{datetime.now(tz=UTC).date().isoformat()}",
+                             sleeve=_s["name"], symbol=_s.get("symbol"), book_key=_key,
+                             # A non-book row is billed at its own risk fraction (#540 S).
+                             missed_growth_risk_frac=_forgone,
+                             why=f"decay zero ({_dz_why}); no order")
+        elif cert_zero_row(_s):
             # A PRINCIPAL ZERO (code pin or cert book) sends nothing on every lane and path; the
             # forgone sleeve is a missed-growth line once per sleeve per day.
             _s["risk_frac"], _s["sized_by"] = 0.0, "allocator_book"
