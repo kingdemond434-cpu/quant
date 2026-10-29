@@ -594,6 +594,8 @@ desks/mt5/data/FTMO_FOLLOWER_ARMED
 # H1 bars the venue reader pulls for FTMO's own cost surface (prop/ftmo_venue_reader.py): box-local.
 desks/mt5/data/FTMO_ALLOCATOR_ARMED
 desks/mt5/data/FTMO_COPY_PRINCIPAL.json
+# The FTMO sleeve executor's arming marker (prop/ftmo_executor.py): box-local, the principal's step.
+desks/mt5/data/FTMO_EXECUTOR_ARMED
 desks/mt5/data/universe_ftmo/
 # bar_clock_probe's atomic-write temporaries; the ledger and summary themselves are tracked state.
 desks/mt5/data/bar_clock_probes.jsonl.tmp

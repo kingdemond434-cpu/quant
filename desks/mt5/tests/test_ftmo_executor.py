@@ -21,9 +21,10 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_DESK.parent.parent)):
         sys.path.insert(0, _p)
 
 from prop import ftmo_executor as fx  # noqa: E402
+from prop.e8_guard import server_offset_hours  # noqa: E402
 
-NOW = datetime(2026, 10, 29, 2, 3, tzinfo=UTC)          # 04:03 on the UTC+2 broker clock
-SERVER = NOW + timedelta(hours=2)
+NOW = datetime(2026, 10, 29, 2, 3, tzinfo=UTC)
+SERVER = NOW + timedelta(hours=server_offset_hours(NOW))   # the broker clock, NY+7
 BAR = pd.Timestamp(SERVER.replace(minute=0) - timedelta(hours=1)).tz_convert(UTC)
 KEY = "AUDNZD_overnight_gap_decay_asia"
 SPEC = {"key": "external.AUDNZD.overnight_gap_decay.p=1", "symbol": "AUDNZD",
@@ -144,8 +145,8 @@ def test_a_funded_sleeve_with_a_signal_is_sent_with_its_stop_and_target(world) -
     (req,) = world.mt5.sent
     assert req["symbol"] == "AUDNZD" and req["magic"] == fx.MAGIC
     assert req["sl"] == 1.0950 and req["tp"] == 1.1100
-    # 0.003 x 100k = $300 at a 50-pip stop worth $300/lot -> 1.00 lot
-    assert req["volume"] == pytest.approx(1.0)
+    # 0.003 x 100k = $300 at the 51-pip stop from the ask ($306/lot), floored -> 0.98 lot
+    assert req["volume"] == pytest.approx(0.98)
     assert _rows()[-1]["status"] == "SENT"
 
 
@@ -169,7 +170,7 @@ def test_an_opposite_side_on_e8_blocks_the_order_and_bills_it(world) -> None:
     assert world.mt5.sent == []
     row = doc["sleeves"][0]
     assert row["status"] == "RAIL_BLOCKED" and row["rail"] == "cross_account_opposite"
-    assert row["missed_growth_risk_usd"] == pytest.approx(300.0)
+    assert row["missed_growth_risk_usd"] == pytest.approx(0.98 * 306.0)
 
 
 def test_an_unreadable_fusion_book_fails_closed(world) -> None:
@@ -273,3 +274,13 @@ def test_the_allocator_marks_a_non_gold_spec_executable_and_gold_windows_not() -
     assert pca.executor_runs("gold_asia", specs)
     assert not pca.executor_runs("XAUUSD_x_london", specs)
     assert not pca.executor_runs("EURUSD_y_asia", specs)
+
+
+def test_every_executor_refusal_reaches_the_missed_growth_bill(world, monkeypatch) -> None:
+    import missed_growth as mg
+    world.books["e8"] = ({"AUDNZD": {"long": False, "short": True}}, "ok")
+    fx.run(world.mt5, armed=True, now=NOW)
+    monkeypatch.setattr(mg, "FTMO_EXEC_INTENTS", Path(fx.INTENTS))
+    line = mg.published_ftmo_executor_lines()["rails"]["cross_account_opposite"]
+    assert line["n"] == 1 and line["undeployed_risk_usd"] == pytest.approx(0.98 * 306.0)
+    assert line["sleeves"] == [KEY]
