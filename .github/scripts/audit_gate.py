@@ -454,6 +454,10 @@ def checks(
 # ------------------------------------------------------------------------ the GitHub side
 
 
+#: Seconds any one gh call may take before the gate gives up on it.
+GH_TIMEOUT_S = 120
+
+
 def _gh(*args: str, data: Mapping[str, Any] | None = None) -> Any:
     cmd = ["gh", "api", *args]
     if data is not None:
@@ -468,6 +472,9 @@ def _gh(*args: str, data: Mapping[str, Any] | None = None) -> Any:
         encoding="utf-8",
         errors="replace",
         check=False,
+        # A hung gh held the box sweep's mutex from 13:53Z on 2026-10-29 and no sweep ran after:
+        # every call ends, and a timeout is an error the sweep logs (it never merges on one).
+        timeout=GH_TIMEOUT_S,
     )
     if p.returncode != 0:
         raise RuntimeError(f"gh api {' '.join(args)}: {p.stderr.strip()[:300]}")
@@ -551,8 +558,12 @@ def up_to_date(base_ref: str, head: str) -> tuple[bool, str]:
         capture_output=True,
         check=False,
     )
+    lag = ""
     if behind.returncode != 0:
-        return False, f"it is behind {base_ref} (merge {base_ref} in first)"
+        state = state_only_lag(base_ref, head)
+        if state is None:
+            return False, f"it is behind {base_ref} (merge {base_ref} in first)"
+        lag = f" but for {state} box-state path(s)"
     same = subprocess.run(
         ["git", "diff", "--quiet", f"origin/{base_ref}", head, "--", ".github"],
         capture_output=True,
@@ -560,7 +571,53 @@ def up_to_date(base_ref: str, head: str) -> tuple[bool, str]:
     )
     if same.returncode != 0:
         return False, f"its .github differs from {base_ref}"
-    return True, "up to date"
+    return True, f"up to date{lag}"
+
+
+def _is_state_path() -> Callable[[str], bool] | None:
+    """libs.ops.release.is_state_path from THIS checkout (the base's, trusted code), loaded by
+    path so the gate needs no install; None (every path is code) when it cannot be loaded."""
+    import importlib.util
+
+    src = Path(__file__).resolve().parents[2] / "libs" / "ops" / "release.py"
+    try:
+        spec = importlib.util.spec_from_file_location("_gate_release", src)
+        if spec is None or spec.loader is None:
+            return None
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        state, governed = mod.is_state_path, mod.is_governed_state
+    except Exception:  # any failure is "code": the PR must merge the base in
+        return None
+    if not (callable(state) and callable(governed)):
+        return None
+    # #521 audit MF1: a sign row, a pin, the survivor canon, the allocator proof or a switch is
+    # state that governs code: a PR tested against the old copy merges the base in first.
+    return lambda rel: bool(state(rel)) and not governed(rel)
+
+
+def state_only_lag(base_ref: str, head: str) -> int | None:
+    """How many paths the base gained since the head forked, when EVERY one is box state
+    (libs.ops.release.is_state_path); None when any is code, or on any error.
+
+    MEASURED 2026-10-29: the box publishes its state onto LIVE every 15 minutes, while a PR's
+    checks waited over two hours for a runner, so no no-comment PR was ever "up to date" by the
+    time its checks finished: merging LIVE in moved the head and restarted the checks, forever.
+    A state-only lag merges no untested CODE (#456 audit MF3 is about code): the files it adds
+    are the box's own records, already on LIVE without any PR's tests. Code on the base still
+    makes the PR merge the base in first."""
+    is_state = _is_state_path()
+    if is_state is None:
+        return None
+    try:
+        fork = _git("merge-base", f"origin/{base_ref}", head)
+        paths = _git("diff", "--name-only", "--no-renames", fork, f"origin/{base_ref}")
+    except subprocess.CalledProcessError:
+        return None
+    changed = [p for p in paths.splitlines() if p.strip()]
+    if not changed or not all(is_state(p) for p in changed):
+        return None
+    return len(changed)
 
 
 def queued_review(
@@ -655,7 +712,7 @@ def _flat(pages: Any) -> list[Any]:
 
 
 def _summary(line: str) -> None:
-    print(line)
+    print(line, flush=True)  # the box streams these into its log as they come
     path = os.environ.get("GITHUB_STEP_SUMMARY")
     if path:
         with open(path, "a", encoding="utf-8") as fh:
@@ -841,7 +898,12 @@ def run(
                 except RuntimeError as exc:
                     _summary(f"(quarantine label not added: {exc})")
             return 1
-        if box or low:  # a LOW-tier PR never holds a runner: the box sweep looks again
+        # A LOW-tier PR never holds a runner, and with `wait_min` 0 no PR does: the box sweep
+        # looks again. MEASURED 2026-10-29: every CLEARed PR's gate polled for up to 300 min on
+        # a runner of the same free pool its own checks were queued for, so under a backlog the
+        # gates held the slots the checks needed (189 runs queued, oldest 14:05Z, nothing but box
+        # state reached LIVE for 4h). Holding a runner to wait for runners is the class.
+        if box or low or wait_min <= 0:
             _summary(f"#{pr} @ {head[:9]}: CI {cwhy}; the next sweep looks again")
             return 0
         if time.monotonic() > deadline:
@@ -860,7 +922,7 @@ def run(
         except RuntimeError as exc:
             _summary(f"(quarantine label not removed: {exc})")
     if p.get("draft"):
-        subprocess.run(["gh", "pr", "ready", str(pr), "-R", repo], check=True)
+        subprocess.run(["gh", "pr", "ready", str(pr), "-R", repo], check=True, timeout=GH_TIMEOUT_S)
     _gh(
         f"repos/{repo}/pulls/{pr}/merge",
         "-X",
@@ -885,18 +947,48 @@ def run(
     return 0
 
 
-def sweep(repo: str, base: str, approvals_issue: int = APPROVALS_ISSUE) -> int:
+#: How long one box sweep may run before it stops and leaves the rest to the next one.
+SWEEP_BUDGET_S = 15 * 60
+
+
+def sweep(
+    repo: str,
+    base: str,
+    approvals_issue: int = APPROVALS_ISSUE,
+    budget_s: float = SWEEP_BUDGET_S,
+    clock: Callable[[], float] = time.monotonic,
+) -> int:
     """The box's pass: every open PR into `base` gets one box-mode run (forks are refused inside).
-    One PR's failure never stops the others; the worst exit code is returned."""
+    One PR's failure never stops the others; the worst exit code is returned.
+
+    MEASURED 2026-10-29: with 231 PRs open, a full run for each outlasted the task's 30-minute
+    limit, so the sweep was killed before its first log line, every time, from 13:14Z. Now one
+    cheap read skips a PR whose gating checks are still running (a skip never merges anything),
+    each line is flushed as it is written, and the pass stops at `budget_s`."""
     pages = _gh(f"repos/{repo}/pulls?state=open&base={base}&per_page=100", "--paginate", "--slurp")
     rc = 0
+    deadline = clock() + budget_s
+    looked = skipped = 0
     for p in _flat(pages):
         n = int(p["number"])
+        if clock() > deadline:
+            _summary(f"sweep budget of {budget_s / 60:.0f} min spent after {looked} PRs; "
+                     "the next sweep goes on")  # fmt: skip
+            break
         try:
+            head = str((p.get("head") or {}).get("sha") or "")
+            if head:  # no sha in the listing: no shortcut, the full run decides
+                got = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100")
+                runs = (got or {}).get("check_runs") or []
+                if checks(runs, GATING_JOBS, lambda r: True)[0] == "pending":
+                    skipped += 1
+                    continue
+            looked += 1
             rc = max(rc, run(repo, n, base, 0.0, box=True, approvals_issue=approvals_issue))
-        except (RuntimeError, subprocess.CalledProcessError) as exc:
+        except (RuntimeError, subprocess.SubprocessError, KeyError, TypeError) as exc:
             _summary(f"#{n}: the box gate failed: {exc}")
             rc = 1
+    _summary(f"sweep: {looked} PR(s) looked at, {skipped} skipped with CI still running")
     return rc
 
 
@@ -925,7 +1017,7 @@ def main(argv: list[str] | None = None) -> int:
             box=a.box,
             approvals_issue=a.approvals_issue,
         )
-    except (RuntimeError, subprocess.CalledProcessError) as exc:
+    except (RuntimeError, subprocess.SubprocessError) as exc:
         _summary(f"#{a.pr}: the gate failed: {exc}")
         return 1
 

@@ -424,9 +424,23 @@ def test_a_hold_after_green_ci_but_before_the_merge_stops_it(hub: Any) -> None:
     assert ag.run("o/r", 7, ag.LIVE, wait_min=5, poll_s=0) == 0 and _merges(h) == []
 
 
-def test_pending_ci_past_the_wait_gives_up_without_merging(hub: Any) -> None:
+def test_pending_ci_past_the_wait_gives_up_without_merging(
+    hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
     h = hub(comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")], runs=_green()[:2])
-    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0) == 1 and _merges(h) == []
+    clock = iter([0.0, 10_000.0])  # the deadline is set, then the first look is past it
+    monkeypatch.setattr(ag.time, "monotonic", lambda: next(clock))
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=5, poll_s=0) == 1 and _merges(h) == []
+
+
+def test_with_no_wait_a_cleared_pr_never_holds_a_runner(
+    hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """2026-10-29: CLEARed PRs' gates polled up to 300 min on the runners their checks needed.
+    The Actions run looks once; pending CI is the box sweep's to look at again, never a fail."""
+    h = hub(comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")], runs=_green()[:2])
+    monkeypatch.setattr(ag.time, "sleep", lambda s: pytest.fail("the gate waited"))
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0) == 0 and _merges(h) == []
 
 
 # --------------------------------------------------------------- workflow-file PRs: the box
