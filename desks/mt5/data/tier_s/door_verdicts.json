@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-29T07:55:19.191752+00:00",
+ "generated_utc": "2026-10-29T08:59:00.395310+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -12753,6 +12753,457 @@
     "n_oos": 16,
     "confidence": 0.3816,
     "sd": 0.0778,
+    "status": "CONTESTED"
+   }
+  },
+  "external.AUDNZD.overnight_gap_decay.p=ffe6d0c6c590042e": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 16,
+    "confidence": 0.3816,
+    "sd": 0.0778,
+    "status": "CONTESTED"
+   }
+  },
+  "external.GBPZAR.overnight_gap_decay.p=fa049d05ce61b04e": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 16,
+    "confidence": 0.3816,
+    "sd": 0.0778,
+    "status": "CONTESTED"
+   }
+  },
+  "external.AUDNZD.overnight_gap_decay.p=931687e6633f8f8b": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 16,
+    "confidence": 0.3816,
+    "sd": 0.0778,
+    "status": "CONTESTED"
+   }
+  },
+  "external.CHFDKK.overnight_gap_decay.p=036315af6f3a4b09": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 16,
+    "confidence": 0.3816,
+    "sd": 0.0778,
+    "status": "CONTESTED"
+   }
+  },
+  "external.CHFDKK.overnight_gap_decay.p=de9ed752775ac9b5": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 16,
+    "confidence": 0.3816,
+    "sd": 0.0778,
+    "status": "CONTESTED"
+   }
+  },
+  "external.EURCHF@M30.clock_transition.p=d416e1eebe081eac": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.EURSGD@M30.clock_transition.p=d416e1eebe081eac": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.GBPCAD@M30.clock_transition.p=d416e1eebe081eac": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.NZDCAD@M30.clock_transition.p=d416e1eebe081eac": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.NZDCHF@M30.clock_transition.p=d416e1eebe081eac": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.SGDJPY@M30.clock_transition.p=d416e1eebe081eac": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.AUDSGD.clock_transition.p=c445bbd1b256484a": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.AUDSGD.clock_transition.p=f4391ced9b0b443d": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.AUDCAD.clock_transition.p=b95e974aac459e97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.AUDJPY.clock_transition.p=2defe48a0461e548": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.AUDJPY.clock_transition.p=cc7629f4faa911ea": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.AUDNZD.clock_transition.p=1a33e1828790f75c": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.AUDNZD.clock_transition.p=b95e974aac459e97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.AUDSGD.clock_transition.p=1a33e1828790f75c": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.AUDSGD.clock_transition.p=2defe48a0461e548": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.AUDSGD.clock_transition.p=cc7629f4faa911ea": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.CHFSGD.clock_transition.p=b95e974aac459e97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.CHFSGD.clock_transition.p=c6388886873e74ed": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.CHFSGD.clock_transition.p=fdd66336df4507c7": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.EURSEK.clock_transition.p=29081cc874e59063": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.GBPJPY.clock_transition.p=99cdb0d39855b38f": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.GBPJPY.clock_transition.p=aaf7fdb4641151c9": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.GBPSGD.clock_transition.p=b95e974aac459e97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.GBPSGD.clock_transition.p=c6388886873e74ed": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.GBPSGD.clock_transition.p=fdd66336df4507c7": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.NZDJPY.clock_transition.p=b95e974aac459e97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.NZDSGD.clock_transition.p=b95e974aac459e97": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.NZDSGD.clock_transition.p=c6388886873e74ed": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.NZDSGD.clock_transition.p=fdd66336df4507c7": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.GBPMXN.clock_transition.p=2837613916b2c544": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.NZDCHF.clock_transition.p=c6e30bbd4abefa53": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.EURPLN.clock_transition.p=39ec47e132030e47": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.GBPNOK.clock_transition.p=39ec47e132030e47": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.NOKSEK.clock_transition.p=39ec47e132030e47": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.NZDHUF.clock_transition.p=39ec47e132030e47": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
+    "status": "CONTESTED"
+   }
+  },
+  "external.NZDCHF.clock_transition.p=7f79288b204e4928": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 13,
+    "confidence": 0.2769,
+    "sd": 0.0773,
     "status": "CONTESTED"
    }
   }
