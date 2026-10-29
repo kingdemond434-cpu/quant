@@ -30,6 +30,10 @@ WHAT IS HERE, one fetcher per source row of `desks/mt5/data/free_stack_sources.j
     tushare            the TuShare Pro HTTP API, token from the box environment
     baostock / jqdatasdk
                        their own client packages only (neither is in the requirements files)
+                       -- ALL FOUR ARE BEHIND THE TERMS GATE (DATA-24, 2026-10-07): each upstream
+                       is fetched only when `alt_proxies.terms_gate` holds a CONFIRMED row for it
+                       (a quoted permitting clause); otherwise BLOCKED_ON_TERMS:<verdict>, no
+                       request, and `licence_validation` names every upstream's verdict
     catalogue          open dataset catalogues (awesome-* lists, AltData.wiki, Brickroad's
                        public index) parsed into dataset candidates
     cn_exchange        SHFE / INE / DCE / CZCE / GFEX / CFFEX dated daily files: member rankings
@@ -43,18 +47,22 @@ reduced to a salted hash used only by the bot filter, and only AGGREGATES leave 
 EVERY FETCHER RETURNS THE SAME SHAPE -- `Harvest` -- so the hunter needs no branch per source:
 observations (key, period_end, value), the columns' target instruments, raw rows kept for the
 point-in-time archive, and cursor updates. A fetcher that cannot run says WHY in `status`
-(NEEDS_CREDENTIAL, NOT_INSTALLED, BLOCKED, NO_ROUTE) and returns no numbers -- never a zero.
+(NEEDS_CREDENTIAL, NOT_INSTALLED, BLOCKED, NO_ROUTE, BLOCKED_ON_TERMS:<verdict>) and returns no
+numbers -- never a zero.
 """
 from __future__ import annotations
 
 import csv
+import functools
 import hashlib
 import html
+import importlib
 import io
 import json
 import math
 import os
 import re
+import sys
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -64,6 +72,7 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from itertools import pairwise
+from pathlib import Path
 from typing import Any
 
 UNMEASURED = "UNMEASURED"
@@ -141,6 +150,11 @@ class Harvest:
 
 def _get(fetch: Fetch, h: Harvest, url: str, headers: Mapping[str, str] | None = None,
          body: bytes | None = None) -> bytes | None:
+    # A gated fetch (every FETCHERS entry runs under one, `terms_gated`) is asked BEFORE the
+    # request is counted: a fenced host is a note, never a request and never a failure.
+    if isinstance(fetch, GatedFetch) and not fetch.allows(url):
+        h.notes.append(f"terms gate: {urllib.parse.urlsplit(url).netloc} fenced, not fetched")
+        return None
     h.requests += 1
     try:
         return fetch(url, headers, body)
@@ -148,6 +162,93 @@ def _get(fetch: Fetch, h: Harvest, url: str, headers: Mapping[str, str] | None =
         h.failures[classify(exc)] += 1
         h.notes.append(f"{classify(exc)}: {url[:120]}")
         return None
+
+
+# -------------------------------------------- EVERY FETCHER BEHIND THE TERMS GATE (DATA-24) ----
+#: The verdicts that let a request out: the same set the asia collector's terms gate passes
+#: (`asia_collector._terms_state`, PR #239) -- a CONFIRMED row, or a host no row governs. refused,
+#: to_confirm and unreadable (an unimportable table) are never fetched.
+LIVE_OK: tuple[str, ...] = ("confirmed", "ungoverned")
+#: Kinds whose fetcher judges the roster row's own `terms` field itself (with its substitutes).
+ROW_TERMS_KINDS: frozenset[str] = frozenset({"cn_exchange"})
+
+
+def host_verdict(url: str) -> tuple[str, str]:
+    """The raw gate verdict for a URL (`ungoverned` when no row governs its host); `unreadable`
+    when the terms table cannot be imported -- fail closed."""
+    try:
+        gate = _terms_gate()
+    except Exception as exc:
+        return "unreadable", f"terms table unimportable ({type(exc).__name__}); fail closed"
+    return gate(url)
+
+
+class GatedFetch:
+    """A fetch that asks `host_verdict` before every request. A fenced host raises FetchError
+    (`terms_<verdict>`) instead of reaching the transport, and is recorded once per host."""
+
+    def __init__(self, fetch: Fetch) -> None:
+        self.inner = fetch
+        self.fenced: dict[str, tuple[str, str]] = {}
+
+    def allows(self, url: str) -> bool:
+        host = urllib.parse.urlsplit(url).netloc.lower()
+        state, why = host_verdict(url)
+        if state in LIVE_OK:
+            return True
+        self.fenced.setdefault(host, (state, why))
+        return False
+
+    def __call__(self, url: str, headers: Mapping[str, str] | None = None,
+                 body: bytes | None = None) -> bytes:
+        if not self.allows(url):
+            raise FetchError(f"terms_{self.fenced[urllib.parse.urlsplit(url).netloc.lower()][0]}",
+                             url)
+        return self.inner(url, headers, body)
+
+
+def row_fence(row: Mapping[str, Any]) -> tuple[str, str, str] | None:
+    """(label, verdict, why) when the roster row itself is fenced, else None: its `url` / `home`
+    host fails the gate, or its own `terms` field is not confirmed (except kinds that judge their
+    own row terms, ROW_TERMS_KINDS)."""
+    for k in ("url", "home"):
+        u = str(row.get(k) or "")
+        if "://" in u:
+            state, why = host_verdict(u)
+            if state not in LIVE_OK:
+                return f"{row.get('id')} ({urllib.parse.urlsplit(u).netloc})", state, why
+    terms = row.get("terms")
+    if (isinstance(terms, str) and terms != "confirmed"
+            and str(row.get("kind")) not in ROW_TERMS_KINDS):
+        ev = row.get("terms_evidence") or {}
+        why = str(ev.get("ban") or ev.get("judgement") or ev.get("terms_url") or "roster row")
+        return f"{row.get('id')} (roster terms)", terms, why
+    return None
+
+
+def terms_gated(fn: Callable[..., Harvest]) -> Callable[..., Harvest]:
+    """Every free_stack fetcher runs under this: the roster row is judged before the fetcher is
+    even called, and every request it then makes goes through a GatedFetch. A fenced source ends
+    BLOCKED_ON_TERMS:<verdict> with the source named, makes no request and writes no cursor."""
+    @functools.wraps(fn)
+    def run(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any], now: datetime,
+            *args: Any, **kw: Any) -> Harvest:
+        pre = row_fence(row)
+        if pre is not None:
+            h = Harvest(str(row.get("id")))
+            _block_on_terms(h, [pre])
+            return h
+        gated = fetch if isinstance(fetch, GatedFetch) else GatedFetch(fetch)
+        h = fn(gated, row, cursor, now, *args, **kw)
+        if gated.fenced:
+            shut = [(host, st, why) for host, (st, why) in sorted(gated.fenced.items())]
+            if not (h.obs or h.raw or h.datasets):
+                _block_on_terms(h, shut)
+                h.cursor = {}
+            else:
+                h.notes.append("terms gate fenced: " + ", ".join(f"{a}={b}" for a, b, _ in shut))
+        return h
+    return run
 
 
 def _json(raw: bytes | None) -> Any:
@@ -531,6 +632,7 @@ def app_rank_scores(rows: Sequence[Mapping[str, Any]], n: int = 100
     return dict(comp), dict(idx), meta
 
 
+@terms_gated
 def fetch_app_rank_apple(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                          now: datetime) -> Harvest:
     h = Harvest(str(row["id"]))
@@ -714,6 +816,7 @@ def _post_time(p: Mapping[str, Any], now: datetime) -> datetime:
         return now
 
 
+@terms_gated
 def fetch_cn_forum(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                    now: datetime) -> Harvest:
     """One forum, every topic keyword; posts deduped by id against the cursor, bot-filtered,
@@ -851,6 +954,7 @@ def document_text(raw: bytes | None, url: str) -> str | None:
     return _text(text)
 
 
+@terms_gated
 def fetch_jp_ir(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                 now: datetime) -> Harvest:
     """Every declared IR page: new transcript/Q&A documents -> tone -> delta vs the company's
@@ -972,6 +1076,7 @@ def patent_momentum(rows: Sequence[Mapping[str, str]]) -> tuple[list[dict[str, A
     return obs, meta
 
 
+@terms_gated
 def fetch_jp_patents(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                      now: datetime, *, inbox: Any = None) -> Harvest:
     """Keyless JP patent data does not exist as an API: J-PlatPat is a web search with no API and
@@ -1040,6 +1145,7 @@ def parse_trends_multiline(raw: bytes | None) -> list[tuple[str, float]]:
     return out
 
 
+@terms_gated
 def fetch_gtrends(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                   now: datetime) -> Harvest:
     """Interest over time for each term. THE PUBLISHED COLUMN IS THE LOG CHANGE, computed inside
@@ -1127,6 +1233,7 @@ def parse_stockwatcher(raw: bytes | None) -> list[dict[str, Any]]:
     return out
 
 
+@terms_gated
 def fetch_congress(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                    now: datetime) -> Harvest:
     """Disclosure-dated, never trade-dated: a congressional trade becomes public on its
@@ -1187,6 +1294,7 @@ def parse_paprika_ticker(raw: bytes | None) -> dict[str, float] | None:
     return out or None
 
 
+@terms_gated
 def fetch_coinpaprika(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                       now: datetime, *, crypto_cfds: Sequence[str] = ()) -> Harvest:
     """Hourly market state per Fusion crypto CFD. Nothing here is an exchange universe: a coin is
@@ -1296,6 +1404,7 @@ def _social(h: Harvest, posts: list[dict[str, Any]], now: datetime, sid: str) ->
                           "score": round(float(tone), 4), "method": method})
 
 
+@terms_gated
 def fetch_reddit(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                  now: datetime) -> Harvest:
     h = Harvest(str(row["id"]))
@@ -1315,6 +1424,7 @@ def fetch_reddit(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any]
     return h
 
 
+@terms_gated
 def fetch_telegram(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                    now: datetime) -> Harvest:
     h = Harvest(str(row["id"]))
@@ -1388,24 +1498,87 @@ def parse_sina_futures(raw: bytes | None) -> list[tuple[str, float]]:
     return out
 
 
+#: The URLs the AKShare-upstream routes send to. Named once, so the fetch, the terms gate, the
+#: licence report and the tests all read the same host.
+ROUTE_URL: dict[str, str] = {
+    "eastmoney": ("https://push2his.eastmoney.com/api/qt/stock/kline/get?secid="
+                  "{code}&fields1=f1,f2,f3&fields2=f51,f52,f53,f54,f55,f56&klt=101&fqt=0"
+                  "&beg=0&end=20500101&lmt=400"),
+    "sina": ("https://stock2.finance.sina.com.cn/futures/api/jsonp.php/var%20_x=/"
+             "InnerFuturesNewService.getDailyKLine?symbol={code}"),
+}
+ROUTE_REFERER: dict[str, str] = {"eastmoney": "https://quote.eastmoney.com/",
+                                 "sina": "https://finance.sina.com.cn/"}
+
+
+# ------------------------------------------------------------- the terms gate (DATA-24) ----
+def _terms_table() -> Any:
+    """The ONE terms table, `desks/mt5/research/alt_proxies` (TERMS_HOSTS / GATE_TERMS /
+    terms_gate), imported the way `asia_collector` imports it: `research.alt_proxies`, with
+    desks/mt5 on sys.path. No second table lives here."""
+    desk = str(Path(__file__).resolve().parents[2] / "desks" / "mt5")
+    if desk not in sys.path:
+        sys.path.insert(0, desk)
+    return importlib.import_module("research.alt_proxies")
+
+
+def _terms_gate() -> Callable[[str], tuple[str, str]]:
+    gate: Callable[[str], tuple[str, str]] = _terms_table().terms_gate
+    return gate
+
+
+def terms_verdict(ref_or_url: str) -> tuple[str, str]:
+    """(state, why) for a gate id or an upstream URL. FAIL CLOSED three ways: an unimportable
+    table is `unreadable`, a host no row governs is `to_confirm` (every CN aggregator upstream must
+    hold a decision), and only `confirmed` -- a quoted permitting clause -- lets a request out."""
+    try:
+        gate = _terms_gate()
+    except Exception as exc:
+        return "unreadable", f"terms table unimportable ({type(exc).__name__}); fail closed"
+    state, why = gate(ref_or_url)
+    if state == "ungoverned":
+        return "to_confirm", f"{ref_or_url[:80]}: no terms row governs this upstream -- fail closed"
+    if state == "confirmed":
+        # A CONFIRMED row must carry the verbatim clause that permits the use; a verdict without
+        # its quote is judgement, and judgement never unfences.
+        quote = str(_gate_evidence(ref_or_url)[1].get("terms_quote") or "")
+        if not quote or quote.startswith("("):
+            return "to_confirm", (f"{why}: confirmed without a verbatim terms_quote -- "
+                                  "fail closed")
+    return state, why
+
+
+def _block_on_terms(h: Harvest, fenced: Sequence[tuple[str, str, str]]) -> None:
+    """A fenced upstream is never fetched, and says so: BLOCKED_ON_TERMS:<verdict(s)> with every
+    fenced source named, never a silent empty. No cursor field is written."""
+    states = sorted({s for _, s, _ in fenced})
+    h.status = "BLOCKED_ON_TERMS:" + "+".join(states)
+    h.detail = "; ".join(f"{lab}: terms {s}, not fetched ({why})" for lab, s, why in fenced)
+
+
+@terms_gated
 def fetch_akshare_direct(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                          now: datetime) -> Harvest:
     """AKShare's own upstreams, fetched directly (AKShare is not in the requirements files).
-    Daily closes; the column is the log return, published at the Shanghai close + a day."""
+    Daily closes; the column is the log return, published at the Shanghai close + a day.
+    Each route's host passes the terms gate first; a fenced route sends NOTHING."""
     h = Harvest(str(row["id"]))
+    gates = {r: terms_verdict(u.format(code="")) for r, u in ROUTE_URL.items()}
+    fenced = [(f"{r} ({urllib.parse.urlsplit(ROUTE_URL[r]).netloc})", st, why)
+              for r, (st, why) in gates.items() if st != "confirmed"]
     for key, code, route, targets in CN_MARKET:
-        if route == "eastmoney":
-            url = ("https://push2his.eastmoney.com/api/qt/stock/kline/get?secid="
-                   f"{code}&fields1=f1,f2,f3&fields2=f51,f52,f53,f54,f55,f56&klt=101&fqt=0"
-                   "&beg=0&end=20500101&lmt=400")
-            pts = parse_eastmoney_kline(_get(fetch, h, url, {"Referer":
-                                                               "https://quote.eastmoney.com/"}))
-        else:
-            url = ("https://stock2.finance.sina.com.cn/futures/api/jsonp.php/var%20_x=/"
-                   f"InnerFuturesNewService.getDailyKLine?symbol={code}")
-            pts = parse_sina_futures(_get(fetch, h, url, {"Referer": "https://finance.sina.com.cn/"}))
+        if gates[route][0] != "confirmed":
+            continue
+        raw = _get(fetch, h, ROUTE_URL[route].format(code=code),
+                   {"Referer": ROUTE_REFERER[route]})
+        pts = parse_eastmoney_kline(raw) if route == "eastmoney" else parse_sina_futures(raw)
         _returns(h, key, pts, targets, f"{key} daily log return ({route})")
+    if fenced:
+        h.notes.append("terms gate: " + ", ".join(f"{lab}={st}" for lab, st, _ in fenced))
     if not h.obs:
+        if fenced and len(fenced) == len(gates):
+            _block_on_terms(h, fenced)
+            return h
         h.status = "BLOCKED" if h.failures else "EMPTY"
         h.detail = ", ".join(f"{k}x{v}" for k, v in h.failures.items()) or "no bars"
     return h
@@ -1453,9 +1626,15 @@ def parse_tushare(raw: bytes | None, value_field: str) -> list[tuple[str, float]
     return out
 
 
+@terms_gated
 def fetch_tushare(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                   now: datetime) -> Harvest:
     h = Harvest(str(row["id"]))
+    # TERMS BEFORE THE TOKEN: no request, and no credential, leaves for unconfirmed terms.
+    state, why = terms_verdict(TUSHARE_API)
+    if state != "confirmed":
+        _block_on_terms(h, [("tushare (api.tushare.pro)", state, why)])
+        return h
     token = os.environ.get(str(row.get("key_env") or "TUSHARE_TOKEN"), "")
     if not token:
         h.status = "NEEDS_CREDENTIAL"
@@ -1478,6 +1657,7 @@ def fetch_tushare(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any
     return h
 
 
+@terms_gated
 def fetch_package_route(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                         now: datetime) -> Harvest:
     """BaoStock and jqdatasdk speak their own client protocols (BaoStock a TCP socket, JoinQuant
@@ -1486,6 +1666,12 @@ def fetch_package_route(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[st
     host the fetch runs through it."""
     h = Harvest(str(row["id"]))
     mod = str(row.get("package") or "")
+    # TERMS BEFORE THE PACKAGE: a package route opens a socket / a login, so it is gated by its
+    # publisher's row (PACKAGE_GATE); a package no row names is to_confirm -- fail closed.
+    state, why = terms_verdict(PACKAGE_GATE.get(mod, f"package:{mod}"))
+    if state != "confirmed":
+        _block_on_terms(h, [(f"{mod} package", state, why)])
+        return h
     try:
         lib = __import__(mod)
     except Exception:
@@ -1530,14 +1716,31 @@ def fetch_package_route(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[st
     return h
 
 
+@terms_gated
 def fetch_akshare_package(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                           now: datetime) -> Harvest:
-    """AKShare through its own package when importable, else its upstreams directly."""
-    try:
-        import akshare as ak  # type: ignore[import-not-found]
-    except Exception:
+    """AKShare through its own package when importable AND its data terms are confirmed, else
+    its upstreams directly -- each of which passes its own host's terms row. AKShare's MIT
+    licence covers its CODE, never the upstream DATA (alt_proxies GATE_TERMS_EVIDENCE
+    `cn_akshare_data`.code_vs_data), so the package's data is judged by its own row."""
+    pkg_state, pkg_why = terms_verdict(AKSHARE_DATA_GATE)
+    ak: Any = None
+    if pkg_state == "confirmed":
+        try:
+            import akshare as ak  # type: ignore[import-not-found,no-redef]
+        except Exception:
+            ak = None
+    if ak is None:
         h = fetch_akshare_direct(fetch, row, cursor, now)
-        h.notes.append("akshare package not importable: fetched its upstreams directly")
+        if pkg_state != "confirmed":
+            h.notes.append(f"akshare package data: terms {pkg_state}, not called")
+            if h.status.startswith("BLOCKED_ON_TERMS"):
+                states = {*h.status.split(":", 1)[1].split("+"), pkg_state}
+                h.status = "BLOCKED_ON_TERMS:" + "+".join(sorted(states))
+                h.detail = (f"akshare package data: terms {pkg_state}, not called ({pkg_why}); "
+                            + h.detail)
+        else:
+            h.notes.append("akshare package not importable: fetched its upstreams directly")
         return h
     h = Harvest(str(row["id"]))
     try:
@@ -1549,6 +1752,157 @@ def fetch_akshare_package(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[
     if not h.obs:
         h.status = "BLOCKED" if h.failures else "EMPTY"
     return h
+
+
+# ------------------------------------------------- licence validation (DATA-24, 2026-10-07) ----
+#: The gate rows the non-URL routes are judged by (rows in alt_proxies.GATE_TERMS).
+AKSHARE_DATA_GATE = "cn_akshare_data"
+PACKAGE_GATE: dict[str, str] = {"baostock": "cn_baostock", "jqdatasdk": "cn_jqdatasdk"}
+#: The report the hunter writes on every pass (desks/mt5/reports/<this>); the proposer reads it.
+LICENCE_REPORT = "CN_AGGREGATOR_LICENCE.json"
+#: Source ids whose data the report governs. Without the report they are fenced (fail closed).
+LICENCE_SOURCE_IDS: tuple[str, ...] = ("akshare", "tushare", "baostock", "jqdatasdk")
+
+#: EVERY upstream the AKShare / TuShare / BaoStock / jqdatasdk paths can reach, with the gate ref
+#: it is judged by: a URL (its host's TERMS_HOSTS row) or a gate id. `columns` names what the
+#: route would publish ("*" = every column of the source).
+CN_AGGREGATOR_UPSTREAMS: tuple[dict[str, Any], ...] = (
+    {"source_id": "akshare", "route": "akshare_direct:eastmoney",
+     "upstream": "Eastmoney index klines (push2his) -- the AKShare stock_zh_index upstream",
+     "host": "push2his.eastmoney.com", "also_governs": ["quote.eastmoney.com"],
+     "gate": ROUTE_URL["eastmoney"].format(code=""),
+     "columns": [f"{k}_ret" for k, _c, r, _t in CN_MARKET if r == "eastmoney"]},
+    {"source_id": "akshare", "route": "akshare_direct:sina",
+     "upstream": "Sina futures daily klines -- the AKShare futures_zh_daily_sina upstream",
+     "host": "stock2.finance.sina.com.cn", "also_governs": ["finance.sina.com.cn"],
+     "gate": ROUTE_URL["sina"].format(code=""),
+     "columns": [f"{k}_ret" for k, _c, r, _t in CN_MARKET if r == "sina"]},
+    {"source_id": "akshare", "route": "akshare_package",
+     "upstream": "the akshare package's data (stock_zh_index_daily; Sina/Eastmoney beneath it)",
+     "host": "akshare package (MIT code; data per its Statement)", "also_governs": [],
+     "gate": AKSHARE_DATA_GATE, "columns": ["csi300_ret"]},
+    {"source_id": "tushare", "route": "tushare", "upstream": "TuShare Pro HTTP API",
+     "host": "api.tushare.pro", "also_governs": ["tushare.pro"], "gate": TUSHARE_API,
+     "columns": ["*"]},
+    {"source_id": "baostock", "route": "package:baostock",
+     "upstream": "BaoStock (own TCP protocol via its package)", "host": "baostock.com",
+     "also_governs": [], "gate": PACKAGE_GATE["baostock"], "columns": ["*"]},
+    {"source_id": "jqdatasdk", "route": "package:jqdatasdk",
+     "upstream": "JoinQuant jqdatasdk (authenticated package)", "host": "joinquant.com",
+     "also_governs": [], "gate": PACKAGE_GATE["jqdatasdk"], "columns": ["*"]},
+)
+
+#: THE LAWFUL OFFICIAL SUBSTITUTE ALREADY IN THE REPO for each fenced series, as
+#: "<registry>:<id>" (alt_proxies = desks/mt5/research/alt_proxies.BY_ID, asia_sources =
+#: desks/mt5/data/asia_sources.json, free_stack_sources = desks/mt5/data/free_stack_sources.json).
+#: A candidate is NOT a measured stand-in: its agreement is UNMEASURED until a corr >= 0.5 with
+#: n >= 12 is measured (the #152 law), and a candidate whose own terms are not confirmed is
+#: fenced too (said in `why`). An empty list is NO lawful substitute -- said, not hidden.
+SUBSTITUTE_MIN_CORR = 0.5
+SUBSTITUTE_MIN_N = 12
+CN_SUBSTITUTES: dict[str, list[tuple[str, str]]] = {
+    "csi300": [("asia_sources:nbs_pmi", "NBS official PMI: the onshore cycle from the statistics "
+                "office whose terms are confirmed (alt_proxies TERMS cn_nbs_retail, same page)"),
+               ("free_stack_sources:cnx_cffex", "CFFEX IF settlement / member rankings, the "
+                "exchange's own file -- its terms are to_confirm, so it is fenced too")],
+    "sse_comp": [("asia_sources:nbs_pmi", "as csi300: the official onshore cycle, not the "
+                  "index level")],
+    "hsi": [("asia_sources:hkma_open_api", "HKMA daily monetary statistics: HK liquidity state "
+             "from the monetary authority (HKEX index data itself is refused, PR #239)")],
+    "shfe_au": [("alt_proxies:in_gold_imports", "Government of India gold imports (PIB), "
+                 "confirmed -- the existing stand-in for the fenced SGE premium"),
+                ("asia_sources:cftc_cot", "CFTC COT gold positioning, US federal public data")],
+    "shfe_ag": [("asia_sources:cftc_cot", "CFTC COT silver positioning, US federal public data")],
+    "shfe_cu": [("asia_sources:cftc_cot", "CFTC COT COMEX copper positioning, US federal public "
+                 "data (SHFE's own file is refused: free_stack_sources cnx_shfe)")],
+    "ine_sc": [("asia_sources:eia_energy", "EIA weekly petroleum stocks, US public domain"),
+               ("asia_sources:cftc_cot", "CFTC COT crude positioning")],
+    "shfe_al": [],
+    "shfe_zn": [],
+    "shfe_ni": [],
+    "shibor": [],
+}
+_NO_SUBSTITUTE_WHY = ("no lawful official substitute in the repo: the exchange's own file is "
+                      "refused (free_stack_sources cnx_shfe) and the CFETS/SHIBOR site is "
+                      "refused (PR #229); CFTC COT has no contract on this metal")
+
+
+def _gate_evidence(ref: str) -> tuple[str, dict[str, Any]]:
+    """(gate id, evidence row) for a gate id or URL, read from the one terms table."""
+    try:
+        ap = _terms_table()
+    except Exception:
+        return ref, {}
+    sid = ref
+    if "://" in ref:
+        host = urllib.parse.urlsplit(ref).netloc.lower().split(":")[0]
+        sid = next((v for k, v in getattr(ap, "TERMS_HOSTS", {}).items()
+                    if host == k or host.endswith("." + k)), ref)
+    ev = (getattr(ap, "TERMS_EVIDENCE", {}).get(sid)
+          or getattr(ap, "GATE_TERMS_EVIDENCE", {}).get(sid) or {})
+    return sid, dict(ev)
+
+
+def licence_validation(now: datetime) -> dict[str, Any]:
+    """The DATA-24 licence report: per AKShare / TuShare / BaoStock / jqdatasdk upstream its host,
+    verdict, terms URL, the verbatim quote (or why there is none), when it was read and what the
+    box must do; the AKShare code-vs-data distinction; the columns each verdict fences; and the
+    lawful substitute candidates, each UNMEASURED until its agreement is measured."""
+    rows: list[dict[str, Any]] = []
+    fenced: dict[str, set[str]] = defaultdict(set)
+    code_vs_data = ""
+    for up in CN_AGGREGATOR_UPSTREAMS:
+        state, why = terms_verdict(str(up["gate"]))
+        sid, ev = _gate_evidence(str(up["gate"]))
+        quote = str(ev.get("terms_quote") or "")
+        read = bool(quote) and not quote.startswith("(")
+        if ev.get("code_vs_data"):
+            code_vs_data = str(ev["code_vs_data"])
+        if state != "confirmed":
+            fenced[str(up["source_id"])].update(up["columns"])
+        rows.append({
+            "source_id": up["source_id"], "route": up["route"], "upstream": up["upstream"],
+            "host": up["host"], "also_governs": up["also_governs"], "terms_ref": sid,
+            "verdict": state, "fetch_allowed": state == "confirmed",
+            "terms_url": ev.get("terms_url") or None,
+            "quote": quote if read else None,
+            "reason": why if not read or state != "confirmed" else "",
+            "unread_because": None if read else (quote or "no evidence row"),
+            "judgement": ev.get("judgement") or None,
+            "checked_at": ev.get("checked_at") or None,
+            "box_action": ev.get("box_action") or None,
+            **({"code_licence_url": ev["code_licence_url"],
+                "code_licence_quote": ev.get("code_licence_quote")}
+               if ev.get("code_licence_url") else {}),
+        })
+    subs: dict[str, Any] = {}
+    for key, cands in CN_SUBSTITUTES.items():
+        subs[key] = {
+            "candidates": [{"id": c, "why": w, "agreement": UNMEASURED} for c, w in cands],
+            "status": UNMEASURED if cands else "NO_LAWFUL_SUBSTITUTE",
+            **({} if cands else {"why": _NO_SUBSTITUTE_WHY})}
+    verdicts = Counter(str(r["verdict"]) for r in rows)
+    return {"generated_utc": now.isoformat(), "writer": "libs/data/free_stack.py "
+            "licence_validation (via research/free_stack_hunter.py)",
+            "item": "DATA-24", "upstreams": rows, "by_verdict": dict(verdicts),
+            "fenced_columns": {k: sorted(v) for k, v in sorted(fenced.items())},
+            "code_vs_data": code_vs_data or UNMEASURED,
+            "substitutes": subs,
+            "substitute_rule": (f"a substitute is MEASURED only on corr >= {SUBSTITUTE_MIN_CORR} "
+                                f"with n >= {SUBSTITUTE_MIN_N} (#152); none is measured here, so "
+                                "every candidate is UNMEASURED"),
+            "rule": ("fail closed: an upstream is fetched only on a CONFIRMED row quoting a "
+                     "clause that permits a commercial desk's own-account research; refused / "
+                     "to_confirm / unreadable are never fetched (BLOCKED_ON_TERMS:<verdict>), "
+                     "and columns already archived from a fenced route are not minted")}
+
+
+def fenced_columns(report: Mapping[str, Any] | None) -> dict[str, list[str]]:
+    """{source id: fenced columns ("*" = all)} from a licence report. FAIL CLOSED: no report, or
+    an unreadable one, fences every source it governs."""
+    if not isinstance(report, Mapping) or not isinstance(report.get("fenced_columns"), Mapping):
+        return {sid: ["*"] for sid in LICENCE_SOURCE_IDS}
+    return {str(k): list(v) for k, v in report["fenced_columns"].items()}
 
 
 # ===================================================================== 6. catalogues
@@ -1612,6 +1966,7 @@ def score_dataset(d: Mapping[str, Any]) -> tuple[float, str | None]:
     return float(hits), None
 
 
+@terms_gated
 def fetch_catalogue(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                     now: datetime) -> Harvest:
     h = Harvest(str(row["id"]))
@@ -1646,5 +2001,6 @@ FETCHERS: dict[str, Callable[..., Harvest]] = {
     "coinpaprika": fetch_coinpaprika, "reddit": fetch_reddit, "telegram": fetch_telegram,
     "akshare": fetch_akshare_package, "tushare": fetch_tushare,
     "package": fetch_package_route, "catalogue": fetch_catalogue,
-    "cn_exchange": fetch_cn_exchange,
+    # cn_exchange judges its row's own `terms` (with substitutes); its requests are gated here
+    "cn_exchange": terms_gated(fetch_cn_exchange),
 }

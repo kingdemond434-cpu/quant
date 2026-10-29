@@ -604,6 +604,14 @@
      "organ": "research/free_stack_hunter.py",
      "note": "reddit latest point-in-time z and regime per mapped instrument"
     }
+   },
+   "terms": "refused",
+   "terms_evidence": {
+    "ban": "BANNED_BY_PROJECT",
+    "terms_ref": "project_ban_reddit",
+    "terms_url": "(project ruling, not a terms page)",
+    "judgement": "REFUSED: the project's standing Reddit ban (coordinator ruling 2026-09-30: Reddit's User Agreement and Data API terms cover all automated access, including RSS and the anonymous JSON listings, and require a separate agreement for commercial use; the desk holds none). Never fetched; read from desks/mt5/research/alt_proxies.GATE_TERMS",
+    "checked_at": "2026-09-30"
    }
   },
   {
@@ -651,6 +659,14 @@
      "organ": "research/free_stack_hunter.py",
      "note": "telegram latest point-in-time z and regime per mapped instrument"
     }
+   },
+   "terms": "refused",
+   "terms_evidence": {
+    "terms_ref": "telegram_public_preview",
+    "terms_url": "https://telegram.org/tos",
+    "terms_quote": "Telegram additionally prohibits data scraping as part of its Content Licensing and AI Scraping Terms, which apply to all users, businesses, and third-party services accessing the platform.",
+    "judgement": "REFUSED: no permitting clause for automated reading of t.me/s previews; the ToS prohibits scraping. Read via the web reader 2026-10-07; re-read on the box before any flip",
+    "checked_at": "2026-10-07"
    }
   },
   {

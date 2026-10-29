@@ -241,7 +241,18 @@ def test_hunter_pass_on_fixtures_writes_yield_series_catalogue_and_state(store, 
     for sid in ("tushare", "jp_patents", "baostock"):
         assert per[sid]["status"] == "REFUSED_HARD_BOUNDARY", sid
         assert per[sid]["attempts"] == 0 and per[sid]["last_error"], sid
-    assert per["akshare"]["status"] == "OK"
+    # DATA-24: AKShare's upstreams pass the terms gate first. Eastmoney is refused and Sina
+    # unread, so the route sends nothing and says why -- never a silent empty, never a fixture yield
+    assert per["akshare"]["status"].startswith("BLOCKED_ON_TERMS:"), per["akshare"]["status"]
+    assert per["akshare"]["requests"] == 0 and "eastmoney" in per["akshare"]["last_error"]
+    # every fetcher asks the gate first: guba (Eastmoney, refused), Reddit (project ban) and
+    # Telegram (ToS bars scraping) are fenced at the roster row and never run
+    for sid in ("cn_guba", "reddit", "telegram"):
+        assert per[sid]["status"] == "BLOCKED_ON_TERMS:refused", sid
+        assert per[sid]["requests"] == 0, sid
+    assert "BANNED_BY_PROJECT" in per["reddit"]["last_error"]
+    lic = json.loads(store.licence.read_text("utf-8"))
+    assert {u["source_id"] for u in lic["upstreams"]} >= {"akshare", "tushare", "baostock"}
     assert per["congress_trades"]["status"] == "OK"
     assert per["coinpaprika"]["status"] == "OK"
     assert per["dataset_catalogues"]["status"] == "OK"
@@ -355,7 +366,7 @@ def test_families_are_registered_where_the_gauntlet_looks() -> None:
 def test_proposer_grid_has_direct_and_indirect_arms_with_culture(monkeypatch, tmp_path) -> None:
     import free_stack_proposer as P
     monkeypatch.setattr(P, "series_exists", lambda sid: True)
-    cols = {"reddit": {"GOLD_tone": {"hypothesis": ["XAUUSD"], "event": [], "why": "t"}}}
+    cols = {"gtrends": {"GOLD_tone": {"hypothesis": ["XAUUSD"], "event": [], "why": "t"}}}
     grid, skipped = P.build_grid(cols, P.roster_rows())
     assert not skipped
     fams = {c["family"] for c in grid}
@@ -364,7 +375,10 @@ def test_proposer_grid_has_direct_and_indirect_arms_with_culture(monkeypatch, tm
     for c in grid:
         assert c["source_culture"] == "US" and c["participant_structure"] == "retail_heavy"
         assert c["failure_mode_hypothesis"]
-        assert c["params"]["source"] == "fs_reddit" and c["symbol"] == "XAUUSD"
+        assert c["params"]["source"] == "fs_gtrends" and c["symbol"] == "XAUUSD"
+    # Reddit is a standing project ban: its archived columns never mint
+    grid2, skipped2 = P.build_grid({"reddit": cols["gtrends"]}, P.roster_rows())
+    assert not grid2 and skipped2["reddit"].startswith("BLOCKED_ON_TERMS:refused")
 
 
 # --------------------------------------------------------------------------- benchmark ----
