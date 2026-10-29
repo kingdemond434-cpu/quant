@@ -268,3 +268,51 @@ def test_the_cycle_carries_the_judging_sweep_and_the_d3_d4_d38_extensions() -> N
     assert {"warm_rate", "cold_build_seconds", "build_failures_by_cause"} <= set(
         spec["duties"]["D38"]["metrics"])
     assert "1,389,434" in text and "`judging_sweep`" in text
+
+
+# ------------------------------------------------- auditor HOLD on #154 (2026-10-29), each probe
+def test_a_counter_is_never_borrowed_from_an_earlier_pass(tmp_path: Path) -> None:
+    """MF1: `latest` without the counter read MET from `history[0]`."""
+    _write(tmp_path, "reports/TIER1_BREADTH_REVIEW.json",
+           {"latest": {"at": datetime.now(UTC).isoformat()},
+            "history": [{"machinery_improvements": [1]}]}, stamped=False)
+    d = ccd.measure(ccd.duty_rows(TABLE), SPEC, root=tmp_path)["duties"]["D44"]
+    assert d["status"] == "UNMEASURED"
+    assert d["metrics"]["machinery_improvements"]["status"] == "UNMEASURED"
+
+
+def test_a_review_ages_by_its_latest_pass(tmp_path: Path) -> None:
+    old = (datetime.now(UTC) - timedelta(hours=60)).isoformat()
+    _write(tmp_path, "reports/TIER1_BREADTH_REVIEW.json",
+           {"latest": {"at": old, "machinery_improvements": [1]}}, stamped=False)
+    art = ccd.measure(ccd.duty_rows(TABLE), SPEC, root=tmp_path)["duties"]["D44"]["artifacts"]
+    assert art["reports/TIER1_BREADTH_REVIEW.json"]["status"] == "STALE"
+    assert art["reports/TIER1_BREADTH_REVIEW.json"]["stamp_basis"] == "latest.at"
+
+
+def test_a_future_stamp_is_never_fresh(tmp_path: Path) -> None:
+    _write(tmp_path, "reports/dead_architecture.json", {"unreached": []}, age_h=-400 * 24)
+    d = ccd.measure(ccd.duty_rows(TABLE), SPEC, root=tmp_path)["duties"]["D41"]
+    assert d["artifacts"]["reports/dead_architecture.json"]["status"] == "FUTURE"
+    assert d["status"] == "UNMEASURED" and d["counts_as"] == "MISSED"
+
+
+def test_an_unstamped_review_is_checked_and_lowercase_claims_count(tmp_path: Path) -> None:
+    review = tmp_path / "review.json"
+    review.write_text(json.dumps({"latest": {"duties": {"D41": {"status": "met"}}}}))
+    measured = ccd.measure(ccd.duty_rows(TABLE), SPEC, root=tmp_path)
+    res = ccd.apply_to_review(review, measured, datetime.now(UTC).isoformat())
+    assert res["applied"] and "D41" in res["changed"]
+    d41 = json.loads(review.read_text())["latest"]["duties"]["D41"]
+    assert d41["status"] == "MISSED" and d41["status_claimed"] == "met"
+
+
+def test_a_big_jsonl_is_read_from_its_tail(tmp_path: Path) -> None:
+    p = tmp_path / "big.jsonl"
+    filler = json.dumps({"pad": "x" * 200})
+    with p.open("w", encoding="utf-8") as fh:
+        for _ in range((ccd.TAIL_BYTES // len(filler)) + 50):
+            fh.write(filler + "\n")
+        fh.write(json.dumps({"at": "2026-10-29T00:00:00+00:00", "last": True}) + "\n")
+    doc, err = ccd._load(p)
+    assert err is None and doc["last"] is True
