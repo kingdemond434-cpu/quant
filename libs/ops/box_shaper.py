@@ -97,7 +97,8 @@ UNTOUCHED = frozenset({"system"})
 DEDUPE_GROUPS = frozenset({"mining", "other"})
 #: A stop is refused when any descendant of the duplicate is in one of these groups: a tree kill
 #: must never take a money, judge, protected, memecoin or adopt process down with a loop.
-NEVER_IN_A_STOPPED_TREE = frozenset({"money", "judge", "protected", "memecoin", "adopt"})
+NEVER_IN_A_STOPPED_TREE = frozenset({"money", "money_feed", "judge", "protected", "memecoin",
+                                     "adopt"})
 #: Pool workers share one command line by design; they are never duplicates.
 _WORKER_MARKERS: tuple[str, ...] = ("multiprocessing", "spawn_main", "joblib", "loky",
                                     "shard_worker")
@@ -153,6 +154,7 @@ class Action:
     error: str | None = None
     tree: list[str] = field(default_factory=list)   # a stop's measured descendants (keys)
     ancestors: list[str] = field(default_factory=list)  # a stop's measured parent chain (keys)
+    died: list[str] = field(default_factory=list)  # a stop's processes that actually died (keys)
     #: the measured process key ("pid:create_time"); apply refuses to write to a pid whose
     #: creation time is no longer this one (a reused pid), and to an action that carries none
     key: str = ""
@@ -888,12 +890,18 @@ def missed_growth_ledger(previous: Mapping[str, Any] | None, *, rules: Mapping[s
             if not isinstance(ev, Mapping):
                 continue
             ev = dict(ev)
-            p = by_key.get(str(ev.get("key")))
-            if p is None and lives is not None and lives(str(ev.get("key"))):
-                still_open.append(ev)   # alive but unread this pass: not closed as gone
-                continue
-            ev["share_after"] = round(p.cpu_pct / cap, 4) if p is not None else 0.0
-            ev["gone"] = p is None
+            if isinstance(ev.get("keys"), list):
+                # a stop bills the processes that died, read again by key (all gone, normally)
+                left = [by_key[str(k)] for k in ev["keys"] if str(k) in by_key]
+                ev["share_after"] = round(sum(q.cpu_pct for q in left) / cap, 4)
+                ev["gone"] = not left
+            else:
+                p = by_key.get(str(ev.get("key")))
+                if p is None and lives is not None and lives(str(ev.get("key"))):
+                    still_open.append(ev)   # alive but unread this pass: not closed as gone
+                    continue
+                ev["share_after"] = round(p.cpu_pct / cap, 4) if p is not None else 0.0
+                ev["gone"] = p is None
             ev["judge_share_after"] = judge_share
             ev["forgone_share"] = round(float(ev.get("share_before") or 0.0)
                                         - ev["share_after"], 4)
@@ -911,19 +919,31 @@ def missed_growth_ledger(previous: Mapping[str, Any] | None, *, rules: Mapping[s
             totals["forgone_share"] = round(totals["forgone_share"] + ev["forgone_share"], 4)
             closed.append(ev)
         for a in actions:
-            if a.rule != name or not a.applied or a.error or not _narrows(a):
+            if a.rule != name or not _narrows(a):
                 continue
             p = next((q for q in procs if q.pid == a.pid), None)
             if p is None:
                 continue
-            pct = p.cpu_pct
             if a.kind == "stop":
-                # A STOP TAKES THE TREE (audit #482): the duplicate and every measured
-                # descendant it took down are what was given up.
-                pct += sum(by_key[k].cpu_pct for k in a.tree if k in by_key)
+                # A STOP BILLS WHAT ACTUALLY DIED (audit #482 SF3): the duplicate and the
+                # measured descendants that are gone -- children killed under a denied root
+                # are billed although the stop did not land; a denied child that still lives
+                # is not billed as forgone.
+                died = [k for k in a.died if k in by_key]
+                if not died:
+                    continue
+                still_open.append({"at": at, "key": p.key, "pid": p.pid, "name": p.name,
+                                   "group": p.group, "kind": a.kind, "before": a.before,
+                                   "after": a.after, "keys": died, "landed": a.applied,
+                                   "share_before": round(sum(by_key[k].cpu_pct for k in died)
+                                                         / cap, 4),
+                                   "judge_share_before": judge_share})
+                continue
+            if not a.applied or a.error:
+                continue
             still_open.append({"at": at, "key": p.key, "pid": p.pid, "name": p.name,
                                "group": p.group, "kind": a.kind, "before": a.before,
-                               "after": a.after, "share_before": round(pct / cap, 4),
+                               "after": a.after, "share_before": round(p.cpu_pct / cap, 4),
                                "judge_share_before": judge_share})
         out[name] = {"two_sided": True,
                      "cost": "forgone_share: the throttled process's share of the box given up",
@@ -1301,6 +1321,9 @@ def apply(actions: Sequence[Action], n_cpu: int) -> None:
                 # LANDED ONLY WHEN THE ROOT IS GONE (SF2): its children dying is not a stop.
                 from libs.ops.proctree import kill_verified_tree
                 result = kill_verified_tree(pr, verified=verified)
+                # WHAT ACTUALLY DIED is what missed_growth bills (audit #482 SF3): children
+                # killed under a denied root, or a root gone with one child denied, are partial.
+                a.died = [str(k) for k in result.get("dead") or []]
                 if result.get("refused"):
                     a.error = str(result["refused"])[:200]
                     continue

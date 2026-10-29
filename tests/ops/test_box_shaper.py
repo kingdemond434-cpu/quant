@@ -1368,7 +1368,7 @@ def test_a_dedupe_stop_bills_a_two_sided_missed_growth_line() -> None:
     kid = Proc(91, "python.exe", ppid=41, cmdline="python.exe helper.py", create_time=31,
                cpu_pct=60, group="other")
     stop = bs.Action(41, "python.exe", "other", "dedupe", "stop", dup.key, "stopped; kept 40:10",
-                     applied=True, tree=[kid.key])
+                     applied=True, tree=[kid.key], died=[dup.key, kid.key])
     led = bs.missed_growth_ledger(None, rules=RULES, procs=[dup, kid], actions=[stop], n_cpu=N,
                                   at="t1", judge_share=0.10)
     line = led["dedupe"]
@@ -1553,3 +1553,85 @@ def test_apply_never_writes_to_a_reused_pid(monkeypatch: pytest.MonkeyPatch) -> 
         child.kill()
         child.wait(timeout=10)
 
+
+# ------------------------------------------------------------ fourth audit (#482), 2026-10-29
+@pytest.mark.parametrize("cmd", [c for c, _g in _MONEY_SCRIPTS])
+def test_a_duplicate_whose_child_is_a_money_process_is_never_stopped(cmd: str) -> None:
+    """MF1 through #482: a duplicate whose child is e8_gold, the deadman or an allocator."""
+    cfg = {"allow": ["some_loop.py"]}
+    procs = _dupes()
+    procs.append(Proc(90, "python.exe", ppid=41, cmdline=cmd, create_time=30))
+    bs.classify(procs, RULES["groups"])
+    assert _by_pid(procs)[90].group in bs.NEVER_IN_A_STOPPED_TREE
+    keys = [d["duplicate"] for d in bs.plan_dedupe(procs, cfg)[1]]
+    stops, seen = bs.plan_dedupe(procs, cfg, previous_duplicates=keys)
+    assert stops == [] and "descendant 90" in seen[0]["refused"]
+
+
+def test_an_orphaned_money_child_is_never_a_dedupe_candidate() -> None:
+    """MF2 through #482: the sticky money key keeps an orphan out of dedupe."""
+    cfg = {"allow": ["state_pusher_loop.py"]}
+    loop = "python.exe state_pusher_loop.py"
+    procs = [Proc(300, "python.exe", ppid=4, exe="py.exe", cmdline="python.exe stray.py",
+                  create_time=1),
+             Proc(301, "python.exe", ppid=300, exe="py.exe", cmdline=loop, create_time=2),
+             Proc(401, "python.exe", ppid=400, exe="py.exe", cmdline=loop, create_time=4)]
+    for p in procs:
+        p.cwd, p.env_sig = r"C:\opt\quant", "env-a"
+    bs.classify(procs, RULES["groups"], {"401:4"})       # its gateway (400) has died
+    assert _by_pid(procs)[401].group == "money"
+    keys = [d["duplicate"] for d in bs.plan_dedupe(procs, cfg)[1]]
+    assert bs.plan_dedupe(procs, cfg, previous_duplicates=keys) == ([], [])
+
+
+def test_a_partial_stop_bills_only_what_died() -> None:
+    """SF3 probe: children killed under a denied root opened no line; a denied child that still
+    lives was billed as forgone when the root died."""
+    dup = Proc(41, "python.exe", cmdline="python.exe some_loop.py", create_time=20,
+               cpu_pct=300, group="other")
+    k1 = Proc(91, "python.exe", ppid=41, create_time=31, cpu_pct=60, group="other")
+    k2 = Proc(92, "python.exe", ppid=41, create_time=32, cpu_pct=90, group="other")
+    procs = [dup, k1, k2]
+    # root denied, both children killed: not a landed stop, but 150% of a core died
+    a = bs.Action(41, "python.exe", "other", "dedupe", "stop", dup.key, "stopped",
+                  error="the duplicate's root is still running", tree=[k1.key, k2.key],
+                  died=[k1.key, k2.key])
+    led = bs.missed_growth_ledger(None, rules=RULES, procs=procs, actions=[a], n_cpu=N,
+                                  at="t1", judge_share=0.1)
+    ev = led["dedupe"]["open"][0]
+    assert ev["share_before"] == round(150 / 1800, 4) and ev["landed"] is False
+    led = bs.missed_growth_ledger(led, rules=RULES, procs=[dup], actions=[], n_cpu=N, at="t2",
+                                  judge_share=0.2)
+    ev = led["dedupe"]["closed"][0]
+    assert ev["gone"] is True and ev["forgone_share"] == round(150 / 1800, 4)
+    # root died, one child denied and alive: only the root and the dead child are billed
+    b = bs.Action(41, "python.exe", "other", "dedupe", "stop", dup.key, "stopped", applied=True,
+                  tree=[k1.key, k2.key], died=[dup.key, k1.key])
+    led = bs.missed_growth_ledger(None, rules=RULES, procs=procs, actions=[b], n_cpu=N,
+                                  at="t1", judge_share=0.1)
+    assert led["dedupe"]["open"][0]["share_before"] == round(360 / 1800, 4)
+    led = bs.missed_growth_ledger(led, rules=RULES, procs=[k2], actions=[], n_cpu=N, at="t2",
+                                  judge_share=0.2)
+    assert led["dedupe"]["closed"][0]["forgone_share"] == round(360 / 1800, 4)
+
+
+def test_the_verified_kill_reports_which_processes_died() -> None:
+    """SF3: kill_verified_tree names the dead by key, so a partial stop is billed exactly."""
+    psutil = pytest.importorskip("psutil")
+    from libs.ops import proctree
+    parent = _parent_with_child()
+    try:
+        kids = _wait_children(psutil, parent.pid)
+        root = psutil.Process(parent.pid)
+        rkey = f"{root.pid}:{int(root.create_time())}"
+        kkeys = {f"{k.pid}:{int(k.create_time())}" for k in kids}
+        out = proctree.kill_verified_tree(root, verified={k.pid: k.create_time() for k in kids},
+                                          timeout=10)
+        assert out["root_gone"] is True and set(out["dead"]) == kkeys | {rkey}
+    finally:
+        _reap(psutil, parent)
+
+
+def test_the_dedupe_why_names_the_verified_kill() -> None:
+    why = RULES["dedupe"]["why"]
+    assert "kill_verified_tree" in why and "proctree.kill_tree" not in why
