@@ -433,6 +433,34 @@ try {
   }
 } catch { $actions += "STATE FLOW UNMEASURED: meter unreadable ($_)" }
 
+# CPU SHAPE AND BOTTLENECK HUNT (2026-10-29). The box's CPU rules were a hand-installed SYSTEM task
+# (Quant-CpuShaper, C:\ProgramData\QuantBox) that no release carried; every rule change was a
+# human paste. They now live in desks\mt5\ops\CPU_SHAPE.json and are applied by ONE Python entry
+# point (libs/ops/box_shaper.py), on this task's clock: it measures every process with psutil,
+# writes desks\mt5\reports\BOX_BOTTLENECKS.json, and applies only what that file says inside the
+# rails the module enforces (nothing above AboveNormal; money path, judge and protected writers
+# only ever raised; mining never below BelowNormal; nothing killed). No arguments are passed.
+# Once a pass has MEASURED, the hand tasks it replaces are DISABLED (never deleted), so two
+# shapers never fight over one mask; re-enabling one by hand is still possible.
+$cpuShape = $null
+Push-Location 'C:\opt\quant'
+try {
+  $cpuShapeRaw = & py -3 -m libs.ops.box_shaper 2>$null
+  $cpuShape = ($cpuShapeRaw | Select-Object -Last 1) | ConvertFrom-Json
+  if ($cpuShape.line) { $actions += $cpuShape.line }
+  if ($cpuShape.verdict -eq 'MEASURED') {
+    foreach ($handTask in @('Quant-CpuShaper', 'Quant-MemecoinCpuCap')) {
+      $ht = Get-ScheduledTask -TaskName $handTask -ErrorAction SilentlyContinue
+      if ($ht -and $ht.State -ne 'Disabled') {
+        Disable-ScheduledTask -TaskName $handTask -ErrorAction SilentlyContinue | Out-Null
+        $actions += "CPU SHAPE: hand task $handTask disabled; desks\mt5\ops\CPU_SHAPE.json now owns its rules"
+      }
+    }
+  }
+} catch {
+  $actions += "CPU SHAPE UNRUNNABLE: py -3 -m libs.ops.box_shaper failed ($_) -- CPU rules not applied this pass"
+} finally { Pop-Location }
+
 # THE PAGER ON ITS OWN CLOCK (2026-09-30). The hourly publish_state leg pages STALLED /
 # SOURCE_STALE, so when that leg or the hourly cycle dies nothing pages at all. This task runs
 # every ten minutes on a clock of its own, and hands the judgement to ONE Python entry point
@@ -606,7 +634,7 @@ if ($free -lt $DiskFloorGB) {
   }
 }
 
-@{ checked_at = $now.ToUniversalTime().ToString('o'); actions = $actions; procs = $procsOut; free_gb = [math]::Round((Get-PSDrive C).Free / 1GB, 1); low_mem_strikes = $strikes; memory = $memCensus; state_flow = $(if ($stateFlow) { $stateFlow.verdict } else { 'UNMEASURED' }); state_flow_watch = $(if ($flowWatch) { $flowWatch.verdict } else { 'UNMEASURED' }); alerts_armed = $(if ($flowWatch -and $flowWatch.alerts) { $flowWatch.alerts.armed } else { $null }); alerts_line = $(if ($flowWatch) { $flowWatch.alerts_line } else { 'ALERTS UNMEASURED: the state flow watcher did not run' }) } |
+@{ checked_at = $now.ToUniversalTime().ToString('o'); actions = $actions; procs = $procsOut; free_gb = [math]::Round((Get-PSDrive C).Free / 1GB, 1); low_mem_strikes = $strikes; memory = $memCensus; state_flow = $(if ($stateFlow) { $stateFlow.verdict } else { 'UNMEASURED' }); state_flow_watch = $(if ($flowWatch) { $flowWatch.verdict } else { 'UNMEASURED' }); alerts_armed = $(if ($flowWatch -and $flowWatch.alerts) { $flowWatch.alerts.armed } else { $null }); alerts_line = $(if ($flowWatch) { $flowWatch.alerts_line } else { 'ALERTS UNMEASURED: the state flow watcher did not run' }); cpu_shape = $(if ($cpuShape) { $cpuShape.verdict } else { 'UNMEASURED' }) } |
   ConvertTo-Json -Depth 4 | Set-Content $stateFile
 
 if ($actions) { $actions | ForEach-Object { "$($now.ToUniversalTime().ToString('u')) $_" } }

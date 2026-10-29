@@ -1,0 +1,37 @@
+{
+  "schema": "cpu_shape/v1",
+  "why": "The trading box's CPU-shaping rules, as committed data. Read every MT5-StallWatch pass (10 min, SYSTEM) by libs/ops/box_shaper.py, which measures every process, writes desks/mt5/reports/BOX_BOTTLENECKS.json and applies ONLY what this file says, inside the rails the code enforces: nothing is ever raised above AboveNormal; the money path, the judge and the protected writers are only ever RAISED (never an affinity, never a lower class); mining is never set below BelowNormal and is affinity-capped only while the judge is starved, never below mining_floor_cores; nothing is ever killed. Replaces the hand-installed Quant-CpuShaper / Quant-MemecoinCpuCap tasks (owner, 2026-10-29: memecoin holds at most 10% of the CPU and keeps running). Change a rule by committing this file; the box adopts it hourly.",
+  "window_s": 5,
+  "priority_ceiling": "AboveNormal",
+  "groups": {
+    "money": ["terminal64", "run_gateway_loop", "gateway_resident", "e8_executor", "e8_window_guard",
+              "e8-executor", "ftmo_follow", "ftmo_venue_reader", "fusion_deadman", "executor"],
+    "judge": ["run_sharded_gauntlet", "external_gauntlet", "quant-research-runtime"],
+    "memecoin": ["memecoin"],
+    "protected": ["moat_recorder", "tick_integrity", "recorders.", "tick_recorder", "promoter",
+                  "shadow_cycle", "shadow_sync", "publish_state", "ledger", "certif", "tape"],
+    "system_names": ["system", "idle", "registry", "smss.exe", "csrss.exe", "wininit.exe",
+                     "services.exe", "lsass.exe", "svchost.exe", "msmpeng.exe", "memcompression",
+                     "dwm.exe", "winlogon.exe", "trustedinstaller.exe", "tiworker.exe"],
+    "mining": ["miner", "moat_", "breadth_sweep", "deepening_worker", "local_converter",
+               "research_supervisor", "edge_search", "orthogonal_sweep", "frontier", "hunt",
+               "deep_forest", "world_crawler"]
+  },
+  "rules": [
+    {"name": "memecoin_cap", "match": "memecoin", "affinity": "0x30000", "priority": "BelowNormal",
+     "max_box_share": 0.10,
+     "why": "Owner rule: the memecoin bot keeps running on at most 10% of the box. The mask is the hand task's two top cores; the code narrows it to floor(10% x cores) of them (1 of 18 on the trading box)."},
+    {"name": "pf_allocator_heavy", "match": "pf_allocator.py --mode heavy", "affinity": "0xFF",
+     "why": "The overnight allocator measured at 3162% (31 cores) beside the judge; eight cores, priority untouched."},
+    {"name": "mt5_terminals_raise", "match": "terminal64.exe", "priority": "AboveNormal",
+     "why": "The MT5 terminals are the money path; raised so research load never starves a fill."}
+  ],
+  "share_cap": {
+    "threshold_cores": 6,
+    "sustained_runs": 2,
+    "mask": "0x3F00",
+    "why": "Any single non-money, non-judge, non-protected process above 6 cores in two consecutive passes is pinned to cores 8-13 (clear of the allocator's 0-7 and memecoin's 16-17). Mining is capped this way only while the judge is starved."
+  },
+  "judge_starved": {"box_cpu_pct_at_least": 90, "judge_share_of_busy_below": 0.5},
+  "mining_floor_cores": 6
+}
