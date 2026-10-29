@@ -129,7 +129,7 @@ ROOM_MARGIN_USD = 100.0
 # many consecutive venue refusals for one position the lane stops re-sending: a position in profit
 # beyond the break-even trigger is closed at market (the protection the stop could not give),
 # otherwise its existing stop is held and the refusal raised as an alert.
-MAX_STOP_REFUSALS = 3
+MAX_STOP_REFUSALS = 30
 # Terminal reconnection (2026-09-30: ~70 min of "No IPC connection" in one day). Each attempt
 # drops the dead IPC handle and re-attaches; the waits are seconds inside a 5-minute pass.
 MT5_RETRY_WAITS_S = (0.0, 2.0, 5.0, 15.0, 30.0)
