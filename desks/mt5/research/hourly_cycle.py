@@ -279,6 +279,19 @@ def frontier_report(health: dict) -> None:
     print(f"frontier report written ({rep['swept_at']})", flush=True)
 
 
+#: `daily_cycle.EXIT_STOOD_DOWN`, restated so this cycle never imports the chain to read one int;
+#: `test_daily_cycle_single_chain` pins the two equal.
+DAILY_CYCLE_STOOD_DOWN = 75
+#: `daily_cycle.EXIT_HOLDER_HUNG`: stood down behind a holder past its ceiling -- a failure (v1.3).
+DAILY_CYCLE_HOLDER_HUNG = 76
+#: `daily_cycle.EXIT_STAMP_UNREADABLE` / `_PERSISTENT` (v1.6): the stamp could not be read, so
+#: nothing ran; the second is the escalation after three consecutive passes.
+DAILY_CYCLE_STAMP_UNREADABLE = 77
+DAILY_CYCLE_STAMP_UNREADABLE_PERSISTENT = 78
+DAILY_CYCLE_STOOD_DOWN_REASON = ("daily chain stood down: another chain healthily holds the lock "
+                                 "and runs the same steps; the next pass re-reads the stamp")
+
+
 def daily() -> dict:
     """The operating chain -- shadow -> promoter -> markout -- run once per UTC day.
 
@@ -301,10 +314,37 @@ def daily() -> dict:
         r = _run_tree([sys.executable, "-u", "-W", "ignore", str(target)],
                       capture_output=True, text=True, cwd=str(BASE),
                       timeout=timeout_s, check=False)
+        tail = (r.stdout or r.stderr or "")[-500:]
+        at = datetime.now(UTC).isoformat(timespec="seconds")
+        # A STAND-DOWN IS A VERDICT, NOT OK AND NOT A FAILURE (v1.1, re-done v1.2). `daily_cycle`
+        # exits EXIT_STOOD_DOWN (75) when another chain healthily holds its lock and this bounded
+        # caller ran nothing. Recording it as OK credits this leg with a chain it never ran; the
+        # v1.1 status "STOOD_DOWN" was worse in the other direction -- `_costed` wrote it as the
+        # outcome, `completion` read every non-"ok" outcome as FAILING and `write_or_explain`
+        # read the undeclared exit 75 as LEG_FAILED. So: no "status" key (the ledger writes
+        # `verdict_exit=75` from VERDICT_EXITS["daily"]), and a `noop_reason`, which is how a leg
+        # tells `write_or_explain` it wrote nothing ON PURPOSE.
+        if r.returncode == DAILY_CYCLE_STOOD_DOWN:
+            return {"exit_code": DAILY_CYCLE_STOOD_DOWN, "verdict_exit": True,
+                    "stood_down": True, "noop_reason": DAILY_CYCLE_STOOD_DOWN_REASON,
+                    "tail": tail, "at": at}
+        if r.returncode == DAILY_CYCLE_HOLDER_HUNG:
+            # NOT a verdict (v1.3): no status and no noop_reason, so the ledger names it
+            # `exit_code=76:HOLDER_HUNG` (NAMED_FAILURE_EXITS), write_or_explain reads LEG_FAILED
+            # and the leg's completion streak counts it -- a hung MT5-Daily is surfaced, not
+            # muted. (completion.judge itself rates `daily` UNDECLARED: it has no capability-graph
+            # node, which predates this change.)
+            return {"exit_code": DAILY_CYCLE_HOLDER_HUNG, "holder_hung": True,
+                    "tail": tail, "at": at}
+        if r.returncode in (DAILY_CYCLE_STAMP_UNREADABLE,
+                            DAILY_CYCLE_STAMP_UNREADABLE_PERSISTENT):
+            # Named failures, like 76 (v1.6): no status, so the ledger writes
+            # `exit_code=77:STAMP_UNREADABLE` / `exit_code=78:STAMP_UNREADABLE_PERSISTENT`.
+            return {"exit_code": int(r.returncode), "stamp_unreadable": True,
+                    "tail": tail, "at": at}
         return {"exit_code": int(r.returncode),
                 "status": "OK" if r.returncode == 0 else "FAILED",
-                "tail": (r.stdout or r.stderr or "")[-500:],
-                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+                "tail": tail, "at": at}
     except subprocess.TimeoutExpired as exc:
         return {"exit_code": None, "status": "TIMEOUT", "timeout_s": exc.timeout,
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
@@ -726,9 +766,85 @@ def heal_clocks() -> dict:
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
 
 
-#: The admission scan's own cadence is the supervisor's hourly heavy pass; twice that is "the
-#: supervisor has missed a pass", which is the condition this roster steps in on.
-ADMISSION_SCAN_MAX_AGE_S = 2 * 3600.0
+#: HEAVY CADENCE: EVERY 4TH HOURLY PASS (2026-10-21, principal: Option B), was every ~2.6 h
+#: measured. The heavy admission scan is the allocator's most expensive pass; running it every
+#: 4th pass frees that CPU for judging and mining. `normal` still runs every hour and rewrites
+#: reports/pf_allocation.json (so the gateway's 1 h mtime check in decision_core is untouched);
+#: only the scan's age grows. Every consumer of the scan expires it at 26 h
+#: (pf_allocator.ADMISSION_MAX_AGE_S, promoter.ADMISSION_MAX_AGE_H, capability_graph).
+#:
+#: THE AGE IS PASS START TO PASS START, NOT SCAN STAMP TO NOW. `pf_allocator` runs late in the
+#: pass and stamps `measured_utc` when its scan finishes, so an age read off that stamp drifted
+#: with the leg's position (audit 2026-10-14 simulated gaps of 3.5-5.1 h on hourly passes and up
+#: to 6.5 h under 1-3 h resident passes). A successful heavy leg now records the START of the
+#: pass it ran in (QUANT_PIPELINE_STARTED_AT) in ADMISSION_HEAVY_PASS, keyed to the scan it
+#: produced, and the next passes measure from their own start against it. On a clock whose
+#: passes start on the hour that is exactly every 4th pass: the 3rd reads ~3 h, the 4th ~4 h,
+#: and the 3.5 h bar sits half a pass from both, so start jitter of minutes cannot move it.
+#:
+#: THE TRUE BOUND, stated rather than claimed away: heavy runs on the FIRST pass that starts at
+#: least ADMISSION_SCAN_MAX_AGE_S after the last successful heavy pass started. The gap between
+#: heavy scans is therefore in [3.5 h, 3.5 h + one pass interval): 4 h on the hourly clock, up to
+#: ~6.5 h when a resident loop runs 3 h passes. AND ROTATION STRETCHES IT FURTHER: a pass that
+#: rotates the pf_allocator leg out runs no heavy, so the next chance is a pass later -- audit v2
+#: simulated 8-12.5 h with the leg rotated out 30% of the time. Each rotated-out pass adds one
+#: pass interval to that gap. A failed or killed heavy leg writes no stamp, so
+#: the next pass is heavy again. A scan with no matching stamp (written by another scheduler, or
+#: before this change) falls back to its own `measured_utc`. A missing/unmeasured scan or an
+#: unpriced rostered sleeve still forces heavy at once. The promotion delay this adds is billed
+#: as the published line `admission_scan_cadence` in research/missed_growth.py (the rail
+#: register libs/portfolio/rails.py is sealed).
+ADMISSION_SCAN_HEAVY_CADENCE_S = 4 * 3600.0
+ADMISSION_SCAN_MAX_AGE_S = ADMISSION_SCAN_HEAVY_CADENCE_S - 1800.0
+ADMISSION_HEAVY_PASS = BASE / "reports" / "admission_heavy_pass.json"
+
+
+def _pass_started(now: datetime | None = None) -> datetime:
+    """The start of the hourly pass this process belongs to (QUANT_PIPELINE_STARTED_AT, set by
+    `main`), else `now`. A future or unparseable value is ignored."""
+    cur = now or datetime.now(UTC)
+    raw = os.environ.get("QUANT_PIPELINE_STARTED_AT")
+    try:
+        ts = datetime.fromisoformat(str(raw).replace("Z", "+00:00")) if raw else None
+    except ValueError:
+        ts = None
+    if ts is not None and ts.tzinfo is None:
+        ts = ts.replace(tzinfo=UTC)
+    return ts if ts is not None and ts <= cur else cur
+
+
+def _scan_stamp(adm: dict) -> str:
+    return str(adm.get("carried_from") or adm.get("measured_utc") or "")
+
+
+def _stamp_heavy_pass(leg: dict | None, art: Path | None = None,
+                      out: Path | None = None, started: datetime | None = None) -> bool:
+    """After a heavy leg: record the pass start against the scan it produced. Only a clean exit
+    whose artifact carries a fresh MEASURED scan (not carried, stamped after the pass began) is
+    stamped -- a failed scan must never read as fresh."""
+    if not isinstance(leg, dict) or leg.get("exit_code") != 0:
+        return False
+    art = art or (BASE / "reports" / "pf_allocation.json")
+    out = out or ADMISSION_HEAVY_PASS
+    started = started or _pass_started()
+    try:
+        adm = json.loads(art.read_text("utf-8")).get("admission") or {}
+        ts = datetime.fromisoformat(str(adm.get("measured_utc")).replace("Z", "+00:00"))
+    except (OSError, ValueError, TypeError, AttributeError):
+        return False
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=UTC)
+    if adm.get("status") != "MEASURED" or adm.get("carried_from") or ts < started:
+        return False
+    try:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps({"pass_started_utc": started.isoformat(),
+                                   "measured_utc": adm.get("measured_utc")}), "utf-8")
+    except OSError as exc:
+        print(f"  pf_allocator: heavy pass stamp not written ({exc}); the scan's own "
+              f"measured_utc decides the next mode", flush=True)
+        return False
+    return True
 
 #: How long the hypothesis-lane sweep may go unrefreshed before it is swept again. A week of H1
 #: bars is ~120 rows against the ~54,000 each symbol carries, so this clock exists to stop the
@@ -820,8 +936,10 @@ def hunt12() -> dict:
                         "--max-age-h", str(HUNT12_REFRESH_AGE_S / 3600)), "why": why}
 
 
-def _admission_scan_age_s(art: Path | None = None, now: datetime | None = None) -> float | None:
-    """Seconds since the last MEASURED admission scan in reports/pf_allocation.json, or None
+def _admission_scan_age_s(art: Path | None = None, now: datetime | None = None,
+                          heavy_pass: Path | None = None) -> float | None:
+    """Seconds from the start of the pass that ran the last MEASURED admission scan (else the
+    scan's own stamp) to the start of this pass, or None
     when there is no measured scan to date (absent artifact, unreadable, not MEASURED, or the
     scan is only carried forward from an older measurement -- `carried_from` names the real
     stamp, and it is that stamp which ages)."""
@@ -839,7 +957,20 @@ def _admission_scan_age_s(art: Path | None = None, now: datetime | None = None) 
         return None
     if ts.tzinfo is None:
         ts = ts.replace(tzinfo=UTC)
-    return ((now or datetime.now(UTC)) - ts).total_seconds()
+    # The pass-start stamp, when it belongs to THIS scan (see ADMISSION_SCAN_HEAVY_CADENCE_S).
+    try:
+        hp = json.loads((heavy_pass or ADMISSION_HEAVY_PASS).read_text("utf-8"))
+        if isinstance(hp, dict) and str(hp.get("measured_utc") or "") == _scan_stamp(adm):
+            st = datetime.fromisoformat(str(hp.get("pass_started_utc")).replace("Z", "+00:00"))
+            st = st if st.tzinfo else st.replace(tzinfo=UTC)
+            # A pass cannot start after the scan it produced, nor in the future: such a stamp
+            # (a clock stepped back, a hand edit) would suppress heavy, so it is ignored and the
+            # scan's own stamp decides.
+            if st <= ts and st <= (now or _pass_started()):
+                ts = st
+    except (OSError, ValueError, TypeError, AttributeError):
+        pass
+    return ((now or _pass_started()) - ts).total_seconds()
 
 
 def _rostered_but_unpriced(art: Path | None = None, sleeves: Path | None = None) -> list[str]:
@@ -851,7 +982,8 @@ def _rostered_but_unpriced(art: Path | None = None, sleeves: Path | None = None)
     2026-09-08: until `pf_allocator.scalp_evidence` read the ledger's own field names
     (closed_at/opened_at), no scalp clock was in the priced universe, so every scan on disk
     answered "nothing" about the three PROMOTION_CANDIDATE scalp sleeves -- and `normal` kept
-    carrying that scan forward as MEASURED and fresh for as long as it was under two hours old.
+    carrying that scan forward as MEASURED and fresh for as long as it was under
+    ADMISSION_SCAN_MAX_AGE_S (then 2 h; 3.5 h since the 4-hourly heavy cadence of 2026-10-21).
     `promoter.capital_verdict` reads a sleeve the universe lacks as UNMEASURED ("nobody looked"),
     which by design neither adds nor removes risk, so a STANDBY row stayed STANDBY on a scan
     that had no opinion about it, while every artifact read healthy. The join is the promoter's
@@ -893,7 +1025,8 @@ def _rostered_but_unpriced(art: Path | None = None, sleeves: Path | None = None)
 
 
 def _allocator_mode_for_the_hour(art: Path | None = None, now: datetime | None = None,
-                                 sleeves: Path | None = None) -> str:
+                                 sleeves: Path | None = None,
+                                 heavy_pass: Path | None = None) -> str:
     """`heavy` when the admission scan is missing, stale, or never priced a rostered sleeve;
     else the hourly `normal`."""
     # An explicitly supplied artifact is an isolated measurement unless its matching roster is
@@ -901,7 +1034,9 @@ def _allocator_mode_for_the_hour(art: Path | None = None, now: datetime | None =
     # depend on whatever happens to be deployed on this machine.  The production call supplies
     # neither, so it still checks both canonical artifacts.
     isolated_artifact = art is not None and sleeves is None
-    age = _admission_scan_age_s(art, now)
+    if heavy_pass is None and art is not None:
+        heavy_pass = art.parent / "admission_heavy_pass.json"
+    age = _admission_scan_age_s(art, now, heavy_pass)
     if age is None or age > ADMISSION_SCAN_MAX_AGE_S:
         return "heavy"
     missing = [] if isolated_artifact else _rostered_but_unpriced(art, sleeves)
@@ -924,7 +1059,36 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
     "model_skill": (2,),
     "deep_forest": (1,),
     "maintain_miners": (2,),
+    # `daily_cycle` exits 75 (EXIT_STOOD_DOWN) when another chain healthily holds its lock and
+    # this bounded caller ran nothing: the holder is running the same steps (v1.2).
+    "daily": (DAILY_CYCLE_STOOD_DOWN,),
 }
+
+#: The other side of the same rule: exit codes a leg uses to NAME a failure. They stay failures
+#: (`exit_code=N`, never a verdict) and the ledger row carries the name after it, so a reader
+#: sees what failed without opening the leg. A code here must never also be in VERDICT_EXITS.
+#:   judge_coverage 3 -- the pass met its budget and committed nothing (JUDGE_COVERAGE_TIMEOUT.json)
+#:   judge_coverage 4 -- --reuse-fresh found no fresh same-cycle table (JUDGE_COVERAGE_REUSE.json)
+#:   judge_coverage 5 -- a committed transaction manifest could not be rolled forward safely; it
+#:                       is kept and every pass refuses until it is resolved by hand
+#:   daily 76          -- stood down behind a chain-lock holder older than its 16 h ceiling: a
+#:                       hung MT5-Daily (daily_cycle.EXIT_HOLDER_HUNG)
+#:   daily 77 / 78     -- the day's stamp could not be READ, so no step ran; 78 once that has
+#:                       lasted past 3 consecutive passes (daily_cycle.EXIT_STAMP_UNREADABLE*)
+NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
+    "judge_coverage": {3: "TIMEOUT_UNCOMMITTED", 4: "REUSE_STALE", 5: "RECOVERY_REFUSED"},
+    "daily": {DAILY_CYCLE_HOLDER_HUNG: "HOLDER_HUNG",
+              DAILY_CYCLE_STAMP_UNREADABLE: "STAMP_UNREADABLE",
+              DAILY_CYCLE_STAMP_UNREADABLE_PERSISTENT: "STAMP_UNREADABLE_PERSISTENT"},
+}
+
+
+def _exit_outcome(name: str, code: int) -> str:
+    """The ledger outcome for leg `name` exiting non-zero with `code`."""
+    if code in VERDICT_EXITS.get(name, ()):
+        return f"verdict_exit={code}"
+    label = NAMED_FAILURE_EXITS.get(name, {}).get(code)
+    return f"exit_code={code}:{label}" if label else f"exit_code={code}"
 
 
 #: THE HOURLY CYCLE COULD NOT FINISH IN AN HOUR, AND ITS TAIL NEVER RAN (measured 2026-09-16).
@@ -959,6 +1123,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # in the law gate's `--rotate` rotation, which reaches a given state fence every few hours.
     # It reads three small files and writes one, so it runs on BOTH plans, every hour.
     "placement_interlock",
+    # THE JUDGE'S PULSE, EVERY HOUR (audit of 2832cebd1, 2026-10-20): the sweep watchdog's
+    # heartbeat and stall record were read only by the law gate's rotation, which reaches a given
+    # fence every few hours -- so a stalled judge could sit unread that long. Two small JSON reads.
+    "judge_alive",
     "mutation_yield", "credit_assignment", "publish_survivors", "publish_dashboard",
     # CANON PUBLICATION IS CORE. `MT5-Gauntlet` is the judge's own hourly task, so a sweep can
     # complete on a pass this cycle never ran; if the seal were only refreshed on the heavy plan
@@ -1032,6 +1200,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
+    # The FTMO book's solve on the same cadence (2026-10-28): it re-solves from the account's live
+    # phase every hour, so a phase change or a new certificate moves the book within the hour.
+    "prop_challenge_allocator",
     # The two stop-geometry constants on the same solve (2026-09-30): a report the sizing fence's
     # citations point at, re-derived hourly so a stale number is visible as stale.
     "stop_geometry_derivation",
@@ -1042,6 +1213,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `publish_state` leg right after them carries to origin. Before this the fence rode only the
     # 48h law-gate rotation and the health check ran on no clock at all.
     "box_state_freshness", "desk_health",
+    # HOW FRESH THE BOX'S BARS AND TICKS ARE (2026-10-21): parquet footers only, ~0.4 s and one
+    # report (data/BARS_STATE.json) that `publish_state` right after it carries. Bars never cross
+    # the wire, so this is the only off-box evidence that the feed is alive. Non-money-path.
+    "bars_state",
 })
 
 
@@ -1092,7 +1267,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
-                     "judge_coverage", "orthogonality_yield", "effective_trials",
+                     "judge_coverage", "judge_prescreen", "orthogonality_yield",
+                     "effective_trials",
                      "occupancy_map", "dsr_inputs"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
@@ -1137,7 +1313,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "research_diversity_archive", "execution_science",
                      "evaluator_lab", "lead_replication", "science_controller",
                      "replication_civilization", "certificate_truth", "model_search",
-                     "loop_liveness", "counterexample_agent", "judging_throughput",
+                     "loop_liveness", "counterexample_agent", "blas_differential",
+                     "judging_throughput",
                      "duty_cycle", "forward_enrolment", "residual_gate",
                      "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
                      "lockbox_recert",
@@ -1147,8 +1324,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "committees", "committee_ensembles", "rejection_throughput"),
                     "validate"),
     # macro: the cross-asset / macro brain
-    **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
-                     "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
+    **dict.fromkeys(("fred_macro", "futures_lead_lag", "bar_clock_probe", "causal_graph",
+                     "residual_factors", "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
                      "counterfactual_world", "opportunity_forecast", "forecast_contract",
                      "exposure_decomposition", "event_response_atlas", "causal_lab",
                      "event_graph_lab",
@@ -1661,8 +1838,9 @@ def _costed(name: str, fn):
             # there, a verdict still ends a leg non-zero, and a code NOT on the declared list is
             # still a failure. What changes is that a reader can tell them apart.
             _code = out["exit_code"]
-            outcome = (f"verdict_exit={_code}" if _code in VERDICT_EXITS.get(name, ())
-                       else f"exit_code={_code}")
+            outcome = _exit_outcome(name, _code)
+            if ":" in outcome:
+                print(f"  LEG FAILED {name}: {outcome}", flush=True)
     _close(outcome, outputs=_leg_artifacts(name))
     _emit_leg(name, outcome)
     _advance_watermark(name, outcome)
@@ -1817,6 +1995,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Review + promotion-door verdicts take seconds on the live box. The full Tier S run can
     # time out before its final door organ, leaving E8's fail-closed input stale for >6h.
     "tier_s_door": 180,
+    # BARS_STATE.json stops itself at --budget-s 20 (marking what it did not reach UNMEASURED);
+    # the cap sits just above, so MT5-Hourly, which already overruns, can lose at most a minute.
+    "bars_state": 60,
     # THE UNKNOWN-SHARE CENSUS, once per UTC day: a fixed 6,000-cell sample took 1,955 s on the
     # box. It stops building at UNKNOWN_CENSUS_BUILD_S (1,800) and then carves and names causes;
     # the cap sits above both and the document is checkpointed, so a kill still publishes.
@@ -1844,6 +2025,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # truncates it at the same prefix every hour. `judging_throughput` must also finish BEFORE
     # the gauntlet leg it sizes, which is the other reason it is cheap by design.
     "judging_throughput": 400,
+    # THE BLAS THREAD DIFFERENTIAL runs only when its proof is missing or lapsed (one JSON read on
+    # every other hour). When it runs: a prepare child and three judge arms, each capped at
+    # --arm-timeout-s 330 by the harness itself, so 4 x 330 = 1,320 s sits inside this cap.
+    "blas_differential": 1_500,
     # THE MASS SCREEN stops starting symbols at its own --budget-s (MASS_SCREEN_BUDGET_S) and
     # always writes its artifact; the cap sits above it for the reason `enrol_clocks` was raised.
     "mass_screen": 1_080,
@@ -1982,9 +2167,19 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Regional parity reads every pack and two reports and writes three small files; measured
     # at ~10 s on a build box. The cap sits above its own --budget-s for the usual reason.
     "regional_parity": 400,
-    # Judge coverage stops itself at --budget-s 120; it reads two files and sorts. The cap sits
-    # above its own budget for the reason every other leg's does.
+    # Judge coverage DECLARES --budget-s 120. It reads the docket, the whole gate ledger, the
+    # gauntlet report and the unrunnable bank, and ranks every docket row -- measured ~70 s on a
+    # build-box replica of the box's inputs, 131 s before c5390bc6a, and killed at this cap on
+    # the box at 2026-10-20 19:44Z. Since v2 it stops itself, UNCOMMITTED, with a named
+    # JUDGE_COVERAGE_TIMEOUT.json and exit 3, at the later of 120 s and this cap (as exported
+    # in QUANT_LEG_BUDGET_S) minus its commit margin -- so it never stops earlier than the kill
+    # it replaces, and a stopped pass changes no file. The cap is unchanged.
     "judge_coverage": 300,
+    # The pre-build screen streams the gate ledger once (time-ordered replay, dict updates only),
+    # stats each bar file's time column only when its size or mtime moved, and probes two
+    # families' input guards per symbol. Measured ~1 s on a 3,557-row ledger in the cloud
+    # container; the box's ~1M-row ledger is UNMEASURED, so the cap is generous.
+    "judge_prescreen": 600,
     # Orthogonality yield is one indexed scan of the candidate registry, one pass over the gate
     # ledger and 79 leave-one-out SVDs of a 79 x ~1000 indicator matrix. Measured 2026-09-23 on
     # the trading box against 323,313 registry rows and 146,359 ledger rows: under a minute. The
@@ -2188,6 +2383,36 @@ def _self_stop_floor_s(args: tuple[str, ...]) -> int:
     return int(own + max(WRITE_MARGIN_MIN_S, WRITE_MARGIN_FRAC * own))
 
 
+#: Extra variables for ONE leg's subprocess env, never the cycle's own `os.environ`. Today only
+#: the judge leg: single-threaded BLAS under a valid proof (`_arm_judge_leg_env`).
+_LEG_ENV: dict[str, dict[str, str]] = {}
+
+#: The legs that ARE the judge, and so may run single-threaded BLAS under the proof.
+JUDGE_LEGS = ("external_gauntlet",)
+
+
+def _arm_judge_leg_env() -> dict[str, str]:
+    """Single-threaded BLAS for the judge leg's spawn env alone, when the proof licenses it.
+
+    WHY NOT `os.environ` (audit re-review of fb7626205): this process runs every leg, so a
+    variable set here reaches all of them -- deep_forest, world_crawler, kimi_hunt, hunt12,
+    pf_allocator -- and confines the miners' BLAS against the no-miner-confinement rule. The
+    decision is taken into a fresh dict and handed to the judge leg only."""
+    blas: dict[str, str] = {}
+    try:
+        from research.judging_throughput import apply_env
+        blas = {k: v for k, v in apply_env(env={}).items()
+                if k in ("OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "OMP_NUM_THREADS")}
+    except Exception as exc:
+        print(f"judge BLAS env not armed: {type(exc).__name__}: {exc}", flush=True)
+    for leg in JUDGE_LEGS:
+        if blas:
+            _LEG_ENV[leg] = dict(blas)
+        else:
+            _LEG_ENV.pop(leg, None)
+    return blas
+
+
 def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
     """The body: resolve the script against both roots and run it under the cycle budget.
 
@@ -2235,7 +2460,8 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
         # THE CAP IS TOLD TO THE CHILD. An organ that stops itself at its own budget can only stop
         # INSIDE the cap if it knows the cap; the pricer moves it hourly. Read by
         # deep_forest_miner (and anything else that wants to self-stop before the kill).
-        _env = {**os.environ, "QUANT_LEG_BUDGET_S": str(int(budget))}
+        _env = {**os.environ, "QUANT_LEG_BUDGET_S": str(int(budget)),
+                **_LEG_ENV.get(name, {})}
         r = _run_tree([sys.executable, "-u", "-W", "ignore", str(target), *args],
                            capture_output=True, text=True, cwd=str(root),
                            timeout=budget, check=False, env=_env)
@@ -2979,6 +3205,16 @@ def placement_interlock() -> dict:
     return _producer("placement_interlock", "scripts/check_placement_interlock.py")
 
 
+def judge_alive() -> dict:
+    """`judge_alive`: is the judge's --once sweep alive and progressing? `scripts/
+    check_judge_coverage.py --liveness --require-state` reads the sweep watchdog's
+    GAUNTLET_HEARTBEAT.json and GAUNTLET_STALL.json and writes reports/judge_alive_fence.json:
+    FAIL on a no-progress kill no finished sweep has cleared or a wedged watchdog, amber (exit 0)
+    on a SLOW sweep that is still burning CPU. Hourly here, and in the law gate's rotation."""
+    return _producer("judge_alive", "scripts/check_judge_coverage.py", "--liveness",
+                     "--require-state")
+
+
 def pit_canaries() -> dict:
     """`pit_canaries`: planted past/now/future rows read point-in-time every hour; green only
     when the future row is invisible at now (closed-loop `truth.pit_canaries_green`)."""
@@ -3386,6 +3622,21 @@ def futures_lead_lag() -> dict:
     H1, and saying so is worth more than a spike that was a timezone.
     """
     return _producer("futures_lead_lag", "research/futures_lead_lag.py")
+
+
+def bar_clock_probe() -> dict:
+    """THE BAR CLOCK, READ OFF THE TERMINAL, AND THE ONE WRITER OF BAR_CLOCK.json.
+
+    Without a measured clock `libs/research/bar_clock` drops every UTC-stamped event, correctly,
+    and `family_event_reaction` read NEEDS_DATA(bar_clock) with 199 events and 0 fire days
+    (judge dead-families v4, 2026-10-21). This reads broker server time (newest tick, confirmed
+    by the current H1 bar's open) against the box's UTC clock on every pass, appends it to
+    `data/bar_clock_probes.jsonl`, and publishes dated spans plus the futures cross-venue season
+    offsets no span contradicts. A host with no attached terminal captures nothing and publishes
+    from the ledger; with no evidence at all it publishes UNMEASURED, never a guess. AFTER
+    futures_lead_lag, whose report it reads.
+    """
+    return _producer("bar_clock_probe", "research/bar_clock_probe.py")
 
 
 def edges_macro_fusion_sweep() -> dict:
@@ -3798,6 +4049,7 @@ def main() -> None:
     sp = _costed("spread_provenance", spread_provenance)
     tf = _costed("tape_features", tape_features)
     fll = _costed("futures_lead_lag", futures_lead_lag)
+    bcp = _costed("bar_clock_probe", bar_clock_probe)
     tj = _costed("time_joins", time_joins)
     aj = _costed("allocator_join", allocator_join)
     # BEFORE pf_allocator, which conditions on the state this refreshes.
@@ -3879,6 +4131,7 @@ def main() -> None:
     ccv = _costed("candidate_conservation", candidate_conservation)
     pcn = _costed("pit_canaries", pit_canaries)
     pil = _costed("placement_interlock", placement_interlock)
+    jal = _costed("judge_alive", judge_alive)
     myd = _costed("mutation_yield", mutation_yield)
     # DELAYED TRUTH (principal F12, 2026-09-12; wired 2026-09-16): realised R credited back
     # to the scientist that proposed each cell, live when the live ledger is thick enough,
@@ -4392,9 +4645,30 @@ def main() -> None:
                   lambda: _producer("orthogonality_yield",
                                     "research/orthogonality_yield.py",
                                     "--once", "--budget-s", "120"))
+    # THE LEG REUSES THE MERGE'S TABLE INSTEAD OF COMPUTING IT A SECOND TIME. `catch_up_intake`
+    # above runs merge_hypotheses -> order_docket -> build -> write in this same cycle, so a
+    # second build here duplicated a full pass over the docket and the ledger, and that copy
+    # was the one killed at this leg's cap on the box. `--reuse-fresh` computes nothing: it
+    # exits 0 only when the published table is this cycle's (stamped after
+    # QUANT_PIPELINE_STARTED_AT, ratchet in step, merge report of this cycle written after it),
+    # and otherwise exits 4 with reports/JUDGE_COVERAGE_REUSE.json naming why. It never writes
+    # the table, so a stale table stays stale under its own `at`. The cap is unchanged.
+    # THE JUDGE'S PRE-BUILD SCREEN (principal 2026-10-28; research/judge_prescreen). Replays the
+    # gate ledger in time order to measure, per K, what `sibling_dead` would have killed and how
+    # many true survivors it would have taken (the canon gate is ZERO in both halves), refreshes
+    # the chart calendars `chart_short` proves from, audits the provable rules on every known
+    # certificate, and writes the tables `judge_coverage.order_docket` screens the docket with
+    # at intake. SHADOW by default -- nothing leaves the docket until the code constant
+    # judge_prescreen.CANON is flipped by a reviewed commit (no state file can), and then only
+    # for a canon-eligible rule (needs_data; sibling_dead is not eligible in code). Runs
+    # at below-normal priority: the judge never outranks the miners. Data department,
+    # information layer.
+    jps = _costed("judge_prescreen", lambda: _producer("judge_prescreen",
+                                                       "research/judge_prescreen.py", "--once"))
     jcv = _costed("judge_coverage", lambda: _producer("judge_coverage",
                                                       "research/judge_coverage.py",
-                                                      "--once", "--budget-s", "120"))
+                                                      "--once", "--reuse-fresh",
+                                                      "--budget-s", "120"))
     # EFFECTIVE TRIALS: the multiplicity budget is charged in independent TESTS, not in docket
     # rows. Measures nominal vs effective per family (participation ratio of (grid cell, content)
     # identities within each mechanism), publishes the ratio, and writes the corrected campaign
@@ -4998,6 +5272,14 @@ def main() -> None:
     # the environment `_producer` hands the gauntlet subprocess. The plan is floored at what the
     # sealed file would pick unaided, so this can never throttle the judge, and the live terminal
     # always wins (it stands down to that floor, never below it).
+    # THE BLAS PROOF, BEFORE THE PUBLISHER THAT CONSUMES IT. `research/blas_threads.py` lets the
+    # judge's workers (and MT5-CacheWarm) run single-threaded BLAS only while
+    # reports/BLAS_DIFFERENTIAL.json proves byte-identical judge output for THIS release; every
+    # adoption voids it, so this re-measures after an adoption and is otherwise one JSON read
+    # (`--if-lapsed`). Read-only against the recorded sweep; it writes the report and a run row.
+    bld = _costed("blas_differential", lambda: _producer(
+        "blas_differential", "scripts/blas_thread_differential.py", "--if-lapsed",
+        "--sample", "300", "--rebuild", "14", "--arm-timeout-s", "330"))
     jth = _costed("judging_throughput", lambda: _producer(
         "judging_throughput", "research/judging_throughput.py", "--once", "--budget-s", "300"))
     try:
@@ -5005,6 +5287,9 @@ def main() -> None:
         _apply_judging_env()
     except Exception as _exc:
         print(f"judging_throughput env not applied: {type(_exc).__name__}: {_exc}", flush=True)
+    # SINGLE-THREADED BLAS, IF THE PROOF HOLDS, GOES TO THE JUDGE LEG ALONE: `_apply_judging_env`
+    # above never puts it in this process's environ (it would leak into every later leg).
+    _arm_judge_leg_env()
     # DUTY CYCLE, and it runs BEFORE the sweep for the same reason `judging_throughput` does: the
     # thing it repairs is the judge's own clock. Measured 2026-09-23/24, `MT5-Gauntlet`'s five-
     # minute trigger had run out its repetition window -- Enabled, a real Last Run Time, and no
@@ -5187,8 +5472,21 @@ def main() -> None:
     # shrinks and vetoes nothing.
     sad = _costed("state_admission", lambda: _producer(
         "state_admission", "research/state_admission_run.py"))
+    # Decided OUTSIDE the leg so the heavy stamp knows the mode; a raise here must not take the
+    # pass with it (see _costed), so it falls to heavy, the side that measures.
+    try:
+        _pa_mode = _allocator_mode_for_the_hour()
+    except Exception as exc:
+        print(f"  pf_allocator: mode decision failed ({type(exc).__name__}: {exc}); heavy",
+              flush=True)
+        _pa_mode = "heavy"
     pa = _costed("pf_allocator", lambda: _producer(
-        "pf_allocator", "research/pf_allocator.py", "--mode", _allocator_mode_for_the_hour()))
+        "pf_allocator", "research/pf_allocator.py", "--mode", _pa_mode))
+    if _pa_mode == "heavy":
+        try:
+            _stamp_heavy_pass(pa)
+        except Exception as exc:
+            print(f"  pf_allocator: heavy stamp failed ({type(exc).__name__}: {exc})", flush=True)
     # DID THE MONEY BRAIN ACTUALLY PRODUCE, PROVE AND PUBLISH -- and on what? (2026-09-23.) Runs
     # immediately after the solve, so the ages it publishes are the ages the pass ABOVE
     # conditioned on. It names every allocator output with its real path and its consumer, every
@@ -5334,6 +5632,12 @@ def main() -> None:
     # 2026-09-08 and never re-measured. `--step markout` runs that one step here, unchanged.
     fmk = _costed("fill_markout", lambda: _producer(
         "fill_markout", "research/daily_cycle.py", "--step", "markout"))
+    # EACH ALLOCATOR INPUT AGAINST THE PLAIN SOLVE, OUT OF SAMPLE (zuck 2026-10-27). Its own leg:
+    # the daily chain is killed at 900 s and its proposers alone measured 9,056 s. The organ
+    # stops itself at 600 s inside the 720 s default cap and caches every solved window, so the
+    # backlog shrinks each hour and an hour with no new window costs a few cache reads.
+    iab = _costed("input_ablation", lambda: _producer(
+        "input_ablation", "research/input_ablation.py", "--budget-s", "600"))
     exo = _costed("exogenous_search", exogenous_search)
     srx = _costed("stop_reverse", stop_reverse_census)
     fwr = _costed("forward_reconcile", forward_reconcile_leg)
@@ -5694,6 +5998,13 @@ def main() -> None:
     # block, principal 2026-10-06); nothing sizes from it until the gateway reads it.
     kls = _costed("kelly_survival", lambda: _producer(
         "kelly_survival", "research/kelly_survival.py", "--book"))
+    # THE FTMO BOOK BY SOLVE (principal 2026-10-28 14:34Z): pass-speed x pass-probability over the
+    # Tier S sleeves FTMO lists, at FTMO's own hour costs, from the account's live phase
+    # (reports/FTMO_ACCOUNT_STATE.json). Writes reports/FTMO_ALLOCATOR.json and the FTMO gap
+    # hypotheses for the miners; the CERT_BOOK_LIVE `ftmo` block moves only when
+    # data/FTMO_ALLOCATOR_ARMED exists. Re-runs every pass, so a certificate change is picked up.
+    fta = _costed("prop_challenge_allocator", lambda: _producer(
+        "prop_challenge_allocator", "research/prop_challenge_allocator.py"))
     # THE STOP GEOMETRY ON THE SAME SOLVE (2026-09-30): MIN_STOP_SPREAD_MULT and
     # ENTRY_DRIFT_TOL_FRAC re-derived from the bars' spreads, the entry drift and the live edge.
     # A report only -- the money path carries the cited values. Each value passes a two-sided
@@ -5775,6 +6086,11 @@ def main() -> None:
     # box_state_age_hours and the NOT-ARMED line; DESK_HEALTH.json every PROBLEM/UNKNOWN finding),
     # so the push below delivers THIS hour's verdicts. The fence exits 1 on STALE/UNMEASURED and
     # the leg reads FAILED then -- loud, and it gates nothing: `publish_state` runs regardless.
+    # BAR AND TICK FRESHNESS, BEFORE THE PUSH THAT CARRIES IT (2026-10-21), and before
+    # `desk_health`, which reads BARS_STATE.json and flags a stale feed. Footer reads under a 20 s
+    # self-budget; fail-soft, it gates nothing and never touches the terminal or an account.
+    bst = _costed("bars_state", lambda: _producer(
+        "bars_state", "research/bars_state.py", "--budget-s", "20"))
     bsf = _costed("box_state_freshness", lambda: _producer(
         "box_state_freshness", "scripts/check_box_state_freshness.py"))
     dhl = _costed("desk_health", lambda: _producer(
@@ -5794,7 +6110,7 @@ def main() -> None:
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "breadth_sweep": bs, "mass_screen": msc,
                     "session_variant_remap": svr, "candidate_conservation": ccv,
-                    "pit_canaries": pcn, "placement_interlock": pil,
+                    "pit_canaries": pcn, "placement_interlock": pil, "judge_alive": jal,
                     "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,
                     "failure_prior": fpr, "scientist_standings": sst, "frontier_ceo": fce,
@@ -5841,6 +6157,7 @@ def main() -> None:
                     "mining_objective": mob, "research_gap_map": rgm,
                     "evidence_router": evr, "research_roi": rroi,
                     "coverage_tensor": cov, "coverage_drain": cdr, "judge_coverage": jcv,
+                    "judge_prescreen": jps,
                     "regional_parity": rpp,
                     "orthogonality_yield": oyz, "effective_trials": eft,
                     "dsr_inputs": dsi,
@@ -5956,9 +6273,9 @@ def main() -> None:
                     "shortfall_model": shm, "counterfactual_timeframes": ctf, "meta_rnd": mrd,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
-                    "kelly_survival": kls,
+                    "kelly_survival": kls, "prop_challenge_allocator": fta,
                     "stop_geometry_derivation": sgd,
-                    "decay_monitor": dmo, "fill_markout": fmk,
+                    "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
@@ -5968,10 +6285,12 @@ def main() -> None:
                     "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
                     "box_state_freshness": bsf, "desk_health": dhl,
+                    "bars_state": bst,
                     "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "moat_candidate_compiler": mcp, "algorithm_db": adb,
+                    "blas_differential": bld,
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
                     "certificate_clock_law": ccl,
                     "external_gauntlet": gt, "fast_admission": fa,
@@ -5984,7 +6303,8 @@ def main() -> None:
                     "alpha_periodic_table": pt, "queue_cycle": qcy,
                     "microstructure_census": mx, "entry_timing": ety,
                     "spread_provenance": sp, "tape_features": tf,
-                    "futures_lead_lag": fll, "time_joins": tj, "allocator_join": aj,
+                    "futures_lead_lag": fll, "bar_clock_probe": bcp, "time_joins": tj,
+                    "allocator_join": aj,
                     "fred_macro": fm,
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,

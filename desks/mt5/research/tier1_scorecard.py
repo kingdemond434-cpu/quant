@@ -356,6 +356,44 @@ def _r07_silent_failures() -> dict[str, Any]:
         total += bad_legs
     if not read:
         return _gone(dim, [PROCESS_HEALTH, SYNC_MARKER])
+    # AN UNREAD SCHEDULER IS NOT ZERO FAILURES. process_health marks every organ it could not
+    # judge SCHEDULER_UNMEASURED, which the FAILING+NOT_SCHEDULED sum never sees -- so 73 unread
+    # rows scored 0.0 and verdict AT (audit v2, 2026-10-14, measured on the committed artifact).
+    # The audit of v3 found the same zero on two neighbouring paths, both closed here:
+    #   * the brief-only reading ("OK schtasks (brief: last run and last result UNMEASURED"),
+    #     which passes an "OK " prefix test while no result code was read, so FAILING could not
+    #     have been observed -- and, the same fact row by row, an OK task row whose code is null;
+    #   * no process_health.json at all, where the legs alone used to score 0.0 AT.
+    # Each leaves this row UNMEASURED; the legs count rides in the basis as a floor.
+    floor = f"(legs={bad_legs} is a floor, not the count)"
+    if not isinstance(health, dict):
+        return _mk(dim, None, f"UNMEASURED: {_rel(PROCESS_HEALTH)} ABSENT/UNREADABLE {floor}",
+                   _stamp(marker))
+    # THE DOCUMENT'S OWN SHAPE (audit v4): a reading with no `counts` object, no `processes`
+    # list, or a headline the producer itself did not call OK/ATTENTION (its "UNMEASURED") is not
+    # a reading of zero failures either -- the legs alone used to score it 0.0 AT.
+    headline = str(health.get("status") or "")
+    procs = health.get("processes")
+    if (not isinstance(health.get("counts"), dict) or not isinstance(procs, list)
+            or headline not in ("OK", "ATTENTION")):
+        return _mk(dim, None,
+                   f"UNMEASURED: {_rel(PROCESS_HEALTH)} status {headline or 'absent'!r}, "
+                   f"counts {type(health.get('counts')).__name__}, processes "
+                   f"{type(procs).__name__} {floor}",
+                   _stamp(health) or _stamp(marker))
+    unread = _num(counts.get("SCHEDULER_UNMEASURED")) or 0.0
+    sched = str(health.get("scheduler_status") or "")
+    # A COMPONENT row is an artifact of another task (no code of its own, by construction); its
+    # owner's row carries the code, so it is not an unread result.
+    null_ok = sum(1 for r in procs if isinstance(r, dict)
+                  and r.get("verdict") == "OK" and r.get("last_result_code") is None
+                  and r.get("state") != "COMPONENT")
+    if unread > 0 or not sched.startswith("OK ") or "(brief:" in sched or null_ok:
+        return _mk(dim, None,
+                   f"UNMEASURED: {_rel(PROCESS_HEALTH)} scheduler_status "
+                   f"{sched[:80] or 'absent'!r}, SCHEDULER_UNMEASURED={unread:.0f}, "
+                   f"OK rows with no result code={null_ok} {floor}",
+                   _stamp(health) or _stamp(marker))
     return _mk(dim, total, f"{' + '.join(read)} (legs={bad_legs})",
                _stamp(health) or _stamp(marker))
 
