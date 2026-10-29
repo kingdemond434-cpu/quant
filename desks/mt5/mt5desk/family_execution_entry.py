@@ -45,6 +45,7 @@ rests stop orders (no market entry to move) or too little history each return []
 """
 from __future__ import annotations
 
+import logging
 import math
 from typing import Any
 
@@ -81,6 +82,40 @@ UNMEASURED: dict[str, str] = {
 
 #: Bars of the SAME session a trailing median is taken over, and the minimum before it speaks.
 MIN_WINDOW = 10
+
+_LOG = logging.getLogger(__name__)
+
+#: CROSSED EXITS ARE COUNTED, NEVER SILENT (audit should-fix, 2026-10-29). Per family, since the
+#: process started: how many delayed signals `_rebased` was asked to carry (`rebased`) and how
+#: many it DROPPED because the base's stop or target was already crossed at the decision close
+#: (`crossed`). Every family call also logs its own pass's counts when it dropped any, and
+#: `crossed_exit_report()` is the reader: a cell whose signal count fell because of this rule says
+#: so, by number, instead of looking like a quieter base.
+CROSSED_EXITS: dict[str, dict[str, int]] = {}
+
+
+def _count(tag: str, *, crossed: bool) -> None:
+    row = CROSSED_EXITS.setdefault(tag, {"rebased": 0, "crossed": 0})
+    row["rebased"] += 1
+    if crossed:
+        row["crossed"] += 1
+
+
+def crossed_exit_report() -> dict[str, dict[str, Any]]:
+    """Per family: delayed signals seen, crossed-exit drops, and the dropped share."""
+    return {tag: {**row, "share": (row["crossed"] / row["rebased"]) if row["rebased"] else 0.0}
+            for tag, row in sorted(CROSSED_EXITS.items())}
+
+
+def _log_pass(tag: str, before: dict[str, int]) -> int:
+    """Log this pass's crossed-exit drops for `tag`; returns how many it dropped."""
+    now = CROSSED_EXITS.get(tag, {"rebased": 0, "crossed": 0})
+    seen = now["rebased"] - before.get("rebased", 0)
+    dropped = now["crossed"] - before.get("crossed", 0)
+    if dropped:
+        _LOG.info("%s: dropped %d of %d delayed signals with an exit already crossed at the "
+                  "decision close", tag, dropped, seen)
+    return dropped
 
 
 def wrappable_base(name: str) -> bool:
@@ -198,7 +233,9 @@ def _rebased(s: Signal, t: Any, ref_old: float, ref_new: float, tag: str) -> Sig
     dist_tgt = side * (float(s.target) - ref_old)
     if not (math.isfinite(dist_stop) and math.isfinite(dist_tgt)
             and dist_stop > 0 and dist_tgt > 0):
+        _count(tag, crossed=True)
         return None                        # an exit already crossed at the decision close
+    _count(tag, crossed=False)
     return Signal(time=t, side=side, stop=ref_new - side * dist_stop,
                   target=ref_new + side * dist_tgt, ttl_bars=int(s.ttl_bars),
                   tag=f"{tag}<{s.tag}", trigger=None, wait_bars=1)
@@ -239,6 +276,7 @@ def family_entry_alpha_spread_session_median(
     close = d["close"].to_numpy(dtype=float)
     n = len(d)
     out: list[Signal] = []
+    before = dict(CROSSED_EXITS.get("entry_alpha_spread_session_median", {}))
     for s, p in zip(base, _positions(d, base), strict=True):
         p = int(p)
         if p >= n or d.index[p] != pd.Timestamp(s.time):
@@ -251,6 +289,7 @@ def family_entry_alpha_spread_session_median(
                 if g is not None:
                     out.append(g)
                 break
+    _log_pass("entry_alpha_spread_session_median", before)
     return out
 
 
@@ -289,6 +328,7 @@ def family_entry_alpha_post_open_normalised(
     close = d["close"].to_numpy(dtype=float)
     n = len(d)
     out: list[Signal] = []
+    before = dict(CROSSED_EXITS.get("entry_alpha_post_open_normalised", {}))
     for s, p in zip(base, _positions(d, base), strict=True):
         p = int(p)
         if p >= n or d.index[p] != pd.Timestamp(s.time) or not in_window[p]:
@@ -300,6 +340,7 @@ def family_entry_alpha_post_open_normalised(
                 if g is not None:
                     out.append(g)
                 break
+    _log_pass("entry_alpha_post_open_normalised", before)
     return out
 
 

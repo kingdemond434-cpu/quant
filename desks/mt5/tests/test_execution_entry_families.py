@@ -210,6 +210,24 @@ def test_a_crossed_exit_is_dropped_never_mirrored(side: int) -> None:
     assert fee._rebased(sig(0.002, 0.0), t1, ref_old, ref_new, "x") is None     # target AT close
 
 
+def test_crossed_exit_drops_are_counted_and_reported(monkeypatch: pytest.MonkeyPatch,
+                                                      caplog: pytest.LogCaptureFixture) -> None:
+    """Audit should-fix (2026-10-29): a dropped crossed exit is COUNTED per family and reported,
+    so a cell that lost signals to the rule says how many, never silently."""
+    monkeypatch.setattr(fee, "CROSSED_EXITS", {})
+    t0, t1 = pd.Timestamp("2024-01-01 07:00", tz="UTC"), pd.Timestamp("2024-01-01 08:00", tz="UTC")
+    ok = Signal(time=t0, side=1, stop=1.098, target=1.104, ttl_bars=5, tag="b")
+    bad = Signal(time=t0, side=1, stop=1.098, target=1.099, ttl_bars=5, tag="b")
+    assert fee._rebased(ok, t1, 1.1, 1.101, "fam") is not None
+    assert fee._rebased(bad, t1, 1.1, 1.101, "fam") is None
+    rep = fee.crossed_exit_report()
+    assert rep["fam"]["rebased"] == 2 and rep["fam"]["crossed"] == 1
+    assert rep["fam"]["share"] == pytest.approx(0.5)
+    with caplog.at_level("INFO", logger=fee.__name__):
+        assert fee._log_pass("fam", {"rebased": 0, "crossed": 0}) == 1
+    assert "dropped 1 of 2" in caplog.text
+
+
 @pytest.mark.parametrize("name", NAMES)
 def test_every_moved_signal_keeps_its_exits_on_the_right_side_of_its_entry(name: str) -> None:
     d = _bars(wide_hour=7)
