@@ -72,8 +72,10 @@ cells. Trials are counted by the gauntlet at its fixed canonical count, so this 
 
 DEPLOYMENT. reports/FTMO_ALLOCATOR.json always. The `ftmo` block of data/CERT_BOOK_LIVE.json is
 rewritten ONLY when data/FTMO_ALLOCATOR_ARMED exists, the account state is MEASURED and fresh, the
-book validated, and only for keys an FTMO executor trades today (`FTMO_EXECUTABLE`). A sized sleeve
-with no executor is published as SIZED_NO_EXECUTOR with the J it would add.
+book validated, and only for keys an FTMO executor trades today (`FTMO_EXECUTABLE`). The deployed
+book is SOLVED over those keys alone (audit #489 MF1), so a column with no executor can never pull
+risk away from one that trades; the joint solve over every admitted column is published as
+`joint_book`, its extra columns as SIZED_NO_EXECUTOR, and the J they would add as J_missed.
 
     python desks/mt5/research/prop_challenge_allocator.py [--venue ftmo] [--paths 1500]
 """
