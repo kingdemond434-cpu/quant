@@ -534,8 +534,8 @@
     }
   },
   "last_run": "2026-10-29",
-  "updated_at": "2026-10-29T20:04:29+00:00",
-  "configured_sleeves": 927,
+  "updated_at": "2026-10-29T20:09:32+00:00",
+  "configured_sleeves": 935,
   "gate_blocked_sleeves": 0,
   "retired_clocks": {
     "AUDCAD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=3_side=-1": {
@@ -30710,7 +30710,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:10:32+00:00",
     "sleeve_id": "7d2c3dcb98a3f20448bf",
-    "last_attempt_at": "2026-10-29T17:42:58+00:00",
+    "last_attempt_at": "2026-10-29T20:06:43+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -30772,7 +30772,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-29T17:42:58+00:00"
+      "at": "2026-10-29T20:06:59+00:00"
     }
   },
   "USDTHB.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_session=ny_side_mode=revert_ttl_bars=8": {
@@ -30788,7 +30788,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:10:35+00:00",
     "sleeve_id": "3b7709fc9007bddcb682",
-    "last_attempt_at": "2026-10-29T17:43:08+00:00",
+    "last_attempt_at": "2026-10-29T20:08:11+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -30850,39 +30850,39 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-29T17:43:08+00:00"
+      "at": "2026-10-29T20:08:11+00:00"
     }
   },
   "USDTHB.macro_conditional.asia@M5#session=ny": {
-    "n": 78,
-    "cum_r": -39.51884061244964,
-    "max_dd_r": -40.64789623736817,
+    "n": 79,
+    "cum_r": -40.45082006901096,
+    "max_dd_r": -41.579875693929495,
     "first_entry": "2026-10-07 14:05:00+00:00",
-    "last_entry": "2026-10-29 16:40:00+00:00",
+    "last_entry": "2026-10-29 18:10:00+00:00",
     "status": "KILL",
     "enrolled_at": "2026-09-26T23:19:52+00:00",
     "n_historical": 196,
-    "evidence_note": "78 forward observation(s) since the clock froze; 196 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
+    "evidence_note": "79 forward observation(s) since the clock froze; 196 earlier observation(s) retained as HISTORICAL and excluded from every threshold (they predate pre-registration)",
     "broker_offset_h": 0.0,
     "forward_start": "2026-10-07T12:10:39+00:00",
     "sleeve_id": "469e71ef8436a33c64c9",
-    "last_attempt_at": "2026-10-29T17:43:19+00:00",
+    "last_attempt_at": "2026-10-29T20:08:47+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
     "order_authority": false,
     "gate_admission": "ORIGINAL_UNIVERSAL_10_PASS",
-    "exp_r": -0.5066518027237132,
+    "exp_r": -0.5120356970760881,
     "days_active": 22,
-    "forward_t": -3.608,
-    "e_value": 93.3539,
-    "e_crossed_at": null,
-    "e_crossed_stamp": null,
-    "e_n": 78,
+    "forward_t": -3.685,
+    "e_value": 112.7713,
+    "e_crossed_at": 78,
+    "e_crossed_stamp": "2026-10-29 16:40:00+00:00",
+    "e_n": 79,
     "e_alpha": 0.01,
     "e_threshold": 100.0,
     "e_null": "mean R >= 0 (the sleeve is not losing); growth is evidence it LOSES -- kill-only",
-    "e_kill_supported": false,
+    "e_kill_supported": true,
     "e_status": "MEASURED",
     "promotion_authority": true,
     "last_error_seen_at": null,
@@ -30928,7 +30928,7 @@
     "runtime_contract": "contract-867e49655ae7786d",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-29T17:43:19+00:00"
+      "at": "2026-10-29T20:08:48+00:00"
     }
   },
   "USDTHB.pca_residual.asia@M5#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']": {
@@ -30944,7 +30944,7 @@
     "broker_offset_h": 0.0,
     "forward_start": "2026-09-28T02:09:03.711633+00:00",
     "sleeve_id": "9ff0a73224572523e64d",
-    "last_attempt_at": "2026-10-29T17:43:31+00:00",
+    "last_attempt_at": "2026-10-29T20:09:24+00:00",
     "bar_source": "MT5:FusionMarkets-Live",
     "evidence_venue": "MT5:FusionMarkets-Live",
     "bar_source_stale": false,
@@ -30967,7 +30967,7 @@
     "last_error_cleared": "no M5 bars from any source for USDTHB covering SHADOW_START 2026-08-16",
     "forward_evidence": {
       "status": "MEASURED",
-      "at": "2026-10-29T17:43:31+00:00"
+      "at": "2026-10-29T20:09:27+00:00"
     }
   },
   "USDZAR.cross_asset_residual.asia#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=8": {
@@ -55054,9 +55054,10 @@
   },
   "engine_pass": {
     "started_at": "2026-10-29T17:55:15+00:00",
-    "rows_reached": 931,
+    "rows_reached": 935,
     "rows": 935,
-    "complete": false
+    "complete": true,
+    "finished_at": "2026-10-29T20:09:32+00:00"
   },
   "USDSGD.overnight_gap_decay.asia#representation=cross_asset": {
     "n": 10,

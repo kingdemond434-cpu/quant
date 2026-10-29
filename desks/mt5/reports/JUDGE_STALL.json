@@ -1,10 +1,10 @@
 {
- "at": "2026-10-29T20:01:25+00:00",
+ "at": "2026-10-29T20:16:03+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 2.71,
-   "why": "no new verdict for 2.7h (last 2026-10-29T17:18:55+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 2.95,
+   "why": "no new verdict for 3.0h (last 2026-10-29T17:18:55+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "resident_dead": {
    "open": false,
@@ -14,9 +14,9 @@
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 2.57,
+   "hours": 2.81,
    "limit_h": 25.59,
-   "why": "2.6h since the last sweep ended (2026-10-29T17:27:18+00:00), status SWEEPING; limit 25.59h"
+   "why": "2.8h since the last sweep ended (2026-10-29T17:27:18+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
@@ -32,10 +32,10 @@
   },
   "phase_overrun": {
    "open": false,
-   "phase": "prewarm",
-   "hours": 2.24,
+   "phase": "plan_handoff",
+   "hours": 0.05,
    "known_phase": true,
-   "why": "sweep phase prewarm has run 2.2h since 2026-10-29T17:47:00+00:00 (limit 4.06h)"
+   "why": "sweep phase plan_handoff has run 0.1h since 2026-10-29T20:12:48+00:00 (limit 1h)"
   },
   "host_unreadable": {
    "open": false,
@@ -77,7 +77,7 @@
  "resident": {
   "status": "SWEEPING",
   "pid": 21384,
-  "heartbeat_utc": "2026-10-29T20:01:17+00:00",
+  "heartbeat_utc": "2026-10-29T20:15:56+00:00",
   "last_sweep_ended_utc": "2026-10-29T17:27:18+00:00",
   "last_rc": 0
  },
