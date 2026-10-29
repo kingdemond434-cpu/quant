@@ -88,7 +88,7 @@ desks/mt5/
 | `meta_desk.py` | Cross-asset impact network, participant inference, drawdown forecaster |
 | `scripts/check_unlanded_clears.py` | Did every auditor CLEAR land on live? (owner rule 23; registry `context/clear_landing_registry.jsonl`) |
 
-**Unlanded auditor CLEARs.** Every auditor CLEAR gets one row in `context/clear_landing_registry.jsonl`. The law gate checks it report-only: a malformed row fails the push, but a late CLEAR does not. On the box, the hourly `desk_health` leg runs the same check and writes `desks/mt5/reports/UNLANDED_CLEARS.json` next to `DESK_HEALTH.json`. A CLEAR still unlanded 12h after clearing, or a CLEAR with no row, becomes a PROBLEM finding in `DESK_HEALTH.json`. *Until the publish PR (`claude/unlanded-clears-publish`) lands, `UNLANDED_CLEARS.json` exists only on the box: it is not on the sync list. That is expected, not a failure, because the PROBLEM line in the published `DESK_HEALTH.json` already reports the verdict.*
+**Unlanded auditor CLEARs.** Every auditor CLEAR gets one row in `context/clear_landing_registry.jsonl`. The law gate checks it report-only: a malformed row fails the push, but a late CLEAR does not. On the box, the hourly `desk_health` leg runs the same check and writes `desks/mt5/reports/UNLANDED_CLEARS.json` next to `DESK_HEALTH.json`. A CLEAR still unlanded 12h after clearing, or a CLEAR with no row, becomes a PROBLEM finding in `DESK_HEALTH.json`. `sync_shadow_to_git.ps1` publishes `UNLANDED_CLEARS.json` with the box state.
 
 ## Run Modes
 
