@@ -280,6 +280,22 @@ def test_cost_refresh_reports_rather_than_guesses_when_the_terminal_is_silent() 
     assert report["filled"] == 0
 
 
+def test_cost_refresh_stamps_broker_swaps_without_replacing_existing_terms() -> None:
+    from types import SimpleNamespace
+    sys.path.insert(0, str(_DESK / "scripts"))
+    import refresh_cost_fields
+    info = SimpleNamespace(trade_tick_value=1.09, currency_profit="CHF",
+                           swap_long=4.13, swap_short=-10.11, swap_mode=1)
+    registry = {"AUDCHF": {"tick_value": 1.05, "swap_long": None,
+                           "swap_short": None}, "OTHER": {"swap_long": 9.0}}
+    merged, _ = refresh_cost_fields.refresh(registry, _fake_mt5({"AUDCHF": info}),
+                                            symbols={"AUDCHF"})
+    assert merged["AUDCHF"]["tick_value"] == 1.05
+    assert (merged["AUDCHF"]["swap_long"], merged["AUDCHF"]["swap_short"]) == (4.13, -10.11)
+    assert merged["AUDCHF"]["_provenance"]["swap_long"]["source"] == "refresh_cost_fields"
+    assert merged["OTHER"]["swap_long"] == 9.0
+
+
 def test_cost_refresh_runs_before_anything_that_prices(monkeypatch) -> None:
     """A capability nothing runs is not wired (III.16), and ORDER is load-bearing here: every
     later step prices something, so the field they price with must be filled first."""

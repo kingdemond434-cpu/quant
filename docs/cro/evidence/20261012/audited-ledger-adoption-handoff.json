@@ -1,0 +1,16 @@
+{
+  "live_rows_verified_readonly": 255,
+  "effective_rows_preserved_exactly": true,
+  "migration_idempotent": true,
+  "raw_original_prefix_restored_in_plan": true,
+  "actual_live_files_modified": false,
+  "adoption_hook_wired": true,
+  "remaining": "Full gates, canonical CI and signed release; actual handoff runs only from verified production adoption target.",
+  "original_seal_entries_preserved": 194,
+  "consumer_tests_passed": 139,
+  "shared_reader_tests_passed": 84,
+  "migration_controls_tests_passed": 9,
+  "released": false,
+  "adopted": false,
+  "full_gate_session": 49823
+}

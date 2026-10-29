@@ -115,6 +115,7 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     # (> 6h) verdict, so a deferred `tier_s` pass withholds every new LIVE row: it is on the
     # money path now, and it runs every hour.
     "tier_s",
+    "tier_s_door",
     # ... and the writer of the door's fourth input, reports/REPLICATION.json (heavy plan).
     "replication_civilization",
     # Without this, the core rotation can leave the judge's worker plan and measured
@@ -122,6 +123,10 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     "judging_throughput",
     # Discovery must hand existing rules to the judge before generating more work.
     "intake_catchup",
+    # THE ONLY OFF-BOX EVIDENCE THAT THE BAR AND TICK FEED IS ALIVE (2026-10-21). Bars never
+    # cross the wire, so a deferred pass leaves every reader off the box measuring a stale
+    # BARS_STATE.json. It cannot cost the overrun much: it stops itself at 20 s (cap 60 s).
+    "bars_state",
 })
 
 
