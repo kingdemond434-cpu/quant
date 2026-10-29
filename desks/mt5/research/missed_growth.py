@@ -816,23 +816,49 @@ NEWS_FENCE_RAIL = "e8_news_fence"
 E8_GOLD_REPORT = BASE / "reports" / "E8_GOLD.json"
 
 
-def _news_fence_blindness(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """What the fence could not see: the lane's last verdict (reports/E8_GOLD.json news_fence:
-    calendar_ok False or an error), and the calendar's gaps over the journal's span. {} only
-    when both are known clean. Unreadable inputs are blindness too, said so."""
+#: The lane passes every five minutes; a last verdict older than this is not "the fence now".
+NEWS_FENCE_REPORT_MAX_AGE_H = 2.0
+
+
+def _news_fence_blindness(rows: list[dict[str, Any]],
+                          now: datetime | None = None) -> dict[str, Any]:
+    """What the fence could not see. {} ONLY when every one of these is positively clean:
+    the lane's last verdict (reports/E8_GOLD.json) is FRESH (`at` within
+    NEWS_FENCE_REPORT_MAX_AGE_H) and says `calendar_ok is True` with no error; every journal row
+    carries a parseable date; and the calendar has no gap over the journal's span. A missing
+    key, a stale or undated report, or an undated row is blindness (audit v3), never clean."""
     out: dict[str, Any] = {}
-    nfv = (_json(E8_GOLD_REPORT) or {}).get("news_fence")
-    if isinstance(nfv, dict):
+    rep = _json(E8_GOLD_REPORT) or {}
+    nfv = rep.get("news_fence")
+    now = now or datetime.now(tz=UTC)
+    try:
+        at = datetime.fromisoformat(str(rep.get("at")))
+        if at.tzinfo is None:
+            at = at.replace(tzinfo=UTC)
+        age_h: float | None = (now - at).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        age_h = None
+    if not isinstance(nfv, dict):
+        out["why_verdict"] = "no news_fence verdict in reports/E8_GOLD.json"
+    else:
         if nfv.get("error"):
             out["error"] = str(nfv.get("error"))
-        if nfv.get("calendar_ok") is False:
-            out["calendar_ok"] = False
+        if nfv.get("calendar_ok") is not True:
+            out["calendar_ok"] = nfv.get("calendar_ok")
             out["uncovered_last_pass"] = list(nfv.get("uncovered") or [])
+        if age_h is None or not 0 <= age_h <= NEWS_FENCE_REPORT_MAX_AGE_H:
+            out["stale_verdict_age_h"] = None if age_h is None else round(age_h, 2)
     days: list[str] = []
+    undated = 0
     for r in rows:
-        at = str(r.get("at") or "")[:10]
-        if len(at) == 10:
-            days.append(at)
+        d = str(r.get("at") or "")[:10]
+        try:
+            datetime.strptime(d, "%Y-%m-%d")
+            days.append(d)
+        except ValueError:
+            undated += 1
+    if undated:
+        out["undated_rows"] = undated
     try:
         from datetime import date as _date
 
@@ -843,13 +869,11 @@ def _news_fence_blindness(rows: list[dict[str, Any]]) -> dict[str, Any]:
             if gaps:
                 out["uncovered_journal_span"] = list(gaps)
                 out["journal_span"] = [min(days), max(days)]
-        elif not isinstance(nfv, dict):
-            out["why_blind"] = "no dated journal rows and no lane verdict: span unknown"
     except Exception as exc:                          # by contract: blindness, never a raise
         out["error_reading_calendar"] = f"{type(exc).__name__}: {exc}"[:200]
     if out:
-        out.setdefault("why", "the fence could not see every tier-1 release in the window it "
-                              "was asked about, and a blind fence fails open and journals "
+        out.setdefault("why", "the fence could not be shown to see every tier-1 release in the "
+                              "window asked about; a blind fence fails open and journals "
                               "nothing -- no rows here is not evidence it never bound")
     return out
 

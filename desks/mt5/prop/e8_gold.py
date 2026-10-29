@@ -1963,8 +1963,7 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
     resting order, then as a filled order in the history, then as a position on its side opened
     since the failed send.
     """
-    blind = [why for why, bad in ((news_why or "", news_why is not None),
-                                  ("the pass is disarmed", not armed),
+    blind = [why for why, bad in (("the pass is disarmed", not armed),
                                   ("the guard stands down", stood_down),
                                   ("the order book is unreadable", not orders_ok),
                                   ("the position book is unreadable", not positions_ok),
@@ -1993,8 +1992,7 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             ("e8_account_undeclared",
              f"retry held: the E8 account does not join ({account_ok[1]})",
              armed and not account_ok[0]),
-            ("adopt_new_risk_hold", f"retry held: {adopt_hold}", adopt_hold is not None),
-            (NEWS_RAIL, f"retry held: {news_why}", news_why is not None)) if on]
+            ("adopt_new_risk_hold", f"retry held: {adopt_hold}", adopt_hold is not None)) if on]
         # Billed once per held leg per day, under the same rail as a refused placement.
         _billed = state.setdefault("rail_logged", {})
         today = now.date().isoformat()
@@ -2051,19 +2049,6 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                "attempts": int(leg.get("attempts") or 0)}
         if dec["act"] == "hold":
             continue
-        if dec["act"] == "retry" and news_shadow_why is not None:
-            # OFF but inside a window: this leg IS being re-sent, so what the fence WOULD have
-            # held is journalled (SHADOW_FENCE) once per leg per day -- only legs
-            # retry_decisions actually re-sends, never every failed leg in state (audit v2).
-            _sb = state.setdefault("rail_logged", {})
-            _day = now.date().isoformat()
-            if _sb.get(f"{NEWS_RAIL}/{name}/{side}/shadow") != _day:
-                _sb[f"{NEWS_RAIL}/{name}/{side}/shadow"] = _day
-                _record({"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
-                         "status": NEWS_SHADOW, "rail": NEWS_RAIL,
-                         "why": f"retry inside the release window: {news_shadow_why}",
-                         "missed_growth_risk_usd": (leg or {}).get("risk_usd"),
-                         "armed": armed})
         sent_at = _iso_ms(leg.get("first_at"))
         since = (sent_at + skew if skew is not None
                  # the matcher allows LEG_MATCH_WINDOW_MS of slack below `since`; none of it
@@ -2168,6 +2153,28 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                         "at": leg.get("first_at") or row["at"], "adopted_at": row["at"]})
             log(f"[{name}] {side} the failed send had landed: adopted order {oid}")
         else:
+            # THE NEWS FENCE ON A RE-SEND (v4): ONE leg set for both bills -- a leg that would
+            # really be sent now, after the landed-match and unowned-position steps. ON: held
+            # and billed RAIL_BLOCKED; OFF inside a window: sent, and billed SHADOW_FENCE. Once
+            # per leg per day either way, so the two sides of the bill count the same legs.
+            if news_why is not None or news_shadow_why is not None:
+                _nb = state.setdefault("rail_logged", {})
+                _nday = now.date().isoformat()
+                _ntag = f"{NEWS_RAIL}/retry/{name}/{side}" + ("" if news_why else "/shadow")
+                if _nb.get(_ntag) != _nday:
+                    _nb[_ntag] = _nday
+                    _record({"at": now.isoformat(timespec="seconds"), "window": name,
+                             "side": side, "rail": NEWS_RAIL,
+                             "status": "RAIL_BLOCKED" if news_why else NEWS_SHADOW,
+                             "why": f"retry inside the release window: "
+                                    f"{news_why or news_shadow_why}",
+                             "missed_growth_risk_usd": leg_missed_usd(leg), "armed": armed,
+                             "retry_of": leg.get("first_at")})
+                if news_why is not None:
+                    act.update({"ok": False, "why": news_why, "rail": NEWS_RAIL})
+                    doc["actions"].append(act)
+                    log(f"[{name}] {side} re-send held: {news_why}")
+                    continue
             try:
                 # THE RETRY IS FENCED TOO (audit round 2, must-fix 1): the same cross-account
                 # check and placement lock as a first send. A fenced leg stays dropped, is not

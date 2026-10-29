@@ -6,6 +6,8 @@ import sys
 from datetime import UTC, date, datetime
 from pathlib import Path
 
+import pytest
+
 _DESK = Path(__file__).resolve().parents[1]
 _ROOT = _DESK.parent.parent
 for p in (str(_DESK), str(_ROOT)):
@@ -82,7 +84,7 @@ def test_the_lane_is_wired_to_the_fence_on_placement_retry_and_resting_legs() ->
     assert "news_why=(" in src                                 # the retry path
     assert "resting_entry_legs(state, open_ids, filled)" in src  # the resting-leg cancel
     assert src.count("else NEWS_SHADOW") >= 2                  # billed when OFF, both paths
-    assert '"status": NEWS_SHADOW' in src                      # ... and on held re-sends
+    assert src.count("else NEWS_SHADOW") >= 3                  # ... and on re-sends
 
 
 def test_missed_growth_publishes_both_sides_of_the_bill(tmp_path, monkeypatch) -> None:
@@ -93,7 +95,8 @@ def test_missed_growth_publishes_both_sides_of_the_bill(tmp_path, monkeypatch) -
     monkeypatch.setattr(mg, "E8_GOLD_REPORT", rep)
     assert mg.published_news_fence_lines()["verdict"] == mg.UNMEASURED      # absent journal
     j.write_text("", "utf-8")
-    rep.write_text(json.dumps({"news_fence": {"calendar_ok": True, "error": None}}), "utf-8")
+    rep.write_text(json.dumps({"at": datetime.now(tz=UTC).isoformat(),
+                               "news_fence": {"calendar_ok": True, "error": None}}), "utf-8")
     assert mg.published_news_fence_lines()["verdict"] == mg.NOT_BINDING
     rows = [{"rail": "e8_news_fence", "status": "SHADOW_FENCE", "missed_growth_risk_usd": 250.0,
              "release": "2026-10-02 12:30Z NFP", "at": "2026-10-02T12:25:00+00:00"},
@@ -160,7 +163,8 @@ def test_liveness_is_not_silent_red_on_a_no_bars_pass_but_is_red_on_an_error(tmp
     assert any("FAILED OPEN" in r for r in chk.assess(report=rep, flag=tmp_path / "none")["red"])
 
 
-def test_no_rows_from_a_blind_fence_is_unmeasured_and_named(tmp_path, monkeypatch) -> None:
+def test_no_rows_from_a_blind_fence_is_unmeasured_and_named(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Audit v2 MUST (L1.28a): a blind or failed fence fails open and journals NOTHING, so a
     readable journal with no fence rows must not read NOT_BINDING."""
     from research import missed_growth as mg
@@ -177,15 +181,97 @@ def test_no_rows_from_a_blind_fence_is_unmeasured_and_named(tmp_path, monkeypatc
     out = mg.published_news_fence_lines()
     assert out["verdict"] == mg.UNMEASURED and out["error"] == "boom"
     # A clean last pass, but the journal spans months the calendar cannot see.
-    rep.write_text(json.dumps({"news_fence": {"calendar_ok": True}}), "utf-8")
+    rep.write_text(json.dumps({"at": datetime.now(tz=UTC).isoformat(),
+                               "news_fence": {"calendar_ok": True}}), "utf-8")
     j.write_text(json.dumps({"rail": "cross_account_opposite", "status": "RAIL_BLOCKED",
                              "at": "2026-10-02T12:25:00+00:00"}), "utf-8")
     out = mg.published_news_fence_lines()
     assert out["verdict"] == mg.UNMEASURED and "CPI:2026-10" in out["uncovered_journal_span"]
 
 
-def test_the_retry_shadow_bills_only_legs_actually_re_sent() -> None:
-    src = (_DESK / "prop" / "e8_gold.py").read_text("utf-8")
-    body = src[src.index("def _retry_failed_legs"):]
-    assert body.index('dec["act"] == "retry" and news_shadow_why') > body.index(
-        "for dec in retry_decisions(")
+def _retry_pass(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, on: bool,
+                legs: dict[str, dict[str, object]]) -> list[dict[str, object]]:
+    sys.path.insert(0, str(_DESK / "tests"))
+    import test_e8_gold_guard_and_open_risk as h
+    from prop import e8_gold as g
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    h._sandbox(monkeypatch, tmp_path)
+    (tmp_path / "intents.json").write_text("", "utf-8")
+    st = json.loads(g.STATE.read_text("utf-8"))
+    st["windows"]["afternoon"] = {"placed_hour": 17.0, "position_id": None, "shadow": False,
+                                  "orders": {}, "failed": legs}
+    sent: list[str] = []
+
+    class V(h._Venue):
+        def place_stop(self, *a: object, **k: object) -> int:
+            sent.append(str(a[1]))
+            return 9000 + len(sent)
+    doc: dict[str, object] = {"actions": []}
+    why = "inside -15/+15 min of 2026-10-15 17:30Z NFP"
+    g._retry_failed_legs(V(), st, doc, hour=17.5, now=datetime(2026, 10, 15, 14, 30, tzinfo=UTC),
+                         open_orders=[], orders_ok=True, filled={}, xau_positions=[],
+                         positions_ok=True, stood_down=False, armed=True, hist_rows=[],
+                         history_ok=True, instrument_id=6102, mt5=h._MT5(),
+                         news_why=f"the news fence holds ({why})" if on else None,
+                         news_shadow_why=None if on else why)
+    rows = [json.loads(x) for x in (tmp_path / "intents.json").read_text("utf-8").splitlines()
+            if x.strip()]
+    return [r for r in rows if r.get("rail") == "e8_news_fence"] + [{"sent": sent}]
+
+
+_LEG = {"price": 4310.0, "sl": 4295.0, "tp": 4340.0, "lot": 0.5, "risk_usd": 750.0,
+        "attempts": 1, "first_at": "2026-10-15T14:20:00+00:00", "why": "timeout"}
+_LATE = {**_LEG, "price": 4290.0}                   # a buy stop already through: abandoned
+
+
+def test_on_and_off_bill_the_same_re_sent_legs(tmp_path: Path,
+                                               monkeypatch: pytest.MonkeyPatch) -> None:
+    """Behavioural (v4): ON holds and bills, OFF sends and shadow-bills -- the SAME leg set, a
+    leg retry_decisions abandons (price through) is billed by neither."""
+    legs = {"buy_stop": dict(_LEG), "sell_stop": {**_LATE, "price": 4310.0}}
+    on = _retry_pass(tmp_path / "on", monkeypatch, on=True, legs={"buy_stop": dict(_LEG)})
+    off = _retry_pass(tmp_path / "off", monkeypatch, on=False, legs={"buy_stop": dict(_LEG)})
+    assert [r["status"] for r in on[:-1]] == ["RAIL_BLOCKED"]
+    assert [r["status"] for r in off[:-1]] == ["SHADOW_FENCE"]
+    assert on[-1]["sent"] == []                                   # held
+    assert [(r["window"], r["side"]) for r in on[:-1]] == \
+        [(r["window"], r["side"]) for r in off[:-1]]
+    gone = _retry_pass(tmp_path / "gone", monkeypatch, on=False, legs=legs)
+    assert [r["side"] for r in gone[:-1]] == ["buy_stop"]         # the through leg: no bill
+
+
+def _clean_report(rep: Path, **over: object) -> None:
+    body: dict[str, object] = {"at": datetime.now(tz=UTC).isoformat(),
+                               "news_fence": {"calendar_ok": True, "error": None}}
+    body.update(over)
+    rep.write_text(json.dumps(body), "utf-8")
+
+
+@pytest.mark.parametrize("case", ["undated_rows", "empty_verdict", "stale_verdict",
+                                  "undated_report"])
+def test_v3_blind_states_read_unmeasured(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+                                         case: str) -> None:
+    """Audit v3 MUST: three (four) blind states that read NOT_BINDING now read UNMEASURED."""
+    from research import missed_growth as mg
+    j = tmp_path / "e8_gold_intents.jsonl"
+    rep = tmp_path / "E8_GOLD.json"
+    monkeypatch.setattr(mg, "E8_INTENTS", j)
+    monkeypatch.setattr(mg, "E8_GOLD_REPORT", rep)
+    j.write_text("", "utf-8")
+    _clean_report(rep)
+    assert mg.published_news_fence_lines()["verdict"] == mg.NOT_BINDING      # the clean case
+    if case == "undated_rows":
+        j.write_text("\n".join(json.dumps(r) for r in (
+            {"rail": "cross_account_opposite", "status": "RAIL_BLOCKED"},
+            {"rail": "x", "at": "2026-10"})), "utf-8")
+        assert mg.published_news_fence_lines()["undated_rows"] == 2
+    elif case == "empty_verdict":
+        _clean_report(rep, news_fence={})
+        assert mg.published_news_fence_lines()["calendar_ok"] is None
+    elif case == "stale_verdict":
+        _clean_report(rep, at="2025-10-02T12:00:00+00:00")
+        assert mg.published_news_fence_lines()["stale_verdict_age_h"] > 24
+    else:
+        rep.write_text(json.dumps({"news_fence": {"calendar_ok": True}}), "utf-8")
+        assert mg.published_news_fence_lines()["stale_verdict_age_h"] is None
+    assert mg.published_news_fence_lines()["verdict"] == mg.UNMEASURED
