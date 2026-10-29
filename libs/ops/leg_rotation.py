@@ -117,6 +117,8 @@ DESK = ROOT / "desks" / "mt5"
 LEDGER = DESK / "data" / "compute_ledger.jsonl"
 CYCLE = DESK / "research" / "hourly_cycle.py"
 RECORD = DESK / "reports" / "LEG_ROTATION.json"
+#: Where `department_resident` keeps its slot locks, FIFO wait tickets and per-dept queue records.
+RESIDENT_LOCKS = DESK / "data" / "locks"
 
 #: How long a leg's run stands before the rotation is failing it. Chosen to be REACHABLE by the
 #: clock that owns the roster: the core plan fires hourly, so 24 h is twenty-four chances. A leg
@@ -433,8 +435,91 @@ class Decision:
         return True, ""
 
 
-def liveness(ageing: dict[str, Any]) -> dict[str, Any]:
-    """RED/GREEN over every plan's latest pass, naming each RED leg and the plan it starved in."""
+def _pid_alive(pid: int) -> bool:
+    """Is `pid` running? True when it cannot be measured: a guess must never hide a wait."""
+    try:
+        import psutil  # type: ignore[import-untyped,unused-ignore]
+    except ImportError:
+        return True
+    try:
+        return bool(psutil.pid_exists(pid))
+    except Exception:
+        return True
+
+
+def resident_liveness(locks: Path | None = None, *, now: datetime | None = None,
+                      max_wait_s: float | None = None) -> dict[str, Any]:
+    """THE DEPARTMENT RESIDENTS' QUEUE, SAME CLASS AS A STARVED LEG (2026-10-29).
+
+    ~15 dept/forest residents finished passes of 1,200-9,231 s and then sat 3-5 h waiting for one
+    of `DEPT_CONCURRENT_PASSES` slots, unmeasured. The queue is longest-wait-first
+    (`department_resident._wait_ticket`), so the wait is bounded by the passes ahead of it -- and
+    this is where that bound is checked. Reads only what the residents wrote:
+
+        waiting   every live FIFO ticket, longest wait first, with seconds waited so far
+        last      each department's last admitted wait and last pass seconds
+        red       a resident CURRENTLY waiting past `max_wait_s`, by name
+        expected_wait_s / oversubscribed
+                  sum of every department's last pass over the slot count: the wait a resident
+                  must expect at the back of the queue. Past the bound, re-ordering cannot help;
+                  the slot count is the box's to raise. It is never cut here.
+    """
+    where = locks or RESIDENT_LOCKS
+    t1 = now or datetime.now(tz=UTC)
+    waiting: list[dict[str, Any]] = []
+    last: dict[str, dict[str, Any]] = {}
+    bound_seen: float | None = None
+    slots_seen: int | None = None
+    try:
+        tickets = list(where.glob("dept_wait_*.ticket"))
+        queues = list(where.glob("dept_queue_*.json"))
+    except OSError:
+        tickets, queues = [], []
+    for path in tickets:
+        try:
+            _, _, stamp, pid, dept = path.stem.split("_", 4)
+            since = datetime.fromtimestamp(int(stamp) / 1e9, tz=UTC)
+            owner = int(pid)
+        except (ValueError, OSError, OverflowError):
+            continue
+        if not _pid_alive(owner):
+            continue
+        waiting.append({"dept": dept, "waiting_s": round((t1 - since).total_seconds(), 1),
+                        "since": since.isoformat(timespec="seconds")})
+    for path in queues:
+        try:
+            doc = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(doc, dict) or not doc.get("dept"):
+            continue
+        last[str(doc["dept"])] = {k: doc.get(k) for k in
+                                  ("waited_s", "admitted_at", "pass_s", "pass_status")}
+        if isinstance(doc.get("max_wait_s"), (int, float)):
+            bound_seen = float(doc["max_wait_s"])
+        if isinstance(doc.get("slots"), (int, float)):
+            slots_seen = int(doc["slots"])
+    bound = float(max_wait_s if max_wait_s is not None else
+                  bound_seen if bound_seen is not None else
+                  float(os.environ.get("DEPT_MAX_WAIT_S", "7200") or 7200))
+    slots = max(1, slots_seen or int(os.environ.get("DEPT_CONCURRENT_PASSES", "3") or 3))
+    waiting.sort(key=lambda w: -float(w["waiting_s"]))
+    red = {w["dept"]: (f"resident waiting {w['waiting_s']:.0f}s for one of {slots} department "
+                       f"slots, past the {bound:.0f}s bound (since {w['since']})")
+           for w in waiting if float(w["waiting_s"]) > bound}
+    total = sum(float(v["pass_s"]) for v in last.values()
+                if isinstance(v.get("pass_s"), (int, float)))
+    expected = total / slots if last else None
+    return {"max_wait_s": bound, "slots": slots, "n_waiting": len(waiting),
+            "waiting": waiting, "last": dict(sorted(last.items())),
+            "expected_wait_s": None if expected is None else round(expected, 1),
+            "oversubscribed": bool(expected is not None and expected > bound),
+            "red": dict(sorted(red.items()))}
+
+
+def liveness(ageing: dict[str, Any], residents: dict[str, Any] | None = None) -> dict[str, Any]:
+    """RED/GREEN over every plan's latest pass, naming each RED leg and the plan it starved in,
+    and every department resident waiting past its slot-queue bound."""
     by_plan: dict[str, list[str]] = {}
     why: dict[str, str] = {}
     for plan, st in sorted(ageing.items()):
@@ -443,7 +528,10 @@ def liveness(ageing: dict[str, Any]) -> dict[str, Any]:
             by_plan[plan] = sorted(map(str, red))
             for leg, reason in red.items():
                 why.setdefault(str(leg), f"[{plan}] {reason}")
-    return {"verdict": "RED" if why else "GREEN", "n_red": len(why), "red_legs": sorted(why),
+    res_red = dict((residents or {}).get("red") or {})
+    return {"verdict": "RED" if why or res_red else "GREEN", "n_red": len(why) + len(res_red),
+            "red_legs": sorted(why),
+            "red_residents": sorted(res_red), "residents_why": res_red,
             "red_by_plan": by_plan, "why": dict(sorted(why.items())),
             "max_deferrals": MAX_DEFERRALS, "red_after_passes": RED_AFTER_PASSES,
             "money_critical": sorted(MONEY_CRITICAL),
@@ -724,7 +812,7 @@ def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float 
 
 def record(dec: Decision, att: Attendance, ran: list[str], *, path: Path | None = None,
            started: datetime | None = None, now: datetime | None = None,
-           complete: bool = True) -> dict[str, Any]:
+           complete: bool = True, residents: dict[str, Any] | None = None) -> dict[str, Any]:
     """Publish the pass: what ran, what waited, and -- by NAME -- what has never run at all.
 
     WRITTEN TWICE, AND THE FIRST WRITE IS THE ONE THAT MATTERS. A pass killed at its 40-minute
@@ -782,7 +870,12 @@ def record(dec: Decision, att: Attendance, ran: list[str], *, path: Path | None 
     doc["ageing"] = dict(sorted(ageing.items()))
     # RED BY NAME, ACROSS EVERY PLAN STILL RUNNING: what `check_leg_rotation` and
     # `check_desk_health` read. A dept pass writing GREEN must not paper over a RED core leg.
-    doc["liveness"] = liveness(ageing)
+    try:
+        res = residents if residents is not None else resident_liveness(now=t1)
+    except Exception as exc:                          # measurement must never fail the pass
+        res = {"error": f"{type(exc).__name__}: {exc}", "red": {}}
+    doc["residents"] = res
+    doc["liveness"] = liveness(ageing, res)
     try:
         out.parent.mkdir(parents=True, exist_ok=True)
         tmp = out.with_suffix(".json.tmp")

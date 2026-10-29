@@ -85,13 +85,19 @@ def check(path: Path | None = None, *, now: object = None) -> dict[str, object]:
     live: dict[str, object] = raw_live if isinstance(raw_live, dict) else {}
     raw_red = live.get("red_legs")
     red = [str(x) for x in raw_red] if isinstance(raw_red, list) else []
-    if str(live.get("verdict") or "").upper() == "RED" or red:
+    raw_res = live.get("red_residents")
+    res_red = [str(x) for x in raw_res] if isinstance(raw_res, list) else []
+    if red or (str(live.get("verdict") or "").upper() == "RED" and not res_red):
         failures.append(f"leg liveness RED: {len(red)} leg(s) starved past the "
                         f"{live.get('max_deferrals', LR.MAX_DEFERRALS)}-pass ageing bound or "
                         f"never run: {', '.join(sorted(red)[:40])}"
                         + (" ..." if len(red) > 40 else ""))
+    if res_red:
+        failures.append(f"resident liveness RED: {len(res_red)} department resident(s) waiting "
+                        f"past the slot-queue bound: {', '.join(sorted(res_red))}")
     return {"ok": not failures, "n_failed": len(failures), "failures": failures,
             "liveness": str(live.get("verdict") or "UNMEASURED"), "red_legs": red,
+            "red_residents": res_red,
             "record_age_h": None if age_h is None else round(age_h, 2),
             "n_roster": rec.get("n_roster"), "n_never_run": len(never),
             "n_outside_window": len(outside), "plan": rec.get("plan"),

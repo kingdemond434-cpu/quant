@@ -433,11 +433,20 @@ def check_leg_rotation(path: Path | None = None) -> None:
     if not isinstance(live, dict):
         _unknown("LEG_ROTATION.json carries no `liveness` -- the rotation predates the starvation "
                  "check; whether any leg is starved is UNMEASURED")
-    elif str(live.get("verdict") or "").upper() == "RED" or live.get("red_legs"):
+    elif str(live.get("verdict") or "").upper() == "RED" or live.get("red_legs") \
+            or live.get("red_residents"):
         red = [str(x) for x in (live.get("red_legs") or [])]
-        _bad(f"leg liveness RED ({doc.get('plan')} plan, {doc.get('generated')}): {len(red)} "
-             f"leg(s) starved or never run: {', '.join(red[:40])}" + (" ..." if len(red) > 40
-                                                                       else ""))
+        res = [str(x) for x in (live.get("red_residents") or [])]
+        if red or not res:
+            _bad(f"leg liveness RED ({doc.get('plan')} plan, {doc.get('generated')}): {len(red)} "
+                 f"leg(s) starved or never run: {', '.join(red[:40])}"
+                 + (" ..." if len(red) > 40 else ""))
+        if res:
+            q = doc.get("residents") if isinstance(doc.get("residents"), dict) else {}
+            _bad(f"resident liveness RED: {len(res)} department resident(s) waiting past the "
+                 f"{q.get('max_wait_s')}s bound for {q.get('slots')} slot(s): {', '.join(res)}"
+                 + (f" (expected queue wait {q.get('expected_wait_s')}s: OVERSUBSCRIBED)"
+                    if q.get("oversubscribed") else ""))
     else:
         _ok(f"leg liveness GREEN ({doc.get('plan')} plan, {doc.get('generated')}): no leg past "
             f"{live.get('max_deferrals')} deferrals; aged in this pass: "

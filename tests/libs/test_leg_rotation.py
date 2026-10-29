@@ -20,6 +20,12 @@ from libs.ops import leg_rotation as LR
 ROOT = Path(__file__).resolve().parents[2]
 
 
+@pytest.fixture(autouse=True)
+def _no_live_resident_queue(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """`record` reads the department residents' queue; a test never reads the box's live one."""
+    monkeypatch.setattr(LR, "RESIDENT_LOCKS", tmp_path / "_resident_locks")
+
+
 def _att(runs: dict[str, int], *, ages_h: dict[str, float] | None = None,
          costs: dict[str, float] | None = None,
          now: datetime | None = None) -> LR.Attendance:
@@ -571,3 +577,77 @@ def test_capacity_names_an_oversubscribed_plan() -> None:
     assert dec.capacity["oversubscribed"] is True
     assert dec.capacity["per_pass_s"] == pytest.approx(max(640.0, LR.AGED_MIN_FILL * 2640.0)
                                                        + LR.CHEAP_BATCH_FILL * 2640.0)
+
+
+# ------------------------------------------------------------------------------------------------
+# THE DEPARTMENT RESIDENTS, SAME CLASS (2026-10-29): ~15 residents finished 1,200-9,231 s passes
+# and then sat 3-5 h on "waiting: bounded department slots or older pass(es) ahead", unmeasured.
+# ------------------------------------------------------------------------------------------------
+
+def _ticket(locks: Path, dept: str, since: datetime, pid: int | None = None) -> Path:
+    import os
+    locks.mkdir(parents=True, exist_ok=True)
+    ns = int(since.timestamp() * 1e9)
+    path = locks / f"dept_wait_{ns}_{pid or os.getpid()}_{dept}.ticket"
+    path.touch()
+    return path
+
+
+def _queue(locks: Path, dept: str, pass_s: float, waited_s: float = 0.0) -> None:
+    locks.mkdir(parents=True, exist_ok=True)
+    (locks / f"dept_queue_{dept}.json").write_text(json.dumps(
+        {"dept": dept, "pass_s": pass_s, "waited_s": waited_s, "slots": 3,
+         "max_wait_s": 7200.0}), encoding="utf-8")
+
+
+def test_a_resident_waiting_past_its_bound_is_red_by_name(tmp_path: Path) -> None:
+    now = datetime(2026, 10, 29, 16, 0, tzinfo=UTC)
+    locks = tmp_path / "locks"
+    _ticket(locks, "forest_europe", now - timedelta(hours=4, minutes=10))
+    _ticket(locks, "execution", now - timedelta(hours=3))
+    _ticket(locks, "intel", now - timedelta(minutes=20))
+    for i, dept in enumerate(("execution", "forward", "intel", "validate", "data", "rest",
+                              "forest_europe", "forest_japan", "forest_china", "forest_latam",
+                              "forest_mena", "forest_korea", "forest_asean", "forest_africa",
+                              "forest_oceania")):
+        _queue(locks, dept, pass_s=(1200.0, 3000.0, 9231.0)[i % 3])
+    res = LR.resident_liveness(locks, now=now)
+    assert [w["dept"] for w in res["waiting"]] == ["forest_europe", "execution", "intel"], \
+        "the queue is published longest wait first"
+    assert set(res["red"]) == {"forest_europe", "execution"}
+    assert res["oversubscribed"] is True, "15 passes of up to 9,231 s over 3 slots cannot fit 2 h"
+    assert res["expected_wait_s"] > res["max_wait_s"]
+
+    # The SAME liveness block the starved legs use, and the same two readers.
+    roster = ["tier_s"]
+    att = _att({"tier_s": 3}, costs={"tier_s": 10.0}, now=now)
+    dec = LR.plan_pass(roster, att, plan="core", budget_s=100.0, now=now)
+    out = tmp_path / "LEG_ROTATION.json"
+    doc = LR.record(dec, att, ["tier_s"], path=out, started=now, now=now, residents=res)
+    live = doc["liveness"]
+    assert live["verdict"] == "RED" and live["red_legs"] == []
+    assert live["red_residents"] == ["execution", "forest_europe"] and live["n_red"] == 2
+    fence = _load(ROOT / "scripts" / "check_leg_rotation.py", "_check_leg_rotation_res")
+    rep = fence.check(out, now=now)  # type: ignore[attr-defined]
+    assert not rep["ok"]
+    assert any("resident liveness RED" in f and "forest_europe" in f for f in rep["failures"])
+    assert not any(f.startswith("leg liveness RED") for f in rep["failures"])
+    health = _load(ROOT / "desks" / "mt5" / "scripts" / "check_desk_health.py", "_cdh_res")
+    health._FINDINGS.clear()  # type: ignore[attr-defined]
+    health.check_leg_rotation(out)  # type: ignore[attr-defined]
+    msgs = [f["message"] for f in health._FINDINGS]  # type: ignore[attr-defined]
+    assert len(msgs) == 1 and "forest_europe" in msgs[0] and "OVERSUBSCRIBED" in msgs[0]
+
+
+def test_a_dead_waiters_ticket_is_not_a_red_resident(tmp_path: Path, monkeypatch) -> None:
+    now = datetime(2026, 10, 29, tzinfo=UTC)
+    locks = tmp_path / "locks"
+    _ticket(locks, "ghost", now - timedelta(hours=9), pid=4_000_000)
+    monkeypatch.setattr(LR, "_pid_alive", lambda pid: pid != 4_000_000)
+    res = LR.resident_liveness(locks, now=now)
+    assert res["red"] == {} and res["n_waiting"] == 0
+
+
+def test_an_absent_queue_is_green_and_never_raises(tmp_path: Path) -> None:
+    res = LR.resident_liveness(tmp_path / "nope")
+    assert res["red"] == {} and res["expected_wait_s"] is None and not res["oversubscribed"]
