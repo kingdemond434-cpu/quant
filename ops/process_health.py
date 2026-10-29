@@ -304,7 +304,7 @@ def expected_disabled(name: str) -> tuple[dict[str, str] | None, str]:
 #: brief-only headline ATTENTION; FAILING cannot arise there (no result code was read) but is
 #: listed so a future change that reads one cannot hide it.
 BRIEF_DEFINITE_FAULTS = frozenset({"NOT_SCHEDULED", "DISABLED", "STALE", "NO_ARTIFACT",
-                                   "FAILING"})
+                                   "FAILING", "HUNG"})
 
 
 def _missing(rows: list[dict[str, str]], fields: tuple[str, ...]) -> list[str]:
@@ -415,6 +415,89 @@ def _age_min(path: Path) -> float | None:
         return None
 
 
+#: 0x800710E0. ON A TASK WHOSE STATE IS RUNNING it is not a refusal (2026-10-29 sweep: all 36
+#: such tasks were Running, none a run-as or logon refusal). Under MultipleInstances=IgnoreNew the
+#: scheduler refuses the NEXT start because the task's own resident or long instance is still in
+#: the first one. So the code says nothing about health; the instance's output does. The row is
+#: RESIDENT_RUNNING, judged by the freshest of its artifact and its log, against its own
+#: ExecutionTimeLimit (past it: HUNG, RED) and its contract or cadence (past it: STALE).
+RESIDENT_CODE = 0x800710E0
+RESIDENT_MEANING = ("an instance is already running: the task's resident or long instance "
+                    "refused a relaunch (MultipleInstances=IgnoreNew)")
+#: With no artifact contract, output older than this many repetition intervals is STALE.
+RESIDENT_CADENCE_FACTOR = 2
+_task_limits_mod: Any = None
+
+
+def _task_limits(name: str) -> dict[str, Any]:
+    """ops/task_limits.task_limits, loaded by path (this file runs as a script). NEVER RAISES."""
+    global _task_limits_mod
+    try:
+        if _task_limits_mod is None:
+            import importlib.util
+            spec = importlib.util.spec_from_file_location(
+                "ops_task_limits", Path(__file__).resolve().parent / "task_limits.py")
+            assert spec is not None and spec.loader is not None
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            _task_limits_mod = mod
+        return dict(_task_limits_mod.task_limits(name))
+    except Exception as exc:
+        return {"execution_time_limit_min": None, "interval_min": None, "logs": [],
+                "why": f"task limits unreadable: {type(exc).__name__}"}
+
+
+def _log_paths(name: str, declared: list[str]) -> list[Path]:
+    """The logs the task's own action appends to, then the desk convention
+    desks/mt5/logs/<TaskName>.log (what the install_*_task.ps1 scripts write)."""
+    out = [Path(p) for p in declared]
+    leaf = name.replace("/", "\\").split("\\")[-1]
+    out.append(ROOT / "desks" / "mt5" / "logs" / f"{leaf}.log")
+    return out
+
+
+def judge_resident(name: str, artifact: str, artifact_age: float | None,
+                   max_age: int) -> tuple[str, str, dict[str, Any]]:
+    """(verdict, why, facts) for a Running task whose last result is RESIDENT_CODE."""
+    lim = _task_limits(name)
+    limit = lim.get("execution_time_limit_min")
+    interval = lim.get("interval_min")
+    ages: list[tuple[float, str]] = []
+    if artifact and artifact_age is not None:
+        ages.append((artifact_age, artifact))
+    for log in _log_paths(name, list(lim.get("logs") or [])):
+        a = _age_min(log)
+        if a is not None:
+            ages.append((a, str(log)))
+    fresh = min(ages) if ages else None
+    facts: dict[str, Any] = {
+        "execution_time_limit": lim.get("execution_time_limit"),
+        "execution_time_limit_min": limit, "interval_min": interval,
+        "freshest_output": None if fresh is None else fresh[1],
+        "freshest_output_age_min": None if fresh is None else round(fresh[0], 1),
+        "limits_why": lim.get("why") or None,
+    }
+    if fresh is not None and limit is not None and fresh[0] > limit:
+        return "HUNG", (f"HUNG: {name} is Running with no output for {fresh[0]:.0f} min, past its "
+                        f"own ExecutionTimeLimit {lim.get('execution_time_limit')} "
+                        f"({limit:g} min); freshest output {fresh[1]}"), facts
+    if artifact and artifact_age is None:
+        return "NO_ARTIFACT", f"{artifact} does not exist (resident instance running)", facts
+    if artifact and max_age and artifact_age is not None and artifact_age > max_age:
+        return "STALE", (f"resident instance running but {artifact_age:.0f} min old against a "
+                         f"{max_age} min contract"), facts
+    if not artifact and interval and fresh is not None and \
+            fresh[0] > RESIDENT_CADENCE_FACTOR * interval:
+        return "STALE", (f"resident instance running but its freshest output is "
+                         f"{fresh[0]:.0f} min old against a {interval:g} min cadence"), facts
+    if fresh is None:
+        return "RESIDENT_RUNNING", ("resident instance running; output freshness UNMEASURED (no "
+                                    "artifact contract and no log found)"), facts
+    bound = ("its ExecutionTimeLimit" if limit is not None else "no ExecutionTimeLimit")
+    return "RESIDENT_RUNNING", (f"resident instance running; freshest output "
+                                f"{fresh[0]:.0f} min old, inside {bound}"), facts
+
+
 def _contracts() -> dict[str, tuple[str, int, str]]:
     """The curated organ -> (artifact, max_age_min, purpose) map, if it is importable."""
     try:
@@ -487,6 +570,7 @@ def build() -> dict[str, Any]:
         if code_unreadable:
             result_unmeasured = f"last result {str(t.get('Last Result') or 'absent')!r} not a code"
         artifact, max_age, purpose = contracts.get(name, ("", 0, ""))
+        resident: dict[str, Any] | None = None
         age = _age_min(ROOT / artifact) if artifact else None
 
         # THE VERDICT IS THE WORST OF THE THREE FACTS, never an average of them. A task that is
@@ -510,6 +594,8 @@ def build() -> dict[str, Any]:
             verdict, why = "SCHEDULER_UNMEASURED", (
                 f"task state {sorted(_states) or 'blank'} not recognised: whether the scheduler "
                 "will start this is UNMEASURED")
+        elif code == RESIDENT_CODE and _running:
+            verdict, why, resident = judge_resident(name, artifact, age, max_age)
         elif artifact and age is None:
             verdict, why = "NO_ARTIFACT", f"{artifact} does not exist"
         elif artifact and max_age and age is not None and age > max_age:
@@ -535,7 +621,9 @@ def build() -> dict[str, Any]:
             "next_run": (t.get("Next Run Time") or "").strip(),
             "last_result_code": code,
             "last_result": ("UNMEASURED: " + result_unmeasured if code is None
+                            else RESIDENT_MEANING if resident is not None
                             else RESULT_MEANING.get(code, f"code {code}")),
+            "resident": resident,
             "artifact": artifact or None,
             "artifact_age_min": None if age is None else round(age, 1),
             "contract_max_age_min": max_age or None,
@@ -583,16 +671,16 @@ def build() -> dict[str, Any]:
             "contract_max_age_min": max_age, "purpose": purpose,
         })
 
-    order = {"NOT_SCHEDULED": 0, "SCHEDULER_UNMEASURED": 0, "FAILING": 1,
+    order = {"HUNG": 0, "NOT_SCHEDULED": 0, "SCHEDULER_UNMEASURED": 0, "FAILING": 1,
              "NO_ARTIFACT": 2, "STALE": 3,
-             "DISABLED": 4, "UNCONTRACTED": 5, "OK": 6}
+             "DISABLED": 4, "UNCONTRACTED": 5, "RESIDENT_RUNNING": 6, "OK": 6}
     rows.sort(key=lambda r: (order.get(str(r["verdict"]), 9), str(r["name"])))
     counts: dict[str, int] = {}
     for r in rows:
         counts[str(r["verdict"])] = counts.get(str(r["verdict"]), 0) + 1
 
     # DISABLED IS A FAULT (v5b ruling) unless the task is EXPECTED_DISABLED.
-    bad = [r for r in rows if r["verdict"] in ("NOT_SCHEDULED", "SCHEDULER_UNMEASURED",
+    bad = [r for r in rows if r["verdict"] in ("HUNG", "NOT_SCHEDULED", "SCHEDULER_UNMEASURED",
                                              "FAILING", "NO_ARTIFACT", "STALE")
            or (r["verdict"] == "DISABLED" and not r.get("expected_disabled"))]
     run_history_read = scheduler_status == "OK schtasks"
@@ -608,6 +696,11 @@ def build() -> dict[str, Any]:
               else "OK" if not bad else "ATTENTION")
     if key_fault or backup_fault:
         status = "ATTENTION"   # a definite fault: the worst finding wins over UNMEASURED too
+    hung = sorted(str(r["name"]) for r in rows if r["verdict"] == "HUNG")
+    if hung:
+        # AN INSTANCE RUNNING PAST ITS OWN EXECUTION LIMIT IS RED, named: the scheduler should
+        # have ended it, nothing it writes is moving, and IgnoreNew means no new run will start.
+        status = "RED"
     return {
         "at": now.isoformat(timespec="seconds"),
         "host": __import__("socket").gethostname(),
@@ -628,6 +721,7 @@ def build() -> dict[str, Any]:
         "status": status,
         "run_history": "MEASURED" if run_history_read else "UNMEASURED",
         "n_needing_attention": len(bad) + int(key_fault) + int(backup_fault),
+        "hung": hung,
         "account_key_file": key,
         # THE BACKUP (v5e): present, size, and whether it matches the live key -- a hash compare
         # done in-process; no hash is ever printed or written. Missing or mismatched: ATTENTION.

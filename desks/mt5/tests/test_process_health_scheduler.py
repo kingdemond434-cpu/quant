@@ -73,7 +73,11 @@ def test_running_gateway_with_overlap_result_and_fresh_artifact_is_healthy(monke
     })
     monkeypatch.setattr(ph, "_age_min", lambda path: 1.0)
 
-    assert _row(ph.build(), "MT5-Gateway")["verdict"] == "OK"
+    # 0x800710E0 on a Running task is its own resident instance refusing a relaunch (2026-10-29):
+    # RESIDENT_RUNNING, judged healthy by its fresh artifact -- not a fault on the board.
+    doc = ph.build()
+    assert _row(doc, "MT5-Gateway")["verdict"] == "RESIDENT_RUNNING"
+    assert doc["n_needing_attention"] == 0
 
 
 def test_parenthesised_component_uses_owner_and_its_own_artifact_clock(monkeypatch):

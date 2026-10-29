@@ -377,8 +377,10 @@ def test_a_localised_running_state_excuses_an_overlap_code(
             "OK schtasks",
         ),
     )
-    _doc, by = _build(monkeypatch, tmp_path, {"MT5-Gateway": ("fresh.json", 120, "gateway")})
-    assert by["MT5-Gateway"]["verdict"] == "OK"
+    doc, by = _build(monkeypatch, tmp_path, {"MT5-Gateway": ("fresh.json", 120, "gateway")})
+    # the resident instance refusing a relaunch (0x800710E0, 2026-10-29), read in German too
+    assert by["MT5-Gateway"]["verdict"] == "RESIDENT_RUNNING"
+    assert doc["n_needing_attention"] == 0
 
 
 # v5b (2026-10-21): a brief-only read lands the inventory but no run history, so the HEADLINE is
