@@ -1413,6 +1413,10 @@ def _work(argv: list[str] | None = None) -> int:
     tasks = [t for t in (queue.get("tasks") or []) if isinstance(t, dict)]
     if not tasks:
         dlog("queue empty or unreadable -- nothing to work")
+        # An idle pass still publishes: MT5-Deepening's contract is this artifact's age, and a
+        # queue with nothing in it must read as WORK_LIMITED, not as a worker that stopped.
+        publish_throughput(0, time.monotonic() - pass_started, 0, 0, datetime.now(tz=UTC), {},
+                           work_limited=True)
         return 0
 
     # COMPACT BEFORE READING, because the ledger is read twice and its size IS startup latency.
@@ -1479,6 +1483,8 @@ def _work(argv: list[str] | None = None) -> int:
         return 0
     if not pending:
         dlog("every queued task already has a decision -- no spend this run")
+        publish_throughput(0, time.monotonic() - pass_started, 0, 0, datetime.now(tz=UTC), {},
+                           work_limited=True)
         return 0
 
     universe = known_symbols()
