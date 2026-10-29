@@ -1368,7 +1368,7 @@ def test_a_dedupe_stop_bills_a_two_sided_missed_growth_line() -> None:
     kid = Proc(91, "python.exe", ppid=41, cmdline="python.exe helper.py", create_time=31,
                cpu_pct=60, group="other")
     stop = bs.Action(41, "python.exe", "other", "dedupe", "stop", dup.key, "stopped; kept 40:10",
-                     applied=True, tree=[kid.key])
+                     applied=True, tree=[kid.key], died=[dup.key, kid.key])
     led = bs.missed_growth_ledger(None, rules=RULES, procs=[dup, kid], actions=[stop], n_cpu=N,
                                   at="t1", judge_share=0.10)
     line = led["dedupe"]
@@ -1385,3 +1385,253 @@ def test_a_dedupe_stop_bills_a_two_sided_missed_growth_line() -> None:
     led = bs.missed_growth_ledger(None, rules=RULES, procs=[dup], actions=[miss], n_cpu=N,
                                   at="t3", judge_share=0.1)
     assert led["dedupe"]["open"] == []
+
+
+# ------------------------------------------------------------------------------------ fourth audit
+_MONEY_SCRIPTS = [
+    # (command line, group it must read as)
+    (r"python.exe C:\opt\quant\desks\mt5\prop\e8_gold.py", "money"),
+    (r"python.exe C:\opt\quant\desks\mt5\prop\e8_book.py", "money"),
+    (r"python.exe C:\opt\quant\scripts\run_deadman_switch.py", "money"),
+    (r"python.exe C:\opt\quant\desks\mt5\research\prop_challenge_allocator.py", "money_feed"),
+    (r"python.exe C:\opt\quant\desks\mt5\research\allocator_trigger.py", "money_feed"),
+    (r"pythonw.exe -u research\pf_allocator.py --mode fast", "money_feed"),
+]
+
+
+@pytest.mark.parametrize(("cmd", "group"), _MONEY_SCRIPTS)
+def test_every_money_process_is_raise_only_and_never_moved_or_capped(cmd: str,
+                                                                     group: str) -> None:
+    """MF1 probe: each of these read as mining/other and was reserve-moved, narrowed and
+    share-capped (pf_allocator --mode fast was share-capped)."""
+    full = list(range(N))
+    procs = [Proc(20, "python.exe", cmdline="python.exe run_sharded_gauntlet.py", create_time=1,
+                  cpu_pct=50, priority="BelowNormal", affinity=full),
+             Proc(70, "python.exe", cmdline=cmd, create_time=5, cpu_pct=900, priority="Normal",
+                  affinity=full),
+             Proc(71, "python.exe", ppid=70, cmdline="python.exe -c from multiprocessing.spawn",
+                  create_time=6, cpu_pct=900, priority="Normal", affinity=full)]
+    bs.classify(procs, RULES["groups"])
+    g = _by_pid(procs)
+    assert g[70].group == group and g[71].group == group        # the child rides with it
+    assert group in bs.RAISE_ONLY
+    for boost in (False, True):
+        actions, moved, _ = bs.plan_reserve(procs, RES, N, boost=boost, floor_cores=FLOOR,
+                                            skip_pids=set(), previous_moved={})
+        assert actions == [] and moved == {}
+    out = bs.plan(procs, RULES, N, judge_starved=True, previous_heavy=[p.key for p in procs])
+    assert not [a for a in out.actions if a.pid in (70, 71) and a.kind == "affinity"]
+    assert not [a for a in out.actions if a.pid in (70, 71) and a.kind == "priority"
+                and bs._rank(str(a.after)) < bs._rank("Normal")]
+    assert not [k for k in out.heavy if k.split(":")[0] in ("70", "71")]
+    raised = {a.pid for a in out.actions if a.kind == "priority" and a.after == "AboveNormal"}
+    # the order path is raised; the allocators are protected but not raised over the judge
+    assert (70 in raised) is (group == "money")
+
+
+def test_pf_allocator_heavy_stays_the_one_pinned_allocator() -> None:
+    """MF1: only --mode heavy keeps its committed 0xFF pin (D-20261029-011); fast is money_feed."""
+    procs = _box()
+    heavy = _by_pid(procs)[10]
+    assert heavy.group == "other"
+    out = bs.plan(procs, RULES, N, judge_starved=False)
+    assert any(a.pid == 10 and a.rule == "pf_allocator_heavy" for a in out.actions)
+    rule = next(r for r in RULES["rules"] if r["name"] == "pf_allocator_heavy")
+    assert "D-20261029-011" in rule["why"]
+
+
+def test_an_orphaned_gateway_child_stays_money_while_it_lives(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """MF2 probe: the gateway dies, its state_pusher_loop child lives on with a dead ppid. The
+    tree is built from live roots only, so it read "other" and was moved, narrowed and capped.
+    Money membership is sticky by key while key_lives holds."""
+    full = list(range(N))
+    judge = Proc(20, "python.exe", cmdline="python.exe run_sharded_gauntlet.py", create_time=1,
+                 cpu_pct=50, priority="BelowNormal", affinity=full)
+    gw = Proc(60, "python.exe", cmdline=r"python.exe C:\opt\quant\desks\mt5\run_gateway_loop.py",
+              create_time=2, cpu_pct=20, priority="AboveNormal", affinity=full)
+    child = Proc(61, "python.exe", ppid=60, create_time=3,
+                 cmdline=r"python.exe C:\opt\quant\desks\mt5\scripts\state_pusher_loop.py",
+                 cpu_pct=900, priority="AboveNormal", affinity=full)
+    box = [judge, gw, child]
+    fake, feed, run = _drive(monkeypatch, tmp_path, box)
+    feed.append((copy.deepcopy(box), 100.0))
+    out = run()
+    assert child.key in out["money_keys"]
+    # the gateway dies: the child is an orphan whose ppid names nothing
+    box.remove(gw)
+    fake.alive.discard(60)
+    for _ in range(3):                         # starved passes: reserve, cap and share_cap
+        feed.append((copy.deepcopy(box), 100.0))
+        out = run()
+        assert out["judge"]["starved"] is True
+        assert child.key in out["money_keys"]
+        assert not [a for a in out["actions"] if a["pid"] == 61 and a["kind"] == "affinity"]
+        assert bs.cpus_to_mask(child.affinity or []) == "0x3ffff"
+    # pure: classify with and without the sticky key
+    alone = [copy.deepcopy(child)]
+    bs.classify(alone, RULES["groups"])
+    assert alone[0].group == "other"           # what the live-roots tree alone says
+    bs.classify(alone, RULES["groups"], {child.key})
+    assert alone[0].group == "money" and alone[0].money_root is False
+    # a dead key or a reused pid is never sticky
+    assert bs.sticky_money_keys([child.key, "77:5"], {}, lambda p: p == 77,
+                                lambda p: 9.0) == set()
+    assert bs.sticky_money_keys([child.key], {}, lambda p: p == 61, lambda p: 3.2) == {child.key}
+
+
+def test_the_adopt_floor_is_the_money_roots_and_never_below_normal(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """MF3 probe: a money child at Idle dragged the adopt tree to Idle when a raise failed."""
+    procs = _money_box("Normal")
+    procs.append(Proc(62, "python.exe", ppid=60, create_time=4, cmdline="python.exe helper.py",
+                      priority="Idle"))
+    bs.classify(procs, RULES["groups"])
+    g = _by_pid(procs)
+    assert g[62].group == "money" and not g[62].money_root and g[60].money_root
+    g[500].priority = "AboveNormal"
+    money = bs.Action(60, "python.exe", "money", "money_path_raise", "priority", "Normal",
+                      "AboveNormal", error="AccessDenied")
+    extra = bs.adopt_floor_actions(procs, [money])
+    assert [(a.pid, a.after, a.rule) for a in extra] == [(500, "Normal", "adopt_under_money")]
+    assert extra[0].key == g[500].key
+    # a money ROOT below Normal still never takes the adopt tree under Normal
+    g[60].priority = "Idle"
+    assert [(a.pid, a.after) for a in bs.adopt_floor_actions(procs, [money])] == [(500, "Normal")]
+    g[500].priority = "Normal"
+    assert bs.adopt_floor_actions(procs, [money]) == []
+    # the plan-time clamp: same roots, same floor
+    old = {**RULES, "rules": [r for r in RULES["rules"] if r["name"] != "money_path_raise"]}
+    out = bs.plan(procs, old, N, judge_starved=False)
+    assert any(r["pid"] == 500 and "Normal" in r["why"] for r in out.refused)
+
+
+def test_lowering_the_adopt_tree_bills_a_two_sided_line() -> None:
+    """MF3: adopt_under_money takes class from a process, so it is billed cost and gain."""
+    assert "adopt_under_money" in bs.throttle_mechanisms(RULES)
+    p = Proc(500, "powershell.exe", create_time=3, cpu_pct=90, group="adopt")
+    a = bs.Action(500, "powershell.exe", "adopt", "adopt_under_money", "priority",
+                  "AboveNormal", "Normal", applied=True, key=p.key)
+    led = bs.missed_growth_ledger(None, rules=RULES, procs=[p], actions=[a], n_cpu=N, at="t1",
+                                  judge_share=0.2)
+    line = led["adopt_under_money"]
+    assert line["two_sided"] and line["open"][0]["share_before"] == round(90 / 1800, 4)
+    p.cpu_pct = 45
+    led = bs.missed_growth_ledger(led, rules=RULES, procs=[p], actions=[], n_cpu=N, at="t2",
+                                  judge_share=0.25)
+    ev = led["adopt_under_money"]["closed"][0]
+    assert ev["forgone_share"] == round(45 / 1800, 4)
+    assert ev["judge_gain_share"] == pytest.approx(0.05)
+
+
+def test_apply_never_writes_to_a_reused_pid(monkeypatch: pytest.MonkeyPatch) -> None:
+    """SF1 probe: priority and affinity writes went to a bare psutil.Process(pid). Each write is
+    checked against the measured key first, as the stop path is."""
+    psutil = pytest.importorskip("psutil")
+    import subprocess
+    import sys
+    monkeypatch.setattr(bs, "IS_WINDOWS", True)
+    child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+    try:
+        pr = psutil.Process(child.pid)
+        ct = int(pr.create_time())
+        cores = sorted(pr.cpu_affinity())
+        mask = bs.cpus_to_mask(cores)
+        stale = bs.Action(child.pid, "python", "other", "share_cap", "affinity", mask, mask,
+                          key=f"{child.pid}:{ct - 5}")
+        nokey = bs.Action(child.pid, "python", "other", "share_cap", "affinity", mask, mask)
+        prio = bs.Action(child.pid, "python", "other", "memecoin_cap", "priority", "Normal",
+                         "BelowNormal", key=f"{child.pid}:{ct - 5}")
+        good = bs.Action(child.pid, "python", "other", "share_cap", "affinity", mask, mask,
+                         key=f"{child.pid}:{ct}")
+        bs.apply([stale, nokey, prio, good], max(cores) + 1)
+        assert not stale.applied and "reused" in str(stale.error)
+        assert not prio.applied and "reused" in str(prio.error)
+        assert not nokey.applied and "no measured key" in str(nokey.error)
+        assert good.applied and good.error is None
+    finally:
+        child.kill()
+        child.wait(timeout=10)
+
+
+# ------------------------------------------------------------ fourth audit (#482), 2026-10-29
+@pytest.mark.parametrize("cmd", [c for c, _g in _MONEY_SCRIPTS])
+def test_a_duplicate_whose_child_is_a_money_process_is_never_stopped(cmd: str) -> None:
+    """MF1 through #482: a duplicate whose child is e8_gold, the deadman or an allocator."""
+    cfg = {"allow": ["some_loop.py"]}
+    procs = _dupes()
+    procs.append(Proc(90, "python.exe", ppid=41, cmdline=cmd, create_time=30))
+    bs.classify(procs, RULES["groups"])
+    assert _by_pid(procs)[90].group in bs.NEVER_IN_A_STOPPED_TREE
+    keys = [d["duplicate"] for d in bs.plan_dedupe(procs, cfg)[1]]
+    stops, seen = bs.plan_dedupe(procs, cfg, previous_duplicates=keys)
+    assert stops == [] and "descendant 90" in seen[0]["refused"]
+
+
+def test_an_orphaned_money_child_is_never_a_dedupe_candidate() -> None:
+    """MF2 through #482: the sticky money key keeps an orphan out of dedupe."""
+    cfg = {"allow": ["state_pusher_loop.py"]}
+    loop = "python.exe state_pusher_loop.py"
+    procs = [Proc(300, "python.exe", ppid=4, exe="py.exe", cmdline="python.exe stray.py",
+                  create_time=1),
+             Proc(301, "python.exe", ppid=300, exe="py.exe", cmdline=loop, create_time=2),
+             Proc(401, "python.exe", ppid=400, exe="py.exe", cmdline=loop, create_time=4)]
+    for p in procs:
+        p.cwd, p.env_sig = r"C:\opt\quant", "env-a"
+    bs.classify(procs, RULES["groups"], {"401:4"})       # its gateway (400) has died
+    assert _by_pid(procs)[401].group == "money"
+    keys = [d["duplicate"] for d in bs.plan_dedupe(procs, cfg)[1]]
+    assert bs.plan_dedupe(procs, cfg, previous_duplicates=keys) == ([], [])
+
+
+def test_a_partial_stop_bills_only_what_died() -> None:
+    """SF3 probe: children killed under a denied root opened no line; a denied child that still
+    lives was billed as forgone when the root died."""
+    dup = Proc(41, "python.exe", cmdline="python.exe some_loop.py", create_time=20,
+               cpu_pct=300, group="other")
+    k1 = Proc(91, "python.exe", ppid=41, create_time=31, cpu_pct=60, group="other")
+    k2 = Proc(92, "python.exe", ppid=41, create_time=32, cpu_pct=90, group="other")
+    procs = [dup, k1, k2]
+    # root denied, both children killed: not a landed stop, but 150% of a core died
+    a = bs.Action(41, "python.exe", "other", "dedupe", "stop", dup.key, "stopped",
+                  error="the duplicate's root is still running", tree=[k1.key, k2.key],
+                  died=[k1.key, k2.key])
+    led = bs.missed_growth_ledger(None, rules=RULES, procs=procs, actions=[a], n_cpu=N,
+                                  at="t1", judge_share=0.1)
+    ev = led["dedupe"]["open"][0]
+    assert ev["share_before"] == round(150 / 1800, 4) and ev["landed"] is False
+    led = bs.missed_growth_ledger(led, rules=RULES, procs=[dup], actions=[], n_cpu=N, at="t2",
+                                  judge_share=0.2)
+    ev = led["dedupe"]["closed"][0]
+    assert ev["gone"] is True and ev["forgone_share"] == round(150 / 1800, 4)
+    # root died, one child denied and alive: only the root and the dead child are billed
+    b = bs.Action(41, "python.exe", "other", "dedupe", "stop", dup.key, "stopped", applied=True,
+                  tree=[k1.key, k2.key], died=[dup.key, k1.key])
+    led = bs.missed_growth_ledger(None, rules=RULES, procs=procs, actions=[b], n_cpu=N,
+                                  at="t1", judge_share=0.1)
+    assert led["dedupe"]["open"][0]["share_before"] == round(360 / 1800, 4)
+    led = bs.missed_growth_ledger(led, rules=RULES, procs=[k2], actions=[], n_cpu=N, at="t2",
+                                  judge_share=0.2)
+    assert led["dedupe"]["closed"][0]["forgone_share"] == round(360 / 1800, 4)
+
+
+def test_the_verified_kill_reports_which_processes_died() -> None:
+    """SF3: kill_verified_tree names the dead by key, so a partial stop is billed exactly."""
+    psutil = pytest.importorskip("psutil")
+    from libs.ops import proctree
+    parent = _parent_with_child()
+    try:
+        kids = _wait_children(psutil, parent.pid)
+        root = psutil.Process(parent.pid)
+        rkey = f"{root.pid}:{int(root.create_time())}"
+        kkeys = {f"{k.pid}:{int(k.create_time())}" for k in kids}
+        out = proctree.kill_verified_tree(root, verified={k.pid: k.create_time() for k in kids},
+                                          timeout=10)
+        assert out["root_gone"] is True and set(out["dead"]) == kkeys | {rkey}
+    finally:
+        _reap(psutil, parent)
+
+
+def test_the_dedupe_why_names_the_verified_kill() -> None:
+    why = RULES["dedupe"]["why"]
+    assert "kill_verified_tree" in why and "proctree.kill_tree" not in why

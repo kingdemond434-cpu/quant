@@ -59,7 +59,7 @@ import shutil
 import socket
 import sys
 import time
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -88,7 +88,8 @@ _PSUTIL_CLASS = {
 #: Groups that may only ever be raised: no affinity, no lower class. "adopt" is the
 #: Adopt-And-Seal / Adopt-Release tree (the release path rides with the money path): never put on
 #: the side mask, never share-capped, and widened back to every core if an earlier pass narrowed it.
-RAISE_ONLY = frozenset({"money", "judge", "protected", "adopt"})
+#: "money_feed" is what sizes the money path's book (the allocators, audit MF1): raise-only too.
+RAISE_ONLY = frozenset({"money", "money_feed", "judge", "protected", "adopt"})
 #: Groups no rule or cap touches at all.
 UNTOUCHED = frozenset({"system"})
 #: The only groups an exact duplicate may be stopped in. Money, judge, memecoin, protected
@@ -96,7 +97,8 @@ UNTOUCHED = frozenset({"system"})
 DEDUPE_GROUPS = frozenset({"mining", "other"})
 #: A stop is refused when any descendant of the duplicate is in one of these groups: a tree kill
 #: must never take a money, judge, protected, memecoin or adopt process down with a loop.
-NEVER_IN_A_STOPPED_TREE = frozenset({"money", "judge", "protected", "memecoin", "adopt"})
+NEVER_IN_A_STOPPED_TREE = frozenset({"money", "money_feed", "judge", "protected", "memecoin",
+                                     "adopt"})
 #: Pool workers share one command line by design; they are never duplicates.
 _WORKER_MARKERS: tuple[str, ...] = ("multiprocessing", "spawn_main", "joblib", "loky",
                                     "shard_worker")
@@ -124,6 +126,7 @@ class Proc:
     priority: str | None = None   # one of PRIORITY_ORDER, None when unreadable
     affinity: list[int] | None = None
     group: str = "other"
+    money_root: bool = False      # matched a money token by name (not by tree or stickiness)
     #: identity of a dedupe candidate (read only for those): working directory and a hash of the
     #: environment. None = unread; a duplicate is never stopped on an unread identity.
     cwd: str | None = None
@@ -151,6 +154,10 @@ class Action:
     error: str | None = None
     tree: list[str] = field(default_factory=list)   # a stop's measured descendants (keys)
     ancestors: list[str] = field(default_factory=list)  # a stop's measured parent chain (keys)
+    died: list[str] = field(default_factory=list)  # a stop's processes that actually died (keys)
+    #: the measured process key ("pid:create_time"); apply refuses to write to a pid whose
+    #: creation time is no longer this one (a reused pid), and to an action that carries none
+    key: str = ""
 
 
 @dataclass
@@ -226,12 +233,19 @@ def validate_rules(data: Mapping[str, Any]) -> None:
 
 
 # ------------------------------------------------------------------------------------ groups
-def classify(procs: Sequence[Proc], groups: Mapping[str, Sequence[str]]) -> None:
+def classify(procs: Sequence[Proc], groups: Mapping[str, Sequence[str]],
+             sticky_money: Collection[str] = ()) -> None:
     """Tag each process; the money, adopt and judge trees are whole. Precedence: money first.
 
     A tree is every process matched by name plus all its descendants by parent chain. A child
     is counted only if it was born no earlier than its parent (a ppid reused by a later process
     is not a parent): Windows recycles pids and keeps a dead parent's id in the child.
+
+    MONEY IS STICKY BY KEY (audit MF2, 2026-10-29): `sticky_money` holds the keys
+    ("pid:create_time") classified money on an earlier pass and still alive. A gateway child
+    whose parent died is no longer under a live money root, so the tree alone would read it
+    "other" and move, narrow, cap or dedupe it; a sticky key keeps it (and anything it spawns)
+    money for as long as that process lives. `money_root` marks only the name-matched roots.
     """
     def hit(p: Proc, kind: str) -> bool:
         return any(s.lower() in p.haystack for s in groups.get(kind, ()))
@@ -247,9 +261,12 @@ def classify(procs: Sequence[Proc], groups: Mapping[str, Sequence[str]]) -> None
             continue  # the "parent" is a later process that reused the pid
         children.setdefault(p.ppid, []).append(p)
 
+    sticky = set(sticky_money)
+
     def tree(kind: str) -> set[int]:
         out: set[int] = set()
-        stack = [p.pid for p in procs if hit(p, kind)]
+        stack = [p.pid for p in procs
+                 if hit(p, kind) or (kind == "money" and p.key in sticky)]
         while stack:
             cur = stack.pop()
             if cur in out:
@@ -265,12 +282,16 @@ def classify(procs: Sequence[Proc], groups: Mapping[str, Sequence[str]]) -> None
     # (state_pusher_loop.py) matched no money name and was narrowed by plan_reserve and share_cap.
     # Every descendant of a money process is money: raise-only, never narrowed.
     money_tree = tree("money")
+    feed_tree = tree("money_feed")
     adopt_tree = tree("adopt")
     judge_tree = tree("judge")
     system = {s.lower() for s in groups.get("system_names", ())}
     for p in procs:
+        p.money_root = hit(p, "money")
         if p.pid in money_tree:
             p.group = "money"
+        elif p.pid in feed_tree:
+            p.group = "money_feed"
         elif p.pid in adopt_tree:
             p.group = "adopt"
         elif p.pid in judge_tree:
@@ -405,18 +426,20 @@ def _clamp_adopt_under_money(procs: Sequence[Proc], out: Plan) -> None:
 
     The adopt tree is raised, but never ABOVE the lowest class the money path will hold after
     this pass's own raises: the gateway python (MT5-GatewayResident) ran at Normal while the adopt
-    tree went to AboveNormal. Each adopt priority action is cut to that money floor; one that would
+    tree went to AboveNormal. The floor is taken over the NAME-MATCHED money roots only (a money
+    child at Idle is not the gateway) and is never below Normal (audit MF3). Each adopt priority
+    action is cut to that money floor; one that would
     then be no raise at all is dropped, and with any money class unreadable the adopt raise is
     refused (a money path we cannot read is never assumed to be on top). Money raises are applied
     before adopt raises (`apply_ordered`), and an adopt raise lands only if every one did.
     """
     planned = {a.pid: a.after for a in out.actions if a.kind == "priority" and a.group == "money"}
-    money = [p for p in procs if p.group == "money"]
+    money = [p for p in procs if p.group == "money" and p.money_root]
     if not money:
         return
     classes = [planned.get(p.pid, p.priority) for p in money]
     unreadable = any(c not in PRIORITY_ORDER for c in classes)
-    floor = min(_rank(c) for c in classes) if not unreadable else -1
+    floor = (max(_rank("Normal"), min(_rank(c) for c in classes)) if not unreadable else -1)
     keep: list[Action] = []
     by_pid = {p.pid: p for p in procs}
     for a in out.actions:
@@ -448,25 +471,27 @@ def adopt_floor_actions(procs: Sequence[Proc], money_actions: Sequence[Action]) 
     raised on an EARLIER pass carries no action now, so holding back this pass's adopt raises is
     not enough: a gateway that restarted at Normal and whose raise failed would sit under an
     adopt tree still at AboveNormal. The money floor is each money process's class after this
-    pass (a landed raise's target, else the class measured); every adopt process above it is
-    lowered to it. With a money class unreadable the floor is unknown and the adopt tree is held
+    pass (a landed raise's target, else the class measured), over the NAME-MATCHED money roots
+    only, and never below Normal (audit MF3: a money child at Idle dragged the whole adopt tree
+    to Idle); every adopt process above it is lowered to it, billed in missed_growth. With a
+    money class unreadable the floor is unknown and the adopt tree is held
     at Normal, the class it started at, never assumed under a money path that cannot be read.
     """
     landed = {a.pid: str(a.after) for a in money_actions
               if a.kind == "priority" and a.applied and not a.error}
-    money = [p for p in procs if p.group == "money"]
+    money = [p for p in procs if p.group == "money" and p.money_root]
     if not money:
         return []
     classes = [landed.get(p.pid, p.priority) for p in money]
     if any(c not in PRIORITY_ORDER for c in classes):
         target = "Normal"
     else:
-        target = PRIORITY_ORDER[min(_rank(c) for c in classes)]
+        target = PRIORITY_ORDER[max(_rank("Normal"), min(_rank(c) for c in classes))]
     out: list[Action] = []
     for p in procs:
         if p.group == "adopt" and _rank(p.priority) > _rank(target):
             out.append(Action(p.pid, p.name, p.group, "adopt_under_money", "priority",
-                              p.priority, target))
+                              p.priority, target, key=p.key))
     return out
 
 
@@ -816,6 +841,8 @@ def throttle_mechanisms(rules: Mapping[str, Any]) -> list[str]:
         out.append("judge_reserve")
     if rules.get("dedupe") is not None:
         out.append("dedupe")
+    # lowering the adopt tree under the money floor takes CPU class from it (audit MF3)
+    out.append("adopt_under_money")
     return out
 
 
@@ -863,12 +890,18 @@ def missed_growth_ledger(previous: Mapping[str, Any] | None, *, rules: Mapping[s
             if not isinstance(ev, Mapping):
                 continue
             ev = dict(ev)
-            p = by_key.get(str(ev.get("key")))
-            if p is None and lives is not None and lives(str(ev.get("key"))):
-                still_open.append(ev)   # alive but unread this pass: not closed as gone
-                continue
-            ev["share_after"] = round(p.cpu_pct / cap, 4) if p is not None else 0.0
-            ev["gone"] = p is None
+            if isinstance(ev.get("keys"), list):
+                # a stop bills the processes that died, read again by key (all gone, normally)
+                left = [by_key[str(k)] for k in ev["keys"] if str(k) in by_key]
+                ev["share_after"] = round(sum(q.cpu_pct for q in left) / cap, 4)
+                ev["gone"] = not left
+            else:
+                p = by_key.get(str(ev.get("key")))
+                if p is None and lives is not None and lives(str(ev.get("key"))):
+                    still_open.append(ev)   # alive but unread this pass: not closed as gone
+                    continue
+                ev["share_after"] = round(p.cpu_pct / cap, 4) if p is not None else 0.0
+                ev["gone"] = p is None
             ev["judge_share_after"] = judge_share
             ev["forgone_share"] = round(float(ev.get("share_before") or 0.0)
                                         - ev["share_after"], 4)
@@ -886,19 +919,31 @@ def missed_growth_ledger(previous: Mapping[str, Any] | None, *, rules: Mapping[s
             totals["forgone_share"] = round(totals["forgone_share"] + ev["forgone_share"], 4)
             closed.append(ev)
         for a in actions:
-            if a.rule != name or not a.applied or a.error or not _narrows(a):
+            if a.rule != name or not _narrows(a):
                 continue
             p = next((q for q in procs if q.pid == a.pid), None)
             if p is None:
                 continue
-            pct = p.cpu_pct
             if a.kind == "stop":
-                # A STOP TAKES THE TREE (audit #482): the duplicate and every measured
-                # descendant it took down are what was given up.
-                pct += sum(by_key[k].cpu_pct for k in a.tree if k in by_key)
+                # A STOP BILLS WHAT ACTUALLY DIED (audit #482 SF3): the duplicate and the
+                # measured descendants that are gone -- children killed under a denied root
+                # are billed although the stop did not land; a denied child that still lives
+                # is not billed as forgone.
+                died = [k for k in a.died if k in by_key]
+                if not died:
+                    continue
+                still_open.append({"at": at, "key": p.key, "pid": p.pid, "name": p.name,
+                                   "group": p.group, "kind": a.kind, "before": a.before,
+                                   "after": a.after, "keys": died, "landed": a.applied,
+                                   "share_before": round(sum(by_key[k].cpu_pct for k in died)
+                                                         / cap, 4),
+                                   "judge_share_before": judge_share})
+                continue
+            if not a.applied or a.error:
+                continue
             still_open.append({"at": at, "key": p.key, "pid": p.pid, "name": p.name,
                                "group": p.group, "kind": a.kind, "before": a.before,
-                               "after": a.after, "share_before": round(pct / cap, 4),
+                               "after": a.after, "share_before": round(p.cpu_pct / cap, 4),
                                "judge_share_before": judge_share})
         out[name] = {"two_sided": True,
                      "cost": "forgone_share: the throttled process's share of the box given up",
@@ -1276,13 +1321,26 @@ def apply(actions: Sequence[Action], n_cpu: int) -> None:
                 # LANDED ONLY WHEN THE ROOT IS GONE (SF2): its children dying is not a stop.
                 from libs.ops.proctree import kill_verified_tree
                 result = kill_verified_tree(pr, verified=verified)
+                # WHAT ACTUALLY DIED is what missed_growth bills (audit #482 SF3): children
+                # killed under a denied root, or a root gone with one child denied, are partial.
+                a.died = [str(k) for k in result.get("dead") or []]
                 if result.get("refused"):
                     a.error = str(result["refused"])[:200]
                     continue
                 if not result.get("root_gone"):
                     a.error = f"the duplicate's root is still running: {result}"[:200]
                     continue
-            elif a.kind == "priority":
+                a.applied = True
+                continue
+            # THE PID MUST STILL BE THE PROCESS THAT WAS MEASURED (audit SF1, 2026-10-29): a
+            # class or mask is never written to a pid reused since the measurement.
+            if not a.key:
+                a.error = "not applied: no measured key to verify the pid against"
+                continue
+            if f"{a.pid}:{int(pr.create_time())}" != a.key:
+                a.error = "pid reused since measurement; not applied"
+                continue
+            if a.kind == "priority":
                 pr.nice(getattr(psutil, _PSUTIL_CLASS[str(a.after)]))
             else:
                 pr.cpu_affinity(mask_to_cpus(str(a.after), n_cpu))
@@ -1334,7 +1392,20 @@ def carried_records(prev: Mapping[str, Any]) -> dict[str, Any]:
         out["wall"] = dict(prev["wall"])
     if isinstance(prev.get(THROTTLE_LEDGER), Mapping):
         out[THROTTLE_LEDGER] = dict(prev[THROTTLE_LEDGER])
+    if isinstance(prev.get("money_keys"), list):
+        out["money_keys"] = list(prev["money_keys"])
     return out
+
+
+def sticky_money_keys(previous: Any, seen: Mapping[str, Proc], alive: Any,
+                      create_time: Any = None) -> set[str]:
+    """Last pass's money keys whose process still lives (`key_lives`). Pure.
+
+    A key seen this pass lives by definition; an unseen one is kept while its pid is alive with
+    the key's creation time, so one unread pass never drops a process out of the money path."""
+    keys = previous if isinstance(previous, list) else []
+    return {str(k) for k in keys
+            if str(k) in seen or key_lives(str(k), alive, create_time)}
 
 
 def pid_create_time(pid: int) -> float | None:
@@ -1426,7 +1497,13 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH,
     phase_doc, phase_file = read_doc(phase_path)
     phase, phase_pid, phase_st = phase_status(phase_doc, phase_file, psutil.pid_exists,
                                               wait_phases)
-    classify(procs, rules.get("groups", {}))
+    seen_by_key = {p.key: p for p in procs}
+    sticky = sticky_money_keys(prev.get("money_keys"), seen_by_key, psutil.pid_exists,
+                               pid_create_time)
+    classify(procs, rules.get("groups", {}), sticky)
+    # carried forward: this pass's money, and last pass's money that lives but went unread
+    money_keys = sorted({p.key for p in procs if p.group == "money"}
+                        | {k for k in sticky if k not in seen_by_key})
     summary = summarize(procs, n_cpu, box_pct, rules.get("judge_starved", {}))
     starved_now = bool(summary["judge"]["starved"])
     the_plan = plan(procs, rules, n_cpu, judge_starved=starved_now,
@@ -1491,6 +1568,9 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH,
                                               mining_share=summary["by_group"].get(
                                                   "mining", {}).get("share_of_box", 0.0),
                                               side_cores=int(meta["side_cores"]))}
+    for a in the_plan.actions:       # every write is verified against the measured key
+        if not a.key and a.pid in key_of:
+            a.key = key_of[a.pid]
     the_plan.actions.extend(apply_ordered(the_plan.actions, n_cpu, procs))
     if reserve_cfg:
         ok, why = reserve_holds(reserve_actions, reserve_doc)
@@ -1523,8 +1603,8 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH,
         top=[_row(p) for p in top],
         actions=[asdict(a) for a in the_plan.actions], refused=the_plan.refused,
         heavy=the_plan.heavy, share_cap_moved=cap_moved, wall=wall, duplicates=duplicates,
-        judge_reserve=reserve_doc, missed_growth=ledger, health=hunter_health,
-        judge_phase=phase, judge_phase_status=phase_st,
+        judge_reserve=reserve_doc, money_keys=money_keys, missed_growth=ledger,
+        health=hunter_health, judge_phase=phase, judge_phase_status=phase_st,
         line=(f"CPU SHAPE {hunter_health['verdict']}: box {box_pct}% on {n_cpu} cores; judge "
               f"{summary['judge']['share_of_box']:.0%} of box"
               f"{' (STARVED)' if summary['judge']['starved'] else ''}; memecoin "
