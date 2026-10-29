@@ -28,10 +28,22 @@
 # for being a Saturday, and it fires the morning after any missed trading day. Silence is no
 # longer green.
 #
-# Idempotent: re-running replaces the task rather than erroring. Takes its principal from
-# MT5-MoatSilver rather than hardcoding a SID, so the MT5 organs never drift apart in identity.
+# Idempotent: re-running replaces the task rather than erroring.
 #
-#   powershell -NoProfile -ExecutionPolicy Bypass -File install_contract_terms_task.ps1
+# THE PRINCIPAL IS THE TERMINAL'S DESKTOP OWNER, LOGGED ON INTERACTIVELY (2026-10-29). This used
+# to copy MT5-MoatSilver's UserId with LogonType S4U. MoatSilver is a SYSTEM task, and S4U runs
+# outside any desktop session anyway, so the recorder sat in Session 0 while terminal64 lived in
+# the trading user's session 2: MetaTrader's IPC endpoint is session-bound, `initialize` failed
+# every hour, and MT5-ContractTerms returned rc 1 (behind a NameError in tape.py's error path that
+# hid the real reason). Same rule as MT5-Gateway, E8-Gold and the FTMO reader: a task that
+# imports MetaTrader5 runs as the interactive user. The owner is read from MT5-TerminalBoot, as
+# Install-QuantWindows.ps1 does, or passed with -InteractiveUser. SYSTEM is refused outright.
+# tests/ops/test_mt5_tasks_run_interactive.py fences every installer for this.
+#
+#   powershell -NoProfile -ExecutionPolicy Bypass -File install_contract_terms_task.ps1 [-InteractiveUser <name>]
+
+[CmdletBinding()]
+param([string] $InteractiveUser)
 
 $ErrorActionPreference = 'Stop'
 
@@ -39,8 +51,17 @@ $TaskName = 'MT5-ContractTerms'
 $Root     = 'C:\opt\quant\desks\mt5'
 $Log      = 'C:\opt\quant\desks\mt5\logs\MT5-ContractTerms.log'
 
-$template = Get-ScheduledTask -TaskName 'MT5-MoatSilver'
-$userId   = $template.Principal.UserId
+if (-not $InteractiveUser) {
+    $terminalTask = Get-ScheduledTask -TaskName 'MT5-TerminalBoot' -ErrorAction SilentlyContinue
+    if ($terminalTask -and $terminalTask.Principal.UserId) {
+        $InteractiveUser = $terminalTask.Principal.UserId
+    } else {
+        $InteractiveUser = $env:USERNAME
+    }
+}
+if (-not $InteractiveUser -or $InteractiveUser -in @('SYSTEM', 'S-1-5-18')) {
+    throw "$TaskName needs the MT5 terminal's interactive desktop owner; pass -InteractiveUser"
+}
 
 # `-m mt5desk.tape` from the desk root, not a file path: the module resolves its own DATA root
 # from __file__ and importing it as a module is how tape.py documents itself being run.
@@ -51,7 +72,7 @@ $trigger = New-ScheduledTaskTrigger -Once -At ([datetime]::Today.AddHours(1))
 $trigger.Repetition = (New-ScheduledTaskTrigger -Once -At ([datetime]::Today.AddHours(1)) `
     -RepetitionInterval (New-TimeSpan -Hours 1)).Repetition
 
-$principal = New-ScheduledTaskPrincipal -UserId $userId -LogonType S4U -RunLevel Highest
+$principal = New-ScheduledTaskPrincipal -UserId $InteractiveUser -LogonType Interactive -RunLevel Highest
 
 # StartWhenAvailable so an hour lost to a reboot is caught up rather than silently skipped -- a
 # schedule that loses runs to downtime reports the same artifact age as one that is broken.
@@ -68,4 +89,5 @@ Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger `
     -Description 'Record point-in-time broker financing and contract terms from the connected Fusion terminal (mt5desk.tape --terms-only). Installed 2026-08-29: the tape had one day on disk and no scheduler -- an unrecorded swap or margin reprice is unbuyable at any price.' | Out-Null
 
 $t = Get-ScheduledTask -TaskName $TaskName
-"installed {0}: state={1} interval={2}" -f $t.TaskName, $t.State, $t.Triggers[0].Repetition.Interval
+"installed {0}: state={1} interval={2} principal={3}/{4}" -f $t.TaskName, $t.State, `
+    $t.Triggers[0].Repetition.Interval, $t.Principal.UserId, $t.Principal.LogonType

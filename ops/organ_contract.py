@@ -216,9 +216,15 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                              "every clock certified or retired -- nothing squats"),
     # Certificates that passed the gates and can never be enrolled still counted toward the total
     # and still spent a share of the fixed family-wise error budget.
-    "MT5-CertHygiene":    ("desks/mt5/reports/CERTIFICATE_HYGIENE.json", 1560,
-                           "certificates the enrolment engine can never run, evicted with their "
-                           "evidence kept"),
+    # A COMPONENT OF MT5-FrontierAudit, NOT A TASK (2026-10-29). certificate_hygiene.py --apply is
+    # the first organ ops/run_frontier_audit.cmd runs; no MT5-CertHygiene task was ever installed
+    # or meant to be. Keyed as a bare task name, process_health reported it NOT_SCHEDULED /
+    # "never run on this box" every pass while its artifact was 11h fresh, and the manifest
+    # carried a phantom UNDECLARED row for it. Parenthesised, it is judged as what it is: an
+    # artifact of the frontier lane, held to the lane's daily clock.
+    "MT5-FrontierAudit (cert hygiene)": (
+        "desks/mt5/reports/CERTIFICATE_HYGIENE.json", 1560,
+        "certificates the enrolment engine can never run, evicted with their evidence kept"),
     "MT5-ReleaseAuthority": ("desks/mt5/reports/RELEASE_AUTHORITY_AUDIT.json", 45,
                              "does the running tree match a SIGNED release, and would the hourly "
                              "adopter overwrite unpushed money-path work"),
