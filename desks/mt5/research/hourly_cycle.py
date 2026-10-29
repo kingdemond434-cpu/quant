@@ -1197,6 +1197,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # tracker, which reads it.
     "live_calibration_posterior", "constrained_book", "experimental_budget",
     "ops_redundancy", "recovery_drills", "forward_evidence_tracker",
+    # THE MANDATE AUDIT, RE-GRADED EVERY PASS (ASIA-0931, 2026-10-06): a tree and artifact read.
+    "mandate_audit",
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
@@ -5992,6 +5994,12 @@ def main() -> None:
         "ops_redundancy", "research/ops_redundancy.py"))
     rcd = _costed("recovery_drills", lambda: _producer(
         "recovery_drills", "research/recovery_drills.py"))
+    # THE MANDATE AUDIT (ASIA-0931, 2026-10-06): the 3,601 audited mandate rows re-graded from
+    # the tree and this host's artifacts -- ABSENT/CODED/SCHEDULED/RUNNING measured, evidence
+    # stages kept and flagged stale. Read by the CRO pass (STEP 4B D13/D41). The same pass writes
+    # one brief per owner thread (research/thread_briefs.py, MISC-18/MISC-22).
+    mda = _costed("mandate_audit", lambda: _producer(
+        "mandate_audit", "research/mandate_audit.py"))
     fet = _costed("forward_evidence_tracker", lambda: _producer(
         "forward_evidence_tracker", "research/forward_evidence_tracker.py"))
     # THE ARENA AND THE CLOCK'S CAPITAL (Tier-1 AP5 and P18; 2026-09-09). The arena records a
@@ -6250,7 +6258,7 @@ def main() -> None:
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,
-                    "recovery_drills": rcd,
+                    "recovery_drills": rcd, "mandate_audit": mda,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "producer_census": prdc,

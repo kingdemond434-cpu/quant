@@ -1,0 +1,12 @@
+{
+ "rule": "One entry per mandate row id. code: [\"path::symbol\"] (symbol defined there); tests: files that exist and name the module; leg: an hourly_cycle leg; artifacts: what the leg writes. desks/mt5/research/mandate_audit.py verifies each claim every pass and the row takes the highest stage that holds. A failing claim changes nothing.",
+ "claims": {
+  "ASIA-0931": {
+   "by": "Finish all paused work",
+   "code": ["desks/mt5/research/mandate_audit.py::build"],
+   "tests": ["desks/mt5/tests/test_mandate_audit.py"],
+   "leg": "mandate_audit",
+   "artifacts": ["desks/mt5/reports/MANDATE_AUDIT.json"]
+  }
+ }
+}
