@@ -22,6 +22,10 @@ from typing import Any
 #: byte-identical to what it has always been, and every other chart is named explicitly.
 REFERENCE_TIMEFRAME = "H1"
 
+#: Families the judge PINS to one chart (`external_gauntlet._PINNED_TIMEFRAME`, sealed; a test
+#: holds the two equal). A docket row of one names the judge's cell only through this.
+PINNED_TIMEFRAME: dict[str, str] = {"lvc_asia_london": "M5"}
+
 
 def timeframe_of(cell: dict[str, Any]) -> str:
     """The chart a cell is hunted on: its own `timeframe`, its params', or H1 by default."""
@@ -109,8 +113,16 @@ def docket_cell(row: dict[str, Any]) -> dict[str, Any]:
     row_tf = str(row.get("timeframe") or "").upper()
     if row_tf and row_tf != REFERENCE_TIMEFRAME and "timeframe" not in params:
         params["timeframe"] = row_tf
-    return {"sym": row.get("symbol") or row.get("sym"), "family": row.get("family"),
+    cell = {"sym": row.get("symbol") or row.get("sym"), "family": row.get("family"),
             "params": params}
+    # A PINNED family's chart is the judge's, whatever the row says: `build_cell` stamps
+    # `timeframe_of(params, family)` on the cell it names, so `lvc_asia_london` is judged as
+    # `SYM@M5...` while its docket rows carry no chart at all (13 rows never joined, audit
+    # 2026-09-30). The pin rides on the cell, exactly as the judge's own spec carries it.
+    pinned = PINNED_TIMEFRAME.get(str(row.get("family") or ""))
+    if pinned:
+        cell["timeframe"] = pinned
+    return cell
 
 
 def docket_cell_id(row: dict[str, Any]) -> str:

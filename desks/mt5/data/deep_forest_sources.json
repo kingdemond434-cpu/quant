@@ -1148,7 +1148,10 @@
    "alt": [
     "https://www.boj.or.jp/en/statistics/index.htm"
    ],
-   "dataset_class": "central_bank_data"
+   "dataset_class": "central_bank_data",
+   "fetched_by": [
+    "central_bank_miner"
+   ]
   },
   {
    "name": "財務省 外国為替平衡操作の実施状況",
