@@ -1180,15 +1180,9 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
             new.append({"day": day, "rail": r.name,
                         "value": float(m.get("value_logw_per_day", 0.0)),
                         "at": datetime.now(tz=UTC).isoformat()})
-    if new and write:
-        try:
-            LEDGER.parent.mkdir(parents=True, exist_ok=True)
-            with LEDGER.open("a", encoding="utf-8") as fh:
-                for row in new:
-                    fh.write(json.dumps(row) + "\n")
-        except (OSError, ValueError) as exc:           # audit v2: a full disk never kills the bill
-            print(f"missed_growth: ledger append failed ({type(exc).__name__}: {exc})",
-                  file=sys.stderr)
+    append_failed = _append_ledger(new) if new and write else None
+    if append_failed is not None:
+        new = []                       # nothing was recorded, so no sample is claimed
     rows = existing + new
     # 2. verdicts from the accumulated samples (or the direct measurement for vetoes)
     verdicts: dict[str, dict[str, Any]] = {}
@@ -1254,6 +1248,7 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
     aggression = alloc.get("aggression") or {}
     doc = {"generated_utc": datetime.now(tz=UTC).isoformat(), "day": day,
            "ledger_rows": len(rows), "new_samples": len(new), "rails": verdicts,
+           **({"ledger_append_failed": append_failed} if append_failed else {}),
            "veto_evidence_source": fv.get("source"),
            "costs_growth": sorted(k for k, v in verdicts.items() if v.get("verdict") == COSTS),
            "earns": sorted(k for k, v in verdicts.items() if v.get("verdict") == EARNS),
@@ -1282,6 +1277,32 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     return doc
+
+
+def _append_ledger(new: list[dict[str, Any]]) -> str | None:
+    """Append `new` to the ledger as ONE write, after cutting any torn trailing fragment back to
+    the last newline (a crash mid-line must not glue the next row onto it). Returns None, or why
+    it failed -- a full disk never kills the bill; the doc says so and claims no new sample."""
+    try:
+        LEDGER.parent.mkdir(parents=True, exist_ok=True)
+        with LEDGER.open("a+b") as fh:
+            fh.seek(0, 2)
+            size = fh.tell()
+            if size:
+                fh.seek(max(0, size - 65536))
+                tail = fh.read()
+                if not tail.endswith(b"\n"):
+                    cut = tail.rfind(b"\n")
+                    fh.truncate((size - len(tail) + cut + 1) if cut >= 0 else
+                                (0 if size <= 65536 else size))
+            fh.seek(0, 2)
+            fh.write("".join(json.dumps(r) + "\n" for r in new).encode("utf-8"))
+            fh.flush()
+        return None
+    except (OSError, ValueError) as exc:
+        why = f"{type(exc).__name__}: {exc}"[:200]
+        print(f"missed_growth: ledger append failed ({why})", file=sys.stderr)
+        return why
 
 
 def main() -> int:
