@@ -402,10 +402,13 @@ def _coverage(report: Path | None = None, *, require_state: bool = False,
     #     judge judged a two-day-old docket with nothing RED. A report without the block (written
     #     before this check) reads UNMEASURED.
     dm = doc.get("docket_merge")
-    if not isinstance(dm, dict) or dm.get("status") not in ("RED", "OK"):
+    if not isinstance(dm, dict) or dm.get("status") not in ("RED", "OK", "PRESERVED"):
         out["checks"].append({"metric": "docket_merge", "state": "UNMEASURED",
                               "why": (dm.get("why") if isinstance(dm, dict) else None)
                               or "report carries no docket_merge block"})
+    elif dm.get("status") == "PRESERVED":
+        out["checks"].append({"metric": "docket_merge", "state": "WARN",
+                              "why": str(dm.get("why") or "docket preserved: no fresh rows")})
     elif dm["status"] == "RED":
         failures.append("docket_merge")
         out["checks"].append({"metric": "docket_merge", "state": "FAIL",

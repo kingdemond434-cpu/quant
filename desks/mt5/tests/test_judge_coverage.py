@@ -624,3 +624,26 @@ def test_the_fence_fails_a_stale_docket_merge(tmp_path: Path) -> None:
     doc = fence.judge(report, now=NOW)
     assert doc["verdict"] == "FAIL"
     assert any(c["metric"] == "docket_merge" and c["state"] == "FAIL" for c in doc["checks"])
+
+
+def test_a_preserved_docket_reads_preserved_never_ok_never_red(tmp_path: Path) -> None:
+    mr = tmp_path / "merge_report.json"
+    mr.write_text(json.dumps({"merged_at": (NOW - timedelta(hours=6)).isoformat(),
+                              "preserved": True,
+                              "checked_at": (NOW - timedelta(minutes=30)).isoformat()}), "utf-8")
+    doc = jc.docket_merge_lag(NOW, mr)
+    assert doc["status"] == "PRESERVED"
+    # A preserve stamp that is itself stale is the merge not running: RED.
+    mr.write_text(json.dumps({"merged_at": (NOW - timedelta(hours=6)).isoformat(),
+                              "preserved": True,
+                              "checked_at": (NOW - timedelta(hours=5)).isoformat()}), "utf-8")
+    assert jc.docket_merge_lag(NOW, mr)["status"] == "RED"
+    report = tmp_path / "JUDGE_COVERAGE.json"
+    report.write_text(json.dumps({
+        "at": NOW.isoformat(), "totals": {},
+        "docket_merge": {"status": "PRESERVED", "why": "kept"},
+        "families": {"alpha": {"unjudged": 40, "queued": 10, "judged_window": 12, "quota": 10,
+                               "window_h": 4.0}}}), "utf-8")
+    out = fence.judge(report, now=NOW)
+    assert any(c["metric"] == "docket_merge" and c["state"] == "WARN" for c in out["checks"])
+    assert out["verdict"] != "FAIL"

@@ -22,6 +22,7 @@ import json
 import os
 import sys
 import tempfile
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -30,7 +31,44 @@ BASE = Path(__file__).resolve().parent.parent
 HYP = BASE / "data" / "hypotheses"
 if str(BASE.parents[1]) not in sys.path:
     sys.path.insert(0, str(BASE.parents[1]))
-from libs.ops.atomic_replace import replace_with_retry  # noqa: E402
+from libs.ops.atomic_replace import DEFAULT_MAX_WAIT_S, replace_with_retry  # noqa: E402
+
+#: When this pass started, so the replace's wait never outlives the leg's own cap.
+_T0 = time.monotonic()
+#: Seconds kept back from the leg cap for the report writes after the docket lands.
+REPLACE_TAIL_S = 60.0
+#: A docket temp file older than this belongs to a pass that was killed mid-write.
+ORPHAN_TMP_AGE_S = 2 * 3600.0
+
+
+def _replace_wait_s() -> float:
+    """The replace's retry budget: DEFAULT_MAX_WAIT_S, cut to what the leg cap
+    (`QUANT_LEG_BUDGET_S`) leaves after this pass's elapsed time and a reporting tail -- a wait
+    the parent kills mid-way would leave the old docket AND a 1.5M-row temp file behind."""
+    try:
+        cap = float(os.environ.get("QUANT_LEG_BUDGET_S") or 0)
+    except ValueError:
+        cap = 0.0
+    if cap <= 0:
+        return DEFAULT_MAX_WAIT_S
+    left = cap - (time.monotonic() - _T0) - REPLACE_TAIL_S
+    return max(5.0, min(DEFAULT_MAX_WAIT_S, left))
+
+
+def sweep_orphan_temps(target: Path | None = None, *, now: float | None = None) -> list[str]:
+    """Remove `.<docket>.*.tmp` files older than `ORPHAN_TMP_AGE_S`: a pass killed mid-write
+    (a leg timeout never runs `finally`) leaves its whole serialised docket behind."""
+    tgt = target or TARGET
+    t = time.time() if now is None else now
+    gone: list[str] = []
+    for p in tgt.parent.glob(f".{tgt.name}.*.tmp"):
+        try:
+            if t - p.stat().st_mtime > ORPHAN_TMP_AGE_S:
+                p.unlink()
+                gone.append(p.name)
+        except OSError:
+            continue
+    return gone
 TARGET = HYP / "external_survivors.json"
 
 
@@ -62,10 +100,34 @@ def _write_docket_atomically(path: Path, rows: list[dict[str, Any]] | dict[str, 
             os.fsync(stream.fileno())
         # A READER HOLDING THE DOCKET OPEN REFUSES THE RENAME ON WINDOWS (10-27: the merge died
         # here on [WinError 5] and the docket never shipped again). Retried, never skipped.
-        replace_with_retry(pending, path)
+        replace_with_retry(pending, path, max_wait_s=_replace_wait_s())
     finally:
         if os.path.exists(pending):
             os.unlink(pending)
+
+
+def _mark_preserved(report: Path, now: datetime, rows: int) -> None:
+    """Keep the last merge's report, stamped `preserved` with this pass's `checked_at`."""
+    try:
+        prior = json.loads(report.read_text("utf-8"))
+        if not isinstance(prior, dict):
+            prior = {}
+    except (OSError, ValueError):
+        prior = {}
+    prior.update(preserved=True, checked_at=now.isoformat(timespec="seconds"),
+                 preserved_rows=rows)
+    try:
+        fd, pending = tempfile.mkstemp(prefix=f".{report.name}.", suffix=".tmp",
+                                       dir=report.parent)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                json.dump(prior, fh, default=str)
+            replace_with_retry(pending, report, max_wait_s=30.0)
+        finally:
+            if os.path.exists(pending):
+                os.unlink(pending)
+    except OSError as exc:
+        print(f"merge: preserved-docket stamp not written ({type(exc).__name__}: {exc})")
 
 
 def _chart_local_order(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -678,7 +740,12 @@ def _lease(path: Path) -> None:
 
 
 def main() -> int:
+    global _T0
+    _T0 = time.monotonic()
     now = datetime.now(tz=UTC)
+    _orphans = sweep_orphan_temps()
+    if _orphans:
+        print(f"merge: removed {len(_orphans)} docket temp file(s) left by a killed pass")
     # HUNT ONLY WHAT THE DESK CAN TRADE (principal, 2026-09-03: "limit all hunting to fusion
     # tradeable symbols only so all compute is used fr tradeable edges").
     #
@@ -1153,6 +1220,9 @@ def main() -> int:
         if isinstance(prior, list) and prior:
             print(f"merge: 0 fresh rows this run -- PRESERVING the existing docket of "
                   f"{len(prior)} candidate(s) rather than shipping an empty file downstream.")
+            # SAID, NOT SILENT (audit of 043b4a0f4): without this the report kept its old
+            # merged_at and a quiet producer hour read as "the merge is not shipping".
+            _mark_preserved(HYP / "merge_report.json", now, len(prior))
             return 0
     # PRE-REGISTRATION, BOTH HALVES, HERE (2026-09-30). This merge runs on the hour BEFORE the
     # judge reads the docket, so it is the last point where a card can honestly precede a

@@ -934,6 +934,14 @@ def docket_merge_lag(at: datetime, path: Path | None = None, *,
         return out
     age = (at - merged).total_seconds() / 3600.0
     out.update(merged_at=merged.isoformat(timespec="seconds"), age_h=round(age, 2))
+    checked = _ts(doc.get("checked_at")) if doc.get("preserved") is True else None
+    if age > lag_h and checked is not None and (at - checked).total_seconds() / 3600.0 <= lag_h:
+        # The merge RAN and found nothing fresh, so it kept the docket: its own state, never OK
+        # (no new cell reached the judge) and never RED (the writer is not broken).
+        out.update(status="PRESERVED", checked_at=checked.isoformat(timespec="seconds"),
+                   why=(f"the merge ran {(at - checked).total_seconds() / 3600:.1f} h ago with "
+                        f"0 fresh rows and kept the docket last merged {age:.1f} h ago"))
+        return out
     if age > lag_h:
         out.update(status="RED", why=(f"the docket was last merged {age:.1f} h ago (past "
                                       f"{lag_h:g} h): the merge is not shipping, so the judge "

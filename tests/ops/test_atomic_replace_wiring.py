@@ -95,3 +95,46 @@ def test_the_docket_writer_survives_a_reader_holding_the_docket(tmp_path: Path,
     assert calls["n"] == 4
     assert json.loads(target.read_text("utf-8"))[0]["family"] == "carry"
     assert [p.name for p in tmp_path.iterdir()] == ["external_survivors.json"]
+
+
+def _mh():
+    sys.path.insert(0, str(ROOT / "desks" / "mt5"))
+    from research import merge_hypotheses as mh
+    return mh
+
+
+def test_a_killed_passs_docket_temp_is_swept_and_a_live_one_kept(tmp_path: Path) -> None:
+    import os
+    mh = _mh()
+    target = tmp_path / "external_survivors.json"
+    old = tmp_path / ".external_survivors.json.abc.tmp"
+    new = tmp_path / ".external_survivors.json.def.tmp"
+    for p in (old, new):
+        p.write_text("[]", "utf-8")
+    os.utime(old, (1_000.0, 1_000.0))
+    os.utime(new, (1_000.0 + mh.ORPHAN_TMP_AGE_S, 1_000.0 + mh.ORPHAN_TMP_AGE_S))
+    gone = mh.sweep_orphan_temps(target, now=1_000.0 + mh.ORPHAN_TMP_AGE_S + 1.0)
+    assert gone == [old.name] and new.exists()
+
+
+def test_the_replace_wait_never_outlives_the_leg_cap(monkeypatch) -> None:
+    mh = _mh()
+    monkeypatch.delenv("QUANT_LEG_BUDGET_S", raising=False)
+    assert mh._replace_wait_s() == ar.DEFAULT_MAX_WAIT_S
+    monkeypatch.setenv("QUANT_LEG_BUDGET_S", "720")
+    monkeypatch.setattr(mh, "_T0", mh.time.monotonic() - 600.0)
+    assert mh._replace_wait_s() == pytest.approx(720 - 600 - mh.REPLACE_TAIL_S, abs=2.0)
+    monkeypatch.setattr(mh, "_T0", mh.time.monotonic() - 10_000.0)
+    assert mh._replace_wait_s() == 5.0
+
+
+def test_a_preserved_docket_is_stamped_not_left_silent(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+    mh = _mh()
+    report = tmp_path / "merge_report.json"
+    report.write_text(json.dumps({"merged_at": "2026-10-27T11:14:30+00:00", "total": 9}), "utf-8")
+    mh._mark_preserved(report, datetime(2026, 10, 29, 12, tzinfo=UTC), 9)
+    doc = json.loads(report.read_text("utf-8"))
+    assert doc["preserved"] is True and doc["checked_at"].startswith("2026-10-29T12")
+    assert doc["merged_at"] == "2026-10-27T11:14:30+00:00", "the last real merge is kept"
+    assert [p.name for p in tmp_path.iterdir()] == ["merge_report.json"]
