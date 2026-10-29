@@ -1193,6 +1193,8 @@ def _local_chat(user: str, system: str, model: str, base_url: str, timeout: floa
     req = urllib.request.Request(base_url.rstrip("/") + "/chat/completions", data=body,
                                  headers={"Content-Type": "application/json"})
     try:
+        from libs.ops import openrouter_guard  # loopback never bills; the guard still sees it
+        openrouter_guard.check_request(req)
         with urllib.request.urlopen(req, timeout=timeout) as r:
             doc = json.loads(r.read().decode("utf-8"))
         return str(doc["choices"][0]["message"]["content"]), None
