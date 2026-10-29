@@ -234,7 +234,8 @@ def test_legs_are_wired_hourly_and_contracted_on_numeric_metrics():
     assert {"fence_planner", "fence_missed_trades"} <= hc.CORE_LEGS
     contracts = json.loads((DESK.parent.parent / "docs" / "research" /
                             "experiment_contracts.json").read_text("utf-8"))["legs"]
-    assert contracts["fence_planner"]["falsifier"]["metric"] == "divergent_measured_symbol_days"
+    assert contracts["fence_planner"]["falsifier"]["metric"] == \
+        "divergent_measured_symbol_days_14d"
     assert contracts["fence_missed_trades"]["falsifier"]["metric"] == "priced_rows"
     assert isinstance(_build(_ledger(12, 12))["divergent_measured_symbol_days"], int)
     mg_src = (DESK / "research" / "missed_growth.py").read_text("utf-8")
