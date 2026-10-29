@@ -1825,66 +1825,102 @@ def _files_tree(root: Path, files: dict[str, str]) -> Path:
     return root
 
 
-def test_a_script_is_money_path_only_when_it_runs_the_money_path(tmp_path: Path) -> None:
-    """2026-10-29: every .ps1 under desks/mt5/scripts/ was money path by directory, and the
-    replay imports only Python, so a CRO lane installer (#439) was UNMEASURED forever."""
-    base = _files_tree(tmp_path / "base", {
-        "desks/mt5/research/run_gateway_loop.py": "from mt5desk import gateway\n",
-        "desks/mt5/mt5desk/__init__.py": "",
-        "desks/mt5/mt5desk/gateway.py": "",
-        "desks/mt5/scripts/install_e8_tasks.ps1": "& $py research\\run_gateway_loop.py\n",
-        "desks/mt5/scripts/by_module.cmd": "python -m mt5desk.gateway\n",
-        "desks/mt5/scripts/venue.ps1": "Start-Process terminal64.exe\n",
-        "desks/mt5/scripts/calls_money.ps1": ". (Join-Path $PSScriptRoot 'install_e8_tasks.ps1')\n",
-        "desks/mt5/scripts/cro_lane.ps1": "# not E8_ or FTMO\n<# fusion #>\nRegister-X\n",
-        "desks/mt5/scripts/tail_name.ps1": "& $py scripts\\offsite_gateway.py\n",
-        "desks/mt5/scripts/was_money.ps1": "Start-Process terminal64.exe\n",
-    })
-    head = _files_tree(tmp_path / "head", {"desks/mt5/scripts/was_money.ps1": "Write-Output hi\n"})
-    closure = rs.import_closure(base)
-    money = rs.money_scripts((base, head), closure)
-    for f in ("install_e8_tasks.ps1", "by_module.cmd", "venue.ps1", "calls_money.ps1",
-              "was_money.ps1"):  # fmt: skip
-        assert f"desks/mt5/scripts/{f}" in money, f
-    for f in ("cro_lane.ps1", "tail_name.ps1"):
-        assert f"desks/mt5/scripts/{f}" not in money, f
-        assert not rs.is_money(f"desks/mt5/scripts/{f}", closure, money)
+_BASE = {
+    "desks/mt5/research/run_gateway_loop.py": (
+        "from mt5desk import gateway\nFLAG = 'GOLD_RETIRED.json'\nSW = 'PF_ALLOCATOR_ARMED'\n"
+    ),
+    "desks/mt5/mt5desk/__init__.py": "",
+    "desks/mt5/mt5desk/gateway.py": "",
+    "desks/mt5/scripts/install_e8_tasks.ps1": "& $py research\\run_gateway_loop.py\n",
+    "desks/mt5/scripts/helper.ps1": "function Lock { 'x' }\n",
+    "desks/mt5/scripts/backup.ps1": "Copy-Item a b\n",
+    "desks/mt5/scripts/report.py": "import json\nprint(json.dumps({}))\n",
+}
+_LISTED = {"desks/mt5/scripts/backup.ps1", "desks/mt5/scripts/report.py",
+           "desks/mt5/scripts/helper.ps1", "desks/mt5/scripts/new_tool.ps1"}  # fmt: skip
+
+
+def _money(tmp_path: Path, edits: dict[str, str]) -> set[str]:
+    base = _files_tree(tmp_path / "base", dict(_BASE))
+    head = _files_tree(tmp_path / "head", {**_BASE, **edits})
+    return rs.money_scripts((base, head), rs.import_closure(base), _LISTED)
+
+
+def test_every_script_is_money_path_unless_reviewed_and_clean(tmp_path: Path) -> None:
+    """#508 audit HOLD: a fail-open text scan became fail closed. Only a listed script that
+    names nothing is not money path; an unlisted one always is, whatever it says."""
+    money = _money(tmp_path, {})
+    assert "desks/mt5/scripts/install_e8_tasks.ps1" in money
+    assert "desks/mt5/scripts/backup.ps1" not in money
+    assert "desks/mt5/scripts/report.py" not in money
+    unlisted = _money(tmp_path / "u", {"desks/mt5/scripts/quiet.ps1": "Write-Output hi\n"})
+    assert "desks/mt5/scripts/quiet.ps1" in unlisted
     # data, state and config under the money directories stay money whatever they say
     for f in ("desks/mt5/scripts/knobs.json", "desks/mt5/ops/CPU_SHAPE.json",
               "desks/mt5/data/sleeves.json"):  # fmt: skip
-        assert rs.is_money(f, closure, money), f
+        assert rs.is_money(f, set(), money), f
 
 
-def test_the_live_lane_installers_are_not_money_and_the_book_installers_are() -> None:
-    """On the real tree: #439's CRO lane scripts name no money-path file, and every installer
-    of a task that sizes or places orders is money path."""
+@pytest.mark.parametrize(
+    "body",
+    [
+        '$a = "<#"; & $py research\\run_gateway_loop.py; $b = "#>"\n',  # fake comment marker
+        "from mt5desk import gateway\n",  # package form
+        "python -m desks.mt5.mt5desk.gateway\n",  # package-prefixed module
+        '& "$PSScriptRoot\\install_e8_tasks"\n',  # extension-less script name
+        "Start-ScheduledTask -TaskName 'MT5-Hourly'\n",  # indirect start
+        "powershell -EncodedCommand SQBFAFgA\n",  # encoded
+        "Invoke-Expression (Get-Content x.txt)\n",  # evaluated
+        "import importlib\nimportlib.import_module('mt5desk.' + 'gate' + 'way')\n",
+        "__import__('Meta' + 'Trader5')\n",
+        "exec(open('x.py').read())\n",
+        "import subprocess\nsubprocess.run(['python', 'y.py'])\n",
+        "import sys\nsys.path.insert(0, 'desks/mt5')\nimport decision_core\n",
+        "Set-Content GOLD_RETIRED.json '1'\n",  # a state file the closure reads
+        "New-Item PF_ALLOCATOR_ARMED\n",  # a switch the closure spells
+        "Set-Content RELEASE_STOP.json 1\n",
+        "Set-Content PROMOTION_FREEZE.json 1\n",
+        "Set-Content MINLOT_OVERRIDE.json 1\n",
+        "Start-Process terminal64.exe\n",
+    ],
+)
+def test_every_audited_evasion_of_a_listed_script_is_money_path(tmp_path: Path, body: str) -> None:
+    money = _money(tmp_path, {"desks/mt5/scripts/backup.ps1": "Copy-Item a b\n" + body})
+    assert "desks/mt5/scripts/backup.ps1" in money
+
+
+def test_a_new_listed_script_with_any_dynamic_line_is_money_path(tmp_path: Path) -> None:
+    money = _money(tmp_path, {"desks/mt5/scripts/new_tool.ps1": "& $exe --version\n"})
+    assert "desks/mt5/scripts/new_tool.ps1" in money
+    money = _money(tmp_path / "b", {"desks/mt5/scripts/new_tool.ps1": "Get-Date\n"})
+    assert "desks/mt5/scripts/new_tool.ps1" not in money
+
+
+def test_the_callee_of_a_money_script_is_money_path(tmp_path: Path) -> None:
+    """#508 audit: GitWriterMutex.ps1, dot-sourced by Adopt-And-Seal.ps1, slipped through."""
+    money = _money(tmp_path, {
+        "desks/mt5/scripts/install_e8_tasks.ps1": (
+            "& $py research\\run_gateway_loop.py\n. (Join-Path $PSScriptRoot 'helper.ps1')\n"
+        ),
+    })  # fmt: skip
+    assert "desks/mt5/scripts/helper.ps1" in money
+
+
+def test_an_unreadable_listed_script_is_money_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real = rs.read
+    monkeypatch.setattr(
+        rs, "read", lambda t, f: None if f.endswith("backup.ps1") else real(t, f)
+    )
+    assert "desks/mt5/scripts/backup.ps1" in _money(tmp_path, {})
+
+
+def test_the_live_book_installers_are_money_path_on_the_real_tree() -> None:
     closure = rs.import_closure(ROOT)
     money = rs.money_scripts((ROOT,), closure)
     for f in ("install_e8_tasks.ps1", "install_ftmo_follower_task.ps1",
-              "Install-QuantWindows.ps1"):  # fmt: skip
+              "Install-QuantWindows.ps1", "install_cro_cycle_tasks.ps1"):  # fmt: skip
         assert f"desks/mt5/scripts/{f}" in money, f
-    assert "desks/mt5/scripts/install_cro_cycle_tasks.ps1" not in money
-
-
-def test_a_python_tool_is_money_path_only_when_it_runs_or_names_the_money_path(
-        tmp_path: Path) -> None:
-    """#508: a stand-alone .py under desks/mt5/scripts/ was money path by directory too, and the
-    replay never imports it, so every backup or report tool there was UNMEASURED."""
-    base = _files_tree(tmp_path / "base", {
-        "desks/mt5/research/run_gateway_loop.py": "from mt5desk import gateway\n",
-        "desks/mt5/mt5desk/__init__.py": "",
-        "desks/mt5/mt5desk/gateway.py": "",
-        "desks/mt5/scripts/imports_gateway.py": "from mt5desk import gateway\n",
-        "desks/mt5/scripts/venue.py": "import MetaTrader5 as mt5\n",
-        "desks/mt5/scripts/writes_sleeves.py": "open('data/sleeves.json', 'w')\n",
-        "desks/mt5/scripts/broken.py": "def (:\n",
-        "desks/mt5/scripts/backup.py": "import shutil\nshutil.copy('a', 'b')\n",
-        "desks/mt5/scripts/runs_tool.ps1": "& $py scripts\\imports_gateway.py\n",
-    })
-    closure = rs.import_closure(base)
-    money = rs.money_scripts((base,), closure)
-    for f in ("imports_gateway.py", "venue.py", "writes_sleeves.py", "broken.py",
-              "runs_tool.ps1"):  # fmt: skip
-        assert f"desks/mt5/scripts/{f}" in money, f
-    assert "desks/mt5/scripts/backup.py" not in money
-    assert not rs.is_money("desks/mt5/scripts/backup.py", closure, money)
+    listed = rs.listed_not_money()
+    assert all(rs.is_script(f) for f in listed), "only scripts can be listed"

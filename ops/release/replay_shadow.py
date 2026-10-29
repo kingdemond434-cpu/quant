@@ -17,8 +17,9 @@ MERGES). It also FAILS when:
   file, another book): nothing here measured it, and an unmeasured change is never a pass. The
   money path is DERIVED from the base, not listed by hand: the static import closure (an AST
   walk, nothing run) of every entry point the box's tasks run to size or place orders, plus the
-  desk's books and state directories, plus every script that runs or names any of it
-  (`money_scripts`; a script that names none is reported, not measured) (#457 audit MF2);
+  desk's books and state directories, plus every script under desks/mt5/scripts/ and ops/
+  except the reviewed exceptions in ops/release/not_money_scripts.txt (`money_scripts`, fail
+  closed) (#457 audit MF2, #508 audit);
 - it changes a module-level UPPER_CASE constant in a money-path file (a knob: a rail count, a
   margin, a grace) that ops/release/ceilings.json does not already bound. A grid exercises the
   knobs it reaches; this catches the ones it does not (#457 audit MF1);
@@ -62,28 +63,42 @@ ENTRY_POINTS = (
     "desks/mt5/prop/e8_executor.py", "desks/mt5/prop/e8_gold.py", "desks/mt5/prop/e8_book.py",
     "desks/mt5/prop/ftmo_follower.py",
 )  # fmt: skip
-#: SCRIPTS ARE MONEY PATH BY WHAT THEY RUN, NOT BY WHERE THEY SIT (2026-10-29). The replay only
-#: imports Python, so a .ps1 under desks/mt5/scripts/ could never be "imported" and every change
-#: to one was UNMEASURED forever (#439, a CRO lane installer that runs no order code). A script
-#: under these directories (shell, or a stand-alone Python tool) is money path when it is a Python
-#: tool that imports the money path or MetaTrader5, or when its base OR PR text (shell scripts;
-#: comments stripped) names a money-path Python file
-#: (the import closure or an entry point, by file name or dotted module), a word of the venue
-#: (MONEY_WORDS), or another money-path script, to a fixed point. Every other script is listed
-#: as `not_money_scripts` in the report, never silently passed. Data, state and config files
-#: under MONEY_PATH stay money path whatever they say.
+#: SCRIPTS: MONEY PATH UNLESS SHOWN OTHERWISE (2026-10-29; #508 audit HOLD on a text scan that
+#: failed OPEN). Every shell script and stand-alone Python tool under SCRIPT_DIRS is money path
+#: (the replay imports only Python, so a change to one reads UNMEASURED: the manual path). The
+#: one way out is a REVIEWED exception: listed in ops/release/not_money_scripts.txt, read from
+#: THIS checkout (the base's, PROTECTED: a PR can never list itself), and then only while
+#:   - neither the base's nor the PR's text, raw (comments too: stripping can only remove money),
+#:     names a money-path module or package (any form: file, stem, dotted, package-prefixed),
+#:     a venue word (MONEY_WORDS), a state or switch file the money path reads (derived from the
+#:     closure's own string literals, plus STATE_WORDS), or a money-path script;
+#:   - the PR adds no line of dynamic execution (DYNAMIC) the reviewed base did not have;
+#:   - no money-path script calls, sources or names it (the callee direction);
+#:   - it can be read in every tree it is in (a read failure is money path).
 SCRIPT_EXTS = (".ps1", ".psm1", ".cmd", ".bat", ".sh")
 SCRIPT_DIRS = ("desks/mt5/scripts/", "desks/mt5/ops/")
+NOT_MONEY = HERE / "not_money_scripts.txt"
 MONEY_WORDS = re.compile(
-    r"terminal64|metatrader|autotrading|mt5[-_]gateway|ftmo|fusion|\be8[-_]|order_send",
+    r"terminal64|metatrader|autotrading|mt5[-_]?gateway|ftmo|fusion|(?<![a-z0-9])e8(?![0-9])"
+    r"|order_send|order_check|positions_get",
     re.IGNORECASE,
 )
-#: The gateway's own switches and books, by file name: a tool that names one may write it, which
-#: changes what the live book does without importing a line of it.
+#: The floor of switch and book names; `state_names` adds every file and flag name the closure's
+#: own code spells out.
 STATE_WORDS = re.compile(
-    r"sleeves\.json|gateway_state|gateway_paused|cashcarry_kill|deadman|\bfreeze\b|live_door"
-    r"|sleeve_registry|account_state",
+    r"sleeves\.json|gateway_state|gateway_paused|cashcarry_kill|deadman|freeze|live_door"
+    r"|sleeve_registry|account_state|retired|minlot|min_lot|sovereign|release_stop|kill",
     re.IGNORECASE,
+)
+#: A line that can run something no scan can name: indirect calls, encoded or evaluated text,
+#: task starts, sourcing, and Python's dynamic import and process calls.
+DYNAMIC = re.compile(
+    r"invoke-expression|\biex\b|-enc(odedcommand)?\b|-e\s+[a-z0-9+/=]{20,}|start-process|start-job"
+    r"|invoke-command|start-scheduledtask|register-scheduledtask|schtasks|\bcall\b|^\s*\.\s"
+    r"|\bsource\b|importlib|__import__|runpy|\bexec\s*\(|\beval\s*\(|subprocess|os\.system"
+    r"|os\.popen|os\.exec|os\.spawn|&\s*[$(\"']|cmd(\.exe)?\s+/[ck]|powershell(\.exe)?\s"
+    r"|pwsh(\.exe)?\s|python\S*\s+-[cm]\b|sys\.path",
+    re.IGNORECASE | re.MULTILINE,
 )
 #: Where `import x` resolves on the box: the repository root and the desk.
 IMPORT_ROOTS = ("", "desks/mt5")
@@ -256,74 +271,108 @@ def import_closure(tree: Path, entries: tuple[str, ...] = ENTRY_POINTS) -> set[s
 
 
 def is_script(path: str) -> bool:
-    """A shell script or a stand-alone Python tool under SCRIPT_DIRS: judged by what it runs."""
+    """A shell script or a stand-alone Python tool under SCRIPT_DIRS."""
     return path.startswith(SCRIPT_DIRS) and path.lower().endswith((*SCRIPT_EXTS, ".py"))
 
 
-def _py_runs_money(tree: Path, f: str, closure: set[str]) -> bool:
-    """A Python tool is money path when it is in the closure, statically imports anything in it,
-    imports the venue's own module, or names the venue or a gateway switch or book anywhere in
-    its text (docstrings too: the safe side). Unparseable is money path (fail closed)."""
-    if f in closure or f in ENTRY_POINTS:
-        return True
-    src = read(tree, f) or ""
-    if MONEY_WORDS.search(src) or STATE_WORDS.search(src):
-        return True
+def listed_not_money(path: Path = NOT_MONEY) -> set[str]:
+    """The reviewed exceptions: one repo path per line, `#` starts a comment (the why)."""
     try:
-        node = ast.parse(src)
-    except (SyntaxError, ValueError):
-        return True
-    for n in ast.walk(node):
-        mods = ([a.name for a in n.names] if isinstance(n, ast.Import)
-                else [n.module or ""] if isinstance(n, ast.ImportFrom) else [])
-        if any(m.split(".")[0].lower() == "metatrader5" for m in mods):
-            return True
-    return bool((import_closure(tree, (f,)) - {f}) & closure)
+        lines = path.read_text("utf-8").splitlines()
+    except OSError:
+        return set()
+    return {ln.split("#", 1)[0].strip() for ln in lines if ln.split("#", 1)[0].strip()}
 
 
-_BLOCK_COMMENT = re.compile(r"<#.*?#>", re.DOTALL)
-_LINE_COMMENT = re.compile(r"^[ \t]*(?:#|rem\b|::).*$", re.IGNORECASE | re.MULTILINE)
-
-
-def _code(src: str) -> str:
-    """A script's text without its comments, lower-cased: prose that mentions the venue runs
-    nothing. A `#` after code on the same line is kept (it may sit inside a string)."""
-    return _LINE_COMMENT.sub("", _BLOCK_COMMENT.sub("", src)).lower()
+def state_names(tree: Path, closure: set[str]) -> set[str]:
+    """Every file or flag name the money path's own code spells out: string literals that end in
+    a data extension (by base name and stem), and UPPER_SNAKE names a flag file may carry."""
+    out: set[str] = set()
+    for f in closure:
+        try:
+            node = ast.parse(read(tree, f) or "")
+        except (SyntaxError, ValueError):
+            continue
+        for n in ast.walk(node):
+            if not (isinstance(n, ast.Constant) and isinstance(n.value, str)):
+                continue
+            v = n.value.strip()
+            base = re.split(r"[\\/]", v)[-1]
+            m = re.fullmatch(r"([\w.-]+)\.(json|jsonl|csv|parquet|flag|lock|txt|ya?ml)", base)
+            if m and len(m.group(1)) >= 4:
+                out |= {base.lower(), m.group(1).lower()}
+            elif re.fullmatch(r"[A-Z][A-Z0-9]*(_[A-Z0-9]+)+", v) and len(v) >= 6:
+                out.add(v.lower())
+    return out
 
 
 def _names_any(text: str, names: set[str]) -> bool:
-    """Any name as a whole path segment or module (`\\e8_gold.py`, `-m mt5desk.gateway`), never
-    as the tail of a longer name (`backup.py` inside `offsite_backup.py`)."""
-    return any(re.search(r"(?<![\w.-])" + re.escape(n) + r"(?![\w])", text) for n in names)
+    """Any name as a whole word or path segment, never as the tail of a longer one (`backup.py`
+    inside `offsite_backup.py`); `.` and `\\` around it are separators, so `mt5desk.gateway`,
+    `from mt5desk import gateway` and `scripts\\x` all count."""
+    return any(re.search(r"(?<![\w-])" + re.escape(n) + r"(?![\w-])", text) for n in names)
 
 
-def money_scripts(trees: tuple[Path, ...], closure: set[str]) -> set[str]:
-    """The scripts under SCRIPT_DIRS that run, or name, the money path in ANY of `trees` (the base
-    and the PR: a script that was money path stays so whatever the PR rewrites it to)."""
-    py = {*closure, *ENTRY_POINTS}
-    names = {Path(f).name.lower() for f in py if Path(f).name != "__init__.py"}
-    for f in py:  # `-m mt5desk.gateway` as well as `mt5desk\gateway.py`
-        for root in IMPORT_ROOTS:
-            if root and f.startswith(root + "/"):
-                f = f[len(root) + 1 :]
-        dotted = f[:-3].replace("/", ".").lower()
-        if f.endswith(".py") and not f.endswith("__init__.py") and "." in dotted:
-            names.add(dotted)  # package-qualified only: a bare `config` is in every script
-    text: dict[str, str] = {}
+def _money_names(tree: Path, closure: set[str]) -> set[str]:
+    """How a script can name the money path's Python: file, stem, every dotted suffix and
+    package-prefixed form, and each package directory the closure imports through."""
+    names: set[str] = set()
+    for f in {*closure, *ENTRY_POINTS}:
+        p = Path(f)
+        if p.name == "__init__.py":
+            names.add(p.parent.name.lower())
+            continue
+        names |= {p.name.lower(), p.stem.lower()}
+        parts = f[:-3].lower().split("/")
+        names |= {".".join(parts[i:]) for i in range(len(parts) - 1)}
+    return {n for n in names if len(n) >= 3}
+
+
+def money_scripts(
+    trees: tuple[Path, ...], closure: set[str], listed: set[str] | None = None
+) -> set[str]:
+    """The scripts under SCRIPT_DIRS that are money path in `trees` (the base first, then the
+    PR): all of them but the listed exceptions that pass every test in the note above."""
+    listed = listed_not_money() if listed is None else listed
+    files = {t: tree_files(t) for t in trees}
+    scripts = {f for t in trees for f in files[t] if is_script(f)}
+    names = _money_names(trees[0], closure)
+    states = state_names(trees[0], closure)
+    text: dict[str, list[str]] = {}
     money: set[str] = set()
-    for tree in trees:
-        for f in tree_files(tree):
-            if not is_script(f):
-                continue
-            if f.endswith(".py"):
-                if _py_runs_money(tree, f, closure):
+    for f in sorted(scripts):
+        got = []
+        for t in trees:
+            if f in files[t]:
+                x = read(t, f)
+                if x is None:  # unreadable (a lazy blob on a blobless checkout): money path
                     money.add(f)
-                continue  # a tool's prose (docstrings) names things it does not run
-            text[f] = text.get(f, "") + "\n" + _code(read(tree, f) or "")
-    money |= {f for f, t in text.items() if MONEY_WORDS.search(t) or _names_any(t, names)}
-    while True:  # a script that calls a money-path script is one
-        called = {Path(f).name.lower() for f in money}
-        more = {f for f, t in text.items() if f not in money and _names_any(t, called)}
+                got.append((x or "").lower())
+        text[f] = got
+    stems = {f: {Path(f).name.lower(), Path(f).stem.lower()} for f in scripts}
+    for f in scripts - money:
+        if f not in listed or f in closure or f in ENTRY_POINTS:
+            money.add(f)
+            continue
+        got = text[f]
+        in_base = f in files[trees[0]]
+        base_lines = (
+            {ln.strip() for ln in got[0].splitlines() if DYNAMIC.search(ln)} if in_base else set()
+        )
+        dyn = {ln.strip() for x in got for ln in x.splitlines() if DYNAMIC.search(ln)}
+        if (
+            any(MONEY_WORDS.search(x) or STATE_WORDS.search(x) for x in got)
+            or any(_names_any(x, names | states) for x in got)
+            or dyn - base_lines  # dynamic execution the reviewed base did not have
+        ):
+            money.add(f)
+    while True:  # a listed script that names or is named by a money-path script is one
+        free = scripts - money
+        more = {
+            f for f in free
+            if any(_names_any(x, set().union(*(stems[m] for m in money))) for x in text[f])
+            or any(_names_any(x, stems[f]) for m in money for x in text[m])
+        }  # fmt: skip
         if not more:
             return money
         money |= more
@@ -381,8 +430,9 @@ def bounded() -> dict[str, set[str]]:
     return out
 
 
-def knob_changes(base: Path, head: Path, changed: list[str], closure: set[str],
-                 scripts: set[str] | None = None) -> list[str]:
+def knob_changes(
+    base: Path, head: Path, changed: list[str], closure: set[str], scripts: set[str] | None = None
+) -> list[str]:
     problems = []
     held = bounded()
     for f in changed:
@@ -528,7 +578,7 @@ def compare(
         "steps": len(grid) * len(HOURS),
         "intents_compared": placed,
         "problems": problems,
-        # changed scripts that name no money-path file, venue word or money-path script
+        # changed scripts that are reviewed exceptions (ops/release/not_money_scripts.txt)
         "not_money_scripts": not_money,
     }
 
