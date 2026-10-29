@@ -2,6 +2,21 @@
  "doc": "Experiment contracts: every registered hourly leg declares hypothesis, metric, falsifier, budget and owner (libs/tiers/experiment_contract.py). budget and owner are DERIVED from hourly_cycle.LEG_BUDGET_SEC / LEG_DEPARTMENT when absent; the metric half is DERIVED from tier_s_program.json leg_contracts when that programme wrote one. Fence: scripts/check_experiment_contracts.py (law gate). Hourly reading: leg experiment_contracts -> desks/mt5/reports/EXPERIMENT_CONTRACTS.json.",
  "schema": "experiment-contracts-registry/1",
  "legs": {
+  "judge_prescreen": {
+   "hypothesis": "A pre-build screen that decides from the cell's identity, its chart's calendar, its family's own input guard and its siblings' recorded verdicts can take cells away from the sealed judge before the signal build at ZERO true-survivor kills, measured by a time-ordered replay of the judge's own gate ledger, so the judge's scarce build seconds go to cells that can survive.",
+   "metric": {
+    "gain": "PRODUCTIVITY",
+    "metric": "sibling_dead.cells_replayed",
+    "better": "up",
+    "organ": "report:JUDGE_PRESCREEN.json"
+   },
+   "falsifier": {
+    "metric": "survivor_spec_audit.provable_rule_fired_on_certified",
+    "op": ">",
+    "threshold": 0,
+    "after": "a PROVABLE rule fired on a certified cell on this box's own bars: the proof is broken and the rule must stay shadow until it is fixed"
+   }
+  },
   "build_failure_bank": {
    "hypothesis": "Ranking every cell that failed to BUILD by cause class turns silently dropped cells into named fix work, so the failed-to-build count falls as the top causes are fixed.",
    "metric": {

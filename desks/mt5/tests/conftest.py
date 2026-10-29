@@ -165,6 +165,44 @@ def _order_door_writes_to_tmp(tmp_path_factory, monkeypatch):
     yield
 
 
+#: The judge pre-build screen's two reports (`research/judge_prescreen`). Every `order_docket`
+#: pass with `publish=True` writes the intake report, and the hourly leg writes the main one.
+PRESCREEN_REPORTS = ("INTAKE_REPORT", "REPORT")
+
+
+@pytest.fixture(autouse=True)
+def _prescreen_reports_in_tmp(tmp_path_factory, monkeypatch):
+    """THE PRESCREEN'S REPORTS NEVER LAND IN THE CHECKOUT FROM A TEST (prescreen v1.7). Before
+    this, any `test_judge_coverage*` test that published wrote
+    `desks/mt5/reports/JUDGE_PRESCREEN_INTAKE.json`. Both module spellings are patched:
+    `judge_coverage._prescreen` imports the bare `judge_prescreen` first and falls back to
+    `research.judge_prescreen`, and the two are separate module objects. The fixture imports
+    only what the test session's own sys.path can already reach and changes no path. A spelling
+    that cannot be imported is one the hook cannot reach either. A test's own redirect (for example
+    `test_judge_prescreen`'s `paths`) is applied after this one and wins."""
+    import importlib
+    import sys
+
+    mods = []
+    for name in ("judge_prescreen", "research.judge_prescreen"):
+        mod = sys.modules.get(name)
+        if mod is None:
+            try:
+                mod = importlib.import_module(name)
+            except Exception:
+                mod = None
+        if mod is not None and mod not in mods:
+            mods.append(mod)
+    if mods:
+        d = tmp_path_factory.mktemp("prescreen_reports")
+        for mod in mods:
+            for attr in PRESCREEN_REPORTS:
+                cur = getattr(mod, attr, None)
+                if isinstance(cur, Path):
+                    monkeypatch.setattr(mod, attr, d / cur.name)
+    yield
+
+
 #: The fake logins the conftest's flat books are keyed by (never a real account).
 #: The E8 identity is the TEST VENUE's own (r7.2, audit r7.1 MF-1): every fake TLAPI handle the
 #: suite uses (`account_id`/`acc_id` 31337 on server "E8-Test") keys to the declared E8 account.

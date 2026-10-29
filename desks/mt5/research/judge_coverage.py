@@ -291,11 +291,15 @@ class _LedgerScan:
     original OSError branch over the rows read before the error.
     """
 
-    __slots__ = ("cell_seen", "err", "judged_at", "judged_total", "live_at", "passed", "tail")
+    __slots__ = ("cell_ruled", "cell_seen", "err", "judged_at", "judged_total", "live_at",
+                 "passed", "tail")
 
     def __init__(self, path: Path) -> None:
         self.err = False
         self.cell_seen: set[str] = set()
+        #: every cell the judge recorded ANY fate for (gate-0 reject, UNKNOWN or ten-gate; never a
+        #: NOT_RUN deferral) -- what `judge_prescreen` may never kill and must hand a charge to.
+        self.cell_ruled: set[str] = set()
         #: per family, rows that carry a real verdict (judged_index's all-time count; the
         #: realised pass rates' denominator is the same filter).
         self.judged_total: dict[str, int] = {}
@@ -313,6 +317,7 @@ class _LedgerScan:
         judged_append = self.judged_at.append
         live_append = self.live_at.append
         total, passed, seen = self.judged_total, self.passed, self.cell_seen
+        ruled = self.cell_ruled
         try:
             with path.open("r", encoding="utf-8", errors="replace") as fh:
                 for raw in fh:
@@ -329,6 +334,8 @@ class _LedgerScan:
                     if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
                         continue
                     ok = row.get("passed")
+                    if row.get("cell"):
+                        ruled.add(str(row["cell"]))
                     unk = ok is not True and str(row.get("terminal_gate") or "") in ("", "UNKNOWN")
                     raw_at = row.get("at")
                     try:
@@ -1806,6 +1813,20 @@ def parked_trial_rows(blocked: list[dict[str, Any]],
             out.append({k: v for k, v in r.items() if k in TRIAL_KEYS})
             if len(out) >= PARKED_TRIAL_ROWS_MAX:
                 break
+    return out
+
+
+def prescreen_trial_rows(before: list[dict[str, Any]], after: list[dict[str, Any]], *,
+                         room: int = PARKED_TRIAL_ROWS_MAX) -> list[dict[str, Any]]:
+    """The rows `_prescreen` took out of the docket (in `before`, not in `after`, by object
+    identity -- the screen returns the rows it keeps, never copies), trimmed to TRIAL_KEYS."""
+    kept = {id(r) for r in after}
+    out: list[dict[str, Any]] = []
+    for r in before:
+        if len(out) >= room:
+            break
+        if id(r) not in kept and isinstance(r, dict):
+            out.append({k: v for k, v in r.items() if k in TRIAL_KEYS})
     return out
 
 
@@ -4046,6 +4067,28 @@ def fireability_order(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
                  "skipped, every row still judged and counted by the sealed judge in its turn")}
 
 
+def _prescreen(rows: list[dict[str, Any]], *, publish: bool,
+               seconds_per_cell: float | None = None
+               ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """`judge_prescreen.intake` on the docket, or the rows untouched when it cannot run."""
+    try:
+        try:
+            import judge_prescreen as _jp
+        except ImportError:                                    # pragma: no cover - import context
+            from research import judge_prescreen as _jp  # type: ignore[no-redef]
+        # THE JUDGE'S RULED SET, from this pass's memoised ledger scan: a row the judge already
+        # ruled is never screened, and a charged kill the judge has since ruled hands its trial
+        # over (exactly once). Unreadable -> None, and the screen then kills nothing.
+        scan = _ledger_scan(GATE_LEDGER)
+        ruled = None if scan is None or scan.err else scan.cell_ruled
+        return _jp.intake(rows, cell_of=lambda r: r.get("_cell") or _cell_id(r),
+                          probe=_fire_probe, publish=publish, ruled=ruled,
+                          seconds_per_cell=seconds_per_cell)
+    except (Exception, SystemExit) as exc:                     # never costs the docket
+        return rows, {"mode": "UNMEASURED", "removed_from_docket": 0,
+                      "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
+
+
 def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
                  now: datetime | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """THE INTAKE CALL. Return the docket re-ordered for coverage, and the table it implies.
@@ -4098,11 +4141,30 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
         blocked = [r for r in rows if str(r.get("_cell") or "") in bank]
         rows = [r for r in rows if str(r.get("_cell") or "") not in bank]
         _ptrials = parked_trial_rows(blocked, bank)
+        # THE PRE-BUILD SCREEN (research/judge_prescreen, principal 2026-10-28), AFTER the bank
+        # filter so it never re-decides a parked cell. SHADOW by default: the rows come back
+        # untouched and JUDGE_PRESCREEN_INTAKE.json records what each rule WOULD remove. Only
+        # when the code constant judge_prescreen.CANON is flipped by a reviewed commit does a
+        # canon-eligible rule remove a row -- after its KILL is durable in the kill ledger, as
+        # a recorded terminal verdict charged exactly once. Fails open: any error ships the rows.
+        _cap = int((doc.get("totals") or {}).get("capacity_measured") or 0)
+        _screened = rows
+        rows, doc["prescreen"] = _prescreen(
+            rows, publish=publish,
+            seconds_per_cell=judge_seconds_per_cell(_cap) if _cap else None)
+        # A SCREENED-OUT ROW STAYS IN THE TRIAL CENSUS, exactly as a parked one does (the same
+        # audit S4 reasoning: removing a row from the docket must move no `effective_trials`
+        # charge). Empty in SHADOW, where the screen removes nothing; under CANON the rows the
+        # kill ledger durably removed are written beside the docket with the parked rows, and
+        # `effective_trials.census_rows` counts each trial identity once.
+        _ptrials = _ptrials + prescreen_trial_rows(
+            _screened, rows, room=PARKED_TRIAL_ROWS_MAX - len(_ptrials))
         _ppath = _write_parked_trials(_ptrials, doc.get("_txn"))
         doc["build_input_parked_trials"] = {
             "rows": len(_ptrials), "path": str(_ppath),
-            "rule": ("rows parked as build_input_missing stay in the trial census "
-                     "(effective_trials reads them beside the docket): parking moves no charge")}
+            "rule": ("rows parked as build_input_missing, and rows the pre-build screen removed "
+                     "under CANON, stay in the trial census (effective_trials reads them beside "
+                     "the docket): neither parking nor screening moves a charge")}
         judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
         study = [r for r in rows if str(r.get("family") or "") in banned]
         # CHARGE VARIANTS AGAINST THEIR PARENT. The split marks the rows; the two orders below
@@ -4189,8 +4251,8 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
                                                       / PARKED_TRIAL_ROWS.name):
             _write_parked_trials([], None)
         for _r in entry_rows:
-            # `_famdup` (judge-families' stamp) too: a fault after `family_stamp` shipped it,
-            # failing #424's test_a_fault_after_the_filter_ships_the_rows_as_they_arrived
+            # `_famdup` (judge-families' stamp) too: on efde2f1c4 a fault after `family_stamp`
+            # shipped it, failing #424's test_a_fault_after_the_filter_ships_the_rows_as_they_arrived
             for _k in ("_cell", "_variant", "_keff", "_occ", "_orth", "_famdup"):
                 _r.pop(_k, None)
         return entry_rows, {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
