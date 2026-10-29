@@ -179,13 +179,14 @@ WORLD_ALIASES: dict[str, tuple[str, ...]] = {
                "தங்கம்", "தங்கத்தின்", "தங்க", "బంగారం", "బంగారు", "सोन्याचा", "सोन्याचे",
                "सोन्याची", "सोनं", "સોનું", "સોના", "ginto", "aurul", "aurului", "aur fizic",
                "zlato", "zlata", "arany", "aranyat", "χρυσ"),
-    "XAGUSD": ("نقره", "نقره‌ای", "چاندی", "রূপা", "রূপার", "வெள்ளி விலை", "వెండి", "ચાંદી",
+    "XAGUSD": ("نقره", "نقره\u200cای", "چاندی", "রূপা", "রূপার", "வெள்ளி விலை", "వెండి", "ચાંદી",  # noqa: RUF001
                "pilak", "argint", "stříbro", "ezüst", "ασήμι"),
     "XTIUSD": ("نفت", "نفتی", "تیل", "তেলের", "অপরিশোধিত তেল", "கச்சா எண்ணெய்", "ముడి చమురు",
                "कच्चे तेल", "ક્રૂડ", "langis", "țiței", "olaj", "πετρέλαιο"),
 }
 #: Arabic, Bengali, Tamil, Telugu, Gujarati and Devanagari, as regex character ranges.
-_SCRIPTS = ("؀-ۿ", "ঀ-৿", "஀-௿", "ఀ-౿", "઀-૿", "ऀ-ॿ")
+_SCRIPTS = ("\u0600-\u06ff", "\u0980-\u09ff", "\u0b80-\u0bff", "\u0c00-\u0c7f", "\u0a80-\u0aff",
+            "\u0900-\u097f")
 #: alias -> its script block: no letter of that script may precede or follow it (so "طلاب",
 #: students, and "نفتح", we open, never read as gold and oil).
 SCRIPT_BOUNDED: dict[str, str] = {
