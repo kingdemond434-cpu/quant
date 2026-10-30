@@ -57,6 +57,12 @@ HEALTH_MAX_AGE_MIN = 90
 #: resurrected the exact reverters the principal spent the day killing.
 RESTARTABLE = {"STALE", "NO_ARTIFACT"}
 
+#: A task Running past its own ExecutionTimeLimit with no fresh output (process_health HUNG).
+HUNG_DIAGNOSIS = ("running past its own ExecutionTimeLimit with no fresh output, so the "
+                  "IgnoreNew policy refuses every new start: end the stuck instance "
+                  "(End-ScheduledTask) and read its log for where it stopped. This watchdog "
+                  "never stops anything itself.")
+
 #: Result codes whose cure is a registration change, not a restart. Named so the report carries
 #: the diagnosis rather than the code.
 DIAGNOSIS = {
@@ -265,7 +271,9 @@ def run(apply: bool) -> dict:
     for row in (doc.get("processes") or []):
         verdict = str(row.get("verdict") or "")
         name = str(row.get("name") or "")
-        if not name or verdict in ("OK", "RUNNING", "DISABLED"):
+        # RESIDENT_RUNNING (process_health, 2026-10-29): 0x800710E0 on a Running task is its own
+        # resident instance refusing a relaunch, judged fresh by its output -- not a breakage.
+        if not name or verdict in ("OK", "RUNNING", "DISABLED", "RESIDENT_RUNNING"):
             continue
         # UNCONTRACTED IS A BOOKKEEPING GAP, NOT A BREAKAGE. The organ runs fine; nobody wrote it
         # an artifact contract, so nothing would notice if it stopped. That is worth fixing and
@@ -290,6 +298,12 @@ def run(apply: bool) -> dict:
         # PER-ORGAN FIRST, then the generic code table. The specific answer beats the general one
         # whenever both exist, and for the small exit codes only the specific one can exist.
         diag = TASK_DIAGNOSIS.get((name, code)) if isinstance(code, int) else None
+        if diag is None and row.get("cure"):
+            diag = str(row["cure"])   # the producer's own named cure (RESIDENT_UNMEASURED)
+        if diag is None and verdict == "HUNG":
+            # Never the code's table entry: on a Running task 0x800710E0 means "already running",
+            # and the defect is the instance that stopped producing output inside its own limit.
+            diag = HUNG_DIAGNOSIS
         if diag is None and isinstance(code, int):
             diag = DIAGNOSIS.get(code)
         escalated.append({
