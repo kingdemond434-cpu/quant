@@ -250,6 +250,9 @@ desks/mt5/data/daily_cycle_state.json
 desks/mt5/data/task_queue.jsonl
 # box-local append-only ledger behind reports/DSR_INPUTS.json (its sha256 is in the report)
 desks/mt5/data/dsr_trial_sharpes.jsonl
+# learned pre-judge (research/prejudge_model.py): the box-local fitted model + its rate tables,
+# refit hourly from the box's own gate ledger; never a committed fact about another machine
+desks/mt5/data/prejudge_model/
 desks/mt5/data/task_queue.subs.json
 desks/mt5/data/task_queue.watermark
 # Cross-account fence (mt5desk.cross_account): each account's book as THIS box's lanes last read

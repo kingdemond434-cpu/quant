@@ -1085,6 +1085,9 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
 #:                       lasted past 3 consecutive passes (daily_cycle.EXIT_STAMP_UNREADABLE*)
 NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
     "judge_coverage": {3: "TIMEOUT_UNCOMMITTED", 4: "REUSE_STALE", 5: "RECOVERY_REFUSED"},
+    # research/prejudge_model.py EXIT_MODEL_STALE: the pre-judge model is past its age or a fit
+    # died mid-way, so the docket is ordered by a stale model -- a failure, named.
+    "prejudge_model": {3: "MODEL_STALE"},
     "daily": {DAILY_CYCLE_HOLDER_HUNG: "HOLDER_HUNG",
               DAILY_CYCLE_STAMP_UNREADABLE: "STAMP_UNREADABLE",
               DAILY_CYCLE_STAMP_UNREADABLE_PERSISTENT: "STAMP_UNREADABLE_PERSISTENT"},
@@ -1183,7 +1186,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     "prosecutor", "scaling_laws", "arena", "session_capital", "session_allocation",
     "allocator_join", "rebalance_trigger", "edge_reliability", "edge_confidence", "capacity",
     "fill_attribution", "execution_resolver", "markout", "swap_rejudge", "queue_compact",
-    "requeue_unrunnable", "merge_docket", "miner_conversion", "graveyard_model",
+    "requeue_unrunnable", "prejudge_model", "merge_docket", "miner_conversion", "graveyard_model",
     "research_exchange_score", "model_skill", "research_org", "experiment_design",
     "experiment_cache", "opportunity_gap", "opportunity_forecast", "forecast_contract",
     "alpha_breadth", "alpha_periodic_table", "regime_coverage", "timeframe_coverage",
@@ -1278,7 +1281,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
                      "judge_coverage", "judge_prescreen", "orthogonality_yield",
                      "effective_trials",
-                     "occupancy_map", "dsr_inputs"), "data"),
+                     "occupancy_map", "dsr_inputs", "prejudge_model"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
@@ -2197,6 +2200,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # DSR inputs reads one sweep report and the trial-Sharpe ledger and writes one JSON; seconds
     # on the build box. The cap is protection against a damaged file, not a budget.
     "dsr_inputs": 300,
+    # The learned pre-judge streams the gate ledger once and fits on <= 200k rows; it is bounded
+    # by its sample cap, not a budget, and skips the fit inside its own hourly refit window.
+    "prejudge_model": 600,
     # The net-edge spine stops itself at --budget-s 600 and writes NET_EDGE.json plus the
     # intake join file; the cap sits above it so the hour is never cut at the same prefix.
     "net_edge": 700,
@@ -5236,6 +5242,14 @@ def main() -> None:
     # on the VPS, and the box is Windows with no systemd. So every candidate this machine mined,
     # compiled, deepened or swept reached a merge only if the other machine happened to run one.
     # Third instance of this exact shape today, after enrolment and miner_conversion.
+    # THE LEARNED PRE-JUDGE, REFIT BEFORE THE DOCKET WRITER READS IT (principal 2026-10-13).
+    # Streams the gate verdict ledger (bounded: a stratified <= 200k-row sample), fits a boring
+    # HistGradientBoosting P(survive) over cheap cell metadata and persists it under
+    # data/prejudge_model/ (refit at most hourly). `merge_hypotheses` then flags the low-priority
+    # half of each family's never-judged rows, minus a seeded exploration quota -- queue order
+    # only, never a rejection. Data department, information layer.
+    pjm = _costed("prejudge_model", lambda: _producer(
+        "prejudge_model", "research/prejudge_model.py", "--train"))
     mh = _costed("merge_docket", lambda: _producer(
         "merge_hypotheses", "research/merge_hypotheses.py"))
     # THE BACKTEST. Also on no clock, anywhere -- not this roster, not the daily cycle, not the
@@ -6281,7 +6295,8 @@ def main() -> None:
                     "external_gauntlet": gt, "fast_admission": fa,
                     "canon_publication": cpub, "judging_burndown": jbd, "lockbox_recert": lrc,
                     "rejection_throughput": rjt,
-                    "falsifier_run": fz, "style_novelty": snv, "merge_docket": mh,
+                    "falsifier_run": fz, "prejudge_model": pjm, "style_novelty": snv,
+                    "merge_docket": mh,
                     "backtest": bt,
                     "wiring_audit": wa, "brain_ab": ab, "alpha_breadth": cm,
                     "alpha_evolution": aev, "research_bandit": rbd, "closed_loop": clp,
