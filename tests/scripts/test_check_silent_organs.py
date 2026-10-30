@@ -186,16 +186,67 @@ def test_skipped_unmeasured_and_absent_legs_are_unmeasured_rows(tmp_path: Path) 
                               "ok": {"exit_code": 0}}, [])
     doc = so.build(health_path=h, marker_path=m, never_stale_path=tmp_path / "n.json")
     verdicts = {r["organ"]: r["verdict"] for r in doc["organs"]}
-    assert verdicts == {f"leg:{k}": "UNMEASURED" for k in "abcde"}
+    # SKIPPED_BY_PLAN is another clock's leg, not an unread one (audit 2026-10-30).
+    assert verdicts == {f"leg:{k}": "UNMEASURED" for k in "acde"}
     assert doc["status"] == doc["fence"] == "UNMEASURED"
     assert doc["n_silent"] is None and doc["n_silent_floor"] == 0
-    assert doc["n_unmeasured_legs"] == 5
+    assert doc["n_unmeasured_legs"] == 4
+
+
+def test_a_pass_whose_only_gaps_are_other_clocks_legs_is_measured(tmp_path: Path) -> None:
+    """Audit 2026-10-30: every plan writes SKIPPED_BY_PLAN for OWN_CLOCK_LEGS, which kept the
+    fence UNMEASURED (exit 3, a standing failed leg and a BLIND issue) on every pass."""
+    assert {"state_vector", "external_gauntlet"} <= so._own_clock_legs()
+    legs = {"state_vector": {"status": "SKIPPED_BY_PLAN", "plan": "core"},
+            "external_gauntlet": {"status": "SKIPPED_BY_PLAN", "plan": "core"},
+            "breadth_sweep": {"status": "SKIPPED_BY_PLAN", "plan": "core"},
+            "ok": {"exit_code": 0}}
+    h, m = _inputs(tmp_path, legs, [])
+    doc = so.build(health_path=h, marker_path=m, never_stale_path=tmp_path / "n.json")
+    assert doc["status"] == doc["fence"] == "GREEN"
+    assert doc["n_silent"] == 0 and doc["n_unmeasured_legs"] == 0
+    h, m = _inputs(tmp_path, {**legs, "x": {"status": "LEG_FAILED", "error": "boom"}}, [])
+    doc = so.build(health_path=h, marker_path=m, never_stale_path=tmp_path / "n.json")
+    assert doc["status"] == "AMBER" and isinstance(doc["n_silent"], int) and doc["n_silent"] == 1
+
+
+def test_a_standing_heavy_failure_is_not_new_after_the_core_pass(tmp_path: Path) -> None:
+    """Audit 2026-10-30: failing (heavy) -> not run (core) -> failing (heavy) re-paged as NEW."""
+    ns = tmp_path / "n.json"
+    fail = {"x": {"status": "LEG_FAILED", "error": "boom"}}
+    h, m = _inputs(tmp_path, fail, [])
+    first = so.build(health_path=h, marker_path=m, previous={"organs": []}, never_stale_path=ns)
+    assert first["new_silent"] == ["leg:x"]
+    h, m = _inputs(tmp_path, {"x": {"status": "SKIPPED_BY_PLAN", "plan": "core"}}, [])
+    second = so.build(health_path=h, marker_path=m, previous=first, never_stale_path=ns)
+    row = {r["organ"]: r for r in second["organs"]}["leg:x"]
+    assert row["verdict"] == "LEG_FAILED" and row["carried"] is True
+    assert second["status"] == "AMBER" and second["cleared"] == []
+    h, m = _inputs(tmp_path, fail, [])
+    third = so.build(health_path=h, marker_path=m, previous=second, never_stale_path=ns)
+    assert third["new_silent"] == [] and third["fence"] == "AMBER"
+    assert {r["organ"]: r for r in third["organs"]}["leg:x"]["passes_silent"] == 3
+
+
+def test_an_unmeasured_carry_keeps_the_last_verdict_and_is_not_new_after(tmp_path: Path) -> None:
+    """Failing, then unread, then failing again: the same failure, never NEW the second time."""
+    ns = tmp_path / "n.json"
+    fail = {"x": {"status": "LEG_FAILED", "error": "boom"}}
+    h, m = _inputs(tmp_path, fail, [])
+    first = so.build(health_path=h, marker_path=m, previous={"organs": []}, never_stale_path=ns)
+    h, m = _inputs(tmp_path, {"x": {"status": "UNMEASURED"}}, [])
+    second = so.build(health_path=h, marker_path=m, previous=first, never_stale_path=ns)
+    row = {r["organ"]: r for r in second["organs"]}["leg:x"]
+    assert row["verdict"] == "UNMEASURED" and row["last_verdict"] == "LEG_FAILED"
+    h, m = _inputs(tmp_path, fail, [])
+    third = so.build(health_path=h, marker_path=m, previous=second, never_stale_path=ns)
+    assert third["new_silent"] == [] and third["fence"] == "AMBER"
 
 
 def test_an_unmeasured_leg_is_never_new_but_a_later_failure_is(tmp_path: Path) -> None:
     h, m = _inputs(tmp_path, {"x": {"exit_code": 0}}, [])
     first = so.build(health_path=h, marker_path=m, never_stale_path=tmp_path / "n.json")
-    h, m = _inputs(tmp_path, {"x": {"status": "SKIPPED_BY_PLAN"}}, [])
+    h, m = _inputs(tmp_path, {"x": {"status": "UNMEASURED"}}, [])
     second = so.build(health_path=h, marker_path=m, previous=first,
                       never_stale_path=tmp_path / "n.json")
     assert second["new_silent"] == [] and second["fence"] == "UNMEASURED"
@@ -252,6 +303,13 @@ def test_a_watchdog_that_refused_to_judge_is_unmeasured(tmp_path: Path) -> None:
                                             "why": "the health reading is 900 min old"})
     doc = so.build(health_path=h, marker_path=m, never_stale_path=ns)
     assert doc["fence"] == "UNMEASURED" and "900 min" in doc["unmeasured"][0]["why"]
+
+
+def test_a_stale_watchdog_reading_is_unmeasured(tmp_path: Path) -> None:
+    h, m = _inputs(tmp_path, {}, [])
+    ns = _w(tmp_path / "NEVER_STALE.json", {"at": "2026-09-16T12:00:00+00:00", "escalated": []})
+    doc = so.build(health_path=h, marker_path=m, never_stale_path=ns)
+    assert doc["fence"] == "UNMEASURED" and "STALE" in doc["unmeasured"][0]["why"]
 
 
 def test_the_fence_exit_is_not_a_declared_verdict_in_the_cycle() -> None:
