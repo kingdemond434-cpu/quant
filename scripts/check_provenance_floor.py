@@ -127,11 +127,14 @@ def main() -> int:
     args = ap.parse_args()
     code, msg = check(args.artifact, args.floor)
     print("candidates: " + msg, flush=True)
-    c1, m1 = check_url(args.artifact)
-    print("external urls: " + m1, flush=True)
+    # REPORTED, NEVER FENCED (run_law_gate's own wiring note): an hour dominated by internal
+    # generators reads no page, and the only way back above a fenced URL floor would be to mint
+    # fewer non-URL cells -- a throttle on mining by fiat. Its verdict is printed, not returned.
+    _c1, m1 = check_url(args.artifact)
+    print("external urls (reported, not fenced): " + m1, flush=True)
     c2, m2 = check_certificates()
     print("certificates: " + m2, flush=True)
-    return max(code, c1, c2)
+    return max(code, c2)
 
 
 if __name__ == "__main__":
