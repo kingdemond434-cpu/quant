@@ -1214,6 +1214,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE INGESTION-EXPLOITATION GATE (LAWS 5c): an artifact read and two ratchets, every pass.
     # The LEDGER it reads is heavy and stays in the data department; the gate is not.
     "ingestion_exploitation",
+    # THE FOREST-ATTEMPT FENCE (2026-09-30): every deep-forest ground attempted daily, or
+    # LOW_EV_RETIRED by name; a reader of the miner's per-ground ledgers, a second at most.
+    "forest_attempts",
     # THE LIVE-TRUTH ORGANS (Tier-1 audit #6/#17/#18/#19/#20, 2026-09-29): readers of artifacts
     # the desk already writes, each a few seconds. The calibration posterior runs before the
     # tracker, which reads it.
@@ -1343,7 +1346,13 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # each hunted family's own pipeline on null data: the gates' real
                      # false-positive rate, per family
                      "null_lab",
-                     "committees", "committee_ensembles", "rejection_throughput"),
+                     "committees", "committee_ensembles", "rejection_throughput",
+                     # the judge's ENVIRONMENT, measured before each sweep (recovered patch 08)
+                     "gauntlet_guard",
+                     # session_range_breakout judged as a PORTFOLIO (recovered patch 13)
+                     "srb_basket_judge",
+                     # ...and the uncorrelated leg sweep it reads, on its own daily refresh
+                     "srb_uncorrelated_sweep"),
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "bar_clock_probe", "causal_graph",
@@ -1388,8 +1397,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "alpha_replenishment", "research_dashboard",
                      "research_roi", "experiment_spine", "implementer",
                      "research_debt", "paradigm_router", "meta_controller", "research_bandit",
-                     "ingestion_exploitation", "coverage_tensor", "regional_parity",
-                     "research_evolution",
+                     "ingestion_exploitation", "forest_attempts",
+                     "coverage_tensor", "regional_parity", "research_evolution",
                      "compute_economics", "control_plane", "attribution_reconcile",
                      "fence_battery", "organ_battery", "research_artifacts", "engine_registry",
                      "search_paradigm_census", "producer_census", "productivity_census",
@@ -2056,6 +2065,18 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.
     "duty_cycle": 480,
     "forward_enrolment": 400,
+    # THE JUDGE'S ENVIRONMENT GUARD (recovered box patch 08, 2026-09-24). Eight bytes per universe
+    # frame, one commit-counter read and a cursor-bounded tail of the judge's log: seconds, not
+    # minutes. The one slow call is `schtasks /query /xml` (timeout 120 s); the cap sits above.
+    "gauntlet_guard": 240,
+    # THE BASKET JUDGE (recovered box patch 13) stops building legs and drawing its sign-flip null
+    # at --budget-s 600, then hands ~20 basket cells to the sealed judge, whose ten gates on
+    # prebuilt series take well under a minute. The cap sits above both; the 720 s default would
+    # leave no margin for a cold cache.
+    "srb_basket_judge": 840,
+    # THE SWEEP THE BASKET JUDGE READS stops building legs at --budget-s 480 and carries the rest
+    # from its previous pass; on the 23 hours a day its artifact is fresh it exits in a second.
+    "srb_uncorrelated_sweep": 600,
     # Reads canon, five lane state files and its own history, then writes two files. No market
     # data, no venue, no terminal call -- it is arithmetic over rows the enrolment leg just wrote.
     "certificate_clock_law": 180,
@@ -4582,15 +4603,22 @@ def main() -> None:
     # registered, disposed, and given EXACTLY ONE downstream state; a stranded unit becomes a
     # discovery so `discovery_compiler` closes it rather than a report nobody reads. It runs
     # AFTER the compiler on purpose: this hour's conversions are what it measures. Data dept.
+    # 480 s (was 240): the index now streams the WHOLE registry instead of its first 20,000
+    # rows, and every stranded unit is routed and drained in the same pass; the 720 s default
+    # cap still sits above it, so the pass writes before any kill.
     igl = _costed("ingestion_ledger", lambda: _producer("ingestion_ledger",
                                                         "research/ingestion_ledger.py",
-                                                        "--budget-s", "240",
+                                                        "--budget-s", "480",
                                                         "--grace-hours", "24"))
     # ITS GATE: the exploitation ratchet (up only), the DATA STRANDING ratchet (down only) and
     # the twelve-question data-utilization audit per dataset. A cheap reader, so it is a CORE
     # leg -- a gate that never ran is a claim the desk cannot cash (L1.49). Meta dept.
     ige = _costed("ingestion_exploitation", lambda: _producer(
         "ingestion_exploitation", "scripts/check_ingestion_exploitation.py"))
+    # THE FOREST-ATTEMPT FENCE: attempted / never-attempted / yielded / retired / overdue per
+    # deep-forest ground, one history line an hour, RED when never-attempted does not fall.
+    fat = _costed("forest_attempts", lambda: _producer(
+        "forest_attempts", "scripts/check_forest_attempts.py"))
     # THE MINING OBJECTIVE (M17/M18): the five sovereign KPIs, the miner reward and the
     # separation-of-powers check, from the registry. Meta.
     mob = _costed("mining_objective", lambda: _producer("mining_objective",
@@ -5345,6 +5373,14 @@ def main() -> None:
     # row re-stamped rather than re-judged.
     arm = _costed("attestation_remint", lambda: _producer(
         "attestation_remint", "research/attestation_remint.py", "--apply"))
+    # THE JUDGE DIES ON ITS ENVIRONMENT, NOT ITS BUDGET (recovered box patch 08). Measured over
+    # 844 MB of MT5-Gauntlet.log: 129 of 168 tracebacks were the commit ceiling breaking the pool
+    # at spawn and 19 were a torn universe frame read mid-rewrite. This measures both -- commit
+    # headroom and every frame's PAR1 sentinels -- plus the pass ledger from the judge's own log,
+    # into reports/GAUNTLET_PASSES.json, IMMEDIATELY BEFORE the sealed judge reads those frames.
+    # It starts nothing, stops nothing and never writes into the sealed judge.
+    ggd = _costed("gauntlet_guard", lambda: _producer(
+        "gauntlet_guard", "scripts/gauntlet_guard.py"))
     gt = _costed("external_gauntlet", lambda: _producer(
         "external_gauntlet", "scripts/external_gauntlet.py"))
     # THE CANON'S LAST MISSING LINK, IMMEDIATELY AFTER THE JUDGE. `external_gauntlet.py` is a
@@ -5969,6 +6005,23 @@ def main() -> None:
         "--once", "--budget-s", "240"))
     mrd = _costed("meta_rnd", lambda: _producer(
         "meta_rnd", "research/meta_rnd.py", "--once", "--budget-s", "180"))
+    # THE FAMILY JUDGED AS A BOOK, NOT ONE LEG AT A TIME (recovered box patch 13, 2026-09-24).
+    # SRB_UNCORRELATED_SWEEP passed 0 of 262 session_range_breakout cells and its own closing
+    # line named the test it had not run: near-zero-correlated legs summed into ONE series. This
+    # leg builds those portfolio series under membership rules fixed in the module, charges the
+    # ones that select on in-sample performance with a sign-flip null, charges every basket to
+    # the lifetime trial census (data/srb_basket_trials.jsonl -> experiment_ledger), and feeds
+    # the lot to the SEALED gauntlet as single cells. Report only: no gate ledger, no
+    # certificate, no authority file, no roster.
+    # ITS INPUT, ON A CLOCK. SRB_UNCORRELATED_SWEEP.json was written once by hand on the box and
+    # never again, so the basket judge read a photograph (or UNMEASURED on every other host). The
+    # sweep mints one leg per (hypothesis-lane instrument, session) on instruments clustered into
+    # correlation blocks and NOT held by the live book; it judges nothing and refreshes daily.
+    suw = _costed("srb_uncorrelated_sweep", lambda: _producer(
+        "srb_uncorrelated_sweep", "research/srb_uncorrelated_sweep.py", "--once",
+        "--budget-s", "480", "--max-age-h", "20"))
+    sbk = _costed("srb_basket_judge", lambda: _producer(
+        "srb_basket_judge", "research/srb_basket_judge.py", "--once", "--budget-s", "600"))
     ac = _costed("acceptance", lambda: _producer(
         "acceptance", "scripts/check_acceptance_properties.py"))
     # RED WHEN THE NOON CRO PASS STOPS LANDING (2026-10-29). It was driven from a laptop session
@@ -6199,6 +6252,7 @@ def main() -> None:
                     "conversion_maximiser": cvm, "conversion_funnel": cfn,
                     "research_debt": rdb,
                     "ingestion_ledger": igl, "ingestion_exploitation": ige,
+                    "forest_attempts": fat,
                     "macro_intelligence": mci, "market_constitution": mcc,
                     "mining_objective": mob, "research_gap_map": rgm,
                     "evidence_router": evr, "research_roi": rroi,
@@ -6342,6 +6396,9 @@ def main() -> None:
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
                     "certificate_clock_law": ccl, "clock_accrual": cac,
                     "external_gauntlet": gt, "fast_admission": fa,
+                    "gauntlet_guard": ggd,
+                    "srb_uncorrelated_sweep": suw,
+                    "srb_basket_judge": sbk,
                     "canon_publication": cpub, "judging_burndown": jbd, "lockbox_recert": lrc,
                     "attestation_remint": arm,
                     "rejection_throughput": rjt,
