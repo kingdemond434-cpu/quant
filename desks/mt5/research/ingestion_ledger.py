@@ -118,7 +118,8 @@ TAPE_TICKS = BASE / "data" / "tape" / "ticks"
 UNIVERSE = BASE / "data" / "universe"
 MOAT_SERIES = BASE / "data" / "moat"
 SHADOW_DIR = BASE / "reports" / "shadow"
-LIVE_LEDGER = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 MACRO_REPORT = BASE / "reports" / "MACRO_INTELLIGENCE.json"
 LEDGER = BASE / "data" / "ingestion_ledger.jsonl"
 OUT = BASE / "reports" / "INGESTION_EXPLOITATION.json"

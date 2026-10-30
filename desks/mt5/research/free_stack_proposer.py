@@ -18,6 +18,13 @@ saved ring cursor (the `htf_anchor_proposer` pattern), so every cell reaches the
 ten gates remain the only thing that certifies. `tests_run` on every donation file is the number
 of cells minted, so `libs.research.experiment_ledger` charges each one to its family.
 
+CHINA EXCHANGE AXES (audit P2, 2026-10-06). The `cnx_*` sources (SHFE / INE / DCE / CZCE / GFEX /
+CFFEX member rankings, warehouse stocks and curves, parsed by `libs.data.free_stack_cnx`) mint
+through this same grid; each of their cells carries its PART II axis (positioning, inventory,
+curve, divergence) in `evidence.axis`, the report counts cells per axis, and a `cnx_*` row the
+terms gate holds shut is named in `cn_exchange.blocked_on_terms` -- an absent axis is a reason,
+never a silent zero.
+
 Share CFDs never appear here: the hunter maps company-level columns to their index / FX proxies
 for this lane and `proposer_common.donate` refuses anything the two-lane order does not hunt.
 
@@ -82,9 +89,12 @@ def _row(sid: str, src: dict[str, Any], col: str, meta: dict[str, Any], sym: str
     from proposer_common import candidate
     mech = (f"{src.get('mechanism') or sid}; column {col} ({meta.get('why', '')}) "
             f"conditions {sym}")
+    evidence: dict[str, Any] = {"source_row": sid, "column": col, "arm": arm}
+    if sid.startswith("cnx_"):
+        from libs.data.free_stack_cnx import axis_of
+        evidence["axis"] = axis_of(col) or "other"
     c = candidate(SEAT, sym, family, {**params, "timeframe": chart}, mech,
-                  f"{family} on fs_{sid}.{col} -> {sym} {chart} [{arm}]",
-                  {"source_row": sid, "column": col, "arm": arm})
+                  f"{family} on fs_{sid}.{col} -> {sym} {chart} [{arm}]", evidence)
     c.update({k: src.get(k, "UNMEASURED") for k in CULTURE_KEYS})
     c["chart"] = chart
     c["required_data"] = [f"desks/mt5/data/lake/series/fs_{sid}.parquet"]
@@ -127,6 +137,28 @@ def build_grid(columns: dict[str, Any], roster: dict[str, dict[str, Any]]
     return out, skipped
 
 
+def cn_exchange_block(grid: list[dict[str, Any]], roster: dict[str, dict[str, Any]],
+                      columns: dict[str, Any], skipped: dict[str, str]) -> dict[str, Any]:
+    """Per China exchange row: its terms state, its signal columns and its cells per axis."""
+    out: dict[str, Any] = {"blocked_on_terms": [], "sources": {}}
+    by: dict[str, dict[str, int]] = {}
+    for c in grid:
+        ev = c.get("evidence") or {}
+        if str(ev.get("source_row", "")).startswith("cnx_"):
+            ax = by.setdefault(str(ev["source_row"]), {})
+            ax[str(ev.get("axis"))] = ax.get(str(ev.get("axis")), 0) + 1
+    for sid, row in sorted(roster.items()):
+        if not sid.startswith("cnx_"):
+            continue
+        terms = str(row.get("terms") or "to_confirm")
+        if terms != "confirmed":
+            out["blocked_on_terms"].append(sid)
+        out["sources"][sid] = {"terms": terms, "signal_columns": len(columns.get(sid) or {}),
+                               "cells_by_axis": by.get(sid) or {},
+                               "skipped": skipped.get(sid)}
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     ap.add_argument("--once", action="store_true")
@@ -134,11 +166,13 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     t0 = time.monotonic()
     columns = _read(COLUMNS, {}) or {}
-    grid, skipped = build_grid(columns, roster_rows())
+    roster = roster_rows()
+    grid, skipped = build_grid(columns, roster)
     doc: dict[str, Any] = {"built_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                            "writer": "research/free_stack_proposer.py", "seat": SEAT,
                            "sources_with_columns": len(columns), "skipped": skipped,
-                           "grid_total": len(grid)}
+                           "grid_total": len(grid),
+                           "cn_exchange": cn_exchange_block(grid, roster, columns, skipped)}
     if not grid:
         doc.update({"built": 0, "minted": 0, "status": "NO_SERIES" if columns else "NO_COLUMNS",
                     "why": ("no free-stack source has published a series on this host yet; "

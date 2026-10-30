@@ -138,7 +138,8 @@ TARGETS = [
 #:
 #: The cadences: fast re-solves EVERY MINUTE on the cached world population, normal rebuilds
 #: evidence and the no-trade filter every 15 min, heavy resamples the worlds and re-measures the
-#: growth curve hourly. ONE allocator process at a time; the mode is the most overdue of the
+#: growth curve every 4 h (hourly until 2026-10-21). ONE allocator process at a time; the mode is
+#: the most overdue of the
 #: three. The gateway consumes the newest book every minute and the no-trade filter, not this
 #: clock, decides whether the book is worth trading toward (dE[log W] > turnover + slippage +
 #: the uncertainty buffer), so a faster clock makes the book fresher without making it churn.
@@ -163,17 +164,47 @@ PERIODIC = [
      # staleness, not a promise about runtime.
      #
      # Only the FAST leg moves. Normal still rebuilds evidence every 15 min and heavy still
-     # resamples the world population and re-measures the growth curve hourly, because those are
+     # resamples the world population and re-measures the growth curve (every 4 h), because
+     # those are
      # the expensive passes and running them every minute would starve the gauntlet and the
      # brain seats that share this box. Fast re-solves on the CACHED worlds, which is what makes
      # a one-minute cadence affordable at all.
-     "cadence_s": {"fast": 60, "normal": 900, "heavy": 3600}},
+     #
+     # HEAVY ON THE HOURLY CYCLE'S 4 H CADENCE (2026-10-21, principal: Option B). This worker is
+     # the second heavy scheduler (MT5-ResearchSupervisor, Install-QuantWindows.ps1); left at
+     # 3600 s it would run the scan hourly whatever MT5-Hourly does and free no cores. It now
+     # shares the cadence AND defers to a fresh scan from either scheduler (_scan_is_fresh), so
+     # the two together still measure about every 4 h, not every 2.
+     "cadence_s": {"fast": 60, "normal": 900, "heavy": 4 * 3600}},
 ]
+
+#: MUST equal hourly_cycle.ADMISSION_SCAN_MAX_AGE_S (pinned by a test; not imported, because
+#: importing the hourly cycle into a resident worker drags its whole module graph along).
+ADMISSION_SCAN_MAX_AGE_S = 4 * 3600.0 - 1800.0
+
+
+def _scan_is_fresh(now: float, art: Path | None = None) -> bool:
+    """True when pf_allocation.json carries a MEASURED admission scan younger than
+    ADMISSION_SCAN_MAX_AGE_S. Anything unreadable is NOT fresh, so heavy still runs."""
+    art = art or (BASE / "reports" / "pf_allocation.json")
+    try:
+        adm = json.loads(art.read_text("utf-8")).get("admission") or {}
+        if adm.get("status") != "MEASURED":
+            return False
+        ts = datetime.fromisoformat(
+            str(adm.get("carried_from") or adm.get("measured_utc")).replace("Z", "+00:00"))
+    except (OSError, ValueError, TypeError, AttributeError):
+        return False
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=UTC)
+    return 0 <= now - ts.timestamp() < ADMISSION_SCAN_MAX_AGE_S
 
 
 def _allocator_mode(state: dict, now: float, cadence: dict[str, int]) -> str | None:
     """The most overdue mode, heaviest first; None when nothing is due yet."""
     for mode in ("heavy", "normal", "fast"):
+        if mode not in cadence:                 # a mode left out is not due (see tick_periodic)
+            continue
         last = float((state.get(f"pf_allocator_{mode}") or {}).get("last_spawn", 0) or 0)
         if now - last >= cadence[mode]:
             return mode
@@ -190,6 +221,12 @@ def tick_periodic(state: dict, now: float, spawn) -> list[str]:
         if is_running(p["match"]):
             continue
         mode = _allocator_mode(state, now, p["cadence_s"])
+        if mode == "heavy" and p["name"] == "pf_allocator" and _scan_is_fresh(now):
+            # Another scheduler measured inside the window: heavy is not due, and the lighter
+            # modes keep their OWN cadences (a bare downgrade to normal relaunched normal on
+            # every tick while heavy stayed overdue -- 360 spawns in 3 h, audit v2).
+            mode = _allocator_mode(state, now, {k: v for k, v in p["cadence_s"].items()
+                                                if k != "heavy"})
         # ONLY WHERE THE CLOCK SAID NO. An interrupt can make the allocator run sooner; it can
         # never make it run less, never reach the expensive normal or heavy legs, and never get
         # past the `is_running` guard above. One request serves exactly once.

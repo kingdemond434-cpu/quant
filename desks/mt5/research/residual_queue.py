@@ -55,7 +55,8 @@ GAP = DESK / "reports" / "OPPORTUNITY_GAP.json"
 MISSED = DESK / "data" / "missed_growth.jsonl"
 FILLS = DESK / "reports" / "FILL_ATTRIBUTION.json"
 EXECQ = DESK / "reports" / "execution_quality.json"
-LEDGER = DESK / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 POSTERIOR = DESK / "reports" / "POSTERIOR_ALPHA.json"
 RESIDUAL_SEARCH = DESK / "reports" / "RESIDUAL_SEARCH.json"
 QUEUE = DESK / "data" / "residual_queue.jsonl"

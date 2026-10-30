@@ -62,6 +62,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -171,15 +172,20 @@ def _git_changed_at(path: Path) -> datetime | None:
 
 
 def in_force_since(fp: str, previous: dict[str, Any], now: datetime,
-                   git_time: datetime | None = None) -> tuple[datetime, str]:
-    """(when the attestation `fp` came into force, how that was established)."""
+                   git_time: datetime | None = None) -> tuple[datetime | None, str]:
+    """(when the attestation `fp` came into force, how that was established).
+
+    None when neither a carried status nor git can date it: an UNMEASURED floor, never `now`.
+    `now` would date every row stale on the first pass (audit of #126, MF3).
+    """
     if previous.get("attestation_fingerprint") == fp:
         t = _ts(previous.get("in_force_since"))
         if t is not None:
             return t, str(previous.get("in_force_basis") or "carried from the previous pass")
     if git_time is not None and git_time <= now:
         return git_time, "git: last commit of research/gate_policy.py (an upper bound)"
-    return now, "first observed by this organ (an upper bound)"
+    return None, ("UNMEASURED: no carried status and git gave no date for "
+                  "research/gate_policy.py, so no row is dated stale against it")
 
 
 def row_evidence_time(row: dict[str, Any]) -> datetime | None:
@@ -192,19 +198,29 @@ def row_evidence_time(row: dict[str, Any]) -> datetime | None:
     return max(got) if got else None
 
 
-def stale_keys(doc: Any, since: datetime) -> list[str]:
-    """Rows whose evidence predates the attestation in force (or carries no date at all)."""
+def stale_keys(doc: Any, since: datetime | None) -> list[str]:
+    """Rows whose evidence is DATED before the attestation in force. Positive evidence only: an
+    undated row is UNMEASURED (`undated_keys`), and no floor dates nothing (audit of #126, MF2)."""
     rows = doc.get("survivors") if isinstance(doc, dict) else None
-    if not isinstance(rows, dict):
+    if not isinstance(rows, dict) or since is None:
         return []
     out = []
     for key, row in rows.items():
         if not isinstance(row, dict):
             continue
         t = row_evidence_time(row)
-        if t is None or t < since:
+        if t is not None and t < since:
             out.append(str(key))
     return sorted(out)
+
+
+def undated_keys(doc: Any) -> list[str]:
+    """Rows with no gate date at all: UNMEASURED, reported by name, never parked or queued."""
+    rows = doc.get("survivors") if isinstance(doc, dict) else None
+    if not isinstance(rows, dict):
+        return []
+    return sorted(str(k) for k, r in rows.items()
+                  if isinstance(r, dict) and row_evidence_time(r) is None)
 
 
 # --------------------------------------------------------------------------- what to re-judge
@@ -279,11 +295,18 @@ def docket_tags(path: Path) -> set[str] | None:
 
 
 def append_to_docket(path: Path, rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """Append rows inside the docket's top-level JSON array, in place. Never rewrites the file."""
+    """Append rows inside the docket's top-level JSON array, ATOMICALLY.
+
+    The tail is rewritten on a copy and the copy replaces the docket in one `os.replace`, so a
+    crash mid-write leaves the old docket whole rather than a truncated array (audit of #126, SF).
+    The copy costs one sequential read of the docket, paid only on a pass that appends.
+    """
     if not rows:
         return {"appended": 0}
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.remint.tmp")
     try:
-        with path.open("r+b") as fh:
+        shutil.copyfile(path, tmp)
+        with tmp.open("r+b") as fh:
             fh.seek(0, os.SEEK_END)
             size = fh.tell()
             back = min(size, 4096)
@@ -298,11 +321,17 @@ def append_to_docket(path: Path, rows: list[dict[str, Any]]) -> dict[str, Any]:
             fh.seek(size - back + close)
             fh.write((b"\n" if empty else b",\n") + blob + b"\n]\n")
             fh.truncate()
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp, path)
     except FileNotFoundError:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(rows, indent=1, default=str), encoding="utf-8")
+        tmp.unlink(missing_ok=True)
+        _atomic_json(path, rows)
     except OSError as exc:
+        tmp.unlink(missing_ok=True)
         return {"appended": 0, "refused": f"{type(exc).__name__}: {exc}"}
+    finally:
+        tmp.unlink(missing_ok=True)
     return {"appended": len(rows)}
 
 
@@ -365,9 +394,11 @@ def _authorized_runs() -> dict[str, Any]:
 
 # --------------------------------------------------------------------------- the pass
 
-def _store(doc: Any, is_exact: Any, att: dict[str, Any], since: datetime) -> dict[str, Any]:
+def _store(doc: Any, is_exact: Any, att: dict[str, Any],
+           since: datetime | None) -> dict[str, Any]:
     if not isinstance(doc, dict):
-        return {"status": "ABSENT", "exact": False, "n": 0, "stale": [], "pending_rejudge": 0}
+        return {"status": "ABSENT", "exact": False, "n": 0, "stale": [], "pending_rejudge": 0,
+                "undated_unmeasured": []}
     gp = doc.get("gate_policy")
     exact = bool(is_exact(gp))
     stale = sorted((doc.get("survivors") or {}).keys()) if not exact else stale_keys(doc, since)
@@ -380,6 +411,7 @@ def _store(doc: Any, is_exact: Any, att: dict[str, Any], since: datetime) -> dic
             "swept_at": doc.get("swept_at"), "n": len(doc.get("survivors") or {}),
             "stale": [str(k) for k in stale],
             "restamped_not_rejudged": (stale_keys(doc, since) if exact else []),
+            "undated_unmeasured": undated_keys(doc) if exact else [],
             "pending_rejudge": len(pend) if isinstance(pend, dict) else 0}
 
 
@@ -476,8 +508,8 @@ def build(now: datetime | None = None, *, previous: dict[str, Any] | None = None
         "not_queueable": [x for x in targets if not x.get("queue")],
         "restamped_not_rejudged": restamped,
         "oldest_pending_since": _iso(since) if pending else None,
-        "oldest_pending_age_hours": (round((t - since).total_seconds() / 3600.0, 2)
-                                     if pending else 0.0),
+        "oldest_pending_age_hours": ((round((t - since).total_seconds() / 3600.0, 2)
+                                      if since is not None else None) if pending else 0.0),
         "oldest_pending_evidence_at": _iso(oldest),
         "sealed_patch_applied": patched,
         "eta": eta(pending, rate, patched),
