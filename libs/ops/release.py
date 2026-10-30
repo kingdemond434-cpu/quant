@@ -156,6 +156,9 @@ NON_CODE: frozenset[str] = frozenset({
     # The lockbox v4 re-certification ledger and the re-mint status (2026-09-30).
     "desks/mt5/reports/LOCKBOX_RECERT.json",
     "desks/mt5/reports/REMINT_STATUS.json",
+    # Whether the tick tape is still moving (2026-10-14): the hourly `tape_fresh` leg's verdict
+    # on each tape's own newest-tick stamp, published on the same wire. An output, never an input.
+    "desks/mt5/reports/TAPE_FRESHNESS.json",
     # The placement-interlock fence's verdict (scripts/check_placement_interlock.py), published
     # by the same sync so a halt is readable off the box. An output, never an input.
     "desks/mt5/data/placement_interlock.json",
@@ -655,6 +658,31 @@ STATE_FILES: frozenset[str] = frozenset({
     # clean adoption stop at the final dirty-code fence.
     "desks/mt5/docs/TRADE_PATH_REPORT.md",
 })
+
+
+#: STATE THAT GOVERNS WHAT CODE MAY DO. Box-written like the rest of STATE_PREFIXES, but a change
+#: to one of these changes what a tested tree is allowed to be or do: the sealed-file pins and sign
+#: rows, the survivor canon, the allocator's proof, the live manifest, and the behaviour switches.
+#: A PR tested against an older copy is not tested against the new one (#521 audit MF1, 2026-10-29),
+#: so the gate's state-only lag and LIVE's push CI treat these as CODE.
+GOVERNED_STATE_FILES: frozenset[str] = frozenset({
+    IMMUTABLE_MANIFEST, SURVIVORS, ALLOCATOR_PROOF,
+    "desks/mt5/data/LIVE_MANIFEST.jsonl", "desks/mt5/data/ALLOCATOR_SOVEREIGN.json",
+})
+#: Switch files by name, under desks/mt5/data/ (GENERIC_EXEC_ENABLED, MARGIN_CLAUSE_DISABLED, ...).
+GOVERNED_STATE_GLOBS: tuple[str, ...] = (
+    "desks/mt5/data/*_ENABLED*", "desks/mt5/data/*_DISABLED*",
+)
+
+
+def is_governed_state(rel: str) -> bool:
+    """A state path whose change governs what code may do (see GOVERNED_STATE_FILES)."""
+    import fnmatch
+
+    p = str(rel).replace("\\", "/").lstrip("./")
+    return p in GOVERNED_STATE_FILES or any(  # `*` stays in one directory, as in a workflow glob
+        fnmatch.fnmatchcase(p, g) and p.count("/") == g.count("/") for g in GOVERNED_STATE_GLOBS
+    )
 
 
 def is_state_path(rel: str) -> bool:
