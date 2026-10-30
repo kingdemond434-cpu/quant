@@ -117,6 +117,22 @@ MATERIAL_RATIO = 2.0
 
 SCHEMA = "cost-surface-1"
 
+#: THE TICK-MEASURED HOURS (2026-10-14). `hours` above is the bars' own `spread` column, which
+#: drops zero-spread bars as absence. On this raw-FX account a zero spread is a REAL quote
+#: (mt5desk/tape.py measured it across 204M ticks: the venue quotes locked FX and charges a
+#: commission), so on a symbol that is mostly locked the bar surface reads the rare nonzero bar
+#: -- USDSGD "1 pt" from hour 01 to 23. `tick_hours` measures the quoted spread of every tick on
+#: the silver tape instead, zeros INCLUDED, per broker hour, over the newest `TICK_DAYS` day
+#: files, and publishes the nonzero-only p50 and the zero share beside it so both readings are
+#: visible. `hours` is unchanged: its consumers (the sealed judge among them) adopt this
+#: separately. Below `TICK_MIN_OBS` ticks an hour is UNMEASURED, never a number.
+TICK_DAYS = 10
+TICK_MIN_OBS = 200
+
+#: ATR(20) on the H1 bars, in points and in price, per symbol: the scale the cost-repricing of a
+#: forward clock divides by, published so a reader off the box needs no bar file.
+ATR_N = 20
+
 
 def session_bars(idx: pd.DatetimeIndex) -> int:
     """How many H1 bars this symbol's own NORMAL day carries.
@@ -222,6 +238,80 @@ def profile_symbol(df: pd.DataFrame) -> dict | None:
     return out
 
 
+def atr_h1(df: pd.DataFrame, n: int = ATR_N) -> float | None:
+    """Wilder-free simple ATR(n) of the newest n H1 bars, in price; None without OHLC."""
+    if not {"high", "low", "close"}.issubset(df.columns) or len(df) <= n:
+        return None
+    hi = df["high"].astype(float)
+    lo = df["low"].astype(float)
+    prev = df["close"].astype(float).shift(1)
+    tr = pd.concat([hi - lo, (hi - prev).abs(), (lo - prev).abs()], axis=1).max(axis=1)
+    v = float(tr.iloc[-n:].mean())
+    return v if np.isfinite(v) and v > 0 else None
+
+
+def atr_through(df: pd.DataFrame) -> str | None:
+    """The open time of the newest H1 bar the ATR was computed through (venue clock, ISO).
+
+    An ATR with no as-of date cannot be told apart from a stale one; this is its date.
+    """
+    if df.empty:
+        return None
+    try:
+        return pd.Timestamp(df.index[-1]).isoformat()
+    except (TypeError, ValueError):
+        return None
+
+
+def tick_profile(symbol: str, point: float, days: int = TICK_DAYS,
+                 root: Path | None = None) -> dict | None:
+    """Per broker hour, the quoted spread of every tick on the silver tape, in points.
+
+    None when the tape holds no readable day for `symbol` or the point is unknown -- the caller
+    reports that, it is never a zero cost. Hours come from `time_msc`, the venue clock the bar
+    surface's hours are also on, so the two blocks are comparable hour for hour.
+    """
+    if not point or point <= 0:
+        return None
+    desk = str(_DESK)
+    if desk not in sys.path:
+        sys.path.insert(0, desk)
+    from mt5desk.tape import day_files
+    files = day_files(symbol, root)[-days:]
+    frames = []
+    for _day, f in files:
+        try:
+            frames.append(pd.read_parquet(f, columns=["time_msc", "bid", "ask"]))
+        except (OSError, ValueError, KeyError, ImportError):
+            continue
+    if not frames:
+        return None
+    t = pd.concat(frames, ignore_index=True).drop_duplicates()
+    t = t[(t["bid"] > 0) & (t["ask"] > 0)]
+    if t.empty:
+        return None
+    pts = ((t["ask"].astype(float) - t["bid"].astype(float)) / point).round(1)
+    hour = (t["time_msc"].astype("int64") // 3_600_000) % 24
+    hours: dict[str, dict] = {}
+    for h in range(24):
+        cell = pts[hour == h]
+        n = int(cell.size)
+        if n == 0:
+            continue
+        nz = cell[cell > 0]
+        row: dict[str, object] = {"n_ticks": n, "zero_frac": round(float((cell <= 0).mean()), 4)}
+        if n < TICK_MIN_OBS:
+            row["status"] = "UNMEASURED"
+        else:
+            row["status"] = "MEASURED"
+            row["p50"] = round(float(cell.median()), 2)
+            row["p90"] = round(float(cell.quantile(0.90)), 2)
+            row["p50_nonzero"] = round(float(nz.median()), 2) if nz.size else 0.0
+        hours[str(h)] = row
+    return {"days": [d for d, _f in files], "n_ticks": len(t), "hours": hours,
+            "n_hours_measured": sum(1 for r in hours.values() if r["status"] == "MEASURED")}
+
+
 def build(universe_dir: Path | None = None) -> dict:
     """Build the whole surface from the H1 parquets the engine already loads."""
     u = universe_dir or _UNIVERSE
@@ -236,6 +326,10 @@ def build(universe_dir: Path | None = None) -> dict:
         except (OSError, ValueError, KeyError) as exc:      # unreadable / column absent
             skipped.append(f"{sym}: unreadable ({type(exc).__name__})")
             continue
+        try:
+            ohlc = pd.read_parquet(f, columns=["high", "low", "close"])
+        except (OSError, ValueError, KeyError):
+            ohlc = pd.DataFrame()
         prof = profile_symbol(df)
         if prof is None:
             # SAY WHICH REFUSAL THIS IS. The first version reported every skip as "no usable
@@ -255,11 +349,22 @@ def build(universe_dir: Path | None = None) -> dict:
         prof["pooled_median_spread_pts"] = float(pooled) if pooled is not None else None
         prof["tick_size"] = float(meta.get("tick_size", 0.0) or 0.0)
         prof["contract_size"] = float(meta.get("contract_size", 0.0) or 0.0)
+        atr = atr_h1(ohlc)
+        prof["atr20_h1"] = round(atr, 8) if atr is not None else None
+        prof["atr20_h1_pts"] = (round(atr / prof["tick_size"], 2)
+                                if atr is not None and prof["tick_size"] > 0 else None)
+        prof["atr20_h1_through"] = atr_through(ohlc) if atr is not None else None
+        try:
+            tp = tick_profile(sym, prof["tick_size"])
+        except Exception as exc:                 # a tape problem must never cost the surface
+            tp = {"status": "UNREADABLE", "why": f"{type(exc).__name__}: {exc}"[:160]}
+        prof["tick_hours"] = tp if tp is not None else {"status": "NO_TAPE"}
         surface[sym] = prof
     return {
         "schema": SCHEMA,
         "built_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "min_obs": MIN_OBS,
+        "tick_days": TICK_DAYS, "tick_min_obs": TICK_MIN_OBS, "atr_n": ATR_N,
         "session_share": SESSION_SHARE,
         "source": str(u.relative_to(_DESK.parent.parent)) if u == _UNIVERSE else str(u),
         "n_symbols": len(surface),
@@ -309,6 +414,7 @@ def spread_pts(surface: dict, symbol: str, hour: int | None) -> float | None:
 
 #: The recorded execution evidence. Absent on a research box, present on the trading box.
 from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+
 _LIVE_LEDGER = _audited_ledger_path(_DESK / "data" / "live_ledger.jsonl")
 _FILL_CORPUS = _DESK / "data" / "fill_corpus.jsonl"
 _SURVIVORS = _DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"
