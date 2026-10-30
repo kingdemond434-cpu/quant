@@ -108,3 +108,48 @@ def test_runtime_proof_accepts_matching_measured_receipt(tmp_path) -> None:
     _, errors = A._runtime_proof(path, instant=datetime(2026, 9, 27, tzinfo=UTC),
                                  release="a" * 40)
     assert errors == []
+
+
+def test_an_open_blocker_keeps_a_fully_evidenced_requirement_partial(tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    for name in ("impl.py", "test_impl.py", "consumer.py"):
+        (root / name).write_text("", "utf-8")
+    req = {"id": "MI01", "title": "x", "priority": "P0", "lane": "production",
+           "implementation": ["impl.py"], "tests": ["test_impl.py"],
+           "consumers": ["consumer.py"], "runtime": [],
+           "blockers": [{"id": "open_one", "owner": "o", "why": "w"},
+                        {"id": "done_one", "owner": "o", "why": "w", "status": "CLOSED"}]}
+    addendum = tmp_path / "root" / "add.json"
+    addendum.write_text(json.dumps({"specification": "ADD_V1", "requirements": [req]}), "utf-8")
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"specification": "BASE", "completion_rule": "strict",
+                                    "frontier_rule": "open", "addenda": ["add.json"],
+                                    "requirements": []}), "utf-8")
+    result = A.audit(root=root, manifest=manifest, report=tmp_path / "out.json",
+                     now=datetime(2026, 10, 6, tzinfo=UTC))
+    row = result["rows"][0]
+    assert row["status"] == "PARTIAL" and row["specification"] == "ADD_V1"
+    assert row["lane"] == "production"
+    assert "blocker:open_one" in row["missing_evidence"]
+    assert "blocker:done_one" not in row["missing_evidence"]
+    assert result["by_specification"] == {"ADD_V1": {"CURRENT_VERIFIED": 0, "PARTIAL": 1}}
+    assert result["complete_against"] == []
+
+
+def test_the_institution_addendum_is_loaded_and_names_every_function() -> None:
+    doc = json.loads(A.MANIFEST.read_text("utf-8"))
+    rel = "docs/research/miniature_institution_acceptance_v1.json"
+    assert rel in doc["addenda"]
+    add = json.loads((ROOT / rel).read_text("utf-8"))
+    assert add["specification"] == "MINIATURE_INSTITUTION_ACCEPTANCE_V1_20261006"
+    ids = [r["id"] for r in add["requirements"]]
+    assert ids == [f"MI{i:02d}" for i in range(1, len(ids) + 1)] and len(ids) >= 12
+    for r in add["requirements"]:
+        assert r["lane"] in ("research", "production"), r["id"]
+        for kind in ("implementation", "tests", "consumers"):
+            assert r[kind], (r["id"], kind)
+            for p in r[kind]:
+                assert (ROOT / p).exists(), (r["id"], p)
+        for b in r["blockers"]:
+            assert b["id"] and b["owner"] and b["why"], r["id"]

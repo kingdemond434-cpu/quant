@@ -1068,7 +1068,77 @@ def oldest_unconverted(conn: sqlite3.Connection) -> dict[str, Any]:
                     "backlog is being re-counted instead of drained"}
 
 
-def judged_vs_docket(*, limit: int = 40) -> dict[str, Any]:
+def _docket_family_counts(path: Path, *, deadline: float | None = None
+                          ) -> tuple[dict[str, int], int]:
+    """Strict, bounded-memory array census; a deadline never publishes a partial population."""
+    decoder = json.JSONDecoder()
+    counts: dict[str, int] = {}
+    total = 0
+    with path.open("r", encoding="utf-8") as handle:
+        buf, pos, eof = "", 0, False
+
+        def check() -> None:
+            if deadline is not None and time.monotonic() >= deadline:
+                raise TimeoutError("docket census exceeded its allocated reporting budget")
+
+        def refill() -> bool:
+            nonlocal buf, pos, eof
+            check()
+            buf = buf[pos:]
+            pos = 0
+            more = handle.read(1 << 20)
+            eof = not more
+            buf += more
+            return bool(more)
+
+        def token() -> str:
+            nonlocal pos
+            while True:
+                check()
+                while pos < len(buf) and buf[pos].isspace():
+                    pos += 1
+                if pos < len(buf):
+                    return buf[pos]
+                if eof or not refill():
+                    return ""
+
+        if token() != "[":
+            raise ValueError("docket is not a top-level JSON array")
+        pos += 1
+        if token() != "]":
+            while True:
+                while True:
+                    check()
+                    try:
+                        row, end = decoder.raw_decode(buf, pos)
+                        if end == len(buf) and not eof:
+                            refill()
+                            continue
+                        pos = end
+                        break
+                    except json.JSONDecodeError:
+                        if eof or len(buf) - pos > 16 * (1 << 20) or not refill():
+                            raise ValueError("docket has an incomplete or oversized row") from None
+                total += 1
+                if isinstance(row, Mapping):
+                    fam = str(row.get("family") or "unknown")
+                    counts[fam] = counts.get(fam, 0) + 1
+                delimiter = token()
+                if delimiter == "]":
+                    break
+                if delimiter != ",":
+                    raise ValueError("docket row has no JSON array delimiter")
+                pos += 1
+                if not token() or token() == "]":
+                    raise ValueError("docket ended after a comma")
+        pos += 1
+        if token():
+            raise ValueError("docket has content after its JSON array")
+    return counts, total
+
+
+def judged_vs_docket(*, limit: int = 40, budget: Budget | None = None,
+                     reserve: float = 0.0) -> dict[str, Any]:
     """WHAT THE DESK MINES VERSUS WHAT THE JUDGE TESTS, per family, and the capacity a
     live-banned family was consuming.
 
@@ -1094,17 +1164,16 @@ def judged_vs_docket(*, limit: int = 40) -> dict[str, Any]:
         )
     except Exception as exc:                                             # pragma: no cover
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    deadline = (time.monotonic() + max(0.0, budget.left() - reserve) * 0.5
+                if budget is not None else None)
     judged = judged_by_family()
-    docket_rows = _read_json(TARGET)
-    study_rows = _read_json(STUDY_BANK)
-    if not isinstance(docket_rows, list):
+    try:
+        docket, docket_total = _docket_family_counts(TARGET, deadline=deadline)
+    except (OSError, ValueError, TimeoutError) as exc:
         return {"status": UNMEASURED,
-                "why": f"the docket at {TARGET} is unreadable, so no ratio can be formed"}
-    docket: dict[str, int] = {}
-    for row in docket_rows:
-        if isinstance(row, Mapping):
-            fam = str(row.get("family") or "unknown")
-            docket[fam] = docket.get(fam, 0) + 1
+                "why": f"docket census incomplete: {type(exc).__name__}: {exc}",
+                "partial_population_published": False}
+    study_rows = _read_json(STUDY_BANK)
     banned = live_banned_families()
     total_judged = sum(judged.values()) or 1
     table = {
@@ -1118,7 +1187,7 @@ def judged_vs_docket(*, limit: int = 40) -> dict[str, Any]:
                                                   -kv[1]["docket"]))[:limit]
     freed = {fam: judged.get(fam, 0) for fam in sorted(banned)}
     return {"status": "MEASURED", "families": len(table),
-            "docket_rows": len(docket_rows),
+            "docket_rows": docket_total,
             "judged_rows_counted": sum(judged.values()),
             "least_judged_first": dict(worst),
             "banned_from_live": sorted(banned),
@@ -2055,7 +2124,8 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
                                           "repairs, one cell each in its compiled grid cell")
     arrivals = _stage("arrival_rate", lambda: arrival_rate(conn))
     oldest = _stage("oldest_unconverted", lambda: oldest_unconverted(conn))
-    jvd = _stage("judged_vs_docket", judged_vs_docket)
+    jvd = _stage("judged_vs_docket", lambda: judged_vs_docket(
+        budget=budget, reserve=write_reserve))
 
     def _coverage() -> dict[str, Any]:
         # THE WHOLE HYPOTHESIS-LANE UNIVERSE, not only the symbols this pass happened to touch:

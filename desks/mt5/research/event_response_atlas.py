@@ -640,7 +640,26 @@ def build(days: int = 400, budget_s: float = 240.0, now: datetime | None = None)
     for row in rows:
         row["clears_bonferroni"] = bool(abs(row["t"]) >= threshold)
     rows.sort(key=lambda r: -abs(r["t"]))
-    clearing = [r for r in rows if r["clears_bonferroni"] and r["verdict"] == "CLEARS_COST"]
+    # A SCREEN HAS NO BAR: IT SORTS AND REPORTS, AND THE TEN GATES DECIDE (RESEARCH.md 6d).
+    #
+    # This line used to read `if row["clears_bonferroni"] and ...`, and that is a producer-private
+    # threshold standing in front of the gauntlet -- the exact thing 6d forbids "in either
+    # direction", and the third time this desk has had to delete one (a sqrt(2 ln N) screen and an
+    # n_trials override inside a gate were removed on 2026-08-26).
+    #
+    # IT IS ALSO SELF-CLOSING, WHICH IS WHY IT WENT SILENT RATHER THAN SELECTIVE. The threshold is
+    # a function of how many cells were tested, so every conditioner or symbol added RAISES it.
+    # Measured on the trading box 2026-09-24: 636 cells -> t = 3.9486, and the strongest cell in
+    # the atlas was t = -3.617. The door did not narrow, it shut -- 258 donated artifacts, then
+    # fifteen consecutive clean runs donating nothing, with the organ reporting `ok` every hour.
+    # That is a bar that rises with generation, which is precisely what the fixed 7x DSR
+    # multiplier exists to make unnecessary: multiplicity is priced ONCE, downstream, as a
+    # constant, and pricing it again here charged the desk twice for the same trials.
+    #
+    # The cell's own `clears_bonferroni` and the pass's `threshold_t` are still computed and still
+    # published on every row, because the information is worth having -- it just has no authority.
+    # `MAX_DONATIONS` still bounds the batch, which is a COMPUTE budget and says so.
+    clearing = [r for r in rows if r["verdict"] == "CLEARS_COST"]
 
     return {
         "at": now.isoformat(),
@@ -720,7 +739,10 @@ def donate_clearing(payload: dict[str, Any], max_donations: int) -> dict[str, An
     """Donate the clearing cells as `event_reaction` hypotheses. Never an equity, never a guess."""
     clearing = payload.get("clearing") or []
     if not clearing:
-        return {"n": 0, "path": None, "status": "no cell cleared both bars", "cells": []}
+        return {"n": 0, "path": None, "cells": [],
+                "status": ("no measured cell's |mean| exceeds its cost proxy this pass -- an "
+                           "economic reality check on the desk's own spreads, not a statistical "
+                           "bar, and the only screen left in front of the gauntlet here")}
     if not _registered_family(FAMILY):
         return {"n": 0, "path": None, "cells": [],
                 "status": f"{FAMILY} is not in ORTHOGONAL_FAMILIES on this tree; donated nothing"}
@@ -742,9 +764,10 @@ def donate_clearing(payload: dict[str, Any], max_donations: int) -> dict[str, An
                           f"({row['cost_source']}). The donated cell is the UNCONDITIONAL "
                           "expression: the family's side is constant and cannot read the "
                           "first-bar sign the atlas oriented on"),
-            "why": (f"clears the Bonferroni threshold {payload.get('threshold_t')} over "
-                    f"{payload.get('n_cells')} cells tested and its |mean| exceeds the cost "
-                    "proxy -- a hypothesis for the ten gates, not a claim"),
+            "why": (f"|mean| exceeds the cost proxy; |t|={abs(row['t'])} against a Bonferroni "
+                    f"reference of {payload.get('threshold_t')} over {payload.get('n_cells')} "
+                    f"cells, which is REPORTED and carries no authority (RESEARCH.md 6d: a screen "
+                    f"sorts, the ten gates decide) -- a hypothesis for those gates, not a claim"),
             "n_events": row["n"], "t": row["t"], "horizon": row["horizon"],
             "conditioner": f"{row['axis']}={row['bucket']}", "event_time": payload.get("at"),
         })

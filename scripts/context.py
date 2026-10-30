@@ -20,6 +20,7 @@ is the single page the operator reads.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import subprocess
@@ -65,6 +66,10 @@ def next_id(rows: list[dict[str, Any]], day: str) -> str:
 
 
 def decide(a: argparse.Namespace, path: Path = JOURNAL) -> dict[str, Any]:
+    # The journal is append-only, so a bad pointer can never be fixed in place.
+    bad = [p for p in (a.evidence or []) if _check_pointer(str(p)) == "MISSING"]
+    if bad:
+        raise SystemExit(f"evidence pointer does not resolve: {bad} (use a repo path, pr:N, sha:X, url: or thread:)")
     rows = read_journal(path)
     now = datetime.now(UTC)
     row = {"id": next_id(rows, now.strftime("%Y%m%d")), "at": now.isoformat(timespec="seconds"),
@@ -92,7 +97,20 @@ def _check_pointer(p: str) -> str:
     path = p.split("#", 1)[0].split(":", 1)[0] if re.match(r"^[^:]+:\d+", p) else p.split("#", 1)[0]
     if path.startswith("/mnt/project-files/"):
         return "OK" if Path(path).exists() else "UNVERIFIABLE"
-    return "OK" if (ROOT / path).exists() else "MISSING"
+    if (ROOT / path).exists():
+        return "OK"
+    # Preserve historical journal rows; portable archives are explicit and hashed.
+    archive_index = ROOT / "context/evidence_archives.json"
+    try:
+        entry = json.loads(archive_index.read_text(encoding="utf-8")).get(p)
+        if isinstance(entry, dict):
+            archive = (ROOT / entry["path"]).resolve()
+            archive.relative_to((ROOT / "docs/cro/evidence").resolve())
+            if hashlib.sha256(archive.read_bytes()).hexdigest() == entry["sha256"]:
+                return "OK"
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    return "MISSING"
 
 
 def verify(path: Path = JOURNAL) -> tuple[bool, list[str]]:

@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -234,16 +235,24 @@ def test_the_cli_exit_code_is_the_verdict(sealed: Path) -> None:
 
 
 # -------------------------------------------------------------------------- the smoke
-def _smoke(root: Path, out: Path) -> tuple[int, dict]:
+def _smoke(root: Path, out: Path, *, production_timing: bool = False) -> tuple[int, dict]:
+    env = os.environ.copy()
+    if production_timing:
+        # This bound measures the production child, not coverage's injected tracer.
+        # Other smoke cases retain instrumentation; every compile/import/fence check
+        # below still binds, and the production deadline remains twenty seconds.
+        for name in tuple(env):
+            if name.startswith("COV_CORE_") or name == "COVERAGE_PROCESS_START":
+                env.pop(name)
     r = subprocess.run([sys.executable, str(SMOKE), "--root", str(root), "--out", str(out),
-                        "--json"], capture_output=True, text=True, timeout=180)
+                        "--json"], capture_output=True, text=True, timeout=180, env=env)
     assert r.stdout, r.stderr
     return r.returncode, json.loads(r.stdout)
 
 
 def test_smoke_release_on_this_tree_imports_everything_and_skips_the_gateway_with_a_reason(
         tmp_path: Path) -> None:
-    rc, rep = _smoke(_ROOT, tmp_path / "smoke.json")
+    rc, rep = _smoke(_ROOT, tmp_path / "smoke.json", production_timing=True)
     assert (tmp_path / "smoke.json").exists()
 
     # PINNED AS AN INVARIANT, NOT A MAGIC NUMBER. This read `n == 15` and went red the moment

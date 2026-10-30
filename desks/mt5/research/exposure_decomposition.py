@@ -283,11 +283,20 @@ def _characteristics(symbols: Sequence[str]) -> tuple[dict[str, float], dict[str
         row = universe.get(symbol) if isinstance(universe.get(symbol), dict) else {}
         cost = surface.get(symbol) if isinstance(surface.get(symbol), dict) else {}
         lng, shrt = row.get("swap_long"), row.get("swap_short")
+        close = load_bars(symbol)
         if isinstance(lng, (int, float)) and isinstance(shrt, (int, float)):
-            raw_carry[symbol] = float(lng) - float(shrt)
+            # IN POINTS-EQUIVALENT, WHATEVER THE swap_mode (2026-10-07): identical to the raw
+            # pair on mode 1, and a mode-5 annual percent converted at the last close instead of
+            # being ranked against points. Unpriceable -> absent, which the meta reports.
+            from mt5desk.engine import swap_night_points
+            px = (float(close.iloc[-1]) if close is not None and len(close) else None)
+            sym_row = {**row, "symbol": row.get("symbol") or symbol}
+            lp, _w = swap_night_points(sym_row, float(lng), px)
+            sp, _w = swap_night_points(sym_row, float(shrt), px)
+            if lp is not None and sp is not None:
+                raw_carry[symbol] = lp - sp
         pts = cost.get("pooled_median_spread_pts", row.get("median_spread_pts"))
         tick = cost.get("tick_size", row.get("tick_size"))
-        close = load_bars(symbol)
         if (isinstance(pts, (int, float)) and isinstance(tick, (int, float))
                 and close is not None and float(close.iloc[-1]) > 0):
             rel_spread[symbol] = abs(float(pts) * float(tick)) / float(close.iloc[-1])
@@ -300,7 +309,8 @@ def _characteristics(symbols: Sequence[str]) -> tuple[dict[str, float], dict[str
     meta = {n: {"kind": "characteristic", "signed_by_side": n == "carry", "n_days": 0,
                 "n_symbols": len(d), "unmeasured": not d, "basis": b}
             for n, d, b in (
-                ("carry", carry, "broker swap_long - swap_short from universe.json, over the "
+                ("carry", carry, "broker swap_long - swap_short from universe.json in points-"
+                                 "equivalent (swap_mode-aware), over the "
                                  f"median absolute carry in the book, clipped to +-{CARRY_CLIP}"),
                 ("liquidity", liquidity, "percentile of spread_pts x tick_size / last close "
                                          "WITHIN THE BOOK, from cost_surface.json where measured "

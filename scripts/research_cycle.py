@@ -320,62 +320,87 @@ def _alpha_pipeline() -> dict[str, Any]:
         })
     return {"generated": datetime.now(tz=UTC).isoformat(),
             "n_alphas": reg.get("n_alphas"), "n_survived": reg.get("n_survived"),
-            "deployed": ["cash_and_carry"], "alphas": rows,
+            "deployed": [r.get("name") for r in _live_sleeves()], "alphas": rows,
             "note": ("Every alpha carries a retire_check, not just a promote check. Data-blocked "
                      "edges accrue forward days before they can be validated -- calendar time, "
                      "not engineering, is the gate.")}
 
 
+#: THE AUTHORITIES research_state.json now reads (N14, 2026-10-13). Until then this function
+#: wrote crypto-era priorities -- OI/LS/liquidation clocks, cash-and-carry, Binance funding --
+#: from web/portfolio.json and web/discovery.json, two files the MT5 mandate (LAWS §1) retired.
+#: A root-level file named research_state.json reads as authoritative to every agent that opens
+#: the repo, so it must say what the MT5 desk's own measurements say, or nothing.
+_SLEEVES = Path("desks/mt5/data/sleeves.json")
+_SCORECARD = Path("desks/mt5/reports/TIER1_SCORECARD.json")
+
+
+def _gap(row: dict[str, Any]) -> float:
+    """How far a BELOW scorecard row sits from its first target, as a fraction of the target."""
+    try:
+        cur, tgt = float(row["current"]), float(row["first_target"])
+    except (KeyError, TypeError, ValueError):
+        return 0.0
+    if row.get("lower_is_better"):
+        return float((cur - tgt) / max(abs(cur), 1.0))
+    return float((tgt - cur) / max(abs(tgt), 1e-9))
+
+
+def _live_sleeves() -> list[dict[str, Any]]:
+    doc = _load(_SLEEVES)
+    rows = doc.get("sleeves") if isinstance(doc, dict) else doc
+    return [r for r in (rows or []) if isinstance(r, dict) and r.get("status") == "LIVE"]
+
+
 def _research_state(eng: dict[str, Any], done: dict[str, bool]) -> dict[str, Any]:
-    port = _load(_WEB / "portfolio.json").get("deployed", {})
-    disc = _load(_WEB / "discovery.json")
-    clocks = [{"edge": p["sleeve"], "have_days": p.get("have_days"),
-               "needs_days": p.get("needs_days")}
-              for p in disc.get("pending", [])]
+    live = _live_sleeves()
+    card = _load(_SCORECARD)
+    rows = [r for r in (card.get("rows") or []) if isinstance(r, dict)]
+    below = sorted((r for r in rows if r.get("verdict") == "BELOW"), key=_gap, reverse=True)
+    unmeasured = [r.get("dimension") for r in rows if r.get("verdict") == "UNMEASURED"]
     bottlenecks = [
-        {"rank": 1, "bottleneck": "calendar-time data accumulation",
-         "evidence": clocks or "OI/LS/liq at 6/40d; cash-carry 2/90d; hyperliquid 1/250",
-         "lever": "keep the flywheel alive + verify archives append; cannot be engineered away"},
-        {"rank": 2, "bottleneck": "single deployed edge (concentration)",
-         "evidence": f"{len(port.get('sleeves', []))} deployed sleeve(s)",
-         "lever": "decorrelated survivors -- blocked on #1 (need forward data to validate)"},
-        {"rank": 3, "bottleneck": "flywheel reliability (PC sleep / reboot)",
-         "evidence": "watchdog enabled; run-logged-off pending",
-         "lever": eng["next_action"]["id"] if eng.get("next_action") else "none"},
-    ]
-    # AUTO-RETIREMENT signal: sleeves whose marginal contribution to portfolio E[log wealth] is
-    # negative are retire candidates (constitution: kill negative-contribution sleeves, reallocate).
-    incr = _load(_WEB / "crypto_portfolio.json").get("incremental_sharpe", {})
-    retire = sorted([{"sleeve": s, "marginal_sharpe": v} for s, v in incr.items() if v < 0],
-                    key=lambda x: x["marginal_sharpe"])
-    # 7-CYCLE architecture review cadence (blank-slate redesign question).
+        {"rank": k, "bottleneck": r.get("dimension"),
+         "evidence": f"{r.get('current')} {r.get('unit')} against a first target of "
+                     f"{r.get('first_target')} (measured {r.get('measured_at')})",
+         "basis": r.get("basis")}
+        for k, r in enumerate(below, 1)]
+    binding = (f"{below[0].get('dimension')}: {below[0].get('current')} {below[0].get('unit')} "
+               f"against a first target of {below[0].get('first_target')}"
+               if below else
+               "UNMEASURED: desks/mt5/reports/TIER1_SCORECARD.json has no BELOW row on this host"
+               if not rows else "none: every scorecard row is at or above its first target")
+    # AUTO-RETIREMENT signal: LIVE sleeves the admission reading says SUBTRACT growth. Signal only;
+    # the promoter re-judges every hour and retires on its own evidence.
+    retire = sorted(
+        ({"sleeve": r.get("name"),
+          "delta_elogw_per_day": (r.get("admission") or {}).get("delta_elogw_per_day")}
+         for r in live
+         if isinstance((r.get("admission") or {}).get("delta_elogw_per_day"), (int, float))
+         and r["admission"]["delta_elogw_per_day"] < 0),
+        key=lambda x: float(x["delta_elogw_per_day"] or 0.0))
     log = _load(Path("data/cro_cycle_log.json"))
     n_cycles = len(log) if isinstance(log, list) else 0
-    arch_review_due = n_cycles > 0 and n_cycles % 7 == 0
     return {
         "generated": datetime.now(tz=UTC).isoformat(),
         "master_objective": "maximize expected lifetime geometric growth (log wealth), survival-c",
-        "deployed": port,
-        "binding_constraint": "calendar-time data accumulation (not engineering throughput)",
+        "universe": "MT5/Fusion only (docs/LAWS.md §1); crypto-exchange ground is never hunted",
+        "authority": {"deployed": str(_SLEEVES), "bottlenecks": str(_SCORECARD),
+                      "decisions": "python scripts/context.py show"},
+        "deployed": {"sleeves": [r.get("name") for r in live], "n_live": len(live),
+                     "source": str(_SLEEVES)},
+        "binding_constraint": binding,
         "bottleneck_rankings": bottlenecks,
+        "unmeasured_dimensions": unmeasured,
         "retirement_candidates": retire,
-        "retirement_note": ("SIGNAL ONLY — marginal-Sharpe swings ~±0.15 between runs, so a single "
-                            "negative sign is within noise. Retire only on PERSISTENT negative "
-                            "contribution across runs, with promotion-grade rigor. No whipsaw."),
-        "architecture_review_due": arch_review_due,
+        "retirement_note": ("SIGNAL ONLY: the promoter re-judges every LIVE sleeve hourly and "
+                            "retires on persistent evidence; this list never retires anything."),
+        "architecture_review_due": n_cycles > 0 and n_cycles % 7 == 0,
         "cycles_logged": n_cycles,
-        "completed_this_cycle": eng["completed"],
-        "engineering_backlog_top": [{"id": i["id"], "roi": i["roi"], "effort_h": i["effort_h"]}
-                                    for i in eng["open"][:5]],
-        "research_backlog": [{"edge": c["edge"],
-                              "status": f"data-blocked {c['have_days']}/{c['needs_days']}d",
-                              "info_value": "positive but not yet actionable"} for c in clocks],
-        "decisions_log": [
-            "REJECT ls_contrarian for deployment: Sharpe 10+ artifact, fails DSR (correct).",
-            "PIVOT executed book to delta-neutral cash-and-carry; perp L/S -> shadow.",
-            "DEFER new-hypothesis generation: lower marginal ROI than protecting the data clock.",
-            "DEFER heavy external paper search: info value < top backlog item this cycle.",
-        ],
+        # engineering_backlog.json's items (_ENG) are the crypto-era desk's -- PC-sleep watchdog,
+        # cash-and-carry hedge reconcile, archive integrity -- so they are NOT echoed here as the
+        # desk's priorities. The ranked work is bottleneck_rankings above.
+        "engineering_backlog": ("engineering_backlog.json (crypto-era task list, not the MT5 "
+                                f"desk's priorities; {len(eng.get('open') or [])} open)"),
     }
 
 

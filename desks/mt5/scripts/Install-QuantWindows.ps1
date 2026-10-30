@@ -133,15 +133,14 @@ New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 #: stamp, so running it hourly gives exactly one daily-cycle run per day and
 #: catches up whenever the box is awake instead of missing a fixed minute.
 $tasks = @(
-    @{ Name = "MT5-Gateway"
-       Script = "research\run_gateway_loop.py"
-       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
-                     -RepetitionInterval (New-TimeSpan -Minutes 1) `
-                     -RepetitionDuration (New-TimeSpan -Days 3650) }
-       Desc = "One gateway pass per minute; file-locked against overlap." },
-    # THE RESIDENT GATEWAY, AND WHY IT EXISTS BESIDE THE PER-MINUTE TASK.
+    # THE PER-MINUTE GATEWAY TASK IS RETIRED FROM THIS INSTALLER (audit 2026-09-30). It has been
+    # Disabled on the box since 2026-09-16 and box_tasks.manifest no longer declares it; the
+    # gateway runs as MT5-GatewayResident below. Re-registering it here re-created an Interactive
+    # per-minute task beside the resident, a second pass runner nobody wanted.
     #
-    # `MT5-Gateway` runs as Administrator with LogonType=Interactive, because the MT5 Python API
+    # THE RESIDENT GATEWAY, AND WHY IT EXISTS.
+    #
+    # The retired per-minute task ran as Administrator with LogonType=Interactive, because the MT5 Python API
     # reaches terminal64 over local IPC and the terminal lives in the interactive session -- a
     # task under SYSTEM sits in Session 0, cannot see it, and would fail to initialise. But an
     # Interactive task only executes while that user holds a desktop session: without one it
@@ -216,15 +215,20 @@ $tasks = @(
        Desc = "Rebuild web/desk_state.json -- the file every dashboard reads." },
     @{ Name = "MT5-Gauntlet"
        Script = "scripts\\run_sharded_gauntlet.py"
+       # RESIDENT, NOT HOURLY (principal 2026-10-10: "24 7 uninterrupted, 0 cadences"). The
+       # launcher runs sweeps back to back and never exits while it can judge; this one-minute
+       # repetition (IgnoreNew) only respawns it if it dies, and the zero time limit stops the
+       # scheduler killing a resident judge at the old four-hour ceiling.
        Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
-                     -RepetitionInterval (New-TimeSpan -Hours 1) `
+                     -RepetitionInterval (New-TimeSpan -Minutes 1) `
                      -RepetitionDuration (New-TimeSpan -Days 3650) }
+       TimeLimit = ([TimeSpan]::Zero)
        # The launcher invokes the sealed judge's fail-closed shard protocol; the judge still owns
        # every verdict and the one union merge. Also a leg of the hourly cycle, deliberately BOTH:
        # the cycle can be
        # long, and a judged docket is what every downstream stage waits on. Its own job lock
        # makes the overlap a wait, not a race.
-       Desc = "The ten statistical gates, hourly, over every newly backtested cell." },
+       Desc = "The ten statistical gates, resident: sweeps back to back over every backtested cell." },
     @{ Name = "MT5-Frontier"
        Script = "frontier_intel\\frontier_supervisor.py"
        Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
@@ -285,6 +289,20 @@ $tasks = @(
                      -RepetitionInterval (New-TimeSpan -Minutes 5) `
                      -RepetitionDuration (New-TimeSpan -Days 3650) }
        Desc = "MT5 ruin rail in DRY-RUN: evaluates every rail every 5 minutes and stamps what it would do; arms nothing." },
+    @{ Name = "MT5-FusionDeadmanLive"
+       # THE MT5 DEADMAN, ARMED BY THE PRINCIPAL'S MARKER ONLY (audit r5 must-fix 4).
+       # The same rail with `--live`. It acts ONLY while data\FUSION_DEADMAN_ARMED.json exists and
+       # reads {"armed_by": "zuck"} -- a gitignored file the principal writes on the box; without it
+       # every pass is DRY-RUN and the stamp says "live_requested_but_unarmed". Once armed, the
+       # dry-run row above steps aside so the stamp has one writer. The gateway opens no new Fusion
+       # risk unless that stamp reads LIVE and is under 15 minutes old (decision_core
+       # .fusion_deadman_armed), so registering this row is what makes arming possible at all.
+       Script = "proposals\\fusion_deadman.py"
+       Args = "--live"
+       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+                     -RepetitionInterval (New-TimeSpan -Minutes 5) `
+                     -RepetitionDuration (New-TimeSpan -Days 3650) }
+       Desc = "MT5 ruin rail, --live: flattens and halts on a confirmed breach, but ONLY while the principal's FUSION_DEADMAN_ARMED.json marker exists." },
     # ---- THE CRO CYCLE LANES (MT5-CycleNoon / MT5-CycleMidnight) ARE NOT IN THIS TABLE --------
     # They run as the account that holds the claude/codex logins (S4U), not SYSTEM, and fire
     # hourly all day with the Europe/Dublin window decided by Run-DeskCycle.ps1. Both facts are
@@ -410,7 +428,7 @@ foreach ($t in $tasks) {
         # the gateway or shadow replay as SYSTEM returns -10004/-10005 even while terminal64 is
         # healthy, which turns every certificate into a false no-bars clock.  All other jobs stay
         # headless under SYSTEM.  The terminal task is the canonical source of the desktop owner.
-        if ($t.Name -in @("MT5-Gateway", "MT5-GatewayResident", "MT5-Shadow", "MT5-Gauntlet")) {
+        if ($t.Name -in @("MT5-GatewayResident", "MT5-Shadow", "MT5-Gauntlet")) {
             if (-not $InteractiveUser -or $InteractiveUser -eq "SYSTEM") {
                 throw "$($t.Name) requires the MT5 interactive desktop owner; pass -InteractiveUser"
             }
@@ -756,7 +774,7 @@ if ($AurumRoot) {
 
 Write-Host ""
 Write-Host "VERIFY -- these are the only checks that mean anything:"
-Write-Host "  Get-ScheduledTask MT5-Gateway,MT5-Hourly | Select TaskName,State"
+Write-Host "  Get-ScheduledTask MT5-GatewayResident,MT5-Hourly | Select TaskName,State"
 Write-Host "  Start-ScheduledTask -TaskName MT5-Hourly     # force one run now"
 Write-Host "  Get-Content logs\MT5-Hourly.log -Tail 40"
 Write-Host "  Get-Content reports\shadow\shadow_state.json | Select-Object -First 30"

@@ -39,4 +39,5 @@ for name in ["TREND_DAY", "NORMAL_DAY", "RANGE_DAY", "FAILED_BREAK"]:
     print(f"{name:<12} n={b['n']:5d} exp={b['exp']:+.3f} t={b['t']:5.2f} "
           f"defl={b['defl_t']:5.2f} PF={b['pf']:5.2f} maxDD={b['maxdd']:7.1f} "
           f"stress={b['exp_stress']:+.3f} WF[{wfs}] {'PASS' if b['gate'] else 'fail'}")
-json.dump(res, open("reports/mech_battery.json", "w"), indent=2, default=str)
+with open("reports/mech_battery.json", "w", encoding="utf-8", newline="\n") as _fh:
+    json.dump(res, _fh, indent=2, default=str)

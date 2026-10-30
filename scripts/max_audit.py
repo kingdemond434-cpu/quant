@@ -3962,6 +3962,15 @@ _PRODUCER_CADENCE = {
 #: Artifacts that are terminal by nature: templates, forensic write-ups, protocol libraries. They
 #: accumulate no inventory, so they owe no cadence -- recorded here so "no law" is a DECISION.
 _TERMINAL_ARTIFACTS = {
+    # DESKTOP-PASS SPECS, claimed as a directory class (2026-10-06). The cloud classifier refuses
+    # money-path edits (gateway, order door, allocator), so the change a cloud thread finds is
+    # handed to the desktop session as a spec in docs/desktop_pass/<topic>/. Each spec is TERMINAL
+    # once the desktop applies it: the code and its drill are then the record. It cannot rot
+    # unseen, because the organ that cites it keeps a FAIL row open until the drill it names
+    # passes (desks/mt5/research/recovery_drills.py: GATEWAY_SPEC, FILL_ORDER_SPEC).
+    "docs/desktop_pass/":
+        "SPEC HANDED TO THE DESKTOP PASS for a money-path change the cloud may not make. Terminal "
+        "on application; until then a FAIL row in reports/RECOVERY_DRILLS.json names it.",
     # THE DERIVED LESSON VAULT, claimed as a DIRECTORY CLASS (2026-09-12). 286 of the 294
     # unclaimed docs artifacts were these. docs/lesson_vault/ is regenerated wholesale by
     # scripts/build_lesson_vault.py from docs/desk_lessons.jsonl, which is the source of truth --
@@ -4298,6 +4307,12 @@ _TERMINAL_ARTIFACTS = {
     "docs/RESEARCH.md": "operative research mandate -- every organ's first standing order, amended by decision only",
     "docs/MANDATE_COVERAGE.md": "terminal disposition map of the consolidation -- a re-consolidation writes a NEW map",
     "docs/policy/DEEPSEEK_SECOND_FLYWHEEL_MANDATE.md": "standing principal mandate -- donation-only flywheel authority limits",
+    # Classified 2026-10-20 (base-red fix): landed in 1e8bca92b with no claim, which turned the
+    # artifact-ungoverned birth property red on every laws-only gate run.
+    "docs/policy/DEEPSEEK_THIRD_BRAIN_MAXIMUM_ROI_ADDENDUM.md":
+        "standing addendum to the DeepSeek second-flywheel mandate, subordinate to it by its own "
+        "header -- scopes the DeepSeek seat's residual work and creates no second authority, "
+        "amended by decision only, never a cadence or an inventory",
     "docs/research/EXPLORATION_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
     "docs/research/MEASUREMENT_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
     "docs/research/OPERATING_DOCTRINE.md": "standing doctrine -- governs what to build",

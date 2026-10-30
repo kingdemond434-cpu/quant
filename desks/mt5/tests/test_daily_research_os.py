@@ -42,9 +42,13 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
 from libs.moat import registry as R  # noqa: E402
 from research import daily_research_os as D  # noqa: E402
 
-TODAY = datetime.now(tz=UTC).date().isoformat()
-YESTERDAY = (datetime.now(tz=UTC) - timedelta(days=1)).date().isoformat()
-NOW = datetime.now(tz=UTC).isoformat(timespec="seconds")
+#: ONE instant for the whole module. The fixtures below stamp their artifacts with it and the
+#: `desk` fixture pins the module's clock to it, so a suite that runs across 00:00 UTC still
+#: reads one day on both sides (it failed six tests on 2026-10-07 00:14Z when it did not).
+CLOCK = datetime.now(tz=UTC)
+TODAY = CLOCK.date().isoformat()
+YESTERDAY = (CLOCK - timedelta(days=1)).date().isoformat()
+NOW = CLOCK.isoformat(timespec="seconds")
 
 
 # --------------------------------------------------------------------------------- the fixtures
@@ -92,6 +96,7 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     arts = {name: (reports if str(path).replace("\\", "/").find("/reports/") >= 0 else data)
             / Path(path).name for name, path in D.ARTIFACTS.items()}
     monkeypatch.setattr(D, "ARTIFACTS", arts)
+    monkeypatch.setattr(D, "_PASS_CLOCK", CLOCK)
     monkeypatch.setattr(D, "DESK", tmp_path)
     monkeypatch.setattr(D, "ROOT", tmp_path)
     monkeypatch.setattr(D, "REPORTS", reports)
@@ -450,3 +455,31 @@ def test_todays_absolutes_are_written_as_kpis_so_tomorrow_can_diff(
     written = {r["name"] for r in R.kpis(days=2) if r["day"] == TODAY}
     assert {"frontier_coverage", "orthogonal_candidates", "n_eff", "complexity_cost",
             "conversion_debt_unexplained", "research_memory_rows"} <= written
+
+
+def test_the_clock_is_read_at_call_time_and_pinned_for_a_pass(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Import never fixes the date, and a pass that crosses midnight reads ONE day throughout."""
+    monkeypatch.setattr(D, "_PASS_CLOCK", None)
+    before = datetime(2026, 10, 6, 23, 59, 59, tzinfo=UTC)
+    after = datetime(2026, 10, 7, 0, 0, 1, tzinfo=UTC)
+    ticks = iter([before, after, after, after])
+
+    class _Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):  # type: ignore[override]
+            return next(ticks)
+
+    monkeypatch.setattr(D, "datetime", _Clock)
+    seen: list[str] = []
+
+    def _pass(*, dry_run: bool, timeout_s: float) -> dict[str, Any]:
+        seen.append(D._now().date().isoformat())
+        seen.append(D._now().date().isoformat())
+        return {}
+
+    monkeypatch.setattr(D, "_run_pass", _pass)
+    D.run_once(dry_run=True)
+    assert seen == ["2026-10-06", "2026-10-06"], "the pass stays on the day it started"
+    assert D._PASS_CLOCK is None, "the pin is released when the pass ends"
+    assert D._now().date().isoformat() == "2026-10-07", "outside a pass the wall clock is read"
