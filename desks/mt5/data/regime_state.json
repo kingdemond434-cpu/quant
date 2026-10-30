@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-30T08:15:05.190848+00:00",
+  "swept_at": "2026-10-30T08:30:04.911604+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -658,7 +658,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2292,
+      "shadow_exp_r": -0.3737,
       "woke_on_shadow": false
     },
     "CHFDKK|macro_conditional_continuous": {
@@ -790,7 +790,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3711,
+      "shadow_exp_r": -0.0421,
       "woke_on_shadow": false
     },
     "CHFNOK|carry_continuous": {
@@ -834,7 +834,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5336,
+      "shadow_exp_r": 0.31,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_continuous": {
@@ -2616,7 +2616,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.6614,
+      "shadow_exp_r": -0.6464,
       "woke_on_shadow": false
     },
     "GBPZAR|clock_transition_asia": {
@@ -2638,7 +2638,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 42,
-      "shadow_exp_r": 0.7209,
+      "shadow_exp_r": 0.7192,
       "woke_on_shadow": false
     },
     "GBPZAR|macro_conditional_asia": {
@@ -2649,7 +2649,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2914,
+      "shadow_exp_r": -0.2942,
       "woke_on_shadow": false
     },
     "GBPZAR|overnight_gap_decay_asia": {
@@ -3243,7 +3243,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1762,
+      "shadow_exp_r": -0.1807,
       "woke_on_shadow": false
     },
     "NZDSGD|overnight_gap_decay_asia": {
@@ -3275,8 +3275,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 37,
-      "shadow_exp_r": 0.1907,
+      "shadow_n": 38,
+      "shadow_exp_r": 0.1861,
       "woke_on_shadow": false
     },
     "NZDSGD|pca_residual_continuous": {
@@ -3826,7 +3826,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5658,
+      "shadow_exp_r": -0.5656,
       "woke_on_shadow": false
     },
     "USDMXN|formula_asia": {
@@ -3848,7 +3848,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0034,
+      "shadow_exp_r": 0.0033,
       "woke_on_shadow": false
     },
     "USDMXN|macro_conditional_continuous": {
