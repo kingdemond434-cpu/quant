@@ -1,10 +1,10 @@
 {
- "at": "2026-10-30T15:46:03+00:00",
+ "at": "2026-10-30T16:16:04+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 4.51,
-   "why": "no new verdict for 4.5h (last 2026-10-30T11:15:35+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 0.3,
+   "why": "no new verdict for 0.3h (last 2026-10-30T15:58:20+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "resident_dead": {
    "open": false,
@@ -14,28 +14,28 @@
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 4.33,
+   "hours": 0.22,
    "limit_h": 25.59,
-   "why": "4.3h since the last sweep ended (2026-10-30T11:25:58+00:00), status SWEEPING; limit 25.59h"
+   "why": "0.2h since the last sweep ended (2026-10-30T16:02:45+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
-   "cells": 13827,
+   "cells": 18667,
    "basis": "n_judged",
    "read": "first 1048576 and last 262144 bytes",
-   "why": "the sweep that ended 2026-10-30T11:25:58+00:00 judged 13827 cell(s) (n_judged)"
+   "why": "the sweep that ended 2026-10-30T16:02:45+00:00 judged 18667 cell(s) (n_judged)"
   },
   "sweep_dead": {
    "open": false,
-   "pid": 19228,
-   "why": "sweep child pid 19228 alive"
+   "pid": 13804,
+   "why": "sweep child pid 13804 alive"
   },
   "phase_overrun": {
    "open": false,
-   "phase": "merge_and_publish",
-   "hours": 0.13,
+   "phase": "plan",
+   "hours": 0.22,
    "known_phase": true,
-   "why": "sweep phase merge_and_publish has run 0.1h since 2026-10-30T15:38:06+00:00 (limit 3h)"
+   "why": "sweep phase plan has run 0.2h since 2026-10-30T16:03:09+00:00 (limit 4.5h)"
   },
   "host_unreadable": {
    "open": false,
@@ -71,14 +71,14 @@
   }
  },
  "last_verdict": {
-  "at": "2026-10-30T11:15:35+00:00",
+  "at": "2026-10-30T15:58:20+00:00",
   "source": "gate_verdict_ledger.jsonl"
  },
  "resident": {
   "status": "SWEEPING",
   "pid": 21384,
-  "heartbeat_utc": "2026-10-30T15:45:37+00:00",
-  "last_sweep_ended_utc": "2026-10-30T11:25:58+00:00",
+  "heartbeat_utc": "2026-10-30T16:15:41+00:00",
+  "last_sweep_ended_utc": "2026-10-30T16:02:45+00:00",
   "last_rc": 0
  },
  "host": "trading box",
