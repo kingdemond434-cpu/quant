@@ -1,18 +1,46 @@
 {
-  "_doc": "Hard ceilings the risk-invariants job holds every AUTO-tier PR to. Read statically (ast, never imported) from the PR head. A value above its ceiling, a constant that is no longer a plain literal, a constant or file that disappeared, or a rail list that lost a member FAILS the job, and the release controller quarantines the PR. The CLEAR + APPROVE MERGES path ignores this job: a change zuck approves himself may move a ceiling. This file is PROTECTED.",
+  "_doc": "Hard ceilings the risk-invariants job holds every AUTO-tier PR to. Read statically (ast, never imported) from the PR head. A value above its ceiling, a constant that is no longer a plain literal, a constant or file that disappeared, or a rail list that lost a member FAILS the job, and the release controller quarantines the PR. The CLEAR + APPROVE MERGES path ignores this job: a change zuck approves himself may move a ceiling. This file is PROTECTED. `source` holds a knob no literal can express (a Path expression, a tuple-keyed dict, a function default) to its exact expression, compared as an ast. A row whose file neither the base nor the head has binds from the PR that adds the file, so a ceiling can land first.",
   "max": {
     "desks/mt5/mt5desk/sizing.py": {
       "BASE_RISK_FRAC": 0.03,
-      "MAX_RISK_FRAC": 0.10
+      "MAX_RISK_FRAC": 0.1
     }
   },
   "equal": {
     "desks/mt5/mt5desk/sizing.py": {
       "FADE_FACTOR": 0.5
+    },
+    "desks/mt5/mt5desk/news_fence.py": {
+      "RAIL": "e8_news_fence",
+      "SHADOW_STATUS": "SHADOW_FENCE",
+      "DEFAULT_PRE_MIN": 15,
+      "DEFAULT_POST_MIN": 15,
+      "MAX_WINDOW_MIN": 240
+    },
+    "desks/mt5/prop/e8_gold.py": {
+      "NEWS_RAIL": "e8_news_fence",
+      "NEWS_SHADOW": "SHADOW_FENCE"
     }
   },
   "superset": {
     "libs/execution/ruin_rail.py": "RAILS",
-    "desks/mt5/mt5desk/fusion_rails.py": "RAILS"
+    "desks/mt5/mt5desk/fusion_rails.py": "RAILS",
+    "desks/mt5/mt5desk/news_fence.py": "MONTHLY"
+  },
+  "source": {
+    "desks/mt5/mt5desk/news_fence.py": {
+      "DESK": "Path(__file__).resolve().parents[1]",
+      "FLAG": "DESK / 'data' / 'E8_NEWS_FENCE.json'",
+      "read_flag(path=)": "None",
+      "verdict(flag_path=)": "None",
+      "verdict(rel=)": "None"
+    },
+    "desks/mt5/prop/e8_gold.py": {
+      "_retry_failed_legs(news_why=)": "None",
+      "_retry_failed_legs(news_shadow_why=)": "None"
+    },
+    "desks/mt5/mt5desk/calendar_us.py": {
+      "NFP_MOVED": "{(2026, 7): (7, 2)}"
+    }
   }
 }
