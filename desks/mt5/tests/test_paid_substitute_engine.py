@@ -301,13 +301,60 @@ def test_materialise_stamps_available_time_after_the_period(tmp_path: Path) -> N
     acq = tmp_path / "s.parquet"
     pd.Series([1.0, 2.0], index=pd.to_datetime(["2026-01-01", "2026-01-02"], utc=True),
               name="value").to_frame().to_parquet(acq)
-    sub = {"id": "fred_t", "endpoint": "https://e/x.csv", "latency_days": 1}
+    sub = {"id": "fred_t", "endpoint": "https://e/x.csv", "latency_days": 1, "frequency": "daily"}
     reg = {"by_url": {"https://e/x.csv": {"series": ["s"]}}, "series": {"s": {"path": str(acq)}}}
     assert pse.materialise(sub, lake=tmp_path / "lake", acquired=reg) == "WRITTEN"
     f = pd.read_parquet(tmp_path / "lake" / f"{pse.dataset_id(sub)}.parquet")
     assert (pd.to_datetime(f["available_time"], utc=True)
             > pd.to_datetime(["2026-01-01", "2026-01-02"], utc=True)).all()
     assert pse.materialise({"id": "none"}, lake=tmp_path / "lake", acquired=reg) == "NOT_ACQUIRED"
+
+
+def test_a_monthly_value_is_available_only_after_its_period_ends_and_its_release_lag() -> None:
+    """September CPI is dated 09-01 by fredgraph.csv and published mid-October. Stamping period
+    START + latency made it available on 09-08 and leaked five weeks of the future."""
+    pd = pytest.importorskip("pandas")
+    stamp, refused = pse.release_offset({"frequency": "monthly", "latency_days": 15})
+    assert refused is None and stamp is not None
+    got = stamp(pd.to_datetime(["2026-09-01"], utc=True))[0]
+    assert got == pd.Timestamp("2026-10-16", tz="UTC")
+    week, _ = pse.release_offset({"frequency": "weekly", "latency_days": 5})
+    assert week is not None
+    assert week(pd.to_datetime(["2026-09-07"], utc=True))[0] == pd.Timestamp("2026-09-19", tz="UTC")
+
+
+@pytest.mark.parametrize("sub", [{"frequency": "monthly"}, {"frequency": "monthly",
+                                                            "latency_days": None},
+                                 {"latency_days": 7}, {"frequency": "fortnightly?",
+                                                       "latency_days": 7}])
+def test_an_undeclared_latency_or_unplaceable_frequency_is_refused_never_defaulted(
+        tmp_path: Path, sub: dict) -> None:
+    pd = pytest.importorskip("pandas")
+    stamp, refused = pse.release_offset(sub)
+    assert stamp is None and refused and refused.startswith("REFUSED")
+    acq = tmp_path / "s.parquet"
+    pd.Series([1.0], index=pd.to_datetime(["2026-01-01"], utc=True),
+              name="value").to_frame().to_parquet(acq)
+    full = {"id": "fred_r", "endpoint": "https://e/r.csv", **sub}
+    reg = {"by_url": {"https://e/r.csv": {"series": ["s"]}}, "series": {"s": {"path": str(acq)}}}
+    assert pse.materialise(full, lake=tmp_path / "lake", acquired=reg).startswith("REFUSED")
+    assert not (tmp_path / "lake" / f"{pse.dataset_id(full)}.parquet").exists()
+
+
+def test_every_library_source_can_be_stamped() -> None:
+    """A library row the stamp refuses never reaches the lake; the shipped library has none."""
+    assert [s["id"] for s in pse.load_library() if pse.release_offset(s)[1]] == []
+
+
+def test_an_unreadable_crawl_file_is_never_overwritten(tmp_path: Path) -> None:
+    listings = tmp_path / "listings.json"
+    listings.write_text(json.dumps({"listings": [{"url": "https://example.org/list"}]}))
+    crawled = tmp_path / "crawled.json"
+    crawled.write_text('{"entries": [{"id": "a"}, ')        # torn mid-write
+    st = pse.crawl_catalogue(listings_path=listings, crawled_path=crawled,
+                             fetch=lambda u: (200, "<html></html>"))
+    assert st["status"].startswith(pse.UNMEASURED)
+    assert crawled.read_text() == '{"entries": [{"id": "a"}, '
 
 
 # ------------------------------------------------------------------------ Asia's table
@@ -621,13 +668,14 @@ def test_materialise_writes_the_period_beside_available_time(tmp_path: Path) -> 
     acq = tmp_path / "s.parquet"
     days = pd.to_datetime(["2026-01-01", "2026-02-01"], utc=True)
     pd.Series([1.0, 2.0], index=days, name="value").to_frame().to_parquet(acq)
-    sub = {"id": "fred_p", "endpoint": "https://e/p.csv", "latency_days": 45}
+    sub = {"id": "fred_p", "endpoint": "https://e/p.csv", "latency_days": 45,
+           "frequency": "monthly"}
     reg = {"by_url": {"https://e/p.csv": {"series": ["s"]}}, "series": {"s": {"path": str(acq)}}}
     assert pse.materialise(sub, lake=tmp_path / "lake", acquired=reg) == "WRITTEN"
     f = pd.read_parquet(tmp_path / "lake" / f"{pse.dataset_id(sub)}.parquet")
     assert list(pd.to_datetime(f["event_time"], utc=True)) == list(days)
     assert (pd.to_datetime(f["available_time"], utc=True) - pd.to_datetime(
-        f["event_time"], utc=True)).dt.days.tolist() == [45, 45]
+        f["event_time"], utc=True)).dt.days.tolist() == [31 + 45, 28 + 45]   # period END + lag
 
 
 def test_correlation_is_compared_unrounded() -> None:

@@ -758,7 +758,13 @@ def crawl_catalogue(
     now = now or _now()
     listings = (_read_json(listings_path or LISTINGS) or {}).get("listings") or []
     cpath = crawled_path or CRAWLED
-    doc = _read_json(cpath) or {}
+    doc = _read_json(cpath)
+    if not isinstance(doc, dict) and Path(cpath).exists():
+        # an unreadable file is not an empty one: rewriting it from this pass's rows would wipe
+        # every row ever crawled, so nothing is written until it reads again
+        return {"status": f"{UNMEASURED}: {Path(cpath).name} exists but does not parse",
+                "listings": len(listings), "new_entries": 0}
+    doc = doc if isinstance(doc, dict) else {}
     entries: list[dict[str, Any]] = [e for e in (doc.get("entries") or []) if isinstance(e, dict)]
     have = {str(e.get("id")) for e in entries}
     cursor = int(doc.get("cursor") or 0)
@@ -984,9 +990,46 @@ def _dated(s: Any) -> Any:
 PERIOD_COLUMNS: tuple[str, ...] = ("event_time", "period", "date")
 
 
+#: How long one observation's PERIOD lasts, by the library's declared frequency. A fetched series
+#: (fredgraph.csv and most lake sources) dates a value at the START of its period, so the value
+#: cannot exist before the period ENDS: September CPI is dated 09-01 and published mid-October.
+#: Stamping start + latency made it "available" five weeks early and let every conditioner cell
+#: backtest on future data. `irregular`/`event` rows are dated at the occurrence itself.
+PERIOD_SPAN: dict[str, tuple[str, int]] = {
+    "intraday": ("hours", 0), "hourly": ("hours", 1), "daily": ("days", 1),
+    "weekly": ("days", 7), "10-day": ("days", 10), "semimonthly": ("days", 16),
+    "monthly": ("months", 1), "quarterly": ("months", 3), "semiannual": ("months", 6),
+    "annual": ("months", 12), "triennial": ("months", 36),
+    "irregular": ("days", 0), "event": ("days", 0),
+}
+
+
+def release_offset(sub: Mapping[str, Any]) -> tuple[Callable[[Any], Any] | None, str | None]:
+    """(period START -> first availability, refusal). The mapping adds the period's
+    span plus the declared release latency counted from the period's END. A source with no
+    declared latency, or a frequency this table cannot place, is REFUSED -- never defaulted,
+    because a guessed stamp is a look-ahead the gauntlet cannot see."""
+    import pandas as pd
+
+    raw = sub.get("latency_days")
+    try:
+        lat = float(raw) if raw is not None and not isinstance(raw, bool) else None
+    except (TypeError, ValueError):
+        lat = None
+    if lat is None or lat < 0:
+        return None, "REFUSED: release latency undeclared"
+    span = PERIOD_SPAN.get(str(sub.get("frequency") or "").strip().lower())
+    if span is None:
+        return None, f"REFUSED: frequency {sub.get('frequency')!r} cannot be placed"
+    unit, n = span
+    span_off, lag = pd.DateOffset(**{unit: n}), pd.Timedelta(days=min(lat, 400.0))
+    return (lambda idx: idx + span_off + lag), None
+
+
 def lake_lag_days(sub: Mapping[str, Any]) -> float:
-    """The lag `materialise` adds to the period to stamp `available_time` (its exact formula), so
-    a frame written before the period column existed can be put back on its period."""
+    """The lag a LEGACY lake frame (written before the period column existed, as period +
+    latency) carries, so it can be put back on its period. New frames always carry
+    `event_time` and are stamped by `release_offset`."""
     try:
         lat = float(sub.get("latency_days") or 1)
     except (TypeError, ValueError):
@@ -1833,8 +1876,9 @@ def materialise(
     sub: Mapping[str, Any], *, lake: Path | None = None, acquired: Mapping[str, Any] | None = None
 ) -> str:
     """Write the substitute's lake frame from what acquire_datasets fetched: `value` plus a
-    point-in-time `available_time` = period + the source's declared latency (at least a day).
-    Returns the status. Never invents a stamp: no acquired series means NOT_ACQUIRED."""
+    point-in-time `available_time` = period END + the source's declared release latency
+    (`release_offset`). Returns the status. Never invents a stamp: no acquired series means
+    NOT_ACQUIRED, and an undeclared latency or unplaceable frequency is REFUSED."""
     did = dataset_id(sub)
     base = lake or LAKE
     if series_present(did, base):
@@ -1845,6 +1889,10 @@ def materialise(
     try:
         import pandas as pd
 
+        offset, refused = release_offset(sub)
+        if refused or offset is None:
+            return refused or "REFUSED"
+
         rec = ((acquired or {}).get("series") or {}).get(names[0]) or {}
         df = pd.read_parquet(Path(str(rec.get("path"))))
         col = df.columns[0]
@@ -1853,7 +1901,7 @@ def materialise(
             {
                 SIGNAL: pd.to_numeric(df[col], errors="coerce").to_numpy(),
                 "event_time": idx,
-                "available_time": idx + pd.Timedelta(days=lake_lag_days(sub)),
+                "available_time": offset(idx),
                 "source_id": did,
             }
         ).dropna(subset=[SIGNAL, "available_time"])
