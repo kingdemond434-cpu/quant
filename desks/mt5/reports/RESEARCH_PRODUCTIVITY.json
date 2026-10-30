@@ -1,9 +1,9 @@
 {
- "generated_utc": "2026-10-28T05:39:53.187192+00:00",
+ "generated_utc": "2026-10-29T22:59:10.591934+00:00",
  "stages": {
   "intake": {
-   "files": 52867,
-   "files_7d": 2908,
+   "files": 53101,
+   "files_7d": 1483,
    "rows_recent_files": 3100
   },
   "proposers": {
@@ -23,65 +23,65 @@
     "last": null
    },
    "weak_signal_ensemble": {
-    "files": 151,
+    "files": 152,
     "rows_latest": 3,
-    "last": "2026-10-16T12:39:57.147543+00:00"
+    "last": "2026-10-29T07:16:31.292975+00:00"
    }
   },
   "compiled": {
    "candidates": 30560
   },
   "deepening": {
-   "queued": 899,
-   "decided_total": 54607,
+   "queued": 740,
+   "decided_total": 55345,
    "backlog": 0
   },
   "judged": {
-   "cells": 945409,
-   "unmeasured": 6571
+   "cells": 1031278,
+   "unmeasured": 4806
   },
   "certified": {
-   "cells": 1048,
-   "last_certified": "2026-10-17",
-   "certified_last_30d": 462
+   "cells": 1213,
+   "last_certified": "2026-10-29",
+   "certified_last_30d": 591
   },
   "forward": {
    "source": "reports/shadow/*_state.json + reports/FORWARD_ENROLMENT.json",
-   "certificates": 1048,
+   "certificates": 1213,
    "banned_family_certificates": 0,
-   "forward_eligible_certificates": 1048,
+   "forward_eligible_certificates": 1213,
    "moat_backup_ledgers": 76,
    "moat_backup_ledgers_updated_7d": 0,
-   "clock_rows": 876,
-   "clocks_ticked_24h": 857,
-   "clocks_ticked_7d": 857,
-   "last_tick": "2026-10-28T05:09:48+00:00",
-   "engine_silent_hours": 0.5,
-   "n_certificates": 1048,
-   "n_enrolled": 872,
-   "n_accruing": 514,
-   "n_blocked": 30,
+   "clock_rows": 941,
+   "clocks_ticked_24h": 922,
+   "clocks_ticked_7d": 922,
+   "last_tick": "2026-10-29T22:58:41+00:00",
+   "engine_silent_hours": 0.0,
+   "n_certificates": 1213,
+   "n_enrolled": 937,
+   "n_accruing": 513,
+   "n_blocked": 94,
    "n_missing": 0,
    "n_overdue": 0,
    "n_dropped_at_admission": 0,
    "blocked_by_status": {
-    "BLOCKED_TIER_S": 9,
-    "BLOCKED_NO_BARS": 8,
-    "IDENTITY_BROKEN": 13
+    "BLOCKED_TIER_S": 8,
+    "IDENTITY_BROKEN": 82,
+    "BLOCKED_NO_BARS": 4
    },
-   "census_at": "2026-10-28T02:46:54+00:00"
+   "census_at": "2026-10-29T18:15:39+00:00"
   },
   "recommendations": {
    "total": 784,
    "open": 216,
-   "open_median_age_days": 62.0
+   "open_median_age_days": 64.0
   }
  },
  "conversion": {
   "intake_to_compiled": 9.8581,
-  "judged_to_certified": 0.0011,
-  "certified_to_forward": 0.4905,
-  "certified_to_clock": 0.8321
+  "judged_to_certified": 0.0012,
+  "certified_to_forward": 0.4229,
+  "certified_to_clock": 0.7725
  },
  "bottleneck": "none obvious"
 }
