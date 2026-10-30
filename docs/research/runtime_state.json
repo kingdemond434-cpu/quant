@@ -528,19 +528,28 @@
     ]
    },
    {
-    "at": "2026-10-30T08:59:46+00:00",
+    "at": "2026-10-30T08:48:51+00:00",
     "host": "vm",
     "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
     "on_attesting_host": false,
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
-     "leg:clock_accrual",
      "library:desks/mt5/research/rejudge_evicted.py",
      "library:desks/mt5/research/run_hunt16.py"
     ]
    },
    {
-    "at": "2026-10-30T09:13:28+00:00",
+    "at": "2026-10-30T10:48:03+00:00",
+    "host": "vm",
+    "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:clock_accrual"
+    ]
+   },
+   {
+    "at": "2026-10-30T11:02:00+00:00",
     "host": "vm",
     "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
     "on_attesting_host": false,
@@ -550,7 +559,7 @@
     ]
    },
    {
-    "at": "2026-10-30T09:21:04+00:00",
+    "at": "2026-10-30T11:11:07+00:00",
     "host": "vm",
     "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
     "on_attesting_host": false,
@@ -560,7 +569,7 @@
     ]
    },
    {
-    "at": "2026-10-30T09:27:52+00:00",
+    "at": "2026-10-30T11:20:32+00:00",
     "host": "vm",
     "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
     "on_attesting_host": false,
@@ -573,7 +582,7 @@
     ]
    },
    {
-    "at": "2026-10-30T09:35:06+00:00",
+    "at": "2026-10-30T11:29:09+00:00",
     "host": "vm",
     "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
     "on_attesting_host": false,
@@ -26812,34 +26821,6 @@
    "measured_at": "2026-10-30T07:31:28+00:00"
   },
   {
-   "organ": "leg:clock_accrual",
-   "kind": "leg",
-   "code": [
-    "desks/mt5/research/clock_accrual.py"
-   ],
-   "clock": "hourly_cycle:clock_accrual",
-   "cadence_s": 3600,
-   "max_silence_s": 7200,
-   "state": "NEVER",
-   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
-   "last_run_at": "UNMEASURED",
-   "last_run_outcome": "UNMEASURED",
-   "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/CLOCK_ACCRUAL.json",
-   "artifact_declared": "desks/mt5/reports/CLOCK_ACCRUAL.json",
-   "artifact_resolved_by": "absent",
-   "artifact_declared_n": 1,
-   "artifact_age_s": null,
-   "artifact_bytes": 0,
-   "artifact_sha256": "UNMEASURED",
-   "summary": {},
-   "progress_metric": "leg_completions",
-   "consumer": "UNMEASURED",
-   "measured_on": "vm",
-   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-30T08:59:46+00:00"
-  },
-  {
    "organ": "library:desks/mt5/research/rejudge_evicted.py",
    "kind": "library",
    "code": [
@@ -26865,7 +26846,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-30T08:59:46+00:00"
+   "measured_at": "2026-10-30T08:48:51+00:00"
   },
   {
    "organ": "library:desks/mt5/research/run_hunt16.py",
@@ -26893,7 +26874,35 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-30T08:59:46+00:00"
+   "measured_at": "2026-10-30T08:48:51+00:00"
+  },
+  {
+   "organ": "leg:clock_accrual",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/clock_accrual.py"
+   ],
+   "clock": "hourly_cycle:clock_accrual",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/CLOCK_ACCRUAL.json",
+   "artifact_declared": "desks/mt5/reports/CLOCK_ACCRUAL.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-30T10:48:03+00:00"
   },
   {
    "organ": "leg:cell_emitter",
@@ -26921,7 +26930,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-30T09:13:28+00:00"
+   "measured_at": "2026-10-30T11:02:00+00:00"
   },
   {
    "organ": "leg:forest_attempts",
@@ -26949,7 +26958,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-30T09:21:04+00:00"
+   "measured_at": "2026-10-30T11:11:07+00:00"
   },
   {
    "organ": "fence:check_organ_cadence",
@@ -26977,7 +26986,7 @@
    "consumer": "desks/mt5/research/plumbing_watchdog.py",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-30T09:27:52+00:00"
+   "measured_at": "2026-10-30T11:20:32+00:00"
   },
   {
    "organ": "leg:gauntlet_guard",
@@ -27005,7 +27014,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-30T09:27:52+00:00"
+   "measured_at": "2026-10-30T11:20:32+00:00"
   },
   {
    "organ": "leg:srb_basket_judge",
@@ -27033,7 +27042,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-30T09:27:52+00:00"
+   "measured_at": "2026-10-30T11:20:32+00:00"
   },
   {
    "organ": "leg:srb_uncorrelated_sweep",
@@ -27061,7 +27070,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-30T09:27:52+00:00"
+   "measured_at": "2026-10-30T11:20:32+00:00"
   },
   {
    "organ": "leg:residual_search",
@@ -27089,7 +27098,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-30T09:35:06+00:00"
+   "measured_at": "2026-10-30T11:29:09+00:00"
   },
   {
    "organ": "leg:specialist_cell",
@@ -27117,7 +27126,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
-   "measured_at": "2026-10-30T09:35:06+00:00"
+   "measured_at": "2026-10-30T11:29:09+00:00"
   }
  ],
  "ratchet": {
