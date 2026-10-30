@@ -2584,10 +2584,9 @@ FAMILY_INPUTS["alt_release_drift"] = (
     "a point-in-time alt-data lake series named by the alt_proxies equity hand-off, placed at "
     "each release's first available_time (research/alt_equity_handoff.py)",
     "desks/mt5/data/lake/series/<source>.csv")
-FAMILY_TIMEFRAMES["alt_release_drift"] = (
-    ("H1",),
-    "a release is a daily-or-slower event whose hold is counted in H1 bars per trading day; "
-    "entry is the first H1 bar opening after the release instant on the broker clock")
+# NO TIMEFRAME RESTRICTION: entry is the first bar OPENING after the release on whatever chart
+# the cell carries (`_h1` keeps the caller's bar clock), and the hold is `hold_days` times the
+# chart's own measured bars per day, so it is the same market rule on every rung of the ladder.
 
 # SPECIALIST FAMILIES (2026-09-30, `research/specialist_cell.py`). Four mechanisms an asset-class
 # specialist names and no registered family expressed: carry harvested in calm and unwound in
