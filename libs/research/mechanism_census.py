@@ -1060,6 +1060,20 @@ CONSTRUCTION_CLASS: dict[str, str] = {
     "cross_sectional_class_reversal": "liquidity_provision_immediacy",
     "lead_lag_class_catchup": "relative_value_convergence",
     "crisis_only_class_defensive": "positioning_crowding_unwind",
+    # BROKER STATE, AMIHUD AND OPTIONS STATE (2026-10-14, research/broker_state_cells.py). A margin
+    # hike or a CLOSEONLY flip is the venue's own collateral rule forcing holders out:
+    # collateral_rule_deleveraging, by definition. A swap change is the rate differential the
+    # carry holder is paid repricing. Amihud impact per tick -- time series or ranked in a class
+    # -- prices immediacy in a thin book. The options state is the volatility premium's own
+    # surface, read as a conditioner.
+    "broker_margin_event": "collateral_rule_deleveraging",
+    "carry_swap_drift": "fx_carry_rate_differential",
+    "amihud_illiquidity": "liquidity_provision_immediacy",
+    "cross_sectional_class_illiquidity": "liquidity_provision_immediacy",
+    "crypto_options_state": "volatility_risk_premium",
+    # P8-M2 (2026-10-14): the concession a thin book prints while the spread is wide, faded once
+    # liquidity providers return -- the price of immediacy at a scheduled liquidity hole.
+    "spread_recovery_fade": "liquidity_provision_immediacy",
 }
 
 

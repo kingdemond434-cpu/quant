@@ -24,6 +24,9 @@ AND THE THREE VERDICTS ARE NOT THE SAME PROBLEM. Collapsing them is how a desk s
                 remedy is not another look: it is a named REPLACEMENT that takes the budget.
     UNMEASURED  no artifact records this producer's output at all. A verdict, never a pass, and
                 in practice the most common real state of a new organ (L1.28a).
+    SUPERSEDED  no output of its own, but its ground is worked by a DECLARED successor
+                (`SUPERSEDED_BY`) that is itself measured alive. A successor that is DEAD or
+                UNMEASURED turns the producer back to DEAD, fatally (2026-10-14).
 
 A REPLACEMENT MUST BE NAMED, NOT IMPLIED. "Try something else" is not a remedy; it is the absence
 of one. Every producer declared here carries the alternative that inherits its budget when it
@@ -159,6 +162,130 @@ REPLACEMENTS: dict[str, str] = {
                   "papers-with-a-mechanism ground; literature was a one-off 2026-09-16 hand seed",
 }
 
+#: SUPERSEDED, NOT DEAD (coordinator pass 8, 2026-10-14). The factor factory: five producers whose
+#: ground -- expression and factor search over the desk's own bars -- is now worked by ONE organ,
+#: `alpha_evolution`, which donates on its own seat every pass. Reading them as DEAD was true and
+#: useless: the remedy the law asks for (a named inheritor taking the budget) has already
+#: happened. So each maps to its SUCCESSOR, and the verdict is SUPERSEDED -- but only while the
+#: successor itself is measured alive. A SUPERSEDED producer whose successor is DEAD, STARVED-to-
+#: nothing or UNMEASURED is RED (`superseded_successor_not_alive`, fatal like an undeclared dead
+#: producer): a declaration that points at a corpse is the same open decision as no declaration.
+SUPERSEDED_BY: dict[str, str] = {
+    "mathlab": "alpha_evolution",
+    "lab_timeseries": "alpha_evolution",
+    "lab_probability": "alpha_evolution",
+    "expression_factory": "alpha_evolution",
+    "alpha_periodic_table": "alpha_evolution",
+}
+
+#: The successor verdicts that keep a supersession green. STARVED is output, so it counts; DEAD
+#: and UNMEASURED are not output, so they do not.
+SUCCESSOR_ALIVE = frozenset({"PRODUCING", "STARVED"})
+
+#: SET ASIDE UNTIL IT EMITS CELLS -- a declared exemption with a MEASURED lift. `alpha_rl_run`
+#: ranks construction DECISIONS for the proposer budget and writes no cell by design, so while it
+#: emits none it is reported SET_ASIDE (declared, not owing). The lift is not a flag: the first
+#: window in which the registry attributes a cell to it lifts the set-aside, the lift is recorded
+#: in the ratchet (`set_aside_lifted`, which only ever gains entries), and from then on it is
+#: judged as an ordinary producer -- a lapse back to zero cells OWES.
+#:
+#: A SET-ASIDE EXPIRES (audit of broker-state-cells, 2026-10-14). The exemption runs for
+#: SET_ASIDE_MAX_DAYS from its `declared_utc`; past that, an organ that has still emitted no cell
+#: is no longer excused: it OWES like any producer and is a named failure on its own (RED,
+#: whatever the owing ratchet says). While it is set aside it publishes a missed-growth line
+#: naming what is not being tested because of it -- the exemption is a cost, never a free pass.
+SET_ASIDE_MAX_DAYS = 14.0
+SET_ASIDE_UNTIL_CELLS: dict[str, dict[str, Any]] = {
+    "alpha_rl_run": {
+        "aliases": ("alpha_rl_run", "alpha_rl", "leg:alpha_rl"),
+        "produces": "reports/ALPHA_RL.json -- a ranked table of construction decisions",
+        "consumer": "proposer budget_s in hourly_discovery._weight and daily_cycle.arm_weight",
+        "lift": "the registry attributes >= 1 cell to it inside a yield window",
+        "declared_utc": "2026-10-14T00:00:00+00:00",
+        "not_tested": ("the construction decisions ALPHA_RL ranks are never emitted as cells, "
+                       "so the cells they would build are never judged: their E[log W] is "
+                       "unknown, and only their indirect effect on proposer budgets is felt"),
+    },
+}
+
+
+def _set_aside_expiry(spec: dict[str, Any]) -> datetime:
+    at = datetime.fromisoformat(str(spec["declared_utc"]))
+    return at + timedelta(days=float(spec.get("max_days") or SET_ASIDE_MAX_DAYS))
+
+
+def _set_aside_line(name: str, spec: dict[str, Any], now: datetime,
+                    compute_h: Any) -> dict[str, Any]:
+    """The set-aside's missed-growth line: what the exemption leaves untested, unpriced."""
+    exp = _set_aside_expiry(spec)
+    return {"gate": f"set_aside:{name}", "kind": "SET_ASIDE", "producer": name,
+            "not_tested": spec["not_tested"], "compute_hours_window7d": compute_h,
+            "declared_utc": spec["declared_utc"], "expires_utc": exp.isoformat(),
+            "days_left": round((exp - now).total_seconds() / 86400.0, 2),
+            "value": None, "verdict": "UNMEASURED",
+            "why": ("no cell, so no forward evidence: the growth this exemption forgoes cannot "
+                    "be priced until the organ emits one; it expires and reads OWING at "
+                    f"{exp.date().isoformat()}")}
+
+
+def _set_aside_entry(key: str) -> tuple[str, dict[str, Any]] | None:
+    k = str(key).strip().lower()
+    for name, spec in SET_ASIDE_UNTIL_CELLS.items():
+        if k in spec["aliases"]:
+            return name, spec
+    return None
+
+
+def _successor_cells(succ: str, window_days: float) -> int | None:
+    """The successor's MEASURED output: cells inside its own discovery artifacts whose
+    `generated_at` stamp falls in the window. Never a file mtime and never a line count -- a
+    touched file, or one unrelated line in any recent file, is not a successor producing.
+    None (UNMEASURED) when no discovery artifact of the successor carries a readable stamp."""
+    cutoff = datetime.now(UTC) - timedelta(days=window_days)
+    seen_stamp = False
+    cells = 0
+    for root in (DESK / "data" / "intelligence", ROOT / "data" / "intelligence"):
+        for f in glob.glob(str(root / succ / "discoveries_*.json")):
+            try:
+                doc = json.loads(Path(f).read_text("utf-8"))
+                at = datetime.fromisoformat(str(doc.get("generated_at")).replace("Z", "+00:00"))
+            except (OSError, ValueError, TypeError, AttributeError):
+                continue
+            if at.tzinfo is None:
+                at = at.replace(tzinfo=UTC)
+            seen_stamp = True
+            if at >= cutoff:
+                rows = doc.get("discoveries")
+                cells += sum(1 for r in rows if isinstance(r, dict)) if isinstance(rows,
+                                                                                  list) else 0
+    return cells if seen_stamp else None
+
+
+def _superseded(name: str, n: int | None, window_days: float, median: int) -> dict[str, Any]:
+    """The verdict for a superseded producer, judged on its SUCCESSOR's measured cells."""
+    succ = SUPERSEDED_BY[name]
+    sn = _successor_cells(succ, window_days)
+    if sn is None:
+        sv = "UNMEASURED"
+    elif sn == 0:
+        sv = "DEAD"
+    elif median and sn < median * STARVED_FRACTION:
+        sv = "STARVED"
+    else:
+        sv = "PRODUCING"
+    if sv in SUCCESSOR_ALIVE:
+        return {"verdict": "SUPERSEDED", "superseded_by": succ, "successor_verdict": sv,
+                "successor_cells_in_window": sn,
+                "why": (f"{n if n is not None else 'no'} row(s) of its own; its ground is "
+                        f"worked by {succ}, measured {sv} with {sn} cell(s) stamped in the "
+                        "window")}
+    return {"verdict": "DEAD", "superseded_by": succ, "successor_verdict": sv,
+            "successor_cells_in_window": sn, "successor_not_alive": True,
+            "why": f"superseded by {succ}, which is itself {sv} -- the declaration points at "
+                   "nothing that produces",
+            "replacement": (f"NONE LIVE -- declared successor {succ} is {sv}; revive it or "
+                            "name a live successor")}
+
 
 def _rel(p: Path) -> str:
     """A repo-relative path for a message, never an exception. A fence that crashes while
@@ -229,11 +356,13 @@ def audit(window_days: float = 3.0) -> dict[str, Any]:
     universe = list(seats.values())
     median = sorted(universe)[len(universe) // 2] if universe else 0
 
-    for name in sorted(set(proposers) | set(seats) | set(REPLACEMENTS)):
+    for name in sorted(set(proposers) | set(seats) | set(REPLACEMENTS) | set(SUPERSEDED_BY)):
         n = seats.get(name)
         rec: dict[str, Any] = {"producer": name, "rows_in_window": n,
                                "window_days": window_days}
-        if n is None:
+        if name in SUPERSEDED_BY and not n:
+            rec.update(_superseded(name, n, window_days, median))
+        elif n is None:
             rec.update({"verdict": "UNMEASURED",
                         "why": ("no intelligence seat records this producer's output. It may "
                                 "write elsewhere, or it may write nowhere -- and those are not "
@@ -256,6 +385,7 @@ def audit(window_days: float = 3.0) -> dict[str, Any]:
     census = Counter(str(r["verdict"]) for r in rows)
     dead = [r for r in rows if r["verdict"] == "DEAD"]
     undeclared = [r for r in dead if "NONE DECLARED" in str(r.get("replacement"))]
+    orphaned = [r for r in dead if r.get("successor_not_alive")]
     return {
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "law": ("EVERY PRODUCER PRODUCES, OR IT IS REPLACED BY A NAMED ALTERNATIVE. Zero output "
@@ -266,6 +396,7 @@ def audit(window_days: float = 3.0) -> dict[str, Any]:
         "n_producers": len(rows),
         "census": dict(census),
         "dead_without_a_declared_replacement": undeclared,
+        "superseded_successor_not_alive": orphaned,
         "producers": sorted(rows, key=lambda r: (r["verdict"], -(r["rows_in_window"] or 0))),
     }
 
@@ -438,8 +569,12 @@ def _set_aside_summary() -> dict[str, Any]:
                       for k, v in worst[:10]]}
 
 
-def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
+def yield_audit(window_hours: float = YIELD_WINDOW_HOURS,
+                now: datetime | None = None) -> dict[str, Any]:
     """EVERY PRODUCER OWES CELLS: who is paying for its compute, and how orthogonally."""
+    now = now or datetime.now(UTC)
+    set_aside_lines: list[dict[str, Any]] = []
+    set_aside_expired: list[str] = []
     census = _read(CENSUS, default={})
     declared = _declarations()
     win = _window_cells(window_hours)
@@ -456,6 +591,9 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     owing: list[dict[str, Any]] = []
     exempted: list[dict[str, Any]] = []
+    rat_lifted = _ratchet_doc().get("set_aside_lifted")
+    rat_lifted = rat_lifted if isinstance(rat_lifted, dict) else {}
+    lifted_now: list[str] = []
     unattributed: list[str] = []
     census_rows = census.get("producers") if isinstance(census.get("producers"), list) else []
     seen: set[str] = set()
@@ -493,6 +631,39 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
                                     if br.get("available") else UNMEASURED_STR),
         }
         decl = declared.get(key)
+        # SUPERSEDED in the cells half: excused only while the successor itself reached the
+        # judge with a unique cell in this window. A stale successor leaves the debt standing.
+        succ = SUPERSEDED_BY.get(key)
+        if not decl and succ:
+            sm = per.get(succ) or {}
+            row["superseded_by"] = succ
+            row["successor_unique_cells"] = int(sm.get("unique_cells", 0))
+            if sm.get("unique_cells", 0) > 0:
+                decl = {"kind": "SUPERSEDED", "superseded_by": succ,
+                        "successor_unique_cells": int(sm.get("unique_cells", 0))}
+        # SET ASIDE UNTIL IT EMITS CELLS, with the lift measured on this very window.
+        sa_entry = _set_aside_entry(key)
+        if sa_entry is not None:
+            sa_name, sa_spec = sa_entry
+            lifted = (sa_name in (rat_lifted or {})) or m.get("cells_emitted", 0) > 0
+            expired = now >= _set_aside_expiry(sa_spec)
+            row["set_aside"] = {"organ": sa_name, "lifted": bool(lifted),
+                                "lift": sa_spec["lift"], "expired": bool(expired and not lifted),
+                                "expires_utc": _set_aside_expiry(sa_spec).isoformat()}
+            if lifted:
+                if m.get("cells_emitted", 0) > 0 and sa_name not in lifted_now:
+                    lifted_now.append(sa_name)
+            elif expired:
+                # Past its window with no cell: no longer excused -- it OWES, and is RED below.
+                if sa_name not in set_aside_expired:
+                    set_aside_expired.append(sa_name)
+            elif not decl:
+                decl = {"kind": "SET_ASIDE", "produces": sa_spec["produces"],
+                        "consumer": sa_spec["consumer"], "lift": sa_spec["lift"],
+                        "expires_utc": _set_aside_expiry(sa_spec).isoformat()}
+                if not any(x["producer"] == sa_name for x in set_aside_lines):
+                    set_aside_lines.append(_set_aside_line(
+                        sa_name, sa_spec, now, src.get("compute_hours")))
         if decl:
             row["declared"] = decl
         row_contract = row_by_producer.get(key)
@@ -563,6 +734,13 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
             "producers have collapsed onto each other's cells, which is the failure this column "
             "exists to catch")
 
+    if set_aside_expired:
+        failures.append(
+            f"{len(set_aside_expired)} set-aside organ(s) passed their "
+            f"{SET_ASIDE_MAX_DAYS:g}-day window without emitting a cell and are no longer "
+            "excused: make them emit a cell or retire them with a reason. Expired: "
+            + ", ".join(sorted(set_aside_expired)))
+
     rows.sort(key=lambda r: (-(r["cells_to_judge_per_hour"] or 0.0),
                              str(r["producer"])))
     return {
@@ -609,6 +787,11 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
                     "orthogonal_cells_to_judge_per_hour_best": best_ortho,
                     "regression_reason": reason or None},
         "failures": failures,
+        # Set-asides whose lift condition was MEASURED this window; the ratchet records them.
+        "set_aside_lifted_now": sorted(lifted_now),
+        "set_aside_expired": sorted(set_aside_expired),
+        # What every live set-aside leaves untested; research/missed_growth carries these.
+        "missed_growth": set_aside_lines,
         "owing": owing,
         "declared": exempted,
         "producers": rows,
@@ -639,6 +822,16 @@ def tighten_ratchet(doc: dict[str, Any]) -> dict[str, Any] | None:
             if not isinstance(cur, (int, float)) or val > cur:
                 rat[field] = val
                 moved = True
+    # A MEASURED LIFT IS PERMANENT. Once a set-aside organ has emitted a cell, it is judged as
+    # an ordinary producer for good; this map only ever gains entries.
+    lifted = rat.get("set_aside_lifted")
+    lifted = dict(lifted) if isinstance(lifted, dict) else {}
+    for name in doc.get("set_aside_lifted_now") or []:
+        if name not in lifted:
+            lifted[name] = datetime.now(UTC).isoformat(timespec="seconds")
+            moved = True
+    if lifted:
+        rat["set_aside_lifted"] = lifted
     if not moved:
         return None
     rat["updated_utc"] = datetime.now(UTC).isoformat(timespec="seconds")
@@ -675,7 +868,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"producer yield: {doc['n_producers']} producer(s) over {args.window_days:g}d -> "
           f"{doc['census']}   (median {doc['median_rows']} rows)"
           + ("   [seat half REPORTED ONLY under --cells-only]" if args.cells_only else ""))
-    for v in ((), ("DEAD", "STARVED", "UNMEASURED"))[not args.cells_only]:
+    for v in ((), ("DEAD", "STARVED", "UNMEASURED", "SUPERSEDED"))[not args.cells_only]:
         rs = [r for r in doc["producers"] if r["verdict"] == v]
         if not rs:
             continue
@@ -704,7 +897,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  -> {OUT}")
     # A dead producer with NO declared alternative is the fatal state: the law says replace, and
     # there is nothing to replace it with. The second half is fatal on its own ratchets.
-    seat_half = [] if args.cells_only else doc["dead_without_a_declared_replacement"]
+    seat_half = [] if args.cells_only else (doc["dead_without_a_declared_replacement"]
+                                            + doc["superseded_successor_not_alive"])
     return 1 if (seat_half or yld["failures"]) else 0
 
 

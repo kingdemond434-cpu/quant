@@ -13,6 +13,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
 _ROOT = Path(__file__).resolve().parents[2]
 _DESK = _ROOT / "desks" / "mt5"
@@ -232,3 +233,104 @@ def test_a_small_budget_still_pays_for_a_due_contract() -> None:
     assert LM._contract_carve(300.0) == LM.CONTRACT_MIN_S
     assert LM._contract_carve(60.0) == 60.0
     assert LM._contract_carve(900.0) == 300.0
+
+
+# ============================================================ one refit clock, the set charged
+def _contract_doc(status: str = "COMPLETE", stamp: str = "2026-10-14T00:00:00+00:00") -> dict:
+    return {"generated_at": stamp, "status": status,
+            "miners": {m: {"verdict": "NO_GAIN: x"} for m in
+                       ("gnn", "attention", "rocket", "autoencoder", "signature")}}
+
+
+def test_the_weekly_leg_drives_the_one_contract_clock(tmp_path: Path) -> None:
+    import os
+
+    import learned_miners as LM
+    con, out = tmp_path / "c.json", tmp_path / "w.json"
+    calls: list[float] = []
+    kw = {"out_path": out, "contract": con,
+          "refit": lambda b: calls.append(b) or {"ok": True}}
+    assert LM.weekly(100.0, **kw)["state"] == "REFIT" and calls == [100.0]   # absent: due
+    con.write_text(json.dumps(_contract_doc()), "utf-8")
+    now = time.time()
+    doc = LM.weekly(100.0, now=now, **kw)
+    assert doc["state"] == "FRESH" and len(calls) == 1 and doc["clock"] == "CONTRACT_EVERY_S"
+    assert doc["next_due_in_days"] == pytest.approx(LM.CONTRACT_EVERY_S / 86400.0, abs=0.01)
+    assert json.loads(out.read_text())["state"] == "FRESH", "the leg always leaves an artifact"
+    # The SAME clock the daily pass reads: past CONTRACT_EVERY_S both call it due.
+    old = now - LM.CONTRACT_EVERY_S - 60
+    os.utime(con, (old, old))
+    assert LM._contract_due(con, now) and LM.weekly(100.0, now=now, **kw)["state"] == "REFIT"
+    # A deadline-truncated contract is due on the next pass, however fresh its mtime.
+    con.write_text(json.dumps(_contract_doc("PARTIAL: deadline cut 3 part(s) short")), "utf-8")
+    assert LM._contract_due(con) and LM.weekly(100.0, **kw)["state"] == "REFIT"
+    assert len(calls) == 3
+
+
+def test_the_weekly_leg_runs_the_pass_with_the_contract_forced(tmp_path: Path,
+                                                                 monkeypatch) -> None:
+    import learned_miners as LM
+    seen: dict = {}
+
+    def fake_run(budget_s, contract=None, **_k):
+        seen.update(budget_s=budget_s, contract=contract)
+        return {"cells_proposed": 0, "contract": {"status": "MEASURED"}}
+    monkeypatch.setattr(LM, "run", fake_run)
+    doc = LM.weekly(900.0, out_path=tmp_path / "w.json", contract=tmp_path / "absent.json")
+    assert doc["state"] == "REFIT" and seen == {"budget_s": 900.0, "contract": True}
+    assert doc["refit"]["contract"]["status"] == "MEASURED"
+
+
+def test_a_partial_contract_reruns_and_charges_nothing_a_complete_one_charges_the_full_set(
+        tmp_path: Path, monkeypatch) -> None:
+    import learned_miners as LM
+    p, ledger = tmp_path / "c.json", tmp_path / "t.jsonl"
+    p.write_text(json.dumps(_contract_doc("PARTIAL: cut")), "utf-8")
+    docs = [_contract_doc("PARTIAL: cut", "2026-10-14T01:00:00+00:00"),
+            _contract_doc("COMPLETE", "2026-10-14T02:00:00+00:00")]
+
+    def fake(out_path=None, **_k):
+        d = docs.pop(0)
+        Path(out_path).write_text(json.dumps(d), "utf-8")
+        return d
+    monkeypatch.setattr(LM, "measure_contract", fake)
+    got = LM._refresh_contract(p, trials_path=ledger)          # fresh mtime, but PARTIAL: reruns
+    assert got["status"] == "PARTIAL" and got["set_charge"]["charged"] == 0
+    assert not ledger.exists()
+    got = LM._refresh_contract(p, trials_path=ledger)
+    assert got["status"] == "MEASURED" and got["set_charge"]["models"] == list(LM.MINERS)
+    rows = [json.loads(x) for x in ledger.read_text("utf-8").splitlines()]
+    assert {r["descriptors"]["model_family"] for r in rows} == set(LM.MINERS)
+    assert len(LM.MINERS) == 5 and all(r["family"] == LM.SET_FAMILY for r in rows)
+    assert LM._refresh_contract(p, trials_path=ledger)["status"] == "FRESH"
+    # Re-charging the same contract (a crash before the report write, a manual re-read) is a
+    # no-op: the ids carry the contract's stamp.
+    LM._charge_set(json.loads(p.read_text("utf-8")), ledger)
+    assert len(ledger.read_text("utf-8").splitlines()) == 5
+
+
+def test_the_lifetime_rule_never_swallows_the_model_set_rows(tmp_path: Path,
+                                                              monkeypatch) -> None:
+    """experiment_ledger charges each learned seat max(distinct ids, largest discovery file).
+    The set rows live under their own seat, `learned_miners`, which no discovery file is ever
+    written for, so a model seat whose file outnumbers its ledger rows cannot absorb them."""
+    import learned_miners as LM
+
+    from libs.research import experiment_ledger as EL
+    desk = tmp_path / "desks" / "mt5"
+    seat = desk / "data" / "intelligence" / "learned_gnn"
+    seat.mkdir(parents=True)
+    (seat / "discoveries_20261014_0300.json").write_text(json.dumps(
+        {"tests_run": 500, "discoveries": [{"family": "gnn_propagation"}]}), "utf-8")
+    monkeypatch.setattr(EL, "DESK", desk)
+    ledger = desk / "data" / "learned_miners_trials.jsonl"
+    LM._append_trials([{"trial_id": f"EURUSD:g{i}", "family": "learned_gnn:gnn_propagation",
+                        "donated": True} for i in range(100)], ledger)
+    base, _ = EL._proposer_counts()
+    assert base == 500                                     # the file is larger: max, not sum
+    for stamp in ("2026-10-07T00:00:00+00:00", "2026-10-14T00:00:00+00:00"):
+        LM._charge_set(_contract_doc("COMPLETE", stamp), ledger)
+    total, by_fam = EL._proposer_counts()
+    assert total == base + 2 * len(LM.MINERS) and by_fam["model_set"] == 2 * len(LM.MINERS)
+    # The seat name the rule keys on is not any miner's discovery seat.
+    assert LM.SET_FAMILY.split(":", 1)[0] not in {s["source"] for s in LM.MINERS.values()}

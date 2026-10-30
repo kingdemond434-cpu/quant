@@ -31,6 +31,9 @@ INPUTS: dict[str, tuple[Path, float]] = {
     "plumbing": (REPORTS / "PLUMBING_INVARIANTS.json", 2.5),
     "self_heal": (REPORTS / "DESK_SELF_HEAL.json", 2.5),
     "tier5": (REPORTS / "TIER5_ACCEPTANCE.json", 26.0),
+    # The learned miners refit WEEKLY (hourly leg `learned_miners_weekly`); a contract older than
+    # seven days is a refit that did not happen -- 2026-09-30 to 2026-10-14 it sat at -1.07.
+    "learned_miners": (REPORTS / "learned_miners_contract.json", 7 * 24.0),
 }
 
 BRACKET22_DISPOSITION: tuple[dict[str, str], ...] = (

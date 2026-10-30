@@ -278,7 +278,31 @@ def test_the_leg_measures_each_producer_from_the_registry(tmp_path: Path) -> Non
     # cross_asset_graph's lead_lag cell is buildable since 76895fedc, so the registry's fresh
     # cell FEEDS the lead-lag cluster: it is no longer listed as unfed at all.
     assert "cross_asset_lead_lag" not in unfed
-    assert unfed["options_implied"].startswith("NO_FAMILY")
+    # options_implied HAS a family since broker-state-cells (crypto_options_state, classified
+    # there by alpha_clusters and BUILDABLE), so with no producer minting it in this registry it
+    # is UNMINTED, not NO_FAMILY; execution_entry still has no family at all.
+    rows = {u["cluster"]: u for u in doc["totals"]["empty_clusters_unfed"]}
+    assert unfed["options_implied"].startswith("UNMINTED")
+    assert "crypto_options_state" in rows["options_implied"]["buildable_families"]
+    assert unfed["execution_entry"].startswith("NO_FAMILY")
+
+
+def test_a_producer_that_donates_through_donate_once_is_measured(tmp_path: Path) -> None:
+    """`broker_state_cells` and `spread_recovery` donate only through the crash-safe
+    `proposer_common.donate_once`. Discovery once matched the bare `donate(` spelling, so neither
+    was a producer here: their registry rows were dropped and the clusters they feed
+    (options_implied among them) read as unfed while their cells sat in the registry."""
+    found = pb.discovered_producers()
+    assert found["broker_state_cells"]["seats"] == ["broker_state_cells"]
+    assert found["spread_recovery"]["seats"] == ["spread_recovery"]
+    now = datetime(2026, 9, 30, 12, tzinfo=UTC)
+    db = tmp_path / "alpha_registry.sqlite"
+    _registry(db, [("broker_state_cells", "crypto_options_state", "BTCUSD", "H1", "all",
+                    (now - timedelta(hours=2)).isoformat())])
+    doc = pb.build(now=now, db=db)
+    assert doc["producers"]["broker_state_cells"]["cells_7d"] == 1
+    assert doc["totals"]["clusters_fed_by"]["options_implied"] == ["broker_state_cells"]
+    assert "options_implied" not in {u["cluster"] for u in doc["totals"]["empty_clusters_unfed"]}
 
 
 def test_a_producer_no_source_can_see_is_unmeasured_never_zero(

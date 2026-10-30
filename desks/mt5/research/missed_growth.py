@@ -706,6 +706,77 @@ def published_gate_lines() -> dict[str, Any]:
             "adopted": doc.get("adopted")}
 
 
+SPREAD_RECOVERY = BASE / "reports" / "SPREAD_RECOVERY.json"
+SPREAD_RECOVERY_MAX_AGE_H = 6.0
+
+
+def spread_recovery_wait_lines() -> dict[str, Any]:
+    """The spread-recovery ENTRY WAIT's lines (`spread_recovery_wait`, a declared cell modifier),
+    read from `reports/SPREAD_RECOVERY.json`. The wait moves an entry EARLIER or LATER than the
+    fixed one-bar wait and never drops one, so each line prices both directions: net log return
+    entered at the gated bar minus at the fixed wait, same exit, each charged the full spread at
+    its own entry bar. A line that does not say `cost_priced: true` is not a price -- it is
+    carried but the verdict is UNMEASURED. Absent or stale is UNMEASURED with its age, never a
+    clean zero."""
+    doc = _json(SPREAD_RECOVERY)
+    if not doc:
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": "no reports/SPREAD_RECOVERY.json on this host: the hourly "
+                       "spread_recovery leg has not written one"}
+    try:
+        at = datetime.fromisoformat(str(doc.get("generated_at")))
+        age_h = (datetime.now(tz=UTC) - at).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        age_h = math.inf
+    if not age_h <= SPREAD_RECOVERY_MAX_AGE_H:
+        return {"verdict": UNMEASURED, "lines": [],
+                "age_h": None if math.isinf(age_h) else round(age_h, 2),
+                "why": f"the spread-recovery report is older than {SPREAD_RECOVERY_MAX_AGE_H:g}h "
+                       "or unstamped: the gate's cost today is unknown"}
+    lines = [x for x in (doc.get("missed_growth") or []) if isinstance(x, dict)]
+    if not lines:
+        return {"verdict": UNMEASURED, "lines": [], "why": "the report carries no lines"}
+    unpriced = [str(x.get("gate")) for x in lines if x.get("cost_priced") is not True]
+    if unpriced:
+        return {"verdict": UNMEASURED, "lines": lines, "cost_priced": False,
+                "age_h": round(age_h, 2),
+                "why": f"{len(unpriced)} line(s) do not state that the spread cost was priced: "
+                       + ", ".join(unpriced[:4])}
+    priced = [float(x["value"]) for x in lines if isinstance(x.get("value"), (int, float))]
+    verdict = (COSTS if any(x.get("verdict") == COSTS for x in lines)
+               else UNMEASURED if any(x.get("verdict") == UNMEASURED for x in lines)
+               else EARNS if any(x.get("verdict") == EARNS for x in lines) else NOT_BINDING)
+    return {"verdict": verdict, "source": "reports/SPREAD_RECOVERY.json",
+            "age_h": round(age_h, 2), "lines": lines, "cost_priced": True,
+            "cost_model": lines[0].get("cost_model"),
+            "value_logw_per_day": round(sum(priced), 12),
+            "by_direction": {"advanced": sum(int(x.get("n_advanced") or 0) for x in lines),
+                             "delayed": sum(int(x.get("n_delayed") or 0) for x in lines)}}
+
+
+PRODUCER_YIELD = BASE / "reports" / "PRODUCER_YIELD.json"
+
+
+def set_aside_lines() -> dict[str, Any]:
+    """Every live SET_ASIDE exemption's line (scripts/check_producer_yield.py): what the
+    exemption leaves untested. A set-aside organ emits no cell, so the growth it forgoes has no
+    forward evidence to price -- the line is UNMEASURED by construction, and it names the ground
+    and the expiry so the exemption is a visible cost, never a silent pass."""
+    doc = _json(PRODUCER_YIELD)
+    if not doc:
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": "no reports/PRODUCER_YIELD.json on this host"}
+    owed = doc.get("cells_owed") if isinstance(doc.get("cells_owed"), dict) else {}
+    lines = [x for x in (owed.get("missed_growth") or []) if isinstance(x, dict)]
+    expired = list(owed.get("set_aside_expired") or [])
+    if not lines and not expired:
+        return {"verdict": NOT_BINDING, "lines": [], "expired": [],
+                "why": "no live set-aside exemption"}
+    return {"verdict": UNMEASURED, "source": "reports/PRODUCER_YIELD.json", "lines": lines,
+            "expired": expired,
+            "why": "a set-aside emits no cell, so what it forgoes cannot be priced yet"}
+
+
 #: THE FUSION BOOK'S RAILS (audit HOLD on fusion_book_go_live 50ef074f9, 2026-10-20): the
 #: one-gold-at-risk veto, the cross-account opposite-side fence, the Fusion daily-loss rail, and
 #: the book's 0.01 floor lift and lot ceiling. Like the stop-geometry gate they register no rail
@@ -1145,6 +1216,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            # Gates that register no rail publish their lines on their own artifact; carried
            # here so the bill sits beside the rails' (never appended to the ledger).
            "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
+                                    "spread_recovery_wait": spread_recovery_wait_lines(),
+                                    "set_aside": set_aside_lines(),
                                     "fusion_book_rails": published_fusion_book_lines(),
                                     "ftmo_follower_rails": published_ftmo_follower_lines(),
                                     "gauntlet_watchdog": organ_published_lines(GAUNTLET_STALL),

@@ -42,6 +42,25 @@ and the zero forecast, plus a time-shuffled falsification control, and writes
 SCHEDULING: this organ runs DAILY as a `daily_cycle` proposer (`daily_cycle._proposers`, which
 calls `run(budget_s=...)`), on its own budget. It is deliberately not on the hourly roster, so it
 takes no share of any hourly miner's time. `--once` runs one pass by hand.
+
+ONE REFIT CLOCK, DRIVEN FROM TWO DOORS (2026-10-14, reconciled with the weekly contract clock).
+The refit clock is `CONTRACT_EVERY_S` and nothing else. The daily pass carves the contract out of
+its own budget when that clock is due; `--weekly` is the hourly leg `learned_miners_weekly`, a
+backstop for a daily door that does not turn (the contract was last written 2026-09-30 and stood
+there for a fortnight). Every hour it reads THE SAME clock (`_contract_due`): when due it runs one
+pass with the contract forced on, otherwise it writes `reports/learned_miners_weekly.json` saying
+the contract is fresh and when it falls due, so the leg always leaves an artifact. A contract a
+deadline cut short is written PARTIAL and reads due on the next pass, never freshly stamped.
+`mission_control` holds the contract to the same 7-day age.
+
+SET-WIDE TRIAL CHARGING. Choosing which model of the set to believe is itself a selection, and
+the per-configuration rows above never charge it. Every COMPLETE contract therefore appends ONE
+row per model in the FULL set (`MINERS`; `family = learned_miners:model_set`,
+`kind = set_selection`, `donated = false`) to the trial ledger, keyed by the contract's stamp, so
+a re-read of the same contract re-charges nothing. `experiment_ledger` counts the seat
+`learned_miners` by distinct trial id; no discovery file is ever written under that seat, so its
+max(distinct ids, largest file) rule cannot swallow these rows
+(tests/research/test_learned_trials_once.py pins it).
 """
 from __future__ import annotations
 
@@ -77,6 +96,11 @@ CONTRACT_REPORT = _DESK / "reports" / "learned_miners_contract.json"
 TRIALS = _DESK / "data" / "learned_miners_trials.jsonl"
 GIT_BARS = _DESK / "universe"
 BUDGET_S = 900.0
+#: The hourly backstop leg's artifact: FRESH (with the time to due) or the refit it ran.
+WEEKLY_REPORT = _DESK / "reports" / "learned_miners_weekly.json"
+#: The family every set-wide selection charge is booked under in the trial ledger. Its seat
+#: (`learned_miners`, the part before the colon) is never a discovery-file seat.
+SET_FAMILY = "learned_miners:model_set"
 
 #: The declared panel: every FX / metals / crypto-CFD instrument whose H1 history is held in git.
 #: The panel IS the hypothesis for both families (the graph is measured over it, the attention
@@ -691,8 +715,10 @@ def run(budget_s: float = BUDGET_S,
     # frozen at the day the model was added. An injected (test) run never triggers it.
     if due:
         left = deadline - time.monotonic()
-        out["contract"] = (_refresh_contract(budget_s=left) if left >= 0.5 * _contract_carve(
-            budget_s) else {"status": f"DEFERRED: {left:.0f}s left of budget_s, contract due"})
+        out["contract"] = (
+            _refresh_contract(budget_s=left, trials_path=trials_path)
+            if left >= 0.5 * _contract_carve(budget_s)
+            else {"status": f"DEFERRED: {left:.0f}s left of budget_s, contract due"})
     if axis_docs:
         ip = intel_path or INTEL_REPORT
         ip.parent.mkdir(parents=True, exist_ok=True)
@@ -736,26 +762,98 @@ def _contract_age(path: Path | None = None, now: float | None = None) -> float:
         return float("inf")
 
 
+def _contract_partial(path: Path | None = None) -> bool:
+    """A contract a deadline cut short is not a refit: it reads due again on the next pass."""
+    try:
+        doc = json.loads((path or CONTRACT_REPORT).read_text("utf-8"))
+    except (OSError, ValueError):
+        return False
+    return isinstance(doc, dict) and str(doc.get("status") or "").startswith("PARTIAL")
+
+
 def _contract_due(path: Path | None = None, now: float | None = None) -> bool:
-    return _contract_age(path, now) >= CONTRACT_EVERY_S
+    return _contract_age(path, now) >= CONTRACT_EVERY_S or _contract_partial(path)
+
+
+def set_charge_rows(models: Sequence[str], stamp: str) -> list[dict[str, Any]]:
+    """ONE trial per model in the set, for one complete contract: the selection, charged.
+
+    `donated` is False on purpose: no discovery file's `tests_run` includes the choice between
+    models, so this ledger is the only place the charge is ever counted. The id carries the
+    contract's own stamp, so `_append_trials` (which skips ids it has seen) charges a contract
+    once however many times it is re-read."""
+    return [{"generated_utc": stamp, "source": "learned_miners",
+             "trial_id": f"set:{stamp}:{m}", "family": SET_FAMILY, "kind": "set_selection",
+             "descriptors": {"model_family": m, "set": ",".join(sorted(models))},
+             "donated": False} for m in models]
+
+
+def _charge_set(doc: Mapping[str, Any], trials_path: Path | None = None) -> dict[str, Any]:
+    """Charge the FULL model set for a complete contract; a PARTIAL one charges nothing (it
+    reruns next pass, and the complete rerun is the selection that counts)."""
+    if str(doc.get("status") or "").startswith("PARTIAL"):
+        return {"family": SET_FAMILY, "charged": 0, "why": "contract PARTIAL, reruns next pass"}
+    rows = set_charge_rows(tuple(MINERS), str(doc.get("generated_at") or ""))
+    return {"family": SET_FAMILY, "models": list(MINERS), "charged": len(rows),
+            "ledger_error": _append_trials(rows, trials_path or TRIALS)}
 
 
 def _refresh_contract(path: Path | None = None, now: float | None = None,
-                      budget_s: float = 2.0 * CONTRACT_CELL_BUDGET_S) -> dict[str, Any]:
+                      budget_s: float = 2.0 * CONTRACT_CELL_BUDGET_S,
+                      trials_path: Path | None = None) -> dict[str, Any]:
     """Half the budget goes to the cell screen, and the walk-forward scoring stops at the whole
     budget's deadline, so a refresh never runs past what it was given."""
     p = path or CONTRACT_REPORT
     age = _contract_age(p, now)
-    if age < CONTRACT_EVERY_S:
+    if age < CONTRACT_EVERY_S and not _contract_partial(p):
         return {"status": "FRESH", "age_h": round(age / 3600.0, 1)}
     try:
         doc = measure_contract(out_path=p,
                                cell_budget_s=min(CONTRACT_CELL_BUDGET_S, 0.5 * float(budget_s)),
                                deadline=time.monotonic() + float(budget_s))
-        return {"status": "MEASURED", "verdicts": {m: b.get("verdict")
-                                                    for m, b in doc["miners"].items()}}
+        partial = str(doc.get("status") or "").startswith("PARTIAL")
+        return {"status": "PARTIAL" if partial else "MEASURED",
+                "verdicts": {m: b.get("verdict") for m, b in doc["miners"].items()},
+                "set_charge": _charge_set(doc, trials_path)}
     except Exception as exc:
         return {"status": f"UNMEASURED: contract failed: {type(exc).__name__}: {exc}"}
+
+
+def weekly(budget_s: float = BUDGET_S, *, now: float | None = None,
+           out_path: Path | None = None, contract: Path | None = None,
+           refit: Callable[[float], Any] | None = None) -> dict[str, Any]:
+    """The hourly backstop leg on the ONE refit clock (`_contract_due`): refit when due,
+    otherwise say the contract is fresh and when it falls due. Always writes its artifact."""
+    t_now = time.time() if now is None else float(now)
+    c = contract or CONTRACT_REPORT
+    age = _contract_age(c, t_now)
+    partial = _contract_partial(c)
+    due = age >= CONTRACT_EVERY_S or partial
+    doc: dict[str, Any] = {
+        "generated_at": datetime.fromtimestamp(t_now, tz=UTC).isoformat(timespec="seconds"),
+        "clock": "CONTRACT_EVERY_S", "every_days": CONTRACT_EVERY_S / 86400.0,
+        "contract_age_days": None if not math.isfinite(age) else round(age / 86400.0, 3),
+        "contract_partial": partial, "due": due}
+    if not due:
+        doc.update({"state": "FRESH",
+                    "next_due_in_days": round((CONTRACT_EVERY_S - age) / 86400.0, 3)})
+    else:
+        t0 = time.monotonic()
+        try:
+            if refit is not None:
+                doc["refit"] = refit(budget_s)
+            else:
+                res = run(budget_s=budget_s, contract=True)
+                doc["refit"] = {"cells_proposed": res.get("cells_proposed"),
+                                "contract": res.get("contract")}
+            doc["state"] = "REFIT"
+        except Exception as exc:
+            doc.update({"state": "FAILED", "why": f"{type(exc).__name__}: {str(exc)[:300]}"})
+        doc["seconds"] = round(time.monotonic() - t0, 1)
+    path = out_path or WEEKLY_REPORT
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    return doc
 
 
 def _git_meta() -> dict[str, Any]:
@@ -802,7 +900,13 @@ def _cell_screen(bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any],
         rows.sort(key=lambda r: -abs(float(r.get("t_gross") or 0.0)))
         best = rows[0] if rows else None
         n = int(res["tests_attempted"])
+        # A config skipped for the budget, or a screen stopped mid-config, is a TRUNCATED screen:
+        # the contract that carries it is PARTIAL and reruns on the next pass.
+        cut = sorted(ck for ck, c in (res.get("configs") or {}).items()
+                     if "budget" in str(c.get("why") or "")
+                     or str(c.get("screen") or "").startswith("PARTIAL"))
         out[model] = {
+            "truncated_configs": cut,
             "tests_attempted": n, "tests_screened": len(rows),
             "not_screened": n - len(rows), "effective_trials": res["effective_trials"],
             "not_screened_by_symbol": unscreened,
@@ -952,8 +1056,18 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None,
                                          or b["primary"].get("ic_mean") is None
                                          else float(b["primary"]["ic_mean"])
                                          > float(lin["ic_mean"]))}
+    # PARTIAL, never a fresh stamp, when the deadline cut anything short: a model or control
+    # left UNMEASURED, or a cell screen that skipped or stopped a configuration.
+    cut_parts = sorted(
+        [k for k, r in results.items() if "status" in r]
+        + (["falsification_control"] if "status" in control else [])
+        + [f"cell_screen:{m}" for m, v in cell_screen.items()
+           if isinstance(v, dict) and v.get("truncated_configs")])
     doc = {
         "generated_at": datetime.now(tz=UTC).isoformat(),
+        "status": (f"PARTIAL: deadline cut {len(cut_parts)} part(s) short; reruns next pass"
+                   if cut_parts else "COMPLETE"),
+        "truncated": cut_parts,
         "data": {"bars": "desks/mt5/universe/*_H1.parquet (in git)", "resample": "broker-date "
                  "daily closes, Monday-Friday grid", "symbols": panel.symbols,
                  "n_symbols": len(panel.symbols), "first_date": str(panel.dates[0].date()),
@@ -1005,14 +1119,25 @@ def main() -> int:
     ap.add_argument("--once", action="store_true", help="one pass and exit")
     ap.add_argument("--contract", action="store_true",
                     help="measure the OOS contract on the bars in git and exit")
+    ap.add_argument("--weekly", action="store_true",
+                    help="the hourly backstop leg: refit when the one contract clock "
+                         "(CONTRACT_EVERY_S) is due or the last contract is PARTIAL, else record "
+                         "that it is fresh")
     ap.add_argument("--budget-s", type=float, default=BUDGET_S)
     ap.add_argument("--model", action="append", choices=list(MINERS), default=None)
     ap.add_argument("--no-donate", action="store_true")
     ap.add_argument("--no-axes", action="store_true",
                     help="do not publish the forecast axes or the allocation-intel artifact")
     a = ap.parse_args()
+    if a.weekly:
+        wk = weekly(budget_s=a.budget_s)
+        print(f"LEARNED MINERS WEEKLY  {wk['state']}  contract age "
+              f"{wk['contract_age_days']}d" + (f"  {wk.get('why')}" if wk.get("why") else ""))
+        print(f"written: {WEEKLY_REPORT}")
+        return 0 if wk["state"] != "FAILED" else 1
     if a.contract:
         doc = measure_contract()
+        doc["set_charge"] = _charge_set(doc)
         print(f"LEARNED MINERS CONTRACT  {doc['data']['n_symbols']} symbols, "
               f"{doc['data']['first_date']}..{doc['data']['last_date']} "
               f"({doc['data']['n_days']} days)")

@@ -2516,3 +2516,65 @@ for _av_name in ("analyst_revision_drift", "analyst_cross_market_lead"):
         "a view is a daily-cadence event measured at +1/+5/+21 trading days; its hold is counted "
         "in H1 bars per trading day, and the tracker that set the measured side read H1 closes")
 del _av_name
+
+# BROKER STATE, AMIHUD IMPACT AND THE OPTIONS-STATE CONDITIONER (2026-10-14). Four families that
+# load their own point-in-time evidence: the venue's margin / trade_mode / swap changes from the
+# contract-terms tape (`research/broker_state_cells.py` writes the store), the bars' own
+# tick_volume, and the recovered BTC/ETH options vintages. The event families take `symbol` and
+# `event` (the options one `symbol` and `field`) as REQUIRED keyword arguments, so the sweep names
+# them unsuppliable instead of calling them blind; `amihud_illiquidity` needs only the bars.
+from mt5desk.family_amihud import family_amihud_illiquidity  # noqa: E402
+from mt5desk.family_broker_state import (  # noqa: E402
+    family_broker_margin_event,
+    family_carry_swap_drift,
+)
+from mt5desk.family_options_state import family_crypto_options_state  # noqa: E402
+
+ORTHOGONAL_FAMILIES["broker_margin_event"] = family_broker_margin_event
+ORTHOGONAL_FAMILIES["carry_swap_drift"] = family_carry_swap_drift
+ORTHOGONAL_FAMILIES["amihud_illiquidity"] = family_amihud_illiquidity
+ORTHOGONAL_FAMILIES["crypto_options_state"] = family_crypto_options_state
+FAMILY_INPUTS["broker_margin_event"] = (
+    "the venue's margin / trade_mode changes, placed at the first hourly record showing them "
+    "(research/broker_state_cells.py)", "desks/mt5/data/broker_state/events.jsonl")
+FAMILY_INPUTS["carry_swap_drift"] = (
+    "the venue's swap changes, sign flips and carry-tercile changes, placed at the first record "
+    "showing them (research/broker_state_cells.py)", "desks/mt5/data/broker_state/events.jsonl")
+FAMILY_INPUTS["amihud_illiquidity"] = (
+    "the bar's own tick_volume (Amihud impact per tick, hour-of-week normalised)", None)
+FAMILY_INPUTS["crypto_options_state"] = (
+    "BTC/ETH option-surface vintages, read-only, as a PIT conditioner on the Fusion CFD",
+    "desks/mt5/data/options_state/vintages.jsonl")
+# The three EVENT families run on ALL SEVEN charts. Nothing in them is an hourly construction:
+# the event is a UTC instant (`knowable_at`, or a vintage's `ts`) placed on the first bar OPENING
+# at or after it by `index.searchsorted`, which is the same causal statement on any bar clock
+# (finer on M5, coarser on D1); the side reads the bar's own close, ATR and a bar-relative
+# trailing move. The one count that is not bar-relative is the HOLD -- a margin hike's forced
+# flow, a swap change's carry and an options-state resolution are dated by the event, so
+# `hold_bars` is declared in WALL_CLOCK_PARAMS and rescaled by `scale_bars` (the identity at
+# H1, so no hourly cell moves). Restricting them to H1 "because the hold is counted in H1 bars"
+# was the narrowing `test_most_families_run_on_every_chart` exists to catch: that is what the
+# wall-clock declaration is for, not a reason the claim cannot be spoken on another chart.
+for _bs_name in ("broker_margin_event", "carry_swap_drift", "crypto_options_state"):
+    WALL_CLOCK_PARAMS[_bs_name] = ("hold_bars",)
+FAMILY_TIMEFRAMES["amihud_illiquidity"] = (
+    ("H1",),
+    "normalised by hour of the week: the baseline is the PRIOR `norm_weeks` bars sharing the "
+    "bar's (weekday, hour) key, which on H1 is twelve weeks of that hour; on a sub-hourly chart "
+    "the same key holds several bars per hour per week, so the 'baseline' would be minutes of the "
+    "same hour, and on H4/D1 most hours of the week never occur")
+del _bs_name
+
+# THE SPREAD-RECOVERY FADE (P8-M2, 2026-10-14). Reads the bars' own `spread` column: at the week
+# open, the Tokyo open (00:00 UTC via session_clock.utc_to_server) and broker rollover it fades
+# the move printed while the spread was wide, once the spread is back within k x its pre-shock
+# baseline. Seeded and charged by `research/spread_recovery.py`.
+from mt5desk.family_spread_recovery import family_spread_recovery_fade  # noqa: E402
+
+ORTHOGONAL_FAMILIES["spread_recovery_fade"] = family_spread_recovery_fade
+FAMILY_INPUTS["spread_recovery_fade"] = (
+    "the bar's own spread column (MT5 MqlRates.spread, points) against its trailing median",
+    None)
+FAMILY_TIMEFRAMES["spread_recovery_fade"] = (
+    ("H1",),
+    "its preregistered holds, recovery waits and spread baseline are counted in H1 bars")

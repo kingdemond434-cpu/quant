@@ -61,6 +61,10 @@ MECHANISM_CLASS: dict[str, str] = {
     "vol_transition": "volatility", "vol_mean_reversion": "volatility",
     "liquidity_regime": "microstructure", "orderflow_imbalance": "microstructure",
     "spread_state": "microstructure", "clock_transition": "plumbing",
+    # P8-M2 (2026-10-14): a new STYLE -- no certificate conditions on the spread's recovery -- but
+    # its CLASS is microstructure (adjacent, 0.5), said honestly; the return projection in
+    # style_novelty measures how novel its certificates actually are.
+    "spread_recovery_fade": "microstructure",
     "cot_positioning": "positioning", "macro_conditional": "macro", "event_reaction": "event",
     "regime_transition": "regime", "drawdown_conditional": "regime", "ensemble": "ensemble",
     "discovered": "discovered", "generic": "generic", "fair_value_gap": "reversion",

@@ -267,15 +267,25 @@ def _file_time(p: Path) -> datetime | None:
 
 
 # ------------------------------------------------------------------ the producer set
+#: A call through a donation door: any `...donate(` spelling (`pc.donate(`, an organ's own
+#: `_donate(`) or the crash-safe wrapper `donate_once(`.
+_DONATES = re.compile(r"donate(?:_once)?\(")
+
+
 def discovered_producers() -> dict[str, dict[str, Any]]:
     """Every research module that donates through `proposer_common.donate` or writes a seat,
     with the seat name its own SOURCE/SEAT constant declares -- DERIVED, so a proposer that lands
-    tomorrow is measured tomorrow. The INVENTORY rows win where both name a producer."""
+    tomorrow is measured tomorrow. The INVENTORY rows win where both name a producer.
+
+    `donate_once` (the crash-safe two-phase wrapper round `donate`) is the same door: a module
+    that calls only it -- `broker_state_cells`, `spread_recovery` -- donates exactly like one that
+    calls `donate`, and matching the bare `donate(` spelling left both invisible to this leg, so
+    the clusters they feed read as unfed while their cells sat in the registry."""
     out: dict[str, dict[str, Any]] = {}
     const = re.compile(r'^(?:SOURCE|SEAT)\s*(?::\s*str)?\s*=\s*"([A-Za-z0-9_]+)"', re.M)
     for path in sorted(RESEARCH.glob("*.py")):
         src = _text(path)
-        if "donate(" not in src or path.stem in ("proposer_common", "producer_breadth"):
+        if not _DONATES.search(src) or path.stem in ("proposer_common", "producer_breadth"):
             continue
         seats = sorted(set(const.findall(src)))
         out[path.stem] = {"module": path.stem, "seats": seats,

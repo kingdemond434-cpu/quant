@@ -164,7 +164,7 @@ _FAMILY_GROUPS: dict[str, str] = {
     "macro_release macro market": "macro_conditional macro_gold_yield",
     "macro_release event market": "event_reaction",
     "macro_release cross_asset market": "usd_session_shock",
-    "carry_rollover carry market": "carry mass_screen_carry",
+    "carry_rollover carry market": "carry mass_screen_carry carry_swap_drift",
     "positioning_crowding positioning market": "cot_change_fade cot_change_momentum"
                                                " cot_comm_follow cot_net_fade cot_positioning"
                                                " retail_overlap_reversal",
@@ -190,7 +190,8 @@ _FAMILY_GROUPS: dict[str, str] = {
     # The class books of 2026-09-30 (`mt5desk.families_cross_sectional`): each leg is ranked
     # against its own peer class on the same date.
     "trend_persistence cross_asset market": "cross_sectional_class_momentum",
-    "range_reversion cross_asset market": "cross_sectional_class_reversal",
+    "range_reversion cross_asset market": "cross_sectional_class_reversal"
+                                          " cross_sectional_class_illiquidity",
     "forced_liquidation cross_asset market": "crisis_only_class_defensive",
     "range_reversion price_only limit": "dav_range_filter_adx ict_fvg mean_reversion_bollinger"
                                         " mean_reversion_rsi range_reversion",
@@ -207,7 +208,25 @@ _FAMILY_GROUPS: dict[str, str] = {
     "execution_microstructure microstructure limit": "execution_state moat_spread_window"
                                                      " spread_state",
     "gamma_hedging_state microstructure market": "liquidity_gamma_reversal",
-    "inventory_shock microstructure market": "volume_spike",
+    # The spread-recovery fade (P8-M2, 2026-10-14, research/spread_recovery.py): the move a thin
+    # book prints while the spread is wide at a scheduled liquidity hole is a concession to the
+    # trader forced through the gap, unwound when the spread normalises -- inventory_shock's
+    # payer, read off the bars' own spread.
+    "inventory_shock microstructure market": "volume_spike spread_recovery_fade",
+    # Broker state (2026-10-14, research/broker_state_cells.py). A dated margin hike/cut or a
+    # CLOSEONLY flip forces holders to cut size (forced_liquidation's payer, the margin-called
+    # trader); a swap change, sign flip or carry-tercile change reprices the financing leg
+    # (carry_rollover's payer, the negative-carry holder; `carry_swap_drift` sits on the carry
+    # row above). Both read the venue's recorded state.
+    "forced_liquidation event market": "broker_margin_event",
+    # Amihud impact per tick: a thin-book move is a concession to the impatient taker that
+    # reverts, and the persistently illiquid pay a premium (range_reversion's payer). The class
+    # book `cross_sectional_class_illiquidity` (on the class-book row above) is the share-CFD
+    # route to the same claim, ranked within its peer class.
+    "range_reversion microstructure market": "amihud_illiquidity",
+    # The options-implied state conditions the Fusion crypto CFD: the option dealer's hedging
+    # need (gamma_hedging_state's payer) is what the surface prices.
+    "gamma_hedging_state cross_asset market": "crypto_options_state",
     # NO MECHANISM NAMED, AND THAT IS THE MEASUREMENT. `discovered` is the desk's own generated
     # family and dominates the docket; `generic`/`formula`/`ensemble`/`joint_genome` are spec
     # constructors. All map to UNKNOWN so the count is visible rather than assumed away.

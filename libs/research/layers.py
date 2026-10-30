@@ -275,6 +275,13 @@ LEG_LAYER: dict[str, str] = {
     "event_surprise": "information",
     # public analyst views collected and stamped at first sighting: information
     "alpha_capture": "information",
+    # the venue's recorded margin/trade_mode/swap state, Amihud impact and the options state,
+    # turned into cells: claims about forward returns, like the class books
+    "broker_state_cells": "prediction",
+    # the spread's recovery half-life after scheduled shocks, and the fade/gate cells it seeds
+    "spread_recovery": "prediction",
+    # the learned miners' weekly refit (miner pass + OOS contract): forecasts and their cells
+    "learned_miners_weekly": "prediction",
     # free public alt-data proxies turned into PIT series: what the desk knows before it predicts
     "alt_proxies": "information",
     "counterexample_agent": "meta",

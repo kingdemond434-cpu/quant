@@ -20,7 +20,7 @@ MAX_SKEW_MS = 250
 #: The three columns a quote leg must carry. Checked by name before any arithmetic so a leg with
 #: the wrong schema is reported as UNMEASURED against ITS OWN symbol, rather than raising out of
 #: the hourly cycle where the message names no file.
-QUOTE_COLUMNS = frozenset({"ts", "bid", "ask"})
+QUOTE_COLUMNS = frozenset({"ts", "bid", "ask"})  # `ts` may be derived from `time_msc`
 
 
 def normalise(frame: pd.DataFrame) -> pd.DataFrame:
@@ -40,6 +40,17 @@ def normalise(frame: pd.DataFrame) -> pd.DataFrame:
     """
     if "ts" in frame.columns:
         return frame
+    if "time_msc" in frame.columns:
+        # THE TAPE'S AUTHORITATIVE CLOCK IS AN INTEGER COLUMN (2026-10-14). Every tick parquet on
+        # the box carries `time_msc` (milliseconds since the epoch) and some generations carry no
+        # `ts` at all, so this function returned the frame unchanged and `build()` reported every
+        # triangle UNMEASURED for "lacking the quote columns" while bid, ask and the clock were
+        # all there. `ts` is derived exactly as `tape.py` derives it when it writes a day file;
+        # the three legs share the clock, so the alignment never depends on its offset.
+        out = frame.copy()
+        out["ts"] = pd.to_datetime(pd.to_numeric(out["time_msc"], errors="coerce"),
+                                   unit="ms", utc=True)
+        return out[out["ts"].notna()]
     index = frame.index
     if index.name == "ts" or isinstance(index, pd.DatetimeIndex):
         out = frame.reset_index()
@@ -85,7 +96,7 @@ def build() -> dict:
             continue
         unusable = {symbol: sorted(frame.columns)                       # type: ignore[union-attr]
                     for symbol, frame in legs.items()
-                    if not QUOTE_COLUMNS <= set(frame.columns)}         # type: ignore[union-attr]
+                    if not set(frame.columns) >= QUOTE_COLUMNS}         # type: ignore[union-attr]
         if unusable:
             # A LEG WITH THE WRONG SCHEMA IS UNMEASURED, NOT AN EXCEPTION. Raising here took the
             # whole `record_tape` leg of the hourly cycle down with it and the message named no

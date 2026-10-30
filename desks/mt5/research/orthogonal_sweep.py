@@ -580,6 +580,24 @@ NOT_SOURCED_HERE = {
                     "research/cross_sectional_breadth enumerates the class x family x params "
                     "grid, measures each cell's firing against the gauntlet's 60-day floor and "
                     "charges its own trials; sweeping it here would charge them twice"),
+    # The Amihud class book (2026-10-14) is the same shape as the six above.
+    "cross_sectional_class_illiquidity": (
+        "research/cross_sectional_breadth enumerates the class x family x params grid, measures "
+        "each cell's firing against the gauntlet's 60-day floor and charges its own trials; "
+        "sweeping it here would charge them twice"),
+    # The time-series Amihud family's grid (index CFDs x mode x hold) is owned by
+    # research/broker_state_cells, which charges each cell once; a share CFD may reach it only
+    # through the class book, so a blind sweep here would both double-charge and cross the lane.
+    "amihud_illiquidity": (
+        "research/broker_state_cells enumerates the index-CFD x mode x hold grid, measures each "
+        "cell's firing against the gauntlet's floor and charges each cell once; sweeping it here "
+        "would charge them twice"),
+    # The spread-recovery fade (P8-M2, 2026-10-14): its preregistered 24-point grid per symbol is
+    # owned by research/spread_recovery, which charges every point once.
+    "spread_recovery_fade": (
+        "research/spread_recovery enumerates the preregistered event x recovery multiple x "
+        "displacement x hold grid per symbol and charges every point once; sweeping it here "
+        "would charge them twice"),
 }
 
 
