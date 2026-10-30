@@ -447,6 +447,11 @@ def test_the_docket_writer_runs_the_census_and_reaims_every_hour(monkeypatch, tm
     # EVERY PATH IN tmp_path (audit of 8628268b6): no desk file may be written by this test.
     monkeypatch.setattr(mh, "_ack", lambda path: None)
     monkeypatch.setattr(mh, "_lease", lambda path: None)
+    # Any other leg main() reaches (the candidate compiler, the promoter) acks and records
+    # lineage through the control plane's own stores; those default to desks/mt5/data/.
+    from libs.ops.control_plane import edges, lease
+    monkeypatch.setattr(lease, "ACK_LOG", tmp_path / "artifact_acks.jsonl")
+    monkeypatch.setattr(edges, "LINEAGE_DB", tmp_path / "lineage.sqlite")
     from libs.research import claim_selection as cs
     monkeypatch.setattr(cs, "LEDGER", hyp / "claim_families.json")
     # order_docket owns JUDGE_COVERAGE.json, the ratchet and the bank; stand it in, and FILTER

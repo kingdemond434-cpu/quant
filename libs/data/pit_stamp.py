@@ -216,6 +216,7 @@ def stamp_frame(df: Any, *, lag_days: int, observed_at: str | datetime | None,
                 source_id: str | None = None, vintage_id: str | None = None,
                 revision_time: str | datetime | None = None,
                 vintage_fallback: bool = False,
+                not_before_observed: bool = False,
                 ) -> tuple[Any, dict[str, Any]]:
     """Add the point-in-time envelope to a DataFrame when a period column exists.
 
@@ -224,6 +225,12 @@ def stamp_frame(df: Any, *, lag_days: int, observed_at: str | datetime | None,
     caller's, or None), source_id and vintage_id (declared or derived from source + fetch).
     Returns (frame, meta). Never raises; an unstampable frame comes back unchanged with
     `meta["status"] == "UNSTAMPED"` and the reason.
+
+    `not_before_observed` (FIRST SIGHT): every row's available_time is
+    max(period_end + lag, observed_at). For a source whose publication schedule nobody declared
+    (a page the deep forest landed raw, read on the 20-day fallback lag), the only instant the
+    desk can PROVE it could read a row is the fetch; a 2019 row in a file first fetched today was
+    not knowable in 2019. Without an observed instant this has nothing to floor at and is a no-op.
     """
     import pandas as pd
 
@@ -300,6 +307,32 @@ def stamp_frame(df: Any, *, lag_days: int, observed_at: str | datetime | None,
     out = df.copy()
     out["event_time"] = parsed
     out["available_time"] = parsed + pd.Timedelta(days=lag_days)
+    floored = 0
+    if not_before_observed:
+        # THE FIRST-SIGHT FLOOR FAILS CLOSED (2026-10-13 audit PR162_357, #357 MF1): a frame
+        # whose fetch instant is absent or unparseable, or whose floor raised, is UNSTAMPED --
+        # never STAMPED on the bare period + lag, which is exactly the look-ahead the floor exists
+        # to prevent.
+        try:
+            if not meta["ingested_time"]:
+                raise ValueError("no fetch instant (ingested_time) to floor at")
+            seen = pd.to_datetime(meta["ingested_time"], utc=True, format="ISO8601")
+            if pd.isna(seen):
+                raise ValueError(f"unparseable fetch instant {meta['ingested_time']!r}")
+            avail = out["available_time"]
+            if getattr(avail.dt, "tz", None) is None:
+                avail = avail.dt.tz_localize("UTC")
+            early = avail.notna() & (avail < seen)
+            floored = int(early.sum())
+            out["available_time"] = avail.where(~early, seen)
+        except Exception as exc:
+            meta.update({"status": "UNSTAMPED", "period_column": col,
+                         "why": (f"first-sight floor failed ({type(exc).__name__}: "
+                                 f"{str(exc)[:120]}); a frame that cannot be floored at its "
+                                 "fetch is not stamped")})
+            return df, meta
+        meta["available_basis"] = "max(period_end + lag, fetched_utc)"
+        meta["floored_to_fetch"] = floored
     out["ingested_time"] = meta["ingested_time"]
     out["published_time"] = out["available_time"]
     out["retrieval_time"] = meta["ingested_time"]

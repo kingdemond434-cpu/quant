@@ -31,6 +31,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_DESK / "side_channels"), str
     if p not in sys.path:
         sys.path.insert(0, p)
 
+from libs.research import hunt_frontier as hf  # noqa: E402
 from libs.research import mechanism_claims as mc  # noqa: E402
 from research import deep_forest_miner as dfm  # noqa: E402
 from research import proposer_common as pc  # noqa: E402
@@ -117,6 +118,7 @@ def _isolate(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(dfm, "PROVENANCE", tmp_path / "mined_sources.jsonl")
     monkeypatch.setattr(dfm, "DATASETS", tmp_path / "datasets.jsonl")
     monkeypatch.setattr(dfm, "WORLD", tmp_path / "world")
+    monkeypatch.setattr(dfm, "RAW_VAULT", tmp_path / "vault")
     monkeypatch.setattr(dfm, "_feed_frontier", lambda urls: len(urls))
     queued: list = []
     import research.regime_coverage as rc
@@ -370,8 +372,6 @@ _PAGE_EN2 = ("<html><title>Another thread</title><body><p>Gold typically reverts
              "two hours once the daily range is wide. EURUSD usually rallies for a week after an ECB rate "
              "decision when positioning is short. Soy exports from Brazil tend to weaken the real over the "
              "month.</p></body></html>")
-_NITTER = """<div class="timeline-item"><a class="tweet-link" href="/trader/status/123#m"></a>
-<div class="tweet-content media-body" dir="auto">XAUUSD fades the London fix within an hour most days, positioning is long.</div></div>"""
 _WAYBACK = json.dumps({"archived_snapshots": {"closest": {"available": True,
                        "url": "https://web.archive.org/web/20200601000000/https://www.quantopian.com/posts",
                        "timestamp": "20200601000000"}}})
@@ -392,7 +392,7 @@ def _dispatch(url: str, **kw) -> str:
     if url.endswith(".rss") or "/feed" in url or "rss" in url:
         return _ATOM if "reddit" in url else _RSS
     if "/search?f=tweets" in url:
-        return _NITTER if "nitter.net" in url else ""
+        raise AssertionError(f"a terms-fenced X mirror was requested: {url}")
     if "gitee.com/api/v5/search" in url:
         return json.dumps([{"full_name": "quant/cta", "html_url": "https://gitee.com/quant/cta",
                             "description": "CTA 策略", "license": "MIT", "stargazers_count": 3}])
@@ -510,7 +510,11 @@ def test_every_ground_in_the_world_file_resolves_offline_and_no_region_is_credit
     _offline(monkeypatch, tmp_path)
     doc = _run_grounds(monkeypatch, tmp_path, _SRC["grounds"], budget=3000)
     statuses = {g["ground"]: g for g in doc["grounds"]}
-    assert len(statuses) == len(_SRC["grounds"])
+    # HELD grounds (METHOD_BLOCKED: the nitter front-ends) are not scheduled; they are named
+    # under `held` with which hold applies, and recorded HELD in the frontier (2026-10-13).
+    held = {str(g["name"]) for g in _SRC["grounds"] if dfm.held_ground(g)}
+    assert held and set(doc["held"]) == held and not (held & set(statuses))
+    assert len(statuses) == len(_SRC["grounds"]) - len(held)
     bad = {k: (v["status"], v.get("errors") or v.get("error")) for k, v in statuses.items()
            if v["status"] not in ("PRODUCTIVE", "REACHED_NO_CLAIMS", "UNREACHABLE")}
     assert not bad, bad
@@ -585,8 +589,9 @@ def test_search_runs_in_the_ground_s_locale_and_a_snippets_only_label_still_fetc
     assert task["region"] == "jp" and task["mechanism_class"] == "calendar"
 
 
-def test_feed_reddit_foreign_papers_wayback_nitter_youtube_and_telegram_routes_resolve(monkeypatch,
-                                                                                       tmp_path) -> None:
+def test_feed_reddit_foreign_papers_wayback_youtube_and_telegram_routes_resolve_nitter_is_held(
+        monkeypatch, tmp_path) -> None:
+    monkeypatch.delenv("X_BEARER_TOKEN", raising=False)
     queued = _offline(monkeypatch, tmp_path)
     grounds = [
         {"name": "Medium", "region": "us", "language": "en", "route": "rss", "kind": "blog",
@@ -611,11 +616,23 @@ def test_feed_reddit_foreign_papers_wayback_nitter_youtube_and_telegram_routes_r
     doc = _run_grounds(monkeypatch, tmp_path, grounds)
     st = {g["ground"]: g for g in doc["grounds"]}
     assert st["Medium"]["status"] == "PRODUCTIVE" and st["Medium"]["items"] == 1
+    # PER-SOURCE POLICY (ruling 2026-10-13): reddit is IDEAS_ONLY and mined; nitter is HELD
+    # (METHOD_BLOCKED, a login-wall workaround) and named under `held`, never fetched.
     assert st["reddit"]["status"] == "PRODUCTIVE" and st["reddit"]["subs"] == 1
+    assert "nitter" not in st
+    assert doc["held"] == {"nitter": "METHOD_BLOCKED"}
     assert st["Qiita"]["status"] == "PRODUCTIVE"
     assert st["arXiv"]["status"] == "PRODUCTIVE" and st["arXiv"]["papers"] == 1
     assert st["Quantopian"]["status"] == "PRODUCTIVE" and "web.archive.org" in st["Quantopian"]["snapshot"]
-    assert st["nitter"]["status"] == "PRODUCTIVE" and st["nitter"]["mirror"] == "nitter.net"
+    # PER-SOURCE POLICY (principal 2026-10-13: no source is banned). Reddit and Telegram public
+    # pages resolve again; a nitter mirror is METHOD_BLOCKED (it exists to get around X's login
+    # wall) and offers X's official API -- NEEDS_KEY here -- as the permitted route.
+    assert "nitter" not in st and doc["held"]["nitter"] == "METHOD_BLOCKED"
+    fr = hf.load(tmp_path / "deep_forest_frontier.json")
+    assert fr.vectors["nitter"].outcome == "HELD" and fr.vectors["nitter"].attempts == 0
+    assert fr.vectors["nitter"].blocker.startswith("METHOD_BLOCKED")
+    pol = dfm.ground_policy(grounds[5])
+    assert pol["permitted_route"] == "x_api" and pol["permitted_route_status"] == "NEEDS_KEY"
     # The YouTube route generalises the Bilibili one: metadata converts, the transcript gap is SAID.
     assert st["YouTube JP"]["status"] == "PRODUCTIVE" and st["YouTube JP"]["transcripts"] == 0
     assert any("mirror rotation dead" in e for e in st["YouTube JP"]["errors"])

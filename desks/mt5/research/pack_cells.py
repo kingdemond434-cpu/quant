@@ -98,6 +98,14 @@ def _write(p: Path, doc: Any) -> None:
     p.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
 
 
+def _fenced_pack(p: dict[str, Any]) -> str | None:
+    try:
+        from libs.data import terms_fence as tf
+    except Exception:
+        return "terms_fence unimportable"            # fail CLOSED: a fence that cannot load
+    return tf.fenced_ground(p) or tf.input_source(str(p.get("id") or ""), str(p.get("url") or ""))
+
+
 def packs() -> list[dict[str, Any]]:
     """The registered data packs. One registry row is one pack; transports are not packs."""
     reg = _read(REGISTRY, {}) or {}
@@ -941,6 +949,15 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
         targets = targets_of(p)
         row: dict[str, Any] = {"id": pid, "stage": stage, "targets": targets,
                                "cadence": p.get("cadence")}
+        # THE LIVE-INPUT CHECK (libs/data/terms_fence.py): a pack whose lake series is LIVE INPUT
+        # from an IDEAS_ONLY or held source (StockTwits' stocktwits_macro page) mints no NEW cell
+        # from it. Idea provenance never blocks a cell; only the input data is checked.
+        fenced = _fenced_pack(p)
+        if fenced:
+            row.update({"reason": f"BLOCKED_WITH_SUBSTITUTE: terms fence ({fenced})",
+                        "terms_fence": fenced})
+            rows.append(row)
+            continue
         if not st:
             row["reason"] = ("UNMEASURED: source_drain has not published a chain state on this "
                              "host, so no pack's stage is known")

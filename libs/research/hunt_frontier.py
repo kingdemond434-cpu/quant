@@ -49,6 +49,7 @@ from typing import Any
 
 __all__ = [
     "BLOCKED_RETRY_D",
+    "HUNT_OUTCOMES",
     "OUTCOMES",
     "Vector",
     "VectorState",
@@ -68,7 +69,11 @@ OUTCOMES: tuple[str, ...] = (
     "BLOCKED",      # hunted and could not complete. NOT covered, and the blocker may lift.
     "EMPTY",        # hunted, nothing there. Covered -- this is real negative knowledge.
     "YIELDED",      # hunted, produced findings. Covered.
+    "HELD",         # not fetched: METHOD_BLOCKED (only route bypasses a login...) or NEEDS_KEY.
 )
+#: The four hunt outcomes every rollup row carries; HELD is added to a row only when the state
+#: holds a HELD vector, so a coverage file with none reads exactly as it always did.
+HUNT_OUTCOMES: tuple[str, ...] = ("NAMED_ONLY", "BLOCKED", "EMPTY", "YIELDED")
 
 #: A blocker is a fact about a moment, not about a territory. Paywalls lapse, transcripts appear,
 #: rate limits reset. Long enough not to thrash, short enough that a lifted blocker is noticed.
@@ -119,6 +124,12 @@ class Vector:
         """
         if self.outcome == "NAMED_ONLY":
             return True, f"{self.name}: NAMED but never hunted -- this is frontier, not coverage"
+        if self.outcome == "HELD":
+            # HELD (2026-10-13): METHOD_BLOCKED or NEEDS_KEY, not a blocker that lifts with time.
+            # It lifts when a permitted route (an official API) or its key is present.
+            return False, (f"{self.name}: HELD"
+                           + (f" ({self.blocker})" if self.blocker else "")
+                           + " -- not fetched; lifts when a permitted route or key exists")
         if self.outcome == "BLOCKED":
             age = self._age_days(self.last_attempt, now)
             if age is None or age >= BLOCKED_RETRY_D:
@@ -204,8 +215,10 @@ def record(state: VectorState, name: str, *, outcome: str, findings: int = 0,
     v = Vector(
         name=name, outcome=outcome,
         first_seen=(prev.first_seen if prev and prev.first_seen else now),
-        last_attempt=(now if outcome != "NAMED_ONLY" else (prev.last_attempt if prev else "")),
-        attempts=(prev.attempts if prev else 0) + (0 if outcome == "NAMED_ONLY" else 1),
+        # NAMED_ONLY and HELD record no attempt: nothing was fetched.
+        last_attempt=(now if outcome not in ("NAMED_ONLY", "HELD")
+                      else (prev.last_attempt if prev else "")),
+        attempts=(prev.attempts if prev else 0) + (0 if outcome in ("NAMED_ONLY", "HELD") else 1),
         findings=(prev.findings if prev else 0) + max(0, findings),
         blocker=blocker,
         language=str(language or (prev.language if prev else "") or ""),
@@ -226,8 +239,8 @@ def rollup(state: VectorState, by: str) -> dict[str, dict[str, int]] | None:
     out: dict[str, dict[str, int]] = {}
     for v in state.vectors.values():
         key = getattr(v, by) or "UNSTATED"
-        row = out.setdefault(key, dict.fromkeys(OUTCOMES, 0) | {"findings": 0, "vectors": 0})
-        row[v.outcome] += 1
+        row = out.setdefault(key, dict.fromkeys(HUNT_OUTCOMES, 0) | {"findings": 0, "vectors": 0})
+        row[v.outcome] = row.get(v.outcome, 0) + 1
         row["findings"] += v.findings
         row["vectors"] += 1
     return dict(sorted(out.items(), key=lambda kv: (-kv[1]["vectors"], kv[0])))
@@ -237,8 +250,11 @@ def frontier(state: VectorState, *, now: datetime | None = None,
              cooldown_d: int = COVERED_COOLDOWN_D) -> dict[str, list[Vector]]:
     """Split the world into what is worth hunting and what is not."""
     n = now or datetime.now(tz=UTC)
-    unhunted, blocked, ready, picked = [], [], [], []
+    unhunted, blocked, ready, picked, held = [], [], [], [], []
     for v in state.vectors.values():
+        if v.outcome == "HELD":
+            held.append(v)                 # neither frontier nor coverage: terms-held
+            continue
         ok, _ = v.huntable(n, cooldown_d=cooldown_d)
         if not ok:
             picked.append(v)
@@ -248,7 +264,8 @@ def frontier(state: VectorState, *, now: datetime | None = None,
             blocked.append(v)
         else:
             ready.append(v)
-    return {"unhunted": unhunted, "blocked": blocked, "ready": ready, "picked_over": picked}
+    return {"unhunted": unhunted, "blocked": blocked, "ready": ready, "picked_over": picked,
+            "held": held}
 
 
 def should_hunt(state: VectorState, *, now: datetime | None = None,
@@ -340,6 +357,7 @@ def summarise(state: VectorState, *, cooldown_d: int = COVERED_COOLDOWN_D) -> di
         "vectors": len(state.vectors),
         "unhunted": len(f["unhunted"]), "blocked": len(f["blocked"]),
         "off_cooldown": len(f["ready"]), "picked_over": len(f["picked_over"]),
+        "held": len(f["held"]),
         "total_findings": sum(v.findings for v in state.vectors.values()),
         "yield_rate": (round(len(yielded) / len(state.vectors), 3) if state.vectors else None),
         # Per-language and per-region outcome counts, or None with the reason: the state
