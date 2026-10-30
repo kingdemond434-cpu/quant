@@ -1,21 +1,21 @@
 {
- "at": "2026-10-30T19:49:18+00:00",
+ "at": "2026-10-30T20:47:29+00:00",
  "status": "MEASURED",
  "box": {
   "cores": 18,
   "market_closed": false,
   "source": "GlobalMemoryStatusEx",
   "total_phys_mb": 98297,
-  "free_phys_mb": 44224,
+  "free_phys_mb": 45188,
   "commit_limit_mb": 200697,
-  "commit_free_mb": 90120,
+  "commit_free_mb": 93791,
   "cpu_source": "psutil",
-  "busy_other_cores": 15.62,
-  "busy_judge_cores": 0.06,
+  "busy_other_cores": 12.21,
+  "busy_judge_cores": 0.94,
   "cpu_sample_s": 1.0,
   "terminal_running": true,
   "gateway_running": false,
-  "n_python": 79,
+  "n_python": 83,
   "terminal_source": "psutil",
   "is_judging_box": true
  },
@@ -25,8 +25,8 @@
  },
  "queue": {
   "status": "MEASURED",
-  "depth": 1612137,
-  "gates_per_hour": 3222.125,
+  "depth": 1600773,
+  "gates_per_hour": 4268.583,
   "workers_last_sweep": 15,
   "source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
   "clock_breach_cells": 0,
@@ -37,17 +37,17 @@
   "burndown_needed_per_hour": 2295.2,
   "burndown_outflow_unit": "settled",
   "burndown_source": "JUDGING_BURNDOWN.json",
-  "source_at": "2026-10-30T15:47:16.384641+00:00",
-  "source_age_seconds": 14476.02883,
-  "file_at": "2026-10-30T19:39:38+00:00",
-  "file_age_seconds": 534.413494,
+  "source_at": "2026-10-30T20:25:19.891431+00:00",
+  "source_age_seconds": 1288.50449,
+  "file_at": "2026-10-30T20:37:46+00:00",
+  "file_age_seconds": 542.395982,
   "discovered": 1630804,
   "depth_scope": "sweep",
-  "judged_last_sweep": 18667,
-  "deferred_build_budget": 325088,
+  "judged_last_sweep": 30031,
+  "deferred_build_budget": 309220,
   "deferred_memory_budget": 0,
   "memory_budget_mb_last_sweep": 11520.0,
-  "swept_at": "2026-10-30T15:47:16.384641+00:00",
+  "swept_at": "2026-10-30T20:25:19.891431+00:00",
   "gates_per_hour_window": "core_24h",
   "value_at_risk": 640.0074798473026,
   "value_deferred": 512.737387597857,
@@ -67,7 +67,7 @@
   "shards_why": "the judge's fail-closed SHARD_PROTOCOL=2 partitions cell-local work across the measured worker allocation and computes program-level gates once on the union",
   "limiting_resource": "judge_value_at_risk",
   "stood_down": false,
-  "why": "cores 15 (reserved 3), memory 28, commit 58 at 768MB a worker; the binding one is judge_value_at_risk",
+  "why": "cores 15 (reserved 3), memory 29, commit 61 at 768MB a worker; the binding one is judge_value_at_risk",
   "baseline": {
    "workers": 10,
    "memory_budget_mb": 8192.0,
@@ -81,9 +81,9 @@
   "queue_deep": true,
   "clock_breach_cells": 0,
   "clock_breach_overdue": 0,
-  "gates_per_hour_before": 3222.125,
-  "gates_per_hour_projected": 3222.125,
-  "days_to_drain_queue": 20.847,
+  "gates_per_hour_before": 4268.583,
+  "gates_per_hour_projected": 4268.583,
+  "days_to_drain_queue": 15.626,
   "build_step": {
    "budget_s": 8640.0,
    "prev_budget_s": null,
@@ -93,14 +93,15 @@
    "sweep_ends": [
     "2026-10-30T07:19:15+00:00",
     "2026-10-30T11:25:58+00:00",
-    "2026-10-30T16:02:45+00:00"
+    "2026-10-30T16:02:45+00:00",
+    "2026-10-30T20:37:49+00:00"
    ],
    "baseline_vph": null,
    "hold_left": 0,
    "state_written": true
   },
   "fresh_budget_s": 8640.0,
-  "fresh_budget_why": "task execution is unlimited; build step: measuring 8640s, 3 of 2 whole sweeps over 13.7 h",
+  "fresh_budget_why": "task execution is unlimited; build step: measuring 8640s, 4 of 2 whole sweeps over 18.3 h",
   "task_time_limit_s": 0.0,
   "task_time_limit_basis": "schtasks"
  },
@@ -126,12 +127,12 @@
    "status": "FAILED",
    "minutes": 1,
    "task": "MT5-Gauntlet",
-   "next_run_before": "10/30/2026 8:51:00 PM",
+   "next_run_before": "10/30/2026 9:51:00 PM",
    "attempts": [
     "attempt 1: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 30.0 seconds",
-    "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 51.19608570006676 seconds"
+    "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 41.67057069996372 seconds"
    ],
-   "why": "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 51.19608570006676 seconds",
+   "why": "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 41.67057069996372 seconds",
    "state_file": "C:\\opt\\quant\\desks\\mt5\\data\\gauntlet_cadence_state.json"
   },
   "process_env": {
@@ -142,58 +143,58 @@
  "alarms": [],
  "rule": "throughput is raised from OUTSIDE the sealed gauntlet, never by editing it; the plan is floored at the sealed baseline so this organ can never throttle the judge; the live terminal always wins and standing down means returning to that baseline, not below it",
  "rate": {
-  "at": "2026-10-30T19:48:32+00:00",
+  "at": "2026-10-30T20:46:48+00:00",
   "status": "MEASURED",
   "verdicts": {
    "status": "MEASURED",
-   "rows_total": 1113492,
+   "rows_total": 1138967,
    "rows_unstamped": 0,
-   "last_verdict_at": "2026-10-30T15:58:20+00:00",
+   "last_verdict_at": "2026-10-30T20:34:13+00:00",
    "counts": {
-    "1h": 0,
-    "24h": 78010,
-    "7d": 114607,
-    "build_step_lo": 27033,
+    "1h": 25475,
+    "24h": 103485,
+    "7d": 140082,
+    "build_step_lo": 52508,
     "build_step_hi": 0
    },
    "count_basis": "changed verdict events; unchanged retests do not append",
    "first_terminal_counts": {
-    "1h": 0,
-    "24h": 53960,
-    "7d": 79509,
-    "build_step_lo": 16099,
+    "1h": 11201,
+    "24h": 65161,
+    "7d": 90710,
+    "build_step_lo": 27300,
     "build_step_hi": 0
    },
-   "first_terminal_cells": 460670,
+   "first_terminal_cells": 471871,
    "first_terminal_per_hour": {
-    "1h": 0.0,
-    "24h": 2248.333,
-    "7d": 473.268
+    "1h": 11201.0,
+    "24h": 2715.042,
+    "7d": 539.94
    },
    "per_hour": {
-    "1h": 0.0,
-    "24h": 3250.417,
-    "7d": 682.185
+    "1h": 25475.0,
+    "24h": 4311.875,
+    "7d": 833.821
    }
   },
   "created": {
    "status": "MEASURED",
    "counts": {
-    "24h": 7117,
-    "7d": 39631
+    "24h": 7137,
+    "7d": 38070
    },
    "per_hour": {
-    "24h": 296.542,
-    "7d": 235.899
+    "24h": 297.375,
+    "7d": 226.607
    }
   },
-  "verdicts_per_hour": 3250.417,
-  "verdicts_per_day": 78010.0,
+  "verdicts_per_hour": 4311.875,
+  "verdicts_per_day": 103485.0,
   "verdict_rate_basis": "changed verdict events, not total completed tests",
-  "first_judged_per_day": 53960.0,
+  "first_judged_per_day": 65161.0,
   "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
   "coverage_backlog_fresh": false,
-  "created_per_day": 7117.0,
+  "created_per_day": 7137.0,
   "backlog": "UNMEASURED",
   "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
   "eta_to_drain": {
@@ -205,8 +206,8 @@
   "cores_basis": "fixed_reservation",
   "attempt": {
    "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-   "started_at": "2026-10-30T19:46:53+00:00",
-   "pid": 5848
+   "started_at": "2026-10-30T20:44:35+00:00",
+   "pid": 24132
   }
  },
  "blas_single_thread": {
@@ -238,11 +239,11 @@
    "cpu": "AMD64 AMD64 Family 23 Model 1 Stepping 2, AuthenticAMD"
   }
  },
- "measure_seconds": 148.3,
+ "measure_seconds": 176.4,
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-10-30T19:46:53+00:00",
-  "pid": 5848
+  "started_at": "2026-10-30T20:44:35+00:00",
+  "pid": 24132
  },
- "seconds": 238.8
+ "seconds": 266.7
 }
