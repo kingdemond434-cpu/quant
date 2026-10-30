@@ -158,6 +158,24 @@ def test_apply_puts_stamped_cells_at_the_docket_front_once(desk):
     assert len(json.loads(desk["DOCKET"].read_text())) == 3
 
 
+def test_an_unreadable_docket_is_never_replaced(desk):
+    """MF1 (#106 audit): a docket read mid-write is truncated JSON; refuse, never overwrite."""
+    desk["DOCKET"].write_text('[{"symbol": "EURUSD", "family": "carry"')
+    before = desk["DOCKET"].read_bytes()
+    doc = rj.run(apply_changes=True, now=NOW)
+    assert doc["applied"]["queued"] == 0 and "unreadable" in doc["applied"]["refused"]
+    assert desk["DOCKET"].read_bytes() == before
+    desk["DOCKET"].write_text(json.dumps({"not": "a list"}))
+    assert "refused" in rj.run(apply_changes=True, now=NOW)["applied"]
+    assert not list(desk["DOCKET"].parent.glob(".external_survivors.json.*"))
+
+
+def test_an_absent_docket_is_created(desk):
+    desk["DOCKET"].unlink()
+    assert rj.run(apply_changes=True, now=NOW)["applied"]["queued"] == 2
+    assert len(json.loads(desk["DOCKET"].read_text())) == 2
+
+
 def test_hunt16_cell_family_reproduces_the_hunt_signals():
     from mt5desk import families_orthogonal as fo
     from research.run_hunt12 import day_states
