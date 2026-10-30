@@ -76,7 +76,7 @@ $StateDir = Join-Path $Root 'state'
 #   git show HEAD:ops/box_self_heal.py | sha256sum   (and the other two)
 $Pins = [ordered]@{
     'box_self_heal.py' = @{ src = 'ops/box_self_heal.py';       sha256 = 'da87e34e4c93cd96fd2e2f0834426bb1718871f25ef5cd3870631cde615359d7' }
-    'process_health.py' = @{ src = 'ops/process_health.py';      sha256 = 'cfdddafe46e4a7e9257846b1c87a0d1342bddc49f25302db0afe08df3e3c72a2' }
+    'process_health.py' = @{ src = 'ops/process_health.py';      sha256 = '1e989e2e942f69d21f0827d2702d579e2d152c4b600b608d49f7ca7681647f8e' }
     'alert_channels.py' = @{ src = 'libs/ops/alert_channels.py'; sha256 = '4448f782dfa7dc4ec0aecd1dc71145403d3de1d1dcbb9c64e81cf95be3e5f4b5' }
 }
 
@@ -142,7 +142,7 @@ $Python = 'C:\Program Files\Python314\python.exe'
 if (-not (Test-Path $Python)) {
     $cand = (Get-Command python.exe -ErrorAction Stop).Source
     $why = Test-DirAdminOnly (Split-Path -Parent $cand)
-    if ($why) { throw "refusing PATH python at $cand: its directory is not admin-only ($why); install Python to C:\Program Files or fix its ACL" }
+    if ($why) { throw "refusing PATH python at ${cand}: its directory is not admin-only ($why); install Python to C:\Program Files or fix its ACL" }
     $Python = $cand
 }
 $PyHome = Split-Path -Parent $Python
