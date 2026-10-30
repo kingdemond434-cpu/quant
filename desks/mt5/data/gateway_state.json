@@ -24,7 +24,7 @@
   },
   "position": null,
   "last_bracket_date": "2026-10-30",
-  "last_reconcile": "2026-10-30T03:50:07+00:00",
+  "last_reconcile": "2026-10-30T04:05:05+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {},
@@ -53,7 +53,7 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-30T06:50:05+00:00",
+  "placement_pass": "2026-10-30T07:05:03+00:00",
   "netting_booked": {},
   "generic": {
     "audcad_discovered_asia_p_7c996ac8456c8919": {
@@ -478,7 +478,7 @@
     "242662542": 33.460000000000036
   },
   "restart_reconcile": {
-    "at": "2026-10-30T03:50:05+00:00",
+    "at": "2026-10-30T04:05:04+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
@@ -494,13 +494,13 @@
     "equity": 457.74
   },
   "rails_logged": {
-    "gold_oco_direction_lock/gold_asia/buy_stop": "2026-10-28",
-    "gold_oco_direction_lock/gold_asia/sell_stop": "2026-10-28",
+    "gold_oco_direction_lock/gold_asia/buy_stop": "2026-10-30",
+    "gold_oco_direction_lock/gold_asia/sell_stop": "2026-10-30",
     "gold_late_send/gold_asia": "2026-10-29",
     "gold_late_send/gold_london_am": "2026-10-29",
     "gold_late_send/gold_afternoon": "2026-10-29",
-    "cross_account_opposite/gold_asia/buy_stop": "2026-10-29",
-    "cross_account_opposite/gold_asia/sell_stop": "2026-10-29",
+    "cross_account_opposite/gold_asia/buy_stop": "2026-10-30",
+    "cross_account_opposite/gold_asia/sell_stop": "2026-10-30",
     "fusion_book_floor_lift/gold_asia": "2026-10-29"
   },
   "daily_loss_stood_down": "2026-10-23"
