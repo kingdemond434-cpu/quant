@@ -160,6 +160,11 @@ def certified_recipes() -> dict[str, tuple[str, str, families.Choice]]:
         if candidate in CANDIDATES:
             continue
         spec = row.get("shadow_spec") or {}
+        # GOLD ONLY (#110 audit MF2b): the promoter writes scalp sleeves as XAUUSD and takes its
+        # promotion authority from the XAUUSD feed manifest, so a recipe on any other symbol
+        # would be promoted onto gold. Other symbols wait for that path to carry the symbol.
+        if str(spec.get("symbol") or "").upper() != "XAUUSD":
+            continue
         try:
             out[candidate] = (str(spec["symbol"]), str(spec["timeframe"]).upper(),
                               families.Choice(str(spec["family"]), str(spec["session"]),
@@ -358,7 +363,12 @@ def run(now: datetime | None = None) -> dict:
             # an already-declared cell DISCARDS every legitimate forward day since declaration
             # (measured 2026-08-27: rows with 6 true forward days re-stamped to day 0). A row
             # keeps an existing freeze; a row without one gets the lane preregistration.
-            "forward_start": _fs or SHADOW_START.isoformat(),
+            # ...WHICH HOLDS ONLY FOR THE HAND-DECLARED CANDIDATES (#110 audit MF2). A recipe
+            # admitted from the canon was selected on bars up to its certificate; stamping it
+            # with SHADOW_START would count that selection window as forward on the next pass
+            # and could mature it on in-sample trades. Its clock starts when it is first seen.
+            "forward_start": _fs or (SHADOW_START.isoformat() if name in CANDIDATES
+                                     else now.isoformat(timespec="seconds")),
             "first_trade_at": _first_forward_trade(records) or _prior.get("first_trade_at"),
             "status": status, "symbol": sym, "timeframe": tf, "choice": choice.__dict__,
             "n": n, "n_historical": n_historical, "days": days,

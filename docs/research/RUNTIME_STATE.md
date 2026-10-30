@@ -1021,9 +1021,9 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `executable:scripts/live_first_ci.py` | `invoked:ops/box/workflow_gate.ps1` | UNMEASURED UNMEASURED | `desks/mt5/reports/LIVE_FIRST_CI.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:scripts/check_cro_duties.py` | `invoked:desks/mt5/scripts/Run-DeskCycle.ps1` | UNMEASURED UNMEASURED | `desks/mt5/reports/CRO_DUTIES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:cro_noon_freshness` | `hourly_cycle:cro_noon_freshness` | UNMEASURED UNMEASURED | `desks/mt5/reports/CRO_NOON_FRESHNESS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:clock_accrual` | `hourly_cycle:clock_accrual` | UNMEASURED UNMEASURED | `desks/mt5/reports/CLOCK_ACCRUAL.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:desks/mt5/research/rejudge_evicted.py` | `import:desks/mt5/research/certificate_hygiene.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/REJUDGE_EVICTED.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:desks/mt5/research/run_hunt16.py` | `import:desks/mt5/research/rejudge_evicted.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/REJUDGE_EVICTED.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:clock_accrual` | `hourly_cycle:clock_accrual` | UNMEASURED UNMEASURED | `desks/mt5/reports/CLOCK_ACCRUAL.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:cell_emitter` | `hourly_cycle:cell_emitter` | UNMEASURED UNMEASURED | `desks/mt5/reports/CELL_EMITTER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:forest_attempts` | `hourly_cycle:forest_attempts` | UNMEASURED UNMEASURED | `desks/mt5/reports/FOREST_ATTEMPTS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 

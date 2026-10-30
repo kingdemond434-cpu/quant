@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -87,6 +88,20 @@ def _read(path: Path) -> Any:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
+
+
+def _atomic_write(path: Path, text: str) -> None:
+    """tmp beside the target, fsync, then one os.replace: a reader sees the old file or the new."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.rejudge.tmp")
+    try:
+        with tmp.open("w", encoding="utf-8") as fh:
+            fh.write(text)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp, path)
+    finally:
+        tmp.unlink(missing_ok=True)
 
 
 def _survivors(doc: Any) -> dict[str, dict]:
@@ -308,8 +323,14 @@ def apply(doc: dict[str, Any], now: datetime | None = None) -> dict[str, Any]:
                         encoding="utf-8")
     if not fresh:
         return {"queued": 0, "already_on_docket": 0}
-    docket = _read(DOCKET)
-    existing = [r for r in docket if isinstance(r, dict)] if isinstance(docket, list) else []
+    docket = _read(DOCKET) if DOCKET.exists() else []
+    if not isinstance(docket, list):
+        # AN UNREADABLE DOCKET IS NEVER REPLACED (audit of #106, MF1). `merge_hypotheses` rewrites
+        # it hourly; a read that lands mid-write sees truncated JSON, and writing `fresh` over it
+        # would wipe the judge's whole input. Absence of a readable docket is UNMEASURED.
+        return {"queued": 0, "refused": "docket unreadable; UNMEASURED, retried next pass",
+                "docket": str(DOCKET.relative_to(ROOT))}
+    existing = [r for r in docket if isinstance(r, dict)]
     want = {_identity(r) for r in fresh}
     present = {_identity(r) for r in existing} & want
     # THE DOCKET IS REWRITTEN ONLY WHEN A CELL IS MISSING FROM IT. It is the judge's whole input
@@ -322,8 +343,7 @@ def apply(doc: dict[str, Any], now: datetime | None = None) -> dict[str, Any]:
         return {"queued": 0, "already_on_docket": len(present), "front_block": 0,
                 "docket": str(DOCKET.relative_to(ROOT))}
     rest = [r for r in existing if _identity(r) not in want]
-    DOCKET.parent.mkdir(parents=True, exist_ok=True)
-    DOCKET.write_text(json.dumps(fresh + rest, indent=1, default=str), encoding="utf-8")
+    _atomic_write(DOCKET, json.dumps(fresh + rest, indent=1, default=str))
     return {"queued": len(want - present), "already_on_docket": len(present),
             "front_block": len(fresh), "docket": str(DOCKET.relative_to(ROOT))}
 
