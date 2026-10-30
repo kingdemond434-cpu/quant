@@ -1,5 +1,5 @@
 {
- "at": "2026-10-30T16:00:40+00:00",
+ "at": "2026-10-30T19:22:46+00:00",
  "status": "MEASURED",
  "verdicts": {
   "status": "MEASURED",
@@ -7,50 +7,50 @@
   "rows_unstamped": 0,
   "last_verdict_at": "2026-10-30T15:58:20+00:00",
   "counts": {
-   "1h": 16518,
-   "24h": 99468,
+   "1h": 0,
+   "24h": 78010,
    "7d": 114607,
    "build_step_lo": 27033,
-   "build_step_hi": 16518
+   "build_step_hi": 0
   },
   "count_basis": "changed verdict events; unchanged retests do not append",
   "first_terminal_counts": {
-   "1h": 7457,
-   "24h": 70200,
+   "1h": 0,
+   "24h": 53960,
    "7d": 79509,
    "build_step_lo": 16099,
-   "build_step_hi": 7457
+   "build_step_hi": 0
   },
   "first_terminal_cells": 460670,
   "first_terminal_per_hour": {
-   "1h": 7457.0,
-   "24h": 2925.0,
+   "1h": 0.0,
+   "24h": 2248.333,
    "7d": 473.268
   },
   "per_hour": {
-   "1h": 16518.0,
-   "24h": 4144.5,
+   "1h": 0.0,
+   "24h": 3250.417,
    "7d": 682.185
   }
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 7791,
-   "7d": 45256
+   "24h": 6541,
+   "7d": 42802
   },
   "per_hour": {
-   "24h": 324.625,
-   "7d": 269.381
+   "24h": 272.542,
+   "7d": 254.774
   }
  },
- "verdicts_per_hour": 4144.5,
- "verdicts_per_day": 99468.0,
+ "verdicts_per_hour": 3250.417,
+ "verdicts_per_day": 78010.0,
  "verdict_rate_basis": "changed verdict events, not total completed tests",
- "first_judged_per_day": 70200.0,
+ "first_judged_per_day": 53960.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
- "created_per_day": 7791.0,
+ "created_per_day": 6541.0,
  "backlog": "UNMEASURED",
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
@@ -62,7 +62,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-10-30T15:56:11+00:00",
-  "pid": 15600
+  "started_at": "2026-10-30T19:21:25+00:00",
+  "pid": 19484
  }
 }
