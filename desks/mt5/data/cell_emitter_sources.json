@@ -403,27 +403,6 @@
     "XTIUSD",
     "CHINAH"
    ]
-  },
-  {
-   "id": "tradingview_open_source_strategies",
-   "name": "TradingView open-source strategies",
-   "region": "global",
-   "language": "pinescript",
-   "route": "page_code",
-   "cadence": "hourly (hourly_cycle leg cell_emitter; files_per_ground slice per pass)",
-   "auth": "none",
-   "license": "MPL-2.0 (TradingView house rules: open-source scripts)",
-   "cursor": "desks/mt5/data/cell_emitter_state.json: file_cursor[\"tradingview_open_source_strategies\"] (+ ground_cursor rotation, seen content sha256)",
-   "url": "https://www.tradingview.com/scripts/?script_type=strategies",
-   "link_pattern": "/script/[A-Za-z0-9]+-[^\"'#?]+/",
-   "kind": "pine_scripts",
-   "weight": 1.0,
-   "why": "open-source published Pine strategies; a script page whose source is public carries it in a code block",
-   "default_instruments": [
-    "EURUSD",
-    "XAUUSD",
-    "US500"
-   ]
   }
  ]
 }
