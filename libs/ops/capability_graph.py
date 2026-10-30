@@ -782,7 +782,8 @@ NODES: tuple[Node, ...] = (
                 "desks/mt5/reports/FORECAST_CONTRACT.json",
                 "desks/mt5/reports/EXPERIMENT_DESIGN.json",
                 "desks/mt5/reports/EDGE_CONFIDENCE.json", "desks/mt5/reports/CAPACITY.json",
-                "desks/mt5/reports/TIMEFRAME_COVERAGE.json")),
+                "desks/mt5/reports/TIMEFRAME_COVERAGE.json",
+                "desks/mt5/reports/JOB_LOCK_HEALTH.json")),
     Node("layer_census", "libs/research/layers.py",
          writes=("desks/mt5/reports/layer_census.json",)),
     Node("ml_layer", "desks/mt5/research/ml_layer.py",
@@ -862,8 +863,11 @@ NODES: tuple[Node, ...] = (
     Node("input_identity", "libs/data/input_identity.py",
          writes=("desks/mt5/data/input_identity.json",)),
     # hourly_cycle:job_lock_health runs it (_producer); the path is its own OUT constant.
+    # ITS AUTHORITY IS A STOP: a WEDGED owner on the research allowlist is terminated (tree,
+    # children first). The report itself only feeds issue_board.
     Node("job_lock_health", "scripts/check_job_locks.py",
-         writes=("desks/mt5/reports/JOB_LOCK_HEALTH.json",)),
+         writes=("desks/mt5/reports/JOB_LOCK_HEALTH.json",),
+         authority=("research_process_stop",)),
     Node("lake_promote", "desks/mt5/research/lake_promote.py",
          writes=("desks/mt5/reports/LAKE_PROMOTION.json",)),
     Node("orthogonality", "desks/mt5/research/orthogonality.py",
