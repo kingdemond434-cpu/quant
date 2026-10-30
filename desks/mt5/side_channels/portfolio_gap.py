@@ -77,7 +77,8 @@ class PortfolioGapAnalyzer:
         self.base_path = base_path
         self.config = config or PortfolioGapConfig()
         self.sleeves_file = base_path / "desks" / "mt5" / "data" / "sleeves.json"
-        self.ledger_file = base_path / "desks" / "mt5" / "data" / "live_ledger.jsonl"
+        from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+        self.ledger_file = _audited_ledger_path(base_path / "desks" / "mt5" / "data" / "live_ledger.jsonl")
         self.shadow_dir = base_path / "desks" / "mt5" / "reports" / "shadow"
     
     def load_portfolio_state(self) -> PortfolioState:
