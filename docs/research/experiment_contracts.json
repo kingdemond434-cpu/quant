@@ -2,6 +2,21 @@
  "doc": "Experiment contracts: every registered hourly leg declares hypothesis, metric, falsifier, budget and owner (libs/tiers/experiment_contract.py). budget and owner are DERIVED from hourly_cycle.LEG_BUDGET_SEC / LEG_DEPARTMENT when absent; the metric half is DERIVED from tier_s_program.json leg_contracts when that programme wrote one. Fence: scripts/check_experiment_contracts.py (law gate). Hourly reading: leg experiment_contracts -> desks/mt5/reports/EXPERIMENT_CONTRACTS.json.",
  "schema": "experiment-contracts-registry/1",
  "legs": {
+  "tape_fresh": {
+   "hypothesis": "Reading both tick tapes by their own newest-tick stamp on the box that writes them, every hour, turns a recorder that silently stopped (MT5-TickRecorder sat dead from 2026-10-12 with only boot/logon triggers) into a named RED row within one cycle, so no more than two hours of open-market quotes are lost unseen.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "n_red",
+    "better": "down",
+    "organ": "report:TAPE_FRESHNESS.json"
+   },
+   "falsifier": {
+    "metric": "n_unmeasured",
+    "op": ">=",
+    "threshold": 2,
+    "after": "30 days in which both tapes stay UNMEASURED on the box: the fence reads nothing and the recorders it watches are not writing where it looks"
+   }
+  },
   "judge_prescreen": {
    "hypothesis": "A pre-build screen that decides from the cell's identity, its chart's calendar, its family's own input guard and its siblings' recorded verdicts can take cells away from the sealed judge before the signal build at ZERO true-survivor kills, measured by a time-ordered replay of the judge's own gate ledger, so the judge's scarce build seconds go to cells that can survive.",
    "metric": {
