@@ -390,23 +390,46 @@ def main() -> int:
     return 0
 
 
+# A MODULE'S `__main__` IS ITS CONTRACT WITH EVERY CLOCK THAT RUNS IT, AND THIS ONE WAS A DEMO.
+#
+# `hourly_cycle` runs this file as a subprocess every hour (leg `alpha_periodic_table`). What it
+# ran, for the life of the leg, was an exploratory print block written while the class was being
+# built: it instantiated the table, printed research targets, discovered cells, priorities and a
+# dataframe shape, and returned 0. `main()` -- the function that calls `run()`, which is the ONLY
+# thing that writes `REPORT` -- was never reached and was dead code.
+#
+# Measured on the trading box 2026-09-24: `LEG_DONE outcome=ok` every hour, and
+# `desks/mt5/reports/ALPHA_PERIODIC_TABLE.json` forty-seven hours stale. The last write came from
+# `daily_cycle`, which invokes the research/ sibling properly and had not completed since. rc=0
+# with no write, in its purest form: the leg was not failing, not slow, not starved -- it was
+# running the wrong entry point, and nothing anywhere compares what a leg runs to what it writes.
+#
+# The demo is not deleted, it is moved behind `--demo`, because it is genuinely useful when
+# working on the table by hand and deleting it would only tempt the next author to re-add it in
+# front of `main()` again.
 if __name__ == "__main__":
-    table = AlphaPeriodicTable()
+    import sys as _sys
 
-    print("Research Targets (empty cells):")
-    for mech, axis in table.get_research_targets()[:20]:
-        print(f"  {mech} × {axis.value}")
+    if "--demo" in _sys.argv:
+        table = AlphaPeriodicTable()
 
-    print("\nDiscovered Cells:")
-    for mech, axis in table.get_discovered():
-        cell = table.cells[(mech, axis)]
-        print(f"  {mech} × {axis.value}: {cell.metadata.get('description', '')[:60]}")
+        print("Research Targets (empty cells):")
+        for mech, axis in table.get_research_targets()[:20]:
+            print(f"  {mech} × {axis.value}")
 
-    print("\nResearch Priorities:")
-    for mech, axis, priority in table.get_research_priorities(15):
-        print(f"  {mech} × {axis.value}: {priority}")
+        print("\nDiscovered Cells:")
+        for mech, axis in table.get_discovered():
+            cell = table.cells[(mech, axis)]
+            print(f"  {mech} × {axis.value}: {cell.metadata.get('description', '')[:60]}")
 
-    df = table.to_dataframe()
-    print(f"\nMatrix shape: {df.shape}")
-    print(f"Empty: {(df['status'] == 'empty').sum()}")
-    print(f"Discovered: {(df['status'] == 'discovered').sum()}")
+        print("\nResearch Priorities:")
+        for mech, axis, priority in table.get_research_priorities(15):
+            print(f"  {mech} × {axis.value}: {priority}")
+
+        df = table.to_dataframe()
+        print(f"\nMatrix shape: {df.shape}")
+        print(f"Empty: {(df['status'] == 'empty').sum()}")
+        print(f"Discovered: {(df['status'] == 'discovered').sum()}")
+        raise SystemExit(0)
+
+    raise SystemExit(main())
