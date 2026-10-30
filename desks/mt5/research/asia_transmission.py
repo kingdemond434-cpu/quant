@@ -55,6 +55,15 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 OUT = BASE / "reports" / "ASIA_TRANSMISSION.json"
+#: FAILURE MEMORY (directive PART XV: "record failures, preserve contradictory evidence, never
+#: self-confirm by selectively storing successes"). Every measurement of every declared edge is
+#: appended here, verdict and statistics, whatever it found; the report's `failure_memory` is
+#: read back from this ledger, so a chain that failed last week still carries that evidence
+#: when it measures as an edge this week. Tracked under `data/` because `reports/` is not.
+EDGE_LEDGER = BASE / "data" / "asia_transmission_edges.jsonl"
+#: The side ledger `experiment_ledger` reads for passes that tested cells and donated none.
+NULL_TRIALS = BASE / "data" / "null_pass_trials.jsonl"
+FAILED = frozenset({"NO_EDGE", "REFUTED"})
 
 #: Asian trading hours in UTC. Tokyo opens 00:00 UTC and Shanghai's afternoon session ends around
 #: 07:00; London's pre-open begins to dominate by 08:00. The window is deliberately generous at
@@ -262,8 +271,91 @@ def measure(budget_s: float = 600.0) -> dict[str, Any]:
     return {"rows": rows, "bars": bars, "meta": meta}
 
 
+def _edge_stats(e: Any) -> dict[str, Any]:
+    e = e if isinstance(e, dict) else {}
+    return {k: e.get(k) for k in ("verdict", "t", "lag", "direction", "n")}
+
+
+def remember(rows: list[dict[str, Any]], at: str, path: Path | None = None) -> int:
+    """Append this pass's measurement of every chain -- failures included -- to the ledger."""
+    path = path or EDGE_LEDGER
+    lines = [json.dumps({"at": at, "chain": r.get("name"), "driver": r.get("driver"),
+                         "target": r.get("target"), "expected": r.get("expected"),
+                         "verdict": r.get("verdict"), "why": r.get("why"),
+                         "asia_hours": _edge_stats(r.get("asia_hours")),
+                         "pooled": _edge_stats(r.get("pooled")),
+                         "proxy_for": r.get("proxy_for"), "falsifier": r.get("falsifier")},
+                        sort_keys=True, default=str) for r in rows]
+    if not lines:
+        return 0
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write("\n".join(lines) + "\n")
+    return len(lines)
+
+
+def failure_memory(path: Path | None = None) -> dict[str, dict[str, Any]]:
+    """Per chain, its whole measured history: how often it held, how often it failed, and the
+    last failure's evidence. A success never erases a failure; both are counted."""
+    path = path or EDGE_LEDGER
+    out: dict[str, dict[str, Any]] = {}
+    try:
+        text = path.read_text("utf-8")
+    except OSError:
+        return out
+    for line in text.splitlines():
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(row, dict) or not row.get("chain"):
+            continue
+        m = out.setdefault(str(row["chain"]), {"measured": 0, "held": 0, "failed": 0,
+                                               "refuted": 0, "unmeasured": 0,
+                                               "last_failure": None, "last_held": None})
+        v = str(row.get("verdict"))
+        if v in ("UNMEASURED", "UNQUOTED"):
+            m["unmeasured"] += 1
+            continue
+        m["measured"] += 1
+        if v in FAILED:
+            m["failed"] += 1
+            m["refuted"] += int(v == "REFUTED")
+            m["last_failure"] = {"at": row.get("at"), "verdict": v, "why": row.get("why"),
+                                 "asia_hours": row.get("asia_hours")}
+        else:
+            m["held"] += 1
+            m["last_held"] = {"at": row.get("at"), "verdict": v,
+                              "asia_hours": row.get("asia_hours")}
+    for m in out.values():
+        m["contradicted"] = bool(m["held"] and m["failed"])
+        m["failure_share"] = round(m["failed"] / m["measured"], 4) if m["measured"] else None
+    return out
+
+
+def charge_null(tests_run: int, at: str, path: Path | None = None) -> bool:
+    """A pass that screened cells and donated none still spent them (experiment_ledger)."""
+    path = path or NULL_TRIALS
+    if tests_run <= 0:
+        return False
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"at": at, "source": "asia_transmission",
+                                 "tests_run": int(tests_run),
+                                 "by_family": {"lead_lag": int(tests_run)},
+                                 "why": "screened transmission cells charged; no discovery "
+                                        "file carried them this pass"}, sort_keys=True) + "\n")
+        return True
+    except OSError:
+        return False
+
+
 def propose(measured: dict[str, Any], budget_s: float = 600.0) -> list[dict[str, Any]]:
-    """Surviving chains -> `family_lead_lag` cells at the MEASURED lag. Never at a declared one."""
+    """Surviving chains -> `family_lead_lag` cells at the MEASURED lag. Never at a declared one.
+
+    Every screen call is a look and is counted on `measured["looks"]`, whether or not the screen
+    returned a row: the trial charge is what was LOOKED AT, not what survived."""
     import time
 
     from mt5desk.family_lead_lag import family_lead_lag
@@ -295,6 +387,7 @@ def propose(measured: dict[str, Any], budget_s: float = 600.0) -> list[dict[str,
                           "hold_bars": h}
                 sig = family_lead_lag(tgt, driver=drv, **params)
                 sc = pc.screen(tgt, sig, cost, unf)
+                measured["looks"] = int(measured.get("looks") or 0) + 1
                 if sc is None:
                     continue
                 out.append({"cell": f"{t}.lead_lag.{d}.asia", "symbol": t, "params": params,
@@ -313,18 +406,36 @@ def main(argv: list[str] | None = None) -> int:
 
     measured = measure(budget_s=args.budget)
     rows = measured["rows"]
+    at = datetime.now(UTC).isoformat(timespec="seconds")
     proposals: list[dict[str, Any]] = []
     donated: str | None = None
+    looks = 0
+    null_charged = False
     if args.propose:
         proposals = pc.best_per_cell(propose(measured, budget_s=args.budget))
-        cands = [pc.candidate("asia_transmission", p["symbol"], "lead_lag", p["params"],
-                              next((c["rationale"] for c in CHAINS if c["name"] == p["chain"]),
-                                   "declared Asian transmission chain"))
-                 for p in proposals]
+        looks = int(measured.get("looks") or 0)
+        cands = []
+        for p in proposals:
+            ch = next((c for c in CHAINS if c["name"] == p["chain"]), {})
+            c = pc.candidate("asia_transmission", p["symbol"], "lead_lag", p["params"],
+                             str(ch.get("rationale") or "declared Asian transmission chain"),
+                             f"{p['chain']}: {p['params']['driver_symbol']} -> {p['symbol']} "
+                             f"lag {p['params']['lag']} (Asia hours)",
+                             {"chain": p["chain"], "verdict": p["verdict"],
+                              "edge_t": p.get("edge_t"),
+                              "t_deflated_sweep": p.get("t_deflated_sweep"),
+                              "n_independent": p.get("n_independent"),
+                              "falsifier": ch.get("falsifier"),
+                              "proxy_for": ch.get("proxy_for")})
+            c["falsifier"] = ch.get("falsifier")
+            cands.append(c)
         if cands:
-            path = pc.donate("asia_transmission", cands, tests_run=len(CHAINS) * len(ENTRY_Z)
-                             * len(HOLDS))
+            path = pc.donate("asia_transmission", cands, tests_run=max(1, looks))
             donated = str(path) if path else None
+        if not donated:
+            null_charged = charge_null(looks, at)
+    remembered = remember(rows, at)
+    memory = failure_memory()
 
     census = Counter(str(r.get("verdict")) for r in rows)
     doc = {
@@ -339,6 +450,13 @@ def main(argv: list[str] | None = None) -> int:
                                  "measures as empty in both the traded and certified books",
         "n_proposals": len(proposals),
         "donated_to": donated,
+        "looks_charged": looks,
+        "null_trials_charged": null_charged,
+        "edge_ledger": {"path": str(EDGE_LEDGER), "appended": remembered},
+        "failure_memory": memory,
+        "failure_rule": ("every measurement of every declared chain is appended to the edge "
+                         "ledger, failures included; a chain's failures and contradictions stay "
+                         "on it after it later measures as an edge"),
         "chains": rows,
         "proposals": proposals,
     }

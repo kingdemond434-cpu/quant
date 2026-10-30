@@ -712,14 +712,56 @@ def attestation_floor(status_path: Path, attestation: dict[str, Any]) -> datetim
     return t if t.tzinfo else t.replace(tzinfo=UTC)
 
 
-def predates(row: dict[str, Any], floor: datetime) -> bool:
-    """True when the row's gates were evaluated before `floor` (or carry no date at all)."""
+def _evidence_time(row: dict[str, Any]) -> datetime | None:
     try:
         from attestation_remint import row_evidence_time
     except ImportError:                                  # pragma: no cover - import-context dep
         from research.attestation_remint import row_evidence_time  # type: ignore[no-redef]
-    t = row_evidence_time(row)
-    return t is None or t < floor
+    return row_evidence_time(row)
+
+
+def predates(row: dict[str, Any], floor: datetime) -> bool:
+    """True only on POSITIVE evidence: the row's gates carry a date and it is before `floor`.
+
+    An undated row is UNMEASURED, never stale: parking it would be retirement on absence (audit of
+    #126, MF2). It stays where it is and is counted under `undated_unmeasured`.
+    """
+    t = _evidence_time(row)
+    return t is not None and t < floor
+
+
+def parking_missed_growth(parked: list[str], parked_now: list[str],
+                          at: str) -> list[dict[str, Any]]:
+    """THE TWO-SIDED LINE FOR THE RE-JUDGE PARKING (GROWTH_GOVERNANCE Rule 1; audit of #126, MF5).
+
+    COST: certificates moved out of the survivor set this pass, so they enrol and promote nothing
+    until the judge re-mints them. GAIN: the same rows were NOT carried under an attestation that
+    never judged them -- the re-stamp this parking exists to refuse. Neither side is priced in
+    E[log W] yet: both are UNMEASURED and said so, never zero. Keyed on EVERY row still parked
+    after the pass, not only those parked on it: the rail binds for as long as any row waits
+    (audit of #126 v2, MF2). No line once nothing is parked (missed_growth reads NOT_BINDING).
+    Published on CANON_PUBLICATION.json and carried by `missed_growth.run` --
+    `libs/portfolio/rails.py` is sealed, so no rail is registered.
+    """
+    if not parked:
+        return []
+    base = {"day": at[:10], "at": at, "rail": "canon_publication.pending_rejudge",
+            "kind": "opportunity_cost", "value": None, "verdict": "UNMEASURED",
+            "e_log_w": "UNMEASURED", "withheld": len(parked),
+            "parked_this_pass": len(parked_now), "keys": sorted(parked)[:50]}
+    return [
+        {**base, "side": "cost",
+         "units": "certificates withheld from the survivor set until re-judged",
+         "why": ("parked certificates enrol no new clock and promote nothing until the judge "
+                 "re-mints them; existing clocks wait UNMEASURED (clock_certificate), never "
+                 "retired. Forgone growth = their forward E[log W] over the re-judge delay, "
+                 "unpriced until attestation_remint publishes a measured ETA per row")},
+        {**base, "side": "gain",
+         "units": "certificates kept from running under an attestation that never judged them",
+         "why": ("a row carried under the new header without a re-judge would size capital on "
+                 "evidence the current bar never saw; the avoided loss is unpriced until "
+                 "lockbox_recert publishes the before/after lockbox per certificate")},
+    ]
 
 
 def publish(report: Path = REPORT, seal: Path = SEAL,
@@ -811,6 +853,7 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
     _pend = doc_seal.get("pending_rejudge")
     parked: dict[str, Any] = dict(_pend) if isinstance(_pend, dict) else {}
     parked_now: list[str] = []
+    rejected_on_rejudge: list[str] = []
     if attested_report or recovered:
         for key in list(merged):
             row = merged[key]
@@ -819,6 +862,9 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
                 parked[key] = merged.pop(key)
                 parked_now.append(key)
     record["attestation_floor"] = floor.isoformat() if floor else None
+    record["undated_unmeasured"] = (sorted(k for k, r in merged.items()
+                                           if isinstance(r, dict) and _evidence_time(r) is None)
+                                    if floor is not None else [])
     admitted: list[str] = []
     admitted_recovered: list[str] = []
     refused_rows: Counter[str] = Counter()
@@ -842,6 +888,13 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
             continue
         if not all_ten_pass(row.get("gates")):
             refused_rows["not_all_ten_pass"] += 1
+            if key in parked and not (floor is not None and predates(row, floor)):
+                # A PARKED ROW RE-JUDGED AND FAILED under the attestation in force is a real
+                # rejection, not a wait: it leaves `pending_rejudge`, so its clock reads BREACHED
+                # and retires through the normal path (audit of #126 v2, MF1). A stale row under
+                # the current header is not a re-judge and stays parked.
+                parked.pop(key, None)
+                rejected_on_rejudge.append(key)
             continue
         if floor is not None and predates(row, floor):
             # The report can carry a stale row under the current header (the sealed writer
@@ -921,6 +974,8 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
                     "re-mints them, never carried under the new header")}
     record["pending_rejudge"] = len(parked)
     record["parked_this_pass"] = len(parked_now)
+    record["rejected_on_rejudge"] = sorted(rejected_on_rejudge)
+    record["missed_growth"] = parking_missed_growth(sorted(parked), parked_now, now.isoformat())
     doc_new.update({
         "n": len(merged),
         "survivors": merged,

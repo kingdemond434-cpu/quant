@@ -14,6 +14,7 @@ bad. A confident instruction to undo a correct decision is worse.
 from __future__ import annotations
 
 import importlib.util
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -67,3 +68,39 @@ def test_an_unanswerable_question_never_says_restore(monkeypatch) -> None:
     assert "UNMEASURED, not a wipe" in src
     # and the destructive instruction is reached only when the answer is an explicit False
     assert "elif not sanctioned:" in src
+
+
+def test_campaign_docket_count_is_streamed_under_the_health_memory_rail(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """A campaign-sized docket must never be materialised by the 400 MB health service."""
+    h = _load()
+    desk = tmp_path / "desks" / "mt5"
+    docket = desk / "data" / "hypotheses" / "external_survivors.json"
+    docket.parent.mkdir(parents=True)
+    docket.write_text(json.dumps([{"id": 1}, {"id": 2}]), encoding="utf-8")
+    now = h.datetime.now(h.UTC)
+    (docket.parent / "external_survivors.json.remote_meta").write_text(
+        f"123:456:{now.isoformat()}\n", encoding="utf-8"
+    )
+    web = tmp_path / "web"
+    web.mkdir()
+    (web / "desk_state.json").write_text(
+        json.dumps({"generated_at": now.isoformat(),
+                    "pipeline": {"docket_candidates": 2}}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(h, "ROOT", tmp_path)
+    monkeypatch.setattr(h, "DESK", desk)
+
+    original_read = h._read
+
+    def refuse_full_docket(path: Path):
+        if path == docket:
+            raise AssertionError("health fence tried to materialise the campaign docket")
+        return original_read(path)
+
+    monkeypatch.setattr(h, "_read", refuse_full_docket)
+    _breaches, measurements = h.collect(now)
+
+    assert measurements["docket_rows"] == 2
