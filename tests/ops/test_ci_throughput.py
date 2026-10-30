@@ -421,6 +421,140 @@ def test_one_manifest_row_per_task_and_the_watcher_has_an_independent_contract()
     assert '"desks/mt5/reports/MERGE_PIPELINE.json", 45' in oc
 
 
+def _lf() -> Any:
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("lf", ROOT / "scripts/live_first_ci.py")
+    assert spec and spec.loader
+    lf = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(lf)
+    return lf
+
+
+def test_live_first_moves_pr_runs_queued_ahead_of_a_waiting_live_run_behind_it() -> None:
+    """2026-10-29 19:45Z: ~120 PR runs queued before LIVE's push runs held every runner."""
+    lf = _lf()
+    live = {"id": 1, "event": "push", "head_branch": lf.LIVE, "created_at": _iso(30)}
+    old = {"id": 2, "event": "pull_request", "head_branch": "b1", "head_sha": "h1",
+           "created_at": _iso(60)}  # fmt: skip
+    moved = {**old, "id": 3, "head_sha": "gone"}
+    later = {**old, "id": 4, "created_at": _iso(10)}
+    rerun = {**old, "id": 5, "run_started_at": _iso(1)}  # a re-run joined the queue again
+    target = {**old, "id": 6, "event": "pull_request_target", "head_sha": "base-sha"}
+    other = {**old, "id": 7, "head_branch": "not-a-pr", "head_sha": "x"}
+    heads = {"b1": "h1"}
+    waste, ahead = lf.plan(NOW, [live, old, moved, later, rerun, target, other], heads)
+    assert waste == [3] and ahead == [2]  # audit-gate and unknown branches are never touched
+    fresh = dict(live, created_at=_iso(2))  # LIVE queued under 5 min: nothing moves yet
+    assert lf.plan(NOW, [fresh, old, moved], heads) == ([3], [])
+    assert lf.plan(NOW, [old, moved], heads) == ([3], [])  # no LIVE run waiting
+    assert lf.plan(NOW, [live, old, moved], {}) == ([], [])  # no PR read: nothing cancelled
+    dispatch = dict(live, event="workflow_dispatch")  # the gate's merge is a LIVE run too
+    assert lf.plan(NOW, [dispatch, old], heads) == ([], [2])
+    gate = (ROOT / "ops/box/workflow_gate.ps1").read_text(encoding="utf-8")
+    assert "scripts\\live_first_ci.py" in gate and "live-first rc=" in gate
+
+
+def test_a_cleared_pr_waits_like_live_and_uncleared_runs_ahead_of_it_go_behind() -> None:
+    """zuck 2026-10-29 22:08Z: the CLEARed fixes waited an hour behind 155 uncleared runs."""
+    lf = _lf()
+    clr = {"id": 1, "event": "pull_request", "head_branch": "c", "head_sha": "hc",
+           "created_at": _iso(30)}  # fmt: skip
+    old = {"id": 2, "event": "pull_request", "head_branch": "u", "head_sha": "hu",
+           "created_at": _iso(60)}  # fmt: skip
+    old_clr = {**clr, "id": 3, "created_at": _iso(90)}  # a CLEARed run is never moved
+    heads = {"c": "hc", "u": "hu"}
+    assert lf.plan(NOW, [clr, old, old_clr], heads, cleared=frozenset({"c"})) == ([], [2])
+    assert lf.plan(NOW, [clr, old], heads) == ([], [])  # no CLEAR, no LIVE: nothing moves
+    fresh = dict(clr, created_at=_iso(2))
+    assert lf.plan(NOW, [fresh, old], heads, cleared=frozenset({"c"})) == ([], [])
+    stale_clr = dict(clr, head_sha="old")  # a run of a superseded head is waste, not a waiter
+    assert lf.plan(NOW, [stale_clr, old], heads, cleared=frozenset({"c"})) == ([1], [])
+
+
+def test_cleared_reads_a_trusted_unedited_clear_of_the_current_head(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    lf = _lf()
+    lf._NUMBERS.update({"c": 7, "u": 8, "e": 9})
+    heads = {"c": "abcdef1234", "u": "1234abcd", "e": "eeeeeee99"}
+
+    def note(body: str, assoc: str = "OWNER", edited: bool = False) -> dict[str, Any]:
+        return {"body": body, "author_association": assoc, "created_at": "t",
+                "updated_at": "t2" if edited else "t"}  # fmt: skip
+
+    by = {7: [note("AUDIT CLEAR abcdef1")], 8: [note("AUDIT CLEAR 1234abcd", assoc="NONE")],
+          9: [note("AUDIT CLEAR eeeeeee", edited=True)]}  # fmt: skip
+
+    def gh(path: str, method: str = "GET") -> Any:
+        return by[int(path.split("/issues/")[1].split("/")[0])]
+
+    monkeypatch.setattr(lf, "_gh", gh)
+    queued = [{"event": "pull_request", "head_branch": b} for b in heads]
+    assert lf._cleared("o/r", queued, heads) == {"c"}
+
+
+def test_a_broken_cleared_read_never_stops_live_first(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """#556 audit SF1: CLEARed-first failing leaves LIVE-first intact."""
+    lf = _lf()
+
+    def boom(*a: Any) -> Any:
+        raise ImportError("no watcher")
+
+    monkeypatch.setattr(lf, "_cleared", boom)
+    monkeypatch.setattr(lf, "_queued", lambda repo: [])
+    monkeypatch.setattr(lf, "_heads", lambda repo: {})
+    assert lf.run("o/r", lf.LIVE, tmp_path / "s.json", settle_s=0, sleep=lambda s: None) == 0
+
+
+def test_live_first_owes_before_it_cancels_and_reruns_only_its_own_cancel(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    lf = _lf()
+    live = {"id": 1, "event": "push", "head_branch": lf.LIVE, "created_at": "2000-01-01T00:00:00Z"}
+    pr = {"id": 2, "event": "pull_request", "head_branch": "b1", "head_sha": "h1",
+          "created_at": "1999-12-31T00:00:00Z"}  # fmt: skip
+    state = tmp_path / "lf.json"
+    runs = {2: {**pr, "status": "queued", "run_attempt": 1}}
+    calls: list[tuple[str, str]] = []
+
+    def gh(path: str, method: str = "GET") -> Any:
+        calls.append((method, path))
+        if "status=queued" in path:
+            return {"workflow_runs": [live, pr]}
+        if "/pulls?" in path:
+            return [{"head": {"ref": "b1", "sha": "h1"}}]
+        if path.endswith("/cancel"):
+            assert json.loads(state.read_text())["owed"][0]["id"] == 2  # owed BEFORE the cancel
+            runs[2] = {**runs[2], "status": "completed", "conclusion": "cancelled"}
+            return None
+        if path.endswith("/rerun"):
+            return None
+        return runs[int(path.rsplit("/", 1)[1])]
+
+    monkeypatch.setattr(lf, "_gh", gh)
+    assert lf.run("o/r", lf.LIVE, state, settle_s=0, sleep=lambda s: None) == 0
+    assert ("POST", "repos/o/r/actions/runs/2/rerun") in calls
+    assert json.loads(state.read_text())["owed"] == []
+    # a run that completed on its own (not cancelled) is never re-run
+    calls.clear()
+    runs[2] = {**pr, "status": "queued", "run_attempt": 1}
+
+    def gh2(path: str, method: str = "GET") -> Any:
+        if path.endswith("/cancel"):
+            runs[2] = {**runs[2], "status": "completed", "conclusion": "success"}
+            calls.append((method, path))
+            return None
+        out = gh(path, method)
+        return out
+
+    monkeypatch.setattr(lf, "_gh", gh2)
+    assert lf.run("o/r", lf.LIVE, state, settle_s=0, sleep=lambda s: None) == 0
+    assert not any(p.endswith("/rerun") for _, p in calls)
+
+
 def test_the_box_sweep_runs_merge_ready_prs_first_and_failed_ones_last(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

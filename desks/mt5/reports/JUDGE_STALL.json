@@ -1,29 +1,27 @@
 {
- "at": "2026-10-30T05:31:03+00:00",
+ "at": "2026-10-30T07:16:03+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 3.29,
-   "why": "no new verdict for 3.3h (last 2026-10-30T02:13:26+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 0.01,
+   "why": "no new verdict for 0.0h (last 2026-10-30T07:15:29+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "resident_dead": {
    "open": false,
-   "heartbeat_age_min": 0.4,
+   "heartbeat_age_min": 0.1,
    "pid_alive": true,
-   "why": "resident SWEEPING pid 21384: heartbeat 0.4 min old (limit 10), pid alive"
+   "why": "resident SWEEPING pid 21384: heartbeat 0.1 min old (limit 10), pid alive"
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 3.16,
+   "hours": 4.91,
    "limit_h": 25.59,
-   "why": "3.2h since the last sweep ended (2026-10-30T02:21:17+00:00), status SWEEPING; limit 25.59h"
+   "why": "4.9h since the last sweep ended (2026-10-30T02:21:17+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
-   "open": false,
-   "cells": 22478,
-   "basis": "n_judged",
+   "open": null,
    "read": "first 1048576 and last 262144 bytes",
-   "why": "the sweep that ended 2026-10-30T02:21:17+00:00 judged 22478 cell(s) (n_judged)"
+   "why": "UNMEASURED: universal_gates_external.json carries no result stamped inside the last sweep (2026-10-29T22:02:50+00:00 .. 2026-10-30T02:21:17+00:00) -- an rc-0 sweep that wrote no result reads this way"
   },
   "sweep_dead": {
    "open": false,
@@ -32,10 +30,10 @@
   },
   "phase_overrun": {
    "open": false,
-   "phase": "build_shards",
-   "hours": 0.27,
+   "phase": "merge_and_publish",
+   "hours": 0.6,
    "known_phase": true,
-   "why": "sweep phase build_shards has run 0.3h since 2026-10-30T05:14:43+00:00 (limit 18h)"
+   "why": "sweep phase merge_and_publish has run 0.6h since 2026-10-30T06:39:56+00:00 (limit 3h)"
   },
   "host_unreadable": {
    "open": false,
@@ -71,13 +69,13 @@
   }
  },
  "last_verdict": {
-  "at": "2026-10-30T02:13:26+00:00",
+  "at": "2026-10-30T07:15:29+00:00",
   "source": "gate_verdict_ledger.jsonl"
  },
  "resident": {
   "status": "SWEEPING",
   "pid": 21384,
-  "heartbeat_utc": "2026-10-30T05:30:38+00:00",
+  "heartbeat_utc": "2026-10-30T07:15:55+00:00",
   "last_sweep_ended_utc": "2026-10-30T02:21:17+00:00",
   "last_rc": 0
  },

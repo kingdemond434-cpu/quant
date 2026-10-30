@@ -259,6 +259,9 @@ TASK name="MT5-FTMO-Follower" trigger="every 1 minute" runs="desks/mt5/prop/ftmo
 # The FTMO venue reader (2026-10-28): read-only, the account's phase/state, the symbol list and FTMO's
 # own hour spreads for research/prop_challenge_allocator.py. Interactive session, like the follower.
 TASK name="MT5-FTMO-VenueReader" trigger="every 5 minutes" runs="desks/mt5/prop/ftmo_venue_reader.py" installer="desks/mt5/scripts/install_ftmo_venue_reader_task.ps1" lane="prop"
+# The FTMO sleeve executor (2026-10-29): every non-gold sleeve the FTMO allocator sizes, behind FTMO's
+# loss rails and the cross-account opposite-side fence. Standby until data/FTMO_EXECUTOR_ARMED exists.
+TASK name="MT5-FTMO-Executor" trigger="every 5 minutes" runs="desks/mt5/prop/ftmo_executor.py" installer="desks/mt5/scripts/install_ftmo_executor_task.ps1" lane="prop"
 TASK name="MT5-E8WindowGuard" trigger="every 1 minute" runs="desks/mt5/scripts/watchers/e8_window_guard.py" installer="desks/mt5/scripts/install_box_watchers_canon.ps1" lane="prop"
 TASK name="MT5-Healers" trigger="every 1 hour, at :48" runs="ops/run_healers.cmd" installer="NONE" lane="research"
 # Referenced by ops/run_gold_hour_sweep.cmd; not installed on the box 2026-09-16, cadence unknown.
@@ -317,6 +320,6 @@ TASK name="Claude-Bridge-Watchdog" trigger="at logon + every 5 minutes" runs="op
 # label needed; .github/workflows PRs too, which the Actions gate cannot merge).
 TASK name="Quant-BootSession"  trigger="at logon"                    runs="ops/box/unattended_boot.ps1" installer="ops/box/install_unattended.ps1" lane="ops"
 TASK name="Quant-BootRecord"   trigger="every 10 minutes"            runs="ops/box/unattended_boot.ps1" installer="ops/box/install_unattended.ps1" lane="ops"
-TASK name="Quant-WorkflowGate" trigger="at logon + every 10 minutes" runs="ops/box/workflow_gate.ps1"   installer="ops/box/install_unattended.ps1" lane="ops" also_runs="scripts/merge_pipeline_watch.py"
+TASK name="Quant-WorkflowGate" trigger="at logon + every 10 minutes" runs="ops/box/workflow_gate.ps1"   installer="ops/box/install_unattended.ps1" lane="ops" also_runs="scripts/merge_pipeline_watch.py,scripts/live_first_ci.py"
 # The sign train's clock (#541): the audit signs a moved sealed file from its committed CLEAR row.
 TASK name="Quant-SignTrain"    trigger="at logon + every 10 minutes" runs="ops/box/sign_train_leg.ps1" installer="ops/box/install_unattended.ps1" lane="ops" also_runs="scripts/sign_train.py"

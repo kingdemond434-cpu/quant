@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 797,
+  "NEVER": 800,
   "UNMEASURED": 43
  },
  "scope": {
-  "attested": 1021,
+  "attested": 1024,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -487,23 +487,44 @@
     ]
    },
    {
-    "at": "2026-10-30T05:40:24+00:00",
+    "at": "2026-10-30T03:24:36+00:00",
     "host": "vm",
     "machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
     "on_attesting_host": false,
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
-     "leg:cro_noon_freshness"
+     "task:MT5-FTMO-Executor"
     ]
    },
    {
-    "at": "2026-10-30T05:47:24+00:00",
+    "at": "2026-10-30T03:30:08+00:00",
     "host": "vm",
     "machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
     "on_attesting_host": false,
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
-     "executable:scripts/check_cro_duties.py"
+     "leg:attestation_remint"
+    ]
+   },
+   {
+    "at": "2026-10-30T03:30:13+00:00",
+    "host": "vm",
+    "machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "executable:scripts/live_first_ci.py"
+    ]
+   },
+   {
+    "at": "2026-10-30T07:31:28+00:00",
+    "host": "vm",
+    "machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "executable:scripts/check_cro_duties.py",
+     "leg:cro_noon_freshness"
     ]
    }
   ]
@@ -26595,12 +26616,40 @@
    "measured_at": "2026-10-30T01:34:40+00:00"
   },
   {
-   "organ": "leg:cro_noon_freshness",
+   "organ": "task:MT5-FTMO-Executor",
+   "kind": "task",
+   "code": [
+    "desks/mt5/prop/ftmo_executor.py"
+   ],
+   "clock": "MT5-FTMO-Executor",
+   "cadence_s": 300,
+   "max_silence_s": 600,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/FTMO_EXEC.json",
+   "artifact_declared": "desks/mt5/reports/FTMO_EXEC.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "task_runs",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+   "measured_at": "2026-10-30T03:24:36+00:00"
+  },
+  {
+   "organ": "leg:attestation_remint",
    "kind": "leg",
    "code": [
-    "scripts/check_cro_noon_freshness.py"
+    "desks/mt5/research/attestation_remint.py"
    ],
-   "clock": "hourly_cycle:cro_noon_freshness",
+   "clock": "hourly_cycle:attestation_remint",
    "cadence_s": 3600,
    "max_silence_s": 7200,
    "state": "NEVER",
@@ -26608,8 +26657,8 @@
    "last_run_at": "UNMEASURED",
    "last_run_outcome": "UNMEASURED",
    "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/CRO_NOON_FRESHNESS.json",
-   "artifact_declared": "desks/mt5/reports/CRO_NOON_FRESHNESS.json",
+   "artifact": "desks/mt5/reports/REMINT_STATUS.json",
+   "artifact_declared": "desks/mt5/reports/REMINT_STATUS.json",
    "artifact_resolved_by": "absent",
    "artifact_declared_n": 1,
    "artifact_age_s": null,
@@ -26620,7 +26669,35 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
-   "measured_at": "2026-10-30T05:40:24+00:00"
+   "measured_at": "2026-10-30T03:30:08+00:00"
+  },
+  {
+   "organ": "executable:scripts/live_first_ci.py",
+   "kind": "executable",
+   "code": [
+    "scripts/live_first_ci.py"
+   ],
+   "clock": "invoked:ops/box/workflow_gate.ps1",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/LIVE_FIRST_CI.json",
+   "artifact_declared": "desks/mt5/reports/LIVE_FIRST_CI.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+   "measured_at": "2026-10-30T03:30:13+00:00"
   },
   {
    "organ": "executable:scripts/check_cro_duties.py",
@@ -26648,7 +26725,35 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
-   "measured_at": "2026-10-30T05:47:24+00:00"
+   "measured_at": "2026-10-30T07:31:28+00:00"
+  },
+  {
+   "organ": "leg:cro_noon_freshness",
+   "kind": "leg",
+   "code": [
+    "scripts/check_cro_noon_freshness.py"
+   ],
+   "clock": "hourly_cycle:cro_noon_freshness",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/CRO_NOON_FRESHNESS.json",
+   "artifact_declared": "desks/mt5/reports/CRO_NOON_FRESHNESS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+   "measured_at": "2026-10-30T07:31:28+00:00"
   }
  ],
  "ratchet": {
