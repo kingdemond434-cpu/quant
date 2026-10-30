@@ -1,5 +1,5 @@
 {
- "at": "2026-10-30T16:02:39+00:00",
+ "at": "2026-10-30T19:39:38+00:00",
  "windows": {
   "24h": {
    "hours": 24.0,
@@ -11307,7 +11307,7 @@
   },
   "measured": {
    "swept_at": "2026-10-30T15:47:16.384641+00:00",
-   "age_h": 0.26,
+   "age_h": 3.87,
    "n_cells": 28032,
    "n_judged": 18667,
    "n_unmeasured": 9365,
@@ -11434,16 +11434,16 @@
  "mode": "core",
  "full_at": "2026-10-03T12:44:22+00:00",
  "core": {
-  "at": "2026-10-30T16:02:39+00:00",
+  "at": "2026-10-30T19:39:38+00:00",
   "inputs": {},
   "testing_24h": {
    "status": "MEASURED",
-   "verdicts": 99468,
-   "cells_judged": 98789,
-   "per_hour": 4116.208,
-   "passed": 144,
+   "verdicts": 78010,
+   "cells_judged": 77331,
+   "per_hour": 3222.125,
+   "passed": 135,
    "ledger": "READ",
-   "measured_at": "2026-10-30T16:02:39+00:00",
+   "measured_at": "2026-10-30T19:39:38+00:00",
    "source": "build_core"
   },
   "re_measured": [
