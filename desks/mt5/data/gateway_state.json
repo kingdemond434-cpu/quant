@@ -24,15 +24,60 @@
   },
   "position": null,
   "last_bracket_date": "2026-10-30",
-  "last_reconcile": "2026-10-30T04:05:05+00:00",
+  "last_reconcile": "2026-10-30T04:20:07+00:00",
   "bracket_cancelled": true,
-  "pending": null,
-  "brackets": {},
+  "pending": [
+    {
+      "ticket": 243283176,
+      "type": 5,
+      "price": 3990.47,
+      "symbol": "XAUUSD"
+    }
+  ],
+  "brackets": {
+    "gold_asia": {
+      "date": "2026-10-30",
+      "hi": 4026.47,
+      "lo": 3990.47,
+      "lot": 0.01,
+      "spec": {
+        "buy_stop": {
+          "price": 4026.47,
+          "sl": 3990.27,
+          "tp": 4098.469999999999
+        },
+        "sell_stop": {
+          "price": 3990.47,
+          "sl": 4026.6699999999996,
+          "tp": 3918.47
+        }
+      },
+      "placed_at": "2026-10-30T04:12:06+00:00",
+      "result": {
+        "shadow": false,
+        "orders": [
+          {
+            "side": "buy_stop",
+            "retcode": null,
+            "blocked": true,
+            "comment": "cross-account fence: e8 holds or rests a short on XAUUSD; a long on XAUUSD here would hedge the other account"
+          },
+          {
+            "side": "sell_stop",
+            "retcode": 10009,
+            "comment": "Request executed",
+            "door_refused": false,
+            "door_reason": null
+          }
+        ]
+      }
+    }
+  },
   "lot": 0.06,
   "equity": 457.74,
   "placement_health": {
     "consecutive_total_rejections": 0,
-    "last_ok": "2026-10-29T04:24:44+00:00",
+    "last_ok": "2026-10-30T04:12:06+00:00",
     "last_error": {
       "time": "2026-08-25T04:00:03+00:00",
       "sleeve": "gold_asia",
@@ -53,7 +98,7 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-30T07:05:03+00:00",
+  "placement_pass": "2026-10-30T07:20:04+00:00",
   "netting_booked": {},
   "generic": {
     "audcad_discovered_asia_p_7c996ac8456c8919": {
@@ -478,13 +523,19 @@
     "242662542": 33.460000000000036
   },
   "restart_reconcile": {
-    "at": "2026-10-30T04:05:04+00:00",
+    "at": "2026-10-30T04:20:05+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
     "armed": true,
     "positions": [],
-    "orders": [],
+    "orders": [
+      {
+        "ticket": 243283176,
+        "symbol": "XAUUSD",
+        "comment": "DWgold_asia"
+      }
+    ],
     "in_doubt": [],
     "stopless": [],
     "verdict": "OK"
@@ -496,12 +547,12 @@
   "rails_logged": {
     "gold_oco_direction_lock/gold_asia/buy_stop": "2026-10-30",
     "gold_oco_direction_lock/gold_asia/sell_stop": "2026-10-30",
-    "gold_late_send/gold_asia": "2026-10-29",
+    "gold_late_send/gold_asia": "2026-10-30",
     "gold_late_send/gold_london_am": "2026-10-29",
     "gold_late_send/gold_afternoon": "2026-10-29",
     "cross_account_opposite/gold_asia/buy_stop": "2026-10-30",
     "cross_account_opposite/gold_asia/sell_stop": "2026-10-30",
-    "fusion_book_floor_lift/gold_asia": "2026-10-29"
+    "fusion_book_floor_lift/gold_asia": "2026-10-30"
   },
   "daily_loss_stood_down": "2026-10-23"
 }
