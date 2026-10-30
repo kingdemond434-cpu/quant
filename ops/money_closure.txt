@@ -342,3 +342,4 @@ desks/mt5/mt5desk/families_specialist.py
 libs/research/cell_culture.py
 libs/research/source_provenance.py
 desks/mt5/mt5desk/local_clock.py
+desks/mt5/mt5desk/family_alt_release.py
