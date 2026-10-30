@@ -17,7 +17,7 @@
  "uptime_s": 192396.7,
  "last_sweep_ended_utc": "2026-10-29T22:07:51+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-10-30T01:04:56+00:00",
+ "heartbeat_utc": "2026-10-30T01:20:02+00:00",
  "sweep_phase": {
   "pid": 8812,
   "sweep_started_utc": "2026-10-29T22:08:19+00:00",
@@ -149,22 +149,22 @@
      }
     },
     "build_shards": {
-     "samples": 83,
+     "samples": 179,
      "top": [
       {
        "stack": "threading.py:wait:369 < _base.py:result:445 < _base.py:_result_or_cancel:311 < _base.py:result_iterator:639 < run_sharded_gauntlet.py:dispatch:1404 < run_sharded_gauntlet.py:_timed_dispatch:3720",
-       "n": 83,
+       "n": 179,
        "share": 1.0
       }
      ],
      "process": {
-      "cpu_s": 134.5,
-      "page_faults": 3099730.0,
+      "cpu_s": 278.4,
+      "page_faults": 6166258.0,
       "read_bytes": 0.0,
-      "write_bytes": 83086.0,
-      "sampled_s": 820.0,
+      "write_bytes": 184950.0,
+      "sampled_s": 1780.0,
       "rss_mb_max": 1549.6,
-      "cpu_share_of_wall": 0.164
+      "cpu_share_of_wall": 0.156
      }
     }
    }
@@ -180,13 +180,13 @@
    "phase": "build",
    "total": 15,
    "started": 15,
-   "done_ok": 0,
+   "done_ok": 1,
    "failed": 3,
    "retries": 0,
-   "running": 12,
-   "last_finish_epoch": 1793322210.9848163,
-   "last_finish_utc": "2026-10-30T01:03:30+00:00",
-   "longest_shard_s": null,
+   "running": 11,
+   "last_finish_epoch": 1793323175.0806983,
+   "last_finish_utc": "2026-10-30T01:19:35+00:00",
+   "longest_shard_s": 1812.1,
    "seconds_since_last_finish": 0.0,
    "stalled_hint": false,
    "stalled_hint_authority": "report_only"
