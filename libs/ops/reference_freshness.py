@@ -667,6 +667,21 @@ class DestructivePath:
 #: note, so the history of what once removed on an absence stays readable.
 DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
     DestructivePath(
+        path_id="run_sharded_gauntlet.drop_merge_snapshot",
+        module="desks/mt5/scripts/run_sharded_gauntlet.py",
+        function="_drop_merge_snapshot",
+        removes="reports/.judge_merge_snapshot -- the judge's own copy of its two merge outputs, "
+                "taken at merge start for a restore after a kill",
+        reference="the two merge outputs themselves (universal_gates_external.json, "
+                  "UNIVERSAL_SURVIVORS.json), read back and parsed at removal time",
+        status="positive",
+        guard_site="_drop_merge_snapshot",
+        note="Added by gauntlet watchdog v4 (b121b16f7); declared in v4.1. Runs only from "
+             "_sweep_succeeded (a FINISHED sweep), and removes the snapshot only when every "
+             "output it holds a copy of exists and parses now, so the copy is provably never "
+             "needed. An absent or unparseable output keeps it. It retires no evidence row.",
+    ),
+    DestructivePath(
         path_id="forward_cure_route.accumulate",
         module="desks/mt5/research/forward_cure_route.py",
         function="accumulate",
@@ -1113,6 +1128,51 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
         status="positive",
         note="SEALED and CLEARED: zero removal acts in the file. Recorded so the audit is a "
              "measurement rather than an absence.",
+    ),
+    DestructivePath(
+        path_id="judge_coverage.txn_drop_dirs",
+        module="desks/mt5/research/judge_coverage.py",
+        function="_drop_dirs",
+        removes="the staging directories THIS pass created (research_priors/.jc-txn-<own id>), "
+                "after its commit renamed their files out or its discard abandoned them",
+        reference="the pass's own in-memory list of the directories it made (self.staged_dirs)",
+        status="positive",
+        note="Removes nothing it did not create this pass, under a name carrying its own "
+             "transaction id; no file's absence or staleness is read as a licence. Judge-owned "
+             "state is never inside: committed files were renamed over their targets first. "
+             "Declared 2026-10-21 (audit of judge_coverage v2.1, MF1).",
+    ),
+    DestructivePath(
+        path_id="judge_coverage.txn_drop_lost",
+        module="desks/mt5/research/judge_coverage.py",
+        function="_drop_lost",
+        removes="THIS pass's own staged bank/sidecar/.born writes (ops popped from its "
+                "uncommitted manifest, their .jc-txn-<own id> files unlinked) before its commit "
+                "point, when the bank lock it adopted is no longer its own",
+        reference="the lock file's token read back and found not to be this pass's "
+                  "(`_SidecarLock.owned()` false): a positive reading, never an absence",
+        status="positive",
+        note="Withholds writes this pass staged and has not landed; no persisted file, row or "
+             "certificate is touched -- the bank and sidecar on disk stay exactly as the lock's "
+             "new holder left them, and the rows are re-asked next pass. v4.4's 'lost the lock "
+             "mid-pass: write nothing', applied at the commit point. Declared 2026-10-21 "
+             "(judge speed train fix1, audit R9).",
+    ),
+    DestructivePath(
+        path_id="daily_cycle.prune_corrupt",
+        module="desks/mt5/research/daily_cycle.py",
+        function="_prune_corrupt",
+        removes="only the daily stamp's own quarantine copies (<stamp>.corrupt-<seq>-<ts>, and "
+                "legacy <stamp>.corrupt-<ts>, beside the "
+                "stamp) beyond the newest CORRUPT_KEEP (5); never the live stamp or other state",
+        reference="the quarantine just taken (always kept) and the newer copies' sequence "
+                  "numbers (legacy unsequenced copies: file mtime)",
+        status="positive",
+        note="Runs only after os.replace moved aside a stamp that still fails to PARSE "
+             "(ValueError or non-dict) after re-reads, under the held chain lock; an unreadable "
+             "stamp (OSError) is never moved and nothing is pruned (v1.5). A copy leaves only "
+             "when CORRUPT_KEEP newer ones exist, ordered by quarantine sequence, never the clock. "
+             "Declared 2026-10-27 (daily-chain lock v1.4, audit of fd141ebb9).",
     ),
 )
 

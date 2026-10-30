@@ -691,14 +691,22 @@ def _swap_replay(world: World, sigs: list, eng: Any, sym_meta: dict,
         return "the minimal replay carries no trade times; the swap world needs the engine"
     run_backtest, costs_cls = eng
     try:
-        costs = costs_cls.from_symbol(sym_meta, mult=world.cost_mult)
+        costs = costs_cls.from_symbol({**sym_meta, "symbol": sym_meta.get("symbol") or symbol},
+                                      mult=world.cost_mult)
+        # IN THE UNIT swap_mode NAMES: a mode-5 rate is `swap_per_lot_per_price`, and
+        # `swap_per_lot_per_night` alone is 0.0 for it -- which read here as "no swap terms".
+        unmeasured = getattr(costs, "swap_unmeasured", None)
+        if unmeasured:
+            return f"{symbol}: {unmeasured}"
         swap = float(getattr(costs, "swap_per_lot_per_night", 0.0) or 0.0)
-        if swap <= 0:
+        rate = float(getattr(costs, "swap_per_lot_per_price", 0.0) or 0.0)
+        if swap <= 0 and rate <= 0:
             return f"no swap terms for {symbol} in universe.json: a zero-swap stress is no stress"
         res = run_backtest(world.exec_bars, sigs, costs)
         rs, touched = swap_world.stress_r(res.trades, swap_per_lot=swap,
                                           spread_per_lot=float(costs.spread_per_lot),
-                                          contract=float(costs.contract_oz))
+                                          contract=float(costs.contract_oz),
+                                          swap_per_lot_per_price=rate)
     except Exception as exc:
         return f"replay raised: {type(exc).__name__}: {str(exc)[:70]}"
     world.applied = touched or world.applied

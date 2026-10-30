@@ -368,9 +368,9 @@ def daily_step_of(rel: str) -> str | None:
     dotted = dotted.replace("/", ".")
     best: tuple[int, str] | None = None
     for name, step in daily_step_imports().items():
-        if dotted == name or dotted.endswith("." + name):
-            if best is None or len(name) > best[0]:
-                best = (len(name), step)
+        if (dotted == name or dotted.endswith("." + name)) and (
+                best is None or len(name) > best[0]):
+            best = (len(name), step)
     return best[1] if best else None
 
 
@@ -407,9 +407,12 @@ def manifest_rows(path: Path | None = None) -> list[dict[str, str]]:
 #: Lanes whose failure costs MONEY or the desk's ability to know it is broken. These are the only
 #: `required` box tasks: a research task that misses an hour costs an hour of research.
 REQUIRED_LANES: frozenset[str] = frozenset({"money"})
-#: Tasks that are required whatever their lane, because the control plane itself rides on them.
+#: Tasks that are required whatever their lane, because the control plane itself rides on them --
+#: or, for MT5-E8WindowGuard (2026-10-21), because it is the fail-open guard that CANCELS ORDERS
+#: outside the E8 window: its lane is "prop", which alone would census it `optional`, and a
+#: stopped guard must raise the required-component alarm rather than go quiet.
 REQUIRED_TASKS: frozenset[str] = frozenset(
-    {"MT5-ClockFixer", "MT5-GatewayResident", "MT5-AdoptRelease"}
+    {"MT5-ClockFixer", "MT5-GatewayResident", "MT5-AdoptRelease", "MT5-E8WindowGuard"}
 )
 
 
@@ -802,6 +805,38 @@ def explicit_specs() -> list[ComponentSpec]:
     nothing else declares them."""
     return [
         ComponentSpec(
+            component_id="executable:scripts/migrate_live_ledger_view.py",
+            kind="executable", host="box",
+            code_paths=("scripts/migrate_live_ledger_view.py", "libs/ops/live_ledger_migration.py"),
+            inputs=("desks/mt5/data/live_ledger.jsonl",
+                    "desks/mt5/data/live_ledger_corrections.jsonl",
+                    "desks/mt5/data/IMMUTABLE_MANIFEST.json"),
+            outputs=("desks/mt5/reports/LEDGER_VIEW_ADOPTION.json",),
+            consumers=("desks/mt5/scripts/Adopt-And-Seal.ps1", "mt5desk.decision_core"),
+            cadence_s=3600, timeout_s=360, progress_metric="rows",
+            expected_artifact_schema="ledger_view_adoption/1",
+            owner="lane:ops", restart_action="restart:task:MT5-AdoptRelease",
+            criticality="required", resource_budget={"budget_s": 360},
+            schedule="invoked:desks/mt5/scripts/Adopt-And-Seal.ps1", artifact_class="hourly",
+            notes="Verified production handoff via existing task; no broker call or order"),
+        ComponentSpec(
+            component_id="executable:scripts/adopt_guard.py",
+            kind="executable", host="box",
+            code_paths=("scripts/adopt_guard.py", "libs/ops/adopt_guard.py"),
+            inputs=("desks/mt5/data/ADOPT_CLEARS.jsonl", "desks/mt5/data/ADOPT_POLICY.json",
+                    "desks/mt5/data/RELEASE.json", "desks/mt5/data/gateway_state.json",
+                    "desks/mt5/reports/ADOPT_ROLLBACKS.jsonl"),
+            outputs=("desks/mt5/reports/ADOPT_GUARD.json",
+                     "desks/mt5/reports/ADOPT_ROLLBACKS.jsonl"),
+            consumers=("desks/mt5/scripts/Adopt-And-Seal.ps1",),
+            cadence_s=3600, timeout_s=900, progress_metric="decisions",
+            expected_artifact_schema="adopt_guard/1",
+            owner="lane:ops", restart_action="restart:task:MT5-AdoptRelease",
+            criticality="required", resource_budget={"budget_s": 900},
+            schedule="invoked:desks/mt5/scripts/Adopt-And-Seal.ps1", artifact_class="hourly",
+            notes="Audit/blackout/smoke/health guard and automatic rollback for the unattended "
+                  "adopter; places no order"),
+        ComponentSpec(
             component_id="component:control_plane",
             kind="task", host="box",
             # THE TASK'S ENTRYPOINT COMES FIRST. This is MT5-ClockFixer's one organ id
@@ -858,6 +893,27 @@ def explicit_specs() -> list[ComponentSpec]:
             schedule=f"invoked:{VPS_DAILY}", artifact_class="daily",
             notes=("step breadth_ledger of the VPS daily cycle (ops/crontab.manifest 02:00 and "
                    "quant-cro.timer 08:01), run with cwd at the repo root")),
+        # THE PUBLIC TRADER GENOME'S CLOCK AND ARTIFACT (2026-10-06, audit row 35). The genome is
+        # built by book_forensics.run(), which daily_cycle's `_proposers` step imports by name
+        # (`__import__`), so the reach walk never sees the edge and credits book_forensics.py to
+        # ops/run_frontier_audit.cmd -- which runs it WITHOUT --genome and never writes the
+        # genome. Declared here, on the step's own code path, so book_forensics.py stays the
+        # reached executable it is (own-book forensics, BOOK_FORENSICS.json) and the genome's
+        # two outputs carry their own attestation row.
+        ComponentSpec(
+            component_id="daily:proposers:trader_genome",
+            kind="daily_step", host="box",
+            code_paths=("desks/mt5/research/daily_cycle.py",),
+            outputs=("desks/mt5/reports/TRADER_GENOME.json",
+                     "desks/mt5/data/trader_genome_priors.json"),
+            consumers=("desks/mt5/research/failure_prior.py",),
+            cadence_s=86_400, timeout_s=3_600, progress_metric=UNMEASURED,
+            expected_artifact_schema="desks/mt5/reports/TRADER_GENOME.json",
+            owner="daily_cycle", restart_action="restart:task:MT5-Daily",
+            criticality="optional", resource_budget={"budget_s": 3600},
+            schedule="daily_cycle:proposers", artifact_class="daily",
+            notes=("book_forensics.run() inside daily_cycle._proposers on MT5-Daily: the "
+                   "alive+dead genome, its base rates, priors and screened cells")),
         ComponentSpec(
             component_id="resident:gateway",
             kind="task", host="box",
@@ -874,6 +930,26 @@ def explicit_specs() -> list[ComponentSpec]:
             criticality="required", resource_budget={},
             schedule="MT5-GatewayResident", artifact_class="fifteen_minute",
             notes="resident loop; the task is its keep-alive, the pass is run_gateway_loop's"),
+        # THE JUDGE STALL PAGER (2026-10-21) rides the box's five-minute watchdog:
+        # `box_heartbeat.main` invokes it as a 60 s-bounded subprocess after its own ping, so its
+        # clock is MT5-BoxHeartbeat and no second task waits on a human to install it. Its
+        # consumer is the principal, through the page; no organ reads JUDGE_STALL.json.
+        ComponentSpec(
+            component_id="exe:desks/mt5/scripts/judge_stall_pager.py",
+            kind="executable", host="box",
+            code_paths=("desks/mt5/scripts/judge_stall_pager.py",),
+            inputs=("desks/mt5/data/hypotheses/gate_verdict_ledger.jsonl",
+                    "desks/mt5/reports/JUDGE_RESIDENT.json",
+                    "desks/mt5/reports/JUDGING_THROUGHPUT.json",
+                    "desks/mt5/reports/universal_gates_external.json",
+                    "desks/mt5/data/judging_throughput.env.json"),
+            outputs=("desks/mt5/reports/JUDGE_STALL.json",),
+            cadence_s=300, timeout_s=60, progress_metric=UNMEASURED,
+            expected_artifact_schema="desks/mt5/reports/JUDGE_STALL.json",
+            owner="lane:ops", restart_action="restart:task:MT5-BoxHeartbeat",
+            criticality="optional", resource_budget={"budget_s": 60},
+            schedule="invoked:desks/mt5/scripts/box_heartbeat.py", artifact_class="fifteen_minute",
+            notes="invoked by box_heartbeat.main on MT5-BoxHeartbeat (every 5 minutes)"),
     ]
 
 
@@ -1423,7 +1499,8 @@ def reach_specs(reg: Registry, root: Path | None = None,
                 owner="daily_cycle", restart_action="restart:task:MT5-Daily",
                 criticality="optional", resource_budget={"budget_s": 3600},
                 schedule=f"daily_cycle:{step}", artifact_class="daily",
-                notes=f"REACHED: imported by daily step `{step}` in {daily_rel}, runs when it runs"))
+                notes=(f"REACHED: imported by daily step `{step}` in {daily_rel}, "
+                       "runs when it runs")))
             continue
         out.append(ComponentSpec(
             component_id=f"{kind}:{rel}",
@@ -1526,7 +1603,7 @@ def own_artifact(rel: str, root: Path | None = None) -> tuple[str, ...]:
         if got is None:
             continue
         try:
-            return (got.resolve().relative_to(base).as_posix(),)
+            return (got.relative_to(base).as_posix(),)
         except ValueError:
             continue
     return ()

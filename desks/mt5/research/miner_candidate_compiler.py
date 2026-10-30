@@ -1544,16 +1544,13 @@ def _provenance_block(ordered: list[dict], now: datetime) -> dict:
 
 
 def structurally_untestable_families() -> dict[str, str]:
-    """Families the gauntlet has MEASURED as producing zero judgeable cells, from its own report.
+    """Historical all-unmeasured family batches, retained as diagnostic warnings.
 
-    Data-driven, never a hardcoded list (LAWS anti-hardcode): a family joins this set only when
-    the last sweep built >=5 of its cells and judged NONE (all under the 60 trading days the
-    gates need) -- measured 2026-08-27: carry 193/193, event_reaction 113/113, calendar_month
-    2/2, lvc_asia_london 3/3 re-shipped every hour, ~310 guaranteed-unjudgeable builds per
-    sweep. Routing them to the DEEPENING queue is not a rejection: it is the statement that
-    these parameterizations need widening (pooled events, longer windows) before any gate can
-    rule, which is exactly what the deepening queue exists to ask the research brains for.
-    A family leaves the set the moment one of its cells becomes judgeable.
+    A past sweep with at least five cells and no measured verdict does not prove
+    that another symbol, parameterization, chart or later data version is also
+    untestable. Complete recipes still enter the canonical evaluator, which owns
+    their actual sample and validation requirements. Incomplete prose still needs
+    deepening. These family warnings are never queue-disposition receipts.
     """
     report = BASE / "reports" / "universal_gates_external.json"
     try:
@@ -1647,7 +1644,7 @@ def main() -> int:
         bank = None
     untestable = structurally_untestable_families()
     if untestable:
-        print("families routed to DEEPENING (measured untestable at current parameters): "
+        print("families with prior sample gaps (advisory; exact recipes still enter the judge): "
               + ", ".join(sorted(untestable)))
 
     # CROSS-ENGINE AGREEMENT (2026-09-08). Two engines proposing the SAME cell already collide
@@ -1740,11 +1737,10 @@ def main() -> int:
                                   sort_keys=True, default=str)
             fam = str(candidate.get("family") or "")
             if fam in untestable:
-                if identity not in deepening:
-                    deepening[identity] = {**candidate,
-                                           "deepening_reason": untestable[fam]}
-                    stats["deepening"] = int(stats["deepening"]) + 1
-                continue
+                # A past batch's sample gap cannot veto every symbol, parameter,
+                # chart or later data version in a family. Preserve the warning;
+                # the canonical evaluator owns sample eligibility for THIS cell.
+                candidate["prior_family_build_gap"] = untestable[fam]
             row_reached_docket = True
             sources_by_identity.setdefault(identity, set()).add(source)
             if identity not in candidates:
@@ -2002,6 +1998,29 @@ def main() -> int:
     disposition_total = converted_total + refusal_total
     producer_debt = [s for s, v in sorted(per_source.items())
                      if int(v["owes_convertible_rows"]) > 0]
+    # AIMED BEFORE IT IS EMITTED (principal 2026-10-28: "stop miners from producing them").
+    # This compiler is ~96% of the docket and 78% of its rows repeated an already-mined rule in
+    # thresholds only. Each repeat is moved, here, to the nearest lawful empty ground of the same
+    # mechanism (research/coverage_steer, against the map the last merge wrote). One row out per
+    # row in; the net-edge order decides which row keeps the claim. A fault costs the steer.
+    steer_note: dict = {"status": "UNAVAILABLE"}
+    try:
+        from research import coverage_steer as _cs
+        _steerer = _cs.for_producer("miner_candidates.json", OUT.parent / _cs.MAP.name,
+                                     now=now)
+        if os.environ.get("QUANT_COVERAGE_STEER", "1") == "0":
+            _steerer.closed.append("QUANT_COVERAGE_STEER=0 (revert path)")
+        ordered = _steerer.steer(ordered, "miner_candidates.json")
+        _rep = _steerer.report()
+        steer_note = {"status": "APPLIED", "fail_closed": _rep["fail_closed"],
+                      **(_rep["by_producer"].get("miner_candidates.json") or {}),
+                      "steered_by_axis": _rep["steered_by_axis"], "map": _rep["map"]}
+        print(f"coverage steer: {steer_note.get('duplicate_in', 0)} repeat(s) in, "
+              f"{steer_note.get('steered', 0)} steered to empty ground, "
+              f"{steer_note.get('unsteerable', 0)} unsteerable "
+              f"(fail closed: {_rep['fail_closed']})")
+    except Exception as exc:
+        steer_note = {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}
     from libs.data.pit import stamp_or_refuse
 
     # These rules were compiled in this pass; source event dates cannot backdate a rule.
@@ -2031,6 +2050,7 @@ def main() -> int:
                                    if d.get("rows_with_outcomes")}},
         "graph": graph_note,
         "provenance": provenance_note,
+        "coverage_steer": steer_note,
         "impossible_metrics": fence_tally.to_dict(),
         "rows_accounted": rows_total,
         "executable_candidates": len(candidates),
