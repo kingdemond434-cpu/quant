@@ -136,7 +136,9 @@ def free_models(key: str = "", *, now: datetime | None = None,
                 continue
             mid = str(m.get("id") or "")
             pr = m.get("pricing") or {}
-            if mid and (str(pr.get("prompt")) in ("0", "0.0") or mid.endswith(":free")) \
+            # ":free" is REQUIRED, not merely sufficient: openrouter_guard refuses every id
+            # without it, so a zero-priced id without the suffix could never be called
+            if mid.endswith(":free") and str(pr.get("prompt", "0")) in ("0", "0.0") \
                     and str(pr.get("completion", "0")) in ("0", "0.0"):
                 models.append(mid)
     if not models:
@@ -301,8 +303,9 @@ def complete(messages: list[dict[str, str]], *, key: str, models: list[str],
                 return "", model, f"daily free allowance refused: {last}"
             sleep(_backoff(tries))
             continue
-        if code == 404 or code == 400:
-            state["model_index"] = idx + 1              # the model is gone or refuses the shape
+        if code == 404 or code == 400 or last.startswith("openrouter_guard:"):
+            # a guard refusal is about THIS id, never the transport: rotate, do not back off
+            state["model_index"] = idx + 1              # gone, refuses the shape, or refused
             save_state(state, state_path)
             continue
         state["errors"] = int(state.get("errors") or 0) + 1
