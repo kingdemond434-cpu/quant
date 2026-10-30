@@ -341,6 +341,38 @@ def test_an_undeclared_latency_or_unplaceable_frequency_is_refused_never_default
     assert not (tmp_path / "lake" / f"{pse.dataset_id(full)}.parquet").exists()
 
 
+@pytest.mark.parametrize("sid,at_least", [
+    ("fred_cpiaucsl", 13), ("fred_jtsjol", 35), ("fred_payems", 7), ("fred_rsafs", 15),
+    ("fred_indpro", 15), ("fred_csushpinsa", 55), ("fhfa_hpi", 55), ("ustreas_tic", 45),
+    ("bls_api", 35)])
+def test_the_shipped_library_declares_the_real_release_lag(sid: str, at_least: int) -> None:
+    """Days from the period's END to the publisher's release, read from the SHIPPED rows: a
+    test that builds its own row cannot see a library that still declares seven days."""
+    row = {s["id"]: s for s in pse.load_library()}[sid]
+    assert float(row["latency_days"]) >= at_least
+
+
+def test_a_frame_stamped_by_an_older_rule_is_re_stamped(tmp_path: Path) -> None:
+    pd = pytest.importorskip("pandas")
+    acq = tmp_path / "s.parquet"
+    pd.Series([1.0], index=pd.to_datetime(["2026-09-01"], utc=True),
+              name="value").to_frame().to_parquet(acq)
+    sub = {"id": "fred_c", "endpoint": "https://e/c.csv", "latency_days": 15,
+           "frequency": "monthly"}
+    reg = {"by_url": {"https://e/c.csv": {"series": ["s"]}}, "series": {"s": {"path": str(acq)}}}
+    lake = tmp_path / "lake"
+    lake.mkdir()
+    old = pd.DataFrame({"value": [1.0], "event_time": pd.to_datetime(["2026-09-01"], utc=True),
+                        "available_time": pd.to_datetime(["2026-09-08"], utc=True),
+                        "source_id": [pse.dataset_id(sub)]})
+    old.to_parquet(lake / f"{pse.dataset_id(sub)}.parquet", index=False)   # the start+lag stamp
+    assert pse.materialise(sub, lake=lake, acquired=reg) == "WRITTEN"
+    f = pd.read_parquet(lake / f"{pse.dataset_id(sub)}.parquet")
+    assert pd.Timestamp(f["available_time"].iloc[0]) == pd.Timestamp("2026-10-16", tz="UTC")
+    assert pse.materialise(sub, lake=lake, acquired=reg) == "PRESENT"
+    assert pse.materialise({**sub, "latency_days": 20}, lake=lake, acquired=reg) == "WRITTEN"
+
+
 def test_every_library_source_can_be_stamped() -> None:
     """A library row the stamp refuses never reaches the lake; the shipped library has none."""
     assert [s["id"] for s in pse.load_library() if pse.release_offset(s)[1]] == []

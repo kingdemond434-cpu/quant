@@ -1861,6 +1861,30 @@ def gate_bases() -> list[str]:
     return out
 
 
+def stamp_rule(sub: Mapping[str, Any]) -> str:
+    """The rule and inputs a frame's `available_time` was stamped by. A frame carrying another
+    rule (the retired period-START stamp, or a latency the library has since raised) is
+    re-materialised, so a look-ahead stamp never survives the fix that removed it."""
+    return (f"period_end+release_lag:v2:{str(sub.get('frequency') or '').strip().lower()}:"
+            f"{sub.get('latency_days')}")
+
+
+def _stamped_by(path: Path) -> str | None:
+    """The `stamp_rule` a lake parquet this engine wrote carries; "" for one written before the
+    column existed (always re-stamped); None when the frame is not this engine's to judge."""
+    if not path.exists():
+        return None
+    try:
+        import pandas as pd
+
+        df = pd.read_parquet(path)
+    except Exception:
+        return ""
+    if "stamp_rule" in df.columns and len(df):
+        return str(df["stamp_rule"].iloc[0])
+    return "" if {"event_time", "available_time", "source_id"} <= set(df.columns) else None
+
+
 def series_present(did: str, lake: Path | None = None) -> bool:
     base = lake or LAKE
     return any((base / f"{did}{s}").exists() for s in (".parquet", ".csv"))
@@ -1881,7 +1905,9 @@ def materialise(
     NOT_ACQUIRED, and an undeclared latency or unplaceable frequency is REFUSED."""
     did = dataset_id(sub)
     base = lake or LAKE
-    if series_present(did, base):
+    rule = stamp_rule(sub)
+    if series_present(did, base) and _stamped_by(base / f"{did}.parquet") in (rule, None):
+        # None: a frame this engine did not write (no parquet, or no stamp column it owns)
         return "PRESENT"
     names = _acquired_names(sub, acquired)
     if not names:
@@ -1903,12 +1929,16 @@ def materialise(
                 "event_time": idx,
                 "available_time": offset(idx),
                 "source_id": did,
+                "stamp_rule": rule,
             }
         ).dropna(subset=[SIGNAL, "available_time"])
         if frame.empty:
             return "EMPTY"
         base.mkdir(parents=True, exist_ok=True)
-        frame.to_parquet(base / f"{did}.parquet", index=False)
+        # tmp + replace: a torn parquet would still read as series_present and mint cells
+        tmp = base / f".{did}.parquet.tmp"
+        frame.to_parquet(tmp, index=False)
+        os.replace(tmp, base / f"{did}.parquet")
         return "WRITTEN"
     except Exception as exc:
         return f"ERROR: {type(exc).__name__}"
