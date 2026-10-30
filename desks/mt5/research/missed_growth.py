@@ -859,6 +859,9 @@ JUDGE_PRIORITY_UNRECORDED = BASE / "reports" / "JUDGE_PRIORITY_RAISES_UNRECORDED
 JUDGE_PRIORITY_RECORDS = (BASE / "reports" / "JUDGE_PRIORITY_SWEEP.json",
                           BASE / "reports" / "JUDGE_PRIORITY.json")
 DEEPENING_GUARD = BASE / "reports" / "DEEPENING_MEMORY_GUARD.json"
+#: canon_publication's record: the lockbox v4 re-judge parking publishes its two-sided line here
+#: (the rail register is sealed), cost and gain both UNMEASURED until priced.
+CANON_PUBLICATION = BASE / "reports" / "CANON_PUBLICATION.json"
 
 
 def _spill_lines(spill: Path | None) -> tuple[list[dict[str, Any]], int]:
@@ -1154,6 +1157,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         unspilled=JUDGE_PRIORITY_RECORDS),
                                     "deepening_memory_guard": organ_published_lines(
                                         DEEPENING_GUARD),
+                                    "canon_rejudge_parking": organ_published_lines(
+                                        CANON_PUBLICATION),
                                     "admission_scan_cadence": admission_cadence_line(alloc)},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),

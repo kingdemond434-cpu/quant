@@ -156,6 +156,41 @@ def canon_state(path: Path | None = None) -> tuple[int | None, str]:
                   "and no clock may be declared in breach against it")
 
 
+def _parked_cell(row: Mapping[str, Any]) -> str | None:
+    """A parked certificate's cell, in `cell_of`'s grammar, or None when it names none."""
+    spec = row.get("shadow_spec") if isinstance(row.get("shadow_spec"), dict) else {}
+    params = spec.get("params") if isinstance(spec.get("params"), dict) else {}
+    sym = str(spec.get("symbol") or row.get("sym") or "")
+    fam = str(spec.get("family") or "")
+    if not sym or not fam:
+        return None
+    tf = str(params.get("timeframe") or row.get("timeframe") or "H1").upper()
+    return f"{sym if tf == 'H1' else f'{sym}@{tf}'}.{fam}"
+
+
+def pending_rejudge_cells(path: Path | None = None) -> set[str]:
+    """Cells whose certificate the seal PARKED for re-judge (lockbox v4 `pending_rejudge`).
+
+    A parked certificate is not a rejection: `canon_publication` moved it whole out of the survivor
+    set because its gates predate the attestation in force, and `attestation_remint` has put it at
+    the front of the judge's queue. Its clock is therefore UNMEASURED until the re-judge lands --
+    never BREACHED, never retired. Joined on the cell (symbol, family, chart), not the parameters:
+    a cell with any parked certificate waits, because retiring a clock whose own certificate is
+    merely awaiting its re-judge discards forward evidence that cannot be rebuilt.
+    """
+    out: set[str] = set()
+    for src in ([path] if path is not None else [CANON, SEALED_CANON]):
+        doc = _read_json(src)
+        pend = doc.get("pending_rejudge") if isinstance(doc, dict) else None
+        if not isinstance(pend, dict):
+            continue
+        for row in pend.values():
+            cell = _parked_cell(row) if isinstance(row, Mapping) else None
+            if cell:
+                out.add(cell)
+    return out
+
+
 # -------------------------------------------------------------------------------- the verdicts
 def _tf_of(cell: str) -> str:
     head = str(cell).split(".", 1)[0]
@@ -321,6 +356,7 @@ def audit(clocks: Sequence[Mapping[str, Any]], *, roster: set[str] | None,
     n_canon, canon_why = canon_state(canon_path)
     rows: list[dict[str, Any]] = []
     unmeasurable = n_canon is None or roster is None
+    parked = pending_rejudge_cells(canon_path)
     for c in clocks:
         row = {"lane": c.get("lane"), "key": c.get("key"), "symbol": c.get("symbol"),
                "family": family_of(c), "timeframe": c.get("timeframe"),
@@ -349,6 +385,12 @@ def audit(clocks: Sequence[Mapping[str, Any]], *, roster: set[str] | None,
                     "why": (f"a current certificate backs this clock: its key is on "
                             f"`shadow_forward`'s roster, which is built from the canon "
                             f"({canon_why})")}
+        elif cell_of(c) in parked:
+            row |= {"backing": UNMEASURED, "pending_rejudge": True,
+                    "why": ("this clock's certificate is PARKED in the seal's `pending_rejudge`: "
+                            "its gates predate the attestation in force and it is queued for "
+                            "re-judge, so backing is UNMEASURED until the judge re-mints it -- "
+                            "never a breach, never retired")}
         else:
             row |= {"backing": BREACHED,
                     "why": ("no canonical certificate backs this clock: CLOCK IF AND ONLY IF "
@@ -407,6 +449,7 @@ def audit(clocks: Sequence[Mapping[str, Any]], *, roster: set[str] | None,
         "counts": counts,
         "breached": counts[BREACHED],
         "awaiting": 0, "backed": counts[BACKED], "retired": counts[RETIRED],
+        "pending_rejudge": sum(1 for r in rows if r.get("pending_rejudge")),
         # What the fence reads: clocks still running with no certificate AFTER this pass. Zero by
         # construction once the retirement is applied; anything else is the law broken.
         "unbacked_live": counts[BREACHED] + counts[AWAITING],

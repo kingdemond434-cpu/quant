@@ -249,3 +249,80 @@ def test_the_leg_runs_before_the_judge_on_the_core_clock() -> None:
     from research import hourly_cycle as hc
     assert "attestation_remint" in hc.CORE_LEGS
     assert hc.LEG_BUDGET_SEC["attestation_remint"] >= 120
+
+
+# ------------------------------------------------------------ the #126 audit's must-fixes
+
+def test_an_undated_row_is_unmeasured_never_parked_or_queued(tmp_path: Path) -> None:
+    """MF2: no gate date is absence of evidence, and absence never retires a certificate."""
+    report, seal, _ = _canon_desk(tmp_path, T0)
+    undated = _row("USDJPY", OLD)
+    undated.pop("gated_at")
+    _write(report, {"n": 1, "gate_policy": dict(ATTESTATION), "swept_at": NEW,
+                    "survivors": {"external.A": _row("AUDUSD", NEW)}})
+    _write(seal, {"n": 2, "gate_policy": dict(ATTESTATION), "swept_at": NEW,
+                  "survivors": {"external.A": _row("AUDUSD", NEW), "external.U": undated}})
+    rec = cp.publish(report, seal)
+    doc = json.loads(seal.read_text("utf-8"))
+    assert "external.U" in doc["survivors"] and "pending_rejudge" not in doc
+    assert rec["undated_unmeasured"] == ["external.U"]
+    assert ar.stale_keys(doc, T0) == [] and ar.undated_keys(doc) == ["external.U"]
+
+
+def test_no_git_date_gives_no_floor_never_now() -> None:
+    """MF3: an attestation this organ cannot date dates no row stale."""
+    since, basis = ar.in_force_since("fp", {}, T0, git_time=None)
+    assert since is None and basis.startswith("UNMEASURED")
+    assert ar.stale_keys({"survivors": {"k": _row("EURUSD", OLD)}}, None) == []
+
+
+def test_no_floor_build_parks_and_queues_nothing_on_an_exact_store(desk: Path) -> None:
+    _stores(desk, dict(ATTESTATION), {"external.A": _row("AUDUSD", OLD)})
+    doc = ar.build(T0, previous={}, git_time=None, patched=True)
+    assert doc["in_force_since"] is None
+    assert doc["certificates_pending_rejudge"] == 0 and doc["restamped_not_rejudged"] == []
+    assert doc["breach"] is False
+
+
+def test_the_breach_exit_is_a_named_failure() -> None:
+    """MF4: exit 3 is classified, never an anonymous exit_code."""
+    from research import hourly_cycle as hc
+    assert hc._exit_outcome("attestation_remint", ar.EXIT_BREACH) == "exit_code=3:REMINT_BREACH"
+    assert ar.EXIT_BREACH not in hc.VERDICT_EXITS.get("attestation_remint", ())
+
+
+def test_parking_publishes_a_two_sided_missed_growth_line(tmp_path: Path) -> None:
+    """MF5 (Rule 1): a parking pass bills its cost and its gain; a pass that parks nothing bills
+    nothing, which missed_growth reads as NOT_BINDING."""
+    report, seal, _ = _canon_desk(tmp_path, T0)
+    _write(report, {"n": 1, "gate_policy": dict(ATTESTATION), "swept_at": NEW,
+                    "survivors": {"external.A": _row("AUDUSD", NEW)}})
+    _write(seal, {"n": 1, "gate_policy": dict(ATTESTATION), "swept_at": NEW,
+                  "survivors": {"external.OLD": _row("EURUSD", OLD)}})
+    rec = cp.publish(report, seal)
+    sides = sorted(x["side"] for x in rec["missed_growth"])
+    assert sides == ["cost", "gain"]
+    assert all(x["verdict"] == "UNMEASURED" and x["value"] is None for x in rec["missed_growth"])
+    from research import missed_growth as mg
+    out = tmp_path / "CANON_PUBLICATION.json"
+    out.write_text(json.dumps(rec, default=str), "utf-8")
+    assert mg.organ_published_lines(out)["verdict"] == "UNMEASURED"
+    rec2 = cp.publish(report, seal)
+    assert rec2["missed_growth"] == []
+
+
+def test_the_docket_append_is_atomic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """SF: a failure mid-append leaves the old docket whole."""
+    docket = tmp_path / "d.json"
+    docket.write_text(json.dumps([{"a": 1}], indent=1), "utf-8")
+    before = docket.read_bytes()
+
+    def boom(*_a, **_k):
+        raise OSError("disk full")
+    monkeypatch.setattr(ar.os, "replace", boom)
+    res = ar.append_to_docket(docket, [{"b": 2}])
+    assert res["appended"] == 0 and docket.read_bytes() == before
+    assert not list(tmp_path.glob(".d.json.*"))
+    monkeypatch.undo()
+    assert ar.append_to_docket(docket, [{"b": 2}])["appended"] == 1
+    assert json.loads(docket.read_text("utf-8")) == [{"a": 1}, {"b": 2}]

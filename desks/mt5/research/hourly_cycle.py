@@ -1075,7 +1075,10 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
 #:                       hung MT5-Daily (daily_cycle.EXIT_HOLDER_HUNG)
 #:   daily 77 / 78     -- the day's stamp could not be READ, so no step ran; 78 once that has
 #:                       lasted past 3 consecutive passes (daily_cycle.EXIT_STAMP_UNREADABLE*)
+#:   attestation_remint 3 -- enrolment still frozen after one full sweep, or a row re-stamped
+#:                       under the current attestation without a re-judge (EXIT_BREACH)
 NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
+    "attestation_remint": {3: "REMINT_BREACH"},
     "judge_coverage": {3: "TIMEOUT_UNCOMMITTED", 4: "REUSE_STALE", 5: "RECOVERY_REFUSED"},
     "daily": {DAILY_CYCLE_HOLDER_HUNG: "HOLDER_HUNG",
               DAILY_CYCLE_STAMP_UNREADABLE: "STAMP_UNREADABLE",

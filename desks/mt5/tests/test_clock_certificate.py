@@ -68,6 +68,32 @@ def test_a_clock_with_no_certificate_is_retired_naming_its_cell(tmp_path, canon)
     assert out["awaiting"] == 0
 
 
+def test_a_clock_whose_certificate_is_parked_for_rejudge_is_unmeasured_never_retired(tmp_path):
+    """LOCKBOX v4 PARKING IS NOT A REJECTION (audit of #126, MF1). `canon_publication` moves a
+    certificate whose gates predate the attestation in force into the seal's `pending_rejudge`;
+    its clock must wait for the re-judge, because a retired clock restarts from zero."""
+    p = tmp_path / "canon.json"
+    p.write_text(json.dumps({"n": 1, "survivors": {"other": {}}, "pending_rejudge": {
+        "external.XAUUSD.session_range_breakout.rr=1.5_wb=12": {
+            "sym": "XAUUSD", "shadow_spec": {"symbol": "XAUUSD", "family": "session_range_breakout",
+                                             "params": {"rr": 1.5, "wait_bars": 12}}},
+        "external.EURUSD.carry.x": {"shadow_spec": {"symbol": "EURUSD", "family": "carry",
+                                                    "params": {"timeframe": "M15"}}}}}),
+                 encoding="utf-8")
+    clocks = [_clock("XAUUSD.session_range_breakout.asia"),
+              _clock("EURUSD.carry.continuous", timeframe="M15"),
+              _clock("EURUSD.carry.continuous#h1")]
+    out = _audit(clocks, set(), tmp_path, p)
+    backing = {r["key"]: r["backing"] for r in out["rows"]}
+    assert backing["XAUUSD.session_range_breakout.asia"] == cc.UNMEASURED
+    assert backing["EURUSD.carry.continuous"] == cc.UNMEASURED
+    # The M15 park does not cover the H1 cell: that clock has no certificate anywhere.
+    assert backing["EURUSD.carry.continuous#h1"] == cc.BREACHED
+    assert out["pending_rejudge"] == 2
+    assert [r["key"] for r in out["retire"]] == ["EURUSD.carry.continuous#h1"]
+    assert out["unbacked_live"] == 1 and out["awaiting"] == 0
+
+
 def test_an_intraday_clock_names_its_chart_in_the_cell(tmp_path, canon):
     out = _audit([_clock("BTCUSD.macro_conditional.continuous", timeframe="M5")], set(),
                  tmp_path, canon)
