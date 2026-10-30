@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-30T10:45:07.103111+00:00",
+  "swept_at": "2026-10-30T11:00:05.607282+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1142,7 +1142,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3548,
+      "shadow_exp_r": -0.3891,
       "woke_on_shadow": false
     },
     "EURCHF|discovered_asia": {
@@ -3441,7 +3441,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0104,
+      "shadow_exp_r": 0.0088,
       "woke_on_shadow": false
     },
     "US30|cross_asset_residual_continuous": {
@@ -3749,7 +3749,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.7544,
+      "shadow_exp_r": -0.7481,
       "woke_on_shadow": false
     },
     "USDJPY|asia": {
@@ -4309,8 +4309,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.5185,
+      "shadow_n": 32,
+      "shadow_exp_r": -0.2759,
       "woke_on_shadow": false
     },
     "XAGEUR|fx_fixing_reversal_continuous": {
@@ -4507,8 +4507,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 50,
-      "shadow_exp_r": -0.03,
+      "shadow_n": 51,
+      "shadow_exp_r": -0.0341,
       "woke_on_shadow": false
     },
     "XAGUSD|cross_asset_residual_continuous": {
