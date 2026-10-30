@@ -732,16 +732,19 @@ INCIDENTS = ("red", "stale", "zero_judged")
 PageSender = Callable[[str, str], Any]
 
 
-def _default_page_sender(root: Path) -> PageSender:
+def _default_page_sender(root: Path, *, resolved: bool = False) -> PageSender:
+    """`resolved=True` when the page reports that NOTHING is open any more: it CLEARS the desk
+    alert row instead of refreshing it (one still-open incident keeps the row)."""
     def send(title: str, body: str) -> Any:
         if str(root) not in sys.path:
             sys.path.insert(0, str(root))
         from libs.ops import alert_channels
         # Anchored on the repo root so the leg's working directory cannot make an armed box look
         # unarmed. Nothing here reads, prints or records a channel's credentials.
+        # DESK: judge-coverage incidents are fence REDs the threads fix.
         return alert_channels.send_all(
             title, body, config=root / "data/secrets/alert_channels.json",
-            ledger=root / "data/alert_delivery.jsonl")
+            ledger=root / "data/alert_delivery.jsonl", audience="desk", resolved=resolved)
     return send
 
 
@@ -825,7 +828,8 @@ def _page_coverage(doc: Mapping[str, Any], report_doc: Any, *, root: Path, now: 
                      f"({Path(str(doc.get('report'))).name})")
         err: object = None
         try:
-            res = (sender or _default_page_sender(root))(title, "\n".join(lines)[:3500])
+            res = (sender or _default_page_sender(root, resolved=not now_open))(
+                title, "\n".join(lines)[:3500])
             res = res if isinstance(res, dict) else {}
             err = res.get("error")
         except Exception as exc:

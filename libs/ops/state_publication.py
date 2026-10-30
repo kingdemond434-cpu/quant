@@ -218,9 +218,10 @@ def _default_sender(root: Path) -> Sender:
         # The sender reads its own config where it always has; anchored on the repo root so the
         # leg's working directory cannot make an armed box look unarmed. Nothing here reads or
         # records a channel's credentials.
+        # DESK: box state flowing/stale is publication plumbing a thread repairs.
         return alert_channels.send_all(
             title, body, config=root / "data/secrets/alert_channels.json",
-            ledger=root / "data/alert_delivery.jsonl")
+            ledger=root / "data/alert_delivery.jsonl", audience="desk")
     return send
 
 

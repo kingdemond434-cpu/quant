@@ -428,7 +428,7 @@ def test_zero_declared_ids_is_unmeasured_keeps_the_alert_open_and_pages(
     monkeypatch.setattr(lf, "record_alert",
                         lambda doc, root=None: alerts.append(doc["status"]) or "OPEN")
     monkeypatch.setattr(lf, "_default_sender",
-                        lambda root: lambda t, b: pages.append((t, b))
+                        lambda root, **_k: lambda t, b: pages.append((t, b))
                         or {"armed": 1, "delivered": 1})
     rc, doc = _cli(tmp_path, monkeypatch, b'{"clean": true}')
     assert rc == 0 and doc["status"] == "UNMEASURED" and doc["declared_ids"] == "UNMEASURED"

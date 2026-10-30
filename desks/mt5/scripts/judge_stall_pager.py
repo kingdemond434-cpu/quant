@@ -622,7 +622,9 @@ def _default_sender(root: Path) -> Sender:
         # Anchored on the repo root; nothing here reads, prints or records a credential.
         return alert_channels.send_all(
             title, body, config=root / "data/secrets/alert_channels.json",
-            ledger=root / "data/alert_delivery.jsonl")
+            ledger=root / "data/alert_delivery.jsonl",
+            # a stalled judge is an organ gone quiet: a RED a thread fixes, never the phone
+            audience="desk")
     return send
 
 

@@ -83,7 +83,8 @@ def unacked_since(alert_state: dict[str, Any], ack_ts: float,
 
     ``alert_state`` is scripts/run_alerts.py's ``data/.last_alerts.json``: ``_paged`` lists the
     keys currently alerting, and ``state[key]`` is when each was last pushed. A page counts as
-    acknowledged once the operator's ack post-dates it.
+    acknowledged once the operator's ack post-dates it. Desk-audience keys (stamped
+    ``<key>@desk`` by run_alerts) are not counted: they never reached the operator's phone.
 
     ``prior`` anchors the clock. Once a run of silence starts we keep its ORIGINAL start time --
     recomputing from the newest page every tick would let a re-paging condition reset the ladder
@@ -94,6 +95,12 @@ def unacked_since(alert_state: dict[str, Any], ack_ts: float,
         return None
     stamps: list[float] = []
     for key in paged:
+        # A DESK-audience key never reached the phone (libs/ops/alert_channels: "desk" pages skip
+        # the personal channels), so there is nothing for the owner to ack and its silence is not
+        # a missing human rail. run_alerts stamps every push under `<key>@<audience>` beside the
+        # bare key; a key carrying the desk stamp is skipped. Principal keys count as before.
+        if f"{key}@desk" in alert_state:
+            continue
         v = alert_state.get(str(key))
         if isinstance(v, (int, float)) and float(v) > ack_ts:
             stamps.append(float(v))

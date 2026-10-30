@@ -11,6 +11,7 @@ Always exits 0 -- this steers priority, it never blocks a cycle.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 import time
 from pathlib import Path
@@ -115,6 +116,70 @@ def ledger_block() -> str:
     return "\n".join(lines)
 
 
+#: How many fresh desk alert rows to hand the brain (the true total is always stated).
+_DESK_ROWS = 12
+
+
+def _desk_alerts_malformed(p: Path) -> str | None:
+    """Why the artifact cannot be read as a desk alert list, or None when it is well formed."""
+    from datetime import datetime
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except FileNotFoundError:
+        return "is absent"
+    except (OSError, ValueError) as exc:
+        return f"is unreadable ({type(exc).__name__})"
+    rows = doc.get("alerts") if isinstance(doc, dict) else None
+    if not isinstance(rows, list):
+        return "has no alerts list"
+    for i, r in enumerate(rows):
+        if not isinstance(r, dict) or not str(r.get("key") or "").strip():
+            return f"row {i} has no key"
+        try:
+            datetime.fromisoformat(str(r.get("last_seen")))
+        except ValueError:
+            return f"row {i} ({r['key']}) has no readable last_seen"
+    return None
+
+
+def desk_alerts_block(path: Path | None = None) -> str:
+    """DESK PAGES MUST REACH A READER ON THIS SIDE TOO (2026-10-29, audit SF2 on a072c7d7b).
+
+    A desk-audience page no longer rings the owner's phone: libs.ops.alert_channels.send_all
+    records it as a row in desks/mt5/reports/DESK_ALERTS.json instead, and on the box
+    check_desk_health turns fresh rows into a PROBLEM. On the VPS nothing read that file -- so
+    every VPS desk page (run_alerts' desk keys, brain plumbing, fences) landed in a ledger nobody
+    acts on. This brief is the FIRST thing in every VPS brain prompt (ops/run_cro_ai.sh), so the
+    fresh rows go here, as REDs the cycle owes a fix. The rule (which rows are fresh) is
+    `fresh_desk_alerts`, imported, never restated. Rows carry a key and a source, never a body.
+    """
+    from libs.ops import alert_channels as ac
+    p = path or (ROOT / "desks" / "mt5" / "reports" / "DESK_ALERTS.json")
+    # ABSENT OR MALFORMED IS UNMEASURED, NEVER "RED 0" (L1.41; audit MF on 7cb207290). The
+    # tolerant loader returns {} for a missing file, a parse error AND a wrongly shaped document
+    # alike, so it cannot be asked; this reads the file itself and only a valid, correctly shaped
+    # document -- {"alerts": [ {key, last_seen, ...}, ... ]} -- may report zero.
+    why = _desk_alerts_malformed(p)
+    if why:
+        return (f"\n[DESK ALERTS] UNMEASURED -- {p.name} {why}. This is NOT 'no desk alert': "
+                "desk pages on this side cannot be read.")
+    rows = ac.fresh_desk_alerts(path=p)
+    if not rows:
+        return (f"\n[DESK ALERTS] RED 0 -- no desk alert seen in the last "
+                f"{ac.DESK_ALERT_FRESH_H:g}h.")
+    lines = ["", f"[DESK ALERTS] RED {len(rows)} -- desk page(s) seen in the last "
+             f"{ac.DESK_ALERT_FRESH_H:g}h. Each is a condition a thread fixes (the owner was NOT "
+             "paged): follow the key to its source; a fixed condition clears its own row.", ""]
+    for r in rows[:_DESK_ROWS]:
+        label = str(r.get("title") or f"title sha {r.get('title_sha') or '?'}")[:100]
+        lines.append(f"  [RED] {r.get('key')}  {label}  (source {r.get('source') or '?'}, "
+                     f"first {r.get('first_seen')}, last {r.get('last_seen')})")
+    if len(rows) > _DESK_ROWS:
+        lines.append(f"  ... and {len(rows) - _DESK_ROWS} more (shown {_DESK_ROWS} of "
+                     f"{len(rows)} -- the rest are NOT excused).")
+    return "\n".join(lines)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--record", action="store_true",
@@ -146,6 +211,7 @@ def main() -> int:
 
     print(brief(carryover_state(load_sweeps(LEDGER), now=time.time())))
     print(ledger_block())
+    print(desk_alerts_block())
     return 0
 
 

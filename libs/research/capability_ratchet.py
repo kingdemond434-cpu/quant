@@ -1123,6 +1123,11 @@ def _alerting(root: Path, now: datetime) -> list[Component]:
             "assumption. libs/ops/alert_channels writes one row per attempt per channel; that "
             "file is what would settle it"))
     else:
+        # ROUTED rows are deliberate non-sends (a desk page kept off a personal channel, owner
+        # 2026-10-29). Counting them as attempts that delivered let a routed-only ledger read
+        # "10/10 delivered" while all_silent_since said nothing had reached anyone -- so they
+        # are excluded from BOTH sides of the fraction.
+        rows = [r for r in rows if not r.get("routed")]
         delivered = float(sum(1 for r in rows if r.get("ok") is True))
         last = rows[-1] if rows else {}
         out.append(fraction_component(

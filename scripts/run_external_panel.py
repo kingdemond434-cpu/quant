@@ -407,16 +407,17 @@ def main() -> None:
                     f"(MTD ${_mtd:.2f} + ~${_need:.2f}); paged the principal, NOT degraded")
             if _mtd > _alert and not _bst.get("alerted"):
                 _bst["alerted"] = True
+                # AUDIENCE: DESK (owner, 2026-10-29; rule in libs/ops/alert_channels.py). Passing
+                # the alert line asks him to do nothing -- the run proceeds inside the envelope he
+                # set. The one spend event that DOES need him (the envelope would be exceeded) is
+                # the BUDGET DECISION on data/PRINCIPAL_ACTION.md above, which run_alerts pages as
+                # principal_action_needed. So this no longer posts to ntfy.sh directly.
                 with contextlib.suppress(Exception):
-                    _topic = json.loads(
-                        Path("data/secrets/ntfy.json").read_text("utf-8")).get("topic")
-                    if _topic:
-                        import urllib.request as _ur
-                        _ur.urlopen(_ur.Request(
-                            f"https://ntfy.sh/{_topic}",
-                            data=(f"OpenRouter month-to-date ${_mtd:.2f} passed the "
-                                  f"${_alert:.0f} alert line (envelope ${_env:.0f})"
-                                  ).encode(), method="POST"), timeout=10)
+                    from libs.ops.alert_channels import send_all
+                    send_all("PANEL SPEND",
+                             f"OpenRouter month-to-date ${_mtd:.2f} passed the "
+                             f"${_alert:.0f} alert line (envelope ${_env:.0f})",
+                             audience="desk")
             _bstp.write_text(json.dumps(_bst, indent=1), encoding="utf-8")
         except SystemExit:
             raise
