@@ -1,15 +1,15 @@
 {
-  "updated_at": "2026-10-30T15:11:23+00:00",
-  "configured_sleeves": 710,
-  "represented_sleeves": 710,
+  "updated_at": "2026-10-30T17:17:59+00:00",
+  "configured_sleeves": 709,
+  "represented_sleeves": 709,
   "certified_sleeves_total": 1343,
-  "forward_clocks_total": 710,
+  "forward_clocks_total": 709,
   "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
   "n_distinct_param_hashes": 211,
   "n_mechanisms": 11,
-  "retired_shadow_sleeves": 265,
+  "retired_shadow_sleeves": 266,
   "quarantined_uncertified_candidates": 0,
-  "sleeves_with_forward_trades": 581,
+  "sleeves_with_forward_trades": 580,
   "zero_trade_clocks": {
     "count": 129,
     "by_status": {
@@ -18,13 +18,12 @@
       "IDENTITY_BROKEN": 9
     },
     "age_measured": 129,
-    "median_age_days": 1.398,
+    "median_age_days": 1.486,
     "mature_14d_without_trade": 39,
-    "fresh_attempts": 119,
-    "naturally_inactive": 118,
-    "suppressed_or_unproven": 11,
+    "fresh_attempts": 120,
+    "naturally_inactive": 119,
+    "suppressed_or_unproven": 10,
     "suppressed_examples": [
-      "UNKNOWN",
       "UNKNOWN",
       "UNKNOWN",
       "UNKNOWN",
@@ -38,12 +37,12 @@
     ],
     "rule": "zero trades is not automatically a plumbing failure: blocked statuses name a repair; only ACTIVE + fresh attempt + valid bar source + no current error is natural inactivity. An ACTIVE clock older than 14 days is a low-frequency/selection finding routed to forward exploitation; no synthetic or backdated trade is ever created"
   },
-  "evidence_blocked_sleeves": 11,
+  "evidence_blocked_sleeves": 10,
   "missing_sleeves": [
     "368 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 12058.304,
+  "seconds": 5253.614,
   "gateway_armed": true,
   "promoted_live_sleeves": [],
   "promoted_live_certificate_rows": [],
