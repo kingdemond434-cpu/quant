@@ -178,17 +178,23 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
     # never reach the hypothesis graph; it records one row per DISTINCT basket identity instead,
     # and each row is charged here to the family it trades.
     try:
-        for ln in (DESK / "data" / "srb_basket_trials.jsonl").read_text("utf-8").splitlines():
-            if not ln.strip():
-                continue
+        basket_lines = (DESK / "data" / "srb_basket_trials.jsonl").read_text("utf-8").splitlines()
+    except OSError:
+        basket_lines = []
+    for ln in basket_lines:
+        # ONE BAD LINE SKIPS ITSELF, NEVER THE REST: a torn append must not un-charge every
+        # basket trial recorded after it.
+        if not ln.strip():
+            continue
+        try:
             row = json.loads(ln)
-            if not isinstance(row, dict):
-                continue
-            fam = str(row.get("family") or "?")
-            total += 1
-            by_fam[fam] = by_fam.get(fam, 0) + 1
-    except (OSError, ValueError, TypeError):
-        pass
+        except ValueError:
+            continue
+        if not isinstance(row, dict):
+            continue
+        fam = str(row.get("family") or "?")
+        total += 1
+        by_fam[fam] = by_fam.get(fam, 0) + 1
     for seat in sorted(set(ledger_ids) | set(learned_files)):
         ids = ledger_ids.get(seat, {})
         file_n, file_fams = learned_files.get(seat, (0, set()))

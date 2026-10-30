@@ -71,6 +71,14 @@ def test_a_young_clock_with_no_observation_is_warming_not_stuck() -> None:
     assert e["reason"] == ca.WARMING and e["accruing"] is True
 
 
+def test_an_unreadable_n_is_unmeasured_never_zero() -> None:
+    """#110 audit SF4: a count the reader cannot read is not zero observations."""
+    for bad in ("7", 2.0, True):
+        e = _judge({"status": "ACTIVE", "n": bad, "last_attempt_at": FRESH,
+                    "forward_start": (NOW - timedelta(days=10)).isoformat()})
+        assert e["reason"] == ca.UNMEASURED, bad
+
+
 def test_an_old_silent_clock_names_whether_its_gate_ever_opened() -> None:
     old = (NOW - timedelta(days=10)).isoformat()
     never = _judge({"status": "ACTIVE", "n": 0, "n_historical": 0, "last_attempt_at": FRESH,

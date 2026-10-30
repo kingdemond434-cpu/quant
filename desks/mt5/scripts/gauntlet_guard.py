@@ -164,6 +164,21 @@ def window_s() -> int:
     return WINDOW_S_FALLBACK
 
 
+def is_judge_argv(argv: list[str]) -> bool:
+    """A python interpreter running the judge script as its own argv element -- never a wrapper
+    shell (`cmd /c ...`, `powershell -Command ...`, `sh -c ...`) whose command line merely
+    mentions it, which would be timed and sized as if it were the judge."""
+    if not argv or "--only" in argv:
+        return False
+
+    def _base(a: object) -> str:                 # both separators: the box is Windows
+        return str(a).replace("\\", "/").rsplit("/", 1)[-1]
+
+    if not _base(argv[0]).lower().startswith("python"):
+        return False
+    return any(_base(a) == JUDGE for a in argv[1:])
+
+
 def live_pass() -> dict:
     """The judge process right now: age, memory, workers, and seconds left in its window."""
     try:
@@ -177,10 +192,10 @@ def live_pass() -> dict:
     for proc in psutil.process_iter(["pid", "ppid", "name", "cmdline", "create_time",
                                      "memory_info"]):
         try:
-            cmd = " ".join(proc.info["cmdline"] or [])
+            argv = list(proc.info["cmdline"] or [])
         except Exception:
             continue
-        if JUDGE in cmd and "--only" not in cmd:
+        if is_judge_argv(argv):
             judge = proc
     if judge is None:
         return {"status": "NO_PASS_RUNNING", "window_s": win}

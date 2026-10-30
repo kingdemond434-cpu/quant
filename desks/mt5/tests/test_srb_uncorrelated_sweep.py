@@ -87,6 +87,20 @@ def test_the_live_book_is_measured_and_kept_out_of_the_mint() -> None:
     assert doc["coverage"]["cells"] == len(minted) * len(sw.SESSIONS)
 
 
+def test_an_unreadable_live_book_is_unmeasured_not_zero_held(tmp_path, monkeypatch) -> None:
+    """Audit of #138: an unreadable sleeves.json must not read as a measured empty book."""
+    bad = tmp_path / "sleeves.json"
+    bad.write_text("{torn", "utf-8")
+    monkeypatch.setattr(sw, "SLEEVES", bad)
+    monkeypatch.setattr(sw.read_live_book, "__defaults__", (bad,))
+    frames = _frames()
+    doc = sw.build(budget_s=60.0, meta={s: {} for s in frames},
+                   symbols=[s for s in frames if s != "LIVE"], bars_for=frames.get,
+                   leg_for=_leg, live=None)
+    assert doc["live_book"]["n_held"] == "UNMEASURED"
+    assert "unreadable" in doc["live_book"]["why"]
+
+
 def test_rows_are_in_the_shape_the_basket_judge_keys_on() -> None:
     doc = _run(_frames())
     for r in doc["cells"]:

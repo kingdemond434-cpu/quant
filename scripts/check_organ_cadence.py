@@ -769,6 +769,10 @@ def write_artifact(doc: dict[str, Any], target: Path | None = None) -> Path:
     return path
 
 
+class DebtDeclareRefused(RuntimeError):
+    """A --declare that would loosen the ratchet, or that cannot read the debt it would replace."""
+
+
 def declare(doc: dict[str, Any], target: Path | None = None) -> Path:
     """Record today's breaches as the declared debt, with the ratchet set at what was measured.
 
@@ -778,28 +782,51 @@ def declare(doc: dict[str, Any], target: Path | None = None) -> Path:
     board nobody reads (L1.43).
     """
     path = Path(target or DEBT)
-    existing = {}
-    try:
-        prev = json.loads(path.read_text(encoding="utf-8"))
-        existing = dict(prev.get("declared") or {}) if isinstance(prev, dict) else {}
-    except (OSError, ValueError):
-        pass
-    for r in doc.get("organs", []):
-        if r["verdict"] not in _BREACH:
-            continue
-        existing.setdefault(str(r["organ"]), {
-            "verdict": r["verdict"], "why": r["why"],
-            "declared_at": doc.get("generated"),
-            "owner": "unassigned -- a declared organ with no owner is a queue, not a plan",
-        })
     seal = doc.get("seal_duty_cycle") or {}
+    w_now = seal.get("windows_lost") if seal.get("available") else None
+    existing: dict[str, Any] = {}
+    prev: dict[str, Any] | None = None
+    if path.exists():
+        # ONCE A DEBT FILE EXISTS, DECLARING MAY ONLY TIGHTEN. An unreadable previous file is
+        # refused, never read as {} -- re-declaring from scratch would absorb every new dark
+        # organ and reset both ceilings to today's (worse) reading.
+        try:
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise DebtDeclareRefused(
+                f"{path} exists but cannot be read ({exc}); refusing to re-declare the debt "
+                "from scratch, which would loosen both ratchets") from exc
+        if not isinstance(loaded, dict) or not isinstance(loaded.get("declared", {}), dict):
+            raise DebtDeclareRefused(
+                f"{path} exists but is not a debt document; refusing to re-declare from scratch")
+        prev = loaded
+        existing = dict(prev.get("declared") or {})
+    else:
+        for r in doc.get("organs", []):
+            if r["verdict"] not in _BREACH:
+                continue
+            existing.setdefault(str(r["organ"]), {
+                "verdict": r["verdict"], "why": r["why"],
+                "declared_at": doc.get("generated"),
+                "owner": "unassigned -- a declared organ with no owner is a queue, not a plan",
+            })
+    declared_max: Any = len(existing)
+    windows_lost_max: Any = w_now
+    if prev is not None:
+        old_d = prev.get("declared_max")
+        if isinstance(old_d, (int, float)):
+            declared_max = min(old_d, declared_max)
+        old_w = prev.get("windows_lost_max")
+        if isinstance(old_w, (int, float)):
+            windows_lost_max = (min(old_w, w_now) if isinstance(w_now, (int, float))
+                                else old_w)
     out = {
         "law": ("ORGAN CADENCE DEBT. Every organ here is KNOWN to be dark and carries its reason. "
                 "The list may only SHRINK: an organ leaves by being repaired, never by being "
                 "deleted, and a NEW dark organ fails the fence immediately rather than joining a "
                 "backlog. See scripts/check_organ_cadence.py."),
-        "declared_max": len(existing),
-        "windows_lost_max": seal.get("windows_lost") if seal.get("available") else None,
+        "declared_max": declared_max,
+        "windows_lost_max": windows_lost_max,
         "updated_utc": doc.get("generated"),
         "declared": dict(sorted(existing.items())),
     }
@@ -820,7 +847,11 @@ def main(argv: list[str] | None = None) -> int:
     if not args.no_write:
         write_artifact(doc)
     if args.declare:
-        print(f"declared debt -> {declare(doc)}")
+        try:
+            print(f"declared debt -> {declare(doc)}")
+        except DebtDeclareRefused as exc:
+            print(f"declare REFUSED: {exc}")
+            return 2
     if args.json:
         print(json.dumps(doc, indent=2, default=str))
         return 0 if doc["ok"] else 2

@@ -203,7 +203,13 @@ def test_entry_conditioned_filters_and_refuses_a_blind_cell(store):
     assert up_ and dn and not ({s.time for s in up_} & {s.time for s in dn})
     hv = fs.family_entry_conditioned(d, base_family="mean_reversion_rsi", vol_regime="high_vol")
     nhv = fs.family_entry_conditioned(d, base_family="mean_reversion_rsi", vol_regime="not_high_vol")
-    assert len(hv) + len(nhv) == len(base)
+    # The regime's warm-up (20-bar realised vol, then its 100-bar median) is no regime: a signal
+    # there is in neither `high_vol` nor `not_high_vol`, and every measured signal is in one.
+    measured_from = d.index[119]
+    n_warm = sum(1 for s in base if s.time < measured_from)
+    assert n_warm > 0, "vacuous: no base signal in the warm-up"
+    assert all(s.time >= measured_from for s in hv + nhv)
+    assert len(hv) + len(nhv) + n_warm == len(base)
     assert fs.family_entry_conditioned(d, base_family="relative_value", hours=[3]) == []
     assert fs.family_entry_conditioned(d, base_family="discovered", hours=[3]) == []
 
@@ -369,7 +375,7 @@ def test_residual_search_is_unmeasured_without_trades_and_writes_no_policy(tmp_p
                                                                             monkeypatch):
     from research import residual_search as rs
     monkeypatch.setattr(rs, "load_trades", lambda: ([], {"n_trades": 0}))
-    for name in ("CANON", "SLEEVES", "COUNTERFACTUALS", "DECISION_DATASET", "DECISIONS", "LIVE",
+    for name in ("CANON", "COUNTERFACTUALS", "DECISION_DATASET", "DECISIONS", "LIVE",
                  "MODIFIERS", "STATE"):
         monkeypatch.setattr(rs, name, tmp_path / f"absent_{name}")
     monkeypatch.setattr(rs, "CITED", {"x": tmp_path / "absent.json"})
@@ -477,3 +483,165 @@ def test_donated_rows_carry_culture_provenance(tmp_path, monkeypatch):
     assert "JP" in cultures and cultures <= {"JP", "GLOBAL"}, cultures
     assert all(rs.CULTURE.get(k) for k in KEYS)
     assert rs.CULTURE["source_culture"] == "GLOBAL"
+
+
+# ------------------------------------------------- audit of PR #118: what is measured is traded ---
+def _fills_of(sigs: list[Signal], d: pd.DataFrame) -> list[dict]:
+    """The engine's own fill convention: a signal at bar k fills at bar k + 1 (`i = i0 + 1`)."""
+    out = []
+    for s in sigs:
+        k = int(d.index.get_indexer(pd.DatetimeIndex([pd.Timestamp(s.time)]))[0])
+        if 0 <= k < len(d) - 1:
+            out.append({"sleeve": "S", "symbol": "FXA", "basis": "shadow",
+                        "t": d.index[k + 1], "r": 0.0, "sig": d.index[k]})
+    return out
+
+
+def test_residual_label_is_the_signal_bar_the_filter_keeps(store, monkeypatch):
+    """MF1: a trade is labelled at its SIGNAL bar, with the stamp `entry_conditioned` filters on,
+    so every measured bucket is exactly the filtered bucket -- on all four axes."""
+    from mt5desk.families import get_family_func
+    from research import residual_search as rs
+    d = store["FXA"]
+    monkeypatch.setattr(rs, "_bars", lambda sym: store.get(sym))
+    monkeypatch.setattr(rs, "COND_SYMBOLS", ("COND",))
+    base = get_family_func("mean_reversion_rsi")(d)
+    trades = _fills_of(base, d)
+    assert len(trades) > 50
+    rs.label(trades)
+    assert all(t["sig_t"] == t["sig"] for t in trades)
+    assert any(t["t"].hour != t["hour"] for t in trades), "vacuous: fill and signal hours agree"
+
+    def kept(**filt) -> set:
+        sigs = fs.family_entry_conditioned(d, base_family="mean_reversion_rsi", **filt)
+        return {pd.Timestamp(s.time) for s in sigs}
+
+    h = trades[0]["hour"]
+    assert {t["sig"] for t in trades if t["hour"] == h} == {t["sig"] for t in trades} & kept(
+        hours=[h])
+    w = trades[0]["dow"]
+    assert {t["sig"] for t in trades if t["dow"] == w} == {t["sig"] for t in trades} & kept(
+        dows=[w])
+    for reg in ("high_vol", "low_vol"):
+        assert {t["sig"] for t in trades if t.get("vol") == reg} == (
+            {t["sig"] for t in trades} & kept(vol_regime=reg))
+    for sign, word in ((1, "up"), (-1, "down")):
+        got = {t["sig"] for t in trades if t.get("x:COND") == word}
+        assert got and got == {t["sig"] for t in trades} & kept(cond_symbol="COND",
+                                                               cond_sign=sign)
+
+
+def test_residual_label_steps_live_fills_back_and_leaves_the_unresolvable_unlabelled(
+        store, monkeypatch):
+    from research import residual_search as rs
+    d = store["FXA"]
+    monkeypatch.setattr(rs, "_bars", lambda sym: store.get(sym))
+    monkeypatch.setattr(rs, "COND_SYMBOLS", ())
+    k = 500
+    live = {"sleeve": "L", "symbol": "FXA", "basis": "live",
+            "t": d.index[k] + pd.Timedelta(minutes=20), "r": 0.0}
+    off_grid = {"sleeve": "S", "symbol": "FXA", "basis": "shadow",
+                "t": d.index[k] + pd.Timedelta(minutes=20), "r": 0.0}
+    no_bars = {"sleeve": "N", "symbol": "NOPE", "basis": "shadow", "t": d.index[k], "r": 0.0}
+    recorded = {"sleeve": "R", "symbol": "FXA", "basis": "shadow", "t": d.index[k], "r": 0.0,
+                "signal_t": d.index[k - 3]}
+    notes = rs.label([live, off_grid, no_bars, recorded])
+    assert live["sig_t"] == d.index[k - 1] and live["hour"] == d.index[k - 1].hour
+    assert recorded["sig_t"] == d.index[k - 3]
+    for t in (off_grid, no_bars):
+        assert "sig_t" not in t and "hour" not in t and "dow" not in t and "vol" not in t
+    assert notes["trades_unlabelled"] == 2 and notes["symbols_without_bars"] == ["NOPE"]
+
+
+def _kid() -> dict:
+    return {"symbol": "EURUSD", "family": "entry_conditioned",
+            "params": {"base_family": "overnight_gap_decay", "base_params": {},
+                       "symbol": "EURUSD", "hours": [9]},
+            "parent": {"sleeve": "EURUSD_overnight_gap_decay_asia", "cert": "c1",
+                       "family": "overnight_gap_decay"},
+            "finding": {"axis": "hour", "bucket": 9, "n": 40, "mean_residual_r": 0.5,
+                        "t": 4.0, "p": 0.0001},
+            "parent_bucket_n": 10, "parent_bucket_mean_residual_r": 0.4}
+
+
+def test_residual_donation_charges_every_bucket_test_it_selected_from(tmp_path, monkeypatch):
+    """MF2: the m bucket tests the children were selected from are charged -- on the contract's
+    tests_run and on every donated row as the claim's selection trials."""
+    from libs.research import trial_ledger as tl
+    from research import proposer_common as pc
+    from research import residual_search as rs
+    from research import specialist_cell as sc
+    monkeypatch.setattr(rs, "STATE", tmp_path / "state.json")
+    monkeypatch.setattr(sc, "_meta", lambda: {})
+    monkeypatch.setattr(sc, "measure", lambda s, f, p, m: {"built": True, "signal_days": 99,
+                                                            "trade_days_lb": 99})
+    got: list[tuple] = []
+    monkeypatch.setattr(pc, "donate",
+                        lambda src, rows, n: got.append((rows, n)) or tmp_path / "d")
+    monkeypatch.setattr(pc, "donation_counts", lambda: {"donated": len(got[-1][0])})
+    rep = rs.emit([_kid()], dry_run=False, budget_s=60, tests_run=37)
+    assert rep["candidates_this_pass"] == 1 and got
+    rows, n = got[0]
+    assert n >= 37 + 1
+    assert rep["trial_charge_this_pass"]["bucket_tests_run"] == 37
+    for r in rows:
+        assert r["claim_selection_trials"] == 37 and r["claim_family"] == "residual_search:hour=9"
+        assert tl.trial_from_record(r).selection_trials == 37
+
+
+def test_residual_parents_are_certified_only(tmp_path, monkeypatch):
+    """A roster row with no canon certificate is not a parent; neither is a spec without one."""
+    from research import residual_search as rs
+    monkeypatch.setattr(rs, "CANON", tmp_path / "absent.json")
+    assert rs.parent_specs() == {}
+    trades = _trades()
+    for t in trades:
+        t["e"], t["hour"] = (1.0 if t["t"].hour == 9 else 0.0), t["t"].hour
+    finding = {"axis": "hour", "bucket": 9, "n": 40, "mean_residual_r": 0.5, "t": 4.0,
+               "p": 0.0001}
+    specs = {"EURUSD_overnight_gap_decay_asia": {"symbol": "EURUSD",
+                                                  "family": "overnight_gap_decay",
+                                                  "params": {}, "cert": None,
+                                                  "source": "sleeves.json"}}
+    kids, skipped = rs.children(trades, [finding], specs)
+    assert kids == [] and skipped["parent sleeve has no certified spec"] == 4
+
+
+def test_entry_conditioned_calls_the_base_as_build_cell_did_and_keeps_its_sides(store,
+                                                                                monkeypatch):
+    """The base is called with side=1 (build_cell's certified convention) unless the parent's
+    params declare a side; the filter never changes a kept signal's side."""
+    import mt5desk.families as fam
+    d = store["FXA"]
+    seen: list = []
+
+    def sided(df, side=1):
+        seen.append(side)
+        return [Signal(time=df.index[i], side=int(side), stop=1.0, target=2.0, ttl_bars=3,
+                       tag="t") for i in range(200, 260)]
+
+    def two_sided(df):
+        return [Signal(time=df.index[i], side=1 if i % 2 else -1, stop=1.0, target=2.0,
+                       ttl_bars=3, tag="t") for i in range(200, 260)]
+
+    every_hour = list(range(24))
+    monkeypatch.setattr(fam, "get_family_func", lambda name: sided)
+    long_ = fs.family_entry_conditioned(d, base_family="mean_reversion_rsi", hours=every_hour)
+    assert seen == [1] and long_ and {s.side for s in long_} == {1}
+    short = fs.family_entry_conditioned(d, base_family="mean_reversion_rsi",
+                                        base_params={"side": -1}, hours=every_hour)
+    assert seen[-1] == -1 and short and {s.side for s in short} == {-1}
+    monkeypatch.setattr(fam, "get_family_func", lambda name: two_sided)
+    both = fs.family_entry_conditioned(d, base_family="mean_reversion_rsi", hours=every_hour)
+    assert _key(both) == _key(two_sided(d)) and {s.side for s in both} == {1, -1}
+
+
+def test_vol_regime_warm_up_is_no_regime_and_not_its_complement(store):
+    d = store["FXA"]
+    hv, nhv = fs.vol_regime_mask(d, "high_vol"), fs.vol_regime_mask(d, "not_high_vol")
+    lv, nlv = fs.vol_regime_mask(d, "low_vol"), fs.vol_regime_mask(d, "not_low_vol")
+    warm = 119      # 20-bar realised vol, then its 100-bar median
+    for m in (hv, nhv, lv, nlv):
+        assert not m[:warm].any()
+    assert (hv | nhv)[warm:].all() and not (hv & nhv).any()
+    assert (lv | nlv)[warm:].all() and not (lv & nlv).any()
