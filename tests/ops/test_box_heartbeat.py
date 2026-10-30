@@ -16,13 +16,17 @@ sys.path.insert(0, str(ROOT / "desks" / "mt5" / "scripts"))
 import box_heartbeat as hb  # noqa: E402
 
 
-def _beats(tmp: Path, monkeypatch: pytest.MonkeyPatch, age_min: float, now: float) -> None:
-    g, w = tmp / "DESK_STALE.json", tmp / "stall_watch.json"
+def _beats(tmp: Path, monkeypatch: pytest.MonkeyPatch, age_min: float, now: float,
+           fence: str = "GREEN") -> None:
+    g, w, s = tmp / "DESK_STALE.json", tmp / "stall_watch.json", tmp / "SILENT_ORGANS.json"
+    s.write_text(json.dumps({"fence": fence, "status": fence, "new_silent": []}))
+    os.utime(s, (now - 5 * 60, now - 5 * 60))
     for p in (g, w):
         p.write_text("{}")
         os.utime(p, (now - age_min * 60, now - age_min * 60))
     monkeypatch.setattr(hb, "GATEWAY_BEAT", g)
     monkeypatch.setattr(hb, "WATCHDOG_BEAT", w)
+    monkeypatch.setattr(hb, "SILENT_ORGANS", s)
 
 
 def test_fx_week() -> None:
@@ -47,9 +51,10 @@ def test_absence_fails_and_closed_market_excuses_only_gateway(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(hb, "GATEWAY_BEAT", tmp_path / "none.json")
     monkeypatch.setattr(hb, "WATCHDOG_BEAT", tmp_path / "none2.json")
+    monkeypatch.setattr(hb, "SILENT_ORGANS", tmp_path / "none3.json")
     sat = datetime(2026, 10, 3, 12, tzinfo=UTC).timestamp()
     r = hb.measure(sat, research={"age_days": None}, disk_free_gb=50)
-    assert r["failing"] == ["research", "watchdog"]
+    assert r["failing"] == ["research", "silent", "watchdog"]
 
 
 def test_unarmed_is_recorded_and_page_fires_once(tmp_path: Path,
@@ -77,3 +82,46 @@ def test_url_is_read_but_never_written(tmp_path: Path, monkeypatch: pytest.Monke
                                              "verdict": "OK"})
     assert calls == [("https://hc-ping.com/secret-uuid", False)]
     assert "secret-uuid" not in out.read_text()
+
+
+# ------------------------------------------------ audit R2 (2026-09-30): the fence pages someone
+@pytest.mark.parametrize("fence", ["RED", "UNMEASURED"])
+def test_a_red_or_unmeasured_silent_fence_fails_the_heartbeat(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fence: str) -> None:
+    now = datetime(2026, 9, 30, 12, tzinfo=UTC).timestamp()
+    _beats(tmp_path, monkeypatch, 2, now, fence=fence)
+    r = hb.measure(now, research={"age_days": 0.05}, disk_free_gb=50)
+    assert r["failing"] == ["silent"] and r["checks"]["silent"]["fence"] == fence
+
+
+def test_a_stale_green_census_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    now = datetime(2026, 9, 30, 12, tzinfo=UTC).timestamp()
+    _beats(tmp_path, monkeypatch, 2, now)
+    os.utime(hb.SILENT_ORGANS, (now - 14 * 86400, now - 14 * 86400))
+    r = hb.measure(now, research={"age_days": 0.05}, disk_free_gb=50)
+    assert r["failing"] == ["silent"]
+
+
+def test_red_fence_pages_even_when_the_box_was_already_failing(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """disk already failing, then the fence turns RED: a page. Same RED, same organs: no page.
+    A NEW organ on the still-RED fence: another page."""
+    out = tmp_path / "BOX_HEARTBEAT.json"
+    sent: list[str] = []
+    import libs.ops.alert_channels as ac
+    monkeypatch.setattr(ac, "send_all", lambda t, b, **k: sent.append(b) or {"status": "ok"})
+
+    def reading(failing: list[str], new: list[str]) -> dict:
+        checks = {"disk": {"fail": "disk" in failing},
+                  "silent": {"fail": "silent" in failing, "fence": "RED", "new_silent": new}}
+        return {"at": "x", "checks": checks, "failing": failing, "verdict": "FAIL"}
+
+    sec = (tmp_path / "absent.json",)
+    hb.run(out=out, secrets=sec, reading=reading(["disk"], []))
+    assert len(sent) == 1
+    hb.run(out=out, secrets=sec, reading=reading(["disk", "silent"], ["leg:x"]))
+    assert len(sent) == 2
+    hb.run(out=out, secrets=sec, reading=reading(["disk", "silent"], ["leg:x"]))
+    assert len(sent) == 2
+    hb.run(out=out, secrets=sec, reading=reading(["disk", "silent"], ["leg:y"]))
+    assert len(sent) == 3

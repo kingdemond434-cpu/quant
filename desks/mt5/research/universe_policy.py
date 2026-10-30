@@ -213,7 +213,11 @@ CROSS_SECTIONAL_FAMILIES = frozenset({
 #: instant, so they are the event lane's executor, not a statistical hunt over the price path. They
 #: are admitted for share CFDs exactly as the class books are; every other statistical family stays
 #: out. `event_reaction` is NOT here: its events are the macro calendar, not news about the name.
-NEWS_LANE_FAMILIES = frozenset({"analyst_revision_drift", "analyst_cross_market_lead"})
+#: `alt_release_drift` (2026-09-30) fires only on a dated free alt-data release that the
+#: alt_proxies equity hand-off names as bearing on the share -- a public datum about the name's
+#: demand, first seen at its recorded `available_time` -- so it is the event lane, not a hunt.
+NEWS_LANE_FAMILIES = frozenset({"analyst_revision_drift", "analyst_cross_market_lead",
+                                "alt_release_drift"})
 
 
 def is_equity(symbol: str) -> bool:

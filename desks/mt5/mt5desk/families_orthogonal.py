@@ -2571,3 +2571,34 @@ for _av_name in ("analyst_revision_drift", "analyst_cross_market_lead"):
         "a view is a daily-cadence event measured at +1/+5/+21 trading days; its hold is counted "
         "in H1 bars per trading day, and the tracker that set the measured side read H1 closes")
 del _av_name
+
+# ALT-DATA RELEASE DRIFT (2026-09-30): the event lane's executor for the alt_proxies equity
+# hand-off. A free alt-data release (Korean 20-day exports, TSA throughput, GDELT country tone)
+# bearing on a share with a declared prior sign; the family loads the lake series itself and
+# fires only on each release's first vintage, placed on the broker clock (New York + 7h). Its
+# `source` and `prior_sign` are REQUIRED, so the sweep names it unsuppliable.
+from mt5desk.family_alt_release import family_alt_release_drift  # noqa: E402
+
+ORTHOGONAL_FAMILIES["alt_release_drift"] = family_alt_release_drift
+FAMILY_INPUTS["alt_release_drift"] = (
+    "a point-in-time alt-data lake series named by the alt_proxies equity hand-off, placed at "
+    "each release's first available_time (research/alt_equity_handoff.py)",
+    "desks/mt5/data/lake/series/<source>.csv")
+# NO TIMEFRAME RESTRICTION: entry is the first bar OPENING after the release on whatever chart
+# the cell carries (`_h1` keeps the caller's bar clock), and the hold is `hold_days` times the
+# chart's own measured bars per day, so it is the same market rule on every rung of the ladder.
+
+# SPECIALIST FAMILIES (2026-09-30, `research/specialist_cell.py`). Four mechanisms an asset-class
+# specialist names and no registered family expressed: carry harvested in calm and unwound in
+# risk-off, the fixed-weight allocator's month-end rebalancing flow, a day-of-year weather or crop
+# window, and the entry-filter OPERATOR the residual search mints conditioned cells with. Each
+# loads its foreign series from the bar store given only what the cell carries (`risk_symbol`,
+# `bond_symbol`, `cond_symbol`), as the class books do, so the sealed gauntlet builds them through
+# its ordinary `fn(h1, **params)` call with no input branch.
+from mt5desk.families_specialist import INPUTS as _SPEC_INPUTS  # noqa: E402
+from mt5desk.families_specialist import SPECIALIST_FAMILIES  # noqa: E402
+from mt5desk.families_specialist import TIMEFRAMES as _SPEC_TIMEFRAMES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(SPECIALIST_FAMILIES)
+FAMILY_INPUTS.update(_SPEC_INPUTS)
+FAMILY_TIMEFRAMES.update(_SPEC_TIMEFRAMES)
