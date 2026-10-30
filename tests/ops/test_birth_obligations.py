@@ -140,3 +140,31 @@ def test_every_axis_names_the_fence_that_already_owns_it() -> None:
         assert (ROOT / "scripts" / ax.fence[0]).is_file(), ax.fence[0]
     gate = (ROOT / "scripts" / "run_law_gate.py").read_text(encoding="utf-8")
     assert "check_birth_obligations.py" in gate, "the fence must run on the law gate"
+
+
+def test_a_side_channels_executable_without_its_row_is_an_arrival(tmp_path: Path) -> None:
+    """PR #524 audit (2026-10-29): `desks/mt5/side_channels/vps_seat_clock.py` arrived clocked
+    by hourly_cycle but with no runtime_state row, and this fence stayed silent only because it
+    never enumerated side_channels. The whole directory is now an executable area."""
+    assert "desks/mt5/side_channels" in birth.EXEC_AREAS
+    _baseline_tree(tmp_path)
+    assert birth.main(["--root", str(tmp_path), "--update"]) == 0
+    _write(tmp_path / "desks" / "mt5" / "side_channels" / "new_clock.py",
+           "if __name__ == '__main__':\n    pass\n")
+    _write(tmp_path / "desks" / "mt5" / "research" / "hourly_cycle.py",
+           '_costed("old_tool", lambda: None)\n_costed("new_clock", lambda: None)\n')
+    doc = birth.measure(tmp_path)
+    assert doc["axes"]["executable"]["arrived_without_obligation"] == [
+        "desks/mt5/side_channels/new_clock.py"]
+    # the row is what clears it -- a clock alone is not the obligation
+    _write(tmp_path / "docs" / "research" / "runtime_state.json", json.dumps({"organs": [
+        {"organ": "leg:old_tool", "artifact": "scripts/old_tool.py"},
+        {"organ": "leg:new_clock", "code": ["desks/mt5/side_channels/new_clock.py"]}]}))
+    assert birth.measure(tmp_path)["axes"]["executable"]["arrived_without_obligation"] == []
+
+
+def test_vps_seat_clock_carries_its_runtime_state_row() -> None:
+    rows = json.loads((ROOT / "docs" / "research" / "runtime_state.json").read_text("utf-8"))
+    organs = {r.get("organ"): r for r in rows["organs"]}
+    assert "leg:vps_seat_clock" in organs
+    assert "desks/mt5/side_channels/vps_seat_clock.py" in organs["leg:vps_seat_clock"]["code"]

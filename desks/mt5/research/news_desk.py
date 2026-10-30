@@ -44,22 +44,50 @@ def log(msg: str) -> None:
         f.write(line + "\n")
 
 
+#: THE DEDUP KEYS, KEPT ACROSS POLLS (2026-10-29). Every 60 s poll re-read the WHOLE capture
+#: file to rebuild its `seen` set -- news_captures.jsonl is ~50 MB on the box -- which is the
+#: ~457 GB in seven days (~0.75 MB/s) MT5-NewsDesk was measured reading for an RSS poller. The
+#: set now lives in the process; each poll reads only the bytes appended since the last one
+#: (by this process or any other writer), and starts over only if the file shrank or was
+#: replaced.
+_SEEN: dict = {"keys": set(), "offset": 0, "ident": None}
+
+
+def _seen_keys(path: Path = CAPTURES) -> set[str]:
+    """The capture keys in `path`, reading only what was appended since the last call."""
+    try:
+        st = path.stat()
+    except OSError:
+        _SEEN.update({"keys": set(), "offset": 0, "ident": None})
+        return _SEEN["keys"]
+    ident = (st.st_dev, st.st_ino)
+    if ident != _SEEN["ident"] or st.st_size < _SEEN["offset"]:
+        _SEEN.update({"keys": set(), "offset": 0, "ident": ident})
+    if st.st_size == _SEEN["offset"]:
+        return _SEEN["keys"]
+    try:
+        with open(path, "rb") as f:
+            f.seek(_SEEN["offset"])
+            chunk = f.read()
+    except OSError:
+        return _SEEN["keys"]
+    # Only COMPLETE lines advance the offset: a line being written right now is read next time.
+    end = chunk.rfind(b"\n") + 1
+    for line in chunk[:end].splitlines():
+        try:
+            _SEEN["keys"].add(json.loads(line).get("key", ""))
+        except Exception:
+            pass
+    _SEEN["offset"] += end
+    return _SEEN["keys"]
+
+
 def poll_official_rss() -> int:
     """Poll FREE official-government RSS feeds (Fed/BLS/ECB/BOJ/BOE/SNB) and
     record every headline with the four clocks. No invented data: only items
     that actually appeared in a first-party feed. Deduped by guid/link/title."""
     import free_data as fd
-    seen = set()
-    if CAPTURES.exists():
-        try:
-            for line in CAPTURES.read_text("utf-8").splitlines():
-                try:
-                    e = json.loads(line)
-                    seen.add(e.get("key", ""))
-                except Exception:
-                    pass
-        except Exception:
-            pass
+    seen = _seen_keys()
     new = 0
     for src, url in fd.RSS_FEEDS.items():
         for item in fd.rss_fetch(url):

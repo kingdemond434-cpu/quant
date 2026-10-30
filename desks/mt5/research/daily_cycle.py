@@ -35,7 +35,7 @@ import time
 import traceback
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import IO
+from typing import IO, Any
 
 BASE = Path(__file__).resolve().parent.parent
 for p in (str(BASE), str(BASE / "research"), str(BASE / "scripts")):
@@ -257,10 +257,17 @@ def _refresh_bars() -> None:
     """
     import refresh_tail
 
-    rc = refresh_tail.main()
+    # BOUNDED, RESUMING (2026-10-29): one unbounded pass over the lake took 6h34m of MT5-Daily's
+    # 10 h. The hourly `refresh_bars` leg runs the same refresher every hour, and both now resume
+    # from refresh_tail's cursor (stalest series first, forward-blocked symbols before all).
+    rc = refresh_tail.main(["--budget-s", f"{REFRESH_BARS_BUDGET_S:.0f}"])
     # rc=2 is "no terminal on this box", the honest answer everywhere but the desk box.
     if rc not in (0, 2):
         raise RuntimeError(f"refresh_tail returned {rc}")
+
+
+#: The daily step's share of the bar refresh; the hourly leg refreshes every hour as well.
+REFRESH_BARS_BUDGET_S = 1800.0
 
 
 def _deepen_bars() -> None:
@@ -368,6 +375,244 @@ def _state_admission() -> None:
          + (f" ({', '.join(doc['graveyard'])})" if doc["graveyard"] else ""))
 
 
+#: THE DAILY PROPOSERS, in their declared order. Module-level so the census
+#: (`scripts/check_producer_yield.py`) and the liveness check (`libs/ops/seat_clocks.py`) read
+#: ONE list -- a list that can drift from the runner reports on organs nobody runs.
+PROPOSERS: tuple[str, ...] = (
+    "plumbing_miner", "transition_alpha", "weak_signal_compiler",
+    "fund_playbook", "microstructure_miner", "alpha_evolution",
+    "style_premia_sweep", "cross_asset_graph", "anomaly_factory",
+    "tail_alpha_search", "survivor_distiller", "factor_model_coevolution",
+    # Reflective factor timing (IBK 2026 design): publishes its own admission
+    # contract, desks/mt5/reports/REFLECTIVE_TIMING.json. Sizes nothing.
+    "reflective_timing_contract",
+    # Text-derived indices (event/policy factors from collected news, JP/KR/CN
+    # retail blog attention and mood): the gain test against a shuffled-date
+    # placebo, then the pre-declared exogenous_conditioner cells through the donor
+    # door. Writes desks/mt5/reports/NLP_SOCIAL_CELLS.json.
+    "nlp_social_cells",
+    # Learned GNN/attention miners (numpy): cells, forecast axes and allocation
+    # intel. Daily, on their own budget, so no hourly organ's share shrinks.
+    "learned_miners",
+    # THE NEGATIVE HALF OF EXPERIENCE (Tier-1 Q17). `survivor_distiller` was
+    # already here and `negative_knowledge` -- the model of what KILLS a cell --
+    # ran on no clock at all, which is the classic defect: the organ existed and
+    # produced nothing. Its report feeds the experience split.
+    "negative_knowledge",
+    # THE REGIME SPLIT (2026-09-30): every price-only family searched inside one
+    # control-room regime at a time, purged walk-forward as the kill, survivors
+    # donated as family `regime_split` to the same gauntlet.
+    "regime_split_miner",
+    # THE PUBLIC TRADER GENOME WITH ITS GRAVEYARD (2026-10-06, audit row 35): the
+    # own-book forensics plus the alive+dead genome, its base rates, failure memory,
+    # crowding prior and style-analogue cells through the donor door.
+    "book_forensics",
+)
+
+#: Per-proposer memory across passes: when each was last STARTED, how it ended, and the UTC day
+#: it last finished an attempt. The rotation below is read from here.
+PROPOSER_STATE = BASE / "data" / "daily_proposers_state.json"
+#: Published after EVERY proposer, so a pass killed partway still says what it did.
+PROPOSER_REPORT = BASE / "reports" / "DAILY_PROPOSERS.json"
+#: The bandit-scaled budget each proposer is handed is unchanged from before 2026-10-29:
+#: base (its own `run(budget_s=...)` default, 1,200 s when it declares none) x arm weight,
+#: clipped to [300, 3,600] s.
+PROPOSER_MIN_BUDGET_S = 300.0
+PROPOSER_MAX_BUDGET_S = 3600.0
+PROPOSER_DEFAULT_BUDGET_S = 1200.0
+#: How long past its OWN budget a proposer may run before its child is killed. Half its budget
+#: again, never under five minutes: a sweep checks its clock between cells and a cell can be slow.
+#: This is a bound on a proposer that ignores its own budget, not a cut to one that honours it.
+PROPOSER_GRACE_FLOOR_S = 300.0
+#: A proposer whose `run()` takes no budget: bounded at the larger of this and 1.5x its last
+#: measured complete run, so a slow-but-finishing organ is never killed for being slow.
+UNBUDGETED_BOUND_S = 5400.0
+#: A proposer KILLED at its bound records no wall time, so its bound would never grow and it
+#: could be killed at the same bound every day (fund_playbook, reflective_timing_contract,
+#: 2026-10-29). Each kill raises the next bound by this factor, capped: past the cap it is still
+#: deferred -- keeping its place -- and goes RED by name at 48h (seat_clocks.red_proposers).
+PROPOSER_BOUND_GROWTH = 1.5
+PROPOSER_BOUND_CAP_S = 2 * UNBUDGETED_BOUND_S
+#: The child's stdout line that carries its report back to the chain.
+PROPOSER_RESULT_PREFIX = "PROPOSER_RESULT "
+#: Outcomes that FINISH a proposer's attempt for the day (a kill or a deferral does not).
+PROPOSER_FINISHED = frozenset({"OK", "FAILED", "ABSENT"})
+
+
+def _read_json(p: Path) -> dict:
+    try:
+        d = json.loads(p.read_text(encoding="utf-8"))
+        return d if isinstance(d, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _write_json(p: Path, doc: dict) -> None:
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        _atomic_write(p, json.dumps(doc, indent=1, default=str))
+    except OSError as exc:
+        dlog(f"  could not write {p.name}: {type(exc).__name__}: {exc}")
+
+
+def proposer_order(state: dict, today: str,
+                   names: tuple[str, ...] = PROPOSERS) -> list[str]:
+    """The proposers still owed an attempt today, LEAST-RECENTLY-STARTED first.
+
+    THE STARVATION THIS REMOVES (2026-10-29). `_proposers` ran nineteen proposers in one fixed
+    order inside ONE chain step, and a step is stamped only when it ends. MT5-Daily was terminated
+    at its time limit (last result 0x41306, 10/28 22:50 local) somewhere inside that step, so the
+    step was never stamped; every later pass -- the hourly `daily` leg, killed at 900 s -- began
+    the step again at `plumbing_miner` and died in the first organ or two. The tail of the list
+    (anomaly_factory, tail_alpha_search, survivor_distiller, ...) could not be reached on any
+    clock, and PRODUCER_YIELD read every one DEAD.
+
+    Ordering by when each was last STARTED (not finished) is what makes it rotate: a proposer
+    that was started and then killed goes to the BACK, so the slowest organ is never first twice
+    running, and the ones that waited longest go first. Never-started proposers lead, in declared
+    order. A proposer that already finished an attempt today is not repeated.
+    """
+    todo = [n for n in names if str((state.get(n) or {}).get("done_day") or "") != today]
+    return sorted(todo, key=lambda n: (str((state.get(n) or {}).get("last_started_at") or ""),
+                                       names.index(n)))
+
+
+def proposer_bound(budget_s: float | None, st: dict | None = None) -> float:
+    """Seconds a proposer's child may run before it is killed (see PROPOSER_GRACE_FLOOR_S), raised
+    to PROPOSER_BOUND_GROWTH x the bound it was last KILLED at, capped at PROPOSER_BOUND_CAP_S."""
+    killed = float((st or {}).get("killed_at_bound_s") or 0.0)
+    grown = min(PROPOSER_BOUND_CAP_S, PROPOSER_BOUND_GROWTH * killed) if killed else 0.0
+    if budget_s is not None:
+        return max(float(budget_s) + max(PROPOSER_GRACE_FLOOR_S, 0.5 * float(budget_s)), grown)
+    last_ok = float((st or {}).get("last_ok_wall_s") or 0.0)
+    return max(UNBUDGETED_BOUND_S, 1.5 * last_ok, grown)
+
+
+def _proposer_absent(name: str, exc: ModuleNotFoundError) -> bool:
+    """True only when the module that could not be found IS the proposer itself (PR #524 audit).
+
+    A ModuleNotFoundError raised while importing a proposer that is on this tree -- its own
+    `import scipy`, say -- names the dependency, not the proposer: that proposer is FAILED."""
+    missing = str(getattr(exc, "name", "") or "")
+    if missing:
+        return missing == name or name.startswith(missing + ".")
+    import importlib.util
+    try:
+        return importlib.util.find_spec(name) is None
+    except (ImportError, ValueError):
+        return False
+
+
+def _missing_dep_error(name: str, exc: ModuleNotFoundError) -> str:
+    return (f"{name} is present but its import failed: ModuleNotFoundError: "
+            f"{getattr(exc, 'name', None) or exc}: {exc}")[:400]
+
+
+def _proposer_budget(name: str) -> float | None:
+    """The bandit-scaled budget for `name`, exactly as the in-process loop computed it; None
+    when its `run()` takes no budget. Raises ModuleNotFoundError when it is not on this tree."""
+    import inspect
+    try:
+        from libs.research.bandit import arm_weight
+    except Exception:
+        def arm_weight(source, kind=None):                        # type: ignore[misc]
+            return 1.0
+    mod = __import__(name)
+    params = inspect.signature(mod.run).parameters
+    if "budget_s" not in params:
+        return None
+    base = float(params["budget_s"].default or PROPOSER_DEFAULT_BUDGET_S)
+    return float(min(PROPOSER_MAX_BUDGET_S, max(PROPOSER_MIN_BUDGET_S, base * arm_weight(name))))
+
+
+def _proposer_child(name: str, budget_s: float | None) -> int:
+    """Child mode: run ONE proposer in this process and print its result line."""
+    t0 = time.monotonic()
+    try:
+        mod = __import__(name)
+        rep = mod.run(**({"budget_s": float(budget_s)} if budget_s is not None else {}))
+    except ModuleNotFoundError as exc:
+        if not _proposer_absent(name, exc):
+            # A proposer that IS on this tree but cannot import a dependency is broken, not
+            # absent: ABSENT is skipped by the liveness check, so it would read OK forever.
+            traceback.print_exc()
+            print(PROPOSER_RESULT_PREFIX + json.dumps(
+                {"status": "FAILED", "error": _missing_dep_error(name, exc)}), flush=True)
+            return 1
+        print(PROPOSER_RESULT_PREFIX + json.dumps({"status": "ABSENT", "error": str(exc)}),
+              flush=True)
+        return 3
+    except Exception as exc:
+        traceback.print_exc()
+        print(PROPOSER_RESULT_PREFIX + json.dumps(
+            {"status": "FAILED", "error": f"{type(exc).__name__}: {exc}"[:400]}), flush=True)
+        return 1
+    out: dict = {"status": "OK", "wall_s": round(time.monotonic() - t0, 1)}
+    if isinstance(rep, dict):
+        for k in ("tests_run", "cells_proposed", "donated_rows"):
+            if isinstance(rep.get(k), int | float) and not isinstance(rep.get(k), bool):
+                out[k] = rep[k]
+    print(PROPOSER_RESULT_PREFIX + json.dumps(out, default=str), flush=True)
+    return 0
+
+
+def _run_proposer(name: str, budget_s: float | None, bound_s: float) -> dict:
+    """Run `name` in its own child, killed (whole tree) at `bound_s`. Never raises."""
+    cmd = [sys.executable, "-u", "-W", "ignore", str(Path(__file__).resolve()),
+           "--proposer", name, "--budget-s", "none" if budget_s is None else f"{budget_s:.0f}"]
+    root = str(BASE.parent.parent)
+    if root not in sys.path:
+        sys.path.append(root)
+    try:
+        from libs.ops.proctree import run as _run
+    except Exception:
+        import subprocess
+        _run = subprocess.run                                        # type: ignore[assignment]
+    import subprocess
+    t0 = time.monotonic()
+    try:
+        r = _run(cmd, capture_output=True, text=True, timeout=bound_s, check=False,
+                 cwd=str(BASE))
+    except subprocess.TimeoutExpired:
+        return {"status": "KILLED_AT_BOUND", "wall_s": round(time.monotonic() - t0, 1),
+                "why": f"ran past its bound of {bound_s:.0f}s (budget "
+                       f"{'none' if budget_s is None else f'{budget_s:.0f}s'} + grace)"}
+    except Exception as exc:
+        return {"status": "FAILED", "wall_s": round(time.monotonic() - t0, 1),
+                "error": f"could not start: {type(exc).__name__}: {exc}"[:400]}
+    text = (r.stdout or "") + (r.stderr or "")
+    res: dict = {}
+    for line in reversed(text.splitlines()):
+        if line.startswith(PROPOSER_RESULT_PREFIX):
+            with contextlib.suppress(ValueError):
+                res = json.loads(line[len(PROPOSER_RESULT_PREFIX):])
+            break
+    if not res:
+        res = {"status": "OK" if r.returncode == 0 else "FAILED",
+               "error": "" if r.returncode == 0 else f"exit {r.returncode}: {text[-300:]}"}
+    res["wall_s"] = round(time.monotonic() - t0, 1)
+    res["rc"] = r.returncode
+    return res
+
+
+def _publish_proposers(rows: dict, order: list[str], today: str) -> None:
+    left = _time_left_s()
+    _write_json(PROPOSER_REPORT, {
+        "at": datetime.now(UTC).isoformat(timespec="seconds"), "day": today,
+        "order": order, "proposers": rows,
+        "deadline": {"basis": _DEADLINE["basis"], "seconds": _DEADLINE["seconds"],
+                     "left_s": None if left is None else round(left, 1)},
+        "done": sorted(n for n, r in rows.items() if r.get("status") in PROPOSER_FINISHED),
+        "deferred": sorted(n for n, r in rows.items()
+                           if r.get("status") == "DEFERRED_NO_TIME"),
+        "killed": sorted(n for n, r in rows.items() if r.get("status") == "KILLED_AT_BOUND"),
+        "rule": ("each proposer runs in its own child, bounded at its own budget + grace; one "
+                 "that does not fit the pass's remaining time is DEFERRED, never cut; order is "
+                 "least-recently-started first, so a killed or deferred proposer never blocks "
+                 "the same tail twice"),
+    })
+
+
 def _proposers() -> None:
     """The proposer sweeps that hand the gauntlet cells it would never otherwise see.
 
@@ -375,60 +620,83 @@ def _proposers() -> None:
     bars, scores against cost, deflates by its own search, and donates survivors into the miner
     contract. None admits anything. Daily, because cadence is multiplicity. A failure in one
     must not cost the others their run, so each is fenced.
+
+    NO PROPOSER CAN SILENCE ANOTHER (2026-10-29). Each runs in its OWN child process, killed at
+    its own bound (`proposer_bound`), in least-recently-started order (`proposer_order`), and a
+    proposer whose bound does not fit what is left of this pass's deadline is DEFERRED -- left
+    for the next pass, at the front -- instead of being started and killed by the task limit.
+    Budgets are exactly what they were: the bandit sets them and nothing here shrinks one.
+    Progress is published to PROPOSER_REPORT after every proposer.
     """
     # THE BANDIT SETS THE BUDGETS. Each proposer belongs to a research direction; its time budget
     # is the base budget scaled by that direction's share (uniform = 1.0), clipped so no arm is
     # ever starved to zero -- the exploration floor is what keeps a cold arm alive.
-    import inspect
-    try:
-        from libs.research.bandit import arm_weight
-    except Exception:
-        def arm_weight(source, kind=None):                        # type: ignore[misc]
-            return 1.0
-    for name in ("plumbing_miner", "transition_alpha", "weak_signal_compiler",
-                 "fund_playbook", "microstructure_miner", "alpha_evolution",
-                 "style_premia_sweep", "cross_asset_graph", "anomaly_factory",
-                 "tail_alpha_search", "survivor_distiller", "factor_model_coevolution",
-                 # Reflective factor timing (IBK 2026 design): publishes its own admission
-                 # contract, desks/mt5/reports/REFLECTIVE_TIMING.json. Sizes nothing.
-                 "reflective_timing_contract",
-                 # Text-derived indices (event/policy factors from collected news, JP/KR/CN
-                 # retail blog attention and mood): the gain test against a shuffled-date
-                 # placebo, then the pre-declared exogenous_conditioner cells through the donor
-                 # door. Writes desks/mt5/reports/NLP_SOCIAL_CELLS.json.
-                 "nlp_social_cells",
-                 # Learned GNN/attention miners (numpy): cells, forecast axes and allocation
-                 # intel. Daily, on their own budget, so no hourly organ's share shrinks.
-                 "learned_miners",
-                 # THE NEGATIVE HALF OF EXPERIENCE (Tier-1 Q17). `survivor_distiller` was
-                 # already here and `negative_knowledge` -- the model of what KILLS a cell --
-                 # ran on no clock at all, which is the classic defect: the organ existed and
-                 # produced nothing. Its report feeds the experience split.
-                 "negative_knowledge",
-                 # THE REGIME SPLIT (2026-09-30): every price-only family searched inside one
-                 # control-room regime at a time, purged walk-forward as the kill, survivors
-                 # donated as family `regime_split` to the same gauntlet.
-                 "regime_split_miner",
-                 # THE PUBLIC TRADER GENOME WITH ITS GRAVEYARD (2026-10-06, audit row 35): the
-                 # own-book forensics plus the alive+dead genome, its base rates, failure memory,
-                 # crowding prior and style-analogue cells through the donor door.
-                 "book_forensics"):
+    today = _utc_today()
+    state = _read_json(PROPOSER_STATE)
+    order = proposer_order(state, today)
+    rows: dict[str, dict] = {}
+    for name in order:
+        st = state.setdefault(name, {})
         try:
-            mod = __import__(name)
-            kwargs = {}
-            if "budget_s" in inspect.signature(mod.run).parameters:
-                base = float(inspect.signature(mod.run).parameters["budget_s"].default or 1200.0)
-                kwargs["budget_s"] = float(min(3600.0, max(300.0, base * arm_weight(name))))
-            rep = mod.run(**kwargs)
-            dlog(f"{name}: " + (f"{rep.get('tests_run', '?')} tests, "
-                                 f"{rep.get('cells_proposed', rep.get('donated_rows', '?'))} "
-                                 "proposed" + (f" (budget {kwargs['budget_s']:.0f}s)"
-                                               if kwargs else "")
-                                 if isinstance(rep, dict) else "ran"))
-        except ModuleNotFoundError:
-            dlog(f"{name}: not present on this tree")
+            budget = _proposer_budget(name)
+        except ModuleNotFoundError as exc:
+            if _proposer_absent(name, exc):
+                dlog(f"{name}: not present on this tree")
+                rows[name] = {"status": "ABSENT"}
+                st.update({"last_status": "ABSENT", "done_day": today})
+            else:
+                # Present but broken (a missing dependency): FAILED, with its cause, so the
+                # liveness check names it RED instead of skipping it as ABSENT forever.
+                err = _missing_dep_error(name, exc)
+                dlog(f"{name} FAILED (non-fatal): {err}")
+                now_iso = datetime.now(UTC).isoformat(timespec="seconds")
+                rows[name] = {"status": "FAILED", "error": err}
+                st.update({"last_status": "FAILED", "last_error": err, "last_at": now_iso,
+                           "done_day": today})
+            _write_json(PROPOSER_STATE, state)
+            _publish_proposers(rows, order, today)
+            continue
         except Exception as exc:
-            dlog(f"{name} FAILED (non-fatal): {type(exc).__name__}: {exc}")
+            budget = None
+            dlog(f"{name}: budget unreadable ({type(exc).__name__}: {exc}); running unbudgeted")
+        bound = proposer_bound(budget, st)
+        left = _research_left_s()
+        if left is not None and bound > left:
+            dlog(f"{name}: DEFERRED -- bound {bound:.0f}s does not fit the {left:.0f}s left "
+                 f"before this pass's deadline ({_DEADLINE['basis']}); it leads the next pass")
+            rows[name] = {"status": "DEFERRED_NO_TIME", "bound_s": round(bound),
+                          "left_s": round(left)}
+            st["last_deferred_at"] = datetime.now(UTC).isoformat(timespec="seconds")
+            _write_json(PROPOSER_STATE, state)
+            _publish_proposers(rows, order, today)
+            continue
+        st["last_started_at"] = datetime.now(UTC).isoformat(timespec="seconds")
+        _write_json(PROPOSER_STATE, state)
+        res = _run_proposer(name, budget, bound)
+        res["budget_s"] = None if budget is None else round(budget)
+        res["bound_s"] = round(bound)
+        rows[name] = res
+        status = str(res.get("status"))
+        st.update({"last_status": status, "last_wall_s": res.get("wall_s"),
+                   "last_at": datetime.now(UTC).isoformat(timespec="seconds")})
+        if status == "OK":
+            st["last_ok_at"] = st["last_at"]
+            st["last_ok_wall_s"] = res.get("wall_s")
+            st.pop("killed_at_bound_s", None)
+        elif status == "KILLED_AT_BOUND":
+            st["killed_at_bound_s"] = round(bound)
+        if status in PROPOSER_FINISHED:
+            st["done_day"] = today
+        _write_json(PROPOSER_STATE, state)
+        _publish_proposers(rows, order, today)
+        if status == "OK":
+            dlog(f"{name}: {res.get('tests_run', '?')} tests, "
+                 f"{res.get('cells_proposed', res.get('donated_rows', '?'))} proposed"
+                 + (f" (budget {budget:.0f}s)" if budget is not None else "")
+                 + f" in {res.get('wall_s')}s")
+        else:
+            dlog(f"{name} {status} (non-fatal): {res.get('error') or res.get('why') or ''}")
+    _publish_proposers(rows, order, today)
 
 
 def _world_miners() -> None:
@@ -902,8 +1170,167 @@ STEPS = (("weekly_hunt_refresh", _weekly_hunt_refresh),
          ("vector_families_check", _vector_families_check),
          ("export_aurum", _export_aurum), ("daily_research_os", _daily_research_os))
 
+#: THIS PASS'S DEADLINE (2026-10-29): seconds from the start of `main`, and where the number came
+#: from. MT5-Daily was terminated at its Task Scheduler ExecutionTimeLimit (0x41306) mid-chain, so
+#: the chain now learns the limit it runs under and stops STARTING work it cannot finish inside
+#: it. Unstamped steps resume on the next pass (the hourly `daily` leg) exactly as before; a
+#: proposer that does not fit is deferred to the front of the next pass. None = no deadline known,
+#: which is the old behaviour.
+_DEADLINE: dict = {"t0": None, "seconds": None, "basis": "not started"}
+#: Room left under the hourly `daily` leg's kill (DAILY_CYCLE_HOURLY_BUDGET_SEC in hourly_cycle).
+HOURLY_DEADLINE_MARGIN_S = 60.0
+#: Room left under MT5-Daily's own ExecutionTimeLimit: 5% of it, never under fifteen minutes.
+TASK_DEADLINE_MARGIN_FLOOR_S = 900.0
+TASK_DEADLINE_MARGIN_FRACTION = 0.05
+#: The scheduled task whose limit a plan-less pass runs under. Its XML lives on the box only:
+#: desks/mt5/ops/box_tasks.manifest declares MT5-Daily with installer="NONE".
+DAILY_TASK_NAME = "MT5-Daily"
+_ISO_DURATION = re.compile(r"^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$")
+
+
+def parse_iso_duration(text: str) -> float | None:
+    """`PT72H` -> 259200.0. None for an empty, unparseable or zero (= unlimited) duration."""
+    m = _ISO_DURATION.match(str(text or "").strip())
+    if not m or not any(m.groups()):
+        return None
+    d, h, mi, se = (float(g) if g else 0.0 for g in m.groups())
+    total = d * 86400 + h * 3600 + mi * 60 + se
+    return total if total > 0 else None
+
+
+def _decode_schtasks(raw: bytes) -> str:
+    """schtasks /xml writes UTF-16 (with a BOM) on most Windows builds and the console code page
+    on others; decoding it as text=True read every NUL-interleaved byte and matched nothing."""
+    if raw[:2] in (b"\xff\xfe", b"\xfe\xff"):
+        return raw.decode("utf-16", "replace")
+    if len(raw) >= 4 and raw[1:2] == b"\x00" and raw[3:4] == b"\x00":
+        return raw.decode("utf-16-le", "replace")
+    if raw[:3] == b"\xef\xbb\xbf":
+        return raw[3:].decode("utf-8", "replace")
+    return raw.decode("utf-8", "replace")
+
+
+def _task_limit_s(task: str = DAILY_TASK_NAME, runner: Any = None) -> float | None:
+    """The task's ExecutionTimeLimit, read from Task Scheduler (Windows only; read-only query).
+
+    NEVER RAISES, AND NEVER SWALLOWS SILENTLY: any failure -- not only OSError/SubprocessError --
+    is logged with its cause before the pass falls back to "no deadline known"."""
+    if os.name != "nt" and runner is None:
+        return None
+    import subprocess
+    run = runner or subprocess.run
+    try:
+        r = run(["schtasks", "/query", "/tn", task, "/xml"], capture_output=True,
+                timeout=20, check=False)
+        out = r.stdout or b""
+        text = out if isinstance(out, str) else _decode_schtasks(out)
+        m = re.search(r"<ExecutionTimeLimit>([^<]+)</ExecutionTimeLimit>", text)
+        if not m:
+            dlog(f"{task}: no ExecutionTimeLimit in schtasks output (rc={r.returncode}, "
+                 f"{len(text)} chars) -- no deadline known")
+            return None
+        return parse_iso_duration(m.group(1))
+    except Exception as exc:  # a deadline read must never crash the chain
+        dlog(f"{task}: ExecutionTimeLimit unreadable ({type(exc).__name__}: {exc}) -- "
+             f"no deadline known")
+        return None
+
+
+def _resolve_deadline() -> tuple[float | None, str]:
+    env = str(os.environ.get("DAILY_CYCLE_DEADLINE_S", "") or "").strip()
+    if env:
+        with contextlib.suppress(ValueError):
+            if float(env) > 0:
+                return float(env), "DAILY_CYCLE_DEADLINE_S"
+    if str(os.environ.get("HOURLY_PLAN", "") or "").strip():
+        b = max(60.0, float(os.environ.get("DAILY_CYCLE_HOURLY_BUDGET_SEC", "900") or 900))
+        return max(30.0, b - HOURLY_DEADLINE_MARGIN_S), "hourly daily leg budget"
+    lim = _task_limit_s()
+    if lim:
+        margin = max(TASK_DEADLINE_MARGIN_FLOOR_S, TASK_DEADLINE_MARGIN_FRACTION * lim)
+        return max(60.0, lim - margin), f"{DAILY_TASK_NAME} ExecutionTimeLimit {lim:.0f}s"
+    return None, "no deadline known"
+
+
+def _start_deadline() -> None:
+    secs, basis = _resolve_deadline()
+    _DEADLINE.update({"t0": time.monotonic(), "seconds": secs, "basis": basis})
+
+
+def _time_left_s() -> float | None:
+    """Seconds left before this pass's deadline; None when it has none."""
+    if _DEADLINE.get("seconds") is None or _DEADLINE.get("t0") is None:
+        return None
+    return float(_DEADLINE["seconds"]) - (time.monotonic() - float(_DEADLINE["t0"]))
+
+
+#: THE STEPS THAT MOVE AN EDGE TOWARD CAPITAL, ON THEIR OWN BUDGET (2026-10-29). MT5-Daily's log
+#: read "36 step(s) of 37 never did" every day: research steps ahead of these (research_gap_map
+#: 2h20m, refresh_bars 6h34m) spent the 10-hour limit and the task was killed before `shadow`.
+#: The declared ORDER is unchanged; what changed is that a non-critical step only STARTS when,
+#: by its last measured wall, it leaves room for every critical step still owed this pass. One
+#: that does not fit is deferred (left unstamped) and the critical steps run now.
+CRITICAL_STEPS: frozenset[str] = frozenset({
+    "reconcile", "shadow", "qquant_shadow", "execution", "recertify", "promoter", "markout",
+    "portfolio", "control_room", "decay", "build_allocator", "probation"})
+#: Reserve for a critical step with no measured wall yet.
+CRITICAL_DEFAULT_S = 300.0
+#: Steps that bound THEMSELVES to what is left (or to a fixed budget): their expected wall is
+#: this, not their history -- `proposers` adapts to `_research_left_s()` per proposer.
+STEP_EXPECTED_CAP_S: dict[str, float] = {"proposers": 0.0, "refresh_bars": 1920.0,
+                                          "deepen_bars": 1620.0}
+#: Per-step memory across days: last outcome, last completed run, last wall. Read by the RED
+#: check (`libs/ops/seat_clocks.red_daily_steps`): a step with no completed run in two days.
+STEP_HISTORY_NAME = "daily_step_history.json"
+_RESERVE: dict = {"s": 0.0}
+
+
+def _research_left_s() -> float | None:
+    """Time left for a NON-critical step: the deadline minus the critical steps' reserve."""
+    left = _time_left_s()
+    return None if left is None else left - float(_RESERVE.get("s") or 0.0)
+
+
+def _expected_s(name: str, hist: dict) -> float:
+    measured = float((hist.get(name) or {}).get("last_seconds") or 0.0)
+    cap = STEP_EXPECTED_CAP_S.get(name)
+    return measured if cap is None else min(measured, cap)
+
+
+def critical_reserve_s(names: list[str], hist: dict) -> float:
+    """Seconds the critical steps among `names` are expected to need."""
+    return sum(_expected_s(n, hist) if n in hist else CRITICAL_DEFAULT_S
+               for n in names if n in CRITICAL_STEPS)
+
+
+def _record_step(hist: dict, name: str, out: dict) -> None:
+    now = datetime.now(UTC).isoformat(timespec="seconds")
+    h = hist.setdefault(name, {})
+    h.update({"last_at": now, "last_ok": bool(out.get("ok")),
+              "last_seconds": out.get("seconds")})
+    if out.get("ok"):
+        h["last_ok_at"] = now
+        h.pop("last_error", None)
+    else:
+        h["last_error"] = str(out.get("error") or "")[:300]
+    _write_json(_step_history_path(), hist)
+
+
+def _step_history_path() -> Path:
+    """Beside the day's stamp (data/), so whatever relocates the stamp relocates this too."""
+    return STAMP.with_name(STEP_HISTORY_NAME)
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
+    if "--proposer" in argv:
+        # CHILD MODE (2026-10-29): one proposer, in this process, for `_run_proposer`. No lock,
+        # no stamp: the parent chain owns both.
+        i = argv.index("--proposer")
+        name = argv[i + 1] if i + 1 < len(argv) else ""
+        b = argv[argv.index("--budget-s") + 1] if "--budget-s" in argv else "none"
+        return _proposer_child(name, None if b == "none" else float(b))
+    _start_deadline()
     # ONE STEP ON ITS OWN CLOCK (2026-09-30). `markout` sits behind research steps this box has
     # measured at 9,056 s, under a 900 s hourly budget, so `reports/markout.json` stood at
     # 2026-09-08 with n_matched=0 while the live book kept filling. `--step NAME` runs that one
@@ -1609,7 +2036,30 @@ def _run_chain(force: bool, lock: ChainLock | None = None) -> int:
     # while every hour spent its full budget re-running the same first steps. Stamping each step
     # makes a killed pass RESUME: the next hour runs only what has not run today.
     results: dict[str, dict] = {}
-    for name, fn in todo:
+    if _DEADLINE.get("seconds") is not None:
+        dlog(f"pass deadline {float(_DEADLINE['seconds']):.0f}s ({_DEADLINE['basis']})")
+    hist = _read_json(_step_history_path())
+    deferred: list[str] = []
+    for i, (name, fn) in enumerate(todo):
+        left = _time_left_s()
+        if left is not None and left <= 0:
+            # PAST THE DEADLINE, START NOTHING (2026-10-29). Being terminated by the task limit
+            # mid-step costs the step it was on AND reports the task FAILING (0x41306); stopping
+            # here leaves every unstamped step for the next pass, which runs them in order.
+            rest = [n for n, _ in todo[i:]]
+            dlog(f"DEADLINE ({_DEADLINE['basis']}): {len(rest)} step(s) left for the next "
+                 f"pass: {', '.join(rest)}")
+            break
+        _RESERVE["s"] = 0.0
+        if left is not None and name not in CRITICAL_STEPS:
+            reserve = critical_reserve_s([n for n, _ in todo[i + 1:]], hist)
+            if left - _expected_s(name, hist) < reserve:
+                dlog(f"{name}: DEFERRED -- its last wall {_expected_s(name, hist):.0f}s would "
+                     f"leave under the {reserve:.0f}s the critical steps need of the "
+                     f"{left:.0f}s left; it runs on a later pass")
+                deferred.append(name)
+                continue
+            _RESERVE["s"] = reserve
         if lock is not None and not lock.held:
             # RUNNING UNLOCKED (v1.2 should-fix 1). Before every step: take the lock if it is
             # free; if a HEALTHY holder has it, wait for that holder rather than run the step it
@@ -1623,6 +2073,7 @@ def _run_chain(force: bool, lock: ChainLock | None = None) -> int:
             if not lock.held:
                 lock.unlocked_steps.append(name)
         results[name] = run_step(name, fn)
+        _record_step(hist, name, results[name])
         _write_stamp(today, {**prior, **results}, lock)
 
     # THE STAMP RECORDS THE ATTEMPT, NOT A SUCCESS. Marking the day done only on a clean run would
@@ -1635,6 +2086,8 @@ def _run_chain(force: bool, lock: ChainLock | None = None) -> int:
     _write_stamp(today, {**prior, **results}, lock)
 
     failed = [n for n, r in results.items() if not r["ok"]]
+    if deferred:
+        dlog(f"deferred to a later pass (critical steps first): {', '.join(deferred)}")
     dlog(f"daily cycle {today} done" + (f" -- FAILED: {', '.join(failed)}" if failed else ""))
     return 1 if failed else 0
 

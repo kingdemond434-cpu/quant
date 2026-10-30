@@ -93,8 +93,11 @@ def _name_safe_stdout() -> None:
 MAX_NAMES = 20_000
 
 #: Where an executable of this desk lives. Outside these areas a .py file is not ours to clock.
+#: `desks/mt5/side_channels` JOINED 2026-10-29 (PR #524 audit): the hourly legs world_crawler and
+#: vps_seat_clock live there, and a new executable in it arrived with no runtime_state row while
+#: this axis stayed silent only because it never looked. Its pre-existing incomplete set is the floor.
 EXEC_AREAS: tuple[str, ...] = ("desks/mt5/research", "desks/mt5/scripts", "desks/mt5/ops",
-                               "desks/mt5/moat", "scripts")
+                               "desks/mt5/moat", "desks/mt5/side_channels", "scripts")
 
 #: The files that DECLARE a clock. A stem named in any of them has one.
 CLOCK_DECLARATIONS: tuple[str, ...] = (

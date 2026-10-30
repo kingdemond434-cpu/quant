@@ -46,10 +46,19 @@ GLOBAL_FAMILIES = [
     ("monday_gap", families.family_monday_gap, dict(mode="momentum")),
     ("monday_gap_fade", families.family_monday_gap, dict(mode="fade")),
     ("london_close_momentum", families.family_london_close_momentum, dict()),
-    ("spread_state_avoidance", families.family7_spread_state_avoidance, dict()),
     ("dow_effect", families.family_dow_effect, dict()),  # negative control
-    ("comex_settlement", families.family4_comex_settlement_effect, dict()),
+    # renamed in the canonical library (identical signature): family4_comex_settlement_effect
+    ("comex_settlement", families.family_comex_settlement, dict()),
 ]
+
+#: GONE FROM THE CANONICAL LIBRARY, NAMED RATHER THAN SUBSTITUTED (2026-10-29). The 2026-08-27
+#: restoration of mt5desk/families.py (f37e63c75) does not carry `family7_spread_state_avoidance`,
+#: and this module still named it at import time, so `weekly_hunt_refresh` -- the first step of
+#: MT5-Daily -- died with AttributeError before a single hunt ran ("module 'mt5desk.families' has
+#: no attribute 'family7_spread_state_avoidance'", box run 09:19Z). The nearest live mechanism is
+#: `family_spread_state` (families_orthogonal), a different claim; running it under this label
+#: would report a result for a strategy nobody ran (see run_edges_macro_fusion_sweep.MISSING_EDGES).
+RETIRED_FAMILIES = {"spread_state_avoidance": "family7_spread_state_avoidance"}
 
 
 def tprint(*a) -> None:

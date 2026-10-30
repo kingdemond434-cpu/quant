@@ -4,8 +4,8 @@
 
 WHY THIS EXISTS NOW
 
-`family2_cot_net_fade`, `family2_cot_change_fade`, `family2_cot_change_momentum` and
-`family2_cot_comm_follow` in `mt5desk/families.py` are mature, well-specified macro
+`family_cot_net_fade`, `family_cot_change_fade`, `family_cot_change_momentum` and
+`family_cot_comm_follow` in `mt5desk/families.py` are mature, well-specified macro
 hypotheses -- crowding mean-reversion, crowding-unwind, momentum control, and following the
 informed counterparty (commercials). They have never been run through the universal gate on
 this clone; `reports/hunt2.json` etc. are gitignored and live on the VPS only, so whatever
@@ -71,10 +71,10 @@ SIGN_FLIP = {"AUDUSD": False, "USDCAD": True, "USDCHF": True,
             "XAUUSD": False, "XAGUSD": False}
 
 FAMILIES = {
-    "cot_net_fade": families.family2_cot_net_fade,
-    "cot_change_fade": families.family2_cot_change_fade,
-    "cot_change_momentum": families.family2_cot_change_momentum,
-    "cot_comm_follow": families.family2_cot_comm_follow,
+    "cot_net_fade": families.family_cot_net_fade,
+    "cot_change_fade": families.family_cot_change_fade,
+    "cot_change_momentum": families.family_cot_change_momentum,
+    "cot_comm_follow": families.family_cot_comm_follow,
 }
 
 
