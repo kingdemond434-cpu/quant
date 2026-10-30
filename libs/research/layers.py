@@ -50,6 +50,9 @@ LEG_LAYER: dict[str, str] = {
     # That is information, not prediction: neither one scores anything.
     "proposer_seat": "information", "kimi_hunt": "information",
     "deep_forest": "information", "market_intel": "information", "record_tape": "information",
+    # Published strategy CODE read into family cells: what the desk knows (a rule someone
+    # wrote), not a prediction -- the gauntlet does the predicting.
+    "cell_emitter": "information",
     # Whether either tick tape moved within 2 h of open market (2026-10-14): a measurement of the
     # desk's own data wiring, not information about the market: meta.
     "tape_fresh": "meta",
@@ -638,6 +641,7 @@ LEG_LAYER: dict[str, str] = {
     "state_replay_audit": "execution", "why_not_report": "execution",
     "forward_calibration": "prediction",
     "certificate_clock_law": "meta", "desk_self_heal": "meta", "mission_control": "meta",
+    "clock_accrual": "meta",
     "tier5_acceptance": "meta",
     "cro_noon_freshness": "meta",
 }
