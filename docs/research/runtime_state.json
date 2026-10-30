@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 794,
+  "NEVER": 796,
   "UNMEASURED": 43
  },
  "scope": {
-  "attested": 1018,
+  "attested": 1020,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -467,7 +467,27 @@
     ]
    },
    {
-    "at": "2026-10-29T18:50:57+00:00",
+    "at": "2026-10-29T19:37:07+00:00",
+    "host": "vm",
+    "machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "executable:scripts/merge_pipeline_watch.py"
+    ]
+   },
+   {
+    "at": "2026-10-30T01:34:40+00:00",
+    "host": "vm",
+    "machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:tape_fresh"
+    ]
+   },
+   {
+    "at": "2026-10-30T02:33:56+00:00",
     "host": "vm",
     "machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
     "on_attesting_host": false,
@@ -26509,6 +26529,62 @@
    "measured_at": "2026-10-29T01:09:30+00:00"
   },
   {
+   "organ": "executable:scripts/merge_pipeline_watch.py",
+   "kind": "executable",
+   "code": [
+    "scripts/merge_pipeline_watch.py"
+   ],
+   "clock": "invoked:ops/box/workflow_gate.ps1",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/MERGE_PIPELINE.json",
+   "artifact_declared": "desks/mt5/reports/MERGE_PIPELINE.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+   "measured_at": "2026-10-29T19:37:07+00:00"
+  },
+  {
+   "organ": "leg:tape_fresh",
+   "kind": "leg",
+   "code": [
+    "scripts/check_tape_fresh.py"
+   ],
+   "clock": "hourly_cycle:tape_fresh",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/TAPE_FRESHNESS.json",
+   "artifact_declared": "desks/mt5/reports/TAPE_FRESHNESS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "11084ab96e344ab0a10eb80b88f0bc97",
+   "measured_at": "2026-10-30T01:34:40+00:00"
+  },
+  {
    "organ": "leg:vps_seat_clock",
    "kind": "leg",
    "code": [
@@ -26534,7 +26610,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
-   "measured_at": "2026-10-29T18:50:57+00:00"
+   "measured_at": "2026-10-30T02:33:56+00:00"
   }
  ],
  "ratchet": {
