@@ -2288,7 +2288,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "factory_throughput": 180,
     # The closed co-evolution stops itself at --budget-s 900 (breeding, then the islands) and
     # writes COEVOLUTION.json; the cap sits above it so it is never cut at the same prefix.
-    "coevolution": 1_020,
+    # The method challenger (factor_model_coevolution.H2H_BUDGET_S = 90 s) runs after it, so the
+    # cap is 900 + 90 + a 150 s write/start margin -- 1,020 left 30 s (audit, 2026-10-06).
+    "coevolution": 1_140,
     # The model-family civilization stops itself at --budget-s 600 and writes MODEL_SEARCH.json.
     "model_search": 720,
     # the organ's own budget is 900 s; the cap sits above it so it stops itself, never cut
@@ -2328,6 +2330,11 @@ LEG_BUDGET_FLOOR_SEC: dict[str, int] = {
     # the SEALED DEFAULT and `_leg_floor_s` raises it to whatever `judging_throughput` actually
     # put in the environment this hour -- a floor read off the run, not off a claim.
     "external_gauntlet": 2_700,
+    # factor_model_coevolution stops itself at --budget-s 900 and THEN runs the method challenger
+    # (H2H_BUDGET_S = 90). The self-stop floor reads only the 900 (900 + its 15% write margin =
+    # 1,035), which cuts the challenger; the organ's real stop is 990 and the same margin on it
+    # is 1,139 (audit, 2026-10-06). 1,140 matches LEG_BUDGET_SEC, so the floor never lowers it.
+    "coevolution": 1_140,
 }
 
 

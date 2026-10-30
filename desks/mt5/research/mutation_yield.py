@@ -265,6 +265,27 @@ def tally(rows: dict[str, dict[str, Any]], verd: dict[str, dict[str, Any]],
     return out
 
 
+def reuse_vs_cold(rows: dict[str, dict[str, Any]], verd: dict[str, dict[str, Any]]
+                  ) -> dict[str, Any]:
+    """RESEARCH TRAJECTORIES AS PROCEDURES, MEASURED (research the researcher, 2026-10-06).
+    A cell minted by an operator from a recorded parent REUSES a procedure (trajectory_evolution,
+    the distiller, alpha_evolution); every other judged cell is a COLD START. Certify rate per
+    arm, as fates the graph recorded -- the frontier's arena judges whether reuse pays."""
+    reused = {i for i, r in rows.items() if r.get("operator")}
+    arms: dict[str, dict[str, int]] = {"reuse": {"certified": 0, "failed": 0},
+                                       "cold": {"certified": 0, "failed": 0}}
+    for nid, v in verd.items():
+        fate = v.get("fate")
+        if fate not in VERDICTS:
+            continue
+        a = arms["reuse" if nid in reused else "cold"]
+        a["certified" if fate == "CERTIFIED" else "failed"] += 1
+    for a in arms.values():
+        a["judged"] = a["certified"] + a["failed"]
+        a["posterior"] = _posterior(a["certified"], a["failed"])   # type: ignore[assignment]
+    return arms
+
+
 def weights_from(groups: dict[str, dict[str, Any]],
                  always: tuple[str, ...] = ()) -> tuple[dict[str, float], float | None, str]:
     """posterior mean / pooled mean per group, clipped. Groups never seen get 1.0."""
@@ -335,11 +356,13 @@ def run(write: bool = True) -> dict[str, Any]:
                  for g, w in gen_w.items()}
         gen_why = f"{gen_why}; x realised credit ({credit_why})"
     now = datetime.now(tz=UTC).isoformat()
+    reuse = reuse_vs_cold(rows, verd)
     rep: dict[str, Any] = {
         "generated_at": now, "inputs": inputs, "n_lineage_rows": len(rows),
         "n_with_operator": sum(1 for r in rows.values() if r.get("operator")),
         "n_with_generator": sum(1 for r in rows.values() if r.get("generator")),
         "by_operator": by_operator, "by_source": by_source, "by_generator": by_generator,
+        "reuse_vs_cold": reuse,
         "operator_weights": {"weights": op_w, "pooled_mean": op_pooled, "reason": op_why},
         "generator_weights": {"weights": gen_w, "pooled_mean": gen_pooled, "reason": gen_why,
                               "realised_credit": gen_credit, "credit_why": credit_why},

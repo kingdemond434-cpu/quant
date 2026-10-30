@@ -764,6 +764,11 @@ $relPaths = @(
 # each must stay a small JSON summary: a file over $ReportCapBytes is skipped and said so, never
 # silently truncated and never allowed to turn this wire into a data lake.
 $ReportCapBytes = 4MB
+# AN APPEND-ONLY LEDGER IS NEVER SKIPPED (audit, 2026-10-13). The holdout register is the proof of
+# what the budget spent; dropping it at the cap would let the next adoption restore an older copy
+# and refill the study off the box. It grows by one short row per charge, so the exemption cannot
+# turn the wire into a data lake.
+$ReportCapExempt = @("desks/mt5/data/reusable_holdout_studies.jsonl")
 $reportPaths = @(
     # the box's swap capture age (2026-10-06): a stopped MT5-ContractTerms reads STALE by name
     "desks/mt5/reports/BROKER_SWAPS_FRESHNESS.json",
@@ -814,6 +819,12 @@ $reportPaths = @(
     "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",
     "desks/mt5/reports/FORWARD_CLOCK_LEDGER.json",
     "desks/mt5/reports/shadow/precert_shadow_state.json",
+    # THE REUSABLE HOLDOUT'S BUDGET (2026-10-07). meta_rnd charges every adaptive question it asks
+    # of the certified rows here; the studies register is the append-only ledger and the state is its
+    # cache. Both must reach origin, or the next adoption restores the tracked stub on the box and
+    # the budget reads as never spent off it (libs/research/reusable_holdout.py). State, not code.
+    "desks/mt5/data/reusable_holdout.json",
+    "desks/mt5/data/reusable_holdout_studies.jsonl",
     # THE COST AND TAPE STATE THE BOX MEASURES (2026-10-20). Each was fresh on the box while the
     # branch held the 2026-09-23 copy carried in by the orphan root, because no list here named
     # it: every reader off the box (pf_allocator, entry_timing, stop_geometry_derivation,
@@ -851,7 +862,7 @@ foreach ($rel in $reportPaths) {
     $full = Join-Path $RepoRoot ($rel -replace "/", "\")
     if (-not (Test-Path $full -PathType Leaf)) { continue }
     $bytes = (Get-Item -LiteralPath $full).Length
-    if ($bytes -gt $ReportCapBytes) {
+    if ($bytes -gt $ReportCapBytes -and $ReportCapExempt -notcontains $rel) {
         Write-SyncLog ("SKIP report {0}: {1:N0} bytes exceeds the {2:N0}-byte cap for this wire" -f $rel, $bytes, $ReportCapBytes)
         continue
     }
