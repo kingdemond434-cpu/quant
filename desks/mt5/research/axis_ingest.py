@@ -246,17 +246,6 @@ CARRY_PAIRS = {
     "EURSEK": ("EUR", "SEK"), "EURPLN": ("EUR", "PLN"), "EURHUF": ("EUR", "HUF"),
 }
 
-FRED_SERIES = {
-    "DGS10": "US 10y constant-maturity yield",
-    "DGS2": "US 2y constant-maturity yield",
-    "T10Y2Y": "10y-2y term spread",
-    "DTWEXBGS": "broad trade-weighted USD index",
-    "T10YIE": "10y breakeven inflation",
-    "BAMLH0A0HYM2": "US high-yield OAS -- credit appetite",
-    "VIXCLS": "VIX",
-}
-FRED_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
-
 ECB_URL = ("https://data-api.ecb.europa.eu/service/data/{flow}/{key}"
            "?lastNObservations={n}&format=csvdata")
 ECB_SERIES = {
@@ -336,31 +325,240 @@ def _csv_series(text, date_col, val_col):
     return sorted(out)
 
 
-def ingest_fred():
-    """US rates, spreads, dollar, breakevens, credit and vol -- the macro STATE series.
+#: THE LIVE FRED INPUT IS PUBLIC-DOMAIN H.15 / H.10 DATA ONLY (2026-10-29).
+#:
+#: Read off each series' FRED page that day: DGS10, DGS2 and DFII10 (H.15 Selected Interest Rates)
+#: and DTWEXBGS (H.10 Foreign Exchange Rates) are tagged "Public Domain: Citation Requested", source
+#: the Board of Governors. None is discontinued.
+FRED_SERIES = {
+    "DGS10": "US 10y constant-maturity yield",
+    "DGS2": "US 2y constant-maturity yield",
+    "DFII10": "US 10y TIPS real yield (the breakeven's second leg)",
+    "DTWEXBGS": "broad trade-weighted USD index",
+}
 
-    THE VINTAGE CAVEAT IS REAL AND RECORDED. fredgraph.csv serves the CURRENT vintage, so a
-    revised series silently back-dates knowledge. For DAILY MARKET series -- yields, the dollar
-    index, VIX, OAS -- there is nothing to revise and the risk is negligible. It would NOT be
-    negligible for GDP or payrolls, and no survey or national-accounts series is in this list.
-    """
-    series, failed = {}, {}
-    for sid, what in FRED_SERIES.items():
+#: THE TWO SPREADS ARE DERIVED HERE, FROM THE PUBLIC-DOMAIN LEGS, UNDER THEIR OLD IDS.
+#: FRED's own T10Y2Y and T10YIE pages are tagged "Copyrighted: Citation Required" (St. Louis Fed
+#: computed series). Both are arithmetic on H.15 legs FRED names in their notes -- T10Y2Y is the
+#: 10y minus the 2y constant-maturity yield, T10YIE the 10y nominal minus the 10y TIPS yield -- so
+#: the desk computes them from the public-domain legs, on dates both legs print, and keeps the ids
+#: every reader of `data/axes/fred.json` already joins on.
+FRED_DERIVED = {
+    "T10Y2Y": ("DGS10", "DGS2", "10y-2y term spread (derived: DGS10 - DGS2)"),
+    "T10YIE": ("DGS10", "DFII10", "10y breakeven inflation (derived: DGS10 - DFII10)"),
+}
+
+#: THIRD-PARTY COPYRIGHTED SERIES: IDEAS_ONLY, NEVER LIVE INPUT (auditor ruling 2026-10-14:
+#: "FRED/CBOE copyrighted series are IDEAS_ONLY"). Each is recorded in the axis document so its
+#: absence reads as a terms decision, never as an empty fetch and never as zero.
+FRED_IDEAS_ONLY = {
+    "VIXCLS": ("Chicago Board Options Exchange: 'Copyright, 2016, Chicago Board Options Exchange, "
+               "Inc. Reprinted with permission.' FRED tag 'Copyrighted: Citation Required'"),
+    "BAMLH0A0HYM2": ("ICE Data Indices: 'Reproduction of this data in any form is prohibited "
+                     "except with the prior written permission of ICE Data Indices.' FRED tag "
+                     "'Copyrighted: Pre-Approval Required'; history cut to 3 years from 2026-04"),
+}
+#: The missed-growth line every hold carries: what the desk gives up is not measured.
+FRED_IDEAS_ONLY_MISSED_GROWTH = {
+    "delta_elogw": "UNMEASURED",
+    "cause": ("third-party copyrighted series held out of live input; no conditioning family "
+              "has been judged with and without it, so the forgone E[log W] is not measured"),
+}
+
+#: TWO TRANSPORTS, AND WHY THE ORDER IS THE FIX.
+#:
+#: The old ingester read `fred.stlouisfed.org/graph/fredgraph.csv` -- the WEBSITE's graph
+#: download -- with no key. Measured on the box 2026-09-12 (data/axes/fred.json, published): 7
+#: of 7 series failed, three `TimeoutError: The read operation timed out` and four
+#: `ConnectionResetError: [WinError 10054]`. Every series failing at the transport, none at
+#: parse, is one host refusing that address -- not seven discontinued ids (each id's FRED page
+#: read 2026-10-29: none discontinued). The keyed collector reads a different host,
+#: `api.stlouisfed.org` (scripts/collect_fred_macro.py: "the registry's old 'blocked' note was
+#: the website host, not api.stlouisfed.org"), and the desk already holds that key at
+#: `data/secrets/fred.json` on both boxes. This ingester simply never used it.
+#:
+#: So the keyed API (`api_key` is a query parameter -- the FRED API documents no header form) is
+#: tried first, and the graph CSV is only the no-key fallback. A missing key reads NEEDS_KEY in the
+#: per-series reason, never zero. The key never appears in a log, a reason or an artifact.
+FRED_API_URL = "https://api.stlouisfed.org/fred/series/observations"
+FRED_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
+FRED_KEY_FILE = ROOT / "data" / "secrets" / "fred.json"
+#: A refused rate (HTTP 429) stops the pass: no further FRED request this run. Never retried
+#: around, never spread across hosts; the next scheduled run is the back-off.
+FRED_RETRY_STATES = ("TIMEOUT", "RESET")
+
+
+def _fred_key() -> str | None:
+    """The FRED API key: `FRED_API_KEY` env, else `data/secrets/fred.json` resolved from the repo
+    root (the scheduled task does not set a working directory, so a cwd-relative path would read
+    NEEDS_KEY on a box that holds the key). Returned, never printed."""
+    import os
+    k = (os.environ.get("FRED_API_KEY") or "").strip()
+    if k:
+        return k
+    try:
+        k = str(json.loads(FRED_KEY_FILE.read_text("utf-8"))["key"]).strip()
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    return k or None
+
+
+def _redact(text: str, key: str | None) -> str:
+    return text.replace(key, "<key>") if key else text
+
+
+def _classify(exc: BaseException) -> str:
+    """One word per failure mode, so a reader can count them without parsing prose."""
+    import socket
+    import urllib.error
+    if isinstance(exc, urllib.error.HTTPError):
+        return "RATE_LIMITED" if exc.code == 429 else f"HTTP_{exc.code}"
+    if isinstance(exc, (TimeoutError, socket.timeout)):
+        return "TIMEOUT"
+    if isinstance(exc, ConnectionResetError):
+        return "RESET"
+    if isinstance(exc, urllib.error.URLError):
+        reason = getattr(exc, "reason", None)
+        if isinstance(reason, (TimeoutError, socket.timeout)):
+            return "TIMEOUT"
+        if isinstance(reason, ConnectionResetError):
+            return "RESET"
+        return "UNREACHABLE"
+    return "ERROR"
+
+
+def _http_error_detail(exc: BaseException) -> str:
+    """FRED's API answers a refusal with a JSON `error_message`; that sentence IS the cause."""
+    import urllib.error
+    if not isinstance(exc, urllib.error.HTTPError):
+        return ""
+    try:
+        body = exc.read().decode("utf-8", "replace")
+        return str(json.loads(body).get("error_message") or "")[:160]
+    except Exception:
+        return ""
+
+
+def _fred_api_points(sid: str, key: str, fetch=None) -> list[tuple[str, float]]:
+    import urllib.parse
+    q = urllib.parse.urlencode({"series_id": sid, "api_key": key, "file_type": "json"})
+    text = (fetch or _fetch)(f"{FRED_API_URL}?{q}")
+    doc = json.loads(text)
+    out = []
+    for o in doc.get("observations") or []:
+        v = o.get("value")
+        if v in (None, "", "."):                  # FRED encodes a missing print as "."
+            continue
         try:
-            req = urllib.request.Request(FRED_URL.format(sid=sid), headers={"User-Agent": UA})
-            with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
-                text = r.read().decode("utf-8", "replace")
-            hdr = text.splitlines()[0].split(",")
-            pts = _csv_series(text, hdr[0], hdr[1] if len(hdr) > 1 else sid)
-            if pts:
-                series[sid] = {"what": what, "n": len(pts), "first": pts[0][0],
-                               "last": pts[-1][0],
-                               "points": [{"d": d, "v": v} for d, v in pts]}
-        except Exception as exc:
-            failed[sid] = f"{type(exc).__name__}: {str(exc)[:60]}"
-    return {"axis": "macro_state", "id": "fred_series", "source": "fredgraph.csv",
+            out.append((str(o["date"])[:10], float(v)))
+        except (KeyError, TypeError, ValueError):
+            continue
+    return sorted(out)
+
+
+def _fred_csv_points(sid: str, fetch=None) -> list[tuple[str, float]]:
+    text = (fetch or _fetch)(FRED_URL.format(sid=sid))
+    lines = text.splitlines()
+    if not lines or "," not in lines[0]:
+        # An HTML block page or a bare error string is not a CSV. Parsing it as one returns zero
+        # rows, which used to vanish into neither `series` nor `failed`.
+        raise ValueError(f"NOT_CSV: response does not start with a CSV header "
+                         f"({(lines[0] if lines else '')[:40]!r})")
+    hdr = lines[0].split(",")
+    return _csv_series(text, hdr[0], hdr[1] if len(hdr) > 1 else sid)
+
+
+def _series_doc(what: str, pts: list[tuple[str, float]], **extra) -> dict:
+    return {"what": what, "n": len(pts), "first": pts[0][0], "last": pts[-1][0], **extra,
+            "points": [{"d": d, "v": v} for d, v in pts]}
+
+
+def ingest_fred(fetch=None, key: str | None | bool = True) -> dict:
+    """US rates, the dollar and the two spreads built from them -- the macro STATE series.
+
+    EVERY SERIES ENDS IN EXACTLY ONE OF `series` OR `failed`. The old loop dropped a series that
+    fetched cleanly and parsed to nothing into neither, so an empty answer looked like a smaller
+    list rather than a failure. Now an empty response is `EMPTY: ...` in `failed`, with its reason,
+    and `series_state[sid]` names the outcome of every series this pass asked for.
+
+    THE VINTAGE CAVEAT IS REAL AND RECORDED. FRED serves the CURRENT vintage, so a revised series
+    silently back-dates knowledge. For DAILY MARKET series -- yields, the dollar index -- there is
+    nothing to revise. It would NOT be negligible for GDP or payrolls, and none is in this list.
+
+    `fetch` and `key` exist for the fixture tests: `fetch(url) -> text`; `key=True` resolves the
+    real key, `None`/`False` forces the no-key path.
+    """
+    api_key = _fred_key() if key is True else (key or None)
+    series, failed, state = {}, {}, {}
+    transport: dict[str, str] = {}
+    rate_limited = False
+    for sid, what in FRED_SERIES.items():
+        if rate_limited:
+            failed[sid] = "RATE_LIMITED: an earlier request this pass got HTTP 429; not asked"
+            state[sid] = "RATE_LIMITED"
+            continue
+        reasons = []
+        pts: list[tuple[str, float]] = []
+        routes = ([("api", lambda s=sid: _fred_api_points(s, api_key, fetch))] if api_key
+                  else []) + [("fredgraph", lambda s=sid: _fred_csv_points(s, fetch))]
+        if not api_key:
+            reasons.append("NEEDS_KEY: no FRED_API_KEY and no data/secrets/fred.json")
+        for route, call in routes:
+            for attempt in (1, 2):
+                try:
+                    pts = call()
+                except Exception as exc:
+                    kind = _classify(exc)
+                    detail = _http_error_detail(exc) or str(exc)[:80]
+                    reasons.append(_redact(f"{route}: {kind}: {type(exc).__name__}: {detail}",
+                                           api_key))
+                    if kind == "RATE_LIMITED":
+                        rate_limited = True
+                        break
+                    if kind in FRED_RETRY_STATES and attempt == 1:
+                        continue          # one polite retry for a transient edge failure
+                    break
+                if not pts:
+                    reasons.append(f"{route}: EMPTY: the response parsed to 0 observations")
+                break
+            if pts or rate_limited:
+                if pts:
+                    transport[sid] = route
+                break
+        if pts:
+            series[sid] = _series_doc(what, pts, transport=transport[sid])
+            state[sid] = "OK"
+        else:
+            failed[sid] = "; ".join(reasons)[:400]
+            state[sid] = ("RATE_LIMITED" if rate_limited else
+                          "EMPTY" if all("EMPTY" in r or "NEEDS_KEY" in r for r in reasons)
+                          else "ERROR")
+
+    for sid, (a, b, what) in FRED_DERIVED.items():
+        la, lb = series.get(a), series.get(b)
+        if not la or not lb:
+            missing = [x for x, leg in ((a, la), (b, lb)) if not leg]
+            failed[sid] = f"EMPTY: derived from {a} - {b}; leg(s) {', '.join(missing)} absent"
+            state[sid] = "EMPTY"
+            continue
+        vb = {p["d"]: p["v"] for p in lb["points"]}
+        pts = [(p["d"], round(p["v"] - vb[p["d"]], 6)) for p in la["points"] if p["d"] in vb]
+        if not pts:
+            failed[sid] = f"EMPTY: {a} and {b} share no date"
+            state[sid] = "EMPTY"
+            continue
+        series[sid] = _series_doc(what, pts, derived_from=[a, b])
+        state[sid] = "OK"
+
+    return {"axis": "macro_state", "id": "fred_series",
+            "source": "api.stlouisfed.org (keyed), fredgraph.csv fallback",
             "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
             "n_series": len(series), "n_failed": len(failed), "failed": failed,
+            "series_state": state,
+            "key_present": bool(api_key),
+            "transport": transport,
+            "ideas_only": {sid: {"terms": why, "missed_growth": FRED_IDEAS_ONLY_MISSED_GROWTH}
+                           for sid, why in FRED_IDEAS_ONLY.items()},
             "vintage_note": ("CURRENT vintage only. Daily market series barely revise; no survey "
                              "or national-accounts series is in this list on purpose."),
             "shape": "series[sid].points -- one dated state variable each",
@@ -378,14 +576,19 @@ def ingest_ecb():
                 text = r.read().decode("utf-8", "replace")
             pts = _csv_series(text, "TIME_PERIOD", "OBS_VALUE")
             if pts:
-                series[name] = {"what": what, "n": len(pts), "first": pts[0][0],
-                                "last": pts[-1][0],
-                                "points": [{"d": d, "v": v} for d, v in pts]}
+                series[name] = _series_doc(what, pts)
+            else:
+                # The same silent hole FRED had: a clean fetch that parses to nothing is a
+                # failure with a reason, never a series quietly missing from the list.
+                failed[name] = "EMPTY: the response parsed to 0 observations"
         except Exception as exc:
-            failed[name] = f"{type(exc).__name__}: {str(exc)[:60]}"
+            failed[name] = f"{_classify(exc)}: {type(exc).__name__}: {str(exc)[:60]}"
+    state = {n: ("OK" if n in series else str(failed.get(n, "")).split(":")[0] or "ERROR")
+             for n in ECB_SERIES}
     return {"axis": "macro_state", "id": "ecb_sdw", "source": "data-api.ecb.europa.eu",
             "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
             "n_series": len(series), "n_failed": len(failed), "failed": failed,
+            "series_state": state,
             "vintage_note": "SDMX carries the vintage; these are published and not revised.",
             "shape": "series[name].points -- one dated state variable each",
             "series": series}
