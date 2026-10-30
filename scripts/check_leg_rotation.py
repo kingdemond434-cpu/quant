@@ -16,6 +16,9 @@ FAILS on two lists rather than letting either be inferred from silence:
 
     never_run       legs the compute ledger has never once recorded. Must be empty.
     outside_window  legs with no run inside ROTATION_WINDOW_H. Must be empty.
+    liveness        the rotation's own RED verdict (2026-10-29): a roster leg starved
+                    RED_AFTER_PASSES consecutive passes, or a declared leg still never run after
+                    a pass ran with it. Must be GREEN; every RED leg is named.
 
 IT IS NOT A THROTTLE AND CANNOT BECOME ONE. This fence only ever demands that MORE legs run; there
 is no threshold here that can be satisfied by attempting less. The rotation it reads
@@ -78,7 +81,32 @@ def check(path: Path | None = None, *, now: object = None) -> dict[str, object]:
         failures.append(f"{len(outside)} leg(s) have no run inside the {win}h rotation window: "
                         + ", ".join(sorted(outside)[:40])
                         + (" ..." if len(outside) > 40 else ""))
+    raw_live = rec.get("liveness")
+    live: dict[str, object] = raw_live if isinstance(raw_live, dict) else {}
+    raw_red = live.get("red_legs")
+    red = [str(x) for x in raw_red] if isinstance(raw_red, list) else []
+    raw_res = live.get("red_residents")
+    res_red = [str(x) for x in raw_res] if isinstance(raw_res, list) else []
+    if red or (str(live.get("verdict") or "").upper() == "RED" and not res_red):
+        failures.append(f"leg liveness RED: {len(red)} leg(s) starved past the "
+                        f"{live.get('max_deferrals', LR.MAX_DEFERRALS)}-pass ageing bound or "
+                        f"never run: {', '.join(sorted(red)[:40])}"
+                        + (" ..." if len(red) > 40 else ""))
+    verdict = str(live.get("verdict") or "").upper()
+    if verdict not in {"RED", "GREEN"}:
+        # UNMEASURED IS AN ANSWER, NEVER A PASS (L1.28a; Auditor 2026-10-29). A record with no
+        # readable `liveness` verdict -- written by a cycle older than the RED/GREEN block, or
+        # hand-edited -- says nothing about whether any leg starved, and that silence is exactly
+        # what this fence exists to refuse.
+        failures.append("leg liveness UNMEASURED: the rotation record carries no RED/GREEN "
+                        "`liveness` verdict, so whether any leg starved past its bound cannot "
+                        "be cashed (L1.28a)")
+    if res_red:
+        failures.append(f"resident liveness RED: {len(res_red)} department resident(s) waiting "
+                        f"past the slot-queue bound: {', '.join(sorted(res_red))}")
     return {"ok": not failures, "n_failed": len(failures), "failures": failures,
+            "liveness": str(live.get("verdict") or "UNMEASURED"), "red_legs": red,
+            "red_residents": res_red,
             "record_age_h": None if age_h is None else round(age_h, 2),
             "n_roster": rec.get("n_roster"), "n_never_run": len(never),
             "n_outside_window": len(outside), "plan": rec.get("plan"),

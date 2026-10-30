@@ -411,6 +411,50 @@ def check_state_flow() -> None:
     print()
 
 
+def check_leg_rotation(path: Path | None = None) -> None:
+    """THE HOURLY CYCLE'S LEG LIVENESS (reports/LEG_ROTATION.json `liveness`, 2026-10-29).
+
+    A leg the rotation keeps deferring raises no error and writes nothing, so it reads exactly
+    like a leg with nothing to do: `clock_ledger` (a one-second leg) went four days that way.
+    The rotation now publishes RED by name; this is the box-side reader of it."""
+    _section("DOES EVERY HOURLY LEG GET ITS TURN  (reports/LEG_ROTATION.json)")
+    p = path or (DESK / "reports" / "LEG_ROTATION.json")
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except FileNotFoundError:
+        _unknown("reports/LEG_ROTATION.json is absent -- which hourly legs ran is UNMEASURED")
+        print()
+        return
+    except (OSError, ValueError) as exc:
+        _unknown(f"reports/LEG_ROTATION.json unreadable ({_exc_reason(exc)})")
+        print()
+        return
+    live = doc.get("liveness") if isinstance(doc, dict) else None
+    if not isinstance(live, dict):
+        _unknown("LEG_ROTATION.json carries no `liveness` -- the rotation predates the starvation "
+                 "check; whether any leg is starved is UNMEASURED")
+    elif str(live.get("verdict") or "").upper() == "RED" or live.get("red_legs") \
+            or live.get("red_residents"):
+        red = [str(x) for x in (live.get("red_legs") or [])]
+        res = [str(x) for x in (live.get("red_residents") or [])]
+        if red or not res:
+            _bad(f"leg liveness RED ({doc.get('plan')} plan, {doc.get('generated')}): {len(red)} "
+                 f"leg(s) starved or never run: {', '.join(red[:40])}"
+                 + (" ..." if len(red) > 40 else ""))
+        if res:
+            q = doc.get("residents") if isinstance(doc.get("residents"), dict) else {}
+            _bad(f"resident liveness RED: {len(res)} department resident(s) waiting past the "
+                 f"{q.get('max_wait_s')}s bound for {q.get('slots')} slot(s): {', '.join(res)}"
+                 + (f" (expected queue wait {q.get('expected_wait_s')}s: OVERSUBSCRIBED)"
+                    if q.get("oversubscribed") else ""))
+    else:
+        _ok(f"leg liveness GREEN ({doc.get('plan')} plan, {doc.get('generated')}): no leg past "
+            f"{live.get('max_deferrals')} deferrals; aged in this pass: "
+            f"{len(doc.get('aged_admitted') or [])}, chronic timeouts: "
+            f"{', '.join(doc.get('chronic_timeouts') or []) or 'none'}")
+    print()
+
+
 def check_stall_watch_alerts() -> None:
     """stall_watch.json's alerts_* keys (the ten-minute watcher's reading) had no reader."""
     _section("DOES A STALL PAGE ANYONE  (stall_watch.json, every ten minutes)")
@@ -501,6 +545,7 @@ def main(argv: list[str] | None = None) -> int:
     check_artifacts()
     check_bars_state()
     check_state_flow()
+    check_leg_rotation()
     check_stall_watch_alerts()
     check_gateway_state()
     print("Every [PROBLEM] line above is a thing to fix. [UNKNOWN] means this could not check,")

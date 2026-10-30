@@ -1513,8 +1513,10 @@ def in_plan(name: str, plan: str | None = None) -> bool:
 #: The cure is the law-gate battery's (`run_law_gate.rotate_gate`): rotate the roster across
 #: passes inside a stated window and publish by name what the window did not reach. Rotation
 #: decides MEMBERSHIP only -- legs still execute in file order, so every "must run after" comment
-#: below still holds -- and it never shrinks the work: a deferred leg leads the next pass, and
-#: the budget it is charged against is the scheduler's own limit, which rotation did not create.
+#: below still holds -- and it never shrinks the work: a deferred leg's wait is counted and, at
+#: `leg_rotation.MAX_DEFERRALS` passes, it is admitted outside the budget (it used to say "leads the
+#: next pass", which was false the moment the always-run set alone overran the budget: a 1 s leg
+#: then starved four days -- 2026-10-29). The budget is the scheduler's own limit.
 _ROTATION: dict[str, Any] = {}
 
 
@@ -1533,10 +1535,19 @@ def _rotation() -> Any:
         from libs.ops import leg_rotation as _lr
         full = _lr.legs_in_order(Path(__file__).resolve())
         roster = [leg for leg in full if in_plan(leg)]
-        att = _lr.read_attendance(
-            prior=_lr.Attendance.from_json(_lr.load_record().get("attendance")))
-        dec = _lr.plan_pass(roster, att, plan=HOURLY_PLAN, full_roster=full)
-        _ROTATION.update({"decision": dec, "attendance": att, "lr": _lr,
+        # THE PRIOR RECORD CARRIES THE AGEING STATE (`starve_passes`, `pass_started`): without it
+        # nothing ages into priority, which is how a 1 s leg starved four days (2026-10-29).
+        prior = _lr.load_record()
+        att = _lr.read_attendance(prior=_lr.Attendance.from_json(prior.get("attendance")))
+        # RUN FIRST WHAT FILE ORDER CANNOT REACH (Auditor MF1, 2026-10-29): the legs whose call
+        # can be built outside `main()`, so a money-critical or aged leg the plan projects past
+        # the kill runs in a prelude instead of never. MINING (the discovery department) is
+        # admitted ahead of the bands that spend the budget: mining is never throttled (MF3).
+        lift_src = _lr.liftable_legs(Path(__file__).resolve())
+        mining = {leg for leg in roster if department_of(leg) == "discovery"}
+        dec = _lr.plan_pass(roster, att, plan=HOURLY_PLAN, full_roster=full, prior=prior,
+                            liftable=set(lift_src), mining=mining)
+        _ROTATION.update({"decision": dec, "attendance": att, "lr": _lr, "lift_src": lift_src,
                           "started": datetime.now(UTC), "ran": []})
         print(f"leg rotation plan={HOURLY_PLAN} roster={len(roster)}/{len(full)} "
               f"admitted={len(dec.admitted)} deferred={len(dec.deferred)} "
@@ -1545,6 +1556,22 @@ def _rotation() -> Any:
         if dec.never_run:
             print(f"  NEVER RUN ({len(dec.never_run)}): {', '.join(dec.never_run[:40])}",
                   flush=True)
+        if dec.aged or dec.chronic_timeouts:
+            print(f"  AGED IN ({len(dec.aged)}): {', '.join(dec.aged[:40])} | CHRONIC TIMEOUT "
+                  f"({len(dec.chronic_timeouts)}): {', '.join(dec.chronic_timeouts[:20])}",
+                  flush=True)
+        if dec.red:
+            print(f"  LEG LIVENESS RED ({len(dec.red)}): {', '.join(sorted(dec.red)[:40])}",
+                  flush=True)
+        if dec.lifted or dec.unreachable:
+            print(f"  RUN FIRST ({len(dec.lifted)}): {', '.join(dec.lifted[:40])} | UNREACHABLE "
+                  f"past the kill ({len(dec.unreachable)}): {', '.join(dec.unreachable[:20])}",
+                  flush=True)
+        if dec.capacity.get("oversubscribed"):
+            print(f"  OVERSUBSCRIBED: other legs {dec.capacity.get('other_legs_s')}s over "
+                  f"{dec.capacity.get('headroom_s')}s headroom = "
+                  f"{dec.capacity.get('passes_to_cover')} passes to cover against a bound of "
+                  f"{dec.capacity.get('bound_passes')}", flush=True)
         # PUBLISHED BEFORE THE FIRST LEG RUNS. A pass killed at its 40-minute limit never reaches
         # its own epilogue, which is precisely how the cycle came to hold no record of what it
         # could not reach. `never_run` is known here, so it is on disk here.
@@ -1553,6 +1580,34 @@ def _rotation() -> Any:
         print(f"leg rotation UNAVAILABLE ({type(exc).__name__}: {exc}); "
               "every leg runs in file order as before", flush=True)
     return _ROTATION.get("decision")
+
+
+def _rotation_prelude(dec: Any) -> None:
+    """RUN FIRST the protected legs the plan projects past the kill (`Decision.lifted`, MF1).
+
+    Once per pass, before the first leg. Each lifted leg's call is rebuilt from its own source
+    expression in `main()` (`leg_rotation.liftable_legs`: module-level names only, so it means here
+    exactly what it means there) and run through `_costed` like any leg -- ledger row, outcome,
+    write-or-explain. Its result is kept, and when `main()` reaches that leg in file order
+    `_costed` hands back the same result without running it again, so every local `main()` binds
+    from it is bound. A call that cannot be rebuilt is skipped LOUDLY and the leg keeps its
+    file-order place. Never fails the pass."""
+    if _ROTATION.get("prelude") is not None:
+        return
+    _ROTATION["prelude"] = {}
+    src = _ROTATION.get("lift_src") or {}
+    for leg in list(getattr(dec, "lifted", None) or []):
+        expr = src.get(leg)
+        if not expr or not in_plan(leg):
+            continue
+        try:
+            fn = eval(compile(expr, f"<run-first {leg}>", "eval"), globals())
+        except Exception as exc:
+            print(f"  RUN FIRST {leg} SKIPPED ({type(exc).__name__}: {exc}); it keeps its "
+                  "file-order place", flush=True)
+            continue
+        print(f"  RUN FIRST {leg}: its file-order place is past the kill", flush=True)
+        _ROTATION["prelude"][leg] = _costed(leg, fn)
 
 
 def _rotation_publish() -> None:
@@ -1726,11 +1781,16 @@ def _costed(name: str, fn):
     # this one boundary, so membership can be decided for all 325 of them without moving a line
     # of `main()` -- which means the dependency order every leg comment states is untouched. A
     # ROTATED_OUT leg returns in microseconds, so the pass races past it and the 40-minute clock
-    # actually reaches the tail; it is the FIRST thing admitted next pass. No ledger row, for the
+    # actually reaches the tail; its wait is counted and ages into admission. No ledger row, for the
     # same reason SKIPPED_BY_PLAN writes none: it did not run here, and `opportunity_cost` and
     # the meta-controller's epoch must read that truth rather than a phantom run.
     _rot = _rotation()
     if _rot is not None:
+        _rotation_prelude(_rot)
+        _early = _ROTATION.get("prelude") or {}
+        if name in _early:
+            # ALREADY RUN THIS PASS, FIRST (MF1): the same result, not a second run.
+            return _early[name]
         _elapsed = (datetime.now(UTC) - _ROTATION["started"]).total_seconds()
         _ok, _why = _rot.should_run(name, _ROTATION.get("attendance"), _elapsed)
         if not _ok:
@@ -2456,6 +2516,26 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
                       "floor_why": f"{name} stops itself at {_floor}s; a shorter cap kills it "
                                    f"before it writes, at the same prefix every hour"}
         budget = _floor
+    # THE LEG_TIMEOUT CLASS (2026-10-29): math_lab/physics_lab were killed at 720/700 s on every
+    # pass with 0 artifacts moved. `measured_cap` raises the cap -- one-sided, bounded, never for
+    # an ALWAYS_RUN leg -- to what the leg measurably needs. Any failure leaves `budget` as it is.
+    with suppress(Exception):
+        _lr_mod = _ROTATION.get("lr")
+        _att_now = _ROTATION.get("attendance")
+        _dec_now = _ROTATION.get("decision")
+        if _lr_mod is not None and _att_now is not None:
+            # THE PLAN'S GRANT, NOT AN UNCHARGED RAISE (Auditor MF2): `cap_for` applies a raise
+            # only as far as `plan_pass` charged it and bounded it across the pass.
+            if _dec_now is not None and hasattr(_dec_now, "cap_for"):
+                _cap, _cap_why = _dec_now.cap_for(name, _att_now, float(budget))
+            else:
+                _cap, _cap_why = _lr_mod.measured_cap(name, _att_now, float(budget), 0.0)
+            if _cap > budget:
+                print(f"  {name} cap {budget}s -> {int(_cap)}s ({_cap_why})", flush=True)
+                _price_rec = {**(_price_rec if isinstance(_price_rec, dict) else {}),
+                              "measured_cap_s": int(_cap), "measured_from_s": budget,
+                              "measured_why": _cap_why}
+                budget = int(_cap)
     try:
         # THE CAP IS TOLD TO THE CHILD. An organ that stops itself at its own budget can only stop
         # INSIDE the cap if it knows the cap; the pricer moves it hourly. Read by
