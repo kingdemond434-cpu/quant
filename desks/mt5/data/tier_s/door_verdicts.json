@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-30T08:54:43.902136+00:00",
+ "generated_utc": "2026-10-30T09:49:57.289544+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -12812,7 +12812,7 @@
    }
   },
   "external.EURCHF@M30.clock_transition.p=d416e1eebe081eac": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -12823,7 +12823,7 @@
    }
   },
   "external.EURSGD@M30.clock_transition.p=d416e1eebe081eac": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -12834,7 +12834,7 @@
    }
   },
   "external.GBPCAD@M30.clock_transition.p=d416e1eebe081eac": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -12845,7 +12845,7 @@
    }
   },
   "external.NZDCAD@M30.clock_transition.p=d416e1eebe081eac": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -12856,7 +12856,7 @@
    }
   },
   "external.NZDCHF@M30.clock_transition.p=d416e1eebe081eac": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -12867,7 +12867,7 @@
    }
   },
   "external.SGDJPY@M30.clock_transition.p=d416e1eebe081eac": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -12878,7 +12878,7 @@
    }
   },
   "external.AUDSGD.clock_transition.p=c445bbd1b256484a": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -12889,7 +12889,7 @@
    }
   },
   "external.AUDSGD.clock_transition.p=f4391ced9b0b443d": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -12900,7 +12900,7 @@
    }
   },
   "external.AUDCAD.clock_transition.p=b95e974aac459e97": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -12911,7 +12911,7 @@
    }
   },
   "external.AUDJPY.clock_transition.p=2defe48a0461e548": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -12922,7 +12922,7 @@
    }
   },
   "external.AUDJPY.clock_transition.p=cc7629f4faa911ea": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -12933,7 +12933,7 @@
    }
   },
   "external.AUDNZD.clock_transition.p=1a33e1828790f75c": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -12944,7 +12944,7 @@
    }
   },
   "external.AUDNZD.clock_transition.p=b95e974aac459e97": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -12955,7 +12955,7 @@
    }
   },
   "external.AUDSGD.clock_transition.p=1a33e1828790f75c": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -12966,7 +12966,7 @@
    }
   },
   "external.AUDSGD.clock_transition.p=2defe48a0461e548": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -12977,7 +12977,7 @@
    }
   },
   "external.AUDSGD.clock_transition.p=cc7629f4faa911ea": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
