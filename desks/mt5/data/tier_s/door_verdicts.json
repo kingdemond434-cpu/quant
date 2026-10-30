@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-30T10:54:49.600334+00:00",
+ "generated_utc": "2026-10-30T11:41:40.494952+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -14646,6 +14646,94 @@
     "confidence": 0.1538,
     "sd": 0.0694,
     "status": "UNMEASURED"
+   }
+  },
+  "external.GBPDKK@M30.cross_asset_residual.p=bb4f32db608b3545": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "cross_asset_residual",
+   "theory": {
+    "n_oos": 14,
+    "confidence": 0.6286,
+    "sd": 0.0805,
+    "status": "CONTESTED"
+   }
+  },
+  "external.GBPDKK@M30.cross_asset_residual.p=8358893314368794": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "cross_asset_residual",
+   "theory": {
+    "n_oos": 14,
+    "confidence": 0.6286,
+    "sd": 0.0805,
+    "status": "CONTESTED"
+   }
+  },
+  "external.GBPDKK@M30.cross_asset_residual.p=b6ac867976ed8a09": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "cross_asset_residual",
+   "theory": {
+    "n_oos": 14,
+    "confidence": 0.6286,
+    "sd": 0.0805,
+    "status": "CONTESTED"
+   }
+  },
+  "external.GBPDKK@M30.cross_asset_residual.p=78c502501c08da60": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "cross_asset_residual",
+   "theory": {
+    "n_oos": 14,
+    "confidence": 0.6286,
+    "sd": 0.0805,
+    "status": "CONTESTED"
+   }
+  },
+  "external.GBPDKK@M30.cross_asset_residual.p=dfc0df28b2b13d4c": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "cross_asset_residual",
+   "theory": {
+    "n_oos": 14,
+    "confidence": 0.6286,
+    "sd": 0.0805,
+    "status": "CONTESTED"
+   }
+  },
+  "external.GBPDKK@M30.cross_asset_residual.p=b4731a724719fd6a": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "cross_asset_residual",
+   "theory": {
+    "n_oos": 14,
+    "confidence": 0.6286,
+    "sd": 0.0805,
+    "status": "CONTESTED"
+   }
+  },
+  "external.GBPDKK@M30.cross_asset_residual.p=c225567235bf60d8": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "cross_asset_residual",
+   "theory": {
+    "n_oos": 14,
+    "confidence": 0.6286,
+    "sd": 0.0805,
+    "status": "CONTESTED"
+   }
+  },
+  "external.GBPDKK@M30.cross_asset_residual.p=bd4b783102802c1a": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "cross_asset_residual",
+   "theory": {
+    "n_oos": 14,
+    "confidence": 0.6286,
+    "sd": 0.0805,
+    "status": "CONTESTED"
    }
   }
  },
