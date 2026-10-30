@@ -215,6 +215,16 @@ def build(*, sources: Path | None = None, frontier: Path | None = None,
         gaps.append({"what": str(stats), "why": "vector stats absent: no yield counter, no "
                                                 "failure reason, no delta cursor and no "
                                                 "retirement evidence on this host"})
+    if fr_doc is None and st_doc is None:
+        # NO ATTEMPT EVIDENCE AT ALL. Without the frontier and the stats every ground would read
+        # NEVER_ATTEMPTED -- a count derived from nothing. That is UNMEASURED, never a census.
+        return {"generated_utc": now.isoformat(timespec="seconds"), "status": UNMEASURED,
+                "why": "frontier and vector stats both absent: no attempt evidence on this host, "
+                       "so no ground's attempt state can be derived",
+                "summary": {"named": len(grounds), **dict.fromkeys(
+                    ("never_attempted", "attempted_ever", "attempted_24h", "overdue_24h",
+                     "yielded", "retired"), UNMEASURED)},
+                "unmeasured": gaps}
     fr, st = _vectors(fr_doc), _vectors(st_doc)
     sib = _sibling_yields(grounds, st, fr)
     rows: dict[str, dict[str, Any]] = {}
@@ -302,18 +312,25 @@ def build(*, sources: Path | None = None, frontier: Path | None = None,
 
 
 # --------------------------------------------------------------------------- history + fence
-def history(path: Path | None = None) -> list[dict[str, Any]]:
-    out: list[dict[str, Any]] = []
+def _valid_lines(path: Path) -> tuple[list[str], int]:
+    """(the well-formed JSON-object lines verbatim, the file's raw line count)."""
     try:
-        lines = (path or HISTORY).read_text("utf-8").splitlines()
+        lines = path.read_text("utf-8").splitlines()
     except OSError:
-        return out
-    for ln in lines[-MAX_HISTORY:]:
+        return [], 0
+    good: list[str] = []
+    for ln in lines:
         with contextlib.suppress(ValueError):
-            row = json.loads(ln)
-            if isinstance(row, dict):
-                out.append(row)
-    return out
+            if isinstance(json.loads(ln), dict):
+                good.append(ln)
+    return good, len(lines)
+
+
+def history(path: Path | None = None) -> list[dict[str, Any]]:
+    """The last MAX_HISTORY VALID readings. Malformed lines are skipped, and they never use up
+    the window: a valid reading is lost only to the cap, never to a neighbour's corruption."""
+    good, _raw = _valid_lines(path or HISTORY)
+    return [json.loads(ln) for ln in good[-MAX_HISTORY:]]
 
 
 #: The window over which never-attempted must fall, and the youngest reading that may anchor it.
@@ -395,17 +412,19 @@ def _atomic(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
     tmp.write_text(text, "utf-8")
+    # ATOMIC OR NOTHING: tmp + os.replace, retried while a Windows reader holds the file. There
+    # is no direct-write fallback -- a half-written history is worse than a late one, and the
+    # failure is raised so the pass reports it instead of publishing a torn file.
     for i in range(6):
         try:
             os.replace(tmp, path)
             return
-        except PermissionError:            # Windows: a reader holds the file; retry, then write
+        except PermissionError:
+            if i == 5:
+                with contextlib.suppress(OSError):
+                    tmp.unlink()
+                raise
             time.sleep(0.2 * (i + 1))
-    try:
-        path.write_text(text, "utf-8")
-    finally:
-        with contextlib.suppress(OSError):
-            tmp.unlink()
 
 
 def publish(*, out: Path | None = None, history_path: Path | None = None,
@@ -427,9 +446,10 @@ def publish(*, out: Path | None = None, history_path: Path | None = None,
                 k: v for k, v in doc["summary"].items() if not isinstance(v, dict)},
                 "fence": verdict["status"]}, ensure_ascii=False)
             hpath.parent.mkdir(parents=True, exist_ok=True)
-            keep = [json.dumps(h, ensure_ascii=False) for h in hist[-(MAX_HISTORY - 1):]]
-            if len(hist) >= MAX_HISTORY:
-                _atomic(hpath, "\n".join([*keep, line]) + "\n")
+            good, raw = _valid_lines(hpath)
+            if raw >= MAX_HISTORY:
+                # trim to the cap from the VALID lines, kept verbatim; malformed ones stay out
+                _atomic(hpath, "\n".join([*good[-(MAX_HISTORY - 1):], line]) + "\n")
             else:
                 with hpath.open("a", encoding="utf-8") as fh:
                     fh.write(line + "\n")

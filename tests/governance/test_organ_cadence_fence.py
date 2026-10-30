@@ -245,6 +245,39 @@ def test_the_declared_debt_may_only_shrink(box: Path) -> None:
     assert any("may only SHRINK" in p for p in doc["problems"])
 
 
+def test_declare_cannot_absorb_a_new_dark_organ_or_loosen_a_ratchet(box: Path) -> None:
+    """MF1 (audit of #138): once a debt file exists, `--declare` adds no rows and both ceilings
+    take min(old, new). A new dark organ stays red after a re-declare."""
+    _declare_ledger(box, {"a": "desks/mt5/reports/A.json", "b": "desks/mt5/reports/B.json"})
+    for n in ("A", "B"):
+        _touch(box / "desks" / "mt5" / "reports" / f"{n}.json", NOW - timedelta(hours=72))
+    _write(box, EVENTS, _events([(leg, NOW - timedelta(hours=h), True)
+                                 for leg in ("a", "b") for h in range(15, 0, -1)]))
+    debt = _write(box, DEBT, json.dumps({"declared_max": 1, "windows_lost_max": 0,
+                                         "declared": {"a": {"why": "x"}}}))
+    doc = fence.scan(box, now=NOW)
+    assert doc["ok"] is False and any(p.startswith("b:") for p in doc["problems"])
+    doc["seal_duty_cycle"] = {"available": True, "windows_lost": 5}
+
+    fence.declare(doc, debt)
+
+    after = json.loads(debt.read_text("utf-8"))
+    assert set(after["declared"]) == {"a"}
+    assert after["declared_max"] == 1 and after["windows_lost_max"] == 0
+    again = fence.scan(box, now=NOW)
+    assert again["ok"] is False and any(p.startswith("b:") for p in again["problems"])
+
+
+def test_declare_refuses_over_an_unreadable_debt_file(box: Path) -> None:
+    """An unreadable previous debt is refused, never re-declared from scratch as {}."""
+    debt = _write(box, DEBT, "{not json")
+    doc = {"generated": NOW.isoformat(), "organs": [
+        {"organ": "b", "verdict": next(iter(fence._BREACH)), "why": "dark"}]}
+    with pytest.raises(fence.DebtDeclareRefused):
+        fence.declare(doc, debt)
+    assert debt.read_text("utf-8") == "{not json"
+
+
 # ----------------------------------------------------- 3. the seal's duty cycle per window
 def test_a_window_that_closed_on_refusals_is_counted(box: Path) -> None:
     """The measurement the 2026-09-24 freeze needed: not 'is placement halted now' (the sibling

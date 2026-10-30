@@ -132,14 +132,19 @@ def test_run_all_reports_the_refusals_it_made(tmp_path: Path, monkeypatch: pytes
     assert json.loads((tmp_path / "fred.json").read_text(encoding="utf-8"))["n_series"] == 7
 
 
-def test_the_fred_token_is_scoped_and_prefixed() -> None:
-    """MEASURED on the box: the publisher's edge allowlists the FIRST token of the User-Agent and
-    tarpits anything else -- no HTTP status, so it arrives as a timeout and reads like a network
-    fault. The desk's own identity stays as the second token so the publisher can still see who
-    is asking, and the shared `UA` is untouched because BIS, COT and ECB work on it."""
+def test_the_fred_token_is_scoped_and_honest() -> None:
+    """MEASURED on the box: the publisher's edge accepts urllib's own `Python-urllib` token (HTTP
+    200) and tarpits an unrecognised one. The first token is the client that actually sends the
+    request -- never another client's name to slip a filter (audit of #138, MF2). The desk's own
+    identity stays as the second token, and the shared `UA` is untouched because BIS, COT and ECB
+    work on it."""
+    import urllib.request
+
     from research import axis_ingest as ai
 
-    assert ai.FRED_UA.split()[0] == "curl/8.4.0"
+    first = ai.FRED_UA.split()[0]
+    assert first == f"Python-urllib/{urllib.request.__version__}", first
+    assert "curl" not in ai.FRED_UA.lower(), "never impersonate another client to pass a filter"
     assert "quant-desk-axis-ingest" in ai.FRED_UA, (
         "the allowlisted token is PREFIXED, never substituted -- the desk still identifies itself")
     assert ai.UA == "quant-desk-axis-ingest/1.0 (research)", (

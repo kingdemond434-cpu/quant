@@ -159,12 +159,25 @@ def correlation_blocks(returns: dict[str, pd.Series]) -> tuple[dict[str, int | N
     return blocks, dropped
 
 
-def live_sleeve_symbols(path: Path = SLEEVES) -> list[str]:
-    """The instruments the LIVE sleeves trade. Read only; an unreadable file is an empty book."""
+def read_live_book(path: Path = SLEEVES) -> tuple[list[str], str | None]:
+    """(LIVE sleeve instruments, why-UNMEASURED). An unreadable file is NOT an empty book: the
+    second element names why, so `n_held` is reported UNMEASURED rather than a measured 0."""
     try:
         raw = json.loads(path.read_text("utf-8"))
-    except (OSError, ValueError):
-        return []
+    except (OSError, ValueError) as exc:
+        return [], f"UNMEASURED: {path.name} unreadable ({type(exc).__name__})"
+    if not isinstance(raw, (dict, list)):
+        return [], f"UNMEASURED: {path.name} is not a sleeve list"
+    return live_sleeve_symbols_from(raw), None
+
+
+def live_sleeve_symbols(path: Path = SLEEVES) -> list[str]:
+    """The instruments the LIVE sleeves trade. Read only; see `read_live_book` for whether the
+    book could be read at all."""
+    return read_live_book(path)[0]
+
+
+def live_sleeve_symbols_from(raw: Any) -> list[str]:
     rows = raw.get("sleeves") if isinstance(raw, dict) else raw
     out = {str(r.get("symbol")) for r in rows or []
            if isinstance(r, dict) and str(r.get("status") or "").upper() == "LIVE"
@@ -299,7 +312,9 @@ def build(*, budget_s: float = 480.0, meta: dict[str, Any] | None = None,
         def bars_for(sym: str) -> pd.DataFrame | None:
             return G._bars_for(sym, "H1")
     leg_for = leg_for or gauntlet_leg
-    live = live_sleeve_symbols() if live is None else live
+    live_unmeasured: str | None = None
+    if live is None:
+        live, live_unmeasured = read_live_book()
 
     returns: dict[str, pd.Series] = {}
     no_bars: list[str] = []
@@ -383,7 +398,8 @@ def build(*, budget_s: float = 480.0, meta: dict[str, Any] | None = None,
                    "dropped_short_history": dropped},
         "live_book": {"sleeve_instruments": live, "rho_max": LIVE_RHO_MAX,
                       "measure": "max |rho| of daily log returns to any LIVE sleeve instrument",
-                      "n_held": len(held)},
+                      "n_held": len(held) if live_unmeasured is None else "UNMEASURED",
+                      **({"why": live_unmeasured} if live_unmeasured else {})},
         "correlated_to_live": correlated,
         "sessions": SESSIONS,
         "cells": cells,

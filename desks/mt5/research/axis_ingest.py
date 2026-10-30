@@ -276,15 +276,17 @@ FRED_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
 #: as "FRED currently times out and resets from this box's IP (7/7)", a fact about the publisher.
 #: It was a fact about this string.
 #:
-#: NOTHING IS BYPASSED. `fredgraph.csv` is keyless and public, it answers 200 to an ordinary
-#: `python-urllib` token, and no access control, paywall or credential is involved (LAWS 5e's
-#: five refused acts are untouched). The desk's own identity is KEPT as the second token so the
-#: publisher can still see who is asking -- the allowlisted token is prefixed, never substituted.
+#: AN HONEST TOKEN, NEVER ANOTHER CLIENT'S (audit of #138, MF2). The first token is the client
+#: this request actually comes from -- urllib's own `Python-urllib/<version>`, exactly what
+#: urllib sends with no header at all, and measured above at HTTP 200 -- and the desk's identity
+#: is the second token so the publisher can see who is asking. Claiming to be `curl` to clear an
+#: edge filter would be impersonating another client to pass that filter, which the desk's
+#: no-bypassing data rule forbids even where, as here, the data itself is keyless and public.
 #:
 #: SCOPED TO FRED ON PURPOSE. `UA` is shared with BIS, COT and ECB, which were ingesting 85.9 MB,
 #: 1.1 MB and 786 KB on this exact header; changing it globally would put three working axes at
 #: risk to repair a fourth.
-FRED_UA = "curl/8.4.0 quant-desk-axis-ingest/1.0"
+FRED_UA = f"Python-urllib/{urllib.request.__version__} quant-desk-axis-ingest/1.0"
 
 ECB_URL = ("https://data-api.ecb.europa.eu/service/data/{flow}/{key}"
            "?lastNObservations={n}&format=csvdata")
