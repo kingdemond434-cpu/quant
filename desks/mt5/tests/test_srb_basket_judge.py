@@ -165,3 +165,67 @@ def test_the_lifetime_ledger_charges_baskets_to_their_family(tmp_path, monkeypat
     total, by_fam = el._proposer_counts()
     assert total == 2
     assert by_fam == {sbj.FAMILY: 2}
+
+
+def test_trials_are_charged_before_the_judge_can_raise(tmp_path, monkeypatch) -> None:
+    """Audit of #138: a judge that raises half-way must never leave a trial uncharged."""
+    sweep = tmp_path / "sweep.json"
+    sweep.write_text('{"cells": []}', "utf-8")
+    uni = tmp_path / "uni"
+    uni.mkdir()
+    (uni / "universe.json").write_text("{}", "utf-8")
+    trials = tmp_path / "srb_basket_trials.jsonl"
+    idx = pd.date_range("2020-01-01", periods=80, freq="D")
+
+    class _Panel:
+        def __init__(self, legs: object) -> None:
+            self.names = ["k0", "k1"]
+
+        def series(self, members, mask, weights):
+            s = pd.Series(np.zeros(80), index=idx)
+            return s, s
+
+    def _boom(*_a, **_k):
+        raise RuntimeError("judge fell over")
+
+    monkeypatch.setattr(sbj, "SWEEP", sweep)
+    monkeypatch.setattr(sbj.G, "UNI", uni)
+    monkeypatch.setattr(sbj, "TRIALS", trials)
+    monkeypatch.setattr(sbj, "build_legs", lambda rows, meta, dl: ({"k0": {}, "k1": {}}, {}))
+    monkeypatch.setattr(sbj, "Panel", _Panel)
+    monkeypatch.setattr(sbj, "membership_rules", lambda panel, meta: [
+        {"name": "oos_top8", "members": [0, 1], "mask": None, "selection": "split_sample"}])
+    monkeypatch.setattr(sbj, "weights_for", lambda panel, r: None)
+    monkeypatch.setattr(sbj, "sign_flip_null", _boom)
+    monkeypatch.setattr(sbj, "judge", _boom)
+    with pytest.raises(RuntimeError):
+        sbj.build()
+    assert len(trials.read_text("utf-8").splitlines()) == 1, "the basket was judged uncharged"
+
+
+def test_an_unmeasured_pass_never_overwrites_a_measured_judgement(tmp_path) -> None:
+    import json
+
+    out = tmp_path / "SRB_BASKET_JUDGEMENT.json"
+    assert sbj.write_judgement({"measured": True, "baskets": [1]}, out) == "written"
+    state = sbj.write_judgement({"measured": False, "why": "UNMEASURED: x"}, out)
+    assert state == "kept_measured"
+    kept = json.loads(out.read_text("utf-8"))
+    assert kept["measured"] is True and kept["baskets"] == [1]
+    assert kept["last_unmeasured_pass"]["why"] == "UNMEASURED: x"
+    assert not list(tmp_path.glob("*.tmp")), "the write goes through tmp + os.replace"
+
+
+def test_one_torn_basket_trial_line_skips_only_itself(tmp_path, monkeypatch) -> None:
+    from libs.research import experiment_ledger as el
+
+    (tmp_path / "data").mkdir()
+    ledger = tmp_path / "data" / "srb_basket_trials.jsonl"
+    sbj.charge_trials(["BASKET:x|1"], path=ledger)
+    with ledger.open("a", encoding="utf-8") as fh:
+        fh.write('{"cell": "BASKET:torn\n')
+    sbj.charge_trials(["BASKET:y|2"], path=ledger)
+    monkeypatch.setattr(el, "DESK", tmp_path)
+    total, by_fam = el._proposer_counts()
+    assert total == 2
+    assert by_fam == {sbj.FAMILY: 2}
