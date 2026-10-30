@@ -250,6 +250,9 @@ ORGAN_OUTPUT: dict[str, str] = {
     "spread_provenance": "desks/mt5/reports/SPREAD_PROVENANCE.json",
     "asia_plane": "desks/mt5/data/intelligence/",
     "sge_premium": "desks/mt5/data/lake/sge_daily.parquet",
+    # -- DECLARED 2026-10-30 (#526): the hourly job_lock_health leg stops a WEDGED research
+    # owner (its authority); its report is read by issue_board, and it is billed through that.
+    "job_lock_health": "desks/mt5/reports/JOB_LOCK_HEALTH.json",
 }
 
 #: Organs that ARE the money path or the release gate rather than an input to it. Their rent is
