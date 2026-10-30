@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-30T05:15:12.098760+00:00",
+  "swept_at": "2026-10-30T05:30:05.983180+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1142,7 +1142,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3773,
+      "shadow_exp_r": -0.3473,
       "woke_on_shadow": false
     },
     "EURCHF|discovered_asia": {
@@ -3749,7 +3749,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.7551,
+      "shadow_exp_r": -0.7524,
       "woke_on_shadow": false
     },
     "USDJPY|asia": {
@@ -4507,8 +4507,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 25,
-      "shadow_exp_r": -0.4188,
+      "shadow_n": 50,
+      "shadow_exp_r": -0.03,
       "woke_on_shadow": false
     },
     "XAGUSD|cross_asset_residual_continuous": {
