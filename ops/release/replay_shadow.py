@@ -45,6 +45,7 @@ import subprocess
 import sys
 import tempfile
 import unicodedata
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -512,13 +513,55 @@ def knobs(src: str) -> dict[str, list[str]]:
     """{name: [ast of every value it is given]} for the knobs a file sets: module-level and
     class-level UPPER_CASE names (`Class.NAME`), and every function's parameter defaults
     (`f(arg=)`, `Class.f(arg=)`), since a rail can move through any of them (#457 audit)."""
+    return bindings(src, lambda n: bool(KNOB.match(n)))
+
+
+def bindings(src: str, keep: Callable[[str], bool]) -> dict[str, list[str]]:
+    """{name: [every way the file binds it]} at module and class scope, for the names `keep`
+    accepts, plus every function's parameter defaults. A plain `NAME = value` records the
+    value's ast; any other binding records a marked entry that can never equal a pinned value,
+    so a ceiling row sees it as a second value (#554 audit SF): `NAME += 1`, a tuple or starred
+    target, a walrus, `global NAME` assigned in a function, `del NAME`, `import x as NAME`, a
+    for/with/except target, and every guarded body (if, for, while, with, try, try*, match)."""
     out: dict[str, list[str]] = {}
 
-    def walk(body: list[ast.stmt], prefix: str) -> None:
+    def put(name: str, val: str) -> None:
+        if keep(name.rsplit(".", 1)[-1].split("(", 1)[0]) or name.endswith("=)"):
+            out.setdefault(name, []).append(val)
+
+    def target(t: ast.expr, prefix: str, val: str) -> None:
+        if isinstance(t, ast.Name):
+            put(f"{prefix}{t.id}", val)
+        elif isinstance(t, ast.Tuple | ast.List):
+            for e in t.elts:
+                target(e, prefix, f"UNPACKED {val}")
+        elif isinstance(t, ast.Starred):
+            target(t.value, prefix, f"STARRED {val}")
+
+    def walrus(node: ast.AST, prefix: str) -> None:
+        for n in ast.walk(node):
+            if isinstance(n, ast.NamedExpr) and isinstance(n.target, ast.Name):
+                put(f"{prefix}{n.target.id}", f"WALRUS {ast.dump(n.value)}")
+
+    def globals_in(fn: ast.AST) -> None:
+        """`global NAME` in a function: its assignments there bind the module's NAME."""
+        names = {g for n in ast.walk(fn) if isinstance(n, ast.Global) for g in n.names}
+        for n in ast.walk(fn):
+            ts: list[ast.expr] = []
+            if isinstance(n, ast.Assign):
+                ts = list(n.targets)
+            elif isinstance(n, ast.AugAssign | ast.AnnAssign):
+                ts = [n.target]
+            for t in ts:
+                for x in ast.walk(t):
+                    if isinstance(x, ast.Name) and x.id in names:
+                        put(x.id, f"GLOBAL {ast.dump(n)}")
+
+    def walk(body: list[ast.stmt], prefix: str, guarded: bool = False) -> None:
         for n in body:
             if isinstance(n, ast.ClassDef):
                 walk(n.body, f"{prefix}{n.name}.")
-            elif isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            elif isinstance(n, ast.FunctionDef | ast.AsyncFunctionDef):
                 a = n.args
                 pos = [*a.posonlyargs, *a.args]
                 pairs = list(zip(pos[len(pos) - len(a.defaults) :], a.defaults, strict=True))
@@ -526,17 +569,55 @@ def knobs(src: str) -> dict[str, list[str]]:
                 for arg, default in pairs:
                     out.setdefault(f"{prefix}{n.name}({arg.arg}=)", []).append(ast.dump(default))
                 walk(n.body, f"{prefix}{n.name}.")  # nested functions' defaults too
-            elif isinstance(n, (ast.If, ast.Try, ast.With, ast.For, ast.While)):
-                # a constant set inside a guard is still a knob
-                for part in ("body", "orelse", "finalbody"):
-                    walk(getattr(n, part, None) or [], prefix)
-                for h in getattr(n, "handlers", None) or []:
-                    walk(h.body, prefix)
-            elif isinstance(n, (ast.Assign, ast.AnnAssign)) and n.value is not None:
-                targets = n.targets if isinstance(n, ast.Assign) else [n.target]
-                for t in targets:
-                    if isinstance(t, ast.Name) and KNOB.match(t.id):
-                        out.setdefault(f"{prefix}{t.id}", []).append(ast.dump(n.value))
+                globals_in(n)
+            elif isinstance(n, ast.Assign):
+                walrus(n.value, prefix)
+                for t in n.targets:
+                    plain = isinstance(t, ast.Name) and not guarded
+                    target(t, prefix, ast.dump(n.value) if plain else f"BOUND {ast.dump(n.value)}")
+            elif isinstance(n, ast.AnnAssign):
+                if n.value is not None:
+                    walrus(n.value, prefix)
+                    v = ast.dump(n.value)
+                    target(n.target, prefix, v if not guarded else f"BOUND {v}")
+            elif isinstance(n, ast.AugAssign):
+                target(n.target, prefix, f"AUGMENTED {ast.dump(n)}")
+            elif isinstance(n, ast.Delete):
+                for t in n.targets:
+                    target(t, prefix, "DELETED")
+            elif isinstance(n, ast.Import | ast.ImportFrom):
+                for al in n.names:
+                    name = al.asname or al.name.split(".", 1)[0]
+                    put(f"{prefix}{name}", f"IMPORTED {ast.dump(n)}")
+            elif isinstance(n, ast.For | ast.AsyncFor):
+                target(n.target, prefix, f"LOOPED {ast.dump(n.iter)}")
+                walrus(n.iter, prefix)
+                walk(n.body + n.orelse, prefix, True)
+            elif isinstance(n, ast.With | ast.AsyncWith):
+                for item in n.items:
+                    walrus(item.context_expr, prefix)
+                    if item.optional_vars is not None:
+                        target(item.optional_vars, prefix, "WITH")
+                walk(n.body, prefix, True)
+            elif isinstance(n, ast.If | ast.While):
+                walrus(n.test, prefix)
+                walk(n.body + n.orelse, prefix, True)
+            elif isinstance(n, ast.Try | ast.TryStar):
+                walk(n.body + n.orelse + n.finalbody, prefix, True)
+                for h in n.handlers:
+                    if h.name:
+                        put(f"{prefix}{h.name}", "EXCEPT")
+                    walk(h.body, prefix, True)
+            elif isinstance(n, ast.Match):
+                walrus(n.subject, prefix)
+                for case in n.cases:
+                    for x in ast.walk(case.pattern):
+                        bound = getattr(x, "name", None) or getattr(x, "rest", None)
+                        if isinstance(bound, str):
+                            put(f"{prefix}{bound}", "MATCHED")
+                    walk(case.body, prefix, True)
+            else:
+                walrus(n, prefix)
 
     walk(ast.parse(src).body, "")
     return out
@@ -551,6 +632,8 @@ def bounded() -> dict[str, set[str]]:
             out.setdefault(f, set()).update(names)
     for f, name in (doc.get("superset") or {}).items():
         out.setdefault(f, set()).add(name)
+    for f, names in (doc.get("source") or {}).items():
+        out.setdefault(f, set()).update(names)
     return out
 
 
@@ -575,6 +658,26 @@ def knob_changes(
                     "take the manual path"
                 )
     return problems
+
+
+def new_and_bounded(base: Path, head: Path, head_imported: set[str]) -> set[str]:
+    """New money files the HEAD's replay ran (no base can import a file it lacks) whose every
+    knob a ceiling already holds, from the base's ceilings.json. The replay shows their code
+    decides like the base on the grid; the ceilings, not the replay, vouch for their values
+    (#553 audit: a clean replay never measures a knob). A file with one unbounded knob stays
+    UNMEASURED."""
+    held = bounded()
+    out = set()
+    for f in head_imported:
+        if not f.endswith(".py") or read(base, f) is not None:
+            continue
+        try:
+            names = set(knobs(read(head, f) or ""))
+        except SyntaxError:
+            continue
+        if names <= held.get(f, set()):
+            out.add(f)
+    return out
 
 
 def canon(value: Any) -> Any:
@@ -657,6 +760,7 @@ def compare(
     grid = [{**who, **sc} for sc in grid]
     problems: list[str] = []
     imported: set[str] = set()
+    head_imported: set[str] = set()
     placed = 0
     for sc in grid:
         b, h = run_tree(base, sc), run_tree(head, sc)
@@ -666,11 +770,16 @@ def compare(
         if "crash" in h:
             problems.append(f"{sc['id']}: the PR's tree crashed ({h['crash']})")
             continue
-        base_root = str(base.resolve())
+        base_root, head_root = str(base.resolve()), str(head.resolve())
         imported.update(
             Path(f).relative_to(base_root).as_posix()
             for f in b["imported"]
             if f.startswith(base_root + "/")
+        )
+        head_imported.update(
+            Path(f).relative_to(head_root).as_posix()
+            for f in h.get("imported") or []
+            if f.startswith(head_root + "/")
         )
         for bs, hs in zip(b["steps"], h["steps"], strict=True):
             if bs.get("error"):
@@ -689,12 +798,13 @@ def compare(
     if not placed:
         problems.append("UNMEASURED: the base tree placed nothing anywhere on the grid")
     closure = import_closure(base)
+    covered = imported | new_and_bounded(base, head, head_imported)
     exempt = exempt_scripts((base, head), closure)
     money = money_scripts((base, head), closure)
     rows_only = MANIFEST in changed and not manifest_is_money(base, head, closure, money, exempt)
     uncovered = sorted(
         f for f in changed
-        if is_money(f, closure, exempt=exempt) and f not in imported
+        if is_money(f, closure, exempt=exempt) and f not in covered
         and not (f == MANIFEST and rows_only)
     )  # fmt: skip
     not_money = sorted(f for f in changed if is_script(f) and f in exempt)

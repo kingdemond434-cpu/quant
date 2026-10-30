@@ -1196,7 +1196,8 @@ def _reader(**files: str | None) -> Any:
         ("MAX_RISK_FRAC = 0.05\nFADE = 0.5\n", None),  # lowering is fine
         ("MAX_RISK_FRAC = 0.2\nFADE = 0.5\n", "over its ceiling"),
         ("MAX_RISK_FRAC: float = 0.11\nFADE = 0.5\n", "over its ceiling"),
-        ("MAX_RISK_FRAC = 0.1\nMAX_RISK_FRAC = 1.0\nFADE = 0.5\n", "over its ceiling"),
+        # bound twice: it fails as no plain literal now (#554 audit SF), still a breach
+        ("MAX_RISK_FRAC = 0.1\nMAX_RISK_FRAC = 1.0\nFADE = 0.5\n", "plain literal"),
         ("import os\nMAX_RISK_FRAC = float(os.environ['R'])\nFADE = 0.5\n", "plain literal"),
         ("FADE = 0.5\n", "is gone"),
         ("MAX_RISK_FRAC = True\nFADE = 0.5\n", "over its ceiling"),
@@ -1229,7 +1230,7 @@ def test_the_live_tree_is_inside_its_ceilings() -> None:
     import json
 
     ceilings = json.loads((ROOT / "ops/release/ceilings.json").read_text(encoding="utf-8"))
-    assert ri.check(ceilings, ri.git_reader("HEAD")) == []
+    assert ri.check(ceilings, ri.git_reader("HEAD"), ri.git_reader("HEAD")) == []
 
 
 # ----------------------------------------------------------------- step C: independent review
@@ -2158,6 +2159,89 @@ def test_zucks_approved_clear_carries_to_a_rebased_identical_change(auto_hub: An
     )
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
     assert len(_merges(h)) == 1
+
+
+# ------------------------------------------- source pins and ceilings that land first (#545)
+
+
+def test_a_source_pin_holds_a_non_literal_knob_to_its_exact_expression() -> None:
+    ceil = {"source": {"n.py": {"FLAG": "DESK / 'data' / 'F.json'", "f(p=)": "None"}}}
+    good = "DESK = 1\nFLAG = DESK / 'data' / 'F.json'\ndef f(p=None):\n    pass\n"
+    assert ri.check(ceil, _reader(n=good), _reader(n=good)) == []
+    for bad in (
+        good.replace("'F.json'", "'G.json'"),  # moved
+        good.replace("p=None", "p=4"),  # a default moved
+        good + "if X:\n    FLAG = 3\n",  # a second value behind a guard
+        good.replace("def f(p=None)", "def f(q=None)"),  # gone while the base has it
+    ):
+        assert ri.check(ceil, _reader(n=bad), _reader(n=good)), bad
+
+
+def test_a_ceiling_for_a_file_or_name_no_tree_has_yet_binds_from_the_pr_that_adds_it() -> None:
+    """#545: ceilings are read from the base, so a fence's rows must land before the fence."""
+    ceil = {"equal": {"n.py": {"RAIL": "fence"}, "s.py": {"NEW": 1}},
+            "source": {"s.py": {"g(x=)": "None"}}, "superset": {"n.py": "MONTHLY"}}  # fmt: skip
+    old = "OLD = 1\n"
+    assert ri.check(ceil, _reader(s=old), _reader(s=old)) == []  # neither tree: nothing binds
+    added = "RAIL = 'other'\nMONTHLY = ()\n"
+    assert ri.check(ceil, _reader(s=old, n=added), _reader(s=old))  # the PR that adds it is held
+    grown = "OLD = 1\nNEW = 2\ndef g(x=5):\n    pass\n"
+    assert len(ri.check(ceil, _reader(s=grown), _reader(s=old))) == 2
+    full = "OLD = 1\nNEW = 1\ndef g(x=None):\n    pass\n"
+    assert ri.check(ceil, _reader(s=old), _reader(s=full))  # the base has them: losing them FAILS
+    assert ri.check(ceil, _reader(s=old))  # no base reader: fail closed
+
+
+def test_a_new_money_file_the_head_ran_is_covered_only_when_every_knob_is_held(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#553 audit: the replay vouches for behaviour, the base's ceilings for values."""
+    fence = "WINDOW_MIN = 15\nFLAG = None\n\ndef ok():\n    return True\n"
+    book = _BOOK.replace("import json", "import json\nfrom desks.mt5.prop import fence")
+    base, head = _tree(tmp_path / "base"), _tree(tmp_path / "head", book)
+    (head / "desks/mt5/prop/fence.py").write_text(fence, "utf-8")
+    (base / "desks/__init__.py").write_text("", "utf-8")
+    (head / "desks/__init__.py").write_text("", "utf-8")
+    (base / "desks/mt5/__init__.py").write_text("", "utf-8")
+    (head / "desks/mt5/__init__.py").write_text("", "utf-8")
+    changed = ["desks/mt5/prop/e8_gold.py", "desks/mt5/prop/fence.py"]
+    held = {"desks/mt5/prop/fence.py": {"WINDOW_MIN", "FLAG"}}
+    monkeypatch.setattr(rs, "bounded", lambda: held)
+    rep = rs.compare(base, head, changed, _grid())
+    assert rep["verdict"] == "PASS", rep["problems"]
+    monkeypatch.setattr(rs, "bounded", lambda: {"desks/mt5/prop/fence.py": {"WINDOW_MIN"}})
+    rep = rs.compare(base, head, changed, _grid())
+    assert rep["verdict"] == "FAIL" and any("fence.py" in p for p in rep["problems"])
+
+
+@pytest.mark.parametrize(
+    "tail",
+    [
+        "PRE += 1\n",  # augmented
+        "PRE, X = 0, 1\n",  # a tuple target
+        "*PRE, X = (0, 1)\n",  # starred
+        "if (PRE := 0):\n    pass\n",  # a walrus
+        "def f():\n    global PRE\n    PRE = 0\n",  # global in a function
+        "del PRE\n",
+        "import os as PRE\n",
+        "from os import sep as PRE\n",
+        "for PRE in (0,):\n    pass\n",
+        "with open('x') as PRE:\n    pass\n",
+        "if X:\n    PRE = 0\n",  # a guarded second value
+        "try:\n    pass\nexcept* ValueError:\n    PRE = 0\n",
+        "match X:\n    case 1:\n        PRE = 0\n",
+        "match X:\n    case PRE:\n        pass\n",
+    ],
+)
+def test_every_other_binding_of_a_pinned_name_is_a_mismatch(tail: str) -> None:
+    """#554 audit SF: a rail rebound any way but one plain `NAME = literal` never reads clean."""
+    good = "PRE = 15\n"
+    ceil_eq = {"equal": {"n.py": {"PRE": 15}}}
+    ceil_max = {"max": {"n.py": {"PRE": 240}}}
+    ceil_src = {"source": {"n.py": {"PRE": "15"}}}
+    for ceil in (ceil_eq, ceil_max, ceil_src):
+        assert ri.check(ceil, _reader(n=good), _reader(n=good)) == []
+        assert ri.check(ceil, _reader(n=good + tail), _reader(n=good)), (ceil, tail)
 
 
 _ROWS = (
