@@ -485,8 +485,10 @@ def run_git(repo: Path | str, args: Sequence[str], *, timeout: float = 300.0,
 # WHAT THIS WILL AND WILL NOT KILL. A process is reaped only when all four hold:
 #   1. it is a `git` or `ssh` executable -- never `sshd` (the SSH SERVER is long-lived by design,
 #      and matching it once reported a healthy 3.9-day-old service as a stuck writer);
-#   2. it is older than `HUNG_MIN_AGE_S`, which is past every legitimate writer's OWN timeout
-#      (the adoption waits 540 s, the shadow sync 600 s), so a slow writer is never a candidate;
+#   2. it is older than `HUNG_MIN_AGE_S` -- a FLOOR that keeps this from racing a writer which is
+#      legitimately BLOCKED WAITING for the mutex (such a writer burns no CPU and moves no bytes
+#      either, so the delta proof cannot tell it from a wedge). It is not the verdict, and when it
+#      was being used as one it hid a live wedge through five consecutive passes;
 #   3. it moved NO CPU and NO I/O across a sampling window, OR it is a stdin-only Git helper whose
 #      parent is absent in both samples -- there is then nobody left to consume its result or
 #      update the ref. A `git gc` is neither case; it will never be reaped merely for being slow;
@@ -496,14 +498,43 @@ def run_git(repo: Path | str, args: Sequence[str], *, timeout: float = 300.0,
 # and "nothing could be measured" must never render identically (L1.28a). Without psutil the
 # verdict is UNMEASURED and nothing is killed.
 
-#: Past every legitimate writer's own timeout: Adopt-And-Seal waits 540 s for the mutex, the
-#: shadow sync's limit is 600 s. Anything still alive at 30 minutes has already outlived every
-#: bound the desk's own writers respect.
-HUNG_MIN_AGE_S = 1800.0
+#: THE AGE IS A FLOOR, NOT THE VERDICT -- and it was doing the verdict's job (measured 2026-09-24).
+#:
+#: At 1800 s, with the reaper on a 15-minute clock, a wedge is invisible for up to FORTY-FIVE
+#: MINUTES. That is not a theoretical bound: while a push sat wedged holding the writer mutex this
+#: evening, `MT5-ReapGitWriters` reported CLEAR **five times in a row**, because "no git process is
+#: older than 1800 s" was literally true on each pass. `MT5-SealIfClean` could not take the lock,
+#: `allows_new_risk` was False for over an hour, and the first `gold_asia` window after a
+#: seventeen-day placement halt was approaching. A wedge starting within ~45 minutes of a fixed
+#: placement window blocks that window ENTIRELY while this fence reports healthy -- and the windows
+#: are at fixed times, so that is a standing hole, not an unlucky night.
+#:
+#: THE PROOF IS THE MOVEMENT, so let the movement carry the verdict. Zero CPU delta AND zero I/O
+#: delta across the sampling window is strong evidence a process is stopped at ANY age; 1800 s was
+#: a weak proxy standing in front of a strong measurement.
+#:
+#: WHY 600 AND NOT LESS, because the floor is doing one real job and it is not the one the old
+#: comment claimed. A writer BLOCKED WAITING FOR THE MUTEX burns no CPU and moves no bytes either
+#: -- it is indistinguishable from a wedge by the delta proof alone. So the floor must sit above
+#: the longest legitimate WAIT, and that number is known: Adopt-And-Seal waits 540 s for the mutex
+#: before giving up. 600 s clears it with a minute in hand. Below that this would start killing
+#: writers that are correctly queued and about to do real work, which is its own failure.
+#:
+#: NET EFFECT: worst-case blind window falls from ~45 min (1800 s + a 15 min cadence) to ~25 min,
+#: and the thing that shortened it is the evidence, not a guess.
+HUNG_MIN_AGE_S = 600.0
 
-#: How long to watch a candidate before calling it stopped. Long enough that a writer between two
-#: syscalls still registers, short enough to sit inside the adoption's window.
-HUNG_SAMPLE_S = 15.0
+#: How long to watch a candidate before calling it stopped. LENGTHENED 15 -> 60 s (2026-09-24) as
+#: the other half of the trade above: the age floor came down by a factor of three, so the proof
+#: that replaces it is made four times stronger. A single `sleep` covers every candidate at once,
+#: so this costs sixty seconds per RUN, not per process, and it still sits an order of magnitude
+#: inside the 540 s mutex wait it must not disturb.
+#:
+#: The direction matters more than the number. A writer doing real work -- a chunked push, a slow
+#: `git gc` on a 22 GB repository -- moves SOMETHING in sixty seconds far more reliably than in
+#: fifteen, so lengthening the window makes this strictly LESS likely to kill live work. Being
+#: trigger-happy in that direction is the failure that would get the reaper switched off.
+HUNG_SAMPLE_S = 60.0
 
 #: `sshd` is excluded on purpose -- see note 1 above.
 _WRITER_NAMES = frozenset({"git", "git.exe", "ssh", "ssh.exe"})

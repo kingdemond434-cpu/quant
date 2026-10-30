@@ -91,6 +91,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import hashlib
 import json
 import os
 import sys
@@ -139,6 +140,10 @@ SYMBOL_KEYED: frozenset[str] = frozenset({"tape_day", "universe_bars", "moat_ser
                                           "sleeve_ledger"})
 #: A handoff discovery counts as exploitation only once it has actually converted.
 CONVERTED_STATES: frozenset[str] = frozenset({"COMPILED", "QUEUED", "TESTED"})
+#: The reason prefix this organ writes when it BLOCKS a handoff whose symbol MetaTrader's registry
+#: does not carry. Such a block is a ROUTE, not a disposition: it re-routes every pass and never
+#: enters the index's BLOCKED set (which would ratchet the share up and the stranded count down).
+UNCLASSIFIED_REASON = "UNCLASSIFIED:"
 #: WHAT MAKES EACH KIND POINT-IN-TIME, per dataset. A file mtime says when the desk wrote the
 #: bytes and never when the world could read them, so it is NOT a PIT stamp and is not counted
 #: as one -- question 2 of the utilization audit is answered off this table and the per-unit
@@ -163,7 +168,9 @@ BUDGET_S = 240.0
 #: would slice in collection order and starve whichever kind sorts last -- the same silent
 #: exclusion the `not_reached` counter exists to make visible.
 MAX_UNITS = 3000
-MAX_STRANDED_HANDOFFS = 300
+#: Every stranded unit is routed each pass (`route_stranded`); this bound is only the legacy
+#: `hand_to_compiler` door's, kept at the unit ceiling so it can never be the thing that strands.
+MAX_STRANDED_HANDOFFS = 3000
 MAX_TOP_STRANDED = 25
 MAX_FILE_BYTES = 128 * 1024 * 1024
 MAX_ROWS_PER_FILE = 200
@@ -333,7 +340,7 @@ def _write_atomic(path: Path, payload: Any) -> None:
 
 
 def population(path: Path, rows: list[dict[str, Any]], limit: int = MAX_POPULATION_BYTES
-               ) -> tuple[dict[str, int], int]:
+               ) -> tuple[dict[str, int], int, str]:
     """Each unit's MOST RECENT disposition over the ledger's recent tail plus this pass.
 
     WHY THE FENCED NUMBER IS NOT THIS PASS'S SHARE. The window rotates, so one pass is heavy on
@@ -345,6 +352,7 @@ def population(path: Path, rows: list[dict[str, Any]], limit: int = MAX_POPULATI
     than of the cursor. The per-pass number is still published, as `pass_share`.
     """
     latest: dict[str, str] = {}
+    read_error = ""          # "" read, "absent" no ledger yet, else why the read failed
     try:
         size = path.stat().st_size
         with path.open("rb") as fh:
@@ -361,15 +369,17 @@ def population(path: Path, rows: list[dict[str, Any]], limit: int = MAX_POPULATI
                     continue
                 if isinstance(row, dict) and row.get("unit_id") and row.get("disposition"):
                     latest[f"{row.get('kind')}:{row['unit_id']}"] = str(row["disposition"])
-    except OSError:
-        pass
+    except FileNotFoundError:
+        read_error = "absent"
+    except OSError as exc:
+        read_error = f"{type(exc).__name__}: {exc}"
     for row in rows:
         latest[f"{row.get('kind')}:{row.get('unit_id')}"] = str(row.get("disposition"))
     tally: dict[str, int] = dict.fromkeys(DISPOSITIONS, 0)
     for verdict in latest.values():
         if verdict in tally:
             tally[verdict] += 1
-    return tally, len(latest)
+    return tally, len(latest), read_error
 
 
 def _append_jsonl(path: Path, rows: list[dict[str, Any]]) -> int:
@@ -401,8 +411,11 @@ def _tokens(value: Any, out: set[str]) -> None:
         for item in value[:64]:
             _tokens(item, out)
     elif isinstance(value, dict):
+        # `field` is how a dataset-conditioned / dataset_stance cell names the SERIES it reads
+        # (dataset_exploitation's cells carry {"dataset": id, "field": series}), so an exact
+        # series join reaches the axis unit that series came from.
         for key in ("unit_id", "path", "source_id", "doc_id", "claim_id", "series", "symbol",
-                    "file", "dataset"):
+                    "file", "dataset", "field"):
             if key in value:
                 _tokens(value[key], out)
 
@@ -428,6 +441,13 @@ class Unit:
     access_label: str = ""
     credibility: str = ""
     predictive_state: str = ""
+    #: What the unit SAYS, when it says anything (a claim's text, a seat row's mechanism/why, a
+    #: document's title): carried onto its routed discovery so the compiler interprets the
+    #: unit's own mechanism instead of the placeholder "ingested and unexploited".
+    text: str = ""
+    #: A mechanism id the source itself declared (the claims table's `mechanism_id`, a seat
+    #: row's `mechanism`). Empty when nothing declared one.
+    mechanism: str = ""
 
     @property
     def qualified(self) -> bool:
@@ -562,7 +582,8 @@ def units_normalized_docs(cursor: dict[str, Any], gaps: list[dict[str, str]]
         out.append(Unit("normalized_doc", str(doc.get("doc_id") or path.stem), str(path),
                         tuple(k for k in keys if k),
                         at=str(doc.get("knowable_at") or "") if knowable else _mtime(path),
-                        pit=knowable is not None))
+                        pit=knowable is not None,
+                        text=_snippet(doc.get("title"), doc.get("summary"), doc.get("text"))))
     return out, nxt, missed
 
 
@@ -571,10 +592,17 @@ def units_claims(conn: Any, cursor: dict[str, Any], gaps: list[dict[str, str]]
     """The registry's claims table, split into news-like claims and the rest."""
     try:
         rows = [dict(r) for r in conn.execute(
-            "SELECT claim_id, doc_id, source_id, kind, knowable_at, created_at, instruments_json "
-            "FROM claims ORDER BY created_at DESC LIMIT ?", (MAX_REGISTRY_ROWS,))]
-    except Exception:                                    # the table is absent on a fresh file
-        rows = []
+            "SELECT claim_id, doc_id, source_id, kind, knowable_at, created_at, instruments_json, "
+            "text, mechanism_id FROM claims ORDER BY created_at DESC LIMIT ?",
+            (MAX_REGISTRY_ROWS,))]
+    except Exception:                                    # an older file lacks text/mechanism_id
+        try:
+            rows = [dict(r) for r in conn.execute(
+                "SELECT claim_id, doc_id, source_id, kind, knowable_at, created_at, "
+                "instruments_json FROM claims ORDER BY created_at DESC LIMIT ?",
+                (MAX_REGISTRY_ROWS,))]
+        except Exception:                                # the table is absent on a fresh file
+            rows = []
     if not rows:
         gaps.append({"what": "registry claims table", "why": "no claim has been recorded on this "
                                                              "host; claim and news ingestion are "
@@ -591,7 +619,8 @@ def units_claims(conn: Any, cursor: dict[str, Any], gaps: list[dict[str, str]]
             tuple(k for k in (str(row.get("claim_id") or ""), str(row.get("doc_id") or ""),
                               str(row.get("source_id") or "")) if k),
             syms, at=at if _stamp(at) else str(row.get("created_at") or ""),
-            pit=_stamp(at) is not None))
+            pit=_stamp(at) is not None, text=_snippet(row.get("text")),
+            mechanism=str(row.get("mechanism_id") or "")))
     out: list[Unit] = []
     nxt: dict[str, int] = {}
     missed: dict[str, int] = {}
@@ -638,12 +667,23 @@ def units_intel_rows(cursor: dict[str, Any], gaps: list[dict[str, str]], deadlin
             ident = str(row.get("id") or row.get("cell") or row.get("claim_id") or i)
             sym = str(row.get("symbol") or row.get("sym") or "").upper()
             declared = _stamp(row.get("at") or row.get("generated_at"))
+            syms = tuple(str(x).upper() for x in (row.get("symbols") or [])[:12]
+                         if isinstance(row.get("symbols"), list) and x)
             out.append(Unit("intel_row", f"{rel}#{ident}", str(path),
                             tuple(k for k in (ident, rel, path.stem, path.parent.name) if k),
-                            (sym,) if sym else (),
+                            (sym,) if sym else syms,
                             at=str(row.get("at") or row.get("generated_at") or "") if declared
-                            else stamp, pit=declared is not None))
+                            else stamp, pit=declared is not None,
+                            text=_snippet(*(row.get(k) for k in ("mechanism", "why", "claim",
+                                                                 "title", "thesis", "text"))),
+                            mechanism=str(row.get("mechanism") or "")))
     return out, nxt, missed_files
+
+
+def _snippet(*parts: Any, limit: int = 600) -> str:
+    """The first `limit` characters of the non-empty string parts, joined."""
+    text = " ".join(str(p).strip() for p in parts if isinstance(p, str) and p.strip())
+    return text[:limit]
 
 
 def _read_text(path: Path) -> str | None:
@@ -837,6 +877,13 @@ class Index:
     n_discoveries: int = 0
     n_candidates: int = 0
     n_handoffs: int = 0
+    #: Did the pass read the whole registry? False names where the deadline stopped it.
+    complete: bool = True
+    stopped_at: str = ""
+    symbols_complete: bool = False
+    #: This organ's own handoffs by state: how many converted, blocked, or still wait.
+    handoff_states: dict[str, int] = field(default_factory=dict)
+    errors: list[str] = field(default_factory=list)
 
 
 def _discovery_keys(row: dict[str, Any], *, own: bool = False) -> set[str]:
@@ -861,58 +908,131 @@ def _candidate_keys(row: dict[str, Any]) -> set[str]:
     return out
 
 
-def build_index(conn: Any) -> Index:
+#: Registry rows fetched per round trip while the index streams the whole table.
+INDEX_FETCH = 5000
+
+
+def _stream(conn: Any, sql: str, args: tuple[Any, ...] = ()) -> Any:
+    """Rows of one query, fetched in blocks -- never the whole table in memory at once."""
+    cur = conn.execute(sql, args)
+    while True:
+        block = cur.fetchmany(INDEX_FETCH)
+        if not block:
+            return
+        for row in block:
+            yield dict(row)
+
+
+def _judged(row: dict[str, Any]) -> bool:
+    return bool(row.get("terminal_gate") or row.get("judged_at"))
+
+
+def build_index(conn: Any, wanted: set[str] | None = None,
+                deadline: float | None = None) -> Index:
     """The exploited / blocked index, with this organ's own handoffs held out until they convert.
 
     Held out ON PURPOSE. A handoff discovery names its unit, so counting it would make
     `exploitation_share` rise by the act of measuring -- the denominator trick the laws forbid.
     A handoff earns the unit's EXPLOITED verdict only by reaching COMPILED/QUEUED/TESTED, being
     BLOCKED with a reason, or having a candidate carry its `discovery_id`.
+
+    THE WHOLE REGISTRY, NOT ITS FIRST 20,000 ROWS (2026-09-30). This index used to read
+    `R.discoveries(limit=20000)` -- the OLDEST twenty thousand, by `created_at` -- and
+    `R.candidates(limit=20000)` -- the twenty thousand best by score out of a table the breadth
+    review counts at 1,587,074 cells. So every handoff this organ minted after the 20,000th
+    discovery was invisible to it: the unit stayed STRANDED forever however its handoff ended,
+    and every instrument named only by a low-scoring candidate read as unexploited. Both are now
+    STREAMED in full. Memory stays bounded because a key is kept only when some unit of THIS pass
+    carries it (`wanted`), and the instrument sets come from one GROUP BY over the whole table.
+    The pass says whether it finished (`complete`); a deadline hit is published, never hidden.
     """
     idx = Index()
-    by_id: dict[str, set[str]] = {}
-    for row in R.discoveries(limit=MAX_REGISTRY_ROWS, conn=conn):
-        did = str(row.get("discovery_id") or "")
-        state = str(row.get("state") or "").upper()
-        own = str(row.get("source_type") or "") == SOURCE_TYPE
-        keys = _discovery_keys(row, own=own)
-        by_id[did] = keys
-        idx.n_discoveries += 1
-        if own:
-            idx.n_handoffs += 1
-            idx.handed.update(keys)
-        if state == "BLOCKED":
-            idx.blocked.update(keys)
-        elif not own or state in CONVERTED_STATES:
-            idx.exploited.update(keys)
-            assets = _json_field(row.get("assets_json"))
-            if not own and isinstance(assets, list):
-                idx.symbols.update(str(a).upper() for a in assets if a)
-    for row in R.candidates(limit=MAX_REGISTRY_ROWS, conn=conn):
-        idx.n_candidates += 1
-        keys = _candidate_keys(row)
-        did = str(row.get("discovery_id") or "")
-        if did and did in by_id:
-            keys |= by_id[did]
-        idx.exploited.update(keys)
-        judged = bool(row.get("terminal_gate") or row.get("judged_at"))
-        lived = bool(row.get("survived"))
-        sym = str(row.get("symbol") or "").strip().upper()
-        if sym:
+    keep = (lambda ks: ks & wanted) if wanted is not None else (lambda ks: ks)
+
+    def late() -> bool:
+        return deadline is not None and time.monotonic() > deadline
+
+    # THE INSTRUMENT SETS, over every candidate the registry holds, in one aggregate.
+    with contextlib.suppress(Exception):
+        for row in _stream(conn, (
+                "SELECT UPPER(TRIM(symbol)) AS s, UPPER(COALESCE(chart,'')) AS c, COUNT(*) AS n, "
+                "SUM(CASE WHEN COALESCE(terminal_gate,'')<>'' OR COALESCE(judged_at,'')<>'' "
+                "THEN 1 ELSE 0 END) AS judged, "
+                "SUM(CASE WHEN (COALESCE(terminal_gate,'')<>'' OR COALESCE(judged_at,'')<>'') "
+                "AND COALESCE(survived,0)=0 THEN 1 ELSE 0 END) AS dead "
+                "FROM research_candidates WHERE COALESCE(TRIM(symbol),'')<>'' GROUP BY 1, 2")):
+            sym, chart = str(row["s"]), str(row["c"])
             idx.symbols.add(sym)
-            idx.symbol_chart.add(f"{sym}.{str(row.get('chart') or '').upper()}")
-            keys.add(sym.lower())
-        if lived:
-            idx.survived.update(keys)
-        if judged and not lived:
-            idx.retired.update(keys)
-            if sym:
+            idx.symbol_chart.add(f"{sym}.{chart}")
+            if int(row["dead"] or 0):
                 idx.retired_symbols.add(sym)
-        else:
-            idx.live_candidates.update(keys)
-            if sym:
+            if int(row["n"] or 0) > int(row["dead"] or 0):
                 idx.live_symbols.add(sym)
-                idx.live_symbol_chart.add(f"{sym}.{str(row.get('chart') or '').upper()}")
+                idx.live_symbol_chart.add(f"{sym}.{chart}")
+        idx.symbols_complete = True
+    by_id: dict[str, set[str]] = {}
+    try:
+        rows = _stream(conn, "SELECT * FROM discoveries")
+        for row in rows:
+            if late():
+                idx.complete = False
+                idx.stopped_at = "discoveries"
+                break
+            did = str(row.get("discovery_id") or "")
+            state = str(row.get("state") or "").upper()
+            own = str(row.get("source_type") or "") == SOURCE_TYPE
+            keys = keep(_discovery_keys(row, own=own))
+            idx.n_discoveries += 1
+            if own:
+                idx.n_handoffs += 1
+                idx.handed.update(keys)
+                idx.handoff_states[state] = idx.handoff_states.get(state, 0) + 1
+            if keys:
+                by_id[did] = keys
+            if state == "BLOCKED":
+                if own and str(row.get("blocked_reason") or "").startswith(UNCLASSIFIED_REASON):
+                    continue        # this organ's own route, re-derived every pass (see route_of)
+                idx.blocked.update(keys)
+            elif not own or state in CONVERTED_STATES:
+                idx.exploited.update(keys)
+                assets = _json_field(row.get("assets_json"))
+                if not own and isinstance(assets, list):
+                    idx.symbols.update(str(a).upper() for a in assets if a)
+    except Exception as exc:                          # the table is absent on a fresh file
+        idx.errors.append(f"discoveries: {type(exc).__name__}: {exc}")
+    try:
+        rows = _stream(conn, "SELECT * FROM research_candidates") if idx.complete else iter(())
+        for row in rows:
+            if late():
+                idx.complete = False
+                idx.stopped_at = "research_candidates"
+                break
+            idx.n_candidates += 1
+            keys = keep(_candidate_keys(row))
+            did = str(row.get("discovery_id") or "")
+            if did and did in by_id:
+                keys |= by_id[did]
+            sym = str(row.get("symbol") or "").strip().upper()
+            if not idx.symbols_complete and sym:
+                idx.symbols.add(sym)
+                idx.symbol_chart.add(f"{sym}.{str(row.get('chart') or '').upper()}")
+            # the declared keys are EXPLOITED; the bare instrument is added only to the
+            # predictive/retired/live sets, exactly as before -- a candidate on EURUSD must not
+            # make every axis row that mentions EURUSD read as exploited
+            idx.exploited.update(keys)
+            if sym and (wanted is None or sym.lower() in wanted):
+                keys.add(sym.lower())
+            if not keys:
+                continue
+            judged, lived = _judged(row), bool(row.get("survived"))
+            if lived:
+                idx.survived.update(keys)
+            if judged and not lived:
+                idx.retired.update(keys)
+            else:
+                idx.live_candidates.update(keys)
+    except Exception as exc:
+        idx.errors.append(f"research_candidates: {type(exc).__name__}: {exc}")
     with contextlib.suppress(Exception):
         idx.sources = {str(r["source_id"]): dict(r)
                        for r in conn.execute("SELECT * FROM sources LIMIT ?",
@@ -1105,6 +1225,123 @@ def disposition(unit: Unit, idx: Index, macro: set[str], now: datetime, grace_ho
     return "STRANDED", f"ingested {age:.1f}h ago and nothing has named it"
 
 
+#: WHERE A STRANDED UNIT GOES (2026-09-30). The handoff used to be a discovery whose mechanism was
+#: the literal "ingested and unexploited: <kind>" -- which the compiler interprets as UNKNOWN, and
+#: no registered family implements UNKNOWN, so EVERY child of EVERY handoff was refused at the
+#: economic gate (reproduced: a EURUSD tape-day handoff closes to 41 children, all family None).
+#: A stranded unit could only ever end BLOCKED, never as a cell -- and it waited behind the
+#: compiler's oldest-first 200-per-pass queue to get even that. Each unit is now ROUTED to the
+#: consumer that can actually use it, with the mechanism and information that consumer reads.
+ROUTE_CONSUMERS: dict[str, str] = {
+    "compile_now": ("discovery_compiler, priority drain: the routed mechanism's closure through "
+                    "the three gates -> registry enqueue_candidate -> donated into "
+                    "data/intelligence/discovery_compiler/ for the docket"),
+    "class_book": ("cross_sectional_breadth: the equity class book ranks every classified share "
+                   "CFD daily and donates through proposer_common into "
+                   "data/intelligence/cross_sectional_breadth/ (the two-lane order: a share CFD "
+                   "is never handed a single-name statistical family)"),
+    "block_unclassified": ("universe classification: BLOCKED with the reason until MetaTrader's "
+                           "registry classifies the symbol -- absence of a class is not a "
+                           "permission (universe_policy)"),
+    "await_registry": ("universe classification, UNMEASURED: MetaTrader's class registry was not "
+                       "read this pass, so the unit is neither blocked nor compiled; it re-routes "
+                       "the next pass the registry is readable"),
+}
+#: The price-only mechanisms a registered family implements, rotated per unit so the stranded
+#: instruments are spread over the mechanism axis instead of all tested for one idea.
+PRICE_MECHANISMS: tuple[str, ...] = (
+    "range_reversion", "trend_persistence", "breakout_liquidity", "volatility_shock",
+    "session_handover", "regime_transition", "hedging_demand_close_flow",
+    "session_information_handoff")
+TEXT_KINDS: frozenset[str] = frozenset({"claim", "news_claim", "normalized_doc", "intel_row"})
+ROUTES = BASE / "data" / "ingestion_routes.json"
+MAX_ROUTES = 20000
+#: Share of the pass budget the priority drain may use (after collection and the index).
+DRAIN_SHARE = 0.85
+
+
+def _lane(symbol: str) -> str:
+    try:
+        from research import universe_policy as up
+        return str(up.lane(symbol))
+    except Exception:
+        return "unclassified"
+
+
+def _class_registry_read() -> bool:
+    """Was MetaTrader's class registry POSITIVELY read? An absent or unreadable universe.json
+    makes every symbol read UNCLASSIFIED, and that is UNMEASURED input, never a reason to BLOCK."""
+    try:
+        from research import universe_policy as up
+        return bool(up._registry())
+    except Exception:
+        return False
+
+
+def route_of(unit: Unit) -> dict[str, Any]:
+    """The ONE consumer a stranded unit is routed to, with what that consumer needs.
+
+    `block_unclassified` only when the class registry was positively read and the symbol is not
+    in it. With the registry unread the unit goes to `await_registry`: no handoff, no BLOCK, and
+    it re-routes next pass -- an UNMEASURED class is not a lawful disposition."""
+    syms = [s for s in unit.symbols if s]
+    lanes = {s: _lane(s) for s in syms}
+    hyp = [s for s in syms if lanes[s] == "hypothesis"]
+    info, mech = "price_only", ""
+    modality = UNIT_MODALITY.get(unit.kind, "")
+    if unit.kind in TEXT_KINDS:
+        mech = unit.mechanism if unit.mechanism in _contracts() else ""
+        info = ""                                   # the contract's own information
+    elif modality == "execution_records":
+        mech, info = "execution_microstructure", "microstructure"
+    elif unit.kind in ("axis_series", "country_plane"):
+        if unit.dataset_name == "axis:cot":
+            mech, info = "positioning_crowding", "positioning"
+        else:
+            mech, info = "macro_release", "macro"
+    else:
+        h = int(hashlib.sha1(f"{unit.kind}:{unit.unit_id}".encode()).hexdigest()[:8], 16)
+        mech = PRICE_MECHANISMS[h % len(PRICE_MECHANISMS)]
+    if unit.kind in SYMBOL_KEYED and syms and not hyp:
+        action = "class_book" if any(v == "event" for v in lanes.values()) \
+            else "block_unclassified"
+        if action == "block_unclassified" and not _class_registry_read():
+            action = "await_registry"
+    else:
+        action = "compile_now"
+    # An all-event (or all-unclassified) text unit routes with symbols=[] EXPLICITLY: the
+    # compiler reads an absent key as "use the discovery's assets", which are the share CFDs.
+    return {"action": action, "consumer": ROUTE_CONSUMERS[action], "mechanism": mech,
+            "information": info, "symbols": list(hyp) if action == "compile_now" else syms,
+            "chart": unit.chart,
+            "why": unit.text or f"stranded {unit.kind} {unit.unit_id}: routed to {mech or 'text'}"}
+
+
+def _contracts() -> frozenset[str]:
+    try:
+        from research import transformation_miners as TM
+        return frozenset(TM.CONTRACTS)
+    except Exception:
+        return frozenset()
+
+
+def _handoff(unit: Unit, conn: Any, route: dict[str, Any] | None = None) -> tuple[str, bool]:
+    """Record (or find) the unit's handoff discovery. The recorded mechanism string is the one
+    every earlier pass used, so the content hash -- and therefore the discovery -- is the SAME
+    one: routing re-uses the handoff, it never mints a twin."""
+    return R.record_discovery(
+        source_id=f"{SOURCE_TYPE}:{unit.kind}:{unit.unit_id}"[:400],
+        source_type=SOURCE_TYPE, mechanism=f"ingested and unexploited: {unit.kind}",
+        origin="MOAT", generator="ingestion_ledger", assets=list(unit.symbols),
+        horizons=[unit.chart] if unit.chart else [],
+        information=unit.kind, economic_rationale=RULE,
+        payload={"unit_kind": unit.kind, "unit_id": unit.unit_id, "path": unit.path,
+                 "why": "ingested and unexploited", "ingested_at": unit.at or UNMEASURED,
+                 "keys": sorted(unit.all_keys())[:16],
+                 **({"route": route["action"], "routed_mechanism": route["mechanism"]}
+                    if route else {})}, conn=conn)
+
+
 def hand_to_compiler(units: list[Unit], conn: Any, limit: int = MAX_STRANDED_HANDOFFS
                      ) -> tuple[int, int]:
     """A stranded unit becomes a DISCOVERY, so the compiler closes it. Returns (new, seen).
@@ -1117,23 +1354,122 @@ def hand_to_compiler(units: list[Unit], conn: Any, limit: int = MAX_STRANDED_HAN
     for unit in units[:limit]:
         if unit.refused:
             # A refused datum never becomes an alpha input, and a discovery IS the road to one.
-            # An ACCESS_UNCLEAR datum is NOT here any more (LAWS 5e, 2026-09-23): it is handed to
-            # the compiler with its label, because an unresolved access path is not a reason to
-            # leave an ingested-and-unexploited datum stranded.
             continue
-        mechanism = f"ingested and unexploited: {unit.kind}"
-        _did, created = R.record_discovery(
-            source_id=f"{SOURCE_TYPE}:{unit.kind}:{unit.unit_id}"[:400],
-            source_type=SOURCE_TYPE, mechanism=mechanism, origin="MOAT",
-            generator="ingestion_ledger", assets=list(unit.symbols),
-            horizons=[unit.chart] if unit.chart else [],
-            information=unit.kind, economic_rationale=RULE,
-            payload={"unit_kind": unit.kind, "unit_id": unit.unit_id, "path": unit.path,
-                     "why": "ingested and unexploited", "ingested_at": unit.at or UNMEASURED,
-                     "keys": sorted(unit.all_keys())[:16]}, conn=conn)
+        _did, created = _handoff(unit, conn)
         new += int(created)
         seen += int(not created)
     return new, seen
+
+
+def _discovery_state(did: str, conn: Any) -> tuple[str, str]:
+    """(state, blocked_reason) of one discovery as the registry holds it now."""
+    row = conn.execute("SELECT state, blocked_reason FROM discoveries WHERE discovery_id=?",
+                       (did,)).fetchone()
+    if row is None:
+        return "", ""
+    return str(row[0] or "").upper(), str(row[1] or "")
+
+
+def _load_routes(path: Path | None = None) -> dict[str, Any]:
+    doc = _read_json(path or ROUTES)
+    rows = doc.get("routes") if isinstance(doc, dict) else None
+    return rows if isinstance(rows, dict) else {}
+
+
+def _drain(overrides: dict[str, dict[str, Any]], conn: Any, deadline: float | None
+           ) -> dict[str, Any]:
+    """The compiler's priority drain over this pass's routed handoffs. Never raises."""
+    try:
+        from research import discovery_compiler as DC
+        return DC.expand_ids(overrides, conn=conn, deadline=deadline)
+    except Exception as exc:
+        return {"requested": len(overrides), "expanded": 0,
+                "errors": [f"{type(exc).__name__}: {exc}"]}
+
+
+def route_stranded(units: list[Unit], conn: Any, *, deadline: float | None = None,
+                   dry_run: bool = False, routes_path: Path | None = None) -> dict[str, Any]:
+    """EVERY stranded unit to a named consumer, this pass. Returns the routing block.
+
+    compile_now          handoff discovery + the compiler's priority drain (`expand_ids`), with
+                         the routed mechanism, information and hypothesis-lane instruments;
+    class_book           share CFDs: the equity class book is their consumer, no single-name
+                         statistical cell is minted (the two-lane order);
+    block_unclassified   a symbol no class claims: the handoff is BLOCKED with that reason --
+                         a lawful disposition, and the day the symbol is classified it reroutes.
+    `unrouted` counts units that got no route; the fence holds it at 0.
+    """
+    when = _iso(_now())
+    book = _load_routes(routes_path)
+    by_action: dict[str, int] = {}
+    overrides: dict[str, dict[str, Any]] = {}
+    unrouted: list[str] = []
+    errors: list[str] = []
+    routed = 0
+    handoffs = {True: 0, False: 0}
+    for unit in units:
+        if unit.refused:
+            continue
+        ident = f"{unit.kind}:{unit.unit_id}"
+        try:
+            route = route_of(unit)
+        except Exception as exc:
+            unrouted.append(ident)
+            errors.append(f"{ident}: {type(exc).__name__}: {exc}")
+            continue
+        action = route["action"]
+        by_action[action] = by_action.get(action, 0) + 1
+        did = ""
+        if not dry_run and action in ("compile_now", "block_unclassified"):
+            try:
+                did, created = _handoff(unit, conn, route)
+                handoffs[created] += 1
+                current, why_now = _discovery_state(did, conn)
+                if action == "block_unclassified":
+                    # NEVER BLOCK A HANDOFF THAT ALREADY CONVERTED: a stale or partial index can
+                    # read an exploited unit as STRANDED, and the block would erase its cells.
+                    if current not in CONVERTED_STATES:
+                        R.set_discovery_state(did, "BLOCKED", reason=(
+                            f"{UNCLASSIFIED_REASON} {', '.join(unit.symbols)} carries no asset "
+                            "class in MetaTrader's registry, so no lane may hunt it; it reroutes "
+                            "the pass after it is classified"), conn=conn)
+                else:
+                    if current == "BLOCKED" and why_now.startswith(UNCLASSIFIED_REASON):
+                        # classified since: the route's own block is lifted so the drain sees it
+                        R.set_discovery_state(did, "UNPROCESSED", reason="", conn=conn)
+                    overrides[did] = {k: v for k, v in (
+                        ("mechanism", route["mechanism"]), ("information", route["information"]),
+                        ("chart", route["chart"]), ("why", route["why"])) if v}
+                    overrides[did]["symbols"] = list(route["symbols"])
+            except Exception as exc:
+                unrouted.append(ident)
+                errors.append(f"{ident}: {type(exc).__name__}: {exc}")
+                continue
+        prev = book.get(ident) if isinstance(book.get(ident), dict) else {}
+        book[ident] = {"action": action, "consumer": route["consumer"],
+                       "mechanism": route["mechanism"], "symbols": route["symbols"],
+                       "discovery_id": did or prev.get("discovery_id") or "",
+                       "first_routed": prev.get("first_routed") or when, "last_routed": when,
+                       "times_routed": int(prev.get("times_routed") or 0) + 1}
+        routed += 1
+    drain: dict[str, Any] = {"requested": len(overrides), "expanded": 0}
+    if overrides and not dry_run:
+        drain = _drain(overrides, conn, deadline)
+    if not dry_run:
+        if len(book) > MAX_ROUTES:
+            book = dict(sorted(book.items(), key=lambda kv: str(kv[1].get("last_routed")))
+                        [-MAX_ROUTES:])
+        with contextlib.suppress(OSError):
+            _write_atomic(routes_path or ROUTES, {
+                "updated": when, "consumers": ROUTE_CONSUMERS, "routes": book,
+                "rule": "every stranded unit is routed to exactly one named consumer each pass "
+                        "it is stranded; the route is re-derived, never trusted from the book"})
+    return {"stranded": len([u for u in units if not u.refused]),
+            "routed": routed, "unrouted": len(unrouted),
+            "handoffs_new": handoffs[True], "handoffs_existing": handoffs[False],
+            "unrouted_units": unrouted[:40], "by_action": by_action,
+            "consumers": {a: ROUTE_CONSUMERS[a] for a in by_action},
+            "drain": drain, "errors": errors[:20], "routes_path": str(routes_path or ROUTES)}
 
 
 # --------------------------------------------------------------------------- the pass
@@ -1240,7 +1576,17 @@ def build(*, grace_hours: float = GRACE_HOURS, budget_s: float = BUDGET_S,
         if len(units) > max_units:
             missed["budget_cap"] = len(units) - max_units
             units = units[:max_units]
-        idx = build_index(c)
+        wanted: set[str] = set()
+        for u in units:
+            wanted |= u.all_keys()
+            wanted |= {x.lower() for x in u.symbols if x}
+        # the index may use up to half the pass; the routing drain gets up to DRAIN_SHARE
+        idx = build_index(c, wanted=wanted, deadline=started + 0.5 * float(budget_s))
+        if not idx.complete:
+            gaps.append({"what": "registry index", "why": f"the deadline stopped the full "
+                                                          f"registry read at {idx.stopped_at}; "
+                                                          "units only a later row names read "
+                                                          "STRANDED this pass"})
         macro = macro_keys()
         if not macro:
             gaps.append({"what": str(MACRO_REPORT),
@@ -1333,8 +1679,26 @@ def build(*, grace_hours: float = GRACE_HOURS, budget_s: float = BUDGET_S,
                          "why": f"{len(unstated)} qualified datum(s) carry no downstream state: "
                                 + DOWNSTREAM_RULE})
         handed = repeats = 0
-        if stranded and not dry_run:
-            handed, repeats = hand_to_compiler(stranded, c)
+        # AN INCOMPLETE INDEX MAY NOT ACT. A deadline-stopped or erroring registry read leaves
+        # exploited units reading STRANDED; routing them would re-compile (a second trial charge)
+        # or BLOCK a handoff that already converted. The routes are still derived and published,
+        # but nothing is written, and the stranded ratchet is not fed.
+        index_ok = idx.complete and not idx.errors
+        if idx.errors:
+            gaps.append({"what": "registry index", "why": "the registry read raised ("
+                         + "; ".join(idx.errors[:3]) + "): routing writes skipped and the "
+                         "stranded count is UNMEASURED this pass"})
+        routing = route_stranded(stranded, c, dry_run=dry_run or not index_ok,
+                                 deadline=started + DRAIN_SHARE * float(budget_s))
+        if not index_ok:
+            routing["writes_skipped"] = "registry index incomplete or in error"
+        if (routing.get("by_action") or {}).get("await_registry"):
+            gaps.append({"what": "universe class registry",
+                         "why": "MetaTrader's class registry was not read: "
+                                f"{routing['by_action']['await_registry']} unit(s) await it, "
+                                "neither BLOCKED nor compiled -- UNMEASURED, not a disposition"})
+        handed, repeats = int(routing.get("handoffs_new") or 0), \
+            int(routing.get("handoffs_existing") or 0)
         counts = dict(sorted(counts.items(), key=lambda kv: -kv[1])[:MAX_STRANDING_COUNTS])
         stranded_data.sort(key=lambda r: -int(r["ingestions"]))
         totals = {d: sum(cell[d] for cell in table.values()) for d in DISPOSITIONS}
@@ -1342,7 +1706,13 @@ def build(*, grace_hours: float = GRACE_HOURS, budget_s: float = BUDGET_S,
         pass_share = (None if past_grace <= 0 else
                       round((totals["EXPLOITED"] + totals["EXPLOITED_MACRO"] + totals["BLOCKED"])
                             / past_grace, 6))
-        pop, pop_units = population(LEDGER, rows)
+        pop, pop_units, ledger_error = population(LEDGER, rows)
+        ledger_ok = ledger_error == "" or (ledger_error == "absent" and passes == 1)
+        if not ledger_ok:
+            gaps.append({"what": str(LEDGER), "why": f"the ledger tail was not read "
+                         f"({ledger_error}): the population is this pass alone, so the stranded "
+                         "count is UNMEASURED and the ratchet is not fed"})
+        stranded_measured = index_ok and ledger_ok
         pop_past_grace = pop_units - pop["PENDING"]
         share = (None if pop_past_grace <= 0 else
                  round((pop["EXPLOITED"] + pop["EXPLOITED_MACRO"] + pop["BLOCKED"])
@@ -1359,6 +1729,14 @@ def build(*, grace_hours: float = GRACE_HOURS, budget_s: float = BUDGET_S,
             "datasets": datasets,
             "exploitation_share": share,
             "stranded_handed_to_compiler": handed,
+            # THE ROUTER'S RECORD: every STRANDED unit of this pass and the consumer it went to.
+            # `n_stranded_units` is the fenced count (check_ingestion_exploitation ratchets it
+            # DOWN only) and `stranded_routing.unrouted` must be 0.
+            "n_stranded_units": int(pop.get("STRANDED") or 0),
+            # False when the index was incomplete or the ledger tail unread: the fence then
+            # neither lowers its floor nor judges against it.
+            "stranded_units_measured": stranded_measured,
+            "stranded_routing": routing,
             "top_stranded": [{"kind": u.kind, "unit_id": u.unit_id, "path": u.path,
                               "ingested_at": u.at or UNMEASURED,
                               "age_h": None if (a := u.age_h(when)) is None else round(a, 1)}
@@ -1392,6 +1770,9 @@ def build(*, grace_hours: float = GRACE_HOURS, budget_s: float = BUDGET_S,
             "scan_cursor": nxt,
             "grace_hours": grace_hours,
             "index": {"discoveries": idx.n_discoveries, "candidates": idx.n_candidates,
+                      "complete": idx.complete, "stopped_at": idx.stopped_at,
+                      "symbols_complete": idx.symbols_complete,
+                      "handoff_states": idx.handoff_states, "errors": idx.errors[:10],
                       "own_handoffs_held_out": idx.n_handoffs,
                       "exploited_keys": len(idx.exploited), "blocked_keys": len(idx.blocked),
                       "symbols": len(idx.symbols)},
@@ -1440,6 +1821,13 @@ def summary_lines(doc: dict[str, Any]) -> list[str]:
                      f"{str(row['unit_id'])[:58]:58} {row['access_label']}")
     lines.append(f"  stranded handed to the compiler: {doc.get('stranded_handed_to_compiler')} "
                  f"new, {doc.get('stranded_already_handed')} already open")
+    routing = doc.get("stranded_routing") or {}
+    drain = routing.get("drain") or {}
+    lines.append(f"  STRANDED units {doc.get('n_stranded_units')} (population); this pass routed "
+                 f"{routing.get('routed')} of {routing.get('stranded')}, unrouted "
+                 f"{routing.get('unrouted')} -- {routing.get('by_action')}; drain expanded "
+                 f"{drain.get('expanded')} of {drain.get('requested')}, compiled "
+                 f"{drain.get('compiled')} cell(s)")
     for row in (doc.get("top_stranded") or [])[:8]:
         lines.append(f"    STRANDED {row['kind']:16} {str(row['unit_id'])[:60]:60} "
                      f"age {row['age_h']}h")
