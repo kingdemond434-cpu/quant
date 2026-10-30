@@ -23,49 +23,11 @@
     }
   },
   "position": null,
-  "last_bracket_date": "2026-10-29",
-  "last_reconcile": "2026-10-29T20:05:12+00:00",
+  "last_bracket_date": "2026-10-30",
+  "last_reconcile": "2026-10-30T02:20:06+00:00",
   "bracket_cancelled": true,
   "pending": null,
-  "brackets": {
-    "gold_asia": {
-      "date": "2026-10-29",
-      "hi": 4069.31,
-      "lo": 4036.12,
-      "lot": 0.01,
-      "spec": {
-        "buy_stop": {
-          "price": 4069.31,
-          "sl": 4035.92,
-          "tp": 4135.69
-        },
-        "sell_stop": {
-          "price": 4036.12,
-          "sl": 4069.5099999999998,
-          "tp": 3969.74
-        }
-      },
-      "placed_at": "2026-10-29T04:24:44+00:00",
-      "result": {
-        "shadow": false,
-        "orders": [
-          {
-            "side": "buy_stop",
-            "retcode": null,
-            "blocked": true,
-            "comment": "cross-account fence: e8 holds or rests a short on XAUUSD; a long on XAUUSD here would hedge the other account"
-          },
-          {
-            "side": "sell_stop",
-            "retcode": 10009,
-            "comment": "Request executed",
-            "door_refused": false,
-            "door_reason": null
-          }
-        ]
-      }
-    }
-  },
+  "brackets": {},
   "lot": 0.06,
   "equity": 457.74,
   "placement_health": {
@@ -91,7 +53,7 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-29T23:05:05+00:00",
+  "placement_pass": "2026-10-30T05:20:04+00:00",
   "netting_booked": {},
   "generic": {
     "audcad_discovered_asia_p_7c996ac8456c8919": {
@@ -516,7 +478,7 @@
     "242662542": 33.460000000000036
   },
   "restart_reconcile": {
-    "at": "2026-10-29T20:05:05+00:00",
+    "at": "2026-10-30T02:20:04+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
@@ -528,8 +490,8 @@
     "verdict": "OK"
   },
   "day_start_equity": {
-    "date": "2026-10-29",
-    "equity": 458.79
+    "date": "2026-10-30",
+    "equity": 457.74
   },
   "rails_logged": {
     "gold_oco_direction_lock/gold_asia/buy_stop": "2026-10-28",

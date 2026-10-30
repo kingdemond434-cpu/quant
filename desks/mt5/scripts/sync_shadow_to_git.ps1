@@ -749,7 +749,11 @@ $relPaths = @(
     # before and after (leg lockbox_recert) and the re-mint's own status (leg attestation_remint,
     # PR #126; absent until it lands, and an absent path is simply not staged).
     "desks/mt5/reports/LOCKBOX_RECERT.json",
-    "desks/mt5/reports/REMINT_STATUS.json"
+    "desks/mt5/reports/REMINT_STATUS.json",
+    # WHETHER THE TICK TAPE IS STILL MOVING (2026-10-14). MT5-TickRecorder sat dead for two days
+    # and origin's tape_state.json (never on this list) read 2026-09-04 whatever the box held.
+    # The hourly `tape_fresh` leg judges both tapes by their own newest tick; this carries it.
+    "desks/mt5/reports/TAPE_FRESHNESS.json"
 )
 # THE RESEARCH MEASUREMENTS THE DESK IS JUDGED ON (2026-09-30). The CRO cycle, the audits and the
 # breadth review all read these from the branch, and none had ever been committed from the box:
@@ -815,8 +819,9 @@ $reportPaths = @(
     # branch held the 2026-09-23 copy carried in by the orphan root, because no list here named
     # it: every reader off the box (pf_allocator, entry_timing, stop_geometry_derivation,
     # expression_factory, desk_economics, the PIT audit) charged costs four weeks old.
-    #   cost_surface.json       per-symbol/per-hour spread quantiles from the bars (~1 MB, under
-    #                           the cap); no account field at all
+    #   cost_surface.json       per-symbol/per-hour spread quantiles from the bars AND from the
+    #                           tick tape (zeros included), plus ATR(20) on H1 with its as-of
+    #                           stamp (~1-2 MB, under the cap); no account field at all
     #   cost_truth_quotes.json  the broker's quoted contract terms and deal costs; its writer
     #                           (research/cost_truth.py) WITHHOLDS the login, and
     #                           tests/ops/test_live_infrastructure_is_not_published.py fences it
