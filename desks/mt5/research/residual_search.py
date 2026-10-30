@@ -78,7 +78,6 @@ OUT = BASE / "reports" / "RESIDUAL_SEARCH.json"
 STATE = BASE / "data" / "residual_search_state.json"
 PERSISTED_TRADES = BASE / "data" / "action_counterfactuals.jsonl"
 CANON = BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json"
-SLEEVES = BASE / "data" / "sleeves.json"
 COUNTERFACTUALS = BASE / "data" / "counterfactuals.jsonl"
 DECISION_DATASET = BASE / "data" / "decision_dataset.jsonl"
 DECISIONS = BASE / "data" / "decision_ledger.jsonl"
@@ -219,8 +218,14 @@ def load_trades() -> tuple[list[dict[str, Any]], dict[str, Any]]:
                 continue
             et = pd.Timestamp(moved)
             et = et.tz_localize("UTC") if et.tzinfo is None else et
-        out.append({"sleeve": sleeve, "symbol": str(r.get("symbol") or "").upper(),
-                    "basis": basis, "t": et, "r": rm})
+        row = {"sleeve": sleeve, "symbol": str(r.get("symbol") or "").upper(),
+               "basis": basis, "t": et, "r": rm}
+        # A shadow row that recorded its signal bar is labelled there as written; a live row's
+        # stamp is venue time and is stepped back on the bar clock instead.
+        st = _ts(r.get("signal_time")) if basis != "live" else None
+        if st is not None:
+            row["signal_t"] = st
+        out.append(row)
     notes["live_rows_without_bar_clock"] = unclocked
     notes["n_trades"] = len(out)
     notes["by_basis"] = dict(Counter(t["basis"] for t in out))
@@ -237,8 +242,15 @@ def _family_names() -> list[str]:
 
 
 def parent_specs() -> dict[str, dict[str, Any]]:
-    """sleeve name -> {symbol, family, params, cert, source} for every CERTIFIED sleeve, from the
-    canon's exact shadow_spec (`research_pnl.resolver`'s name join), then the roster's rows."""
+    """sleeve name -> {symbol, family, params, cert, source} for every CERTIFIED sleeve: the
+    canon's exact shadow_spec, joined by `research_pnl.resolver`'s name join.
+
+    CERTIFIED MEANS A CERTIFICATE. A roster row (`sleeves.json`) carries a family and params but
+    no canon certificate (its `certificate` field is a clock's name or a dict, never a canon key:
+    measured 2026-10-30, 0 of 987 rows resolve), so a child built on it would be described to
+    the gauntlet as "the certified parent conditioned" when no certificate stands behind it.
+    Those rows are not parents. Measured the same day: 55 canon parents remain, so the lane is
+    narrowed, not emptied."""
     out: dict[str, dict[str, Any]] = {}
     canon = _read(CANON)
     if isinstance(canon, dict) and isinstance(canon.get("survivors"), dict):
@@ -250,20 +262,11 @@ def parent_specs() -> dict[str, dict[str, Any]]:
         for name, hit in names.items():
             cert = canon["survivors"].get(hit.get("cert")) or {}
             spec = cert.get("shadow_spec") if isinstance(cert, dict) else None
-            if isinstance(spec, dict) and spec.get("family"):
+            if hit.get("cert") and isinstance(spec, dict) and spec.get("family"):
                 out[name] = {"symbol": str(spec.get("symbol") or cert.get("sym") or "").upper(),
                              "family": str(spec["family"]),
                              "params": dict(spec.get("params") or {}),
                              "cert": hit.get("cert"), "source": "canon"}
-    roster = _read(SLEEVES)
-    for row in (roster.get("sleeves") if isinstance(roster, dict) else None) or []:
-        if not isinstance(row, dict) or not row.get("name") or row["name"] in out:
-            continue
-        if row.get("family") and isinstance(row.get("params"), dict):
-            out[str(row["name"])] = {"symbol": str(row.get("symbol") or "").upper(),
-                                     "family": str(row["family"]),
-                                     "params": dict(row["params"]), "cert": None,
-                                     "source": "sleeves.json"}
     return out
 
 
@@ -323,28 +326,74 @@ def _bars(symbol: str) -> pd.DataFrame | None:
         return None
 
 
+def signal_stamps(trades: list[dict[str, Any]], d: pd.DataFrame) -> list[pd.Timestamp | None]:
+    """The SIGNAL bar's stamp of each trade on `d` (the cell's own `_h1` clock) -- the stamp
+    `entry_conditioned` filters on, never the fill.
+
+    The engine fills one bar after the signal (`engine.py`: `i = i0 + 1`, entry_ts =
+    idx[fill_bar]), so a ledger's `entry_time` is the FILL bar. Labelling there measured an
+    hour, weekday, vol state and cross-asset close one bar later than the decision saw: the
+    child would filter on a bucket other than the one measured, and the labels read a close the
+    decision never had. A row that carries its own `signal_t` is used as recorded; otherwise the
+    signal is the bar before the fill bar. A shadow fill stamp must BE a bar of `d` (a stamp the
+    bars do not hold cannot be stepped back honestly); a live fill, moved to the bar clock, sits
+    inside its fill bar. Where neither resolves, None: the trade stays UNLABELLED, never guessed."""
+    out: list[pd.Timestamp | None] = []
+    idx = d.index
+    for t in trades:
+        st = t.get("signal_t")
+        if st is not None:
+            out.append(st)
+            continue
+        live = t.get("basis") == "live"
+        i = int(idx.get_indexer(pd.DatetimeIndex([t["t"]]),
+                                method="ffill" if live else None)[0])
+        out.append(idx[i - 1] if i >= 1 else None)
+    return out
+
+
 def label(trades: list[dict[str, Any]]) -> dict[str, Any]:
-    """Hour, weekday, volatility regime and cross-asset state of each trade at entry -- with
-    the same functions `entry_conditioned` filters on, so what is measured is what is traded."""
+    """Hour, weekday, volatility regime and cross-asset state of each trade at its SIGNAL bar --
+    with the same functions, on the same `_h1` bars and at the same stamp `entry_conditioned`
+    filters on, so what is measured is what is traded. A trade whose signal bar cannot be
+    resolved (no bars for its symbol, or a fill stamp the bars do not hold) is left unlabelled
+    and counted: UNMEASURED, never placed in a bucket."""
+    from mt5desk.families import _h1
     from mt5desk.families_specialist import trailing_log_return, vol_regime_mask
     no_bars: set[str] = set()
-    for t in trades:
-        t["hour"] = int(t["t"].hour)
-        t["dow"] = int(t["t"].dayofweek)
+    unresolved = 0
     for sym in sorted({t["symbol"] for t in trades}):
-        d = _bars(sym) if sym else None
+        raw = _bars(sym) if sym else None
         mine = [t for t in trades if t["symbol"] == sym]
-        if d is None or len(d) == 0:
+        if raw is None or len(raw) == 0:
             no_bars.add(sym or "?")
             continue
+        d = _h1(raw)
         hv = vol_regime_mask(d, "high_vol")
         lv = vol_regime_mask(d, "low_vol")
-        at = d.index.get_indexer(pd.DatetimeIndex([t["t"] for t in mine]), method="ffill")
-        for t, i in zip(mine, at, strict=True):
-            if i < 0 or hv is None or lv is None:
+        nhv = vol_regime_mask(d, "not_high_vol")
+        for t, st in zip(mine, signal_stamps(mine, d), strict=True):
+            if st is None:
+                unresolved += 1
                 continue
-            t["vol"] = "high_vol" if hv[i] else ("low_vol" if lv[i] else "neither")
-    stamps = pd.DatetimeIndex([t["t"] for t in trades]).as_unit("ns").asi8 if trades else None
+            st = pd.Timestamp(st)
+            st = st.tz_localize("UTC") if st.tzinfo is None else st.tz_convert("UTC")
+            t["sig_t"] = st
+            t["hour"] = int(st.hour)
+            t["dow"] = int(st.dayofweek)
+            i = int(d.index.get_indexer(pd.DatetimeIndex([st]))[0])
+            if i < 0 or hv is None or lv is None or nhv is None:
+                continue
+            if hv[i]:
+                t["vol"] = "high_vol"
+            elif lv[i]:
+                t["vol"] = "low_vol"
+            elif nhv[i]:
+                t["vol"] = "neither"
+            # else: the regime's warm-up -- no state measured, so no vol label.
+    labelled = [t for t in trades if t.get("sig_t") is not None]
+    stamps = (pd.DatetimeIndex([t["sig_t"] for t in labelled]).as_unit("ns").asi8
+              if labelled else None)
     cond_missing: list[str] = []
     for cs in COND_SYMBOLS:
         if stamps is None:
@@ -353,10 +402,13 @@ def label(trades: list[dict[str, Any]]) -> dict[str, Any]:
         if not np.isfinite(r).any():
             cond_missing.append(cs)
             continue
-        for t, v in zip(trades, r, strict=True):
+        for t, v in zip(labelled, r, strict=True):
             if np.isfinite(v) and v != 0 and cs != t["symbol"]:
                 t[f"x:{cs}"] = "up" if v > 0 else "down"
-    return {"symbols_without_bars": sorted(no_bars), "cond_symbols_without_bars": cond_missing}
+    return {"symbols_without_bars": sorted(no_bars), "cond_symbols_without_bars": cond_missing,
+            "labelled_at": "the SIGNAL bar (fill bar minus one, or the row's own signal_time)",
+            "trades_without_a_resolvable_signal_bar": unresolved,
+            "trades_unlabelled": len(trades) - len(labelled)}
 
 
 def search(trades: list[dict[str, Any]]) -> dict[str, Any]:
@@ -443,7 +495,7 @@ def children(trades: list[dict[str, Any]], findings: list[dict[str, Any]],
                 per[t["sleeve"]].append(t["e"])
         for sleeve, es in sorted(per.items()):
             spec = specs.get(sleeve)
-            if spec is None:
+            if spec is None or not spec.get("cert"):
                 skipped["parent sleeve has no certified spec"] += 1
                 continue
             if len(es) < MIN_PARENT_N or np.sign(np.mean(es)) != sign:
@@ -482,8 +534,17 @@ def _save_state(state: dict[str, Any]) -> None:
     tmp.replace(STATE)
 
 
-def emit(kids: list[dict[str, Any]], *, dry_run: bool, budget_s: float) -> dict[str, Any]:
-    """Verdict, sealed build, floor, then the door -- the specialist organ's own path."""
+def emit(kids: list[dict[str, Any]], *, dry_run: bool, budget_s: float,
+         tests_run: int) -> dict[str, Any]:
+    """Verdict, sealed build, floor, then the door -- the specialist organ's own path.
+
+    THE SEARCH'S OWN SELECTION IS CHARGED. Every child was selected from `tests_run` bucket
+    t-tests run on the SAME trade history the gauntlet will judge it on, so the contract's
+    `tests_run` is those tests PLUS the children measured (never the children alone, which
+    under-charged by the whole search), and every donated row carries the search as its claim:
+    `claim_selection_trials = tests_run` under one `claim_family` per finding, the field the
+    trial ledger (`trial_ledger.trial_from_record`) charges once per claim family."""
+    tests_run = int(tests_run)
     from research.gauntlet_buildability import BUILDABLE, cell_verdict
     from research.specialist_cell import _meta, charge, measure
     started = time.monotonic()
@@ -541,7 +602,15 @@ def emit(kids: list[dict[str, Any]], *, dry_run: bool, budget_s: float) -> dict[
             # CULTURE PROVENANCE (principal, 2026-09-30): the structure is the desk's OWN book's
             # residual, so it belongs to no culture; region-agnostic, and nothing is guessed.
             row.update(CULTURE)
-        path = pc.donate(SOURCE, rows, len(measured) or len(rows))
+        for row, c in zip(rows, cands, strict=True):
+            row["claim_family"] = (f"{SOURCE}:{c['finding']['axis']}="
+                                   f"{c['finding']['bucket']}")
+            row["claim_selection_trials"] = tests_run
+            row["breadth_unit"] = row["claim_family"]
+            row["selection"] = {"bucket_tests_run": tests_run,
+                                "children_measured_this_pass": len(measured),
+                                "basis": "BH over every bucket t-test of the book's residual"}
+        path = pc.donate(SOURCE, rows, tests_run + max(len(measured), len(rows)))
         got = pc.donation_counts()
         donation = {"status": "DONATED" if path else "REFUSED_AT_DOOR",
                     "path": str(path) if path else None, "donated": got.get("donated"),
@@ -556,7 +625,8 @@ def emit(kids: list[dict[str, Any]], *, dry_run: bool, budget_s: float) -> dict[
         _save_state(state)
     return {"children_named": len(kids), "measured_this_pass": len(measured),
             "counts": dict(counts), "candidates_this_pass": len(cands), "donation": donation,
-            "trial_charge_this_pass": charge(measured),
+            "trial_charge_this_pass": {**charge(measured), "bucket_tests_run": tests_run,
+                                       "contract_tests_run": tests_run + len(measured)},
             "donated_total": sum(1 for v in cs.values() if v.get("donated_at"))}
 
 
@@ -768,8 +838,8 @@ def data_window(trades: list[dict[str, Any]]) -> dict[str, Any]:
     out: dict[str, Any] = {"first_entry_bar_stamp": ts.min().isoformat(),
                            "last_entry_bar_stamp": ts.max().isoformat(),
                            "n_trades": len(trades),
-                           "hour_axis": "broker hour of the entry bar stamp (venue clock, "
-                                        "New York + 7 h), NOT UTC"}
+                           "hour_axis": "broker hour of the SIGNAL bar stamp, the bar before "
+                                        "the fill (venue clock, New York + 7 h), NOT UTC"}
     try:
         from libs.regime import session_clock
         u = session_clock.server_to_utc(ts)
@@ -791,7 +861,8 @@ def _true_utc_of_hour_findings(trades: list[dict[str, Any]], findings: list[dict
     for f in findings:
         if f.get("axis") != "hour":
             continue
-        members = [t["t"] for t in trades if t.get("hour") == f["bucket"]]
+        members = [t["sig_t"] for t in trades
+                   if t.get("hour") == f["bucket"] and t.get("sig_t") is not None]
         if not members:
             continue
         hours = session_clock.server_to_utc(pd.DatetimeIndex(members)).hour
@@ -826,7 +897,8 @@ def build(*, dry_run: bool = False, budget_s: float = 600.0) -> dict[str, Any]:
         kids, skipped = children(trades, found["findings"], specs)
         doc["residual"] = {"status": "MEASURED", "model": model, "labels": labels, **found,
                            "conditioned_cells": emit(kids, dry_run=dry_run,
-                                                     budget_s=budget_s),
+                                                     budget_s=budget_s,
+                                                     tests_run=found["tests_run"]),
                            "children_not_expressible": dict(skipped)}
     doc["counterfactual_policy"] = {"gates": gate_policy(),
                                     "capital_modifiers": modifier_policy(trades),

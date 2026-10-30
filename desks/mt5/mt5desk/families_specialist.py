@@ -107,15 +107,21 @@ def trailing_log_return(stamps: np.ndarray, symbol: str, lookback_d: int, *,
 
 def vol_regime_mask(d: pd.DataFrame, regime: str) -> np.ndarray | None:
     """The desk's own volatility regimes (`family_generic._CONTEXTS`, the definition
-    `cell_modifiers` applies for `regime=high_vol`), plus their complements."""
-    from mt5desk.family_generic import _CONTEXTS
+    `cell_modifiers` applies for `regime=high_vol`), plus their complements.
+
+    THE WARM-UP IS NO REGIME. Until the realised vol and its 100-bar median both exist, a bar
+    is neither high nor low vol -- and it is not "not high vol" either: the complement is taken
+    over the MEASURED bars only, so a warm-up bar is False under every regime name."""
+    from mt5desk.family_generic import _CONTEXTS, _rv
     key = str(regime or "").strip().lower()
     neg = key.startswith("not_")
     base = key[4:] if neg else key
     if base not in ("high_vol", "low_vol"):
         return None
+    rv = pd.Series(_rv(d), index=d.index)
+    measured = (rv.notna() & rv.rolling(100).median().notna()).to_numpy()
     m = pd.Series(_CONTEXTS[base](d), index=d.index).fillna(False).astype(bool).to_numpy()
-    return ~m if neg else m
+    return (~m & measured) if neg else (m & measured)
 
 
 def _daily_decisions(d: pd.DataFrame, decision_hour: int) -> np.ndarray:
@@ -421,8 +427,13 @@ def family_entry_conditioned(
     if takes_symbol and symbol and not params.get("symbol"):
         params["symbol"] = symbol
     d = _h1(df)
+    # THE BASE IS CALLED EXACTLY AS THE SEALED `build_cell` CALLED IT WHEN IT WAS CERTIFIED:
+    # `side=1` (the gauntlet's convention), falling back to no side for a family that takes
+    # none. A side the parent's own params declare wins -- a certified short parent stays short.
+    # The filter only DROPS signals; each kept signal keeps the side the base gave it, so a base
+    # that emits both sides on its own stays two-sided.
     try:
-        raw = fn(d, side=1, **params)
+        raw = fn(d, **params) if "side" in params else fn(d, side=1, **params)
     except TypeError:
         try:
             raw = fn(d, **params)
