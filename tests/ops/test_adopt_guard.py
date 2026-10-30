@@ -1013,3 +1013,69 @@ def test_a_hold_deleted_by_hand_never_absorbs_a_failed_adoptions_files(repo: Pat
     (repo / "libs/left_over.py").unlink()
     assert ag.lift_hold(repo, run="r2")
     assert not (repo / ag.UNTRACKED_BASELINE_REL).exists()
+
+
+# ------------------------------------------------------------- state the box published itself
+def _publish(
+    repo: Path,
+    parent: str,
+    files: dict[str, str | None],
+    *,
+    logged: bool = True,
+    subject: str = "mt5 box state 2026-10-30_1107 (published onto origin; inbound code "
+    "left to MT5-AdoptRelease)",
+) -> str:
+    """A ShadowSync publication: commit-tree onto origin, never the box's HEAD, named in the
+    box's own sync log."""
+    sha = _origin(repo, parent, files, msg=subject)
+    if logged:
+        log = repo / ag.PUBLISH_LOG_REL
+        log.parent.mkdir(parents=True, exist_ok=True)
+        with log.open("a", encoding="utf-8") as f:
+            f.write(
+                f"2026-10-30T11:07:53Z published box state onto origin/live as {sha[:12]} "
+                "(3 path(s)) without merging code\n"
+            )
+    return sha
+
+
+def test_state_the_box_published_without_committing_is_the_boxs(repo: Path) -> None:
+    target = _publish(repo, _head(repo), {"desks/mt5/data/sleeves.json": '{"gold": 0.02}\n'})
+    assert ag.pre(repo, target, now=QUIET, offset_h=summer)[0] == ag.GO
+
+
+def test_a_publication_the_box_log_does_not_name_is_governed(repo: Path) -> None:
+    rel = "desks/mt5/data/sleeves.json"
+    target = _publish(repo, _head(repo), {rel: '{"gold": 0.02}\n'}, logged=False)
+    code, doc = ag.pre(repo, target, now=QUIET, offset_h=summer)
+    assert code == ag.HOLD and doc["uncovered"] == [rel]
+
+
+def test_a_logged_commit_without_the_publisher_subject_is_governed(repo: Path) -> None:
+    rel = "desks/mt5/data/sleeves.json"
+    target = _publish(repo, _head(repo), {rel: '{"gold": 0.02}\n'}, subject="tune sleeves")
+    code, doc = ag.pre(repo, target, now=QUIET, offset_h=summer)
+    assert code == ag.HOLD and doc["uncovered"] == [rel]
+
+
+def test_an_origin_edit_after_the_box_published_is_governed(repo: Path) -> None:
+    rel = "desks/mt5/data/sleeves.json"
+    pub = _publish(repo, _head(repo), {rel: '{"gold": 0.02}\n'})
+    target = _origin(repo, pub, {rel: '{"gold": 0.5}\n'})
+    code, doc = ag.pre(repo, target, now=QUIET, offset_h=summer)
+    assert code == ag.HOLD and doc["uncovered"] == [rel]
+
+
+def test_an_origin_deletion_the_box_never_published_is_governed(repo: Path) -> None:
+    rel = "desks/mt5/data/sleeves.json"
+    pub = _publish(repo, _head(repo), {"desks/mt5/data/state.json": '{"p": 1}\n'})
+    target = _origin(repo, pub, {rel: None})
+    code, doc = ag.pre(repo, target, now=QUIET, offset_h=summer)
+    assert code == ag.HOLD and doc["uncovered"] == [rel]
+
+
+def test_the_box_republishing_over_an_origin_edit_is_the_boxs(repo: Path) -> None:
+    rel = "desks/mt5/data/sleeves.json"
+    edit = _origin(repo, _head(repo), {rel: '{"gold": 0.5}\n'})
+    target = _publish(repo, edit, {rel: '{"gold": 0.03}\n'})
+    assert ag.pre(repo, target, now=QUIET, offset_h=summer)[0] == ag.GO
