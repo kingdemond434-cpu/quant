@@ -129,6 +129,17 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "git checkout failed ($LASTEXITCODE)" }
     $at = (& git -C $Clone rev-parse --short=9 HEAD)
 
+    # LIVE first (zuck 2026-10-29 19:50Z "yes"): PR runs queued ahead of a waiting LIVE push run
+    # are cancelled and re-run behind it, and runs on moved heads are cancelled. A failure here is
+    # logged and never stops the sweep.
+    try {
+        $env:GH_BIN = $Gh
+        & $Python -I -u (Join-Path $Clone "scripts\live_first_ci.py") --repo $Repo --base $Live --state (Join-Path $QuantRoot "desks\mt5\reports\LIVE_FIRST_CI.json") 2>&1 | ForEach-Object { Say "live-first $_" }
+        Say "live-first rc=$LASTEXITCODE"  # 2: a re-run was given up on; 1: it stopped on an API error
+    } catch {
+        Say "live-first failed: $($_.Exception.Message)"
+    }
+
     Push-Location -LiteralPath $Clone
     try {
         # Streamed, one log line per gate line as it comes (2026-10-29: a sweep killed by the
