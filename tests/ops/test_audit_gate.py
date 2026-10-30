@@ -1843,6 +1843,149 @@ def test_gh_output_is_read_as_utf8_whatever_the_locale(monkeypatch: pytest.Monke
     assert seen["encoding"] == "utf-8"
 
 
+# ------------------------------------------- scripts are money path by what they run (#439)
+def _files_tree(root: Path, files: dict[str, str]) -> Path:
+    for rel, body in files.items():
+        p = root / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(body)
+    return root
+
+
+_BASE = {
+    "desks/mt5/research/run_gateway_loop.py": (
+        "from mt5desk import gateway\nFLAG = 'GOLD_RETIRED.json'\nSW = 'PF_ALLOCATOR_ARMED'\n"
+    ),
+    "desks/mt5/mt5desk/__init__.py": "",
+    "desks/mt5/mt5desk/gateway.py": "",
+    "desks/mt5/scripts/install_e8_tasks.ps1": "& $py research\\run_gateway_loop.py\n",
+    "desks/mt5/scripts/helper.ps1": "function Lock { 'x' }\n",
+    "desks/mt5/scripts/backup.ps1": "Copy-Item a b\n",
+    "desks/mt5/scripts/report.py": "import json\nprint(json.dumps({}))\n",
+}
+_LISTED = {"desks/mt5/scripts/backup.ps1", "desks/mt5/scripts/report.py",
+           "desks/mt5/scripts/helper.ps1", "desks/mt5/scripts/new_tool.ps1"}  # fmt: skip
+
+
+def _money(tmp_path: Path, edits: dict[str, str]) -> set[str]:
+    base = _files_tree(tmp_path / "base", dict(_BASE))
+    head = _files_tree(tmp_path / "head", {**_BASE, **edits})
+    return rs.money_scripts((base, head), rs.import_closure(base), _LISTED)
+
+
+def test_every_script_is_money_path_unless_reviewed_and_clean(tmp_path: Path) -> None:
+    """#508 audit HOLD: a fail-open text scan became fail closed. Only a listed script that
+    names nothing is not money path; an unlisted one always is, whatever it says."""
+    money = _money(tmp_path, {})
+    assert "desks/mt5/scripts/install_e8_tasks.ps1" in money
+    assert "desks/mt5/scripts/backup.ps1" not in money
+    assert "desks/mt5/scripts/report.py" not in money
+    unlisted = _money(tmp_path / "u", {"desks/mt5/scripts/quiet.ps1": "Write-Output hi\n"})
+    assert "desks/mt5/scripts/quiet.ps1" in unlisted
+    # data, state and config under the money directories stay money whatever they say
+    for f in ("desks/mt5/scripts/knobs.json", "desks/mt5/ops/CPU_SHAPE.json",
+              "desks/mt5/data/sleeves.json"):  # fmt: skip
+        assert rs.is_money(f, set(), exempt={f}), f  # only a script can be exempt
+
+
+def test_a_script_no_caller_showed_is_money_path(tmp_path: Path) -> None:
+    """#508 v2 audit MF1: a caller that passes only the base tree never saw a script the PR
+    adds; it must read money, not slip out because the money set never named it."""
+    base = _files_tree(tmp_path / "base", dict(_BASE))
+    exempt = rs.exempt_scripts((base,), rs.import_closure(base), _LISTED)
+    assert "desks/mt5/scripts/backup.ps1" in exempt
+    for f in ("desks/mt5/scripts/new_tool.ps1", "desks/mt5/ops/new_helper.py",
+              "desks/mt5/scripts/new.PS1"):  # fmt: skip
+        assert rs.is_money(f, set(), exempt=exempt), f
+    assert rs.is_money("desks/mt5/scripts/anything.ps1", set())
+
+
+def test_a_utf16_script_reads_and_is_scanned(tmp_path: Path) -> None:
+    """#508 v2 audit: a UTF-16 script crashed the run; now it reads, and its words still count."""
+    base = _files_tree(tmp_path / "base", dict(_BASE))
+    (base / "desks/mt5/scripts/backup.ps1").write_bytes(
+        "Copy-Item a b\nStart-Process terminal64.exe\n".encode("utf-16")
+    )
+    assert "terminal64.exe" in (rs.read(base, "desks/mt5/scripts/backup.ps1") or "")
+    assert "desks/mt5/scripts/backup.ps1" in rs.money_scripts(
+        (base,), rs.import_closure(base), _LISTED
+    )
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        '$a = "<#"; & $py research\\run_gateway_loop.py; $b = "#>"\n',  # fake comment marker
+        "from mt5desk import gateway\n",  # package form
+        "python -m desks.mt5.mt5desk.gateway\n",  # package-prefixed module
+        '& "$PSScriptRoot\\install_e8_tasks"\n',  # extension-less script name
+        "Start-ScheduledTask -TaskName 'MT5-Hourly'\n",  # indirect start
+        "powershell -EncodedCommand SQBFAFgA\n",  # encoded
+        "Invoke-Expression (Get-Content x.txt)\n",  # evaluated
+        "import importlib\nimportlib.import_module('mt5desk.' + 'gate' + 'way')\n",
+        "__import__('Meta' + 'Trader5')\n",
+        "exec(open('x.py').read())\n",
+        "import subprocess\nsubprocess.run(['python', 'y.py'])\n",
+        "import sys\nsys.path.insert(0, 'desks/mt5')\nimport decision_core\n",
+        "Set-Content GOLD_RETIRED.json '1'\n",  # a state file the closure reads
+        "New-Item PF_ALLOCATOR_ARMED\n",  # a switch the closure spells
+        "Set-Content RELEASE_STOP.json 1\n",
+        "Set-Content PROMOTION_FREEZE.json 1\n",
+        "Set-Content MINLOT_OVERRIDE.json 1\n",
+        "Start-Process terminal64.exe\n",
+        # #508 v2 audit
+        "$sb = [scriptblock]::Create($x); & $sb\n",
+        "Enable-ScheduledTask MT5-Hourly; Disable-ScheduledTask MT5-Gold\n",
+        "Stop-Process -Name terminal64\n",
+        "getattr(__import__('os'), 'sys' + 'tem')('x')\n",
+        "from os import system\n",
+        "import pickle\npickle.loads(b)\n",
+        "from \uff4d\uff54\uff15\uff44\uff45\uff53\uff4b import "  # fullwidth mt5desk
+        "\uff47\uff41\uff54\uff45\uff57\uff41\uff59\n",
+    ],
+)
+def test_every_audited_evasion_of_a_listed_script_is_money_path(tmp_path: Path, body: str) -> None:
+    money = _money(tmp_path, {"desks/mt5/scripts/backup.ps1": "Copy-Item a b\n" + body})
+    assert "desks/mt5/scripts/backup.ps1" in money
+
+
+def test_a_new_listed_script_with_any_dynamic_line_is_money_path(tmp_path: Path) -> None:
+    money = _money(tmp_path, {"desks/mt5/scripts/new_tool.ps1": "& $exe --version\n"})
+    assert "desks/mt5/scripts/new_tool.ps1" in money
+    money = _money(tmp_path / "b", {"desks/mt5/scripts/new_tool.ps1": "Get-Date\n"})
+    assert "desks/mt5/scripts/new_tool.ps1" not in money
+
+
+def test_the_callee_of_a_money_script_is_money_path(tmp_path: Path) -> None:
+    """#508 audit: GitWriterMutex.ps1, dot-sourced by Adopt-And-Seal.ps1, slipped through."""
+    money = _money(tmp_path, {
+        "desks/mt5/scripts/install_e8_tasks.ps1": (
+            "& $py research\\run_gateway_loop.py\n. (Join-Path $PSScriptRoot 'helper.ps1')\n"
+        ),
+    })  # fmt: skip
+    assert "desks/mt5/scripts/helper.ps1" in money
+
+
+def test_an_unreadable_listed_script_is_money_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real = rs.read
+    monkeypatch.setattr(
+        rs, "read", lambda t, f: None if f.endswith("backup.ps1") else real(t, f)
+    )
+    assert "desks/mt5/scripts/backup.ps1" in _money(tmp_path, {})
+
+
+def test_the_live_book_installers_are_money_path_on_the_real_tree() -> None:
+    closure = rs.import_closure(ROOT)
+    money = rs.money_scripts((ROOT,), closure)
+    for f in ("install_e8_tasks.ps1", "install_ftmo_follower_task.ps1",
+              "Install-QuantWindows.ps1", "install_cro_cycle_tasks.ps1"):  # fmt: skip
+        assert f"desks/mt5/scripts/{f}" in money, f
+    listed = rs.listed_not_money()
+    assert all(rs.is_script(f) for f in listed), "only scripts can be listed"
+
+
 @pytest.mark.parametrize(
     "name",
     ["docs/RESEARCH.md", "docs/cro/CRO_CYCLE.md", "scripts/run_deadman_switch.py",
@@ -1943,3 +2086,59 @@ def test_every_other_binding_of_a_pinned_name_is_a_mismatch(tail: str) -> None:
     for ceil in (ceil_eq, ceil_max, ceil_src):
         assert ri.check(ceil, _reader(n=good), _reader(n=good)) == []
         assert ri.check(ceil, _reader(n=good + tail), _reader(n=good)), (ceil, tail)
+
+
+_ROWS = (
+    "# the box's tasks\n"
+    'TASK name="Quant-WorkflowGate" trigger="every 10 minutes" runs="ops/box/workflow_gate.ps1" '
+    'installer="ops/box/install_unattended.ps1" lane="ops"\n'
+    'TASK name="MT5-Gateway" trigger="at logon" runs="desks/mt5/scripts/gw.ps1" lane="money"\n'
+)
+
+
+@pytest.mark.parametrize(
+    ("head", "money"),
+    [
+        (_ROWS + "# a new comment\n", False),  # prose only
+        (_ROWS + 'TASK name="Quant-SignTrain" trigger="every 10 minutes" '
+                 'runs="ops/box/sign_train_leg.ps1" lane="ops" also_runs="scripts/sign_train.py"\n',
+         False),  # a gate clock's row
+        (_ROWS + 'TASK name="Quant-X" runs="ops/box/x.ps1"\n', True),  # no lane: never free
+        (_ROWS.replace('lane="ops"', 'lane="ops" also_runs="scripts/watch.py"'), False),
+        (_ROWS.replace('trigger="at logon"', 'trigger="never"'), True),  # a money task's row
+        (_ROWS + 'TASK name="Quant-X" runs="ops/box/x.ps1" note="FTMO copy"\n', True),  # venue
+        (_ROWS + 'TASK name="Quant-X" runs="desks/mt5/scripts/new.ps1"\n', True),  # a script there
+        (_ROWS + 'TASK name="Quant-X" runs="desks/mt5/prop/e8_gold.py"\n', True),  # the closure
+        (_ROWS + "VERSION 2\n", True),  # not a TASK row
+        (_ROWS.replace("# the box's tasks\n", ""), False),
+        (_ROWS + _ROWS.splitlines(keepends=True)[1], True),  # a row duplicated
+        (None, True),  # gone
+        # #508 audit v3 MF1: only a plain repo path is compared as the file it names
+        (_ROWS + 'TASK name="Quant-X" runs="ops/../desks/mt5/mt5desk/b.py" lane="ops"\n', True),
+        (_ROWS + 'TASK name="Quant-X" runs="ops\\box\\x.ps1" lane="ops"\n', True),
+        (_ROWS + 'TASK name="Quant-X" runs="./ops/box/x.ps1" lane="ops"\n', True),
+        (_ROWS + 'TASK name="Quant-X" runs="%REPO%/ops/box/x.ps1" lane="ops"\n', True),
+        (_ROWS + 'TASK name="Quant-X" runs="powershell -c x" lane="ops"\n', True),
+        # MF2: a second row for a name, any case, rebinds that task
+        (_ROWS + 'TASK name="quant-workflowgate" runs="ops/box/x.ps1" lane="ops"\n', True),
+        # MF3: a money/prop row, or a control-plane row, never changes freely
+        (_ROWS + 'TASK name="Quant-P" runs="ops/box/x.ps1" lane="prop"\n', True),
+        (_ROWS + 'TASK name="MT5-ClockFixer" runs="ops/box/x.ps1" lane="ops"\n', True),
+        (_ROWS + 'TASK name="Quant-N" runs="ops/box/x.ps1"\n', True),  # no lane
+    ],
+)  # fmt: skip
+def test_the_box_task_table_is_money_unless_only_gate_rows_change(
+    tmp_path: Path, head: str | None, money: bool
+) -> None:
+    """#541/#546: a row for the gate's own clock is not order code; any money row still is."""
+    b, h = tmp_path / "b", tmp_path / "h"
+    for t, text in ((b, _ROWS), (h, head)):
+        (t / "desks/mt5/ops").mkdir(parents=True)
+        (t / rs.COMPONENTS).write_text(
+            'REQUIRED_TASKS: frozenset[str] = frozenset({"MT5-ClockFixer"})\n'
+            'TASK_CANONICAL: dict[str, str] = {"MT5-Hourly": "x"}\n', "utf-8"
+        )
+        if text is not None:
+            (t / rs.MANIFEST).write_text(text, "utf-8")
+    scripts = {"desks/mt5/scripts/gw.ps1"}
+    assert rs.manifest_is_money(b, h, set(), scripts, set()) is money
