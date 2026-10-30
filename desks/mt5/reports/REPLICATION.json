@@ -1,5 +1,5 @@
 {
- "at": "2026-10-30T02:51:35+00:00",
+ "at": "2026-10-30T03:38:50+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -17,27 +17,27 @@
  },
  "n": 16,
  "counts": {
-  "REPLICATED": 6,
-  "MISMATCH": 10,
+  "REPLICATED": 5,
+  "MISMATCH": 11,
   "UNMEASURED": 0
  },
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "USDMXN.overnight_gap_decay.p=0dfa3f66cade1630",
-   "certificate": "external.USDMXN.overnight_gap_decay.p=0dfa3f66cade1630",
-   "fp": "c1a661f5f8415c29",
-   "symbol": "USDMXN",
+   "key": "AUDNZD.overnight_gap_decay.p=5c32f658b2d0b2ab",
+   "certificate": "external.AUDNZD.overnight_gap_decay.p=5c32f658b2d0b2ab",
+   "fp": "8cd77ebf501884f5",
+   "symbol": "AUDNZD",
    "family": "overnight_gap_decay",
    "verdict": "REPLICATED",
    "why": [
-    "in-sample Sharpe comes back: rebuilt +0.446 vs recorded +0.273 on 513 fill(s)"
+    "in-sample Sharpe comes back: rebuilt +0.207 vs recorded +0.198 on 837 fill(s)"
    ],
    "ours": {
-    "sharpe": 0.4457,
-    "n_fills": 513,
-    "n_days": 513,
-    "cost_price_units": 0.0048814544000000005,
+    "sharpe": 0.2074,
+    "n_fills": 837,
+    "n_days": 837,
+    "cost_price_units": 0.00010846639999999999,
     "cost_basis": "universe_registry",
     "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
     "params": {
@@ -49,26 +49,26 @@
     }
    },
    "theirs": {
-    "sharpe": 0.2729,
-    "days": 178
+    "sharpe": 0.1979,
+    "days": 217
    }
   },
   {
    "lane": "certificate",
-   "key": "USDMXN.overnight_gap_decay.p=de9ed752775ac9b5",
-   "certificate": "external.USDMXN.overnight_gap_decay.p=de9ed752775ac9b5",
-   "fp": "3702199ea41049cd",
-   "symbol": "USDMXN",
+   "key": "AUDNZD.overnight_gap_decay.p=3088664d633bb32d",
+   "certificate": "external.AUDNZD.overnight_gap_decay.p=3088664d633bb32d",
+   "fp": "1ccc91cb63ce6cc1",
+   "symbol": "AUDNZD",
    "family": "overnight_gap_decay",
    "verdict": "REPLICATED",
    "why": [
-    "in-sample Sharpe comes back: rebuilt +0.446 vs recorded +0.273 on 513 fill(s)"
+    "in-sample Sharpe comes back: rebuilt +0.207 vs recorded +0.249 on 837 fill(s)"
    ],
    "ours": {
-    "sharpe": 0.4457,
-    "n_fills": 513,
-    "n_days": 513,
-    "cost_price_units": 0.0048814544000000005,
+    "sharpe": 0.2074,
+    "n_fills": 837,
+    "n_days": 837,
+    "cost_price_units": 0.00010846639999999999,
     "cost_basis": "universe_registry",
     "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
     "params": {
@@ -80,26 +80,26 @@
     }
    },
    "theirs": {
-    "sharpe": 0.2729,
-    "days": 178
+    "sharpe": 0.2489,
+    "days": 148
    }
   },
   {
    "lane": "certificate",
-   "key": "USDSEK.overnight_gap_decay.p=4e3e7963cfc9ce12",
-   "certificate": "external.USDSEK.overnight_gap_decay.p=4e3e7963cfc9ce12",
-   "fp": "089c7708f779869d",
-   "symbol": "USDSEK",
+   "key": "AUDNZD.overnight_gap_decay.p=c9c5e7428f709c87",
+   "certificate": "external.AUDNZD.overnight_gap_decay.p=c9c5e7428f709c87",
+   "fp": "5c5b1da57bf7b2ef",
+   "symbol": "AUDNZD",
    "family": "overnight_gap_decay",
    "verdict": "REPLICATED",
    "why": [
-    "in-sample Sharpe comes back: rebuilt +0.527 vs recorded +0.342 on 453 fill(s)"
+    "in-sample Sharpe comes back: rebuilt +0.207 vs recorded +0.198 on 837 fill(s)"
    ],
    "ours": {
-    "sharpe": 0.5272,
-    "n_fills": 453,
-    "n_days": 453,
-    "cost_price_units": 0.0018050732,
+    "sharpe": 0.2074,
+    "n_fills": 837,
+    "n_days": 837,
+    "cost_price_units": 0.00010846639999999999,
     "cost_basis": "universe_registry",
     "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
     "params": {
@@ -111,88 +111,26 @@
     }
    },
    "theirs": {
-    "sharpe": 0.3418,
-    "days": 235
+    "sharpe": 0.1979,
+    "days": 217
    }
   },
   {
    "lane": "certificate",
-   "key": "USDSEK.overnight_gap_decay.p=0dfa3f66cade1630",
-   "certificate": "external.USDSEK.overnight_gap_decay.p=0dfa3f66cade1630",
-   "fp": "ba16c8cfe5b328be",
-   "symbol": "USDSEK",
-   "family": "overnight_gap_decay",
-   "verdict": "REPLICATED",
-   "why": [
-    "in-sample Sharpe comes back: rebuilt +0.527 vs recorded +0.342 on 453 fill(s)"
-   ],
-   "ours": {
-    "sharpe": 0.5272,
-    "n_fills": 453,
-    "n_days": 453,
-    "cost_price_units": 0.0018050732,
-    "cost_basis": "universe_registry",
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
-    "params": {
-     "gap_atr": 0.75,
-     "atr_n": 20,
-     "stop_atr": 1.5,
-     "rr": 1.0,
-     "ttl_bars": 8
-    }
-   },
-   "theirs": {
-    "sharpe": 0.3418,
-    "days": 235
-   }
-  },
-  {
-   "lane": "certificate",
-   "key": "USDSEK.overnight_gap_decay.p=de9ed752775ac9b5",
-   "certificate": "external.USDSEK.overnight_gap_decay.p=de9ed752775ac9b5",
-   "fp": "69872de56208f9b6",
-   "symbol": "USDSEK",
-   "family": "overnight_gap_decay",
-   "verdict": "REPLICATED",
-   "why": [
-    "in-sample Sharpe comes back: rebuilt +0.527 vs recorded +0.342 on 453 fill(s)"
-   ],
-   "ours": {
-    "sharpe": 0.5272,
-    "n_fills": 453,
-    "n_days": 453,
-    "cost_price_units": 0.0018050732,
-    "cost_basis": "universe_registry",
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
-    "params": {
-     "gap_atr": 0.75,
-     "atr_n": 20,
-     "stop_atr": 1.5,
-     "rr": 1.0,
-     "ttl_bars": 8
-    }
-   },
-   "theirs": {
-    "sharpe": 0.3418,
-    "days": 235
-   }
-  },
-  {
-   "lane": "certificate",
-   "key": "USDZAR.overnight_gap_decay.p=de9ed752775ac9b5",
-   "certificate": "external.USDZAR.overnight_gap_decay.p=de9ed752775ac9b5",
-   "fp": "bbcb1013c16d0365",
-   "symbol": "USDZAR",
+   "key": "AUDSGD.overnight_gap_decay.p=5c32f658b2d0b2ab",
+   "certificate": "external.AUDSGD.overnight_gap_decay.p=5c32f658b2d0b2ab",
+   "fp": "b134b512e6966e8c",
+   "symbol": "AUDSGD",
    "family": "overnight_gap_decay",
    "verdict": "MISMATCH",
    "why": [
-    "Sharpe MAGNITUDE disagrees: rebuilt/recorded = 2.28 outside [0.5, 2]"
+    "Sharpe MAGNITUDE disagrees: rebuilt/recorded = 0.30 outside [0.5, 2]"
    ],
    "ours": {
-    "sharpe": 0.651,
-    "n_fills": 566,
-    "n_days": 566,
-    "cost_price_units": 0.0035625112,
+    "sharpe": 0.1046,
+    "n_fills": 527,
+    "n_days": 527,
+    "cost_price_units": 8.7254e-05,
     "cost_basis": "universe_registry",
     "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
     "params": {
@@ -204,26 +142,26 @@
     }
    },
    "theirs": {
-    "sharpe": 0.2853,
-    "days": 216
+    "sharpe": 0.3439,
+    "days": 217
    }
   },
   {
    "lane": "certificate",
-   "key": "USDZAR.overnight_gap_decay.p=0dfa3f66cade1630",
-   "certificate": "external.USDZAR.overnight_gap_decay.p=0dfa3f66cade1630",
-   "fp": "8cbb06693027138e",
-   "symbol": "USDZAR",
+   "key": "AUDSGD.overnight_gap_decay.p=c9c5e7428f709c87",
+   "certificate": "external.AUDSGD.overnight_gap_decay.p=c9c5e7428f709c87",
+   "fp": "cba212be98377fac",
+   "symbol": "AUDSGD",
    "family": "overnight_gap_decay",
    "verdict": "MISMATCH",
    "why": [
-    "Sharpe MAGNITUDE disagrees: rebuilt/recorded = 2.28 outside [0.5, 2]"
+    "Sharpe MAGNITUDE disagrees: rebuilt/recorded = 0.30 outside [0.5, 2]"
    ],
    "ours": {
-    "sharpe": 0.651,
-    "n_fills": 566,
-    "n_days": 566,
-    "cost_price_units": 0.0035625112,
+    "sharpe": 0.1046,
+    "n_fills": 527,
+    "n_days": 527,
+    "cost_price_units": 8.7254e-05,
     "cost_basis": "universe_registry",
     "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
     "params": {
@@ -235,26 +173,26 @@
     }
    },
    "theirs": {
-    "sharpe": 0.2853,
-    "days": 216
+    "sharpe": 0.3439,
+    "days": 217
    }
   },
   {
    "lane": "certificate",
-   "key": "AUDCAD.overnight_gap_decay.p=b5ae6cc03c9ae8a4",
-   "certificate": "external.AUDCAD.overnight_gap_decay.p=b5ae6cc03c9ae8a4",
-   "fp": "f092788ba75d55f3",
-   "symbol": "AUDCAD",
+   "key": "GBPDKK.overnight_gap_decay.p=5c21beb6db4ddd6d",
+   "certificate": "external.GBPDKK.overnight_gap_decay.p=5c21beb6db4ddd6d",
+   "fp": "59a0b7a2b63d866b",
+   "symbol": "GBPDKK",
    "family": "overnight_gap_decay",
    "verdict": "REPLICATED",
    "why": [
-    "in-sample Sharpe comes back: rebuilt +0.270 vs recorded +0.312 on 500 fill(s)"
+    "in-sample Sharpe comes back: rebuilt +0.346 vs recorded +0.263 on 578 fill(s)"
    ],
    "ours": {
-    "sharpe": 0.2703,
-    "n_fills": 500,
-    "n_days": 500,
-    "cost_price_units": 8.272039999999998e-05,
+    "sharpe": 0.3465,
+    "n_fills": 578,
+    "n_days": 578,
+    "cost_price_units": 0.0006890032000000001,
     "cost_basis": "universe_registry",
     "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
     "params": {
@@ -266,18 +204,220 @@
     }
    },
    "theirs": {
-    "sharpe": 0.3121,
-    "days": 204
+    "sharpe": 0.2632,
+    "days": 290
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPMXN.overnight_gap_decay.p=931687e6633f8f8b",
+   "certificate": "external.GBPMXN.overnight_gap_decay.p=931687e6633f8f8b",
+   "fp": "bb20335c2890ed4c",
+   "symbol": "GBPMXN",
+   "family": "overnight_gap_decay",
+   "verdict": "REPLICATED",
+   "why": [
+    "in-sample Sharpe comes back: rebuilt +0.536 vs recorded +0.418 on 755 fill(s)"
+   ],
+   "ours": {
+    "sharpe": 0.5355,
+    "n_fills": 755,
+    "n_days": 755,
+    "cost_price_units": 0.006891454400000001,
+    "cost_basis": "universe_registry",
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
+    "params": {
+     "gap_atr": 0.75,
+     "atr_n": 20,
+     "stop_atr": 1.5,
+     "rr": 1.0,
+     "ttl_bars": 8
+    }
+   },
+   "theirs": {
+    "sharpe": 0.4176,
+    "days": 320
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPSEK.overnight_gap_decay.p=931687e6633f8f8b",
+   "certificate": "external.GBPSEK.overnight_gap_decay.p=931687e6633f8f8b",
+   "fp": "b8c999dad30c5cad",
+   "symbol": "GBPSEK",
+   "family": "overnight_gap_decay",
+   "verdict": "MISMATCH",
+   "why": [
+    "Sharpe MAGNITUDE disagrees: rebuilt/recorded = 2.05 outside [0.5, 2]"
+   ],
+   "ours": {
+    "sharpe": 0.5708,
+    "n_fills": 765,
+    "n_days": 765,
+    "cost_price_units": 0.0021050732000000003,
+    "cost_basis": "universe_registry",
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
+    "params": {
+     "gap_atr": 0.75,
+     "atr_n": 20,
+     "stop_atr": 1.5,
+     "rr": 1.0,
+     "ttl_bars": 8
+    }
+   },
+   "theirs": {
+    "sharpe": 0.2779,
+    "days": 301
    }
   },
   {
    "lane": "forward",
-   "key": "EURSGD.overnight_gap_decay.asia",
-   "symbol": "EURSGD",
+   "key": "NZDCAD.overnight_gap_decay.asia",
+   "symbol": "NZDCAD",
    "family": "overnight_gap_decay",
    "verdict": "MISMATCH",
    "why": [
-    "the rebuild produced NO fill against 4 ledger trade(s)"
+    "the rebuild produced NO fill against 9 ledger trade(s)"
+   ],
+   "ours": {
+    "n_fills": 0,
+    "pnl_R": 0,
+    "cost": {
+     "spread_per_lot": 1.0,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 1.6067,
+     "basis": "universe_registry"
+    },
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
+   },
+   "theirs": {
+    "n_trades": 9,
+    "cost_fields": {
+     "spread_per_lot": 1.0,
+     "commission_per_lot": 2.0,
+     "contract_oz": 100000.0,
+     "quote_per_account": 1.6067
+    },
+    "forward_start": "2026-10-29T05:26:12.692495+00:00"
+   },
+   "divergence": {
+    "n_ledger": 9,
+    "n_rebuilt": 0
+   }
+  },
+  {
+   "lane": "forward",
+   "key": "NZDCAD.overnight_gap_decay.asia#representation=price_only",
+   "symbol": "NZDCAD",
+   "family": "overnight_gap_decay",
+   "verdict": "MISMATCH",
+   "why": [
+    "the rebuild produced NO fill against 9 ledger trade(s)"
+   ],
+   "ours": {
+    "n_fills": 0,
+    "pnl_R": 0,
+    "cost": {
+     "spread_per_lot": 1.0,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 1.6067,
+     "basis": "universe_registry"
+    },
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
+   },
+   "theirs": {
+    "n_trades": 9,
+    "cost_fields": {
+     "spread_per_lot": 1.0,
+     "commission_per_lot": 2.0,
+     "contract_oz": 100000.0,
+     "quote_per_account": 1.6067
+    },
+    "forward_start": "2026-10-29T05:25:26.785945+00:00"
+   },
+   "divergence": {
+    "n_ledger": 9,
+    "n_rebuilt": 0
+   }
+  },
+  {
+   "lane": "forward",
+   "key": "NZDCHF.overnight_gap_decay.asia",
+   "symbol": "NZDCHF",
+   "family": "overnight_gap_decay",
+   "verdict": "MISMATCH",
+   "why": [
+    "the rebuild produced NO fill against 17 ledger trade(s)"
+   ],
+   "ours": {
+    "n_fills": 0,
+    "pnl_R": 0,
+    "cost": {
+     "spread_per_lot": 2.0,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 0.92089,
+     "basis": "universe_registry"
+    },
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
+   },
+   "theirs": {
+    "n_trades": 17,
+    "cost_fields": {
+     "spread_per_lot": 2.0,
+     "commission_per_lot": 2.0,
+     "contract_oz": 100000.0,
+     "quote_per_account": 0.92089
+    },
+    "forward_start": "2026-10-29T05:29:39.201719+00:00"
+   },
+   "divergence": {
+    "n_ledger": 17,
+    "n_rebuilt": 0
+   }
+  },
+  {
+   "lane": "forward",
+   "key": "NZDCHF.overnight_gap_decay.asia#representation=price_only",
+   "symbol": "NZDCHF",
+   "family": "overnight_gap_decay",
+   "verdict": "MISMATCH",
+   "why": [
+    "the rebuild produced NO fill against 17 ledger trade(s)"
+   ],
+   "ours": {
+    "n_fills": 0,
+    "pnl_R": 0,
+    "cost": {
+     "spread_per_lot": 2.0,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 0.92089,
+     "basis": "universe_registry"
+    },
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
+   },
+   "theirs": {
+    "n_trades": 17,
+    "cost_fields": {
+     "spread_per_lot": 2.0,
+     "commission_per_lot": 2.0,
+     "contract_oz": 100000.0,
+     "quote_per_account": 0.92089
+    },
+    "forward_start": "2026-10-29T05:28:57.592944+00:00"
+   },
+   "divergence": {
+    "n_ledger": 17,
+    "n_rebuilt": 0
+   }
+  },
+  {
+   "lane": "forward",
+   "key": "NZDSGD.overnight_gap_decay.asia#representation=price_only",
+   "symbol": "NZDSGD",
+   "family": "overnight_gap_decay",
+   "verdict": "MISMATCH",
+   "why": [
+    "the rebuild produced NO fill against 24 ledger trade(s)"
    ],
    "ours": {
     "n_fills": 0,
@@ -291,24 +431,23 @@
     "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
    },
    "theirs": {
-    "n_trades": 4,
+    "n_trades": 24,
     "cost_fields": {
      "spread_per_lot": 2.0,
      "commission_per_lot": 2.0,
      "contract_oz": 100000.0,
-     "quote_per_account": 1.43135,
-     "swap_per_lot_per_night": 8.13
+     "quote_per_account": 1.43135
     },
-    "forward_start": "2026-10-29T02:00:23.989305+00:00"
+    "forward_start": "2026-10-29T05:30:07.310873+00:00"
    },
    "divergence": {
-    "n_ledger": 4,
+    "n_ledger": 24,
     "n_rebuilt": 0
    }
   },
   {
    "lane": "forward",
-   "key": "SGDJPY.overnight_gap_decay.asia#representation=price_only_session=asia",
+   "key": "SGDJPY.overnight_gap_decay.asia",
    "symbol": "SGDJPY",
    "family": "overnight_gap_decay",
    "verdict": "MISMATCH",
@@ -333,10 +472,9 @@
      "spread_per_lot": 300.0,
      "commission_per_lot": 2.0,
      "contract_oz": 100000.0,
-     "quote_per_account": 175.42,
-     "swap_per_lot_per_night": 412.0
+     "quote_per_account": 175.42
     },
-    "forward_start": "2026-10-29T02:00:30+00:00"
+    "forward_start": "2026-10-29T05:35:41.296400+00:00"
    },
    "divergence": {
     "n_ledger": 12,
@@ -356,7 +494,7 @@
   },
   {
    "lane": "forward",
-   "key": "USDSEK.overnight_gap_decay.asia#representation=price_only_session=asia",
+   "key": "USDSEK.overnight_gap_decay.asia#representation=price_only",
    "symbol": "USDSEK",
    "family": "overnight_gap_decay",
    "verdict": "MISMATCH",
@@ -384,7 +522,7 @@
      "contract_oz": 100000.0,
      "quote_per_account": 11.12683
     },
-    "forward_start": "2026-10-29T02:01:10+00:00"
+    "forward_start": "2026-10-29T05:38:00.490641+00:00"
    },
    "divergence": {
     "n_ledger": 29,
@@ -403,203 +541,62 @@
   },
   {
    "lane": "forward",
-   "key": "AUDCAD.overnight_gap_decay.asia@M30#entry_timing=delayed_execution_style=market_session=asia",
-   "symbol": "AUDCAD",
+   "key": "USDSGD.overnight_gap_decay.asia#representation=price_only",
+   "symbol": "USDSGD",
    "family": "overnight_gap_decay",
    "verdict": "MISMATCH",
    "why": [
-    "the rebuild produced NO fill against 10 ledger trade(s)"
+    "the rebuild produced NO fill against 29 ledger trade(s)"
    ],
    "ours": {
     "n_fills": 0,
     "pnl_R": 0,
     "cost": {
-     "spread_per_lot": 2.0,
+     "spread_per_lot": 1.0,
      "commission_per_lot": 2.0,
-     "quote_per_account": 1.56801,
+     "quote_per_account": 1.43135,
      "basis": "universe_registry"
     },
     "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
    },
    "theirs": {
-    "n_trades": 10,
+    "n_trades": 29,
     "cost_fields": {
-     "spread_per_lot": 2.0,
+     "spread_per_lot": 1.0,
      "commission_per_lot": 2.0,
      "contract_oz": 100000.0,
-     "quote_per_account": 1.56801,
-     "swap_per_lot_per_night": 8.54
+     "quote_per_account": 1.43135
     },
-    "forward_start": "2026-10-29T05:03:51+00:00"
+    "forward_start": "2026-10-29T05:40:24.389570+00:00"
    },
    "divergence": {
-    "n_ledger": 10,
-    "n_rebuilt": 0
-   }
-  },
-  {
-   "lane": "forward",
-   "key": "AUDCAD.overnight_gap_decay.asia@M30#entry_timing=delayed_execution_style=market",
-   "symbol": "AUDCAD",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
-   "why": [
-    "the rebuild produced NO fill against 10 ledger trade(s)"
-   ],
-   "ours": {
-    "n_fills": 0,
-    "pnl_R": 0,
-    "cost": {
-     "spread_per_lot": 2.0,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 1.56801,
-     "basis": "universe_registry"
-    },
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
-   },
-   "theirs": {
-    "n_trades": 10,
-    "cost_fields": {
-     "spread_per_lot": 2.0,
-     "commission_per_lot": 2.0,
-     "contract_oz": 100000.0,
-     "quote_per_account": 1.56801,
-     "swap_per_lot_per_night": 8.54
-    },
-    "forward_start": "2026-10-29T05:04:16.712120+00:00"
-   },
-   "divergence": {
-    "n_ledger": 10,
-    "n_rebuilt": 0
-   }
-  },
-  {
-   "lane": "forward",
-   "key": "AUDNZD.overnight_gap_decay.asia@M30#entry_timing=delayed_execution_style=market_session=asia",
-   "symbol": "AUDNZD",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
-   "why": [
-    "the rebuild produced NO fill against 24 ledger trade(s)"
-   ],
-   "ours": {
-    "n_fills": 0,
-    "pnl_R": 0,
-    "cost": {
-     "spread_per_lot": 3.0000000000000004,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 1.96166,
-     "basis": "universe_registry"
-    },
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
-   },
-   "theirs": {
-    "n_trades": 24,
-    "cost_fields": {
-     "spread_per_lot": 3.0,
-     "commission_per_lot": 2.0,
-     "contract_oz": 100000.0,
-     "quote_per_account": 1.96166
-    },
-    "forward_start": "2026-10-29T05:08:56+00:00"
-   },
-   "divergence": {
-    "n_ledger": 24,
-    "n_rebuilt": 0
-   }
-  },
-  {
-   "lane": "forward",
-   "key": "GBPDKK.overnight_gap_decay.asia",
-   "symbol": "GBPDKK",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
-   "why": [
-    "the rebuild produced NO fill against 15 ledger trade(s)"
-   ],
-   "ours": {
-    "n_fills": 0,
-    "pnl_R": 0,
-    "cost": {
-     "spread_per_lot": 39.00000000000001,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 7.47508,
-     "basis": "universe_registry"
-    },
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
-   },
-   "theirs": {
-    "n_trades": 15,
-    "cost_fields": {
-     "spread_per_lot": 39.0,
-     "commission_per_lot": 2.0,
-     "contract_oz": 100000.0,
-     "quote_per_account": 7.47508
-    },
-    "forward_start": "2026-10-29T05:17:24.787909+00:00"
-   },
-   "divergence": {
-    "n_ledger": 15,
-    "n_rebuilt": 0
-   }
-  },
-  {
-   "lane": "forward",
-   "key": "GBPDKK.overnight_gap_decay.asia#representation=price_only",
-   "symbol": "GBPDKK",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
-   "why": [
-    "the rebuild produced NO fill against 15 ledger trade(s)"
-   ],
-   "ours": {
-    "n_fills": 0,
-    "pnl_R": 0,
-    "cost": {
-     "spread_per_lot": 39.00000000000001,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 7.47508,
-     "basis": "universe_registry"
-    },
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
-   },
-   "theirs": {
-    "n_trades": 15,
-    "cost_fields": {
-     "spread_per_lot": 39.0,
-     "commission_per_lot": 2.0,
-     "contract_oz": 100000.0,
-     "quote_per_account": 7.47508
-    },
-    "forward_start": "2026-10-29T05:16:30.806376+00:00"
-   },
-   "divergence": {
-    "n_ledger": 15,
+    "n_ledger": 29,
     "n_rebuilt": 0
    }
   }
  ],
  "quarantined": [
-  "USDZAR.overnight_gap_decay.p=de9ed752775ac9b5",
-  "USDZAR.overnight_gap_decay.p=0dfa3f66cade1630",
-  "EURSGD.overnight_gap_decay.asia",
-  "SGDJPY.overnight_gap_decay.asia#representation=price_only_session=asia",
-  "USDSEK.overnight_gap_decay.asia#representation=price_only_session=asia",
-  "AUDCAD.overnight_gap_decay.asia@M30#entry_timing=delayed_execution_style=market_session=asia",
-  "AUDCAD.overnight_gap_decay.asia@M30#entry_timing=delayed_execution_style=market",
-  "AUDNZD.overnight_gap_decay.asia@M30#entry_timing=delayed_execution_style=market_session=asia",
-  "GBPDKK.overnight_gap_decay.asia",
-  "GBPDKK.overnight_gap_decay.asia#representation=price_only"
+  "AUDSGD.overnight_gap_decay.p=5c32f658b2d0b2ab",
+  "AUDSGD.overnight_gap_decay.p=c9c5e7428f709c87",
+  "GBPSEK.overnight_gap_decay.p=931687e6633f8f8b",
+  "NZDCAD.overnight_gap_decay.asia",
+  "NZDCAD.overnight_gap_decay.asia#representation=price_only",
+  "NZDCHF.overnight_gap_decay.asia",
+  "NZDCHF.overnight_gap_decay.asia#representation=price_only",
+  "NZDSGD.overnight_gap_decay.asia#representation=price_only",
+  "SGDJPY.overnight_gap_decay.asia",
+  "USDSEK.overnight_gap_decay.asia#representation=price_only",
+  "USDSGD.overnight_gap_decay.asia#representation=price_only"
  ],
  "unmeasured": [],
  "recorded": {
-  "quarantined": 10,
+  "quarantined": 11,
   "memory": 16,
-  "candidates": 1879
+  "candidates": 1859
  },
  "cursor": {
-  "forward": 1754,
-  "at": "2026-10-30T01:51:47+00:00",
+  "forward": 1762,
+  "at": "2026-10-30T02:51:35+00:00",
   "certificates": 979
  },
  "notes": [],
@@ -617,24 +614,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDMXN_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDMXN_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSEK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSEK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSEK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDZAR_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDZAR_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCAD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDNZD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDNZD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDNZD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPDKK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCHF_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCHF_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDSGD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\SGDJPY_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSEK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCAD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCAD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDNZD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPDKK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPDKK_H1.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_H1.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 819.32
+ "seconds": 88.82
 }
