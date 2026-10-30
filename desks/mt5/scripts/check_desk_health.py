@@ -437,6 +437,64 @@ def check_stall_watch_alerts() -> None:
     print()
 
 
+#: THE FUSION RUIN RAIL'S OWN STAMP (proposals/fusion_deadman.py, MT5-FusionDeadmanLive /
+#: -DryRun, box_tasks.manifest "every 5 minutes"). It had no reader here: on 2026-10-29 the dry-run
+#: task was exiting 1 on a log write and its live sibling's console log had been empty for a week,
+#: and nothing said whether the rail was still stamping. DERIVATION: 3 missed 5-minute passes =
+#: 900 s, the same limit as decision_core.FUSION_DEADMAN_MAX_AGE_S (the gateway's own gate).
+FUSION_DEADMAN_STAMP = DESK / "data" / "fusion_deadman_state.json"
+FUSION_DEADMAN_CADENCE_S = 300.0
+FUSION_DEADMAN_MAX_AGE_S = 3 * FUSION_DEADMAN_CADENCE_S
+
+
+def check_fusion_deadman(path: Path | None = None, now: datetime | None = None) -> None:
+    """PROBLEM when the rail's stamp is absent, undatable or older than 3x its cadence, or when
+    it reads mode LIVE while `armed` does not say the principal armed it."""
+    _section("IS THE FUSION RUIN RAIL STAMPING  (data/fusion_deadman_state.json)")
+    p = path or FUSION_DEADMAN_STAMP
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except FileNotFoundError:
+        _bad("data/fusion_deadman_state.json is absent -- the Fusion ruin rail has never "
+             "stamped here")
+        print()
+        return
+    except (OSError, ValueError) as exc:
+        _unknown(f"data/fusion_deadman_state.json unreadable ({_exc_reason(exc)})")
+        print()
+        return
+    if not isinstance(doc, dict):
+        _unknown("data/fusion_deadman_state.json is not an object -- the rail is UNMEASURED")
+        print()
+        return
+    mode = doc.get("mode")
+    armed = doc.get("armed")
+    principal = armed is True or (isinstance(armed, dict) and armed.get("principal") is True)
+    try:
+        at = datetime.fromisoformat(str(doc.get("checked_at")))
+        if at.tzinfo is None:
+            raise ValueError("naive")
+        age = ((now or datetime.now(UTC)) - at).total_seconds()
+    except ValueError:
+        age = None
+    if age is None:
+        _bad(f"fusion deadman stamp checked_at {doc.get('checked_at')!r} cannot be dated -- "
+             f"the rail's liveness is not established")
+    elif age > FUSION_DEADMAN_MAX_AGE_S:
+        _bad(f"fusion deadman stamp is {age / 60:.0f} min old (limit "
+             f"{FUSION_DEADMAN_MAX_AGE_S / 60:.0f} min = 3 missed passes) -- the ruin rail has "
+             f"STOPPED; mode {mode!r}")
+    if mode == "LIVE" and not principal:
+        _bad("fusion deadman stamp reads mode LIVE but armed is false -- a LIVE rail the "
+             "principal's marker does not arm")
+    if age is not None and age <= FUSION_DEADMAN_MAX_AGE_S and (mode != "LIVE" or principal):
+        action = (doc.get("would") or {}).get("action") if isinstance(doc.get("would"),
+                                                                      dict) else None
+        _ok(f"fusion deadman stamped {age:.0f}s ago: mode {mode}, armed {principal}, "
+            f"action {action}")
+    print()
+
+
 def check_gateway_state() -> None:
     _section("THE GATEWAY'S OWN LAST WORD")
     p = DESK / "data" / "gateway_state.json"
@@ -502,6 +560,7 @@ def main(argv: list[str] | None = None) -> int:
     check_bars_state()
     check_state_flow()
     check_stall_watch_alerts()
+    check_fusion_deadman()
     check_gateway_state()
     print("Every [PROBLEM] line above is a thing to fix. [UNKNOWN] means this could not check,")
     print("which is a finding too -- it is never the same as OK.")
