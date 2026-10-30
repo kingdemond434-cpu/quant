@@ -89,6 +89,8 @@ ROSTER = DESK / "data" / "source_rosters" / "culture_gap_sources.json"
 UNIVERSE = DESK / "data" / "universe" / "universe.json"
 SUMMARY = DESK / "reports" / "CELL_CULTURE.json"
 CURSOR = DESK / "reports" / "culture_gap_cells_cursor.json"
+#: the cursor's slot for donation rows a door refused (no recipe id starts with "_")
+PENDING_KEY = "_pending_donations"
 OUT = DESK / "reports" / "CULTURE_GAP_CELLS.json"
 SERIES_DIR = DESK / "data" / "lake" / "series"
 #: The intake seat: `proposer_common.donate` writes data/intelligence/<SEAT>/discoveries_*.json,
@@ -703,7 +705,13 @@ def run(budget_s: float = 240.0, *, dry_run: bool = False, year: int | None = No
     if not isinstance(cursor, dict):
         cursor = {}
     per: list[dict[str, Any]] = []
-    donations: list[tuple[str, dict[str, Any]]] = []
+    # rows a previous pass minted into the registry but the door did not take: donated again
+    # here, never re-minted (a repeat enqueue_candidate is not a no-op -- it bumps search_count,
+    # which charges the rule a second trial for one cell)
+    pending = cursor.pop(PENDING_KEY, None)
+    donations: list[tuple[str, dict[str, Any]]] = [
+        (str(k), row) for k, row in (pending if isinstance(pending, list) else [])
+        if isinstance(row, dict)]
     dones: dict[str, set[str]] = {}
     order = sorted(recs, key=lambda r: (_ORDER.get(recipe_gap_state(r, states), 9), r["id"]))
     for rec in order:
@@ -749,12 +757,9 @@ def run(budget_s: float = 240.0, *, dry_run: bool = False, year: int | None = No
     if not dry_run:
         donation = donate_cells([row for _k, row in donations])
         if donations and not donation.get("path"):
-            # THE DOOR DID NOT TAKE THEM: the cells are un-marked so the next pass mints and
-            # donates them again (the registry dedups the lineage row by content hash).
-            undone = {k for k, _row in donations}
-            for rid, d in dones.items():
-                d -= undone
-                cursor[rid]["next"] = 0
+            # THE DOOR DID NOT TAKE THEM: the cells stay minted (they ARE in the registry) and
+            # only their donation rows are carried to the next pass, which donates them again.
+            cursor[PENDING_KEY] = [[k, row] for k, row in donations]
         for rid, d in dones.items():
             if rid in cursor:
                 cursor[rid]["done"] = sorted(d)
