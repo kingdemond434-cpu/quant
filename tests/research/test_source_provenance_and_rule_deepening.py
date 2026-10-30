@@ -277,6 +277,33 @@ def test_complete_rotates_on_429_and_404_and_persists_the_cursor(tmp_path) -> No
     assert saved["per_model"]["m3"]["ok"] == 1
 
 
+def test_a_zero_priced_id_without_free_is_never_rotated_in(tmp_path) -> None:
+    """openrouter_guard refuses every id without ":free", so admitting one would burn calls."""
+    body = {"data": [{"id": "z/zero", "pricing": {"prompt": "0", "completion": "0"},
+                      "context_length": 999},
+                     {"id": "a/x:free", "pricing": {"prompt": "0", "completion": "0"}}]}
+    models, _ = orf.free_models("k", get=lambda *a, **k: (body, None), cache=tmp_path / "m.json")
+    assert models == ["a/x:free"]
+
+
+def test_a_guard_refusal_rotates_without_backing_off(tmp_path) -> None:
+    calls: list[str] = []
+    slept: list[float] = []
+    replies = iter([({}, "openrouter_guard: refused paid model 'm1'"),
+                    ({"choices": [{"message": {"content": "ok"}}]}, None)])
+
+    def post(url, key, req, **kw):
+        calls.append(req["model"])
+        return next(replies)
+
+    st = orf.load_state(tmp_path / "s.json")
+    text, model, err = orf.complete([{"role": "user", "content": "x"}], key="k",
+                                    models=["m1", "m2"], state=st, post=post,
+                                    sleep=slept.append, state_path=tmp_path / "s.json")
+    assert err is None and text == "ok" and calls == ["m1", "m2"] and model == "m2"
+    assert slept == []
+
+
 def test_batch_extract_validates_each_row_against_its_own_text() -> None:
     t1 = {"source": "forum", "title": "EURUSD London open range breakout works"}
     t2 = {"source": "forum", "title": "Nothing to see"}
@@ -405,6 +432,18 @@ def test_the_url_fence_fails_below_its_floor_and_is_unmeasured_when_absent(
     assert fence.check_url(art, floor)[0] == 1
     art.write_text(json.dumps({"provenance": {"new": {"share_source_url": 0.75}}}))
     assert fence.check_url(art, floor)[0] == 0
+
+
+def test_the_url_floor_is_reported_never_fenced(monkeypatch: pytest.MonkeyPatch,
+                                                tmp_path: Path) -> None:
+    """A below-floor external-URL share prints FAIL but never turns the law gate red: an hour of
+    internal generators reads no page, and fencing it would throttle mining."""
+    monkeypatch.setattr(fence, "check", lambda *_a, **_k: (0, "OK"))
+    monkeypatch.setattr(fence, "check_url", lambda *_a, **_k: (1, "FAIL: below floor"))
+    monkeypatch.setattr(fence, "check_certificates", lambda: (0, "OK"))
+    monkeypatch.setattr(sys, "argv", ["check_provenance_floor.py",
+                                      "--artifact", str(tmp_path / "mc.json")])
+    assert fence.main() == 0
 
 
 def test_the_docket_feed_carries_the_registry_sources_url(tmp_path: Path) -> None:
