@@ -263,11 +263,12 @@ class _Hub:
         labels: tuple[str, ...] = ("audit-clear",),
         files: tuple[str, ...] = ("scripts/x.py",),
         approvals: list[dict[str, Any]] | None = None,
+        ref: str = "claude/x",
     ) -> None:
         self.pr = {
             "state": "open",
             "draft": draft,
-            "head": {"sha": head, "repo": {"full_name": "o/fork" if fork else "o/r"}},
+            "head": {"sha": head, "ref": ref, "repo": {"full_name": "o/fork" if fork else "o/r"}},
             "base": {"ref": ag.LIVE},
             "labels": [{"name": n} for n in labels],
             "changed_files": len(files),
@@ -283,6 +284,7 @@ class _Hub:
         self.suites = {1: ".github/workflows/ci.yml", 2: ".github/workflows/release-gates.yml"}
         self.annotations: dict[int, list[dict[str, Any]]] = {}
         self.attempt = 1
+        self.merged_in = 0  # earlier merges of the base into the branch (#552 SF1)
 
     def __call__(self, *args: str, data: Any = None) -> Any:
         path = args[0]
@@ -323,6 +325,9 @@ class _Hub:
             return [self.files]
         if "/pulls?" in path:
             return [[{"number": 7}]]
+        if "/compare/" in path:
+            msg = f"Merge branch '{ag.LIVE}' into claude/x"
+            return {"commits": [{"commit": {"message": msg}}] * self.merged_in}
         return self.pr
 
 
@@ -952,12 +957,72 @@ def test_a_forged_same_name_run_counts_for_nothing(auto_hub: Any, forged: dict[s
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
 
 
-def test_a_stale_github_tree_takes_the_manual_path(
+def test_a_behind_auto_pr_gets_live_merged_in_never_the_manual_path(
     auto_hub: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Desk health 2026-10-29 20:20Z: AUTO PRs behind LIVE went to zuck's path and nothing
+    merged. The box merges LIVE in (pinned to the head) and the next run decides."""
     h = auto_hub(runs=_auto_green())
     monkeypatch.setattr(ag, "up_to_date", lambda base, head: (False, "it is behind"))
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+    (put,) = [w for w in h.writes if w[1].endswith("/pulls/7/update-branch")]
+    assert put[0] == "PUT" and f"expected_head_sha={A}" in put
+    # a red head spends no CI on a merge-in, and the Actions run never merges LIVE in
+    red = [*_green()[:-1], _r(ag.GATING_JOBS[-1], conclusion="failure")]
+    for runs, box in ((red, True), (_auto_green(), False)):
+        h = auto_hub(runs=runs)
+        ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=box)
+        assert not any(w[1].endswith("/update-branch") for w in h.writes)
+
+
+def _brought_up(h: Any) -> bool:
+    return any(w[1].endswith("/update-branch") for w in h.writes)
+
+
+def test_only_a_behind_session_branch_with_genuine_checks_is_brought_up_and_only_so_often(
+    auto_hub: Any, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """#552 audit SF1/SF3/SF5: a fetch failure never loops; a forged success spends no CI; a
+    human's branch or an unaudited draft is never pushed to; past the cap it stops, RED."""
+    behind = (False, f"it is behind {ag.LIVE} (merge {ag.LIVE} in first)")
+
+    def hub(why: tuple[bool, str] = behind, **kw: Any) -> Any:
+        h = auto_hub(**{"runs": _auto_green(), **kw})
+        monkeypatch.setattr(ag, "up_to_date", lambda base, head: why)  # after the hub's own
+        return h
+
+    def go(h: Any, **kw: Any) -> bool:
+        ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True, **kw)
+        return _brought_up(h)
+
+    assert go(hub())
+    assert not go(hub((False, "the head or the base could not be fetched")))
+    assert not go(hub(ref="zuck/hand-edit")) and not go(hub(draft=True))
+    assert not go(hub(runs=[{**r, "forged": True} for r in _auto_green()]))
+    h = hub()
+    h.merged_in = ag.BRING_UP_CAP
+    capsys.readouterr()
+    assert not go(h) and "RED BRING_UP_CAPPED #7" in capsys.readouterr().out
+    budget = [0]
+    assert not go(hub(), bring_ups=budget) and budget == [0]
+    budget = [1]
+    assert go(hub(), bring_ups=budget) and budget == [0]
+
+
+def test_a_refused_bring_up_leaves_the_pr_as_it_is(
+    auto_hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#552 audit SF6: a 422 (a conflict) is a False, and nothing else is written."""
+    h = auto_hub(runs=_auto_green())
+    inner = ag._gh
+
+    def gh(*args: str, data: Any = None) -> Any:
+        if args[0].endswith("/update-branch"):
+            raise RuntimeError("HTTP 422: merge conflict")
+        return inner(*args, data=data)
+
+    monkeypatch.setattr(ag, "_gh", gh)
+    assert ag.bring_up("o/r", 7, A) is False and h.writes == []
 
 
 @pytest.mark.parametrize(
@@ -2007,6 +2072,92 @@ def test_formerly_protected_files_merge_only_on_every_auto_check(auto_hub: Any, 
 def test_a_secrets_path_never_merges(auto_hub: Any) -> None:
     h = auto_hub(files=("data/secrets/k.txt",), runs=_auto_green())
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 1 and _merges(h) == []
+
+
+# ------------------------------------------- an audit verdict no longer pins a PR (zuck 19:12Z)
+
+
+def test_a_cleared_auto_pr_merges_with_no_approval_on_every_auto_job(auto_hub: Any) -> None:
+    """zuck 2026-10-29 19:12Z: "i want to be free not having to do any merges". A CLEAR he has
+    not approved leaves the PR on the AUTO path: no APPROVE, but every AUTO job."""
+    for sha in (A, C):  # a CLEAR of this head, and a stale one of another change
+        h = auto_hub(runs=_green(), comments=[_c(f"AUDIT CLEAR {sha}", "2026-10-29T10:00:00Z")])
+        assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+        assert _merges(h) == []  # the AUTO jobs never ran: no pass
+        h = auto_hub(
+            runs=_auto_green(), comments=[_c(f"AUDIT CLEAR {sha}", "2026-10-29T10:00:00Z")]
+        )
+        assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+        (merge,) = _merges(h)
+        assert "AUTO tier" in " ".join(merge)
+
+
+def test_a_standing_hold_or_an_edit_still_pins_an_auto_pr(auto_hub: Any) -> None:
+    hold = [
+        _c(f"AUDIT CLEAR {A}", "2026-10-29T10:00:00Z"),
+        _c(f"AUDIT HOLD {A}", "2026-10-29T11:00:00Z"),
+    ]
+    edited = [
+        {**_c(f"AUDIT CLEAR {A}", "2026-10-29T10:00:00Z"), "updated_at": "2026-10-29T12:00:00Z"}
+    ]
+    for comments in (hold, edited):
+        h = auto_hub(runs=_auto_green(), comments=comments)
+        assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+        assert _merges(h) == []
+
+
+def test_zucks_approved_clear_of_the_head_still_takes_his_path(auto_hub: Any) -> None:
+    """His override (a CLEAR he approved) merges on the gating jobs alone, as before."""
+    h = auto_hub(
+        runs=[*_green(), _r("independent-review", conclusion="failure")],
+        comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T22:00:00Z")],
+        approvals=[*BOTH, _ok("2026-10-28T23:00:00Z")],
+    )
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    (merge,) = _merges(h)
+    assert "audit CLEAR" in " ".join(merge)
+
+
+def test_an_audited_low_pr_runs_every_auto_job(low_hub: Any) -> None:
+    """#454 audit S1 kept: an audited LOW PR never merges on gating CI alone."""
+    comments = [_c(f"AUDIT CLEAR {C}", "2026-10-29T10:00:00Z")]
+    h = low_hub(comments=comments, approvals=list(BOTH))
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+    h = low_hub(comments=comments, approvals=list(BOTH), runs=_auto_green())
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    assert len(_merges(h)) == 1
+
+
+def test_a_clear_arriving_mid_run_never_merges_a_low_pr_on_gating_ci_alone(
+    low_hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#537 audit MF1: a run that began unaudited (LOW, gating jobs only) re-decides once a
+    verdict lands, even with AUTO off, so an audited LOW PR never skips the AUTO jobs."""
+    h = low_hub(comments=[])
+    reads = {"n": 0}
+
+    def gh(*args: str, data: Any = None) -> Any:
+        if args[0].endswith("/issues/7/comments?per_page=100"):
+            reads["n"] += 1
+            if reads["n"] == 2:
+                h.comments.append(_c(f"AUDIT CLEAR {A}", "2026-10-29T10:00:00Z"))
+        return h(*args, data=data)
+
+    monkeypatch.setattr(ag, "_gh", gh)
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    assert reads["n"] >= 2 and _merges(h) == []
+
+
+def test_zucks_approved_clear_carries_to_a_rebased_identical_change(auto_hub: Any) -> None:
+    """#537 audit S1: a CLEAR of B (same diff as head A) that zuck approved keeps his override,
+    as cleared() reads it: it merges on the gating jobs even though an AUTO job failed."""
+    h = auto_hub(
+        runs=[*_green(), _r("independent-review", conclusion="failure")],
+        comments=[_c(f"AUDIT CLEAR {B}", "2026-10-28T22:00:00Z")],
+        approvals=[*BOTH, _ok("2026-10-28T23:00:00Z")],
+    )
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    assert len(_merges(h)) == 1
 
 
 _ROWS = (

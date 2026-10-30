@@ -140,7 +140,8 @@ try {
         $rc = $LASTEXITCODE
         $out = $lines -join "`n"
     } finally { Pop-Location }
-    $merged = @($out -split "`r?`n" | Where-Object { $_ -match 'MERGED' }).Count
+    # case-sensitive, the gate's own word: -match counted every "merged" in any line (20:20Z: 5)
+    $merged = @($out -split "`r?`n" | Where-Object { $_ -cmatch ': MERGED \(' }).Count
     $note = "gate@{0}: {1} merged" -f $at, $merged
     if (-not $scope) { $note += "; NO workflow scope: run once  gh auth refresh -h github.com -s workflow" }
     Beat $rc $note $scope
