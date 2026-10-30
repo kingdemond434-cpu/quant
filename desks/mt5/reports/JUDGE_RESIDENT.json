@@ -17,7 +17,7 @@
  "uptime_s": 207603.3,
  "last_sweep_ended_utc": "2026-10-30T02:21:17+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-10-30T06:50:23+00:00",
+ "heartbeat_utc": "2026-10-30T07:04:54+00:00",
  "sweep_phase": {
   "pid": 25588,
   "sweep_started_utc": "2026-10-30T02:21:44+00:00",
@@ -254,42 +254,42 @@
      }
     },
     "merge_and_publish": {
-     "samples": 50,
+     "samples": 133,
      "top": [
       {
+       "stack": "hypothesis_graph.py:<genexpr>:768 < hypothesis_graph.py:_fold_fates:732 < hypothesis_graph.py:_fate_index:768 < hypothesis_graph.py:record_gauntlet_verdicts:804 < external_gauntlet.py:<lambda>:3960 < external_gauntlet.py:_safe:2170",
+       "n": 68,
+       "share": 0.511
+      },
+      {
        "stack": "preregistration.py:spec_index:286 < hypothesis_graph.py:record_gauntlet_verdicts:795 < external_gauntlet.py:<lambda>:3960 < external_gauntlet.py:_safe:2170 < external_gauntlet.py:main:3960 < external_gauntlet.py:run_sharded:4844",
-       "n": 16,
-       "share": 0.32
+       "n": 29,
+       "share": 0.218
       },
       {
        "stack": "encoder.py:iterencode:261 < encoder.py:encode:200 < __init__.py:dumps:238 < frontier_identity.py:cell_id:63 < external_gauntlet.py:main:3915 < external_gauntlet.py:run_sharded:4844",
        "n": 3,
-       "share": 0.06
+       "share": 0.023
       },
       {
        "stack": "external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
        "n": 3,
-       "share": 0.06
+       "share": 0.023
       },
       {
        "stack": "_axis_nan_policy.py:_broadcast_shapes:100 < _axis_nan_policy.py:_broadcast_arrays:55 < _axis_nan_policy.py:axis_nan_policy_wrapper:541 < dsr.py:probabilistic_sharpe_ratio:36 < dsr.py:deflated_sharpe_ratio:85 < external_gauntlet.py:run_gauntlet:3184",
        "n": 2,
-       "share": 0.04
-      },
-      {
-       "stack": "encoder.py:iterencode:261 < encoder.py:encode:200 < __init__.py:dumps:238 < frontier_identity.py:cell_id:63 < external_gauntlet.py:<lambda>:3963 < external_gauntlet.py:_safe:2170",
-       "n": 2,
-       "share": 0.04
+       "share": 0.015
       }
      ],
      "process": {
-      "cpu_s": 465.6,
-      "page_faults": 3079889.0,
-      "read_bytes": 2980850887.0,
-      "write_bytes": 10295171.0,
-      "sampled_s": 490.0,
+      "cpu_s": 649.4,
+      "page_faults": 3964445.0,
+      "read_bytes": 5960037028.0,
+      "write_bytes": 10470965.0,
+      "sampled_s": 1320.0,
       "rss_mb_max": 5010.4,
-      "cpu_share_of_wall": 0.95
+      "cpu_share_of_wall": 0.492
      }
     }
    }
