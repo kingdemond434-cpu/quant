@@ -592,8 +592,12 @@ def _write_health(locks: dict[str, Any], t: float) -> None:
         finally:
             with suppress(OSError):
                 tmp.unlink()
-    except Exception:
-        pass                              # bookkeeping never blocks the lock decision
+    except (OSError, ImportError, TypeError, ValueError) as exc:
+        # Bookkeeping never blocks the lock decision, but a lost health report is said aloud:
+        # the disk refused it (OSError), the atomic-replace helper would not import, or a lock
+        # row would not serialise. Each is named so JOB_LOCK_HEALTH.json going stale has a cause.
+        print(f"job_lock: JOB_LOCK_HEALTH.json NOT written ({type(exc).__name__}: {exc})",
+              file=sys.stderr)
 
 
 def _stamp(health: dict[str, Any], t: float) -> dict[str, Any]:

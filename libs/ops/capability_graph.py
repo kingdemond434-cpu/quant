@@ -861,6 +861,9 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/data/forward_reconcile.json",)),
     Node("input_identity", "libs/data/input_identity.py",
          writes=("desks/mt5/data/input_identity.json",)),
+    # hourly_cycle:job_lock_health runs it (_producer); the path is its own OUT constant.
+    Node("job_lock_health", "scripts/check_job_locks.py",
+         writes=("desks/mt5/reports/JOB_LOCK_HEALTH.json",)),
     Node("lake_promote", "desks/mt5/research/lake_promote.py",
          writes=("desks/mt5/reports/LAKE_PROMOTION.json",)),
     Node("orthogonality", "desks/mt5/research/orthogonality.py",
