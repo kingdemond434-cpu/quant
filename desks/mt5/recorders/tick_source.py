@@ -71,6 +71,17 @@ TICK_DTYPE = np.dtype([
 COPY_TICKS_ALL = 3
 
 
+def _robust_clock(stamps: list[int]) -> int | None:
+    """The broker's clock from every symbol's last stamp: the SECOND-newest (audit 2026-10-29,
+    S1). The newest alone let one forward-glitched stamp end the window in the future -- +10/+30/
+    +59/+90 s lost 2/22/51/82 of 3,461 ticks. On a live broker the two newest are within a
+    second, so this is late by that much at most, and late is lossless. One stamp: that one."""
+    vals = sorted(v for v in stamps if v > 0)
+    if not vals:
+        return None
+    return vals[-2] if len(vals) >= 2 else vals[-1]
+
+
 class TickSourceError(RuntimeError):
     """The source could not answer. ALWAYS a recorded gap, never a silent zero."""
 
@@ -223,6 +234,23 @@ class Mt5TickSource:
             return np.empty(0, dtype=TICK_DTYPE)
         return arr
 
+    def server_now_ms(self, symbols: list[str]) -> int | None:
+        """The broker's own clock, measured: the newest `time_msc` any listed symbol's last tick
+        carries. Never ahead of the broker's true now (a stamp is only ever in the past), so a
+        window ending here cannot outrun ticks the server has not stamped yet. None when no
+        symbol answers -- the recorder then falls back to its late, lossless bound."""
+        mt5 = self._mt5()
+        got: list[int] = []
+        for sym in symbols:
+            try:
+                t = mt5.symbol_info_tick(sym)
+            except Exception:
+                continue
+            v = int(getattr(t, "time_msc", 0) or 0) if t is not None else 0
+            if v > 0:
+                got.append(v)
+        return _robust_clock(got)
+
     def clock_probe(self, symbol: str) -> tuple[int, int] | None:
         mt5 = self._mt5()
         try:
@@ -264,6 +292,8 @@ class FakeTickSource:
         #: Symbols the source reports but returns nothing for (a delisted-but-listed instrument).
         self.silent_symbols: set[str] = set()
         self.clock_skew_ms = 0
+        #: The broker clock `server_now_ms` reports; None = unmeasurable (the recorder falls back).
+        self.server_clock_ms: int | None = None
         self.calls: list[tuple[str, int, int]] = []
 
     def alive(self) -> bool:
@@ -284,6 +314,9 @@ class FakeTickSource:
         if symbol not in self._symbols:
             return None
         return SymbolSpec(symbol=symbol, point=self.point, digits=self.digits, trade_mode=4)
+
+    def server_now_ms(self, symbols: list[str]) -> int | None:
+        return self.server_clock_ms if self.is_alive else None
 
     def clock_probe(self, symbol: str) -> tuple[int, int] | None:
         if not self.is_alive:
