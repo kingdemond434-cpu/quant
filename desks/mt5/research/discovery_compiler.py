@@ -413,7 +413,10 @@ def registry_parent(row: Mapping[str, Any],
     payload = row.get("payload_json")
     spec = json.loads(payload) if isinstance(payload, str) and payload.startswith("{") else {}
     merged: dict[str, Any] = {**row, **spec, **dict(override or {})}
-    if not merged.get("symbol") and not (override or {}).get("symbols") \
+    # An override that NAMES `symbols` -- even as [] -- is the recording organ's answer: an
+    # all-share-CFD text unit is routed with no hypothesis-lane instrument, and falling back to
+    # its assets would hand the share CFDs a single-name statistical cell (the two-lane order).
+    if not merged.get("symbol") and "symbols" not in (override or {}) \
             and isinstance(row.get("assets_json"), str):
         # A discovery another organ recorded carries its instruments in `assets_json` and no
         # `symbol`. Reading only `symbol` would make every foreign discovery instrument-less,

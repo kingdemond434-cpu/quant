@@ -263,7 +263,13 @@ def _clock_wanted() -> dict[tuple[str, str], int]:
     out: dict[tuple[str, str], int] = {}
     for row in (doc.get("bars_wanted") or []) if isinstance(doc, dict) else []:
         if isinstance(row, dict) and row.get("symbol") and row.get("timeframe"):
-            out[(str(row["symbol"]), str(row["timeframe"]).upper())] = int(row.get("clocks") or 1)
+            # A malformed count ranks the chart as wanted by one clock; it never stops the
+            # collector (#110 audit SF3).
+            try:
+                clocks = int(row.get("clocks") or 1)
+            except (TypeError, ValueError):
+                clocks = 1
+            out[(str(row["symbol"]), str(row["timeframe"]).upper())] = clocks
     return out
 
 

@@ -89,3 +89,28 @@ def test_apply_moves_banned_rows_to_retired_with_the_reason_and_drops_n(reg) -> 
 def test_the_rejudge_organ_never_requeues_a_banned_family() -> None:
     rec = rj.recover("external.EURCHF.discovered.p=x", _row("EURCHF", "discovered", None), {})
     assert rec["ok"] is False and "banned" in rec["why"]
+
+
+def test_an_unreadable_archive_is_never_reset_and_nothing_moves(reg) -> None:
+    """#106 audit SF1: a truncated archive is refused, never rewritten as empty."""
+    reg["BANNED_ARCHIVE"].write_text('{"survivors": {"old": ')
+    before = {p: p.read_bytes() for p in (reg["BANNED_ARCHIVE"], reg["SURVIVORS"], reg["CANON"])}
+    out = ch.evict_banned(ch.build())
+    assert out["evicted"] == 0 and "unreadable" in out["refused"]
+    assert {p: p.read_bytes() for p in before} == before
+    reg["EVICTED"].write_text('{"survivors": ')
+    doc = {"at": "2026-10-30T00:00:00",
+           "unrunnable": [{"key": "external.CADJPY.session_range_breakout"}]}
+    assert "refused" in ch.apply(doc)
+    assert reg["EVICTED"].read_text() == '{"survivors": '
+
+
+def test_the_unrunnable_list_is_a_union_across_passes(reg) -> None:
+    """#106 audit SF2: a later pass never forgets an earlier eviction."""
+    ch.apply({"at": "a", "unrunnable": [{"key": "external.CADJPY.session_range_breakout"}]})
+    ch.apply({"at": "b",
+              "unrunnable": [{"key": "external.XAUUSD.session_range_breakout.rr=2.5_wb=12"}]})
+    d = json.loads(reg["CANON"].read_text())
+    assert d["unrunnable_evicted"] == ["external.CADJPY.session_range_breakout",
+                                       "external.XAUUSD.session_range_breakout.rr=2.5_wb=12"]
+    assert json.loads(reg["EVICTED"].read_text())["n"] == 2
