@@ -301,6 +301,185 @@ def _read_jsonl(path: Path, note: dict[str, str], *, since: datetime | None = No
     return list(rows)
 
 
+#: THE GRAPH INDEX (2026-10-29). `hypothesis_graph.jsonl` is 3.9 GB on the box and `_read_jsonl`
+#: scans it TWICE per full build (the horizon rows, then every older row for ids born before the
+#: horizon). The full build last published 2026-10-03; its core kept re-stamping `at` over windows
+#: from that day. The index makes the full build read only what was appended since the last one:
+#: it keeps the read offset, each id's EARLIEST date (the second scan's whole answer), and the raw
+#: lines still inside the horizon in a sidecar. Same rows out as `_read_jsonl(births=True)`.
+GRAPH_INDEX = DESK / "data" / "gauntlet_backpressure_graph_index.json"
+#: v2 (audit HOLD of 6fd8ac95f, MF2): the index records the sidecar's byte length and line count
+#: and is checked against them, so a sidecar replaced without its index rebuilds instead of being
+#: appended to twice.
+GRAPH_INDEX_SCHEMA = 2
+#: A FRESH BUILD SAVES ITS PROGRESS this often (audit S4): the first read of a multi-gigabyte
+#: graph took 15 s in a sandbox and far longer on a busy box, and a leg killed before its only
+#: write would start again from byte 0 every hour.
+GRAPH_INDEX_CHECKPOINT_BYTES = 256 * 1024 * 1024
+#: Attempts, with doubling waits, for a replace Windows refuses while another process holds it.
+_REPLACE_ATTEMPTS = 5
+#: Only the box's own graph uses GRAPH_INDEX; any other graph (a test's) keeps an index beside it.
+_BOX_GRAPH = DESK / "data" / "hypothesis_graph.jsonl"
+GRAPH_INDEX_HEAD_BYTES = 4096
+
+
+def _id_digest(ident: str) -> str:
+    import hashlib
+    return hashlib.blake2b(ident.encode("utf-8"), digest_size=8).hexdigest()
+
+
+def _replace_retry(tmp: Path, dst: Path) -> None:
+    import time
+    for attempt in range(_REPLACE_ATTEMPTS):
+        try:
+            os.replace(tmp, dst)
+            return
+        except PermissionError:
+            if attempt == _REPLACE_ATTEMPTS - 1:
+                raise
+            time.sleep(0.05 * (2 ** attempt))
+
+
+def _write_retry(dst: Path, text: str) -> None:
+    """tmp then replace, retried; a write that fails leaves no tmp behind (audit S6)."""
+    tmp = dst.with_name(f"{dst.name}.{os.getpid()}.tmp")
+    try:
+        tmp.write_text(text, encoding="utf-8")
+        _replace_retry(tmp, dst)
+    finally:
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
+def _save_graph_index(ip: Path, side: Path, idx: dict[str, Any], recent: list[str]) -> bool:
+    """The sidecar, then the index that names its exact size: a pair that disagrees is rebuilt."""
+    body = "".join(recent)
+    by_date: dict[str, list[str]] = {}
+    for d, day in (idx.get("first") or {}).items():
+        by_date.setdefault(day, []).append(d)
+    # Grouped by date (audit S4): one key per day, the ids' digests concatenated, so a 3M-id
+    # graph's index parses as a few thousand strings instead of three million pairs.
+    idx = {**{k: v for k, v in idx.items() if k != "first"},
+           "first_by_date": {day: "".join(ds) for day, ds in by_date.items()},
+           "side_bytes": len(body.encode("utf-8")), "side_lines": len(recent)}
+    try:
+        side.parent.mkdir(parents=True, exist_ok=True)
+        _write_retry(side, body)
+        _write_retry(ip, json.dumps(idx))
+        return True
+    except OSError:
+        return False             # the answer is still whole; the next pass re-reads more
+
+
+def _read_graph_indexed(path: Path, note: dict[str, str], *, since: datetime,
+                        index_path: Path | None = None) -> list[dict[str, Any]]:
+    """`_read_jsonl(path, note, since=since, births=True)`, reading only appended lines.
+
+    The index rebuilds from byte 0 when the file's head changed, it shrank, or the horizon moved
+    back past the lines the sidecar kept. A row without an
+    `id` cannot mark an id as born earlier, exactly as in the second scan; a row without a date
+    is never a horizon row. Lines the writer has not finished (no newline yet) wait."""
+    ip = index_path if index_path is not None else path.with_name(
+        path.name + ".bp_index.json") if path != _BOX_GRAPH else GRAPH_INDEX
+    side = ip.with_name(ip.name + ".recent.jsonl")
+    cut = (since - timedelta(days=1)).date().isoformat()
+    try:
+        with path.open("rb") as fh:
+            head = fh.read(GRAPH_INDEX_HEAD_BYTES).hex()
+        size = path.stat().st_size
+    except OSError:
+        note[path.name] = "ABSENT"
+        return []
+    try:
+        idx = json.loads(ip.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        idx = None
+    fresh = (not isinstance(idx, dict) or idx.get("schema") != GRAPH_INDEX_SCHEMA
+             or not idx.get("head") or not head.startswith(str(idx["head"])[:len(head)])
+             or int(idx.get("offset") or 0) > size
+             or cut < str(idx.get("cut") or ""))         # the sidecar no longer holds that far
+    recent: list[str] = []
+    if not fresh:
+        try:
+            body = side.read_bytes()
+            # "\n" ONLY (audit S5): splitlines also breaks on U+2028, \x0c and friends.
+            recent = [ln + "\n" for ln in body.decode("utf-8").split("\n")[:-1]]
+            fresh = (len(body) != int(idx.get("side_bytes", -1))
+                     or len(recent) != int(idx.get("side_lines", -1)))
+        except (OSError, ValueError, TypeError):
+            fresh = True
+    if fresh:
+        idx = {"schema": GRAPH_INDEX_SCHEMA, "offset": 0, "lines": 0}
+        recent = []
+    assert isinstance(idx, dict)
+    first: dict[str, str] = {}
+    try:
+        for day, blob in (idx.get("first_by_date") or {}).items():
+            day = str(day)
+            for i in range(0, len(blob), 16):
+                first[blob[i:i + 16]] = day
+    except (AttributeError, TypeError):
+        idx = {"schema": GRAPH_INDEX_SCHEMA, "offset": 0, "lines": 0}
+        first, recent = {}, []
+    offset, total = int(idx.get("offset") or 0), int(idx.get("lines") or 0)
+    dates: dict[str, str] = {day: day for day in set(first.values())}
+    next_save = offset + GRAPH_INDEX_CHECKPOINT_BYTES
+    with path.open("rb") as fh:
+        fh.seek(offset)
+        for raw in fh:
+            if not raw.endswith(b"\n"):
+                break
+            offset += len(raw)
+            total += 1
+            if offset >= next_save:
+                recent = [ln for ln in recent
+                          if (mm := _AT_RE.search(ln)) is not None and mm.group(1) >= cut]
+                _save_graph_index(ip, side, {**idx, "head": head, "offset": offset - len(raw),
+                                             "lines": total - 1, "first": first, "cut": cut},
+                                  recent)
+                next_save = offset + GRAPH_INDEX_CHECKPOINT_BYTES
+            line = raw.decode("utf-8", errors="replace")
+            if offset == len(raw) and line.startswith("\ufeff"):
+                line = line[1:]                          # utf-8-sig, as the stream opened it
+            m = _AT_RE.search(line)
+            if m is None:
+                continue
+            mi = _ID_RE.search(line)
+            if mi is not None:
+                d = _id_digest(mi.group(1))
+                if d not in first or m.group(1) < first[d]:
+                    # One string per distinct date, not one per id (audit S4).
+                    first[d] = dates.setdefault(m.group(1), m.group(1))
+            if line.strip():
+                recent.append(line if line.endswith("\n") else line + "\n")
+    recent = [ln for ln in recent if (mm := _AT_RE.search(ln)) is not None and mm.group(1) >= cut]
+    idx.update({"head": head, "offset": offset, "lines": total, "first": first, "cut": cut,
+                "updated_at": datetime.now(UTC).isoformat(timespec="seconds")})
+    _save_graph_index(ip, side, idx, recent)
+    from collections import deque
+    rows: deque[dict[str, Any]] = deque(maxlen=MAX_LINES)
+    decoded = 0
+    for ln in recent:
+        try:
+            row = json.loads(ln)
+        except ValueError:
+            continue
+        if isinstance(row, dict):
+            decoded += 1
+            rows.append(row)
+    if rows:
+        older = {str(r.get("id") or "") for r in rows
+                 if r.get("id") and first.get(_id_digest(str(r.get("id"))), cut) < cut}
+        if older:
+            rows = deque((r for r in rows if str(r.get("id") or "") not in older),
+                         maxlen=MAX_LINES)
+    note[path.name] = (f"TRUNCATED_KEPT_NEWEST({MAX_LINES} of {decoded} in horizon, "
+                       f"{total} lines)" if decoded > MAX_LINES else "READ")
+    return list(rows)
+
+
 def _rel(path: Path) -> str:
     """`path` inside the repo, or its plain string: a tmp path has no relative form, and an organ
     that raises while describing its own output is an organ nobody can test."""
@@ -784,7 +963,7 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     at = now or _now()
     note: dict[str, str] = {}
     horizon = at - timedelta(days=HORIZON_DAYS)
-    born = born_cells(_read_jsonl(GRAPH, note, since=horizon, births=True))
+    born = born_cells(_read_graph_indexed(GRAPH, note, since=horizon))
     # The ledger is streamed whole too, but NOT date-filtered: `priors` are a lifetime pass rate
     # per bucket. On truncation it keeps the NEWEST rows, where the windows live.
     vers = verdicts(_read_jsonl(GATE_LEDGER, note))
