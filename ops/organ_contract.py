@@ -88,6 +88,14 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                                 "Owned by MT5-Gauntlet; this is not a task of its own"),
     "MT5-Universe":       ("desks/mt5/data/universe/universe.json", 1440,
                            "the symbol registry the whole hypothesis lane reads"),
+    # CONTRACTED 2026-10-29 with its move to an Interactive principal. An Interactive task does
+    # not fire while the terminal's owner is logged off, and before that it sat under SYSTEM/S4U
+    # failing `initialize` every hour -- both look like nothing at all unless an artifact ages.
+    # tape.py --terms-only rewrites the swap-freshness report on every pass that reaches the
+    # terminal, so the hourly cadence plus one missed run is the budget.
+    "MT5-ContractTerms":  ("desks/mt5/reports/BROKER_SWAPS_FRESHNESS.json", 180,
+                           "point-in-time broker swaps and contract terms; silence means the "
+                           "terminal's owner is logged off or the recorder cannot attach"),
     "MT5-LocalConvert":   ("desks/mt5/data/hypotheses/local_candidates.json", 180,
                            "deterministic row -> candidate conversion"),
 
@@ -225,9 +233,17 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                              "every clock certified or retired -- nothing squats"),
     # Certificates that passed the gates and can never be enrolled still counted toward the total
     # and still spent a share of the fixed family-wise error budget.
-    "MT5-CertHygiene":    ("desks/mt5/reports/CERTIFICATE_HYGIENE.json", 1560,
-                           "certificates the enrolment engine can never run, evicted with their "
-                           "evidence kept"),
+    # A COMPONENT OF MT5-FrontierAudit, NOT A TASK (2026-10-29). certificate_hygiene.py --apply is
+    # the first organ ops/run_frontier_audit.cmd runs; no cert-hygiene task of its own was ever
+    # installed or meant to be. Keyed as a bare task name, process_health reported it
+    # NOT_SCHEDULED / "never run on this box" every pass while its artifact was 11h fresh, and the
+    # manifest carried a phantom UNDECLARED row for it. Parenthesised, it is judged as what it is:
+    # an artifact of the frontier lane, held to the lane's daily clock. (The old bare key is not
+    # spelled here on purpose: scripts/check_box_tasks.py reads any task-shaped token in a .py as
+    # a reference the manifest must cover, so naming it in prose re-creates the phantom row.)
+    "MT5-FrontierAudit (cert hygiene)": (
+        "desks/mt5/reports/CERTIFICATE_HYGIENE.json", 1560,
+        "certificates the enrolment engine can never run, evicted with their evidence kept"),
     "MT5-ReleaseAuthority": ("desks/mt5/reports/RELEASE_AUTHORITY_AUDIT.json", 45,
                              "does the running tree match a SIGNED release, and would the hourly "
                              "adopter overwrite unpushed money-path work"),

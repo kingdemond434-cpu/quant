@@ -1025,6 +1025,27 @@ def _dry_run(argv: list[str]) -> int:
     return 0
 
 
+def _explain(err: object) -> str:
+    """Route the raw MT5 error through the shared explanation -- see h1_source.
+
+    Imported lazily and falling back to the bare error: a diagnostic helper must never be the
+    reason a producer cannot start.
+
+    IT LIVES ABOVE `main`, NOT AFTER THE `__main__` GUARD (MT5-ContractTerms rc 1, 2026-10-29).
+    It used to be defined below `raise SystemExit(main())`, so under `python -m mt5desk.tape`
+    main() ran before this name existed and the init-failure branch died with NameError instead
+    of saying why the terminal would not attach. tests/ops/test_main_guard_is_last.py fences it.
+    """
+    try:
+        from research.h1_source import explain_init_failure
+    except ImportError:
+        try:
+            from h1_source import explain_init_failure  # type: ignore[no-redef]
+        except ImportError:
+            return f"{err}"
+    return explain_init_failure(err)
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     if "--dry-run" in argv:
@@ -1078,24 +1099,9 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def _explain(err: object) -> str:
-    """Route the raw MT5 error through the shared explanation -- see h1_source.
-
-    Imported lazily and falling back to the bare error: a diagnostic helper must never be the
-    reason a producer cannot start.
-    """
-    try:
-        from research.h1_source import explain_init_failure
-    except ImportError:
-        try:
-            from h1_source import explain_init_failure  # type: ignore[no-redef]
-        except ImportError:
-            return f"{err}"
-    return explain_init_failure(err)
-
-
 # THE ENTRY POINT IS THE LAST STATEMENT (2026-10-14). It sat above `_explain`, so
 # `python -m mt5desk.tape` ran main() before `_explain` existed and the init-failure path --
 # the one that must explain itself -- died on NameError instead of printing the reason.
+# `_explain` now lives above `main`; tests/ops/test_main_guard_is_last.py fences the order.
 if __name__ == "__main__":
     raise SystemExit(main())
