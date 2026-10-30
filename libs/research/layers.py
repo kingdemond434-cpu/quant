@@ -50,6 +50,9 @@ LEG_LAYER: dict[str, str] = {
     # That is information, not prediction: neither one scores anything.
     "proposer_seat": "information", "kimi_hunt": "information",
     "deep_forest": "information", "market_intel": "information", "record_tape": "information",
+    # Whether either tick tape moved within 2 h of open market (2026-10-14): a measurement of the
+    # desk's own data wiring, not information about the market: meta.
+    "tape_fresh": "meta",
     "archive_tape": "information", "refresh_bars": "information",
     "timeframe_coverage": "information", "frontier": "information",
     "frontier_ontology": "information", "frontier_unknowns": "information",
