@@ -59,7 +59,8 @@ function Watch {
         $script = Join-Path $Clone "scripts\merge_pipeline_watch.py"
         if (-not $py -or -not (Test-Path -LiteralPath $script)) { Say "watch: no Python or no watcher in the clone"; return }
         $report = Join-Path $QuantRoot "desks\mt5\reports\MERGE_PIPELINE.json"
-        $wout = (& $py -I -u $script --repo $Repo --base $Live --out $report --heartbeat $beat 2>&1 | Out-String)
+        $sign = Join-Path $LogDir "sign_train.json"  # Quant-SignTrain's heartbeat (#541 audit MF3)
+        $wout = (& $py -I -u $script --repo $Repo --base $Live --out $report --heartbeat $beat --sign-heartbeat $sign 2>&1 | Out-String)
         Say "watch rc=$LASTEXITCODE $($wout.Trim())"
     } catch {
         Say "watch failed: $($_.Exception.Message)"
@@ -151,7 +152,8 @@ try {
         $rc = $LASTEXITCODE
         $out = $lines -join "`n"
     } finally { Pop-Location }
-    $merged = @($out -split "`r?`n" | Where-Object { $_ -match 'MERGED' }).Count
+    # case-sensitive, the gate's own word: -match counted every "merged" in any line (20:20Z: 5)
+    $merged = @($out -split "`r?`n" | Where-Object { $_ -cmatch ': MERGED \(' }).Count
     $note = "gate@{0}: {1} merged" -f $at, $merged
     if (-not $scope) { $note += "; NO workflow scope: run once  gh auth refresh -h github.com -s workflow" }
     Beat $rc $note $scope
