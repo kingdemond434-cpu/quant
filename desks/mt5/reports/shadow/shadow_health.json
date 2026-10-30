@@ -1,15 +1,15 @@
 {
-  "updated_at": "2026-10-30T20:37:43+00:00",
-  "configured_sleeves": 706,
-  "represented_sleeves": 706,
+  "updated_at": "2026-10-30T22:52:35+00:00",
+  "configured_sleeves": 705,
+  "represented_sleeves": 705,
   "certified_sleeves_total": 1345,
-  "forward_clocks_total": 706,
+  "forward_clocks_total": 705,
   "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
   "n_distinct_param_hashes": 210,
   "n_mechanisms": 11,
-  "retired_shadow_sleeves": 269,
+  "retired_shadow_sleeves": 270,
   "quarantined_uncertified_candidates": 0,
-  "sleeves_with_forward_trades": 577,
+  "sleeves_with_forward_trades": 576,
   "zero_trade_clocks": {
     "count": 129,
     "by_status": {
@@ -18,7 +18,7 @@
       "IDENTITY_BROKEN": 9
     },
     "age_measured": 129,
-    "median_age_days": 1.625,
+    "median_age_days": 1.718,
     "mature_14d_without_trade": 39,
     "fresh_attempts": 120,
     "naturally_inactive": 119,
@@ -42,7 +42,7 @@
     "370 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 2552.373,
+  "seconds": 7046.029,
   "gateway_armed": true,
   "promoted_live_sleeves": [],
   "promoted_live_certificate_rows": [],
