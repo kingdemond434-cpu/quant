@@ -3,12 +3,12 @@
  "create_time": 1793326878.3873253,
  "status": "RUNNING",
  "started_utc": "2026-10-30T02:21:19+00:00",
- "beat_utc": "2026-10-30T06:04:54+00:00",
- "beats": 438,
+ "beat_utc": "2026-10-30T06:20:11+00:00",
+ "beats": 468,
  "beat_every_s": 30.0,
  "phase": "build_shards",
  "phase_started_utc": "2026-10-30T05:14:43+00:00",
- "phase_elapsed_s": 3011.2,
+ "phase_elapsed_s": 3928.1,
  "phases_done": {
   "plan": 1112.9,
   "prewarm": 8747.2,
@@ -28,23 +28,37 @@
  "shards": {
   "phase": "build",
   "total": 15,
-  "done": 0,
+  "done": 13,
   "failed": 2,
-  "running": 13,
+  "running": 2,
   "stalled": 0,
   "slow": 0,
-  "retrying": 0,
+  "retrying": 2,
   "shard_slow_s": 42781.5,
   "shard_idle_kill_s": 1800.0,
-  "wave_started_utc": "2026-10-30T05:14:43+00:00"
+  "wave_started_utc": "2026-10-30T05:14:43+00:00",
+  "admission": {
+   "floor": 14,
+   "widest": 14,
+   "last": {
+    "running": 14,
+    "available_mb": 34565.1,
+    "wave_rss_mb": 9363.8,
+    "estimate_mb": 1469.9,
+    "estimate_basis": "historic_peak",
+    "room_mb": 1301.8,
+    "reserve_mb": 21425.1,
+    "admitted": false
+   }
+  }
  },
  "tree": {
-  "procs": 27,
-  "rss_mb": 16240.3,
-  "cpu_s": 16734.5
+  "procs": 5,
+  "rss_mb": 2798.4,
+  "cpu_s": 2741.9
  },
  "progress": "MEASURED",
- "last_progress_utc": "2026-10-30T06:04:54+00:00",
+ "last_progress_utc": "2026-10-30T06:20:11+00:00",
  "idle_s": 0.0,
  "progress_gaps": 0
 }
