@@ -1,0 +1,14 @@
+{
+ "at": "2026-10-30T02:39:28+00:00",
+ "screened": 1500,
+ "set_aside": 1,
+ "rows": [
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M5.formula.p=ba013eb7096b4f76",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M5.formula.p=ba013eb7096b4f76 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  }
+ ],
+ "rule": "REDUNDANT on every measurable economic dimension, twin named"
+}

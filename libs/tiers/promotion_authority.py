@@ -40,7 +40,10 @@ expectancy its clock carried when it was withheld, so what the door refused is a
 
 AUTHORITY IS EARNED: an organ whose every contracted layer reads REJECTED
 (`libs/tiers/authority.py`) loses its verdict here -- a suspended `online_fdr` or `immune` organ
-withholds nothing until one of its layers is ADMITTED or UNMEASURED again.
+withholds nothing until one of its layers is ADMITTED or UNMEASURED again. Its verdict is still
+read, and what it would have withheld is recorded as DOOR_SUSPENDED in
+`data/tier_s/door_suspended.jsonl`, never dropped silently. The constitution check is NEVER
+suspended: law loosening binds whatever the truth kernel's contract reads.
 
 READ-ONLY OF CERTIFICATES, BY THE FIREWALL: every file this module opens is checked with
 `firewall.may("promoter", "read", ...)`, and the promoter role may not read raw hypotheses.
@@ -132,9 +135,57 @@ def _replication(name: str) -> str | None:
     return None
 
 
+SUSPENDED_LEDGER = DESK / "data" / "tier_s" / "door_suspended.jsonl"
+
+
+def _suspended_note(organ: str, name: str, why: str) -> None:
+    """A SUSPENDED ORGAN'S WITHHOLD IS RECORDED, NEVER DROPPED SILENTLY (audit I16, 2026-10-06).
+
+    An organ whose every contract reads REJECTED has no authority over capital, so its verdict
+    withholds nothing. But it used to return None before even reading its file, so nobody could
+    see what it WOULD have withheld. The verdict is now still read; a would-be withhold goes to
+    `data/tier_s/door_suspended.jsonl` as DOOR_SUSPENDED (a pass the door let through on a
+    suspended organ's word, not a missed-growth row: nothing was withheld, so nothing is billed)."""
+    row = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "name": name,
+           "organ": organ, "reason": "DOOR_SUSPENDED",
+           "why": f"DOOR_SUSPENDED: {organ} is suspended (every contract REJECTED); it would have "
+                  f"withheld -- {why}"}
+    _LAST_SUSPENDED[name] = row
+    try:
+        firewall.may("promoter", "write", str(SUSPENDED_LEDGER.relative_to(ROOT)))
+        SUSPENDED_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+        with SUSPENDED_LEDGER.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, default=str) + "\n")
+    except (OSError, ValueError):  # the note never costs the pass (FirewallError is an OSError)
+        pass
+
+
+#: {name: the last DOOR_SUSPENDED row}, for the caller and the tests
+_LAST_SUSPENDED: dict[str, dict[str, Any]] = {}
+
+
+def _suspendable(organ: str, name: str, verdict: Callable[[], str | None], *,
+                 suspended: bool | None = None) -> str | None:
+    """Run one suspendable organ's check. Not suspended: its verdict, fail closed as ever.
+    Suspended: it withholds nothing, and what it would have said is recorded."""
+    if not (authority.suspended(organ) if suspended is None else suspended):
+        return verdict()
+    try:
+        why = verdict()
+    except Exception as exc:  # a suspended organ's damaged file is not required either
+        why = None
+        _suspended_note(organ, name, f"(its input could not be read: {type(exc).__name__}: "
+                                     f"{exc})")
+    if why:
+        _suspended_note(organ, name, why)
+    return None
+
+
 def _fdr(name: str) -> str | None:
-    if authority.suspended("online_fdr"):      # its contract is REJECTED: no authority here
-        return None
+    return _suspendable("online_fdr", name, partial(_fdr_verdict, name))
+
+
+def _fdr_verdict(name: str) -> str | None:
     doc = _required(FDR_ROWS)
     certified = doc.get("certified") or []
     if not isinstance(certified, list):
@@ -147,9 +198,11 @@ def _fdr(name: str) -> str | None:
     return None
 
 
-def _freeze() -> str | None:
-    if authority.suspended("immune"):
-        return None
+def _freeze(name: str = "*") -> str | None:
+    return _suspendable("immune", name, _freeze_verdict)
+
+
+def _freeze_verdict() -> str | None:
     doc = _required(FREEZE, "at")
     if str(doc.get("verdict")) != "FREEZE" or not str(doc.get("judge") or "").startswith(
             "production:"):
@@ -169,9 +222,12 @@ def _constitution(name: str) -> str | None:
     sealed one (a DSR bar lowered, a gate count cut, cost fail-closed switched off) without a
     principal ratification of its exact hash is a VIOLATION, and while it stands no new LIVE row
     is written: a certificate minted under loosened law is not the certificate the law promised.
-    A tightening, the sealed set itself or a ratified successor withholds nothing."""
-    if authority.suspended("truth_kernel"):
-        return None
+    A tightening, the sealed set itself or a ratified successor withholds nothing.
+
+    NEVER SUSPENDABLE (audit I16, 2026-10-06). This used to return None whenever the truth
+    kernel's contract read REJECTED, so a loosened rule set stopped being withheld exactly when
+    the kernel was least trusted. Sealed-law loosening is a fact about two files and a
+    ratification, not a steering opinion: it binds whatever the kernel's contract says."""
     from libs.tiers import truth_kernel
     live = _read(CONSTITUTION)
     if live is None:
@@ -203,7 +259,8 @@ def _panel_and_theory(name: str) -> str | None:
     loses its authority while its organ is suspended."""
     from libs.tiers import door_evidence
     if authority.suspended("review") and authority.suspended("theory"):
-        return None
+        return _suspendable("review+theory", name, partial(_panel_verdict, name, door_evidence),
+                            suspended=True)
     doc = _required(DOOR_VERDICTS)
     rows = doc.get("rows") or {}
     if not isinstance(rows, dict):
@@ -211,6 +268,7 @@ def _panel_and_theory(name: str) -> str | None:
     for cert, row in rows.items():
         if not isinstance(row, dict) or not _match(str(cert), name):
             continue
+        full = row
         if authority.suspended("review"):
             row = {**row, "review_failed": []}
         if authority.suspended("theory"):
@@ -218,6 +276,23 @@ def _panel_and_theory(name: str) -> str | None:
         why = door_evidence.door_reason(row)
         if why:
             return why
+        if row is not full and (would := door_evidence.door_reason(full)):
+            _suspended_note("review" if authority.suspended("review") else "theory", name,
+                            would)
+    return None
+
+
+def _panel_verdict(name: str, door_evidence: Any) -> str | None:
+    """The panel/theory verdict read whole, for the note when both organs are suspended."""
+    doc = _required(DOOR_VERDICTS)
+    rows = doc.get("rows") or {}
+    if not isinstance(rows, dict):
+        raise DoorReadError(f"{DOOR_VERDICTS.name} rows are a {type(rows).__name__}")
+    for cert, row in rows.items():
+        if isinstance(row, dict) and _match(str(cert), name):
+            why = door_evidence.door_reason(row)
+            if why:
+                return str(why)
     return None
 
 
@@ -309,7 +384,7 @@ def block(name: str) -> str | None:
         ("panel_and_theory", _panel_and_theory)]
     checks: list[tuple[str, Callable[[], str | None]]] = [
         (label, partial(fn, name)) for label, fn in per_cert]
-    checks.append(("freeze", _freeze))
+    checks.append(("freeze", partial(_freeze, name)))
     checks.append(("release_stop", _release_stop))
     for label, check in checks:
         try:

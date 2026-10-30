@@ -109,7 +109,7 @@ def main() -> None:
     out["signal_counts_by_state"] = counts
     (DESK / "reports" / "mech_split.json").write_text(
         json.dumps({"swept_at": datetime.now(UTC).isoformat(),
-                    **out}, indent=2, default=str), encoding="utf-8")
+                    **out}, indent=2, default=str), encoding="utf-8", newline="\n")
 
 
 if __name__ == "__main__":

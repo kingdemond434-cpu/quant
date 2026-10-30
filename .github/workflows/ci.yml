@@ -7,7 +7,50 @@ name: ci
 
 on:
   push:
-    branches: ["**"]
+    # Only the two shared branches run on push; feature branches are gated by their
+    # pull_request runs.
+    branches: ["claude/llm-auto-upgrade-verify-gcjac3", "desk-sync-clean"]
+    # A push that changes ONLY box state starts no run (GitHub skips a push when no changed path
+    # survives these filters). MEASURED 2026-10-29: the box publishes its state every 15 min and
+    # each publish ran the whole suite on LIVE, about a third of a runner queue 189 runs deep, for
+    # code that had not changed (`seal --if-needed` and promote have nothing to do on it). A code
+    # merge still runs: the gate dispatches this workflow, and a code path is never excluded.
+    # Governed state (sign rows and pins, survivor canon, allocator proof, live manifest, switches)
+    # is re-included last, so a push of one of those alone still runs the law gate (#521 audit).
+    # The lists ARE libs.ops.release STATE_PREFIXES + STATE_FILES and GOVERNED_STATE_*;
+    # tests/ops/test_ci_throughput.py fails on any drift.
+    paths:
+      - "**"
+      - ".github/**"
+      - ".*"
+      - "!desks/mt5/data/**"
+      - "!desks/mt5/reports/**"
+      - "!desks/mt5/logs/**"
+      - "!desks/mt5/frontier_intel/data/**"
+      - "!desks/mt5/side_channels/data/**"
+      - "!data/**"
+      - "!reports/**"
+      - "!logs/**"
+      - "!web/**"
+      - "!docs/**"
+      - "!context/decision_journal.jsonl"
+      - "!desks/mt5/docs/TRADE_PATH_REPORT.md"
+      - "!desks/mt5/gateway_state.json"
+      - "!desks/mt5/hunt11.json"
+      - "!desks/mt5/mech_battery.json"
+      - "!desks/mt5/mech_split.json"
+      - "!desks/mt5/portfolio_projection.json"
+      - "!desks/mt5/regime_state.json"
+      - "!desks/mt5/swap_exposure.json"
+      - "!desks/mt5/sync_marker.json"
+      - "!docs/desk_lessons.jsonl"
+      - "desks/mt5/data/ALLOCATOR_SOVEREIGN.json"
+      - "desks/mt5/data/IMMUTABLE_MANIFEST.json"
+      - "desks/mt5/data/LIVE_MANIFEST.jsonl"
+      - "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json"
+      - "desks/mt5/reports/ALLOCATOR_PROOF.json"
+      - "desks/mt5/data/*_ENABLED*"
+      - "desks/mt5/data/*_DISABLED*"
   pull_request:
   workflow_dispatch:
 
@@ -15,7 +58,9 @@ concurrency:
   # ONE GROUP PER PUSHED COMMIT. GitHub keeps one pending run per group and cancels the older
   # pending one whatever cancel-in-progress says, so with a per-branch group every live push
   # still cancelled the last (20 runs cancelled on 2026-09-30) and live never finished a run.
-  group: ci-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || 'pr' }}
+  # A workflow_dispatch on LIVE is the audit gate's merge (a merge made with the workflow token
+  # starts no push run): it is a push run in every respect, its own group included.
+  group: ci-${{ github.ref }}-${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.sha || 'pr' }}
   # A push run on a shared branch always finishes: every live run 11:42-12:54Z on 2026-09-30
   # was cancelled by the next push, so live never produced a base set. PR runs still supersede.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -45,6 +90,12 @@ jobs:
       suite: ${{ steps.evidence.outputs.suite }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # FULL HISTORY, BLOBLESS (D-20261027-003): check_seal_clears proves the auto-sign's
+          # CLEAR record only ever grew, which needs every commit that touched it. A depth-1
+          # checkout made it UNMEASURED on every gating run. Blobless keeps it ~19 MB / ~2 s.
+          fetch-depth: 0
+          filter: blob:none
 
       - uses: actions/setup-python@v5
         with:
@@ -52,6 +103,7 @@ jobs:
           cache: pip
 
       - name: Install (pinned dev extras)
+        id: dev_install
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
@@ -87,6 +139,10 @@ jobs:
       # never once invoked. First measurement, 2026-08-04: 88.1% repo-wide, and the money path at
       # 41.6%, which is backwards from where the care belongs.
       - name: Tests (pytest + branch coverage)
+        id: root_tests
+        # Collect independent software diagnostics even when a law is red.
+        # The failed law step still fails quality and all release dependents.
+        if: ${{ !cancelled() && steps.dev_install.outcome == 'success' }}
         run: pytest -n auto --dist loadfile --cov=libs --cov-branch --cov-report=term:skip-covered --cov-report=json:coverage.json --junitxml=quality-junit.xml
 
       # Two floors, not one: a repo-wide average lets ORDER-PATH coverage fall while a wave of
@@ -95,6 +151,7 @@ jobs:
       # Shared libs are also exercised by the desk suite. Preserve raw branch data so the
       # unchanged floor measures BOTH completed suites, not only root testpaths=[tests].
       - name: Preserve root coverage
+        if: ${{ !cancelled() && steps.root_tests.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
           name: root-coverage-${{ github.sha }}
@@ -236,7 +293,7 @@ jobs:
   # no install step.
   seal:
     if: >-
-      github.event_name == 'push' && (
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (
         github.ref == 'refs/heads/desk-sync-clean' ||
         github.ref == 'refs/heads/claude/llm-auto-upgrade-verify-gcjac3')
     needs: [quality, mt5-money-path, coverage-floor]
@@ -323,7 +380,7 @@ jobs:
   # Protect `production` in the repository settings: no force pushes, no deletions.
   promote:
     if: >-
-      github.event_name == 'push' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       github.ref == 'refs/heads/claude/llm-auto-upgrade-verify-gcjac3'
     needs: [quality, mt5-money-path, coverage-floor, seal]
     runs-on: ubuntu-latest

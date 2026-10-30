@@ -1,0 +1,31 @@
+{
+ "pid": 21384,
+ "started_utc": "2026-10-27T16:41:15+00:00",
+ "task_limit_s": 0.0,
+ "sweeps": 19,
+ "failures": 0,
+ "lane_held": 13,
+ "hung_kills": 1,
+ "busy_seconds": 225279.6,
+ "status": "SWEEPING",
+ "longest_sweep_s": 110509.5,
+ "consecutive_hangs": 0,
+ "sweep_started_utc": "2026-10-30T07:19:15+00:00",
+ "hang_limit_s": 172800.0,
+ "last_rc": 0,
+ "last_sweep_s": 17877.5,
+ "uptime_s": 225480.8,
+ "last_sweep_ended_utc": "2026-10-30T07:19:15+00:00",
+ "backoff_s": 15,
+ "heartbeat_utc": "2026-10-30T07:19:56+00:00",
+ "sweep_phase": {
+  "pid": 30172,
+  "sweep_started_utc": "2026-10-30T07:19:38+00:00",
+  "phases": {},
+  "phase": "plan",
+  "phase_started_utc": "2026-10-30T07:19:38+00:00",
+  "plan_steps": {},
+  "plan_step": "lane_and_docket",
+  "plan_step_started_utc": "2026-10-30T07:19:38+00:00"
+ }
+}

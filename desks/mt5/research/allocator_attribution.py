@@ -128,7 +128,8 @@ for _p in (str(BASE), str(BASE / "research"), str(BASE.parent.parent)):
         sys.path.insert(0, _p)
 
 FORECASTS = BASE / "data" / "pf_forecast_log.jsonl"
-LIVE = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 OUT = BASE / "reports" / "allocator_attribution.json"
 WEEKLY_OUT = BASE / "reports" / "GROWTH_ATTRIBUTION_WEEKLY.json"
 
@@ -348,8 +349,9 @@ def _execution_term(basis: str) -> dict[str, Any]:
                        f"difference would be the cost model measured against itself"}
     try:
         from mt5desk import markout as _markout
+        from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
         m = _markout.compute(_markout.load_jsonl(BASE / "data" / "order_intents.jsonl"),
-                             _markout.load_jsonl(BASE / "data" / "live_ledger.jsonl"))
+                             _markout.load_jsonl(_audited_ledger_path(BASE / "data" / "live_ledger.jsonl")))
     except Exception as exc:
         return {"value": UNMEASURED, "why": f"markout unavailable: {type(exc).__name__}: {exc}"}
 

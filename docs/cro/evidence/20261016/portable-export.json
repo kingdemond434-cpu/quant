@@ -1,0 +1,8 @@
+{
+  "state": "VALIDATED_RELEASE_PENDING",
+  "upstream_failed_run": 38816436466,
+  "failed_job": 116702168260,
+  "upstream_failure": "check_judge_coverage.py consumed stale exported state",
+  "change": "Portable stale exports are UNMEASURED; live require-state freshness remains FAIL; fresh coverage failures remain FAIL",
+  "source_and_ratchet_mutation": false
+}
