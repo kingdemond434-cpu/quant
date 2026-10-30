@@ -459,3 +459,78 @@ def test_the_box_sweep_runs_merge_ready_prs_first_and_failed_ones_last(
     assert all(b is budgets[0] for b in budgets) and budgets[0] == [ag.BRING_UPS_PER_SWEEP]
     ps = (ROOT / "ops/box/workflow_gate.ps1").read_text(encoding="utf-8")
     assert "-cmatch ': MERGED \\('" in ps  # the count reads the gate's own word only
+
+
+def test_a_queued_live_push_run_is_red() -> None:
+    """2026-10-29 19:45Z: LIVE's push runs sat queued behind ~120 PR runs and Adopt-And-Seal
+    waited on them; nothing went RED because no PR check was the one waiting."""
+    live = [_commit("fix", 1)]
+    run = {"event": "push", "head_branch": mp.LIVE, "created_at": _iso(45)}
+    rep = mp.assess(NOW, [], {}, {}, [run], 20, live)
+    assert [r.split(":")[0] for r in rep["red"]] == ["LIVE_CI_QUEUED"]
+    pr_run = dict(run, event="pull_request")
+    assert (
+        mp.assess(NOW, [], {}, {}, [pr_run, dict(run, created_at=_iso(5))], 20, live)["status"]
+        == "GREEN"
+    )
+
+
+def test_the_sign_train_heartbeat_reds_when_stale_failing_wedged_or_unread() -> None:
+    """#541 audit MF3: a failing or wedged sign train is never silent."""
+    live = [_commit("fix", 1)]
+    ok = {"at": _iso(5), "rc": 0, "fail_runs": 0, "mutex_held_runs": 0}
+    rep = mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=ok, sign_expected=True)
+    assert rep["status"] == "GREEN" and rep["sign_train"]["rc"] == 0
+    cases = (
+        (dict(ok, at=_iso(45)), "SIGN_TRAIN_STALE"),
+        (dict(ok, rc=1, fail_runs=3), "SIGN_TRAIN_FAILING"),
+        (dict(ok, rc=4, mutex_held_runs=3), "SIGN_TRAIN_WEDGED"),
+        (None, "SIGN_TRAIN_BLIND"),
+    )
+    for beat, kind in cases:
+        rep = mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=beat, sign_expected=True)
+        assert [r.split(":")[0] for r in rep["red"]] == [kind]
+    waiting = dict(ok, waiting_on="claude/sign-train-abc", waiting_since=_iso(150))
+    rep = mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=waiting, sign_expected=True)
+    assert [r.split(":")[0] for r in rep["red"]] == ["SIGN_TRAIN_WAITING"]
+    two = dict(ok, rc=1, fail_runs=2)  # two in a row is not yet RED
+    assert mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=two, sign_expected=True)["red"] == []
+    # v3: a closed-unmerged wait carries waiting_on too, so it reds like an open one
+    closed = dict(ok, waiting_on="claude/sign-train-def", waiting_since=_iso(150),
+                  note="a sign PR for def was closed unmerged; waiting for LIVE to move")
+    rep = mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=closed, sign_expected=True)
+    assert [r.split(":")[0] for r in rep["red"]] == ["SIGN_TRAIN_WAITING"]
+    # v3 SF: an untimeable wait, or a counter that is not a number, reds instead of raising
+    for odd in (dict(ok, waiting_on="claude/sign-train-abc", waiting_since="soon"),
+                dict(ok, fail_runs={"n": 1}), dict(ok, mutex_held_runs="x")):
+        rep = mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=odd, sign_expected=True)
+        assert rep["status"] == "RED"
+    swept = {"at": _iso(5), "rc": 0, "mutex_held_runs": [1]}
+    rep = mp.assess(NOW, [], {}, {}, [], 0, live, beat=swept, beat_expected=True)
+    assert [r.split(":")[0] for r in rep["red"]] == ["SWEEP_WEDGED"]
+
+
+def test_the_sign_train_leg_never_stacks_a_sign_and_is_watched() -> None:
+    ps = (ROOT / "ops/box/sign_train_leg.ps1").read_text(encoding="utf-8")
+    # #541 audit MF1/v2: every train branch from git, each asked by its exact head
+    assert "'refs/heads/claude/sign-train-*'" in ps and "'--head', $b, '--state', 'open'" in ps
+    # v2 MF1: never reuse a pushed branch; sign locally and force-push the box's own commit
+    assert "reused the" not in ps and "--push" not in ps
+    assert "--body-file $bodyFile" in ps and "--body $" not in ps  # v2 MF2: nothing to argv
+    assert "'--state', 'closed'" in ps  # a closed sign PR is not reopened for the same head
+    # v3 MF1: a closed wait is timed like an open one; gh counts are stdout-only numbers
+    assert 'Wait $branch "a sign PR' in ps and ps.count("GhCount @('pr', 'list'") == 2
+    assert "-notmatch '^\\d+$'" in ps
+    # v3 SF: leased push, one single-parent commit touching exactly the two sealed-state files
+    assert "--force-with-lease=$lease" in ps and "push -q --force origin" not in ps
+    assert "desks/mt5/data/IMMUTABLE_MANIFEST.json,desks/mt5/research/quantbench.py" in ps
+    assert "rev-list --parents -n 1 HEAD" in ps and "Set-Content" not in ps  # no BOM
+    assert "AbandonedMutexException" in ps and "mutex_held_runs" in ps  # S1, S2
+    assert "--principal" not in ps.split("& $Python", 1)[1].split("\n", 1)[0]
+    assert "signed \\d+ file" not in ps  # S3: read from git, not the wording
+    gate = (ROOT / "ops/box/workflow_gate.ps1").read_text(encoding="utf-8")
+    assert "--sign-heartbeat $sign" in gate
+    rows = (ROOT / "desks/mt5/ops/box_tasks.manifest").read_text(encoding="utf-8")
+    assert 'TASK name="Quant-SignTrain"' in rows
+    inst = (ROOT / "ops/box/install_unattended.ps1").read_text(encoding="utf-8")
+    assert "Add-QuantTask 'Quant-SignTrain' 'sign_train_leg.ps1'" in inst
