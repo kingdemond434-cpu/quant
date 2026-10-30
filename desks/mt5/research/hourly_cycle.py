@@ -1125,7 +1125,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `state_vector` is listed here for the reader's sake and runs on NEITHER plan: it is in
     # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
-    "forward_reconcile", "clock_liveness", "certificate_clock_law",
+    "forward_reconcile", "clock_liveness", "certificate_clock_law", "clock_accrual",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     # The noon CRO pass must land a ledger row every day; one file read, so it is core.
@@ -1291,7 +1291,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "effective_trials",
                      "occupancy_map", "dsr_inputs"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
-    **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
+    **dict.fromkeys(("world_crawler", "deep_forest", "cell_emitter", "moat_miner",
+                     "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
                      "frontier_implementer", "hunt12", "scout_roster", "analyst_pipeline",
@@ -1335,7 +1336,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "replication_civilization", "certificate_truth", "model_search",
                      "loop_liveness", "counterexample_agent", "blas_differential",
                      "judging_throughput",
-                     "duty_cycle", "forward_enrolment", "residual_gate",
+                     "duty_cycle", "forward_enrolment", "clock_accrual", "residual_gate",
                      "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
                      "attestation_remint",
                      "lockbox_recert",
@@ -2058,6 +2059,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Reads canon, five lane state files and its own history, then writes two files. No market
     # data, no venue, no terminal call -- it is arithmetic over rows the enrolment leg just wrote.
     "certificate_clock_law": 180,
+    # Reads the canon (through the admission door), three lane state files and the sleeve
+    # registry, and writes one report. No bars, no terminal: arithmetic over the rows above.
+    "clock_accrual": 180,
     # THE JUDGE WAS BEING KILLED AT 27% OF ITS OWN BUDGET (measured 2026-09-23). The sealed
     # gauntlet builds cells under `FRESH_BUILD_BUDGET_SEC = 2700` and stops ITSELF at that mark
     # to write `universal_gates_external.json`. This leg had no entry here, so it fell through to
@@ -2315,6 +2319,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # sits above its budget, the cap is exported to the child (QUANT_LEG_BUDGET_S) so it
     # self-stops inside whatever the pricer grants, and it checkpoints per ground regardless.
     "deep_forest_miner": 1_020,
+    # The cell emitter stops itself at --budget-s 300 (it reads QUANT_LEG_BUDGET_S too); the cap
+    # sits above it so the pass writes its report, cursor and donations rather than being cut.
+    "cell_emitter": 420,
     # A FOREST IS GIVEN THE BUDGET IT IS ASKED FOR. Each leg passes `--budget-s 3000` down to
     # `forest_runner`, which divides it across eleven parallel agents; a 720 s cycle cap would
     # SIGKILL every forest at the same prefix every hour -- the truncated-job failure that cost
@@ -3406,6 +3413,19 @@ def deep_forest() -> dict:
     quiet pass still advances the queue (mandate section 70, never idle).
     """
     return _producer("deep_forest_miner", "research/deep_forest_miner.py", "--budget-s", "900")
+
+
+def cell_emitter() -> dict:
+    """Open-source STRATEGY CODE read as cells (the lost 2026-09-25 lane, rebuilt 2026-09-30).
+
+    Grounds in `data/cell_emitter_sources.json` (vn.py, backtrader, zipline, pysystemtrade,
+    EA31337 MQL, freqtrade/jesse on crypto CFDs only, Pine, TradingView); each pass lists and
+    fetches a cursor's slice, statically reads each file's indicator calls into a registered
+    family + exact params (or a STRUCTURED_HYPOTHESIS), maps instruments through
+    universe_policy, donates to data/intelligence/cell_emitter/ for miner_candidate_compiler,
+    and writes reports/CELL_EMITTER.json with per-ground yield and drop reasons.
+    """
+    return _producer("cell_emitter", "research/cell_emitter.py", "--once", "--budget-s", "300")
 
 
 def session_structure() -> dict:
@@ -5378,6 +5398,13 @@ def main() -> None:
     # promotes, sizes and retires nothing.
     ccl = _costed("certificate_clock_law", lambda: _producer(
         "certificate_clock_law", "scripts/check_certificate_clock_law.py"))
+    # AND FOR EVERY CLOCK THAT IS NOT TICKING, WHY -- as one named reason per certificate
+    # (NOT_ENROLLED, KEY_MISMATCH, FAMILY_UNBUILDABLE, BAR_FILE_MISSING, ENGINE_NOT_REACHED,
+    # GATE_NEVER_OPENS, ...). The two legs above count; this one routes. It writes
+    # reports/CLOCK_ACCRUAL.json, whose headline is the non-accruing count by reason and whose
+    # `bars_wanted` the MT5-Universe collector fetches first. It enrols and retires nothing.
+    cac = _costed("clock_accrual", lambda: _producer(
+        "clock_accrual", "research/clock_accrual.py", "--once"))
     # THE FALSIFIERS RUN AGAINST THE FRESH CANON (Tier-1 item V4, 2026-09-09). libs/validation/
     # falsifiers.py had zero callers; every certificate was minted and never attacked. The
     # producer budgets itself (600 s default) under this leg's timeout and writes
@@ -5665,6 +5692,9 @@ def main() -> None:
         "placebo_audit", "research/placebo_audit.py"))
     fr = _costed("frontier", frontier)
     df = _costed("deep_forest", deep_forest)
+    # OPEN-SOURCE CODE -> CELLS: donates to data/intelligence/cell_emitter/, which the next
+    # pass's `compile_candidates` reads. Network leg; self-stops inside its budget.
+    cem = _costed("cell_emitter", cell_emitter)
     ssm_leg = _costed("session_structure", session_structure)
     mm = _costed("maintain_miners", maintain_miners)
     # MEASURE THE CONVERSION WHERE THE DISCOVERIES ARE, AND ON THIS HOUR'S CODE. Nothing on this
@@ -6258,6 +6288,7 @@ def main() -> None:
                     "forward_reconcile": fwr,
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
+                    "cell_emitter": cem,
                     "session_structure": ssm_leg,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
@@ -6309,7 +6340,7 @@ def main() -> None:
                     "moat_candidate_compiler": mcp, "algorithm_db": adb,
                     "blas_differential": bld,
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
-                    "certificate_clock_law": ccl,
+                    "certificate_clock_law": ccl, "clock_accrual": cac,
                     "external_gauntlet": gt, "fast_admission": fa,
                     "canon_publication": cpub, "judging_burndown": jbd, "lockbox_recert": lrc,
                     "attestation_remint": arm,

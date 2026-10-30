@@ -89,7 +89,10 @@ TARGET_LATENCY_H = 0.0
 #: A clock in one of these statuses is WORKING: it has no verdict yet and the next pass will
 #: replay it. An empty status is one of them -- the engine writes `""` for a row it has evaluated
 #: and not ruled on, and reading that as a defect would fail on every healthy clock the desk has.
-ACCRUING_STATUSES = frozenset({"", "ACTIVE", "NONE", UNMEASURED.upper()})
+ACCRUING_STATUSES = frozenset({"", "ACTIVE", "NONE", UNMEASURED.upper(),
+                               # the scalp lane's working words: it counts forward trades under
+                               # both (PROXY_SHADOW only withholds capital authority)
+                               "ACCUMULATING", "PROXY_SHADOW"})
 
 #: A clock in one of these has DONE ITS JOB. The certificate was forward-tested and a verdict was
 #: reached; it stops accruing because the desk decided, not because anything is broken. Reported
@@ -161,8 +164,16 @@ def clock_rows(shadow_dir: Path | None = None) -> dict[str, dict[str, Any]]:
         if not isinstance(doc, dict):
             continue
         for key, row in doc.items():
-            if isinstance(row, dict) and key not in out:
+            if isinstance(row, dict) and key not in out and key != "sleeves":
                 out[key] = {**row, "lane": name}
+        # THE SCALP LANE NESTS ITS CLOCKS under `sleeves`, keyed by candidate. Reading only the
+        # top level saw the container, never the clocks, so every scalp certificate read NO
+        # CLOCK while `scalp_shadow` advanced it (see clock_accrual.clock_address).
+        nested = doc.get("sleeves")
+        if isinstance(nested, dict):
+            for key, row in nested.items():
+                if isinstance(row, dict) and key not in out:
+                    out[str(key)] = {**row, "lane": name}
     return out
 
 
@@ -220,6 +231,30 @@ def certificates() -> tuple[list[dict[str, Any]], list[dict[str, str]], str]:
 
 
 def _run_key(run: dict[str, Any]) -> str | None:
+    """The key the run's clock is written under, IN ITS OWN LANE.
+
+    `clock_accrual.clock_address` is the one resolver: a scalp certificate's clock is its
+    candidate row, a qquant certificate's is its own name, and only the rest are keyed by the
+    engine's `sleeve_key`. Deriving the H1 key for all three called running clocks missing.
+    """
+    try:
+        from clock_accrual import clock_address
+    except ImportError:
+        try:
+            from research.clock_accrual import (  # type: ignore[no-redef,unused-ignore]
+                clock_address,
+            )
+        except Exception:
+            clock_address = None  # type: ignore[assignment]
+    except Exception:
+        clock_address = None  # type: ignore[assignment]
+    if clock_address is not None:
+        name = str(run.get("certificate") or "")
+        if run.get("lane") == "scalp" or name.startswith(("scalp.", "qquant.")):
+            try:
+                return clock_address(run)[1]
+            except Exception:
+                return None
     try:
         from shadow_admission import run_key
     except ImportError:

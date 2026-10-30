@@ -65,12 +65,60 @@ def next_id(rows: list[dict[str, Any]], day: str) -> str:
     return f"D-{day}-{n + 1:03d}"
 
 
+#: The branches whose journals a new id must clear: LIVE, and every claude/* PR branch, whose
+#: rows reach LIVE when it merges.
+LIVE = "claude/llm-auto-upgrade-verify-gcjac3"
+BRANCH_PREFIX = "claude/"
+
+
+def _git(cwd: Path, *args: str, stdin: str | None = None) -> str | None:
+    try:
+        r = subprocess.run(["git", "-C", str(cwd), *args], input=stdin, capture_output=True,
+                           text=True, encoding="utf-8", errors="replace", timeout=60, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return r.stdout if r.returncode == 0 else None
+
+
+def committed_rows(path: Path) -> list[dict[str, Any]]:
+    """The journal rows at HEAD and on every fetched claude/* branch (LIVE among them).
+
+    MEASURED 2026-10-29 23:01Z: the box minted D-20261029-003 from its own file, which ended at
+    002, while LIVE already carried a different 003 and open PR branches held 004-020. Ids
+    minted from one host's file collide whenever two hosts append on the same day, and a reused
+    id reads as a rewritten record when the second copy lands. Minting past every copy git can
+    see closes that to the gap between fetches; verify still names any duplicate that gets
+    through. One `git cat-file --batch` reads every copy. Nothing here can fail a decision: an
+    unreadable ref adds no rows."""
+    prefix = _git(path.parent, "rev-parse", "--show-prefix")
+    listed = _git(path.parent, "for-each-ref", "--format=%(refname)", "refs/remotes", "refs/heads")
+    if prefix is None:
+        return []
+    def branch(ref: str) -> str:  # refs/heads/<b> or refs/remotes/<remote>/<b>
+        return ref.split("/", 2 if ref.startswith("refs/heads/") else 3)[-1]
+
+    refs = ["HEAD"] + [r for r in (listed or "").split() if branch(r).startswith(BRANCH_PREFIX)]
+    want = "".join(f"{ref}:{prefix.strip()}{path.name}\n" for ref in refs)
+    out = _git(path.parent, "cat-file", "--batch", stdin=want) or ""
+    rows: list[dict[str, Any]] = []
+    for line in out.splitlines():
+        if not line.startswith("{"):
+            continue  # an object header, a "missing" line, or a blob line that is no row
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(row, dict):
+            rows.append(row)
+    return rows
+
+
 def decide(a: argparse.Namespace, path: Path = JOURNAL) -> dict[str, Any]:
     # The journal is append-only, so a bad pointer can never be fixed in place.
     bad = [p for p in (a.evidence or []) if _check_pointer(str(p)) == "MISSING"]
     if bad:
         raise SystemExit(f"evidence pointer does not resolve: {bad} (use a repo path, pr:N, sha:X, url: or thread:)")
-    rows = read_journal(path)
+    rows = read_journal(path) + committed_rows(path)
     now = datetime.now(UTC)
     row = {"id": next_id(rows, now.strftime("%Y%m%d")), "at": now.isoformat(timespec="seconds"),
            "title": a.title, "decision": a.decision, "why": a.why, "by": a.by,
