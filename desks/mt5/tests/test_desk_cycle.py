@@ -375,3 +375,12 @@ def test_the_lane_clone_guard_covers_every_path_an_unsandboxed_process_trusts() 
     for needle in ("'config'", "'hooks'", "'commondir'", "'.codex'", "ReparsePoint", "GetOwner",
                    "InheritOnly", "$R::Delete", "$R::DeleteSubdirectoriesAndFiles"):
         assert needle in src, needle
+
+
+def test_the_end_row_carries_the_enforced_misses_not_the_agents_claim() -> None:
+    """Auditor should-fix on #271: the end ledger row copies the duty check's own verdict."""
+    src = LAUNCHER.read_text("utf-8")
+    assert "$dutyCheck = Invoke-DutyCheck" in src and "ConvertFrom-Json" in src
+    for field in ("duties_missed", "pass_questions_missed", "judging_sweep_missed"):
+        assert f"{field} = $enforced.{field}" in src, field
+    assert 'duties_missed = "UNMEASURED"' in src
