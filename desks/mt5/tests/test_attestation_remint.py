@@ -307,8 +307,36 @@ def test_parking_publishes_a_two_sided_missed_growth_line(tmp_path: Path) -> Non
     out = tmp_path / "CANON_PUBLICATION.json"
     out.write_text(json.dumps(rec, default=str), "utf-8")
     assert mg.organ_published_lines(out)["verdict"] == "UNMEASURED"
+    # MF2 (v2): the rail binds for as long as a row waits, not only on the pass that parked it.
     rec2 = cp.publish(report, seal)
-    assert rec2["missed_growth"] == []
+    assert rec2["parked_this_pass"] == 0
+    assert [x["withheld"] for x in rec2["missed_growth"]] == [1, 1]
+    # Re-judged and re-admitted: nothing waits, so nothing is billed.
+    _write(report, {"n": 1, "gate_policy": dict(ATTESTATION), "swept_at": NEW,
+                    "survivors": {"external.OLD": _row("EURUSD", NEW)}})
+    rec3 = cp.publish(report, seal)
+    assert rec3["pending_rejudge"] == 0 and rec3["missed_growth"] == []
+
+
+def test_a_parked_row_that_fails_its_re_judge_leaves_the_park(tmp_path: Path) -> None:
+    """MF1 (v2): a failed re-judge is a rejection, so the row stops waiting and its clock can
+    retire through the normal path. A stale row under the current header is not a re-judge."""
+    report, seal, _ = _canon_desk(tmp_path, T0)
+    failed = _row("EURUSD", NEW)
+    failed["gates"]["deflated_sharpe"] = {"passed": False}
+    stale_fail = _row("USDCAD", OLD)
+    stale_fail["gates"]["deflated_sharpe"] = {"passed": False}
+    _write(report, {"n": 2, "gate_policy": dict(ATTESTATION), "swept_at": NEW,
+                    "survivors": {"external.OLD": failed, "external.STALE": stale_fail}})
+    _write(seal, {"n": 1, "gate_policy": dict(ATTESTATION), "swept_at": NEW,
+                  "survivors": {"external.B": _row("NZDUSD", NEW)},
+                  "pending_rejudge": {"external.OLD": _row("EURUSD", OLD),
+                                      "external.STALE": _row("USDCAD", OLD)}})
+    rec = cp.publish(report, seal)
+    doc = json.loads(seal.read_text("utf-8"))
+    assert rec["rejected_on_rejudge"] == ["external.OLD"]
+    assert set(doc["pending_rejudge"]) == {"external.STALE"}
+    assert "external.OLD" not in doc["survivors"]
 
 
 def test_the_docket_append_is_atomic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -94,6 +94,24 @@ def test_a_clock_whose_certificate_is_parked_for_rejudge_is_unmeasured_never_ret
     assert out["unbacked_live"] == 1 and out["awaiting"] == 0
 
 
+def test_a_parked_cell_the_judge_rejected_breaches_and_retires(tmp_path):
+    """MF1 (v2): the park waits for a re-judge; a judge's rejection ends the wait."""
+    p = tmp_path / "canon.json"
+    p.write_text(json.dumps({"n": 1, "survivors": {"other": {}}, "pending_rejudge": {
+        "k": {"shadow_spec": {"symbol": "xauusd", "family": "session_range_breakout",
+                              "params": {}}}}}), encoding="utf-8")
+    clock = _clock("XAUUSD.session_range_breakout.asia")
+    assert _audit([clock], set(), tmp_path, p)["rows"][0]["backing"] == cc.UNMEASURED
+    reject = {"sym": "XAUUSD", "family": "session_range_breakout",
+              "cell": "XAUUSD.session_range_breakout.rr=1", "passed": False,
+              "terminal_gate": "economic_prior", "downstream_status": "REJECTED",
+              "at": "2026-10-29T00:00:00+00:00"}
+    out = _audit([clock], set(), tmp_path, p, verdicts=[reject])
+    assert out["rows"][0]["backing"] == cc.BREACHED
+    assert out["retire"][0]["retired_reason"] == "JUDGE_REJECTED"
+    assert out["pending_rejudge"] == 0
+
+
 def test_an_intraday_clock_names_its_chart_in_the_cell(tmp_path, canon):
     out = _audit([_clock("BTCUSD.macro_conditional.continuous", timeframe="M5")], set(),
                  tmp_path, canon)

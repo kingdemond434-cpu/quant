@@ -165,7 +165,7 @@ def _parked_cell(row: Mapping[str, Any]) -> str | None:
     if not sym or not fam:
         return None
     tf = str(params.get("timeframe") or row.get("timeframe") or "H1").upper()
-    return f"{sym if tf == 'H1' else f'{sym}@{tf}'}.{fam}"
+    return f"{sym if tf == 'H1' else f'{sym}@{tf}'}.{fam}".upper()
 
 
 def pending_rejudge_cells(path: Path | None = None) -> set[str]:
@@ -385,7 +385,7 @@ def audit(clocks: Sequence[Mapping[str, Any]], *, roster: set[str] | None,
                     "why": (f"a current certificate backs this clock: its key is on "
                             f"`shadow_forward`'s roster, which is built from the canon "
                             f"({canon_why})")}
-        elif cell_of(c) in parked:
+        elif cell_of(c).upper() in parked:
             row |= {"backing": UNMEASURED, "pending_rejudge": True,
                     "why": ("this clock's certificate is PARKED in the seal's `pending_rejudge`: "
                             "its gates predate the attestation in force and it is queued for "
@@ -399,6 +399,20 @@ def audit(clocks: Sequence[Mapping[str, Any]], *, roster: set[str] | None,
                             "certifies it gets a NEW clock from zero, because forward evidence "
                             "on a cell that never certifies can never be cashed")}
         rows.append(row)
+
+    # A PARKED CELL THE JUDGE HAS REJECTED IS NOT WAITING (audit of #126 v2, MF1). The wait is
+    # for a re-judge; once the judge's own verdict is a rejection, the clock breaches and retires
+    # like any other, with the judge's reason.
+    waiting = [r for r in rows if r.get("pending_rejudge")]
+    if waiting:
+        p_index = verdict_index(((str(r["symbol"]), str(r["family"]), str(r["timeframe"]))
+                                 for r in waiting), verdict_path)
+        for r in waiting:
+            state, why = verdict_state(p_index.get((str(r["symbol"]).upper(), str(r["family"]),
+                                                    str(r["timeframe"]).upper())))
+            if state == RETIRED:
+                r["pending_rejudge"] = False
+                r |= {"backing": BREACHED, "why": why}
 
     breached = [r for r in rows if r["backing"] == BREACHED]
     index = verdict_index(((str(r["symbol"]), str(r["family"]), str(r["timeframe"]))
