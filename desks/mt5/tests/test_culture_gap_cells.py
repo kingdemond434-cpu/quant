@@ -278,6 +278,51 @@ def test_cells_reach_the_registry_with_declared_culture_once(tmp_path: Path,
         R.set_path(None)
 
 
+def test_a_refused_donation_is_retried_without_minting_the_cells_again(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A door that takes nothing must not re-mint: a repeat enqueue_candidate bumps the rule's
+    search_count, so re-minting every hour would charge each unjudged rule a fresh trial."""
+    from libs.moat import registry as R
+    _isolate_door(tmp_path, monkeypatch)
+    rp = tmp_path / "recipes.json"
+    rp.write_text(json.dumps({"recipes": [r for r in _REC if r["id"] == "cn_pboc_fix"]}),
+                  encoding="utf-8")
+    summary = tmp_path / "CELL_CULTURE.json"
+    summary.write_text(json.dumps({"gaps": []}), encoding="utf-8")
+    cur = tmp_path / "cursor.json"
+    door: list[int] = []
+    shut = {"on": True}
+
+    def _donate(rows: list) -> dict:
+        door.append(len(rows))
+        return {"donated": 0, "path": None} if shut["on"] else {"donated": len(rows),
+                                                                 "path": "x.json"}
+    monkeypatch.setattr(G, "donate_cells", _donate)
+    R.set_path(tmp_path / "alpha_registry.sqlite")
+    try:
+        first = G.run(60, year=2026, recipes_path=rp, summary=summary, cursor_path=cur)
+        n = first["totals"]["emitted_this_pass"]
+        assert n > 0 and door == [n]
+
+        def _count() -> int:
+            conn = R.connect()
+            try:
+                return int(conn.execute("select coalesce(sum(search_count), 0) from "
+                                        "research_candidates where origin = ?",
+                                        (G.ORIGIN,)).fetchone()[0])
+            finally:
+                conn.close()
+        charged = _count()
+        shut["on"] = False
+        again = G.run(60, year=2026, recipes_path=rp, summary=summary, cursor_path=cur)
+        assert again["totals"]["emitted_this_pass"] == 0          # nothing minted twice
+        assert door == [n, n]                                     # the same rows, donated again
+        assert _count() == charged                                # no second trial charged
+        assert G.PENDING_KEY not in json.loads(cur.read_text("utf-8"))
+    finally:
+        R.set_path(None)
+
+
 def test_recipe_to_donation_to_compiler_to_a_docket_row_with_all_four_fields(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """END TO END (2026-09-30): the registry door alone is never judged, so a gap cell must
