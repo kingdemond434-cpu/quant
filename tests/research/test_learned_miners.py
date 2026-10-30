@@ -312,8 +312,10 @@ def test_a_null_run_is_charged_to_the_lifetime_ledger(tmp_path, monkeypatch):
         "\n".join(json.dumps(r) for r in rows) + "\n", "utf-8")
     monkeypatch.setattr(EL, "DESK", desk)
     total, by_fam = EL._proposer_counts()
-    assert total == 5
-    assert by_fam == {"gnn_propagation": 5}
+    # Six distinct trials: the ledger is the authority for every learned trial, donated or not
+    # (one charge per distinct id; the donated one's discovery file is not counted on top).
+    assert total == 6
+    assert by_fam == {"gnn_propagation": 6}
 
 
 def test_the_donated_flag_comes_from_what_the_door_wrote():
