@@ -196,7 +196,9 @@ def test_red_names_a_proposer_with_no_completed_run_in_two_days(tmp_path):
 
 
 def test_never_stale_publishes_the_red_seats(tmp_path, monkeypatch):
-    sys.path.insert(0, str(_ROOT / "ops"))
+    # syspath_prepend, not sys.path.insert: a leaked ops/ entry shadows research modules of the
+    # same name (release_authority) for every later test on this worker.
+    monkeypatch.syspath_prepend(str(_ROOT / "ops"))
     import never_stale
     health = tmp_path / "process_health.json"
     health.write_text(json.dumps({"processes": []}), "utf-8")
@@ -392,7 +394,9 @@ def test_report_is_unmeasured_with_its_cause_when_a_roster_cannot_be_read(tmp_pa
 
 
 def test_never_stale_does_not_read_an_unmeasured_seat_check_as_ok(tmp_path, monkeypatch):
-    sys.path.insert(0, str(_ROOT / "ops"))
+    # syspath_prepend, not sys.path.insert: a leaked ops/ entry shadows research modules of the
+    # same name (release_authority) for every later test on this worker.
+    monkeypatch.syspath_prepend(str(_ROOT / "ops"))
     import never_stale
     health = tmp_path / "process_health.json"
     health.write_text(json.dumps({"processes": []}), "utf-8")
