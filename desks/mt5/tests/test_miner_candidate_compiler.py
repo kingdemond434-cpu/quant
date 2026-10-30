@@ -90,9 +90,11 @@ def test_cot_candidate_reader_uses_owned_history_weekly(tmp_path, monkeypatch) -
     desk = tmp_path / "desks" / "mt5"
     (tmp_path / "data").mkdir()
     idx = pd.date_range("2020-01-01", periods=900, freq="D", tz="UTC")
-    pd.DataFrame({"XAUUSD": np.sin(np.arange(len(idx)) / 40)}, index=idx).to_parquet(
-        tmp_path / "data" / "cot_zcache.parquet"
-    )
+    # Stamped with the current definition: an unstamped cache is the redefined (v1) series and
+    # is refused (audit COT_AXIS_DEEPENING MF2).
+    from libs.data.cot_source import write_zcache
+    write_zcache(pd.DataFrame({"XAUUSD": np.sin(np.arange(len(idx)) / 40)}, index=idx),
+                 tmp_path / "data" / "cot_zcache.parquet")
     monkeypatch.setattr(orthogonal_sweep, "BASE", desk)
     orthogonal_sweep._cot_frame.cache_clear()
 

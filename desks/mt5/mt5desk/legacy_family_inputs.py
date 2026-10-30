@@ -16,11 +16,29 @@ def fx_driver(params):
     return names[0], "ok"
 
 
+def cot_definition_refusal():
+    """Refuse `cot_positioning` while the COT z history on this machine is not of the current
+    definition (audit COT_AXIS_DEEPENING MF2, 2026-10-14). The rule and the stamp live in
+    `libs.data.cot_source.zcache_definition_refusal`; this is its one call site on the build path
+    (judge `build_cell`/`modifier_preflight` and the forward engine's `family_inputs.resolve`).
+    """
+    try:
+        from libs.data.cot_source import zcache_definition_refusal
+    except ImportError:
+        return ("BLOCKED_DATA: the COT definition stamp cannot be read here "
+                "(libs.data.cot_source not importable) -- UNMEASURED")
+    return zcache_definition_refusal()
+
+
 def input_preflight(family, params):
     if params is None:
         params = {}
     if not isinstance(params, dict):
         return "BLOCKED_RULES: candidate params are not an object"
+    if family == "cot_positioning":
+        why = cot_definition_refusal()
+        if why:
+            return why
     if family in {"relative_value", "correlation_regime"}:
         if not isinstance(params.get("peer_symbol"), str) or not params["peer_symbol"].strip():
             return "BLOCKED_RULES: no peer_symbol on the candidate"

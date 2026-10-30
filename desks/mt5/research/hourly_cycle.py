@@ -378,6 +378,14 @@ def record_tape() -> dict:
     return results
 
 
+def tape_fresh() -> dict:
+    """`tape_fresh`: RED when the bronze recorder's or the silver tape's newest tick is over 2 h
+    old during FX hours, or absent/unstamped/future (UNMEASURED). MT5-TickRecorder sat dead for
+    two days from 2026-10-12 with nothing acting on it; `scripts/check_tape_fresh.py` writes
+    `reports/TAPE_FRESHNESS.json`, which the box publishes."""
+    return _producer("tape_fresh", "scripts/check_tape_fresh.py")
+
+
 def publish_state() -> dict:
     """Publish this box's state to git -- a SECOND, independent path to the dashboard.
 
@@ -1106,6 +1114,9 @@ def _exit_outcome(name: str, code: int) -> str:
 HOURLY_PLAN = str(os.environ.get("HOURLY_PLAN", "all") or "all").strip().lower()
 CORE_LEGS: frozenset[str] = frozenset({
     "smoke_release", "health", "release_identity", "input_identity", "burn_in", "record_tape",
+    # Whether either tick tape has moved within 2 h of open market, read by each tape's own
+    # newest-tick stamp right after `record_tape`: two small JSON reads, every hour (2026-10-14).
+    "tape_fresh",
     # `state_vector` is listed here for the reader's sake and runs on NEITHER plan: it is in
     # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
@@ -3134,7 +3145,7 @@ def alpha_rl() -> dict:
     return _producer("alpha_rl", "research/alpha_rl_run.py")
 
 
-def compile_candidates() -> dict:
+def compile_candidates(*, lock_held: bool = False) -> dict:
     """`miner_candidate_compiler`: every crawler row becomes a candidate or a deepening task.
 
     NOTHING SCHEDULED IT. Measured 2026-09-05 by cross-referencing the capability graph against
@@ -3156,7 +3167,31 @@ def compile_candidates() -> dict:
     did -- works this hour's worker against last hour's queue, so a row fetched at 10:05 could not
     reach the gauntlet until 11:xx at the earliest and only if somebody had run the compiler by
     hand in between.
+
+    THE WRITER'S LOCK IS TAKEN HERE (audit COT_AXIS_DEEPENING_31eb89f3d, should-fix). The
+    compiler rewrites `miner_deepening_queue.json`; `deepening_worker.purge_off_lane` and
+    `catch_up_intake` both exclude it with `job_lock.exclusive_job("miner_candidate_compiler")`,
+    and this leg was the one writer that did not, so a purge could replace the queue between the
+    compiler's read and its write. The leg now takes the SAME lock (without admission accounting,
+    as the purge does: this parent is not the compiler and its footprint is not the compiler's).
+    A held lock returns DEFERRED, loud, at once -- it never waits on the owner and never reads as
+    a pass. `lock_held=True` is for a caller that already holds it (`catch_up_intake`).
     """
+    if lock_held:
+        return _compile_producer()
+    from research.job_lock import exclusive_job
+
+    with exclusive_job("miner_candidate_compiler", account=False) as acquired:
+        if not acquired:
+            why = ("miner_candidate_compiler writer lock is held (the lane purge or the intake "
+                   "catch-up owns the queue); this pass's compile is deferred to the next trigger")
+            print(f"compile_candidates: DEFERRED -- {why}")
+            return {"status": "DEFERRED", "exit_code": None, "why": why,
+                    "at": datetime.now(UTC).isoformat(timespec="seconds")}
+        return _compile_producer()
+
+
+def _compile_producer() -> dict:
     return _producer("miner_candidate_compiler", "research/miner_candidate_compiler.py",
                      "--budget-s", "600")
 
@@ -3174,7 +3209,7 @@ def catch_up_intake() -> dict:
     with exclusive_job("miner_candidate_compiler", need_mb=14000) as acquired:
         if not acquired:
             return {"status": "SKIPPED", "why": "canonical compiler lane already owned"}
-        compiled = compile_candidates()
+        compiled = compile_candidates(lock_held=True)
     if compiled.get("exit_code") != 0:
         return {"status": "FAILED", "compile": compiled,
                 "why": "fresh compilation failed; catch-up merge withheld"}
@@ -3993,6 +4028,7 @@ def main() -> None:
     # compiles and merges discoveries generated during this pass.
     _costed("intake_catchup", catch_up_intake)
     t = _costed("record_tape", record_tape)
+    tfr = _costed("tape_fresh", tape_fresh)
     s = _costed("state_vector", state_vector)
     rg = _costed("regime_monitor", refresh_regime)
     d = _costed("daily", daily)
@@ -6079,7 +6115,7 @@ def main() -> None:
     # permanently dirty. Pinned by tests/test_sync_marker_is_written_lf.py.
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
-                    "health": h, "tape": t, "state_vector": s, "daily": d,
+                    "health": h, "tape": t, "tape_fresh": tfr, "state_vector": s, "daily": d,
                     "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "breadth_sweep": bs, "mass_screen": msc,

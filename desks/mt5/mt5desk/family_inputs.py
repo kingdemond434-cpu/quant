@@ -316,7 +316,9 @@ def resolve(sym: str, family: str, params: dict[str, Any],
         if family == "cot_positioning":
             cot = inputs._cot_frame(sym)
             if cot is None:
-                return None, f"no COT frame for {sym}"
+                refusal = getattr(inputs, "cot_input_refusal", lambda _s: None)(sym)
+                return None, (f"BLOCKED_DATA: {refusal}" if refusal
+                              else f"no COT frame for {sym}")
             extra["cot"] = cot
             return extra, "ok"
 

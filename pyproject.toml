@@ -281,7 +281,7 @@ files = ["libs", "app", "migrations",
 # every genuinely stale ignore in the repo. Registering the modules that make the straddling
 # call is the only change that keeps both environments honest.
 [[tool.mypy.overrides]]
-module = ["libs.data.lake", "libs.research.bar_span", "libs.research.perishability"]
+module = ["libs.data.lake", "libs.research.bar_span", "libs.research.perishability", "libs.data.cot_source"]
 warn_unused_ignores = false
 
 [[tool.mypy.overrides]]

@@ -216,11 +216,46 @@ def sr0(n_trials: int, variance_of_sharpes: float | None) -> float:
 NOMINAL_CAMPAIGN_TRIALS = 597
 
 
+def distinct_cells(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], int]:
+    """The docket with each JUDGE CELL once, keyed by `frontier_identity.docket_cell_id`, and how
+    many duplicate rows were dropped.
+
+    WHY (audit COT_AXIS_DEEPENING_31eb89f3d, should-fix). The charge scales the campaign count by
+    effective / nominal, and nominal counted ROWS: a docket holding the same cell twice (a
+    re-judge with only a code hash changed, a producer re-donating) doubled nominal while the
+    participation ratio barely moved, so the charge fell -- 597 -> 313 on the auditor's probe.
+    One cell judged twice is one test, so duplicates are counted once and can never lower the
+    bar. This never adds a trial: a row whose identity cannot be computed is kept as it was.
+    """
+    try:
+        from research.frontier_identity import docket_cell_id
+    except ImportError:                                   # pragma: no cover - path dependent
+        from frontier_identity import docket_cell_id  # type: ignore[import-not-found,no-redef]
+    seen: set[str] = set()
+    out: list[dict[str, Any]] = []
+    dropped = 0
+    for row in rows:
+        try:
+            key = docket_cell_id(row)
+        except Exception:
+            out.append(row)
+            continue
+        if key in seen:
+            dropped += 1
+            continue
+        seen.add(key)
+        out.append(row)
+    return out, dropped
+
+
 def measure(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """Nominal versus effective independent tests, per family and in total."""
+    """Nominal versus effective independent tests, per family and in total, over DISTINCT judge
+    cells (`distinct_cells`): a duplicated docket row is one test, never two."""
     from libs.research.trial_ledger import effective_independent_tests
+    rows, duplicates = distinct_cells(rows)
     census = effective_independent_tests(rows)
     out = census.to_dict()
+    out["duplicate_rows_collapsed"] = duplicates
     fams = sorted(census.families.values(),
                   key=lambda c: (-c.n_nominal, c.family))
     out["by_family"] = [c.to_dict() for c in fams]

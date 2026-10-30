@@ -435,8 +435,19 @@ def family_cot_positioning(
 
     REFUSES WITHOUT COT DATA rather than substituting a price-based crowding proxy, which would
     be a momentum sleeve with a misleading name.
+
+    INPUT DEFINITION 2 IS PART OF THIS FUNCTION'S IDENTITY (audit COT_AXIS_DEEPENING MF2,
+    2026-10-14). The zcache this family reads was redefined (52-report z of RAW nets,
+    `libs.data.cot_source.COT_ZCACHE_VERSION`). The number is written as a LITERAL below on
+    purpose: `sleeve_registry.code_hash`/`behaviour_hash` cover this body, so redefining the
+    series changes the family's identity and every forward clock on it restarts through the
+    existing organs (IDENTITY_BROKEN -> heal_identity_broken_clocks -> rebase_code, window RESET)
+    rather than carrying on over a series it was never measured on. A frame stamped with another
+    definition is refused here too; the reader refuses it first, by name.
     """
     if cot is None or cot.empty or "net" not in cot.columns:
+        return []
+    if cot.attrs.get("cot_zcache_version", 2) != 2:
         return []
     d = _h1(df)
     net = cot["net"].astype(float)
