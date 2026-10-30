@@ -53,7 +53,13 @@ THE UNIVERSE, every gate fail-closed and every refusal NAMED in `screen`:
      R-per-trade bias exactly as `libs.portfolio.execution_cost` does for Fusion (BASE_COST_R x
      (ratio - 1), clipped at MAX_RATIO, never a credit). A sleeve the venue cannot price is OUT;
   5. not quarantined (`live_sleeve_policy.json` empty symbol list) and not a principal zero;
-  6. NEVER OPPOSITE TO E8: a sleeve on a symbol E8's live book trades is out.
+  6. E8'S SYMBOLS ARE ELIGIBLE (principal override, zuck 2026-10-29 14:46Z: "remove the e8
+     exception"). Until then a sleeve on a symbol E8's live book trades was out. The no-opposite
+     rule now lives where it can actually be enforced, at the order: a sleeve that shares a symbol
+     with E8 is marked `e8_overlap` and its `direction_fence`, and no FTMO executor may send it
+     without the cross-account opposite-side fence (`mt5desk.cross_account.opposite_block`, the
+     gold direction lock for XAUUSD). `prop/ftmo_executor.py` is that executor: it checks the
+     Fusion and E8 books under the placement lock before every send.
 The one exception is the gold_asia COPY, and it is the principal's switch, not this solve's
 (`COPY_COLUMNS`, `copy_switch`): FTMO bans cross-firm copying and the principal overrode that with
 informed consent (2026-10-28 14:31Z). It is a column only while the principal holds it on, and the
@@ -66,8 +72,14 @@ cells. Trials are counted by the gauntlet at its fixed canonical count, so this 
 
 DEPLOYMENT. reports/FTMO_ALLOCATOR.json always. The `ftmo` block of data/CERT_BOOK_LIVE.json is
 rewritten ONLY when data/FTMO_ALLOCATOR_ARMED exists, the account state is MEASURED and fresh, the
-book validated, and only for keys an FTMO executor trades today (`FTMO_EXECUTABLE`). A sized sleeve
-with no executor is published as SIZED_NO_EXECUTOR with the J it would add.
+book validated, and only for keys an FTMO executor trades: the gold copy (`FTMO_EXECUTABLE`, the
+follower) and every non-gold sleeve whose certificate spec is published in `specs` (the sleeve
+executor, `prop/ftmo_executor.py`, 2026-10-29). The deployed book is SOLVED over those keys alone
+(audit #489 MF1), so a column with no executor (a non-copy gold window: gold has one FTMO owner)
+can never pull risk away from one that trades; the joint solve over every admitted column is
+published as `joint_book`, its extra columns as SIZED_NO_EXECUTOR, and the J they would add as
+J_missed. A key that was in the block and is no longer executable is written 0 -- a sleeve the
+solve dropped is never left funded.
 
     python desks/mt5/research/prop_challenge_allocator.py [--venue ftmo] [--paths 1500]
 """
@@ -120,10 +132,19 @@ HANDOFF_DAYS = 2
 #: The size grid (risk per trade, fraction of the INITIAL balance) and the search steps.
 STEPS = (0.004, 0.002, 0.001, 0.0005)
 STARTS = 4
+#: Scores closer than this are a tie, broken by progress to the target (see `search`).
+TIE_EPS = 1e-9
+#: Total sizes probed along the unconstrained mix when the constrained book comes back empty:
+#: a positive size there that keeps P(fail) within the margin and makes progress means the
+#: search missed it (EMPTY_BOOK_SEARCH_DEFECT), never that zero is the answer.
+EMPTY_PROBE = (1e-4, 5e-4, 1e-3, 2e-3)
 #: The account state must be younger than this to deploy from (the reader runs every 5 minutes).
 STATE_MAX_AGE_S = 3 * 3600
-#: Keys an FTMO executor can trade today. Everything else is sized and reported, never sent.
+#: Keys the gold follower trades (prop/ftmo_follower.py). Non-gold keys are the sleeve
+#: executor's (`executor_runs`); a non-copy gold window has no FTMO executor.
 FTMO_EXECUTABLE = frozenset({"gold_asia"})
+#: Symbols the sleeve executor never trades: gold has one FTMO owner, the follower.
+EXECUTOR_SKIP_SYMBOLS = frozenset({"XAUUSD"})
 #: THE COPY IS THE PRINCIPAL'S SWITCH, NEVER THIS SOLVE'S. FTMO's rules ban copied/coordinated
 #: trades across firms; the principal overrode that with informed consent on 2026-10-28 14:31Z
 #: ("Copy anyway", cmsg G7EkJ9KTaSMy5a42YV4Hxg). So the gold_asia copy is a column ONLY while the
@@ -279,7 +300,16 @@ def simulate_phase(r: np.ndarray, h: np.ndarray, rules: VenueRules, phase: str,
             state[hit] = 1
             days[hit] = t + 1 + np.maximum(rules.min_days - done_days[hit], 0)
         start = bal.copy()
-    return {"state": state, "days": days}
+    # PROGRESS TO THE TARGET (the tie-break, 2026-10-29): +1 at a pass, -1 at a failure, and a
+    # running path's signed share of the way from the account now to the target, in [-1, 1].
+    # Signed, so a size whose paths drift down (a negative edge) scores below standing aside.
+    if target is not None:
+        gap = max(1.0 + target - st.balance, 1e-9)
+        prog = np.where(state == 1, 1.0,
+                        np.where(state == 0, np.clip((bal - st.balance) / gap, -1.0, 1.0), -1.0))
+    else:
+        prog = np.zeros(n)
+    return {"state": state, "days": days, "progress": prog}
 
 
 def phase_outcome(sim: dict[str, np.ndarray], cont: np.ndarray | None,
@@ -293,6 +323,7 @@ def phase_outcome(sim: dict[str, np.ndarray], cont: np.ndarray | None,
     j = float(np.mean(np.clip(horizon - t, 0.0, None)) / horizon)
     tp = sim["days"][passed]
     return {"J": j, "p_pass": float(passed.mean()),
+            "progress": float(np.mean(sim["progress"])) if "progress" in sim else 0.0,
             "p_fail": float(np.isin(sim["state"], (2, 3)).mean()),
             "p_daily": float((sim["state"] == 2).mean()),
             "p_max_loss": float((sim["state"] == 3).mean()),
@@ -508,6 +539,49 @@ def quarantined_symbols() -> set[str]:
     return {s for s, v in (allow or {}).items() if isinstance(v, list) and not v}
 
 
+def executor_runs(col: str, specs: dict[str, Any]) -> bool:
+    """Does an FTMO executor trade `col`? The follower's gold copy, or a non-gold sleeve whose
+    certificate spec the sleeve executor can rebuild."""
+    if col in FTMO_EXECUTABLE:
+        return True
+    spec = specs.get(col)
+    return isinstance(spec, dict) and str(spec.get("symbol") or "").upper() not in \
+        EXECUTOR_SKIP_SYMBOLS
+
+
+def sleeve_spec(cert_key: str) -> tuple[dict[str, Any] | None, str]:
+    """(the spec the sleeve executor runs, why): the certificate's own `shadow_spec`, in the
+    E8 book's shape (prop/e8_book._load_survivors) so one reconstruction serves both lanes."""
+    store = _read_json(BASE / "reports" / "UNIVERSAL_SURVIVORS.json") or {}
+    if not store.get("survivors"):
+        store = _read_json(BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json") or {}
+    cert = (store.get("survivors") or {}).get(cert_key)
+    if not isinstance(cert, dict):
+        return None, f"certificate {cert_key} is not in the store"
+    spec = cert.get("shadow_spec") or {}
+    sym = str(spec.get("symbol") or cert.get("sym") or "").upper()
+    fam = str(spec.get("family") or "")
+    if not sym or not fam:
+        return None, f"certificate {cert_key} carries no symbol/family spec"
+    try:
+        from admission_integrity import spec_fingerprint
+        fp = spec_fingerprint(spec.get("symbol"), spec.get("family"), spec.get("selector"),
+                              spec.get("side"), spec.get("params"))
+    except Exception as exc:
+        return None, f"spec fingerprint unavailable ({type(exc).__name__})"
+    return {"key": cert_key, "symbol": sym, "family": fam,
+            "selector": spec.get("selector") or "asia", "fingerprint": fp,
+            "params": {k: v for k, v in spec.items()
+                       if k not in ("symbol", "family", "selector", "is_universe", "hunt")}}, "ok"
+
+
+def executable_columns(cols: list[str], uni: dict[str, Any]) -> set[str]:
+    """The admitted columns an FTMO executor can send: the deployed book is solved over these
+    alone."""
+    specs = uni.get("specs") or {}
+    return {c for c in cols if executor_runs(c, specs)}
+
+
 def build_universe(seed: int = 0) -> dict[str, Any]:
     """Columns, world tensor and the screen, every gate fail-closed and named."""
     import kelly_survival as ks
@@ -534,6 +608,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
     slices: list[np.ndarray] = []
     costs: dict[str, Any] = {}
     columns: dict[str, dict[str, Any]] = {}
+    specs: dict[str, dict[str, Any]] = {}
 
     deals: list[dict[str, Any]] = []
     try:
@@ -583,13 +658,21 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
             reason = "quarantined in live_sleeve_policy.json"
         elif principal_zero(col, "ftmo"):
             reason = "principal zero"
-        elif sym in e8_syms:
-            reason = f"E8 trades {sym}: an own FTMO sleeve could stand opposite E8"
         if reason:
-            columns[col] = {"admitted": False, "why": reason,
-                            "rail": ("ftmo_e8_symbol" if sym in e8_syms else "ftmo_universe")}
+            columns[col] = {"admitted": False, "why": reason, "rail": "ftmo_universe"}
             continue
         admit(col, r_c[:, :, k], f"Tier S via {tier_s[col]}")
+        if columns[col].get("admitted"):
+            spec, swhy = sleeve_spec(tier_s[col])
+            if spec is not None:
+                specs[col] = spec
+            else:
+                columns[col]["no_spec"] = swhy
+        if sym in e8_syms and columns[col].get("admitted"):
+            columns[col]["e8_overlap"] = True
+            columns[col]["direction_fence"] = (
+                f"E8 also trades {sym}: an order needs the cross-account opposite-side fence "
+                "(cross_account.opposite_block / the gold direction lock) before it is sent")
     if not cols:
         return {"status": "NO_ADMISSIBLE_SLEEVE", "columns": columns, "screen": screen,
                 "caps": caps,
@@ -606,7 +689,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         post[c] = {"prior_r": round(prior, 4), "live_n": len(live_r),
                    "posterior_r": round(mean, 4), "live_weight": round(weight, 3)}
     return {"status": "OK", "cols": cols, "r": r, "columns": columns, "screen": screen,
-            "caps": caps,
+            "caps": caps, "specs": specs,
             "costs": costs, "posterior": post, "listing_source": listing_src,
             "unpriced": unpriced, "listing": listing, "tier_s": tier_s}
 
@@ -639,6 +722,7 @@ def evaluate(world: World, h: np.ndarray, rules: VenueRules, phase: str, st: Acc
     e = phase_outcome(simulate_phase(world.est, h, rules, phase, st), c_e)
     hv = phase_outcome(simulate_phase(world.halved, h, rules, phase, st), c_h)
     return {"score": 0.5 * (e["J"] + hv["J"]), "risk": max(e["p_fail"], hv["p_fail"]),
+            "tie": 0.5 * (e["progress"] + hv["progress"]),
             "as_estimated": e, "edges_halved": hv}
 
 
@@ -647,25 +731,39 @@ def search(world: World, rules: VenueRules, phase: str, st: AccountState,
            rng: np.random.Generator,
            margin: float | None) -> tuple[np.ndarray, float]:
     """Multi-start pattern search (coordinate steps + pairwise transfers), the kelly_survival
-    book search on this objective. `margin` None = unconstrained (the frontier's reference)."""
-    k = world.est.shape[2]
+    book search on this objective. `margin` None = unconstrained (the frontier's reference).
 
-    def val(h: np.ndarray) -> float:
+    LEXICOGRAPHIC: a move is taken when it raises the score, or leaves it within TIE_EPS and
+    raises the progress to the target. Without the tie-break the search stalled on a flat zero
+    (2026-10-29 15:33Z): every size small enough to keep P(fail) within the margin passed phase 1
+    too slowly for the whole chain to fund inside the horizon, so J was exactly 0 everywhere
+    feasible, no strict improvement existed, and the zero book deployed over a sleeve the
+    unconstrained solve sized at 0.009. Progress still separates those sizes, so the search now
+    climbs to the largest survivable one. The constraint is unchanged."""
+    k = world.est.shape[2]
+    worst = (-math.inf, -math.inf)
+
+    def val(h: np.ndarray) -> tuple[float, float]:
         if np.any(h < 0) or np.any(h > cap + 1e-12):
-            return -math.inf
+            return worst
         ev = evaluate(world, h, rules, phase, st, cont)
         if margin is not None and ev["risk"] > margin:
-            return -math.inf
-        return float(ev["score"])
+            return worst
+        return float(ev["score"]), float(ev.get("tie", 0.0))
+
+    def better(v: tuple[float, float], cur: tuple[float, float]) -> bool:
+        if v[0] > cur[0] + TIE_EPS:
+            return True
+        return v[0] >= cur[0] - TIE_EPS and v[1] > cur[1] + TIE_EPS
 
     best_h, best_v = np.zeros(k), val(np.zeros(k))
     for s in range(STARTS):
         h = np.full(k, 0.002) if s == 0 else rng.dirichlet(np.ones(k)) * rng.uniform(0.005, 0.03)
         h = np.minimum(h, cap)
-        while val(h) == -math.inf and h.sum() > 1e-4:
+        while val(h) == worst and h.sum() > 1e-4:
             h *= 0.8
         cur = val(h)
-        if cur == -math.inf:
+        if cur == worst:
             continue
         for step in STEPS:
             moved = True
@@ -676,7 +774,7 @@ def search(world: World, rules: VenueRules, phase: str, st: AccountState,
                         t = h.copy()
                         t[i] = max(0.0, t[i] + d)
                         v = val(t)
-                        if v > cur + 1e-9:
+                        if better(v, cur):
                             h, cur, moved = t, v, True
                 for i in range(k):
                     for j in range(k):
@@ -685,11 +783,29 @@ def search(world: World, rules: VenueRules, phase: str, st: AccountState,
                             t[i] -= step
                             t[j] += step
                             v = val(t)
-                            if v > cur + 1e-9:
+                            if better(v, cur):
                                 h, cur, moved = t, v, True
-        if cur > best_v:
+        if better(cur, best_v):
             best_h, best_v = h, cur
-    return best_h, best_v
+    return best_h, best_v[0]
+
+
+def empty_book_probe(world: World, h_u: np.ndarray, rules: VenueRules, phase: str,
+                     st: AccountState, cont: dict[str, np.ndarray] | None,
+                     cap: float | np.ndarray, margin: float) -> dict[str, Any] | None:
+    """When the constrained book is empty: the first probe size along the unconstrained mix
+    (`EMPTY_PROBE`, within the caps) that keeps P(fail) within `margin` AND scores or progresses,
+    or None. A hit means positive sizes are feasible and useful, so the empty book is a search
+    defect and must not deploy; None means zero is the survival answer (every size breaches)."""
+    k = h_u.size
+    d = h_u / h_u.sum() if h_u.sum() > 0 else np.full(k, 1.0 / k)
+    for total in EMPTY_PROBE:
+        h = np.minimum(d * total, cap)
+        ev = evaluate(world, h, rules, phase, st, cont)
+        if ev["risk"] <= margin and (ev["score"] > 0 or ev.get("tie", 0.0) > 0):
+            return {"total_risk": round(float(h.sum()), 5), "risk": round(ev["risk"], 5),
+                    "score": round(ev["score"], 6), "progress": round(ev.get("tie", 0.0), 5)}
+    return None
 
 
 def continuation(world: World, h: np.ndarray, rules: VenueRules, phase: str,
@@ -754,13 +870,32 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
         doc["deployable"] = False
         doc["rail_blocks"] = rail_blocks(uni)
         return doc
-    cols, r = uni["cols"], uni["r"]
-    solve_w, valid_w = make_worlds(r, n_paths, SIM_DAYS, seed)
+    all_cols, r = uni["cols"], uni["r"]
+    full_w, full_valid = make_worlds(r, n_paths, SIM_DAYS, seed)
+    # THE DEPLOYED BOOK IS SOLVED OVER WHAT CAN BE SENT, AND NOTHING ELSE (audit #489 MF1). A joint
+    # solve over every admitted column lets the optimiser move risk from a column that trades to a
+    # correlated one with no executor, so the traded size would fall by side effect, never by
+    # evidence. The paths are drawn per row, independent of the columns, so the executable slice
+    # of the joint worlds IS the executable solve's input: adding a column with no executor can
+    # never move the deployed book. The joint solve is published beside it (`joint_book`) as the
+    # missed-growth view of the executors that do not exist yet.
+    exec_idx = [k for k, c in enumerate(all_cols) if c in executable_columns(all_cols, uni)]
+    if not exec_idx:
+        doc["status"] = "NO_EXECUTABLE_SLEEVE"
+        doc["validation_score"] = 0.0
+        doc["deployable"] = False
+        doc["sized_no_executor_columns"] = list(all_cols)
+        doc["rail_blocks"] = rail_blocks(uni)
+        return doc
+    cols = [all_cols[k] for k in exec_idx]
+    solve_w = World(full_w.est[:, :, exec_idx], full_w.halved[:, :, exec_idx])
+    valid_w = World(full_valid.est[:, :, exec_idx], full_valid.halved[:, :, exec_idx])
     rng = np.random.default_rng(seed)
     # Per-column ceiling: the venue's per-trade cap, and for the principal's copy the value the
     # principal set (an equity fraction, so in initial-balance units at today's equity).
-    cap = np.array([min(MAX_RISK_FRAC, uni["caps"][c] * st.equity) if c in uni["caps"]
-                    else MAX_RISK_FRAC for c in cols])
+    cap_all = np.array([min(MAX_RISK_FRAC, uni["caps"][c] * st.equity) if c in uni["caps"]
+                        else MAX_RISK_FRAC for c in all_cols])
+    cap = cap_all[exec_idx]
     # BACKWARD INDUCTION: the last challenge phase first (from a fresh account), so every earlier
     # phase is valued by what passing it is actually worth.
     chain = [st.phase]
@@ -792,6 +927,17 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
             block["frontier"] = frontier(valid_w, h, rules, phase, here, cont)
         if val["risk"] > EPS_DEATH:
             block["status"] = "VALIDATION_FAILED: independent sample breaches EPS_DEATH"
+        if phase != "funded" and not (h > 0).any() and (h_u > 0).any():
+            # RED, NOT A ZERO (2026-10-29): an empty book while the unconstrained solve sizes an
+            # admitted column is read against the probe. Feasible useful sizes exist -> the
+            # search failed, the block is left as it is. None -> zero is the survival answer.
+            hit = empty_book_probe(solve_w, h_u, rules, phase, here, cont, cap, ks.BOOK_MARGIN)
+            block["empty_book_probe"] = hit or "every probe size breaches the margin or is idle"
+            if hit is not None:
+                prior = block["status"]
+                block["status"] = ("EMPTY_BOOK_SEARCH_DEFECT: a positive size within the margin "
+                                   "makes progress; not deployed"
+                                   + ("" if prior == "OK" else f" (also {prior})"))
         phases[phase] = block
         if phase != "funded" and phase != st.phase:
             cont = continuation(solve_w, h, rules, phase, cont, seed + 10 + i)
@@ -800,26 +946,54 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
     doc["book"] = dict(now_block["risk_frac"])
     # THE EXECUTOR SIZES ON EQUITY (prop/ftmo_follower: fraction x equity); the solve sizes on the
     # initial balance. The written fraction carries the same dollars at today's equity.
-    doc["executable"] = {c: math.floor(v / st.equity * 1e5) / 1e5 for c, v in doc["book"].items()
-                         if c in FTMO_EXECUTABLE}
-    doc["sized_no_executor"] = {c: v for c, v in doc["book"].items() if c not in FTMO_EXECUTABLE}
-    # Missed growth (Rule 1): what the missing executors cost, and every column a rail kept out.
-    if doc["sized_no_executor"] and now_block["status"] == "OK":
-        here = st
-        h_full = np.array([doc["book"].get(c, 0.0) for c in cols])
-        h_exec = np.array([doc["book"].get(c, 0.0) if c in FTMO_EXECUTABLE else 0.0
-                           for c in cols])
-        j_full = evaluate(valid_w, h_full, rules, st.phase, here, cont)["score"]
-        j_exec = evaluate(valid_w, h_exec, rules, st.phase, here, cont)["score"]
-        doc["missed_growth_no_executor"] = {"J_book": round(j_full, 5),
-                                            "J_executable_only": round(j_exec, 5),
-                                            "J_missed": round(j_full - j_exec, 5)}
+    specs = uni.get("specs") or {}
+    doc["executable"] = {c: math.floor(v / st.equity * 1e5) / 1e5 for c, v in doc["book"].items()}
+    doc["specs"] = {c: specs[c] for c in doc["executable"] if c in specs}
+    doc["sized_no_executor"] = {}
+    # Missed growth (Rule 1): the joint solve over every admitted column, from the same account
+    # and the same continuation, against the deployed book -- what the missing executors cost.
+    if len(cols) < len(all_cols) and now_block["status"] == "OK":
+        h_j, v_j = search(full_w, rules, st.phase, st, cont, cap_all, rng, ks.BOOK_MARGIN)
+        if v_j > -math.inf:
+            j_joint = evaluate(full_valid, h_j, rules, st.phase, st, cont)["score"]
+            j_exec = now_block["validation"]["score"]
+            doc["joint_book"] = {c: round(float(h_j[k]), 4) for k, c in enumerate(all_cols)
+                                 if h_j[k] > 0}
+            doc["sized_no_executor"] = {c: v for c, v in doc["joint_book"].items()
+                                        if c not in cols}
+            doc["missed_growth_no_executor"] = {"J_joint": round(j_joint, 5),
+                                                "J_executable": round(j_exec, 5),
+                                                "J_missed": round(j_joint - j_exec, 5)}
     doc["rail_blocks"] = rail_blocks(uni)
+    doc["e8_overlap"] = sorted(c for c, row in (uni.get("columns") or {}).items()
+                               if row.get("e8_overlap"))
     doc["status"] = now_block["status"]
     doc["validation_score"] = (now_block["validation"]["score"]
                                if now_block["status"] == "OK" else 0.0)
     doc["deployable"] = bool(now_block["status"] == "OK" and st.measured)
+    # `book` and `executable` are the solve, never the deployed block: a reader that does not
+    # check `deployable` is told so in the file itself (audit 2026-10-29).
+    doc["book_deployed"] = doc["deployable"]
+    if str(doc["status"]).startswith("EMPTY_BOOK_SEARCH_DEFECT"):
+        doc["red"] = ("RED EMPTY_BOOK_SEARCH_DEFECT: the solve came back empty while a size within "
+                      "the margin makes progress; the standing ftmo block is left deployed")
     return doc
+
+
+def mark_defect(doc: dict[str, Any], prev: Any) -> None:
+    """Carry a standing EMPTY_BOOK_SEARCH_DEFECT's start across passes (from the last report), so
+    its RED line says how long the old block has stood; a sound pass drops both."""
+    if not str(doc.get("status")).startswith("EMPTY_BOOK_SEARCH_DEFECT"):
+        doc.pop("red", None)
+        doc.pop("defect_since", None)
+        return
+    was = isinstance(prev, dict) and str(prev.get("status")).startswith("EMPTY_BOOK_SEARCH_DEFECT")
+    since = (prev.get("defect_since") if was and isinstance(prev, dict) else None) \
+        or doc.get("generated_at")
+    doc["defect_since"] = since
+    doc["red"] = (f"RED EMPTY_BOOK_SEARCH_DEFECT since {since}: the solve came back empty while "
+                  f"a size within the margin makes progress; the standing ftmo block is left "
+                  f"deployed")
 
 
 def rail_blocks(uni: dict[str, Any]) -> list[dict[str, Any]]:
@@ -843,9 +1017,11 @@ def _round(x: Any) -> Any:
 # ===================================================================== gap requests
 
 def write_gap_requests(uni: dict[str, Any], now: datetime,
-                       path: Path = GAP_REQUESTS) -> dict[str, Any]:
+                       path: Path | None = None) -> dict[str, Any]:
     """FTMO-listed FX and metal symbols with no Tier S sleeve, as targeted hypotheses on the
-    families that certify elsewhere. One file, rewritten each pass, read by the miner compiler."""
+    families that certify elsewhere. One file, rewritten each pass, read by the miner compiler.
+    `path` defaults to GAP_REQUESTS read at call time, so a test's redirect reaches it."""
+    path = path or GAP_REQUESTS
     listing = uni.get("listing") or {}
     tier_s = uni.get("tier_s") or {}
     covered = {_symbol_of(c) for c in tier_s}
@@ -896,7 +1072,11 @@ def apply_book(doc: dict[str, Any], path: Path = CERT_BOOK, armed: Path = ARMED,
     if not isinstance(book, dict) or book.get("enabled") is not True:
         return {"applied": False, "why": "CERT_BOOK_LIVE.json unreadable or not enabled"}
     block = dict(book.get("ftmo") or {})
-    new = {k: float(doc["executable"].get(k, 0.0)) for k in FTMO_EXECUTABLE}
+    # Every key the solve can execute, and every numeric key already in the block: one the solve
+    # no longer funds is written 0 (fail closed), never left at its old size.
+    keys = set(FTMO_EXECUTABLE) | set(doc.get("executable") or {}) | {
+        k for k, v in block.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}
+    new = {k: float((doc.get("executable") or {}).get(k, 0.0)) for k in sorted(keys)}
     if any(not 0.0 <= v <= MAX_RISK_FRAC for v in new.values()):
         return {"applied": False, "why": "a value lies outside [0, MAX_RISK_FRAC]"}
     ceiling = principal_ceiling(principal)
@@ -928,6 +1108,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=OUT)
     a = ap.parse_args(argv)
     doc = solve(a.venue, n_paths=a.paths, seed=a.seed)
+    mark_defect(doc, _read_json(a.out))
+    if doc.get("red"):
+        print(doc["red"], file=sys.stderr)
     if a.venue == "ftmo":
         try:
             doc["deploy"] = apply_book(doc)

@@ -138,6 +138,10 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
     # still runs when a slow earlier leg ends the hourly pass before it is reached.
     ("silent_organs", "desks/mt5/reports/SILENT_ORGANS.json", 3600,
      "scripts/check_silent_organs.py"),
+    ("specialist_cell", "desks/mt5/reports/SPECIALIST_CELLS.json", 3600,
+     "research/specialist_cell.py"),
+    ("residual_search", "desks/mt5/reports/RESIDUAL_SEARCH.json", 3600,
+     "research/residual_search.py"),
     ("attribution_census", "desks/mt5/reports/ATTRIBUTION_COVERAGE.json", 3600,
      "research/attribution_census.py"),
     ("coverage_tensor", "desks/mt5/reports/COVERAGE_TENSOR.json", 3600,

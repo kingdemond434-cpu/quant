@@ -55,8 +55,26 @@ TARGETS = [
     dict(name="placebo", args=["-u", "-W", "ignore", "research/placebo_test.py",
                                "XAUUSD", "AUDCAD", "AUDJPY"],
          marker="reports/DONE_placebo", match="placebo_test.py"),
-    dict(name="hunt17", args=["-u", "-W", "ignore", "research/run_hunt17.py"],
-         marker="reports/DONE_hunt17", match="run_hunt17.py"),
+    # hunt17 RETIRED 2026-09-25, and it is the one target this restart loop could never satisfy.
+    #
+    # MEASURED: `research/run_hunt17.py` exits 1 after 1.0 second with
+    # `FileNotFoundError: ...\data\universe\BeyondMeat_H1.parquet`. It walks a hardcoded symbol
+    # list and BeyondMeat is a single-name equity CFD -- removed from the hypothesis universe by
+    # the two-lane mandate of 2026-09-06, which routes single names to the news lane and never
+    # hunts them for statistical hypotheses. So the symbol is correctly gone and the hunt cannot
+    # finish, ever.
+    #
+    # The loop above restarts anything that died before writing its DONE marker, FOREVER. Every
+    # sibling carries a marker minted in the last two hours; hunt17 has neither a marker nor a
+    # final `reports/hunt17.json`, and `hunt17_partial.json` has been frozen at 977 cells for
+    # ninety-one hours with 0 of 945 rows passing its gate. A restart loop pointed at a job that
+    # dies in one second is not resilience -- it is a process spawned every cycle to fail, and the
+    # `*_partial` it leaves behind is unfinished work wearing the costume of a result.
+    #
+    # Its families now run as gauntlet cells, which is the same disposition seven sibling hunts
+    # took on 2026-09-23 (run_hunt1/2/3/4/6/13/15). The FILE is not deleted and the partial is not
+    # deleted -- evidence never is -- only the clock is withdrawn. (No retirements.jsonl row: that
+    # ledger records executables MOVED to `_retired/`, and this file stays where it is.)
     dict(name="fragility", args=["-u", "-W", "ignore", "research/fragility.py"],
          marker="reports/DONE_fragility", match="fragility.py"),
     dict(name="qquant_gates",

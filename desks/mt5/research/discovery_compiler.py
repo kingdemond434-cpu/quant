@@ -327,11 +327,58 @@ def _record(source_id: str, source_type: str, spec: dict[str, Any], *, mechanism
         exact_rule_if_known=spec.get("exact_rule") or "", required_data=spec.get("required_data"),
         information=spec.get("information") or "", novelty=spec.get("novelty"),
         confidence=spec.get("confidence"), falsifier=spec.get("falsifier") or "",
-        economic_rationale=str(spec.get("why") or "")[:800], payload=spec, conn=conn)
+        economic_rationale=str(spec.get("why") or "")[:800], payload=spec, conn=conn,
+        **{k: v for k, v in carried(spec).items()
+           if k not in ("source_url", "source_seat", "source_file")})
 
 
-def _spec_from_row(row: Mapping[str, Any]) -> dict[str, Any]:
-    """One intake row, whatever seat wrote it, normalised into the miners' parent shape."""
+#: What a cell must still know about WHERE it came from once the compiler has expanded it: the
+#: four culture fields and their derivation (libs/research/cell_culture.py), the source's own
+#: URL, the seat that donated it and the donation file. The Tier S cross-culture test measured
+#: 24 live FX sleeves born here with none of these -- the compiler was the place they were lost.
+PROVENANCE_KEYS: tuple[str, ...] = ("source_culture", "participant_structure",
+                                    "failure_mode_hypothesis", "crowding_prior",
+                                    "culture_derivation", "source_url", "source_seat",
+                                    "source_file")
+
+
+def provenance(row: Mapping[str, Any], *, seat: str | None = None,
+               path: Path | str | None = None) -> dict[str, Any]:
+    """The provenance an intake row carries forward: declared culture fields kept, the rest
+    inferred from the row's own evidence (URL, ground, language, text, seat) by the one rule,
+    UNMEASURED where nothing speaks. Never raises: provenance may never cost a discovery."""
+    out: dict[str, Any] = {}
+    url = row.get("source_url") or row.get("url") or row.get("link")
+    if url:
+        out["source_url"] = str(url)
+    seat = seat or row.get("source_seat")
+    if seat:
+        out["source_seat"] = str(seat)
+    if path or row.get("source_file"):
+        try:
+            out["source_file"] = (str(Path(path).relative_to(BASE)) if path
+                                  else str(row.get("source_file")))
+        except ValueError:
+            out["source_file"] = str(path)
+    try:
+        from libs.research import cell_culture as _cc
+        got = _cc.infer({**row, **out})
+        for k in (*_cc.FIELDS, _cc.DERIVATION_FIELD):
+            out[k] = got[k]
+    except Exception:
+        pass
+    return out
+
+
+def carried(spec: Mapping[str, Any]) -> dict[str, Any]:
+    """The provenance keys a spec holds, to pass to the next hop unchanged."""
+    return {k: spec[k] for k in PROVENANCE_KEYS if spec.get(k) not in (None, "")}
+
+
+def _spec_from_row(row: Mapping[str, Any], *, seat: str | None = None,
+                   path: Path | None = None) -> dict[str, Any]:
+    """One intake row, whatever seat wrote it, normalised into the miners' parent shape, with
+    its provenance (culture, source URL, seat, donation file) carried forward."""
     params = row.get("params") if isinstance(row.get("params"), dict) else {}
     sym = str(row.get("symbol") or row.get("sym") or row.get("target") or "").strip().upper()
     syms = row.get("symbols") if isinstance(row.get("symbols"), list) else []
@@ -355,7 +402,104 @@ def _spec_from_row(row: Mapping[str, Any]) -> dict[str, Any]:
             "exact_rule": str(row.get("exact_rule") or row.get("cell") or ""),
             "required_data": row.get("required_data"), "novelty": row.get("novelty"),
             "confidence": row.get("confidence"), "falsifier": str(row.get("falsifier") or ""),
-            "why": text.strip(), "declared_mechanism": str(row.get("mechanism") or "")}
+            "why": text.strip(), "declared_mechanism": str(row.get("mechanism") or ""),
+            **provenance(row, seat=seat, path=path)}
+
+
+def registry_parent(row: Mapping[str, Any],
+                    override: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    """One registry discovery row -> the intake shape `_expand_one` reads. `override` (fields
+    the recording organ knows better now than when it recorded) wins over the payload."""
+    payload = row.get("payload_json")
+    spec = json.loads(payload) if isinstance(payload, str) and payload.startswith("{") else {}
+    merged: dict[str, Any] = {**row, **spec, **dict(override or {})}
+    if not merged.get("symbol") and not (override or {}).get("symbols") \
+            and isinstance(row.get("assets_json"), str):
+        # A discovery another organ recorded carries its instruments in `assets_json` and no
+        # `symbol`. Reading only `symbol` would make every foreign discovery instrument-less,
+        # and an instrument-less parent produces a closure of nothing -- a silent drop wearing
+        # a successful run.
+        with contextlib.suppress(ValueError, TypeError):
+            merged["symbols"] = [s for s in json.loads(row["assets_json"]) if s]
+    return {"discovery_id": str(row["discovery_id"]), "source_type": "registry",
+            "origin": row.get("origin"), **_spec_from_row(merged)}
+
+
+def expand_ids(overrides: Mapping[str, Mapping[str, Any]], *, conn: Any,
+               deadline: float | None = None, ctx: TM.Context | None = None,
+               dry_run: bool = False) -> dict[str, Any]:
+    """THE PRIORITY DRAIN: expand THESE UNPROCESSED discoveries now, through the same seven steps.
+
+    `run()` takes the OLDEST 200 UNPROCESSED discoveries per pass, so a discovery recorded behind
+    a backlog waits for the whole backlog to drain first. The ingestion ledger's stranded-unit
+    handoffs are exactly that case: a datum already past its 24-hour grace would wait again, in a
+    queue, for its first cell. This lets the recording organ hand its OWN discoveries straight to
+    `_expand_one` -- the same gates, the same registry door (`enqueue_candidate`, so every cell
+    is charged to the census), the same donation into `data/intelligence/discovery_compiler/`.
+    Nothing else in the queue moves; nothing is skipped. `overrides` maps discovery_id -> fields
+    the caller knows now (the routed mechanism, information and instruments). Never raises.
+    """
+    out: dict[str, Any] = {"requested": len(overrides), "expanded": 0, "compiled": 0,
+                           "blocked": 0, "not_unprocessed": 0, "budget_stopped": False,
+                           "by_mechanism": {}, "blocked_by_reason": {}, "donation_path": None,
+                           "donated": 0, "errors": []}
+    if not overrides:
+        return out
+    try:
+        ctx = ctx if ctx is not None else build_context()
+        coverage = dict(R.grid_coverage(conn=conn))
+        hashes = {str(r["content_hash"]) for r in R.candidates(limit=20000, conn=conn)
+                  if r.get("content_hash")}
+        redundant = _redundant_keys()
+    except Exception as exc:
+        out["errors"].append(f"context: {type(exc).__name__}: {exc}")
+        return out
+    donations: list[dict[str, Any]] = []
+    blocked: dict[str, int] = {}
+    by_miner: dict[str, dict[str, int]] = {}
+    possible = 0
+    ids = list(overrides)
+    for i in range(0, len(ids), 500):
+        chunk = ids[i:i + 500]
+        marks = ",".join("?" * len(chunk))
+        try:
+            rows = [dict(r) for r in conn.execute(
+                f"SELECT * FROM discoveries WHERE discovery_id IN ({marks})",  # noqa: S608
+                chunk)]
+        except Exception as exc:
+            out["errors"].append(f"read: {type(exc).__name__}: {exc}")
+            break
+        for row in rows:
+            if str(row.get("state") or "").upper() != "UNPROCESSED":
+                out["not_unprocessed"] += 1
+                continue
+            if deadline is not None and time.monotonic() > deadline:
+                out["budget_stopped"] = True
+                break
+            try:
+                got = _expand_one(registry_parent(row, overrides.get(str(row["discovery_id"]))),
+                                  ctx, coverage=coverage, hashes=hashes, redundant=redundant,
+                                  conn=conn, dry_run=dry_run, donations=donations,
+                                  blocked=blocked, by_miner=by_miner)
+            except Exception as exc:
+                out["errors"].append(f"{row.get('discovery_id')}: {type(exc).__name__}: {exc}")
+                continue
+            out["expanded"] += 1
+            out["compiled"] += got["compiled"]
+            out["blocked"] += int(got["compiled"] == 0)
+            possible += got["possible"]
+            slot = out["by_mechanism"].setdefault(got["mechanism_id"],
+                                                  {"discoveries": 0, "compiled": 0})
+            slot["discoveries"] += 1
+            slot["compiled"] += got["compiled"]
+        if out["budget_stopped"]:
+            break
+    out["blocked_by_reason"] = dict(sorted(blocked.items()))
+    if donations and not dry_run:
+        out["donation_path"] = donate(donations, possible)
+        out["donated"] = len(donations)
+    out["errors"] = out["errors"][:20]
+    return out
 
 
 def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVERIES,
@@ -400,18 +544,7 @@ def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVE
             by_source[source_type] = by_source.get(source_type, 0) + 1
 
     for row in R.discoveries(state="UNPROCESSED", limit=limit, conn=conn):
-        payload = row.get("payload_json")
-        spec = json.loads(payload) if isinstance(payload, str) and payload.startswith("{") else {}
-        merged: dict[str, Any] = {**row, **spec}
-        if not merged.get("symbol") and isinstance(row.get("assets_json"), str):
-            # A discovery another organ recorded carries its instruments in `assets_json` and no
-            # `symbol`. Reading only `symbol` would make every foreign discovery instrument-less,
-            # and an instrument-less parent produces a closure of nothing -- a silent drop wearing
-            # a successful run.
-            with contextlib.suppress(ValueError, TypeError):
-                merged["symbols"] = [s for s in json.loads(row["assets_json"]) if s]
-        got.append({"discovery_id": str(row["discovery_id"]), "source_type": "registry",
-                    "origin": row.get("origin"), **_spec_from_row(merged)})
+        got.append(registry_parent(row))
         by_source["registry_unprocessed"] = by_source.get("registry_unprocessed", 0) + 1
         if len(got) >= limit:
             return got, by_source, unmeasured
@@ -429,7 +562,8 @@ def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVE
             else:
                 doc = _read_json(path)
             for row in rows_of(doc)[:MAX_ROWS_PER_FILE]:
-                add(f"intel:{path.parent.name}:{path.name}", "intelligence", _spec_from_row(row),
+                add(f"intel:{path.parent.name}:{path.name}", "intelligence",
+                    _spec_from_row(row, seat=path.parent.name, path=path),
                     origin=R.origin_of(path.parent.name), generator=f"seat:{path.parent.name}")
             _mark(cursor, path)
     else:
@@ -909,7 +1043,9 @@ def _donation_row(child: Mapping[str, Any], parent: Mapping[str, Any]) -> dict[s
             "title": (f"{child.get('transformation')} of {parent.get('symbol') or 'a discovery'}"
                       f" -> {child.get('symbol')} {child.get('chart')} {child.get('session')}"),
             "why": child.get("why"), "parent_discovery_ids": child.get("parent_discovery_ids"),
-            "discovery_id": parent.get("discovery_id")}
+            "discovery_id": parent.get("discovery_id"),
+            # the source's culture, URL, seat and file ride every emitted cell (Tier S joins them)
+            **carried(parent)}
 
 
 # --------------------------------------------------------------------------- the organ
@@ -1001,7 +1137,8 @@ def _expand_one(disc: Mapping[str, Any], ctx: TM.Context, *, coverage: dict[str,
             causal_rationale=str(child.get("why") or "")[:800],
             parent_ids=list(child.get("parent_discovery_ids") or []),
             pit_status=pit_status(child, ctx), source_id=str(disc.get("source_type") or ""),
-            conn=conn)
+            conn=conn, **{k: v for k, v in carried(parent).items()
+                          if k not in ("source_url", "source_seat", "source_file")})
         R.link("mechanism", mechanism_id, "cell", cid, "compiled", conn=conn)
         R.link("miner", f"{SOURCE}:{child.get('miner')}", "cell", cid, "generated", conn=conn)
         donations.append(_donation_row(child, parent))

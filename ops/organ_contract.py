@@ -149,6 +149,15 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                            "proof the standing fixers actually ran"),
     "MT5-MoatRecorder":   ("desks/mt5/data/moat_coverage.json", 180,
                            "moat capture coverage"),
+    # THE TICK RECORDER, JUDGED ON THE TAPE'S OWN CLOCK (2026-10-14). It returned 1 at
+    # 2026-10-12 19:56 box time and never ran again: boot/logon triggers only, and the scheduler's
+    # restart-on-failure does not fire on a non-zero exit. process_health called it FAILING for
+    # two days and never_stale escalated rather than started it, because no contract existed. Its
+    # status file is rewritten every cycle even while nothing is captured, so the age is read
+    # from `last_tick_utc` inside it (INTERNAL_STAMPS below), not from the file's mtime: a
+    # recorder that beats but records nothing reads STALE, and never_stale starts it.
+    "MT5-TickRecorder":   ("desks/mt5/reports/TAPE_RECORDER.json", 120,
+                           "the bronze tick tape; age is its newest tick, true UTC"),
     # THE FOURTEEN UNCONTRACTED ORGANS (2026-09-12). Every one appeared on the board as
     # "no artifact contract: this process could stop and nothing would notice" -- which is
     # exactly the gap that lets a new organ die quietly, and the principal asked for it closed.
@@ -378,10 +387,52 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     "MT5-FrontierAudit (market posteriors)": (
         "desks/mt5/reports/MARKET_POSTERIORS.json", 1560,
         "F3: nine market axes as posteriors, two estimators each, disagreement kept per axis"),
+    # #521 audit MF-B (2026-10-29): the merge-pipeline watcher runs inside Quant-WorkflowGate, so
+    # a task that stops firing would leave its report simply un-updated. This board runs on its
+    # own clock; 45 min = the watcher's 25-min re-read plus two 10-min sweep runs.
+    "Quant-WorkflowGate (merge pipeline)": (
+        "desks/mt5/reports/MERGE_PIPELINE.json", 45,
+        "queued-check ages, CLEARed or green work waiting, LIVE's last code, the box sweep's "
+        "heartbeat; owned by Quant-WorkflowGate, not a task of its own"),
     "MT5-FrontierAudit (chart allocation)": (
         "desks/mt5/reports/CHART_ALLOCATION.json", 1560,
         "research effort per chart, inverse to the docket share each chart already holds"),
 }
+
+
+#: Artifacts whose age is the stamp INSIDE them, not the file's mtime: artifact -> JSON key
+#: holding an ISO-8601 UTC instant. For an organ that rewrites its status every pass whether or
+#: not it produced anything, mtime only proves the process is alive. An absent, unreadable,
+#: unstamped or future stamp reads as no artifact at all, which never_stale answers by starting
+#: the task.
+INTERNAL_STAMPS: dict[str, str] = {
+    "desks/mt5/reports/TAPE_RECORDER.json": "last_tick_utc",
+}
+
+#: A stamp further than this past now is a clock defect, never freshness.
+FUTURE_SLACK_MIN = 5.0
+
+
+def _stamp_age_min(p: Path, key: str, now: datetime) -> float | None:
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8"))
+        at = datetime.fromisoformat(str(doc[key]).replace("Z", "+00:00"))
+    except (OSError, ValueError, TypeError, KeyError):
+        return None
+    if at.tzinfo is None:
+        at = at.replace(tzinfo=UTC)
+    age = (now - at).total_seconds() / 60.0
+    return None if age < -FUTURE_SLACK_MIN else max(age, 0.0)
+
+
+def artifact_age_min(rel: str, now: datetime | None = None, root: Path = ROOT) -> float | None:
+    """The contract age of `rel`: its internal stamp where INTERNAL_STAMPS names one, else the
+    file's mtime. None means the organ has produced nothing usable."""
+    now = now or datetime.now(UTC)
+    key = INTERNAL_STAMPS.get(rel)
+    if key:
+        return _stamp_age_min(root / rel, key, now)
+    return _age_min(root / rel, now)
 
 
 def _age_min(p: Path, now: datetime) -> float | None:
@@ -395,8 +446,7 @@ def check() -> dict:
     now = datetime.now(UTC)
     rows = []
     for organ, (rel, max_age, what) in sorted(CONTRACTS.items()):
-        p = ROOT / rel
-        age = _age_min(p, now)
+        age = artifact_age_min(rel, now)
         if age is None:
             verdict, why = "ABSENT", f"{rel} does not exist -- the organ has never produced it"
         elif age > max_age:
