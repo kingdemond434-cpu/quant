@@ -157,7 +157,7 @@ def main(argv: list[str] | None = None) -> int:
     hygiene = _hygiene_first() if apply else {"status": "SKIPPED (dry run)"}
     try:
         rows, source = _canon_rows()
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         print(f"UNANSWERED: the certificate canon could not be read via shadow_admission "
               f"({type(exc).__name__}: {exc}). Nothing is requeued and nothing is claimed.",
               file=sys.stderr)
@@ -220,7 +220,7 @@ def main(argv: list[str] | None = None) -> int:
                                      "refused": len(rj.get("refused") or []),
                                      "applied": rj.get("applied"),
                                      "report": str(rejudge_evicted.OUT)}
-    except Exception as exc:                                            # noqa: BLE001
+    except Exception as exc:
         report["rejudge_evicted"] = {"status": "UNMEASURED",
                                      "why": f"{type(exc).__name__}: {exc}"}
 

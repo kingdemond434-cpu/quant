@@ -110,7 +110,8 @@ def evicted_rows(evicted: Path | None = None, survivors: Path | None = None,
     evicted, survivors, canon = evicted or EVICTED, survivors or SURVIVORS, canon or CANON
     out = dict(_survivors(_read(evicted)))
     canon_doc = _read(canon)
-    listed = set(canon_doc.get("unrunnable_evicted") or []) if isinstance(canon_doc, dict) else set()
+    listed = (set(canon_doc.get("unrunnable_evicted") or [])
+              if isinstance(canon_doc, dict) else set())
     for doc in (_read(survivors), canon_doc):
         for key, row in _survivors(doc).items():
             if key in out:
@@ -215,7 +216,7 @@ def recover(key: str, row: dict, registry: dict[str, dict]) -> dict[str, Any]:
     try:
         from mt5desk.executables import hunt16_families
         is_h16 = fam in hunt16_families()
-    except Exception:                                             # noqa: BLE001
+    except Exception:
         is_h16 = False
     if is_h16:
         h16w = _hunt16_windows()
