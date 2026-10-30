@@ -54813,6 +54813,75 @@
       "retired_at": "2026-10-29T19:10:20+00:00",
       "retire_reason": "USDMXN is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
       "retired_by": "live_policy"
+    },
+    {
+      "name": "USDNOK.carry.asia@M15#input_symbol=USDNOK_session=ny",
+      "symbol": "USDNOK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['usdnok.carry.asia@m15#input_symbol=usdnok_session=ny', 'usdnok|carry|asia', 'usdnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['usdnok.carry.asia@m15#input_symbol=usdnok_session=ny', 'usdnok|carry|asia', 'usdnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-10-29T23:57:51+00:00",
+      "shadow_exp": 0.6235063755489969,
+      "family": "carry",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "USDNOK.carry.asia@M15#input_symbol=USDNOK_session=ny",
+      "sleeve_id": "649b8a794c29ab7da1c8",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "input_symbol": "USDNOK",
+        "session": "ny",
+        "timeframe": "M15"
+      },
+      "exec": "family_market",
+      "retired_at": "2026-10-29T23:57:55+00:00",
+      "retire_reason": "USDNOK admits only ['usdnok_carry_asia_p_ff35bb7c8427d66f'] for live capital; 'USDNOK.carry.asia@M15#input_symbol=USDNOK_session=ny' is a different parameter set on the same instrument -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "USDNOK.carry.asia@M15#session=ny",
+      "symbol": "USDNOK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['usdnok.carry.asia@m15#session=ny', 'usdnok|carry|asia', 'usdnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['usdnok.carry.asia@m15#session=ny', 'usdnok|carry|asia', 'usdnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-10-29T23:57:54+00:00",
+      "shadow_exp": 0.6235063755489969,
+      "family": "carry",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "USDNOK.carry.asia@M15#session=ny",
+      "sleeve_id": "7c6829f7bb1829bddae1",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "session": "ny",
+        "timeframe": "M15"
+      },
+      "exec": "family_market",
+      "retired_at": "2026-10-29T23:57:55+00:00",
+      "retire_reason": "USDNOK admits only ['usdnok_carry_asia_p_ff35bb7c8427d66f'] for live capital; 'USDNOK.carry.asia@M15#session=ny' is a different parameter set on the same instrument -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     }
   ]
 }
