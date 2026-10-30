@@ -57,7 +57,9 @@ ledger, no certificate and no authority file; `data/sleeves.json`, the rosters, 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
+import os
 import sys
 import time
 from datetime import UTC, datetime
@@ -124,12 +126,42 @@ def _cost_meta_load() -> dict[str, Any]:
     return dict(raw) if isinstance(raw, dict) else {}
 
 
-def _cost_meta_save(rows: dict[str, Any]) -> None:
+def _atomic_write(path: Path, text: str) -> None:
+    """tmp + os.replace, so a reader never sees a half-written file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
     try:
-        COSTMETA.parent.mkdir(parents=True, exist_ok=True)
-        COSTMETA.write_text(json.dumps(rows, indent=1, sort_keys=True), "utf-8")
-    except OSError:
-        pass
+        tmp.write_text(text, "utf-8")
+        os.replace(tmp, path)
+    finally:
+        if tmp.exists():
+            tmp.unlink()
+
+
+def _cost_meta_save(rows: dict[str, Any]) -> None:
+    with contextlib.suppress(OSError):
+        _atomic_write(COSTMETA, json.dumps(rows, indent=1, sort_keys=True))
+
+
+def write_judgement(doc: dict[str, Any], out: Path) -> str:
+    """Write the judgement unless it would put an UNMEASURED pass over a MEASURED one.
+
+    UNMEASURED is an answer, but it is not a newer judgement: replacing a measured basket verdict
+    with "could not measure this hour" would erase the evidence any reader is entitled to. The
+    unmeasured pass is recorded beside it instead. Returns "written" or "kept_measured".
+    """
+    if not doc.get("measured"):
+        try:
+            prev = json.loads(out.read_text("utf-8"))
+        except (OSError, ValueError):
+            prev = None
+        if isinstance(prev, dict) and prev.get("measured"):
+            prev["last_unmeasured_pass"] = {"why": doc.get("why"),
+                                            "generated_at": doc.get("generated_at")}
+            _atomic_write(out, json.dumps(prev, indent=1, default=str))
+            return "kept_measured"
+    _atomic_write(out, json.dumps(doc, indent=1, default=str))
+    return "written"
 
 
 def _leg_key(row: dict[str, Any]) -> str:
@@ -594,13 +626,13 @@ def build(budget_s: float = 900.0) -> dict[str, Any]:
         b1, b3 = panel.series(r["members"], r["mask"], weights_for(panel, r))
         r["_b1"], r["_b3"] = b1, b3
         r["_n_days"] = len(b1)
-    null = sign_flip_null(panel, NULL_DRAWS, deadline)
-    res = judge(panel, rules, meta)
-    # CHARGED BEFORE ANYTHING IS READ OFF THE VERDICTS: a basket the judge saw is a trial whether
-    # it passed or not, and only the ones that reached the judge (>= 60 days) are counted.
+    # CHARGED BEFORE THE JUDGE RUNS: a basket the judge sees is a trial whether it passes, fails
+    # or the judge raises half-way, and only the ones that reach the judge (>= 60 days) count.
     trial_charge = charge_trials([
         basket_identity(r, [panel.names[j] for j in r["members"]])
         for r in rules if r["_n_days"] >= 60])
+    null = sign_flip_null(panel, NULL_DRAWS, deadline)
+    res = judge(panel, rules, meta)
     verdict_by = {v["sym"]: v for v in res.get("verdicts", [])}
 
     baskets: list[dict[str, Any]] = []
@@ -788,14 +820,13 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     doc = build(budget_s=a.budget_s)
     try:
-        a.out.parent.mkdir(parents=True, exist_ok=True)
-        a.out.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+        state = write_judgement(doc, a.out)
     except OSError as exc:
         print(f"srb basket judge: could not write {a.out}: {exc}")
         return 1
     if not doc.get("measured"):
         print(f"srb basket judge: {doc.get('why')}")
-        print(f"written: {a.out}")
+        print(f"{state}: {a.out}")
         return 0
     print(f"srb basket judge: {len(doc['baskets'])} basket(s) from "
           f"{doc['legs']['n_legs']} legs, hurdle sr0=0.3122")

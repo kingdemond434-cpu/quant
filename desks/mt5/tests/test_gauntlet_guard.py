@@ -168,3 +168,19 @@ def test_judging_throughput_reads_the_guard_and_absence_is_unmeasured(tmp_path, 
     assert env["judge_env_reach_rate"] == 0.55
     assert env["judge_env_commit_ceiling_touched"] is True
     assert env["judge_env_torn_frames"] == 0
+
+
+@pytest.mark.parametrize("argv, expected", [
+    ([r"C:\opt\quant\.venv\Scripts\python.exe",
+      r"C:\opt\quant\desks\mt5\scripts\external_gauntlet.py"], True),
+    (["/usr/bin/python3", "scripts/external_gauntlet.py", "--workers", "4"], True),
+    (["cmd.exe", "/c", r"python.exe scripts\external_gauntlet.py"], False),
+    (["powershell.exe", "-Command", "python scripts/external_gauntlet.py"], False),
+    (["/bin/sh", "-c", "python3 scripts/external_gauntlet.py"], False),
+    (["python.exe", "scripts/external_gauntlet.py", "--only", "X"], False),
+    (["python.exe", "scripts/gauntlet_guard.py", "external_gauntlet.py.log"], False),
+    ([], False),
+])
+def test_live_pass_matches_the_interpreter_not_a_wrapper_shell(argv, expected):
+    """Audit of #138: a wrapper shell whose command line mentions the judge is not the judge."""
+    assert gg.is_judge_argv(argv) is expected
