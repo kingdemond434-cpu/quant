@@ -1,29 +1,27 @@
 {
- "at": "2026-10-30T11:01:07+00:00",
+ "at": "2026-10-30T11:16:04+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 3.76,
-   "why": "no new verdict for 3.8h (last 2026-10-30T07:15:29+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 0.01,
+   "why": "no new verdict for 0.0h (last 2026-10-30T11:15:35+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "resident_dead": {
    "open": false,
-   "heartbeat_age_min": 0.3,
+   "heartbeat_age_min": 0.2,
    "pid_alive": true,
-   "why": "resident SWEEPING pid 21384: heartbeat 0.3 min old (limit 10), pid alive"
+   "why": "resident SWEEPING pid 21384: heartbeat 0.2 min old (limit 10), pid alive"
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 3.7,
+   "hours": 3.95,
    "limit_h": 25.59,
-   "why": "3.7h since the last sweep ended (2026-10-30T07:19:15+00:00), status SWEEPING; limit 25.59h"
+   "why": "3.9h since the last sweep ended (2026-10-30T07:19:15+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
-   "open": false,
-   "cells": 8389,
-   "basis": "n_judged",
+   "open": null,
    "read": "first 1048576 and last 262144 bytes",
-   "why": "the sweep that ended 2026-10-30T07:19:15+00:00 judged 8389 cell(s) (n_judged)"
+   "why": "UNMEASURED: universal_gates_external.json has no indented top-level key line (compact, torn or not an object): its layout is unrecognised"
   },
   "sweep_dead": {
    "open": false,
@@ -33,9 +31,9 @@
   "phase_overrun": {
    "open": false,
    "phase": "merge_and_publish",
-   "hours": 0.09,
+   "hours": 0.34,
    "known_phase": true,
-   "why": "sweep phase merge_and_publish has run 0.1h since 2026-10-30T10:55:57+00:00 (limit 3h)"
+   "why": "sweep phase merge_and_publish has run 0.3h since 2026-10-30T10:55:57+00:00 (limit 3h)"
   },
   "host_unreadable": {
    "open": false,
@@ -71,13 +69,13 @@
   }
  },
  "last_verdict": {
-  "at": "2026-10-30T07:15:29+00:00",
+  "at": "2026-10-30T11:15:35+00:00",
   "source": "gate_verdict_ledger.jsonl"
  },
  "resident": {
   "status": "SWEEPING",
   "pid": 21384,
-  "heartbeat_utc": "2026-10-30T11:00:48+00:00",
+  "heartbeat_utc": "2026-10-30T11:15:50+00:00",
   "last_sweep_ended_utc": "2026-10-30T07:19:15+00:00",
   "last_rc": 0
  },
