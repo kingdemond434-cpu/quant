@@ -303,8 +303,45 @@ def _no_evidence(doc: dict[str, Any], problem: str, *, live: bool) -> dict[str, 
 
 
 def scan(root: Path | None = None, *, now: datetime | None = None) -> dict[str, Any]:
+    """The placement verdict, then (c) the gateway's pass CLOCK on top of whatever it found."""
     base = Path(root or ROOT)
     t_now = now or _now()
+    doc = _scan_placement(base, now=t_now)
+    return apply_clock_check(doc, base, t_now)
+
+
+def apply_clock_check(doc: dict[str, Any], base: Path, t_now: datetime) -> dict[str, Any]:
+    """(c) THE PASS STAMP IS ON THE REAL CLOCK (ledger row L3, 2026-10-29).
+
+    The gateway once wrote `placement_pass` as the BROKER clock under a UTC label, two to three
+    hours in the future, and its stale-tick guard read a dead terminal as fresh for that long. The
+    source now writes real UTC marked `placement_pass_clock: "utc"`; this goes RED if a
+    new-format state loses the mark or a pass sits more than five minutes in the future
+    (`libs.ops.gateway_clock.clock_verdict`). A legacy unmarked stamp is reported, not failed.
+    It reads one tracked file and needs no live ledger: a stamp in the future is wrong anywhere.
+    """
+    gateway_state = base / Path(*GATEWAY_STATE_REL.split("/"))
+    gw = _read_json(gateway_state)
+    if gw is None:
+        return doc
+    try:
+        from libs.ops.gateway_clock import clock_verdict
+        clock = clock_verdict(gw, t_now)
+    except Exception as exc:          # a broken checker is reported, never a silent pass
+        clock = {"verdict": UNMEASURED, "why": f"clock check raised {type(exc).__name__}: {exc}"}
+    doc["gateway_clock"] = clock
+    if clock.get("verdict") == "RED":
+        doc["ok"] = False
+        doc["problems"].append(f"{GATEWAY_STATE_REL}: {clock.get('why')}")
+        if doc.get("verdict") not in ("HALTED", "IDENTITY_STALE"):
+            doc["verdict"] = "GATEWAY_CLOCK_RED"
+    elif clock.get("verdict") in ("LEGACY", UNMEASURED):
+        doc["notes"].append(f"gateway clock {clock.get('verdict')}: {clock.get('why')}")
+    return doc
+
+
+def _scan_placement(base: Path, *, now: datetime) -> dict[str, Any]:
+    t_now = now
     ledger = base / Path(*LEDGER_REL.split("/"))
     identity = base / Path(*IDENTITY_REL.split("/"))
     gateway_state = base / Path(*GATEWAY_STATE_REL.split("/"))

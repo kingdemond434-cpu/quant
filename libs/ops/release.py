@@ -129,6 +129,8 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/data/decision_ledger.jsonl",
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
+    "desks/mt5/data/live_ledger_corrections.jsonl",
+    "desks/mt5/reports/LEDGER_VIEW_ADOPTION.json",
     "desks/mt5/reports/attribution_chain.json",
     # The markout the same leg writes beside the chain (2026-09-30): the VPS's desk state reads
     # `matched_fills` from it, and without publication it read a 2026-09-08 stub forever.
@@ -154,6 +156,9 @@ NON_CODE: frozenset[str] = frozenset({
     # The lockbox v4 re-certification ledger and the re-mint status (2026-09-30).
     "desks/mt5/reports/LOCKBOX_RECERT.json",
     "desks/mt5/reports/REMINT_STATUS.json",
+    # Whether the tick tape is still moving (2026-10-14): the hourly `tape_fresh` leg's verdict
+    # on each tape's own newest-tick stamp, published on the same wire. An output, never an input.
+    "desks/mt5/reports/TAPE_FRESHNESS.json",
     # The placement-interlock fence's verdict (scripts/check_placement_interlock.py), published
     # by the same sync so a halt is readable off the box. An output, never an input.
     "desks/mt5/data/placement_interlock.json",
@@ -165,6 +170,11 @@ NON_CODE: frozenset[str] = frozenset({
     # `box_state_freshness` and `desk_health` legs and published on the same wire.
     "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
     "desks/mt5/reports/DESK_HEALTH.json",
+    # Which scheduled organs are FAILING / NOT_SCHEDULED (ops/process_health.py, N14
+    # 2026-10-13): the scorecard counted them, nobody off the box could name them.
+    "desks/mt5/reports/process_health.json",
+    # Backup and restore-drill state, scheme only (ops/backup_state.py, v5f).
+    "desks/mt5/reports/BACKUP_STATE.json",
     # The Tier S box attestation and live door, published since 2026-09-30 and never declared
     # here (test_every_path_the_box_publishes_is_declared_non_code was red on the live branch).
     "desks/mt5/data/tier_s/box_evidence.json",
@@ -648,6 +658,31 @@ STATE_FILES: frozenset[str] = frozenset({
     # clean adoption stop at the final dirty-code fence.
     "desks/mt5/docs/TRADE_PATH_REPORT.md",
 })
+
+
+#: STATE THAT GOVERNS WHAT CODE MAY DO. Box-written like the rest of STATE_PREFIXES, but a change
+#: to one of these changes what a tested tree is allowed to be or do: the sealed-file pins and sign
+#: rows, the survivor canon, the allocator's proof, the live manifest, and the behaviour switches.
+#: A PR tested against an older copy is not tested against the new one (#521 audit MF1, 2026-10-29),
+#: so the gate's state-only lag and LIVE's push CI treat these as CODE.
+GOVERNED_STATE_FILES: frozenset[str] = frozenset({
+    IMMUTABLE_MANIFEST, SURVIVORS, ALLOCATOR_PROOF,
+    "desks/mt5/data/LIVE_MANIFEST.jsonl", "desks/mt5/data/ALLOCATOR_SOVEREIGN.json",
+})
+#: Switch files by name, under desks/mt5/data/ (GENERIC_EXEC_ENABLED, MARGIN_CLAUSE_DISABLED, ...).
+GOVERNED_STATE_GLOBS: tuple[str, ...] = (
+    "desks/mt5/data/*_ENABLED*", "desks/mt5/data/*_DISABLED*",
+)
+
+
+def is_governed_state(rel: str) -> bool:
+    """A state path whose change governs what code may do (see GOVERNED_STATE_FILES)."""
+    import fnmatch
+
+    p = str(rel).replace("\\", "/").lstrip("./")
+    return p in GOVERNED_STATE_FILES or any(  # `*` stays in one directory, as in a workflow glob
+        fnmatch.fnmatchcase(p, g) and p.count("/") == g.count("/") for g in GOVERNED_STATE_GLOBS
+    )
 
 
 def is_state_path(rel: str) -> bool:

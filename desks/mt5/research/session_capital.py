@@ -41,7 +41,8 @@ for _p in (str(REPO), str(BASE / "research")):
 
 ALLOC = BASE / "reports" / "pf_allocation.json"
 SURVIVORS = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
-LEDGER = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 OUT = BASE / "reports" / "session_capital.json"
 
 #: A band is "underspent" when the allocator priced value there and the book holds nearly none

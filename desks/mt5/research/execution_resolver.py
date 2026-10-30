@@ -44,6 +44,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
 UNIVERSE = BASE / "data" / "universe"
@@ -114,6 +115,33 @@ def _atr_distance(symbol: str) -> float | None:
         return None
 
 
+def _last_close(symbol: str) -> float | None:
+    """The last H1 close: the price a mode-5 (annual percent of notional) swap is charged at."""
+    try:
+        import pandas as pd
+        path = UNIVERSE / f"{symbol}_H1.parquet"
+        if not path.exists():
+            return None
+        px = float(pd.read_parquet(path, columns=["close"])["close"].iloc[-1])
+        return px if px > 0 else None
+    except Exception:
+        return None
+
+
+def _swap_quote_per_lot(meta: dict, symbol: str, direction: int) -> tuple[float | None, str | None]:
+    """The side's swap as QUOTE currency per lot per night, in the unit its swap_mode names
+    (signed, positive = credit). (None, why) when it cannot be priced -- never 0.0 for that."""
+    import sys
+    if str(BASE) not in sys.path:
+        sys.path.insert(0, str(BASE))
+    from mt5desk.engine import swap_night_quote
+    raw = meta.get("swap_long" if direction > 0 else "swap_short")
+    if raw is None:
+        return None, f"UNMEASURED: no {'swap_long' if direction > 0 else 'swap_short'} for {symbol}"
+    return swap_night_quote({**meta, "symbol": meta.get("symbol") or symbol}, float(raw),
+                            _last_close(symbol))
+
+
 def _spread_cost_r(meta: dict, risk_distance: float | None) -> float | None:
     """Spread as a fraction of R -- the unit every gate and sizing decision uses."""
     try:
@@ -159,6 +187,7 @@ def resolve(intent: dict, candidates: list[str] | None = None) -> dict:
     risk_frac = float(intent.get("risk_frac") or 0.03)
 
     scored = []
+    unpriced: list[dict[str, Any]] = []
     for sym in symbols:
         meta = registry.get(sym)
         if not isinstance(meta, dict):
@@ -169,16 +198,21 @@ def resolve(intent: dict, candidates: list[str] | None = None) -> dict:
         sym_risk = _atr_distance(sym) or (float(risk_distance) if risk_distance else None)
 
         spread_r = _spread_cost_r(meta, sym_risk)
-        # SWAP, IN COMMENSURATE UNITS. swap_long/short from the venue is CURRENCY PER LOT PER
-        # NIGHT; risk_distance is PRICE units. Dividing them directly produced net edges of +23R
-        # on GBPJPY -- an artifact of mixed units, not an opportunity. Risk per lot in currency
-        # is distance x contract_size; swap contributes only for nights actually held, and a
-        # session strategy that closes intraday holds zero.
-        swap_ccy = float(meta.get("swap_long" if direction > 0 else "swap_short") or 0.0)
+        # SWAP, IN COMMENSURATE UNITS. risk_distance is PRICE units; risk per lot in QUOTE
+        # currency is distance x contract_size. swap_long/short are NOT currency: their unit is
+        # whatever swap_mode names -- POINTS on 110 symbols, an ANNUAL PERCENT of notional on 138
+        # (2026-10-07; this line read both as currency). `_swap_quote_per_lot` converts either.
+        # Swap contributes only for nights actually held; an intraday strategy holds zero. A
+        # held night whose swap cannot be priced is UNMEASURED and the expression is set aside
+        # by name below, never scored as free.
         nights = float(intent.get("expected_holding_nights") or 0.0)
         contract = float(meta.get("contract_size") or 0.0)
         if sym_risk and contract > 0 and nights > 0:
-            swap_r = (swap_ccy * nights) / (sym_risk * contract)
+            swap_q, swap_why = _swap_quote_per_lot(meta, sym, direction)
+            if swap_q is None:
+                unpriced.append({"symbol": sym, "why": swap_why})
+                continue
+            swap_r = (swap_q * nights) / (sym_risk * contract)
         else:
             swap_r = 0.0
         overlap = _overlap(sym)
@@ -217,6 +251,7 @@ def resolve(intent: dict, candidates: list[str] | None = None) -> dict:
         "resolved_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "intent": intent, "candidates_scored": len(scored),
         "best": best, "ranked": scored[:20],
+        "swap_unmeasured": unpriced,
         "note": ("Ranked by INCREMENTAL log-growth for the whole book, never standalone edge. "
                  "Unmeasured execution is penalised, never assumed favourable. This never sends "
                  "an order -- promotion authority stays with the ten gates and the forward "

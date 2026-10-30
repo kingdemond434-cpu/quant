@@ -150,7 +150,7 @@ def test_the_event_lane_enters_after_the_news_in_the_bars_own_clock(tmp_path, mo
 
     _clock(tmp_path)
     monkeypatch.setattr(fe, "to_bar_time",
-                        lambda when, root=None: bc.to_bar_time(when, tmp_path))
+                        lambda when, root=None, **kw: bc.to_bar_time(when, tmp_path, **kw))
     df = _bars()
     at = "2026-07-05T12:00:00+00:00"
     sig = fe.family_event_reaction(df, events=[{"symbol": "X", "at": at}], symbol="X",
@@ -167,7 +167,8 @@ def test_an_unconvertible_event_is_dropped_not_used_raw(tmp_path, monkeypatch):
     from mt5desk import family_event_reaction as fe
 
     monkeypatch.setattr(fe, "to_bar_time",
-                        lambda when, root=None: bc.to_bar_time(when, tmp_path))  # no clock file
+                        # no clock file
+                        lambda when, root=None, **kw: bc.to_bar_time(when, tmp_path, **kw))
     df = _bars()
     sig = fe.family_event_reaction(df, events=[{"symbol": "X", "at": "2026-07-05T12:00:00+00:00"}],
                                    symbol="X", mode="drift", side=1, clock="utc")
@@ -180,7 +181,7 @@ def test_the_offset_applied_is_the_seasons_own(tmp_path, monkeypatch, month, exp
 
     _clock(tmp_path)
     monkeypatch.setattr(fe, "to_bar_time",
-                        lambda when, root=None: bc.to_bar_time(when, tmp_path))
+                        lambda when, root=None, **kw: bc.to_bar_time(when, tmp_path, **kw))
     start = f"2026-{month:02d}-01"
     df = _bars(start=start)
     at = f"2026-{month:02d}-05T12:00:00+00:00"
@@ -198,7 +199,7 @@ def test_the_default_frame_converts_nothing(tmp_path, monkeypatch):
 
     _clock(tmp_path)
     monkeypatch.setattr(fe, "to_bar_time",
-                        lambda when, root=None: bc.to_bar_time(when, tmp_path))
+                        lambda when, root=None, **kw: bc.to_bar_time(when, tmp_path, **kw))
     df = _bars()
     at = "2026-07-05T12:00:00+00:00"
     default = fe.family_event_reaction(df, events=[{"symbol": "X", "at": at}], symbol="X",

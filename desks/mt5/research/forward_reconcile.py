@@ -503,7 +503,8 @@ def live_series() -> dict[str, list[float]]:
     """{live sleeve name: its per-trade R}, from data/live_ledger.jsonl by posterior_alpha's own
     rule: a row stamped `r_multiple: 0.0` against non-zero P&L is an UNRECONSTRUCTED R, not an
     observation of no edge, and is dropped."""
-    path = BASE / "data" / "live_ledger.jsonl"
+    from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+    path = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
     pa = _posterior()
     if pa is not None:
         rows = pa._read_jsonl(path)
