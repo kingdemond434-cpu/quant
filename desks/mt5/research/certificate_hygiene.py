@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -154,6 +155,32 @@ def build() -> dict[str, Any]:
     }
 
 
+def _atomic_json(path: Path, doc: Any) -> None:
+    """tmp beside the target, fsync, one os.replace: a reader sees the old file or the new."""
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.hygiene.tmp")
+    try:
+        with tmp.open("w", encoding="utf-8") as fh:
+            fh.write(json.dumps(doc, indent=1, default=str))
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp, path)
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
+def _read_archive(path: Path) -> dict[str, Any] | None:
+    """An archive's rows; {} when absent; None when it exists and cannot be read. An unreadable
+    archive is never reset to empty: that would drop every row it already holds (#106 audit)."""
+    if not path.exists():
+        return {}
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    rows = doc.get("survivors") if isinstance(doc, dict) else None
+    return rows if isinstance(rows, dict) else ({} if isinstance(doc, dict) else None)
+
+
 def evict_banned(doc: dict[str, Any]) -> dict[str, Any]:
     """Move every banned-family certificate into `retired_certificates`, reason on each row.
 
@@ -164,6 +191,10 @@ def evict_banned(doc: dict[str, Any]) -> dict[str, Any]:
     if not decisions:
         return {"evicted": 0}
     stamp = doc.get("at") or datetime.now(tz=UTC).isoformat(timespec="seconds")
+    archive = _read_archive(BANNED_ARCHIVE)
+    if archive is None:
+        return {"evicted": 0, "refused": f"{BANNED_ARCHIVE.name} unreadable; UNMEASURED, "
+                                         "retried next pass"}
     moved: dict[str, Any] = {}
     for path in (SURVIVORS, CANON):
         if not path.exists():
@@ -189,20 +220,12 @@ def evict_banned(doc: dict[str, Any]) -> dict[str, Any]:
         d["retired_certificates"] = retired
         prior = d.get("banned_evicted") if isinstance(d.get("banned_evicted"), list) else []
         d["banned_evicted"] = sorted(set(prior) | set(hit))
-        path.write_text(json.dumps(d, indent=1, default=str), encoding="utf-8")
-    archive: dict[str, Any] = {}
-    if BANNED_ARCHIVE.exists():
-        try:
-            archive = (json.loads(BANNED_ARCHIVE.read_text(encoding="utf-8")) or {}).get(
-                "survivors") or {}
-        except (OSError, ValueError):
-            archive = {}
+        _atomic_json(path, d)
     archive.update(moved)
-    BANNED_ARCHIVE.write_text(json.dumps(
-        {"at": stamp, "n": len(archive), "survivors": archive,
-         "why": ("certificates of a family the principal banned; evicted with the reason on "
-                 "each row and never re-homed -- " + REHOME_REFUSED)},
-        indent=1, default=str), encoding="utf-8")
+    _atomic_json(BANNED_ARCHIVE,
+                 {"at": stamp, "n": len(archive), "survivors": archive,
+                  "why": ("certificates of a family the principal banned; evicted with the "
+                          "reason on each row and never re-homed -- " + REHOME_REFUSED)})
     return {"evicted": len(moved), "to": "retired_certificates + "
             + str(BANNED_ARCHIVE.relative_to(ROOT))}
 
@@ -212,6 +235,10 @@ def apply(doc: dict[str, Any]) -> dict[str, Any]:
     keys = {z["key"] for z in doc.get("unrunnable") or []}
     if not keys:
         return {"moved": 0}
+    prior = _read_archive(EVICTED)
+    if prior is None:
+        # The UNRUNNABLE archive is rejudge_evicted's input: never reset it on a bad read.
+        return {"moved": 0, "refused": f"{EVICTED.name} unreadable; UNMEASURED, retried next pass"}
     moved: dict[str, Any] = {}
     for path in (SURVIVORS, CANON):
         if not path.exists():
@@ -226,25 +253,20 @@ def apply(doc: dict[str, Any]) -> dict[str, Any]:
                 moved[k] = surv.pop(k)
         d["survivors"] = surv
         d["n"] = len(surv)
-        d["unrunnable_evicted"] = sorted(keys)
+        was = d.get("unrunnable_evicted") if isinstance(d.get("unrunnable_evicted"), list) else []
+        d["unrunnable_evicted"] = sorted(set(was) | keys)
         d["unrunnable_note"] = (
             "rows whose shadow_spec cannot be enrolled were moved to "
             "reports/UNIVERSAL_SURVIVORS_UNRUNNABLE.json. They passed the gates and cannot be "
             "run; counting them inflated the desk's belief about its own edge.")
-        path.write_text(json.dumps(d, indent=1, default=str), encoding="utf-8")
-    prior: dict[str, Any] = {}
-    if EVICTED.exists():
-        try:
-            prior = (json.loads(EVICTED.read_text(encoding="utf-8")) or {}).get("survivors") or {}
-        except (OSError, ValueError):
-            prior = {}
+        _atomic_json(path, d)
     prior.update(moved)
-    EVICTED.write_text(json.dumps(
-        {"at": doc["at"], "n": len(prior), "survivors": prior,
-         "why": ("passed the ten gates and cannot be enrolled -- kept in full so the evidence "
-                 "stays auditable and a future certificate can revive the mechanism on a FRESH "
-                 "pre-registered window, never by inheriting this row.")},
-        indent=1, default=str), encoding="utf-8")
+    _atomic_json(EVICTED,
+                 {"at": doc["at"], "n": len(prior), "survivors": prior,
+                  "why": ("passed the ten gates and cannot be enrolled -- kept in full so the "
+                          "evidence stays auditable and a future certificate can revive the "
+                          "mechanism on a FRESH pre-registered window, never by inheriting this "
+                          "row.")})
     return {"moved": len(moved), "to": str(EVICTED.relative_to(ROOT))}
 
 
