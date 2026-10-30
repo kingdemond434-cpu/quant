@@ -20,13 +20,113 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import tempfile
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
 HYP = BASE / "data" / "hypotheses"
+if str(BASE.parents[1]) not in sys.path:
+    sys.path.insert(0, str(BASE.parents[1]))
+from libs.ops.atomic_replace import DEFAULT_MAX_WAIT_S, replace_with_retry  # noqa: E402
+
+#: When this pass started, so the replace's wait never outlives the leg's own cap.
+_T0 = time.monotonic()
+#: Seconds kept back from the leg cap for the report writes after the docket lands.
+REPLACE_TAIL_S = 60.0
+#: THE ORDERING IS BOUNDED (2026-10-29). The merge wedged 15 h after "alpha_rl family values",
+#: in the steps that follow it, holding the docket writer lane while every intake refused. Past
+#: this many seconds the coverage build stops uncommitted (JudgeCoverageTimeout) and the rows ship
+#: in the order they arrived: an ordering organ may cost the order, never the docket.
+#: Without a leg cap this is the limit; under hourly_cycle `_order_budget_s` cuts it to what the
+#: cap leaves, or the leg is tree-killed before the ordering ever times out (audit of v5).
+ORDER_BUDGET_S = float(os.environ.get("MERGE_ORDER_BUDGET_S", "2700") or 2700)
+#: Seconds kept back after the ordering for serialising and replacing the docket.
+ORDER_WRITE_RESERVE_S = 120.0
+#: A docket temp file older than this belongs to a pass that was killed mid-write.
+ORPHAN_TMP_AGE_S = 2 * 3600.0
+
+
+def _replace_wait_s() -> float:
+    """The replace's retry budget: DEFAULT_MAX_WAIT_S, cut to what the leg cap
+    (`QUANT_LEG_BUDGET_S`) leaves after this pass's elapsed time and a reporting tail -- a wait
+    the parent kills mid-way would leave the old docket AND a 1.5M-row temp file behind."""
+    cap = _leg_cap_s()
+    if cap <= 0:
+        return DEFAULT_MAX_WAIT_S
+    left = cap - (time.monotonic() - _T0) - REPLACE_TAIL_S
+    return max(5.0, min(DEFAULT_MAX_WAIT_S, left))
+
+
+def _leg_cap_s() -> float:
+    try:
+        return float(os.environ.get("QUANT_LEG_BUDGET_S") or 0)
+    except ValueError:
+        return 0.0
+
+
+def _order_budget_s() -> float:
+    """The ordering's limit: ORDER_BUDGET_S, cut to what the leg cap (`QUANT_LEG_BUDGET_S`)
+    leaves after this pass's elapsed time, the docket write and the reporting tail -- so the
+    timeout fires and the docket ships, instead of the parent killing the leg mid-order."""
+    cap = _leg_cap_s()
+    if cap <= 0:
+        return ORDER_BUDGET_S
+    left = cap - (time.monotonic() - _T0) - REPLACE_TAIL_S - ORDER_WRITE_RESERVE_S
+    return max(5.0, min(ORDER_BUDGET_S, left))
+
+
+#: Seconds any other phase may run before it reads WEDGED. The merge also runs outside a leg cap
+#: (run_external_pipeline.sh), where a slow but working phase must not be stopped.
+PHASE_S = 3600.0
+#: Seconds a docket serialise + replace may take before its phase reads WEDGED (beyond the
+#: replace's own retry budget).
+WRITE_PHASE_S = 900.0
+
+
+def _beat(phase: str, expect_s: float | None = None) -> None:
+    """Tell `job_lock_health` which phase this pass is in (job_lock.heartbeat). The 15 h owner of
+    2026-10-29 spun ~2.3 s of CPU a minute after "alpha_rl family values" and read PROGRESSING
+    on CPU alone; with beats, a phase that outruns its limit reads WEDGED whatever the CPU does.
+    A no-op unless this process holds the merge lock; never raises."""
+    try:
+        import sys as _sys
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
+        from research.job_lock import heartbeat
+        heartbeat("merge_hypotheses", phase, expect_s=expect_s)
+    except Exception:
+        pass
+
+
+def order_timeout_streak(report: Path, timed_out: bool) -> int:
+    """This pass's count of consecutive ordering timeouts: the prior report's plus one, or 0."""
+    if not timed_out:
+        return 0
+    try:
+        prior = json.loads(report.read_text("utf-8")).get("order_timeout_streak")
+    except (OSError, ValueError, AttributeError):
+        prior = 0
+    return (int(prior) if isinstance(prior, int) and prior > 0 else 0) + 1
+
+
+def sweep_orphan_temps(target: Path | None = None, *, now: float | None = None) -> list[str]:
+    """Remove `.<docket>.*.tmp` files older than `ORPHAN_TMP_AGE_S`: a pass killed mid-write
+    (a leg timeout never runs `finally`) leaves its whole serialised docket behind."""
+    tgt = target or TARGET
+    t = time.time() if now is None else now
+    gone: list[str] = []
+    for p in tgt.parent.glob(f".{tgt.name}.*.tmp"):
+        try:
+            if t - p.stat().st_mtime > ORPHAN_TMP_AGE_S:
+                p.unlink()
+                gone.append(p.name)
+        except OSError:
+            continue
+    return gone
 TARGET = HYP / "external_survivors.json"
 
 
@@ -56,10 +156,36 @@ def _write_docket_atomically(path: Path, rows: list[dict[str, Any]] | dict[str, 
                 stream.write("\n]\n")
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(pending, path)
+        # A READER HOLDING THE DOCKET OPEN REFUSES THE RENAME ON WINDOWS (10-27: the merge died
+        # here on [WinError 5] and the docket never shipped again). Retried, never skipped.
+        replace_with_retry(pending, path, max_wait_s=_replace_wait_s())
     finally:
         if os.path.exists(pending):
             os.unlink(pending)
+
+
+def _mark_preserved(report: Path, now: datetime, rows: int) -> None:
+    """Keep the last merge's report, stamped `preserved` with this pass's `checked_at`."""
+    try:
+        prior = json.loads(report.read_text("utf-8"))
+        if not isinstance(prior, dict):
+            prior = {}
+    except (OSError, ValueError):
+        prior = {}
+    prior.update(preserved=True, checked_at=now.isoformat(timespec="seconds"),
+                 preserved_rows=rows)
+    try:
+        fd, pending = tempfile.mkstemp(prefix=f".{report.name}.", suffix=".tmp",
+                                       dir=report.parent)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                json.dump(prior, fh, default=str)
+            replace_with_retry(pending, report, max_wait_s=30.0)
+        finally:
+            if os.path.exists(pending):
+                os.unlink(pending)
+    except OSError as exc:
+        print(f"merge: preserved-docket stamp not written ({type(exc).__name__}: {exc})")
 
 
 def _chart_local_order(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -672,7 +798,13 @@ def _lease(path: Path) -> None:
 
 
 def main() -> int:
+    global _T0
+    _T0 = time.monotonic()
     now = datetime.now(tz=UTC)
+    _beat("intake", expect_s=PHASE_S)
+    _orphans = sweep_orphan_temps()
+    if _orphans:
+        print(f"merge: removed {len(_orphans)} docket temp file(s) left by a killed pass")
     # HUNT ONLY WHAT THE DESK CAN TRADE (principal, 2026-09-03: "limit all hunting to fusion
     # tradeable symbols only so all compute is used fr tradeable edges").
     #
@@ -811,6 +943,7 @@ def main() -> int:
         if _root not in _sys.path:
             _sys.path.insert(0, _root)
         from libs.moat.docket_feed import feed as _registry_feed
+        _beat("registry_feed", expect_s=PHASE_S)
         _reg_rows, registry_census = _registry_feed(tradeable=tradeable or None,
                                                     banned=live_banned_families())
         kept = 0
@@ -1038,6 +1171,7 @@ def main() -> int:
             if _p not in _sys.path:
                 _sys.path.insert(0, _p)
         from research import hypothesis_families as _hf
+        _beat("families", expect_s=PHASE_S)
         rows_out, families, families_pending = _hf.apply(
             rows_out, fresh=produced_now - reproposed, reproposed=reproposed,
             identity_fn=_identity, now=now, hyp_dir=HYP,
@@ -1065,6 +1199,7 @@ def main() -> int:
     _rl_fam, _rl_why = alpha_rl_family_values()
     print(f"   alpha_rl family values: {_rl_why}")
     coverage: dict[str, Any] = {}
+    order_timed_out = False
     try:
         # Run as `python research/merge_hypotheses.py`, sys.path[0] is the research directory
         # itself, so the desk root has to be on the path before a sibling package import works.
@@ -1072,7 +1207,17 @@ def main() -> int:
         if str(BASE) not in _sys.path:
             _sys.path.insert(0, str(BASE))
         from research.judge_coverage import order_docket
-        rows_out, coverage = order_docket(rows_out)
+        _o0, _ob = time.monotonic(), _order_budget_s()
+        _beat("order", expect_s=_ob + ORDER_WRITE_RESERVE_S)
+        rows_out, coverage = order_docket(rows_out, deadline=(_o0, _o0 + _ob))
+        if str(coverage.get("why") or "").startswith("JudgeCoverageTimeout"):
+            order_timed_out = True
+            # THE CHEAP FALLBACK STILL APPLIES (audit of v6, SF3): a timed-out allocator costs
+            # the interleave, never the least-judged-family order.
+            if judged:
+                rows_out = breadth_order(rows_out, judged)
+            print(f"   judge coverage stopped at its {_ob:.0f}s budget -- the docket "
+                  "ships in least-judged-family order this pass")
     except Exception as exc:
         print(f"   judge coverage unavailable ({type(exc).__name__}: {exc}) -- falling back to "
               f"least-judged-family order")
@@ -1083,6 +1228,7 @@ def main() -> int:
     # clean rows of its OWN family, in that family's own slots. The family-balanced prefix the
     # allocator just built is unchanged, no row leaves the docket, and nothing is billed because
     # nothing is withheld. A screen fault costs the demotion, never a row.
+    _beat("prejudge", expect_s=PHASE_S)
     prejudge: dict[str, Any] = {"status": "UNAVAILABLE"}
     try:
         import sys as _sys
@@ -1147,6 +1293,9 @@ def main() -> int:
         if isinstance(prior, list) and prior:
             print(f"merge: 0 fresh rows this run -- PRESERVING the existing docket of "
                   f"{len(prior)} candidate(s) rather than shipping an empty file downstream.")
+            # SAID, NOT SILENT (audit of 043b4a0f4): without this the report kept its old
+            # merged_at and a quiet producer hour read as "the merge is not shipping".
+            _mark_preserved(HYP / "merge_report.json", now, len(prior))
             return 0
     # PRE-REGISTRATION, BOTH HALVES, HERE (2026-09-30). This merge runs on the hour BEFORE the
     # judge reads the docket, so it is the last point where a card can honestly precede a
@@ -1187,7 +1336,9 @@ def main() -> int:
     except Exception as exc:
         prereg = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
         print(f"   preregistration unavailable ({type(exc).__name__}: {exc}); docket unstamped")
+    _beat("write", expect_s=_replace_wait_s() + WRITE_PHASE_S)
     _write_docket_atomically(TARGET, rows_out)
+    _beat("publish", expect_s=PHASE_S)
     _lease(TARGET)
     # THE FAMILIES REPORT, THEN THE RE-AIM LEDGER -- ONLY NOW, after the docket is durable, and
     # only for children that survived into the rows just written (order_docket can filter some).
@@ -1202,8 +1353,13 @@ def main() -> int:
     # map every producer reads next pass describes exactly the docket that exists, and the steer
     # ledger never names a child the written docket does not hold.
     steer_block = publish_steering(steerer, rows_out)
+    timeout_streak = order_timeout_streak(HYP / "merge_report.json", order_timed_out)
     (HYP / "merge_report.json").write_text(json.dumps({
         "merged_at": now.isoformat(timespec="seconds"),
+        # Consecutive passes whose ordering hit its budget; judge_coverage.docket_merge_lag
+        # reads it RED at ORDER_TIMEOUT_RED_STREAK, so an ordering that can never finish inside
+        # the leg cap is named instead of shipping unordered forever.
+        "order_timeout_streak": timeout_streak,
         "pipeline_started_at": started_at.isoformat(timespec="seconds") if started_at else None,
         "per_source": per_source, "source_state": source_state, "total": len(rows_out),
         "fresh_intake_stamps": intake_stamped,
@@ -1248,6 +1404,11 @@ def main() -> int:
                                   "every prefix of the docket is family-balanced"),
                         "families_ordered": len({str(r.get("family")) for r in rows_out}),
                         "applied": bool(coverage.get("families")),
+                        # The ordering's own verdict, durable here: a timeout or fault reads
+                        # UNMEASURED with its why, never as null totals beside a stale report.
+                        "verdict": (coverage.get("verdict") if coverage else "UNMEASURED"),
+                        "why": (coverage.get("why") if coverage
+                                else "judge coverage unavailable; least-judged-family order"),
                         "fallback_basis": "judgements already spent per docket row, least first",
                         "coverage": {k: (coverage.get("totals") or {}).get(k) for k in
                                      ("families_with_backlog", "families_queued",
