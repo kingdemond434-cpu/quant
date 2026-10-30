@@ -75,6 +75,37 @@ NOT wired: each island still seeds from its own population, so an island can spe
 inside ground the grid already holds. Seed one island per pass from the head of `grid.targets`
 and it becomes a third filler -- same helper, same artifact, no new organ.
 
+THE BUDGET IS THE WHOLE RUN'S, NOT THE FILLER'S (measured on the trading box 2026-10-29). The
+task `MT5-IndependenceIntake` (every 15 min, IgnoreNew, 20 min limit) sat in `Running` for more
+than 100 minutes while every run due behind it was dropped. `--budget-s 600` was checked in ONE
+place, inside the filler, after the run had read 400k registry rows, GROUPED THE WHOLE candidate
+table for donors (twice: once here, once again inside the filler) and built the grid -- none of
+which looked at the clock. Three things changed:
+
+    ONE DEADLINE. `libs.ops.run_budget.RunBudget` is created at the top of the run; every stage
+    asks it before starting, every registry read carries a progress handler that interrupts the
+    query once the deadline passes, and a watchdog at budget + grace publishes what the run has,
+    marked `partial`, and exits 124. The scheduler's limit is never what stops this organ. A run
+    that stops cooperatively on the deadline publishes verdict PARTIAL and exits 3 (EXIT_PARTIAL),
+    never 0; under the hourly cycle the budget is cut so budget + grace sits inside the leg's
+    QUANT_LEG_BUDGET_S. A block carried from an earlier artifact keeps the time it was measured
+    and reads UNMEASURED once that is older than CARRY_MAX_AGE_S.
+
+    AN INCREMENTAL CENSUS. The registry only grows (rows are never lost), so the occupied cells,
+    the per-class gain sets, the donors and the ladder are folded forward from a cursor on `seq`
+    (`data/independence_intake_census.json`). A pass reads only the rows minted since the last
+    pass -- a primary-key range scan -- and a pass whose registry has not moved reads nothing.
+    A census interrupted by the deadline keeps its cursor and the next pass resumes it.
+
+    THE CENSUS IS THE WHOLE TABLE, AND THAT FIXED THE FILLER. `_rows` read `LIMIT 400000` with no
+    order, so on a registry past 400k rows (740k on 2026-09-25) every cell minted after the first
+    400k rows -- including every transplant this organ ever made -- was INVISIBLE to the grid. The
+    filler then aimed at cells it had already filled, `enqueue_candidate` found each content hash
+    present and created nothing, and paid an UPDATE + commit per cell for it under the box's write
+    contention: `291 aimed at, 0 created, stopped at its 300 s budget`, forever, at the head of the
+    same frontier-first list. With the full census those cells read occupied; the filler also now
+    commits once per chunk and is handed the donor census instead of re-grouping the table.
+
 Clock: `hourly_cycle` leg `independence_intake`. Artifact: `reports/INDEPENDENCE_INTAKE.json`.
 Consumers: `survivor_distiller` (the mix share and the empty targets), the yield fence's
 context, `tier1_scorecard`.
@@ -84,7 +115,10 @@ context, `tier1_scorecard`.
 from __future__ import annotations
 
 import argparse
+import contextlib
+import hashlib
 import json
+import os
 import sqlite3
 import sys
 import time
@@ -102,6 +136,37 @@ UNIVERSE = BASE / "data" / "universe" / "universe.json"
 #: The declared mix, persisted so the tuning is a record and not a coin flip each hour.
 MIX = BASE / "data" / "mechanism_mutation_mix.json"
 REGISTRY = ROOT / "data" / "alpha_registry.sqlite"
+#: The incremental census: occupied cells, gain sets, donors and ladder counts folded forward from
+#: a cursor on `research_candidates.seq`, so a pass reads only what was minted since the last one.
+CENSUS = BASE / "data" / "independence_intake_census.json"
+CENSUS_VERSION = 1
+#: Rows per census read. Each read is a primary-key range scan, and the deadline is checked
+#: between reads as well as inside them (the progress handler), so this bounds the work lost to
+#: an interrupted read, not the work done.
+CENSUS_CHUNK = 20_000
+#: The census is checkpointed to disk every this many chunks, so a run the watchdog stops keeps
+#: most of what it read.
+CENSUS_SAVE_EVERY = 10
+#: Seconds held back from the filler for the ratchet and the publish.
+PUBLISH_RESERVE_S = 15.0
+#: The watchdog fires at budget + this share of it (at least WATCHDOG_MIN_GRACE_S). With the
+#: task's 600 s budget that is 720 s, well inside its 20-minute ExecutionTimeLimit.
+WATCHDOG_GRACE_SHARE = 0.2
+WATCHDOG_MIN_GRACE_S = 30.0
+#: Seconds the watchdog's stop must sit inside the hourly cycle's SIGKILL (QUANT_LEG_BUDGET_S):
+#: the partial publish, the interpreter's exit and the cycle's own reap. At the leg's 240 s budget
+#: under its 300 s cap the stop was 288 s -- 12 s of slack for all three (audit, 2026-10-29).
+LEG_CAP_MARGIN_S = 20.0
+#: THE EXIT OF A RUN THAT STOPPED ON ITS OWN DEADLINE (verdict PARTIAL). Not 0: the artifact said
+#: PARTIAL while LastTaskResult and the hourly ledger recorded success, so a run that never once
+#: finished read green everywhere a reader looks first. Not 1 (an error), 2 (argparse) or 124
+#: (the watchdog's EXIT_OVERRUN). Named in hourly_cycle.NAMED_FAILURE_EXITS.
+EXIT_PARTIAL = 3
+#: A block carried from an earlier artifact is published stale only this long after it was last
+#: MEASURED; past it the block reads UNMEASURED. Twenty-four passes of the 15-minute task.
+CARRY_MAX_AGE_S = 6 * 3600.0
+#: The job broker's name for this organ (`data/.job_locks/<name>.peaks.json`).
+JOB_NAME = "independence_intake"
 
 #: A verdict, never a zero (L1.28a).
 UNMEASURED = "UNMEASURED"
@@ -120,8 +185,10 @@ SHARE_BOUNDS = (0.2, 0.8)
 #: 2026-09-23: 8,410 reachable empties, 400 published, 8 filled). `targets_total` publishes the
 #: full count beside the slice so the truncation is never mistaken for the frontier.
 MAX_TARGETS = 5_000
-#: Rows read from the registry for the ladder. The ladder is a count of DISTINCT keys, which
-#: saturates long before this; the bound keeps the scan off an 8 GB box's memory.
+#: Rows `_rows` reads. NOT WHAT THE RUN USES ANY MORE: `run` reads the incremental `census`,
+#: which covers the whole table. This bound was what hid every cell past the 400,000th row from
+#: the grid (see the module docstring); `_rows` keeps it only for callers that want a bounded
+#: sample in memory.
 MAX_ROWS = 400_000
 
 #: A BOUND THAT CANNOT BIND, kept only so a runaway grid has a named stop. The nominal grid is
@@ -185,10 +252,15 @@ def dedup_ladder(rows: list[tuple[str, str, str, str, str]]) -> dict[str, Any]:
     """
     if not rows:
         return {"available": False, "why": f"{UNMEASURED}: no candidate row to walk"}
-    raw = len(rows)
-    hashes = len({h for *_, h, _ in rows if h})
-    cells = len({f"{f}|{s}|{h}" for f, s, h, _, _ in rows})
-    mechs = len({m for *_, m in rows if m})
+    return ladder_from_counts(len(rows), len({h for *_, h, _ in rows if h}),
+                              len({f"{f}|{s}|{h}" for f, s, h, _, _ in rows}),
+                              len({m for *_, m in rows if m}))
+
+
+def ladder_from_counts(raw: int, hashes: int, cells: int, mechs: int) -> dict[str, Any]:
+    """The ladder from its four counts -- the census's shape, which never holds the rows."""
+    if not raw:
+        return {"available": False, "why": f"{UNMEASURED}: no candidate row to walk"}
     out: dict[str, Any] = {"available": True, "raw_cells": raw, "content_hashes": hashes,
                            "grid_cells": cells, "mechanisms": mechs}
     out["collapse"] = {
@@ -242,7 +314,8 @@ def _axes() -> tuple[list[str], list[str], list[str], dict[str, str]]:
 
 
 def grid_occupancy(rows: list[tuple[str, str, str, str, str]],
-                   *, mintable: set[str] | None = None) -> dict[str, Any]:
+                   *, mintable: set[str] | None = None,
+                   occupied: set[str] | None = None) -> dict[str, Any]:
     """The family x instrument x horizon grid: how much of it is occupied, and what is empty.
 
     TWO THINGS WERE CONFUSED HERE AND BOTH COST THE DESK ITS BREADTH (measured 2026-09-23).
@@ -257,7 +330,8 @@ def grid_occupancy(rows: list[tuple[str, str, str, str, str]],
     and that IS the permission (absence from the router's answer is still not one). So a cell is
     reachable when its family can be minted and its symbol is in the lane. `mintable` is the set
     of families holding a transplantable donor; passing None keeps the old load-only reading, so
-    a caller with no donor census loses nothing.
+    a caller with no donor census loses nothing. `occupied`, when given, is the set of occupied
+    `family|symbol|horizon` cells from the census and replaces the one derived from `rows`.
 
     ORDER AIMS AT THE SPARSE FRONTIER, NOT THE DENSE MIDDLE. The old sort put the empty cells
     whose family AND symbol were ALREADY the busiest at the head -- exactly backwards for
@@ -270,7 +344,8 @@ def grid_occupancy(rows: list[tuple[str, str, str, str, str]],
     instruments, families, horizons, why = _axes()
     if not instruments or not families or not horizons:
         return {"available": False, "why": why or {"axes": f"{UNMEASURED}: empty axis"}}
-    occupied = {f"{f}|{s}|{h}" for f, s, h, _, _ in rows}
+    if occupied is None:
+        occupied = {f"{f}|{s}|{h}" for f, s, h, _, _ in rows}
     fam_set, sym_set, hor_set = set(families), set(instruments), set(horizons)
     in_grid = {c for c in occupied
                if (p := c.split("|"))[0] in fam_set and p[1] in sym_set and p[2] in hor_set}
@@ -336,10 +411,24 @@ def orthogonality_gain(rows: list[tuple[str, str, str, str, str]]) -> dict[str, 
         klass = mechanism_class(op)
         emitted[klass] += 1
         per[klass].add(f"{fam}|{sym}|{hor}")
+    return gain_from_sets(emitted, per)
+
+
+def _operator_of(mech: str) -> str | None:
+    """The operator stamped into a lower-cased mechanism text, or None."""
+    if "(mutation:" not in mech:
+        return None
+    return mech.split("(mutation:", 1)[1].split(")", 1)[0].strip()
+
+
+def gain_from_sets(emitted: Counter[str] | dict[str, int],
+                   per: dict[str, set[str]]) -> dict[str, Any]:
+    """The gain from its parts -- cells emitted per class and the distinct cells each opened."""
+    emitted = Counter({k: int(v) for k, v in dict(emitted).items() if int(v)})
     out: dict[str, Any] = {"available": bool(emitted), "emitted": dict(emitted)}
     for klass in ("mechanism", "parameter"):
         n = emitted.get(klass, 0)
-        out[klass] = round(len(per[klass]) / n, 4) if n else None
+        out[klass] = round(len(per.get(klass) or ()) / n, 4) if n else None
     if not emitted:
         out["why"] = (f"{UNMEASURED}: no candidate carries an operator stamp, so neither class "
                       f"has a measured gain and the declared share stands unchanged")
@@ -469,8 +558,214 @@ def _symbol_case() -> dict[str, str]:
     return {str(s).lower(): str(s) for s in uni} if isinstance(uni, dict) else {}
 
 
+# --------------------------------------------------------------------------- the census
+#: One read of the census: every column the ladder, the grid, the gain and the donors need, for a
+#: primary-key range of rows. The lower-cased keys match `_rows` and `_donors` exactly.
+_CENSUS_SQL = (
+    "select seq, lower(coalesce(nullif(family,''),'?')), lower(coalesce(nullif(symbol,''),'?')), "
+    "lower(coalesce(nullif(horizon,''),'?')), lower(coalesce(mechanism,'')), "
+    "coalesce(family,''), coalesce(symbol,''), params_json, coalesce(mechanism,''), "
+    "lower(coalesce(origin,'')), lower(coalesce(generator,'')), generator, producer, "
+    "discovery_id, region "
+    "from research_candidates where seq > ? and seq <= ? order by seq limit ?")
+
+
+def _mech_key(mech: str) -> str:
+    """A short stable key for one mechanism text, so the census never stores the texts."""
+    return hashlib.sha1(mech.encode("utf-8", "replace")).hexdigest()[:12]
+
+
+def _empty_census(registry: Path) -> dict[str, Any]:
+    return {"version": CENSUS_VERSION, "registry": str(registry), "cursor": 0, "rows": 0,
+            "cells": [], "mech_keys": [], "gain_emitted": {},
+            "gain_cells": {"mechanism": [], "parameter": []}, "donors": {},
+            "content_hashes": None, "content_hashes_at": None, "started_utc": None}
+
+
+def load_census(path: Path | None = None) -> dict[str, Any]:
+    doc = _read(path or CENSUS, default={})
+    return doc if isinstance(doc, dict) else {}
+
+
+def save_census(doc: dict[str, Any], path: Path | None = None) -> str | None:
+    """Write atomically, so a run stopped mid-write leaves the previous census intact."""
+    out = path or CENSUS
+    try:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        tmp = out.with_suffix(out.suffix + f".{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(doc, separators=(",", ":")), encoding="utf-8")
+        os.replace(tmp, out)
+    except OSError as exc:                                               # pragma: no cover
+        return f"{type(exc).__name__}: {exc}"
+    return None
+
+
+def _ro_connect(path: Path, rb: Any = None) -> sqlite3.Connection:
+    con = sqlite3.connect(f"file:{path}?mode=ro", uri=True, timeout=5)
+    if rb is not None:
+        rb.guard(con)
+    return con
+
+
+def census(db: Path | None = None, rb: Any = None, *,
+           path: Path | None = None) -> dict[str, Any]:
+    """THE WHOLE REGISTRY, READ ONCE AND THEN ONLY WHAT IS NEW. Never raises.
+
+    Folds every row with `seq` past the stored cursor into the occupied-cell set, the per-class
+    gain sets, the latest donor per family and the ladder counts, then moves the cursor. A pass
+    whose registry has not grown reads one `max(seq)` and nothing else (`reused`). A pass that
+    hits the run deadline keeps what it folded and says `complete: False`; the next pass resumes
+    from the cursor. The registry only grows (the moat never loses a row), which is what makes
+    folding forward exact; a registry whose `max(seq)` fell below the cursor was replaced or
+    restored, and the census is rebuilt from zero.
+    """
+    reg = db or REGISTRY
+    if not reg.exists():
+        return {"available": False, "why": f"{UNMEASURED}: no registry at {reg}"}
+    doc = load_census(path)
+    rebuilt = None
+    if doc.get("version") != CENSUS_VERSION or doc.get("registry") != str(reg):
+        rebuilt = ("no census for this registry yet" if not doc
+                   else "census version or registry changed")
+        doc = _empty_census(reg)
+    try:
+        con = _ro_connect(reg, rb)
+    except sqlite3.Error as exc:
+        return {"available": False,
+                "why": f"{UNMEASURED}: registry unopenable ({type(exc).__name__}: {exc})"}
+    interrupted: str | None = None
+    try:
+        try:
+            max_seq = int(con.execute(
+                "select coalesce(max(seq), 0) from research_candidates").fetchone()[0] or 0)
+        except sqlite3.Error as exc:
+            return {"available": False,
+                    "why": f"{UNMEASURED}: registry query failed ({type(exc).__name__}: {exc})"}
+        if int(doc.get("cursor") or 0) > max_seq:
+            rebuilt = (f"registry max(seq) {max_seq} is below the census cursor "
+                       f"{doc.get('cursor')}: the file was replaced or restored")
+            doc = _empty_census(reg)
+        if not doc.get("started_utc"):
+            doc["started_utc"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
+        start = cursor = int(doc.get("cursor") or 0)
+        rows = int(doc.get("rows") or 0)
+        cells = set(doc.get("cells") or ())
+        mech_keys = set(doc.get("mech_keys") or ())
+        emitted: Counter[str] = Counter(doc.get("gain_emitted") or {})
+        per = {k: set((doc.get("gain_cells") or {}).get(k) or ())
+               for k in ("mechanism", "parameter")}
+        donors: dict[str, dict[str, Any]] = dict(doc.get("donors") or {})
+
+        def _checkpoint() -> None:
+            doc.update({"cursor": cursor, "rows": rows, "cells": sorted(cells),
+                        "mech_keys": sorted(mech_keys), "gain_emitted": dict(emitted),
+                        "gain_cells": {k: sorted(v) for k, v in per.items()},
+                        "donors": donors})
+            save_census(doc, path)
+
+        chunks = 0
+        while cursor < max_seq:
+            if rb is not None and rb.expired():
+                interrupted = "run deadline reached between census reads"
+                break
+            try:
+                batch = con.execute(_CENSUS_SQL, (cursor, max_seq, CENSUS_CHUNK)).fetchall()
+            except sqlite3.Error as exc:
+                interrupted = f"census read stopped ({type(exc).__name__}: {exc})"
+                break
+            if not batch:
+                cursor = max_seq
+                break
+            for (seq, fam, sym, hor, mech, fam_raw, sym_raw, params, mech_raw, origin, gen,
+                 gen_raw, prod, disc, region) in batch:
+                rows += 1
+                cell = f"{fam}|{sym}|{hor}"
+                cells.add(cell)
+                if mech:
+                    mech_keys.add(_mech_key(mech))
+                    op = _operator_of(mech)
+                    if op is not None:
+                        klass = mechanism_class(op)
+                        emitted[klass] += 1
+                        per[klass].add(cell)
+                # THE DONOR RULE, row by row, exactly as `_donors` states it in SQL: the most
+                # recent param-carrying row per family that is not this organ's own transplant.
+                if (fam_raw and params and str(params) not in ("", "{}")
+                        and origin != SOURCE and gen != SOURCE):
+                    donors[fam] = {"seq": int(seq), "family": str(fam_raw),
+                                   "symbol": str(sym_raw), "horizon": str(hor),
+                                   "params_json": str(params), "mechanism": str(mech_raw or ""),
+                                   "generator": str(gen_raw or "") or None,
+                                   "producer": str(prod or "") or None,
+                                   "discovery_id": str(disc or "") or None,
+                                   "region": str(region or "") or None}
+            cursor = int(batch[-1][0])
+            chunks += 1
+            if chunks % CENSUS_SAVE_EVERY == 0:
+                _checkpoint()
+        complete = cursor >= max_seq
+        # DISTINCT CONTENT HASHES come from the hash index (a covering scan, not the table), and
+        # only when the census is whole and the registry moved since the last count.
+        if complete and doc.get("content_hashes_at") != max_seq and not (
+                rb is not None and rb.expired()):
+            try:
+                doc["content_hashes"] = int(con.execute(
+                    "select count(distinct content_hash) from research_candidates "
+                    "where coalesce(content_hash,'') != ''").fetchone()[0] or 0)
+                doc["content_hashes_at"] = max_seq
+            except sqlite3.Error as exc:
+                interrupted = interrupted or f"hash count stopped ({type(exc).__name__}: {exc})"
+        _checkpoint()
+    finally:
+        con.close()
+    return {"available": True, "complete": complete, "reused": start == max_seq and not rebuilt,
+            "rebuilt": rebuilt, "interrupted": interrupted, "cursor": cursor, "max_seq": max_seq,
+            "seq_read_this_pass": cursor - start, "rows": rows, "cells": cells,
+            "mechanisms": len(mech_keys), "content_hashes": doc.get("content_hashes"),
+            "content_hashes_at": doc.get("content_hashes_at"),
+            "gain_emitted": dict(emitted), "gain_cells": per, "donor_rows": donors,
+            "started_utc": doc.get("started_utc")}
+
+
+def census_donors(cen: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """`_donors`' shape from the census: parsed params, a family whose latest rule will not
+    parse has no donor (the same answer the grouped query gave)."""
+    out: dict[str, dict[str, Any]] = {}
+    for key, d in (cen.get("donor_rows") or {}).items():
+        try:
+            parsed = json.loads(d.get("params_json") or "")
+        except (TypeError, ValueError):
+            continue
+        if isinstance(parsed, dict) and parsed:
+            out[str(key)] = {"family": d.get("family"), "symbol": d.get("symbol"),
+                             "horizon": d.get("horizon"), "params": parsed,
+                             "mechanism": d.get("mechanism") or "",
+                             "generator": d.get("generator"), "producer": d.get("producer"),
+                             "discovery_id": d.get("discovery_id"), "region": d.get("region")}
+    return out
+
+
+def census_ladder(cen: dict[str, Any]) -> dict[str, Any]:
+    if not cen.get("available"):
+        return {"available": False, "why": cen.get("why") or UNMEASURED}
+    hashes = cen.get("content_hashes")
+    out = ladder_from_counts(int(cen.get("rows") or 0),
+                             int(hashes) if isinstance(hashes, int) else 0,
+                             len(cen.get("cells") or ()), int(cen.get("mechanisms") or 0))
+    out["basis"] = ("the whole research_candidates table through seq "
+                    f"{cen.get('cursor')} (incremental census), not a bounded sample")
+    if not isinstance(hashes, int):
+        out["content_hashes"] = UNMEASURED
+    elif cen.get("content_hashes_at") != cen.get("max_seq"):
+        out["content_hashes_as_of_seq"] = cen.get("content_hashes_at")
+    if not cen.get("complete"):
+        out["partial"] = True
+    return out
+
+
 def fill_empty_cells(grid: dict[str, Any], *, budget_s: float = 120.0,
-                     db: Path | None = None) -> dict[str, Any]:
+                     db: Path | None = None,
+                     donors: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
     """AIM, NOT A LIST: transplant a family's own rule onto the empty cells it has not reached.
 
     PUBLISHING TARGETS IS NOT FILLING THE GRID (the principal, 2026-09-23). 889 of 57,275 cells
@@ -504,6 +799,10 @@ def fill_empty_cells(grid: dict[str, Any], *, budget_s: float = 120.0,
     ONE CONNECTION, not one per cell: `enqueue_candidate` opens, evolves and closes the registry
     on every call it is not handed a connection for. That is cheap here (4 ms) and it is still
     four seconds over a full grid, so the pass holds one open and hands it down.
+
+    ONE COMMIT PER CHUNK, not one per cell (`registry.batch`), and the donors the run already
+    took from its census are handed in rather than re-grouped from the whole table here: the
+    second full-table GROUP BY was half of what made a 600 s run take more than 100 minutes.
     """
     started = time.monotonic()
     targets = [t for t in (grid.get("targets") or []) if isinstance(t, dict)]
@@ -513,17 +812,19 @@ def fill_empty_cells(grid: dict[str, Any], *, budget_s: float = 120.0,
     try:
         if str(ROOT) not in sys.path:
             sys.path.insert(0, str(ROOT))
+        from libs.moat import registry as _reg
         from libs.moat.registry import connect, enqueue_candidate
     except Exception as exc:                                             # pragma: no cover
         return {"available": False,
                 "why": f"{UNMEASURED}: registry door unimportable ({type(exc).__name__})"}
-    donors = _donors(db)
+    if donors is None:
+        donors = _donors(db)
     case = _symbol_case()
     occupied_before = int(grid.get("occupied_cells") or 0)
     nominal = int(grid.get("nominal_cells") or 0)
     created: set[str] = set()
     created_rows: list[tuple[str, str, str, str]] = []
-    targeted = existing = failed = frontier_hits = 0
+    targeted = existing = failed = frontier_hits = no_donor = 0
     by_operator: Counter[str] = Counter()
     by_producer: Counter[str] = Counter()
     stopped = "list exhausted"
@@ -532,40 +833,47 @@ def fill_empty_cells(grid: dict[str, Any], *, budget_s: float = 120.0,
     except Exception as exc:                                             # pragma: no cover
         return {"available": False,
                 "why": f"{UNMEASURED}: registry unopenable ({type(exc).__name__}: {exc})"}
+    # A test double without a transaction cannot be batched; the real connection always can.
+    chunked = (_reg.batch(con, every=500)
+               if hasattr(con, "in_transaction") and hasattr(_reg, "batch")
+               else contextlib.nullcontext())
     try:
-        for t in targets[:MAX_FILLS_PER_PASS]:
-            if time.monotonic() - started > budget_s:
-                stopped = f"time budget {budget_s:g}s reached after {targeted} cells"
-                break
-            donor = donors.get(str(t.get("family") or ""))
-            if not donor:
-                continue
-            sym = case.get(str(t.get("symbol") or ""), str(t.get("symbol") or "").upper())
-            hor = str(t.get("horizon") or "")
-            op = "cross_instrument" if sym.lower() != donor["symbol"].lower() else "cross_horizon"
-            targeted += 1
-            extra = {k: donor[k] for k in ("generator", "producer", "discovery_id", "region")
-                     if donor.get(k)}
-            try:
-                _id, made = enqueue_candidate(
-                    family=donor["family"], symbol=sym, params=donor["params"],
-                    origin=SOURCE, horizon=hor, conn=con,
-                    mechanism=(f"{donor['mechanism'] or donor['family']} carried to {sym} at "
-                               f"{hor} (mutation: {op})"),
-                    **extra)
-            except Exception:                                            # pragma: no cover
-                failed += 1
-                continue
-            by_producer[str(extra.get("generator") or extra.get("producer") or SOURCE)] += 1
-            by_operator[op] += 1
-            if made:
-                created.add(str(t.get("cell") or f"{t.get('family')}|{sym.lower()}|{hor}"))
-                created_rows.append((
-                    str(extra.get("generator") or extra.get("producer") or SOURCE).lower(),
-                    str(t.get("family") or ""), sym.lower(), hor))
-                frontier_hits += int(bool(t.get("frontier")))
-            else:
-                existing += 1
+        with chunked:
+            for t in targets[:MAX_FILLS_PER_PASS]:
+                if time.monotonic() - started > budget_s:
+                    stopped = f"time budget {budget_s:g}s reached after {targeted} cells"
+                    break
+                donor = donors.get(str(t.get("family") or ""))
+                if not donor:
+                    no_donor += 1
+                    continue
+                sym = case.get(str(t.get("symbol") or ""), str(t.get("symbol") or "").upper())
+                hor = str(t.get("horizon") or "")
+                op = ("cross_instrument" if sym.lower() != donor["symbol"].lower()
+                      else "cross_horizon")
+                targeted += 1
+                extra = {k: donor[k] for k in ("generator", "producer", "discovery_id", "region")
+                         if donor.get(k)}
+                try:
+                    _id, made = enqueue_candidate(
+                        family=donor["family"], symbol=sym, params=donor["params"],
+                        origin=SOURCE, horizon=hor, conn=con,
+                        mechanism=(f"{donor['mechanism'] or donor['family']} carried to {sym} at "
+                                   f"{hor} (mutation: {op})"),
+                        **extra)
+                except Exception:                                            # pragma: no cover
+                    failed += 1
+                    continue
+                by_producer[str(extra.get("generator") or extra.get("producer") or SOURCE)] += 1
+                by_operator[op] += 1
+                if made:
+                    created.add(str(t.get("cell") or f"{t.get('family')}|{sym.lower()}|{hor}"))
+                    created_rows.append((
+                        str(extra.get("generator") or extra.get("producer") or SOURCE).lower(),
+                        str(t.get("family") or ""), sym.lower(), hor))
+                    frontier_hits += int(bool(t.get("frontier")))
+                else:
+                    existing += 1
     finally:
         con.close()
     after = occupied_before + len(created)
@@ -577,6 +885,13 @@ def fill_empty_cells(grid: dict[str, Any], *, budget_s: float = 120.0,
         "cells_created_in_empty_cells": len(created),
         "frontier_cells_created": frontier_hits,
         "already_present": existing, "failed": failed,
+        # THE 291-AIMED-0-CREATED SHAPE, named so it is never read as "the grid is full". A cell
+        # the grid calls empty whose rule the registry already holds means the grid was built
+        # from less than the whole registry; `run` builds it from the full census for this reason.
+        "aimed_at_cells_already_held": (
+            f"{existing} of {targeted} aimed cells already held the transplanted rule: the "
+            f"grid's occupancy is stale against the registry" if targeted and existing else None),
+        "targets_without_donor": no_donor, "donors_available": len(donors),
         "by_operator": dict(by_operator),
         # WHOSE RULE WENT WHERE. The transplant carries the donor's attribution because the cell
         # is that producer's rule on new ground; this organ keeps `origin`. A single key here
@@ -746,57 +1061,248 @@ def intake_split() -> dict[str, Any]:
     return {"available": True, **block}
 
 
-def run(budget_s: float = 240.0, *, db: Path | None = None) -> dict[str, Any]:
-    """Measure the ladder, the grid and the mix; tune the share; publish."""
-    started = time.monotonic()
-    rows, why = _rows(db)
-    ladder = dedup_ladder(rows)
-    # THE DONOR CENSUS COMES FIRST because it is what makes a cell reachable. A family holding a
-    # transplantable rule can be carried onto any lane instrument whether or not the grid already
-    # shows load for it, and those zero-load families are whole empty ROWS -- the most orthogonal
-    # ground on the board. Reading donors after the grid is what hid them.
-    donors = _donors(db)
-    grid = (grid_occupancy(rows, mintable=set(donors)) if rows
-            else {"available": False, "why": why or UNMEASURED})
-    gain = orthogonality_gain(rows)
-    mix = tune_mix(gain)
-    head = headline()
-    intake = intake_split()
-    # AIM: transplant the families' own rules onto the empty cells, then ratchet what that filled.
-    fill = (fill_empty_cells(grid, budget_s=max(budget_s * 0.5, 30.0), db=db)
-            if grid.get("available") else
-            {"available": False, "why": f"{UNMEASURED}: no measured grid to aim at"})
-    occupancy_ratchet = ratchet_occupancy(fill)
-    # THE REPORT IS TRUNCATED, THE WORK IS NOT. The filler above was handed every target; the
-    # artifact carries the head of the same list so a consumer pays one bounded file read.
+#: What the run has built so far, for the watchdog to publish if the run cannot finish. Written
+#: only by `run`; read by `_publish_partial` from the watchdog thread.
+_PROGRESS: dict[str, Any] = {}
+
+#: Blocks a partial artifact carries forward from the previous one, stamped stale, so the
+#: consumers (`empty_pairs`, the distiller's mix) keep the last measured answer rather than none.
+_CARRIED = ("grid", "dedup_ladder", "mutation_mix", "headline", "intake")
+
+
+def _budget(budget_s: float) -> Any:
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from libs.ops.run_budget import RunBudget
+    return RunBudget(budget_s)
+
+
+def _measured_at(block: dict[str, Any], prev: dict[str, Any]) -> Any:
+    """When `block` (a block of the artifact `prev`) was last MEASURED, not last republished.
+
+    A block `prev` itself carried keeps the stamp it was carried with; only a block `prev`
+    measured takes `prev`'s own time. Restamping on every carry made a block N partial passes
+    old read as one pass old.
+    """
+    if block.get("stale") and block.get("carried_from_generated_utc"):
+        return block["carried_from_generated_utc"]
+    return prev.get("generated_utc")
+
+
+def _age_s(stamp: Any, now: datetime) -> float | None:
+    try:
+        t = datetime.fromisoformat(str(stamp))
+    except (TypeError, ValueError):
+        return None
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=UTC)
+    return (now - t).total_seconds()
+
+
+def _carry(blocks: dict[str, Any], prev: dict[str, Any] | None, *,
+           now: datetime | None = None) -> list[str]:
+    """Fill each missing block from the previous artifact, marked stale. Returns what it carried.
+
+    The block keeps the time it was MEASURED (`carried_from_generated_utc`) across any number of
+    carries, and past CARRY_MAX_AGE_S it is not carried at all: it reads UNMEASURED with that
+    time, so a reader can never take a days-old grid for a fresh one.
+    """
+    carried: list[str] = []
+    if not isinstance(prev, dict):
+        return carried
+    now = now or datetime.now(tz=UTC)
+    for key in _CARRIED:
+        have = blocks.get(key)
+        if isinstance(have, dict) and have.get("available"):
+            continue
+        old = prev.get(key)
+        if isinstance(old, dict) and old.get("available"):
+            measured_at = _measured_at(old, prev)
+            age = _age_s(measured_at, now)
+            if age is None or age > CARRY_MAX_AGE_S:
+                blocks[key] = {"available": False, "stale": True,
+                               "last_measured_utc": measured_at,
+                               "why": (f"{UNMEASURED}: last measured {measured_at}, "
+                                       + ("at an unreadable time" if age is None
+                                          else f"{age / 3600:.1f} h ago")
+                                       + f" -- past the {CARRY_MAX_AGE_S / 3600:g} h carry cap")}
+                continue
+            blocks[key] = {**old, "stale": True,
+                           "carried_from_generated_utc": measured_at,
+                           "carried_age_s": round(age, 1),
+                           "why_carried": (have or {}).get("why") if isinstance(have, dict)
+                           else "not reached before the run deadline"}
+            carried.append(key)
+    return carried
+
+
+def _assemble(blocks: dict[str, Any], rb: Any, *, prev: dict[str, Any] | None,
+              partial_reasons: list[str], census_meta: dict[str, Any] | None) -> dict[str, Any]:
+    blocks = dict(blocks)
+    carried = _carry(blocks, prev) if partial_reasons else []
+    grid = blocks.get("grid") or {}
     published = grid.get("targets")
-    if isinstance(published, list):
-        grid["targets"] = published[:MAX_TARGETS]
+    if isinstance(published, list) and len(published) > MAX_TARGETS:
+        blocks["grid"] = {**grid, "targets": published[:MAX_TARGETS]}
+    mix = blocks.get("mutation_mix") or {}
     doc: dict[str, Any] = {
         "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "law": ("RAISE THE ORTHOGONALITY-WEIGHTED FIGURE, NOT THE RAW ONE. Nothing here caps, "
                 "throttles or drops anything: variants keep their place in an uncapped queue, "
                 "the mix moves slots between operator classes, and generation is aimed at "
                 "ground the desk does not yet hold."),
-        "registry_note": why,
-        "headline": head, "dedup_ladder": ladder, "grid": grid,
-        "fill": fill, "occupancy_ratchet": occupancy_ratchet,
-        "intake": intake,
-        "mutation_mix": {**mix, "gain": gain,
-                         "consumer": "desks/mt5/research/survivor_distiller.py",
-                         "bounds": list(SHARE_BOUNDS)},
-        "elapsed_s": round(time.monotonic() - started, 3),
-        "budget_s": budget_s,
+        "registry_note": blocks.get("registry_note", ""),
+        "headline": blocks.get("headline") or {"available": False, "why": "not reached"},
+        "dedup_ladder": blocks.get("dedup_ladder") or {"available": False, "why": "not reached"},
+        "grid": blocks.get("grid") or {"available": False, "why": "not reached"},
+        "fill": blocks.get("fill") or {"available": False,
+                                       "why": f"{UNMEASURED}: fill not reached this pass"},
+        "occupancy_ratchet": blocks.get("occupancy_ratchet") or {"verdict": UNMEASURED},
+        "intake": blocks.get("intake") or {"available": False, "why": "not reached"},
+        "mutation_mix": mix or {"available": False, "why": "not reached"},
+        "census": census_meta or {"available": False, "why": "not reached"},
+        "run_budget": rb.summary(),
+        "elapsed_s": round(rb.elapsed(), 3),
+        "budget_s": rb.budget_s,
+        "partial": bool(partial_reasons),
+        "partial_reasons": list(partial_reasons),
+        "carried_blocks": carried,
     }
-    measured = [b for b in (head, ladder, grid) if b.get("available")]
-    doc["verdict"] = "MEASURED" if len(measured) == 3 else UNMEASURED
+    measured = [b for b in (doc["headline"], doc["dedup_ladder"], doc["grid"])
+                if b.get("available") and not b.get("stale")]
+    # PARTIAL IS A VERDICT, NOT A PASS: the run stopped on its own clock and says which stages
+    # it did not reach (`run_budget.skipped_stages`, `partial_reasons`); `main` exits
+    # EXIT_PARTIAL on it, a named failure, so no scheduler records it as success.
+    doc["verdict"] = ("PARTIAL" if partial_reasons
+                      else "MEASURED" if len(measured) == 3 else UNMEASURED)
     return doc
+
+
+def run(budget_s: float = 240.0, *, db: Path | None = None, rb: Any = None,
+        census_path: Path | None = None) -> dict[str, Any]:
+    """Measure the ladder, the grid and the mix; tune the share; fill; publish -- on ONE clock.
+
+    Every stage asks the run's single deadline before it starts; every registry read is
+    interruptible by it. A run that reaches its deadline stops where it is and returns what it
+    has with `partial: True`, carrying the previous artifact's blocks (stamped stale) for what it
+    did not reach. Nothing that depends on the whole registry -- the grid, the gain, the fill --
+    is computed from an incomplete census.
+    """
+    rb = rb if rb is not None else _budget(budget_s)
+    prev = _read(OUT, default=None)
+    blocks: dict[str, Any] = {}
+    reasons: list[str] = []
+    _PROGRESS.clear()
+    _PROGRESS.update({"rb": rb, "prev": prev, "blocks": blocks, "reasons": reasons,
+                      "census": None})
+
+    cen: dict[str, Any] = {"available": False, "why": "census not reached"}
+    with rb.stage("census") as go:
+        if go:
+            cen = census(db, rb, path=census_path)
+    meta = {k: v for k, v in cen.items()
+            if k not in ("cells", "gain_cells", "donor_rows")}
+    _PROGRESS["census"] = meta
+    blocks["registry_note"] = "" if cen.get("available") else str(cen.get("why") or UNMEASURED)
+    whole = bool(cen.get("available") and cen.get("complete"))
+    if cen.get("available") and not whole:
+        reasons.append(f"census incomplete at seq {cen.get('cursor')} of {cen.get('max_seq')} "
+                       f"({cen.get('interrupted') or 'deadline'}); resumes next pass")
+    with rb.stage("ladder") as go:
+        if go:
+            blocks["dedup_ladder"] = census_ladder(cen)
+    # THE DONOR CENSUS COMES FIRST because it is what makes a cell reachable. A family holding a
+    # transplantable rule can be carried onto any lane instrument whether or not the grid already
+    # shows load for it, and those zero-load families are whole empty ROWS -- the most orthogonal
+    # ground on the board. Reading donors after the grid is what hid them.
+    donors = census_donors(cen) if whole else {}
+    grid: dict[str, Any] = {"available": False,
+                            "why": f"{UNMEASURED}: no whole-registry census to build the grid on"}
+    with rb.stage("grid") as go:
+        if go and whole:
+            grid = grid_occupancy([], mintable=set(donors), occupied=set(cen.get("cells") or ()))
+            blocks["grid"] = grid
+    gain: dict[str, Any] = {"available": False,
+                            "why": f"{UNMEASURED}: no whole-registry census to measure gain on"}
+    with rb.stage("gain_and_mix") as go:
+        if go:
+            if whole:
+                gain = gain_from_sets(cen.get("gain_emitted") or {}, cen.get("gain_cells") or {})
+            mix = tune_mix(gain)
+            blocks["mutation_mix"] = {**mix, "available": True, "gain": gain,
+                                      "consumer": "desks/mt5/research/survivor_distiller.py",
+                                      "bounds": list(SHARE_BOUNDS)}
+    with rb.stage("headline") as go:
+        if go:
+            blocks["headline"] = headline()
+    with rb.stage("intake") as go:
+        if go:
+            blocks["intake"] = intake_split()
+    # AIM: transplant the families' own rules onto the empty cells, then ratchet what that filled.
+    # THE FILLER GETS WHAT IS LEFT OF THE RUN'S CLOCK, less the publish reserve -- never a share
+    # of a budget the earlier stages may already have spent.
+    with rb.stage("fill") as go:
+        if go and grid.get("available"):
+            slice_s = rb.remaining() - max(PUBLISH_RESERVE_S, 0.05 * rb.budget_s)
+            blocks["fill"] = fill_empty_cells(grid, budget_s=slice_s, db=db, donors=donors)
+        elif go:
+            blocks["fill"] = {"available": False,
+                              "why": f"{UNMEASURED}: no measured grid to aim at"}
+    with rb.stage("ratchet") as go:
+        if go and "fill" in blocks:
+            blocks["occupancy_ratchet"] = ratchet_occupancy(blocks["fill"])
+    if rb.skipped:
+        reasons.append("run deadline reached before: " + ", ".join(rb.skipped))
+    return _assemble(blocks, rb, prev=prev, partial_reasons=reasons, census_meta=meta)
+
+
+def _publish_partial() -> None:
+    """The watchdog's callback: publish what the run has, marked partial."""
+    rb = _PROGRESS.get("rb")
+    if rb is None:
+        return
+    reasons = list(_PROGRESS.get("reasons") or [])
+    reasons.append(f"watchdog: run still going {rb.elapsed():.0f}s into a {rb.budget_s:g}s "
+                   f"budget; stopped and published what it had")
+    doc = _assemble(dict(_PROGRESS.get("blocks") or {}), rb, prev=_PROGRESS.get("prev"),
+                    partial_reasons=reasons, census_meta=_PROGRESS.get("census"))
+    write(doc)
+    for line in render(doc):
+        print(line)
+
+
+def declare_to_broker(budget_s: float, grace_s: float) -> None:
+    """THE JOB BROKER'S DECLARATION (`job_lock.record_spec`), with the deadline this organ
+    actually keeps: its budget plus the watchdog's grace. A job that declares no deadline is
+    indistinguishable from a hung one, which is what this one looked like for 100 minutes."""
+    try:
+        if str(BASE) not in sys.path:
+            sys.path.insert(0, str(BASE))
+        from research.job_lock import measured_need_mb, record_spec
+        need, _why = measured_need_mb(JOB_NAME, 512)
+        record_spec(JOB_NAME, mb=int(need), cpu=1, deadline_s=float(budget_s + grace_s))
+    except Exception:                                                    # pragma: no cover
+        return
+
+
+def _record_peak() -> None:
+    try:
+        from research.job_lock import peak_rss_mb, record_peak
+        hwm = peak_rss_mb()
+        if hwm:
+            record_peak(JOB_NAME, hwm)
+    except Exception:                                                    # pragma: no cover
+        return
 
 
 def write(doc: dict[str, Any], *, report: Path | None = None) -> None:
     out = report or OUT
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(doc, indent=1, default=str) + "\n", encoding="utf-8")
+    # ATOMIC: the watchdog may publish while the main thread is stuck, and a reader must never
+    # see half a file from either.
+    tmp = out.with_suffix(out.suffix + f".{os.getpid()}.{id(doc)}.tmp")
+    tmp.write_text(json.dumps(doc, indent=1, default=str) + "\n", encoding="utf-8")
+    os.replace(tmp, out)
     try:
         if str(ROOT) not in sys.path:
             sys.path.insert(0, str(ROOT))
@@ -842,6 +1348,14 @@ def render(doc: dict[str, Any]) -> list[str]:
         lines.append(f"  stop    {fill.get('stopped_because')} at "
                      f"{fill.get('seconds_per_cell')}s per cell, "
                      f"{fill.get('targets_available')} targets available")
+    if doc.get("partial"):
+        lines.append(f"  PARTIAL {'; '.join(str(r) for r in doc.get('partial_reasons') or [])}"
+                     f" (carried: {', '.join(doc.get('carried_blocks') or []) or 'none'})")
+    rbs = doc.get("run_budget") or {}
+    if rbs.get("stages"):
+        lines.append("  stages  " + ", ".join(
+            f"{r.get('stage')}={'skipped' if r.get('skipped') else r.get('elapsed_s')}"
+            for r in rbs["stages"]) + f"  ({rbs.get('elapsed_s')}s of {rbs.get('budget_s')}s)")
     intake = doc.get("intake") or {}
     if intake.get("available"):
         lines.append(f"  intake  {intake.get('unseen_mechanisms')} unseen / "
@@ -850,16 +1364,71 @@ def render(doc: dict[str, Any]) -> list[str]:
     return lines
 
 
+def _grace_s(budget_s: float) -> float:
+    return max(WATCHDOG_MIN_GRACE_S, WATCHDOG_GRACE_SHARE * budget_s)
+
+
+def effective_budget_s(requested: float, env: Any = None) -> float:
+    """The run's budget: its own `--budget-s`, cut so budget + grace lands inside the leg cap.
+
+    `QUANT_LEG_BUDGET_S` is the hourly cycle's SIGKILL for this leg. The watchdog stops the run
+    at budget + grace, and that stop must sit LEG_CAP_MARGIN_S inside the kill, or the kill is
+    the stop and nothing partial is published. Run by hand or by MT5-IndependenceIntake (no cap
+    exported) the requested budget stands.
+    """
+    source = os.environ if env is None else env
+    try:
+        cap = float(source.get("QUANT_LEG_BUDGET_S") or 0.0)
+    except (TypeError, ValueError):
+        cap = 0.0
+    want = float(requested)
+    if cap <= 0.0:
+        return want
+    ceiling = cap - LEG_CAP_MARGIN_S
+    # budget + max(MIN_GRACE, SHARE * budget) <= ceiling, solved for budget.
+    fit = min(ceiling - WATCHDOG_MIN_GRACE_S, ceiling / (1.0 + WATCHDOG_GRACE_SHARE))
+    return max(1.0, min(want, fit))
+
+
+def _positive(raw: str) -> float:
+    try:
+        v = float(raw)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"not a number: {raw!r}") from None
+    if not v > 0:                     # also refuses nan
+        raise argparse.ArgumentTypeError(f"--budget-s must be > 0, got {raw}")
+    return v
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Independence at intake: order, mutate, spread")
     ap.add_argument("--once", action="store_true", help="one pass (the only mode)")
-    ap.add_argument("--budget-s", type=float, default=240.0)
+    ap.add_argument("--budget-s", type=_positive, default=240.0,
+                    help="seconds for the WHOLE run (> 0); a watchdog stops it at budget + "
+                         "grace, and under the hourly cycle budget + grace stays inside "
+                         "QUANT_LEG_BUDGET_S")
     args = ap.parse_args(argv)
-    doc = run(budget_s=float(args.budget_s))
+    budget_s = effective_budget_s(float(args.budget_s))
+    if budget_s < float(args.budget_s):
+        print(f"independence_intake: --budget-s {args.budget_s:g} cut to {budget_s:.1f}s so the "
+              f"watchdog stops it {LEG_CAP_MARGIN_S:g}s inside the leg cap "
+              f"(QUANT_LEG_BUDGET_S={os.environ.get('QUANT_LEG_BUDGET_S')})")
+    rb = _budget(budget_s)
+    from libs.ops.run_budget import unbuffer_stdio
+    unbuffer_stdio()          # a launcher that forgot -u still gets a live log
+    grace_s = _grace_s(budget_s)
+    declare_to_broker(budget_s, grace_s)
+    print(f"independence_intake: start budget={budget_s:g}s watchdog=+{grace_s:g}s")
+    rb.watchdog(grace_s, _publish_partial, name="independence_intake")
+    doc = run(budget_s=budget_s, rb=rb)
+    rb.disarm()
     write(doc)
+    _record_peak()
     for line in render(doc):
         print(line)
-    return 0
+    # PARTIAL IS NOT SUCCESS TO A SCHEDULER. The artifact already says what was not reached;
+    # the exit makes LastTaskResult and the hourly ledger (`exit_code=3:PARTIAL`) say it too.
+    return EXIT_PARTIAL if doc.get("verdict") == "PARTIAL" else 0
 
 
 if __name__ == "__main__":                                               # pragma: no cover

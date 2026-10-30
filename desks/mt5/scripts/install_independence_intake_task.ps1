@@ -42,11 +42,14 @@ $LogDir = Join-Path $DeskRoot 'logs'
 if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir | Out-Null }
 $Log = Join-Path $LogDir 'MT5-IndependenceIntake.log'
 
+# -u: a redirected Python block-buffers stdout, so without it the log shows nothing until the
+# process exits -- a run hung for 100 minutes (2026-10-29) left a log whose last line was the
+# previous pass's. Fence: desks/mt5/tests/test_task_logs_are_unbuffered.py.
 # --budget-s 600: the organ stops ITSELF and writes, and the task's limit sits above its own
 # budget. A cap below an organ's budget truncates it at the same prefix every hour -- the defect
 # that cost this desk eighty-four forward clocks (see LEG_BUDGET_SEC in hourly_cycle.py).
 $action = New-ScheduledTaskAction -Execute 'cmd.exe' -Argument `
-    ('/d /s /c ""{0}" -W ignore "{1}" --once --budget-s 600 >> "{2}" 2>&1"' -f $Python, $Organ, $Log)
+    ('/d /s /c ""{0}" -u -W ignore "{1}" --once --budget-s 600 >> "{2}" 2>&1"' -f $Python, $Organ, $Log)
 
 # A DAILY trigger repeating hourly for one day, never a -Once trigger with a long duration: the
 # scheduler folds a long duration into a fixed number of days and the repetition then EXPIRES

@@ -38,7 +38,7 @@ $template = Get-ScheduledTask -TaskName 'MT5-MoatSilver'
 $userId   = $template.Principal.UserId
 
 $action = New-ScheduledTaskAction -Execute 'cmd.exe' `
-    -Argument ('/d /s /c "py -3 {0} >> {1} 2>&1"' -f $Script, $Log)
+    -Argument ('/d /s /c "py -3 -u {0} >> {1} 2>&1"' -f $Script, $Log)
 
 $trigger = New-ScheduledTaskTrigger -Once -At ([datetime]::Today.AddHours(1))
 $trigger.Repetition = (New-ScheduledTaskTrigger -Once -At ([datetime]::Today.AddHours(1)) `

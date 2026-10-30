@@ -45,7 +45,7 @@ $userId   = $template.Principal.UserId
 # `-m mt5desk.tape` from the desk root, not a file path: the module resolves its own DATA root
 # from __file__ and importing it as a module is how tape.py documents itself being run.
 $action = New-ScheduledTaskAction -Execute 'cmd.exe' `
-    -Argument ('/d /s /c "cd /d {0} && py -3 -m mt5desk.tape --terms-only >> {1} 2>&1"' -f $Root, $Log)
+    -Argument ('/d /s /c "cd /d {0} && py -3 -u -m mt5desk.tape --terms-only >> {1} 2>&1"' -f $Root, $Log)
 
 $trigger = New-ScheduledTaskTrigger -Once -At ([datetime]::Today.AddHours(1))
 $trigger.Repetition = (New-ScheduledTaskTrigger -Once -At ([datetime]::Today.AddHours(1)) `
