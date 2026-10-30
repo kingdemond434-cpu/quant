@@ -421,6 +421,8 @@ desks/mt5/reports/tier_s/*
 # and the re-mint's status.
 !desks/mt5/reports/LOCKBOX_RECERT.json
 !desks/mt5/reports/REMINT_STATUS.json
+# THE TICK TAPE'S FRESHNESS VERDICT (2026-10-14), published by $relPaths.
+!desks/mt5/reports/TAPE_FRESHNESS.json
 
 # CONSOLE LOGS ARE NEVER TRACKED (2026-09-06). Seventeen of them were, and they are append-only
 # files that RUNNING hunt processes hold open. Every merge on the trading box therefore tried to

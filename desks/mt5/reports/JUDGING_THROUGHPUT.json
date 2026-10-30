@@ -1,21 +1,21 @@
 {
- "at": "2026-10-29T20:18:21+00:00",
+ "at": "2026-10-29T22:02:00+00:00",
  "status": "MEASURED",
  "box": {
   "cores": 18,
   "market_closed": false,
   "source": "GlobalMemoryStatusEx",
   "total_phys_mb": 98297,
-  "free_phys_mb": 64521,
+  "free_phys_mb": 67110,
   "commit_limit_mb": 200697,
-  "commit_free_mb": 108379,
+  "commit_free_mb": 118124,
   "cpu_source": "psutil",
-  "busy_other_cores": 12.42,
-  "busy_judge_cores": 0.02,
+  "busy_other_cores": 12.2,
+  "busy_judge_cores": 0.94,
   "cpu_sample_s": 1.0,
   "terminal_running": true,
   "gateway_running": false,
-  "n_python": 93,
+  "n_python": 80,
   "terminal_source": "psutil",
   "is_judging_box": true
  },
@@ -38,9 +38,9 @@
   "burndown_outflow_unit": "settled",
   "burndown_source": "JUDGING_BURNDOWN.json",
   "source_at": "2026-10-29T17:09:19.706251+00:00",
-  "source_age_seconds": 11301.28254,
+  "source_age_seconds": 17437.976525,
   "file_at": "2026-10-29T17:27:06+00:00",
-  "file_age_seconds": 10234.989104,
+  "file_age_seconds": 16371.682805,
   "discovered": 1590804,
   "depth_scope": "sweep",
   "judged_last_sweep": 20572,
@@ -67,7 +67,7 @@
   "shards_why": "the judge's fail-closed SHARD_PROTOCOL=2 partitions cell-local work across the measured worker allocation and computes program-level gates once on the union",
   "limiting_resource": "judge_value_at_risk",
   "stood_down": false,
-  "why": "cores 15 (reserved 3), memory 42, commit 70 at 768MB a worker; the binding one is judge_value_at_risk",
+  "why": "cores 15 (reserved 3), memory 43, commit 76 at 768MB a worker; the binding one is judge_value_at_risk",
   "baseline": {
    "workers": 10,
    "memory_budget_mb": 8192.0,
@@ -96,7 +96,7 @@
    "state_written": true
   },
   "fresh_budget_s": 8640.0,
-  "fresh_budget_why": "task execution is unlimited; build step: measuring the applied 8640s budget before any step",
+  "fresh_budget_why": "task execution is unlimited; build step: 8640s set 2026-10-29T20:18:21+00:00; waiting for the first sweep launched under it",
   "task_time_limit_s": 0.0,
   "task_time_limit_basis": "schtasks"
  },
@@ -122,12 +122,12 @@
    "status": "FAILED",
    "minutes": 1,
    "task": "MT5-Gauntlet",
-   "next_run_before": "10/29/2026 9:21:00 PM",
+   "next_run_before": "10/29/2026 11:06:00 PM",
    "attempts": [
     "attempt 1: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 30.0 seconds",
-    "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 57.593391399946995 seconds"
+    "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 39.920289499918 seconds"
    ],
-   "why": "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 57.593391399946995 seconds",
+   "why": "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 39.920289499918 seconds",
    "state_file": "C:\\opt\\quant\\desks\\mt5\\data\\gauntlet_cadence_state.json"
   },
   "process_env": {
@@ -138,54 +138,54 @@
  "alarms": [],
  "rule": "throughput is raised from OUTSIDE the sealed gauntlet, never by editing it; the plan is floored at the sealed baseline so this organ can never throttle the judge; the live terminal always wins and standing down means returning to that baseline, not below it",
  "rate": {
-  "at": "2026-10-29T20:17:41+00:00",
+  "at": "2026-10-29T21:59:57+00:00",
   "status": "MEASURED",
   "verdicts": {
    "status": "MEASURED",
-   "rows_total": 1035482,
+   "rows_total": 1055671,
    "rows_unstamped": 0,
-   "last_verdict_at": "2026-10-29T17:18:55+00:00",
+   "last_verdict_at": "2026-10-29T21:58:54+00:00",
    "counts": {
-    "1h": 0,
-    "24h": 36597,
-    "7d": 36597
+    "1h": 20189,
+    "24h": 56786,
+    "7d": 56786
    },
    "count_basis": "changed verdict events; unchanged retests do not append",
    "first_terminal_counts": {
-    "1h": 0,
-    "24h": 25549,
-    "7d": 25549
+    "1h": 15383,
+    "24h": 40932,
+    "7d": 40932
    },
-   "first_terminal_cells": 406710,
+   "first_terminal_cells": 422093,
    "first_terminal_per_hour": {
-    "1h": 0.0,
-    "24h": 1064.542,
-    "7d": 152.077
+    "1h": 15383.0,
+    "24h": 1705.5,
+    "7d": 243.643
    },
    "per_hour": {
-    "1h": 0.0,
-    "24h": 1524.875,
-    "7d": 217.839
+    "1h": 20189.0,
+    "24h": 2366.083,
+    "7d": 338.012
    }
   },
   "created": {
    "status": "MEASURED",
    "counts": {
-    "24h": 9623,
-    "7d": 50568
+    "24h": 4303,
+    "7d": 46582
    },
    "per_hour": {
-    "24h": 400.958,
-    "7d": 301.0
+    "24h": 179.292,
+    "7d": 277.274
    }
   },
-  "verdicts_per_hour": 1524.875,
-  "verdicts_per_day": 36597.0,
+  "verdicts_per_hour": 2366.083,
+  "verdicts_per_day": 56786.0,
   "verdict_rate_basis": "changed verdict events, not total completed tests",
-  "first_judged_per_day": 25549.0,
+  "first_judged_per_day": 40932.0,
   "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
   "coverage_backlog_fresh": false,
-  "created_per_day": 9623.0,
+  "created_per_day": 4303.0,
   "backlog": "UNMEASURED",
   "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
   "eta_to_drain": {
@@ -197,8 +197,8 @@
   "cores_basis": "fixed_reservation",
   "attempt": {
    "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-   "started_at": "2026-10-29T20:16:31+00:00",
-   "pid": 8880
+   "started_at": "2026-10-29T21:58:44+00:00",
+   "pid": 12528
   }
  },
  "blas_single_thread": {
@@ -230,11 +230,11 @@
    "cpu": "AMD64 AMD64 Family 23 Model 1 Stepping 2, AuthenticAMD"
   }
  },
- "measure_seconds": 110.9,
+ "measure_seconds": 200.5,
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-10-29T20:16:31+00:00",
-  "pid": 8880
+  "started_at": "2026-10-29T21:58:44+00:00",
+  "pid": 12528
  },
- "seconds": 201.0
+ "seconds": 290.9
 }

@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-10-29T21:30:05+00:00",
+ "updated_at": "2026-10-30T03:00:09+00:00",
  "source": "ops/publish_account_state.py",
  "venue": "FTMO Global Markets Ltd",
  "server": "FTMO-Server2",
@@ -8,13 +8,13 @@
  "balance": 99616.45,
  "equity": 99616.45,
  "margin_free": 99616.45,
- "today_pnl": -35.81,
- "today_closed_pnl": -35.81,
+ "today_pnl": 0.0,
+ "today_closed_pnl": 0.0,
  "today_floating_pnl": 0,
  "open_positions": 0,
  "margin": 0.0,
  "margin_level": null,
  "swap": 0,
- "today_swap": 0.0,
+ "today_swap": 0,
  "positions_file": "desks/mt5/data/account_positions.json"
 }
