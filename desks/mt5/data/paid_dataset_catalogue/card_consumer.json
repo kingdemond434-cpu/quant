@@ -1,0 +1,330 @@
+{
+ "class": "card_consumer",
+ "label": "Card transactions and consumer spending panels",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:1010data:analytics_platform",
+   "vendor": "1010data",
+   "dataset": "Analytics Platform",
+   "class": "card_consumer",
+   "region": "US",
+   "measures": "Consumer spending queries and trend analysis",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:affinity_solutions:card_transaction_data",
+   "vendor": "Affinity Solutions",
+   "dataset": "Card Transaction Data",
+   "class": "card_consumer",
+   "region": "US",
+   "measures": "Consumer purchase analytics from 150M+ cards",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://londonstrategicedge.com/directory/alternative-data/",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:bloomberg_second_measure:card_transaction_data",
+   "vendor": "Bloomberg Second Measure",
+   "dataset": "Card Transaction Data",
+   "class": "card_consumer",
+   "region": "US",
+   "measures": "Company revenue and consumer spending estimates",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://londonstrategicedge.com/directory/alternative-data/",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:consumer_edge:transaction_data",
+   "vendor": "Consumer Edge",
+   "dataset": "Transaction Data",
+   "class": "card_consumer",
+   "region": "US",
+   "measures": "Consumer spending from 180M accounts",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://londonstrategicedge.com/directory/alternative-data/",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:earnest_analytics:spending_trends_dashboard",
+   "vendor": "Earnest Analytics",
+   "dataset": "Spending Trends Dashboard",
+   "class": "card_consumer",
+   "region": "US",
+   "measures": "Daily card sales data and earnings predictions",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:envestnet_yodlee:financial_data_aggregation",
+   "vendor": "Envestnet|Yodlee",
+   "dataset": "Financial Data Aggregation",
+   "class": "card_consumer",
+   "region": "US",
+   "measures": "Bank and fintech app payment records",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:fable_data:european_transaction_data",
+   "vendor": "Fable Data",
+   "dataset": "European Transaction Data",
+   "class": "card_consumer",
+   "region": "EU",
+   "measures": "EU and UK banking transaction records",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:facteus:card_transaction_aggregation",
+   "vendor": "Facteus",
+   "dataset": "Card Transaction Aggregation",
+   "class": "card_consumer",
+   "region": "US",
+   "measures": "Anonymized credit and debit card swipes",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:kodata:south_korean_credit_card_data_and_sales_estimate",
+   "vendor": "KoDATA",
+   "dataset": "South Korean credit card data and sales estimates",
+   "class": "card_consumer",
+   "region": "KR",
+   "measures": "Credit card data and sales estimates",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://www.neudata.co/1/vendors/kodata",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:m_science:alternative_research",
+   "vendor": "M Science",
+   "dataset": "Alternative Research",
+   "class": "card_consumer",
+   "region": "US",
+   "measures": "Investment research from multiple alt data sources",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:mastercard:spendingpulse",
+   "vendor": "Mastercard",
+   "dataset": "SpendingPulse",
+   "class": "card_consumer",
+   "region": "global",
+   "measures": "Retail sales estimates from payments",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:nielseniq:retail_data",
+   "vendor": "NielsenIQ",
+   "dataset": "Retail Data",
+   "class": "card_consumer",
+   "region": "global",
+   "measures": "Point-of-sale and consumer-panel data",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://londonstrategicedge.com/directory/alternative-data/",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:nowcast_inc:jcb_consumption_now",
+   "vendor": "Nowcast Inc.",
+   "dataset": "JCB Consumption NOW",
+   "class": "card_consumer",
+   "region": "JP",
+   "measures": "Japan card-based consumption index",
+   "frequency": "semi-monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:second_measure:consumer_spending_platform",
+   "vendor": "Second Measure",
+   "dataset": "Consumer Spending Platform",
+   "class": "card_consumer",
+   "region": "US",
+   "measures": "Card spending by company and category",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:visa:visa_spending_momentum_index",
+   "vendor": "Visa",
+   "dataset": "Visa spending momentum index",
+   "class": "card_consumer",
+   "region": "global",
+   "measures": "Card spending momentum",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "MACHINE_SERIES",
+    "kind": "vendor_public_release",
+    "url": "https://fred.stlouisfed.org/series/VISASMIHSA",
+    "endpoints": [
+     "https://fred.stlouisfed.org/graph/fredgraph.csv?id=VISASMIHSA"
+    ],
+    "series": "VISASMIHSA",
+    "source": "web_search:2026-09-30",
+    "note": "Visa SMI headline, US, seasonally adjusted, on FRED"
+   }
+  },
+  {
+   "id": "paid:yipitdata:alternative_data_research",
+   "vendor": "YipitData",
+   "dataset": "Alternative Data Research",
+   "class": "card_consumer",
+   "region": "US",
+   "measures": "Curated alt data analysis and reports",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  }
+ ]
+}
