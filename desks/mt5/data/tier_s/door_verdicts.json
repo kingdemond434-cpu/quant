@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-30T12:43:01.610273+00:00",
+ "generated_utc": "2026-10-30T13:56:55.101040+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -12988,7 +12988,7 @@
    }
   },
   "external.CHFSGD.clock_transition.p=b95e974aac459e97": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -12999,7 +12999,7 @@
    }
   },
   "external.CHFSGD.clock_transition.p=c6388886873e74ed": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -13010,7 +13010,7 @@
    }
   },
   "external.CHFSGD.clock_transition.p=fdd66336df4507c7": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -13021,7 +13021,7 @@
    }
   },
   "external.EURSEK.clock_transition.p=29081cc874e59063": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -13032,7 +13032,7 @@
    }
   },
   "external.GBPJPY.clock_transition.p=99cdb0d39855b38f": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -13043,7 +13043,7 @@
    }
   },
   "external.GBPJPY.clock_transition.p=aaf7fdb4641151c9": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -13054,7 +13054,7 @@
    }
   },
   "external.GBPSGD.clock_transition.p=b95e974aac459e97": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -13065,7 +13065,7 @@
    }
   },
   "external.GBPSGD.clock_transition.p=c6388886873e74ed": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -13076,7 +13076,7 @@
    }
   },
   "external.GBPSGD.clock_transition.p=fdd66336df4507c7": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -13087,7 +13087,7 @@
    }
   },
   "external.NZDJPY.clock_transition.p=b95e974aac459e97": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -13098,7 +13098,7 @@
    }
   },
   "external.NZDSGD.clock_transition.p=b95e974aac459e97": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -13109,7 +13109,7 @@
    }
   },
   "external.NZDSGD.clock_transition.p=c6388886873e74ed": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -13120,7 +13120,7 @@
    }
   },
   "external.NZDSGD.clock_transition.p=fdd66336df4507c7": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -13131,7 +13131,7 @@
    }
   },
   "external.GBPMXN.clock_transition.p=2837613916b2c544": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -13142,7 +13142,7 @@
    }
   },
   "external.NZDCHF.clock_transition.p=c6e30bbd4abefa53": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
@@ -13153,7 +13153,7 @@
    }
   },
   "external.EURPLN.clock_transition.p=39ec47e132030e47": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "clock_transition",
    "theory": {
