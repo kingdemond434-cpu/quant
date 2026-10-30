@@ -1,6 +1,6 @@
 {
  "schema": "backup_state/1",
- "at": "2026-10-29T14:31:31+00:00",
+ "at": "2026-10-30T02:01:10+00:00",
  "host": "vmi3571445",
  "last_backup_at": null,
  "last_restore_drill_at": null,
@@ -29,8 +29,11 @@
  },
  "moat": {
   "backup": {
-   "state": "UNMEASURED",
-   "why": "no moat backup manifest on this host"
+   "state": "DEGRADED",
+   "at": "2026-10-29T14:35:17+00:00",
+   "restore_drill_passed": true,
+   "n_stores": 9,
+   "n_absent": 3
   },
   "restore_drill": {
    "state": "FAIL",

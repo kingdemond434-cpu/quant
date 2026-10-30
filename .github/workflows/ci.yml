@@ -10,6 +10,47 @@ on:
     # Only the two shared branches run on push; feature branches are gated by their
     # pull_request runs.
     branches: ["claude/llm-auto-upgrade-verify-gcjac3", "desk-sync-clean"]
+    # A push that changes ONLY box state starts no run (GitHub skips a push when no changed path
+    # survives these filters). MEASURED 2026-10-29: the box publishes its state every 15 min and
+    # each publish ran the whole suite on LIVE, about a third of a runner queue 189 runs deep, for
+    # code that had not changed (`seal --if-needed` and promote have nothing to do on it). A code
+    # merge still runs: the gate dispatches this workflow, and a code path is never excluded.
+    # Governed state (sign rows and pins, survivor canon, allocator proof, live manifest, switches)
+    # is re-included last, so a push of one of those alone still runs the law gate (#521 audit).
+    # The lists ARE libs.ops.release STATE_PREFIXES + STATE_FILES and GOVERNED_STATE_*;
+    # tests/ops/test_ci_throughput.py fails on any drift.
+    paths:
+      - "**"
+      - ".github/**"
+      - ".*"
+      - "!desks/mt5/data/**"
+      - "!desks/mt5/reports/**"
+      - "!desks/mt5/logs/**"
+      - "!desks/mt5/frontier_intel/data/**"
+      - "!desks/mt5/side_channels/data/**"
+      - "!data/**"
+      - "!reports/**"
+      - "!logs/**"
+      - "!web/**"
+      - "!docs/**"
+      - "!context/decision_journal.jsonl"
+      - "!desks/mt5/docs/TRADE_PATH_REPORT.md"
+      - "!desks/mt5/gateway_state.json"
+      - "!desks/mt5/hunt11.json"
+      - "!desks/mt5/mech_battery.json"
+      - "!desks/mt5/mech_split.json"
+      - "!desks/mt5/portfolio_projection.json"
+      - "!desks/mt5/regime_state.json"
+      - "!desks/mt5/swap_exposure.json"
+      - "!desks/mt5/sync_marker.json"
+      - "!docs/desk_lessons.jsonl"
+      - "desks/mt5/data/ALLOCATOR_SOVEREIGN.json"
+      - "desks/mt5/data/IMMUTABLE_MANIFEST.json"
+      - "desks/mt5/data/LIVE_MANIFEST.jsonl"
+      - "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json"
+      - "desks/mt5/reports/ALLOCATOR_PROOF.json"
+      - "desks/mt5/data/*_ENABLED*"
+      - "desks/mt5/data/*_DISABLED*"
   pull_request:
   workflow_dispatch:
 

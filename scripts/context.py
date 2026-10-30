@@ -66,6 +66,10 @@ def next_id(rows: list[dict[str, Any]], day: str) -> str:
 
 
 def decide(a: argparse.Namespace, path: Path = JOURNAL) -> dict[str, Any]:
+    # The journal is append-only, so a bad pointer can never be fixed in place.
+    bad = [p for p in (a.evidence or []) if _check_pointer(str(p)) == "MISSING"]
+    if bad:
+        raise SystemExit(f"evidence pointer does not resolve: {bad} (use a repo path, pr:N, sha:X, url: or thread:)")
     rows = read_journal(path)
     now = datetime.now(UTC)
     row = {"id": next_id(rows, now.strftime("%Y%m%d")), "at": now.isoformat(timespec="seconds"),
