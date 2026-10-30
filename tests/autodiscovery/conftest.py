@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -36,5 +37,8 @@ def noise_series(n: int = 3000, seed: int = 0) -> MarketSeries:
 
 def noise_provider(seed: int = 0):
     def provider(symbol: str) -> MarketSeries:
-        return noise_series(seed=seed + hash(symbol) % 100)
+        # Python salts hash() per process, so a noise fixture otherwise samples a different
+        # market on every CI run and occasionally produces a chance survivor.
+        symbol_seed = int.from_bytes(hashlib.sha256(symbol.encode("utf-8")).digest()[:4], "big")
+        return noise_series(seed=seed + symbol_seed % 100)
     return provider
