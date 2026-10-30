@@ -25,6 +25,12 @@ from prop import ftmo_venue_reader as fvr  # noqa: E402
 R = pca.FTMO_2STEP
 
 
+@pytest.fixture(autouse=True)
+def _no_gap_file_in_the_real_tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A test run never writes a donation file under the real data/intelligence (audit #489)."""
+    monkeypatch.setattr(pca, "GAP_REQUESTS", tmp_path / "ftmo_gap_hypotheses.jsonl")
+
+
 def _paths(rows: list[list[float]]) -> np.ndarray:
     """(paths=1, days, sleeves=1) from one path's daily R."""
     return np.asarray(rows, dtype=float)[None]
@@ -274,7 +280,7 @@ def test_only_executable_keys_are_ever_written(tmp_path: Path) -> None:
     assert set(json.loads(book.read_text())["ftmo"]) == {"gold_asia"}
 
 
-def test_e8_symbols_keep_own_sleeves_out(tmp_path: Path, monkeypatch) -> None:
+def test_e8_symbols_are_read_for_the_overlap_mark(tmp_path: Path, monkeypatch) -> None:
     p = tmp_path / "b.json"
     p.write_text(json.dumps({"enabled": True, "e8": {"gold_asia": 0.006, "AUDCHF_x_asia": 0.0}}))
     monkeypatch.setattr(pca, "CERT_BOOK", p)
@@ -336,6 +342,42 @@ def test_gap_requests_name_one_symbol_per_row(tmp_path: Path) -> None:
     out = pca.write_gap_requests(uni, datetime.now(tz=UTC), tmp_path / "g.jsonl")
     rows = [json.loads(x) for x in (tmp_path / "g.jsonl").read_text().splitlines()]
     assert out["rows"] == 3 and all(len(r["symbols"]) == 1 for r in rows)
+
+
+def test_an_e8_overlap_sleeve_is_sized_never_sent_without_an_executor() -> None:
+    # zuck's 2026-10-29 override admits E8's symbols; the opposite-side fence is the executor's.
+    # The follower's key is the gold copy alone (behind the gold direction lock); every other
+    # key needs the sleeve executor's spec (prop/ftmo_executor.py, which carries the fence).
+    assert frozenset({"gold_asia"}) == pca.FTMO_EXECUTABLE
+    assert not pca.executor_runs("AUDNZD_overnight_gap_decay_asia", {})
+
+
+def _synthetic_universe(extra: bool) -> dict:
+    g = np.random.default_rng(7)
+    gold = g.choice([-1.0, 0.0, 0.0, 0.0, 1.8], size=(8, 256))
+    cols, slices = ["gold_asia"], [gold]
+    if extra:   # a Tier S gold window the venue lists but no FTMO executor can send
+        cols.append("XAUUSD_session_range_breakout_london")
+        slices.append(np.where(g.random((8, 256)) < 0.8, gold, 0.0))
+    return {"status": "OK", "cols": cols, "r": np.stack(slices, axis=2),
+            "columns": {c: {"admitted": True} for c in cols}, "caps": {}, "costs": {},
+            "posterior": {}, "listing_source": "test", "unpriced": [], "screen": []}
+
+
+def test_a_column_with_no_executor_never_moves_the_deployed_book(tmp_path, monkeypatch) -> None:
+    # audit #489 MF1: the joint solve could shift risk from the column that trades to a correlated
+    # one that cannot, cutting the traded size by side effect. The deployed book is solved over
+    # the executable columns alone, so an extra column changes nothing that is sent.
+    monkeypatch.setattr(pca, "GAP_REQUESTS", tmp_path / "gaps.jsonl")
+    books = []
+    for extra in (False, True):
+        monkeypatch.setattr(pca, "build_universe", lambda seed=0, e=extra: _synthetic_universe(e))
+        doc = pca.solve("ftmo", n_paths=200, seed=3, state=pca.AccountState())
+        books.append(doc)
+    assert books[0]["executable"] == books[1]["executable"]
+    assert books[0]["book"] == books[1]["book"]
+    assert "XAUUSD_session_range_breakout_london" not in books[1]["book"]
+    assert "joint_book" in books[1] and "missed_growth_no_executor" in books[1]
 
 
 # ------------------------------------------------------------------ the empty book (2026-10-29)
