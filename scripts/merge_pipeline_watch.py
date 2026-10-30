@@ -25,6 +25,11 @@ RED when any of these holds:
     LIVE_STALLED    no code commit on LIVE for 6 h while any PR holds a CLEAR
     REVIEWER_FP     over half of (3+) open heads the independent reviewer FAILed carry an
                     Auditor CLEAR: the reviewer is blocking what the audit passed
+    LIVE_CI_QUEUED  a push run on LIVE itself has been queued over 30 min: the box cannot adopt
+                    (Adopt-And-Seal waits for green) and the gate cannot see LIVE green
+    SIGN_TRAIN_*    the sign train's heartbeat (logs/sign_train.json) is unread, over 30 min old,
+                    failed past two runs in a row, found its mutex held past two (#541 MF3), or
+                    has waited on one open sign PR over 2 h
 
 Read-only on GitHub: it never cancels, re-runs, comments or merges. What to do about a RED is
 the owner's call (Autonomy thread), and the report names the stage so the call is quick.
@@ -69,6 +74,14 @@ CLEAR_RE = re.compile(r"AUDITCLEAR([0-9a-f]{7,40})", re.I)
 NOT_CODE_RE = re.compile(r"^(mt5 box state|seal release)\b", re.I)
 
 
+def _streak(v: Any) -> int:
+    """A beat's run counter; anything that is not a whole number reads as past the RED bar."""
+    try:
+        return int(v or 0)
+    except (TypeError, ValueError):
+        return SWEEP_WEDGED_RUNS + 1
+
+
 def _ts(s: str | None) -> datetime | None:
     if not s:
         return None
@@ -108,6 +121,9 @@ def assess(
     ready: Mapping[int, str] | None = None,
     beat: Mapping[str, Any] | None = None,
     beat_expected: bool = False,
+    sign_beat: Mapping[str, Any] | None = None,
+    sign_expected: bool = False,
+    base: str = LIVE,
 ) -> dict[str, Any]:
     """The report, from already-fetched data (pure: the tests drive this). `ready`: PR -> when
     its last required check went green, for heads the gate has marked mergeable (audit/clear
@@ -173,13 +189,49 @@ def assess(
     if waiting and (code_age is None or code_age / 60.0 > LIVE_RED_H):
         hours = "an unknown number of" if code_age is None else f"{code_age / 60.0:.1f}"
         red.append(f"LIVE_STALLED: no code on LIVE for {hours} h while mergeable work waits")
+    live_q = [
+        a
+        for a in (
+            _age_min(now, str(r.get("created_at")))
+            for r in queued_runs
+            if r.get("event") == "push" and str(r.get("head_branch")) == base
+        )
+        if a is not None
+    ]
+    if live_q and max(live_q) > QUEUED_RED_MIN:
+        red.append(f"LIVE_CI_QUEUED: a push run on LIVE queued {max(live_q):.0f} min")
+    sign: dict[str, Any] | None = None
+    if sign_expected:
+        if not sign_beat:
+            red.append("SIGN_TRAIN_BLIND: the sign train's heartbeat could not be read")
+        else:
+            sage = _age_min(now, str(sign_beat.get("at") or ""))
+            sfails = _streak(sign_beat.get("fail_runs"))
+            sheld = _streak(sign_beat.get("mutex_held_runs"))
+            sign = {"at": sign_beat.get("at"), "age_min": sage, "rc": sign_beat.get("rc"),
+                    "note": sign_beat.get("note"), "fail_runs": sfails,
+                    "mutex_held_runs": sheld}  # fmt: skip
+            if sage is None or sage > SWEEP_STALE_MIN:
+                red.append(f"SIGN_TRAIN_STALE: the sign train last beat {sage} min ago")
+            if sfails > SWEEP_WEDGED_RUNS:
+                red.append(f"SIGN_TRAIN_FAILING: {sfails} runs in a row failed")
+            if sheld > SWEEP_WEDGED_RUNS:
+                red.append(f"SIGN_TRAIN_WEDGED: its mutex refused {sheld} runs in a row")
+            wage = _age_min(now, str(sign_beat.get("waiting_since") or ""))
+            sign["waiting_on"], sign["waiting_min"] = sign_beat.get("waiting_on"), wage
+            if sign_beat.get("waiting_on") and wage is None:  # a wait nobody can time
+                red.append(f"SIGN_TRAIN_WAITING: {sign_beat.get('waiting_on')} has no readable "
+                           "waiting_since")  # fmt: skip
+            if wage is not None and wage / 60.0 > CLEAR_RED_H:  # a sign PR open, never merged
+                red.append(f"SIGN_TRAIN_WAITING: {sign_beat.get('waiting_on')} open "
+                           f"{wage / 60.0:.1f} h")  # fmt: skip
     sweep: dict[str, Any] | None = None
     if beat_expected:
         if not beat:
             red.append("SWEEP_BLIND: the box sweep's heartbeat could not be read")
         else:
             bage = _age_min(now, str(beat.get("at") or ""))
-            held = int(beat.get("mutex_held_runs") or 0)
+            held = _streak(beat.get("mutex_held_runs"))
             sweep = {"at": beat.get("at"), "age_min": bage, "rc": beat.get("rc"),
                      "note": beat.get("note"), "mutex_held_runs": held}  # fmt: skip
             if bage is None or bage > SWEEP_STALE_MIN:
@@ -199,6 +251,7 @@ def assess(
         },
         "reviewer": {"fails": len(fails), "cleared_fails": fp, "fp_rate": fp_rate},
         "sweep": sweep,
+        "sign_train": sign,
         "live": {
             "last_code_commit": None if code is None else str(code["sha"])[:9],
             "last_code_at": code_at,
@@ -239,7 +292,19 @@ def _runs(repo: str, status: str, pages: int = 5) -> list[dict[str, Any]]:
     return out
 
 
-def collect(repo: str, base: str = LIVE, heartbeat: Path | None = None) -> dict[str, Any]:
+def _beat(path: Path | None) -> dict[str, Any] | None:
+    if path is None:
+        return None
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return None
+    return doc if isinstance(doc, dict) else None
+
+
+def collect(
+    repo: str, base: str = LIVE, heartbeat: Path | None = None, sign_beat: Path | None = None
+) -> dict[str, Any]:
     now = datetime.now(UTC)
     prs: list[dict[str, Any]] = []
     for page in range(1, 11):  # 231 PRs were open on 2026-10-29: one page of 100 is not all
@@ -267,15 +332,10 @@ def collect(repo: str, base: str = LIVE, heartbeat: Path | None = None) -> dict[
     queued = _runs(repo, "queued")
     running = len(_runs(repo, "in_progress", pages=1))
     live = _gh(f"repos/{repo}/commits?sha={base}&per_page=100")
-    beat: dict[str, Any] | None = None
-    if heartbeat is not None:
-        try:
-            beat = json.loads(heartbeat.read_text(encoding="utf-8-sig"))
-        except (OSError, ValueError):
-            beat = None
     return assess(
-        now, prs, checks, clears, queued, running, live, ready, beat, heartbeat is not None
-    )
+        now, prs, checks, clears, queued, running, live, ready, _beat(heartbeat),
+        heartbeat is not None, _beat(sign_beat), sign_beat is not None, base,
+    )  # fmt: skip
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -285,6 +345,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=REPORT)
     ap.add_argument("--print", action="store_true", help="stdout only, write nothing")
     ap.add_argument("--heartbeat", type=Path, help="the box sweep's logs/workflow_gate.json")
+    ap.add_argument("--sign-heartbeat", type=Path, help="the sign train's logs/sign_train.json")
     ap.add_argument(
         "--min-interval-min", type=float, default=25.0,
         help="skip when --out is younger (the sweep calls this every 10 min; ~2 calls per open PR)",
@@ -308,7 +369,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"fresh ({age:.0f} min old): not re-read")
             return 0
     try:
-        rep = collect(a.repo, a.base, a.heartbeat)
+        rep = collect(a.repo, a.base, a.heartbeat, a.sign_heartbeat)
     except (RuntimeError, ValueError) as exc:
         # no data is not GREEN: the report says the watcher itself could not see
         rep = {
