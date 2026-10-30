@@ -329,6 +329,18 @@ def family_vol_transition(
     _a_atr = atr.to_numpy()
     _a_d_close = d["close"].to_numpy()
     _a_ret = ret.to_numpy()
+    from mt5desk import families_vector as _vec
+    if _vec.enabled():
+        # Speed only: the same signals from the bars that can emit (families_vector).
+        try:
+            _fast = _vec.vol_transition_emit(
+                d=d, vf=_a_v_fast, vs=_a_v_slow, at=_a_atr, cl=_a_d_close, ret=_a_ret,
+                slow=slow, ratio_in=ratio_in, stop_atr=stop_atr, rr=rr, ttl_bars=ttl_bars)
+        except Exception as exc:
+            _vec.fell_back("vol_transition", exc)
+            _fast = None
+        if _fast is not None:
+            return _fast
     for i in range(slow + 1, len(d) - 1):
         prev = float(_a_v_fast[i - 1] / _a_v_slow[i - 1]) if _a_v_slow[i - 1] else np.nan
         now = float(_a_v_fast[i] / _a_v_slow[i]) if _a_v_slow[i] else np.nan
@@ -495,6 +507,25 @@ def family_lvc_asia_london(
     public blob ``2868957900aa9a06e8d9eb6523f938947210f6e9``. The source has no default
     session-close exit, so ``ttl_bars`` is an explicit one-day replay bound rather than a hidden
     one-hour exit assumption.
+
+    THE ATR IS THE SIGNAL CHART'S OWN M5 ATR(14), BECAUSE THE SOURCE SAYS SO -- DO NOT "FIX" IT TO
+    DAILY (checked 2026-10-20 against the pinned blob, fetched from
+    github.com/yannis-montreer/MT5-EA-London-Volatility-Capture-LVC-EA `LVC_EA.mq5`, whose git
+    blob hash re-computes to 2868957900aa9a06e8d9eb6523f938947210f6e9):
+
+        line  10  input ENUM_TIMEFRAMES InpATRTimeframe = PERIOD_M5;
+        line  31  input int             InpATRPeriod = 14;
+        line 678  g_atrHandle = iATR(_Symbol, InpATRTimeframe, InpATRPeriod);
+        line 724  GetATRValue(1, atr)            -- the last CLOSED signal bar, as ``atr.iloc[pos]``
+        line 354  rangeAtr = g_rangeSize / atr;  -- the 0.50..2.00 window of lines 32-33
+
+    The README lists "ATR timeframe" as an optimisable input; nothing in the source or README
+    names a daily ATR. ``_atr`` is the SMA of true range, which is what MT5's ``iATR`` computes.
+    So the measured consequence is the SOURCE'S, not this port's: on XAUUSD M5 (73 days on this
+    tree) the Asia span is 4.4..12.6 M5 ATRs (5th..95th pct) and no day reaches the 0.5..2.0
+    window, so the published defaults never trade. That is a never_fires verdict that is TRUE.
+    Any other ATR chart is a different hypothesis (a new cell with its own trial charge), never a
+    repair of this one.
     """
     if bias_mode not in {"off", "source_shift", "session_relative"}:
         return []
@@ -849,6 +880,18 @@ def family_vol_mean_reversion(
     _a_atr = atr.to_numpy()
     _a_d_close = d["close"].to_numpy()
     _a_ret = ret.to_numpy()
+    from mt5desk import families_vector as _vec
+    if _vec.enabled():
+        # Speed only: the same signals from the bars that can emit (families_vector).
+        try:
+            _fast = _vec.vol_mean_reversion_emit(
+                d=d, z=_a_z, at=_a_atr, cl=_a_d_close, ret=_a_ret, lookback=lookback,
+                z_in=z_in, stop_atr=stop_atr, rr=rr, ttl_bars=ttl_bars)
+        except Exception as exc:
+            _vec.fell_back("vol_mean_reversion", exc)
+            _fast = None
+        if _fast is not None:
+            return _fast
     for i in range(lookback + 1, len(d) - 1):
         zi = float(_a_z[i]) if np.isfinite(_a_z[i]) else np.nan
         if not np.isfinite(zi) or zi > z_in:
@@ -1691,12 +1734,27 @@ FAMILY_INPUTS["style_premia"] = ("swap_diff (broker_swaps) for carry; risk-drive
 # rebuilds peers only for the families it names) and refuses the cell if any peer is missing.
 # research/learned_miners.py is the only proposer and charges every configuration it tried.
 from mt5desk.family_learned_propagation import (  # noqa: E402
+    family_ae_latent,
     family_attention_ts,
     family_gnn_propagation,
+    family_rocket_ts,
+    family_sig_path,
 )
 
 ORTHOGONAL_FAMILIES["gnn_propagation"] = family_gnn_propagation
 ORTHOGONAL_FAMILIES["attention_ts"] = family_attention_ts
+ORTHOGONAL_FAMILIES["rocket_ts"] = family_rocket_ts
+ORTHOGONAL_FAMILIES["ae_latent"] = family_ae_latent
+ORTHOGONAL_FAMILIES["sig_path"] = family_sig_path
+FAMILY_INPUTS["sig_path"] = ("the peer panel's bars (peer_symbols on the recipe; the readout is "
+                             "pooled across it and the path includes the panel mean), resolved "
+                             "by the family itself", "data/universe/*_H1.parquet")
+FAMILY_INPUTS["rocket_ts"] = ("the peer panel's bars (peer_symbols on the recipe; the readout is "
+                              "pooled across it), resolved by the family itself",
+                              "data/universe/*_H1.parquet")
+FAMILY_INPUTS["ae_latent"] = ("the peer panel's bars (peer_symbols on the recipe; the "
+                              "autoencoder compresses the whole panel), resolved by the family "
+                              "itself", "data/universe/*_H1.parquet")
 FAMILY_INPUTS["gnn_propagation"] = ("the peer panel's bars (peer_symbols on the recipe), "
                                     "resolved by the family itself",
                                     "data/universe/*_H1.parquet")
@@ -2027,6 +2085,18 @@ FAMILY_TIMEFRAMES["attention_ts"] = (
     ("H1", "H4", "D1"),
     "a next-day forecast from daily tokens, acted on once a day; a finer chart re-emits the same "
     "daily signal and only multiplies the trial count")
+FAMILY_TIMEFRAMES["rocket_ts"] = (
+    ("H1", "H4", "D1"),
+    "a next-day forecast from daily tokens, acted on once a day; a finer chart re-emits the same "
+    "daily signal and only multiplies the trial count")
+FAMILY_TIMEFRAMES["sig_path"] = (
+    ("H1", "H4", "D1"),
+    "a next-day forecast from daily tokens, acted on once a day; a finer chart re-emits the same "
+    "daily signal and only multiplies the trial count")
+FAMILY_TIMEFRAMES["ae_latent"] = (
+    ("H1", "H4", "D1"),
+    "a next-day forecast from the daily cross-asset panel, acted on once a day; a finer chart "
+    "re-emits the same daily signal and only multiplies the trial count")
 
 #: Parameters whose bar count expresses a WALL-CLOCK duration the mechanism's cause is dated by.
 #: Everything not listed is bar-relative and is left exactly as written. See the essay above.
@@ -2424,6 +2494,61 @@ for _xs_name in CROSS_SECTIONAL_FAMILIES:
         "(read at H1) would be joined to a finer clock than it carries")
 del _xs_name
 
+
+# A HUNT16 CELL, JUDGEABLE BY THE ONE DOOR THAT MINTS (2026-09-30). The hunt16 population
+# (`research/run_hunt16.FAMILIES`) is resolved by the forward engine (`executables.resolve_family`
+# checks it first) but NOT by the sealed gauntlet: `build_cell` looks in `families` and in this dict
+# and nowhere else, and it always calls `fn(h1, side=1, ...)`. A hunt16 certificate is also more
+# than its family -- `AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY` is the family's SHORT
+# signals, kept only at the window's signal hour (17 for `afternoon`) and only on days the causal
+# prior-NY-session label calls NORMAL_DAY (`run_hunt12.day_states`). None of those three were ever
+# recorded as params, which is why `certificate_hygiene` evicted that certificate.
+#
+# This family carries all three AS PARAMS, so a re-judged cell is executable by construction and
+# the certificate it may earn names exactly what it trades. It DELEGATES to the hunt16 code and to
+# the same `day_states` the hunt used -- nothing is re-implemented, so the judged signals are the
+# hunt's signals. `direction` rides in params because the gauntlet always passes `side=1`; when
+# `direction` is given it wins, so the forward engine and the judge agree whichever side they pass.
+def family_hunt16_cell(
+    df: pd.DataFrame,
+    *,
+    side: int = 1,
+    base_family: str = "",
+    direction: str | int | None = None,
+    signal_at: int | None = None,
+    day_state: str | None = None,
+) -> list[Signal]:
+    try:
+        from research.run_hunt12 import day_states as _day_states
+        from research.run_hunt16 import FAMILIES as _H16
+    except ImportError:                                           # pragma: no cover - path only
+        from run_hunt12 import day_states as _day_states  # type: ignore[no-redef]
+        from run_hunt16 import FAMILIES as _H16  # type: ignore[no-redef]
+    fn = _H16.get(str(base_family))
+    if fn is None:
+        return []
+    if direction is not None:
+        d = str(direction).strip().upper()
+        side = -1 if d in ("SHORT", "-1", "SELL") else 1
+    h1 = _h1(df)
+    sigs = list(fn(h1, -1 if int(side) < 0 else 1) or [])
+    if signal_at is not None:
+        sigs = [s for s in sigs if pd.Timestamp(s.time).hour == int(signal_at)]
+    if day_state:
+        states = _day_states(h1)
+        want = str(day_state).upper()
+        sigs = [s for s in sigs if states.get(pd.Timestamp(s.time).date()) == want]
+    return sigs
+
+
+ORTHOGONAL_FAMILIES["hunt16_cell"] = family_hunt16_cell
+FAMILY_INPUTS["hunt16_cell"] = ("price only", "data/universe/*_H1.parquet")
+FAMILY_TIMEFRAMES["hunt16_cell"] = (
+    ("H1",),
+    "the hunt16 families, their signal hours and the prior-NY-session day labels are all "
+    "defined on H1 stamp-hours; on any other chart the hour filter and the label do not exist")
+
+
 # ANALYST REVISION DRIFT AND THE CROSS-MARKET ANALYST LEAD (2026-09-30, the Alpha Capture
 # substitute). Public broker, company-guidance and forecast-revision views, stored point-in-time
 # by `research/alpha_capture.py` and replayed here from that store -- the family loads its own
@@ -2463,3 +2588,18 @@ FAMILY_TIMEFRAMES["alt_release_drift"] = (
     ("H1",),
     "a release is a daily-or-slower event whose hold is counted in H1 bars per trading day; "
     "entry is the first H1 bar opening after the release instant on the broker clock")
+
+# SPECIALIST FAMILIES (2026-09-30, `research/specialist_cell.py`). Four mechanisms an asset-class
+# specialist names and no registered family expressed: carry harvested in calm and unwound in
+# risk-off, the fixed-weight allocator's month-end rebalancing flow, a day-of-year weather or crop
+# window, and the entry-filter OPERATOR the residual search mints conditioned cells with. Each
+# loads its foreign series from the bar store given only what the cell carries (`risk_symbol`,
+# `bond_symbol`, `cond_symbol`), as the class books do, so the sealed gauntlet builds them through
+# its ordinary `fn(h1, **params)` call with no input branch.
+from mt5desk.families_specialist import INPUTS as _SPEC_INPUTS  # noqa: E402
+from mt5desk.families_specialist import SPECIALIST_FAMILIES  # noqa: E402
+from mt5desk.families_specialist import TIMEFRAMES as _SPEC_TIMEFRAMES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(SPECIALIST_FAMILIES)
+FAMILY_INPUTS.update(_SPEC_INPUTS)
+FAMILY_TIMEFRAMES.update(_SPEC_TIMEFRAMES)

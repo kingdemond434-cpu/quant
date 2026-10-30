@@ -24,6 +24,7 @@ operation (`git filter-repo`) that only the principal may authorise.
 """
 from __future__ import annotations
 
+import re
 import subprocess
 from pathlib import Path
 
@@ -52,7 +53,7 @@ RETIRED: dict[str, str] = {
 FORBIDDEN: dict[str, str] = {**LIVE, **RETIRED}
 
 #: Tracked files carrying a retired identifier, measured 2026-09-11. MAY ONLY GO DOWN.
-MAX_RETIRED_SITES = 46
+MAX_RETIRED_SITES = 44
 
 #: Files that legitimately carry a live identifier and cannot simply drop it, each with the reason
 #: and the plan. AN ENTRY HERE IS A DEBT, NOT A PARDON: it is the list a reader checks first.
@@ -64,26 +65,66 @@ MAX_RETIRED_SITES = 46
 #: provenance check, which is a real safety property. The right fix is that these paths stop being
 #: tracked at all, which is a state-path change and is queued rather than done here.
 ALLOWED: dict[str, str] = {
-    "desks/mt5/data/live_ledger.jsonl":
-        "per-fill account stamp; removing it breaks ledger provenance. Untrack this path.",
     "desks/mt5/data/universe/broker_info.json":
         "broker registry snapshot written by the desk. Untrack this path.",
     # Box-written state: editing the committed copy on origin is reverted by the box's next push
     # (libs/ops/release.py STATE_PREFIXES), so the WRITER was fixed instead and the stale copy
     # clears itself. Delete each entry once the box has rewritten the file -- the
     # stale-exemption test below fails until you do.
-    "desks/mt5/data/account_state.json":
-        "box-written state; writer fixed in ops/publish_account_state.py, clears on the box's "
-        "next write",
-    "desks/mt5/data/cost_truth_quotes.json":
-        "box-written state; writer fixed in desks/mt5/research/cost_truth.py, clears on the "
-        "box's next write",
 }
+
+
+#: THE TWO LEDGERS ARE NO LONGER WHOLE-FILE DEBTS (2026-10-20). Their writers stamp a hashed
+#: `account_key` (mt5desk/provenance.py, gateway `_record_intent`) and every reader hashes a
+#: legacy row on read, so from the first `account_key` row onward these files are fenced like any
+#: other: a live identifier in a row after the cutover fails `test_no_LIVE_...` below.
+#:
+#: The rows BEFORE the cutover keep the raw login, deliberately. They cannot be rewritten in place:
+#: `live_ledger.jsonl`'s prefix is sealed in IMMUTABLE_MANIFEST.json and every audited reader
+#: (libs/ops/live_ledger_view.py) raises on a changed prefix -- which would stop the promoter, the
+#: allocator and k_eff, i.e. the money path -- and the gateway appends to both files while it runs.
+#: Rewriting them buys nothing either: the rows are already on origin and in history, and
+#: scrubbing history is `git filter-repo`, the principal's call alone.
+#: PINNED, NOT MARKED (audit v5): each exempt prefix is {records, sha256} measured on LIVE, and
+#: every row after it is judged; a prefix that changed is judged WHOLE (it fails closed here as it
+#: does in the publisher).
+#: REMOVAL TRIGGER: `test_the_legacy_prefixes_still_need_the_exemption` fails once a prefix no
+#: longer carries a forbidden identifier (history scrubbed and the file restarted). Delete the
+#: entry from `libs/ops/login_fence.LEGACY_PIN` then; this fence and the publisher's share it.
+from libs.ops import login_fence as _lf  # noqa: E402
+from libs.ops.login_fence import LEGACY_PIN  # noqa: E402
+
+
+def _judged_text(path: str, text: str) -> str:
+    """What the fence judges: the whole file, or for a pinned ledger only the rows after its
+    pinned prefix -- and the whole file when that prefix no longer hashes to its pin."""
+    body, _offset, _changed = _lf._judged(path, text.encode("utf-8"))
+    return body.decode("utf-8", errors="replace")
+
+
+def _legacy_prefix(path: str, text: str) -> str:
+    lines = text.splitlines(keepends=True)
+    return "".join(lines[:int(LEGACY_PIN[path]["records"])])
 
 
 def _tracked() -> list[str]:
     out = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True)
     return [ln.strip() for ln in out.stdout.splitlines() if ln.strip()]
+
+
+def _contains_identifier(text: str, needle: str) -> bool:
+    # A measured decimal such as 7.495044 is not an account identifier.
+    # Keep integer tokens, quoted identifiers and prose identifiers detectable.
+    return re.search(r"(?<![\d.])" + re.escape(needle) + r"(?![\d.])", text) is not None
+
+
+def test_identifier_matching_preserves_real_identifiers():
+    needle = next(iter(LIVE))
+    assert _contains_identifier('account ' + needle, needle)
+    assert _contains_identifier('"account": ' + needle + ',', needle)
+    assert _contains_identifier('"account": "' + needle + '"', needle)
+    assert not _contains_identifier('"q99": 7.' + needle, needle)
+    assert not _contains_identifier('"sample": 1' + needle + '2', needle)
 
 
 def _hits(needle: str) -> list[str]:
@@ -97,7 +138,9 @@ def _hits(needle: str) -> list[str]:
     # is committed, and the obvious "fix" is to delete the gate. Nothing else is excluded.
     me = Path(__file__).resolve().relative_to(ROOT).as_posix()
     return [q for q in (ln.strip().replace("\\", "/") for ln in out.stdout.splitlines())
-            if q and q != me]
+            if q and q != me and _contains_identifier(
+                _judged_text(q, (ROOT / q).read_text(encoding="utf-8", errors="replace")),
+                needle)]
 
 
 def _offenders(table: dict[str, str]) -> list[str]:
@@ -143,8 +186,49 @@ def test_the_allowlist_entries_actually_still_need_the_exemption() -> None:
     unneeded = []
     for path in ALLOWED:
         text = (ROOT / path).read_text(encoding="utf-8", errors="replace")
-        if not any(n in text for n in FORBIDDEN):
+        if not any(_contains_identifier(text, n) for n in FORBIDDEN):
             unneeded.append(path)
     assert not unneeded, (
         f"these files no longer contain a forbidden identifier and their exemption is stale: "
         f"{unneeded}. Delete the ALLOWED entries.")
+
+
+def test_the_two_ledgers_are_fenced_and_not_whole_file_allowed() -> None:
+    for path in LEGACY_PIN:
+        assert path not in ALLOWED, f"{path} is a whole-file debt again; it is fenced by rows"
+    assert set(LEGACY_PIN) == {"desks/mt5/data/live_ledger.jsonl",
+                                  "desks/mt5/data/order_intents.jsonl"}
+
+
+def test_the_legacy_prefixes_still_need_the_exemption() -> None:
+    """The removal trigger. A prefix that no longer carries a forbidden identifier is a paid
+    debt: delete its LEGACY_PIN entry so the whole file is fenced."""
+    unneeded = []
+    for path in LEGACY_PIN:
+        full = ROOT / path
+        if not full.exists():
+            continue
+        prefix = _legacy_prefix(path, full.read_text(encoding="utf-8", errors="replace"))
+        if not any(_contains_identifier(prefix, n) for n in FORBIDDEN):
+            unneeded.append(path)
+    assert not unneeded, (
+        f"these ledgers' legacy prefixes no longer carry a forbidden identifier: {unneeded}. "
+        f"Delete their libs/ops/login_fence.LEGACY_PIN entries.")
+
+
+def test_a_row_after_the_pinned_prefix_is_judged_and_a_changed_prefix_is_judged_whole() -> None:
+    needle = next(iter(LIVE))
+    path = "desks/mt5/data/live_ledger.jsonl"
+    held = (ROOT / path).read_text(encoding="utf-8")
+    pin = LEGACY_PIN[path]
+    assert _lf.measure_prefix("".join(held.splitlines(keepends=True)[:pin["records"]]).encode()) \
+        == {"records": pin["records"], "sha256": pin["sha256"]}, "the pin is not this prefix"
+    new = '{"deal": 2, "account_key": "sha256:0123456789abcdef"}\n'
+    old = '{"deal": 1, "account": ' + needle + '}\n'
+    assert not _contains_identifier(_judged_text(path, held + new), needle)
+    assert _contains_identifier(_judged_text(path, held + new + old), needle)
+    # one byte changed inside the prefix: the whole file is judged (and the publisher refuses)
+    lines = held.splitlines(keepends=True)
+    lines[0] = lines[0].replace("{", "{ ", 1)
+    assert _contains_identifier(_judged_text(path, "".join(lines)), needle)
+    assert _contains_identifier(_judged_text("desks/mt5/data/other.jsonl", old), needle)

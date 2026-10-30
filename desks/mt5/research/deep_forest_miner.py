@@ -102,6 +102,11 @@ from libs.research import mechanism_claims as mc  # noqa: E402
 SOURCE = "deep_forest"
 KIND = "story_mechanism"
 SOURCES = _DESK / "data" / "deep_forest_sources.json"
+#: Grounds OTHER organs queue for the forest to mine, one JSON file per producer
+#: (`{"grounds": [...]}`), merged after the registered grounds. First, so far, is
+#: research/paid_substitute_engine.py (free substitutes for paid datasets); its grounds carry
+#: their own `cluster`, so the round-robin gives the whole file one fair turn.
+GROUND_QUEUE = _DESK / "data" / "deep_forest_queue"
 CLAIMS = _DESK / "data" / "deep_forest_claims.jsonl"
 DATASETS = _DESK / "data" / "deep_forest_datasets.jsonl"
 SEEN = _DESK / "data" / "deep_forest_seen.json"
@@ -132,6 +137,12 @@ RUNS = _DESK / "data" / "alt_fetch_runs.jsonl"
 LEG = "deep_forest_miner"
 #: Cross-process locks live where the desk keeps its job locks (gitignored, per machine).
 LOCKS = _DESK / "data" / ".job_locks"
+#: THE COMPETITION GRAVEYARD (Asia directive PART XIV, 2026-10-06). A `competition` ground's
+#: ranking TABLE is a population -- winners, the middle and the accounts that blew up or left --
+#: and the claims extractor only ever read its prose. `competition_rows` reads the table; the
+#: rows are appended here (never overwritten) and `book_forensics` folds them into the trader
+#: genome under its terms gate.
+COMPETITION_LEDGER = _DESK / "data" / "trader_genome_competition.jsonl"
 #: Per-vector attempts / successes / rows / last error, beside the frontier file.
 VECTOR_STATS_NAME = "deep_forest_vector_stats.json"
 _UA = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -592,9 +603,35 @@ def data_endpoints(page: str, base: str) -> list[str]:
 # ------------------------------------------------------------------------------- ledgers
 def _load_sources() -> dict[str, Any]:
     try:
-        return json.loads(SOURCES.read_text("utf-8"))
+        cfg = json.loads(SOURCES.read_text("utf-8"))
     except (OSError, ValueError):
-        return {"grounds": []}
+        cfg = {"grounds": []}
+    queued = queued_grounds({str(g.get("name")) for g in cfg.get("grounds") or []
+                             if isinstance(g, dict)})
+    if queued:
+        cfg = {**cfg, "grounds": [*(cfg.get("grounds") or []), *queued]}
+    return cfg
+
+
+def queued_grounds(registered: set[str] | None = None,
+                   queue_dir: Path | None = None) -> list[dict[str, Any]]:
+    """Grounds other organs queued in `data/deep_forest_queue/*.json`. A registered ground of
+    the same name wins (the grounds file is the registry); a malformed file is skipped."""
+    seen = set(registered or ())
+    out: list[dict[str, Any]] = []
+    for f in sorted((queue_dir or GROUND_QUEUE).glob("*.json")):
+        try:
+            doc = json.loads(f.read_text("utf-8"))
+        except (OSError, ValueError):
+            continue
+        for g in (doc.get("grounds") if isinstance(doc, dict) else None) or []:
+            if not isinstance(g, dict) or not g.get("name") or not g.get("route"):
+                continue
+            if str(g["name"]) in seen:
+                continue
+            seen.add(str(g["name"]))
+            out.append(g)
+    return out
 
 
 def _load_seen() -> dict[str, Any]:
@@ -670,20 +707,57 @@ def _fair_order(grounds: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
+#: THE DAILY FLOOR (2026-09-30): a ground not attempted inside this many hours is scheduled ahead
+#: of every ground that was, whatever its cooldown says. The 45-day covered cooldown and the
+#: 10-day blocked retry decide the order of FRONTIER work; they may never let a registered ground
+#: go a day unattempted while the pass still has budget (`research/forest_attempts.py`).
+DAILY_FLOOR_H = 24.0
+N_BUCKETS = 6
+
+
 def _frontier_bucket(g: dict[str, Any], frontier_state: Any | None,
-                     now: datetime) -> int:
-    vector = getattr(frontier_state, "vectors", {}).get(str(g.get("name") or "")) \
+                     now: datetime, retired: set[str] | frozenset[str] = frozenset()) -> int:
+    """0 NAMED_ONLY, 1 retry-due BLOCKED, 2 cooldown-due covered, 3 not attempted in 24h (the
+    daily floor), 4 attempted in 24h, 5 LOW_EV_RETIRED and not reopen-due (still scheduled --
+    last, never dropped)."""
+    name = str(g.get("name") or "")
+    vector = getattr(frontier_state, "vectors", {}).get(name) \
         if frontier_state is not None else None
     if vector is None or str(getattr(vector, "outcome", "NAMED_ONLY")) == "NAMED_ONLY":
         return 0
-    if str(getattr(vector, "outcome", "")) == "BLOCKED":
-        return 1 if vector.huntable(now)[0] else 3
-    return 2 if vector.huntable(now)[0] else 3
+    if name in retired:
+        return 5
+    if str(getattr(vector, "outcome", "")) == "BLOCKED" and vector.huntable(now)[0]:
+        return 1
+    if str(getattr(vector, "outcome", "")) != "BLOCKED" and vector.huntable(now)[0]:
+        return 2
+    try:
+        last = datetime.fromisoformat(str(getattr(vector, "last_attempt", "") or ""))
+        last = last if last.tzinfo else last.replace(tzinfo=UTC)
+        recent = (now - last).total_seconds() < DAILY_FLOOR_H * 3600.0
+    except ValueError:
+        recent = False                    # an unreadable stamp is overdue, never exempt
+    return 4 if recent else 3
+
+
+def culture_gaps() -> frozenset[str]:
+    """Jurisdiction codes (lower-case) `reports/CELL_CULTURE.json` lists as zero or thin cells.
+
+    The CULTURE GAP LIST is the producers' to-do list (research/cell_culture_index.py): an MT5
+    asset class a culture's participants move, with no cells mined from that culture's own
+    sources. Empty -- and therefore reordering nothing -- when the summary is absent.
+    """
+    try:
+        from research.cell_culture_index import gap_cultures
+        return frozenset(gap_cultures())
+    except Exception:
+        return frozenset()
 
 
 def schedule(grounds: list[dict[str, Any]], cursor: int = 0, *, only: set[str] | None = None,
-             region: str | None = None, frontier_state: Any | None = None
-             ) -> list[dict[str, Any]]:
+             region: str | None = None, frontier_state: Any | None = None,
+             gaps: frozenset[str] | None = None,
+             retired: set[str] | frozenset[str] = frozenset()) -> list[dict[str, Any]]:
     """The order a run works grounds in: round-robin across clusters (heaviest weight first
     inside each), rotated by the cursor the previous run left, so every forest gets its turn
     across runs and no region is worked only because it sorts first in a file."""
@@ -702,22 +776,30 @@ def schedule(grounds: list[dict[str, Any]], cursor: int = 0, *, only: set[str] |
     # regional fairness and the ROI weights, but rotate each frontier bucket independently and
     # place uncovered/retry-due ground first.  A mapping row can therefore never masquerade as a
     # completed hunt or starve behind already-covered ground.
-    buckets: list[list[dict[str, Any]]] = [[], [], [], []]
+    buckets: list[list[dict[str, Any]]] = [[] for _ in range(N_BUCKETS)]
     now = datetime.now(tz=UTC)
     for g in picked:
-        buckets[_frontier_bucket(g, frontier_state, now)].append(g)
+        buckets[_frontier_bucket(g, frontier_state, now, retired)].append(g)
     # LEAST-RECENTLY-ATTEMPTED FIRST (2026-09-30). Inside a bucket the fair, cursor-rotated
     # order is then sorted -- stably -- by the vector's last attempt, oldest first. Never-tried
     # ground has no attempt and sorts first; ground tried an hour ago sorts behind ground tried a
     # week ago. The cursor alone could not do this: it only advanced when a run finished, and a
     # run the cycle killed left it where it was, so every hour re-hit the same head.
+    # CULTURE GAPS FIRST INSIDE EACH BUCKET (2026-09-30). A ground standing in a culture the
+    # cell-culture index lists as a zero/thin gap is worked before a ground of a culture already
+    # holding cells, then least-recently-attempted as before. It never crosses a frontier bucket
+    # and never removes a ground: a reorder, so an absent gap list changes nothing. `run()`
+    # passes `culture_gaps()`; a direct call with no `gaps` keeps the historic order exactly.
+    gap = gaps or frozenset()
     out: list[dict[str, Any]] = []
     for bucket in buckets:
         ordered = _fair_order(bucket)
         if ordered:
             start = cursor % len(ordered)
             rotated = ordered[start:] + ordered[:start]
-            out.extend(sorted(rotated, key=lambda g: _last_attempt(g, frontier_state)))
+            out.extend(sorted(rotated, key=lambda g: (
+                str(g.get("region") or "").lower() not in gap,
+                _last_attempt(g, frontier_state))))
     return out
 
 
@@ -747,7 +829,7 @@ class _Run:
         self.counts = {"queries": 0, "pages": 0, "transcripts": 0, "rendered": 0,
                        "dropped_venue": 0, "dropped_unmappable": 0, "duplicate_mechanisms": 0,
                        "claims_seen_before": 0, "net_failures": 0, "dataset_pages": 0,
-                       "dataset_endpoints": 0, "feeds": 0}
+                       "dataset_endpoints": 0, "feeds": 0, "urls_new": 0}
         #: Shared by every fork of this run: the network verdict and its failure streak.
         self._shared: dict[str, Any] = {"network": None, "fails": 0}
         self._lock = threading.RLock()
@@ -845,6 +927,8 @@ class _Run:
     def take(self, text: str, *, ground: dict[str, Any], url: str, title: str,
              route: str, grade: str | None = None, extra: dict[str, Any] | None = None,
              page: str = "") -> int:
+        if page and str(ground.get("kind")) == "competition":
+            self._competition(page, ground=ground, url=url)
         r = mc.extract(text, universe=self.universe or None)
         self.counts["dropped_venue"] += int(r["dropped_venue"])
         self.counts["dropped_unmappable"] += int(r["dropped_unmappable"])
@@ -886,6 +970,28 @@ class _Run:
             n += 1
             self._provenance(row)
         return n
+
+    def _competition(self, page: str, *, ground: dict[str, Any], url: str) -> int:
+        """Append a competition page's ranking rows to the genome's competition ledger."""
+        try:
+            meta = page_meta(page)
+            now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+            rows = competition_rows(page, ground=str(ground.get("name")), url=url,
+                                    published_time=meta.get("published_time"),
+                                    available_time=now, region=str(ground.get("region") or ""),
+                                    language=str(ground.get("language") or ""))
+            if not rows:
+                return 0
+            with self._lock, _xlock("trader_genome_competition"):
+                COMPETITION_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+                with COMPETITION_LEDGER.open("a", encoding="utf-8") as fh:
+                    for row in rows:
+                        fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+            self.counts["competition_rows"] = self.counts.get("competition_rows", 0) + len(rows)
+            return len(rows)
+        except Exception as exc:                 # a table we cannot read never costs the claims
+            self.status.append({"url": url, "competition_table": f"{type(exc).__name__}: {exc}"})
+            return 0
 
     def _provenance(self, row: dict[str, Any]) -> None:
         try:
@@ -933,6 +1039,9 @@ class _Run:
             if url in self.seen_urls:
                 return
             self.seen_urls.add(url)
+        # THE DELTA SCAN: a fork works one ground, so this count is THAT ground's new URLs
+        # against the durable seen-set -- what the attempt found that no earlier pass had.
+        self.counts["urls_new"] = self.counts.get("urls_new", 0) + 1
         self.frontier.append((url, via, self.lang))
 
     # ---------------------------------------------------------------- routes per ground
@@ -1353,6 +1462,7 @@ class _Run:
             return
         self.ground, self.ground_claims = g, []
         seen_before = self.counts["claims_seen_before"]
+        urls_before = self.counts.get("urls_new", 0)
         t0 = time.monotonic()
         self.g_end = min(self.started + self.budget_s, t0 + (share_s or self.budget_s))
         try:
@@ -1404,7 +1514,139 @@ class _Run:
                             "elapsed_s": round(time.monotonic() - t0, 1), "classes": classes,
                             # ORTHOGONALITY: a ground that yields only momentum says so.
                             "momentum_only": bool(classes) and set(classes) <= {"momentum"},
-                            "datasets": sum(1 for d in self.datasets if d.get("ground") == name)})
+                            "datasets": sum(1 for d in self.datasets if d.get("ground") == name),
+                            # the per-ground DELTA against the durable seen-sets
+                            "delta": {"urls_new": self.counts.get("urls_new", 0) - urls_before,
+                                      "claims_new": n_claims,
+                                      "claims_seen_before": (self.counts["claims_seen_before"]
+                                                             - seen_before)}})
+
+
+# ------------------------------------------------------------ competition ranking tables
+
+#: Header vocabulary of public futures/FX competition ranking tables. Based on the published
+#: layout of the 期货日报 全国期货(期权)实盘交易大赛 ranking pages (名次 / 参赛者 / 净值 /
+#: 累计净值增长率 / 最大回撤 / 风险度 / 组别 / 状态) and its English and Russian equivalents
+#: (MOEX ЛЧИ: Место / Участник / Доходность). A column is matched by substring.
+_COMP_COLS: dict[str, tuple[str, ...]] = {
+    "rank": ("名次", "排名", "rank", "место", "#"),
+    "name": ("参赛者", "参赛账户", "昵称", "选手", "账户", "trader", "participant", "участник",
+             "name"),
+    "nav": ("净值", "nav", "权益"),
+    "return_pct": ("收益率", "增长率", "return", "доходность", "profit %"),
+    "max_dd_pct": ("回撤", "drawdown", "просадка"),
+    "group": ("组别", "group", "division", "лига"),
+    "status": ("状态", "status", "статус"),
+}
+#: Words that put a competitor in the graveyard: a blown, liquidated, withdrawn or disqualified
+#: account. Matched against the row's status cell and its name cell.
+_COMP_DEAD = ("爆仓", "清盘", "退赛", "出局", "淘汰", "强平", "取消资格", "blown", "liquidated",
+              "withdrawn", "disqualified", "выбыл", "дисквал")
+
+
+def _pct(v: str) -> float | None:
+    t = str(v or "").replace(",", "").replace("%", "").replace("\uff05", "").strip()
+    try:
+        return float(t)
+    except ValueError:
+        return None
+
+
+def _tables(page: str) -> list[list[list[str]]]:
+    from html.parser import HTMLParser
+
+    class _P(HTMLParser):
+        def __init__(self) -> None:
+            super().__init__(convert_charrefs=True)
+            self.tables: list[list[list[str]]] = []
+            self.row: list[str] | None = None
+            self.cell: list[str] | None = None
+
+        def handle_starttag(self, tag: str, attrs: Any) -> None:
+            if tag == "table":
+                self.tables.append([])
+            elif tag == "tr" and self.tables:
+                self.row = []
+            elif tag in ("td", "th") and self.row is not None:
+                self.cell = []
+
+        def handle_endtag(self, tag: str) -> None:
+            if tag in ("td", "th") and self.row is not None and self.cell is not None:
+                self.row.append(" ".join("".join(self.cell).split()))
+                self.cell = None
+            elif tag == "tr" and self.row is not None and self.tables:
+                if self.row:
+                    self.tables[-1].append(self.row)
+                self.row = None
+
+        def handle_data(self, data: str) -> None:
+            if self.cell is not None:
+                self.cell.append(data)
+
+    p = _P()
+    p.feed(page)
+    return p.tables
+
+
+def competition_rows(page: str, *, ground: str, url: str, published_time: str | None,
+                     available_time: str, region: str = "", language: str = ""
+                     ) -> list[dict[str, Any]]:
+    """Every competitor row of every ranking table on a page, the dead ones included.
+
+    A table qualifies when its header names a competitor column and at least one of NAV /
+    return / drawdown. Values are kept verbatim beside their parse; an unparseable number is
+    None, never zero. PIT: a row is knowable from the FETCH (`knowable_from` = available_time).
+    Ranking tables are republished in place under one URL, so the page's meta date says when the
+    page was first published, not when THESE standings were; the row a fetch reads may be weeks
+    newer than that date. `published_time` is kept as provenance only.
+    """
+    out: list[dict[str, Any]] = []
+    for t in _tables(page):
+        if len(t) < 2:
+            continue
+        head = [h.lower() for h in t[0]]
+        col: dict[str, int] = {}
+        for key, words in _COMP_COLS.items():
+            for i, h in enumerate(head):
+                if i in col.values():
+                    continue
+                if any(w.lower() in h for w in words):
+                    col[key] = i
+                    break
+        if "name" not in col or not ({"nav", "return_pct", "max_dd_pct"} & set(col)):
+            continue
+        for cells in t[1:]:
+            if len(cells) <= col["name"]:
+                continue
+
+            def cell(k: str, cells: list[str] = cells, col: dict[str, int] = col) -> str:
+                return cells[col[k]] if k in col and col[k] < len(cells) else ""
+
+            name = cell("name").strip()
+            if not name:
+                continue
+            nav, ret, dd = _pct(cell("nav")), _pct(cell("return_pct")), _pct(cell("max_dd_pct"))
+            status = cell("status")
+            dead_word = next((w for w in _COMP_DEAD if w in status.lower() or w in name.lower()),
+                             None)
+            if dead_word or (nav is not None and nav <= 0.05) or (ret is not None and ret <= -95.0):
+                outcome = "BLOWN"
+            else:
+                outcome = "ALIVE"
+            raw = "|".join(cells)
+            out.append({
+                "ground": ground, "url": url, "region": region, "language": language,
+                "name": name, "rank": cell("rank") or None, "group": cell("group") or None,
+                "nav": nav, "return_pct": ret, "max_dd_pct": (-abs(dd) if dd is not None else None),
+                "status_text": status or None, "outcome": outcome,
+                "outcome_why": (f"status/name says {dead_word!r}" if dead_word else
+                                "NAV/return at the blow-up floor" if outcome == "BLOWN" else
+                                "listed in the ranking"),
+                "published_time": published_time, "available_time": available_time,
+                "knowable_from": available_time,
+                "row_hash": hashlib.sha256(f"{url}|{raw}".encode()).hexdigest()[:16],
+                "raw": raw[:400]})
+    return out
 
 
 def _feed_frontier(urls: list[tuple[str, str, str]]) -> int:
@@ -1435,6 +1677,8 @@ def _write_discoveries(rows: list[dict[str, Any]]) -> Path | None:
     try:
         WORLD.mkdir(parents=True, exist_ok=True)
         out = WORLD / f"discoveries_deepforest_{datetime.now(tz=UTC):%Y%m%d_%H%M}.json"
+        from libs.research.source_provenance import stamp_rows
+        rows = stamp_rows([dict(r) for r in rows])
         out.write_text(json.dumps(rows, indent=1, ensure_ascii=False, default=str), "utf-8")
         return out
     except OSError:
@@ -1532,11 +1776,30 @@ def _task(row: dict[str, Any], tellings: list[dict[str, Any]] | None = None) -> 
             "evidence_grade": row.get("evidence_grade"), "claimed_performance": perf,
             "transfer_only": inst.get("transfer_only") or [], "claim_hash": row.get("claim_hash"),
             "provenance": prov, "n_tellings": len(prov),
+            # SOURCE PROVENANCE in the compiler's vocabulary (libs.research.source_provenance):
+            # the page the best telling came from, when it was fetched, and the page's hash.
+            "source_url": str(row.get("url") or ""),
+            "retrieved_at": row.get("available_time") or row.get("fetched_utc"),
+            "content_hash": row.get("source_hash") or row.get("claim_hash"),
+            "ground": row.get("ground"),
             "event_time": row.get("event_time"), "published_time": row.get("published_time"),
             "available_time": row.get("available_time") or row.get("fetched_utc"),
             "score": row.get("score"), "status": None,
+            # CULTURE PROVENANCE DECLARED AT THE SOURCE (libs/research/cell_culture.py): the
+            # ground's region and language are known here and nowhere downstream, so they ride
+            # the task into compile_row -> _candidate -> the docket.
+            **_culture_of(row),
             "consumer": "deepening_worker (story_mechanism) -> miner_candidate_compiler "
                         "-> gauntlet"}
+
+
+def _culture_of(row: dict[str, Any]) -> dict[str, Any]:
+    try:
+        from libs.research import cell_culture as _cc
+        got = _cc.infer({**row, "kind": row.get("kind") or row.get("ground_kind")})
+    except Exception:  # provenance may never cost a task
+        return {}
+    return got
 
 
 def build_tasks(rows: list[dict[str, Any]], *, decided: set[str] | None = None,
@@ -1632,8 +1895,17 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
         frontier_state = _hf.load(_frontier_path())
     except Exception:  # a damaged accounting file may never stop the miner
         frontier_state = None
+    culture_gap = culture_gaps()
+    # LOW_EV_RETIRED is derived from the counters every pass (`research/forest_attempts.py`):
+    # retired grounds are scheduled LAST, never dropped, and reopen on a named condition.
+    try:
+        from research import forest_attempts as _fa
+        retired = _fa.retired_names(grounds, frontier=_frontier_path(),
+                                    stats=_vector_stats_path())
+    except Exception:  # a damaged accounting file may never stop the miner
+        retired = set()
     order = schedule(grounds, cursor, only=r.only, region=region,
-                     frontier_state=frontier_state)
+                     frontier_state=frontier_state, gaps=culture_gap, retired=retired)
     # THE PROPOSER SEAT, OPTIONAL: which registered GROUND is worth this pass's seconds first.
     # An ORDER over the grounds the registry already holds -- the seat may reorder the crawl and
     # may never widen it, so a name it invents is discarded and no unregistered ground can be
@@ -1657,7 +1929,9 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
             now = datetime.now(tz=UTC)
             # frontier bucket first, then least-recently-attempted, the seat's rank breaking ties
             order = sorted(seat_order,
-                           key=lambda g: (_frontier_bucket(g, frontier_state, now),
+                           key=lambda g: (_frontier_bucket(g, frontier_state, now, retired),
+                                          str(g.get("region") or "").lower()
+                                          not in culture_gap,
                                           _last_attempt(g, frontier_state)))
     except Exception as _exc:                             # pragma: no cover - optional seat
         seat_hint = {"verdict": "UNMEASURED", "why": f"{type(_exc).__name__}: {_exc}"}
@@ -1809,8 +2083,10 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            "languages": sorted({str(g.get("language")) for g in grounds if g.get("language")}),
            "frontier": frontier,
            "scheduler": {"policy": ("NAMED_ONLY -> retry-due BLOCKED -> cooldown-due covered "
-                                    "-> picked-over; inside each bucket least-recently-"
+                                    "-> not attempted in 24h (daily floor) -> attempted in 24h "
+                                    "-> LOW_EV_RETIRED; inside each bucket least-recently-"
                                     "attempted first over a regional round-robin"),
+                         "retired_scheduled_last": len(retired),
                          "frontier_state_loaded": frontier_state is not None,
                          "workers": n_workers, "requested_budget_s": requested_s,
                          "cycle_cap_s": cap,
@@ -1832,6 +2108,8 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            "frontier_added": frontier_added,
            "source_shares": share_meta,
            "proposer_seat": seat_hint,
+           # the culture gap list this run worked first (reports/CELL_CULTURE.json `gaps`)
+           "culture_gaps_first": sorted(culture_gap),
            "source_expansion": expansion,
            "fetch_notes": [s for s in r.status if "url" in s][:40],
            "top_claims": [{k: t.get(k) for k in ("title", "symbols", "channel", "mechanism_class",
@@ -1923,6 +2201,25 @@ def _record_vector_stats(statuses: list[dict[str, Any]]) -> None:
                 e["last_success"] = now
             if err or s.get("status") in ("BLOCKED", "NO_ADDRESS", "UNREACHABLE"):
                 e["last_error"] = str(err or s.get("status"))[:200]
+            # THE STANDING failure reason: this attempt's, or none when the route answered.
+            # `last_error` stays sticky -- it is history; this is the current state.
+            e["failure_reason"] = (str(err or s.get("status"))[:200]
+                                   if err or s.get("status") not in ("PRODUCTIVE",
+                                                                    "REACHED_NO_CLAIMS")
+                                   else "")
+            # THE DURABLE DELTA CURSOR. The seen-sets (deep_forest_seen.json) are the scan's
+            # memory; this is its per-ground reading: what the last attempt added, when the
+            # ground last showed anything new, and how many attempts running it showed nothing.
+            delta = s.get("delta") if isinstance(s.get("delta"), dict) else None
+            if delta is not None:
+                e["last_delta"] = delta
+                fresh = int(delta.get("urls_new") or 0) + int(delta.get("claims_new") or 0) \
+                    + dsets
+                if fresh:
+                    e["last_new_content_at"] = now
+                    e["empty_delta_streak"] = 0
+                else:
+                    e["empty_delta_streak"] = int(e.get("empty_delta_streak") or 0) + 1
         _atomic_text(p, json.dumps({"updated": now, "vectors": vec,
                                     "note": "per-vector cumulative counts since counted_since; "
                                             "written by deep_forest_miner at each ground's "

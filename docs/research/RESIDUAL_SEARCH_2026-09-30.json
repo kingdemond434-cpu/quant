@@ -1,0 +1,362 @@
+{
+ "at": "2026-09-30T15:56:08+00:00",
+ "organ": "desks/mt5/research/residual_search.py",
+ "scope": "RESEARCH FINDINGS ONLY: changes no sizing, admission or live policy; its conditioned cells go to the gauntlet through the proposer door, and its counterfactuals are read by research/residual_queue.py, never by the gateway, promoter, admission or allocator",
+ "inputs": {
+  "load_gaps": {
+   "unparsed_rows": "140 ledger rows carry no entry_time/entry/exit/r_multiple and cannot be replayed: xau_m15_anti_breakout=34, xau_m15_anti_momentum=65, xau_m5_anti_breakout_overlap=14, xau_m5_anti_momentum_ny=27",
+   "live_ledger": "151 of 151 live rows carry no entry_time / entry / exit and cannot be replayed"
+  },
+  "live_rows_without_bar_clock": 0,
+  "n_trades": 467,
+  "by_basis": {
+   "shadow": 467
+  },
+  "certified_parent_specs": 56,
+  "data_window": {
+   "first_entry_bar_stamp": "2026-08-16T12:00:00+00:00",
+   "last_entry_bar_stamp": "2026-09-04T07:00:00+00:00",
+   "n_trades": 467,
+   "hour_axis": "broker hour of the entry bar stamp (venue clock, New York + 7 h), NOT UTC",
+   "first_entry_utc": "2026-08-16T09:00:00+00:00",
+   "last_entry_utc": "2026-09-04T04:00:00+00:00",
+   "clock_model": "session_clock.server_to_utc (America/New_York + 7 h)"
+  }
+ },
+ "residual": {
+  "status": "MEASURED",
+  "model": {
+   "n": 467,
+   "clusters": {
+    "UNKNOWN": {
+     "n": 210,
+     "mean_r": -0.0067
+    },
+    "breakout_liquidity": {
+     "n": 99,
+     "mean_r": 0.1257
+    },
+    "calendar_seasonality": {
+     "n": 3,
+     "mean_r": 16.6987
+    },
+    "carry_rollover": {
+     "n": 23,
+     "mean_r": 1.1192
+    },
+    "session_handover": {
+     "n": 132,
+     "mean_r": 0.6689
+    }
+   },
+   "n_sleeves": 53,
+   "r2_explained_by_clusters_and_sleeves": 0.3026,
+   "model": "r_hat = cluster mean + n/(n+10) x (sleeve mean - cluster mean); cluster = axis_registry mechanism of the sleeve's family"
+  },
+  "labels": {
+   "symbols_without_bars": [
+    "CADCHF",
+    "CHFDKK",
+    "CHFNOK",
+    "EURNOK",
+    "EURZAR",
+    "GBPCHF",
+    "GBPMXN",
+    "GBPNOK",
+    "GBPSEK",
+    "GBPZAR",
+    "QQUANT.HUNT16.JSON.AUDNZD",
+    "USDMXN",
+    "USDSGD",
+    "USDZAR"
+   ],
+   "cond_symbols_without_bars": [
+    "USDX",
+    "US500",
+    "UST10Y"
+   ]
+  },
+  "tests_run": 18,
+  "fdr_q": 0.1,
+  "findings": [
+   {
+    "axis": "hour",
+    "bucket": 16,
+    "n": 28,
+    "n_sleeves": 19,
+    "mean_residual_r": -0.6202,
+    "t": -5.257,
+    "p": 0.0,
+    "bh_rejected": true,
+    "bonferroni_rejected": true,
+    "broker_hour": 16,
+    "true_utc_hours": {
+     "13": 28
+    }
+   }
+  ],
+  "top_by_abs_t": [
+   {
+    "axis": "hour",
+    "bucket": 16,
+    "n": 28,
+    "n_sleeves": 19,
+    "mean_residual_r": -0.6202,
+    "t": -5.257,
+    "p": 0.0,
+    "bh_rejected": true,
+    "bonferroni_rejected": true,
+    "broker_hour": 16,
+    "true_utc_hours": {
+     "13": 28
+    }
+   },
+   {
+    "axis": "dow",
+    "bucket": 1,
+    "n": 100,
+    "n_sleeves": 44,
+    "mean_residual_r": -0.1972,
+    "t": -2.34,
+    "p": 0.019268,
+    "bh_rejected": false,
+    "bonferroni_rejected": false
+   },
+   {
+    "axis": "dow",
+    "bucket": 4,
+    "n": 77,
+    "n_sleeves": 40,
+    "mean_residual_r": -0.1524,
+    "t": -1.797,
+    "p": 0.072393,
+    "bh_rejected": false,
+    "bonferroni_rejected": false
+   },
+   {
+    "axis": "dow",
+    "bucket": 2,
+    "n": 102,
+    "n_sleeves": 45,
+    "mean_residual_r": 0.1666,
+    "t": 1.733,
+    "p": 0.083049,
+    "bh_rejected": false,
+    "bonferroni_rejected": false
+   },
+   {
+    "axis": "hour",
+    "bucket": 18,
+    "n": 24,
+    "n_sleeves": 12,
+    "mean_residual_r": 0.1281,
+    "t": 1.395,
+    "p": 0.16309,
+    "bh_rejected": false,
+    "bonferroni_rejected": false
+   },
+   {
+    "axis": "hour",
+    "bucket": 8,
+    "n": 43,
+    "n_sleeves": 16,
+    "mean_residual_r": 0.1111,
+    "t": 0.902,
+    "p": 0.366857,
+    "bh_rejected": false,
+    "bonferroni_rejected": false
+   },
+   {
+    "axis": "vol",
+    "bucket": "low_vol",
+    "n": 150,
+    "n_sleeves": 34,
+    "mean_residual_r": -0.0612,
+    "t": -0.878,
+    "p": 0.379872,
+    "bh_rejected": false,
+    "bonferroni_rejected": false
+   },
+   {
+    "axis": "dow",
+    "bucket": 0,
+    "n": 114,
+    "n_sleeves": 45,
+    "mean_residual_r": 0.2812,
+    "t": 0.834,
+    "p": 0.404468,
+    "bh_rejected": false,
+    "bonferroni_rejected": false
+   },
+   {
+    "axis": "dow",
+    "bucket": 3,
+    "n": 71,
+    "n_sleeves": 37,
+    "mean_residual_r": -0.1999,
+    "t": -0.73,
+    "p": 0.465114,
+    "bh_rejected": false,
+    "bonferroni_rejected": false
+   },
+   {
+    "axis": "hour",
+    "bucket": 14,
+    "n": 26,
+    "n_sleeves": 14,
+    "mean_residual_r": 0.1161,
+    "t": 0.691,
+    "p": 0.489539,
+    "bh_rejected": false,
+    "bonferroni_rejected": false
+   },
+   {
+    "axis": "hour",
+    "bucket": 9,
+    "n": 31,
+    "n_sleeves": 18,
+    "mean_residual_r": 0.1182,
+    "t": 0.655,
+    "p": 0.512263,
+    "bh_rejected": false,
+    "bonferroni_rejected": false
+   },
+   {
+    "axis": "hour",
+    "bucket": 1,
+    "n": 152,
+    "n_sleeves": 23,
+    "mean_residual_r": -0.0858,
+    "t": -0.318,
+    "p": 0.750431,
+    "bh_rejected": false,
+    "bonferroni_rejected": false
+   },
+   {
+    "axis": "x:XAUUSD",
+    "bucket": "up",
+    "n": 329,
+    "n_sleeves": 47,
+    "mean_residual_r": -0.0386,
+    "t": -0.302,
+    "p": 0.762464,
+    "bh_rejected": false,
+    "bonferroni_rejected": false
+   },
+   {
+    "axis": "x:USDJPY",
+    "bucket": "up",
+    "n": 250,
+    "n_sleeves": 43,
+    "mean_residual_r": -0.0199,
+    "t": -0.264,
+    "p": 0.791513,
+    "bh_rejected": false,
+    "bonferroni_rejected": false
+   },
+   {
+    "axis": "hour",
+    "bucket": 10,
+    "n": 21,
+    "n_sleeves": 13,
+    "mean_residual_r": 0.0479,
+    "t": 0.262,
+    "p": 0.793023,
+    "bh_rejected": false,
+    "bonferroni_rejected": false
+   }
+  ],
+  "rule": "a bucket needs >= 20 trades to be tested; every test is counted; a finding is BH-rejected at q=0.1 over all 18 tests",
+  "conditioned_cells": {
+   "children_named": 0,
+   "measured_this_pass": 0,
+   "counts": {},
+   "candidates_this_pass": 0,
+   "donation": {
+    "status": "DRY_RUN"
+   },
+   "trial_charge_this_pass": {
+    "n_raw": 0,
+    "n_effective": 0.0,
+    "basis": "no cell measured this pass"
+   },
+   "donated_total": 0
+  },
+  "children_not_expressible": {
+   "parent's own bucket residual too thin or of the other sign": 9,
+   "parent sleeve has no certified spec": 10
+  }
+ },
+ "counterfactual_policy": {
+  "gates": {
+   "status": "MEASURED",
+   "gates": {
+    "broker_rejected": {
+     "relaxed": {
+      "n": 2,
+      "sum_r": -0.711,
+      "mean_r": -0.3553,
+      "t": -16.97,
+      "verdict": "INCONCLUSIVE",
+      "sources": [
+       "counterfactual_replay"
+      ],
+      "refusals_seen": 13,
+      "sum_d_elog": -0.00712
+     },
+     "tightened": {
+      "status": "UNMEASURED",
+      "n_admitted_with_margin": 0,
+      "why": "the decision ledger records each gate's VERDICT and not the MARGIN by which an admitted trade cleared it (signal_bps and modelled_cost_bps are 0 on every executed row read); tightening needs that margin, which only the gateway can write -- `gateway._record_decision` is money-path code, so it is named here, not edited"
+     }
+    },
+    "release_identity_refused": {
+     "relaxed": {
+      "n": 0,
+      "sum_r": 0.0,
+      "mean_r": null,
+      "t": null,
+      "verdict": "UNMEASURED",
+      "sources": [],
+      "refusals_seen": 428,
+      "sum_d_elog": null,
+      "why": "no refusal of this gate has been priced yet (the bracket never triggered, or no bars cover it on this host)"
+     },
+     "tightened": {
+      "status": "UNMEASURED",
+      "n_admitted_with_margin": 0,
+      "why": "the decision ledger records each gate's VERDICT and not the MARGIN by which an admitted trade cleared it (signal_bps and modelled_cost_bps are 0 on every executed row read); tightening needs that margin, which only the gateway can write -- `gateway._record_decision` is money-path code, so it is named here, not edited"
+     }
+    }
+   },
+   "rule": "relaxed = the priced counterfactual R of every bracket the gate refused (positive: the book would have earned it); tightened = the realised R of the admitted trades in the bottom quintile of the gate's recorded margin (what one quintile tighter would have removed)"
+  },
+  "capital_modifiers": {
+   "status": "UNMEASURED",
+   "why": "no trade of the book falls after a modifier row of its own sleeve"
+  },
+  "cited_organs": {
+   "missed_growth": {
+    "status": "UNMEASURED",
+    "why": "MISSED_GROWTH.json absent on this host"
+   },
+   "modifier_counterfactuals": {
+    "status": "UNMEASURED",
+    "why": "MODIFIER_COUNTERFACTUALS.json absent on this host"
+   },
+   "filter_value": {
+    "status": "UNMEASURED",
+    "why": "FILTER_VALUE.json absent on this host"
+   },
+   "counterfactual_world": {
+    "status": "UNMEASURED",
+    "why": "COUNTERFACTUAL_WORLD.json absent on this host"
+   },
+   "action_counterfactuals": {
+    "status": "UNMEASURED",
+    "why": "ACTION_COUNTERFACTUALS.json absent on this host"
+   }
+  }
+ },
+ "elapsed_s": 6.32
+}

@@ -98,10 +98,19 @@ sys.path.insert(0, str(BASE / "research"))
 sys.path.insert(0, str(ROOT))
 
 from miner_candidate_compiler import (  # noqa: E402
+    _FAMILY_VOCAB,
     DEEPEN,
+    INTEL_ROOTS,
+    _deepening_task_id,
+    _is_operational_state,
+    _iter_file_rows,
+    _registered_cached,
     compile_row,
     known_symbols,
 )
+
+from libs.research import rule_deepening as rd  # noqa: E402
+from libs.research import source_provenance as sp  # noqa: E402
 
 #: Append-only: one line per task ever decided, so a decision is paid for once. Deliberately not
 #: a set inside the output file -- that file is rewritten each run and a crash mid-write would
@@ -120,6 +129,30 @@ BACKLOG = BASE / "reports" / "DEEPENING_BACKLOG.json"
 #: measures below the mark is a REGRESSION and says so; `tests/test_deepening_worker.py` fences
 #: the direction so a later change cannot quietly lower it.
 THROUGHPUT = BASE / "reports" / "DEEPENING_THROUGHPUT.json"
+
+#: THE NO-KEY PATH (six-event trace 2026-09-30: 28,686 worked rows, 0 candidates, 18,676 of them
+#: BLOCKED_SEAT_UNAVAILABLE because no key reached this worker). `libs.research.rule_deepening`
+#: reads a row's text in every language the desk mines and names a registered family, priced
+#: instruments and the session/month the text states. Its hypotheses are DONATED here, in the
+#: STRUCTURED_HYPOTHESIS shape the compiler already admits from the seats, labelled
+#: `fidelity: rule_based` -- the compiler's door and the ten gates still decide.
+RULE_DONATIONS = BASE / "data" / "intelligence" / "deepening_rule_based"
+#: What served each row this pass (llm:<provider> / rule_based), per family, and the trial charge.
+RULE_REPORT = BASE / "reports" / "DEEPENING_RULE_BASED.json"
+#: The incremental cursor over the BLOCKED rows whose task left the queue: where the replay
+#: scan stopped, and which rows the CURRENT lexicon already read without a match (re-read only
+#: when the lexicon version changes, so an unchanged lexicon never re-reads its own misses).
+RULE_CURSOR = BASE / "logs" / "deepening_rule_cursor.json"
+#: Blocked rows the no-key reader could not read, with their TEXT, waiting for the free LLM seat
+#: (the replay finds each row's text once; this keeps it so the seat can reach it on any pass).
+LLM_BACKLOG = BASE / "logs" / "deepening_llm_backlog.jsonl"
+#: Rows per free-model request. The contract is one JSON array, validated per row.
+BATCH_SIZE = max(1, int(os.environ.get("DEEPEN_BATCH_SIZE", "15")))
+#: Wall seconds the replay of old BLOCKED rows may take per pass, inside RUN_BUDGET_SEC.
+REPLAY_BUDGET_SEC = float(os.environ.get("DEEPEN_REPLAY_BUDGET_SEC", "600"))
+#: The desk's second seat roster (free models). Read for provider NAMES and routes only; the
+#: key is handed to the seat object and never printed, logged or written anywhere.
+FREE_ROSTER = ROOT / "data" / "secrets" / "llm_panel_free.json"
 
 #: THE COMPILER'S OWN LABEL DECIDES THE LANE. Each entry is the disposition the compiler recorded
 #: on the row -> (terminal disposition, why the seat cannot win here, what would reopen it).
@@ -199,6 +232,86 @@ COMPACT_OVER_BYTES = int(os.environ.get("DEEPEN_COMPACT_OVER_BYTES", str(64 * 10
 #: running three seats that have produced NOTHING in seven days and five launches that died in 24
 #: hours. Asking more of a failing seat layer produces more of the same nothing.
 DEFAULT_LIMIT = int(os.environ.get("DEEPEN_LIMIT", "0"))          # 0 = the whole queue
+
+#: THE MEMORY SELF-CHECK (2026-10-20). `deepening_worker.py --limit 25` sat at 18 GB in session 0
+#: on the trading box. The cause is fixed (`graph_index`), and this is the rail for the next one:
+#: once this process's resident size passes this share of the box's AVAILABLE memory -- both
+#: measured live with psutil, never a figure for either box -- the pass stops starting work,
+#: publishes what it decided and exits 0. Every decision is already in the append-only worked
+#: ledger the moment it is made, so that IS the checkpoint: the next pass resumes exactly where
+#: this one stopped, and nothing is skipped, dropped or capped.
+RSS_SHARE_OF_AVAILABLE = 0.5
+
+
+def memory_guard(rss_mb: float | None = None, avail_mb: float | None = None) -> tuple[bool, str]:
+    """(over, why). Over when RSS > share x available memory; UNMEASURED is never over."""
+    try:
+        share = float(os.environ.get("DEEPEN_RSS_SHARE", str(RSS_SHARE_OF_AVAILABLE)))
+    except ValueError:
+        share = RSS_SHARE_OF_AVAILABLE
+    if not 0.0 < share <= 4.0:
+        share = RSS_SHARE_OF_AVAILABLE
+    try:
+        import psutil
+        mb = 1024.0 * 1024.0
+        rss = float(psutil.Process().memory_info().rss) / mb if rss_mb is None else rss_mb
+        avail = float(psutil.virtual_memory().available) / mb if avail_mb is None else avail_mb
+    except Exception as exc:
+        return False, f"memory UNMEASURED ({type(exc).__name__}): the pass runs on"
+    limit = share * avail
+    return rss > limit, (f"rss {rss:.0f}MB vs {share:g} x {avail:.0f}MB available "
+                         f"= {limit:.0f}MB")
+
+
+#: The memory guard's own report: did it trip, how many tasks it deferred, and for how many
+#: consecutive passes -- with the missed-growth line `research/missed_growth.py` carries.
+MEMORY_GUARD_REPORT = BASE / "reports" / "DEEPENING_MEMORY_GUARD.json"
+MEMORY_GUARD_HISTORY = 50
+
+
+def publish_memory_guard(mem_stop: dict, *, worked: int, pending: int,
+                         path: Path | None = None) -> dict:
+    """Publish one pass's guard outcome. A tripped pass defers `pending - worked` tasks to the
+    next pass (nothing is dropped: the worked ledger is the checkpoint), and that deferral is a
+    missed-growth line in its own units -- its E[log W] price is UNMEASURED, said, never zero.
+    `consecutive_tripped` counts passes in a row the guard stopped; one untripped pass resets it.
+    """
+    out_path = path or MEMORY_GUARD_REPORT
+    try:
+        prev = json.loads(out_path.read_text("utf-8"))
+        prev = prev if isinstance(prev, dict) else {}
+    except (OSError, ValueError):
+        prev = {}
+    tripped = bool(mem_stop)
+    deferred = max(0, int(pending) - int(worked)) if tripped else 0
+    now = datetime.now(tz=UTC)
+    lines = list(prev.get("missed_growth") or [])
+    if tripped:
+        lines.append({"day": now.date().isoformat(), "at": now.isoformat(timespec="seconds"),
+                      "rail": "deepening_memory_guard", "kind": "opportunity_cost",
+                      "value": None, "verdict": "UNMEASURED", "units": "tasks deferred",
+                      "deferred": deferred, "worked": int(worked),
+                      "why": (f"the memory guard stopped the pass after {worked} task(s) "
+                              f"({mem_stop.get('why')}); {deferred} deferred to the next pass")})
+    doc = {"generated_utc": now.isoformat(timespec="seconds"), "tripped": tripped,
+           "why": mem_stop.get("why") if tripped else None, "worked_this_pass": int(worked),
+           "pending_at_start": int(pending), "deferred": deferred,
+           "consecutive_tripped": (int(prev.get("consecutive_tripped") or 0) + 1) if tripped
+           else 0,
+           "tripped_passes_total": int(prev.get("tripped_passes_total") or 0) + int(tripped),
+           "missed_growth": lines[-MEMORY_GUARD_HISTORY:]}
+    try:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = out_path.with_name(f"{out_path.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+        os.replace(tmp, out_path)
+    except OSError:
+        pass                                    # a report never stops the pass
+    if tripped and doc["consecutive_tripped"] >= 3:
+        dlog(f"MEMORY GUARD has stopped {doc['consecutive_tripped']} consecutive passes: the "
+             f"worker's working set is the defect to fix, not the guard")
+    return doc
+
 
 #: Wall clock a single run may spend. 40 minutes inside the 60-minute cycle leaves the remaining
 #: legs their time and absorbs an overrun on the last task without colliding with the next hour.
@@ -515,6 +628,82 @@ def validate_expression(found: dict, universe: set[str]) -> tuple[dict, str]:
             "evidence": f"generated: {mechanism} [{ag.to_str(expr)}]"}, ""
 
 
+#: Which path served the row the current thread is working: "llm:<provider>" or "rule_based".
+_SERVED = threading.local()
+
+
+def served_by() -> str:
+    return str(getattr(_SERVED, "value", "") or "")
+
+
+def seat_chain() -> list:
+    """Every distinct seat this box can reach, in the order they are tried.
+
+    THE CHAIN, NOT THE FIRST SEAT (L1.54). `llm_seat.chat` resolves `primary_seat()` and stops,
+    so a box whose first seat is refused or unreachable read as "no seat" while a second
+    provider sat configured. Resolved here from the environment and BOTH seat rosters
+    (`data/secrets/llm_panel.json` through `llm_seat.seats()`, then the free roster), deduped by
+    route. Keys are passed to the Seat object and nowhere else -- never printed, logged or
+    written; the ledger records the provider NAME only.
+    """
+    out: list = []
+    seen: set[tuple[str, str]] = set()
+    try:
+        from libs.ops import llm_seat
+        candidates = list(llm_seat.seats())
+    except Exception:
+        return out
+    try:
+        from libs.ops.llm_route import load_seats
+        for p in load_seats(FREE_ROSTER):
+            candidates.append(llm_seat.Seat(
+                name=str(p.get("name") or "free"), base_url=str(p.get("base_url")),
+                key=str(p.get("key")), model=str(p.get("model") or ""),
+                source="file:llm_panel_free.json"))
+    except Exception:
+        pass
+    for seat in candidates:
+        route = (str(seat.base_url).rstrip("/"),
+                 hashlib.sha256(str(seat.key).encode("utf-8")).hexdigest()[:12]
+                 + "|" + str(seat.model))
+        if route in seen:
+            continue
+        seen.add(route)
+        out.append(seat)
+    return out
+
+
+def chain_chat(prompt: str, **kw):
+    """`llm_seat.chat` across the whole chain: the first seat that answers serves the row.
+
+    A route failing ends that ATTEMPT and nothing else. A DAILY refusal is returned as soon as it
+    is seen, because every seat on the same account takes the same refusal; any other error moves
+    to the next seat. The serving provider is recorded in `served_by()`.
+    """
+    from libs.ops import llm_seat
+    chain = seat_chain()
+    if not chain:
+        return llm_seat.chat(prompt, **kw)           # the canonical "no seat" sentence
+    last = ""
+    for seat in chain:
+        text, err = llm_seat.chat(prompt, seat=seat, **kw)
+        if not err:
+            _SERVED.value = f"llm:{seat.name}"
+            return text, None
+        last = f"{seat.name}: {err}"
+        if _is_daily(err):
+            break
+    return "", last
+
+
+def _is_daily(err: str) -> bool:
+    try:
+        from libs.ops.llm_seat import _is_daily_free_refusal
+        return bool(_is_daily_free_refusal(err))
+    except Exception:
+        return "per-day" in err.lower() or "daily" in err.lower()
+
+
 #: THE COMPLETION CAP, AND IT WAS THROWING AWAY HALF THE DAY'S SEAT CALLS (measured 2026-09-25).
 #:
 #: This was 700. A/B on twelve real queue rows, same prompts, same model, only the cap varying --
@@ -544,8 +733,7 @@ EXTRACT_MAX_TOKENS = int(os.environ.get("DEEPEN_EXTRACT_MAX_TOKENS", "3000"))
 def extract(task: dict, *, chat=None) -> tuple[dict, str]:
     """Ask the seat what the row's own text states. ({}, reason) on any doubt."""
     if chat is None:
-        from libs.ops import llm_seat
-        chat = llm_seat.chat
+        chat = chain_chat
     text = task_text(task)
     kind = str(task.get("kind") or "")
     system = _SYSTEM_BY_KIND.get(kind, _SYSTEM)
@@ -591,6 +779,11 @@ def work_task(task: dict, universe: set[str], *, chat=None) -> tuple[list[dict],
             return [], f"BLOCKED_SEAT_UNAVAILABLE: {why}"
         return [], f"REJECTED: {why}"
 
+    return apply_found(task, found, universe)
+
+
+def apply_found(task: dict, found: dict, universe: set[str]) -> tuple[list[dict], str]:
+    """A validated extraction written onto a COPY of the row and re-compiled by `compile_row`."""
     enriched = dict(task)
     if found["symbols"]:
         enriched["symbols"] = found["symbols"]
@@ -607,7 +800,83 @@ def work_task(task: dict, universe: set[str], *, chat=None) -> tuple[list[dict],
     for c in candidates:
         c["deepened"] = True
         c["evidence"] = found["evidence"][:400]
+        sp.stamp_candidate(c, task)
     return candidates, f"RECOVERED_{disposition}"
+
+
+# ------------------------------------------------------------ the free-model batch seat
+_BATCH_CONTRACT = """Return ONE JSON array, no prose around it, with exactly one object per row:
+
+[{"row": 1, "symbols": ["EURUSD"], "family": "session_range_breakout" | null,
+  "params": {"lookback": 20} | null,
+  "evidence": "verbatim span copied from THAT row's text", "why_not": "..." }, ...]
+
+Rules you must follow, for every row independently:
+- `evidence` MUST be copied character-for-character from that row's own text. If you cannot quote
+  it, return empty symbols, null family, and say why in `why_not`.
+- A generic mention of "forex", "trading" or "MT5" is NOT a symbol. Only concrete instruments.
+- Prefer a family from this list when the text states one of these mechanisms: {families}.
+- Prefer returning nothing for a row over returning something you had to reason your way to."""
+
+
+def batch_text(task: dict) -> str:
+    """The text one row shows the batch seat: the same fields `task_text` shows, without the
+    desk-memory blocks (they would repeat per row), each capped so a batch fits one request."""
+    lines = [f"TITLE: {task.get('title') or ''}", f"URL: {task.get('url') or ''}",
+             f"SOURCE: {task.get('source') or ''}",
+             f"SYMBOLS ALREADY RESOLVED: {task.get('symbols') or []}"]
+    for key, label in (("description", "DESCRIPTION"), ("claim", "CLAIM"), ("text", "TEXT"),
+                       ("summary", "SUMMARY"), ("family", "FAMILY HINT")):
+        v = task.get(key)
+        if v not in (None, "", [], {}):
+            lines.append(f"{label}: {str(v)[:1200]}")
+    return "\n".join(lines)
+
+
+def _parse_array(text: str) -> list[dict]:
+    t = (text or "").strip()
+    start, end = t.find("["), t.rfind("]")
+    if start < 0 or end <= start:
+        one = _parse(t)
+        return [one] if one else []
+    try:
+        v = json.loads(t[start:end + 1])
+    except ValueError:
+        return []
+    return [x for x in v if isinstance(x, dict)] if isinstance(v, list) else []
+
+
+def batch_extract(tasks: list[dict], universe: set[str], *, complete) -> tuple[
+        list[tuple[dict, list[dict], str]], str, str | None]:
+    """Deepen several rows in ONE request: (per-row results, model, error).
+
+    Each returned object is validated against ITS OWN row's text by `validate` -- the same
+    fabricated-quote check a single-row call gets -- so batching buys rows per request and never
+    leniency. A row the reply omits is returned with no decision and stays open.
+    """
+    shown = [batch_text(t) for t in tasks]
+    body = "\n\n".join(f"[ROW {i}]\n{txt}" for i, txt in enumerate(shown, start=1))
+    contract = _BATCH_CONTRACT.replace("{families}", ", ".join(sorted(_FAMILY_VOCAB)))
+    text, model, err = complete([{"role": "system", "content": _SYSTEM},
+                                 {"role": "user", "content": f"{body}\n\n{contract}"}])
+    if err:
+        return [], model, err
+    by_row: dict[int, dict] = {}
+    for obj in _parse_array(text):
+        with contextlib.suppress(TypeError, ValueError):
+            by_row.setdefault(int(obj.get("row")), obj)
+    out: list[tuple[dict, list[dict], str]] = []
+    for i, task in enumerate(tasks, start=1):
+        obj = by_row.get(i)
+        if obj is None:
+            continue                                   # not served: the row stays open
+        found, why = validate(obj, shown[i - 1], universe)
+        if not found:
+            out.append((task, [], f"REJECTED: {why}"))
+            continue
+        cands, disp = apply_found(task, found, universe)
+        out.append((task, cands, disp))
+    return out, model, None
 
 
 def lane(task: dict) -> str:
@@ -660,6 +929,332 @@ def no_seat_work(task: dict, universe: set[str]) -> tuple[list[dict], str]:
         ("REFUSED_NOT_CONVERTIBLE",
          f"the compiler refused this row again as {disposition}", "none recorded"))
     return [], f"{label}: {why}; remedy: {remedy}"
+
+
+def rule_work(task: dict, universe: set[str]) -> tuple[list[dict], str, list[dict]]:
+    """The deterministic path: (candidates, disposition, hypothesis rows to donate).
+
+    The row is read by `rule_deepening` in its own language; every hypothesis it names is then
+    passed through `compile_row` -- the door every miner row uses -- and only hypotheses the
+    compiler turns into at least one candidate are kept and donated. A miss is NOT terminal: it
+    names why, and the row stays open for a seat or a later lexicon.
+    """
+    row = dict(task)
+    row.setdefault("deepening_task_id", task_id(task))
+    try:
+        res = rd.deepen(row, universe, registered=_registered_cached,
+                        allowed_families=_FAMILY_VOCAB)
+    except Exception as exc:                          # the lexicon must never end the pass
+        return [], f"RULE_BASED_NO_MATCH: {type(exc).__name__}: {exc}", []
+    kept: list[dict] = []
+    cands: list[dict] = []
+    for hyp in res["hypotheses"]:
+        got, _disp = compile_row(hyp["source"], hyp, universe)
+        if not got:
+            continue
+        for c in got:
+            c["deepened"] = True
+            c["fidelity"] = rd.FIDELITY
+            c["evidence"] = str(hyp.get("evidence") or "")[:400]
+            sp.stamp_candidate(c, hyp)
+        kept.append(hyp)
+        cands.extend(got)
+    if not kept:
+        return [], f"RULE_BASED_NO_MATCH: {res.get('why') or 'compiler refused every reading'}", []
+    return cands, "RECOVERED_RULE_BASED", kept
+
+
+_DONATE_LOCK = threading.Lock()
+
+
+def donate(hyps: list[dict], *, now: datetime | None = None) -> int:
+    """Append rule-based hypotheses to today's donation file, where the compiler reads them."""
+    if not hyps:
+        return 0
+    t = now or datetime.now(tz=UTC)
+    path = RULE_DONATIONS / f"rule_based_{t:%Y%m%d}.jsonl"
+    stamp = t.isoformat(timespec="seconds")
+    with _DONATE_LOCK:
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open("a", encoding="utf-8") as fh:
+                for h in hyps:
+                    row = sp.stamp_row(dict(h), ground=str(h.get("ground") or "deepening"),
+                                       retrieved_at=str(h.get("retrieved_at") or stamp))
+                    row["deepened_at"] = stamp
+                    fh.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
+        except OSError:
+            return 0
+    return len(hyps)
+
+
+def _load_rule_cursor() -> dict:
+    try:
+        doc = json.loads(RULE_CURSOR.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(doc, dict) or doc.get("lexicon_version") != rd.LEXICON_VERSION:
+        return {}                                     # a new lexicon re-reads every miss
+    return doc
+
+
+def _save_rule_cursor(doc: dict) -> None:
+    doc = {**doc, "lexicon_version": rd.LEXICON_VERSION,
+           "at": datetime.now(tz=UTC).isoformat(timespec="seconds")}
+    with contextlib.suppress(OSError):
+        RULE_CURSOR.parent.mkdir(parents=True, exist_ok=True)
+        tmp = RULE_CURSOR.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(doc), encoding="utf-8")
+        os.replace(tmp, RULE_CURSOR)
+
+
+def _replay_paths() -> list[Path]:
+    """Every evidence artifact the replay may read, in a STABLE order so the cursor means
+    something across passes. The rule-based donations themselves are excluded."""
+    out: list[Path] = []
+    for root in INTEL_ROOTS:
+        if not root.exists():
+            continue
+        for p in root.rglob("*"):
+            if not (p.is_file() and p.suffix.lower() in {".json", ".jsonl"}):
+                continue
+            rel = p.relative_to(root)
+            if _is_operational_state(rel) or rel.parts[0] == RULE_DONATIONS.name:
+                continue
+            out.append(p)
+    return sorted(out, key=lambda p: p.as_posix())
+
+
+def _story_tasks() -> list[dict]:
+    """Deep-forest story tasks rebuilt from the claims ledger (their text is not in any
+    intelligence file). Empty when the miner cannot be imported."""
+    try:
+        from research import deep_forest_miner as dfm
+        return list(dfm.build_tasks(dfm._claims_rows(), cap=10**9))
+    except Exception:
+        return []
+
+
+def replay_blocked(wanted: set[str], universe: set[str], budget_s: float, *,
+                   paths: list[Path] | None = None) -> tuple[list[tuple[dict, list[dict], str,
+                                                                          list[dict]]], dict]:
+    """Re-read BLOCKED rows whose task is no longer queued, through an incremental cursor.
+
+    `wanted` is the set of outage task ids with no terminal decision. The replay walks every
+    evidence artifact (and the deep-forest claims ledger), computes each row's task identity
+    exactly as the compiler does, and runs `rule_work` on the FULL row -- body text included,
+    which the compact queue task never carried. Bounded by `budget_s`; the cursor resumes at the
+    same file and row next pass, and wraps when the walk completes.
+    """
+    cur = _load_rule_cursor()
+    tried: set[str] = set(cur.get("tried") or [])
+    todo = wanted - tried
+    results: list[tuple[dict, list[dict], str, list[dict]]] = []
+    note = {"wanted": len(wanted), "already_tried_this_lexicon": len(wanted & tried),
+            "matched": 0, "recovered": 0, "rows_scanned": 0, "wrapped": False}
+    if not todo or not universe:
+        note["why"] = "nothing to replay" if not todo else "empty universe: nothing is priceable"
+        return results, note
+    started = time.monotonic()
+    # THE STORY TASKS FIRST: small, and the only place their text still lives.
+    for t in _story_tasks():
+        tid = task_id(t)
+        if tid in todo:
+            c, d, h = rule_work(t, universe)
+            results.append((t, c, d, h))
+            todo.discard(tid)
+            tried.add(tid)
+    files = paths if paths is not None else _replay_paths()
+    start_file = str(cur.get("file") or "")
+    start_row = int(cur.get("row") or 0)
+    names = [p.as_posix() for p in files]
+    i0 = names.index(start_file) if start_file in names else 0
+    order = files[i0:] + files[:i0]
+    stop_at: tuple[str, int] | None = None
+    for k, path in enumerate(order):
+        if not todo:
+            break
+        skip = start_row if k == 0 else 0
+        for idx, row in enumerate(_iter_file_rows(path)):
+            if idx < skip:
+                continue
+            if time.monotonic() - started > budget_s:
+                stop_at = (path.as_posix(), idx)
+                break
+            note["rows_scanned"] += 1
+            src = str(row.get("source") or path.parent.name or "unknown")
+            tid = _deepening_task_id(src, row)
+            if tid not in todo:
+                continue
+            task = {**row, "source": src,
+                    "title": str(row.get("title") or row.get("description") or "")[:300],
+                    "url": sp.source_url_of(row)}
+            with contextlib.suppress(OSError):
+                try:
+                    rel = path.relative_to(ROOT).as_posix()
+                except ValueError:  # a path outside the repo (a test root, an override)
+                    rel = path.as_posix()
+                prov = sp.extract(row, artifact=rel, row_index=idx,
+                                  artifact_mtime=path.stat().st_mtime)
+                task.update({k2: v for k2, v in prov.items() if v and k2 in sp.FIELDS})
+            c, d, h = rule_work(task, universe)
+            results.append((task, c, d, h))
+            todo.discard(tid)
+            tried.add(tid)
+        if stop_at is not None:
+            break
+    if stop_at is None:
+        note["wrapped"] = True
+        stop_at = ("", 0)
+    note["matched"] = len(results)
+    note["recovered"] = sum(1 for _t, c, _d, _h in results if c)
+    note["still_open"] = len(todo)
+    note["elapsed_s"] = round(time.monotonic() - started, 1)
+    # A recovered row gets a TERMINAL ledger row; only misses need remembering here.
+    recovered_ids = {task_id(t) for t, c, _d, _h in results if c}
+    _save_rule_cursor({"file": stop_at[0], "row": stop_at[1],
+                       "tried": sorted(tried - recovered_ids)})
+    return results, note
+
+
+def append_llm_backlog(tasks: list[dict]) -> int:
+    """Keep the TEXT of blocked rows the no-key reader could not read, for the free seat."""
+    if not tasks:
+        return 0
+    keep = ("source", "title", "url", "kind", "symbols", "description", "claim", "text",
+            "summary", "lang", "language", "region", "country", *sp.FIELDS)
+    with contextlib.suppress(OSError):
+        LLM_BACKLOG.parent.mkdir(parents=True, exist_ok=True)
+        with LLM_BACKLOG.open("a", encoding="utf-8") as fh:
+            for t in tasks:
+                row = {k: t[k] for k in keep if t.get(k) not in (None, "", [])}
+                if "description" not in row:
+                    body = rd.row_text(t)
+                    if body:
+                        row["description"] = body[:1500]
+                row["id"] = task_id(t)
+                fh.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
+        return len(tasks)
+    return 0
+
+
+def read_llm_backlog() -> list[dict]:
+    """The backlog rows, one per task id (last write wins). Empty when absent."""
+    out: dict[str, dict] = {}
+    with contextlib.suppress(OSError):
+        with LLM_BACKLOG.open("r", encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                with contextlib.suppress(ValueError):
+                    row = json.loads(line)
+                    if isinstance(row, dict) and row.get("id"):
+                        out[str(row["id"])] = row
+    return list(out.values())
+
+
+def free_seat_lane(pending: list[dict], universe: set[str], commit, out_of_time, *,
+                   blocked_backlog: int | None = None, orf=None) -> dict:
+    """Serve `pending` rows on OpenRouter's free models, BATCH_SIZE per request, until the day's
+    ceiling, the pass's time, or the provider says no. Returns the lane's note (with
+    `served_ids`). Publishes `reports/OPENROUTER_FREE_SEAT.json` whenever a key exists."""
+    if orf is None:
+        from libs.ops import openrouter_free as orf
+    key, key_source = orf.resolve_key()
+    if not key:
+        return {"status": "NO_KEY", "why": ("no OPENROUTER_API_KEY in the environment and no "
+                                            "openrouter provider in data/secrets/llm_panel*.json"),
+                "served_ids": []}
+    if not pending or not universe:
+        return {"status": "IDLE", "why": "nothing pending" if not pending else "empty universe",
+                "served_ids": []}
+    models, models_basis = orf.free_models(key)
+    q = orf.quota(key)
+    ceiling, ceiling_basis = orf.daily_request_ceiling(q)
+    st = orf.load_state()
+    served_ids: list[str] = []
+    stop_why = "pending rows exhausted"
+
+    def complete(messages: list[dict]):
+        return orf.complete(messages, key=key, models=models, state=st)
+
+    for i in range(0, len(pending), BATCH_SIZE):
+        if out_of_time():
+            stop_why = "run budget spent"
+            break
+        if ceiling is not None and int(st.get("requests") or 0) >= ceiling:
+            stop_why = f"daily ceiling {ceiling} reached ({ceiling_basis})"
+            break
+        batch = pending[i:i + BATCH_SIZE]
+        t0 = time.monotonic()
+        results, model, err = batch_extract(batch, universe, complete=complete)
+        st["rows_sent"] = int(st.get("rows_sent") or 0) + len(batch)
+        if err:
+            orf.save_state(st)
+            if "daily" in err.lower() or err.startswith(("HTTP 401", "HTTP 402", "HTTP 403")):
+                stop_why = f"provider refused: {err[:200]}"
+                break
+            continue                                   # this batch stays open; try the next
+        per = (time.monotonic() - t0) / max(1, len(results))
+        for task, cands, disp in results:
+            commit(task, cands, disp, per, via=f"llm:openrouter/{model}")
+            served_ids.append(task_id(task))
+        st["rows_served"] = int(st.get("rows_served") or 0) + len(results)
+        orf.save_state(st)
+    doc = orf.publish(st, q=q, models_basis=models_basis, n_models=len(models),
+                      batch_size=BATCH_SIZE, key_source=key_source, ceiling=ceiling,
+                      ceiling_basis=ceiling_basis, blocked_backlog=blocked_backlog)
+    return {"status": "RAN", "stop": stop_why, "requests_today": doc["requests_today"],
+            "rows_served_today": doc["rows_served_today"], "served_ids": served_ids,
+            "key_source": key_source}
+
+
+def charge_trials(cands: list[dict]) -> dict:
+    """This pass's rule-based cells, priced by the desk's own effective-trial census.
+
+    Every minted cell is a trial and nothing is judged for free: the census reports N_raw and
+    N_effective (the participation ratio over descriptor similarity) so the multiplicity charge
+    these cells add is on the artifact, and they reach the docket, where
+    `research/effective_trials.py` charges them to the deflated-Sharpe budget with everything else.
+    """
+    if not cands:
+        return {"n_raw": 0, "n_effective": 0.0, "basis": "no cell minted this pass"}
+    try:
+        from libs.research import trial_ledger as tl
+        rows = [tl.Trial(str(c.get("genome_id") or f"{c.get('symbol')}|{c.get('family')}|{i}"),
+                         str(c.get("family") or ""),
+                         {"symbol": str(c.get("symbol") or ""),
+                          "culture": str(c.get("source_culture") or "UNMEASURED"),
+                          "basis": "rule_based"},
+                         dict(c.get("params") or {}))
+                for i, c in enumerate(cands)]
+        census = tl.census(rows)
+        return {"n_raw": int(census.n_raw), "n_effective": round(float(census.n_effective), 2),
+                "inflation": round(float(census.inflation), 3),
+                "basis": ("libs.research.trial_ledger.census over this pass's rule-based cells; "
+                          "the docket charge is research/effective_trials.py")}
+    except Exception as exc:
+        return {"n_raw": len(cands), "n_effective": None,
+                "basis": f"UNMEASURED: census failed ({type(exc).__name__}: {exc})"}
+
+
+def publish_rule_report(served: dict[str, int], by_family: dict[str, int],
+                        by_culture: dict[str, int], cands: list[dict], replay: dict,
+                        donated: int, now: datetime) -> dict:
+    doc = {"at": now.isoformat(timespec="seconds"), "lexicon_version": rd.LEXICON_VERSION,
+           "served_by": dict(sorted(served.items())),
+           "rule_based_candidates": len(cands), "hypotheses_donated": donated,
+           "by_family": dict(sorted(by_family.items(), key=lambda kv: -kv[1])),
+           "by_source_culture": dict(sorted(by_culture.items(), key=lambda kv: -kv[1])),
+           "trial_census": charge_trials(cands), "replay": replay,
+           "donations": RULE_DONATIONS.relative_to(BASE).as_posix(),
+           "consumer": "miner_candidate_compiler (STRUCTURED_HYPOTHESIS) -> merge -> gauntlet",
+           "rule": ("served_by names the path per row: llm:<provider> or rule_based. A rule-based "
+                    "cell is a hypothesis labelled fidelity=rule_based; the ten gates decide")}
+    with contextlib.suppress(OSError):
+        RULE_REPORT.parent.mkdir(parents=True, exist_ok=True)
+        tmp = RULE_REPORT.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(doc, indent=1, ensure_ascii=False), encoding="utf-8")
+        os.replace(tmp, RULE_REPORT)
+    return doc
 
 
 def task_class(task: dict) -> str:
@@ -754,6 +1349,62 @@ def voi_order(tasks: list[dict], costs: dict[str, float] | None = None,
     return sorted(tasks, key=_key)
 
 
+def graph_index(path: Path | None = None) -> tuple[object | None, dict[str, int], int]:
+    """(graveyard model, buried rows per region, rows read) from ONE streamed graph read.
+
+    THIS WAS THE WORKER'S RESIDENT SIZE (2026-10-20). `_scorer` held `Graph().snapshot()` -- every
+    row of `hypothesis_graph.jsonl` as a parsed dict, ~3.1 KB each measured here -- for the whole
+    pass, then fitted the graveyard model over it. The judge appends up to a million first fates
+    per sweep; the box's graph held 5,742,434 lines on 2026-10-03 (GAUNTLET_BACKPRESSURE.json),
+    which is ~18 GB, the size `deepening_worker.py --limit 25` sat at in session 0. It grows with
+    every sweep, so it grew with every run whatever the limit.
+
+    The scorer reads exactly two things from the graph: the LATEST fate per node id (a region's
+    FAILED/BURIED count, `prior_failures()["n_failed"]`) and the graveyard model `fit` derives
+    from those same latest rows. Both are kept per id as a few interned values while the file is
+    streamed a line at a time, so the answers are the same and the memory is a small fraction.
+    A torn line (the judge appending while this reads) is skipped, where the old read discarded
+    the whole graph on it.
+    """
+    from libs.research import graveyard_model as _gm
+    from libs.research.hypothesis_graph import BURIED, FAILED, LEDGER
+
+    src = path or LEDGER
+    pool: dict = {}
+    regions: dict = {}           # Graph.current() keys: str(id), every row -> region or None
+    judged: dict = {}            # GraveyardModel.fit keys: truthy ids only -> judged_entry
+    n = 0
+    try:
+        with open(src, encoding="utf-8") as fh:
+            for ln in fh:
+                if not ln.strip():
+                    continue
+                try:
+                    r = json.loads(ln)
+                except ValueError:
+                    continue
+                if not isinstance(r, dict):
+                    continue
+                n += 1
+                rid = r.get("id")
+                fate = r.get("fate")
+                reg = str(r.get("region")) if fate in (FAILED, BURIED) else None
+                regions[str(rid)] = None if reg is None else pool.setdefault(reg, reg)
+                if rid:
+                    judged[str(rid)] = _gm.judged_entry(r, pool)
+    except OSError:
+        return None, {}, 0
+    counts: dict[str, int] = {}
+    for reg in regions.values():
+        if reg is not None:
+            counts[reg] = counts.get(reg, 0) + 1
+    regions.clear()
+    model = _gm.GraveyardModel().fit_entries(judged.values())
+    judged.clear()
+    pool.clear()
+    return model, counts, n
+
+
 def _scorer():
     """The value-of-information score for one task, as a callable built once per run."""
     try:
@@ -766,22 +1417,19 @@ def _scorer():
         pooled = float(sum(p_fam.values()) / max(1, len(p_fam))) if p_fam else 0.05
     except Exception:
         p_fam, pooled = {}, 0.05
+    # ONE STREAMED READ OF THE GRAPH, never the whole graph in memory (see `graph_index`).
     try:
-        from libs.research.hypothesis_graph import Graph
-        graph = Graph().snapshot()
-        graph.buried()
+        from libs.research.hypothesis_graph import region_key
+        _model, buried_n, _rows = graph_index()
+        graph_ok = _rows > 0
     except Exception:
-        graph = None
+        _model, buried_n, graph_ok = None, {}, False
     # THE META-MODEL OF RESEARCH SUCCESS: P(survivor | family, symbol, source, ...) from the
     # graveyard, blended with the pooled family rate wherever the task names enough to ask.
     # The bandit's 20% exploration floor still applies through `direction`, so the queue
     # cannot become trapped by its own history.
-    try:
-        from libs.research.graveyard_model import GraveyardModel
-        gm = GraveyardModel().fit(graph.rows()) if graph is not None else None
-        if gm is not None and gm.n < 50:
-            gm = None
-    except Exception:
+    gm = _model if graph_ok else None
+    if gm is not None and getattr(gm, "n", 0) < 50:
         gm = None
 
     def _score(t: dict) -> float:
@@ -812,10 +1460,11 @@ def _scorer():
             or (src == "fund_playbook" and str(t.get("evidence_grade")) == "A")
             else (1.5 if strong_story else 1.0))
         novelty = 1.0
-        if graph is not None and fam and t.get("symbols"):
+        if graph_ok and fam and t.get("symbols"):
             try:
-                pf = graph.prior_failures(str(t["symbols"][0]), fam, dict(t.get("params") or {}))
-                novelty = 1.0 / (1.0 + float(pf.get("n_failed", 0)))
+                n_failed = buried_n.get(region_key(str(t["symbols"][0]), fam,
+                                                   dict(t.get("params") or {})), 0)
+                novelty = 1.0 / (1.0 + float(n_failed))
             except Exception:
                 pass
         # THE BANDIT'S SHARE for this task's research direction (uniform budget = 1.0), so the
@@ -973,11 +1622,17 @@ def compact_ledger(path: Path | None = None, *, over_bytes: int | None = None) -
     if size <= limit:
         return {"compacted": False, "why": f"{size} bytes is within the {limit}-byte budget",
                 "bytes": size}
-    kept: list[str] = []
+    # STREAMED TO THE NEW FILE, NEVER HELD (2026-10-20). Every kept line used to sit in a list and
+    # then in one joined string -- twice the ledger in memory -- and a ledger of real decisions
+    # past the budget was rewritten that way on EVERY pass, because compaction can only remove
+    # outage rows. Now kept lines go straight to the new file and a pass that would drop nothing
+    # leaves the ledger untouched.
     outage_days: set[str] = set()
-    rows = dropped = 0
+    rows = dropped = kept = 0
+    tmp = p.with_suffix(".jsonl.compact")
     try:
-        with p.open("r", encoding="utf-8", errors="replace") as fh:
+        with p.open("r", encoding="utf-8", errors="replace") as fh, \
+                tmp.open("w", encoding="utf-8") as out:
             for line in fh:
                 if not line.strip():
                     continue
@@ -985,25 +1640,33 @@ def compact_ledger(path: Path | None = None, *, over_bytes: int | None = None) -
                 try:
                     row = json.loads(line)
                 except ValueError:
-                    kept.append(line.rstrip("\n"))     # unreadable is never silently dropped
+                    out.write(line.rstrip("\n") + "\n")   # unreadable is never silently dropped
+                    kept += 1
                     continue
-                disposition = str(row.get("disposition") or "")
+                disposition = str(row.get("disposition") or "") if isinstance(row, dict) else ""
                 if not is_outage(disposition):
-                    kept.append(line.rstrip("\n"))
+                    out.write(line.rstrip("\n") + "\n")
+                    kept += 1
                     continue
                 day = str(row.get("at") or "")[:10]
                 if day in outage_days:
                     dropped += 1
                     continue
                 outage_days.add(day)
-                kept.append(line.rstrip("\n"))
-        tmp = p.with_suffix(".jsonl.compact")
-        tmp.write_text("\n".join(kept) + ("\n" if kept else ""), encoding="utf-8")
+                out.write(line.rstrip("\n") + "\n")
+                kept += 1
+        if not dropped:
+            tmp.unlink(missing_ok=True)
+            return {"compacted": False, "bytes": size, "rows": rows,
+                    "why": (f"{size} bytes is over the {limit}-byte budget but holds no repeated "
+                            "outage row to drop: every line is a decision, kept as it is")}
         os.replace(tmp, p)
     except OSError as exc:
+        with contextlib.suppress(OSError):
+            tmp.unlink(missing_ok=True)
         return {"compacted": False, "why": f"{type(exc).__name__}: {exc}"}
     after = p.stat().st_size
-    return {"compacted": True, "rows_before": rows, "rows_after": len(kept),
+    return {"compacted": True, "rows_before": rows, "rows_after": kept,
             "outage_rows_dropped": dropped, "outage_days_kept": len(outage_days),
             "bytes_before": size, "bytes_after": after,
             "why": ("repeated seat-outage rows are non-terminal by construction (worked_ids "
@@ -1280,9 +1943,9 @@ def _work(argv: list[str] | None = None) -> int:
     # unconfigured external model was buried permanently; retried every hour it would spend the
     # whole conversion budget rediscovering the same outage. Eligible again only once a seat
     # actually exists.
+    # THE WHOLE CHAIN COUNTS, not the first seat: a box with any reachable provider retries.
     try:
-        from libs.ops.llm_seat import primary_seat
-        retry_seat_blocks = primary_seat() is not None
+        retry_seat_blocks = bool(seat_chain())
     except Exception:
         retry_seat_blocks = False
     # ONE read, TWO questions: what is DECIDED (never re-worked) and what is merely BLOCKED
@@ -1300,7 +1963,29 @@ def _work(argv: list[str] | None = None) -> int:
     # budget on the trading box. The seat lane is the only lane whose order can change an outcome,
     # because it is the only lane with a scarce resource to spend.
     rule_tasks = [t for t in open_tasks if lane(t) == "rule"]
+    # A SEAT OUTAGE NEVER HIDES A ROW FROM THE NO-KEY PATH. With no seat, `done` includes the
+    # outage set so the seat lane does not re-bill the outage -- but the rule-based reader needs
+    # no seat, so every non-terminal seat-lane row is offered to it on this pass.
+    rule_first = [t for t in tasks if task_id(t) not in terminal and lane(t) == "seat"]
     seat_tasks = voi_order([t for t in open_tasks if lane(t) == "seat"], costs=costs)
+    mem_stop: dict = {}
+
+    def over_memory() -> bool:
+        if mem_stop:
+            return True
+        # AT LEAST ONE TASK EVERY PASS (audit of 2832cebd1). Checked before the first task, the
+        # guard could stop a pass at zero tasks and exit 0 every hour -- a silent mining cut. The
+        # worker's own working set is the thing measured, so it is only judged once work is done.
+        # An OUTAGE row (a seat unavailable) is not work done (audit of 7cf2ece90): only a real
+        # decision counts, so a pass of outages can never satisfy the one-task guarantee.
+        if not decided_ids:
+            return False
+        over, why = memory_guard()
+        if over:
+            mem_stop.update(why=why, at=datetime.now(tz=UTC).isoformat(timespec="seconds"))
+            dlog(f"MEMORY GUARD: {why} -- no new task is started; every decision so far is in "
+                 f"{WORKED.name} and the rest resumes on the next pass")
+        return over
     pending = rule_tasks + seat_tasks
     lane_census = {"rule": len(rule_tasks), "seat": len(seat_tasks)}
     dlog(f"queue={len(tasks)} already-decided={len(done)} pending={len(pending)} "
@@ -1323,9 +2008,18 @@ def _work(argv: list[str] | None = None) -> int:
     write_lock = threading.Lock()
     decided_ids: set[str] = set()
 
-    def commit(task: dict, candidates: list[dict], disposition: str, wall_s: float) -> None:
+    served: dict[str, int] = {}
+    by_family: dict[str, int] = {}
+    by_culture: dict[str, int] = {}
+    rule_cands: list[dict] = []
+    donated = [0]
+
+    def commit(task: dict, candidates: list[dict], disposition: str, wall_s: float,
+               hyps: list[dict] | None = None, via: str = "") -> None:
         """Record one decision. Holds the lock only for the append, so the pool never serialises
         on a seat call -- only on the few microseconds of writing a line."""
+        if hyps:
+            donated[0] += donate(hyps)
         cls = task_class(task)
         head = disposition.split(":")[0]
         entry = {"id": task_id(task), "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
@@ -1336,13 +2030,28 @@ def _work(argv: list[str] | None = None) -> int:
                  "cost_basis": (f"measured:{cls}:{costs[cls]:.2f}s" if cls in costs
                                 else "uncosted:1.0"),
                  "controller_variant": variant}
+        # WHICH PATH SERVED THE ROW: llm:<provider>, rule_based, or compiler (a free recompile).
+        # An outage was served by nothing, and says so.
+        entry["served_by"] = via or ("none" if is_outage(disposition) else "compiler")
+        if hyps:
+            entry["fidelity"] = rd.FIDELITY
+            entry["families"] = sorted({str(h.get("family")) for h in hyps})
         # AND IT SAYS WHAT WOULD UNBLOCK IT. A row parked on an unconfigured seat is an outage
         # with a remedy, not a rejection; without this the ledger records only that it stopped.
         if disposition.startswith("BLOCKED_SEAT_UNAVAILABLE:"):
             entry["retry_action"] = "retry automatically after an external-model seat is configured"
         with write_lock:
             counts[head] = counts.get(head, 0) + 1
-            recovered.extend(candidates)
+            served[entry["served_by"]] = served.get(entry["served_by"], 0) + 1
+            if hyps:
+                rule_cands.extend(candidates)
+                for c in candidates:
+                    f = str(c.get("family") or "")
+                    by_family[f] = by_family.get(f, 0) + 1
+                    k = str(c.get("source_culture") or "UNMEASURED")
+                    by_culture[k] = by_culture.get(k, 0) + 1
+            else:
+                recovered.extend(candidates)
             # AN OUTAGE ROW IS NOT A DECISION, so it never counts against the backlog: the row
             # keeps its place and its published age, which is the whole point of the distinction.
             if not is_outage(disposition):
@@ -1357,6 +2066,8 @@ def _work(argv: list[str] | None = None) -> int:
     # moves the backlog, and running it first means a pass that dies later still drained.
     budget = args.limit if args.limit > 0 else len(pending)
     for task in rule_tasks[:budget]:
+        if over_memory():
+            break
         if out_of_time():
             dlog("run budget spent in the rule lane; the rest carries to the next pass -- "
                  "nothing is dropped and its age is published in DEEPENING_BACKLOG.json")
@@ -1366,7 +2077,14 @@ def _work(argv: list[str] | None = None) -> int:
             candidates, disposition = no_seat_work(task, universe)
         except Exception as exc:
             candidates, disposition = [], f"ERROR: {type(exc).__name__}: {exc}"
-        commit(task, candidates, disposition, time.monotonic() - t0)
+        hyps: list[dict] = []
+        via = ""
+        if not candidates:
+            # The compiler's English vocabulary refused it; the multilingual reader may not.
+            rc, rdisp, rh = rule_work(task, universe)
+            if rc:
+                candidates, disposition, hyps, via = rc, rdisp, rh, rd.FIDELITY
+        commit(task, candidates, disposition, time.monotonic() - t0, hyps=hyps, via=via)
     rule_done = sum(counts.values())
     dlog(f"rule lane: {rule_done} decided with no seat call, "
          f"{len(recovered)} candidate(s) recovered")
@@ -1381,6 +2099,73 @@ def _work(argv: list[str] | None = None) -> int:
                            ordering="compiler disposition: EMPTY_CAPTURE / OPERATIONAL_ROW / "
                                     "BANNED_FAMILY carry no text a reader could quote; each is "
                                     "refused BY NAME with its remedy, never dropped")
+
+    # ---- THE NO-KEY READER, OVER EVERY OPEN SEAT-LANE ROW, BEFORE ANY SEAT IS SPENT --------
+    # A row the lexicon can read is decided here for free and the seat's scarce daily allowance
+    # goes to the rows it cannot. A miss is not terminal: it stays open for the seat, and is not
+    # re-read by the same lexicon version (the cursor remembers it).
+    rule_cur = _load_rule_cursor() if universe else {}
+    tried: set[str] = set(rule_cur.get("tried") or [])
+    rule_hit_ids: set[str] = set()
+    newly_tried: set[str] = set()
+    for task in rule_first:
+        if out_of_time():
+            break
+        tid = task_id(task)
+        if tid in tried or not universe:
+            continue
+        t0 = time.monotonic()
+        rc, rdisp, rh = rule_work(task, universe)
+        if rc:
+            commit(task, rc, rdisp, time.monotonic() - t0, hyps=rh, via=rd.FIDELITY)
+            rule_hit_ids.add(tid)
+        else:
+            newly_tried.add(tid)
+    if newly_tried or rule_hit_ids:
+        _save_rule_cursor({**rule_cur, "tried": sorted((tried | newly_tried) - rule_hit_ids)})
+    seat_tasks = [t for t in seat_tasks if task_id(t) not in rule_hit_ids]
+    dlog(f"rule-based reader: {len(rule_hit_ids)} seat-lane row(s) recovered with no seat, "
+         f"{len(newly_tried)} read without a match (kept open for a seat)")
+
+    # ---- THE REPLAY: BLOCKED ROWS WHOSE TASK LEFT THE QUEUE, THROUGH AN INCREMENTAL CURSOR --
+    # 18,676 rows were parked BLOCKED_SEAT_UNAVAILABLE on 2026-09-10 and the compiler rewrites
+    # the queue hourly, so most of their tasks are no longer queued. Their text still lives in
+    # the evidence artifacts; the replay finds each by the compiler's own task identity and
+    # reads the FULL row with the no-key reader. What it cannot read keeps its TEXT in the LLM
+    # backlog, so the free-model seat below can reach it on this pass or any later one.
+    replay_note: dict = {"why": "skipped: empty universe"}
+    if universe and not out_of_time():
+        queued = {task_id(t) for t in tasks}
+        wanted = outage - terminal - decided_ids - queued
+        budget_left = max(0.0, RUN_BUDGET_SEC - (time.monotonic() - started))
+        replayed, replay_note = replay_blocked(wanted, universe,
+                                               min(REPLAY_BUDGET_SEC, budget_left))
+        misses: list[dict] = []
+        for task, rc, rdisp, rh in replayed:
+            if rc:
+                commit(task, rc, rdisp, 0.0, hyps=rh, via=rd.FIDELITY)
+            else:
+                misses.append(task)
+        append_llm_backlog(misses)
+        dlog(f"replay: {replay_note}")
+
+    # ---- THE FREE-MODEL SEAT: OPENROUTER ":free" MODELS, ROTATED AND BATCHED ---------------
+    # First in the chain (principal 2026-09-30). Queue rows first, then blocked rows from the
+    # LLM backlog; BATCH_SIZE rows per request, each validated against its own text. A row the
+    # seat does not serve is left open -- the no-key reader has already had its turn at it.
+    or_served: set[str] = set()
+    or_note: dict = {"status": "NO_KEY"}
+    backlog_rows = [t for t in read_llm_backlog()
+                    if task_id(t) not in terminal and task_id(t) not in decided_ids]
+    or_pending = seat_tasks + backlog_rows
+    try:
+        or_note = free_seat_lane(or_pending, universe, commit, out_of_time,
+                                 blocked_backlog=len(outage - terminal - decided_ids))
+        or_served = set(or_note.pop("served_ids", []) or [])
+    except Exception as exc:                          # the free seat must never end the pass
+        or_note = {"status": f"ERROR: {type(exc).__name__}: {exc}"[:300]}
+    dlog(f"free-model seat: {or_note}")
+    seat_tasks = [t for t in seat_tasks if task_id(t) not in or_served]
 
     # ---- THE SEAT LANE, PARALLEL, AND IT STOPS THE MOMENT THE DAY'S ALLOWANCE IS GONE -------
     # Before this, an exhausted budget still cost one refusal per row at 0.103s each: the pass
@@ -1400,18 +2185,23 @@ def _work(argv: list[str] | None = None) -> int:
         def run_one(task: dict) -> None:
             if stop.is_set() or out_of_time():
                 return
+            if over_memory():
+                stop.set()
+                return
             t0 = time.monotonic()
+            _SERVED.value = ""
             try:
                 candidates, disposition = work_task(task, universe)
             except Exception as exc:
                 candidates, disposition = [], f"ERROR: {type(exc).__name__}: {exc}"
+            via = served_by()
             # A DAILY REFUSAL ENDS THE LANE, not just this row: every further call today would
             # take the same refusal and record the same nothing. A BURST refusal must NOT --
             # stopping on "slow down for a minute" would hand back most of an allowance the desk
             # has already been granted, which is the timid reading this house does not take.
             if ends_the_day(disposition):
                 stop.set()
-            commit(task, candidates, disposition, time.monotonic() - t0)
+            commit(task, candidates, disposition, time.monotonic() - t0, via=via)
 
         with ThreadPoolExecutor(max_workers=workers,
                                 thread_name_prefix="deepen-seat") as pool:
@@ -1420,6 +2210,10 @@ def _work(argv: list[str] | None = None) -> int:
             dlog("seat lane stopped: the provider refused the DAY's allowance, not a burst. The "
                  "remaining rows keep their place and their published age, and the rule lane has "
                  "already had its turn at every row it can decide")
+
+    if universe:
+        publish_rule_report(served, by_family, by_culture, rule_cands, replay_note, donated[0],
+                            datetime.now(tz=UTC))
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     prior = []
@@ -1433,7 +2227,9 @@ def _work(argv: list[str] | None = None) -> int:
         "candidates": prior + recovered,
         "recovered_this_run": len(recovered),
         "dispositions": counts,
+        **({"memory_guard": mem_stop} if mem_stop else {}),
     }, indent=1), encoding="utf-8")
+    publish_memory_guard(mem_stop, worked=len(decided_ids), pending=backlog_before)
 
     elapsed = max(1e-6, time.monotonic() - pass_started)
     # THE CENSUS COUNTS EVERY ROW WITHOUT A TERMINAL DECISION, including the rows this pass never

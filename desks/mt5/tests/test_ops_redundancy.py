@@ -126,3 +126,17 @@ def test_terminal_health_is_unmeasured_off_the_box(monkeypatch, tmp_path):
     except ImportError:
         assert t["status"] == "UNMEASURED"
     assert t["reboot_drill"]["verdict"] == "UNMEASURED"
+
+
+def test_clock_health_judges_the_median_offset_and_never_passes_unanswered():
+    from research import ops_redundancy as orr
+    offs = {"a": 0.2, "b": 0.3, "c": 5.0}
+    ok = orr.clock_health(query=lambda s: offs[s], servers=("a", "b", "c"))
+    assert ok["status"] == "PASS" and ok["offset_s"] == 0.3
+    off = orr.clock_health(query=lambda s: 2.5, servers=("a",))
+    assert off["status"] == "FAIL" and "resync" in off["why"]
+
+    def down(s):
+        raise TimeoutError(s)
+    assert orr.clock_health(query=down, servers=("a", "b"))["status"] == "UNMEASURED"
+    assert orr.clock_health(network=False)["status"] == "UNMEASURED"

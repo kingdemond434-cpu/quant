@@ -519,6 +519,15 @@ NOT_SOURCED_HERE = {
                        "per panel and charges configurations x symbols x thresholds as trials; "
                        "enumerating it here would refit the same panel model per symbol and "
                        "charge the same search twice",
+    "rocket_ts": "the peer panel and the (kernels, lookback) configuration are named by "
+                 "research/learned_miners, which fits each configuration once per panel and "
+                 "charges its whole grid; a per-symbol sweep here would be an uncharged search",
+    "sig_path": "the peer panel and the (depth, lookback) configuration are named by "
+                "research/learned_miners, which fits each configuration once per panel and "
+                "charges its whole grid; a per-symbol sweep here would be an uncharged search",
+    "ae_latent": "the peer panel and the (latent, hidden) configuration are named by "
+                 "research/learned_miners, which trains each autoencoder once per panel and "
+                 "charges its whole grid; a per-symbol sweep here would be an uncharged search",
     "attention_ts": "the peer panel and the (heads, lookback) configuration are named by "
                     "research/learned_miners, which trains each configuration once per panel "
                     "and charges its whole grid; a per-symbol sweep here would be an uncharged "
@@ -575,6 +584,17 @@ NOT_SOURCED_HERE = {
                     "research/cross_sectional_breadth enumerates the class x family x params "
                     "grid, measures each cell's firing against the gauntlet's 60-day floor and "
                     "charges its own trials; sweeping it here would charge them twice"),
+    # The specialist families (mt5desk/families_specialist.py). Their windows, proxies and sides
+    # are a specialist's stated priors, enumerated and charged by research/specialist_cell; the
+    # entry filter's conditions are named by research/residual_search from the book's residual.
+    **dict.fromkeys(("carry_risk_off", "month_end_rebalance", "seasonal_window"),
+                    "research/specialist_cell enumerates each asset-class desk's catalogue, "
+                    "builds every cell through the sealed build_cell and charges its own trials; "
+                    "sweeping it here would charge them twice"),
+    "entry_conditioned": "an OPERATOR over a certified cell: its base and its hour, weekday, "
+                         "regime or cross-asset filter are named by research/residual_search "
+                         "from a BH-corrected residual finding, which charges its own tests. "
+                         "Called blind it has no base cell and returns [] on every symbol",
 }
 
 
@@ -620,12 +640,18 @@ def _event_index():
     """Recover point-in-time event timestamps already persisted by the calendar miner."""
     import pandas as pd
 
+    from libs.research.bar_clock_release import _rows
+
+    # THE WHOLE HISTORY ON DISK, NOT THE LAST 60 FILES (2026-10-20). `sorted(...)[-60:]` kept the
+    # 46 newest discovery snapshots plus the 14 `rollup_*.jsonl.gz` files, and `_read` could not
+    # parse a gzip of JSON lines, so the reader saw 57 events, all in 2026-09-07..12, of the 198
+    # the calendar holds from 2026-08-23. A one-week calendar can never give an event family 60
+    # fire days. Every vintage is read now, JSON and JSON lines alike; the index is de-duplicated
+    # by instant, so overlapping snapshots add no event twice.
     root = BASE / "data" / "intelligence" / "ff_calendar_vintage"
     values = []
-    for path in sorted(root.glob("*.json*"))[-60:] if root.exists() else []:
-        doc = _read(path)
-        rows = doc if isinstance(doc, list) else (doc or {}).get("rows", [])
-        for row in rows if isinstance(rows, list) else []:
+    for path in sorted(root.glob("*.json*")) if root.exists() else []:
+        for row in _rows(path):
             if not isinstance(row, dict):
                 continue
             # `event_date` FIRST, because it is the key the calendar miner actually writes and

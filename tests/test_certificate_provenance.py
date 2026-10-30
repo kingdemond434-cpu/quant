@@ -301,3 +301,143 @@ def test_the_fence_axis_is_registered() -> None:
     assert "certificate_birth" in names
     axis = next(a for a in cb.AXES if a.name == "certificate_birth")
     assert axis.source == "desks/mt5/data/certificate_provenance.json"
+
+
+# ------------------------------------------------ the SOURCE lineage, and coverage of TODAY's store
+
+def _cell_of(sym: str, params: dict[str, Any]) -> str:
+    return str(cp._cell_id()({"sym": sym, "family": FAM, "params": params}))
+
+
+def _wire_many(monkeypatch: pytest.MonkeyPatch, tmp: Path, certs: dict[str, dict[str, Any]],
+               docket: list[dict[str, Any]], *, db: Path | None = None) -> None:
+    """Several certificates at once; the graph and verdict ledger present but empty."""
+    canon = tmp / "canon.json"
+    canon.write_text(json.dumps({"n": len(certs), "survivors": certs}), encoding="utf-8")
+    dpath, vpath, gpath = tmp / "docket.json", tmp / "verdicts.jsonl", tmp / "graph.jsonl"
+    dpath.write_text(json.dumps(docket), encoding="utf-8")
+    vpath.write_text("", encoding="utf-8")
+    gpath.write_text("", encoding="utf-8")
+    for name, val in (("CANON", canon), ("SURVIVORS", tmp / "absent_survivors.json"),
+                      ("DOCKET", dpath), ("VERDICTS", vpath), ("GRAPH", gpath),
+                      ("REGISTRY", db if db is not None else tmp / "absent.sqlite"),
+                      ("RECORD", tmp / "certificate_provenance.json"),
+                      ("TABLE", tmp / "PRODUCER_CONVERSION.json")):
+        monkeypatch.setattr(cp, name, val)
+
+
+def _three(tmp: Path) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]], list[str]]:
+    """Three certificates: one whose docket row names its web source, one whose donation names
+    no source, and one whose docket row is gone -- the three places a lineage can end."""
+    p_url = {"rr": 2.0, "ttl_bars": 24}
+    p_don = {"rr": 3.0, "ttl_bars": 9}
+    p_gone = {"rr": 4.0, "ttl_bars": 5}
+    cells = [_cell_of("EURAUD", p_url), _cell_of("GBPJPY", p_don), _cell_of("XAUUSD", p_gone)]
+    certs = {f"external.{c}": {"hunt": "external", "cell": c, "sym": c.split(".")[0],
+                               "gated_at": "2026-09-24T00:00:00+00:00"} for c in cells}
+    docket = [
+        {"symbol": "EURAUD", "family": FAM, "params": p_url, "producer": "miner:deep_forest",
+         "source": "deep_forest_cn", "candidate_id": "cand_url",
+         "first_seen": "2026-09-20T00:00:00+00:00",
+         "source_url": "https://example.org/forum/thread/1"},
+        {"symbol": "GBPJPY", "family": FAM, "params": p_don,
+         "producer": "orthogonal_candidates.json",
+         "source": "orthogonal_sweep:overnight_gap_decay", "candidate_id": "cand_don",
+         "first_seen": "2026-09-21T00:00:00+00:00"},
+    ]
+    return certs, docket, cells
+
+
+def test_every_current_certificate_gets_a_row_and_a_lineage(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """THE #104 DEFECT: 20 of 52 current certificates had a row. Coverage is today's store, all
+    of it, and each lineage ends where the evidence ends -- never with a borrowed URL."""
+    certs, docket, cells = _three(tmp_path)
+    _wire_many(monkeypatch, tmp_path, certs, docket)
+    doc = cp.refresh(budget_s=30.0)
+    cp.write(doc)
+    cov = doc["coverage"]
+    assert cov["current_certificates"] == 3 and cov["recorded"] == 3
+    assert cov["record_coverage"] == 1.0
+    assert cov["source_lineage"]["walked"] == 3
+    recs = doc["records"]
+    url = recs[cells[0]]["source_lineage"]
+    assert url["status"] == "MEASURED" and url["ends_at"] == "source"
+    assert url["source_url"] == "https://example.org/forum/thread/1"
+    assert url["retrieved_at"] and url["content_hash"]
+    don = recs[cells[1]]["source_lineage"]
+    assert don["status"] == cp.UNMEASURED and don["ends_at"] == "donation" and don["why"]
+    assert don.get("source_url") is None, "an unlinked donation must never borrow a URL"
+    assert don["steps"][2]["producer"] is None, "a FILE is a route, never the donor"
+    gone = recs[cells[2]]["source_lineage"]
+    assert gone["status"] == cp.UNMEASURED and gone["ends_at"] == "certificate" and gone["why"]
+    rc, msg = cp.coverage_gate(cp._json(cp.RECORD), cp.certificates())
+    assert rc == 0 and msg.startswith("OK: 3/3"), msg
+
+
+def test_the_coverage_fence_fails_below_the_number_of_current_certificates(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A record that saw TODAY's store and still left a certificate without a row fails; a record
+    computed against an older store is STALE, which the hourly leg cures, and does not."""
+    certs, docket, cells = _three(tmp_path)
+    _wire_many(monkeypatch, tmp_path, certs, docket)
+    cp.write(cp.refresh(budget_s=30.0))
+    rec = cp._json(cp.RECORD)
+    del rec["records"][cells[1]]
+    rc, msg = cp.coverage_gate(rec, cp.certificates())
+    assert rc == 1 and "2/3" in msg and cells[1] in msg
+    rec2 = cp._json(cp.RECORD)
+    rec2["records"][cells[0]].pop("source_lineage")
+    assert cp.coverage_gate(rec2, cp.certificates())[0] == 1, "a row with no lineage is short"
+    stale = dict(rec)
+    stale["keys"] = {"external.OLD.cell": "OLD.cell"}
+    rc, msg = cp.coverage_gate(stale, cp.certificates())
+    assert rc == 0 and "STALE" in msg
+
+
+def test_an_old_record_is_backfilled_without_being_reattributed(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A final record written before the lineage existed keeps its producer and gains a lineage;
+    a certificate the old record never saw gets a row of its own."""
+    certs, docket, cells = _three(tmp_path)
+    _wire_many(monkeypatch, tmp_path, certs, docket)
+    old = {"records": {cells[0]: {"cell": cells[0], "verdict": cp.ATTRIBUTED,
+                                  "producer": "legacy_producer", "final": True, "why": "x"}}}
+    cp.RECORD.write_text(json.dumps(old), encoding="utf-8")
+    doc = cp.refresh(budget_s=30.0)
+    assert doc["pending"] == 2 and doc["lineage_pending"] == 3
+    assert doc["records"][cells[0]]["producer"] == "legacy_producer"
+    assert doc["records"][cells[0]]["source_lineage"]["status"] == "MEASURED"
+    assert doc["coverage"]["recorded"] == 3
+
+
+def test_the_spec_identity_reaches_a_docket_row_the_cell_name_does_not(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The certificate's name and its shadow_spec can disagree (a selector, a renamed cell); the
+    spec's own identity is a second exact key into the docket -- for the lineage only."""
+    p = {"rr": 2.5, "ttl_bars": 7}
+    spec_id = _cell_of("AUDNZD", p)
+    certs = {"external.AUDNZD legacy name": {
+        "hunt": "external", "cell": "AUDNZD legacy name", "sym": "AUDNZD",
+        "shadow_spec": {"symbol": "AUDNZD", "family": FAM, "params": p}}}
+    docket = [{"symbol": "AUDNZD", "family": FAM, "params": p, "producer": "miner:x",
+               "source": "x", "candidate_id": "c1", "first_seen": "2026-09-01T00:00:00+00:00",
+               "source_url": "https://example.org/a"}]
+    _wire_many(monkeypatch, tmp_path, certs, docket)
+    doc = cp.refresh(budget_s=30.0)
+    lin = doc["records"]["AUDNZD legacy name"]["source_lineage"]
+    assert lin["steps"][0]["spec_cell"] == spec_id
+    assert lin["status"] == "MEASURED" and lin["steps"][1]["joined_by"] == "spec_frontier_id"
+    assert doc["records"]["AUDNZD legacy name"]["verdict"] == cp.UNMEASURED, \
+        "a spec-identity docket hit feeds the lineage, never a producer claim"
+
+
+def test_a_route_that_could_not_run_leaves_the_verdict_open(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """No registry on this host is not a registry that looked and found nothing."""
+    certs, docket, cells = _three(tmp_path)
+    _wire_many(monkeypatch, tmp_path, certs, docket)          # REGISTRY absent
+    doc = cp.refresh(budget_s=30.0)
+    for c in cells:
+        assert doc["records"][c]["final"] is False
+        assert "registry_identity" in doc["records"][c]["why"]

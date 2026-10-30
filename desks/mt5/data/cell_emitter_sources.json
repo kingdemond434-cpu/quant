@@ -1,0 +1,429 @@
+{
+ "note": "Grounds for desks/mt5/research/cell_emitter.py: open-source STRATEGY CODE read as testable rules. Same shape as deep_forest_sources.json (name, region, language, route, kind, weight, why, url). New grounds are added HERE, never hard-coded. Routes: github_repo (tree via api.github.com, raw via raw.githubusercontent.com; seed `paths` are the fallback listing when the API is unreachable), gitee_repo (gitee.com/api/v5 tree + raw), github_code_search (api.github.com/search/code; needs GITHUB_TOKEN on the host), page_code (an HTML page whose <pre>/<code> blocks hold source). `venue: crypto_exchange` marks a ground whose strategies were written for a crypto exchange: its cells map ONLY onto Fusion crypto CFDs, and a strategy whose logic reads funding, perpetuals, liquidations or an exchange order book is dropped and counted. `default_instruments` is a DECLARED mechanism transfer used only when the code names no instrument, and every cell says so (instrument_basis). Seed paths marked verified were fetched with HTTP 200 on 2026-09-30. Every ground is a self-describing row (id, cadence, auth, license, cursor, region, language) so a wider roster can absorb it unchanged.",
+ "policy": {
+  "files_per_ground": 12,
+  "max_file_bytes": 400000,
+  "extensions": [
+   ".py",
+   ".pine",
+   ".mq4",
+   ".mq5",
+   ".mqh",
+   ".txt"
+  ],
+  "code_copied": false,
+  "copy_policy": "concept reimplemented through the desk's own family constructors; code is never copied or executed (static parse only, mt5desk/compiler.py's guarantee)"
+ },
+ "grounds": [
+  {
+   "id": "vnpy_cta_strategies",
+   "name": "vnpy CTA strategies",
+   "region": "cn",
+   "language": "python",
+   "route": "github_repo",
+   "cadence": "hourly (hourly_cycle leg cell_emitter; files_per_ground slice per pass)",
+   "auth": "none (GITHUB_TOKEN used when present: raises the api.github.com tree-listing rate limit)",
+   "license": "MIT",
+   "cursor": "desks/mt5/data/cell_emitter_state.json: file_cursor[\"vnpy_cta_strategies\"] (+ ground_cursor rotation, seen content sha256)",
+   "repo": "vnpy/vnpy_ctastrategy",
+   "branch": "master",
+   "kind": "framework_examples",
+   "weight": 1.5,
+   "why": "vn.py's shipped CTA strategies (double MA, Bollinger channel, ATR-RSI, turtle, King Keltner, dual thrust): the Chinese futures practitioner canon, exact class-attribute parameters",
+   "globs": [
+    "vnpy_ctastrategy/strategies/*.py"
+   ],
+   "paths": [
+    "vnpy_ctastrategy/strategies/double_ma_strategy.py",
+    "vnpy_ctastrategy/strategies/boll_channel_strategy.py",
+    "vnpy_ctastrategy/strategies/atr_rsi_strategy.py",
+    "vnpy_ctastrategy/strategies/turtle_signal_strategy.py",
+    "vnpy_ctastrategy/strategies/king_keltner_strategy.py",
+    "vnpy_ctastrategy/strategies/dual_thrust_strategy.py",
+    "vnpy_ctastrategy/strategies/multi_signal_strategy.py",
+    "vnpy_ctastrategy/strategies/multi_timeframe_strategy.py"
+   ],
+   "default_instruments": [
+    "XAUUSD",
+    "XAGUSD",
+    "XCUUSD",
+    "XTIUSD",
+    "CHINAH"
+   ]
+  },
+  {
+   "id": "backtrader_samples",
+   "name": "backtrader samples",
+   "region": "global",
+   "language": "python",
+   "route": "github_repo",
+   "cadence": "hourly (hourly_cycle leg cell_emitter; files_per_ground slice per pass)",
+   "auth": "none (GITHUB_TOKEN used when present: raises the api.github.com tree-listing rate limit)",
+   "license": "GPL-3.0",
+   "cursor": "desks/mt5/data/cell_emitter_state.json: file_cursor[\"backtrader_samples\"] (+ ground_cursor rotation, seen content sha256)",
+   "repo": "backtrader/backtrader",
+   "branch": "master",
+   "kind": "framework_examples",
+   "weight": 1.0,
+   "why": "backtrader's own sample strategies: SMA crossovers, RSI, Bollinger, channel systems with explicit params tuples",
+   "globs": [
+    "samples/*/*.py"
+   ],
+   "paths": [
+    "samples/sigsmacross/sigsmacross.py",
+    "samples/sigsmacross/sigsmacross2.py"
+   ],
+   "default_instruments": [
+    "EURUSD",
+    "US500",
+    "XAUUSD"
+   ]
+  },
+  {
+   "id": "zipline_examples",
+   "name": "zipline examples",
+   "region": "global",
+   "language": "python",
+   "route": "github_repo",
+   "cadence": "hourly (hourly_cycle leg cell_emitter; files_per_ground slice per pass)",
+   "auth": "none (GITHUB_TOKEN used when present: raises the api.github.com tree-listing rate limit)",
+   "license": "Apache-2.0",
+   "cursor": "desks/mt5/data/cell_emitter_state.json: file_cursor[\"zipline_examples\"] (+ ground_cursor rotation, seen content sha256)",
+   "repo": "stefan-jansen/zipline-reloaded",
+   "branch": "main",
+   "kind": "framework_examples",
+   "weight": 0.8,
+   "why": "the Quantopian lineage's example algorithms (dual moving average, momentum, pairs)",
+   "globs": [
+    "src/zipline/examples/*.py"
+   ],
+   "paths": [
+    "src/zipline/examples/dual_moving_average.py"
+   ],
+   "default_instruments": [
+    "US500",
+    "NAS100",
+    "EURUSD"
+   ]
+  },
+  {
+   "id": "pysystemtrade_provided_rules",
+   "name": "pysystemtrade provided rules",
+   "region": "global",
+   "language": "python",
+   "route": "github_repo",
+   "cadence": "hourly (hourly_cycle leg cell_emitter; files_per_ground slice per pass)",
+   "auth": "none (GITHUB_TOKEN used when present: raises the api.github.com tree-listing rate limit)",
+   "license": "GPL-3.0",
+   "cursor": "desks/mt5/data/cell_emitter_state.json: file_cursor[\"pysystemtrade_provided_rules\"] (+ ground_cursor rotation, seen content sha256)",
+   "repo": "robcarver17/pysystemtrade",
+   "branch": "master",
+   "kind": "academic_replication",
+   "weight": 1.0,
+   "why": "Carver's published trading rules (EWMAC, breakout, carry): a practitioner book's rules as code",
+   "globs": [
+    "systems/provided/rules/*.py"
+   ],
+   "paths": [
+    "systems/provided/rules/ewmac.py",
+    "systems/provided/rules/breakout.py"
+   ],
+   "default_instruments": [
+    "EURUSD",
+    "USDJPY",
+    "XAUUSD",
+    "US500",
+    "UST10Y"
+   ]
+  },
+  {
+   "id": "ea31337_mql_strategies",
+   "name": "EA31337 MQL strategies",
+   "region": "global",
+   "language": "mql",
+   "route": "github_repo",
+   "cadence": "hourly (hourly_cycle leg cell_emitter; files_per_ground slice per pass)",
+   "auth": "none (GITHUB_TOKEN used when present: raises the api.github.com tree-listing rate limit)",
+   "license": "GPL-3.0",
+   "cursor": "desks/mt5/data/cell_emitter_state.json: file_cursor[\"ea31337_mql_strategies\"] (+ ground_cursor rotation, seen content sha256)",
+   "repo": "EA31337/Strategy-MA",
+   "branch": "master",
+   "kind": "mql_codebase",
+   "weight": 1.2,
+   "why": "an open MQL4/MQL5 strategy set, one repository per strategy; the MQL5 CodeBase's own viewcode/download routes are robots-disallowed, so open MQL lives here",
+   "globs": [
+    "*.mqh",
+    "*.mq5",
+    "*.mq4"
+   ],
+   "paths": [
+    "Stg_MA.mqh"
+   ],
+   "default_instruments": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "XAUUSD"
+   ]
+  },
+  {
+   "id": "ea31337_rsi",
+   "name": "EA31337 RSI",
+   "region": "global",
+   "language": "mql",
+   "route": "github_repo",
+   "cadence": "hourly (hourly_cycle leg cell_emitter; files_per_ground slice per pass)",
+   "auth": "none (GITHUB_TOKEN used when present: raises the api.github.com tree-listing rate limit)",
+   "license": "GPL-3.0",
+   "cursor": "desks/mt5/data/cell_emitter_state.json: file_cursor[\"ea31337_rsi\"] (+ ground_cursor rotation, seen content sha256)",
+   "repo": "EA31337/Strategy-RSI",
+   "branch": "master",
+   "kind": "mql_codebase",
+   "weight": 1.0,
+   "why": "sibling of the EA31337 set",
+   "globs": [
+    "*.mqh",
+    "*.mq5",
+    "*.mq4"
+   ],
+   "paths": [
+    "Stg_RSI.mqh"
+   ],
+   "default_instruments": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "XAUUSD"
+   ]
+  },
+  {
+   "id": "ea31337_bands",
+   "name": "EA31337 Bands",
+   "region": "global",
+   "language": "mql",
+   "route": "github_repo",
+   "cadence": "hourly (hourly_cycle leg cell_emitter; files_per_ground slice per pass)",
+   "auth": "none (GITHUB_TOKEN used when present: raises the api.github.com tree-listing rate limit)",
+   "license": "GPL-3.0",
+   "cursor": "desks/mt5/data/cell_emitter_state.json: file_cursor[\"ea31337_bands\"] (+ ground_cursor rotation, seen content sha256)",
+   "repo": "EA31337/Strategy-Bands",
+   "branch": "master",
+   "kind": "mql_codebase",
+   "weight": 1.0,
+   "why": "sibling of the EA31337 set",
+   "globs": [
+    "*.mqh",
+    "*.mq5",
+    "*.mq4"
+   ],
+   "paths": [
+    "Stg_Bands.mqh"
+   ],
+   "default_instruments": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "XAUUSD"
+   ]
+  },
+  {
+   "id": "ea31337_macd",
+   "name": "EA31337 MACD",
+   "region": "global",
+   "language": "mql",
+   "route": "github_repo",
+   "cadence": "hourly (hourly_cycle leg cell_emitter; files_per_ground slice per pass)",
+   "auth": "none (GITHUB_TOKEN used when present: raises the api.github.com tree-listing rate limit)",
+   "license": "GPL-3.0",
+   "cursor": "desks/mt5/data/cell_emitter_state.json: file_cursor[\"ea31337_macd\"] (+ ground_cursor rotation, seen content sha256)",
+   "repo": "EA31337/Strategy-MACD",
+   "branch": "master",
+   "kind": "mql_codebase",
+   "weight": 1.0,
+   "why": "sibling of the EA31337 set",
+   "globs": [
+    "*.mqh",
+    "*.mq5",
+    "*.mq4"
+   ],
+   "paths": [
+    "Stg_MACD.mqh"
+   ],
+   "default_instruments": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "XAUUSD"
+   ]
+  },
+  {
+   "id": "freqtrade_strategies",
+   "name": "freqtrade strategies",
+   "region": "global",
+   "language": "python",
+   "route": "github_repo",
+   "cadence": "hourly (hourly_cycle leg cell_emitter; files_per_ground slice per pass)",
+   "auth": "none (GITHUB_TOKEN used when present: raises the api.github.com tree-listing rate limit)",
+   "license": "GPL-3.0",
+   "cursor": "desks/mt5/data/cell_emitter_state.json: file_cursor[\"freqtrade_strategies\"] (+ ground_cursor rotation, seen content sha256)",
+   "repo": "freqtrade/freqtrade-strategies",
+   "branch": "main",
+   "kind": "framework_examples",
+   "venue": "crypto_exchange",
+   "weight": 1.0,
+   "why": "the freqtrade community strategy set; written for crypto exchanges, so cells map ONLY onto Fusion crypto CFDs",
+   "globs": [
+    "user_data/strategies/*.py",
+    "user_data/strategies/*/*.py"
+   ],
+   "paths": [
+    "user_data/strategies/Strategy001.py",
+    "user_data/strategies/Strategy002.py",
+    "user_data/strategies/Strategy003.py"
+   ],
+   "default_instruments": [
+    "BTCUSD",
+    "ETHUSD"
+   ]
+  },
+  {
+   "id": "jesse_example_strategies",
+   "name": "jesse example strategies",
+   "region": "global",
+   "language": "python",
+   "route": "github_repo",
+   "cadence": "hourly (hourly_cycle leg cell_emitter; files_per_ground slice per pass)",
+   "auth": "none (GITHUB_TOKEN used when present: raises the api.github.com tree-listing rate limit)",
+   "license": "MIT",
+   "cursor": "desks/mt5/data/cell_emitter_state.json: file_cursor[\"jesse_example_strategies\"] (+ ground_cursor rotation, seen content sha256)",
+   "repo": "jesse-ai/example-strategies",
+   "branch": "master",
+   "kind": "framework_examples",
+   "venue": "crypto_exchange",
+   "weight": 0.8,
+   "why": "Jesse's documented example strategies; crypto-exchange native, so Fusion crypto CFDs only",
+   "globs": [
+    "*/__init__.py"
+   ],
+   "paths": [],
+   "default_instruments": [
+    "BTCUSD",
+    "ETHUSD"
+   ]
+  },
+  {
+   "id": "everget_pine_indicators",
+   "name": "everget Pine indicators",
+   "region": "global",
+   "language": "pinescript",
+   "route": "github_repo",
+   "cadence": "hourly (hourly_cycle leg cell_emitter; files_per_ground slice per pass)",
+   "auth": "none (GITHUB_TOKEN used when present: raises the api.github.com tree-listing rate limit)",
+   "license": "MIT",
+   "cursor": "desks/mt5/data/cell_emitter_state.json: file_cursor[\"everget_pine_indicators\"] (+ ground_cursor rotation, seen content sha256)",
+   "repo": "everget/tradingview-pinescript-indicators",
+   "branch": "master",
+   "kind": "pine_scripts",
+   "weight": 1.0,
+   "why": "a large open collection of TradingView Pine scripts mirrored to GitHub",
+   "globs": [
+    "**/*.pine"
+   ],
+   "paths": [],
+   "default_instruments": [
+    "EURUSD",
+    "XAUUSD",
+    "US500"
+   ]
+  },
+  {
+   "id": "github_pine_strategy_search",
+   "name": "GitHub Pine strategy search",
+   "region": "global",
+   "language": "pinescript",
+   "route": "github_code_search",
+   "cadence": "hourly (hourly_cycle leg cell_emitter; files_per_ground slice per pass)",
+   "auth": "GITHUB_TOKEN (required: code search is authenticated-only)",
+   "license": "UNKNOWN",
+   "cursor": "desks/mt5/data/cell_emitter_state.json: file_cursor[\"github_pine_strategy_search\"] (+ ground_cursor rotation, seen content sha256)",
+   "query": "strategy.entry extension:pine",
+   "kind": "pine_scripts",
+   "weight": 1.0,
+   "why": "every public Pine strategy on GitHub that places an entry; needs GITHUB_TOKEN (code search is authenticated-only)",
+   "default_instruments": [
+    "EURUSD",
+    "XAUUSD",
+    "US500"
+   ]
+  },
+  {
+   "id": "github_mql5_ea_search",
+   "name": "GitHub MQL5 EA search",
+   "region": "global",
+   "language": "mql",
+   "route": "github_code_search",
+   "cadence": "hourly (hourly_cycle leg cell_emitter; files_per_ground slice per pass)",
+   "auth": "GITHUB_TOKEN (required: code search is authenticated-only)",
+   "license": "UNKNOWN",
+   "cursor": "desks/mt5/data/cell_emitter_state.json: file_cursor[\"github_mql5_ea_search\"] (+ ground_cursor rotation, seen content sha256)",
+   "query": "OnTick iMA extension:mq5",
+   "kind": "mql_codebase",
+   "weight": 1.0,
+   "why": "public MQL5 expert advisors on GitHub; needs GITHUB_TOKEN",
+   "default_instruments": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "XAUUSD"
+   ]
+  },
+  {
+   "id": "gitee_vnpy_strategies",
+   "name": "Gitee vnpy strategies",
+   "region": "cn",
+   "language": "python",
+   "route": "gitee_repo",
+   "cadence": "hourly (hourly_cycle leg cell_emitter; files_per_ground slice per pass)",
+   "auth": "none",
+   "license": "MIT",
+   "cursor": "desks/mt5/data/cell_emitter_state.json: file_cursor[\"gitee_vnpy_strategies\"] (+ ground_cursor rotation, seen content sha256)",
+   "repo": "vnpy/vnpy",
+   "branch": "master",
+   "kind": "framework_examples",
+   "weight": 0.8,
+   "why": "the Gitee mirror of the vn.py lineage (聚宽/JoinQuant-era CTA examples live beside it)",
+   "globs": [
+    "examples/**/*.py"
+   ],
+   "paths": [],
+   "default_instruments": [
+    "XAUUSD",
+    "XAGUSD",
+    "XCUUSD",
+    "XTIUSD",
+    "CHINAH"
+   ]
+  },
+  {
+   "id": "tradingview_open_source_strategies",
+   "name": "TradingView open-source strategies",
+   "region": "global",
+   "language": "pinescript",
+   "route": "page_code",
+   "cadence": "hourly (hourly_cycle leg cell_emitter; files_per_ground slice per pass)",
+   "auth": "none",
+   "license": "MPL-2.0 (TradingView house rules: open-source scripts)",
+   "cursor": "desks/mt5/data/cell_emitter_state.json: file_cursor[\"tradingview_open_source_strategies\"] (+ ground_cursor rotation, seen content sha256)",
+   "url": "https://www.tradingview.com/scripts/?script_type=strategies",
+   "link_pattern": "/script/[A-Za-z0-9]+-[^\"'#?]+/",
+   "kind": "pine_scripts",
+   "weight": 1.0,
+   "why": "open-source published Pine strategies; a script page whose source is public carries it in a code block",
+   "default_instruments": [
+    "EURUSD",
+    "XAUUSD",
+    "US500"
+   ]
+  }
+ ]
+}

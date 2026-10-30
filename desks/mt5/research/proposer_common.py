@@ -489,8 +489,15 @@ def _blinded(source: str, candidates: list[dict]) -> tuple[list[dict], dict[str,
     return clean, {k: rep[k] for k in ("rows", "violations", "fields_stripped")}
 
 
-def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
+def donate(source: str, candidates: list[dict], tests_run: int,
+           suffix: str = "", *, registry: bool = True) -> Path | None:
     """Write the discovery contract. A control run must NEVER call this.
+
+    `registry=False` is for a producer that has ALREADY written each row to the canonical
+    registry itself, with the same (family, symbol, params, chart) identity: a second write here
+    would be a second candidate for one rule whenever the two writes spell chart or horizon
+    differently, and the registry's docket feed would then put that rule in front of the judge
+    twice. The contract file (and its `tests_run` charge) is written either way.
 
     POINT-IN-TIME BY CONSTRUCTION AND BY REFUSAL. Every row that leaves here carries
     available_time, ingested_time, source_version and a payload hash, so a joiner can refuse it
@@ -524,7 +531,9 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
     out = INTEL / source
     out.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M")
-    path = out / f"discoveries_{stamp}.json"
+    # `suffix` keeps two donations from one source in the same minute (one per panel, say) from
+    # overwriting each other; it sorts after the bare minute stamp, so newest-first still holds.
+    path = out / (f"discoveries_{stamp}_{suffix}.json" if suffix else f"discoveries_{stamp}.json")
     LAST_DONATION["donated"] = len(candidates)
     LAST_DONATION["path"] = str(path)
     path.write_text(json.dumps({"source": source,
@@ -542,7 +551,8 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
                                          "here and counted, never written: absence of an "
                                          "available_time is not permission to use the row")},
                                indent=1, default=str), "utf-8")
-    _record_in_registry(source, candidates)
+    if registry:
+        _record_in_registry(source, candidates)
     return path
 
 
