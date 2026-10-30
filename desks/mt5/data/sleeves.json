@@ -205,7 +205,7 @@
         "why": "standby on the current reading -- same signal as gold_asia (a second copy of one bet, not a variant): the allocator prices and funds gold_asia; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-28T20:13:16+00:00",
       "restored_by": "heal_silent_demotions",
@@ -245,7 +245,7 @@
         "why": "standby on the current reading -- same signal as gold_asia (a second copy of one bet, not a variant): the allocator prices and funds gold_asia; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-28T20:13:16+00:00",
       "restored_by": "heal_silent_demotions",
@@ -285,7 +285,7 @@
         "why": "standby on the current reading -- same signal as gold_asia (a second copy of one bet, not a variant): the allocator prices and funds gold_asia; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-28T20:13:16+00:00",
       "restored_by": "heal_silent_demotions",
@@ -325,7 +325,7 @@
         "why": "standby on the current reading -- same signal as gold_london_am (a second copy of one bet, not a variant): the allocator prices and funds gold_london_am; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "artifact": {
         "version_hash": "76d3294f692f48aa",
         "ok": false,
@@ -360,7 +360,7 @@
         "why": "standby on the current reading -- same signal as gold_london_am (a second copy of one bet, not a variant): the allocator prices and funds gold_london_am; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "artifact": {
         "version_hash": "2a9076c595eee423",
         "ok": false,
@@ -395,7 +395,7 @@
         "why": "standby on the current reading -- same signal as gold_london_am (a second copy of one bet, not a variant): the allocator prices and funds gold_london_am; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "artifact": {
         "version_hash": "105ec4ce38c2d40c",
         "ok": false,
@@ -430,7 +430,7 @@
         "why": "standby on the current reading -- same signal as gold_afternoon (a second copy of one bet, not a variant): the allocator prices and funds gold_afternoon; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "artifact": {
         "version_hash": "0c5648f41c8dd935",
         "ok": false,
@@ -465,7 +465,7 @@
         "why": "standby on the current reading -- same signal as gold_afternoon (a second copy of one bet, not a variant): the allocator prices and funds gold_afternoon; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "artifact": {
         "version_hash": "46f8d1fa8e5ea5ea",
         "ok": false,
@@ -500,7 +500,7 @@
         "why": "standby on the current reading -- same signal as gold_afternoon (a second copy of one bet, not a variant): the allocator prices and funds gold_afternoon; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "artifact": {
         "version_hash": "18107538babc5487",
         "ok": false,
@@ -2175,7 +2175,7 @@
         "why": "no allocator row answers to any of ['xauusd_session_range_breakout_asia_5_wb_12', 'xauusd|session_range_breakout|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-05T01:40:13+00:00",
       "restored_by": "heal_silent_demotions",
@@ -2238,7 +2238,7 @@
         "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-05T01:40:13+00:00",
       "restored_by": "heal_silent_demotions",
@@ -2301,7 +2301,7 @@
         "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-25T21:32:41+00:00",
       "restored_by": "heal_silent_demotions",
@@ -12735,7 +12735,7 @@
         "why": "standby on the current reading -- its forward clock reached KILL (XAUUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=8): the forward evidence refuses this certificate, so the allocator records zero"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-21T21:53:44+00:00",
       "restored_by": "heal_silent_demotions",
@@ -25954,7 +25954,7 @@
         "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "artifact": {
         "version_hash": "0ecf162bf6563324",
         "ok": true,
@@ -26021,7 +26021,7 @@
         "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "artifact": {
         "version_hash": "ed02d01ef593e9db",
         "ok": true,
@@ -26088,7 +26088,7 @@
         "why": "no allocator row answers to any of ['xauusd_cross_asset_residual_asia_p_2479d0d883199a4b', 'xauusd|cross_asset_residual|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "artifact": {
         "version_hash": "8e755b67f96dddf6",
         "ok": true,
@@ -26155,7 +26155,7 @@
         "why": "no allocator row answers to any of ['xauusd_cross_asset_residual_asia_p_cec9a82bd34685dc', 'xauusd|cross_asset_residual|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "artifact": {
         "version_hash": "59777c1a846eb2ee",
         "ok": true,
@@ -31580,7 +31580,7 @@
         "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "artifact": {
         "version_hash": "672878475e97e3b7",
         "ok": true,
@@ -31647,7 +31647,7 @@
         "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "restored_at": "2026-10-15T20:43:36+00:00",
       "restore_reason": "already funded by the allocator at 0.21% heat; the allocator's current solve gives this sleeve 0.21% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|cross_asset_residual|asia' (funded book))",
       "artifact": {
@@ -31714,7 +31714,7 @@
         "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "restored_at": "2026-10-15T20:43:36+00:00",
       "restore_reason": "already funded by the allocator at 0.21% heat; the allocator's current solve gives this sleeve 0.21% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|cross_asset_residual|asia' (funded book))",
       "artifact": {
@@ -31781,7 +31781,7 @@
         "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "restored_at": "2026-10-15T20:43:36+00:00",
       "restore_reason": "already funded by the allocator at 0.21% heat; the allocator's current solve gives this sleeve 0.21% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|cross_asset_residual|asia' (funded book))",
       "artifact": {
@@ -31848,7 +31848,7 @@
         "why": "standby on the current reading -- its forward clock reached KILL (XAUUSD.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=-1_ttl_bars=96): the forward evidence refuses this certificate, so the allocator records zero"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "artifact": {
         "version_hash": "73ce8910712839f7",
         "ok": true,
@@ -31915,7 +31915,7 @@
         "why": "standby on the current reading -- its forward clock reached KILL (XAUUSD.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=-1_ttl_bars=96): the forward evidence refuses this certificate, so the allocator records zero"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "artifact": {
         "version_hash": "5afa2c20b82eca04",
         "ok": true,
@@ -31982,7 +31982,7 @@
         "why": "standby on the current reading -- its forward clock reached KILL (XAUUSD.macro_conditional.asia@M5#side_in_high=-1): the forward evidence refuses this certificate, so the allocator records zero"
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "artifact": {
         "version_hash": "edd2a2e1f5d0df1b",
         "ok": true,
@@ -32049,7 +32049,7 @@
         "why": "no allocator row answers to any of ['xauusd_range_reversion_asia_p_ff35bb7c8427d66f', 'xauusd|range_reversion|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "artifact": {
         "version_hash": "3b13d93f7cbf5cb0",
         "ok": true,
@@ -34222,7 +34222,7 @@
         "why": "no allocator row answers to any of ['xauusd_range_reversion_asia_p_f83412948ea922b5', 'xauusd|range_reversion|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
-      "admit_scan": "2026-10-29T13:00:02.687075+00:00",
+      "admit_scan": "2026-10-30T01:27:31.603486+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-25T10:45:03+00:00",
       "restored_by": "heal_silent_demotions",
@@ -54812,7 +54812,9 @@
       "exec": "family_market",
       "retired_at": "2026-10-29T19:10:20+00:00",
       "retire_reason": "USDMXN is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
-      "retired_by": "live_policy"
+      "retired_by": "live_policy",
+      "canonical_identity": "usdmxn|formula|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
     },
     {
       "name": "USDNOK.carry.asia@M15#input_symbol=USDNOK_session=ny",
@@ -54847,7 +54849,9 @@
       "exec": "family_market",
       "retired_at": "2026-10-29T23:57:55+00:00",
       "retire_reason": "USDNOK admits only ['usdnok_carry_asia_p_ff35bb7c8427d66f'] for live capital; 'USDNOK.carry.asia@M15#input_symbol=USDNOK_session=ny' is a different parameter set on the same instrument -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
-      "retired_by": "live_policy"
+      "retired_by": "live_policy",
+      "canonical_identity": "usdnok|carry|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
     },
     {
       "name": "USDNOK.carry.asia@M15#session=ny",
@@ -54881,7 +54885,9 @@
       "exec": "family_market",
       "retired_at": "2026-10-29T23:57:55+00:00",
       "retire_reason": "USDNOK admits only ['usdnok_carry_asia_p_ff35bb7c8427d66f'] for live capital; 'USDNOK.carry.asia@M15#session=ny' is a different parameter set on the same instrument -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
-      "retired_by": "live_policy"
+      "retired_by": "live_policy",
+      "canonical_identity": "usdnok|carry|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
     }
   ]
 }

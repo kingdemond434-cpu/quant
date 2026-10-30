@@ -310,3 +310,48 @@ def test_the_lane_widening_is_read_only_and_from_the_one_domain_file() -> None:
                       "Remove-Item", "secrets", "Bash(*)", "Bash(powershell", "Bash(cmd"):
         assert forbidden not in allowed, forbidden
     assert '"Read(data/secrets/**)"' in args
+
+
+# ------------------------------------------------------- the midnight lane revived (2026-10-28)
+def test_the_installer_refuses_system_and_a_registration_with_no_next_run() -> None:
+    """MT5-CycleMidnight sat as SYSTEM with a one-shot trigger: never run since registration."""
+    src = _cro_installer()
+    assert "is SYSTEM: neither claude nor codex is logged in" in src
+    assert "registered with no next run time" in src and "exit 4" in src
+
+
+def test_the_codex_lane_gets_its_own_clone_and_never_the_live_git() -> None:
+    """Write on the live .git is SYSTEM code execution (config, hooks); the lane gets a clone."""
+    src = (DESK / "scripts" / "provision_midnight_lane_clone.ps1").read_text("utf-8")
+    assert "CodexSandboxUsers" in src and "'quant-cro-midnight'" in src
+    assert "git clone --reference" in src
+    assert not re.search(r"icacls \$RepoRoot\b[^\n]*/grant", src)   # live tree: no grant
+    assert "Join-Path $RepoRoot '.git') /grant" not in src         # live .git: no grant
+    # Root and .git: no DELETE on the folders themselves (a renamed .git could be replaced).
+    assert '"*${sid}:(RX,WD,AD)"' in src and '"*${sid}:(OI)(CI)(IO)M"' in src
+    assert "(OI)(CI)M" not in src
+    assert "--dissociate" in src and "[^/@]*@" in src             # no token reaches the sandbox
+    assert "Write-Host $origin" not in src and '"$origin"' not in src
+    assert "lane_clone_guard.ps1" in src and "exit 7" in src
+    assert "safe.directory $SafeDir" in src and "safe.directory *" not in src
+    assert "exit 2" in src and "exit 5" in src and "exit 6" in src  # no group / untrusted / leak
+    assert "GetOwner" in src and "-Undo" in src
+
+
+def test_the_codex_lane_runs_in_its_clone_and_proves_the_lock_held() -> None:
+    launcher = LAUNCHER.read_text("utf-8")
+    assert '"exec", "--full-auto", "--cd", $LaneClone, "-"' in launcher
+    assert '"quant-cro-midnight"' in launcher
+    assert "--add-dir" not in launcher
+    assert "Select-String -Pattern $leakPattern" in launcher and "$sbx.SID.Value" in launcher
+    assert launcher.count("Get-LaneCloneProblems $LaneClone") == 2  # sealed before AND after
+    assert "DEFECT: lane clone unsealed by the pass" in launcher
+    for var in ("GIT_DIR", "GIT_COMMON_DIR", "GIT_WORK_TREE"):        # pinned for the agent only
+        assert f"$env:{var} =" in launcher and f"Env:{var}" in launcher
+
+
+def test_the_lane_clone_guard_covers_every_path_an_unsandboxed_process_trusts() -> None:
+    src = (DESK / "scripts" / "lane_clone_guard.ps1").read_text("utf-8")
+    for needle in ("'config'", "'hooks'", "'commondir'", "'.codex'", "ReparsePoint", "GetOwner",
+                   "InheritOnly", "$R::Delete", "$R::DeleteSubdirectoriesAndFiles"):
+        assert needle in src, needle
