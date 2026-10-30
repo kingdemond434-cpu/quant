@@ -160,8 +160,8 @@ def test_an_alert_ledger_busy_never_skips_the_page(
         paged.append(str(doc["status"]))
         return {"sent": True}
 
-    monkeypatch.setattr(lf, "declared_ids", lambda repo: frozenset())
-    monkeypatch.setattr(lf, "judge", lambda repo, entries, ids: {
+    monkeypatch.setattr(lf, "declared", lambda repo: (frozenset(), ()))
+    monkeypatch.setattr(lf, "judge", lambda repo, entries, ids, sources=(): {
         "status": "REFUSED", "refused": ["desks/mt5/data/x.json"], "findings": {}})
     monkeypatch.setattr(lf, "record_alert", busy)
     monkeypatch.setattr(lf, "page", page)

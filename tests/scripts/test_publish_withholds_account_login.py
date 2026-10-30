@@ -68,7 +68,7 @@ def _publish(repo: Path, files: dict[str, bytes], monkeypatch: pytest.MonkeyPatc
     assert [r.split("\t")[1] for r in scrubbed] == list(files), "the scrub reorders nothing"
     monkeypatch.setattr(lf, "record_alert", lambda doc, root=None: "OPEN")
     monkeypatch.setattr(lf, "page", lambda doc, root=None: {})
-    monkeypatch.setattr(lf, "declared_ids", lambda root, env=None: FAKE_IDS)
+    monkeypatch.setattr(lf, "declared", lambda root, env=None: (FAKE_IDS, (lf.ID_ENV,)))
     monkeypatch.setattr("sys.stdin", io.StringIO("\n".join(scrubbed) + "\n"))
     art = repo / "LOGIN_FENCE.json"
     assert lf.main(["--repo", str(repo), "--artifact", str(art)]) == 0

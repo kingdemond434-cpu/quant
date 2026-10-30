@@ -422,7 +422,8 @@ function Push-Logged {
 # libs/ops/login_fence.py names -- login, login_id, account, account_number, accountLogin,
 # mt5_login and their kin, plain, escaped or \u-encoded, and CSV columns -- with an
 # account-shaped value, and every account number the box declares (QUANT_FENCE_ACCOUNT_IDS,
-# ACCOUNT_PROFILES.json) wherever it stands between non-digits. It does NOT make every
+# ACCOUNT_PROFILES.json, and the `login` of FUSION_LIVE_ACCOUNT.json / FTMO_LIVE_ACCOUNT.json)
+# wherever it stands between non-digits. It does NOT make every
 # published byte login-free: the sealed legacy
 # prefixes of live_ledger.jsonl and order_intents.jsonl still carry the raw login in `account`.
 # They are PINNED as {records, sha256} measured on LIVE (LEGACY_PIN there); every row after

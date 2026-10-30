@@ -45,8 +45,10 @@ JSON object inside a CSV cell.
 
 NO DECLARED NUMBER IS UNMEASURED, NOT CLEAN (audit v5). With zero declared account numbers the
 digit-bounded match above covers nothing, so the pass reads `UNMEASURED` and the alert stays
-open (it pages) -- publication proceeds on the key rules alone. A declaration source that
-exists and yields an unreadable token is a config error: exit 2, nothing published.
+open (it pages) -- publication proceeds on the key rules alone. The sources (`declared`) are
+QUANT_FENCE_ACCOUNT_IDS, ACCOUNT_PROFILES.json, and the `login` of the box's live account files
+FUSION_LIVE_ACCOUNT.json and FTMO_LIVE_ACCOUNT.json. A declaration source that exists and
+yields an unreadable token is a config error: exit 2, nothing published, and it PAGES (below).
 
 A refusal (or UNMEASURED) is written to desks/mt5/reports/LOGIN_FENCE.json (published on the
 next pass), opens `state_login_fence_refusal` in data/alert_ledger.json, and PAGES through
@@ -81,6 +83,8 @@ ALERTS = ROOT / "data" / "alert_ledger.json"
 ALERT_ID = "state_login_fence_refusal"
 PAGE_STATE_REL = "desks/mt5/logs/login_fence_alert.json"   # gitignored with desks/mt5/logs/
 REPAGE_H = 6.0
+#: page() status for an rc-2 pass: the declarations could not be read, nothing published.
+CONFIG_ERROR = "CONFIG_ERROR"
 Sender = Callable[[str, str], dict[str, Any]]
 
 #: Binary state the fence does not read as text (market frames; a regex over pickled bytes only
@@ -164,14 +168,32 @@ _UNESCAPE_PASSES = 4
 #: matched on its own, with DIGIT boundaries `(?<!\d)ID(?!\d)` -- never `\b`, which treats `_` and
 #: letters as word characters and so misses `acc_<ID>` and `x<ID>`. A longer number that merely
 #: contains the ID (`1<ID>2`) is a different number and does not match.
-#: Sources, all box-local and never committed: the env var below (comma/space separated) and the
-#: login half of every "<login>@<server>" key in desks/mt5/data/ACCOUNT_PROFILES.json (the
-#: declarations account_profile.py reads). No declared number is not an error; a declarations
-#: file that exists and cannot be read IS one, and the CLI then exits 2 so the publisher
-#: publishes nothing (it fails closed).
+#: Sources, all box-local and never committed:
+#:   * the env var below (comma/space separated);
+#:   * the login half of every "<login>@<server>" key in desks/mt5/data/ACCOUNT_PROFILES.json
+#:     (the declarations account_profile.py reads);
+#:   * the `login` of each LIVE ACCOUNT FILE (`ACCOUNT_FILES`): FUSION_LIVE_ACCOUNT.json
+#:     (decision_core.FUSION_ACCOUNT_FILE / fusion_live_login: {"login": int, "server": ...}) and
+#:     FTMO_LIVE_ACCOUNT.json (prop/ftmo_follower.ACCOUNT_FILE / bound_account: {"login", "server",
+#:     "trade_mode", "initial_balance", ...}). These already exist on the box and hold the live
+#:     logins; the fence runs as SYSTEM inside MT5-ShadowSync, so a user env var never reaches it,
+#:     and ACCOUNT_PROFILES.json cannot be created for the fence's sake (it feeds
+#:     account_profile.envelope_for_connected -> gateway.venue_heat_cap, i.e. live sizing).
+#:     E8_ACCOUNT.json is NOT a source: its schema (cross_account.expected_key) is
+#:     {"account_key": "sha256:..."} -- a keyed hash, never a login.
+#: No declared number is not an error, and an ABSENT source declares nothing; a source that
+#: exists and cannot be read, or yields a token that is not 4-12 ASCII digits, IS one, and the CLI
+#: then exits 2 so the publisher publishes nothing (it fails closed). Which sources contributed is
+#: recorded by NAME in the published report (`declared_sources`); the numbers never are.
 ID_ENV = "QUANT_FENCE_ACCOUNT_IDS"
 DECLARATIONS_REL = "desks/mt5/data/ACCOUNT_PROFILES.json"
+#: (rel path, the field holding the login). Box-local and gitignored, like ACCOUNT_PROFILES.json.
+ACCOUNT_FILES: tuple[tuple[str, str], ...] = (
+    ("desks/mt5/data/FUSION_LIVE_ACCOUNT.json", "login"),
+    ("desks/mt5/data/FTMO_LIVE_ACCOUNT.json", "login"),
+)
 ID_FINDING = "<declared account number>"
+_ASCII_LOGIN = re.compile(r"[0-9]{4,12}")
 
 
 class FenceConfigError(RuntimeError):
@@ -179,18 +201,62 @@ class FenceConfigError(RuntimeError):
 
 
 def declared_ids(root: Path, env: dict[str, str] | None = None) -> frozenset[str]:
-    """Every account number the box declares, as digit strings (4-12 digits).
+    """Every account number the box declares (see `declared`), without the source names."""
+    return declared(root, env)[0]
 
-    STRICT (audit v5): a token in the env var that is not account-shaped, or a declarations key
-    whose login half is not, is a FenceConfigError -- a typo must not silently declare nothing.
-    The declarations file is account_profile.py's: {"accounts": {"<login>@<server>": profile}}
-    (a bare top-level mapping of such keys is read too)."""
+
+def _account_file_login(path: Path, rel: str, field: str) -> str:
+    """The login `field` of the live account file at `path`, as an ASCII digit string. RAISES
+    FenceConfigError (naming `rel` and the field, never the value) when the file cannot be read or
+    parsed, is not an object, or its login is not an int / digit string of 4-12 ASCII digits."""
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError) as exc:
+        raise FenceConfigError(f"{rel} unreadable ({type(exc).__name__})") from exc
+    login = doc.get(field) if isinstance(doc, dict) else None
+    # cross_account.norm_login's types: an int, an INTEGRAL float (`7000001.0` -- an FTMO file
+    # written that way must not stop all publication with rc 2) and a digit string are one
+    # account. bool, a non-integral float, NaN and inf are not (NaN/inf are not `is_integer`).
+    if isinstance(login, int) and not isinstance(login, bool):
+        text = str(login)
+    elif isinstance(login, float) and login.is_integer():
+        text = str(int(login))
+    elif isinstance(login, str):
+        text = login.strip()
+    else:
+        raise FenceConfigError(f"{rel} carries no {field!r} of 4-12 digits")
+    if not _ASCII_LOGIN.fullmatch(text):
+        raise FenceConfigError(f"{rel} carries a {field!r} that is not 4-12 ASCII digits")
+    # norm_login's form is str(int(...)): leading zeros go, as the terminal's int login has none.
+    # The NORMALISED form is what the publisher compares, so it must still be 4-12 digits:
+    # "0000" (-> "0") and "0123" (-> "123") are config errors, "0700100" declares "700100".
+    norm = str(int(text))
+    if not _ASCII_LOGIN.fullmatch(norm):
+        raise FenceConfigError(f"{rel} carries a {field!r} that is not 4-12 digits without its "
+                               "leading zeros")
+    return norm
+
+
+def declared(root: Path, env: dict[str, str] | None = None
+             ) -> tuple[frozenset[str], tuple[str, ...]]:
+    """(every account number the box declares, as digit strings of 4-12 digits; the NAMES of the
+    sources that contributed at least one). The names are safe to publish; the numbers never are.
+
+    STRICT (audit v5): a token in the env var that is not account-shaped, a declarations key
+    whose login half is not, or a live account file that exists but cannot be parsed or whose
+    login is not 4-12 ASCII digits, is a FenceConfigError -- a typo must not silently declare
+    nothing. An absent file declares nothing for that source. The declarations file is
+    account_profile.py's: {"accounts": {"<login>@<server>": profile}} (a bare top-level mapping of
+    such keys is read too); the live account files are read for their `login` (`ACCOUNT_FILES`)."""
     import os
+    sources: list[str] = []
     env = dict(os.environ) if env is None else env
     raw = [_ascii_digits(t) for t in re.split(r"[,\s]+", env.get(ID_ENV, "").strip()) if t]
     bad = [t for t in raw if not _ACCOUNT_SHAPED.fullmatch(t)]
     if bad:
         raise FenceConfigError(f"{ID_ENV} carries {len(bad)} token(s) that are not 4-12 digits")
+    if raw:
+        sources.append(ID_ENV)
     path = Path(root) / DECLARATIONS_REL
     if path.exists():
         try:
@@ -206,7 +272,14 @@ def declared_ids(root: Path, env: dict[str, str] | None = None) -> frozenset[str
             raw += logins
         except (OSError, ValueError) as exc:
             raise FenceConfigError(f"{DECLARATIONS_REL} unreadable ({type(exc).__name__})") from exc
-    return frozenset(raw)
+        if logins:
+            sources.append(Path(DECLARATIONS_REL).name)
+    for rel, field in ACCOUNT_FILES:
+        path = Path(root) / rel
+        if path.exists():
+            raw.append(_account_file_login(path, rel, field))
+            sources.append(Path(rel).name)
+    return frozenset(raw), tuple(sources)
 
 
 #: Characters a writer puts between the digits of one number (v5b): `555-1234`, `5,551,234`,
@@ -689,11 +762,13 @@ def _blobs(repo: Path, ids: list[str]) -> list[bytes | None]:
 
 
 def judge(repo: Path, entries: list[tuple[str, str]],
-          ids: frozenset[str] = frozenset()) -> dict[str, Any]:
+          ids: frozenset[str] = frozenset(),
+          sources: tuple[str, ...] = ()) -> dict[str, Any]:
     """Judge (blob, rel) pairs. An unreadable blob is refused: this fence fails closed.
 
     status: REFUSED (something refused), UNMEASURED (nothing refused, but no account number is
-    declared, so the digit-bounded match covered nothing), or OK."""
+    declared, so the digit-bounded match covered nothing), or OK. `sources` are the NAMES of the
+    declaration sources that contributed (see `declared`), recorded as `declared_sources`."""
     data = _blobs(repo, [b for b, _ in entries])
     refused: dict[str, list[dict[str, Any]]] = {}
     for (_blob, rel), raw in zip(entries, data, strict=True):
@@ -709,6 +784,7 @@ def judge(repo: Path, entries: list[tuple[str, str]],
             "n_checked": len(entries), "n_refused": len(refused),
             "n_declared_ids": len(ids),
             "declared_ids": "MEASURED" if ids else "UNMEASURED",
+            "declared_sources": sorted(set(sources)),
             "refused": refused,
             "legacy_pins": {rel: {"records": p["records"], "sha256": p["sha256"]}
                             for rel, p in LEGACY_PIN.items()},
@@ -717,8 +793,14 @@ def judge(repo: Path, entries: list[tuple[str, str]],
 
 
 def _why(doc: dict[str, Any]) -> str:
+    if doc.get("status") == CONFIG_ERROR:
+        return ("a declared-login source (QUANT_FENCE_ACCOUNT_IDS / ACCOUNT_PROFILES.json / "
+                "FUSION_LIVE_ACCOUNT.json / FTMO_LIVE_ACCOUNT.json) exists but is unreadable or "
+                "not 4-12 digits: login_fence exits 2 and NO box state is published until fixed "
+                "(run libs/ops/login_fence.py on the box to see which)")
     if doc.get("status") == "UNMEASURED":
-        return ("no account number declared (QUANT_FENCE_ACCOUNT_IDS / ACCOUNT_PROFILES.json): "
+        return ("no account number declared (QUANT_FENCE_ACCOUNT_IDS / ACCOUNT_PROFILES.json / "
+                "FUSION_LIVE_ACCOUNT.json / FTMO_LIVE_ACCOUNT.json): "
                 "the declared-number match covered nothing")
     return "; ".join(f"{rel}: {', '.join(sorted({h['key'] for h in hits}))}"
                      for rel, hits in sorted(doc.get("refused", {}).items()))
@@ -748,6 +830,7 @@ def record_alert(doc: dict[str, Any], root: Path | None = None) -> str | None:
 def _default_sender(root: Path) -> Sender:
     def send(title: str, body: str) -> dict[str, Any]:
         from libs.ops import alert_channels
+        # desk audience: box health (a publish fence / its config), not an owner action.
         return alert_channels.send_all(
             title, body, config=root / "data/secrets/alert_channels.json",
             ledger=root / "data/alert_delivery.jsonl")
@@ -756,11 +839,11 @@ def _default_sender(root: Path) -> Sender:
 
 def page(doc: dict[str, Any], root: Path | None = None, *, sender: Sender | None = None,
          now: datetime | None = None, repage_h: float = REPAGE_H) -> dict[str, Any]:
-    """Page a REFUSED or UNMEASURED pass off the box (state_publication.page_flow's idiom):
-    on a change, again every `repage_h` hours while it stands, once on recovery to OK. A send
-    whose `delivered` is 0 or falsy is NOT a page: nothing is recorded and the next pass
-    re-sends. The page names paths and key names only. RAISES if the sender does: the CLI turns
-    that into rc 3."""
+    """Page a REFUSED, UNMEASURED or CONFIG_ERROR (rc 2) pass off the box
+    (state_publication.page_flow's idiom): on a change, again every `repage_h` hours while it
+    stands, once on recovery to OK. A send whose `delivered` is 0 or falsy is NOT a page:
+    nothing is recorded and the next pass re-sends. The page names paths and key names only.
+    RAISES if the sender does: the CLI turns that into rc 3 (on rc 2 it stays rc 2)."""
     base = Path(root or ROOT)
     now = now or datetime.now(UTC)
     status = str(doc.get("status") or "UNMEASURED")
@@ -782,12 +865,16 @@ def page(doc: dict[str, Any], root: Path | None = None, *, sender: Sender | None
         else:
             return {"sent": False, "reason": "deduplicated"}
         title = (f"STATE PUBLISH REFUSED: {doc.get('n_refused', 0)} path(s) held back"
-                 if status == "REFUSED" else "LOGIN FENCE UNMEASURED: no declared account number")
+                 if status == "REFUSED" else
+                 "STATE PUBLISH STOPPED: login fence config error" if status == CONFIG_ERROR
+                 else "LOGIN FENCE UNMEASURED: no declared account number")
     elif prev.get("status") not in (None, "OK"):
         reason, title = f"recovered from {prev.get('status')}", "LOGIN FENCE OK again"
     else:
         return {"sent": False, "reason": "OK: nothing to page"}
-    body = f"{_why(doc) or status}\n(values withheld; see desks/mt5/reports/LOGIN_FENCE.json)"
+    see = ("nothing was written this pass" if status == CONFIG_ERROR
+           else "see desks/mt5/reports/LOGIN_FENCE.json")
+    body = f"{_why(doc) or status}\n(values withheld; {see})"
     res = (sender or _default_sender(base))(title, body[:1500])
     res = res if isinstance(res, dict) else {}
     # A page that reached NOBODY was not a page (v5b): `delivered` 0, absent or falsy leaves the
@@ -811,8 +898,9 @@ def _write(out: Path, doc: dict[str, Any]) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     """stdin: one `<blob>\\t<rel>` per line. stdout: one refused rel per line.
-    rc 0 = judged; 2 = the declarations are unreadable; 3 = a non-OK pass could not be alerted
-    or paged. The publisher publishes NOTHING on any non-zero rc."""
+    rc 0 = judged; 2 = the declarations are unreadable (paged, deduped; nothing written);
+    3 = a non-OK pass could not be alerted or paged. The publisher publishes NOTHING on any
+    non-zero rc."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--repo", type=Path, default=ROOT)
     ap.add_argument("--artifact", type=Path, default=None)
@@ -831,12 +919,19 @@ def main(argv: list[str] | None = None) -> int:
         if sep:
             entries.append((blob.strip(), rel.strip().replace("\\", "/")))
     try:
-        ids = declared_ids(args.repo)
+        ids, sources = declared(args.repo)
     except FenceConfigError as exc:
         # FAIL CLOSED: the publisher reads any non-zero exit as "publish nothing this pass".
         print(f"login fence: {exc}", file=sys.stderr)
+        # ...and it discards stderr (sync_shadow_to_git.ps1), so a typo would stop publication
+        # in silence: PAGE it, through the same deduped page() (login_fence_alert.json). The
+        # text is fixed -- a FenceConfigError names sources and fields only, and is not echoed.
+        try:
+            page({"status": CONFIG_ERROR, "refused": {}}, args.repo)
+        except Exception as pexc:
+            print(f"login fence: page failed ({type(pexc).__name__})", file=sys.stderr)
         return 2
-    doc = judge(args.repo, entries, ids)
+    doc = judge(args.repo, entries, ids, sources)
     out = args.artifact or (args.repo / "desks" / "mt5" / "reports" / "LOGIN_FENCE.json")
     _write(out, doc)                      # the artifact exists even if alerting fails below
     rc = 0
