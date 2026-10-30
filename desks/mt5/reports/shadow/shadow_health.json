@@ -1,27 +1,27 @@
 {
-  "updated_at": "2026-10-29T14:53:50+00:00",
-  "configured_sleeves": 662,
-  "represented_sleeves": 662,
-  "certified_sleeves_total": 1204,
-  "forward_clocks_total": 662,
+  "updated_at": "2026-10-30T03:04:35+00:00",
+  "configured_sleeves": 686,
+  "represented_sleeves": 686,
+  "certified_sleeves_total": 1335,
+  "forward_clocks_total": 686,
   "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
   "n_distinct_param_hashes": 207,
   "n_mechanisms": 11,
-  "retired_shadow_sleeves": 260,
+  "retired_shadow_sleeves": 263,
   "quarantined_uncertified_candidates": 0,
-  "sleeves_with_forward_trades": 571,
+  "sleeves_with_forward_trades": 572,
   "zero_trade_clocks": {
-    "count": 91,
+    "count": 114,
     "by_status": {
-      "ACTIVE": 79,
-      "BLOCKED_NO_BARS": 1,
-      "IDENTITY_BROKEN": 11
+      "ACTIVE": 102,
+      "BLOCKED_NO_BARS": 3,
+      "IDENTITY_BROKEN": 9
     },
-    "age_measured": 91,
-    "median_age_days": 0.575,
+    "age_measured": 114,
+    "median_age_days": 0.914,
     "mature_14d_without_trade": 40,
-    "fresh_attempts": 80,
-    "naturally_inactive": 79,
+    "fresh_attempts": 105,
+    "naturally_inactive": 102,
     "suppressed_or_unproven": 12,
     "suppressed_examples": [
       "UNKNOWN",
@@ -41,10 +41,10 @@
   },
   "evidence_blocked_sleeves": 12,
   "missing_sleeves": [
-    "282 certified sleeve(s)"
+    "386 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 10529.024,
+  "seconds": 7958.771,
   "gateway_armed": true,
   "promoted_live_sleeves": [],
   "promoted_live_certificate_rows": [],
