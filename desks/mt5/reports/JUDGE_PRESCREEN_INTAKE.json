@@ -1,0 +1,376 @@
+{
+ "schema": "judge_prescreen/1.3",
+ "generated_at": "2026-10-30T15:14:14+00:00",
+ "mode": "SHADOW",
+ "rows": 1692182,
+ "rows_already_ruled_not_screened": 546531,
+ "would_kill": {
+  "needs_data": 1000,
+  "chart_short": 0,
+  "sibling_dead": 256771
+ },
+ "would_kill_total": 257771,
+ "would_kill_share": 0.152331,
+ "removed_from_docket": 0,
+ "holdout_sent_to_judge": 0,
+ "rule_acts": {
+  "needs_data": false,
+  "chart_short": false,
+  "sibling_dead": false
+ },
+ "sibling_k": 5,
+ "sibling_canon_k": null,
+ "sibling_would_kill_by_k": {
+  "5": 256771,
+  "10": 176959,
+  "20": 101139,
+  "40": 49631,
+  "80": 31153
+ },
+ "ms_per_row": 3.76068,
+ "seconds": 6363.752,
+ "samples": {
+  "needs_data": [
+   {
+    "cell": "USDZAR.cot_positioning.p=0d8318b9505543ec",
+    "missing_input": "cot_series:USDZAR",
+    "why": "orthogonal_sweep._cot_frame('USDZAR') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "NZDJPY.cot_positioning.p=0d8318b9505543ec",
+    "missing_input": "cot_series:NZDJPY",
+    "why": "orthogonal_sweep._cot_frame('NZDJPY') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "UK100.cot_positioning.p=0d8318b9505543ec",
+    "missing_input": "cot_series:UK100",
+    "why": "orthogonal_sweep._cot_frame('UK100') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "USDINR.cot_positioning.p=0d8318b9505543ec",
+    "missing_input": "cot_series:USDINR",
+    "why": "orthogonal_sweep._cot_frame('USDINR') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "EURMXN.cot_positioning.p=b6110a625e567b24",
+    "missing_input": "cot_series:EURMXN",
+    "why": "orthogonal_sweep._cot_frame('EURMXN') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "EURNOK.cot_positioning.p=b6110a625e567b24",
+    "missing_input": "cot_series:EURNOK",
+    "why": "orthogonal_sweep._cot_frame('EURNOK') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "EURCZK.cot_positioning.p=b6110a625e567b24",
+    "missing_input": "cot_series:EURCZK",
+    "why": "orthogonal_sweep._cot_frame('EURCZK') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "EURPLN.cot_positioning.p=b6110a625e567b24",
+    "missing_input": "cot_series:EURPLN",
+    "why": "orthogonal_sweep._cot_frame('EURPLN') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "EURDKK.cot_positioning.p=b6110a625e567b24",
+    "missing_input": "cot_series:EURDKK",
+    "why": "orthogonal_sweep._cot_frame('EURDKK') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "AUDJPY@M5.cot_positioning.p=ff65eb66d44b6829",
+    "missing_input": "cot_series:AUDJPY",
+    "why": "orthogonal_sweep._cot_frame('AUDJPY') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "GBPSEK@M5.cot_positioning.p=ff65eb66d44b6829",
+    "missing_input": "cot_series:GBPSEK",
+    "why": "orthogonal_sweep._cot_frame('GBPSEK') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "NZDCAD@M5.cot_positioning.p=ff65eb66d44b6829",
+    "missing_input": "cot_series:NZDCAD",
+    "why": "orthogonal_sweep._cot_frame('NZDCAD') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "CORN@M5.cot_positioning.p=ff65eb66d44b6829",
+    "missing_input": "cot_series:CORN",
+    "why": "orthogonal_sweep._cot_frame('CORN') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "XALUSD@M5.cot_positioning.p=ff65eb66d44b6829",
+    "missing_input": "cot_series:XALUSD",
+    "why": "orthogonal_sweep._cot_frame('XALUSD') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "SOLUSD@M5.cot_positioning.p=ff65eb66d44b6829",
+    "missing_input": "cot_series:SOLUSD",
+    "why": "orthogonal_sweep._cot_frame('SOLUSD') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "HK50.cot_positioning.p=0d8318b9505543ec",
+    "missing_input": "cot_series:HK50",
+    "why": "orthogonal_sweep._cot_frame('HK50') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "EURZAR.cot_positioning.p=af2630cc374bc191",
+    "missing_input": "cot_series:EURZAR",
+    "why": "orthogonal_sweep._cot_frame('EURZAR') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "EUSTX50.cot_positioning.p=af2630cc374bc191",
+    "missing_input": "cot_series:EUSTX50",
+    "why": "orthogonal_sweep._cot_frame('EUSTX50') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "FRA40.cot_positioning.p=af2630cc374bc191",
+    "missing_input": "cot_series:FRA40",
+    "why": "orthogonal_sweep._cot_frame('FRA40') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "GBPAUD.cot_positioning.p=af2630cc374bc191",
+    "missing_input": "cot_series:GBPAUD",
+    "why": "orthogonal_sweep._cot_frame('GBPAUD') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "GBPCAD.cot_positioning.p=af2630cc374bc191",
+    "missing_input": "cot_series:GBPCAD",
+    "why": "orthogonal_sweep._cot_frame('GBPCAD') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "GBPCHF.cot_positioning.p=af2630cc374bc191",
+    "missing_input": "cot_series:GBPCHF",
+    "why": "orthogonal_sweep._cot_frame('GBPCHF') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "GBPDKK.cot_positioning.p=af2630cc374bc191",
+    "missing_input": "cot_series:GBPDKK",
+    "why": "orthogonal_sweep._cot_frame('GBPDKK') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "GBPHUF.cot_positioning.p=af2630cc374bc191",
+    "missing_input": "cot_series:GBPHUF",
+    "why": "orthogonal_sweep._cot_frame('GBPHUF') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   },
+   {
+    "cell": "GBPJPY.cot_positioning.p=af2630cc374bc191",
+    "missing_input": "cot_series:GBPJPY",
+    "why": "orthogonal_sweep._cot_frame('GBPJPY') serves no positioning series (data/cot_zcache.parquet has no column for it and no legacy COT JSON is on disk), so family_cot_positioning returns [] on its input guard"
+   }
+  ],
+  "chart_short": [],
+  "sibling_dead": [
+   {
+    "cell": "ADAUSD@M15.session_range_breakout.p=f9acf2b793cc3fed",
+    "bucket": "ADAUSD|M15|session_range_breakout",
+    "named_cells": 23,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M15.session_range_breakout.p=20d4b56a513998cf",
+    "bucket": "ADAUSD|M15|session_range_breakout",
+    "named_cells": 23,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=cf5c17ee77d2e826",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 23,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=3e6194ffd4fdb6bb",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 23,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=56584bc7776c6b12",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 23,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M30.session_range_breakout.p=c1ff468e22ba41cf",
+    "bucket": "ADAUSD|M30|session_range_breakout",
+    "named_cells": 13,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M30.session_range_breakout.p=5a005e9c241abea8",
+    "bucket": "ADAUSD|M30|session_range_breakout",
+    "named_cells": 13,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M30.session_range_breakout.p=ad3623c9ef2730bd",
+    "bucket": "ADAUSD|M30|session_range_breakout",
+    "named_cells": 13,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M30.session_range_breakout.p=595a3abbb34a8632",
+    "bucket": "ADAUSD|M30|session_range_breakout",
+    "named_cells": 13,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD.session_range_breakout.p=4246ef3135b448b3",
+    "bucket": "ADAUSD|H1|session_range_breakout",
+    "named_cells": 7,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD.session_range_breakout.p=818a216cff1d99a0",
+    "bucket": "ADAUSD|H1|session_range_breakout",
+    "named_cells": 7,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD.session_range_breakout.p=cc49d834172f02e5",
+    "bucket": "ADAUSD|H1|session_range_breakout",
+    "named_cells": 7,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD.session_range_breakout.p=c780499cb1083add",
+    "bucket": "ADAUSD|H1|session_range_breakout",
+    "named_cells": 7,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M15.session_range_breakout.p=4caab331add53bff",
+    "bucket": "ADAUSD|M15|session_range_breakout",
+    "named_cells": 23,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M15.session_range_breakout.p=60268d1d5796ad1e",
+    "bucket": "ADAUSD|M15|session_range_breakout",
+    "named_cells": 23,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=134f0b5da3848e41",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 23,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=de5756d892364a85",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 23,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=b16950af73bfe560",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 23,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M30.session_range_breakout.p=a44e7e6065b5271b",
+    "bucket": "ADAUSD|M30|session_range_breakout",
+    "named_cells": 13,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M30.session_range_breakout.p=226b02caa3f8520f",
+    "bucket": "ADAUSD|M30|session_range_breakout",
+    "named_cells": 13,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M30.session_range_breakout.p=21f9dcb598480ea0",
+    "bucket": "ADAUSD|M30|session_range_breakout",
+    "named_cells": 13,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M30.session_range_breakout.p=5bbea829c6f84c51",
+    "bucket": "ADAUSD|M30|session_range_breakout",
+    "named_cells": 13,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD.session_range_breakout.p=ecc8294bc1ad7e1f",
+    "bucket": "ADAUSD|H1|session_range_breakout",
+    "named_cells": 7,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD.session_range_breakout.p=9388df5a252bc72a",
+    "bucket": "ADAUSD|H1|session_range_breakout",
+    "named_cells": 7,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD.session_range_breakout.p=195a04fcdb727d0c",
+    "bucket": "ADAUSD|H1|session_range_breakout",
+    "named_cells": 7,
+    "cleared_cells": 0,
+    "k": 5
+   }
+  ]
+ },
+ "missed_growth": [
+  {
+   "day": "2026-10-30",
+   "at": "2026-10-30T15:14:14+00:00",
+   "rail": "judge_prescreen",
+   "side": "cost",
+   "kind": "opportunity_cost",
+   "value": null,
+   "verdict": "UNMEASURED",
+   "units": "cells killed that the judge would have passed or cleared in_sample",
+   "e_log_w": "UNMEASURED",
+   "acting": {
+    "needs_data": null,
+    "sibling_dead": null
+   },
+   "would_act_sibling_dead": {
+    "k": 5,
+    "true_survivors_killed": 11,
+    "cleared_in_sample_killed": 1065,
+    "basis": "MEASURED by the look-ahead-free ledger replay"
+   }
+  },
+  {
+   "day": "2026-10-30",
+   "at": "2026-10-30T15:14:14+00:00",
+   "rail": "judge_prescreen",
+   "side": "gain",
+   "kind": "compute_freed",
+   "value": 0.0,
+   "verdict": "MEASURED",
+   "units": "judge build seconds freed (rows removed x measured judge seconds per cell)",
+   "rows_removed": 0,
+   "seconds_per_cell": 0.1601565975620607,
+   "would_free_seconds_if_all_rules_acted": 41283.7
+  }
+ ],
+ "note": "SHADOW records what each rule WOULD remove and removes nothing; every row still reaches the sealed judge. CANON (a code constant) removes only rules marked rule_acts, minus a 1-in-20 holdout, and only after a durable KILL."
+}
