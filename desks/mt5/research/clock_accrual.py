@@ -463,7 +463,11 @@ def judge(run: Mapping[str, Any], lane: str, key: str | None, row: Mapping[str, 
                     f"(limit {SILENT_H:g}h): the pass stopped before this row")
 
     n = row.get("n")
-    n = n if isinstance(n, int) else 0
+    if n is not None and (isinstance(n, bool) or not isinstance(n, int)):
+        # A count the lane wrote but this reader cannot read is not zero observations (#110
+        # audit SF4): zero would call the clock WARMING or GATE_NEVER_OPENS on no evidence.
+        return done(UNMEASURED, f"the lane's n is {n!r}, not a count")
+    n = n or 0
     if n > 0:
         return done(ACCRUING, f"{n} forward observation(s), last {entry['last_entry']}")
     started = _parse_ts(entry["forward_start"])
