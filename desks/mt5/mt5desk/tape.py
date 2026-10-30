@@ -681,6 +681,51 @@ def write_day(chunk: pd.DataFrame, out: Path) -> int:
     return len(merged)
 
 
+#: A measured broker lead this far below the last run's is a step back (the fall-back), and the
+#: deepest such a step re-reads: one hour plus slack for a stale reading (audit 2026-10-29).
+CLOCK_STEP_MS = 60_000
+CLOCK_REWIND_CAP_MS = 65 * 60_000
+
+
+def _broker_now_ms(mt5: object, symbols: list[str]) -> int | None:
+    """The newest `time_msc` any symbol's last tick carries: the broker's clock, never ahead of
+    it. None when nothing answers."""
+    got: list[int] = []
+    for sym in symbols:
+        try:
+            t = mt5.symbol_info_tick(sym)  # type: ignore[attr-defined]
+        except Exception:
+            continue
+        v = int(getattr(t, "time_msc", 0) or 0) if t is not None else 0
+        if v > 0:
+            got.append(v)
+    # The SECOND-newest when two or more answer (audit 2026-10-29, S1): one forward-glitched
+    # stamp must not end the window in the future. Late is lossless.
+    got.sort()
+    if not got:
+        return None
+    return got[-2] if len(got) >= 2 else got[-1]
+
+
+def _utcnow() -> datetime:
+    """The wall clock, as one seam a replay can move."""
+    return datetime.now(UTC)
+
+
+def _venue_lead_h(now: datetime) -> int:
+    """Hours the venue's tick clock runs ahead of UTC at `now` (3 in US summer, else 2), from
+    `libs.regime.session_clock`; 0 when that cannot be imported -- a late window, never a wrong
+    one."""
+    try:
+        root = str(Path(__file__).resolve().parents[3])
+        if root not in sys.path:
+            sys.path.append(root)
+        from libs.regime.session_clock import utc_offset_h
+        return int(utc_offset_h(now))
+    except Exception:
+        return 0
+
+
 def record_ticks(symbols: list[str]) -> dict:
     """Append every tick since the last recorded one, per symbol. Resumable and idempotent.
 
@@ -696,15 +741,54 @@ def record_ticks(symbols: list[str]) -> dict:
     import MetaTrader5 as mt5
 
     state = _load(STATE, {})
-    now = datetime.now(UTC)
+    now = _utcnow()
+    # THE WINDOW ENDS AT THE VENUE'S NOW, NOT UTC'S (2026-10-14). `copy_ticks_range` compares its
+    # bounds with `time_msc` as plain numbers, and `time_msc` is the venue clock (New York + 7 h),
+    # so a window ending at UTC-now stopped two or three hours short: on 2026-09-06 a pass at
+    # 22:40:35 UTC ended every crypto CFD at broker 22:40:3x. `start` is already on that clock.
+    lead_h = _venue_lead_h(now)
+    end = now + timedelta(hours=lead_h)
+    # BOUNDED BY THE BROKER'S OWN CLOCK (audit 2026-10-20): the box clock plus a calendar lead
+    # can run ahead of the broker; the newest stamp any symbol carries cannot.
+    measured = _broker_now_ms(mt5, symbols)
+    if measured:
+        end = min(end, datetime.fromtimestamp(measured / 1000.0, tz=UTC))
+    # THE MEASURED OFFSET (audit 2026-10-29, S3): how far the broker's clock runs ahead of this
+    # box's, from the broker itself. The calendar lead is only the fallback when nothing answers.
+    now_ms = int(now.timestamp() * 1000)
+    offset_ms = (measured - now_ms) if measured else lead_h * 3_600_000
     summary: dict[str, dict] = {}
 
     for sym in symbols:
         last = state.get(sym, {}).get("last_tick_ms")
         start = (datetime.fromtimestamp(last / 1000.0, tz=UTC) + timedelta(milliseconds=1)
                  if last else now - timedelta(days=COLD_START_DAYS))
+        # THE FALL-BACK HOUR (audit 2026-10-20). When New York leaves daylight time the venue
+        # clock steps back an hour and re-stamps it, so ticks arrive LOWER than `last`. Resuming
+        # at last+1 skipped the whole repeated hour on every 24/7 symbol. When the lead this run
+        # is smaller than the lead `last` was recorded under, start that much earlier; the
+        # re-read first occurrence dedupes in `write_day`.
+        prev_lead = state.get(sym, {}).get("lead_h")
+        back_ms = 0
+        if last and isinstance(prev_lead, int) and prev_lead > lead_h:
+            back_ms = (prev_lead - lead_h) * 3_600_000
+        # ...and by the MEASURED drop in the broker's lead (S3). The calendar says when New York
+        # flips; only the broker says when IT flipped. A broker 30 h early lost 3,001 of 126,000
+        # ticks while the calendar rewind waited. Whichever is deeper is used; a re-read dedupes.
+        prev_off = state.get(sym, {}).get("offset_ms")
+        if not isinstance(prev_off, int) and isinstance(prev_lead, int):
+            prev_off = prev_lead * 3_600_000
+        if last and isinstance(prev_off, int) and prev_off - offset_ms >= CLOCK_STEP_MS:
+            back_ms = max(back_ms, min(prev_off - offset_ms, CLOCK_REWIND_CAP_MS))
+        if back_ms:
+            start -= timedelta(milliseconds=back_ms)
+        # ...and for the rest of the repeated hour, resume where the last run's QUERY ended
+        # rather than after the first occurrence's later ticks (which `last` still holds).
+        queried = state.get(sym, {}).get("queried_to_ms")
+        if last and isinstance(queried, int) and queried < last:
+            start = min(start, datetime.fromtimestamp((queried - 5_000) / 1000.0, tz=UTC))
         try:
-            ticks = mt5.copy_ticks_range(sym, start, now, mt5.COPY_TICKS_ALL)
+            ticks = mt5.copy_ticks_range(sym, start, end, mt5.COPY_TICKS_ALL)
         except Exception as exc:
             summary[sym] = {"error": f"{type(exc).__name__}: {exc}"}
             continue
@@ -725,7 +809,10 @@ def record_ticks(symbols: list[str]) -> dict:
             # the new ticks, deduplicated on (time_msc, bid, ask, last), `ts` derived, written
             # as an explicit Arrow table (see merge_day for the failure this replaced).
             written += write_day(chunk, out)
-        state[sym] = {"last_tick_ms": int(df["time_msc"].iloc[-1]),
+        state[sym] = {"last_tick_ms": int(df["time_msc"].max()),
+                      "lead_h": lead_h,
+                      "offset_ms": int(offset_ms),
+                      "queried_to_ms": int(end.timestamp() * 1000),
                       "last_run": now.isoformat(timespec="seconds"),
                       "last_tick_utc": str(df["ts"].iloc[-1])}
         summary[sym] = {"new_ticks": len(df), "rows_on_disk_touched": written,
@@ -965,7 +1052,6 @@ def main(argv: list[str] | None = None) -> int:
         return _dry_run(argv)
     import MetaTrader5 as mt5
     from mt5desk.config import terminal_path
-
     from research.mt5_session import attach_or_initialize
 
     if not attach_or_initialize(mt5, path=terminal_path(), timeout=5000):
@@ -1013,5 +1099,9 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
+# THE ENTRY POINT IS THE LAST STATEMENT (2026-10-14). It sat above `_explain`, so
+# `python -m mt5desk.tape` ran main() before `_explain` existed and the init-failure path --
+# the one that must explain itself -- died on NameError instead of printing the reason.
+# `_explain` now lives above `main`; tests/ops/test_main_guard_is_last.py fences the order.
 if __name__ == "__main__":
     raise SystemExit(main())
