@@ -36,8 +36,14 @@ UNMEASURED IS NEVER ZERO (L1.28a). A missing input is named. So is a STALE one: 
 than `INPUT_MAX_AGE_MIN` is a reading of a machine that has stopped, not of this hour, and a probe
 fed 14-day-old inputs read GREEN before this rule. A scheduler reading that only LISTED the task
 directory (`existence_only`, the schtasks-timeout fallback) proves which tasks exist and nothing
-about how they ran, so it is unread here. A leg recorded as SKIPPED, SKIPPED_BY_PLAN, ROTATED_OUT
-or UNMEASURED -- or with no record at all -- is an UNMEASURED row, never a pass.
+about how they ran, so it is unread here. A leg recorded as SKIPPED, ROTATED_OUT or UNMEASURED
+-- or with no record at all -- is an UNMEASURED row, never a pass.
+
+ANOTHER CLOCK'S LEG IS NEITHER (audit 2026-10-30). The core and heavy plans share one marker, and
+each writes SKIPPED_BY_PLAN for every leg the other owns, as it does for `OWN_CLOCK_LEGS` on every
+plan. Reading those as unread left the fence UNMEASURED on every pass, forever. They are skipped
+here and their last MEASURED row is carried, so a failing heavy leg is still on the list (and not
+NEW again) after the core pass that did not run it.
 
     python scripts/check_silent_organs.py            # write the artifact, exit 2 on a new one
     python scripts/check_silent_organs.py --json
@@ -63,7 +69,10 @@ NEVER_STALE = DESK / "reports" / "NEVER_STALE.json"
 SILENT_TASK_VERDICTS = frozenset({"NOT_SCHEDULED", "FAILING", "NO_ARTIFACT", "STALE"})
 SILENT_LEG_STATUSES = frozenset({"LEG_FAILED", "TIMEOUT", "MISSING"})
 #: A leg outcome that says the leg did not run (or could not judge) this pass: nobody looked.
-UNMEASURED_LEG_STATUSES = frozenset({"UNMEASURED", "SKIPPED", "SKIPPED_BY_PLAN", "ROTATED_OUT"})
+UNMEASURED_LEG_STATUSES = frozenset({"UNMEASURED", "SKIPPED", "ROTATED_OUT"})
+#: A leg another clock owns this pass: the other plan's leg, or an `OWN_CLOCK_LEGS` one. Not a
+#: measurement and not a gap in one -- its last measured row stands.
+OTHER_CLOCK = "OTHER_CLOCK"
 #: The fence's own leg. Its exit code is this artifact's verdict, not a fresh silence to fence on
 #: (counting it would make every RED fence re-announce itself the next hour).
 SELF_LEG = "silent_organs"
@@ -71,6 +80,8 @@ SELF_LEG = "silent_organs"
 #: 60 min (ops/organ_contract.py MT5-ProcessHealth); the hourly cycle's marker is rewritten each
 #: pass, and a heavy pass may run past two hours. Twice the cadence, and the marker's worst pass.
 INPUT_MAX_AGE_MIN = {"process_health": 120.0, "sync_marker": 180.0}
+#: never_stale runs every 15 min (ops/run_never_stale.cmd) and itself refuses a 90-minute reading.
+NEVER_STALE_MAX_AGE_MIN = 90.0
 #: Exit code for "a new organ went silent" (and for an escalation nothing else pages).
 RED_EXIT = 2
 #: Exit code for "the fence could not see": an unreadable, stale or existence-only input.
@@ -103,6 +114,23 @@ def _stamp_age_min(stamp: Any, path: Path, now: datetime) -> float | None:
         except ValueError:
             pass
     return _age_min(path, now)
+
+
+def _own_clock_legs() -> frozenset[str]:
+    """hourly_cycle.OWN_CLOCK_LEGS, read from its source like VERDICT_EXITS. Unreadable -> empty
+    (each such leg is then judged by its recorded status, SKIPPED_BY_PLAN, which is the same)."""
+    import ast
+    try:
+        tree = ast.parse((DESK / "research" / "hourly_cycle.py").read_text(encoding="utf-8"))
+    except (OSError, SyntaxError, ValueError):
+        return frozenset()
+    for node in tree.body:
+        if (isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name)
+                and node.target.id == "OWN_CLOCK_LEGS" and isinstance(node.value, ast.Call)
+                and node.value.args and isinstance(node.value.args[0], ast.Set)):
+            return frozenset(e.value for e in node.value.args[0].elts
+                             if isinstance(e, ast.Constant) and isinstance(e.value, str))
+    return frozenset()
 
 
 def _declared_verdict_exits() -> dict[str, tuple[int, ...]]:
@@ -190,13 +218,19 @@ def escalation_silences(doc: Any) -> list[dict[str, Any]]:
 
 
 def leg_verdict(leg: Any, name: str = "",
-                verdict_exits: dict[str, tuple[int, ...]] | None = None) -> tuple[str, str] | None:
+                verdict_exits: dict[str, tuple[int, ...]] | None = None,
+                own_clock: frozenset[str] = frozenset()) -> tuple[str, str] | None:
     """(verdict, why) for a silent or UNMEASURED leg outcome, or None when the leg ran clean.
 
-    A leg with no record (None) and a leg that reports it did not run -- SKIPPED, SKIPPED_BY_PLAN,
-    ROTATED_OUT, UNMEASURED -- read UNMEASURED: this pass holds no measurement of it (audit,
-    2026-09-30). A non-zero exit that the leg has not declared a verdict is a failure, exactly as
-    the cycle's own ledger records it (`exit_code=N`)."""
+    A leg with no record (None) and a leg that reports it did not run -- SKIPPED, ROTATED_OUT,
+    UNMEASURED -- read UNMEASURED: this pass holds no measurement of it (audit, 2026-09-30). A
+    SKIPPED_BY_PLAN or own-clock leg reads OTHER_CLOCK: another clock owns it (audit 2026-10-30).
+    A non-zero exit that the leg has not declared a verdict is a failure, exactly as the cycle's
+    own ledger records it (`exit_code=N`)."""
+    if name in own_clock or (isinstance(leg, dict)
+                             and str(leg.get("status") or "").upper() == "SKIPPED_BY_PLAN"):
+        return OTHER_CLOCK, "owned by another clock this pass: " + str(
+            (leg or {}).get("plan") if isinstance(leg, dict) else "own scheduled task")
     if leg is None:
         return "UNMEASURED", "no record of this leg in the pass: nobody looked"
     if not isinstance(leg, dict):
@@ -220,17 +254,26 @@ def leg_verdict(leg: Any, name: str = "",
     return None
 
 
+def other_clock_legs(marker: Any) -> set[str]:
+    """The marker's legs another clock owns this pass, as organ names."""
+    if not isinstance(marker, dict):
+        return set()
+    own = _own_clock_legs()
+    return {f"leg:{n}" for n, leg in marker.items()
+            if n != "last_cycle" and (leg_verdict(leg, n, None, own) or ("",))[0] == OTHER_CLOCK}
+
+
 def leg_silences(marker: Any) -> list[dict[str, Any]]:
     """Silent and UNMEASURED legs of the last completed hourly pass, one per leg."""
     out: list[dict[str, Any]] = []
     if not isinstance(marker, dict):
         return out
-    exits = _declared_verdict_exits()
+    exits, own = _declared_verdict_exits(), _own_clock_legs()
     for name, leg in sorted(marker.items()):
         if name == "last_cycle":
             continue
-        v = leg_verdict(leg, name, exits)
-        if v:
+        v = leg_verdict(leg, name, exits, own)
+        if v and v[0] != OTHER_CLOCK:
             row = {"organ": f"leg:{name}", "source": "leg", "verdict": v[0], "why": v[1],
                    "artifact": None}
             if v[0] == "UNMEASURED":
@@ -289,6 +332,7 @@ def build(*, health_path: Path | None = None, marker_path: Path | None = None,
     health_unread = not isinstance(health, dict)
     scheduler_unread = not health_unread and not _scheduler(health).get("read", True)
     marker_unread = not isinstance(marker, dict)
+    other_clock = other_clock_legs(marker)
     # What each organ reads as NOW in process_health, so a row whose verdict went UNMEASURED can
     # be told apart from a row that recovered.
     now_task_verdict = {str(r.get("name") or ""): str(r.get("verdict") or "")
@@ -298,8 +342,8 @@ def build(*, health_path: Path | None = None, marker_path: Path | None = None,
     unread_legs = sorted(r["organ"] for r in silent if r.get("unread"))
     if unread_legs:
         unmeasured.append({"what": f"{len(unread_legs)} hourly-cycle leg(s)",
-                           "why": "no measurement this pass (SKIPPED / SKIPPED_BY_PLAN / "
-                                  "ROTATED_OUT / UNMEASURED / no record): "
+                           "why": "no measurement this pass (SKIPPED / ROTATED_OUT / "
+                                  "UNMEASURED / no record): "
                                   + ", ".join(unread_legs[:12])
                                   + (" ..." if len(unread_legs) > 12 else "")})
     # An escalation about a task already on the list is the same organ twice; only the ones no
@@ -313,6 +357,14 @@ def build(*, health_path: Path | None = None, marker_path: Path | None = None,
         # nothing -- an empty escalation list that means "nobody looked", not "nothing wrong".
         unmeasured.append({"what": "watchdog escalations (NEVER_STALE)",
                            "why": str(watchdog.get("why") or "never_stale reported UNMEASURED")})
+    elif isinstance(watchdog, dict):
+        # A STALE WATCHDOG ESCALATES NOTHING NEW: its empty list is an old one, not a clean one.
+        ns_age = _stamp_age_min(watchdog.get("at"), never_stale_path or NEVER_STALE, now)
+        if ns_age is not None and ns_age > NEVER_STALE_MAX_AGE_MIN:
+            unmeasured.append({"what": "watchdog escalations (NEVER_STALE)",
+                               "why": f"NEVER_STALE.json is STALE: {ns_age:.0f} min old against "
+                                      f"{NEVER_STALE_MAX_AGE_MIN:.0f} -- MT5-NeverStale has "
+                                      "stopped writing it"})
     prev_rows: dict[str, dict[str, Any]] = {}
     if isinstance(previous, dict):
         prev_rows = {str(r.get("organ")): r for r in previous.get("organs") or []
@@ -327,11 +379,17 @@ def build(*, health_path: Path | None = None, marker_path: Path | None = None,
         before = prev_rows.get(row["organ"])
         row["first_seen"] = (before or {}).get("first_seen") or stamp
         row["passes_silent"] = int((before or {}).get("passes_silent") or 0) + 1
-        # NEW means newly KNOWN silent: absent before, or only UNMEASURED before (a failure seen
-        # for the first time after an unread pass is still a first sighting). An UNMEASURED row
-        # is never new -- it turns the fence UNMEASURED, not RED.
-        if has_baseline and row["verdict"] != "UNMEASURED" and (
-                before is None or str(before.get("verdict") or "") == "UNMEASURED"):
+        # NEW means newly KNOWN silent, judged against the LAST MEASURED verdict (audit
+        # 2026-10-30): absent before, or UNMEASURED before with no measured verdict behind it (a
+        # failure seen for the first time after an unread pass is still a first sighting). An
+        # UNMEASURED row keeps that verdict as `last_verdict`, so one unread pass between two
+        # failing ones never re-pages the same failure. An UNMEASURED row is never new.
+        last = (str(before.get("verdict") or "") if before else "") or None
+        if last == "UNMEASURED":
+            last = (before or {}).get("last_verdict")
+        if row["verdict"] == "UNMEASURED" and last:
+            row["last_verdict"] = last
+        if has_baseline and row["verdict"] != "UNMEASURED" and not last:
             new.append(row["organ"])
     now_names = {r["organ"] for r in silent}
 
@@ -354,7 +412,18 @@ def build(*, health_path: Path | None = None, marker_path: Path | None = None,
     for name, prev in sorted(prev_rows.items()):
         if name in now_names:
             continue
-        if _unmeasured_now(prev):
+        if name in other_clock:
+            # ANOTHER CLOCK OWNS IT THIS PASS: its last measured row stands, verdict and all, and
+            # it is never an unread row (that kept the fence UNMEASURED on every pass).
+            last = prev.get("verdict") if prev.get("verdict") != "UNMEASURED" else None
+            last = last or prev.get("last_verdict")
+            row = {**prev, "carried": True, "owner": "another clock",
+                   "passes_silent": int(prev.get("passes_silent") or 0) + 1}
+            row.pop("unread", None)
+            if last:
+                row.update(verdict=last, last_verdict=last)
+            silent.append(row)
+        elif _unmeasured_now(prev):
             # CARRIED FORWARD with its streak and first-seen intact (audit R1b): the organ is
             # still on the list, now marked UNMEASURED, until a reading says otherwise.
             # passes_silent COUNTS THIS PASS TOO (audit 2026-09-30): the streak is how long the

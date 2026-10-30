@@ -239,7 +239,7 @@
    "region": "JP",
    "frequency": "weekly",
    "history_start": 2005,
-   "latency_days": 4,
+   "latency_days": 5,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -290,7 +290,7 @@
    "region": "US",
    "frequency": "monthly",
    "history_start": 1977,
-   "latency_days": 45,
+   "latency_days": 50,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -316,7 +316,7 @@
    "region": "global",
    "frequency": "quarterly",
    "history_start": 1999,
-   "latency_days": 90,
+   "latency_days": 95,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -1155,7 +1155,7 @@
    "region": "US",
    "frequency": "monthly",
    "history_start": 1990,
-   "latency_days": 7,
+   "latency_days": 40,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -1205,7 +1205,7 @@
    "region": "US",
    "frequency": "monthly",
    "history_start": 1990,
-   "latency_days": 7,
+   "latency_days": 17,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -1256,7 +1256,7 @@
    "region": "US",
    "frequency": "monthly",
    "history_start": 1990,
-   "latency_days": 7,
+   "latency_days": 15,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -1282,7 +1282,7 @@
    "region": "US",
    "frequency": "monthly",
    "history_start": 1990,
-   "latency_days": 7,
+   "latency_days": 10,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -1308,7 +1308,7 @@
    "region": "US",
    "frequency": "monthly",
    "history_start": 1990,
-   "latency_days": 7,
+   "latency_days": 18,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -1383,7 +1383,7 @@
    "region": "US",
    "frequency": "monthly",
    "history_start": 1990,
-   "latency_days": 7,
+   "latency_days": 62,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -1823,7 +1823,7 @@
    "region": "CN",
    "frequency": "monthly",
    "history_start": 2002,
-   "latency_days": 12,
+   "latency_days": 15,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -1976,7 +1976,7 @@
    "region": "global",
    "frequency": "monthly",
    "history_start": 1960,
-   "latency_days": 30,
+   "latency_days": 45,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -2000,7 +2000,7 @@
    "region": "global",
    "frequency": "monthly",
    "history_start": 1950,
-   "latency_days": 60,
+   "latency_days": 90,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -2051,7 +2051,7 @@
    "region": "EU",
    "frequency": "monthly",
    "history_start": 1990,
-   "latency_days": 30,
+   "latency_days": 45,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -2183,7 +2183,7 @@
    "region": "US",
    "frequency": "monthly",
    "history_start": 1992,
-   "latency_days": 15,
+   "latency_days": 17,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -2208,7 +2208,7 @@
    "region": "US",
    "frequency": "monthly",
    "history_start": 2013,
-   "latency_days": 35,
+   "latency_days": 37,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -2236,7 +2236,7 @@
    "region": "US",
    "frequency": "monthly",
    "history_start": 1948,
-   "latency_days": 7,
+   "latency_days": 40,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -2293,7 +2293,7 @@
    "region": "JP",
    "frequency": "monthly",
    "history_start": 1970,
-   "latency_days": 30,
+   "latency_days": 45,
    "auth": "free_key",
    "auth_env": "ESTAT_APP_ID",
    "languages": [
@@ -2319,7 +2319,7 @@
    "region": "KR",
    "frequency": "monthly",
    "history_start": 1990,
-   "latency_days": 30,
+   "latency_days": 45,
    "auth": "free_key",
    "auth_env": "KOSIS_API_KEY",
    "languages": [
@@ -2344,7 +2344,7 @@
    "region": "CN",
    "frequency": "monthly",
    "history_start": 1990,
-   "latency_days": 15,
+   "latency_days": 18,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -2373,7 +2373,7 @@
    "region": "BR",
    "frequency": "monthly",
    "history_start": 1990,
-   "latency_days": 30,
+   "latency_days": 40,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -2397,7 +2397,7 @@
    "region": "LATAM",
    "frequency": "monthly",
    "history_start": 1990,
-   "latency_days": 30,
+   "latency_days": 45,
    "auth": "free_key",
    "auth_env": "INEGI_TOKEN",
    "languages": [
@@ -2422,7 +2422,7 @@
    "region": "TR",
    "frequency": "monthly",
    "history_start": 2003,
-   "latency_days": 3,
+   "latency_days": 45,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -2447,7 +2447,7 @@
    "region": "IN",
    "frequency": "monthly",
    "history_start": 2011,
-   "latency_days": 12,
+   "latency_days": 30,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -2473,7 +2473,7 @@
    "region": "SA",
    "frequency": "monthly",
    "history_start": 2010,
-   "latency_days": 30,
+   "latency_days": 45,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -2499,7 +2499,7 @@
    "region": "RU",
    "frequency": "monthly",
    "history_start": 1999,
-   "latency_days": 30,
+   "latency_days": 45,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -2525,7 +2525,7 @@
    "region": "DE",
    "frequency": "monthly",
    "history_start": 1991,
-   "latency_days": 30,
+   "latency_days": 40,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -2551,7 +2551,7 @@
    "region": "FR",
    "frequency": "monthly",
    "history_start": 1990,
-   "latency_days": 30,
+   "latency_days": 45,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -2577,7 +2577,7 @@
    "region": "EU",
    "frequency": "monthly",
    "history_start": 1990,
-   "latency_days": 30,
+   "latency_days": 40,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -2783,7 +2783,7 @@
    "region": "US",
    "frequency": "monthly",
    "history_start": 2013,
-   "latency_days": 10,
+   "latency_days": 14,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -2834,7 +2834,7 @@
    "region": "JP",
    "frequency": "quarterly",
    "history_start": 1974,
-   "latency_days": 1,
+   "latency_days": 5,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -3019,7 +3019,7 @@
    "region": "US",
    "frequency": "semimonthly",
    "history_start": 2004,
-   "latency_days": 15,
+   "latency_days": 20,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -3710,7 +3710,7 @@
    "region": "global",
    "frequency": "monthly",
    "history_start": 2015,
-   "latency_days": 60,
+   "latency_days": 90,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -4450,7 +4450,7 @@
    "region": "global",
    "frequency": "monthly",
    "history_start": 1997,
-   "latency_days": 5,
+   "latency_days": 8,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -4581,7 +4581,7 @@
    "region": "CN",
    "frequency": "monthly",
    "history_start": 2015,
-   "latency_days": 10,
+   "latency_days": 14,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -4608,7 +4608,7 @@
    "region": "JP",
    "frequency": "10-day",
    "history_start": 1988,
-   "latency_days": 5,
+   "latency_days": 12,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -4633,7 +4633,7 @@
    "region": "global",
    "frequency": "monthly",
    "history_start": 1962,
-   "latency_days": 60,
+   "latency_days": 120,
    "auth": "free_key",
    "auth_env": "COMTRADE_API_KEY",
    "languages": [
@@ -4853,7 +4853,7 @@
    "region": "US",
    "frequency": "monthly",
    "history_start": 1991,
-   "latency_days": 55,
+   "latency_days": 62,
    "auth": "none",
    "auth_env": "",
    "languages": [
@@ -4878,7 +4878,7 @@
    "region": "US",
    "frequency": "monthly",
    "history_start": 2000,
-   "latency_days": 15,
+   "latency_days": 20,
    "auth": "none",
    "auth_env": "",
    "languages": [
