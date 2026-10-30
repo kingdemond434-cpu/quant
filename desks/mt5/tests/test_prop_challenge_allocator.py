@@ -25,6 +25,12 @@ from prop import ftmo_venue_reader as fvr  # noqa: E402
 R = pca.FTMO_2STEP
 
 
+@pytest.fixture(autouse=True)
+def _no_gap_file_in_the_real_tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A test run never writes a donation file under the real data/intelligence (audit #489)."""
+    monkeypatch.setattr(pca, "GAP_REQUESTS", tmp_path / "ftmo_gap_hypotheses.jsonl")
+
+
 def _paths(rows: list[list[float]]) -> np.ndarray:
     """(paths=1, days, sleeves=1) from one path's daily R."""
     return np.asarray(rows, dtype=float)[None]
@@ -340,9 +346,10 @@ def test_gap_requests_name_one_symbol_per_row(tmp_path: Path) -> None:
 
 def test_an_e8_overlap_sleeve_is_sized_never_sent_without_an_executor() -> None:
     # zuck's 2026-10-29 override admits E8's symbols; the opposite-side fence is the executor's.
-    # Until an FTMO executor carrying that fence exists, only the gold copy (behind the gold
-    # direction lock) is ever written to the traded book.
+    # The follower's key is the gold copy alone (behind the gold direction lock); every other
+    # key needs the sleeve executor's spec (prop/ftmo_executor.py, which carries the fence).
     assert frozenset({"gold_asia"}) == pca.FTMO_EXECUTABLE
+    assert not pca.executor_runs("AUDNZD_overnight_gap_decay_asia", {})
 
 
 def _synthetic_universe(extra: bool) -> dict:
