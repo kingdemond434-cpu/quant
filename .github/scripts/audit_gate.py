@@ -574,6 +574,44 @@ def provenance(repo: str, pr: int, head: str) -> Callable[[Mapping[str, Any]], b
     return genuine
 
 
+#: Times the box may merge the base into one PR's branch (#552 audit SF1): past it the PR stops
+#: being brought up, and the watcher's CLEAR-unmerged RED names it.
+BRING_UP_CAP = 4
+#: Bring-ups per sweep (#552 audit SF2): each one starts a full CI run on the shared free pool,
+#: and the most merge-ready PRs come first, so a few per pass drain the queue without flooding it.
+BRING_UPS_PER_SWEEP = 2
+BEHIND = "it is behind"
+
+
+def bring_up(repo: str, pr: int, head: str, base: str = LIVE) -> bool:
+    """Merge the base into a PR whose own GENUINE gating checks pass (provenance, #552 audit
+    SF3: a forged success never spends a CI run), pinned to `head` (GitHub refuses if the head
+    moved). False when its checks do not pass, after BRING_UP_CAP earlier merges of the base,
+    on a conflict (422: a merge by hand, Autonomy's) or any other refusal: the PR is left as it
+    is."""
+    try:
+        got = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100")
+        runs = (got or {}).get("check_runs") or []
+        if checks(runs, GATING_JOBS, provenance(repo, pr, head))[0] != "pass":
+            return False
+        cmp = _gh(f"repos/{repo}/compare/{base}...{head}")
+        mine = f"Merge branch '{base}' into "
+        done = sum(
+            1 for c in (cmp or {}).get("commits") or []
+            if str((c.get("commit") or {}).get("message") or "").startswith(mine)
+        )  # fmt: skip
+        if done >= BRING_UP_CAP:
+            _summary(f"RED BRING_UP_CAPPED #{pr} @ {head[:9]}: {base} was merged in {done} "
+                     "times and it still has not merged; it needs a look")  # fmt: skip
+            return False
+        _gh(f"repos/{repo}/pulls/{pr}/update-branch", "-X", "PUT",
+            data={"expected_head_sha": head})  # fmt: skip
+    except RuntimeError as exc:
+        _summary(f"#{pr} @ {head[:9]}: LIVE could not be merged in ({str(exc)[:200]})")
+        return False
+    return True
+
+
 def up_to_date(base_ref: str, head: str) -> tuple[bool, str]:
     """May a no-comment path test-and-merge this head? Only when the head already contains the
     base's tip (#456 audit MF3: otherwise the tree that merges, base + PR, was never tested) and
@@ -779,10 +817,12 @@ def run(
     poll_s: float = 60.0,
     box: bool = False,
     approvals_issue: int = APPROVALS_ISSUE,
+    bring_ups: list[int] | None = None,
 ) -> int:
     """Merge #pr when the rule holds. `box`: the box's run with a user token -- it needs no label,
     merges workflow-file PRs too (the Actions run, box=False, leaves those to it), posts no
-    pending status and dispatches nothing."""
+    pending status and dispatches nothing. `bring_ups`: the sweep's remaining bring-up budget,
+    one element, spent here (None: no limit, a single PR's run)."""
     p = _gh(f"repos/{repo}/pulls/{pr}")
     head = str(p["head"]["sha"])
     if p.get("state") != "open":
@@ -816,29 +856,79 @@ def run(
                 "--slurp",
             )
         )
+        boards.append(board)
         on, owhy = activated(board)
         if on and level == "AUTO":
             on, owhy = activated(board, ACTIVATE_AUTO)
         return on, owhy
+
+    boards: list[list[dict[str, Any]]] = []
+    # The head's own diff identity, computed only when a CLEAR names another sha (a sweep looks
+    # at every open PR, most of which carry no verdict at all).
+    ids: dict[str, str | None] = {}
+
+    def same_change(sha: str) -> bool:
+        if "head" not in ids:
+            ids["head"] = patch_id(base, head)
+        return ids["head"] is not None and patch_id(base, sha) == ids["head"]
+
+    def pinned(found: list[dict[str, str]]) -> str | None:
+        """Why an audited PR takes the manual path, or None: it may take the no-comment path.
+        zuck 2026-10-29 19:12Z ("i want to be free not having to do any merges"): an AUDIT verdict
+        no longer pins a PR to his path for good. Only a standing HOLD (an edit counts as one), or
+        a CLEAR he has already approved (his override, which skips the AUTO jobs), sends it there;
+        any other CLEAR leaves the PR on the AUTO path with every AUTO job."""
+        if not found:
+            return None
+        last = found[-1]
+        if last["verdict"] != "CLEAR":
+            return f"the latest verdict is AUDIT HOLD {last['sha'][:9]}"
+        # the CLEAR names this change: its head, or the same diff carried over (as cleared() reads
+        # it), so a rebased identical change zuck approved keeps his override (#537 audit S1)
+        ours = last["sha"] == head or same_change(last["sha"])
+        if ours and boards and approved(last, approval_at(boards[-1]))[0]:
+            return "zuck approved its CLEAR of this head"
+        return None
 
     def pr_verdicts() -> list[dict[str, str]]:
         pages = _gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate", "--slurp")
         return verdicts(_flat(pages))
 
     # The path a PR takes: "low" / "auto" (no comment needed) or "manual" (CLEAR + APPROVE).
-    # Once the auditor has spoken on a PR (any CLEAR or HOLD, on any sha), the audit governs it:
-    # it takes the manual path.
+    # A standing HOLD, or a CLEAR zuck approved, sends an audited PR to the manual path (pinned).
     mode = "manual"
     if level in ("LOW", "AUTO"):
         on, owhy = switches()
         if not on:
             twhy = f"{twhy}, but {owhy}: it takes the CLEAR + APPROVE path"
-        elif pr_verdicts():
-            twhy = f"{twhy}, but it carries an AUDIT verdict: it takes the CLEAR + APPROVE path"
+        elif pin := pinned(audited := pr_verdicts()):
+            twhy = f"{twhy}, but {pin}: it takes the CLEAR + APPROVE path"
         else:
             fresh, fwhy = up_to_date(base, head)
-            if fresh:
-                mode = level.lower()
+            auto_on = bool(boards) and activated(boards[-1], ACTIVATE_AUTO)[0]
+            if fresh and audited and not auto_on:
+                twhy = f"{twhy}, but it is audited and AUTO is off: the CLEAR + APPROVE path"
+            elif fresh:  # an audited LOW PR runs every AUTO job (#454 audit S1)
+                mode = "auto" if audited else level.lower()
+            elif (
+                box
+                and fwhy.startswith(BEHIND)  # only behind: a fetch failure never loops (SF1)
+                # a session's branch only, and a draft only once audited: a merge commit on a
+                # branch someone is still pushing breaks their next push (#552 audit SF5)
+                and str(p["head"].get("ref") or "").startswith("claude/")
+                and (not p.get("draft") or bool(audited))
+                and (bring_ups is None or bring_ups[0] > 0)
+                and bring_up(repo, pr, head, base)
+            ):
+                if bring_ups is not None:
+                    bring_ups[0] -= 1
+                # BEHIND IS NOT A DEMOTION (Desk health 2026-10-29 20:20Z: AUTO PRs behind LIVE
+                # went to zuck's path and nothing merged for 40 min). The box merges LIVE into
+                # the branch with zuck's login, which starts the PR's CI on the new head; the
+                # next run decides on that tested tree.
+                _summary(f"#{pr} @ {head[:9]}: {twhy}, but {fwhy}: LIVE merged in; the next "
+                         "run decides on the new head")  # fmt: skip
+                return 0
             else:
                 twhy = f"{twhy}, but {fwhy}: it takes the CLEAR + APPROVE path"
     low = mode != "manual"  # no verdict or approval needed on this path
@@ -856,23 +946,19 @@ def run(
             _gh(f"repos/{repo}/issues/{pr}/labels/{LABEL}", "-X", "DELETE")
         except RuntimeError as exc:
             _summary(f"(label not removed: {exc})")
-    # The head's own diff identity, computed only when a CLEAR names another sha (a sweep looks
-    # at every open PR, most of which carry no verdict at all).
-    ids: dict[str, str | None] = {}
-
-    def same_change(sha: str) -> bool:
-        if "head" not in ids:
-            ids["head"] = patch_id(base, head)
-        return ids["head"] is not None and patch_id(base, sha) == ids["head"]
 
     def verdict_now() -> tuple[dict[str, str] | None, str]:
         found = pr_verdicts()
         if low:
-            if found:  # the auditor spoke mid-run: the next run takes the manual path
-                return None, f"{twhy}, but an AUDIT verdict arrived: the audit governs it now"
-            on, owhy = switches()  # a DEACTIVATE since the first read is honoured
-            if not on:
+            on, owhy = switches()  # a DEACTIVATE since the first read is honoured; read first so
+            if not on:  # pinned() sees a mid-run APPROVE on this poll (#537 audit S2)
                 return None, f"{twhy}, but {owhy}"
+            pin = pinned(found)
+            if pin:  # a HOLD (or zuck's approval) arrived mid-run: the next run decides
+                return None, f"{twhy}, but {pin}: the audit governs it now"
+            if found and mode == "low":  # a verdict arrived mid-run on an unaudited LOW PR: it is
+                # audited now and must run every AUTO job, so the next run decides (#537 audit MF1)
+                return None, f"{twhy}, but it was audited mid-run: the next run decides"
             fresh, fwhy = up_to_date(base, head)  # LIVE may have moved: the merged tree
             if not fresh:  # must still be the tested one
                 return None, f"{twhy}, but {fwhy}"
@@ -1004,27 +1090,56 @@ def sweep(
     pages = _gh(f"repos/{repo}/pulls?state=open&base={base}&per_page=100", "--paginate", "--slurp")
     rc = 0
     deadline = clock() + budget_s
-    looked = skipped = 0
-    for p in _flat(pages):
+    looked = skipped = failed = 0
+    # MERGE-READY FIRST (Desk health 2026-10-29 20:20Z: ~6 PRs a sweep, in listing order, so a
+    # green PR waited behind dozens that could not merge). One cheap read per PR sorts them:
+    # every check green, then the gating ones, then a failed gating check (its full run still
+    # quarantines it and counts in rc; #552 audit SF4), then checks still running. The read is
+    # ORDER ONLY: no PR is dropped on it, so a forged check run can reorder but never hide one
+    # (#552 audit SF3); every merge and bring-up decides on provenance-checked runs.
+    ready: list[tuple[int, int, int]] = []
+    bring_ups = [BRING_UPS_PER_SWEEP]
+    for i, p in enumerate(_flat(pages)):
+        if clock() > deadline:  # the pre-read is inside the budget too (#552 audit SF6)
+            _summary("sweep budget spent while reading checks; the next sweep goes on")
+            break
         n = int(p["number"])
+        head = str((p.get("head") or {}).get("sha") or "")
+        rank = 1
+        if head:  # no sha in the listing: no shortcut, the full run decides
+            try:
+                got = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100")
+            except RuntimeError as exc:
+                _summary(f"#{n}: its checks could not be read: {exc}")
+                rc = 1
+                continue
+            runs = (got or {}).get("check_runs") or []
+            state = checks(runs, GATING_JOBS, lambda r: True)[0]
+            if state == "pending":
+                skipped += 1
+                rank = 3
+            elif state == "fail":
+                failed += 1
+                rank = 2
+            else:
+                every = checks(runs, GATING_JOBS + AUTO_JOBS, lambda r: True)[0]
+                rank = 0 if every == "pass" else 1
+        ready.append((rank, i, n))
+    for _rank, _i, n in sorted(ready):
         if clock() > deadline:
             _summary(f"sweep budget of {budget_s / 60:.0f} min spent after {looked} PRs; "
                      "the next sweep goes on")  # fmt: skip
             break
         try:
-            head = str((p.get("head") or {}).get("sha") or "")
-            if head:  # no sha in the listing: no shortcut, the full run decides
-                got = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100")
-                runs = (got or {}).get("check_runs") or []
-                if checks(runs, GATING_JOBS, lambda r: True)[0] == "pending":
-                    skipped += 1
-                    continue
             looked += 1
-            rc = max(rc, run(repo, n, base, 0.0, box=True, approvals_issue=approvals_issue))
+            rc = max(rc, run(repo, n, base, 0.0, box=True, approvals_issue=approvals_issue,
+                             bring_ups=bring_ups))  # fmt: skip
         except (RuntimeError, subprocess.SubprocessError, KeyError, TypeError) as exc:
             _summary(f"#{n}: the box gate failed: {exc}")
             rc = 1
-    _summary(f"sweep: {looked} PR(s) looked at, {skipped} skipped with CI still running")
+    _summary(f"sweep: {looked} PR(s) looked at; {skipped} with CI still running and {failed} "
+             f"with a gating check failed went last; "
+             f"{BRING_UPS_PER_SWEEP - bring_ups[0]} brought up")  # fmt: skip
     return rc
 
 

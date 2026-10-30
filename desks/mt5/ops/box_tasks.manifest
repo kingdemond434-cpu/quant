@@ -150,7 +150,7 @@ TASK name="MT5-Deepening"          trigger="every 1 hour"  runs="desks/mt5/resea
 TASK name="MT5-DeepSeek"           trigger="every 1 hour, at :24"  runs="ops/run_deepseek_windows.ps1"  installer="desks/mt5/scripts/install_deepseek_brain_task.ps1" lane="research"
 
 # ------------------------------------------------------------------------------- the data moat
-TASK name="MT5-TickRecorder"       trigger="every 1 hour"          runs="desks/mt5/recorders/tick_recorder.py"   installer="desks/mt5/recorders/install_tape_tasks.ps1" lane="data"
+TASK name="MT5-TickRecorder"       trigger="at logon + every 10 minutes (keep-alive of a 24/7 resident)" runs="ops/run_tick_recorder.cmd"   installer="desks/mt5/recorders/install_tape_tasks.ps1" lane="data"
 TASK name="MT5-TickIntegrity"      trigger="every 1 hour, at :20"  runs="desks/mt5/recorders/tick_integrity.py"  installer="desks/mt5/recorders/install_tape_tasks.ps1" lane="data"
 TASK name="MT5-TapeFeatures"       trigger="every 1 hour, at :40"  runs="desks/mt5/recorders/tape_features.py"   installer="desks/mt5/recorders/install_tape_tasks.ps1" lane="data"
 TASK name="MT5-VolArchive"         trigger="UNDECLARED"            runs="desks/mt5/recorders/vol_archive.py"     installer="NONE" lane="data"
@@ -318,3 +318,5 @@ TASK name="Claude-Bridge-Watchdog" trigger="at logon + every 5 minutes" runs="op
 TASK name="Quant-BootSession"  trigger="at logon"                    runs="ops/box/unattended_boot.ps1" installer="ops/box/install_unattended.ps1" lane="ops"
 TASK name="Quant-BootRecord"   trigger="every 10 minutes"            runs="ops/box/unattended_boot.ps1" installer="ops/box/install_unattended.ps1" lane="ops"
 TASK name="Quant-WorkflowGate" trigger="at logon + every 10 minutes" runs="ops/box/workflow_gate.ps1"   installer="ops/box/install_unattended.ps1" lane="ops" also_runs="scripts/merge_pipeline_watch.py"
+# The sign train's clock (#541): the audit signs a moved sealed file from its committed CLEAR row.
+TASK name="Quant-SignTrain"    trigger="at logon + every 10 minutes" runs="ops/box/sign_train_leg.ps1" installer="ops/box/install_unattended.ps1" lane="ops" also_runs="scripts/sign_train.py"
