@@ -114,7 +114,10 @@ CASES = [
 @pytest.mark.parametrize(("family", "spec"), CASES)
 def test_a_replicating_certificate_passes_and_a_contradicted_one_is_held(
         family: str, spec: dict[str, Any], terms, tmp_path: Path) -> None:
-    b = _bars(_frame(seed=21, days=320))
+    # Seed 36: under the replication lane's per-day Sharpe (SHARPE_METRIC_VERSION v2, no sqrt 252)
+    # every family's probe clears 2x SHARPE_NOISE (0.14, 0.14, -0.19); seed 21 gave 0.09 and 0.04,
+    # inside the noise band where a sign flip is, by design, not a contradiction.
+    b = _bars(_frame(seed=36, days=320))
     probe = rc.replicate_certificate(_cert(family, spec, 1.0), meta=META, bars=b)
     ours = probe["ours"].get("sharpe")
     assert ours is not None and abs(ours) >= 2 * rc.SHARPE_NOISE, probe
