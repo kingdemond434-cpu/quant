@@ -1,5 +1,5 @@
 {
- "signed_utc": "2026-10-29T14:36:23.906350+00:00",
+ "signed_utc": "2026-10-30T00:02:53.802915+00:00",
  "signed_by": "auditor-clear",
  "files": {
   "desks/mt5/scripts/external_gauntlet.py": "f56bc72fc5532a67",
@@ -7,9 +7,9 @@
   "desks/mt5/research/multiplicity.py": "fc91833570cd8ded",
   "desks/mt5/research/gate_policy.py": "a01bf170b1b214ec",
   "desks/mt5/policy/gate_spec.yaml": "cd7e57ea9c3d9182",
-  "desks/mt5/research/heat_policy.py": "239842969a50bca4",
+  "desks/mt5/research/heat_policy.py": "918cde501f851fb2",
   "desks/mt5/research/promoter.py": "bb9c0e744bad615f",
-  "desks/mt5/mt5desk/gateway_config_fallback.py": "0ce1dd51f98b6c23",
+  "desks/mt5/mt5desk/gateway_config_fallback.py": "08317746ca379e47",
   "libs/ops/live_ledger_migration.py": "74ef5609d1ce37a4",
   "scripts/migrate_live_ledger_view.py": "87cf8fced3671929",
   "libs/ops/live_ledger_view.py": "5cc676fb56625f2a",
@@ -20,7 +20,7 @@
   "libs/validation/replay2.py": "a002827611ea8079",
   "libs/validation/calibration.py": "ccd77ae2a28a7fbd",
   "libs/regime/state_admission.py": "1fc3e4878041db7a",
-  "scripts/check_growth_governance.py": "59e3415bf41170cf",
+  "scripts/check_growth_governance.py": "c5b5eb26a4e44f6b",
   "scripts/check_heat_floor_wiring.py": "e5b3ff5a58848e00",
   "scripts/check_immutable_evaluator.py": "19c5c5d23cfec184",
   "scripts/run_deadman_switch.py": "799db26dadc9c8e3"
@@ -2477,7 +2477,6 @@
   "desks/mt5/research/multiplicity.py": "Codex, principal-authorized repair",
   "desks/mt5/research/gate_policy.py": "Codex, principal-authorized repair",
   "desks/mt5/policy/gate_spec.yaml": "Codex, principal-authorized repair",
-  "desks/mt5/mt5desk/gateway_config_fallback.py": "Codex, principal-authorized repair",
   "libs/portfolio/rails.py": "Codex, principal-authorized repair",
   "libs/portfolio/capital_modifiers.py": "Codex, principal-authorized repair",
   "libs/validation/redteam.py": "Codex, principal-authorized repair",
@@ -2491,6 +2490,7 @@
   "libs/ops/live_ledger_migration.py": "Codex, principal-authorized audited ledger adoption handoff",
   "scripts/migrate_live_ledger_view.py": "Codex, principal-authorized audited ledger adoption handoff",
   "scripts/check_immutable_evaluator.py": "Codex, principal-authorized audited verification fixture declaration",
-  "desks/mt5/scripts/external_gauntlet.py": "Codex under principal instruction: maximise and repair build bottleneck canonically; policy and record seals preserved"
+  "desks/mt5/scripts/external_gauntlet.py": "Codex under principal instruction: maximise and repair build bottleneck canonically; policy and record seals preserved",
+  "libs/portfolio/allocator_proof.py": "auditor-clear"
  }
 }
