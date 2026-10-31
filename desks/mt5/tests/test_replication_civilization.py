@@ -268,3 +268,33 @@ def test_load_bars_reads_a_parquet_whose_time_is_a_plain_column(tmp_path: Path) 
     frame.to_parquet(path, index=False)
     bars = rc.load_bars("TESTFY", "H1", universe=tmp_path)
     assert bars is not None and len(bars) == n and bars.minutes == 60
+
+
+def test_the_count_is_a_floor_and_rule_bearing_unjudged_certificates_go_first(
+        tmp_path: Path, monkeypatch) -> None:
+    """295 certificates sat clockless because the lane judged 8 a pass and stopped with two
+    thirds of its budget unspent. Past the floor it keeps judging certificates that HAVE a
+    written rule; a family with no rule is neither judged ahead of them nor opens its bars."""
+    seen: list[str] = []
+    loaded: list[str] = []
+
+    def fake_replicate(row, *, meta, bars):
+        seen.append(row["certificate"])
+        return {"lane": "certificate", "key": row["certificate"],
+                "certificate": row["certificate"], "verdict": rc.UNMEASURED, "why": []}
+
+    monkeypatch.setattr(rc, "replicate_certificate", fake_replicate)
+    monkeypatch.setattr(rc, "certificate_fp", lambda row: "fp")
+    ruled = [{"certificate": f"G{i}", "shadow_spec": {"symbol": f"S{i}",
+                                                      "family": "overnight_gap_decay"}}
+             for i in range(6)]
+    unruled = [{"certificate": f"U{i}", "shadow_spec": {"symbol": f"U{i}",
+                                                        "family": "no_such_family"}}
+               for i in range(4)]
+    doc = rc.build(certificates=unruled + ruled, forward=[], universe_meta={},
+                   bars_loader=lambda sym, _tf: loaded.append(sym),
+                   cursor_path=tmp_path / "cursor.json", dry_run=True, max_per_pass=4,
+                   budget_s=600)
+    assert seen[:6] == [f"G{i}" for i in range(6)]       # all six, past the floor of two
+    assert not any(s.startswith("U") for s in loaded)     # no rule, no parquet opened
+    assert doc["n"] == len(seen)
