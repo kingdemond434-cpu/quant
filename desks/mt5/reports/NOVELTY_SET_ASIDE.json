@@ -1,13 +1,25 @@
 {
- "at": "2026-10-31T05:25:57+00:00",
+ "at": "2026-10-31T10:15:19+00:00",
  "screened": 1500,
- "set_aside": 1,
+ "set_aside": 3,
  "rows": [
   {
    "sym": "AUDCHF",
    "family": "formula",
    "twin": "external.AUDCHF@M5.formula.p=ba013eb7096b4f76",
    "why": "every measurable dimension reads as a twin of external.AUDCHF@M5.formula.p=ba013eb7096b4f76 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "AUDNZD",
+   "family": "cross_asset_residual",
+   "twin": "external.AUDNZD@M5.cross_asset_residual.p=428518b71bf7faed",
+   "why": "every measurable dimension reads as a twin of external.AUDNZD@M5.cross_asset_residual.p=428518b71bf7faed (feature 0.92, semantic 0.94); the twin is NAMED rather"
+  },
+  {
+   "sym": "GBPJPY",
+   "family": "cross_asset_residual",
+   "twin": "external.GBPJPY@M5.cross_asset_residual.p=428518b71bf7faed",
+   "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.cross_asset_residual.p=428518b71bf7faed (feature 0.92, semantic 0.94); the twin is NAMED rather"
   }
  ],
  "rule": "REDUNDANT on every measurable economic dimension, twin named"
