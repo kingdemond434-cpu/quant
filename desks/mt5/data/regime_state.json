@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-31T00:30:05.705236+00:00",
+  "swept_at": "2026-10-31T00:45:05.593456+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1340,7 +1340,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.8916,
+      "shadow_exp_r": -0.9017,
       "woke_on_shadow": false
     },
     "EURILS|formula_asia": {
@@ -1362,7 +1362,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2843,
+      "shadow_exp_r": -0.2668,
       "woke_on_shadow": false
     },
     "EURILS|macro_conditional_continuous": {
@@ -1714,7 +1714,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4254,
+      "shadow_exp_r": -0.38,
       "woke_on_shadow": false
     },
     "EURZAR|formula_asia": {
@@ -1923,7 +1923,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1604,
+      "shadow_exp_r": -0.125,
       "woke_on_shadow": false
     },
     "GBPCHF|clock_transition_asia": {
@@ -3760,7 +3760,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 53,
-      "shadow_exp_r": 0.2195,
+      "shadow_exp_r": 0.2158,
       "woke_on_shadow": false
     },
     "USDJPY|macro_conditional_continuous": {
@@ -3881,7 +3881,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0143,
+      "shadow_exp_r": 0.1482,
       "woke_on_shadow": false
     },
     "USDNOK|carry_continuous": {
@@ -4870,8 +4870,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 27,
-      "shadow_exp_r": -0.427,
+      "shadow_n": 90,
+      "shadow_exp_r": -0.0758,
       "woke_on_shadow": false
     },
     "XAUEUR|cross_asset_residual_continuous": {
@@ -4937,7 +4937,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.1744,
+      "shadow_exp_r": 0.1732,
       "woke_on_shadow": false
     },
     "XAUEUR|macro_conditional_continuous": {
