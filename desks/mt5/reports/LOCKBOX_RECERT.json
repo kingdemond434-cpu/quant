@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-20T11:44:50+00:00",
+ "generated_utc": "2026-10-31T11:48:40+00:00",
  "attestation_in_force": "mt5-original-universal-10-v3-reserved-lockbox",
  "canon_attestation": "mt5-original-universal-10-v3-reserved-lockbox",
  "report_attestation": "mt5-original-universal-10-v3-reserved-lockbox",
@@ -10,15 +10,15 @@
  },
  "n_certificates": 52,
  "counts": {
-  "REMINTED": 8,
+  "REMINTED": 13,
   "RETIRED": 32,
   "PENDING": 0,
-  "RESTAMPED": 12,
+  "RESTAMPED": 7,
   "ABSENT": 0
  },
  "before_lockbox_equals_wf": 52,
- "after_lockbox_equals_wf": 7,
- "restamped": 12,
+ "after_lockbox_equals_wf": 4,
+ "restamped": 7,
  "done": false,
  "done_rule": "every certificate REMINTED or RETIRED under the attestation in force, none RESTAMPED, and 0 REMINTED rows with lockbox Sharpe == WF Sharpe",
  "status": "BREACH: re-stamped without a re-judge",
@@ -166,11 +166,11 @@
     "state": "REMINTED",
     "store": "canon",
     "key": "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
-    "lockbox_sharpe": 0.6088,
-    "wf_sharpe": 0.6088,
+    "lockbox_sharpe": 0.5306,
+    "wf_sharpe": 0.7458,
     "lockbox_passed": true,
-    "lockbox_equals_wf": true,
-    "gated_at": "2026-09-29T20:48:07.885338+00:00",
+    "lockbox_equals_wf": false,
+    "gated_at": "2026-10-28T23:33:35.017839+00:00",
     "attestation": "mt5-original-universal-10-v3-reserved-lockbox"
    }
   },
@@ -530,15 +530,15 @@
     "source": "baseline"
    },
    "after": {
-    "state": "RESTAMPED",
+    "state": "REMINTED",
     "store": "canon",
     "key": "external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a",
-    "lockbox_sharpe": 0.5643,
-    "wf_sharpe": 0.5643,
+    "lockbox_sharpe": 0.5298,
+    "wf_sharpe": 0.6023,
     "lockbox_passed": true,
-    "lockbox_equals_wf": true,
-    "gated_at": "2026-09-02T23:37:32.828824+00:00",
-    "why": "under the attestation in force with the baseline's own gated_at: re-stamped, never re-judged"
+    "lockbox_equals_wf": false,
+    "gated_at": "2026-10-29T17:26:02.393010+00:00",
+    "attestation": "mt5-original-universal-10-v3-reserved-lockbox"
    }
   },
   "external.CHFNOK.carry.p=98d776f3e210d3e2": {
@@ -1099,15 +1099,15 @@
     "source": "baseline"
    },
    "after": {
-    "state": "RESTAMPED",
+    "state": "REMINTED",
     "store": "canon",
     "key": "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a",
-    "lockbox_sharpe": 0.5474,
-    "wf_sharpe": 0.5474,
+    "lockbox_sharpe": 0.4069,
+    "wf_sharpe": 0.4862,
     "lockbox_passed": true,
-    "lockbox_equals_wf": true,
-    "gated_at": "2026-09-02T23:37:32.829569+00:00",
-    "why": "under the attestation in force with the baseline's own gated_at: re-stamped, never re-judged"
+    "lockbox_equals_wf": false,
+    "gated_at": "2026-10-28T23:33:43.514527+00:00",
+    "attestation": "mt5-original-universal-10-v3-reserved-lockbox"
    }
   },
   "external.EURUSD.discovered.p=6d034b421914e1a2": {
@@ -1345,11 +1345,11 @@
     "state": "REMINTED",
     "store": "canon",
     "key": "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
-    "lockbox_sharpe": 0.6402,
-    "wf_sharpe": 0.6402,
+    "lockbox_sharpe": 0.7003,
+    "wf_sharpe": 0.6996,
     "lockbox_passed": true,
-    "lockbox_equals_wf": true,
-    "gated_at": "2026-09-27T02:15:49.378196+00:00",
+    "lockbox_equals_wf": false,
+    "gated_at": "2026-10-28T23:33:50.600230+00:00",
     "attestation": "mt5-original-universal-10-v3-reserved-lockbox"
    }
   },
@@ -1373,15 +1373,15 @@
     "source": "baseline"
    },
    "after": {
-    "state": "RESTAMPED",
+    "state": "REMINTED",
     "store": "canon",
     "key": "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
-    "lockbox_sharpe": 0.5465,
-    "wf_sharpe": 0.5465,
+    "lockbox_sharpe": 0.3785,
+    "wf_sharpe": 0.6154,
     "lockbox_passed": true,
-    "lockbox_equals_wf": true,
-    "gated_at": "2026-09-02T23:37:32.826945+00:00",
-    "why": "under the attestation in force with the baseline's own gated_at: re-stamped, never re-judged"
+    "lockbox_equals_wf": false,
+    "gated_at": "2026-10-28T23:33:52.114546+00:00",
+    "attestation": "mt5-original-universal-10-v3-reserved-lockbox"
    }
   },
   "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a": {
@@ -1404,15 +1404,15 @@
     "source": "baseline"
    },
    "after": {
-    "state": "RESTAMPED",
+    "state": "REMINTED",
     "store": "canon",
     "key": "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
-    "lockbox_sharpe": 0.7142,
-    "wf_sharpe": 0.7142,
+    "lockbox_sharpe": 0.4848,
+    "wf_sharpe": 0.4051,
     "lockbox_passed": true,
-    "lockbox_equals_wf": true,
-    "gated_at": "2026-09-02T23:37:32.826966+00:00",
-    "why": "under the attestation in force with the baseline's own gated_at: re-stamped, never re-judged"
+    "lockbox_equals_wf": false,
+    "gated_at": "2026-10-28T23:33:53.901968+00:00",
+    "attestation": "mt5-original-universal-10-v3-reserved-lockbox"
    }
   },
   "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a": {
@@ -1438,11 +1438,11 @@
     "state": "REMINTED",
     "store": "canon",
     "key": "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
-    "lockbox_sharpe": 0.3881,
-    "wf_sharpe": 0.5537,
+    "lockbox_sharpe": 0.4449,
+    "wf_sharpe": 0.5934,
     "lockbox_passed": true,
     "lockbox_equals_wf": false,
-    "gated_at": "2026-10-12T07:06:44.057586+00:00",
+    "gated_at": "2026-10-29T08:51:42.400894+00:00",
     "attestation": "mt5-original-universal-10-v3-reserved-lockbox"
    }
   },
@@ -1731,11 +1731,11 @@
     "state": "REMINTED",
     "store": "canon",
     "key": "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a",
-    "lockbox_sharpe": 0.5653,
-    "wf_sharpe": 0.5653,
+    "lockbox_sharpe": 0.6589,
+    "wf_sharpe": 0.602,
     "lockbox_passed": true,
-    "lockbox_equals_wf": true,
-    "gated_at": "2026-09-27T02:15:55.379539+00:00",
+    "lockbox_equals_wf": false,
+    "gated_at": "2026-10-28T23:34:05.486365+00:00",
     "attestation": "mt5-original-universal-10-v3-reserved-lockbox"
    }
   },
@@ -1759,15 +1759,15 @@
     "source": "baseline"
    },
    "after": {
-    "state": "RESTAMPED",
+    "state": "REMINTED",
     "store": "canon",
     "key": "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a",
-    "lockbox_sharpe": 0.7069,
-    "wf_sharpe": 0.7069,
+    "lockbox_sharpe": 0.4585,
+    "wf_sharpe": 0.5388,
     "lockbox_passed": true,
-    "lockbox_equals_wf": true,
-    "gated_at": "2026-09-02T02:29:50.591219+00:00",
-    "why": "under the attestation in force with the baseline's own gated_at: re-stamped, never re-judged"
+    "lockbox_equals_wf": false,
+    "gated_at": "2026-10-28T23:34:10.696969+00:00",
+    "attestation": "mt5-original-universal-10-v3-reserved-lockbox"
    }
   },
   "external.XAUUSD.session_range_breakout.rr=1.5_wb=12": {
