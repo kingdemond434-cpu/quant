@@ -6,12 +6,12 @@
   "sample": 6000,
   "overlay": [],
   "complete": false,
-  "stage": "siblings_minted",
+  "stage": "building",
   "utc_day": "2026-10-31",
   "started_at": "2026-10-31T14:51:36+00:00",
-  "written_at": "2026-10-31T14:54:54+00:00",
+  "written_at": "2026-10-31T15:19:11+00:00",
   "cells_planned": 6092,
-  "cells_visited": 0,
+  "cells_visited": 505,
   "judge": {
     "named_unknowns": true,
     "cell_lockbox_cut": true,
@@ -22,12 +22,12 @@
   "memory": {
     "available_mb": 52467,
     "rss_cap_mb": 13117,
-    "peak_rss_mb": 531
+    "peak_rss_mb": 744
   },
-  "lockbox_cut": null,
-  "lockbox_frac": null,
-  "cells_carved_at_own_tail": null,
-  "elapsed_s": 184.1,
+  "lockbox_cut": "2024-05-14",
+  "lockbox_frac": 0.2,
+  "cells_carved_at_own_tail": 34,
+  "elapsed_s": 1641.7,
   "siblings": {
     "status": "MEASURED",
     "peerless_rows": 151,
@@ -41,38 +41,124 @@
     }
   },
   "sampled_cells": {
-    "cells": 0,
-    "gate0_rejected": {},
-    "preflight_refused": 0,
+    "cells": 505,
+    "gate0_rejected": {
+      "symbol_eligibility": 43
+    },
+    "preflight_refused": 212,
     "build_failed": 0,
     "build_failed_by_reason": {},
     "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
+    "judged_built": 250,
+    "unknown": 89,
+    "unknown_share_of_judged": 0.356,
+    "wilson95": [
+      0.2992,
+      0.4171
+    ],
+    "unknown_by_reason": {
+      "no_signals": 68,
+      "too_rare": 11,
+      "short_history_after_cut": 7,
+      "lockbox_consumed_history": 2,
+      "signals_no_trades": 1
+    },
     "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "unknown_by_family": {
+      "formula": 16,
+      "orderflow_imbalance": 11,
+      "liquidity_regime": 7,
+      "session_range_breakout": 6,
+      "overnight_drift": 5,
+      "ensemble": 5,
+      "alt_conditioned": 4,
+      "joint_genome": 3,
+      "lvc_asia_london": 3,
+      "regime_transition": 3,
+      "liquidity_gamma_reversal": 2,
+      "htf_anchor_trend": 2,
+      "event_reaction": 2,
+      "vol_transition": 2,
+      "monday_gap": 2
+    },
+    "unknown_by_chart": {
+      "M30": 26,
+      "H1": 21,
+      "M5": 15,
+      "M15": 14,
+      "M1": 5,
+      "D1": 4,
+      "H4": 4
+    },
+    "judged_by_chart": {
+      "H1": 89,
+      "M30": 62,
+      "M15": 42,
+      "M5": 40,
+      "H4": 8,
+      "M1": 5,
+      "D1": 4
+    }
   },
   "sampled_plus_siblings": {
-    "cells": 0,
-    "gate0_rejected": {},
-    "preflight_refused": 0,
+    "cells": 505,
+    "gate0_rejected": {
+      "symbol_eligibility": 43
+    },
+    "preflight_refused": 212,
     "build_failed": 0,
     "build_failed_by_reason": {},
     "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
+    "judged_built": 250,
+    "unknown": 89,
+    "unknown_share_of_judged": 0.356,
+    "wilson95": [
+      0.2992,
+      0.4171
+    ],
+    "unknown_by_reason": {
+      "no_signals": 68,
+      "too_rare": 11,
+      "short_history_after_cut": 7,
+      "lockbox_consumed_history": 2,
+      "signals_no_trades": 1
+    },
     "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "unknown_by_family": {
+      "formula": 16,
+      "orderflow_imbalance": 11,
+      "liquidity_regime": 7,
+      "session_range_breakout": 6,
+      "overnight_drift": 5,
+      "ensemble": 5,
+      "alt_conditioned": 4,
+      "joint_genome": 3,
+      "lvc_asia_london": 3,
+      "regime_transition": 3,
+      "liquidity_gamma_reversal": 2,
+      "htf_anchor_trend": 2,
+      "event_reaction": 2,
+      "vol_transition": 2,
+      "monday_gap": 2
+    },
+    "unknown_by_chart": {
+      "M30": 26,
+      "H1": 21,
+      "M5": 15,
+      "M15": 14,
+      "M1": 5,
+      "D1": 4,
+      "H4": 4
+    },
+    "judged_by_chart": {
+      "H1": 89,
+      "M30": 62,
+      "M15": 42,
+      "M5": 40,
+      "H4": 8,
+      "M1": 5,
+      "D1": 4
+    }
   },
   "siblings_only": {
     "cells": 0,
