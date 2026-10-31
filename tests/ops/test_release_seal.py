@@ -265,11 +265,33 @@ def test_every_path_the_box_publishes_is_declared_non_code() -> None:
     block = ps.split("$relPaths = @(", 1)[1].split("\n)", 1)[0]
     published = [m for m in re.findall(r'"([^"]+)"', block) if "/" in m]
     assert len(published) >= 6, f"parsed only {published} out of the sync script; parser is wrong"
-    undeclared = sorted(p for p in published if p not in release.NON_CODE)
+    # A path the seal already classifies as state (desks/mt5/reports/, desks/mt5/data/, ...)
+    # needs no NON_CODE entry: `accepts` passes it by `is_state_path`, as the end-to-end test
+    # above proves on the real list. Requiring the entry anyway made every new published report
+    # edit two PROTECTED files (this module and release_identity.py) for a redundant line, so
+    # every such PR needed zuck's manual CLEAR + APPROVE (2026-10-29: #475 #476 #486 #490).
+    undeclared = sorted(p for p in published
+                        if p not in release.NON_CODE and not release.is_state_path(p)
+                        and not release.is_build_artifact(p))
     assert not undeclared, (
-        f"sync_shadow_to_git.ps1 publishes {undeclared} but release.NON_CODE does not name "
-        f"them. Every one refuses new risk within fifteen minutes of any seal, silently: the "
-        f"promoter goes on promoting and nothing it promotes ever places an order.")
+        f"sync_shadow_to_git.ps1 publishes {undeclared}, which is neither under a state prefix "
+        f"nor named in release.NON_CODE. Every one refuses new risk within fifteen minutes of "
+        f"any seal, silently: the promoter goes on promoting and nothing it promotes ever "
+        f"places an order.")
+
+
+def test_a_published_state_report_needs_no_protected_edit() -> None:
+    """The class guard for the rule above: a new report under desks/mt5/reports/ or data under
+    desks/mt5/data/ is state to BOTH classifiers with no list entry, so publishing one is an
+    AUTO-tier change (sync_shadow_to_git.ps1 alone), never a PROTECTED one."""
+    ri = _box_identity()
+    for p in ("desks/mt5/reports/A_NEW_REPORT_2099.json", "desks/mt5/data/new_state_2099.json"):
+        assert p not in release.NON_CODE
+        assert release.is_state_path(p), p
+        assert ri._is_state_path(p), p                      # type: ignore[attr-defined]
+    # and code stays code: the rule widens nothing outside the state prefixes
+    for p in ("desks/mt5/mt5desk/gateway.py", "libs/ops/release.py", "scripts/x.py"):
+        assert not release.is_state_path(p) and not ri._is_state_path(p), p  # type: ignore
 
 
 def test_the_box_side_mirror_hashes_and_allowlists_identically(tmp_path: Path) -> None:
