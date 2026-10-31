@@ -104,8 +104,34 @@
  },
  "applied": {
   "env_file": "C:\\opt\\quant\\desks\\mt5\\data\\judging_throughput.env.json",
-  "machine_env": "PENDING",
-  "cadence": "PENDING",
+  "machine_env": {
+   "status": "APPLIED",
+   "set": {},
+   "unchanged": {
+    "GAUNTLET_WORKERS": "18",
+    "GAUNTLET_SHARDS": "18",
+    "GAUNTLET_MEMORY_BUDGET_MB": "13824",
+    "GAUNTLET_HEADROOM_CAP_MB": "13824",
+    "GAUNTLET_PER_WORKER_MB": "768",
+    "GAUNTLET_FRESH_BUDGET_SEC": "12960"
+   },
+   "failed": {},
+   "retired": {
+    "WARM_WORKERS": "ABSENT"
+   }
+  },
+  "cadence": {
+   "status": "FAILED",
+   "minutes": 1,
+   "task": "MT5-Gauntlet",
+   "next_run_before": "10/31/2026 6:51:00 PM",
+   "attempts": [
+    "attempt 1: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 30.0 seconds",
+    "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 53.79354839993175 seconds"
+   ],
+   "why": "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 53.79354839993175 seconds",
+   "state_file": "C:\\opt\\quant\\desks\\mt5\\data\\gauntlet_cadence_state.json"
+  },
   "process_env": {
    "GAUNTLET_SHARDS": "18"
   }
@@ -222,5 +248,6 @@
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
   "started_at": "2026-10-31T17:46:19+00:00",
   "pid": 35124
- }
+ },
+ "seconds": 317.8
 }
