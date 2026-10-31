@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-31T02:15:03.701914+00:00",
+  "swept_at": "2026-10-31T02:30:03.610579+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -790,7 +790,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3056,
+      "shadow_exp_r": -0.0567,
       "woke_on_shadow": false
     },
     "CHFNOK|carry_continuous": {
@@ -834,7 +834,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.6249,
+      "shadow_exp_r": 0.3214,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_continuous": {
@@ -2099,7 +2099,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1787,
+      "shadow_exp_r": -0.179,
       "woke_on_shadow": false
     },
     "GBPJPY|macro_conditional_asia": {
@@ -4244,7 +4244,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0649,
+      "shadow_exp_r": 0.0473,
       "woke_on_shadow": false
     },
     "USDZAR|overnight_gap_decay_asia": {
