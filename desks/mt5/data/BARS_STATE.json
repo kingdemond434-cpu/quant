@@ -1,21 +1,21 @@
 {
  "schema": "bars_state/2",
- "generated_at": "2026-10-31T16:16:27+00:00",
+ "generated_at": "2026-10-31T17:21:05+00:00",
  "host": "vmi<redacted-numeric>",
  "time_clock": "broker",
  "utc_conversion": "prop.e8_guard: server = America/New_York + 7h (UTC+2 winter / UTC+3 summer)",
  "budget_s": 20.0,
- "elapsed_s": 20.77,
+ "elapsed_s": 20.081,
  "budget_exhausted": true,
  "summary": {
   "bar_files": 1722,
-  "bar_files_measured": 405,
-  "bars_measured_share": 0.235,
+  "bar_files_measured": 357,
+  "bars_measured_share": 0.207,
   "bars_verdict": "PARTIAL",
-  "newest_bar_time": "2026-10-31T18:30:00",
-  "newest_bar_time_utc": "2026-10-31T15:30:00+00:00",
-  "newest_bar_age_h": 0.77,
-  "newest_bar_file_mtime_age_h": 0.53,
+  "newest_bar_time": "2026-10-31T19:32:00",
+  "newest_bar_time_utc": "2026-10-31T16:32:00+00:00",
+  "newest_bar_age_h": 0.82,
+  "newest_bar_file_mtime_age_h": 0.04,
   "tape_symbols": 249,
   "tape_symbols_measured": 0,
   "tape_measured_share": 0.0,
@@ -35,13 +35,13 @@
    "file": "3M_D1.parquet",
    "time_clock": "broker",
    "row_count": 1434,
-   "file_mtime": "2026-10-31T15:30:20+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:32+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "3M",
@@ -49,13 +49,13 @@
    "file": "3M_H1.parquet",
    "time_clock": "broker",
    "row_count": 10067,
-   "file_mtime": "2026-10-31T15:30:20+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:32+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "3M",
@@ -63,13 +63,13 @@
    "file": "3M_H4.parquet",
    "time_clock": "broker",
    "row_count": 2839,
-   "file_mtime": "2026-10-31T15:30:20+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:32+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "3M",
@@ -77,13 +77,13 @@
    "file": "3M_M1.parquet",
    "time_clock": "broker",
    "row_count": 108967,
-   "file_mtime": "2026-10-31T15:30:21+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:33+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "3M",
@@ -91,13 +91,13 @@
    "file": "3M_M15.parquet",
    "time_clock": "broker",
    "row_count": 37250,
-   "file_mtime": "2026-10-31T15:30:21+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:34+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "3M",
@@ -105,13 +105,13 @@
    "file": "3M_M30.parquet",
    "time_clock": "broker",
    "row_count": 18653,
-   "file_mtime": "2026-10-31T15:30:22+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:34+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "3M",
@@ -119,13 +119,13 @@
    "file": "3M_M5.parquet",
    "time_clock": "broker",
    "row_count": 101793,
-   "file_mtime": "2026-10-31T15:30:22+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:35+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "Accenture",
@@ -133,13 +133,13 @@
    "file": "Accenture_D1.parquet",
    "time_clock": "broker",
    "row_count": 6356,
-   "file_mtime": "2026-10-31T15:30:51+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:17+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "Accenture",
@@ -147,13 +147,13 @@
    "file": "Accenture_H1.parquet",
    "time_clock": "broker",
    "row_count": 13358,
-   "file_mtime": "2026-10-31T15:30:51+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:18+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "Accenture",
@@ -161,13 +161,13 @@
    "file": "Accenture_H4.parquet",
    "time_clock": "broker",
    "row_count": 7523,
-   "file_mtime": "2026-10-31T15:30:52+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:18+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "Accenture",
@@ -175,13 +175,13 @@
    "file": "Accenture_M1.parquet",
    "time_clock": "broker",
    "row_count": 108969,
-   "file_mtime": "2026-10-31T15:30:52+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:19+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "Accenture",
@@ -189,13 +189,13 @@
    "file": "Accenture_M15.parquet",
    "time_clock": "broker",
    "row_count": 35510,
-   "file_mtime": "2026-10-31T15:30:52+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:20+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "Accenture",
@@ -203,13 +203,13 @@
    "file": "Accenture_M30.parquet",
    "time_clock": "broker",
    "row_count": 20354,
-   "file_mtime": "2026-10-31T15:30:52+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:20+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "Accenture",
@@ -217,13 +217,13 @@
    "file": "Accenture_M5.parquet",
    "time_clock": "broker",
    "row_count": 96137,
-   "file_mtime": "2026-10-31T15:30:53+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:20+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "ADAUSD",
@@ -231,27 +231,27 @@
    "file": "ADAUSD_D1.parquet",
    "time_clock": "broker",
    "row_count": 2969,
-   "file_mtime": "2026-10-31T15:30:23+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:36+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-29T21:00:00+00:00",
-   "age_h": 43.27
+   "age_h": 44.35
   },
   {
    "symbol": "ADAUSD",
    "timeframe": "H1",
    "file": "ADAUSD_H1.parquet",
    "time_clock": "broker",
-   "row_count": 49368,
-   "file_mtime": "2026-10-31T15:30:23+00:00",
-   "mtime_age_h": 0.77,
+   "row_count": 49369,
+   "file_mtime": "2026-10-31T16:30:36+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T17:00:00",
+   "last_bar_time": "2026-10-31T18:00:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T14:00:00+00:00",
-   "age_h": 2.27
+   "last_bar_time_utc": "2026-10-31T15:00:00+00:00",
+   "age_h": 2.35
   },
   {
    "symbol": "ADAUSD",
@@ -259,69 +259,69 @@
    "file": "ADAUSD_H4.parquet",
    "time_clock": "broker",
    "row_count": 13075,
-   "file_mtime": "2026-10-31T15:30:23+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:37+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-31T12:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-31T09:00:00+00:00",
-   "age_h": 7.27
+   "age_h": 8.35
   },
   {
    "symbol": "ADAUSD",
    "timeframe": "M1",
    "file": "ADAUSD_M1.parquet",
    "time_clock": "broker",
-   "row_count": 144934,
-   "file_mtime": "2026-10-31T15:30:24+00:00",
-   "mtime_age_h": 0.77,
+   "row_count": 144990,
+   "file_mtime": "2026-10-31T16:30:38+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T18:29:00",
+   "last_bar_time": "2026-10-31T19:28:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T15:29:00+00:00",
-   "age_h": 0.79
+   "last_bar_time_utc": "2026-10-31T16:28:00+00:00",
+   "age_h": 0.88
   },
   {
    "symbol": "ADAUSD",
    "timeframe": "M15",
    "file": "ADAUSD_M15.parquet",
    "time_clock": "broker",
-   "row_count": 102959,
-   "file_mtime": "2026-10-31T15:30:24+00:00",
-   "mtime_age_h": 0.77,
+   "row_count": 102963,
+   "file_mtime": "2026-10-31T16:30:39+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T18:15:00",
+   "last_bar_time": "2026-10-31T19:15:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T15:15:00+00:00",
-   "age_h": 1.02
+   "last_bar_time_utc": "2026-10-31T16:15:00+00:00",
+   "age_h": 1.1
   },
   {
    "symbol": "ADAUSD",
    "timeframe": "M30",
    "file": "ADAUSD_M30.parquet",
    "time_clock": "broker",
-   "row_count": 90126,
-   "file_mtime": "2026-10-31T15:30:25+00:00",
-   "mtime_age_h": 0.77,
+   "row_count": 90128,
+   "file_mtime": "2026-10-31T16:30:39+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T18:00:00",
+   "last_bar_time": "2026-10-31T19:00:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T15:00:00+00:00",
-   "age_h": 1.27
+   "last_bar_time_utc": "2026-10-31T16:00:00+00:00",
+   "age_h": 1.35
   },
   {
    "symbol": "ADAUSD",
    "timeframe": "M5",
    "file": "ADAUSD_M5.parquet",
    "time_clock": "broker",
-   "row_count": 109246,
-   "file_mtime": "2026-10-31T15:30:25+00:00",
-   "mtime_age_h": 0.77,
+   "row_count": 109258,
+   "file_mtime": "2026-10-31T16:30:40+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T18:25:00",
+   "last_bar_time": "2026-10-31T19:25:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T15:25:00+00:00",
-   "age_h": 0.86
+   "last_bar_time_utc": "2026-10-31T16:25:00+00:00",
+   "age_h": 0.93
   },
   {
    "symbol": "Adobe",
@@ -329,13 +329,13 @@
    "file": "Adobe_D1.parquet",
    "time_clock": "broker",
    "row_count": 1411,
-   "file_mtime": "2026-10-31T15:30:53+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:21+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "Adobe",
@@ -343,13 +343,13 @@
    "file": "Adobe_H1.parquet",
    "time_clock": "broker",
    "row_count": 9902,
-   "file_mtime": "2026-10-31T15:30:53+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:23+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "Adobe",
@@ -357,13 +357,13 @@
    "file": "Adobe_H4.parquet",
    "time_clock": "broker",
    "row_count": 2821,
-   "file_mtime": "2026-10-31T15:30:53+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:26+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "Adobe",
@@ -371,13 +371,13 @@
    "file": "Adobe_M1.parquet",
    "time_clock": "broker",
    "row_count": 108969,
-   "file_mtime": "2026-10-31T15:30:54+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:27+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "Adobe",
@@ -385,13 +385,13 @@
    "file": "Adobe_M15.parquet",
    "time_clock": "broker",
    "row_count": 36653,
-   "file_mtime": "2026-10-31T15:30:54+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:28+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "Adobe",
@@ -399,13 +399,13 @@
    "file": "Adobe_M30.parquet",
    "time_clock": "broker",
    "row_count": 18352,
-   "file_mtime": "2026-10-31T15:30:54+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:31+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "Adobe",
@@ -413,13 +413,13 @@
    "file": "Adobe_M5.parquet",
    "time_clock": "broker",
    "row_count": 101793,
-   "file_mtime": "2026-10-31T15:30:55+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:34+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "ADP",
@@ -427,13 +427,13 @@
    "file": "ADP_D1.parquet",
    "time_clock": "broker",
    "row_count": 1418,
-   "file_mtime": "2026-10-31T15:30:26+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:40+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "ADP",
@@ -441,13 +441,13 @@
    "file": "ADP_H1.parquet",
    "time_clock": "broker",
    "row_count": 9957,
-   "file_mtime": "2026-10-31T15:30:26+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:41+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "ADP",
@@ -455,13 +455,13 @@
    "file": "ADP_H4.parquet",
    "time_clock": "broker",
    "row_count": 2837,
-   "file_mtime": "2026-10-31T15:30:26+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:41+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "ADP",
@@ -469,13 +469,13 @@
    "file": "ADP_M1.parquet",
    "time_clock": "broker",
    "row_count": 108947,
-   "file_mtime": "2026-10-31T15:30:27+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:42+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "ADP",
@@ -483,13 +483,13 @@
    "file": "ADP_M15.parquet",
    "time_clock": "broker",
    "row_count": 36835,
-   "file_mtime": "2026-10-31T15:30:27+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:42+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "ADP",
@@ -497,13 +497,13 @@
    "file": "ADP_M30.parquet",
    "time_clock": "broker",
    "row_count": 18451,
-   "file_mtime": "2026-10-31T15:30:27+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:42+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "ADP",
@@ -511,13 +511,13 @@
    "file": "ADP_M5.parquet",
    "time_clock": "broker",
    "row_count": 101793,
-   "file_mtime": "2026-10-31T15:30:27+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:43+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "Airbnb",
@@ -525,13 +525,13 @@
    "file": "Airbnb_D1.parquet",
    "time_clock": "broker",
    "row_count": 1475,
-   "file_mtime": "2026-10-31T15:30:55+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:34+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "Airbnb",
@@ -539,13 +539,13 @@
    "file": "Airbnb_H1.parquet",
    "time_clock": "broker",
    "row_count": 8480,
-   "file_mtime": "2026-10-31T15:30:55+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:36+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "Airbnb",
@@ -553,13 +553,13 @@
    "file": "Airbnb_H4.parquet",
    "time_clock": "broker",
    "row_count": 2644,
-   "file_mtime": "2026-10-31T15:30:55+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:38+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "Airbnb",
@@ -567,13 +567,13 @@
    "file": "Airbnb_M1.parquet",
    "time_clock": "broker",
    "row_count": 100389,
-   "file_mtime": "2026-10-31T15:30:56+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:40+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "Airbnb",
@@ -581,13 +581,13 @@
    "file": "Airbnb_M15.parquet",
    "time_clock": "broker",
    "row_count": 30634,
-   "file_mtime": "2026-10-31T15:30:56+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:41+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "Airbnb",
@@ -595,13 +595,13 @@
    "file": "Airbnb_M30.parquet",
    "time_clock": "broker",
    "row_count": 15476,
-   "file_mtime": "2026-10-31T15:30:56+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:41+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "Airbnb",
@@ -609,13 +609,13 @@
    "file": "Airbnb_M5.parquet",
    "time_clock": "broker",
    "row_count": 91261,
-   "file_mtime": "2026-10-31T15:30:57+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:44+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "AlibabaGroup",
@@ -623,13 +623,13 @@
    "file": "AlibabaGroup_D1.parquet",
    "time_clock": "broker",
    "row_count": 3044,
-   "file_mtime": "2026-10-31T15:30:58+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:45+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "AlibabaGroup",
@@ -637,13 +637,13 @@
    "file": "AlibabaGroup_H1.parquet",
    "time_clock": "broker",
    "row_count": 10047,
-   "file_mtime": "2026-10-31T15:30:58+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:46+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "AlibabaGroup",
@@ -651,13 +651,13 @@
    "file": "AlibabaGroup_H4.parquet",
    "time_clock": "broker",
    "row_count": 4212,
-   "file_mtime": "2026-10-31T15:30:58+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:46+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "AlibabaGroup",
@@ -665,13 +665,13 @@
    "file": "AlibabaGroup_M1.parquet",
    "time_clock": "broker",
    "row_count": 108969,
-   "file_mtime": "2026-10-31T15:30:58+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:48+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "AlibabaGroup",
@@ -679,13 +679,13 @@
    "file": "AlibabaGroup_M15.parquet",
    "time_clock": "broker",
    "row_count": 32199,
-   "file_mtime": "2026-10-31T15:30:59+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:50+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "AlibabaGroup",
@@ -693,13 +693,13 @@
    "file": "AlibabaGroup_M30.parquet",
    "time_clock": "broker",
    "row_count": 17043,
-   "file_mtime": "2026-10-31T15:30:59+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:50+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "AlibabaGroup",
@@ -707,13 +707,13 @@
    "file": "AlibabaGroup_M5.parquet",
    "time_clock": "broker",
    "row_count": 92826,
-   "file_mtime": "2026-10-31T15:30:59+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:51+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "Alphabet-A",
@@ -721,13 +721,13 @@
    "file": "Alphabet-A_D1.parquet",
    "time_clock": "broker",
    "row_count": 1382,
-   "file_mtime": "2026-10-31T15:31:00+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:52+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "Alphabet-A",
@@ -735,13 +735,13 @@
    "file": "Alphabet-A_H1.parquet",
    "time_clock": "broker",
    "row_count": 9670,
-   "file_mtime": "2026-10-31T15:31:00+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:54+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "Alphabet-A",
@@ -749,13 +749,13 @@
    "file": "Alphabet-A_H4.parquet",
    "time_clock": "broker",
    "row_count": 2761,
-   "file_mtime": "2026-10-31T15:31:01+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:55+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "Alphabet-A",
@@ -763,13 +763,13 @@
    "file": "Alphabet-A_M1.parquet",
    "time_clock": "broker",
    "row_count": 108969,
-   "file_mtime": "2026-10-31T15:31:01+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:56+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "Alphabet-A",
@@ -777,13 +777,13 @@
    "file": "Alphabet-A_M15.parquet",
    "time_clock": "broker",
    "row_count": 35769,
-   "file_mtime": "2026-10-31T15:31:01+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:57+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "Alphabet-A",
@@ -791,13 +791,13 @@
    "file": "Alphabet-A_M30.parquet",
    "time_clock": "broker",
    "row_count": 17915,
-   "file_mtime": "2026-10-31T15:31:02+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:59+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "Alphabet-A",
@@ -805,13 +805,13 @@
    "file": "Alphabet-A_M5.parquet",
    "time_clock": "broker",
    "row_count": 101793,
-   "file_mtime": "2026-10-31T15:31:02+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:59+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "Alphabet-C",
@@ -819,13 +819,13 @@
    "file": "Alphabet-C_D1.parquet",
    "time_clock": "broker",
    "row_count": 1406,
-   "file_mtime": "2026-10-31T15:31:03+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:00+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "Alphabet-C",
@@ -833,13 +833,13 @@
    "file": "Alphabet-C_H1.parquet",
    "time_clock": "broker",
    "row_count": 9853,
-   "file_mtime": "2026-10-31T15:31:03+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:01+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "Alphabet-C",
@@ -847,13 +847,13 @@
    "file": "Alphabet-C_H4.parquet",
    "time_clock": "broker",
    "row_count": 2811,
-   "file_mtime": "2026-10-31T15:31:04+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:02+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "Alphabet-C",
@@ -861,13 +861,13 @@
    "file": "Alphabet-C_M1.parquet",
    "time_clock": "broker",
    "row_count": 108969,
-   "file_mtime": "2026-10-31T15:31:04+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:04+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "Alphabet-C",
@@ -875,13 +875,13 @@
    "file": "Alphabet-C_M15.parquet",
    "time_clock": "broker",
    "row_count": 36460,
-   "file_mtime": "2026-10-31T15:31:04+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:05+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "Alphabet-C",
@@ -889,13 +889,13 @@
    "file": "Alphabet-C_M30.parquet",
    "time_clock": "broker",
    "row_count": 18259,
-   "file_mtime": "2026-10-31T15:31:04+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:05+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "Alphabet-C",
@@ -903,13 +903,13 @@
    "file": "Alphabet-C_M5.parquet",
    "time_clock": "broker",
    "row_count": 101793,
-   "file_mtime": "2026-10-31T15:31:05+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:07+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "Amazon",
@@ -917,13 +917,13 @@
    "file": "Amazon_D1.parquet",
    "time_clock": "broker",
    "row_count": 1327,
-   "file_mtime": "2026-10-31T15:31:05+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:08+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "Amazon",
@@ -931,13 +931,13 @@
    "file": "Amazon_H1.parquet",
    "time_clock": "broker",
    "row_count": 9273,
-   "file_mtime": "2026-10-31T15:31:06+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:09+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "Amazon",
@@ -945,13 +945,13 @@
    "file": "Amazon_H4.parquet",
    "time_clock": "broker",
    "row_count": 2655,
-   "file_mtime": "2026-10-31T15:31:06+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:09+00:00",
+   "mtime_age_h": 0.82,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "Amazon",
@@ -959,13 +959,13 @@
    "file": "Amazon_M1.parquet",
    "time_clock": "broker",
    "row_count": 108969,
-   "file_mtime": "2026-10-31T15:31:06+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:11+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "Amazon",
@@ -973,13 +973,13 @@
    "file": "Amazon_M15.parquet",
    "time_clock": "broker",
    "row_count": 34408,
-   "file_mtime": "2026-10-31T15:31:06+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:13+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "Amazon",
@@ -987,13 +987,13 @@
    "file": "Amazon_M30.parquet",
    "time_clock": "broker",
    "row_count": 17214,
-   "file_mtime": "2026-10-31T15:31:07+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:13+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "Amazon",
@@ -1001,13 +1001,13 @@
    "file": "Amazon_M5.parquet",
    "time_clock": "broker",
    "row_count": 103115,
-   "file_mtime": "2026-10-31T15:31:07+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:15+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "AMD",
@@ -1015,13 +1015,13 @@
    "file": "AMD_D1.parquet",
    "time_clock": "broker",
    "row_count": 1418,
-   "file_mtime": "2026-10-31T15:30:28+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:43+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "AMD",
@@ -1029,13 +1029,13 @@
    "file": "AMD_H1.parquet",
    "time_clock": "broker",
    "row_count": 9961,
-   "file_mtime": "2026-10-31T15:30:28+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:44+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "AMD",
@@ -1043,13 +1043,13 @@
    "file": "AMD_H4.parquet",
    "time_clock": "broker",
    "row_count": 2839,
-   "file_mtime": "2026-10-31T15:30:28+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:44+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "AMD",
@@ -1057,13 +1057,13 @@
    "file": "AMD_M1.parquet",
    "time_clock": "broker",
    "row_count": 108969,
-   "file_mtime": "2026-10-31T15:30:29+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:45+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "AMD",
@@ -1071,13 +1071,13 @@
    "file": "AMD_M15.parquet",
    "time_clock": "broker",
    "row_count": 36859,
-   "file_mtime": "2026-10-31T15:30:29+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:46+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "AMD",
@@ -1085,13 +1085,13 @@
    "file": "AMD_M30.parquet",
    "time_clock": "broker",
    "row_count": 18456,
-   "file_mtime": "2026-10-31T15:30:29+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:46+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "AMD",
@@ -1099,13 +1099,13 @@
    "file": "AMD_M5.parquet",
    "time_clock": "broker",
    "row_count": 101793,
-   "file_mtime": "2026-10-31T15:30:30+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:47+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "AmericanExpress",
@@ -1113,13 +1113,13 @@
    "file": "AmericanExpress_D1.parquet",
    "time_clock": "broker",
    "row_count": 1413,
-   "file_mtime": "2026-10-31T13:32:03+00:00",
-   "mtime_age_h": 2.74,
+   "file_mtime": "2026-10-31T16:32:15+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "AmericanExpress",
@@ -1127,13 +1127,13 @@
    "file": "AmericanExpress_H1.parquet",
    "time_clock": "broker",
    "row_count": 9916,
-   "file_mtime": "2026-10-31T15:31:07+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:17+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "AmericanExpress",
@@ -1141,13 +1141,13 @@
    "file": "AmericanExpress_H4.parquet",
    "time_clock": "broker",
    "row_count": 2825,
-   "file_mtime": "2026-10-31T15:31:07+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:18+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "AmericanExpress",
@@ -1155,13 +1155,13 @@
    "file": "AmericanExpress_M1.parquet",
    "time_clock": "broker",
    "row_count": 108968,
-   "file_mtime": "2026-10-31T15:31:08+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:19+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "AmericanExpress",
@@ -1169,13 +1169,13 @@
    "file": "AmericanExpress_M15.parquet",
    "time_clock": "broker",
    "row_count": 36693,
-   "file_mtime": "2026-10-31T15:31:08+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:19+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "AmericanExpress",
@@ -1183,13 +1183,13 @@
    "file": "AmericanExpress_M30.parquet",
    "time_clock": "broker",
    "row_count": 18374,
-   "file_mtime": "2026-10-31T15:31:08+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:20+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "AmericanExpress",
@@ -1197,13 +1197,13 @@
    "file": "AmericanExpress_M5.parquet",
    "time_clock": "broker",
    "row_count": 101793,
-   "file_mtime": "2026-10-31T15:31:09+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:22+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "Amgen",
@@ -1211,13 +1211,13 @@
    "file": "Amgen_D1.parquet",
    "time_clock": "broker",
    "row_count": 1416,
-   "file_mtime": "2026-10-31T15:31:09+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:32:23+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "Amgen",
@@ -1225,13 +1225,13 @@
    "file": "Amgen_H1.parquet",
    "time_clock": "broker",
    "row_count": 9944,
-   "file_mtime": "2026-10-31T15:31:10+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:23+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "Amgen",
@@ -1239,13 +1239,13 @@
    "file": "Amgen_H4.parquet",
    "time_clock": "broker",
    "row_count": 2833,
-   "file_mtime": "2026-10-31T15:31:10+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:24+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "Amgen",
@@ -1253,13 +1253,13 @@
    "file": "Amgen_M1.parquet",
    "time_clock": "broker",
    "row_count": 108969,
-   "file_mtime": "2026-10-31T15:31:10+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:26+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "Amgen",
@@ -1267,13 +1267,13 @@
    "file": "Amgen_M15.parquet",
    "time_clock": "broker",
    "row_count": 36796,
-   "file_mtime": "2026-10-31T15:31:11+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:27+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "Amgen",
@@ -1281,13 +1281,13 @@
    "file": "Amgen_M30.parquet",
    "time_clock": "broker",
    "row_count": 18427,
-   "file_mtime": "2026-10-31T15:31:11+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:28+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "Amgen",
@@ -1295,13 +1295,13 @@
    "file": "Amgen_M5.parquet",
    "time_clock": "broker",
    "row_count": 101793,
-   "file_mtime": "2026-10-31T15:31:11+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:29+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "Apple",
@@ -1309,13 +1309,13 @@
    "file": "Apple_D1.parquet",
    "time_clock": "broker",
    "row_count": 1418,
-   "file_mtime": "2026-10-31T15:31:12+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:30+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "Apple",
@@ -1323,13 +1323,13 @@
    "file": "Apple_H1.parquet",
    "time_clock": "broker",
    "row_count": 9962,
-   "file_mtime": "2026-10-31T15:31:12+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:32+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "Apple",
@@ -1337,13 +1337,13 @@
    "file": "Apple_H4.parquet",
    "time_clock": "broker",
    "row_count": 2838,
-   "file_mtime": "2026-10-31T15:31:12+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:33+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "Apple",
@@ -1351,13 +1351,13 @@
    "file": "Apple_M1.parquet",
    "time_clock": "broker",
    "row_count": 108969,
-   "file_mtime": "2026-10-31T15:31:13+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:34+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "Apple",
@@ -1365,13 +1365,13 @@
    "file": "Apple_M15.parquet",
    "time_clock": "broker",
    "row_count": 36859,
-   "file_mtime": "2026-10-31T15:31:13+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:35+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "Apple",
@@ -1379,13 +1379,13 @@
    "file": "Apple_M30.parquet",
    "time_clock": "broker",
    "row_count": 18457,
-   "file_mtime": "2026-10-31T15:31:13+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:37+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "Apple",
@@ -1393,13 +1393,13 @@
    "file": "Apple_M5.parquet",
    "time_clock": "broker",
    "row_count": 101793,
-   "file_mtime": "2026-10-31T15:31:14+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:38+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "AppliedMaterials",
@@ -1407,13 +1407,13 @@
    "file": "AppliedMaterials_D1.parquet",
    "time_clock": "broker",
    "row_count": 1415,
-   "file_mtime": "2026-10-31T15:31:15+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:39+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "AppliedMaterials",
@@ -1421,13 +1421,13 @@
    "file": "AppliedMaterials_H1.parquet",
    "time_clock": "broker",
    "row_count": 9933,
-   "file_mtime": "2026-10-31T15:31:15+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:39+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "AppliedMaterials",
@@ -1435,13 +1435,13 @@
    "file": "AppliedMaterials_H4.parquet",
    "time_clock": "broker",
    "row_count": 2830,
-   "file_mtime": "2026-10-31T15:31:15+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:41+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "AppliedMaterials",
@@ -1449,13 +1449,13 @@
    "file": "AppliedMaterials_M1.parquet",
    "time_clock": "broker",
    "row_count": 108969,
-   "file_mtime": "2026-10-31T15:31:16+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:43+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "AppliedMaterials",
@@ -1463,13 +1463,13 @@
    "file": "AppliedMaterials_M15.parquet",
    "time_clock": "broker",
    "row_count": 36763,
-   "file_mtime": "2026-10-31T15:31:16+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:43+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "AppliedMaterials",
@@ -1477,13 +1477,13 @@
    "file": "AppliedMaterials_M30.parquet",
    "time_clock": "broker",
    "row_count": 18406,
-   "file_mtime": "2026-10-31T15:31:16+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:44+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "AppliedMaterials",
@@ -1491,13 +1491,13 @@
    "file": "AppliedMaterials_M5.parquet",
    "time_clock": "broker",
    "row_count": 101793,
-   "file_mtime": "2026-10-31T15:31:17+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:46+00:00",
+   "mtime_age_h": 0.81,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "AT&T",
@@ -1505,13 +1505,13 @@
    "file": "AT&T_D1.parquet",
    "time_clock": "broker",
    "row_count": 10651,
-   "file_mtime": "2026-10-31T15:30:31+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:49+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "AT&T",
@@ -1519,13 +1519,13 @@
    "file": "AT&T_H1.parquet",
    "time_clock": "broker",
    "row_count": 17652,
-   "file_mtime": "2026-10-31T15:30:31+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:49+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "AT&T",
@@ -1533,13 +1533,13 @@
    "file": "AT&T_H4.parquet",
    "time_clock": "broker",
    "row_count": 11817,
-   "file_mtime": "2026-10-31T15:30:31+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:50+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "AT&T",
@@ -1547,13 +1547,13 @@
    "file": "AT&T_M1.parquet",
    "time_clock": "broker",
    "row_count": 108969,
-   "file_mtime": "2026-10-31T15:30:32+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:50+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "AT&T",
@@ -1561,13 +1561,13 @@
    "file": "AT&T_M15.parquet",
    "time_clock": "broker",
    "row_count": 39681,
-   "file_mtime": "2026-10-31T15:30:32+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:51+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "AT&T",
@@ -1575,13 +1575,13 @@
    "file": "AT&T_M30.parquet",
    "time_clock": "broker",
    "row_count": 24644,
-   "file_mtime": "2026-10-31T15:30:32+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:51+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "AT&T",
@@ -1589,13 +1589,13 @@
    "file": "AT&T_M5.parquet",
    "time_clock": "broker",
    "row_count": 95995,
-   "file_mtime": "2026-10-31T15:30:32+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:51+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "Atlassian",
@@ -1603,13 +1603,13 @@
    "file": "Atlassian_D1.parquet",
    "time_clock": "broker",
    "row_count": 1384,
-   "file_mtime": "2026-10-31T15:31:18+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:47+00:00",
+   "mtime_age_h": 0.8,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "Atlassian",
@@ -1617,13 +1617,13 @@
    "file": "Atlassian_H1.parquet",
    "time_clock": "broker",
    "row_count": 9614,
-   "file_mtime": "2026-10-31T15:31:18+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:47+00:00",
+   "mtime_age_h": 0.8,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "Atlassian",
@@ -1631,13 +1631,13 @@
    "file": "Atlassian_H4.parquet",
    "time_clock": "broker",
    "row_count": 2764,
-   "file_mtime": "2026-10-31T15:31:18+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:48+00:00",
+   "mtime_age_h": 0.8,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "Atlassian",
@@ -1645,13 +1645,13 @@
    "file": "Atlassian_M1.parquet",
    "time_clock": "broker",
    "row_count": 108960,
-   "file_mtime": "2026-10-31T15:31:18+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:49+00:00",
+   "mtime_age_h": 0.8,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "Atlassian",
@@ -1659,13 +1659,13 @@
    "file": "Atlassian_M15.parquet",
    "time_clock": "broker",
    "row_count": 35359,
-   "file_mtime": "2026-10-31T15:31:19+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:51+00:00",
+   "mtime_age_h": 0.8,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "Atlassian",
@@ -1673,13 +1673,13 @@
    "file": "Atlassian_M30.parquet",
    "time_clock": "broker",
    "row_count": 17848,
-   "file_mtime": "2026-10-31T15:31:19+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:52+00:00",
+   "mtime_age_h": 0.8,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "Atlassian",
@@ -1687,13 +1687,13 @@
    "file": "Atlassian_M5.parquet",
    "time_clock": "broker",
    "row_count": 101793,
-   "file_mtime": "2026-10-31T15:31:19+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:52+00:00",
+   "mtime_age_h": 0.8,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "AUDCAD",
@@ -1701,13 +1701,13 @@
    "file": "AUDCAD_D1.parquet",
    "time_clock": "broker",
    "row_count": 7198,
-   "file_mtime": "2026-10-31T15:44:19+00:00",
-   "mtime_age_h": 0.54,
+   "file_mtime": "2026-10-31T17:18:15+00:00",
+   "mtime_age_h": 0.05,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "AUDCAD",
@@ -1715,13 +1715,13 @@
    "file": "AUDCAD_H1.parquet",
    "time_clock": "broker",
    "row_count": 49804,
-   "file_mtime": "2026-10-31T15:30:33+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:52+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "AUDCAD",
@@ -1729,13 +1729,13 @@
    "file": "AUDCAD_H4.parquet",
    "time_clock": "broker",
    "row_count": 16942,
-   "file_mtime": "2026-10-31T15:30:33+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:30:52+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "AUDCAD",
@@ -1743,13 +1743,13 @@
    "file": "AUDCAD_M1.parquet",
    "time_clock": "broker",
    "row_count": 47152,
-   "file_mtime": "2026-10-31T15:30:34+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:30:52+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:57:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:57:00+00:00",
-   "age_h": 19.32
+   "age_h": 20.4
   },
   {
    "symbol": "AUDCAD",
@@ -1757,13 +1757,13 @@
    "file": "AUDCAD_M15.parquet",
    "time_clock": "broker",
    "row_count": 102130,
-   "file_mtime": "2026-10-31T15:30:34+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:30:53+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:30:00+00:00",
-   "age_h": 19.77
+   "age_h": 20.85
   },
   {
    "symbol": "AUDCAD",
@@ -1771,13 +1771,13 @@
    "file": "AUDCAD_M30.parquet",
    "time_clock": "broker",
    "row_count": 80684,
-   "file_mtime": "2026-10-31T15:30:35+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:30:53+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:00:00+00:00",
-   "age_h": 20.27
+   "age_h": 21.35
   },
   {
    "symbol": "AUDCAD",
@@ -1785,13 +1785,13 @@
    "file": "AUDCAD_M5.parquet",
    "time_clock": "broker",
    "row_count": 107013,
-   "file_mtime": "2026-10-31T15:30:35+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:30:53+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:50:00+00:00",
-   "age_h": 19.44
+   "age_h": 20.52
   },
   {
    "symbol": "AUDCHF",
@@ -1799,13 +1799,13 @@
    "file": "AUDCHF_D1.parquet",
    "time_clock": "broker",
    "row_count": 7696,
-   "file_mtime": "2026-10-31T15:44:20+00:00",
-   "mtime_age_h": 0.54,
+   "file_mtime": "2026-10-31T17:18:15+00:00",
+   "mtime_age_h": 0.05,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "AUDCHF",
@@ -1813,13 +1813,13 @@
    "file": "AUDCHF_H1.parquet",
    "time_clock": "broker",
    "row_count": 49690,
-   "file_mtime": "2026-10-31T15:30:36+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:30:54+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "AUDCHF",
@@ -1827,13 +1827,13 @@
    "file": "AUDCHF_H4.parquet",
    "time_clock": "broker",
    "row_count": 16827,
-   "file_mtime": "2026-10-31T15:30:36+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:30:54+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "AUDCHF",
@@ -1841,13 +1841,13 @@
    "file": "AUDCHF_M1.parquet",
    "time_clock": "broker",
    "row_count": 134596,
-   "file_mtime": "2026-10-31T15:30:36+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:30:54+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:57:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:57:00+00:00",
-   "age_h": 19.32
+   "age_h": 20.4
   },
   {
    "symbol": "AUDCHF",
@@ -1855,13 +1855,13 @@
    "file": "AUDCHF_M15.parquet",
    "time_clock": "broker",
    "row_count": 102130,
-   "file_mtime": "2026-10-31T15:30:37+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:30:55+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:30:00+00:00",
-   "age_h": 19.77
+   "age_h": 20.85
   },
   {
    "symbol": "AUDCHF",
@@ -1869,13 +1869,13 @@
    "file": "AUDCHF_M30.parquet",
    "time_clock": "broker",
    "row_count": 80675,
-   "file_mtime": "2026-10-31T15:30:37+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:30:55+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:00:00+00:00",
-   "age_h": 20.27
+   "age_h": 21.35
   },
   {
    "symbol": "AUDCHF",
@@ -1883,13 +1883,13 @@
    "file": "AUDCHF_M5.parquet",
    "time_clock": "broker",
    "row_count": 106957,
-   "file_mtime": "2026-10-31T15:30:37+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:30:56+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:50:00+00:00",
-   "age_h": 19.44
+   "age_h": 20.52
   },
   {
    "symbol": "AUDHUF",
@@ -1897,13 +1897,13 @@
    "file": "AUDHUF_D1.parquet",
    "time_clock": "broker",
    "row_count": 2528,
-   "file_mtime": "2026-10-31T15:30:38+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:30:56+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "AUDHUF",
@@ -1911,13 +1911,13 @@
    "file": "AUDHUF_H1.parquet",
    "time_clock": "broker",
    "row_count": 44484,
-   "file_mtime": "2026-10-31T15:30:38+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:30:57+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "AUDHUF",
@@ -1925,13 +1925,13 @@
    "file": "AUDHUF_H4.parquet",
    "time_clock": "broker",
    "row_count": 11656,
-   "file_mtime": "2026-10-31T15:30:38+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:30:57+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "AUDHUF",
@@ -1939,13 +1939,13 @@
    "file": "AUDHUF_M1.parquet",
    "time_clock": "broker",
    "row_count": 134753,
-   "file_mtime": "2026-10-31T15:30:39+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:30:58+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:57:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:57:00+00:00",
-   "age_h": 19.32
+   "age_h": 20.4
   },
   {
    "symbol": "AUDHUF",
@@ -1953,13 +1953,13 @@
    "file": "AUDHUF_M15.parquet",
    "time_clock": "broker",
    "row_count": 102130,
-   "file_mtime": "2026-10-31T15:30:39+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:30:58+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:30:00+00:00",
-   "age_h": 19.77
+   "age_h": 20.85
   },
   {
    "symbol": "AUDHUF",
@@ -1967,13 +1967,13 @@
    "file": "AUDHUF_M30.parquet",
    "time_clock": "broker",
    "row_count": 78041,
-   "file_mtime": "2026-10-31T15:30:40+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:30:59+00:00",
+   "mtime_age_h": 0.84,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:00:00+00:00",
-   "age_h": 20.27
+   "age_h": 21.35
   },
   {
    "symbol": "AUDHUF",
@@ -1981,13 +1981,13 @@
    "file": "AUDHUF_M5.parquet",
    "time_clock": "broker",
    "row_count": 106957,
-   "file_mtime": "2026-10-31T15:30:40+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:30:59+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:50:00+00:00",
-   "age_h": 19.44
+   "age_h": 20.52
   },
   {
    "symbol": "AUDJPY",
@@ -1995,13 +1995,13 @@
    "file": "AUDJPY_D1.parquet",
    "time_clock": "broker",
    "row_count": 7712,
-   "file_mtime": "2026-10-31T15:44:20+00:00",
-   "mtime_age_h": 0.54,
+   "file_mtime": "2026-10-31T17:18:16+00:00",
+   "mtime_age_h": 0.05,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "AUDJPY",
@@ -2009,13 +2009,13 @@
    "file": "AUDJPY_H1.parquet",
    "time_clock": "broker",
    "row_count": 49709,
-   "file_mtime": "2026-10-31T15:30:41+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:00+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "AUDJPY",
@@ -2023,13 +2023,13 @@
    "file": "AUDJPY_H4.parquet",
    "time_clock": "broker",
    "row_count": 16843,
-   "file_mtime": "2026-10-31T15:30:41+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:01+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "AUDJPY",
@@ -2037,13 +2037,13 @@
    "file": "AUDJPY_M1.parquet",
    "time_clock": "broker",
    "row_count": 134703,
-   "file_mtime": "2026-10-31T15:30:41+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:01+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:57:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:57:00+00:00",
-   "age_h": 19.32
+   "age_h": 20.4
   },
   {
    "symbol": "AUDJPY",
@@ -2051,13 +2051,13 @@
    "file": "AUDJPY_M15.parquet",
    "time_clock": "broker",
    "row_count": 102130,
-   "file_mtime": "2026-10-31T15:30:42+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:02+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:30:00+00:00",
-   "age_h": 19.77
+   "age_h": 20.85
   },
   {
    "symbol": "AUDJPY",
@@ -2065,13 +2065,13 @@
    "file": "AUDJPY_M30.parquet",
    "time_clock": "broker",
    "row_count": 80695,
-   "file_mtime": "2026-10-31T15:30:42+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:02+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:00:00+00:00",
-   "age_h": 20.27
+   "age_h": 21.35
   },
   {
    "symbol": "AUDJPY",
@@ -2079,13 +2079,13 @@
    "file": "AUDJPY_M5.parquet",
    "time_clock": "broker",
    "row_count": 106957,
-   "file_mtime": "2026-10-31T15:30:42+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:03+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:50:00+00:00",
-   "age_h": 19.44
+   "age_h": 20.52
   },
   {
    "symbol": "AUDNZD",
@@ -2093,13 +2093,13 @@
    "file": "AUDNZD_D1.parquet",
    "time_clock": "broker",
    "row_count": 7798,
-   "file_mtime": "2026-10-31T15:44:21+00:00",
-   "mtime_age_h": 0.54,
+   "file_mtime": "2026-10-31T17:18:18+00:00",
+   "mtime_age_h": 0.05,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "AUDNZD",
@@ -2107,13 +2107,13 @@
    "file": "AUDNZD_H1.parquet",
    "time_clock": "broker",
    "row_count": 49781,
-   "file_mtime": "2026-10-31T15:30:43+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:03+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "AUDNZD",
@@ -2121,13 +2121,13 @@
    "file": "AUDNZD_H4.parquet",
    "time_clock": "broker",
    "row_count": 16928,
-   "file_mtime": "2026-10-31T15:30:43+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:04+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "AUDNZD",
@@ -2135,13 +2135,13 @@
    "file": "AUDNZD_M1.parquet",
    "time_clock": "broker",
    "row_count": 134362,
-   "file_mtime": "2026-10-31T15:30:43+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:04+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:57:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:57:00+00:00",
-   "age_h": 19.32
+   "age_h": 20.4
   },
   {
    "symbol": "AUDNZD",
@@ -2149,13 +2149,13 @@
    "file": "AUDNZD_M15.parquet",
    "time_clock": "broker",
    "row_count": 102129,
-   "file_mtime": "2026-10-31T15:30:44+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:04+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:30:00+00:00",
-   "age_h": 19.77
+   "age_h": 20.85
   },
   {
    "symbol": "AUDNZD",
@@ -2163,13 +2163,13 @@
    "file": "AUDNZD_M30.parquet",
    "time_clock": "broker",
    "row_count": 80635,
-   "file_mtime": "2026-10-31T15:30:44+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:05+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:00:00+00:00",
-   "age_h": 20.27
+   "age_h": 21.35
   },
   {
    "symbol": "AUDNZD",
@@ -2177,13 +2177,13 @@
    "file": "AUDNZD_M5.parquet",
    "time_clock": "broker",
    "row_count": 106896,
-   "file_mtime": "2026-10-31T15:30:45+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:05+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:50:00+00:00",
-   "age_h": 19.44
+   "age_h": 20.52
   },
   {
    "symbol": "AUDSGD",
@@ -2191,13 +2191,13 @@
    "file": "AUDSGD_D1.parquet",
    "time_clock": "broker",
    "row_count": 5225,
-   "file_mtime": "2026-10-31T15:44:21+00:00",
-   "mtime_age_h": 0.54,
+   "file_mtime": "2026-10-31T17:18:19+00:00",
+   "mtime_age_h": 0.05,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "AUDSGD",
@@ -2205,13 +2205,13 @@
    "file": "AUDSGD_H1.parquet",
    "time_clock": "broker",
    "row_count": 47173,
-   "file_mtime": "2026-10-31T15:30:06+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:08+00:00",
+   "mtime_age_h": 0.85,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "AUDSGD",
@@ -2219,13 +2219,13 @@
    "file": "AUDSGD_H4.parquet",
    "time_clock": "broker",
    "row_count": 14355,
-   "file_mtime": "2026-10-31T15:30:06+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:09+00:00",
+   "mtime_age_h": 0.85,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "AUDSGD",
@@ -2233,13 +2233,13 @@
    "file": "AUDSGD_M1.parquet",
    "time_clock": "broker",
    "row_count": 134441,
-   "file_mtime": "2026-10-31T15:30:06+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:10+00:00",
+   "mtime_age_h": 0.85,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:57:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:57:00+00:00",
-   "age_h": 19.32
+   "age_h": 20.4
   },
   {
    "symbol": "AUDSGD",
@@ -2247,13 +2247,13 @@
    "file": "AUDSGD_M15.parquet",
    "time_clock": "broker",
    "row_count": 102128,
-   "file_mtime": "2026-10-31T15:30:07+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:11+00:00",
+   "mtime_age_h": 0.85,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:30:00+00:00",
-   "age_h": 19.77
+   "age_h": 20.85
   },
   {
    "symbol": "AUDSGD",
@@ -2261,13 +2261,13 @@
    "file": "AUDSGD_M30.parquet",
    "time_clock": "broker",
    "row_count": 77945,
-   "file_mtime": "2026-10-31T15:30:07+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:12+00:00",
+   "mtime_age_h": 0.85,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:00:00+00:00",
-   "age_h": 20.27
+   "age_h": 21.35
   },
   {
    "symbol": "AUDSGD",
@@ -2275,13 +2275,13 @@
    "file": "AUDSGD_M5.parquet",
    "time_clock": "broker",
    "row_count": 106897,
-   "file_mtime": "2026-10-31T15:30:08+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:12+00:00",
+   "mtime_age_h": 0.85,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:50:00+00:00",
-   "age_h": 19.44
+   "age_h": 20.52
   },
   {
    "symbol": "AUDUSD",
@@ -2289,13 +2289,13 @@
    "file": "AUDUSD_D1.parquet",
    "time_clock": "broker",
    "row_count": 7811,
-   "file_mtime": "2026-10-31T13:31:03+00:00",
-   "mtime_age_h": 2.76,
+   "file_mtime": "2026-10-31T16:31:05+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "AUDUSD",
@@ -2303,13 +2303,13 @@
    "file": "AUDUSD_H1.parquet",
    "time_clock": "broker",
    "row_count": 49811,
-   "file_mtime": "2026-10-31T15:30:45+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:06+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "AUDUSD",
@@ -2317,13 +2317,13 @@
    "file": "AUDUSD_H4.parquet",
    "time_clock": "broker",
    "row_count": 16943,
-   "file_mtime": "2026-10-31T15:30:45+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:07+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "AUDUSD",
@@ -2331,13 +2331,13 @@
    "file": "AUDUSD_M1.parquet",
    "time_clock": "broker",
    "row_count": 131854,
-   "file_mtime": "2026-10-31T15:30:46+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:07+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:57:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:57:00+00:00",
-   "age_h": 19.32
+   "age_h": 20.4
   },
   {
    "symbol": "AUDUSD",
@@ -2345,13 +2345,13 @@
    "file": "AUDUSD_M15.parquet",
    "time_clock": "broker",
    "row_count": 102129,
-   "file_mtime": "2026-10-31T15:30:46+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:07+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:30:00+00:00",
-   "age_h": 19.77
+   "age_h": 20.85
   },
   {
    "symbol": "AUDUSD",
@@ -2359,13 +2359,13 @@
    "file": "AUDUSD_M30.parquet",
    "time_clock": "broker",
    "row_count": 80707,
-   "file_mtime": "2026-10-31T15:30:47+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:08+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:00:00+00:00",
-   "age_h": 20.27
+   "age_h": 21.35
   },
   {
    "symbol": "AUDUSD",
@@ -2373,13 +2373,13 @@
    "file": "AUDUSD_M5.parquet",
    "time_clock": "broker",
    "row_count": 106902,
-   "file_mtime": "2026-10-31T15:30:47+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:08+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:50:00+00:00",
-   "age_h": 19.44
+   "age_h": 20.52
   },
   {
    "symbol": "AUS200",
@@ -2387,13 +2387,13 @@
    "file": "AUS200_D1.parquet",
    "time_clock": "broker",
    "row_count": 3235,
-   "file_mtime": "2026-10-31T15:30:47+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:09+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "AUS200",
@@ -2401,13 +2401,13 @@
    "file": "AUS200_H1.parquet",
    "time_clock": "broker",
    "row_count": 42087,
-   "file_mtime": "2026-10-31T15:30:48+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:10+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "AUS200",
@@ -2415,13 +2415,13 @@
    "file": "AUS200_H4.parquet",
    "time_clock": "broker",
    "row_count": 12214,
-   "file_mtime": "2026-10-31T15:30:48+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:10+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "AUS200",
@@ -2429,13 +2429,13 @@
    "file": "AUS200_M1.parquet",
    "time_clock": "broker",
    "row_count": 130076,
-   "file_mtime": "2026-10-31T15:30:48+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:11+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "AUS200",
@@ -2443,13 +2443,13 @@
    "file": "AUS200_M15.parquet",
    "time_clock": "broker",
    "row_count": 101843,
-   "file_mtime": "2026-10-31T15:30:48+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:12+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "AUS200",
@@ -2457,13 +2457,13 @@
    "file": "AUS200_M30.parquet",
    "time_clock": "broker",
    "row_count": 70414,
-   "file_mtime": "2026-10-31T15:30:49+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:12+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "AUS200",
@@ -2471,13 +2471,13 @@
    "file": "AUS200_M5.parquet",
    "time_clock": "broker",
    "row_count": 106149,
-   "file_mtime": "2026-10-31T15:30:49+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:13+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "AVAXUSD",
@@ -2485,27 +2485,27 @@
    "file": "AVAXUSD_D1.parquet",
    "time_clock": "broker",
    "row_count": 1702,
-   "file_mtime": "2026-10-31T15:30:49+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:13+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-29T21:00:00+00:00",
-   "age_h": 43.27
+   "age_h": 44.35
   },
   {
    "symbol": "AVAXUSD",
    "timeframe": "H1",
    "file": "AVAXUSD_H1.parquet",
    "time_clock": "broker",
-   "row_count": 40727,
-   "file_mtime": "2026-10-31T15:30:50+00:00",
-   "mtime_age_h": 0.76,
+   "row_count": 40728,
+   "file_mtime": "2026-10-31T16:31:14+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T17:00:00",
+   "last_bar_time": "2026-10-31T18:00:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T14:00:00+00:00",
-   "age_h": 2.27
+   "last_bar_time_utc": "2026-10-31T15:00:00+00:00",
+   "age_h": 2.35
   },
   {
    "symbol": "AVAXUSD",
@@ -2513,69 +2513,69 @@
    "file": "AVAXUSD_H4.parquet",
    "time_clock": "broker",
    "row_count": 10199,
-   "file_mtime": "2026-10-31T15:30:50+00:00",
-   "mtime_age_h": 0.76,
+   "file_mtime": "2026-10-31T16:31:14+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-31T12:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-31T09:00:00+00:00",
-   "age_h": 7.27
+   "age_h": 8.35
   },
   {
    "symbol": "AVAXUSD",
    "timeframe": "M1",
    "file": "AVAXUSD_M1.parquet",
    "time_clock": "broker",
-   "row_count": 145260,
-   "file_mtime": "2026-10-31T15:30:50+00:00",
-   "mtime_age_h": 0.76,
+   "row_count": 145321,
+   "file_mtime": "2026-10-31T16:31:15+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T18:29:00",
+   "last_bar_time": "2026-10-31T19:30:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T15:29:00+00:00",
-   "age_h": 0.79
+   "last_bar_time_utc": "2026-10-31T16:30:00+00:00",
+   "age_h": 0.85
   },
   {
    "symbol": "AVAXUSD",
    "timeframe": "M15",
    "file": "AVAXUSD_M15.parquet",
    "time_clock": "broker",
-   "row_count": 102959,
-   "file_mtime": "2026-10-31T15:30:50+00:00",
-   "mtime_age_h": 0.76,
+   "row_count": 102963,
+   "file_mtime": "2026-10-31T16:31:15+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T18:15:00",
+   "last_bar_time": "2026-10-31T19:15:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T15:15:00+00:00",
-   "age_h": 1.02
+   "last_bar_time_utc": "2026-10-31T16:15:00+00:00",
+   "age_h": 1.1
   },
   {
    "symbol": "AVAXUSD",
    "timeframe": "M30",
    "file": "AVAXUSD_M30.parquet",
    "time_clock": "broker",
-   "row_count": 81357,
-   "file_mtime": "2026-10-31T15:30:51+00:00",
-   "mtime_age_h": 0.76,
+   "row_count": 81359,
+   "file_mtime": "2026-10-31T16:31:16+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T18:00:00",
+   "last_bar_time": "2026-10-31T19:00:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T15:00:00+00:00",
-   "age_h": 1.27
+   "last_bar_time_utc": "2026-10-31T16:00:00+00:00",
+   "age_h": 1.35
   },
   {
    "symbol": "AVAXUSD",
    "timeframe": "M5",
    "file": "AVAXUSD_M5.parquet",
    "time_clock": "broker",
-   "row_count": 109062,
-   "file_mtime": "2026-10-31T15:30:51+00:00",
-   "mtime_age_h": 0.76,
+   "row_count": 109074,
+   "file_mtime": "2026-10-31T16:31:17+00:00",
+   "mtime_age_h": 0.83,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T18:25:00",
+   "last_bar_time": "2026-10-31T19:25:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T15:25:00+00:00",
-   "age_h": 0.86
+   "last_bar_time_utc": "2026-10-31T16:25:00+00:00",
+   "age_h": 0.93
   },
   {
    "symbol": "Baidu",
@@ -2583,13 +2583,13 @@
    "file": "Baidu_D1.parquet",
    "time_clock": "broker",
    "row_count": 5340,
-   "file_mtime": "2026-10-31T15:31:27+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:34:08+00:00",
+   "mtime_age_h": 0.78,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "Baidu",
@@ -2597,13 +2597,13 @@
    "file": "Baidu_H1.parquet",
    "time_clock": "broker",
    "row_count": 9172,
-   "file_mtime": "2026-10-31T15:31:28+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:34:08+00:00",
+   "mtime_age_h": 0.78,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "Baidu",
@@ -2611,13 +2611,13 @@
    "file": "Baidu_H4.parquet",
    "time_clock": "broker",
    "row_count": 6502,
-   "file_mtime": "2026-10-31T15:31:28+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:34:10+00:00",
+   "mtime_age_h": 0.78,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "Baidu",
@@ -2625,13 +2625,13 @@
    "file": "Baidu_M1.parquet",
    "time_clock": "broker",
    "row_count": 100386,
-   "file_mtime": "2026-10-31T15:31:28+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:34:15+00:00",
+   "mtime_age_h": 0.78,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "Baidu",
@@ -2639,13 +2639,13 @@
    "file": "Baidu_M15.parquet",
    "time_clock": "broker",
    "row_count": 33972,
-   "file_mtime": "2026-10-31T15:31:28+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:34:16+00:00",
+   "mtime_age_h": 0.78,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "Baidu",
@@ -2653,13 +2653,13 @@
    "file": "Baidu_M30.parquet",
    "time_clock": "broker",
    "row_count": 19220,
-   "file_mtime": "2026-10-31T15:31:29+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:34:16+00:00",
+   "mtime_age_h": 0.78,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "Baidu",
@@ -2667,13 +2667,13 @@
    "file": "Baidu_M5.parquet",
    "time_clock": "broker",
    "row_count": 91444,
-   "file_mtime": "2026-10-31T15:31:29+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:34:23+00:00",
+   "mtime_age_h": 0.78,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "BankofAmericaCorp",
@@ -2681,13 +2681,13 @@
    "file": "BankofAmericaCorp_D1.parquet",
    "time_clock": "broker",
    "row_count": 10237,
-   "file_mtime": "2026-10-31T13:33:18+00:00",
-   "mtime_age_h": 2.72,
+   "file_mtime": "2026-10-31T16:34:25+00:00",
+   "mtime_age_h": 0.78,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "BankofAmericaCorp",
@@ -2695,13 +2695,13 @@
    "file": "BankofAmericaCorp_H1.parquet",
    "time_clock": "broker",
    "row_count": 17239,
-   "file_mtime": "2026-10-31T15:31:30+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:34:25+00:00",
+   "mtime_age_h": 0.78,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "BankofAmericaCorp",
@@ -2709,13 +2709,13 @@
    "file": "BankofAmericaCorp_H4.parquet",
    "time_clock": "broker",
    "row_count": 11404,
-   "file_mtime": "2026-10-31T15:31:30+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:34:25+00:00",
+   "mtime_age_h": 0.78,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "BankofAmericaCorp",
@@ -2723,13 +2723,13 @@
    "file": "BankofAmericaCorp_M1.parquet",
    "time_clock": "broker",
    "row_count": 108969,
-   "file_mtime": "2026-10-31T15:31:30+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:34:35+00:00",
+   "mtime_age_h": 0.78,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "BankofAmericaCorp",
@@ -2737,13 +2737,13 @@
    "file": "BankofAmericaCorp_M15.parquet",
    "time_clock": "broker",
    "row_count": 39392,
-   "file_mtime": "2026-10-31T15:31:30+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:34:41+00:00",
+   "mtime_age_h": 0.77,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "BankofAmericaCorp",
@@ -2751,13 +2751,13 @@
    "file": "BankofAmericaCorp_M30.parquet",
    "time_clock": "broker",
    "row_count": 24235,
-   "file_mtime": "2026-10-31T15:31:31+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:34:43+00:00",
+   "mtime_age_h": 0.77,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "BankofAmericaCorp",
@@ -2765,13 +2765,13 @@
    "file": "BankofAmericaCorp_M5.parquet",
    "time_clock": "broker",
    "row_count": 99971,
-   "file_mtime": "2026-10-31T15:31:31+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:34:49+00:00",
+   "mtime_age_h": 0.77,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "BCHUSD",
@@ -2779,27 +2779,27 @@
    "file": "BCHUSD_D1.parquet",
    "time_clock": "broker",
    "row_count": 2866,
-   "file_mtime": "2026-10-31T15:31:20+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:53+00:00",
+   "mtime_age_h": 0.8,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-29T21:00:00+00:00",
-   "age_h": 43.27
+   "age_h": 44.35
   },
   {
    "symbol": "BCHUSD",
    "timeframe": "H1",
    "file": "BCHUSD_H1.parquet",
    "time_clock": "broker",
-   "row_count": 57014,
-   "file_mtime": "2026-10-31T15:31:20+00:00",
-   "mtime_age_h": 0.75,
+   "row_count": 57015,
+   "file_mtime": "2026-10-31T16:32:55+00:00",
+   "mtime_age_h": 0.8,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T17:00:00",
+   "last_bar_time": "2026-10-31T18:00:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T14:00:00+00:00",
-   "age_h": 2.27
+   "last_bar_time_utc": "2026-10-31T15:00:00+00:00",
+   "age_h": 2.35
   },
   {
    "symbol": "BCHUSD",
@@ -2807,69 +2807,69 @@
    "file": "BCHUSD_H4.parquet",
    "time_clock": "broker",
    "row_count": 14652,
-   "file_mtime": "2026-10-31T15:31:20+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:32:55+00:00",
+   "mtime_age_h": 0.8,
    "status": "MEASURED",
    "last_bar_time": "2026-10-31T12:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-31T09:00:00+00:00",
-   "age_h": 7.27
+   "age_h": 8.35
   },
   {
    "symbol": "BCHUSD",
    "timeframe": "M1",
    "file": "BCHUSD_M1.parquet",
    "time_clock": "broker",
-   "row_count": 145112,
-   "file_mtime": "2026-10-31T15:31:21+00:00",
-   "mtime_age_h": 0.75,
+   "row_count": 145173,
+   "file_mtime": "2026-10-31T16:32:57+00:00",
+   "mtime_age_h": 0.8,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T18:30:00",
+   "last_bar_time": "2026-10-31T19:31:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T15:30:00+00:00",
-   "age_h": 0.77
+   "last_bar_time_utc": "2026-10-31T16:31:00+00:00",
+   "age_h": 0.83
   },
   {
    "symbol": "BCHUSD",
    "timeframe": "M15",
    "file": "BCHUSD_M15.parquet",
    "time_clock": "broker",
-   "row_count": 102956,
-   "file_mtime": "2026-10-31T15:31:21+00:00",
-   "mtime_age_h": 0.75,
+   "row_count": 102960,
+   "file_mtime": "2026-10-31T16:32:57+00:00",
+   "mtime_age_h": 0.8,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T18:15:00",
+   "last_bar_time": "2026-10-31T19:15:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T15:15:00+00:00",
-   "age_h": 1.02
+   "last_bar_time_utc": "2026-10-31T16:15:00+00:00",
+   "age_h": 1.1
   },
   {
    "symbol": "BCHUSD",
    "timeframe": "M30",
    "file": "BCHUSD_M30.parquet",
    "time_clock": "broker",
-   "row_count": 101388,
-   "file_mtime": "2026-10-31T15:31:22+00:00",
-   "mtime_age_h": 0.75,
+   "row_count": 101390,
+   "file_mtime": "2026-10-31T16:32:59+00:00",
+   "mtime_age_h": 0.8,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T18:00:00",
+   "last_bar_time": "2026-10-31T19:00:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T15:00:00+00:00",
-   "age_h": 1.27
+   "last_bar_time_utc": "2026-10-31T16:00:00+00:00",
+   "age_h": 1.35
   },
   {
    "symbol": "BCHUSD",
    "timeframe": "M5",
    "file": "BCHUSD_M5.parquet",
    "time_clock": "broker",
-   "row_count": 109066,
-   "file_mtime": "2026-10-31T15:31:22+00:00",
-   "mtime_age_h": 0.75,
+   "row_count": 109078,
+   "file_mtime": "2026-10-31T16:33:01+00:00",
+   "mtime_age_h": 0.8,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T18:25:00",
+   "last_bar_time": "2026-10-31T19:25:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T15:25:00+00:00",
-   "age_h": 0.86
+   "last_bar_time_utc": "2026-10-31T16:25:00+00:00",
+   "age_h": 0.93
   },
   {
    "symbol": "Berkshire",
@@ -2877,13 +2877,13 @@
    "file": "Berkshire_D1.parquet",
    "time_clock": "broker",
    "row_count": 7666,
-   "file_mtime": "2026-10-31T15:31:31+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:34:55+00:00",
+   "mtime_age_h": 0.77,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "Berkshire",
@@ -2891,13 +2891,13 @@
    "file": "Berkshire_H1.parquet",
    "time_clock": "broker",
    "row_count": 9220,
-   "file_mtime": "2026-10-31T15:31:32+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:34:58+00:00",
+   "mtime_age_h": 0.77,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "Berkshire",
@@ -2905,13 +2905,13 @@
    "file": "Berkshire_H4.parquet",
    "time_clock": "broker",
    "row_count": 8834,
-   "file_mtime": "2026-10-31T15:31:32+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:34:58+00:00",
+   "mtime_age_h": 0.77,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "Berkshire",
@@ -2919,13 +2919,13 @@
    "file": "Berkshire_M1.parquet",
    "time_clock": "broker",
    "row_count": 100389,
-   "file_mtime": "2026-10-31T15:31:32+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:35:24+00:00",
+   "mtime_age_h": 0.76,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "Berkshire",
@@ -2933,13 +2933,13 @@
    "file": "Berkshire_M15.parquet",
    "time_clock": "broker",
    "row_count": 36824,
-   "file_mtime": "2026-10-31T15:31:32+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:35:25+00:00",
+   "mtime_age_h": 0.76,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "Berkshire",
@@ -2947,13 +2947,13 @@
    "file": "Berkshire_M30.parquet",
    "time_clock": "broker",
    "row_count": 21665,
-   "file_mtime": "2026-10-31T15:31:32+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:35:26+00:00",
+   "mtime_age_h": 0.76,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "Berkshire",
@@ -2961,13 +2961,13 @@
    "file": "Berkshire_M5.parquet",
    "time_clock": "broker",
    "row_count": 97453,
-   "file_mtime": "2026-10-31T15:31:33+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:35:28+00:00",
+   "mtime_age_h": 0.76,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "BlackRock",
@@ -2975,13 +2975,13 @@
    "file": "BlackRock_D1.parquet",
    "time_clock": "broker",
    "row_count": 6809,
-   "file_mtime": "2026-10-31T15:31:34+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:35:29+00:00",
+   "mtime_age_h": 0.76,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "BlackRock",
@@ -2989,13 +2989,13 @@
    "file": "BlackRock_H1.parquet",
    "time_clock": "broker",
    "row_count": 13809,
-   "file_mtime": "2026-10-31T15:31:35+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:35:35+00:00",
+   "mtime_age_h": 0.76,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "BlackRock",
@@ -3003,13 +3003,13 @@
    "file": "BlackRock_H4.parquet",
    "time_clock": "broker",
    "row_count": 7974,
-   "file_mtime": "2026-10-31T15:31:35+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:35:36+00:00",
+   "mtime_age_h": 0.76,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "BlackRock",
@@ -3017,13 +3017,13 @@
    "file": "BlackRock_M1.parquet",
    "time_clock": "broker",
    "row_count": 108928,
-   "file_mtime": "2026-10-31T15:31:35+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:35:40+00:00",
+   "mtime_age_h": 0.76,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "BlackRock",
@@ -3031,13 +3031,13 @@
    "file": "BlackRock_M15.parquet",
    "time_clock": "broker",
    "row_count": 35962,
-   "file_mtime": "2026-10-31T15:31:35+00:00",
+   "file_mtime": "2026-10-31T16:35:49+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "BlackRock",
@@ -3045,13 +3045,13 @@
    "file": "BlackRock_M30.parquet",
    "time_clock": "broker",
    "row_count": 20805,
-   "file_mtime": "2026-10-31T15:31:36+00:00",
+   "file_mtime": "2026-10-31T16:35:51+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "BlackRock",
@@ -3059,13 +3059,13 @@
    "file": "BlackRock_M5.parquet",
    "time_clock": "broker",
    "row_count": 96582,
-   "file_mtime": "2026-10-31T15:31:36+00:00",
+   "file_mtime": "2026-10-31T16:35:52+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "BNBUSD",
@@ -3073,27 +3073,27 @@
    "file": "BNBUSD_D1.parquet",
    "time_clock": "broker",
    "row_count": 3072,
-   "file_mtime": "2026-10-31T15:31:23+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:33:02+00:00",
+   "mtime_age_h": 0.8,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-29T21:00:00+00:00",
-   "age_h": 43.27
+   "age_h": 44.35
   },
   {
    "symbol": "BNBUSD",
    "timeframe": "H1",
    "file": "BNBUSD_H1.parquet",
    "time_clock": "broker",
-   "row_count": 49486,
-   "file_mtime": "2026-10-31T15:31:23+00:00",
-   "mtime_age_h": 0.75,
+   "row_count": 49487,
+   "file_mtime": "2026-10-31T16:33:03+00:00",
+   "mtime_age_h": 0.8,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T17:00:00",
+   "last_bar_time": "2026-10-31T18:00:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T14:00:00+00:00",
-   "age_h": 2.27
+   "last_bar_time_utc": "2026-10-31T15:00:00+00:00",
+   "age_h": 2.35
   },
   {
    "symbol": "BNBUSD",
@@ -3101,69 +3101,69 @@
    "file": "BNBUSD_H4.parquet",
    "time_clock": "broker",
    "row_count": 13183,
-   "file_mtime": "2026-10-31T15:31:23+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:33:07+00:00",
+   "mtime_age_h": 0.8,
    "status": "MEASURED",
    "last_bar_time": "2026-10-31T12:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-31T09:00:00+00:00",
-   "age_h": 7.27
+   "age_h": 8.35
   },
   {
    "symbol": "BNBUSD",
    "timeframe": "M1",
    "file": "BNBUSD_M1.parquet",
    "time_clock": "broker",
-   "row_count": 144958,
-   "file_mtime": "2026-10-31T15:31:24+00:00",
-   "mtime_age_h": 0.75,
+   "row_count": 145020,
+   "file_mtime": "2026-10-31T16:33:11+00:00",
+   "mtime_age_h": 0.8,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T18:30:00",
+   "last_bar_time": "2026-10-31T19:32:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T15:30:00+00:00",
-   "age_h": 0.77
+   "last_bar_time_utc": "2026-10-31T16:32:00+00:00",
+   "age_h": 0.82
   },
   {
    "symbol": "BNBUSD",
    "timeframe": "M15",
    "file": "BNBUSD_M15.parquet",
    "time_clock": "broker",
-   "row_count": 102956,
-   "file_mtime": "2026-10-31T15:31:24+00:00",
-   "mtime_age_h": 0.75,
+   "row_count": 102960,
+   "file_mtime": "2026-10-31T16:33:13+00:00",
+   "mtime_age_h": 0.8,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T18:15:00",
+   "last_bar_time": "2026-10-31T19:15:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T15:15:00+00:00",
-   "age_h": 1.02
+   "last_bar_time_utc": "2026-10-31T16:15:00+00:00",
+   "age_h": 1.1
   },
   {
    "symbol": "BNBUSD",
    "timeframe": "M30",
    "file": "BNBUSD_M30.parquet",
    "time_clock": "broker",
-   "row_count": 89411,
-   "file_mtime": "2026-10-31T15:31:25+00:00",
-   "mtime_age_h": 0.75,
+   "row_count": 89413,
+   "file_mtime": "2026-10-31T16:33:15+00:00",
+   "mtime_age_h": 0.8,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T18:00:00",
+   "last_bar_time": "2026-10-31T19:00:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T15:00:00+00:00",
-   "age_h": 1.27
+   "last_bar_time_utc": "2026-10-31T16:00:00+00:00",
+   "age_h": 1.35
   },
   {
    "symbol": "BNBUSD",
    "timeframe": "M5",
    "file": "BNBUSD_M5.parquet",
    "time_clock": "broker",
-   "row_count": 109063,
-   "file_mtime": "2026-10-31T15:31:25+00:00",
-   "mtime_age_h": 0.75,
+   "row_count": 109075,
+   "file_mtime": "2026-10-31T16:33:27+00:00",
+   "mtime_age_h": 0.79,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T18:25:00",
+   "last_bar_time": "2026-10-31T19:25:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T15:25:00+00:00",
-   "age_h": 0.86
+   "last_bar_time_utc": "2026-10-31T16:25:00+00:00",
+   "age_h": 0.93
   },
   {
    "symbol": "Boeing",
@@ -3171,13 +3171,13 @@
    "file": "Boeing_D1.parquet",
    "time_clock": "broker",
    "row_count": 1412,
-   "file_mtime": "2026-10-31T15:31:37+00:00",
+   "file_mtime": "2026-10-31T16:35:52+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "Boeing",
@@ -3185,13 +3185,13 @@
    "file": "Boeing_H1.parquet",
    "time_clock": "broker",
    "row_count": 9914,
-   "file_mtime": "2026-10-31T15:31:37+00:00",
+   "file_mtime": "2026-10-31T16:35:53+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "Boeing",
@@ -3199,13 +3199,13 @@
    "file": "Boeing_H4.parquet",
    "time_clock": "broker",
    "row_count": 2824,
-   "file_mtime": "2026-10-31T15:31:37+00:00",
+   "file_mtime": "2026-10-31T16:35:54+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "Boeing",
@@ -3213,13 +3213,13 @@
    "file": "Boeing_M1.parquet",
    "time_clock": "broker",
    "row_count": 108969,
-   "file_mtime": "2026-10-31T15:31:37+00:00",
+   "file_mtime": "2026-10-31T16:35:55+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "Boeing",
@@ -3227,13 +3227,13 @@
    "file": "Boeing_M15.parquet",
    "time_clock": "broker",
    "row_count": 36696,
-   "file_mtime": "2026-10-31T15:31:37+00:00",
+   "file_mtime": "2026-10-31T16:35:56+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "Boeing",
@@ -3241,13 +3241,13 @@
    "file": "Boeing_M30.parquet",
    "time_clock": "broker",
    "row_count": 18373,
-   "file_mtime": "2026-10-31T15:31:38+00:00",
+   "file_mtime": "2026-10-31T16:35:56+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "Boeing",
@@ -3255,13 +3255,13 @@
    "file": "Boeing_M5.parquet",
    "time_clock": "broker",
    "row_count": 101793,
-   "file_mtime": "2026-10-31T15:31:38+00:00",
+   "file_mtime": "2026-10-31T16:35:59+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "Booking",
@@ -3269,13 +3269,13 @@
    "file": "Booking_D1.parquet",
    "time_clock": "broker",
    "row_count": 1397,
-   "file_mtime": "2026-10-31T15:31:39+00:00",
+   "file_mtime": "2026-10-31T16:36:00+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "Booking",
@@ -3283,13 +3283,13 @@
    "file": "Booking_H1.parquet",
    "time_clock": "broker",
    "row_count": 9610,
-   "file_mtime": "2026-10-31T15:31:39+00:00",
+   "file_mtime": "2026-10-31T16:36:00+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "Booking",
@@ -3297,13 +3297,13 @@
    "file": "Booking_H4.parquet",
    "time_clock": "broker",
    "row_count": 2770,
-   "file_mtime": "2026-10-31T15:31:39+00:00",
+   "file_mtime": "2026-10-31T16:36:02+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "Booking",
@@ -3311,13 +3311,13 @@
    "file": "Booking_M1.parquet",
    "time_clock": "broker",
    "row_count": 109749,
-   "file_mtime": "2026-10-31T15:31:39+00:00",
+   "file_mtime": "2026-10-31T16:36:06+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "Booking",
@@ -3325,13 +3325,13 @@
    "file": "Booking_M15.parquet",
    "time_clock": "broker",
    "row_count": 35284,
-   "file_mtime": "2026-10-31T15:31:40+00:00",
+   "file_mtime": "2026-10-31T16:36:06+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "Booking",
@@ -3339,13 +3339,13 @@
    "file": "Booking_M30.parquet",
    "time_clock": "broker",
    "row_count": 17801,
-   "file_mtime": "2026-10-31T15:31:40+00:00",
+   "file_mtime": "2026-10-31T16:36:07+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "Booking",
@@ -3353,13 +3353,13 @@
    "file": "Booking_M5.parquet",
    "time_clock": "broker",
    "row_count": 102503,
-   "file_mtime": "2026-10-31T15:31:40+00:00",
+   "file_mtime": "2026-10-31T16:36:09+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "Broadcom",
@@ -3367,13 +3367,13 @@
    "file": "Broadcom_D1.parquet",
    "time_clock": "broker",
    "row_count": 1410,
-   "file_mtime": "2026-10-31T15:31:41+00:00",
+   "file_mtime": "2026-10-31T16:36:11+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "Broadcom",
@@ -3381,13 +3381,13 @@
    "file": "Broadcom_H1.parquet",
    "time_clock": "broker",
    "row_count": 9898,
-   "file_mtime": "2026-10-31T15:31:41+00:00",
+   "file_mtime": "2026-10-31T16:36:12+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "Broadcom",
@@ -3395,13 +3395,13 @@
    "file": "Broadcom_H4.parquet",
    "time_clock": "broker",
    "row_count": 2822,
-   "file_mtime": "2026-10-31T15:31:41+00:00",
+   "file_mtime": "2026-10-31T16:36:12+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "Broadcom",
@@ -3409,13 +3409,13 @@
    "file": "Broadcom_M1.parquet",
    "time_clock": "broker",
    "row_count": 108969,
-   "file_mtime": "2026-10-31T15:31:42+00:00",
+   "file_mtime": "2026-10-31T16:36:13+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "Broadcom",
@@ -3423,13 +3423,13 @@
    "file": "Broadcom_M15.parquet",
    "time_clock": "broker",
    "row_count": 36622,
-   "file_mtime": "2026-10-31T15:31:42+00:00",
+   "file_mtime": "2026-10-31T16:36:15+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "Broadcom",
@@ -3437,13 +3437,13 @@
    "file": "Broadcom_M30.parquet",
    "time_clock": "broker",
    "row_count": 18342,
-   "file_mtime": "2026-10-31T15:31:42+00:00",
+   "file_mtime": "2026-10-31T16:36:17+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "Broadcom",
@@ -3451,13 +3451,13 @@
    "file": "Broadcom_M5.parquet",
    "time_clock": "broker",
    "row_count": 101793,
-   "file_mtime": "2026-10-31T15:31:42+00:00",
+   "file_mtime": "2026-10-31T16:36:17+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "BTCUSD",
@@ -3465,27 +3465,27 @@
    "file": "BTCUSD_D1.parquet",
    "time_clock": "broker",
    "row_count": 2347,
-   "file_mtime": "2026-10-31T15:44:22+00:00",
-   "mtime_age_h": 0.53,
+   "file_mtime": "2026-10-31T17:18:20+00:00",
+   "mtime_age_h": 0.05,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-29T21:00:00+00:00",
-   "age_h": 43.27
+   "age_h": 44.35
   },
   {
    "symbol": "BTCUSD",
    "timeframe": "H1",
    "file": "BTCUSD_H1.parquet",
    "time_clock": "broker",
-   "row_count": 56214,
-   "file_mtime": "2026-10-31T15:31:25+00:00",
-   "mtime_age_h": 0.75,
+   "row_count": 56215,
+   "file_mtime": "2026-10-31T16:33:31+00:00",
+   "mtime_age_h": 0.79,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T17:00:00",
+   "last_bar_time": "2026-10-31T18:00:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T14:00:00+00:00",
-   "age_h": 2.27
+   "last_bar_time_utc": "2026-10-31T15:00:00+00:00",
+   "age_h": 2.35
   },
   {
    "symbol": "BTCUSD",
@@ -3493,69 +3493,69 @@
    "file": "BTCUSD_H4.parquet",
    "time_clock": "broker",
    "row_count": 15885,
-   "file_mtime": "2026-10-31T15:31:25+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:33:34+00:00",
+   "mtime_age_h": 0.79,
    "status": "MEASURED",
    "last_bar_time": "2026-10-31T12:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-31T09:00:00+00:00",
-   "age_h": 7.27
+   "age_h": 8.35
   },
   {
    "symbol": "BTCUSD",
    "timeframe": "M1",
    "file": "BTCUSD_M1.parquet",
    "time_clock": "broker",
-   "row_count": 145323,
-   "file_mtime": "2026-10-31T15:31:26+00:00",
-   "mtime_age_h": 0.75,
+   "row_count": 145385,
+   "file_mtime": "2026-10-31T16:33:42+00:00",
+   "mtime_age_h": 0.79,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T18:30:00",
+   "last_bar_time": "2026-10-31T19:32:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T15:30:00+00:00",
-   "age_h": 0.77
+   "last_bar_time_utc": "2026-10-31T16:32:00+00:00",
+   "age_h": 0.82
   },
   {
    "symbol": "BTCUSD",
    "timeframe": "M15",
    "file": "BTCUSD_M15.parquet",
    "time_clock": "broker",
-   "row_count": 102959,
-   "file_mtime": "2026-10-31T15:31:26+00:00",
-   "mtime_age_h": 0.75,
+   "row_count": 102963,
+   "file_mtime": "2026-10-31T16:33:56+00:00",
+   "mtime_age_h": 0.79,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T18:15:00",
+   "last_bar_time": "2026-10-31T19:15:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T15:15:00+00:00",
-   "age_h": 1.02
+   "last_bar_time_utc": "2026-10-31T16:15:00+00:00",
+   "age_h": 1.1
   },
   {
    "symbol": "BTCUSD",
    "timeframe": "M30",
    "file": "BTCUSD_M30.parquet",
    "time_clock": "broker",
-   "row_count": 101431,
-   "file_mtime": "2026-10-31T15:31:26+00:00",
-   "mtime_age_h": 0.75,
+   "row_count": 101433,
+   "file_mtime": "2026-10-31T16:34:02+00:00",
+   "mtime_age_h": 0.78,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T18:00:00",
+   "last_bar_time": "2026-10-31T19:00:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T15:00:00+00:00",
-   "age_h": 1.27
+   "last_bar_time_utc": "2026-10-31T16:00:00+00:00",
+   "age_h": 1.35
   },
   {
    "symbol": "BTCUSD",
    "timeframe": "M5",
    "file": "BTCUSD_M5.parquet",
    "time_clock": "broker",
-   "row_count": 109072,
-   "file_mtime": "2026-10-31T15:31:27+00:00",
-   "mtime_age_h": 0.75,
+   "row_count": 109084,
+   "file_mtime": "2026-10-31T16:34:07+00:00",
+   "mtime_age_h": 0.78,
    "status": "MEASURED",
-   "last_bar_time": "2026-10-31T18:25:00",
+   "last_bar_time": "2026-10-31T19:25:00",
    "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-31T15:25:00+00:00",
-   "age_h": 0.86
+   "last_bar_time_utc": "2026-10-31T16:25:00+00:00",
+   "age_h": 0.93
   },
   {
    "symbol": "CA60",
@@ -3563,13 +3563,13 @@
    "file": "CA60_D1.parquet",
    "time_clock": "broker",
    "row_count": 2324,
-   "file_mtime": "2026-10-31T15:31:43+00:00",
+   "file_mtime": "2026-10-31T16:36:19+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "CA60",
@@ -3577,13 +3577,13 @@
    "file": "CA60_H1.parquet",
    "time_clock": "broker",
    "row_count": 23012,
-   "file_mtime": "2026-10-31T15:31:43+00:00",
+   "file_mtime": "2026-10-31T16:36:21+00:00",
    "mtime_age_h": 0.75,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "CA60",
@@ -3591,13 +3591,13 @@
    "file": "CA60_H4.parquet",
    "time_clock": "broker",
    "row_count": 6626,
-   "file_mtime": "2026-10-31T15:31:43+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:36:23+00:00",
+   "mtime_age_h": 0.74,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "CA60",
@@ -3605,13 +3605,13 @@
    "file": "CA60_M1.parquet",
    "time_clock": "broker",
    "row_count": 118748,
-   "file_mtime": "2026-10-31T15:31:43+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:36:25+00:00",
+   "mtime_age_h": 0.74,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:28:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:28:00+00:00",
-   "age_h": 19.81
+   "age_h": 20.88
   },
   {
    "symbol": "CA60",
@@ -3619,13 +3619,13 @@
    "file": "CA60_M15.parquet",
    "time_clock": "broker",
    "row_count": 78932,
-   "file_mtime": "2026-10-31T15:31:44+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:36:27+00:00",
+   "mtime_age_h": 0.74,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:00:00+00:00",
-   "age_h": 20.27
+   "age_h": 21.35
   },
   {
    "symbol": "CA60",
@@ -3633,13 +3633,13 @@
    "file": "CA60_M30.parquet",
    "time_clock": "broker",
    "row_count": 41655,
-   "file_mtime": "2026-10-31T15:31:44+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:36:30+00:00",
+   "mtime_age_h": 0.74,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "CA60",
@@ -3647,13 +3647,13 @@
    "file": "CA60_M5.parquet",
    "time_clock": "broker",
    "row_count": 103757,
-   "file_mtime": "2026-10-31T15:31:44+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:36:33+00:00",
+   "mtime_age_h": 0.74,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:20:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:20:00+00:00",
-   "age_h": 19.94
+   "age_h": 21.02
   },
   {
    "symbol": "CADCHF",
@@ -3661,13 +3661,13 @@
    "file": "CADCHF_D1.parquet",
    "time_clock": "broker",
    "row_count": 5158,
-   "file_mtime": "2026-10-31T15:44:23+00:00",
-   "mtime_age_h": 0.53,
+   "file_mtime": "2026-10-31T17:18:22+00:00",
+   "mtime_age_h": 0.05,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "CADCHF",
@@ -3675,13 +3675,13 @@
    "file": "CADCHF_H1.parquet",
    "time_clock": "broker",
    "row_count": 46472,
-   "file_mtime": "2026-10-31T15:31:45+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:36:35+00:00",
+   "mtime_age_h": 0.74,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "CADCHF",
@@ -3689,13 +3689,13 @@
    "file": "CADCHF_H4.parquet",
    "time_clock": "broker",
    "row_count": 14322,
-   "file_mtime": "2026-10-31T15:31:45+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:36:35+00:00",
+   "mtime_age_h": 0.74,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "CADCHF",
@@ -3703,13 +3703,13 @@
    "file": "CADCHF_M1.parquet",
    "time_clock": "broker",
    "row_count": 133490,
-   "file_mtime": "2026-10-31T15:31:45+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:36:37+00:00",
+   "mtime_age_h": 0.74,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:57:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:57:00+00:00",
-   "age_h": 19.32
+   "age_h": 20.4
   },
   {
    "symbol": "CADCHF",
@@ -3717,13 +3717,13 @@
    "file": "CADCHF_M15.parquet",
    "time_clock": "broker",
    "row_count": 102126,
-   "file_mtime": "2026-10-31T15:31:45+00:00",
-   "mtime_age_h": 0.75,
+   "file_mtime": "2026-10-31T16:36:40+00:00",
+   "mtime_age_h": 0.74,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:30:00+00:00",
-   "age_h": 19.77
+   "age_h": 20.85
   },
   {
    "symbol": "CADCHF",
@@ -3731,13 +3731,13 @@
    "file": "CADCHF_M30.parquet",
    "time_clock": "broker",
    "row_count": 80677,
-   "file_mtime": "2026-10-31T15:31:46+00:00",
+   "file_mtime": "2026-10-31T16:36:43+00:00",
    "mtime_age_h": 0.74,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:00:00+00:00",
-   "age_h": 20.27
+   "age_h": 21.35
   },
   {
    "symbol": "CADCHF",
@@ -3745,13 +3745,13 @@
    "file": "CADCHF_M5.parquet",
    "time_clock": "broker",
    "row_count": 106746,
-   "file_mtime": "2026-10-31T15:31:46+00:00",
+   "file_mtime": "2026-10-31T16:36:44+00:00",
    "mtime_age_h": 0.74,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:50:00+00:00",
-   "age_h": 19.44
+   "age_h": 20.52
   },
   {
    "symbol": "CADJPY",
@@ -3759,13 +3759,13 @@
    "file": "CADJPY_D1.parquet",
    "time_clock": "broker",
    "row_count": 5815,
-   "file_mtime": "2026-10-31T15:31:46+00:00",
+   "file_mtime": "2026-10-31T16:36:45+00:00",
    "mtime_age_h": 0.74,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "CADJPY",
@@ -3773,13 +3773,13 @@
    "file": "CADJPY_H1.parquet",
    "time_clock": "broker",
    "row_count": 47811,
-   "file_mtime": "2026-10-31T15:31:46+00:00",
+   "file_mtime": "2026-10-31T16:36:48+00:00",
    "mtime_age_h": 0.74,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "CADJPY",
@@ -3787,13 +3787,13 @@
    "file": "CADJPY_H4.parquet",
    "time_clock": "broker",
    "row_count": 14946,
-   "file_mtime": "2026-10-31T15:31:47+00:00",
+   "file_mtime": "2026-10-31T16:36:52+00:00",
    "mtime_age_h": 0.74,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "CADJPY",
@@ -3801,13 +3801,13 @@
    "file": "CADJPY_M1.parquet",
    "time_clock": "broker",
    "row_count": 133685,
-   "file_mtime": "2026-10-31T15:31:47+00:00",
+   "file_mtime": "2026-10-31T16:36:53+00:00",
    "mtime_age_h": 0.74,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:57:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:57:00+00:00",
-   "age_h": 19.32
+   "age_h": 20.4
   },
   {
    "symbol": "CADJPY",
@@ -3815,13 +3815,13 @@
    "file": "CADJPY_M15.parquet",
    "time_clock": "broker",
    "row_count": 102126,
-   "file_mtime": "2026-10-31T15:31:47+00:00",
+   "file_mtime": "2026-10-31T16:36:56+00:00",
    "mtime_age_h": 0.74,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:30:00+00:00",
-   "age_h": 19.77
+   "age_h": 20.85
   },
   {
    "symbol": "CADJPY",
@@ -3829,13 +3829,13 @@
    "file": "CADJPY_M30.parquet",
    "time_clock": "broker",
    "row_count": 80697,
-   "file_mtime": "2026-10-31T15:31:47+00:00",
+   "file_mtime": "2026-10-31T16:36:59+00:00",
    "mtime_age_h": 0.74,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:00:00+00:00",
-   "age_h": 20.27
+   "age_h": 21.35
   },
   {
    "symbol": "CADJPY",
@@ -3843,13 +3843,13 @@
    "file": "CADJPY_M5.parquet",
    "time_clock": "broker",
    "row_count": 106748,
-   "file_mtime": "2026-10-31T15:31:48+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:01+00:00",
+   "mtime_age_h": 0.73,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:50:00+00:00",
-   "age_h": 19.44
+   "age_h": 20.52
   },
   {
    "symbol": "Caterpillar",
@@ -3857,13 +3857,13 @@
    "file": "Caterpillar_D1.parquet",
    "time_clock": "broker",
    "row_count": 1415,
-   "file_mtime": "2026-10-31T15:32:13+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:31+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "Caterpillar",
@@ -3871,13 +3871,13 @@
    "file": "Caterpillar_H1.parquet",
    "time_clock": "broker",
    "row_count": 9938,
-   "file_mtime": "2026-10-31T15:32:14+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:33+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "Caterpillar",
@@ -3885,13 +3885,13 @@
    "file": "Caterpillar_H4.parquet",
    "time_clock": "broker",
    "row_count": 2832,
-   "file_mtime": "2026-10-31T15:32:14+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:35+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "Caterpillar",
@@ -3899,13 +3899,13 @@
    "file": "Caterpillar_M1.parquet",
    "time_clock": "broker",
    "row_count": 108969,
-   "file_mtime": "2026-10-31T15:32:14+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:36+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "Caterpillar",
@@ -3913,13 +3913,13 @@
    "file": "Caterpillar_M15.parquet",
    "time_clock": "broker",
    "row_count": 36778,
-   "file_mtime": "2026-10-31T15:32:14+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:37+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "Caterpillar",
@@ -3927,13 +3927,13 @@
    "file": "Caterpillar_M30.parquet",
    "time_clock": "broker",
    "row_count": 18415,
-   "file_mtime": "2026-10-31T15:32:14+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:37+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "Caterpillar",
@@ -3941,13 +3941,13 @@
    "file": "Caterpillar_M5.parquet",
    "time_clock": "broker",
    "row_count": 101793,
-   "file_mtime": "2026-10-31T15:32:15+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:40+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "CharlesSchwab",
@@ -3955,13 +3955,13 @@
    "file": "CharlesSchwab_D1.parquet",
    "time_clock": "broker",
    "row_count": 9400,
-   "file_mtime": "2026-10-31T15:32:16+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:41+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "CharlesSchwab",
@@ -3969,13 +3969,13 @@
    "file": "CharlesSchwab_H1.parquet",
    "time_clock": "broker",
    "row_count": 16403,
-   "file_mtime": "2026-10-31T15:32:16+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:42+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "CharlesSchwab",
@@ -3983,13 +3983,13 @@
    "file": "CharlesSchwab_H4.parquet",
    "time_clock": "broker",
    "row_count": 10568,
-   "file_mtime": "2026-10-31T15:32:16+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:43+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "CharlesSchwab",
@@ -3997,13 +3997,13 @@
    "file": "CharlesSchwab_M1.parquet",
    "time_clock": "broker",
    "row_count": 108969,
-   "file_mtime": "2026-10-31T15:32:16+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:45+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "CharlesSchwab",
@@ -4011,13 +4011,13 @@
    "file": "CharlesSchwab_M15.parquet",
    "time_clock": "broker",
    "row_count": 38556,
-   "file_mtime": "2026-10-31T15:32:16+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:46+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "CharlesSchwab",
@@ -4025,13 +4025,13 @@
    "file": "CharlesSchwab_M30.parquet",
    "time_clock": "broker",
    "row_count": 23399,
-   "file_mtime": "2026-10-31T15:32:17+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:46+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "CharlesSchwab",
@@ -4039,13 +4039,13 @@
    "file": "CharlesSchwab_M5.parquet",
    "time_clock": "broker",
    "row_count": 99181,
-   "file_mtime": "2026-10-31T15:32:17+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:47+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "Charter",
@@ -4053,13 +4053,13 @@
    "file": "Charter_D1.parquet",
    "time_clock": "broker",
    "row_count": 1421,
-   "file_mtime": "2026-10-31T15:32:17+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:49+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "Charter",
@@ -4067,13 +4067,13 @@
    "file": "Charter_H1.parquet",
    "time_clock": "broker",
    "row_count": 9970,
-   "file_mtime": "2026-10-31T15:32:18+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:50+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "Charter",
@@ -4081,13 +4081,13 @@
    "file": "Charter_H4.parquet",
    "time_clock": "broker",
    "row_count": 2841,
-   "file_mtime": "2026-10-31T15:32:18+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:51+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "Charter",
@@ -4095,13 +4095,13 @@
    "file": "Charter_M1.parquet",
    "time_clock": "broker",
    "row_count": 108948,
-   "file_mtime": "2026-10-31T15:32:18+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:52+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "Charter",
@@ -4109,13 +4109,13 @@
    "file": "Charter_M15.parquet",
    "time_clock": "broker",
    "row_count": 36858,
-   "file_mtime": "2026-10-31T15:32:18+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:52+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "Charter",
@@ -4123,13 +4123,13 @@
    "file": "Charter_M30.parquet",
    "time_clock": "broker",
    "row_count": 18479,
-   "file_mtime": "2026-10-31T15:32:18+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:54+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "Charter",
@@ -4137,13 +4137,13 @@
    "file": "Charter_M5.parquet",
    "time_clock": "broker",
    "row_count": 101793,
-   "file_mtime": "2026-10-31T15:32:19+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:56+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "Chevron",
@@ -4151,13 +4151,13 @@
    "file": "Chevron_D1.parquet",
    "time_clock": "broker",
    "row_count": 1435,
-   "file_mtime": "2026-10-31T15:32:19+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:57+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "Chevron",
@@ -4165,13 +4165,13 @@
    "file": "Chevron_H1.parquet",
    "time_clock": "broker",
    "row_count": 10077,
-   "file_mtime": "2026-10-31T15:32:19+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:57+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "Chevron",
@@ -4179,13 +4179,13 @@
    "file": "Chevron_H4.parquet",
    "time_clock": "broker",
    "row_count": 2870,
-   "file_mtime": "2026-10-31T15:32:19+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:39:59+00:00",
+   "mtime_age_h": 0.69,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "Chevron",
@@ -4193,13 +4193,13 @@
    "file": "Chevron_M1.parquet",
    "time_clock": "broker",
    "row_count": 108969,
-   "file_mtime": "2026-10-31T15:32:20+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:40:01+00:00",
+   "mtime_age_h": 0.68,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "age_h": 21.38
   },
   {
    "symbol": "Chevron",
@@ -4207,13 +4207,13 @@
    "file": "Chevron_M15.parquet",
    "time_clock": "broker",
    "row_count": 37294,
-   "file_mtime": "2026-10-31T15:32:20+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:40:03+00:00",
+   "mtime_age_h": 0.68,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "age_h": 21.85
   },
   {
    "symbol": "Chevron",
@@ -4221,13 +4221,13 @@
    "file": "Chevron_M30.parquet",
    "time_clock": "broker",
    "row_count": 18674,
-   "file_mtime": "2026-10-31T15:32:20+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:40:05+00:00",
+   "mtime_age_h": 0.68,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "Chevron",
@@ -4235,13 +4235,13 @@
    "file": "Chevron_M5.parquet",
    "time_clock": "broker",
    "row_count": 101793,
-   "file_mtime": "2026-10-31T15:32:20+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:40:10+00:00",
+   "mtime_age_h": 0.68,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "age_h": 21.52
   },
   {
    "symbol": "CHFDKK",
@@ -4249,13 +4249,13 @@
    "file": "CHFDKK_D1.parquet",
    "time_clock": "broker",
    "row_count": 1878,
-   "file_mtime": "2026-10-31T15:44:23+00:00",
-   "mtime_age_h": 0.53,
+   "file_mtime": "2026-10-31T17:18:23+00:00",
+   "mtime_age_h": 0.04,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "CHFDKK",
@@ -4263,13 +4263,13 @@
    "file": "CHFDKK_H1.parquet",
    "time_clock": "broker",
    "row_count": 43866,
-   "file_mtime": "2026-10-31T15:31:48+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:02+00:00",
+   "mtime_age_h": 0.73,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "CHFDKK",
@@ -4277,13 +4277,13 @@
    "file": "CHFDKK_H4.parquet",
    "time_clock": "broker",
    "row_count": 11008,
-   "file_mtime": "2026-10-31T15:31:48+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:03+00:00",
+   "mtime_age_h": 0.73,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "CHFDKK",
@@ -4291,13 +4291,13 @@
    "file": "CHFDKK_M1.parquet",
    "time_clock": "broker",
    "row_count": 133636,
-   "file_mtime": "2026-10-31T15:31:49+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:07+00:00",
+   "mtime_age_h": 0.73,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:57:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:57:00+00:00",
-   "age_h": 19.32
+   "age_h": 20.4
   },
   {
    "symbol": "CHFDKK",
@@ -4305,13 +4305,13 @@
    "file": "CHFDKK_M15.parquet",
    "time_clock": "broker",
    "row_count": 102126,
-   "file_mtime": "2026-10-31T15:31:49+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:11+00:00",
+   "mtime_age_h": 0.73,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:30:00+00:00",
-   "age_h": 19.77
+   "age_h": 20.85
   },
   {
    "symbol": "CHFDKK",
@@ -4319,13 +4319,13 @@
    "file": "CHFDKK_M30.parquet",
    "time_clock": "broker",
    "row_count": 78137,
-   "file_mtime": "2026-10-31T15:31:49+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:15+00:00",
+   "mtime_age_h": 0.73,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:00:00+00:00",
-   "age_h": 20.27
+   "age_h": 21.35
   },
   {
    "symbol": "CHFDKK",
@@ -4333,13 +4333,13 @@
    "file": "CHFDKK_M5.parquet",
    "time_clock": "broker",
    "row_count": 106736,
-   "file_mtime": "2026-10-31T15:31:50+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:18+00:00",
+   "mtime_age_h": 0.73,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:50:00+00:00",
-   "age_h": 19.44
+   "age_h": 20.52
   },
   {
    "symbol": "CHFHUF",
@@ -4347,13 +4347,13 @@
    "file": "CHFHUF_D1.parquet",
    "time_clock": "broker",
    "row_count": 2529,
-   "file_mtime": "2026-10-31T15:31:50+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:20+00:00",
+   "mtime_age_h": 0.73,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "CHFHUF",
@@ -4361,13 +4361,13 @@
    "file": "CHFHUF_H1.parquet",
    "time_clock": "broker",
    "row_count": 44485,
-   "file_mtime": "2026-10-31T15:31:51+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:23+00:00",
+   "mtime_age_h": 0.73,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "CHFHUF",
@@ -4375,13 +4375,13 @@
    "file": "CHFHUF_H4.parquet",
    "time_clock": "broker",
    "row_count": 11657,
-   "file_mtime": "2026-10-31T15:31:51+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:24+00:00",
+   "mtime_age_h": 0.73,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "CHFHUF",
@@ -4389,13 +4389,13 @@
    "file": "CHFHUF_M1.parquet",
    "time_clock": "broker",
    "row_count": 133637,
-   "file_mtime": "2026-10-31T15:31:51+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:27+00:00",
+   "mtime_age_h": 0.73,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:57:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:57:00+00:00",
-   "age_h": 19.32
+   "age_h": 20.4
   },
   {
    "symbol": "CHFHUF",
@@ -4403,13 +4403,13 @@
    "file": "CHFHUF_M15.parquet",
    "time_clock": "broker",
    "row_count": 102126,
-   "file_mtime": "2026-10-31T15:31:52+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:29+00:00",
+   "mtime_age_h": 0.73,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:30:00+00:00",
-   "age_h": 19.77
+   "age_h": 20.85
   },
   {
    "symbol": "CHFHUF",
@@ -4417,13 +4417,13 @@
    "file": "CHFHUF_M30.parquet",
    "time_clock": "broker",
    "row_count": 78037,
-   "file_mtime": "2026-10-31T15:31:52+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:32+00:00",
+   "mtime_age_h": 0.73,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:00:00+00:00",
-   "age_h": 20.27
+   "age_h": 21.35
   },
   {
    "symbol": "CHFHUF",
@@ -4431,13 +4431,13 @@
    "file": "CHFHUF_M5.parquet",
    "time_clock": "broker",
    "row_count": 106737,
-   "file_mtime": "2026-10-31T15:31:52+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:34+00:00",
+   "mtime_age_h": 0.73,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:50:00+00:00",
-   "age_h": 19.44
+   "age_h": 20.52
   },
   {
    "symbol": "CHFJPY",
@@ -4445,13 +4445,13 @@
    "file": "CHFJPY_D1.parquet",
    "time_clock": "broker",
    "row_count": 7664,
-   "file_mtime": "2026-10-31T15:44:25+00:00",
-   "mtime_age_h": 0.53,
+   "file_mtime": "2026-10-31T17:18:24+00:00",
+   "mtime_age_h": 0.04,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "CHFJPY",
@@ -4459,13 +4459,13 @@
    "file": "CHFJPY_H1.parquet",
    "time_clock": "broker",
    "row_count": 49425,
-   "file_mtime": "2026-10-31T15:31:53+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:37+00:00",
+   "mtime_age_h": 0.72,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "CHFJPY",
@@ -4473,13 +4473,13 @@
    "file": "CHFJPY_H4.parquet",
    "time_clock": "broker",
    "row_count": 16795,
-   "file_mtime": "2026-10-31T15:31:53+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:38+00:00",
+   "mtime_age_h": 0.72,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "CHFJPY",
@@ -4487,13 +4487,13 @@
    "file": "CHFJPY_M1.parquet",
    "time_clock": "broker",
    "row_count": 133540,
-   "file_mtime": "2026-10-31T15:31:53+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:41+00:00",
+   "mtime_age_h": 0.72,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:57:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:57:00+00:00",
-   "age_h": 19.32
+   "age_h": 20.4
   },
   {
    "symbol": "CHFJPY",
@@ -4501,13 +4501,13 @@
    "file": "CHFJPY_M15.parquet",
    "time_clock": "broker",
    "row_count": 102083,
-   "file_mtime": "2026-10-31T15:31:53+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:44+00:00",
+   "mtime_age_h": 0.72,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:30:00+00:00",
-   "age_h": 19.77
+   "age_h": 20.85
   },
   {
    "symbol": "CHFJPY",
@@ -4515,13 +4515,13 @@
    "file": "CHFJPY_M30.parquet",
    "time_clock": "broker",
    "row_count": 79997,
-   "file_mtime": "2026-10-31T15:31:54+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:45+00:00",
+   "mtime_age_h": 0.72,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:00:00+00:00",
-   "age_h": 20.27
+   "age_h": 21.35
   },
   {
    "symbol": "CHFJPY",
@@ -4529,13 +4529,13 @@
    "file": "CHFJPY_M5.parquet",
    "time_clock": "broker",
    "row_count": 106723,
-   "file_mtime": "2026-10-31T15:31:54+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:47+00:00",
+   "mtime_age_h": 0.72,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:50:00+00:00",
-   "age_h": 19.44
+   "age_h": 20.52
   },
   {
    "symbol": "CHFNOK",
@@ -4543,13 +4543,13 @@
    "file": "CHFNOK_D1.parquet",
    "time_clock": "broker",
    "row_count": 4078,
-   "file_mtime": "2026-10-31T15:44:25+00:00",
-   "mtime_age_h": 0.53,
+   "file_mtime": "2026-10-31T17:18:24+00:00",
+   "mtime_age_h": 0.04,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "CHFNOK",
@@ -4557,13 +4557,13 @@
    "file": "CHFNOK_H1.parquet",
    "time_clock": "broker",
    "row_count": 46056,
-   "file_mtime": "2026-10-31T15:30:09+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:13+00:00",
+   "mtime_age_h": 0.85,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "CHFNOK",
@@ -4571,13 +4571,13 @@
    "file": "CHFNOK_H4.parquet",
    "time_clock": "broker",
    "row_count": 13208,
-   "file_mtime": "2026-10-31T15:30:09+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:14+00:00",
+   "mtime_age_h": 0.85,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "CHFNOK",
@@ -4585,13 +4585,13 @@
    "file": "CHFNOK_M1.parquet",
    "time_clock": "broker",
    "row_count": 133592,
-   "file_mtime": "2026-10-31T15:30:09+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:20+00:00",
+   "mtime_age_h": 0.85,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:57:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:57:00+00:00",
-   "age_h": 19.32
+   "age_h": 20.4
   },
   {
    "symbol": "CHFNOK",
@@ -4599,13 +4599,13 @@
    "file": "CHFNOK_M15.parquet",
    "time_clock": "broker",
    "row_count": 102126,
-   "file_mtime": "2026-10-31T15:30:10+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:21+00:00",
+   "mtime_age_h": 0.85,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:30:00+00:00",
-   "age_h": 19.77
+   "age_h": 20.85
   },
   {
    "symbol": "CHFNOK",
@@ -4613,13 +4613,13 @@
    "file": "CHFNOK_M30.parquet",
    "time_clock": "broker",
    "row_count": 78105,
-   "file_mtime": "2026-10-31T15:30:10+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:22+00:00",
+   "mtime_age_h": 0.85,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:00:00+00:00",
-   "age_h": 20.27
+   "age_h": 21.35
   },
   {
    "symbol": "CHFNOK",
@@ -4627,13 +4627,13 @@
    "file": "CHFNOK_M5.parquet",
    "time_clock": "broker",
    "row_count": 106644,
-   "file_mtime": "2026-10-31T15:30:11+00:00",
-   "mtime_age_h": 0.77,
+   "file_mtime": "2026-10-31T16:30:22+00:00",
+   "mtime_age_h": 0.85,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:50:00+00:00",
-   "age_h": 19.44
+   "age_h": 20.52
   },
   {
    "symbol": "CHFPLN",
@@ -4641,13 +4641,13 @@
    "file": "CHFPLN_D1.parquet",
    "time_clock": "broker",
    "row_count": 2923,
-   "file_mtime": "2026-10-31T15:31:55+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:48+00:00",
+   "mtime_age_h": 0.72,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "CHFPLN",
@@ -4655,13 +4655,13 @@
    "file": "CHFPLN_H1.parquet",
    "time_clock": "broker",
    "row_count": 44910,
-   "file_mtime": "2026-10-31T15:31:55+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:50+00:00",
+   "mtime_age_h": 0.72,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "CHFPLN",
@@ -4669,13 +4669,13 @@
    "file": "CHFPLN_H4.parquet",
    "time_clock": "broker",
    "row_count": 12053,
-   "file_mtime": "2026-10-31T15:31:55+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:51+00:00",
+   "mtime_age_h": 0.72,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "CHFPLN",
@@ -4683,13 +4683,13 @@
    "file": "CHFPLN_M1.parquet",
    "time_clock": "broker",
    "row_count": 133184,
-   "file_mtime": "2026-10-31T15:31:55+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:52+00:00",
+   "mtime_age_h": 0.72,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:57:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:57:00+00:00",
-   "age_h": 19.32
+   "age_h": 20.4
   },
   {
    "symbol": "CHFPLN",
@@ -4697,13 +4697,13 @@
    "file": "CHFPLN_M15.parquet",
    "time_clock": "broker",
    "row_count": 102126,
-   "file_mtime": "2026-10-31T15:31:56+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:55+00:00",
+   "mtime_age_h": 0.72,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:30:00+00:00",
-   "age_h": 19.77
+   "age_h": 20.85
   },
   {
    "symbol": "CHFPLN",
@@ -4711,13 +4711,13 @@
    "file": "CHFPLN_M30.parquet",
    "time_clock": "broker",
    "row_count": 78141,
-   "file_mtime": "2026-10-31T15:31:56+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:56+00:00",
+   "mtime_age_h": 0.72,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:00:00+00:00",
-   "age_h": 20.27
+   "age_h": 21.35
   },
   {
    "symbol": "CHFPLN",
@@ -4725,13 +4725,13 @@
    "file": "CHFPLN_M5.parquet",
    "time_clock": "broker",
    "row_count": 106649,
-   "file_mtime": "2026-10-31T15:31:56+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:58+00:00",
+   "mtime_age_h": 0.72,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:50:00+00:00",
-   "age_h": 19.44
+   "age_h": 20.52
   },
   {
    "symbol": "CHFSEK",
@@ -4739,13 +4739,13 @@
    "file": "CHFSEK_D1.parquet",
    "time_clock": "broker",
    "row_count": 1877,
-   "file_mtime": "2026-10-31T15:31:57+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:37:59+00:00",
+   "mtime_age_h": 0.72,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "CHFSEK",
@@ -4753,13 +4753,13 @@
    "file": "CHFSEK_H1.parquet",
    "time_clock": "broker",
    "row_count": 43857,
-   "file_mtime": "2026-10-31T15:31:57+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:38:02+00:00",
+   "mtime_age_h": 0.72,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "CHFSEK",
@@ -4767,13 +4767,13 @@
    "file": "CHFSEK_H4.parquet",
    "time_clock": "broker",
    "row_count": 11007,
-   "file_mtime": "2026-10-31T15:31:57+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:38:03+00:00",
+   "mtime_age_h": 0.72,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "CHFSEK",
@@ -4781,13 +4781,13 @@
    "file": "CHFSEK_M1.parquet",
    "time_clock": "broker",
    "row_count": 133191,
-   "file_mtime": "2026-10-31T15:31:57+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:38:04+00:00",
+   "mtime_age_h": 0.72,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:57:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:57:00+00:00",
-   "age_h": 19.32
+   "age_h": 20.4
   },
   {
    "symbol": "CHFSEK",
@@ -4795,13 +4795,13 @@
    "file": "CHFSEK_M15.parquet",
    "time_clock": "broker",
    "row_count": 102126,
-   "file_mtime": "2026-10-31T15:31:57+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:38:06+00:00",
+   "mtime_age_h": 0.72,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:30:00+00:00",
-   "age_h": 19.77
+   "age_h": 20.85
   },
   {
    "symbol": "CHFSEK",
@@ -4809,13 +4809,13 @@
    "file": "CHFSEK_M30.parquet",
    "time_clock": "broker",
    "row_count": 78108,
-   "file_mtime": "2026-10-31T15:31:58+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:38:08+00:00",
+   "mtime_age_h": 0.72,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:00:00+00:00",
-   "age_h": 20.27
+   "age_h": 21.35
   },
   {
    "symbol": "CHFSEK",
@@ -4823,13 +4823,13 @@
    "file": "CHFSEK_M5.parquet",
    "time_clock": "broker",
    "row_count": 106647,
-   "file_mtime": "2026-10-31T15:31:58+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:38:11+00:00",
+   "mtime_age_h": 0.71,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:50:00+00:00",
-   "age_h": 19.44
+   "age_h": 20.52
   },
   {
    "symbol": "CHFSGD",
@@ -4837,13 +4837,13 @@
    "file": "CHFSGD_D1.parquet",
    "time_clock": "broker",
    "row_count": 5223,
-   "file_mtime": "2026-10-31T15:44:25+00:00",
-   "mtime_age_h": 0.53,
+   "file_mtime": "2026-10-31T17:18:26+00:00",
+   "mtime_age_h": 0.04,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "CHFSGD",
@@ -4851,13 +4851,13 @@
    "file": "CHFSGD_H1.parquet",
    "time_clock": "broker",
    "row_count": 46697,
-   "file_mtime": "2026-10-31T15:31:58+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:38:12+00:00",
+   "mtime_age_h": 0.71,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T22:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "age_h": 22.35
   },
   {
    "symbol": "CHFSGD",
@@ -4865,13 +4865,13 @@
    "file": "CHFSGD_H4.parquet",
    "time_clock": "broker",
    "row_count": 14353,
-   "file_mtime": "2026-10-31T15:31:58+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:38:13+00:00",
+   "mtime_age_h": 0.71,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "CHFSGD",
@@ -4879,13 +4879,13 @@
    "file": "CHFSGD_M1.parquet",
    "time_clock": "broker",
    "row_count": 131868,
-   "file_mtime": "2026-10-31T15:31:59+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:38:15+00:00",
+   "mtime_age_h": 0.71,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:57:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:57:00+00:00",
-   "age_h": 19.32
+   "age_h": 20.4
   },
   {
    "symbol": "CHFSGD",
@@ -4893,13 +4893,13 @@
    "file": "CHFSGD_M15.parquet",
    "time_clock": "broker",
    "row_count": 102043,
-   "file_mtime": "2026-10-31T15:31:59+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:38:20+00:00",
+   "mtime_age_h": 0.71,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:30:00+00:00",
-   "age_h": 19.77
+   "age_h": 20.85
   },
   {
    "symbol": "CHFSGD",
@@ -4907,13 +4907,13 @@
    "file": "CHFSGD_M30.parquet",
    "time_clock": "broker",
    "row_count": 79491,
-   "file_mtime": "2026-10-31T15:32:00+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:38:21+00:00",
+   "mtime_age_h": 0.71,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:00:00+00:00",
-   "age_h": 20.27
+   "age_h": 21.35
   },
   {
    "symbol": "CHFSGD",
@@ -4921,13 +4921,13 @@
    "file": "CHFSGD_M5.parquet",
    "time_clock": "broker",
    "row_count": 106381,
-   "file_mtime": "2026-10-31T15:32:00+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:38:23+00:00",
+   "mtime_age_h": 0.71,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T23:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T20:50:00+00:00",
-   "age_h": 19.44
+   "age_h": 20.52
   },
   {
    "symbol": "CHINAH",
@@ -4935,13 +4935,13 @@
    "file": "CHINAH_D1.parquet",
    "time_clock": "broker",
    "row_count": 2589,
-   "file_mtime": "2026-10-31T15:32:01+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:38:25+00:00",
+   "mtime_age_h": 0.71,
    "status": "MEASURED",
    "last_bar_time": "2026-10-29T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "age_h": 68.35
   },
   {
    "symbol": "CHINAH",
@@ -4949,13 +4949,13 @@
    "file": "CHINAH_H1.parquet",
    "time_clock": "broker",
    "row_count": 25959,
-   "file_mtime": "2026-10-31T15:32:01+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:38:26+00:00",
+   "mtime_age_h": 0.71,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T20:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T17:00:00+00:00",
-   "age_h": 23.27
+   "age_h": 24.35
   },
   {
    "symbol": "CHINAH",
@@ -4963,13 +4963,13 @@
    "file": "CHINAH_H4.parquet",
    "time_clock": "broker",
    "row_count": 8890,
-   "file_mtime": "2026-10-31T15:32:01+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:38:27+00:00",
+   "mtime_age_h": 0.71,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T16:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "age_h": 28.35
   },
   {
    "symbol": "CHINAH",
@@ -4977,13 +4977,13 @@
    "file": "CHINAH_M1.parquet",
    "time_clock": "broker",
    "row_count": 122079,
-   "file_mtime": "2026-10-31T15:32:02+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:38:28+00:00",
+   "mtime_age_h": 0.71,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:58:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:58:00+00:00",
-   "age_h": 21.31
+   "age_h": 22.38
   },
   {
    "symbol": "CHINAH",
@@ -4991,13 +4991,13 @@
    "file": "CHINAH_M15.parquet",
    "time_clock": "broker",
    "row_count": 82802,
-   "file_mtime": "2026-10-31T15:32:02+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:38:30+00:00",
+   "mtime_age_h": 0.71,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:30:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:30:00+00:00",
-   "age_h": 21.77
+   "age_h": 22.85
   },
   {
    "symbol": "CHINAH",
@@ -5005,13 +5005,13 @@
    "file": "CHINAH_M30.parquet",
    "time_clock": "broker",
    "row_count": 46642,
-   "file_mtime": "2026-10-31T15:32:02+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:38:31+00:00",
+   "mtime_age_h": 0.71,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "age_h": 23.35
   },
   {
    "symbol": "CHINAH",
@@ -5019,685 +5019,349 @@
    "file": "CHINAH_M5.parquet",
    "time_clock": "broker",
    "row_count": 104031,
-   "file_mtime": "2026-10-31T15:32:03+00:00",
-   "mtime_age_h": 0.74,
+   "file_mtime": "2026-10-31T16:38:33+00:00",
+   "mtime_age_h": 0.71,
    "status": "MEASURED",
    "last_bar_time": "2026-10-30T21:50:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-30T18:50:00+00:00",
-   "age_h": 21.44
+   "age_h": 22.52
   },
   {
    "symbol": "Cisco",
    "timeframe": "D1",
    "file": "Cisco_D1.parquet",
-   "time_clock": "broker",
-   "row_count": 1445,
-   "file_mtime": "2026-10-31T15:32:21+00:00",
-   "mtime_age_h": 0.74,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-29T00:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Cisco",
    "timeframe": "H1",
    "file": "Cisco_H1.parquet",
-   "time_clock": "broker",
-   "row_count": 10147,
-   "file_mtime": "2026-10-31T15:32:21+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T21:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Cisco",
    "timeframe": "H4",
    "file": "Cisco_H4.parquet",
-   "time_clock": "broker",
-   "row_count": 2890,
-   "file_mtime": "2026-10-31T15:32:22+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T16:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Cisco",
    "timeframe": "M1",
    "file": "Cisco_M1.parquet",
-   "time_clock": "broker",
-   "row_count": 108969,
-   "file_mtime": "2026-10-31T15:32:22+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T22:58:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Cisco",
    "timeframe": "M15",
    "file": "Cisco_M15.parquet",
-   "time_clock": "broker",
-   "row_count": 37556,
-   "file_mtime": "2026-10-31T15:32:22+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T22:30:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Cisco",
    "timeframe": "M30",
    "file": "Cisco_M30.parquet",
-   "time_clock": "broker",
-   "row_count": 18804,
-   "file_mtime": "2026-10-31T15:32:22+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T22:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Cisco",
    "timeframe": "M5",
    "file": "Cisco_M5.parquet",
-   "time_clock": "broker",
-   "row_count": 101793,
-   "file_mtime": "2026-10-31T15:32:23+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T22:50:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Citigroup",
    "timeframe": "D1",
    "file": "Citigroup_D1.parquet",
-   "time_clock": "broker",
-   "row_count": 12557,
-   "file_mtime": "2026-10-31T15:32:23+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-29T00:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Citigroup",
    "timeframe": "H1",
    "file": "Citigroup_H1.parquet",
-   "time_clock": "broker",
-   "row_count": 19560,
-   "file_mtime": "2026-10-31T15:32:23+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T21:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Citigroup",
    "timeframe": "H4",
    "file": "Citigroup_H4.parquet",
-   "time_clock": "broker",
-   "row_count": 13725,
-   "file_mtime": "2026-10-31T15:32:24+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T16:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Citigroup",
    "timeframe": "M1",
    "file": "Citigroup_M1.parquet",
-   "time_clock": "broker",
-   "row_count": 109748,
-   "file_mtime": "2026-10-31T15:32:24+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T22:58:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Citigroup",
    "timeframe": "M15",
    "file": "Citigroup_M15.parquet",
-   "time_clock": "broker",
-   "row_count": 41713,
-   "file_mtime": "2026-10-31T15:32:24+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T22:30:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Citigroup",
    "timeframe": "M30",
    "file": "Citigroup_M30.parquet",
-   "time_clock": "broker",
-   "row_count": 26556,
-   "file_mtime": "2026-10-31T15:32:24+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T22:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Citigroup",
    "timeframe": "M5",
    "file": "Citigroup_M5.parquet",
-   "time_clock": "broker",
-   "row_count": 101894,
-   "file_mtime": "2026-10-31T15:32:25+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T22:50:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Coca-Cola",
    "timeframe": "D1",
    "file": "Coca-Cola_D1.parquet",
-   "time_clock": "broker",
-   "row_count": 1414,
-   "file_mtime": "2026-10-31T15:32:25+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-29T00:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Coca-Cola",
    "timeframe": "H1",
    "file": "Coca-Cola_H1.parquet",
-   "time_clock": "broker",
-   "row_count": 9927,
-   "file_mtime": "2026-10-31T15:32:25+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T21:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Coca-Cola",
    "timeframe": "H4",
    "file": "Coca-Cola_H4.parquet",
-   "time_clock": "broker",
-   "row_count": 2827,
-   "file_mtime": "2026-10-31T15:32:25+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T16:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Coca-Cola",
    "timeframe": "M1",
    "file": "Coca-Cola_M1.parquet",
-   "time_clock": "broker",
-   "row_count": 108969,
-   "file_mtime": "2026-10-31T15:32:26+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T22:58:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Coca-Cola",
    "timeframe": "M15",
    "file": "Coca-Cola_M15.parquet",
-   "time_clock": "broker",
-   "row_count": 36747,
-   "file_mtime": "2026-10-31T15:32:26+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T22:30:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Coca-Cola",
    "timeframe": "M30",
    "file": "Coca-Cola_M30.parquet",
-   "time_clock": "broker",
-   "row_count": 18397,
-   "file_mtime": "2026-10-31T15:32:26+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T22:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Coca-Cola",
    "timeframe": "M5",
    "file": "Coca-Cola_M5.parquet",
-   "time_clock": "broker",
-   "row_count": 101793,
-   "file_mtime": "2026-10-31T15:32:26+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T22:50:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "COFARA",
    "timeframe": "D1",
    "file": "COFARA_D1.parquet",
-   "time_clock": "broker",
-   "row_count": 2161,
-   "file_mtime": "2026-10-31T15:32:03+00:00",
-   "mtime_age_h": 0.74,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-29T00:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "COFARA",
    "timeframe": "H1",
    "file": "COFARA_H1.parquet",
-   "time_clock": "broker",
-   "row_count": 14228,
-   "file_mtime": "2026-10-31T15:32:03+00:00",
-   "mtime_age_h": 0.74,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T19:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T16:00:00+00:00",
-   "age_h": 24.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "COFARA",
    "timeframe": "H4",
    "file": "COFARA_H4.parquet",
-   "time_clock": "broker",
-   "row_count": 6122,
-   "file_mtime": "2026-10-31T15:32:03+00:00",
-   "mtime_age_h": 0.74,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T16:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "COFARA",
    "timeframe": "M1",
    "file": "COFARA_M1.parquet",
-   "time_clock": "broker",
-   "row_count": 112460,
-   "file_mtime": "2026-10-31T15:32:04+00:00",
-   "mtime_age_h": 0.74,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T20:28:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T17:28:00+00:00",
-   "age_h": 22.81
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "COFARA",
    "timeframe": "M15",
    "file": "COFARA_M15.parquet",
-   "time_clock": "broker",
-   "row_count": 49037,
-   "file_mtime": "2026-10-31T15:32:04+00:00",
-   "mtime_age_h": 0.74,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T20:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T17:00:00+00:00",
-   "age_h": 23.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "COFARA",
    "timeframe": "M30",
    "file": "COFARA_M30.parquet",
-   "time_clock": "broker",
-   "row_count": 25692,
-   "file_mtime": "2026-10-31T15:32:04+00:00",
-   "mtime_age_h": 0.74,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T19:30:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T16:30:00+00:00",
-   "age_h": 23.77
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "COFARA",
    "timeframe": "M5",
    "file": "COFARA_M5.parquet",
-   "time_clock": "broker",
-   "row_count": 102492,
-   "file_mtime": "2026-10-31T15:32:05+00:00",
-   "mtime_age_h": 0.74,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T20:20:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T17:20:00+00:00",
-   "age_h": 22.94
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "COFROB",
    "timeframe": "D1",
    "file": "COFROB_D1.parquet",
-   "time_clock": "broker",
-   "row_count": 2173,
-   "file_mtime": "2026-10-31T15:32:05+00:00",
-   "mtime_age_h": 0.74,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-29T00:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "COFROB",
    "timeframe": "H1",
    "file": "COFROB_H1.parquet",
-   "time_clock": "broker",
-   "row_count": 13326,
-   "file_mtime": "2026-10-31T15:32:06+00:00",
-   "mtime_age_h": 0.74,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T19:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T16:00:00+00:00",
-   "age_h": 24.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "COFROB",
    "timeframe": "H4",
    "file": "COFROB_H4.parquet",
-   "time_clock": "broker",
-   "row_count": 4926,
-   "file_mtime": "2026-10-31T15:32:06+00:00",
-   "mtime_age_h": 0.74,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T16:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "COFROB",
    "timeframe": "M1",
    "file": "COFROB_M1.parquet",
-   "time_clock": "broker",
-   "row_count": 111728,
-   "file_mtime": "2026-10-31T15:32:06+00:00",
-   "mtime_age_h": 0.74,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T20:28:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T17:28:00+00:00",
-   "age_h": 22.81
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "COFROB",
    "timeframe": "M15",
    "file": "COFROB_M15.parquet",
-   "time_clock": "broker",
-   "row_count": 45841,
-   "file_mtime": "2026-10-31T15:32:06+00:00",
-   "mtime_age_h": 0.74,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T20:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T17:00:00+00:00",
-   "age_h": 23.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "COFROB",
    "timeframe": "M30",
    "file": "COFROB_M30.parquet",
-   "time_clock": "broker",
-   "row_count": 23733,
-   "file_mtime": "2026-10-31T15:32:07+00:00",
-   "mtime_age_h": 0.74,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T19:30:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T16:30:00+00:00",
-   "age_h": 23.77
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "COFROB",
    "timeframe": "M5",
    "file": "COFROB_M5.parquet",
-   "time_clock": "broker",
-   "row_count": 102345,
-   "file_mtime": "2026-10-31T15:32:07+00:00",
-   "mtime_age_h": 0.74,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T20:20:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T17:20:00+00:00",
-   "age_h": 22.94
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Coinbase",
    "timeframe": "D1",
    "file": "Coinbase_D1.parquet",
-   "time_clock": "broker",
-   "row_count": 1392,
-   "file_mtime": "2026-10-31T15:32:26+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-29T00:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Coinbase",
    "timeframe": "H1",
    "file": "Coinbase_H1.parquet",
-   "time_clock": "broker",
-   "row_count": 8396,
-   "file_mtime": "2026-10-31T15:32:27+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T21:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Coinbase",
    "timeframe": "H4",
    "file": "Coinbase_H4.parquet",
-   "time_clock": "broker",
-   "row_count": 2561,
-   "file_mtime": "2026-10-31T15:32:27+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T16:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Coinbase",
    "timeframe": "M1",
    "file": "Coinbase_M1.parquet",
-   "time_clock": "broker",
-   "row_count": 108969,
-   "file_mtime": "2026-10-31T15:32:27+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T22:58:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Coinbase",
    "timeframe": "M15",
    "file": "Coinbase_M15.parquet",
-   "time_clock": "broker",
-   "row_count": 30550,
-   "file_mtime": "2026-10-31T15:32:27+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T22:30:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Coinbase",
    "timeframe": "M30",
    "file": "Coinbase_M30.parquet",
-   "time_clock": "broker",
-   "row_count": 15392,
-   "file_mtime": "2026-10-31T15:32:27+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T22:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Coinbase",
    "timeframe": "M5",
    "file": "Coinbase_M5.parquet",
-   "time_clock": "broker",
-   "row_count": 91178,
-   "file_mtime": "2026-10-31T15:32:28+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T22:50:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T19:50:00+00:00",
-   "age_h": 20.44
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Comcast",
    "timeframe": "D1",
    "file": "Comcast_D1.parquet",
-   "time_clock": "broker",
-   "row_count": 1444,
-   "file_mtime": "2026-10-31T15:32:28+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-29T00:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-28T21:00:00+00:00",
-   "age_h": 67.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Comcast",
    "timeframe": "H1",
    "file": "Comcast_H1.parquet",
-   "time_clock": "broker",
-   "row_count": 10139,
-   "file_mtime": "2026-10-31T15:32:28+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T21:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T18:00:00+00:00",
-   "age_h": 22.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Comcast",
    "timeframe": "H4",
    "file": "Comcast_H4.parquet",
-   "time_clock": "broker",
-   "row_count": 2889,
-   "file_mtime": "2026-10-31T15:32:28+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T16:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T13:00:00+00:00",
-   "age_h": 27.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Comcast",
    "timeframe": "M1",
    "file": "Comcast_M1.parquet",
-   "time_clock": "broker",
-   "row_count": 108969,
-   "file_mtime": "2026-10-31T15:32:28+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T22:58:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T19:58:00+00:00",
-   "age_h": 20.31
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Comcast",
    "timeframe": "M15",
    "file": "Comcast_M15.parquet",
-   "time_clock": "broker",
-   "row_count": 37521,
-   "file_mtime": "2026-10-31T15:32:29+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T22:30:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T19:30:00+00:00",
-   "age_h": 20.77
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Comcast",
    "timeframe": "M30",
    "file": "Comcast_M30.parquet",
-   "time_clock": "broker",
-   "row_count": 18790,
-   "file_mtime": "2026-10-31T15:32:29+00:00",
-   "mtime_age_h": 0.73,
-   "status": "MEASURED",
-   "last_bar_time": "2026-10-30T22:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-10-30T19:00:00+00:00",
-   "age_h": 21.27
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Comcast",
@@ -16173,6 +15837,6 @@
   "ages": "every age is from a true UTC source: the server anchor, the file mtime, or tape_state.last_run; never a broker stamp read as UTC"
  },
  "resources": {
-  "peak_rss_mb": 96.0
+  "peak_rss_mb": 95.6
  }
 }
