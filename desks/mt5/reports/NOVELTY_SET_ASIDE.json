@@ -1,7 +1,7 @@
 {
- "at": "2026-10-31T10:15:19+00:00",
+ "at": "2026-10-31T15:44:01+00:00",
  "screened": 1500,
- "set_aside": 3,
+ "set_aside": 7,
  "rows": [
   {
    "sym": "AUDCHF",
@@ -20,6 +20,30 @@
    "family": "cross_asset_residual",
    "twin": "external.GBPJPY@M5.cross_asset_residual.p=428518b71bf7faed",
    "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.cross_asset_residual.p=428518b71bf7faed (feature 0.92, semantic 0.94); the twin is NAMED rather"
+  },
+  {
+   "sym": "USCOCOA",
+   "family": "cross_asset_residual",
+   "twin": "external.USCOCOA@M5.cross_asset_residual.p=b3a79f17d1268b3e",
+   "why": "every measurable dimension reads as a twin of external.USCOCOA@M5.cross_asset_residual.p=b3a79f17d1268b3e (feature 1.00, semantic 1.00); the twin is NAMED rathe"
+  },
+  {
+   "sym": "EURCAD",
+   "family": "cross_asset_residual",
+   "twin": "external.EURCAD@M15.cross_asset_residual.p=49eee8b22060afb7",
+   "why": "every measurable dimension reads as a twin of external.EURCAD@M15.cross_asset_residual.p=49eee8b22060afb7 (feature 0.92, semantic 0.94); the twin is NAMED rathe"
+  },
+  {
+   "sym": "EURCAD",
+   "family": "cross_asset_residual",
+   "twin": "external.EURCAD@M15.cross_asset_residual.p=49eee8b22060afb7",
+   "why": "every measurable dimension reads as a twin of external.EURCAD@M15.cross_asset_residual.p=49eee8b22060afb7 (feature 1.00, semantic 1.00); the twin is NAMED rathe"
+  },
+  {
+   "sym": "GBPJPY",
+   "family": "cross_asset_residual",
+   "twin": "external.GBPJPY@M15.cross_asset_residual.p=76a842aadaf3bd86",
+   "why": "every measurable dimension reads as a twin of external.GBPJPY@M15.cross_asset_residual.p=76a842aadaf3bd86 (feature 0.92, semantic 0.94); the twin is NAMED rathe"
   }
  ],
  "rule": "REDUNDANT on every measurable economic dimension, twin named"
