@@ -17,7 +17,7 @@
  "uptime_s": 303903.3,
  "last_sweep_ended_utc": "2026-10-31T05:06:17+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-10-31T08:50:04+00:00",
+ "heartbeat_utc": "2026-10-31T09:05:09+00:00",
  "sweep_phase": {
   "pid": 22696,
   "sweep_started_utc": "2026-10-31T05:06:38+00:00",
@@ -196,15 +196,43 @@
      }
     },
     "collect_and_cut": {
-     "samples": 1,
+     "samples": 33,
      "top": [
       {
-       "stack": "external_gauntlet.py:_shard_collect:4714 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
-       "n": 1,
-       "share": 1.0
+       "stack": "external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
+       "n": 14,
+       "share": 0.424
+      },
+      {
+       "stack": "<frozen abc>:__instancecheck__:117 < datetimes.py:_new_DatetimeIndex:78 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857",
+       "n": 3,
+       "share": 0.091
+      },
+      {
+       "stack": "base.py:_simple_new:671 < datetimes.py:_new_DatetimeIndex:95 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857",
+       "n": 2,
+       "share": 0.061
+      },
+      {
+       "stack": "generic.py:__setstate__:2232 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844",
+       "n": 2,
+       "share": 0.061
+      },
+      {
+       "stack": "numeric.py:_frombuffer:1905 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844",
+       "n": 2,
+       "share": 0.061
       }
      ],
-     "process": {}
+     "process": {
+      "cpu_s": 189.4,
+      "page_faults": 1544875.0,
+      "read_bytes": 914877405.0,
+      "write_bytes": 61171.0,
+      "sampled_s": 320.0,
+      "rss_mb_max": 4487.7,
+      "cpu_share_of_wall": 0.592
+     }
     }
    }
   },
