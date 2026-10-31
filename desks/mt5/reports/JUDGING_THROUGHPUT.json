@@ -1,21 +1,21 @@
 {
- "at": "2026-10-31T04:24:51+00:00",
+ "at": "2026-10-31T04:59:58+00:00",
  "status": "MEASURED",
  "box": {
   "cores": 18,
   "market_closed": true,
   "source": "GlobalMemoryStatusEx",
   "total_phys_mb": 98297,
-  "free_phys_mb": 52291,
+  "free_phys_mb": 60004,
   "commit_limit_mb": 200697,
-  "commit_free_mb": 79336,
+  "commit_free_mb": 79680,
   "cpu_source": "psutil",
-  "busy_other_cores": 14.88,
-  "busy_judge_cores": 0.94,
+  "busy_other_cores": 14.41,
+  "busy_judge_cores": 0.99,
   "cpu_sample_s": 1.0,
   "terminal_running": true,
   "gateway_running": false,
-  "n_python": 84,
+  "n_python": 81,
   "terminal_source": "psutil",
   "is_judging_box": true
  },
@@ -38,9 +38,9 @@
   "burndown_outflow_unit": "settled",
   "burndown_source": "JUDGING_BURNDOWN.json",
   "source_at": "2026-10-31T00:39:55.317612+00:00",
-  "source_age_seconds": 13414.974549,
+  "source_age_seconds": 15534.401589,
   "file_at": "2026-10-31T00:55:27+00:00",
-  "file_age_seconds": 12483.292184,
+  "file_age_seconds": 14602.719222,
   "discovered": 1630804,
   "depth_scope": "sweep",
   "judged_last_sweep": 22664,
@@ -67,7 +67,7 @@
   "shards_why": "the judge's fail-closed SHARD_PROTOCOL=2 partitions cell-local work across the measured worker allocation and computes program-level gates once on the union",
   "limiting_resource": "judge_value_at_risk",
   "stood_down": false,
-  "why": "cores 18 (reserved 0), memory 34, commit 51 at 768MB a worker; the binding one is judge_value_at_risk",
+  "why": "cores 18 (reserved 0), memory 39, commit 51 at 768MB a worker; the binding one is judge_value_at_risk",
   "baseline": {
    "workers": 10,
    "memory_budget_mb": 8192.0,
@@ -118,7 +118,7 @@
  "alarms": [],
  "rule": "throughput is raised from OUTSIDE the sealed gauntlet, never by editing it; the plan is floored at the sealed baseline so this organ can never throttle the judge; the live terminal always wins and standing down means returning to that baseline, not below it",
  "rate": {
-  "at": "2026-10-31T04:23:30+00:00",
+  "at": "2026-10-31T04:58:50+00:00",
   "status": "MEASURED",
   "verdicts": {
    "status": "MEASURED",
@@ -156,11 +156,11 @@
    "status": "MEASURED",
    "counts": {
     "24h": 7079,
-    "7d": 36732
+    "7d": 36698
    },
    "per_hour": {
     "24h": 294.958,
-    "7d": 218.643
+    "7d": 218.44
    }
   },
   "verdicts_per_hour": 2421.792,
@@ -181,8 +181,8 @@
   "cores_basis": "fixed_reservation",
   "attempt": {
    "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-   "started_at": "2026-10-31T04:18:22+00:00",
-   "pid": 16196
+   "started_at": "2026-10-31T04:54:27+00:00",
+   "pid": 27864
   }
  },
  "blas_single_thread": {
@@ -214,10 +214,10 @@
    "cpu": "AMD64 AMD64 Family 23 Model 1 Stepping 2, AuthenticAMD"
   }
  },
- "measure_seconds": 393.3,
+ "measure_seconds": 339.0,
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-10-31T04:18:22+00:00",
-  "pid": 16196
+  "started_at": "2026-10-31T04:54:27+00:00",
+  "pid": 27864
  }
 }
