@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-31T01:00:06.085626+00:00",
+  "swept_at": "2026-10-31T01:15:03.606145+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1142,7 +1142,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3094,
+      "shadow_exp_r": -0.2963,
       "woke_on_shadow": false
     },
     "EURCHF|discovered_asia": {
@@ -2836,7 +2836,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2929,
+      "shadow_exp_r": -0.452,
       "woke_on_shadow": false
     },
     "NAS100|cross_asset_residual_continuous": {
@@ -3111,7 +3111,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.6246,
+      "shadow_exp_r": -0.6082,
       "woke_on_shadow": false
     },
     "NZDHUF|carry_continuous": {
@@ -3188,7 +3188,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2118,
+      "shadow_exp_r": -0.2119,
       "woke_on_shadow": false
     },
     "NZDJPY|vol_transition_continuous": {
@@ -3749,7 +3749,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.6705,
+      "shadow_exp_r": -0.6895,
       "woke_on_shadow": false
     },
     "USDJPY|asia": {
@@ -4178,7 +4178,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4584,
+      "shadow_exp_r": -0.4658,
       "woke_on_shadow": false
     },
     "USDTHB|overnight_gap_decay_continuous": {
@@ -4200,7 +4200,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1742,
+      "shadow_exp_r": -0.1727,
       "woke_on_shadow": false
     },
     "USDZAR|carry_asia": {

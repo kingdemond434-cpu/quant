@@ -17,68 +17,74 @@
  "uptime_s": 288862.7,
  "last_sweep_ended_utc": "2026-10-31T00:55:36+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-10-31T01:04:56+00:00",
+ "heartbeat_utc": "2026-10-31T01:19:57+00:00",
  "sweep_phase": {
   "pid": 9488,
   "sweep_started_utc": "2026-10-31T00:55:55+00:00",
-  "phases": {},
-  "phase": "plan",
-  "phase_started_utc": "2026-10-31T00:55:55+00:00",
+  "phases": {
+   "plan": 1428.2
+  },
+  "phase": "prewarm",
+  "phase_started_utc": "2026-10-31T01:19:43+00:00",
   "plan_steps": {
    "lane_and_docket": 75.1,
    "docket_grouping": 121.3,
-   "gate0": 180.4
+   "gate0": 180.4,
+   "preflight": 227.5,
+   "cache_prune": 472.4,
+   "order": 293.7,
+   "yield_allocation": 57.7
   },
-  "plan_step": "preflight",
-  "plan_step_started_utc": "2026-10-31T01:02:12+00:00",
+  "plan_step": "prewarm",
+  "plan_step_started_utc": "2026-10-31T01:19:43+00:00",
   "plan_counts": {
    "docket_rows": 1631587,
    "unique_cells": 1630804,
    "gate0_advance": 1618968
   },
-  "plan_last_marker": "Gate 0: 1618968 advance; 11836 terminal reject (11836 untradeable symbol, 0 no economic prior)",
+  "plan_last_marker": "  docket order: 174091 never-judged cell(s) first, then 158687 in symbol-rotation order",
   "wall_profile": {
    "every_s": 10.0,
    "depth": 6,
    "authority": "report_only",
    "phases": {
     "plan": {
-     "samples": 47,
+     "samples": 130,
      "top": [
+      {
+       "stack": "novelty_gate.py:_jsonl:214 < novelty_gate.py:load:517 < novelty_gate.py:screen:707 < external_gauntlet.py:main:3797 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
+       "n": 16,
+       "share": 0.123
+      },
       {
        "stack": "__init__.py:exists:676 < external_gauntlet.py:symbol_is_tradeable:933 < external_gauntlet.py:partition_at_economic_prior:979 < external_gauntlet.py:main:3569 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
        "n": 12,
-       "share": 0.255
+       "share": 0.092
       },
       {
-       "stack": "encoder.py:iterencode:261 < encoder.py:encode:200 < __init__.py:dumps:238 < external_gauntlet.py:main:3527 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
+       "stack": "__init__.py:open:776 < __init__.py:read_text:792 < family_policy.py:banned_families:86 < family_policy.py:family_banned:102 < external_gauntlet.py:main:3685 < external_gauntlet.py:run_sharded:4844",
+       "n": 12,
+       "share": 0.092
+      },
+      {
+       "stack": "__init__.py:stat:659 < external_gauntlet.py:main:3613 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622 < run_sharded_gauntlet.py:main:3601",
+       "n": 12,
+       "share": 0.092
+      },
+      {
+       "stack": "__init__.py:read_text:792 < family_policy.py:banned_families:86 < family_policy.py:family_banned:102 < external_gauntlet.py:main:3685 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
        "n": 4,
-       "share": 0.085
-      },
-      {
-       "stack": "external_gauntlet.py:refill:3387 < external_gauntlet.py:iter_json_array:3421 < external_gauntlet.py:main:3464 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
-       "n": 4,
-       "share": 0.085
-      },
-      {
-       "stack": "external_gauntlet.py:refill:3387 < external_gauntlet.py:iter_json_array:3421 < external_gauntlet.py:main:3516 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
-       "n": 4,
-       "share": 0.085
-      },
-      {
-       "stack": "core.py:read:1585 < core.py:read_table:1959 < parquet.py:read:265 < parquet.py:read_parquet:669 < external_gauntlet.py:_bars_for:480 < external_gauntlet.py:partition_at_economic_prior:987",
-       "n": 3,
-       "share": 0.064
+       "share": 0.031
       }
      ],
      "process": {
-      "cpu_s": 412.0,
-      "page_faults": 7759936.0,
-      "read_bytes": 5607808379.0,
-      "write_bytes": 62546.0,
-      "sampled_s": 460.0,
-      "rss_mb_max": 3253.1,
-      "cpu_share_of_wall": 0.896
+      "cpu_s": 1000.8,
+      "page_faults": 9856847.0,
+      "read_bytes": 7207283699.0,
+      "write_bytes": 112308.0,
+      "sampled_s": 1290.0,
+      "rss_mb_max": 4736.9,
+      "cpu_share_of_wall": 0.776
      }
     }
    }
