@@ -1,10 +1,10 @@
 {
- "at": "2026-10-31T09:31:02+00:00",
+ "at": "2026-10-31T09:46:02+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 4.47,
-   "why": "no new verdict for 4.5h (last 2026-10-31T05:02:44+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 0.02,
+   "why": "no new verdict for 0.0h (last 2026-10-31T09:44:48+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "resident_dead": {
    "open": false,
@@ -14,16 +14,14 @@
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 4.41,
+   "hours": 4.66,
    "limit_h": 25.59,
-   "why": "4.4h since the last sweep ended (2026-10-31T05:06:17+00:00), status SWEEPING; limit 25.59h"
+   "why": "4.7h since the last sweep ended (2026-10-31T05:06:17+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
-   "open": false,
-   "cells": 40047,
-   "basis": "n_judged",
+   "open": null,
    "read": "first 1048576 and last 262144 bytes",
-   "why": "the sweep that ended 2026-10-31T05:06:17+00:00 judged 40047 cell(s) (n_judged)"
+   "why": "UNMEASURED: universal_gates_external.json carries no result stamped inside the last sweep (2026-10-31T00:50:36+00:00 .. 2026-10-31T05:06:17+00:00) -- an rc-0 sweep that wrote no result reads this way"
   },
   "sweep_dead": {
    "open": false,
@@ -33,9 +31,9 @@
   "phase_overrun": {
    "open": false,
    "phase": "merge_and_publish",
-   "hours": 0.38,
+   "hours": 0.63,
    "known_phase": true,
-   "why": "sweep phase merge_and_publish has run 0.4h since 2026-10-31T09:08:12+00:00 (limit 3h)"
+   "why": "sweep phase merge_and_publish has run 0.6h since 2026-10-31T09:08:12+00:00 (limit 3h)"
   },
   "host_unreadable": {
    "open": false,
@@ -71,13 +69,13 @@
   }
  },
  "last_verdict": {
-  "at": "2026-10-31T05:02:44+00:00",
+  "at": "2026-10-31T09:44:48+00:00",
   "source": "gate_verdict_ledger.jsonl"
  },
  "resident": {
   "status": "SWEEPING",
   "pid": 21384,
-  "heartbeat_utc": "2026-10-31T09:30:43+00:00",
+  "heartbeat_utc": "2026-10-31T09:45:44+00:00",
   "last_sweep_ended_utc": "2026-10-31T05:06:17+00:00",
   "last_rc": 0
  },
