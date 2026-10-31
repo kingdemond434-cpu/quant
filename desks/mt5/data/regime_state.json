@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-31T13:30:04.010355+00:00",
+  "swept_at": "2026-10-31T13:45:03.892962+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -4166,8 +4166,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 77,
-      "shadow_exp_r": -0.4457,
+      "shadow_n": 49,
+      "shadow_exp_r": -0.6968,
       "woke_on_shadow": false
     },
     "USDTHB|macro_conditional_asia": {
