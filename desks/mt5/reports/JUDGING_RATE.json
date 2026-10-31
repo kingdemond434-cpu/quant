@@ -1,37 +1,11 @@
 {
- "at": "2026-10-31T01:04:17+00:00",
- "status": "MEASURED",
+ "at": "2026-10-31T02:07:06+00:00",
+ "status": "UNMEASURED",
+ "why": "verdicts: gate_verdict_ledger.jsonl stream overran its 150 s deadline after 1,007,616 rows (151 s): verdicts/hour is UNMEASURED this pass, never a partial count",
  "verdicts": {
-  "status": "MEASURED",
-  "rows_total": 1144582,
-  "rows_unstamped": 0,
-  "last_verdict_at": "2026-10-31T00:49:51+00:00",
-  "counts": {
-   "1h": 5615,
-   "24h": 88911,
-   "7d": 145697,
-   "build_step_lo": 58123,
-   "build_step_hi": 0
-  },
-  "count_basis": "changed verdict events; unchanged retests do not append",
-  "first_terminal_counts": {
-   "1h": 3975,
-   "24h": 53753,
-   "7d": 94685,
-   "build_step_lo": 31275,
-   "build_step_hi": 0
-  },
-  "first_terminal_cells": 475846,
-  "first_terminal_per_hour": {
-   "1h": 3975.0,
-   "24h": 2239.708,
-   "7d": 563.601
-  },
-  "per_hour": {
-   "1h": 5615.0,
-   "24h": 3704.625,
-   "7d": 867.244
-  }
+  "status": "UNMEASURED",
+  "rows_read": 1007616,
+  "why": "gate_verdict_ledger.jsonl stream overran its 150 s deadline after 1,007,616 rows (151 s): verdicts/hour is UNMEASURED this pass, never a partial count"
  },
  "created": {
   "status": "MEASURED",
@@ -44,10 +18,10 @@
    "7d": 219.994
   }
  },
- "verdicts_per_hour": 3704.625,
- "verdicts_per_day": 88911.0,
+ "verdicts_per_hour": "UNMEASURED",
+ "verdicts_per_day": "UNMEASURED",
  "verdict_rate_basis": "changed verdict events, not total completed tests",
- "first_judged_per_day": 53753.0,
+ "first_judged_per_day": "UNMEASURED",
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
  "created_per_day": 7160.0,
@@ -62,7 +36,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-10-31T01:01:01+00:00",
-  "pid": 30916
+  "started_at": "2026-10-31T02:05:57+00:00",
+  "pid": 1448
  }
 }
