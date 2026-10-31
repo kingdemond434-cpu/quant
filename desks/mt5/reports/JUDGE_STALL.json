@@ -1,10 +1,10 @@
 {
- "at": "2026-10-31T09:46:02+00:00",
+ "at": "2026-10-31T10:01:03+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 0.02,
-   "why": "no new verdict for 0.0h (last 2026-10-31T09:44:48+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 0.27,
+   "why": "no new verdict for 0.3h (last 2026-10-31T09:44:48+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "resident_dead": {
    "open": false,
@@ -14,26 +14,28 @@
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 4.66,
+   "hours": 0.12,
    "limit_h": 25.59,
-   "why": "4.7h since the last sweep ended (2026-10-31T05:06:17+00:00), status SWEEPING; limit 25.59h"
+   "why": "0.1h since the last sweep ended (2026-10-31T09:53:49+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
-   "open": null,
+   "open": false,
+   "cells": 37166,
+   "basis": "n_judged",
    "read": "first 1048576 and last 262144 bytes",
-   "why": "UNMEASURED: universal_gates_external.json carries no result stamped inside the last sweep (2026-10-31T00:50:36+00:00 .. 2026-10-31T05:06:17+00:00) -- an rc-0 sweep that wrote no result reads this way"
+   "why": "the sweep that ended 2026-10-31T09:53:49+00:00 judged 37166 cell(s) (n_judged)"
   },
   "sweep_dead": {
    "open": false,
-   "pid": 22696,
-   "why": "sweep child pid 22696 alive"
+   "pid": 20696,
+   "why": "sweep child pid 20696 alive"
   },
   "phase_overrun": {
    "open": false,
-   "phase": "merge_and_publish",
-   "hours": 0.63,
+   "phase": "plan",
+   "hours": 0.12,
    "known_phase": true,
-   "why": "sweep phase merge_and_publish has run 0.6h since 2026-10-31T09:08:12+00:00 (limit 3h)"
+   "why": "sweep phase plan has run 0.1h since 2026-10-31T09:54:07+00:00 (limit 4.5h)"
   },
   "host_unreadable": {
    "open": false,
@@ -53,11 +55,11 @@
    "collect_and_cut": 1.0,
    "rule_shards": 1.0,
    "merge_and_publish": 3.0,
-   "prewarm": 4.06,
+   "prewarm": 5.86,
    "plan_handoff": 1.0,
    "done": 1.0
   },
-  "prewarm_budget_s": 8640.0,
+  "prewarm_budget_s": 12960.0,
   "prewarm_budget_source": "JUDGING_THROUGHPUT.json decision.fresh_budget_s",
   "unknown_phase_limit_h": 18.0,
   "sweep_overdue_h": 25.59,
@@ -75,8 +77,8 @@
  "resident": {
   "status": "SWEEPING",
   "pid": 21384,
-  "heartbeat_utc": "2026-10-31T09:45:44+00:00",
-  "last_sweep_ended_utc": "2026-10-31T05:06:17+00:00",
+  "heartbeat_utc": "2026-10-31T10:00:45+00:00",
+  "last_sweep_ended_utc": "2026-10-31T09:53:49+00:00",
   "last_rc": 0
  },
  "host": "trading box",
