@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-31T05:14:58+00:00",
+ "generated_utc": "2026-10-31T05:25:57+00:00",
  "summary": {
   "platforms": 14,
   "platforms_yielding": 4,
@@ -2885,13 +2885,13 @@
    },
    "KRX 정보데이터시스템": {
     "outcome": "EMPTY",
-    "attempts": 410,
-    "successes": 160,
+    "attempts": 411,
+    "successes": 161,
     "rows": 0,
     "findings_total": 0,
-    "datasets": 160,
+    "datasets": 161,
     "last_error": "",
-    "last_attempt": "2026-10-31T02:38:25.400442+00:00",
+    "last_attempt": "2026-10-31T05:24:29.712337+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -5069,13 +5069,13 @@
    },
    "Velog quant": {
     "outcome": "BLOCKED",
-    "attempts": 421,
+    "attempts": 422,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismat; URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mism",
-    "last_attempt": "2026-10-31T02:38:23.004494+00:00",
+    "last_attempt": "2026-10-31T05:20:47.183555+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -5753,13 +5753,13 @@
    },
    "tistory 퀀트 블로그": {
     "outcome": "BLOCKED",
-    "attempts": 393,
+    "attempts": 394,
     "successes": 2,
     "rows": 11,
     "findings_total": 11,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (93234 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: HTTPError: HTTP Error 403: HTTP 403",
-    "last_attempt": "2026-10-31T02:38:32.418926+00:00",
+    "last_error": "bing: bing returned no parseable results (91035 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14245 bytes)",
+    "last_attempt": "2026-10-31T05:21:11.782711+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -6617,13 +6617,13 @@
    },
    "관세청 수출입 통계": {
     "outcome": "EMPTY",
-    "attempts": 411,
-    "successes": 161,
+    "attempts": 412,
+    "successes": 162,
     "rows": 0,
     "findings_total": 1,
-    "datasets": 161,
+    "datasets": 162,
     "last_error": "",
-    "last_attempt": "2026-10-31T02:38:29.789440+00:00",
+    "last_attempt": "2026-10-31T05:24:17.701258+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -6653,13 +6653,13 @@
    },
    "팍스넷 검색": {
     "outcome": "BLOCKED",
-    "attempts": 402,
+    "attempts": 403,
     "successes": 1,
     "rows": 3,
     "findings_total": 27,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (93529 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: HTTPError: HTTP Error 403: HTTP 403",
-    "last_attempt": "2026-10-31T02:38:22.186525+00:00",
+    "last_error": "bing: bing returned no parseable results (93217 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14227 bytes)",
+    "last_attempt": "2026-10-31T05:20:59.287829+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -6677,25 +6677,25 @@
    },
    "한국경제 퀀트 칼럼": {
     "outcome": "BLOCKED",
-    "attempts": 397,
+    "attempts": 398,
     "successes": 3,
     "rows": 19,
     "findings_total": 19,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (89694 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: HTTPError: HTTP Error 403: HTTP 403",
-    "last_attempt": "2026-10-31T02:38:24.686823+00:00",
+    "last_error": "bing: bing returned no parseable results (91295 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14223 bytes)",
+    "last_attempt": "2026-10-31T05:21:09.309976+00:00",
     "language": "ko",
     "region": "kr"
    },
    "한국은행 경제통계시스템 ECOS": {
     "outcome": "BLOCKED",
-    "attempts": 415,
+    "attempts": 416,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-10-31T02:38:23.687407+00:00",
+    "last_attempt": "2026-10-31T05:23:12.593213+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -6823,8 +6823,8 @@
    "last_run": "2026-10-31T05:14:58+00:00",
    "fetches_per_s": 0.6016,
    "success_rate": 0.9408,
-   "wall_s_24h": 665.7,
-   "cpu_s_24h": 134.7
+   "wall_s_24h": 1416.6,
+   "cpu_s_24h": 263.2
   },
   "forest_global_physical_data": {
    "runs": 10,
@@ -6862,16 +6862,16 @@
    "wall_s_24h": "UNMEASURED"
   },
   "forest_korea": {
-   "runs": 18,
-   "fetches": 1008,
-   "ok": 913,
+   "runs": 19,
+   "fetches": 1029,
+   "ok": 934,
    "http_errors": 18,
    "transport_errors": 77,
-   "seconds": 4594.0,
-   "rows": 129,
-   "last_run": "2026-10-30T21:47:25+00:00",
-   "fetches_per_s": 0.2194,
-   "success_rate": 0.9058,
+   "seconds": 5017.1,
+   "rows": 131,
+   "last_run": "2026-10-31T05:25:57+00:00",
+   "fetches_per_s": 0.2051,
+   "success_rate": 0.9077,
    "wall_s_24h": 4676.8,
    "cpu_s_24h": 433.5
   },
@@ -6914,8 +6914,8 @@
    "last_run": "2026-10-31T04:38:06+00:00",
    "fetches_per_s": 0.5858,
    "success_rate": 0.7319,
-   "wall_s_24h": 4667.7,
-   "cpu_s_24h": 963.9
+   "wall_s_24h": 2763.1,
+   "cpu_s_24h": 681.2
   },
   "forest_oceania": {
    "runs": 19,
