@@ -3,48 +3,64 @@
  "create_time": 1793408136.9144428,
  "status": "RUNNING",
  "started_utc": "2026-10-31T00:55:37+00:00",
- "beat_utc": "2026-10-31T04:20:07+00:00",
- "beats": 355,
+ "beat_utc": "2026-10-31T04:35:09+00:00",
+ "beats": 376,
  "beat_every_s": 30.0,
- "phase": "build_shards",
- "phase_started_utc": "2026-10-31T03:34:28+00:00",
- "phase_elapsed_s": 2739.6,
+ "phase": "rule_shards",
+ "phase_started_utc": "2026-10-31T04:34:29+00:00",
+ "phase_elapsed_s": 40.1,
  "phases_done": {
   "plan": 1428.2,
   "prewarm": 7937.5,
-  "plan_handoff": 147.2
+  "plan_handoff": 147.2,
+  "build_shards": 3127.9,
+  "collect_and_cut": 473.5
  },
  "deadlines": {
   "kind": "SLOW thresholds (amber, never a kill); only no_progress_s kills",
   "run_s": 129422.8,
   "run_deadline_utc": "2026-11-01T12:52:40+00:00",
-  "phase_s": 128344.5,
-  "phase_deadline_utc": "2026-11-01T15:13:32+00:00",
+  "phase_s": 3600.0,
+  "phase_deadline_utc": "2026-10-31T05:34:29+00:00",
   "no_progress_s": 1800.0,
   "consecutive_stalls": 0
  },
  "run_deadline_utc": "2026-11-01T12:52:40+00:00",
  "slow": [],
  "shards": {
-  "phase": "build",
+  "phase": "rule",
   "total": 18,
-  "done": 17,
+  "done": 0,
   "failed": 0,
-  "running": 1,
+  "running": 18,
   "stalled": 0,
   "slow": 0,
   "retrying": 0,
-  "shard_slow_s": 42781.5,
+  "shard_slow_s": 1800.0,
   "shard_idle_kill_s": 1800.0,
-  "wave_started_utc": "2026-10-31T03:34:28+00:00"
+  "wave_started_utc": "2026-10-31T04:34:29+00:00",
+  "admission": {
+   "floor": 17,
+   "widest": 17,
+   "last": {
+    "running": 17,
+    "available_mb": 39377.9,
+    "wave_rss_mb": 20008.4,
+    "estimate_mb": 1470.1,
+    "estimate_basis": "historic_peak",
+    "room_mb": 7932.8,
+    "reserve_mb": 25978.9,
+    "admitted": false
+   }
+  }
  },
  "tree": {
-  "procs": 3,
-  "rss_mb": 1374.7,
-  "cpu_s": 2880.5
+  "procs": 37,
+  "rss_mb": 18447.5,
+  "cpu_s": 2910.0
  },
  "progress": "MEASURED",
- "last_progress_utc": "2026-10-31T04:20:07+00:00",
+ "last_progress_utc": "2026-10-31T04:35:09+00:00",
  "idle_s": 0.0,
- "progress_gaps": 2
+ "progress_gaps": 3
 }
