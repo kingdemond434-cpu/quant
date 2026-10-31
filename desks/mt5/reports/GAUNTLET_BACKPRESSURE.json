@@ -1,5 +1,5 @@
 {
- "at": "2026-10-31T00:55:27+00:00",
+ "at": "2026-10-31T05:06:12+00:00",
  "windows": {
   "24h": {
    "hours": 24.0,
@@ -11306,16 +11306,16 @@
    "why": "seconds of FIRST-TIME cell building one sweep may spend; cached cells are free and are always all loaded"
   },
   "measured": {
-   "swept_at": "2026-10-31T00:39:55.317612+00:00",
-   "age_h": 0.26,
-   "n_cells": 32502,
-   "n_judged": 22664,
-   "n_unmeasured": 9838,
+   "swept_at": "2026-10-31T04:52:43.096243+00:00",
+   "age_h": 0.22,
+   "n_cells": 61181,
+   "n_judged": 40047,
+   "n_unmeasured": 21134,
    "n_cells_discovered": 1630804,
-   "n_cells_deferred_build_budget": 317986,
+   "n_cells_deferred_build_budget": 271597,
    "n_cells_deferred_memory_budget": 0,
-   "memory_budget_mb": 11520.0,
-   "workers": 15,
+   "memory_budget_mb": 13824.0,
+   "workers": 18,
    "why": "cells judged by the LAST sweep: the per-pass capacity the desk actually has"
   }
  },
@@ -11434,16 +11434,16 @@
  "mode": "core",
  "full_at": "2026-10-03T12:44:22+00:00",
  "core": {
-  "at": "2026-10-31T00:55:27+00:00",
+  "at": "2026-10-31T05:06:12+00:00",
   "inputs": {},
   "testing_24h": {
    "status": "MEASURED",
-   "verdicts": 88911,
-   "cells_judged": 87735,
-   "per_hour": 3655.625,
-   "passed": 115,
+   "verdicts": 78428,
+   "cells_judged": 76987,
+   "per_hour": 3207.792,
+   "passed": 43,
    "ledger": "READ",
-   "measured_at": "2026-10-31T00:55:27+00:00",
+   "measured_at": "2026-10-31T05:06:12+00:00",
    "source": "build_core"
   },
   "re_measured": [
