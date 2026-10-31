@@ -1,6 +1,6 @@
 {
  "schema": "backup_state/1",
- "at": "2026-10-31T18:01:37+00:00",
+ "at": "2026-10-31T18:15:40+00:00",
  "host": "vmi3571445",
  "last_backup_at": null,
  "last_restore_drill_at": null,
@@ -49,7 +49,7 @@
  },
  "status": "UNMEASURED",
  "page": {
-  "sent": true,
-  "delivered": 1
+  "sent": false,
+  "reason": "deduplicated"
  }
 }
