@@ -119,84 +119,84 @@
   "allocation_rule": "unfinished canonical cells first; among discretionary research organs prefer measured certificate yield per CPU-hour",
   "certificates_added": 0,
   "certificates_per_cpu_hour": 0.0,
-  "measured_cpu_hours": 0.008512,
+  "measured_cpu_hours": 0.005208,
   "stage_rows": [
    {
     "certificate_delta": 0,
     "cpu_seconds": 0.0,
-    "duration_seconds": 6792.961,
+    "duration_seconds": 2015.684,
     "name": "canonical_external_pipeline"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 4.047253,
-    "duration_seconds": 18.587,
+    "cpu_seconds": 4.073487,
+    "duration_seconds": 20.53,
     "name": "external_queue_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 9.044781,
-    "duration_seconds": 46.951,
+    "cpu_seconds": 10.796092,
+    "duration_seconds": 207.89,
     "name": "external_queue_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.076003,
-    "duration_seconds": 14.085,
+    "cpu_seconds": 0.086393,
+    "duration_seconds": 116.584,
     "name": "certificate_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 12.614991,
-    "duration_seconds": 74.158,
+    "cpu_seconds": 0.235951,
+    "duration_seconds": 86.507,
     "name": "fusion_state_pull"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.243007,
-    "duration_seconds": 11.658,
+    "cpu_seconds": 1.284778,
+    "duration_seconds": 15.962,
     "name": "forward_identity_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.102867,
-    "duration_seconds": 10.218,
+    "cpu_seconds": 0.093648,
+    "duration_seconds": 17.76,
     "name": "forward_clock_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.18316,
-    "duration_seconds": 11.602,
+    "cpu_seconds": 1.212026,
+    "duration_seconds": 11.752,
     "name": "forward_lane_heal"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.300893,
-    "duration_seconds": 14.431,
+    "cpu_seconds": 0.0,
+    "duration_seconds": 11.602,
     "name": "zero_capital_shadow_forward"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.506165,
-    "duration_seconds": 12.999,
+    "cpu_seconds": 0.414932,
+    "duration_seconds": 9.735,
     "name": "mechanism_independence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.136193,
-    "duration_seconds": 9.668,
+    "cpu_seconds": 0.137123,
+    "duration_seconds": 5.983,
     "name": "same_day_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.270071,
-    "duration_seconds": 16.29,
+    "cpu_seconds": 0.251207,
+    "duration_seconds": 8.465,
     "name": "certificate_yield_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.117825,
-    "duration_seconds": 14.455,
+    "cpu_seconds": 0.163592,
+    "duration_seconds": 7.781,
     "name": "forward_clock_fence"
    }
   ]
@@ -345,7 +345,7 @@
    "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY"
   ]
  },
- "generated_at": "2026-11-01T03:34:37.944414+00:00",
+ "generated_at": "2026-11-01T05:17:49.012762+00:00",
  "headline": {
   "candidates_discovered": 57538,
   "candidates_lost": 54993,
@@ -874,7 +874,7 @@
    "why": "N_eff is the participation ratio of the correlation eigenvalues: it cannot be inflated by adding a variant of something already held. Unmeasured pairs are assumed FULLY correlated, the conservative direction."
   },
   "forward_sleeves_with_observations": 76,
-  "measured_at": "2026-11-01T03:33:00+00:00",
+  "measured_at": "2026-11-01T05:16:48+00:00",
   "note": "Forward-phase observations only. Historical rows are excluded: allocation is a forward decision and may not be informed by evidence gathered during selection."
  },
  "rerouting": {
@@ -885,7 +885,7 @@
  "resource_execution": {
   "collision_control": "systemd uses one quant-external-pipeline.service instance; hourly and midnight starts cannot duplicate the heavy worker",
   "external_pipeline_memory_max": "1500M",
-  "mem_available_mb": 1001.3,
+  "mem_available_mb": 2071.7,
   "remote_control": "desk-box job locks and per-stage timeouts remain authoritative"
  },
  "schema_version": 1,
@@ -1056,13 +1056,6 @@
     "cell": "AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
     "certificate": "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
     "deadline_at": "2026-09-02 00:13:35.223752+00:00",
-    "enrolled": false,
-    "overdue": true
-   },
-   {
-    "cell": "CADCHF.overnight_gap_decay.p=44136fa355b3678a",
-    "certificate": "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a",
-    "deadline_at": "2026-10-26 09:54:47.147221+00:00",
     "enrolled": false,
     "overdue": true
    },
@@ -1300,7 +1293,7 @@
   ],
   "certificates": 59,
   "certificates_not_enrolled": 58,
-  "certificates_overdue": 58,
+  "certificates_overdue": 57,
   "policy": "queued candidates and certificates have a 24h maximum waiting-room SLA",
   "queue_active": 0,
   "queue_overdue": 0,
