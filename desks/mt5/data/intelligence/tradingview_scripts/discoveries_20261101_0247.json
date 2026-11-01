@@ -1,0 +1,242 @@
+[
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Heat Sweep | Volume Heatmap Liquidity Strategy",
+  "url": "https://www.tradingview.com/script/FjletcWZ-Heat-Sweep-Volume-Heatmap-Liquidity-Strategy/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "FjletcWZ"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Overnight MNQ Synapse Confluence Scalper Pro",
+  "url": "https://www.tradingview.com/script/ZdzVl3mG-Overnight-MNQ-Synapse-Confluence-Scalper-Pro/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "ZdzVl3mG"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Crazy ORB V2.1  NQ Breakout Optimization",
+  "url": "https://www.tradingview.com/script/VmA8JZYm-Crazy-ORB-V2-1-NQ-Breakout-Optimization/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "VmA8JZYm"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Myth Busting E02 - Quick Flip Scalper [PyneSys]",
+  "url": "https://www.tradingview.com/script/RezOvAzR-Myth-Busting-E02-Quick-Flip-Scalper-PyneSys/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "RezOvAzR"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Monthly RSI 70 Breakout",
+  "url": "https://www.tradingview.com/script/Th0bZVUB-Monthly-RSI-70-Breakout/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "Th0bZVUB"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Absorption Reversal | Delta Trap",
+  "url": "https://www.tradingview.com/script/wMcOiPoG-Absorption-Reversal-Delta-Trap/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "wMcOiPoG"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "FT Strategy Engine - Template",
+  "url": "https://www.tradingview.com/script/qXp6AwrJ-FT-Strategy-Engine-Template/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "qXp6AwrJ"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "TradeLink MNQ Opening Range Retest",
+  "url": "https://www.tradingview.com/script/IiKSCwyD-TradeLink-MNQ-Opening-Range-Retest/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "IiKSCwyD"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Vix Fix Gold Trend Stats",
+  "url": "https://www.tradingview.com/script/mOAycgFH-Vix-Fix-Gold-Trend-Stats/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "mOAycgFH"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Squeeze Momentum Gold Buy-Only Stats",
+  "url": "https://www.tradingview.com/script/pisBiaro-Squeeze-Momentum-Gold-Buy-Only-Stats/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "pisBiaro"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "ICT Silver Bullet | Liquidity Sweep + FVG Strategy",
+  "url": "https://www.tradingview.com/script/bWCnYln2-ICT-Silver-Bullet-Liquidity-Sweep-FVG-Strategy/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "bWCnYln2"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Opening Candle Breakout [OCB] Strategy",
+  "url": "https://www.tradingview.com/script/kp2hYvG9/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "kp2hYvG9"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "NexTrade Strategy 1.1 - Backtest",
+  "url": "https://www.tradingview.com/script/drGjJKyF/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "drGjJKyF"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "LIQUIDITY SCALPING V1.0",
+  "url": "https://www.tradingview.com/script/8s4Thk5I-LIQUIDITY-SCALPING-V1-0/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "8s4Thk5I"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "CA Demand Reclaim &amp; Trendline Breakout Strategy v1",
+  "url": "https://www.tradingview.com/script/Y9ppyIk2-CA-Demand-Reclaim-Trendline-Breakout-Strategy-v1/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "Y9ppyIk2"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Tried &amp; True Composite Strategy (Filtered Zero Cross)",
+  "url": "https://www.tradingview.com/script/7lgW8p5E-Tried-True-Composite-Strategy-Filtered-Zero-Cross/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "7lgW8p5E"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Liquidity Gravity Strategy | Weighted Swing-Pool Imbalance",
+  "url": "https://www.tradingview.com/script/EiPetOXE-Liquidity-Gravity-Strategy-Weighted-Swing-Pool-Imbalance/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "EiPetOXE"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Myth Busting E01 - First 4-Hour Range False Breakout [PyneSys]",
+  "url": "https://www.tradingview.com/script/6AWDwmgT-Myth-Busting-E01-First-4-Hour-Range-False-Breakout-PyneSys/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "6AWDwmgT"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "DNSE VN301!, 3 SMA Cross Strategy",
+  "url": "https://www.tradingview.com/script/lGzLYXqa/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "lGzLYXqa"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "CNPS25-FVG + BOS CHOCH RETEST",
+  "url": "https://www.tradingview.com/script/c6AI4Jei-CNPS25-FVG-BOS-CHOCH-RETEST/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "c6AI4Jei"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "CNPS24_BASIS MEAN REVERSION",
+  "url": "https://www.tradingview.com/script/RH6yWT9q-CNPS24-BASIS-MEAN-REVERSION/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "RH6yWT9q"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "CNPS23-VOLUME_ORDER BLOCK",
+  "url": "https://www.tradingview.com/script/Lv51jbrS-CNPS23-VOLUME-ORDER-BLOCK/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "Lv51jbrS"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "CNPS22-BASTION",
+  "url": "https://www.tradingview.com/script/8xHbblHu-CNPS22-BASTION/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "8xHbblHu"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "CNPS21-AUTOMATE_ST",
+  "url": "https://www.tradingview.com/script/OTVcmpa7-CNPS21-AUTOMATE-ST/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-01T02:50:30+00:00",
+  "script_id": "OTVcmpa7"
+ }
+]

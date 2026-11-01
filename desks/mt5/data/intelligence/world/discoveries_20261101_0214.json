@@ -1,0 +1,1858 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Solana vs US Dollar (SOLUSD.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/SOLUSD.p/",
+  "published": "2026-11-01T02:12:50+00:00",
+  "symbols": [
+   "SOLUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3ee8d0732d8d29f79394",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Doge vs US Dollar (DOGEUSD.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/DOGEUSD.p/",
+  "published": "2026-11-01T02:12:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a8c32b672f6937db5480",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cardano vs US Dollar (ADAUSD.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/ADAUSD.p/",
+  "published": "2026-11-01T02:12:53+00:00",
+  "symbols": [
+   "ADAUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6539451312090320af47",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gold vs Euro (Spot) (XAUEUR.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/XAUEUR.p/",
+  "published": "2026-11-01T02:12:55+00:00",
+  "symbols": [
+   "XAUEUR",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1bbfc5fde9de37fc4851",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Canadian Dollar (AUDCAD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/AUDCAD/",
+  "published": "2026-11-01T02:12:57+00:00",
+  "symbols": [
+   "AUDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "878a23d023d41628cce4",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Swiss Franc (AUDCHF) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/AUDCHF/",
+  "published": "2026-11-01T02:12:59+00:00",
+  "symbols": [
+   "AUDCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7c48803b352230d11996",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Japanese Yen (AUDJPY) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/AUDJPY/",
+  "published": "2026-11-01T02:13:01+00:00",
+  "symbols": [
+   "AUDJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3b202fd3a68214bf6c35",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "40 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY",
+      "AUDJPY"
+     ],
+     "mentioned": [
+      "yen",
+      "audjpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "851739d13eed"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Canadian Dollar (EURCAD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/EURCAD.p/",
+  "published": "2026-11-01T02:13:02+00:00",
+  "symbols": [
+   "EURCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e9071621729367eb5cdc",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Swiss Franc (EURCHF.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/EURCHF.p/",
+  "published": "2026-11-01T02:13:04+00:00",
+  "symbols": [
+   "EURCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ceefc9195aa86a128669",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Great Britain Pound (EURGBP.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/EURGBP.p/",
+  "published": "2026-11-01T02:13:06+00:00",
+  "symbols": [
+   "EURGBP",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a6afe9a44298af37bc7c",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency GBP 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 26.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD",
+      "EURGBP"
+     ],
+     "mentioned": [
+      "pound",
+      "eurgbp"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "af8e76ec44c0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Japanese Yen (EURJPY.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/EURJPY.p/",
+  "published": "2026-11-01T02:13:08+00:00",
+  "symbols": [
+   "EURJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4cb035b65dcb594ffb4e",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency JPY 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 14.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY",
+      "EURJPY"
+     ],
+     "mentioned": [
+      "yen",
+      "eurjpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "66c5801231df"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs New Zealand Dollar (EURNZD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/EURNZD.p/",
+  "published": "2026-11-01T02:13:10+00:00",
+  "symbols": [
+   "EURNZD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e143a94f06a8362174b6",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs US Dollar (EURUSD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/EURUSD.p/",
+  "published": "2026-11-01T02:13:12+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "96b4a237f5ddef97d693",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency USD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 19.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "15ad27297d9f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Australian Dollar (GBPAUD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/GBPAUD.p/",
+  "published": "2026-11-01T02:13:14+00:00",
+  "symbols": [
+   "GBPAUD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "afe4c157fc521bd43942",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency AUD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 19.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "da2264b3e80d"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Profile - historical_data - Trading Q&amp;A by Zerodha - All your queries on trading and markets answered",
+  "url": "https://tradingqna.com/u/historical_data",
+  "published": "2026-11-01T02:13:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "23940b49914ef305f92b",
+  "host": "tradingqna.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Access to and acceptance of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/acceptance-cash/html/index.sl.html",
+  "published": "2026-11-01T02:13:16+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ce27d61035d2009c111b",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Tillg\u00e5ng till och godtagande av kontanter",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/acceptance-cash/html/index.sv.html",
+  "published": "2026-11-01T02:13:18+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5656770a680991326bcc",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0427\u0435\u0441\u0442\u043e \u0437\u0430\u0434\u0430\u0432\u0430\u043d\u0438 \u0432\u044a\u043f\u0440\u043e\u0441\u0438 \u0437\u0430 \u043f\u0430\u0440\u0438\u0442\u0435",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/faqs/html/index.bg.html",
+  "published": "2026-11-01T02:13:20+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "bg",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.bg.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "84dda968fb12ad3c7468",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Nej\u010dast\u011bj\u0161\u00ed dotazy t\u00fdkaj\u00edc\u00ed se hotovosti",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/faqs/html/index.cs.html",
+  "published": "2026-11-01T02:13:22+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "cs",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.cs.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5b9c0f9edcba463779c5",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Ofte stillede sp\u00f8rgsm\u00e5l om kontanter",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/faqs/html/index.da.html",
+  "published": "2026-11-01T02:13:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "da",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.da.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e1812f8bac6359b7e167",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "H\u00e4ufig gestellte Fragen zum Bargeld",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/faqs/html/index.de.html",
+  "published": "2026-11-01T02:13:26+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "T\u00c4GLICH"
+  ],
+  "patterns": [
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "de",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.de.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f685fa70b6270088a0f3",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0391\u03c0\u03b1\u03bd\u03c4\u03ae\u03c3\u03b5\u03b9\u03c2 \u03c3\u03b5 \u03c3\u03c5\u03bd\u03ae\u03b8\u03b5\u03b9\u03c2 \u03b5\u03c1\u03c9\u03c4\u03ae\u03c3\u03b5\u03b9\u03c2 \u03b3\u03b9\u03b1 \u03c4\u03b1 \u03bc\u03b5\u03c4\u03c1\u03b7\u03c4\u03ac",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/faqs/html/index.el.html",
+  "published": "2026-11-01T02:13:28+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "el",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.el.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b3e5bf39b1587e542e01",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "United States Money Supply M2",
+  "url": "https://tradingeconomics.com/united-states/money-supply-m2",
+  "published": "2026-11-01T02:13:29+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/south-korea/exports-yoy",
+   "https://tradingeconomics.com/united-states/gdp-growth-contribution-exports",
+   "https://tradingeconomics.com/united-states/export-prices",
+   "https://tradingeconomics.com/united-states/export-prices-mom",
+   "https://tradingeconomics.com/united-states/export-prices-yoy",
+   "https://tradingeconomics.com/united-states/auto-exports",
+   "https://tradingeconomics.com/united-states/exports",
+   "https://tradingeconomics.com/united-states/exports-by-category",
+   "https://tradingeconomics.com/united-states/exports-by-country",
+   "https://tradingeconomics.com/united-states/goods-exports",
+   "https://tradingeconomics.com/united-states/oil-exports",
+   "https://tradingeconomics.com/united-states/semiconductor-exports",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 19,
+  "vault_sha": "9c4a851e6389d437ca0c",
+  "host": "tradingeconomics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "South Korea Consumer Confidence",
+  "url": "https://tradingeconomics.com/south-korea/consumer-confidence",
+  "published": "2026-11-01T02:13:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/south-korea/exports-yoy",
+   "https://tradingeconomics.com/south-korea/export-prices",
+   "https://tradingeconomics.com/south-korea/export-prices-yoy",
+   "https://tradingeconomics.com/south-korea/auto-exports",
+   "https://tradingeconomics.com/south-korea/exports",
+   "https://tradingeconomics.com/south-korea/exports-by-category",
+   "https://tradingeconomics.com/south-korea/exports-by-country",
+   "https://tradingeconomics.com/south-korea/semiconductor-exports",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 15,
+  "vault_sha": "eb368ec47b30f8243184",
+  "host": "tradingeconomics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Australia S&P Global Manufacturing PMI",
+  "url": "https://tradingeconomics.com/australia/manufacturing-pmi",
+  "published": "2026-11-01T02:13:33+00:00",
+  "symbols": [
+   "AUS200",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "flow",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/australia/export-prices-mom",
+   "https://tradingeconomics.com/south-korea/exports-yoy",
+   "https://tradingeconomics.com/australia/export-prices",
+   "https://tradingeconomics.com/australia/exports-by-category",
+   "https://tradingeconomics.com/australia/exports-by-country",
+   "https://tradingeconomics.com/australia/exports",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 13,
+  "vault_sha": "fef4362eed7e13c4e6d3",
+  "host": "tradingeconomics.com",
+  "claims": [
+   {
+    "claim": "2026-09-22 Related ASX 200 Trims Gains, Secures Weekly and Monthly Advances Australia 10Y Yield Hits 2-Month Low Australia Q3 Producer Price Inflation Slightly Beats Forecast Australia Private Credit Rises 0.",
+    "lang": "en",
+    "quantities": [
+     "yield"
+    ],
+    "direction": [
+     "gains",
+     "forecast"
+    ],
+    "horizon": [
+     "weekly",
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "AUS200",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "asx 200",
+      "10y yield"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "fa11f9c8aa06"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Australia S&P Global Services PMI",
+  "url": "https://tradingeconomics.com/australia/services-pmi",
+  "published": "2026-11-01T02:13:35+00:00",
+  "symbols": [
+   "AUS200",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "flow",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/australia/export-prices-mom",
+   "https://tradingeconomics.com/south-korea/exports-yoy",
+   "https://tradingeconomics.com/australia/export-prices",
+   "https://tradingeconomics.com/australia/exports-by-category",
+   "https://tradingeconomics.com/australia/exports-by-country",
+   "https://tradingeconomics.com/australia/exports",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 13,
+  "vault_sha": "3b2b9e923fe53bd5f9a5",
+  "host": "tradingeconomics.com",
+  "claims": [
+   {
+    "claim": "2026-09-22 Related ASX 200 Trims Gains, Secures Weekly and Monthly Advances Australia 10Y Yield Hits 2-Month Low Australia Q3 Producer Price Inflation Slightly Beats Forecast Australia Private Credit Rises 0.",
+    "lang": "en",
+    "quantities": [
+     "yield"
+    ],
+    "direction": [
+     "gains",
+     "forecast"
+    ],
+    "horizon": [
+     "weekly",
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "AUS200",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "asx 200",
+      "10y yield"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "fa11f9c8aa06"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Australia S&P Global Composite PMI",
+  "url": "https://tradingeconomics.com/australia/composite-pmi",
+  "published": "2026-11-01T02:13:37+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "US500",
+   "AUS200",
+   "USDINR",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "carry",
+   "flow",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/australia/export-prices-mom",
+   "https://tradingeconomics.com/south-korea/exports-yoy",
+   "https://tradingeconomics.com/australia/export-prices",
+   "https://tradingeconomics.com/australia/exports-by-category",
+   "https://tradingeconomics.com/australia/exports-by-country",
+   "https://tradingeconomics.com/australia/exports",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 13,
+  "vault_sha": "9a417dacba3ad877dd27",
+  "host": "tradingeconomics.com",
+  "claims": [
+   {
+    "claim": "On prices, input cost inflation accelerated to a five-month high due to higher energy, shipping, commodity, and wage costs.",
+    "lang": "en",
+    "quantities": [
+     "shipping"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500",
+      "AUS200",
+      "USDINR",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "s&p",
+      "asx 200",
+      "inr",
+      "10y yield"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "AUDUSD"
+     ],
+     "channels": [
+      "rba: policy: RBA -> AUD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0c314cf0da90"
+   },
+   {
+    "claim": "New orders grew for a third month, but at the slowest rate in the period, while export orders fell for the fifth time in six months, due to weakness in manufacturing.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "fell"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500",
+      "AUS200",
+      "USDINR",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "s&p",
+      "asx 200",
+      "inr",
+      "10y yield"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "AUDUSD"
+     ],
+     "channels": [
+      "rba: policy: RBA -> AUD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "72fead269843"
+   },
+   {
+    "claim": "2026-09-22 Related ASX 200 Trims Gains, Secures Weekly and Monthly Advances Australia 10Y Yield Hits 2-Month Low Australia Q3 Producer Price Inflation Slightly Beats Forecast Australia Private Credit Rises 0.",
+    "lang": "en",
+    "quantities": [
+     "yield"
+    ],
+    "direction": [
+     "gains",
+     "forecast"
+    ],
+    "horizon": [
+     "weekly",
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "AUS200",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "asx 200",
+      "10y yield"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "fa11f9c8aa06"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "India Composite PMI",
+  "url": "https://tradingeconomics.com/india/composite-pmi",
+  "published": "2026-11-01T02:13:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/south-korea/exports-yoy",
+   "https://tradingeconomics.com/india/export-prices",
+   "https://tradingeconomics.com/india/exports",
+   "https://tradingeconomics.com/india/exports-by-category",
+   "https://tradingeconomics.com/india/exports-by-country",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "9551fc0ba97d36fb76c1",
+  "host": "tradingeconomics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "India Manufacturing PMI",
+  "url": "https://tradingeconomics.com/india/manufacturing-pmi",
+  "published": "2026-11-01T02:13:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/south-korea/exports-yoy",
+   "https://tradingeconomics.com/india/export-prices",
+   "https://tradingeconomics.com/india/exports",
+   "https://tradingeconomics.com/india/exports-by-category",
+   "https://tradingeconomics.com/india/exports-by-country",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "10c74332fbb1733e0890",
+  "host": "tradingeconomics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Index of /src/contrib/Archive/quantreg",
+  "url": "https://CRAN.R-project.org/src/contrib/Archive/quantreg?C=S;O=D",
+  "published": "2026-11-01T02:13:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "5M"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.76.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.81.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.91.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.85.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.79.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.78.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.77.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.98.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.97.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.95.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.96.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.94.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.90.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.29.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.26.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.24.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.21.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.19.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.18.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.11.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.08.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.36.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.35.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.34.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.05.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.04.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.02.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.01.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.33.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.40.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.38.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.41.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.99.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.98.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.97.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.95.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.96.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.94.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.93.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.88.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.87.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.86.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.85.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.82.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.83.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.75.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.74.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.73.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.70.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.67.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.65.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.61.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.42.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.55.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.54.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.52.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.51.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.42.1.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.99.1.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_6.00.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.34.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.33.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.32.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.31.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.52.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.50.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.40.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.35.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.19.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.17.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.11.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.09.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.05.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.04.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.03.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.02.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.01-1.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_2.0-2.tar.gz"
+  ],
+  "n_endpoints": 78,
+  "vault_sha": "22587cf1e7cc263b60a6",
+  "host": "CRAN.R-project.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Index of /src/contrib/Archive/quantreg",
+  "url": "https://CRAN.R-project.org/src/contrib/Archive/quantreg?C=D;O=D",
+  "published": "2026-11-01T02:13:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "5M"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_6.00.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.99.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.99.1.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.98.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.97.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.96.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.95.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.94.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.93.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.88.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.87.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.86.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.85.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.83.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.82.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.75.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.74.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.73.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.70.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.67.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.65.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.61.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.55.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.54.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.52.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.51.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.42.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.42.1.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.41.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.40.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.38.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.36.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.35.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.34.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.33.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.29.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.26.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.24.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.21.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.19.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.18.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.11.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.08.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.05.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.04.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.02.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_5.01.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.98.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.97.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.96.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.95.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.94.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.91.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.90.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.85.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.81.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.79.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.78.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.77.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_4.76.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.52.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.50.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.40.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.35.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.34.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.33.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.32.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.31.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.19.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.17.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.11.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.09.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.05.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.04.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.03.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.02.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_3.01-1.tar.gz",
+   "https://CRAN.R-project.org/src/contrib/Archive/quantreg_2.0-2.tar.gz"
+  ],
+  "n_endpoints": 78,
+  "vault_sha": "6e2ef813f8e859268bd1",
+  "host": "CRAN.R-project.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Spreadsheet &#8211; Tranquility Trading",
+  "url": "https://www.tranquilitytrading.com/the-spreadsheet/",
+  "published": "2026-11-01T02:13:45+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.tranquilitytrading.com/wp-content/uploads/corr-matrix/TranquilityTrading_Data.zip"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1b72ff44bc4b66244172",
+  "host": "www.tranquilitytrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Navigator &#8211; Stats &#8211; Tranquility Trading",
+  "url": "https://www.tranquilitytrading.com/navigator-stats/",
+  "published": "2026-11-01T02:13:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f3ebb039c63b4caaef2a",
+  "host": "www.tranquilitytrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Rocket Rail &#8211; Stats &#8211; Tranquility Trading",
+  "url": "https://www.tranquilitytrading.com/rocket-rail-stats/",
+  "published": "2026-11-01T02:13:49+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "20830eb536000bec49e6",
+  "host": "www.tranquilitytrading.com",
+  "claims": [
+   {
+    "claim": "Average annual return over 20% over the last 12 years Can be traded a minutes a day Multiple portfolio based strategies to choose from Trades only S&P 500 stocks Long trades only Over 60% winners Positive returns in 15 of the last 17 years The Genesis of Rocket Rail Necessity breeds innovation.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "long",
+     "positive"
+    ],
+    "horizon": [
+     "minutes",
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {
+     "return_pct": 20.0
+    },
+    "claim_hash": "0a0e27af7651"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Sector Comets &#8211; Stats &#8211; Tranquility Trading",
+  "url": "https://www.tranquilitytrading.com/sector-comets-stats/",
+  "published": "2026-11-01T02:13:51+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "638d3d89613fe1584afa",
+  "host": "www.tranquilitytrading.com",
+  "claims": [
+   {
+    "claim": "Average annual return over 20% over the last 18 years Can be traded a minutes a day Multiple portfolio based strategies to choose from Long trades only Over 45% winners Positive returns in most years How Sector Comets Came to Be The strongest stocks are rarely found in weak sectors.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "long",
+     "positive"
+    ],
+    "horizon": [
+     "minutes",
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {
+     "return_pct": 20.0
+    },
+    "claim_hash": "04b56b353bc3"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Shadow Vega &#8211; Stats &#8211; Tranquility Trading",
+  "url": "https://www.tranquilitytrading.com/shadow-vega-stats/",
+  "published": "2026-11-01T02:13:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "orderflow",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ef712724ca6461720c75",
+  "host": "www.tranquilitytrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Tech Torque &#8211; Stats &#8211; Tranquility Trading",
+  "url": "https://www.tranquilitytrading.com/tech-torque-stats/",
+  "published": "2026-11-01T02:13:55+00:00",
+  "symbols": [
+   "NAS100",
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "carry",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e2942b59aef001306f96",
+  "host": "www.tranquilitytrading.com",
+  "claims": [
+   {
+    "claim": "The strategies use predictor variables to find the best of the best, leading tech trades in optimal pullback situations set up for a bounce resulting in 67% winners with 4 day holds.",
+    "lang": "en",
+    "quantities": [
+     "pullback"
+    ],
+    "direction": [
+     "bounce"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b74b93462e25"
+   },
+   {
+    "claim": "Average annual return over 20% over the last 12 years Can be traded a minutes a day Multiple portfolio based strategies to choose from Trades only Nasdaq stocks Long trades only Over 60% winners Positive returns in 15 of the last 17 years How Tech Torque Came to Be Tech Torque has been a labor of love.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "long",
+     "positive"
+    ],
+    "horizon": [
+     "minutes",
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100"
+     ],
+     "mentioned": [
+      "nasdaq"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {
+     "return_pct": 20.0
+    },
+    "claim_hash": "42ac4131d786"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Weathervane &#8211; Stats &#8211; Tranquility Trading",
+  "url": "https://www.tranquilitytrading.com/weathervane-stats/",
+  "published": "2026-11-01T02:13:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a8ea21b66179c5e25acd",
+  "host": "www.tranquilitytrading.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Calendar API - Trading Hours & Holidays | TradingHours.com",
+  "url": "https://tradinghours.com/data",
+  "published": "2026-11-01T02:14:11+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "night_session",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://tradinghours.com/manifest.json",
+   "https://tradinghours.com/llms.txt",
+   "https://docs.tradinghours.com/4.x/endpoints/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download",
+   "https://docs.tradinghours.com/3.x/enterprise/download#data-dictionary",
+   "https://docs.tradinghours.com/3.x/enterprise/download#schedules"
+  ],
+  "n_endpoints": 6,
+  "vault_sha": "aa5431c046ab4c8a6e63",
+  "host": "tradinghours.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u60c5\u4e2d\u5fc3\uff1a\u56fd\u5185\u5feb\u6377\u5168\u9762\u7684\u80a1\u7968\u3001\u57fa\u91d1\u3001\u671f\u8d27\u3001\u7f8e\u80a1\u3001\u6e2f\u80a1\u3001\u5916\u6c47\u3001\u9ec4\u91d1\u3001\u503a\u5238\u884c\u60c5\u7cfb\u7edf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://js1.eastmoney.com/tg.aspx?ID=667",
+  "published": "2026-11-01T02:14:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5d0f9c680537a163f049",
+  "host": "js1.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u60c5\u4e2d\u5fc3\uff1a\u56fd\u5185\u5feb\u6377\u5168\u9762\u7684\u80a1\u7968\u3001\u57fa\u91d1\u3001\u671f\u8d27\u3001\u7f8e\u80a1\u3001\u6e2f\u80a1\u3001\u5916\u6c47\u3001\u9ec4\u91d1\u3001\u503a\u5238\u884c\u60c5\u7cfb\u7edf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://js1.eastmoney.com/tg.aspx?ID=667",
+  "published": "2026-11-01T02:14:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5d0f9c680537a163f049",
+  "host": "js1.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How does the World Bank code its indicators? \u2013 World Bank Data Help Desk",
+  "url": "https://datahelpdesk.worldbank.org/knowledgebase/articles/201175-how-does-the-world-bank-code-its-indicators",
+  "published": "2026-11-01T02:14:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://databank.worldbank.org/data/download/site-content/WDI_CETS.xls"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "aaeee75429585ff3d6e0",
+  "host": "datahelpdesk.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5927\u5b97\u4ea4\u6613\u9996\u9875 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51_ \u6570\u636e\u9891\u9053",
+  "url": "http://js1.eastmoney.com/tg.aspx?ID=731",
+  "published": "2026-11-01T02:14:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b140c1c3797137e9e2d6",
+  "host": "js1.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "World Development Indicators (WDI) \u2013 World Bank Data Help Desk",
+  "url": "https://datahelpdesk.worldbank.org/knowledgebase/topics/19286-world-development-indicators-wdi",
+  "published": "2026-11-01T02:14:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "21c922d5ea3c0cc014e5",
+  "host": "datahelpdesk.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How do I access World Development Indicators (WDI) online tables? \u2013 World Bank Data Help Desk",
+  "url": "https://datahelpdesk.worldbank.org/knowledgebase/articles/191128-how-do-i-access-world-development-indicators-wdi",
+  "published": "2026-11-01T02:14:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b9ee3f0b7dae26c1cfdf",
+  "host": "datahelpdesk.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "FAQ Archives | RoboForex Help Center",
+  "url": "https://help.roboforex.com/en/support/solutions/articles/501000291518-how-a-trader-s-commission-is-calculated",
+  "published": "2026-11-01T02:14:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7ef978045c170904d5f7",
+  "host": "help.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
