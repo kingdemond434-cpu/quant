@@ -1,6 +1,6 @@
 {
  "schema": "judge_prescreen/1.3",
- "generated_at": "2026-10-31T22:37:46+00:00",
+ "generated_at": "2026-11-01T05:33:52+00:00",
  "producer": "desks/mt5/research/judge_prescreen.py (hourly leg judge_prescreen)",
  "mode": "SHADOW",
  "canon_switch": "the code constant judge_prescreen.CANON (a reviewed commit flips it)",
@@ -51,22 +51,22 @@
    "cleared_in_sample": 55308,
    "true_survivor": 1542
   },
-  "true_survivors_unprotected": 934,
+  "true_survivors_unprotected": 936,
   "true_survivors_reached_by_k": {
    "5": {
-    "reached": 554,
+    "reached": 556,
     "reached_by_half": {
-     "select": 277,
-     "confirm": 277
+     "select": 278,
+     "confirm": 278
     },
     "exposed_uncleared": 13,
     "floor_met": true
    },
    "10": {
-    "reached": 372,
+    "reached": 374,
     "reached_by_half": {
-     "select": 186,
-     "confirm": 186
+     "select": 187,
+     "confirm": 187
     },
     "exposed_uncleared": 7,
     "floor_met": true
@@ -118,10 +118,10 @@
      "true_survivor": 0.008431
     },
     "true_survivors_reached": {
-     "reached": 554,
+     "reached": 556,
      "reached_by_half": {
-      "select": 277,
-      "confirm": 277
+      "select": 278,
+      "confirm": 278
      },
      "exposed_uncleared": 13,
      "floor_met": true
@@ -178,24 +178,24 @@
      "true_survivor": 0.00454
     },
     "true_survivors_reached": {
-     "reached": 372,
+     "reached": 374,
      "reached_by_half": {
-      "select": 186,
-      "confirm": 186
+      "select": 187,
+      "confirm": 187
      },
      "exposed_uncleared": 7,
      "floor_met": true
     },
     "killed_by_tier_select_half": {
-     "unknown": 2615,
-     "in_sample_fail": 9677,
-     "cleared_in_sample": 70,
+     "unknown": 2675,
+     "in_sample_fail": 9753,
+     "cleared_in_sample": 72,
      "true_survivor": 0
     },
     "killed_by_tier_confirm_half": {
-     "unknown": 45087,
-     "in_sample_fail": 122534,
-     "cleared_in_sample": 578,
+     "unknown": 45027,
+     "in_sample_fail": 122458,
+     "cleared_in_sample": 576,
      "true_survivor": 7
     },
     "sample_false_kills_cleared_or_better": [
@@ -473,9 +473,9 @@
   "bytes": 355224714
  },
  "timing_s": {
-  "charts": 71.795,
-  "replay": 79.395,
-  "total": 303.014
+  "charts": 63.975,
+  "replay": 108.198,
+  "total": 285.395
  },
  "priority": {
   "applied": true,
@@ -490,8 +490,8 @@
    "status": "MEASURED",
    "provisional": false,
    "cells": 1110849,
-   "both": 984527,
-   "gate_ruled_not_graph_counted": 123956,
+   "both": 984523,
+   "gate_ruled_not_graph_counted": 123960,
    "graph_counted_not_gate_ruled": 0,
    "neither": 2366,
    "pending_graph_read": 0,
@@ -501,10 +501,10 @@
    "coverage": {
     "gate_bytes_read": 355224714,
     "gate_bytes": 355224714,
-    "graph_bytes_read": 4272482157,
-    "graph_bytes": 4272482157,
+    "graph_bytes_read": 4272542468,
+    "graph_bytes": 4272542468,
     "backfill_ids_waiting": 0,
-    "backfill_cursor": 2250837533,
+    "backfill_cursor": 2928300147,
     "backfill_end": 3892044602,
     "reset_this_pass": [],
     "checkpoint_saved": true
@@ -524,13 +524,13 @@
    ],
    "sample_graph_only": [],
    "charge_joins_on": "the hypothesis graph (the source experiment_ledger counts)",
-   "seconds": 149.599
+   "seconds": 111.168
   }
  },
  "missed_growth": [
   {
-   "day": "2026-10-31",
-   "at": "2026-10-31T22:37:46+00:00",
+   "day": "2026-11-01",
+   "at": "2026-11-01T05:33:52+00:00",
    "rail": "judge_prescreen",
    "side": "cost",
    "kind": "opportunity_cost",
@@ -550,8 +550,8 @@
    }
   },
   {
-   "day": "2026-10-31",
-   "at": "2026-10-31T22:37:46+00:00",
+   "day": "2026-11-01",
+   "at": "2026-11-01T05:33:52+00:00",
    "rail": "judge_prescreen",
    "side": "gain",
    "kind": "compute_freed",
