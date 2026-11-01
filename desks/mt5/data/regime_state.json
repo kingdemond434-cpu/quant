@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-01T15:15:03.500592+00:00",
+  "swept_at": "2026-11-01T15:30:03.795696+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -3012,7 +3012,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5077,
+      "shadow_exp_r": -0.5368,
       "woke_on_shadow": false
     },
     "NZDCAD|cross_asset_residual_continuous": {
@@ -3881,7 +3881,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.234,
+      "shadow_exp_r": -0.1147,
       "woke_on_shadow": false
     },
     "USDMXN|macro_conditional_continuous": {
