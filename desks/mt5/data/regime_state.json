@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-01T00:30:04.909084+00:00",
+  "swept_at": "2026-11-01T00:45:03.995888+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1746,8 +1746,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.38,
+      "shadow_n": 62,
+      "shadow_exp_r": 0.3919,
       "woke_on_shadow": false
     },
     "EURZAR|formula_asia": {
@@ -2285,8 +2285,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 83,
-      "shadow_exp_r": 0.6928,
+      "shadow_n": 90,
+      "shadow_exp_r": -0.2165,
       "woke_on_shadow": false
     },
     "GBPNOK|carry_continuous": {
