@@ -3,49 +3,65 @@
  "create_time": 1793482648.7158673,
  "status": "RUNNING",
  "started_utc": "2026-10-31T21:37:29+00:00",
- "beat_utc": "2026-11-01T03:05:20+00:00",
- "beats": 610,
+ "beat_utc": "2026-11-01T03:20:07+00:00",
+ "beats": 638,
  "beat_every_s": 30.0,
- "phase": "collect_and_cut",
- "phase_started_utc": "2026-11-01T02:44:54+00:00",
- "phase_elapsed_s": 1225.1,
+ "phase": "merge_and_publish",
+ "phase_started_utc": "2026-11-01T03:18:01+00:00",
+ "phase_elapsed_s": 126.1,
  "phases_done": {
   "plan": 1563.7,
   "prewarm": 13261.0,
   "plan_handoff": 168.4,
-  "build_shards": 3435.1
+  "build_shards": 3435.1,
+  "collect_and_cut": 1689.9,
+  "rule_shards": 296.4
  },
  "deadlines": {
   "kind": "SLOW thresholds (amber, never a kill); only no_progress_s kills",
   "run_s": 129422.8,
   "run_deadline_utc": "2026-11-02T09:34:32+00:00",
-  "phase_s": 8896.8,
-  "phase_deadline_utc": "2026-11-01T05:13:11+00:00",
+  "phase_s": 153594.0,
+  "phase_deadline_utc": "2026-11-02T21:57:55+00:00",
   "no_progress_s": 1800.0,
   "consecutive_stalls": 0
  },
  "run_deadline_utc": "2026-11-02T09:34:32+00:00",
  "slow": [],
  "shards": {
-  "phase": "build",
+  "phase": "rule",
   "total": 18,
   "done": 18,
-  "failed": 1,
+  "failed": 0,
   "running": 0,
   "stalled": 0,
   "slow": 0,
-  "retrying": 1,
-  "shard_slow_s": 42781.5,
+  "retrying": 0,
+  "shard_slow_s": 1800.0,
   "shard_idle_kill_s": 1800.0,
-  "wave_started_utc": "2026-11-01T01:47:40+00:00"
+  "wave_started_utc": "2026-11-01T03:13:04+00:00",
+  "admission": {
+   "floor": 16,
+   "widest": 16,
+   "last": {
+    "running": 16,
+    "available_mb": 18336.8,
+    "wave_rss_mb": 11000.4,
+    "estimate_mb": 934.2,
+    "estimate_basis": "historic_peak",
+    "room_mb": 1311.2,
+    "reserve_mb": 14958.3,
+    "admitted": false
+   }
+  }
  },
  "tree": {
   "procs": 1,
-  "rss_mb": 3172.8,
-  "cpu_s": 1880.2
+  "rss_mb": 5390.0,
+  "cpu_s": 2416.0
  },
  "progress": "MEASURED",
- "last_progress_utc": "2026-11-01T03:05:20+00:00",
+ "last_progress_utc": "2026-11-01T03:20:07+00:00",
  "idle_s": 0.0,
  "progress_gaps": 2
 }
