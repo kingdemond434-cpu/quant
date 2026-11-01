@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-01T11:30:04.401257+00:00",
+  "swept_at": "2026-11-01T11:45:03.386962+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -3991,7 +3991,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.7639,
+      "shadow_exp_r": -0.7245,
       "woke_on_shadow": false
     },
     "USDPLN|formula_asia": {
@@ -5464,8 +5464,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.3012,
+      "shadow_n": 66,
+      "shadow_exp_r": -0.0375,
       "woke_on_shadow": false
     },
     "XTIUSD|cross_asset_residual_continuous": {

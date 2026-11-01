@@ -1,21 +1,21 @@
 {
- "at": "2026-11-01T11:14:54+00:00",
+ "at": "2026-11-01T11:44:33+00:00",
  "status": "MEASURED",
  "box": {
   "cores": 18,
   "market_closed": true,
   "source": "GlobalMemoryStatusEx",
   "total_phys_mb": 98297,
-  "free_phys_mb": 68254,
+  "free_phys_mb": 46316,
   "commit_limit_mb": 200697,
-  "commit_free_mb": 107540,
+  "commit_free_mb": 84972,
   "cpu_source": "psutil",
-  "busy_other_cores": 12.74,
-  "busy_judge_cores": 2.69,
+  "busy_other_cores": 14.06,
+  "busy_judge_cores": 1.0,
   "cpu_sample_s": 1.0,
   "terminal_running": true,
   "gateway_running": false,
-  "n_python": 85,
+  "n_python": 77,
   "terminal_source": "psutil",
   "is_judging_box": true
  },
@@ -38,9 +38,9 @@
   "burndown_outflow_unit": "settled",
   "burndown_source": "JUDGING_BURNDOWN.json",
   "source_at": "2026-11-01T06:19:58.698824+00:00",
-  "source_age_seconds": 17652.390065,
+  "source_age_seconds": 19424.286724,
   "file_at": "2026-11-01T06:41:21+00:00",
-  "file_age_seconds": 16370.088911,
+  "file_age_seconds": 18141.985571,
   "discovered": 1711828,
   "depth_scope": "sweep",
   "judged_last_sweep": 67781,
@@ -67,7 +67,7 @@
   "shards_why": "the judge's fail-closed SHARD_PROTOCOL=2 partitions cell-local work across the measured worker allocation and computes program-level gates once on the union",
   "limiting_resource": "judge_value_at_risk",
   "stood_down": false,
-  "why": "cores 18 (reserved 0), memory 44, commit 70 at 768MB a worker; the binding one is judge_value_at_risk",
+  "why": "cores 18 (reserved 0), memory 30, commit 55 at 768MB a worker; the binding one is judge_value_at_risk",
   "baseline": {
    "workers": 10,
    "memory_budget_mb": 8192.0,
@@ -126,12 +126,12 @@
    "status": "FAILED",
    "minutes": 1,
    "task": "MT5-Gauntlet",
-   "next_run_before": "",
+   "next_run_before": "11/1/2026 12:46:00 PM",
    "attempts": [
     "attempt 1: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 30.0 seconds",
-    "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 36.37735369999427 seconds"
+    "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 56.91851460002363 seconds"
    ],
-   "why": "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 36.37735369999427 seconds",
+   "why": "attempt 2: TimeoutExpired: Command '['schtasks', '/Change', '/TN', 'MT5-Gauntlet', '/RI', '1', '/DU', '9999:59']' timed out after 56.91851460002363 seconds",
    "state_file": "C:\\opt\\quant\\desks\\mt5\\data\\gauntlet_cadence_state.json"
   },
   "process_env": {
@@ -142,7 +142,7 @@
  "alarms": [],
  "rule": "throughput is raised from OUTSIDE the sealed gauntlet, never by editing it; the plan is floored at the sealed baseline so this organ can never throttle the judge; the live terminal always wins and standing down means returning to that baseline, not below it",
  "rate": {
-  "at": "2026-11-01T11:14:11+00:00",
+  "at": "2026-11-01T11:43:42+00:00",
   "status": "MEASURED",
   "verdicts": {
    "status": "MEASURED",
@@ -180,11 +180,11 @@
    "status": "MEASURED",
    "counts": {
     "24h": 9250,
-    "7d": 35779
+    "7d": 34509
    },
    "per_hour": {
     "24h": 385.417,
-    "7d": 212.97
+    "7d": 205.411
    }
   },
   "verdicts_per_hour": 2048.667,
@@ -205,8 +205,8 @@
   "cores_basis": "fixed_reservation",
   "attempt": {
    "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-   "started_at": "2026-11-01T11:10:18+00:00",
-   "pid": 14128
+   "started_at": "2026-11-01T11:40:00+00:00",
+   "pid": 15764
   }
  },
  "blas_single_thread": {
@@ -245,11 +245,11 @@
    "cpu": "AMD64 AMD64 Family 23 Model 1 Stepping 2, AuthenticAMD"
   }
  },
- "measure_seconds": 280.8,
+ "measure_seconds": 275.7,
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-01T11:10:18+00:00",
-  "pid": 14128
+  "started_at": "2026-11-01T11:40:00+00:00",
+  "pid": 15764
  },
- "seconds": 372.6
+ "seconds": 366.4
 }
