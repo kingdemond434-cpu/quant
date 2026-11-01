@@ -1,36 +1,32 @@
 {
- "at": "2026-11-01T16:50:54+00:00",
+ "at": "2026-11-01T17:43:24+00:00",
  "status": "MEASURED",
  "verdicts": {
   "status": "MEASURED",
-  "rows_total": 1229374,
+  "rows_total": 1255013,
   "rows_unstamped": 0,
-  "last_verdict_at": "2026-11-01T11:57:43+00:00",
+  "last_verdict_at": "2026-11-01T17:38:59+00:00",
   "counts": {
-   "1h": 0,
-   "24h": 51624,
-   "7d": 230489,
-   "build_step_lo": 62806,
-   "build_step_hi": 0
+   "1h": 25639,
+   "24h": 77263,
+   "7d": 256128
   },
   "count_basis": "changed verdict events; unchanged retests do not append",
   "first_terminal_counts": {
-   "1h": 0,
-   "24h": 27457,
-   "7d": 139308,
-   "build_step_lo": 30618,
-   "build_step_hi": 0
+   "1h": 21319,
+   "24h": 48776,
+   "7d": 160627
   },
-  "first_terminal_cells": 520469,
+  "first_terminal_cells": 541788,
   "first_terminal_per_hour": {
-   "1h": 0.0,
-   "24h": 1144.042,
-   "7d": 829.214
+   "1h": 21319.0,
+   "24h": 2032.333,
+   "7d": 956.113
   },
   "per_hour": {
-   "1h": 0.0,
-   "24h": 2151.0,
-   "7d": 1371.958
+   "1h": 25639.0,
+   "24h": 3219.292,
+   "7d": 1524.571
   }
  },
  "created": {
@@ -44,10 +40,10 @@
    "7d": 230.619
   }
  },
- "verdicts_per_hour": 2151.0,
- "verdicts_per_day": 51624.0,
+ "verdicts_per_hour": 3219.292,
+ "verdicts_per_day": 77263.0,
  "verdict_rate_basis": "changed verdict events, not total completed tests",
- "first_judged_per_day": 27457.0,
+ "first_judged_per_day": 48776.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
  "created_per_day": 12034.0,
@@ -62,7 +58,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-01T16:47:50+00:00",
-  "pid": 25416
+  "started_at": "2026-11-01T17:40:22+00:00",
+  "pid": 29168
  }
 }
