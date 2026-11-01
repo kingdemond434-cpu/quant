@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-01T22:45:03.396981+00:00",
+  "swept_at": "2026-11-01T23:00:05.497869+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -294,8 +294,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 48,
-      "shadow_exp_r": 0.2579,
+      "shadow_n": 67,
+      "shadow_exp_r": -0.305,
       "woke_on_shadow": false
     },
     "AUDUSD|discovered_asia": {

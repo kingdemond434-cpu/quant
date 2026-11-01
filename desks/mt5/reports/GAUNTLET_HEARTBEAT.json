@@ -3,12 +3,12 @@
  "create_time": 1793555214.8003004,
  "status": "RUNNING",
  "started_utc": "2026-11-01T17:46:55+00:00",
- "beat_utc": "2026-11-01T22:49:52+00:00",
- "beats": 529,
+ "beat_utc": "2026-11-01T23:04:41+00:00",
+ "beats": 549,
  "beat_every_s": 30.0,
  "phase": "merge_and_publish",
  "phase_started_utc": "2026-11-01T21:46:27+00:00",
- "phase_elapsed_s": 3805.3,
+ "phase_elapsed_s": 4694.3,
  "phases_done": {
   "plan": 1145.7,
   "prewarm": 8047.6,
@@ -43,11 +43,11 @@
  },
  "tree": {
   "procs": 1,
-  "rss_mb": 6835.3,
-  "cpu_s": 4942.0
+  "rss_mb": 6512.4,
+  "cpu_s": 5442.0
  },
  "progress": "MEASURED",
- "last_progress_utc": "2026-11-01T22:49:52+00:00",
+ "last_progress_utc": "2026-11-01T23:04:41+00:00",
  "idle_s": 0.0,
- "progress_gaps": 4
+ "progress_gaps": 5
 }
