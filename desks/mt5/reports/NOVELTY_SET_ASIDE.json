@@ -1,7 +1,7 @@
 {
- "at": "2026-11-01T12:26:01+00:00",
+ "at": "2026-11-01T18:05:22+00:00",
  "screened": 1500,
- "set_aside": 8,
+ "set_aside": 16,
  "rows": [
   {
    "sym": "AUDCHF",
@@ -50,6 +50,54 @@
    "family": "cross_asset_residual",
    "twin": "external.GBPJPY@M15.cross_asset_residual.p=76a842aadaf3bd86",
    "why": "every measurable dimension reads as a twin of external.GBPJPY@M15.cross_asset_residual.p=76a842aadaf3bd86 (feature 0.92, semantic 0.94); the twin is NAMED rathe"
+  },
+  {
+   "sym": "CHFNOK",
+   "family": "formula",
+   "twin": "external.CHFNOK@M30.formula.p=bdcd8535d09fc6e9",
+   "why": "every measurable dimension reads as a twin of external.CHFNOK@M30.formula.p=bdcd8535d09fc6e9 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "CHFNOK",
+   "family": "formula",
+   "twin": "external.CHFNOK@M30.formula.p=bdcd8535d09fc6e9",
+   "why": "every measurable dimension reads as a twin of external.CHFNOK@M30.formula.p=bdcd8535d09fc6e9 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "CHFNOK",
+   "family": "formula",
+   "twin": "external.CHFNOK@M30.formula.p=bdcd8535d09fc6e9",
+   "why": "every measurable dimension reads as a twin of external.CHFNOK@M30.formula.p=bdcd8535d09fc6e9 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "CHFNOK",
+   "family": "formula",
+   "twin": "external.CHFNOK@M30.formula.p=bdcd8535d09fc6e9",
+   "why": "every measurable dimension reads as a twin of external.CHFNOK@M30.formula.p=bdcd8535d09fc6e9 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "EURCHF",
+   "family": "formula",
+   "twin": "external.EURCHF@M30.formula.p=bdcd8535d09fc6e9",
+   "why": "every measurable dimension reads as a twin of external.EURCHF@M30.formula.p=bdcd8535d09fc6e9 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "EURMXN",
+   "family": "formula",
+   "twin": "external.EURMXN@M30.formula.p=bdcd8535d09fc6e9",
+   "why": "every measurable dimension reads as a twin of external.EURMXN@M30.formula.p=bdcd8535d09fc6e9 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "EURMXN",
+   "family": "formula",
+   "twin": "external.EURMXN@M30.formula.p=bdcd8535d09fc6e9",
+   "why": "every measurable dimension reads as a twin of external.EURMXN@M30.formula.p=bdcd8535d09fc6e9 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "EURMXN",
+   "family": "formula",
+   "twin": "external.EURMXN@M30.formula.p=bdcd8535d09fc6e9",
+   "why": "every measurable dimension reads as a twin of external.EURMXN@M30.formula.p=bdcd8535d09fc6e9 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
   }
  ],
  "rule": "REDUNDANT on every measurable economic dimension, twin named"
