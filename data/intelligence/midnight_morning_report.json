@@ -119,84 +119,84 @@
   "allocation_rule": "unfinished canonical cells first; among discretionary research organs prefer measured certificate yield per CPU-hour",
   "certificates_added": 0,
   "certificates_per_cpu_hour": 0.0,
-  "measured_cpu_hours": 0.005434,
+  "measured_cpu_hours": 0.008918,
   "stage_rows": [
    {
     "certificate_delta": 0,
     "cpu_seconds": 0.0,
-    "duration_seconds": 5805.305,
+    "duration_seconds": 4247.575,
     "name": "canonical_external_pipeline"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 4.786357,
-    "duration_seconds": 27.439,
+    "cpu_seconds": 5.622679,
+    "duration_seconds": 29.88,
     "name": "external_queue_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 11.159211,
-    "duration_seconds": 50.895,
+    "cpu_seconds": 10.911632,
+    "duration_seconds": 64.164,
     "name": "external_queue_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.101525,
-    "duration_seconds": 9.851,
+    "cpu_seconds": 0.089711,
+    "duration_seconds": 9.96,
     "name": "certificate_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.0,
-    "duration_seconds": 58.6,
+    "cpu_seconds": 12.220658,
+    "duration_seconds": 52.026,
     "name": "fusion_state_pull"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.305744,
-    "duration_seconds": 66.167,
+    "cpu_seconds": 1.104639,
+    "duration_seconds": 9.822,
     "name": "forward_identity_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.097025,
-    "duration_seconds": 11.495,
+    "cpu_seconds": 0.085684,
+    "duration_seconds": 7.446,
     "name": "forward_clock_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.265663,
-    "duration_seconds": 11.506,
+    "cpu_seconds": 1.121833,
+    "duration_seconds": 9.414,
     "name": "forward_lane_heal"
    },
    {
     "certificate_delta": 0,
     "cpu_seconds": 0.0,
-    "duration_seconds": 14.977,
+    "duration_seconds": 13.471,
     "name": "zero_capital_shadow_forward"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.370043,
-    "duration_seconds": 10.55,
+    "cpu_seconds": 0.388106,
+    "duration_seconds": 10.638,
     "name": "mechanism_independence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.130041,
-    "duration_seconds": 9.793,
+    "cpu_seconds": 0.139612,
+    "duration_seconds": 11.09,
     "name": "same_day_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.251488,
-    "duration_seconds": 10.115,
+    "cpu_seconds": 0.284182,
+    "duration_seconds": 13.464,
     "name": "certificate_yield_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.09454,
-    "duration_seconds": 8.659,
+    "cpu_seconds": 0.134565,
+    "duration_seconds": 14.066,
     "name": "forward_clock_fence"
    }
   ]
@@ -345,7 +345,7 @@
    "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY"
   ]
  },
- "generated_at": "2026-11-01T07:34:43.566713+00:00",
+ "generated_at": "2026-11-01T09:25:58.682389+00:00",
  "headline": {
   "candidates_discovered": 57538,
   "candidates_lost": 54993,
@@ -874,7 +874,7 @@
    "why": "N_eff is the participation ratio of the correlation eigenvalues: it cannot be inflated by adding a variant of something already held. Unmeasured pairs are assumed FULLY correlated, the conservative direction."
   },
   "forward_sleeves_with_observations": 76,
-  "measured_at": "2026-11-01T07:33:29+00:00",
+  "measured_at": "2026-11-01T09:24:22+00:00",
   "note": "Forward-phase observations only. Historical rows are excluded: allocation is a forward decision and may not be informed by evidence gathered during selection."
  },
  "rerouting": {
@@ -885,7 +885,7 @@
  "resource_execution": {
   "collision_control": "systemd uses one quant-external-pipeline.service instance; hourly and midnight starts cannot duplicate the heavy worker",
   "external_pipeline_memory_max": "1500M",
-  "mem_available_mb": 3457.2,
+  "mem_available_mb": 2997.7,
   "remote_control": "desk-box job locks and per-stage timeouts remain authoritative"
  },
  "schema_version": 1,
@@ -1070,20 +1070,6 @@
     "cell": "EURNOK.overnight_gap_decay.p=44136fa355b3678a",
     "certificate": "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a",
     "deadline_at": "2026-09-03 23:37:32.829569+00:00",
-    "enrolled": false,
-    "overdue": true
-   },
-   {
-    "cell": "GBPCHF.overnight_gap_decay.p=44136fa355b3678a",
-    "certificate": "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a",
-    "deadline_at": "2026-10-26 09:54:47.147396+00:00",
-    "enrolled": false,
-    "overdue": true
-   },
-   {
-    "cell": "GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
-    "certificate": "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
-    "deadline_at": "2026-10-26 09:54:47.147441+00:00",
     "enrolled": false,
     "overdue": true
    },
@@ -1282,18 +1268,11 @@
     "deadline_at": "2026-09-04 11:06:39.722089+00:00",
     "enrolled": false,
     "overdue": true
-   },
-   {
-    "cell": "GBPMXN.clock_transition.p=4671136d3763ffdb",
-    "certificate": "external.GBPMXN.clock_transition.p=4671136d3763ffdb",
-    "deadline_at": "2026-10-26 09:54:47.147425+00:00",
-    "enrolled": false,
-    "overdue": true
    }
   ],
   "certificates": 59,
   "certificates_not_enrolled": 58,
-  "certificates_overdue": 57,
+  "certificates_overdue": 54,
   "policy": "queued candidates and certificates have a 24h maximum waiting-room SLA",
   "queue_active": 0,
   "queue_overdue": 0,
