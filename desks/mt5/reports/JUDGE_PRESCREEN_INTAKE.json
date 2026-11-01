@@ -1,16 +1,16 @@
 {
  "schema": "judge_prescreen/1.3",
- "generated_at": "2026-10-31T19:02:20+00:00",
+ "generated_at": "2026-11-01T13:06:39+00:00",
  "mode": "SHADOW",
- "rows": 1650629,
- "rows_already_ruled_not_screened": 577958,
+ "rows": 1642579,
+ "rows_already_ruled_not_screened": 614374,
  "would_kill": {
-  "needs_data": 978,
+  "needs_data": 980,
   "chart_short": 0,
-  "sibling_dead": 279659
+  "sibling_dead": 277733
  },
- "would_kill_total": 280637,
- "would_kill_share": 0.170018,
+ "would_kill_total": 278713,
+ "would_kill_share": 0.16968,
  "removed_from_docket": 0,
  "holdout_sent_to_judge": 0,
  "rule_acts": {
@@ -21,14 +21,14 @@
  "sibling_k": 5,
  "sibling_canon_k": null,
  "sibling_would_kill_by_k": {
-  "5": 279659,
-  "10": 200441,
-  "20": 115573,
-  "40": 53646,
-  "80": 31526
+  "5": 277733,
+  "10": 206240,
+  "20": 127516,
+  "40": 61254,
+  "80": 35982
  },
- "ms_per_row": 1.58317,
- "seconds": 2613.223,
+ "ms_per_row": 1.27684,
+ "seconds": 2097.313,
  "samples": {
   "needs_data": [
    {
@@ -338,8 +338,8 @@
  },
  "missed_growth": [
   {
-   "day": "2026-10-31",
-   "at": "2026-10-31T19:02:20+00:00",
+   "day": "2026-11-01",
+   "at": "2026-11-01T13:06:39+00:00",
    "rail": "judge_prescreen",
    "side": "cost",
    "kind": "opportunity_cost",
@@ -353,14 +353,14 @@
    },
    "would_act_sibling_dead": {
     "k": 5,
-    "true_survivors_killed": 12,
-    "cleared_in_sample_killed": 1281,
+    "true_survivors_killed": 13,
+    "cleared_in_sample_killed": 1416,
     "basis": "MEASURED by the look-ahead-free ledger replay"
    }
   },
   {
-   "day": "2026-10-31",
-   "at": "2026-10-31T19:02:20+00:00",
+   "day": "2026-11-01",
+   "at": "2026-11-01T13:06:39+00:00",
    "rail": "judge_prescreen",
    "side": "gain",
    "kind": "compute_freed",
@@ -368,8 +368,8 @@
    "verdict": "MEASURED",
    "units": "judge build seconds freed (rows removed x measured judge seconds per cell)",
    "rows_removed": 0,
-   "seconds_per_cell": 0.1601565975620607,
-   "would_free_seconds_if_all_rules_acted": 44945.9
+   "seconds_per_cell": 0.15765272607838843,
+   "would_free_seconds_if_all_rules_acted": 43939.9
   }
  ],
  "note": "SHADOW records what each rule WOULD remove and removes nothing; every row still reaches the sealed judge. CANON (a code constant) removes only rules marked rule_acts, minus a 1-in-20 holdout, and only after a durable KILL."
