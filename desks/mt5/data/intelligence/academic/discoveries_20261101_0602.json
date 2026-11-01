@@ -1,0 +1,41 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "From extreme weather to agricultural consequences with agentic AI",
+    "summary": "Extreme weather is forecast days ahead, yet its consequences for agriculture remain hard to predict: a forecast says where a storm will strike, not which crops will suffer or how much is at risk, and ",
+    "url": "https://arxiv.org/abs/2610.40641v1",
+    "published": "2026-10-29T17:58:53Z",
+    "trading_terms": [
+      "risk"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Finding Competitive Equilibria in Online Marketplaces with Platform Fees, Taxes, and Subsidies",
+    "summary": "We study equilibrium computation in multi-unit trading networks with valuations satisfying generalized full substitutes and agent- and transaction-specific piecewise-linear transfer functions. These t",
+    "url": "https://arxiv.org/abs/2610.40626v1",
+    "published": "2026-10-29T17:56:24Z",
+    "trading_terms": [
+      "trading"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Finding Competitive Equilibria in Online Marketplaces with Platform Fees, Taxes, and Subsidies",
+    "summary": "We study equilibrium computation in multi-unit trading networks with valuations satisfying generalized full substitutes and agent- and transaction-specific piecewise-linear transfer functions. These t",
+    "url": "https://arxiv.org/abs/2610.40626v1",
+    "published": "2026-10-29T17:56:24Z",
+    "trading_terms": [
+      "trading"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]

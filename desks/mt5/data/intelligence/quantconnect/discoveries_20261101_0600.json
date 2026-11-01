@@ -1,0 +1,9 @@
+[
+  {
+    "source": "quantconnect",
+    "kind": "stub",
+    "needs_selector_work": true,
+    "host": "www.quantconnect.com/tutorials/strategy-library",
+    "why": "fetched OK, content is client-side rendered"
+  }
+]
