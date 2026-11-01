@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-01T07:30:04.189354+00:00",
+  "swept_at": "2026-11-01T07:45:03.604831+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -3793,7 +3793,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 53,
-      "shadow_exp_r": 0.1752,
+      "shadow_exp_r": 0.2158,
       "woke_on_shadow": false
     },
     "USDJPY|macro_conditional_continuous": {
