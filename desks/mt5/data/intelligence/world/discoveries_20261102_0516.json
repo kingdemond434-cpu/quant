@@ -1,0 +1,2660 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Invest in stock indices, Indices trading - RoboForex",
+  "url": "https://roboforex.com/forex-trading/assets/indices/",
+  "published": "2026-11-02T05:14:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b3799b43668de950b102",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "ETF Trading, Invest into stocks or other assets, Buy ETF - RoboForex",
+  "url": "https://roboforex.com/forex-trading/assets/etf/",
+  "published": "2026-11-02T05:14:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9eff7c54697ae6880d27",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Invest in Soft commodities: cocoa, coffee, corn, Start trading - RoboForex",
+  "url": "https://roboforex.com/forex-trading/assets/soft-commodities/",
+  "published": "2026-11-02T05:14:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "dd1137de2b8afeb4b657",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Invest in ETFs and CFDs on energy commodities: oil, natural gas - RoboForex",
+  "url": "https://roboforex.com/forex-trading/assets/energies/",
+  "published": "2026-11-02T05:14:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8a69fcfe13d5921f94ad",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Negative Balance Protection - RoboForex",
+  "url": "https://roboforex.com/clients/services/negative-balance-protection/",
+  "published": "2026-11-02T05:14:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "bda6f96fe3ff68eeb126",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "<![CDATA[Market Analysis]]>",
+  "url": "https://roboforex.com/beginners/analytics/forex-forecast/rss/",
+  "published": "2026-11-02T05:14:09+00:00",
+  "symbols": [
+   "EURUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [
+   "https://www.tesla.com/sites/default/files/downloads/TSLA-Q2-2025-Update.pdf"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d1075f05c45c7cc01ee6",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "US Tech price forecast and analysis for today, 11 September 2026 - RoboForex",
+  "url": "https://roboforex.com/beginners/analytics/forex-forecast/indices/ustech-forecast-2026-09-11/",
+  "published": "2026-11-02T05:14:12+00:00",
+  "symbols": [
+   "EURUSD",
+   "XAUUSD",
+   "XTIUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "H4"
+  ],
+  "patterns": [
+   "breakout",
+   "flow",
+   "gap",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6f6d2cd5c859a8e74a16",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "The primary driver of the previous session\u2019s sell-off was an acceleration in the annual growth rate of the US Producer Price Index ( PPI ) to 5.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "rate"
+    ],
+    "direction": [
+     "sell-off"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "EURUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "brent",
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "XBRUSD",
+      "USDCAD",
+      "USDNOK"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "strait of hormuz: energy flow: OPEC / inventories / chokepoints -> oil, CAD, NOK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8220d55e136c"
+   },
+   {
+    "claim": "Open Account Editors\u2019 picks EURUSD forecast 2026\u20132027: technical analysis, price levels & predictions EURUSD has recovered from the July lows and is trading near 1.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4e07cff013ea"
+   },
+   {
+    "claim": "The pair has reclaimed EMA65 on the daily, formed a bullish EMA crossover on H4, and the US-eurozone GDP gap has narrowed sharply (US 1.",
+    "lang": "en",
+    "quantities": [
+     "gap"
+    ],
+    "direction": [
+     "bullish"
+    ],
+    "horizon": [
+     "daily",
+     "h4"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "EURUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "brent",
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "XBRUSD",
+      "USDCAD",
+      "USDNOK"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "strait of hormuz: energy flow: OPEC / inventories / chokepoints -> oil, CAD, NOK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fd7220b3c5cd"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Citigroup Inc. stocks CFD (C) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/C/",
+  "published": "2026-11-02T05:14:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c32977b1313368617ec2",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Exxon Mobil Corporation stocks CFD (XOM) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/XOM/",
+  "published": "2026-11-02T05:14:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d5f544e7a2f382c2621e",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Chevron Corporation stocks CFD (CVX) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/CVX/",
+  "published": "2026-11-02T05:14:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b9aa2170565381df98e4",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Newmont Mining Corporation stocks CFD (NEM) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/NEM/",
+  "published": "2026-11-02T05:14:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e076a1597271ab4b65fc",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "JPMorgan Chase &amp; Co. stocks CFD (JPM) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/JPM/",
+  "published": "2026-11-02T05:14:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1e18581a2a6134f0f6c4",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Bank of America Corporation stocks CFD (BAC) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/BAC/",
+  "published": "2026-11-02T05:14:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c69ad9daedf75656c253",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "eBay Inc. stocks CFD (EBAY) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/EBAY/",
+  "published": "2026-11-02T05:14:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "36ef9ce20ed48a9cb76c",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.es.html",
+  "published": "2026-11-02T05:14:26+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "es",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.es.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "de9b50568db3dab648a6",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.et.html",
+  "published": "2026-11-02T05:14:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "et",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.et.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ee615e9f45c287ca83ae",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "kes"
+     ],
+     "transfer_only": [
+      "kes->fx (KES not quoted)"
+     ],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.fi.html",
+  "published": "2026-11-02T05:14:29+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "fi",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fi.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2aab4c621839b546c2da",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "tase"
+     ],
+     "transfer_only": [
+      "tase->indices (TASE)"
+     ],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.fr.html",
+  "published": "2026-11-02T05:14:32+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "24142216a95dafa98d37",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.ga.html",
+  "published": "2026-11-02T05:14:34+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "ga",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ga.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "42801c48213ac7857182",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.hr.html",
+  "published": "2026-11-02T05:14:36+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "hr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "623f9ad27e7b0db57ce1",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.hu.html",
+  "published": "2026-11-02T05:14:38+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "hu",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hu.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "49261564791524acf905",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2012/12/",
+  "published": "2026-11-02T05:14:39+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2012/11/",
+  "published": "2026-11-02T05:14:41+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2012/10/",
+  "published": "2026-11-02T05:14:43+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2012/09/",
+  "published": "2026-11-02T05:14:45+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2012/08/",
+  "published": "2026-11-02T05:14:47+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2012/07/",
+  "published": "2026-11-02T05:14:49+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2012/06/",
+  "published": "2026-11-02T05:14:51+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u6e2f\u5143\u5b9a\u671f\u5b58\u6b3e - \u5b9a\u671f\u5b58\u6b3e - \u5916\u532f\u9ec3\u91d1 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/deposit-rate.php?currency=hkd&sortcolumn=-6",
+  "published": "2026-11-02T05:14:56+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XPTUSD",
+   "HK50",
+   "CHINAH",
+   "US500",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCNH",
+   "USDHKD",
+   "BTCUSD",
+   "AlibabaGroup"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "34db2060fdffa3f8c711",
+  "host": "www.etnet.com.hk",
+  "claims": [
+   {
+    "claim": "68\u5398\u9023\u8dcc\u5169\u65e5\uff0c\u9694\u591c\u606f\u8dcc\u81f32.",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u9694\u591c"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u9694\u591c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XPTUSD",
+      "HK50",
+      "CHINAH",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCNH",
+      "USDHKD",
+      "BTCUSD",
+      "AlibabaGroup"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1",
+      "\u767d\u91d1",
+      "\u6052\u751f",
+      "\u570b\u4f01\u6307\u6578",
+      "\u7f8e\u80a1",
+      "\u6eec\u6df1",
+      "\u6b50\u5143",
+      "\u82f1\u938a",
+      "\u65e5\u5713",
+      "\u6fb3\u5143",
+      "\u4eba\u6c11\u5e63",
+      "\u6e2f\u5143",
+      "bitcoin",
+      "\u963f\u91cc\u5df4\u5df4"
+     ],
+     "transfer_only": [
+      "\u6eec\u6df1->indices (China A-share)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a2371d3e1c8b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u6e2f\u5143\u5b9a\u671f\u5b58\u6b3e - \u5b9a\u671f\u5b58\u6b3e - \u5916\u532f\u9ec3\u91d1 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/deposit-rate.php?currency=hkd&sortcolumn=-7",
+  "published": "2026-11-02T05:15:00+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XPTUSD",
+   "HK50",
+   "CHINAH",
+   "US500",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCNH",
+   "USDHKD",
+   "BTCUSD",
+   "AlibabaGroup"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e76b29ace67fbc3380b9",
+  "host": "www.etnet.com.hk",
+  "claims": [
+   {
+    "claim": "68\u5398\u9023\u8dcc\u5169\u65e5\uff0c\u9694\u591c\u606f\u8dcc\u81f32.",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u9694\u591c"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u9694\u591c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XPTUSD",
+      "HK50",
+      "CHINAH",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCNH",
+      "USDHKD",
+      "BTCUSD",
+      "AlibabaGroup"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1",
+      "\u767d\u91d1",
+      "\u6052\u751f",
+      "\u570b\u4f01\u6307\u6578",
+      "\u7f8e\u80a1",
+      "\u6eec\u6df1",
+      "\u6b50\u5143",
+      "\u82f1\u938a",
+      "\u65e5\u5713",
+      "\u6fb3\u5143",
+      "\u4eba\u6c11\u5e63",
+      "\u6e2f\u5143",
+      "bitcoin",
+      "\u963f\u91cc\u5df4\u5df4"
+     ],
+     "transfer_only": [
+      "\u6eec\u6df1->indices (China A-share)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a2371d3e1c8b"
+   },
+   {
+    "claim": "07% \u66f4\u65b0\uff1a30/10/2026 16:15 \u5916\u532f\u9ec3\u91d1 \u65b0\u805e \u3010\u91d1\u878d\u79d1\u6280\u5468\u3011\u6ed9\u8c50:\u5ba2\u6236\u5c07\u53ef\u65bc\u6ed9\u8c50\u9999\u6e2f\u6d41\u52d5\u7406\u8ca1\u61c9\u7528\u7a0b\u5f0f\u8cb7\u8ce3\u6ed9\u8c50RedCoin\uff0c\u4ee5\u8f03\u4f4e\u9580\u6abb\u8a8d\u8cfc\u4ee3\u5e63\u5316\u6295\u8cc7\u7522\u54c1 02/11/2026 12:45 \u65b0\u805e \u5c08\u984c\u900f\u8996 \u91d1\u878d\u79d1\u6280\u5468 | \u4f59\u5049\u6587\u516c\u5e03\u56db\u9805\u91d1\u878d\u79d1\u6280\u63aa\u65bd\uff0c\u7814AI\u4ee3\u7406\u61c9\u7528\u5834\u666f\u53ca\u9280\u884c\u540c\u696d\u9593\u4ee3\u5e63\u5316\u5b58\u6b3e\u5168\u6642\u4ea4\u6613\u7b49 02/11/2026 12:48 \u532f\u6d77\u5a01\u8a00\uff0d\u6bdb\u5049\u5ec9 02/11/2026 11:24 \u300a\u532f\u6d77\u5a01\u8a00\uff0d\u6bdb\u5049\u5ec9\u300b\u300a\u532f\u6d77\u5a01\u8a00\uff0d\u6bdb\u5049\u5ec9\u300b\u79d1\u6280\u80a1\u4fe1\u7528\u5371\u6a5f\u7591\u96f2\u8513\u5ef6\uff0c\u62d6\u7d2f\u91d1\u50f9\u66b4\u8dcc\uff0c\u5e02\u5834\u7dca\u76ef\u4e2d\u671f\u9078\u8209\u7d50\u679c \u5099\u8a3b \u5b9a\u671f\u5b58\u6b3e\u8cc7\u6599\u53ea\u4f9b\u53c3\u8003\uff0c\u500b\u5225\u9280\u884c\u6709\u512a\u60e0\u9650\u671f\u53ca\u984d\u5ea6\u9650\u5236\uff0c\u6700\u7d42\u689d\u6b3e\u4ee5\u9280\u884c\u516c\u5e03\u70ba\u6e96\u3002",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u9ec3\u91d1",
+     "\u5916\u532f"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "49a46a1d8732"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u6e2f\u5143\u5b9a\u671f\u5b58\u6b3e - \u5b9a\u671f\u5b58\u6b3e - \u5916\u532f\u9ec3\u91d1 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/deposit-rate.php?currency=hkd&sortcolumn=-8",
+  "published": "2026-11-02T05:15:03+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XPTUSD",
+   "HK50",
+   "CHINAH",
+   "US500",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCNH",
+   "USDHKD",
+   "BTCUSD",
+   "AlibabaGroup"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "98edc9f44df840c487a2",
+  "host": "www.etnet.com.hk",
+  "claims": [
+   {
+    "claim": "68\u5398\u9023\u8dcc\u5169\u65e5\uff0c\u9694\u591c\u606f\u8dcc\u81f32.",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u9694\u591c"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u9694\u591c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XPTUSD",
+      "HK50",
+      "CHINAH",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCNH",
+      "USDHKD",
+      "BTCUSD",
+      "AlibabaGroup"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1",
+      "\u767d\u91d1",
+      "\u6052\u751f",
+      "\u570b\u4f01\u6307\u6578",
+      "\u7f8e\u80a1",
+      "\u6eec\u6df1",
+      "\u6b50\u5143",
+      "\u82f1\u938a",
+      "\u65e5\u5713",
+      "\u6fb3\u5143",
+      "\u4eba\u6c11\u5e63",
+      "\u6e2f\u5143",
+      "bitcoin",
+      "\u963f\u91cc\u5df4\u5df4"
+     ],
+     "transfer_only": [
+      "\u6eec\u6df1->indices (China A-share)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a2371d3e1c8b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u6e2f\u5143\u5b9a\u671f\u5b58\u6b3e - \u5b9a\u671f\u5b58\u6b3e - \u5916\u532f\u9ec3\u91d1 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/deposit-rate.php?currency=hkd&sortcolumn=-9",
+  "published": "2026-11-02T05:15:08+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XPTUSD",
+   "HK50",
+   "CHINAH",
+   "US500",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCNH",
+   "USDHKD",
+   "BTCUSD",
+   "AlibabaGroup"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "34143bc0b0c4dafeb843",
+  "host": "www.etnet.com.hk",
+  "claims": [
+   {
+    "claim": "68\u5398\u9023\u8dcc\u5169\u65e5\uff0c\u9694\u591c\u606f\u8dcc\u81f32.",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u9694\u591c"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u9694\u591c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XPTUSD",
+      "HK50",
+      "CHINAH",
+      "US500",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCNH",
+      "USDHKD",
+      "BTCUSD",
+      "AlibabaGroup"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1",
+      "\u767d\u91d1",
+      "\u6052\u751f",
+      "\u570b\u4f01\u6307\u6578",
+      "\u7f8e\u80a1",
+      "\u6eec\u6df1",
+      "\u6b50\u5143",
+      "\u82f1\u938a",
+      "\u65e5\u5713",
+      "\u6fb3\u5143",
+      "\u4eba\u6c11\u5e63",
+      "\u6e2f\u5143",
+      "bitcoin",
+      "\u963f\u91cc\u5df4\u5df4"
+     ],
+     "transfer_only": [
+      "\u6eec\u6df1->indices (China A-share)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a2371d3e1c8b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "CNH \u4eba\u6c11\u5e63(\u96e2\u5cb8) - \u9280\u884c\u5916\u5e63\u514c\u63db - \u5916\u532f\u9ec3\u91d1 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/bank-exchange-rate.php?currency=cnh",
+  "published": "2026-11-02T05:15:12+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2fc889b5538ec0c8ed2c",
+  "host": "www.etnet.com.hk",
+  "claims": [
+   {
+    "claim": "1728 -- -- 02/11/2026 21:15 \u795e\u5dde\u4eba\u5e63\u65b0\u805e \u5916\u532f\u9ec3\u91d1 \u65b0\u805e \u300a\u795e\u5dde\u62c6\u606f\u300b\u6536\u6c345150\u5104\uff0cShibor\u9694\u591c\u8dcc0.",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u9694\u591c",
+     "\u9ec3\u91d1",
+     "\u5916\u532f"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u9694\u591c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5f59d4ddbb02"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "NZD \u7d10\u5143 - \u9280\u884c\u5916\u5e63\u514c\u63db - \u5916\u532f\u9ec3\u91d1 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/bank-exchange-rate.php?currency=nzd",
+  "published": "2026-11-02T05:15:17+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "968c99e4043b82b169c5",
+  "host": "www.etnet.com.hk",
+  "claims": [
+   {
+    "claim": "50% \u65b0\u805e \u5c08\u984c\u900f\u8996 \u91d1\u878d\u79d1\u6280\u5468 | \u4f59\u5049\u6587\u516c\u5e03\u56db\u9805\u91d1\u878d\u79d1\u6280\u63aa\u65bd\uff0c\u7814AI\u4ee3\u7406\u61c9\u7528\u5834\u666f\u53ca\u9280\u884c\u540c\u696d\u9593\u4ee3\u5e63\u5316\u5b58\u6b3e\u5168\u6642\u4ea4\u6613\u7b49 02/11/2026 12:48 \u5916\u532f\u9ec3\u91d1 \u65b0\u805e \u3010\u91d1\u878d\u79d1\u6280\u5468\u3011\u6ed9\u8c50:\u5ba2\u6236\u5c07\u53ef\u65bc\u6ed9\u8c50\u9999\u6e2f\u6d41\u52d5\u7406\u8ca1\u61c9\u7528\u7a0b\u5f0f\u8cb7\u8ce3\u6ed9\u8c50RedCoin\uff0c\u4ee5\u8f03\u4f4e\u9580\u6abb\u8a8d\u8cfc\u4ee3\u5e63\u5316\u6295\u8cc7\u7522\u54c1 02/11/2026 12:45 \u532f\u6d77\u5a01\u8a00\uff0d\u6bdb\u5049\u5ec9 02/11/2026 11:24 \u300a\u532f\u6d77\u5a01\u8a00\uff0d\u6bdb\u5049\u5ec9\u300b\u300a\u532f\u6d77\u5a01\u8a00\uff0d\u6bdb\u5049\u5ec9\u300b\u79d1\u6280\u80a1\u4fe1\u7528\u5371\u6a5f\u7591\u96f2\u8513\u5ef6\uff0c\u62d6\u7d2f\u91d1\u50f9\u66b4\u8dcc\uff0c\u5e02\u5834\u7dca\u76ef\u4e2d\u671f\u9078\u8209\u7d50\u679c \u5099\u8a3b \u8cc7\u6599\u7531\u76f8\u95dc\u9280\u884c\u63d0\u4f9b\uff0c\u53ea\u4f9b\u53c3\u8003\u3002",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u9ec3\u91d1",
+     "\u5916\u532f"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "96bdb853571b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "CAD \u52a0\u5143 - \u9280\u884c\u5916\u5e63\u514c\u63db - \u5916\u532f\u9ec3\u91d1 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/bank-exchange-rate.php?currency=cad",
+  "published": "2026-11-02T05:15:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b9c998b2100d967b83af",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "055 - Toby Crabel - Short-Term... \u2014 The Algorithmic Advantage \u2014 Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/055-toby-crabel-short-term-futures-trading-with-size/id1703013320?i=1000783228611&l=ru",
+  "published": "2026-11-02T05:15:20+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ru",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F055-toby-crabel-short-term-futures-trading-with-size%2Fid1703013320%3Fi%3D1000783228611%26l%3Dru"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b44a445205fb32474f9b",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "054 - Kieran Duff - Trading fo... \u2014 The Algorithmic Advantage \u2014 Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/054-kieran-duff-trading-for-a-living/id1703013320?i=1000777494006&l=ru",
+  "published": "2026-11-02T05:15:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ru",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F054-kieran-duff-trading-for-a-living%2Fid1703013320%3Fi%3D1000777494006%26l%3Dru"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "de18ab9a17c84ceb3d79",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "053 - Martyn Tinsley - 2 of 2 ... \u2014 The Algorithmic Advantage \u2014 Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/053-martyn-tinsley-2-of-2-walk-forward-correlation/id1703013320?i=1000769572662&l=ru",
+  "published": "2026-11-02T05:15:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ru",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F053-martyn-tinsley-2-of-2-walk-forward-correlation%2Fid1703013320%3Fi%3D1000769572662%26l%3Dru"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b51987e56dba6e09fcdd",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "052 - Martyn Tinsley - 1 of 2 ... \u2014 The Algorithmic Advantage \u2014 Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/052-martyn-tinsley-1-of-2-building-robust-trading/id1703013320?i=1000767140263&l=ru",
+  "published": "2026-11-02T05:15:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.35,
+  "lang": "ru",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F052-martyn-tinsley-1-of-2-building-robust-trading%2Fid1703013320%3Fi%3D1000767140263%26l%3Dru"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f5228e497b7eca1b0db2",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "051 - Samir Varma - Classify R... \u2014 The Algorithmic Advantage \u2014 Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/051-samir-varma-classify-risk-dont-chase-alpha/id1703013320?i=1000761206056&l=ru",
+  "published": "2026-11-02T05:15:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ru",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F051-samir-varma-classify-risk-dont-chase-alpha%2Fid1703013320%3Fi%3D1000761206056%26l%3Dru"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "86d1486963fcb2e36b46",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "050 \u2013 Samir Varma - When Acade... \u2014 The Algorithmic Advantage \u2014 Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/050-samir-varma-when-academic-finance-theory-fails/id1703013320?i=1000759472276&l=ru",
+  "published": "2026-11-02T05:15:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "ru",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F050-samir-varma-when-academic-finance-theory-fails%2Fid1703013320%3Fi%3D1000759472276%26l%3Dru"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7c0ee7a88ad3a29b111e",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "049 - David Bush - Build a Hig... \u2014 The Algorithmic Advantage \u2014 Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/049-david-bush-build-a-high-performance-quant/id1703013320?i=1000757436554&l=ru",
+  "published": "2026-11-02T05:15:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "ru",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F049-david-bush-build-a-high-performance-quant%2Fid1703013320%3Fi%3D1000757436554%26l%3Dru"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ff5df9a300a39d91a526",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Prisijungti/Registruotis \u2013 Vikipedija",
+  "url": "https://lt.wikipedia.org/w/index.php?title=Specialus:Prisijungimas&returnto=Kategorija%3AAlgoritmai",
+  "published": "2026-11-02T05:15:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "faf849b2bf3d6df7c55d",
+  "host": "lt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Kategorija:Algoritmai \u2013 Vikipedija",
+  "url": "https://lt.wikipedia.org/w/index.php?title=Kategorija:Algoritmai&veaction=edit",
+  "published": "2026-11-02T05:15:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1c080ed9051210d0aaae",
+  "host": "lt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Per\u017ei\u016br\u0117ti \u0161altin\u012f Kategorija:Algoritmai \u2013 Vikipedija",
+  "url": "https://lt.wikipedia.org/w/index.php?title=Kategorija:Algoritmai&action=edit",
+  "published": "2026-11-02T05:15:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9105f060e3558ec75bfb",
+  "host": "lt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Straipsnio \u201eKategorija:Algoritmai\u201c istorija \u2013 Vikipedija",
+  "url": "https://lt.wikipedia.org/w/index.php?title=Kategorija:Algoritmai&action=history",
+  "published": "2026-11-02T05:15:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "MN"
+  ],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "lt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1b01b01af531ed177b09",
+  "host": "lt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u012e straipsn\u012f Kategorija:Algoritmai rodantys puslapiai \u2013 Vikipedija",
+  "url": "https://lt.wikipedia.org/wiki/Specialus:Kas_%C4%AF_%C4%8Dia_rodo/Kategorija:Algoritmai",
+  "published": "2026-11-02T05:15:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "lt",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b780c249546f304eaa8b",
+  "host": "lt.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Congress Trades API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/congress-trades",
+  "published": "2026-11-02T05:15:45+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/revolving-door",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news",
+   "https://api.quiverquant.com/datasets/daily-equity-prices"
+  ],
+  "n_endpoints": 19,
+  "vault_sha": "af9baf1540cbe0bfef9f",
+  "host": "api.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Insider Trades API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/insider-trades",
+  "published": "2026-11-02T05:15:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/revolving-door",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news",
+   "https://api.quiverquant.com/datasets/daily-equity-prices"
+  ],
+  "n_endpoints": 19,
+  "vault_sha": "f741f60d8a1e2140bfc8",
+  "host": "api.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Politician Net Worth API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/politician-net-worth",
+  "published": "2026-11-02T05:15:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/revolving-door",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news",
+   "https://api.quiverquant.com/datasets/daily-equity-prices"
+  ],
+  "n_endpoints": 19,
+  "vault_sha": "55a01ed6cf0a2ccf94c3",
+  "host": "api.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Government Contracts API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/government-contracts",
+  "published": "2026-11-02T05:15:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/revolving-door",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news",
+   "https://api.quiverquant.com/datasets/daily-equity-prices"
+  ],
+  "n_endpoints": 19,
+  "vault_sha": "9405179c44a4b01cf95a",
+  "host": "api.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Corporate Lobbying API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/corporate-lobbying",
+  "published": "2026-11-02T05:15:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/revolving-door",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news",
+   "https://api.quiverquant.com/datasets/daily-equity-prices"
+  ],
+  "n_endpoints": 19,
+  "vault_sha": "5ddb212ff525bff199ac",
+  "host": "api.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Corporate Donors API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/corporate-donors",
+  "published": "2026-11-02T05:15:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/revolving-door",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news",
+   "https://api.quiverquant.com/datasets/daily-equity-prices"
+  ],
+  "n_endpoints": 19,
+  "vault_sha": "3b9a9a8ecc5f25be7e6a",
+  "host": "api.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Executive Compensation API | Quiver API | Quiver Quantitative",
+  "url": "https://api.quiverquant.com/datasets/executive-compensation",
+  "published": "2026-11-02T05:15:57+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://api.quiverquant.com/static/css/datasetInfo.css?v=1.2",
+   "https://api.quiverquant.com/datasets/congress-trades",
+   "https://api.quiverquant.com/datasets/congress-stock-holdings",
+   "https://api.quiverquant.com/datasets/insider-trades",
+   "https://api.quiverquant.com/datasets/politician-net-worth",
+   "https://api.quiverquant.com/datasets/government-contracts",
+   "https://api.quiverquant.com/datasets/corporate-lobbying",
+   "https://api.quiverquant.com/datasets/revolving-door",
+   "https://api.quiverquant.com/datasets/corporate-donors",
+   "https://api.quiverquant.com/datasets/corporate-patents",
+   "https://api.quiverquant.com/datasets/hedge-fund-activity",
+   "https://api.quiverquant.com/datasets/executive-compensation",
+   "https://api.quiverquant.com/datasets/etf-holdings",
+   "https://api.quiverquant.com/datasets/top-shareholders",
+   "https://api.quiverquant.com/datasets/off-exchange-trading",
+   "https://api.quiverquant.com/datasets/trump-stock-trades",
+   "https://api.quiverquant.com/datasets/app-ratings",
+   "https://api.quiverquant.com/datasets/quiver-news",
+   "https://api.quiverquant.com/datasets/daily-equity-prices"
+  ],
+  "n_endpoints": 19,
+  "vault_sha": "047bee782365e414c85d",
+  "host": "api.quiverquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data - AlgoCloud",
+  "url": "https://algocloud.com/learning-academy/data/",
+  "published": "2026-11-02T05:16:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1100947f4fbe2dd9be56",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IBKR Trading API Solutions | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/ib-api.php?menu=B",
+  "published": "2026-11-02T05:16:02+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B",
+   "https://www.interactivebrokers.com/campus/traders-academy/api/",
+   "https://www.interactivebrokers.com/download/WebAPI_Onboarding_Questionnaire.pdf"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "446d8e200b784f49ba9e",
+  "host": "www.interactivebrokers.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Order Types and Algos | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/ordertypes.php?menu=B",
+  "published": "2026-11-02T05:16:10+00:00",
+  "symbols": [
+   "XAUUSD",
+   "NAS100",
+   "US500",
+   "USDTRY",
+   "Tesla"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "mean_reversion",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6d2806be4a165c6a41ea",
+  "host": "www.interactivebrokers.com",
+  "claims": [
+   {
+    "claim": "You want to buy 10 XYZ futures contracts as an auction order at the calculated opening price, which you think will be the best price of the day.",
+    "lang": "en",
+    "quantities": [
+     "futures",
+     "auction"
+    ],
+    "direction": [
+     "buy",
+     "contracts"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "nasdaq",
+      "s&p 500",
+      "try",
+      "php",
+      "tsla"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4ca01962e354"
+   },
+   {
+    "claim": "53 is significantly higher than the NBBO and above the daily trading range.",
+    "lang": "en",
+    "quantities": [
+     "range"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "nasdaq",
+      "s&p 500",
+      "try",
+      "php",
+      "tsla"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5564ade07706"
+   },
+   {
+    "claim": "however under certain circumstances IBKR may not be able to cancel such orders on a timely basis, including but not limited to when IBKR receives information on a corporate action within 48 hours of the announced effective date, and such GTC orders may continue to remain in force and may be eligible for execution.",
+    "lang": "en",
+    "quantities": [
+     "basis"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "nasdaq",
+      "s&p 500",
+      "try",
+      "php",
+      "tsla"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1eeca5ee5935"
+   },
+   {
+    "claim": "Directed liquidity-adding orders to IBKR ATS whose effective price would match or cross the opposite side NBBO are repriced to be 1 minimum tick increment away (less aggressive) from the opposite side, except for Pegged-to-Midpoint orders with positive offsets when the NBBO spread is one cent, in which case the order would be repriced to the NBBO midpoint.",
+    "lang": "en",
+    "quantities": [
+     "liquidity",
+     "spread"
+    ],
+    "direction": [
+     "positive"
+    ],
+    "horizon": [
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "nasdaq",
+      "s&p 500",
+      "try",
+      "php",
+      "tsla"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "147d787fcb2f"
+   },
+   {
+    "claim": "Order Type In Depth - Limit-on-Open Buy Order Step 1 \u2013 Enter a Limit-on-Open Buy Order XYZ stock has a current Ask price of 38.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "nasdaq",
+      "s&p 500",
+      "try",
+      "php",
+      "tsla"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d5461e48e725"
+   },
+   {
+    "claim": "Video Lesson Order Type Outside RTH Products: Stocks, ETFs, Options, Futures, FOPs, Currencies, Bonds, Funds, Warrants, EFPs Platforms: TWS, IBKR Desktop, IBKR Mobile, Client Portal Regions: US and Non-US Products Routing: Smart, Directed You can instruct an order to continue to work after normal trading hours have ended by enabling Outside RTH (outside regular trading hours).",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "options",
+     "futures"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "hours"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "nasdaq",
+      "s&p 500",
+      "try",
+      "php",
+      "tsla"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "27574d2406da"
+   }
+  ],
+  "n_claims": 6
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Securities Financing | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/securities-financing.php?menu=B",
+  "published": "2026-11-02T05:16:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d68bc22b83bc3e4129ac",
+  "host": "www.interactivebrokers.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
