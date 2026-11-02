@@ -45,7 +45,7 @@
    "status": "FAILED"
   },
   "forward_identity_reconciliation": {
-   "finished_at": "2026-11-02T07:28:05.190796+00:00",
+   "finished_at": "2026-11-02T11:49:37.519472+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -57,15 +57,10 @@
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-desk-pull.service"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-11-02T09:39:14.454176+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-11-02T11:48:30.511559+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
   },
   "mechanism_independence": {
    "finished_at": "2026-11-02T07:29:03.747851+00:00",
@@ -86,5 +81,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-11-02T09:39:14.454176+00:00"
+ "updated_at": "2026-11-02T11:49:37.519472+00:00"
 }
