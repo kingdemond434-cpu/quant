@@ -1,0 +1,456 @@
+[
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Which measure should I use in the estimation of GARCH model for option pricing, the phsical one or the neutral one?",
+  "url": "https://quant.stackexchange.com/questions/85320/which-measure-should-i-use-in-the-estimation-of-garch-model-for-option-pricing",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 2,
+  "tags": [
+   "options",
+   "monte-carlo",
+   "garch"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Two-Period Non-Linear Binomial Tree (to price a long straddle under different borrowing and lending rates ($r = 0\\%,\\ R = 10\\%$))",
+  "url": "https://quant.stackexchange.com/questions/86921/two-period-non-linear-binomial-tree-to-price-a-long-straddle-under-different-bo",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 0,
+  "tags": [
+   "option-pricing",
+   "stochastic-calculus"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Terminal vs Path Variation",
+  "url": "https://quant.stackexchange.com/questions/86903/terminal-vs-path-variation",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 1,
+  "tags": [
+   "options",
+   "option-pricing",
+   "volatility",
+   "black-scholes"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Mid price vs micro price for IV calculation",
+  "url": "https://quant.stackexchange.com/questions/85835/mid-price-vs-micro-price-for-iv-calculation",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 0,
+  "tags": [
+   "volatility"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Areas of research in calibration of stochastic volatility models",
+  "url": "https://quant.stackexchange.com/questions/78738/areas-of-research-in-calibration-of-stochastic-volatility-models",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 2,
+  "tags": [
+   "stochastic-processes",
+   "stochastic-volatility",
+   "heston",
+   "calibration",
+   "pde"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Relationship between fractional Brownian motion and stretched exponential relaxation",
+  "url": "https://quant.stackexchange.com/questions/86916/relationship-between-fractional-brownian-motion-and-stretched-exponential-relaxa",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 0,
+  "tags": [
+   "brownian-motion"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "DV01 for Bond Forwards",
+  "url": "https://quant.stackexchange.com/questions/78626/dv01-for-bond-forwards",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 1,
+  "tags": [
+   "bond",
+   "forward",
+   "dv01"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Validation set on Walk Forward Analysis",
+  "url": "https://quant.stackexchange.com/questions/74272/validation-set-on-walk-forward-analysis",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 0,
+  "tags": [
+   "backtesting",
+   "performance-evaluation",
+   "model-validation"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Covered interest parity for USD/COP: which public rates to use for the peso and dollar legs?",
+  "url": "https://quant.stackexchange.com/questions/86914/covered-interest-parity-for-usd-cop-which-public-rates-to-use-for-the-peso-and",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 1,
+  "tags": [
+   "interest-rates",
+   "fx",
+   "forward",
+   "cross-currency-basis"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Can asynchronous bid\u2013ask snapshots identify one 0DTE Gamma curve, or only a family of possible curves?",
+  "url": "https://quant.stackexchange.com/questions/86912/can-asynchronous-bid-ask-snapshots-identify-one-0dte-gamma-curve-or-only-a-fami",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 0,
+  "tags": [
+   "implied-volatility",
+   "gamma"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Why the Esscher transform is the right transform for pricing formula?",
+  "url": "https://quant.stackexchange.com/questions/69081/why-the-esscher-transform-is-the-right-transform-for-pricing-formula",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 1,
+  "tags": [
+   "black-scholes",
+   "asset-pricing",
+   "martingale",
+   "wienerprocess",
+   "equivalent-measure"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Interpretation of significant positive Alpha and negative Momentum",
+  "url": "https://quant.stackexchange.com/questions/79581/interpretation-of-significant-positive-alpha-and-negative-momentum",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 0,
+  "tags": [
+   "regression",
+   "factor-models",
+   "fama-french",
+   "performance-evaluation",
+   "momentum"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Has anyone actually built a robust sub-1h trading model?",
+  "url": "https://quant.stackexchange.com/questions/85868/has-anyone-actually-built-a-robust-sub-1h-trading-model",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 0,
+  "tags": [
+   "time-series",
+   "quant-trading-strategies",
+   "algorithmic-trading",
+   "backtesting",
+   "high-frequency"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Sourcing un-conflated US Equities MBP data for retail algorithmic engines: Architectural and licensing constraints",
+  "url": "https://quant.stackexchange.com/questions/85751/sourcing-un-conflated-us-equities-mbp-data-for-retail-algorithmic-engines-archi",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 0,
+  "tags": [
+   "equities",
+   "market-data",
+   "high-frequency",
+   "market-microstructure",
+   "orderbook"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Regime filter for an intrabar scalping signal on adaptive (KAMA-style) OHLC candles: detecting a range without lagging the release on breakouts",
+  "url": "https://quant.stackexchange.com/questions/86905/regime-filter-for-an-intrabar-scalping-signal-on-adaptive-kama-style-ohlc-cand",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 0,
+  "tags": [
+   "time-series",
+   "quant-trading-strategies",
+   "algorithmic-trading",
+   "trends",
+   "market-regimes"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How does the U.S. SR 26-2 Revised Guidance on Model Risk Management differ from the prior SR 11-7 Guidance on Model Risk Management?",
+  "url": "https://quant.stackexchange.com/questions/85597/how-does-the-u-s-sr-26-2-revised-guidance-on-model-risk-management-differ-from",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 1,
+  "tags": [
+   "risk-management",
+   "models",
+   "model-validation"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "US Market CDS Data during the Corona Pandemic for Bachelor Thesis",
+  "url": "https://quant.stackexchange.com/questions/64219/us-market-cds-data-during-the-corona-pandemic-for-bachelor-thesis",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 0,
+  "tags": [
+   "cds",
+   "credit",
+   "default"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Derive historical price of a corporate bond using current market quotes",
+  "url": "https://quant.stackexchange.com/questions/81471/derive-historical-price-of-a-corporate-bond-using-current-market-quotes",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 3,
+  "tags": [
+   "fixed-income",
+   "bond",
+   "bond-yields"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Martingale property of the CEV model",
+  "url": "https://quant.stackexchange.com/questions/78843/martingale-property-of-the-cev-model",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 1,
+  "tags": [
+   "black-scholes",
+   "stochastic-processes",
+   "martingale"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Hedging an equity portfolio",
+  "url": "https://quant.stackexchange.com/questions/80473/hedging-an-equity-portfolio",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 0,
+  "tags": [
+   "hedging"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Under what circumstances is hedging a portfolio by shorting index futures profitable? (John C. Hull 11e Practice Questions 3.25)",
+  "url": "https://quant.stackexchange.com/questions/80039/under-what-circumstances-is-hedging-a-portfolio-by-shorting-index-futures-profit",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 0,
+  "tags": [
+   "futures",
+   "hedging",
+   "capm",
+   "index"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "How should I account for multiple strategy variants when evaluating out-of-sample crypto backtest results?",
+  "url": "https://quant.stackexchange.com/questions/86898/how-should-i-account-for-multiple-strategy-variants-when-evaluating-out-of-sampl",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": -1,
+  "tags": [
+   "backtesting"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "how to calculate the Sharpe ratio based on a list of trades, with space between them?",
+  "url": "https://quant.stackexchange.com/questions/71003/how-to-calculate-the-sharpe-ratio-based-on-a-list-of-trades-with-space-between",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 6,
+  "tags": [
+   "sharpe-ratio"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "CDS vs Corps recovery rates",
+  "url": "https://quant.stackexchange.com/questions/85858/cds-vs-corps-recovery-rates",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 0,
+  "tags": [
+   "credit-risk",
+   "credit-derivatives"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Free Data Source for Credit Spreads?",
+  "url": "https://quant.stackexchange.com/questions/31373/free-data-source-for-credit-spreads",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 3,
+  "tags": [
+   "interest-rates",
+   "market-data",
+   "spread",
+   "credit",
+   "bond-yields"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Does the regulatory feedback loop between PD and Asset Correlation under CRR imply a unique fixed-point MoC (for TTC PD)?",
+  "url": "https://quant.stackexchange.com/questions/85862/does-the-regulatory-feedback-loop-between-pd-and-asset-correlation-under-crr-imp",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 0,
+  "tags": [
+   "credit-risk"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Does the sign of a walk-forward candidate\u2019s OOS P&amp;L measure selection quality, or mostly the test period\u2019s level?",
+  "url": "https://quant.stackexchange.com/questions/85893/does-the-sign-of-a-walk-forward-candidate-s-oos-pl-measure-selection-quality-o",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 0,
+  "tags": [
+   "backtesting"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "What&#39;s the price of a lookback call option in the arbitrage-free CRR-model?",
+  "url": "https://quant.stackexchange.com/questions/60563/whats-the-price-of-a-lookback-call-option-in-the-arbitrage-free-crr-model",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 1,
+  "tags": [
+   "option-pricing",
+   "risk-neutral-measure",
+   "martingale",
+   "binomial-tree",
+   "equivalent-measure"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Deflated Sharpe Ratio when the number of trials is unknown: bound it, estimate an effective N, or rely only on a fresh holdout?",
+  "url": "https://quant.stackexchange.com/questions/85879/deflated-sharpe-ratio-when-the-number-of-trials-is-unknown-bound-it-estimate-a",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 0,
+  "tags": [
+   "fx",
+   "statistics",
+   "backtesting",
+   "sharpe-ratio",
+   "statistical-significance"
+  ]
+ },
+ {
+  "source": "quant_se",
+  "kind": "qa",
+  "title": "Online sources for quantitative finance research",
+  "url": "https://quant.stackexchange.com/questions/73853/online-sources-for-quantitative-finance-research",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-11-02T23:30:12+00:00",
+  "score": 9,
+  "tags": [
+   "quant-trading-strategies",
+   "research",
+   "resource"
+  ]
+ }
+]
