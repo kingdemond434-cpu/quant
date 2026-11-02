@@ -3,13 +3,13 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "finished_at": "2026-11-02T09:05:33.970011+00:00",
+   "finished_at": "2026-11-02T19:08:58.825947+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-11-02T09:26:33.926638+00:00",
+   "finished_at": "2026-11-02T19:10:45.864132+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -21,15 +21,15 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-11-02T09:05:51.679462+00:00",
+   "finished_at": "2026-11-02T19:09:35.722652+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-11-02T09:25:45.374272+00:00",
+   "finished_at": "2026-11-02T19:10:23.571961+00:00",
    "passes_completed": 1,
-   "returncode": 124,
+   "returncode": 1,
    "status": "FAILED"
   },
   "forward_clock_fence": {
@@ -45,10 +45,13 @@
    "status": "FAILED"
   },
   "forward_identity_reconciliation": {
-   "finished_at": "2026-11-02T11:49:37.519472+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
+   "command": [
+    "/home/quant/quant-platform/.venv/bin/python",
+    "desks/mt5/research/forward_reconcile.py"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-11-02T19:17:06.665764+00:00",
+   "status": "RUNNING"
   },
   "forward_lane_heal": {
    "finished_at": "2026-11-02T11:56:43.101767+00:00",
@@ -57,7 +60,7 @@
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "finished_at": "2026-11-02T11:48:30.511559+00:00",
+   "finished_at": "2026-11-02T19:14:59.022392+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -81,5 +84,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-11-02T11:57:25.885826+00:00"
+ "updated_at": "2026-11-02T19:17:06.665764+00:00"
 }
