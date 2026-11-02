@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-02T03:45:04.584929+00:00",
+  "swept_at": "2026-11-02T04:00:08.883086+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1966,8 +1966,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 57,
-      "shadow_exp_r": 0.2401,
+      "shadow_n": 58,
+      "shadow_exp_r": 0.2492,
       "woke_on_shadow": false
     },
     "GBPCHF|cross_asset_residual_asia": {
@@ -2010,8 +2010,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 19,
-      "shadow_exp_r": 0.4341,
+      "shadow_n": 20,
+      "shadow_exp_r": 0.4474,
       "woke_on_shadow": false
     },
     "GBPDKK|cross_asset_residual_asia": {
@@ -3914,7 +3914,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0213,
+      "shadow_exp_r": -0.0407,
       "woke_on_shadow": false
     },
     "USDNOK|carry_continuous": {
@@ -4133,8 +4133,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 56,
-      "shadow_exp_r": 0.7154,
+      "shadow_n": 57,
+      "shadow_exp_r": 0.7133,
       "woke_on_shadow": false
     },
     "USDSGD|cross_asset_residual_asia": {
@@ -4145,7 +4145,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 40,
-      "shadow_exp_r": -0.0104,
+      "shadow_exp_r": -0.0465,
       "woke_on_shadow": false
     },
     "USDSGD|macro_conditional_asia": {
@@ -4156,7 +4156,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2031,
+      "shadow_exp_r": -0.1917,
       "woke_on_shadow": false
     },
     "USDSGD|overnight_drift_continuous": {
@@ -4442,7 +4442,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.259,
+      "shadow_exp_r": -0.2375,
       "woke_on_shadow": false
     },
     "XAGEUR|range_reversion_continuous": {
