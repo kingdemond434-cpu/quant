@@ -1,0 +1,696 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cliente VIP - niveles y beneficios del programa - RoboForex",
+  "url": "https://roboforex.com/es/clients/services/vip-client/",
+  "published": "2026-11-02T09:47:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "39959376b8612bf77734",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Se\u00f1ales Forex gratuitas y an\u00e1lisis de mercado para MT4 y MT5 - Acuity - RoboForex",
+  "url": "https://roboforex.com/es/beginners/analytics/acuity/",
+  "published": "2026-11-02T09:47:29+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "bc1d76e0877937da178e",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading - Calculadora de ganancias y p\u00e9rdidas - RoboForex",
+  "url": "https://roboforex.com/es/beginners/start/profit-and-loss-calculator/",
+  "published": "2026-11-02T09:47:35+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFJPY",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURNZD",
+   "EURUSD",
+   "GBPAUD",
+   "GBPCAD",
+   "GBPCHF",
+   "GBPJPY",
+   "GBPNZD",
+   "GBPUSD",
+   "NZDCAD",
+   "NZDCHF",
+   "NZDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b8a6525b46c1f1e392a3",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "El monto requerido se calcula as\u00ed: Margen = (Lotes \u00d7 Tama\u00f1o del contrato \u00d7 Precio de entrada) \u00f7 Apalancamiento Si el capital de su cuenta cae por debajo del nivel de margen requerido, las posiciones abiertas pueden quedar sujetas a una llamada de margen o a un cierre autom\u00e1tico.",
+    "lang": "es",
+    "quantities": [
+     "cierre"
+    ],
+    "direction": [
+     "entrada",
+     "cae"
+    ],
+    "horizon": [
+     "cierre"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDMXN",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "xauusd",
+      "xagusd",
+      "wti",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "eurjpy",
+      "gbpjpy",
+      "audjpy",
+      "eurgbp",
+      "usdmxn",
+      "tsla",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "212919403882"
+   },
+   {
+    "claim": "Ganancia / P\u00e9rdida (Precio de cierre \u2212 Precio de entrada) \u00d7 Lotes \u00d7 Tama\u00f1o del contrato El resultado es positivo para una Compra cuando el precio sube;",
+    "lang": "es",
+    "quantities": [
+     "cierre"
+    ],
+    "direction": [
+     "entrada",
+     "compra"
+    ],
+    "horizon": [
+     "cierre"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDMXN",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "xauusd",
+      "xagusd",
+      "wti",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "eurjpy",
+      "gbpjpy",
+      "audjpy",
+      "eurgbp",
+      "usdmxn",
+      "tsla",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fe20eb01d55d"
+   },
+   {
+    "claim": "Comisi\u00f3n Lotes \u00d7 Tama\u00f1o del contrato \u00d7 Precio de entrada \u00d7 2 \u00d7 (Tasa de comisi\u00f3n \u00f7 1,000,000) El factor 2 cubre tanto la apertura como el cierre de la posici\u00f3n.",
+    "lang": "es",
+    "quantities": [
+     "tasa",
+     "apertura",
+     "cierre",
+     "factor"
+    ],
+    "direction": [
+     "entrada"
+    ],
+    "horizon": [
+     "apertura",
+     "cierre"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDMXN",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "xauusd",
+      "xagusd",
+      "wti",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "eurjpy",
+      "gbpjpy",
+      "audjpy",
+      "eurgbp",
+      "usdmxn",
+      "tsla",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "da4eb2ebb92c"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Calculadora de Trading: spread, pips, margen, apalancamiento, beneficio - RoboForex",
+  "url": "https://roboforex.com/es/beginners/start/forex-calculator/",
+  "published": "2026-11-02T09:47:37+00:00",
+  "symbols": [
+   "ADAUSD",
+   "AUDCAD",
+   "AUDCHF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFJPY",
+   "ETHUSD",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURNZD",
+   "EURUSD",
+   "GBPAUD",
+   "GBPCAD",
+   "GBPCHF",
+   "GBPJPY",
+   "GBPNZD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e1e6ccb097332464c582",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Pron\u00f3sticos de Forex 2026: an\u00e1lisis de mercado y predicciones de Forex para hoy - RoboForex",
+  "url": "https://roboforex.com/es/beginners/analytics/forex-forecast/",
+  "published": "2026-11-02T09:47:42+00:00",
+  "symbols": [
+   "AUDUSD",
+   "BTCUSD",
+   "EURUSD",
+   "GBPUSD",
+   "USDCAD",
+   "USDJPY",
+   "XAGUSD",
+   "XAUUSD",
+   "XTIUSD",
+   "Tesla"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "breakout",
+   "flow",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0ca81f8de8cea36a9371",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "Aqu\u00ed tendr\u00e1 a su disposici\u00f3n una gran cantidad de art\u00edculos anal\u00edticos diarios con pron\u00f3sticos para el mercado Forex que le ayudar\u00e1n a desarrollar estrategias de trading fiables y a profundizar en su comprensi\u00f3n de las tendencias actuales y emergentes del mercado.",
+    "lang": "es",
+    "quantities": [
+     "tendencia"
+    ],
+    "direction": [
+     "compr"
+    ],
+    "horizon": [
+     "diario"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "BTCUSD",
+      "Tesla"
+     ],
+     "mentioned": [
+      "oro",
+      "plata",
+      "petr\u00f3leo",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "bitcoin",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2d7902d3d223"
+   },
+   {
+    "claim": "viernes, octubre 30, 2026 Pron\u00f3stico semanal de divisas para 2\u20136 de noviembre de 2026: niveles y escenarios para forex, oro, US 500 y Bitcoin El pron\u00f3stico semanal para 2\u20136 de noviembre de 2026 incluye cuatro escenarios de venta y cuatro escenarios de compra para ocho instrumentos.",
+    "lang": "es",
+    "quantities": [
+     "oro"
+    ],
+    "direction": [
+     "venta",
+     "compra"
+    ],
+    "horizon": [
+     "semanal"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "oro",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "dd2d7c5f58be"
+   },
+   {
+    "claim": "Pron\u00f3stico semanal del EURUSD: los compradores intentan recuperar la iniciativa El par EURUSD inicia la nueva semana cerca de 1,1190 tras intentar recuperarse de los m\u00ednimos de octubre.",
+    "lang": "es",
+    "quantities": [
+     "m\u00ednimo"
+    ],
+    "direction": [
+     "compra"
+    ],
+    "horizon": [
+     "semanal",
+     "semana"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "a228363957fd"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "D\u00edas festivos del mercado financiero 2026 - calendario de festivos y d\u00edas bancarios - RoboForex",
+  "url": "https://roboforex.com/es/beginners/info/national-holidays/",
+  "published": "2026-11-02T09:47:47+00:00",
+  "symbols": [
+   "NAS100",
+   "CA60"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6d9e0b4e7484bbaabb94",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "El hecho es que los d\u00edas festivos suelen provocar una baja volatilidad en los mercados financieros;",
+    "lang": "es",
+    "quantities": [
+     "volatilidad"
+    ],
+    "direction": [
+     "baja"
+    ],
+    "horizon": [
+     "d\u00eda"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "CA60"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "tsx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b74ec836e63b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Horario de trading del mercado 2026 - horarios de sesiones por regi\u00f3n - RoboForex",
+  "url": "https://roboforex.com/es/beginners/info/forex-trading-hours/",
+  "published": "2026-11-02T09:47:51+00:00",
+  "symbols": [
+   "EURJPY",
+   "EURUSD",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "efa4ce4ff5dd6e6c65e0",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Webinarios y podcast - RoboForex",
+  "url": "https://roboforex.com/es/beginners/start/webinars-podcasts/",
+  "published": "2026-11-02T09:47:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a34729e87d3bd5336ae2",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Calendario econ\u00f3mico 2026: noticias y eventos financieros - RoboForex",
+  "url": "https://roboforex.com/es/beginners/analytics/economic-calendar/",
+  "published": "2026-11-02T09:47:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "42a30768b658670bd29a",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Preguntas frecuentes | RoboForex Help Center",
+  "url": "https://roboforex.com/es/help/",
+  "published": "2026-11-02T09:48:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-ES",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b443ae83a26652d3122d",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Programa de socios financieros Infinity - RoboForex",
+  "url": "https://roboforex.com/es/partner-program/",
+  "published": "2026-11-02T09:48:06+00:00",
+  "symbols": [
+   "BTCUSD",
+   "EURUSD",
+   "GBPUSD",
+   "US30",
+   "US500",
+   "USDJPY",
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f5cf5912628e53067b84",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Fidelidad de socios - RoboForex",
+  "url": "https://roboforex.com/es/promo/loyalty-program/",
+  "published": "2026-11-02T09:48:09+00:00",
+  "symbols": [
+   "BTCUSD",
+   "EURUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.95,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4e38e59dcd8278565406",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
