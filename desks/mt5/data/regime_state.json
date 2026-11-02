@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-02T13:30:04.006355+00:00",
+  "swept_at": "2026-11-02T13:45:04.016005+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1681,7 +1681,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.7302,
+      "shadow_exp_r": -0.7254,
       "woke_on_shadow": false
     },
     "EURSEK|overnight_gap_decay_asia": {
@@ -2484,7 +2484,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4816,
+      "shadow_exp_r": -0.4778,
       "woke_on_shadow": false
     },
     "GBPSEK|overnight_gap_decay_asia": {
@@ -4013,7 +4013,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.091,
+      "shadow_exp_r": -0.0797,
       "woke_on_shadow": false
     },
     "USDRUB|carry_continuous": {
@@ -4277,7 +4277,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0707,
+      "shadow_exp_r": -0.0599,
       "woke_on_shadow": false
     },
     "USDZAR|overnight_gap_decay_asia": {
@@ -4904,7 +4904,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0758,
+      "shadow_exp_r": -0.1463,
       "woke_on_shadow": false
     },
     "XAUEUR|cross_asset_residual_continuous": {
