@@ -3,21 +3,22 @@
  "create_time": 1793640888.201205,
  "status": "RUNNING",
  "started_utc": "2026-11-02T17:34:48+00:00",
- "beat_utc": "2026-11-02T20:05:17+00:00",
- "beats": 298,
+ "beat_utc": "2026-11-02T20:19:59+00:00",
+ "beats": 325,
  "beat_every_s": 30.0,
- "phase": "prewarm",
- "phase_started_utc": "2026-11-02T18:02:49+00:00",
- "phase_elapsed_s": 7347.2,
+ "phase": "plan_handoff",
+ "phase_started_utc": "2026-11-02T20:15:20+00:00",
+ "phase_elapsed_s": 278.9,
  "phases_done": {
-  "plan": 1653.1
+  "plan": 1653.1,
+  "prewarm": 7950.7
  },
  "deadlines": {
   "kind": "SLOW thresholds (amber, never a kill); only no_progress_s kills",
   "run_s": 129422.8,
   "run_deadline_utc": "2026-11-04T05:31:51+00:00",
   "phase_s": 153594.0,
-  "phase_deadline_utc": "2026-11-04T12:42:43+00:00",
+  "phase_deadline_utc": "2026-11-04T14:55:14+00:00",
   "no_progress_s": 1800.0,
   "consecutive_stalls": 0
  },
@@ -25,12 +26,12 @@
  "slow": [],
  "shards": {},
  "tree": {
-  "procs": 16,
-  "rss_mb": 4564.1,
-  "cpu_s": 17680.2
+  "procs": 1,
+  "rss_mb": 1452.5,
+  "cpu_s": 1794.3
  },
  "progress": "MEASURED",
- "last_progress_utc": "2026-11-02T20:05:17+00:00",
+ "last_progress_utc": "2026-11-02T20:19:59+00:00",
  "idle_s": 0.0,
  "progress_gaps": 0
 }
