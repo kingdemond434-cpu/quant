@@ -1,0 +1,60 @@
+[
+  {
+    "source": "central_bank",
+    "bank": "Fed",
+    "currency": "USD",
+    "feed": "https://www.federalreserve.gov/feeds/press_monetary.xml",
+    "published_utc": "2026-10-28T18:00:00+00:00",
+    "title": "Federal Reserve issues FOMC statement",
+    "link": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm",
+    "policy_signals": [],
+    "instruments": [
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "XAUUSD"
+    ]
+  },
+  {
+    "source": "central_bank",
+    "bank": "BoJ",
+    "currency": "JPY",
+    "feed": "https://www.boj.or.jp/en/rss/whatsnew.xml",
+    "published_utc": "2026-11-02T05:00:00+00:00",
+    "title": "Outlook for Economic Activity and Prices (October 2026, full text)",
+    "link": "http://www.boj.or.jp/en/mopo/outlook/gor2610b.pdf",
+    "policy_signals": [],
+    "instruments": [
+      "USDJPY",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "CADJPY",
+      "CHFJPY",
+      "NZDJPY"
+    ]
+  },
+  {
+    "source": "central_bank",
+    "bank": "BoJ",
+    "currency": "JPY",
+    "feed": "https://www.boj.or.jp/en/rss/whatsnew.xml",
+    "published_utc": "2026-11-02T04:00:00+00:00",
+    "title": "Sources of Changes in Current Account Balances and Market Operations (Oct.)",
+    "link": "http://www.boj.or.jp/en/statistics/boj/fm/juqf/juqf10.xlsx",
+    "policy_signals": [],
+    "instruments": [
+      "USDJPY",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "CADJPY",
+      "CHFJPY",
+      "NZDJPY"
+    ]
+  }
+]

@@ -1,0 +1,28 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Functional Tensor Trains for High-Order Greeks and Exposure Tails of Multi-Asset Structured Products",
+    "summary": "Risk management of worst-of autocallables needs price sensitivities (Greeks) up to third order and the potential future exposure, a tail quantile of the note's future value. In Monte Carlo, each order",
+    "url": "https://arxiv.org/abs/2610.42119v1",
+    "published": "2026-10-30T17:52:14Z",
+    "trading_terms": [
+      "risk"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Regret-Optimal Wasserstein-Robust Linear Regression",
+    "summary": "Distributionally robust optimization (DRO) minimizes worst-case risk under distributional uncertainty, but its decisions can be suboptimal in terms of their excess risk, or regret. We study this gap f",
+    "url": "https://arxiv.org/abs/2610.42109v1",
+    "published": "2026-10-30T17:47:58Z",
+    "trading_terms": [
+      "risk"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]
