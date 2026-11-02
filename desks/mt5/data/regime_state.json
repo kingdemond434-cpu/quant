@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-02T21:45:03.909466+00:00",
+  "swept_at": "2026-11-02T22:00:04.383456+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1153,7 +1153,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1765,
+      "shadow_exp_r": -0.2031,
       "woke_on_shadow": false
     },
     "EURCHF|discovered_asia": {
@@ -3782,7 +3782,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.7279,
+      "shadow_exp_r": -0.7154,
       "woke_on_shadow": false
     },
     "USDJPY|asia": {
@@ -4199,8 +4199,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 49,
-      "shadow_exp_r": -0.6968,
+      "shadow_n": 31,
+      "shadow_exp_r": 0.0183,
       "woke_on_shadow": false
     },
     "USDTHB|macro_conditional_asia": {
@@ -4232,8 +4232,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.1852,
+      "shadow_n": 44,
+      "shadow_exp_r": -0.0157,
       "woke_on_shadow": false
     },
     "USDZAR|carry_asia": {
@@ -4342,8 +4342,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.529,
+      "shadow_n": 32,
+      "shadow_exp_r": -0.2759,
       "woke_on_shadow": false
     },
     "XAGEUR|fx_fixing_reversal_continuous": {
@@ -4442,7 +4442,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2524,
+      "shadow_exp_r": -0.2482,
       "woke_on_shadow": false
     },
     "XAGEUR|range_reversion_continuous": {
@@ -5300,7 +5300,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1927,
+      "shadow_exp_r": -0.0998,
       "woke_on_shadow": false
     },
     "XBRUSD|cross_asset_residual_continuous": {
