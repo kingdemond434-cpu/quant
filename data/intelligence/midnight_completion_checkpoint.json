@@ -57,13 +57,10 @@
    "status": "DONE"
   },
   "same_day_fence": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "scripts/check_sameday_pipeline.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-11-02T02:20:40.658671+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-11-02T03:08:11.429025+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "DONE"
   },
   "zero_capital_shadow_forward": {
    "finished_at": "2026-11-02T02:20:04.949044+00:00",
@@ -72,5 +69,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-11-02T02:20:40.658671+00:00"
+ "updated_at": "2026-11-02T03:08:11.429025+00:00"
 }
