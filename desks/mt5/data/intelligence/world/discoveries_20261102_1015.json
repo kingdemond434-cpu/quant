@@ -1,0 +1,2321 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Programa CopyFX Partner: cobre por los inversores que atraiga - RoboForex",
+  "url": "https://roboforex.com/es/partner-program/copy-trading-partner-program/",
+  "published": "2026-11-02T10:13:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c5e4584f8e99f6c14f08",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Proveedor de servicios de trading en r\u00e1pida expansi\u00f3n - RoboForex",
+  "url": "https://roboforex.com/es/about/company/about/",
+  "published": "2026-11-02T10:13:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://roboforex.com/es/forex-trading/terminals/download/",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "894ba86d7d9edfc74b77",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Seguridad de Fondos de los Clientes - RoboForex",
+  "url": "https://roboforex.com/es/about/company/security/",
+  "published": "2026-11-02T10:13:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1e4ab14d97fcb63798e0",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Noticias - RoboForex",
+  "url": "https://roboforex.com/es/about/company/news/",
+  "published": "2026-11-02T10:13:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a9844cafcb0428a2177e",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Premios de la empresa - RoboForex",
+  "url": "https://roboforex.com/es/about/activity/awards/",
+  "published": "2026-11-02T10:13:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b1d32cf047c67e77abed",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Regulaci\u00f3n RoboForex - RoboForex",
+  "url": "https://roboforex.com/es/about/company/regulation/",
+  "published": "2026-11-02T10:13:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "821a4dfc8cc4303e76af",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Documentos - RoboForex",
+  "url": "https://roboforex.com/es/about/company/documents/",
+  "published": "2026-11-02T10:13:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "02bcd46aeecf55e39e56",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e08\u0e31\u0e14\u0e2d\u0e31\u0e19\u0e14\u0e31\u0e1a Copy Trading - \u0e01\u0e25\u0e22\u0e38\u0e17\u0e18\u0e4c\u0e22\u0e2d\u0e14\u0e19\u0e34\u0e22\u0e21\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01 - RoboForex",
+  "url": "https://th.roboforex.com/copy-trading/rating/",
+  "published": "2026-11-02T10:13:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6b5c1b289fa4def95859",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e41\u0e1e\u0e25\u0e15\u0e1f\u0e2d\u0e23\u0e4c\u0e21 Copy Trading - RoboForex",
+  "url": "https://th.roboforex.com/copy-trading/copy-top-strategies/",
+  "published": "2026-11-02T10:13:37+00:00",
+  "symbols": [
+   "EURCHF",
+   "EURUSD",
+   "GBPUSD"
+  ],
+  "timeframes": [
+   "1M",
+   "5M"
+  ],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9934aeca7ecd05272965",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e41\u0e0a\u0e23\u0e4c\u0e01\u0e25\u0e22\u0e38\u0e17\u0e18\u0e4c Copy Trading \u0e02\u0e2d\u0e07\u0e04\u0e38\u0e13\u0e41\u0e25\u0e30\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49 - RoboForex",
+  "url": "https://th.roboforex.com/copy-trading/share-your-strategy/",
+  "published": "2026-11-02T10:13:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "bf4f87a6fcd7460f6ada",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e42\u0e1a\u0e19\u0e31\u0e2a\u0e15\u0e49\u0e2d\u0e19\u0e23\u0e31\u0e1a 30 USD - \u0e23\u0e31\u0e1a\u0e40\u0e07\u0e34\u0e19\u0e40\u0e23\u0e34\u0e48\u0e21\u0e15\u0e49\u0e19\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e01\u0e32\u0e23\u0e40\u0e17\u0e23\u0e14 - RoboForex",
+  "url": "https://th.roboforex.com/clients/promotions/welcome-program/",
+  "published": "2026-11-02T10:13:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c7d5a766130d120b649e",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e40\u0e25\u0e40\u0e27\u0e2d\u0e40\u0e23\u0e08\u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14 1:2000 \u0e01\u0e31\u0e1a\u0e42\u0e1a\u0e23\u0e01\u0e40\u0e01\u0e2d\u0e23\u0e4c - RoboForex",
+  "url": "https://th.roboforex.com/clients/services/2000-up-leverage/",
+  "published": "2026-11-02T10:13:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1ef818a7ee9f40894722",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Copy Trading: \u0e17\u0e31\u0e48\u0e27\u0e44\u0e1b | RoboForex Help Center",
+  "url": "https://th.roboforex.com/help/copy-trading-general/",
+  "published": "2026-11-02T10:13:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "13d2e9c8ba9defc52da9",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "R Points of Joy - RoboForex",
+  "url": "https://th.roboforex.com/promo/points-of-joy/",
+  "published": "2026-11-02T10:13:47+00:00",
+  "symbols": [
+   "EURUSD",
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b06be00173a40d75f404",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Our retail payments strategy",
+  "url": "https://www.ecb.europa.eu/paym/retail/retail_payments_strategy/html/index.pt.html",
+  "published": "2026-11-02T10:13:48+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "pt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "00ea4cc552299d665899",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "The Eurosystem is open to any market initiative that is working to meet five key objectives: pan-European reach and customer experience, convenience and low cost, safety and efficiency, European brand and governance, and global acceptance (in the long run).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDMXN"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5686469fb4d4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Our retail payments strategy",
+  "url": "https://www.ecb.europa.eu/paym/retail/retail_payments_strategy/html/index.ro.html",
+  "published": "2026-11-02T10:13:50+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "ro",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ro.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3a4995e79e827922d60a",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "The Eurosystem is open to any market initiative that is working to meet five key objectives: pan-European reach and customer experience, convenience and low cost, safety and efficiency, European brand and governance, and global acceptance (in the long run).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDMXN"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5686469fb4d4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Our retail payments strategy",
+  "url": "https://www.ecb.europa.eu/paym/retail/retail_payments_strategy/html/index.sk.html",
+  "published": "2026-11-02T10:13:52+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "sk",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sk.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8acc80af64496492983b",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "The Eurosystem is open to any market initiative that is working to meet five key objectives: pan-European reach and customer experience, convenience and low cost, safety and efficiency, European brand and governance, and global acceptance (in the long run).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDMXN"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5686469fb4d4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Our retail payments strategy",
+  "url": "https://www.ecb.europa.eu/paym/retail/retail_payments_strategy/html/index.sl.html",
+  "published": "2026-11-02T10:13:54+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "sl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "addd4ad28122147f30e6",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "The Eurosystem is open to any market initiative that is working to meet five key objectives: pan-European reach and customer experience, convenience and low cost, safety and efficiency, European brand and governance, and global acceptance (in the long run).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDMXN"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5686469fb4d4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Our retail payments strategy",
+  "url": "https://www.ecb.europa.eu/paym/retail/retail_payments_strategy/html/index.sv.html",
+  "published": "2026-11-02T10:13:56+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "sv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cf484dd9274fa8522951",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "The Eurosystem is open to any market initiative that is working to meet five key objectives: pan-European reach and customer experience, convenience and low cost, safety and efficiency, European brand and governance, and global acceptance (in the long run).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDMXN"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5686469fb4d4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0421\u0442\u0440\u0430\u0442\u0435\u0433\u0438\u044f \u043d\u0430 \u0415\u0432\u0440\u043e\u0441\u0438\u0441\u0442\u0435\u043c\u0430\u0442\u0430 \u0437\u0430 \u043f\u0430\u0440\u0438\u0442\u0435 \u0432 \u0431\u0440\u043e\u0439",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.bg.html",
+  "published": "2026-11-02T10:13:58+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "bg",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.bg.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1ee7f1745ede3570aba6",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Hotovostn&amp;iacute; strategie Eurosyst&amp;eacute;mu",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.cs.html",
+  "published": "2026-11-02T10:14:00+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "cs",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.cs.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "62d9462304d57c2f80df",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2010/07/",
+  "published": "2026-11-02T10:14:02+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2010/06/",
+  "published": "2026-11-02T10:14:03+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2010/05/",
+  "published": "2026-11-02T10:14:05+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2010/04/",
+  "published": "2026-11-02T10:14:07+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2010/03/",
+  "published": "2026-11-02T10:14:10+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2010/02/",
+  "published": "2026-11-02T10:14:11+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2010/01/",
+  "published": "2026-11-02T10:14:13+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Critical formulas for Bollinge\u2026 \u2014 The Algorithmic Advantage \u2014 Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/critical-formulas-for-bollinger-band-trading-john-bollinger/id1703013320?i=1000787548690&l=pt-BR",
+  "published": "2026-11-02T10:14:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H"
+  ],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fcritical-formulas-for-bollinger-band-trading-john-bollinger%2Fid1703013320%3Fi%3D1000787548690%26l%3Dpt-BR"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "912f943119bbefd36dd1",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "055 - Toby Crabel - Short-Term\u2026 \u2014 The Algorithmic Advantage \u2014 Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/055-toby-crabel-short-term-futures-trading-with-size/id1703013320?i=1000783228611&l=pt-BR",
+  "published": "2026-11-02T10:14:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F055-toby-crabel-short-term-futures-trading-with-size%2Fid1703013320%3Fi%3D1000783228611%26l%3Dpt-BR"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6321834e35f7981100ac",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "054 - Kieran Duff - Trading fo\u2026 \u2014 The Algorithmic Advantage \u2014 Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/054-kieran-duff-trading-for-a-living/id1703013320?i=1000777494006&l=pt-BR",
+  "published": "2026-11-02T10:14:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F054-kieran-duff-trading-for-a-living%2Fid1703013320%3Fi%3D1000777494006%26l%3Dpt-BR"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d49491e47739720fdd2a",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "053 - Martyn Tinsley - 2 of 2 \u2026 \u2014 The Algorithmic Advantage \u2014 Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/053-martyn-tinsley-2-of-2-walk-forward-correlation/id1703013320?i=1000769572662&l=pt-BR",
+  "published": "2026-11-02T10:14:20+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H"
+  ],
+  "patterns": [
+   "correlation",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F053-martyn-tinsley-2-of-2-walk-forward-correlation%2Fid1703013320%3Fi%3D1000769572662%26l%3Dpt-BR"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e77ce11043cfdd49ef94",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "052 - Martyn Tinsley - 1 of 2 \u2026 \u2014 The Algorithmic Advantage \u2014 Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/052-martyn-tinsley-1-of-2-building-robust-trading/id1703013320?i=1000767140263&l=pt-BR",
+  "published": "2026-11-02T10:14:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H"
+  ],
+  "patterns": [
+   "correlation",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F052-martyn-tinsley-1-of-2-building-robust-trading%2Fid1703013320%3Fi%3D1000767140263%26l%3Dpt-BR"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0b37a711cef3cad27fe5",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "051 - Samir Varma - Classify R\u2026 \u2014 The Algorithmic Advantage \u2014 Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/051-samir-varma-classify-risk-dont-chase-alpha/id1703013320?i=1000761206056&l=pt-BR",
+  "published": "2026-11-02T10:14:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F051-samir-varma-classify-risk-dont-chase-alpha%2Fid1703013320%3Fi%3D1000761206056%26l%3Dpt-BR"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "12419ce5a682350e8c16",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "050 \u2013 Samir Varma - When Acade\u2026 \u2014 The Algorithmic Advantage \u2014 Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/050-samir-varma-when-academic-finance-theory-fails/id1703013320?i=1000759472276&l=pt-BR",
+  "published": "2026-11-02T10:14:26+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F050-samir-varma-when-academic-finance-theory-fails%2Fid1703013320%3Fi%3D1000759472276%26l%3Dpt-BR"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "31639dcc4ba4146d12b5",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "FT: Brasil, UE, Qu\u00eania e Canad\u00e1 escrevem manifesto em defesa do multilateralismo",
+  "url": "https://www.infomoney.com.br/mundo/ft-brasil-ue-quenia-e-canada-escrevem-manifesto-em-defesa-do-multilateralismo/",
+  "published": "2026-11-02T10:14:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "feec4076792cf934309f",
+  "host": "www.infomoney.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Caiado: &#8220;Brasil tem estrutura para combater e libertar popula\u00e7\u00e3o do narcotr\u00e1fico&#8221;",
+  "url": "https://www.infomoney.com.br/politica/caiado-brasil-tem-estrutura-para-combater-e-libertar-populacao-do-narcotrafico/",
+  "published": "2026-11-02T10:14:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fcea1359fbd625cee282",
+  "host": "www.infomoney.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Educators | Student Trading Lab | IBKR Campus",
+  "url": "https://www.interactivebrokers.com/campus/student-trading-lab/?menu=B",
+  "published": "2026-11-02T10:14:33+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "71a40fc84818b9f8bc9b",
+  "host": "www.interactivebrokers.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IBKR BestX | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/bestx.php",
+  "published": "2026-11-02T10:14:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "34c535d87acce3d7f390",
+  "host": "www.interactivebrokers.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Stock Trading: Trade Stocks Online | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/products-stocks.php",
+  "published": "2026-11-02T10:14:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "inventory",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a0a298e0e2adf020748b",
+  "host": "www.interactivebrokers.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Products ETF Trading | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/products-etfs.php",
+  "published": "2026-11-02T10:14:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "inventory",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c8a9f48e84b929b323ca",
+  "host": "www.interactivebrokers.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Investment Products Options Trading | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/products-options.php",
+  "published": "2026-11-02T10:14:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b73b53490510209b584f",
+  "host": "www.interactivebrokers.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Futures Trading \u2013 Resources & Products from IBKR | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/products-futures.php",
+  "published": "2026-11-02T10:14:47+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "XNGUSD",
+   "USDTRY",
+   "SOYBEAN",
+   "CORN",
+   "WHEAT"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "carry",
+   "inventory",
+   "night_session",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "26e6d2b707a6dc2bfbb3",
+  "host": "www.interactivebrokers.com",
+  "claims": [
+   {
+    "claim": "Since Section 1256 contracts are subject to so-called \u2018mark-to-market\u2019 reporting, for tax purposes MTM reports both realized activity throughout the year and unrealized gains and losses on still open futures trades at the end of the year.",
+    "lang": "en",
+    "quantities": [
+     "open",
+     "futures"
+    ],
+    "direction": [
+     "contracts",
+     "gains"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "USDTRY",
+      "SOYBEAN",
+      "CORN",
+      "WHEAT"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "natural gas",
+      "try",
+      "php",
+      "soybeans",
+      "corn",
+      "wheat"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d86d65921758"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Currency Trading | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/products-spot-currencies.php",
+  "published": "2026-11-02T10:14:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ad459352c5d3ba63da41",
+  "host": "www.interactivebrokers.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u535a\u6da6\u94f6\u6cf0\u6295\u8d44\u6768\u6653\u5728\u7ebf\u8def\u6f14\uff1a\u535a\u6da6\u94f6\u6cf0\u829d\u9ebb\u91cf\u5316CTA\u7cfb\u5217\u4ea7\u54c1\u4ecb\u7ecd \u79c1\u52df\u6392\u6392\u7f51\u8def\u6f14\u4e2d\u5fc3",
+  "url": "https://ly.simuwang.com/roadshow/12492.html",
+  "published": "2026-11-02T10:14:52+00:00",
+  "symbols": [
+   "XTIUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "correlation",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "02f653da67437e9d55f1",
+  "host": "ly.simuwang.com",
+  "claims": [
+   {
+    "claim": "\u91cf\u5316CTA\u7b56\u7565\u5347\u7ea7\uff1a\u5927\u7c7b\u8d44\u4ea7\u914d\u7f6e\u4e0e\u8d1f\u76f8\u5173\u7b56\u7565\u5b9e\u8df5 00:22:37 \u8ba8\u8bba\u4e86\u901a\u8fc7\u5927\u7c7b\u8d44\u4ea7\u914d\u7f6e\u548c\u8d1f\u76f8\u5173\u7b56\u7565\u5b9e\u73b03\u52306\u4e2a\u6708\u521b\u65b0\u9ad8\u7684\u76ee\u6807\uff0c\u5f3a\u8c03\u4e86\u5b8f\u89c2\u7b56\u7565\u5728\u5546\u54c1\u5c0f\u5e74\u65f6\u5229\u7528\u80a1\u503a\u673a\u4f1a\u7684\u91cd\u8981\u6027\uff0c\u4ee5\u53ca\u8d8b\u52bf\u8ddf\u8e2a\u3001\u975e\u8d8b\u52bf\u62fc\u76d8\u4e0e\u5b8f\u89c2\u7b56\u7565\u7684\u590d\u5408\u578b\u91cf\u5316CTA\u6846\u67b6\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u8d8b\u52bf"
+    ],
+    "direction": [
+     "\u8d1f\u76f8\u5173"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7608acd7d7da"
+   },
+   {
+    "claim": "\u7b54 \u4e2d\u4e1c\u51b2\u7a81\u5bfc\u81f4\u539f\u6cb9\u6d41\u901a\u5c42\u9762\u51fa\u73b0\u95ee\u9898\uff0c\u5f15\u53d1\u901a\u80c0\u9884\u671f\u4e0a\u5347\uff0c\u4fc3\u4f7f\u539f\u6cb9\u4ef7\u683c\u63d0\u524d\u6570\u6708\u4e0a\u6da8\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u901a\u80c0",
+     "\u539f\u6cb9"
+    ],
+    "direction": [
+     "\u4e0a\u6da8",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "46399ea32ae5"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u4e0a\u6d77\u60ac\u94c3\u79c1\u52df\u94b1\u6615\u5728\u7ebf\u8def\u6f14\uff1a\u4e0a\u6d77\u60ac\u94c3\uff1a\u653b\u5b88\u517c\u5907\u7684\u91cf\u5316CTA\u9ed1\u9a6c \u79c1\u52df\u6392\u6392\u7f51\u8def\u6f14\u4e2d\u5fc3",
+  "url": "https://ly.simuwang.com/roadshow/12018.html",
+  "published": "2026-11-02T10:14:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "correlation",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9cd14dc5efce847bc0ae",
+  "host": "ly.simuwang.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u4eac\u76c8\u667a\u6295\u8c22\u9ece\u535a\u3001\u5d47\u658c\u5728\u7ebf\u8def\u6f14\uff1a\u4eac\u76c8\u667a\u6295\u91cf\u5316CTA\u7b56\u7565\u4ecb\u7ecd \u79c1\u52df\u6392\u6392\u7f51\u8def\u6f14\u4e2d\u5fc3",
+  "url": "https://ly.simuwang.com/roadshow/11675.html",
+  "published": "2026-11-02T10:14:56+00:00",
+  "symbols": [
+   "EURUSD",
+   "UST10Y"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "breakout",
+   "correlation",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fd545a959745e8cb051a",
+  "host": "ly.simuwang.com",
+  "claims": [
+   {
+    "claim": "\u7ed3\u6784\u5316\u884c\u60c5\u4e0e\u6307\u6570\u7ea7\u673a\u4f1a\uff1a\u7f8e\u5143\u653f\u7b56\u4e0e\u57fa\u672c\u9762\u652f\u6491\u7684\u672a\u6765\u5c55\u671b 00:43:49 \u8ba8\u8bba\u4e86\u8fd1\u671f\u7ed3\u6784\u5316\u884c\u60c5\u7684\u7279\u70b9\uff0c\u5305\u62ec\u9ed1\u8272\u54c1\u79cd\u548c\u65b0\u80fd\u6e90\u7684\u4e0b\u8dcc\u673a\u4f1a\uff0c\u4ee5\u53ca\u4e03\u6708\u540e\u7684\u884c\u60c5\u8f6c\u5411\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u4e0b\u8dcc",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u80a1\u6307\u671f\u8d27",
+      "\u6b27\u7f8e",
+      "\u7f8e\u503a",
+      "\u56fd\u503a\u671f\u8d27"
+     ],
+     "transfer_only": [
+      "\u80a1\u6307\u671f\u8d27->indices (China A-share)",
+      "\u56fd\u503a\u671f\u8d27->rates->fx carry"
+     ],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1d866c13025f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Jak inwestowa\u0107 w z\u0142oto fizyczne, gdzie i jak kupi\u0107 z\u0142oto? Poradnik - Bankier.pl",
+  "url": "https://www.bankier.pl/wiadomosc/Jak-inwestowac-w-zloto-fizyczne-Poradnik-7477261.html",
+  "published": "2026-11-02T10:14:59+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XCUUSD",
+   "XTIUSD",
+   "NAS100",
+   "US500",
+   "GER40",
+   "USDPLN",
+   "Toyota",
+   "Tesla"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d7a88933ef68006ed802",
+  "host": "www.bankier.pl",
+  "claims": [
+   {
+    "claim": "zamkn\u0119\u0142a pierwsze trzy kwarta\u0142y 2026 roku rekordowymi wynikami finansowymi, osi\u0105gaj\u0105c 2,22 mld z\u0142 przychod\u00f3w ze sprzeda\u017cy, czyli blisko miliard z\u0142otych wi\u0119cej ni\u017c rok wcze\u015bniej.",
+    "lang": "pl",
+    "quantities": [
+     "z\u0142oty"
+    ],
+    "direction": [
+     "sprzeda"
+    ],
+    "horizon": [
+     "kwarta\u0142"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "GER40",
+      "USDPLN",
+      "Toyota",
+      "Tesla"
+     ],
+     "mentioned": [
+      "z\u0142oto",
+      "srebro",
+      "mied\u017a",
+      "ropa",
+      "nasdaq",
+      "sp500",
+      "dax",
+      "wig20",
+      "z\u0142oty",
+      "taka",
+      "toyota",
+      "tesla"
+     ],
+     "transfer_only": [
+      "wig20->indices (GPW)",
+      "taka->fx (South Asian not quoted)"
+     ],
+     "indirect": [],
+     "channels": [
+      "nbp: policy: NBP -> PLN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "43bea1d57867"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Inwestujesz w z\u0142ote sp\u00f3\u0142ki? Patrz nie tylko na cen\u0119 metalu, ale i koszty produkcji - Bankier.pl",
+  "url": "https://www.bankier.pl/wiadomosc/Inwestujesz-w-zlote-spolki-Patrz-nie-tylko-na-cene-metalu-ale-i-koszty-produkcji-9028535.html",
+  "published": "2026-11-02T10:15:02+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XCUUSD",
+   "XTIUSD",
+   "NAS100",
+   "US500",
+   "GER40",
+   "USDPLN",
+   "Toyota",
+   "Tesla"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "inventory",
+   "mean_reversion",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "986eb4273ae49bca79cf",
+  "host": "www.bankier.pl",
+  "claims": [
+   {
+    "claim": "zamkn\u0119\u0142a pierwsze trzy kwarta\u0142y 2026 roku rekordowymi wynikami finansowymi, osi\u0105gaj\u0105c 2,22 mld z\u0142 przychod\u00f3w ze sprzeda\u017cy, czyli blisko miliard z\u0142otych wi\u0119cej ni\u017c rok wcze\u015bniej.",
+    "lang": "pl",
+    "quantities": [
+     "z\u0142oty"
+    ],
+    "direction": [
+     "sprzeda"
+    ],
+    "horizon": [
+     "kwarta\u0142"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "GER40",
+      "USDPLN",
+      "Toyota",
+      "Tesla"
+     ],
+     "mentioned": [
+      "z\u0142oto",
+      "srebro",
+      "mied\u017a",
+      "ropa",
+      "nasdaq",
+      "sp500",
+      "dax",
+      "wig20",
+      "usd/pln",
+      "toyota",
+      "tesla"
+     ],
+     "transfer_only": [
+      "wig20->indices (GPW)"
+     ],
+     "indirect": [],
+     "channels": [
+      "nbp: policy: NBP -> PLN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "43bea1d57867"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Surowce - Wiadomo\u015bci - Notowania - Bankier.pl",
+  "url": "https://www.bankier.pl/surowce",
+  "published": "2026-11-02T10:15:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "1M",
+   "4H"
+  ],
+  "patterns": [
+   "policy",
+   "session"
+  ],
+  "confidence": 0.55,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "91c8c46f41a98d620b93",
+  "host": "www.bankier.pl",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Przecena energetyki i Orlenu, ale WIG i WIG20 zn\u00f3w najwy\u017cej w historii. Banki zn\u00f3w bij\u0105 rekordy - Bankier.pl",
+  "url": "https://www.bankier.pl/wiadomosc/Przecena-energetyki-i-Orlenu-ale-WIG-i-WIG20-znow-najwyzej-w-historii-Banki-znow-bija-rekordy-9200931.html",
+  "published": "2026-11-02T10:15:07+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XCUUSD",
+   "XTIUSD",
+   "NAS100",
+   "US500",
+   "GER40",
+   "UK100",
+   "FRA40",
+   "USDPLN",
+   "Toyota",
+   "Tesla"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "379084a1d9ca50a769c8",
+  "host": "www.bankier.pl",
+  "claims": [
+   {
+    "claim": "pl w Google Podziel si\u0119 Skomentuj Wtorkowe handel na warszawskiej gie\u0142dzie przyni\u00f3s\u0142 kontynuacj\u0119 bicia historycznych szczyt\u00f3w przez WIG i WIG20, cho\u0107 ostatecznie g\u0142\u00f3wne indeksy zako\u0144czy\u0142y dzie\u0144 kosmetycznymi zmianami.",
+    "lang": "pl",
+    "quantities": [
+     "szczyt",
+     "wig",
+     "wig20",
+     "indeks"
+    ],
+    "direction": [
+     "kontynu"
+    ],
+    "horizon": [
+     "dzie\u0144"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "wig20"
+     ],
+     "transfer_only": [
+      "wig20->indices (GPW)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e26fc3f03619"
+   },
+   {
+    "claim": "Pepco liderem wzrost\u00f3w, mocna wyprzeda\u017c w sektorze energii Na warszawskim parkiecie tylko jedna czwarta sp\u00f3\u0142ek z portfela WIG20 zako\u0144czy\u0142a dzie\u0144 na minusie.",
+    "lang": "pl",
+    "quantities": [
+     "wig20"
+    ],
+    "direction": [
+     "wzrost"
+    ],
+    "horizon": [
+     "dzie\u0144"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "wig20"
+     ],
+     "transfer_only": [
+      "wig20->indices (GPW)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5e99de35822e"
+   },
+   {
+    "claim": "Akcje sp\u00f3\u0142ki spada\u0142y w 5 z poprzednich 6 sesji.",
+    "lang": "pl",
+    "quantities": [
+     "akcje"
+    ],
+    "direction": [
+     "spada"
+    ],
+    "horizon": [
+     "sesj"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "GER40",
+      "UK100",
+      "FRA40",
+      "USDPLN",
+      "Toyota",
+      "Tesla"
+     ],
+     "mentioned": [
+      "z\u0142oto",
+      "srebro",
+      "mied\u017a",
+      "brent",
+      "nasdaq",
+      "s&p 500",
+      "dax",
+      "ftse 100",
+      "cac 40",
+      "wig20",
+      "eur/pln",
+      "toyota",
+      "tesla"
+     ],
+     "transfer_only": [
+      "wig20->indices (GPW)"
+     ],
+     "indirect": [],
+     "channels": [
+      "nbp: policy: NBP -> PLN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "45f0e1191845"
+   },
+   {
+    "claim": "Szeroki rynek p\u0119dzi dzi\u0119ki bankom Nowe maksima wszech czas\u00f3w g\u0142\u00f3wnych indeks\u00f3w, nap\u0119dzane kontynuacj\u0105 fali optymizmu w sektorze bankowym by\u0142y wydarzeniem dnia na GPW.",
+    "lang": "pl",
+    "quantities": [
+     "indeks"
+    ],
+    "direction": [
+     "kontynu"
+    ],
+    "horizon": [
+     "dni"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "GER40",
+      "UK100",
+      "FRA40",
+      "USDPLN",
+      "Toyota",
+      "Tesla"
+     ],
+     "mentioned": [
+      "z\u0142oto",
+      "srebro",
+      "mied\u017a",
+      "brent",
+      "nasdaq",
+      "s&p 500",
+      "dax",
+      "ftse 100",
+      "cac 40",
+      "wig20",
+      "eur/pln",
+      "toyota",
+      "tesla"
+     ],
+     "transfer_only": [
+      "wig20->indices (GPW)"
+     ],
+     "indirect": [],
+     "channels": [
+      "nbp: policy: NBP -> PLN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "278b5be87b7d"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "B\u0142\u0105d na GPW i uniewa\u017cniona sesja sp\u00f3\u0142ki z NC. Na g\u0142\u00f3wnym rynku czerwono - Bankier.pl",
+  "url": "https://www.bankier.pl/wiadomosc/Blad-na-GPW-i-uniewazniona-sesja-spolki-z-NC-Na-glownym-rynku-czerwono-9158948.html",
+  "published": "2026-11-02T10:15:10+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XCUUSD",
+   "XTIUSD",
+   "NAS100",
+   "US500",
+   "GER40",
+   "FRA40",
+   "USDPLN",
+   "Toyota",
+   "Tesla"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "afe829d9b63184acc59b",
+  "host": "www.bankier.pl",
+  "claims": [
+   {
+    "claim": "Szeroki rynek p\u0119dzi dzi\u0119ki bankom Nowe maksima wszech czas\u00f3w g\u0142\u00f3wnych indeks\u00f3w, nap\u0119dzane kontynuacj\u0105 fali optymizmu w sektorze bankowym by\u0142y wydarzeniem dnia na GPW.",
+    "lang": "pl",
+    "quantities": [
+     "indeks"
+    ],
+    "direction": [
+     "kontynu"
+    ],
+    "horizon": [
+     "dni"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD",
+      "XTIUSD",
+      "NAS100",
+      "US500",
+      "GER40",
+      "FRA40",
+      "USDPLN",
+      "Toyota",
+      "Tesla"
+     ],
+     "mentioned": [
+      "z\u0142oto",
+      "srebro",
+      "mied\u017a",
+      "ropa",
+      "nasdaq",
+      "s&p500",
+      "dax",
+      "cac40",
+      "wig20",
+      "usd/pln",
+      "toyota",
+      "tesla"
+     ],
+     "transfer_only": [
+      "wig20->indices (GPW)"
+     ],
+     "indirect": [],
+     "channels": [
+      "nbp: policy: NBP -> PLN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "278b5be87b7d"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Ongoing - NSE India",
+  "url": "https://www.nseindia.com/static/research/research-initiatives",
+  "published": "2026-11-02T10:15:18+00:00",
+  "symbols": [
+   "XAUUSD",
+   "COFARA"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "basis",
+   "carry",
+   "flow",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://nsearchives.nseindia.com/research/content/nse_nyu/NSE_NYU_12-13_WorkingPaper_Series_cons.zip",
+   "https://nsearchives.nseindia.com/research/content/nse_nyu/NSE_NYU_12-13WPaper_Consolidated.zip"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d5c176aabfb3aea02d29",
+  "host": "www.nseindia.com",
+  "claims": [
+   {
+    "claim": "Investor Relations Font size A+ | Reset | A- Contrast High Contrast | Reset Login to Mutual Fund NCFM You will be redirected to another link to complete the login Market Turnover Value Convention Crores Billions PRODUCTS Today Previous Trade Day VOLUME (Shares/Contracts) VALUE* (\u20b9 Crores) OPEN INTEREST ( Contracts ) No.",
+    "lang": "en",
+    "quantities": [
+     "volume",
+     "open interest"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "day",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "COFARA"
+     ],
+     "mentioned": [
+      "gold",
+      "coffee"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDINR"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "rbi: policy: RBI -> INR",
+      "foreign portfolio: flow: India portfolio flows -> INR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "17059908f16b"
+   },
+   {
+    "claim": "of Trades Average Trade Value(\u20b9) Updated AT VOLUME ( Shares/Contracts ) VALUE* (\u20b9 Crores) OPEN INTEREST ( Contracts ) Note *In case of Option Contracts \u201cValue\u201d displayed is \u201cPremium Turnover\u201d Turnover of Currency Futures and Currency options include turnover of both Non Cross Currency pairs and",
+    "lang": "en",
+    "quantities": [
+     "volume",
+     "open interest",
+     "premium",
+     "futures"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "COFARA"
+     ],
+     "mentioned": [
+      "gold",
+      "coffee"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDINR"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "rbi: policy: RBI -> INR",
+      "foreign portfolio: flow: India portfolio flows -> INR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a6d3d4e29d02"
+   }
+  ],
+  "n_claims": 2
+ }
+]
