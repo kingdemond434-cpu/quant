@@ -1,0 +1,4651 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Datos de contacto - RoboForex",
+  "url": "https://roboforex.com/es/about/company/contacts/",
+  "published": "2026-11-02T07:12:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "176ae7de642e18eb7f6b",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Contacts - RoboForex",
+  "url": "https://roboforex.com/ph/about/company/contacts/",
+  "published": "2026-11-02T07:12:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "cb47a6f9a34a497ad230",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex: Accede a los mercados financieros y empieza a operar ahora - RoboForex",
+  "url": "https://roboforex.com/es/",
+  "published": "2026-11-02T07:13:02+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "US500",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://roboforex.com/es/forex-trading/terminals/download/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "bd9cf01fc24e25e80363",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cuentas de trading RoboForex - Pro, Prime, ECN, ProCent, RST con condiciones claras - RoboForex",
+  "url": "https://roboforex.com/es/forex-trading/trading/trading-accounts/",
+  "published": "2026-11-02T07:13:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://roboforex.com/es/forex-trading/terminals/download/",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "d34fd5b4bc3c17106c07",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Activos, Instrumentos financieros - RoboForex",
+  "url": "https://roboforex.com/es/forex-trading/assets/other-assets/",
+  "published": "2026-11-02T07:13:05+00:00",
+  "symbols": [
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9afeebed7d3462d79b85",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Plataforma MetaTrader 4 (MT4) - descarga para PC, web y m\u00f3vil - RoboForex",
+  "url": "https://roboforex.com/es/forex-trading/platforms/metatrader4-mt4/",
+  "published": "2026-11-02T07:13:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a86496d5f6b0932ca98f",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Plataforma MetaTrader 5 (MT5) - descarga para PC, web y m\u00f3vil - RoboForex",
+  "url": "https://roboforex.com/es/forex-trading/platforms/metatrader5-mt5/",
+  "published": "2026-11-02T07:13:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "31d577a0da007bc645b4",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e01\u0e32\u0e23\u0e40\u0e17\u0e23\u0e14 (Copy Trading Service) \u0e21\u0e35\u0e40\u0e07\u0e34\u0e19\u0e1d\u0e32\u0e01\u0e02\u0e31\u0e49\u0e19\u0e15\u0e48\u0e33\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48? | RoboForex Help Center",
+  "url": "https://th.roboforex.com/help/faq/copy-trading-general/is-there-a-minimum-deposit-for-copy-trading-service/",
+  "published": "2026-11-02T07:13:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a4d24c0795bb71f6db8a",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e1a\u0e31\u0e0d\u0e0a\u0e35\u0e02\u0e2d\u0e07\u0e1c\u0e39\u0e49\u0e40\u0e02\u0e49\u0e32\u0e23\u0e48\u0e27\u0e21\u0e15\u0e49\u0e2d\u0e07\u0e40\u0e2b\u0e21\u0e37\u0e2d\u0e19\u0e01\u0e31\u0e19\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48? | RoboForex Help Center",
+  "url": "https://th.roboforex.com/help/faq/copy-trading-general/must-the-types-of-participants-accounts-match-each-other/",
+  "published": "2026-11-02T07:13:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "21f48df47a2518ba0dcf",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e01\u0e32\u0e23\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e02\u0e49\u0e32\u0e21\u0e1a\u0e31\u0e0d\u0e0a\u0e35 (Cross-copying) \u0e04\u0e37\u0e2d\u0e2d\u0e30\u0e44\u0e23? | RoboForex Help Center",
+  "url": "https://th.roboforex.com/help/faq/copy-trading-general/what-is-cross-copying/",
+  "published": "2026-11-02T07:13:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "54999c710a771d808244",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e01\u0e32\u0e23\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e01\u0e32\u0e23\u0e40\u0e17\u0e23\u0e14\u0e43\u0e19\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23 Copy Trading \u0e43\u0e0a\u0e49\u0e40\u0e27\u0e25\u0e32\u0e19\u0e32\u0e19\u0e41\u0e04\u0e48\u0e44\u0e2b\u0e19? | RoboForex Help Center",
+  "url": "https://th.roboforex.com/help/faq/copy-trading-general/how-fast-are-trades-copied-in-copy-trading-service/",
+  "published": "2026-11-02T07:13:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "19e6724150a8aa00f459",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e40\u0e17\u0e23\u0e14\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e43\u0e19\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23 Copy Trading \u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e43\u0e0a\u0e49\u0e04\u0e33\u0e2a\u0e31\u0e48\u0e07\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e43\u0e14\u0e44\u0e14\u0e49\u0e1a\u0e49\u0e32\u0e07? | RoboForex Help Center",
+  "url": "https://th.roboforex.com/help/faq/copy-trading-general/what-types-of-orders-are-available-to-copy-trading-service-traders/",
+  "published": "2026-11-02T07:13:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0cca492b3564c6e12fa4",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "R StocksTrader \u0e04\u0e37\u0e2d\u0e2d\u0e30\u0e44\u0e23? | RoboForex Help Center",
+  "url": "https://th.roboforex.com/help/faq/copy-trading-general/what-is-r-stockstrader/",
+  "published": "2026-11-02T07:13:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "851b78a30306f7dba43d",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e09\u0e31\u0e19\u0e08\u0e30\u0e1d\u0e32\u0e01\u0e41\u0e25\u0e30\u0e16\u0e2d\u0e19\u0e40\u0e07\u0e34\u0e19\u0e44\u0e14\u0e49\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e44\u0e23? | RoboForex Help Center",
+  "url": "https://th.roboforex.com/help/faq/copy-trading-general/how-do-i-deposit-and-withdraw-funds/",
+  "published": "2026-11-02T07:13:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6c84c44542510a52894f",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.ro.html",
+  "published": "2026-11-02T07:13:24+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "ro",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ro.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4f1e8352bfc54a45b93a",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.sk.html",
+  "published": "2026-11-02T07:13:25+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "sk",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sk.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "dce67a8fc382acc2b6f9",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.sl.html",
+  "published": "2026-11-02T07:13:27+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "sl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "92dffc264875e31ec078",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.sv.html",
+  "published": "2026-11-02T07:13:29+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "sv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "406b9bb9b0ac0c88bfe4",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Our retail payments strategy",
+  "url": "https://www.ecb.europa.eu/paym/retail/retail_payments_strategy/html/index.bg.html",
+  "published": "2026-11-02T07:13:31+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "bg",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.bg.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c78f786df0cea6b2833d",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "The Eurosystem is open to any market initiative that is working to meet five key objectives: pan-European reach and customer experience, convenience and low cost, safety and efficiency, European brand and governance, and global acceptance (in the long run).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDMXN"
+     ],
+     "channels": [
+      "\u0435\u0446\u0431: policy: ECB -> EUR",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5686469fb4d4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Our retail payments strategy",
+  "url": "https://www.ecb.europa.eu/paym/retail/retail_payments_strategy/html/index.cs.html",
+  "published": "2026-11-02T07:13:33+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "cs",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.cs.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8808560d3f195948f8e7",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "The Eurosystem is open to any market initiative that is working to meet five key objectives: pan-European reach and customer experience, convenience and low cost, safety and efficiency, European brand and governance, and global acceptance (in the long run).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDMXN"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5686469fb4d4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Our retail payments strategy",
+  "url": "https://www.ecb.europa.eu/paym/retail/retail_payments_strategy/html/index.de.html",
+  "published": "2026-11-02T07:13:35+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "flow",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "de",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.de.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bb6e2980395c3ac2eea9",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "The Eurosystem is open to any market initiative that is working to meet five key objectives: pan-European reach and customer experience, convenience and low cost, safety and efficiency, European brand and governance, and global acceptance (in the long run).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDMXN"
+     ],
+     "channels": [
+      "ezb: policy: ECB -> EUR",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5686469fb4d4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2011/11/",
+  "published": "2026-11-02T07:13:37+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2011/10/",
+  "published": "2026-11-02T07:13:38+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2011/09/",
+  "published": "2026-11-02T07:13:40+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2011/08/",
+  "published": "2026-11-02T07:13:42+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2011/07/",
+  "published": "2026-11-02T07:13:44+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2011/06/",
+  "published": "2026-11-02T07:13:46+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2011/05/",
+  "published": "2026-11-02T07:13:48+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "CNY \u4eba\u6c11\u5e63(\u5728\u5cb8) - \u9280\u884c\u5916\u5e63\u514c\u63db - \u5916\u532f\u9ec3\u91d1 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/bank-exchange-rate.php?currency=cny&sortcolumn=-1",
+  "published": "2026-11-02T07:13:52+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c699750510a2b84d1205",
+  "host": "www.etnet.com.hk",
+  "claims": [
+   {
+    "claim": "1740 02/11/2026 03:19 \u795e\u5dde\u4eba\u5e63\u65b0\u805e \u5916\u532f\u9ec3\u91d1 \u65b0\u805e \u300a\u795e\u5dde\u62c6\u606f\u300b\u6536\u6c345150\u5104\uff0cShibor\u9694\u591c\u8dcc0.",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u9694\u591c",
+     "\u9ec3\u91d1",
+     "\u5916\u532f"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u9694\u591c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "a8146a182362"
+   },
+   {
+    "claim": "00% \u65b0\u805e \u5c08\u984c\u900f\u8996 \u91d1\u878d\u79d1\u6280\u5468 | \u4f59\u5049\u6587\u516c\u5e03\u56db\u9805\u91d1\u878d\u79d1\u6280\u63aa\u65bd\uff0c\u7814AI\u4ee3\u7406\u61c9\u7528\u5834\u666f\u53ca\u9280\u884c\u540c\u696d\u9593\u4ee3\u5e63\u5316\u5b58\u6b3e\u5168\u6642\u4ea4\u6613\u7b49 02/11/2026 12:48 \u5916\u532f\u9ec3\u91d1 \u65b0\u805e \u3010\u5916\u570d\u7d93\u6fdf\u3011\u7f8e\u79d1\u4f01\u696d\u7e3e\u905c\u9810\u671f\u5373\u906d\u300c\u61f2\u7f70\u300d\u80a1\u50f9\u5927\u8dcc\uff0c\u5206\u6790\uff1a\u5e02\u5834\u654f\u611f\uff0c\u5be7\u9858\u5148\u6cbd\u8ca8 02/11/2026 12:58 \u532f\u6d77\u5a01\u8a00\uff0d\u6bdb\u5049\u5ec9 02/11/2026 11:24 \u300a\u532f\u6d77\u5a01\u8a00\uff0d\u6bdb\u5049\u5ec9\u300b\u300a\u532f\u6d77\u5a01\u8a00\uff0d\u6bdb\u5049\u5ec9\u300b\u79d1\u6280\u80a1\u4fe1\u7528\u5371\u6a5f\u7591\u96f2\u8513\u5ef6\uff0c\u62d6\u7d2f\u91d1\u50f9\u66b4\u8dcc\uff0c\u5e02\u5834\u7dca\u76ef\u4e2d\u671f\u9078\u8209\u7d50\u679c \u5099\u8a3b \u8cc7\u6599\u7531\u76f8\u95dc\u9280\u884c\u63d0\u4f9b\uff0c\u53ea\u4f9b\u53c3\u8003\u3002",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u9ec3\u91d1",
+     "\u5916\u532f"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "b8cec68a03c6"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "CNY \u4eba\u6c11\u5e63(\u5728\u5cb8) - \u9280\u884c\u5916\u5e63\u514c\u63db - \u5916\u532f\u9ec3\u91d1 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/bank-exchange-rate.php?currency=cny&sortcolumn=-2",
+  "published": "2026-11-02T07:13:55+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "800bdf63840f34fe42e1",
+  "host": "www.etnet.com.hk",
+  "claims": [
+   {
+    "claim": "1706 02/11/2026 14:45 \u795e\u5dde\u4eba\u5e63\u65b0\u805e \u5916\u532f\u9ec3\u91d1 \u65b0\u805e \u300a\u795e\u5dde\u62c6\u606f\u300b\u6536\u6c345150\u5104\uff0cShibor\u9694\u591c\u8dcc0.",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u9694\u591c",
+     "\u9ec3\u91d1",
+     "\u5916\u532f"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u9694\u591c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "6ce8db7ab8e8"
+   },
+   {
+    "claim": "25%\uff0c\u62bc\u6ce8\u660e\u5e747\u6708\u524d\u52a0\u606f4\u6b21\uff0c\u592e\u884c\u5167\u90e8\u8868\u8cea\u7591 02/11/2026 14:28 \u5916\u532f\u9ec3\u91d1 \u65b0\u805e \u3010\uff21\uff29\u3011\u8b49\u76e3\u6703\u8abf\u67e5\u986f\u793a\u4eba\u5de5\u667a\u80fd\u61c9\u7528\u65e5\u76ca\u666e\u53ca\uff0c\u8ca0\u8cac\u4efb\u7684\u898f\u6a21\u5316\u767c\u5c55\u4ecd\u5177\u6311\u6230 02/11/2026 14:24 \u532f\u6d77\u5a01\u8a00\uff0d\u6bdb\u5049\u5ec9 02/11/2026 11:24 \u300a\u532f\u6d77\u5a01\u8a00\uff0d\u6bdb\u5049\u5ec9\u300b\u300a\u532f\u6d77\u5a01\u8a00\uff0d\u6bdb\u5049\u5ec9\u300b\u79d1\u6280\u80a1\u4fe1\u7528\u5371\u6a5f\u7591\u96f2\u8513\u5ef6\uff0c\u62d6\u7d2f\u91d1\u50f9\u66b4\u8dcc\uff0c\u5e02\u5834\u7dca\u76ef\u4e2d\u671f\u9078\u8209\u7d50\u679c \u5099\u8a3b \u8cc7\u6599\u7531\u76f8\u95dc\u9280\u884c\u63d0\u4f9b\uff0c\u53ea\u4f9b\u53c3\u8003\u3002",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u9ec3\u91d1",
+     "\u5916\u532f",
+     "\u592e\u884c",
+     "\u52a0\u606f"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "d60161ca5d03"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "CNY \u4eba\u6c11\u5e63(\u5728\u5cb8) - \u9280\u884c\u5916\u5e63\u514c\u63db - \u5916\u532f\u9ec3\u91d1 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/bank-exchange-rate.php?currency=cny&sortcolumn=3",
+  "published": "2026-11-02T07:13:58+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "17bc3e7006de6dcf7d29",
+  "host": "www.etnet.com.hk",
+  "claims": [
+   {
+    "claim": "1734 -- -- 02/11/2026 14:48 \u795e\u5dde\u4eba\u5e63\u65b0\u805e \u5916\u532f\u9ec3\u91d1 \u65b0\u805e \u300a\u795e\u5dde\u62c6\u606f\u300b\u6536\u6c345150\u5104\uff0cShibor\u9694\u591c\u8dcc0.",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u9694\u591c",
+     "\u9ec3\u91d1",
+     "\u5916\u532f"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u9694\u591c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "256be0070dfa"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "CNY \u4eba\u6c11\u5e63(\u5728\u5cb8) - \u9280\u884c\u5916\u5e63\u514c\u63db - \u5916\u532f\u9ec3\u91d1 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/bank-exchange-rate.php?currency=cny&sortcolumn=-4",
+  "published": "2026-11-02T07:14:01+00:00",
+  "symbols": [
+   "HK50",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "00200de1a36551d53bc4",
+  "host": "www.etnet.com.hk",
+  "claims": [
+   {
+    "claim": "\u7acb\u5373\u91cd\u65b0\u8f09\u5165 \u67e5\u770b\u66f4\u591aetnet\u7cbe\u5f69\u5167\u5bb9 \u8ca1\u7d93 \u8d85\u7d1a\u8b70\u606f\u5468 \u4f60\u8a8d\u70ba\u300c\u8d85\u7d1a\u8b70\u606f\u5468\u300d\u53ca\u7f8e\u4e2d\u671f\u9078\u8209\u904e\u5f8c\uff0c\u6052\u6307\u6709\u529b\u8f49\u8dcc\u70ba\u5347\u55ce\uff1f",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u6052\u6307"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "HK50"
+     ],
+     "mentioned": [
+      "\u6052\u6307"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "62feadab61d0"
+   },
+   {
+    "claim": "1734 -- -- 02/11/2026 14:48 \u795e\u5dde\u4eba\u5e63\u65b0\u805e \u5916\u532f\u9ec3\u91d1 \u65b0\u805e \u300a\u795e\u5dde\u62c6\u606f\u300b\u6536\u6c345150\u5104\uff0cShibor\u9694\u591c\u8dcc0.",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u9694\u591c",
+     "\u9ec3\u91d1",
+     "\u5916\u532f"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u9694\u591c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "256be0070dfa"
+   },
+   {
+    "claim": "25%\uff0c\u62bc\u6ce8\u660e\u5e747\u6708\u524d\u52a0\u606f4\u6b21\uff0c\u592e\u884c\u5167\u90e8\u8868\u8cea\u7591 02/11/2026 14:28 \u5916\u532f\u9ec3\u91d1 \u65b0\u805e \u3010\u5916\u570d\u7d93\u6fdf\u3011\u97d3\u570bKOSPI\u7d9c\u5408\u80a1\u6307\u4e00\u5ea6\u6f323%\uff0cSK\u6d77\u529b\u58eb\u6f325.",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u9ec3\u91d1",
+     "\u80a1\u6307",
+     "\u5916\u532f",
+     "\u592e\u884c"
+    ],
+    "direction": [
+     "\u6f32"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1",
+      "kospi"
+     ],
+     "transfer_only": [
+      "kospi->indices (KRX)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "3be92f2d169f"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "050 \u2013 Samir Varma - When Acade... - The Algorithmic Advantage - Apple \u64ad\u5ba2",
+  "url": "https://podcasts.apple.com/us/podcast/050-samir-varma-when-academic-finance-theory-fails/id1703013320?i=1000759472276&l=zh-Hans-CN",
+  "published": "2026-11-02T07:14:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "\u5206\u949f",
+   "\u5c0f\u65f6"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-Hans-",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F050-samir-varma-when-academic-finance-theory-fails%2Fid1703013320%3Fi%3D1000759472276%26l%3Dzh-Hans-CN"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7ee14dd34b37498e3072",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "049 - David Bush - Build a Hig... - The Algorithmic Advantage - Apple \u64ad\u5ba2",
+  "url": "https://podcasts.apple.com/us/podcast/049-david-bush-build-a-high-performance-quant/id1703013320?i=1000757436554&l=zh-Hans-CN",
+  "published": "2026-11-02T07:14:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "\u5206\u949f"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-Hans-",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F049-david-bush-build-a-high-performance-quant%2Fid1703013320%3Fi%3D1000757436554%26l%3Dzh-Hans-CN"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d98c66365d226991b83a",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Words of Rizdom - Trading Podcast - \u64ad\u5ba2 - Apple \u64ad\u5ba2",
+  "url": "https://podcasts.apple.com/us/podcast/words-of-rizdom---trading-podcast/id1780241706?l=zh-Hans-CN",
+  "published": "2026-11-02T07:14:09+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "5M",
+   "DAILY",
+   "\u5206\u949f",
+   "\u5c0f\u65f6"
+  ],
+  "patterns": [
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-Hans-",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fwords-of-rizdom-trading-podcast%2Fid1780241706%3Fl%3Dzh-Hans-CN"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4f027f2a4bdd4a43dd72",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Critical formulas for Bollinge\u2026 \u2011 The Algorithmic Advantage \u2011 Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/critical-formulas-for-bollinger-band-trading-john-bollinger/id1703013320?i=1000787548690&l=fr-FR",
+  "published": "2026-11-02T07:14:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "fr-FR",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fcritical-formulas-for-bollinger-band-trading-john-bollinger%2Fid1703013320%3Fi%3D1000787548690%26l%3Dfr-FR"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a52c6bdf19994b600fcd",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "055 - Toby Crabel - Short-Term\u2026 \u2011 The Algorithmic Advantage \u2011 Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/055-toby-crabel-short-term-futures-trading-with-size/id1703013320?i=1000783228611&l=fr-FR",
+  "published": "2026-11-02T07:14:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "fr-FR",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F055-toby-crabel-short-term-futures-trading-with-size%2Fid1703013320%3Fi%3D1000783228611%26l%3Dfr-FR"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "af7021e46bc20088f4be",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "054 - Kieran Duff - Trading fo\u2026 \u2011 The Algorithmic Advantage \u2011 Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/054-kieran-duff-trading-for-a-living/id1703013320?i=1000777494006&l=fr-FR",
+  "published": "2026-11-02T07:14:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "fr-FR",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F054-kieran-duff-trading-for-a-living%2Fid1703013320%3Fi%3D1000777494006%26l%3Dfr-FR"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "75a8d1b8638994d959e0",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "053 - Martyn Tinsley - 2 of 2 \u2026 \u2011 The Algorithmic Advantage \u2011 Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/053-martyn-tinsley-2-of-2-walk-forward-correlation/id1703013320?i=1000769572662&l=fr-FR",
+  "published": "2026-11-02T07:14:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "fr-FR",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F053-martyn-tinsley-2-of-2-walk-forward-correlation%2Fid1703013320%3Fi%3D1000769572662%26l%3Dfr-FR"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "df4c91fca99324b22f60",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IBKR Desktop | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/ibkr-desktop.php?menu=B",
+  "published": "2026-11-02T07:14:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6f22d25d964d743433ff",
+  "host": "www.interactivebrokers.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "IBKR Mobile Trading App | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/ibkr-mobile.php?menu=B",
+  "published": "2026-11-02T07:14:20+00:00",
+  "symbols": [
+   "XAUUSD",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ec652f19f64a98ff03ca",
+  "host": "www.interactivebrokers.com",
+  "claims": [
+   {
+    "claim": "View Guides iOS Portfolio Guides Android Portfolio Guides View Courses iOS Portfolio Lesson Android Portfolio Lesson Portfolio Overview View current positions with key metrics including daily P&L, net liquidity, market value, and realized/unrealized gains.",
+    "lang": "en",
+    "quantities": [
+     "liquidity"
+    ],
+    "direction": [
+     "gains"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "try",
+      "php"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "74132312aaa6"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Global Trading Platform - IB Trader Workstation | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/tws.php?menu=B",
+  "published": "2026-11-02T07:14:25+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B",
+   "https://www.interactivebrokers.com/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "cc524b5bff08502797e4",
+  "host": "www.interactivebrokers.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "GlobalTrader Overview | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/globaltrader/overview.php?menu=B",
+  "published": "2026-11-02T07:14:26+00:00",
+  "symbols": [
+   "XAUUSD",
+   "NAS100",
+   "US500",
+   "USDTRY",
+   "BTCUSD",
+   "ETHUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "carry",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "660d3d8b6588f7678a82",
+  "host": "www.interactivebrokers.com",
+  "claims": [
+   {
+    "claim": "Track intraday changes with spark charts Manage positions and open orders in one place Use long-press controls to trade, modify, or manage positions with fewer steps Identify Investments with Confidence Find ideas faster with a platform built to surface useful connections across global markets.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "intraday",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "BTCUSD",
+      "ETHUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "nasdaq",
+      "s&p",
+      "try",
+      "php",
+      "bitcoin",
+      "ethereum"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3cdd40a3fc2f"
+   },
+   {
+    "claim": "Spreads may be wider and volume lower than during the day.",
+    "lang": "en",
+    "quantities": [
+     "volume"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "US500",
+      "USDTRY",
+      "BTCUSD",
+      "ETHUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "nasdaq",
+      "s&p",
+      "try",
+      "php",
+      "bitcoin",
+      "ethereum"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ae3652a36513"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "IMPACT | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/impact/overview.php?menu=B",
+  "published": "2026-11-02T07:14:28+00:00",
+  "symbols": [
+   "XAUUSD",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d8672e13b0a956783e70",
+  "host": "www.interactivebrokers.com",
+  "claims": [
+   {
+    "claim": "OnClose or OnOpen US listed stock orders are free for IBKR Lite clients so long as the order does not exceed 10% of an account's monthly US stock trading volume, otherwise your account will be charged USD 0.",
+    "lang": "en",
+    "quantities": [
+     "volume"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "try",
+      "php"
+     ],
+     "transfer_only": [
+      "php->fx (PHP not quoted)"
+     ],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "monetary authority of singapore: policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0ae1e19c4a4a"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "IBKR Trading Platforms | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/trading-platforms.php?menu=B",
+  "published": "2026-11-02T07:14:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B",
+   "https://www.interactivebrokers.com/en/trading/download-tws.php"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "17121b6e4a47031e8241",
+  "host": "www.interactivebrokers.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Stock, Bond & Options Global Outsourced Trading Desk | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/pdfhighlights/PDF-OptionsDesk.php?menu=B",
+  "published": "2026-11-02T07:14:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "765843100237fbc187eb",
+  "host": "www.interactivebrokers.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5916\u6c47\u805a\u7126 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/news/cwhxw.html",
+  "published": "2026-11-02T07:14:35+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "12972073a01fcc8e0ce7",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u91d1\u878d\u76d1\u7ba1\u90e8\u95e8\u5c06\u53ec\u5f00\u5ea7\u8c08\u4f1a \u4e1a\u5185\u671f\u5f85\u7a33\u5e02\u63aa\u65bd\u4fee\u590d\u60c5\u7eea 5 \u73af\u7403\u4e0b\u5468\u770b\u70b9\uff1aAI\u70ed\u6f6e\u9047\u8003\u9a8c \u7f8e\u56fd\u4e2d\u671f\u9009\u4e3e\u3001\u975e\u519c\u4e0e\u82f9\u679c\u8d22\u62a5\u63a5\u8fde\u6765\u88ad 6 \u5343\u4ebf\u7ea7\u80a1\u7968\u56de\u8d2d\u589e\u6301\u4e13\u9879\u8d37\u6b3e\u6765\u4e86 \u8fd9\u4e9b\u516c\u53f8\u4e09\u5b63\u5ea6\u83b7\u56fd\u65b0\u3001\u8bda\u901a\u52a0\u4ed3 7 \u521a\u521a \u5927\u6da8\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u975e\u519c"
+    ],
+    "direction": [
+     "\u52a0\u4ed3",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u5468",
+     "\u5b63\u5ea6"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "\u82f9\u679c"
+     ],
+     "transfer_only": [
+      "\u82f9\u679c->softs"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "bdcfcbd76794"
+   },
+   {
+    "claim": "\u5468\u672b A\u80a1\u5927\u5229\u597d\u6765\u4e86 8 \u9ec4\u91d1\u51fa\u73b0\u9022\u4f4e\u4e70\u76d8 \u5206\u6790\u5e08\u62c5\u5fe7\u91d1\u4ef7\u77ed\u671f\u5185\u4ecd\u5c06\u8fdb\u4e00\u6b65\u4e0b\u884c 9 \u5168\u7ebf\u62c9\u5347\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u9ec4\u91d1"
+    ],
+    "direction": [
+     "\u62c9\u5347"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "a\u80a1"
+     ],
+     "transfer_only": [
+      "a\u80a1->indices (China A-share)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "22a2c660072e"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5916\u6c47\u8bc4\u8bba _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/news/cwhpl.html",
+  "published": "2026-11-02T07:14:37+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dddd0c0000d7c6a04bcf",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u91d1\u878d\u76d1\u7ba1\u90e8\u95e8\u5c06\u53ec\u5f00\u5ea7\u8c08\u4f1a \u4e1a\u5185\u671f\u5f85\u7a33\u5e02\u63aa\u65bd\u4fee\u590d\u60c5\u7eea 5 \u73af\u7403\u4e0b\u5468\u770b\u70b9\uff1aAI\u70ed\u6f6e\u9047\u8003\u9a8c \u7f8e\u56fd\u4e2d\u671f\u9009\u4e3e\u3001\u975e\u519c\u4e0e\u82f9\u679c\u8d22\u62a5\u63a5\u8fde\u6765\u88ad 6 \u5343\u4ebf\u7ea7\u80a1\u7968\u56de\u8d2d\u589e\u6301\u4e13\u9879\u8d37\u6b3e\u6765\u4e86 \u8fd9\u4e9b\u516c\u53f8\u4e09\u5b63\u5ea6\u83b7\u56fd\u65b0\u3001\u8bda\u901a\u52a0\u4ed3 7 \u521a\u521a \u5927\u6da8\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u975e\u519c"
+    ],
+    "direction": [
+     "\u52a0\u4ed3",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u5468",
+     "\u5b63\u5ea6"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "\u82f9\u679c"
+     ],
+     "transfer_only": [
+      "\u82f9\u679c->softs"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "bdcfcbd76794"
+   },
+   {
+    "claim": "\u5468\u672b A\u80a1\u5927\u5229\u597d\u6765\u4e86 8 \u9ec4\u91d1\u51fa\u73b0\u9022\u4f4e\u4e70\u76d8 \u5206\u6790\u5e08\u62c5\u5fe7\u91d1\u4ef7\u77ed\u671f\u5185\u4ecd\u5c06\u8fdb\u4e00\u6b65\u4e0b\u884c 9 \u5168\u7ebf\u62c9\u5347\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u9ec4\u91d1"
+    ],
+    "direction": [
+     "\u62c9\u5347"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "a\u80a1"
+     ],
+     "transfer_only": [
+      "a\u80a1->indices (China A-share)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "22a2c660072e"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u592e\u884c\u52a8\u6001 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/news/cyhdt.html",
+  "published": "2026-11-02T07:14:40+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b679a7f80744c77ec251",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u91d1\u878d\u76d1\u7ba1\u90e8\u95e8\u5c06\u53ec\u5f00\u5ea7\u8c08\u4f1a \u4e1a\u5185\u671f\u5f85\u7a33\u5e02\u63aa\u65bd\u4fee\u590d\u60c5\u7eea 5 \u73af\u7403\u4e0b\u5468\u770b\u70b9\uff1aAI\u70ed\u6f6e\u9047\u8003\u9a8c \u7f8e\u56fd\u4e2d\u671f\u9009\u4e3e\u3001\u975e\u519c\u4e0e\u82f9\u679c\u8d22\u62a5\u63a5\u8fde\u6765\u88ad 6 \u5343\u4ebf\u7ea7\u80a1\u7968\u56de\u8d2d\u589e\u6301\u4e13\u9879\u8d37\u6b3e\u6765\u4e86 \u8fd9\u4e9b\u516c\u53f8\u4e09\u5b63\u5ea6\u83b7\u56fd\u65b0\u3001\u8bda\u901a\u52a0\u4ed3 7 \u521a\u521a \u5927\u6da8\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u975e\u519c"
+    ],
+    "direction": [
+     "\u52a0\u4ed3",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u5468",
+     "\u5b63\u5ea6"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "\u82f9\u679c"
+     ],
+     "transfer_only": [
+      "\u82f9\u679c->softs"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "bdcfcbd76794"
+   },
+   {
+    "claim": "\u5468\u672b A\u80a1\u5927\u5229\u597d\u6765\u4e86 8 \u9ec4\u91d1\u51fa\u73b0\u9022\u4f4e\u4e70\u76d8 \u5206\u6790\u5e08\u62c5\u5fe7\u91d1\u4ef7\u77ed\u671f\u5185\u4ecd\u5c06\u8fdb\u4e00\u6b65\u4e0b\u884c 9 \u5168\u7ebf\u62c9\u5347\uff01",
+    "lang": "zh",
+    "quantities": [
+     "\u9ec4\u91d1"
+    ],
+    "direction": [
+     "\u62c9\u5347"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "a\u80a1"
+     ],
+     "transfer_only": [
+      "a\u80a1->indices (China A-share)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "22a2c660072e"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "http://forex.eastmoney.com/USD.html",
+  "published": "2026-11-02T07:14:41+00:00",
+  "symbols": [
+   "USDJPY",
+   "XAUUSD",
+   "XTIUSD",
+   "HK50",
+   "US500",
+   "USDX",
+   "EURUSD",
+   "GBPUSD",
+   "AUDUSD",
+   "USDCAD",
+   "USDCHF",
+   "NZDUSD",
+   "USDCNH",
+   "USDKRW"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bd8951f58e66d61b8a3d",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u7f8e\u5143\u5151\u65e5\u5143\u65e5\u5185\u8dcc0.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u65e5\u5143"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u65e5\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "b5f2c9783004"
+   },
+   {
+    "claim": "6612\u5143 \u8f83\u5468\u4e09\u591c\u76d8\u6536\u76d8\u6da84.",
+    "lang": "zh",
+    "quantities": [
+     "\u591c\u76d8",
+     "\u6536\u76d8"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u591c\u76d8",
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "HK50",
+      "US500",
+      "USDX",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "USDCNH",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u77f3\u6cb9",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u7f8e\u5143\u6307\u6570",
+      "\u6b27\u5143",
+      "\u82f1\u9551",
+      "\u65e5\u5143",
+      "\u6fb3\u5143",
+      "\u52a0\u5143",
+      "\u745e\u90ce",
+      "\u7ebd\u5143",
+      "\u4eba\u6c11\u5e01",
+      "\u97e9\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities",
+      "\u4e2d\u95f4\u4ef7: policy: PBoC fixing -> CNH"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "24901a734002"
+   },
+   {
+    "claim": "\u4eba\u6c11\u5e01\u5151\u7f8e\u5143\u521b2022\u5e746\u670828\u65e5\u4ee5\u6765\u65b0\u9ad8 \u7f8e\u5143\u6307\u6570\u65e5\u5185\u6da80.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143\u6307\u6570",
+     "\u65e5\u5185",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDX",
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u7f8e\u5143\u6307\u6570",
+      "\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "87d9a5da8ffd"
+   },
+   {
+    "claim": "22% \u7a81\u7834102\u5173\u53e3 \u7f8e\u56fd9\u6708CPI\u540c\u6bd4\u4e0a\u6da83.",
+    "lang": "zh",
+    "quantities": [
+     "\u7a81\u7834",
+     "cpi"
+    ],
+    "direction": [
+     "\u4e0a\u6da8",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "HK50",
+      "US500",
+      "USDX",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "USDCNH",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u77f3\u6cb9",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u7f8e\u5143\u6307\u6570",
+      "\u6b27\u5143",
+      "\u82f1\u9551",
+      "\u65e5\u5143",
+      "\u6fb3\u5143",
+      "\u52a0\u5143",
+      "\u745e\u90ce",
+      "\u7ebd\u5143",
+      "\u4eba\u6c11\u5e01",
+      "\u97e9\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities",
+      "\u4e2d\u95f4\u4ef7: policy: PBoC fixing -> CNH"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8bdc7b3fc2c4"
+   },
+   {
+    "claim": "\u7f8e\u5143\u6307\u6570\u89e6\u53ca18\u4e2a\u6708\u6765\u65b0\u9ad8\uff0c\u6700\u65b0\u4e0a\u6da80.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143\u6307\u6570",
+     "\u7f8e\u5143"
+    ],
+    "direction": [
+     "\u4e0a\u6da8",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDX"
+     ],
+     "mentioned": [
+      "\u7f8e\u5143\u6307\u6570"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "d1cc35db72e1"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "http://forex.eastmoney.com/CNY.html",
+  "published": "2026-11-02T07:14:44+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "HK50",
+   "US500",
+   "USDX",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCAD",
+   "USDCHF",
+   "NZDUSD",
+   "USDCNH"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f5424c182a50148b4149",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "6612\u5143 \u8f83\u5468\u4e09\u591c\u76d8\u6536\u76d8\u6da84.",
+    "lang": "zh",
+    "quantities": [
+     "\u591c\u76d8",
+     "\u6536\u76d8"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u591c\u76d8",
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "HK50",
+      "US500",
+      "USDX",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u539f\u6cb9",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u7f8e\u5143\u6307\u6570",
+      "\u6b27\u5143",
+      "\u82f1\u9551",
+      "\u65e5\u5143",
+      "\u6fb3\u5143",
+      "\u52a0\u5143",
+      "\u745e\u90ce",
+      "\u7ebd\u5143",
+      "\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u7f8e\u8054\u50a8: policy: Fed -> dollar and US equities",
+      "\u4e2d\u95f4\u4ef7: policy: PBoC fixing -> CNH"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "24901a734002"
+   },
+   {
+    "claim": "\u524d\u4e09\u5b63\u5ea6\u4eba\u6c11\u5e01\u5bf9\u7f8e\u5143\u5373\u671f\u6c47\u7387\u5347\u503c\u8d854% \u540e\u7eed\u5982\u4f55.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u6c47\u7387"
+    ],
+    "direction": [
+     "\u5347\u503c"
+    ],
+    "horizon": [
+     "\u5b63\u5ea6"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "eee5639861df"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "http://forex.eastmoney.com/EUR.html",
+  "published": "2026-11-02T07:14:45+00:00",
+  "symbols": [
+   "EURUSD",
+   "USDJPY",
+   "EURJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cfca8c949ccf00ea6dcb",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u6cd5\u56fd\u8d22\u653f\u62c5\u5fe7\u52a0\u5267 \u6b27\u5143\u8dcc\u81f317\u4e2a\u6708\u4f4e\u70b9 \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u6da8\u5e45\u8fbe0.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "0b409833f08d"
+   },
+   {
+    "claim": "\u7f8e\u5143\u5151\u591a\u6570G10\u8d27\u5e01\u8d70\u5f3a\uff0c\u6b27\u5143\u8dcc\u81f3\u4e00\u4e2a\u6708\u4f4e\u70b9 \u6b27\u76df\u5b98\u5458\u8b66\u544a\u6b27\u76df\u7ecf\u6d4e\u6216\u5c06\u9762\u4e34\u201c\u6ede\u80c0\u201d \u6b27\u5143\u5151\u7f8e\u5143\u8dcc\u81f31.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u8d70\u5f3a",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u4e00\u4e2a\u6708",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "160eb2fa281a"
+   },
+   {
+    "claim": "1500 \u5237\u65b08\u6708\u521d\u4ee5\u6765\u65b0\u4f4e \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u6da8\u5e45\u6269\u5927\u81f30.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u6269\u5927",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "b7d32d77a381"
+   },
+   {
+    "claim": "18 \u4e3a7\u6708\u521d\u4ee5\u6765\u9996\u6b21 \u6b27\u5143\u5151\u65e5\u5143EUR/JPY\u6da8\u81f3173.",
+    "lang": "zh",
+    "quantities": [
+     "\u6b27\u5143",
+     "\u65e5\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDJPY",
+      "EURJPY"
+     ],
+     "mentioned": [
+      "\u6b27\u5143",
+      "\u65e5\u5143",
+      "eur/jpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "18d9efd2bd74"
+   },
+   {
+    "claim": "9 \u521b\u4e0b\u903e\u4e00\u5e74\u65b0\u9ad8 \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u8dcc\u5e45\u8fbe0.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "d9d5558e22cf"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "http://forex.eastmoney.com/GBP.html",
+  "published": "2026-11-02T07:14:48+00:00",
+  "symbols": [
+   "GBPUSD",
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "38917cabdb7b4a07d012",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u82f1\u9551\u5151\u7f8e\u5143\u5728\u82f1\u56fd\u592e\u884c\u516c\u5e03\u51b3\u5b9a\u540e\u7ef4\u6301\u6da8\u52bf \u3010\u73af\u7403\u8d22\u7ecf\u3011\u82f1\u56fd3\u6708\u5e73\u5747\u623f\u4ef7\u73af\u6bd4\u4e0b\u8dcc0.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u82f1\u9551",
+     "\u592e\u884c"
+    ],
+    "direction": [
+     "\u4e0b\u8dcc",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "\u82f1\u9551"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u82f1\u56fd\u592e\u884c: policy: BoE -> GBP"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "1207d8dd8ea3"
+   },
+   {
+    "claim": "3394 \u82f1\u9551/\u7f8e\u5143\u521b\u4e0b4\u6708\u4efd\u4ee5\u6765\u6700\u5927\u8dcc\u5e45 \u8dcc1.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u82f1\u9551"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "\u82f1\u9551"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4059dba080ed"
+   },
+   {
+    "claim": "\u82f1\u9551\u5151\u7f8e\u5143\u65e5\u5185\u8dcc\u8d851% \u82f1\u9551\u5151\u7f8e\u5143GBP/USD\u7ad9\u4e0a1.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u82f1\u9551"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "\u82f1\u9551"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "683a9f635600"
+   },
+   {
+    "claim": "36 \u4e3a2022\u5e742\u6708\u4ee5\u6765\u9996\u6b21 \u6b27\u5143\u5151\u82f1\u9551\u8dcc\u81f34\u67083\u65e5\u4ee5\u6765\u6700\u4f4e \u82f1\u9551\u5151\u7f8e\u5143\u4e0a\u6da80.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u6b27\u5143",
+     "\u82f1\u9551"
+    ],
+    "direction": [
+     "\u4e0a\u6da8",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143",
+      "\u82f1\u9551"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e6155240a3f4"
+   },
+   {
+    "claim": "54% \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u8dcc1.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "0634f28279db"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Trading: Trading with Estimize and I/B/E/S earnings estimates data",
+  "url": "http://epchan.blogspot.com/2015/01/trading-with-estimize-and-ibes-earnings.html?showComment=1421593871007",
+  "published": "2026-11-02T07:14:50+00:00",
+  "symbols": [
+   "EURCHF",
+   "EURGBP",
+   "USDMXN",
+   "US500",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6b86c50a02b326bfabda",
+  "host": "epchan.blogspot.com",
+  "claims": [
+   {
+    "claim": "Buy stocks with delta > 0 at close before an earnings announcement and exit the positions next morning at the open after the announcement.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "close",
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "close",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "934a26d14959"
+   },
+   {
+    "claim": "Sell stocks with delta < 0 at close before an earnings announcement and exit the positions next morning at the open after the announcement.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "close",
+     "open"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "close",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a89d79030412"
+   },
+   {
+    "claim": "The following figure is the daily P&L of the strategy based on $1 per stock position Cumulative P&L of momentum Strategy with I/B/E/S We tried the same momentum strategy using Estimize data over 2012-2013, and it generated negative returns this time.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "221547f004aa"
+   },
+   {
+    "claim": "Hi Ernie Where could one buy daily data on futures dating back as far as the 1970s?",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b0cf35918c8d"
+   },
+   {
+    "claim": "I think using order flow inferences to predict FX trends is very difficult beyond a few minutes (if that).",
+    "lang": "en",
+    "quantities": [
+     "order flow"
+    ],
+    "direction": [
+     "predict"
+    ],
+    "horizon": [
+     "minutes"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5ed9e5630faa"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Trading: Trading with Estimize and I/B/E/S earnings estimates data",
+  "url": "http://epchan.blogspot.com/2015/01/trading-with-estimize-and-ibes-earnings.html?showComment=1421603167162",
+  "published": "2026-11-02T07:14:52+00:00",
+  "symbols": [
+   "EURCHF",
+   "EURGBP",
+   "USDMXN",
+   "US500",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8f957f3285f71297b346",
+  "host": "epchan.blogspot.com",
+  "claims": [
+   {
+    "claim": "Buy stocks with delta > 0 at close before an earnings announcement and exit the positions next morning at the open after the announcement.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "close",
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "close",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "934a26d14959"
+   },
+   {
+    "claim": "Sell stocks with delta < 0 at close before an earnings announcement and exit the positions next morning at the open after the announcement.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "close",
+     "open"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "close",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a89d79030412"
+   },
+   {
+    "claim": "The following figure is the daily P&L of the strategy based on $1 per stock position Cumulative P&L of momentum Strategy with I/B/E/S We tried the same momentum strategy using Estimize data over 2012-2013, and it generated negative returns this time.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "221547f004aa"
+   },
+   {
+    "claim": "Hi Ernie Where could one buy daily data on futures dating back as far as the 1970s?",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b0cf35918c8d"
+   },
+   {
+    "claim": "I think using order flow inferences to predict FX trends is very difficult beyond a few minutes (if that).",
+    "lang": "en",
+    "quantities": [
+     "order flow"
+    ],
+    "direction": [
+     "predict"
+    ],
+    "horizon": [
+     "minutes"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5ed9e5630faa"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Trading: Trading with Estimize and I/B/E/S earnings estimates data",
+  "url": "http://epchan.blogspot.com/2015/01/trading-with-estimize-and-ibes-earnings.html?showComment=1421759535359",
+  "published": "2026-11-02T07:14:54+00:00",
+  "symbols": [
+   "EURCHF",
+   "EURGBP",
+   "USDMXN",
+   "US500",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7e3478096c2548eb19b9",
+  "host": "epchan.blogspot.com",
+  "claims": [
+   {
+    "claim": "Buy stocks with delta > 0 at close before an earnings announcement and exit the positions next morning at the open after the announcement.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "close",
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "close",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "934a26d14959"
+   },
+   {
+    "claim": "Sell stocks with delta < 0 at close before an earnings announcement and exit the positions next morning at the open after the announcement.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "close",
+     "open"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "close",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a89d79030412"
+   },
+   {
+    "claim": "The following figure is the daily P&L of the strategy based on $1 per stock position Cumulative P&L of momentum Strategy with I/B/E/S We tried the same momentum strategy using Estimize data over 2012-2013, and it generated negative returns this time.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "221547f004aa"
+   },
+   {
+    "claim": "Hi Ernie Where could one buy daily data on futures dating back as far as the 1970s?",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b0cf35918c8d"
+   },
+   {
+    "claim": "I think using order flow inferences to predict FX trends is very difficult beyond a few minutes (if that).",
+    "lang": "en",
+    "quantities": [
+     "order flow"
+    ],
+    "direction": [
+     "predict"
+    ],
+    "horizon": [
+     "minutes"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5ed9e5630faa"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Trading: Trading with Estimize and I/B/E/S earnings estimates data",
+  "url": "http://epchan.blogspot.com/2015/01/trading-with-estimize-and-ibes-earnings.html?showComment=1421764793692",
+  "published": "2026-11-02T07:14:56+00:00",
+  "symbols": [
+   "EURCHF",
+   "EURGBP",
+   "USDMXN",
+   "US500",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "56b9d1922438d08ca7e6",
+  "host": "epchan.blogspot.com",
+  "claims": [
+   {
+    "claim": "Buy stocks with delta > 0 at close before an earnings announcement and exit the positions next morning at the open after the announcement.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "close",
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "close",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "934a26d14959"
+   },
+   {
+    "claim": "Sell stocks with delta < 0 at close before an earnings announcement and exit the positions next morning at the open after the announcement.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "close",
+     "open"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "close",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a89d79030412"
+   },
+   {
+    "claim": "The following figure is the daily P&L of the strategy based on $1 per stock position Cumulative P&L of momentum Strategy with I/B/E/S We tried the same momentum strategy using Estimize data over 2012-2013, and it generated negative returns this time.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "221547f004aa"
+   },
+   {
+    "claim": "Hi Ernie Where could one buy daily data on futures dating back as far as the 1970s?",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b0cf35918c8d"
+   },
+   {
+    "claim": "I think using order flow inferences to predict FX trends is very difficult beyond a few minutes (if that).",
+    "lang": "en",
+    "quantities": [
+     "order flow"
+    ],
+    "direction": [
+     "predict"
+    ],
+    "horizon": [
+     "minutes"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5ed9e5630faa"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Trading: Trading with Estimize and I/B/E/S earnings estimates data",
+  "url": "http://epchan.blogspot.com/2015/01/trading-with-estimize-and-ibes-earnings.html?showComment=1421790556750",
+  "published": "2026-11-02T07:14:58+00:00",
+  "symbols": [
+   "EURCHF",
+   "EURGBP",
+   "USDMXN",
+   "US500",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9809aa44c5003ab980b7",
+  "host": "epchan.blogspot.com",
+  "claims": [
+   {
+    "claim": "Buy stocks with delta > 0 at close before an earnings announcement and exit the positions next morning at the open after the announcement.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "close",
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "close",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "934a26d14959"
+   },
+   {
+    "claim": "Sell stocks with delta < 0 at close before an earnings announcement and exit the positions next morning at the open after the announcement.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "close",
+     "open"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "close",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a89d79030412"
+   },
+   {
+    "claim": "The following figure is the daily P&L of the strategy based on $1 per stock position Cumulative P&L of momentum Strategy with I/B/E/S We tried the same momentum strategy using Estimize data over 2012-2013, and it generated negative returns this time.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "221547f004aa"
+   },
+   {
+    "claim": "Hi Ernie Where could one buy daily data on futures dating back as far as the 1970s?",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b0cf35918c8d"
+   },
+   {
+    "claim": "I think using order flow inferences to predict FX trends is very difficult beyond a few minutes (if that).",
+    "lang": "en",
+    "quantities": [
+     "order flow"
+    ],
+    "direction": [
+     "predict"
+    ],
+    "horizon": [
+     "minutes"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5ed9e5630faa"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Trading: Trading with Estimize and I/B/E/S earnings estimates data",
+  "url": "http://epchan.blogspot.com/2015/01/trading-with-estimize-and-ibes-earnings.html?showComment=1421794552659",
+  "published": "2026-11-02T07:15:00+00:00",
+  "symbols": [
+   "EURCHF",
+   "EURGBP",
+   "USDMXN",
+   "US500",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ff75d46150035e721116",
+  "host": "epchan.blogspot.com",
+  "claims": [
+   {
+    "claim": "Buy stocks with delta > 0 at close before an earnings announcement and exit the positions next morning at the open after the announcement.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "close",
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "close",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "934a26d14959"
+   },
+   {
+    "claim": "Sell stocks with delta < 0 at close before an earnings announcement and exit the positions next morning at the open after the announcement.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "close",
+     "open"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "close",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a89d79030412"
+   },
+   {
+    "claim": "The following figure is the daily P&L of the strategy based on $1 per stock position Cumulative P&L of momentum Strategy with I/B/E/S We tried the same momentum strategy using Estimize data over 2012-2013, and it generated negative returns this time.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "221547f004aa"
+   },
+   {
+    "claim": "Hi Ernie Where could one buy daily data on futures dating back as far as the 1970s?",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b0cf35918c8d"
+   },
+   {
+    "claim": "I think using order flow inferences to predict FX trends is very difficult beyond a few minutes (if that).",
+    "lang": "en",
+    "quantities": [
+     "order flow"
+    ],
+    "direction": [
+     "predict"
+    ],
+    "horizon": [
+     "minutes"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5ed9e5630faa"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Trading: Trading with Estimize and I/B/E/S earnings estimates data",
+  "url": "http://epchan.blogspot.com/2015/01/trading-with-estimize-and-ibes-earnings.html?showComment=1421795566740",
+  "published": "2026-11-02T07:15:02+00:00",
+  "symbols": [
+   "EURCHF",
+   "EURGBP",
+   "USDMXN",
+   "US500",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "06fa9e5371d18e573c89",
+  "host": "epchan.blogspot.com",
+  "claims": [
+   {
+    "claim": "Buy stocks with delta > 0 at close before an earnings announcement and exit the positions next morning at the open after the announcement.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "close",
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "close",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "934a26d14959"
+   },
+   {
+    "claim": "Sell stocks with delta < 0 at close before an earnings announcement and exit the positions next morning at the open after the announcement.",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "close",
+     "open"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "close",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a89d79030412"
+   },
+   {
+    "claim": "The following figure is the daily P&L of the strategy based on $1 per stock position Cumulative P&L of momentum Strategy with I/B/E/S We tried the same momentum strategy using Estimize data over 2012-2013, and it generated negative returns this time.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "221547f004aa"
+   },
+   {
+    "claim": "Hi Ernie Where could one buy daily data on futures dating back as far as the 1970s?",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b0cf35918c8d"
+   },
+   {
+    "claim": "I think using order flow inferences to predict FX trends is very difficult beyond a few minutes (if that).",
+    "lang": "en",
+    "quantities": [
+     "order flow"
+    ],
+    "direction": [
+     "predict"
+    ],
+    "horizon": [
+     "minutes"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURGBP",
+      "USDKRW",
+      "USDMXN",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "spy",
+      "eurgbp",
+      "won",
+      "usdmxn",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDCAD",
+      "USDCHF"
+     ],
+     "channels": [
+      "bank of canada: policy: BoC -> CAD",
+      "snb: policy: SNB -> CHF"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5ed9e5630faa"
+   }
+  ],
+  "n_claims": 5
+ }
+]
