@@ -1,0 +1,3806 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Copy Trading Rating - Top Strategies to Copy - RoboForex",
+  "url": "https://roboforex.com/copy-trading/rating/",
+  "published": "2026-11-02T00:13:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "093a6e06d239b9be57fb",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Copy Trading Platform - RoboForex",
+  "url": "https://roboforex.com/copy-trading/copy-top-strategies/",
+  "published": "2026-11-02T00:13:23+00:00",
+  "symbols": [
+   "EURCHF",
+   "EURUSD",
+   "GBPUSD"
+  ],
+  "timeframes": [
+   "1M",
+   "5M"
+  ],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "700921b7ea7271c6cc24",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Share Your Copy Trading Strategy and Earn - RoboForex",
+  "url": "https://roboforex.com/copy-trading/share-your-strategy/",
+  "published": "2026-11-02T00:13:25+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "67b307ec13107c225aa3",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Copy Trading: General | RoboForex Help Center",
+  "url": "https://roboforex.com/help/copy-trading-general/",
+  "published": "2026-11-02T00:13:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5c951b0eafd87d2b8dd0",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Welcome Bonus 30 USD - Receive initial funds for trading - RoboForex",
+  "url": "https://roboforex.com/clients/promotions/welcome-program/",
+  "published": "2026-11-02T00:13:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "67c8d901635e14570e1e",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Leverage up to 1:2000 with the broker - RoboForex",
+  "url": "https://roboforex.com/clients/services/2000-up-leverage/",
+  "published": "2026-11-02T00:13:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e7639035a5cabac0eeb7",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Withdrawal Without Commission - RoboForex",
+  "url": "https://roboforex.com/clients/funds/free-withdrawal/",
+  "published": "2026-11-02T00:13:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8e3e927993c32a10acab",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Foreign exchange operations",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/forex/html/index.en.html",
+  "published": "2026-11-02T00:13:34+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.en.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "377821ee68394eff6c6d",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Pfizer Inc. stocks CFD (PFE) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/PFE/",
+  "published": "2026-11-02T00:13:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c4defd249fe55fe8d92e",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Johnson &amp; Johnson stocks CFD (JNJ) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/JNJ/",
+  "published": "2026-11-02T00:13:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "59f7f02eaa7cb2f05810",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Electronic Arts Inc. stocks CFD (EA) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/EA/",
+  "published": "2026-11-02T00:13:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5f081eb008dd46812c5c",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Boeing Company stocks CFD (BA) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/BA/",
+  "published": "2026-11-02T00:13:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3d0d2bfe3bc603349477",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Oracle Corporation stocks CFD (ORCL) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/ORCL/",
+  "published": "2026-11-02T00:13:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9649c5ba7ec2561b9d99",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "NVIDIA Corporation stocks CFD (NVDA) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/NVDA/",
+  "published": "2026-11-02T00:13:45+00:00",
+  "symbols": [
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ec10e8d48bade78ca181",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Caterpillar Inc. stocks CFD (CAT) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/CAT/",
+  "published": "2026-11-02T00:13:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1793273914",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1341e6690734a3a08f48",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Publications by date",
+  "url": "https://www.ecb.europa.eu/press/pr/html/index.en.html",
+  "published": "2026-11-02T00:13:47+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.en.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b6f37268a9a254e787fe",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Medium-term orientation",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/medium-term-orientation/html/index.da.html",
+  "published": "2026-11-02T00:13:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "da",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.da.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6ed84b93b767b458daf1",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Medium-term orientation",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/medium-term-orientation/html/index.de.html",
+  "published": "2026-11-02T00:13:51+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "de",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.de.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ae4bf84f0cb60236b234",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Medium-term orientation",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/medium-term-orientation/html/index.el.html",
+  "published": "2026-11-02T00:13:53+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "el",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.el.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9d427a6d6cbffc8c9222",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Medium-term orientation",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/medium-term-orientation/html/index.es.html",
+  "published": "2026-11-02T00:13:55+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.es.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "139ccaa29c74a8e9e5d3",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Medium-term orientation",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/medium-term-orientation/html/index.et.html",
+  "published": "2026-11-02T00:13:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "et",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.et.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6fcb31aa8b93cd120c09",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2015/05/",
+  "published": "2026-11-02T00:13:58+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2015/04/",
+  "published": "2026-11-02T00:14:00+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Blog - Quantifiable Edges",
+  "url": "http://quantifiableedges.com/blog",
+  "published": "2026-11-02T00:14:03+00:00",
+  "symbols": [
+   "US500",
+   "XAUUSD",
+   "XAGUSD",
+   "NAS100",
+   "US2000"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "momentum",
+   "orderflow",
+   "policy",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8431cee6a8d0de540881",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "Comment off How August and September Have Fared After June & July Both Close Lower Posted by Rob Hanna in Quantitative Study , seasonality August 3, 2026 Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "c0809a6c41c7"
+   },
+   {
+    "claim": "A 70% win rate and a strong, steady move higher suggest Thursday looks like a pretty good day from a seasonal standpoint.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "seasonal"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "US2000"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "nasdaq",
+      "spx",
+      "russell 2000"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b07ae1f764a3"
+   },
+   {
+    "claim": "Related Quantifiable Edges Studies An updated look at Thanksgiving Week Stats The Reversal Tendency of Labor Day Week Will Tomorrow Be Another Bullish Holy Thursday?",
+    "lang": "en",
+    "quantities": [
+     "reversal"
+    ],
+    "direction": [
+     "bullish"
+    ],
+    "horizon": [
+     "week",
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "US2000"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "nasdaq",
+      "spx",
+      "russell 2000"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b2dd92627a1d"
+   },
+   {
+    "claim": "Signal vs baseline forward returns (top 20 rallies) Lastly a little graphic showing the one-year forward returns after each of the 6-week rallies: So the momentum over the recent six-week period seems to be positive.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "rallies",
+     "positive"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "US2000"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "nasdaq",
+      "spx",
+      "russell 2000"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0e457d32d708"
+   },
+   {
+    "claim": "If any one of the above is true, the model will go (or remain) long 150% SPX at the close on Thursday, and will remain long at least until the following Thursday when the new number is published.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "65b8c61114e0"
+   },
+   {
+    "claim": "Related Quantifiable Edges Studies The Reversal Tendency of Labor Day Week Memorial Week History And The One Day That\u2019s Been Consistent Will Tomorrow Be Another Bullish Holy Thursday?",
+    "lang": "en",
+    "quantities": [
+     "reversal"
+    ],
+    "direction": [
+     "bullish"
+    ],
+    "horizon": [
+     "day",
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "NAS100",
+      "US500",
+      "US2000"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "nasdaq",
+      "spx",
+      "russell 2000"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5da5545ec9c2"
+   }
+  ],
+  "n_claims": 6
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com",
+  "published": "2026-11-02T00:14:04+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "The Quantifiable Edges Guide to Fed Days - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/fedguide",
+  "published": "2026-11-02T00:14:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "correlation",
+   "gap",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "df4e82f6d0a12cd9cee9",
+  "host": "quantifiableedges.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2015/03/",
+  "published": "2026-11-02T00:14:08+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+  "url": "https://quantifiableedges.com/2015/02/",
+  "published": "2026-11-02T00:14:11+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c32ba7325ad74f97edee",
+  "host": "quantifiableedges.com",
+  "claims": [
+   {
+    "claim": "How August and September Have Fared After June & July Both Close Lower Posted on August 3, 2026 by Rob Hanna Both June and July saw SPX close lower.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e7980f30bcc0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u3010\u6765\u9031\u306e\u6ce8\u76ee\u6750\u6599\u3011\u7c73\u5229\u4e0a\u3052\u306b\u5411\u3051\u3066\u3001\u7269\u4fa1\u7d71\u8a08\u306b\u6ce8\u76ee=\u7c73CPI\uff06PPI - 2026\u5e7409\u670805\u65e517:10\uff5c\u70ba\u66ff\u30cb\u30e5\u30fc\u30b9\uff5c\u307f\u3093\u304b\u3076",
+  "url": "https://fx.minkabu.jp/news/378254",
+  "published": "2026-11-02T00:14:12+00:00",
+  "symbols": [
+   "XTIUSD",
+   "HK50",
+   "NAS100",
+   "US500",
+   "US30",
+   "JPN225",
+   "USDJPY",
+   "AUDUSD",
+   "BTCUSD",
+   "UST10Y"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f366792199e8793321d7",
+  "host": "fx.minkabu.jp",
+  "claims": [
+   {
+    "claim": "\u3010\u6765\u9031\u306e\u6ce8\u76ee\u6750\u6599\u3011\u7c73\u5229\u4e0a\u3052\u306b\u5411\u3051\u3066\u3001\u7269\u4fa1\u7d71\u8a08\u306b\u6ce8\u76ee=\u7c73CPI\uff06PPI - 2026\u5e7409\u670805\u65e517:10\uff5c\u70ba\u66ff\u30cb\u30e5\u30fc\u30b9\uff5c\u307f\u3093\u304b\u3076 \u307f\u3093\u304b\u3076\u30d7\u30ec\u30df\u30a2\u30e0\u306e\u3054\u7d39\u4ecb \u203a \u682a\u5f0f \u7c73\u56fd\u682a FX \u4eee\u60f3\u901a\u8ca8 \u6295\u4fe1 \u5148\u7269 \u4fdd\u967a \u30de\u30ac\u30b8\u30f3 \u30de\u30ac\u30b8\u30f3TOP \u30de\u30ac\u30b8\u30f3\u7dcf\u5408 \u8cc7\u7523\u5f62\u6210\u306e\u306f\u3058\u3081\u65b9 NISA\u30fb\u3064\u307f\u305f\u3066NISA iDeCo\uff08\u30a4\u30c7\u30b3\uff09 \u682a \u521d\u5fc3\u8005\u5165\u9580 \u6295\u8cc7\u4fe1\u8a17 \u521d\u5fc3\u8005\u5165\u9580 FX \u521d\u5fc3\u8005\u5165\u9580 \u4eee\u60f3\u901a\u8ca8 \u521d\u5fc3\u8005\u5165\u9580 \u4e0d\u52d5\u7523 \u521d\u5fc3\u8005\u5165\u9580 \u5148\u7269\u53d6\u5f15 \u521d\u5fc3\u8005\u5165\u9580 \u30ed\u30b0\u30a4\u30f3 \u4f1a\u54e1\u767b\u9332 FX/\u70ba\u66ffTOP \u70ba\u66ff\u30ec\u30fc\u30c8 \u30cb\u30e5\u30fc\u30b9/\u30b3\u30e9\u30e0 \u7d4c\u6e08\u6307\u6a19 \u4e3b\u8981\u56fd\u30c7\u30fc\u30bf \u5e02\u5834\u4f11\u65e5\u30ab\u30ec\u30f3\u30c0\u30fc \u653f\u7b56\u91d1\u5229\u4e00\u89a7 \u4e2d\u592e\u9280\u884c\u30e1\u30f3\u30d0\u30fc FX\u3092\u59cb\u3081\u308b FX\u521d\u5fc3\u8005 FX\u7528\u8a9e\u96c6 \u304a\u3059\u3059\u3081FX\u53e3\u5ea7 PR FX\u30c7\u30e2\u53d6\u5f15\u4f53\u9a13 \u30de\u30a4\u30eb\u304c\u305f\u307e\u308bFX \u5186\u5b89\u6642\u4ee3\u306eFX\u6226\u7565 \u6700\u5927100\u4e07\u5186\u9084\u5143 FX\u53d6\u5f15\u30a2\u30d7\u30eaNo.",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u6307\u6a19",
+     "\u5148\u7269",
+     "\u653f\u7b56\u91d1\u5229"
+    ],
+    "direction": [
+     "\u5186\u5b89"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u9031"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "f6f078a49d90"
+   },
+   {
+    "claim": "\u4e2d\u6771\u60c5\u52e2\u8b66\u6212\u3082\u3042\u3063\u3066\u539f\u6cb9\u4fa1\u683c\u304c\u4e0a\u6607\u3001\u30ac\u30bd\u30ea\u30f3\u4fa1\u683c\u3082\u4e0a\u6607\u50be\u5411\u3068\u306a\u308a\u3001\u524d\u6708\u6bd4\u3067\u306f+0.",
+    "lang": "ja",
+    "quantities": [
+     "\u539f\u6cb9"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9\u4fa1\u683c"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "21903295596c"
+   },
+   {
+    "claim": "CPI\u540c\u69d8\u306b\u30ec\u30bf\u30b9\u4fa1\u683c\u4e0b\u843d(\u524d\u6708\u6bd4-73%)\u304b\u3089\u306e\u98df\u6599\u54c1\u306e\u4e0b\u3052\u3082\u898b\u3089\u308c\u307e\u3057\u305f\u3002",
+    "lang": "ja",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "\u4e0b\u843d"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "AUDUSD",
+      "BTCUSD",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9",
+      "hang seng",
+      "\u30ca\u30b9\u30c0\u30c3\u30af",
+      "s&p",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "\u30c9\u30eb\u5186",
+      "\u8c6a\u30c9\u30eb",
+      "\u30d3\u30c3\u30c8\u30b3\u30a4\u30f3",
+      "\u7c73\u56fd\u50b5"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "EURUSD"
+     ],
+     "channels": [
+      "\u30d1\u30a6\u30a8\u30eb: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY",
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY",
+      "\u56fd\u50b5\u5165\u672d: auction: sovereign debt -> rates and dollar"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "26a22e9526ec"
+   },
+   {
+    "claim": "CPI,PPI\u304c\u3068\u3082\u306b\u5e02\u5834\u4e88\u60f3\u3092\u8d85\u3048\u308b\u4f38\u3073\u3068\u306a\u3063\u305f\u5834\u5408\u306f\u3001\u4eca\u6708\u306eFOMC\u3067\u306e\u7c73\u5229\u4e0a\u3052\u671f\u5f85\u304c\u9ad8\u307e\u308a\u30c9\u30eb\u9ad8\u3068\u306a\u308b\u53ef\u80fd\u6027\u304c\u3042\u308a\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "fomc",
+     "cpi"
+    ],
+    "direction": [
+     "\u30c9\u30eb\u9ad8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "e4cb96c8d9da"
+   },
+   {
+    "claim": "\u95a2\u9023\u30bf\u30b0 #FOMC #\u7269\u4fa1 #\u30d1\u30a6\u30a8\u30eb \u95a2\u9023\u901a\u8ca8\u30da\u30a2 \u7c73\u30c9\u30eb/\u5186 \u7c73\u30c9\u30eb/\u30ab\u30ca\u30c0 \u7c73\u30c9\u30eb/\u30b9\u30a4\u30b9 \u70ba\u66ff\u30cb\u30e5\u30fc\u30b9/\u30b3\u30e9\u30e0 \u901a\u8ca8\u5225\u77ed\u671f\u30c8\u30ec\u30f3\u30c9\u4e00\u89a7 \u70ba\u66ff 11/02(\u6708) 08:30 \u6771\u4eac\u5e02\u5834 \u30d4\u30dc\u30c3\u30c8\u5206\u6790\uff08\u8cc7\u6e90\u56fd\u901a\u8ca8\uff09 \u70ba\u66ff 11/02(\u6708) 08:14 \u6771\u4eac\u5e02\u5834 \u30d4\u30dc\u30c3\u30c8\u5206\u6790\uff08\u65b0\u8208\u56fd\u901a\u8ca8\uff09 \u70ba\u66ff 11/02(\u6708) 08:13 \u6771\u4eac\u5e02\u5834 \u30d4\u30dc\u30c3\u30c8\u5206\u6790\uff08\u30af\u30ed\u30b9\u5186\uff09 \u70ba\u66ff 11/02(\u6708) 08:12 \u6771\u4eac\u5e02\u5834 \u30d4\u30dc\u30c3\u30c8\u5206\u6790\uff08\u4e3b\u8981\u56fd\u901a\u8ca8\uff09 \u70ba\u66ff 11/02(\u6708) 08:11 \u3010\u672c\u65e5\u306e\u898b\u901a\u3057\u3011\u30c9\u30eb\u5186\u306f\u30c9\u30eb\u8cb7\u3044\u5186\u8cb7\u3044\u304c\u4ea4\u932f \u70ba\u66ff 11/02(\u6708) 07:55 \u4e2d\u6771\u60c5\u52e2\u306b\u3089\u307f\u3001\u30c9\u30eb\u5186\u4ee5\u5916\u3067\u306f\u3084\u3084\u30c9\u30eb\u9ad8\u3001\u30af\u30ed\u30b9\u5186\u306f\u5186\u9ad8\uff1d\u6771\u4eac\u70ba\u66ff \u70ba\u66ff 11/02(\u6708) 07:22 \u671d\u306e\u30c9\u30eb\u5186\u306f157.",
+    "lang": "ja",
+    "quantities": [
+     "\u30c8\u30ec\u30f3\u30c9",
+     "\u30c9\u30eb\u5186",
+     "fomc"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u5186\u9ad8"
+    ],
+    "horizon": [
+     "\u5206",
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u30c9\u30eb\u5186"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "fbb08f45b6cd"
+   },
+   {
+    "claim": "\u307f\u3093\u304b\u3076\u30d7\u30ec\u30df\u30a2\u30e0\u3068\u306f \uff3c 30\u65e5\u9593\u7121\u6599\u3067\u4f53\u9a13\u3057\u3088\u3046 \uff0f \u307f\u3093\u304b\u3076\u30d7\u30ec\u30df\u30a2\u30e0\u4f1a\u54e1\u306b\u306a\u308b \u3059\u3067\u306b\u4f1a\u54e1\u306e\u65b9\u306f\u30ed\u30b0\u30a4\u30f3 TOP \u30cb\u30e5\u30fc\u30b9 \u3010\u6765\u9031\u306e\u6ce8\u76ee\u6750\u6599\u3011\u7c73\u5229\u4e0a\u3052\u306b\u5411\u3051\u3066\u3001\u7269\u4fa1\u7d71\u8a08\u306b\u6ce8\u76ee=\u7c73CPI\uff06PPI \u3010\u3054\u6ce8\u610f\u3011\u300e\u307f\u3093\u304b\u3076\u300f\u306b\u304a\u3051\u308b\u300c\u8cb7\u3044\u300d\u300c\u58f2\u308a\u300d\u306e\u60c5\u5831\u306f\u3042\u304f\u307e\u3067\u3082\u6295\u7a3f\u8005\u306e\u500b\u4eba\u7684\u898b\u89e3\u306b\u3088\u308b\u3082\u306e\u3067\u3042\u308a\u3001\u60c5\u5831\u306e\u771f\u507d\u3001\u682a\u5f0f\u306e\u8a55\u4fa1\u306b\u95a2\u3059\u308b\u6b63\u78ba\u6027\u30fb\u4fe1\u983c\u6027\u7b49\u306b\u3064\u3044\u3066\u306f\u4e00\u5207\u4fdd\u8a3c\u3055\u308c\u3066\u304a\u308a\u307e\u305b\u3093\u3002",
+    "lang": "ja",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u58f2\u308a"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u9031"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "AUDUSD",
+      "BTCUSD",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9",
+      "hang seng",
+      "\u30ca\u30b9\u30c0\u30c3\u30af",
+      "s&p",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "\u30c9\u30eb\u5186",
+      "\u8c6a\u30c9\u30eb",
+      "\u30d3\u30c3\u30c8\u30b3\u30a4\u30f3",
+      "\u7c73\u56fd\u50b5"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "EURUSD"
+     ],
+     "channels": [
+      "\u30d1\u30a6\u30a8\u30eb: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY",
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY",
+      "\u56fd\u50b5\u5165\u672d: auction: sovereign debt -> rates and dollar"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "646d130c85a0"
+   }
+  ],
+  "n_claims": 6
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u70ba\u66ff\u76f8\u5834\u307e\u3068\u3081\uff18\u6708\uff13\uff11\u65e5\u304b\u3089\uff19\u6708\uff14\u65e5\u306e\u9031 - 2026\u5e7409\u670805\u65e508:00\uff5c\u70ba\u66ff\u30cb\u30e5\u30fc\u30b9\uff5c\u307f\u3093\u304b\u3076 FX/\u70ba\u66ff",
+  "url": "https://fx.minkabu.jp/news/378253",
+  "published": "2026-11-02T00:14:14+00:00",
+  "symbols": [
+   "USDJPY",
+   "UST10Y",
+   "XTIUSD",
+   "XNGUSD",
+   "HK50",
+   "NAS100",
+   "US500",
+   "US30",
+   "JPN225",
+   "EURUSD",
+   "GBPUSD",
+   "AUDUSD",
+   "EURJPY",
+   "GBPJPY",
+   "BTCUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "carry",
+   "flow",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "919a5fc4a98b73f920b6",
+  "host": "fx.minkabu.jp",
+  "claims": [
+   {
+    "claim": "\u70ba\u66ff\u76f8\u5834\u307e\u3068\u3081\uff18\u6708\uff13\uff11\u65e5\u304b\u3089\uff19\u6708\uff14\u65e5\u306e\u9031 - 2026\u5e7409\u670805\u65e508:00\uff5c\u70ba\u66ff\u30cb\u30e5\u30fc\u30b9\uff5c\u307f\u3093\u304b\u3076 FX/\u70ba\u66ff \u307f\u3093\u304b\u3076\u30d7\u30ec\u30df\u30a2\u30e0\u306e\u3054\u7d39\u4ecb \u203a \u682a\u5f0f \u7c73\u56fd\u682a FX \u4eee\u60f3\u901a\u8ca8 \u6295\u4fe1 \u5148\u7269 \u4fdd\u967a \u30de\u30ac\u30b8\u30f3 \u30de\u30ac\u30b8\u30f3TOP \u30de\u30ac\u30b8\u30f3\u7dcf\u5408 \u8cc7\u7523\u5f62\u6210\u306e\u306f\u3058\u3081\u65b9 NISA\u30fb\u3064\u307f\u305f\u3066NISA iDeCo\uff08\u30a4\u30c7\u30b3\uff09 \u682a \u521d\u5fc3\u8005\u5165\u9580 \u6295\u8cc7\u4fe1\u8a17 \u521d\u5fc3\u8005\u5165\u9580 FX \u521d\u5fc3\u8005\u5165\u9580 \u4eee\u60f3\u901a\u8ca8 \u521d\u5fc3\u8005\u5165\u9580 \u4e0d\u52d5\u7523 \u521d\u5fc3\u8005\u5165\u9580 \u5148\u7269\u53d6\u5f15 \u521d\u5fc3\u8005\u5165\u9580 \u30ed\u30b0\u30a4\u30f3 \u4f1a\u54e1\u767b\u9332 FX/\u70ba\u66ffTOP \u70ba\u66ff\u30ec\u30fc\u30c8 \u30cb\u30e5\u30fc\u30b9/\u30b3\u30e9\u30e0 \u7d4c\u6e08\u6307\u6a19 \u4e3b\u8981\u56fd\u30c7\u30fc\u30bf \u5e02\u5834\u4f11\u65e5\u30ab\u30ec\u30f3\u30c0\u30fc \u653f\u7b56\u91d1\u5229\u4e00\u89a7 \u4e2d\u592e\u9280\u884c\u30e1\u30f3\u30d0\u30fc FX\u3092\u59cb\u3081\u308b FX\u521d\u5fc3\u8005 FX\u7528\u8a9e\u96c6 \u304a\u3059\u3059\u3081FX\u53e3\u5ea7 PR FX\u30c7\u30e2\u53d6\u5f15\u4f53\u9a13 \u30de\u30a4\u30eb\u304c\u305f\u307e\u308bFX \u5186\u5b89\u6642\u4ee3\u306eFX\u6226\u7565 \u6700\u5927100\u4e07\u5186\u9084\u5143 FX\u53d6\u5f15\u30a2\u30d7\u30eaNo.",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u6307\u6a19",
+     "\u5148\u7269",
+     "\u653f\u7b56\u91d1\u5229"
+    ],
+    "direction": [
+     "\u5186\u5b89"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u9031"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "9503fd437104"
+   },
+   {
+    "claim": "8\u6708\u672b\uff0831\u65e5\uff09\u306f\u30d9\u30c3\u30bb\u30f3\u30c8\u7c73\u8ca1\u52d9\u9577\u5b98\u306e\u5229\u4e0a\u3052\u5727\u529b\u767a\u8a00\u3092\u5951\u6a5f\u306b\u5186\u8cb7\u3044\u304c\u9032\u307f\u3001\u30c9\u30eb\u5186\u306f160\u5186\u53f0\u304b\u3089159\u5186\u53f0\u3078\u62bc\u3057\u623b\u3055\u308c\u305f\u304c\u3001\u7c73\u5b9f\u8cea\u91d1\u5229\u306e\u9ad8\u3055\u304c\u30ad\u30e3\u30ea\u30fc\u9700\u8981\u3092\u652f\u3048\u3001\u5186\u9ad8\u306f\u9650\u5b9a\u7684\u3060\u3063\u305f\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u30ad\u30e3\u30ea\u30fc",
+     "\u91d1",
+     "\u30c9\u30eb\u5186",
+     "\u6708\u672b"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u5186\u9ad8"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u30c9\u30eb\u5186"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "69812ff0b23a"
+   },
+   {
+    "claim": "1\u65e5\u306f\u65e5\u672c\u306e10\u5e74\u50b5\u5229\u56de\u308a\u304c3\uff05\u53f0\u3078\u4e0a\u6607\u3057\u3064\u3064\u3082\u3001\u7c73\u91d1\u5229\u3082\u540c\u6642\u306b\u4e0a\u6607\u3057\u305f\u305f\u3081\u65e5\u7c73\u91d1\u5229\u5dee\u306e\u7e2e\u5c0f\u306f\u610f\u8b58\u3055\u308c\u305a\u3001\u30c9\u30eb\u5186\u306f160\u5186\u53f0\u3092\u7dad\u6301\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u30c9\u30eb\u5186",
+     "\u91d1\u5229\u5dee",
+     "\u5229\u56de\u308a"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u30c9\u30eb\u5186",
+      "10\u5e74\u50b5"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "b0736e5cc6e3"
+   },
+   {
+    "claim": "2\u65e5\u306f\u4e2d\u6771\u30ea\u30b9\u30af\u306b\u3088\u308b\u6709\u4e8b\u306e\u30c9\u30eb\u9ad8\u3067\u30c9\u30eb\u5186\u304c160.",
+    "lang": "ja",
+    "quantities": [
+     "\u30c9\u30eb\u5186"
+    ],
+    "direction": [
+     "\u30c9\u30eb\u9ad8"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u30c9\u30eb\u5186"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "d3ee9c4a3597"
+   },
+   {
+    "claim": "39\u5186\u307e\u3067\u4e0a\u6607\u3057\u305f\u304c\u3001\u56fd\u5185\u91d1\u5229\u6025\u9a30\u3068\u65e5\u9280\u5229\u4e0a\u3052\u89b3\u6e2c\u304c\u5186\u8cb7\u3044\u3092\u8a98\u767a\u3057\u3001159\u5186\u53f0\u3078\u6025\u53cd\u843d\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u65e5\u9280",
+     "\u9280"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "a4375213ff8c"
+   },
+   {
+    "claim": "\u30a6\u30a9\u30e9\u30fcFRB\u7406\u4e8b\u306e\u653f\u7b56\u91d1\u5229\u636e\u3048\u7f6e\u304d\u8a00\u53ca\u3082\u52a0\u308f\u308a\u30011\u30ab\u6708\u7d9a\u3044\u305f\u5186\u5b89\u30c8\u30ec\u30f3\u30c9\u306f\u69cb\u9020\u7684\u306b\u53cd\u8ee2\u3057\u30c9\u30eb\u5186\u306f155\u5186\u53f0\u307e\u3067\u4e0b\u843d\u3001\u5186\u30ad\u30e3\u30ea\u30fc\u306e\u5dfb\u304d\u623b\u3057\u304c\u5e02\u5834\u5168\u4f53\u3092\u652f\u914d\u3057\u305f\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u30c8\u30ec\u30f3\u30c9",
+     "\u30ad\u30e3\u30ea\u30fc",
+     "\u91d1",
+     "\u30c9\u30eb\u5186"
+    ],
+    "direction": [
+     "\u4e0b\u843d",
+     "\u5186\u5b89"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u30c9\u30eb\u5186"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "1ad9bfd82f4c"
+   },
+   {
+    "claim": "\u3053\u308c\u3092\u53d7\u3051\u3066\u30c9\u30eb\u5186\u304c\u6025\u9a30\u3082\u3001\u3059\u3050\u306b\u53cd\u843d\u3059\u308b\u306a\u3069\u4e0d\u5b89\u5b9a\u306a\u4e0a\u4e0b\u3092\u7d4c\u3066\u3001\u9031\u672b\u3092\u524d\u306b\u3057\u305f\u8b66\u6212\u611f\u3082\u3042\u3063\u3066\u3001\u5c11\u3057\u8abf\u6574\u304c\u5165\u3063\u3066156\u5186\u53f0\u524d\u534a\u3067\u5f15\u3051\u3066\u3044\u308b\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u30c9\u30eb\u5186"
+    ],
+    "direction": [
+     "\u53cd\u843d",
+     "\u6025\u9a30"
+    ],
+    "horizon": [
+     "\u9031",
+     "\u5f15\u3051"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u30c9\u30eb\u5186"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "7cb645e6e94b"
+   },
+   {
+    "claim": "\u30ed\u30f3\u30c9\u30f3\u5e02\u5834\u3067\u306f\u3001\u5148\u9031\u672b\u306e\u30a6\u30a9\u30fc\u30b7\u30e5\u7c73FRB\u8b70\u9577\u306e\u30bf\u30ab\u6d3e\u767a\u8a00\u3092\u80cc\u666f\u3068\u3057\u305f\u30c9\u30eb\u8cb7\u3044\u304c\u4e00\u5de1\u3057\u3001\u30dd\u30b8\u30b7\u30e7\u30f3\u8abf\u6574\u306b\u3088\u308b\u30c9\u30eb\u58f2\u308a\u3068\u5186\u8cb7\u3044\u304c\u512a\u52e2\u3068\u306a\u3063\u305f\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u30ed\u30f3\u30c9\u30f3"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u58f2\u308a"
+    ],
+    "horizon": [
+     "\u9031",
+     "\u9031\u672b"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "XNGUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "US30",
+      "JPN225",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "BTCUSD",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9",
+      "\u5929\u7136\u30ac\u30b9",
+      "hang seng",
+      "\u30ca\u30b9\u30c0\u30c3\u30af",
+      "s&p",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "\u30e6\u30fc\u30ed\u30c9\u30eb",
+      "\u30dd\u30f3\u30c9\u30c9\u30eb",
+      "\u30c9\u30eb\u5186",
+      "\u8c6a\u30c9\u30eb",
+      "\u30e6\u30fc\u30ed\u5186",
+      "\u30dd\u30f3\u30c9\u5186",
+      "\u30d3\u30c3\u30c8\u30b3\u30a4\u30f3",
+      "10\u5e74\u50b5"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "XBRUSD",
+      "USDCAD",
+      "USDNOK"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY",
+      "\u30db\u30eb\u30e0\u30ba\u6d77\u5ce1: energy flow: OPEC / inventories / chokepoints -> oil, CAD, NOK",
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY",
+      "\u56fd\u50b5\u5165\u672d: auction: sovereign debt -> rates and dollar"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "99cc08f09c21"
+   }
+  ],
+  "n_claims": 12
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u3010\u672c\u65e5\u306e\u898b\u901a\u3057\u3011\u30c9\u30eb\u9ad8\u5186\u5b89\u306e\u5730\u5408\u3044\u306f\u7d99\u7d9a\u304b - 2026\u5e7409\u670815\u65e507:55\uff5c\u70ba\u66ff\u30cb\u30e5\u30fc\u30b9\uff5c\u307f\u3093\u304b\u3076 FX/\u70ba\u66ff",
+  "url": "https://fx.minkabu.jp/news/378999",
+  "published": "2026-11-02T00:14:15+00:00",
+  "symbols": [
+   "XTIUSD",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "809b47f5909072bc52f2",
+  "host": "fx.minkabu.jp",
+  "claims": [
+   {
+    "claim": "\u3010\u672c\u65e5\u306e\u898b\u901a\u3057\u3011\u30c9\u30eb\u9ad8\u5186\u5b89\u306e\u5730\u5408\u3044\u306f\u7d99\u7d9a\u304b - 2026\u5e7409\u670815\u65e507:55\uff5c\u70ba\u66ff\u30cb\u30e5\u30fc\u30b9\uff5c\u307f\u3093\u304b\u3076 FX/\u70ba\u66ff \u307f\u3093\u304b\u3076\u30d7\u30ec\u30df\u30a2\u30e0\u306e\u3054\u7d39\u4ecb \u203a \u682a\u5f0f \u7c73\u56fd\u682a FX \u4eee\u60f3\u901a\u8ca8 \u6295\u4fe1 \u5148\u7269 \u4fdd\u967a \u30de\u30ac\u30b8\u30f3 \u30de\u30ac\u30b8\u30f3TOP \u30de\u30ac\u30b8\u30f3\u7dcf\u5408 \u8cc7\u7523\u5f62\u6210\u306e\u306f\u3058\u3081\u65b9 NISA\u30fb\u3064\u307f\u305f\u3066NISA iDeCo\uff08\u30a4\u30c7\u30b3\uff09 \u682a \u521d\u5fc3\u8005\u5165\u9580 \u6295\u8cc7\u4fe1\u8a17 \u521d\u5fc3\u8005\u5165\u9580 FX \u521d\u5fc3\u8005\u5165\u9580 \u4eee\u60f3\u901a\u8ca8 \u521d\u5fc3\u8005\u5165\u9580 \u4e0d\u52d5\u7523 \u521d\u5fc3\u8005\u5165\u9580 \u5148\u7269\u53d6\u5f15 \u521d\u5fc3\u8005\u5165\u9580 \u30ed\u30b0\u30a4\u30f3 \u4f1a\u54e1\u767b\u9332 FX/\u70ba\u66ffTOP \u70ba\u66ff\u30ec\u30fc\u30c8 \u30cb\u30e5\u30fc\u30b9/\u30b3\u30e9\u30e0 \u7d4c\u6e08\u6307\u6a19 \u4e3b\u8981\u56fd\u30c7\u30fc\u30bf \u5e02\u5834\u4f11\u65e5\u30ab\u30ec\u30f3\u30c0\u30fc \u653f\u7b56\u91d1\u5229\u4e00\u89a7 \u4e2d\u592e\u9280\u884c\u30e1\u30f3\u30d0\u30fc FX\u3092\u59cb\u3081\u308b FX\u521d\u5fc3\u8005 FX\u7528\u8a9e\u96c6 \u304a\u3059\u3059\u3081FX\u53e3\u5ea7 PR FX\u30c7\u30e2\u53d6\u5f15\u4f53\u9a13 \u30de\u30a4\u30eb\u304c\u305f\u307e\u308bFX \u5186\u5b89\u6642\u4ee3\u306eFX\u6226\u7565 \u6700\u5927100\u4e07\u5186\u9084\u5143 FX\u53d6\u5f15\u30a2\u30d7\u30eaNo.",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u6307\u6a19",
+     "\u5148\u7269",
+     "\u653f\u7b56\u91d1\u5229"
+    ],
+    "direction": [
+     "\u5186\u5b89",
+     "\u30c9\u30eb\u9ad8"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "32164a595fb0"
+   },
+   {
+    "claim": "\u307f\u3093\u304b\u3076\u30d7\u30ec\u30df\u30a2\u30e0\u3068\u306f \uff3c 30\u65e5\u9593\u7121\u6599\u3067\u4f53\u9a13\u3057\u3088\u3046 \uff0f \u307f\u3093\u304b\u3076\u30d7\u30ec\u30df\u30a2\u30e0\u4f1a\u54e1\u306b\u306a\u308b \u3059\u3067\u306b\u4f1a\u54e1\u306e\u65b9\u306f\u30ed\u30b0\u30a4\u30f3 \u3010\u672c\u65e5\u306e\u898b\u901a\u3057\u3011\u30c9\u30eb\u9ad8\u5186\u5b89\u306e\u5730\u5408\u3044\u306f\u7d99\u7d9a\u304b \u70ba\u66ff 2026/09/15(\u706b) 07:55 \u3010\u672c\u65e5\u306e\u898b\u901a\u3057\u3011\u30c9\u30eb\u9ad8\u5186\u5b89\u306e\u5730\u5408\u3044\u306f\u7d99\u7d9a\u304b \u524d\u65e5\u306e\uff2e\uff39\u5e02\u5834\u3067\u306f\u3001\u539f\u6cb9\u9ad8\u3092\u80cc\u666f\u306b\u7c73\uff11\uff10\u5e74\u50b5\u5229\u56de\u308a\u304c\u4e00\u6642\uff15\uff05\u53f0\u307e\u3067\u4e0a\u6607\u3057\u305f\u3053\u3068\u3067\u30c9\u30eb\u5186\u306f\uff11\uff15\uff15\u5186\u8fd1\u8fba\u307e\u3067\u4e0a\u6607\u3057\u305f\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u539f\u6cb9",
+     "\u30c9\u30eb\u5186",
+     "\u5229\u56de\u308a"
+    ],
+    "direction": [
+     "\u4e0a\u6607",
+     "\u5186\u5b89"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9",
+      "\u30c9\u30eb\u5186"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "cbb3adbe1583"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u672c\u65e5\u306e\u4e88\u5b9a\u3010\u7d4c\u6e08\u6307\u6a19\u3011 - 2026\u5e7409\u670815\u65e507:20\uff5c\u70ba\u66ff\u30cb\u30e5\u30fc\u30b9\uff5c\u307f\u3093\u304b\u3076 FX/\u70ba\u66ff",
+  "url": "https://fx.minkabu.jp/news/378996",
+  "published": "2026-11-02T00:14:17+00:00",
+  "symbols": [
+   "USDJPY",
+   "AUDUSD",
+   "XTIUSD",
+   "HK50",
+   "NAS100",
+   "US500",
+   "US30",
+   "JPN225",
+   "BTCUSD",
+   "UST10Y"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "eb8746ed519eb8c6287f",
+  "host": "fx.minkabu.jp",
+  "claims": [
+   {
+    "claim": "\u672c\u65e5\u306e\u4e88\u5b9a\u3010\u7d4c\u6e08\u6307\u6a19\u3011 - 2026\u5e7409\u670815\u65e507:20\uff5c\u70ba\u66ff\u30cb\u30e5\u30fc\u30b9\uff5c\u307f\u3093\u304b\u3076 FX/\u70ba\u66ff \u307f\u3093\u304b\u3076\u30d7\u30ec\u30df\u30a2\u30e0\u306e\u3054\u7d39\u4ecb \u203a \u682a\u5f0f \u7c73\u56fd\u682a FX \u4eee\u60f3\u901a\u8ca8 \u6295\u4fe1 \u5148\u7269 \u4fdd\u967a \u30de\u30ac\u30b8\u30f3 \u30de\u30ac\u30b8\u30f3TOP \u30de\u30ac\u30b8\u30f3\u7dcf\u5408 \u8cc7\u7523\u5f62\u6210\u306e\u306f\u3058\u3081\u65b9 NISA\u30fb\u3064\u307f\u305f\u3066NISA iDeCo\uff08\u30a4\u30c7\u30b3\uff09 \u682a \u521d\u5fc3\u8005\u5165\u9580 \u6295\u8cc7\u4fe1\u8a17 \u521d\u5fc3\u8005\u5165\u9580 FX \u521d\u5fc3\u8005\u5165\u9580 \u4eee\u60f3\u901a\u8ca8 \u521d\u5fc3\u8005\u5165\u9580 \u4e0d\u52d5\u7523 \u521d\u5fc3\u8005\u5165\u9580 \u5148\u7269\u53d6\u5f15 \u521d\u5fc3\u8005\u5165\u9580 \u30ed\u30b0\u30a4\u30f3 \u4f1a\u54e1\u767b\u9332 FX/\u70ba\u66ffTOP \u70ba\u66ff\u30ec\u30fc\u30c8 \u30cb\u30e5\u30fc\u30b9/\u30b3\u30e9\u30e0 \u7d4c\u6e08\u6307\u6a19 \u4e3b\u8981\u56fd\u30c7\u30fc\u30bf \u5e02\u5834\u4f11\u65e5\u30ab\u30ec\u30f3\u30c0\u30fc \u653f\u7b56\u91d1\u5229\u4e00\u89a7 \u4e2d\u592e\u9280\u884c\u30e1\u30f3\u30d0\u30fc FX\u3092\u59cb\u3081\u308b FX\u521d\u5fc3\u8005 FX\u7528\u8a9e\u96c6 \u304a\u3059\u3059\u3081FX\u53e3\u5ea7 PR FX\u30c7\u30e2\u53d6\u5f15\u4f53\u9a13 \u30de\u30a4\u30eb\u304c\u305f\u307e\u308bFX \u5186\u5b89\u6642\u4ee3\u306eFX\u6226\u7565 \u6700\u5927100\u4e07\u5186\u9084\u5143 FX\u53d6\u5f15\u30a2\u30d7\u30eaNo.",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u6307\u6a19",
+     "\u5148\u7269",
+     "\u653f\u7b56\u91d1\u5229"
+    ],
+    "direction": [
+     "\u5186\u5b89"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "ca5981dece3e"
+   },
+   {
+    "claim": "\u95a2\u9023\u901a\u8ca8\u30da\u30a2 \u7c73\u30c9\u30eb/\u5186 \u30e6\u30fc\u30ed/\u5186 \u82f1\u30dd\u30f3\u30c9/\u5186 \u30e6\u30fc\u30ed/\u7c73\u30c9\u30eb \u30e6\u30fc\u30ed/\u8c6a\u30c9\u30eb \u30dd\u30f3\u30c9/\u7c73\u30c9\u30eb \u30e6\u30fc\u30ed/\u30dd\u30f3\u30c9 \u82f1\u30dd\u30f3\u30c9/\u8c6a\u30c9\u30eb \u82f1\u30dd\u30f3\u30c9/\u30b9\u30a4\u30b9 \u82f1\u30dd\u30f3\u30c9/NZ\u30c9\u30eb \u7c73\u30c9\u30eb/\u30ab\u30ca\u30c0 \u7c73\u30c9\u30eb/\u30b9\u30a4\u30b9 \u70ba\u66ff\u30cb\u30e5\u30fc\u30b9/\u30b3\u30e9\u30e0 \u901a\u8ca8\u5225\u77ed\u671f\u30c8\u30ec\u30f3\u30c9\u4e00\u89a7 \u70ba\u66ff 11/02(\u6708) 08:30 \u6771\u4eac\u5e02\u5834 \u30d4\u30dc\u30c3\u30c8\u5206\u6790\uff08\u8cc7\u6e90\u56fd\u901a\u8ca8\uff09 \u70ba\u66ff 11/02(\u6708) 08:14 \u6771\u4eac\u5e02\u5834 \u30d4\u30dc\u30c3\u30c8\u5206\u6790\uff08\u65b0\u8208\u56fd\u901a\u8ca8\uff09 \u70ba\u66ff 11/02(\u6708) 08:13 \u6771\u4eac\u5e02\u5834 \u30d4\u30dc\u30c3\u30c8\u5206\u6790\uff08\u30af\u30ed\u30b9\u5186\uff09 \u70ba\u66ff 11/02(\u6708) 08:12 \u6771\u4eac\u5e02\u5834 \u30d4\u30dc\u30c3\u30c8\u5206\u6790\uff08\u4e3b\u8981\u56fd\u901a\u8ca8\uff09 \u70ba\u66ff 11/02(\u6708) 08:11 \u3010\u672c\u65e5\u306e\u898b\u901a\u3057\u3011\u30c9\u30eb\u5186\u306f\u30c9\u30eb\u8cb7\u3044\u5186\u8cb7\u3044\u304c\u4ea4\u932f \u70ba\u66ff 11/02(\u6708) 07:55 \u4e2d\u6771\u60c5\u52e2\u306b\u3089\u307f\u3001\u30c9\u30eb\u5186\u4ee5\u5916\u3067\u306f\u3084\u3084\u30c9\u30eb\u9ad8\u3001\u30af\u30ed\u30b9\u5186\u306f\u5186\u9ad8\uff1d\u6771\u4eac\u70ba\u66ff \u70ba\u66ff 11/02(\u6708) 07:22 \u671d\u306e\u30c9\u30eb\u5186\u306f157.",
+    "lang": "ja",
+    "quantities": [
+     "\u30c8\u30ec\u30f3\u30c9",
+     "\u30c9\u30eb\u5186",
+     "\u8c6a\u30c9\u30eb"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u5186\u9ad8"
+    ],
+    "horizon": [
+     "\u5206",
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY",
+      "AUDUSD"
+     ],
+     "mentioned": [
+      "\u30c9\u30eb\u5186",
+      "\u8c6a\u30c9\u30eb"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "a5df60bf6c84"
+   },
+   {
+    "claim": "\u307f\u3093\u304b\u3076\u30d7\u30ec\u30df\u30a2\u30e0\u3068\u306f \uff3c 30\u65e5\u9593\u7121\u6599\u3067\u4f53\u9a13\u3057\u3088\u3046 \uff0f \u307f\u3093\u304b\u3076\u30d7\u30ec\u30df\u30a2\u30e0\u4f1a\u54e1\u306b\u306a\u308b \u3059\u3067\u306b\u4f1a\u54e1\u306e\u65b9\u306f\u30ed\u30b0\u30a4\u30f3 TOP \u30cb\u30e5\u30fc\u30b9 \u672c\u65e5\u306e\u4e88\u5b9a\u3010\u7d4c\u6e08\u6307\u6a19\u3011 \u3010\u3054\u6ce8\u610f\u3011\u300e\u307f\u3093\u304b\u3076\u300f\u306b\u304a\u3051\u308b\u300c\u8cb7\u3044\u300d\u300c\u58f2\u308a\u300d\u306e\u60c5\u5831\u306f\u3042\u304f\u307e\u3067\u3082\u6295\u7a3f\u8005\u306e\u500b\u4eba\u7684\u898b\u89e3\u306b\u3088\u308b\u3082\u306e\u3067\u3042\u308a\u3001\u60c5\u5831\u306e\u771f\u507d\u3001\u682a\u5f0f\u306e\u8a55\u4fa1\u306b\u95a2\u3059\u308b\u6b63\u78ba\u6027\u30fb\u4fe1\u983c\u6027\u7b49\u306b\u3064\u3044\u3066\u306f\u4e00\u5207\u4fdd\u8a3c\u3055\u308c\u3066\u304a\u308a\u307e\u305b\u3093\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u6307\u6a19"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u58f2\u308a"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "AUDUSD",
+      "BTCUSD",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9",
+      "hang seng",
+      "\u30ca\u30b9\u30c0\u30c3\u30af",
+      "s&p",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "\u30c9\u30eb\u5186",
+      "\u8c6a\u30c9\u30eb",
+      "\u30d3\u30c3\u30c8\u30b3\u30a4\u30f3",
+      "\u7c73\u56fd\u50b5"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "EURUSD"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY",
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY",
+      "\u56fd\u50b5\u5165\u672d: auction: sovereign debt -> rates and dollar"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b1d237a85701"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u30c9\u30eb\u5186\u3001\u4e00\u6642\uff11\uff15\uff15\u5186\u307e\u3067\u4e0a\u6607 \u7c73\uff11\uff10\u5e74\u50b5\u5229\u56de\u308a\u304c\uff15\uff05\u53f0\u307e\u3067\u4e00\u6642\u4e0a\u6607\uff1d\uff2e\uff39\u70ba\u66ff\u6982\u6cc1 -",
+  "url": "https://fx.minkabu.jp/news/378991",
+  "published": "2026-11-02T00:14:19+00:00",
+  "symbols": [
+   "USDJPY",
+   "XTIUSD",
+   "XNGUSD",
+   "HK50",
+   "NAS100",
+   "US500",
+   "US30",
+   "JPN225",
+   "EURUSD",
+   "GBPUSD",
+   "AUDUSD",
+   "EURJPY",
+   "GBPJPY",
+   "AUDJPY",
+   "BTCUSD",
+   "UST10Y"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bdecee9747ab20f1764b",
+  "host": "fx.minkabu.jp",
+  "claims": [
+   {
+    "claim": "\u30c9\u30eb\u5186\u3001\u4e00\u6642\uff11\uff15\uff15\u5186\u307e\u3067\u4e0a\u6607 \u7c73\uff11\uff10\u5e74\u50b5\u5229\u56de\u308a\u304c\uff15\uff05\u53f0\u307e\u3067\u4e00\u6642\u4e0a\u6607\uff1d\uff2e\uff39\u70ba\u66ff\u6982\u6cc1 - \u307f\u3093\u304b\u3076\u30d7\u30ec\u30df\u30a2\u30e0\u306e\u3054\u7d39\u4ecb \u203a \u682a\u5f0f \u7c73\u56fd\u682a FX \u4eee\u60f3\u901a\u8ca8 \u6295\u4fe1 \u5148\u7269 \u4fdd\u967a \u30de\u30ac\u30b8\u30f3 \u30de\u30ac\u30b8\u30f3TOP \u30de\u30ac\u30b8\u30f3\u7dcf\u5408 \u8cc7\u7523\u5f62\u6210\u306e\u306f\u3058\u3081\u65b9 NISA\u30fb\u3064\u307f\u305f\u3066NISA iDeCo\uff08\u30a4\u30c7\u30b3\uff09 \u682a \u521d\u5fc3\u8005\u5165\u9580 \u6295\u8cc7\u4fe1\u8a17 \u521d\u5fc3\u8005\u5165\u9580 FX \u521d\u5fc3\u8005\u5165\u9580 \u4eee\u60f3\u901a\u8ca8 \u521d\u5fc3\u8005\u5165\u9580 \u4e0d\u52d5\u7523 \u521d\u5fc3\u8005\u5165\u9580 \u5148\u7269\u53d6\u5f15 \u521d\u5fc3\u8005\u5165\u9580 \u30ed\u30b0\u30a4\u30f3 \u4f1a\u54e1\u767b\u9332 FX/\u70ba\u66ffTOP \u70ba\u66ff\u30ec\u30fc\u30c8 \u30cb\u30e5\u30fc\u30b9/\u30b3\u30e9\u30e0 \u7d4c\u6e08\u6307\u6a19 \u4e3b\u8981\u56fd\u30c7\u30fc\u30bf \u5e02\u5834\u4f11\u65e5\u30ab\u30ec\u30f3\u30c0\u30fc \u653f\u7b56\u91d1\u5229\u4e00\u89a7 \u4e2d\u592e\u9280\u884c\u30e1\u30f3\u30d0\u30fc FX\u3092\u59cb\u3081\u308b FX\u521d\u5fc3\u8005 FX\u7528\u8a9e\u96c6 \u304a\u3059\u3059\u3081FX\u53e3\u5ea7 PR FX\u30c7\u30e2\u53d6\u5f15\u4f53\u9a13 \u30de\u30a4\u30eb\u304c\u305f\u307e\u308bFX \u5186\u5b89\u6642\u4ee3\u306eFX\u6226\u7565 \u6700\u5927100\u4e07\u5186\u9084\u5143 FX\u53d6\u5f15\u30a2\u30d7\u30eaNo.",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u30c9\u30eb\u5186",
+     "\u6307\u6a19",
+     "\u5148\u7269"
+    ],
+    "direction": [
+     "\u4e0a\u6607",
+     "\u5186\u5b89"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u30c9\u30eb\u5186"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "e0aecc6af5c8"
+   },
+   {
+    "claim": "\u307f\u3093\u304b\u3076\u30d7\u30ec\u30df\u30a2\u30e0\u3068\u306f \uff3c 30\u65e5\u9593\u7121\u6599\u3067\u4f53\u9a13\u3057\u3088\u3046 \uff0f \u307f\u3093\u304b\u3076\u30d7\u30ec\u30df\u30a2\u30e0\u4f1a\u54e1\u306b\u306a\u308b \u3059\u3067\u306b\u4f1a\u54e1\u306e\u65b9\u306f\u30ed\u30b0\u30a4\u30f3 \u30c9\u30eb\u5186\u3001\u4e00\u6642\uff11\uff15\uff15\u5186\u307e\u3067\u4e0a\u6607 \u7c73\uff11\uff10\u5e74\u50b5\u5229\u56de\u308a\u304c\uff15\uff05\u53f0\u307e\u3067\u4e00\u6642\u4e0a\u6607\uff1d\uff2e\uff39\u70ba\u66ff\u6982\u6cc1 \u4eca\u65e5\u306e\u70ba\u66ff 2026/09/15(\u706b) 05:54 \u30c9\u30eb\u5186\u3001\u4e00\u6642\uff11\uff15\uff15\u5186\u307e\u3067\u4e0a\u6607 \u7c73\uff11\uff10\u5e74\u50b5\u5229\u56de\u308a\u304c\uff15\uff05\u53f0\u307e\u3067\u4e00\u6642\u4e0a\u6607\uff1d\uff2e\uff39\u70ba\u66ff\u6982\u6cc1 \u304d\u3087\u3046\u306e\uff2e\uff39\u70ba\u66ff\u5e02\u5834\u3001\u30c9\u30eb\u9ad8\u304c\u5f37\u307e\u308b\u4e2d\u3001\u30c9\u30eb\u5186\u306f\u5e8f\u76e4\u306b\u4e00\u6642\uff11\uff15\uff15\u5186\u3061\u3087\u3046\u3069\u307e\u3067\u4e0a\u6607\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u30c9\u30eb\u5186",
+     "\u5229\u56de\u308a"
+    ],
+    "direction": [
+     "\u4e0a\u6607",
+     "\u30c9\u30eb\u9ad8"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u30c9\u30eb\u5186"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "fc6e3f51ce3e"
+   },
+   {
+    "claim": "\u4eca\u9031\u306e\u65e5\u7c73\u91d1\u878d\u653f\u7b56\u4f1a\u5408\u3092\u63a7\u3048\u308b\u4e2d\u3001\uff26\uff32\uff22\u306e\u5229\u4e0a\u3052\u89b3\u6e2c\u3084\u4e2d\u6771\u60c5\u52e2\u306e\u7dca\u8feb\u5316\u3092\u80cc\u666f\u3068\u3057\u305f\u539f\u6cb9\u9ad8\u304c\u30c9\u30eb\u3092\u652f\u3048\u3001\u3053\u308c\u307e\u3067\u6025\u901f\u306b\u9032\u3093\u3060\u5186\u9ad8\u306b\u4e00\u65e6\u5dfb\u304d\u623b\u3057\u304c\u51fa\u3066\u3044\u308b\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u539f\u6cb9"
+    ],
+    "direction": [
+     "\u5186\u9ad8"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u9031"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "b62eadfd34b5"
+   },
+   {
+    "claim": "\u6295\u6a5f\u7b4b\u306e\u30dd\u30b8\u30b7\u30e7\u30f3\u306b\u3082\u5927\u304d\u306a\u5909\u5316\u304c\u898b\u3089\u308c\u3001\uff23\uff26\uff34\uff23\u304c\u91d1\u66dc\u65e5\u306b\u767a\u8868\u3057\u305f\uff29\uff2d\uff2d\u6295\u6a5f\u7b4b\u306e\u5efa\u7389\u3067\u306f\u5186\u304c\u8cb7\u3044\u8d8a\u3057\u306b\u8ee2\u3058\u3066\u3044\u308b\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u5efa\u7389",
+     "\u91d1"
+    ],
+    "direction": [
+     "\u8cb7\u3044"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "XNGUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "US30",
+      "JPN225",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "BTCUSD",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9",
+      "\u5929\u7136\u30ac\u30b9",
+      "hang seng",
+      "\u30ca\u30b9\u30c0\u30c3\u30af",
+      "s&p",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "\u30e6\u30fc\u30ed\u30c9\u30eb",
+      "\u30dd\u30f3\u30c9\u30c9\u30eb",
+      "\u30c9\u30eb\u5186",
+      "\u8c6a\u30c9\u30eb",
+      "\u30e6\u30fc\u30ed\u5186",
+      "\u30dd\u30f3\u30c9\u5186",
+      "\u8c6a\u30c9\u30eb\u5186",
+      "\u30d3\u30c3\u30c8\u30b3\u30a4\u30f3",
+      "\u7c73\u56fd\u50b5"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "\u5186\u8cb7\u3044\u4ecb\u5165: policy: BoJ / MoF intervention -> JPY",
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY",
+      "\u56fd\u50b5\u5165\u672d: auction: sovereign debt -> rates and dollar"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ad72e2ef7f26"
+   },
+   {
+    "claim": "\u305d\u306e\u3088\u3046\u306a\u4e2d\u3067\u4e00\u90e8\u304b\u3089\u306f\u3001\u8db3\u5143\u306e\u5186\u306f\u65e5\u7c73\u91d1\u5229\u5dee\u304b\u3089\u60f3\u5b9a\u3055\u308c\u308b\u6c34\u6e96\u3088\u308a\u3082\u5f37\u542b\u3093\u3067\u3044\u308b\u3068\u306e\u6307\u6458\u3082\u51fa\u3066\u3044\u308b\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u91d1\u5229\u5dee",
+     "\u5229\u5dee"
+    ],
+    "direction": [
+     "\u5f37\u542b"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u8db3"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "XNGUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "US30",
+      "JPN225",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "BTCUSD",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9",
+      "\u5929\u7136\u30ac\u30b9",
+      "hang seng",
+      "\u30ca\u30b9\u30c0\u30c3\u30af",
+      "s&p",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "\u30e6\u30fc\u30ed\u30c9\u30eb",
+      "\u30dd\u30f3\u30c9\u30c9\u30eb",
+      "\u30c9\u30eb\u5186",
+      "\u8c6a\u30c9\u30eb",
+      "\u30e6\u30fc\u30ed\u5186",
+      "\u30dd\u30f3\u30c9\u5186",
+      "\u8c6a\u30c9\u30eb\u5186",
+      "\u30d3\u30c3\u30c8\u30b3\u30a4\u30f3",
+      "\u7c73\u56fd\u50b5"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "\u5186\u8cb7\u3044\u4ecb\u5165: policy: BoJ / MoF intervention -> JPY",
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY",
+      "\u56fd\u50b5\u5165\u672d: auction: sovereign debt -> rates and dollar"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e285ec57021a"
+   },
+   {
+    "claim": "\u3053\u306e\u305f\u3081\u3001\u3053\u3053\u304b\u3089\u3055\u3089\u306b\u5186\u9ad8\u304c\u9032\u3080\u306b\u306f\u3001\u65e5\u9280\u304c\u9023\u7d9a\u5229\u4e0a\u3052\u3092\u5f37\u304f\u793a\u5506\u3059\u308b\u306a\u3069\u4e00\u6bb5\u3068\u30bf\u30ab\u6d3e\u59ff\u52e2\u3092\u793a\u3059\u304b\u3001\u7c73\u56fd\u306e\u91d1\u5229\u512a\u4f4d\u6027\u304c\u4e88\u60f3\u4ee5\u4e0a\u306b\u7e2e\u5c0f\u3059\u308b\u5fc5\u8981\u304c\u3042\u308b\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u65e5\u9280",
+     "\u9280"
+    ],
+    "direction": [
+     "\u5186\u9ad8"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "76d844111f6f"
+   },
+   {
+    "claim": "\u4eca\u9031\u306e\u65e5\u7c73\u91d1\u878d\u653f\u7b56\u4f1a\u5408\u306f\u3001\u4ecb\u5165\u4ee5\u964d\u306e\u5186\u8cb7\u3044\u623b\u3057\u304c\u7d99\u7d9a\u3059\u308b\u304b\u3092\u5360\u3046\u91cd\u8981\u306a\u8a66\u91d1\u77f3\u3068\u306a\u308a\u305d\u3046\u3060\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u8cb7\u3044\u623b\u3057",
+     "\u4ecb\u5165"
+    ],
+    "direction": [
+     "\u8cb7\u3044"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u9031"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "XNGUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "US30",
+      "JPN225",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "BTCUSD",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9",
+      "\u5929\u7136\u30ac\u30b9",
+      "hang seng",
+      "\u30ca\u30b9\u30c0\u30c3\u30af",
+      "s&p",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "\u30e6\u30fc\u30ed\u30c9\u30eb",
+      "\u30dd\u30f3\u30c9\u30c9\u30eb",
+      "\u30c9\u30eb\u5186",
+      "\u8c6a\u30c9\u30eb",
+      "\u30e6\u30fc\u30ed\u5186",
+      "\u30dd\u30f3\u30c9\u5186",
+      "\u8c6a\u30c9\u30eb\u5186",
+      "\u30d3\u30c3\u30c8\u30b3\u30a4\u30f3",
+      "\u7c73\u56fd\u50b5"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "\u5186\u8cb7\u3044\u4ecb\u5165: policy: BoJ / MoF intervention -> JPY",
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY",
+      "\u56fd\u50b5\u5165\u672d: auction: sovereign debt -> rates and dollar"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a2368ea34f86"
+   },
+   {
+    "claim": "\u73fe\u5728\u306e\u5186\u76f8\u5834\u306f\u65e5\u9280\u306e\u91d1\u878d\u6b63\u5e38\u5316\u304c\u5f93\u6765\u3088\u308a\u3082\u901f\u3044\u30da\u30fc\u30b9\u3067\u9032\u3080\u3053\u3068\u3092\u76f8\u5f53\u7a0b\u5ea6\u7e54\u308a\u8fbc\u3093\u3067\u3044\u308b\u3068\u3082\u8a00\u3048\u3001\u65e5\u9280\u304b\u3089\u5341\u5206\u306a\u30bf\u30ab\u6d3e\u59ff\u52e2\u304c\u793a\u3055\u308c\u306a\u3051\u308c\u3070\u3001\u5186\u8cb7\u3044\u304c\u4e00\u6c17\u306b\u5dfb\u304d\u623b\u3055\u308c\u3001\u30c9\u30eb\u5186\u304c\u6025\u4e0a\u6607\u3059\u308b\u30ea\u30b9\u30af\u3082\u610f\u8b58\u3055\u308c\u3066\u3044\u308b\u3088\u3046\u3060\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u30c9\u30eb\u5186",
+     "\u65e5\u9280",
+     "\u9280"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u5206",
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u5186\u76f8\u5834"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "644d2c653afc"
+   }
+  ],
+  "n_claims": 10
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u30c9\u30eb\u8cb7\u3044\u7d99\u7d9a\u3001\u6709\u4e8b\u30c9\u30eb\u8cb7\u3044\u3068\u7c73\u5229\u4e0a\u3052\u89b3\u6e2c\u3067 \u30c9\u30eb\u5186\uff11\uff15\uff14\u5186\u53f0\u5f8c\u534a\uff1d\u30ed\u30f3\u30c9\u30f3\u70ba\u66ff\u6982\u6cc1 -",
+  "url": "https://fx.minkabu.jp/news/378956",
+  "published": "2026-11-02T00:14:22+00:00",
+  "symbols": [
+   "USDJPY",
+   "XTIUSD",
+   "EURJPY",
+   "GBPJPY",
+   "HK50",
+   "NAS100",
+   "US500",
+   "US30",
+   "JPN225",
+   "EURUSD",
+   "GBPUSD",
+   "AUDUSD",
+   "AUDJPY",
+   "EURGBP",
+   "BTCUSD",
+   "UST10Y"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "50999c2d6c82a679060a",
+  "host": "fx.minkabu.jp",
+  "claims": [
+   {
+    "claim": "\u30c9\u30eb\u8cb7\u3044\u7d99\u7d9a\u3001\u6709\u4e8b\u30c9\u30eb\u8cb7\u3044\u3068\u7c73\u5229\u4e0a\u3052\u89b3\u6e2c\u3067 \u30c9\u30eb\u5186\uff11\uff15\uff14\u5186\u53f0\u5f8c\u534a\uff1d\u30ed\u30f3\u30c9\u30f3\u70ba\u66ff\u6982\u6cc1 - \u307f\u3093\u304b\u3076\u30d7\u30ec\u30df\u30a2\u30e0\u306e\u3054\u7d39\u4ecb \u203a \u682a\u5f0f \u7c73\u56fd\u682a FX \u4eee\u60f3\u901a\u8ca8 \u6295\u4fe1 \u5148\u7269 \u4fdd\u967a \u30de\u30ac\u30b8\u30f3 \u30de\u30ac\u30b8\u30f3TOP \u30de\u30ac\u30b8\u30f3\u7dcf\u5408 \u8cc7\u7523\u5f62\u6210\u306e\u306f\u3058\u3081\u65b9 NISA\u30fb\u3064\u307f\u305f\u3066NISA iDeCo\uff08\u30a4\u30c7\u30b3\uff09 \u682a \u521d\u5fc3\u8005\u5165\u9580 \u6295\u8cc7\u4fe1\u8a17 \u521d\u5fc3\u8005\u5165\u9580 FX \u521d\u5fc3\u8005\u5165\u9580 \u4eee\u60f3\u901a\u8ca8 \u521d\u5fc3\u8005\u5165\u9580 \u4e0d\u52d5\u7523 \u521d\u5fc3\u8005\u5165\u9580 \u5148\u7269\u53d6\u5f15 \u521d\u5fc3\u8005\u5165\u9580 \u30ed\u30b0\u30a4\u30f3 \u4f1a\u54e1\u767b\u9332 FX/\u70ba\u66ffTOP \u70ba\u66ff\u30ec\u30fc\u30c8 \u30cb\u30e5\u30fc\u30b9/\u30b3\u30e9\u30e0 \u7d4c\u6e08\u6307\u6a19 \u4e3b\u8981\u56fd\u30c7\u30fc\u30bf \u5e02\u5834\u4f11\u65e5\u30ab\u30ec\u30f3\u30c0\u30fc \u653f\u7b56\u91d1\u5229\u4e00\u89a7 \u4e2d\u592e\u9280\u884c\u30e1\u30f3\u30d0\u30fc FX\u3092\u59cb\u3081\u308b FX\u521d\u5fc3\u8005 FX\u7528\u8a9e\u96c6 \u304a\u3059\u3059\u3081FX\u53e3\u5ea7 PR FX\u30c7\u30e2\u53d6\u5f15\u4f53\u9a13 \u30de\u30a4\u30eb\u304c\u305f\u307e\u308bFX \u5186\u5b89\u6642\u4ee3\u306eFX\u6226\u7565 \u6700\u5927100\u4e07\u5186\u9084\u5143 FX\u53d6\u5f15\u30a2\u30d7\u30eaNo.",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u30c9\u30eb\u5186",
+     "\u30ed\u30f3\u30c9\u30f3",
+     "\u6307\u6a19"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u5186\u5b89"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u30c9\u30eb\u5186"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "0d1093ab2d9e"
+   },
+   {
+    "claim": "\u307f\u3093\u304b\u3076\u30d7\u30ec\u30df\u30a2\u30e0\u3068\u306f \uff3c 30\u65e5\u9593\u7121\u6599\u3067\u4f53\u9a13\u3057\u3088\u3046 \uff0f \u307f\u3093\u304b\u3076\u30d7\u30ec\u30df\u30a2\u30e0\u4f1a\u54e1\u306b\u306a\u308b \u3059\u3067\u306b\u4f1a\u54e1\u306e\u65b9\u306f\u30ed\u30b0\u30a4\u30f3 \u30c9\u30eb\u8cb7\u3044\u7d99\u7d9a\u3001\u6709\u4e8b\u30c9\u30eb\u8cb7\u3044\u3068\u7c73\u5229\u4e0a\u3052\u89b3\u6e2c\u3067 \u30c9\u30eb\u5186\uff11\uff15\uff14\u5186\u53f0\u5f8c\u534a\uff1d\u30ed\u30f3\u30c9\u30f3\u70ba\u66ff\u6982\u6cc1 \u4eca\u65e5\u306e\u70ba\u66ff 2026/09/14(\u6708) 20:10 \u30c9\u30eb\u8cb7\u3044\u7d99\u7d9a\u3001\u6709\u4e8b\u30c9\u30eb\u8cb7\u3044\u3068\u7c73\u5229\u4e0a\u3052\u89b3\u6e2c\u3067 \u30c9\u30eb\u5186\uff11\uff15\uff14\u5186\u53f0\u5f8c\u534a\uff1d\u30ed\u30f3\u30c9\u30f3\u70ba\u66ff\u6982\u6cc1 \u30ed\u30f3\u30c9\u30f3\u5e02\u5834\u3067\u306f\u3001\u30c9\u30eb\u8cb7\u3044\u304c\u7d99\u7d9a\u3057\u3066\u3044\u308b\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u30c9\u30eb\u5186",
+     "\u30ed\u30f3\u30c9\u30f3"
+    ],
+    "direction": [
+     "\u8cb7\u3044"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u30c9\u30eb\u5186"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "6468c511fca5"
+   },
+   {
+    "claim": "NY\u539f\u6cb9\u5148\u7269\u306f\u4e00\u6642103\u30c9\u30eb\u53f0\u5f8c\u534a\u307e\u3067\u4e0a\u6607\u3057\u3001\u8db3\u5143\u3067\u3082102\u30c9\u30eb\u53f0\u306b\u9ad8\u6b62\u307e\u308a\u3057\u3066\u3044\u308b\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u539f\u6cb9",
+     "\u5148\u7269"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u8db3"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "1fc38a51ca74"
+   },
+   {
+    "claim": "\u30af\u30ed\u30b9\u5186\u306f\u8db3\u5143\u3067\u3084\u3084\u5186\u5b89\u3068\u306a\u3063\u3066\u304a\u308a\u3001\u30e6\u30fc\u30ed\u5186\u306f178\u5186\u53f0\u524d\u534a\u3001\u30dd\u30f3\u30c9\u5186\u306f208\u5186\u53f0\u534a\u3070\u3078\u3068\u3058\u308a\u9ad8\u306e\u52d5\u304d\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u30dd\u30f3\u30c9\u5186",
+     "\u30e6\u30fc\u30ed\u5186"
+    ],
+    "direction": [
+     "\u5186\u5b89"
+    ],
+    "horizon": [
+     "\u8db3"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURJPY",
+      "GBPJPY"
+     ],
+     "mentioned": [
+      "\u30e6\u30fc\u30ed\u5186",
+      "\u30dd\u30f3\u30c9\u5186"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4634fc2698e6"
+   },
+   {
+    "claim": "\u6771\u4eac\u5348\u5f8c\u306b154\u5186\u53f0\u306b\u4e57\u305b\u305f\u3042\u3068\u3001\u30ed\u30f3\u30c9\u30f3\u6642\u9593\u306b\u306f\u518d\u3073\u8cb7\u3044\u304c\u5f37\u307e\u308a\u3001\u8db3\u5143\u3067\u306f154.",
+    "lang": "ja",
+    "quantities": [
+     "\u30ed\u30f3\u30c9\u30f3"
+    ],
+    "direction": [
+     "\u8cb7\u3044"
+    ],
+    "horizon": [
+     "\u6642\u9593",
+     "\u8db3"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "US30",
+      "JPN225",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "BTCUSD",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "\u539f\u6cb9",
+      "hang seng",
+      "\u30ca\u30b9\u30c0\u30c3\u30af",
+      "s&p",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "\u30e6\u30fc\u30ed\u30c9\u30eb",
+      "\u30dd\u30f3\u30c9\u30c9\u30eb",
+      "\u30c9\u30eb\u5186",
+      "\u8c6a\u30c9\u30eb",
+      "\u30e6\u30fc\u30ed\u5186",
+      "\u30dd\u30f3\u30c9\u5186",
+      "\u8c6a\u30c9\u30eb\u5186",
+      "\u30e6\u30fc\u30ed\u30dd\u30f3\u30c9",
+      "\u30d3\u30c3\u30c8\u30b3\u30a4\u30f3",
+      "10\u5e74\u50b5"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY",
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY",
+      "\u56fd\u50b5\u5165\u672d: auction: sovereign debt -> rates and dollar"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "560ae5111389"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u3010\u6d77\u5916\u5e02\u5834\u306e\u6ce8\u76ee\u30dd\u30a4\u30f3\u30c8\u3011\uff19\u6708\u306e\u72ec\uff3a\uff25\uff37\u666f\u6cc1\u611f\u6307\u6570\u306a\u3069 - 2026\u5e7409\u670815\u65e514:20\uff5c\u70ba\u66ff\u30cb\u30e5\u30fc\u30b9\uff5c\u307f\u3093\u304b\u3076 FX/\u70ba\u66ff",
+  "url": "https://fx.minkabu.jp/news/379039",
+  "published": "2026-11-02T00:14:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b47f36e0db84d3112fab",
+  "host": "fx.minkabu.jp",
+  "claims": [
+   {
+    "claim": "\u3010\u6d77\u5916\u5e02\u5834\u306e\u6ce8\u76ee\u30dd\u30a4\u30f3\u30c8\u3011\uff19\u6708\u306e\u72ec\uff3a\uff25\uff37\u666f\u6cc1\u611f\u6307\u6570\u306a\u3069 - 2026\u5e7409\u670815\u65e514:20\uff5c\u70ba\u66ff\u30cb\u30e5\u30fc\u30b9\uff5c\u307f\u3093\u304b\u3076 FX/\u70ba\u66ff \u307f\u3093\u304b\u3076\u30d7\u30ec\u30df\u30a2\u30e0\u306e\u3054\u7d39\u4ecb \u203a \u682a\u5f0f \u7c73\u56fd\u682a FX \u4eee\u60f3\u901a\u8ca8 \u6295\u4fe1 \u5148\u7269 \u4fdd\u967a \u30de\u30ac\u30b8\u30f3 \u30de\u30ac\u30b8\u30f3TOP \u30de\u30ac\u30b8\u30f3\u7dcf\u5408 \u8cc7\u7523\u5f62\u6210\u306e\u306f\u3058\u3081\u65b9 NISA\u30fb\u3064\u307f\u305f\u3066NISA iDeCo\uff08\u30a4\u30c7\u30b3\uff09 \u682a \u521d\u5fc3\u8005\u5165\u9580 \u6295\u8cc7\u4fe1\u8a17 \u521d\u5fc3\u8005\u5165\u9580 FX \u521d\u5fc3\u8005\u5165\u9580 \u4eee\u60f3\u901a\u8ca8 \u521d\u5fc3\u8005\u5165\u9580 \u4e0d\u52d5\u7523 \u521d\u5fc3\u8005\u5165\u9580 \u5148\u7269\u53d6\u5f15 \u521d\u5fc3\u8005\u5165\u9580 \u30ed\u30b0\u30a4\u30f3 \u4f1a\u54e1\u767b\u9332 FX/\u70ba\u66ffTOP \u70ba\u66ff\u30ec\u30fc\u30c8 \u30cb\u30e5\u30fc\u30b9/\u30b3\u30e9\u30e0 \u7d4c\u6e08\u6307\u6a19 \u4e3b\u8981\u56fd\u30c7\u30fc\u30bf \u5e02\u5834\u4f11\u65e5\u30ab\u30ec\u30f3\u30c0\u30fc \u653f\u7b56\u91d1\u5229\u4e00\u89a7 \u4e2d\u592e\u9280\u884c\u30e1\u30f3\u30d0\u30fc FX\u3092\u59cb\u3081\u308b FX\u521d\u5fc3\u8005 FX\u7528\u8a9e\u96c6 \u304a\u3059\u3059\u3081FX\u53e3\u5ea7 PR FX\u30c7\u30e2\u53d6\u5f15\u4f53\u9a13 \u30de\u30a4\u30eb\u304c\u305f\u307e\u308bFX \u5186\u5b89\u6642\u4ee3\u306eFX\u6226\u7565 \u6700\u5927100\u4e07\u5186\u9084\u5143 FX\u53d6\u5f15\u30a2\u30d7\u30eaNo.",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u6307\u6a19",
+     "\u5148\u7269",
+     "\u653f\u7b56\u91d1\u5229"
+    ],
+    "direction": [
+     "\u5186\u5b89"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDJPY"
+     ],
+     "channels": [
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "d5796b497eac"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u7f8e\u5143\u5b9a\u671f\u5b58\u6b3e - \u5b9a\u671f\u5b58\u6b3e - \u5916\u532f\u9ec3\u91d1 | etnet \u7d93\u6fdf\u901a|\u9999\u6e2f\u65b0\u805e\u8ca1\u7d93\u8cc7\u8a0a\u548c\u751f\u6d3b\u5e73\u53f0",
+  "url": "https://www.etnet.com.hk/www/tc/forex/deposit-rate.php?currency=usd&plan=a15b044bc4dc9b55ce7bfbcce9baaae3e489ae07db5c2f8de91c5dbbcaabe877",
+  "published": "2026-11-02T00:14:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cac562ec75645d2129ff",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u3010\u6d2a\u705d\u5c08\u8a2a\u3011\u9999\u6e2f\u61c9\u62d3\u8edf\u79d1\u6280\u5fcc\u76f2\u641e\u57fa\u5efa\uff0c\u672c\u5b63\u80a1\u5e02\u591a\u91cd\u5229\u597d\u8fce\u52dd\u4ed7\uff089\u670828\u65e5\u9304\u5f71\uff0c\u7e41\u9ad4\u5b57\u5e55\uff09 | \u6d2a\u705d\u7b56\u7565 - etnet TV",
+  "url": "https://www.etnet.com.hk/www/tc/video/haohong/",
+  "published": "2026-11-02T00:14:31+00:00",
+  "symbols": [
+   "US500",
+   "USDKRW",
+   "HK50",
+   "XAUUSD",
+   "XAGUSD",
+   "USDJPY",
+   "USDCNH",
+   "USDHKD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "flow",
+   "mean_reversion",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "30447c2c4201c071c8d6",
+  "host": "www.etnet.com.hk",
+  "claims": [
+   {
+    "claim": "\u6ed9\u63a7\u906d\u62cb\u552e\u653b\u9632\u7b56\u7565 2,554 views ETF\u653b\u7565 2026-10-27 12:55 SK\u6d77\u529b\u58eb\u63a840\u842c\u5104\u97d3\u5143\u80a1\u6771\u56de\u5831 1,213 views 2026-10-22 17:41 \u751f\u79d1\u80a1\u9006\u5e02\u5c55\u5f37\u52e2 1,342 views 2026-10-20 15:27 \u97d3\u80a1\u8d85\u8dcc\u76f8\u95dcETF\u5438\u91d1\u903e\u516b\u5343\u842c 1,090 views 2026-10-13 12:11 \u6bcf\u5468\u5099\u514c\u671f\u6b0a\u7b56\u7565\u517c\u8cfa\u606f\u8cfa\u50f9 1,383 views 2026-10-08 13:09 \u50b5\u606f\u5c45\u9ad8\u907f\u96aa\u60c5\u7dd2\u4e0b\u9069\u5b9c\u90e8\u7f72\u9ad8\u606f\u9078\u64c7 2,000 views \u653f\u7d93\u5c08\u8a2a 2026-10-27 18:28 \u7f8e\u80a1\u8dcc\uff1a\u718a\u5e02\u4f86\u81e8\u9084\u662f\u91cd\u65b0\u6d17\u724c\uff1f",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u7f8e\u80a1"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "\u7f8e\u80a1",
+      "\u97d3\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "a1bd46a3b2a8"
+   },
+   {
+    "claim": "1,040 views 2026-07-30 12:15 \u30103\u5206\u9418\u71b1\u7092\u80a1\u9ede\u8a55\u3011\u7f8e\u806f\u51329\u6708\u52a0\u606f\u6a5f\u6703\u5927\u589e\u975e\u7f8e\u80a1\u5927\u8dcc\u5143\u5147\uff0c\u6e2f\u80a1\u61c9\u8a72\u9ede\u90e8\u7f72\uff1f",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u6e2f\u80a1",
+     "\u7f8e\u80a1",
+     "\u52a0\u606f"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5206\u9418",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "HK50",
+      "US500"
+     ],
+     "mentioned": [
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "3b5483bc1c55"
+   },
+   {
+    "claim": "1,385 views 2026-07-29 14:48 \u30103\u5206\u9418\u71b1\u7092\u80a1\u9ede\u8a55\u3011\u6676\u7247\u80a1\u640f\u53cd\u5f48\u63c0\u908a\u96bb\uff1f",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u53cd\u5f48"
+    ],
+    "direction": [
+     "\u53cd\u5f48"
+    ],
+    "horizon": [
+     "\u5206\u9418"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "HK50",
+      "US500",
+      "USDJPY",
+      "USDCNH",
+      "USDHKD",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1",
+      "\u767d\u9280",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "a\u80a1",
+      "\u65e5\u5713",
+      "\u4eba\u6c11\u5e63",
+      "\u6e2f\u5143",
+      "\u97d3\u5143"
+     ],
+     "transfer_only": [
+      "a\u80a1->indices (China A-share)"
+     ],
+     "indirect": [
+      "CHINAH"
+     ],
+     "channels": [
+      "\u5317\u6c34: flow: Stock Connect -> HK indices and CNH"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4e44ebe3a74a"
+   },
+   {
+    "claim": "\u7092\u6ce2\u5e45\u6b62\u8755\u9ede\u6a23\u5b9a\uff0c\u62c6\u89e3\u83ef\u8679\u7368\u6709\u512a\u52e2 2,381 views 2026-07-28 11:55 \u30103\u5206\u9418\u71b1\u7092\u80a1\u9ede\u8a55\u3011\u8001\u92ea\u9ec3\u91d1\u80a1\u50f9\u61c9\u8072\u632b\uff0c\u80a1\u6c11\u7576\u5fc3\u300c\u5047\u76c8\u559c\u300d\u9677\u9631 881 views 2026-07-27 11:53 \u30103\u5206\u9418\u71b1\u7092\u80a1\u9ede\u8a55\u3011\u9a30\u8a0a\u9ad8\u4f4d\u8cb7\u5165\u8b8a\u300c\u87f9\u8ca8\u300d\uff1f",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u9ec3\u91d1"
+    ],
+    "direction": [
+     "\u8cb7\u5165"
+    ],
+    "horizon": [
+     "\u5206\u9418"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "bb1b1c956634"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u3010\u6d2a\u705d\u5c08\u8a2a\u3011A\u80a1\u5efa\u5009\u628a\u63e1\u4ea4\u6613\u578b\u6a5f\u6703\uff0c\u5c0f\u5fc3\u300c\u71d2\u9999\u5f0f\u300d\u8207\u300c\u50f9\u503c\u5f0f\u300d\u5169\u985e\u6295\u8cc7\uff088\u670827\u65e5\u9304\u5f71\uff0c\u666e\u901a\u8a71\u8996\u983b\uff0c\u7e41\u9ad4\u5b57\u5e55\uff09 | \u653f\u7d93\u5c08\u8a2a - etnet TV",
+  "url": "https://www.etnet.com.hk/www/tc/video/moneychat/H7ZZlCeA8ZA",
+  "published": "2026-11-02T00:14:34+00:00",
+  "symbols": [
+   "HK50",
+   "US500",
+   "XAUUSD",
+   "USDJPY",
+   "USDCNH",
+   "USDHKD",
+   "USDKRW"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "flow",
+   "mean_reversion",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "396bb49c994f4822ca14",
+  "host": "www.etnet.com.hk",
+  "claims": [
+   {
+    "claim": "1,040 views 2026-07-30 12:15 \u30103\u5206\u9418\u71b1\u7092\u80a1\u9ede\u8a55\u3011\u7f8e\u806f\u51329\u6708\u52a0\u606f\u6a5f\u6703\u5927\u589e\u975e\u7f8e\u80a1\u5927\u8dcc\u5143\u5147\uff0c\u6e2f\u80a1\u61c9\u8a72\u9ede\u90e8\u7f72\uff1f",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u6e2f\u80a1",
+     "\u7f8e\u80a1",
+     "\u52a0\u606f"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5206\u9418",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "HK50",
+      "US500"
+     ],
+     "mentioned": [
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "3b5483bc1c55"
+   },
+   {
+    "claim": "1,385 views 2026-07-29 14:48 \u30103\u5206\u9418\u71b1\u7092\u80a1\u9ede\u8a55\u3011\u6676\u7247\u80a1\u640f\u53cd\u5f48\u63c0\u908a\u96bb\uff1f",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u53cd\u5f48"
+    ],
+    "direction": [
+     "\u53cd\u5f48"
+    ],
+    "horizon": [
+     "\u5206\u9418"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "US500",
+      "USDJPY",
+      "USDCNH",
+      "USDHKD",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1",
+      "\u6052\u6307",
+      "\u7f8e\u80a1",
+      "a\u80a1",
+      "\u53f0\u80a1",
+      "\u65e5\u5713",
+      "\u4eba\u6c11\u5e63",
+      "\u6e2f\u5143",
+      "\u97d3\u5143"
+     ],
+     "transfer_only": [
+      "a\u80a1->indices (China A-share)",
+      "\u53f0\u80a1->indices (TWSE)"
+     ],
+     "indirect": [
+      "CHINAH"
+     ],
+     "channels": [
+      "\u65e5\u672c\u592e\u884c: policy: BoJ / MoF intervention -> JPY",
+      "\u5317\u6c34: flow: Stock Connect -> HK indices and CNH"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4e44ebe3a74a"
+   },
+   {
+    "claim": "\u7092\u6ce2\u5e45\u6b62\u8755\u9ede\u6a23\u5b9a\uff0c\u62c6\u89e3\u83ef\u8679\u7368\u6709\u512a\u52e2 2,381 views 2026-07-28 11:55 \u30103\u5206\u9418\u71b1\u7092\u80a1\u9ede\u8a55\u3011\u8001\u92ea\u9ec3\u91d1\u80a1\u50f9\u61c9\u8072\u632b\uff0c\u80a1\u6c11\u7576\u5fc3\u300c\u5047\u76c8\u559c\u300d\u9677\u9631 881 views 2026-07-27 11:53 \u30103\u5206\u9418\u71b1\u7092\u80a1\u9ede\u8a55\u3011\u9a30\u8a0a\u9ad8\u4f4d\u8cb7\u5165\u8b8a\u300c\u87f9\u8ca8\u300d\uff1f",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u9ec3\u91d1"
+    ],
+    "direction": [
+     "\u8cb7\u5165"
+    ],
+    "horizon": [
+     "\u5206\u9418"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "bb1b1c956634"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u8207\u62cd\u8ce3\u5b98\u770b\u85dd\u8853\uff1a\u8d70\u9032Sotheby's Maison\uff01\u8607\u5bcc\u6bd4\u5982\u4f55\u7a81\u7834\u50b3\u7d71\u6210\u898f\uff1f\u9019\u6b21\u8f49\u8b8a\u610f\u5473\u8457\u751a\u9ebc\uff1f | \u8207\u62cd\u8ce3\u5b98\u770b\u85dd\u8853 - etnet TV",
+  "url": "https://www.etnet.com.hk/www/tc/video/auctioneer/le6vlWETtaE",
+  "published": "2026-11-02T00:14:39+00:00",
+  "symbols": [
+   "US500",
+   "USDKRW",
+   "HK50",
+   "XAUUSD",
+   "USDJPY",
+   "USDCNH",
+   "USDHKD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "411282b16f1b6a779c37",
+  "host": "www.etnet.com.hk",
+  "claims": [
+   {
+    "claim": "\u6ed9\u63a7\u906d\u62cb\u552e\u653b\u9632\u7b56\u7565 2,554 views ETF\u653b\u7565 2026-10-27 12:55 SK\u6d77\u529b\u58eb\u63a840\u842c\u5104\u97d3\u5143\u80a1\u6771\u56de\u5831 1,213 views 2026-10-22 17:41 \u751f\u79d1\u80a1\u9006\u5e02\u5c55\u5f37\u52e2 1,342 views 2026-10-20 15:27 \u97d3\u80a1\u8d85\u8dcc\u76f8\u95dcETF\u5438\u91d1\u903e\u516b\u5343\u842c 1,090 views 2026-10-13 12:11 \u6bcf\u5468\u5099\u514c\u671f\u6b0a\u7b56\u7565\u517c\u8cfa\u606f\u8cfa\u50f9 1,383 views 2026-10-08 13:09 \u50b5\u606f\u5c45\u9ad8\u907f\u96aa\u60c5\u7dd2\u4e0b\u9069\u5b9c\u90e8\u7f72\u9ad8\u606f\u9078\u64c7 2,000 views \u653f\u7d93\u5c08\u8a2a 2026-10-27 18:28 \u7f8e\u80a1\u8dcc\uff1a\u718a\u5e02\u4f86\u81e8\u9084\u662f\u91cd\u65b0\u6d17\u724c\uff1f",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u7f8e\u80a1"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "\u7f8e\u80a1",
+      "\u97d3\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "a1bd46a3b2a8"
+   },
+   {
+    "claim": "1,040 views 2026-07-30 12:15 \u30103\u5206\u9418\u71b1\u7092\u80a1\u9ede\u8a55\u3011\u7f8e\u806f\u51329\u6708\u52a0\u606f\u6a5f\u6703\u5927\u589e\u975e\u7f8e\u80a1\u5927\u8dcc\u5143\u5147\uff0c\u6e2f\u80a1\u61c9\u8a72\u9ede\u90e8\u7f72\uff1f",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u6e2f\u80a1",
+     "\u7f8e\u80a1",
+     "\u52a0\u606f"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5206\u9418",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "HK50",
+      "US500"
+     ],
+     "mentioned": [
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "3b5483bc1c55"
+   },
+   {
+    "claim": "1,385 views 2026-07-29 14:48 \u30103\u5206\u9418\u71b1\u7092\u80a1\u9ede\u8a55\u3011\u6676\u7247\u80a1\u640f\u53cd\u5f48\u63c0\u908a\u96bb\uff1f",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u53cd\u5f48"
+    ],
+    "direction": [
+     "\u53cd\u5f48"
+    ],
+    "horizon": [
+     "\u5206\u9418"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "US500",
+      "USDJPY",
+      "USDCNH",
+      "USDHKD",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1",
+      "\u6052\u6307",
+      "\u7f8e\u80a1",
+      "a\u80a1",
+      "\u65e5\u5713",
+      "\u4eba\u6c11\u5e63",
+      "\u6e2f\u5143",
+      "\u97d3\u5143"
+     ],
+     "transfer_only": [
+      "a\u80a1->indices (China A-share)"
+     ],
+     "indirect": [
+      "CHINAH"
+     ],
+     "channels": [
+      "\u5317\u6c34: flow: Stock Connect -> HK indices and CNH"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4e44ebe3a74a"
+   },
+   {
+    "claim": "\u7092\u6ce2\u5e45\u6b62\u8755\u9ede\u6a23\u5b9a\uff0c\u62c6\u89e3\u83ef\u8679\u7368\u6709\u512a\u52e2 2,381 views 2026-07-28 11:55 \u30103\u5206\u9418\u71b1\u7092\u80a1\u9ede\u8a55\u3011\u8001\u92ea\u9ec3\u91d1\u80a1\u50f9\u61c9\u8072\u632b\uff0c\u80a1\u6c11\u7576\u5fc3\u300c\u5047\u76c8\u559c\u300d\u9677\u9631 881 views 2026-07-27 11:53 \u30103\u5206\u9418\u71b1\u7092\u80a1\u9ede\u8a55\u3011\u9a30\u8a0a\u9ad8\u4f4d\u8cb7\u5165\u8b8a\u300c\u87f9\u8ca8\u300d\uff1f",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u9ec3\u91d1"
+    ],
+    "direction": [
+     "\u8cb7\u5165"
+    ],
+    "horizon": [
+     "\u5206\u9418"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "bb1b1c956634"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u80a1\u5e02\u6a02\u89c0\u60c5\u7dd2\u6108\u9ad8\u6108\u8981\u5c0f\u5fc3\u6ce1\u6cab\u2757\u9ede\u6a23\u63d0\u9632\u5047\u7a81\u7834\u9677\u9631\u2753 | \u7df4\u597d\u57fa\u672c\u529f - etnet TV",
+  "url": "https://www.etnet.com.hk/www/tc/video/basicinvestment/dy-ckdx3Lks",
+  "published": "2026-11-02T00:14:42+00:00",
+  "symbols": [
+   "US500",
+   "USDKRW",
+   "HK50",
+   "XAUUSD",
+   "US30",
+   "USDJPY",
+   "USDCNH",
+   "USDHKD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "flow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4b8cafe978772e9528d7",
+  "host": "www.etnet.com.hk",
+  "claims": [
+   {
+    "claim": "\u6ed9\u63a7\u906d\u62cb\u552e\u653b\u9632\u7b56\u7565 2,554 views ETF\u653b\u7565 2026-10-27 12:55 SK\u6d77\u529b\u58eb\u63a840\u842c\u5104\u97d3\u5143\u80a1\u6771\u56de\u5831 1,213 views 2026-10-22 17:41 \u751f\u79d1\u80a1\u9006\u5e02\u5c55\u5f37\u52e2 1,342 views 2026-10-20 15:27 \u97d3\u80a1\u8d85\u8dcc\u76f8\u95dcETF\u5438\u91d1\u903e\u516b\u5343\u842c 1,090 views 2026-10-13 12:11 \u6bcf\u5468\u5099\u514c\u671f\u6b0a\u7b56\u7565\u517c\u8cfa\u606f\u8cfa\u50f9 1,383 views 2026-10-08 13:09 \u50b5\u606f\u5c45\u9ad8\u907f\u96aa\u60c5\u7dd2\u4e0b\u9069\u5b9c\u90e8\u7f72\u9ad8\u606f\u9078\u64c7 2,000 views \u653f\u7d93\u5c08\u8a2a 2026-10-27 18:28 \u7f8e\u80a1\u8dcc\uff1a\u718a\u5e02\u4f86\u81e8\u9084\u662f\u91cd\u65b0\u6d17\u724c\uff1f",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u7f8e\u80a1"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "\u7f8e\u80a1",
+      "\u97d3\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "a1bd46a3b2a8"
+   },
+   {
+    "claim": "1,040 views 2026-07-30 12:15 \u30103\u5206\u9418\u71b1\u7092\u80a1\u9ede\u8a55\u3011\u7f8e\u806f\u51329\u6708\u52a0\u606f\u6a5f\u6703\u5927\u589e\u975e\u7f8e\u80a1\u5927\u8dcc\u5143\u5147\uff0c\u6e2f\u80a1\u61c9\u8a72\u9ede\u90e8\u7f72\uff1f",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u6e2f\u80a1",
+     "\u7f8e\u80a1",
+     "\u52a0\u606f"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5206\u9418",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "HK50",
+      "US500"
+     ],
+     "mentioned": [
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "3b5483bc1c55"
+   },
+   {
+    "claim": "1,385 views 2026-07-29 14:48 \u30103\u5206\u9418\u71b1\u7092\u80a1\u9ede\u8a55\u3011\u6676\u7247\u80a1\u640f\u53cd\u5f48\u63c0\u908a\u96bb\uff1f",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u53cd\u5f48"
+    ],
+    "direction": [
+     "\u53cd\u5f48"
+    ],
+    "horizon": [
+     "\u5206\u9418"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "US500",
+      "US30",
+      "USDJPY",
+      "USDCNH",
+      "USDHKD",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "\u9053\u6307",
+      "a\u80a1",
+      "\u65e5\u5713",
+      "\u4eba\u6c11\u5e63",
+      "\u6e2f\u5143",
+      "\u97d3\u5143"
+     ],
+     "transfer_only": [
+      "a\u80a1->indices (China A-share)"
+     ],
+     "indirect": [
+      "CHINAH"
+     ],
+     "channels": [
+      "\u5317\u6c34: flow: Stock Connect -> HK indices and CNH"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4e44ebe3a74a"
+   },
+   {
+    "claim": "\u7092\u6ce2\u5e45\u6b62\u8755\u9ede\u6a23\u5b9a\uff0c\u62c6\u89e3\u83ef\u8679\u7368\u6709\u512a\u52e2 2,381 views 2026-07-28 11:55 \u30103\u5206\u9418\u71b1\u7092\u80a1\u9ede\u8a55\u3011\u8001\u92ea\u9ec3\u91d1\u80a1\u50f9\u61c9\u8072\u632b\uff0c\u80a1\u6c11\u7576\u5fc3\u300c\u5047\u76c8\u559c\u300d\u9677\u9631 881 views 2026-07-27 11:53 \u30103\u5206\u9418\u71b1\u7092\u80a1\u9ede\u8a55\u3011\u9a30\u8a0a\u9ad8\u4f4d\u8cb7\u5165\u8b8a\u300c\u87f9\u8ca8\u300d\uff1f",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u9ec3\u91d1"
+    ],
+    "direction": [
+     "\u8cb7\u5165"
+    ],
+    "horizon": [
+     "\u5206\u9418"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "bb1b1c956634"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u3010\u4e32\u6d41\u7248IQ\u64cd\u4f5c\u6559\u5b78 \u2014 \u9032\u968e\u7bc7\u3011\u500b\u80a1\u65b0\u805e \u52a9\u4f60\u6355\u6349\u6bcf\u500b\u4ea4\u6613\u6642\u6a5f\uff01\ud83c\udf1f | IQ - etnet TV",
+  "url": "https://www.etnet.com.hk/www/tc/video/IQ/hbnUmmu923k",
+  "published": "2026-11-02T00:14:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "34ae0ebb4c670bd9f863",
+  "host": "www.etnet.com.hk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u6d1e\u6089\u5168\u7403\u8b8a\u5c40\uff01\u6536\u7747\u300a\u6613\u7d93\u770b\u4e16\u754c\u300b\u300a\u6d2a\u705d\u7b56\u7565\u300b\u89e3\u9396\u7d93\u6fdf\u8207\u667a\u6167\u8108\u640f | \u7522\u54c1\u53ca\u670d\u52d9 - etnet TV",
+  "url": "https://www.etnet.com.hk/www/tc/video/product/Soyg5DWw6OY",
+  "published": "2026-11-02T00:14:46+00:00",
+  "symbols": [
+   "US500",
+   "USDKRW",
+   "HK50",
+   "XAUUSD",
+   "USDJPY",
+   "USDCNH",
+   "USDHKD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "zh-Hant",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d837c72c7b4d70b43d50",
+  "host": "www.etnet.com.hk",
+  "claims": [
+   {
+    "claim": "\u6ed9\u63a7\u906d\u62cb\u552e\u653b\u9632\u7b56\u7565 2,554 views ETF\u653b\u7565 2026-10-27 12:55 SK\u6d77\u529b\u58eb\u63a840\u842c\u5104\u97d3\u5143\u80a1\u6771\u56de\u5831 1,213 views 2026-10-22 17:41 \u751f\u79d1\u80a1\u9006\u5e02\u5c55\u5f37\u52e2 1,342 views 2026-10-20 15:27 \u97d3\u80a1\u8d85\u8dcc\u76f8\u95dcETF\u5438\u91d1\u903e\u516b\u5343\u842c 1,090 views 2026-10-13 12:11 \u6bcf\u5468\u5099\u514c\u671f\u6b0a\u7b56\u7565\u517c\u8cfa\u606f\u8cfa\u50f9 1,383 views 2026-10-08 13:09 \u50b5\u606f\u5c45\u9ad8\u907f\u96aa\u60c5\u7dd2\u4e0b\u9069\u5b9c\u90e8\u7f72\u9ad8\u606f\u9078\u64c7 2,000 views \u653f\u7d93\u5c08\u8a2a 2026-10-27 18:28 \u7f8e\u80a1\u8dcc\uff1a\u718a\u5e02\u4f86\u81e8\u9084\u662f\u91cd\u65b0\u6d17\u724c\uff1f",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u7f8e\u80a1"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5468"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "\u7f8e\u80a1",
+      "\u97d3\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "a1bd46a3b2a8"
+   },
+   {
+    "claim": "1,040 views 2026-07-30 12:15 \u30103\u5206\u9418\u71b1\u7092\u80a1\u9ede\u8a55\u3011\u7f8e\u806f\u51329\u6708\u52a0\u606f\u6a5f\u6703\u5927\u589e\u975e\u7f8e\u80a1\u5927\u8dcc\u5143\u5147\uff0c\u6e2f\u80a1\u61c9\u8a72\u9ede\u90e8\u7f72\uff1f",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u6e2f\u80a1",
+     "\u7f8e\u80a1",
+     "\u52a0\u606f"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5206\u9418",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "HK50",
+      "US500"
+     ],
+     "mentioned": [
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "3b5483bc1c55"
+   },
+   {
+    "claim": "1,385 views 2026-07-29 14:48 \u30103\u5206\u9418\u71b1\u7092\u80a1\u9ede\u8a55\u3011\u6676\u7247\u80a1\u640f\u53cd\u5f48\u63c0\u908a\u96bb\uff1f",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u53cd\u5f48"
+    ],
+    "direction": [
+     "\u53cd\u5f48"
+    ],
+    "horizon": [
+     "\u5206\u9418"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "US500",
+      "USDJPY",
+      "USDCNH",
+      "USDHKD",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1",
+      "\u6e2f\u80a1",
+      "\u7f8e\u80a1",
+      "a\u80a1",
+      "\u65e5\u5713",
+      "\u4eba\u6c11\u5e63",
+      "\u6e2f\u5143",
+      "\u97d3\u5143"
+     ],
+     "transfer_only": [
+      "a\u80a1->indices (China A-share)"
+     ],
+     "indirect": [
+      "CHINAH"
+     ],
+     "channels": [
+      "\u5317\u6c34: flow: Stock Connect -> HK indices and CNH"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "4e44ebe3a74a"
+   },
+   {
+    "claim": "\u7092\u6ce2\u5e45\u6b62\u8755\u9ede\u6a23\u5b9a\uff0c\u62c6\u89e3\u83ef\u8679\u7368\u6709\u512a\u52e2 2,381 views 2026-07-28 11:55 \u30103\u5206\u9418\u71b1\u7092\u80a1\u9ede\u8a55\u3011\u8001\u92ea\u9ec3\u91d1\u80a1\u50f9\u61c9\u8072\u632b\uff0c\u80a1\u6c11\u7576\u5fc3\u300c\u5047\u76c8\u559c\u300d\u9677\u9631 881 views 2026-07-27 11:53 \u30103\u5206\u9418\u71b1\u7092\u80a1\u9ede\u8a55\u3011\u9a30\u8a0a\u9ad8\u4f4d\u8cb7\u5165\u8b8a\u300c\u87f9\u8ca8\u300d\uff1f",
+    "lang": "zh-Hant",
+    "quantities": [
+     "\u9ec3\u91d1"
+    ],
+    "direction": [
+     "\u8cb7\u5165"
+    ],
+    "horizon": [
+     "\u5206\u9418"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\u9ec3\u91d1"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "bb1b1c956634"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "054 - Kieran Duff - Trading fo\u2026 - The Algorithmic Advantage - Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/054-kieran-duff-trading-for-a-living/id1703013320?i=1000777494006",
+  "published": "2026-11-02T00:14:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F054-kieran-duff-trading-for-a-living%2Fid1703013320%3Fi%3D1000777494006"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "23a1047cd929c15154ff",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "053 - Martyn Tinsley - 2 of 2 \u2026 - The Algorithmic Advantage - Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/053-martyn-tinsley-2-of-2-walk-forward-correlation/id1703013320?i=1000769572662",
+  "published": "2026-11-02T00:14:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H"
+  ],
+  "patterns": [
+   "correlation",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F053-martyn-tinsley-2-of-2-walk-forward-correlation%2Fid1703013320%3Fi%3D1000769572662"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fcffbc501d1a5b6138d4",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "052 - Martyn Tinsley - 1 of 2 \u2026 - The Algorithmic Advantage - Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/052-martyn-tinsley-1-of-2-building-robust-trading/id1703013320?i=1000767140263",
+  "published": "2026-11-02T00:14:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H"
+  ],
+  "patterns": [
+   "correlation",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F052-martyn-tinsley-1-of-2-building-robust-trading%2Fid1703013320%3Fi%3D1000767140263"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d378e1ab1a9cd62e8c5c",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "051 - Samir Varma - Classify R\u2026 - The Algorithmic Advantage - Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/051-samir-varma-classify-risk-dont-chase-alpha/id1703013320?i=1000761206056",
+  "published": "2026-11-02T00:14:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F051-samir-varma-classify-risk-dont-chase-alpha%2Fid1703013320%3Fi%3D1000761206056"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0a3ab3d01b08f4422cc5",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "050 \u2013 Samir Varma - When Acade\u2026 - The Algorithmic Advantage - Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/050-samir-varma-when-academic-finance-theory-fails/id1703013320?i=1000759472276",
+  "published": "2026-11-02T00:14:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F050-samir-varma-when-academic-finance-theory-fails%2Fid1703013320%3Fi%3D1000759472276"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8f33f050c0def1706dbd",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "049 - David Bush - Build a Hig\u2026 - The Algorithmic Advantage - Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/049-david-bush-build-a-high-performance-quant/id1703013320?i=1000757436554",
+  "published": "2026-11-02T00:14:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2F049-david-bush-build-a-high-performance-quant%2Fid1703013320%3Fi%3D1000757436554"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "15a392daebe8af7c1b0c",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Words of Rizdom - Trading Podcast - Podcast - Apple Podcasts",
+  "url": "https://podcasts.apple.com/us/podcast/words-of-rizdom---trading-podcast/id1780241706",
+  "published": "2026-11-02T00:15:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1H",
+   "1M",
+   "5M",
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://podcasts.apple.com/manifest.json",
+   "https://podcasts.apple.com/api/oembed?url=https%3A%2F%2Fpodcasts.apple.com%2Fus%2Fpodcast%2Fwords-of-rizdom-trading-podcast%2Fid1780241706"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "36bf0b862a3f31e38d83",
+  "host": "podcasts.apple.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Networking Fundamentals Every Developer Should Understand | Quantt",
+  "url": "https://www.quantt.co.uk/resources/networking-fundamentals-for-developers",
+  "published": "2026-11-02T00:15:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "09b0878b13beb17fdb94",
+  "host": "www.quantt.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics for Quantitative Trading | Quantt",
+  "url": "https://www.quantt.co.uk/resources/statistics-for-quantitative-trading",
+  "published": "2026-11-02T00:15:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a625eed7d371990297c3",
+  "host": "www.quantt.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Quant Developer Interview Questions: 25 Real Examples 2026 | Quantt",
+  "url": "https://www.quantt.co.uk/resources/quant-developer-interview-questions",
+  "published": "2026-11-02T00:15:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "30M"
+  ],
+  "patterns": [
+   "gap",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "094fa6c2145acda17200",
+  "host": "www.quantt.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Review of Monetary Policy Strategy, Tools, and Communications",
+  "url": "https://federalreserve.gov/monetarypolicy/review-of-monetary-policy-strategy-tools-and-communications-2019-2020.htm",
+  "published": "2026-11-02T00:15:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9050bacec4ca0840b5d1",
+  "host": "federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Review of Monetary Policy Strategy, Tools, and Communications",
+  "url": "https://federalreserve.gov/monetarypolicy/review-of-monetary-policy-strategy-tools-and-communications-2025.htm",
+  "published": "2026-11-02T00:15:10+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8582f4ce2f7bd699109b",
+  "host": "federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - 2020 Statement on Longer-Run Goals and Monetary Policy Strategy",
+  "url": "https://federalreserve.gov/monetarypolicy/monetary-policy-strategy-tools-and-communications-statement-on-longer-run-goals-monetary-policy-strategy-2019-2020.htm",
+  "published": "2026-11-02T00:15:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dd1042393f9cd6607532",
+  "host": "federalreserve.gov",
+  "claims": [
+   {
+    "claim": "as amended effective August 27, 2020 The Federal Open Market Committee (FOMC) is firmly committed to fulfilling its statutory mandate from the Congress of promoting maximum employment, stable prices, and moderate long-term interest rates.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "fed9254914e9"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Guide to changes in the 2020 Statement on Longer-Run Goals and Monetary Policy Strategy",
+  "url": "https://federalreserve.gov/monetarypolicy/guide-to-changes-in-statement-on-longer-run-goals-monetary-policy-strategy-2019-2020.htm",
+  "published": "2026-11-02T00:15:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "738f02a3caca4619bfce",
+  "host": "federalreserve.gov",
+  "claims": [
+   {
+    "claim": "The Federal Open Market Committee (FOMC) is firmly committed to fulfilling its statutory mandate from the Congress of promoting maximum employment, stable prices, and moderate long-term interest rates.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "5c85c8b6a276"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Fed Listens",
+  "url": "https://federalreserve.gov/monetarypolicy/review-of-monetary-policy-strategy-tools-and-communications-fed-listens-events-2019-2020.htm",
+  "published": "2026-11-02T00:15:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2a8368b39efbf5c98b84",
+  "host": "federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - System Analytical Work",
+  "url": "https://federalreserve.gov/monetarypolicy/review-of-monetary-policy-strategy-tools-and-communications-system-analytical-work-2019-2020.htm",
+  "published": "2026-11-02T00:15:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "613193af32c10f749ce0",
+  "host": "federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ }
+]
