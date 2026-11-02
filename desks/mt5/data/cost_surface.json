@@ -1,5 +1,5 @@
 {
- "built_at": "2026-11-01T02:29:01+00:00",
+ "built_at": "2026-11-02T02:38:52+00:00",
  "min_obs": 200,
  "n_skipped": 6,
  "n_symbols": 240,
@@ -163,15 +163,15 @@
   },
   "ADAUSD": {
    "administered": false,
-   "bars_total": 49373,
-   "bars_used": 48383,
+   "bars_total": 49377,
+   "bars_used": 48384,
    "cheapest_hour": 0,
    "contract_size": 100.0,
    "days_full": 2020,
-   "days_total": 2970,
+   "days_total": 2971,
    "dear_over_cheap": 1.03,
    "dearest_hour": 2,
-   "excluded_days": 950,
+   "excluded_days": 951,
    "first": "2018-09-01 00:00:00+00:00",
    "hours": {
     "0": {
@@ -319,13 +319,13 @@
      "zero_frac": 0.0833
     },
     "23": {
-     "n_bars": 2018,
-     "n_nonzero": 1850,
+     "n_bars": 2019,
+     "n_nonzero": 1851,
      "p50": 33.0,
      "p75": 36.0,
      "p90": 41.0,
      "status": "MEASURED",
-     "zero_frac": 0.0833
+     "zero_frac": 0.0832
     },
     "3": {
      "n_bars": 2017,
@@ -391,7 +391,7 @@
      "zero_frac": 0.0833
     }
    },
-   "last": "2026-10-31 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 31.0,
    "session_bars": 24,
@@ -780,15 +780,15 @@
   },
   "AUDCAD": {
    "administered": false,
-   "bars_total": 49804,
-   "bars_used": 43795,
+   "bars_total": 49808,
+   "bars_used": 43796,
    "cheapest_hour": 23,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 7199,
+   "days_total": 7200,
    "dear_over_cheap": 200.0,
    "dearest_hour": 9,
-   "excluded_days": 5374,
+   "excluded_days": 5375,
    "first": "1999-12-06 00:00:00+00:00",
    "hours": {
     "0": {
@@ -936,13 +936,13 @@
      "zero_frac": 0.6871
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1556,
+     "n_bars": 1824,
+     "n_nonzero": 1557,
      "p50": 1.0,
      "p75": 4.0,
      "p90": 200.0,
      "status": "MEASURED",
-     "zero_frac": 0.1465
+     "zero_frac": 0.1464
     },
     "3": {
      "n_bars": 1825,
@@ -1008,7 +1008,7 @@
      "zero_frac": 0.7162
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 2.0,
    "session_bars": 24,
@@ -1019,15 +1019,15 @@
   },
   "AUDCHF": {
    "administered": false,
-   "bars_total": 49690,
-   "bars_used": 43793,
+   "bars_total": 49694,
+   "bars_used": 43794,
    "cheapest_hour": 23,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 7697,
+   "days_total": 7698,
    "dear_over_cheap": 160.0,
    "dearest_hour": 3,
-   "excluded_days": 5872,
+   "excluded_days": 5873,
    "first": "1998-05-11 00:00:00+00:00",
    "hours": {
     "0": {
@@ -1175,13 +1175,13 @@
      "zero_frac": 0.7781
     },
     "23": {
-     "n_bars": 1823,
+     "n_bars": 1824,
      "n_nonzero": 1211,
      "p50": 1.0,
      "p75": 115.5,
      "p90": 160.0,
      "status": "MEASURED",
-     "zero_frac": 0.3357
+     "zero_frac": 0.3361
     },
     "3": {
      "n_bars": 1825,
@@ -1247,7 +1247,7 @@
      "zero_frac": 0.8033
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 1.0,
    "session_bars": 24,
@@ -1258,15 +1258,15 @@
   },
   "AUDHUF": {
    "administered": false,
-   "bars_total": 44484,
-   "bars_used": 43765,
+   "bars_total": 44488,
+   "bars_used": 43766,
    "cheapest_hour": 16,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 2529,
+   "days_total": 2530,
    "dear_over_cheap": 10.35,
    "dearest_hour": 0,
-   "excluded_days": 704,
+   "excluded_days": 705,
    "first": "2017-07-02 00:00:00+00:00",
    "hours": {
     "0": {
@@ -1414,13 +1414,13 @@
      "zero_frac": 0.1639
     },
     "23": {
-     "n_bars": 1822,
-     "n_nonzero": 1523,
+     "n_bars": 1823,
+     "n_nonzero": 1524,
      "p50": 15606.0,
-     "p75": 20415.0,
+     "p75": 20410.5,
      "p90": 27506.0,
      "status": "MEASURED",
-     "zero_frac": 0.1641
+     "zero_frac": 0.164
     },
     "3": {
      "n_bars": 1824,
@@ -1486,26 +1486,26 @@
      "zero_frac": 0.1638
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 14200.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 8.6,
+   "splice_tickvol_ratio": 8.5,
    "stress_p90_over_p50": 1.51,
    "tick_size": 1e-05
   },
   "AUDJPY": {
    "administered": false,
-   "bars_total": 49709,
-   "bars_used": 43797,
+   "bars_total": 49713,
+   "bars_used": 43798,
    "cheapest_hour": 23,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 7713,
+   "days_total": 7714,
    "dear_over_cheap": 60.0,
    "dearest_hour": 2,
-   "excluded_days": 5888,
+   "excluded_days": 5889,
    "first": "1998-05-07 00:00:00+00:00",
    "hours": {
     "0": {
@@ -1653,13 +1653,13 @@
      "zero_frac": 0.7627
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1205,
+     "n_bars": 1824,
+     "n_nonzero": 1206,
      "p50": 2.0,
-     "p75": 100.0,
+     "p75": 88.25,
      "p90": 120.0,
      "status": "MEASURED",
-     "zero_frac": 0.339
+     "zero_frac": 0.3388
     },
     "3": {
      "n_bars": 1825,
@@ -1725,7 +1725,7 @@
      "zero_frac": 0.8099
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 2.0,
    "session_bars": 24,
@@ -1736,15 +1736,15 @@
   },
   "AUDNZD": {
    "administered": false,
-   "bars_total": 49781,
-   "bars_used": 43791,
+   "bars_total": 49785,
+   "bars_used": 43792,
    "cheapest_hour": 9,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 7799,
+   "days_total": 7800,
    "dear_over_cheap": 54.0,
    "dearest_hour": 0,
-   "excluded_days": 5974,
+   "excluded_days": 5975,
    "first": "1998-04-02 00:00:00+00:00",
    "hours": {
     "0": {
@@ -1892,13 +1892,13 @@
      "zero_frac": 0.3863
     },
     "23": {
-     "n_bars": 1822,
-     "n_nonzero": 1411,
+     "n_bars": 1823,
+     "n_nonzero": 1412,
      "p50": 3.0,
      "p75": 7.0,
      "p90": 240.0,
      "status": "MEASURED",
-     "zero_frac": 0.2256
+     "zero_frac": 0.2255
     },
     "3": {
      "n_bars": 1825,
@@ -1964,7 +1964,7 @@
      "zero_frac": 0.4532
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 3.0,
    "session_bars": 24,
@@ -1975,15 +1975,15 @@
   },
   "AUDSGD": {
    "administered": false,
-   "bars_total": 47173,
-   "bars_used": 43773,
+   "bars_total": 47177,
+   "bars_used": 43774,
    "cheapest_hour": 8,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 5226,
+   "days_total": 5227,
    "dear_over_cheap": 52.5,
    "dearest_hour": 0,
-   "excluded_days": 3400,
+   "excluded_days": 3401,
    "first": "2005-08-01 00:00:00+00:00",
    "hours": {
     "0": {
@@ -2131,13 +2131,13 @@
      "zero_frac": 0.3105
     },
     "23": {
-     "n_bars": 1824,
-     "n_nonzero": 1694,
+     "n_bars": 1825,
+     "n_nonzero": 1695,
      "p50": 3.0,
      "p75": 6.0,
      "p90": 200.0,
      "status": "MEASURED",
-     "zero_frac": 0.0713
+     "zero_frac": 0.0712
     },
     "3": {
      "n_bars": 1825,
@@ -2203,7 +2203,7 @@
      "zero_frac": 0.4704
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 3.0,
    "session_bars": 24,
@@ -2214,15 +2214,15 @@
   },
   "AUDUSD": {
    "administered": false,
-   "bars_total": 49811,
-   "bars_used": 43798,
+   "bars_total": 49815,
+   "bars_used": 43799,
    "cheapest_hour": 0,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 7812,
+   "days_total": 7813,
    "dear_over_cheap": 5.56,
    "dearest_hour": 1,
-   "excluded_days": 5987,
+   "excluded_days": 5988,
    "first": "1997-09-24 00:00:00+00:00",
    "hours": {
     "0": {
@@ -2370,13 +2370,13 @@
      "zero_frac": 0.8268
     },
     "23": {
-     "n_bars": 1823,
+     "n_bars": 1824,
      "n_nonzero": 325,
      "p50": 50.0,
      "p75": 50.0,
      "p90": 50.0,
      "status": "MEASURED",
-     "zero_frac": 0.8217
+     "zero_frac": 0.8218
     },
     "3": {
      "n_bars": 1825,
@@ -2442,7 +2442,7 @@
      "zero_frac": 0.8312
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 0.0,
    "session_bars": 24,
@@ -2453,15 +2453,15 @@
   },
   "AUS200": {
    "administered": true,
-   "bars_total": 42087,
-   "bars_used": 40212,
+   "bars_total": 42091,
+   "bars_used": 40213,
    "cheapest_hour": 0,
    "contract_size": 1.0,
    "days_full": 1777,
-   "days_total": 3236,
+   "days_total": 3237,
    "dear_over_cheap": 1.0,
    "dearest_hour": 0,
-   "excluded_days": 1459,
+   "excluded_days": 1460,
    "first": "2014-11-21 00:00:00+00:00",
    "hours": {
     "0": {
@@ -2600,13 +2600,13 @@
      "zero_frac": 0.1739
     },
     "22": {
-     "n_bars": 1776,
-     "n_nonzero": 1470,
+     "n_bars": 1777,
+     "n_nonzero": 1471,
      "p50": 80.0,
      "p75": 80.0,
      "p90": 175.0,
      "status": "MEASURED",
-     "zero_frac": 0.1723
+     "zero_frac": 0.1722
     },
     "23": {
      "n_bars": 1119,
@@ -2681,26 +2681,26 @@
      "zero_frac": 0.1689
     }
    },
-   "last": "2026-10-30 21:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 100.0,
    "session_bars": 23,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 16.1,
+   "splice_tickvol_ratio": 16.0,
    "stress_p90_over_p50": 1.88,
    "tick_size": 0.01
   },
   "AVAXUSD": {
    "administered": true,
-   "bars_total": 40732,
-   "bars_used": 40721,
+   "bars_total": 40736,
+   "bars_used": 40722,
    "cheapest_hour": 0,
    "contract_size": 1000.0,
    "days_full": 1700,
-   "days_total": 1703,
+   "days_total": 1704,
    "dear_over_cheap": 1.0,
    "dearest_hour": 0,
-   "excluded_days": 3,
+   "excluded_days": 4,
    "first": "2022-02-23 00:00:00+00:00",
    "hours": {
     "0": {
@@ -2848,8 +2848,8 @@
      "zero_frac": 0.0
     },
     "23": {
-     "n_bars": 1697,
-     "n_nonzero": 1697,
+     "n_bars": 1698,
+     "n_nonzero": 1698,
      "p50": 50.0,
      "p75": 60.0,
      "p90": 97.0,
@@ -2920,12 +2920,12 @@
      "zero_frac": 0.0
     }
    },
-   "last": "2026-10-31 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 36.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 0.2,
+   "splice_tickvol_ratio": 0.3,
    "stress_p90_over_p50": 1.94,
    "tick_size": 0.001
   },
@@ -4371,15 +4371,15 @@
   },
   "BCHUSD": {
    "administered": false,
-   "bars_total": 57019,
-   "bars_used": 56473,
+   "bars_total": 57023,
+   "bars_used": 56474,
    "cheapest_hour": 0,
    "contract_size": 1.0,
    "days_full": 2356,
-   "days_total": 2867,
+   "days_total": 2868,
    "dear_over_cheap": 1.01,
    "dearest_hour": 3,
-   "excluded_days": 511,
+   "excluded_days": 512,
    "first": "2017-12-11 00:00:00+00:00",
    "hours": {
     "0": {
@@ -4527,13 +4527,13 @@
      "zero_frac": 0.1265
     },
     "23": {
-     "n_bars": 2354,
-     "n_nonzero": 2056,
+     "n_bars": 2355,
+     "n_nonzero": 2057,
      "p50": 130.0,
      "p75": 166.0,
      "p90": 260.0,
      "status": "MEASURED",
-     "zero_frac": 0.1266
+     "zero_frac": 0.1265
     },
     "3": {
      "n_bars": 2353,
@@ -4599,26 +4599,26 @@
      "zero_frac": 0.1266
     }
    },
-   "last": "2026-10-31 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 156.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 19.6,
+   "splice_tickvol_ratio": 19.3,
    "stress_p90_over_p50": 2.01,
    "tick_size": 0.01
   },
   "BNBUSD": {
    "administered": true,
-   "bars_total": 49491,
-   "bars_used": 48418,
+   "bars_total": 49495,
+   "bars_used": 48419,
    "cheapest_hour": 0,
    "contract_size": 1.0,
    "days_full": 2022,
-   "days_total": 3073,
+   "days_total": 3074,
    "dear_over_cheap": 1.0,
    "dearest_hour": 0,
-   "excluded_days": 1051,
+   "excluded_days": 1052,
    "first": "2018-05-22 02:00:00+00:00",
    "hours": {
     "0": {
@@ -4766,8 +4766,8 @@
      "zero_frac": 0.0837
     },
     "23": {
-     "n_bars": 2019,
-     "n_nonzero": 1850,
+     "n_bars": 2020,
+     "n_nonzero": 1851,
      "p50": 84.0,
      "p75": 104.0,
      "p90": 139.0,
@@ -4838,26 +4838,26 @@
      "zero_frac": 0.0828
     }
    },
-   "last": "2026-10-31 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 94.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 2.8,
+   "splice_tickvol_ratio": 2.7,
    "stress_p90_over_p50": 1.65,
    "tick_size": 0.01
   },
   "BTCUSD": {
    "administered": false,
-   "bars_total": 56219,
-   "bars_used": 56199,
+   "bars_total": 56223,
+   "bars_used": 56200,
    "cheapest_hour": 1,
    "contract_size": 1.0,
    "days_full": 2345,
-   "days_total": 2348,
+   "days_total": 2349,
    "dear_over_cheap": 1.02,
    "dearest_hour": 0,
-   "excluded_days": 3,
+   "excluded_days": 4,
    "first": "2019-11-01 00:00:00+00:00",
    "hours": {
     "0": {
@@ -5005,10 +5005,10 @@
      "zero_frac": 0.1229
     },
     "23": {
-     "n_bars": 2343,
-     "n_nonzero": 2054,
+     "n_bars": 2344,
+     "n_nonzero": 2055,
      "p50": 1908.0,
-     "p75": 2566.5,
+     "p75": 2565.0,
      "p90": 3000.0,
      "status": "MEASURED",
      "zero_frac": 0.1233
@@ -5077,7 +5077,7 @@
      "zero_frac": 0.123
     }
    },
-   "last": "2026-10-31 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 2032.0,
    "session_bars": 24,
@@ -6070,15 +6070,15 @@
   },
   "CADCHF": {
    "administered": false,
-   "bars_total": 46472,
-   "bars_used": 43002,
+   "bars_total": 46476,
+   "bars_used": 43003,
    "cheapest_hour": 23,
    "contract_size": 100000.0,
    "days_full": 1792,
-   "days_total": 5159,
+   "days_total": 5160,
    "dear_over_cheap": 80.0,
    "dearest_hour": 9,
-   "excluded_days": 3367,
+   "excluded_days": 3368,
    "first": "2007-03-23 00:00:00+00:00",
    "hours": {
     "0": {
@@ -6226,13 +6226,13 @@
      "zero_frac": 0.7573
     },
     "23": {
-     "n_bars": 1790,
+     "n_bars": 1791,
      "n_nonzero": 1124,
      "p50": 2.0,
      "p75": 160.0,
      "p90": 160.0,
      "status": "MEASURED",
-     "zero_frac": 0.3721
+     "zero_frac": 0.3724
     },
     "3": {
      "n_bars": 1792,
@@ -6298,7 +6298,7 @@
      "zero_frac": 0.7634
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 119.0,
    "session_bars": 24,
@@ -6309,15 +6309,15 @@
   },
   "CADJPY": {
    "administered": false,
-   "bars_total": 47811,
-   "bars_used": 43797,
+   "bars_total": 47815,
+   "bars_used": 43798,
    "cheapest_hour": 23,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 5816,
+   "days_total": 5817,
    "dear_over_cheap": 60.0,
    "dearest_hour": 3,
-   "excluded_days": 3991,
+   "excluded_days": 3992,
    "first": "2005-05-24 00:00:00+00:00",
    "hours": {
     "0": {
@@ -6465,13 +6465,13 @@
      "zero_frac": 0.7995
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1248,
+     "n_bars": 1824,
+     "n_nonzero": 1249,
      "p50": 2.0,
      "p75": 9.0,
      "p90": 120.0,
      "status": "MEASURED",
-     "zero_frac": 0.3154
+     "zero_frac": 0.3152
     },
     "3": {
      "n_bars": 1825,
@@ -6537,7 +6537,7 @@
      "zero_frac": 0.8121
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 1.0,
    "session_bars": 24,
@@ -6548,15 +6548,15 @@
   },
   "CHFDKK": {
    "administered": false,
-   "bars_total": 43866,
-   "bars_used": 43813,
+   "bars_total": 43870,
+   "bars_used": 43814,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 1879,
+   "days_total": 1880,
    "dear_over_cheap": 22.73,
    "dearest_hour": 0,
-   "excluded_days": 53,
+   "excluded_days": 54,
    "first": "2019-07-17 00:00:00+00:00",
    "hours": {
     "0": {
@@ -6704,13 +6704,13 @@
      "zero_frac": 0.1966
     },
     "23": {
-     "n_bars": 1824,
-     "n_nonzero": 1501,
+     "n_bars": 1825,
+     "n_nonzero": 1502,
      "p50": 45.0,
      "p75": 48.0,
      "p90": 59.0,
      "status": "MEASURED",
-     "zero_frac": 0.1771
+     "zero_frac": 0.177
     },
     "3": {
      "n_bars": 1825,
@@ -6776,26 +6776,26 @@
      "zero_frac": 0.2004
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 64.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 28.0,
+   "splice_tickvol_ratio": 27.4,
    "stress_p90_over_p50": 1.31,
    "tick_size": 1e-05
   },
   "CHFHUF": {
    "administered": false,
-   "bars_total": 44485,
-   "bars_used": 43764,
+   "bars_total": 44489,
+   "bars_used": 43765,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 2530,
+   "days_total": 2531,
    "dear_over_cheap": 15.65,
    "dearest_hour": 0,
-   "excluded_days": 705,
+   "excluded_days": 706,
    "first": "2017-07-02 00:00:00+00:00",
    "hours": {
     "0": {
@@ -6943,13 +6943,13 @@
      "zero_frac": 0.1645
     },
     "23": {
-     "n_bars": 1822,
-     "n_nonzero": 1523,
+     "n_bars": 1823,
+     "n_nonzero": 1524,
      "p50": 24100.0,
-     "p75": 27079.0,
+     "p75": 27066.5,
      "p90": 35304.0,
      "status": "MEASURED",
-     "zero_frac": 0.1641
+     "zero_frac": 0.164
     },
     "3": {
      "n_bars": 1824,
@@ -7015,7 +7015,7 @@
      "zero_frac": 0.1638
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 23510.0,
    "session_bars": 24,
@@ -7026,15 +7026,15 @@
   },
   "CHFJPY": {
    "administered": false,
-   "bars_total": 49425,
-   "bars_used": 43563,
+   "bars_total": 49429,
+   "bars_used": 43564,
    "cheapest_hour": 4,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 7665,
+   "days_total": 7666,
    "dear_over_cheap": 40.0,
    "dearest_hour": 0,
-   "excluded_days": 5840,
+   "excluded_days": 5841,
    "first": "1997-08-27 00:00:00+00:00",
    "hours": {
     "0": {
@@ -7182,8 +7182,8 @@
      "zero_frac": 0.4203
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1652,
+     "n_bars": 1824,
+     "n_nonzero": 1653,
      "p50": 3.0,
      "p75": 7.0,
      "p90": 80.0,
@@ -7254,7 +7254,7 @@
      "zero_frac": 0.4701
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 4.0,
    "session_bars": 24,
@@ -7265,15 +7265,15 @@
   },
   "CHFNOK": {
    "administered": false,
-   "bars_total": 46056,
-   "bars_used": 43803,
+   "bars_total": 46059,
+   "bars_used": 43804,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 4079,
+   "days_total": 4080,
    "dear_over_cheap": 39.57,
    "dearest_hour": 0,
-   "excluded_days": 2253,
+   "excluded_days": 2254,
    "first": "2012-07-17 00:00:00+00:00",
    "hours": {
     "0": {
@@ -7421,13 +7421,13 @@
      "zero_frac": 0.1637
     },
     "23": {
-     "n_bars": 1824,
-     "n_nonzero": 1525,
+     "n_bars": 1825,
+     "n_nonzero": 1526,
      "p50": 346.0,
      "p75": 495.0,
      "p90": 642.0,
      "status": "MEASURED",
-     "zero_frac": 0.1639
+     "zero_frac": 0.1638
     },
     "3": {
      "n_bars": 1825,
@@ -7493,7 +7493,7 @@
      "zero_frac": 0.1637
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 253.0,
    "session_bars": 24,
@@ -7504,15 +7504,15 @@
   },
   "CHFPLN": {
    "administered": false,
-   "bars_total": 44910,
-   "bars_used": 43812,
+   "bars_total": 44914,
+   "bars_used": 43813,
    "cheapest_hour": 11,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 2924,
+   "days_total": 2925,
    "dear_over_cheap": 17.48,
    "dearest_hour": 0,
-   "excluded_days": 1098,
+   "excluded_days": 1099,
    "first": "2015-07-27 00:00:00+00:00",
    "hours": {
     "0": {
@@ -7660,13 +7660,13 @@
      "zero_frac": 0.1637
     },
     "23": {
-     "n_bars": 1824,
-     "n_nonzero": 1525,
+     "n_bars": 1825,
+     "n_nonzero": 1526,
      "p50": 228.0,
      "p75": 258.0,
      "p90": 318.0,
      "status": "MEASURED",
-     "zero_frac": 0.1639
+     "zero_frac": 0.1638
     },
     "3": {
      "n_bars": 1825,
@@ -7732,26 +7732,26 @@
      "zero_frac": 0.1637
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 254.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 25.0,
+   "splice_tickvol_ratio": 24.9,
    "stress_p90_over_p50": 1.69,
    "tick_size": 1e-05
   },
   "CHFSEK": {
    "administered": false,
-   "bars_total": 43857,
-   "bars_used": 43805,
+   "bars_total": 43861,
+   "bars_used": 43806,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 1878,
+   "days_total": 1879,
    "dear_over_cheap": 28.85,
    "dearest_hour": 0,
-   "excluded_days": 52,
+   "excluded_days": 53,
    "first": "2019-07-17 00:00:00+00:00",
    "hours": {
     "0": {
@@ -7899,13 +7899,13 @@
      "zero_frac": 0.1643
     },
     "23": {
-     "n_bars": 1824,
-     "n_nonzero": 1523,
+     "n_bars": 1825,
+     "n_nonzero": 1524,
      "p50": 322.0,
      "p75": 634.0,
      "p90": 648.0,
      "status": "MEASURED",
-     "zero_frac": 0.165
+     "zero_frac": 0.1649
     },
     "3": {
      "n_bars": 1825,
@@ -7971,26 +7971,26 @@
      "zero_frac": 0.1637
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 603.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 12.5,
+   "splice_tickvol_ratio": 12.3,
    "stress_p90_over_p50": 2.92,
    "tick_size": 1e-05
   },
   "CHFSGD": {
    "administered": false,
-   "bars_total": 46697,
-   "bars_used": 43299,
+   "bars_total": 46700,
+   "bars_used": 43300,
    "cheapest_hour": 4,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 5224,
+   "days_total": 5225,
    "dear_over_cheap": 63.33,
    "dearest_hour": 0,
-   "excluded_days": 3398,
+   "excluded_days": 3399,
    "first": "2005-12-08 00:00:00+00:00",
    "hours": {
     "0": {
@@ -8138,8 +8138,8 @@
      "zero_frac": 0.0378
     },
     "23": {
-     "n_bars": 1822,
-     "n_nonzero": 1799,
+     "n_bars": 1823,
+     "n_nonzero": 1800,
      "p50": 7.0,
      "p75": 16.0,
      "p90": 230.0,
@@ -8210,7 +8210,7 @@
      "zero_frac": 0.2278
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 4.0,
    "session_bars": 24,
@@ -8221,8 +8221,8 @@
   },
   "CHINAH": {
    "administered": true,
-   "bars_total": 25959,
-   "bars_used": 24720,
+   "bars_total": 25960,
+   "bars_used": 24721,
    "cheapest_hour": 3,
    "contract_size": 1.0,
    "days_full": 1445,
@@ -8344,13 +8344,13 @@
      "zero_frac": 0.1184
     },
     "21": {
-     "n_bars": 985,
-     "n_nonzero": 860,
+     "n_bars": 986,
+     "n_nonzero": 861,
      "p50": 180.0,
      "p75": 180.0,
      "p90": 180.0,
      "status": "MEASURED",
-     "zero_frac": 0.1269
+     "zero_frac": 0.1268
     },
     "22": {
      "n_bars": 40,
@@ -8422,7 +8422,7 @@
      "zero_frac": 0.1183
     }
    },
-   "last": "2026-10-30 20:00:00+00:00",
+   "last": "2026-10-30 21:00:00+00:00",
    "n_hours_measured": 19,
    "pooled_median_spread_pts": 280.0,
    "session_bars": 17,
@@ -8662,8 +8662,8 @@
   },
   "CORN": {
    "administered": true,
-   "bars_total": 25828,
-   "bars_used": 24662,
+   "bars_total": 25829,
+   "bars_used": 24663,
    "cheapest_hour": 3,
    "contract_size": 2.0,
    "days_full": 1300,
@@ -8779,13 +8779,13 @@
      "zero_frac": 0.0394
     },
     "21": {
-     "n_bars": 1273,
-     "n_nonzero": 1242,
+     "n_bars": 1274,
+     "n_nonzero": 1243,
      "p50": 68.0,
      "p75": 68.0,
      "p90": 70.0,
      "status": "MEASURED",
-     "zero_frac": 0.0244
+     "zero_frac": 0.0243
     },
     "3": {
      "n_bars": 1300,
@@ -8851,7 +8851,7 @@
      "zero_frac": 0.04
     }
    },
-   "last": "2026-10-30 20:00:00+00:00",
+   "last": "2026-10-30 21:00:00+00:00",
    "n_hours_measured": 19,
    "pooled_median_spread_pts": 55.0,
    "session_bars": 19,
@@ -10303,15 +10303,15 @@
   },
   "DOGEUSD": {
    "administered": false,
-   "bars_total": 48666,
-   "bars_used": 48369,
+   "bars_total": 48670,
+   "bars_used": 48370,
    "cheapest_hour": 16,
    "contract_size": 1000.0,
    "days_full": 2019,
-   "days_total": 2279,
+   "days_total": 2280,
    "dear_over_cheap": 1.03,
    "dearest_hour": 0,
-   "excluded_days": 260,
+   "excluded_days": 261,
    "first": "2020-07-10 00:00:00+00:00",
    "hours": {
     "0": {
@@ -10459,8 +10459,8 @@
      "zero_frac": 0.0833
     },
     "23": {
-     "n_bars": 2017,
-     "n_nonzero": 1849,
+     "n_bars": 2018,
+     "n_nonzero": 1850,
      "p50": 39.0,
      "p75": 42.0,
      "p90": 46.0,
@@ -10531,7 +10531,7 @@
      "zero_frac": 0.0833
     }
    },
-   "last": "2026-10-31 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 44.0,
    "session_bars": 24,
@@ -10542,15 +10542,15 @@
   },
   "DOTUSD": {
    "administered": true,
-   "bars_total": 48614,
-   "bars_used": 48347,
+   "bars_total": 48618,
+   "bars_used": 48348,
    "cheapest_hour": 0,
    "contract_size": 50.0,
    "days_full": 2018,
-   "days_total": 2249,
+   "days_total": 2250,
    "dear_over_cheap": 1.0,
    "dearest_hour": 0,
-   "excluded_days": 231,
+   "excluded_days": 232,
    "first": "2020-08-21 00:00:00+00:00",
    "hours": {
     "0": {
@@ -10698,8 +10698,8 @@
      "zero_frac": 0.0833
     },
     "23": {
-     "n_bars": 2016,
-     "n_nonzero": 1848,
+     "n_bars": 2017,
+     "n_nonzero": 1849,
      "p50": 34.0,
      "p75": 38.0,
      "p90": 49.0,
@@ -10770,7 +10770,7 @@
      "zero_frac": 0.0834
     }
    },
-   "last": "2026-10-31 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 30.0,
    "session_bars": 24,
@@ -11481,15 +11481,15 @@
   },
   "ETHUSD": {
    "administered": true,
-   "bars_total": 56221,
-   "bars_used": 56201,
+   "bars_total": 56225,
+   "bars_used": 56202,
    "cheapest_hour": 0,
    "contract_size": 1.0,
    "days_full": 2345,
-   "days_total": 2348,
+   "days_total": 2349,
    "dear_over_cheap": 1.0,
    "dearest_hour": 0,
-   "excluded_days": 3,
+   "excluded_days": 4,
    "first": "2019-11-01 00:00:00+00:00",
    "hours": {
     "0": {
@@ -11637,8 +11637,8 @@
      "zero_frac": 0.1229
     },
     "23": {
-     "n_bars": 2343,
-     "n_nonzero": 2055,
+     "n_bars": 2344,
+     "n_nonzero": 2056,
      "p50": 251.0,
      "p75": 290.0,
      "p90": 334.0,
@@ -11709,7 +11709,7 @@
      "zero_frac": 0.123
     }
    },
-   "last": "2026-10-31 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 304.0,
    "session_bars": 24,
@@ -11720,15 +11720,15 @@
   },
   "EURAUD": {
    "administered": false,
-   "bars_total": 49386,
-   "bars_used": 43788,
+   "bars_total": 49390,
+   "bars_used": 43789,
    "cheapest_hour": 1,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 7399,
+   "days_total": 7400,
    "dear_over_cheap": 95.0,
    "dearest_hour": 2,
-   "excluded_days": 5574,
+   "excluded_days": 5575,
    "first": "1999-01-11 00:00:00+00:00",
    "hours": {
     "0": {
@@ -11876,13 +11876,13 @@
      "zero_frac": 0.7633
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1132,
+     "n_bars": 1824,
+     "n_nonzero": 1133,
      "p50": 2.0,
      "p75": 190.0,
      "p90": 190.0,
      "status": "MEASURED",
-     "zero_frac": 0.379
+     "zero_frac": 0.3788
     },
     "3": {
      "n_bars": 1825,
@@ -11948,7 +11948,7 @@
      "zero_frac": 0.7989
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 3.0,
    "session_bars": 24,
@@ -11959,15 +11959,15 @@
   },
   "EURCAD": {
    "administered": false,
-   "bars_total": 49233,
-   "bars_used": 43796,
+   "bars_total": 49237,
+   "bars_used": 43797,
    "cheapest_hour": 23,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 7239,
+   "days_total": 7240,
    "dear_over_cheap": 160.0,
    "dearest_hour": 3,
-   "excluded_days": 5414,
+   "excluded_days": 5415,
    "first": "1999-08-02 00:00:00+00:00",
    "hours": {
     "0": {
@@ -12115,13 +12115,13 @@
      "zero_frac": 0.7825
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1204,
+     "n_bars": 1824,
+     "n_nonzero": 1205,
      "p50": 1.0,
-     "p75": 63.75,
+     "p75": 61.0,
      "p90": 160.0,
      "status": "MEASURED",
-     "zero_frac": 0.3396
+     "zero_frac": 0.3394
     },
     "3": {
      "n_bars": 1825,
@@ -12187,7 +12187,7 @@
      "zero_frac": 0.7808
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 0.0,
    "session_bars": 24,
@@ -12198,15 +12198,15 @@
   },
   "EURCHF": {
    "administered": false,
-   "bars_total": 45802,
-   "bars_used": 43796,
+   "bars_total": 45806,
+   "bars_used": 43797,
    "cheapest_hour": 1,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 3808,
+   "days_total": 3809,
    "dear_over_cheap": 16.67,
    "dearest_hour": 0,
-   "excluded_days": 1983,
+   "excluded_days": 1984,
    "first": "2012-03-01 00:00:00+00:00",
    "hours": {
     "0": {
@@ -12354,13 +12354,13 @@
      "zero_frac": 0.7962
     },
     "23": {
-     "n_bars": 1823,
+     "n_bars": 1824,
      "n_nonzero": 538,
      "p50": 50.0,
      "p75": 50.0,
      "p90": 50.0,
      "status": "MEASURED",
-     "zero_frac": 0.7049
+     "zero_frac": 0.705
     },
     "3": {
      "n_bars": 1825,
@@ -12426,7 +12426,7 @@
      "zero_frac": 0.8115
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 2.0,
    "session_bars": 24,
@@ -12437,15 +12437,15 @@
   },
   "EURCZK": {
    "administered": false,
-   "bars_total": 44557,
-   "bars_used": 43766,
+   "bars_total": 44561,
+   "bars_used": 43767,
    "cheapest_hour": 14,
    "contract_size": 100000.0,
    "days_full": 1828,
-   "days_total": 2614,
+   "days_total": 2615,
    "dear_over_cheap": 7.29,
    "dearest_hour": 0,
-   "excluded_days": 786,
+   "excluded_days": 787,
    "first": "2017-03-26 00:00:00+00:00",
    "hours": {
     "0": {
@@ -12593,13 +12593,13 @@
      "zero_frac": 0.1652
     },
     "23": {
-     "n_bars": 1826,
-     "n_nonzero": 1519,
+     "n_bars": 1827,
+     "n_nonzero": 1520,
      "p50": 890.0,
      "p75": 990.0,
      "p90": 1190.0,
      "status": "MEASURED",
-     "zero_frac": 0.1681
+     "zero_frac": 0.168
     },
     "3": {
      "n_bars": 1821,
@@ -12665,26 +12665,26 @@
      "zero_frac": 0.1658
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 1254.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 19.5,
+   "splice_tickvol_ratio": 19.3,
    "stress_p90_over_p50": 1.71,
    "tick_size": 1e-05
   },
   "EURDKK": {
    "administered": false,
-   "bars_total": 44210,
-   "bars_used": 43704,
+   "bars_total": 44214,
+   "bars_used": 43705,
    "cheapest_hour": 14,
    "contract_size": 100000.0,
    "days_full": 1831,
-   "days_total": 2321,
+   "days_total": 2322,
    "dear_over_cheap": 2.83,
    "dearest_hour": 0,
-   "excluded_days": 490,
+   "excluded_days": 491,
    "first": "2017-11-15 00:00:00+00:00",
    "hours": {
     "0": {
@@ -12832,13 +12832,13 @@
      "zero_frac": 0.1671
     },
     "23": {
-     "n_bars": 1829,
-     "n_nonzero": 1506,
+     "n_bars": 1830,
+     "n_nonzero": 1507,
      "p50": 34.0,
      "p75": 43.0,
      "p90": 43.0,
      "status": "MEASURED",
-     "zero_frac": 0.1766
+     "zero_frac": 0.1765
     },
     "3": {
      "n_bars": 1806,
@@ -12904,26 +12904,26 @@
      "zero_frac": 0.1693
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 35.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 22.5,
+   "splice_tickvol_ratio": 22.3,
    "stress_p90_over_p50": 1.21,
    "tick_size": 1e-05
   },
   "EURGBP": {
    "administered": false,
-   "bars_total": 49813,
-   "bars_used": 43798,
+   "bars_total": 49817,
+   "bars_used": 43799,
    "cheapest_hour": 1,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 7815,
+   "days_total": 7816,
    "dear_over_cheap": 6.67,
    "dearest_hour": 2,
-   "excluded_days": 5990,
+   "excluded_days": 5991,
    "first": "1997-09-30 00:00:00+00:00",
    "hours": {
     "0": {
@@ -13071,13 +13071,13 @@
      "zero_frac": 0.8258
     },
     "23": {
-     "n_bars": 1823,
+     "n_bars": 1824,
      "n_nonzero": 590,
      "p50": 50.0,
      "p75": 50.0,
      "p90": 50.0,
      "status": "MEASURED",
-     "zero_frac": 0.6764
+     "zero_frac": 0.6765
     },
     "3": {
      "n_bars": 1825,
@@ -13143,7 +13143,7 @@
      "zero_frac": 0.8323
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 0.0,
    "session_bars": 24,
@@ -13154,15 +13154,15 @@
   },
   "EURHKD": {
    "administered": false,
-   "bars_total": 44517,
-   "bars_used": 43813,
+   "bars_total": 44521,
+   "bars_used": 43814,
    "cheapest_hour": 10,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 2530,
+   "days_total": 2531,
    "dear_over_cheap": 21.78,
    "dearest_hour": 0,
-   "excluded_days": 704,
+   "excluded_days": 705,
    "first": "2017-07-02 00:00:00+00:00",
    "hours": {
     "0": {
@@ -13310,13 +13310,13 @@
      "zero_frac": 0.4135
     },
     "23": {
-     "n_bars": 1824,
-     "n_nonzero": 1186,
+     "n_bars": 1825,
+     "n_nonzero": 1187,
      "p50": 12.0,
-     "p75": 17.75,
+     "p75": 18.0,
      "p90": 25.0,
      "status": "MEASURED",
-     "zero_frac": 0.3498
+     "zero_frac": 0.3496
     },
     "3": {
      "n_bars": 1825,
@@ -13382,26 +13382,26 @@
      "zero_frac": 0.4918
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 40.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 30.6,
+   "splice_tickvol_ratio": 30.3,
    "stress_p90_over_p50": 2.68,
    "tick_size": 1e-05
   },
   "EURHUF": {
    "administered": false,
-   "bars_total": 44463,
-   "bars_used": 43737,
+   "bars_total": 44467,
+   "bars_used": 43738,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1828,
-   "days_total": 2531,
+   "days_total": 2532,
    "dear_over_cheap": 8.37,
    "dearest_hour": 0,
-   "excluded_days": 703,
+   "excluded_days": 704,
    "first": "2017-07-02 00:00:00+00:00",
    "hours": {
     "0": {
@@ -13549,13 +13549,13 @@
      "zero_frac": 0.1724
     },
     "23": {
-     "n_bars": 1825,
-     "n_nonzero": 1514,
+     "n_bars": 1826,
+     "n_nonzero": 1515,
      "p50": 18600.0,
      "p75": 24104.0,
-     "p90": 27218.0,
+     "p90": 27216.0,
      "status": "MEASURED",
-     "zero_frac": 0.1704
+     "zero_frac": 0.1703
     },
     "3": {
      "n_bars": 1815,
@@ -13621,7 +13621,7 @@
      "zero_frac": 0.1783
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 20500.0,
    "session_bars": 24,
@@ -13632,15 +13632,15 @@
   },
   "EURILS": {
    "administered": false,
-   "bars_total": 45917,
-   "bars_used": 43546,
+   "bars_total": 45921,
+   "bars_used": 43547,
    "cheapest_hour": 10,
    "contract_size": 100000.0,
    "days_full": 1820,
-   "days_total": 4101,
+   "days_total": 4102,
    "dear_over_cheap": 20.34,
    "dearest_hour": 0,
-   "excluded_days": 2281,
+   "excluded_days": 2282,
    "first": "2012-06-17 00:00:00+00:00",
    "hours": {
     "0": {
@@ -13788,13 +13788,13 @@
      "zero_frac": 0.1649
     },
     "23": {
-     "n_bars": 1817,
-     "n_nonzero": 1516,
-     "p50": 344.5,
+     "n_bars": 1818,
+     "n_nonzero": 1517,
+     "p50": 344.0,
      "p75": 414.0,
-     "p90": 513.5,
+     "p90": 513.4,
      "status": "MEASURED",
-     "zero_frac": 0.1657
+     "zero_frac": 0.1656
     },
     "3": {
      "n_bars": 1810,
@@ -13860,7 +13860,7 @@
      "zero_frac": 0.1665
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 246.0,
    "session_bars": 24,
@@ -13871,15 +13871,15 @@
   },
   "EURJPY": {
    "administered": false,
-   "bars_total": 47988,
-   "bars_used": 43795,
+   "bars_total": 47992,
+   "bars_used": 43796,
    "cheapest_hour": 23,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 5995,
+   "days_total": 5996,
    "dear_over_cheap": 50.0,
    "dearest_hour": 0,
-   "excluded_days": 4170,
+   "excluded_days": 4171,
    "first": "2004-09-16 00:00:00+00:00",
    "hours": {
     "0": {
@@ -14027,13 +14027,13 @@
      "zero_frac": 0.8093
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 895,
+     "n_bars": 1824,
+     "n_nonzero": 896,
      "p50": 1.0,
      "p75": 50.0,
      "p90": 50.0,
      "status": "MEASURED",
-     "zero_frac": 0.5091
+     "zero_frac": 0.5088
     },
     "3": {
      "n_bars": 1825,
@@ -14099,7 +14099,7 @@
      "zero_frac": 0.8296
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 2.0,
    "session_bars": 24,
@@ -14110,15 +14110,15 @@
   },
   "EURMXN": {
    "administered": false,
-   "bars_total": 44613,
-   "bars_used": 43806,
+   "bars_total": 44617,
+   "bars_used": 43807,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 2633,
+   "days_total": 2634,
    "dear_over_cheap": 77.29,
    "dearest_hour": 0,
-   "excluded_days": 807,
+   "excluded_days": 808,
    "first": "2017-03-05 00:00:00+00:00",
    "hours": {
     "0": {
@@ -14266,13 +14266,13 @@
      "zero_frac": 0.1867
     },
     "23": {
-     "n_bars": 1824,
-     "n_nonzero": 1481,
+     "n_bars": 1825,
+     "n_nonzero": 1482,
      "p50": 228.0,
-     "p75": 319.0,
+     "p75": 318.75,
      "p90": 369.0,
      "status": "MEASURED",
-     "zero_frac": 0.188
+     "zero_frac": 0.1879
     },
     "3": {
      "n_bars": 1825,
@@ -14338,26 +14338,26 @@
      "zero_frac": 0.1824
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 280.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 29.0,
+   "splice_tickvol_ratio": 28.9,
    "stress_p90_over_p50": 3.06,
    "tick_size": 1e-05
   },
   "EURNOK": {
    "administered": false,
-   "bars_total": 45639,
-   "bars_used": 43785,
+   "bars_total": 45642,
+   "bars_used": 43786,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 3660,
+   "days_total": 3661,
    "dear_over_cheap": 43.09,
    "dearest_hour": 0,
-   "excluded_days": 1835,
+   "excluded_days": 1836,
    "first": "2012-09-24 00:00:00+00:00",
    "hours": {
     "0": {
@@ -14505,13 +14505,13 @@
      "zero_frac": 0.1633
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1525,
-     "p50": 243.0,
+     "n_bars": 1824,
+     "n_nonzero": 1526,
+     "p50": 242.5,
      "p75": 334.0,
      "p90": 406.0,
      "status": "MEASURED",
-     "zero_frac": 0.1635
+     "zero_frac": 0.1634
     },
     "3": {
      "n_bars": 1825,
@@ -14577,7 +14577,7 @@
      "zero_frac": 0.1633
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 160.0,
    "session_bars": 24,
@@ -14588,15 +14588,15 @@
   },
   "EURNZD": {
    "administered": false,
-   "bars_total": 49397,
-   "bars_used": 43701,
+   "bars_total": 49401,
+   "bars_used": 43702,
    "cheapest_hour": 9,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 7507,
+   "days_total": 7508,
    "dear_over_cheap": 47.5,
    "dearest_hour": 0,
-   "excluded_days": 5682,
+   "excluded_days": 5683,
    "first": "1999-01-05 00:00:00+00:00",
    "hours": {
     "0": {
@@ -14744,13 +14744,13 @@
      "zero_frac": 0.2849
     },
     "23": {
-     "n_bars": 1822,
-     "n_nonzero": 1481,
+     "n_bars": 1823,
+     "n_nonzero": 1482,
      "p50": 6.0,
      "p75": 15.0,
      "p90": 240.0,
      "status": "MEASURED",
-     "zero_frac": 0.1872
+     "zero_frac": 0.1871
     },
     "3": {
      "n_bars": 1825,
@@ -14816,7 +14816,7 @@
      "zero_frac": 0.3337
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 3.0,
    "session_bars": 24,
@@ -14827,15 +14827,15 @@
   },
   "EURPLN": {
    "administered": false,
-   "bars_total": 46082,
-   "bars_used": 43809,
+   "bars_total": 46086,
+   "bars_used": 43810,
    "cheapest_hour": 16,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 4098,
+   "days_total": 4099,
    "dear_over_cheap": 10.56,
    "dearest_hour": 0,
-   "excluded_days": 2272,
+   "excluded_days": 2273,
    "first": "2012-05-21 00:00:00+00:00",
    "hours": {
     "0": {
@@ -14983,13 +14983,13 @@
      "zero_frac": 0.1654
     },
     "23": {
-     "n_bars": 1824,
-     "n_nonzero": 1512,
-     "p50": 173.5,
-     "p75": 203.25,
+     "n_bars": 1825,
+     "n_nonzero": 1513,
+     "p50": 173.0,
+     "p75": 203.0,
      "p90": 246.0,
      "status": "MEASURED",
-     "zero_frac": 0.1711
+     "zero_frac": 0.171
     },
     "3": {
      "n_bars": 1823,
@@ -15055,7 +15055,7 @@
      "zero_frac": 0.167
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 74.0,
    "session_bars": 24,
@@ -15305,15 +15305,15 @@
   },
   "EURSEK": {
    "administered": false,
-   "bars_total": 45786,
-   "bars_used": 43792,
+   "bars_total": 45790,
+   "bars_used": 43793,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 3795,
+   "days_total": 3796,
    "dear_over_cheap": 36.93,
    "dearest_hour": 0,
-   "excluded_days": 1970,
+   "excluded_days": 1971,
    "first": "2012-03-19 00:00:00+00:00",
    "hours": {
     "0": {
@@ -15461,13 +15461,13 @@
      "zero_frac": 0.1666
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1512,
+     "n_bars": 1824,
+     "n_nonzero": 1513,
      "p50": 215.0,
      "p75": 274.0,
      "p90": 326.0,
      "status": "MEASURED",
-     "zero_frac": 0.1706
+     "zero_frac": 0.1705
     },
     "3": {
      "n_bars": 1825,
@@ -15533,7 +15533,7 @@
      "zero_frac": 0.166
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 116.0,
    "session_bars": 24,
@@ -15544,15 +15544,15 @@
   },
   "EURSGD": {
    "administered": false,
-   "bars_total": 45115,
-   "bars_used": 43259,
+   "bars_total": 45118,
+   "bars_used": 43260,
    "cheapest_hour": 2,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 3659,
+   "days_total": 3660,
    "dear_over_cheap": 49.5,
    "dearest_hour": 0,
-   "excluded_days": 1834,
+   "excluded_days": 1835,
    "first": "2012-09-24 00:00:00+00:00",
    "hours": {
     "0": {
@@ -15700,13 +15700,13 @@
      "zero_frac": 0.3145
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1479,
+     "n_bars": 1824,
+     "n_nonzero": 1480,
      "p50": 2.0,
      "p75": 6.0,
      "p90": 220.0,
      "status": "MEASURED",
-     "zero_frac": 0.1887
+     "zero_frac": 0.1886
     },
     "3": {
      "n_bars": 1825,
@@ -15772,7 +15772,7 @@
      "zero_frac": 0.4488
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 2.0,
    "session_bars": 24,
@@ -15783,15 +15783,15 @@
   },
   "EURTRY": {
    "administered": false,
-   "bars_total": 46039,
-   "bars_used": 43715,
+   "bars_total": 46043,
+   "bars_used": 43716,
    "cheapest_hour": 11,
    "contract_size": 100000.0,
    "days_full": 1823,
-   "days_total": 4098,
+   "days_total": 4099,
    "dear_over_cheap": 13.08,
    "dearest_hour": 0,
-   "excluded_days": 2275,
+   "excluded_days": 2276,
    "first": "2012-06-20 00:00:00+00:00",
    "hours": {
     "0": {
@@ -15939,11 +15939,11 @@
      "zero_frac": 0.1636
     },
     "23": {
-     "n_bars": 1821,
-     "n_nonzero": 1523,
-     "p50": 2727.0,
-     "p75": 3816.5,
-     "p90": 5645.2,
+     "n_bars": 1822,
+     "n_nonzero": 1524,
+     "p50": 2724.5,
+     "p75": 3815.25,
+     "p90": 5644.8,
      "status": "MEASURED",
      "zero_frac": 0.1636
     },
@@ -16011,26 +16011,26 @@
      "zero_frac": 0.1679
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 4610.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 18.3,
+   "splice_tickvol_ratio": 18.2,
    "stress_p90_over_p50": 2.39,
    "tick_size": 1e-05
   },
   "EURUSD": {
    "administered": false,
-   "bars_total": 49821,
-   "bars_used": 43816,
+   "bars_total": 49825,
+   "bars_used": 43817,
    "cheapest_hour": 0,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 7815,
+   "days_total": 7816,
    "dear_over_cheap": 5.56,
    "dearest_hour": 1,
-   "excluded_days": 5989,
+   "excluded_days": 5990,
    "first": "1997-10-10 00:00:00+00:00",
    "hours": {
     "0": {
@@ -16178,13 +16178,13 @@
      "zero_frac": 0.8296
     },
     "23": {
-     "n_bars": 1823,
+     "n_bars": 1824,
      "n_nonzero": 314,
      "p50": 50.0,
      "p75": 50.0,
      "p90": 50.0,
      "status": "MEASURED",
-     "zero_frac": 0.8278
+     "zero_frac": 0.8279
     },
     "3": {
      "n_bars": 1826,
@@ -16250,7 +16250,7 @@
      "zero_frac": 0.8319
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 0.0,
    "session_bars": 24,
@@ -16261,15 +16261,15 @@
   },
   "EURZAR": {
    "administered": false,
-   "bars_total": 44962,
-   "bars_used": 43811,
+   "bars_total": 44966,
+   "bars_used": 43812,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 2977,
+   "days_total": 2978,
    "dear_over_cheap": 47.08,
    "dearest_hour": 0,
-   "excluded_days": 1151,
+   "excluded_days": 1152,
    "first": "2016-01-24 00:00:00+00:00",
    "hours": {
     "0": {
@@ -16417,13 +16417,13 @@
      "zero_frac": 0.1922
     },
     "23": {
-     "n_bars": 1824,
-     "n_nonzero": 1485,
+     "n_bars": 1825,
+     "n_nonzero": 1486,
      "p50": 448.0,
-     "p75": 646.0,
+     "p75": 645.75,
      "p90": 840.0,
      "status": "MEASURED",
-     "zero_frac": 0.1859
+     "zero_frac": 0.1858
     },
     "3": {
      "n_bars": 1825,
@@ -16489,7 +16489,7 @@
      "zero_frac": 0.1944
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 368.0,
    "session_bars": 24,
@@ -16500,15 +16500,15 @@
   },
   "EUSTX50": {
    "administered": false,
-   "bars_total": 39815,
-   "bars_used": 35104,
+   "bars_total": 39817,
+   "bars_used": 35105,
    "cheapest_hour": 17,
    "contract_size": 1.0,
    "days_full": 1682,
-   "days_total": 3622,
-   "dear_over_cheap": 6.36,
+   "days_total": 3623,
+   "dear_over_cheap": 4.72,
    "dearest_hour": 23,
-   "excluded_days": 1940,
+   "excluded_days": 1941,
    "first": "2012-08-06 00:00:00+00:00",
    "hours": {
     "1": {
@@ -16644,13 +16644,13 @@
      "zero_frac": 0.1504
     },
     "23": {
-     "n_bars": 440,
-     "n_nonzero": 260,
-     "p50": 318.0,
+     "n_bars": 441,
+     "n_nonzero": 261,
+     "p50": 236.0,
      "p75": 430.0,
      "p90": 430.0,
      "status": "MEASURED",
-     "zero_frac": 0.4091
+     "zero_frac": 0.4082
     },
     "3": {
      "n_bars": 1680,
@@ -16716,7 +16716,7 @@
      "zero_frac": 0.1843
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 22,
    "pooled_median_spread_pts": 140.0,
    "session_bars": 21,
@@ -17177,15 +17177,15 @@
   },
   "GBPAUD": {
    "administered": false,
-   "bars_total": 49518,
-   "bars_used": 43714,
+   "bars_total": 49522,
+   "bars_used": 43715,
    "cheapest_hour": 2,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 7611,
+   "days_total": 7612,
    "dear_over_cheap": 100.0,
    "dearest_hour": 10,
-   "excluded_days": 5786,
+   "excluded_days": 5787,
    "first": "1998-04-27 00:00:00+00:00",
    "hours": {
     "0": {
@@ -17333,13 +17333,13 @@
      "zero_frac": 0.4696
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1369,
+     "n_bars": 1824,
+     "n_nonzero": 1370,
      "p50": 3.0,
      "p75": 9.0,
      "p90": 200.0,
      "status": "MEASURED",
-     "zero_frac": 0.249
+     "zero_frac": 0.2489
     },
     "3": {
      "n_bars": 1825,
@@ -17405,7 +17405,7 @@
      "zero_frac": 0.6701
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 3.0,
    "session_bars": 24,
@@ -17416,15 +17416,15 @@
   },
   "GBPCAD": {
    "administered": false,
-   "bars_total": 49581,
-   "bars_used": 43774,
+   "bars_total": 49585,
+   "bars_used": 43775,
    "cheapest_hour": 8,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 7617,
+   "days_total": 7618,
    "dear_over_cheap": 66.67,
    "dearest_hour": 11,
-   "excluded_days": 5792,
+   "excluded_days": 5793,
    "first": "1998-04-16 00:00:00+00:00",
    "hours": {
     "0": {
@@ -17572,13 +17572,13 @@
      "zero_frac": 0.5233
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1407,
+     "n_bars": 1824,
+     "n_nonzero": 1408,
      "p50": 3.0,
      "p75": 8.0,
      "p90": 200.0,
      "status": "MEASURED",
-     "zero_frac": 0.2282
+     "zero_frac": 0.2281
     },
     "3": {
      "n_bars": 1825,
@@ -17644,7 +17644,7 @@
      "zero_frac": 0.5814
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 1.0,
    "session_bars": 24,
@@ -17655,15 +17655,15 @@
   },
   "GBPCHF": {
    "administered": false,
-   "bars_total": 49760,
-   "bars_used": 43751,
+   "bars_total": 49764,
+   "bars_used": 43752,
    "cheapest_hour": 23,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 7813,
+   "days_total": 7814,
    "dear_over_cheap": 50.0,
    "dearest_hour": 10,
-   "excluded_days": 5988,
+   "excluded_days": 5989,
    "first": "1997-07-11 00:00:00+00:00",
    "hours": {
     "0": {
@@ -17811,13 +17811,13 @@
      "zero_frac": 0.6022
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1405,
+     "n_bars": 1824,
+     "n_nonzero": 1406,
      "p50": 3.0,
      "p75": 10.0,
      "p90": 150.0,
      "status": "MEASURED",
-     "zero_frac": 0.2293
+     "zero_frac": 0.2292
     },
     "3": {
      "n_bars": 1825,
@@ -17883,7 +17883,7 @@
      "zero_frac": 0.6362
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 154.0,
    "session_bars": 24,
@@ -17894,15 +17894,15 @@
   },
   "GBPDKK": {
    "administered": false,
-   "bars_total": 46429,
-   "bars_used": 43808,
+   "bars_total": 46433,
+   "bars_used": 43809,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 4447,
+   "days_total": 4448,
    "dear_over_cheap": 13.07,
    "dearest_hour": 0,
-   "excluded_days": 2621,
+   "excluded_days": 2622,
    "first": "2009-08-11 00:00:00+00:00",
    "hours": {
     "0": {
@@ -18050,13 +18050,13 @@
      "zero_frac": 0.1807
     },
     "23": {
-     "n_bars": 1824,
-     "n_nonzero": 1504,
+     "n_bars": 1825,
+     "n_nonzero": 1505,
      "p50": 50.0,
      "p75": 63.0,
      "p90": 78.0,
      "status": "MEASURED",
-     "zero_frac": 0.1754
+     "zero_frac": 0.1753
     },
     "3": {
      "n_bars": 1825,
@@ -18122,7 +18122,7 @@
      "zero_frac": 0.1955
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 39.0,
    "session_bars": 24,
@@ -18133,15 +18133,15 @@
   },
   "GBPHUF": {
    "administered": false,
-   "bars_total": 44484,
-   "bars_used": 43764,
+   "bars_total": 44488,
+   "bars_used": 43765,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 2530,
+   "days_total": 2531,
    "dear_over_cheap": 11.9,
    "dearest_hour": 0,
-   "excluded_days": 705,
+   "excluded_days": 706,
    "first": "2017-07-02 00:00:00+00:00",
    "hours": {
     "0": {
@@ -18289,13 +18289,13 @@
      "zero_frac": 0.1645
     },
     "23": {
-     "n_bars": 1822,
-     "n_nonzero": 1523,
+     "n_bars": 1823,
+     "n_nonzero": 1524,
      "p50": 24662.0,
-     "p75": 30692.0,
+     "p75": 30677.0,
      "p90": 41162.0,
      "status": "MEASURED",
-     "zero_frac": 0.1641
+     "zero_frac": 0.164
     },
     "3": {
      "n_bars": 1824,
@@ -18361,26 +18361,26 @@
      "zero_frac": 0.1638
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 24380.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 10.1,
+   "splice_tickvol_ratio": 10.0,
    "stress_p90_over_p50": 1.52,
    "tick_size": 1e-05
   },
   "GBPJPY": {
    "administered": false,
-   "bars_total": 49762,
-   "bars_used": 43751,
+   "bars_total": 49766,
+   "bars_used": 43752,
    "cheapest_hour": 14,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 7813,
+   "days_total": 7814,
    "dear_over_cheap": 76.0,
    "dearest_hour": 0,
-   "excluded_days": 5988,
+   "excluded_days": 5989,
    "first": "1997-07-17 00:00:00+00:00",
    "hours": {
     "0": {
@@ -18528,13 +18528,13 @@
      "zero_frac": 0.3715
     },
     "23": {
-     "n_bars": 1822,
-     "n_nonzero": 1348,
+     "n_bars": 1823,
+     "n_nonzero": 1349,
      "p50": 5.0,
      "p75": 8.0,
      "p90": 150.0,
      "status": "MEASURED",
-     "zero_frac": 0.2602
+     "zero_frac": 0.26
     },
     "3": {
      "n_bars": 1825,
@@ -18600,7 +18600,7 @@
      "zero_frac": 0.4071
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 3.0,
    "session_bars": 24,
@@ -18611,15 +18611,15 @@
   },
   "GBPMXN": {
    "administered": false,
-   "bars_total": 44308,
-   "bars_used": 43802,
+   "bars_total": 44312,
+   "bars_used": 43803,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 2332,
+   "days_total": 2333,
    "dear_over_cheap": 44.12,
    "dearest_hour": 0,
-   "excluded_days": 506,
+   "excluded_days": 507,
    "first": "2017-10-31 00:00:00+00:00",
    "hours": {
     "0": {
@@ -18767,13 +18767,13 @@
      "zero_frac": 0.1637
     },
     "23": {
-     "n_bars": 1824,
-     "n_nonzero": 1525,
+     "n_bars": 1825,
+     "n_nonzero": 1526,
      "p50": 402.0,
      "p75": 462.0,
      "p90": 527.0,
      "status": "MEASURED",
-     "zero_frac": 0.1639
+     "zero_frac": 0.1638
     },
     "3": {
      "n_bars": 1825,
@@ -18839,26 +18839,26 @@
      "zero_frac": 0.1637
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 605.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 69.3,
+   "splice_tickvol_ratio": 68.9,
    "stress_p90_over_p50": 2.23,
    "tick_size": 1e-05
   },
   "GBPNOK": {
    "administered": false,
-   "bars_total": 45631,
-   "bars_used": 43784,
+   "bars_total": 45634,
+   "bars_used": 43785,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 3658,
+   "days_total": 3659,
    "dear_over_cheap": 57.15,
    "dearest_hour": 0,
-   "excluded_days": 1833,
+   "excluded_days": 1834,
    "first": "2012-09-24 00:00:00+00:00",
    "hours": {
     "0": {
@@ -19006,8 +19006,8 @@
      "zero_frac": 0.1644
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1513,
+     "n_bars": 1824,
+     "n_nonzero": 1514,
      "p50": 405.0,
      "p75": 551.0,
      "p90": 640.0,
@@ -19078,7 +19078,7 @@
      "zero_frac": 0.1649
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 306.0,
    "session_bars": 24,
@@ -19089,15 +19089,15 @@
   },
   "GBPNZD": {
    "administered": false,
-   "bars_total": 48542,
-   "bars_used": 43576,
+   "bars_total": 48545,
+   "bars_used": 43577,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 6774,
+   "days_total": 6775,
    "dear_over_cheap": 58.0,
    "dearest_hour": 0,
-   "excluded_days": 4949,
+   "excluded_days": 4950,
    "first": "1999-12-31 00:00:00+00:00",
    "hours": {
     "0": {
@@ -19245,13 +19245,13 @@
      "zero_frac": 0.28
     },
     "23": {
-     "n_bars": 1822,
-     "n_nonzero": 1376,
+     "n_bars": 1823,
+     "n_nonzero": 1377,
      "p50": 7.0,
      "p75": 11.0,
      "p90": 18.0,
      "status": "MEASURED",
-     "zero_frac": 0.2448
+     "zero_frac": 0.2447
     },
     "3": {
      "n_bars": 1825,
@@ -19317,7 +19317,7 @@
      "zero_frac": 0.3079
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 3.0,
    "session_bars": 24,
@@ -19328,15 +19328,15 @@
   },
   "GBPPLN": {
    "administered": false,
-   "bars_total": 45683,
-   "bars_used": 43429,
+   "bars_total": 45687,
+   "bars_used": 43430,
    "cheapest_hour": 11,
    "contract_size": 100000.0,
    "days_full": 1810,
-   "days_total": 4064,
+   "days_total": 4065,
    "dear_over_cheap": 22.11,
    "dearest_hour": 0,
-   "excluded_days": 2254,
+   "excluded_days": 2255,
    "first": "2012-07-17 00:00:00+00:00",
    "hours": {
     "0": {
@@ -19484,13 +19484,13 @@
      "zero_frac": 0.1657
     },
     "23": {
-     "n_bars": 1808,
-     "n_nonzero": 1497,
+     "n_bars": 1809,
+     "n_nonzero": 1498,
      "p50": 214.0,
      "p75": 247.0,
      "p90": 287.0,
      "status": "MEASURED",
-     "zero_frac": 0.172
+     "zero_frac": 0.1719
     },
     "3": {
      "n_bars": 1809,
@@ -19556,7 +19556,7 @@
      "zero_frac": 0.1685
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 251.0,
    "session_bars": 24,
@@ -19567,15 +19567,15 @@
   },
   "GBPSEK": {
    "administered": false,
-   "bars_total": 44730,
-   "bars_used": 42882,
+   "bars_total": 44734,
+   "bars_used": 42883,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1787,
-   "days_total": 3620,
+   "days_total": 3621,
    "dear_over_cheap": 30.91,
    "dearest_hour": 0,
-   "excluded_days": 1833,
+   "excluded_days": 1834,
    "first": "2012-09-24 00:00:00+00:00",
    "hours": {
     "0": {
@@ -19723,13 +19723,13 @@
      "zero_frac": 0.1852
     },
     "23": {
-     "n_bars": 1785,
-     "n_nonzero": 1463,
-     "p50": 273.0,
+     "n_bars": 1786,
+     "n_nonzero": 1464,
+     "p50": 272.5,
      "p75": 359.0,
      "p90": 484.0,
      "status": "MEASURED",
-     "zero_frac": 0.1804
+     "zero_frac": 0.1803
     },
     "3": {
      "n_bars": 1787,
@@ -19795,7 +19795,7 @@
      "zero_frac": 0.2009
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 166.0,
    "session_bars": 24,
@@ -19806,15 +19806,15 @@
   },
   "GBPSGD": {
    "administered": false,
-   "bars_total": 46815,
-   "bars_used": 43415,
+   "bars_total": 46818,
+   "bars_used": 43416,
    "cheapest_hour": 9,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 5226,
+   "days_total": 5227,
    "dear_over_cheap": 58.67,
    "dearest_hour": 0,
-   "excluded_days": 3400,
+   "excluded_days": 3401,
    "first": "2006-04-07 00:00:00+00:00",
    "hours": {
     "0": {
@@ -19962,8 +19962,8 @@
      "zero_frac": 0.0679
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1784,
+     "n_bars": 1824,
+     "n_nonzero": 1785,
      "p50": 7.0,
      "p75": 19.0,
      "p90": 300.0,
@@ -20034,7 +20034,7 @@
      "zero_frac": 0.2251
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 3.0,
    "session_bars": 24,
@@ -20045,15 +20045,15 @@
   },
   "GBPTRY": {
    "administered": false,
-   "bars_total": 45948,
-   "bars_used": 43631,
+   "bars_total": 45952,
+   "bars_used": 43632,
    "cheapest_hour": 16,
    "contract_size": 100000.0,
    "days_full": 1821,
-   "days_total": 4070,
+   "days_total": 4071,
    "dear_over_cheap": 13.35,
    "dearest_hour": 0,
-   "excluded_days": 2249,
+   "excluded_days": 2250,
    "first": "2012-07-17 00:00:00+00:00",
    "hours": {
     "0": {
@@ -20201,13 +20201,13 @@
      "zero_frac": 0.1645
     },
     "23": {
-     "n_bars": 1817,
-     "n_nonzero": 1518,
-     "p50": 3159.5,
-     "p75": 4544.75,
-     "p90": 6638.1,
+     "n_bars": 1818,
+     "n_nonzero": 1519,
+     "p50": 3159.0,
+     "p75": 4543.5,
+     "p90": 6629.4,
      "status": "MEASURED",
-     "zero_frac": 0.1646
+     "zero_frac": 0.1645
     },
     "3": {
      "n_bars": 1815,
@@ -20273,7 +20273,7 @@
      "zero_frac": 0.1669
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 8552.0,
    "session_bars": 24,
@@ -20284,15 +20284,15 @@
   },
   "GBPUSD": {
    "administered": false,
-   "bars_total": 49807,
-   "bars_used": 43796,
+   "bars_total": 49811,
+   "bars_used": 43797,
    "cheapest_hour": 0,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 7814,
+   "days_total": 7815,
    "dear_over_cheap": 2.08,
    "dearest_hour": 1,
-   "excluded_days": 5989,
+   "excluded_days": 5990,
    "first": "1997-10-07 00:00:00+00:00",
    "hours": {
     "0": {
@@ -20440,13 +20440,13 @@
      "zero_frac": 0.8268
     },
     "23": {
-     "n_bars": 1823,
+     "n_bars": 1824,
      "n_nonzero": 330,
      "p50": 50.0,
      "p75": 50.0,
      "p90": 50.0,
      "status": "MEASURED",
-     "zero_frac": 0.819
+     "zero_frac": 0.8191
     },
     "3": {
      "n_bars": 1825,
@@ -20512,7 +20512,7 @@
      "zero_frac": 0.8312
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 0.0,
    "session_bars": 24,
@@ -20523,15 +20523,15 @@
   },
   "GBPZAR": {
    "administered": false,
-   "bars_total": 43153,
-   "bars_used": 42055,
+   "bars_total": 43156,
+   "bars_used": 42056,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1753,
-   "days_total": 2851,
+   "days_total": 2852,
    "dear_over_cheap": 79.47,
    "dearest_hour": 0,
-   "excluded_days": 1098,
+   "excluded_days": 1099,
    "first": "2015-07-27 00:00:00+00:00",
    "hours": {
     "0": {
@@ -20679,13 +20679,13 @@
      "zero_frac": 0.1928
     },
     "23": {
-     "n_bars": 1751,
-     "n_nonzero": 1427,
+     "n_bars": 1752,
+     "n_nonzero": 1428,
      "p50": 532.0,
-     "p75": 783.5,
-     "p90": 1136.8,
+     "p75": 784.0,
+     "p90": 1136.6,
      "status": "MEASURED",
-     "zero_frac": 0.185
+     "zero_frac": 0.1849
     },
     "3": {
      "n_bars": 1752,
@@ -20751,26 +20751,26 @@
      "zero_frac": 0.1991
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 01:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 722.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 29.6,
+   "splice_tickvol_ratio": 29.5,
    "stress_p90_over_p50": 4.69,
    "tick_size": 1e-05
   },
   "GER40": {
    "administered": false,
-   "bars_total": 32767,
-   "bars_used": 30021,
+   "bars_total": 32769,
+   "bars_used": 30022,
    "cheapest_hour": 10,
    "contract_size": 1.0,
    "days_full": 1460,
-   "days_total": 4198,
+   "days_total": 4199,
    "dear_over_cheap": 4.0,
    "dearest_hour": 2,
-   "excluded_days": 2738,
+   "excluded_days": 2739,
    "first": "2011-09-29 00:00:00+00:00",
    "hours": {
     "1": {
@@ -20906,10 +20906,10 @@
      "zero_frac": 0.1068
     },
     "23": {
-     "n_bars": 221,
-     "n_nonzero": 93,
+     "n_bars": 222,
+     "n_nonzero": 94,
      "status": "UNMEASURED",
-     "zero_frac": 0.5792
+     "zero_frac": 0.5766
     },
     "3": {
      "n_bars": 1459,
@@ -20975,7 +20975,7 @@
      "zero_frac": 0.1068
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 21,
    "pooled_median_spread_pts": 80.0,
    "session_bars": 21,
@@ -21450,8 +21450,8 @@
   },
   "HK50": {
    "administered": true,
-   "bars_total": 34590,
-   "bars_used": 30828,
+   "bars_total": 34591,
+   "bars_used": 30829,
    "cheapest_hour": 3,
    "contract_size": 1.0,
    "days_full": 1713,
@@ -21573,13 +21573,13 @@
      "zero_frac": 0.1117
     },
     "21": {
-     "n_bars": 1187,
-     "n_nonzero": 998,
+     "n_bars": 1188,
+     "n_nonzero": 999,
      "p50": 420.0,
      "p75": 420.0,
      "p90": 420.0,
      "status": "MEASURED",
-     "zero_frac": 0.1592
+     "zero_frac": 0.1591
     },
     "22": {
      "n_bars": 330,
@@ -21657,7 +21657,7 @@
      "zero_frac": 0.1705
     }
    },
-   "last": "2026-10-30 20:00:00+00:00",
+   "last": "2026-10-30 21:00:00+00:00",
    "n_hours_measured": 19,
    "pooled_median_spread_pts": 420.0,
    "session_bars": 17,
@@ -21668,15 +21668,15 @@
   },
   "HKDJPY": {
    "administered": false,
-   "bars_total": 44175,
-   "bars_used": 43812,
+   "bars_total": 44179,
+   "bars_used": 43813,
    "cheapest_hour": 1,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 2189,
+   "days_total": 2190,
    "dear_over_cheap": 6.0,
    "dearest_hour": 0,
-   "excluded_days": 363,
+   "excluded_days": 364,
    "first": "2017-11-15 00:00:00+00:00",
    "hours": {
     "0": {
@@ -21803,13 +21803,13 @@
      "zero_frac": 0.8801
     },
     "23": {
-     "n_bars": 1824,
+     "n_bars": 1825,
      "n_nonzero": 234,
      "p50": 1.0,
      "p75": 1.0,
      "p90": 2.0,
      "status": "MEASURED",
-     "zero_frac": 0.8717
+     "zero_frac": 0.8718
     },
     "3": {
      "n_bars": 1825,
@@ -21872,12 +21872,12 @@
      "zero_frac": 0.96
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 16,
    "pooled_median_spread_pts": 2.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 36.1,
+   "splice_tickvol_ratio": 35.9,
    "stress_p90_over_p50": 1.05,
    "tick_size": 0.001
   },
@@ -22779,15 +22779,15 @@
   },
   "JPN225": {
    "administered": true,
-   "bars_total": 43135,
-   "bars_used": 41912,
+   "bars_total": 43138,
+   "bars_used": 41913,
    "cheapest_hour": 1,
    "contract_size": 10.0,
    "days_full": 1837,
-   "days_total": 3005,
+   "days_total": 3006,
    "dear_over_cheap": 1.0,
    "dearest_hour": 1,
-   "excluded_days": 1168,
+   "excluded_days": 1169,
    "first": "1998-09-06 00:00:00+00:00",
    "hours": {
     "1": {
@@ -22926,13 +22926,13 @@
      "zero_frac": 0.1787
     },
     "23": {
-     "n_bars": 1779,
-     "n_nonzero": 1455,
+     "n_bars": 1780,
+     "n_nonzero": 1456,
      "p50": 600.0,
      "p75": 600.0,
      "p90": 700.0,
      "status": "MEASURED",
-     "zero_frac": 0.1821
+     "zero_frac": 0.182
     },
     "3": {
      "n_bars": 1837,
@@ -22998,7 +22998,7 @@
      "zero_frac": 0.1758
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 23,
    "pooled_median_spread_pts": 600.0,
    "session_bars": 23,
@@ -23155,15 +23155,15 @@
   },
   "LNKUSD": {
    "administered": true,
-   "bars_total": 46045,
-   "bars_used": 45591,
+   "bars_total": 46049,
+   "bars_used": 45592,
    "cheapest_hour": 0,
    "contract_size": 10.0,
    "days_full": 1903,
-   "days_total": 2311,
+   "days_total": 2312,
    "dear_over_cheap": 1.0,
    "dearest_hour": 0,
-   "excluded_days": 408,
+   "excluded_days": 409,
    "first": "2020-05-19 00:00:00+00:00",
    "hours": {
     "0": {
@@ -23311,8 +23311,8 @@
      "zero_frac": 0.031
     },
     "23": {
-     "n_bars": 1901,
-     "n_nonzero": 1842,
+     "n_bars": 1902,
+     "n_nonzero": 1843,
      "p50": 35.0,
      "p75": 44.0,
      "p90": 55.0,
@@ -23383,7 +23383,7 @@
      "zero_frac": 0.0311
     }
    },
-   "last": "2026-10-31 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 37.0,
    "session_bars": 24,
@@ -23394,15 +23394,15 @@
   },
   "LTCUSD": {
    "administered": true,
-   "bars_total": 56220,
-   "bars_used": 56200,
+   "bars_total": 56224,
+   "bars_used": 56201,
    "cheapest_hour": 0,
    "contract_size": 1.0,
    "days_full": 2345,
-   "days_total": 2348,
+   "days_total": 2349,
    "dear_over_cheap": 1.0,
    "dearest_hour": 0,
-   "excluded_days": 3,
+   "excluded_days": 4,
    "first": "2019-11-01 00:00:00+00:00",
    "hours": {
     "0": {
@@ -23550,8 +23550,8 @@
      "zero_frac": 0.1229
     },
     "23": {
-     "n_bars": 2343,
-     "n_nonzero": 2055,
+     "n_bars": 2344,
+     "n_nonzero": 2056,
      "p50": 36.0,
      "p75": 43.0,
      "p90": 47.0,
@@ -23622,12 +23622,12 @@
      "zero_frac": 0.123
     }
    },
-   "last": "2026-10-31 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 36.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 1.0,
+   "splice_tickvol_ratio": 0.9,
    "stress_p90_over_p50": 1.31,
    "tick_size": 0.01
   },
@@ -23805,15 +23805,15 @@
   },
   "MATICUSD": {
    "administered": true,
-   "bars_total": 40665,
-   "bars_used": 40642,
+   "bars_total": 40669,
+   "bars_used": 40643,
    "cheapest_hour": 0,
    "contract_size": 10000.0,
    "days_full": 1697,
-   "days_total": 1701,
+   "days_total": 1702,
    "dear_over_cheap": 1.0,
    "dearest_hour": 0,
-   "excluded_days": 4,
+   "excluded_days": 5,
    "first": "2022-02-23 00:00:00+00:00",
    "hours": {
     "0": {
@@ -23961,10 +23961,10 @@
      "zero_frac": 0.0
     },
     "23": {
-     "n_bars": 1694,
-     "n_nonzero": 1694,
+     "n_bars": 1695,
+     "n_nonzero": 1695,
      "p50": 39.0,
-     "p75": 47.75,
+     "p75": 47.5,
      "p90": 67.0,
      "status": "MEASURED",
      "zero_frac": 0.0
@@ -24033,7 +24033,7 @@
      "zero_frac": 0.0
     }
    },
-   "last": "2026-10-31 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 30.0,
    "session_bars": 24,
@@ -24044,15 +24044,15 @@
   },
   "MXNJPY": {
    "administered": false,
-   "bars_total": 37419,
-   "bars_used": 37418,
+   "bars_total": 37423,
+   "bars_used": 37419,
    "cheapest_hour": 9,
    "contract_size": 100000.0,
    "days_full": 1560,
-   "days_total": 1561,
+   "days_total": 1562,
    "dear_over_cheap": 1.5,
    "dearest_hour": 0,
-   "excluded_days": 1,
+   "excluded_days": 2,
    "first": "2020-10-27 00:00:00+00:00",
    "hours": {
     "0": {
@@ -24200,13 +24200,13 @@
      "zero_frac": 0.1205
     },
     "23": {
-     "n_bars": 1558,
-     "n_nonzero": 1372,
+     "n_bars": 1559,
+     "n_nonzero": 1373,
      "p50": 24.0,
      "p75": 24.0,
      "p90": 24.0,
      "status": "MEASURED",
-     "zero_frac": 0.1194
+     "zero_frac": 0.1193
     },
     "3": {
      "n_bars": 1560,
@@ -24272,12 +24272,12 @@
      "zero_frac": 0.1224
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 25.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 0.0,
+   "splice_tickvol_ratio": 0.4,
    "stress_p90_over_p50": 1.0,
    "tick_size": 0.001
   },
@@ -25211,15 +25211,15 @@
   },
   "NAS100": {
    "administered": true,
-   "bars_total": 44358,
-   "bars_used": 41847,
+   "bars_total": 44361,
+   "bars_used": 41848,
    "cheapest_hour": 1,
    "contract_size": 1.0,
    "days_full": 1829,
-   "days_total": 4233,
+   "days_total": 4234,
    "dear_over_cheap": 1.0,
    "dearest_hour": 1,
-   "excluded_days": 2404,
+   "excluded_days": 2405,
    "first": "2011-05-25 00:00:00+00:00",
    "hours": {
     "0": {
@@ -25364,13 +25364,13 @@
      "zero_frac": 0.1888
     },
     "23": {
-     "n_bars": 1767,
-     "n_nonzero": 1446,
+     "n_bars": 1768,
+     "n_nonzero": 1447,
      "p50": 80.0,
      "p75": 80.0,
      "p90": 80.0,
      "status": "MEASURED",
-     "zero_frac": 0.1817
+     "zero_frac": 0.1816
     },
     "3": {
      "n_bars": 1828,
@@ -25436,7 +25436,7 @@
      "zero_frac": 0.1761
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 23,
    "pooled_median_spread_pts": 80.0,
    "session_bars": 23,
@@ -25694,15 +25694,15 @@
   },
   "NOKJPY": {
    "administered": false,
-   "bars_total": 46059,
-   "bars_used": 43807,
+   "bars_total": 46063,
+   "bars_used": 43808,
    "cheapest_hour": 9,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 4078,
+   "days_total": 4079,
    "dear_over_cheap": 2.68,
    "dearest_hour": 0,
-   "excluded_days": 2252,
+   "excluded_days": 2253,
    "first": "2012-07-17 00:00:00+00:00",
    "hours": {
     "0": {
@@ -25850,13 +25850,13 @@
      "zero_frac": 0.1637
     },
     "23": {
-     "n_bars": 1824,
-     "n_nonzero": 1506,
+     "n_bars": 1825,
+     "n_nonzero": 1507,
      "p50": 26.0,
      "p75": 28.0,
      "p90": 29.0,
      "status": "MEASURED",
-     "zero_frac": 0.1743
+     "zero_frac": 0.1742
     },
     "3": {
      "n_bars": 1825,
@@ -25922,26 +25922,26 @@
      "zero_frac": 0.1654
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 03:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 27.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 21.0,
+   "splice_tickvol_ratio": 20.9,
    "stress_p90_over_p50": 1.08,
    "tick_size": 0.001
   },
   "NOKSEK": {
    "administered": false,
-   "bars_total": 46045,
-   "bars_used": 43792,
+   "bars_total": 46048,
+   "bars_used": 43793,
    "cheapest_hour": 10,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 4079,
+   "days_total": 4080,
    "dear_over_cheap": 13.48,
    "dearest_hour": 0,
-   "excluded_days": 2253,
+   "excluded_days": 2254,
    "first": "2012-07-17 00:00:00+00:00",
    "hours": {
     "0": {
@@ -26089,13 +26089,13 @@
      "zero_frac": 0.167
     },
     "23": {
-     "n_bars": 1824,
-     "n_nonzero": 1464,
+     "n_bars": 1825,
+     "n_nonzero": 1465,
      "p50": 51.0,
      "p75": 62.0,
      "p90": 74.0,
      "status": "MEASURED",
-     "zero_frac": 0.1974
+     "zero_frac": 0.1973
     },
     "3": {
      "n_bars": 1825,
@@ -26161,7 +26161,7 @@
      "zero_frac": 0.167
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 38.0,
    "session_bars": 24,
@@ -26258,15 +26258,15 @@
   },
   "NZDCAD": {
    "administered": false,
-   "bars_total": 46020,
-   "bars_used": 43793,
+   "bars_total": 46025,
+   "bars_used": 43794,
    "cheapest_hour": 10,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 4034,
+   "days_total": 4035,
    "dear_over_cheap": 47.0,
    "dearest_hour": 0,
-   "excluded_days": 2209,
+   "excluded_days": 2210,
    "first": "2011-07-11 00:00:00+00:00",
    "hours": {
     "0": {
@@ -26405,13 +26405,13 @@
      "zero_frac": 0.7156
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1160,
+     "n_bars": 1824,
+     "n_nonzero": 1161,
      "p50": 2.0,
      "p75": 3.0,
      "p90": 5.0,
      "status": "MEASURED",
-     "zero_frac": 0.3637
+     "zero_frac": 0.3635
     },
     "3": {
      "n_bars": 1825,
@@ -26477,7 +26477,7 @@
      "zero_frac": 0.7721
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 03:00:00+00:00",
    "n_hours_measured": 21,
    "pooled_median_spread_pts": 1.0,
    "session_bars": 24,
@@ -26488,15 +26488,15 @@
   },
   "NZDCHF": {
    "administered": false,
-   "bars_total": 46014,
-   "bars_used": 43788,
+   "bars_total": 46018,
+   "bars_used": 43789,
    "cheapest_hour": 2,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 4033,
+   "days_total": 4034,
    "dear_over_cheap": 49.0,
    "dearest_hour": 0,
-   "excluded_days": 2208,
+   "excluded_days": 2209,
    "first": "2011-07-11 00:00:00+00:00",
    "hours": {
     "0": {
@@ -26644,13 +26644,13 @@
      "zero_frac": 0.5781
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1187,
+     "n_bars": 1824,
+     "n_nonzero": 1188,
      "p50": 1.0,
      "p75": 3.0,
      "p90": 5.0,
      "status": "MEASURED",
-     "zero_frac": 0.3489
+     "zero_frac": 0.3487
     },
     "3": {
      "n_bars": 1825,
@@ -26716,7 +26716,7 @@
      "zero_frac": 0.5797
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 2.0,
    "session_bars": 24,
@@ -26727,15 +26727,15 @@
   },
   "NZDHUF": {
    "administered": false,
-   "bars_total": 44273,
-   "bars_used": 43763,
+   "bars_total": 44278,
+   "bars_used": 43764,
    "cheapest_hour": 14,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 2320,
+   "days_total": 2321,
    "dear_over_cheap": 8.91,
    "dearest_hour": 0,
-   "excluded_days": 495,
+   "excluded_days": 496,
    "first": "2017-07-02 00:00:00+00:00",
    "hours": {
     "0": {
@@ -26883,13 +26883,13 @@
      "zero_frac": 0.164
     },
     "23": {
-     "n_bars": 1822,
-     "n_nonzero": 1523,
+     "n_bars": 1823,
+     "n_nonzero": 1524,
      "p50": 15380.0,
-     "p75": 25490.0,
+     "p75": 25485.0,
      "p90": 33980.0,
      "status": "MEASURED",
-     "zero_frac": 0.1641
+     "zero_frac": 0.164
     },
     "3": {
      "n_bars": 1824,
@@ -26955,7 +26955,7 @@
      "zero_frac": 0.1638
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 03:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 11800.0,
    "session_bars": 24,
@@ -26966,15 +26966,15 @@
   },
   "NZDJPY": {
    "administered": false,
-   "bars_total": 49800,
-   "bars_used": 43791,
+   "bars_total": 49805,
+   "bars_used": 43792,
    "cheapest_hour": 9,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 6561,
+   "days_total": 6562,
    "dear_over_cheap": 51.0,
    "dearest_hour": 0,
-   "excluded_days": 4736,
+   "excluded_days": 4737,
    "first": "2002-09-19 00:00:00+00:00",
    "hours": {
     "0": {
@@ -27122,13 +27122,13 @@
      "zero_frac": 0.4444
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1374,
+     "n_bars": 1824,
+     "n_nonzero": 1375,
      "p50": 2.0,
-     "p75": 5.75,
+     "p75": 5.5,
      "p90": 160.0,
      "status": "MEASURED",
-     "zero_frac": 0.2463
+     "zero_frac": 0.2462
     },
     "3": {
      "n_bars": 1825,
@@ -27194,26 +27194,26 @@
      "zero_frac": 0.4827
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 03:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 1.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 7.9,
+   "splice_tickvol_ratio": 7.8,
    "stress_p90_over_p50": 80.0,
    "tick_size": 0.001
   },
   "NZDSGD": {
    "administered": false,
-   "bars_total": 47138,
-   "bars_used": 43738,
+   "bars_total": 47143,
+   "bars_used": 43739,
    "cheapest_hour": 8,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 5226,
+   "days_total": 5227,
    "dear_over_cheap": 67.0,
    "dearest_hour": 0,
-   "excluded_days": 3400,
+   "excluded_days": 3401,
    "first": "2004-12-14 00:00:00+00:00",
    "hours": {
     "0": {
@@ -27361,8 +27361,8 @@
      "zero_frac": 0.011
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1822,
+     "n_bars": 1824,
+     "n_nonzero": 1823,
      "p50": 9.0,
      "p75": 19.0,
      "p90": 300.0,
@@ -27433,7 +27433,7 @@
      "zero_frac": 0.0789
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 03:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 2.0,
    "session_bars": 24,
@@ -27444,15 +27444,15 @@
   },
   "NZDUSD": {
    "administered": false,
-   "bars_total": 46237,
-   "bars_used": 43796,
+   "bars_total": 46242,
+   "bars_used": 43797,
    "cheapest_hour": 0,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 4241,
+   "days_total": 4242,
    "dear_over_cheap": 4.44,
    "dearest_hour": 1,
-   "excluded_days": 2416,
+   "excluded_days": 2417,
    "first": "2010-07-02 00:00:00+00:00",
    "hours": {
     "0": {
@@ -27600,13 +27600,13 @@
      "zero_frac": 0.823
     },
     "23": {
-     "n_bars": 1823,
+     "n_bars": 1824,
      "n_nonzero": 504,
      "p50": 80.0,
      "p75": 80.0,
      "p90": 80.0,
      "status": "MEASURED",
-     "zero_frac": 0.7235
+     "zero_frac": 0.7237
     },
     "3": {
      "n_bars": 1825,
@@ -27672,7 +27672,7 @@
      "zero_frac": 0.8318
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 03:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 0.0,
    "session_bars": 24,
@@ -28926,15 +28926,15 @@
   },
   "SEKJPY": {
    "administered": false,
-   "bars_total": 45767,
-   "bars_used": 43810,
+   "bars_total": 45770,
+   "bars_used": 43811,
    "cheapest_hour": 9,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 3783,
+   "days_total": 3784,
    "dear_over_cheap": 2.36,
    "dearest_hour": 0,
-   "excluded_days": 1957,
+   "excluded_days": 1958,
    "first": "2012-04-02 00:00:00+00:00",
    "hours": {
     "0": {
@@ -29082,13 +29082,13 @@
      "zero_frac": 0.1654
     },
     "23": {
-     "n_bars": 1824,
-     "n_nonzero": 1507,
+     "n_bars": 1825,
+     "n_nonzero": 1508,
      "p50": 26.0,
      "p75": 27.0,
      "p90": 30.0,
      "status": "MEASURED",
-     "zero_frac": 0.1738
+     "zero_frac": 0.1737
     },
     "3": {
      "n_bars": 1825,
@@ -29154,7 +29154,7 @@
      "zero_frac": 0.1654
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 01:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 29.0,
    "session_bars": 24,
@@ -29165,15 +29165,15 @@
   },
   "SGDJPY": {
    "administered": false,
-   "bars_total": 45209,
-   "bars_used": 43707,
+   "bars_total": 45212,
+   "bars_used": 43708,
    "cheapest_hour": 14,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 3302,
+   "days_total": 3303,
    "dear_over_cheap": 98.0,
    "dearest_hour": 0,
-   "excluded_days": 1477,
+   "excluded_days": 1478,
    "first": "2014-02-10 00:00:00+00:00",
    "hours": {
     "0": {
@@ -29321,13 +29321,13 @@
      "zero_frac": 0.2427
     },
     "23": {
-     "n_bars": 1822,
-     "n_nonzero": 1525,
+     "n_bars": 1823,
+     "n_nonzero": 1526,
      "p50": 2.0,
      "p75": 5.0,
      "p90": 120.0,
      "status": "MEASURED",
-     "zero_frac": 0.163
+     "zero_frac": 0.1629
     },
     "3": {
      "n_bars": 1825,
@@ -29393,7 +29393,7 @@
      "zero_frac": 0.4071
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 01:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 3.0,
    "session_bars": 24,
@@ -29404,15 +29404,15 @@
   },
   "SOLUSD": {
    "administered": true,
-   "bars_total": 40619,
-   "bars_used": 40602,
+   "bars_total": 40622,
+   "bars_used": 40603,
    "cheapest_hour": 0,
    "contract_size": 1000.0,
    "days_full": 1695,
-   "days_total": 1699,
+   "days_total": 1700,
    "dear_over_cheap": 1.0,
    "dearest_hour": 0,
-   "excluded_days": 4,
+   "excluded_days": 5,
    "first": "2022-02-23 00:00:00+00:00",
    "hours": {
     "0": {
@@ -29560,8 +29560,8 @@
      "zero_frac": 0.0
     },
     "23": {
-     "n_bars": 1692,
-     "n_nonzero": 1692,
+     "n_bars": 1693,
+     "n_nonzero": 1693,
      "p50": 150.0,
      "p75": 171.0,
      "p90": 200.0,
@@ -29632,7 +29632,7 @@
      "zero_frac": 0.0
     }
    },
-   "last": "2026-10-31 22:00:00+00:00",
+   "last": "2026-11-02 01:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 180.0,
    "session_bars": 24,
@@ -31491,8 +31491,8 @@
   },
   "UK100": {
    "administered": false,
-   "bars_total": 39561,
-   "bars_used": 34313,
+   "bars_total": 39562,
+   "bars_used": 34314,
    "cheapest_hour": 10,
    "contract_size": 1.0,
    "days_full": 1668,
@@ -31638,13 +31638,13 @@
      "zero_frac": 0.1248
     },
     "23": {
-     "n_bars": 449,
-     "n_nonzero": 259,
+     "n_bars": 450,
+     "n_nonzero": 260,
      "p50": 500.0,
      "p75": 830.0,
      "p90": 830.0,
      "status": "MEASURED",
-     "zero_frac": 0.4232
+     "zero_frac": 0.4222
     },
     "3": {
      "n_bars": 1560,
@@ -31710,7 +31710,7 @@
      "zero_frac": 0.1301
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-10-30 23:00:00+00:00",
    "n_hours_measured": 21,
    "pooled_median_spread_pts": 80.0,
    "session_bars": 20,
@@ -31947,15 +31947,15 @@
   },
   "US2000": {
    "administered": true,
-   "bars_total": 17839,
-   "bars_used": 17797,
+   "bars_total": 17842,
+   "bars_used": 17798,
    "cheapest_hour": 1,
    "contract_size": 1.0,
    "days_full": 778,
-   "days_total": 781,
+   "days_total": 782,
    "dear_over_cheap": 1.0,
    "dearest_hour": 1,
-   "excluded_days": 3,
+   "excluded_days": 4,
    "first": "2023-10-24 05:00:00+00:00",
    "hours": {
     "1": {
@@ -32094,8 +32094,8 @@
      "zero_frac": 0.0
     },
     "23": {
-     "n_bars": 750,
-     "n_nonzero": 750,
+     "n_bars": 751,
+     "n_nonzero": 751,
      "p50": 20.0,
      "p75": 20.0,
      "p90": 20.0,
@@ -32166,7 +32166,7 @@
      "zero_frac": 0.0
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 23,
    "pooled_median_spread_pts": 30.0,
    "session_bars": 23,
@@ -32177,15 +32177,15 @@
   },
   "US30": {
    "administered": false,
-   "bars_total": 44353,
-   "bars_used": 41846,
+   "bars_total": 44356,
+   "bars_used": 41847,
    "cheapest_hour": 16,
    "contract_size": 1.0,
    "days_full": 1829,
-   "days_total": 4233,
+   "days_total": 4234,
    "dear_over_cheap": 2.08,
    "dearest_hour": 1,
-   "excluded_days": 2404,
+   "excluded_days": 2405,
    "first": "2011-08-08 00:00:00+00:00",
    "hours": {
     "1": {
@@ -32324,13 +32324,13 @@
      "zero_frac": 0.2261
     },
     "23": {
-     "n_bars": 1767,
-     "n_nonzero": 1372,
+     "n_bars": 1768,
+     "n_nonzero": 1373,
      "p50": 150.0,
      "p75": 250.0,
      "p90": 280.0,
      "status": "MEASURED",
-     "zero_frac": 0.2235
+     "zero_frac": 0.2234
     },
     "3": {
      "n_bars": 1829,
@@ -32396,7 +32396,7 @@
      "zero_frac": 0.2258
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 23,
    "pooled_median_spread_pts": 160.0,
    "session_bars": 23,
@@ -32407,15 +32407,15 @@
   },
   "US500": {
    "administered": false,
-   "bars_total": 44354,
-   "bars_used": 41829,
+   "bars_total": 44357,
+   "bars_used": 41830,
    "cheapest_hour": 9,
    "contract_size": 1.0,
    "days_full": 1828,
-   "days_total": 4233,
+   "days_total": 4234,
    "dear_over_cheap": 1.2,
    "dearest_hour": 1,
-   "excluded_days": 2405,
+   "excluded_days": 2406,
    "first": "2011-08-05 00:00:00+00:00",
    "hours": {
     "1": {
@@ -32554,13 +32554,13 @@
      "zero_frac": 0.2421
     },
     "23": {
-     "n_bars": 1766,
-     "n_nonzero": 1351,
+     "n_bars": 1767,
+     "n_nonzero": 1352,
      "p50": 36.0,
      "p75": 36.0,
      "p90": 36.0,
      "status": "MEASURED",
-     "zero_frac": 0.235
+     "zero_frac": 0.2349
     },
     "3": {
      "n_bars": 1828,
@@ -32626,7 +32626,7 @@
      "zero_frac": 0.2144
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 23,
    "pooled_median_spread_pts": 30.0,
    "session_bars": 23,
@@ -32890,15 +32890,15 @@
   },
   "USDCAD": {
    "administered": false,
-   "bars_total": 46238,
-   "bars_used": 43797,
+   "bars_total": 46242,
+   "bars_used": 43798,
    "cheapest_hour": 0,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 4242,
+   "days_total": 4243,
    "dear_over_cheap": 2.5,
    "dearest_hour": 1,
-   "excluded_days": 2417,
+   "excluded_days": 2418,
    "first": "2010-07-02 00:00:00+00:00",
    "hours": {
     "0": {
@@ -33046,13 +33046,13 @@
      "zero_frac": 0.8268
     },
     "23": {
-     "n_bars": 1823,
+     "n_bars": 1824,
      "n_nonzero": 324,
      "p50": 50.0,
      "p75": 50.0,
      "p90": 50.0,
      "status": "MEASURED",
-     "zero_frac": 0.8223
+     "zero_frac": 0.8224
     },
     "3": {
      "n_bars": 1825,
@@ -33118,7 +33118,7 @@
      "zero_frac": 0.8312
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 0.0,
    "session_bars": 24,
@@ -33129,15 +33129,15 @@
   },
   "USDCHF": {
    "administered": false,
-   "bars_total": 46234,
-   "bars_used": 43795,
+   "bars_total": 46238,
+   "bars_used": 43796,
    "cheapest_hour": 1,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 4241,
+   "days_total": 4242,
    "dear_over_cheap": 7.14,
    "dearest_hour": 2,
-   "excluded_days": 2416,
+   "excluded_days": 2417,
    "first": "2010-07-02 00:00:00+00:00",
    "hours": {
     "0": {
@@ -33285,13 +33285,13 @@
      "zero_frac": 0.8236
     },
     "23": {
-     "n_bars": 1823,
+     "n_bars": 1824,
      "n_nonzero": 409,
      "p50": 50.0,
      "p75": 50.0,
      "p90": 50.0,
      "status": "MEASURED",
-     "zero_frac": 0.7756
+     "zero_frac": 0.7758
     },
     "3": {
      "n_bars": 1825,
@@ -33357,7 +33357,7 @@
      "zero_frac": 0.8285
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 0.0,
    "session_bars": 24,
@@ -33368,15 +33368,15 @@
   },
   "USDCNH": {
    "administered": false,
-   "bars_total": 45822,
-   "bars_used": 43789,
+   "bars_total": 45826,
+   "bars_used": 43790,
    "cheapest_hour": 23,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 3828,
+   "days_total": 3829,
    "dear_over_cheap": 38.4,
    "dearest_hour": 0,
-   "excluded_days": 2003,
+   "excluded_days": 2004,
    "first": "2011-12-30 00:00:00+00:00",
    "hours": {
     "0": {
@@ -33524,13 +33524,13 @@
      "zero_frac": 0.2148
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1099,
+     "n_bars": 1824,
+     "n_nonzero": 1100,
      "p50": 5.0,
      "p75": 13.0,
      "p90": 20.0,
      "status": "MEASURED",
-     "zero_frac": 0.3971
+     "zero_frac": 0.3969
     },
     "3": {
      "n_bars": 1825,
@@ -33596,7 +33596,7 @@
      "zero_frac": 0.2384
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 50.0,
    "session_bars": 24,
@@ -33607,15 +33607,15 @@
   },
   "USDCZK": {
    "administered": false,
-   "bars_total": 44590,
-   "bars_used": 43802,
+   "bars_total": 44594,
+   "bars_used": 43803,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 2614,
+   "days_total": 2615,
    "dear_over_cheap": 29.98,
    "dearest_hour": 0,
-   "excluded_days": 788,
+   "excluded_days": 789,
    "first": "2017-03-26 00:00:00+00:00",
    "hours": {
     "0": {
@@ -33763,8 +33763,8 @@
      "zero_frac": 0.1637
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1513,
+     "n_bars": 1824,
+     "n_nonzero": 1514,
      "p50": 608.0,
      "p75": 718.0,
      "p90": 1228.0,
@@ -33835,26 +33835,26 @@
      "zero_frac": 0.1659
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 1134.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 10.8,
+   "splice_tickvol_ratio": 10.7,
    "stress_p90_over_p50": 2.55,
    "tick_size": 1e-05
   },
   "USDDKK": {
    "administered": false,
-   "bars_total": 44516,
-   "bars_used": 43811,
+   "bars_total": 44520,
+   "bars_used": 43812,
    "cheapest_hour": 10,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 2531,
+   "days_total": 2532,
    "dear_over_cheap": 4.93,
    "dearest_hour": 0,
-   "excluded_days": 705,
+   "excluded_days": 706,
    "first": "2017-07-02 00:00:00+00:00",
    "hours": {
     "0": {
@@ -34002,13 +34002,13 @@
      "zero_frac": 0.1637
     },
     "23": {
-     "n_bars": 1824,
-     "n_nonzero": 1525,
+     "n_bars": 1825,
+     "n_nonzero": 1526,
      "p50": 34.0,
      "p75": 41.0,
      "p90": 43.0,
      "status": "MEASURED",
-     "zero_frac": 0.1639
+     "zero_frac": 0.1638
     },
     "3": {
      "n_bars": 1825,
@@ -34074,26 +34074,26 @@
      "zero_frac": 0.1637
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 35.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 41.5,
+   "splice_tickvol_ratio": 41.4,
    "stress_p90_over_p50": 1.28,
    "tick_size": 1e-05
   },
   "USDHKD": {
    "administered": false,
-   "bars_total": 45741,
-   "bars_used": 43786,
+   "bars_total": 45745,
+   "bars_used": 43787,
    "cheapest_hour": 11,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 3757,
+   "days_total": 3758,
    "dear_over_cheap": 30.0,
    "dearest_hour": 0,
-   "excluded_days": 1932,
+   "excluded_days": 1933,
    "first": "2011-11-15 00:00:00+00:00",
    "hours": {
     "0": {
@@ -34241,13 +34241,13 @@
      "zero_frac": 0.5386
     },
     "23": {
-     "n_bars": 1822,
-     "n_nonzero": 838,
+     "n_bars": 1823,
+     "n_nonzero": 839,
      "p50": 3.0,
      "p75": 7.0,
      "p90": 11.0,
      "status": "MEASURED",
-     "zero_frac": 0.5401
+     "zero_frac": 0.5398
     },
     "3": {
      "n_bars": 1825,
@@ -34313,7 +34313,7 @@
      "zero_frac": 0.7616
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 5.0,
    "session_bars": 24,
@@ -34324,15 +34324,15 @@
   },
   "USDHUF": {
    "administered": false,
-   "bars_total": 44334,
-   "bars_used": 43768,
+   "bars_total": 44338,
+   "bars_used": 43769,
    "cheapest_hour": 15,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 2376,
+   "days_total": 2377,
    "dear_over_cheap": 11.06,
    "dearest_hour": 0,
-   "excluded_days": 551,
+   "excluded_days": 552,
    "first": "2018-01-01 00:00:00+00:00",
    "hours": {
     "0": {
@@ -34480,13 +34480,13 @@
      "zero_frac": 0.1639
     },
     "23": {
-     "n_bars": 1822,
-     "n_nonzero": 1523,
+     "n_bars": 1823,
+     "n_nonzero": 1524,
      "p50": 17500.0,
      "p75": 22180.0,
      "p90": 28280.0,
      "status": "MEASURED",
-     "zero_frac": 0.1641
+     "zero_frac": 0.164
     },
     "3": {
      "n_bars": 1824,
@@ -34552,12 +34552,12 @@
      "zero_frac": 0.1638
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 18700.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 17.3,
+   "splice_tickvol_ratio": 17.1,
    "stress_p90_over_p50": 1.79,
    "tick_size": 1e-05
   },
@@ -34778,15 +34778,15 @@
   },
   "USDILS": {
    "administered": false,
-   "bars_total": 45802,
-   "bars_used": 43458,
+   "bars_total": 45806,
+   "bars_used": 43459,
    "cheapest_hour": 9,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 4101,
+   "days_total": 4102,
    "dear_over_cheap": 17.27,
    "dearest_hour": 0,
-   "excluded_days": 2275,
+   "excluded_days": 2276,
    "first": "2012-06-10 00:00:00+00:00",
    "hours": {
     "0": {
@@ -34934,13 +34934,13 @@
      "zero_frac": 0.1678
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1518,
+     "n_bars": 1824,
+     "n_nonzero": 1519,
      "p50": 224.0,
      "p75": 323.0,
-     "p90": 390.3,
+     "p90": 390.2,
      "status": "MEASURED",
-     "zero_frac": 0.1673
+     "zero_frac": 0.1672
     },
     "3": {
      "n_bars": 1786,
@@ -35006,7 +35006,7 @@
      "zero_frac": 0.1725
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 221.0,
    "session_bars": 24,
@@ -35226,15 +35226,15 @@
   },
   "USDJPY": {
    "administered": false,
-   "bars_total": 45615,
-   "bars_used": 43174,
+   "bars_total": 45619,
+   "bars_used": 43175,
    "cheapest_hour": 0,
    "contract_size": 100000.0,
    "days_full": 1799,
-   "days_total": 4216,
+   "days_total": 4217,
    "dear_over_cheap": 2.78,
    "dearest_hour": 1,
-   "excluded_days": 2417,
+   "excluded_days": 2418,
    "first": "2010-07-02 00:00:00+00:00",
    "hours": {
     "0": {
@@ -35382,7 +35382,7 @@
      "zero_frac": 0.8238
     },
     "23": {
-     "n_bars": 1797,
+     "n_bars": 1798,
      "n_nonzero": 316,
      "p50": 50.0,
      "p75": 50.0,
@@ -35454,7 +35454,7 @@
      "zero_frac": 0.8299
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 2.0,
    "session_bars": 24,
@@ -35695,15 +35695,15 @@
   },
   "USDMXN": {
    "administered": false,
-   "bars_total": 45297,
-   "bars_used": 43790,
+   "bars_total": 45301,
+   "bars_used": 43791,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 3304,
+   "days_total": 3305,
    "dear_over_cheap": 21.47,
    "dearest_hour": 0,
-   "excluded_days": 1479,
+   "excluded_days": 1480,
    "first": "2014-02-10 00:00:00+00:00",
    "hours": {
     "0": {
@@ -35851,13 +35851,13 @@
      "zero_frac": 0.2
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1475,
+     "n_bars": 1824,
+     "n_nonzero": 1476,
      "p50": 237.0,
      "p75": 266.0,
-     "p90": 310.6,
+     "p90": 310.5,
      "status": "MEASURED",
-     "zero_frac": 0.1909
+     "zero_frac": 0.1908
     },
     "3": {
      "n_bars": 1825,
@@ -35923,7 +35923,7 @@
      "zero_frac": 0.1797
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 404.0,
    "session_bars": 24,
@@ -35934,15 +35934,15 @@
   },
   "USDNOK": {
    "administered": false,
-   "bars_total": 45566,
-   "bars_used": 43808,
+   "bars_total": 45569,
+   "bars_used": 43809,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 3568,
+   "days_total": 3569,
    "dear_over_cheap": 47.91,
    "dearest_hour": 0,
-   "excluded_days": 1742,
+   "excluded_days": 1743,
    "first": "2013-01-29 00:00:00+00:00",
    "hours": {
     "0": {
@@ -36090,13 +36090,13 @@
      "zero_frac": 0.166
     },
     "23": {
-     "n_bars": 1824,
-     "n_nonzero": 1492,
+     "n_bars": 1825,
+     "n_nonzero": 1493,
      "p50": 218.0,
      "p75": 290.0,
      "p90": 357.0,
      "status": "MEASURED",
-     "zero_frac": 0.182
+     "zero_frac": 0.1819
     },
     "3": {
      "n_bars": 1826,
@@ -36162,7 +36162,7 @@
      "zero_frac": 0.1665
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 164.0,
    "session_bars": 24,
@@ -36173,15 +36173,15 @@
   },
   "USDPLN": {
    "administered": false,
-   "bars_total": 46089,
-   "bars_used": 43813,
+   "bars_total": 46093,
+   "bars_used": 43814,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 4102,
+   "days_total": 4103,
    "dear_over_cheap": 22.86,
    "dearest_hour": 0,
-   "excluded_days": 2276,
+   "excluded_days": 2277,
    "first": "2012-06-19 00:00:00+00:00",
    "hours": {
     "0": {
@@ -36329,13 +36329,13 @@
      "zero_frac": 0.1654
     },
     "23": {
-     "n_bars": 1824,
-     "n_nonzero": 1513,
+     "n_bars": 1825,
+     "n_nonzero": 1514,
      "p50": 126.0,
      "p75": 186.0,
      "p90": 206.0,
      "status": "MEASURED",
-     "zero_frac": 0.1705
+     "zero_frac": 0.1704
     },
     "3": {
      "n_bars": 1825,
@@ -36401,12 +36401,12 @@
      "zero_frac": 0.167
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 75.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 18.7,
+   "splice_tickvol_ratio": 18.6,
    "stress_p90_over_p50": 2.6,
    "tick_size": 1e-05
   },
@@ -36651,15 +36651,15 @@
   },
   "USDSEK": {
    "administered": false,
-   "bars_total": 39994,
-   "bars_used": 38417,
+   "bars_total": 39998,
+   "bars_used": 38418,
    "cheapest_hour": 10,
    "contract_size": 100000.0,
    "days_full": 1601,
-   "days_total": 3164,
+   "days_total": 3165,
    "dear_over_cheap": 53.57,
    "dearest_hour": 0,
-   "excluded_days": 1563,
+   "excluded_days": 1564,
    "first": "2013-10-10 00:00:00+00:00",
    "hours": {
     "0": {
@@ -36807,13 +36807,13 @@
      "zero_frac": 0.1899
     },
     "23": {
-     "n_bars": 1599,
-     "n_nonzero": 1276,
+     "n_bars": 1600,
+     "n_nonzero": 1277,
      "p50": 148.0,
      "p75": 229.0,
      "p90": 288.0,
      "status": "MEASURED",
-     "zero_frac": 0.202
+     "zero_frac": 0.2019
     },
     "3": {
      "n_bars": 1601,
@@ -36879,7 +36879,7 @@
      "zero_frac": 0.1899
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 136.0,
    "session_bars": 24,
@@ -36890,15 +36890,15 @@
   },
   "USDSGD": {
    "administered": false,
-   "bars_total": 46213,
-   "bars_used": 43783,
+   "bars_total": 46217,
+   "bars_used": 43784,
    "cheapest_hour": 1,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 4242,
+   "days_total": 4243,
    "dear_over_cheap": 95.5,
    "dearest_hour": 0,
-   "excluded_days": 2416,
+   "excluded_days": 2417,
    "first": "2010-08-18 03:00:00+00:00",
    "hours": {
     "0": {
@@ -37046,13 +37046,13 @@
      "zero_frac": 0.4299
     },
     "23": {
-     "n_bars": 1824,
-     "n_nonzero": 1094,
+     "n_bars": 1825,
+     "n_nonzero": 1095,
      "p50": 1.0,
      "p75": 5.0,
      "p90": 6.0,
      "status": "MEASURED",
-     "zero_frac": 0.4002
+     "zero_frac": 0.4
     },
     "3": {
      "n_bars": 1826,
@@ -37118,7 +37118,7 @@
      "zero_frac": 0.4869
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 1.0,
    "session_bars": 24,
@@ -37129,15 +37129,15 @@
   },
   "USDTHB": {
    "administered": false,
-   "bars_total": 46244,
-   "bars_used": 43753,
+   "bars_total": 46248,
+   "bars_used": 43754,
    "cheapest_hour": 9,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 4287,
+   "days_total": 4288,
    "dear_over_cheap": 44.55,
    "dearest_hour": 0,
-   "excluded_days": 2462,
+   "excluded_days": 2463,
    "first": "2011-01-02 00:00:00+00:00",
    "hours": {
     "0": {
@@ -37285,13 +37285,13 @@
      "zero_frac": 0.1752
     },
     "23": {
-     "n_bars": 1822,
-     "n_nonzero": 1505,
-     "p50": 624.0,
+     "n_bars": 1823,
+     "n_nonzero": 1506,
+     "p50": 612.0,
      "p75": 1024.0,
      "p90": 1130.0,
      "status": "MEASURED",
-     "zero_frac": 0.174
+     "zero_frac": 0.1739
     },
     "3": {
      "n_bars": 1824,
@@ -37357,7 +37357,7 @@
      "zero_frac": 0.2186
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 224.0,
    "session_bars": 24,
@@ -37368,15 +37368,15 @@
   },
   "USDTRY": {
    "administered": false,
-   "bars_total": 45275,
-   "bars_used": 43773,
+   "bars_total": 45279,
+   "bars_used": 43774,
    "cheapest_hour": 11,
    "contract_size": 100000.0,
    "days_full": 1825,
-   "days_total": 3303,
+   "days_total": 3304,
    "dear_over_cheap": 18.43,
    "dearest_hour": 0,
-   "excluded_days": 1478,
+   "excluded_days": 1479,
    "first": "2014-02-10 00:00:00+00:00",
    "hours": {
     "0": {
@@ -37524,13 +37524,13 @@
      "zero_frac": 0.1633
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1524,
+     "n_bars": 1824,
+     "n_nonzero": 1525,
      "p50": 1010.0,
      "p75": 1688.0,
-     "p90": 2876.2,
+     "p90": 2875.6,
      "status": "MEASURED",
-     "zero_frac": 0.164
+     "zero_frac": 0.1639
     },
     "3": {
      "n_bars": 1820,
@@ -37596,22 +37596,22 @@
      "zero_frac": 0.1693
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 769.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 172.9,
+   "splice_tickvol_ratio": 172.8,
    "stress_p90_over_p50": 2.94,
    "tick_size": 1e-05
   },
   "USDX": {
-   "bars_total": 39976,
-   "bars_used": 38394,
+   "bars_total": 39979,
+   "bars_used": 38395,
    "contract_size": 100.0,
    "days_full": 1600,
-   "days_total": 3160,
-   "excluded_days": 1560,
+   "days_total": 3161,
+   "excluded_days": 1561,
    "first": "2013-10-10 00:00:00+00:00",
    "hours": {
     "0": {
@@ -37711,7 +37711,7 @@
      "zero_frac": 1.0
     },
     "23": {
-     "n_bars": 1598,
+     "n_bars": 1599,
      "n_nonzero": 0,
      "status": "UNMEASURED",
      "zero_frac": 1.0
@@ -37759,7 +37759,7 @@
      "zero_frac": 1.0
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 01:00:00+00:00",
    "n_hours_measured": 0,
    "pooled_median_spread_pts": 24.0,
    "session_bars": 24,
@@ -37769,15 +37769,15 @@
   },
   "USDZAR": {
    "administered": false,
-   "bars_total": 46252,
-   "bars_used": 43820,
+   "bars_total": 46256,
+   "bars_used": 43821,
    "cheapest_hour": 17,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 4243,
+   "days_total": 4244,
    "dear_over_cheap": 32.26,
    "dearest_hour": 0,
-   "excluded_days": 2417,
+   "excluded_days": 2418,
    "first": "2010-08-19 03:00:00+00:00",
    "hours": {
     "0": {
@@ -37925,13 +37925,13 @@
      "zero_frac": 0.1643
     },
     "23": {
-     "n_bars": 1823,
-     "n_nonzero": 1525,
+     "n_bars": 1824,
+     "n_nonzero": 1526,
      "p50": 472.0,
      "p75": 611.0,
      "p90": 711.0,
      "status": "MEASURED",
-     "zero_frac": 0.1635
+     "zero_frac": 0.1634
     },
     "3": {
      "n_bars": 1826,
@@ -37997,7 +37997,7 @@
      "zero_frac": 0.1643
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 282.0,
    "session_bars": 24,
@@ -39066,8 +39066,8 @@
   },
   "WHEAT": {
    "administered": true,
-   "bars_total": 28055,
-   "bars_used": 26772,
+   "bars_total": 28056,
+   "bars_used": 26773,
    "cheapest_hour": 3,
    "contract_size": 1.0,
    "days_full": 1418,
@@ -39177,8 +39177,8 @@
      "zero_frac": 0.1231
     },
     "21": {
-     "n_bars": 1254,
-     "n_nonzero": 1233,
+     "n_bars": 1255,
+     "n_nonzero": 1234,
      "p50": 60.0,
      "p75": 60.0,
      "p90": 62.0,
@@ -39249,7 +39249,7 @@
      "zero_frac": 0.1227
     }
    },
-   "last": "2026-10-30 20:00:00+00:00",
+   "last": "2026-10-30 21:00:00+00:00",
    "n_hours_measured": 19,
    "pooled_median_spread_pts": 55.0,
    "session_bars": 19,
@@ -39552,15 +39552,15 @@
   },
   "XAGEUR": {
    "administered": false,
-   "bars_total": 44744,
-   "bars_used": 41972,
+   "bars_total": 44747,
+   "bars_used": 41973,
    "cheapest_hour": 5,
    "contract_size": 5000.0,
    "days_full": 1832,
-   "days_total": 4592,
+   "days_total": 4593,
    "dear_over_cheap": 1.75,
    "dearest_hour": 15,
-   "excluded_days": 2760,
+   "excluded_days": 2761,
    "first": "2008-06-04 00:00:00+00:00",
    "hours": {
     "0": {
@@ -39705,13 +39705,13 @@
      "zero_frac": 0.3921
     },
     "23": {
-     "n_bars": 1772,
-     "n_nonzero": 1378,
+     "n_bars": 1773,
+     "n_nonzero": 1379,
      "p50": 7.0,
      "p75": 9.0,
      "p90": 18.0,
      "status": "MEASURED",
-     "zero_frac": 0.2223
+     "zero_frac": 0.2222
     },
     "3": {
      "n_bars": 1832,
@@ -39777,7 +39777,7 @@
      "zero_frac": 0.4312
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 23,
    "pooled_median_spread_pts": 33.0,
    "session_bars": 23,
@@ -39788,15 +39788,15 @@
   },
   "XAGUSD": {
    "administered": false,
-   "bars_total": 44430,
-   "bars_used": 41981,
+   "bars_total": 44433,
+   "bars_used": 41982,
    "cheapest_hour": 18,
    "contract_size": 5000.0,
    "days_full": 1832,
-   "days_total": 4276,
+   "days_total": 4277,
    "dear_over_cheap": 1.6,
    "dearest_hour": 2,
-   "excluded_days": 2444,
+   "excluded_days": 2445,
    "first": "2010-06-15 00:00:00+00:00",
    "hours": {
     "1": {
@@ -39935,13 +39935,13 @@
      "zero_frac": 0.367
     },
     "23": {
-     "n_bars": 1772,
-     "n_nonzero": 1289,
+     "n_bars": 1773,
+     "n_nonzero": 1290,
      "p50": 5.0,
      "p75": 9.0,
      "p90": 14.0,
      "status": "MEASURED",
-     "zero_frac": 0.2726
+     "zero_frac": 0.2724
     },
     "3": {
      "n_bars": 1832,
@@ -40007,7 +40007,7 @@
      "zero_frac": 0.3608
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 23,
    "pooled_median_spread_pts": 20.0,
    "session_bars": 23,
@@ -40018,8 +40018,8 @@
   },
   "XALUSD": {
    "administered": false,
-   "bars_total": 33272,
-   "bars_used": 33254,
+   "bars_total": 33273,
+   "bars_used": 33255,
    "cheapest_hour": 10,
    "contract_size": 100.0,
    "days_full": 1852,
@@ -40135,10 +40135,10 @@
      "zero_frac": 0.1922
     },
     "21": {
-     "n_bars": 93,
-     "n_nonzero": 87,
+     "n_bars": 94,
+     "n_nonzero": 88,
      "status": "UNMEASURED",
-     "zero_frac": 0.0645
+     "zero_frac": 0.0638
     },
     "3": {
      "n_bars": 1661,
@@ -40204,7 +40204,7 @@
      "zero_frac": 0.1992
     }
    },
-   "last": "2026-10-30 20:00:00+00:00",
+   "last": "2026-10-30 21:00:00+00:00",
    "n_hours_measured": 18,
    "pooled_median_spread_pts": 2200.0,
    "session_bars": 18,
@@ -40215,15 +40215,15 @@
   },
   "XAUAUD": {
    "administered": false,
-   "bars_total": 44077,
-   "bars_used": 41973,
+   "bars_total": 44080,
+   "bars_used": 41974,
    "cheapest_hour": 3,
    "contract_size": 100.0,
    "days_full": 1832,
-   "days_total": 3925,
+   "days_total": 3926,
    "dear_over_cheap": 1.55,
    "dearest_hour": 1,
-   "excluded_days": 2093,
+   "excluded_days": 2094,
    "first": "2011-08-02 00:00:00+00:00",
    "hours": {
     "1": {
@@ -40362,13 +40362,13 @@
      "zero_frac": 0.394
     },
     "23": {
-     "n_bars": 1772,
-     "n_nonzero": 1264,
+     "n_bars": 1773,
+     "n_nonzero": 1265,
      "p50": 11.0,
      "p75": 14.0,
      "p90": 19.0,
      "status": "MEASURED",
-     "zero_frac": 0.2867
+     "zero_frac": 0.2865
     },
     "3": {
      "n_bars": 1832,
@@ -40434,7 +40434,7 @@
      "zero_frac": 0.4591
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 23,
    "pooled_median_spread_pts": 23.0,
    "session_bars": 23,
@@ -40445,15 +40445,15 @@
   },
   "XAUEUR": {
    "administered": false,
-   "bars_total": 43683,
-   "bars_used": 41973,
+   "bars_total": 43686,
+   "bars_used": 41974,
    "cheapest_hour": 3,
    "contract_size": 100.0,
    "days_full": 1832,
-   "days_total": 3531,
+   "days_total": 3532,
    "dear_over_cheap": 1.4,
    "dearest_hour": 1,
-   "excluded_days": 1699,
+   "excluded_days": 1700,
    "first": "2013-02-27 00:00:00+00:00",
    "hours": {
     "1": {
@@ -40592,13 +40592,13 @@
      "zero_frac": 0.4374
     },
     "23": {
-     "n_bars": 1772,
-     "n_nonzero": 1185,
+     "n_bars": 1773,
+     "n_nonzero": 1186,
      "p50": 6.0,
      "p75": 8.0,
      "p90": 11.0,
      "status": "MEASURED",
-     "zero_frac": 0.3313
+     "zero_frac": 0.3311
     },
     "3": {
      "n_bars": 1832,
@@ -40664,7 +40664,7 @@
      "zero_frac": 0.4612
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 23,
    "pooled_median_spread_pts": 9.0,
    "session_bars": 23,
@@ -40675,15 +40675,15 @@
   },
   "XAUUSD": {
    "administered": false,
-   "bars_total": 42432,
-   "bars_used": 41980,
+   "bars_total": 42435,
+   "bars_used": 41981,
    "cheapest_hour": 9,
    "contract_size": 100.0,
    "days_full": 1832,
-   "days_total": 2280,
+   "days_total": 2281,
    "dear_over_cheap": 1.25,
    "dearest_hour": 1,
-   "excluded_days": 448,
+   "excluded_days": 449,
    "first": "2018-01-02 00:00:00+00:00",
    "hours": {
     "1": {
@@ -40822,13 +40822,13 @@
      "zero_frac": 0.5885
     },
     "23": {
-     "n_bars": 1772,
-     "n_nonzero": 934,
+     "n_bars": 1773,
+     "n_nonzero": 935,
      "p50": 4.0,
      "p75": 4.0,
      "p90": 5.0,
      "status": "MEASURED",
-     "zero_frac": 0.4729
+     "zero_frac": 0.4726
     },
     "3": {
      "n_bars": 1832,
@@ -40894,19 +40894,19 @@
      "zero_frac": 0.5846
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 23,
    "pooled_median_spread_pts": 7.0,
    "session_bars": 23,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 38.1,
+   "splice_tickvol_ratio": 38.0,
    "stress_p90_over_p50": 1.25,
    "tick_size": 0.01
   },
   "XBRUSD": {
    "administered": false,
-   "bars_total": 31682,
-   "bars_used": 29929,
+   "bars_total": 31683,
+   "bars_used": 29930,
    "cheapest_hour": 16,
    "contract_size": 1000.0,
    "days_full": 1431,
@@ -41034,13 +41034,13 @@
      "zero_frac": 0.1027
     },
     "23": {
-     "n_bars": 1387,
-     "n_nonzero": 1244,
+     "n_bars": 1388,
+     "n_nonzero": 1245,
      "p50": 16.0,
      "p75": 16.0,
      "p90": 16.0,
      "status": "MEASURED",
-     "zero_frac": 0.1031
+     "zero_frac": 0.103
     },
     "3": {
      "n_bars": 1430,
@@ -41106,7 +41106,7 @@
      "zero_frac": 0.102
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-10-30 23:00:00+00:00",
    "n_hours_measured": 21,
    "pooled_median_spread_pts": 20.0,
    "session_bars": 21,
@@ -41117,8 +41117,8 @@
   },
   "XCUUSD": {
    "administered": false,
-   "bars_total": 31758,
-   "bars_used": 31740,
+   "bars_total": 31759,
+   "bars_used": 31741,
    "cheapest_hour": 15,
    "contract_size": 100.0,
    "days_full": 1768,
@@ -41234,10 +41234,10 @@
      "zero_frac": 0.2019
     },
     "21": {
-     "n_bars": 88,
-     "n_nonzero": 82,
+     "n_bars": 89,
+     "n_nonzero": 83,
      "status": "UNMEASURED",
-     "zero_frac": 0.0682
+     "zero_frac": 0.0674
     },
     "3": {
      "n_bars": 1581,
@@ -41303,7 +41303,7 @@
      "zero_frac": 0.2087
     }
    },
-   "last": "2026-10-30 20:00:00+00:00",
+   "last": "2026-10-30 21:00:00+00:00",
    "n_hours_measured": 18,
    "pooled_median_spread_pts": 3400.0,
    "session_bars": 18,
@@ -41314,15 +41314,15 @@
   },
   "XLMUSD": {
    "administered": true,
-   "bars_total": 45997,
-   "bars_used": 45518,
+   "bars_total": 46001,
+   "bars_used": 45519,
    "cheapest_hour": 0,
    "contract_size": 10000.0,
    "days_full": 1900,
-   "days_total": 2345,
+   "days_total": 2346,
    "dear_over_cheap": 1.0,
    "dearest_hour": 0,
-   "excluded_days": 445,
+   "excluded_days": 446,
    "first": "2020-04-16 00:00:00+00:00",
    "hours": {
     "0": {
@@ -41470,11 +41470,11 @@
      "zero_frac": 0.0295
     },
     "23": {
-     "n_bars": 1898,
-     "n_nonzero": 1842,
+     "n_bars": 1899,
+     "n_nonzero": 1843,
      "p50": 43.0,
      "p75": 54.0,
-     "p90": 73.8,
+     "p90": 73.6,
      "status": "MEASURED",
      "zero_frac": 0.0295
     },
@@ -41542,26 +41542,26 @@
      "zero_frac": 0.0295
     }
    },
-   "last": "2026-10-31 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 50.0,
    "session_bars": 24,
    "session_threshold": 18,
-   "splice_tickvol_ratio": 91.4,
+   "splice_tickvol_ratio": 91.2,
    "stress_p90_over_p50": 1.72,
    "tick_size": 1e-05
   },
   "XNGUSD": {
    "administered": true,
-   "bars_total": 35452,
-   "bars_used": 32484,
+   "bars_total": 35455,
+   "bars_used": 32485,
    "cheapest_hour": 1,
    "contract_size": 10000.0,
    "days_full": 1417,
-   "days_total": 4356,
+   "days_total": 4357,
    "dear_over_cheap": 1.0,
    "dearest_hour": 1,
-   "excluded_days": 2939,
+   "excluded_days": 2940,
    "first": "2009-11-11 00:00:00+00:00",
    "hours": {
     "0": {
@@ -41706,13 +41706,13 @@
      "zero_frac": 0.0953
     },
     "23": {
-     "n_bars": 1373,
-     "n_nonzero": 1242,
+     "n_bars": 1374,
+     "n_nonzero": 1243,
      "p50": 70.0,
      "p75": 70.0,
      "p90": 70.0,
      "status": "MEASURED",
-     "zero_frac": 0.0954
+     "zero_frac": 0.0953
     },
     "3": {
      "n_bars": 1416,
@@ -41778,7 +41778,7 @@
      "zero_frac": 0.0946
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 23,
    "pooled_median_spread_pts": 70.0,
    "session_bars": 23,
@@ -41789,8 +41789,8 @@
   },
   "XNIUSD": {
    "administered": false,
-   "bars_total": 28949,
-   "bars_used": 22451,
+   "bars_total": 28950,
+   "bars_used": 22452,
    "cheapest_hour": 15,
    "contract_size": 100.0,
    "days_full": 1252,
@@ -41906,10 +41906,10 @@
      "zero_frac": 0.2865
     },
     "21": {
-     "n_bars": 48,
-     "n_nonzero": 43,
+     "n_bars": 49,
+     "n_nonzero": 44,
      "status": "UNMEASURED",
-     "zero_frac": 0.1042
+     "zero_frac": 0.102
     },
     "3": {
      "n_bars": 1105,
@@ -41975,7 +41975,7 @@
      "zero_frac": 0.2947
     }
    },
-   "last": "2026-10-30 20:00:00+00:00",
+   "last": "2026-10-30 21:00:00+00:00",
    "n_hours_measured": 18,
    "pooled_median_spread_pts": 17940.0,
    "session_bars": 18,
@@ -41986,8 +41986,8 @@
   },
   "XPBUSD": {
    "administered": false,
-   "bars_total": 33254,
-   "bars_used": 33212,
+   "bars_total": 33255,
+   "bars_used": 33213,
    "cheapest_hour": 10,
    "contract_size": 100.0,
    "days_full": 1850,
@@ -42103,10 +42103,10 @@
      "zero_frac": 0.1914
     },
     "21": {
-     "n_bars": 92,
-     "n_nonzero": 87,
+     "n_bars": 93,
+     "n_nonzero": 88,
      "status": "UNMEASURED",
-     "zero_frac": 0.0543
+     "zero_frac": 0.0538
     },
     "3": {
      "n_bars": 1660,
@@ -42172,7 +42172,7 @@
      "zero_frac": 0.1984
     }
    },
-   "last": "2026-10-30 20:00:00+00:00",
+   "last": "2026-10-30 21:00:00+00:00",
    "n_hours_measured": 18,
    "pooled_median_spread_pts": 2450.0,
    "session_bars": 18,
@@ -42183,15 +42183,15 @@
   },
   "XPDUSD": {
    "administered": false,
-   "bars_total": 42889,
-   "bars_used": 41392,
+   "bars_total": 42892,
+   "bars_used": 41393,
    "cheapest_hour": 14,
    "contract_size": 100.0,
    "days_full": 1809,
-   "days_total": 2888,
+   "days_total": 2889,
    "dear_over_cheap": 1.28,
    "dearest_hour": 1,
-   "excluded_days": 1079,
+   "excluded_days": 1080,
    "first": "2015-03-30 00:00:00+00:00",
    "hours": {
     "1": {
@@ -42330,13 +42330,13 @@
      "zero_frac": 0.1624
     },
     "23": {
-     "n_bars": 1747,
-     "n_nonzero": 1463,
+     "n_bars": 1748,
+     "n_nonzero": 1464,
      "p50": 568.0,
      "p75": 1385.0,
-     "p90": 1923.4,
+     "p90": 1923.1,
      "status": "MEASURED",
-     "zero_frac": 0.1626
+     "zero_frac": 0.1625
     },
     "3": {
      "n_bars": 1809,
@@ -42402,7 +42402,7 @@
      "zero_frac": 0.1617
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 23,
    "pooled_median_spread_pts": 647.0,
    "session_bars": 23,
@@ -42413,15 +42413,15 @@
   },
   "XPTUSD": {
    "administered": false,
-   "bars_total": 43009,
-   "bars_used": 41917,
+   "bars_total": 43012,
+   "bars_used": 41918,
    "cheapest_hour": 23,
    "contract_size": 100.0,
    "days_full": 1830,
-   "days_total": 2904,
+   "days_total": 2905,
    "dear_over_cheap": 1.15,
    "dearest_hour": 10,
-   "excluded_days": 1074,
+   "excluded_days": 1075,
    "first": "2015-03-30 00:00:00+00:00",
    "hours": {
     "1": {
@@ -42560,13 +42560,13 @@
      "zero_frac": 0.1716
     },
     "23": {
-     "n_bars": 1768,
-     "n_nonzero": 1456,
+     "n_bars": 1769,
+     "n_nonzero": 1457,
      "p50": 219.0,
-     "p75": 304.25,
+     "p75": 304.0,
      "p90": 393.0,
      "status": "MEASURED",
-     "zero_frac": 0.1765
+     "zero_frac": 0.1764
     },
     "3": {
      "n_bars": 1830,
@@ -42632,7 +42632,7 @@
      "zero_frac": 0.1727
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 23,
    "pooled_median_spread_pts": 534.0,
    "session_bars": 23,
@@ -42643,15 +42643,15 @@
   },
   "XTIUSD": {
    "administered": true,
-   "bars_total": 35448,
-   "bars_used": 32483,
+   "bars_total": 35451,
+   "bars_used": 32484,
    "cheapest_hour": 1,
    "contract_size": 1000.0,
    "days_full": 1417,
-   "days_total": 4356,
+   "days_total": 4357,
    "dear_over_cheap": 1.0,
    "dearest_hour": 1,
-   "excluded_days": 2939,
+   "excluded_days": 2940,
    "first": "2010-07-07 00:00:00+00:00",
    "hours": {
     "0": {
@@ -42796,13 +42796,13 @@
      "zero_frac": 0.0953
     },
     "23": {
-     "n_bars": 1372,
-     "n_nonzero": 1241,
+     "n_bars": 1373,
+     "n_nonzero": 1242,
      "p50": 16.0,
      "p75": 16.0,
      "p90": 20.0,
      "status": "MEASURED",
-     "zero_frac": 0.0955
+     "zero_frac": 0.0954
     },
     "3": {
      "n_bars": 1416,
@@ -42868,7 +42868,7 @@
      "zero_frac": 0.0946
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 23,
    "pooled_median_spread_pts": 20.0,
    "session_bars": 23,
@@ -42879,8 +42879,8 @@
   },
   "XZNUSD": {
    "administered": false,
-   "bars_total": 33234,
-   "bars_used": 33216,
+   "bars_total": 33235,
+   "bars_used": 33217,
    "cheapest_hour": 11,
    "contract_size": 100.0,
    "days_full": 1850,
@@ -42996,10 +42996,10 @@
      "zero_frac": 0.1914
     },
     "21": {
-     "n_bars": 92,
-     "n_nonzero": 87,
+     "n_bars": 93,
+     "n_nonzero": 88,
      "status": "UNMEASURED",
-     "zero_frac": 0.0543
+     "zero_frac": 0.0538
     },
     "3": {
      "n_bars": 1659,
@@ -43065,7 +43065,7 @@
      "zero_frac": 0.1984
     }
    },
-   "last": "2026-10-30 20:00:00+00:00",
+   "last": "2026-10-30 21:00:00+00:00",
    "n_hours_measured": 18,
    "pooled_median_spread_pts": 2470.0,
    "session_bars": 18,
@@ -43076,15 +43076,15 @@
   },
   "ZARJPY": {
    "administered": false,
-   "bars_total": 44597,
-   "bars_used": 43808,
+   "bars_total": 44601,
+   "bars_used": 43809,
    "cheapest_hour": 10,
    "contract_size": 100000.0,
    "days_full": 1826,
-   "days_total": 2615,
+   "days_total": 2616,
    "dear_over_cheap": 4.33,
    "dearest_hour": 0,
-   "excluded_days": 789,
+   "excluded_days": 790,
    "first": "2017-03-26 00:00:00+00:00",
    "hours": {
     "0": {
@@ -43232,13 +43232,13 @@
      "zero_frac": 0.1988
     },
     "23": {
-     "n_bars": 1824,
-     "n_nonzero": 1487,
+     "n_bars": 1825,
+     "n_nonzero": 1488,
      "p50": 7.0,
      "p75": 8.0,
      "p90": 9.0,
      "status": "MEASURED",
-     "zero_frac": 0.1848
+     "zero_frac": 0.1847
     },
     "3": {
      "n_bars": 1825,
@@ -43304,7 +43304,7 @@
      "zero_frac": 0.2338
     }
    },
-   "last": "2026-10-30 22:00:00+00:00",
+   "last": "2026-11-02 02:00:00+00:00",
    "n_hours_measured": 24,
    "pooled_median_spread_pts": 7.0,
    "session_bars": 24,
