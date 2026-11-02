@@ -1,16 +1,16 @@
 {
  "schema": "judge_prescreen/1.3",
- "generated_at": "2026-11-01T13:06:39+00:00",
+ "generated_at": "2026-11-01T23:46:15+00:00",
  "mode": "SHADOW",
- "rows": 1642579,
- "rows_already_ruled_not_screened": 614374,
+ "rows": 1635238,
+ "rows_already_ruled_not_screened": 646535,
  "would_kill": {
   "needs_data": 980,
   "chart_short": 0,
-  "sibling_dead": 277733
+  "sibling_dead": 269724
  },
- "would_kill_total": 278713,
- "would_kill_share": 0.16968,
+ "would_kill_total": 270704,
+ "would_kill_share": 0.165544,
  "removed_from_docket": 0,
  "holdout_sent_to_judge": 0,
  "rule_acts": {
@@ -21,14 +21,14 @@
  "sibling_k": 5,
  "sibling_canon_k": null,
  "sibling_would_kill_by_k": {
-  "5": 277733,
-  "10": 206240,
-  "20": 127516,
-  "40": 61254,
-  "80": 35982
+  "5": 269724,
+  "10": 200159,
+  "20": 123456,
+  "40": 59462,
+  "80": 35468
  },
- "ms_per_row": 1.27684,
- "seconds": 2097.313,
+ "ms_per_row": 0.70174,
+ "seconds": 1147.511,
  "samples": {
   "needs_data": [
    {
@@ -230,20 +230,6 @@
     "k": 5
    },
    {
-    "cell": "NAS100.asia_momentum.p=a666e20b3e95803e",
-    "bucket": "NAS100|H1|asia_momentum",
-    "named_cells": 18,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "NZDUSD.asia_momentum.p=f67aa9941088a869",
-    "bucket": "NZDUSD|H1|asia_momentum",
-    "named_cells": 7,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
     "cell": "NZDUSD.session_range_breakout.p=43e6069cd2eff1e2",
     "bucket": "NZDUSD|H1|session_range_breakout",
     "named_cells": 11,
@@ -254,13 +240,6 @@
     "cell": "NZDUSD.session_range_breakout.p=06e87ea875ed4acb",
     "bucket": "NZDUSD|H1|session_range_breakout",
     "named_cells": 11,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "US500.asia_momentum.p=a666e20b3e95803e",
-    "bucket": "US500|H1|asia_momentum",
-    "named_cells": 36,
     "cleared_cells": 0,
     "k": 5
    },
@@ -321,15 +300,36 @@
     "k": 5
    },
    {
-    "cell": "XAUUSD.asia_momentum.p=fd0c8aec13dff3ed",
-    "bucket": "XAUUSD|H1|asia_momentum",
-    "named_cells": 7,
+    "cell": "USDINR@M30.session_range_breakout.p=ff910ceb442ce5d5",
+    "bucket": "USDINR|M30|session_range_breakout",
+    "named_cells": 22,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "XAUUSD.asia_momentum.p=a666e20b3e95803e",
-    "bucket": "XAUUSD|H1|asia_momentum",
+    "cell": "ADAUSD@M15.session_range_breakout.p=774b6379c6a0d5f1",
+    "bucket": "ADAUSD|M15|session_range_breakout",
+    "named_cells": 41,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M5.session_range_breakout.p=d5b0c62b963ce186",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 40,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD@M30.session_range_breakout.p=2231ce2a1205ce26",
+    "bucket": "ADAUSD|M30|session_range_breakout",
+    "named_cells": 42,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "ADAUSD.session_range_breakout.p=14ee5e84081cca92",
+    "bucket": "ADAUSD|H1|session_range_breakout",
     "named_cells": 7,
     "cleared_cells": 0,
     "k": 5
@@ -339,7 +339,7 @@
  "missed_growth": [
   {
    "day": "2026-11-01",
-   "at": "2026-11-01T13:06:39+00:00",
+   "at": "2026-11-01T23:46:15+00:00",
    "rail": "judge_prescreen",
    "side": "cost",
    "kind": "opportunity_cost",
@@ -360,7 +360,7 @@
   },
   {
    "day": "2026-11-01",
-   "at": "2026-11-01T13:06:39+00:00",
+   "at": "2026-11-01T23:46:15+00:00",
    "rail": "judge_prescreen",
    "side": "gain",
    "kind": "compute_freed",
@@ -368,8 +368,8 @@
    "verdict": "MEASURED",
    "units": "judge build seconds freed (rows removed x measured judge seconds per cell)",
    "rows_removed": 0,
-   "seconds_per_cell": 0.15765272607838843,
-   "would_free_seconds_if_all_rules_acted": 43939.9
+   "seconds_per_cell": 0.1507474561366777,
+   "would_free_seconds_if_all_rules_acted": 40807.9
   }
  ],
  "note": "SHADOW records what each rule WOULD remove and removes nothing; every row still reaches the sealed judge. CANON (a code constant) removes only rules marked rule_acts, minus a 1-in-20 holdout, and only after a durable KILL."
