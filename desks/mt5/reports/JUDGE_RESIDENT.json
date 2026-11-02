@@ -17,7 +17,7 @@
  "uptime_s": 504804.3,
  "last_sweep_ended_utc": "2026-11-02T12:54:37+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-02T13:50:10+00:00",
+ "heartbeat_utc": "2026-11-02T14:05:14+00:00",
  "sweep_phase": {
   "pid": 11936,
   "sweep_started_utc": "2026-11-02T12:55:00+00:00",
@@ -88,37 +88,37 @@
      }
     },
     "prewarm": {
-     "samples": 155,
+     "samples": 239,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 150,
-       "share": 0.968
+       "n": 234,
+       "share": 0.979
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 2,
-       "share": 0.013
+       "share": 0.008
       },
       {
        "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 2,
-       "share": 0.013
+       "share": 0.008
       },
       {
        "stack": "_base.py:_create_and_install_waiters:166 < _base.py:wait:297 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
        "n": 1,
-       "share": 0.006
+       "share": 0.004
       }
      ],
      "process": {
-      "cpu_s": 346.4,
-      "page_faults": 9539252.0,
-      "read_bytes": 4248940.0,
-      "write_bytes": 10712253853.0,
-      "sampled_s": 1540.0,
+      "cpu_s": 438.2,
+      "page_faults": 12114926.0,
+      "read_bytes": 5431620.0,
+      "write_bytes": 13745040389.0,
+      "sampled_s": 2380.0,
       "rss_mb_max": 3350.9,
-      "cpu_share_of_wall": 0.225
+      "cpu_share_of_wall": 0.184
      }
     }
    }
