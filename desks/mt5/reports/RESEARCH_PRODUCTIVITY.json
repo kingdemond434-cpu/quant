@@ -1,9 +1,9 @@
 {
- "generated_utc": "2026-11-01T18:53:28.383688+00:00",
+ "generated_utc": "2026-11-02T12:41:00.009594+00:00",
  "stages": {
   "intake": {
-   "files": 54405,
-   "files_7d": 1850,
+   "files": 54902,
+   "files_7d": 2255,
    "rows_recent_files": 3016
   },
   "proposers": {
@@ -23,53 +23,53 @@
     "last": null
    },
    "weak_signal_ensemble": {
-    "files": 153,
-    "rows_latest": 12,
-    "last": "2026-11-01T02:45:34.813696+00:00"
+    "files": 155,
+    "rows_latest": 3,
+    "last": "2026-11-02T12:04:35.425325+00:00"
    }
   },
   "compiled": {
    "candidates": 30560
   },
   "deepening": {
-   "queued": 814,
-   "decided_total": 56264,
+   "queued": 734,
+   "decided_total": 56529,
    "backlog": 0
   },
   "judged": {
-   "cells": 1082052,
-   "unmeasured": 16086
+   "cells": 1128039,
+   "unmeasured": 9372
   },
   "certified": {
-   "cells": 1415,
-   "last_certified": "2026-11-01",
-   "certified_last_30d": 594
+   "cells": 1579,
+   "last_certified": "2026-11-02",
+   "certified_last_30d": 760
   },
   "forward": {
    "source": "reports/shadow/*_state.json + reports/FORWARD_ENROLMENT.json",
-   "certificates": 1415,
+   "certificates": 1579,
    "banned_family_certificates": 0,
-   "forward_eligible_certificates": 1415,
+   "forward_eligible_certificates": 1579,
    "moat_backup_ledgers": 76,
    "moat_backup_ledgers_updated_7d": 0,
    "clock_rows": 994,
    "clocks_ticked_24h": 975,
    "clocks_ticked_7d": 975,
-   "last_tick": "2026-11-01T18:29:24+00:00",
-   "engine_silent_hours": 0.4,
-   "n_certificates": 1417,
+   "last_tick": "2026-11-02T12:27:24+00:00",
+   "engine_silent_hours": 0.2,
+   "n_certificates": 1579,
    "n_enrolled": 990,
-   "n_accruing": 593,
-   "n_blocked": 25,
+   "n_accruing": 586,
+   "n_blocked": 31,
    "n_missing": 0,
    "n_overdue": 0,
    "n_dropped_at_admission": 0,
    "blocked_by_status": {
     "BLOCKED_TIER_S": 8,
-    "IDENTITY_BROKEN": 13,
-    "BLOCKED_NO_BARS": 4
+    "BLOCKED_NO_BARS": 10,
+    "IDENTITY_BROKEN": 13
    },
-   "census_at": "2026-11-01T17:55:50+00:00"
+   "census_at": "2026-11-02T10:46:30+00:00"
   },
   "recommendations": {
    "total": 784,
@@ -79,9 +79,9 @@
  },
  "conversion": {
   "intake_to_compiled": 10.1326,
-  "judged_to_certified": 0.0013,
-  "certified_to_forward": 0.4191,
-  "certified_to_clock": 0.6996
+  "judged_to_certified": 0.0014,
+  "certified_to_forward": 0.3711,
+  "certified_to_clock": 0.627
  },
  "bottleneck": "none obvious"
 }
