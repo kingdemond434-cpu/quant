@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-02T10:45:04.603156+00:00",
+  "swept_at": "2026-11-02T11:00:17.405658+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -294,8 +294,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 48,
-      "shadow_exp_r": 0.2579,
+      "shadow_n": 67,
+      "shadow_exp_r": -0.305,
       "woke_on_shadow": false
     },
     "AUDUSD|discovered_asia": {
@@ -801,7 +801,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1852,
+      "shadow_exp_r": -0.359,
       "woke_on_shadow": false
     },
     "CHFNOK|carry_continuous": {
@@ -834,7 +834,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 55,
-      "shadow_exp_r": 0.4801,
+      "shadow_exp_r": 0.4901,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_asia": {
@@ -845,7 +845,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.1889,
+      "shadow_exp_r": -0.6009,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_continuous": {
