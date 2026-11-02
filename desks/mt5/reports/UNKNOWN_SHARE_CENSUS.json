@@ -6,11 +6,11 @@
   "sample": 6000,
   "overlay": [],
   "complete": false,
-  "stage": "sampled",
+  "stage": "siblings_minted",
   "utc_day": "2026-11-02",
   "started_at": "2026-11-02T15:02:31+00:00",
-  "written_at": "2026-11-02T15:05:20+00:00",
-  "cells_planned": 6000,
+  "written_at": "2026-11-02T15:05:25+00:00",
+  "cells_planned": 6005,
   "cells_visited": 0,
   "judge": {
     "named_unknowns": true,
@@ -22,14 +22,21 @@
   "memory": {
     "available_mb": 65492,
     "rss_cap_mb": 16373,
-    "peak_rss_mb": 523
+    "peak_rss_mb": 525
   },
   "lockbox_cut": null,
   "lockbox_frac": null,
   "cells_carved_at_own_tail": null,
-  "elapsed_s": 160.3,
+  "elapsed_s": 165.3,
   "siblings": {
-    "status": "NOT_REQUESTED"
+    "status": "MEASURED",
+    "peerless_rows": 11,
+    "siblings": 5,
+    "unfilled_by_family": {
+      "triangle": 3,
+      "pca_residual": 1,
+      "cross_asset_residual": 2
+    }
   },
   "sampled_cells": {
     "cells": 0,

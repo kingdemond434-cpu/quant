@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-02T13:30:07+00:00",
+ "generated_utc": "2026-11-02T15:06:37+00:00",
  "summary": {
   "platforms": 14,
   "platforms_yielding": 4,
@@ -7,9 +7,9 @@
   "vectors_attempted_this_week": 535,
   "vectors_never_attempted": 2,
   "vectors_by_outcome": {
-   "BLOCKED": 253,
-   "YIELDED": 18,
-   "EMPTY": 264,
+   "BLOCKED": 251,
+   "YIELDED": 19,
+   "EMPTY": 265,
    "NAMED_ONLY": 2
   }
  },
@@ -258,9 +258,9 @@
  "vectors": {
   "named": 537,
   "by_outcome": {
-   "BLOCKED": 253,
-   "YIELDED": 18,
-   "EMPTY": 264,
+   "BLOCKED": 251,
+   "YIELDED": 19,
+   "EMPTY": 265,
    "NAMED_ONLY": 2
   },
   "never_attempted": 2,
@@ -341,13 +341,13 @@
    },
    "ADVFN Brasil fórum": {
     "outcome": "BLOCKED",
-    "attempts": 526,
+    "attempts": 527,
     "successes": 1,
     "rows": 0,
     "findings_total": 15,
     "datasets": 1,
-    "last_error": "bing: bing returned no parseable results (93552 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14267 bytes)",
-    "last_attempt": "2026-11-02T07:57:49.912430+00:00",
+    "last_error": "bing: bing returned no parseable results (94208 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14273 bytes)",
+    "last_attempt": "2026-11-02T15:03:56.885219+00:00",
     "language": "pt",
     "region": "br"
    },
@@ -521,29 +521,53 @@
    },
    "B3 dados de mercado": {
     "outcome": "EMPTY",
-    "attempts": 555,
-    "successes": 152,
+    "attempts": 556,
+    "successes": 153,
     "rows": 0,
     "findings_total": 0,
-    "datasets": 152,
+    "datasets": 153,
     "last_error": "",
-    "last_attempt": "2026-11-02T07:56:56.204860+00:00",
+    "last_attempt": "2026-11-02T15:02:34.893268+00:00",
     "language": "pt",
     "region": "br"
    },
    "B3 estudos": {
-    "outcome": "BLOCKED",
-    "attempts": 526,
+    "outcome": "EMPTY",
+    "attempts": 527,
     "successes": 1,
     "rows": 2,
     "findings_total": 4,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (121900 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14283 bytes)",
-    "last_attempt": "2026-11-02T07:57:10.118997+00:00",
+    "last_error": "bing: bing returned no parseable results (93431 bytes -- an anti-bot shell or a layout change, not an empty forest); bing: bing returned no parseable results (95207 bytes -- an anti-bot shell or a lay",
+    "last_attempt": "2026-11-02T15:04:06.817185+00:00",
     "language": "pt",
     "region": "br"
    },
    "BCB Copom comunicados": {
+    "outcome": "EMPTY",
+    "attempts": 558,
+    "successes": 0,
+    "rows": 0,
+    "findings_total": 0,
+    "datasets": 0,
+    "last_error": "",
+    "last_attempt": "2026-11-02T15:02:33.404531+00:00",
+    "language": "pt",
+    "region": "br"
+   },
+   "BCB SGS time series": {
+    "outcome": "BLOCKED",
+    "attempts": 555,
+    "successes": 0,
+    "rows": 0,
+    "findings_total": 0,
+    "datasets": 0,
+    "last_error": "BLOCKED",
+    "last_attempt": "2026-11-02T15:02:34.708950+00:00",
+    "language": "pt",
+    "region": "br"
+   },
+   "BCB leilões de swap cambial": {
     "outcome": "EMPTY",
     "attempts": 557,
     "successes": 0,
@@ -551,79 +575,55 @@
     "findings_total": 0,
     "datasets": 0,
     "last_error": "",
-    "last_attempt": "2026-11-02T07:56:57.702832+00:00",
-    "language": "pt",
-    "region": "br"
-   },
-   "BCB SGS time series": {
-    "outcome": "BLOCKED",
-    "attempts": 554,
-    "successes": 0,
-    "rows": 0,
-    "findings_total": 0,
-    "datasets": 0,
-    "last_error": "BLOCKED",
-    "last_attempt": "2026-11-02T07:56:57.722502+00:00",
-    "language": "pt",
-    "region": "br"
-   },
-   "BCB leilões de swap cambial": {
-    "outcome": "EMPTY",
-    "attempts": 556,
-    "successes": 0,
-    "rows": 0,
-    "findings_total": 0,
-    "datasets": 0,
-    "last_error": "",
-    "last_attempt": "2026-11-02T07:57:02.684449+00:00",
+    "last_attempt": "2026-11-02T15:02:42.889625+00:00",
     "language": "pt",
     "region": "br"
    },
    "BCCh comunicados": {
     "outcome": "BLOCKED",
-    "attempts": 401,
+    "attempts": 402,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-02T07:56:56.191041+00:00",
+    "last_attempt": "2026-11-02T15:02:31.497093+00:00",
     "language": "es",
     "region": "cl"
    },
    "BCRA comunicados": {
     "outcome": "EMPTY",
-    "attempts": 403,
+    "attempts": 404,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "",
-    "last_attempt": "2026-11-02T07:56:59.496032+00:00",
+    "last_attempt": "2026-11-02T15:02:35.316939+00:00",
     "language": "es",
     "region": "ar"
    },
    "BCRA estadísticas": {
     "outcome": "EMPTY",
-    "attempts": 402,
-    "successes": 150,
+    "attempts": 403,
+    "successes": 151,
     "rows": 0,
     "findings_total": 0,
-    "datasets": 750,
+    "datasets": 755,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-02T07:57:20.391058+00:00",
+    "last_attempt": "2026-11-02T15:03:47.500674+00:00",
     "language": "es",
     "region": "ar"
    },
    "BCRP estadísticas": {
     "outcome": "EMPTY",
-    "attempts": 404,
-    "successes": 149,
+    "attempts": 405,
+    "successes": 150,
     "rows": 0,
     "findings_total": 0,
-    "datasets": 545,
+    "datasets": 546,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-02T07:56:57.817964+00:00",
+    "last_attempt": "2026-11-02T15:02:34.618146+00:00",
     "language": "es",
     "region": "pe"
    },
@@ -689,13 +689,13 @@
    },
    "BMV / MexDer datos": {
     "outcome": "BLOCKED",
-    "attempts": 401,
+    "attempts": 402,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-02T07:56:51.614113+00:00",
+    "last_attempt": "2026-11-02T15:02:31.398151+00:00",
     "language": "es",
     "region": "mx"
    },
@@ -785,25 +785,25 @@
    },
    "Banco Central de Chile estadísticas": {
     "outcome": "EMPTY",
-    "attempts": 402,
-    "successes": 152,
+    "attempts": 403,
+    "successes": 153,
     "rows": 0,
     "findings_total": 0,
-    "datasets": 255,
+    "datasets": 257,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-02T07:57:09.385918+00:00",
+    "last_attempt": "2026-11-02T15:03:26.104181+00:00",
     "language": "es",
     "region": "cl"
    },
    "Banco Central do Brasil working papers": {
     "outcome": "EMPTY",
-    "attempts": 527,
+    "attempts": 528,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "",
-    "last_attempt": "2026-11-02T07:57:15.795010+00:00",
+    "last_attempt": "2026-11-02T15:02:43.521429+00:00",
     "language": "pt",
     "region": "br"
    },
@@ -833,13 +833,13 @@
    },
    "Banco de la República estadísticas": {
     "outcome": "EMPTY",
-    "attempts": 403,
-    "successes": 152,
+    "attempts": 404,
+    "successes": 153,
     "rows": 0,
     "findings_total": 0,
-    "datasets": 152,
+    "datasets": 153,
     "last_error": "",
-    "last_attempt": "2026-11-02T07:59:38.593182+00:00",
+    "last_attempt": "2026-11-02T15:05:10.396339+00:00",
     "language": "es",
     "region": "co"
    },
@@ -1013,25 +1013,25 @@
    },
    "Banxico SIE": {
     "outcome": "EMPTY",
-    "attempts": 403,
-    "successes": 149,
+    "attempts": 404,
+    "successes": 150,
     "rows": 0,
     "findings_total": 0,
-    "datasets": 149,
+    "datasets": 150,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-02T07:56:57.797148+00:00",
+    "last_attempt": "2026-11-02T15:02:34.806388+00:00",
     "language": "es",
     "region": "mx"
    },
    "Banxico comunicados": {
     "outcome": "BLOCKED",
-    "attempts": 404,
+    "attempts": 405,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-02T07:59:16.310187+00:00",
+    "last_attempt": "2026-11-02T15:04:59.699535+00:00",
     "language": "es",
     "region": "mx"
    },
@@ -1433,13 +1433,13 @@
    },
    "CONAB safras": {
     "outcome": "BLOCKED",
-    "attempts": 557,
+    "attempts": 558,
     "successes": 88,
     "rows": 0,
     "findings_total": 0,
     "datasets": 88,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-02T07:59:33.384847+00:00",
+    "last_attempt": "2026-11-02T15:05:16.401926+00:00",
     "language": "pt",
     "region": "br"
    },
@@ -1601,13 +1601,13 @@
    },
    "Chilean boards and press": {
     "outcome": "BLOCKED",
-    "attempts": 402,
+    "attempts": 403,
     "successes": 1,
     "rows": 7,
     "findings_total": 7,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (93745 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14261 bytes)",
-    "last_attempt": "2026-11-02T07:58:07.113511+00:00",
+    "last_error": "bing: bing returned no parseable results (92566 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14261 bytes)",
+    "last_attempt": "2026-11-02T15:04:19.416864+00:00",
     "language": "es",
     "region": "cl"
    },
@@ -1625,49 +1625,49 @@
    },
    "Clube do Valor blog": {
     "outcome": "EMPTY",
-    "attempts": 557,
+    "attempts": 558,
     "successes": 2,
     "rows": 2,
     "findings_total": 6,
     "datasets": 0,
     "last_error": "",
-    "last_attempt": "2026-11-02T07:57:33.196715+00:00",
+    "last_attempt": "2026-11-02T15:03:59.202331+00:00",
     "language": "pt",
     "region": "br"
    },
    "Cochilco cobre": {
     "outcome": "EMPTY",
-    "attempts": 403,
-    "successes": 153,
+    "attempts": 404,
+    "successes": 154,
     "rows": 8,
     "findings_total": 8,
-    "datasets": 153,
+    "datasets": 154,
     "last_error": "",
-    "last_attempt": "2026-11-02T07:57:13.498049+00:00",
+    "last_attempt": "2026-11-02T15:03:41.402959+00:00",
     "language": "es",
     "region": "cl"
    },
    "Colombian boards and press": {
     "outcome": "BLOCKED",
-    "attempts": 401,
+    "attempts": 402,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (93473 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14293 bytes)",
-    "last_attempt": "2026-11-02T07:57:52.496250+00:00",
+    "last_error": "bing: bing returned no parseable results (91360 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14287 bytes)",
+    "last_attempt": "2026-11-02T15:04:04.315380+00:00",
     "language": "es",
     "region": "co"
    },
    "Comex Stat exportações": {
     "outcome": "BLOCKED",
-    "attempts": 557,
+    "attempts": 558,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-02T07:56:50.425682+00:00",
+    "last_attempt": "2026-11-02T15:02:31.324725+00:00",
     "language": "pt",
     "region": "br"
    },
@@ -1985,13 +1985,13 @@
    },
    "El Economista mercados": {
     "outcome": "BLOCKED",
-    "attempts": 400,
+    "attempts": 401,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (93597 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14277 bytes)",
-    "last_attempt": "2026-11-02T07:58:14.612538+00:00",
+    "last_error": "bing: bing returned no parseable results (94691 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14283 bytes)",
+    "last_attempt": "2026-11-02T15:04:31.813917+00:00",
     "language": "es",
     "region": "mx"
    },
@@ -2549,13 +2549,13 @@
    },
    "IBGE": {
     "outcome": "BLOCKED",
-    "attempts": 556,
+    "attempts": 557,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-02T07:59:00.189966+00:00",
+    "last_attempt": "2026-11-02T15:04:26.406858+00:00",
     "language": "pt",
     "region": "br"
    },
@@ -2657,13 +2657,13 @@
    },
    "INEGI": {
     "outcome": "BLOCKED",
-    "attempts": 401,
+    "attempts": 402,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-02T07:59:43.824530+00:00",
+    "last_attempt": "2026-11-02T15:05:23.316750+00:00",
     "language": "es",
     "region": "mx"
    },
@@ -2693,25 +2693,25 @@
    },
    "InfoMoney feed": {
     "outcome": "EMPTY",
-    "attempts": 529,
+    "attempts": 530,
     "successes": 86,
     "rows": 531,
     "findings_total": 826,
     "datasets": 5,
     "last_error": "",
-    "last_attempt": "2026-11-02T07:57:09.182710+00:00",
+    "last_attempt": "2026-11-02T15:03:30.203299+00:00",
     "language": "pt",
     "region": "br"
    },
    "InfoMoney mercados": {
     "outcome": "EMPTY",
-    "attempts": 556,
+    "attempts": 557,
     "successes": 45,
     "rows": 51,
     "findings_total": 98,
     "datasets": 2,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-02T07:56:58.797459+00:00",
+    "last_attempt": "2026-11-02T15:02:42.088283+00:00",
     "language": "pt",
     "region": "br"
    },
@@ -3785,13 +3785,13 @@
    },
    "Peruvian boards and press": {
     "outcome": "BLOCKED",
-    "attempts": 402,
+    "attempts": 403,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (120381 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14289 bytes)",
-    "last_attempt": "2026-11-02T07:58:19.724085+00:00",
+    "last_error": "bing: bing returned no parseable results (92914 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14277 bytes)",
+    "last_attempt": "2026-11-02T15:04:26.913973+00:00",
     "language": "es",
     "region": "pe"
    },
@@ -3989,13 +3989,13 @@
    },
    "Quantbrasil": {
     "outcome": "EMPTY",
-    "attempts": 560,
+    "attempts": 561,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "",
-    "last_attempt": "2026-11-02T07:57:41.292178+00:00",
+    "last_attempt": "2026-11-02T15:04:02.588951+00:00",
     "language": "pt",
     "region": "br"
    },
@@ -4145,13 +4145,13 @@
    },
    "Rankia México": {
     "outcome": "BLOCKED",
-    "attempts": 401,
+    "attempts": 402,
     "successes": 1,
     "rows": 1,
     "findings_total": 1,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (95296 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14287 bytes)",
-    "last_attempt": "2026-11-02T07:57:39.904706+00:00",
+    "last_error": "bing: bing returned no parseable results (93817 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14287 bytes)",
+    "last_attempt": "2026-11-02T15:03:52.698801+00:00",
     "language": "es",
     "region": "mx"
    },
@@ -4193,13 +4193,13 @@
    },
    "Rava Bursátil / Rankia AR": {
     "outcome": "BLOCKED",
-    "attempts": 402,
+    "attempts": 403,
     "successes": 2,
     "rows": 4,
     "findings_total": 4,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (92681 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14259 bytes)",
-    "last_attempt": "2026-11-02T07:57:54.889757+00:00",
+    "last_error": "bing: bing returned no parseable results (91567 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14259 bytes)",
+    "last_attempt": "2026-11-02T15:04:16.815798+00:00",
     "language": "es",
     "region": "ar"
    },
@@ -4721,13 +4721,13 @@
    },
    "Suno / Bastter / Bastter fórum": {
     "outcome": "BLOCKED",
-    "attempts": 553,
+    "attempts": 554,
     "successes": 0,
     "rows": 0,
     "findings_total": 21,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (93174 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14263 bytes)",
-    "last_attempt": "2026-11-02T07:58:12.213049+00:00",
+    "last_error": "bing: bing returned no parseable results (94748 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14269 bytes)",
+    "last_attempt": "2026-11-02T15:04:29.213937+00:00",
     "language": "pt",
     "region": "br"
    },
@@ -4817,13 +4817,13 @@
    },
    "Tesouro leilões": {
     "outcome": "BLOCKED",
-    "attempts": 555,
+    "attempts": 556,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-02T07:59:21.120986+00:00",
+    "last_attempt": "2026-11-02T15:05:31.210900+00:00",
     "language": "pt",
     "region": "br"
    },
@@ -5201,13 +5201,13 @@
    },
    "X (nitter) BR mercado": {
     "outcome": "BLOCKED",
-    "attempts": 528,
+    "attempts": 529,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "nitter.net: no tweets parsed; nitter.privacydev.net: no tweets parsed",
-    "last_attempt": "2026-11-02T07:57:00.518117+00:00",
+    "last_attempt": "2026-11-02T15:03:33.816426+00:00",
     "language": "pt",
     "region": "br"
    },
@@ -5297,13 +5297,13 @@
    },
    "YouTube BR trading": {
     "outcome": "BLOCKED",
-    "attempts": 527,
+    "attempts": 528,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (95564 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14285 bytes)",
-    "last_attempt": "2026-11-02T07:57:13.415635+00:00",
+    "last_error": "bing: bing returned no parseable results (95582 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14285 bytes)",
+    "last_attempt": "2026-11-02T15:03:37.312590+00:00",
     "language": "pt",
     "region": "br"
    },
@@ -5669,25 +5669,25 @@
    },
    "r/investimentos r/farialimabets": {
     "outcome": "EMPTY",
-    "attempts": 527,
+    "attempts": 528,
     "successes": 9,
     "rows": 12,
     "findings_total": 16,
     "datasets": 0,
     "last_error": "https://www.reddit.com/r/investimentos/new/.rss: no items parsed (0 bytes); https://www.reddit.com/r/farialimabets/top/.rss?t=month: no items parsed (0 bytes)",
-    "last_attempt": "2026-11-02T07:57:37.403797+00:00",
+    "last_attempt": "2026-11-02T15:03:58.017997+00:00",
     "language": "pt",
     "region": "br"
    },
    "r/merval": {
     "outcome": "EMPTY",
-    "attempts": 402,
+    "attempts": 403,
     "successes": 7,
     "rows": 10,
     "findings_total": 10,
     "datasets": 0,
     "last_error": "https://www.reddit.com/r/merval/new/.rss: no items parsed (0 bytes)",
-    "last_attempt": "2026-11-02T07:56:58.197539+00:00",
+    "last_attempt": "2026-11-02T15:02:42.218995+00:00",
     "language": "es",
     "region": "ar"
    },
@@ -5788,14 +5788,14 @@
     "region": "de"
    },
    "Ámbito / El Cronista mercados": {
-    "outcome": "BLOCKED",
-    "attempts": 401,
-    "successes": 0,
-    "rows": 0,
-    "findings_total": 0,
-    "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (93238 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14259 bytes)",
-    "last_attempt": "2026-11-02T07:57:14.903788+00:00",
+    "outcome": "YIELDED",
+    "attempts": 402,
+    "successes": 1,
+    "rows": 6,
+    "findings_total": 6,
+    "datasets": 3,
+    "last_error": "bing: bing returned no parseable results (92514 bytes -- an anti-bot shell or a layout change, not an empty forest); bing: bing returned no parseable results (92323 bytes -- an anti-bot shell or a lay",
+    "last_attempt": "2026-11-02T15:03:45.020773+00:00",
     "language": "es",
     "region": "ar"
    },
@@ -6766,8 +6766,8 @@
    "last_run": "2026-11-02T12:16:31+00:00",
    "fetches_per_s": 0.241,
    "success_rate": 0.7225,
-   "wall_s_24h": 2169.3,
-   "cpu_s_24h": 791.6
+   "wall_s_24h": 1662.6,
+   "cpu_s_24h": 610.1
   },
   "forest_china": {
    "runs": 20,
@@ -6794,8 +6794,8 @@
    "last_run": "2026-11-02T12:28:28+00:00",
    "fetches_per_s": 0.3684,
    "success_rate": 0.8627,
-   "wall_s_24h": 4039.7,
-   "cpu_s_24h": 1120.3
+   "wall_s_24h": 3506.9,
+   "cpu_s_24h": 882.7
   },
   "forest_global_academic_code": {
    "runs": 8,
@@ -6829,8 +6829,8 @@
    "last_run": "2026-11-02T09:16:31+00:00",
    "fetches_per_s": 0.5815,
    "success_rate": 0.9384,
-   "wall_s_24h": 1857.6,
-   "cpu_s_24h": 241.1
+   "wall_s_24h": 836.7,
+   "cpu_s_24h": 137.4
   },
   "forest_global_physical_data": {
    "runs": 8,
@@ -6843,8 +6843,8 @@
    "last_run": "2026-11-01T23:45:18+00:00",
    "fetches_per_s": 0.5338,
    "success_rate": 0.9535,
-   "wall_s_24h": 2307.7,
-   "cpu_s_24h": 183.4
+   "wall_s_24h": 1055.4,
+   "cpu_s_24h": 101.3
   },
   "forest_global_web": {
    "runs": 12,
@@ -6857,8 +6857,8 @@
    "last_run": "2026-11-02T08:37:32+00:00",
    "fetches_per_s": 0.5542,
    "success_rate": 0.9395,
-   "wall_s_24h": 4269.6,
-   "cpu_s_24h": 311.5
+   "wall_s_24h": 3537.0,
+   "cpu_s_24h": 222.3
   },
   "forest_japan": {
    "runs": "UNMEASURED",
@@ -6878,20 +6878,20 @@
    "last_run": "2026-11-02T12:08:04+00:00",
    "fetches_per_s": 0.1857,
    "success_rate": 0.9386,
-   "wall_s_24h": 2586.0,
-   "cpu_s_24h": 556.7
+   "wall_s_24h": 2071.3,
+   "cpu_s_24h": 453.1
   },
   "forest_latam": {
-   "runs": 18,
-   "fetches": 2235,
-   "ok": 1496,
-   "http_errors": 282,
-   "transport_errors": 457,
-   "seconds": 8030.0,
-   "rows": 338,
-   "last_run": "2026-11-02T08:03:22+00:00",
-   "fetches_per_s": 0.2783,
-   "success_rate": 0.6694,
+   "runs": 19,
+   "fetches": 2359,
+   "ok": 1590,
+   "http_errors": 297,
+   "transport_errors": 472,
+   "seconds": 8281.4,
+   "rows": 359,
+   "last_run": "2026-11-02T15:06:37+00:00",
+   "fetches_per_s": 0.2849,
+   "success_rate": 0.674,
    "wall_s_24h": 1445.4,
    "cpu_s_24h": 394.7
   },
@@ -6906,8 +6906,8 @@
    "last_run": "2026-11-02T13:30:03+00:00",
    "fetches_per_s": 0.3239,
    "success_rate": 0.6807,
-   "wall_s_24h": 2080.6,
-   "cpu_s_24h": 399.5
+   "wall_s_24h": 2694.5,
+   "cpu_s_24h": 577.0
   },
   "forest_north_america": {
    "runs": 19,
@@ -6920,8 +6920,8 @@
    "last_run": "2026-11-02T10:39:35+00:00",
    "fetches_per_s": 0.5564,
    "success_rate": 0.7472,
-   "wall_s_24h": 4496.3,
-   "cpu_s_24h": 819.2
+   "wall_s_24h": 3500.9,
+   "cpu_s_24h": 632.7
   },
   "forest_oceania": {
    "runs": 19,
@@ -6948,8 +6948,8 @@
    "last_run": "2026-11-02T12:18:40+00:00",
    "fetches_per_s": 0.2583,
    "success_rate": 0.7854,
-   "wall_s_24h": 2713.8,
-   "cpu_s_24h": 600.5
+   "wall_s_24h": 2500.4,
+   "cpu_s_24h": 471.6
   },
   "forest_south_asia": {
    "runs": 20,
@@ -6962,8 +6962,8 @@
    "last_run": "2026-11-02T12:32:09+00:00",
    "fetches_per_s": 0.6603,
    "success_rate": 0.9179,
-   "wall_s_24h": 2958.8,
-   "cpu_s_24h": 677.4
+   "wall_s_24h": 2357.1,
+   "cpu_s_24h": 522.6
   }
  },
  "sources": {
