@@ -14,6 +14,12 @@
    "returncode": 0,
    "status": "DONE"
   },
+  "certificate_yield_fence": {
+   "finished_at": "2026-11-02T04:42:42.817001+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
+  },
   "external_queue_projection": {
    "finished_at": "2026-11-02T01:40:37.794428+00:00",
    "passes_completed": 1,
@@ -24,6 +30,12 @@
    "finished_at": "2026-11-02T01:41:49.675209+00:00",
    "passes_completed": 1,
    "returncode": 0,
+   "status": "DONE"
+  },
+  "forward_clock_fence": {
+   "finished_at": "2026-11-02T04:43:18.700158+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
    "status": "DONE"
   },
   "forward_clock_reconciliation": {
@@ -69,5 +81,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-11-02T03:08:11.429025+00:00"
+ "updated_at": "2026-11-02T04:43:18.700158+00:00"
 }
