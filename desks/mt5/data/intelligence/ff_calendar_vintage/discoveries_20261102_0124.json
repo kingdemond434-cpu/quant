@@ -1,0 +1,1842 @@
+[
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "CAD Daylight Saving Time Shift",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "CAD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-01T02:00:00-05:00",
+  "impact": "Holiday",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Daylight Saving Time Shift",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-01T02:00:00-05:00",
+  "impact": "Holiday",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "AUD MI Inflation Gauge m/m",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "AUD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-01T19:00:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "0.3%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "AUD Building Approvals m/m",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "AUD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-01T19:30:00-05:00",
+  "impact": "Low",
+  "forecast": "1.8%",
+  "previous": "-6.1%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "JPY Final Manufacturing PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "JPY"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-01T19:30:00-05:00",
+  "impact": "Low",
+  "forecast": "53.3",
+  "previous": "53.3",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "CNY RatingDog Manufacturing PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "CNY"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-01T20:45:00-05:00",
+  "impact": "Low",
+  "forecast": "52.0",
+  "previous": "52.1",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "AUD Commodity Prices y/y",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "AUD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T00:30:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "15.5%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR German Retail Sales m/m",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T02:00:00-05:00",
+  "impact": "Low",
+  "forecast": "0.4%",
+  "previous": "1.3%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "CHF Retail Sales y/y",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "CHF"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T02:30:00-05:00",
+  "impact": "Low",
+  "forecast": "3.0%",
+  "previous": "3.2%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR Spanish Manufacturing PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T03:15:00-05:00",
+  "impact": "Low",
+  "forecast": "50.4",
+  "previous": "51.0",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "CHF Manufacturing PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "CHF"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T03:30:00-05:00",
+  "impact": "Low",
+  "forecast": "55.3",
+  "previous": "55.3",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR Italian Manufacturing PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T03:45:00-05:00",
+  "impact": "Low",
+  "forecast": "49.9",
+  "previous": "50.4",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR French Final Manufacturing PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T03:50:00-05:00",
+  "impact": "Low",
+  "forecast": "49.3",
+  "previous": "49.3",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR German Final Manufacturing PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T03:55:00-05:00",
+  "impact": "Low",
+  "forecast": "54.2",
+  "previous": "54.2",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR Final Manufacturing PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T04:00:00-05:00",
+  "impact": "Low",
+  "forecast": "52.4",
+  "previous": "52.4",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "GBP Final Manufacturing PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "GBP"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T04:30:00-05:00",
+  "impact": "Low",
+  "forecast": "52.8",
+  "previous": "52.8",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR German Buba President Nagel Speaks",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T07:00:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "CAD Manufacturing PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "CAD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T09:30:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "51.5",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Final Manufacturing PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T09:45:00-05:00",
+  "impact": "Low",
+  "forecast": "56.0",
+  "previous": "56.0",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD ISM Manufacturing PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T10:00:00-05:00",
+  "impact": "Medium",
+  "forecast": "54.5",
+  "previous": "54.5",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Construction Spending m/m",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T10:00:00-05:00",
+  "impact": "Low",
+  "forecast": "0.4%",
+  "previous": "0.9%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD ISM Manufacturing Prices",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T10:00:00-05:00",
+  "impact": "Low",
+  "forecast": "77.2",
+  "previous": "77.9",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Loan Officer Survey",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T14:03:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "NZD Building Consents m/m",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "NZD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T16:45:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "5.6%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "JPY Bank Holiday",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "JPY"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T19:00:00-05:00",
+  "impact": "Holiday",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "AUD Cash Rate",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "AUD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T22:30:00-05:00",
+  "impact": "High",
+  "forecast": "4.85%",
+  "previous": "4.60%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "AUD RBA Monetary Policy Statement",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "AUD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T22:30:00-05:00",
+  "impact": "High",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "AUD RBA Rate Statement",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "AUD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T22:30:00-05:00",
+  "impact": "High",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "AUD RBA Press Conference",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "AUD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-02T23:30:00-05:00",
+  "impact": "High",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "CHF CPI m/m",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "CHF"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-03T02:30:00-05:00",
+  "impact": "Medium",
+  "forecast": "0.0%",
+  "previous": "0.0%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR French Gov Budget Balance",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-03T02:45:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "-159.6B",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "GBP 10-y Bond Auction",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "GBP"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-03T05:33:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "5.42|3.6",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD JOLTS Job Openings",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-03T10:00:00-05:00",
+  "impact": "Medium",
+  "forecast": "7.11M",
+  "previous": "7.08M",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Factory Orders m/m",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-03T10:00:00-05:00",
+  "impact": "Low",
+  "forecast": "1.2%",
+  "previous": "0.1%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD RCM/TIPP Economic Optimism",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-03T10:10:00-05:00",
+  "impact": "Low",
+  "forecast": "46.2",
+  "previous": "46.8",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Omdia Total Vehicle Sales",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-03T10:15:00-05:00",
+  "impact": "Low",
+  "forecast": "15.9M",
+  "previous": "16.0M",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Congressional Elections",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-03T10:16:00-05:00",
+  "impact": "High",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "NZD GDT Price Index",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "NZD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-03T10:50:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "2.5%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "CAD BOC Gov Macklem Speaks",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "CAD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-03T11:00:00-05:00",
+  "impact": "Medium",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR German Buba President Nagel Speaks",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-03T12:00:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD API Weekly Statistical Bulletin",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-03T16:30:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "NZD Employment Change q/q",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "NZD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-03T16:45:00-05:00",
+  "impact": "High",
+  "forecast": "0.4%",
+  "previous": "0.5%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "NZD Unemployment Rate",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "NZD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-03T16:45:00-05:00",
+  "impact": "High",
+  "forecast": "5.5%",
+  "previous": "5.6%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "NZD Labor Cost Index q/q",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "NZD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-03T16:45:00-05:00",
+  "impact": "Low",
+  "forecast": "0.5%",
+  "previous": "0.7%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "JPY Monetary Base y/y",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "JPY"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-03T18:50:00-05:00",
+  "impact": "Low",
+  "forecast": "-14.0%",
+  "previous": "-15.2%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "NZD ANZ Commodity Prices m/m",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "NZD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-03T19:00:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "0.6%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "AUD Household Spending m/m",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "AUD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-03T19:30:00-05:00",
+  "impact": "Low",
+  "forecast": "0.2%",
+  "previous": "0.0%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "CNY RatingDog Services PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "CNY"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-03T20:45:00-05:00",
+  "impact": "Low",
+  "forecast": "51.5",
+  "previous": "51.6",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR Spanish Unemployment Change",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-04T03:00:00-05:00",
+  "impact": "Low",
+  "forecast": "25.3K",
+  "previous": "23.6K",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR Spanish Services PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-04T03:15:00-05:00",
+  "impact": "Low",
+  "forecast": "57.5",
+  "previous": "58.3",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR Italian Services PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-04T03:45:00-05:00",
+  "impact": "Low",
+  "forecast": "51.0",
+  "previous": "51.7",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR French Final Services PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-04T03:50:00-05:00",
+  "impact": "Low",
+  "forecast": "48.4",
+  "previous": "48.4",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR German Final Services PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-04T03:55:00-05:00",
+  "impact": "Low",
+  "forecast": "51.7",
+  "previous": "51.7",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR Final Services PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-04T04:00:00-05:00",
+  "impact": "Low",
+  "forecast": "51.7",
+  "previous": "51.7",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "GBP Final Services PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "GBP"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-04T04:30:00-05:00",
+  "impact": "Low",
+  "forecast": "53.1",
+  "previous": "53.1",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR Core CPI Flash Estimate y/y",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-04T05:00:00-05:00",
+  "impact": "Medium",
+  "forecast": "2.5%",
+  "previous": "2.5%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR CPI Flash Estimate y/y",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-04T05:00:00-05:00",
+  "impact": "Medium",
+  "forecast": "4.0%",
+  "previous": "3.8%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD ADP Non-Farm Employment Change",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-04T08:15:00-05:00",
+  "impact": "Low",
+  "forecast": "68K",
+  "previous": "90K",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "CAD Trade Balance",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "CAD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-04T08:30:00-05:00",
+  "impact": "Low",
+  "forecast": "3.8B",
+  "previous": "4.2B",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Trade Balance",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-04T08:30:00-05:00",
+  "impact": "Low",
+  "forecast": "-107.9B",
+  "previous": "-105.6B",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Final Services PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-04T09:45:00-05:00",
+  "impact": "Low",
+  "forecast": "57.9",
+  "previous": "57.9",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD ISM Services PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-04T10:00:00-05:00",
+  "impact": "Medium",
+  "forecast": "54.9",
+  "previous": "54.9",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Crude Oil Inventories",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-04T10:30:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "-1.9M",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "JPY Monetary Policy Meeting Minutes",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "JPY"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-04T18:50:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "AUD Goods Trade Balance",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "AUD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-04T19:30:00-05:00",
+  "impact": "Low",
+  "forecast": "0.96B",
+  "previous": "0.50B",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "JPY 10-y Bond Auction",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "JPY"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-04T22:35:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "3.10|3.8",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "AUD RBA Deputy Gov Hauser Speaks",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "AUD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T01:45:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR German Factory Orders m/m",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T02:00:00-05:00",
+  "impact": "Low",
+  "forecast": "4.9%",
+  "previous": "-10.6%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR French Industrial Production m/m",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T02:45:00-05:00",
+  "impact": "Low",
+  "forecast": "0.4%",
+  "previous": "-0.3%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "CHF Unemployment Rate",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "CHF"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T03:00:00-05:00",
+  "impact": "Low",
+  "forecast": "3.1%",
+  "previous": "3.1%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR Italian Retail Sales m/m",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T04:00:00-05:00",
+  "impact": "Low",
+  "forecast": "0.1%",
+  "previous": "0.3%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "GBP Construction PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "GBP"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T04:30:00-05:00",
+  "impact": "Low",
+  "forecast": "46.5",
+  "previous": "46.1",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR PPI m/m",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T05:00:00-05:00",
+  "impact": "Low",
+  "forecast": "2.6%",
+  "previous": "1.9%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR Spanish 10-y Bond Auction",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T05:03:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "4.18|1.6",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR French 10-y Bond Auction",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T05:18:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "4.93|2.0",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Challenger Job Cuts y/y",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T05:30:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "-19.9%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "GBP BOE Monetary Policy Report",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "GBP"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T07:00:00-05:00",
+  "impact": "High",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "GBP Monetary Policy Summary",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "GBP"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T07:00:00-05:00",
+  "impact": "High",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "GBP MPC Official Bank Rate Votes",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "GBP"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T07:00:00-05:00",
+  "impact": "High",
+  "forecast": "7-0-2",
+  "previous": "3-0-6",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "GBP Official Bank Rate",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "GBP"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T07:00:00-05:00",
+  "impact": "High",
+  "forecast": "4.00%",
+  "previous": "3.75%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "GBP BOE Gov Bailey Speaks",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "GBP"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T07:30:00-05:00",
+  "impact": "High",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "CHF SNB Chairman Schlegel Speaks",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "CHF"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T07:40:00-05:00",
+  "impact": "Medium",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Unemployment Claims",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T08:30:00-05:00",
+  "impact": "Medium",
+  "forecast": "197K",
+  "previous": "194K",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Prelim Nonfarm Productivity q/q",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T08:30:00-05:00",
+  "impact": "Low",
+  "forecast": "2.8%",
+  "previous": "1.4%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Prelim Unit Labor Costs q/q",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T08:30:00-05:00",
+  "impact": "Low",
+  "forecast": "0.3%",
+  "previous": "1.3%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD FOMC Member Hammack Speaks",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T08:50:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD FOMC Member Barkin Speaks",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T09:10:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "CAD BOC Gov Macklem Speaks",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "CAD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T10:30:00-05:00",
+  "impact": "Medium",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Natural Gas Storage",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T10:30:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "80B",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR German Buba President Nagel Speaks",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T12:45:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR ECB President Lagarde Speaks",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T13:00:00-05:00",
+  "impact": "Medium",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "CAD Annual Budget Release",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "CAD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T16:00:00-05:00",
+  "impact": "Medium",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "JPY Average Cash Earnings y/y",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "JPY"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-05T18:30:00-05:00",
+  "impact": "Low",
+  "forecast": "3.8%",
+  "previous": "3.8%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR German Industrial Production m/m",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T02:00:00-05:00",
+  "impact": "Low",
+  "forecast": "-0.2%",
+  "previous": "2.0%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "GBP Lloyds HPI m/m",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "GBP"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T02:00:00-05:00",
+  "impact": "Low",
+  "forecast": "0.0%",
+  "previous": "0.0%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR French Trade Balance",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T02:45:00-05:00",
+  "impact": "Low",
+  "forecast": "-5.8B",
+  "previous": "-6.1B",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "CHF Foreign Currency Reserves",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "CHF"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T03:00:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "770B",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "CHF SECO Consumer Climate",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "CHF"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T03:00:00-05:00",
+  "impact": "Low",
+  "forecast": "-35",
+  "previous": "-36",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD FOMC Member Williams Speaks",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T04:30:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "EUR Retail Sales m/m",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "EUR"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T05:00:00-05:00",
+  "impact": "Low",
+  "forecast": "-0.1%",
+  "previous": "0.1%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "CHF Gov Board Member Tschudin Speaks",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "CHF"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T06:00:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "GBP MPC Member Pill Speaks",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "GBP"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T07:15:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "CAD Employment Change",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "CAD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T08:30:00-05:00",
+  "impact": "High",
+  "forecast": "14.5K",
+  "previous": "-68.3K",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "CAD Unemployment Rate",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "CAD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T08:30:00-05:00",
+  "impact": "High",
+  "forecast": "6.5%",
+  "previous": "6.5%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Average Hourly Earnings m/m",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T08:30:00-05:00",
+  "impact": "High",
+  "forecast": "0.3%",
+  "previous": "0.1%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Non-Farm Employment Change",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T08:30:00-05:00",
+  "impact": "High",
+  "forecast": "63K",
+  "previous": "29K",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Unemployment Rate",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T08:30:00-05:00",
+  "impact": "High",
+  "forecast": "4.2%",
+  "previous": "4.2%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD FOMC Member Musalem Speaks",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T09:10:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "CAD Ivey PMI",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "CAD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T10:00:00-05:00",
+  "impact": "Medium",
+  "forecast": "57.7",
+  "previous": "58.2",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Prelim UoM Consumer Sentiment",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T10:00:00-05:00",
+  "impact": "Medium",
+  "forecast": "47.8",
+  "previous": "46.3",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Prelim UoM Inflation Expectations",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T10:00:00-05:00",
+  "impact": "Medium",
+  "forecast": "",
+  "previous": "4.7%",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "JPY BOJ Gov Ueda Speaks",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "JPY"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T11:00:00-05:00",
+  "impact": "High",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD FOMC Member Bowman Speaks",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T12:15:00-05:00",
+  "impact": "Low",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "USD Consumer Credit m/m",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "USD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T15:00:00-05:00",
+  "impact": "Low",
+  "forecast": "12.0B",
+  "previous": "8.3B",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ },
+ {
+  "source": "ff_calendar_vintage",
+  "kind": "calendar_vintage",
+  "title": "NZD Parliamentary Elections",
+  "url": "",
+  "text": "",
+  "symbols": [
+   "NZD"
+  ],
+  "found_at": "2026-11-02T01:40:31+00:00",
+  "event_date": "2026-11-06T16:45:00-05:00",
+  "impact": "High",
+  "forecast": "",
+  "previous": "",
+  "captured_at": "2026-11-02T01:40:31+00:00"
+ }
+]
