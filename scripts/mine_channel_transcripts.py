@@ -1,0 +1,211 @@
+#!/usr/bin/env python3
+"""Mine EVERY video of the channels in channels.json: enumerate, fetch public captions, keep a
+coverage ledger proving no video was skipped.
+
+Rules (desk LAWS 5e + principal rulings):
+  * Public captions only, via the normal public routes (yt-dlp enumeration, youtube-transcript-api).
+  * NO bypass: no cookies, no logins, no proxies, no CAPTCHA solving. If YouTube serves a bot wall
+    / IP block, the run STOPS and every remaining video is recorded ACCESS_LIMIT (retry later).
+  * Polite pacing (sleep between caption fetches).
+  * Resumable: videos already FULL / NO_TRANSCRIPT are not refetched.
+
+Outputs (under --out, default ./video_mining_out):
+  ledger.jsonl                       one row per video, latest row per video_id wins
+  transcripts/<handle>/<video_id>.txt
+  coverage_summary.json              counts per channel per status
+  video_mining_out.zip               everything above, for transfer
+
+Usage:
+  pip install -U yt-dlp youtube-transcript-api
+  python mine_channel_transcripts.py --config config/video_mining_channels.json [--sleep 6] [--limit N]
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import random
+import shutil
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+STATUSES = ("FULL", "NO_TRANSCRIPT", "UNAVAILABLE", "ACCESS_LIMIT", "FETCH_FAILED")
+
+
+def now() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def enumerate_tab(handle: str, tab: str) -> list[dict]:
+    url = f"https://www.youtube.com/{handle}/{tab}"
+    cmd = [sys.executable, "-m", "yt_dlp", "--flat-playlist", "-J", "--no-warnings", url]
+    p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if p.returncode != 0:
+        msg = (p.stderr or "").strip().splitlines()[-1:] or [""]
+        if "does not have a" in msg[0] or "This channel does not have" in msg[0]:
+            return []
+        raise RuntimeError(f"enumerate {handle}/{tab} failed: {msg[0][:300]}")
+    data = json.loads(p.stdout)
+    out = []
+    for e in data.get("entries") or []:
+        # streams/videos tabs can nest playlists one level deep
+        for x in (e.get("entries") or [e]):
+            vid = x.get("id")
+            if vid and len(vid) == 11:
+                out.append({"video_id": vid, "title": x.get("title") or "",
+                            "duration": x.get("duration"), "tab": tab})
+    return out
+
+
+def load_ledger(path: Path) -> dict[str, dict]:
+    rows: dict[str, dict] = {}
+    if path.exists():
+        for line in path.read_text("utf-8").splitlines():
+            if line.strip():
+                r = json.loads(line)
+                rows[r["video_id"]] = r
+    return rows
+
+
+def fetch_transcript(api, vid: str):
+    """Return (status, text, meta)."""
+    from youtube_transcript_api import _errors as E  # type: ignore
+
+    blocked = tuple(getattr(E, n) for n in ("RequestBlocked", "IpBlocked", "TooManyRequests")
+                    if hasattr(E, n))
+    none = tuple(getattr(E, n) for n in ("TranscriptsDisabled", "NoTranscriptFound")
+                 if hasattr(E, n))
+    gone = tuple(getattr(E, n) for n in ("VideoUnavailable", "VideoUnplayable", "AgeRestricted",
+                                          "InvalidVideoId") if hasattr(E, n))
+    try:
+        tl = api.list(vid)
+        tr = None
+        for finder in ("find_manually_created_transcript", "find_generated_transcript"):
+            try:
+                tr = getattr(tl, finder)(["en", "en-US", "en-GB"])
+                break
+            except none:
+                continue
+        if tr is None:
+            first = next(iter(tl), None)
+            if first is None:
+                return "NO_TRANSCRIPT", "", {}
+            tr = first.translate("en") if getattr(first, "is_translatable", False) else first
+        fetched = tr.fetch()
+        snippets = getattr(fetched, "snippets", fetched)
+        parts, last_end = [], 0.0
+        for s in snippets:
+            txt = s.text if hasattr(s, "text") else s["text"]
+            st = s.start if hasattr(s, "start") else s["start"]
+            du = s.duration if hasattr(s, "duration") else s.get("duration", 0)
+            parts.append(f"[{int(st)//60:02d}:{int(st)%60:02d}] {txt}")
+            last_end = max(last_end, float(st) + float(du or 0))
+        meta = {"language": getattr(tr, "language_code", ""),
+                "generated": bool(getattr(tr, "is_generated", False)),
+                "caption_end_s": round(last_end, 1), "snippets": len(parts)}
+        return ("FULL" if parts else "NO_TRANSCRIPT"), "\n".join(parts), meta
+    except blocked as exc:
+        return "ACCESS_LIMIT", "", {"error": type(exc).__name__}
+    except none as exc:
+        return "NO_TRANSCRIPT", "", {"error": type(exc).__name__}
+    except gone as exc:
+        return "UNAVAILABLE", "", {"error": type(exc).__name__}
+    except Exception as exc:  # noqa: BLE001 - typed into the ledger, never swallowed
+        return "FETCH_FAILED", "", {"error": f"{type(exc).__name__}: {str(exc)[:200]}"}
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--config", default="config/video_mining_channels.json")
+    ap.add_argument("--out", default="video_mining_out")
+    ap.add_argument("--sleep", type=float, default=6.0, help="base seconds between caption fetches")
+    ap.add_argument("--limit", type=int, default=0, help="max caption fetches this run (0 = all)")
+    args = ap.parse_args()
+
+    from youtube_transcript_api import YouTubeTranscriptApi  # type: ignore
+    api = YouTubeTranscriptApi()
+
+    cfg = json.loads(Path(args.config).read_text("utf-8"))
+    out = Path(args.out)
+    (out / "transcripts").mkdir(parents=True, exist_ok=True)
+    ledger_path = out / "ledger.jsonl"
+    ledger = load_ledger(ledger_path)
+    lf = ledger_path.open("a", encoding="utf-8")
+
+    def write(row: dict) -> None:
+        ledger[row["video_id"]] = row
+        lf.write(json.dumps(row, ensure_ascii=False) + "\n")
+        lf.flush()
+
+    # 1. enumerate every tab of every channel (a video is never silently dropped)
+    todo: list[dict] = []
+    enum_report = {}
+    for ch in cfg["channels"]:
+        seen = set()
+        for tab in ch.get("tabs", ["videos", "shorts", "streams"]):
+            try:
+                vids = enumerate_tab(ch["handle"], tab)
+            except Exception as exc:  # noqa: BLE001
+                enum_report[f"{ch['handle']}/{tab}"] = f"ERROR {exc}"
+                print(f"[enum] {ch['handle']}/{tab}: ERROR {exc}", flush=True)
+                continue
+            enum_report[f"{ch['handle']}/{tab}"] = len(vids)
+            print(f"[enum] {ch['handle']}/{tab}: {len(vids)} videos", flush=True)
+            for v in vids:
+                if v["video_id"] in seen:
+                    continue
+                seen.add(v["video_id"])
+                v["channel"] = ch["handle"]
+                prev = ledger.get(v["video_id"])
+                if prev and prev["status"] in ("FULL", "NO_TRANSCRIPT", "UNAVAILABLE"):
+                    continue
+                if not prev:
+                    write({**v, "status": "PENDING", "ts": now()})
+                todo.append(v)
+
+    # 2. fetch captions, politely; stop the whole run at the first access wall (no bypass)
+    fetched = 0
+    stopped = None
+    for v in todo:
+        if args.limit and fetched >= args.limit:
+            break
+        status, text, meta = fetch_transcript(api, v["video_id"])
+        fetched += 1
+        row = {**v, "status": status, "ts": now(), **meta}
+        if status == "FULL":
+            d = out / "transcripts" / v["channel"].lstrip("@")
+            d.mkdir(parents=True, exist_ok=True)
+            (d / f"{v['video_id']}.txt").write_text(
+                f"# {v['title']}\n# https://www.youtube.com/watch?v={v['video_id']}\n{text}\n",
+                encoding="utf-8")
+            row["chars"] = len(text)
+        write(row)
+        print(f"[{fetched}/{len(todo)}] {v['channel']} {v['video_id']} {status} "
+              f"{row.get('chars', '')} {v['title'][:60]}", flush=True)
+        if status == "ACCESS_LIMIT":
+            stopped = f"access wall at {v['video_id']} ({meta.get('error')}); stopping, no bypass"
+            print(stopped, flush=True)
+            break
+        time.sleep(args.sleep + random.uniform(0, args.sleep / 2))
+    lf.close()
+
+    # 3. coverage summary: every enumerated video has exactly one status
+    summary: dict = {"ts": now(), "enumeration": enum_report, "stopped": stopped, "channels": {}}
+    for r in ledger.values():
+        c = summary["channels"].setdefault(r["channel"], {})
+        c[r["status"]] = c.get(r["status"], 0) + 1
+    for c in summary["channels"].values():
+        c["total"] = sum(c.values())
+    (out / "coverage_summary.json").write_text(json.dumps(summary, indent=1), encoding="utf-8")
+    print(json.dumps(summary, indent=1))
+
+    zip_base = out.parent / "video_mining_out"
+    shutil.make_archive(str(zip_base), "zip", root_dir=out)
+    print(f"zip: {zip_base}.zip")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
