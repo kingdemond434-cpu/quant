@@ -50,6 +50,10 @@ SOURCE = "weak_signal_ensemble"
 REPORT = _DESK / "reports" / "weak_signal_compiler.json"
 GATES = _DESK / "reports" / "universal_gates_external.json"
 DOCKET = _DESK / "data" / "hypotheses" / "external_survivors.json"
+#: cell -> failed gates, ACCUMULATED ACROSS SWEEPS by the weak-signal book (#604). The latest sweep
+#: alone is mostly NOT_RUN_BUILD_BUDGET_DEFERRED, so on the box (2026-11-03 04:35Z) it yielded
+#: zero members and this lane proposed nothing; the store remembers every sweep's verdicts.
+FAILED_GATES_STORE = _DESK / "reports" / "weak_signal_book" / "failed_gates.json"
 POWER_GATES = frozenset({"deflated_sharpe", "expected_value", "in_sample_screen"})
 MAX_MEMBERS = 24
 MIN_MEMBERS = 4
@@ -112,34 +116,54 @@ def power_deficient(max_per_symbol: int = MAX_MEMBERS) -> dict[str, list[dict]]:
     try:
         doc = json.loads(GATES.read_text("utf-8"))
     except (OSError, ValueError):
-        return {}
+        doc = {}
     docket = _docket_by_cell()
     out: dict[str, list[dict]] = {}
-    for v in doc.get("verdicts") or []:
-        if not isinstance(v, dict) or v.get("unmeasured"):
-            continue
-        stages = v.get("stages") or v.get("gates") or {}
-        if not isinstance(stages, dict) or not stages:
-            continue
-        failed = {k for k, g in stages.items() if isinstance(g, dict) and g.get("passed") is False}
-        if not failed or not failed <= POWER_GATES:
-            continue
-        sym = str(v.get("sym") or v.get("symbol") or "")
-        fam = str(v.get("family") or "")
-        if not sym or not fam or fam == "ensemble":
-            continue
+    seen: set[str] = set()
+
+    def _add(cell: str, sym: str, fam: str, failed: set[str], sharpe: float) -> None:
+        if not cell or cell in seen or not failed or not failed <= POWER_GATES:
+            return
         # PARAMS COME FROM THE DOCKET, NEVER FROM THE VERDICT. The verdict carries a digest; a
         # member built with `{}` because the real params could not be found is a DIFFERENT
         # strategy wearing the cell's name, and it would be combined under that name.
-        row = docket.get(str(v.get("cell") or ""))
+        row = docket.get(cell)
         if row is None:
-            continue
+            return
+        sym = sym or str(row.get("symbol") or "")
+        fam = fam or str(row.get("family") or "")
+        if not sym or not fam or fam == "ensemble":
+            return
+        seen.add(cell)
         params = row.get("params")
         out.setdefault(sym, []).append({
             "symbol": sym, "family": fam,
             "params": dict(params) if isinstance(params, dict) else {},
-            "cell": str(v.get("cell") or ""),
-            "sharpe": float((stages.get("in_sample_screen") or {}).get("sharpe") or 0.0)})
+            "cell": cell, "sharpe": sharpe})
+
+    for v in (doc.get("verdicts") or []) if isinstance(doc, dict) else []:
+        if not isinstance(v, dict) or v.get("unmeasured"):
+            continue
+        stages = v.get("stages") or v.get("gates") or {}
+        if isinstance(stages, dict) and stages:
+            failed = {k for k, g in stages.items()
+                      if isinstance(g, dict) and g.get("passed") is False}
+            sharpe = float((stages.get("in_sample_screen") or {}).get("sharpe") or 0.0)
+        elif isinstance(v.get("failed_gates"), list):
+            failed, sharpe = {str(g) for g in v["failed_gates"]}, 0.0
+        else:
+            continue
+        _add(str(v.get("cell") or ""), str(v.get("sym") or v.get("symbol") or ""),
+             str(v.get("family") or ""), failed, sharpe)
+    # EVERY EARLIER SWEEP TOO. A cell whose full failed-gate set some sweep recorded stays a member
+    # after later sweeps defer it; the latest sweep's own reading wins where both exist.
+    try:
+        store = json.loads(FAILED_GATES_STORE.read_text("utf-8"))
+    except (OSError, ValueError):
+        store = {}
+    for cell, gates in (store.items() if isinstance(store, dict) else []):
+        if isinstance(gates, list):
+            _add(str(cell), "", "", {str(g) for g in gates}, 0.0)
     for sym in out:
         out[sym] = sorted(out[sym], key=lambda m: -abs(m["sharpe"]))[:max_per_symbol]
     return out
@@ -406,7 +430,7 @@ def run(symbols: list[str] | None = None, budget_s: float = 2400.0) -> dict:
               "build_failures": dict(BUILD_FAILURES.most_common(20)),
               "cells_proposed": len(proposals), "skipped": skipped,
               "proposals": proposals, "all": rows,
-              "member_source": str(GATES),
+              "member_source": [str(GATES), str(FAILED_GATES_STORE)],
               "note": ("members are cells that passed every validity gate and failed only "
                        "power gates; an ensemble is proposed only if it beats its strongest "
                        "member out of sample")}

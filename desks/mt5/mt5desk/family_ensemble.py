@@ -73,7 +73,21 @@ def family_ensemble(
     # its actual exposure -- is what "the members agree" means, and a member timestamp that is not
     # on this chart's clock (an M5 member under an H1 ensemble) is placed on the bar containing it
     # instead of being dropped.
-    idx_ns = d.index.asi8 if isinstance(d.index, pd.DatetimeIndex) else None
+    on_clock = isinstance(d.index, pd.DatetimeIndex)
+    # ttl_bars is counted in the MEMBER's bars (members run on `df`), the vote lives on `d`. On a
+    # sub-H1 chart an M5 member's 12-bar hold is one hour, not twelve: convert through the two
+    # bar durations so a short hold is not inflated into manufactured agreement (audit SF, #636).
+    def _bar_ns(ix: object) -> int:
+        # In Timedelta nanoseconds, never raw asi8: a datetime64[us] chart and a [ns] resample
+        # differ by 1000x in asi8 units and would shrink every span to one bar.
+        if isinstance(ix, pd.DatetimeIndex) and len(ix) > 1:
+            dt = ix.to_series().diff().dropna()
+            dt = dt[dt > pd.Timedelta(0)]
+            if len(dt):
+                return int(pd.Timedelta(dt.median()).value)
+        return 0
+    member_ns, vote_ns = _bar_ns(df.index), _bar_ns(d.index)
+    span_scale = (member_ns / vote_ns) if member_ns > 0 and vote_ns > 0 else 1.0
     vote_a = np.zeros(len(d), dtype=float)
     n_ok = 0
     for m, w in zip(members, weights):
@@ -89,14 +103,15 @@ def family_ensemble(
         for s in sigs:
             try:
                 t = pd.Timestamp(s.time)
-                if idx_ns is None:
+                if not on_clock:
                     continue
-                i = int(np.searchsorted(idx_ns, t.value, side="right")) - 1
+                i = int(d.index.searchsorted(t, side="right")) - 1
             except (TypeError, ValueError):
                 continue
             if i < 0 or i >= len(d):
                 continue
-            span = max(int(getattr(s, "ttl_bars", 1) or 1), 1)
+            ttl = max(int(getattr(s, "ttl_bars", 1) or 1), 1)
+            span = max(int(np.ceil(ttl * span_scale - 1e-9)), 1)
             exposure[i:i + span] = int(s.side)       # latest entry wins where a member re-enters
         vote_a += float(w) * exposure
     if n_ok == 0:

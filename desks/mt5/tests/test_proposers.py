@@ -325,3 +325,25 @@ def test_ensemble_places_off_clock_member_times_on_the_containing_bar():
                        trigger=None, wait_bars=1)]
     sigs = fam(d, members=members, weights=[1.0], threshold=0.5, hold_bars=48, _runner=runner)
     assert [s.time for s in sigs] == [d.index[24 * 130]] and sigs[0].side == -1
+
+
+def test_ensemble_converts_a_member_ttl_through_bar_durations(monkeypatch):
+    """A 12-bar M5 hold is one H1 bar of exposure, not twelve (audit SF on #636)."""
+    import mt5desk.family_ensemble as fe
+    from mt5desk.engine import Signal
+    h = _bars(days=200)
+    idx5 = pd.date_range(h.index[0], periods=len(h) * 12, freq="5min", tz="UTC")
+    m5 = h.reindex(idx5, method="ffill")
+    monkeypatch.setattr(fe, "_h1", lambda df: h)          # the vote clock is H1, members run on M5
+    k = 24 * 130
+    ta, tb = h.index[k], h.index[k + 1]
+
+    def runner(sym, family, params, df):
+        t = ta if family == "a" else tb
+        return [Signal(time=t, side=1, stop=0.0, target=1e9, ttl_bars=12, tag=family,
+                       trigger=None, wait_bars=1)]
+    members = [{"symbol": "X", "family": "a", "params": {}},
+               {"symbol": "X", "family": "b", "params": {}}]
+    sigs = fe.family_ensemble(m5, members=members, weights=[1.0, 1.0], threshold=0.9,
+                              hold_bars=48, _runner=runner)
+    assert sigs == [], "a one-hour M5 hold must not overlap the next hour's member"
