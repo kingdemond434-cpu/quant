@@ -119,3 +119,15 @@ def test_an_unknown_fill_rule_is_refused() -> None:
     df = _frame(lows=[99.9], highs=[100.1])
     with pytest.raises(ValueError):
         run_backtest(df, [_buy_limit(df)], COSTS, limit_fill="mid")
+
+
+def test_a_generator_that_priced_the_trade_through_is_not_charged_twice() -> None:
+    """entry_alpha already shifts its level by its own hourly worst spread; the engine must fill
+    that signal on a touch of the shifted level, never subtract a second spread."""
+    df = _frame(lows=[99.9, 99.5], highs=[100.1, 100.1])
+    priced = Signal(time=df.index[0], side=1, stop=98.5, target=104.5, ttl_bars=4, tag="t",
+                    trigger=99.5, wait_bars=3, fill_through_priced=True)
+    trades = run_backtest(df, [priced], COSTS).trades
+    assert len(trades) == 1 and trades[0].entry == pytest.approx(99.5)
+    engine._LEGS.slot = None
+    assert run_backtest(df, [_buy_limit(df)], COSTS).trades == []

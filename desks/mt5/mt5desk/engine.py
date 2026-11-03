@@ -438,6 +438,11 @@ class Signal:
     # every add, which is how a pyramid turns into the thing it is not supposed
     # to be. Set False only to MEASURE that difference, never to trade it.
     add_ratchets_stop: bool = True
+    # A generator that ALREADY priced the trade-through into its trigger (entry_alpha shifts its
+    # level by its own measured hourly worst spread, and emits nothing when none is measured) sets
+    # this so the engine fills it on a touch of that shifted level instead of charging the spread
+    # a second time. Default False: every other resting limit must trade through.
+    fill_through_priced: bool = False
 
 
 @dataclass
@@ -776,7 +781,8 @@ def run_backtest(
             limit_entry = ((sig.side > 0 and tgt < entry)
                            or (sig.side < 0 and tgt > entry))
             hit = -1
-            through = limit_entry and limit_fill == "trade_through"
+            through = (limit_entry and limit_fill == "trade_through"
+                       and not sig.fill_through_priced)
             for j in range(i, min(i + sig.wait_bars, len(idx))):
                 if through:
                     # TRADE-THROUGH, NOT TOUCH (2026-11-03). The bars are BID. A buy limit at
