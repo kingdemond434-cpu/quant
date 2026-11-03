@@ -307,6 +307,26 @@ def test_green_and_mergeable_but_open_past_2h_is_red() -> None:
     assert rep["status"] == "GREEN"
 
 
+def test_no_merge_for_24h_while_gating_green_is_red() -> None:
+    """10-30 to 11-03: nothing merged for four days and no other rule fired."""
+    prs = [_pr(567, "7" * 40, "fix")]
+    ok = [{"name": k, "status": "completed", "conclusion": "success"} for k in mp.GATING]
+    green = {"7" * 40: ok}
+    old = [{"merged_at": _iso(25 * 60)}, {"merged_at": None}]
+    rep = mp.assess(NOW, prs, green, {}, [], 0, [_commit("fix", 1)], merged=old)
+    assert [r.split()[0] for r in rep["red"]] == ["NO_MERGE_24H:"]
+    assert rep["live"]["hours_since_merge"] == 25.0
+    rep = mp.assess(NOW, prs, green, {}, [], 0, [_commit("fix", 1)], merged=[])  # unknown: RED
+    assert any(r.startswith("NO_MERGE_24H") for r in rep["red"])
+    fresh = [{"merged_at": _iso(60)}]
+    rep = mp.assess(NOW, prs, green, {}, [], 0, [_commit("fix", 1)], merged=fresh)
+    assert rep["status"] == "GREEN"
+    red_ci = {"7" * 40: [{"name": "quality", "status": "completed", "conclusion": "failure"}]}
+    rep = mp.assess(NOW, prs, red_ci, {}, [], 0, [_commit("fix", 1)], merged=old)
+    assert rep["status"] == "GREEN"
+    assert mp.assess(NOW, prs, green, {}, [], 0, [_commit("fix", 1)])["status"] == "GREEN"  # unread
+
+
 def test_live_stalls_on_green_work_too() -> None:
     prs = [_pr(516, "1" * 40, "ftmo")]
     rep = mp.assess(NOW, prs, {}, {}, [], 0, [_commit("fix", 7 * 60)], ready={516: _iso(10)})
@@ -353,7 +373,9 @@ def test_a_second_merger_looks_when_checks_complete() -> None:
 
 def test_every_gh_call_of_the_gate_can_time_out() -> None:
     src = (ROOT / ".github/scripts/audit_gate.py").read_text(encoding="utf-8")
-    assert "timeout=GH_TIMEOUT_S" in src.split("def _gh(", 1)[1].split("\ndef ", 1)[0]
+    # #571 moved the subprocess call into _gh_run; _gh turns its timeout into a RuntimeError
+    assert "timeout=GH_TIMEOUT_S" in src.split("def _gh_run(", 1)[1].split("\ndef ", 1)[0]
+    assert "except subprocess.TimeoutExpired" in src.split("def _gh(", 1)[1].split("\ndef ", 1)[0]
     assert '"pr", "ready"' in src and "check=True, timeout=GH_TIMEOUT_S" in src
 
 

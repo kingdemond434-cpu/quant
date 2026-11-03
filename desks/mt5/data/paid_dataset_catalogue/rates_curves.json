@@ -1,0 +1,67 @@
+{
+ "class": "rates_curves",
+ "label": "Government yield curves and money-market rates",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:bloomberg:bval_curves",
+   "vendor": "Bloomberg",
+   "dataset": "BVAL curves",
+   "class": "rates_curves",
+   "region": "global",
+   "measures": "Evaluated yield curves",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:ice_data_services:swap_rates_and_curves",
+   "vendor": "ICE Data Services",
+   "dataset": "Swap rates and curves",
+   "class": "rates_curves",
+   "region": "global",
+   "measures": "Interest-rate swap curves",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:tradeweb:government_bond_yields_and_curves",
+   "vendor": "Tradeweb",
+   "dataset": "Government bond yields and curves",
+   "class": "rates_curves",
+   "region": "global",
+   "measures": "Dealer-quoted government bond curves",
+   "frequency": "intraday",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  }
+ ]
+}
