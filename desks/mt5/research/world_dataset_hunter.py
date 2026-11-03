@@ -1051,7 +1051,8 @@ def direct_sources(now: datetime | None = None) -> list[dict[str, Any]]:
                  "od/avg_interest_rates?sort=-record_date&page%5Bsize%5D=10000")},
     ]
     out += gap_doors()
-    out += fund_flow_doors()
+    out += fund_flow_doors(now)
+    out += jobs_doors(now)
     out += agri_nowcast_doors(now)
     out += country_pack_doors()
     for sid in _fred_ids():
@@ -1140,9 +1141,13 @@ def gap_doors() -> list[dict[str, Any]]:
 #: `world_macro_state` cells (a z-score band on one flow series) the sealed gauntlet judges as a
 #: state for USDJPY, JPN225, EURUSD, US500 and the rest. Terms are rows of the ONE register:
 #: `jp_mof` (PUBLIC_PAGE, PDL 1.0), `ecb_data_portal` (API_PERMITTED, ESCB reuse policy),
-#: `fed_board` (PUBLIC_PAGE, public domain), `us_tic` (IDEAS_ONLY: no clause read). A door on an
-#: IDEAS_ONLY row is refused at `urllib_fetch` (`terms_fenced`) and its missed-growth line is
-#: published in the report (`terms_doors`); its parser is still built and pinned on fixtures.
+#: `fed_board` (PUBLIC_PAGE, public domain), `us_tic` (PUBLIC_PAGE since 2026-11-03: CC0 per the
+#: Treasury's own data.json entry), `ici_stats` (PUBLIC_WITH_TERMS label, research-only). A door
+#: on an IDEAS_ONLY row is never asked (`fetch_direct`'s terms pre-check; `urllib_fetch`
+#: refuses it as `terms_fenced` too) and its missed-growth line is published in the report
+#: (`terms_doors`); its parser is still built and pinned on fixtures. Every door here carries
+#: `liveness` and goes RED after more than PACK_EMPTY_RED_RUNS consecutive empty runs
+#: (`door_liveness_report`).
 _MOF_ITS = ("https://www.mof.go.jp/policy/international_policy/reference/"
             "itn_transactions_in_securities/")
 _TIC_DOCS = "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/"
@@ -1365,8 +1370,9 @@ def _z1_ddp_frame(raw: bytes) -> Any:
     return df[df["series_code"].isin(keep)]
 
 
-def fund_flow_doors() -> list[dict[str, Any]]:
+def fund_flow_doors(now: datetime | None = None) -> list[dict[str, Any]]:
     """The fund-flow doors as direct specs (`direct_sources` appends them)."""
+    now = now or _now()
     out: list[dict[str, Any]] = [
         {"provider": "JP_MOF", "dataset": "ITS_WEEKLY",
          "name": ("Japan Ministry of Finance weekly international transactions in securities: "
@@ -1394,7 +1400,288 @@ def fund_flow_doors() -> list[dict[str, Any]]:
                          "world, money market fund, mutual fund and ETF flows and levels"),
                 "mode": "z1_ddp_zip", "freq": "quarterly", "lag_days": _Z1_LAG_D,
                 "currencies": ["USD"], "url": _Z1_DATA + "FRB_Z1_csv.zip"})
+    out.append(ici_mmf_door(now))
+    for d in out:
+        d["liveness"] = "fund_flows"
     return out
+
+
+# ------------------------------------------- ICI weekly money market fund assets (2026-11-03) ----
+#: ICI publishes one HTML release page per week (`mm_MM_DD_YY`, the release date), read on
+#: 2026-11-03 from the 2021-04-08 page: dateline "Washington, DC; April 8, 2021", "for the week
+#: ended Wednesday, April 7", a table in billions of dollars with columns current week, prior
+#: week, $ change, two weeks back, rows Government / Prime / Tax-exempt (each with Retail and
+#: Institutional) and Total / Total, Retail / Total, Institutional. ONLY the current-week column is
+#: kept, stamped at the PAGE'S OWN dateline: a week the page repeats from an earlier release was
+#: knowable at that earlier release, never later. The release hour is not printed (UNMEASURED):
+#: the value is stamped the dateline day + 1 at 00:00 UTC (19:00-20:00 ET), after an afternoon
+#: release. Late only costs edge. A Thursday that is a US federal holiday is asked as the
+#: Wednesday before (UNVERIFIED: no holiday-week page was readable from the build sandbox).
+#: Terms: row `ici_stats` -- PUBLIC_WITH_TERMS (personal-use storage, no mirroring) as a LABEL
+#: (LAWS 5e): fetched, mined and tested, RESEARCH-ONLY (the spec and its catalog row carry
+#: `research_only`; no clause permits live sizing use) and never redistributed.
+_ICI_MMF = "https://www.ici.org/research/stats/mmf/"
+_ICI_WEEKS = 4
+_ICI_BACKFILL_WEEKS = 110
+_ICI_DATELINE = re.compile(r"Washington,\s*D\.?C\.?\s*[;,]\s*([A-Z][a-z]+\s+\d{1,2},\s*\d{4})")
+_ICI_DATE = re.compile(r"\b(\d{1,2})/(\d{1,2})/(\d{4})\b")
+_TAG = re.compile(r"<[^>]+>")
+_MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+_TR = re.compile(r"<tr\b[^>]*>(.*?)</tr>", re.I | re.S)
+_TD = re.compile(r"<t[dh]\b[^>]*>(.*?)</t[dh]>", re.I | re.S)
+
+
+def ici_release_days(now: datetime, weeks: int = _ICI_WEEKS) -> list[date]:
+    """The release days of the last `weeks` weekly ICI pages on or before `now` (Thursdays; the
+    Wednesday before when the Thursday is a US federal holiday)."""
+    d = now.date()
+    thu = d - timedelta(days=(d.weekday() - 3) % 7)
+    out = []
+    for i in range(weeks):
+        t = thu - timedelta(days=7 * i)
+        out.append(t - timedelta(days=1) if _holiday(t) else t)
+    return out
+
+
+def ici_mmf_door(now: datetime) -> dict[str, Any]:
+    """Each pass asks the last _ICI_WEEKS pages; the first pass (no rows yet) also asks the
+    earlier _ICI_BACKFILL_WEEKS, one page a week, so the series clears the weekly quality floor
+    (104 observations) instead of waiting two years for it."""
+    days = ici_release_days(now, _ICI_WEEKS + _ICI_BACKFILL_WEEKS)
+    urls = [{"url": f"{_ICI_MMF}mm_{d:%m}_{d:%d}_{d:%y}"} for d in days[:_ICI_WEEKS]]
+    back = [{"url": f"{_ICI_MMF}mm_{d:%m}_{d:%d}_{d:%y}"} for d in days[_ICI_WEEKS:]]
+    return {"provider": "ICI", "dataset": "MMF_WEEKLY",
+            "name": ("Investment Company Institute weekly money market fund assets by type "
+                     "(government, prime, tax-exempt; retail and institutional), billions USD"),
+            "mode": "ici_mmf_html", "freq": "weekly", "currencies": ["USD"],
+            "stems": ["US500", "NAS100", "USDX"], "research_only": True,
+            "url": urls[0]["url"], "urls": urls, "urls_backfill": back}
+
+
+def _cells(row_html: str) -> list[str]:
+    import html as _h
+    return [" ".join(_h.unescape(_TAG.sub(" ", c)).split()) for c in _TD.findall(row_html)]
+
+
+def _ici_mmf_frame(raw: bytes, spec: dict[str, Any] | None = None) -> Any:
+    import pandas as pd
+
+    text = raw.decode("utf-8-sig", "replace")
+    m = _ICI_DATELINE.search(_TAG.sub(" ", text))
+    if not m:
+        raise FetchError("unparseable", "ici mmf: no dateline")
+    mo, dd, yy = m[1].replace(",", " ").split()
+    try:
+        released = date(int(yy), _MONTHS.index(mo[:3].lower()) + 1, int(dd))
+    except ValueError as exc:
+        raise FetchError("unparseable", "ici mmf: dateline date") from exc
+    week: date | None = None
+    rows: list[dict[str, Any]] = []
+    for tr in _TR.findall(text):
+        cells = _cells(tr)
+        if not cells:
+            continue
+        if week is None:
+            dm = next((_ICI_DATE.search(c) for c in cells if _ICI_DATE.search(c)), None)
+            if dm:
+                week = date(int(dm[3]), int(dm[1]), int(dm[2]))
+            continue
+        label = re.sub(r"\d+$", "", cells[0]).strip()
+        if not label or len(cells) < 2:
+            continue
+        v = _num_or_none(cells[1].replace(",", "").replace("$", "").strip())
+        if v is None:
+            continue
+        rows.append({"series_code": "ici_mmf_" + _slug(label).lower().replace("-", "_"),
+                     "period": None, "value": v})
+    if week is None or not rows:
+        raise FetchError("unparseable", "ici mmf: no week column or no rows")
+    if released < week:
+        raise FetchError("unparseable", "ici mmf: dateline before the week it reports")
+    rel = datetime(released.year, released.month, released.day, tzinfo=UTC) + timedelta(days=1)
+    for r in rows:
+        r["period"] = (week - timedelta(days=6)).isoformat()   # period_end = the Wednesday
+        r["release_utc"] = _iso(rel)
+    return pd.DataFrame(rows, columns=["series_code", "period", "value", "release_utc"])
+
+
+def access_labels(key: str | None) -> dict[str, Any]:
+    """The LAWS 5e labels for a register row: `access_label` (the row's own; ACCESS_UNCLEAR when
+    it names none or the URL is unlisted), `redistribute_allowed` from
+    `access_classifier.ROUTING` (fails closed: an unknown label never redistributes) and the
+    row's `terms_note`. Labels route use; they never stop a fetch."""
+    from libs.data import terms_fence as _tf
+    from libs.research.access_classifier import ROUTING
+    row = (_tf.SOURCE_POLICY.get(key) or {}) if key else {}
+    label = str(row.get("access_label") or "ACCESS_UNCLEAR")
+    route = ROUTING.get(label)  # type: ignore[call-overload]
+    allowed = bool(route) and "redistribute" in (route.get("allowed_uses") or ())
+    return {"access_label": label, "redistribute_allowed": allowed,
+            "terms_note": str(row.get("terms_note") or "")}
+
+
+# ---------------------------------------------------- jobs-postings nowcast doors (2026-11-03) ----
+#: THE OFFICIAL ANCHOR: BLS Public Data API v2, one GET per series (`registrationkey` is the API's
+#: documented query parameter; the key is substituted at fetch time, registered with the
+#: redactor and written back as `{key}` on every error path). JOLTS openings, hires and quits and
+#: CES total nonfarm payrolls, monthly, SA. A ten-year window a request (the API FAQ's own cap);
+#: two older windows are added only while the dataset holds no rows (`urls_backfill`).
+#: RELEASE: JOLTS ~5-6 weeks after the month (10:00 ET), CES the first Friday after (08:30 ET).
+#: Stamped month end + 45 days (JOLTS) and + 10 days (CES), with the shutdown months read from
+#: BLS's own rescheduled releases pushed LATE: JOLTS 2025-09 (released with 2025-10 on
+#: 2025-12-09), CES 2025-09 (2025-11-20), 2025-10 and 2025-11 (2025-12-16), and the 2013
+#: shutdown months. Any other slipped release is UNMEASURED; a value watched arriving is keyed
+#: on its own first_seen_utc anyway (`pit_series`).
+_BLS_API = "https://api.bls.gov/publicAPI/v2/timeseries/data/"
+BLS_SERIES: tuple[tuple[str, str, str], ...] = (
+    ("JTS000000000000000JOL", "us_jolts_openings", "jolts"),
+    ("JTS000000000000000JOR", "us_jolts_openings_rate", "jolts"),
+    ("JTS000000000000000HIL", "us_jolts_hires", "jolts"),
+    ("JTS000000000000000QUL", "us_jolts_quits", "jolts"),
+    ("CES0000000001", "us_ces_nonfarm_payrolls", "ces"),
+)
+_BLS_LAG_D = {"jolts": 45, "ces": 10}
+_BLS_LAG_OVERRIDE = {"jolts": {"2025-09": 71, "2013-08": 60, "2013-09": 60},
+                     "ces": {"2025-09": 52, "2025-10": 47, "2025-11": 17, "2013-09": 23}}
+
+
+def _bls_url(sid: str, y0: int, y1: int) -> str:
+    return (f"{_BLS_API}{sid}?registrationkey={{api_key}}&"
+            + urllib.parse.urlencode({"startyear": y0, "endyear": y1}))
+
+
+def _bls_api_frame(raw: bytes, spec: dict[str, Any] | None = None) -> Any:
+    """BLS v2 JSON -> one row per (series, month). M13 (annual average) and '-' cells are absent;
+    a refused request (`REQUEST_NOT_PROCESSED`, the daily limit) is a named failure, never 0."""
+    import pandas as pd
+
+    try:
+        doc = json.loads(raw.decode("utf-8", "replace"))
+    except ValueError as exc:
+        raise FetchError("bad_json", "bls api") from exc
+    if str(doc.get("status") or "") != "REQUEST_SUCCEEDED":
+        msg = " ".join(str(x) for x in (doc.get("message") or []))[:160]
+        raise FetchError("api_refused", f"bls: {doc.get('status')}: {msg}")
+    names = {sid: (code, kind) for sid, code, kind in BLS_SERIES}
+    rows: list[dict[str, Any]] = []
+    for s in (doc.get("Results") or {}).get("series") or []:
+        sid = str(s.get("seriesID") or "")
+        code, kind = names.get(sid, (sid.lower(), "jolts"))
+        for d in s.get("data") or []:
+            per = str(d.get("period") or "")
+            if not re.fullmatch(r"M(0[1-9]|1[0-2])", per):
+                continue
+            v = _num_or_none(str(d.get("value") or "").replace(",", ""))
+            if v is None:
+                continue
+            p = f"{int(d['year']):04d}-{per[1:]}"
+            rows.append({"series_code": code, "period": p, "value": v,
+                         "lag_days": _BLS_LAG_OVERRIDE[kind].get(p, _BLS_LAG_D[kind])})
+    df = pd.DataFrame(rows, columns=["series_code", "period", "value", "lag_days"])
+    if df.empty:
+        raise FetchError("empty", "bls api: no monthly observations")
+    return df
+
+
+#: ADZUNA (the API's documented `app_id` + `app_key` query parameters, both read through the
+#: hunter's key_env at fetch time). One count per (country, cut) a day: every live advert, and
+#: four category cuts. A count is a STOCK read at the instant this box asked (first-seen PIT):
+#: period = the fetch day, release_utc = the fetch instant. Terms: row `adzuna_api` (IDEAS_ONLY,
+#: re-read 2026-11-03: aggregated vacancy counts for ongoing research need written consent), so
+#: the door is built, its parser pinned on fixtures, and it is never asked.
+_ADZUNA_API = "https://api.adzuna.com/v1/api/jobs/"
+ADZUNA_COUNTRIES = ("us", "gb", "de", "fr", "au", "ca", "nz", "ch", "it", "es", "nl", "at", "be",
+                    "pl", "mx", "za", "sg", "in", "br")
+ADZUNA_CUTS: tuple[tuple[str, str], ...] = (
+    ("total", ""), ("it", "it-jobs"), ("engineering", "engineering-jobs"),
+    ("healthcare", "healthcare-nursing-jobs"), ("manufacturing", "manufacturing-jobs"))
+
+
+def _adzuna_url(cc: str, category: str) -> str:
+    q = "&category=" + category if category else ""
+    return (f"{_ADZUNA_API}{cc}/search/1?app_id={{app_id}}&app_key={{api_key}}"
+            f"&results_per_page=1{q}")
+
+
+def _adzuna_count_frame(raw: bytes, spec: dict[str, Any]) -> Any:
+    import pandas as pd
+
+    try:
+        doc = json.loads(raw.decode("utf-8", "replace"))
+    except ValueError as exc:
+        raise FetchError("bad_json", "adzuna") from exc
+    n = doc.get("count") if isinstance(doc, dict) else None
+    if not isinstance(n, (int, float)) or isinstance(n, bool):
+        raise FetchError("unparseable", "adzuna: no count")
+    at = _parse_iso(spec.get("fetched_at"))
+    if at is None:
+        raise FetchError("unparseable", "adzuna: no fetch instant to stamp")
+    return pd.DataFrame([{"series_code": str(spec["series_code"]),
+                          "period": at.date().isoformat(), "value": float(n),
+                          "release_utc": _iso(at)}])
+
+
+def jobs_doors(now: datetime | None = None) -> list[dict[str, Any]]:
+    """The jobs-postings nowcast doors (`direct_sources` appends them): the BLS anchor and one
+    Adzuna dataset per country. USAJOBS is NOT here: alt_proxies fetches it (USAJOBS_API_KEY,
+    header-only) and `jobs_nowcast` reads its axis -- nothing is fetched twice."""
+    now = now or _now()
+    y = now.year
+    out: list[dict[str, Any]] = [{
+        "provider": "BLS", "dataset": "JOLTS_CES",
+        "name": ("BLS JOLTS job openings, hires, quits and CES total nonfarm payrolls (official "
+                 "US labour-demand releases, monthly, SA)"),
+        "mode": "bls_api_json", "freq": "monthly", "lag_days": _BLS_LAG_D["jolts"],
+        "key_env": "BLS_API_KEY", "currencies": ["USD"], "liveness": "jobs",
+        "pin": list(JOBS_PINS["us"]),
+        "url": _bls_url(BLS_SERIES[0][0], y - 9, y),
+        "urls": [{"url": _bls_url(sid, y - 9, y)} for sid, _, _ in BLS_SERIES],
+        "urls_backfill": [{"url": _bls_url(sid, a, b)} for sid, _, _ in BLS_SERIES
+                          for a, b in ((y - 29, y - 20), (y - 19, y - 10))]}]
+    for cc in ADZUNA_COUNTRIES:
+        urls = [{"url": _adzuna_url(cc, cat), "series_code": f"{cc}_postings_{cut}"}
+                for cut, cat in ADZUNA_CUTS]
+        out.append({"provider": "ADZUNA", "dataset": f"POSTINGS_{cc.upper()}",
+                    "name": f"Adzuna live job-advert counts, {cc.upper()}, total and by category",
+                    "mode": "adzuna_count_json", "freq": "daily", "lag_days": 0,
+                    "key_env": "ADZUNA_APP_KEY", "key_env_extra": {"{app_id}": "ADZUNA_APP_ID"},
+                    "currencies": [], "pin": list(JOBS_PINS.get(cc, ())), "liveness": "jobs",
+                    "url": urls[0]["url"], "urls": urls})
+    return out
+
+
+#: The related FX pair(s) and index CFD per postings country. Filtered by the broker registry's
+#: hypothesis lane at ingest (a symbol it does not hold is never informed). No single names.
+JOBS_PINS: dict[str, tuple[str, ...]] = {
+    "us": ("US500", "NAS100", "US30", "US2000", "USDX", "EURUSD", "USDJPY", "GBPUSD", "AUDUSD",
+           "USDCAD", "USDCHF"),
+    "gb": ("GBPUSD", "EURGBP", "GBPJPY", "UK100"), "de": ("EURUSD", "GER40", "EUSTX50"),
+    "fr": ("EURUSD", "FRA40", "EUSTX50"), "it": ("EURUSD", "EUSTX50"), "es": ("EURUSD", "E35"),
+    "nl": ("EURUSD", "NETH25"), "at": ("EURUSD",), "be": ("EURUSD",),
+    "au": ("AUDUSD", "AUDJPY", "AUS200"), "ca": ("USDCAD", "CADJPY", "CA60"),
+    "nz": ("NZDUSD", "NZDJPY"), "ch": ("USDCHF", "EURCHF"), "pl": ("USDPLN", "EURPLN"),
+    "mx": ("USDMXN",), "za": ("USDZAR",), "sg": ("USDSGD",), "in": ("USDINR",),
+    "br": ("USDBRL",)}
+
+
+def door_liveness_report(cat: dict[str, Any]) -> dict[str, Any]:
+    """Every `liveness` door (fund flows, jobs) by group: its state (GREEN / AMBER / RED /
+    IDEAS_ONLY with its missed-growth line / NEEDS_KEY / UNMEASURED) and the RED rule shared with
+    the country packs: RED after more than PACK_EMPTY_RED_RUNS consecutive empty runs."""
+    rows_by_key = cat.get("datasets") or {}
+    groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for spec in direct_sources():
+        grp = spec.get("liveness")
+        if grp:
+            st = _door_state(rows_by_key.get(f"{spec['provider']}/{spec['dataset']}"), spec)
+            st["door"] = f"{spec['provider']}/{spec['dataset']}"
+            groups[str(grp)].append(st)
+    red = [d["door"] for ds in groups.values() for d in ds if d["state"] == "RED"]
+    return {"groups": {g: {"doors": ds, "states": dict(Counter(d["state"] for d in ds))}
+                       for g, ds in sorted(groups.items())},
+            "red_doors": red, "red_after_empty_runs": PACK_EMPTY_RED_RUNS,
+            "status": (f"RED: fund-flow/jobs doors empty > {PACK_EMPTY_RED_RUNS} runs: "
+                       + ", ".join(red)) if red else "OK"}
 
 
 def terms_doors() -> list[dict[str, Any]]:
@@ -1412,7 +1699,10 @@ def terms_doors() -> list[dict[str, Any]]:
                                "policy_row": key,
                                "status": _tf.live_input_status(key) if key else "UNLISTED",
                                "terms_state": _tf.terms_state(key) if key else _tf.UNREAD,
-                               "live_input": "REFUSED" if refused else "PERMITTED"}
+                               "live_input": "REFUSED" if refused else "PERMITTED",
+                               **access_labels(key),
+                               "research_only": bool(spec.get("research_only") or (
+                                   key and _tf.SOURCE_POLICY.get(key, {}).get("research_only")))}
         if refused:
             row["missed_growth"] = _tf.held_missed_growth(refused, source=row["door"],
                                                           live_input_refusal=True)
@@ -2286,6 +2576,9 @@ PACK_PARSERS: dict[str, Callable[[bytes, dict[str, Any]], Any]] = {
     "records_json": _records_frame,
     "boj_api_json": lambda raw, spec: _boj_api_frame(raw),
     "bi_table_html": _bi_table_frame,
+    "ici_mmf_html": _ici_mmf_frame,
+    "bls_api_json": _bls_api_frame,
+    "adzuna_count_json": _adzuna_count_frame,
 }
 
 
@@ -2423,13 +2716,17 @@ def _door_state(row: dict[str, Any] | None, spec: dict[str, Any]) -> dict[str, A
                            "last_attempt_at": (row or {}).get("last_attempt_at") or UNMEASURED,
                            "fetched_at": (row or {}).get("fetched_at") or UNMEASURED,
                            "fail_reason": (row or {}).get("fail_reason")}
+    envs = [e for e in [key_env, *dict(spec.get("key_env_extra") or {}).values()] if e]
+    missing = [e for e in envs if not os.environ.get(str(e))]
     if key_env:
         out["key"] = key_env if os.environ.get(key_env) else f"NEEDS_KEY:{key_env}"
+    if missing and len(envs) > 1:
+        out["key"] = "NEEDS_KEY:" + ",".join(str(e) for e in missing)
     if held:
         out["state"] = "IDEAS_ONLY"
         out["missed_growth"] = _tf.held_missed_growth(
             held, source=f"{spec['provider']}/{spec['dataset']}", live_input_refusal=True)
-    elif key_env and not os.environ.get(key_env):
+    elif missing:
         out["state"] = "NEEDS_KEY"
     elif out["empty_streak"] > PACK_EMPTY_RED_RUNS:
         out["state"] = "RED"
@@ -2861,6 +3158,16 @@ def _fetch_direct(client: Client, spec: dict[str, Any], now: datetime, *,
         _pf.register_secret(key)
         if spec.get("key_header"):
             headers = {str(spec["key_header"]): key}      # travels in the header, never the URL
+    # A door with a second credential (Adzuna's app_id beside its app_key): placeholder -> env,
+    # each read here, registered with the redactor and named `needs_key` when absent.
+    extra: dict[str, str] = {}
+    for ph, env in dict(spec.get("key_env_extra") or {}).items():
+        val = os.environ.get(str(env)) or ""
+        if not val:
+            raise FetchError("needs_key", str(env))
+        from libs.data import polite_fetch as _pf
+        _pf.register_secret(val)
+        extra[str(ph)] = val
     parts = list(spec.get("urls") or [{"url": spec["url"]}])
     if backfill:
         parts = list(spec.get("urls_backfill") or []) + parts
@@ -2871,10 +3178,12 @@ def _fetch_direct(client: Client, spec: dict[str, Any], now: datetime, *,
         url = str(part["url"]).replace("{bday}", _last_business_day(now))
         if key_env:
             url = url.replace("{api_key}", urllib.parse.quote(key, safe=""))
+        for ph, val in extra.items():
+            url = url.replace(ph, urllib.parse.quote(val, safe=""))
         try:
             raw = client.get(url, headers) if headers else client.get(url)
             # the parser sees the TEMPLATE url: a key never rides into an error's detail
-            sub = {**spec, **part, "url": str(part["url"])}
+            sub = {**spec, **part, "url": str(part["url"]), "fetched_at": _iso(now)}
             if mode in PACK_PARSERS:
                 df = PACK_PARSERS[mode](raw, sub)
             elif mode == "lbma_json":
@@ -2885,6 +3194,8 @@ def _fetch_direct(client: Client, spec: dict[str, Any], now: datetime, *,
             if key:
                 # a stored or logged failure names the door's TEMPLATE (`{key}`), never the key
                 exc = FetchError(exc.reason, url_template(exc.detail, key))
+            for val in extra.values():
+                exc = FetchError(exc.reason, url_template(exc.detail, val))
             if exc.reason == "budget_exhausted" or len(parts) == 1:
                 raise exc from None
             first = first or exc
@@ -2920,12 +3231,18 @@ def fetch_direct(client: Client, cat: dict[str, Any], *, now: datetime, until: f
                                                "discovered_at": _iso(now), "source": "direct"})
         row["name"] = spec.get("name")
         row["score"] = dataset_score(spec["provider"], spec.get("name", ""))
+        if spec.get("research_only"):
+            row["research_only"] = True       # a label: mined and tested, never live sizing
         if not _due(row, now):
             continue
         misses: Counter[str] = Counter()
         pack = spec.get("pack")
+        # A country-pack door and a `liveness` door (fund flows, jobs) share the empty-run
+        # streak, the terms pre-check and the RED rule (more than PACK_EMPTY_RED_RUNS empty runs).
+        gated = bool(pack or spec.get("liveness"))
         if pack:
             row["pack"] = pack
+        if gated:
             held = pack_terms_hold(spec)
             if held:
                 # IDEAS_ONLY / held on the register: never requested as data. Not a failure and
@@ -2945,7 +3262,7 @@ def fetch_direct(client: Client, cat: dict[str, Any], *, now: datetime, until: f
             row["fail_count"] = int(row.get("fail_count") or 0) + 1
             row["fail_reason"] = exc.reason
             row["next_due"] = _iso(now + timedelta(hours=DIRECT_REFRESH_H))
-            if pack:
+            if gated:
                 _pack_empty_run(row, exc.reason)
             stats[f"direct:{exc.reason}"] += 1
             by_provider[spec["provider"]]["failed"] += 1
@@ -2954,7 +3271,7 @@ def fetch_direct(client: Client, cat: dict[str, Any], *, now: datetime, until: f
             row["fail_count"] = int(row.get("fail_count") or 0) + 1
             row["fail_reason"] = f"parse:{type(exc).__name__}"
             row["next_due"] = _iso(now + timedelta(hours=DIRECT_REFRESH_H))
-            if pack:
+            if gated:
                 _pack_empty_run(row, row["fail_reason"])
             stats[f"direct:parse:{type(exc).__name__}"] += 1
             continue
@@ -2964,7 +3281,7 @@ def fetch_direct(client: Client, cat: dict[str, Any], *, now: datetime, until: f
                             hint_stems=spec.get("stems", ()), qstats=qstats,
                             pin_instruments=spec.get("pin"))
         row["partial_misses"] = dict(misses) or None
-        if pack:
+        if gated:
             row.update({"pack_state": "FETCHED", "empty_streak": 0, "needs_key": None})
         row.update({"fetched_at": _iso(now), "fail_count": 0, "fail_reason": None,
                     "series_total": len(series), "series_passed": res["passed"],
@@ -3390,6 +3707,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: Fetcher | None = None,
     qstats: Counter[str] = Counter()
     by_provider: dict[str, Counter[str]] = defaultdict(Counter)
     stood_down = None
+    jobs: Any = {"state": UNMEASURED, "why": "not run this pass (dry run or disk floor)"}
     disk_ok, disk = _free_disk_ok()
 
     discovery_until = t0 + (deadline - t0) * DISCOVERY_SHARE
@@ -3405,6 +3723,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: Fetcher | None = None,
                                 stats=stats, qstats=qstats, by_provider=by_provider)
             fetch_dbnomics(client, cat, now=now, until=deadline, stats=stats, qstats=qstats,
                            by_provider=by_provider)
+            jobs = _jobs_nowcast_or_unmeasured(now, qstats)
     cat["updated_at"] = _iso(now)
     write_json(CATALOG, cat, indent=None)
     exposure = build_exposure(now)
@@ -3431,6 +3750,14 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: Fetcher | None = None,
     own = report.get("country_packs") or {}
     report["country_packs"] = {**own, **eu,
                                "packs": {**(own.get("packs") or {}), **(eu.get("packs") or {})}}
+    # FUND-FLOW AND JOBS DOORS: their liveness (RED after > PACK_EMPTY_RED_RUNS empty runs) joins
+    # the organ's own `status`, which health_board reads -- the desk's existing RED path.
+    live = door_liveness_report(cat)
+    report["flow_jobs_liveness"] = live
+    report["jobs_nowcast"] = jobs
+    if live["red_doors"]:
+        report["status"] = (live["status"] if report.get("status") in (None, "OK")
+                            else f"{report['status']}; {live['status']}")
     write_json(REPORT, report)
     return report
 
@@ -3522,6 +3849,18 @@ def build_report(cat: dict[str, Any], exposure: dict[str, Any], *, stats: Counte
         "rule": ("absence is UNMEASURED, never 0; every observation carries available_time and "
                  "first_seen_utc; a revision is a new row, never an overwrite"),
     }
+
+
+def _jobs_nowcast_or_unmeasured(now: datetime, qstats: Counter[str]) -> Any:
+    """The jobs-postings nowcast (research/jobs_nowcast.py) over what the doors landed."""
+    try:
+        try:
+            from research import jobs_nowcast as _jn
+        except ImportError:                                                   # pragma: no cover
+            import jobs_nowcast as _jn  # type: ignore[no-redef,import-not-found]
+        return _jn.ingest(now, qstats)
+    except Exception as exc:                       # a failed derivation is a reading, never 0
+        return {"state": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:200]}
 
 
 def _terms_doors_or_unmeasured() -> Any:

@@ -375,20 +375,115 @@ SOURCE_POLICY.update({
                                       "from the original source and cannot be obtained from the "
                                       "Board.")}}},
     "us_tic": {
-        "hosts": ("ticdata.treasury.gov",), "status": IDEAS_ONLY, "sources": ("us_tic",),
-        "why": ("US Treasury TIC cross-border securities files: the Treasury site-policies page "
-                "as read carries no copyright, reuse or automated-access clause, so its terms "
-                "are UNREAD and UNREAD terms never permit live input; read for ideas only"),
-        "unblock": ("a Treasury (home.treasury.gov or ticdata.treasury.gov) page quoting a reuse "
-                    "or public-domain clause for TIC data, quoted into this row"),
-        "terms": {"url": "https://home.treasury.gov/subfooter/site-policies-and-notices",
-                  "checked_at": "2026-10-29",
-                  "unread": {
+        # RE-READ 2026-11-03 (claude/gd-flows-jobs): the Treasury's own data.json entry for the
+        # TIC long-term securities transactions series, as listed on catalog.data.gov, declares
+        # CC0 with public access -- the permitting clause the 2026-10-29 reading lacked. The row
+        # moves IDEAS_ONLY -> PUBLIC_PAGE on that quote; the site-policies page still carries no
+        # clause of its own (kept under also_read).
+        "hosts": ("ticdata.treasury.gov",), "status": PUBLIC_PAGE, "sources": ("us_tic",),
+        "access_label": "OPEN_DATA",
+        "terms_note": ("CC0 per the Treasury's data.json entry (catalog.data.gov, identifier "
+                       "015-DO-082); robots asked at run time by the fetch door"),
+        "why": ("US Treasury TIC cross-border securities files: the Treasury's own open-data "
+                "catalogue entry for the TIC long-term securities transactions series declares "
+                "public access under Creative Commons CCZero"),
+        "terms": {"url": ("https://catalog.data.gov/dataset/treasury-international-capital-tic-"
+                          "u-s-transactions-with-foreign-residents-in-long-term-se-3d2aa"),
+                  "checked_at": "2026-11-03",
+                  "clauses": {
+                      "access": ("Public: This dataset is intended for public access and use. "
+                                 "License: Creative Commons CCZero"),
+                      "licence": "http://creativecommons.org/publicdomain/zero/1.0/",
+                      "publisher": "Department of the Treasury",
+                      "catalog": "http://www.treasury.gov/data.json"},
+                  "also_read": {
                       "https://home.treasury.gov/subfooter/site-policies-and-notices":
                           ("read 2026-10-29: only linking and privacy text, no copyright, reuse "
-                           "or automated-access clause: UNREAD"),
+                           "or automated-access clause"),
                       "https://home.treasury.gov/subfooter/privacy-act/privacy-and-legal-notices":
                           "client_error to the reader on 2026-10-29: UNREAD"}}},
+    "ici_stats": {
+        # ICI's weekly money market fund assets release. READ 2026-11-03: the copyright page
+        # permits storage for personal use only and bars mirroring ICI data. Under LAWS 5e those
+        # terms are a LABEL, never a stop (ruling relayed 2026-11-03): the series is MINED AND
+        # TESTED as PUBLIC_WITH_TERMS, RESEARCH-ONLY -- no verbatim clause permits it as a live
+        # sizing input -- and redistribution is withheld (ROUTING fails closed on that label).
+        "hosts": ("ici.org",), "status": PUBLIC_PAGE, "sources": ("ici_stats", "ici_mmf"),
+        "access_label": "PUBLIC_WITH_TERMS", "research_only": True,
+        "terms_note": ("personal-use storage only; no mirroring of ICI data; reuse by "
+                       "permission form; no automated-access clause; robots not read (proxy); "
+                       "research-only: no clause permits live sizing use; never redistributed"),
+        "why": ("ICI weekly money market fund assets: mined and tested for research with its "
+                "terms attached as a label (personal-use storage, no mirroring); research-only, "
+                "never a live sizing input, never redistributed"),
+        "unblock": ("ICI written permission (https://www.ici.org/permissions) for live use of "
+                    "the weekly MMF assets series"),
+        "terms": {"url": "https://www.ici.org/copyright-and-linking-policies",
+                  "checked_at": "2026-11-03",
+                  "clauses": {
+                      "personal": ("You may store any of this information on your own computer "
+                                   "for your personal use only"),
+                      "reuse": "you may not reproduce, modify, or reuse the text or graphics.",
+                      "mirror": ("you may not \u201cmirror\u201d this information (that is, you "
+                                 "may not post ICI data, papers, or sections of papers)"),
+                      "citation": ("You may cite or refer to the information in this site in "
+                                   "any media provided you include proper attribution")},
+                  "also_read": {
+                      "https://www.idc.org/research/stats/mmfassets":
+                          ("2026-11-03: 'To request permission to use or reproduce ICI "
+                           "material, please use the permission request form.'"),
+                      "https://www.ici.org/robots.txt":
+                          "connect_rejected by the build proxy on 2026-11-03: UNREAD"}}},
+    "us_bls_api": {
+        "hosts": ("api.bls.gov",), "status": API_PERMITTED, "sources": ("us_bls_api", "us_bls"),
+        # the key is checked by the door that uses it (as eia_api): a `key_env` here would hold
+        # the host for keyless v1 discovery too
+        "key_checked_by": "desks/mt5/research/world_dataset_hunter.py (BLS_API_KEY)",
+        "access_label": "OPEN_DATA",
+        "terms_note": "US-government public domain; cite BLS; v2 key 500 queries/day",
+        "why": ("BLS Public Data API v2 (JOLTS, CES) with the desk's registered key, within its "
+                "500-queries-a-day limit; everything BLS publishes is in the public domain"),
+        "terms": {"url": "https://www.bls.gov/opub/copyright-information.htm",
+                  "checked_at": "2026-11-03",
+                  "clauses": {
+                      "public_domain": ("everything that we publish, both in hard copy and "
+                                        "electronically, is in the public domain"),
+                      "use": ("You are free to use our public domain material without specific "
+                              "permission"),
+                      "citation": ("we do ask that you cite the Bureau of Labor Statistics as "
+                                   "the source")},
+                  "also_read": {
+                      "https://www.bls.gov/developers/api_faqs.htm":
+                          ("Registered users may request up to 500 queries daily. / up to 50 "
+                           "series per query. / up to 20 years per query.")}}},
+    "adzuna_api": {
+        # The HOST row for the Adzuna API (the held ROUTE row is gb_adzuna_vacancies). Re-read
+        # 2026-11-03: the clauses below still bar ongoing aggregate vacancy-count research and
+        # commercial analysis without written agreement, so the door (built, parser pinned on
+        # fixtures, keys read through the hunter's key_env) is never asked.
+        "hosts": ("api.adzuna.com",), "status": IDEAS_ONLY, "sources": ("adzuna_api",),
+        "access_label": "LICENSED",
+        "terms_note": ("API licence: 14-day trial for commercial users; aggregated vacancy "
+                       "counts for ongoing research need written consent"),
+        "why": ("Adzuna API: its terms allow a commercial user a 14-day validation trial only "
+                "and bar aggregated vacancy counts for ongoing research without written "
+                "consent; the key on the box does not change that"),
+        "unblock": "Adzuna's written agreement for ongoing aggregate use of vacancy counts",
+        "terms": {"url": "https://developer.adzuna.com/docs/terms_of_service",
+                  "checked_at": "2026-11-03",
+                  "clauses": {
+                      "trial": ("Any use of the Adzuna API by a commercial, government or "
+                                "academic organisation ... is permitted subject to a 14 day "
+                                "trial period."),
+                      "trial_purpose": ("This period is strictly for the purpose of validating "
+                                        "the general coverage and quality of the data"),
+                      "commercial": ("Any other use, including commercial analysis, resale of "
+                                     "data, ... requires our written agreement."),
+                      "aggregation": ("It may not be used in its original format or in "
+                                      "aggregation (including but not limited to vacancy counts, "
+                                      "average salaries etc) to deliver any ongoing work or "
+                                      "research, apart from the purpose stated prior, without "
+                                      "written consent.")}}},
     "kr_fss": {
         "hosts": ("fss.or.kr",), "status": IDEAS_ONLY, "sources": ("kr_fss",),
         "why": ("Korea FSS foreign-investor net purchases are bulletin-board PDF/HWP releases, "

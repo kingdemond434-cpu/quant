@@ -1,0 +1,7 @@
+{"status":"REQUEST_SUCCEEDED","responseTime":120,"message":[],"Results":{"series":[
+{"seriesID":"JTS000000000000000JOL","data":[
+{"year":"2025","period":"M10","periodName":"October","latest":"true","value":"7670","footnotes":[{"code":"P","text":"preliminary"}]},
+{"year":"2025","period":"M09","periodName":"September","value":"7658","footnotes":[{}]},
+{"year":"2025","period":"M08","periodName":"August","value":"7227","footnotes":[{}]},
+{"year":"2024","period":"M13","periodName":"Annual","value":"7800","footnotes":[{}]},
+{"year":"2024","period":"M07","periodName":"July","value":"-","footnotes":[{}]}]}]}}

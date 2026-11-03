@@ -1,0 +1,1 @@
+{"__CLASS__":"Adzuna::API::Response::JobSearchResults","count":1012345,"mean":38512.7,"results":[{"__CLASS__":"Adzuna::API::Response::Job","title":"<strong>Example</strong> advert","id":"1"}]}

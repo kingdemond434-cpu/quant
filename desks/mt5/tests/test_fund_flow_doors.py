@@ -105,7 +105,7 @@ def test_mof_per_week_lag_reaches_the_store(tmp_path, monkeypatch):
     monkeypatch.setattr(W, "direct_sources", lambda now=None: doors)
     payload = {"week.csv": _fx("mof_week.csv"), "slt_table1": _fx("tic_slt_table1.txt"),
                "slt_table2": _fx("tic_slt_table1.txt"), "IVF/": _fx("ecb_ivf.csv"),
-               "FRB_Z1": _z1_zip()}
+               "FRB_Z1": _z1_zip(), "/mmf/mm_": _fx("ici_mm_release.html")}
 
     def fetch(url: str, timeout: float) -> bytes:
         return next(v for k, v in payload.items() if k in url)
@@ -154,22 +154,31 @@ def test_z1_keeps_only_fund_flow_sectors_and_nd_is_absent():
 
 
 # ------------------------------------------------------------------- the one register ----
-def test_each_fund_flow_door_reads_its_row_and_tic_is_refused_with_missed_growth():
+def test_each_fund_flow_door_reads_its_row_and_tic_is_permitted_on_its_cc0_clause():
     rows = {d["provider"]: tf.source_of_url(d["url"]) for d in W.fund_flow_doors()}
     assert rows == {"JP_MOF": "jp_mof", "US_TIC": "us_tic", "ECB_IVF": "ecb_data_portal",
-                    "FED_Z1": "fed_board"}
-    for key in ("jp_mof", "ecb_data_portal", "fed_board"):
+                    "FED_Z1": "fed_board", "ICI": "ici_stats"}
+    for key in ("jp_mof", "ecb_data_portal", "fed_board", "us_tic"):
         assert tf.terms_state(key) == "READ" and tf.terms_verdict(key) == "confirmed"
-    assert tf.live_input_status("us_tic") == tf.IDEAS_ONLY
+    # TIC IS PERMITTED ON A QUOTED CLAUSE, NOT BY LOOSENING: the Treasury's own data.json entry
+    # (catalog.data.gov, read 2026-11-03) declares CC0 with public access. Without that quote the
+    # row would fall back to UNREAD and refuse again.
+    tic_row = tf.SOURCE_POLICY["us_tic"]
+    assert tic_row["terms"]["clauses"]["access"] == (
+        "Public: This dataset is intended for public access and use. License: Creative Commons "
+        "CCZero")
+    assert tic_row["terms"]["clauses"]["licence"] == \
+        "http://creativecommons.org/publicdomain/zero/1.0/"
+    assert tic_row["terms"]["clauses"]["publisher"] == "Department of the Treasury"
+    assert tic_row["terms"]["url"].startswith("https://catalog.data.gov/dataset/")
+    assert tic_row["terms"]["checked_at"] == "2026-11-03"
+    assert tf.live_input_status("us_tic") == tf.PUBLIC_PAGE
     tic = next(d for d in W.fund_flow_doors() if d["provider"] == "US_TIC")
-    with pytest.raises(W.FetchError) as ei:
-        W.urllib_fetch(tic["url"], 1.0)                      # refused before any request
-    assert ei.value.reason == "terms_fenced"
+    assert tf.input_source(tic["url"]) is None
     doors = {r["door"]: r for r in W.terms_doors()}
     t = doors["US_TIC/slt_table1"]
-    assert t["live_input"] == "REFUSED"
-    assert t["missed_growth"]["delta_elogw"] == "UNMEASURED"
-    assert t["missed_growth"]["kind"] == "ideas_only_refusal" and t["missed_growth"]["cause"]
+    assert t["live_input"] == "PERMITTED" and "missed_growth" not in t
+    assert t["access_label"] == "OPEN_DATA" and t["redistribute_allowed"] is True
     assert doors["JP_MOF/ITS_WEEKLY"]["live_input"] == "PERMITTED"
 
 
@@ -205,7 +214,7 @@ def test_fund_flows_now_has_a_producer_and_reads_the_data_paths():
         assert cands[cid]["ingested"], cid
         assert "desks/mt5/research/world_dataset_hunter.py" in cands[cid]["fetched_by"]
     assert cands["jp_mof_weekly_securities"]["terms"]["live_basis"] == "OK"
-    assert cands["us_tic"]["terms"]["live_basis"] == "REFUSED"
+    assert cands["us_tic"]["terms"]["live_basis"] == "OK"       # CC0 clause, 2026-11-03
     assert cands["kr_fss_foreign_flows"]["terms"]["live_basis"] == "REFUSED"
     assert row["coverage"].startswith("WIRED")
     text = next(c for c in G.CLASSES if c["id"] == "text_sentiment_multilang")
