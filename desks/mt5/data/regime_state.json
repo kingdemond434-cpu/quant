@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-03T06:00:17.607457+00:00",
+  "swept_at": "2026-11-03T06:30:06.192698+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -3198,8 +3198,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 16,
-      "shadow_exp_r": 0.0382,
+      "shadow_n": 48,
+      "shadow_exp_r": -0.1392,
       "woke_on_shadow": false
     },
     "NZDJPY|cross_asset_residual_continuous": {
@@ -3221,7 +3221,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1154,
+      "shadow_exp_r": -0.0723,
       "woke_on_shadow": false
     },
     "NZDJPY|vol_transition_continuous": {
