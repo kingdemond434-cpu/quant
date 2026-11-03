@@ -178,3 +178,13 @@ def test_recipe_on_a_family_with_unresolved_params_is_refused() -> None:
     v = contract.screen(_recipe(family="carry", params={"anything": 1}), families=FAMS,
                         universe=UNI)
     assert not v.ok and any("unresolved" in r for r in v.reasons)
+
+
+def test_committed_company_package_matches_roles(tmp_path: Path) -> None:
+    from libs.research.paperclip_lab.company import write_package
+    n = write_package(tmp_path)
+    assert n == len(ROLES) + 1
+    for f in sorted((tmp_path / "ops" / "paperclip" / "company").rglob("*")):
+        if f.is_file():
+            rel = f.relative_to(tmp_path)
+            assert (ROOT / rel).read_text("utf-8") == f.read_text("utf-8"), rel

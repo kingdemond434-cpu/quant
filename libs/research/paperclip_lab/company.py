@@ -1,30 +1,27 @@
-#!/usr/bin/env python3
-"""Write the Paperclip company package (agentcompanies/v1) from libs/research/paperclip_lab/roles.
+"""The Paperclip company package (agentcompanies/v1), DERIVED from `roles.py`.
 
-    python scripts/paperclip_company_export.py      # -> ops/paperclip/company/
+    python -c "from libs.research.paperclip_lab.company import write_package; write_package()"
 
-The package is DERIVED: edit roles.py, never the markdown. Every agent runs on Paperclip's
+Edit roles.py, never the markdown; `tests/research/test_paperclip_lab.py` fails when the committed
+package under ops/paperclip/company drifts from what this writes. Every agent runs on Paperclip's
 `process` adapter as `scripts/paperclip_lab_run.py --role <name>`, a worker with no shell tool and
 no file writes beyond its bundle. CLI-agent adapters (claude_local, codex_local, cursor, ...) are
 not used: several default to approval bypass, and the company needs none of their powers.
 """
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+from libs.research.paperclip_lab.roles import RED_TEAM_MISSION, ROLES
 
-from libs.research.paperclip_lab.roles import RED_TEAM_MISSION, ROLES  # noqa: E402
-
-OUT = ROOT / "ops" / "paperclip" / "company"
+ROOT = Path(__file__).resolve().parents[3]
 
 
-def main() -> int:
-    (OUT / "agents").mkdir(parents=True, exist_ok=True)
-    (OUT / "COMPANY.md").write_text(
+def write_package(root: Path = ROOT) -> int:
+    """Regenerate the package; returns the number of agents written."""
+    out_dir = root / "ops" / "paperclip" / "company"
+    (out_dir / "agents").mkdir(parents=True, exist_ok=True)
+    (out_dir / "COMPANY.md").write_text(
         "---\nname: Quant Alpha Research Company\nslug: quant-alpha-research\n"
         "schema: agentcompanies/v1\ndescription: Isolated, free-model research company that "
         "donates exact MT5 cells to the desk's canonical gauntlet. Owns no verdict and no "
@@ -33,7 +30,7 @@ def main() -> int:
         "(libs/research/paperclip_lab/contract.py), re-screened on the box.\n", "utf-8")
     yaml = ["schema: paperclip/v1", "agents:"]
     for r in ROLES:
-        d = OUT / "agents" / r.name
+        d = out_dir / "agents" / r.name
         d.mkdir(parents=True, exist_ok=True)
         (d / "AGENTS.md").write_text(
             f"---\nname: {r.name}\ntitle: {r.lane} lab\nreportsTo: null\n---\n\n{r.mission}\n",
@@ -44,15 +41,11 @@ def main() -> int:
                  "        timeoutSec: 600", "        dangerouslySkipPermissions: false",
                  "    runtime:", "      heartbeat:", "        enabled: true",
                  "        intervalSec: 3600"]
-    d = OUT / "agents" / "red_team"
+    d = out_dir / "agents" / "red_team"
     d.mkdir(parents=True, exist_ok=True)
     (d / "AGENTS.md").write_text(
         f"---\nname: red_team\ntitle: pre-gauntlet red team\nreportsTo: null\n---\n\n"
         f"{RED_TEAM_MISSION}\n", "utf-8")
-    (OUT / ".paperclip.yaml").write_text("\n".join(yaml) + "\n", "utf-8")
-    print(f"wrote {len(ROLES) + 1} agents to {OUT.relative_to(ROOT)}")
-    return 0
+    (out_dir / ".paperclip.yaml").write_text("\n".join(yaml) + "\n", "utf-8")
+    return len(ROLES) + 1
 
-
-if __name__ == "__main__":
-    raise SystemExit(main())
