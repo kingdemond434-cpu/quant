@@ -20,8 +20,8 @@ cover `requests` and `urllib.request`; no file the feed runs imports another HTT
 2. ROBOTS.TXT IS A LABEL, NEVER A REFUSAL (LAWS §5e, 2026-09-23; audit SF on #601, 2026-11-03).
    robots.txt is still read with the honest UA, once per host, for every token in
    `ROBOTS_TOKENS` -- the `*` group, this crawler's own token, and ClaudeBot -- and a Disallow,
-   a 401/403 on robots.txt, or an unreachable robots.txt is RECORDED as a PUBLIC_WITH_TERMS
-   label (`labelled()`, and the LOG_ENV file with `"label"`), and the URL is fetched. "robots.txt
+   or a 401/403 on robots.txt is RECORDED as a PUBLIC_WITH_TERMS label, and an unreadable
+   robots.txt (5xx, timeout, redirect loop) as ACCESS_UNCLEAR (`labelled()`, and the LOG_ENV file with `"label"`), and the URL is fetched. "robots.txt
    Disallow read as a refusal" is one of the brakes §5e deleted by name. What still stops a
    fetch is an act, not a policy file: the server's own 401/403/429 or WAF answer, which each
    miner books as a fetch_error, and the VPS walls below.
@@ -182,7 +182,7 @@ def check(url: str, exc_t: type[Exception] = RailRefusal) -> None:
         return
     rp, why = _robots(parts.scheme or "https", parts.netloc)
     if rp is None:
-        _label(url, why)
+        _label(url, why, UNREADABLE_LABEL)
         return
     for tok in ROBOTS_TOKENS:
         if not rp.can_fetch(tok, url):
@@ -193,11 +193,15 @@ def check(url: str, exc_t: type[Exception] = RailRefusal) -> None:
 #: The access label a robots signal earns (LAWS §5e): mined and tested in full, never
 #: redistributed, the fact carried on the row as `terms_note`.
 ROBOTS_LABEL = "PUBLIC_WITH_TERMS"
+#: A robots.txt that could not be read (5xx, timeout, redirect loop, onto a walled host) says
+#: nothing either way: mined with the ACCESS_UNCLEAR label attached, no quarantine (LAWS §5e).
+UNREADABLE_LABEL = "ACCESS_UNCLEAR"
 
 
-def _label(url: str, why: str) -> None:
-    """Record a robots signal as a label and let the fetch proceed."""
-    row = {"url": url[:300], "why": why, "label": ROBOTS_LABEL, "pid": os.getpid()}
+def _label(url: str, why: str, label: str = ROBOTS_LABEL) -> None:
+    """Record a robots signal as a label and let the fetch proceed. The server's own answer on
+    the content fetch (401/403/429, a WAF page) is untouched here and still fails the fetch."""
+    row = {"url": url[:300], "why": why, "label": label, "pid": os.getpid()}
     with _LOCK:
         _STATE["labelled"].append(row)
         log = os.environ.get(LOG_ENV)

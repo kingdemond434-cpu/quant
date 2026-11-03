@@ -119,15 +119,15 @@ def test_every_request_carries_the_honest_user_agent(rails):
 
 
 @pytest.mark.parametrize("url,labelled", [
-    ("https://open.example/page", False),
-    ("https://open.example/private/x", True),           # the `*` group
-    ("https://claude-refused.example/page", True),      # ClaudeBot named, even though * allows
-    ("https://own-refused.example/page", True),         # this crawler's own token named
-    ("https://browser-only.example/page", True),        # a browser UA would have passed
-    ("https://nopolicy.example/page", False),           # 404 robots = no policy
-    ("https://forbidden.example/page", True),           # 403 robots = disallow all
-    ("https://down.example/page", True),                # 5xx = unreachable policy
-    ("https://dead.example/page", True),                # unreachable policy
+    ("https://open.example/page", None),
+    ("https://open.example/private/x", "PUBLIC_WITH_TERMS"),       # the `*` group
+    ("https://claude-refused.example/page", "PUBLIC_WITH_TERMS"),  # ClaudeBot named
+    ("https://own-refused.example/page", "PUBLIC_WITH_TERMS"),     # this crawler's own token
+    ("https://browser-only.example/page", "PUBLIC_WITH_TERMS"),    # a browser UA would pass
+    ("https://nopolicy.example/page", None),                       # 404 robots = no policy
+    ("https://forbidden.example/page", "PUBLIC_WITH_TERMS"),       # 403 robots = disallow all
+    ("https://down.example/page", "ACCESS_UNCLEAR"),               # 5xx = unreadable policy
+    ("https://dead.example/page", "ACCESS_UNCLEAR"),               # unreachable policy
 ])
 def test_robots_is_a_label_never_a_refusal(rails, url, labelled):
     """LAWS §5e: "robots.txt Disallow read as a refusal" is a deleted brake. Every source is
@@ -139,7 +139,7 @@ def test_robots_is_a_label_never_a_refusal(rails, url, labelled):
     assert box_rails.refused() == []
     rows = box_rails.labelled()
     if labelled:
-        assert rows and all(r["label"] == "PUBLIC_WITH_TERMS" and r["url"] == url for r in rows)
+        assert rows and all(r["label"] == labelled and r["url"] == url for r in rows)
     else:
         assert rows == []
 
