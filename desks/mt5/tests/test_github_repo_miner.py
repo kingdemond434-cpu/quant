@@ -234,3 +234,13 @@ def test_the_miner_never_executes_what_it_reads() -> None:
             assert node.func.id not in {"exec", "eval", "compile", "__import__"}
         assert not (isinstance(node, ast.Import) and any(a.name == "subprocess"
                                                          for a in node.names))
+
+
+def test_donated_rows_compile_through_the_ordinary_door(tmp_path: Path) -> None:
+    import miner_candidate_compiler as mcc
+    _run(tmp_path, Fake(_routes()), _seeds(tmp_path))
+    uni = mcc.known_symbols() | {"XAUUSD"}
+    for seat in ("github_repos", "firm_mining"):
+        row = next(r for r in _donated(tmp_path, seat) if r.get("family"))
+        cands, disp = mcc.compile_row(seat, row, uni)
+        assert disp == "STRUCTURED_HYPOTHESIS" and cands
