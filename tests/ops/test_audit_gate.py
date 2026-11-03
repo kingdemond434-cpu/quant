@@ -624,7 +624,7 @@ def _f(name: str, **kw: Any) -> dict[str, Any]:
         ([_f(".github/scripts/audit_gate.py")], 1, set(), "PROTECTED"),
         ([_f(".github/workflows/ci.yml")], 1, set(), "PROTECTED"),
         ([_f("ops/release/ceilings.json")], 1, set(), "PROTECTED"),
-        ([_f("ops/box/workflow_gate.ps1")], 1, set(), "AUTO"),
+        ([_f("ops/box/install_unattended.ps1")], 1, set(), "AUTO"),
         ([_f("CODEOWNERS")], 1, set(), "AUTO"),
         ([_f("docs/x/CLAUDE.md")], 1, set(), "AUTO"),
         ([_f("desks/mt5/scripts/smoke_release.py")], 1, set(), "AUTO"),
@@ -2058,7 +2058,7 @@ def test_the_live_book_installers_are_money_path_on_the_real_tree() -> None:
 @pytest.mark.parametrize(
     "name",
     ["docs/RESEARCH.md", "docs/cro/CRO_CYCLE.md", "scripts/run_deadman_switch.py",
-     "desks/mt5/research/heat_policy.py", "CLAUDE.md", "ops/box/workflow_gate.ps1"],
+     "desks/mt5/research/heat_policy.py", "CLAUDE.md", "ops/box/install_unattended.ps1"],
 )  # fmt: skip
 def test_formerly_protected_files_merge_only_on_every_auto_check(auto_hub: Any, name: str) -> None:
     """zuck 2026-10-29: no comment needed, but a missing or failed AUTO job is never a pass."""
