@@ -54,6 +54,8 @@ sys.path.insert(0, str(BASE))
 
 import world_frontier as wf  # noqa: E402  # type: ignore[import-not-found]
 
+from libs.data.polite_fetch import MethodRefused, fenced_urlopen  # noqa: E402
+
 WORLD = BASE / "data" / "intelligence" / "world"
 VAULT = WORLD / "vault"
 REPORT = BASE / "reports" / "world_crawl.json"
@@ -204,13 +206,17 @@ def fetch(url: str) -> tuple[bytes | None, str]:
             # cover the world quietly stops covering most of it.
             "Accept-Language": "*",
         })
-        with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_S) as resp:
+        # THE ONE FETCH DOOR (polite_fetch.fenced_urlopen): a redirect into a login or CAPTCHA
+        # wall is refused, never followed.
+        with fenced_urlopen(req, timeout=FETCH_TIMEOUT_S) as resp:
             ctype = str(resp.headers.get("Content-Type", ""))
             if "html" not in ctype and "text" not in ctype and "json" not in ctype:
                 return None, f"content-type {ctype.split(';')[0] or 'unknown'}"
             return resp.read(MAX_BYTES), ""
     except urllib.error.HTTPError as exc:
         return None, f"HTTP {exc.code}"
+    except MethodRefused as exc:
+        return None, str(exc.reason)[:120]
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         return None, f"{type(exc).__name__}: {str(exc)[:60]}"
     except Exception as exc:
