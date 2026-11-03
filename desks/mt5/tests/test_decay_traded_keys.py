@@ -515,3 +515,5 @@ def test_one_signal_on_two_venues_is_one_episode(desk) -> None:
     st = D.fold_sequential(None, D.episodes([{**ftmo, "_venue": "ftmo"}]))
     st = D.fold_sequential(st, eps)
     assert st["n"] == 1
+    # two separate trades on ONE venue in the same hour stay two
+    assert len(D.episodes([{**fusion, "_venue": "fusion"}, {**fusion, "_venue": "fusion"}])) == 2

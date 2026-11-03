@@ -72,6 +72,7 @@ BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
 from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+
 LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 #: FTMO's (and E8's, once written) closed prop-account trades, in the live ledger's own schema.
 PROP_LEDGER = BASE / "data" / "live_ledger_prop.jsonl"
@@ -261,11 +262,19 @@ def episodes(rows: list[dict]) -> list[dict]:
     for r in sorted(rows, key=rank):
         et = str(r.get("entry_time") or r.get("time") or "")[:13]       # YYYY-MM-DDTHH
         side = r.get("entry_side", r.get("side"))
-        key = f"{str(r.get('sleeve'))[:LEDGER_NAME_MAX]}|{et}|{side}"
+        base = f"{str(r.get('sleeve'))[:LEDGER_NAME_MAX]}|{et}|{side}"
+        venue = str(r.get("_venue"))
+        # A copy is the same signal on ANOTHER venue. A second row on a venue that already took
+        # this key is a separate trade (two scalps in one hour), and keeps its own episode.
+        k = 0
+        key = base
+        while key in uniq and venue in uniq[key]["_venues"]:
+            k += 1
+            key = f"{base}#{k}"
         if key in uniq:
-            uniq[key]["_venues"].append(str(r.get("_venue")))
+            uniq[key]["_venues"].append(venue)
         else:
-            uniq[key] = {**r, "_venues": [str(r.get("_venue"))], "_episode": key}
+            uniq[key] = {**r, "_venues": [venue], "_episode": key}
     return sorted(uniq.values(), key=lambda r: str(r.get("time") or ""))
 
 
