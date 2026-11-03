@@ -9,10 +9,18 @@ name: trusted-eval
 # The run-name names the PR and the exact head it checked out; the gate and the release authority
 # accept only a successful run whose run-name is `trusted-eval <pr> <head sha>`.
 #
-# SAFETY: PR code runs here, so this job holds a READ-ONLY token, no secrets, persists no
-# credentials and uses no cache (no cache poisoning of the base's runs). Forks never run it.
-# This file is ROOT (ops/release/authority/ROOT_POLICY.json): the authority never clears a change
-# to it.
+# SAFETY: PR code runs here, in the BASE ref's cache scope, from the moment this file is on LIVE
+# (merging it starts this job on every same-repo PR; nothing else in the release authority is on
+# until zuck activates it). So this job holds a READ-ONLY token, no secrets, persists no
+# credentials and restores no cache, and NO gating workflow restores a cache either (#637 audit
+# MF1: `cache: pip` removed from ci.yml and release-gates.yml, so a poisoned base-scope cache
+# entry has no reader). Forks never run it. This file is ROOT (ops/release/authority/
+# ROOT_POLICY.json): the authority never clears a change to it.
+#
+# WHAT A GREEN HERE PROVES (#637 audit SF1): that the base's tests pass against an HONEST head.
+# A hostile head runs with the runner's sudo and could fake a green (os._exit(0) at import); the
+# collected-versus-passed count below catches the cheap version only. Against a hostile author
+# the other gates stand: independent review of the diff, the 24 h veto, auto-revert.
 run-name: trusted-eval ${{ github.event.pull_request.number }} ${{ github.event.pull_request.head.sha }}
 
 on:
@@ -87,4 +95,17 @@ jobs:
           set -euo pipefail
           present=()
           while read -r t; do [ -e "$t" ] && present+=("$t"); done < "$RUNNER_TEMP/trusted/suites"
-          pytest -q -p no:randomly -p no:cacheprovider --timeout=600 "${present[@]}"
+          want=$(pytest -q --co -p no:randomly -p no:cacheprovider "${present[@]}" | grep -c '::' || true)
+          pytest -q -p no:randomly -p no:cacheprovider --timeout=600 \
+            --junitxml "$RUNNER_TEMP/trusted/junit.xml" "${present[@]}"
+          # every collected base test must have RUN: an early exit 0 is not a pass
+          python -I - "$RUNNER_TEMP/trusted/junit.xml" "$want" <<'PY'
+          import sys, xml.etree.ElementTree as ET
+          root = ET.parse(sys.argv[1]).getroot()
+          suites = [root] if root.tag == "testsuite" else list(root)
+          ran = sum(int(s.get("tests", 0)) for s in suites)
+          bad = sum(int(s.get("failures", 0)) + int(s.get("errors", 0)) for s in suites)
+          want = int(sys.argv[2])
+          print(f"trusted-eval: {ran} run, {bad} failed, {want} collected")
+          sys.exit(0 if want > 0 and ran >= want and bad == 0 else 1)
+          PY
