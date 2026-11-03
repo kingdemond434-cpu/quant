@@ -290,3 +290,38 @@ def test_the_ensemble_refuses_without_a_runner_and_votes_with_one():
                _runner=runner)
     assert sigs and all(s.side == 1 for s in sigs)
     assert fam(d, members=members, weights=[1.0], _runner=runner) == [], "weight/member mismatch"
+
+
+def test_ensemble_counts_a_member_for_its_whole_ttl_so_staggered_weak_signals_combine():
+    """Weak members almost never ENTER on the same bar. The entry-bar vote therefore never reached
+    the threshold and every ensemble cell read UNKNOWN; the exposure vote combines them."""
+    from mt5desk.engine import Signal
+    fam = ORTHOGONAL_FAMILIES["ensemble"]
+    d = _bars(days=200)
+    members = [{"symbol": "X", "family": f"m{k}", "params": {}} for k in range(6)]
+    base = 24 * 130
+
+    def runner(sym, family, params, df):
+        k = int(family[1:])
+        # Six members, each entering one bar after the previous, each held 12 bars: no two
+        # entries coincide, but all six are exposed together from base+5 to base+11.
+        return [Signal(time=d.index[base + k], side=1, stop=0.0, target=1e9, ttl_bars=12,
+                       tag=family, trigger=None, wait_bars=1)]
+    sigs = fam(d, members=members, weights=[1.0] * 6, threshold=0.5, hold_bars=48,
+               _runner=runner)
+    assert len(sigs) == 1 and sigs[0].side == 1
+    assert sigs[0].time == d.index[base + 2]          # 3 of 6 exposed = 0.5: fires then, no earlier
+
+
+def test_ensemble_places_off_clock_member_times_on_the_containing_bar():
+    from mt5desk.engine import Signal
+    fam = ORTHOGONAL_FAMILIES["ensemble"]
+    d = _bars(days=200)
+    members = [{"symbol": "X", "family": "a", "params": {}}]
+    t = d.index[24 * 130] + pd.Timedelta(minutes=35)     # an M5 time under an H1 frame
+
+    def runner(sym, family, params, df):
+        return [Signal(time=t, side=-1, stop=0.0, target=-1e9, ttl_bars=3, tag=family,
+                       trigger=None, wait_bars=1)]
+    sigs = fam(d, members=members, weights=[1.0], threshold=0.5, hold_bars=48, _runner=runner)
+    assert [s.time for s in sigs] == [d.index[24 * 130]] and sigs[0].side == -1

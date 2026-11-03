@@ -20,9 +20,10 @@ WHAT THE WEIGHTS ARE NOT. They are inputs, chosen by `weak_signal_compiler` on a
 and then FROZEN; this family does not fit anything. A family that re-estimated its weights on the
 bars it was about to be judged on would be the leak this desk has removed three times today.
 
-SIDE AND TIMING. Each member contributes +-1 at each of its signal bars (0 elsewhere), scaled by
-its weight. At bars where the weighted sum crosses `threshold`, one signal is emitted with the
-sum's sign. Stops and targets are ATR-based like every other family, so the ensemble's R has the
+SIDE AND TIMING. Each member contributes +-1 over the bars its own position would be open (from
+its signal bar for its `ttl_bars`, 0 elsewhere), scaled by its weight. At bars where the weighted
+sum is at or beyond `threshold`, one signal is emitted with the sum's sign, at most once per
+`hold_bars`. Stops and targets are ATR-based like every other family, so the ensemble's R has the
 same meaning as its members'.
 """
 from __future__ import annotations
@@ -63,7 +64,17 @@ def family_ensemble(
     # 120 DAYS of history, on whatever chart this is (identical on H1, where it is 24 bars/day).
     if len(d) < bars_per_day(d) * 120:
         return []
-    vote = pd.Series(0.0, index=d.index)
+    # A MEMBER VOTES FOR AS LONG AS ITS OWN POSITION WOULD BE OPEN, not on its entry bar only
+    # (2026-11-03). The entry-bar vote needed `threshold * sum|w|` of weight to fire on the SAME
+    # bar: with 24 equal members at threshold 0.3, seven independent weak signals entering in one
+    # hour. Weak signals by construction almost never coincide, so the family emitted nothing and
+    # every one of the 12,966 ensemble cells the judge was handed read UNKNOWN (no_trades /
+    # too_rare; GATE_VERDICT_DIGEST 2026-11-03). Holding each member's +-w over its ttl window --
+    # its actual exposure -- is what "the members agree" means, and a member timestamp that is not
+    # on this chart's clock (an M5 member under an H1 ensemble) is placed on the bar containing it
+    # instead of being dropped.
+    idx_ns = d.index.asi8 if isinstance(d.index, pd.DatetimeIndex) else None
+    vote_a = np.zeros(len(d), dtype=float)
     n_ok = 0
     for m, w in zip(members, weights):
         try:
@@ -74,11 +85,23 @@ def family_ensemble(
         if not sigs:
             continue
         n_ok += 1
+        exposure = np.zeros(len(d), dtype=float)
         for s in sigs:
-            if s.time in vote.index:
-                vote.loc[s.time] += float(w) * int(s.side)
+            try:
+                t = pd.Timestamp(s.time)
+                if idx_ns is None:
+                    continue
+                i = int(np.searchsorted(idx_ns, t.value, side="right")) - 1
+            except (TypeError, ValueError):
+                continue
+            if i < 0 or i >= len(d):
+                continue
+            span = max(int(getattr(s, "ttl_bars", 1) or 1), 1)
+            exposure[i:i + span] = int(s.side)       # latest entry wins where a member re-enters
+        vote_a += float(w) * exposure
     if n_ok == 0:
         return []
+    vote = pd.Series(vote_a, index=d.index)
     total_w = float(np.sum(np.abs(weights))) or 1.0
     vote = vote / total_w
     atr = _atr(d, atr_n)
