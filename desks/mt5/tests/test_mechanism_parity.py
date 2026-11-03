@@ -147,6 +147,13 @@ def test_the_ftmo_gold_lane_manages_its_own_position_without_e8() -> None:
 
     mt5, p, info = _terminal(side=-1, entry=100.0, sl=101.0, highs=[100.2, 99.6],
                              lows=[99.5, 98.8], bid=98.98, ask=99.0)
+    # gold runs the full ratchet, which reads H1: two hours since entry, the second a 1.2R run
+    h0 = p.time - (p.time % 3600)
+    h1 = [{"time": h0 - 3600 * (40 - i), "open": 100.0, "high": 101.0, "low": 99.0,
+           "close": 100.0} for i in range(40)]
+    h1 += [{"time": h0, "open": 100.0, "high": 100.2, "low": 99.5, "close": 99.6},
+           {"time": h0 + 3600, "open": 99.6, "high": 99.6, "low": 98.8, "close": 98.99}]
+    mt5.copy_rates_from_pos = lambda sym, tf, start, n: h1
     mt5.symbol_info = lambda sym: info
     new, why = ff.native_stop(mt5, {}, p)
     assert new is not None and new <= 100.0, why
