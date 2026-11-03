@@ -171,7 +171,7 @@ def test_spread_is_the_worst_measured_fill_hour(tmp_path, monkeypatch):
 
 
 def _touch_only_frame() -> tuple[pd.DataFrame, pd.Timestamp, float]:
-    """Flat bars, then ONE bar whose low exactly touches the limit and never trades through,
+    """Flat bars, then ONE bar whose bid low touches the limit but not limit - spread,
     then a rally through the target: an edge that exists only if a touch is a fill."""
     n = 120
     idx = pd.date_range("2024-03-04", periods=n, freq="h", tz="UTC")
@@ -192,8 +192,9 @@ def test_stress_arm_a_touch_only_edge_disappears_under_trade_through(monkeypatch
     monkeypatch.setattr(reach, "_base_signals", lambda d, f, p, s: [base])
     atr = float(reach._atr(reach._h1(df), 20).loc[sig_at])
     limit = 100.0 - 0.5 * atr
-    # bar 61 touches the limit EXACTLY (bid low == L) and goes no lower; bars 62+ rally
-    df.loc[df.index[61], ["open", "high", "low", "close"]] = [100.0, 100.05, limit, 100.0]
+    # bar 61's bid dips half a spread under L: a touch, but the ask never reached L
+    df.loc[df.index[61], ["open", "high", "low", "close"]] = [100.0, 100.05,
+                                                               limit - SPR / 2, 100.0]
     for j in range(62, 120):
         px = 100.0 + 0.05 * (j - 61)
         df.loc[df.index[j], ["open", "high", "low", "close"]] = [px, px + 0.05, px - 0.02, px]
