@@ -48,13 +48,16 @@ if (-not $Python) {
 }
 if (-not $Python) { throw "No machine-wide Python under C:\Program Files. Install Python 3 for all users, then run this again." }
 & $Python -c "import cryptography" 2>$null
-if ($LASTEXITCODE -ne 0) { & $Python -m pip install --quiet cryptography; if ($LASTEXITCODE -ne 0) { throw "pip install cryptography failed" } }
+# pinned, wheels only: this runs elevated (#643 audit SF2)
+if ($LASTEXITCODE -ne 0) { & $Python -m pip install --quiet --only-binary :all: "cryptography==50.0.1"; if ($LASTEXITCODE -ne 0) { throw "pip install cryptography failed" } }
 Write-Host "   $Python"
 
 Step "Folders and ACLs"
 foreach ($d in @($Home_, $Key, $Bin, $Att)) { New-Item -ItemType Directory -Force -Path $d | Out-Null }
-Add-Type -AssemblyName System.Web
-$pw = [System.Web.Security.Membership]::GeneratePassword(40, 8)
+# works in Windows PowerShell 5.1 and pwsh 7 alike (#643 audit SF1)
+$bytes = New-Object byte[] 30
+[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+$pw = "Qa1!" + [Convert]::ToBase64String($bytes)
 $sec = ConvertTo-SecureString $pw -AsPlainText -Force
 if (-not (Get-LocalUser -Name $User -ErrorAction SilentlyContinue)) {
     New-LocalUser -Name $User -Password $sec -PasswordNeverExpires -AccountNeverExpires -Description "Release authority signer" | Out-Null
@@ -137,4 +140,9 @@ if ($Activate) {
 Write-Host ""
 Write-Host "DONE. Public key: $(Get-Content (Join-Path $Registry 'authority.pub'))" -ForegroundColor Green
 Write-Host "First pass log: $Home_\authority.log (within 10 min)."
-if (-not $Activate) { Write-Host "The gate does not read attestations yet: run again with -Activate to turn it on." }
+if ($Activate) {
+    # machine env vars reach a process only when it starts (#643 audit SF4)
+    Write-Host "The gate reads attestations from its next start: the 10-minute Quant-WorkflowGate run picks the new variables up by itself."
+} else { Write-Host "The gate does not read attestations yet: run again with -Activate to turn it on." }
+# What the gate trusts lives only in $Registry (authority.pub, ROOT_PIN.json: Administrators-write);
+# nothing the gate reads may ever be placed under $Home_, which quant-authority can modify (SF3).
