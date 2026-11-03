@@ -45,5 +45,21 @@
    "added": "2026-11-03",
    "requested_by": "zuck"
   }
+ ],
+ "discovery_queries": [
+  "quant trading strategy backtest",
+  "algorithmic trading python backtest",
+  "quantitative finance lecture",
+  "forex algorithmic strategy backtest",
+  "statistical arbitrage pairs trading",
+  "mean reversion strategy backtest",
+  "volatility trading strategy quant",
+  "machine learning trading strategy python",
+  "market microstructure order flow",
+  "trading strategy walk forward optimization",
+  "gold XAUUSD algorithmic strategy",
+  "kelly criterion position sizing",
+  "regime detection hidden markov trading",
+  "time series momentum carry strategy"
  ]
 }

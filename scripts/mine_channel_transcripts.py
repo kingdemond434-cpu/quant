@@ -40,8 +40,13 @@ def now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def channel_url(handle: str) -> str:
+    return (f"https://www.youtube.com/channel/{handle}" if handle.startswith("UC")
+            else f"https://www.youtube.com/{handle}")
+
+
 def enumerate_tab(handle: str, tab: str) -> list[dict]:
-    url = f"https://www.youtube.com/{handle}/{tab}"
+    url = f"{channel_url(handle)}/{tab}"
     cmd = [sys.executable, "-m", "yt_dlp", "--flat-playlist", "-J", "--no-warnings", url]
     p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if p.returncode != 0:
@@ -80,6 +85,35 @@ def fetch_description(vid: str) -> tuple[str, list[str], dict]:
             "view_count": d.get("view_count"), "chapters": [c.get("title") for c in
                                                           (d.get("chapters") or [])]}
     return desc, sorted(set(LINK_RE.findall(desc))), meta
+
+
+def discover(cfg: dict, out: Path, per_query: int) -> list[dict]:
+    """Find NEW quant/strategy channels from config search queries (public search pages via
+    yt-dlp, one request per query). Discovered channels are appended to discovered.json with
+    status CANDIDATE; the yield ranker (cells passing the judge per video) promotes or prunes."""
+    path = out / "discovered.json"
+    disc = json.loads(path.read_text("utf-8")) if path.exists() else {}
+    known = {c["handle"] for c in cfg["channels"]} | set(disc)
+    for q in cfg.get("discovery_queries", []):
+        cmd = [sys.executable, "-m", "yt_dlp", "--flat-playlist", "-J", "--no-warnings",
+               f"ytsearch{per_query}:{q}"]
+        p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
+                           errors="replace")
+        if p.returncode != 0:
+            print(f"[discover] {q!r}: error, stopping discovery this run", flush=True)
+            break
+        for e in (json.loads(p.stdout).get("entries") or []):
+            cid = e.get("channel_id")
+            if not cid or cid in known:
+                continue
+            known.add(cid)
+            disc[cid] = {"handle": cid, "name": e.get("channel") or e.get("uploader") or "",
+                         "found_by": q, "found_ts": now(), "status": "CANDIDATE",
+                         "videos_mined": 0, "cells_passed": 0}
+            print(f"[discover] + {cid} {disc[cid]['name']} (via {q!r})", flush=True)
+        time.sleep(5)
+    path.write_text(json.dumps(disc, indent=1, ensure_ascii=False), encoding="utf-8")
+    return [d for d in disc.values() if d["status"] in ("CANDIDATE", "ACTIVE")]
 
 
 def load_ledger(path: Path) -> dict[str, dict]:
@@ -145,6 +179,11 @@ def main() -> int:
     ap.add_argument("--out", default="video_mining_out")
     ap.add_argument("--sleep", type=float, default=6.0, help="base seconds between caption fetches")
     ap.add_argument("--limit", type=int, default=0, help="max caption fetches this run (0 = all)")
+    ap.add_argument("--discover", action="store_true",
+                    help="also find new channels from config discovery_queries")
+    ap.add_argument("--per-query", type=int, default=20)
+    ap.add_argument("--backoff-min", type=float, default=90.0,
+                    help="after an access wall, later runs exit until this many minutes pass")
     args = ap.parse_args()
 
     from youtube_transcript_api import YouTubeTranscriptApi  # type: ignore
@@ -153,6 +192,12 @@ def main() -> int:
     cfg = json.loads(Path(args.config).read_text("utf-8"))
     out = Path(args.out)
     (out / "transcripts").mkdir(parents=True, exist_ok=True)
+    wall = out / "last_access_wall.txt"
+    if wall.exists():
+        age_min = (time.time() - wall.stat().st_mtime) / 60
+        if age_min < args.backoff_min:
+            print(f"in backoff after access wall ({age_min:.0f} < {args.backoff_min:.0f} min)")
+            return 0
     ledger_path = out / "ledger.jsonl"
     ledger = load_ledger(ledger_path)
     lf = ledger_path.open("a", encoding="utf-8")
@@ -165,7 +210,11 @@ def main() -> int:
     # 1. enumerate every tab of every channel (a video is never silently dropped)
     todo: list[dict] = []
     enum_report = {}
-    for ch in cfg["channels"]:
+    channels = list(cfg["channels"])
+    if args.discover:
+        channels += [{"handle": d["handle"], "tabs": ["videos"]}
+                     for d in discover(cfg, out, args.per_query)]
+    for ch in channels:
         seen = set()
         for tab in ch.get("tabs", ["videos", "shorts", "streams"]):
             try:
@@ -223,6 +272,7 @@ def main() -> int:
         if status == "ACCESS_LIMIT":
             stopped = f"access wall at {v['video_id']} ({meta.get('error')}); stopping, no bypass"
             print(stopped, flush=True)
+            wall.write_text(f"{now()} {stopped}\n", encoding="utf-8")
             break
         time.sleep(args.sleep + random.uniform(0, args.sleep / 2))
     lf.close()
