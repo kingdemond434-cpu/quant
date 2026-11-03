@@ -26,7 +26,9 @@ from __future__ import annotations
 import argparse
 import contextlib
 import ctypes
+import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -37,7 +39,11 @@ DESK = Path(__file__).resolve().parents[1]
 CYCLE = DESK / "research" / "hourly_cycle.py"
 LOCKS = DESK / "data" / "locks"
 LOGS = DESK / "logs"
-PASS_TIMEOUT_S = int(os.environ.get("DEPT_PASS_TIMEOUT_S", "10800"))      # 3 h, as the task had
+# 90 min (2026-11-03). Three hours let two hung passes hold two of three slots for an afternoon
+# while twenty departments queued. The tail of a long department is not lost at the shorter
+# clock: leg_rotation plans strictly inside PASS_BUDGET_FILL of it, a leg whose measured cost no
+# longer fits yields, and every leg that did not finish leads the next pass oldest-first.
+PASS_TIMEOUT_S = int(os.environ.get("DEPT_PASS_TIMEOUT_S", "5400"))
 MIN_CYCLE_S = int(os.environ.get("DEPT_MIN_CYCLE_S", "600"))              # never spin faster
 PAUSE_S = int(os.environ.get("DEPT_PAUSE_S", "30"))
 MIN_FREE_MB = float(os.environ.get("DEPT_MIN_FREE_MB", "4096"))
@@ -49,7 +55,26 @@ RECYCLE_PASSES = int(os.environ.get("DEPT_RECYCLE_PASSES", "48"))
 # passes with OS-held slots.  Three keeps useful parallel discovery on the 98GB box while leaving
 # the terminal, gateway, gauntlet and core loop headroom.  A crashed process releases its byte
 # lock in the kernel, so there is no stale-file recovery path.
-CONCURRENT_PASSES = max(1, int(os.environ.get("DEPT_CONCURRENT_PASSES", "3")))
+#
+# SIX SLOTS, ADMITTED BY MEASURED CPU (2026-11-03). Three slots on an 18-core box with 65 GB free
+# left twenty departments queued for hours. The cap is now six, but a pass is admitted only while
+# (logical cores - JUDGE_RESERVED_CORES - busy non-judge cores) >= MIN_FREE_CORES_TO_ADMIT, so the
+# judge keeps its eight and mining is never cut: a busy box simply admits nothing new. An
+# unmeasurable CPU falls back to LEGACY_SLOTS -- unmeasured never licenses more than before.
+CONCURRENT_PASSES = max(1, int(os.environ.get("DEPT_CONCURRENT_PASSES", "6")))
+LEGACY_SLOTS = 3
+JUDGE_RESERVED_CORES = float(os.environ.get("DEPT_JUDGE_RESERVED_CORES", "8"))
+MIN_FREE_CORES_TO_ADMIT = float(os.environ.get("DEPT_MIN_FREE_CORES", "2"))
+# THE PASS HEARTBEAT. The child touches it at every leg boundary and the resident touches it
+# whenever the child's process tree burns CPU. A pass with neither for HEARTBEAT_STALL_S is hung:
+# its own resident kills its own child tree, releases the slot and requeues the department.
+HEARTBEAT_STALL_S = int(os.environ.get("DEPT_HEARTBEAT_STALL_S", "1800"))
+HEARTBEAT_POLL_S = int(os.environ.get("DEPT_HEARTBEAT_POLL_S", "30"))
+CPU_PROGRESS_S = 1.0          # child-tree CPU seconds per poll that count as progress
+# A ticket that has waited longer than this is STARVED: DEPT_QUEUE.json goes RED.
+STARVATION_S = int(os.environ.get("DEPT_STARVATION_S", "7200"))
+REPORT_EVERY_S = 60
+REPORTS = DESK / "reports"
 # A department child still has a hard timeout.  Plan strictly inside it so every admitted
 # oldest-first tranche can checkpoint and publish instead of losing the same tail every pass.
 PASS_BUDGET_FILL = min(
@@ -154,53 +179,261 @@ def _wait_ticket(dept: str) -> Path:
     return path
 
 
-def _ticket_alive(path: Path, pid: int) -> bool:
-    """A crashed waiter must not block the queue forever, including after PID reuse."""
+_TICKET = re.compile(r"^dept_wait_(\d+)_(\d+)_(.+)\.ticket$", re.IGNORECASE)
+ALIVE, DEAD, UNMEASURED = "alive", "dead", "unmeasured"
+
+
+def _parse_ticket(path: Path) -> tuple[int, int, str] | None:
+    """(entered ns, owner pid, dept) from the ticket's NAME, the ticket's only clock. st_mtime is
+    not read, so an ACL hiding a SYSTEM-owned file's attributes cannot reorder or drop it."""
+    m = _TICKET.match(path.name)
+    if not m:
+        return None
+    return int(m.group(1)), int(m.group(2)), m.group(3)
+
+
+def _owner_state_os(pid: int) -> str:
+    """Owner liveness without psutil. Only a definite answer is DEAD; refusal is UNMEASURED."""
+    if sys.platform == "win32":
+        try:
+            k32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
+            handle = k32.OpenProcess(0x1000, False, int(pid))  # QUERY_LIMITED_INFORMATION
+            if not handle:
+                return DEAD if k32.GetLastError() == 87 else UNMEASURED  # 87: no such pid
+            try:
+                code = ctypes.c_ulong()
+                if not k32.GetExitCodeProcess(handle, ctypes.byref(code)):
+                    return UNMEASURED
+                return ALIVE if code.value == 259 else DEAD               # 259: STILL_ACTIVE
+            finally:
+                k32.CloseHandle(handle)
+        except Exception:
+            return UNMEASURED
+    try:
+        os.kill(int(pid), 0)
+    except ProcessLookupError:
+        return DEAD
+    except OSError:
+        return UNMEASURED
+    return ALIVE
+
+
+def _owner_state(pid: int, entered_s: float) -> str:
+    """ALIVE, DEAD or UNMEASURED for a ticket's owner.
+
+    THE EUROPE SKIP (measured 2026-11-03). The old check answered a bare bool and folded every
+    OSError into "dead"; the caller then tried to delete the ticket, and on a SYSTEM-owned ticket
+    seen from a user-account resident the delete is refused, the refusal was caught by
+    `except OSError: continue`, and the ticket silently left the contention. Europe's own SYSTEM
+    resident saw itself at the head while every other resident admitted the next ticket. DEAD now
+    needs proof -- no such process, or a process born after the ticket (pid reuse); access
+    denied, a raw WinError or any other doubt is UNMEASURED, and UNMEASURED keeps its place.
+    """
+    if int(pid) == os.getpid():
+        return ALIVE
     try:
         import psutil
-        proc = psutil.Process(pid)
-        return proc.is_running() and proc.create_time() <= path.stat().st_mtime + 1.0
-    except (ImportError, PermissionError):
-        return True  # unmeasured ownership is not permission to steal another waiter's turn
-    except (OSError, ValueError):
-        return False
-    except Exception as exc:
-        if type(exc).__name__ in ("NoSuchProcess", "ZombieProcess"):
-            return False
-        return True
+    except ImportError:
+        return _owner_state_os(pid)
+    try:
+        created = psutil.Process(int(pid)).create_time()
+    except psutil.NoSuchProcess:         # ZombieProcess is a NoSuchProcess: it will never poll
+        return DEAD
+    except Exception:
+        return UNMEASURED
+    try:
+        if float(created) > float(entered_s) + 2.0:
+            return DEAD                  # the pid was reused after the ticket was written
+    except (TypeError, ValueError):
+        return UNMEASURED
+    return ALIVE
+
+
+def _ticket_alive(path: Path, pid: int) -> bool:
+    """A crashed waiter must not block the queue forever; an unreadable one keeps its turn."""
+    parsed = _parse_ticket(path)
+    entered_s = parsed[0] / 1e9 if parsed else time.time()
+    return _owner_state(pid, entered_s) != DEAD
+
+
+def _queue() -> tuple[list[dict], list[str]]:
+    """Every live-or-unmeasured contender, STRICTLY by ticket time, and the names set aside.
+
+    Only a ticket whose owner is proven DEAD leaves the contention, and it leaves whether or not
+    the delete succeeds (a dead owner can never take its turn). A ticket whose owner cannot be
+    read stays in line -- skipping it is exactly how a later ticket was admitted ahead of it.
+    """
+    contenders: list[dict] = []
+    set_aside: list[str] = []
+    try:
+        paths = list(LOCKS.glob("dept_wait_*.ticket"))
+    except OSError:
+        return [], ["UNREADABLE: the ticket directory could not be listed"]
+    for path in paths:
+        parsed = _parse_ticket(path)
+        if parsed is None:
+            set_aside.append(f"{path.name}: malformed name")
+            continue
+        entered, owner, dept = parsed
+        try:
+            alive = _ticket_alive(path, owner)
+        except Exception:
+            alive = True
+        if not alive:
+            try:
+                path.unlink(missing_ok=True)
+            except OSError as exc:
+                set_aside.append(f"{path.name}: dead owner, delete refused ({type(exc).__name__})")
+            continue
+        contenders.append({"entered": entered, "name": path.name, "path": path,
+                           "pid": owner, "dept": dept})
+    contenders.sort(key=lambda c: (c["entered"], c["name"]))
+    return contenders, set_aside
 
 
 def _oldest_waiter() -> Path | None:
     """Return the oldest live contender; remove abandoned process tickets only."""
-    contenders: list[tuple[int, str, Path]] = []
-    for path in LOCKS.glob("dept_wait_*.ticket"):
-        try:
-            _, _, stamp, pid, _dept = path.stem.split("_", 4)
-            entered = int(stamp)
-            owner = int(pid)
-            if not _ticket_alive(path, owner):
-                path.unlink(missing_ok=True)
-                continue
-            contenders.append((entered, path.name, path))
-        except (ValueError, OSError):
-            # An unreadable ticket is not evidence of an available slot. Leave it visible.
-            continue
-    return min(contenders)[2] if contenders else None
+    contenders, _ = _queue()
+    return contenders[0]["path"] if contenders else None
+
+
+def _logical_cores() -> int | None:
+    try:
+        import psutil
+        return int(psutil.cpu_count(logical=True) or 0) or os.cpu_count()
+    except Exception:
+        return os.cpu_count()
+
+
+def busy_cores() -> tuple[float | None, str]:
+    """Cores in use by everything except the judge's own reservation, or None when unmeasurable.
+
+    The repo's convention first (`judging_throughput.measure_cpu`: psutil per process, the
+    gauntlet tree attributed to the judge), so the judge's reserved eight are not counted twice;
+    judge use ABOVE its reservation is counted as busy. Fallback: psutil per-core percentages
+    summed, counting everything as busy -- conservative, never optimistic.
+    """
+    try:
+        research = str(DESK / "research")
+        if research not in sys.path:
+            sys.path.insert(0, research)
+        from judging_throughput import measure_cpu
+        cpu = measure_cpu(1.0)
+        other, judge = cpu.get("busy_other_cores"), cpu.get("busy_judge_cores")
+        if isinstance(other, (int, float)) and isinstance(judge, (int, float)):
+            busy = float(other) + max(0.0, float(judge) - JUDGE_RESERVED_CORES)
+            return busy, f"measure_cpu other={float(other):.1f} judge={float(judge):.1f}"
+    except Exception:
+        pass
+    try:
+        import psutil
+        per = psutil.cpu_percent(interval=1.0, percpu=True)
+        return sum(float(x) for x in per) / 100.0, "psutil per-core (judge not separated)"
+    except Exception:
+        return None, "UNMEASURED"
+
+
+def admission_slots() -> tuple[int, str]:
+    """How many slots a pass may be admitted into right now (0: wait for CPU)."""
+    cores = _logical_cores()
+    busy, how = busy_cores()
+    if busy is None or not cores:
+        slots = min(LEGACY_SLOTS, CONCURRENT_PASSES)
+        return slots, f"CPU UNMEASURED ({how}): the legacy {slots} slots stand"
+    free = cores - JUDGE_RESERVED_CORES - busy
+    why = (f"{cores} cores - {JUDGE_RESERVED_CORES:g} judge-reserved - {busy:.1f} busy "
+           f"= {free:.1f} free ({how})")
+    if free < MIN_FREE_CORES_TO_ADMIT:
+        return 0, f"{why} < {MIN_FREE_CORES_TO_ADMIT:g}: no pass admitted"
+    return CONCURRENT_PASSES, why
+
+
+def pass_heartbeat_path(dept: str) -> Path:
+    return LOCKS / f"dept_pass_{dept}.heartbeat"
+
+
+def touch_pass_heartbeat(path: Path, **info) -> None:
+    with contextlib.suppress(OSError):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                                    "resident_pid": os.getpid(), **info}), encoding="utf-8")
+
+
+def _heartbeat_age_s(path: Path, now: float | None = None) -> float | None:
+    try:
+        return max(0.0, (now if now is not None else time.time()) - path.stat().st_mtime)
+    except OSError:
+        return None
+
+
+def queue_report(contenders: list[dict], set_aside: list[str], *,
+                 now: float | None = None) -> dict:
+    """The queue as process_health reads it: RED when any ticket has waited over STARVATION_S."""
+    t = now if now is not None else time.time()
+    tickets = [{"dept": c["dept"], "pid": c["pid"], "ticket": c["name"],
+                "waited_s": round(max(0.0, t - c["entered"] / 1e9), 1)} for c in contenders]
+    starved = [x for x in tickets if x["waited_s"] > STARVATION_S]
+    passes = []
+    with contextlib.suppress(OSError):
+        for hb in sorted(LOCKS.glob("dept_pass_*.heartbeat")):
+            age = _heartbeat_age_s(hb, t)
+            passes.append({"dept": hb.stem[len("dept_pass_"):],
+                           "heartbeat_age_s": None if age is None else round(age, 1),
+                           "stale": age is not None and age > HEARTBEAT_STALL_S})
+    verdict = "RED" if starved else "GREEN"
+    why = (f"{len(starved)} ticket(s) waited over {STARVATION_S}s: "
+           + ", ".join(f"{x['dept']} {x['waited_s'] / 3600:.1f}h" for x in starved)
+           if starved else f"{len(tickets)} waiting, none over {STARVATION_S}s")
+    return {"at": datetime.fromtimestamp(t, tz=UTC).isoformat(timespec="seconds"),
+            "verdict": verdict, "why": why, "starvation_s": STARVATION_S,
+            "concurrent_passes": CONCURRENT_PASSES, "waiting": tickets, "starved": starved,
+            "set_aside": set_aside, "passes": passes, "writer_pid": os.getpid()}
+
+
+def write_queue_report(contenders: list[dict], set_aside: list[str], *,
+                       force: bool = False) -> dict | None:
+    """Write reports/DEPT_QUEUE.json, at most every REPORT_EVERY_S unless forced."""
+    out = REPORTS / "DEPT_QUEUE.json"
+    age = _heartbeat_age_s(out)
+    if not force and age is not None and age < REPORT_EVERY_S:
+        return None
+    doc = queue_report(contenders, set_aside)
+    with contextlib.suppress(OSError):
+        out.parent.mkdir(parents=True, exist_ok=True)
+        tmp = out.with_name(f"{out.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+        os.replace(tmp, out)
+    return doc
 
 
 def wait_for_capacity(dept: str, *, slots: int = CONCURRENT_PASSES,
-                      poll_s: int = PAUSE_S):
-    """Wait FIFO for bounded capacity; reacquiring departments rejoin at the tail."""
+                      poll_s: int = PAUSE_S, admit=None):
+    """Wait FIFO for bounded capacity; reacquiring departments rejoin at the tail.
+
+    Strictly by ticket time: only the head may claim, the head is the same ticket in every
+    resident's view, and the head is admitted only while the CPU rule leaves room.
+    """
+    admit = admit or admission_slots
     announced = False
+    starved_logged = False
+    cpu_logged = ""
     ticket = _wait_ticket(dept)
     try:
         while True:
-            if _oldest_waiter() == ticket:
-                handle = claim_capacity_slot(slots)
+            contenders, set_aside = _queue()
+            doc = write_queue_report(contenders, set_aside)
+            if doc and doc["verdict"] == "RED" and not starved_logged:
+                log(dept, f"RED: queue starvation -- {doc['why']}")
+                starved_logged = True
+            if contenders and contenders[0]["name"] == ticket.name:
+                allowed, why = admit()
+                handle = claim_capacity_slot(min(int(slots), allowed)) if allowed > 0 else None
                 if handle is not None:
-                    if announced:
-                        log(dept, f"capacity available: admitted to one of {slots} department slots")
+                    log(dept, f"admitted to {Path(handle.name).stem} of {slots}: {why}")
                     return handle
+                if allowed <= 0 and why != cpu_logged:
+                    log(dept, f"head of queue, waiting for CPU: {why}")
+                    cpu_logged = why
             if not announced:
                 log(dept, "waiting: bounded department slots or older pass(es) ahead")
                 announced = True
@@ -209,24 +442,63 @@ def wait_for_capacity(dept: str, *, slots: int = CONCURRENT_PASSES,
         ticket.unlink(missing_ok=True)
 
 
-def _tree_runner():
-    """libs/ops/proctree.run when it imports (kills the whole tree on timeout), else
-    subprocess.run -- a resident must keep running even when the rail cannot load."""
+def _kill_own_tree(proc: subprocess.Popen) -> dict:
+    """Kill THIS resident's own child and its descendants -- never any other process. The Popen
+    handle is still unreaped, so its pid cannot have been reused by a stranger."""
+    out: dict = {"pid": proc.pid}
     try:
         root = str(DESK.parents[1])
         if root not in sys.path:
             sys.path.insert(0, root)
         from libs.ops import proctree
-        return proctree.run
+        out.update(proctree.kill_tree(proc.pid))
+    except Exception as exc:
+        out["proctree"] = type(exc).__name__
+        with contextlib.suppress(OSError):
+            proc.kill()
+    with contextlib.suppress(Exception):
+        proc.wait(timeout=10)
+    return out
+
+
+def _spawn(args: list[str], **kwargs) -> subprocess.Popen:
+    return subprocess.Popen(args, **kwargs)
+
+
+def _tree_cpu_progress(pid: int, seen: dict[int, float]) -> bool | None:
+    """Did the child's tree burn CPU_PROGRESS_S since the last poll? None when unmeasurable."""
+    try:
+        import psutil
+        root = psutil.Process(pid)
+        procs = [root, *root.children(recursive=True)]
     except Exception:
-        return subprocess.run
+        return None
+    delta, fresh = 0.0, False
+    now_seen: dict[int, float] = {}
+    for pr in procs:
+        try:
+            ct = pr.cpu_times()
+            used = float(ct.user) + float(ct.system)
+        except Exception:
+            continue
+        now_seen[pr.pid] = used
+        if pr.pid in seen:
+            delta += max(0.0, used - seen[pr.pid])
+        else:
+            fresh = fresh or bool(seen)   # a new descendant after the first poll is progress
+    first = not seen
+    seen.clear()
+    seen.update(now_seen)
+    if not now_seen:
+        return None
+    return (not first) and (fresh or delta >= CPU_PROGRESS_S)
 
 
-_run_tree = _tree_runner()
-
-
-def run_pass(dept: str, timeout_s: int = PASS_TIMEOUT_S) -> dict:
-    """One department pass as a child under HOURLY_PLAN=dept:<name>, BELOW_NORMAL priority."""
+def run_pass(dept: str, timeout_s: int = PASS_TIMEOUT_S, *, slot: str = "",
+             stall_s: int = HEARTBEAT_STALL_S, poll_s: float = HEARTBEAT_POLL_S) -> dict:
+    """One department pass as a child under HOURLY_PLAN=dept:<name>, BELOW_NORMAL priority,
+    supervised by the pass heartbeat: a child with no leg boundary and no CPU for `stall_s` is
+    hung, and this resident kills its own child tree and reports `stalled`."""
     env = dict(os.environ)
     env["HOURLY_PLAN"] = f"dept:{dept}"
     # leg_rotation otherwise treats departments as unbounded, which is false: this child is
@@ -239,20 +511,50 @@ def run_pass(dept: str, timeout_s: int = PASS_TIMEOUT_S) -> dict:
     # Preserve a stricter caller budget, but never inherit one that reaches past our kill clock.
     env["HOURLY_BUDGET_S"] = str(int(min(inherited_budget, safe_budget))
                                  if inherited_budget > 0 else safe_budget)
+    beat = pass_heartbeat_path(dept)
+    env["DEPT_PASS_HEARTBEAT"] = str(beat)
     kwargs: dict = {}
     if sys.platform == "win32":
         kwargs["creationflags"] = BELOW_NORMAL_PRIORITY_CLASS
     t0 = time.monotonic()
+    touch_pass_heartbeat(beat, dept=dept, slot=slot, source="admitted")
     try:
-        r = _run_tree([sys.executable, "-W", "ignore", str(CYCLE)], cwd=str(DESK),
-                      env=env, timeout=timeout_s, check=False, **kwargs)
-        return {"rc": r.returncode, "seconds": round(time.monotonic() - t0, 1), "status": "ok"
-                if r.returncode == 0 else "exit"}
-    except subprocess.TimeoutExpired:
-        return {"rc": None, "seconds": round(time.monotonic() - t0, 1), "status": "timeout"}
+        proc = _spawn([sys.executable, "-W", "ignore", str(CYCLE)], cwd=str(DESK),
+                      env=env, **kwargs)
     except OSError as exc:
+        with contextlib.suppress(OSError):
+            beat.unlink(missing_ok=True)
         return {"rc": None, "seconds": round(time.monotonic() - t0, 1),
                 "status": f"failed_to_start: {type(exc).__name__}"}
+    seen: dict[int, float] = {}
+    try:
+        while True:
+            left = timeout_s - (time.monotonic() - t0)
+            try:
+                rc = proc.wait(timeout=max(0.05, min(float(poll_s), left)))
+                return {"rc": rc, "seconds": round(time.monotonic() - t0, 1),
+                        "status": "ok" if rc == 0 else "exit"}
+            except subprocess.TimeoutExpired:
+                pass
+            if time.monotonic() - t0 >= timeout_s:
+                killed = _kill_own_tree(proc)
+                return {"rc": None, "seconds": round(time.monotonic() - t0, 1),
+                        "status": "timeout", "killed": killed}
+            progressed = _tree_cpu_progress(proc.pid, seen)
+            if progressed:
+                touch_pass_heartbeat(beat, dept=dept, slot=slot, source="cpu",
+                                     child_pid=proc.pid)
+            age = _heartbeat_age_s(beat)
+            # UNMEASURED NEVER KILLS: without a readable tree, only the hard timeout stands.
+            if progressed is not None and age is not None and age > stall_s:
+                killed = _kill_own_tree(proc)
+                return {"rc": None, "seconds": round(time.monotonic() - t0, 1),
+                        "status": "stalled", "killed": killed,
+                        "why": f"no heartbeat (leg boundary or child CPU) for {age:.0f}s "
+                               f"> {stall_s}s"}
+    finally:
+        with contextlib.suppress(OSError):
+            beat.unlink(missing_ok=True)
 
 
 #: Cores kept for the live terminal, the gateway and the core hourly pass before a resident is
@@ -376,11 +678,24 @@ def main(argv: list[str] | None = None) -> int:
                 # Recheck after admission: several residents may have waited on memory before
                 # taking different slots.  The second check prevents the same snapshot race.
                 wait_for_memory(dept)
-                res = run_pass(dept)
+                slot = Path(getattr(capacity, "name", "")).stem
+                res = run_pass(dept, slot=slot)
             finally:
                 with contextlib.suppress(OSError):
                     capacity.close()
             log(dept, f"pass {passes}: {res['status']} rc={res['rc']} in {res['seconds']}s")
+            if res["status"] == "stalled":
+                # Reclaimed: the child tree is dead, the slot is released (closed above), and
+                # the department rejoins the queue now. A hung pass is not completed work.
+                log(dept, f"RECLAIMED {slot}: {res.get('why')}; killed own child tree "
+                          f"{res.get('killed')}; requeued")
+                heartbeat(dept, passes, status="stalled")
+                if a.once:
+                    return 1
+                if passes >= RECYCLE_PASSES:
+                    return 0
+                time.sleep(PAUSE_S)
+                continue
             heartbeat(dept, passes, done_inc=1)
             if a.once:
                 return 0 if res["status"] == "ok" else 1

@@ -1739,6 +1739,20 @@ def _leg_artifacts(name: str) -> list[Path]:
     return list(_LEG_ARTIFACTS.get(name, []))
 
 
+def _pass_heartbeat(name: str, phase: str) -> None:
+    """Touch the department resident's pass heartbeat at a leg boundary (DEPT_PASS_HEARTBEAT).
+
+    The resident reclaims a slot whose pass has shown no leg boundary and no CPU for 30 minutes;
+    this is the half of that heartbeat only the child can give. Never fails the leg."""
+    path = os.environ.get("DEPT_PASS_HEARTBEAT")
+    if not path:
+        return
+    with suppress(Exception):
+        Path(path).write_text(json.dumps({"at": datetime.now(UTC).isoformat(timespec="seconds"),
+                                          "source": "leg", "leg": name, "phase": phase,
+                                          "child_pid": os.getpid()}), encoding="utf-8")
+
+
 def _costed(name: str, fn):
     """Run one leg and record what it COST, whatever it returns or raises.
 
@@ -1843,6 +1857,7 @@ def _costed(name: str, fn):
     # instead of organ by organ. See `libs/ops/write_or_explain.py` for the eight silent failures
     # of one day that this exists to end; the short version is that a leg exiting 0 having written
     # nothing was, until this line, indistinguishable from a leg with nothing to write.
+    _pass_heartbeat(name, "start")
     _woe = _woe_before(name)
     _woe_t0 = time.monotonic()
     try:
@@ -1860,6 +1875,7 @@ def _costed(name: str, fn):
     except BaseException as exc:
         detail = f"{type(exc).__name__}: {exc}"
         _close(detail[:200])
+        _pass_heartbeat(name, "failed")
         print(f"  LEG FAILED {name}: {detail}", flush=True)
         _emit_leg(name, detail[:200])
         _woe_after(name, _woe, None, raised=detail, wall_s=time.monotonic() - _woe_t0)
@@ -1905,6 +1921,7 @@ def _costed(name: str, fn):
             if ":" in outcome:
                 print(f"  LEG FAILED {name}: {outcome}", flush=True)
     _close(outcome, outputs=_leg_artifacts(name))
+    _pass_heartbeat(name, "end")
     _emit_leg(name, outcome)
     _advance_watermark(name, outcome)
     _woe_after(name, _woe, out, wall_s=time.monotonic() - _woe_t0,

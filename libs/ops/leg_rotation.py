@@ -298,6 +298,17 @@ class Decision:
         if self.budget_s > 0 and elapsed_s > self.budget_s and att.runs.get(leg, 0) > 0:
             return False, (f"budget overrun at {elapsed_s:.0f}s of {self.budget_s:.0f}s: this "
                            f"pass yields to legs that have never run; it leads the next pass")
+        # A LEG THAT NO LONGER FITS DOES NOT START (2026-11-03). The department kill clock fell
+        # from 3 h to 90 min. A leg started at 70 minutes with a measured 30-minute cost is killed
+        # mid-write by the resident -- the tail lost, and the pass's own record never closed. A
+        # leg that has run before and whose MEASURED median would carry the pass past its budget
+        # yields instead; with no ledger row it is the oldest leg next pass and leads it.
+        samples = [c for c in att.costs.get(leg, []) if c > 0]
+        if (self.budget_s > 0 and att.runs.get(leg, 0) > 0 and samples
+                and elapsed_s + att.cost_s(leg) > self.budget_s):
+            return False, (f"would not fit: {att.cost_s(leg):.0f}s measured from "
+                           f"{elapsed_s:.0f}s passes the {self.budget_s:.0f}s budget; it leads "
+                           f"the next pass")
         return True, ""
 
 
