@@ -1192,7 +1192,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # The culture-gap producers (2026-09-30): a data-driven recipe walk, well under a second
     # when nothing is new, so every gap's cells are minted on the core clock.
     "culture_gap_cells",
-    "fill_recorder", "cost_surfaces",
+    "fill_recorder", "realised_cost", "cost_surfaces",
     # THE REBUILT 25-SEP LANES (2026-09-30): four artifact readers, seconds each. The bank ranks
     # why cells never BUILT, the pathology report classifies the live book's bad fills, the
     # contracts leg reads every leg's declared experiment against its own report, and the health
@@ -1405,7 +1405,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
                      "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin",
-                     "net_edge", "cost_truth", "cost_surfaces", "trade_pathology"),
+                     "net_edge", "cost_truth", "cost_surfaces", "trade_pathology",
+                     "realised_cost"),
                     "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
@@ -2339,6 +2340,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # second on the build box); the caps only guard a damaged file.
     "build_failure_bank": 120,
     "trade_pathology": 120,
+    # per account x symbol realised cost off the fill corpus: one JSONL read, seconds
+    "realised_cost": 120,
     "experiment_contracts": 240,
     "health_board": 180,
     # The sandbox runner stops itself at --budget-s 900 (each system inside its ROI share) and
@@ -6110,6 +6113,12 @@ def main() -> None:
     # corpus the execution twin and the shortfall model already read. Recording only.
     flr = _costed("fill_recorder", lambda: _producer(
         "fill_recorder", "research/fill_recorder.py", "--once", "--budget-s", "120"))
+    # WHAT EACH ACCOUNT ACTUALLY PAYS (2026-11-03). The corpus fill_recorder just wrote, rolled
+    # into per account x symbol realised cost (slip + spread + commission, fraction and R) with
+    # an empirical-Bayes shrink toward the model; pf_allocator's cost input reads it, two-sided,
+    # and falls back to the modelled surface when it is stale. Report only. Seconds.
+    rlc = _costed("realised_cost", lambda: _producer(
+        "realised_cost", "research/realised_cost.py", "--once"))
     # THE WHOLE ROUND TRIP, KEYED (2026-09-30). The cost model was spread x hour only; this joins
     # the corpus fill_recorder just wrote with the ledger's commission and swap into surfaces
     # keyed instrument x session x size x vol x direction x order type, UNMEASURED where no fill
@@ -6515,7 +6524,8 @@ def main() -> None:
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
                     "culture_gap_cells": cgc,
                     "ground_depth": gdp,
-                    "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
+                    "timeframe_fanout": tff, "fill_recorder": flr, "realised_cost": rlc,
+                    "cost_surfaces": csf,
                     "actor_pressure": apr, "destroyer_pool": dpo,
                     "quantbench": qbn, "evidence_chain": evc, "identity_chain": idc,
                     "clock_ledger": ckl,

@@ -71,22 +71,49 @@ false-null direction, the only one this desk has no instrument for". It is repor
 NOT applied as a credit: crediting it would raise a sleeve's mean on the strength of a cost model,
 which is sizing up on a modelling assumption. Under-charging is corrected; over-charging is
 reported and left for the replay to fix at source, where it belongs.
+
+REALISED FILLS OVERRIDE THE MODEL, BOTH WAYS (2026-11-03). The reason the model may never credit
+is that it "has never been validated against a real fill". `research/realised_cost.py` publishes
+what each account actually paid per symbol (slip + spread + commission, in R, from the fill
+corpus), and `apply_realised` replaces the modelled per-trade cost with the empirical-Bayes blend
+
+    shrunk = w x realised_mean + (1 - w) x (base_cost_r + modelled cost_bias_r),
+    w = n / (n + REALISED_K)
+
+so `cost_bias_r = shrunk - base_cost_r`, which is NEGATIVE when the venue fills cheaper than the
+replay charged. That is a measurement, not a model, so it is allowed to credit: a capital modifier
+on this desk must be two-sided (GROWTH_GOVERNANCE, `capital_modifiers.REGISTRY`
+"realised_execution_cost"). A REALISED_COST report older than `REALISED_MAX_AGE_H`, unreadable,
+or holding no cell for the sleeve's account and symbol leaves the modelled cost exactly as it was,
+and the summary says which of those it was.
 """
 from __future__ import annotations
 
 import math
 import re
 from collections.abc import Mapping, Sequence
+from datetime import UTC, datetime
 from typing import Any
 
 __all__ = [
     "BASE_COST_R",
     "MAX_RATIO",
+    "REALISED_K",
+    "REALISED_MAX_AGE_H",
     "SESSION_FILL_HOUR",
+    "apply_realised",
     "cost_ratio",
     "costs_for",
     "fill_hour",
+    "realised_state",
 ]
+
+#: Empirical-Bayes prior strength, in fills, of the modelled cost against the realised one: at
+#: n = REALISED_K the venue's own mean and the model weigh equally. Declared, not fitted.
+REALISED_K = 20.0
+#: A realised-cost report older than this describes a book that has since traded; the modelled
+#: cost stands until a fresh one is written.
+REALISED_MAX_AGE_H = 48.0
 
 MEASURED, UNMEASURED, REGISTRY_DEFECT = "MEASURED", "UNMEASURED", "REGISTRY_DEFECT"
 
@@ -331,3 +358,81 @@ def costs_for(sleeves: Sequence[Mapping[str, Any]],
         summary["verdict"] = ("UNMEASURED: not one sleeve could be priced at its own fill hour. "
                               "Execution is not an allocator input on this host.")
     return {"sleeves": out, "summary": summary}
+
+
+def realised_state(doc: Any, now: datetime | None = None,
+                   max_age_h: float = REALISED_MAX_AGE_H) -> tuple[bool, str, float | None]:
+    """(usable, why, age_h) for a REALISED_COST.json document. Unreadable, unstamped, stale or
+    UNMEASURED is not usable, and the reason is the allocator's published fallback note."""
+    if not isinstance(doc, Mapping):
+        return False, "REALISED_COST.json absent or unreadable: modelled cost used", None
+    try:
+        at = datetime.fromisoformat(str(doc.get("measured_at")).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return False, "REALISED_COST.json carries no readable measured_at: modelled cost used", None
+    at = at if at.tzinfo else at.replace(tzinfo=UTC)
+    age_h = ((now or datetime.now(tz=UTC)) - at).total_seconds() / 3600.0
+    if not age_h <= max_age_h:
+        return (False, f"REALISED_COST.json is {age_h:.1f}h old (> {max_age_h:g}h): STALE, "
+                       "modelled cost used", round(age_h, 2))
+    if str(doc.get("status") or "") != MEASURED:
+        return (False, "REALISED_COST.json is UNMEASURED (no account x symbol cell carries a "
+                       "whole round-trip cost): modelled cost used", round(age_h, 2))
+    return True, f"REALISED_COST.json fresh ({age_h:.1f}h)", round(age_h, 2)
+
+
+def apply_realised(cost_doc: Mapping[str, Any], realised: Any, *,
+                   symbols: Mapping[str, str], account: str = "fusion",
+                   base_cost_r: float = BASE_COST_R, k: float = REALISED_K,
+                   now: datetime | None = None,
+                   max_age_h: float = REALISED_MAX_AGE_H) -> dict[str, Any]:
+    """`costs_for`'s output with each sleeve's cost replaced by the shrunk REALISED cost of its
+    symbol on `account`, where one is measured. TWO-SIDED: the blend moves toward the venue's
+    own mean whichever side of the model it lies, so `cost_bias_r` may go negative (a credit).
+
+    Never mixes accounts: only `realised["accounts"][account]` is read. A sleeve whose symbol has
+    no MEASURED cell there keeps its modelled entry untouched and is counted in `n_model`."""
+    sleeves = {n: dict(v) for n, v in (cost_doc.get("sleeves") or {}).items()}
+    summary = dict(cost_doc.get("summary") or {})
+    usable, why, age_h = realised_state(realised, now, max_age_h)
+    block: dict[str, Any] = {"account": account, "usable": usable, "why": why, "age_h": age_h,
+                             "k": float(k), "n_realised": 0, "n_model": len(sleeves),
+                             "n_cheaper": 0, "n_dearer": 0, "two_sided": True}
+    if not usable:
+        block["fallback"] = "MODELLED"
+        summary["realised"] = block
+        return {"sleeves": sleeves, "summary": summary}
+    cells = (((realised.get("accounts") or {}).get(account) or {}).get("symbols") or {})
+    for name, entry in sleeves.items():
+        c = cells.get(str(symbols.get(name) or ""))
+        sh = (c or {}).get("shrink") or {}
+        mean, n = sh.get("realised_mean_cost_r"), int(sh.get("n") or 0)
+        if (not isinstance(c, Mapping) or c.get("status") != MEASURED or n <= 0
+                or not isinstance(mean, (int, float)) or not math.isfinite(float(mean))):
+            continue
+        model_bias = float(entry.get("cost_bias_r", 0.0) or 0.0)
+        model_level = float(base_cost_r) + model_bias
+        w = n / (n + float(k))
+        shrunk = w * float(mean) + (1.0 - w) * model_level
+        entry.update({
+            "cost_bias_r": round(shrunk - float(base_cost_r), 6),
+            # the uncertainty scale moves with the level, as on the modelled path
+            "cost_r": round(abs(shrunk) if shrunk else float(base_cost_r), 6),
+            "source": "REALISED",
+            "realised": {"account": account, "n": n, "weight": round(w, 6),
+                         "realised_mean_cost_r": round(float(mean), 8),
+                         "modelled_cost_r": round(model_level, 8),
+                         "modelled_cost_bias_r": round(model_bias, 8),
+                         "shrunk_cost_r": round(shrunk, 8)},
+            "why": (f"realised {account} {symbols.get(name)} cost {float(mean):.4f}R over {n} "
+                    f"fill(s), shrunk at w={w:.3f} toward the modelled {model_level:.4f}R"),
+        })
+        block["n_realised"] += 1
+        block["n_model"] -= 1
+        if shrunk < model_level:
+            block["n_cheaper"] += 1
+        elif shrunk > model_level:
+            block["n_dearer"] += 1
+    block["fallback"] = "NONE" if block["n_model"] == 0 else "MODELLED_WHERE_UNMEASURED"
+    summary["realised"] = block
+    return {"sleeves": sleeves, "summary": summary}

@@ -899,7 +899,7 @@ def search_trials() -> dict[str, int]:
     return out
 
 
-def _execution_costs(names: Any) -> dict[str, Any]:
+def _execution_costs(names: Any, account: str = "fusion") -> dict[str, Any]:
     """Each sleeve's measured execution under-charge, keyed by sleeve name.
 
     THE SYMBOL AND THE SELECTOR BOTH COME OUT OF THE SLEEVE NAME, which is how every other organ
@@ -908,16 +908,16 @@ def _execution_costs(names: Any) -> dict[str, Any]:
     A name that carries no session token is UNPRICED and says so; it is not guessed at, because a
     guessed fill hour prices the sleeve at an hour it does not trade.
     """
+    from libs.portfolio.execution_cost import costs_for
+    rows = [{"name": str(c), "symbol": str(c).split("_")[0], "selector": str(c)} for c in names]
     try:
-        from libs.portfolio.execution_cost import costs_for
         surface = json.loads((BASE / "data" / "cost_surface.json").read_text("utf-8"))
-    except (OSError, ValueError, ImportError) as exc:
-        return {"sleeves": {},
-                "summary": {"n_sleeves": 0, "n_measured": 0, "n_unpriced": 0,
-                            "n_undercharged": 0, "n_overcharged": 0, "n_clipped": 0,
-                            "n_registry_defect": 0, "n_no_spread_provenance": 0,
-                            "worst_undercharge": None,
-                            "verdict": f"no cost surface on this host ({type(exc).__name__})"}}
+    except (OSError, ValueError) as exc:
+        # NO MODEL IS NOT NO FILLS: the venue's own realised cost still applies where measured,
+        # against the unpriced base (every sleeve's modelled bias 0.0, as before).
+        blank = costs_for(rows, None)
+        blank["summary"]["verdict"] = f"no cost surface on this host ({type(exc).__name__})"
+        return _with_realised(blank, rows, account)
     # THE REGISTRY IS PASSED SO THE PROVENANCE GATE CAN RUN. Without it every symbol prices, and
     # on this desk's data that means pricing 241 of 251 symbols off a spread nobody can attribute
     # to a producer. An unreadable registry is treated as "no provenance for anything", which is
@@ -927,8 +927,32 @@ def _execution_costs(names: Any) -> dict[str, Any]:
         reg = reg.get("symbols", reg) if isinstance(reg, dict) else {}
     except (OSError, ValueError):
         reg = {}
-    rows = [{"name": str(c), "symbol": str(c).split("_")[0], "selector": str(c)} for c in names]
-    return costs_for(rows, surface, registry=reg)
+    doc = costs_for(rows, surface, registry=reg)
+    return _with_realised(doc, rows, account)
+
+
+#: The realised-cost block of the last pass, published on the allocation artifact so a reader can
+#: see whether the cost input was the venue's own fills or the model (and why).
+_EXEC_COST_META: dict[str, Any] = {}
+
+
+def _with_realised(doc: dict[str, Any], rows: list[dict[str, Any]],
+                   account: str) -> dict[str, Any]:
+    """THE VENUE'S OWN FILLS OVER THE MODEL, BOTH WAYS (2026-11-03). `REALISED_COST.json`
+    (hourly leg `realised_cost`) carries what `account` actually paid per symbol; where a cell is
+    MEASURED the sleeve's cost is the empirical-Bayes blend of that and the model, so a venue that
+    fills cheaper than modelled LOWERS the cost and one that fills dearer raises it. Stale (>48h),
+    unreadable or UNMEASURED falls back to the modelled cost and the artifact says so."""
+    from libs.portfolio.execution_cost import apply_realised
+    try:
+        realised: Any = json.loads((BASE / "reports" / "REALISED_COST.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        realised = None
+    out = apply_realised(doc, realised, account=account,
+                         symbols={str(r["name"]): str(r["symbol"]) for r in rows})
+    _EXEC_COST_META.clear()
+    _EXEC_COST_META.update(out["summary"].get("realised") or {})
+    return out
 
 
 def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
@@ -4930,6 +4954,11 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # C17: the objective's two non-growth terms, written down instead of folded in, plus the
         # instrument and mechanism tiers as decompositions of the heat already resolved.
         "objective_terms": _objective_terms(funded, ev),
+        # THE COST INPUT'S SOURCE: the venue's own fills (REALISED_COST.json, shrunk toward the
+        # model, two-sided) or the modelled surface, with the reason when it fell back.
+        "execution_cost_realised": dict(_EXEC_COST_META) or {
+            "usable": False, "fallback": "MODELLED",
+            "why": "the cost input was not built on this pass"},
         # P12: E[log W] as a function of capital per sleeve, and which edges this account's size
         # is still able to harvest. Read from CAPACITY.json; sizes nothing.
         "capacity_growth": _capacity_growth(),

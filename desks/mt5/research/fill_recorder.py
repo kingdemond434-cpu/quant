@@ -68,7 +68,19 @@ from libs.execution import fill_corpus as fc  # noqa: E402
 
 INTENTS = DESK / "data" / "order_intents.jsonl"
 E8_INTENTS = DESK / "data" / "e8_intents.jsonl"
-from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+#: THE THIRD ACCOUNT (2026-11-03). FTMO places real orders through two lanes -- the E8-following
+#: gold copy (`prop/ftmo_follower.py`) and the certified-sleeve executor (`prop/ftmo_executor.py`)
+#: -- and its closed positions land in the prop fills ledger (`ftmo_follower.compose_fills`, book
+#: "ftmo"). None of the three files was ever opened here, so FTMO's execution cost was outside the
+#: corpus. E8's closed deals land in the same ledger under book "e8" when a writer records them.
+FTMO_EXEC_INTENTS = DESK / "data" / "ftmo_exec_intents.jsonl"
+FTMO_FOLLOWER_INTENTS = DESK / "data" / "ftmo_follower_intents.jsonl"
+PROP_LEDGER = DESK / "data" / "live_ledger_prop.jsonl"
+#: The three books, never pooled: every corpus row this organ writes carries `book`, and the join
+#: runs inside one book at a time, so an E8 ticket can never pair with a Fusion deal by number.
+BOOKS: tuple[str, ...] = ("fusion", "e8", "ftmo")
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path  # noqa: E402
+
 LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 DECISIONS = DESK / "data" / "decision_ledger.jsonl"
 CORPUS = DESK / "data" / "fill_corpus.jsonl"
@@ -296,6 +308,8 @@ def build_row(it: dict[str, Any], deal: dict[str, Any], how: str,
         slip_r = (slip_quote * contract * lots) / denom
     spread_frac = (spread / ref) if (spread is not None and ref) else None
     spread_points = (spread / point) if (spread is not None and point) else None
+    stop = _f(deal.get("sl"))
+    stop_frac = (abs(fill - stop) / fill) if (fill and stop and stop > 0) else None
 
     iid = str(it.get("intent_id") or "")
     dec = decisions.get(iid) or {}
@@ -334,6 +348,8 @@ def build_row(it: dict[str, Any], deal: dict[str, Any], how: str,
         "slip_frac": slip_frac, "slip_r": slip_r, "slip_points": slip_points,
         "spread_frac_at_decision": spread_frac,
         "spread_points_at_decision": spread_points, "point": point,
+        # |entry - stop| / entry: the bridge from R to a fraction of price (realised_cost.py)
+        "stop_frac": stop_frac,
         # COMMISSION IN R DIVIDED BY THE BARE STOP DISTANCE UNTIL NOW. `risk_quote` is price units
         # on 141 of 151 rows, so this read (contract x lots) times too large -- 100x on gold.
         "commission_r": (((_f(deal.get("commission")) or 0.0) / denom) if denom else None),
@@ -395,7 +411,10 @@ def unfilled_row(it: dict[str, Any]) -> dict[str, Any]:
             "spread_points_at_decision": ((spread / point) if (spread is not None and point)
                                           else None),
             "point": point,
+            "stop_frac": ((stop_dist / fill) if (stop_dist and fill) else None),
             "latency_decision_to_send_ms": _f(it.get("latency_ms")),
+            "latency_send_to_ack_ms": _f(it.get("latency_send_to_ack_ms")),
+            "account_kind": str(it.get("account_kind") or "unknown"),
             "status": "FILLED",
         }
     return {
@@ -510,6 +529,8 @@ def deal_row(deal: dict[str, Any]) -> dict[str, Any]:
         "slip_frac": None, "slip_r": None, "slip_points": None,
         "spread_frac_at_decision": None, "spread_points_at_decision": None,
         "point": _point_from(entry, exit_px, _f(deal.get("sl")), _f(deal.get("tp"))),
+        "stop_frac": ((abs(entry - (_f(deal.get("sl")) or 0.0)) / entry)
+                      if (entry and (_f(deal.get("sl")) or 0.0) > 0) else None),
         "commission_r": ((comm / denom) if denom else None),
         "realized_r": realized_r(deal, denom),
         "status": "FILLED" if entry is not None else "UNRESOLVED",
@@ -517,11 +538,12 @@ def deal_row(deal: dict[str, Any]) -> dict[str, Any]:
 
 
 def supersede_rows(pairs: list[tuple[dict[str, Any], dict[str, Any], str]],
-                   existing: dict[str, str]) -> list[dict[str, Any]]:
-    """A SUPERSEDED marker for every deal_only key an earlier pass wrote for a deal now joined."""
+                   existing: dict[str, str], prefix: str = "") -> list[dict[str, Any]]:
+    """A SUPERSEDED marker for every deal_only key an earlier pass wrote for a deal now joined.
+    `prefix` is the book's record-id prefix (empty for Fusion, whose keys predate books)."""
     out: list[dict[str, Any]] = []
     for it, deal, how in pairs:
-        old = f"deal:{deal.get('deal')}|{deal.get('time') or ''}"
+        old = f"{prefix}deal:{deal.get('deal')}|{deal.get('time') or ''}"
         if old not in existing or existing[old].startswith("SUPERSEDED|"):
             continue
         new = f"{it.get('intent_id') or it.get('ticket')}|{deal.get('time') or ''}"
@@ -564,9 +586,118 @@ def e8_intents(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             # These land as UNRESOLVED until `e8_book` records the venue's answer.
             "fill_price": None,
             "intent_id": f"e8|{r.get('tag') or ''}|{r.get('at') or ''}",
-            "account_kind": "prop", "source_file": "e8_intents.jsonl",
+            "account_kind": "prop", "source_file": "e8_intents.jsonl", "book": "e8",
         })
     return out
+
+
+def ftmo_exec_intents(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The FTMO certified-sleeve executor's orders, in the live account's intent shape.
+
+    `ftmo_exec_intents.jsonl` writes one row per sleeve CONSIDERED; only a SENT row reached the
+    venue, so only those are offered to the join (a sleeve that was refused is not an execution
+    and would only add UNRESOLVED noise). Same field names as E8's executor -- `entry_ref` is the
+    quote the lane decided against, `spread` the spread at that instant -- and, as on E8, no fill
+    price is invented from the request.
+    """
+    out: list[dict[str, Any]] = []
+    for r in rows:
+        if not r.get("symbol") or str(r.get("status") or "").strip().upper() != "SENT":
+            continue
+        sleeve = str(r.get("sleeve") or "ftmo_executor")
+        out.append({
+            "time": r.get("at"), "symbol": r.get("symbol"), "sleeve": sleeve,
+            "side": r.get("side"), "lot": _f(r.get("lot")), "intended": _f(r.get("entry_ref")),
+            "sl": _f(r.get("stop")), "tp": _f(r.get("target")),
+            "ticket": _i(r.get("order_id")), "order_type": "market",
+            "spread_at_decision": _f(r.get("spread")),
+            "latency_send_to_ack_ms": _f(r.get("latency_send_to_ack_ms")),
+            "retcode": _i(r.get("retcode")), "fill_price": None,
+            "intent_id": f"ftmo|{sleeve}|{r.get('at') or ''}",
+            "account_kind": "prop", "source_file": "ftmo_exec_intents.jsonl", "book": "ftmo",
+        })
+    return out
+
+
+def ftmo_follower_intents(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The FTMO gold copy's orders. A PENDING stop/limit at `price`: that is the price the desk
+    asked for, so slippage is the trigger's fill against it. The row names no symbol because
+    the lane trades one (`ftmo_follower.SYMBOL`); it carries no quote, so spread is unrecorded
+    and stays None rather than borrowed from another account."""
+    out: list[dict[str, Any]] = []
+    for r in rows:
+        if str(r.get("status") or "").strip().upper() != "SENT":
+            continue
+        out.append({
+            "time": r.get("at"), "symbol": str(r.get("symbol") or "XAUUSD"),
+            "sleeve": "gold_asia", "side": r.get("side"), "lot": _f(r.get("lot")),
+            "intended": _f(r.get("price")), "sl": _f(r.get("sl")), "tp": _f(r.get("tp")),
+            "ticket": _i(r.get("order_id")), "order_type": str(r.get("kind") or "pending"),
+            "retcode": _i(r.get("retcode")), "fill_price": None,
+            "intent_id": f"ftmo|{r.get('window') or 'asia'}|{r.get('at') or ''}",
+            "account_kind": "prop", "source_file": "ftmo_follower_intents.jsonl",
+            "book": "ftmo",
+        })
+    return out
+
+
+def prop_deals(rows: list[dict[str, Any]], book: str) -> list[dict[str, Any]]:
+    """The prop fills ledger's closed positions for ONE book, in the live ledger's deal shape.
+
+    `live_ledger_prop.jsonl` (schema prop-fills-v1) holds one row per CLOSED position: entry
+    price, the stop the order was sent with, volume, the exit and the fees read off the MT5
+    deals. It carries no deal number and no contract size, so: the position id is the row's
+    deal key (unique inside one book, which is the only place the join ever looks), and the
+    contract size is RECOVERED from the ledger's own geometric `risk_quote` (|entry - stop| x
+    volume x contract), never assumed. Commission is the venue's commission plus its fees --
+    both are execution charges; swap is financing and stays separate.
+    """
+    out: list[dict[str, Any]] = []
+    for r in rows:
+        if str(r.get("book") or "").strip().lower() != book:
+            continue
+        pid = _i(r.get("position_id"))
+        if pid is None:
+            continue
+        entry, sl, vol = _f(r.get("entry_price")), _f(r.get("sl")), _f(r.get("volume"))
+        rq = _f(r.get("risk_quote"))
+        contract = _f(r.get("contract_size"))
+        if contract is None and rq and entry and sl and vol and abs(entry - sl) > 0:
+            contract = abs(rq) / (abs(entry - sl) * vol)
+        comm, fees = _f(r.get("commission")), _f(r.get("fees"))
+        out.append({
+            "deal": pid, "position_id": pid, "entry_order": _i(r.get("entry_order")),
+            "symbol": r.get("symbol"), "sleeve": r.get("sleeve"),
+            "entry_price": entry, "fill_price": _f(r.get("fill_price")),
+            "sl": sl, "tp": _f(r.get("tp")), "volume": vol, "contract_size": contract,
+            "commission": (None if comm is None and fees is None
+                           else (comm or 0.0) + (fees or 0.0)),
+            "swap": _f(r.get("swap")), "pl_quote": _f(r.get("pl_quote")),
+            "r_multiple": _f(r.get("r_multiple")), "risk_quote": rq,
+            "time": r.get("time") or r.get("exit_time"), "entry_time": r.get("entry_time"),
+            "entry_side": r.get("entry_side"), "side": r.get("side"),
+            "account_kind": str(r.get("account_kind") or "prop"),
+            "account_key": r.get("account_key"), "book": book,
+        })
+    return out
+
+
+def _tag(rows: list[dict[str, Any]], book: str, intent_src: str,
+         deal_src: str) -> list[dict[str, Any]]:
+    """Stamp every row with its book; a prop book's record ids carry the book as prefix so they
+    can never collide with a Fusion key, and its sources name the files it was actually read
+    from. Fusion keys stay unprefixed so the corpus's existing rows keep their identity."""
+    for r in rows:
+        r["book"] = book
+        if book == "fusion":
+            continue
+        rid = str(r.get("record_id") or "")
+        if rid and not rid.startswith(f"{book}|"):
+            r["record_id"] = f"{book}|{rid}"
+        r["sources"] = [intent_src if s == "order_intents.jsonl"
+                        else deal_src if s == "live_ledger.jsonl" else s
+                        for s in (r.get("sources") or [])]
+    return rows
 
 
 def impact_block(rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -638,11 +769,18 @@ def impact_block(rows: list[dict[str, Any]]) -> dict[str, Any]:
 def build(budget_s: float = 120.0, *, dry_run: bool = False) -> dict[str, Any]:
     t0 = time.monotonic()
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
-    intents = _read_jsonl(INTENTS)
-    # BOTH ACCOUNTS PLACE REAL ORDERS. The prop book was never opened by this organ.
+    fusion_intents = _read_jsonl(INTENTS)
+    for it in fusion_intents:
+        it.setdefault("book", "fusion")
+    # EVERY ACCOUNT PLACES REAL ORDERS. The prop books were never opened by this organ.
     prop = e8_intents(_read_jsonl(E8_INTENTS))
-    intents += prop
-    deals = [d for d in _read_jsonl(LEDGER) if _i(d.get("deal")) is not None]
+    ftmo = (ftmo_exec_intents(_read_jsonl(FTMO_EXEC_INTENTS))
+            + ftmo_follower_intents(_read_jsonl(FTMO_FOLLOWER_INTENTS)))
+    intents = fusion_intents + prop + ftmo
+    fusion_deals = [d for d in _read_jsonl(LEDGER) if _i(d.get("deal")) is not None]
+    prop_rows = _read_jsonl(PROP_LEDGER)
+    e8_deals, ftmo_deals = prop_deals(prop_rows, "e8"), prop_deals(prop_rows, "ftmo")
+    deals = fusion_deals + e8_deals + ftmo_deals
     decisions = {str(d.get("intent_id") or ""): d for d in _read_jsonl(DECISIONS)
                  if d.get("intent_id")}
     if not intents and not deals:
@@ -652,33 +790,74 @@ def build(budget_s: float = 120.0, *, dry_run: bool = False) -> dict[str, Any]:
                        "slippage"), "seconds": round(time.monotonic() - t0, 2)}
         return doc
 
-    pairs, unfilled, unmatched, census = match(intents, deals)
-    rows = [build_row(it, d, how, decisions) for it, d, how in pairs]
-    rows += [unfilled_row(it) for it in unfilled]
-    # THE DEALS THE OLD JOIN THREW AWAY. Every executed deal is a realised fill whether or not an
-    # intent row survived beside it; only its slippage needs one.
-    rows += [deal_row(d) for d in unmatched]
-    census["deal_only"] = len(unmatched)
-
     existing = {fc.record_from_row(r).key: fc.record_from_row(r).resolution
                 for r in fc.read_rows(CORPUS)}
-    # A DEAL THE JOIN NOW REACHES WAS RECORDED EARLIER AS `deal_only` UNDER ITS OWN KEY. The
-    # corpus keeps the last row per key, so without this the same fill would read twice -- once
-    # joined, once bare. The old key is re-appended as SUPERSEDED, naming the row that replaces
-    # it; nothing is deleted from the append-only file.
-    rows += supersede_rows(pairs, existing)
+    # ONE JOIN PER BOOK. The three accounts number their orders independently, so a pooled join
+    # could pair an E8 order id with a Fusion deal that happens to carry the same number, and a
+    # pooled mean would average three venues' frictions into one that none of them pays.
+    inputs = {"fusion": (fusion_intents, fusion_deals, "order_intents.jsonl",
+                         "live_ledger.jsonl"),
+              "e8": (prop, e8_deals, "e8_intents.jsonl", "live_ledger_prop.jsonl"),
+              "ftmo": (ftmo, ftmo_deals, "ftmo_exec_intents.jsonl|ftmo_follower_intents.jsonl",
+                       "live_ledger_prop.jsonl")}
+    rows: list[dict[str, Any]] = []
+    pairs: list[tuple[dict[str, Any], dict[str, Any], str]] = []
+    unfilled: list[dict[str, Any]] = []
+    unmatched: list[dict[str, Any]] = []
+    census: dict[str, int] = {}
+    by_book_rows: dict[str, list[dict[str, Any]]] = {}
+    by_book_census: dict[str, dict[str, Any]] = {}
+    for book in BOOKS:
+        b_int, b_deals, i_src, d_src = inputs[book]
+        b_pairs, b_unf, b_unm, b_census = match(b_int, b_deals)
+        b_rows = [build_row(it, d, how, decisions) for it, d, how in b_pairs]
+        b_rows += [unfilled_row(it) for it in b_unf]
+        # THE DEALS THE OLD JOIN THREW AWAY. Every executed deal is a realised fill whether or
+        # not an intent row survived beside it; only its slippage needs one.
+        b_rows += [deal_row(d) for d in b_unm]
+        b_census["deal_only"] = len(b_unm)
+        # A DEAL THE JOIN NOW REACHES WAS RECORDED EARLIER AS `deal_only` UNDER ITS OWN KEY. The
+        # corpus keeps the last row per key, so without this the same fill would read twice --
+        # once joined, once bare. The old key is re-appended as SUPERSEDED, naming the row that
+        # replaces it; nothing is deleted from the append-only file.
+        b_rows += supersede_rows(b_pairs, existing, "" if book == "fusion" else f"{book}|")
+        _tag(b_rows, book, i_src, d_src)
+        by_book_rows[book] = b_rows
+        rows += b_rows
+        pairs += b_pairs
+        unfilled += b_unf
+        unmatched += b_unm
+        for k, v in b_census.items():
+            census[k] = census.get(k, 0) + v
+        b_filled = [r for r in b_rows if r["status"] == "FILLED"]
+        b_slips = [r["slip_r"] for r in b_filled if r.get("slip_r") is not None]
+        by_book_census[book] = {
+            "n_intents": len(b_int), "n_deals": len(b_deals),
+            "matched_fills": len(b_pairs), "realised_fills": len(b_filled),
+            "n_unfilled_intents": len(b_unf), "n_unmatched_deals": len(b_unm),
+            "join_census": b_census,
+            "mean_slip_r": (round(sum(b_slips) / len(b_slips), 5) if b_slips else None),
+            "intent_source": i_src, "deal_source": d_src,
+            "status": ("UNMEASURED" if not b_int and not b_deals else "OK"),
+        }
     fresh = [r for r in rows
              if fc.record_from_row(r).key not in existing
              or existing[fc.record_from_row(r).key] != fc.record_from_row(r).resolution]
     appended = 0 if dry_run else fc.append_rows(CORPUS, fresh)
 
-    filled = [r for r in rows if r["status"] == "FILLED"]
     # MATCHED MEANS JOINED TO THE ORDER THE DESK SENT. This counted every FILLED row, deal_only
     # included, so it read 151 on the committed ledgers while three fills carried a slippage: the
-    # number named a join that had not happened. `realised_fills` keeps the wider count.
-    joined = [r for r in filled
+    # number named a join that had not happened. `realised_fills` keeps the wider count. Both are
+    # COUNTS over every book; no cost is averaged across books.
+    filled_all = [r for r in rows if r["status"] == "FILLED"]
+    joined = [r for r in filled_all
               if str((r.get("join_keys") or {}).get("basis") or "")
               in ("entry_order", "position_id", "sl_tp_echo", "symbol_minute", "intent_fill")]
+    # THE FUSION BOOK'S COST AGGREGATES STAND WHERE THEY ALWAYS STOOD (capacity and cost_truth
+    # read them as the live account's); each prop book's own figures are under `by_book`, and the
+    # per account x symbol cost is `realised_cost.py`'s.
+    rows = by_book_rows["fusion"]
+    filled = [r for r in rows if r["status"] == "FILLED"]
     completeness = {
         f: {"n": sum(1 for r in filled if r.get(f) is not None),
             "share": (round(sum(1 for r in filled if r.get(f) is not None) / len(filled), 3)
@@ -691,7 +870,8 @@ def build(budget_s: float = 120.0, *, dry_run: bool = False) -> dict[str, Any]:
         "at": now,
         "status": "OK",
         "matched_fills": len(joined),
-        "realised_fills": len(filled),
+        "realised_fills": len(filled_all),
+        "by_book": by_book_census,
         "joined_share_of_deals": (round(len(pairs) / len(deals), 4) if deals else None),
         "n_intents": len(intents), "n_deals": len(deals),
         "n_unfilled_intents": len(unfilled), "n_unmatched_deals": len(unmatched),
@@ -707,6 +887,7 @@ def build(budget_s: float = 120.0, *, dry_run: bool = False) -> dict[str, Any]:
                       "from the ledger alone (basis deal_only) with slippage None, never zero: "
                       "that is the 121 rows the intent-keyed walk used to drop."),
         "n_prop_intents": len(prop),
+        "n_ftmo_intents": len(ftmo), "n_prop_deals": len(e8_deals) + len(ftmo_deals),
         "impact": impact_block(rows),
         "realized_r": {
             "n": sum(1 for r in rows if r.get("realized_r") is not None),
@@ -717,7 +898,7 @@ def build(budget_s: float = 120.0, *, dry_run: bool = False) -> dict[str, Any]:
                       "x lots); live_ledger.r_multiple is 0.0 on 141 of 151 deals and is used "
                       "only where it is actually populated"),
         },
-        "rows_written": appended, "rows_considered": len(rows),
+        "rows_written": appended, "rows_considered": sum(len(v) for v in by_book_rows.values()),
         "corpus": str(CORPUS), "corpus_rows_after": len(fc.read_rows(CORPUS)),
         "completeness": completeness,
         "mean_slip_r": (round(mean_r, 5) if mean_r is not None else None),
@@ -726,7 +907,8 @@ def build(budget_s: float = 120.0, *, dry_run: bool = False) -> dict[str, Any]:
         # hashed keys (provenance.row_key), never the raw login: this report is published
         "accounts": sorted({str(k) for k in (_row_key(d) for d in deals) if k}),
         "account_kinds": sorted({str(r.get("account_kind") or "unknown")
-                                 for r in (*deals, *prop)}),
+                                 for r in (*deals, *prop, *ftmo)}),
+        "books": list(BOOKS),
         "dry_run": bool(dry_run),
         "consumers": [
             "desks/mt5/data/fill_corpus.jsonl -> execution_twin, execution_intelligence, "

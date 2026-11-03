@@ -705,7 +705,12 @@ def sample_worlds(ev: Sequence[SleeveEvidence], cfg: WorldConfig | None = None) 
     # They are different statements and only the second can make a sleeve unprofitable, which is
     # exactly what it is for. Deterministic, not drawn: it is a measurement, so treating it as
     # noise would let half the worlds pretend it is not there.
-    cost_bias = np.array([max(0.0, float(getattr(e, "cost_bias_r", 0.0))) for e in ev])
+    #
+    # SIGNED (2026-11-03). The modelled path never produces a negative bias (it never credits an
+    # unvalidated model); a negative one comes only from REALISED fills cheaper than the replay
+    # charged (`execution_cost.apply_realised`), and clipping it at zero here would have made a
+    # two-sided measurement one-sided at the last step.
+    cost_bias = np.array([float(getattr(e, "cost_bias_r", 0.0)) for e in ev])
     cost_draw = (cost_draw + cost_bias[None, :]) * activity[None, :]
 
     crisis = rng.random(n_worlds) < cfg.crisis_prob
