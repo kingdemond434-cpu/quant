@@ -126,7 +126,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable, Iterable, Mapping
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -675,6 +675,22 @@ def _is_state_path() -> Callable[[str], bool] | None:
     return lambda rel: bool(state(rel)) and not governed(rel)
 
 
+#: A draft whose PR has not moved for this long is brought up like a ready PR: no session is
+#: pushing to it, so a merge commit breaks no one's next push (#552 audit SF5 still holds for a
+#: draft in motion). MEASURED 2026-11-03: 98 of 100 open PRs were drafts, none audited by comment,
+#: so none was ever brought up and none could be up to date.
+QUIET_DRAFT_H = 6.0
+
+
+def quiet(p: Mapping[str, Any], now: datetime | None = None) -> bool:
+    """Has this PR gone QUIET_DRAFT_H hours without an update? An unreadable time is not quiet."""
+    try:
+        at = datetime.fromisoformat(str(p.get("updated_at") or "").replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return ((now or datetime.now(UTC)) - at).total_seconds() >= QUIET_DRAFT_H * 3600.0
+
+
 def state_only_lag(base_ref: str, head: str) -> int | None:
     """How many paths the base gained since the head forked, when EVERY one is box state
     (libs.ops.release.is_state_path); None when any is code, or on any error.
@@ -926,7 +942,7 @@ def run(
                 # a session's branch only, and a draft only once audited: a merge commit on a
                 # branch someone is still pushing breaks their next push (#552 audit SF5)
                 and str(p["head"].get("ref") or "").startswith("claude/")
-                and (not p.get("draft") or bool(audited))
+                and (not p.get("draft") or bool(audited) or quiet(p))
                 and (bring_ups is None or bring_ups[0] > 0)
                 and bring_up(repo, pr, head, base)
             ):
@@ -1119,7 +1135,9 @@ def sweep(
         if head:  # no sha in the listing: no shortcut, the full run decides
             try:
                 got = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100")
-            except RuntimeError as exc:
+            # A TIMEOUT SKIPS ONE PR (Desk health 2026-11-03: 378 sweeps since 10-30 died on one
+            # 120 s gh TimeoutExpired here, so every sweep read "0 looked at" and merged nothing).
+            except (RuntimeError, subprocess.SubprocessError) as exc:
                 _summary(f"#{n}: its checks could not be read: {exc}")
                 rc = 1
                 continue
