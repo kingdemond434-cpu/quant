@@ -28,7 +28,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(os.environ.get("QUANT_ROOT") or Path(__file__).resolve().parent.parent)
 PRIV = ROOT / "data" / "secrets" / "video_vault_key.pem"
 PUB = ROOT / "data" / "video_vault_pub.pem"
 OAEP = padding.OAEP(mgf=padding.MGF1(hashes.SHA256()), algorithm=hashes.SHA256(), label=None)
