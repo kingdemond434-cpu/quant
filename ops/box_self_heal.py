@@ -153,9 +153,14 @@ STATE = STATE_DIR / "box_self_heal_state.json"
 #: The gate's own folder (ops/box/workflow_gate.ps1, $Root). A literal, never an argument.
 QUANTBOX_LOGS = Path(r"C:\ProgramData\QuantBox\logs")
 GATE_BEAT = QUANTBOX_LOGS / "workflow_gate.json"
+#: The memecoin spot launcher's own status file (MemecoinResourceLimits wrapper). Read only.
+MEMECOIN_SPOT_TASK = "MemecoinShadowCodex"
+MEMECOIN_SPOT_STATUS = Path(r"C:\ProgramData\MemecoinResourceLimits\status\spot.json")
+#: A status older than this, or any state but BOUNDED, is a launcher that is not running spot.
+MEMECOIN_SPOT_STALE_S = 300
 
 SCHEMA = "box_self_heal/1"
-VERSION = "boxheal-2026-10-29-b"
+VERSION = "boxheal-2026-11-03-a"
 TASK_NAME = "Quant-BoxSelfHeal"
 #: How often the task fires, and the age past which its own report is stale (desk health, contract).
 CADENCE_S = 5 * 60
@@ -194,7 +199,7 @@ class Rule:
     """One allowlisted thing this watchdog may act on. Literal in code; never loaded."""
 
     key: str
-    kind: str                      # "task" | "gate" | "gate_restart"
+    kind: str                      # "task" | "gate" | "gate_restart" | "spot_restart"
     #: The identity, for the report (`matches` checks it exactly, per rule).
     cmd_all: tuple[str, ...]
     #: The image the matched process must have (lower-case basename, extension optional).
@@ -230,6 +235,15 @@ RULES: tuple[Rule, ...] = (
          fallback_budget_s=GATE_STALE_S,
          budget_source="3 of the gate's own 10-minute cadences",
          why="the gate crashed and its heartbeat stopped; nothing merges until it runs again"),
+    # MEMECOIN SPOT (2026-11-03): its launcher exited on a status-write IOException at 04:36Z,
+    # KILL_ON_JOB_CLOSE took spot with it, and the task sat Ready all day because a non-elevated
+    # session cannot start a LOCAL SERVICE task. RUN ONLY: never ended, nothing in its tree is
+    # ever stopped. /Run starts the task's own wrapped action, so its identity and CPU cap stay.
+    Rule("memecoin_spot_restart", "spot_restart", (), (), task=MEMECOIN_SPOT_TASK,
+         fallback_budget_s=MEMECOIN_SPOT_STALE_S,
+         budget_source="spot.json observed_at older than 300 s, or state != BOUNDED, held "
+                       "across two passes",
+         why="the spot launcher is down while its task reads Ready; nothing restarts it"),
 )
 RULE_BY_KEY: dict[str, Rule] = {r.key: r for r in RULES}
 #: The orphan stop is its own attempt budget (a gate wedge and its orphans are two incidents).
@@ -247,7 +261,7 @@ DEFERRED: tuple[tuple[str, str], ...] = (
 
 #: The ONLY tasks this file may /End, and the ONLY one it may /Run. Checked at the call.
 ENDABLE_TASKS: frozenset[str] = frozenset({"MT5-IndependenceIntake", "Quant-WorkflowGate"})
-RUNNABLE_TASKS: frozenset[str] = frozenset({"Quant-WorkflowGate"})
+RUNNABLE_TASKS: frozenset[str] = frozenset({"Quant-WorkflowGate", MEMECOIN_SPOT_TASK})
 
 #: The images a workflow_gate tree may contain. Anything else under the gate refuses the action.
 GATE_CHILD_IMAGES: frozenset[str] = frozenset({
@@ -284,6 +298,7 @@ DENY: tuple[tuple[str, str], ...] = (
     ("moat", "the moat recorders and miners"),
     ("recorder", "a tape recorder"),
     ("box_self_heal", "this watchdog"),
+    ("memecoinautonomousdevelopment", "the memecoin development lane: its owner runs it"),
     # The research organs other owners run and keep alive (audit HOLD of 7a01c1b09): the
     # promoter and certifier launcher mint and move capital state, the forward clocks are
     # time-series that a kill corrupts, and the hourly cycle is the clock of everything else.
@@ -603,6 +618,7 @@ class Box:
     kill: Callable[[Proc, Sequence[Proc], frozenset[str] | None, Verify | None], dict[str, Any]]
     host: str = field(default_factory=socket.gethostname)
     gate_beat: Path = GATE_BEAT
+    spot_status: Path = MEMECOIN_SPOT_STATUS
     windows: bool = sys.platform == "win32"
     #: secure(path): why the state directory (or a file in it) is NOT admin-only, or None.
     secure: Callable[[Path], str | None] = field(default=lambda p: admin_only(p))
@@ -1481,6 +1497,56 @@ class Pass:
             return
         self.end(rule, "Quant-WorkflowGate", why)
         self.start(rule, "Quant-WorkflowGate", why)
+
+    def spot_restart_rule(self, rule: Rule) -> None:
+        """/Run the memecoin spot task when it reads NOT running and its launcher's status says
+        spot is not BOUNDED (or has gone quiet), on two passes in a row. Never /End, never kill."""
+        assert rule.task is not None
+        task = rule.task
+        running = self.box.task_running(task)
+        if running is None:
+            self.red(rule.key, "UNMEASURED", f"the scheduler would not say whether {task} is "
+                     f"running; nothing done")
+            return
+        if running:
+            self.ok(rule.key, "RUNNING", f"{task} reads Running")
+            return
+        try:
+            doc = json.loads(self.box.spot_status.read_text("utf-8-sig"))
+        except FileNotFoundError:
+            self.red(rule.key, "UNMEASURED", f"{self.box.spot_status.name} is absent: whether "
+                     f"spot is down cannot be proven, so {task} is not started")
+            return
+        except (OSError, ValueError) as exc:
+            self.red(rule.key, "UNMEASURED", f"{self.box.spot_status.name} is unreadable "
+                     f"({type(exc).__name__}); nothing done")
+            return
+        state = str(doc.get("state") or "") if isinstance(doc, dict) else ""
+        at = _parse_iso(doc.get("observed_at")) if isinstance(doc, dict) else None
+        age = None if at is None else self.now - at
+        facts = {"spot_state": state or None,
+                 "status_age_s": None if age is None else round(age)}
+        if state == "BOUNDED" and age is not None and age <= MEMECOIN_SPOT_STALE_S:
+            self.ok(rule.key, "BOUNDED", f"{task} is between runs and spot is BOUNDED "
+                    f"({age:.0f}s old)", **facts)
+            return
+        why = (f"{task} reads not running and spot is "
+               + (f"{state or 'state-less'}" if state != "BOUNDED"
+                  else f"BOUNDED but {('un-stamped' if age is None else f'{age:.0f}s old')}"))
+        # TWO PASSES, NOT ONE: the launcher rewrites its status every few seconds, and a task
+        # between its own restart and its first write reads exactly like a dead one.
+        first = self.no_owner.get(task, self.now)
+        self.next_no_owner[task] = first
+        if self.now - first < PROGRESS_WINDOW_S:
+            self.ok(rule.key, "OBSERVING", why + "; confirming next pass", **facts)
+            return
+        if not self.apply:
+            if self.may_attempt(rule.key, **facts):
+                self.red(rule.key, "WOULD_RUN", why, dry_run=True, task=task, **facts)
+            return
+        if not self.attempt(rule.key, f"run {task}", **facts):
+            return
+        self.start(rule, task, why)
 
     def run(self) -> None:
         procs = self.box.procs()

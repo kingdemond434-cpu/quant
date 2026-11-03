@@ -86,7 +86,9 @@ class FakeBox:
                  beat_age_s: float | None = 60.0) -> None:
         self.table = ([svchost(), *procs] if not any(p.pid == SVCHOST_PID for p in procs)
                       else list(procs))
-        self.running = running or {}
+        # Spot reads Running unless a test says otherwise, so its rule stays out of the others.
+        self.running = {bsh.MEMECOIN_SPOT_TASK: True, **(running or {})}
+        self.spot = tmp / "spot.json"
         self.killed: list[int] = []
         self.ended: list[str] = []
         self.started: list[str] = []
@@ -118,7 +120,7 @@ class FakeBox:
         return bsh.Box(procs=lambda: list(self.table),
                        task_running=lambda t: self.running.get(t, False),
                        end_task=end, run_task=run, kill=kill, host=HOST,
-                       gate_beat=self.beat, windows=True,
+                       gate_beat=self.beat, spot_status=self.spot, windows=True,
                        secure=self.secure, task_principal=lambda t: self.principal,
                        sid_of=self.sid_of)
 
@@ -160,9 +162,9 @@ def rows(doc: dict, rule: str) -> list[dict]:
 # ------------------------------------------------------------------------------- the table
 def test_the_rule_table_is_closed_and_names_exactly_the_paste() -> None:
     assert [r.key for r in bsh.RULES] == ["independence_intake", "workflow_gate",
-                                          "workflow_gate_restart"]
+                                          "workflow_gate_restart", "memecoin_spot_restart"]
     assert {"MT5-IndependenceIntake", "Quant-WorkflowGate"} == bsh.ENDABLE_TASKS
-    assert {"Quant-WorkflowGate"} == bsh.RUNNABLE_TASKS
+    assert {"Quant-WorkflowGate", "MemecoinShadowCodex"} == bsh.RUNNABLE_TASKS
     # the paste's two job-lock lines are deferred to job_lock_health (#526), never duplicated
     assert [k for k, _ in bsh.DEFERRED] == ["merge_hypotheses", "pf_allocator"]
     assert "check_job_locks" in dict(bsh.DEFERRED)["merge_hypotheses"]
@@ -1696,3 +1698,64 @@ def test_send_alert_reads_only_the_admin_only_copy(monkeypatch: pytest.MonkeyPat
     monkeypatch.setattr(bsh, "admin_only", lambda p: "Users may write it")
     loaded.clear()
     assert _REAL_SEND_ALERT("t", "b")["armed"] == 0 and loaded == []
+
+
+# ------------------------------------------------------------------------- memecoin spot restart
+def _spot(fb: FakeBox, state: str, age_s: float, now: float = NOW) -> None:
+    fb.spot.write_text(json.dumps({"state": state, "observed_at": datetime.fromtimestamp(
+        now - age_s, tz=UTC).isoformat()}), "utf-8")
+
+
+def _spot_kw(tmp: Path) -> dict[str, Path]:
+    return {"report": tmp / "r.json", "ledger": tmp / "l.jsonl", "state": tmp / "s.json"}
+
+
+def test_spot_ready_with_a_failed_launcher_is_run_on_the_second_pass(tmp_path: Path) -> None:
+    """2026-11-03: the launcher died on an IOException at 04:36Z and the task sat Ready."""
+    fb = FakeBox(tmp_path, [], running={bsh.MEMECOIN_SPOT_TASK: False})
+    _spot(fb, "FAILED_IOException", 15 * 3600)
+    kw = _spot_kw(tmp_path)
+    doc = bsh.run(apply=False, box=fb.box(), now=NOW, **kw)
+    assert rows(doc, "memecoin_spot_restart")[0]["verdict"] == "OBSERVING"
+    doc = bsh.run(apply=False, box=fb.box(), now=NOW + 5 * MIN, **kw)
+    assert rows(doc, "memecoin_spot_restart")[0]["verdict"] == "WOULD_RUN"
+    assert fb.started == []
+    doc = bsh.run(box=fb.box(), now=NOW + 10 * MIN, **kw)
+    assert fb.started == [bsh.MEMECOIN_SPOT_TASK]
+    assert rows(doc, "memecoin_spot_restart")[-1]["verdict"] == "STARTED"
+    assert fb.ended == [] and fb.killed == [], "spot is run only, never ended or killed"
+    doc = bsh.run(box=fb.box(), now=NOW + 15 * MIN, **kw)      # still down: backoff, not a loop
+    assert rows(doc, "memecoin_spot_restart")[0]["verdict"] == "BACKOFF"
+    assert fb.started == [bsh.MEMECOIN_SPOT_TASK]
+
+
+def test_spot_running_or_freshly_bounded_is_left_alone(tmp_path: Path) -> None:
+    kw = _spot_kw(tmp_path)
+    fb = FakeBox(tmp_path, [])                                  # Running
+    _spot(fb, "FAILED_IOException", 3600)
+    for t in (NOW, NOW + 5 * MIN, NOW + 10 * MIN):
+        doc = bsh.run(box=fb.box(), now=t, **kw)
+    assert rows(doc, "memecoin_spot_restart")[0]["verdict"] == "RUNNING"
+    fb = FakeBox(tmp_path, [], running={bsh.MEMECOIN_SPOT_TASK: False})
+    for t in (NOW, NOW + 5 * MIN, NOW + 10 * MIN):
+        _spot(fb, "BOUNDED", 5, now=t)
+        doc = bsh.run(box=fb.box(), now=t, **kw)
+        assert rows(doc, "memecoin_spot_restart")[0]["verdict"] == "BOUNDED"
+    assert fb.started == []
+
+
+def test_spot_with_no_status_file_is_never_started(tmp_path: Path) -> None:
+    fb = FakeBox(tmp_path, [], running={bsh.MEMECOIN_SPOT_TASK: False})
+    kw = _spot_kw(tmp_path)
+    for t in (NOW, NOW + 5 * MIN, NOW + 10 * MIN):
+        doc = bsh.run(box=fb.box(), now=t, **kw)
+    assert rows(doc, "memecoin_spot_restart")[0]["verdict"] == "UNMEASURED"
+    assert fb.started == []
+
+
+def test_spot_task_is_runnable_not_endable_and_the_dev_lane_is_denied() -> None:
+    assert bsh.MEMECOIN_SPOT_TASK in bsh.RUNNABLE_TASKS
+    assert bsh.MEMECOIN_SPOT_TASK not in bsh.ENDABLE_TASKS
+    assert any(n == "memecoinautonomousdevelopment" for n, _ in bsh.DENY)
+    with pytest.raises(ValueError):
+        bsh._schtasks("/End", bsh.MEMECOIN_SPOT_TASK)
