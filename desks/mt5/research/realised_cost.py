@@ -357,7 +357,8 @@ def vs_replay(costs: list[dict[str, Any]], charged: list[tuple[float | None, str
         "fills": per_fill,
         "rule": ("diff_r = realised total_cost_r - replay_charged_cost_r per fill, both over the "
                  "trade's own stop distance; replay_charged_cost_r is external_gauntlet's "
-                 "Costs for the symbol at the fill's broker hour (per_oz_roundtrip/contract_oz "
+                 "Costs for the symbol at its POOLED median spread plus commission -- the "
+                 "charge the replay applied, not a fill-hour spread (per_oz_roundtrip/contract_oz "
                  "over |entry - stop|, the term engine.run_backtest subtracts)")}
     if n_counted == 0:
         out["status"] = UNMEASURED

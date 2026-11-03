@@ -462,7 +462,10 @@ def apply_realised(cost_doc: Mapping[str, Any], realised: Any, *,
             "cost_bias_r": round(bias, 6),
             # the uncertainty scale moves with the level the venue measured: the replay's own
             # charge plus the corrected bias, as on the modelled path
-            "cost_r": (round(abs(level), 6) if level else model_cost_r),
+            # clamped at 0, never abs(): a negative level can only be a rebate, and abs would
+            # turn it into a cost; the raw level stays on the record so a rebate is visible
+            "cost_r": (round(max(0.0, level), 6) if level is not None else model_cost_r),
+            "level_r": (round(level, 8) if level is not None else None),
             "source": "REALISED",
             "realised": {"account": acct, "n": n, "weight": round(w, 6),
                          "diff_mean_r": round(float(diff), 8),

@@ -675,3 +675,16 @@ def test_a_spreadless_prop_fill_leaves_total_cost_unmeasured(tmp_path: Path,
         assert c["status"] == rc.UNMEASURED and c["shrink"]["weight"] == 0.0
         assert acct["status"] == rc.UNMEASURED
     assert doc["status"] == rc.UNMEASURED and doc["n_cells_measured"] == 0
+
+
+
+def test_a_rebate_level_clamps_cost_r_at_zero_and_stays_on_record() -> None:
+    """Auditor nit on 6f95c0475: abs() turned a negative level (a rebate) into a positive
+    cost. GBPUSD is unpriced (modelled bias 0); charged 0.01, diff -0.2 over 80 fills gives
+    w = 0.8 and level 0.01 + 0.8 x -0.2 = -0.15R."""
+    out = ec.apply_realised(_modelled(), _realised(-0.2, 80, symbol="GBPUSD", charged=0.01),
+                            symbols=_SYMS)
+    row = out["sleeves"]["GBPUSD_asia_brk"]
+    assert row["source"] == "REALISED"
+    assert row["level_r"] == pytest.approx(-0.15)
+    assert row["cost_r"] == 0.0
