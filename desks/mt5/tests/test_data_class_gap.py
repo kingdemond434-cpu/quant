@@ -367,3 +367,12 @@ def test_census_without_world_keys_names_the_gap(canon):
     assert doc["world_keys"] == C.UNMEASURED
     i = doc["certificates"][0]["inputs"][-1]
     assert i["basis"] == C.TERMS_UNMEASURED and "keys.json absent" in i["why"]
+
+
+def test_a_canon_outside_the_repo_is_named_by_its_absolute_path(canon, tmp_path):
+    """The source label is repo-relative when it can be and the absolute posix path otherwise: a
+    canon outside the checkout (a fixture, a published copy elsewhere) never crashes the census."""
+    canon({"a.XAUUSD.session_range_breakout": _cert("XAUUSD", "session_range_breakout")})
+    doc = C.build(NOW)
+    assert doc["certificates_read_from"] == (tmp_path / "canon.json").resolve().as_posix()
+    assert C._shown(C.ROOT / "desks" / "mt5" / "data" / "x.json") == "desks/mt5/data/x.json"

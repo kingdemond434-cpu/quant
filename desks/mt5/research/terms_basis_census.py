@@ -105,14 +105,23 @@ def _read_json(path: Path) -> Any:
         return None
 
 
+def _shown(p: Path) -> str:
+    """How a source file is named in the report: repo-relative when it lives in the repo, else its
+    absolute posix path. The name is a label; a canon read from outside the checkout (a box's
+    published copy, a test fixture) must never crash the census for want of a relative form."""
+    try:
+        return p.resolve().relative_to(ROOT.resolve()).as_posix()
+    except ValueError:
+        return p.resolve().as_posix()
+
+
 def certificates() -> tuple[dict[str, dict[str, Any]], str]:
     """`{key: row}` from the canon, else its published twin, and which file was read."""
     for p in (CANON, SURVIVORS):
         doc = _read_json(p)
         surv = doc.get("survivors") if isinstance(doc, dict) else None
         if isinstance(surv, dict) and surv:
-            return {str(k): v for k, v in surv.items() if isinstance(v, dict)}, \
-                p.relative_to(ROOT).as_posix()
+            return {str(k): v for k, v in surv.items() if isinstance(v, dict)}, _shown(p)
     return {}, UNMEASURED
 
 
