@@ -432,7 +432,11 @@ def _pass(state: dict[str, Any], why: str, budget_s: float, runner: Runner, writ
         rep["discovery"] = disc
     finally:
         import box_rails
-        refused = box_rails.logged_refusals(log)
+        logged = box_rails.logged_refusals(log)
+        # robots signals are LABELS (LAWS §5e): the fetch went ahead; they are reported, never
+        # counted as refused ground.
+        refused = [r for r in logged if not r.get("label")]
+        labelled = [r for r in logged if r.get("label")]
         with contextlib.suppress(OSError):
             os.unlink(log)
     hosts, missed = refused_by_host(refused)
@@ -443,7 +447,11 @@ def _pass(state: dict[str, Any], why: str, budget_s: float, runner: Runner, writ
                     "refused_n": len(refused),
                     "refused": [{"url": str(r.get("url", ""))[:150],
                                  "why": str(r.get("why", ""))[:150]}
-                                for r in refused[:REFUSALS_SHOWN]]}
+                                for r in refused[:REFUSALS_SHOWN]],
+                    "robots_labelled_n": len(labelled),
+                    "robots_labelled_hosts": sorted({str(r.get("url", "")).split("/")[2]
+                                                     for r in labelled
+                                                     if str(r.get("url", "")).count("/") >= 2})}
     rep["spent_s"] = round(time.monotonic() - t0, 1)
     ran = [k for k in ("seed_miners", "discovery")
            if (rep.get(k) or {}).get("status") == "OK"]

@@ -2,8 +2,8 @@
 
 `vps_seat_clock` widens the VPS miners onto the box's own IP. These pin, for that path: every
 request carries an honest User-Agent naming the project's research crawler and its public repo
-(no browser string, no email); robots.txt is honoured for `*` AND the agent tokens on EVERY
-source, with an unreachable robots.txt read as no consent; and no host walled on the VPS
+(no browser string, no email); robots.txt is read for `*` AND the agent tokens on EVERY
+source and recorded as a PUBLIC_WITH_TERMS label, never a refusal (LAWS §5e); and no host walled on the VPS
 (`seed_miners.SOURCE_WALLS`, pinned here) is ever contacted from the box -- not even its
 robots.txt. Nothing here touches the network.
 """
@@ -118,28 +118,30 @@ def test_every_request_carries_the_honest_user_agent(rails):
     assert "Mozilla" not in ua and "Chrome" not in ua and "@" not in ua
 
 
-@pytest.mark.parametrize("url,allowed", [
-    ("https://open.example/page", True),
-    ("https://open.example/private/x", False),          # the `*` group
-    ("https://claude-refused.example/page", False),     # ClaudeBot named, even though * allows
-    ("https://own-refused.example/page", False),        # this crawler's own token named
-    ("https://browser-only.example/page", False),       # a browser UA would have passed
-    ("https://nopolicy.example/page", True),            # 404 robots = no policy
-    ("https://forbidden.example/page", False),          # 403 robots = disallow all
-    ("https://down.example/page", False),               # 5xx = not consent
-    ("https://dead.example/page", False),               # unreachable = not consent
+@pytest.mark.parametrize("url,labelled", [
+    ("https://open.example/page", False),
+    ("https://open.example/private/x", True),           # the `*` group
+    ("https://claude-refused.example/page", True),      # ClaudeBot named, even though * allows
+    ("https://own-refused.example/page", True),         # this crawler's own token named
+    ("https://browser-only.example/page", True),        # a browser UA would have passed
+    ("https://nopolicy.example/page", False),           # 404 robots = no policy
+    ("https://forbidden.example/page", True),           # 403 robots = disallow all
+    ("https://down.example/page", True),                # 5xx = unreachable policy
+    ("https://dead.example/page", True),                # unreachable policy
 ])
-def test_robots_is_honoured_for_every_group_on_every_source(rails, url, allowed):
+def test_robots_is_a_label_never_a_refusal(rails, url, labelled):
+    """LAWS §5e: "robots.txt Disallow read as a refusal" is a deleted brake. Every source is
+    fetched with the honest UA; a robots signal is recorded as PUBLIC_WITH_TERMS."""
     wire, _ = rails
-    if allowed:
-        requests.get(url, timeout=5)
-        assert wire and wire[-1][0] == url
+    requests.get(url, timeout=5)
+    urllib.request.urlopen(url, timeout=5)
+    assert [u for u, _ in wire] == [url, url]
+    assert box_rails.refused() == []
+    rows = box_rails.labelled()
+    if labelled:
+        assert rows and all(r["label"] == "PUBLIC_WITH_TERMS" and r["url"] == url for r in rows)
     else:
-        with pytest.raises(box_rails.RailRefusal):
-            requests.get(url, timeout=5)
-        with pytest.raises(box_rails.RailRefusal):
-            urllib.request.urlopen(url, timeout=5)
-        assert wire == []
+        assert rows == []
 
 
 def test_robots_is_read_once_per_host(rails):
@@ -212,27 +214,30 @@ def test_a_robots_redirect_to_a_non_robots_path_does_not_recurse(local_site):
     with urllib.request.urlopen(f"{base}/page", timeout=5) as r:      # no RecursionError
         assert r.read() == b"page"
     assert hits == ["/robots.txt", "/login", "/page"]
-    with pytest.raises(box_rails.RailRefusal):
-        requests.get(f"{base}/private/x", timeout=5)
-    assert len(hits) == 3                       # robots read once; the refused URL never sent
+    requests.get(f"{base}/private/x", timeout=5)      # disallowed: labelled, still fetched
+    assert hits == ["/robots.txt", "/login", "/page", "/private/x"]   # robots read once
+    assert [r["url"] for r in box_rails.labelled()] == [f"{base}/private/x"]
 
 
-def test_a_robots_redirect_loop_stops_after_five_hops_and_is_not_consent(local_site):
+def test_a_robots_redirect_loop_stops_after_five_hops_and_is_labelled(local_site):
     base, routes, hits = local_site
     for i in range(20):
         routes["/robots.txt" if i == 0 else f"/r{i}"] = (302, f"/r{i + 1}")
-    with pytest.raises(box_rails.RailRefusal, match="redirects"):
-        urllib.request.urlopen(f"{base}/page", timeout=5)
-    assert len(hits) <= box_rails.ROBOTS_MAX_HOPS + 1 and "/page" not in hits
+    with urllib.request.urlopen(f"{base}/page", timeout=5) as r:
+        assert r.read() == b"page"
+    robots_hops = [h for h in hits if h != "/page"]
+    assert len(robots_hops) <= box_rails.ROBOTS_MAX_HOPS + 1 and hits[-1] == "/page"
+    assert "redirects" in box_rails.labelled()[0]["why"]
 
 
 def test_a_robots_redirect_onto_a_walled_host_is_never_followed(local_site, monkeypatch):
     base, routes, hits = local_site
     routes["/robots.txt"] = (302, "https://www.forexpeacearmy.com/robots.txt")
     monkeypatch.setitem(box_rails._STATE, "walled", frozenset({"forexpeacearmy.com"}))
-    with pytest.raises(box_rails.RailRefusal, match="walled"):
-        requests.get(f"{base}/page", timeout=5)
-    assert hits == ["/robots.txt"]
+    requests.get(f"{base}/page", timeout=5)
+    # the walled host is never contacted; the unreadable policy is a label on the origin's page
+    assert hits == ["/robots.txt", "/page"]
+    assert "walled" in box_rails.labelled()[0]["why"]
 
 
 def test_install_is_not_marked_done_until_the_patches_are_in(monkeypatch):
