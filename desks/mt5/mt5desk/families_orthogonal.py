@@ -2602,3 +2602,21 @@ from mt5desk.families_specialist import TIMEFRAMES as _SPEC_TIMEFRAMES  # noqa: 
 ORTHOGONAL_FAMILIES.update(SPECIALIST_FAMILIES)
 FAMILY_INPUTS.update(_SPEC_INPUTS)
 FAMILY_TIMEFRAMES.update(_SPEC_TIMEFRAMES)
+
+
+# THE RETAIL STOP-CLUSTER MAP (Tier-1 gap #9, A26/B13, 2026-11-03). Where round numbers, the
+# prior day's high/low, the Asian range and confirmed swing points coincide, retail stops pile up.
+# One map, two opposite claims about what the pile does: `stop_cluster_revert` fades a sweep that
+# closes back inside, `stop_cluster_cascade` follows a hard close through it. The gauntlet decides
+# per symbol and chart. Crowd weighting and broker order-book pages are UNMEASURED and named as
+# such in the module; nothing pretends to weight by them.
+from mt5desk.family_stop_cluster import STOP_CLUSTER_FAMILIES  # noqa: E402
+
+for _sc_name, _sc_fn in STOP_CLUSTER_FAMILIES.items():
+    ORTHOGONAL_FAMILIES[_sc_name] = _sc_fn
+    FAMILY_INPUTS[_sc_name] = ("price only", "data/universe/*_H1.parquet")
+    FAMILY_TIMEFRAMES[_sc_name] = (
+        ("M1", "M5", "M15", "M30", "H1", "H4"),
+        "two of its four level sources are calendar-day objects (yesterday's high/low and "
+        "today's Asian range); on a daily bar the prior day is simply the previous bar and the "
+        "Asian range does not exist, so the map would be a different, thinner claim")
