@@ -298,7 +298,8 @@ $level2 = Test-Path -LiteralPath "C:\opt\merger\config.json"
 if ($level2) {
     . (Join-Path $RepoRoot "ops\release\merger\merger_env.ps1")
     try { $null = Use-MergerIdentity $RepoRoot } catch { Write-Cycle ("FATAL: {0}" -f $_.Exception.Message); exit 3 }
-    if ($agentName -eq "claude") { $agentArgs = $agentArgs[0..($agentArgs.IndexOf("--allowedTools"))] + @("Bash(gh pr create:*)", "Bash(gh pr view:*)") + $agentArgs[($agentArgs.IndexOf("--allowedTools") + 1)..($agentArgs.Count - 1)] }
+    $i = if ($agentName -eq "claude") { [array]::IndexOf($agentArgs, "--allowedTools") } else { -1 }
+    if ($i -ge 0) { $agentArgs = $agentArgs[0..$i] + @("Bash(gh pr create:*)", "Bash(gh pr view:*)") + $agentArgs[($i + 1)..($agentArgs.Count - 1)] }
 }
 $landing = if ($level2) {
     "push to your branch cro/$Lane-$Today (never to the box branch: the LIVE ruleset refuses it) and open a PR into <box branch> with gh pr create --body-file. The release authority clears it and the box gate merges it"

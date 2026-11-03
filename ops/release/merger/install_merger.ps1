@@ -37,5 +37,11 @@ if ($AppKey -and (Test-Path -LiteralPath $AppKey)) {
 }
 $Inst = (& $Python -I (Join-Path $Clone "ops\release\authority\mint_app_token.py") --app-id $AppId --key $appPem --find-installation $Owner)
 if ($LASTEXITCODE -ne 0 -or -not $Inst) { throw "The App is not installed. On the App page click 'Install App', choose the quant repository only, then run this again." }
+# The merger must never be able to change the rules it merges under (#650 audit SFa): no
+# Administration (rulesets, settings) and no Statuses (the authority's check).
+$perms = (& $Python -I (Join-Path $Clone "ops\release\authority\mint_app_token.py") --app-id $AppId --key $appPem --permissions "$Inst".Trim() | Out-String) | ConvertFrom-Json
+foreach ($bad in @('administration', 'statuses')) {
+    if ($perms.PSObject.Properties.Name -contains $bad) { throw "quant-merger has the '$bad' permission. Remove it on the App's page (Permissions), accept the change on the installation, then run this again." }
+}
 @{ app_id = $AppId; installation_id = "$Inst".Trim(); python = $Python } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $Home_ "config.json") -Encoding UTF8
 Write-Host "DONE. The gate and the sign train use quant-merger from their next pass." -ForegroundColor Green

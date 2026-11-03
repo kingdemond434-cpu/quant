@@ -39,13 +39,19 @@ Each step is safe to stop after, and nothing is enforced until step 6.
 
 1. **Re-pin** (#650 is ROOT): run `python ops\release\authority\pin_root.py --write C:\opt\audit_registry\ROOT_PIN.json` from a clean checkout of LIVE.
 2. **Authority App:** on its settings page, set Commit statuses to Read & write. Then run `New-Item C:\opt\audit_registry\POST_STATUS` and the authority starts posting the check.
-3. **Create the "quant-merger" App** with Contents, Pull requests and Workflows Read & write, and Metadata Read. No webhook; install it on quant only. Then run `install_merger.ps1 -AppId N`.
+3. **Create the "quant-merger" App** with Contents, Pull requests and Workflows Read & write, and Metadata Read. **Never** give it Administration or Commit statuses: `install_merger.ps1` reads the installation's permissions and refuses if it has either. No webhook; install it on quant only. Then run `install_merger.ps1 -AppId N`.
 4. **Create the "quant-state-publisher" App** with Contents Read & write and Metadata Read. Then:
    - in the repo, go to Settings, Environments, `live-seal`; set Deployment branches to the selected branches `claude/llm-auto-upgrade-verify-gcjac3` and `desk-sync-clean`; add the secret `STATE_APP_KEY` (a second private key of this App, generated for CI); and add the variable `STATE_APP_ID`;
    - run `install_publisher.ps1 -AppId N`;
    - write `C:\opt\audit_registry\STATE_APP.json` as `{"login": "quant-state-publisher[bot]"}`, which starts the push-log detector with a baseline.
 5. **Wait a day.** Check that the state publisher's log shows pushes and that LIVE's seal commits are authored by the state App.
-6. **Enforce:**
+6. **Enforce.** This is gated, like `check_ruleset.py`, on every LIVE writer being converted:
+   - the state publisher pushes state (step 2);
+   - the CI seal uses the state App (step 4b);
+   - the gate and the sign train use the merger (the sign train already pushes only its own `claude/sign-train-*` branch plus a PR, never LIVE);
+   - the CRO agents open PRs.
+
+   Then:
    - put the state App's id in `ruleset_live.json`;
    - run `python ops\release\authority\check_ruleset.py` until it prints `SAFE to import`;
    - import the ruleset (Settings, Rules, Rulesets, Import);
