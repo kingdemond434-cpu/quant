@@ -1,5 +1,5 @@
 {
-  "_doc": "Copy-trade crowd sources (Tier-1 sweep row #10, class A2). ROWS, NEVER CODE: an adapter of 'none' is a named gap with its blocked_by. Public, logged-out pages only. A login wall, robots Disallow or 401/403/429/451 is recorded and never routed around: no login, cookie, proxy, CAPTCHA or paywall step exists in this producer.",
+  "_doc": "Copy-trade crowd sources (Tier-1 sweep row #10, class A2). ROWS, NEVER CODE: an adapter of 'none' is a named gap with its blocked_by. Public, logged-out pages only. A login wall or 401/403/429/451 is recorded and never routed around; robots.txt is an access label on every row (LAWS 5e): no login, cookie, proxy, CAPTCHA or paywall step exists in this producer.",
   "sources": {
     "mql5_signals": {
       "adapter": "mql5",
@@ -36,7 +36,7 @@
       "account_url": "https://www.myfxbook.com/members/{id}",
       "books": ["positions"],
       "positions": "UNMEASURED",
-      "positions_evidence": "public system pages carry an Open Trades tab unless the owner hides it; read from the served HTML only. robots.txt could not be read from the cloud on 2026-11-03: an unread robots.txt fails closed on the box.",
+      "positions_evidence": "public system pages carry an Open Trades tab unless the owner hides it; read from the served HTML only. robots.txt could not be read from the cloud on 2026-11-03; the box pass labels it.",
       "per_pass_accounts": 80
     },
     "myfxbook_api": {
@@ -56,7 +56,7 @@
     },
     "etoro_popular_investors": {
       "adapter": "none",
-      "blocked_by": "TODO: public profile portfolio is client-rendered; check for a public JSON the page itself loads without login, within robots.",
+      "blocked_by": "TODO: public profile portfolio is client-rendered; check for a public JSON the page itself loads without login.",
       "next": "box probe"
     }
   }

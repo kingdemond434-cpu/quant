@@ -68,19 +68,23 @@ def test_robots_wildcards_longest_match_and_agent_groups() -> None:
     assert cc.robots_allows([("/x$", False)], "https://h/xy")
 
 
-def test_unreadable_robots_bars_and_hard_stop_is_recorded_and_not_retried() -> None:
+def test_robots_is_a_label_and_hard_stop_is_recorded_and_not_retried() -> None:
     calls: list[str] = []
 
     def get(url: str) -> tuple[int | None, str]:
         calls.append(url)
         if url.endswith("robots.txt"):
-            return (500, "") if "bad" in url else (404, "")
-        return 403, ""
+            if "bad" in url:
+                return 500, ""
+            return (200, "User-agent: *\nDisallow: /a") if "terms" in url else (404, "")
+        return (200, "ok") if "bad" in url or "terms" in url else (403, "")
 
     state: dict = {}
     f = cc.Fetcher(state, deadline=1e18, get=get)
-    assert f.fetch("s", "https://bad.example/a") is None
-    assert f.stats["s"]["robots_barred"] == 1
+    assert f.fetch("s", "https://bad.example/a") == "ok"          # fetched, labelled
+    assert f.stats["s"]["access_ACCESS_UNCLEAR"] == 1
+    assert f.fetch("w", "https://terms.example/a") == "ok"
+    assert f.labels["w"] == {"PUBLIC_WITH_TERMS"}
     assert f.fetch("t", "https://ok.example/a") is None
     assert state["hard_stops"]["t"]["code"] == 403
     n = len(calls)
@@ -189,6 +193,7 @@ def test_build_two_passes_writes_pit_series(tmp_path: Path,
     assert row["flow_net_smart_minus_dumb"] == 2.0
     df = pd.read_parquet(tmp_path / "s" / "ctc_XAUUSD.parquet")
     assert list(pd.to_datetime(df["available_time"], utc=True)) == [pd.Timestamp(t2)]
+    assert set(df["access_label"]) == {"PUBLIC"} and bool(df["redistribute"].iloc[0])
     assert (tmp_path / "s" / "ctc_XAUUSD.pit.json").exists()
     assert d2["cells"] == {"stub": 1}
 

@@ -26,10 +26,13 @@ aggregates observations captured in the last FRESH_H hours, and each per-symbol 
 Raw observations are appended to `data/crowd/copytrade/raw/<day>.jsonl.gz`: this history cannot
 be bought later, so every pass that does not run is history lost.
 
-HONEST ACCESS. Public pages only; robots.txt is read per host and a Disallow (or an unreadable
-robots.txt) bars the route; a login wall is recorded as BLOCKED_AUTH and that route stops for the
-pass; 401/403/429/451 is a HARD STOP written to state and the source is not fetched again until
-`--release <source>`. No login, cookie, proxy, CAPTCHA or paywall step exists here.
+HONEST ACCESS. Logged-out pages only. robots.txt is read per host and LABELS the route (LAWS
+section 5e, the #651 pattern): allowed or 404 = PUBLIC, Disallow = PUBLIC_WITH_TERMS, unreadable =
+ACCESS_UNCLEAR. Every label is fetched; the label rides on the observation and the series rows
+with `redistribute` withheld. The access controls stay: a login wall is recorded as BLOCKED_AUTH
+and that route stops for the pass; 401/403/429/451 is a HARD STOP written to state and the source
+is not fetched again until `--release <source>`. No login, cookie, proxy, CAPTCHA or paywall
+step exists here.
 
 CELLS. Once a symbol's series holds 30 rows, its columns become `exogenous_conditioner` cells
 through `futures_state.mint` (the same door, each cell minted once in its life).
@@ -202,8 +205,8 @@ def robots_allows(rules: list[tuple[str, bool]], url: str) -> bool:
 # ----------------------------------------------------------------------------- fetching
 
 class Fetcher:
-    """One honest GET per URL through the desk's polite client: no retries, our own UA, robots
-    per host, hard stops recorded. `get` is injectable so tests run offline."""
+    """One honest GET per URL through the desk's polite client: no retries, our own UA, a robots
+    access label per URL, hard stops recorded. `get` is injectable so tests run offline."""
 
     def __init__(self, state: dict[str, Any], deadline: float,
                  get: Callable[[str], tuple[int | None, str]] | None = None) -> None:
@@ -212,6 +215,7 @@ class Fetcher:
         self._get = get or self._polite
         self._robots: dict[str, list[tuple[str, bool]] | None] = {}
         self.stats: dict[str, dict[str, int]] = {}
+        self.labels: dict[str, set[str]] = {}
 
     @staticmethod
     def _polite(url: str) -> tuple[int | None, str]:
@@ -223,7 +227,9 @@ class Fetcher:
         self.stats.setdefault(source, {}).setdefault(key, 0)
         self.stats[source][key] += 1
 
-    def robots_ok(self, url: str) -> bool:
+    def access_label(self, url: str) -> str:
+        """PUBLIC (allowed or no robots.txt), PUBLIC_WITH_TERMS (Disallow), ACCESS_UNCLEAR
+        (robots.txt unreadable). A label, never a refusal (LAWS section 5e)."""
         host = urllib.parse.urlsplit(url).netloc.lower()
         if host not in self._robots:
             code, body = self._get(f"https://{host}/robots.txt")
@@ -232,9 +238,11 @@ class Fetcher:
             elif code is not None and 200 <= code < 300:
                 self._robots[host] = robots_rules(body)
             else:
-                self._robots[host] = None      # unread is not consent
+                self._robots[host] = None
         rules = self._robots[host]
-        return rules is not None and robots_allows(rules, url)
+        if rules is None:
+            return "ACCESS_UNCLEAR"
+        return "PUBLIC" if robots_allows(rules, url) else "PUBLIC_WITH_TERMS"
 
     def fetch(self, source: str, url: str) -> str | None:
         if time.monotonic() >= self.deadline:
@@ -243,9 +251,9 @@ class Fetcher:
         if source in (self.state.get("hard_stops") or {}):
             self._stat(source, "hard_stopped")
             return None
-        if not self.robots_ok(url):
-            self._stat(source, "robots_barred")
-            return None
+        label = self.access_label(url)
+        self._stat(source, f"access_{label}")
+        self.labels.setdefault(source, set()).add(label)
         code, body = self._get(url)
         self._stat(source, "fetched")
         if code in HARD_STOP:
@@ -473,12 +481,13 @@ def flow_delta(prev: Mapping[str, Any] | None, cur: Mapping[str, Any]) -> dict[s
 def observe(name: str, src: Mapping[str, Any], acct: str, f: Fetcher, state: dict[str, Any],
             now: datetime) -> dict[str, Any] | None:
     adapter = src.get("adapter")
-    html = f.fetch(name, str(src["account_url"]).format(id=acct))
+    url = str(src["account_url"]).format(id=acct)
+    html = f.fetch(name, url)
     if html is None:
         return None
     text = page_text(html)
     obs: dict[str, Any] = {"source": name, "account": acct, "captured_at": _iso(now),
-                           **parse_quality(text)}
+                           "access_label": f.access_label(url), **parse_quality(text)}
     if adapter == "mql5":
         cur = parse_mql5_flow(text)
         if not cur["symbols"]:
@@ -599,9 +608,27 @@ def append_raw(obs: list[dict[str, Any]], now: datetime) -> Path:
     return p
 
 
+#: Access labels, least to most qualified. A symbol's row carries the most qualified label among
+#: the observations that built it, and `redistribute` only when every one of them was PUBLIC.
+LABEL_ORDER = ("PUBLIC", "PUBLIC_WITH_TERMS", "ACCESS_UNCLEAR")
+
+
+def symbol_labels(obs: Iterable[Mapping[str, Any]]) -> dict[str, str]:
+    worst: dict[str, int] = {}
+    for o in obs:
+        lab = str(o.get("access_label") or "ACCESS_UNCLEAR")
+        r = LABEL_ORDER.index(lab) if lab in LABEL_ORDER else len(LABEL_ORDER) - 1
+        syms = {p["symbol"] for p in o.get("positions") or []} | set(o.get("flow") or {})
+        for sym in syms:
+            worst[sym] = max(worst.get(sym, 0), r)
+    return {sym: LABEL_ORDER[r] for sym, r in worst.items()}
+
+
 def write_series(book: Mapping[str, Mapping[str, Any]], now: datetime,
-                 root: Path | None = None) -> dict[str, Any]:
-    """One row per symbol per pass into `ctc_<SYMBOL>.parquet`, available_time = capture time."""
+                 root: Path | None = None, labels: Mapping[str, str] | None = None
+                 ) -> dict[str, Any]:
+    """One row per symbol per pass into `ctc_<SYMBOL>.parquet`, available_time = capture time,
+    with the row's access label and whether it may be redistributed."""
     import pandas as pd
     base = root or SERIES
     base.mkdir(parents=True, exist_ok=True)
@@ -613,7 +640,9 @@ def write_series(book: Mapping[str, Mapping[str, Any]], now: datetime,
                                  for k, v in row.items()},
                              "available_time": pd.Timestamp(now),
                              "event_time": pd.Timestamp(now),
-                             "retrieval_time": _iso(now), "source_id": sid}])
+                             "retrieval_time": _iso(now), "source_id": sid,
+                             "access_label": (labels or {}).get(sym, "ACCESS_UNCLEAR"),
+                             "redistribute": (labels or {}).get(sym) == "PUBLIC"}])
         try:
             old = pd.read_parquet(p) if p.exists() else None
         except Exception:
@@ -624,8 +653,10 @@ def write_series(book: Mapping[str, Mapping[str, Any]], now: datetime,
         tmp = p.with_suffix(".parquet.tmp")
         df.to_parquet(tmp, index=False)
         tmp.replace(p)
+        lab = (labels or {}).get(sym, "ACCESS_UNCLEAR")
         (base / f"{sid}.pit.json").write_text(json.dumps(
-            {"available_time": _iso(now), "source_id": sid, "producer": LEG}), encoding="utf-8")
+            {"available_time": _iso(now), "source_id": sid, "producer": LEG,
+             "access_label": lab, "redistribute": lab == "PUBLIC"}), encoding="utf-8")
         frames[sid] = df
     return frames
 
@@ -689,14 +720,15 @@ def build(*, budget_s: float = 600.0, dry_run: bool = False,
     if not dry_run and fresh:
         append_raw(fresh, now)
     if not dry_run and book:
-        frames = write_series(book, now, series_root)
+        frames = write_series(book, now, series_root, symbol_labels(window))
         cells = mint_cells(frames, state, dry_run)
     groups = cohorts(window)
     doc = {
         "generated_utc": _iso(now),
         "rule": ("Public, logged-out copy-trade pages aggregated into a per-symbol crowd book; "
-                 "login walls, robots Disallow and 401/403/429/451 are recorded, never routed "
-                 "around. Smart = >=26 weeks and top-decile log-growth/drawdown; dumb = losing "
+                 "login walls and 401/403/429/451 stop a route and are never routed around; "
+                 "robots.txt is an access label carried on every row (LAWS 5e). "
+                 "Smart = >=26 weeks and top-decile log-growth/drawdown; dumb = losing "
                  "or below-median. available_time = capture time."),
         "observations_this_pass": len(fresh),
         "observations_in_window": len(window),
@@ -709,6 +741,7 @@ def build(*, budget_s: float = 600.0, dry_run: bool = False,
                                 - (kv[1].get("flow_deals_all") or 0))[:25]),
         "sources": {n: {"adapter": s.get("adapter"), "positions": s.get("positions"),
                         "stats": f.stats.get(n, {}),
+                        "access_labels": sorted(f.labels.get(n, set())),
                         "population": len((state.get("population") or {}).get(n, {}).get(
                             "ids") or [])} for n, s in live.items()},
         "gaps": {n: {"blocked_by": s.get("blocked_by"), "next": s.get("next")}
