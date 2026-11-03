@@ -529,6 +529,24 @@ def mine_horizon(parent: Mapping[str, Any], ctx: Context) -> list[dict[str, Any]
     return out
 
 
+def _same_anchored_cell(parent: Mapping[str, Any], a: str, b: str) -> bool:
+    """ONE ANCHOR, ONE CELL (`libs/research/family_firing.same_cell`): True only when the
+    parent's family is anchor-clocked and its measured masks in `a` and `b` are identical. An
+    unreachable or unmeasured oracle answers False, so the child is proposed as before."""
+    try:
+        import sys
+        from pathlib import Path
+        root = str(Path(__file__).resolve().parents[3])
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from libs.research import family_firing
+        return bool(family_firing.same_cell(str(parent.get("family") or ""),
+                                            dict(parent.get("params") or {}), a, b,
+                                            symbol=str(parent.get("symbol") or "") or None))
+    except Exception:
+        return False
+
+
 def mine_session(parent: Mapping[str, Any], ctx: Context) -> list[dict[str, Any]]:
     """The ADJACENT session windows, plus the unconditional control when the parent is
     conditioned. `all` is not adjacent to anything -- it is what a conditional is measured
@@ -553,6 +571,10 @@ def mine_session(parent: Mapping[str, Any], ctx: Context) -> list[dict[str, Any]
         ok, why = compatible(contract, chart=chart, session=s)
         if not ok:
             ctx.note("session", pid, f"{s}: {why}")
+            continue
+        if _same_anchored_cell(parent, session, s):
+            ctx.note("session", pid, f"{s}: the same cell as {session} -- the family is "
+                     "anchor-clocked and keeps identical signals in both, so it is charged once")
             continue
         out.append(_child(parent, transformation="session", axis="session", session=s,
                           why=("the unconditional control arm for a session-conditioned claim"
