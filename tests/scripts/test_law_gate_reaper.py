@@ -202,3 +202,17 @@ def test_a_garbled_pid_file_says_nothing(tmp_path):
     (tmp_path / law_gate._OWNER_PID).write_text("not-a-pid")
     assert law_gate._owner_alive(tmp_path) is False
     assert law_gate._owner_alive(tmp_path / "absent") is False
+
+
+def test_the_owner_probe_never_signals_on_windows(tmp_path, monkeypatch):
+    """os.kill(pid, 0) terminates the target on Windows, so the probe must not run there."""
+    (tmp_path / law_gate._OWNER_PID).write_text(str(os.getpid()))
+
+    def boom(*_a):
+        raise AssertionError("os.kill called on Windows")
+
+    # Swap the module's `os` for a Windows-shaped stand-in; patching the real os.name would
+    # turn pytest's own pathlib Windows-shaped for the rest of the run.
+    import types
+    monkeypatch.setattr(law_gate, "os", types.SimpleNamespace(name="nt", kill=boom))
+    assert law_gate._owner_alive(tmp_path) is False

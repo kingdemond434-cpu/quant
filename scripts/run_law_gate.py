@@ -810,6 +810,10 @@ def _owner_alive(d: Path) -> bool:
     A missing or unreadable pid file says nothing either way (False); a pid we may not signal is
     alive (PermissionError), and a reused pid only delays the reap to the 2 h rule -- never early.
     """
+    if os.name == "nt":
+        # os.kill(pid, 0) TERMINATES the process on Windows. Never probe there; the 2 h rule and
+        # the blind-census fallback already guard every dir on that host.
+        return False
     try:
         pid = int((d / _OWNER_PID).read_text().strip())
     except (OSError, ValueError):
