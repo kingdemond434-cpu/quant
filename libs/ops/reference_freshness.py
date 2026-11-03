@@ -667,6 +667,18 @@ class DestructivePath:
 #: note, so the history of what once removed on an absence stays readable.
 DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
     DestructivePath(
+        path_id="heal_silent_demotions.clear_replication_refusal",
+        module="desks/mt5/scripts/heal_silent_demotions.py",
+        function="heal",
+        removes="a row's stale `replication_refusal` annotation (one field; the row itself stays)",
+        reference="the replication door's verdict on the same row, re-read in this pass",
+        status="positive",
+        note="POSITIVE EVIDENCE ONLY (declared 2026-11-03 with restore door v2; the pop came in "
+             "with door v8). The field is cleared only after `_replication_refusal` was asked "
+             "this pass and returned no refusal, and the row is then asked the restore door "
+             "before anything lifts it. No sleeve, certificate or evidence row is removed.",
+    ),
+    DestructivePath(
         path_id="run_sharded_gauntlet.drop_merge_snapshot",
         module="desks/mt5/scripts/run_sharded_gauntlet.py",
         function="_drop_merge_snapshot",
