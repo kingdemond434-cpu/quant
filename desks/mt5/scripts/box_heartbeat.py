@@ -36,6 +36,10 @@ machines never answer for each other. Absent: status NOT_ARMED in the report, ex
 pinged -- a missing credential is a recorded state, never a crash and never a claimed pass. The
 URL is never printed or written to the report.
 
+ACCOUNT PARITY rides this clock too (2026-11-03): `main` refreshes
+`reports/ACCOUNT_PARITY.json` (`account_parity.py`, every 15 min at most, bounded) after the ping.
+It is a report, not a check: it never changes the ping, the verdict or the exit code.
+
 Writes `desks/mt5/reports/BOX_HEARTBEAT.json` (a state path; the box may write it).
 """
 from __future__ import annotations
@@ -260,12 +264,30 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     doc = run(dry_run=a.dry_run)
     if not a.dry_run:
+        print(json.dumps({"account_parity": account_parity_refresh()}))
         _judge_stall()
     print(json.dumps({"verdict": doc["verdict"], "failing": doc["failing"],
                       "ping": doc["ping"]["status"]}))
     if not a.dry_run:
         print(json.dumps({"account_key_alerts": deliver_account_key_alerts()}))
     return 0
+
+
+def account_parity_refresh(now: float | None = None) -> dict[str, Any]:
+    """Refresh `reports/ACCOUNT_PARITY.json` (desks/mt5/scripts/account_parity.py: every live
+    account against every mechanism; re-measured at most every 15 min, bounded to log tails and
+    an 8 s budget). A REPORT, NOT A CHECK: it never touches this heartbeat's ping, verdict or exit
+    code, and it imports no lane and no MetaTrader5. NEVER RAISES."""
+    try:
+        here = str(Path(__file__).resolve().parent)
+        if here not in sys.path:
+            sys.path.insert(0, here)
+        import account_parity
+        res = account_parity.refresh(now)
+        return {"verdict": res.get("verdict"), "red": len(res.get("red") or []),
+                "measured_at": res.get("measured_at")}
+    except Exception as exc:
+        return {"verdict": "UNMEASURED", "error": type(exc).__name__}
 
 
 def deliver_account_key_alerts() -> dict[str, Any]:

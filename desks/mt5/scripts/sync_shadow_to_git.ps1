@@ -835,6 +835,10 @@ $reportPaths = @(
     # the judge speed switch's daily drift monitor (2026-10-28): identity of the fast families
     # against the original loops on this box's pandas/numpy, read-only; no credential
     "desks/mt5/reports/VECTOR_FAMILIES_CHECK.json",
+    # every live account against every mechanism (2026-11-03, scripts/account_parity.py, on
+    # MT5-BoxHeartbeat): present / last_fired / evidence per cell and the firm caps that may
+    # differ; read-only towards trading, no account number in it
+    "desks/mt5/reports/ACCOUNT_PARITY.json",
     "desks/mt5/data/tape/tape_state.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,
