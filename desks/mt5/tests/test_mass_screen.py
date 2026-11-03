@@ -206,7 +206,10 @@ def test_default_parameter_sweeps_set_the_grammar_aside() -> None:
     ok, blocked = breadth_sweep.default_families()
     for g in MR.GRAMMARS:
         assert f"mass_screen_{g}" not in ok
-        assert f"mass_screen_{g}" in blocked
+        # Either set aside at defaults, or swept only through a DECLARED READY grid that names
+        # every rule parameter (`mass_screen_lead`, 2026-10-29) -- never minted at defaults.
+        ready = breadth_sweep.READY.get(f"mass_screen_{g}")
+        assert f"mass_screen_{g}" in blocked or (ready and callable(ready.get("targets")))
 
 
 def test_the_leg_is_wired_into_the_hourly_cycle() -> None:

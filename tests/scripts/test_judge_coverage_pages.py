@@ -47,7 +47,8 @@ class Channel:
 
 def _report(at: datetime, *, red: bool = False, judged: int = 5) -> dict[str, Any]:
     fam = {"unjudged": 10, "queued": 0 if red else 3, "judged_window": judged}
-    return {"at": at.isoformat(), "families": {"overnight_drift": fam}}
+    return {"at": at.isoformat(), "families": {"overnight_drift": fam},
+            "totals": {"families_live": 1, "families_unmined": 0}, "unmined_live_families": []}
 
 
 def _pass(fence, tmp_path: Path, rep: dict[str, Any], now: datetime, ch: Channel) -> dict:
