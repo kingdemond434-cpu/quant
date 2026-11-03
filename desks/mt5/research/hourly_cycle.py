@@ -1130,8 +1130,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
     "forward_reconcile", "clock_liveness", "certificate_clock_law", "clock_accrual",
-    "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
-    "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
+    "forward_calibration", "desk_self_heal", "tier5_acceptance", "blueprint_score",
+    "mission_control", "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     # The noon CRO pass must land a ledger row every day; one file read, so it is core.
     "cro_noon_freshness",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
@@ -1465,7 +1465,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # machine measuring its own build path, experiments and organs: meta.
                      "build_failure_bank", "experiment_contracts", "health_board",
                      "runtime_attestation", "self_repair", "desk_self_heal",
-                     "tier5_acceptance", "mission_control", "tier_s", "tier_s_door",
+                     "tier5_acceptance", "blueprint_score", "mission_control", "tier_s",
+                     "tier_s_door",
                      "research_live_identity", "cro_noon_freshness",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
@@ -2314,6 +2315,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "forward_calibration": 180,
     "desk_self_heal": 240,
     "tier5_acceptance": 180,
+    # Two ledgers (410 rows) re-scored from file existence, clock text and artifact stamps: a
+    # second or two; the cap only guards a wedged disk.
+    "blueprint_score": 180,
     "cro_noon_freshness": 60,
     "mission_control": 180,
     # The producer census relights at most six dark producers at 240s each and re-measures after
@@ -5129,6 +5133,13 @@ def main() -> None:
     t5a = _costed("tier5_acceptance", lambda: _producer(
         "tier5_acceptance", "scripts/check_tier5_audit.py", "--runtime-out",
         "desks/mt5/reports/TIER5_ACCEPTANCE.json"))
+    # EVERY BLUEPRINT ROW, RE-SCORED FROM EVIDENCE (BACKLOG rows 20 and 82, principal 2026-09-29).
+    # The 138-row strict matrix and the 272 Tier-5 sections (the 20 audit items and the 52
+    # partials among them) get a state per row -- DONE / PARTIAL / OPEN / UNMEASURED -- derived
+    # from files, clocks, tests and THIS host's artifacts, never from the prose that scored them
+    # once. RED (exit 1) when a ledger lies or a DONE count falls since the last pass.
+    bps = _costed("blueprint_score", lambda: _producer(
+        "blueprint_score", "scripts/check_blueprint_score.py", "--write"))
     # THE RUNTIME ATTESTATION (a GitHub reviewer, 2026-09-23): "GitHub code is not current VPS
     # reality ... comments in the code describe measured runs, but that is not the same as seeing
     # runtime state." Correct, and uncloseable by committing `desks/mt5/reports/**` (~50 MB the
@@ -6443,6 +6454,7 @@ def main() -> None:
                     "external_federation": xfd, "archaeology": arch, "sares": srs,
                     "certificate_truth": ctt, "forward_calibration": fcal,
                     "desk_self_heal": dsh, "tier5_acceptance": t5a,
+                    "blueprint_score": bps,
                     "mission_control": msc,
                     "runtime_attestation": rta,
                     "self_repair": slf,

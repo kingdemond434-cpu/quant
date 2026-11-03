@@ -675,6 +675,9 @@ LEG_LAYER: dict[str, str] = {
     "certificate_clock_law": "meta", "desk_self_heal": "meta", "mission_control": "meta",
     "clock_accrual": "meta",
     "tier5_acceptance": "meta",
+    # The blueprint re-score measures how much of the principal's blueprints the machine has
+    # actually built and runs: the machine measuring itself, so meta.
+    "blueprint_score": "meta",
     "cro_noon_freshness": "meta",
 }
 
