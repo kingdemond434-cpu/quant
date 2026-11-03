@@ -1,0 +1,127 @@
+{
+ "class": "expert_surveys",
+ "label": "Business and expert surveys (PMI-like, diffusion indices)",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:au_jibun_bank_s_p_global:japan_pmi",
+   "vendor": "au Jibun Bank/S&P Global",
+   "dataset": "Japan PMI",
+   "class": "expert_surveys",
+   "region": "JP",
+   "measures": "Japan PMI",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:caixin_s_p_global:caixin_china_pmi",
+   "vendor": "Caixin/S&P Global",
+   "dataset": "Caixin China PMI",
+   "class": "expert_surveys",
+   "region": "CN",
+   "measures": "China private-sector PMI",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "HEADLINE_ONLY",
+    "kind": "vendor_press_release",
+    "url": "https://www.pmi.spglobal.com/Public/Home/PressRelease/b82735a9ba66455eb839145fba0ac5df",
+    "endpoints": [],
+    "source": "web_search:2026-09-30",
+    "note": "monthly press release (2025.06 cited); no machine series"
+   }
+  },
+  {
+   "id": "paid:ism:ism_report_on_business",
+   "vendor": "ISM",
+   "dataset": "ISM Report On Business",
+   "class": "expert_surveys",
+   "region": "US",
+   "measures": "Manufacturing and services diffusion indices",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "HEADLINE_ONLY",
+    "kind": "vendor_press_release",
+    "url": "https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/",
+    "endpoints": [],
+    "source": "web_search:2026-09-30",
+    "note": "monthly headline PMI published free as an HTML report; no machine series"
+   }
+  },
+  {
+   "id": "paid:reuters_tankan:reuters_tankan",
+   "vendor": "Reuters Tankan",
+   "dataset": "Reuters Tankan",
+   "class": "expert_surveys",
+   "region": "JP",
+   "measures": "Monthly Japanese business sentiment poll",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:s_p_global_ihs_markit:pmi",
+   "vendor": "S&P Global (IHS Markit)",
+   "dataset": "PMI",
+   "class": "expert_surveys",
+   "region": "global",
+   "measures": "Purchasing managers' diffusion indices",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "HEADLINE_ONLY",
+    "kind": "vendor_press_release",
+    "url": "https://www.pmi.spglobal.com/public",
+    "endpoints": [],
+    "source": "web_search:2026-09-30",
+    "note": "headline PMIs in public press releases; no machine series"
+   }
+  },
+  {
+   "id": "paid:zew:zew_financial_market_survey_full_data",
+   "vendor": "ZEW",
+   "dataset": "ZEW Financial Market Survey (full data)",
+   "class": "expert_surveys",
+   "region": "DE",
+   "measures": "Financial analyst expectations",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "HEADLINE_ONLY",
+    "kind": "vendor_press_release",
+    "url": "https://www.zew.de/en/press/latest-press-releases/zew-indicator-of-economic-sentiment-sentiment-deteriorates-further",
+    "endpoints": [],
+    "source": "web_search:2026-09-30",
+    "note": "headline indicator in monthly press releases; full survey data paid"
+   }
+  }
+ ]
+}

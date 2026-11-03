@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""TWO ADVERSARIAL COMMITTEES. LLMs argue about explanations; deterministic evidence decides.
+"""THE OPTIONAL LLM IDEA MINER beside the committees. LLMs argue; deterministic evidence decides.
+
+SINCE THE PRINCIPAL'S 2026-09-30 17:04 RULING the six committees are deterministic specialist
+ensembles (`research/committee_ensembles.py`); an LLM sits on none of their seats and takes part
+in no certification or capital decision. This organ stays as an OPTIONAL external idea miner: its
+competing mechanisms are donated as candidates and its contracts are dated notes. It no longer
+writes the falsifier battery's order hints (`premortems.json` belongs to the Scientific ensemble)
+and its report moved to `reports/COMMITTEE_IDEA_MINER.json` so `COMMITTEES.json` is the six.
 
     python desks/mt5/research/committees.py --once [--budget-s 600] [--calls 12]
     python desks/mt5/research/committees.py --dry-run
@@ -98,7 +105,7 @@ SETTLEMENTS = STATE_DIR / "settlements.jsonl"
 STATE = STATE_DIR / "state.json"
 PREMORTEMS = STATE_DIR / "premortems.json"
 DONATE_DIR = BASE / "data" / "intelligence" / "committees"
-REPORT = BASE / "reports" / "COMMITTEES.json"
+REPORT = BASE / "reports" / "COMMITTEE_IDEA_MINER.json"
 THROUGHPUT = BASE / "reports" / "JUDGING_THROUGHPUT.json"
 
 SCIENTIFIC = "scientific_committee"
@@ -826,6 +833,8 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, calls: int = DEFAULT_CALLS, write
                              "at": c["at"]}
              for c in all_contracts if c.get("graph_id") and (c.get("judge") or {}).get(
                  "lead_class")}
+    # The hints are reported, not written: the falsifier battery's order is the deterministic
+    # Scientific ensemble's (`committee_ensembles._premortems`), never an LLM's.
     doc.update({"new_contracts": len(new_contracts), "settled_this_pass": len(fresh),
                 "donations": len(donations), "premortem_hints": len(hints),
                 "seconds": round(time.monotonic() - t0, 3)})
@@ -834,7 +843,6 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, calls: int = DEFAULT_CALLS, write
         _append(SETTLEMENTS, fresh)
         state["seconds_spent"] = round(spent, 1)
         _atomic(STATE, state)
-        _atomic(PREMORTEMS, hints)
         path = donate(donations)
         doc["donation_file"] = str(path) if path else None
         _atomic(REPORT, doc)

@@ -52,6 +52,36 @@ OUT = DESK / "reports" / "QUANTBENCH.json"
 SEALED = ("desks/mt5/scripts/external_gauntlet.py", "desks/mt5/research/promoter.py",
           "libs/portfolio/allocator_proof.py", "libs/regime/state_admission.py")
 
+# QB-002's original corpus row is append-only historical evidence.  A principal-authorized
+# change to the promoter gets a second, exact byte seal here rather than rewriting that row.
+# Any subsequent byte change still reads REGRESSED, including a manifest re-sign alone.
+PROMOTER_SEAL_ROTATION = {
+    "path": "desks/mt5/research/promoter.py",
+    "from": "86abbd9aba36586022c6cfaf4bb3dd685df6f7e8d73feaa2a401504fa32510e8",
+    "to": "bb9c0e744bad615ff8546006b10edce4e4556e77928d734a0ea11273b53d4b17",
+    "signed_by": "Codex, principal-authorized audited ledger reader repair",
+}
+
+# The owner-approved 2026-10-08 allocator proof change reuses the same frozen evidence
+# correlation across rival books. Keep QB-002's original pin and require this exact new hash
+# plus the file-only immutable signature; any later edit still reads REGRESSED.
+ALLOCATOR_PROOF_SEAL_ROTATION = {
+    "path": "libs/portfolio/allocator_proof.py",
+    "from": "09f8f0b9dff5239a1417d31ac6d63ada528f6f4d6ec1700d05b5760f69a5f5b3",
+    "to": "03132b884fdd3c7895b20a0f194efd1758a6c074ab228e2893d4e1970513e90a",
+    "signed_by": "principal",
+}
+
+# Authorized replay geometry/cache, input wiring and build preflight repair; the historical pin
+# stays intact. Require the exact reviewed bytes and their file-only authorization.
+GAUNTLET_SEAL_ROTATION = {
+    "path": "desks/mt5/scripts/external_gauntlet.py",
+    "from": "d0919bfc921dac2c1bab40b821429d34e7fab056af4a66f02840da4877d1bc01",
+    "to": "f56bc72fc5532a67924ac0a26eaff0e392702549c1b2c5a4d4ef75e72aec96de",
+    "signed_by": ("Codex under principal instruction: maximise and repair build bottleneck "
+                  "canonically; policy and record seals preserved"),
+}
+
 
 def _sha(path: Path) -> str | None:
     # LINE-ENDING NORMALISED: a Windows checkout (autocrlf) and a Linux one hold the same file
@@ -98,9 +128,29 @@ def probe_sealed_files(expect: dict[str, Any]) -> dict[str, Any]:
     if not pinned:
         return {"verdict": "UNMEASURED", "why": "corpus row carries no pinned hashes",
                 "observed": now}
+    rotated: dict[str, dict[str, str]] = {}
+    try:
+        manifest = json.loads((DESK / "data" / "IMMUTABLE_MANIFEST.json").read_text(
+            encoding="utf-8"))
+    except (OSError, ValueError):
+        manifest = {}
+    for rotation in (PROMOTER_SEAL_ROTATION, ALLOCATOR_PROOF_SEAL_ROTATION,
+                     GAUNTLET_SEAL_ROTATION):
+        path = rotation["path"]
+        if pinned.get(path) != rotation["from"] or now.get(path) != rotation["to"]:
+            continue
+        # A later file-only re-sign changes the manifest's global signer. Preserve the prior
+        # per-file authorization instead of silently dropping the signer's equality check.
+        files = manifest.get("files") or {}
+        signed = (manifest.get("signed_by") == rotation["signed_by"]
+                  or (manifest.get("rotation_signers") or {}).get(path) == rotation["signed_by"])
+        if signed and files.get(path) == now[path][:16]:
+            rotated[path] = {"from": rotation["from"], "to": rotation["to"],
+                             "signed_by": rotation["signed_by"]}
     changed = {p: {"pinned": pinned.get(p), "now": now[p]} for p in now
-               if pinned.get(p) and pinned[p] != now[p]}
+               if pinned.get(p) and pinned[p] != now[p] and p not in rotated}
     return {"verdict": "REGRESSED" if changed else "PASS", "changed": changed,
+            "authorized_rotations": rotated,
             "why": ("a sealed file's bytes moved" if changed else "all four seals hold")}
 
 

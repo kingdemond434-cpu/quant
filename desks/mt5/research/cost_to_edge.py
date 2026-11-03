@@ -117,8 +117,20 @@ def symbol_cost_r(sym: str, family: str = "", mt5: Any = None) -> dict[str, Any]
     # THE WORSE SIDE, ALWAYS. A sleeve may be long or short and the desk does not get to choose
     # the cheaper financing after the fact; charging the favourable side would price a trade the
     # book cannot guarantee it is taking.
-    swap_pts = max(abs(float(info.swap_long)), abs(float(info.swap_short)))
+    #
+    # IN POINTS-EQUIVALENT, WHATEVER THE swap_mode (2026-10-07). This line read both swaps as
+    # points; on a swap_mode-5 symbol (138 of 248: every index, share and crypto CFD) they are an
+    # ANNUAL PERCENT of notional. The venue's own `swap_mode` is on `info`, and the mid is the
+    # price a percent is charged at. A held night that cannot be priced is UNMEASURED.
     holds = any(f in str(family) for f in OVERNIGHT_FAMILIES)
+    swap_pts = 0.0
+    if holds:
+        swap_pts_or_none, swap_why = _swap_points_worse_side(
+            sym, info, (float(tick.ask) + float(tick.bid)) / 2.0)
+        if swap_pts_or_none is None:
+            out["why"] = str(swap_why)
+            return out
+        swap_pts = swap_pts_or_none
     swap_charge = swap_pts * NIGHTS_HELD if holds else 0.0
     out.update({
         "measured": True,
@@ -131,6 +143,35 @@ def symbol_cost_r(sym: str, family: str = "", mt5: Any = None) -> dict[str, Any]
         "total_cost_r": round((spread_pts + swap_charge) / stop_pts, 4),
     })
     return out
+
+
+def _swap_points_worse_side(sym: str, info: Any, price: float) -> tuple[float | None, str | None]:
+    """The worse side's nightly swap in POINTS of `sym`, through the engine's swap_mode table."""
+    import sys
+    desk = str(Path(__file__).resolve().parent.parent)
+    if desk not in sys.path:
+        sys.path.insert(0, desk)
+    from mt5desk.engine import swap_night_points
+    meta = {"symbol": sym,
+            "contract_size": float(getattr(info, "trade_contract_size", 0.0) or 0.0),
+            "tick_size": float(getattr(info, "trade_tick_size", 0.0) or 0.0)
+            or float(getattr(info, "point", 0.0) or 0.0),
+            "tick_value": float(getattr(info, "trade_tick_value", 0.0) or 0.0),
+            "swap_mode": getattr(info, "swap_mode", None),
+            "currency_profit": getattr(info, "currency_profit", None),
+            "currency_base": getattr(info, "currency_base", None),
+            "currency_margin": getattr(info, "currency_margin", None)}
+    worse = None
+    for raw in (info.swap_long, info.swap_short):
+        p, why = swap_night_points(meta, float(raw), price)
+        if p is None:
+            return None, why
+        worse = abs(p) if worse is None else max(worse, abs(p))
+    # points of tick_size; the caller's points are of `info.point`
+    point = float(getattr(info, "point", 0.0) or 0.0)
+    if point > 0 and meta["tick_size"] > 0:
+        worse = float(worse or 0.0) * meta["tick_size"] / point
+    return float(worse or 0.0), None
 
 
 def verdict(sym: str, family: str, edge_r: float | None,

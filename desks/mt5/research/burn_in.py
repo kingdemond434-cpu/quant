@@ -49,6 +49,8 @@ REPO = BASE.parent.parent
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
+from libs.ops.gateway_clock import placement_pass_utc  # noqa: E402
+
 OUT_ROWS = BASE / "reports" / "burn_in.jsonl"
 OUT = BASE / "reports" / "burn_in.json"
 TARGET_DAYS = 30.0
@@ -94,6 +96,10 @@ def _ts(value) -> datetime | None:
 
 def _git_head(repo: Path) -> str | None:
     try:
+        root = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=str(repo),
+                              capture_output=True, text=True, timeout=10)
+        if root.returncode != 0 or Path(root.stdout.strip()).resolve() != repo.resolve():
+            return None  # a nested data directory must not inherit its parent's identity
         r = subprocess.run(["git", "rev-parse", "HEAD"], cwd=str(repo), capture_output=True,
                            text=True, timeout=10)
     except (OSError, subprocess.SubprocessError):
@@ -128,7 +134,8 @@ def observe(now: datetime | None = None, *, base: Path | None = None,
     ident_age_s = (now - ident_at).total_seconds() if ident_at else None
     ident_fresh = ident_age_s is not None and ident_age_s <= IDENTITY_MAX_AGE_S
     paused = (base / "data" / "GATEWAY_PAUSED").exists()
-    deals = _recent(_read_jsonl(base / "data" / "live_ledger.jsonl"), since)
+    from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+    deals = _recent(_read_jsonl(_audited_ledger_path(base / "data" / "live_ledger.jsonl")), since)
     intents = _recent(_read_jsonl(base / "data" / "order_intents.jsonl"), since)
     hist = gw.get("placement_health") if isinstance(gw.get("placement_health"), dict) else {}
 
@@ -157,6 +164,9 @@ def observe(now: datetime | None = None, *, base: Path | None = None,
         "paused": paused,
         "armed": gw.get("armed"),
         "placement_pass": gw.get("placement_pass"),
+        # the same instant in real UTC (L3: the raw stamp is broker time under a UTC label)
+        "placement_pass_utc": (_pp.isoformat(timespec="seconds")
+                               if (_pp := placement_pass_utc(gw)) else None),
         "rejection_streak": (hist.get("consecutive_total_rejections")
                              if isinstance(hist, dict) else None),
         "deals_24h": len(deals),
@@ -184,7 +194,8 @@ def summarise(rows: list[dict], now: datetime, base: Path | None = None) -> dict
     days = ((now - first).total_seconds() / 86400.0) if first else 0.0
     fills = 0
     if first:
-        fills = len(_recent(_read_jsonl(base / "data" / "live_ledger.jsonl"), first))
+        from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+        fills = len(_recent(_read_jsonl(_audited_ledger_path(base / "data" / "live_ledger.jsonl")), first))
     latest = rows[-1] if rows else None
     return {
         "at": now.isoformat(timespec="seconds"),

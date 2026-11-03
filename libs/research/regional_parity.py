@@ -43,8 +43,10 @@ rather than of the country.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import math
+import re
 import sqlite3
 import uuid
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
@@ -55,12 +57,14 @@ from pathlib import Path
 from typing import Any
 
 from libs.research import country_lab as CL
+from libs.research import equivalence_ontology as EQ
 from libs.research import forests as F
 
 __all__ = [
     "DEBT_WEIGHTS",
     "DEPTH_TARGETS",
     "DISCOVERY_WINDOW_DAYS",
+    "EQUIVALENCE_RULE",
     "FLAGS",
     "LATTICE_TARGET",
     "RESIDENT_STALE_HOURS",
@@ -68,14 +72,18 @@ __all__ = [
     "UNMEASURED",
     "PackDepth",
     "RegionDepth",
+    "classes_declared",
     "clip",
     "coverage_debt",
     "depth_score",
+    "equivalence_parity",
     "flags_for",
     "median",
+    "pack_declarations",
     "pack_depth",
     "parity_report",
     "priority_of",
+    "proof_index",
     "region_depth",
     "region_signals",
     "region_tokens",
@@ -774,3 +782,401 @@ def parity_report(regions: Sequence[str] | None = None, *, conn: Any = None,
             "flagged": sorted(fid for fid, r in rows.items() if r["flags"]),
             "mean_priority": (round(mean_p, 6) if mean_p is not None else None),
             "law": "docs/LAWS.md 5n", "rule": RULE}
+
+
+# =========================================================================== EQUIVALENCE PARITY
+# THE GLOBAL HALF'S CORE LAW, PROJECTED (ASIA_CHINA_FIRST_DIRECTIVE 2026-10-05, CORE LAW + PARTS
+# II, III and XXXIII; completion audit 2026-10-06 rank 11). Depth above counts what a region's
+# packs carry; this half asks the directive's question of EVERY country: for each information
+# class, is the local functional equivalent COVERED, DECLARED, a known public equivalent nobody
+# declared, genuinely absent, or never looked at? The ontology is frozen data in
+# `libs/research/equivalence_ontology.py`; this projection is pure (it reads what it is handed)
+# and `desks/mt5/research/regional_parity_pass.py` is the hourly organ that hands it the packs,
+# the coverage tensor and the ingestion ledger and writes REGIONAL_PARITY.json.
+
+#: A declaration a pack writes as a GAP rather than as a source ("NOT AVAILABLE. Declared as a
+#: GAP by name", "cftc_cot_absent :: ... NO KRW CONTRACT EXISTS") is never a declaration.
+_GAP_RE = re.compile(r"NOT AVAILABLE|declared as a gap|_absent\b|\bNO \w+ (CONTRACT )?EXISTS|"
+                     r"LARGELY SUSPENDED", re.IGNORECASE)
+#: Work-queue weights. Disposition first (a known equivalent nobody declared is the cheapest
+#: parity a country can gain), then how good the equivalent is, then how fast it prints.
+_QUEUE_DISPOSITION: dict[str, float] = {"ABSENT_KNOWN_EQUIVALENT": 3.0, "DECLARED": 2.0,
+                                        UNMEASURED: 1.0}
+_QUEUE_TIER: dict[str, float] = {"named": 0.3, "transnational": 0.2, "role": 0.1}
+_QUEUE_CADENCE: dict[str, float] = {"daily": 0.15, "weekly": 0.1, "event": 0.08, "monthly": 0.05}
+_NEXT_MOVE: dict[str, str] = {
+    "ABSENT_KNOWN_EQUIVALENT": "declare the known equivalent in the country pack and hand its "
+                               "endpoint to acquire_datasets (discoveries_parity_*.json)",
+    "DECLARED": "feed it: fetch the declared source and carry one unit to a measured downstream "
+                "state in the ingestion ledger",
+    UNMEASURED: "hunt the local functional equivalent (directive PART III) or declare its "
+                "absence with a reason",
+}
+EQUIVALENCE_RULE = ("for every country and every information class, name the LOCAL functional "
+                    "equivalent; COVERED only with proof of source -> measured outcome, never by "
+                    "default, and UNMEASURED is a verdict, never zero")
+
+
+def _txt(*parts: Any) -> str:
+    return " | ".join(str(p) for p in parts if str(p or "").strip())
+
+
+def pack_declarations(code: str, pack: Any) -> list[dict[str, Any]]:
+    """Every row a pack declares that could answer an information class, as plain mappings.
+
+    Read from the typed pack (`country_lab.CountryPack`): release classes, datasets, positioning
+    and institutional-flow sources, the series map, fixing conventions, the central bank's policy
+    series and the CFTC currency. The ten source-layer ROOTS are not read: they name where to look
+    ("the ministries"), not a data class, and matching them would credit classes by prose.
+    """
+    rows: list[dict[str, Any]] = []
+
+    def add(kind: str, rid: Any, text: str, keys: Sequence[Any], forced: Sequence[str] = (),
+            gap_text: str = "") -> None:
+        ident = str(rid or "").strip()
+        if not ident or _GAP_RE.search(f"{ident} {gap_text} {text}"):
+            return
+        rows.append({"pack": code, "kind": kind, "id": ident[:120], "text": text[:400],
+                     "keys": sorted({str(k).strip().lower() for k in keys
+                                     if len(str(k or "").strip()) >= 4}),
+                     "forced": list(forced)})
+
+    for r in getattr(pack, "release_classes", ()) or ():
+        add("release", r.name, _txt(r.name, r.actual_series, r.source), (r.name, r.actual_series))
+    for d in getattr(pack, "datasets", ()) or ():
+        add("dataset", d.name, _txt(d.name, d.source, d.frequency), (d.name,),
+            gap_text=str(d.how_to_fetch or ""))
+    for s in tuple(getattr(pack, "positioning_sources", ()) or ()) + tuple(
+            getattr(pack, "institutional_flow_sources", ()) or ()):
+        parts = [p.strip() for p in str(s).split("::")]
+        add("positioning", parts[0], _txt(*parts[:2]), (parts[0],), gap_text=str(s))
+    for k, v in dict(getattr(pack, "series", {}) or {}).items():
+        add("series", k, _txt(k, v), (k, v))
+    for f in getattr(pack, "fixing_conventions", ()) or ():
+        add("fixing", f.name, str(f.name), (f.name,))
+    cb = getattr(pack, "central_bank", None)
+    series = str(getattr(cb, "policy_rate_series", "") or "").strip() if cb is not None else ""
+    if series and "no_policy_rate" not in series:
+        add("central_bank", series, _txt(getattr(cb, "name", ""), "policy rate"), (series,),
+            forced=("Monetary / rates:policy rates",))
+    ccy = str(getattr(pack, "cot_currency", "") or "").strip()
+    if ccy:
+        add("cot_currency", f"cftc_cot:{ccy}", f"CFTC currency positioning {ccy}",
+            ("cftc_tff_currency",), forced=("Part III:FX positioning",))
+    return rows
+
+
+def classes_declared(rows: Iterable[Mapping[str, Any]], code: str,
+                     jurisdictions: Sequence[str]) -> dict[str, dict[str, list[dict[str, Any]]]]:
+    """country -> class -> [declaration], with multi-country attribution made honestly.
+
+    A single-jurisdiction pack credits its one country. A multi-jurisdiction pack credits a row to
+    the country it NAMES (`equivalence_ontology.names_country`), or -- for a class that is that
+    pack's shared competence, the ECB's operations for the euro members -- to every member. A row
+    that names nobody is UNATTRIBUTED and reported, never spread over the pack.
+    """
+    out: dict[str, dict[str, list[dict[str, Any]]]] = {}
+    shared = EQ.SHARED_COMPETENCE.get(code, frozenset())
+    single = len(jurisdictions) == 1
+    for row in rows:
+        text = str(row.get("text") or "").replace("_", " ")
+        forced = list(row.get("forced") or ())
+        # A FORCED row says exactly what it is (the central bank's policy series, the CFTC
+        # currency); matching its prose too would credit the FOMC's name to open-market ops.
+        keys = forced or list(EQ.match_classes(text))
+        for key in keys:
+            if single or key in shared:
+                targets = list(jurisdictions)
+            else:
+                raw = f"{row.get('id')} {row.get('text')}"
+                targets = [cc for cc in jurisdictions if EQ.names_country(raw, cc)]
+            for cc in targets:
+                out.setdefault(cc, {}).setdefault(key, []).append(dict(row))
+    return out
+
+
+def proof_index(ingestion: Mapping[str, Any] | None,
+                ledger_rows: Iterable[Mapping[str, Any]] = ()) -> dict[str, dict[str, str]]:
+    """token -> {state, unit}: every ingestion unit or dataset that reached a MEASURED outcome.
+
+    The ingestion ledger is the same evidence the coverage tensor reads for its INGESTED rung; a
+    unit counts as proof only past AWAITING_EXPERIMENT (`equivalence_ontology.
+    MEASURED_OUTCOME_STATES`). Tokens are the unit id, the dataset name, the path stem and each
+    `:`-separated part of them, lower-cased.
+    """
+    idx: dict[str, dict[str, str]] = {}
+
+    def put(names: Iterable[Any], state: str, unit: str) -> None:
+        for raw in names:
+            s = str(raw or "").strip().lower()
+            if not s:
+                continue
+            toks = {s, s.rsplit("/", 1)[-1].rsplit("\\", 1)[-1].rsplit(".", 1)[0]}
+            toks |= {p for p in s.split(":") if p}
+            for t in toks:
+                if len(t) >= 4:
+                    idx.setdefault(t, {"state": state, "unit": unit})
+
+    datasets = ingestion.get("datasets") if isinstance(ingestion, Mapping) else None
+    if isinstance(datasets, Mapping):
+        for name, block in datasets.items():
+            states = block.get("downstream_states") if isinstance(block, Mapping) else None
+            hit = sorted(str(s) for s, n in dict(states or {}).items()
+                         if s in EQ.MEASURED_OUTCOME_STATES and int(n or 0) > 0)
+            if hit:
+                put((name,), hit[0], str(name))
+    for r in ledger_rows:
+        state = str(r.get("downstream_state") or "")
+        if state in EQ.MEASURED_OUTCOME_STATES:
+            put((r.get("unit_id"), r.get("dataset"), r.get("path")), state,
+                f"{r.get('kind')}:{r.get('unit_id')}")
+    return idx
+
+
+def _find_proof(idx: Mapping[str, Mapping[str, str]], keys: Iterable[str]) -> dict[str, str] | None:
+    for k in keys:
+        got = idx.get(str(k).lower())
+        if got:
+            return {"key": str(k), **dict(got)}
+    return None
+
+
+def _tensor_layers(tensor: Mapping[str, Any] | None) -> dict[str, dict[str, str]]:
+    """pack code -> layer -> state, from COVERAGE_TENSOR.json's own country verdicts."""
+    if not isinstance(tensor, Mapping):
+        return {}
+    cov = tensor.get("coverage")
+    per = cov.get("by_country") if isinstance(cov, Mapping) else None
+    out: dict[str, dict[str, str]] = {}
+    for code, row in dict(per or {}).items():
+        layers = row.get("layers") if isinstance(row, Mapping) else None
+        if isinstance(layers, Mapping):
+            out[str(code).lower()] = {
+                str(k): str(v.get("state") or UNMEASURED) if isinstance(v, Mapping)
+                else UNMEASURED for k, v in layers.items()}
+    return out
+
+
+#: The dispositions whose FED question a readable ledger answers. UNMEASURED never is (nobody
+#: looked), NO_EQUIVALENT is out of scope, and any cell whose proof_state is UNMEASURED (no ledger
+#: was readable) is unmeasured whatever its disposition.
+_FED_MEASURABLE = frozenset({"COVERED", "DECLARED", "ABSENT_KNOWN_EQUIVALENT"})
+
+
+def _fed_measured(cell: Mapping[str, Any]) -> bool:
+    return (str(cell["disposition"]) in _FED_MEASURABLE
+            and str(cell.get("proof_state") or UNMEASURED) != UNMEASURED)
+
+
+def _counts(cells: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
+    """Counts and THE HEADLINE. Parity = fed / measured, where FED means EVALUATED -- a ledger
+    verdict past AWAITING_EXPERIMENT (COVERED) -- and never merely declared; and MEASURED excludes
+    every cell whose fed state nobody measured, which is published as its own count instead of
+    sitting in the denominator as a zero. Nothing measured -> the headline is UNMEASURED."""
+    c = dict.fromkeys(EQ.DISPOSITIONS, 0)
+    n = measured = 0
+    for cell in cells:
+        c[str(cell["disposition"])] += 1
+        n += 1
+        measured += _fed_measured(cell)
+    in_scope = n - c["NO_EQUIVALENT"]
+    unmeasured = in_scope - measured
+    return {"n": n, "counts": c,
+            "parity": (round(c["COVERED"] / measured, 6) if measured > 0 else UNMEASURED),
+            "fed": c["COVERED"], "measured": measured, "unmeasured": unmeasured,
+            "declared_share": (round((c["COVERED"] + c["DECLARED"]) / in_scope, 6)
+                               if in_scope > 0 else None),
+            "known_gap": c["ABSENT_KNOWN_EQUIVALENT"],
+            "unmeasured_share": (round(unmeasured / in_scope, 6) if in_scope > 0 else None)}
+
+
+def _num(value: Any) -> float | None:
+    return float(value) if isinstance(value, int | float) else None
+
+
+def candidate_class_rows(rows: Iterable[Mapping[str, Any]], code: str,
+                         jurisdictions: Sequence[str]) -> list[dict[str, Any]]:
+    """Every declaration NO class matches, as a CANDIDATE CLASS row -- never dropped.
+
+    The ontology is the directive's floor, not its ceiling: a source a pack declares that answers
+    none of the classes is either a class the ontology lacks or a class whose terms are too
+    narrow. Either way it is work, so it is reported and persisted; promoting one means adding
+    it to `desks/mt5/data/equivalence_ontology_ext.json`."""
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        if row.get("forced") or EQ.match_classes(str(row.get("text") or "").replace("_", " ")):
+            continue
+        raw = f"{row.get('id')} {row.get('text')}"
+        named = [cc for cc in jurisdictions if EQ.names_country(raw, cc)]
+        ident = f"{code}|{row.get('kind')}|{row.get('id')}"
+        out.append({"candidate_id": hashlib.sha1(ident.encode("utf-8")).hexdigest()[:16],
+                    "pack": code, "kind": row.get("kind"), "id": row.get("id"),
+                    "text": row.get("text"),
+                    "countries": (list(jurisdictions) if len(jurisdictions) == 1 else named),
+                    "status": "CANDIDATE_CLASS",
+                    "next_move": "add a class (or widen an existing class's terms) in "
+                                 "desks/mt5/data/equivalence_ontology_ext.json, or record why "
+                                 "this declaration is not an information class"})
+    return out
+
+
+def _queue_row(c: Mapping[str, Any], below: Sequence[str]) -> dict[str, Any] | None:
+    d = str(c["disposition"])
+    if d not in _QUEUE_DISPOSITION:
+        return None
+    eq = c.get("equivalent") or {}
+    dc = EQ.class_of(str(c["class"]))
+    score = (_QUEUE_DISPOSITION[d] + _QUEUE_TIER.get(str(eq.get("tier") or ""), 0.0)
+             + (0.2 if eq.get("endpoints") else 0.0)
+             + _QUEUE_CADENCE.get(dc.cadence if dc is not None else "", 0.0)
+             + (0.1 if c["region"] in below else 0.0))
+    return {"country": c["country"], "region": c["region"], "class": c["class"],
+            "disposition": d, "score": round(score, 4), "source_id": eq.get("source_id"),
+            "publisher": eq.get("publisher"), "url": eq.get("url"),
+            "endpoints": list(eq.get("endpoints") or []),
+            "held_endpoints": [h.get("url") for h in eq.get("held_endpoints") or []],
+            "tier": eq.get("tier"),
+            "next_move": _NEXT_MOVE[d]}
+
+
+def equivalence_parity(*, packs: Mapping[str, Any], jurisdictions: Mapping[str, Sequence[str]],
+                       tensor: Mapping[str, Any] | None = None,
+                       ingestion: Mapping[str, Any] | None = None,
+                       ledger_rows: Sequence[Mapping[str, Any]] = (),
+                       countries: Sequence[str] | None = None,
+                       now: datetime | None = None, queue_cap: int = 600) -> dict[str, Any]:
+    """The per-country x information-class disposition table, its parity metrics and the work
+    queue. PURE: everything it reads is an argument, and an argument that is None is named in
+    `unmeasured` rather than read as empty ground."""
+    at = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
+    unmeasured: list[str] = []
+    declared: dict[str, dict[str, list[dict[str, Any]]]] = {}
+    unattributed: dict[str, int] = {}
+    candidates: list[dict[str, Any]] = []
+    pack_of: dict[str, list[str]] = {}
+    for code, pack in sorted(packs.items()):
+        juris = [str(c).lower() for c in (jurisdictions.get(code) or (code,))]
+        for cc in juris:
+            pack_of.setdefault(cc, []).append(code)
+        if pack is None:
+            unmeasured.append(f"pack {code}: did not resolve, its declarations are UNMEASURED")
+            continue
+        rows = pack_declarations(code, pack)
+        got = classes_declared(rows, code, juris)
+        candidates.extend(candidate_class_rows(rows, code, juris))
+        if len(juris) > 1:
+            hit_ids = {d["id"] for per in got.values() for ds in per.values() for d in ds}
+            missed = sum(1 for r in rows
+                         if EQ.match_classes(str(r["text"]).replace("_", " "))
+                         and r["id"] not in hit_ids)
+            if missed:
+                unattributed[code] = missed
+        for cc, per in got.items():
+            for key, ds in per.items():
+                declared.setdefault(cc, {}).setdefault(key, []).extend(ds)
+    roster = sorted({str(c).lower() for c in (countries or ())} | set(pack_of))
+    readable = isinstance(ingestion, Mapping) or bool(ledger_rows)
+    if not readable:
+        unmeasured.append("ingestion ledger: neither INGESTION_EXPLOITATION.json nor "
+                          "ingestion_ledger.jsonl was readable -- no cell can be COVERED and "
+                          "every DECLARED cell carries proof_state UNMEASURED")
+    idx = proof_index(ingestion, ledger_rows) if readable else {}
+    layers = _tensor_layers(tensor)
+    if not layers:
+        unmeasured.append("COVERAGE_TENSOR.json: absent or carries no coverage.by_country -- the "
+                          "per-country source-layer states are UNMEASURED")
+
+    cells: list[dict[str, Any]] = []
+    by_country: dict[str, dict[str, Any]] = {}
+    for cc in roster:
+        region = F.forest_of_country(cc) or "UNASSIGNED"
+        per_cells: list[dict[str, Any]] = []
+        for dc in EQ.CLASSES:
+            decl = declared.get(cc, {}).get(dc.key, [])
+            eqs = EQ.equivalents_for(cc, dc.key)
+            keys = [str(k) for d in decl for k in d.get("keys") or ()]
+            keys += [e.source_id for e in eqs if e.tier != "role"]
+            proof = _find_proof(idx, keys) if idx else None
+            cell = EQ.dispose(cc, dc.key, declared=decl, proof=proof, proof_readable=readable,
+                              equivalents=eqs).to_json()
+            cell["region"] = region
+            cell["layer"] = dc.layer
+            per_cells.append(cell)
+        cells.extend(per_cells)
+        tl: dict[str, str] = {}
+        for code in pack_of.get(cc, []):
+            for layer, state in layers.get(code, {}).items():
+                tl.setdefault(layer, state)
+        by_country[cc] = {"region": region, "name": EQ.COUNTRY_NAMES.get(cc, (cc,))[0],
+                          "packs": sorted(pack_of.get(cc, [])),
+                          "tensor_layers": tl or UNMEASURED, **_counts(per_cells)}
+
+    groups = list(dict.fromkeys(dc.group for dc in EQ.CLASSES))
+    by_class = {dc.key: {"group": dc.group, "part": dc.part, "mandate_id": dc.mandate_id,
+                         "layer": dc.layer,
+                         **_counts(c for c in cells if c["class"] == dc.key)}
+                for dc in EQ.CLASSES}
+    by_region: dict[str, dict[str, Any]] = {}
+    for r in sorted({str(c["region"]) for c in cells}):
+        mine = [c for c in cells if c["region"] == r]
+        ctry = sorted(cc for cc, row in by_country.items() if row["region"] == r)
+        by_region[r] = {"countries": ctry, "n_countries": len(ctry), **_counts(mine),
+                        "parity_by_group": {
+                            g: _counts(c for c in mine
+                                       if str(c["class"]).startswith(g + ":"))["parity"]
+                            for g in groups}}
+    # THE HEADLINE SPREAD: only regions whose parity was MEASURED; an UNMEASURED region is named,
+    # never read as zero and never as the median.
+    measured_parity = {k: p for k, v in by_region.items()
+                       if k != "UNASSIGNED" and (p := _num(v["parity"])) is not None}
+    med = median(measured_parity.values())
+    below = sorted(k for k, p in measured_parity.items() if med is not None and p < med)
+    # The QUEUE's region boost reads declaration coverage, a different and explicitly named
+    # quantity: it orders work toward thin regions even while no ledger is readable, and it is
+    # never published as parity.
+    declared_by_region = {k: float(v["declared_share"]) for k, v in by_region.items()
+                          if k != "UNASSIGNED" and v["declared_share"] is not None}
+    dmed = median(declared_by_region.values())
+    thin = sorted(k for k, p in declared_by_region.items() if dmed is not None and p < dmed)
+    queue = [q for q in (_queue_row(c, thin) for c in cells) if q is not None]
+    queue.sort(key=lambda q: (-float(q["score"]), str(q["country"]), str(q["class"])))
+    core: dict[str, dict[str, str]] = {}
+    for anchor, key in EQ.CORE_LAW_ANCHORS.items():
+        core[anchor] = {str(c["country"]): str(c["disposition"]) for c in cells
+                        if c["class"] == key}
+    return {
+        "at": at, "rule": EQUIVALENCE_RULE, "class_source": EQ.CLASS_SOURCE,
+        "dispositions": list(EQ.DISPOSITIONS),
+        "classes": [{"key": dc.key, "group": dc.group, "name": dc.name, "part": dc.part,
+                     "layer": dc.layer, "mandate_id": dc.mandate_id} for dc in EQ.CLASSES],
+        "functions": {k: list(v) for k, v in EQ.FUNCTIONS.items()},
+        "core_law_anchors": dict(EQ.CORE_LAW_ANCHORS),
+        "n_countries": len(roster), "n_classes": len(EQ.CLASSES), "n_cells": len(cells),
+        "totals": _counts(cells),
+        "by_class": by_class, "by_region": by_region, "by_country": by_country,
+        "parity_definition": ("fed / measured: FED = COVERED (an ingestion-ledger verdict past "
+                              "AWAITING_EXPERIMENT), never DECLARED; MEASURED = in-scope cells "
+                              "whose fed state a readable ledger answered; UNMEASURED cells are "
+                              "excluded from the denominator and counted in `unmeasured`; with "
+                              "nothing measured the headline is UNMEASURED"),
+        "parity_spread": {"median": (round(med, 6) if med is not None else UNMEASURED),
+                          "min": min(measured_parity.values()) if measured_parity else UNMEASURED,
+                          "max": max(measured_parity.values()) if measured_parity else UNMEASURED,
+                          "regions_measured": sorted(measured_parity),
+                          "regions_unmeasured": sorted(k for k in by_region
+                                                       if k != "UNASSIGNED"
+                                                       and k not in measured_parity),
+                          "regions_below_median": below},
+        "declaration_spread": {"median": (round(dmed, 6) if dmed is not None else None),
+                               "regions_below_median": thin,
+                               "note": "declared_share orders the work queue; it is NOT parity"},
+        "core_law": core,
+        "work_queue": queue[:queue_cap], "work_queue_total": len(queue),
+        "unattributed_declarations": dict(sorted(unattributed.items())),
+        "candidate_classes": candidates, "n_candidate_classes": len(candidates),
+        "ontology_extension": dict(EQ.EXT_REPORT),
+        "proof": {"readable": readable, "measured_tokens": len(idx),
+                  "states": sorted(EQ.MEASURED_OUTCOME_STATES)},
+        "cells": cells,
+        "unmeasured": unmeasured,
+    }

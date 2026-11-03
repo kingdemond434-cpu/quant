@@ -170,7 +170,9 @@ def read_ledger(path: Path | str) -> Ledger:
     """(offset, row) for every readable JSON object in a file. A `.jsonl` gives one per line
     (a torn final line is skipped, never fatal); a `.json` singleton gives [(0, obj)]. The
     offset is the physical 0-based line number, which an append-only ledger never moves."""
-    p = Path(path)
+    from libs.ops.live_ledger_view import ledger_path
+
+    p = ledger_path(Path(path))
     try:
         text = p.read_text("utf-8")
     except OSError:

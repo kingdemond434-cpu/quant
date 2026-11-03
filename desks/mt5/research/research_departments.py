@@ -87,6 +87,7 @@ RESOURCE_DENOMINATOR: dict[str, str | None] = {
 #: is the coarse map the exchange prices). Unknown sources are `discovery`.
 SOURCE_DEPARTMENT: dict[str, str] = {
     "world_crawler": "intel", "deep_forest": "intel", "repo_miner": "intel", "crawler": "intel",
+    "cell_emitter": "intel",
     "world": "intel", "kimi": "intel", "deepseek": "intel", "standing_questions": "intel",
     "axis_registry": "discovery", "qd_frontier": "discovery", "alpha_evolution": "discovery",
     "edge_search": "discovery", "breadth_sweep": "discovery", "deepening": "discovery",

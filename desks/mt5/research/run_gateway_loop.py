@@ -8,7 +8,9 @@ Never trade a weekend/holiday: gateway.main() itself idles on stale ticks.
 
 from __future__ import annotations
 
+import contextlib
 import sys
+import threading
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -30,6 +32,29 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 # `tests`... imported bare anywhere in mt5desk/ or research/).
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
+#: WHAT THIS PROCESS LOADED, taken before the gateway's modules are imported (adopter v3, Desk
+#: health 2026-10-28): MT5-GatewayResident has been disabled since 10-14 and the live runner is the
+#: MT5-Gateway task, a fresh process per pass that never reads GATEWAY_RECYCLE -- so the adopter's
+#: health check, which waits for a load stamp, would have rolled back every good release. Run as a
+#: script, this writes the same stamp the resident writes (`_stamp_loaded` there): the release on
+#: disk when the process started, and the time its pass finished.
+_STARTED_AT = __import__("datetime").datetime.now(__import__("datetime").UTC).isoformat()
+_STARTED_EPOCH = __import__("time").time()
+
+
+def _release_on_disk() -> str | None:
+    import json
+    try:
+        rec = json.loads((Path(__file__).resolve().parents[1] / "data" / "RELEASE.json")
+                         .read_text(encoding="utf-8"))
+        return str(rec.get("code_sha") or rec.get("live_sha") or "") or None
+    except Exception:
+        return None
+
+
+_RELEASE_AT_START = _release_on_disk()
+_PASS_DONE = False
+
 from mt5desk import gateway  # noqa: E402
 
 # LATENT ON THIS BRANCH, ALREADY CORRECT ON THE BOX'S -- which is the dangerous shape.
@@ -50,6 +75,60 @@ LOCK.parent.mkdir(parents=True, exist_ok=True)
 #: A lock older than this whose OWNER IS GONE is stale. Only used when the pid is unreadable or
 #: the platform cannot be asked -- the pid check is the real test.
 LOCK_MAX_MIN = 45
+#: THE OVERLONG-PASS WATCHDOG (audit r5 must-fix 5). An MT5 call that hangs (order_send included)
+#: used to hold this lock, the cross-account placement lock and every rail with it for as long as
+#: it hung. Past this many minutes the pass's own process ends itself (`os._exit`): the dead pid
+#: frees this lock (`_holder_alive` is False) and the placement lock (`cross_account._holder_gone`),
+#: and the next invocation starts clean. 30 minutes sits below the armed deadman's 45-minute STALE
+#: rail, so a hang is ended by the process before the rail has to flatten for it. Normal pass
+#: length is UNMEASURED here; a false kill costs one pass.
+PASS_WATCHDOG_S = 30 * 60
+#: What the watchdog leaves behind, so a kill is never silent.
+WATCHDOG_STAMP = LOCK.parent / "GATEWAY_WATCHDOG.json"
+
+
+def _watchdog_fire(started: float) -> None:
+    """Called on the watchdog thread when the pass has overrun. Never returns."""
+    import json
+    import os
+    import time
+    msg = (f"WATCHDOG: gateway pass pid {os.getpid()} overran {PASS_WATCHDOG_S}s "
+           f"({time.time() - started:.0f}s); the process ends itself so the locks free")
+    with contextlib.suppress(Exception):
+        gateway.log(msg)
+    with contextlib.suppress(Exception):
+        WATCHDOG_STAMP.write_text(json.dumps({"pid": os.getpid(), "at": time.time(),
+                                              "overran_s": PASS_WATCHDOG_S, "why": msg}),
+                                  encoding="utf-8")
+    with contextlib.suppress(Exception):
+        LOCK.unlink(missing_ok=True)
+    # A resident loop gets a successor at once (the keep-alive trigger is the backstop). The
+    # singleton is released FIRST (audit r6 should-fix 3), or the successor sees the slot held
+    # and exits, and the desk waits for the keep-alive tick.
+    res = sys.modules.get("__main__")
+    release = getattr(res, "_release_singleton", None)
+    if callable(release) and getattr(res, "_HANDLE", None) is not None:
+        with contextlib.suppress(Exception):
+            release(res._HANDLE)
+    spawn = getattr(res, "_spawn_successor", None)
+    if callable(spawn):
+        with contextlib.suppress(Exception):
+            spawn()
+    os._exit(70)
+
+
+def start_watchdog(timeout_s: float | None = None) -> threading.Timer:
+    """A daemon timer that ends this process if the pass outlives `timeout_s`. Cancel it with
+    `.cancel()` when the pass returns. A thread, not a subprocess: the MetaTrader5 module binds
+    one terminal per process and is not safe to call from a second thread, so the watchdog never
+    touches it -- it only ends the process, which Windows and POSIX both do cleanly."""
+    import time
+    started = time.time()
+    t = threading.Timer(float(PASS_WATCHDOG_S if timeout_s is None else timeout_s),
+                        _watchdog_fire, args=(started,))
+    t.daemon = True
+    t.start()
+    return t
 
 
 def _holder_alive(pid: int) -> bool:
@@ -70,6 +149,7 @@ def _holder_alive(pid: int) -> bool:
 
 
 def main() -> None:
+    global _PASS_DONE
     # THE LOCK IS NOW PID-AWARE, AND THE OLD ONE WAS THE REASON THE BOX RAN OUT OF MEMORY.
     #
     # It stole any lock older than five minutes. That was fine while a pass took seconds -- most
@@ -86,10 +166,8 @@ def main() -> None:
     # rather than after an arbitrary wait.
     if LOCK.exists():
         raw = ""
-        try:
+        with contextlib.suppress(OSError):
             raw = LOCK.read_text(encoding="utf-8").strip()
-        except OSError:
-            pass
         pid = int(raw) if raw.isdigit() else 0
         age_min = (__import__("time").time() - LOCK.stat().st_mtime) / 60
         if pid and _holder_alive(pid):
@@ -98,56 +176,45 @@ def main() -> None:
             return                                    # legacy lock with no pid: fall back to age
         LOCK.unlink(missing_ok=True)                  # owner gone, or unreadable and ancient
     LOCK.write_text(str(__import__("os").getpid()), encoding="utf-8")
+    dog = start_watchdog()
     try:
         gateway.main()
-        from datetime import datetime, timezone  # noqa: PLC0415
-        if datetime.now(timezone.utc).hour == 22:  # once per UTC day
-            import shadow_forward  # noqa: PLC0415
-            shadow_forward.main()
-            import promoter  # noqa: PLC0415
-            promoter.main()
-            import regime_monitor  # noqa: PLC0415
-            regime_monitor.main()
-        if datetime.now(timezone.utc).weekday() == 0 and datetime.now(timezone.utc).hour == 23:
-            import json as _json  # noqa: PLC0415
-            from pathlib import Path as _Path  # noqa: PLC0415
-            # WAS the retired laptop's absolute path (C:\Users\dell\mt5-research), which does
-            # not exist on Contabo: the weekly sweep read "never swept" every Monday and
-            # re-ran hunts 7-12 from scratch. The desk root is where the state lives.
-            stfile = _Path(__file__).resolve().parents[1] / "data" / "hunt7_state.json"
-            last = 0
-            if stfile.exists():
-                try:
-                    last = _json.loads(stfile.read_text(encoding="utf-8")).get("last_sweep", 0)
-                except Exception:
-                    pass
-            now_ts = datetime.now(timezone.utc).timestamp()
-            if now_ts - last > 6 * 86400:  # weekly standing sweep
-                try:
-                    import fetch_universe  # noqa: PLC0415
-                    fetch_universe.main()
-                    import run_hunt7  # noqa: PLC0415
-                    run_hunt7.main()
-                    import run_hunt8  # noqa: PLC0415
-                    run_hunt8.main()
-                    import run_hunt9  # noqa: PLC0415
-                    run_hunt9.main()
-                    import free_shadows  # noqa: PLC0415
-                    free_shadows.main()
-                    import run_hunt10  # noqa: PLC0415
-                    run_hunt10.main()
-                    import run_hunt12  # noqa: PLC0415
-                    run_hunt12.main()
-                    stfile.write_text(_json.dumps({"last_sweep": now_ts}),
-                                      encoding="utf-8")
-                    gateway.log("weekly hunt7-12 + states sweep completed")
-                except Exception as e2:  # noqa: BLE001
-                    gateway.log(f"HUNT7-12 ERROR: {e2!r}")
-    except Exception as e:  # noqa: BLE001 - watchdog must never die
+        # A PASS THAT REACHED THE TERMINAL (adopter v6 audit): main() also returns early when
+        # paused or when connect() fails, and those say nothing about the code working. Every
+        # pass that connected saves the gateway state, so its write after this process started
+        # is the evidence.
+        with contextlib.suppress(OSError):
+            _PASS_DONE = gateway.STATE.stat().st_mtime >= _STARTED_EPOCH
+        # Research and promotion run on their own canonical hourly/daily lanes. Holding the
+        # gateway lock while doing either blocks every minute-by-minute order check. In
+        # particular, the former 22:00 UTC branch ran on *every* gateway pass in that hour,
+        # not once per day, and could strand the resident inside shadow processing.
+    except Exception as e:  # watchdog must never die
         gateway.log(f"LOOP ERROR: {e!r}")
     finally:
+        dog.cancel()
         LOCK.unlink(missing_ok=True)
+
+
+def _stamp_loaded() -> None:
+    """The whole stamp, atomically; a failure is logged and never takes the pass down."""
+    import json
+    import os
+    from datetime import UTC, datetime
+    f = LOCK.parent / "GATEWAY_LOADED.json"
+    tmp = f.with_suffix(".tmp")
+    doc = {"pid": os.getpid(), "started_at": _STARTED_AT, "release_sha": _RELEASE_AT_START,
+           "runner": "MT5-Gateway",
+           "last_pass_at": datetime.now(UTC).isoformat() if _PASS_DONE else None}
+    try:
+        tmp.write_text(json.dumps(doc, sort_keys=True), encoding="utf-8")
+        os.replace(tmp, f)
+    except OSError as exc:
+        with contextlib.suppress(Exception):
+            gateway.log(f"GATEWAY: load stamp {f.name} NOT written ({type(exc).__name__}: {exc})")
 
 
 if __name__ == "__main__":
     main()
+    if _PASS_DONE:  # a pass that found the lock held, or failed, says nothing about this code
+        _stamp_loaded()

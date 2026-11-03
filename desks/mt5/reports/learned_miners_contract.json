@@ -3356,7 +3356,8 @@
      "clears_cost": false,
      "proposed": false
     }
-   ]
+   ],
+   "not_screened_reason": "tried and CHARGED, but too few forecast signals cleared the entry threshold on the walk-forward window for the screen to score them (the symbol's bar history in git is shorter than the panel's)"
   },
   "attention": {
    "tests_attempted": 192,
@@ -6326,7 +6327,14 @@
      "clears_cost": false,
      "proposed": false
     }
-   ]
+   ],
+   "not_screened_reason": "tried and CHARGED, but too few forecast signals cleared the entry threshold on the walk-forward window for the screen to score them (the symbol's bar history in git is shorter than the panel's)"
+  },
+  "union_headline": {
+   "m": 384,
+   "rule": "each miner's best t deflated over the UNION of every test both miners ran",
+   "gnn": 0.198,
+   "attention": -0.294
   }
  },
  "fit_seconds": {
