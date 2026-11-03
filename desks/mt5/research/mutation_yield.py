@@ -77,7 +77,7 @@ def _at(value: Any) -> datetime | None:
 # Lineage rows: from the graph and from the discovery contract
 # ------------------------------------------------------------------------------------------
 
-def _lineage_lines(path: Path) -> list[dict[str, Any]]:
+def _lineage_lines(path: Path, stats: dict[str, int] | None = None) -> list[dict[str, Any]]:
     """Every graph row `_lineage_from_graph` can use, without parsing the rest (2026-11-03).
 
     A row qualifies by its source or by an `operator`/`generator` key; a line that names none of
@@ -91,9 +91,14 @@ def _lineage_lines(path: Path) -> list[dict[str, Any]]:
         fh = path.open("rb")
     except OSError:
         return out
+    names = tuple(s.encode() for s in LINEAGE_SOURCES)
     with fh:
         for ln in fh:
             if not any(m in ln for m in marks):
+                # A skipped line that still names a lineage source is a format the marks do not
+                # read (escaped, re-spaced): counted, so a writer's drift is a number, never a 0.
+                if stats is not None and any(n in ln for n in names):
+                    stats["suspect_skipped"] = stats.get("suspect_skipped", 0) + 1
                 continue
             try:
                 r = json.loads(ln)
@@ -106,10 +111,12 @@ def _lineage_lines(path: Path) -> list[dict[str, Any]]:
 
 def _graph_rows(inputs: dict[str, str]) -> list[dict[str, Any]]:
     try:
-        rows = _lineage_lines(GRAPH)
+        stats: dict[str, int] = {}
+        rows = _lineage_lines(GRAPH, stats)
     except Exception as exc:
         inputs["hypothesis_graph"] = f"unreadable: {type(exc).__name__}: {exc}"
         return []
+    inputs["hypothesis_graph_prefilter_suspect_skipped"] = str(stats.get("suspect_skipped", 0))
     inputs["hypothesis_graph"] = f"{len(rows)} rows" if rows else f"no rows at {GRAPH}"
     return rows
 
