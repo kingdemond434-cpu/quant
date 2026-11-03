@@ -19,7 +19,7 @@ for _p in (str(DESK), str(DESK.parent.parent)):
 
 
 def test_exact_names_never_swallow_a_cross_contract() -> None:
-    from mt5desk import fetch_tff
+    import fetch_tff
 
     cme = " - CHICAGO MERCANTILE EXCHANGE"
     df = pd.DataFrame({"Market_and_Exchange_Names": ["EURO FX" + cme,
