@@ -414,7 +414,13 @@ def _series(jsp, tmp: Path, ch: Channel, minutes, write) -> list[dict]:
 
 
 def _resident(doc: dict) -> Any:
-    return lambda t, p: p["resident"].write_text(json.dumps(doc), "utf-8")
+    def write(t: datetime, p: dict) -> None:
+        p["resident"].write_text(json.dumps(doc), "utf-8")
+        # a readable queue, as on the box, so cores_idle reads and only the resident is unknown
+        tp = p["resident"].with_name("JUDGING_THROUGHPUT.json")
+        tp.write_text(json.dumps({"queue": {"depth": 5}}), "utf-8")
+        p["throughput"] = tp
+    return write
 
 
 def test_a_resident_with_no_heartbeat_pages_after_the_bound(jsp, tmp_path):
