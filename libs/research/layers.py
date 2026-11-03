@@ -446,6 +446,9 @@ LEG_LAYER: dict[str, str] = {
     # `residual_hunt` is.
     "research_evolution": "meta", "compute_economics": "meta",
     "missed_trade_archaeologist": "information",
+    # THE LOSS LEARNER (2026-11-03) steps a live sleeve's target, stop or hold on the loss mode
+    # its own trades show -- where and when a position ends -- which is the exit layer.
+    "loss_learner": "exit",
     # THE ANYTIME-VALID SCIENCE CONTROLLER (LAWS 5k/5m): online-FDR wealth per lineage, the
     # effective-trial census and the genome archive. It predicts, sizes and times nothing; it
     # measures whether the machine's evidence is still evidence after an unbounded stream of
