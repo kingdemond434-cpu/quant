@@ -35,6 +35,7 @@ UNIVERSE_ROWS = {
 }
 ROUTES = {
     "TP.DK.USD.A.YTL": "evds_usdtry.json", "TP.FG.J0": "evds_cpi.json",
+    "TP.APIFON4": "evds_funding.json",
     "exchangerates/rates/A/USD": "nbp_usd.json", "exchangerates/rates/A/EUR": "nbp_usd.json",
     "cenyzlota": "nbp_gold.json", "stopy_procentowe": "nbp_rates.xml",
     "SECBREPOEFF": "swea_policy.json", "SEKUSDPMI": "swea_usdsek.json",
@@ -235,8 +236,11 @@ def test_packs_land_pit_stamped_and_mapped_through_the_hunter(box) -> None:
     # the series reach the world_macro_state door: exposed per symbol, rebuildable by key
     expo = json.loads(W.EXPOSURE.read_text("utf-8"))
     sek = expo["symbols"]["USDSEK"]
-    assert any("se_usdsek" in k for k in sek) and any("se_cpi" in k for k in sek)
-    key = next(k for k in sek if "se_usdsek" in k)
+    key = W.series_key("RIKSBANK", "se_usdsek", "se_usdsek")
+    assert key in sek and W.series_key("SCB", "se_cpi", "cpi_yoy") in sek
+    assert W.series_key("RIKSBANK", "se_swestr", "se_swestr") in sek
+    assert W.series_key("NBP", "pl_fx_usd", "pl_fx_usd") in expo["symbols"]["USDPLN"]
+    assert W.series_key("CBRT_EVDS", "tr_cpi", "cpi_yoy_chg") in expo["symbols"]["USDTRY"]
     s = W.raw_world_series(key)
     assert s is not None and len(s) > 250
     assert s.index.max() <= pd.Timestamp(NOW)
