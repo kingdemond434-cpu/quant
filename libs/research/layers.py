@@ -50,6 +50,12 @@ LEG_LAYER: dict[str, str] = {
     # That is information, not prediction: neither one scores anything.
     "proposer_seat": "information", "kimi_hunt": "information",
     "deep_forest": "information", "market_intel": "information", "record_tape": "information",
+    # Published strategy CODE read into family cells: what the desk knows (a rule someone
+    # wrote), not a prediction -- the gauntlet does the predicting.
+    "cell_emitter": "information",
+    # Whether either tick tape moved within 2 h of open market (2026-10-14): a measurement of the
+    # desk's own data wiring, not information about the market: meta.
+    "tape_fresh": "meta",
     "archive_tape": "information", "refresh_bars": "information",
     "timeframe_coverage": "information", "frontier": "information",
     "frontier_ontology": "information", "frontier_unknowns": "information",
@@ -81,6 +87,7 @@ LEG_LAYER: dict[str, str] = {
     # places an order, neither sizes one, and both exist only so the prediction layer's verdict
     # is fed the right population and published the moment it exists.
     "fast_admission": "prediction", "canon_publication": "prediction",
+    "attestation_remint": "prediction",
     "lockbox_recert": "prediction",
     "miner_conversion": "prediction", "opportunity_gap": "prediction",
     "research_org": "prediction", "queue_compact": "prediction",
@@ -634,8 +641,10 @@ LEG_LAYER: dict[str, str] = {
     "state_replay_audit": "execution", "why_not_report": "execution",
     "forward_calibration": "prediction",
     "certificate_clock_law": "meta", "desk_self_heal": "meta", "mission_control": "meta",
+    "clock_accrual": "meta",
     "tier5_acceptance": "meta",
     "fill_hour_reprice": "execution",
+    "cro_noon_freshness": "meta",
 }
 
 _LEG_RE = re.compile(r'_costed\("([^"]+)"')
