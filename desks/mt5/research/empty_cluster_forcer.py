@@ -52,11 +52,18 @@ MANDATE = BASE / "reports" / "BREADTH_MANDATE.json"
 UNIVERSE = BASE / "data" / "universe" / "universe.json"
 SEAT = BASE / "data" / "intelligence" / "breadth"
 OUT = BASE / "reports" / "EMPTY_CLUSTER_FORCER.json"
+FAMILIES = BASE / "reports" / "HYPOTHESIS_FAMILIES.json"
 
 #: Cells minted per reachable empty cluster per pass. Small on purpose -- the point is that the
 #: attempt HAPPENS every hour and accumulates, not that one pass floods the docket. Trial count
 #: is a shared cost and a flood raises the bar for every other cell the desk is testing.
 CELLS_PER_CLUSTER = 6
+
+#: An asset class is THIN when its families per instrument are below this share of the median
+#: class's. A declared constant, never tuned to a count: it is the line under which a whole class
+#: of the book's instruments is not being looked at, as energy (3 CFDs, read as FX exotics) and
+#: bonds (3, absent) were on 2026-11-02.
+THIN_CLASS_SHARE = 0.10
 
 #: Instruments a forced cell is minted on, in order. The book's own liquid ground first: a
 #: cross-sectional FX cell on an exotic nobody quotes tightly is a cell that cannot survive costs
@@ -186,6 +193,92 @@ def _symbols_for(family: str, universe: dict[str, Any], turn: int) -> list[str]:
     return [s for s in PREFERRED if s in universe]
 
 
+def _class_counts(steering: dict[str, Any]) -> dict[str, int]:
+    rows = (steering.get("thinnest") or []) if isinstance(steering, dict) else []
+    return {str(r.get("value")): int(r.get("families") or 0) for r in rows
+            if isinstance(r, dict)}
+
+
+def class_slots(by_cluster: dict[str, list[str]], turn: int,
+                families_doc: dict[str, Any] | None = None,
+                lane: list[str] | None = None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """(rows, cells): CELLS_PER_CLUSTER forced cells for every THIN hypothesis-lane asset class.
+
+    THE ASSET-CLASS TWIN OF THE CLUSTER FORCER (2026-11-03). The docket steering is read per class
+    from HYPOTHESIS_FAMILIES, under BOTH names a class can carry there -- the broker registry's
+    ("energy") and the pattern classifier's ("energy", but "fx exotic" before the X-ticker fix),
+    taking the larger -- so a report written by either classifier is read correctly. A class
+    whose families per instrument sit under THIN_CLASS_SHARE of the median class is minted
+    CELLS_PER_CLUSTER cells of price-only families the sealed judge can build, on its own
+    instruments, one rotating window per hour. Every cell is an ordinary docket row, counted in
+    the trial census like any other. An unreadable report mints nothing and says UNMEASURED.
+    """
+    doc = families_doc if families_doc is not None else _read(FAMILIES, {})
+    steer = ((doc or {}).get("steering") or {}).get("asset_class")
+    if not steer:
+        return ([{"axis": "asset_class", "verdict": "UNMEASURED",
+                  "why": f"{FAMILIES.name} carries no asset_class steering; nothing minted"}], [])
+    counts = _class_counts(steer)
+    try:
+        from mt5desk.universe import asset_class as pattern_class
+
+        from research.breadth_rotation import hypothesis_symbols, orthogonal_ring, rotating_window
+        from research.universe_policy import _norm, asset_class_of
+    except Exception as exc:                                          # pragma: no cover
+        return ([{"axis": "asset_class", "verdict": "UNMEASURED",
+                  "why": f"classifier unimportable: {type(exc).__name__}"}], [])
+    members: dict[str, list[str]] = {}
+    for sym in (lane if lane is not None else hypothesis_symbols()):
+        k = asset_class_of(sym)
+        if k:
+            members.setdefault(k, []).append(sym)
+    density: dict[str, tuple[int, float]] = {}
+    for k, syms in members.items():
+        names = {k} | {_norm(pattern_class(x)) for x in syms}
+        n = max((counts.get(nm, 0) for nm in names), default=0)
+        density[k] = (n, n / len(syms))
+    if not density:
+        return ([{"axis": "asset_class", "verdict": "UNMEASURED",
+                  "why": "no hypothesis-lane instrument with bars here"}], [])
+    ordered = sorted(d for _, d in density.values())
+    median = ordered[len(ordered) // 2]
+    fams: list[str] = []
+    for c in sorted(by_cluster):
+        ok, _ = _testable(by_cluster[c])
+        fams.extend(f for f in ok if f not in fams)
+    rows: list[dict[str, Any]] = []
+    cells: list[dict[str, Any]] = []
+    for k in sorted(density):
+        n, d = density[k]
+        if d >= THIN_CLASS_SHARE * median:
+            continue
+        if not fams:
+            rows.append({"axis": "asset_class", "value": k, "families_in_docket": n,
+                         "verdict": "UNREACHABLE", "why": "no buildable donatable family"})
+            continue
+        syms = orthogonal_ring(members[k])
+        width = max(1, CELLS_PER_CLUSTER)
+        picks = rotating_window(fams, width, turn=turn)
+        where = rotating_window(syms, width, turn=turn)
+        for i in range(width):
+            fam, sym = picks[i % len(picks)], where[i % len(where)]
+            cells.append({
+                "kind": "hypothesis", "family": fam, "symbols": [sym],
+                "source": "breadth:empty_cluster_forcer", "url": "",
+                "title": f"thin-class forcing: {k}", "asset_class": k,
+                "mechanism_status": "NAMED",
+                "text": (f"{fam} on {sym}. FORCED BREADTH CELL for the thin asset class {k}: "
+                         f"{n} docket famil(ies) over {len(members[k])} instrument(s), "
+                         f"{d:.1f} per instrument against a median class's {median:.1f}. The "
+                         f"desk cannot call a class barren that it has barely looked at. A "
+                         f"hypothesis for the ten gates, not a claim.")})
+        rows.append({"axis": "asset_class", "value": k, "families_in_docket": n,
+                     "instruments": len(members[k]), "per_instrument": round(d, 2),
+                     "median_per_instrument": round(median, 2), "verdict": "FORCED",
+                     "cells_minted": width})
+    return rows, cells
+
+
 def plan() -> dict[str, Any]:
     breadth = _read(BREADTH, {})
     clusters = breadth.get("clusters") or {}
@@ -274,6 +367,10 @@ def plan() -> dict[str, Any]:
                      "why": (f"reachable via {', '.join(fams)} and never generated: a pure "
                              f"wiring gap, closed by minting {minted} cell(s) this pass")})
 
+    class_rows, class_cells = class_slots(by_cluster, turn)
+    cells.extend(class_cells)
+    symbols_used.update(c["symbols"][0] for c in class_cells)
+
     census = Counter(str(r["verdict"]) for r in rows)
     return {
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
@@ -288,6 +385,8 @@ def plan() -> dict[str, Any]:
         "symbol_rotation": ("a window of CELLS_PER_CLUSTER over every hypothesis-lane "
                             "instrument, least-judged first, one width further per hour"),
         "clusters": rows,
+        "asset_classes": class_rows,
+        "n_class_cells_minted": len(class_cells),
         "cells": cells,
     }
 
@@ -320,6 +419,8 @@ def main(argv: list[str] | None = None) -> int:
     for r in doc["clusters"]:
         if r["verdict"] == "UNREACHABLE":
             print(f"\n  {r['cluster']}: {str(r['missing_artifact'])[:150]}")
+    for r in doc.get("asset_classes") or []:
+        print(f"  class  {r.get('value', '-')!s:24} {r['verdict']}")
     if doc.get("donated_to"):
         print(f"\n  {doc['n_cells_minted']} cell(s) donated -> {doc['donated_to']}")
     print(f"  -> {OUT}")
