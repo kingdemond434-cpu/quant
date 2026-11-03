@@ -220,6 +220,12 @@ _FAMILY_GROUPS: dict[str, str] = {
     "execution_microstructure microstructure limit": "execution_state moat_spread_window"
                                                      " spread_state",
     "gamma_hedging_state microstructure market": "liquidity_gamma_reversal",
+    # The cluster-reach families (row 72, `mt5desk.families_cluster_reach`): the variance risk
+    # premium read off a free CBOE implied-vol close against the index's own realised vol is the
+    # dealer-hedging state, from a MACRO (exogenous) series; the entry operator's mechanism is
+    # its base's, and what it changes is the ENTRY, a resting limit.
+    "gamma_hedging_state macro market": "implied_vol",
+    f"{UNKNOWN} price_only limit": "entry_alpha",
     "inventory_shock microstructure market": "volume_spike",
     # NO MECHANISM NAMED, AND THAT IS THE MEASUREMENT. `discovered` is the desk's own generated
     # family and dominates the docket; `generic`/`formula`/`ensemble`/`joint_genome` are spec

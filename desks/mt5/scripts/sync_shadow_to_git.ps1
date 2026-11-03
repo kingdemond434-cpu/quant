@@ -807,6 +807,11 @@ $reportPaths = @(
     "desks/mt5/reports/JUDGE_PRESCREEN_INTAKE.json",
     "desks/mt5/reports/EFFECTIVE_BREADTH.json",
     "desks/mt5/reports/BREADTH_MANDATE.json",
+    # row 72/75 (2026-11-03): the forcer's per-cluster dispositions (FORCED / DATA_GAP), the
+    # per-region forest yield report, and the fence that turns RED when either stops moving
+    "desks/mt5/reports/EMPTY_CLUSTER_FORCER.json",
+    "desks/mt5/reports/REGION_YIELD.json",
+    "desks/mt5/reports/LEG_ARTIFACT_LIVENESS.json",
     "desks/mt5/reports/TIER1_SCORECARD.json",
     "desks/mt5/reports/ALT_DATA_YIELD.json",
     "desks/mt5/reports/PRODUCER_YIELD.json",

@@ -857,6 +857,32 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/reports/dead_architecture.json",)),
     Node("deep_forest", "desks/mt5/research/deep_forest_miner.py",
          writes=("desks/mt5/reports/DEEP_FOREST.json",)),
+    # ROWS 72/75 (2026-11-03). The forcer writes the breadth mandate (it had no node, so
+    # `completion` read it UNDECLARED and nothing judged its staleness); the region yield report
+    # and the liveness fence that turns RED when either artifact stops moving.
+    Node("empty_cluster_forcer", "desks/mt5/research/empty_cluster_forcer.py",
+         reads=("desks/mt5/reports/JUDGE_COVERAGE.json",
+                "desks/mt5/reports/EFFECTIVE_BREADTH.json",
+                "desks/mt5/data/universe/universe.json"),
+         writes=("desks/mt5/reports/BREADTH_MANDATE.json",
+                 "desks/mt5/reports/EMPTY_CLUSTER_FORCER.json",
+                 "desks/mt5/data/intelligence/breadth/"),
+         freshness_s={"desks/mt5/reports/BREADTH_MANDATE.json": 6 * 3600,
+                      "desks/mt5/reports/EMPTY_CLUSTER_FORCER.json": 6 * 3600},
+         # Its forced cells reach a decision only through the compiler that reads the breadth
+         # seat, so it is priced there, as cell_emitter and intake_catchup are.
+         billed_as=("miner_candidate_compiler",)),
+    Node("region_yield", "desks/mt5/research/region_yield.py",
+         reads=("desks/mt5/data/deep_forest_sources.json",
+                "desks/mt5/data/deep_forest_vector_stats.json",
+                "desks/mt5/data/deep_forest_claims.jsonl",
+                "desks/mt5/reports/CELL_CULTURE.json"),
+         writes=("desks/mt5/reports/REGION_YIELD.json",),
+         freshness_s={"desks/mt5/reports/REGION_YIELD.json": 3 * 3600}),
+    Node("leg_artifact_liveness", "scripts/check_leg_artifact_liveness.py",
+         reads=("desks/mt5/reports/BREADTH_MANDATE.json",
+                "desks/mt5/reports/REGION_YIELD.json", "desks/mt5/data/sync_marker.json"),
+         writes=("desks/mt5/reports/LEG_ARTIFACT_LIVENESS.json",)),
     Node("exogenous_search", "desks/mt5/research/unknown_unknowns.py",
          writes=("desks/mt5/reports/UNKNOWN_UNKNOWNS.json",)),
     Node("falsifier_run", "desks/mt5/research/falsifier_run.py",

@@ -244,6 +244,13 @@ FAMILY_CLUSTER: dict[str, str] = {
     "news_reaction": "news_reaction",
     "analyst_revision_drift": "news_reaction",
     "alt_release_drift": "news_reaction",
+    # `jump` (families_orthogonal.family_jump) trades ONE BAR'S BREAK from the diffusive process
+    # with no calendar at all -- its own docstring: it "catches the unscheduled shock the event
+    # family cannot see", and its `continue` / `revert` modes are exactly the reaction function
+    # this cluster names. It sat UNCLASSIFIED (row 72, 2026-11-03), so the cluster read
+    # NEVER_ATTEMPTED while ~30k jump cells were in the docket. Not `event_reaction`: that
+    # family trades the SCHEDULED release and stays in event_surprise.
+    "jump": "news_reaction",
     # -- cross-sectional selection
     "cross_sectional": "cross_sectional_fx",
     "style_premia": "cross_sectional_fx",

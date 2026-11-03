@@ -516,6 +516,9 @@ desks/mt5/data/hypotheses/prescreen_sources_state.json
 desks/mt5/data/hypotheses/prescreen_sources_state.json.*.tmp
 !desks/mt5/reports/EFFECTIVE_BREADTH.json
 !desks/mt5/reports/BREADTH_MANDATE.json
+!desks/mt5/reports/EMPTY_CLUSTER_FORCER.json
+!desks/mt5/reports/REGION_YIELD.json
+!desks/mt5/reports/LEG_ARTIFACT_LIVENESS.json
 !desks/mt5/reports/TIER1_SCORECARD.json
 !desks/mt5/reports/ALT_DATA_YIELD.json
 !desks/mt5/reports/PRODUCER_YIELD.json
