@@ -40,6 +40,10 @@ def box(tmp_path: Path) -> tuple[Path, Path]:
     repo = tmp_path / "box"
     _git(tmp_path, "init", "-q", "-b", "live", str(repo))
     _git(repo, "config", "commit.gpgsign", "false")
+    # The module's own `commit-tree` runs with the process environment, not this helper's: a CI
+    # runner has no global git identity, so the box repo carries one (as the real box does).
+    _git(repo, "config", "user.name", "Contabo MT5 Desk")
+    _git(repo, "config", "user.email", "box@example.invalid")
     _write(repo, "libs/a.py", "A = 1\n")
     _write(repo, "desks/mt5/data/state.json", "{}")
     _git(repo, "add", ".")
