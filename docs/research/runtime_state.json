@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 822,
+  "NEVER": 825,
   "UNMEASURED": 43
  },
  "scope": {
-  "attested": 1046,
+  "attested": 1049,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -673,6 +673,18 @@
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
      "leg:futures_state"
+    ]
+   },
+   {
+    "at": "2026-11-03T23:49:04+00:00",
+    "host": "vm",
+    "machine_id": "d165c2d88d894a4787be219662b439ad",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "executable:desks/mt5/research/scalp_shadow.py",
+     "leg:retail_crowd",
+     "leg:volcontrol_flow"
     ]
    }
   ]
@@ -27518,6 +27530,90 @@
    "measured_on": "vm",
    "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
    "measured_at": "2026-11-03T19:27:00+00:00"
+  },
+  {
+   "organ": "executable:desks/mt5/research/scalp_shadow.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/scalp_shadow.py"
+   ],
+   "clock": "invoked:libs/ops/release.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/SCALP_GAUNTLET.json",
+   "artifact_declared": "desks/mt5/reports/SCALP_GAUNTLET.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-03T23:49:04+00:00"
+  },
+  {
+   "organ": "leg:retail_crowd",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/retail_crowd.py"
+   ],
+   "clock": "hourly_cycle:retail_crowd",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/RETAIL_CROWD.json",
+   "artifact_declared": "desks/mt5/reports/RETAIL_CROWD.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-03T23:49:04+00:00"
+  },
+  {
+   "organ": "leg:volcontrol_flow",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/volcontrol_flow.py"
+   ],
+   "clock": "hourly_cycle:volcontrol_flow",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/VOLCONTROL_FLOW.json",
+   "artifact_declared": "desks/mt5/reports/VOLCONTROL_FLOW.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
+   "measured_at": "2026-11-03T23:49:04+00:00"
   }
  ],
  "ratchet": {
