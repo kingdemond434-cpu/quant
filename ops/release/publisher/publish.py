@@ -18,8 +18,12 @@ state BY CONSTRUCTION:
      that the commit's diff against origin/LIVE is publishable paths only, and pushes it as a
      fast-forward (never a force). A race loses and is retried on the next pass.
 
-Code, workflows, tests and the gate itself are never in the commit, so holding this App's key
-gives no way past the authority. Exit 0: published or nothing to publish; 1: failed; 2: refused.
+Code, workflows, tests and the gate itself are never in a commit THIS PROGRAM makes. That
+constrains the program, not the key: the state App bypasses the LIVE ruleset outright, so anyone
+holding its key could push any tree. The control is confinement of the key to the
+quant-publisher account, and the detector: every authority pass checks each LIVE commit the state
+App authored, and on any non-publishable path it raises the DEACTIVATE kill file (authority.py
+`state_app_violations`). Exit 0: published or nothing to publish; 1: failed; 2: refused.
 
     python publish.py --src C:\\opt\\quant --work C:\\opt\\publisher\\repo [--dry-run]
 """
@@ -58,7 +62,12 @@ WITHHELD_FILES: frozenset[str] = frozenset({
     "desks/mt5/reports/ALLOCATOR_PROOF.json", "desks/mt5/data/SEAL_CLEARS.jsonl",
     "desks/mt5/data/ADOPT_CLEARS.jsonl",
 })  # fmt: skip
-SWITCH_GLOBS = ("*_ENABLED*", "*_DISABLED*", "*_ARMED*")
+# Curated: a file whose presence or contents switches behaviour (#650 audit SF3).
+SWITCH_GLOBS = ("*_ENABLED*", "*_DISABLED*", "*_ARMED*", "*_ENFORCE*", "*_OFF", "*_OFF.*",
+                "DEACTIVATE*", "PRINCIPAL_*", "*KILL*", "*_HALT*", "*_STOP", "*_STOP.*",
+                "*OVERRIDE*")  # fmt: skip
+NEVER_NAMES = frozenset({".gitattributes", ".gitmodules", ".gitignore", ".mailmap"})
+REGULAR_MODES = frozenset({"100644", "100755"})
 CODE_SUFFIXES = (".py", ".pyw", ".ps1", ".psm1", ".sh", ".cmd", ".bat", ".exe", ".dll",
                  ".yml", ".yaml", ".toml", ".cfg", ".ini", ".js", ".html", ".pth")  # fmt: skip
 
@@ -70,6 +79,8 @@ def publishable(rel: str) -> bool:
     if p.lower().endswith(CODE_SUFFIXES) or p in WITHHELD_FILES:
         return False
     name = p.rsplit("/", 1)[-1]
+    if name in NEVER_NAMES:
+        return False
     if any(fnmatch.fnmatchcase(name, g) for g in SWITCH_GLOBS):
         return False
     return p in PUBLISH_FILES or any(p.startswith(x) for x in PUBLISH_PREFIXES)
@@ -115,11 +126,19 @@ def main(argv: list[str] | None = None) -> int:
         if withheld:
             print(f"withheld (not state, goes by PR): {len(withheld)}: {', '.join(withheld[:8])}")
         todo = sorted(set(keep) & names(live, box))
+        modes: dict[str, str] = {}
+        for entry in git(work, "ls-tree", "-r", "-z", box).split("\0"):
+            if "\t" in entry:
+                meta, path = entry.split("\t", 1)
+                modes[path] = meta.split(" ", 1)[0]
+        odd = [p for p in todo if p in modes and modes[p] not in REGULAR_MODES]
+        if odd:  # symlinks and gitlinks never travel (#650 audit SF2)
+            print(f"withheld (not a regular file): {', '.join(odd[:8])}")
+            todo = [p for p in todo if p not in odd]
+        present = set(modes)
         if not todo:
             print("nothing to publish")
             return 0
-        listed = git(work, "ls-tree", "-r", "-z", "--name-only", box)
-        present = {n for n in listed.split("\0") if n}
         there = [p for p in todo if p in present]
         gone = [p for p in todo if p not in present]
         if there:

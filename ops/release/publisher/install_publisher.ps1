@@ -45,6 +45,12 @@ if (-not (Get-LocalUser -Name $User -ErrorAction SilentlyContinue)) {
 } else { Set-LocalUser -Name $User -Password $sec }
 & icacls $Home_ /inheritance:r /grant:r "${User}:(OI)(CI)M" "SYSTEM:(OI)(CI)F" "Administrators:(OI)(CI)F" | Out-Null
 & icacls $Key /inheritance:r /grant:r "${User}:(OI)(CI)R" "SYSTEM:(OI)(CI)F" | Out-Null
+# RX on .git makes its config readable to quant-publisher: refuse if it carries a credential
+# (#650 audit SF4). Credentials belong in Windows Credential Manager, never in .git/config.
+$gc = Get-Content -Raw -LiteralPath (Join-Path $Src ".git\config")
+if ($gc -match '(?im)extraheader|^\s*\[credential|helper\s*=\s*store|insteadOf|https?://[^/\s@]+@') {
+    throw "$Src\.git\config carries a credential or URL rewrite; remove it before granting quant-publisher read access."
+}
 & icacls $Src /grant "${User}:RX" | Out-Null                       # traverse only, this folder
 & icacls (Join-Path $Src ".git") /grant "${User}:(OI)(CI)RX" /T /C /Q | Out-Null
 

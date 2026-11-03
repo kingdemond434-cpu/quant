@@ -267,6 +267,52 @@ def post_status(ag: Any, repo: str, head: str, state: str, desc: str) -> None:
            data={"state": state, "context": STATUS_CONTEXT, "description": desc[:140]})  # fmt: skip
 
 
+STATE_APP_FILE = "STATE_APP.json"  # in the registry folder: {"login": "<slug>[bot]"} (Level 2)
+
+
+def state_app_violations(
+    commits: list[dict[str, Any]], login: str, files_of: Callable[[str], list[str]],
+    publishable: Callable[[str], bool],
+) -> list[str]:  # fmt: skip
+    """LIVE commits the state App authored that touch anything but publishable state. The App
+    bypasses the ruleset, so this is the check on its KEY, not on publish.py (#650 audit SF1)."""
+    bad: list[str] = []
+    for c in commits:
+        who = {str((c.get(k) or {}).get("login") or "") for k in ("author", "committer")}
+        if login not in who:
+            continue
+        sha = str(c.get("sha"))
+        wrong = [f for f in files_of(sha) if not publishable(f)]
+        if wrong:
+            bad.append(f"{sha[:12]}: {', '.join(wrong[:5])}")
+    return bad
+
+
+def check_state_app(ag: Any, repo: str, base: str, out: Path) -> str | None:
+    """Level 2 detector. On a violation it writes the DEACTIVATE kill file beside the
+    attestations, which stops every authority merge until a person looks."""
+    cfg = out.parent / STATE_APP_FILE
+    if not cfg.exists():
+        return None
+    login = str(json.loads(cfg.read_text(encoding="utf-8-sig")).get("login") or "")
+    if not login:
+        return "STATE_APP.json has no login: detector not run"
+    pub = _load("state_publisher", ROOT / "ops" / "release" / "publisher" / "publish.py")
+    commits = ag._flat(ag._gh(f"repos/{repo}/commits?sha={base}&per_page=50"))
+
+    def files_of(sha: str) -> list[str]:
+        doc = ag._gh(f"repos/{repo}/commits/{sha}")
+        return [str(f.get("filename")) for f in doc.get("files") or []]
+
+    bad = state_app_violations(commits, login, files_of, pub.publishable)
+    if not bad:
+        return f"state App {login}: last 50 LIVE commits clean"
+    (out / "DEACTIVATE").write_text(
+        "state App pushed non-state paths: " + "; ".join(bad) + "\n", encoding="utf-8"
+    )
+    return f"RED: state App {login} pushed non-state paths, DEACTIVATE raised: {'; '.join(bad)}"
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--repo", required=True)
@@ -302,6 +348,14 @@ def main(argv: list[str] | None = None) -> int:
         pages = ag._gh(f"repos/{a.repo}/pulls?state=open&base={base}&per_page=100", "--paginate",
                        "--slurp")  # fmt: skip
         prs = [int(p["number"]) for p in ag._flat(pages)]
+    try:
+        seen = check_state_app(ag, a.repo, base, Path(a.out))
+    except (RuntimeError, ValueError, OSError) as exc:
+        seen = f"state App detector failed: {exc}"
+    if seen:
+        print(seen, flush=True)
+        if seen.startswith("RED"):
+            return 2
     post = a.post_status or (Path(a.out).parent / STATUS_FLAG).exists()
     veto_h = float(policy.get("veto_hours", 24))
     rc = 0

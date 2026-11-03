@@ -41,6 +41,12 @@ def _mod() -> Any:
     ("desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json", False),
     ("data/FTMO_ALLOCATOR_ARMED", False),
     ("web/index.html", False),
+    ("desks/mt5/data/OVERRIDE_SIGNIFICANCE_ENFORCE.json", False),
+    ("data/RECORDERS_OFF", False),
+    ("desks/mt5/data/DEACTIVATE", False),
+    ("desks/mt5/data/PRINCIPAL_STOP.json", False),
+    ("desks/mt5/data/.gitattributes", False),
+    ("desks/mt5/data/.gitmodules", False),
     ("desks/mt5/gateway_state.json", True),
 ])  # fmt: skip
 def test_publishable(path: str, ok: bool) -> None:
@@ -122,3 +128,43 @@ def test_publishes_box_state_and_nothing_else(tmp_path: Path) -> None:
     # a second pass has nothing left to do
     assert m.main(["--src", str(box), "--work", str(work)]) == 0
     assert _g(seed, "log", "--oneline").count("\n") == 3
+
+
+def test_symlinks_never_travel(tmp_path: Path) -> None:
+    m = _mod()
+    origin = tmp_path / "origin.git"
+    subprocess.run(["git", "init", "-q", "--bare", "-b", BR, str(origin)], check=True)
+    box = tmp_path / "box"
+    subprocess.run(["git", "clone", "-q", str(origin), str(box)], check=True, capture_output=True)
+    _g(box, "checkout", "-q", "-b", BR)
+    _commit(box, {"desks/mt5/data/a.json": "1\n"}, "base")
+    _g(box, "push", "-q", "origin", BR)
+    (box / "desks/mt5/data/link.json").symlink_to("../../../ops/x.py")
+    _g(box, "add", "desks/mt5/data/link.json")
+    _commit(box, {"desks/mt5/data/a.json": "2\n"}, "box")
+    work = tmp_path / "work"
+    subprocess.run(["git", "clone", "-q", "-b", BR, str(origin), str(work)], check=True,
+                   capture_output=True)  # fmt: skip
+    assert m.main(["--src", str(box), "--work", str(work)]) == 0
+    _g(work, "fetch", "-q", "origin")
+    tree = _g(work, "ls-tree", "-r", f"origin/{BR}")
+    assert "link.json" not in tree and "a.json" in tree
+    assert _g(work, "show", f"origin/{BR}:desks/mt5/data/a.json") == "2\n"
+
+
+def test_authority_detects_a_state_app_push_of_code() -> None:
+    path = ROOT / "ops/release/authority/authority.py"
+    spec = importlib.util.spec_from_file_location("auth_for_pub", path)
+    assert spec is not None and spec.loader is not None
+    a = importlib.util.module_from_spec(spec)
+    sys.modules["auth_for_pub"] = a
+    spec.loader.exec_module(a)
+    m = _mod()
+    bot = "quant-state-publisher[bot]"
+    commits = [{"sha": "1" * 40, "author": {"login": bot}},
+               {"sha": "2" * 40, "author": {"login": bot}},
+               {"sha": "3" * 40, "author": {"login": "someone"}}]  # fmt: skip
+    files = {"1" * 40: ["desks/mt5/data/x.json"], "2" * 40: ["desks/mt5/gateway.py"],
+             "3" * 40: ["desks/mt5/gateway.py"]}  # fmt: skip
+    got = a.state_app_violations(commits, bot, files.__getitem__, m.publishable)
+    assert got == ["222222222222: desks/mt5/gateway.py"]
