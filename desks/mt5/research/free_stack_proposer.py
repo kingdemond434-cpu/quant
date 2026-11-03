@@ -114,6 +114,13 @@ def build_grid(columns: dict[str, Any], roster: dict[str, dict[str, Any]]
         if src is None:
             skipped[sid] = "no roster row"
             continue
+        from libs.data import congress_gate
+        if congress_gate.refused(src) or congress_gate.refused(sid):
+            # 5 U.S.C. 13107(c): no cell is minted from congressional data, however old the
+            # series on disk, until the principal attests (libs.data.congress_gate)
+            skipped[sid] = (f"{congress_gate.HELD}: {congress_gate.ENV} not attested; "
+                            "read as UNMEASURED")
+            continue
         if not series_exists(sid):
             skipped[sid] = "no data/lake/series/fs_<id> frame on this host yet"
             continue

@@ -61,7 +61,14 @@ MIN_OBSERVATIONS = 30
 
 
 def series_path(source: str, root: Path | None = None) -> Path | None:
-    """The pack's canonical frame, or None. Absence is UNMEASURED and emits nothing."""
+    """The pack's canonical frame, or None. Absence is UNMEASURED and emits nothing.
+
+    A congressional-disclosure series is None too while the principal's switch is off
+    (`libs.data.congress_gate`, 5 U.S.C. 13107(c)), however long it has been on disk: every
+    conditioner family, `alt_series_*` and `cell_modifiers` read it as UNMEASURED."""
+    from libs.data import congress_gate
+    if congress_gate.refused(source):
+        return None
     base = root or SERIES_DIR
     for suffix in (".parquet", ".csv"):
         p = base / f"{source!s}{suffix}"

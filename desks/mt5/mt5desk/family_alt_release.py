@@ -65,6 +65,9 @@ def series_path(source: str, root: Path | None = None) -> Path | None:
     base = root or SERIES_DIR
     if not source or any(c in str(source) for c in ("/", "\\", "..")):
         return None
+    from libs.data import congress_gate
+    if congress_gate.refused(source):        # 5 U.S.C. 13107(c): UNMEASURED until attested
+        return None
     for suffix in (".parquet", ".csv"):
         p = base / f"{source}{suffix}"
         if p.exists():
