@@ -70,20 +70,22 @@ def test_story_slug_filter_keeps_stories_and_drops_rules_pages() -> None:
 
 
 class _FakeFetcher(psm._Fetcher):
-    def __init__(self, pages: dict[str, tuple[int, bytes]]) -> None:
+    def __init__(self, pages: dict[str, tuple]) -> None:
         super().__init__(delay_s=0.0)
         self.pages = pages
         self.hits: list[str] = []
 
-    def _raw(self, url: str, limit: int = 3_000_000) -> tuple[int, bytes]:
+    def _raw(self, url: str, limit: int = 3_000_000) -> tuple[int, bytes, str]:
         self.hits.append(url)
-        return self.pages.get(url, (404, b""))
+        got = self.pages.get(url, (404, b""))
+        return (got[0], got[1], got[2] if len(got) > 2 else url)
 
 
 def _redirect(monkeypatch: pytest.MonkeyPatch, tmp: Path) -> None:
     monkeypatch.setattr(psm, "INTEL", tmp / "intel")
     monkeypatch.setattr(psm, "SEEN", tmp / "intel" / "seen.json")
     monkeypatch.setattr(psm, "CLAIMS", tmp / "claims.jsonl")
+    monkeypatch.setattr(psm, "SCREENED", tmp / "intel" / "screened.json")
 
 
 def test_harvest_respects_robots_and_never_crosses_walls(tmp_path: Path,
@@ -142,10 +144,19 @@ def test_every_screened_cell_is_charged(tmp_path: Path, monkeypatch: pytest.Monk
     monkeypatch.setattr(pc, "cost_frac", lambda *a, **k: 0.0002)
     charged: list[tuple] = []
     monkeypatch.setattr(ap, "_donate", lambda *a, **k: charged.append(a) or {"donated": 0})
+    monkeypatch.setattr(psm, "SCREENED", tmp_path / "screened.json")
+    import research.universe_policy as up
+    monkeypatch.setattr(up, "may_hypothesise", lambda s: True)
     claim = {"firm": "ftmo", "url": "u1", **psm.extract(STORY)}
     rep = psm.propose([claim], budget_s=120, write=True)
     assert rep["tests_run"] > 0 and rep["cells_built"] >= rep["tests_run"]
     assert charged and charged[0][1] == psm.SOURCE and charged[0][3] == rep["tests_run"]
+    cells_ids = [c["cell"] for c in rep["top_cells"]]
+    assert all(c.endswith(".showcase") for c in cells_ids)
+    # the same claim on the same bars is not screened (or charged) again
+    again = psm.propose([claim], budget_s=120, write=True)
+    assert again["tests_run"] == 0 and len(charged) == 1
+    assert again["skipped"]["already screened on these bars"] == rep["tests_run"]
 
 
 def test_daily_cycle_and_component_declare_the_producer() -> None:
@@ -178,3 +189,52 @@ def test_own_yield_reads_census_rows(tmp_path: Path, monkeypatch: pytest.MonkeyP
     y = psm._own_yield()
     assert y["producer_yield"]["verdict"] == "PRODUCING"
     assert y["census"] == {"certificates/prop_showcase_story": 3}
+
+
+def test_robots_402_and_cross_host_redirect_are_refused(tmp_path: Path,
+                                                        monkeypatch: pytest.MonkeyPatch) -> None:
+    _redirect(monkeypatch, tmp_path)
+    f = _FakeFetcher({
+        "https://w.example/robots.txt": (402, b""),
+        "https://a.example/robots.txt": (200, b"User-agent: *\nDisallow: /private\n"),
+        "https://a.example/blog/x-trader-story/": (200, b"<html>gold</html>",
+                                                   "https://other.example/x"),
+        "https://a.example/blog/y-trader-story/": (200, b"<html>gold</html>",
+                                                   "https://a.example/private/y"),
+    })
+    assert f.get("https://w.example/blog/a/") is None and f.log["robots_refused"] == 1
+    assert f.get("https://a.example/blog/x-trader-story/") is None
+    assert f.log["cross_host_redirect_refused"] == 1
+    assert f.get("https://a.example/blog/y-trader-story/") is None
+    assert f.log["robots_disallowed_after_redirect"] == 1
+
+
+def test_crawl_delay_is_honoured() -> None:
+    f = _FakeFetcher({"https://a.example/robots.txt": (200, b"User-agent: *\nCrawl-delay: 9\n")})
+    f.robot("https://a.example/")
+    assert f._spacing("a.example") == 9.0
+    f.delay_s = 12.0
+    assert f._spacing("a.example") == 12.0
+
+
+def test_transient_failure_is_retried_next_pass(tmp_path: Path,
+                                                monkeypatch: pytest.MonkeyPatch) -> None:
+    _redirect(monkeypatch, tmp_path)
+    story = "https://a.example/blog/gold-trader-story/"
+    pages = {"https://a.example/robots.txt": (200, b"Sitemap: https://a.example/sm.xml\n"),
+             "https://a.example/sm.xml": (200, f"<loc>{story}</loc>".encode()),
+             story: (503, b"")}
+    f = _FakeFetcher(pages)
+    firms = {"a": {"home": "https://a.example", "paths": ("/blog/",)}}
+    rep = psm.harvest(f, firms)
+    assert rep["harvest_status"].startswith("UNMEASURED")
+    pages[story] = (200, f"<html>{STORY}</html>".encode())
+    f2 = _FakeFetcher(pages)
+    rep2 = psm.harvest(f2, firms)
+    assert story in f2.hits and rep2["new_claims"] == 1 and rep2["harvest_status"] == "MEASURED"
+
+
+def test_news_maps_to_no_dead_family_and_asia_uses_both_windows() -> None:
+    assert psm._grid("news", None, [], None) == []
+    asia = psm._grid("breakout", "asia", [], None)
+    assert {p["asia_end"] for _, p in asia} == {7, 8}

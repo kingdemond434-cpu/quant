@@ -44,7 +44,8 @@ PIPELINE, each stage counted so conversion is visible (PROP_SHOWCASE.json `funne
 SESSION HOURS ARE BROKER STAMP HOURS (NY+7, the desk's clock; families read stamp hours, see
 families._h1). On NY+7 the London and New York opens are fixed stamps year-round (London 08:00
 = stamp 10, NY 09:30 = stamp 16:30 -> 16), except the 2-3 weeks a year the US and UK DST dates
-differ. Tokyo 09:00 JST = stamp 02 (US summer) / 03 (US winter); the grid carries both.
+differ. Tokyo 09:00 JST = 00:00 UTC = stamp 02 (US winter, EST) / 03 (US summer, EDT); the Asia
+window is screened ending at 07 and at 08 (both rows of SESSIONS['asia']).
 
 IT PROPOSES, IT NEVER PROMOTES. Nothing here writes a sleeve, certificate, clock or book.
 Yield to certificates, forward enrolment and promotable sleeves is measured downstream by
@@ -76,6 +77,8 @@ SOURCE = "prop_showcase_story"
 INTEL = DESK / "data" / "intelligence" / "prop_showcase"
 CLAIMS = DESK / "data" / "prop_showcase_claims.jsonl"
 SEEN = INTEL / "seen.json"
+#: cell -> bar count it was last screened on (box-local state, charge-once ledger).
+SCREENED = INTEL / "screened.json"
 REPORT = DESK / "reports" / "PROP_SHOWCASE.json"
 PRODUCER_YIELD = DESK / "reports" / "PRODUCER_YIELD.json"
 PRODUCTIVITY_CENSUS = DESK / "reports" / "PRODUCTIVITY_CENSUS.json"
@@ -87,6 +90,8 @@ MAX_SITEMAPS = 12
 MIN_BARS = 3000
 #: Cells screened per pass at most (the budget is also wall-clock bounded).
 MAX_CELLS = 120
+#: New H1 bars (~1 month) before a screened cell may be screened (and charged) again.
+RESCREEN_BARS = 500
 
 #: Firm-published selection base rates (stamped on every candidate; never a gate).
 SELECTION_PRIORS: dict[str, Any] = {
@@ -205,8 +210,8 @@ def _grid(style: str, session: str | None, rr: list[float], horizon: str | None
         extra = {"rr": r} if r is not None else {}
         if style in ("breakout", "scalp") and (windows or session == "london_close"):
             if session == "asia":
-                out.append(("asia_momentum", {"asia_start": windows[0][0],
-                                              "asia_end": windows[0][1], **extra}))
+                for a, b in windows:
+                    out.append(("asia_momentum", {"asia_start": a, "asia_end": b, **extra}))
             elif session == "london_close":
                 out.append(("london_close_momentum", {**extra}))
             else:
@@ -236,8 +241,8 @@ def _grid(style: str, session: str | None, rr: list[float], horizon: str | None
             out.append(("mean_reversion_rsi", {**extra}))
         elif style == "bollinger":
             out.append(("mean_reversion_bollinger", {**extra}))
-        elif style == "news":
-            out.append(("usd_session_shock", {**extra}))
+        # "news" maps to no family here: usd_session_shock needs the dollar-index frame
+        # (positional fx) this producer does not load, and a cell that always raises is dead.
         elif style == "price_action":
             out.append(("pin_bar_reversal", {**extra}))
             out.append(("engulfing_reversal", {**extra}))
@@ -283,24 +288,43 @@ def cells(claims: list[dict[str, Any]], have: set[str]) -> list[dict[str, Any]]:
 
 # ------------------------------------------------------------------------------- harvest
 class _Fetcher:
-    """Polite GET: robots consulted per host (unreadable = refuse), fixed spacing, no cookies."""
+    """Polite GET. Robots consulted per host; an unreadable or walled robots.txt (0, 401, 402,
+    403, 429, 5xx) means the host is not fetched at all. Spacing per host is
+    max(robots Crawl-delay, DELAY_S). A redirect to another host is refused; a same-host
+    redirect is re-checked against robots. No cookies, no retries on a wall."""
+
+    WALLS = (401, 402, 403, 429)
 
     def __init__(self, delay_s: float = DELAY_S) -> None:
         self.delay_s = delay_s
         self.robots: dict[str, Any] = {}
-        self.last = 0.0
+        self.last: dict[str, float] = {}
         self.log: dict[str, int] = {}
+        #: Outcome of the last get(): "ok", "disallowed", "permanent" (4xx incl. walls) or
+        #: "transient" (0 / 5xx), so the caller marks a URL seen only when it should be.
+        self.outcome = ""
 
     def _count(self, k: str) -> None:
         self.log[k] = self.log.get(k, 0) + 1
 
-    def _raw(self, url: str, limit: int = 3_000_000) -> tuple[int, bytes]:
-        """One GET through the desk's polite_fetch (certifi trust store, header/meta charset,
-        per-host spacing) with retries=0, so a 429 stays a counted wall, never a retry loop."""
-        wait = self.delay_s - (time.monotonic() - self.last)
+    def _spacing(self, host: str) -> float:
+        rp = self.robots.get(host)
+        cd = None
+        if rp is not None:
+            try:
+                cd = rp.crawl_delay(AGENT)
+            except Exception:
+                cd = None
+        return max(self.delay_s, float(cd or 0.0))
+
+    def _raw(self, url: str, limit: int = 3_000_000) -> tuple[int, bytes, str]:
+        """(status, body, final_url) through polite_fetch (certifi trust store, charset) with
+        retries=0, so a 429 stays a counted wall, never a retry loop."""
+        host = urllib.parse.urlsplit(url).netloc.lower()
+        wait = self._spacing(host) - (time.monotonic() - self.last.get(host, -1e9))
         if wait > 0:
             time.sleep(wait)
-        self.last = time.monotonic()
+        self.last[host] = time.monotonic()
         try:
             from libs.data import polite_fetch as pf
         except Exception:
@@ -308,25 +332,28 @@ class _Fetcher:
         if pf is not None:
             r = pf.get(url, headers={"User-Agent": AGENT}, retries=0, max_bytes=limit,
                        leg=SOURCE)
-            return int(r.status or 0), (r.text or "").encode("utf-8")
+            return (int(r.status or 0), (r.text or "").encode("utf-8"),
+                    str(r.final_url or url))
         req = urllib.request.Request(url, headers={"User-Agent": AGENT})
         try:
             with urllib.request.urlopen(req, timeout=20) as resp:
                 body = resp.read(limit)
                 if resp.headers.get("Content-Encoding") == "gzip":
                     body = gzip.decompress(body)
-                return int(resp.status), body
+                return int(resp.status), body, str(resp.geturl() or url)
         except urllib.error.HTTPError as exc:
-            return int(exc.code), b""
+            return int(exc.code), b"", url
         except Exception:
-            return 0, b""
+            return 0, b"", url
 
-    def robot(self, home: str) -> Any:
-        host = urllib.parse.urlsplit(home).netloc
+    def robot(self, url: str) -> Any:
+        parts = urllib.parse.urlsplit(url)
+        host = parts.netloc.lower()
         if host not in self.robots:
             from urllib.robotparser import RobotFileParser
-            code, body = self._raw(f"{urllib.parse.urlsplit(home).scheme}://{host}/robots.txt")
-            if code in (401, 403, 429) or code == 0 or code >= 500:
+            code, body, final = self._raw(f"{parts.scheme}://{host}/robots.txt")
+            if (code in self.WALLS or code == 0 or code >= 500
+                    or urllib.parse.urlsplit(final).netloc.lower() != host):
                 self.robots[host] = None           # unreadable or walled: fetch nothing here
                 self._count("robots_refused")
             else:
@@ -336,19 +363,39 @@ class _Fetcher:
         return self.robots[host]
 
     def get(self, url: str) -> bytes | None:
+        host = urllib.parse.urlsplit(url).netloc.lower()
         rp = self.robot(url)
         if rp is None or not rp.can_fetch(AGENT, url):
             self._count("robots_disallowed")
+            self.outcome = "disallowed"
             return None
-        code, body = self._raw(url)
-        if code in (401, 402, 403, 429):
+        code, body, final = self._raw(url)
+        if code in self.WALLS:
             self._count(f"walled_{code}")          # a wall is a counted absence, never crossed
+            self.outcome = "transient" if code == 429 else "permanent"
             return None
         if code != 200:
             self._count(f"http_{code}")
+            self.outcome = "transient" if code == 0 or code >= 500 else "permanent"
+            return None
+        if urllib.parse.urlsplit(final).netloc.lower() != host:
+            self._count("cross_host_redirect_refused")
+            self.outcome = "permanent"
+            return None
+        if final != url and not rp.can_fetch(AGENT, final):
+            self._count("robots_disallowed_after_redirect")
+            self.outcome = "disallowed"
             return None
         self._count("fetched")
+        self.outcome = "ok"
         return body
+
+
+def _write_atomic(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    tmp.replace(path)
 
 
 def _sitemap_urls(f: _Fetcher, home: str) -> list[str]:
@@ -432,7 +479,8 @@ def harvest(fetcher: _Fetcher | None = None, firms: dict[str, dict[str, Any]] | 
                 break
             body = f.get(u)
             now = datetime.now(UTC).isoformat(timespec="seconds")
-            seen[u] = now
+            if f.outcome != "transient":           # a 5xx/429/timeout is retried next pass
+                seen[u] = now
             if not body:
                 continue
             text, pub, title = _text(body)
@@ -455,8 +503,13 @@ def harvest(fetcher: _Fetcher | None = None, firms: dict[str, dict[str, Any]] | 
             for c in new_claims:
                 fh.write(json.dumps(c, sort_keys=True) + "\n")
     INTEL.mkdir(parents=True, exist_ok=True)
-    SEEN.write_text(json.dumps(seen, indent=0), encoding="utf-8")
+    _write_atomic(SEEN, json.dumps(seen, indent=0))
     rep["fetch_log"] = f.log
+    read = sum(int(r.get("read", 0)) for r in rep["by_firm"].values())
+    pending = sum(int(r.get("story_urls_new", 0)) for r in rep["by_firm"].values())
+    rep["harvest_status"] = ("MEASURED" if read or (f.log.get("fetched") and not pending) else
+                             "UNMEASURED: nothing was fetched this pass (walls, robots or "
+                             "network); zero new stories is not a finding")
     rep["new_claims"] = len(new_claims)
     return rep
 
@@ -494,8 +547,9 @@ def propose(claims: list[dict[str, Any]], budget_s: float = 1200.0,
     try:
         from research.universe_policy import may_hypothesise
     except Exception:
+        # FAIL CLOSED: without the universe policy no symbol may be hypothesised.
         def may_hypothesise(_s: str) -> bool:                   # type: ignore[misc]
-            return True
+            return False
     started = time.monotonic()
     meta = pc.universe_meta()
     have = {p.stem.removesuffix("_H1") for p in pc.UNI.glob("*_H1.parquet")}
@@ -507,7 +561,12 @@ def propose(claims: list[dict[str, Any]], budget_s: float = 1200.0,
         skipped[why] = skipped.get(why, 0) + 1
 
     bars_cache: dict[str, Any] = {}
-    for c in allc[:MAX_CELLS]:
+    ledger = _load_screened()
+    attempted = 0
+    for c in allc:
+        if attempted >= MAX_CELLS:
+            skip("over the per-pass cell cap (next pass)")
+            continue
         if time.monotonic() - started > budget_s:
             skip("budget exhausted")
             continue
@@ -522,6 +581,13 @@ def propose(claims: list[dict[str, Any]], budget_s: float = 1200.0,
         if d is None or len(d) < MIN_BARS:
             skip("too few H1 bars")
             continue
+        # CHARGED ONCE PER NEW-BAR WINDOW: the same claim on the same bars is the same look, so
+        # a daily pass re-screens a cell only after RESCREEN_BARS new bars have arrived.
+        lkey = json.dumps([sym, c["family"], c["params"]], sort_keys=True)
+        if len(d) - int(ledger.get(lkey, -10**9)) < RESCREEN_BARS:
+            skip("already screened on these bars")
+            continue
+        attempted += 1
         cost = pc.cost_frac(sym, meta, d["close"])
         if cost is None:
             skip("no contract terms to price the round trip")
@@ -538,10 +604,10 @@ def propose(claims: list[dict[str, Any]], budget_s: float = 1200.0,
                                      "cost_frac": round(cost, 8)}
         body["t_gross"] = float(body.get("t_gross") or 0.0)
         pid = hashlib.sha256(json.dumps(c["params"], sort_keys=True).encode()).hexdigest()[:8]
-        screened.append({"cell": f"{sym}.{c['family']}.showcase_{pid}", **c, **body,
-                         "screened": bool(sc)})
-    if len(allc) > MAX_CELLS:
-        skipped["over the per-pass cell cap (next pass)"] = len(allc) - MAX_CELLS
+        # The cell is (symbol, family): best_per_cell then keeps ONE variant per cell, so
+        # shipping every params variant of one winner never smuggles the search back in.
+        screened.append({"cell": f"{sym}.{c['family']}.showcase", "variant": pid, **c, **body,
+                         "screened": bool(sc), "_lkey": lkey, "_nbars": len(d)})
     swept = pc.deflate(screened)
     proposals = pc.best_per_cell(swept)
     cands = []
@@ -574,7 +640,18 @@ def propose(claims: list[dict[str, Any]], budget_s: float = 1200.0,
             by_family[str(r["family"])] = by_family.get(str(r["family"]), 0) + 1
         rep["charge"] = ap._donate(paths, SOURCE, cands, len(screened), by_family,
                                    datetime.now(tz=UTC))
+        for r in screened:
+            ledger[r["_lkey"]] = r["_nbars"]
+        _write_atomic(SCREENED, json.dumps(ledger, indent=0, sort_keys=True))
     return rep
+
+
+def _load_screened() -> dict[str, int]:
+    try:
+        doc = json.loads(SCREENED.read_text("utf-8"))
+        return doc if isinstance(doc, dict) else {}
+    except (OSError, ValueError):
+        return {}
 
 
 def _own_yield() -> dict[str, Any]:
@@ -634,7 +711,7 @@ def run(budget_s: float = 1800.0, write: bool = True, fetch: bool = True) -> dic
                      "promotes": "never"}}
     if write:
         REPORT.parent.mkdir(parents=True, exist_ok=True)
-        REPORT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+        _write_atomic(REPORT, json.dumps(doc, indent=1, default=str))
     return {"tests_run": prop["tests_run"], "cells_proposed": prop["cells_proposed"],
             "stories": len(claims)}
 
