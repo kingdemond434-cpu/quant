@@ -62,8 +62,8 @@ def sandbox(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(cr, "bar_path", lambda s, dirs=(uni,): (uni / f"{s}_H1.parquet")
                         if (uni / f"{s}_H1.parquet").exists() else None)
     monkeypatch.setattr(cr, "BAR_DIRS", (uni,))
-    for name in ("OUT", "CONTRACT", "NEARMISS", "CACHE", "CHARGED", "NULL_TRIALS",
-                 "GATES_EXTERNAL", "GATE_LEDGER"):
+    for name in ("OUT", "CONTRACT", "CONTRACT_PROGRESS", "NEARMISS", "CACHE", "CHARGED",
+                 "NULL_TRIALS", "GATES_EXTERNAL", "GATE_LEDGER"):
         monkeypatch.setattr(ser, name, tmp_path / getattr(ser, name).name)
     monkeypatch.setattr(E, "available_engines", lambda: NO_GARCH)
     return tmp_path
@@ -125,6 +125,33 @@ def test_conditioning_keeps_the_incumbent_rails() -> None:
     assert min(p.values()) >= ser.REGIME_MIN_SHARE - 1e-9
     assert max(p.values()) <= ser.REGIME_MAX_SHARE + 1e-9
     assert ser.ensemble_conditioning(gold, list(lab.index[:200]), 21, lab) is None
+
+
+def test_contract_resumes_and_writes_a_verdict_only_when_complete(
+        sandbox: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import regime_allocation_contract as rac
+    days = pd.bdate_range("2019-01-01", periods=760).strftime("%Y-%m-%d")
+    rng = np.random.default_rng(8)
+    closes = pd.DataFrame({s: 100 * np.exp(np.cumsum(rng.normal(scale=0.01, size=days.size)))
+                           for s in ("XAUUSD", "EURUSD")}, index=days)
+    monkeypatch.setattr(rac, "load_desk", lambda: None)
+    monkeypatch.setattr(rac, "load", lambda assets: (closes, {}))
+    monkeypatch.setattr(rac, "hmm_conditioning", lambda gold, tdays: None)
+    monkeypatch.setattr(rac, "_solve", lambda ev, cfg: {e.name: 0.1 for e in ev})
+    kw: dict[str, Any] = {"step": 21, "train_n": 120, "budget_s": 0.0, "max_steps": 3}
+    first = ser.run_contract(**kw)
+    assert first["verdict"] == "UNMEASURED" and first["progress"]["rebalances_done"] == 1
+    assert (sandbox / ser.CONTRACT_PROGRESS.name).exists()
+    ser.run_contract(**kw)
+    done = ser.run_contract(**kw)
+    assert done["verdict"] in ("WIN", "LOSS", "INCONCLUSIVE")
+    assert done["passes"] == 3 and done["admits"] is False      # a bars bench never admits
+    assert not (sandbox / ser.CONTRACT_PROGRESS.name).exists()
+    assert done["arms"]["geo"]["days"] == 63
+    # A checkpoint from a different design is discarded, never stitched on.
+    ser.run_contract(**kw)
+    other = ser.run_contract(**{**kw, "step": 10})
+    assert other["next_run"]["rebalances_done"] == 1
 
 
 def _near(cands: list[dict[str, Any]]) -> Any:

@@ -2039,10 +2039,11 @@ def _producer(name: str, script: str,
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
     # THE STATE ENSEMBLE: measured 2026-11-03 at ~4.5 s per symbol refit (six engines) plus ~47 s
-    # for the incumbent-HMM walk-forward on gold; its own sub-budgets are 420 s (state), 900 s
-    # (the weekly contract) and 600 s (the daily near-miss re-test), so the cap sits above all
-    # three for the pass on which every cadence comes due at once.
-    "state_ensemble": 2_100,
+    # for the incumbent-HMM walk-forward on gold, ~10 s on a pass whose bars did not move; the
+    # weekly allocation contract (1,293 s for 65 re-solves on the 4-core build host) runs
+    # RESUMABLY in 600 s slices; the daily near-miss re-test has 600 s. Sub-budgets 420 + 600 +
+    # 600, so the cap sits above all three for the pass on which every cadence comes due.
+    "state_ensemble": 1_800,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.

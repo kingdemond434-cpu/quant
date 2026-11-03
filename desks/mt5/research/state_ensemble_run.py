@@ -15,11 +15,12 @@ THREE PASSES, ONE LEG (`state_ensemble` in hourly_cycle), EACH ON ITS OWN CADENC
             On XAUUSD it is also scored against the allocator's CURRENT input, the gold HMM, refit
             on the same schedule. A symbol whose newest completed day has not moved is carried
             from the last pass rather than refitted: bars change once a day, the leg runs hourly.
-  contract  weekly (CONTRACT_EVERY_H). The allocation half of the proof, built on
-            `regime_allocation_contract`'s own walk-forward, books and solver -- not a copy of
-            them: geo (no regime), geo_hmm (the live recipe) and geo_ensemble (the ensemble's gold
-            states conditioning the worlds), re-solved every 21 days on the trailing 750, held on
-            the next 21 nobody has seen. reports/STATE_ENSEMBLE_CONTRACT.json.
+  contract  weekly (CONTRACT_EVERY_H), resumable over several passes. The allocation half of
+            the proof, built on `regime_allocation_contract`'s own walk-forward, books and solver
+            -- not a copy of them: geo (no regime), geo_hmm (the live recipe) and geo_ensemble
+            (the ensemble's gold states conditioning the worlds), re-solved every 21 days on
+            the trailing 750, held on the next 21 nobody has seen.
+            reports/STATE_ENSEMBLE_CONTRACT.json.
   nearmiss  daily (NEARMISS_EVERY_H). Cells the canonical gauntlet judged and NARROWLY failed
             (`alpha_recombination.near_survivor`: died on the last gate, or deflated Sharpe within
             20% of the bar) are re-tested inside each ensemble regime as family `regime_split`
@@ -44,6 +45,7 @@ organ never edits.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import json
 import os
@@ -69,6 +71,7 @@ SCHEMA = "state_ensemble/1"
 REPORTS = DESK / "reports"
 OUT = REPORTS / "STATE_ENSEMBLE.json"
 CONTRACT = REPORTS / "STATE_ENSEMBLE_CONTRACT.json"
+CONTRACT_PROGRESS = DESK / "data" / "state_ensemble_contract_progress.json"
 NEARMISS = REPORTS / "STATE_ENSEMBLE_NEARMISS.json"
 GATES_EXTERNAL = REPORTS / "universal_gates_external.json"
 GATE_LEDGER = DESK / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
@@ -83,7 +86,7 @@ FAMILY = "regime_split"
 CONTRACT_EVERY_H = 7 * 24.0
 NEARMISS_EVERY_H = 24.0
 STATE_BUDGET_S = 420.0
-CONTRACT_BUDGET_S = 900.0
+CONTRACT_BUDGET_S = 600.0
 NEARMISS_BUDGET_S = 600.0
 INCUMBENT_SYMBOL = "XAUUSD"
 #: The incumbent's world-probability rails (`regime_allocation_contract.hmm_conditioning`, itself
@@ -370,10 +373,24 @@ def ensemble_conditioning(gold: pd.Series, train_days: list[str], step: int,
     return tuple(lab_tr), tuple(sorted(probs.items(), key=lambda kv: -kv[1]))
 
 
+def _contract_unmeasured(why: str, **extra: Any) -> dict[str, Any]:
+    doc = {"schema": SCHEMA, "generated_at": _iso(), "verdict": UNMEASURED, "admits": False,
+           "why": why, **extra}
+    _write(CONTRACT, doc)
+    return doc
+
+
 def run_contract(step: int = 21, train_n: int = 750, n_worlds: int = 128, n_rows: int = 256,
                  budget_s: float = CONTRACT_BUDGET_S, max_steps: int | None = None,
                  universe: str = "auto") -> dict[str, Any]:
-    """geo vs geo_hmm vs geo_ensemble, walk-forward, on `regime_allocation_contract`'s machinery."""
+    """geo vs geo_hmm vs geo_ensemble, walk-forward, on `regime_allocation_contract`'s machinery.
+
+    RESUMABLE, BECAUSE IT DOES NOT FIT IN ONE HOUR. Measured 2026-11-03 on the 4-core build host:
+    65 re-solves of three books took 1,293 s. A pass therefore does as many re-solves as its
+    budget allows, checkpoints the realised series (CONTRACT_PROGRESS), and the next pass
+    continues from the next rebalance; the verdict is written only when every rebalance is done.
+    A checkpoint whose design or data no longer match is discarded, never stitched on. While a
+    run is in progress the last COMPLETE contract stays the reading."""
     import regime_allocation_contract as rac
 
     from libs.portfolio.robust_elog import WorldConfig
@@ -381,10 +398,10 @@ def run_contract(step: int = 21, train_n: int = 750, n_worlds: int = 128, n_rows
     t0 = time.monotonic()
     stood = _headroom("contract")
     if stood is not None:
-        doc = {"schema": SCHEMA, "generated_at": _iso(), "verdict": UNMEASURED, "admits": False,
-               **stood}
-        _write(CONTRACT, doc)
-        return doc
+        prev = _read(CONTRACT, {}) or {}
+        if prev.get("verdict") not in (None, UNMEASURED):
+            return {**prev, "this_pass": stood}
+        return _contract_unmeasured(stood["why"], stood_down=True, memory=stood["memory"])
     desk = rac.load_desk() if universe in ("auto", "desk") else None
     if desk is not None:
         r, _labels, closes = desk
@@ -394,26 +411,33 @@ def run_contract(step: int = 21, train_n: int = 750, n_worlds: int = 128, n_rows
         r = rac.sleeves(_labels, closes).dropna(how="all").iloc[rac.MOM_WIN + rac.SIG_WIN:]
         used = "bars"
     if INCUMBENT_SYMBOL not in closes:
-        doc = {"schema": SCHEMA, "generated_at": _iso(), "verdict": UNMEASURED, "admits": False,
-               "why": f"no {INCUMBENT_SYMBOL} closes: neither state can condition the worlds"}
-        _write(CONTRACT, doc)
-        return doc
+        return _contract_unmeasured(f"no {INCUMBENT_SYMBOL} closes: neither state can condition "
+                                    "the worlds")
     gold = closes[INCUMBENT_SYMBOL].dropna()
     lab = ens.label_days(pd.DataFrame({"close": gold}))
-    days = list(r.index)
+    days = [str(d) for d in r.index]
     arms = ["equal", "geo", "geo_hmm", "geo_ensemble"]
     cfg0 = WorldConfig(n_worlds=n_worlds, n_rows=n_rows)
-    realised: dict[str, list[float]] = {a: [] for a in arms}
     starts = list(range(train_n, len(days) - 1, step))
     if max_steps:
         starts = starts[:max_steps]
-    oos: list[str] = []
-    conditioned = {"geo_hmm": 0, "geo_ensemble": 0}
-    truncated = False
-    for s in starts:
-        if time.monotonic() - t0 > budget_s:
-            truncated = True
-            break
+    ident = {"universe": used, "step": step, "train": train_n, "worlds": n_worlds,
+             "rows": n_rows, "n_starts": len(starts), "first_day": days[0] if days else None,
+             "columns": hashlib.sha256("|".join(map(str, r.columns)).encode()).hexdigest()[:12],
+             "engines": list(ens.available_engines())}
+    prog = _read(CONTRACT_PROGRESS, {}) or {}
+    if prog.get("ident") != ident:
+        prog = {"ident": ident, "started_at": _iso(), "done": 0,
+                "realised": {a: [] for a in arms}, "oos": [],
+                "conditioned": {"geo_hmm": 0, "geo_ensemble": 0}, "passes": 0}
+    realised: dict[str, list[float]] = prog["realised"]
+    oos: list[str] = prog["oos"]
+    conditioned: dict[str, int] = prog["conditioned"]
+    k = k0 = int(prog["done"])
+    # At least one re-solve per pass, so a budget below one step still makes progress.
+    while k < len(starts) and (k == k0 or time.monotonic() - t0 <= budget_s):
+        s = starts[k]
+        k += 1
         train = r.iloc[s - train_n: s]
         train = train.loc[:, train.notna().sum() >= rac.MIN_TRAIN_OBS]
         if train.shape[1] < 2:
@@ -436,15 +460,26 @@ def run_contract(step: int = 21, train_n: int = 750, n_worlds: int = 128, n_rows
         for a in arms:
             h = np.array([heat[a].get(c, 0.0) for c in names])
             acct = test.to_numpy(float) @ h
-            realised[a].extend(np.log1p(np.maximum(acct, -0.99)).tolist())
+            realised[a].extend(round(float(x), 10)
+                               for x in np.log1p(np.maximum(acct, -0.99)))
         oos.extend(str(d) for d in test.index)
-    arr = {a: np.asarray(v) for a, v in realised.items()}
+    prog.update(done=k, passes=int(prog.get("passes", 0)) + 1, updated_at=_iso())
+    if k < len(starts):
+        _write(CONTRACT_PROGRESS, prog)
+        prev = _read(CONTRACT, {}) or {}
+        status = {"in_progress": True, "rebalances_done": k, "rebalances": len(starts),
+                  "passes": prog["passes"], "started_at": prog["started_at"]}
+        if prev.get("verdict") not in (None, UNMEASURED):
+            return {**prev, "next_run": status}
+        return _contract_unmeasured(f"walk-forward in progress: {k}/{len(starts)} rebalances "
+                                    "re-solved; the verdict is written when all are done",
+                                    progress=status, design={"universe": used})
+    with contextlib.suppress(OSError):
+        CONTRACT_PROGRESS.unlink()
+    arr = {a: np.asarray(v, dtype=float) for a, v in realised.items()}
     if not oos or arr["geo"].size < 42:
-        doc = {"schema": SCHEMA, "generated_at": _iso(), "verdict": UNMEASURED, "admits": False,
-               "why": f"{arr['geo'].size} out-of-sample days; the contract needs 42",
-               "design": {"universe": used}}
-        _write(CONTRACT, doc)
-        return doc
+        return _contract_unmeasured(f"{arr['geo'].size} out-of-sample days; the contract needs 42",
+                                    design={"universe": used})
     diffs: dict[str, Any] = {}
     for a, b in (("geo_ensemble", "geo_hmm"), ("geo_ensemble", "geo"), ("geo_hmm", "geo"),
                  ("geo_ensemble", "equal")):
@@ -458,15 +493,15 @@ def run_contract(step: int = 21, train_n: int = 750, n_worlds: int = 128, n_rows
     verdict = "WIN" if win else ("LOSS" if head["ci90"][1] < 0 else "INCONCLUSIVE")
     doc = {
         "schema": SCHEMA, "generated_at": _iso(), "contract": "state_ensemble_allocation",
-        "verdict": verdict, "admits": bool(used == "desk" and verdict == "WIN" and not truncated),
+        "verdict": verdict, "admits": bool(used == "desk" and verdict == "WIN"),
         "headline": {"arm": HEADLINE[0], "against": HEADLINE[1], **head},
         "rule": ("WIN iff the 90% stationary-bootstrap interval of (geo_ensemble - geo_hmm) daily "
                  "log growth is above zero AND geo_ensemble beats geo (no regime); headline "
                  "declared before the run, never swapped; only the desk's own sleeves admit, and "
-                 "only on a pass that completed every re-solve"),
+                 "only once every rebalance has been re-solved"),
         "trials": len(arms), "arms": {a: rac.summarise(x) for a, x in arr.items()},
-        "differences": diffs, "conditioned_rebalances": conditioned,
-        "truncated_by_budget": truncated, "memory": memory(),
+        "differences": diffs, "conditioned_rebalances": conditioned, "memory": memory(),
+        "passes": prog["passes"], "started_at": prog["started_at"],
         "design": {"universe": used, "step_days": step, "train_days": train_n,
                    "n_worlds": n_worlds, "n_rows": n_rows, "rebalances": len(starts),
                    "oos_first": oos[0], "oos_last": oos[-1],
@@ -475,7 +510,7 @@ def run_contract(step: int = 21, train_n: int = 750, n_worlds: int = 128, n_rows
                    "lookahead": "labels fitted once on the gold series; each is a function of "
                                 "data up to its own day (truncation test), and only training "
                                 "days' labels and asof's state enter a solve"},
-        "runtime_s": round(time.monotonic() - t0, 1),
+        "runtime_s_last_pass": round(time.monotonic() - t0, 1),
     }
     _write(CONTRACT, doc)
     return doc
@@ -686,10 +721,12 @@ def run(only: str | None = None) -> dict[str, Any]:
     out: dict[str, Any] = {}
     if only in (None, "contract"):
         age = _age_h(CONTRACT)
-        if only == "contract" or age is None or age > CONTRACT_EVERY_H:
+        resuming = CONTRACT_PROGRESS.exists()
+        if only == "contract" or resuming or age is None or age > CONTRACT_EVERY_H:
             try:
                 c = run_contract()
-                out["contract"] = {"verdict": c.get("verdict"), "admits": c.get("admits")}
+                out["contract"] = {"verdict": c.get("verdict"), "admits": c.get("admits"),
+                                   "next_run": c.get("next_run") or c.get("progress")}
             except Exception as exc:
                 out["contract"] = {"error": f"{type(exc).__name__}: {exc}"[:240]}
         else:
