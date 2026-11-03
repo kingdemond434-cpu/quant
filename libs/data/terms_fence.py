@@ -1932,6 +1932,51 @@ SOURCE_POLICY.update({
         "terms": {"url": _WGC_TERMS_URL, "checked_at": "2026-11-03",
                   "unread": {_WGC_TERMS_URL: _WGC_UNREAD}}},
 })
+
+
+def _issuer_row(host: str, door_ids: tuple[str, ...], who: str, what: str, terms_url: str,
+                entry: str) -> dict[str, Any]:
+    """A metal-ETF issuer's public holdings pages (2026-11-03). LAWS 5e: mined and tested
+    (PUBLIC_PAGE); terms UNREAD from the build host (its proxy refused the host), so the row is
+    PUBLIC_WITH_TERMS, redistribution withheld and never a live sizing input until a permitting
+    clause is quoted here with its URL and date."""
+    unread = (f"egress proxy of the build host refused {host} on 2026-11-03: UNREAD. Read it "
+              "from the box (polite_fetch, DESK_UA) and quote the clause here")
+    return {
+        "hosts": (host,), "status": PUBLIC_PAGE, "sources": door_ids,
+        "access_label": "PUBLIC_WITH_TERMS", "redistribute": False, "live_sizing_input": False,
+        "access_meta": {"url": entry, "obtained": "public_page", "source_class": "institutional",
+                        "has_terms": True},
+        "terms_note": (f"{who} publishes terms of use; UNREAD from the build host, so "
+                       "redistribution is withheld and the holdings are research inputs only"),
+        "why": (f"{who}'s own public {what}, fetched politely with the desk's agent for research "
+                "(LAWS 5e: terms are a label, never a brake); terms UNREAD, so never a live "
+                "sizing input and never redistributed"),
+        "unblock": (f"{who}'s terms read with a clause permitting automated use of the holdings "
+                    "data, quoted verbatim into this row with its URL and date, and "
+                    "live_sizing_input flipped"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": (f"delta E[log W] UNMEASURED: {what} are researched and "
+                                    "tested but cannot size a live XAUUSD/XAGUSD position until "
+                                    "the issuer's terms are read with a permitting clause; no "
+                                    "conversion of them is on record")},
+        "robots": (f"UNMEASURED from the build host (proxy refused {host}); polite_fetch reads "
+                   "robots.txt before every request on the box"),
+        "terms": {"url": terms_url, "checked_at": "2026-11-03", "unread": {terms_url: unread}}}
+
+
+SOURCE_POLICY.update({
+    "spdr_gold_shares": _issuer_row(
+        "spdrgoldshares.com", ("etf_gld_holdings",), "SPDR Gold Shares (World Gold Trust "
+        "Services)", "GLD daily holdings archive (ounces, tonnes, ounces per share)",
+        "https://www.spdrgoldshares.com/usa/terms-and-conditions/",
+        "https://www.spdrgoldshares.com/assets/dynamic/GLD/GLD_US_archive_EN.csv"),
+    "ishares_trusts": _issuer_row(
+        "ishares.com", ("etf_slv_holdings", "etf_iau_holdings"), "iShares (BlackRock)",
+        "SLV and IAU trust holdings (shares outstanding, ounces and tonnes in trust)",
+        "https://www.ishares.com/us/terms-and-conditions",
+        "https://www.ishares.com/us/products/239855/ishares-silver-trust-fund"),
+})
 #: The held-route rows, by key (read by `alt_proxies.HELD_ROUTES`).
 HELD_ROUTE_KEYS: frozenset[str] = frozenset(
     k for k, r in SOURCE_POLICY.items() if r.get("held_route"))

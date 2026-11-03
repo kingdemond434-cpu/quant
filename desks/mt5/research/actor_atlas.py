@@ -402,7 +402,9 @@ SEED: tuple[Seed, ...] = (
        "SPDR Gold Shares / iShares Silver Trust daily holdings files (public)", 0.55,
        "cross_asset_residual", axis_actor="inventory_laden_dealer",
        actor_terms=("etf", "creation", "redemption", "tonnes", "authorised participant"),
-       desk_path="data/intelligence/world"),
+       # the GLD door's PIT store (research/country_packs.py etf_issuers, hourly); SLV and IAU
+       # land beside it under data/world_datasets/obs/ETF_ISSUER/
+       desk_path="data/world_datasets/obs/ETF_ISSUER/etf_gld_holdings.parquet"),
     # THE WORLD GOLD COUNCIL DOORS (research/country_packs.py `wgc`, hourly through the world
     # dataset hunter): each row's observable is the door's own PIT store, so it is measurable
     # exactly when the door has landed data on this box.

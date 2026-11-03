@@ -74,6 +74,15 @@ WGC_ETF_PAGE = os.environ.get("ALT_WGC_ETF_URL", WGC_GOLDHUB + "gold-etfs-holdin
 #: five to six weeks after the month; the regional ETF flow tables early in the next month.
 WGC_CB_LAG_D = 45
 WGC_ETF_LAG_D = 10
+#: The metal ETFs' OWN issuers (2026-11-03; replaces research/fetch_gld.py's laptop-path script).
+#: SPDR's GLD archive is the full daily history; an iShares trust page prints one "as of" day,
+#: so SLV and IAU accumulate their history one PIT reading per day from the first fetch.
+SPDR_GLD_ARCHIVE = os.environ.get(
+    "ALT_SPDR_GLD_URL", "https://www.spdrgoldshares.com/assets/dynamic/GLD/GLD_US_archive_EN.csv")
+ISHARES_SLV = os.environ.get("ALT_ISHARES_SLV_URL",
+                             "https://www.ishares.com/us/products/239855/ishares-silver-trust-fund")
+ISHARES_IAU = os.environ.get("ALT_ISHARES_IAU_URL",
+                             "https://www.ishares.com/us/products/239561/ishares-gold-trust-fund")
 
 
 class LoginRequired(Exception):
@@ -143,6 +152,13 @@ PACKS: dict[str, Pack] = {
                   "(terms_fence wgc_goldhub_download, METHOD_BLOCKED reason login)"),
                  ("gold demand trends (quarterly supply/demand by sector)",
                   "not built: quarterly, and its public form is a report, not a table"))),
+    # The metal ETFs' issuers: GLD (SPDR), SLV and IAU (iShares), from their own public pages.
+    "etf_issuers": Pack("Metal ETF issuers (US-listed trusts)", "US", "USD",
+                        ("SPDR Gold Shares", "iShares (BlackRock)"), (),
+                        (("SLV / IAU history before the first fetch",
+                          "an iShares trust page prints one as-of day; the history files sit "
+                          "behind a site-entry flow not read here, so the daily series "
+                          "accumulates from the first PIT reading"),)),
 }
 
 #: Default EVDS codes. Each was taken from the EVDS catalogue's published naming, NOT read on the
@@ -208,6 +224,20 @@ DOORS: tuple[Door, ...] = (
          url=WGC_ETF_PAGE,
          what="month end + 10 days 12:00 UTC (a weekday); the newest month at the page's own "
               "publication date when later (next day 00:00 UTC)"),
+    Door("etf_gld_holdings", "etf_issuers", "ETF_ISSUER", "SPDR GLD holdings: ounces and "
+         "tonnes in the trust, shares outstanding", "spdr_gold_shares", "daily", "spdr_archive",
+         stems=("XAU",), code="gld", release="spdr_eod", url=SPDR_GLD_ARCHIVE,
+         what="struck 4.15 p.m. New York, the file posted that evening: stamped the next day "
+              "01:00 UTC"),
+    Door("etf_slv_holdings", "etf_issuers", "ETF_ISSUER", "iShares SLV: shares outstanding, "
+         "ounces and tonnes in trust", "ishares_trusts", "daily", "ishares_page",
+         stems=("XAG",), code="slv", release="ishares_asof", url=ISHARES_SLV,
+         what="the page's 'as of' day + 1 day 14:00 UTC (a weekday), or the fetch instant when "
+              "earlier"),
+    Door("etf_iau_holdings", "etf_issuers", "ETF_ISSUER", "iShares IAU: shares outstanding, "
+         "ounces and tonnes in trust", "ishares_trusts", "daily", "ishares_page",
+         stems=("XAU",), code="iau", release="ishares_asof", url=ISHARES_IAU,
+         what="as etf_slv_holdings"),
     Door("wgc_cb_xlsx", "wgc", "WGC", "WGC central-bank statistics data file (login)",
          "wgc_goldhub_download", "monthly", "wgc_xlsx", stems=("XAU",), release="wgc_cb",
          what="held: the Goldhub download needs an account login; never requested"),
@@ -255,6 +285,10 @@ def release_at(rule: str, period: date) -> datetime:
         return _weekday_on_or_after(d + timedelta(days=WGC_CB_LAG_D, hours=12))
     if rule == "wgc_etf":
         return _weekday_on_or_after(d + timedelta(days=WGC_ETF_LAG_D, hours=12))
+    if rule == "spdr_eod":
+        return d + timedelta(days=1, hours=1)
+    if rule == "ishares_asof":
+        return _weekday_on_or_after(d + timedelta(days=1, hours=14))
     return d                                                         # "effective"
 
 
@@ -568,6 +602,82 @@ def parse_wgc_tables(body: bytes) -> WgcDoc:
                                                 for k, v in series.items()})
 
 
+# ------------------------------------------------------------------- metal ETF issuers ----
+@dataclass(frozen=True)
+class IsharesPage:
+    """One iShares trust page's Key Facts: its 'as of' day and the values printed for it."""
+    as_of: date | None
+    values: dict[str, float]
+
+
+_IS_FACTS = (("Shares Outstanding", "shares_outstanding"), ("Ounces in Trust", "ounces"),
+             ("Tonnes in Trust", "tonnes"))
+_ASOF = r"as\s+of\s+([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4})"
+
+
+def parse_ishares_page(body: bytes, ticker: str) -> IsharesPage:
+    """'<label> as of <Mon DD, YYYY> <number>' for each Key Fact; a page that prints none
+    (a site-entry interstitial, a script-only shell) is empty, never zero."""
+    text = _cell_text(body.decode("utf-8", "replace"))
+    vals: dict[str, float] = {}
+    asof: date | None = None
+    for label, key in _IS_FACTS:
+        m = re.search(re.escape(label) + r"\s*" + _ASOF + r"\s*([\d,]+(?:\.\d+)?)", text,
+                      re.I)
+        if not m or (v := _tonnes(m[2])) is None:
+            continue
+        d = _pub_date(f"published {m[1]}")
+        if d is None:
+            continue
+        if asof is not None and d != asof:
+            continue                         # one reading per page: the facts' common day
+        asof = d
+        vals[f"{ticker}_{key}"] = v
+    return IsharesPage(asof, vals)
+
+
+def parse_spdr_archive(body: bytes, ticker: str) -> dict[str, list[tuple[str, float]]]:
+    """SPDR's GLD_US_archive_EN.csv: one row per trading day ('03-Nov-2026'), HOLIDAY rows
+    carry no numbers. Ounces and tonnes in the trust are read by their column names; shares
+    outstanding is the trust's ounces over its 'Ounces of Gold per Share' (or a shares column
+    when the file prints one)."""
+    import csv
+    import io
+
+    rows = [r for r in csv.reader(io.StringIO(body.decode("utf-8-sig", "replace")))
+            if r and not r[0].lstrip().startswith("#")]
+    hi = next((i for i, r in enumerate(rows[:40]) if r[0].strip().lower() == "date"), None)
+    if hi is None:
+        return {}
+    head = [h.strip().lower() for h in rows[hi]]
+
+    def col(*need: str, avoid: str = "") -> int | None:
+        return next((i for i, h in enumerate(head)
+                     if all(n in h for n in need) and not (avoid and avoid in h)), None)
+
+    c_oz = col("ounces", "trust", avoid="per share")
+    c_t = col("tonnes")
+    c_ops = col("ounces", "per share")
+    c_sh = col("shares outstanding")
+    out: dict[str, list[tuple[str, float]]] = {}
+    for r in rows[hi + 1:]:
+        try:
+            d = datetime.strptime(r[0].strip(), "%d-%b-%Y").date().isoformat()
+        except ValueError:
+            continue
+
+        def num(i: int | None, r: list[str] = r) -> float | None:
+            return _tonnes(r[i].replace("$", "")) if i is not None and i < len(r) else None
+
+        oz, t, ops, sh = num(c_oz), num(c_t), num(c_ops), num(c_sh)
+        if sh is None and oz is not None and ops:
+            sh = oz / ops
+        for key, v in (("ounces", oz), ("tonnes", t), ("shares_outstanding", sh)):
+            if v is not None:
+                out.setdefault(f"{ticker}_{key}", []).append((d, v))
+    return out
+
+
 def looks_like_login(body: bytes) -> bool:
     """A login wall: login markup and no data table."""
     text = body[:200_000].decode("utf-8", "replace")
@@ -660,9 +770,10 @@ def requests_for(door: Door, now: datetime, *, first: bool) -> list[Req]:
         return [Req(f"{SCB_API}{code}", {"Content-Type": "application/json"}, body)]
     if door.parse == "sarb":
         return [Req(SARB_RATES)]
-    if door.parse == "wgc_html":
+    if door.parse in ("wgc_html", "ishares_page", "spdr_archive"):
         from libs.data.polite_fetch import DESK_UA
-        return [Req(door.url, {"User-Agent": DESK_UA, "Accept": "text/html"})]
+        accept = "text/csv" if door.parse == "spdr_archive" else "text/html"
+        return [Req(door.url, {"User-Agent": DESK_UA, "Accept": accept})]
     if door.parse == "wgc_xlsx":
         raise ValueError(f"{door.id} is held (login): never requested")
     raise ValueError(door.parse)
@@ -723,6 +834,26 @@ def series_from_bodies(door: Door, bodies: list[bytes], now: datetime
                 newest = v_newest(doc.series)
                 rule = release_at(door.release, _month_end(int(newest[:4]), int(newest[5:7])))
                 given[newest] = max(rule, pub).isoformat()
+    elif door.parse == "spdr_archive":
+        for b in bodies:
+            for k, v in parse_spdr_archive(b, door.code).items():
+                named.setdefault(k, []).extend(v)
+    elif door.parse == "ishares_page":
+        for b in bodies:
+            if looks_like_login(b):
+                raise LoginRequired(door.url or door.id)
+            page = parse_ishares_page(b, door.code)
+            if page.as_of is None:
+                continue
+            day = page.as_of.isoformat()
+            for k, v in page.values.items():
+                named.setdefault(k, []).append((day, v))
+            # the page proves the reading existed when the desk saw it: the stamp is the
+            # release rule or the fetch instant, whichever is EARLIER (never before the day)
+            rule = release_at(door.release, page.as_of)
+            given[day] = min(rule, max(now, datetime(page.as_of.year, page.as_of.month,
+                                                     page.as_of.day, tzinfo=UTC)
+                                       + timedelta(days=1))).isoformat()
     out = []
     for name, raw in named.items():
         pts = sorted(dict(raw).items())
@@ -739,7 +870,7 @@ def series_from_bodies(door: Door, bodies: list[bytes], now: datetime
         row: dict[str, Any] = {"code": name, "name": f"{door.name} {name}".strip(),
                                "freq": door.freq, "dims": {"REF_AREA": PACKS[door.pack].iso2},
                                "points": pts, "release_at": stamps}
-        if door.stems and door.parse.startswith("wgc"):
+        if door.stems and door.parse in ("wgc_html", "spdr_archive", "ishares_page"):
             # the door names its instrument: a country's name in a series never maps an FX pair
             row["stems"] = list(door.stems)
         out.append(row)
