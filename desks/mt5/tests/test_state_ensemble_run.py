@@ -177,8 +177,10 @@ def test_regime_split_null_pass_is_charged(tmp_path: Path, monkeypatch: pytest.M
     uni = tmp_path / "uni"
     uni.mkdir()
     (uni / "XTST_H1.parquet").write_bytes(b"")
-    monkeypatch.setattr(pc, "UNI", uni)
-    monkeypatch.setattr(pc, "universe_meta", lambda: {})
+    # The miner holds `research.proposer_common`, a different module object from the top-level
+    # import above, so its own reference is the one patched.
+    monkeypatch.setattr(rsm.pc, "UNI", uni)
+    monkeypatch.setattr(rsm.pc, "universe_meta", lambda: {})
     for name in ("CHARGED", "TRIALS", "NULL_TRIALS", "REPORT"):
         monkeypatch.setattr(rsm, name, tmp_path / getattr(rsm, name).name)
     row = {"cell": "XTST.regime_split.a.low_trend", "symbol": "XTST", "t_gross": 0.4,
