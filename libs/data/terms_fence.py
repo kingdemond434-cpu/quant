@@ -259,6 +259,131 @@ SOURCE_POLICY.update({
 })
 
 
+#: THE COUNTRY OPEN-DATA PACKS (2026-11-03, REGION_GAP_RANK ranks 2/7/9 plus Japan and China).
+#: Doors of the world dataset hunter (`world_dataset_hunter.COUNTRY_PACKS`). Each row quotes the
+#: publisher's OWN terms page, read 2026-11-03. LIVE only where a clause permits commercial use
+#: (trading on the data is commercial); everything else is IDEAS_ONLY, its parser exercised on
+#: fixtures, and its hold carries a missed-growth line (`held_missed_growth`, delta UNMEASURED).
+SOURCE_POLICY.update({
+    "jp_mof_feio": {
+        "hosts": ("mof.go.jp",), "status": PUBLIC_PAGE, "sources": ("jp_mof_feio",),
+        "why": ("Japan Ministry of Finance site (foreign exchange intervention operations CSV); "
+                "its copyright notice applies Public Data License 1.0, which permits copying, "
+                "adaptation and commercial use with a source credit"),
+        "terms": {"url": "https://www.mof.go.jp/english/notice.htm", "checked_at": "2026-11-03",
+                  "clauses": {
+                      "licence": ("belongs to the Ministry of Finance unless otherwise provided, "
+                                  "and Public Data License (Version 1.0; PDL 1.0) applies"),
+                      "pdl:free_use": "複製、公衆送信、翻訳・変形等の翻案等、自由に利用できます",
+                      "pdl:commercial": "商用利用も可能です。",
+                      "pdl:credit": "本コンテンツを利用する際は出典を記載してください。"},
+                  "also_read": {"https://www.digital.go.jp/resources/open_data/"
+                                "public_data_license_v1.0": "pdl:* clauses above"}}},
+    "sg_mas_api": {
+        "hosts": (), "status": API_PERMITTED, "sources": ("sg_mas_api",),
+        "url_patterns": (r"^(?:[^/]*\.)?eservices\.mas\.gov\.sg/apimg-gw/",),
+        # The gateway issues credentials; the KEY is checked by the door that uses it
+        # (world_dataset_hunter raises the named `needs_key`), as for eia_api: a `key_env` here
+        # would hold the route for every caller, and no clause bars it.
+        "key_checked_by": "desks/mt5/research/world_dataset_hunter.py (MAS_API_KEY)",
+        "why": ("MAS API gateway (SORA and domestic interest rates, SGD exchange rates, official "
+                "foreign reserves); MAS's API terms grant use whether commercially or "
+                "non-commercially, within a reasonable load and with the issued credential"),
+        "terms": {"url": "https://www.mas.gov.sg/Terms-of-Use/API-Terms-of-Service.aspx",
+                  "checked_at": "2026-11-03",
+                  "clauses": {
+                      "api_use": ("You can use, access, call, command, query or request the "
+                                  "API, whether commercially or non-commercially"),
+                      "datasets": ("MAS grants you a worldwide, perpetual, royalty-free, "
+                                   "non-exclusive licence to Use the datasets"),
+                      "credentials": ("you must utilise the access control credentials issued "
+                                      "to you if applicable"),
+                      "load": ("places or may place an unreasonable or disproportionately large "
+                               "load on MAS' systems")}}},
+    "jp_boj_stat_search": {
+        "hosts": ("stat-search.boj.or.jp",), "status": IDEAS_ONLY,
+        "sources": ("jp_boj_stat_search",),
+        "why": ("BOJ Time-Series Data Search (keyless API and flat files): the site notice excepts "
+                "copying or reproduction for commercial purposes, so its series are ideas only "
+                "until the Bank grants permission"),
+        "unblock": "the Bank of Japan's written permission for commercial use, quoted here",
+        "terms": {"url": "https://www.stat-search.boj.or.jp/info/notice_en.html",
+                  "checked_at": "2026-11-03",
+                  "clauses": {
+                      "grant": ("The information included in this site may be copied or "
+                                "reproduced with the exceptions below."),
+                      "commercial_bar": ("The copying or reproduction of the content for "
+                                         "commercial purposes."),
+                      "permission": ("In such cases, please contact the Research and Statistics "
+                                     "Department of the Bank in advance to request permission.")},
+                  "also_read": {"https://www.stat-search.boj.or.jp/info/api_notice_en.pdf":
+                                "credit and load clauses only; no grant of commercial use",
+                                "https://www.boj.or.jp/en/copyright.htm":
+                                "the same commercial-purpose exception"}}},
+    "jp_jquants": {
+        "hosts": ("jpx-jquants.com", "api.jquants.com"), "status": IDEAS_ONLY,
+        "sources": ("jp_jquants", "jquants"),
+        "why": ("J-Quants API terms limit use to the registered user's private use and state that "
+                "commercial use is not private use; the box's JQUANTS key is never used for "
+                "live input"),
+        "unblock": "a J-Quants corporate (法人) plan whose terms grant the desk's use, quoted here",
+        "terms": {"url": "https://jpx-jquants.com/ja/termsofservice", "checked_at": "2026-11-03",
+                  "clauses": {
+                      # verbatim, full-width punctuation kept
+                      "art8_1": ("本サービス及び本データの利用目的"
+                                 "（以下「本利用目的」といいます。）は、"  # noqa: RUF001
+                                 "登録ユーザーのみによる私的使用の目的に限ります。"),
+                      "art8_2": ("第三者が使用できる状態にすること"
+                                 "（インターネット上での配信を含みます。）"  # noqa: RUF001
+                                 "または商用もしくは学術の目的で利用することは、私的使用の目的に該当し"
+                                 "ません。")}}},
+    "id_bank_indonesia": {
+        "hosts": ("bi.go.id",), "status": IDEAS_ONLY, "sources": ("id_bank_indonesia",),
+        "why": ("Bank Indonesia (BI-Rate, JISDOR, reserve assets): no terms-of-use or reuse "
+                "clause was found on its site (footer carries only a copyright line), so terms "
+                "are UNREAD and its series are ideas only (fail closed)"),
+        "unblock": "a Bank Indonesia page whose clause permits the desk's use, quoted here",
+        "terms": {"url": "https://www.bi.go.id/en/statistik/", "checked_at": "2026-11-03",
+                  "unread": {"https://www.bi.go.id/en/syarat-dan-ketentuan.aspx": "HTTP 404",
+                             "https://www.bi.go.id/en/statistik/": (
+                                 "footer lists no disclaimer, terms or privacy link; its only "
+                                 "rights text is the copyright line '©2026 Bank Indonesia'")}}},
+    "id_bps_webapi": {
+        "hosts": ("webapi.bps.go.id",), "status": IDEAS_ONLY, "sources": ("id_bps_webapi",),
+        "why": ("BPS-Statistics Indonesia WebAPI: registration and an API token are required "
+                "(BPS_API_KEY is not on the box) and its terms permit commercial use only where "
+                "BPS has authorised it, so it is ideas only and NEEDS_KEY"),
+        "needs_key": "BPS_API_KEY",
+        "unblock": ("BPS authorisation of the desk's use (a cooperation agreement) and a "
+                    "registered token in BPS_API_KEY"),
+        "terms": {"url": "https://webapi.bps.go.id/developer/", "checked_at": "2026-11-03",
+                  "clauses": {
+                      "registration": ("The BPS WebAPI may only be used by Users who have "
+                                       "completed the registration process"),
+                      "commercial": ("Use of the BPS WebAPI for commercial purposes is "
+                                     "permitted only where such use has been authorized"),
+                      "site_grant": ("The Contents made available on this website are granted "
+                                     "to you for free, worldwide, perpetual, and non-exclusive "
+                                     "use")},
+                  "also_read": {"https://www.bps.go.id/en/term-of-use":
+                                "site_grant (the website, not the WebAPI)"}}},
+    "sa_sama": {
+        "hosts": ("sama.gov.sa",), "status": IDEAS_ONLY, "sources": ("sa_sama", "sama"),
+        "why": ("Saudi Central Bank (reserves, money supply, SAIBOR): robots.txt disallows the "
+                "reader on SAMA's statistics pages and on opendata.sama.gov.sa, so no terms page "
+                "was read; ideas only (fail closed)"),
+        "unblock": ("SAMA's open-data terms read with a clause permitting the desk's use, and "
+                    "robots.txt allowing the data route"),
+        "terms": {"url": "https://www.sama.gov.sa/en-US/Statistics/Pages/Summary.aspx",
+                  "checked_at": "2026-11-03",
+                  "unread": {"https://www.sama.gov.sa/en-US/Statistics/Pages/Summary.aspx":
+                             "robots_disallowed",
+                             "https://opendata.sama.gov.sa/": "robots_disallowed",
+                             "https://mep.gov.sa/en/knowledge-base/open-data/policy": (
+                                 "national open-data policy; it does not name SAMA's portal")}}},
+})
+
+
 def _feed_row(feed_url: str, status_: str, why: str, terms_url: str, read: str,
               clause: str = "") -> dict[str, Any]:
     """One macro event-ledger RSS feed's row (desks/mt5/macro/sources.py `_OFFICIAL_FEEDS`),
@@ -735,11 +860,17 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
     "cnx_dce": _cnx_row(
         "cnx_dce", "DCE", host="dce.com.cn", url="http://www.dce.com.cn/",
         unread={"dce.com.cn": ("not readable from the build sandbox: robots.txt fetch timed out "
-                               "from the sandbox")}),
+                               "from the sandbox"),
+                "dce.com.cn/2026-11-03": ("re-read for the China country pack: the home page "
+                                          "answered client_error and the trading-rules page "
+                                          "(dalianshangpin/fgfz/...) is robots_disallowed")}),
     "cnx_czce": _cnx_row(
         "cnx_czce", "CZCE", host="czce.com.cn", url="http://www.czce.com.cn/",
         unread={"czce.com.cn": ("not readable from the build sandbox: the legal-statement link "
-                                "returned HTTP 412 to the sandbox")}),
+                                "returned HTTP 412 to the sandbox"),
+                "czce.com.cn/2026-11-03": ("re-read for the China country pack: the footer's "
+                                           "法律声明 link carries no readable target and the "
+                                           "trading-rules page answered client_error")}),
     "cnx_gfex": _cnx_row(
         "cnx_gfex", "GFEX", host="gfex.com.cn", url="http://www.gfex.com.cn/",
         unread={"gfex.com.cn": ("not readable from the build sandbox: TLS hostname mismatch on "
