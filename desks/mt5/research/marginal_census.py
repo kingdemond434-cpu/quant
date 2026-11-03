@@ -126,8 +126,8 @@ def census(sleeves: list[dict], view: dict, state: dict, now: datetime,
             r["held_risk_frac"] for r in rows if r["over_bound"]), 6),
         "bound_h": bound_h, "enforce": ENFORCE,
         "allocation": {"fresh": bool(view.get("fresh")), "why": view.get("why"),
-                       "admission_at": view.get("admission_at"),
-                       "scan_age_h": view.get("scan_age_h")},
+                       "admission_at": view.get("at"),
+                       "scan_age_h": view.get("age_h")},
         "verdict": ("UNMEASURED" if not rows else
                     "OVER_BOUND" if over else
                     "ALL_MEASURED" if not counts["UNMEASURED"] else "WITHIN_BOUND"),
