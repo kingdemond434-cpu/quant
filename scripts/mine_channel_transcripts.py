@@ -33,6 +33,10 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+#: Discovery never adopts a crypto-exchange's own channel (MT5 mandate; crypto = CFDs only).
+EXCHANGE_BRANDS = ("binance", "coinbase", "kraken", "bybit", "okx", "kucoin", "bitget",
+                   "gate.io", "huobi", "htx", "mexc", "bitfinex", "bitmex", "deribit", "crypto.com")
+
 STATUSES = ("FULL", "NO_TRANSCRIPT", "UNAVAILABLE", "ACCESS_LIMIT", "FETCH_FAILED")
 
 
@@ -106,6 +110,9 @@ def discover(cfg: dict, out: Path, per_query: int) -> list[dict]:
             cid = e.get("channel_id")
             if not cid or cid in known:
                 continue
+            cname = (e.get("channel") or e.get("uploader") or "").lower()
+            if any(b in cname for b in EXCHANGE_BRANDS):
+                continue  # MT5 mandate: no crypto-exchange channels as a hunted universe
             known.add(cid)
             disc[cid] = {"handle": cid, "name": e.get("channel") or e.get("uploader") or "",
                          "found_by": q, "found_ts": now(), "status": "CANDIDATE",
