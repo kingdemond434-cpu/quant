@@ -1188,7 +1188,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
-    "source_evig", "source_drain", "pack_cells", "ground_depth", "timeframe_fanout",
+    "source_evig", "source_drain", "pack_cells", "futures_state", "ground_depth",
+    "timeframe_fanout",
     # The culture-gap producers (2026-09-30): a data-driven recipe walk, well under a second
     # when nothing is new, so every gap's cells are minted on the core clock.
     "culture_gap_cells",
@@ -1303,7 +1304,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
-                     "asia_plane", "archive_tape", "reclaim_disk", "maintain_miners",
+                     "asia_plane", "futures_state", "archive_tape", "reclaim_disk",
+                     "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
@@ -1350,6 +1352,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
                      "cross_sectional_breadth",
+                     # the alt_proxies equity hand-off minted into the event lane and the
+                     # class books (share CFDs never mint anywhere else)
+                     "alt_equity_handoff",
                      # the asset-class specialists' named mechanisms, built by the sealed
                      # gauntlet's own build_cell before they are donated
                      "specialist_cell"),
@@ -1408,7 +1413,7 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
                      "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
-                     "missed_trade_archaeologist", "portfolio_bounty",
+                     "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
                      "clock_liveness", "allocator_liveness", "allocator_trigger",
                      "forward_calibration"),
@@ -1423,7 +1428,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "research_roi", "experiment_spine", "implementer",
                      "research_debt", "paradigm_router", "meta_controller", "research_bandit",
                      "ingestion_exploitation", "forest_attempts",
-                     "coverage_tensor", "regional_parity", "research_evolution",
+                     "coverage_tensor", "regional_parity", "global_coverage_tensor",
+                     "research_evolution",
                      "compute_economics", "control_plane", "attribution_reconcile",
                      "fence_battery", "organ_battery", "research_artifacts", "engine_registry",
                      "search_paradigm_census", "producer_census", "productivity_census",
@@ -2087,6 +2093,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # truncates it at the same prefix every hour. `judging_throughput` must also finish BEFORE
     # the gauntlet leg it sizes, which is the other reason it is cheap by design.
     "judging_throughput": 400,
+    # Both stop themselves inside these caps (--budget-s 480 / 540) and write their artifacts:
+    # a cap below an organ's own budget truncates it at the same prefix every hour.
+    "gauntlet_backpressure": 600,
+    "global_coverage_tensor": 660,
     # THE BLAS THREAD DIFFERENTIAL runs only when its proof is missing or lapsed (one JSON read on
     # every other hour). When it runs: a prepare child and three judge arms, each capped at
     # --arm-timeout-s 330 by the harness itself, so 4 x 330 = 1,320 s sits inside this cap.
@@ -2218,6 +2228,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "alpha_capture": 420,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
+    # The hand-off consumer stops itself at --budget-s 240 and writes; the cap sits above it.
+    "alt_equity_handoff": 300,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
     "replication_civilization": 1_000,
@@ -2416,6 +2428,11 @@ LEG_BUDGET_FLOOR_SEC: dict[str, int] = {
     # the SEALED DEFAULT and `_leg_floor_s` raises it to whatever `judging_throughput` actually
     # put in the environment this hour -- a floor read off the run, not off a claim.
     "external_gauntlet": 2_700,
+    # The two organs that stop THEMSELVES on `--budget-s` (CRO 2026-09-30, gap 2): the floor is
+    # that budget plus a minute of interpreter start and final write, so a priced-down hour can
+    # never kill them before they publish -- which is how GAUNTLET_BACKPRESSURE went a week stale.
+    "gauntlet_backpressure": 540,
+    "global_coverage_tensor": 600,
 }
 
 
@@ -4388,6 +4405,14 @@ def main() -> None:
     xsb = _costed("cross_sectional_breadth", lambda: _producer(
         "cross_sectional_breadth", "research/cross_sectional_breadth.py", "--once",
         "--budget-s", "900"))
+    # THE ALT-PROXIES EQUITY HAND-OFF'S CONSUMER (2026-09-30). alt_proxies writes the share CFDs
+    # each free alt-data series bears on (data/digests/alt_proxies_equity_handoff.json) and mints
+    # nothing on them (two-lane order). This mints them in the two lanes a share may use: the
+    # news lane's alt_release_drift, and every class-book family conditioned on the series as a
+    # ranking input; measures firing, charges every measured cell, donates through the one door
+    # and writes reports/ALT_EQUITY_HANDOFF.json.
+    aeh = _costed("alt_equity_handoff", lambda: _producer(
+        "alt_equity_handoff", "research/alt_equity_handoff.py", "--once", "--budget-s", "240"))
     # SPECIALIST RESEARCH CELLS (2026-09-30): per-asset-class desks mint the mechanisms a generic
     # sweep misses -- FX fixes, carry into risk-off, central-bank drift; gold against bonds and the
     # dollar, the gold/silver ratio; the EIA Wednesday; index overnight gaps, open drives and
@@ -4608,6 +4633,12 @@ def main() -> None:
     mta = _costed("missed_trade_archaeologist", lambda: _producer(
         "missed_trade_archaeologist", "research/missed_trade_archaeologist.py",
         "--once", "--budget-s", "600"))
+    # THE LOSS LEARNER (principal 2026-11-03): every live sleeve's losses and missed trades on
+    # Fusion, E8 and FTMO, diagnosed into loss modes and minted as one-step variant cells of the
+    # sleeve's own certificate -> the ordinary gauntlet, each one a lineage trial. Its forward
+    # replacement verdicts are acted on by the daily step `loss_replace`. Forward department.
+    mll = _costed("loss_learner", lambda: _producer(
+        "loss_learner", "research/loss_learner.py", "--once"))
     mfe = _costed("forward_exploitation", lambda: _producer("forward_exploitation",
                                                              "research/forward_exploitation.py"))
     mar = _costed("alpha_recombination", lambda: _producer("alpha_recombination",
@@ -4798,10 +4829,30 @@ def main() -> None:
                                                   "--once"))
     # GAUNTLET BACKPRESSURE (M23) and MINER SPECIALISATION (M24): the gauntlet talks back and
     # the organisation routes work by measured value per miner per domain. Meta.
+    #
+    # THE ORGAN STOPS ITSELF (CRO 2026-09-30, gap 2): `--budget-s 480` inside the leg's 600 s cap.
+    # It ran past the 720 s default on every pass and last published 2026-09-25, so the judge's
+    # controllers read a week-old file; it now reads the graph BACKWARDS, classifies each row once
+    # and writes its report before it touches the registry.
     gbp = _costed("gauntlet_backpressure", lambda: _producer("gauntlet_backpressure",
-                                                              "research/gauntlet_backpressure.py"))
+                                                              "research/gauntlet_backpressure.py",
+                                                              "--budget-s", "480"))
     msp = _costed("miner_specialisation", lambda: _producer("miner_specialisation",
                                                              "research/miner_specialisation.py"))
+    # THE GLOBAL COVERAGE TENSOR (principal 2026-09-30). The principal's fourteen axes -- region,
+    # language, source class (24), mechanism, transmission, instrument, horizon, broker-clock
+    # session, regime, participant, event, positioning, cross-asset and execution state -- as a
+    # third tensor of the coverage algebra on the SAME ladder, cells generated by mechanistic
+    # compatibility, coverage counted only on a proven source -> ... -> measured-outcome path.
+    # Publishes the three numbers (nominal / distinct / effective independent), per-source ROI
+    # (SOURCE_ROI.json: funnel, info gain per compute hour, incremental k_eff, auto-retire =
+    # redirect budget) and emits the emptiest high-EVIG cells as `coverage_gap` missions into
+    # data/intelligence/global_coverage/ and the registry, throttled by judged/created and never
+    # to zero. Runs AFTER gauntlet_backpressure, whose 24h window it reads. Information layer.
+    gct = _costed("global_coverage_tensor",
+                  lambda: _producer("global_coverage_tensor",
+                                    "research/global_coverage_tensor.py",
+                                    "--once", "--budget-s", "540"))
     # THE TIER-5 RESIDUALS (mandate 90, 110, 131/132, 133, 134, 136, 97/98, 162). The allocator
     # publishes the payoff shapes and regimes it LACKS and they become research requests; the
     # departments bid compute for those bounties and the winners are funded next epoch; the
@@ -6030,6 +6081,13 @@ def main() -> None:
     # run AFTER source_drain, whose chain state it reads and never edits.
     pkc = _costed("pack_cells", lambda: _producer(
         "pack_cells", "research/pack_cells.py", "--once", "--budget-s", "240"))
+    # FUTURES STATE (principal 2026-10-19): CFTC positioning incl. the options-on-futures book,
+    # FRED curves, FX rate differentials and reserves, Japan's MoF intervention record
+    # and cross-market transmissions become stamped series and exogenous_conditioner cells
+    # through the same registry door, each cell minted once in its life, headline state first.
+    # 401/403/429/451 is a hard stop per source.
+    fst = _costed("futures_state", lambda: _producer(
+        "futures_state", "research/futures_state.py", "--once"))
     # THE FRONT DOOR IS NOT THE GROUND (2026-09-23). 15 of the 121 document-holding grounds named
     # no instrument for ONE reason `pack_cells.resolve_ground` had already written: the documents
     # held are the landing page. This walks inside those grounds' own doors -- ranked links and
@@ -6325,6 +6383,7 @@ def main() -> None:
                     "engine_registry": engr,
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
+                    "alt_equity_handoff": aeh,
                     "specialist_cell": spcl,
                     "event_surprise": esur, "alpha_capture": acap,
                     "counterexample_agent": cexa,
@@ -6357,6 +6416,7 @@ def main() -> None:
                     "dsr_inputs": dsi,
                     "occupancy_map": ocm,
                     "gauntlet_backpressure": gbp, "miner_specialisation": msp,
+                    "global_coverage_tensor": gct,
                     "portfolio_bounty": pbt, "research_auction": rau,
                     "bottleneck_law": btl, "drawdown_alpha_miner": dam,
                     "trade_autopsy": tap, "research_latency": rlt,
@@ -6367,7 +6427,7 @@ def main() -> None:
                     "paradigm_router": prr, "meta_controller": mtc, "lead_replication": lrp,
                     "experiment_spine": exs, "implementer": imp,
                     "research_evolution": rev, "compute_economics": cec,
-                    "missed_trade_archaeologist": mta,
+                    "missed_trade_archaeologist": mta, "loss_learner": mll,
                     "replication_civilization": rpc,
                     "science_controller": scc,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
@@ -6462,7 +6522,7 @@ def main() -> None:
                     "preregistration": prg, "organ_census": ogc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
-                    "culture_gap_cells": cgc,
+                    "culture_gap_cells": cgc, "futures_state": fst,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
                     "actor_pressure": apr, "destroyer_pool": dpo,
