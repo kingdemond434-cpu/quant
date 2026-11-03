@@ -111,6 +111,7 @@ from miner_candidate_compiler import (  # noqa: E402
 
 from libs.research import rule_deepening as rd  # noqa: E402
 from libs.research import source_provenance as sp  # noqa: E402
+from libs.ops.secret_scrub import scrub_text  # noqa: E402
 
 #: Append-only: one line per task ever decided, so a decision is paid for once. Deliberately not
 #: a set inside the output file -- that file is rewritten each run and a crash mid-write would
@@ -398,7 +399,7 @@ def dlog(msg: str) -> None:
     try:
         LOG.parent.mkdir(parents=True, exist_ok=True)
         with LOG.open("a", encoding="utf-8") as fh:
-            fh.write(line + "\n")
+            fh.write(scrub_text(line) + "\n")
     except OSError:
         pass
 
