@@ -117,6 +117,7 @@ refused or gave up, with the reason in the job summary and on the `audit/clear` 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import fnmatch
 import hashlib
 import json
@@ -489,11 +490,26 @@ def checks(
 GH_TIMEOUT_S = 120
 
 
-def _gh(*args: str, data: Mapping[str, Any] | None = None) -> Any:
+def _gh(*args: str, data: Mapping[str, Any] | None = None, timeout: float | None = None) -> Any:
     cmd = ["gh", "api", *args]
     if data is not None:
         cmd += ["--input", "-"]
-    p = subprocess.run(
+    try:
+        p = _gh_run(cmd, data) if timeout is None else _gh_run(cmd, data, timeout)
+    except subprocess.TimeoutExpired as exc:
+        # A TIMEOUT IS A FAILED CALL, NOT A CRASH (2026-11-03): raised raw, one slow check-runs
+        # read aborted the whole box sweep -- 378 times from 10-30 to 11-03, no merge in between.
+        # As a RuntimeError every caller's per-PR handling logs it and the sweep goes on.
+        raise RuntimeError(f"gh api {' '.join(args)}: timed out after {exc.timeout}s") from exc
+    if p.returncode != 0:
+        raise RuntimeError(f"gh api {' '.join(args)}: {p.stderr.strip()[:300]}")
+    return json.loads(p.stdout) if p.stdout.strip() else None
+
+
+def _gh_run(
+    cmd: list[str], data: Mapping[str, Any] | None, timeout: float | None = None
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
         cmd,
         input=json.dumps(data) if data is not None else None,
         capture_output=True,
@@ -505,11 +521,8 @@ def _gh(*args: str, data: Mapping[str, Any] | None = None) -> Any:
         check=False,
         # A hung gh held the box sweep's mutex from 13:53Z on 2026-10-29 and no sweep ran after:
         # every call ends, and a timeout is an error the sweep logs (it never merges on one).
-        timeout=GH_TIMEOUT_S,
+        timeout=GH_TIMEOUT_S if timeout is None else timeout,
     )
-    if p.returncode != 0:
-        raise RuntimeError(f"gh api {' '.join(args)}: {p.stderr.strip()[:300]}")
-    return json.loads(p.stdout) if p.stdout.strip() else None
 
 
 def _git(*args: str) -> str:
@@ -580,6 +593,151 @@ BRING_UP_CAP = 4
 #: Bring-ups per sweep (#552 audit SF2): each one starts a full CI run on the shared free pool,
 #: and the most merge-ready PRs come first, so a few per pass drain the queue without flooding it.
 BRING_UPS_PER_SWEEP = 2
+
+# THE REGISTRY PATH (zuck 2026-11-03 17:11Z: "Allow the box to auto-merge .github/ops release
+# changes after an auditor CLEAR and 24h veto window"; 17:00Z "The box may auto-merge everything
+# autonomously ... don't ever make me merge again"; journal D-20261103-005). Only the box's run
+# reads it, from a file on the box that no PR can write: the Auditor's lane appends one row per
+# verdict there ({"pr", "sha", "verdict": "CLEAR"|"HOLD", "at"}). A PR the manual path would hold
+# for zuck merges from the box instead only when ALL of these hold: zuck's own CLEAR + APPROVE
+# path did not already clear it (that path always comes first and is never replaced); merges are
+# not DEACTIVATEd; the PR's latest row is a CLEAR naming the EXACT head, dated no later than now;
+# the gate ITSELF has sent the veto notice for that (pr, head) and a channel delivered it; that
+# delivery is REGISTRY_HOLD_H old by the gate's OWN clock (a row's self-declared "at" never
+# starts the window, so a backdated row merges nothing early); no AUDIT HOLD stands on the PR;
+# the head is up to date with the base; and every gating AND every AUTO job (replay-shadow
+# included) passed. A HOLD row, a HOLD comment, a DEACTIVATE or a new push is a veto. The gate
+# that judges a PR is always the base's copy, so a gate change is judged by the gate it would
+# replace, never by itself.
+REGISTRY_ENV = "QUANT_AUDIT_REGISTRY"
+#: The command that sends the veto notice; the gate appends the title and body as two arguments
+#: and counts the notice as sent only on exit 0 (scripts/send_alert.py: a channel delivered it).
+#: Unset, no notice can go out, so no window ever starts and nothing merges by the registry.
+REGISTRY_NOTIFY_ENV = "QUANT_REGISTRY_NOTIFY"
+REGISTRY_HOLD_H = 24.0
+#: A row dated this far past the gate's clock is refused (clock skew allowance).
+REGISTRY_SKEW_S = 300.0
+#: The marker in a registry merge's commit title (auto_revert() looks for it).
+REGISTRY_TITLE = "registry CLEAR"
+
+
+def registry_rows(path: str | None) -> tuple[list[dict[str, Any]], str]:
+    """(the registry's rows, oldest first; why there are none). No path, or ANY unreadable line,
+    reads as no rows: the registry only ever adds a merge path, so failing closed falls back to
+    zuck's. The why says which, so a broken registry is never silent."""
+    if not path:
+        return [], "no registry configured"
+    try:
+        text = Path(path).read_text(encoding="utf-8-sig")
+        rows = [json.loads(line) for line in text.splitlines() if line.strip()]
+    except (OSError, ValueError) as exc:
+        return [], f"the registry is unreadable ({type(exc).__name__}), so it counts as empty"
+    if not all(isinstance(r, dict) for r in rows):
+        return [], "the registry has a line that is not an object, so it counts as empty"
+    return rows, ""
+
+
+def notice_title(pr: int, head: str) -> str:
+    return f"PR #{pr} {head[:9]} auto-merges from the box in {REGISTRY_HOLD_H:.0f} h unless vetoed"
+
+
+def registry_window(
+    seen_path: Path, pr: int, head: str, now: datetime, notify: Callable[[str, str], bool]
+) -> tuple[datetime | None, str]:
+    """(when the veto window for (pr, head) started, or None; why). The start is the gate's own
+    record of the moment its notice was DELIVERED, kept in `seen_path` beside the registry. The
+    first time a head is seen the notice is sent; the window starts only if it went out, and a
+    failed send is tried again by the next sweep. An unreadable record, or one that cannot be
+    written, starts nothing."""
+    key = f"{pr}:{head}"
+    try:
+        seen = json.loads(seen_path.read_text(encoding="utf-8")) if seen_path.exists() else {}
+        if not isinstance(seen, dict):
+            raise ValueError("not an object")
+    except (OSError, ValueError) as exc:
+        return None, f"the veto-window record is unreadable ({type(exc).__name__})"
+    if key in seen:
+        try:
+            at = datetime.fromisoformat(str(seen[key]))
+        except ValueError:
+            return None, "the veto-window record has an unreadable time"
+        if at.tzinfo is None or at > now:
+            return None, "the veto-window record has a bad time"
+        return at, ""
+    body = (
+        f"The Auditor CLEARed #{pr} at {head[:9]}. The box merges it after {REGISTRY_HOLD_H:.0f} h "
+        "with every check green. To stop it: an AUDIT HOLD on the PR, a HOLD row, DEACTIVATE "
+        "merges, or a new push."
+    )
+    try:
+        sent = bool(notify(notice_title(pr, head), body))
+    except Exception as exc:
+        return None, f"the veto notice failed ({type(exc).__name__}); the next sweep retries"
+    if not sent:
+        return None, "the veto notice was not delivered; the next sweep retries"
+    seen[key] = now.isoformat()
+    try:
+        tmp = seen_path.with_suffix(seen_path.suffix + ".tmp")
+        tmp.write_text(json.dumps(seen, sort_keys=True), encoding="utf-8")
+        os.replace(tmp, seen_path)
+    except OSError as exc:
+        return None, f"the veto-window record could not be written ({type(exc).__name__})"
+    return None, f"veto notice sent for {head[:9]}: the {REGISTRY_HOLD_H:.0f} h window starts now"
+
+
+def run_notify(title: str, body: str) -> bool:
+    """Send the veto notice with the box's REGISTRY_NOTIFY_ENV command; True only on exit 0."""
+    cmd = os.environ.get(REGISTRY_NOTIFY_ENV)
+    if not cmd:
+        return False
+    import shlex
+
+    done = subprocess.run(
+        [*shlex.split(cmd, posix=os.name != "nt"), title, body],
+        capture_output=True,
+        timeout=GH_TIMEOUT_S,
+        check=False,
+    )
+    return done.returncode == 0
+
+
+def registry_clear(
+    rows: list[dict[str, Any]],
+    pr: int,
+    head: str,
+    window: Callable[[], tuple[datetime | None, str]],
+    now: datetime | None = None,
+) -> tuple[dict[str, str] | None, str]:
+    """(the CLEAR that lets the box merge `head`, or None; why). The exact head only. `window`
+    is called only once the row itself qualifies, and gives the gate's own window start."""
+    now = now or datetime.now(UTC)
+    mine = [r for r in rows if r.get("pr") == pr]
+    if not mine:
+        return None, "no registry verdict"
+    last = mine[-1]
+    if last.get("verdict") != "CLEAR" or last.get("sha") != head:
+        sha = str(last.get("sha"))[:9]
+        return None, f"the latest registry verdict is {last.get('verdict')} {sha}"
+    try:
+        at = datetime.fromisoformat(str(last.get("at") or "").replace("Z", "+00:00"))
+    except ValueError:
+        return None, "the registry CLEAR has no readable time"
+    if at.tzinfo is None:
+        return None, "the registry CLEAR has no time zone"
+    if (at - now).total_seconds() > REGISTRY_SKEW_S:
+        return None, "the registry CLEAR is dated in the future"
+    start, wwhy = window()
+    if start is None:
+        return None, wwhy
+    age_h = (now - start).total_seconds() / 3600.0
+    if age_h < REGISTRY_HOLD_H:
+        return None, (
+            f"registry CLEAR {head[:9]}: the veto window is {age_h:.1f} of {REGISTRY_HOLD_H:.0f} h"
+        )
+    got = {"verdict": "CLEAR", "sha": head, "method": "merge", "at": start.isoformat()}
+    return {**got, "by": "registry"}, f"{REGISTRY_TITLE} {head[:9]} ({age_h:.0f} h, no veto)"
+
+
 BEHIND = "it is behind"
 
 
@@ -947,6 +1105,8 @@ def run(
                 return 0
             else:
                 twhy = f"{twhy}, but {fwhy}: it takes the CLEAR + APPROVE path"
+    # the box's registry path is tried only after zuck's own path fails (see REGISTRY_ENV)
+    registry = box and mode == "manual" and bool(os.environ.get(REGISTRY_ENV))
     low = mode != "manual"  # no verdict or approval needed on this path
     required = GATING_JOBS + (AUTO_JOBS if mode == "auto" else ())
     _summary(f"#{pr} @ {head[:9]}: {twhy}")
@@ -982,13 +1142,39 @@ def run(
                 twhy
             )
         clear, why = cleared(found, head, same_change)
-        if clear is None:
+        if clear is not None:
+            ap = _gh(
+                f"repos/{repo}/issues/{approvals_issue}/comments?per_page=100",
+                "--paginate",
+                "--slurp",
+            )
+            ok, awhy = approved(clear, approval_at(_flat(ap)))
+            if ok or not registry:
+                return (clear if ok else None), f"{why}; {awhy}"
+            why = f"{why}; {awhy}"
+        if not registry:
             return None, why
-        ap = _gh(
-            f"repos/{repo}/issues/{approvals_issue}/comments?per_page=100", "--paginate", "--slurp"
+        return registry_now(found, why)
+
+    def registry_now(found: list[dict[str, str]], mwhy: str) -> tuple[dict[str, str] | None, str]:
+        """The registry path, after zuck's path did not clear the head (see REGISTRY_ENV)."""
+        path = os.environ.get(REGISTRY_ENV) or ""
+        rows, gone = registry_rows(path)
+        if not rows:
+            return None, f"{mwhy}; registry: {gone or 'no rows'}"
+        if found and found[-1]["verdict"] != "CLEAR":  # a HOLD (or an edit) on the PR wins
+            return None, f"{mwhy}; registry: AUDIT HOLD {found[-1]['sha'][:9]} stands on the PR"
+        on, owhy = switches()
+        if not on:
+            return None, f"{mwhy}; registry: {owhy}"
+        fresh, fwhy = up_to_date(base, head)
+        if not fresh:
+            return None, f"{mwhy}; registry: {fwhy}"
+        now = datetime.now(UTC)
+        seen = Path(path + ".window.json")
+        return registry_clear(
+            rows, pr, head, lambda: registry_window(seen, pr, head, now, run_notify), now
         )
-        ok, awhy = approved(clear, approval_at(_flat(ap)))
-        return (clear if ok else None), f"{why}; {awhy}"
 
     clear, why = verdict_now()
     if clear is None:
@@ -1014,13 +1200,14 @@ def run(
         pages = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100", "--paginate", "--slurp")
         runs = [r for page in _flat_pages(pages) for r in (page.get("check_runs") or [])]
         genuine = provenance(repo, pr, head) if low else _from_ci_app
-        state, cwhy = checks(runs, required, genuine)
+        need = required + (AUTO_JOBS if clear.get("by") == "registry" else ())
+        state, cwhy = checks(runs, need, genuine)
         if state == "pass":
             break
-        if state == "fail" and REVIEWER in required:
+        if state == "fail" and REVIEWER in need:
             review = queued_review(repo, runs, genuine)
             rest = [r for r in runs if r is not review]
-            if review is not None and checks(rest, required, genuine)[0] != "fail":
+            if review is not None and checks(rest, need, genuine)[0] != "fail":
                 # no free reviewer answered: QUEUED, never a pass and never a quarantine
                 qwhy = f"{REVIEWER} queued: no free reviewer answered; {requeue(repo, review)}"
                 _status(repo, head, "pending", qwhy)
@@ -1071,6 +1258,8 @@ def run(
             "commit_title": (
                 f"Merge #{pr} ({mode.upper()} tier, no comment: {twhy})"[:250]
                 if clear["verdict"] == mode.upper()
+                else f"Merge #{pr} ({REGISTRY_TITLE} {head[:9]}, from the box)"
+                if clear.get("by") == "registry"
                 else f"Merge #{pr} ({clear['method']}): audit CLEAR {clear['sha'][:9]}"
             ),
         },
@@ -1087,6 +1276,92 @@ def run(
 
 #: How long one box sweep may run before it stops and leaves the rest to the next one.
 SWEEP_BUDGET_S = 15 * 60
+#: THE ORDER READ IS CHEAP OR IT IS SKIPPED (Desk health 2026-11-03 19:08Z: inside the box task a
+#: check-runs read averaged 13 s with 120 s stalls, so 209 open PRs spent the whole budget on the
+#: pre-read and no sweep reached a merge from 17:07Z). Each read gets PRE_READ_TIMEOUT_S, and the
+#: pre-read stops at PRE_READ_SHARE of the budget; a PR it did not reach is ordered last, never
+#: dropped, and its full run still decides.
+PRE_READ_TIMEOUT_S = 20.0
+PRE_READ_SHARE = 0.4
+
+
+def to_revert(commits: list[Mapping[str, Any]], ci: Mapping[str, list[str]]) -> list[str]:
+    """The registry merges on the base (newest first) whose LIVE ci FAILED while their first
+    parent's ci PASSED (so the merge itself broke LIVE, not a base-side transient it inherited),
+    and that no listed commit reverts. `commits`: the base's recent commits, newest first; `ci`:
+    sha -> conclusions of its completed ci runs. Cancelled or still-running is never a failure."""
+    reverted = {
+        m.group(1)
+        for c in commits
+        for m in re.finditer(r"This reverts commit ([0-9a-f]{40})", str(c["commit"]["message"]))
+    }
+    out = []
+    for c in commits:
+        msg, sha = str(c["commit"]["message"]), str(c["sha"])
+        parents = [str(x.get("sha")) for x in c.get("parents") or []]
+        first = parents[0] if parents else ""
+        if (
+            is_registry_merge(msg)
+            and "failure" in ci.get(sha, [])
+            and "success" in ci.get(first, [])
+            and sha not in reverted
+        ):
+            out.append(sha)
+    return out
+
+
+def is_registry_merge(msg: str) -> bool:
+    return msg.startswith("Merge #") and REGISTRY_TITLE in msg.split("\n", 1)[0]
+
+
+def _ci_conclusions(repo: str, sha: str) -> list[str]:
+    runs = _gh(f"repos/{repo}/actions/runs?head_sha={sha}&per_page=20") or {}
+    return [
+        str(r.get("conclusion"))
+        for r in runs.get("workflow_runs") or []
+        if r.get("name") == "ci" and r.get("status") == "completed"
+    ]
+
+
+def auto_revert(repo: str, base: str) -> int:
+    """AUTO-REVERT (journal D-20261103-005): a registry merge that turned LIVE ci red is reverted
+    on the base by the box, so the tree goes back to the one LIVE ran green before it. Any
+    failure is logged and leaves the base as it is (rc 1); a revert that does not apply is
+    aborted and the checkout is put back on the base, so the next sweep starts clean. It never
+    merges anything."""
+    try:
+        commits = _gh(f"repos/{repo}/commits?sha={base}&per_page=30") or []
+        ci: dict[str, list[str]] = {}
+        for c in commits:
+            if is_registry_merge(str(c["commit"]["message"])):
+                ci[str(c["sha"])] = _ci_conclusions(repo, str(c["sha"]))
+                parents = c.get("parents") or []
+                if parents:
+                    first = str(parents[0].get("sha"))
+                    ci[first] = _ci_conclusions(repo, first)
+        bad = to_revert(commits, ci)
+    except (RuntimeError, subprocess.SubprocessError, KeyError, TypeError, AttributeError) as exc:
+        _summary(f"AUTO-REVERT failed, nothing reverted: {exc}")
+        return 1
+    rc = 0
+    for sha in bad:
+        try:
+            _git("fetch", "-q", "--no-tags", "origin", base)
+            # an older revert past the 30 listed commits still counts (#591 audit SF2)
+            if _git("log", f"origin/{base}", "--format=%H", f"--grep=This reverts commit {sha}"):
+                continue
+            _git("checkout", "-q", "-B", "gate-auto-revert", f"origin/{base}")
+            _git("revert", "-m", "1", "--no-edit", sha)
+            _git("push", "-q", "origin", f"HEAD:{base}")
+            _summary(f"AUTO-REVERT: {sha[:9]} (a registry merge) broke LIVE ci; reverted on {base}")
+        except (RuntimeError, subprocess.SubprocessError) as exc:
+            _summary(f"AUTO-REVERT of {sha[:9]} failed, nothing pushed: {exc}")
+            rc = 1
+        finally:
+            for args in (("revert", "--abort"), ("checkout", "-q", "--detach", f"origin/{base}")):
+                with contextlib.suppress(RuntimeError, subprocess.SubprocessError):
+                    _git(*args)
+    return rc
 
 
 def sweep(
@@ -1103,8 +1378,9 @@ def sweep(
     limit, so the sweep was killed before its first log line, every time, from 13:14Z. Now one
     cheap read skips a PR whose gating checks are still running (a skip never merges anything),
     each line is flushed as it is written, and the pass stops at `budget_s`."""
+    # a red registry merge goes back before anything new merges (only where registry merges run)
+    rc = auto_revert(repo, base) if os.environ.get(REGISTRY_ENV) else 0
     pages = _gh(f"repos/{repo}/pulls?state=open&base={base}&per_page=100", "--paginate", "--slurp")
-    rc = 0
     deadline = clock() + budget_s
     looked = skipped = failed = 0
     # MERGE-READY FIRST (Desk health 2026-10-29 20:20Z: ~6 PRs a sweep, in listing order, so a
@@ -1113,18 +1389,33 @@ def sweep(
     # quarantines it and counts in rc; #552 audit SF4), then checks still running. The read is
     # ORDER ONLY: no PR is dropped on it, so a forged check run can reorder but never hide one
     # (#552 audit SF3); every merge and bring-up decides on provenance-checked runs.
+    # REGISTRY FIRST: a PR whose latest registry row CLEARs its exact listed head is the one a
+    # sweep can merge without zuck, so it is run before any order read (an ordering only: its
+    # full run still checks the window, every job and the HOLDs).
+    reg_rows, _ = registry_rows(os.environ.get(REGISTRY_ENV))
+    latest = {r.get("pr"): r for r in reg_rows}
     ready: list[tuple[int, int, int]] = []
     bring_ups = [BRING_UPS_PER_SWEEP]
+    read_until = clock() + budget_s * PRE_READ_SHARE
+    unread = 0
     for i, p in enumerate(_flat(pages)):
-        if clock() > deadline:  # the pre-read is inside the budget too (#552 audit SF6)
-            _summary("sweep budget spent while reading checks; the next sweep goes on")
-            break
         n = int(p["number"])
         head = str((p.get("head") or {}).get("sha") or "")
+        row = latest.get(n) or {}
+        if head and row.get("verdict") == "CLEAR" and row.get("sha") == head:
+            ready.append((-1, i, n))
+            continue
+        if clock() > min(deadline, read_until):  # the pre-read is inside the budget (#552 SF6)
+            unread += 1
+            ready.append((4, i, n))  # never dropped: ordered after every PR that was read
+            continue
         rank = 1
         if head:  # no sha in the listing: no shortcut, the full run decides
             try:
-                got = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100")
+                got = _gh(
+                    f"repos/{repo}/commits/{head}/check-runs?per_page=100",
+                    timeout=PRE_READ_TIMEOUT_S,
+                )
             # A TIMEOUT SKIPS ONE PR (Desk health 2026-11-03: 378 sweeps since 10-30 died on one
             # 120 s gh TimeoutExpired here, so every sweep read "0 looked at" and merged nothing).
             except (RuntimeError, subprocess.SubprocessError) as exc:
@@ -1143,6 +1434,9 @@ def sweep(
                 every = checks(runs, GATING_JOBS + AUTO_JOBS, lambda r: True)[0]
                 rank = 0 if every == "pass" else 1
         ready.append((rank, i, n))
+    if unread:
+        _summary(f"order read stopped at {PRE_READ_SHARE:.0%} of the budget; {unread} PR(s) unread "
+                 "go last")  # fmt: skip
     for _rank, _i, n in sorted(ready):
         if clock() > deadline:
             _summary(f"sweep budget of {budget_s / 60:.0f} min spent after {looked} PRs; "

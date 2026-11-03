@@ -214,6 +214,15 @@ def _decay() -> None:
     decay_monitor.main()
 
 
+def _loss_replace() -> None:
+    """Apply the loss learner's REPLACE verdicts, after decay has judged the same day's book: a
+    parent is retired only when its forward-superior variant already holds capital."""
+    import loss_learner
+    res = loss_learner.act()
+    dlog(f"loss_replace: {res.get('status')}, {len(res.get('done') or [])} action(s), "
+         f"{res.get('window_requests', 0)} window request(s)")
+
+
 def _markout() -> None:
     from mt5desk.markout import compute, load_jsonl, render
     data = BASE / "data"
@@ -892,6 +901,7 @@ STEPS = (("weekly_hunt_refresh", _weekly_hunt_refresh),
          ("execution", _execution), ("recertify", _recertify),
          ("promoter", _promote), ("markout", _markout),
          ("portfolio", _portfolio), ("control_room", _control_room), ("decay", _decay),
+         ("loss_replace", _loss_replace),
          ("state_research_feedback", _state_research_feedback),
          ("research_memory", _research_memory),
          ("module_rent", _module_rent), ("zentech", _zentech), ("conservation", _conservation),
