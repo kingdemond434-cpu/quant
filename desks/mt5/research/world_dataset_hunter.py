@@ -3379,8 +3379,21 @@ def _free_disk_ok() -> tuple[bool, dict[str, Any]]:
                              "floor_gb": round(need / 1024 ** 3, 2)}
 
 
+def _jp_retail() -> Any:
+    try:
+        from research import jp_retail_flow as jrf
+    except ImportError:                                                       # pragma: no cover
+        import jp_retail_flow as jrf  # type: ignore[no-redef]
+    return jrf
+
+
 def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: Fetcher | None = None,
-        now: datetime | None = None, dry_run: bool = False) -> dict[str, Any]:
+        now: datetime | None = None, dry_run: bool = False,
+        labelled_fetch: Any = None) -> dict[str, Any]:
+    """One pass. `labelled_fetch` is the JAPAN RETAIL FLOW doors' transport (jp_retail_flow:
+    robots read as a LABEL, never a stop, LAWS 5e). Production (`fetch` None) uses its desk
+    transport; a caller that injects `fetch` runs those doors only when it injects this too, so
+    a test of another door never reaches them."""
     now = now or _now()
     t0 = time.monotonic()
     deadline = t0 + max(10.0, float(budget_s))
@@ -3403,6 +3416,9 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: Fetcher | None = None,
                          qstats=qstats, by_provider=by_provider)
             fetch_country_packs(client, cat, now=now, until=t0 + (deadline - t0) * 0.65,
                                 stats=stats, qstats=qstats, by_provider=by_provider)
+            if fetch is None or labelled_fetch is not None:
+                _jp_retail().fetch_doors(cat, now=now, transport=labelled_fetch, stats=stats,
+                                         qstats=qstats, until=t0 + (deadline - t0) * 0.72)
             fetch_dbnomics(client, cat, now=now, until=deadline, stats=stats, qstats=qstats,
                            by_provider=by_provider)
     cat["updated_at"] = _iso(now)
@@ -3431,6 +3447,17 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: Fetcher | None = None,
     own = report.get("country_packs") or {}
     report["country_packs"] = {**own, **eu,
                                "packs": {**(own.get("packs") or {}), **(eu.get("packs") or {})}}
+    # JAPAN RETAIL FLOW (jp_retail_flow: TFX Click 365, JPX investor type, FFAJ OTC FX): its
+    # pack entry, and a RED / HARD_STOP door names itself in the organ's own `status`.
+    jp = _jp_retail().report(cat)
+    report["country_packs"]["packs"][jp_pack := _jp_retail().PACK] = jp
+    report["player_footprint"] = jp.pop("player_footprint")
+    if jp["red_doors"]:
+        prior = report.get("status") or "OK"
+        names = ", ".join(jp["red_doors"])
+        report["status"] = (f"{prior}, {names}" if str(prior).startswith("RED") else
+                            f"RED: {jp_pack} doors empty > {PACK_EMPTY_RED_RUNS} runs or held "
+                            f"for a person: {names}")
     write_json(REPORT, report)
     return report
 

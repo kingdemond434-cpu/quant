@@ -1869,6 +1869,113 @@ SOURCE_POLICY.update({
                       "Incapsula challenge to fetchers (alt_proxies za_statssa_retail evidence); "
                       "no terms page readable, 2026-11-03")}}},
 })
+
+
+#: JAPAN RETAIL AND INVESTOR-TYPE FLOW (2026-11-03; desks/mt5/research/jp_retail_flow.py, doors of
+#: the world dataset hunter). Both publishers' own pages were read on 2026-11-03 with WebFetch
+#: (the cloud container's proxy refuses both hosts to curl). NEITHER CARRIES A CLAUSE PERMITTING
+#: THE DESK'S USE, so both rows are IDEAS_ONLY for LIVE INPUT (fail closed: no series here sizes a
+#: position). Under LAWS 5e that is a ROUTING label, not a stop: the door mines, stores, features
+#: and tests both series in full, labelled PUBLIC_WITH_TERMS (redistribution withheld), and its
+#: missed-growth line names what live sizing forgoes (delta E[log W] UNMEASURED).
+SOURCE_POLICY.update({
+    "jp_tfx_click365": {
+        # ROUTE-level, deliberately: the rest of tfx.co.jp (asia_collector's tfx_swap_points)
+        # keeps whatever row or default it had; this row governs the sell/buy files only.
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("jp_tfx_click365", "tfx_click365"),
+        "url_patterns": (r"^(?:[^/]*\.)?click365\.jp/resorces/doc/",
+                         r"^(?:[^/]*\.)?tfx\.co\.jp/kawase/document/"),
+        "research_only": True,
+        "why": ("Tokyo Financial Exchange (Click 365 為替売買動向, retail FX open interest sell vs "
+                "buy per pair): the site reserves all rights and its site policy covers links "
+                "only; no clause grants reuse, so the series is RESEARCH-ONLY (mined and tested, "
+                "never sized live, never redistributed)"),
+        "unblock": ("TFX's written permission covering internal use of the 為替売買動向 file, "
+                    "quoted here, or a TFX market-data (相場情報提供サービス) agreement"),
+        "robots": "read at run time as a LABEL (jp_retail_flow.access_label), never a stop",
+        "terms": {"url": "https://www.click365.jp/sitepolicy.html", "checked_at": "2026-11-03",
+                  "clauses": {
+                      "copyright": "Copyright© Tokyo Financial Exchange Inc. All Rights Reserved.",
+                      "links": ("株式会社東京金融取引所（以下「TFX」という）「tfx.co.jp」webサイト"  # noqa: RUF001
+                                "へのリンクは、原則自由ですが、次に該当するサイトからのリンクは"
+                                "お断りします。"),
+                      "logo": ("※ 上記「くりっく株３６５」のロゴは、本HPへのリンクを目的と"
+                               "する場合に限り使用することが可能です。 他のいかなる目的にも"
+                               "ご利用いただけませんのでご注意ください。"),
+                      "schedule": ("毎週火曜日取引終了時のデータを提出します。 "
+                                   "(https://www.click365.jp/market.html, 為替売買動向 "
+                                   "毎週火曜日に更新; 過去分のデータに関しては直近4回分が含まれて"
+                                   "います)")},
+                  "also_read": {
+                      "https://www.tfx.co.jp/sitepolicy.html":
+                          "the same copyright line and link policy (links clause above)",
+                      "https://www.click365.jp/newsfile/news/article/20060710-01":
+                          "2006 notice: 売買別建玉数量 published from 2006-07-11, previous "
+                          "business day's data, as an Excel file"},
+                  "unread": {
+                      "https://www.tfx.co.jp/disclaimer/":
+                          "served the reader only the copyright footer on 2026-11-03: UNREAD",
+                      "https://www.click365.jp/disclaimer/":
+                          "served the reader a 404 page on 2026-11-03: UNREAD"}}},
+    "jp_jpx_investor_type": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("jp_jpx_investor_type", "jpx_investor_type"),
+        "url_patterns": (r"^(?:[^/]*\.)?jpx\.co\.jp/(?:english/)?markets/statistics-equities/"
+                         r"investor-type/",),
+        "research_only": True,
+        "why": ("JPX weekly trading by type of investors (投資部門別売買状況, TSE Prime value by "
+                "foreigners, individuals, trust banks ...): JPX's site terms bar secondary use "
+                "without its permission and ask users to refrain from high-frequency, high-load "
+                "automated retrieval; no clause permits the desk's use, so the series is "
+                "RESEARCH-ONLY (mined at one index page and a few files per six hours, tested, "
+                "never sized live, never redistributed)"),
+        "unblock": "JPX's permission (許諾), free or paid, covering the investor-type statistics",
+        "robots": "read at run time as a LABEL (jp_retail_flow.access_label), never a stop",
+        "terms": {**_JPX_TERMS, "checked_at": "2026-11-03",
+                  "clauses": {**_JPX_TERMS["clauses"],
+                              "copyright": ("著作権は日本国著作権法および国際条約により保護されて"
+                                            "います。"),
+                              "schedule": ("毎週第4営業日（通常は木曜日、祝日等非営業日がある場合は"  # noqa: RUF001
+                                           "その分後ろ倒し） 午後3時30分に資料を掲載します。")},  # noqa: RUF001
+                  "also_read": (*_JPX_TERMS["also_read"],
+                                "https://www.jpx.co.jp/markets/statistics-equities/investor-type/"
+                                "index.html (schedule clause above; files stock_1_w_YYYYMMDD_"
+                                "YYYYMMDD.xlsx since 2026-09-29)",
+                                "https://www.jpx.co.jp/markets/statistics-equities/investor-type/"
+                                "00-00-archives-00.html (stock_val_1_YYMMNN.xls value files)")}},
+    "jp_ffaj_otc_fx": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("jp_ffaj_otc_fx", "ffaj_otc_fx"),
+        "url_patterns": (r"^(?:[^/]*\.)?ffaj\.or\.jp/library/performance/fx_flash",
+                         r"^(?:[^/]*\.)?ffaj\.or\.jp/wp-content/uploads/\d{4}/\d{2}/"
+                         r"(?:trading_vol|open_position|deposit_amount|fx_flash)"),
+        "research_only": True,
+        "why": ("Financial Futures Association of Japan (店頭FX月次速報: OTC retail FX customer "
+                "open positions, sell vs buy, monthly): the site states FFAJ holds the copyright "
+                "and asks users to comply with the Copyright Act; no clause grants reuse, so the "
+                "series is RESEARCH-ONLY (mined and tested, never sized live, never "
+                "redistributed)"),
+        "unblock": "FFAJ's written permission covering internal use of the monthly statistics",
+        "robots": "read at run time as a LABEL (jp_retail_flow.access_label), never a stop",
+        "terms": {"url": "https://www.ffaj.or.jp/exception/matters/", "checked_at": "2026-11-03",
+                  "clauses": {
+                      "copyright": ("当サイトの内容については、原則として一般社団法人金融先物取引業"
+                                    "協会が著作権を有しています。"),
+                      "comply": "ご利用に当たっては、著作権法を遵守してください。",
+                      "disclaimer": ("当サイトを利用して生じた結果については一切の責任を負うもの"
+                                     "ではありません。"),
+                      "schedule": ("更新日：2026年10月15日 (https://www.ffaj.or.jp/library/"  # noqa: RUF001
+                                   "performance/fx_flash, carrying September 2026: no release "
+                                   "rule is stated)")},
+                  "also_read": {
+                      "https://www.ffaj.or.jp/library/performance/fx_flash":
+                          "files trading_vol_and_position.xls, open_position_with_mc.xls, "
+                          "trading_vol_by_cp.xls, deposit_amount_information.xls under "
+                          "/wp-content/uploads/YYYY/MM/; 売建玉 / 買建玉 in 億円",
+                      "https://www.ffaj.or.jp/en/performance/explanation/":
+                          "deposit amounts disclosed every month; no release day stated"}}},
+})
 #: The held-route rows, by key (read by `alt_proxies.HELD_ROUTES`).
 HELD_ROUTE_KEYS: frozenset[str] = frozenset(
     k for k, r in SOURCE_POLICY.items() if r.get("held_route"))
