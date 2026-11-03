@@ -334,7 +334,23 @@ def test_a_row_that_raises_is_unmeasured_and_the_pass_still_writes(tmp_path: Pat
     doc = rc.build(certificates=certs, forward=[], universe_meta={},
                    bars_loader=lambda *_: None, cursor_path=tmp_path / "cursor.json",
                    dry_run=True, max_per_pass=4)
-    rows = {r["key"]: r for r in doc["rows"]} if "rows" in doc else None
-    assert doc["counts"][rc.UNMEASURED] == 2
-    if rows is not None:
-        assert "TypeError" in rows["BAD"]["why"][0]
+    rows = {r["key"]: r for r in doc["verdicts"]}
+    assert doc["counts"][rc.UNMEASURED] == 2 and doc["rows_raised"] == 1
+    assert "TypeError" in rows["BAD"]["why"][0] and rows["BAD"]["raised"] == "TypeError"
+
+
+def test_a_ledger_read_that_raises_is_one_unmeasured_row(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(rc, "replicate_forward", lambda row, *, meta, bars, ledger: {
+        "lane": "forward", "key": row["key"], "verdict": rc.UNMEASURED, "why": []})
+
+    def ledger(key, ident):
+        if key == "BAD":
+            raise OSError("ledger torn")
+        return []
+
+    fwd = [{"key": k, "identity": {"symbol": "TESTFX", "family": "overnight_gap_decay"}}
+           for k in ("BAD", "OK")]
+    doc = rc.build(certificates=[], forward=fwd, universe_meta={}, bars_loader=lambda *_: None,
+                   ledger_loader=ledger, cursor_path=tmp_path / "cursor.json", dry_run=True,
+                   max_per_pass=4)
+    assert doc["rows_raised"] == 1 and doc["counts"][rc.UNMEASURED] == 2

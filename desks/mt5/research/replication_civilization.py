@@ -961,17 +961,19 @@ HUNT16_FAMILIES = frozenset({"dav_range_filter_adx", "hunt16_cell"})
 
 
 def _guarded(lane: str, key: str, judge: Callable[..., dict[str, Any]], *args: Any,
-             loader: Callable[[], Any] | None = None, **kwargs: Any) -> dict[str, Any]:
-    """One row that raises (its bars loader included) is UNMEASURED by name; it never aborts
-    the pass and its artifact."""
+             loaders: Mapping[str, Callable[[], Any]] | None = None,
+             **kwargs: Any) -> dict[str, Any]:
+    """One row that raises (its bars and ledger loaders included) is UNMEASURED by name and
+    marked `raised`; it never aborts the pass and its artifact. The pass counts those rows
+    (`rows_raised`), so a leg whose every row is a code error cannot pass as merely unmeasured."""
     try:
-        if loader is not None:
-            kwargs["bars"] = loader()
+        for name, load in dict(loaders or {}).items():
+            kwargs[name] = load()
         return judge(*args, **kwargs)
     except Exception as exc:
         return {"lane": lane, "key": key, "certificate": key if lane == "certificate" else None,
                 "verdict": UNMEASURED, "why": [f"row raised {type(exc).__name__}: {exc}"],
-                "ours": {}, "theirs": {}}
+                "raised": type(exc).__name__, "ours": {}, "theirs": {}}
 
 
 def rebuild(family: str, bars: Bars, p: Mapping[str, Any], cost_units: float
@@ -1400,8 +1402,8 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         # UNMEASURED before the bars are touched, so opening its parquet was pure cost
         rows.append(_guarded("certificate", certificate_id(row), replicate_certificate, row,
                              meta=dict(meta_all.get(sym) or {}),
-                             loader=functools.partial(bars_loader, sym, tf) if _has_rule(idx)
-                             else (lambda: None)))
+                             loaders={"bars": functools.partial(bars_loader, sym, tf)
+                                      if _has_rule(idx) else (lambda: None)}))
         taken += 1
         if n >= len(first):
             cursor["certificates"] = (idx + 1) % len(certs)
@@ -1414,8 +1416,9 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         sym, tf = str(ident.get("symbol") or ""), str(ident.get("timeframe") or "H1")
         rows.append(_guarded("forward", str(row.get("key") or ""), replicate_forward, row,
                              meta=dict(meta_all.get(sym) or {}),
-                             loader=functools.partial(bars_loader, sym, tf),
-                             ledger=ledger_loader(str(row.get("key") or ""), ident)))
+                             loaders={"bars": functools.partial(bars_loader, sym, tf),
+                                      "ledger": functools.partial(
+                                          ledger_loader, str(row.get("key") or ""), ident)}))
         cursor["forward"] = (fi + k + 1) % len(fwd)
     recorded = record(rows, conn=conn, dry_run=dry_run, quarantine_path=quarantine_path)
     counts = {v: sum(1 for r in rows if r["verdict"] == v)
@@ -1425,7 +1428,8 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         "sharpe_metric_version": SHARPE_METRIC_VERSION,
         "population": {"certificates": len(certs), "forward_rows": len(fwd),
                        "spec_book": sorted(SPEC_BOOK)},
-        "n": len(rows), "counts": counts, "verdicts": rows,
+        "n": len(rows), "counts": counts,
+        "rows_raised": sum(1 for r in rows if r.get("raised")), "verdicts": rows,
         "quarantined": [r["key"] for r in rows if r["verdict"] == MISMATCH],
         "unmeasured": [{"what": r["key"], "why": "; ".join(r["why"])} for r in rows
                        if r["verdict"] == UNMEASURED],
