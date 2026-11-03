@@ -98,7 +98,8 @@ def test_the_parser_reads_the_public_table_layout() -> None:
     pol = dict(cb.series["cb_net_t_poland"])
     assert "2023-05" not in pol                       # "-" is absent, never zero
     assert pol["2023-06"] == 2.4 and pol["2023-08"] == -0.6   # "(0.6)" is a sale
-    assert min(pol) == "2023-06" and max(pol) == "2026-08"
+    assert min(pol) == "2023-06" and max(pol) == "2026-07"   # its Aug-2026 cell is "-"
+    assert max(dict(cb.series["cb_net_t_china"])) == "2026-08"
     assert {"cb_net_t_china", "cb_net_t_czech_republic", "cb_net_t_uzbekistan"} <= set(cb.series)
     # the reporting total is derived from the countries, period by period
     tot = dict(cb.series["cb_net_t_total_reporting"])
@@ -126,15 +127,15 @@ def test_a_page_without_the_table_parses_to_nothing() -> None:
 def test_each_observation_is_stamped_by_publication_never_by_its_period() -> None:
     s = {x["code"]: x for x in cp.series_from_bodies(cp.BY_ID["wgc_cb_monthly"],
                                                       [_body("wgc_cb_monthly.html")], NOW)}
-    rel = s["cb_net_t_poland"]["release_at"]
+    rel = s["cb_net_t_china"]["release_at"]
     for per, stamp in rel.items():
         end = cp._month_end(int(per[:4]), int(per[5:7]))
         assert datetime.fromisoformat(stamp).date() > end, per    # never the period date
     # history: the publisher's monthly lag rule (month end + 45 days, 12:00 UTC, a weekday)
-    assert rel["2026-07"] == "2026-09-14T12:00:00+00:00"
+    assert rel["2026-06"] == "2026-08-14T12:00:00+00:00"
     # the newest period is first published by THIS page: its own date binds when it is later
     assert rel["2026-08"] == "2026-11-03T00:00:00+00:00"
-    assert s["cb_net_t_poland"]["stems"] == ["XAU"]
+    assert s["cb_net_t_china"]["stems"] == ["XAU"]
     etf = {x["code"]: x for x in cp.series_from_bodies(cp.BY_ID["wgc_etf_flows"],
                                                        [_body("wgc_etf_flows.html")], NOW)}
     # ETF flows: month end + 10 days 12:00 UTC (Oct 10 is a Saturday -> Monday); the page's own
@@ -150,7 +151,7 @@ def test_the_store_keys_each_value_on_its_publication(box) -> None:
         assert hdr.get("User-Agent") == pf.DESK_UA      # the honest desk agent
     frame = pd.read_parquet(W.dataset_path("WGC", "wgc_cb_monthly"))
     assert (frame["available_time"] > frame["period_end"]).all()
-    last = frame[(frame["series_code"] == "cb_net_t_poland") & (frame["period"] == "2026-08")]
+    last = frame[(frame["series_code"] == "cb_net_t_china") & (frame["period"] == "2026-08")]
     assert last["available_time"].iloc[0] == pd.Timestamp("2026-11-03T00:00:00Z")
     expo = json.loads(W.EXPOSURE.read_text("utf-8"))
     assert W.series_key("WGC", "wgc_etf_flows", "etf_flows_t_asia") in expo["symbols"]["XAUUSD"]

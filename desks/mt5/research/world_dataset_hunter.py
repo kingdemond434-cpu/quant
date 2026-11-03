@@ -3010,9 +3010,11 @@ def fetch_country_packs(client: Client, cat: dict[str, Any], *, now: datetime, u
                     "score": dataset_score(door.provider, door.name) + 4.0})
         if not _due(row, now):
             continue
-        held = cp.gate(door)
+        held = cp.login_hold(row) or cp.gate(door)
         if held:
-            row.update({"pack_state": held[0], "fail_reason": held[1],
+            row.update({"pack_state": held[0],
+                        "fail_reason": ("login_required" if row.get("login_held_at")
+                                        and not row.get("login_released_by") else held[1]),
                         "next_due": _iso(now + timedelta(hours=DIRECT_REFRESH_H))})
             stats[f"pack:{held[0]}"] += 1
             continue
@@ -3028,12 +3030,29 @@ def fetch_country_packs(client: Client, cat: dict[str, Any], *, now: datetime, u
             series = cp.fetch_door(door, _get, now, first=first)
             if not series:
                 reason = "empty"
+        except cp.LoginRequired:
+            reason = "login_required"
         except FetchError as exc:
             if exc.reason == "budget_exhausted":
                 break
             reason = exc.reason
+            if reason == "terms_fenced" and "login_wall" in str(exc.detail):
+                reason = "login_required"                 # a redirect into a login wall
         except Exception as exc:
             reason = f"parse:{type(exc).__name__}"
+        if reason == "login_required":
+            # A LOGIN WALL IS A HARD STOP, HELD FOR A PERSON: never logged into, never retried
+            # by a clock, never an empty run (so never RED). A person releases it by writing
+            # `login_released_by` on this catalog row.
+            from libs.data import polite_fetch as _pf
+            row.update({"pack_state": "HELD", "fail_reason": "login_required",
+                        "login_held_at": _iso(now), "login_released_by": None,
+                        "missed_growth": _pf.hold_missed_growth(
+                            door.provider, "LOGIN_REQUIRED", "login",
+                            f"{door.id}: its page answered with a login wall"),
+                        "next_due": _iso(now + timedelta(hours=DIRECT_REFRESH_H))})
+            stats["pack:login_required"] += 1
+            continue
         if reason:
             row["empty_streak"] = int(row.get("empty_streak") or 0) + 1
             row.setdefault("first_empty_at", _iso(now))
@@ -3081,6 +3100,9 @@ def country_packs_eu_report(cat: dict[str, Any], now: datetime) -> dict[str, Any
                 "verdict": live["dependencies"][d.id]["verdict"], "policy": d.policy,
                 "state": r.get("pack_state") or UNMEASURED, "why": r.get("fail_reason"),
                 "rows": r.get("rows") if r.get("fetched_at") else UNMEASURED,
+                **({"missed_growth": r["missed_growth"]} if r.get("missed_growth")
+                   and r.get("pack_state") == "HELD" else {}),
+                **({"access": acc} if (acc := cp.access_of(d)) else {}),
                 "series": {c: {"quality": v.get("quality"), "instruments": v.get("instruments"),
                                "key": v.get("key")} for c, v in ser.items()} or UNMEASURED,
                 "instruments": (sorted({i for v in ser.values() for i in v.get("instruments")

@@ -403,6 +403,32 @@ SEED: tuple[Seed, ...] = (
        "cross_asset_residual", axis_actor="inventory_laden_dealer",
        actor_terms=("etf", "creation", "redemption", "tonnes", "authorised participant"),
        desk_path="data/intelligence/world"),
+    # THE WORLD GOLD COUNCIL DOORS (research/country_packs.py `wgc`, hourly through the world
+    # dataset hunter): each row's observable is the door's own PIT store, so it is measurable
+    # exactly when the door has landed data on this box.
+    _s("central_bank_gold_reserve_flow",
+       "central banks adding gold to (or selling it from) their reserves",
+       "a reserve-diversification mandate is executed in tonnes over months, set by committee "
+       "and largely indifferent to the gold price on the day it is bought",
+       "WGC monthly central-bank gold purchases and sales by country (tonnes), stamped at "
+       "publication",
+       "series", "buy", ("prefix:XAU",), "multi_day", "all",
+       "World Gold Council Goldhub monthly central bank statistics (public page; IMF IFS)",
+       0.5, "cross_asset_residual", axis_actor="calendar_constrained_allocator",
+       actor_terms=("central bank gold", "official sector", "reserve diversification",
+                    "gold reserves"),
+       desk_path="data/world_datasets/obs/WGC/wgc_cb_monthly.parquet"),
+    _s("regional_gold_etf_flow",
+       "regional gold ETF holders (North America, Europe, Asia) through their funds' creations "
+       "and redemptions",
+       "a fund's metal must move with its share count, so a region's investor flow becomes "
+       "physical buying or selling within days whatever the price",
+       "WGC gold ETF holdings and flows by region (tonnes, US$mn), stamped at publication",
+       "series", "two_sided", ("prefix:XAU",), "multi_day", "all",
+       "World Gold Council Goldhub gold ETF holdings and flows (public page)", 0.5,
+       "cross_asset_residual", axis_actor="inventory_laden_dealer",
+       actor_terms=("gold etf", "etf flows", "etf holdings", "regional flows"),
+       desk_path="data/world_datasets/obs/WGC/wgc_etf_flows.parquet"),
     _s("retail_broker_triple_swap",
        "retail brokers and their clients carrying positions over the value-date roll",
        "spot settles T+2, so the Wednesday roll carries three days of financing; a negative-carry"
