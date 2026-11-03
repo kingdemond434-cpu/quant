@@ -203,7 +203,7 @@ def lane(symbol: str) -> str:
 CROSS_SECTIONAL_FAMILIES = frozenset({
     "cross_sectional_class_momentum", "cross_sectional_class_reversal",
     "cross_sectional_class_value", "cross_sectional_class_low_vol",
-    "crisis_only_class_defensive", "lead_lag_class_catchup",
+    "crisis_only_class_defensive", "lead_lag_class_catchup", "cross_sectional_class_carry",
 })
 
 

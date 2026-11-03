@@ -415,10 +415,56 @@ def test_the_box_sweep_skips_pending_prs_streams_and_stops_on_budget(
     monkeypatch.setattr(ag, "_gh", gh)
     monkeypatch.setattr(ag, "run", fake_run)
     assert ag.sweep("o/r", ag.LIVE) == 0 and ran == [1, 3, 2]  # still running: last
-    ticks = iter([0.0] * 5 + [10_000.0] * 5)  # start, three pre-reads, one run, then out
+    # start, the order read's own cutoff, three pre-reads, one run, then out
+    ticks = iter([0.0] * 6 + [10_000.0] * 5)
     ran.clear()
     ag.sweep("o/r", ag.LIVE, budget_s=60, clock=lambda: next(ticks))
     assert ran == [1]
+
+
+def test_a_registry_cleared_head_runs_first_and_a_slow_order_read_never_eats_the_budget(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """2026-11-03 19:08Z: 209 order reads at ~13 s each spent the whole budget, so the sweep
+    never reached a merge. The registry's CLEARed exact heads run first with no read; the order
+    read stops at PRE_READ_SHARE of the budget and the rest go last, never dropped."""
+    prs = [{"number": n, "head": {"sha": f"{n:040d}"}} for n in (1, 2, 3, 4)]
+    reg = tmp_path / "registry.jsonl"
+    reg.write_text(
+        "\n".join(
+            json.dumps(r)
+            for r in (
+                {"pr": 3, "sha": f"{3:040d}", "verdict": "CLEAR", "at": "2026-11-03T00:00:00Z"},
+                {"pr": 4, "sha": "f" * 40, "verdict": "CLEAR", "at": "2026-11-03T00:00:00Z"},
+            )
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv(ag.REGISTRY_ENV, str(reg))
+    green = [{"name": j, "status": "completed", "conclusion": "success",
+              "started_at": "t"} for j in ag.GATING_JOBS]  # fmt: skip
+    reads: list[str] = []
+    now = [0.0]
+
+    def gh(path: str, *a: Any, **k: Any) -> Any:
+        if path.startswith("repos/o/r/pulls?"):
+            return [prs]
+        if path.startswith("repos/o/r/commits?"):
+            return []  # auto_revert: nothing on the base to look at
+        if "/check-runs" in path:
+            assert k.get("timeout") == ag.PRE_READ_TIMEOUT_S  # a short timeout for the order read
+            reads.append(path)
+            now[0] += 50.0  # one slow read spends half the order-read share of a 200 s budget
+            return {"check_runs": green}
+        raise AssertionError(path)
+
+    ran: list[int] = []
+    monkeypatch.setattr(ag, "_gh", gh)
+    monkeypatch.setattr(ag, "run", lambda repo, n, *a, **k: ran.append(n) or 0)
+    ag.sweep("o/r", ag.LIVE, budget_s=200, clock=lambda: now[0])
+    assert ran[0] == 3  # the registry CLEAR of its exact head: first, and never read
+    assert all("0" * 39 + "3" not in r for r in reads)
+    assert len(reads) == 2 and sorted(ran) == [1, 2, 3, 4]  # #4's row names another head
 
 
 def test_the_watcher_runs_on_every_exit_of_the_box_sweep() -> None:
@@ -652,13 +698,20 @@ def test_the_sign_train_heartbeat_reds_when_stale_failing_wedged_or_unread() -> 
     two = dict(ok, rc=1, fail_runs=2)  # two in a row is not yet RED
     assert mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=two, sign_expected=True)["red"] == []
     # v3: a closed-unmerged wait carries waiting_on too, so it reds like an open one
-    closed = dict(ok, waiting_on="claude/sign-train-def", waiting_since=_iso(150),
-                  note="a sign PR for def was closed unmerged; waiting for LIVE to move")
+    closed = dict(
+        ok,
+        waiting_on="claude/sign-train-def",
+        waiting_since=_iso(150),
+        note="a sign PR for def was closed unmerged; waiting for LIVE to move",
+    )
     rep = mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=closed, sign_expected=True)
     assert [r.split(":")[0] for r in rep["red"]] == ["SIGN_TRAIN_WAITING"]
     # v3 SF: an untimeable wait, or a counter that is not a number, reds instead of raising
-    for odd in (dict(ok, waiting_on="claude/sign-train-abc", waiting_since="soon"),
-                dict(ok, fail_runs={"n": 1}), dict(ok, mutex_held_runs="x")):
+    for odd in (
+        dict(ok, waiting_on="claude/sign-train-abc", waiting_since="soon"),
+        dict(ok, fail_runs={"n": 1}),
+        dict(ok, mutex_held_runs="x"),
+    ):
         rep = mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=odd, sign_expected=True)
         assert rep["status"] == "RED"
     swept = {"at": _iso(5), "rc": 0, "mutex_held_runs": [1]}
