@@ -482,3 +482,42 @@ def test_a_farm_only_clock_is_its_own_breach_never_compliant() -> None:
     compliant would hide the certificates the integrity door still holds."""
     e = law.judge(_cert(), "K", _row(n=4, lane=law.FARM_LANE), [], 72.0, "t", NOW)
     assert e["verdict"] == "FARM_ONLY" and e["breach"] is True
+
+
+def _ledger(tmp_path, at) -> None:
+    rep = tmp_path / "desks" / "mt5" / law.CLOCK_LEDGER_REPORT
+    rep.parent.mkdir(parents=True, exist_ok=True)
+    rep.write_text(json.dumps({"at": at.isoformat(), "status": "OK"}), encoding="utf-8")
+
+
+def _one_compliant_clock(monkeypatch) -> None:
+    monkeypatch.setattr(law, "host_runs_clocks", lambda desk=None: (True, "test host"))
+    monkeypatch.setattr(law, "certificates", lambda p=None: ([_cert(name="has")], []))
+    monkeypatch.setattr(law, "clock_keys", lambda c, d=None: ({"has": "K"}, []))
+    monkeypatch.setattr(law, "clock_rows", lambda d=None: ({"K": _row(n=3)}, []))
+
+
+def test_a_stale_forward_start_ledger_is_a_breach(monkeypatch, tmp_path) -> None:
+    """MEASURED 2026-11-03: the ledger report sat ~40h old while this law ran hourly."""
+    _one_compliant_clock(monkeypatch)
+    _ledger(tmp_path, NOW - timedelta(hours=law.LEDGER_STALE_H + 1))
+    doc = law.scan(root=tmp_path, now=NOW, record=False)
+    assert any(p.startswith("LEDGER_STALE") for p in doc["problems"])
+    assert doc["ok"] is False and doc["ledger_age_h"] > law.LEDGER_STALE_H
+
+
+def test_a_fresh_ledger_raises_nothing_and_an_absent_one_is_a_breach(monkeypatch,
+                                                                     tmp_path) -> None:
+    _one_compliant_clock(monkeypatch)
+    _ledger(tmp_path, NOW - timedelta(hours=2))
+    doc = law.scan(root=tmp_path, now=NOW, record=False)
+    assert not any(p.startswith("LEDGER_STALE") for p in doc["problems"])
+    (tmp_path / "desks" / "mt5" / law.CLOCK_LEDGER_REPORT).unlink()
+    doc = law.scan(root=tmp_path, now=NOW, record=False)
+    assert any(p.startswith("LEDGER_STALE") for p in doc["problems"])
+    assert doc["ledger_age_h"] == law.UNMEASURED
+
+
+def test_the_ledger_writer_is_never_deferred_by_the_rotation() -> None:
+    from libs.ops import leg_rotation as lr
+    assert "clock_ledger" in lr.ALWAYS_RUN

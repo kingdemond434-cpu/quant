@@ -127,6 +127,11 @@ DECIDED_STATUSES = frozenset({"KILL", "PROMOTED", "DEAD", "REJECTED", "RETIRED",
 #: it is judged FARM_ONLY, still a breach, but one the reader can tell from a certificate with
 #: no clock at all.
 FARM_LANE = "farm/near_miss_farm.json"
+#: The forward-start ledger every clock's window is measured against, and how old it may get.
+#: `clock_ledger` is an always-run leg, so a day-old file means the writer stopped, not that the
+#: rotation deferred it. 26h leaves a full pass of slack over a daily republish.
+CLOCK_LEDGER_REPORT = "reports/FORWARD_CLOCK_LEDGER.json"
+LEDGER_STALE_H = 26.0
 LANES = ("shadow_state.json", "qquant_shadow_state.json", "scalp_shadow_state.json",
          "external_shadow_state.json", "FAMILY_shadow_state.json", FARM_LANE)
 
@@ -519,6 +524,26 @@ def judge(cert: dict[str, Any], key: str | None, row: dict[str, Any] | None,
     return _seal(entry)
 
 
+def ledger_freshness(desk: Path, now: datetime) -> tuple[float | None, str | None]:
+    """(age in hours, problem) for the forward-start ledger report; problem None when fresh.
+
+    MEASURED 2026-11-03: the report was last written 2026-11-01 20:15 while the clock law ran
+    hourly, because the rotation kept deferring the leg and nothing read the file's age. An
+    unreadable or unstamped report is a breach too: a writer that never ran is a claim the desk
+    cannot cash (L1.49), never a clean reading."""
+    doc = _read_json(desk / CLOCK_LEDGER_REPORT)
+    at = _parse_ts(doc.get("at")) if isinstance(doc, dict) else None
+    if at is None:
+        return None, (f"LEDGER_STALE {CLOCK_LEDGER_REPORT}: unreadable or unstamped, so no "
+                      f"forward start can be shown immutable. Remedy: run the clock_ledger leg")
+    age_h = (now - at).total_seconds() / 3600.0
+    if age_h > LEDGER_STALE_H:
+        return age_h, (f"LEDGER_STALE {CLOCK_LEDGER_REPORT}: last written {at.isoformat()}, "
+                       f"{age_h:.1f}h ago (breach past {LEDGER_STALE_H:g}h). Remedy: run the "
+                       f"clock_ledger leg -- it is always-run, so find what stopped it")
+    return age_h, None
+
+
 def scan(root: Path | None = None, *, now: datetime | None = None,
          record: bool = True) -> dict[str, Any]:
     base = Path(root or ROOT)
@@ -636,6 +661,13 @@ def scan(root: Path | None = None, *, now: datetime | None = None,
             f"as `params changed after the clock froze`. Remedy: collapse the duplicate in "
             f"the organ that mints canon -- never retire the clock")
 
+    ledger_age_h, ledger_problem = ledger_freshness(desk, t)
+    if ledger_problem:
+        problems.append(ledger_problem)
+    else:
+        notes.append(f"forward-start ledger republished {ledger_age_h:.1f}h ago "
+                     f"(breach past {LEDGER_STALE_H:g}h)")
+
     doc = {
         "at": t.isoformat(), "law": "L1.102", "alert_id": ALERT_ID,
         "host_why": why_host,
@@ -646,6 +678,7 @@ def scan(root: Path | None = None, *, now: datetime | None = None,
         "n_clock_rows": len(rows),
         "counts": counts,
         "n_late": len(late),
+        "ledger_age_h": UNMEASURED if ledger_age_h is None else round(ledger_age_h, 2),
         "latency_breach_h": LATENCY_BREACH_H,
         "family_gap_hours": {k: round(v, 3) for k, v in sorted(gaps.items())},
         "collisions": collisions,
