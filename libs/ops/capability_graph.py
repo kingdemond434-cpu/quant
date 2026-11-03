@@ -839,6 +839,14 @@ NODES: tuple[Node, ...] = (
                 "desks/mt5/data/universe/universe.json")),
     Node("cost_to_edge", "desks/mt5/research/cost_to_edge.py",
          writes=("desks/mt5/reports/COST_TO_EDGE.json",)),
+    Node("cell_emitter", "desks/mt5/research/cell_emitter.py",
+         reads=("desks/mt5/data/cell_emitter_sources.json", "desks/mt5/data/universe/"),
+         writes=("desks/mt5/reports/CELL_EMITTER.json",
+                 "desks/mt5/data/intelligence/cell_emitter/",
+                 "desks/mt5/data/cell_emitter_state.json"),
+         # Its cells reach a decision only through the compiler that reads its intake glob, so
+         # it is priced there, as alpha_registry and intake_catchup are.
+         billed_as=("miner_candidate_compiler",)),
     # Prices every arm of one decision (veto, sizing, execution, exit, missed trade); the rent
     # ledger already bills two of those arms under their own names, and this node's output is
     # the union of them rather than a new line.
@@ -905,6 +913,19 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/data/compute_ledger.jsonl",)),
     Node("hourly_cycle", "desks/mt5/research/hourly_cycle.py",
          writes=("desks/mt5/data/sync_marker.json",)),
+    # THE SRB BASKET PAIR (audit of #138). The sweep mints uncorrelated session_range_breakout
+    # legs off the hypothesis lane minus what the live book already holds; the judge sums them
+    # into baskets, charges every basket to the trial census BEFORE the sealed gauntlet sees it,
+    # and publishes a judgement that is, today, read by a person only (see HUMAN_READ).
+    Node("srb_uncorrelated_sweep", "desks/mt5/research/srb_uncorrelated_sweep.py",
+         writes=("desks/mt5/reports/SRB_UNCORRELATED_SWEEP.json",),
+         reads=("desks/mt5/data/sleeves.json", "desks/mt5/data/universe/universe.json")),
+    Node("srb_basket_judge", "desks/mt5/research/srb_basket_judge.py",
+         writes=("desks/mt5/reports/SRB_BASKET_JUDGEMENT.json",
+                 "desks/mt5/data/srb_basket_leg_costs.json",
+                 "desks/mt5/data/srb_basket_trials.jsonl"),
+         reads=("desks/mt5/reports/SRB_UNCORRELATED_SWEEP.json",
+                "desks/mt5/data/universe/universe.json")),
 )
 
 #: Artifacts a person is expected to read. Being the ONLY reader of a node's output makes that
@@ -914,6 +935,10 @@ HUMAN_READ = frozenset({
     # code and the work orders it names; the converters are the organs that already own each
     # field, so nothing in the graph sizes on it.
     "desks/mt5/reports/MEASURABILITY.json",
+    # The SRB basket judgement: no organ reads it yet (no basket is promotable from it -- the
+    # in-sample rules are labelled, and run_gauntlet here writes no certificate). A reader is
+    # the follow-up; until then it is a report for a person, declared as such.
+    "desks/mt5/reports/SRB_BASKET_JUDGEMENT.json",
     # The weekly novelty count; its decision input is STYLE_NOVELTY.json above.
     "desks/mt5/reports/NOVELTY_WEEKLY.json",
     # merge_hypotheses writes a census receipt, not a decision input. Its executable
@@ -978,6 +1003,9 @@ HUMAN_READ = frozenset({
     "desks/mt5/reports/ANOMALY_FACTORY.json", "desks/mt5/reports/SURVIVOR_DISTILLER.json",
     "desks/mt5/reports/COEVOLUTION.json", "desks/mt5/reports/REPO_MINER.json",
     "desks/mt5/reports/DEEP_FOREST.json", "desks/mt5/reports/REVIVAL.json",
+    # The cell emitter's per-ground yield: the donations reach decisions through the compiler
+    # (data/intelligence/cell_emitter/); this report is the evidence a person reads beside them.
+    "desks/mt5/reports/CELL_EMITTER.json",
     "desks/mt5/reports/EXIT_ACCOUNTS.json", "desks/mt5/reports/ACTION_COUNTERFACTUALS.json",
     "desks/mt5/reports/RESEARCH_PNL.json", "desks/mt5/reports/MUTATION_YIELD.json",
     "desks/mt5/reports/RESEARCH_BANDIT.json",
@@ -1089,6 +1117,9 @@ EXTERNAL_READERS = {
     "desks/mt5/data/research_budget.json": ("daily_cycle proposer budgets and deepening_worker "
                                             "voi_order, through bandit.arm_weight"),
     "desks/mt5/data/coevolution_trials.jsonl": "experiment_ledger (lifetime multiplicity)",
+    "desks/mt5/data/srb_basket_trials.jsonl": ("experiment_ledger._proposer_counts (lifetime "
+                                               "multiplicity: the deflated-Sharpe N)"),
+    "desks/mt5/data/srb_basket_leg_costs.json": "srb_basket_judge (its own leg-cost cache)",
     "desks/mt5/data/intelligence/world/frontier.json": "world_crawler (side_channels)",
     "desks/mt5/data/repo_cache/": "repo_miner (its own cache)",
     "desks/mt5/data/intelligence/alpha_evolution/": "miner_candidate_compiler intake glob",
@@ -1097,6 +1128,8 @@ EXTERNAL_READERS = {
     "desks/mt5/data/intelligence/tail_alpha/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/anomaly_factory/": "miner_candidate_compiler intake glob",
     "desks/mt5/data/intelligence/survivor_distiller/": "miner_candidate_compiler intake glob",
+    "desks/mt5/data/intelligence/cell_emitter/": "miner_candidate_compiler intake glob",
+    "desks/mt5/data/cell_emitter_state.json": "cell_emitter (its own cursor and seen-ledger)",
     "desks/mt5/data/features/": "feature_store (content-addressed cache)",
     # CODE READERS OUTSIDE THE GRAPH, each found by grepping the artifact's filename and the
     # reader's own constant (2026-09-29). None of these is a graph node, so the edge lives here.
@@ -1170,6 +1203,7 @@ def _covers(declared: str, path: str) -> bool:
 #: Declared so a DEAD_CONSUMER verdict cannot be silenced by an unnamed "somebody writes it".
 CONFIG_INPUTS = frozenset({
     "desks/mt5/data/repo_watchlist.json", "desks/mt5/data/deep_forest_sources.json",
+    "desks/mt5/data/cell_emitter_sources.json",
     "desks/mt5/data/universe/universe.json",
     # Box-produced inputs: acquire_datasets fills this from the prospector's targets.
     "desks/mt5/data/acquired/",

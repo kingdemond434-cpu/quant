@@ -1,6 +1,6 @@
 {
  "schema": "backup_state/1",
- "at": "2026-10-29T14:31:31+00:00",
+ "at": "2026-11-03T17:30:54+00:00",
  "host": "vmi3571445",
  "last_backup_at": null,
  "last_restore_drill_at": null,
@@ -19,22 +19,25 @@
  },
  "ops_redundancy": {
   "state": "FAIL",
-  "at": "2026-10-20T07:18:01+00:00",
+  "at": "2026-10-31T19:09:51+00:00",
   "offbox_restore_drill": "PASS"
  },
  "reboot_drill": {
   "state": "PASS",
-  "at": "2026-10-28T04:31:30+00:00",
+  "at": "2026-11-03T04:30:25+00:00",
   "n_failures": 0
  },
  "moat": {
   "backup": {
-   "state": "UNMEASURED",
-   "why": "no moat backup manifest on this host"
+   "state": "DEGRADED",
+   "at": "2026-10-29T14:35:17+00:00",
+   "restore_drill_passed": true,
+   "n_stores": 9,
+   "n_absent": 3
   },
   "restore_drill": {
    "state": "FAIL",
-   "at": "2026-10-27T07:28:42+00:00"
+   "at": "2026-11-02T07:08:56+00:00"
   }
  },
  "key_backup": {

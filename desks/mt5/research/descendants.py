@@ -132,9 +132,10 @@ def graph_fates(path: Path | None = None) -> dict[str, str]:
     parse would have to re-derive, and the id contract is the graph's too -- a descendant whose id
     does not join the ledger's is a second spelling of a cell the desk has already judged.
     """
+    # Only fates are needed, so the streaming reader is used: the full-row parse was the step
+    # that ran before this organ's budget clock could stop anything (CRO noon 2026-09-30).
     try:
-        return {str(k): str(r.get("fate") or hg.BORN)
-                for k, r in hg.Graph(path or GRAPH_LEDGER).current().items()}
+        return hg.current_fates(path or GRAPH_LEDGER)
     except (OSError, ValueError):
         return {}
 

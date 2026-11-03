@@ -183,3 +183,13 @@ def test_is_a_core_leg_before_tier_s() -> None:
     assert "research_live_identity" in hc.CORE_LEGS
     from libs.research.layers import LEG_LAYER
     assert LEG_LAYER["research_live_identity"] == "meta"
+
+
+def test_cro_d21_counts_code_drift_and_unresolved_code_apart() -> None:
+    w = _world()
+    moved = rli.judge([_row()], **{**w, "code_of": lambda fam: ("new1", "beh1")})
+    assert moved["live_code_hash_mismatch"] == 1 and moved["live_code_hash_unmeasured"] == 0
+    same = rli.judge([_row()], **w)
+    assert same["live_code_hash_mismatch"] == 0 and same["live_code_hash_unmeasured"] == 0
+    nocode = rli.judge([_row()], **{**w, "code_of": lambda fam: (None, None)})
+    assert nocode["live_code_hash_mismatch"] == 0 and nocode["live_code_hash_unmeasured"] == 1
