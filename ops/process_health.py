@@ -165,6 +165,39 @@ def _contracts() -> dict[str, tuple[str, int, str]]:
         return {}
 
 
+#: THE COUNTRY-PACK LIVENESS VERDICT (Rule 23, 2026-11-03). Written by world_dataset_hunter
+#: (leg world_dataset_hunt) in the DEPENDENCY_LIVENESS shape the fred-axis fix introduced: RED when
+#: any country-pack door (CBRT EVDS, NBP, Riksbank, SCB) has delivered nothing on more than two
+#: consecutive attempts. The leg exits 0 either way, so the board reads the streak itself.
+COUNTRY_PACK_LIVENESS = ROOT / "desks" / "mt5" / "reports" / "COUNTRY_PACK_LIVENESS.json"
+
+
+def dependency_liveness(path: Path) -> dict[str, Any]:
+    """A DEPENDENCY_LIVENESS-shaped verdict, summarised: RED / GREEN / UNMEASURED and which
+    dependencies are RED. Absent or unreadable is UNMEASURED, never GREEN."""
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"verdict": "UNMEASURED", "why": f"{path.name} absent or unreadable on this host"}
+    if not isinstance(doc, dict) or doc.get("verdict") not in ("RED", "GREEN", "UNMEASURED"):
+        return {"verdict": "UNMEASURED", "why": f"{path.name} carries no verdict"}
+    deps = doc.get("dependencies") or {}
+    return {
+        "verdict": doc["verdict"], "at": doc.get("at"),
+        "red_after_runs": doc.get("red_after_runs"),
+        "red": [{"dependency": k, "empty_streak": (deps.get(k) or {}).get("empty_streak"),
+                 "since": (deps.get(k) or {}).get("first_empty_at"),
+                 "reason": (deps.get(k) or {}).get("last_reason")}
+                for k in (doc.get("red") or [])],
+        "not_delivering": {k: {"verdict": d.get("verdict"), "empty_streak": d.get("empty_streak"),
+                               "reason": str(d.get("last_reason") or "")[:240]}
+                           for k, d in sorted(deps.items())
+                           if isinstance(d, dict) and d.get("verdict") not in ("GREEN",)},
+        "sources": doc.get("sources") or {},
+        "artifact": str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else path.name,
+    }
+
+
 def build() -> dict[str, Any]:
     contracts = _contracts()
     now = datetime.now(tz=UTC)
@@ -263,6 +296,8 @@ def build() -> dict[str, Any]:
 
     bad = [r for r in rows if r["verdict"] in ("NOT_SCHEDULED", "SCHEDULER_UNMEASURED",
                                              "FAILING", "NO_ARTIFACT", "STALE")]
+    packs = dependency_liveness(COUNTRY_PACK_LIVENESS)
+    pack_fault = packs.get("verdict") == "RED"
     return {
         "at": now.isoformat(timespec="seconds"),
         "host": __import__("socket").gethostname(),
@@ -271,8 +306,10 @@ def build() -> dict[str, Any]:
         "counts": counts,
         # The headline is the WORST row, never the proportion that are fine. "38 of 41 healthy"
         # is how a dead gateway hides behind a green majority.
-        "status": "OK" if not bad else "ATTENTION",
-        "n_needing_attention": len(bad),
+        "status": "OK" if not bad and not pack_fault else "ATTENTION",
+        "n_needing_attention": len(bad) + int(pack_fault),
+        # A COUNTRY-PACK DOOR THAT RETURNS NOTHING, PASS AFTER PASS, WHILE ITS LEG EXITS 0.
+        "country_pack_liveness": packs,
         "processes": rows,
     }
 

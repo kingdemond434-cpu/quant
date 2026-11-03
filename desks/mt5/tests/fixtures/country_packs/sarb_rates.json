@@ -1,0 +1,20 @@
+[
+{
+"SectionId": "HPR",
+"SectionName": "Home page rates",
+"Name": "Repo rate",
+"TimeseriesCode": "KBPXXXX",
+"Date": "2026-10-30T00:00:00",
+"Value": 7.0,
+"UpDown": 0
+},
+{
+"SectionId": "HPR",
+"SectionName": "Home page rates",
+"Name": "Prime lending rate",
+"TimeseriesCode": "KBPYYYY",
+"Date": "2026-10-30T00:00:00",
+"Value": 10.5,
+"UpDown": 0
+}
+]

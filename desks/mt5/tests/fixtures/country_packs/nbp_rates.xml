@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stopy_procentowe_archiwum>
+<pozycje obowiazuje_od="2023-10-05">
+<pozycja id="ref" nazwa="Stopa referencyjna" oprocentowanie="5,75" />
+<pozycja id="lom" nazwa="Stopa lombardowa" oprocentowanie="6,25" />
+<pozycja id="dep" nazwa="Stopa depozytowa" oprocentowanie="5,25" />
+</pozycje>
+<pozycje obowiazuje_od="2025-05-08">
+<pozycja id="ref" nazwa="Stopa referencyjna" oprocentowanie="5,25" />
+<pozycja id="lom" nazwa="Stopa lombardowa" oprocentowanie="5,75" />
+<pozycja id="dep" nazwa="Stopa depozytowa" oprocentowanie="4,75" />
+</pozycje>
+<pozycje obowiazuje_od="2025-07-03">
+<pozycja id="ref" nazwa="Stopa referencyjna" oprocentowanie="5,00" />
+<pozycja id="lom" nazwa="Stopa lombardowa" oprocentowanie="5,50" />
+<pozycja id="dep" nazwa="Stopa depozytowa" oprocentowanie="4,50" />
+</pozycje>
+<pozycje obowiazuje_od="2025-09-04">
+<pozycja id="ref" nazwa="Stopa referencyjna" oprocentowanie="4,75" />
+<pozycja id="lom" nazwa="Stopa lombardowa" oprocentowanie="5,25" />
+<pozycja id="dep" nazwa="Stopa depozytowa" oprocentowanie="4,25" />
+</pozycje>
+<pozycje obowiazuje_od="2025-10-09">
+<pozycja id="ref" nazwa="Stopa referencyjna" oprocentowanie="4,50" />
+<pozycja id="lom" nazwa="Stopa lombardowa" oprocentowanie="5,00" />
+<pozycja id="dep" nazwa="Stopa depozytowa" oprocentowanie="4,00" />
+</pozycje>
+</stopy_procentowe_archiwum>
