@@ -146,3 +146,53 @@ def test_without_a_hold_the_rebase_path_is_unchanged(tmp_path, monkeypatch):
     assert row["status"] == "LIVE" and row["window_before_rebase"]["forward_start"]
     report = json.loads((desk / "reports" / "IDENTITY_HEALER.json").read_text("utf-8"))
     assert report["verdict"] == "GREEN" and report["rebased"][0]["key"] == "K"
+
+
+def test_a_hold_that_outlives_its_expiry_is_rebased_and_priced(tmp_path, monkeypatch):
+    """The Auditor's must-fix (11-03): a hold has a way out. Past HOLD_EXPIRY_H the clock is
+    rebased and the forward window it gave up is published as missed growth; inside the expiry
+    the hold keeps its FIRST start, so re-holding every hour never extends it."""
+    desk = tmp_path / "desk"
+    (desk / "data").mkdir(parents=True)
+    (desk / "reports").mkdir()
+    ident = {f: f"v-{f}" for f in reg.IDENTITY_FIELDS}
+    ident.update(family="toy", code_hash="aaaaaaaaaaaaaaaa")
+    path = desk / "data" / "sleeve_registry.json"
+    report_path = desk / "reports" / "IDENTITY_HEALER.json"
+
+    def seed(since: str) -> None:
+        path.write_text(json.dumps({"sleeves": {"K": {
+            "identity": dict(ident), "status": "IDENTITY_BROKEN",
+            "forward_start": "2026-09-27T00:00:00+00:00"}}}), "utf-8")
+        report_path.write_text(json.dumps({"held": [{"key": "K", "why": "w", "since": since}]}),
+                               "utf-8")
+
+    monkeypatch.setattr(heal, "DESK", desk)
+    monkeypatch.setattr(heal, "REPORT", report_path)
+    monkeypatch.setattr(reg, "REGISTRY", path)
+    monkeypatch.setattr(heal, "backfill_behaviour", lambda *a, **k: 0)
+    monkeypatch.setattr(heal, "freeze_unfrozen", lambda *a, **k: 0)
+    monkeypatch.setattr(heal, "current_identity",
+                        lambda row: {**ident, "code_hash": "bbbbbbbbbbbbbbbb"})
+    monkeypatch.setattr(heal, "reattach_hold", lambda row: "HELD_FOR_REATTACH: test")
+    monkeypatch.setattr(sys, "argv", ["heal", "--apply"])
+
+    from datetime import UTC, datetime, timedelta
+    recent = (datetime.now(tz=UTC) - timedelta(hours=10)).isoformat(timespec="seconds")
+    seed(recent)
+    assert heal.main() == 0
+    rep = json.loads(report_path.read_text("utf-8"))
+    assert rep["verdict"] == "RED" and rep["held"][0]["since"] == recent
+    assert rep["held"][0]["expires_at"] and rep["missed_growth"]["clocks_rebased_on_expiry"] == 0
+
+    old = (datetime.now(tz=UTC) - timedelta(hours=heal.HOLD_EXPIRY_H + 1)).isoformat(
+        timespec="seconds")
+    seed(old)
+    assert heal.main() == 0
+    row = json.loads(path.read_text("utf-8"))["sleeves"]["K"]
+    assert row["status"] == "LIVE" and row["window_before_rebase"]["forward_start"]
+    rep = json.loads(report_path.read_text("utf-8"))
+    assert rep["verdict"] == "GREEN" and rep["rebased"][0]["key"] == "K"
+    mg = rep["missed_growth"]
+    assert mg["clocks_rebased_on_expiry"] == 1 and mg["forward_days_lost"] > 30
+    assert mg["rows"][0]["held_since"] == old
