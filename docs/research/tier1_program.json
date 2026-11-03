@@ -26,7 +26,8 @@
   "S": "The free shadow-institutional stack (principal 2026-09-17): public proxy ensembles for private capabilities, free crypto L2 / Deribit as sensors, the latency laboratory, retail positioning ecology, latent actor inference, synthetic proprietary datasets, the disagreement dataset, the capability gap map",
   "X": "The L1vsun and bl888m extraction (principal 2026-09-17): forced flow, funding/OI crowding, narrative lifecycle, thesis staleness, evidence watchtower; prediction-market calibration, crowd disagreement, smart-participant archaeology with provenance, resolution truth, refusal attribution, bounded LLM",
   "U": "The data-utilization law (LAWS 5c) and the world information coverage (principal 2026-09-17): PIT truth layer, representation forge, world model posteriors, frequency matching, regional state vectors, allocator conditional distributions, counterfactual attribution, delayed ROI, the data-utilization audit, world exhaust coverage, latency map, missing-information hunter, coverage tensor",
-  "RD": "The RD-Agent closure programme (principal 2026-09-22): make every research civilization behave like one experiment directly changing the next -- one canonical ExperimentSpec, world-miner conversion to the campaign queue, the experiment memory graph, credit assignment end to end, priors updated by every completed experiment, and the funnel metric that settles it"
+  "RD": "The RD-Agent closure programme (principal 2026-09-22): make every research civilization behave like one experiment directly changing the next -- one canonical ExperimentSpec, world-miner conversion to the campaign queue, the experiment memory graph, credit assignment end to end, priors updated by every completed experiment, and the funnel metric that settles it",
+  "V": "The blueprint verification re-score (principal 2026-09-29, BACKLOG rows 20 and 82): the 138-row strict matrix and the 272-section Tier-5 audit (its 20 audit items and 52 partials) scored row by row from evidence every hour"
  },
  "acceptance_properties": [
   {
@@ -9203,6 +9204,30 @@
    ],
    "gap": "BLOCKED_ON_TERMS: cnx_shfe and cnx_ine hold terms=refused (SHFE's statement grants only non-commercial browse/download; trading use is not granted; INE is SHFE's subsidiary and its own page is unreadable), so they are never fetched and name CFTC COT (axis_ingest.py) as the substitute, coverage UNMEASURED under the #152 law (no measured corr >= 0.5 with n). The DCE, CZCE, GFEX and CFFEX rows hold terms=to_confirm (pages unreadable from the build sandbox); the principal (or the box, reading the page) flips each row's `terms` to confirmed. Live yield, the exchanges' current URL paths and the exact release instants are UNMEASURED until the box runs the leg; no exchange host is reachable from the sandbox, so every parser is proven on hand-built fixtures in the documented layouts. Not built here: SGE (P1/P4), spot basis and delivery volumes (no free dated file found), CFFEX option IV.",
    "next_step": "Principal: settle exchange terms (one field per roster row). Box: first free_stack_hunt pass after the flip; read FREE_STACK_YIELD.json per cnx_* row and each day's missing_surfaces in data/free_stack/raw/cnx_*/ to see which URL template answers."
+  },
+  {
+   "id": "BP1",
+   "item": "Re-score every blueprint row from evidence, hourly: the 138 strict rows (docs/research/blueprint_ledger.json) and the 272 Tier-5 sections, DONE / PARTIAL / OPEN / UNMEASURED per row, the 20 audit items and 52 Tier-5 partials as their own subsets, open rows ranked by E[log W] weight, RED on a lie or a fall in a DONE count",
+   "domain": "V",
+   "phase": "V",
+   "status": "EXISTS-LIT",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:blueprint_score",
+   "artifact": "desks/mt5/reports/BLUEPRINT_SCORE.json",
+   "consumer": "desks/mt5/research/issue_board.py CADENCE (staleness), scripts/run_law_gate.py (portable fence and the --require-state box half), the BACKLOG verifier routing the ranked open rows",
+   "evidence": [
+    "scripts/check_blueprint_score.py:119 -- one verifier: the blueprint ledger is judged by check_tier1_program.check, the Tier-5 ledger by check_tier5_audit.check",
+    "scripts/check_blueprint_score.py:242 -- seven marks per row (I/W/T/R/D measured on this host, A/C recorded with a 14-day TTL); the state is min(claim, evidence); a DONE claim unproven is a lie",
+    "scripts/check_blueprint_score.py:325 -- Tier-5 rows: cited files + known clock + a current artifact; a PARTIAL whose declared artifact is absent reads UNMEASURED",
+    "scripts/check_blueprint_score.py:452 -- the box half: BLUEPRINT_SCORE.json present, under 3 h old and not RED",
+    "desks/mt5/research/hourly_cycle.py:5141 -- the hourly leg blueprint_score runs it with --write",
+    "desks/mt5/research/issue_board.py:189 -- the staleness row",
+    "scripts/run_law_gate.py:160 -- the portable fence; scripts/run_law_gate.py:583 the state fence",
+    "MEASURED 2026-11-03 on the build container (branch claude/blueprint-rescore, so D reads UNMEASURED): blueprint 138 rows -- DONE 0, PARTIAL 96, OPEN 4, UNMEASURED 37, EXCLUDED 1; the 20 audit items DONE 0, PARTIAL 18, UNMEASURED 2; the 52 Tier-5 partials DONE 0, PARTIAL 12, UNMEASURED 40 (2 promotable: REPLICATION.json now present)"
+   ],
+   "gap": "",
+   "next_step": "A reviewer re-records A and C (with mark_evidence) on the rows the box's R and D marks now prove; until then no row can honestly read DONE.",
+   "landed": []
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

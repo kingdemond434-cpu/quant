@@ -183,6 +183,10 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
     # No auto-repair: its producer is the hourly cycle's `judge_alive` leg
     # (`scripts/check_judge_coverage.py --liveness --require-state`), which takes arguments.
     ("judge_alive", "desks/mt5/reports/judge_alive_fence.json", 3600, None),
+    # The blueprint re-score (hourly `blueprint_score` leg): the principal's blueprints scored
+    # row by row from evidence. No auto-repair: its producer takes `--write`, and an argless run
+    # is the portable fence, which writes nothing.
+    ("blueprint_score", "desks/mt5/reports/BLUEPRINT_SCORE.json", 3600, None),
 )
 
 #: Alarm files any detector on this tree may raise. Presence IS the issue; the file's first line
