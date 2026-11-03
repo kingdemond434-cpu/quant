@@ -412,7 +412,11 @@ def _proposers() -> None:
                  # THE PUBLIC TRADER GENOME WITH ITS GRAVEYARD (2026-10-06, audit row 35): the
                  # own-book forensics plus the alive+dead genome, its base rates, failure memory,
                  # crowding prior and style-analogue cells through the donor door.
-                 "book_forensics"):
+                 "book_forensics",
+                 # PROP-FIRM PAYOUT SHOWCASES (2026-11-03, BACKLOG row 38): the firms' own
+                 # funded-trader stories -> instrument/session/style claims -> family cells,
+                 # screened and charged through the same donor door as the genome.
+                 "prop_showcase_miner"):
         try:
             mod = __import__(name)
             kwargs = {}
