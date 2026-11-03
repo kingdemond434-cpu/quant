@@ -4893,7 +4893,31 @@ def _emit(ctx: Any, rows: list[dict[str, Any]]) -> int:
     return taken
 
 
-def mine_chokepoint_phases(pack: Any = None, ctx: Any = None) -> dict[str, Any]:
+#: The attribution the IMF terms require on every payload that carries PortWatch counts
+#: (`alt_proxies._IMF_EV["credit"]` is the source; this is the fallback when it cannot load).
+PORTWATCH_CREDIT = "Source: International Monetary Fund (IMF PortWatch)."
+
+
+def _portwatch_known(names: Iterable[str], store: Any = None,
+                     asof: datetime | None = None) -> dict[str, Any]:
+    """The IMF PortWatch chokepoint counts KNOWN at `asof` (default now), read through the one
+    organ that writes them (`alt_proxies.chokepoints_asof`, PIT: a row is visible only once its
+    release-or-read stamp has passed, and never for the decision's own day). Any failure to
+    read is UNMEASURED by name, never a zero."""
+    at = asof or datetime.now(tz=UTC)
+    try:
+        try:
+            from research import alt_proxies as _ap
+        except ImportError:
+            import alt_proxies as _ap  # type: ignore[import-not-found,no-redef]
+        return dict(_ap.chokepoints_asof(at, store, names))
+    except Exception as exc:
+        return {"status": "UNMEASURED", "series": {}, "credit": PORTWATCH_CREDIT,
+                "why": f"PortWatch reader unavailable ({type(exc).__name__})"}
+
+
+def mine_chokepoint_phases(pack: Any = None, ctx: Any = None, *, store: Any = None,
+                           asof: datetime | None = None) -> dict[str, Any]:
     """RS-A, RS-B and RS-D: the dated chokepoint boundaries, ALWAYS with the Panama control.
 
     Every row carries `panama_constrained`, because the whole identification of this pack is that
@@ -4925,11 +4949,25 @@ def mine_chokepoint_phases(pack: Any = None, ctx: Any = None) -> dict[str, Any]:
                  "horizon": "1 to 2 quarters", "needs_sibling_pack": "eg",
                  "control": "the `eg` pack's own balance-of-payments canal line, and PANAMA's "
                             "revenue series; neither pack may measure the canal alone"})
+    # THE MEASURED COUNTS, POINT IN TIME (pass-7 N4): the RS-B reroute row carries the latest
+    # Bab el-Mandeb / Suez / Cape / Panama counts KNOWN at the decision instant, or names them
+    # UNMEASURED. First vintage only -- the revision caveat below is what that guards.
+    known = _portwatch_known((SERIES["CHOKE_BAM"].split(":", 1)[1],
+                              SERIES["CHOKE_SUEZ"].split(":", 1)[1],
+                              SERIES["CHOKE_CAPE"].split(":", 1)[1],
+                              SERIES["CHOKE_PANAMA"].split(":", 1)[1]), store, asof)
+    for r in rows:
+        if r["domain"] == "RS-B":
+            r["portwatch"] = known
+            r["credit"] = known.get("credit") or PORTWATCH_CREDIT
+    unmeasured = ["the PortWatch series is REVISED as AIS gaps are backfilled, so a "
+                  "cell compiled on today's vintage for a 2024 decision is using "
+                  "information the decision did not have"]
+    if known.get("status") != "MEASURED":
+        unmeasured.append(f"RS-B/portwatch_series: {known.get('why')}")
     return {"miner": "rs_chokepoint_phases", "code": CODE, "at": _now(), "rows": rows,
-            "emitted": _emit(ctx, rows),
-            "unmeasured": ["the PortWatch series is REVISED as AIS gaps are backfilled, so a "
-                           "cell compiled on today's vintage for a 2024 decision is using "
-                           "information the decision did not have"]}
+            "emitted": _emit(ctx, rows), "portwatch": known,
+            "unmeasured": unmeasured}
 
 
 def mine_war_risk_cost(pack: Any = None, ctx: Any = None) -> dict[str, Any]:

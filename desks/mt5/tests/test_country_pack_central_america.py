@@ -616,7 +616,7 @@ def test_the_substitution_control_is_named_and_is_not_optional() -> None:
     assert "Suez" in controls and "Bab el-Mandeb" in controls
     sub = {d["id"]: d for d in CA.DOMAINS}["CA-D"]
     assert "both-constrained" in " ".join(sub["controls"]).lower()
-    report = CA.chokepoint_substitution(None, None)
+    report = CA.chokepoint_substitution(None, None, store=Path("absent-portwatch-store.json"))
     assert any("PortWatch" in u for u in report["unmeasured"]), (
         "the control miner must say UNMEASURED by name when the counterfactual series is absent")
 

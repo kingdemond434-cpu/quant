@@ -104,7 +104,14 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 SOURCE = "alt_proxies"
 INDIRECT_SOURCE = "alt_proxies_indirect"
 UNMEASURED = "UNMEASURED"
-UA = "quant-desk-alt-proxies/1.0 (+public statistics research)"
+#: The desk's honest identifying UA (pass-7 N4, 2026-10-14): a contact, no browser token.
+#: Every alt-proxies fetch, robots.txt included, sends it.
+#: EXACTLY `libs/data/polite_fetch.DESK_UA` on claude/polite-fetch-honest (0ca783b1f): LIVE has
+#: no polite_fetch.DESK_UA yet. When that branch lands this becomes
+#: `from libs.data.polite_fetch import DESK_UA as UA, DESK_UA_PRODUCT as UA_AGENT_NAME`.
+UA_AGENT_NAME = "quant-mt5-research-desk"
+UA = (f"{UA_AGENT_NAME}/1.0 (+https://github.com/kingdemond434-cpu/quant/issues; "
+      "internal research; honours robots.txt)")
 TIMEOUT = 30.0
 MAX_BYTES = 16 * 1024 * 1024
 #: The prefix a conditioner spec carries; `mt5desk.cell_modifiers` applies only this form.
@@ -259,6 +266,27 @@ def _lag_rule(lag_days: int, hour: int = 0, weekday: bool = False) -> Callable[[
         t = t.replace(hour=hour, minute=0, second=0, microsecond=0)
         return _roll_weekday(t) if weekday else t
     return rule
+
+
+#: PortWatch's own statement, https://portwatch.imf.org/pages/data-and-methodology (read
+#: 2026-10-14): "Daily Chokepoint Transit Calls and Trade Volume Estimates: Updated Weekly,
+#: Tuesdays 9 AM ET" (the port layer says the same). No day-count lag is stated; measured the same
+#: day, the layer's dataLastEditDate was Tue 2026-10-06 12:09 UTC and its last row 2026-10-04.
+PORTWATCH_PUBLISH_WEEKDAY = 1                                   # Tuesday
+PORTWATCH_PUBLISH_HOUR_UTC = 14         # 09:00 ET is 13:00 UTC (EDT) or 14:00 (EST): the later
+PORTWATCH_MIN_LAG_D = 2                 # the Tuesday release carried data to the Sunday before
+
+
+def rule_portwatch(period: date) -> datetime:
+    """The first stated release that can carry `period`: the first Tuesday at least two days
+    after it, at 14:00 UTC (never before 09:00 ET in either daylight regime). The merge then
+    floors this at the fetch instant (`Source.stamp_floor_fetch`), so a value is never stamped
+    before the pass that actually read it."""
+    t = _utc(period.year, period.month, period.day, PORTWATCH_PUBLISH_HOUR_UTC)
+    t += timedelta(days=PORTWATCH_MIN_LAG_D)
+    while t.weekday() != PORTWATCH_PUBLISH_WEEKDAY:
+        t += timedelta(days=1)
+    return t
 
 
 def rule_tsa(period: date) -> datetime:
@@ -495,14 +523,41 @@ def parse_firms(body: bytes, ctx: Ctx) -> list[Obs]:
     return out
 
 
-def _arcgis_rows(body: bytes) -> list[dict[str, Any]]:
+def _arcgis_doc(body: bytes) -> dict[str, Any] | None:
     try:
         doc = json.loads(body.decode("utf-8", errors="replace"))
     except ValueError:
-        return []
-    feats = doc.get("features") if isinstance(doc, dict) else None
+        return None
+    return doc if isinstance(doc, dict) else None
+
+
+def _arcgis_rows(body: bytes) -> list[dict[str, Any]]:
+    doc = _arcgis_doc(body)
+    feats = doc.get("features") if doc is not None else None
     return [f["attributes"] for f in feats or [] if isinstance(f, dict)
             and isinstance(f.get("attributes"), dict)]
+
+
+def arcgis_error(body: bytes) -> str | None:
+    """The cause an ArcGIS query reports IN A 200 RESPONSE, or None for a readable answer.
+
+    THIS IS WHY PORTWATCH NEVER YIELDED (measured 2026-10-14). ArcGIS answers a bad query with
+    HTTP 200 and `{"error": {"code": 400, "message": "Cannot perform query. Invalid query
+    parameters.", "details": ["'outFields' parameter is invalid"]}}`; the parser saw no
+    `features`, returned [], the pager read that as "paging exhausted", and the pass reported
+    "nothing parsed" with no error -- a zero wearing a clean face. A body that is not JSON at all
+    (a WAF or maintenance page) is named too."""
+    doc = _arcgis_doc(body)
+    if doc is None:
+        return "NOT_JSON: the body is not an ArcGIS JSON answer (WAF, maintenance or HTML page)"
+    err = doc.get("error")
+    if isinstance(err, dict):
+        det = err.get("details") or []
+        det_s = "; ".join(str(d) for d in det) if isinstance(det, list) else str(det)
+        return f"ARCGIS_{err.get('code')}: {err.get('message')} {det_s}".strip()[:240]
+    if not isinstance(doc.get("features"), list):
+        return "NO_FEATURES: the answer carries no features array"
+    return None
 
 
 def _arcgis_date(v: Any) -> date | None:
@@ -530,15 +585,183 @@ def parse_portwatch_ports(body: bytes, ctx: Ctx) -> list[Obs]:
 
 
 def parse_portwatch_chokepoints(body: bytes, ctx: Ctx) -> list[Obs]:
-    """IMF PortWatch Daily_Chokepoints_Data: transits per chokepoint per day."""
+    """IMF PortWatch Daily_Chokepoints_Data: transits per chokepoint per day (`n_total`), and the
+    tanker subset (`n_tanker`) where the layer carries it. `date` is an esriFieldTypeDateOnly
+    field served as 'YYYY-MM-DD'; epoch milliseconds are still read."""
     out: list[Obs] = []
     for a in _arcgis_rows(body):
         d = _arcgis_date(a.get("date"))
         name = str(a.get("portname") or "")
+        if not (d and name):
+            continue
         v = _num(str(a.get("n_total") if a.get("n_total") is not None else ""))
-        if d and name and v is not None:
+        if v is not None:
             out.append(Obs(f"{_slug(name)}_transits", d, v))
+        t = _num(str(a.get("n_tanker") if a.get("n_tanker") is not None else ""))
+        if t is not None:
+            out.append(Obs(f"{_slug(name)}_tanker_transits", d, t))
     return out
+
+
+# ---------------------------------------------------------------------------- pass-8 novel styles
+#: P8-N1 EU DAY-AHEAD POWER (Energy-Charts / Fraunhofer ISE, `api.energy-charts.info/price`).
+#: Series are keyed on the AUCTION day (delivery day - 1). The SDAC auction for delivery day D
+#: closes at 12:00 CET on D-1; NEMO Committee timings (in
+#: force from delivery 2021-06-18, Nord Pool exchange message 2021-05-26): preliminary results
+#: "12:45 CET", Full-Decoupling deadline "14:00 CET", shadow allocation results "no later than
+#: 14:00 CET". The rule takes the LATEST of these, 14:00 Brussels local time on D-1, so a
+#: decoupled day is never dated before it was published; the merge then floors it at the read
+#: (`stamp_floor_fetch`). Brussels time is computed by the EU DST rule (last Sunday of March /
+#: October, 01:00 UTC) so no tz database is needed on the Windows box.
+POWER_URL = "https://api.energy-charts.info/price"
+#: Bidding zone -> series slug. Only zones the API's /price description lists as "licensed as CC
+#: BY 4.0 from Bundesnetzagentur | SMARD.de" are read; every other zone is "for private and
+#: internal use only" there and is never requested.
+POWER_ZONES: dict[str, str] = {"DE-LU": "de_lu", "FR": "fr"}
+POWER_LICENCE_NAME = "CC BY 4.0"
+#: THE LICENCE PINNED VERBATIM, as api.energy-charts.info/price serves it for DE-LU and FR (read
+#: 2026-10-14 with WebFetch). A body whose `license_info` differs IN ANY WAY -- a prefix such as
+#: "Not CC BY 4.0: ...", an extra suffix, a changed source -- is never merged and holds the
+#: source for a person (audit NOVEL_ALT_P8_003fe110c: a substring test let "Not CC BY 4.0: for
+#: private and internal use only." through).
+POWER_LICENCE_INFO = ("CC BY 4.0 (creativecommons.org/licenses/by/4.0) from "
+                      "Bundesnetzagentur | SMARD.de")
+POWER_PUBLISH_HOUR_LOCAL = 14
+POWER_DEPTH_D = 365                     # first pass reaches this far back
+POWER_CHUNK_D = 92                      # one request covers at most this many delivery days
+POWER_RECENT_D = 7                      # a caught-up zone re-reads its last week
+#: The API's stated default limit is "2 requests per minute with a burst of 4": one data request
+#: per zone a pass, spaced by this, keeps every pass under it.
+POWER_MIN_INTERVAL_S = 31.0
+POWER_PEAK_HOURS = range(8, 20)         # 08:00-20:00 local, the exchange peak block
+
+
+def _last_sunday(y: int, m: int) -> date:
+    d = _month_end(y, m)
+    while d.weekday() != 6:
+        d -= timedelta(days=1)
+    return d
+
+
+def cet_offset_h(t: datetime) -> int:
+    """Brussels/Berlin UTC offset at instant `t` (UTC): +2 inside EU summer time, else +1."""
+    t = t.astimezone(UTC)
+    on = datetime.combine(_last_sunday(t.year, 3), datetime.min.time(), UTC) + timedelta(hours=1)
+    off = datetime.combine(_last_sunday(t.year, 10), datetime.min.time(), UTC) + timedelta(hours=1)
+    return 2 if on <= t < off else 1
+
+
+def cet_local(t: datetime) -> datetime:
+    """The naive Brussels wall-clock time of UTC instant `t`."""
+    return (t.astimezone(UTC) + timedelta(hours=cet_offset_h(t))).replace(tzinfo=None)
+
+
+def cet_day_hours(d: date) -> int:
+    """Hours in Brussels local day `d`: 23 on the spring change, 25 on the autumn one."""
+    return 24 - (d == _last_sunday(d.year, 3)) + (d == _last_sunday(d.year, 10))
+
+
+def rule_power_dayahead(period: date) -> datetime:
+    """`period` is the AUCTION day A (delivery day A+1): its prices are known from 14:00
+    Brussels time on A (the SDAC Full-Decoupling / shadow-results deadline, the latest stated
+    publication), in UTC. Keying the series on the auction day keeps every stamp after its
+    period, as the organ's release-rule law requires; the delivery day is period + 1."""
+    guess = _utc(period.year, period.month, period.day, POWER_PUBLISH_HOUR_LOCAL)
+    return guess - timedelta(hours=cet_offset_h(guess - timedelta(hours=1)))
+
+
+def power_licence_error(body: bytes) -> str | None:
+    """None when the answer is the licensed day-ahead series, else the cause. FAIL CLOSED: a
+    body whose `license_info` is not EXACTLY `POWER_LICENCE_INFO` is never merged (the licence
+    changed, or the zone is one the API restricts to private use)."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return "NOT_JSON: the body is not an Energy-Charts JSON answer (WAF or HTML page)"
+    if not isinstance(doc, dict) or not isinstance(doc.get("unix_seconds"), list):
+        return "NO_SERIES: the answer carries no unix_seconds array"
+    lic = doc.get("license_info")
+    if lic != POWER_LICENCE_INFO:
+        return (f"LICENCE_CHANGED: license_info is not the pinned CC BY 4.0 clause "
+                f"({str(lic)[:120]!r})")
+    return None
+
+
+def parse_power_dayahead(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Energy-Charts /price: `unix_seconds` (slot start) and `price` (EUR/MWh), hourly or 15-min.
+
+    Folded per Brussels DELIVERY day into `<zone>_dayahead_base` (mean of every slot) and
+    `<zone>_dayahead_peak` (08-20 local), each keyed on its AUCTION day (delivery - 1, see
+    `rule_power_dayahead`). A day is published only when every local hour of it (23, 24 or 25)
+    carries a price: a partial day is never averaged. `ctx.part` is the zone slug. Nothing is
+    read unless the licence check passes."""
+    if power_licence_error(body) is not None:
+        return []
+    doc = json.loads(body.decode("utf-8", errors="replace"))
+    ts, px = doc.get("unix_seconds") or [], doc.get("price") or []
+    slug = ctx.part or "zone"
+    hours: dict[date, set[int]] = {}
+    base: dict[date, list[float]] = {}
+    peak: dict[date, list[float]] = {}
+    for t, p in zip(ts, px, strict=False):
+        if not isinstance(t, (int, float)) or isinstance(t, bool) or p is None:
+            continue
+        v = _num(str(p))
+        if v is None:
+            continue
+        loc = cet_local(datetime.fromtimestamp(float(t), tz=UTC))
+        d = loc.date()
+        hours.setdefault(d, set()).add(int(float(t) // 3600))
+        base.setdefault(d, []).append(v)
+        if loc.hour in POWER_PEAK_HOURS:
+            peak.setdefault(d, []).append(v)
+    out: list[Obs] = []
+    for d, vals in sorted(base.items()):
+        if len(hours[d]) < cet_day_hours(d):
+            continue
+        auction = d - timedelta(days=1)
+        out.append(Obs(f"{slug}_dayahead_base", auction, round(sum(vals) / len(vals), 4)))
+        if peak.get(d):
+            out.append(Obs(f"{slug}_dayahead_peak", auction,
+                           round(sum(peak[d]) / len(peak[d]), 4)))
+    return out
+
+
+#: P8-N2 OPENSKY DEPARTURES. Airport (ICAO) -> country slug. The departures endpoint is filled
+#: by a nightly batch ("only data from the previous day or earlier" on its sibling endpoints), so
+#: day D is dated no earlier than D+2 00:00 UTC, then floored at the read.
+OPENSKY_URL = "https://opensky-network.org/api/flights/departure"
+OPENSKY_AIRPORTS: dict[str, str] = {
+    "ZBAA": "cn", "ZSPD": "cn", "ZGGG": "cn",
+    "LTFM": "tr", "LTFJ": "tr",
+    "MMMX": "mx", "MMUN": "mx",
+    "FAOR": "za", "FACT": "za",
+    "RJTT": "jp", "RJAA": "jp", "RJBB": "jp"}
+
+
+def rule_opensky(period: date) -> datetime:
+    return _utc(period.year, period.month, period.day) + timedelta(days=2)
+
+
+def parse_opensky_departures(body: bytes, ctx: Ctx) -> list[Obs]:
+    """GET /flights/departure: a JSON list of flights; each `firstSeen` (unix seconds) is a
+    departure from `estDepartureAirport`. Counted per UTC day per COUNTRY (OPENSKY_AIRPORTS) into
+    `<country>_departures`. An airport not in the map is discarded, never guessed."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    counts: dict[tuple[str, date], float] = {}
+    for f in doc if isinstance(doc, list) else []:
+        if not isinstance(f, dict):
+            continue
+        cc = OPENSKY_AIRPORTS.get(str(f.get("estDepartureAirport") or ctx.part or ""))
+        t = f.get("firstSeen")
+        if cc is None or not isinstance(t, (int, float)) or isinstance(t, bool):
+            continue
+        k = (cc, datetime.fromtimestamp(float(t), tz=UTC).date())
+        counts[k] = counts.get(k, 0.0) + 1.0
+    return [Obs(f"{cc}_departures", d, v) for (cc, d), v in sorted(counts.items())]
 
 
 _MONTHS = {m: i for i, m in enumerate(
@@ -2138,6 +2361,10 @@ class Source:
     #: Fetch through `libs.data.polite_fetch.get` (robots.txt, the site's access holds, honest
     #: DESK_UA, 401/403/429/WAF a hard stop) instead of the bare fenced urlopen.
     polite: bool = False
+    #: True when a value's stamp is max(release rule, the instant this desk first read it):
+    #: the publisher states a release SCHEDULE but no day-count lag, so the rule alone could
+    #: date a backfilled row before anyone here could have seen it. Never stamped earlier.
+    stamp_floor_fetch: bool = False
 
     def instruments_for(self, series: str) -> dict[str, int]:
         for prefix, m in self.series_instruments.items():
@@ -2160,7 +2387,41 @@ FIRMS_URL = ("https://firms.modaps.eosdis.nasa.gov/api/area/csv/{key}/{product}/
 PORTWATCH_BASE = ("https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/"
                   "{svc}/FeatureServer/0/query")
 PORTS = ("Shanghai", "Ningbo-Zhoushan", "Busan", "Port Hedland", "Singapore")
-CHOKEPOINTS = ("Strait of Hormuz", "Suez Canal", "Bab el-Mandeb Strait", "Malacca Strait")
+#: Names exactly as the layer serves them (distinct portname read 2026-10-14; 28 chokepoints).
+CHOKEPOINTS = ("Strait of Hormuz", "Suez Canal", "Bab el-Mandeb Strait", "Malacca Strait",
+               "Panama Canal", "Bosporus Strait", "Cape of Good Hope", "Gibraltar Strait")
+#: Fields each layer ACTUALLY has (FeatureServer/0?f=json, 2026-10-14). One shared list naming
+#: `portcalls` AND `n_total` was invalid on both layers, which is why no row was ever read.
+PORTWATCH_FIELDS: dict[str, str] = {
+    "imf_portwatch_ports": "date,portid,portname,portcalls",
+    "imf_portwatch_chokepoints": "date,portid,portname,n_total,n_tanker",
+}
+#: The layer's maxRecordCount (both layers: 1000). Asking 2000 and stepping the offset by 2000
+#: silently skipped every second thousand rows.
+PORTWATCH_PAGE = 1000
+PORTWATCH_MAX_PAGES = 20
+PORTWATCH_DEPTH_D = 800                 # first pass reaches this far back
+PORTWATCH_RECENT_D = 35                 # every later pass re-reads this window for revisions
+PORTWATCH_HARD_STOP = (401, 403, 429)
+#: A 401/403/429 (or WAF) hold WAITS FOR A PERSON (auditor's index-route ruling, 2026-10-14):
+#: it has no expiry and no retry clock. RELEASE: a person deletes the `hard_stop` row from
+#: `sources.<id>` in data/alt_proxies/state.json (or sets its `released_by` to their name)
+#: after reading why the host refused us. Nothing in code ever clears it.
+PORTWATCH_HOLD_RELEASE = ("a person deletes sources.<id>.hard_stop in "
+                          "desks/mt5/data/alt_proxies/state.json, or sets its released_by")
+
+
+def portwatch_request(src_id: str, url: str, since: date, offset: int,
+                      fetched_at: datetime, page_size: int = PORTWATCH_PAGE) -> Request:
+    names = PORTS if src_id == "imf_portwatch_ports" else CHOKEPOINTS
+    quoted = ",".join("'" + n.replace("'", "''") + "'" for n in names)
+    q = urllib.parse.urlencode({
+        "where": f"portname IN ({quoted}) AND date >= DATE '{since.isoformat()}'",
+        "outFields": PORTWATCH_FIELDS[src_id], "orderByFields": "date,portid",
+        "returnGeometry": "false", "resultOffset": offset,
+        "resultRecordCount": page_size, "f": "json"})
+    return Request(f"{url}?{q}", Ctx(part=f"page{offset}", start=since, fetched_at=fetched_at))
+
 
 SOURCES: tuple[Source, ...] = (
     Source(
@@ -2285,7 +2546,7 @@ SOURCES: tuple[Source, ...] = (
         id="imf_portwatch_ports", name="IMF PortWatch daily port calls",
         url=PORTWATCH_BASE.format(svc="Daily_Ports_Data"),
         region="GLOBAL", language="en", cadence="daily", parse=parse_portwatch_ports,
-        rule=_lag_rule(10, 0), transform="anomaly_daily",
+        rule=rule_portwatch, stamp_floor_fetch=True, transform="anomaly_daily",
         instruments={"AUDUSD": 1},
         series_instruments={
             "port_hedland": {"AUDUSD": 1, "AUS200": 1},
@@ -2307,9 +2568,21 @@ SOURCES: tuple[Source, ...] = (
         id="imf_portwatch_chokepoints", name="IMF PortWatch daily chokepoint transits",
         url=PORTWATCH_BASE.format(svc="Daily_Chokepoints_Data"),
         region="GLOBAL", language="en", cadence="daily", parse=parse_portwatch_chokepoints,
-        rule=_lag_rule(10, 0), transform="anomaly_daily",
+        rule=rule_portwatch, stamp_floor_fetch=True, transform="anomaly_daily",
         instruments={"XTIUSD": -1, "XBRUSD": -1},
-        signal_series=("strait_of_hormuz_transits", "bab_el_mandeb_strait_transits"),
+        # Declared priors, untested: the gain test decides and charges every cell. Oil
+        # chokepoints bear on crude; Hormuz also on gold (a transit collapse there is the
+        # war-risk state). Panama, the Cape, Gibraltar, the Bosporus and Malacca are
+        # UNMAPPED CONTROLS: stored for the red_sea and central_america packs, mapped to NO
+        # instrument (an empty map, so `instruments_for` cannot fall back to oil).
+        series_instruments={
+            "strait_of_hormuz": {"XTIUSD": -1, "XBRUSD": -1, "XAUUSD": -1},
+            "bab_el_mandeb_strait": {"XBRUSD": -1, "XTIUSD": -1},
+            "suez_canal": {"XBRUSD": -1, "XTIUSD": -1},
+            **{k: {} for k in ("panama_canal", "cape_of_good_hope", "gibraltar_strait",
+                               "bosporus_strait", "malacca_strait")}},
+        signal_series=("strait_of_hormuz_transits", "bab_el_mandeb_strait_transits",
+                       "suez_canal_transits"),
         mechanism=("fewer transits through oil chokepoints is supply friction; the tanker count "
                    "moves before any inventory report"),
         payer="short-dated crude holders pricing weekly inventories",
@@ -2319,6 +2592,59 @@ SOURCES: tuple[Source, ...] = (
         failure_mode_hypothesis=("fails when rerouting is already priced by freight markets "
                                  "before the transit counts publish"),
         crowding_prior="low"),
+    Source(
+        id="eu_power_dayahead", name="EU day-ahead power prices, DE-LU and FR (Energy-Charts)",
+        url=POWER_URL, region="EU", language="en", cadence="daily",
+        parse=parse_power_dayahead, rule=rule_power_dayahead, stamp_floor_fetch=True,
+        transform="level_dev",
+        instruments={"EURUSD": -1, "EURCHF": -1, "GER40": -1, "FRA40": -1, "XNGUSD": 1},
+        # Declared priors, untested: the gain test decides and charges every cell. Dear power
+        # is a terms-of-trade and margin stress on the euro area (EUR down against USD and the
+        # haven CHF, the domestic index down) and is gas-set at the margin (XNGUSD up).
+        series_instruments={
+            "de_lu": {"GER40": -1, "EURUSD": -1, "EURCHF": -1, "XNGUSD": 1},
+            "fr": {"FRA40": -1, "EURUSD": -1, "EURCHF": -1, "XNGUSD": 1}},
+        signal_series=("de_lu_dayahead_base", "fr_dayahead_base", "de_lu_dayahead_peak",
+                       "fr_dayahead_peak"),
+        mechanism=("the day-ahead auction prices tomorrow's power by 14:00 CET today: a "
+                   "power-price shock is an input-cost and terms-of-trade stress on euro-area "
+                   "industry, known a day before it is paid and weeks before PMIs or trade data"),
+        payer="FX and index holders pricing the euro area from monthly surveys and trade prints",
+        constraint=("the stress reaches PPI, PMIs and the trade balance only monthly; the "
+                    "auction is daily and public"),
+        licence="CC BY 4.0 (Bundesnetzagentur | SMARD.de via Energy-Charts), attribution",
+        source_culture="EU/en", participant_structure=("physical_flow", "institutional"),
+        failure_mode_hypothesis=("fails when the shock is renewable intermittency (a windless "
+                                 "day) rather than fuel or capacity, so it reverts before it "
+                                 "reaches any cost line, or when the gas price already carried "
+                                 "it"),
+        crowding_prior="low",
+        note=("PASS-8 N1 (novel style). Only zones the /price description licenses as CC BY 4.0 "
+              "are requested; a body whose license_info drops that is FAILED and held")),
+    Source(
+        id="opensky_departures", name="OpenSky Network daily departures by country",
+        url=OPENSKY_URL, region="GLOBAL", language="en", cadence="daily",
+        parse=parse_opensky_departures, rule=rule_opensky, stamp_floor_fetch=True,
+        transform="anomaly_daily", key_env="OPENSKY_CLIENT_ID",
+        instruments={"USDCNH": -1, "USDTRY": -1, "USDMXN": -1, "USDZAR": -1, "USDJPY": -1},
+        series_instruments={"cn_": {"USDCNH": -1}, "tr_": {"USDTRY": -1},
+                            "mx_": {"USDMXN": -1}, "za_": {"USDZAR": -1},
+                            "jp_": {"USDJPY": -1}},
+        signal_series=("cn_departures", "tr_departures", "mx_departures", "za_departures",
+                       "jp_departures"),
+        mechanism=("ADS-B counted departures are a daily activity nowcast for an economy whose "
+                   "official activity data is monthly and late"),
+        payer="EM FX holders pricing activity from monthly releases",
+        constraint="official activity prints lag by four to eight weeks",
+        licence=("OpenSky General Terms of Use & Data License Agreement: non-profit research, "
+                 "education, government, commercial internal testing and evaluation only"),
+        source_culture="GLOBAL/en", participant_structure=("physical_flow",),
+        failure_mode_hypothesis=("fails when receiver coverage changes move the counts, or "
+                                 "when flights are driven by tourism seasonality, not activity"),
+        crowding_prior="low",
+        note=("PASS-8 N2 (novel style). IDEAS_ONLY: the terms grant no for-profit use and the "
+              "departures endpoint needs an OAuth2 client; never fetched until a person files "
+              "both")),
     Source(
         id="in_gold_imports", name="India monthly gold and silver imports (PIB trade release)",
         url=os.environ.get("ALT_PIB_TRADE_URL", "https://pib.gov.in/PressReleasePage.aspx"),
@@ -3048,9 +3374,13 @@ TERMS: dict[str, tuple[str, str]] = {
                          "published works (incl. databases) is copyright infringement"),
     "jp_tokyo_cpi": ("confirmed", "e-Stat documented API, Government of Japan statistics"),
     "cn_firms_industrial": ("confirmed", "NASA open data, documented API"),
-    "imf_portwatch_ports": ("confirmed", "IMF PortWatch public statistics, documented ArcGIS API"),
-    "imf_portwatch_chokepoints": ("confirmed", "IMF PortWatch public statistics, documented "
-                                  "ArcGIS API"),
+    "imf_portwatch_ports": ("confirmed", "IMF terms: 'Users may download, extract, copy [...] "
+                            "Data obtained from IMF Sites, including for commercial purposes'; "
+                            "PortWatch's documented ArcGIS API (re-read 2026-10-14)"),
+    "imf_portwatch_chokepoints": ("confirmed", "IMF terms: 'Users may download, extract, copy "
+                                  "[...] Data obtained from IMF Sites, including for commercial "
+                                  "purposes'; PortWatch's documented ArcGIS API (re-read "
+                                  "2026-10-14)"),
     "in_gold_imports": ("confirmed", "Government of India press releases (PIB), public"),
     "cn_sge_premium": ("to_confirm", "SGE site shows only 'All Right Reserved'; no terms or "
                        "licence page found, no robots.txt"),
@@ -3104,6 +3434,13 @@ TERMS: dict[str, tuple[str, str]] = {
     NET_LIQ_ID: ("confirmed", "H.4.1 public domain (Board disclaimer); Fiscal Data open data "
                  "for commercial and non-commercial use; NY Fed terms licence automated access "
                  "(verbatim in TERMS_EVIDENCE, read 2026-10-14)"),
+    "eu_power_dayahead": ("confirmed", "Energy-Charts API /price: DE-LU and FR 'licensed as CC "
+                          "BY 4.0 from Bundesnetzagentur | SMARD.de'; documented REST API with "
+                          "stated rate limits (read 2026-10-14)"),
+    "opensky_departures": ("refused", "OpenSky General Terms of Use & Data License Agreement: "
+                           "licence 'solely for the purpose of non-profit research, non-profit "
+                           "education', 'No license is granted for any other purpose'; the "
+                           "departures API needs an OAuth2 client (read 2026-10-14). IDEAS_ONLY"),
     "za_statssa_retail": ("to_confirm", "Stats SA publication notice read ONLY on a third-party "
                           "mirror (statssa.gov.za serves an Incapsula check); not confirmed until "
                           "read on a Stats SA page (audit 2026-10-06)"),
@@ -3128,20 +3465,118 @@ _ESTAT_API: dict[str, str] = {
                "サービスの内容は国によって保証されたものではありません。 / This service uses API "
                "functions from e-Stat, however its contents are not guaranteed by government."),
 }
+#: IMF PortWatch, RE-READ 2026-10-14 (pass-7 N4) with WebFetch. LIVE: the IMF's own terms grant
+#: download and extraction of Data, commercial use included; PortWatch's methodology page sends
+#: copyright and usage there and publishes an "Access API" per dataset. The bot clause reserves
+#: termination for bulk downloading of PUBLICATION FILES, not Data. The two robots.txt files:
+#: portwatch.imf.org asks a 60-second crawl delay and disallows /sites/ /admin/ /sessions/
+#: /groups/ /people/ /workspace/ (no data path); services9.arcgis.com/robots.txt could not be
+#: read from the authoring container, so `collect_portwatch` reads it on the box every pass and
+#: refuses to fetch when it cannot (fail closed), honouring any crawl-delay it states.
+#: THIS IS THE REGISTER UNTIL `libs/data/terms_fence.SOURCE_POLICY` LANDS (gd-queue-rows): the
+#: row moves there verbatim then; there is never a second table.
 _IMF_EV: dict[str, str] = {
     "terms_url": "https://www.imf.org/external/terms.htm",
     "terms_quote": ("Users may download, extract, copy, create derivative works, publish, "
                     "distribute, and sell Data obtained from IMF Sites, including for commercial "
                     "purposes"),
+    "attribution_quote": ("When Data is distributed or reproduced, it must appear accurately and "
+                          "attributed to the IMF as the source"),
+    "automation_quote": ("The IMF reserves the right to terminate access to its Sites or Content "
+                         "by automated technology (including but not limited to bots, spiders "
+                         "and crawlers) for the purposes of bulk downloading IMF publication "
+                         "files."),
     "policy_url": "https://portwatch.imf.org/pages/data-and-methodology",
-    "policy_quote": ("All data and content in the IMF PortWatch are provided by the IMF unless "
-                     "mentioned otherwise."),
-    "judgement": ("PortWatch points to the IMF terms for copyright and usage; the live terms "
-                  "read 2026-09-30 grant commercial reuse (an older copy asked commercial users "
-                  "to email copyright@imf.org). Attribution required"),
-    "robots": "services9.arcgis.com FeatureServer is PortWatch's documented ArcGIS API",
-    "credit": "Source: International Monetary Fund (IMF PortWatch).",
+    "policy_quote": ("For questions on copyright and usage, please refer to this page: "
+                     "https://www.imf.org/external/terms.htm / All data and content in the IMF "
+                     "PortWatch are provided by the IMF unless mentioned otherwise."),
+    "schedule_quote": ("Daily Chokepoint Transit Calls and Trade Volume Estimates: Updated "
+                       "Weekly, Tuesdays 9 AM ET"),
+    "judgement": ("LIVE. The IMF terms grant download and extraction of Data including for "
+                  "commercial purposes (internal research is inside that); PortWatch publishes "
+                  "the ArcGIS 'Access API' itself. The automation clause targets bulk downloading "
+                  "of publication files, not Data, and this organ is bounded (<=20 pages of 1000 "
+                  "rows a pass, robots.txt and its crawl-delay obeyed; a 401/403/429 or WAF "
+                  "answer is a hard stop whose hold WAITS FOR A PERSON, with no timer). "
+                  "Attribution required; a material transformation must say so"),
+    "robots": ("portwatch.imf.org/robots.txt: Crawl-delay 60, disallows /sites/ /admin/ "
+               "/sessions/ /groups/ /people/ /workspace/ only; services9.arcgis.com/robots.txt "
+               "unread from the authoring container -- read on the box every pass, fail closed"),
+    "credit": ("Source: International Monetary Fund (IMF PortWatch); daily counts transformed "
+               "by the desk (anomaly vs trailing baseline)."),
     "checked_at": _CHK,
+    "rechecked_at": "2026-10-14",
+    "register": "alt_proxies.TERMS (moves to libs/data/terms_fence.SOURCE_POLICY when it lands)",
+}
+#: P8-N1 Energy-Charts, READ 2026-10-14 with WebFetch. LIVE for DE-LU and FR only. The API's
+#: own OpenAPI document (api.energy-charts.info/openapi.json) licenses those zones CC BY 4.0 and
+#: publishes the rate limits automated clients must keep; every other zone is "for private and
+#: internal use only" and is never requested. The site's /charts/ JSON and llms.txt carry the
+#: EPEX/EEX restriction ("may not be redistributed"): this organ reads neither. robots.txt of
+#: www.energy-charts.info allows all agents except on three EPEX/EEX /charts/ paths (and names
+#: AI crawlers only there); api.energy-charts.info/robots.txt could not be read from the
+#: authoring container, so `collect_power` reads it on the box every pass, fail closed.
+#: THIS IS THE REGISTER UNTIL `libs/data/terms_fence.SOURCE_POLICY` LANDS: the row moves there.
+_P8_CHK = "2026-10-14"
+_ENERGY_CHARTS_EV: dict[str, str] = {
+    "terms_url": "https://api.energy-charts.info/openapi.json",
+    "terms_quote": ("licensed as CC BY 4.0 from Bundesnetzagentur | SMARD.de and is published "
+                    "without changes"),
+    "zones_quote": ("AT, BE, CH, CZ, DE-LU, DE-AT-LU, DK1, DK2, FR, HU, IT-North, NL, NO2, PL, "
+                    "SE4, SI (the zones the /price description licenses as above)"),
+    "restriction_quote": ("The data for the other bidding zones is for private and internal use "
+                          "only."),
+    "api_licence_quote": ("Unless stated otherwise, the data provided by the Energy-Charts API "
+                          "is licensed under the CC BY 4.0 license."),
+    "attribution_quote": "Proper attribution to Energy-Charts.info as the source is required.",
+    "rate_limit": ("2 requests per minute with a burst of 4; HTTP 429 with Retry-After when "
+                   "exceeded (this organ treats a 429 as a hard stop held for a person)"),
+    "schedule_url": ("https://nordpoolgroup.com/en/message-center-container/newsroom/exchange-"
+                     "message-list/2021/q2/26-may-2021-starting-with-17-june-2021-new-"
+                     "operational-timings-to-be-applied-for-daily--market-coupling-process"),
+    "schedule_quote": ("Preliminary Results publication 12:45 CET; Full-Decoupling deadline "
+                       "14:00 CET; Shadow Allocation Results no later than 14:00 CET"),
+    "judgement": ("LIVE for DE-LU and FR. CC BY 4.0 permits reproduction and adaptation for any "
+                  "purpose, commercial included, with attribution; the API is published for "
+                  "programmatic access with stated limits. Every response's license_info is "
+                  "re-checked and a body that drops CC BY 4.0 is never merged (held)"),
+    "robots": ("www.energy-charts.info/robots.txt: all agents allowed except three EPEX/EEX "
+               "/charts/ paths; api.energy-charts.info/robots.txt unread from the authoring "
+               "container -- read on the box every pass, fail closed"),
+    "credit": ("Source: Energy-Charts.info (Fraunhofer ISE), data Bundesnetzagentur | SMARD.de, "
+               "CC BY 4.0; daily means computed by the desk."),
+    "checked_at": _P8_CHK,
+    "register": "alt_proxies.TERMS (moves to libs/data/terms_fence.SOURCE_POLICY when it lands)",
+}
+#: P8-N2 OpenSky, READ 2026-10-14. IDEAS_ONLY. opensky-network.org/about/terms-of-use refused
+#: our reader (ROBOTS_DISALLOWED), so the clause is quoted from OpenSky's own "General Terms of
+#: Use & Data License Agreement" as the association publishes it with its datasets (Zenodo record
+#: 6325961, LICENSE.txt). A trading desk's research is for-profit: none of the granted purposes
+#: covers it ("commercial internal testing and evaluation of the data" is evaluating the data,
+#: not trading on it). Separately the REST departures endpoint is OAuth2 client credentials only
+#: (openskynetwork.github.io/opensky-api/rest.html): NEEDS_KEY, never a workaround.
+_OPENSKY_EV: dict[str, str] = {
+    "terms_url": "https://zenodo.org/records/6325961/files/LICENSE.txt?download=1",
+    "terms_quote": ("solely for the purpose of non-profit research, non-profit education [...] "
+                    "No license is granted for any other purpose."),
+    "terms_page": ("https://opensky-network.org/about/terms-of-use (ROBOTS_DISALLOWED to the "
+                   "reader 2026-10-14: unread)"),
+    "api_url": "https://openskynetwork.github.io/opensky-api/rest.html",
+    "api_quote": ("OpenSky supports only OAuth2 client credentials; historical data beyond one "
+                  "hour points to the Trino interface"),
+    "judgement": ("IDEAS_ONLY: no verbatim clause permits automated access for a for-profit "
+                  "desk's internal research, and the endpoint needs an OAuth2 client "
+                  "(NEEDS_KEY). Never fetched; no ideas fetch either -- the API body IS the "
+                  "data, and the terms page refuses robots"),
+    "robots": "opensky-network.org refused the terms-page read (robots); the API is never called",
+    "missed_growth_delta_elogw": UNMEASURED,
+    "missed_growth_cause": ("opensky_departures IDEAS_ONLY: the departures activity nowcast for "
+                            "USDCNH/USDTRY/USDMXN/USDZAR/USDJPY is never tested or traded"),
+    "release": ("a PERSON files OpenSky's written licence for a for-profit desk's internal "
+                "research, sets TERMS['opensky_departures'] to confirmed with that clause "
+                "quoted, and provisions OPENSKY_CLIENT_ID / OPENSKY_CLIENT_SECRET on the box"),
+    "checked_at": _P8_CHK,
+    "register": "alt_proxies.TERMS (moves to libs/data/terms_fence.SOURCE_POLICY when it lands)",
 }
 _OI_EV: dict[str, str] = {
     "terms_url": "https://github.com/opportunityinsights/economictracker",
@@ -3377,6 +3812,8 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "checked_at": _CHK},
     "imf_portwatch_ports": {**_IMF_EV},
     "imf_portwatch_chokepoints": {**_IMF_EV},
+    "eu_power_dayahead": {**_ENERGY_CHARTS_EV},
+    "opensky_departures": {**_OPENSKY_EV},
     "in_gold_imports": {
         "terms_url": "https://www.pib.gov.in/content/102_2_Copyright-Policy.aspx?reg=3&lang=1",
         "terms_quote": ("Material featured on this website may be reproduced free of charge and "
@@ -4347,18 +4784,9 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
                                    Ctx(part=name, start=bf_start, end=bf_end, fetched_at=now)))
             state["firms_backfill_to_next"] = (bf_start - timedelta(days=1)).isoformat()
         return out
-    if src.id in ("imf_portwatch_ports", "imf_portwatch_chokepoints"):
-        names = PORTS if src.id.endswith("ports") else CHOKEPOINTS
-        since = (now - timedelta(days=800)).date().isoformat()
-        quoted = ",".join("'" + n.replace("'", "''") + "'" for n in names)
-        reqs = []
-        for offset in range(0, 20_000, 2_000):
-            q = urllib.parse.urlencode({
-                "where": f"portname IN ({quoted}) AND date >= timestamp '{since} 00:00:00'",
-                "outFields": "date,portname,portcalls,n_total", "orderByFields": "date",
-                "resultOffset": offset, "resultRecordCount": 2000, "f": "json"})
-            reqs.append(Request(f"{src.url}?{q}", Ctx(part=f"page{offset}", fetched_at=now)))
-        return reqs
+    if src.id in PORTWATCH_FIELDS:
+        # The first page only: `collect_portwatch` pages on from it, honouring robots.txt.
+        return [portwatch_request(src.id, src.url, portwatch_since(now, state), 0, now)]
     if src.id == "gdelt_events_country":
         return _gdelt_requests(src, now, state)
     if src.id == NET_LIQ_ID:
@@ -4508,6 +4936,29 @@ def _atomic(p: Path, doc: Any) -> None:
     os.replace(tmp, p)
 
 
+#: A first read more than this long after the value's PUBLICATION (its release rule, or the
+#: page stamp) is a BACKFILL; within it, a live read. One threshold, one predicate
+#: (`pit_quality_of`), read by the merge, `build_points` and `series_asof` alike (audit
+#: NOVEL_ALT_P8_003fe110c): a day-ahead price read an hour after its auction is live; a
+#: PortWatch row read on the Tuesday it was published is live; the 800-day backfill is not.
+PIT_LIVE_READ_LAG = timedelta(hours=24)
+
+
+def pit_quality_of(row: dict[str, Any]) -> str:
+    """live | backfill for one stored row: backfill iff its first read came more than
+    PIT_LIVE_READ_LAG after the instant it was published. A `first_read` row's stamp IS the read,
+    so its publication is the release rule recorded beside it (`rule_time`); a legacy first_read
+    row with no `rule_time` cannot prove it was live and reads backfill."""
+    first = _t(row.get("first_seen_at"))
+    if row.get("published_basis") == "first_read":
+        pub = _t(row.get("rule_time"))
+    else:
+        pub = _t(row.get("published_time"))
+    if first is None or pub is None:
+        return "backfill"
+    return "backfill" if first - pub > PIT_LIVE_READ_LAG else "live"
+
+
 def merge_vintages(store: dict[str, Any], src: Source, obs: Iterable[Obs],
                    seen_at: datetime) -> dict[str, int]:
     """Append-only: a key's FIRST value and first-seen instant never change; a different later
@@ -4517,6 +4968,10 @@ def merge_vintages(store: dict[str, Any], src: Source, obs: Iterable[Obs],
     for o in obs:
         k = f"{o.series}|{o.period.isoformat()}"
         rule_at = src.rule(o.period)
+        basis = "release_rule"
+        stated = rule_at
+        if src.stamp_floor_fetch and rule_at < seen_at:
+            rule_at, basis = seen_at, "first_read"   # max(stated release, the read): never earlier
         pub = o.published_at
         # A page stamp far after the period is a LATER document quoting an old value (a release
         # citing last year's figure), not that value's release: the calendar rule governs it.
@@ -4528,10 +4983,13 @@ def merge_vintages(store: dict[str, Any], src: Source, obs: Iterable[Obs],
                         "value_first": o.value, "value_last": o.value,
                         "first_seen_at": stamp, "last_seen_at": stamp,
                         "published_time": (pub or rule_at).isoformat(timespec="seconds"),
-                        "published_basis": "page" if pub else "release_rule",
+                        "published_basis": "page" if pub else basis,
                         "revision_time": None, "n_revisions": 0}
             if src.rule_basis is not None:
                 store[k]["rule_basis"] = src.rule_basis(o.period)
+            if basis == "first_read" and pub is None:
+                store[k]["rule_time"] = stated.isoformat(timespec="seconds")
+            store[k]["pit_quality"] = pit_quality_of(store[k])
             added += 1
             continue
         row["last_seen_at"] = stamp
@@ -4637,10 +5095,7 @@ def build_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str,
                     z = surprise / sd if sd else None
                     surprises.append(surprise)
                 prior_x.append(x)
-            first_seen = _t(r.get("first_seen_at"))
-            published = _t(r.get("published_time"))
-            quality = ("live" if first_seen and published
-                       and first_seen <= published + timedelta(days=2) else "backfill")
+            quality = pit_quality_of(r)              # the ONE predicate (PIT_LIVE_READ_LAG)
             pts.append({
                 "d": str(r["period"]), "event_time": str(r["period"]),
                 "available_time": str(r["published_time"]),
@@ -4843,6 +5298,29 @@ def _meta(src: Source) -> dict[str, Any]:
 
 DIRECT_FAMILY = "exogenous_conditioner"
 
+#: PASS-8 NOVEL STYLES, DECLARED before any data. `research/style_novelty.py` (style-novelty-lane,
+#: not on LIVE) counts a certificate NOVEL only from its own MEASURED return projection, scaled by
+#: `genealogy(family)`, which reads `alpha_genome.MECHANISM_CLASS[family]`; `discovered` /
+#: `generic` score 1.0. Every alt-proxies cell's family is `exogenous_conditioner`, which that
+#: map does not classify (neutral 0.0), and re-classing it would re-label every source this
+#: organ owns, so the tag is carried per CELL here (provenance.style) and the family-wide
+#: class is left to the coordinator. No verdict is NOVEL until a certificate exists.
+NOVEL_STYLE: dict[str, dict[str, Any]] = {
+    "eu_power_dayahead": {
+        "style_tag": "novel", "lane": "P8-N1", "declared_class": "discovered",
+        "closest_known": ["trend_20d", "value_250d"],
+        "why": ("an exogenous input-cost auction (power) conditioning FX and indices: no price "
+                "window of the traded instrument names it; if its direction tracks the "
+                "trailing month it is trend in disguise"),
+        "verdict": UNMEASURED,
+        "verdict_why": "declared only: style_novelty measures certificates and none exists"},
+    "opensky_departures": {
+        "style_tag": "novel", "lane": "P8-N2", "declared_class": "discovered",
+        "closest_known": ["trend_20d"],
+        "why": "an ADS-B activity nowcast for EM FX; held IDEAS_ONLY, so never measured",
+        "verdict": UNMEASURED, "verdict_why": "IDEAS_ONLY: no cell, no certificate"},
+}
+
 
 def may_mint(sym: str, family: str = DIRECT_FAMILY) -> bool:
     """THE TWO-LANE ORDER, by ASSET CLASS from `universe_policy` (never a symbol list). A share
@@ -4907,7 +5385,11 @@ def gain_tests(paths: Paths, points_by_source: dict[str, dict[str, list[dict[str
         pts = points_by_source[sid][series]
         ev = [(p["available_time"], float(p["surprise_z"])) for p in pts
               if p.get("surprise_z") is not None]
-        res = release_gain(ev, close, horizon_bars=HORIZON_BARS, n_cells=len(cells)).as_dict()
+        # THE TIER S BAR AT THE CELL'S OWN n (release_gain.tier_s_t_required: canonical DSR,
+        # N=5, 1/(T-1)) judges every cell, whatever the family size: no charge over the count
+        # of cells. Replaced by trial_count_guard.tier_s_t_required (T8) when it lands.
+        res = release_gain(ev, close, horizon_bars=HORIZON_BARS).as_dict()
+        res["cells_in_family"] = len(cells)                       # recorded, never charged
         res["backfill_share"] = (round(sum(1 for p in pts if p["pit_quality"] == "backfill")
                                        / len(pts), 3) if pts else None)
         out[key] = res
@@ -4944,7 +5426,8 @@ def direct_cells(gains: dict[str, dict[str, Any]], now: datetime) -> list[dict[s
                                                "placebo_abs_ic_p95", "backfill_share",
                                                "horizon_bars", "min_detectable_ic", "why")},
             "provenance": {"organ": "alt_proxies", "use": "direct_cells", "source_id": sid,
-                           "series": series, **_meta(src)}})
+                           "series": series, **_meta(src),
+                           **({"style": NOVEL_STYLE[sid]} if sid in NOVEL_STYLE else {})}})
     return out
 
 
@@ -5037,9 +5520,10 @@ def indirect_cells(paths: Paths, points_by_source: dict[str, dict[str, list[dict
 
     THE PLACEBO-CONDITIONED GATE. A child is donated only when the parent's signals inside its
     regime beat the same signals inside random regimes of the same duty cycle
-    (`release_gain.regime_placebo`, circular shifts of the regime mask), Bonferroni-charged over
-    every child tested this pass. A child whose parent cannot be replayed here, or whose regime
-    holds too few signals, is UNMEASURED and not donated.
+    (`release_gain.regime_placebo`, circular shifts of the regime mask), judged against the Tier S
+    bar at the child's in-regime n whatever the number of children tested this pass (that count
+    is recorded). A child whose parent cannot be replayed here, or whose regime holds too few
+    signals, is UNMEASURED and not donated.
 
     Returns (passing candidates, pairs owed to later passes, one gate row per minted child)."""
     parents = _parents(paths)
@@ -5110,7 +5594,7 @@ def _gate_children(paths: Paths,
         mask = _regime_mask(paths, src, series, op, idx)
         inputs.append((cand, "no conditioning series in the lake on this box" if mask is None
                        else (pos, ret, mask)))
-    n_trials = max(1, sum(1 for _c, x in inputs if not isinstance(x, str)))
+    n_recorded = max(1, sum(1 for _c, x in inputs if not isinstance(x, str)))
     passed: list[dict[str, Any]] = []
     gates: list[dict[str, Any]] = []
     for cand, x in inputs:
@@ -5118,13 +5602,13 @@ def _gate_children(paths: Paths,
             res: dict[str, Any] = {"verdict": UNMEASURED, "why": x}
         else:
             seed = int(hashlib.sha256(cand["cell"].encode()).hexdigest()[:8], 16)
-            res = regime_placebo(x[0], x[1], x[2], n_trials=n_trials, seed=seed)
+            res = regime_placebo(x[0], x[1], x[2], n_recorded=n_recorded, seed=seed)
         gates.append({"cell": cand["cell"], "parent": cand["parent"], "family": cand["family"],
                       **res})
         if res.get("verdict") == "PASS":
             cand["evidence"] = {k: res.get(k) for k in (
                 "n_in", "n_signals", "duty_cycle", "mean_in", "placebo_mean", "placebo_p95",
-                "p_placebo", "p_charged", "n_trials", "n_masks", "why")}
+                "p_placebo", "p_bar", "t_bar", "n_recorded", "n_masks", "why")}
             passed.append(cand)
     return passed, gates
 
@@ -5186,6 +5670,11 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
                     "why": (f"terms {src.terms}: not fetched until a human confirms the "
                             f"licence ({TERMS.get(src.id, ('', 'unknown'))[1]})"),
                     "store_rows": len(store)})
+        ev = TERMS_EVIDENCE.get(src.id, {})
+        if ev.get("missed_growth_cause"):
+            rec.update({"ideas_only": True, "release": ev.get("release"),
+                        "missed_growth": {"delta_elogw": ev.get("missed_growth_delta_elogw"),
+                                          "cause": ev["missed_growth_cause"]}})
         return rec
     if src.parse is None:                  # a local read of a series another organ fetches
         obs = src.reader(paths) if src.reader is not None else []
@@ -5205,6 +5694,18 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec["store_rows"] = len(store)
         return rec
     sst = state.setdefault("sources", {}).setdefault(src.id, {})
+    if src.id in PORTWATCH_FIELDS:
+        rec.update(collect_portwatch(paths, src, sst, store, now, fetch=fetch,
+                                     fixtures=fixtures, deadline=deadline, getter=getter))
+        _atomic(store_p, store)
+        rec["store_rows"] = len(store)
+        return rec
+    if src.id == "eu_power_dayahead":
+        rec.update(collect_power(paths, src, sst, store, now, fetch=fetch, fixtures=fixtures,
+                                 deadline=deadline, getter=getter))
+        _atomic(store_p, store)
+        rec["store_rows"] = len(store)
+        return rec
     if src.id == "gdelt_events_country":
         rec.update(collect_gdelt(paths, src, sst, store, now, fetch=fetch, fixtures=fixtures,
                                  deadline=deadline, getter=getter))
@@ -5268,6 +5769,505 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec["why"] = "nothing parsed this pass (no fetch, or the page carried no rows)"
     _atomic(store_p, store)
     return rec
+
+
+def portwatch_since(now: datetime, sst: dict[str, Any]) -> date:
+    """Where this pass starts reading: the stored cursor, else PORTWATCH_DEPTH_D back."""
+    cur = sst.get("pw_from")
+    with contextlib.suppress(ValueError, TypeError):
+        return date.fromisoformat(str(cur))
+    return (now - timedelta(days=PORTWATCH_DEPTH_D)).date()
+
+
+def _http_code(exc: BaseException) -> int | None:
+    code = getattr(exc, "code", None)
+    return int(code) if isinstance(code, int) else None
+
+
+def robots_verdict(url: str, getter: Callable[[str], tuple[bytes, str]] = http_get
+                   ) -> dict[str, Any]:
+    """robots.txt DECIDES this fetch (fail closed). allow | disallow | hard_stop | unreadable.
+
+    A 404 is a host with no rules (allow). 401/403/429 is a hard stop. Any other failure to read
+    it is `unreadable`, and the pass does not fetch -- an unread robots.txt is not permission."""
+    from urllib.robotparser import RobotFileParser
+    parts = urllib.parse.urlsplit(url)
+    robots = f"{parts.scheme}://{parts.netloc}/robots.txt"
+    try:
+        body, _ct = getter(robots)
+    except Exception as exc:
+        code = _http_code(exc)
+        if code == 404:
+            return {"verdict": "allow", "crawl_delay": 0.0, "robots": robots,
+                    "note": "robots.txt 404: no rules"}
+        if code in PORTWATCH_HARD_STOP:
+            return {"verdict": "hard_stop", "crawl_delay": 0.0, "robots": robots,
+                    "note": f"robots.txt HTTP {code}"}
+        return {"verdict": "unreadable", "crawl_delay": 0.0, "robots": robots,
+                "note": f"robots.txt unreadable ({type(exc).__name__}: {str(exc)[:80]})"}
+    rp = RobotFileParser()
+    rp.parse(body.decode("utf-8", errors="replace").splitlines())
+    delay = rp.crawl_delay(UA_AGENT_NAME)
+    ok = rp.can_fetch(UA_AGENT_NAME, url)
+    return {"verdict": "allow" if ok else "disallow", "robots": robots,
+            "crawl_delay": float(delay or 0.0),
+            "note": "robots.txt consulted" if ok else "robots.txt disallows this path"}
+
+
+def person_hold(sst: dict[str, Any], src: Source, cause: str, now: datetime,
+                what: str) -> dict[str, Any]:
+    """Record a 401/403/429/WAF (or licence-change) refusal as a hold that WAITS FOR A PERSON:
+    no expiry, no retry clock, a missed_growth line, and the release named."""
+    sst["hard_stop"] = {
+        "since": now.isoformat(timespec="seconds"), "cause": cause,
+        "release": PORTWATCH_HOLD_RELEASE, "released_by": None,
+        "missed_growth": {"delta_elogw": UNMEASURED,
+                          "cause": (f"{src.id} held after {cause}: {what} read no new rows "
+                                    "until a person releases the hold")}}
+    return dict(sst["hard_stop"])
+
+
+def held_by_person(sst: dict[str, Any], now: datetime, out: dict[str, Any]) -> bool:
+    """True (and `out` filled) while an unreleased hold stands. A hold a person released is
+    archived as hard_stop_released and the pass proceeds."""
+    held = sst.get("hard_stop")
+    if isinstance(held, dict) and not held.get("released_by"):
+        # NO AGE TEST, ON PURPOSE: a refusal is answered by a person, never by a clock.
+        out["status"] = "HELD:HARD_STOP"
+        out["outcome"] = out["status"]
+        out["hard_stop"] = held
+        out["why"] = (f"hard stop since {held.get('since')}: {held.get('cause')}; "
+                      f"release: {held.get('release')}")
+        return True
+    if isinstance(held, dict):
+        sst["hard_stop_released"] = {**held, "released_seen_at": now.isoformat(
+            timespec="seconds")}
+        sst.pop("hard_stop", None)
+    return False
+
+
+def power_request(zone: str, start: date, end: date, fetched_at: datetime) -> Request:
+    q = urllib.parse.urlencode({"bzn": zone, "start": start.isoformat(), "end": end.isoformat()})
+    return Request(f"{POWER_URL}?{q}", Ctx(part=POWER_ZONES[zone], start=start, end=end,
+                                           fetched_at=fetched_at))
+
+
+def collect_power(paths: Paths, src: Source, sst: dict[str, Any], store: dict[str, Any],
+                  now: datetime, *, fetch: bool, fixtures: Path | None, deadline: float,
+                  getter: Callable[[str], tuple[bytes, str]] = http_get,
+                  sleep: Callable[[float], None] = time.sleep,
+                  clock: Callable[[], datetime] = lambda: datetime.now(UTC)) -> dict[str, Any]:
+    """Energy-Charts day-ahead prices (DE-LU, FR) into the PIT vintage store.
+
+    Per zone the cursor `power_from[zone]` walks forward in POWER_CHUNK_D windows until the
+    window reaches tomorrow (the source is done when it has served the delivery day after
+    today); a caught-up zone re-reads its last POWER_RECENT_D days. Each response is stamped at
+    ITS OWN fetch instant (`clock()`), never the pass start. robots.txt of the API host decides
+    every pass (fail closed). 401/403/429, a non-JSON body or a licence change is a hard stop
+    held for a person. outcome: OK | UNCHANGED | FAILED:<cause> | HELD:HARD_STOP | UNMEASURED."""
+    out: dict[str, Any] = {"requests": 0, "fetched": 0, "parsed": 0, "errors": [],
+                           "merge": {"added": 0, "revised": 0}}
+
+    def fail(cause: str, *, hold: bool = False) -> dict[str, Any]:
+        out["errors"].append(cause)
+        out["status"] = f"FAILED:{cause.split(':', 1)[0]}"
+        out["outcome"] = out["status"]
+        out["why"] = cause
+        if hold:
+            out["hard_stop"] = person_hold(sst, src, cause, now, "its power-stress cells")
+        return out
+
+    def take(body: bytes, ctx: Ctx, seen: datetime) -> None:
+        obs = parse_power_dayahead(body, ctx)
+        out["parsed"] += len(obs)
+        m = merge_vintages(store, src, obs, seen)
+        out["merge"]["added"] += m["added"]
+        out["merge"]["revised"] += m["revised"]
+
+    if fixtures is not None:
+        for slug in POWER_ZONES.values():
+            fp = fixtures / f"eu_power_dayahead.{slug}.json"
+            if not fp.exists():
+                continue
+            body = fp.read_bytes()
+            err = power_licence_error(body)
+            if err:
+                return fail(err)
+            take(body, Ctx(part=slug, fetched_at=now), now)
+        if not out["parsed"]:
+            return fail("EMPTY: no fixture parsed to a complete delivery day")
+        out["outcome"] = "OK"
+        return out
+    if not fetch:
+        out["why"] = "no fetch this pass (--no-fetch): UNMEASURED, not zero"
+        out["outcome"] = "UNMEASURED"
+        return out
+    if held_by_person(sst, now, out):
+        return out
+    rb = robots_verdict(POWER_URL, getter)
+    out["robots"] = rb
+    if rb["verdict"] == "hard_stop":
+        return fail(f"HARD_STOP: {rb['note']}", hold=True)
+    if rb["verdict"] != "allow":
+        return fail(f"ROBOTS_{rb['verdict'].upper()}: {rb['note']}")
+    delay = max(POWER_MIN_INTERVAL_S, float(rb.get("crawl_delay") or 0.0))
+    cursors: dict[str, str] = sst.setdefault("power_from", {})
+    tomorrow = (now + timedelta(days=1)).date()
+    done: dict[str, bool] = {}
+    first = True
+    for zone in POWER_ZONES:
+        try:
+            since = date.fromisoformat(str(cursors.get(zone)))
+        except ValueError:
+            since = (now - timedelta(days=POWER_DEPTH_D)).date()
+        done[zone] = False
+        while not done[zone]:
+            if not first:
+                if time.monotonic() + delay > deadline:
+                    out["errors"].append(f"budget reached at {zone} {since}: the rest is owed "
+                                         "to the next pass (cursor kept)")
+                    break
+                sleep(delay)
+            first = False
+            end = min(since + timedelta(days=POWER_CHUNK_D - 1), tomorrow)
+            req = power_request(zone, since, end, now)
+            out["requests"] += 1
+            try:
+                body, ctype = getter(req.url)
+            except Exception as exc:
+                code = _http_code(exc)
+                if code in PORTWATCH_HARD_STOP:
+                    return fail(f"HARD_STOP: HTTP {code} on {zone}", hold=True)
+                if code == 404:
+                    # The API's answer for a range with no data. The window is recorded
+                    # UNMEASURED (never a zero) and the cursor MOVES PAST it, so one empty
+                    # window cannot stall the zone on every later pass.
+                    win = {"zone": zone, "from": since.isoformat(), "to": end.isoformat(),
+                           "status": UNMEASURED, "why": "HTTP 404: no data for this window",
+                           "at": now.isoformat(timespec="seconds")}
+                    out.setdefault("unmeasured_windows", []).append(win)
+                    log = sst.setdefault("power_unmeasured", [])
+                    log.append(win)
+                    del log[:-50]
+                    if end >= tomorrow:
+                        done[zone] = True
+                        cursors[zone] = (end - timedelta(days=POWER_RECENT_D)).isoformat()
+                    else:
+                        since = end + timedelta(days=1)
+                        cursors[zone] = since.isoformat()
+                    continue
+                return fail(f"HTTP_ERROR: {type(exc).__name__}: {str(exc)[:120]}")
+            seen = clock()
+            out["fetched"] += 1
+            err = power_licence_error(body)
+            if err:
+                return fail(err, hold=err.startswith(("NOT_JSON", "LICENCE_CHANGED")))
+            vault(paths, src, body, req.url, ctype, seen)
+            take(body, Ctx(part=POWER_ZONES[zone], start=since, end=end, fetched_at=seen), seen)
+            if end >= tomorrow:
+                done[zone] = True
+                cursors[zone] = (end - timedelta(days=POWER_RECENT_D)).isoformat()
+            else:
+                since = end + timedelta(days=1)
+                cursors[zone] = since.isoformat()
+    out["caught_up"] = done
+    if not out["parsed"]:
+        n404 = len(out.get("unmeasured_windows", []))
+        if out["fetched"]:
+            return fail("EMPTY: the API answered with no complete delivery day")
+        if n404 and n404 == out["requests"]:
+            # Every request the pass made was answered 404: the source was reached and had
+            # no data for any window asked. That is not a budget cut (the old label), and it is
+            # not a zero: each window is recorded UNMEASURED above.
+            cut = "" if all(done.values()) else "; budget cut before every zone caught up"
+            return fail(f"ALL_WINDOWS_404: {n404} window(s), every one HTTP 404{cut}")
+        return fail("BUDGET: no request completed inside the budget")
+    if not all(done.values()):
+        # NEVER OK ON A PARTIAL READ: the rows read stand (each stamped at its own fetch), the
+        # cursors resume next pass, and the pass says it was cut.
+        behind = ",".join(z for z, ok in done.items() if not ok)
+        out["outcome"] = "PARTIAL:BUDGET"
+        out["why"] = f"budget cut before {behind} caught up (cursor kept)"
+        return out
+    out["outcome"] = ("UNCHANGED" if not (out["merge"]["added"] or out["merge"]["revised"])
+                      else "OK")
+    return out
+
+
+def collect_portwatch(paths: Paths, src: Source, sst: dict[str, Any], store: dict[str, Any],
+                      now: datetime, *, fetch: bool, fixtures: Path | None, deadline: float,
+                      getter: Callable[[str], tuple[bytes, str]] = http_get,
+                      sleep: Callable[[float], None] = time.sleep,
+                      clock: Callable[[], datetime] = lambda: datetime.now(UTC)
+                      ) -> dict[str, Any]:
+    """IMF PortWatch chokepoint transits / port calls into the PIT vintage store.
+
+    `outcome` is OK, UNCHANGED (rows read, nothing new or revised) or FAILED:<cause>. A fetch pass
+    that parsed nothing is FAILED with its cause, never a zero. 401/403/429 or a non-JSON body
+    (WAF) is a HARD STOP: nothing more is requested and the source is held until a PERSON
+    releases it (no expiry, see PORTWATCH_HOLD_RELEASE). robots.txt
+    of the data host decides every pass and its crawl-delay is honoured between pages."""
+    out: dict[str, Any] = {"requests": 0, "fetched": 0, "parsed": 0, "errors": [],
+                           "merge": {"added": 0, "revised": 0}}
+
+    def fail(cause: str, *, hold: bool = False) -> dict[str, Any]:
+        out["errors"].append(cause)
+        out["status"] = f"FAILED:{cause.split(':', 1)[0]}"
+        out["outcome"] = out["status"]
+        out["why"] = cause
+        if hold:
+            out["hard_stop"] = person_hold(sst, src, cause, now, "its chokepoint cells")
+        return out
+
+    def take(body: bytes, ctx: Ctx, seen_at: datetime) -> int:
+        # `seen_at` is THIS page's fetch instant, taken after its response arrived: a pass with
+        # a crawl-delay can run for many minutes, and the pass-start instant would date a row
+        # published mid-pass before it existed.
+        assert src.parse is not None
+        obs = src.parse(body, ctx)
+        out["parsed"] += len(obs)
+        m = merge_vintages(store, src, obs, seen_at)
+        out["merge"]["added"] += m["added"]
+        out["merge"]["revised"] += m["revised"]
+        return len(_arcgis_rows(body))
+
+    if fixtures is not None:
+        fp = fixtures / f"{src.id}.json"
+        if not fp.exists():
+            return fail(f"NO_FIXTURE: {fp.name} absent")
+        body = fp.read_bytes()
+        err = arcgis_error(body)
+        if err:
+            return fail(err)
+        take(body, Ctx(part="fixture", fetched_at=now), now)
+        if not out["parsed"]:
+            return fail("EMPTY: the fixture parsed to no rows")
+        out["outcome"] = "OK"
+        return out
+    if not fetch:
+        out["why"] = "no fetch this pass (--no-fetch): UNMEASURED, not zero"
+        out["outcome"] = "UNMEASURED"
+        return out
+    if held_by_person(sst, now, out):
+        return out
+    since = portwatch_since(now, sst)
+    first = portwatch_request(src.id, src.url, since, 0, now)
+    rb = robots_verdict(first.url, getter)
+    out["robots"] = rb
+    if rb["verdict"] == "hard_stop":
+        return fail(f"HARD_STOP: {rb['note']}", hold=True)
+    if rb["verdict"] != "allow":
+        return fail(f"ROBOTS_{rb['verdict'].upper()}: {rb['note']}")
+    delay = float(rb.get("crawl_delay") or 0.0)
+    n_req = 0
+
+    def polite() -> bool:
+        """Crawl-delay before every request after the first; False when the budget is out."""
+        if n_req and delay:
+            if time.monotonic() + delay > deadline:
+                return False
+            sleep(delay)
+        return time.monotonic() <= deadline
+
+    # THE SERVER'S PAGE CAP, READ FROM THE LAYER (FeatureServer/0?f=json). It sizes the pages
+    # only: completion is proved by an EMPTY page whatever the cap says, because a server can
+    # cap below its stated maxRecordCount without setting exceededTransferLimit.
+    cap: int | None = None
+    meta_url = src.url.rsplit("/query", 1)[0] + "?f=json"
+    try:
+        mbody, _ct = getter(meta_url)
+        n_req += 1
+    except Exception as exc:
+        n_req += 1
+        code = _http_code(exc)
+        if code in PORTWATCH_HARD_STOP:
+            return fail(f"HARD_STOP: HTTP {code} on the layer metadata", hold=True)
+    else:
+        mdoc = _arcgis_doc(mbody)
+        if mdoc is None:
+            # A WAF / HTML / non-JSON answer is a refusal in disguise: fail closed and hold for
+            # a person, and never go on to page 0.
+            return fail("NOT_JSON: the layer metadata answered with a non-JSON body (WAF, "
+                        "maintenance or HTML page)", hold=True)
+        mrc = mdoc.get("maxRecordCount")
+        cap = int(mrc) if isinstance(mrc, int) and mrc > 0 else None
+    out["page_cap"] = cap if cap is not None else UNMEASURED
+    page_size = min(PORTWATCH_PAGE, cap) if cap else PORTWATCH_PAGE
+    complete = False
+    partial_why = ""
+    last_full: date | None = None
+    offset = 0
+    flagged = False                           # the previous page said exceededTransferLimit
+    prev_sig = ""                             # the previous page's row identities, hashed
+    for page in range(PORTWATCH_MAX_PAGES):
+        if not polite():
+            partial_why = "BUDGET: the remaining pages are owed to the next pass (cursor kept)"
+            break
+        req = portwatch_request(src.id, src.url, since, offset, now, page_size)
+        out["requests"] += 1
+        n_req += 1
+        try:
+            body, ctype = getter(req.url)
+        except Exception as exc:
+            code = _http_code(exc)
+            if code in PORTWATCH_HARD_STOP:
+                return fail(f"HARD_STOP: HTTP {code} on page {page}", hold=True)
+            return fail(f"HTTP_ERROR: {type(exc).__name__}: {str(exc)[:120]}")
+        seen_at = clock()
+        out["fetched"] += 1
+        err = arcgis_error(body)
+        if err:
+            return fail(err, hold=err.startswith("NOT_JSON"))
+        vault(paths, src, body, req.url, ctype, seen_at)
+        n_rows = take(body, Ctx(part=req.ctx.part, start=since, fetched_at=seen_at), seen_at)
+        doc = _arcgis_doc(body) or {}
+        exceeded = bool(doc.get("exceededTransferLimit"))
+        sig = hashlib.sha256(json.dumps(
+            [[a.get("date"), a.get("portid"), a.get("portname")] for a in _arcgis_rows(body)],
+            sort_keys=True, default=str).encode()).hexdigest() if n_rows else ""
+        if sig and sig == prev_sig:
+            return fail(f"OFFSET_IGNORED: page {page} repeats the previous page's rows -- the "
+                        "server ignores resultOffset, so paging cannot advance")
+        prev_sig = sig
+        dates = [d for a in _arcgis_rows(body) if (d := _arcgis_date(a.get("date")))]
+        if dates:
+            # The last date on a page may continue on the next one: only the day before it is
+            # known complete, which is where a cut-short pass resumes.
+            last_full = max(dates) - timedelta(days=1)
+        if n_rows == 0:
+            if flagged:
+                return fail("TRUNCATED: the server said exceededTransferLimit and the next "
+                            "page was empty -- rows were withheld, the read is not complete")
+            complete = True
+            break
+        offset += n_rows
+        flagged = exceeded
+        # A short unflagged page may still be a silent server cap (below the stated
+        # maxRecordCount, or with the cap unknown): read on until an EMPTY page proves the end.
+    else:
+        partial_why = (f"MAX_PAGES: {PORTWATCH_MAX_PAGES} pages read and more remain "
+                       "(cursor kept)")
+    if complete:
+        newest = max((date.fromisoformat(str(r["period"])) for r in store.values()
+                      if isinstance(r, dict) and r.get("period")), default=None)
+        if newest is not None:
+            sst["pw_from"] = (newest - timedelta(days=PORTWATCH_RECENT_D)).isoformat()
+    elif last_full is not None and last_full > since:
+        sst["pw_from"] = last_full.isoformat()
+    if not out["parsed"]:
+        return fail("EMPTY: the query answered with no rows" if complete else
+                    partial_why or "EMPTY: no page completed")
+    out["complete"] = complete
+    if not complete:
+        # NEVER OK ON A PARTIAL READ: the rows read are kept (each stamped at its own page's
+        # fetch), the cursor resumes, and the pass says so.
+        out["errors"].append(partial_why)
+        out["outcome"] = f"PARTIAL:{partial_why.split(':', 1)[0]}"
+        out["why"] = partial_why
+        return out
+    out["outcome"] = ("UNCHANGED" if not (out["merge"]["added"] or out["merge"]["revised"])
+                      else "OK")
+    return out
+
+
+#: The pack vocabulary (`PORTWATCH:<name>` in red_sea / central_america SERIES) -> the stored
+#: series this organ writes. One map, read by every pack.
+PORTWATCH_PACK_SERIES: dict[str, str] = {
+    "bab_el_mandeb_transits": "bab_el_mandeb_strait_transits",
+    "suez_transits": "suez_canal_transits",
+    "panama_transits": "panama_canal_transits",
+    "cape_of_good_hope_transits": "cape_of_good_hope_transits",
+    "hormuz_transits": "strait_of_hormuz_transits",
+    "malacca_transits": "malacca_strait_transits",
+    "bosporus_transits": "bosporus_strait_transits",
+    "gibraltar_transits": "gibraltar_strait_transits",
+}
+
+
+def chokepoints_asof(decision_at: datetime, store_path: Path | None = None,
+                     names: Iterable[str] | None = None) -> dict[str, Any]:
+    """The latest chokepoint transit count per series KNOWN at `decision_at`.
+
+    A row is visible only when its `published_time` (max of the stated Tuesday release and the
+    instant this desk first read it) is at or before the decision, and its period is strictly
+    before the decision's own UTC day: a same-day value is never seen. The value is the FIRST
+    vintage read, never a later revision back-dated. An absent or empty store is UNMEASURED."""
+    want = [PORTWATCH_PACK_SERIES.get(n, n) for n in names] if names is not None else None
+    got = series_asof("imf_portwatch_chokepoints", decision_at, store_path, want)
+    p = Path(got["store"])
+    best = {k: {f: v[f] for f in ("period", "value", "known_at")}
+            for k, v in got["series"].items()}           # the packs' row shape, unchanged
+    if decision_at.tzinfo is None:
+        decision_at = decision_at.replace(tzinfo=UTC)
+    credit = _IMF_EV["credit"]                 # the attribution the IMF terms require
+    if not best:
+        return {"status": "UNMEASURED", "series": {}, "store": str(p), "credit": credit,
+                "why": ("no IMF PortWatch chokepoint row known at "
+                        f"{decision_at.isoformat(timespec='seconds')} in {p.name}")}
+    inv = {v: k for k, v in PORTWATCH_PACK_SERIES.items()}
+    return {"status": "MEASURED", "series": dict(sorted(best.items())),
+            "by_pack_name": {inv[k]: v for k, v in sorted(best.items()) if k in inv},
+            "store": str(p), "decision_at": decision_at.isoformat(timespec="seconds"),
+            "credit": credit}
+
+
+def series_asof(source_id: str, decision_at: datetime, store_path: Path | None = None,
+                names: Iterable[str] | None = None) -> dict[str, Any]:
+    """The latest value per series of `source_id`'s vintage store KNOWN at `decision_at`.
+
+    THE ONE PIT READER every alt-proxies consumer uses (chokepoints, power stress, ...). A row
+    is visible only when its `published_time` (max of the stated release and the instant this
+    desk first read it) is at or before the decision AND its period is strictly before the
+    decision's own UTC day: a same-day value is never seen, even a day-ahead price already
+    auctioned (late, never early). The value is the FIRST vintage read; a revision is never
+    back-dated. An absent or empty store is UNMEASURED."""
+    if decision_at.tzinfo is None:
+        decision_at = decision_at.replace(tzinfo=UTC)
+    p = store_path or (DEFAULT_PATHS.obs_dir / f"{source_id}.json")
+    store = _read_json(p, {})
+    want = set(names) if names is not None else None
+    best: dict[str, dict[str, Any]] = {}
+    for row in store.values() if isinstance(store, dict) else ():
+        if not isinstance(row, dict) or not row.get("series"):
+            continue
+        name = str(row["series"])
+        if want is not None and name not in want:
+            continue
+        known = _t(row.get("published_time"))
+        try:
+            period = date.fromisoformat(str(row.get("period")))
+        except ValueError:
+            continue
+        if known is None or known > decision_at or period >= decision_at.date():
+            continue
+        cur = best.get(name)
+        if cur is None or period.isoformat() > cur["period"]:
+            best[name] = {"period": period.isoformat(), "value": float(row["value_first"]),
+                          "known_at": known.isoformat(timespec="seconds"),
+                          "pit_quality": pit_quality_of(row)}
+    credit = credit_of(source_id)              # the attribution the publisher's terms require
+    if not best:
+        return {"status": "UNMEASURED", "series": {}, "store": str(p), "credit": credit,
+                "why": (f"no {source_id} row known at "
+                        f"{decision_at.isoformat(timespec='seconds')} in {p.name}")}
+    return {"status": "MEASURED", "series": dict(sorted(best.items())), "store": str(p),
+            "decision_at": decision_at.isoformat(timespec="seconds"), "credit": credit}
+
+
+def power_stress_asof(decision_at: datetime, store_path: Path | None = None) -> dict[str, Any]:
+    """P8-N1 consumer: the power-stress vector per MT5 instrument known at `decision_at`.
+
+    For each instrument the source maps, the latest known base-load price per zone with its
+    declared prior sign (untested: the gain test, not this reader, decides any cell)."""
+    got = series_asof("eu_power_dayahead", decision_at, store_path)
+    src = BY_ID["eu_power_dayahead"]
+    vec: dict[str, list[dict[str, Any]]] = {}
+    for series, row in got["series"].items():
+        if series not in src.signal_series:
+            continue
+        for sym, sign in src.instruments_for(series).items():
+            vec.setdefault(sym, []).append({"series": series, "prior_sign": sign, **row})
+    return {**got, "instruments": dict(sorted(vec.items())), "style": NOVEL_STYLE[src.id]}
 
 
 def collect_gdelt(paths: Paths, src: Source, sst: dict[str, Any], store: dict[str, Any],
@@ -5517,6 +6517,25 @@ def substitute_agreement(paths: Paths, pts: dict[str, dict[str, list[dict[str, A
     return out
 
 
+def _entsoe_pass(paths: Paths, state: dict[str, Any], now: datetime, *, fetch: bool,
+                 fixtures: Path | None, deadline: float, dry_run: bool,
+                 donate: bool) -> dict[str, Any]:
+    """REGISTERED PRODUCER: ENTSO-E load and generation per type (`research/entsoe_power.py`),
+    run on this leg's clock with its own share of the budget (at most BUDGET_S, never past
+    `deadline`). One producer's exception is recorded (scrubbed by the producer's own errors;
+    an unexpected one carries only its type) and never costs this leg its other sources."""
+    from research import entsoe_power
+    own = min(deadline, time.monotonic() + entsoe_power.BUDGET_S)
+    try:
+        return entsoe_power.run_pass(sys.modules[__name__], paths, state, now, fetch=fetch,
+                                     fixtures=fixtures, deadline=own, dry_run=dry_run,
+                                     donate=donate)
+    except Exception as exc:
+        return {"id": entsoe_power.SOURCE_ID, "outcome": "FAILED:EXCEPTION",
+                "why": f"{type(exc).__name__} in entsoe_power.run_pass (message withheld: it "
+                       "may carry request state)"}
+
+
 def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = True,
         fixtures: Path | None = None, dry_run: bool = False, donate: bool = True,
         now: datetime | None = None) -> dict[str, Any]:
@@ -5570,8 +6589,9 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
         "power": {"target_ic": TARGET_IC,
                   "n_underpowered": sum(1 for g in gains.values()
                                         if g.get("verdict") == "UNDERPOWERED"),
-                  "rule": ("each gain row carries min_detectable_ic (80% power at its n and "
-                           "Bonferroni charge); a miss above target_ic is UNDERPOWERED, not FAIL")},
+                  "rule": ("each gain row carries min_detectable_ic (80% power at its n against "
+                           "the Tier S bar at that n, tier_s_t_required); a miss above target_ic "
+                           "is UNDERPOWERED, not FAIL")},
         "equity_handoff": {"path": str(paths.equity_handoff), "n_rows": len(handoff["rows"]),
                            "rule": handoff["rule"]},
         "dead_sources": sorted(s.id for s in SOURCES if is_dead(s)),
@@ -5595,10 +6615,11 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
                                     "params.conditioner, applied by mt5desk.cell_modifiers; a "
                                     "child is donated only when its in-regime parent return "
                                     "beats circularly shifted regimes of the same duty cycle, "
-                                    "Bonferroni over every child tested")},
+                                    "Tier S bar at each child's own n; children recorded")},
         "allocation_intel": {"path": str(paths.allocation_intel),
                              "n_instruments": len(intel["instruments"])},
         "substitute_agreement": substitute_agreement(paths, points_by_source),
+        "novel_styles": NOVEL_STYLE,
         "keys": {s.key_env: bool(os.environ.get(s.key_env)) for s in SOURCES if s.key_env},
         "live_yield": ("UNMEASURED until the trading box runs this leg: the fetchers were built "
                        "against fixtures because the authoring container cannot reach the hosts"),
@@ -5608,6 +6629,9 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
         "path": str(paths.desk / "reports" / _agp.STATE_FILE),
         "verdicts": {sid: b["verdict"] for sid, b in gold["states"].items()},
         "missed_growth_lines": gold["missed_growth_lines"]}
+    report["entsoe_power"] = _entsoe_pass(paths, state, now, fetch=fetch, fixtures=fixtures,
+                                          deadline=deadline + budget_s * 0.2,
+                                          dry_run=dry_run, donate=donate)
     state["last_run"] = report["at"]
     if not dry_run:
         _agp.write(paths.desk / "reports" / _agp.STATE_FILE, gold)
@@ -5653,7 +6677,12 @@ def _cursor(s: Source) -> str:
     if s.id == "cn_firms_industrial":
         return "firms_backfill_to (10 days/cluster/pass, archive product)"
     if s.id.startswith("imf_portwatch"):
-        return "resultOffset paging; 800-day window"
+        return (f"resultOffset paging ({PORTWATCH_PAGE}/page) from state.pw_from; first pass "
+                f"{PORTWATCH_DEPTH_D}d deep, then the last {PORTWATCH_RECENT_D}d re-read")
+    if s.id == "eu_power_dayahead":
+        return (f"state.power_from[zone] walks {POWER_CHUNK_D}-day windows forward from "
+                f"{POWER_DEPTH_D}d back until tomorrow is served, then re-reads the last "
+                f"{POWER_RECENT_D}d")
     if s.id == "gdelt_events_country":
         return (f"fwd/back 15-minute slot cursors ({GDELT_FWD_PER_PASS}+{GDELT_BACK_PER_PASS} "
                 f"slots/pass, {GDELT_BACK_DEPTH_D}d deep); open days held in state.acc")

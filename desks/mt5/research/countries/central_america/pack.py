@@ -4730,20 +4730,65 @@ def canal_auction_prints(pack: Any = None, ctx: Any = None) -> dict[str, Any]:
                            "observations and is declared as such (L1.28a)"]}
 
 
-def chokepoint_substitution(pack: Any = None, ctx: Any = None) -> dict[str, Any]:
+#: The attribution the IMF terms require on every payload that carries PortWatch counts
+#: (`alt_proxies._IMF_EV["credit"]` is the source; this is the fallback when it cannot load).
+PORTWATCH_CREDIT = "Source: International Monetary Fund (IMF PortWatch)."
+
+
+def _portwatch_known(names: Iterable[str], store: Any = None,
+                     asof: datetime | None = None) -> dict[str, Any]:
+    """The IMF PortWatch chokepoint counts KNOWN at `asof` (default now), read through the one
+    organ that writes them (`alt_proxies.chokepoints_asof`, PIT: a row is visible only once its
+    release-or-read stamp has passed, and never for the decision's own day). Any failure to
+    read is UNMEASURED by name, never a zero."""
+    at = asof or datetime.now(tz=UTC)
+    try:
+        try:
+            from research import alt_proxies as _ap
+        except ImportError:
+            import alt_proxies as _ap  # type: ignore[import-not-found,no-redef]
+        return dict(_ap.chokepoints_asof(at, store, names))
+    except Exception as exc:
+        return {"status": "UNMEASURED", "series": {}, "credit": PORTWATCH_CREDIT,
+                "why": f"PortWatch reader unavailable ({type(exc).__name__})"}
+
+
+#: The pack's PortWatch names for the three controls (red_sea's vocabulary, one map in
+#: alt_proxies.PORTWATCH_PACK_SERIES).
+CHOKEPOINT_PORTWATCH: dict[str, str] = {
+    "Suez Canal": "suez_transits",
+    "Bab el-Mandeb and the Red Sea": "bab_el_mandeb_transits",
+    "The Cape of Good Hope routing share": "cape_of_good_hope_transits",
+}
+
+
+def chokepoint_substitution(pack: Any = None, ctx: Any = None, *, store: Any = None,
+                            asof: datetime | None = None) -> dict[str, Any]:
     """CA-D: THE CONTROL MINER. It refuses to attribute a freight move to Panama without the
     Suez and Bab el-Mandeb series beside it, and says UNMEASURED by name when they are absent."""
+    known = _portwatch_known(("panama_transits", *CHOKEPOINT_PORTWATCH.values()), store, asof)
+    got = known.get("by_pack_name") or {}
     n = 0
     for row in CHOKEPOINT_CONTROLS:
+        pw = CHOKEPOINT_PORTWATCH.get(row["name"])
         n += _emit(ctx, "substitution",
                    payload={"domain": "CA-D", "control": row["name"],
-                            "observable": row["observable"], "status": row["status"]})
+                            "observable": row["observable"], "status": row["status"],
+                            "measured": got.get(pw) if pw else None,
+                            "credit": known.get("credit") or PORTWATCH_CREDIT})
+    panama = got.get("panama_transits")
+    controls_in = all(s in got for s in ("suez_transits", "bab_el_mandeb_transits"))
+    unmeasured: list[str] = []
+    if not (panama and controls_in):
+        unmeasured.append("CA-D/portwatch_series: the IMF PortWatch daily transit counts for "
+                          "Panama, Suez and Bab el-Mandeb are not all known at this instant "
+                          f"({known.get('why') or 'partial'}); without them a Panama "
+                          "constraint cell is measuring global freight and the miner refuses "
+                          "to claim otherwise")
     return {"miner": "chokepoint_substitution", "domain": "CA-D",
             "controls": len(CHOKEPOINT_CONTROLS), "emitted": n,
-            "unmeasured": ["CA-D/portwatch_series: the IMF PortWatch daily transit counts for "
-                           "Panama, Suez and Bab el-Mandeb are not loaded on this box; without "
-                           "them a Panama constraint cell is measuring global freight and the "
-                           "miner refuses to claim otherwise"]}
+            "portwatch": known, "credit": known.get("credit") or PORTWATCH_CREDIT,
+            "unmeasured": unmeasured}
 
 
 def coffee_export_calendar(pack: Any = None, ctx: Any = None) -> dict[str, Any]:

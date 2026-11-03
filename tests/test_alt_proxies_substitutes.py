@@ -349,6 +349,7 @@ def test_reviewed_terms_carry_evidence() -> None:
     assert set(A.TERMS_EVIDENCE) <= set(A.TERMS)
     for sid, ev in A.TERMS_EVIDENCE.items():
         assert ev["terms_url"].startswith("https://") and ev["terms_quote"], sid
+        # The 2026-09-30 review, or a later read (pass 8: eu_power_dayahead, opensky_departures).
         assert ev["robots"] and ev["checked_at"] >= "2026-09-30", sid     # ISO: never older
     reviewed = {sid for sid in A.TERMS_EVIDENCE if A.TERMS[sid][0] == "confirmed"}
     confirmed = {s.id for s in A.SOURCES if s.terms == "confirmed"}
@@ -526,7 +527,16 @@ def test_power_is_reported_and_a_low_power_miss_is_underpowered_not_fail() -> No
     assert by[("release_gain", 0.05)]["underpowered_rate"] > 0
     m250, m1000 = min_detectable_ic(250), min_detectable_ic(1000)
     assert m250 is not None and m1000 is not None and m1000 < m250
-    assert (min_detectable_ic(1000, 40) or 0.0) > m1000             # the charge costs power
+    # THE FAMILY SIZE NEVER MOVES A VERDICT: the same draw judged as 1 child or as 40 children
+    # gets the same verdict, the same p bar and the same t bar (no charge over the count).
+    import numpy as np
+
+    from libs.research.release_gain import _sim_regime, regime_placebo
+    pos, ret, mask = _sim_regime(0.2, 400, np.random.default_rng(11))
+    one = regime_placebo(pos, ret, mask, n_recorded=1, seed=3)
+    forty = regime_placebo(pos, ret, mask, n_recorded=40, seed=3)
+    assert one["verdict"] == forty["verdict"] and one["p_bar"] == forty["p_bar"] > 0
+    assert one["t_bar"] == forty["t_bar"] and (one["n_recorded"], forty["n_recorded"]) == (1, 40)
 
 
 # ============================================================================ roster
@@ -581,7 +591,8 @@ def test_every_blocked_source_has_candidates_or_says_why_not() -> None:
     gold = {"vn_sjc_premium", "th_gold_premium", "cn_sge_deferral",
             # Turkey (IDEA_QUEUE 257): Borsa Istanbul's precious-metals table, IDEAS_ONLY
             "tr_bist_gold"}
-    assert blocked == {*BLOCKED, "za_statssa_retail", *held, *gold}
+    # OpenSky is IDEAS_ONLY on its own terms (pass 8)
+    assert blocked == {*BLOCKED, "za_statssa_retail", *held, *gold, "opensky_departures"}
     assert set(A.SUBSTITUTED_BY) | set(A.NO_SUBSTITUTE) == set(BLOCKED)
     assert set(A.NO_SUBSTITUTE) == {"in_npci_upi", "za_beti"}
     for sid, subs in A.SUBSTITUTED_BY.items():

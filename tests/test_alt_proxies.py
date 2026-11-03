@@ -253,7 +253,7 @@ def _plant(logp: pd.Series, events: list[tuple[pd.Timestamp, float]], beta: floa
 def test_gain_test_passes_a_planted_post_release_effect() -> None:
     ev = _events(90, 1)
     close = _plant(_bars(1000, 1), ev, beta=0.01)
-    res = release_gain(ev, close, horizon_bars=120, n_cells=40)
+    res = release_gain(ev, close, horizon_bars=120)
     assert res.verdict == "PASS", res.why
     assert res.ic is not None and res.ic > 0.5
     assert res.placebo_abs_ic_p95 is not None and res.placebo_abs_ic_p95 < res.ic
@@ -263,7 +263,7 @@ def test_gain_test_does_not_pass_null_data() -> None:
     passes = 0
     for seed in range(6):
         ev = _events(90, seed)
-        res = release_gain(ev, np.exp(_bars(1000, seed)), horizon_bars=120, n_cells=40)
+        res = release_gain(ev, np.exp(_bars(1000, seed)), horizon_bars=120)
         assert res.verdict in ("FAIL", "UNDERPOWERED", "UNMEASURED")
         passes += res.verdict == "PASS"
     assert passes == 0
@@ -275,7 +275,7 @@ def test_placebo_catches_a_release_calendar_that_is_wrong() -> None:
     ev = _events(90, 2)
     close = _plant(_bars(1000, 2), ev, beta=0.01)
     wrong = [(t + pd.Timedelta(days=17), s) for t, s in ev]
-    res = release_gain(wrong, close, horizon_bars=120, n_cells=40)
+    res = release_gain(wrong, close, horizon_bars=120)
     assert res.verdict != "PASS"
 
 
@@ -393,12 +393,12 @@ def test_indirect_child_with_a_planted_regime_edge_passes_and_its_mirror_does_no
     assert owed >= 0 and len(gates) == 2                       # both halves were tested
     verdicts = {g["cell"].rsplit(":", 2)[1]: g["verdict"] for g in gates}
     assert verdicts["gt"] == "PASS" and verdicts["lt"] in ("FAIL", "UNDERPOWERED"), gates
-    assert all(g["n_trials"] == 2 for g in gates)               # both charged
+    assert all(g["n_recorded"] == 2 for g in gates)               # both recorded
     assert len(cells) == 1
     c = cells[0]
     assert c["family"] == "session_range_breakout" and c["params"]["rr"] == 2.0
     assert c["params"]["session"] == "asia"
-    assert c["evidence"]["p_charged"] <= 0.05 and c["evidence"]["n_in"] >= 20
+    assert c["evidence"]["p_placebo"] <= c["evidence"]["p_bar"] and c["evidence"]["n_in"] >= 20
     for k in REQUIRED_META:
         assert c[k], k
     spec = cm.alt_conditioner(c["params"]["conditioner"])
@@ -437,13 +437,13 @@ def test_regime_placebo_passes_a_planted_regime_and_fails_a_null() -> None:
     mask = np.repeat(rng.random(T // 300) < 0.4, 300)[:T]      # slow regime, duty ~0.4
     pos = np.sort(rng.choice(T, 1500, replace=False))
     noise = rng.normal(0, 0.004, pos.size)
-    planted = regime_placebo(pos, noise + np.where(mask[pos], 0.0015, 0.0), mask, n_trials=24)
+    planted = regime_placebo(pos, noise + np.where(mask[pos], 0.0015, 0.0), mask, n_recorded=24)
     assert planted["verdict"] == "PASS", planted
-    assert planted["p_charged"] <= 0.05 and planted["n_trials"] == 24
+    assert planted["p_placebo"] <= planted["p_bar"] and planted["n_recorded"] == 24
     fails = 0
     for seed in range(8):
         r = np.random.default_rng(100 + seed).normal(0, 0.004, pos.size)
-        fails += regime_placebo(pos, r, mask, n_trials=24, seed=seed)["verdict"] != "PASS"
+        fails += regime_placebo(pos, r, mask, n_recorded=24, seed=seed)["verdict"] != "PASS"
     assert fails == 8
     # a regime that is never on, or holds too few signals, is UNMEASURED -- never a verdict
     assert regime_placebo(pos, noise, np.zeros(T, bool))["verdict"] == "UNMEASURED"

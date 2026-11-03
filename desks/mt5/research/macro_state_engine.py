@@ -2232,7 +2232,7 @@ def regime_children(specs: list[LatentSpec], series_root: Path, state: dict[str,
             known = series.reindex(series.index.union(idx)).ffill().reindex(idx)
             mask = cm.ALT_OPS[op](known.astype(float), 0.0).to_numpy(dtype=bool)
             inputs.append((cand, (pos, ret, mask)))
-    n_trials = max(1, sum(1 for _c, x in inputs if not isinstance(x, str)))
+    n_recorded = max(1, sum(1 for _c, x in inputs if not isinstance(x, str)))
     passed: list[dict[str, Any]] = []
     gates: list[dict[str, Any]] = []
     by_family: dict[str, int] = {}
@@ -2243,12 +2243,12 @@ def regime_children(specs: list[LatentSpec], series_root: Path, state: dict[str,
             fam = str(cand["family"])
             by_family[fam] = by_family.get(fam, 0) + 1
             seed = int(hashlib.sha256(str(cand["cell"]).encode()).hexdigest()[:8], 16)
-            res = regime_placebo(x[0], x[1], x[2], n_trials=n_trials, seed=seed)
+            res = regime_placebo(x[0], x[1], x[2], n_recorded=n_recorded, seed=seed)
         gates.append({"cell": cand["cell"], "family": cand["family"], **res})
         if res.get("verdict") == "PASS":
             cand["evidence"] = {k: res.get(k) for k in (
                 "n_in", "n_signals", "duty_cycle", "mean_in", "placebo_mean", "p_placebo",
-                "p_charged", "n_trials", "why")}
+                "p_bar", "t_bar", "n_recorded", "why")}
             passed.append(cand)
     return passed, sum(by_family.values()), gates, by_family
 
