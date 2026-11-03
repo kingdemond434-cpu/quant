@@ -41,10 +41,11 @@ and none of them can be done legitimately by a code-writing agent.
    - Note the App ID and the Installation ID, and generate one private key (a .pem download).
 3. **On the box, over RDP**, open PowerShell with *Run as administrator* and paste one line,
    with your App ID in place of the number:
-   `powershell -ExecutionPolicy Bypass -File C:\ProgramData\QuantBox\gate-repo\ops\release\authority\install_authority.ps1 -AppId 1234567`
+   `git -C C:\ProgramData\QuantBox\gate-repo diff --quiet HEAD -- ops/release/authority; if ($?) { powershell -ExecutionPolicy Bypass -File C:\ProgramData\QuantBox\gate-repo\ops\release\authority\install_authority.ps1 -AppId 1234567 } else { 'STOP: the installer differs from LIVE' }`
    - The App ID is the number at the top of the App's settings page.
    - The path is the box gate's own clean checkout of LIVE. The gate refreshes it every 10
-     minutes, so the installer is there even while `C:\opt\quant` waits for adoption.
+     minutes, so the installer is there even while `C:\opt\quant` waits for adoption. The
+     `git diff` in front refuses to run the installer if anyone changed it on disk since LIVE.
    - The installer finds everything else itself: it moves the App key you downloaded out of
      Downloads into the key folder, and asks GitHub for the installation id.
    - It then creates the `quant-authority` account, its folders, the signing key, the pin and the
