@@ -307,6 +307,8 @@ def test_the_envelope_caps_the_book_lot_below_the_target_when_it_binds(
 def _sleeves_file(tmp_path: Path, rows: list[dict]) -> Path:
     p = tmp_path / "sleeves.json"
     p.write_text(json.dumps({"sleeves": rows}), encoding="utf-8")
+    # The gateway reads the principal stops beside the roster; an absent record is its own note.
+    p.with_name("PRINCIPAL_STOPS.json").write_text('{"stops": []}', encoding="utf-8")
     return p
 
 

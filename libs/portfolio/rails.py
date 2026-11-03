@@ -167,6 +167,29 @@ RAILS: tuple[Rail, ...] = (
     Rail("e8_unowned_position_block", "integrity",
          "prop.e8_gold._retry_failed_legs <- position_since_failure",
          "measure_e8_unowned_block"),
+    # AN ORDERED STANDBY HOLDS (2026-10-14). A row someone parked with `standby_reason` (the
+    # 2026-10-13 stop-the-bleed) is not lifted by an admitting allocator reading or by the
+    # silent-demotion healer; the reading is still recorded on the row. Billed like any veto:
+    # what the held rows would have earned is the missed growth, and the hold ends when its
+    # writer deletes the field.
+    Rail("ordered_standby_hold", "veto",
+         "promoter.reconcile_capital standby_reason / heal_silent_demotions._reason",
+         "measure_ordered_standby_hold"),
+    # THE REPLICATION LIVE DOOR (coordinator ruling C, 2026-10-14). A row newly written LIVE on
+    # a canon certificate needs a REPLICATED independent rebuild, or the principal's named waiver
+    # (MISMATCH voids it). Rows already LIVE are not demoted. Billed from the forward clocks of
+    # the rows it withheld, which keep running as paper.
+    Rail("replication_live_door", "gate",
+         "promoter.replication_door <- admission_integrity.live_refusal",
+         "measure_replication_live_door"),
+    # THE RESTORE DOOR (Judge, 2026-10-20: a restore is a promotion). A STANDBY row the allocator
+    # admits again is restored to LIVE only past the doors a new LIVE row must pass -- cost
+    # re-grade, blind reviewer, Tier S, principal stops -- and stays STANDBY when any refuses or
+    # cannot be read. Rows already LIVE are not touched. Billed from the forward clocks of the rows
+    # it holds (`restore_refusal`), which keep running as paper.
+    Rail("restore_door", "gate",
+         "promoter.restore_door_refusal <- reconcile_capital / heal_silent_demotions",
+         "measure_restore_door"),
 )
 
 _CACHE: dict[str, Any] = {"mtime": None, "doc": {}}

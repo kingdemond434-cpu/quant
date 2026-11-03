@@ -44,6 +44,10 @@ from mt5desk import position_manager as _pm  # noqa: E402
 from mt5desk import provenance  # noqa: E402
 from mt5desk import scalp_exec as sx  # noqa: E402
 
+# These tests lift the scalp ban to exercise promotion (`_open_live_policy`), and a lifted ban
+# puts scalp rows behind the replication LIVE door, which is tested in test_replication_live_door.
+pytestmark = pytest.mark.usefixtures("replication_passes")
+
 _ACC = {"login": 5551234, "server": "FusionMarkets-Live", "kind": provenance.LIVE}
 _NAME = "xau_m15_anti_breakout"
 _CAND = {"status": "PROMOTION_CANDIDATE", "timeframe": "M15",
@@ -81,6 +85,8 @@ def desk(tmp_path, monkeypatch):
     (tmp_path / "logs").mkdir()
     monkeypatch.setattr(promoter, "SHADOW_DIR", shadow_dir)
     monkeypatch.setattr(promoter, "SLEEVES_FILE", tmp_path / "data" / "sleeves.json")
+    # A restore asks the principal stops beside the roster and refuses an absent record.
+    (tmp_path / "data" / "PRINCIPAL_STOPS.json").write_text('{"stops": []}', encoding="utf-8")
     _open_live_policy(tmp_path, monkeypatch, "XAUUSD", unban_m15=True)
     monkeypatch.setattr(promoter, "LEDGER", tmp_path / "data" / "live_ledger.jsonl")
     monkeypatch.setattr(promoter, "LOG", tmp_path / "logs" / "promoter.log")

@@ -674,7 +674,7 @@ LEG_LAYER: dict[str, str] = {
     "forward_calibration": "prediction",
     "certificate_clock_law": "meta", "desk_self_heal": "meta", "mission_control": "meta",
     "clock_accrual": "meta",
-    "tier5_acceptance": "meta",
+    "tier5_acceptance": "meta", "principal_stops": "meta",
     "cro_noon_freshness": "meta",
 }
 

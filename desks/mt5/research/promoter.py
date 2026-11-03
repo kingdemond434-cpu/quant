@@ -79,9 +79,11 @@ import math
 import re
 import sys
 import time
+from collections.abc import Callable
 from contextlib import suppress
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -331,9 +333,184 @@ def cost_basis_of(row: dict, universe: dict | None = None) -> tuple[str | None, 
     return None, f"{sym or 'row'} has no clock identity and no registry cost fields"
 
 
+#: Certificates the principal accepts LIVE without an independent replication, each with the
+#: order it rests on: {"certificates": {"<cell>": "<principal order, dated>"}}. An entry without
+#: its order text waives nothing, and a MISMATCH verdict voids an entry (`live_refusal`).
+REPLICATION_WAIVER = BASE / "data" / "REPLICATION_WAIVER.json"
+
+
+def live_certificate(row: dict) -> str:
+    """The canon certificate a sleeve row trades on, or "" for a row that carries none.
+
+    EVERY SHAPE, ONE ANSWER (audit of ruling C, 2026-10-14), read by
+    `admission_integrity.canon_certificate` so the healer asks the identical question:
+    `principal_certificate`, `canon_certificate` (the clock's enrolling certificate), a
+    `{"cell": ...}` certificate, or the `certificate` string. The scalp lane's own markers are
+    not certificates; whether that lane passes is `admission_integrity.scalp_refusal`."""
+    from admission_integrity import canon_certificate
+    return canon_certificate(row)
+
+
+def _clock_canon_map() -> dict[str, str]:
+    """Main-lane clock key -> the canon certificate that enrolled it. The replication lane keys
+    its verdicts by canon id; a main-lane row names its clock key (`USDJPY.asia#rr=2.5`), so the
+    door looks the clock's own certificate up rather than refusing a REPLICATED cert unread."""
+    return {k: str(v.get("certificate")) for k, v in clock_identities().items()
+            if v.get("certificate")}
+
+
+def _row_check(gate: Any, why_gate: str, waived: dict[str, str] | set[str]
+               ) -> Callable[[dict], str]:
+    try:
+        import admission_integrity as ai
+    except Exception as exc:                           # fail closed on every row with a claim
+        why = f"REFUSED_UNREPLICATED: admission_integrity unreadable ({type(exc).__name__})"
+        return lambda row: why if (row.get("certificate") or row.get("principal_certificate")
+                                   or row.get("canon_certificate")) else ""
+    memo: dict[str, Any] = {}
+
+    def check(row: dict) -> str:
+        if ai.scalp_lane_marker(row):
+            if "scalp" not in memo:
+                memo["scalp"] = ai.scalp_refusal()
+            return str(memo["scalp"])
+        cert = live_certificate(row)
+        if not cert:
+            return ""
+        if gate is None:
+            return f"REFUSED_UNREPLICATED: {why_gate}"
+        key = row.get("certificate")
+        if (not row.get("principal_certificate") and isinstance(key, str) and key.strip()
+                and key.strip() in waived):
+            # A WAIVED KEY IS JUDGED ON ITS OWN WAIVER (audit of door v7, 2026-10-14). The
+            # waiver names this key, so its validity is asked of this key and nothing else: a
+            # stamped canon_certificate (a REPLICATED one borrowed from another cell included)
+            # never carries a row whose own waiver a SIGN mismatch has voided.
+            return str(gate.live_refusal(key.strip(), waived=True) or "")
+        if (not row.get("principal_certificate") and isinstance(key, str) and key.strip()):
+            # A LANE KEY IS RE-RESOLVED EVERY PASS (audit of door v4, 2026-10-14). A stamp is a
+            # record, never an authority: when the enrolment knows this clock key, its
+            # certificate is the one asked, and a row stamped with any other is refused. Only a
+            # key the enrolment does not list this pass falls back to its stamp, and says so.
+            if "clock" not in memo:
+                memo["clock"] = _clock_canon_map()
+            mapped = memo["clock"].get(key.strip())
+            stamped = str(row.get("canon_certificate") or "")
+            if stamped and not mapped:
+                # A STAMP IS NEVER AUTHORITY (audits of door v5 and v6). Only this pass's
+                # enrolment can say which certificate a clock key trades on; a stamped row whose
+                # key the enrolment does not list -- an empty map, a partial one, an unreadable
+                # shadow_state, a respelt key -- is refused. Every legitimate main-lane row is
+                # promoted from the enrolment (promote_main stamps it from clock_identities), and
+                # rows already LIVE on disk keep the Ruling C grandfather, so nothing that trades
+                # needs a fallback.
+                state = ("UNMEASURED clock enrolment (0 clocks this pass)" if not memo["clock"]
+                         else f"clock {key.strip()} is not enrolled this pass")
+                return (f"REFUSED_UNREPLICATED: {state}; stamped canon_certificate {stamped} "
+                        f"is a record, never an authority")
+            if mapped:
+                if stamped and stamped != mapped:
+                    return (f"REFUSED_UNREPLICATED: row stamped canon_certificate {stamped} but "
+                            f"clock {key.strip()} is enrolled by {mapped}; a stamp never "
+                            f"outranks the enrolment")
+                row["canon_certificate"] = mapped
+                row["canon_certificate_source"] = "clock_enrolment"
+                cert = mapped
+            else:
+                cert = key.strip()
+        return str(gate.live_refusal(cert, waived=cert in waived) or "")
+    return check
+
+
+def replication_check() -> Callable[[dict], str]:
+    """One loaded verdict book and waiver list, asked per row: the refusal text, or "" when the
+    row may go LIVE (no canon certificate, REPLICATED, or waived and not a SIGN MISMATCH). Fails
+    closed: an unreadable book refuses every certificate-backed row. `replication_door` and
+    `reconcile_capital` ask the same question through this, so a restore the door would undo is
+    never written (and never logged as RESTORED) in the first place."""
+    why_gate = ""
+    gate: Any = None
+    try:
+        from admission_integrity import IntegrityGate
+        gate = IntegrityGate.load()
+    except Exception as exc:
+        why_gate = f"replication verdicts unreadable ({type(exc).__name__}: {exc})"
+    return _row_check(gate, why_gate, _replication_waivers())
+
+
+def _replication_waivers() -> dict[str, str]:
+    try:
+        doc = json.loads(REPLICATION_WAIVER.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    rows = doc.get("certificates") if isinstance(doc, dict) else None
+    return {str(k): str(v) for k, v in (rows or {}).items()
+            if isinstance(v, str) and v.strip()}
+
+
+def replication_door(rows: list[dict], prior_live: set[str], *, gate: object | None = None,
+                     stamp: str = "") -> list[str]:
+    """THE LIVE DOOR NEEDS AN INDEPENDENT REPLICATION (coordinator ruling C, 2026-10-14).
+
+    Every row this pass would write LIVE that was not LIVE on disk, and that trades on a canon
+    certificate, goes back to STANDBY unless the replication lane's latest verdict for that
+    certificate is REPLICATED (`admission_integrity.IntegrityGate.live_refusal`) or the principal
+    waived it by name (REPLICATION_WAIVER). It runs inside `save_sleeves`, the only writer of
+    sleeves.json, so no path reaches the file around it: the principal-book promotion, every
+    `promote_*` lane and the STANDBY restore in `reconcile_capital` all write through here.
+
+    A row ALREADY LIVE on disk is not demoted by this door: what it did before the door existed is
+    reported by the caller, never reversed silently. An unreadable verdict book refuses every new
+    certificate-backed LIVE row -- the door fails closed. Returns the names it refused.
+    """
+    check = (replication_check() if gate is None
+             else _row_check(gate, "", _replication_waivers()))
+    refused: list[str] = []
+    for row in rows:
+        name = str(row.get("name") or "")
+        if str(row.get("status") or "").upper() != "LIVE" or _grandfather_key(row) in prior_live:
+            continue
+        why = check(row)
+        if not why:
+            continue
+        row.update({"status": "STANDBY", "risk_frac": 0.0, "risk_frac_source": "none",
+                    "demoted_at": stamp or datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                    "demote_reason": why})
+        plog(f"{name}: LIVE refused at the replication door -- {why}")
+        # The lane that wrote this row LIVE may already have logged PROMOTED; the ledger gets the
+        # correction on the same pass so no reader is left with a LIVE that never traded.
+        note_door(name, door="REPLICATION_REFUSED", from_status="LIVE", to_status="STANDBY",
+                  reason=why, evidence={"certificate": live_certificate(row)})
+        refused.append(name)
+    return refused
+
+
+def _grandfather_key(row: dict) -> str:
+    """The Ruling C grandfather covers a row AS IT WAS LIVE: its name AND every certificate field.
+    Rewriting a LIVE row's certificate is a new claim and meets the door (audit of door v6).
+    That includes STAMPING canon_certificate onto a legacy LIVE row: no writer does today
+    (promote_* skip existing names, reconcile asks STANDBY rows, the principal path changes
+    risk_frac only), and a future one that does must expect the row to be re-judged
+    (test_stamping_a_legacy_live_row_is_a_new_claim, door v7 audit)."""
+    claim = {k: row.get(k) for k in ("certificate", "canon_certificate",
+                                      "principal_certificate")}
+    return f"{row.get('name')}\x1f{json.dumps(claim, sort_keys=True, default=str)}"
+
+
+def _live_on_disk() -> set[str]:
+    try:
+        doc = json.loads(SLEEVES_FILE.read_text(encoding="utf-8"))
+        rows = doc.get("sleeves") if isinstance(doc, dict) else None
+    except (OSError, ValueError):
+        return set()
+    return {_grandfather_key(r) for r in (rows if isinstance(rows, list) else [])
+            if isinstance(r, dict) and str(r.get("status") or "").upper() == "LIVE"}
+
+
 def save_sleeves(sleeves: list[dict]) -> None:
     SLEEVES_FILE.parent.mkdir(parents=True, exist_ok=True)
     _apply_live_policy(sleeves)
+    replication_door(sleeves, _live_on_disk())
     kept: list[dict] = []
     _universe: dict | None = None
     try:
@@ -1706,7 +1883,8 @@ def clock_identities() -> dict[str, dict]:
             sym, win, params, fam, side = r[0], r[1], r[2], r[3], r[4]
             key = sf.sleeve_key(sym, win, params, fam, side)
             out[key] = {"symbol": str(sym), "selector": str(win), "family": str(fam),
-                        "params": dict(params or {}), "side": str(side).upper()}
+                        "params": dict(params or {}), "side": str(side).upper(),
+                        "certificate": str(getattr(sf, "CLOCK_CERTIFICATE", {}).get(key) or "")}
         return out
     except Exception as exc:
         plog(f"clock identities unavailable ({type(exc).__name__}: {exc}); keys parsed by shape")
@@ -1937,6 +2115,110 @@ def _after(a: str, b: str) -> bool:
         return False
 
 
+#: The row fields that carry a hold ORDERED from outside the promoter. reconcile_capital records an
+#: admitting reading on such a row and never lifts it; the promoter's own `demote_reason` is not
+#: here, because the promoter must still reverse its own demotions on evidence. The healer asks a
+#: different question ("was any reason recorded") and reads every `*_reason` field.
+ORDERED_HOLD_FIELDS: tuple[str, ...] = ("standby_reason",)
+
+
+def _recert_unreadable() -> str:
+    """Why the recertification audit cannot be READ, or "" when it reads (or is absent).
+
+    `regrade_failures` turns an unreadable audit into {} -- no failures -- which at the promotion
+    door is a pre-existing pass-through. A RESTORE fails closed on it (restore door audit
+    must-fix 5, 2026-10-20): a file that exists and does not parse is not evidence of a clean
+    certificate. An ABSENT audit, or one older than RECERT_FRESH_H, is read as the promotion door
+    reads it -- not binding -- because the daily recertify step owns its freshness and refusing
+    every restore on its schedule would be an outage wearing a risk decision."""
+    try:
+        doc = json.loads(RECERT_AUDIT.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return ""
+    except (OSError, ValueError) as exc:
+        return f"{type(exc).__name__}: {exc}"
+    if not isinstance(doc, dict) or not isinstance(doc.get("rows", []), list):
+        return "not an audit document (no rows list)"
+    return ""
+
+
+def _blind_verdicts() -> tuple[dict[str, str], str]:
+    """(the blind reviewer's latest verdicts, why they could not be read or "")."""
+    try:
+        import blind_reviewer
+        verdicts = blind_reviewer.latest_verdicts()
+    except Exception as exc:
+        return {}, f"{type(exc).__name__}: {exc}"
+    if not isinstance(verdicts, dict):
+        return {}, f"verdicts are a {type(verdicts).__name__}, not a mapping"
+    return verdicts, ""
+
+
+def restore_door_refusal(row: dict, fails: dict[str, dict] | None = None) -> str:
+    """Why a STANDBY row may NOT be restored to LIVE, or "" when every promotion door passes.
+
+    A RESTORE IS A PROMOTION (Judge, 2026-10-20). reconcile_capital used to lift a STANDBY row on
+    an admitting allocator reading alone, so a row the cost re-grade, the blind reviewer, the Tier S
+    door or a principal stop would refuse at promotion came back LIVE through the side door -- the
+    failure class of the 2026-10-13 gap-decay re-promotion. The restore now asks the same
+    predicates the promotion doors ask (`regrade_block`, `blind_review_veto`, `tier_s_block`),
+    under every name the row is known by (its name, its certificate key, its canon certificate),
+    plus the principal-stop fence (`mt5desk.principal_stops`), which the gateway also enforces.
+    Replication is asked separately (`replication_check`); a banned family never reaches here
+    (`retire_banned` runs first in the pass).
+
+    FAILS CLOSED ON EVERY INPUT IT CANNOT READ (audit 2026-10-20, must-fixes 2, 3, 5): a
+    recertification audit that exists and does not parse, a blind reviewer that raises, a stop
+    fence that does not import, and a stop record `load` reports a problem with each refuse with
+    an `*_UNMEASURED` reason. The built-in stops hold whatever the file says. What this costs is
+    billed on the `restore_door` rail (missed_growth.measure_restore_door)."""
+    fails = regrade_failures() if fails is None else fails
+    bad_audit = _recert_unreadable()
+    if bad_audit:
+        return (f"COST_REGRADE_UNMEASURED: the recertification audit did not read "
+                f"({bad_audit}); withheld until it does")
+    verdicts, bad_review = _blind_verdicts()
+    if bad_review:
+        return (f"BLIND_REVIEW_UNMEASURED: the blind reviewer did not load ({bad_review}); "
+                "withheld until it does")
+    names: list[str] = []
+    try:
+        canon = live_certificate(row)
+    except Exception:                                   # unreadable shape: the other names stand
+        canon = ""
+    for n in (str(row.get("name") or ""), _certificate_key(row), canon):
+        if n and n not in names:
+            names.append(n)
+    for n in names:
+        bad = regrade_block(n, fails)
+        if bad:
+            return ("BLOCKED_COST_REGRADE: fails its own ten gates at the current cost model: "
+                    + ", ".join(bad.get("gates_failing_now") or ["unspecified"]))
+        veto = blind_review_veto(n, verdicts)
+        if veto:
+            return f"BLOCKED_BLIND_REVIEW: the blind reviewer could not reproduce {veto} (VETO)"
+        ts = tier_s_block(n)
+        if ts:
+            return f"BLOCKED_TIER_S: {ts}"
+    try:
+        from mt5desk.principal_stops import load, match, why
+    except ImportError as exc:
+        return (f"PRINCIPAL_STOP_UNMEASURED: the stop fence is not importable ({exc}); "
+                "withheld until it is")
+    try:
+        stops, problem = load(SLEEVES_FILE.with_name("PRINCIPAL_STOPS.json"))
+        hit = match(row, stops)
+    except Exception as exc:
+        return (f"PRINCIPAL_STOP_UNMEASURED: the stop fence did not load "
+                f"({type(exc).__name__}: {exc}); withheld until it does")
+    if hit:
+        return f"PRINCIPAL_STOP: {why(hit)}"
+    if problem:
+        return (f"PRINCIPAL_STOP_UNMEASURED: the stop record did not read ({problem}); "
+                "withheld until it does")
+    return ""
+
+
 def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None = None,
                       only: set[str] | None = None) -> bool:
     """Move every standing row toward what the CURRENT solve says, in both directions.
@@ -1969,6 +2251,8 @@ def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None =
              f"Rows stand as they are -- an unmeasured reading removes nothing and adds nothing.")
         return False
     changed = False
+    repl: Callable[[dict], str] | None = None   # the replication door's check, loaded on first use
+    fails: dict[str, dict] | None = None        # the cost re-grade audit, read on first restore
     at = str(view.get("at") or "")
     stamp = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
     for s in sleeves:
@@ -2026,7 +2310,51 @@ def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None =
             # reason stands on it so the gap is visible rather than silent.
             changed = changed or json.dumps(s, sort_keys=True, default=str) != before
             continue
+        hold = next((str(s.get(f)).strip() for f in ORDERED_HOLD_FIELDS
+                     if str(s.get(f) or "").strip()), "")
+        if cap["status"] == "LIVE" and status == "STANDBY" and hold:
+            # A STANDBY SOMEONE ORDERED IS NOT THE PROMOTER'S TO LIFT (2026-10-14). The promoter
+            # writes its own demotions as `demote_reason` and may reverse them on evidence;
+            # `standby_reason` is a hold written by an order from outside it (the 2026-10-13
+            # stop-the-bleed on the AUDCHF/ZAR gap-decay principals), and an allocator reading
+            # does not answer the reason it was written for. The reading is still recorded on
+            # the row; the hold ends when whoever wrote it deletes the field
+            # (ORDERED_HOLD_FIELDS).
+            plog(f"HELD {s['name']} at STANDBY despite an admitting reading -- standby_reason: "
+                 f"{hold[:120]}")
+            changed = changed or json.dumps(s, sort_keys=True, default=str) != before
+            continue
         if cap["status"] == "LIVE" and status == "STANDBY":
+            if repl is None:
+                repl = replication_check()
+            if fails is None:
+                fails = regrade_failures()
+            refusal = repl(s)
+            if refusal:
+                # The replication door would put this row straight back (save_sleeves), so the
+                # restore is not written and no RESTORED event is logged for it (audit P3,
+                # 2026-10-14: three false RESTORED events in three passes). The reading stands.
+                if s.get("replication_refusal") != refusal:
+                    s["replication_refusal"] = refusal
+                    changed = True
+                # The restore door was not asked this pass, so its last refusal is stale
+                # (audit should-fix, 2026-10-20); replication's own field says why it is held.
+                if s.pop("restore_refusal", None) is not None:
+                    changed = True
+                plog(f"HELD {s['name']} at STANDBY despite an admitting reading -- {refusal}")
+                continue
+            s.pop("replication_refusal", None)
+            # A RESTORE IS A PROMOTION: the doors a new LIVE row must pass, asked again here
+            # (`restore_door_refusal`). The reading stands; the refusal is recorded on the row
+            # and leaves it the pass the door opens.
+            refusal = restore_door_refusal(s, fails)
+            if refusal:
+                if s.get("restore_refusal") != refusal:
+                    s["restore_refusal"] = refusal
+                    changed = True
+                plog(f"HELD {s['name']} at STANDBY despite an admitting reading -- {refusal}")
+                continue
+            s.pop("restore_refusal", None)
             s.update({"status": "LIVE", "risk_frac": cap["risk_frac"],
                       "risk_frac_source": "allocator_marginal",
                       "restored_at": stamp, "restore_reason": cap["why"]})
@@ -2313,6 +2641,10 @@ def main() -> None:
                # convention) AND THE REGISTRY IDENTITY, so the hop from a funded sleeve to the
                # certificate that justified it is a field, not a name-shaped inference (E9/E1).
                "certificate": key, "sleeve_id": registry_sleeve_id(key)}
+        # THE CANON ID THE REPLICATION LANE JUDGES (audit of door v3, 2026-10-14): `key` is the
+        # clock key; the certificate that enrolled the clock is what has a verdict.
+        if ident and ident.get("certificate"):
+            row["canon_certificate"] = str(ident["certificate"])
         if family == "session_range_breakout":
             if win not in GOLD_WINDOWS:
                 st["executor_gap"] = f"bracket window {win!r} is not one the gateway runs"

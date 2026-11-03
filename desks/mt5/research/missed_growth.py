@@ -613,6 +613,66 @@ def _bill_door_error(rows: list[dict[str, Any]], heat_per_sleeve: float) -> dict
             "lines": sorted(lines.values(), key=lambda v: -v["n_withheld"]),
             "rule": "every DOOR_ERROR withhold billed to the input it names, over the window "
                     "that input was absent/stale; fail-closed stands, its cost is a number"}
+#: The book's own rows: the two holds below are fields on them, written by their own organs.
+SLEEVES = BASE / "data" / "sleeves.json"
+
+
+def _price_held(held: list[dict[str, Any]], alloc: dict[str, Any], what: str) -> dict[str, Any]:
+    """Price rows a hold keeps out of the book by the forward R their clocks carry
+    (`shadow_exp`), per hold, in the unit `measure_tier_s_block` uses: mean R x one sleeve's
+    heat. Fewer than MIN_N priced rows is UNMEASURED, said with the count."""
+    if not held:
+        return {"verdict": NOT_BINDING, "n": 0, "value_logw_per_day": 0.0,
+                "why": f"no row in sleeves.json is held by the {what} on this host"}
+    names = sorted(str(x.get("name")) for x in held)[:50]
+    rs = [float(x["shadow_exp"]) for x in held
+          if isinstance(x.get("shadow_exp"), (int, float))
+          and not isinstance(x.get("shadow_exp"), bool)]
+    if len(rs) < MIN_N:
+        return {"verdict": UNMEASURED, "n": len(held), "names": names,
+                "why": f"{len(rs)} held row(s) carry a forward R; {MIN_N} are needed to price"}
+    q = float(np.mean(list((alloc.get("book") or {}).values()) or [0.0]))
+    m = float(np.mean(rs))
+    return {"verdict": COSTS if m > 0 else EARNS, "n": len(held), "names": names,
+            "mean_held_r": round(m, 5), "value_logw_per_veto": round(-m * q, 6)}
+
+
+def _sleeve_rows() -> list[dict[str, Any]]:
+    rows = _json(SLEEVES).get("sleeves")
+    return [x for x in rows if isinstance(x, dict)] if isinstance(rows, list) else []
+
+
+def measure_ordered_standby_hold(_r: Any, alloc: dict[str, Any],
+                                 _fv: dict[str, Any]) -> dict[str, Any]:
+    """The principal's ordered STANDBY holds (`standby_reason`), priced by the forward R of the
+    rows they keep out. The clocks keep running as paper, so the number is real."""
+    held = [x for x in _sleeve_rows() if str(x.get("status") or "").upper() == "STANDBY"
+            and str(x.get("standby_reason") or "").strip()]
+    return _price_held(held, alloc, "ordered STANDBY hold")
+
+
+def measure_replication_live_door(_r: Any, alloc: dict[str, Any],
+                                  _fv: dict[str, Any]) -> dict[str, Any]:
+    """What the replication LIVE door withholds NOW: STANDBY rows whose `replication_refusal` (or
+    `demote_reason`) starts REFUSED_UNREPLICATED, priced by their forward R. A RETIRED row is out
+    for its own reason and is not the door's cost."""
+    held = [x for x in _sleeve_rows() if str(x.get("status") or "").upper() == "STANDBY"
+            and any(str(x.get(f) or "").startswith("REFUSED_UNREPLICATED")
+                    for f in ("replication_refusal", "demote_reason"))]
+    return _price_held(held, alloc, "replication LIVE door")
+
+
+def measure_restore_door(_r: Any, alloc: dict[str, Any],
+                         _fv: dict[str, Any]) -> dict[str, Any]:
+    """What the restore door withholds NOW: STANDBY rows an admitting reading would have put back
+    LIVE but a promotion door refused (`restore_refusal`), priced by their forward R. A refusal
+    that only says an input was unreadable (`*_UNMEASURED`) is billed the same way: fail-closed
+    stands, and its cost is a number."""
+    held = [x for x in _sleeve_rows() if str(x.get("status") or "").upper() == "STANDBY"
+            and str(x.get("restore_refusal") or "").strip()]
+    return _price_held(held, alloc, "restore door")
+
+
 #: E8 gold's intents journal: the duplicate guard journals each block as RAIL_BLOCKED there.
 E8_INTENTS = BASE / "data" / "e8_gold_intents.jsonl"
 
@@ -1070,6 +1130,10 @@ def admission_cadence_line(alloc: dict[str, Any]) -> dict[str, Any]:
 
 
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
+#: Measures that price their rail directly each pass (no daily-sample ledger behind them).
+DIRECT_MEASURES = frozenset({"measure_veto", "measure_shrinkage",
+                             "measure_ordered_standby_hold", "measure_replication_live_door",
+                             "measure_restore_door"})
 
 
 # --------------------------------------------------------------------------- the ledger
@@ -1119,7 +1183,7 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
     verdicts: dict[str, dict[str, Any]] = {}
     for r in RAILS:
         m = live[r.name]
-        if r.measure == "measure_veto" or r.measure == "measure_shrinkage":
+        if r.measure in DIRECT_MEASURES:
             verdicts[r.name] = {"kind": r.kind, **m}
             continue
         samples = [float(x["value"]) for x in rows if x.get("rail") == r.name]

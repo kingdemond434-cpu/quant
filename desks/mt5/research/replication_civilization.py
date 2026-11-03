@@ -1307,7 +1307,10 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
                                                "sharpe_metric_version": SHARPE_METRIC_VERSION,
                                                "why": list(r.get("why") or [])[:4],
                                                "key": r.get("key"), "at": _now()}
-        _write_atomic(verdicts_path, {"at": _now(), "rule": RULE, "certificates": book})
+        # The families with a written rule travel with the verdicts: the admission door releases a
+        # certificate whose family has none to a paper clock without waiting to be reached.
+        _write_atomic(verdicts_path, {"at": _now(), "rule": RULE, "spec_book": sorted(SPEC_BOOK),
+                                      "certificates": book})
     doc["verdict_book"] = {"path": str(verdicts_path.name), "n": len(book),
                            "judged_first_this_pass": min(len(pending), per_lane)}
     return doc
