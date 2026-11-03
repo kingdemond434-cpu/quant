@@ -71,6 +71,15 @@ def _first_weekday(y: int, m: int, weekday: int) -> date:
     return d + timedelta(days=(weekday - d.weekday()) % 7)
 
 
+#: Employment Situation dates BLS moved off the first Friday. 2026-07-03 is the observed
+#: Independence Day holiday, so June's report came on Thursday 07-02. OTHER rule exceptions
+#: (a first Friday on the 1st-2nd that BLS pushes a week, a shutdown delay) are NOT derived:
+#: until this table is checked against the BLS schedule for every armed year it is a
+#: PRE-ARM BLOCKER of the news fence (patch e8_news_fence/v2 README).
+NFP_MOVED: dict[tuple[int, int], tuple[int, int]] = {
+    (2026, 7): (7, 2),
+}
+
 #: Dates that follow no rule. Sourced from the official Fed/BLS/BEA schedules;
 #: a year absent from this table is a REFUSAL, not an empty blackout list.
 FIXED: dict[int, tuple[tuple[str, int, int, int, int], ...]] = {
@@ -97,8 +106,11 @@ def releases(start: date, end: date) -> list[Release]:
     out: list[Release] = []
     for y in years:
         for m in range(1, 13):
-            # Employment Situation: first Friday, 08:30 ET
-            out.append(Release(_et(_first_weekday(y, m, 4), 8, 30), "NFP"))
+            # Employment Situation: first Friday, 08:30 ET -- unless BLS moved it (a federal
+            # holiday on that Friday), which the rule cannot know: NFP_MOVED wins.
+            mv = NFP_MOVED.get((y, m))
+            d_nfp = date(y, mv[0], mv[1]) if mv else _first_weekday(y, m, 4)
+            out.append(Release(_et(d_nfp, 8, 30), "NFP"))
         # Initial claims: every Thursday, 08:30 ET
         d = _first_weekday(y, 1, 3)
         while d.year == y:
