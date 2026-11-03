@@ -288,7 +288,7 @@ def test_secrets_fence_refuses(cmd: str) -> None:
 
 @pytest.mark.parametrize("cmd", [
     "head data/universe.json", "jq . data/*.json", "grep -rn edge docs/research",
-    "grep -r edge desks/mt5/data", "tail -n 50 data/cro_ai_logs/x.log",
+    "grep -r edge desks/mt5/data/universe", "tail -n 50 data/cro_ai_logs/x.log",
     "grep -rn --exclude-dir=secrets edge .", "grep -rn --exclude-dir secrets edge data",
     "grep -d skip edge .", "grep -erd docs/research",
 ], ids=["head_catalog", "jq_glob_flat", "grep_r_docs", "grep_r_desk_data", "tail_log",
@@ -443,3 +443,20 @@ def test_grep_with_no_path_from_inside_data_is_refused() -> None:
 ], ids=["grep_docs", "grep_file", "glob_docs", "glob_top_level", "glob_libs"])
 def test_ordinary_grep_and_glob_stay_allowed(tool: str, inp: dict[str, str]) -> None:
     assert lg.refusal(tool, inp, cwd=str(ROOT)) is None, (tool, inp)
+
+
+# AUDIT HOLD ON #199 (2026-11-03, third): the box's second secrets dir, desks/mt5/data/secrets.
+@pytest.mark.parametrize("tool,inp", [
+    ("Grep", {"pattern": "token", "path": "desks"}),
+    ("Grep", {"pattern": "token", "path": "desks/mt5"}),
+    ("Grep", {"pattern": "token", "path": "desks/mt5/data"}),
+    ("Glob", {"pattern": "**/*", "path": "desks"}),
+    ("Glob", {"pattern": "mt5/data/*/*", "path": "desks"}),
+], ids=["grep_desks", "grep_desks_mt5", "grep_desk_data", "glob_desks", "glob_desks_descends"])
+def test_the_desk_secrets_dir_is_fenced_even_when_absent(tool: str, inp: dict[str, str]) -> None:
+    assert str(ROOT / "desks/mt5/data/secrets").lower() in lg.SECRET_DIRS
+    assert lg.refusal(tool, inp, cwd=str(ROOT)), (tool, inp)
+
+
+def test_the_vps_desk_secrets_dir_is_known() -> None:
+    assert "/home/quant/quant-platform/desks/mt5/data/secrets" in lg.SECRET_DIRS

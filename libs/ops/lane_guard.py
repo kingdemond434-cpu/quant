@@ -60,6 +60,7 @@ backslashes into slashes, so a Windows spelling is matched the same way as a POS
 from __future__ import annotations
 
 import fnmatch
+import glob as globmod
 import json
 import os
 import posixpath
@@ -78,10 +79,32 @@ VPS_SECRETS = "/home/quant/quant-platform/data/secrets"
 REFUSAL = "Permission denied by the VPS lane guard"
 #: The tree this guard ships in; a missing payload cwd is read as this one.
 ROOT = Path(__file__).resolve().parents[2]
+#: Secrets directories named by the deploy scripts, under any checkout root: the box keeps a
+#: second one at desks/mt5/data/secrets (ops/migrate_to_new_box.ps1), and it is listed even
+#: where it is absent on disk (audit HOLD on #199, 2026-11-03).
+_KNOWN_SECRET_SUBDIRS = ("data/secrets", "desks/mt5/data/secrets")
+#: The VPS checkout that holds VPS_SECRETS.
+VPS_ROOT = posixpath.dirname(posixpath.dirname(VPS_SECRETS))
+
+
+def _derive_secret_dirs() -> tuple[str, ...]:
+    """Every `*/data/secrets` under ROOT up to depth 4, plus the known subdirectories of ROOT
+    and of the VPS checkout, read once at import."""
+    found: list[str] = [VPS_SECRETS]
+    for base in (str(ROOT).replace("\\", "/"), VPS_ROOT):
+        found += [posixpath.join(base, sub) for sub in _KNOWN_SECRET_SUBDIRS]
+    for depth in range(4):
+        pat = os.path.join(str(ROOT), *(["*"] * depth), "data", "secrets")
+        try:
+            found += [d for d in globmod.glob(pat) if os.path.isdir(d)]
+        except OSError:
+            continue
+    return tuple(dict.fromkeys(posixpath.normpath(d.replace("\\", "/")).lower()
+                               for d in found))
+
+
 #: Every secrets directory known by absolute path (normalised as `_norm` does).
-SECRET_DIRS: tuple[str, ...] = tuple(dict.fromkeys(
-    posixpath.normpath(d.replace("\\", "/")).lower()
-    for d in (VPS_SECRETS, str(ROOT / "data" / "secrets"))))
+SECRET_DIRS: tuple[str, ...] = _derive_secret_dirs()
 #: Programs whose `cd`-like argument moves the cwd for the rest of the command.
 _CD = ("cd", "pushd", "chdir")
 
