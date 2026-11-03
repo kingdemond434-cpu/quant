@@ -157,7 +157,7 @@ def refusal(mods: dict[str, Any]) -> str | None:
     if "publication_lag_d" in mods or "transform" in mods:
         return "publication-lagged transform: no point-in-time input series is wired for it"
     if "selector" in mods:
-        from mt5desk.family_call import SESSIONS
+        from mt5desk.family_call import WINDOWS as SESSIONS
 
         selector = _s(mods.get("selector"))
         if selector not in SESSIONS:

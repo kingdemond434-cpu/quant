@@ -54,13 +54,11 @@ PARQUET_DIR.mkdir(parents=True, exist_ok=True)
 #: 296 of the 602 FX charts were absent while the terminal served the same bars live.
 TERMINAL_ERROR_MAX = -10000
 
-# Single-name shares are an event/news lane by mandate, not a statistical-mining universe.
-# Downloading seven deep histories for every share used most of the four-hour recovery window
-# before the collector reached the FX, metals, rates, energy and index charts that certified
-# mechanisms actually require. Keep indices (their broker path is ``Indices``) and every other
-# multi-asset class; exclude only explicit share/equity path components. Existing files are not
-# deleted -- they can still serve as cross-asset observations -- but this completeness job no
-# longer treats them as missing research cells.
+# Single-name shares, by explicit share/equity path component (indices sit under ``Indices`` and
+# are not shares). Downloading seven deep histories for every share once used most of the
+# four-hour recovery window before the collector reached the FX, metals, rates, energy and index
+# charts that certified mechanisms actually require -- so shares are now queued LAST rather than
+# skipped (see `tradable` below): every chart is collected, the multi-asset ones first.
 _SINGLE_NAME_EQUITY_CATEGORIES = frozenset({"equities", "equity", "stocks", "stock", "shares"})
 
 
@@ -114,8 +112,6 @@ def _all_cells_accounted_for() -> tuple[bool, int, int]:
         "MT5_TIMEFRAMES", ",".join(CANONICAL_TIMEFRAMES)).split(",") if x.strip()]
     physical = refused = 0
     for symbol, meta in registry.items():
-        if isinstance(meta, dict) and _is_single_name_equity(meta.get("category")):
-            continue
         wildcard = cells.get(f"{symbol}_*") or {}
         for tf in wanted:
             if (PARQUET_DIR / f"{symbol}_{tf}.parquet").exists():
@@ -174,9 +170,17 @@ syms = mt5.symbols_get()
 # it visible before the request.  A failed select/request is recorded as a cell verdict rather
 # than silently shrinking the denominator.
 tradable_all = [s for s in syms if s.trade_mode > 0]
-tradable = [s for s in tradable_all if not _is_single_name_equity(s.path)]
-print(f"Tradable non-equity symbols: {len(tradable)} "
-      f"({len(tradable_all) - len(tradable)} single-name equities excluded by mandate)")
+# SHARES ARE COLLECTED, LAST (principal 2026-09-30 and 2026-10-06). The 2026-09-06 order made
+# single-name shares an event lane and this collector skipped them, so only 238 of the broker's
+# symbols ever held a chart. The amended order gives shares cross-sectional class books AND the
+# news/earnings lane, and an earnings reaction is measured on M1, so a share's ladder is as
+# needed as a pair's. They are queued AFTER every other class, so the multi-asset charts the
+# certified mechanisms need are still collected first in any budget-cut pass.
+_others = [s for s in tradable_all if not _is_single_name_equity(s.path)]
+_shares = [s for s in tradable_all if _is_single_name_equity(s.path)]
+tradable = [*_others, *_shares]
+print(f"Tradable symbols: {len(tradable)} ({len(_others)} multi-asset first, then "
+      f"{len(_shares)} single-name shares)")
 
 # Build universe.json + download bars at every eligible timeframe
 universe = {}

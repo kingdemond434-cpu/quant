@@ -157,7 +157,8 @@ def test_always_in_session_hours_are_derived_from_the_clock() -> None:
     from libs.regime import session_clock
     # London: server 10 is outside London on the US/UK mismatch days of 2026; 11-17 never is.
     assert ff.MARKET_SERVER_HOURS["london"] == frozenset(range(11, 18))
-    assert ff.MARKET_OPEN_SERVER == {"asia": 2, "london": 11, "ny": 15}
+    assert ff.MARKET_OPEN_SERVER == {"asia": 2, "london": 11, "ny": 15,
+                                     "tokyo_fix": 3, "london_fix": 18, "overlap": 15}
     days = pd.bdate_range("2026-01-01", "2026-12-31")
     out10 = days[~session_clock.in_session(days + pd.Timedelta(hours=10), "london")]
     assert len(out10) == 20
@@ -299,7 +300,9 @@ def test_compiler_expand_axes_keeps_its_count(monkeypatch: pytest.MonkeyPatch) -
     out = mcc.expand_axes([{"symbol": "EURUSD", "family": fam, "params": {}}])
     assert len(out) == len(mcc.SESSION_AXIS)
     assert len({json.dumps(v["params"], sort_keys=True) for v in out}) == len(out)
-    assert sum(1 for v in out if v.get("session_remap", {}).get("remapped")) == 2
+    # fires at server hour 16 only: asia, london, tokyo_fix and london_fix hold none of it and
+    # are remapped; ny and overlap (15-18) hold it
+    assert sum(1 for v in out if v.get("session_remap", {}).get("remapped")) == 4
 
 
 def test_breadth_sweep_slots_keep_their_count(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -59,7 +59,8 @@ def test_aliases_and_unknown_sessions() -> None:
     idx = _idx("2026-07-15 16:00")                     # 13:00 UTC = 09:00 New York (EDT)
     assert sc.in_session(idx, "newyork").tolist() == [True]  # type: ignore[union-attr]
     assert sc.in_session(idx, "tokyo").tolist() == [False]  # type: ignore[union-attr]
-    assert sc.in_session(idx, "overlap") is None
+    assert sc.in_session(idx, "overlap").tolist() == [True]  # type: ignore[union-attr]
+    assert sc.in_session(idx, "no_such_session") is None
     assert isinstance(sc.in_session(idx, "ny"), np.ndarray)
 
 

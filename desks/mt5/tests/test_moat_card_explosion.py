@@ -165,8 +165,9 @@ def test_a_session_family_keeps_sessions_and_never_takes_d1(desk: Any) -> None:
     # single Tokyo-session hour, so its london and ny slots are minted as the firing-hours
     # oracle's stand-ins -- re-homed into the window where it fires -- never as empty windows.
     sess = [r for r in kept if r["axis"] == "session"]
-    assert len(sess) == 3
-    assert len({json.dumps(r["spec"], sort_keys=True) for r in sess}) == 3
+    n = min(mce.MAX_PER_AXIS, len(mce.sessions()) - 1)
+    assert len(sess) == n
+    assert len({json.dumps(r["spec"], sort_keys=True) for r in sess}) == n
     assert "asia" in {r["spec"]["session"] for r in sess}
     for r in sess:
         if r["spec"]["session"] == "asia" and r["spec"]["params"].get("regime"):

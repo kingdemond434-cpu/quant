@@ -27,8 +27,8 @@ def test_a_compiled_candidate_becomes_every_intraday_chart_in_every_session(tmp_
     out = mcc.expand_axes([_cand({"fast": 10})])
     charts = sorted({v["axis"]["chart"] for v in out})
     sessions = sorted({v["axis"]["session"] for v in out})
-    assert charts == ["H1", "M15", "M5"] and sessions == ["all", "asia", "london", "ny"]
-    assert len(out) == 3 * 4
+    assert charts == ["H1", "M15", "M5"] and sessions == sorted(mcc.SESSION_AXIS)
+    assert len(out) == 3 * len(mcc.SESSION_AXIS)
     m5_asia = next(v for v in out if v["axis"] == {"chart": "M5", "session": "asia"})
     assert m5_asia["params"] == {"fast": 10, "timeframe": "M5", "session": "asia"}
     h1_all = next(v for v in out if v["axis"] == {"chart": "H1", "session": "all"})
