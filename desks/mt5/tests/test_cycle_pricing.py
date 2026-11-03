@@ -37,6 +37,7 @@ def _isolate(tmp_path: Path, monkeypatch: Any, *, meta: dict[str, Any] | None = 
     lp.write_text(ledger, encoding="utf-8")
     monkeypatch.setattr(cp, "LEDGER", lp, raising=True)
     monkeypatch.setattr(cp, "OUT", tmp_path / "CYCLE_PRICING.json", raising=True)
+    monkeypatch.setattr(cp, "STEER", tmp_path / "SCHEDULER_STEER.json", raising=True)
     monkeypatch.setattr(cp, "_PLAN", None, raising=False)
     monkeypatch.setattr(cp, "_PLAN_AT", 0.0, raising=False)
     # The factory contracts are a price source read from the desk's reports; a test must never
