@@ -477,10 +477,13 @@ def dataset_usage_issues(root: Path | None = None) -> list[Issue]:
     fence = str(doc.get("fence") or "")
     if fence == "RED":
         red = [d for d in doc.get("red") or [] if isinstance(d, dict)]
-        names = [f"{d.get('registry')}:{d.get('id')} {d.get('verdict')}" for d in red]
+        ahead = [d for d in doc.get("lookahead") or [] if isinstance(d, dict)]
+        names = [f"{d.get('registry')}:{d.get('id')} LOOKAHEAD" for d in ahead] + \
+            [f"{d.get('registry')}:{d.get('id')} {d.get('verdict')}" for d in red]
         return [Issue(
             "dataset_usage:red", "DEGRADED",
-            f"{len(red)} collected dataset(s) unfed or starved for more than 24h",
+            (f"{len(ahead)} dataset(s) carry future-stamped observations; " if ahead else "")
+            + f"{len(red)} collected dataset(s) unfed or starved for more than 24h",
             "Named: " + ", ".join(names[:8]) + (" ..." if len(names) > 8 else "")
             + f". Read {DATASET_USAGE} for each row's readers, freshness and missing parts.",
             repair=None, auto=False)]

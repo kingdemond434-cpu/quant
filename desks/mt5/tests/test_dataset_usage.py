@@ -178,10 +178,50 @@ def test_a_future_stamp_is_lookahead_and_never_freshness(tmp_path: Path) -> None
         _bars(p, NOW + timedelta(days=3))
         old = (NOW - timedelta(days=30)).timestamp()
         os.utime(p, (old, old))
-    r = _row(_run(repo, desk), "bars")
+    doc = _run(repo, desk)
+    r = _row(doc, "bars")
     assert r["lookahead_stamps"] is True
     assert r["freshness"] != "FRESH"
     assert r["verdict"] == "STARVED"
+    # RED at once: the data went stale under a day ago, so only the lookahead can make it RED
+    assert doc["fence"] == "RED" and "lookahead" in doc["fence_why"]
+    assert [x["id"] for x in doc["lookahead"]] == ["bars"]
+
+
+def test_lookahead_is_red_with_no_grace_even_when_otherwise_fed(tmp_path: Path) -> None:
+    repo, desk = _tree(tmp_path)
+    _bars(desk / "data" / "universe" / "AAA_H1.parquet", NOW - timedelta(minutes=10))
+    _bars(desk / "data" / "universe" / "BBB_H1.parquet", NOW + timedelta(days=2))
+    doc = _run(repo, desk)
+    r = _row(doc, "bars")
+    assert r["verdict"] == "FED" and r["lookahead_stamps"] is True
+    assert doc["fence"] == "RED"
+    assert doc["red"] == [] and [x["id"] for x in doc["lookahead"]] == ["bars"]
+
+
+def test_a_colliding_stem_never_marks_a_reader_scheduled(tmp_path: Path) -> None:
+    """`from libs.other import bar_reader` names a DIFFERENT file with the reader's stem; the
+    clocked leg imports that one, so the real reader stays unscheduled and the data UNFED."""
+    repo, desk = _tree(tmp_path, clocked=False)
+    (repo / "libs" / "other").mkdir(parents=True)
+    (repo / "libs" / "other" / "bar_reader.py").write_text("X = 1\n", "utf-8")
+    (desk / "research" / "leg.py").write_text("from libs.other import bar_reader\n", "utf-8")
+    (desk / "research" / "hourly_cycle.py").write_text('_producer("l", "research/leg.py")\n',
+                                                        "utf-8")
+    for s in ("AAA", "BBB"):
+        _bars(desk / "data" / "universe" / f"{s}_H1.parquet", NOW)
+    assert _row(_run(repo, desk), "bars")["verdict"] == "UNFED"
+    # and a bare import of a stem that two files share resolves to neither
+    (desk / "research" / "leg.py").write_text("import bar_reader\n", "utf-8")
+    assert _row(_run(repo, desk), "bars")["verdict"] == "UNFED"
+    from research.dataset_usage import resolve_module
+    files = {"desks/mt5/research/bar_reader.py", "libs/other/bar_reader.py"}
+    stems = {"bar_reader": sorted(files)}
+    assert resolve_module("research.bar_reader", files, stems) == \
+        "desks/mt5/research/bar_reader.py"
+    assert resolve_module("libs.other.bar_reader", files, stems) == "libs/other/bar_reader.py"
+    assert resolve_module("bar_reader", files, stems) is None
+    assert resolve_module("numpy.linalg", files, stems) is None
 
 
 def test_the_census_never_reads_secrets(tmp_path: Path) -> None:
@@ -289,6 +329,12 @@ def test_the_artifact_is_declared_attested_and_on_the_board(tmp_path: Path) -> N
     issues = ib.dataset_usage_issues(tmp_path)
     assert [i.key for i in issues] == ["dataset_usage:red"]
     assert "free_stack:gtrends STARVED" in issues[0].detail
+    (rep / "DATASET_USAGE.json").write_text(json.dumps({
+        "fence": "RED", "red": [], "lookahead": [{"registry": "data_registry", "id": "bars"}]}),
+        "utf-8")
+    issues = ib.dataset_usage_issues(tmp_path)
+    assert "data_registry:bars LOOKAHEAD" in issues[0].detail
+    assert "future-stamped" in issues[0].what
     (rep / "DATASET_USAGE.json").write_text(json.dumps({"fence": "GREEN"}), "utf-8")
     assert ib.dataset_usage_issues(tmp_path) == []
     (rep / "DATASET_USAGE.json").write_text(json.dumps({"fence": "UNMEASURED",

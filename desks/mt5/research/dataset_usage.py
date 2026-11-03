@@ -45,7 +45,9 @@ VERDICT, never defaulted to clean (L1.28a):
     STARVED     a scheduled reader exists, and the data is STALE or PARTIAL
     FED         a scheduled reader exists, and the data is fresh and complete
 
-THE FENCE: RED when any dataset has been UNFED or STARVED for more than RED_AFTER_H hours (the
+THE FENCE: RED AT ONCE when any dataset carries a future-stamped observation (lookahead in data
+the gauntlet reads is a correctness defect, so it gets no grace; listed under `lookahead`), and
+RED when any dataset has been UNFED or STARVED for more than RED_AFTER_H hours (the
 onset is the stale point when staleness is the cause, else the first pass that saw it, carried
 in this artifact); UNMEASURED when nothing could be measured or any in-scope dataset is
 UNMEASURED; GREEN otherwise. The census names datasets; it never fetches, revives or edits one.
@@ -354,6 +356,53 @@ _IMPORT = re.compile(r"^[ \t]*(?:from[ \t]+([\w.]+)[ \t]+import[ \t]+([^\n#]+)|"
 _DOTTED = re.compile(r"[\"']((?:mt5desk|research|libs|scripts)\.[\w.]+)[\"']")
 
 
+#: Where each first-party import root lives, so `mt5desk.X` resolves to ONE file, never to every
+#: file that happens to share X's stem (a colliding stem would mark a reader scheduled).
+PACKAGE_ROOTS: dict[str, str] = {"mt5desk": "desks/mt5/mt5desk", "research": "desks/mt5/research",
+                                 "libs": "libs", "scripts": "scripts", "desks": "desks",
+                                 "frontier_intel": "desks/mt5/frontier_intel"}
+
+
+def imported_modules(text: str) -> set[str]:
+    """Every dotted module name a file imports: `from a.b import c` -> a.b and a.b.c (c may be a
+    module or a name; only the one that resolves to a file is followed), plus quoted dotted
+    first-party module strings handed to importlib."""
+    out: set[str] = set()
+    for m in _IMPORT.finditer(text):
+        if m.group(1):
+            base = m.group(1).lstrip(".")
+            if base:
+                out.add(base)
+            for n in m.group(2).split(","):
+                nm = n.strip(" ()\t").split(" as ")[0].strip()
+                if nm and nm != "*":
+                    out.add(f"{base}.{nm}" if base else nm)
+        else:
+            out |= {n.strip().split(" as ")[0].strip() for n in (m.group(3) or "").split(",")}
+    out |= {m.group(1) for m in _DOTTED.finditer(text)}
+    return {o for o in out if o}
+
+
+def resolve_module(name: str, files: set[str], by_stem: Mapping[str, list[str]]) -> str | None:
+    """The one file a dotted module name means, or None. A first-party package path is resolved
+    by its path; a bare or unresolved name falls back to its stem ONLY when that stem is unique."""
+    head, _, rest = name.partition(".")
+    root = PACKAGE_ROOTS.get(head)
+    if root is not None and rest:
+        base = f"{root}/{rest.replace('.', '/')}"
+        for cand in (f"{base}.py", f"{base}/__init__.py"):
+            if cand in files:
+                return cand
+        return None
+    if root is not None:
+        cand = f"{root}/__init__.py"
+        return cand if cand in files else None
+    if "." in name:
+        return None                       # third-party or unknown package: never a stem guess
+    hits = by_stem.get(name, [])
+    return hits[0] if len(hits) == 1 else None
+
+
 def scan_corpus(repo: Path, tokens: Iterable[str], deadline: float) -> Corpus:
     toks = sorted({t for t in tokens if t}, key=len, reverse=True)
     rx = re.compile("|".join(re.escape(t) for t in toks)) if toks else None
@@ -362,6 +411,7 @@ def scan_corpus(repo: Path, tokens: Iterable[str], deadline: float) -> Corpus:
     imports: dict[str, set[str]] = {}
     by_stem: dict[str, list[str]] = {}
     truncated = False
+    file_set = set(files)
     for f in files:
         stem = Path(f).stem if Path(f).stem != "__init__" else Path(f).parent.name
         by_stem.setdefault(stem, []).append(f)
@@ -377,27 +427,17 @@ def scan_corpus(repo: Path, tokens: Iterable[str], deadline: float) -> Corpus:
             hit = {m.group(0) for m in rx.finditer(text)}
             if hit:
                 found[f] = hit
-        names: set[str] = set()
-        for m in _IMPORT.finditer(text):
-            if m.group(1):
-                names.add(m.group(1).split(".")[-1])
-                names |= {n.strip(" ()\t").split(" as ")[0].strip()
-                          for n in m.group(2).split(",")}
-            else:
-                names |= {n.strip().split(" as ")[0].split(".")[-1]
-                          for n in (m.group(3) or "").split(",")}
-        names |= {m.group(1).split(".")[-1] for m in _DOTTED.finditer(text)}
-        imports[f] = {n for n in names if n}
+        imports[f] = imported_modules(text)
     roots = clock_roots(repo, files)
     seen = set(roots)
     stack = list(roots)
     while stack:
         f = stack.pop()
         for n in imports.get(f, ()):
-            for g in by_stem.get(n, ()):
-                if g not in seen:
-                    seen.add(g)
-                    stack.append(g)
+            g = resolve_module(n, file_set, by_stem)
+            if g is not None and g not in seen:
+                seen.add(g)
+                stack.append(g)
     return Corpus(found=found, scheduled=seen, n_files=len(files), truncated=truncated)
 
 
@@ -638,7 +678,13 @@ def build(desk: Path = DESK, repo: Path = REPO, *, budget_s: float = DEFAULT_BUD
     pending = [r for r in rows if r["verdict"] in ("UNFED", "STARVED") and r not in red]
     unmeasured = [r for r in rows if r["verdict"] == UNMEASURED]
     measured = [r for r in rows if r["verdict"] != UNMEASURED]
-    if red:
+    lookahead = [r for r in rows if r.get("lookahead_stamps") is True]
+    if lookahead:
+        fence, fwhy = "RED", (f"{len(lookahead)} dataset(s) carry future-stamped observations "
+                              "(lookahead): RED at once, no 24h grace"
+                              + (f"; and {len(red)} UNFED/STARVED past {RED_AFTER_H}h"
+                                 if red else ""))
+    elif red:
         fence, fwhy = "RED", f"{len(red)} dataset(s) UNFED or STARVED for more than {RED_AFTER_H}h"
     elif not measured:
         fence, fwhy = UNMEASURED, "no dataset could be measured on this host"
@@ -663,11 +709,16 @@ def build(desk: Path = DESK, repo: Path = REPO, *, budget_s: float = DEFAULT_BUD
         "ask": "BACKLOG row 61 (principal 2026-09-30): fix partial and unfed datasets fully, "
                "unstarved and collected",
         "fence": fence, "fence_why": fwhy,
-        "rule": f"RED when any dataset is UNFED or STARVED for more than {RED_AFTER_H}h; "
+        "rule": "RED at once when any dataset carries future-stamped observations (lookahead), "
+                f"and when any dataset is UNFED or STARVED for more than {RED_AFTER_H}h; "
                 "UNMEASURED when nothing or any in-scope dataset is unmeasured; GREEN otherwise",
         "counts": counts, "n_datasets": len(rows),
         "red": [{"registry": r["registry"], "id": r["id"], "verdict": r["verdict"],
                  "bad_for_h": r.get("bad_for_h"), "why": r.get("why")} for r in red],
+        "lookahead": [{"registry": r["registry"], "id": r["id"], "newest": r.get("newest"),
+                       "why": "observation stamped more than "
+                              f"{FUTURE_TOLERANCE_H}h in the future, set aside"}
+                      for r in lookahead],
         "pending_red": [{"registry": r["registry"], "id": r["id"], "verdict": r["verdict"],
                          "bad_for_h": r.get("bad_for_h")} for r in pending],
         "top_unfed": _top("UNFED"), "top_starved": _top("STARVED"),
