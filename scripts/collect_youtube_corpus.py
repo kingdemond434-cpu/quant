@@ -33,8 +33,8 @@ from fetch_video_transcript import youtube as _yt_transcript
 ROOT = Path(__file__).resolve().parent.parent
 KEYFILE = ROOT / "data" / "secrets" / "youtube_api_key"
 #: The trading box keeps secrets under the desk (C:\\opt\\quant\\desks\\mt5\\data\\secrets); the VPS
-#: under the repo root. Either file, or the YOUTUBE_API_KEY environment variable, is the key.
-KEYFILES = (KEYFILE, ROOT / "desks" / "mt5" / "data" / "secrets" / "youtube_api_key")
+#: under the repo root (KEYFILE). Either file, or the YOUTUBE_API_KEY environment variable, is the key.
+DESK_KEYFILE = ROOT / "desks" / "mt5" / "data" / "secrets" / "youtube_api_key"
 REGISTRY = ROOT / "data" / "youtube_channels.json"
 OUTDIR = ROOT / "data" / "intelligence" / "youtube"
 COVERAGE = ROOT / "data" / "intelligence" / "video_channel_coverage.json"
@@ -105,7 +105,7 @@ def _key() -> str:
     env = os.environ.get("YOUTUBE_API_KEY", "").strip()
     if env:
         return env
-    for f in KEYFILES:
+    for f in (KEYFILE, DESK_KEYFILE):
         try:
             k = f.read_text("utf-8").strip()
         except OSError:

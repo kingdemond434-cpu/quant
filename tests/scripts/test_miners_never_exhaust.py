@@ -94,7 +94,8 @@ def test_a_spent_daily_quota_stands_the_run_down(corpus: Path,
 def test_a_missing_key_is_written_down_not_silent(corpus: Path,
         monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("YOUTUBE_API_KEY")
-    monkeypatch.setattr(yc, "KEYFILES", (corpus / "nope",))
+    monkeypatch.setattr(yc, "KEYFILE", corpus / "nope")
+    monkeypatch.setattr(yc, "DESK_KEYFILE", corpus / "nope2")
     assert yc.main() == 0
     assert json.loads((corpus / "cov.json").read_text("utf-8"))["status"] == "KEY_MISSING"
 
