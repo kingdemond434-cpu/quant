@@ -49,6 +49,7 @@ import re
 from typing import Any
 
 from libs.research import mechanism_claims_world as _world
+from libs.research import mechanism_claims_world_c as _c
 from libs.research.claim_selection import selection_trials
 from libs.research.metric_fence import check_metrics as fence_metrics
 from libs.research.metric_fence import reason_class
@@ -817,12 +818,27 @@ def language_of(text: str) -> str:
     if greek >= 3 and greek >= 0.3 * sum(ch.isalpha() for ch in t):
         return "el"
     if _CYRILLIC.search(t):
-        return "uk" if _UKR_ONLY.search(t) else "ru"
+        # Kazakh before Ukrainian: both write the dotted i; only Kazakh writes its six own letters.
+        for letters, code in ((_c.KAZAKH_LETTERS, "kk"), (_c.MONGOLIAN_LETTERS, "mn")):
+            if any(ch in t for ch in letters):
+                return code
+        if _UKR_ONLY.search(t):
+            return "uk"
+        if any(ch in t for ch in _c.SERBIAN_LETTERS):
+            return "sr"
+        padded = f" {t.lower()} "
+        if (sum(padded.count(w) for w in _c.BULGARIAN_MARKERS) >= 2
+                and not any(ch in t for ch in _c.RUSSIAN_ONLY)):
+            return "bg"
+        return "ru"
     viet = _VIET.findall(t)
     if len(viet) >= 2 and not (any(ch in t for ch in _world.ROMANIAN_ONLY)
                                and len([c for c in viet if c not in "ăĂ"]) < 2):
         return "vi"
     low = t.lower()
+    for letters, code in _c.DECISIVE_LETTERS:
+        if any(ch in low for ch in letters):
+            return code
     score: dict[str, int] = {lang: len(rx.findall(low)) for lang, rx in _STOP_RE.items()}
     for ch, lang in _LETTER_HINTS:
         if ch in low:
