@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-03T01:14:52+00:00",
+  "updated_at": "2026-11-03T03:13:02+00:00",
   "configured_sleeves": 709,
   "represented_sleeves": 709,
   "certified_sleeves_total": 1579,
@@ -9,21 +9,23 @@
   "n_mechanisms": 11,
   "retired_shadow_sleeves": 280,
   "quarantined_uncertified_candidates": 0,
-  "sleeves_with_forward_trades": 603,
+  "sleeves_with_forward_trades": 613,
   "zero_trade_clocks": {
-    "count": 106,
+    "count": 96,
     "by_status": {
-      "ACTIVE": 96,
-      "BLOCKED_NO_BARS": 1,
+      "ACTIVE": 84,
+      "BLOCKED_NO_BARS": 3,
       "IDENTITY_BROKEN": 9
     },
-    "age_measured": 106,
-    "median_age_days": 4.816,
+    "age_measured": 96,
+    "median_age_days": 4.914,
     "mature_14d_without_trade": 38,
-    "fresh_attempts": 97,
-    "naturally_inactive": 96,
-    "suppressed_or_unproven": 10,
+    "fresh_attempts": 87,
+    "naturally_inactive": 84,
+    "suppressed_or_unproven": 12,
     "suppressed_examples": [
+      "UNKNOWN",
+      "UNKNOWN",
       "UNKNOWN",
       "UNKNOWN",
       "UNKNOWN",
@@ -37,12 +39,12 @@
     ],
     "rule": "zero trades is not automatically a plumbing failure: blocked statuses name a repair; only ACTIVE + fresh attempt + valid bar source + no current error is natural inactivity. An ACTIVE clock older than 14 days is a low-frequency/selection finding routed to forward exploitation; no synthetic or backdated trade is ever created"
   },
-  "evidence_blocked_sleeves": 10,
+  "evidence_blocked_sleeves": 12,
   "missing_sleeves": [
     "590 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 8381.979,
+  "seconds": 4862.412,
   "gateway_armed": true,
   "promoted_live_sleeves": [],
   "promoted_live_certificate_rows": [],
