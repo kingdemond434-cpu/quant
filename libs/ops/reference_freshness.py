@@ -667,6 +667,23 @@ class DestructivePath:
 #: note, so the history of what once removed on an absence stays readable.
 DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
     DestructivePath(
+        path_id="loss_learner.act",
+        module="desks/mt5/research/loss_learner.py",
+        function="act",
+        removes="a LIVE parent row in data/sleeves.json (status RETIRED, risk_frac 0.0, close "
+                "queued) that a forward-superior loss-learning variant replaces",
+        reference="reports/LOSS_LEARNER.json replacement verdicts, each computed from both forward "
+                  "clocks' ledgers in the same pass, plus the roster row of the variant",
+        status="positive",
+        note="POSITIVE EVIDENCE ONLY (2026-11-03): retires only on a REPLACE verdict -- >= 20 "
+             "paired forward days over >= 14, an always-valid lower bound > 0 at alpha / lifetime "
+             "lineage trials, the variant's own forward verdict promoting -- AND only when the "
+             "variant's row is LIVE with risk_frac > 0 in the roster re-read just before the "
+             "write. An absent report, verdict, clock ledger or variant row retires nothing "
+             "(IMMATURE / WAITING / PENDING_VARIANT_LIVE). The pop() the scan sees removes an "
+             "in-memory door note, not evidence.",
+    ),
+    DestructivePath(
         path_id="run_sharded_gauntlet.drop_merge_snapshot",
         module="desks/mt5/scripts/run_sharded_gauntlet.py",
         function="_drop_merge_snapshot",
