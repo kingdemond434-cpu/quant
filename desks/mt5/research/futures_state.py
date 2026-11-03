@@ -579,18 +579,25 @@ def fetch_text(url: str, timeout: float = 40.0) -> str:
     return _polite(url, "text/html,text/csv,*/*;q=0.8", timeout)
 
 
-def robots_allow(url: str, get_text: Callable[[str], str]) -> bool:
-    """robots.txt for the URL's host, read with our own UA. A missing file (404) allows, as the
-    standard says; any other failure to read it does NOT allow, so an unread policy is never
-    treated as a yes."""
+def robots_label(url: str, get_text: Callable[[str], str]) -> tuple[str, str]:
+    """robots.txt for the URL's host, READ AND LABELLED, never a veto (LAWS 5e, 2026-09-23).
+
+    A missing file (404) or an allow is PUBLIC; a Disallow is PUBLIC_WITH_TERMS; a file that
+    could not be read is ACCESS_UNCLEAR. Every label withholds redistribution and none of them
+    stops the fetch -- only a hard status (401/403/429/451) does that.
+    """
     import urllib.robotparser
     p = urllib.parse.urlsplit(url)
     rp = urllib.robotparser.RobotFileParser()
     try:
         rp.parse(get_text(f"{p.scheme}://{p.netloc}/robots.txt").splitlines())
     except (urllib.error.HTTPError, FetchError) as exc:
-        return getattr(exc, "code", None) == 404
-    return rp.can_fetch(UA, url)
+        if getattr(exc, "code", None) == 404:
+            return "PUBLIC", "no robots.txt (404)"
+        return "ACCESS_UNCLEAR", f"robots.txt unreadable: {type(exc).__name__}"
+    if rp.can_fetch(UA, url):
+        return "PUBLIC", "robots allows this path for our agent"
+    return "PUBLIC_WITH_TERMS", "robots disallows this path: recorded as a label, not a refusal"
 
 
 def mof_sign(pair: str) -> float:
@@ -709,27 +716,29 @@ def mof_collect(src: Mapping[str, Any], get_text: Callable[[str], str] | None,
     if get_text is not None and src.get("terms") == "OPEN" and \
             sid not in state.get("hard_stops", {}):
         try:
-            if not robots_allow(str(src["csv_url"]), get_text):
-                notes.append({"source": sid, "status": "UNMEASURED", "why": "robots disallows"})
-            else:
-                text = get_text(str(src["csv_url"]))
-                if mof_days(text)[1]:
-                    csv_path.parent.mkdir(parents=True, exist_ok=True)
-                    tmp = csv_path.with_suffix(".csv.tmp")
-                    tmp.write_text(text, encoding="utf-8")
-                    _replace(tmp, csv_path)
-                index = get_text(str(src["monthly_index_url"]))
-                base = str(src["monthly_index_url"]).rsplit("/", 1)[0]
-                links = sorted(set(re.findall(r"monthly/(\d{8}e?)\.html", index)) |
-                               set(re.findall(r'href="(\d{8}e?)\.html"', index)))
-                todo = [ln for ln in links if ln[:8] not in pages][-MOF_PAGES_PER_PASS:]
-                for ln in todo:
-                    got = mof_monthly_page(get_text(f"{base}/{ln}.html"))
-                    if got is None:
-                        notes.append({"source": sid, "page": ln, "status": "UNPARSED"})
-                        continue
-                    pages[ln[:8]] = {"period_end": str(got[0].date()), "total": got[1]}
-                _write(pages_path, pages)
+            label, why = robots_label(str(src["csv_url"]), get_text)
+            state.setdefault("access_labels", {})[sid] = label
+            if label != "PUBLIC":
+                notes.append({"source": sid, "access_label": label, "why": why,
+                              "redistribute_allowed": False})
+            text = get_text(str(src["csv_url"]))
+            if mof_days(text)[1]:
+                csv_path.parent.mkdir(parents=True, exist_ok=True)
+                tmp = csv_path.with_suffix(".csv.tmp")
+                tmp.write_text(text, encoding="utf-8")
+                _replace(tmp, csv_path)
+            index = get_text(str(src["monthly_index_url"]))
+            base = str(src["monthly_index_url"]).rsplit("/", 1)[0]
+            links = sorted(set(re.findall(r"monthly/(\d{8}e?)\.html", index)) |
+                           set(re.findall(r'href="(\d{8}e?)\.html"', index)))
+            todo = [ln for ln in links if ln[:8] not in pages][-MOF_PAGES_PER_PASS:]
+            for ln in todo:
+                got = mof_monthly_page(get_text(f"{base}/{ln}.html"))
+                if got is None:
+                    notes.append({"source": sid, "page": ln, "status": "UNPARSED"})
+                    continue
+                pages[ln[:8]] = {"period_end": str(got[0].date()), "total": got[1]}
+            _write(pages_path, pages)
         except HardStop as hs:
             state.setdefault("hard_stops", {})[sid] = {"code": hs.code, "at": _now()}
         except Exception as exc:
@@ -757,7 +766,8 @@ def _write_series(sid: str, frame: pd.DataFrame) -> Path:
 
 
 def _feature_cols(frame: pd.DataFrame) -> list[str]:
-    stamp = {"available_time", "event_time", "source_id", "retrieval_time"}
+    stamp = {"available_time", "event_time", "source_id", "retrieval_time", "access_label",
+             "redistribute_allowed"}
     cols = []
     for c in frame.columns:
         if c in stamp:
@@ -885,6 +895,8 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
     if mof.get("adapter") == "mof_feio":
         days, quarters, pages = mof_collect(mof, get_text, state, notes)
         targets = list(mof.get("targets") or [])
+        label = str((state.get("access_labels") or {}).get("mof_japan_intervention", "PUBLIC"))
+        tag = {"access_label": label, "redistribute_allowed": False}
         q = mof_quarterly(days, quarters)
         if len(q) >= MIN_ROWS:
             feat = dynamics(q, ["mof_q_net", "mof_net_4q"], window=40)
@@ -893,15 +905,16 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
             at = (pd.to_datetime(pd.Series(q.index), utc=True).dt.normalize()
                   + pd.Timedelta(days=MOF_QUARTER_LAG_DAYS, hours=23))
             frames["mof_jpy_q"] = stamped(feat.reset_index(drop=True), at, "mof_jpy_q",
-                                          pd.Series(q.index))
-            built["mof_jpy_q"] = {"targets": targets, "kind": "mof_intervention_quarterly",
+                                          pd.Series(q.index)).assign(**tag)
+            built["mof_jpy_q"] = {**tag, "targets": targets, "kind": "mof_intervention_quarterly",
                                   "rows": len(q), "last_event": str(q.index.max())}
         mm = mof_monthly(pages, days, quarters)
         if len(mm) >= MIN_ROWS:
             feat = dynamics(mm[["mof_m_gross"]], ["mof_m_gross"], window=60)
             feat["mof_m_since_last"] = mm["mof_m_since_last"]
-            frames["mof_jpy_m"] = stamped(feat, mm["available"], "mof_jpy_m", mm["event_time"])
-            built["mof_jpy_m"] = {"targets": targets, "kind": "mof_intervention_monthly",
+            frames["mof_jpy_m"] = stamped(feat, mm["available"], "mof_jpy_m",
+                                          mm["event_time"]).assign(**tag)
+            built["mof_jpy_m"] = {**tag, "targets": targets, "kind": "mof_intervention_monthly",
                                   "rows": len(mm), "release_pages": len(pages),
                                   "last_event": str(mm["event_time"].max())}
         if "mof_jpy_q" not in built:

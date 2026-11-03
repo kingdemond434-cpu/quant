@@ -394,7 +394,8 @@ def test_mof_rows_are_stamped_at_disclosure_never_at_intervention(tmp_desk: Path
     assert "mof_q_net" in fs._feature_cols(q)
 
 
-def test_mof_is_not_fetched_when_robots_disallows(tmp_desk: Path) -> None:
+def test_mof_robots_disallow_is_a_label_and_the_fetch_proceeds(tmp_desk: Path) -> None:
+    """LAWS 5e: a Disallow labels the source PUBLIC_WITH_TERMS; it never stops the fetch."""
     calls: list[str] = []
 
     def get_text(url: str) -> str:
@@ -402,10 +403,23 @@ def test_mof_is_not_fetched_when_robots_disallows(tmp_desk: Path) -> None:
         return "User-agent: *\nDisallow: /\n"
 
     notes: list = []
+    state: dict = {}
     fs.mof_collect({"id": "mof_japan_intervention", "terms": "OPEN", "csv_url": "https://h/a.csv",
-                    "monthly_index_url": "https://h/m/index.html"}, get_text, {}, notes)
-    assert calls == ["https://h/robots.txt"]
-    assert notes[0]["why"] == "robots disallows"
+                    "monthly_index_url": "https://h/m/index.html"}, get_text, state, notes)
+    assert calls[:3] == ["https://h/robots.txt", "https://h/a.csv", "https://h/m/index.html"]
+    assert notes[0]["access_label"] == "PUBLIC_WITH_TERMS"
+    assert notes[0]["redistribute_allowed"] is False
+    assert state["access_labels"]["mof_japan_intervention"] == "PUBLIC_WITH_TERMS"
+
+
+def test_unreadable_robots_is_access_unclear(tmp_desk: Path) -> None:
+    import urllib.error
+
+    def get_text(url: str) -> str:
+        if url.endswith("robots.txt"):
+            raise urllib.error.HTTPError(url, 500, "x", None, None)  # type: ignore[arg-type]
+        return ""
+    assert fs.robots_label("https://h/a.csv", get_text)[0] == "ACCESS_UNCLEAR"
 
 
 def _registry_calendar() -> dict:
