@@ -2602,3 +2602,20 @@ from mt5desk.families_specialist import TIMEFRAMES as _SPEC_TIMEFRAMES  # noqa: 
 ORTHOGONAL_FAMILIES.update(SPECIALIST_FAMILIES)
 FAMILY_INPUTS.update(_SPEC_INPUTS)
 FAMILY_TIMEFRAMES.update(_SPEC_TIMEFRAMES)
+
+# INSIDER CLUSTER DRIFT (2026-11-03, the insider / politician / buyback event lane, restoring the
+# Form 4 lane of draft PR #512). Open-market insider purchase clusters, frozen at their SEC
+# ACCEPTANCE time by `research/form4_lane.py` and stored by `research/insider_event_lane.py`; the
+# family replays that store for its `symbol` (a REQUIRED keyword, so the sweep never calls it
+# blind). `source="congress"` reads disclosed congressional net buys, and only while the
+# principal's QUANT_CONGRESS_ATTEST switch is on. A news-lane family: share CFDs only.
+from mt5desk.family_insider_cluster import family_insider_cluster_drift  # noqa: E402
+
+ORTHOGONAL_FAMILIES["insider_cluster_drift"] = family_insider_cluster_drift
+FAMILY_INPUTS["insider_cluster_drift"] = (
+    "Form 4 open-market purchase clusters dated at SEC acceptance (research/form4_lane.py via "
+    "research/insider_event_lane.py); congressional disclosures only when attested",
+    "desks/mt5/data/insider_events/clusters.jsonl")
+# NO TIMEFRAME RESTRICTION, as for `alt_release_drift`: entry is the first bar OPENING after the
+# acceptance on whatever chart the cell carries, and the hold is `hold_days` times the chart's own
+# measured bars per day (`family_analyst_revision._signals`).
