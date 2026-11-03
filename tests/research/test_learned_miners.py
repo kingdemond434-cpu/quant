@@ -125,6 +125,15 @@ def test_the_miner_proposes_nothing_on_noise_and_charges_every_attempt() -> None
         assert r["n_tests_sweep"] == res["tests_attempted"]
         assert r["proposed"] is False
     assert res["trial_census"]["n_raw"] == 6
+    # ...and still hands the judge one cell per screened (symbol, family), marked NOT_PROPOSED:
+    # the screen ranks and labels, the gauntlet decides (2026-11-03).
+    cells = res["cells"]
+    assert len(cells) == len({r["cell"] for r in res["rows"]}) > 0
+    assert all(c["proposed"] is False for c in cells)
+    c = LM.make_candidate("gnn", cells[0], panel=res["panel"], tests_run=res["tests_attempted"],
+                          n_effective=res["effective_trials"])
+    assert c["evidence"]["proposer_screen"] == "NOT_PROPOSED"
+    assert c["evidence"]["n_tests_sweep"] == res["tests_attempted"]
 
 
 # ============================================================================== PIT

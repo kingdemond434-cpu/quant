@@ -158,8 +158,12 @@ def test_cell_schema() -> None:
                     "Apple|yahoo_upgrades|direct|": {"status": "ADMIT"}}}
     cands, trials, refused = ac.cell_rows(groups, {"yahoo_upgrades": {"status": "ADMIT"}},
                                           cell_placebo=admit)
-    assert trials == 3 and not refused and len(cands) == 2
-    nv, krw = cands
+    # every measured cell reaches the judge; the screen's verdict rides on it (2026-11-03)
+    assert trials == 3 and not refused and len(cands) == 3
+    nv, krw, apple = cands
+    assert [c["evidence"]["proposer_screen"] for c in cands] == [
+        "PROPOSED", "PROPOSED", "NOT_PROPOSED"]
+    assert apple["params"]["symbol"] == "Apple"
     assert nv["family"] == "analyst_revision_drift" and nv["params"]["side"] == 1
     assert nv["params"]["symbol"] == "NVIDIA" and nv["params"]["hold_days"] == 5
     assert krw["family"] == "analyst_cross_market_lead" and krw["params"]["side"] == -1
@@ -197,7 +201,9 @@ def test_cells_pass_the_real_donation_door(tmp_path: Path, monkeypatch: pytest.M
     assert row["available_time"] and row["payload_hash"]
 
 
-def test_a_high_t_cell_is_not_donated_without_its_own_placebo_admit() -> None:
+def test_a_cell_without_its_placebo_admit_goes_to_the_judge_marked_not_proposed() -> None:
+    """The placebo is the proposer's screen, not the judge: a cell that misses it is donated
+    anyway, and carries the miss so nothing downstream reads it as a pass."""
     groups = [_group("NVIDIA", "yahoo_upgrades", "direct", "", 6.0, 80.0),
               _group("Apple", "yahoo_upgrades", "direct", "", 6.0, 80.0),
               _group("Meta", "yahoo_upgrades", "direct", "", 6.0, 80.0)]
@@ -205,8 +211,17 @@ def test_a_high_t_cell_is_not_donated_without_its_own_placebo_admit() -> None:
                    "Apple|yahoo_upgrades|direct|": {"status": av.UNMEASURED}}}
     for placebo in (gate, None):                 # REJECT, UNMEASURED, absent: none is a pass
         cands, trials, refused = ac.cell_rows(groups, {}, cell_placebo=placebo)
-        assert not cands and trials == 3 and len(refused) == 3
-        assert all("placebo gate" in r["why"] for r in refused)
+        assert len(cands) == 3 and trials == 3 and not refused
+        assert {c["evidence"]["proposer_screen"] for c in cands} == {"NOT_PROPOSED"}
+    nv = next(c for c in ac.cell_rows(groups, {}, cell_placebo=gate)[0]
+              if c["symbol"] == "NVIDIA")
+    assert nv["evidence"]["cell_placebo"]["status"] == "REJECT"
+
+
+def test_cells_over_the_pass_limit_are_counted_by_name() -> None:
+    groups = [_group(f"S{i}", "yahoo_upgrades", "direct", "", 1.0 + i, 10.0) for i in range(3)]
+    cands, _trials, refused = ac.cell_rows(groups, {}, cell_placebo=None, limit=2)
+    assert len(cands) == 2 and len(refused) == 1 and "pass limit" in refused[0]["why"]
 
 
 def test_the_report_never_collides_with_execution_intelligence() -> None:
