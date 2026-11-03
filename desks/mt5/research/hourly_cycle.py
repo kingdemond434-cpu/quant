@@ -1308,6 +1308,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "alt_proxies",
                      # the tier-1 data-class gap list: which classes of data the desk lacks
                      "data_class_gap",
+                     # gap #5: ALFRED real-time vintages, renewed a few series a pass; gap #2:
+                     # the implied-vol register and the realized-vol PROXY family (2026-10-29)
+                     "fetch_alfred", "options_implied",
                      # the alt seats' readings as PIT series the compiler mints cells from
                      "alt_seat_cells",
                      # walking inside a registered ground's own door is collection, like the
@@ -2045,6 +2048,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # rows and DATASET_HUNT.json; the cap sits above so the write is never the part cut off.
     # Its per-dataset cursor means a short pass still advances the frontier.
     "world_dataset_hunt": 1_020,
+    # data_class_gap #2: the realized-vol PROXY stops starting symbols at --budget-s 240 and
+    # writes; the cap sits above. #5: ALFRED renews at most four series a pass (one full vintage
+    # history each, ~10-60 s measured per series in the module's own notes); the cap bounds it.
+    "options_implied": 300,
+    "fetch_alfred": 300,
     # ITS CONSUMER mints world_macro_state cells from the hunter's exposure and stops itself at
     # --budget-s 900; a symbol cursor carries the sweep across hours.
     "world_macro_proposer": 1_020,
@@ -5034,6 +5042,18 @@ def main() -> None:
     # thousands of public datasets (DBnomics backbone + BIS bulk, CFTC, Treasury, FRED, and the
     # registry's own DISCOVERED rows), then publishes the per-symbol exposure that
     # `edge_search.resolve_inputs` reads. Writes reports/DATASET_HUNT.json.
+    # DATA-CLASS GAP #2 (options_implied_vol, 2026-10-29): the implied-vol sources on the one
+    # terms register (none permits live input: IDEAS_ONLY, missed-growth lines) and the PROXY
+    # family -- realized-vol term structure and realized skew per hypothesis-lane symbol from its
+    # own MT5 bars, labelled PROXY, landed in the hunter's store BEFORE the hunter runs, so its
+    # exposure maps them this pass. Writes reports/OPTIONS_IMPLIED.json.
+    opi = _costed("options_implied", lambda: _producer(
+        "options_implied", "research/options_implied.py", "--once", "--budget-s", "240"))
+    # DATA-CLASS GAP #5 (macro_nowcasts_vintages, WIRED_STALE): ALFRED real-time vintages,
+    # renewed once a day a few series a pass; NEEDS_KEY by name when FRED_API_KEY is absent.
+    # Writes reports/alfred_vintages.json and data/lake/alfred/<id>.parquet.
+    alf = _costed("fetch_alfred", lambda: _producer(
+        "fetch_alfred", "research/fetch_alfred.py", "--once"))
     wdh = _costed("world_dataset_hunt", lambda: _producer(
         "world_dataset_hunt", "research/world_dataset_hunter.py", "--once", "--budget-s", "900"))
     # ITS CONSUMER: mints `world_macro_state` cells (a z band on one named world series x
@@ -6333,7 +6353,8 @@ def main() -> None:
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
                     "acquire_datasets": acq, "free_stack_hunt": fsh,
                     "free_stack_proposer": fsp, "factory_throughput": fxt,
-                    "world_dataset_hunt": wdh,
+                    "world_dataset_hunt": wdh, "options_implied": opi,
+                    "fetch_alfred": alf,
                     "world_macro_proposer": wmp,
                     "source_experiment_census": sxc,
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,

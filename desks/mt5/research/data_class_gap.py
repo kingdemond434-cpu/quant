@@ -155,6 +155,10 @@ CLASSES: tuple[dict[str, Any], ...] = (
                    "research/institutional_atlas.py"],
      "extra_urls": ["www.cboe.com", "cdn.cboe.com"],
      "catalogue_terms": r"option|implied vol|risk reversal|skew|\bvix\b", "max_age_h": 30,
+     # THE ONLY WIRED PRODUCER IS A PROXY (realized vol from the desk's own bars, 2026-10-29):
+     # no implied source is live input, so the class can read PRODUCER at most until one is.
+     "coverage_cap": ("PRODUCER", "proxy only: realized-vol PROXY family wired; no implied-vol "
+                                  "source is live input (every one IDEAS_ONLY or held)"),
      "candidates": [
          _c("cboe_vix_history", "Cboe VIX/VVIX/SKEW index history", "https://cdn.cboe.com/",
             "US", "en", note="held row cboe_delayed_index_values"),
@@ -163,7 +167,12 @@ CLASSES: tuple[dict[str, Any], ...] = (
          _c("cme_option_bulletin", "CME daily bulletin option OI by strike",
             "https://www.cmegroup.com/", "US", "en", note="Futures thread"),
          _c("jpx_options", "JPX Nikkei 225 option statistics", "https://www.jpx.co.jp/",
-            "JP", "ja", note="JPX terms bar automated collection (held rows)")]},
+            "JP", "ja", note="JPX terms bar automated collection (held rows)"),
+         _c("minneapolis_fed_mpd", "Minneapolis Fed market-based probabilities (option-implied "
+            "distributions: grains, gold, crude, EUR, JPY, S&P 500)",
+            "https://www.minneapolisfed.org/banking/current-and-historical-market-based-"
+            "probabilities", "US", "en",
+            note="IDEAS_ONLY row; parser options_implied.mpd_frame; PROXY family built")]},
     {"id": "positioning", "name": "Positioning (COT, TFF, exchange open interest, broker books)",
      "weight": 2, "mt5": ["FX majors", "XAUUSD", "XAGUSD", "XTIUSD", "indices"],
      "tier1": "CTA and macro desks read speculative positioning weekly as a crowding state",
@@ -285,15 +294,17 @@ CLASSES: tuple[dict[str, Any], ...] = (
     {"id": "macro_nowcasts_vintages", "name": "Macro nowcasts and real-time vintages",
      "weight": 3, "mt5": ["USD crosses", "EURUSD", "US500", "GER40", "XAUUSD"],
      "tier1": "surprise vs the nowcast, on the vintage known at the time, is the macro edge",
-     "producers": ["research/fetch_alfred.py", "research/macro_state_engine.py"],
+     "producers": ["research/fetch_alfred.py", "research/macro_state_engine.py",
+                   "research/world_dataset_hunter.py"],
      "extra_urls": ["alfred.stlouisfed.org"],
      "catalogue_terms": r"nowcast|gdpnow|vintage|real.time data|survey of professional",
      "max_age_h": 48,
      "candidates": [
          _c("atlanta_gdpnow", "Atlanta Fed GDPNow", "https://www.atlantafed.org/cqer/research/"
             "gdpnow", "US", "en"),
-         _c("nyfed_nowcast", "NY Fed Staff Nowcast", "https://www.newyorkfed.org/research/"
-            "policy/nowcast", "US", "en"),
+         _c("nyfed_nowcast", "NY Fed Staff Nowcast (download behind the nowcast page)",
+            "https://www.newyorkfed.org/medialibrary/Research/Interactives/Data/NowCast/",
+            "US", "en"),
          _c("philly_rtdsm", "Philadelphia Fed Real-Time Data Set for Macroeconomists",
             "https://www.philadelphiafed.org/surveys-and-data/real-time-data-research/",
             "US", "en"),
@@ -557,7 +568,8 @@ CLASSES: tuple[dict[str, Any], ...] = (
     {"id": "agri_supply", "name": "Agricultural supply (crop progress, WASDE, export sales)",
      "weight": 2, "mt5": ["WHEAT", "CORN", "SOYBEAN", "SUGAR", "COFFEE", "COCOA", "COTTON"],
      "tier1": "every ags desk trades crop progress and WASDE surprises",
-     "producers": [], "extra_urls": ["apps.fas.usda.gov", "www.nass.usda.gov"],
+     "producers": ["research/world_dataset_hunter.py"],
+     "extra_urls": ["apps.fas.usda.gov", "www.nass.usda.gov"],
      "catalogue_terms": r"crop|wasde|harvest|export sales|usda|conab",
      "max_age_h": 200,
      "candidates": [
@@ -565,7 +577,8 @@ CLASSES: tuple[dict[str, Any], ...] = (
             "https://quickstats.nass.usda.gov/api/", "US", "en", "key:NASS_API_KEY"),
          _c("usda_fas_esr", "USDA FAS export sales reporting API",
             "https://apps.fas.usda.gov/OpenData/", "US", "en"),
-         _c("usda_wasde", "USDA WASDE monthly", "https://www.usda.gov/oce/commodity/wasde",
+         _c("usda_wasde", "USDA WASDE monthly (as-reported report data files)",
+            "https://www.usda.gov/sites/default/files/documents/oce-wasde-report-data-",
             "US", "en"),
          _c("conab_brazil", "CONAB crop survey (Brazil)", "https://www.conab.gov.br/", "BR",
             "pt"),
@@ -902,12 +915,17 @@ def measure_class(spec: dict[str, Any], *, idx: dict[str, set[str]], legs: dict[
         level = "CATALOGUED"
     else:
         level = "NONE"
+    cap = spec.get("coverage_cap")
+    capped = None
+    if cap and COVERAGE[level] > COVERAGE[cap[0]]:
+        capped = {"from": level, "to": cap[0], "why": cap[1]}
+        level = cap[0]
     cov = COVERAGE[level]
     score = round(float(spec["weight"]) * (1.0 - cov) * (1.0 + math.log1p(open_lawful)), 3)
     return {
         "id": spec["id"], "name": spec["name"], "weight": spec["weight"], "mt5": spec["mt5"],
         "tier1_use": spec["tier1"], "owner": spec.get("owner") or "unowned",
-        "coverage": level, "coverage_value": cov,
+        "coverage": level, "coverage_value": cov, "coverage_capped": capped,
         "freshness_limit_h": spec.get("max_age_h") or FRESH_DEFAULT_H,
         "producers": producers,
         "hosts_in_code": {"fetchers": sorted(fetchers)[:12], "catalogues": sorted(catalogued)[:12],

@@ -1,0 +1,10 @@
+WasdeNumber,ReportDate,ReportTitle,Attribute,ReleaseDate,Commodity,Region,MarketYear,ProjEstFlag,AnnualQuarterFlag,Value,Unit,ReleaseTime,ForecastYear,ForecastMonth
+666,October 2026,U.S. Feed Grain and Corn Supply and Use,Ending Stocks,2026-10-09,Corn,United States,2026/27 Proj.,Proj.,Annual,"2,100",Million Bushels,12:00:00.0000000,2026,10
+666,October 2026,U.S. Feed Grain and Corn Supply and Use,"Use, Total",2026-10-09,Corn,United States,2026/27 Proj.,Proj.,Annual,"15,000",Million Bushels,12:00:00.0000000,2026,10
+666,October 2026,U.S. Feed Grain and Corn Supply and Use,Ending Stocks,2026-10-09,Corn,United States,2025/26 Est.,Est.,Annual,"1,500",Million Bushels,12:00:00.0000000,2026,10
+666,October 2026,U.S. Feed Grain and Corn Supply and Use,"Use, Total",2026-10-09,Corn,United States,2025/26 Est.,Est.,Annual,"14,900",Million Bushels,12:00:00.0000000,2026,10
+666,October 2026,World Soybean Supply and Use,Ending Stocks,2026-10-09,Soybeans,World,2026/27 Proj.,Proj.,Annual,125.0,Million Metric Tons,12:00:00.0000000,2026,10
+666,October 2026,World Soybean Supply and Use,Domestic Total,2026-10-09,Soybeans,World,2026/27 Proj.,Proj.,Annual,400.0,Million Metric Tons,12:00:00.0000000,2026,10
+666,October 2026,World Soybean Supply and Use,Exports,2026-10-09,Soybeans,World,2026/27 Proj.,Proj.,Annual,100.0,Million Metric Tons,12:00:00.0000000,2026,10
+666,October 2026,U.S. Rice Supply and Use,Ending Stocks,2026-10-09,Rice,United States,2026/27 Proj.,Proj.,Annual,40.0,Million Cwt,12:00:00.0000000,2026,10
+666,October 2026,Brazil Soybeans,Ending Stocks,2026-10-09,Soybeans,Brazil,2026/27 Proj.,Proj.,Annual,30.0,Million Metric Tons,12:00:00.0000000,2026,10
