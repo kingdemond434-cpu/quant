@@ -47,7 +47,7 @@ WINDOW_DAYS = 7
 #: `_donate`, `scripts/kimi_hunter.py` `_donate`). Reported as one block in the compiled artifact
 #: so "what did the seats put in the docket" is a field, not a grep -- and a seat that donated
 #: nothing in the window is reported with zeros, because that is the measurement, not an absence.
-SEAT_SOURCES = frozenset({"deepseek", "kimi_k3_deep_forest"})
+SEAT_SOURCES = frozenset({"deepseek", "kimi_k3_deep_forest", "paperclip"})
 
 
 def _deepening_task_id(source: str, row: dict) -> str:

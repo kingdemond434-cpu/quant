@@ -6187,6 +6187,11 @@ def main() -> None:
         "trade_pathology", "research/trade_pathology.py", "--once"))
     exc_ = _costed("experiment_contracts", lambda: _producer(
         "experiment_contracts", "scripts/check_experiment_contracts.py", "--report"))
+    # THE PAPERCLIP COMPANY'S DOOR (2026-11-03, principal: "do 2 and 1 now", 24/7). Exports the
+    # isolated lab's inbox, pulls its hourly bundles, re-screens every row through the narrow
+    # gateway and donates survivors to data/intelligence/paperclip/. RED when the loop stops.
+    pci = _costed("paperclip_intake", lambda: _producer(
+        "paperclip_intake", "research/paperclip_intake.py", "--once"))
     hbd = _costed("health_board", lambda: _producer(
         "health_board", "research/health_board.py", "--once"))
     # THE ORGAN CENSUS (2026-09-25). Three external reviews asked one closing question -- does
@@ -6519,6 +6524,7 @@ def main() -> None:
                     "cro_noon_freshness": cnf,
                     "build_failure_bank": bfb, "trade_pathology": tpa,
                     "experiment_contracts": exc_, "health_board": hbd,
+                    "paperclip_intake": pci,
                     "preregistration": prg, "organ_census": ogc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
