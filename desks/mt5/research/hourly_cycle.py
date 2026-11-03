@@ -2048,6 +2048,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The paid-substitute engine: a 120 s catalogue crawl (its own deadline) plus ~2-10 s of
     # scoring, enrolment and queue writes; the cap sits above so the report is always written.
     "paid_substitute_engine": 300,
+    # AC7 trade attribution: one pass over the live ledger, decision index and M1 bars per
+    # traded symbol; seconds in practice, capped small so it can never starve the hour.
+    "trade_attribution": 120,
     # THE WORLD DATASET HUNTER stops itself at --budget-s 900 and writes its catalog, registry
     # rows and DATASET_HUNT.json; the cap sits above so the write is never the part cut off.
     # Its per-dataset cursor means a short pass still advances the frontier.

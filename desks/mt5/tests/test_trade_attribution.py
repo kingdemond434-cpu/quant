@@ -81,3 +81,43 @@ def test_absent_ledgers(tmp_path: Path) -> None:
     assert doc["n_trades"] == 0
     assert doc["inputs"]["live_ledger"].startswith(ta.UNMEASURED)
     assert doc["weekly_by_sleeve"] == {}
+
+
+def _gateway_row(**kw: object) -> dict:
+    """A closed-deal row in the shape `gateway.py` writes to the live ledger."""
+    row = {"time": "2026-11-02T12:00:05+00:00", "sleeve": "s1", "symbol": "XAUUSD",
+           "entry_side": 0, "entry_time": "2026-11-02T10:00:00+00:00",
+           "exit_time": "2026-11-02T12:00:00+00:00", "timestamp_basis": "broker_deal_epoch",
+           "side": 1, "pl_quote": -10.0, "r_multiple": -1.0, "volume": 0.02,
+           "commission": -0.4, "swap": -0.6, "deal": 9001, "entry_cost_allocated": -0.4,
+           "net_cost_status": "MEASURED", "exit_fee": 0.0, "fill_price": 3990.0,
+           "entry_price": 4000.0, "sl": 3990.0, "tp": 4020.0, "r_unreconstructible": False,
+           "order": 8801, "position_id": 77, "entry_order": 77, "entry_deal": 7701,
+           "risk_quote": -10.0, "account_kind": "live"}
+    row.update(kw)
+    return row
+
+
+def test_fees_are_signed_in_quote_like_pl_quote() -> None:
+    meta = {"digits": 2, "median_spread_pts": 0.0}
+    dec = {"price": 4000.0, "lot": 0.02, "decision_id": "d1"}
+    t = ta.attribute(_gateway_row(), dec, meta, {}, None, None)
+    # Debits arrive negative, as pl_quote's loss does: -(0.4 + 0.6) / |risk 10| = -0.1 R.
+    assert t["layers"]["execution_cost"] == -0.1
+    # A swap CREDIT reduces the cost, with the same sign convention as a profit.
+    t2 = ta.attribute(_gateway_row(swap=0.6), dec, meta, {}, None, None)
+    assert t2["layers"]["execution_cost"] == 0.02
+
+
+def test_sizing_unmeasured_across_accounts() -> None:
+    meta = {"digits": 2, "median_spread_pts": 0.0}
+    dec = {"price": 4000.0, "lot": 0.01, "decision_id": "d1", "account_key": "fusion:1"}
+    same = ta.attribute(_gateway_row(account_key="fusion:1"), dec, meta, {}, None, None)
+    assert same["layers"]["sizing"] == -1.0
+    other = ta.attribute(_gateway_row(account_key="ftmo:2"), dec, meta, {}, None, None)
+    assert other["layers"]["sizing"] == ta.UNMEASURED
+    bare = {k: v for k, v in dec.items() if k != "account_key"}
+    assert ta.attribute(_gateway_row(), bare, meta, {}, None, None,
+                        single_account=True)["layers"]["sizing"] == -1.0
+    assert ta.attribute(_gateway_row(), bare, meta, {}, None, None,
+                        single_account=False)["layers"]["sizing"] == ta.UNMEASURED

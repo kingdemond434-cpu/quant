@@ -157,8 +157,27 @@ def _exit_grid_best(sleeve: str, grid: Any) -> float | None:
     return None
 
 
+def _account(row: dict[str, Any] | None) -> str | None:
+    """The account a row belongs to: account_key, else login/account_login/account."""
+    for k in ("account_key", "login", "account_login", "account"):
+        v = (row or {}).get(k)
+        if v not in (None, "") and not isinstance(v, (dict, list)):
+            return str(v)
+    return None
+
+
+def same_account(row: dict[str, Any], dec: dict[str, Any] | None, single_account: bool) -> bool:
+    """A decided lot sizes only a fill on ITS account (FTMO/Fusion copies differ). When either
+    side is unstamped, the comparison is trusted only on a single-account ledger."""
+    a, b = _account(row), _account(dec)
+    if a is not None and b is not None:
+        return a == b
+    return single_account
+
+
 def attribute(row: dict[str, Any], dec: dict[str, Any] | None, meta: dict[str, Any],
-              bars: dict[str, Any], sleeves_doc: Any, grid: Any) -> dict[str, Any]:
+              bars: dict[str, Any], sleeves_doc: Any, grid: Any,
+              single_account: bool = True) -> dict[str, Any]:
     d = _direction(row)
     entry, sl, tp = _f(row.get("entry_price")), _f(row.get("sl")), _f(row.get("tp"))
     digits = meta.get("digits")
@@ -205,7 +224,7 @@ def attribute(row: dict[str, Any], dec: dict[str, Any] | None, meta: dict[str, A
         layers["exit_policy"] = round(r - hold, 4)
     best = _exit_grid_best(sleeve, grid)
     lot, vol = _f((dec or {}).get("lot")), _f(row.get("volume"))
-    if lot and vol is not None and r is not None:
+    if lot and vol is not None and r is not None and same_account(row, dec, single_account):
         layers["sizing"] = round(r * (vol / lot - 1.0), 4) + 0.0
     measured = all(isinstance(v, float) for v in layers.values())
     return {
@@ -262,13 +281,15 @@ def run(now: datetime | None = None, live: Path = LIVE, decisions: Path = DECISI
     sdoc = _read(sleeves)
     grid = next((g for g in (_read(p) for p in grid_paths) if g is not None), None)
     bars_cache: dict[str, dict[str, Any]] = {}
+    single = len({a for a in (_account(r) for r in rows) if a is not None}) <= 1
     trades = []
     for r in rows:
         sym = _sym(r.get("symbol"))
         if sym not in bars_cache:
             bars_cache[sym] = load_bars(sym, universe)
         dec = decs.get(str(r.get("entry_order") or "")) or decs.get(str(r.get("order") or ""))
-        trades.append(attribute(r, dec, meta_all.get(sym) or {}, bars_cache[sym], sdoc, grid))
+        trades.append(attribute(r, dec, meta_all.get(sym) or {}, bars_cache[sym], sdoc, grid,
+                                single))
     per_sleeve = rollup(trades, now)
     inputs = {
         "live_ledger": f"MEASURED: {len(rows)} live rows" if lpath.exists()
