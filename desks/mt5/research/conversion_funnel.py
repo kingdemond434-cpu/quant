@@ -778,8 +778,13 @@ def main(argv: list[str] | None = None) -> int:
         if conn is not None:
             with contextlib.suppress(sqlite3.Error):
                 conn.close()
+    # The complete funnel lands FIRST: the ledger refresh is a second, uninterruptible read, and
+    # a leg cap that kills it must not cost the fence. It starts only while half the budget is
+    # left, so the leg's cap (hourly_cycle LEG_BUDGET_SEC 330 s) sits well above both.
+    doc["conversion_ledger"] = {"status": "PENDING"}
+    _atomic_write(paths.out, doc)
     doc["conversion_ledger"] = refresh_conversion_ledger(
-        a.desk, deadline=t_start + budget * 0.95)
+        a.desk, deadline=t_start + budget * 0.5)
     _atomic_write(paths.out, doc)
     if a.json:
         print(json.dumps(doc, indent=1, default=str))
