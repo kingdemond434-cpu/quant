@@ -410,8 +410,14 @@ class Client:
         self.requests += 1
         try:
             timeout = min(HTTP_TIMEOUT_S, max(2.0, left - 1.0))
-            raw = (self.fetch(url, timeout, headers=headers, data=data) if headers or data
-                   else self.fetch(url, timeout))
+            # a credential header or a POST body travels only when one is set, as a keyword, so
+            # every two-argument fetcher (and a three-argument one taking headers) keeps working
+            kw: dict[str, Any] = {}
+            if headers:
+                kw["headers"] = headers
+            if data is not None:
+                kw["data"] = data
+            raw = self.fetch(url, timeout, **kw) if kw else self.fetch(url, timeout)
         except FetchError as exc:
             self.failures[exc.reason] += 1
             raise
@@ -3396,16 +3402,11 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: Fetcher | None = None,
     # TWO PACK SETS, ONE REPORT KEY: the hunter's own COUNTRY_PACKS (id / sg / sa / jp / cn,
     # `build_report`) and research/country_packs.py's (tr / pl / se / za). Pack names never
     # overlap; the liveness verdict and its artifact are the latter's (COUNTRY_PACK_LIVENESS.json),
-    # and a RED there turns the organ's own status RED as a RED door of the former does.
+    # whose RED process_health reads from that file (the organ's `status` stays the former's).
     eu = country_packs_eu_report(cat, now)
     own = report.get("country_packs") or {}
     report["country_packs"] = {**own, **eu,
                                "packs": {**(own.get("packs") or {}), **(eu.get("packs") or {})}}
-    if eu.get("verdict") == "RED":
-        red = ", ".join(eu.get("red") or [])
-        report["status"] = (f"{report['status']}; RED: country-pack liveness: {red}"
-                            if str(report.get("status", "")).startswith("RED")
-                            else f"RED: country-pack liveness: {red}")
     write_json(REPORT, report)
     return report
 

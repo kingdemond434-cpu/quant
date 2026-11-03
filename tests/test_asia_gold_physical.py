@@ -273,4 +273,7 @@ def test_alt_proxies_pass_writes_hk_series_and_the_state(tmp_path: Path) -> None
     for sid in IDEAS:
         assert st["states"][sid]["verdict"] == G.UNMEASURED
         assert rep["sources"][sid]["requests"] == 0
-    assert {ln["source"] for ln in rep["asia_gold_physical"]["missed_growth_lines"]} == set(IDEAS)
+    # the Turkey rows (257): Borsa Istanbul's table is IDEAS_ONLY and the refinery's terms UNREAD,
+    # so both carry a missed-growth line beside the three Asian rows
+    assert {ln["source"] for ln in rep["asia_gold_physical"]["missed_growth_lines"]} == {
+        *IDEAS, G.TR_BIST_ID, G.TR_IAR_POLICY}

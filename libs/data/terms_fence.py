@@ -694,7 +694,11 @@ SOURCE_POLICY.update({
 #: fixtures, and its hold carries a missed-growth line (`held_missed_growth`, delta UNMEASURED).
 SOURCE_POLICY.update({
     "jp_mof_feio": {
-        "hosts": ("mof.go.jp",), "status": PUBLIC_PAGE, "sources": ("jp_mof_feio",),
+        # A ROUTE row: mof.go.jp's HOST row is `jp_mof` (the fund-flow doors, same PDL 1.0 basis);
+        # the intervention file's own route names this row, so one host never has two host rows.
+        "hosts": (), "status": PUBLIC_PAGE, "sources": ("jp_mof_feio",),
+        "url_patterns": (r"^(?:www\.)?mof\.go\.jp/english/policy/international_policy/"
+                         r"reference/feio/",),
         "why": ("Japan Ministry of Finance site (foreign exchange intervention operations CSV); "
                 "its copyright notice applies Public Data License 1.0, which permits copying, "
                 "adaptation and commercial use with a source credit"),

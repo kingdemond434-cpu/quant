@@ -578,7 +578,9 @@ def test_every_blocked_source_has_candidates_or_says_why_not() -> None:
     held = {s for s in A.PASS5_TERMS if A.PASS5_TERMS[s][0] != "confirmed"}
     # the Asian physical-gold rows whose terms are UNREAD (IDEAS_ONLY in terms_fence): sources in
     # their own right, never stand-ins for a paid panel (IDEA_QUEUE 237, 228, 215)
-    gold = {"vn_sjc_premium", "th_gold_premium", "cn_sge_deferral"}
+    gold = {"vn_sjc_premium", "th_gold_premium", "cn_sge_deferral",
+            # Turkey (IDEA_QUEUE 257): Borsa Istanbul's precious-metals table, IDEAS_ONLY
+            "tr_bist_gold"}
     assert blocked == {*BLOCKED, "za_statssa_retail", *held, *gold}
     assert set(A.SUBSTITUTED_BY) | set(A.NO_SUBSTITUTE) == set(BLOCKED)
     assert set(A.NO_SUBSTITUTE) == {"in_npci_upi", "za_beti"}

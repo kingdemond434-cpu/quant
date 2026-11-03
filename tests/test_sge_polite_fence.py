@@ -124,7 +124,9 @@ def test_route_probe_reaches_sge_only_through_polite_fetch(
     monkeypatch.setattr(polite_fetch, "get", fake)
     r = R.probe({"name": "sge_quotations", "url": "https://www.sge.com.cn/graph/quotations",
                  "expect": "any"})
-    assert seen and r["status"] == "UNMEASURED"
+    # the train's polite probe records a refusal as REFUSED with its verdict: never a pass, never
+    # MOVED, never routed around (scripts/check_source_routes._polite_probe)
+    assert seen and r["status"] == "REFUSED" and r["verdict"] == "ROBOTS_DISALLOW"
 
 
 def test_dislocation_and_asia_plane_read_a_refusal_as_unmeasured() -> None:

@@ -102,8 +102,10 @@ def box(tmp_path, monkeypatch):
 
 
 # ------------------------------------------------------------------------------ the register --
-LIVE_ROWS = ("tr_evds_macro", "pl_nbp", "se_riksbank", "se_scb")
-HELD_ROWS = ("za_sarb", "za_statssa_macro")
+LIVE_ROWS = ("tr_evds_macro", "se_riksbank", "se_scb")
+# pl_nbp: its only permitting clause, s.1(6), grants copying "for personal use" -- not a permission
+# for a desk's research, so the row is IDEAS_ONLY (fail closed for live input, 2026-11-03)
+HELD_ROWS = ("za_sarb", "za_statssa_macro", "pl_nbp")
 
 
 def test_each_pack_publisher_is_one_fence_row_with_its_verdict() -> None:
@@ -133,7 +135,7 @@ def test_gate_holds_ideas_only_and_reads_keys_and_codes(monkeypatch) -> None:
     assert cp.gate(cp.BY_ID["za_sarb_rates"])[0] == "HELD"
     assert cp.gate(cp.BY_ID["tr_fx_reserves"])[0] == "NEEDS_CONFIG"
     assert cp.gate(cp.BY_ID["tr_usdtry_cbrt"]) is None
-    assert cp.gate(cp.BY_ID["pl_fx_usd"]) is None and cp.gate(cp.BY_ID["se_cpi"]) is None
+    assert cp.gate(cp.BY_ID["pl_fx_usd"])[0] == "HELD" and cp.gate(cp.BY_ID["se_cpi"]) is None
     monkeypatch.setenv("ALT_EVDS_RESERVES_SERIES", "TP.AB.TOPLAM")
     assert cp.gate(cp.BY_ID["tr_fx_reserves"]) is None
     monkeypatch.delenv("EVDS_API_KEY")
@@ -205,6 +207,7 @@ def test_packs_land_pit_stamped_and_mapped_through_the_hunter(box) -> None:
     rep = W.run(budget_s=120, fetch=web, now=NOW)
     urls = web.urls()
     assert not any("resbank" in u for u in urls)                 # held: never requested
+    assert not any("nbp.pl" in u for u in urls)                  # held: never requested
     assert not any("TP.AB" in u or "ALT_EVDS" in u for u in urls)  # unconfigured: no request
     evds = [c for c in web.calls if "TP.DK.USD" in c[0]]
     assert evds and all(c[1].get("key") == "fixture-key-not-real" for c in evds)
@@ -212,7 +215,8 @@ def test_packs_land_pit_stamped_and_mapped_through_the_hunter(box) -> None:
     assert scb and scb[0][2] and json.loads(scb[0][2])["response"]["format"] == "json-stat2"
 
     packs = rep["country_packs"]["packs"]
-    assert packs["pl"]["doors"]["pl_fx_usd"]["verdict"] == "GREEN"
+    assert packs["pl"]["doors"]["pl_fx_usd"]["verdict"] == "HELD"
+    assert packs["pl"]["verdict"] == "HELD" and rep["country_packs"]["missed_growth"]["pl_nbp"]
     assert set(packs["pl"]["doors"]["pl_fx_usd"]["instruments"]) >= {"USDPLN", "EURPLN"}
     assert "XAUUSD" in packs["pl"]["doors"]["pl_gold"]["instruments"]
     assert set(packs["se"]["doors"]["se_usdsek"]["instruments"]) >= {"USDSEK", "EURSEK"}
@@ -225,9 +229,7 @@ def test_packs_land_pit_stamped_and_mapped_through_the_hunter(box) -> None:
     assert rep["country_packs"]["verdict"] == "GREEN"
 
     # PIT: the stored available_time is the publisher's release instant, not a cadence lag
-    frame = pd.read_parquet(W.dataset_path("NBP", "pl_fx_usd"))
-    row = frame[frame["period"] == "2026-10-30"].iloc[0]
-    assert row["available_time"] == pd.Timestamp("2026-10-30T11:30:00Z")
+    assert not W.dataset_path("NBP", "pl_fx_usd").exists()      # held: nothing landed
     sw = pd.read_parquet(W.dataset_path("RIKSBANK", "se_swestr"))
     first = sw.sort_values("period").iloc[0]
     assert first["available_time"] > first["period_end"]
@@ -239,7 +241,8 @@ def test_packs_land_pit_stamped_and_mapped_through_the_hunter(box) -> None:
     key = W.series_key("RIKSBANK", "se_usdsek", "se_usdsek")
     assert key in sek and W.series_key("SCB", "se_cpi", "cpi_yoy") in sek
     assert W.series_key("RIKSBANK", "se_swestr", "se_swestr") in sek
-    assert W.series_key("NBP", "pl_fx_usd", "pl_fx_usd") in expo["symbols"]["USDPLN"]
+    assert W.series_key("NBP", "pl_fx_usd", "pl_fx_usd") not in expo["symbols"].get("USDPLN",
+                                                                                    [])
     assert W.series_key("CBRT_EVDS", "tr_cpi", "cpi_yoy_chg") in expo["symbols"]["USDTRY"]
     s = W.raw_world_series(key)
     assert s is not None and len(s) > 250
