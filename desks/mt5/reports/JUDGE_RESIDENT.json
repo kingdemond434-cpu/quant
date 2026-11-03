@@ -17,69 +17,98 @@
  "uptime_s": 556456.0,
  "last_sweep_ended_utc": "2026-11-03T03:15:28+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-03T03:50:23+00:00",
+ "heartbeat_utc": "2026-11-03T04:04:55+00:00",
  "sweep_phase": {
   "pid": 25140,
   "sweep_started_utc": "2026-11-03T03:15:54+00:00",
-  "phases": {},
-  "phase": "plan",
-  "phase_started_utc": "2026-11-03T03:15:54+00:00",
+  "phases": {
+   "plan": 2609.7
+  },
+  "phase": "prewarm",
+  "phase_started_utc": "2026-11-03T03:59:23+00:00",
   "plan_steps": {
    "lane_and_docket": 85.8,
    "docket_grouping": 125.7,
    "gate0": 221.0,
-   "preflight": 238.6
+   "preflight": 238.6,
+   "cache_prune": 1617.7,
+   "order": 261.7,
+   "yield_allocation": 59.1
   },
-  "plan_step": "cache_prune",
-  "plan_step_started_utc": "2026-11-03T03:27:05+00:00",
+  "plan_step": "prewarm",
+  "plan_step_started_utc": "2026-11-03T03:59:23+00:00",
   "plan_counts": {
    "docket_rows": 1623472,
    "unique_cells": 1622830,
    "gate0_advance": 1622830
   },
-  "plan_last_marker": "Build preflight: 766579 incomplete input/variant(s) conserved without spending build/gate compute; 856251 executable cell(s) remain",
+  "plan_last_marker": "  docket order: 94369 never-judged cell(s) first, then 207998 in symbol-rotation order",
   "wall_profile": {
    "every_s": 10.0,
    "depth": 6,
    "authority": "report_only",
    "phases": {
     "plan": {
-     "samples": 190,
+     "samples": 235,
      "top": [
       {
        "stack": "__init__.py:stat:659 < external_gauntlet.py:main:3613 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622 < run_sharded_gauntlet.py:main:3601",
        "n": 78,
-       "share": 0.411
+       "share": 0.332
       },
       {
        "stack": "__init__.py:open:776 < __init__.py:read_text:792 < family_policy.py:banned_families:86 < family_policy.py:family_banned:102 < external_gauntlet.py:main:3685 < external_gauntlet.py:run_sharded:4844",
        "n": 21,
-       "share": 0.111
+       "share": 0.089
       },
       {
        "stack": "__init__.py:exists:676 < external_gauntlet.py:symbol_is_tradeable:933 < external_gauntlet.py:partition_at_economic_prior:979 < external_gauntlet.py:main:3569 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
        "n": 13,
-       "share": 0.068
+       "share": 0.055
       },
       {
        "stack": "external_gauntlet.py:refill:3387 < external_gauntlet.py:iter_json_array:3421 < external_gauntlet.py:main:3516 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
        "n": 9,
-       "share": 0.047
+       "share": 0.038
       },
       {
        "stack": "__init__.py:unlink:1047 < external_gauntlet.py:main:3614 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622 < run_sharded_gauntlet.py:main:3601",
        "n": 7,
-       "share": 0.037
+       "share": 0.03
       }
      ],
      "process": {
-      "cpu_s": 970.1,
-      "page_faults": 9798715.0,
-      "read_bytes": 6981845147.0,
-      "write_bytes": 162058.0,
-      "sampled_s": 1890.0,
-      "rss_mb_max": 3456.6,
-      "cpu_share_of_wall": 0.513
+      "cpu_s": 1364.5,
+      "page_faults": 12713259.0,
+      "read_bytes": 8742850173.0,
+      "write_bytes": 266934.0,
+      "sampled_s": 2340.0,
+      "rss_mb_max": 5277.5,
+      "cpu_share_of_wall": 0.583
+     }
+    },
+    "prewarm": {
+     "samples": 31,
+     "top": [
+      {
+       "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
+       "n": 29,
+       "share": 0.935
+      },
+      {
+       "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
+       "n": 2,
+       "share": 0.065
+      }
+     ],
+     "process": {
+      "cpu_s": 69.4,
+      "page_faults": 1524489.0,
+      "read_bytes": 717607.0,
+      "write_bytes": 1806443823.0,
+      "sampled_s": 300.0,
+      "rss_mb_max": 3385.7,
+      "cpu_share_of_wall": 0.231
      }
     }
    }

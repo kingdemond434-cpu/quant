@@ -1,7 +1,7 @@
 {
- "at": "2026-11-02T22:43:34+00:00",
+ "at": "2026-11-03T03:58:24+00:00",
  "screened": 1500,
- "set_aside": 25,
+ "set_aside": 16,
  "rows": [
   {
    "sym": "AUDCHF",
@@ -98,60 +98,6 @@
    "family": "formula",
    "twin": "external.EURMXN@M30.formula.p=bdcd8535d09fc6e9",
    "why": "every measurable dimension reads as a twin of external.EURMXN@M30.formula.p=bdcd8535d09fc6e9 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
-  },
-  {
-   "sym": "EURZAR",
-   "family": "lvc_asia_london",
-   "twin": "EURZAR@M5.lvc_asia_london.p=44136fa355b3678a",
-   "why": "exact cell identity: this IS EURZAR@M5.lvc_asia_london.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
-  },
-  {
-   "sym": "GBPAUD",
-   "family": "lvc_asia_london",
-   "twin": "GBPAUD@M5.lvc_asia_london.p=44136fa355b3678a",
-   "why": "exact cell identity: this IS GBPAUD@M5.lvc_asia_london.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
-  },
-  {
-   "sym": "GBPJPY",
-   "family": "lvc_asia_london",
-   "twin": "GBPJPY@M5.lvc_asia_london.p=44136fa355b3678a",
-   "why": "exact cell identity: this IS GBPJPY@M5.lvc_asia_london.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
-  },
-  {
-   "sym": "GBPZAR",
-   "family": "lvc_asia_london",
-   "twin": "GBPZAR@M5.lvc_asia_london.p=44136fa355b3678a",
-   "why": "exact cell identity: this IS GBPZAR@M5.lvc_asia_london.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
-  },
-  {
-   "sym": "USDCZK",
-   "family": "lvc_asia_london",
-   "twin": "USDCZK@M5.lvc_asia_london.p=44136fa355b3678a",
-   "why": "exact cell identity: this IS USDCZK@M5.lvc_asia_london.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
-  },
-  {
-   "sym": "USDPLN",
-   "family": "lvc_asia_london",
-   "twin": "USDPLN@M5.lvc_asia_london.p=44136fa355b3678a",
-   "why": "exact cell identity: this IS USDPLN@M5.lvc_asia_london.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
-  },
-  {
-   "sym": "USDZAR",
-   "family": "lvc_asia_london",
-   "twin": "USDZAR@M5.lvc_asia_london.p=44136fa355b3678a",
-   "why": "exact cell identity: this IS USDZAR@M5.lvc_asia_london.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
-  },
-  {
-   "sym": "XAUEUR",
-   "family": "lvc_asia_london",
-   "twin": "XAUEUR@M5.lvc_asia_london.p=44136fa355b3678a",
-   "why": "exact cell identity: this IS XAUEUR@M5.lvc_asia_london.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
-  },
-  {
-   "sym": "XCUUSD",
-   "family": "lvc_asia_london",
-   "twin": "XCUUSD@M5.lvc_asia_london.p=44136fa355b3678a",
-   "why": "exact cell identity: this IS XCUUSD@M5.lvc_asia_london.p=44136fa355b3678a (judged), already in the library. Re-testing it spends a trial on an answered question"
   }
  ],
  "rule": "REDUNDANT on every measurable economic dimension, twin named"
