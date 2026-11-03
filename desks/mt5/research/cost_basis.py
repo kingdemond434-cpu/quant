@@ -185,6 +185,8 @@ def match(ledger: list[dict[str, Any]], decisions: list[dict[str, Any]],
             "slippage_points": (slip_px / point) if (slip_px is not None and point) else None,
             "slippage_r": (slip_px / stop) if (slip_px is not None and stop) else None,
             "commission_r": (-fee / risk) if (fee is not None and risk) else None,
+            "r_multiple": (None if row.get("r_unreconstructible")
+                           else _f(row.get("r_multiple"))),
         })
     return out
 
@@ -251,6 +253,33 @@ def _cert_exp(row: dict[str, Any]) -> float | None:
     return None
 
 
+VAR_MIN_N = 5
+VAR_KEYS = (("shadow_var_r", 1), ("forward_var_r", 1), ("shadow_sd_r", 2),
+            ("forward_sd_r", 2), ("shadow_sd", 2), ("forward_sd", 2))
+NESTED_STATS = ("shadow", "forward", "shadow_stats", "forward_stats")
+
+
+def r_variance(row: dict[str, Any], own: list[dict[str, Any]]) -> tuple[float, str]:
+    """The sleeve's measured per-trade R variance: own fills (n>=5), then shadow/forward
+    stats, else 1.0 as a LABELLED fallback (never presented as measured)."""
+    rs = [x["r_multiple"] for x in own if x.get("r_multiple") is not None]
+    if len(rs) >= VAR_MIN_N:
+        v = statistics.variance(rs)
+        if v > 0:
+            return v, f"own_matched_trades(n={len(rs)})"
+    cands: list[tuple[str, dict[str, Any]]] = [("row", row)]
+    cands += [(k, row[k]) for k in NESTED_STATS if isinstance(row.get(k), dict)]
+    for where, d in cands:
+        for k, power in VAR_KEYS + (("var_r", 1), ("sd_r", 2), ("var", 1), ("sd", 2),
+                                    ("std", 2)):
+            if where == "row" and not k.startswith(("shadow", "forward")):
+                continue
+            x = _f(d.get(k))
+            if x is not None and x > 0:
+                return x ** power, f"{where}.{k}" if where != "row" else k
+    return 1.0, "FALLBACK_UNIT_VARIANCE"
+
+
 def basis_for(row: dict[str, Any], trades: list[dict[str, Any]], real: dict[str, Any],
               surface: dict[str, Any]) -> dict[str, Any]:
     name, sym = str(row.get("name") or ""), str(row.get("symbol") or "")
@@ -280,17 +309,21 @@ def basis_for(row: dict[str, Any], trades: list[dict[str, Any]], real: dict[str,
     cert = _cert_exp(row)
     f = _f(row.get("risk_frac")) or _f((row.get("admission") or {}).get("risk_frac")) or 0.0
     adm: dict[str, Any] = {"cert_exp_r": cert, "cert_net_exp_r": None, "status": UNMEASURED}
+    var_r, var_src = r_variance(row, own)
     siz: dict[str, Any] = {"risk_frac": f, "delta_elogw_at_current_f": None,
                            "delta_elogw_reoptimised": None, "status": UNMEASURED,
-                           "assumption": "per-trade R variance 1 (E[log W] ~ f mu - f^2/2)"}
+                           "variance_r": var_r, "variance_source": var_src,
+                           "assumption": ("E[log W] ~ f mu - f^2 var/2; re-optimised f* = mu/var"
+                                          + ("; var=1 is a FALLBACK, not measured"
+                                             if var_src == "FALLBACK_UNIT_VARIANCE" else ""))}
     if cert is not None and drift is not None:
         net = cert - drift
         adm.update(cert_net_exp_r=round(net, 6), status="MEASURED",
                    would_flip_sign=(cert > 0) != (net > 0))
         siz.update(status="MEASURED",
                    delta_elogw_at_current_f=round(f * (net - cert), 8),
-                   delta_elogw_reoptimised=round((max(net, 0.0) ** 2 - max(cert, 0.0) ** 2) / 2,
-                                                 8))
+                   delta_elogw_reoptimised=round(
+                       (max(net, 0.0) ** 2 - max(cert, 0.0) ** 2) / (2 * var_r), 8))
     return {"name": name, "status": row.get("status"), "cost_basis": basis,
             "admission_view": adm, "sizing_view": siz}
 

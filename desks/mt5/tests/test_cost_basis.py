@@ -86,3 +86,49 @@ def test_main_writes_both_reports(tmp_path: Path, monkeypatch) -> None:
     out, srf = tmp_path / "COST_BASIS.json", tmp_path / "S.json"
     assert cb.main(["--once", "--out", str(out), "--surface-out", str(srf)]) == 0
     assert out.exists() and srf.exists()
+
+
+def _sign_case(side: int) -> dict:
+    """A buy filled 0.10 above its request / a sell filled 0.10 below: both adverse."""
+    deal = {"symbol": "XAUUSD", "sleeve": "s1", "side": "SELL" if side > 0 else "BUY",
+            "entry_time": "2026-10-30T08:00:00+00:00", "time": "2026-10-30T09:00:00+00:00",
+            "entry_price": 4000.0 + 0.10 * side, "sl": 4000.0 - 10.0 * side,
+            "tp": 4000.0 + 20.0 * side, "exit_price": 4000.0 + 5.0 * side,
+            "volume": 0.01, "pl_quote": 5.0, "r_multiple": 0.5, "commission": -0.07,
+            "entry_cost_allocated": -0.07, "exit_fee": 0.0, "swap": 0.0,
+            "entry_order": 900, "position_id": 900, "order": 901, "magic": 1}
+    dec = {"outcome": "EXECUTED", "ticket": 900, "price": 4000.0,
+           "sl": 4000.0 - 10.0 * side, "symbol": "XAUUSD", "decision_id": "dx",
+           "sleeve": "s1"}
+    trades = cb.match([deal], [dec], [], UNIVERSE["symbols"])
+    assert len(trades) == 1
+    return trades[0]
+
+
+def test_cost_sign_is_positive_for_adverse_fill_and_commission_debit() -> None:
+    for side in (1, -1):
+        t = _sign_case(side)
+        assert t["slippage_points"] > 0 and t["slippage_r"] > 0, side
+        assert t["commission_r"] > 0, side
+
+
+def test_reoptimised_uses_measured_variance_with_labelled_fallback() -> None:
+    rs = [0.5, -1.0, 2.0, -1.0, 1.5]
+    deals = [dict(_deal(i), r_multiple=r, pl_quote=20.0 * r) for i, r in enumerate(rs)]
+    doc = cb.build(ledger=deals, decisions=[_dec(i) for i in range(5)], corpus=[],
+                   sleeves=SLEEVES, universe=UNIVERSE, surface={})
+    s1 = next(r for r in doc["live_rows"] if r["name"] == "s1")["sizing_view"]
+    import statistics
+    var = statistics.variance(rs)
+    assert s1["variance_source"].startswith("own_matched_trades")
+    assert abs(s1["variance_r"] - var) < 1e-9
+    net = next(r for r in doc["live_rows"] if r["name"] == "s1")["admission_view"]
+    want = (max(net["cert_net_exp_r"], 0) ** 2 - 0.2 ** 2) / (2 * var)
+    assert abs(s1["delta_elogw_reoptimised"] - want) < 1e-6
+    assert cb.r_variance({"shadow_sd_r": 2.0}, [])[0] == 4.0
+    assert cb.r_variance({"forward": {"var_r": 3.0}}, [])[1] == "forward.var_r"
+    v, src = cb.r_variance({}, [])
+    assert v == 1.0 and src == "FALLBACK_UNIT_VARIANCE"
+    four = _build()["live_rows"][0]["sizing_view"]
+    assert four["variance_source"] == "FALLBACK_UNIT_VARIANCE"
+    assert "FALLBACK" in four["assumption"]
