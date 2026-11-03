@@ -83,6 +83,8 @@ class Markout:
     edge_share: float | None
     rows: list[dict[str, Any]]
     why: str = ""
+    #: The median in R: one break-even-trailed stop or a gap fill can own the mean, never this.
+    median_slip_r: float | None = None
     #: Which kind of account produced these fills. A markout is only meaningful against one.
     account_kind: str = UNKNOWN
     mixed: bool = False
@@ -262,6 +264,30 @@ def load_jsonl(path: Path) -> list[dict]:
     return out
 
 
+def risk_price(intent: dict, deal: dict) -> tuple[float | None, str]:
+    """The trade's INITIAL risk in PRICE units, and which basis supplied it.
+
+    THE UNIT BUG THIS CLOSES (2026-10-13). `slip_r` was `slip_quote / risk_quote`: a PRICE
+    difference over a CURRENCY amount. On gold at 0.01 lot the two coincide (contract 100 x lot
+    0.01 = 1), which is why every test passed; on FX the ratio was a pip over tens of euros and
+    read ~0 on every row. Worse, `risk_quote` is taken from the CLOSING deal's stop, so a stop
+    trailed to break-even left a 0.09 denominator and one 3.84-point fill read -44R -- one row
+    that alone carried the headline mean_slip_r of -0.20R ("slippage is 127% of the edge") while
+    the median was ~0. The intent's own stop against its own price is the risk the trade was
+    sized on, in the unit slippage is measured in.
+    """
+    want, stop = _num(intent.get("intended")), _num(intent.get("sl"))
+    if want is not None and stop is not None and abs(want - stop) > 0:
+        return abs(want - stop), "intent_stop"
+    risk = _num(deal.get("risk_quote"))
+    if risk is None or risk <= 0:
+        return None, "none"
+    size = (_num(deal.get("contract_size")) or 0.0) * (_num(deal.get("volume")) or 0.0)
+    if size > 0:
+        return risk / size, "risk_quote_per_unit"
+    return risk, "risk_quote_legacy"
+
+
 def compute(intents: list[dict], deals: list[dict],
             book_edge_r: float = 0.159) -> Markout:
     """Join intents to deals by order ticket and measure the gap.
@@ -341,13 +367,15 @@ def compute(intents: list[dict], deals: list[dict],
             continue
         slip_quote = (float(got) - float(want)) * dirn
         link["slip_quote"] = slip_quote
-        risk = float(d.get("risk_quote") or 0.0)
+        risk, basis = risk_price(intent, d)
         rows.append({
             "sleeve": d.get("sleeve"), "symbol": d.get("symbol"),
             "intended": float(want), "fill": float(got),
             "slip_quote": slip_quote,
-            "slip_r": (slip_quote / risk) if risk > 0 else None,
+            "slip_r": (slip_quote / risk) if risk else None, "risk_basis": basis,
             "deal": d.get("deal"), "order": t,
+            "order_type": intent.get("order_type"), "intent_time": intent.get("time"),
+            "spread_at_decision": intent.get("spread_at_decision"),
         })
 
     # An intent with no deal is an UNFILLED bracket -- the 20:30 cancel, or a range never broken.
@@ -362,8 +390,9 @@ def compute(intents: list[dict], deals: list[dict],
                        account_kind=kind, attributed_deals=len(chain), chain=chain)
 
     sq = sorted(r["slip_quote"] for r in rows)
-    srs = [r["slip_r"] for r in rows if r["slip_r"] is not None]
+    srs = sorted(r["slip_r"] for r in rows if r["slip_r"] is not None)
     mean_r = (sum(srs) / len(srs)) if srs else 0.0
+    median_r = srs[len(srs) // 2] if srs else None
     return Markout(
         n_deals=len(deals), n_matched=len(rows), n_unfilled_intents=unfilled,
         n_unmatched_deals=unmatched,
@@ -371,6 +400,7 @@ def compute(intents: list[dict], deals: list[dict],
         median_slip_quote=sq[len(sq) // 2],
         worst_slip_quote=sq[-1],
         mean_slip_r=mean_r,
+        median_slip_r=median_r,
         edge_share=(mean_r / book_edge_r) if book_edge_r else None,
         rows=rows,
         why=("matched on the position id (entry order == intent ticket), and legacy key-less "
@@ -400,7 +430,8 @@ def render(m: Markout) -> str:
           f"{'<- RECONCILE: orders this desk cannot account for' if m.n_unmatched_deals else ''}",
           "",
           f"  mean slip            {m.mean_slip_quote:+.5f} quote  ({m.mean_slip_r:+.4f} R)",
-          f"  median slip          {m.median_slip_quote:+.5f} quote",
+          f"  median slip          {m.median_slip_quote:+.5f} quote"
+          + (f"  ({m.median_slip_r:+.4f} R)" if m.median_slip_r is not None else ""),
           f"  worst slip           {m.worst_slip_quote:+.5f} quote", ""]
     if m.account_kind == DEMO:
         L += ["  MEASURED ON A DEMO ACCOUNT -- not evidence of live execution.",

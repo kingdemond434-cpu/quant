@@ -322,6 +322,10 @@ class RuleSpec:
     defaults: dict[str, Any]
     build: Callable[[Bars, dict[str, Any]], list[Order]]
     selector_params: bool = False
+    #: The session is the cell's own `session` param (never the selector), the side is a rule
+    #: param the build applies itself (a fade flips it per signal), and a variant modifier with
+    #: no written meaning here is refused rather than silently dropped.
+    params_own_session_and_side: bool = False
 
 
 def _build_overnight_gap_decay(b: Bars, p: dict[str, Any]) -> list[Order]:
@@ -449,6 +453,92 @@ def _build_overnight_drift(b: Bars, p: dict[str, Any]) -> list[Order]:
     return out
 
 
+#: The plumbing moments a clock-transition cell may name. The rule reads only the STAMP HOUR the
+#: cell carries; the label must be one of these or the cell names no cause and is not a rule.
+CLOCK_LABELS = frozenset({"london_fix", "ny_option_cut", "cme_fx_close", "cash_equity_close",
+                          "comex_settle", "tokyo_open", "london_open", "ny_open",
+                          "broker_rollover"})
+
+
+#: The ladder of charts a frame can be, in minutes.
+CHART_MINUTES = frozenset({1, 5, 15, 30, 60, 240, 1440})
+
+
+def _bars_per_day(b: Bars, default: int = 24) -> int:
+    """How many bars of THIS frame's chart make a 24-hour day, measured from the frame's own
+    modal bar gap (it must be at least half of all gaps and a ladder chart); `default` when the
+    frame is not a regular chart. Written from the spec, not imported: "sixty days of history,
+    on whatever chart this is" (audit on #487: `1440 // minutes` trusted the declared chart)."""
+    if b.t.size < 3:
+        return default
+    gaps = np.diff(b.t.astype("int64"))
+    gaps = gaps[gaps > 0]
+    if gaps.size == 0:
+        return default
+    vals, counts = np.unique(gaps, return_counts=True)
+    span = int(vals[int(np.argmax(counts))])
+    if counts.max() / gaps.size < 0.5 or span % 60_000_000_000:
+        return default
+    minutes = span // 60_000_000_000
+    return max(1, 1440 // minutes) if minutes in CHART_MINUTES else default
+
+
+def _build_clock_transition(b: Bars, p: dict[str, Any]) -> list[Order]:
+    side, mode = int(p["side"]), str(p["mode"])
+    stamp = int(p["stamp_hour"])
+    if (str(p.get("label") or "") not in CLOCK_LABELS or mode not in ("into", "out_of", "fade")
+            or side not in (1, -1) or not 0 <= stamp <= 23):
+        return []
+    if len(b) < _bars_per_day(b) * 60:
+        return []
+    hour = b.hour
+    at = np.flatnonzero(hour == stamp)
+    if at.size < 40:
+        return []
+    a = atr(b, int(p["atr_n"]))
+    lead, hold = int(p["lead_bars"]), int(p["hold_bars"])
+    stop_atr, rr = float(p["stop_atr"]), float(p["rr"])
+    out: list[Order] = []
+    for i in at:
+        if mode == "into":
+            j = int(i) - lead
+            if j < 1:
+                continue
+            entry, ttl, s = j, lead, side
+        elif mode == "out_of":
+            entry, ttl, s = int(i), hold, side
+        else:
+            j = int(i) - lead
+            if j < 1:
+                continue
+            move = float(b.c[i] - b.c[j])
+            if move == 0.0:
+                continue
+            entry, ttl, s = int(i), hold, (-1 if move > 0 else 1) * side
+        ai = float(a[entry])
+        if not np.isfinite(ai) or ai <= 0:
+            continue
+        px = float(b.c[entry])
+        out.append(Order(int(b.t[entry]), s, px - s * stop_atr * ai,
+                         px + s * stop_atr * ai * rr, max(1, ttl)))
+    return out
+
+
+#: Variant keys and the values that leave a rule unchanged. Any other value names a variant the
+#: written rule does not describe, and that certificate is not rebuilt (UNMEASURED by name).
+NO_OP_MODIFIERS: dict[str, frozenset[str]] = {
+    "regime": frozenset({"", "unconditional", "all", "any"}),
+    "side_mode": frozenset({"", "follow"}),
+    "entry_timing": frozenset({"", "instant"}),
+    "execution_style": frozenset({"", "market"}),
+    "entry_style": frozenset({"", "market"}),
+}
+#: Keys that only label a cell's coordinate and change nothing about how it trades.
+LABEL_KEYS = frozenset({"representation", "timeframe", "selector", "session"})
+VARIANT_KEYS = frozenset({"cost_aware", "residual", "residual_tag", "conditioner", "macro_axis",
+                          "macro_state", "publication_lag_d", "transform"})
+
+
 SPEC_BOOK: dict[str, RuleSpec] = {
     "overnight_gap_decay": RuleSpec(
         "overnight_gap_decay",
@@ -495,6 +585,19 @@ SPEC_BOOK: dict[str, RuleSpec] = {
         "fade it: entry next open, stop 1.2 x ATR, target rr x that, time exit after ttl_bars.",
         {"anchor_hour": 0, "hold_bars": 8, "atr_n": 20, "ttl_bars": 12, "rr": 1.8},
         _build_overnight_drift),
+    "clock_transition": RuleSpec(
+        "clock_transition",
+        "One named plumbing moment (label, from the catalogue) at broker stamp hour stamp_hour. "
+        "Only when the bars hold at least 60 days and at least 40 bars at that hour. At each bar "
+        "i stamped stamp_hour: mode into -- signal at bar i - lead_bars, side, held lead_bars; "
+        "out_of -- signal at bar i, side, held hold_bars; fade -- signal at bar i, side x the "
+        "opposite of the sign of close[i] - close[i - lead_bars] (no signal when it is 0), held "
+        "hold_bars. Stop stop_atr x ATR(atr_n) from the signal bar's close, target rr x that "
+        "distance; entry next open, time exit after the hold. The cell's `session` keeps only "
+        "signals whose bar hour is inside that session.",
+        {"label": "", "stamp_hour": -1, "mode": "out_of", "side": 1, "lead_bars": 2,
+         "hold_bars": 4, "atr_n": 20, "stop_atr": 2.0, "rr": 1.5},
+        _build_clock_transition, params_own_session_and_side=True),
 }
 
 #: Breakout selector -> window parameters, written into the spec text above.
@@ -929,8 +1032,24 @@ def sharpe(fills: Sequence[Fill]) -> tuple[float | None, int]:
 def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | None,
                  side: str | int | None, *, symbol: str | None = None,
                  condition: str | None = None) -> tuple[dict[str, Any] | None, str]:
-    """The parameters the written rule names, with the selector's window (breakouts) or session
-    (everything else) applied, or the reason there is no written rule."""
+    """The parameters the written rule names, with the selector's window (breakouts) applied, and
+    the cell's session and side filtered EXACTLY as the desk's forward call filters them -- or the
+    reason there is no written rule.
+
+    THE DESK'S CALL IS THE SPEC FOR SIDE AND SESSION (2026-10-29, found by the cert hunt's
+    builder). `family_call.signals` passes no side on a LONG certificate, so a family emits every
+    signal it would emit; it passes side=-1 on a SHORT one; and it filters by the cell's own
+    `session` param, never by the selector. This function used to filter a LONG certificate to
+    longs and to the selector's session, so a fade family that trades both ways was rebuilt as a
+    different strategy and judged MISMATCH or UNMEASURED, and its clock stayed shut at the door.
+    A param the written rule does not name is refused by name, never dropped: dropping it rebuilds
+    a different strategy and calls the comparison a replication.
+
+    The rules the spec book took from the desk's hunt16 and carry lanes (`OWN_SIDE_RULES`) keep
+    their own call: their selector names a signal hour or a swap side, their params are read
+    by the rule itself, and the side filter is the certificate's.
+    """
+
     own = OWN_RESOLVERS.get(str(family or ""))
     if own is not None:                 # replication_families: strict, wrappers by name
         resolved: tuple[dict[str, Any] | None, str] = own(params, selector, side)
@@ -942,12 +1061,37 @@ def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | 
     sel = str(selector or "").lower()
     if spec.selector_params and sel in WINDOWS:
         p.update(WINDOWS[sel])
-    for k, v in dict(params or {}).items():
+    raw = dict(params or {})
+    for k, v in raw.items():
         if k in p or k in ("range_start", "range_end", "signal_at", "wait_bars"):
             p[k] = v
+            continue
+        if k in LABEL_KEYS or family in OWN_SIDE_RULES:
+            continue
+        val = str(v if v is not None else "").strip().lower()
+        if k in NO_OP_MODIFIERS:
+            if val not in NO_OP_MODIFIERS[k]:
+                return None, (f"variant {k}={v!r} has no written rule in the spec book for "
+                              f"{family!r}")
+            continue
+        if k in VARIANT_KEYS:
+            return None, f"variant {k}={v!r} has no written rule in the spec book"
+        return None, f"param {k!r} is not named by the written rule for {family!r}"
+    if spec.params_own_session_and_side:
+        try:
+            p["side"] = int(p["side"])
+        except (TypeError, ValueError):
+            return None, f"side {p.get('side')!r} is not +1 or -1"
+    session = str(raw.get("session") or "all").strip().lower()
+    if session not in SESSIONS and family not in OWN_SIDE_RULES:
+        return None, f"session {session!r} has no written window"
+    p["_session"] = SESSIONS.get(session)
     s = str(side or "").upper()
-    p["_side"] = 1 if s in ("LONG", "1") else -1 if s in ("SHORT", "-1") else 0
-    p["_session"] = SESSIONS.get(sel) if not spec.selector_params else None
+    if family in OWN_SIDE_RULES:
+        p["_side"] = 1 if s in ("LONG", "1") else -1 if s in ("SHORT", "-1") else 0
+        p["_session"] = SESSIONS.get(sel) if not spec.selector_params else None
+    else:
+        p["_side"] = -1 if s in ("SHORT", "-1") and not spec.params_own_session_and_side else 0
     # The rules that need them read these; every other rule ignores them (hunt16 selectors name
     # a signal hour, a hunt16 condition a prior-session day label, carry a symbol's swap terms).
     p["_selector"], p["_symbol"], p["_condition"] = sel, str(symbol or ""), condition
@@ -958,6 +1102,8 @@ def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | 
 
 #: Families whose selector names a hunt16 signal hour, not a session window to filter on.
 HUNT16_FAMILIES = frozenset({"dav_range_filter_adx", "hunt16_cell"})
+#: Rules that read side, selector and params themselves (see resolve_spec).
+OWN_SIDE_RULES = HUNT16_FAMILIES | {"carry"}
 
 
 def _guarded(lane: str, key: str, judge: Callable[..., dict[str, Any]], *args: Any,

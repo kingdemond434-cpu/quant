@@ -1324,7 +1324,11 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "htf_anchor", "empty_cluster_forcer",
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
-                     "cross_sectional_breadth"),
+                     "cross_sectional_breadth",
+                     # every dated forced-flow kind, kind x mode x polarity on the UTC clock
+                     "calendar_flow_cells",
+                     # retail crowd long share, recorded PIT from Myfxbook's API, faded
+                     "crowd_positioning"),
                     "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "style_novelty",
@@ -1367,11 +1371,13 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "excursions", "exit_accounts",
                      "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
+                     "execution_feedback",
                      "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin",
                      "net_edge", "cost_truth", "cost_surfaces", "trade_pathology"),
                     "execution"),
     # forward: forward evidence, promotion and the allocator
-    **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
+    **dict.fromkeys(("enrol_clocks", "near_miss_farm", "forward_lane_fence",
+                     "state_admission", "pf_allocator",
                      "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
                      "missed_trade_archaeologist", "portfolio_bounty",
@@ -2039,6 +2045,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # PRODUCER_YIELD read the seat DEAD for 3 days on 2026-10-13. Three full waves fit here.
     "kimi_hunt": 1_020,
     "enrol_clocks": 2_700,
+    # The near-miss farm checkpoints every 60 s and runs stalest symbols first, so a cut pass
+    # resumes where it stopped rather than replaying the same prefix.
+    "near_miss_farm": 1_800,
+    # The lane fence stops itself at --budget-s 900 (restarts included) and writes its artifact.
+    "forward_lane_fence": 1_200,
     # Both stop themselves at --budget-s 300 and write their artifact; the caps sit above their
     # own budgets for the reason `enrol_clocks` was raised -- a cap below an organ's budget
     # truncates it at the same prefix every hour. `judging_throughput` must also finish BEFORE
@@ -2154,6 +2165,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The class-book seeder stops itself at --budget-s 900 and resumes from its state file (each
     # cell is measured at most once a day), so the cap only has to sit above its own budget.
     "cross_sectional_breadth": 1_000,
+    # Stops itself at --budget-s 900 and re-measures each cell at most once a day.
+    "calendar_flow_cells": 1_000,
+    # One API call (at most hourly, the free tier's 100 a day) and a parquet append.
+    "crowd_positioning": 300,
     "event_surprise": 400,
     # Stops itself at --budget-s 300 (60% of it collecting); the cap sits above it.
     "alpha_capture": 420,
@@ -4314,6 +4329,18 @@ def main() -> None:
     xsb = _costed("cross_sectional_breadth", lambda: _producer(
         "cross_sectional_breadth", "research/cross_sectional_breadth.py", "--once",
         "--budget-s", "900"))
+    # CALENDAR FLOW CELLS (principal 2026-10-13): every dated kind in forced_flow_calendar -- WMR
+    # fix, month/quarter end, gotobi Tokyo fix, JP fiscal half-year ends, equity and FX option
+    # expiries, UST coupon auctions and refunding, CN closures -- on the instruments the
+    # calendar names for it, kind x mode x polarity on the UTC clock, through the one proposer
+    # door. The breadth sweep reaches forced_flow only at its month_end/bars-clock defaults.
+    cfc = _costed("calendar_flow_cells", lambda: _producer(
+        "calendar_flow_cells", "research/calendar_flow_cells.py", "--budget-s", "900"))
+    # CROWD POSITIONING (principal 2026-10-13, retail-behaviour ideas): Myfxbook's community
+    # outlook through its official API, one PIT row an hour into the pack's lake frame, and the
+    # contrarian fade + crowd-regime cells donated per symbol once its history is long enough.
+    crp = _costed("crowd_positioning", lambda: _producer(
+        "crowd_positioning", "research/crowd_positioning.py"))
     # ACTUAL AGAINST CONSENSUS (W21): the standardized surprise per calendar event and the
     # measured reaction of every instrument to it, by horizon and regime. The collector is
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
@@ -4773,6 +4800,11 @@ def main() -> None:
     exa = _costed("execution_alpha", lambda: _producer("execution_alpha",
                                                         "research/execution_alpha_miner.py",
                                                         "--budget-s", "240"))
+    # EXECUTION FEEDBACK (principal 2026-10-13): per-sleeve cost in R on the initial risk (slip,
+    # half spread, commission, swap), fill rate and latency, and the tape discoveries above priced
+    # per sleeve in R and E[log W]. Proposes; never places, sizes or vetoes. Execution.
+    exf = _costed("execution_feedback", lambda: _producer("execution_feedback",
+                                                           "research/execution_feedback.py"))
     # THE PARADIGM ROUTER (M14): every lead meets every discovery paradigm; disagreement recorded.
     prr = _costed("paradigm_router", lambda: _producer("paradigm_router",
                                                         "research/paradigm_router.py",
@@ -5449,6 +5481,18 @@ def main() -> None:
     # enrolment logic was never the defect -- only its cadence.
     ecl = _costed("enrol_clocks", lambda: _producer(
         "shadow_forward", "research/shadow_forward.py"))
+    # THE NEAR-MISS FARM (principal 2026-10-13): every validity-pass, power-deficient cell on the
+    # cure roster paper-forwarded through the SAME engine into its OWN ledger
+    # (reports/shadow/farm/), promotion_authority False, outside every clock store the promoter
+    # and allocator read. Untouched forward evidence accrues while the judge works.
+    nmf = _costed("near_miss_farm", lambda: _producer(
+        "near_miss_farm", "research/near_miss_farm.py"))
+    # THE FORWARD LANE FENCE (principal 2026-10-13: "all forward lanes must be running actively
+    # not stale ever n all certis must always be put in forward lanes"). Red when a lane's file
+    # or any active clock in it stops moving, or a certificate sits in no lane past one cycle;
+    # it re-runs the stale lane's own engine (or the farm) and proves it by the stamp moving.
+    flf = _costed("forward_lane_fence", lambda: _producer(
+        "forward_lane_fence", "research/forward_lane_fence.py", "--budget-s", "900"))
     # THE GROWTH-MAXIMISING SIZER, WHICH HAS NEVER RUN. `pf_allocator` solves posterior E[log W]
     # for PER-SLEEVE heat -- the fraction of equity each sleeve should risk to maximise compound
     # growth, which is the only principled answer to "how big should this trade be". Everything
@@ -6179,6 +6223,7 @@ def main() -> None:
                     "engine_registry": engr,
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
+                    "calendar_flow_cells": cfc, "crowd_positioning": crp,
                     "event_surprise": esur, "alpha_capture": acap,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
@@ -6216,6 +6261,7 @@ def main() -> None:
                     "moat_collectors": mcl, "source_frontier": sfr, "scout_swarm": ssw,
                     "actor_atlas": aat, "understanding_seat": usd,
                     "netting_report": ntr, "execution_alpha": exa,
+                    "execution_feedback": exf,
                     "paradigm_router": prr, "meta_controller": mtc, "lead_replication": lrp,
                     "experiment_spine": exs, "implementer": imp,
                     "research_evolution": rev, "compute_economics": cec,
@@ -6335,7 +6381,8 @@ def main() -> None:
                     "box_state_freshness": bsf, "desk_health": dhl,
                     "bars_state": bst,
                     "publish_state": pub,
-                    "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
+                    "enrol_clocks": ecl, "near_miss_farm": nmf,
+                    "forward_lane_fence": flf, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "moat_candidate_compiler": mcp, "algorithm_db": adb,
                     "blas_differential": bld,

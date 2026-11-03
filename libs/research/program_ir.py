@@ -69,7 +69,11 @@ CLOCK_MODES: tuple[str, ...] = ("since", "to")
 #: producing an all-NaN clock that reads like a mechanism with no signal.
 CALENDAR_KINDS: tuple[str, ...] = ("month_end", "quarter_end", "index_rebalance", "futures_roll",
                                    "option_expiry", "bond_auction", "central_bank", "fixing",
-                                   "inventory", "usda", "holiday_liquidity")
+                                   "inventory", "usda", "holiday_liquidity",
+                                   # 2026-10-13: the flow-mechanics kinds (forced_flow_calendar)
+                                   "gotobi_fix", "jp_fiscal_flow", "fx_option_expiry",
+                                   "ust_coupon_auction", "ust_refunding", "cn_holiday",
+                                   "cn_pre_holiday")
 
 MAX_DEPTH = 10
 MAX_NODES = 80

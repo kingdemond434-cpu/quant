@@ -127,6 +127,10 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     # cross the wire, so a deferred pass leaves every reader off the box measuring a stale
     # BARS_STATE.json. It cannot cost the overrun much: it stops itself at 20 s (cap 60 s).
     "bars_state",
+    # THE FORWARD-START LEDGER'S WRITER (2026-11-03). Measured on the box: the report sat about
+    # 40h old while the rotation deferred it, and every clock's window is read against it. It
+    # reads one JSON and verifies it in about a second; the clock law pages RED past 26h.
+    "clock_ledger",
 })
 
 

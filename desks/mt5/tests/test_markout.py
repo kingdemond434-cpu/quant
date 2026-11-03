@@ -183,3 +183,26 @@ def test_the_gateway_writes_the_key_chain_and_filters_magic_in_python():
         "history_deals_get takes no magic keyword; a refused keyword lands in the except and "
         "the ledger is silently never written")
     assert 'getattr(d, "magic", 0)' in src
+
+
+def test_slip_r_uses_the_intents_initial_stop_in_price_units():
+    """THE UNIT BUG (2026-10-13). A price slip over a CURRENCY risk read ~0 on FX and, with a
+    stop trailed to break-even on the closing deal, -44R on one gold fill. The intent's own
+    stop distance is the risk the trade was sized on, in the unit slippage is measured in."""
+    intent = {**_intent(1, 1.1000), "sl": 1.0980, "symbol": "EURUSD"}
+    deal = {**_deal(1, 1.1002, BUY, risk=20.0), "contract_size": 100000.0, "volume": 0.1,
+            "symbol": "EURUSD"}
+    m = compute([intent], [deal])
+    assert m.mean_slip_r == pytest.approx(0.0002 / 0.0020, rel=1e-6)
+    assert m.rows[0]["risk_basis"] == "intent_stop"
+    trailed = {**_deal(2, 2000.5, BUY, risk=0.09)}
+    m2 = compute([{**_intent(2, 2000.0), "sl": 1990.0}], [trailed])
+    assert m2.mean_slip_r == pytest.approx(0.05, rel=1e-6)
+    assert m2.median_slip_r == pytest.approx(0.05, rel=1e-6)
+
+
+def test_without_an_intent_stop_the_currency_risk_is_converted_per_unit():
+    from mt5desk.markout import risk_price
+    r, basis = risk_price({"intended": 1.1}, {"risk_quote": 20.0, "contract_size": 100000.0,
+                                              "volume": 0.1})
+    assert basis == "risk_quote_per_unit" and r == pytest.approx(0.002)

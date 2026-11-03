@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import pytest
 
 DESK = Path(__file__).resolve().parents[1]
 for _p in (str(DESK / "research"), str(DESK), str(DESK.parents[1])):
@@ -338,3 +339,101 @@ def test_a_row_that_raises_is_unmeasured_and_the_pass_still_writes(tmp_path: Pat
     assert doc["counts"][rc.UNMEASURED] == 2
     if rows is not None:
         assert "TypeError" in rows["BAD"]["why"][0]
+
+
+def _walk_bars(days: int = 90, seed: int = 3) -> tuple[rc.Bars, Any]:
+    import pandas as pd
+    rng = np.random.default_rng(seed)
+    n = days * 24
+    idx = pd.date_range("2025-01-01", periods=n, freq="h", tz="UTC")
+    close = 1.1 * np.exp(np.cumsum(rng.normal(0, 0.0008, n)))
+    open_ = np.concatenate([[1.1], close[:-1]])
+    high = np.maximum(open_, close) * 1.0004
+    low = np.minimum(open_, close) * 0.9996
+    df = pd.DataFrame({"open": open_, "high": high, "low": low, "close": close}, index=idx)
+    t = idx.as_unit("ns").asi8
+    return rc.bars_from_arrays(t, open_, high, low, close), df
+
+
+@pytest.mark.parametrize("mode", ["into", "out_of", "fade"])
+def test_the_written_clock_transition_rule_emits_the_desks_signals(mode: str) -> None:
+    """The spec text, read by this lane, must emit what the desk's family emits; the test may
+    import the original, the lane may not."""
+    from mt5desk.family_clock_transition import family_clock_transition
+    bars, df = _walk_bars()
+    params = {"label": "london_fix", "stamp_hour": 18, "mode": mode, "side": -1,
+              "lead_bars": 3, "hold_bars": 5}
+    p, why = rc.resolve_spec("clock_transition", params, "asia", "LONG")
+    assert p is not None, why
+    ours = rc._build_clock_transition(bars, p)
+    theirs = family_clock_transition(df, **params)
+    assert len(ours) == len(theirs) > 40
+    for o, s in zip(ours, theirs, strict=True):
+        assert o.t_ns == s.time.value and o.side == s.side and o.ttl_bars == s.ttl_bars
+        assert o.stop == pytest.approx(s.stop) and o.target == pytest.approx(s.target)
+
+
+def test_clock_transition_session_is_the_cells_and_a_real_variant_is_refused() -> None:
+    p, _ = rc.resolve_spec("clock_transition", {"label": "tokyo_open", "stamp_hour": 0,
+                                                "session": "ny"}, "asia", "LONG")
+    assert p is not None and p["_session"] == rc.SESSIONS["ny"] and p["_side"] == 0
+    noop, _ = rc.resolve_spec("clock_transition", {"label": "tokyo_open", "stamp_hour": 0,
+                                                   "entry_timing": "instant",
+                                                   "representation": "x"}, "asia", "LONG")
+    assert noop is not None
+    refused, why = rc.resolve_spec("clock_transition", {"label": "tokyo_open", "stamp_hour": 0,
+                                                        "entry_timing": "delayed"}, "asia", "LONG")
+    assert refused is None and "entry_timing" in why
+
+
+def test_clock_transition_refuses_a_param_its_rule_does_not_name() -> None:
+    refused, why = rc.resolve_spec("clock_transition", {"label": "tokyo_open", "stamp_hour": 0,
+                                                        "warp_factor": 3}, "asia", "LONG")
+    assert refused is None and "warp_factor" in why
+
+
+def test_bars_per_day_is_measured_from_the_frame_not_its_declared_chart() -> None:
+    bars, _ = _walk_bars()
+    assert rc._bars_per_day(bars) == 24
+    m5 = rc.bars_from_arrays(np.arange(10, dtype="int64") * 300_000_000_000,
+                             *([np.ones(10)] * 4))
+    assert rc._bars_per_day(m5) == 288
+    irregular = rc.bars_from_arrays(np.array([0, 7, 19, 40, 77], dtype="int64") * 60_000_000_000,
+                                    *([np.ones(5)] * 4))
+    assert rc._bars_per_day(irregular) == 24
+
+
+def _frame(b: rc.Bars) -> Any:
+    import pandas as pd
+    idx = pd.to_datetime(b.t, utc=True)
+    return pd.DataFrame({"open": b.o, "high": b.h, "low": b.low, "close": b.c}, index=idx)
+
+
+@pytest.mark.parametrize("session", [None, "asia"])
+def test_a_long_certificate_is_rebuilt_as_the_desk_calls_it_both_sides_and_its_own_session(
+        session: str | None) -> None:
+    """The desk's forward call passes no side on a LONG certificate and filters by the cell's
+    `session` param; the rebuild used to keep longs only and filter by the selector, so a fade
+    that trades both ways was rebuilt as a different strategy (found 2026-10-29)."""
+    from mt5desk.families_orthogonal import family_overnight_gap_decay
+    from mt5desk.family_call import signals
+    bars = _gap_bars()
+    params = {"session": session} if session else {}
+    p, why = rc.resolve_spec("overnight_gap_decay", params, "london_am", "LONG")
+    assert p is not None, why
+    assert p["_side"] == 0 and p["_session"] == (rc.SESSIONS[session] if session else None)
+    orders, _ = rc.rebuild("overnight_gap_decay", bars, p, 0.0)
+    desk = signals(family_overnight_gap_decay, _frame(bars), side=1, params=params)
+    assert len(orders) == len(desk) > 20
+    assert sorted(o.side for o in orders) == sorted(s.side for s in desk)
+    assert {o.side for o in orders} == {1, -1}
+
+
+def test_a_short_certificate_is_filtered_short_and_an_unnamed_param_is_refused() -> None:
+    p, _ = rc.resolve_spec("overnight_gap_decay", {}, "asia", "SHORT")
+    assert p is not None and p["_side"] == -1
+    refused, why = rc.resolve_spec("overnight_gap_decay", {"lookback": 5}, "asia", "LONG")
+    assert refused is None and "lookback" in why
+    label, _ = rc.resolve_spec("overnight_gap_decay", {"representation": "x", "selector": "asia"},
+                               "asia", "LONG")
+    assert label is not None
