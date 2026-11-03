@@ -71,6 +71,13 @@ MIN_FREE_CORES_TO_ADMIT = float(os.environ.get("DEPT_MIN_FREE_CORES", "2"))
 HEARTBEAT_STALL_S = int(os.environ.get("DEPT_HEARTBEAT_STALL_S", "1800"))
 HEARTBEAT_POLL_S = int(os.environ.get("DEPT_HEARTBEAT_POLL_S", "30"))
 CPU_PROGRESS_S = 1.0          # child-tree CPU seconds per poll that count as progress
+# I/O is progress too: a leg waiting on a remote queue (CDS/ERA5), a slow paginated fetch or a
+# streamed download burns almost no CPU but moves bytes. Any tree I/O (read, write, and on
+# Windows other_bytes, which includes network) since the last poll counts as alive.
+IO_PROGRESS_BYTES = int(os.environ.get("DEPT_IO_PROGRESS_BYTES", "1"))
+# The same leg reclaimed this many passes in a row never completes: DEPT_QUEUE.json goes RED.
+RECLAIM_REPEAT_N = 2
+RECLAIM_REPEAT_FRESH_S = 24 * 3600
 # A ticket that has waited longer than this is STARVED: DEPT_QUEUE.json goes RED.
 STARVATION_S = int(os.environ.get("DEPT_STARVATION_S", "7200"))
 REPORT_EVERY_S = 60
@@ -344,8 +351,49 @@ def admission_slots() -> tuple[int, str]:
     why = (f"{cores} cores - {JUDGE_RESERVED_CORES:g} judge-reserved - {busy:.1f} busy "
            f"= {free:.1f} free ({how})")
     if free < MIN_FREE_CORES_TO_ADMIT:
-        return 0, f"{why} < {MIN_FREE_CORES_TO_ADMIT:g}: no pass admitted"
+        # ANTI-STARVATION FLOOR: one pass is always admitted, so a judge-saturated box can slow
+        # departments to one at a time but never hold all of them. The judge keeps its 8.
+        return 1, f"{why} < {MIN_FREE_CORES_TO_ADMIT:g}: floor of 1 slot only"
     return CONCURRENT_PASSES, why
+
+
+def _last_leg(beat: Path) -> str:
+    """The last leg the child announced at a boundary; '' when none or unreadable."""
+    try:
+        doc = json.loads(beat.read_text(encoding="utf-8"))
+    except Exception:
+        return ""
+    return str(doc.get("leg") or "") if isinstance(doc, dict) else ""
+
+
+def reclaim_path(dept: str) -> Path:
+    return LOCKS / f"dept_reclaim_{dept}.json"
+
+
+def note_reclaim(dept: str, leg: str, *, now: float | None = None) -> dict:
+    """Count consecutive reclaims of the same leg; a REPEAT (>= RECLAIM_REPEAT_N) goes RED in
+    DEPT_QUEUE.json, because a leg killed at the same point every pass never completes."""
+    t = now if now is not None else time.time()
+    path = reclaim_path(dept)
+    try:
+        prev = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        prev = {}
+    same = isinstance(prev, dict) and prev.get("leg") == leg
+    count = int(prev.get("count", 0)) + 1 if same else 1
+    doc = {"dept": dept, "leg": leg, "count": count, "at": t,
+           "repeat": count >= RECLAIM_REPEAT_N}
+    with contextlib.suppress(OSError):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(doc), encoding="utf-8")
+        os.replace(tmp, path)
+    return doc
+
+
+def clear_reclaim(dept: str) -> None:
+    with contextlib.suppress(OSError):
+        reclaim_path(dept).unlink(missing_ok=True)
 
 
 def pass_heartbeat_path(dept: str) -> Path:
@@ -380,14 +428,31 @@ def queue_report(contenders: list[dict], set_aside: list[str], *,
             passes.append({"dept": hb.stem[len("dept_pass_"):],
                            "heartbeat_age_s": None if age is None else round(age, 1),
                            "stale": age is not None and age > HEARTBEAT_STALL_S})
-    verdict = "RED" if starved else "GREEN"
-    why = (f"{len(starved)} ticket(s) waited over {STARVATION_S}s: "
-           + ", ".join(f"{x['dept']} {x['waited_s'] / 3600:.1f}h" for x in starved)
-           if starved else f"{len(tickets)} waiting, none over {STARVATION_S}s")
+    repeats = []
+    with contextlib.suppress(OSError):
+        for rp in sorted(LOCKS.glob("dept_reclaim_*.json")):
+            try:
+                d = json.loads(rp.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+            if (isinstance(d, dict) and d.get("repeat")
+                    and t - float(d.get("at") or 0) <= RECLAIM_REPEAT_FRESH_S):
+                repeats.append({"dept": d.get("dept"), "leg": d.get("leg"),
+                                "count": d.get("count")})
+    verdict = "RED" if (starved or repeats) else "GREEN"
+    parts = []
+    if starved:
+        parts.append(f"{len(starved)} ticket(s) waited over {STARVATION_S}s: "
+                     + ", ".join(f"{x['dept']} {x['waited_s'] / 3600:.1f}h" for x in starved))
+    if repeats:
+        parts.append("RECLAIMED_REPEAT: " + ", ".join(
+            f"{x['dept']}:{x['leg'] or '?'} x{x['count']}" for x in repeats))
+    why = "; ".join(parts) if parts else f"{len(tickets)} waiting, none over {STARVATION_S}s"
     return {"at": datetime.fromtimestamp(t, tz=UTC).isoformat(timespec="seconds"),
             "verdict": verdict, "why": why, "starvation_s": STARVATION_S,
             "concurrent_passes": CONCURRENT_PASSES, "waiting": tickets, "starved": starved,
-            "set_aside": set_aside, "passes": passes, "writer_pid": os.getpid()}
+            "set_aside": set_aside, "passes": passes, "reclaim_repeats": repeats,
+            "writer_pid": os.getpid()}
 
 
 def write_queue_report(contenders: list[dict], set_aside: list[str], *,
@@ -465,25 +530,39 @@ def _spawn(args: list[str], **kwargs) -> subprocess.Popen:
     return subprocess.Popen(args, **kwargs)
 
 
-def _tree_cpu_progress(pid: int, seen: dict[int, float]) -> bool | None:
-    """Did the child's tree burn CPU_PROGRESS_S since the last poll? None when unmeasurable."""
+def _io_bytes(pr) -> int | None:
+    try:
+        io = pr.io_counters()
+    except Exception:
+        return None
+    return int(getattr(io, "read_bytes", 0) or 0) + int(getattr(io, "write_bytes", 0) or 0) \
+        + int(getattr(io, "other_bytes", 0) or 0)
+
+
+def _tree_cpu_progress(pid: int, seen: dict) -> bool | None:
+    """Did the child's tree burn CPU_PROGRESS_S, or move IO_PROGRESS_BYTES of I/O, since the last
+    poll? None when unmeasurable. `seen` maps pid -> (cpu_s, io_bytes or None)."""
     try:
         import psutil
         root = psutil.Process(pid)
         procs = [root, *root.children(recursive=True)]
     except Exception:
         return None
-    delta, fresh = 0.0, False
-    now_seen: dict[int, float] = {}
+    delta, io_delta, fresh = 0.0, 0, False
+    now_seen: dict = {}
     for pr in procs:
         try:
             ct = pr.cpu_times()
             used = float(ct.user) + float(ct.system)
         except Exception:
             continue
-        now_seen[pr.pid] = used
+        io = _io_bytes(pr)
+        now_seen[pr.pid] = (used, io)
         if pr.pid in seen:
-            delta += max(0.0, used - seen[pr.pid])
+            prev_cpu, prev_io = seen[pr.pid]
+            delta += max(0.0, used - prev_cpu)
+            if io is not None and prev_io is not None:
+                io_delta += max(0, io - prev_io)
         else:
             fresh = fresh or bool(seen)   # a new descendant after the first poll is progress
     first = not seen
@@ -491,7 +570,7 @@ def _tree_cpu_progress(pid: int, seen: dict[int, float]) -> bool | None:
     seen.update(now_seen)
     if not now_seen:
         return None
-    return (not first) and (fresh or delta >= CPU_PROGRESS_S)
+    return (not first) and (fresh or delta >= CPU_PROGRESS_S or io_delta >= IO_PROGRESS_BYTES)
 
 
 def run_pass(dept: str, timeout_s: int = PASS_TIMEOUT_S, *, slot: str = "",
@@ -547,9 +626,10 @@ def run_pass(dept: str, timeout_s: int = PASS_TIMEOUT_S, *, slot: str = "",
             age = _heartbeat_age_s(beat)
             # UNMEASURED NEVER KILLS: without a readable tree, only the hard timeout stands.
             if progressed is not None and age is not None and age > stall_s:
+                leg = _last_leg(beat)
                 killed = _kill_own_tree(proc)
                 return {"rc": None, "seconds": round(time.monotonic() - t0, 1),
-                        "status": "stalled", "killed": killed,
+                        "status": "stalled", "killed": killed, "leg": leg,
                         "why": f"no heartbeat (leg boundary or child CPU) for {age:.0f}s "
                                f"> {stall_s}s"}
     finally:
@@ -689,6 +769,10 @@ def main(argv: list[str] | None = None) -> int:
                 # the department rejoins the queue now. A hung pass is not completed work.
                 log(dept, f"RECLAIMED {slot}: {res.get('why')}; killed own child tree "
                           f"{res.get('killed')}; requeued")
+                rec = note_reclaim(dept, str(res.get("leg") or ""))
+                if rec["repeat"]:
+                    log(dept, f"RECLAIMED_REPEAT RED: leg {rec['leg'] or '?'} reclaimed "
+                              f"{rec['count']} passes in a row; it never completes")
                 heartbeat(dept, passes, status="stalled")
                 if a.once:
                     return 1
@@ -696,6 +780,7 @@ def main(argv: list[str] | None = None) -> int:
                     return 0
                 time.sleep(PAUSE_S)
                 continue
+            clear_reclaim(dept)
             heartbeat(dept, passes, done_inc=1)
             if a.once:
                 return 0 if res["status"] == "ok" else 1

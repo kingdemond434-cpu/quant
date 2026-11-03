@@ -10,6 +10,8 @@ import time
 import types
 from pathlib import Path
 
+import pytest
+
 DESK = Path(__file__).resolve().parents[1]
 for p in (str(DESK / "research"), str(DESK), str(DESK.parents[1])):
     if p not in sys.path:
@@ -140,7 +142,7 @@ def test_admission_requires_two_free_cores_after_the_judge(monkeypatch):
     assert dr.admission_slots()[0] == 6
     monkeypatch.setattr(dr, "busy_cores", lambda: (8.5, "t"))       # 1.5 free
     slots, why = dr.admission_slots()
-    assert slots == 0 and "no pass admitted" in why
+    assert slots == 1 and "floor of 1 slot" in why                # anti-starvation floor
     monkeypatch.setattr(dr, "busy_cores", lambda: (None, "UNMEASURED"))
     slots, why = dr.admission_slots()
     assert slots == 3 and "UNMEASURED" in why                      # never more than before
@@ -344,3 +346,88 @@ def test_process_health_raises_attention_on_a_red_queue(tmp_path):
     assert got["fault"] and got["state"] == "RED"
     os.utime(q, (time.time() - 7200, time.time() - 7200))
     assert ph.department_queue(q)["fault"] is False               # stale RED is not live
+
+
+def _fake_psutil(monkeypatch, cpu_s, io_b):
+    """A psutil whose single child process reports the given cpu seconds and io bytes."""
+    class _P:
+        pid = 4242
+
+        def __init__(self, *_a):
+            pass
+
+        def children(self, recursive=True):
+            return []
+
+        def cpu_times(self):
+            return types.SimpleNamespace(user=cpu_s[0], system=0.0)
+
+        def io_counters(self):
+            return types.SimpleNamespace(read_bytes=io_b[0], write_bytes=0, other_bytes=0)
+    mod = types.ModuleType("psutil")
+    mod.Process = _P
+    monkeypatch.setitem(sys.modules, "psutil", mod)
+
+
+def test_io_bound_leg_with_near_zero_cpu_counts_as_progress(monkeypatch):
+    cpu, io = [10.0], [1000]
+    _fake_psutil(monkeypatch, cpu, io)
+    seen: dict = {}
+    assert dr._tree_cpu_progress(4242, seen) is False        # first poll is a baseline
+    cpu[0] += 0.01                                           # waiting on a remote queue
+    io[0] += 512                                             # but bytes are moving
+    assert dr._tree_cpu_progress(4242, seen) is True
+    cpu[0] += 0.01                                           # no cpu, no io: really idle
+    assert dr._tree_cpu_progress(4242, seen) is False
+
+
+def test_io_bound_child_is_not_reclaimed(monkeypatch, tmp_path):
+    cpu, io = [1.0], [0]
+    _fake_psutil(monkeypatch, cpu, io)
+    monkeypatch.setattr(dr, "LOCKS", tmp_path)
+
+    class _Proc:
+        pid = 4242
+        polls = 0
+
+        def wait(self, timeout=None):
+            _Proc.polls += 1
+            io[0] += 4096                                    # bytes every poll, cpu flat
+            if _Proc.polls > 6:
+                return 0
+            raise dr.subprocess.TimeoutExpired("x", timeout)
+    monkeypatch.setattr(dr, "_spawn", lambda *a, **k: _Proc())
+    monkeypatch.setattr(dr, "_kill_own_tree", lambda p: pytest.fail("killed an I/O-bound leg"))
+    # A heartbeat reads fresh only right after a touch, 2s old otherwise (stall_s=1), so the pass
+    # survives only if every poll's I/O produces a touch.
+    fresh = {"v": False}
+    touched: list = []
+
+    def _touch(path, **i):
+        touched.append(i.get("source"))
+        fresh["v"] = True
+
+    def _age(path, now=None):
+        was, fresh["v"] = fresh["v"], False
+        return 0.0 if was else 2.0
+    monkeypatch.setattr(dr, "touch_pass_heartbeat", _touch)
+    monkeypatch.setattr(dr, "_heartbeat_age_s", _age)
+    res = dr.run_pass("era5", timeout_s=3600, stall_s=1, poll_s=0.01)
+    assert res["status"] == "ok"
+    assert "cpu" in touched
+
+
+def test_same_leg_reclaimed_twice_goes_red(monkeypatch, tmp_path):
+    monkeypatch.setattr(dr, "LOCKS", tmp_path)
+    first = dr.note_reclaim("intel", "cds_reader", now=1000.0)
+    assert first["repeat"] is False
+    second = dr.note_reclaim("intel", "cds_reader", now=1100.0)
+    assert second["repeat"] is True and second["count"] == 2
+    doc = dr.queue_report([], [], now=1200.0)
+    assert doc["verdict"] == "RED" and "RECLAIMED_REPEAT" in doc["why"]
+    assert doc["reclaim_repeats"][0]["leg"] == "cds_reader"
+    dr.note_reclaim("intel", "other_leg", now=1300.0)        # a different leg resets the count
+    assert dr.queue_report([], [], now=1400.0)["verdict"] == "GREEN"
+    dr.note_reclaim("intel", "other_leg", now=1500.0)
+    dr.clear_reclaim("intel")                                # a completed pass clears it
+    assert dr.queue_report([], [], now=1600.0)["verdict"] == "GREEN"
