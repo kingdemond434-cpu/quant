@@ -6536,6 +6536,24 @@ def _entsoe_pass(paths: Paths, state: dict[str, Any], now: datetime, *, fetch: b
                        "may carry request state)"}
 
 
+
+def _smard_pass(paths: Paths, state: dict[str, Any], now: datetime, *, fetch: bool,
+                fixtures: Path | None, deadline: float, dry_run: bool,
+                donate: bool) -> dict[str, Any]:
+    """REGISTERED PRODUCER: SMARD (Bundesnetzagentur, CC BY 4.0) German load, residual load and
+    generation by type (`research/smard_power.py`), the LIVE-eligible twin of `_entsoe_pass`,
+    on this leg's clock with its own share of the budget (at most BUDGET_S, never past
+    `deadline`). An exception is recorded by type only and never costs the leg its sources."""
+    from research import smard_power
+    own = min(deadline, time.monotonic() + smard_power.BUDGET_S)
+    try:
+        return smard_power.run_pass(sys.modules[__name__], paths, state, now, fetch=fetch,
+                                    fixtures=fixtures, deadline=own, dry_run=dry_run,
+                                    donate=donate)
+    except Exception as exc:
+        return {"id": smard_power.SOURCE_ID, "outcome": "FAILED:EXCEPTION",
+                "why": f"{type(exc).__name__} in smard_power.run_pass (message withheld)"}
+
 def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = True,
         fixtures: Path | None = None, dry_run: bool = False, donate: bool = True,
         now: datetime | None = None) -> dict[str, Any]:
@@ -6632,6 +6650,9 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
     report["entsoe_power"] = _entsoe_pass(paths, state, now, fetch=fetch, fixtures=fixtures,
                                           deadline=deadline + budget_s * 0.2,
                                           dry_run=dry_run, donate=donate)
+    report["smard_power"] = _smard_pass(paths, state, now, fetch=fetch, fixtures=fixtures,
+                                        deadline=deadline + budget_s * 0.35,
+                                        dry_run=dry_run, donate=donate)
     state["last_run"] = report["at"]
     if not dry_run:
         _agp.write(paths.desk / "reports" / _agp.STATE_FILE, gold)
