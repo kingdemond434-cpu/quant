@@ -1,0 +1,2 @@
+{"path": "desks/mt5/research/promoter.py", "sha256": "28df19e06f67c944d354b18bcfd8aa9ecdd5580091c1b442f4bf310e610810fd", "verdict": "CLEAR", "report": "reports/audit/2026-11-03/seal_clears_restore_door_41e3328a8.md", "cleared_utc": "2026-11-03T16:50:00Z"}
+{"path": "libs/portfolio/rails.py", "sha256": "14ec6f93c9f9f7781d9aae2a4c4b6f541202f613498c52749ab9ff192787499b", "verdict": "CLEAR", "report": "reports/audit/2026-11-03/seal_clears_restore_door_41e3328a8.md", "cleared_utc": "2026-11-03T16:50:00Z"}
