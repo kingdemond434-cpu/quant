@@ -1,0 +1,113 @@
+{
+ "note": "Active owner threads (2026-10-07). session = the Claude-Session id whose link a thread's PR bodies carry; thread_id links the brief to its thread. Add a row when a thread is started; a title must match the owner_thread the audits use. prs pins PRs whose body has no session link (desktop sessions).",
+ "threads": [
+  {
+   "title": "Schedule the twice-daily CRO cycle",
+   "session": "cse_01DJ49uoxRj95rTdfiRsHcTt",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8prN4f6eLCME7SUSYPp5TzQEs"
+  },
+  {
+   "title": "Institutional truth discipline fixes",
+   "session": "cse_012GhMjwc4hCV217XbEzidrq",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8prMmL3zcaS7v7HdD38p1Ch2o"
+  },
+  {
+   "title": "Tier S research institution build",
+   "session": "cse_01ECesENUM7Nkd2JDy4DWGb6",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8prJiaJKGpzgPRKrT6TmgmrHV"
+  },
+  {
+   "title": "Independent blueprint completion audit",
+   "session": "cse_01XsJF1fiv7JFpss3jgXCHru",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8prN8kCAxK3DSNXebBkU4DG8X"
+  },
+  {
+   "title": "Release signing and canon hashes",
+   "session": "cse_01XRtisEsZsnD5h6r4phw4dW",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8prJzQMVdsu5VWzrgNDrLfaXN"
+  },
+  {
+   "title": "Breadth and tier assessment",
+   "session": "cse_01PR19YnvLJWNg11Y63i43Ne",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8pr6naJ6BwaofDq5Xo7GthXdk"
+  },
+  {
+   "title": "Finish the old committees work",
+   "session": "cse_01NEJ5smvCd6QLkhr9E9uWqj",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8pr9JaeJUJpqf3kkCf3ERuUtH"
+  },
+  {
+   "title": "Asian quant practices gap check",
+   "session": "cse_011CmDFZvqTqa8Xwqnh4rwrS",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8prTePGZJtNu87KYZfbEZkmVA"
+  },
+  {
+   "title": "MT5 global mining pipeline v1",
+   "session": "cse_017VYyRiCH9NqqeXLcFhtCpg",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8prJL4HMNgTVQbV2wGzPjT2i8"
+  },
+  {
+   "title": "Live control room layer",
+   "session": "cse_01Jt1TJoscMFXqz4t7rmANar",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8prSrAebQ5uRfXtWojDj2ZHEq"
+  },
+  {
+   "title": "Mine the EliteQuant list",
+   "session": "cse_01N1k1UkvADp9kmpxJphzpZq",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8prCiXzD1HSBJm1rsm1bdWVMZ"
+  },
+  {
+   "title": "QuantConnect, WorldQuant and fund miners",
+   "session": "cse_014SSNDANDNFP5AE7weHDP6u",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8prQWPC1JdzLX68vLnPJLvALt"
+  },
+  {
+   "title": "Institutional flow in country packs",
+   "session": "cse_01WTLFQGTRr4aVqxR7fEcJMC",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8pr1SCvtudNvX29gvpZaVjtYG"
+  },
+  {
+   "title": "World sensor and macro surprise",
+   "session": "cse_018P72qZVEda6fcPhrVrZYrP",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8prKkhuqiT2m4nkZTNoUx59Lm"
+  },
+  {
+   "title": "Global data discovery and use",
+   "session": "cse_01PS2ptkAicwaD8x3guMTEQH",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8pr6sASFN3cLkdW27Pz8QpeHS"
+  },
+  {
+   "title": "Growth allocator overhaul",
+   "session": "cse_01RfekcD7Dtc3GZqKVgstUJZ",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8pr1MN2sNT71JLQt7kxitSqhK",
+   "prs": [
+    261
+   ]
+  },
+  {
+   "title": "Every API key in one list",
+   "session": "cse_015ZLqWZ956TVVuxpedPnoJm",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8pr4tg7qd9t2YF8awksnNCyhA"
+  },
+  {
+   "title": "Max-growth certified sleeve book",
+   "session": "cse_01SVYVwJShHA8gWQ49wkcMj7",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8prY1H993DTMLqpphe8hTGfqN"
+  },
+  {
+   "title": "Stalled PR sweep",
+   "session": "cse_012Vg7YxGrhGPnrkE9o952NV",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8prWTiPWk1nqhWBH647dRcbMy"
+  },
+  {
+   "title": "Finish all paused work",
+   "session": "cse_01MPeXnHfbn71c2hvRkNKXyY",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8prJzCRSXeFenQNB7XWv6WqhP"
+  },
+  {
+   "title": "Desktop sealed patch pass",
+   "session": "cse_01825wxF7M3ZKYgKEm1E7bkD",
+   "thread_id": "cmsg_012XFUfE12Rvggnu86fDb8prAjU3jwsfLMu1LAkHrAp1LN"
+  }
+ ]
+}
