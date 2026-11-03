@@ -4938,6 +4938,11 @@ def main() -> None:
         return
     equity = float(mt5.account_info().equity)
     st["equity"] = round(equity, 2)
+    # A PRINCIPAL WITHDRAWAL IS NOT A LOSS (2026-11-03): every sizer and the heat cap read
+    # `size_eq`; the daily-loss rail and the published equity stay on the real number.
+    from mt5desk.fusion_equity_reference import sizing_equity
+    size_eq = sizing_equity(equity)
+    st["sizing_equity"] = round(size_eq, 2)
 
     # STALENESS MUST DISARM (principal, 2026-09-16). If every research heartbeat on this box has
     # been silent for DISARM_DAYS the desk is trading blind: no new risk this pass, loudly. At
@@ -5004,7 +5009,7 @@ def main() -> None:
 
     sleeves = sleeve_set()
     try:
-        sleeves = minlot_override_roster(sleeves, equity)
+        sleeves = minlot_override_roster(sleeves, size_eq)
     except Exception as exc:
         # FAIL CLOSED: an override that cannot be read is off, and every mark it may have left
         # is cleared, so the pass sizes exactly as sovereignty sizes it.
@@ -5194,10 +5199,10 @@ def main() -> None:
     if reg_killed:
         log(f"REGIME: auto-hibernate, no new brackets: {reg_killed}")
         sleeves = [s for s in sleeves if s["name"] not in reg_killed]
-    if equity < PROMOTED_MIN_EQUITY:
+    if size_eq < PROMOTED_MIN_EQUITY:
         sleeves = [s for s in sleeves if s["name"].startswith("gold_")]
         if load_sleeves():
-            log(f"equity {equity:.0f} < {PROMOTED_MIN_EQUITY:.0f}: promoted sleeves dormant")
+            log(f"equity {size_eq:.0f} < {PROMOTED_MIN_EQUITY:.0f}: promoted sleeves dormant")
     # AGGREGATE HEAT, applied after every other filter so it sees the sleeves that would really
     # trade. Deferred sleeves are named in the log rather than dropped quietly.
     #
@@ -5336,8 +5341,8 @@ def main() -> None:
                         _charge_basis = f"the {_lot_charge:.2f} lots already on the book"
                     else:
                         _lot_charge, _charge_basis = bracket_lane_lot(
-                            _s, equity, _pend["dist"], _pend["sym"])
-                    _s["q_charge"] = realised_q(equity, _pend["dist"], _s["symbol"],
+                            _s, size_eq, _pend["dist"], _pend["sym"])
+                    _s["q_charge"] = realised_q(size_eq, _pend["dist"], _s["symbol"],
                                                 _pend["sym"], lot=_lot_charge)
                 except Exception as _exc:
                     # UNPRICEABLE IS NOT PLACEABLE. The placement site refuses to size a sleeve
@@ -5390,7 +5395,7 @@ def main() -> None:
             # the venue's lot floor round it. `resolve_family_order` writes no state, so the
             # signal MARK is left for the executor to apply if it acts.
             try:
-                _plan = resolve_family_order(st, _s, equity, pending=_pending_legs)
+                _plan = resolve_family_order(st, _s, size_eq, pending=_pending_legs)
             except Exception as _exc:
                 _plan = {"ok": False, "stage": "resolve_failed",
                          "why": f"{type(_exc).__name__}: {_exc}"}
@@ -5401,7 +5406,7 @@ def main() -> None:
                 _pending_legs[_s["symbol"]] = (_pending_legs.get(_s["symbol"], 0.0)
                                                + float(_plan["side"]) * float(_plan["lot"]))
                 try:
-                    _s["q_charge"] = realised_q(equity, _plan["dist"], _s["symbol"],
+                    _s["q_charge"] = realised_q(size_eq, _plan["dist"], _s["symbol"],
                                                 _plan["sym"], lot=_plan["lot"])
                     _s["dist"] = _plan["dist"]
                     _s["q_charge_basis"] = (
@@ -5431,19 +5436,19 @@ def main() -> None:
             # by slice at each one's own distance to the basket's stop, plus the slice this pass
             # would add. A sleeve holding four slices and adding none is still holding four.
             try:
-                _plan = resolve_scalp_order(st, _s, equity)
+                _plan = resolve_scalp_order(st, _s, size_eq)
             except Exception as _exc:
                 _plan = {"ok": False, "stage": "resolve_failed",
                          "why": f"{type(_exc).__name__}: {_exc}"}
             _open_q, _open_why = 0.0, "no open basket"
             try:
                 _open_q, _open_why = scalp_open_basket_q(
-                    st, _s, equity, _plan.get("sym") if _plan.get("ok") else None)
+                    st, _s, size_eq, _plan.get("sym") if _plan.get("ok") else None)
             except Exception as _exc:                       # a charge never stops the pass
                 _open_why = f"open basket unpriceable ({type(_exc).__name__}: {_exc})"
             if _plan.get("ok"):
                 try:
-                    _new_q = realised_q(equity, _plan["dist"], _s["symbol"], _plan["sym"],
+                    _new_q = realised_q(size_eq, _plan["dist"], _s["symbol"], _plan["sym"],
                                         lot=_plan["per"])
                 except Exception as _exc:
                     _plan = {"ok": False, "stage": "unpriceable",
@@ -5474,18 +5479,18 @@ def main() -> None:
             # heat ledger and the order path could come to disagree about the same leg.
             _s["q_charge"] = ramped_fraction(_s.get("risk_frac"), sleeve_live_n(_s["name"]),
                                              _s.get("decay_faded"))
-    sleeves, heat_note = cap_by_heat(sleeves, equity, k_eff=k_eff)
+    sleeves, heat_note = cap_by_heat(sleeves, size_eq, k_eff=k_eff)
     if heat_note:
         log(heat_note)
     # Hunt-certified family sleeves run their own replay-faithful executor -- AFTER the heat
     # cap, so an inadmissible sleeve never reaches it, and OUTSIDE the bracket loop, whose
     # session-window semantics they do not share.
     try:
-        run_family_sleeves(st, sleeves, equity)
+        run_family_sleeves(st, sleeves, size_eq)
     except Exception as exc:
         log(f"FAMILY-EXEC FAILED (bracket path unaffected): {type(exc).__name__}: {exc}")
     try:
-        run_scalp_sleeves(st, sleeves, equity)
+        run_scalp_sleeves(st, sleeves, size_eq)
     except Exception as exc:
         log(f"SCALP-EXEC FAILED (bracket path unaffected): {type(exc).__name__}: {exc}")
     # The net order per symbol across every sleeve's theoretical position -- measured, never
@@ -5760,7 +5765,7 @@ def main() -> None:
                         _rails.line(_oco.RAIL, sleeve=s["name"], symbol=s["symbol"], side=_leg,
                                     day=day_key, lot=lot, risk_frac=q_real, why=_w,
                                     lane=_oco_lane,
-                                    missed_growth_risk_usd=_missed_usd(equity, q_real))
+                                    missed_growth_risk_usd=_missed_usd(size_eq, q_real))
                 for _leg, _w in _xblocked.items():
                     log(f"[{s['name']}] {_leg} NOT SENT: {_w}")
                     if _rails_seen.get(f"cross_account_opposite/{s['name']}/{_leg}") != day_key:
@@ -5768,7 +5773,7 @@ def main() -> None:
                         _rails.line("cross_account_opposite", sleeve=s["name"],
                                     symbol=s["symbol"], side=_leg, day=day_key, lot=lot,
                                     risk_frac=q_real, why=_w,
-                                    missed_growth_risk_usd=_missed_usd(equity, q_real))
+                                    missed_growth_risk_usd=_missed_usd(size_eq, q_real))
                 if {"buy_stop", "sell_stop"} <= _all_blocked:
                     log(f"[{s['name']}] bracket NOT placed: every leg is fenced this pass; "
                         f"retried next pass")

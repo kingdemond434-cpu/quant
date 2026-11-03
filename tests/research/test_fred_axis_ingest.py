@@ -239,7 +239,8 @@ def test_the_driver_never_overwrites_data_with_an_empty_pass_and_writes_the_red_
         assert AIA.main(["--apply"]) == 0
     assert json.loads((out / "fred.json").read_text("utf-8"))["n_series"] == 4
     report = json.loads((tmp_path / "AXIS_INGEST.json").read_text("utf-8"))
-    assert report["axes"]["fred"]["kept_previous"] is True
+    assert report["axes"]["fred"]["write_state"] == "EMPTY_REFUSED_OVERWRITE"   # LIVE's guard
+    assert report["write_refused"] == ["fred"]
     assert report["axes"]["fred"]["state"] == "EMPTY"
     live = json.loads((tmp_path / "DEPENDENCY_LIVENESS.json").read_text("utf-8"))
     assert live["verdict"] == "RED" and "fred" in live["red"]

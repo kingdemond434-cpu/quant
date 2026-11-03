@@ -246,6 +246,45 @@ CARRY_PAIRS = {
     "EURSEK": ("EUR", "SEK"), "EURPLN": ("EUR", "PLN"), "EURHUF": ("EUR", "HUF"),
 }
 
+#: FRED'S EDGE ALLOWLISTS THE CLIENT TOKEN, AND `UA` IS NOT ON IT -- which is why this axis read
+#: 0 series for its entire life while the other three worked on the same clock, the same box and
+#: the same IP.
+#:
+#: MEASURED ON THE TRADING BOX 2026-09-24, one series (DGS10), same URL, same process, back to
+#: back -- the only variable is this header:
+#:
+#:     "quant-desk-axis-ingest/1.0 (research)"      ConnectionResetError 10054 after 19.2 s
+#:     "curl/8.4.0"                                 HTTP 200, 268,823 B, 0.04 s
+#:     "curl/8.4.0 quant-desk-axis-ingest/1.0"      HTTP 200, 268,823 B, 0.04 s
+#:     "quant-desk-axis-ingest/1.0 curl/8.4.0"      TimeoutError after 30.0 s
+#:     "python-urllib/3.14"                         HTTP 200, 268,823 B, 0.11 s
+#:
+#: The FIRST token decides: an Akamai edge accepts the TLS handshake, then tarpits or resets the
+#: response body for a token it does not recognise. No HTTP status is ever returned, so the
+#: failure arrives as a timeout and reads exactly like a network fault -- which is how it survived
+#: as "FRED currently times out and resets from this box's IP (7/7)", a fact about the publisher.
+#: It was a fact about this string.
+#:
+#: AN HONEST TOKEN, NEVER ANOTHER CLIENT'S (audit of #138, MF2). The first token is the client
+#: this request actually comes from -- urllib's own `Python-urllib/<version>`, exactly what
+#: urllib sends with no header at all, and measured above at HTTP 200 -- and the desk's identity
+#: is the second token so the publisher can see who is asking. Claiming to be `curl` to clear an
+#: edge filter would be impersonating another client to pass that filter, which the desk's
+#: no-bypassing data rule forbids even where, as here, the data itself is keyless and public.
+#:
+#: SCOPED TO FRED ON PURPOSE. `UA` is shared with BIS, COT and ECB, which were ingesting 85.9 MB,
+#: 1.1 MB and 786 KB on this exact header; changing it globally would put three working axes at
+#: risk to repair a fourth.
+FRED_UA = f"Python-urllib/{urllib.request.__version__} quant-desk-axis-ingest/1.0"
+
+
+def _fred_fetch(url: str) -> str:
+    """Every FRED request -- the keyed API and the website fallback alike -- goes through here,
+    so both carry `FRED_UA` and neither can drift back to the shared token."""
+    req = urllib.request.Request(url, headers={"User-Agent": FRED_UA})
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+        return r.read().decode("utf-8", "replace")
+
 ECB_URL = ("https://data-api.ecb.europa.eu/service/data/{flow}/{key}"
            "?lastNObservations={n}&format=csvdata")
 ECB_SERIES = {
@@ -377,6 +416,9 @@ FRED_IDEAS_ONLY_MISSED_GROWTH = {
 #: the website host, not api.stlouisfed.org"), and the desk already holds that key at
 #: `data/secrets/fred.json` on both boxes. This ingester simply never used it.
 #:
+#: (The ROOT CAUSE of those resets was later measured to be the client token, not the address --
+#: see `FRED_UA` above. Both transports now send it; the keyed API is still read first.)
+#:
 #: So the keyed API (`api_key` is a query parameter -- the FRED API documents no header form) is
 #: tried first, and the graph CSV is only the no-key fallback. A missing key reads NEEDS_KEY in the
 #: per-series reason, never zero. The key never appears in a log, a reason or an artifact.
@@ -442,7 +484,7 @@ def _http_error_detail(exc: BaseException) -> str:
 def _fred_api_points(sid: str, key: str, fetch=None) -> list[tuple[str, float]]:
     import urllib.parse
     q = urllib.parse.urlencode({"series_id": sid, "api_key": key, "file_type": "json"})
-    text = (fetch or _fetch)(f"{FRED_API_URL}?{q}")
+    text = (fetch or _fred_fetch)(f"{FRED_API_URL}?{q}")
     doc = json.loads(text)
     out = []
     for o in doc.get("observations") or []:
@@ -457,7 +499,7 @@ def _fred_api_points(sid: str, key: str, fetch=None) -> list[tuple[str, float]]:
 
 
 def _fred_csv_points(sid: str, fetch=None) -> list[tuple[str, float]]:
-    text = (fetch or _fetch)(FRED_URL.format(sid=sid))
+    text = (fetch or _fred_fetch)(FRED_URL.format(sid=sid))
     lines = text.splitlines()
     if not lines or "," not in lines[0]:
         # An HTML block page or a bare error string is not a CSV. Parsing it as one returns zero
