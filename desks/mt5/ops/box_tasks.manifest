@@ -262,12 +262,6 @@ TASK name="MT5-FTMO-VenueReader" trigger="every 5 minutes" runs="desks/mt5/prop/
 # The FTMO sleeve executor (2026-10-29): every non-gold sleeve the FTMO allocator sizes, behind FTMO's
 # loss rails and the cross-account opposite-side fence. Standby until data/FTMO_EXECUTOR_ARMED exists.
 TASK name="MT5-FTMO-Executor" trigger="every 5 minutes" runs="desks/mt5/prop/ftmo_executor.py" installer="desks/mt5/scripts/install_ftmo_executor_task.ps1" lane="prop"
-# The prop fleet (2026-11-03): every prop challenge account registered in data/prop_accounts.json beyond
-# the legacy FTMO account, one terminal and one child process per account (prop/prop_fleet.py), and the
-# allocator re-solving every account when due. Standby per account until its ARMED markers exist.
-TASK name="MT5-Prop-VenueReaders" trigger="every 5 minutes" runs="desks/mt5/prop/prop_fleet.py" installer="desks/mt5/scripts/install_prop_fleet_tasks.ps1" lane="prop"
-TASK name="MT5-Prop-Executors" trigger="every 5 minutes" runs="desks/mt5/prop/prop_fleet.py" installer="desks/mt5/scripts/install_prop_fleet_tasks.ps1" lane="prop"
-TASK name="MT5-Prop-Allocator" trigger="every 10 minutes" runs="desks/mt5/research/prop_challenge_allocator.py" installer="desks/mt5/scripts/install_prop_fleet_tasks.ps1" lane="prop"
 TASK name="MT5-E8WindowGuard" trigger="every 1 minute" runs="desks/mt5/scripts/watchers/e8_window_guard.py" installer="desks/mt5/scripts/install_box_watchers_canon.ps1" lane="prop"
 TASK name="MT5-Healers" trigger="every 1 hour, at :48" runs="ops/run_healers.cmd" installer="NONE" lane="research"
 # Referenced by ops/run_gold_hour_sweep.cmd; not installed on the box 2026-09-16, cadence unknown.
