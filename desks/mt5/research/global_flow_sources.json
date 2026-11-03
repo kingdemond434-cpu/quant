@@ -1,0 +1,277 @@
+{
+ "_doc": "Global flow registry (global_flow.py, run inside futures_state's hourly pass). Rows, never code: add a source here. adapter=none is a NAMED GAP with blocked_by. class: retail | institutional | dealer | central_bank | sovereign | etf | cross_border | forced. Every series is an exogenous_conditioner QUESTION for the judge, never a sized edge. avail_lag_days + avail_hour_utc stamp publication conservatively after the observation date.",
+ "sources": [
+  {
+   "id": "snb_sight",
+   "class": "central_bank",
+   "region": "CH",
+   "adapter": "snb_cube",
+   "url": "https://data.snb.ch/api/cube/snbgwdzid/data/csv/en",
+   "avail_lag_days": 3,
+   "avail_hour_utc": 23,
+   "window": 104,
+   "targets": [
+    "EURCHF",
+    "USDCHF",
+    "CHFJPY",
+    "GBPCHF"
+   ],
+   "why": "SNB buys foreign currency by crediting banks' sight deposits: a weekly jump is the intervention footprint the franc price has not finished absorbing (SNB publishes Monday for the prior week)."
+  },
+  {
+   "id": "gld_holdings",
+   "class": "etf",
+   "region": "US",
+   "adapter": "gld_archive",
+   "url": "https://www.spdrgoldshares.com/assets/dynamic/GLD/GLD_US_archive_EN.csv",
+   "avail_lag_days": 1,
+   "avail_hour_utc": 6,
+   "window": 252,
+   "log_change_cols": [
+    "tonnes"
+   ],
+   "targets": [
+    "XAUUSD",
+    "XAGUSD",
+    "XAUEUR",
+    "XAUAUD"
+   ],
+   "why": "GLD creations and redemptions are Western investment demand for physical gold; tonnes change against price separates investor flow from central-bank and Asian physical buying."
+  },
+  {
+   "id": "nse_part_oi",
+   "class": "retail",
+   "region": "IN",
+   "adapter": "nse_daily",
+   "url": "https://archives.nseindia.com/content/nsccl/fao_participant_oi_{ddmmyyyy}.csv",
+   "avail_lag_days": 1,
+   "avail_hour_utc": 0,
+   "window": 156,
+   "targets": [
+    "USDINR",
+    "HK50",
+    "CHINAH",
+    "US500"
+   ],
+   "why": "NSE splits every derivatives contract by owner: Indian retail (Client) is the largest options crowd on earth and trades against FII and prop desks. FII index-futures net leads INR flows; retail extremes are the contrarian leg."
+  },
+  {
+   "id": "cboe_gamma",
+   "class": "dealer",
+   "region": "US",
+   "adapter": "cboe_snapshot",
+   "url": "https://cdn.cboe.com/api/global/delayed_quotes/options/{symbol}.json",
+   "robots_url": "https://cdn.cboe.com/api/global/delayed_quotes/options/_SPX.json",
+   "symbols": [
+    "_SPX",
+    "_NDX"
+   ],
+   "max_bytes": 80000000,
+   "avail_lag_days": 0,
+   "avail_hour_utc": 23,
+   "window": 120,
+   "targets": [
+    "US500",
+    "NAS100",
+    "US30",
+    "US2000"
+   ],
+   "why": "Dealer gamma sign decides whether hedging damps or amplifies index moves (pinning vs trend days); put/call OI is the options crowd. Snapshot history accrues from the first pass."
+  },
+  {
+   "id": "mof_weekly",
+   "class": "cross_border",
+   "region": "JP",
+   "adapter": "mof_weekly",
+   "url": "https://www.mof.go.jp/english/policy/international_policy/reference/itn_transactions_in_securities/week.csv",
+   "avail_lag_days": 5,
+   "avail_hour_utc": 0,
+   "window": 104,
+   "targets": [
+    "USDJPY",
+    "EURJPY",
+    "AUDJPY",
+    "JPN225"
+   ],
+   "why": "Japanese lifers, pensions and toshin buying foreign bonds sell yen; foreign buying of Japanese stocks buys it. MoF publishes the week on the following Thursday 08:50 JST (stamped later, conservatively)."
+  },
+  {
+   "id": "cn_dce_czce_gfex_cffex",
+   "class": "retail",
+   "region": "CN",
+   "adapter": "none",
+   "blocked_by": "fetcher BUILT (libs/data/free_stack_cnx.py: quotes, OI, top-20 member ranks, warehouse stocks) but terms rows are to_confirm since 2026-10-06: DCE/CFFEX legal pages robots-disallow the cloud, GFEX serves a bot check, CZCE footer link unread. The box must read each 法律声明 from China-reachable IP and flip terms in free_stack_sources.json. SHFE/INE refused (non-commercial only).",
+   "why": "China's retail-dominated commodity futures (iron ore, rebar, coking coal, soy meal, palm oil, rubber, copper) and their night session lead the global contracts the desk trades."
+  },
+  {
+   "id": "jpx_investor_type",
+   "class": "retail",
+   "region": "JP",
+   "adapter": "none",
+   "blocked_by": "JPX weekly 'Trading by Type of Investors' is a per-week Excel whose URL changes; needs an index-page adapter + xls parser (to build next).",
+   "why": "Japanese individuals vs foreigners in TSE cash equities: individuals are reliable contrarians, foreigners trend-follow."
+  },
+  {
+   "id": "tfx_click365",
+   "class": "retail",
+   "region": "JP",
+   "adapter": "none",
+   "blocked_by": "TFX Click365 daily volume/OI per pair is public; exact CSV route unconfirmed from the cloud (no reach). Box read needed.",
+   "why": "Mrs Watanabe: Japanese retail FX margin positions in USDJPY, AUDJPY, MXNJPY, ZARJPY, TRYJPY are a crowded carry book that unwinds violently."
+  },
+  {
+   "id": "krx_investor_flow",
+   "class": "retail",
+   "region": "KR",
+   "adapter": "none",
+   "blocked_by": "KRX data portal serves investor-type net buying through an OTP-token POST flow; terms unread. Bank of Korea ECOS needs a key we do not hold.",
+   "why": "Korean retail (gaemi) vs foreigners in KOSPI and KOSPI200 futures; foreign flow drives USDKRW."
+  },
+  {
+   "id": "cbrt_nonresident",
+   "class": "cross_border",
+   "region": "TR",
+   "adapter": "none",
+   "blocked_by": "CBRT weekly non-resident portfolio flows via EVDS (EVDS key held by name); adapter to write.",
+   "why": "Foreign carry money in Turkish bonds and equities is the marginal USDTRY flow."
+  },
+  {
+   "id": "hkex_southbound",
+   "class": "cross_border",
+   "region": "CN/HK",
+   "adapter": "none",
+   "blocked_by": "HKEX publishes daily Stock Connect turnover; northbound net-buy publication stopped 2024; southbound route unconfirmed.",
+   "why": "Mainland money buying Hong Kong (southbound) moves HK50 and CHINAH."
+  },
+  {
+   "id": "broker_sentiment",
+   "class": "retail",
+   "region": "global",
+   "adapter": "none",
+   "blocked_by": "IG/Myfxbook/Dukascopy client long-short ratios need a login or session API (never bypassed); shadow_institutional row ig_client_sentiment stays UNMEASURED.",
+   "why": "Retail CFD traders' net position is a contrarian signal in FX and gold."
+  },
+  {
+   "id": "etf_flows_broad",
+   "class": "etf",
+   "region": "US",
+   "adapter": "none",
+   "blocked_by": "issuer holdings pages (iShares IAU/SLV/TLT/EEM, SPY shares outstanding) need per-issuer adapters; GLD built first.",
+   "why": "ETF creations are the cleanest public read of investor demand by asset class."
+  },
+  {
+   "id": "cta_replica",
+   "class": "cta",
+   "region": "global",
+   "adapter": "none",
+   "blocked_by": "to build next: trend-replica CTA book from the desk's own D1 bars (sign of 1/3/12-month returns, vol-scaled, SG CTA-index style) per MT5 market; distance-to-flip levels are the forced-flow triggers. No external data needed.",
+   "why": "CTAs are a ~$350bn rule-bound player: where their replica position flips is where forced buying or selling arrives."
+  },
+  {
+   "id": "pension_rebalance_estimate",
+   "class": "forced",
+   "region": "global",
+   "adapter": "none",
+   "blocked_by": "to build next: month/quarter-end equity-vs-bond drift since last rebalance from desk bars (60/40 drift) feeding forced_flow_calendar windows.",
+   "why": "Balanced funds and pensions must sell the winner and buy the loser at month and quarter end; the size is estimable from the drift."
+  }
+ ],
+ "already_live": [
+  {
+   "id": "cftc_all_classes",
+   "class": "institutional",
+   "region": "US",
+   "where": "futures_state.py cftc_markets (62 markets; legacy incl. non-reportable small traders = US retail, disagg managed money, TFF leveraged/asset managers/dealers)"
+  },
+  {
+   "id": "cftc_small_traders",
+   "class": "retail",
+   "region": "US",
+   "where": "futures_state.py positioning(): nonrept_net / nonrept_net_oi"
+  },
+  {
+   "id": "mof_intervention",
+   "class": "central_bank",
+   "region": "JP",
+   "where": "futures_state.py mof_jpy_q / mof_jpy_m"
+  },
+  {
+   "id": "imf_reserves",
+   "class": "sovereign",
+   "region": "global",
+   "where": "futures_state.py fred_sets.reserves (CN JP CH IN KR BR MX ZA TR SG)"
+  },
+  {
+   "id": "fed_liquidity",
+   "class": "central_bank",
+   "region": "US",
+   "where": "shadow_institutional.py usd_liquidity (reserves, TGA, RRP, SOFR-IORB, bill supply)"
+  },
+  {
+   "id": "forced_flow_calendar",
+   "class": "forced",
+   "region": "global",
+   "where": "forced_flow_calendar.py (month-end WMR fix, quarter-end, index rebalances, opex, CB meetings, auctions)"
+  },
+  {
+   "id": "crypto_leverage",
+   "class": "retail",
+   "region": "global",
+   "where": "shadow_institutional.py perp funding / liquidations / Deribit as sensors for MT5 targets"
+  },
+  {
+   "id": "us_aaii",
+   "class": "retail",
+   "region": "US",
+   "where": "side_channels/aaii_sentiment_miner.py"
+  },
+  {
+   "id": "cn_forums",
+   "class": "retail",
+   "region": "CN",
+   "where": "free_stack_sources cn_weibo/cn_xueqiu/cn_guba + local-language content thread"
+  },
+  {
+   "id": "fed_foreign_custody",
+   "class": "sovereign",
+   "region": "global",
+   "where": "futures_state_sources.json fred_sets.global_flow (added with this module)"
+  },
+  {
+   "id": "cftc_commercials",
+   "class": "corporate_hedger",
+   "region": "US",
+   "where": "futures_state.py cftc (legacy commercial, disagg producer/merchant and swap dealer nets)"
+  }
+ ],
+ "player_classes": [
+  "retail",
+  "institutional",
+  "dealer",
+  "cta",
+  "central_bank",
+  "sovereign",
+  "etf",
+  "cross_border",
+  "forced",
+  "corporate_hedger"
+ ],
+ "regions": [
+  "US",
+  "EU",
+  "UK",
+  "CH",
+  "JP",
+  "CN",
+  "CN/HK",
+  "KR",
+  "IN",
+  "TR",
+  "AU",
+  "BR",
+  "MX",
+  "ZA",
+  "global"
+ ],
+ "_grid_doc": "Every (player_class x region) cell with no live or gap row is UNSEARCHED; each hourly pass must turn at least one UNSEARCHED or gap cell into a live row (standing rule, zuck 2026-11-03: maximise every player's footprint everywhere)."
+}

@@ -1094,6 +1094,14 @@ def stale_series(built: Mapping[str, Any], frames: Mapping[str, pd.DataFrame],
     return out
 
 
+def _flow_coverage() -> dict[str, Any]:
+    try:
+        from research import global_flow
+        return global_flow.coverage()
+    except Exception as exc:
+        return {"error": f"{type(exc).__name__}: {str(exc)[:80]}"}
+
+
 def build(*, dry_run: bool = False, offline: bool = False) -> dict[str, Any]:
     t0 = time.monotonic()
     registry = _read(REGISTRY, {}) or {}
@@ -1108,6 +1116,18 @@ def build(*, dry_run: bool = False, offline: bool = False) -> dict[str, Any]:
         registry, get=None if offline else fetch_json, state=state, bars=bars,
         get_text=None if offline else fetch_text, now=now,
         budget=time.monotonic() + FETCH_BUDGET_S)
+    # Global flow (retail, dealer, central-bank, ETF, cross-border): its own rows and parsers,
+    # minted through this pass's door so there is one clock and one once-in-a-life ledger.
+    try:
+        from research import global_flow
+        gb, gf = global_flow.collect(
+            get=None if offline else global_flow.http_get, state=state, notes=notes,
+            get_text=None if offline else fetch_text, now=now,
+            budget=time.monotonic() + global_flow.FETCH_BUDGET_S)
+        built.update(gb)
+        frames.update(gf)
+    except Exception as exc:
+        notes.append({"source": "global_flow", "error": f"{type(exc).__name__}: {str(exc)[:80]}"})
     for sid, why in stale_series(built, frames, registry, now).items():
         built.pop(sid, None)
         frames.pop(sid, None)
@@ -1133,6 +1153,7 @@ def build(*, dry_run: bool = False, offline: bool = False) -> dict[str, Any]:
         "cells": cells,
         "hard_stops": state.get("hard_stops", {}),
         "gaps": gaps(registry, built, notes),
+        "global_flow": _flow_coverage(),
         "notes": notes,
         "seconds": round(time.monotonic() - t0, 1),
     }

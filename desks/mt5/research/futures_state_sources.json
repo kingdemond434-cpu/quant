@@ -1360,6 +1360,30 @@
      "USDSGD"
     ]
    }
+  },
+  {
+   "id": "global_flow",
+   "mode": "levels",
+   "avail_lag_days": 2,
+   "window": 104,
+   "note": "Fed H.4.1 memo: marketable Treasuries and agencies held in custody for foreign official and international accounts (weekly Wednesday level, published Thursday 16:30 ET): sovereign selling of USTs (e.g. FX defence) shows here first. Read by global_flow's coverage map.",
+   "series": [
+    "WMTSECL1",
+    "WFASECL1"
+   ],
+   "targets_by_series": {
+    "WMTSECL1": [
+     "USDX",
+     "UST10Y",
+     "USDJPY",
+     "XAUUSD",
+     "USDCNH"
+    ],
+    "WFASECL1": [
+     "USDX",
+     "UST10Y"
+    ]
+   }
   }
  ],
  "cftc_release_calendar": {
