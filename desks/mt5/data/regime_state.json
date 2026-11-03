@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-03T09:30:04.998294+00:00",
+  "swept_at": "2026-11-03T09:45:04.085342+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -3914,7 +3914,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0364,
+      "shadow_exp_r": -0.0495,
       "woke_on_shadow": false
     },
     "USDNOK|carry_continuous": {
@@ -3958,7 +3958,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 45,
-      "shadow_exp_r": 0.2695,
+      "shadow_exp_r": 0.2575,
       "woke_on_shadow": false
     },
     "USDNOK|overnight_gap_decay_continuous": {
@@ -4156,7 +4156,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1722,
+      "shadow_exp_r": -0.1752,
       "woke_on_shadow": false
     },
     "USDSGD|overnight_drift_continuous": {
@@ -4541,7 +4541,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 52,
-      "shadow_exp_r": -0.03,
+      "shadow_exp_r": -0.0394,
       "woke_on_shadow": false
     },
     "XAGUSD|cross_asset_residual_continuous": {
