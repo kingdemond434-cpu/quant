@@ -508,9 +508,9 @@ def write_lake_pack(pack: str, frame: Any, *, release_h: int, now: datetime,
                           else "own MT5 bars: the day's last bar closes by D+1 00:00 UTC"),
             "frames": [{"file": path.name, "status": "STAMPED",
                         "available_time": (known.max().isoformat() if len(known) else None)}],
-            "n_rows": int(len(out)), "canonical_file": path.name, "written_at": _iso(now)}
+            "n_rows": len(out), "canonical_file": path.name, "written_at": _iso(now)}
     (lake / f"{pack}.pit.json").write_text(json.dumps(side, indent=1), encoding="utf-8")
-    return {"pack": pack, "rows_added": int(added), "rows": int(len(out)),
+    return {"pack": pack, "rows_added": int(added), "rows": len(out),
             "columns": cols, "last_day": str(days.max().date()) if len(days) else None}
 
 
@@ -737,7 +737,7 @@ def cboe_pass(*, now: datetime, bars: Path, dry_run: bool = False, fetch: Any = 
                 held = str(why)                       # a person-held stop for the whole site
             continue
         st.update({"empty_streak": 0, "fail_reason": None, "fetched_at": _iso(now),
-                   "last_day": str(s.index.max().date()), "n": int(len(s))})
+                   "last_day": str(s.index.max().date()), "n": len(s)})
         if not dry_run:
             landed[key] = write_lake_pack(key, s.to_frame(d["code"]),
                                           release_h=CBOE_RELEASE_H, now=now, lake=lake)

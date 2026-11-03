@@ -296,7 +296,7 @@ def test_substitutes_reach_pack_cells_and_the_conditioner_cboe_is_held(lake, bar
         ch = SD.chain_for(rows[pid], {}, {})
         assert ch["stage_reached"] == "represented", (pid, ch)
     path = lake / "mt5vol_us500.csv"
-    sigs, n, why = PC.signals_of(path)
+    sigs, _n, why = PC.signals_of(path)
     assert {"rv_term_5_21", "vol_of_vol_63d", "gk_jump"} <= set(sigs) and not why
     res = PC.emit_for(rows["mt5vol_us500"], sigs, PC.targets_of(rows["mt5vol_us500"]),
                       dry_run=True)
