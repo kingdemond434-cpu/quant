@@ -1,0 +1,8 @@
+# TRUSTED-EVAL SUITES (.github/workflows/trusted-eval.yml). The BASE's copy of each test file below
+# runs, under the BASE's test configuration, against the PR head's code, for every PR that
+# changes a check (the CONTROLLER class: .github/, ops/release/, test configuration). A PR that
+# loosens a gate fails the base's tests that pin it. Grow-only: ROOT_POLICY.json lists this file,
+# so dropping a line is a ROOT change the authority never clears.
+tests/ops/test_audit_gate.py
+tests/ops/test_release_authority.py
+tests/ops/test_money_closure_pin.py
