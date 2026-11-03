@@ -1241,6 +1241,7 @@ def family_regime_split(
     vol: str = "",
     trend: str = "",
     liq: str = "",
+    labeler: str = "",
     **base_params: object,
 ) -> list[Signal]:
     """A price-only family traded ONLY inside one market regime of its own instrument.
@@ -1258,6 +1259,14 @@ def family_regime_split(
     each ranked against the instrument's own trailing year. Causal by construction: no fitted
     parameters, so no label can carry information from after the bar it gates. An empty axis
     means "any". An unknown base family, or bars too short to label, return NO SIGNALS.
+
+    `labeler="ensemble"` (2026-11-03) reads the vol / trend axes from
+    `libs.regime.ensemble.label_days` instead: six state engines refit walk-forward on returns
+    strictly before each refit day and fused by prequential score, so the label of day d is
+    still known at d's close (its truncation test pins that). The empty default is the control
+    room, so every existing cell keeps its identity and its signals. The ensemble has no
+    liquidity axis: a non-empty `liq` with it matches nothing. Any other labeler value returns
+    NO SIGNALS rather than silently falling back.
     """
     fn = getattr(_families_mod(), f"family_{base_family}", None) or \
         ORTHOGONAL_FAMILIES.get(str(base_family))
@@ -1265,9 +1274,15 @@ def family_regime_split(
         return []
     want = {"vol": vol, "trend": trend, "liq": liq}
     want = {k: v for k, v in want.items() if v}
+    if labeler not in ("", "ensemble"):
+        return []
     try:
         from libs.regime.control_room import daily_frame, label_days
-        lab = label_days(daily_frame(df))
+        if labeler == "ensemble":
+            from libs.regime.ensemble import label_days_cached
+            lab = label_days_cached(daily_frame(df))
+        else:
+            lab = label_days(daily_frame(df))
     except Exception:
         return []
     lab = lab[lab["vol"] != ""]

@@ -178,6 +178,10 @@ LEG_LAYER: dict[str, str] = {
     # `alpha_rl` searches sequentially against the allocator's marginals, which is prediction.
     "alpha_rl": "prediction",
     "regime_monitor": "prediction",
+    # THE STATE ENSEMBLE forecasts tomorrow's volatility state per instrument and scores the
+    # forecast against the plain base rate: a prediction layer, read by the allocator only on a
+    # measured win.
+    "state_ensemble": "prediction",
     "orthogonality": "portfolio",
     # THE BASKET JUDGE asks the portfolio question directly: does one family, held as many
     # near-zero-correlated legs at once, clear a bar no single leg clears? It builds the summed
