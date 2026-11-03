@@ -80,7 +80,7 @@
    "frequency": "daily",
    "status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=in_gold_imports",
    "terms": "to_confirm",
-   "blocked_because": "SGE site shows only 'All Right Reserved'; no terms or licence page found, no robots.txt",
+   "blocked_because": "the SGE site prints only 'Copyright 2016 上海黄金交易所 All Right Reserved' and links no terms page (read 2026-10-29), so its terms are UNREAD and UNREAD terms never permit automated live input; its pages are read politely for ideas only",
    "unsubstituted_because": "candidate(s) in_gold_imports UNVERIFIED: no measured correlation >= 0.5 against the original with n >= 12",
    "substitute_check": "in_gold_imports: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
    "evidence": "in_gold_imports: https://www.pib.gov.in/content/102_2_Copyright-Policy.aspx?reg=3&lang=1"

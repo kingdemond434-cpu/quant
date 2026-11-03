@@ -1,0 +1,236 @@
+{
+ "totalCount": 33,
+ "items": [
+  {
+   "Tarih": "2024-1",
+   "TP_FIXTURE_GOLD_IMPORTS": "1500",
+   "UNIXTIME": {
+    "$numberLong": "1704067200"
+   }
+  },
+  {
+   "Tarih": "2024-2",
+   "TP_FIXTURE_GOLD_IMPORTS": "1620",
+   "UNIXTIME": {
+    "$numberLong": "1706745600"
+   }
+  },
+  {
+   "Tarih": "2024-3",
+   "TP_FIXTURE_GOLD_IMPORTS": "1740",
+   "UNIXTIME": {
+    "$numberLong": "1709251200"
+   }
+  },
+  {
+   "Tarih": "2024-4",
+   "TP_FIXTURE_GOLD_IMPORTS": "1860",
+   "UNIXTIME": {
+    "$numberLong": "1711929600"
+   }
+  },
+  {
+   "Tarih": "2024-5",
+   "TP_FIXTURE_GOLD_IMPORTS": "1980",
+   "UNIXTIME": {
+    "$numberLong": "1714521600"
+   }
+  },
+  {
+   "Tarih": "2024-6",
+   "TP_FIXTURE_GOLD_IMPORTS": "1500",
+   "UNIXTIME": {
+    "$numberLong": "1717200000"
+   }
+  },
+  {
+   "Tarih": "2024-7",
+   "TP_FIXTURE_GOLD_IMPORTS": "1620",
+   "UNIXTIME": {
+    "$numberLong": "1719792000"
+   }
+  },
+  {
+   "Tarih": "2024-8",
+   "TP_FIXTURE_GOLD_IMPORTS": "1740",
+   "UNIXTIME": {
+    "$numberLong": "1722470400"
+   }
+  },
+  {
+   "Tarih": "2024-9",
+   "TP_FIXTURE_GOLD_IMPORTS": "1860",
+   "UNIXTIME": {
+    "$numberLong": "1725148800"
+   }
+  },
+  {
+   "Tarih": "2024-10",
+   "TP_FIXTURE_GOLD_IMPORTS": "1980",
+   "UNIXTIME": {
+    "$numberLong": "1727740800"
+   }
+  },
+  {
+   "Tarih": "2024-11",
+   "TP_FIXTURE_GOLD_IMPORTS": "1500",
+   "UNIXTIME": {
+    "$numberLong": "1730419200"
+   }
+  },
+  {
+   "Tarih": "2024-12",
+   "TP_FIXTURE_GOLD_IMPORTS": "1620",
+   "UNIXTIME": {
+    "$numberLong": "1733011200"
+   }
+  },
+  {
+   "Tarih": "2025-1",
+   "TP_FIXTURE_GOLD_IMPORTS": "1740",
+   "UNIXTIME": {
+    "$numberLong": "1735689600"
+   }
+  },
+  {
+   "Tarih": "2025-2",
+   "TP_FIXTURE_GOLD_IMPORTS": "1860",
+   "UNIXTIME": {
+    "$numberLong": "1738368000"
+   }
+  },
+  {
+   "Tarih": "2025-3",
+   "TP_FIXTURE_GOLD_IMPORTS": "1980",
+   "UNIXTIME": {
+    "$numberLong": "1740787200"
+   }
+  },
+  {
+   "Tarih": "2025-4",
+   "TP_FIXTURE_GOLD_IMPORTS": "1500",
+   "UNIXTIME": {
+    "$numberLong": "1743465600"
+   }
+  },
+  {
+   "Tarih": "2025-5",
+   "TP_FIXTURE_GOLD_IMPORTS": "1620",
+   "UNIXTIME": {
+    "$numberLong": "1746057600"
+   }
+  },
+  {
+   "Tarih": "2025-6",
+   "TP_FIXTURE_GOLD_IMPORTS": "1740",
+   "UNIXTIME": {
+    "$numberLong": "1748736000"
+   }
+  },
+  {
+   "Tarih": "2025-7",
+   "TP_FIXTURE_GOLD_IMPORTS": "1860",
+   "UNIXTIME": {
+    "$numberLong": "1751328000"
+   }
+  },
+  {
+   "Tarih": "2025-8",
+   "TP_FIXTURE_GOLD_IMPORTS": "1980",
+   "UNIXTIME": {
+    "$numberLong": "1754006400"
+   }
+  },
+  {
+   "Tarih": "2025-9",
+   "TP_FIXTURE_GOLD_IMPORTS": "1500",
+   "UNIXTIME": {
+    "$numberLong": "1756684800"
+   }
+  },
+  {
+   "Tarih": "2025-10",
+   "TP_FIXTURE_GOLD_IMPORTS": "1620",
+   "UNIXTIME": {
+    "$numberLong": "1759276800"
+   }
+  },
+  {
+   "Tarih": "2025-11",
+   "TP_FIXTURE_GOLD_IMPORTS": "1740",
+   "UNIXTIME": {
+    "$numberLong": "1761955200"
+   }
+  },
+  {
+   "Tarih": "2025-12",
+   "TP_FIXTURE_GOLD_IMPORTS": "1860",
+   "UNIXTIME": {
+    "$numberLong": "1764547200"
+   }
+  },
+  {
+   "Tarih": "2026-1",
+   "TP_FIXTURE_GOLD_IMPORTS": "1980",
+   "UNIXTIME": {
+    "$numberLong": "1767225600"
+   }
+  },
+  {
+   "Tarih": "2026-2",
+   "TP_FIXTURE_GOLD_IMPORTS": "1500",
+   "UNIXTIME": {
+    "$numberLong": "1769904000"
+   }
+  },
+  {
+   "Tarih": "2026-3",
+   "TP_FIXTURE_GOLD_IMPORTS": "1620",
+   "UNIXTIME": {
+    "$numberLong": "1772323200"
+   }
+  },
+  {
+   "Tarih": "2026-4",
+   "TP_FIXTURE_GOLD_IMPORTS": "1740",
+   "UNIXTIME": {
+    "$numberLong": "1775001600"
+   }
+  },
+  {
+   "Tarih": "2026-5",
+   "TP_FIXTURE_GOLD_IMPORTS": "1860",
+   "UNIXTIME": {
+    "$numberLong": "1777593600"
+   }
+  },
+  {
+   "Tarih": "2026-6",
+   "TP_FIXTURE_GOLD_IMPORTS": "1980",
+   "UNIXTIME": {
+    "$numberLong": "1780272000"
+   }
+  },
+  {
+   "Tarih": "2026-7",
+   "TP_FIXTURE_GOLD_IMPORTS": "1500",
+   "UNIXTIME": {
+    "$numberLong": "1782864000"
+   }
+  },
+  {
+   "Tarih": "2026-8",
+   "TP_FIXTURE_GOLD_IMPORTS": "1620",
+   "UNIXTIME": {
+    "$numberLong": "1785542400"
+   }
+  },
+  {
+   "Tarih": "2026-9",
+   "TP_FIXTURE_GOLD_IMPORTS": "4340",
+   "UNIXTIME": {
+    "$numberLong": "1788220800"
+   }
+  }
+ ]
+}

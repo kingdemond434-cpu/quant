@@ -1315,6 +1315,218 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
                                  "fetched or parsed from the sandbox")}),
 }
 SOURCE_POLICY.update(_HELD_ROUTES)
+#: THE ASIAN PHYSICAL-GOLD STATES (IDEA_QUEUE 245, 237, 228, 215; 2026-10-29). One row per
+#: `alt_proxies` source id; `hosts` is empty so the row governs only that source NAME (the
+#: country packs' idea grounds on these hosts keep whatever row or default they had; sge.com.cn
+#: as a whole is the `sge` row below). A row is LIVE only on a quoted clause of its own terms
+#: page; the other three were not readable and are IDEAS_ONLY: never live input, ideas still
+#: mined, parsers built on fixtures, and each carries its missed-growth line here and in the
+#: state artifact (`asia_gold_physical.missed_growth_lines`). Flipping a row is the only unblock.
+_GOLD_MISSED = ("delta E[log W] UNMEASURED: the {state} state for the gold_asia window cannot be "
+                "judged until this row's terms are read with a clause permitting automated "
+                "access for internal research; no conversion of it is on record")
+SOURCE_POLICY.update({
+    "hk_gold_reexports": {
+        "hosts": (), "url_level": False, "status": API_PERMITTED,
+        "sources": ("hk_gold_reexports",),
+        "why": ("C&SD trade statistics through the Trade-IDDS API published as a DATA.GOV.HK "
+                "resource; the portal's terms (clauses quoted) permit downloading and "
+                "reproducing the Data for commercial purposes with attribution, and the API is "
+                "the portal's own machine route; robots.txt is read per request (a Disallow is "
+                "a hold). One-line revert: status -> IDEAS_ONLY if the auditor reads the "
+                "download grant as not covering automated access"),
+        "api": "https://tradeidds.censtatd.gov.hk/api/get",
+        "api_enquiry": ("https://data.gov.hk/en-data/dataset/hk-censtatd-trade-idds-trade/"
+                        "resource/173a8d40-24ff-4e8e-b9f2-456b20208fa4"),
+        "robots": ("tradeidds.censtatd.gov.hk refused the terms reader's agent by robots on the "
+                   "API spec PDF (2026-10-29); polite_fetch reads robots for DESK_UA on every "
+                   "request, and a Disallow is recorded as a hold, never routed around"),
+        "credit": ("Source: Census and Statistics Department, HKSAR Government (via "
+                   "DATA.GOV.HK); figures modified by the desk (net flow, z-score)"),
+        "terms": {"url": "https://data.gov.hk/en/terms-and-conditions",
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "use": ("You are allowed to browse, download, distribute, reproduce, "
+                              "hyperlink to, and print the Data for both commercial and "
+                              "non-commercial purposes on a free-of-charge basis"),
+                      "data": ("“Data” mean the data and all contents provided by the "
+                               "Government and/or other organisations"),
+                      "attribution": "you shall identify clearly the source of the Data"},
+                  "unread": {"https://tradeidds.censtatd.gov.hk/MetadataLink/ApiSpec/"
+                             "API_eng.pdf": "ROBOTS_DISALLOWED to the reader on 2026-10-29: "
+                                            "the response field names are UNREAD"}}},
+    "vn_sjc_premium": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("vn_sjc_premium",),
+        "why": ("SJC's price board and the SBV central-rate page could not be read (client "
+                "error to the reader, 2026-10-29), so their terms are UNREAD and UNREAD terms "
+                "never permit automated live input; the parser is ready on fixtures"),
+        "unblock": ("sjc.com.vn and sbv.gov.vn terms read with a clause permitting automated "
+                    "access for internal research, quoted into this row, and the row flipped"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _GOLD_MISSED.format(state="Vietnam SJC premium")},
+        "terms": {"url": "https://sjc.com.vn/", "checked_at": "2026-10-29",
+                  "unread": {"https://sjc.com.vn/": "client_error to the reader on 2026-10-29",
+                             "https://www.sbv.gov.vn/": ("client_error to the reader on "
+                                                         "2026-10-29")}}},
+    "th_gold_premium": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("th_gold_premium",),
+        "why": ("the Gold Traders Association's terms page renders its body by script and the "
+                "reader saw navigation only (2026-10-29), so its terms are UNREAD and UNREAD "
+                "terms never permit automated live input; the parser is ready on fixtures"),
+        "unblock": ("goldtraders.or.th/terms-and-conditions read with a clause permitting "
+                    "automated access for internal research (and the BoT reference-rate API's "
+                    "terms), quoted into this row, and the row flipped"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _GOLD_MISSED.format(state="Thai 96.5% bar premium")},
+        "terms": {"url": "https://www.goldtraders.or.th/terms-and-conditions",
+                  "checked_at": "2026-10-29",
+                  "unread": {"https://www.goldtraders.or.th/terms-and-conditions": (
+                      "body rendered by script: the reader saw navigation and footer only "
+                      "(footer: 'สงวนสิทธิ์ 2567 สมาคมค้าทองคำ') on 2026-10-29")}}},
+    "cn_sge_deferral": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("cn_sge_deferral",),
+        "why": ("the SGE site prints only 'Copyright 2016 上海黄金交易所 All Right Reserved' and "
+                "links no terms page (read 2026-10-29), so its terms are UNREAD and UNREAD "
+                "terms never permit automated live input; the 交收方向 parser is ready on "
+                "fixtures"),
+        "unblock": ("an SGE statement permitting automated access to its daily quotation "
+                    "table for internal research, quoted into this row, and the row flipped"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _GOLD_MISSED.format(state="SGE Au(T+D) deferral direction")},
+        "terms": {"url": "https://www.sge.com.cn/", "checked_at": "2026-10-29",
+                  "unread": {"https://www.sge.com.cn/": (
+                      "no terms link; footer 'Copyright 2016 上海黄金交易所 All Right Reserved' "
+                      "(2026-10-29)")}}},
+})
+#: THE SGE HOST (2026-10-29, coordinator follow-up to the asia-gold build). `fetch_sge_premium`
+#: fetched sge.com.cn as LIVE INPUT with a bare `requests.get` while SGE's terms were UNREAD. Under
+#: the fail-closed ruling the whole host is IDEAS_ONLY: every request goes through polite_fetch
+#: (robots, DESK_UA, hard stops), live input from it is refused before anything is sent, and the
+#: deep-forest / world-crawler idea grounds on it keep reading for ideas. `consumers` is the grep
+#: of every organ, state, cell and proposal that reads the SGE premium or SGE data (2026-10-29);
+#: each reads a refused fetch as UNMEASURED. No certificate, sleeve or shadow clock consumes it.
+_SGE_CONSUMERS = (
+    "leg sge_premium -> research/fetch_sge_premium.py (writes data/lake/sge_daily.parquet, "
+    "data/lake/sge_premium.parquet, reports/sge_premium.json)",
+    "alt_proxies source cn_sge_premium (reader of sge_premium.parquet; terms to_confirm, never "
+    "read)",
+    "macro_state_engine latent cn_physical_gold input sge_premium (terms_source cn_sge_premium)",
+    "dislocation_lab engine P6 (reads reports/sge_premium.json row count for XAUUSD)",
+    "asia_plane in-hand census (counted sge_benchmark from sge_daily.parquet)",
+    "asia_collector registry rows sge_benchmark and sge_silver (asia_sources.json, sjzx/mrhq and "
+    "sjzx/yjstjb)",
+    "world_dataset_hunter sge_benchmark (en.sge.com.cn/data_BenchmarkPrice)",
+    "asia_transmission edge sge_premium_to_gold (declared proxy, not yet collected)",
+    "scripts/check_source_routes.py route sge_quotations (shape probe only)",
+    "alt_proxies source cn_sge_deferral (IDEA_QUEUE 215; its own IDEAS_ONLY row)",
+    "compiled proposal XAU_locbasis_split (data_source names SGE Au99.99 daily close)",
+    "36 external_survivors genomes with SGE idea provenance (miner:asia:sge_benchmark XAUUSD "
+    "range_reversion/spread_state, miner:asia:sge_silver XAGUSD): idea lineage only, they trade "
+    "on MT5 data and stay judged (rule 4)",
+)
+SOURCE_POLICY["sge"] = {
+    "hosts": ("sge.com.cn",), "status": IDEAS_ONLY,
+    "sources": ("sge_premium", "cn_sge_premium", "sge_benchmark", "sge_silver"),
+    "why": ("the SGE site prints only 'Copyright 2016 上海黄金交易所 All Right Reserved' and links "
+            "no terms page (read 2026-10-29), so its terms are UNREAD and UNREAD terms never "
+            "permit automated live input; its pages are read politely for ideas only"),
+    "unblock": ("an SGE statement permitting automated access to its quotation data for internal "
+                "research, quoted into this row, and the row flipped to PUBLIC_PAGE"),
+    "consumers": _SGE_CONSUMERS,
+    "missed_growth": {
+        "delta_elogw": "UNMEASURED",
+        "cause": ("the SGE premium (and the Au(T+D) basis) for the gold_asia window is cut as live "
+                  "input until SGE's terms are read; consumers cut: " + "; ".join(_SGE_CONSUMERS)
+                  + ". No certificate, sleeve or shadow clock reads it, so the forgone growth is "
+                  "UNMEASURED, never zero")},
+    "terms": {"url": "https://www.sge.com.cn/", "checked_at": "2026-10-29",
+              "unread": {"https://www.sge.com.cn/": (
+                  "no terms link; footer 'Copyright 2016 上海黄金交易所 All Right Reserved' "
+                  "(2026-10-29)")}}}
+#: THE TURKISH HOUSEHOLD GOLD DEMAND STATE (IDEA_QUEUE 257, 2026-10-29). Three rows, one per
+#: publisher. EVDS's OWN terms ("EVDS Kullanim Sartlari", served by evds3 as document 18) govern
+#: the EVDS web service and permit third-party use and publication with the source credited, for
+#: commercial or non-commercial purposes; that is narrower and later than the tcmb.gov.tr site
+#: disclaimer (also quoted), which put commercial use of SITE information under prior written
+#: permission and is why tr_tuik_retail once skipped EVDS. Borsa Istanbul's own notice refuses
+#: copying or storing without prior written consent; Istanbul Gold Refinery links no terms page.
+_TR_GOLD_MISSED = ("delta E[log W] UNMEASURED: the Turkish domestic gold {what} for the XAUUSD "
+                   "Europe and Asia windows cannot be read from this publisher until its terms "
+                   "permit automated access; the CBRT EVDS rows carry the state meanwhile, and no "
+                   "conversion of this route is on record")
+SOURCE_POLICY.update({
+    "tr_evds_gold": {
+        "hosts": (), "url_level": False, "status": API_PERMITTED, "key_env": ("EVDS_API_KEY",),
+        "sources": ("tr_gold_try_price", "tr_gold_imports", "tr_gold_reserves"),
+        "why": ("the CBRT EVDS web service (an API taking the user's key in a request header); "
+                "EVDS's own terms (clauses quoted) let third parties use and publish EVDS data "
+                "with the source credited, commercial use included, with no extra charge passed "
+                "to users, and let the CBRT cap query counts; robots.txt is read per request by "
+                "polite_fetch (a Disallow is a hold). One-line revert: status -> IDEAS_ONLY if "
+                "the auditor reads the tcmb.gov.tr site disclaimer as governing EVDS data"),
+        "api": "https://evds3.tcmb.gov.tr/igmevdsms-dis/",
+        "credit": "Kaynak: TCMB EVDS (Türkiye Cumhuriyet Merkez Bankası Elektronik Veri "  # noqa: RUF001
+                  "Dağıtım Sistemi); premium and z computed by the desk",  # noqa: RUF001
+        "robots": "read per request by polite_fetch for DESK_UA (not readable from the authoring "
+                  "container, whose proxy refuses the host)",
+        "terms": {"url": ("https://evds3.tcmb.gov.tr/igmevdsms-dis/documents/showDocument"
+                          "?docId=18"),
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "use": ("EVDS uygulaması, EVDS web servisi ve EVDS MCP'de sunulan veriler "  # noqa: RUF001
+                              "kaynak gösterilmek koşuluyla ... üçüncü kişiler tarafından "  # noqa: RUF001
+                              "kullanılabilir ve yayımlanabilir."),  # noqa: RUF001
+                      "commercial": ("ticari veya ticari olmayan amaçla dahi kullanıldığında, "  # noqa: RUF001
+                                     "ürünün kullanıcılarına ve abonelerine ..."),  # noqa: RUF001
+                      "web_service": ("EVDS web servisi: EVDS verilerine programatik erişim "
+                                      "sağlayan API."),
+                      "limits": ("TCMB gerekli gördüğü takdirde EVDS bileşenleri üzerinde sorgu "
+                                 "sayısı, eşzamanlı bağlantı sayısı ...")},  # noqa: RUF001
+                  "site_disclaimer": {
+                      "url": ("https://www.tcmb.gov.tr/wps/wcm/connect/EN/TCMB+EN/Bottom+Menu/"
+                              "Other/Disclaimer"),
+                      "quote": ("Information published in this site may be quoted by specific "
+                                "reference thereto, but the use of such information for "
+                                "commercial purposes shall be subject to prior written "
+                                "permission of the CBRT.")}}},
+    "tr_bist_gold": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("tr_bist_gold",),
+        "why": ("Borsa Istanbul's own notice (clause quoted) forbids copying, distributing or "
+                "storing its information for subsequent use without prior written consent, so "
+                "its precious-metals price table is never automated live input; the parser is "
+                "ready on fixtures"),
+        "unblock": ("a Borsa Istanbul data licence (or written consent) for the precious metals "
+                    "market price table, quoted into this row, and the row flipped"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _TR_GOLD_MISSED.format(
+                              what="market price (Borsa Istanbul precious metals market)")},
+        "terms": {"url": "https://borsaistanbul.com/sayfa/3642", "checked_at": "2026-10-29",
+                  "clauses": {
+                      "copying": ("The information contained herein may not otherwise be "
+                                  "copied, performed, distributed, rented, reproduced, "
+                                  "sublicensed, altered, stored for subsequent use, etc., in "
+                                  "whole or in part, in any manner without Borsa İstanbul's "
+                                  "prior written consent.")}}},
+    "tr_iar_gold": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("tr_iar_gold",),
+        "why": ("Istanbul Gold Refinery's site links no terms of use (only a KVKK personal-data "
+                "page) and its home page prints no price table (read 2026-10-29), so its terms "
+                "are UNREAD and UNREAD terms never permit automated live input; no parser is "
+                "built because no price page shape was readable"),
+        "unblock": ("an iar.com.tr statement permitting automated access to a published price "
+                    "page, quoted into this row, and a parser on a fixture of that page"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _TR_GOLD_MISSED.format(what="refinery price")},
+        "terms": {"url": "https://www.iar.com.tr/", "checked_at": "2026-10-29",
+                  "unread": {"https://www.iar.com.tr/": (
+                      "no terms link; footer links only 'Kişisel Verilerin Korunması' "  # noqa: RUF001
+                      "(https://www.iar.com.tr/Kurumsal/kvkk/148), 2026-10-29")}}},
+})
 #: The held-route rows, by key (read by `alt_proxies.HELD_ROUTES`).
 HELD_ROUTE_KEYS: frozenset[str] = frozenset(
     k for k, r in SOURCE_POLICY.items() if r.get("held_route"))
