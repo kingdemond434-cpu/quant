@@ -1,0 +1,1124 @@
+{
+ "about": "Every API key or credential the code reads. Read by libs/ops/env_keys.py, scripts/check_keys.py and scripts/check_keys.ps1. Policy: public or licensed only; free self-registered keys count as licensed; paid data stays unused. X, Discord user tokens, Reddit, StockTwits and crypto venues are fenced (libs/data/terms_fence.py) and are not listed.",
+ "keys": [
+  {
+   "name": "FRED_API_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box+vps",
+   "signup": "https://fredaccount.stlouisfed.org/apikeys",
+   "unlocks": "FRED macro and ALFRED vintages (macro surprise, first prints)",
+   "readers": [
+    "desks/mt5/research/fetch_alfred.py",
+    "scripts/collect_fred_macro.py"
+   ],
+   "owner": "World sensor and macro surprise",
+   "file_fallback": "data/secrets/fred.json {\"key\": ...} or secrets/fred_api_key"
+  },
+  {
+   "name": "EIA_API_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://www.eia.gov/opendata/register.php",
+   "unlocks": "EIA weekly petroleum stocks -> XTIUSD, XBRUSD, USDCAD",
+   "readers": [
+    "desks/mt5/research/asia_collector.py (asia_sources.json eia_energy)",
+    "desks/mt5/research/keyed_sources.py"
+   ],
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "ECOS_API_KEY",
+   "group": "unavailable",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://ecos.bok.or.kr/api/#/AuthKeyApply",
+   "unlocks": "Bank of Korea card spending (kr_bok_card_spend)",
+   "readers": [
+    "desks/mt5/research/alt_proxies.py",
+    "desks/mt5/research/keyed_sources.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "same_key_as": "BOK_API_KEY",
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: bis_kr_policy_rate (BIS SDMX, keyless), FRED Korea series (FRED key set), oecd_cli, imf_ifs"
+  },
+  {
+   "name": "BOK_API_KEY",
+   "group": "unavailable",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://ecos.bok.or.kr/api/#/AuthKeyApply",
+   "unlocks": "Bank of Korea ECOS macro (bok_ecos)",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "same_key_as": "ECOS_API_KEY",
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: bis_kr_policy_rate (BIS SDMX, keyless), FRED Korea series, oecd_cli, imf_ifs"
+  },
+  {
+   "name": "TUSHARE_TOKEN",
+   "group": "unavailable",
+   "cost": "free (points-tiered)",
+   "machine": "box",
+   "signup": "https://tushare.pro/register",
+   "unlocks": "China futures, settlement, margin, minute/OI, China release calendar",
+   "readers": [
+    "libs/data/free_stack.py",
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: BaoStock (keyless, libs/data/free_stack.py), AKShare (keyless), and the exchanges' own daily pages shfe_daily, dce_daily, czce_daily, cffex_daily"
+  },
+  {
+   "name": "JQ_USER",
+   "group": "unavailable",
+   "cost": "free trial, BLOCKED_REGION (JoinQuant requires a Chinese IP)",
+   "machine": "box",
+   "signup": "https://www.joinquant.com/default/index/sdk",
+   "unlocks": "JoinQuant jqdatasdk (with JQ_PASS)",
+   "readers": [
+    "libs/data/free_stack.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: BaoStock + AKShare + the SHFE/DCE/CZCE/CFFEX daily pages"
+  },
+  {
+   "name": "JQ_PASS",
+   "group": "unavailable",
+   "cost": "free trial, BLOCKED_REGION (JoinQuant requires a Chinese IP)",
+   "machine": "box",
+   "signup": "https://www.joinquant.com/default/index/sdk",
+   "unlocks": "JoinQuant jqdatasdk (with JQ_USER)",
+   "readers": [
+    "libs/data/free_stack.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: BaoStock + AKShare + the SHFE/DCE/CZCE/CFFEX daily pages"
+  },
+  {
+   "name": "ESTAT_APP_ID",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://www.e-stat.go.jp/api/en",
+   "unlocks": "Japan e-Stat: Tokyo CPI, immigration, customs microdata",
+   "readers": [
+    "desks/mt5/research/alt_proxies.py",
+    "desks/mt5/research/asia_collector.py",
+    "desks/mt5/research/keyed_sources.py"
+   ],
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "FIRMS_MAP_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://firms.modaps.eosdis.nasa.gov/api/map_key/",
+   "unlocks": "NASA FIRMS thermal hotspots (refineries, smelters, CN industrial)",
+   "readers": [
+    "desks/mt5/research/alt_proxies.py",
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "KOBIS_API_KEY",
+   "group": "unavailable",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://www.kobis.or.kr/kobisopenapi/homepg/apikey/ckUser/findApikeyList.do",
+   "unlocks": "Korea box office (consumer spend proxy)",
+   "readers": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: kobis_boxoffice_web (KOFIC's public daily box-office page, keyless)"
+  },
+  {
+   "name": "SEOUL_API_KEY",
+   "group": "unavailable",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://data.seoul.go.kr/together/mypage/actkeyMain.do",
+   "unlocks": "Seoul subway ridership (activity proxy)",
+   "readers": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: no keyless equivalent for Seoul subway/footfall; kr_kosis and kr_customs_20day carry the Korean demand cycle meanwhile"
+  },
+  {
+   "name": "DATA_GO_KR_KEY",
+   "group": "unavailable",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://www.data.go.kr/",
+   "unlocks": "Korea MOF container TEU (apply for dataset 1192000/SsopCargContnImxprt2)",
+   "readers": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: kr_customs_20day and kr_exports_20d (UNIPASS public pages), UN Comtrade (COMTRADE_API_KEY)"
+  },
+  {
+   "name": "INEGI_TOKEN",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://www.inegi.org.mx/app/desarrolladores/generatoken/Usuarios/token_Verify",
+   "unlocks": "Mexico INEGI retail (EMEC) -> USDMXN",
+   "readers": [
+    "desks/mt5/research/alt_proxies.py"
+   ],
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "BANXICO_TOKEN",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://www.banxico.org.mx/SieAPIRest/service/v1/token",
+   "unlocks": "Banco de Mexico SIE series -> USDMXN, GBPMXN",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "NASDAQ_DATA_LINK_KEY",
+   "group": "free_data",
+   "cost": "free (50k calls/day)",
+   "machine": "box",
+   "signup": "https://data.nasdaq.com/sign-up",
+   "unlocks": "LBMA gold/silver fixes, OPEC basket -> XAUUSD, XAGUSD, XBRUSD, XTIUSD",
+   "readers": [
+    "desks/mt5/research/keyed_sources.py"
+   ],
+   "owner": "Global data discovery and use"
+  },
+  {
+   "name": "KOSIS_API_KEY",
+   "group": "unavailable",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://kosis.kr/openapi/index/index.jsp",
+   "unlocks": "Statistics Korea CPI and exports",
+   "readers": [
+    "desks/mt5/research/keyed_sources.py"
+   ],
+   "owner": "Global data discovery and use",
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: kr_kosis public pages, oecd_cli, imf_ifs, FRED Korea series"
+  },
+  {
+   "name": "BLS_API_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://data.bls.gov/registrationEngine/",
+   "unlocks": "BLS CPI components, average hourly earnings, PPI",
+   "readers": [
+    "desks/mt5/research/keyed_sources.py"
+   ],
+   "owner": "Global data discovery and use"
+  },
+  {
+   "name": "EDINET_API_KEY",
+   "group": "unavailable",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://api.edinet-fsa.go.jp/api/auth/index.aspx?mode=1",
+   "unlocks": "Japan FSA filings (securities and large-holding reports)",
+   "readers": [
+    "desks/mt5/research/corporate_disclosure.py"
+   ],
+   "pending_pr": 140,
+   "owner": "Asian quant practices gap check",
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: tdnet_jp_disclosures (JPX TDnet daily listing, keyless)"
+  },
+  {
+   "name": "DART_API_KEY",
+   "group": "unavailable",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://opendart.fss.or.kr/uss/umt/EgovMberInsertView.do",
+   "unlocks": "Korea FSS OpenDART corporate filings",
+   "readers": [
+    "desks/mt5/research/corporate_disclosure.py"
+   ],
+   "pending_pr": 140,
+   "owner": "Asian quant practices gap check",
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: krx_kind_disclosures (KRX KIND public disclosure listing, keyless)"
+  },
+  {
+   "name": "JQUANTS_PASSWORD",
+   "group": "legacy",
+   "cost": "free plan (legacy V1 only)",
+   "machine": "box",
+   "signup": "https://jpx-jquants.com/",
+   "unlocks": "legacy J-Quants V1 login fallback (with JQUANTS_MAILADDRESS)",
+   "readers": [
+    "desks/mt5/research/corporate_disclosure.py"
+   ],
+   "pending_pr": 218,
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "JQUANTS_REFRESH_TOKEN",
+   "group": "legacy",
+   "cost": "free plan (legacy V1 only)",
+   "machine": "box",
+   "signup": "https://jpx-jquants.com/",
+   "unlocks": "legacy J-Quants V1 fallback; set only if you have no JQUANTS_API_KEY",
+   "readers": [
+    "desks/mt5/research/corporate_disclosure.py"
+   ],
+   "pending_pr": 218,
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "TELEGRAM_API_ID",
+   "group": "account_free",
+   "cost": "free (your own Telegram account)",
+   "machine": "box",
+   "signup": "https://my.telegram.org/apps",
+   "unlocks": "full history of public finance channels (with TELEGRAM_API_HASH)",
+   "readers": [
+    "desks/mt5/research/keyed_sources.py"
+   ],
+   "owner": "Global data discovery and use"
+  },
+  {
+   "name": "TELEGRAM_API_HASH",
+   "group": "account_free",
+   "cost": "free (your own Telegram account)",
+   "machine": "box",
+   "signup": "https://my.telegram.org/apps",
+   "unlocks": "(pair of TELEGRAM_API_ID)",
+   "readers": [
+    "desks/mt5/research/keyed_sources.py"
+   ],
+   "owner": "Global data discovery and use"
+  },
+  {
+   "name": "QUANT_EDGAR_UA",
+   "group": "free_data",
+   "cost": "free (not a key)",
+   "machine": "box+vps",
+   "signup": "https://www.sec.gov/os/accessing-edgar-data",
+   "unlocks": "SEC EDGAR filings (alpha_capture, edgar_transmission)",
+   "readers": [
+    "desks/mt5/research/alpha_capture.py",
+    "desks/mt5/research/sandboxes/edgar_transmission.py"
+   ],
+   "owner": "World sensor and macro surprise",
+   "note": "value is a declared User-Agent: \"YourName your@email\"",
+   "aliases": [
+    "SEC_EDGAR_USER_AGENT",
+    "SEC_EDGAR_UA"
+   ]
+  },
+  {
+   "name": "GITHUB_TOKEN",
+   "group": "free_infra",
+   "cost": "free",
+   "machine": "box+vps",
+   "signup": "https://github.com/settings/personal-access-tokens/new",
+   "unlocks": "the box's git push (it has no other non-interactive credential) and repo/paper miners at 5000 req/h",
+   "readers": [
+    "desks/mt5/research/repo_miner.py",
+    "libs/data/papers.py",
+    "desks/mt5/side_channels/github_miner.py"
+   ],
+   "owner": "Mine the EliteQuant list",
+   "note": "fine-grained token, only kingdemond434-cpu/quant, Contents: Read and write; public repos stay readable",
+   "file_fallback": "~/.gh_token"
+  },
+  {
+   "name": "OPENROUTER_API_KEY",
+   "group": "free_llm",
+   "cost": "free models available (QUANT_FREE_TIER=1 default)",
+   "machine": "box+vps",
+   "signup": "https://openrouter.ai/settings/keys",
+   "unlocks": "LLM idea-miner seat (#142): proposer seat, event factors, convert swarm",
+   "readers": [
+    "libs/ops/llm_seat.py",
+    "libs/research/proposer_seat.py",
+    "libs/research/event_factors_llm.py",
+    "ops/convert_swarm.py"
+   ],
+   "owner": "Finish the old committees work",
+   "file_fallback": "data/secrets/llm_panel.json"
+  },
+  {
+   "name": "YOUTUBE_API_KEY",
+   "group": "free_data",
+   "cost": "free quota",
+   "machine": "vps",
+   "signup": "https://console.cloud.google.com/apis/library/youtube.googleapis.com",
+   "unlocks": "YouTube transcript/video miner",
+   "readers": [
+    "desks/mt5/side_channels/youtube_miner.py"
+   ],
+   "owner": "Mine the EliteQuant list",
+   "file_fallback": "VPS data/secrets/youtube.env"
+  },
+  {
+   "name": "CLAUDE_CODE_OAUTH_TOKEN",
+   "group": "infra",
+   "cost": "your Claude plan",
+   "machine": "vps",
+   "signup": "run `claude setup-token` on the VPS",
+   "unlocks": "VPS brain/frontier/dataaxis hunters",
+   "readers": [
+    "ops/brain_env.sh",
+    "ops/quant-frontier.service"
+   ],
+   "owner": "Breadth and tier assessment",
+   "file_fallback": "VPS data/secrets/claude_oauth_token or ~/.claude_token.env"
+  },
+  {
+   "name": "DARWINEX_TOKEN",
+   "group": "account_free",
+   "cost": "free with a Darwinex account (check terms)",
+   "machine": "box",
+   "signup": "https://www.darwinex.com/",
+   "unlocks": "Darwinex DARWIN investment attributes for thousands of strategies, dead ones included: which structure predicts persistence after costs, conditioned onto our instruments",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "QuantConnect, WorldQuant and fund miners"
+  },
+  {
+   "name": "C2_API_KEY",
+   "group": "account_free",
+   "cost": "account-gated (check terms)",
+   "machine": "box",
+   "signup": "https://collective2.com/api-docs/latest",
+   "unlocks": "Collective2 strategy history with dead, killed and archived strategies: the graveyard, i.e. what predicts a strategy dying",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "QuantConnect, WorldQuant and fund miners"
+  },
+  {
+   "name": "OPENAI_API_KEY",
+   "group": "paid_llm",
+   "cost": "paid",
+   "machine": "box+vps",
+   "signup": "https://platform.openai.com/api-keys",
+   "unlocks": "optional extra LLM seat",
+   "readers": [
+    "libs/ops/llm_seat.py"
+   ],
+   "owner": "Finish the old committees work"
+  },
+  {
+   "name": "DEEPSEEK_API_KEY",
+   "group": "paid_llm",
+   "cost": "paid (cheap)",
+   "machine": "box+vps",
+   "signup": "https://platform.deepseek.com/api_keys",
+   "unlocks": "optional extra LLM seat",
+   "readers": [
+    "libs/ops/llm_seat.py"
+   ],
+   "owner": "Finish the old committees work"
+  },
+  {
+   "name": "XAI_API_KEY",
+   "group": "paid_llm",
+   "cost": "paid",
+   "machine": "box+vps",
+   "signup": "https://console.x.ai/",
+   "unlocks": "optional extra LLM seat (API only, not X data)",
+   "readers": [
+    "libs/ops/llm_seat.py"
+   ],
+   "owner": "Finish the old committees work"
+  },
+  {
+   "name": "ANTHROPIC_API_KEY",
+   "group": "paid_llm",
+   "cost": "paid",
+   "machine": "vps",
+   "signup": "https://console.anthropic.com/settings/keys",
+   "unlocks": "optional brain seat (dormant; OAuth token preferred)",
+   "readers": [
+    "ops/brain_env.sh",
+    "desks/mt5/mt5desk/analyst_rank.py"
+   ],
+   "owner": "Breadth and tier assessment"
+  },
+  {
+   "name": "TIANYANCHA_TOKEN",
+   "group": "paid_blocked",
+   "cost": "paid, not used by policy",
+   "machine": "box",
+   "signup": "https://open.tianyancha.com/",
+   "unlocks": "CN corporate registry graph",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "BAIDU_INDEX_COOKIE",
+   "group": "paid_blocked",
+   "cost": "login cookie, not used by policy",
+   "machine": "box",
+   "signup": "-",
+   "unlocks": "Baidu Index attention",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check"
+  },
+  {
+   "name": "JQUANTS_API_KEY",
+   "group": "free_data",
+   "cost": "free plan",
+   "machine": "box",
+   "signup": "https://jpx-jquants.com/",
+   "unlocks": "J-Quants V2 (never expires): investor-type flow, statements, forecasts -> USDJPY, JP225",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "aliases": [
+    "JQUANTS_TOKEN"
+   ],
+   "pending_pr": 218,
+   "note": "V2 key from the J-Quants dashboard; accounts made after 2025-12-22 have no V1 refresh token"
+  },
+  {
+   "name": "JQUANTS_MAILADDRESS",
+   "group": "legacy",
+   "cost": "free plan (legacy V1 only)",
+   "machine": "box",
+   "signup": "https://jpx-jquants.com/",
+   "unlocks": "legacy J-Quants V1 login fallback (with JQUANTS_PASSWORD)",
+   "readers": [
+    "desks/mt5/research/corporate_disclosure.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "aliases": [
+    "JQUANTS_MAIL"
+   ],
+   "pending_pr": 218
+  },
+  {
+   "name": "CDSE_USERNAME",
+   "group": "unavailable",
+   "cost": "free account",
+   "machine": "box",
+   "signup": "https://dataspace.copernicus.eu/",
+   "unlocks": "Sentinel-5P NO2/SO2/CO over industrial clusters (with CDSE_PASSWORD; the desk mints its own token)",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "aliases": [
+    "CDSE_TOKEN"
+   ],
+   "pending_pr": 218,
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: openmeteo_cams_air (Copernicus CAMS NO2/SO2 via Open-Meteo, keyless) and nasa_cmr_s5p_no2 (NASA CMR search keyless; granules with EARTHDATA_TOKEN)"
+  },
+  {
+   "name": "CDSE_PASSWORD",
+   "group": "unavailable",
+   "cost": "free account",
+   "machine": "box",
+   "signup": "https://dataspace.copernicus.eu/",
+   "unlocks": "(pair of CDSE_USERNAME)",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "pending_pr": 218,
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: openmeteo_cams_air and nasa_cmr_s5p_no2"
+  },
+  {
+   "name": "CDSE_CLIENT_ID",
+   "group": "unavailable",
+   "cost": "free account",
+   "machine": "box",
+   "signup": "https://dataspace.copernicus.eu/",
+   "unlocks": "alternative to CDSE_USERNAME/PASSWORD (OAuth client)",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "pending_pr": 218,
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: openmeteo_cams_air and nasa_cmr_s5p_no2"
+  },
+  {
+   "name": "CDSE_CLIENT_SECRET",
+   "group": "unavailable",
+   "cost": "free account",
+   "machine": "box",
+   "signup": "https://dataspace.copernicus.eu/",
+   "unlocks": "(pair of CDSE_CLIENT_ID)",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "pending_pr": 218,
+   "note": "UNAVAILABLE to the operator (2026-10-06): never ask for it again. Keyless substitute: openmeteo_cams_air and nasa_cmr_s5p_no2"
+  },
+  {
+   "name": "MYFXBOOK_EMAIL",
+   "group": "account_free",
+   "cost": "free account",
+   "machine": "box",
+   "signup": "https://www.myfxbook.com/",
+   "unlocks": "Myfxbook community outlook: % long/short and positions per pair = retail crowding, the stops a move runs into (with MYFXBOOK_PASSWORD)",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "aliases": [
+    "MYFXBOOK_SESSION"
+   ],
+   "pending_pr": 218
+  },
+  {
+   "name": "MYFXBOOK_PASSWORD",
+   "group": "account_free",
+   "cost": "free account",
+   "machine": "box",
+   "signup": "https://www.myfxbook.com/",
+   "unlocks": "(pair of MYFXBOOK_EMAIL)",
+   "readers": [
+    "desks/mt5/research/asia_collector.py"
+   ],
+   "owner": "Asian quant practices gap check",
+   "pending_pr": 218
+  },
+  {
+   "name": "EVDS_API_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://evds2.tcmb.gov.tr/index.php?/evds/userDocs",
+   "unlocks": "Turkey central bank EVDS series -> USDTRY",
+   "readers": [
+    "desks/mt5/data/paid_substitute_library.json"
+   ],
+   "owner": "Breadth and tier assessment",
+   "pending_pr": 152
+  },
+  {
+   "name": "NASS_API_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://quickstats.nass.usda.gov/api",
+   "unlocks": "USDA crop progress and condition -> softs and grains",
+   "readers": [
+    "desks/mt5/data/paid_substitute_library.json"
+   ],
+   "owner": "Breadth and tier assessment",
+   "pending_pr": 152
+  },
+  {
+   "name": "COMTRADE_API_KEY",
+   "group": "free_data",
+   "cost": "free tier",
+   "machine": "box",
+   "signup": "https://comtradedeveloper.un.org/",
+   "unlocks": "UN Comtrade monthly trade flows since 1962",
+   "readers": [
+    "desks/mt5/data/paid_substitute_library.json"
+   ],
+   "owner": "Breadth and tier assessment",
+   "pending_pr": 152,
+   "note": "ACQUIRED 2026-10-06; COMTRADE_API_KEY_SECONDARY is the rotation fallback"
+  },
+  {
+   "name": "ENTSOE_API_TOKEN",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://transparency.entsoe.eu/ (register, then email transparency@entsoe.eu for API access)",
+   "unlocks": "EU hourly power load/generation -> XNGUSD, GER40",
+   "readers": [
+    "desks/mt5/data/paid_substitute_library.json"
+   ],
+   "owner": "Breadth and tier assessment",
+   "pending_pr": 152
+  },
+  {
+   "name": "EARTHDATA_TOKEN",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://urs.earthdata.nasa.gov/users/new",
+   "unlocks": "NASA Black Marble nightlights -> USDCNH, USDINR, copper",
+   "readers": [
+    "desks/mt5/data/paid_substitute_library.json"
+   ],
+   "owner": "Breadth and tier assessment",
+   "pending_pr": 152,
+   "note": "ACQUIRED 2026-10-06; also the Copernicus CDSE substitute (Sentinel-5P granules via NASA)"
+  },
+  {
+   "name": "CDSAPI_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://cds.climate.copernicus.eu/",
+   "unlocks": "Copernicus ERA5 weather reanalysis since 1940",
+   "readers": [
+    "desks/mt5/data/paid_substitute_library.json"
+   ],
+   "owner": "Breadth and tier assessment",
+   "pending_pr": 152
+  },
+  {
+   "name": "USAJOBS_API_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://developer.usajobs.gov/apirequest/",
+   "unlocks": "US federal job postings (labour demand)",
+   "readers": [
+    "desks/mt5/data/paid_substitute_library.json"
+   ],
+   "owner": "Breadth and tier assessment",
+   "pending_pr": 152,
+   "note": "USAJOBS also needs USAJOBS_USER_AGENT (the registered email) in the User-Agent header"
+  },
+  {
+   "name": "ADZUNA_APP_KEY",
+   "group": "free_data",
+   "cost": "free tier",
+   "machine": "box",
+   "signup": "https://developer.adzuna.com/signup",
+   "unlocks": "Adzuna job counts by category, 5 languages",
+   "readers": [
+    "desks/mt5/data/paid_substitute_library.json"
+   ],
+   "owner": "Breadth and tier assessment",
+   "pending_pr": 152,
+   "note": "ACQUIRED 2026-10-06; Adzuna also needs ADZUNA_APP_ID (still pending)"
+  },
+  {
+   "name": "PATENTSVIEW_API_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://patentsview-support.atlassian.net/servicedesk/customer/portal/1/group/1/create/18",
+   "unlocks": "US patent grants (innovation momentum)",
+   "readers": [
+    "desks/mt5/data/paid_substitute_library.json"
+   ],
+   "owner": "Breadth and tier assessment",
+   "pending_pr": 152
+  },
+  {
+   "name": "EPO_OPS_KEY",
+   "group": "free_data",
+   "cost": "free tier",
+   "machine": "box",
+   "signup": "https://developers.epo.org/",
+   "unlocks": "European Patent Office publications",
+   "readers": [
+    "desks/mt5/data/paid_substitute_library.json"
+   ],
+   "owner": "Breadth and tier assessment",
+   "pending_pr": 152
+  },
+  {
+   "name": "DATA_GOV_IN_KEY",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://data.gov.in/user/register",
+   "unlocks": "India open government data (Asia substitutes)",
+   "readers": [
+    "desks/mt5/data/paid_substitute_library.json"
+   ],
+   "owner": "Asian quant practices gap check",
+   "pending_pr": 182
+  },
+  {
+   "name": "TQ_USER",
+   "group": "free_data",
+   "cost": "free account",
+   "machine": "box",
+   "signup": "https://account.shinnytech.com/",
+   "unlocks": "TqSdk CN futures/options quotes, ticks, klines (SHFE/INE/DCE/CZCE/CFFEX/GFEX); pair with your TqSdk password",
+   "readers": [
+    "desks/mt5/data/source_rosters/thuquant.yaml"
+   ],
+   "owner": "Mine the EliteQuant list",
+   "pending_pr": 166
+  },
+  {
+   "name": "FXMACRODATA_API_KEY",
+   "group": "free_data",
+   "cost": "free tier",
+   "machine": "box",
+   "signup": "https://fxmacrodata.com/",
+   "unlocks": "central-bank announcements, rates, CPI, jobs, GDP for 18 currencies",
+   "readers": [
+    "desks/mt5/data/source_rosters/thuquant.yaml"
+   ],
+   "owner": "Mine the EliteQuant list",
+   "pending_pr": 166
+  },
+  {
+   "name": "FINLIGHT_API_KEY",
+   "group": "free_data",
+   "cost": "free tier",
+   "machine": "box",
+   "signup": "https://finlight.me/",
+   "unlocks": "real-time financial and geopolitical news with entities and sentiment",
+   "readers": [
+    "desks/mt5/data/source_rosters/thuquant.yaml"
+   ],
+   "owner": "Mine the EliteQuant list",
+   "pending_pr": 166
+  },
+  {
+   "name": "FINANCIALDATA_API_KEY",
+   "group": "free_data",
+   "cost": "free tier",
+   "machine": "box",
+   "signup": "https://financialdata.net/",
+   "unlocks": "stock prices and financial statements (share-CFD event lane)",
+   "readers": [
+    "desks/mt5/data/source_rosters/thuquant.yaml"
+   ],
+   "owner": "Mine the EliteQuant list",
+   "pending_pr": 166,
+   "note": "ACQUIRED 2026-10-06 20:07"
+  },
+  {
+   "name": "EODHD_API_KEY",
+   "group": "free_data",
+   "cost": "free tier (20 calls/day)",
+   "machine": "box",
+   "signup": "https://eodhd.com/register",
+   "unlocks": "EOD bars on non-Western exchanges",
+   "readers": [
+    "desks/mt5/data/source_rosters/elitequant.yaml"
+   ],
+   "owner": "Mine the EliteQuant list",
+   "pending_pr": 166
+  },
+  {
+   "name": "KAKAO_TOKEN",
+   "group": "free_data",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://developers.kakao.com/ (create an app, copy its REST API key)",
+   "unlocks": "Daum web/blog/cafe search for Korean trading strategies",
+   "readers": [
+    "libs/mining/sources.yaml"
+   ],
+   "owner": "MT5 global mining pipeline v1",
+   "pending_pr": 133
+  },
+  {
+   "name": "DISCORD_BOT_TOKEN",
+   "group": "account_free",
+   "cost": "free",
+   "machine": "box",
+   "signup": "https://discord.com/developers/applications",
+   "unlocks": "Discord quant servers that invite our bot (bot token only; a user token stays banned)",
+   "readers": [
+    "libs/mining/sources.yaml"
+   ],
+   "owner": "MT5 global mining pipeline v1",
+   "pending_pr": 133
+  },
+  {
+   "name": "CLOUDFLARE_API_TOKEN",
+   "group": "paid_blocked",
+   "cost": "free key, CC BY-NC (non-commercial), not used by policy",
+   "machine": "box",
+   "signup": "https://dash.cloudflare.com/profile/api-tokens",
+   "unlocks": "Cloudflare Radar traffic",
+   "readers": [
+    "desks/mt5/data/paid_substitute_library.json"
+   ],
+   "owner": "Breadth and tier assessment",
+   "pending_pr": 152
+  },
+  {
+   "name": "GFW_API_TOKEN",
+   "group": "paid_blocked",
+   "cost": "free key, CC BY-NC (non-commercial), not used by policy",
+   "machine": "box",
+   "signup": "https://globalfishingwatch.org/our-apis/",
+   "unlocks": "Global Fishing Watch vessel presence",
+   "readers": [
+    "desks/mt5/data/paid_substitute_library.json"
+   ],
+   "owner": "Breadth and tier assessment",
+   "pending_pr": 152
+  },
+  {
+   "name": "XUEQIU_COOKIE",
+   "group": "paid_blocked",
+   "cost": "login cookie, not used by policy",
+   "machine": "box",
+   "signup": "-",
+   "unlocks": "Xueqiu posts behind its WAF",
+   "readers": [
+    "libs/mining/sources.yaml"
+   ],
+   "owner": "MT5 global mining pipeline v1",
+   "pending_pr": 133
+  },
+  {
+   "name": "WIND_KEY",
+   "group": "paid_blocked",
+   "cost": "paid, not used by policy",
+   "machine": "box",
+   "signup": "-",
+   "unlocks": "Wind terminal",
+   "readers": [
+    "libs/mining/sources.yaml"
+   ],
+   "owner": "MT5 global mining pipeline v1",
+   "pending_pr": 133
+  },
+  {
+   "name": "BEA_API_KEY",
+   "group": "not_built",
+   "cost": "free tier, deliberately unused",
+   "machine": "box",
+   "signup": "https://apps.bea.gov/API/signup/",
+   "unlocks": "NIPA GDP, PCE, trade balance detail",
+   "readers": [
+    "desks/mt5/data/credential_registry.json"
+   ],
+   "owner": "Global data discovery and use",
+   "why_not": "FRED/ALFRED already carry GDP, PCE and the trade balance WITH vintages (fetch_alfred); BEA adds industry/regional detail with no MT5 mapping"
+  },
+  {
+   "name": "FINNHUB_API_KEY",
+   "group": "not_built",
+   "cost": "free tier, deliberately unused",
+   "machine": "box",
+   "signup": "https://finnhub.io/register",
+   "unlocks": "earnings calendar and company news for the share-CFD EVENT lane",
+   "readers": [
+    "desks/mt5/data/credential_registry.json"
+   ],
+   "owner": "Global data discovery and use",
+   "why_not": "the event-lane consumer (news_reaction on claude/asia-disclosure) is unmerged; a calendar with no consumer is a dataset that feeds no producer. Wire after asia-disclosure lands"
+  },
+  {
+   "name": "TIINGO_API_KEY",
+   "group": "not_built",
+   "cost": "free tier, deliberately unused",
+   "machine": "box",
+   "signup": "https://www.tiingo.com/account/api/token",
+   "unlocks": "EOD equity/ETF bars (duplicates the broker's own bars)",
+   "readers": [
+    "desks/mt5/data/credential_registry.json"
+   ],
+   "owner": "Global data discovery and use",
+   "why_not": "EOD bars duplicate MT5 bars; news is not on the free tier"
+  },
+  {
+   "name": "ALPHAVANTAGE_API_KEY",
+   "group": "not_built",
+   "cost": "free tier, deliberately unused",
+   "machine": "box",
+   "signup": "https://www.alphavantage.co/support/#api-key",
+   "unlocks": "price series and a few US macro series",
+   "readers": [
+    "desks/mt5/data/credential_registry.json"
+   ],
+   "owner": "Global data discovery and use",
+   "why_not": "25 calls/day, prices duplicate MT5 bars, macro duplicates FRED"
+  },
+  {
+   "name": "TWELVE_DATA_API_KEY",
+   "group": "not_built",
+   "cost": "free tier, deliberately unused",
+   "machine": "box",
+   "signup": "https://twelvedata.com/register",
+   "unlocks": "price series",
+   "readers": [
+    "desks/mt5/data/credential_registry.json"
+   ],
+   "owner": "Global data discovery and use",
+   "why_not": "prices duplicate the broker's own bars"
+  },
+  {
+   "name": "POLYGON_API_KEY",
+   "group": "not_built",
+   "cost": "free tier, deliberately unused",
+   "machine": "box",
+   "signup": "https://polygon.io/dashboard/signup",
+   "unlocks": "US equity EOD aggregates",
+   "readers": [
+    "desks/mt5/data/credential_registry.json"
+   ],
+   "owner": "Global data discovery and use",
+   "why_not": "EOD aggregates duplicate MT5 bars at 5 calls/min"
+  },
+  {
+   "name": "OPENFIGI_API_KEY",
+   "group": "not_built",
+   "cost": "free tier, deliberately unused",
+   "machine": "box",
+   "signup": "https://www.openfigi.com/api",
+   "unlocks": "identifier mapping (ticker/ISIN -> FIGI) for disclosure-to-instrument joins",
+   "readers": [
+    "desks/mt5/data/credential_registry.json"
+   ],
+   "owner": "Global data discovery and use",
+   "why_not": "a mapping utility, not a dataset; no cell rides on it yet"
+  },
+  {
+   "name": "NEWSAPI_KEY",
+   "group": "not_built",
+   "cost": "free tier, deliberately unused",
+   "machine": "box",
+   "signup": "https://newsapi.org/register",
+   "unlocks": "headline search",
+   "readers": [
+    "desks/mt5/data/credential_registry.json"
+   ],
+   "owner": "Global data discovery and use",
+   "why_not": "the free licence forbids production use; GDELT is keyless"
+  },
+  {
+   "name": "GNEWS_API_KEY",
+   "group": "not_built",
+   "cost": "free tier, deliberately unused",
+   "machine": "box",
+   "signup": "https://gnews.io/register",
+   "unlocks": "headline search",
+   "readers": [
+    "desks/mt5/data/credential_registry.json"
+   ],
+   "owner": "Global data discovery and use",
+   "why_not": "1,000 headlines/day and no event-lane consumer on live yet"
+  },
+  {
+   "name": "X_BEARER_TOKEN",
+   "group": "banned",
+   "cost": "banned by policy",
+   "machine": "-",
+   "signup": "-",
+   "unlocks": "X / Reddit: fenced, never fetched",
+   "readers": [
+    "libs/mining/sources.yaml"
+   ],
+   "owner": "-",
+   "pending_pr": 133
+  },
+  {
+   "name": "REDDIT_CLIENT_ID",
+   "group": "banned",
+   "cost": "banned by policy",
+   "machine": "-",
+   "signup": "-",
+   "unlocks": "X / Reddit: fenced, never fetched",
+   "readers": [
+    "desks/mt5/data/credential_registry.json"
+   ],
+   "owner": "-"
+  },
+  {
+   "name": "REDDIT_SECRET",
+   "group": "banned",
+   "cost": "banned by policy",
+   "machine": "-",
+   "signup": "-",
+   "unlocks": "X / Reddit: fenced, never fetched",
+   "readers": [
+    "desks/mt5/data/credential_registry.json"
+   ],
+   "owner": "-"
+  },
+  {
+   "group": "free_data",
+   "machine": "box",
+   "readers": [
+    "desks/mt5/data/paid_substitute_library.json"
+   ],
+   "owner": "Breadth and tier assessment",
+   "pending_pr": 152,
+   "name": "COMTRADE_API_KEY_SECONDARY",
+   "cost": "free tier",
+   "signup": "https://comtradedeveloper.un.org/",
+   "unlocks": "UN Comtrade secondary subscription key: rotation fallback when the primary is rate-limited or rotated",
+   "note": "ACQUIRED 2026-10-06"
+  },
+  {
+   "group": "free_data",
+   "machine": "box",
+   "readers": [
+    "desks/mt5/data/paid_substitute_library.json"
+   ],
+   "owner": "Breadth and tier assessment",
+   "pending_pr": 152,
+   "name": "USAJOBS_USER_AGENT",
+   "cost": "free (an email, not a secret)",
+   "signup": "https://developer.usajobs.gov/apirequest/",
+   "unlocks": "the email USAJOBS requires in the User-Agent header beside Authorization-Key",
+   "note": "ACQUIRED 2026-10-06"
+  },
+  {
+   "group": "free_data",
+   "machine": "box",
+   "readers": [
+    "desks/mt5/data/paid_substitute_library.json"
+   ],
+   "owner": "Breadth and tier assessment",
+   "pending_pr": 152,
+   "name": "ADZUNA_APP_ID",
+   "cost": "free tier",
+   "signup": "https://developer.adzuna.com/signup",
+   "unlocks": "Adzuna app id, paired with ADZUNA_APP_KEY",
+   "note": "PENDING: shown on the same Adzuna dashboard page as the key"
+  }
+ ],
+ "config": [
+  {
+   "name": "ALT_ECOS_CARD_STAT",
+   "for": "ECOS_API_KEY",
+   "what": "defaulted in #182 (601Y003, verified)"
+  },
+  {
+   "name": "ALT_ECOS_CARD_ITEM",
+   "for": "ECOS_API_KEY",
+   "what": "defaulted in #182 (201010, verified)"
+  },
+  {
+   "name": "ALT_ESTAT_IMMIG_STATS_ID",
+   "for": "ESTAT_APP_ID",
+   "what": "defaulted in #182 (0003449066, verified)"
+  },
+  {
+   "name": "ALT_ESTAT_IMMIG_CAT01",
+   "for": "ESTAT_APP_ID",
+   "what": "read on the box from getMetaInfo once ESTAT_APP_ID is set"
+  },
+  {
+   "name": "ALT_INEGI_EMEC_ID",
+   "for": "INEGI_TOKEN",
+   "what": "stays UNCONFIGURED until INEGI_TOKEN exists"
+  }
+ ],
+ "infra_already_set": [
+  "QUANT_RELEASE_SIGNING_KEY",
+  "QUANT_CONTROLLER_TOKEN",
+  "RESTIC_PASSWORD",
+  "E8_TL_USERNAME",
+  "E8_TL_PASSWORD",
+  "E8_TL_SERVER",
+  "E8_TL_ENV"
+ ]
+}

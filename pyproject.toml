@@ -97,6 +97,12 @@ freestack = [
     "akshare>=1.16,<2",
     "snownlp>=0.12.3,<1",
 ]
+# ERA5 reanalysis from the Copernicus Climate Data Store. Optional: desks/mt5/research/era5_reader.py
+# imports it lazily and reports UNAVAILABLE without it (never fake data); the key is CDSAPI_KEY,
+# read through libs.ops.env_keys.read_key.
+climate = [
+    "cdsapi>=0.7.7,<1",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["libs", "app"]
