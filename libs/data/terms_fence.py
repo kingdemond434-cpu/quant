@@ -227,9 +227,10 @@ SOURCE_POLICY: dict[str, dict[str, Any]] = {
                                  "ruled_at": "2026-11-03",
                                  "text": "no onion or Tor egress, ever; the lane is "
                                          "permanently off"},
-                      "why": ("permanently refused, auditor 2026-11-03: no onion or Tor "
-                              "egress, ever; the onion lane is permanently off and nothing "
-                              "is fetched from any .onion host"),
+                      "why": ("permanently refused, auditor 2026-11-03 (ruling clause: no "
+                              "onion or Tor egress, ever); the onion lane is permanently off, "
+                              "nothing is fetched from any .onion host, and every mirror's own "
+                              "terms stay UNREAD"),
                       "unblock": "none: the ruling is permanent",
                       "missed_growth": {"delta_elogw": "UNMEASURED",
                                         "cause": ("the onion lane is permanently refused "
