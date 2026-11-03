@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-03T06:45:04.289892+00:00",
+  "swept_at": "2026-11-03T07:00:05.702224+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -273,7 +273,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1384,
+      "shadow_exp_r": -0.1826,
       "woke_on_shadow": false
     },
     "AUDSGD|overnight_gap_decay_asia": {
@@ -801,7 +801,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3337,
+      "shadow_exp_r": -0.3382,
       "woke_on_shadow": false
     },
     "CHFNOK|carry_continuous": {
@@ -834,7 +834,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 56,
-      "shadow_exp_r": 0.4831,
+      "shadow_exp_r": 0.4845,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_asia": {
@@ -845,7 +845,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4165,
+      "shadow_exp_r": -0.4155,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_continuous": {
@@ -889,7 +889,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 55,
-      "shadow_exp_r": 0.5311,
+      "shadow_exp_r": 0.5298,
       "woke_on_shadow": false
     },
     "CHFPLN|carry_continuous": {
@@ -2187,7 +2187,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.382,
+      "shadow_exp_r": -0.3561,
       "woke_on_shadow": false
     },
     "GBPMXN|carry_continuous": {
@@ -2220,7 +2220,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 57,
-      "shadow_exp_r": 0.7045,
+      "shadow_exp_r": 0.7047,
       "woke_on_shadow": false
     },
     "GBPMXN|macro_conditional_continuous": {
@@ -4683,8 +4683,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.1684,
+      "shadow_n": 0,
+      "shadow_exp_r": 0.0,
       "woke_on_shadow": false
     },
     "XAUAUD|cross_asset_residual_continuous": {
