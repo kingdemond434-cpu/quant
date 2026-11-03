@@ -519,6 +519,11 @@ desks/mt5/data/hypotheses/prescreen_sources_state.json.*.tmp
 !desks/mt5/reports/TIER1_SCORECARD.json
 !desks/mt5/reports/ALT_DATA_YIELD.json
 !desks/mt5/reports/PRODUCER_YIELD.json
+# the per-stage conversion funnel and its RED fence (row 78), the intel-ship landing stamp and the
+# adopter's heartbeat (box-task freshness contracts, 2026-11-03): small JSON, no credential
+!desks/mt5/reports/CONVERSION_FUNNEL.json
+!desks/mt5/reports/INTEL_SHIP.json
+!desks/mt5/reports/ADOPTION_HEARTBEAT.json
 !desks/mt5/reports/RESEARCH_PRODUCTIVITY.json
 !desks/mt5/reports/FORWARD_ENROLMENT.json
 !desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json

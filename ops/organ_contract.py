@@ -400,6 +400,166 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
 }
 
 
+#: EVERY BOX TASK GETS A FRESHNESS CONTRACT (row 118 / class fix, 2026-11-03). process_health
+#: measured 77 desk tasks UNCONTRACTED on the trading box, among them MT5-AdoptRelease (the only
+#: road code takes onto the box) and MT5-IntelShip (whose upstream went silent for 14 h with the
+#: task reporting rc 0 every hour). An UNCONTRACTED task can stop and nothing notices, so every
+#: TASK line of `desks/mt5/ops/box_tasks.manifest` now owes a row here, in RESIDENT_CONTRACTS
+#: (derived), or in NOT_CONTRACTABLE (named reason, ratcheted down by
+#: tests/ops/test_box_task_contracts.py). The artifact for each is the file its own script
+#: writes, read from that script: a report where one exists, its log where its product is an
+#: action. Ages follow the file's convention: cadence with room for one missed run (5 min -> 15,
+#: 15 min -> 45, 30 min -> 90, hourly -> 180, 2 h -> 360, 6 h -> 1080, daily -> 1560).
+BOX_TASK_CONTRACTS: dict[str, tuple[str, int, str]] = {
+    # THE TWO THAT STALLED SILENTLY.
+    "MT5-AdoptRelease": ("desks/mt5/reports/ADOPTION_HEARTBEAT.json", 180,
+                         "Adopt-And-Seal.ps1 stamps started_at/finished_at every pass; whether "
+                         "the box is actually RUNNING LIVE's code is process_health's "
+                         "`adoption` block (RELEASE.json age against LIVE's code head)"),
+    "MT5-IntelShip":    ("desks/mt5/reports/INTEL_SHIP.json", 180,
+                         "age = the newest intel-ship/send commit the box landed "
+                         "(INTERNAL_STAMPS ship_head_at), so a silent upstream miner reads "
+                         "STALE even while this task exits 0 every hour"),
+    "MT5-CostState":    ("desks/mt5/reports/COST_HONESTY.json", 1560,
+                         "the last of the three daily cost producers (surface, carry, honesty)"),
+    "MT5-AuditLane":    ("desks/mt5/logs/MT5-AuditLane.log", 180,
+                         "audit intake + kimi hunter; the cmd appends every step here"),
+    "MT5-FusionDeadmanDryRun": ("desks/mt5/logs/fusion_deadman.log", 15,
+                                "every deadman pass logs; one stamp file has one writer"),
+    "MT5-FusionDeadmanLive": ("desks/mt5/data/fusion_deadman_state.json", 15,
+                              "the live deadman's stamp, written every 5-minute pass"),
+    "MT5-ResearchSupervisor": ("desks/mt5/logs/supervisor_state.json", 90,
+                               "the supervisor's child table, rewritten every pass"),
+    "MT5-AllocatorPulse": ("desks/mt5/data/allocator_trigger_state.json", 15,
+                           "the 5-minute allocator trigger's own state"),
+    "MT5-Deepening":    ("desks/mt5/reports/DEEPENING_MEMORY_GUARD.json", 180,
+                         "the deepening worker's per-pass memory guard (published to git)"),
+    "MT5-DeepSeek":     ("desks/mt5/logs/MT5-DeepSeek.log", 180,
+                         "the DeepSeek seat's hourly run log"),
+    "MT5-TickIntegrity": ("desks/mt5/reports/TICK_INTEGRITY.json", 180,
+                          "the hourly tick-tape integrity verdict"),
+    "MT5-TapeFeatures": ("desks/mt5/reports/TAPE_FEATURES.json", 180,
+                         "the hourly tape-derived cost/slippage features"),
+    "MT5-VolArchive":   ("desks/mt5/reports/VOL_ARCHIVE.json", 1560,
+                         "the vol archive's report; cadence UNDECLARED, so a day's room"),
+    "MT5-MoatFence":    ("desks/mt5/logs/MT5-MoatFence.log", 90,
+                         "the tape recorder's 30-minute watchdog log"),
+    "MT5-ContractTerms": ("desks/mt5/logs/MT5-ContractTerms.log", 180,
+                          "install_contract_terms_task.ps1 sends every hourly run here"),
+    "MT5-BoxHeartbeat": ("desks/mt5/reports/BOX_HEARTBEAT.json", 15,
+                         "the box's 5-minute heartbeat"),
+    "MT5-OffsiteBackup": ("desks/mt5/reports/OFFSITE_BACKUP.json", 1080,
+                          "the 6-hourly offsite backup verdict"),
+    "MT5-PrivateNetAudit": ("desks/mt5/data/private_net.json", 1560,
+                            "the daily private-network audit"),
+    "MT5-ReapGitWriters": ("desks/mt5/reports/GIT_WRITER_REAP.json", 45,
+                           "the 15-minute hung-git-writer reaper's verdict"),
+    "MT5-RebootDrill":  ("desks/mt5/reports/REBOOT_DRILL.json", 1560,
+                         "the daily reboot drill PASS/FAIL"),
+    "MT5-ShadowSync":   ("desks/mt5/logs/sync_shadow_to_git.log", 45,
+                         "the 15-minute box-state publish to git"),
+    "MT5-HourlyCore":   ("desks/mt5/reports/REPLICATION.json", 180,
+                         "the core hourly plan's replication leg (published to git)"),
+    "MT5-GateAttest":   ("data/gate_attestation_run.json", 360,
+                         "the 2-hourly gate attestation run"),
+    "MT5-SshGuard":     ("desks/mt5/data/ssh_guard.json", 15,
+                         "the 5-minute SSH guard verdict"),
+    "MT5-PlumbingWatchdog": ("desks/mt5/reports/PLUMBING_WATCHDOG.json", 45,
+                             "the 15-minute plumbing defects report"),
+    "MT5-ClockFixer":   ("desks/mt5/reports/CLOCK_FIXER.json", 45,
+                         "the 15-minute resident/clock repair report"),
+    "MT5-Daily":        ("desks/mt5/logs/daily_cycle.log", 1560,
+                         "the daily cycle's step log"),
+    "MT5-ConvertSwarm": ("desks/mt5/logs/MT5-ConvertSwarm.log", 180,
+                         "the hourly conversion swarm's run log"),
+    "MT5-NoLog":        ("desks/mt5/reports/NO_LOG.json", 1560,
+                         "the daily silent-gateway-log audit"),
+    "MT5-RegimeMonitor": ("desks/mt5/data/regime_state.json", 45,
+                          "the 15-minute regime state (published to git)"),
+    "MT5-MoatRecorder-Watchdog": ("desks/mt5/data/moat_coverage.json", 90,
+                                  "the moat recorder's coverage, which the watchdog restarts"),
+    "MT5-FTMOFollow":   ("desks/mt5/data/ftmo_follow_state.json", 10,
+                         "the legacy 1-minute follower's state"),
+    "MT5-FTMO-Follower": ("desks/mt5/reports/FTMO_FOLLOWER.json", 10,
+                          "the 1-minute FTMO follower's report"),
+    "MT5-FTMO-VenueReader": ("desks/mt5/reports/FTMO_ACCOUNT_STATE.json", 15,
+                             "the 5-minute FTMO account read"),
+    "MT5-FTMO-Executor": ("desks/mt5/reports/FTMO_EXEC.json", 15,
+                          "the 5-minute FTMO executor's report"),
+    "MT5-E8WindowGuard": ("desks/mt5/data/e8_window_guard_state.json", 10,
+                          "the 1-minute E8 window guard's handled-set"),
+    "MT5-GoldHourSweep": ("desks/mt5/logs/MT5-GoldHourSweep.log", 1560,
+                          "the gold hour sweep's log; cadence UNDECLARED, so a day's room"),
+    "MT5-CycleMidnight": ("desks/mt5/data/cro_cycle_ledger.jsonl", 1560,
+                          "both CRO lanes append one row per cycle; a day without one is a "
+                          "missed lane"),
+    "MT5-CycleNoon":    ("desks/mt5/data/cro_cycle_ledger.jsonl", 1560,
+                         "both CRO lanes append one row per cycle"),
+    "MT5-LawGate":      ("data/law_gate.json", 180,
+                         "the rotating law gate's record of every fence and when it ran"),
+    "Claude-Bridge-Watchdog": ("C:/ProgramData/ClaudeBridge/logs/bridge_watchdog.json", 15,
+                               "refreshed at least every 60 s while the watchdog lives"),
+    "Quant-BootRecord": ("C:/ProgramData/QuantBox/logs/boot_session.log", 30,
+                         "the 10-minute boot-session record"),
+    "Quant-WorkflowGate": ("C:/ProgramData/QuantBox/logs/workflow_gate.json", 30,
+                           "the 10-minute workflow gate's own state"),
+    "Quant-SignTrain":  ("C:/ProgramData/QuantBox/logs/sign_train.json", 30,
+                         "the 10-minute sign train leg's state"),
+}
+
+#: Box tasks that genuinely produce no artifact a freshness contract could read, each with the
+#: reason. tests/ops/test_box_task_contracts.py fails if this grows, and fails if a manifest task
+#: is in neither table -- so a new task cannot join the box without saying what it produces.
+NOT_CONTRACTABLE: dict[str, str] = {
+    "MT5-SealIfClean": "retired: MT5-AdoptRelease owns sealing (manifest 'legacy compatibility')",
+    "MT5-LocalDashboard": "an HTTP server with no artifact; liveness is a probe, not a file age",
+    "MT5-DeskDashboard": "an HTTP server with no artifact; liveness is a probe, not a file age",
+    "MT5-DashMirror": "not installed (manifest runs=UNKNOWN, trigger UNDECLARED)",
+    "Quant-BootSession": "fires once at logon; Quant-BootRecord's 10-minute row carries the log",
+}
+
+#: The prefixes of task names this desk owns. A scheduler row outside them (Google updater, a
+#: sibling project) is FOREIGN to process_health: listed, never a desk fault.
+DESK_TASK_PREFIXES: tuple[str, ...] = ("MT5-", "E8-", "Quant-", "Claude-Bridge-", "Codex-")
+
+
+def resident_contracts() -> dict[str, tuple[str, int, str]]:
+    """Keep-alive task -> contract for every 24/7 resident, DERIVED from the component registry
+    (desks/mt5/ops/components.resident_specs), never hand-listed: a department or forest proves a
+    COMPLETED pass through its progress watermark, a moat swarm through MOAT_SWARMS.json, each
+    against its family's own derived max silence. Empty if the registry cannot be loaded."""
+    try:
+        import sys as _sys
+        for p in (str(ROOT), str(DESK)):
+            if p not in _sys.path:
+                _sys.path.insert(0, p)
+        from desks.mt5.ops import components
+
+        from libs.ops.control_plane import watermarks
+        specs = components.resident_specs()
+    except Exception:
+        return {}
+    out: dict[str, tuple[str, int, str]] = {}
+    for s in specs:
+        silence_min = max(15, -(-int(s.max_silence_s or 11_400) // 60))
+        if s.component_id.startswith("resident:dept_"):
+            rel = watermarks.path_for(s.component_id).relative_to(ROOT).as_posix()
+            what = f"{s.component_id}'s progress watermark: written once per COMPLETED pass"
+        else:
+            rel = "desks/mt5/reports/MOAT_SWARMS.json"
+            what = f"{s.component_id}: the swarms' shared pass report"
+        out.setdefault(str(s.schedule), (rel, silence_min, what))
+    return out
+
+
+def all_contracts() -> dict[str, tuple[str, int, str]]:
+    """Curated CONTRACTS, then the box-task table, then the derived residents. Curated wins."""
+    out = dict(resident_contracts())
+    out.update(BOX_TASK_CONTRACTS)
+    out.update(CONTRACTS)
+    return out
+
+
 #: Artifacts whose age is the stamp INSIDE them, not the file's mtime: artifact -> JSON key
 #: holding an ISO-8601 UTC instant. For an organ that rewrites its status every pass whether or
 #: not it produced anything, mtime only proves the process is alive. An absent, unreadable,
@@ -407,6 +567,9 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
 #: the task.
 INTERNAL_STAMPS: dict[str, str] = {
     "desks/mt5/reports/TAPE_RECORDER.json": "last_tick_utc",
+    # The newest commit the box landed from intel-ship/send, not when the task last ran: an
+    # upstream miner that stops shipping reads STALE while the task keeps exiting 0.
+    "desks/mt5/reports/INTEL_SHIP.json": "ship_head_at",
 }
 
 #: A stamp further than this past now is a clock defect, never freshness.
@@ -415,7 +578,8 @@ FUTURE_SLACK_MIN = 5.0
 
 def _stamp_age_min(p: Path, key: str, now: datetime) -> float | None:
     try:
-        doc = json.loads(p.read_text(encoding="utf-8"))
+        # utf-8-sig: PowerShell 5's Set-Content -Encoding UTF8 writes a BOM (INTEL_SHIP.json).
+        doc = json.loads(p.read_text(encoding="utf-8-sig"))
         at = datetime.fromisoformat(str(doc[key]).replace("Z", "+00:00"))
     except (OSError, ValueError, TypeError, KeyError):
         return None
@@ -445,7 +609,7 @@ def _age_min(p: Path, now: datetime) -> float | None:
 def check() -> dict:
     now = datetime.now(UTC)
     rows = []
-    for organ, (rel, max_age, what) in sorted(CONTRACTS.items()):
+    for organ, (rel, max_age, what) in sorted(all_contracts().items()):
         age = artifact_age_min(rel, now)
         if age is None:
             verdict, why = "ABSENT", f"{rel} does not exist -- the organ has never produced it"

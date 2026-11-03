@@ -608,8 +608,163 @@ def cro_duties(reg: Mapping[str, Any], verdicts: Mapping[str, Any],
     }
 
 
+#: THE STAGE PAIRS THE FENCE JUDGES, in funnel order: (input stage, output stage).
+FENCE_PAIRS: tuple[tuple[str, str], ...] = (
+    ("mined", "testable_cell"), ("testable_cell", "judged"), ("judged", "pass"),
+    ("pass", "certificate"), ("certificate", "forward_clock"),
+)
+#: Consecutive passes in which a stage's input GREW while its output did not, before that is a
+#: stall rather than a slow hour. Three hourly passes: one slow judge pass is not a defect.
+STALL_PASSES = 3
+
+
+def conversion_fence(funnel: Iterable[Mapping[str, Any]],
+                     prior: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    """THE CONVERSION FENCE (row 78, 2026-11-03): per stage, input, output, the rate, and RED when
+    the stage converts nothing while its inputs flow.
+
+        CONVERTS_NOTHING  input > 0 and output == 0 -- the stage produced nothing at all
+        STALLED           input grew on each of the last STALL_PASSES passes, output did not
+        UNMEASURED        either side unreadable (never OK: absence is not a pass, L1.28a)
+        OK                otherwise
+
+    `prior` is the previous pass's block; its counts give the deltas and its stall counters carry,
+    so a killed pass never resets a stall that is still running."""
+    n_by = {str(r.get("stage")): r.get("n") for r in funnel if isinstance(r, Mapping)}
+    prev = {str(r.get("stage")): r for r in ((prior or {}).get("stages") or [])
+            if isinstance(r, Mapping)}
+    rows: list[dict[str, Any]] = []
+    for src, dst in FENCE_PAIRS:
+        key = f"{src}->{dst}"
+        n_in, n_out = n_by.get(src), n_by.get(dst)
+        p = prev.get(key) or {}
+        row: dict[str, Any] = {"stage": key, "in": n_in, "out": n_out,
+                               "rate": _ratio(n_out, n_in)}
+        if not isinstance(n_in, (int, float)) or not isinstance(n_out, (int, float)):
+            row.update(state=UNMEASURED, stalled_passes=int(p.get("stalled_passes") or 0),
+                       why=f"{src if not isinstance(n_in, (int, float)) else dst} unreadable")
+            rows.append(row)
+            continue
+        p_in, p_out = p.get("in"), p.get("out")
+        d_in = n_in - p_in if isinstance(p_in, (int, float)) else None
+        d_out = n_out - p_out if isinstance(p_out, (int, float)) else None
+        row.update(in_delta=d_in, out_delta=d_out)
+        stalled = int(p.get("stalled_passes") or 0)
+        if d_in is not None and d_out is not None:
+            stalled = stalled + 1 if (d_in > 0 and d_out <= 0) else 0
+        row["stalled_passes"] = stalled
+        if n_in > 0 and n_out == 0:
+            row.update(state="CONVERTS_NOTHING",
+                       why=f"{n_in} in, nothing out: this stage converts nothing")
+        elif stalled >= STALL_PASSES:
+            row.update(state="STALLED", why=(f"input grew on {stalled} consecutive passes and "
+                                              f"output did not"))
+        else:
+            row.update(state="OK")
+        rows.append(row)
+    states = {r["state"] for r in rows}
+    verdict = ("RED" if states & {"CONVERTS_NOTHING", "STALLED"}
+               else UNMEASURED if UNMEASURED in states else "GREEN")
+    return {"verdict": verdict, "stall_passes": STALL_PASSES, "stages": rows,
+            "red": [r["stage"] for r in rows if r["state"] in ("CONVERTS_NOTHING", "STALLED")],
+            "rule": "RED when a stage converts nothing while its inputs flow; UNMEASURED is "
+                    "never GREEN"}
+
+
+def _ledger_shape(doc: Any) -> dict[str, Any]:
+    """The parts of conversion_ledger.json its readers allocate from: per-stage rates, the
+    binding stage, and each cell type's share of trials (trial_allocator / build_allocator)."""
+    if not isinstance(doc, Mapping):
+        return {}
+    stages = {str(s.get("name")): s.get("rate") for s in (doc.get("stages") or [])
+              if isinstance(s, Mapping) and s.get("name")}
+    cells = [c for c in (doc.get("cell_type_yield") or []) if isinstance(c, Mapping)]
+    total = sum(float(c.get("tried") or 0) for c in cells)
+    shares = ({f"{c.get('family')} x {c.get('asset_class')}":
+               round(float(c.get("tried") or 0) / total, 6) for c in cells} if total > 0 else {})
+    return {"generated_utc": doc.get("generated_utc"), "binding_stage": doc.get("binding_stage"),
+            "binding_rate": doc.get("binding_rate"), "stage_rates": stages,
+            "trial_shares": shares}
+
+
+def refresh_delta(before: Any, after: Any, *, top: int = 20) -> dict[str, Any]:
+    """WHAT A REFRESH MOVED (audit of #611). build_allocator, bottleneck_law and trial_allocator
+    allocate research compute from this ledger, so a re-measure after a long freeze shifts that
+    allocation in one step. The before/after stage rates, binding stage and cell-type trial
+    shares are published beside it, so the jump is a recorded transition, never a quiet edit."""
+    b, a = _ledger_shape(before), _ledger_shape(after)
+    if not b:
+        return {"status": "NO_PRIOR", "after": {k: a.get(k) for k in
+                                                ("generated_utc", "binding_stage", "binding_rate")}}
+
+    def _diff(x: Mapping[str, Any], y: Mapping[str, Any]) -> list[dict[str, Any]]:
+        rows = []
+        for k in sorted(set(x) | set(y)):
+            vx, vy = x.get(k), y.get(k)
+            d = (round(float(vy) - float(vx), 6)
+                 if isinstance(vx, (int, float)) and isinstance(vy, (int, float)) else None)
+            if vx != vy:
+                rows.append({"key": k, "before": vx, "after": vy, "delta": d})
+        rows.sort(key=lambda r: -abs(r["delta"]) if r["delta"] is not None else 0.0)
+        return rows[:top]
+
+    prior_at = _parse_ts(b.get("generated_utc"))
+    stage_moves = _diff(b["stage_rates"], a.get("stage_rates") or {})
+    share_moves = _diff(b["trial_shares"], a.get("trial_shares") or {})
+    return {
+        "status": "MEASURED",
+        "before_generated_utc": b.get("generated_utc"),
+        "after_generated_utc": a.get("generated_utc"),
+        "prior_age_h": (round((_now() - prior_at).total_seconds() / 3600, 1)
+                        if prior_at else None),
+        "binding_before": b.get("binding_stage"), "binding_after": a.get("binding_stage"),
+        "binding_changed": b.get("binding_stage") != a.get("binding_stage"),
+        "binding_rate_before": b.get("binding_rate"), "binding_rate_after": a.get("binding_rate"),
+        "stage_rate_moves": stage_moves,
+        "trial_share_moves": share_moves,
+        "max_abs_stage_rate_delta": max((abs(r["delta"]) for r in stage_moves
+                                         if r["delta"] is not None), default=0.0),
+        "max_abs_trial_share_delta": max((abs(r["delta"]) for r in share_moves
+                                          if r["delta"] is not None), default=0.0),
+        "readers": ["research/build_allocator.py", "research/bottleneck_law.py",
+                    "research/trial_allocator.py"],
+    }
+
+
+def refresh_conversion_ledger(desk: Path, *, deadline: float,
+                              events_path: Path | None = None) -> dict[str, Any]:
+    """Re-measure data/conversion_ledger.json on this clock. It was last written 2026-09-05 (its
+    only caller, hourly_discovery, runs nowhere) while build_allocator, bottleneck_law and
+    trial_allocator kept reading it. Skipped, and SAID so, when the pass has no time left.
+    Every refresh publishes its `refresh_delta` and appends one DATA_UPDATED event."""
+    if time.monotonic() > deadline:
+        return {"status": "SKIPPED", "why": "pass budget spent before the ledger refresh"}
+    before = _read(desk / "data" / "conversion_ledger.json")
+    try:
+        from research import conversion_ledger
+        doc = conversion_ledger.run(desk)
+    except Exception as exc:
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}"}
+    delta = refresh_delta(before, doc)
+    with contextlib.suppress(Exception):
+        from libs.ops import events
+        events.emit("DATA_UPDATED", events_path, producer=SEAT,
+                    topic="conversion_ledger_refresh",
+                    artifact="desks/mt5/data/conversion_ledger.json",
+                    status=delta.get("status"), prior_age_h=delta.get("prior_age_h"),
+                    binding_before=delta.get("binding_before"),
+                    binding_after=delta.get("binding_after"),
+                    binding_changed=delta.get("binding_changed"),
+                    max_abs_stage_rate_delta=delta.get("max_abs_stage_rate_delta"),
+                    max_abs_trial_share_delta=delta.get("max_abs_trial_share_delta"))
+    return {"status": "WRITTEN", "artifact": "desks/mt5/data/conversion_ledger.json",
+            "binding_stage": doc.get("binding_stage"), "binding_rate": doc.get("binding_rate"),
+            "stages_measured": doc.get("stages_measured"), "refresh_delta": delta}
+
+
 def build(paths: Paths, conn: sqlite3.Connection | None, *, budget_s: float,
-          now: datetime | None = None, banned: Iterable[str] | None = None) -> dict[str, Any]:
+          now: datetime | None = None, banned: Iterable[str] | None = None,
+          prior_fence: Mapping[str, Any] | None = None) -> dict[str, Any]:
     t = now or _now()
     t0 = time.monotonic()
     reg = registry_stage(conn)
@@ -644,7 +799,14 @@ def build(paths: Paths, conn: sqlite3.Connection | None, *, budget_s: float,
             "cro_duties": cro_duties(reg, verdicts, certs, clocks, latency),
             "pass_status": "PARTIAL" if stream.get("partial") else STAGE_COMPLETE,
             "budget_s": budget_s, "spent_s": round(time.monotonic() - t0, 2),
-            "funnel": funnel, "registry": reg, "verdicts": verdicts,
+            "funnel": funnel,
+            "conversion_fence": (conversion_fence(funnel, prior_fence)
+                                 if not stream.get("partial") else
+                                 {**(prior_fence or {}), "verdict": (prior_fence or {}).get(
+                                     "verdict", UNMEASURED),
+                                  "carried": "the ledger stream was cut by the budget; the "
+                                             "last complete pass's fence stands"}),
+            "registry": reg, "verdicts": verdicts,
             "certificates": certs, "clocks": clocks, "near_miss": near_miss_stage(paths),
             "latency": latency,
             "rule": "every row lost between two stages is counted with a named reason and an "
@@ -660,8 +822,15 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     paths = Paths.at(a.desk)
     budget = effective_budget_s(a.budget_s)
+    t_start = time.monotonic()
+    # The previous fence, read BEFORE the checkpoint overwrites it, and carried in the checkpoint
+    # so a pass killed mid-stream does not reset a stall counter that is still running.
+    prior = _read(paths.out)
+    prior_fence = (prior.get("conversion_fence") if isinstance(prior, Mapping)
+                   and isinstance(prior.get("conversion_fence"), Mapping) else None)
     _atomic_write(paths.out, {"generated_utc": _now().isoformat(timespec="seconds"),
                               "organ": SEAT, "pass_status": "RUNNING", "budget_s": budget,
+                              "conversion_fence": prior_fence or {"verdict": UNMEASURED},
                               "note": "checkpoint written before the ledger stream; replaced "
                                       "when the pass completes"})
     conn: sqlite3.Connection | None = None
@@ -679,11 +848,20 @@ def main(argv: list[str] | None = None) -> int:
     except Exception:
         conn = None
     try:
-        doc = build(paths, conn, budget_s=budget)
+        doc = build(paths, conn, budget_s=budget, prior_fence=prior_fence)
     finally:
         if conn is not None:
             with contextlib.suppress(sqlite3.Error):
                 conn.close()
+    # The complete funnel lands FIRST: the ledger refresh is a second, uninterruptible read, and
+    # a leg cap that kills it must not cost the fence. It starts only while half the budget is
+    # left, so the leg's cap (hourly_cycle LEG_BUDGET_SEC 330 s) sits well above both.
+    doc["conversion_ledger"] = {"status": "PENDING"}
+    _atomic_write(paths.out, doc)
+    doc["conversion_ledger"] = refresh_conversion_ledger(
+        a.desk, deadline=t_start + budget * 0.5)
+    doc["refresh_delta"] = doc["conversion_ledger"].pop(
+        "refresh_delta", {"status": doc["conversion_ledger"].get("status")})
     _atomic_write(paths.out, doc)
     if a.json:
         print(json.dumps(doc, indent=1, default=str))
@@ -695,6 +873,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  UNKNOWN share {v.get('unknown_share')} (7d {v.get('window_unknown_share')}); "
           f"build/data {v.get('unknown_build_or_data')} = {v.get('unknown_build_or_data_share')} "
           f"of UNKNOWN; pass {doc['pass_status']} in {doc['spent_s']}s -> {paths.out}")
+    fence = doc.get("conversion_fence") or {}
+    print(f"  conversion fence {fence.get('verdict')}: red {fence.get('red')}; ledger "
+          f"{doc['conversion_ledger'].get('status')}")
     return 0
 
 
