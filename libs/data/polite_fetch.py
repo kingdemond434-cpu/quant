@@ -42,6 +42,7 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import os
 import random
 import re
 import ssl
@@ -628,6 +629,53 @@ def parse_robots(text: str) -> RobotsRules:
     return RobotsRules(text)
 
 
+#: How long a save waits for the ledger's lock file before refusing (never overwriting).
+SAVE_LOCK_WAIT_S = 10.0
+#: A lock file older than this is a crashed writer's and is broken (a save holds it for ms).
+SAVE_LOCK_STALE_S = 120.0
+
+
+class _LedgerLock:
+    """A cross-process lock on the shared access ledger: `<ledger>.lock`, created with O_EXCL
+    (atomic on POSIX and on Windows/NTFS, no fcntl/msvcrt). Bounded wait; a lock older than
+    SAVE_LOCK_STALE_S is a dead writer's and is broken."""
+
+    def __init__(self, ledger: Path, wait_s: float | None = None) -> None:
+        self.path = ledger.with_name(f"{ledger.name}.lock")
+        self.wait_s = SAVE_LOCK_WAIT_S if wait_s is None else wait_s
+        self.held = False
+
+    def acquire(self) -> bool:
+        deadline = time.monotonic() + self.wait_s
+        with contextlib.suppress(OSError):
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+        while True:
+            try:
+                fd = os.open(str(self.path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            except FileExistsError:
+                with contextlib.suppress(OSError):
+                    if time.time() - self.path.stat().st_mtime > SAVE_LOCK_STALE_S:
+                        self.path.unlink()
+                        continue
+            except OSError:
+                pass                      # Windows: PermissionError while another unlinks it
+            else:
+                with contextlib.suppress(OSError):
+                    os.write(fd, f"{os.getpid()} {time.time():.3f}".encode())
+                os.close(fd)
+                self.held = True
+                return True
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(0.02 + random.random() * 0.03)  # noqa: S311 - lock jitter
+
+    def release(self) -> None:
+        if self.held:
+            self.held = False
+            with contextlib.suppress(OSError):
+                self.path.unlink()
+
+
 class HostAccess:
     """robots.txt per scheme://host[:port] and the refusals each site has given.
 
@@ -656,6 +704,8 @@ class HostAccess:
         self.disallowed = 0
         self._lock = threading.RLock()
         self._origin_locks: dict[str, threading.Lock] = {}
+        #: every save this process refused (unreadable ledger, lock timeout), newest last
+        self.save_refusals: list[dict[str, Any]] = []
 
     def now(self) -> float:
         return self._now if self._now is not None else time.time()
@@ -667,13 +717,54 @@ class HostAccess:
         return acc
 
     def _read_disk(self) -> dict[str, Any]:
+        """The shared ledger for a READ (load): anything unreadable reads as empty."""
+        data, _why = self._read_disk_strict(quarantine=False)
+        return data or {}
+
+    def _read_disk_strict(self, *, quarantine: bool) -> tuple[dict[str, Any] | None, str]:
+        """(ledger, '') when the file is absent (an empty ledger) or parsed; (None, why) when it
+        exists and cannot be read. A save must never merge over an unreadable ledger: it holds
+        OTHER processes' person-held holds, and writing only ours would drop them. A file that
+        parses as something other than a JSON object is CORRUPT and, with `quarantine`, is moved
+        aside to `<name>.corrupt.<utc>.<pid>` (kept for a person) -- an OSError other than absence
+        (a Windows share violation mid-replace) is transient and left where it is."""
         if self.path is None:
-            return {}
+            return {}, ""
         try:
-            data = json.loads(self.path.read_text("utf-8"))
-        except (OSError, ValueError):
-            return {}
-        return data if isinstance(data, dict) else {}
+            raw = self.path.read_text("utf-8")
+        except FileNotFoundError:
+            return {}, ""
+        except OSError as exc:
+            return None, f"unreadable ({type(exc).__name__}: {exc})"
+        try:
+            data = json.loads(raw)
+        except ValueError as exc:
+            data, why = None, f"corrupt ({type(exc).__name__}: {exc})"
+        else:
+            if isinstance(data, dict):
+                return data, ""
+            why = f"corrupt (top level is {type(data).__name__}, not an object)"
+        if quarantine:
+            aside = self.path.with_name(
+                f"{self.path.name}.corrupt.{datetime.now(tz=UTC).strftime('%Y%m%dT%H%M%S%fZ')}"
+                f".{os.getpid()}")
+            try:
+                os.replace(self.path, aside)
+                why += f"; moved aside to {aside.name} (kept)"
+            except OSError as exc:
+                why += f"; could not move aside ({type(exc).__name__}), left in place"
+        return None, why
+
+    def _refuse_save(self, why: str) -> None:
+        """Record a save this process refused, in memory and beside the ledger. Never raises."""
+        row = {"at_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+               "pid": os.getpid(), "why": why, "holds_unsaved": sorted(self.blocked)}
+        self.save_refusals.append(row)
+        if self.path is None:
+            return
+        rec = self.path.with_name(f"{self.path.name}.save_refusals.jsonl")
+        with contextlib.suppress(OSError), rec.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, ensure_ascii=False) + "\n")
 
     def _merge(self, data: dict[str, Any]) -> None:
         """Union another writer's rows into this one: holds this process lacks are adopted, and
@@ -694,29 +785,52 @@ class HostAccess:
                 self.robots[str(k)] = v
                 self._parsers.pop(str(k), None)
 
-    def save(self) -> None:
+    def save(self) -> bool:
+        """Read-merge-replace the shared ledger under a cross-process lock file. Returns False
+        (and records why) when it refused: the existing ledger could not be read, or the lock
+        could not be taken in SAVE_LOCK_WAIT_S. A refused save never overwrites the file."""
         if self.path is None:
-            return
+            return False
         with self._lock:
-            self._merge(self._read_disk())
-            now = self.now()
-            robots = {k: v for k, v in self.robots.items()
-                      if now - float(v.get("fetched_ts") or 0) < ROBOTS_TTL_S}
-            payload = {
-                "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-                "user_agent": self.user_agent,
-                "note": ("per-host robots.txt cache (24h) and refusal holds, shared by every "
-                         "polite fetcher. Every 401/403/429/WAF hold is active while "
-                         "released_by is null; no clock releases it. A person releases one with "
-                         "`python -m libs.data.polite_fetch --release site:<site> --by <name>`."),
-                "blocked": dict(self.blocked),
-                "robots": robots,
-            }
-        with contextlib.suppress(OSError):
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            tmp = self.path.with_name(f"{self.path.name}.{threading.get_ident()}.tmp")
-            tmp.write_text(json.dumps(payload, indent=1, ensure_ascii=False), encoding="utf-8")
-            tmp.replace(self.path)
+            lock = _LedgerLock(self.path)
+            if not lock.acquire():
+                self._refuse_save(f"lock {lock.path.name} not taken in {SAVE_LOCK_WAIT_S:g}s "
+                                  f"(held by another writer); the ledger was not overwritten")
+                return False
+            try:
+                disk, why = self._read_disk_strict(quarantine=True)
+                if disk is None:
+                    self._refuse_save(f"existing ledger {why}; this merge was not saved, so "
+                                      "no other process's holds were dropped")
+                    return False
+                self._merge(disk)
+                now = self.now()
+                robots = {k: v for k, v in self.robots.items()
+                          if now - float(v.get("fetched_ts") or 0) < ROBOTS_TTL_S}
+                payload = {
+                    "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                    "user_agent": self.user_agent,
+                    "note": ("per-host robots.txt cache (24h) and refusal holds, shared by every "
+                             "polite fetcher. Every 401/403/429/WAF hold is active while "
+                             "released_by is null; no clock releases it. A person releases one "
+                             "with `python -m libs.data.polite_fetch --release site:<site> "
+                             "--by <name>`."),
+                    "blocked": dict(self.blocked),
+                    "robots": robots,
+                }
+                try:
+                    self.path.parent.mkdir(parents=True, exist_ok=True)
+                    tmp = self.path.with_name(
+                        f"{self.path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+                    tmp.write_text(json.dumps(payload, indent=1, ensure_ascii=False),
+                                   encoding="utf-8")
+                    tmp.replace(self.path)
+                except OSError as exc:
+                    self._refuse_save(f"write failed ({type(exc).__name__}: {exc})")
+                    return False
+                return True
+            finally:
+                lock.release()
 
     # ---- the network seam
     def send(self, req: urllib.request.Request, timeout: float) -> Any:
@@ -920,9 +1034,14 @@ class LegStats:
     bytes: int = 0
     seconds: float = 0.0
     by_error: dict[str, int] = field(default_factory=dict)
+    #: site -> the missed_growth line of every person-held hold this leg met (recorded or was
+    #: refused by), so each fetcher's own artifact (`fetch_stats`) carries the bill
+    held: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     def as_row(self) -> dict[str, Any]:
-        return {"fetches": self.fetches, "ok": self.ok, "http_errors": self.http_errors,
+        return {"access_holds": [self.held[k] for k in sorted(self.held)],
+                "n_access_holds": len(self.held),
+                "fetches": self.fetches, "ok": self.ok, "http_errors": self.http_errors,
                 "transport_errors": self.transport_errors, "retries": self.retries,
                 "refused": self.refused,
                 "bytes": self.bytes, "fetch_seconds": round(self.seconds, 2),
@@ -941,6 +1060,23 @@ def _stat(leg: str, **inc: Any) -> None:
                 s.by_error[str(v)] = s.by_error.get(str(v), 0) + 1
             else:
                 setattr(s, k, getattr(s, k) + v)
+
+
+def _note_held(leg: str, acc: HostAccess, url: str) -> None:
+    """Carry the missed_growth line of the person-held hold on `url`'s site into `leg`'s stats.
+    A refusal that is not a hold (robots, a fence) adds nothing. Never raises."""
+    with contextlib.suppress(Exception):
+        site = site_of(hostname_of(url))
+        with acc._lock:
+            row = acc.blocked.get(site)
+        if row is None or not person_held(row):
+            return
+        mg = row.get("missed_growth") if isinstance(row.get("missed_growth"), dict) else None
+        line = dict(mg) if mg else hold_missed_growth(
+            site, str(row.get("verdict") or "METHOD_BLOCKED"), row.get("status") or "",
+            f"held site {site}")
+        with _STATS_LOCK:
+            _STATS.setdefault(leg, LegStats()).held[site] = line
 
 
 def stats(leg: str) -> dict[str, Any]:
@@ -1290,6 +1426,8 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
         attempt += 1
     resp.elapsed_s = time.monotonic() - t0
     _stat(leg, seconds=resp.elapsed_s)
+    if resp.verdict:
+        _note_held(leg, acc, resp.final_url or cur)
     return resp
 
 

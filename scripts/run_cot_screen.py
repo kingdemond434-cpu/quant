@@ -44,12 +44,12 @@ from typing import Any
 import numpy as np
 
 try:
-    from libs.data.polite_fetch import polite_urlopen
+    from libs.data.polite_fetch import PoliteRefused, polite_urlopen
 except ImportError:  # run as a script: the repo root is not on the path
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
-    from libs.data.polite_fetch import polite_urlopen
+    from libs.data.polite_fetch import PoliteRefused, polite_urlopen
 
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT / "desks" / "mt5" / "research") not in sys.path:
@@ -100,6 +100,21 @@ _ZWIN = 52          # weeks
 _BORROWED_HAIRCUT = 0.58
 
 
+def transport_only(exc: BaseException) -> bool:
+    """True only for a pure transport failure (timeout, reset, DNS, TLS) the polite path raised
+    AFTER admitting the URL. A PoliteRefused that carries a verdict (robots, a hold, a challenge),
+    the method fence's TermsFenced, any error naming a verdict, a size cap, or anything that is
+    not a network error is a refusal or a bug -- never a reason to try curl."""
+    if isinstance(exc, urllib.error.HTTPError) or getattr(exc, "verdict", ""):
+        return False
+    if type(exc).__name__ == "TermsFenced" or isinstance(exc, RuntimeError):
+        return False
+    if isinstance(exc, PoliteRefused):
+        err = str(getattr(exc, "error", "") or "")
+        return not err.startswith("body longer than")
+    return isinstance(exc, (urllib.error.URLError, TimeoutError, ConnectionError))
+
+
 def _fetch(url: str, dest: Path) -> bytes:
     """Cache-first fetch, with a curl fallback.
 
@@ -119,9 +134,9 @@ def _fetch(url: str, dest: Path) -> bytes:
         raise                       # an HTTP answer (401/403/429 already held): no other route
     except Exception as exc:
         # ROBOTS DECIDES (LAWS 5e amended 2026-10-14): a refusal -- robots.txt, a site hold, the
-        # method fence -- is final, never routed around through curl. Only a TRANSPORT failure
-        # on a URL the polite path already admitted falls back (no redirects followed).
-        if getattr(exc, "verdict", ""):
+        # method fence -- is final, never routed around through curl. Only a PURE TRANSPORT
+        # failure on a URL the polite path already admitted falls back (no redirects followed).
+        if not transport_only(exc):
             raise
         subprocess.run(["curl", "-sSf", "-o", str(dest), url, "--max-time", "90"],
                        check=True, capture_output=True)
