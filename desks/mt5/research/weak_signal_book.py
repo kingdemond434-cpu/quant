@@ -82,6 +82,10 @@ COMBINER_INPUTS = DATA / "combiner_inputs"
 DECAY_LIVE = DATA / "decay_live.json"
 DECAY_ZERO = DATA / "DECAY_ZERO.json"
 FEATURE_DRIFT = REPORTS / "FEATURE_DRIFT.json"
+#: The principal's DECAY RULING (11-03): gold_asia is exempt from decay retirement until a LIVE
+#: replacement on XAUUSD exists. A data/DECAY_EXEMPT.json list, when present, replaces this.
+DECAY_EXEMPT_DEFAULT = frozenset({"gold_asia"})
+DECAY_EXEMPT = DATA / "DECAY_EXEMPT.json"
 RETIRE_VERDICTS = frozenset({"RETIRE", "RETIRED", "DECAYED", "ZERO", "KILL", "KILLED"})
 RED_AFTER_HOURS = 24.0
 MAX_AGE_DAYS = 7           # a stored series older than this is rebuilt (rotation, not a gap)
@@ -400,11 +404,23 @@ def decay_retired() -> tuple[set[str], str]:
         if str(verdict or "").upper() in RETIRE_VERDICTS:
             names.add(str(k))
     z = _read_json(DECAY_ZERO, None)
-    if z is not None:
+    if isinstance(z, list):
         basis += " + DECAY_ZERO.json"
-        items = z.get("zeroed") or z.get("sleeves") or z if isinstance(z, dict) else z
-        names.update(str(k) for k in (items if isinstance(items, list | dict) else []))
-    return names, basis
+        names.update(str(k) for k in z)
+    elif isinstance(z, dict):
+        items = z.get("zeroed", z.get("sleeves"))
+        if isinstance(items, list | dict):
+            basis += " + DECAY_ZERO.json"
+            names.update(str(k) for k in items)
+        else:
+            basis += " + DECAY_ZERO.json: no zeroed list"
+    exempt = _read_json(DECAY_EXEMPT, None)
+    exempt_set = (frozenset(str(x) for x in exempt) if isinstance(exempt, list)
+                  else DECAY_EXEMPT_DEFAULT)
+    held = sorted(names & exempt_set)
+    if held:
+        basis += f"; exempt by principal ruling, kept: {held}"
+    return names - exempt_set, basis
 
 
 def drift_flags() -> list[str]:
@@ -427,9 +443,10 @@ def drift_flags() -> list[str]:
 
 
 def _retired(live_name: str, retired: set[str]) -> bool:
-    # Ledger names are MT5 comments, truncated at 31 characters: match on prefix either way.
+    # EXACT match only (audit 11-03): a prefix match let "gold_asia" retire "gold_asia_v2".
+    # A sleeve whose ledger comment was truncated therefore stays in; that is the safe side.
     n = live_name.removeprefix("LIVE:")
-    return any(r == n or r.startswith(n) or n.startswith(r) for r in retired if r)
+    return n in {r.removeprefix("LIVE:") for r in retired}
 
 
 def live_sleeve_series() -> dict[str, pd.Series] | None:
@@ -671,13 +688,14 @@ def publish_coverage(cov, cells: dict, pm: dict, ext: dict, book: dict,
     rows = []
     for cid, cause in cov.missing:
         try:
-            age_h = (now - datetime.fromisoformat(first[cid])).total_seconds() / 3600
-        except (KeyError, ValueError):
-            age_h = 0.0
+            age: float | str = round(
+                (now - datetime.fromisoformat(first[cid])).total_seconds() / 3600, 1)
+        except (KeyError, TypeError, ValueError):
+            age = "UNMEASURED"           # an unreadable age is never read as young (L1.28a)
         row = {"signal": cid, "reason": cause, "first_seen_utc": first.get(cid),
-               "age_hours": round(age_h, 1)}
+               "age_hours": age}
         rows.append(row)
-        if age_h > RED_AFTER_HOURS:
+        if age == "UNMEASURED" or float(age) > RED_AFTER_HOURS:
             red.append(row)
     _atomic_write(GAPS_OUT, "".join(json.dumps(r) + "\n" for r in rows))
     seen_prod = set(_read_json(PRODUCERS_SEEN, []) or [])

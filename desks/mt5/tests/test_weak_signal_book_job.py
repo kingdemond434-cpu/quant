@@ -78,6 +78,7 @@ def _setup(tmp: Path, monkeypatch, cells: list[dict], index_extra: dict | None =
                       "DECAY_LIVE": tmp / "decay_live.json",
                       "DECAY_ZERO": tmp / "DECAY_ZERO.json",
                       "FEATURE_DRIFT": tmp / "FEATURE_DRIFT.json",
+                      "DECAY_EXEMPT": tmp / "DECAY_EXEMPT.json",
                       "EXTRA_PARAM_SOURCES": ()}.items():
         monkeypatch.setattr(job, name, val)
     eg = _fake_gauntlet(tmp)
@@ -173,6 +174,7 @@ def test_combiner_coverage_is_one_file_with_reasons_breadth_and_auto_enrolment(
     _ext(tmp_path, "no_cert", evidence="")
     _ext(tmp_path, "no_3x", daily_r_3x={})
     (tmp_path / "decay_live.json").write_text(json.dumps({"verdicts": {"gold_asia": "RETIRE"}}))
+    (tmp_path / "DECAY_EXEMPT.json").write_text("[]")   # lift the default exemption for this test
     (tmp_path / "FEATURE_DRIFT.json").write_text(json.dumps(
         {"sleeves": [{"sleeve": "x", "verdict": "EDGE_DECAY_CANDIDATE"}]}))
     job.run(budget_s=60)
@@ -204,3 +206,27 @@ def test_a_gap_older_than_24h_is_red(tmp_path, monkeypatch):
     job.run(budget_s=60)
     c = json.loads((tmp_path / "COMBINER_COVERAGE.json").read_text())
     assert c["red_over_24h"] == 1 and c["red_sample"][0]["signal"] == "EXT:no_cert"
+
+
+def test_decay_retirement_is_exact_exempts_gold_asia_and_ignores_metadata(tmp_path, monkeypatch):
+    _setup(tmp_path, monkeypatch, [{"sym": "S0", "family": "fam", "params": {"k": 0}}])
+    (tmp_path / "decay_live.json").write_text(json.dumps(
+        {"verdicts": {"gold_asia": "RETIRE", "gold": "RETIRE"}}))
+    (tmp_path / "DECAY_ZERO.json").write_text(json.dumps({"generated_utc": "x", "rule": "y"}))
+    names, basis = job.decay_retired()
+    assert names == {"gold"}                         # gold_asia held by the principal's ruling
+    assert "no zeroed list" in basis and "gold_asia" in basis
+    assert not job._retired("LIVE:gold_asia_v2", {"gold_asia"})
+    assert not job._retired("LIVE:gold_asia", {"gold"})
+    assert job._retired("LIVE:gold", {"gold"})
+
+
+def test_unreadable_first_seen_is_red_not_young(tmp_path, monkeypatch):
+    _setup(tmp_path, monkeypatch, [{"sym": "S0", "family": "fam", "params": {"k": 0}}])
+    _ext(tmp_path, "no_cert", evidence="")
+    store = tmp_path / "store"
+    store.mkdir(exist_ok=True)
+    (store / "first_seen.json").write_text(json.dumps({"EXT:no_cert": "garbage"}))
+    job.run(budget_s=60)
+    c = json.loads((tmp_path / "COMBINER_COVERAGE.json").read_text())
+    assert c["red_over_24h"] == 1 and c["red_sample"][0]["age_hours"] == "UNMEASURED"
