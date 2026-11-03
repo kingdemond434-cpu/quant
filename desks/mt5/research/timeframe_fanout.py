@@ -69,6 +69,16 @@ OUT = DESK / "reports" / "TIMEFRAME_FANOUT.json"
 #: include the control, or the comparison is between five new things and nothing.
 CHARTS: tuple[str, ...] = ("M1", "M5", "M15", "H1", "H4")
 
+#: HOLDING PERIODS, in bars of the parent's chart (hourly pass 28, idea 279, 2026-11-03). The
+#: certified book holds each mechanism for ONE time exit its author picked; nothing ever asked
+#: the judge whether the same entry pays more held for 1 bar or for 72. Every horizon is minted
+#: and charged -- none is pre-selected on the parent's own data, because a pick made by looking
+#: at six horizons is six trials that a two-cell count would hide.
+HORIZONS: tuple[int, ...] = (1, 2, 4, 8, 24, 72)
+#: The time-exit knob, in the order a family is asked for it. `hold_bars` first: `carry` exposes
+#: both names and maps `hold_bars` onto the signal's `ttl_bars`.
+HORIZON_KNOBS: tuple[str, ...] = ("hold_bars", "ttl_bars")
+
 #: Parents taken per pass from each lane, advanced by a saved cursor so every parent is reached.
 #: Not a cap: a parent not reached this pass leads the next one.
 PARENTS_PER_LANE_PER_PASS = 40
@@ -103,10 +113,15 @@ def canonical_parents() -> tuple[list[dict[str, Any]], str]:
         fam = str(spec.get("family") or "")
         if not sym or not fam:
             continue
+        # THE CERTIFIED RULE, NOT THE FAMILY DEFAULT (2026-11-03). The spec's own `params`
+        # (rr, wait_bars, gap_atr, ...) were left behind here, so every canonical re-mint was the
+        # family at its defaults -- a different rule from the one that certified.
+        own = spec.get("params")
         out.append({
             "lane": "canonical", "parent": str(key), "symbol": sym, "family": fam,
-            "params": {k: v for k, v in spec.items()
-                       if k in ("side", "selector", "condition", "hunt")},
+            "params": {**(dict(own) if isinstance(own, dict) else {}),
+                       **{k: v for k, v in spec.items()
+                          if k in ("side", "selector", "condition", "hunt")}},
             "session": str(spec.get("selector") or ""),
             "regime": str(spec.get("condition") or ""),
             "parent_chart": str(spec.get("chart") or "H1"),
@@ -218,6 +233,84 @@ def mint(parent: dict[str, Any], charts: list[str], *, dry_run: bool) -> dict[st
     return {"emitted": made, "created": created, "errors": errors, "trials": trials}
 
 
+def horizon_knob(family: str) -> tuple[str | None, Any]:
+    """(the family's time-exit parameter, its default) from the constructor's own signature."""
+    try:
+        import inspect
+
+        from mt5desk.families import get_family_func
+        fn = get_family_func(family)
+        sig = inspect.signature(fn).parameters if fn is not None else {}
+    except Exception:
+        return None, None
+    for k in HORIZON_KNOBS:
+        if k in sig:
+            d = sig[k].default
+            return k, (None if d is inspect.Parameter.empty else d)
+    return None, None
+
+
+def mint_horizons(parent: dict[str, Any], *, dry_run: bool) -> dict[str, Any]:
+    """The certified rule on its own chart at every holding period it was not certified at.
+
+    Only the time exit changes. A banned family is refused at the door, never minted; a family
+    whose constructor names no time exit is reported, never given a knob it would ignore (that
+    would be the parent again under a new hash, a trial charged for nothing).
+    """
+    fam, sym = parent["family"], parent["symbol"]
+    out: dict[str, Any] = {"emitted": 0, "created": 0, "errors": [], "trials": [],
+                           "knob": None, "skipped": ""}
+    try:
+        from research.family_policy import family_banned
+        if family_banned(fam):
+            out["skipped"] = "banned family"
+            return out
+    except Exception as exc:
+        out["skipped"] = f"UNMEASURED: family policy unreadable ({type(exc).__name__})"
+        return out
+    knob, default = horizon_knob(fam)
+    if knob is None:
+        out["skipped"] = "no time-exit parameter in the family's constructor"
+        return out
+    out["knob"] = knob
+    base = dict(parent.get("params") or {})
+    current = base.get(knob, default)
+    chart = parent.get("parent_chart") or "H1"
+    for h in HORIZONS:
+        if current is not None and int(current) == h:
+            continue                                     # the parent itself
+        params = {**base, knob: h}
+        out["emitted"] += 1
+        out["trials"].append({"trial_id": f"{parent['parent'][:28]}@{knob}={h}",
+                              "family": fam,
+                              "descriptors": {"symbol": sym, "chart": chart,
+                                              "session": parent.get("session") or "",
+                                              "regime": parent.get("regime") or "",
+                                              "asset_class": parent.get("asset_class") or ""},
+                              "params": {k: v for k, v in params.items()
+                                         if isinstance(v, (int, float))}})
+        if dry_run:
+            continue
+        try:
+            from libs.moat.registry import enqueue_candidate
+            _cid, was_new = enqueue_candidate(
+                family=fam, symbol=sym, params=params, origin="horizon_fanout",
+                mechanism=(f"{parent['mechanism']}; held {h} bars instead of "
+                           f"{current if current is not None else 'the default'}"),
+                chart=chart, horizon=f"{knob}={h}", session=parent.get("session") or "",
+                regime=parent.get("regime") or "",
+                asset_class=parent.get("asset_class") or "",
+                generator="horizon_fanout", department="prediction",
+                transformation="horizon_fanout", parent_ids=[parent["parent"]],
+                causal_rationale=parent["mechanism"],
+                falsifier=(f"{fam} on {sym} held {h} bars has no edge it has held {current}"))
+            out["created"] += int(bool(was_new))
+        except Exception as exc:
+            out["errors"].append(f"{parent['parent'][:20]}@{knob}={h}: "
+                                 f"{type(exc).__name__}: {str(exc)[:50]}")
+    return out
+
+
 def charge_trials(trials: list[dict[str, Any]]) -> dict[str, Any]:
     """Price this pass's multiplicity with the desk's own effective-trial ledger.
 
@@ -283,6 +376,30 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
                           "cells_emitted": lane_emitted, "cells_created": lane_created,
                           "cursor": starts[lane]}
 
+    # HOLDING PERIODS of every certified mechanism, on its own chart, on its own cursor.
+    h_start = int(starts.get("horizon") or 0) % max(len(canon), 1)
+    h_order = canon[h_start:] + canon[:h_start]
+    h_done = h_emitted = h_created = 0
+    h_skipped: dict[str, int] = {}
+    for parent in h_order[:PARENTS_PER_LANE_PER_PASS]:
+        if time.monotonic() - t0 > budget_s:
+            break
+        res = mint_horizons(parent, dry_run=dry_run)
+        h_done += 1
+        h_emitted += int(res["emitted"])
+        h_created += int(res["created"])
+        all_trials.extend(res["trials"])
+        errors.extend(res["errors"][:2])
+        if res["skipped"]:
+            h_skipped[res["skipped"]] = h_skipped.get(res["skipped"], 0) + 1
+    starts["horizon"] = h_start + h_done
+    emitted += h_emitted
+    created += h_created
+    per_lane["horizon"] = {"n_parents": len(canon), "parents_this_pass": h_done,
+                           "cells_emitted": h_emitted, "cells_created": h_created,
+                           "cursor": starts["horizon"], "horizons": list(HORIZONS),
+                           "skipped": h_skipped}
+
     if not dry_run:
         _write(CURSOR, {"at": now, "starts": starts,
                         "rule": ("a cursor per lane, so every certified mechanism and every "
@@ -311,8 +428,12 @@ def build(budget_s: float = 240.0, *, dry_run: bool = False) -> dict[str, Any]:
             "n_raw/n_effective, the multiplicity the deflation charge must use",
             "desks/mt5/research/counterfactual_timeframes.py -> supplies the chart order this "
             "organ mints in; nothing is dropped, only ordered",
+            "per_lane.horizon -> every certified mechanism at holding periods "
+            f"{list(HORIZONS)} bars on its own chart (origin horizon_fanout); the combiner "
+            "enrols whichever certify",
         ],
-        "boundary": ("MINTS ONLY. No rule, parameter, symbol or side is changed; no chart is "
+        "boundary": ("MINTS ONLY. The chart lane changes the chart and the horizon lane the time "
+                     "exit; no other parameter, symbol or side is changed; no chart is "
                      "filtered or preferred; nothing is judged, sized or vetoed here. The "
                      "per-pass budget is a wall clock, never a quota."),
         "seconds": round(time.monotonic() - t0, 2),
