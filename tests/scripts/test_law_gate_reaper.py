@@ -56,10 +56,11 @@ def test_reaps_a_checkout_older_than_any_live_run(fake_tmp):
     assert not dead.exists()
 
 
-def test_leaves_a_checkout_a_live_run_could_still_be_reading(fake_tmp):
+def test_leaves_a_checkout_a_live_run_could_still_be_reading(fake_tmp, monkeypatch):
     """The failure that would be WORSE than the leak: deleting a slow sibling's HEAD checkout
     mid-verdict. The threshold is >3x the maximum lifetime precisely so this cannot happen."""
     live = _checkout(fake_tmp, "lawgate-head-live", law_gate._ORPHAN_AFTER_S - 60)
+    monkeypatch.setattr(law_gate, "_held_paths", lambda: {str(live / "t")})
 
     assert law_gate._reap_stale_checkouts(_ROOT) == 0
     assert (live / "t" / "marker").exists()
@@ -131,3 +132,37 @@ def test_reaper_still_sweeps_the_old_tmp_base(monkeypatch, tmp_path):
     monkeypatch.setattr(law_gate, "_checkout_base", lambda: new_base)
     assert law_gate._reap_stale_checkouts(tmp_path) == 1
     assert not stale.exists(), "an orphan in the OLD base was stranded by the relocation"
+
+
+def test_reaps_an_unheld_checkout_long_before_two_hours(fake_tmp, monkeypatch):
+    """2026-11-03: 12 GB of killed pushes' checkouts filled the disk inside one hour."""
+    dead = _checkout(fake_tmp, "lawgate-head-killed", law_gate._UNHELD_AFTER_S + 60)
+    monkeypatch.setattr(law_gate, "_held_paths", lambda: {"/somewhere/else"})
+
+    assert law_gate._reap_stale_checkouts(_ROOT) == 1
+    assert not dead.exists()
+
+
+def test_a_fresh_unheld_checkout_is_left_for_its_starting_run(fake_tmp, monkeypatch):
+    """A run that has made its directory but not yet entered it holds nothing for a moment."""
+    young = _checkout(fake_tmp, "lawgate-head-young", law_gate._UNHELD_AFTER_S - 60)
+    monkeypatch.setattr(law_gate, "_held_paths", lambda: set())
+
+    assert law_gate._reap_stale_checkouts(_ROOT) == 0
+    assert young.exists()
+
+
+def test_a_blind_process_census_falls_back_to_the_age_rule(fake_tmp, monkeypatch):
+    """No /proc is UNMEASURED, never "nobody holds it"."""
+    mid = _checkout(fake_tmp, "lawgate-head-mid", law_gate._UNHELD_AFTER_S + 60)
+    monkeypatch.setattr(law_gate, "_held_paths", lambda: None)
+
+    assert law_gate._reap_stale_checkouts(_ROOT) == 0
+    assert mid.exists()
+
+
+def test_the_census_sees_this_process(tmp_path):
+    held = law_gate._held_paths()
+    if held is None:
+        pytest.skip("no readable /proc on this host")
+    assert os.getcwd() in held

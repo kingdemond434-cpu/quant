@@ -738,6 +738,11 @@ def _dirty(root: Path) -> list[str]:
 #: keeps the reaper off a sibling law gate that is merely slow -- the only way to be wrong here is
 #: to delete a checkout still being read, so the threshold is deliberately far past the maximum.
 _ORPHAN_AFTER_S = 2 * 60 * 60
+# A checkout no live process holds is an orphan long before two hours. Measured 2026-11-03 on a
+# 14 GB cloud container: concurrent pushes, each wrapped in a caller's `timeout`, left 12 GB of
+# `lawgate-head-*` (1-3.8 GB each, no longer 150 MB) inside one hour and filled the disk while the
+# age rule still called every one of them alive. Past this floor, "nobody holds it" reaps it.
+_UNHELD_AFTER_S = 10 * 60
 
 
 def _is_tmpfs(path: Path) -> bool:
@@ -787,6 +792,44 @@ def _checkout_base() -> Path:
     return base
 
 
+def _within(path: str, d: Path) -> bool:
+    ds = str(d)
+    return path == ds or path.startswith(ds + os.sep)
+
+
+def _held_paths() -> set[str] | None:
+    """Every cwd and open file of every live process, or None when /proc cannot say.
+
+    None is UNMEASURED, and the reaper then falls back to the age rule alone: an unreadable /proc
+    (Windows, a hardened container) must never read as "nobody holds it".
+    """
+    proc = Path("/proc")
+    if not proc.is_dir():
+        return None
+    held: set[str] = set()
+    try:
+        pids = [p for p in proc.iterdir() if p.name.isdigit()]
+    except OSError:
+        return None
+    readable = 0
+    for p in pids:
+        try:
+            held.add(os.readlink(p / "cwd"))
+            readable += 1
+        except OSError:
+            continue
+        try:
+            for fd in (p / "fd").iterdir():
+                try:
+                    held.add(os.readlink(fd))
+                except OSError:
+                    continue
+        except OSError:
+            continue
+    # Not even our own cwd was readable: the census is blind, not empty.
+    return held if readable else None
+
+
 def _reap_stale_checkouts(root: Path, *, now: float | None = None) -> int:
     """Delete lawgate HEAD checkouts left by runs that DIED before reaching their own cleanup.
 
@@ -822,9 +865,16 @@ def _reap_stale_checkouts(root: Path, *, now: float | None = None) -> int:
         except OSError:
             continue                        # unreadable base is not this gate's verdict to fail
     candidates.sort()
+    held = _held_paths()
     for d in candidates:
         try:
-            if not d.is_dir() or now - d.stat().st_mtime < _ORPHAN_AFTER_S:
+            if not d.is_dir():
+                continue
+            age = now - d.stat().st_mtime
+            # Unheld: reap past the short floor. Held, or holders UNMEASURED: only past the
+            # lifetime a live run cannot reach -- never reap what a running gate may be using.
+            unheld = held is not None and not any(_within(h, d) for h in held)
+            if age < (_UNHELD_AFTER_S if unheld else _ORPHAN_AFTER_S):
                 continue
         except OSError:
             continue                        # vanished under us -- a concurrent reaper is fine
