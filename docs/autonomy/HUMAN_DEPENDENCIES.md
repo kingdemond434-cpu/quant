@@ -36,6 +36,20 @@ independence the system rests on).
    LIVE run, and LIVE has been red (fact 3). So #661 → green LIVE → promote → master carries
    trusted-eval.yml → its next `ready_for_review` or `synchronize` event runs it on each PR.
 
+6. **Box state, 23:29Z (Desk health, read-only):**
+   - C:\opt\quant is at 6fe812a00 and gate-repo at 442dfd6a8.
+   - The root pin is 8cbbb93f…f278 at commit d7fe4a7de (pinned 22:30:46Z).
+   - The attestation env vars (ATTESTATIONS, PUBKEY, ROOT_PIN) are set.
+   - **Quant-WorkflowGate: every sweep since 22:46Z was TERMINATED (0x41306) before it wrote its
+     log, so nothing merges on the box.** Sweeps at 22:06Z and 22:27Z logged gh api 120 s
+     timeouts and an i/o timeout to 140.82.121.5:443.
+   - The authority's log, attestations and task are ACL-closed to agent box sessions, so
+     whether the authority has signed anything is UNMEASURED by agents.
+   - **The 22:50Z adoption is hung** (heartbeat stage "started", pid alive about 40 min). The
+     22:35Z adoption held at 6fe812a00, "held-awaiting-audit", with production target
+     298269eb1505 (the 10-30 release).
+   - About 24 python processes from the 22:54Z fan-out may be starving both.
+
 ## The ledger
 
 | # | Dependency | Status | Evidence / exact constraint |
@@ -57,6 +71,9 @@ independence the system rests on).
 | D2 | Post-adoption health checks | IN WORK | Not run against a new release since 10-30. |
 | D3 | Box provisioning for #658 memecoin gate (registry file, Machine env `MEMECOIN_AUDIT_REGISTRY`, `memecoin-gate` clone) | REMAINING | Desk health got ACL denials and did not elevate (correctly). The only standing elevated path is adoption running as SYSTEM, and the independence of that path rests on review plus the veto (A9). The clone is made by workflow_gate.ps1 itself once the env var exists. |
 | D4 | Memecoin CLEAR rows | REMAINING | They must be authority attestations, not Claude rows. The authority evaluates only kingdemond434-cpu/quant. Extending it to memecoin changes the authority core (A5, owner re-pin), and memecoin_gate.py must then verify signatures. |
+| B1 | Gate sweep reliability (killed by its task time limit, API timeouts) | REMAINING, root-cause in work (Desk health) | Fact 6. The gate's code (audit_gate.py, workflow_gate.ps1) is ROOT, so a fix to the gate itself needs the owner re-pin (A5) until Level 2 (A6). The task time limit is set by task registration, which needs admin (S1). |
+| B2 | Hung adoption | REMAINING, root-cause in work (Desk health) | Fact 6. There is no watchdog that kills and retries a hung adoption. The self-heal watchdog #555 is unmerged (AUTO, CLEAR at 0fcae913). |
+| B3 | Agents cannot observe the authority (ACL-closed log, attestations, task) | REMAINING by design | Keeping it isolated is the point. A read-only status export by the authority is needed for evidence: either Level 2's `release-authority` commit status (#650, owner-only), or a public-safe summary file the authority writes. |
 | A9 | Independence of code run as SYSTEM after adoption | RESIDUAL (stated, not eliminable here) | Adoption and law_gate run merged code as SYSTEM. Independence therefore rests on review plus the veto window before a merge, not on process separation. |
 | K1 | Credentials: API keys, App keys, key files | OWNER-ONLY (exceptional, per new credential) | Hard rule: agents never ask for, hold or store secrets. A new external key is placed by the owner. It is not recurring for existing keys. Rotation of the leaked YouTube key is explicitly waived by zuck. |
 | S1 | Scheduled-task install and repair on the box | REMAINING | Registering or repairing a task needs admin. Agent box sessions (Remote Control) run without elevation and must not elevate. The self-heal watchdog (#555) is not merged. |
