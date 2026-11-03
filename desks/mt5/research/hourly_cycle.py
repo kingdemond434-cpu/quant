@@ -1129,7 +1129,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `state_vector` is listed here for the reader's sake and runs on NEITHER plan: it is in
     # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
-    "forward_reconcile", "clock_liveness", "certificate_clock_law", "clock_accrual",
+    "forward_reconcile", "clock_liveness", "certificate_clock_law", "measurability",
+    "clock_accrual",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     # The noon CRO pass must land a ledger row every day; one file read, so it is core.
@@ -2122,6 +2123,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Reads canon, five lane state files and its own history, then writes two files. No market
     # data, no venue, no terminal call -- it is arithmetic over rows the enrolment leg just wrote.
     "certificate_clock_law": 180,
+    # Reads seven artifacts and one state file; no bars, no venue.
+    "measurability": 120,
     # Reads the canon (through the admission door), three lane state files and the sleeve
     # registry, and writes one report. No bars, no terminal: arithmetic over the rows above.
     "clock_accrual": 180,
@@ -5560,6 +5563,13 @@ def main() -> None:
     # promotes, sizes and retires nothing.
     ccl = _costed("certificate_clock_law", lambda: _producer(
         "certificate_clock_law", "scripts/check_certificate_clock_law.py"))
+    # NEVER UNMEASURED PAST ONE CYCLE (principal 2026-10-13: "all sleeves must be able to be
+    # measureed all certs never unmeasured excuse"). Right after the clock law it reads: every
+    # certificate and every LIVE sleeve, every field (class, novelty, fill cost, tradability,
+    # forward clock, live attribution), dated, RED past two hours, each with its converter named.
+    # Writes reports/MEASURABILITY.json; sizes, retires and enrols nothing.
+    msr = _costed("measurability", lambda: _producer(
+        "measurability", "scripts/check_measurability.py"))
     # AND FOR EVERY CLOCK THAT IS NOT TICKING, WHY -- as one named reason per certificate
     # (NOT_ENROLLED, KEY_MISMATCH, FAMILY_UNBUILDABLE, BAR_FILE_MISSING, ENGINE_NOT_REACHED,
     # GATE_NEVER_OPENS, ...). The two legs above count; this one routes. It writes
@@ -6541,7 +6551,8 @@ def main() -> None:
                     "moat_candidate_compiler": mcp, "algorithm_db": adb,
                     "blas_differential": bld,
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
-                    "certificate_clock_law": ccl, "clock_accrual": cac,
+                    "certificate_clock_law": ccl, "measurability": msr,
+                    "clock_accrual": cac,
                     "external_gauntlet": gt, "fast_admission": fa,
                     "gauntlet_guard": ggd,
                     "srb_uncorrelated_sweep": suw,
