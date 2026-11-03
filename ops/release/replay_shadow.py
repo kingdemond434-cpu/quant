@@ -733,6 +733,8 @@ def decisions(step: dict[str, Any]) -> dict[str, Any]:
             "committed_usd": (doc.get("committed_risk") or {}).get("total_usd"),
             "windows": ((doc.get("state") or {}).get("windows")),
             "intents": step.get("intents"),
+            # the FTMO lane at the same step (replay_child.ftmo_step): executor and reader
+            "ftmo": step.get("ftmo"),
         }
     )
 
@@ -766,6 +768,9 @@ def run_tree(tree: Path, sc: dict[str, Any]) -> dict[str, Any]:
         return json.loads(out.read_text("utf-8"))
 
 
+FTMO_EXECUTOR = "desks/mt5/prop/ftmo_executor.py"
+
+
 def compare(
     base: Path, head: Path, changed: list[str], grid: list[dict[str, Any]] | None = None
 ) -> dict[str, Any]:
@@ -778,6 +783,10 @@ def compare(
     imported: set[str] = set()
     head_imported: set[str] = set()
     placed = 0
+    ftmo_rows = 0
+    # The FTMO leg is owed only where the base HAS the lane (a toy tree, or a base from before
+    # the lane existed, has nothing to measure; a head that adds it is a new money file).
+    ftmo_owed = (base / FTMO_EXECUTOR).is_file()
     for sc in grid:
         b, h = run_tree(base, sc), run_tree(head, sc)
         if "crash" in b:
@@ -798,6 +807,17 @@ def compare(
             if f.startswith(head_root + "/")
         )
         for bs, hs in zip(b["steps"], h["steps"], strict=True):
+            fb = bs.get("ftmo") or {}
+            ftmo_err = (
+                fb.get("setup_error") or fb.get("error") or (fb.get("exec") or {}).get("error")
+            )
+            if ftmo_err and ftmo_owed:
+                # the FTMO leg must run on the base, or its agreement with the head is vacuous
+                problems.append(
+                    f"UNMEASURED {sc['id']} @{bs['hour']}: the base FTMO leg raised "
+                    f"{str(ftmo_err)[:200]}"
+                )
+            ftmo_rows += len((fb.get("exec") or {}).get("sleeves") or [])
             if bs.get("error"):
                 problems.append(f"UNMEASURED {sc['id']} @{bs['hour']}: base raised {bs['error']}")
                 continue
@@ -813,6 +833,8 @@ def compare(
                 )
     if not placed:
         problems.append("UNMEASURED: the base tree placed nothing anywhere on the grid")
+    if ftmo_owed and not ftmo_rows:
+        problems.append("UNMEASURED: the base FTMO leg decided on no sleeve anywhere on the grid")
     closure = import_closure(base)
     covered = imported | new_and_bounded(base, head, head_imported)
     exempt = exempt_scripts((base, head), closure)
