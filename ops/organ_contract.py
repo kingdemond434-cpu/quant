@@ -405,6 +405,10 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
         "desks/mt5/reports/HOURLY_DISCOVERY.json", 180,
         "the discovery organs' hourly pass (miners, proposers, data organs) that feeds the "
         "intelligence intake; owned by the intel_feed leg"),
+    "MT5-Dept-Intel (run_all feed)": (
+        "desks/mt5/reports/BOX_RUN_ALL_FEED.json", 120,
+        "the 24 run_all_miners seats (reddit, github, mql5, central banks...) every half hour; "
+        "owned by the run_all_feed leg"),
     "MT5-Dept-Intel (intel feed: seed miners)": (
         "desks/mt5/data/intelligence/seed_miners_state.json", 180,
         "the seed miner fleet's state, rewritten every sweep; its discoveries land beside it "

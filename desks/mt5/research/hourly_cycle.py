@@ -1340,7 +1340,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "culture_gap_cells",
                      # hel8's intel feed (seed_miners + hourly_discovery), produced on the box
                      # since the VPS went silent (2026-11-03). See side_channels/box_intel_feed.py.
-                     "intel_feed"),
+                     "intel_feed",
+                     # the other 24 run_all_miners seats (YouTube has its own two legs), VPS-only
+                     # until 2026-11-03. See side_channels/box_run_all_feed.py.
+                     "run_all_feed"),
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "session_variant_remap",
@@ -1550,7 +1553,7 @@ OWN_CLOCK_LEGS: frozenset[str] = frozenset({
 #: `intel_feed` takes up to forty minutes. Under the default `all` plan (MT5Hourly.cmd sets none)
 #: it would sit inline AHEAD of release_identity, burn_in and fill_recorder; under `heavy` it
 #: would duplicate the intel resident. So it runs under HOURLY_PLAN=dept:intel and nowhere else.
-DEPT_ONLY_LEGS: frozenset[str] = frozenset({"intel_feed"})
+DEPT_ONLY_LEGS: frozenset[str] = frozenset({"intel_feed", "run_all_feed"})
 
 
 def in_plan(name: str, plan: str | None = None) -> bool:
@@ -2059,6 +2062,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # is left) and writes BOX_INTEL_FEED.json; 2,040 s plus the 15% write margin is 2,346 s, so
     # this cap is never under the organ's own floor and the leg never passes forty minutes.
     "intel_feed": 2_400,
+    # THE RUN_ALL FEED stops itself at --budget-s 2040 like the intel feed (each miner child
+    # killed at 180 s or at what is left) and writes BOX_RUN_ALL_FEED.json; same cap, same reason.
+    "run_all_feed": 2_400,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -5985,6 +5991,11 @@ def main() -> None:
     # organs no other box leg clocks. Self-gated to hourly; BELOW_NORMAL; no paid seat.
     ifd = _costed("intel_feed", lambda: _producer(
         "intel_feed", "side_channels/box_intel_feed.py", "--budget-s", "2040"))
+    # THE RUN_ALL MINERS, ON THE BOX (principal 2026-11-03: every miner 24/7). reddit, github,
+    # mql5, central banks, sec_edgar and nineteen more had only VPS clocks; each now runs here in
+    # its own rails child (honest UA, robots.txt, no VPS-walled host), every half hour.
+    raf = _costed("run_all_feed", lambda: _producer(
+        "run_all_feed", "side_channels/box_run_all_feed.py", "--budget-s", "2040"))
     # THE PROPOSER SEAT (2026-09-23). An OPTIONAL external-model prior over which expression
     # skeletons and which mechanism names are worth a trial. It proposes candidates and never a
     # verdict: every proposal enters the population with provenance, is charged effective trials,
@@ -6548,6 +6559,7 @@ def main() -> None:
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
                     "frontier_ontology": fo, "exit_study": xs,
                     "graveyard_model": gm, "world_crawler": wc, "intel_feed": ifd,
+                    "run_all_feed": raf,
                     "proposer_seat": prs, "committees": cmt,
                     "committee_ensembles": cme, "kimi_hunt": kh,
                     "youtube_corpus": ytc, "youtube_miner": ytm,

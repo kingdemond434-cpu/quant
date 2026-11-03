@@ -198,6 +198,8 @@ LEG_LAYER: dict[str, str] = {
     # THE INTEL FEED ON THE BOX (2026-11-03): hel8's seed_miners + hourly_discovery, now produced
     # here because the VPS went silent. Mining the world's public ground: information.
     "intel_feed": "information",
+    # The other 24 run_all_miners seats, on the box since the VPS went silent: information.
+    "run_all_feed": "information",
     # THE FEATURE COMPILER and THE DATA-ACQUISITION SCIENTIST (LAWS 5m): typing what the desk
     # holds, and deciding which dataset to hold next, are both about what the desk knows before
     # it predicts anything: information.
