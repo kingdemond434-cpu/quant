@@ -1064,6 +1064,8 @@ def _allocator_mode_for_the_hour(art: Path | None = None, now: datetime | None =
 #: mined nothing; `maintain_miners` exits 2 after examining stale artifacts and deciding, which is
 #: the work, not a failure to do it.
 VERDICT_EXITS: dict[str, tuple[int, ...]] = {
+    # RED is the fence's verdict on a stopped sleeve found LIVE, not a crash.
+    "principal_stops": (1,),
     "model_skill": (2,),
     "deep_forest": (1,),
     "maintain_miners": (2,),
@@ -1130,6 +1132,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
     "forward_reconcile", "clock_liveness", "certificate_clock_law", "clock_accrual",
+    # A STOPPED SLEEVE BACK ON LIVE IS RED WITHIN THE HOUR (2026-10-14: three gap-decay sleeves
+    # the principal stopped were lifted back to LIVE overnight and nothing said so).
+    "principal_stops",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     # The noon CRO pass must land a ledger row every day; one file read, so it is core.
@@ -2124,6 +2129,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Reads canon, five lane state files and its own history, then writes two files. No market
     # data, no venue, no terminal call -- it is arithmetic over rows the enrolment leg just wrote.
     "certificate_clock_law": 180,
+    # Two JSON reads and one small write.
+    "principal_stops": 60,
     # Reads the canon (through the admission door), three lane state files and the sleeve
     # registry, and writes one report. No bars, no terminal: arithmetic over the rows above.
     "clock_accrual": 180,
@@ -5562,6 +5569,10 @@ def main() -> None:
     # promotes, sizes and retires nothing.
     ccl = _costed("certificate_clock_law", lambda: _producer(
         "certificate_clock_law", "scripts/check_certificate_clock_law.py"))
+    # THE PRINCIPAL-STOP FENCE: RED when a sleeve the principal or the CRO stopped is LIVE with
+    # risk above 0, naming the organ that wrote it. The gateway already places nothing for it.
+    pst = _costed("principal_stops", lambda: _producer(
+        "principal_stops", "scripts/check_principal_stops.py"))
     # AND FOR EVERY CLOCK THAT IS NOT TICKING, WHY -- as one named reason per certificate
     # (NOT_ENROLLED, KEY_MISMATCH, FAMILY_UNBUILDABLE, BAR_FILE_MISSING, ENGINE_NOT_REACHED,
     # GATE_NEVER_OPENS, ...). The two legs above count; this one routes. It writes
@@ -6551,6 +6562,7 @@ def main() -> None:
                     "blas_differential": bld,
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
                     "certificate_clock_law": ccl, "clock_accrual": cac,
+                    "principal_stops": pst,
                     "external_gauntlet": gt, "fast_admission": fa,
                     "gauntlet_guard": ggd,
                     "srb_uncorrelated_sweep": suw,
