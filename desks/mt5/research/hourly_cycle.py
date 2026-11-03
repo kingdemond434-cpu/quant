@@ -1413,7 +1413,7 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
                      "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
-                     "missed_trade_archaeologist", "portfolio_bounty",
+                     "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
                      "clock_liveness", "allocator_liveness", "allocator_trigger",
                      "forward_calibration"),
@@ -4633,6 +4633,12 @@ def main() -> None:
     mta = _costed("missed_trade_archaeologist", lambda: _producer(
         "missed_trade_archaeologist", "research/missed_trade_archaeologist.py",
         "--once", "--budget-s", "600"))
+    # THE LOSS LEARNER (principal 2026-11-03): every live sleeve's losses and missed trades on
+    # Fusion, E8 and FTMO, diagnosed into loss modes and minted as one-step variant cells of the
+    # sleeve's own certificate -> the ordinary gauntlet, each one a lineage trial. Its forward
+    # replacement verdicts are acted on by the daily step `loss_replace`. Forward department.
+    mll = _costed("loss_learner", lambda: _producer(
+        "loss_learner", "research/loss_learner.py", "--once"))
     mfe = _costed("forward_exploitation", lambda: _producer("forward_exploitation",
                                                              "research/forward_exploitation.py"))
     mar = _costed("alpha_recombination", lambda: _producer("alpha_recombination",
@@ -6421,7 +6427,7 @@ def main() -> None:
                     "paradigm_router": prr, "meta_controller": mtc, "lead_replication": lrp,
                     "experiment_spine": exs, "implementer": imp,
                     "research_evolution": rev, "compute_economics": cec,
-                    "missed_trade_archaeologist": mta,
+                    "missed_trade_archaeologist": mta, "loss_learner": mll,
                     "replication_civilization": rpc,
                     "science_controller": scc,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
