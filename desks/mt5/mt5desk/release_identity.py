@@ -85,7 +85,6 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/data/placement_interlock.json",
     "desks/mt5/reports/GATE_VERDICT_DIGEST.json",
     "desks/mt5/reports/BOX_STATE_FLOW.json",
-    "desks/mt5/reports/COMBINER_COVERAGE.json",
     "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
     "desks/mt5/reports/MERGE_PIPELINE.json",
     "desks/mt5/reports/DESK_HEALTH.json",
