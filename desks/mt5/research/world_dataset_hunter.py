@@ -1138,7 +1138,10 @@ def gap_doors() -> list[dict[str, Any]]:
                     "key_env": "EIA_API_KEY",
                     **({"liveness": ENERGY_AGRI} if gas else {}),
                     "stems": ["XNG"] if kind == "natural_gas" else ["XTI", "XBR"],
-                    "currencies": ["USD", "CAD"] if kind == "petroleum" else ["USD"],
+                    "currencies": ["USD", "CAD"] if kind == "petroleum" else [],
+                    # storage informs the gas CFD only: a USD hint mapped it to every USD
+                    # pair and index (34 symbols), charging their trial budget for nothing
+                    **({"pin": NATGAS_SYMBOLS} if gas else {}),
                     "url": (f"https://api.eia.gov/v2/seriesid/{sid}?"
                             "api_key={api_key}&length=5000")})
     return out
@@ -2029,6 +2032,9 @@ def agri_nowcast_doors(now: datetime) -> list[dict[str, Any]]:
 #: either US Eastern offset). pit_series keys a value the hunter WATCHED arrive on
 #: max(stamp, first_seen), so a late file is never read early.
 ENERGY_AGRI = "energy_agri"
+#: The natgas CFD(s) the storage and degree-day features are pinned to (only those the broker
+#: registry holds in the hypothesis lane are informed: `ingest_series` intersects them).
+NATGAS_SYMBOLS = ["XNGUSD"]
 #: More than this many consecutive attempts that land nothing is RED (as the country packs).
 ENERGY_AGRI_RED_RUNS = 2
 #: The normal Thursday a holiday displaced -> (actual release day, hour, minute ET), verbatim from
@@ -2258,7 +2264,8 @@ def energy_weather_doors(now: datetime) -> list[dict[str, Any]]:
              "name": ("NOAA CPC population-weighted heating and cooling degree days, CONUS, "
                       "daily and EIA-storage-week, with five-year-normal departures"),
              "mode": "cpc_degree_days", "derive": "degree_days", "liveness": ENERGY_AGRI,
-             "currencies": [], "stems": ["XNG"], "url": urls[-1]["url"], "urls": urls}]
+             "currencies": [], "stems": ["XNG"], "pin": NATGAS_SYMBOLS,
+             "url": urls[-1]["url"], "urls": urls}]
 
 
 #: robots.txt as this desk read it for each door host (2026-11-03, through the session reader;
@@ -2295,22 +2302,25 @@ def door_access(url: str) -> dict[str, Any]:
     clauses = ((_tf.SOURCE_POLICY.get(key) or {}).get("terms") or {}).get("clauses") or {}
     licence = " ".join(str(v) for v in clauses.values()).lower()
     robots = reading["robots"]
-    if robots == "disallowed":
-        v = ac.classify({"url": url, "obtained": "api", "robots": "disallowed"})
-    elif robots == "allowed":
-        v = ac.classify({"url": url, "obtained": "api",
-                         "licence": "public domain" if "public domain" in licence else ""})
-    else:
-        v = ac.classify({})                        # nothing resolves access: ACCESS_UNCLEAR
-        assert v.access_label == "ACCESS_UNCLEAR"
+    label, basis = "ACCESS_UNCLEAR", "robots.txt unreadable"
+    redist = False                                 # FAILS CLOSED: only a readable grant opens it
     try:
-        redist = "redistribute" in tuple(ac.ROUTING[v.access_label]["allowed_uses"])
-    except Exception:
-        redist = False
+        if robots == "disallowed":
+            v = ac.classify({"url": url, "obtained": "api", "robots": "disallowed"})
+        elif robots == "allowed":
+            v = ac.classify({"url": url, "obtained": "api",
+                             "licence": "public domain" if "public domain" in licence else ""})
+        else:
+            v = ac.classify({})                    # nothing resolves access: ACCESS_UNCLEAR
+        label, basis = v.access_label, v.basis
+        redist = "redistribute" in tuple(ac.ROUTING[label]["allowed_uses"])
+    except Exception as exc:
+        basis = f"access classifier unreadable ({type(exc).__name__}): label left unclear"
+        label, redist = "ACCESS_UNCLEAR", False
     note = (f"robots Disallow: {reading['read']}" if robots == "disallowed"
             else f"robots unreadable: {reading['read']}" if robots != "allowed" else None)
-    return {"access_label": v.access_label,
-            "basis": v.basis if robots == "allowed" else note,
+    return {"access_label": label,
+            "basis": basis if robots == "allowed" else note,
             "terms_note": note,
             "robots_read": reading["read"], "redistribute_allowed": bool(redist),
             "policy_row": key}

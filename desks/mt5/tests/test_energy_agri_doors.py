@@ -111,8 +111,11 @@ def _fetcher(seen: list[str], *, cpc_fail: bool = False):
     return fetch
 
 
+_DIRECT_SOURCES = W.direct_sources
+
+
 def _energy_doors() -> list[dict[str, Any]]:
-    return [d for d in W.direct_sources(NOW) if d.get("liveness") == W.ENERGY_AGRI
+    return [d for d in _DIRECT_SOURCES(NOW) if d.get("liveness") == W.ENERGY_AGRI
             and d["provider"] in ("EIA", "NOAA_CPC")]
 
 
