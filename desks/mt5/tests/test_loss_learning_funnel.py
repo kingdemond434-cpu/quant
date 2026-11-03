@@ -130,7 +130,10 @@ def test_a_strategy_loss_carries_its_sleeves_family_and_is_donated(tmp_path: Pat
 def _point(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     for name, rel in (("LIVE", "live.jsonl"), ("NON_FIRED", "nf.jsonl"),
                       ("MISSED", "MISSED_TRADES.json"), ("VERDICTS", "verdicts.jsonl"),
-                      ("SLEEVES", "sleeves.json"), ("OUT", "reports/LOSS_LEARNING.json")):
+                      ("SLEEVES", "sleeves.json"), ("OUT", "reports/LOSS_LEARNING.json"),
+                      ("LINEAGE", "ll/lineage.jsonl"), ("REPLACEMENTS", "ll/replacements.jsonl"),
+                      ("ROLLOUTS", "ll/BOOK_ROLLOUTS.json"),
+                      ("LEARNER_REPORT", "reports/LOSS_LEARNER.json")):
         monkeypatch.setattr(LL, name, tmp_path / rel)
     monkeypatch.setattr(LL, "INTEL_ROOTS", (tmp_path / "intel",))
     return tmp_path
@@ -190,27 +193,43 @@ def test_a_loss_free_week_is_quiet_not_red(tmp_path, monkeypatch) -> None:
     assert doc["stages"]["promoted"]["status"] == "RED", "judged cells waited on the promoter"
 
 
-def test_a_tweak_that_beat_its_parent_forward_counts_as_replaced(tmp_path, monkeypatch) -> None:
+def test_replaced_reads_the_loss_learners_verdicts_and_never_rejudges(tmp_path,
+                                                                       monkeypatch) -> None:
     root = _point(tmp_path, monkeypatch)
     t = NOW - timedelta(hours=10)
     _jsonl(root / "live.jsonl", [{"time": t.isoformat(), "r_multiple": -1.5}])
     _jsonl(root / "nf.jsonl", [{"known_at": t.isoformat()}])
-    _seat(root, t)
+    (root / "ll").mkdir()
+    _jsonl(root / "ll" / "lineage.jsonl", [{"at": t.isoformat(), "id": "v1", "parent": "p",
+                                            "family": "carry", "symbol": "USDNOK"}])
     _jsonl(root / "verdicts.jsonl", [{"at": (t + timedelta(hours=1)).isoformat(),
                                       "family": "carry", "sym": "USDNOK"}])
+    # A child with a far better shadow_exp: the funnel must NOT call it replaced by itself.
     (root / "sleeves.json").write_text(json.dumps({"sleeves": [
         {"name": "p", "family": "carry", "symbol": "USDNOK", "shadow_exp": 0.10},
-        {"name": "child", "family": "carry", "symbol": "USDNOK", "shadow_exp": 0.30,
-         "promoted_at": (t + timedelta(hours=2)).isoformat()},
-        {"name": "weak", "family": "carry", "symbol": "USDNOK", "shadow_exp": 0.11,
-         "promoted_at": (t + timedelta(hours=2)).isoformat()}]}), "utf-8")
+        {"name": "child", "family": "carry", "symbol": "USDNOK", "shadow_exp": 0.90,
+         "vs_armed": {"margin_r": 5.0}, "promoted_at": (t + timedelta(hours=2)).isoformat()}]}),
+        "utf-8")
     doc = LL.build(NOW)
-    assert doc["stages"]["promoted"]["n_window"] == 2
-    assert doc["stages"]["replaced"]["n_window"] == 1, "beating by less than the margin is not"
+    assert doc["stages"]["tweak_cells_generated"]["n_window"] == 1, "lineage rows are cells"
+    assert doc["stages"]["promoted"]["n_window"] == 1
+    assert doc["stages"]["replaced"]["status"] == LL.UNMEASURED, "no learner output: unmeasured"
+    (root / "reports").mkdir(exist_ok=True)
+    (root / "reports" / "LOSS_LEARNER.json").write_text(json.dumps(
+        {"generated_at": (t + timedelta(hours=3)).isoformat(), "replacements": {"verdicts": [
+            {"verdict": "REPLACE"}, {"verdict": "HOLD_PARENT"}]}}), "utf-8")
+    _jsonl(root / "ll" / "replacements.jsonl", [{"at": (t + timedelta(hours=4)).isoformat()}])
+    (root / "ll" / "BOOK_ROLLOUTS.json").write_text(json.dumps(
+        {"at": NOW.isoformat(), "requests": [{}, {}]}), "utf-8")
+    doc = LL.build(NOW)
+    assert doc["stages"]["replaced"]["n_window"] == 2, "one REPLACE verdict + one acted row"
+    assert doc["book_rollouts"]["requests"] == 2
     assert doc["status"] == "GREEN"
+    assert "MARGIN" not in (_ROOT / "scripts" / "check_loss_learning.py").read_text("utf-8")
 
 
 def test_the_leg_is_wired_and_owns_its_artifact() -> None:
     src = (_DESK / "research" / "hourly_cycle.py").read_text("utf-8")
-    assert '_producer("loss_learning",' in src and "scripts/check_loss_learning.py" in src
+    assert '"loss_learning_funnel", "scripts/check_loss_learning.py"' in src
+    assert '"loss_learning",' not in src, "the old leg name is gone"
     assert LL.OUT == _DESK / "reports" / "LOSS_LEARNING.json"

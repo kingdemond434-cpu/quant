@@ -17,14 +17,16 @@ THE FUNNEL, one stage per hop, each with its count in the window and its LAST NO
     missed_seen            qualified setups that did not trade, plus dug missed-move episodes
                                                                      (non_fired_setups.jsonl,
                                                                       MISSED_TRADES.json)
-    tweak_cells_generated  rows the two loss seats donated            (data/intelligence/<seat>/)
+    tweak_cells_generated  variant cells the loss learner minted     (data/loss_learning/lineage.jsonl)
+                           plus rows the two loss seats donated     (data/intelligence/<seat>/)
     judged                 gate verdicts on a donated (family, symbol) after its donation
                                                                      (gate_verdict_ledger.jsonl)
     promoted               sleeves promoted on such a cell after its donation  (sleeves.json)
-    replaced               promoted tweaks that BEAT their parent forward on the promoter's own
-                           comparison (`vs_armed.margin_r`, else shadow_exp against the parent's,
-                           by CHAMPION_MARGIN). This loop retires nothing: the promoter is the
-                           only organ that moves capital, and its guards are untouched.
+    replaced               the loss learner's own replacements: acted rows in
+                           data/loss_learning/replacements.jsonl plus REPLACE verdicts in
+                           reports/LOSS_LEARNER.json. There is ONE replacement rule and it is the
+                           loss learner's (forward superiority at alpha / lineage trials); this
+                           report only reads it and moves nothing.
 
 STATUS. A stage with no nonzero reading for STALE_DAYS (3) -- never-nonzero counts -- is RED
 when work waited on it (its upstream moved after it last did), and QUIET when nothing reached
@@ -54,14 +56,16 @@ INTEL_ROOTS = (DESK / "data" / "intelligence", ROOT / "data" / "intelligence")
 SEATS: tuple[str, ...] = ("missed_trade_archaeologist", "residual_queue")
 VERDICTS = DESK / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
 SLEEVES = DESK / "data" / "sleeves.json"
+LL_DIR = DESK / "data" / "loss_learning"
+LINEAGE = LL_DIR / "lineage.jsonl"
+REPLACEMENTS = LL_DIR / "replacements.jsonl"
+ROLLOUTS = LL_DIR / "BOOK_ROLLOUTS.json"
+LEARNER_REPORT = DESK / "reports" / "LOSS_LEARNER.json"
 
 UNMEASURED = "UNMEASURED"
 STALE_DAYS = 3.0
 WINDOW_DAYS = 3.0
 ADVERSE_R = -1.0
-#: The promoter's own margin (research/promoter.py CHAMPION_MARGIN); read from there when the
-#: module imports, so the two can never disagree silently.
-CHAMPION_MARGIN_FALLBACK = 0.02
 #: The verdict ledger is ~400 MB; only its tail can hold verdicts on cells donated this week.
 VERDICT_TAIL_BYTES = 64 * 1024 * 1024
 STAGES: tuple[str, ...] = ("losses_seen", "missed_seen", "tweak_cells_generated", "judged",
@@ -110,17 +114,6 @@ def _json(path: Path) -> Any:
         return None
 
 
-def _margin() -> float:
-    """CHAMPION_MARGIN as the promoter's source declares it. Parsed, not imported: importing the
-    promoter pulls the whole gateway stack into a report leg."""
-    try:
-        src = (DESK / "research" / "promoter.py").read_text("utf-8")
-        m = re.search(r"^CHAMPION_MARGIN\s*=\s*([0-9.]+)", src, re.M)
-        return float(m.group(1)) if m else CHAMPION_MARGIN_FALLBACK
-    except (OSError, ValueError):
-        return CHAMPION_MARGIN_FALLBACK
-
-
 def _stage(times: list[datetime] | None, now: datetime, why: str) -> dict[str, Any]:
     """One stage's reading. `times` is None when the stage's input is absent."""
     if times is None:
@@ -137,10 +130,21 @@ def _stage(times: list[datetime] | None, now: datetime, why: str) -> dict[str, A
 
 
 def donated_cells() -> tuple[list[dict[str, Any]] | None, str]:
-    """Every row the loss seats donated: (family, symbol, at, parent). None when no seat
-    directory exists on either root (the seats' output is UNREADABLE, not zero)."""
+    """Every variant the loss learner minted (lineage.jsonl) plus every row the loss seats
+    donated: (family, symbol, at, parent). None when neither the lineage file nor any seat
+    directory exists (the producers' output is UNREADABLE, not zero)."""
     found_dir = False
     out: list[dict[str, Any]] = []
+    lineage = _jsonl(LINEAGE)
+    if lineage is not None:
+        found_dir = True
+        for r in lineage:
+            at = _at(r.get("at"))
+            if at is not None:
+                out.append({"seat": "loss_learner", "at": at,
+                            "family": str(r.get("family") or ""),
+                            "symbol": str(r.get("symbol") or ""),
+                            "parent": r.get("parent_sleeve") or r.get("parent")})
     for root in INTEL_ROOTS:
         for seat in SEATS:
             d = root / seat
@@ -160,8 +164,9 @@ def donated_cells() -> tuple[list[dict[str, Any]] | None, str]:
                                     "parent": (r.get("evidence") or {}).get("parent_sleeve")
                                     if isinstance(r.get("evidence"), dict) else None})
     if not found_dir:
-        return None, "no loss-seat directory under data/intelligence on either root"
-    return out, f"{len(out)} donated row(s) across {', '.join(SEATS)}"
+        return None, ("no lineage.jsonl and no loss-seat directory under data/intelligence "
+                      "on either root")
+    return out, f"{len(out)} row(s) across loss_learner lineage, {', '.join(SEATS)}"
 
 
 #: Each flow stage's upstream. The two intake stages have none.
@@ -246,45 +251,41 @@ def build(now: datetime | None = None) -> dict[str, Any]:
 
     sdoc = _json(SLEEVES)
     srows = (sdoc.get("sleeves") if isinstance(sdoc, dict) else sdoc) if sdoc else None
-    margin = _margin()
-    promoted_rows: list[dict[str, Any]] = []
     if isinstance(srows, list) and cells is not None:
+        promoted: list[datetime] = []
         for r in srows:
             if not isinstance(r, dict):
                 continue
             t = _at(r.get("promoted_at"))
             k = (str(r.get("family") or "").lower(), str(r.get("symbol") or "").upper())
             if t is not None and k in first_by_cell and t >= first_by_cell[k]:
-                promoted_rows.append(r)
-        stages["promoted"] = _stage([_at(r["promoted_at"]) for r in promoted_rows], now,  # type: ignore[misc]
-                                    "sleeves promoted on a donated (family, symbol) after it")
-        by_name = {str(r.get("name")): r for r in srows if isinstance(r, dict)}
-        parents = {str(c["parent"]) for c in cells if c.get("parent")}
-        replaced: list[datetime] = []
-        for r in promoted_rows:
-            vs = r.get("vs_armed") if isinstance(r.get("vs_armed"), dict) else None
-            beat = None
-            if vs and isinstance(vs.get("margin_r"), (int, float)):
-                beat = float(vs["margin_r"]) > margin
-            else:
-                fam_sym = (str(r.get("family") or ""), str(r.get("symbol") or ""))
-                pars = [by_name[p] for p in parents if p in by_name
-                        and (str(by_name[p].get("family") or ""),
-                             str(by_name[p].get("symbol") or "")) == fam_sym]
-                pexp = [float(p["shadow_exp"]) for p in pars
-                        if isinstance(p.get("shadow_exp"), (int, float))]
-                if pexp and isinstance(r.get("shadow_exp"), (int, float)):
-                    beat = float(r["shadow_exp"]) - max(pexp) > margin
-            if beat:
-                replaced.append(_at(r["promoted_at"]))  # type: ignore[arg-type]
-        stages["replaced"] = _stage(replaced, now,
-                                    f"promoted tweaks that beat their parent forward by "
-                                    f"{margin:g}R (promoter CHAMPION_MARGIN)")
+                promoted.append(t)
+        stages["promoted"] = _stage(promoted, now,
+                                    "sleeves promoted on a minted/donated (family, symbol) after it")
     else:
-        why = ("sleeve registry absent" if not isinstance(srows, list)
-               else "loss seats unreadable")
-        stages["promoted"] = _stage(None, now, why)
-        stages["replaced"] = _stage(None, now, why)
+        stages["promoted"] = _stage(None, now, "sleeve registry absent"
+                                    if not isinstance(srows, list) else "loss producers unreadable")
+
+    acted = _jsonl(REPLACEMENTS)
+    learner = _json(LEARNER_REPORT)
+    if acted is None and not isinstance(learner, dict):
+        replaced: list[datetime] | None = None
+    else:
+        replaced = [t for r in (acted or []) if (t := _at(r.get("at"))) is not None]
+        if isinstance(learner, dict):
+            gen = _at(learner.get("generated_at"))
+            reps = learner.get("replacements")
+            for v in (reps.get("verdicts") or []) if isinstance(reps, dict) else []:
+                if isinstance(v, dict) and v.get("verdict") == "REPLACE" and gen is not None:
+                    replaced.append(gen)
+    stages["replaced"] = _stage(replaced, now,
+                                "loss learner replacements.jsonl rows plus REPLACE verdicts in "
+                                "LOSS_LEARNER.json (the learner's rule; read, never re-judged)")
+
+    rdoc = _json(ROLLOUTS)
+    rollouts: Any = UNMEASURED
+    if isinstance(rdoc, dict) and isinstance(rdoc.get("requests"), list):
+        rollouts = {"at": rdoc.get("at"), "requests": len(rdoc["requests"])}
 
     gate_staleness(stages)
     states = {s["status"] for s in stages.values()}
@@ -297,12 +298,13 @@ def build(now: datetime | None = None) -> dict[str, Any]:
                  "after it (work waited), QUIET when nothing reached it; UNMEASURED when its "
                  "input is absent (never a clean zero)"),
         "window_days": WINDOW_DAYS,
-        "producers": list(SEATS),
+        "producers": ["loss_learner", *SEATS],
+        "book_rollouts": rollouts,
         "stages": {k: stages[k] for k in STAGES},
         "red_stages": [k for k in STAGES if stages[k]["status"] == "RED"],
         "unmeasured_stages": [k for k in STAGES if stages[k]["status"] == UNMEASURED],
-        "replace_rule": ("a tweak replaces its parent only after beating it forward on the "
-                         "promoter's comparison; this report measures that and moves nothing"),
+        "replace_rule": ("the loss learner's verdict is the only replacement rule; this "
+                         "report reads it and moves nothing"),
     }
 
 
