@@ -4181,6 +4181,12 @@ _TERMINAL_ARTIFACTS = {
         "kind that constrain one. It never accumulates inventory; the hypothesis it pins either "
         "gets tested through the standard gauntlet (its outcome ledgered like any candidate) or "
         "dies untested. Editing it after data arrives would destroy the instrument.",
+    "docs/research/F1_IDIO_VOLUME_PREREGISTRATION.md":
+        "PRE-REGISTRATION (2026-10-14) of the F1 idio_volume_reversal family's 21 cells, "
+        "written AFTER a same-history measurement that it discloses. Immutable by design: it "
+        "freezes direction, z, holds and symbols against the gauntlet's run. It accumulates no "
+        "inventory -- market_ecology.donate_f1 donates the 21 cells once, the standard gauntlet "
+        "judges them and the outcome is ledgered like any candidate, never written back here.",
     "docs/research/COINM_CONVEXITY_PREREGISTRATION.md":
         "PRE-REGISTRATION (2026-08-13, R0462) of the COIN-M-vs-USDT-M convexity-differential "
         "measurement + the two screen constructions, written BEFORE the backfill was read. Same "
