@@ -118,7 +118,8 @@ def test_absent_ledgers_are_unmeasured_never_zero_matched_fills(monkeypatch: Any
     # a test that isolates only the live ledger leaves the real e8 file underneath and measures
     # the box instead of the fixture.
     monkeypatch.setattr(fr, "E8_INTENTS", tmp_path / "no_e8.jsonl")
-    for _name in ("FTMO_EXEC_INTENTS", "FTMO_FOLLOWER_INTENTS", "PROP_LEDGER"):
+    for _name in ("FTMO_EXEC_INTENTS", "FTMO_FOLLOWER_INTENTS", "PROP_LEDGER",
+                  "E8_GOLD_INTENTS"):
         monkeypatch.setattr(fr, _name, tmp_path / f"no_{_name.lower()}.jsonl")
     monkeypatch.setattr(fr, "LEDGER", tmp_path / "no_ledger.jsonl")
     doc = fr.build(dry_run=True)
@@ -131,7 +132,8 @@ def test_the_corpus_row_carries_every_field_the_principal_named(tmp_path: Path,
     from libs.execution import fill_corpus as fc
     monkeypatch.setattr(fr, "INTENTS", tmp_path / "i.jsonl")
     monkeypatch.setattr(fr, "E8_INTENTS", tmp_path / "e8.jsonl")
-    for _name in ("FTMO_EXEC_INTENTS", "FTMO_FOLLOWER_INTENTS", "PROP_LEDGER"):
+    for _name in ("FTMO_EXEC_INTENTS", "FTMO_FOLLOWER_INTENTS", "PROP_LEDGER",
+                  "E8_GOLD_INTENTS"):
         monkeypatch.setattr(fr, _name, tmp_path / f"{_name.lower()}.jsonl")
     monkeypatch.setattr(fr, "LEDGER", tmp_path / "l.jsonl")
     monkeypatch.setattr(fr, "DECISIONS", tmp_path / "d.jsonl")
@@ -275,7 +277,8 @@ def test_matched_fills_counts_joins_and_supersedes_the_bare_row(tmp_path: Path,
     from libs.execution import fill_corpus as fc
     monkeypatch.setattr(fr, "INTENTS", tmp_path / "i.jsonl")
     monkeypatch.setattr(fr, "E8_INTENTS", tmp_path / "e8.jsonl")
-    for _name in ("FTMO_EXEC_INTENTS", "FTMO_FOLLOWER_INTENTS", "PROP_LEDGER"):
+    for _name in ("FTMO_EXEC_INTENTS", "FTMO_FOLLOWER_INTENTS", "PROP_LEDGER",
+                  "E8_GOLD_INTENTS"):
         monkeypatch.setattr(fr, _name, tmp_path / f"{_name.lower()}.jsonl")
     monkeypatch.setattr(fr, "LEDGER", tmp_path / "l.jsonl")
     monkeypatch.setattr(fr, "DECISIONS", tmp_path / "d.jsonl")

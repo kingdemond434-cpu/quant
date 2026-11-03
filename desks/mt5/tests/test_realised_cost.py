@@ -61,7 +61,8 @@ def _prop_row(book: str, pid: int, entry: float, sl: float, vol: float, contract
 
 
 def _point_recorder(monkeypatch: Any, tmp: Path) -> None:
-    for name in ("INTENTS", "E8_INTENTS", "FTMO_EXEC_INTENTS", "FTMO_FOLLOWER_INTENTS",
+    for name in ("INTENTS", "E8_INTENTS", "E8_GOLD_INTENTS", "FTMO_EXEC_INTENTS",
+                 "FTMO_FOLLOWER_INTENTS",
                  "LEDGER", "PROP_LEDGER", "DECISIONS", "CORPUS"):
         monkeypatch.setattr(fr, name, tmp / f"{name.lower()}.jsonl")
 
@@ -350,3 +351,135 @@ def test_health_board_carries_the_liveness_row(tmp_path: Path) -> None:
                    stall=tmp_path / "d", readers={}, liveness={"realised_cost": (rep, up)})
     row = next(o for o in doc["organs"] if o["organ"] == "liveness:realised_cost")
     assert row["verdict"] == hb.RED and doc["desk_verdict"] == hb.RED
+
+
+# --------------------------------------------------------------------------- prop ledger rows
+def _e8_ledger_row(pid: int, entry_order: int, *, book: str = "e8", entry: float = 4000.6,
+                   intended: float = 4000.0, sl: float = 3990.0, direction: int = 1,
+                   r_multiple: float | None = 1.4) -> dict[str, Any]:
+    """A closed position in `prop/e8_fills.compose_fills`' exact prop-fills-v1 shape (#589)."""
+    return {
+        "schema": "prop-fills-v1", "book": book, "venue": "tradelocker", "lane": f"{book}_gold",
+        "provenance": "e8_fills:tradelocker_order_history",
+        "recorded_at": "2026-11-02T10:00:00+00:00", "time": "2026-11-02T09:00:00.000+00:00",
+        "sleeve": "gold_asia", "window": "asia", "symbol": "XAUUSD",
+        "entry_side": 0 if direction == 1 else 1, "side": 1 if direction == 1 else 0,
+        "direction": direction, "signal_hour_utc": "2026-11-02T04:00:00+00:00",
+        "signal_hour_basis": "server_offset",
+        "entry_time": "2026-11-02T05:10:00.000+00:00",
+        "exit_time": "2026-11-02T09:00:00.000+00:00",
+        "timestamp_basis": "tradelocker_order_ms_utc (lastModified of the filled order)",
+        "venue_clock_skew_ms": 120, "entry_time_box_utc": "2026-11-02T04:00:02+00:00",
+        "entry_price": entry, "intended_entry": intended, "sl": sl, "tp": intended + 20.0,
+        "volume": 0.1, "fill_price": entry + 14.0, "exit_reason": "tp", "closed_by": "venue",
+        "exit_magic": None, "exit_order_type": "limit", "r_multiple": r_multiple,
+        "r_basis": "price: side x (exit - entry) / |entry - sent stop|, gross of fees",
+        "r_unreconstructible": False, "risk_quote": round(abs(entry - sl) * 0.1 * 100.0, 6),
+        "pl_quote": 140.0, "quote_ccy": "USD", "pl_basis": "price",
+        "commission": None, "swap": None, "fees": None, "fees_status": "UNMEASURED",
+        "fees_measured": [], "fees_basis": "the TradeLocker order history (no fee fields)",
+        "pl_net_quote": None, "position_id": pid, "entry_order": entry_order,
+        "close_order": entry_order + 1, "n_exit_orders": 1, "server": "E8",
+        "account_kind": "prop", "account_key": "k" * 16,
+        "account_key_status": "keyed (gold_oco.tradelocker_oco_key)"}
+
+
+#: `prop/e8_gold.py`'s SENT journal row (`_record`), identical on LIVE and on #589.
+_E8_GOLD_SENT = {"at": "2026-11-02T04:00:02+00:00", "window": "asia", "side": "buy_stop",
+                 "price": 4000.0, "sl": 3990.0, "tp": 4020.0, "lot": 0.1, "stop_dist": 10.0,
+                 "risk_usd": 100.0, "sizing": "risk", "risk_frac": 0.005,
+                 "risk_source": "allocator", "armed": True, "status": "SENT",
+                 "order_id": 7300001}
+
+
+def _filled_by_book(book: str) -> list[dict[str, Any]]:
+    last: dict[str, dict[str, Any]] = {}
+    for r in fc.read_rows(fr.CORPUS):
+        last[fc.record_from_row(r).key] = r
+    return [r for r in last.values() if r.get("book") == book and r["status"] == "FILLED"]
+
+
+def test_e8_gold_ledger_row_joins_its_gold_intent_on_entry_order(tmp_path: Path,
+                                                                 monkeypatch: Any) -> None:
+    _point_recorder(monkeypatch, tmp_path)
+    _jsonl(fr.E8_GOLD_INTENTS, [_E8_GOLD_SENT, {**_E8_GOLD_SENT, "adopted": True},
+                                {**_E8_GOLD_SENT, "status": "RAIL_BLOCKED", "order_id": None}])
+    _jsonl(fr.PROP_LEDGER, [_e8_ledger_row(88, 7300001)])
+    doc = fr.build()
+    e8 = doc["by_book"]["e8"]
+    assert e8["n_intents"] == 1                       # one SENT order id, adoption deduped
+    assert e8["matched_fills"] == 1 and e8["join_census"]["entry_order"] == 1
+    assert e8["join_census"]["ledger_row"] == 0
+    rows = _filled_by_book("e8")
+    assert len(rows) == 1
+    r = rows[0]
+    assert r["join_keys"]["basis"] == "entry_order"
+    assert r["intent_id"].startswith("e8|gold|asia|buy_stop")
+    assert r["requested_price"] == 4000.0 and r["fill_price"] == 4000.6
+    assert r["slip_r"] == pytest.approx(0.6 / 10.6)   # stop geometry of the filled position
+    assert r["realized_r"] == pytest.approx(1.4)
+    # no quote on the gold intent, and E8 fees are unread: neither is a zero
+    assert r["spread_frac_at_decision"] is None and r["commission_r"] is None
+
+
+@pytest.mark.parametrize("book", ["e8", "ftmo"])
+def test_a_ledger_row_with_its_asked_price_is_self_sufficient(tmp_path: Path, monkeypatch: Any,
+                                                              book: str) -> None:
+    _point_recorder(monkeypatch, tmp_path)
+    _jsonl(fr.PROP_LEDGER, [_e8_ledger_row(91, 555, book=book, entry=3989.5, intended=3990.0,
+                                           sl=4000.0, direction=-1, r_multiple=-0.3)])
+    doc = fr.build()
+    blk = doc["by_book"][book]
+    assert blk["matched_fills"] == 0
+    assert blk["join_census"]["ledger_row"] == 1 and blk["join_census"]["deal_only"] == 0
+    rows = _filled_by_book(book)
+    assert len(rows) == 1
+    r = rows[0]
+    assert r["join"] == "ledger_row" and r["join_keys"]["basis"] == "ledger_row"
+    # a short that filled 0.5 BELOW its sell stop got a worse price: slip is positive
+    assert r["slip_frac"] == pytest.approx(0.5 / 3990.0)
+    assert r["slip_r"] == pytest.approx(0.5 / 10.0)   # |intended_entry - sl|
+    assert r["realized_r"] == pytest.approx(-0.3)
+    assert r["decided_at"] == "2026-11-02T04:00:02+00:00"
+    assert r["spread_frac_at_decision"] is None and r["spread_status"] == "UNMEASURED"
+    assert r["record_id"].startswith(f"{book}|deal:91|")
+
+
+def test_a_joined_position_is_never_also_written_from_its_ledger_row(tmp_path: Path,
+                                                                     monkeypatch: Any) -> None:
+    _point_recorder(monkeypatch, tmp_path)
+    _jsonl(fr.E8_GOLD_INTENTS, [_E8_GOLD_SENT])
+    # the same closed position recorded twice, plus one position no intent reaches
+    _jsonl(fr.PROP_LEDGER, [_e8_ledger_row(88, 7300001), _e8_ledger_row(88, 7300001),
+                            _e8_ledger_row(89, 999)])
+    doc = fr.build()
+    e8 = doc["by_book"]["e8"]
+    assert e8["n_deals"] == 2
+    assert e8["join_census"]["entry_order"] == 1 and e8["join_census"]["ledger_row"] == 1
+    rows = _filled_by_book("e8")
+    assert sorted(str(r["join_keys"]["position_id"]) for r in rows) == ["88", "89"]
+    # a later pass that joins position 89 supersedes its earlier ledger_row key
+    _jsonl(fr.E8_GOLD_INTENTS, [_E8_GOLD_SENT, {**_E8_GOLD_SENT, "order_id": 999}])
+    fr.build()
+    rows = _filled_by_book("e8")
+    assert sorted(str(r["join_keys"]["position_id"]) for r in rows) == ["88", "89"]
+    assert {r["join_keys"]["basis"] for r in rows} == {"entry_order"}
+    fills, _census = rc.latest_fills(fc.read_rows(fr.CORPUS))
+    assert len([f for f in fills if f["_book"] == "e8"]) == 2
+
+
+def test_a_spreadless_prop_fill_leaves_total_cost_unmeasured(tmp_path: Path,
+                                                             monkeypatch: Any) -> None:
+    _point_recorder(monkeypatch, tmp_path)
+    _jsonl(fr.PROP_LEDGER, [_e8_ledger_row(91, 555), _e8_ledger_row(92, 556, book="ftmo")])
+    fr.build()
+    doc = rc.build(fc.read_rows(fr.CORPUS), fill_report={})
+    for book in ("e8", "ftmo"):
+        acct = doc["accounts"][book]
+        assert acct["n_fills"] == 1
+        c = acct["symbols"]["XAUUSD"]
+        assert c["slip_r"]["n"] == 1                  # the slippage IS measured
+        assert c["total_cost_r"]["status"] == rc.UNMEASURED
+        assert c["status"] == rc.UNMEASURED and c["shrink"]["shrunk_cost_r"] is None
+        assert acct["status"] == rc.UNMEASURED
+    assert doc["status"] == rc.UNMEASURED and doc["missed_growth"] == []

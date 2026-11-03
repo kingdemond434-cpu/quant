@@ -68,6 +68,10 @@ from libs.execution import fill_corpus as fc  # noqa: E402
 
 INTENTS = DESK / "data" / "order_intents.jsonl"
 E8_INTENTS = DESK / "data" / "e8_intents.jsonl"
+#: THE E8 GOLD LANE'S OWN JOURNAL (`prop/e8_gold.py`). Its SENT rows carry the venue order id that
+#: `prop/e8_fills.py` writes onto the closed position as `entry_order` -- the one bridge between
+#: what the gold lane asked for and what it got. `e8_intents.jsonl` is the sleeve executor's.
+E8_GOLD_INTENTS = DESK / "data" / "e8_gold_intents.jsonl"
 #: THE THIRD ACCOUNT (2026-11-03). FTMO places real orders through two lanes -- the E8-following
 #: gold copy (`prop/ftmo_follower.py`) and the certified-sleeve executor (`prop/ftmo_executor.py`)
 #: -- and its closed positions land in the prop fills ledger (`ftmo_follower.compose_fills`, book
@@ -199,10 +203,10 @@ def match(intents: list[dict[str, Any]], deals: list[dict[str, Any]],
         if not t:
             continue
         for key, table in (("entry_order", by_entry), ("position_id", by_pos)):
-            d = table.get(t)
-            if d is not None and _i(d.get("deal")) not in used:
-                hits[id(it)] = (d, key)
-                dk = _i(d.get("deal"))
+            hit = table.get(t)
+            if hit is not None and _i(hit.get("deal")) not in used:
+                hits[id(it)] = (hit, key)
+                dk = _i(hit.get("deal"))
                 if dk is not None:
                     used.add(dk)
                 break
@@ -352,7 +356,7 @@ def build_row(it: dict[str, Any], deal: dict[str, Any], how: str,
         "stop_frac": stop_frac,
         # COMMISSION IN R DIVIDED BY THE BARE STOP DISTANCE UNTIL NOW. `risk_quote` is price units
         # on 141 of 151 rows, so this read (contract x lots) times too large -- 100x on gold.
-        "commission_r": (((_f(deal.get("commission")) or 0.0) / denom) if denom else None),
+        "commission_r": _commission_r(deal, denom),
         "latency_decision_to_send_ms": _f(it.get("latency_ms")),
         "latency_send_to_ack_ms": _f(it.get("latency_send_to_ack_ms")),
         "realized_r": realized_r(deal, denom),
@@ -437,6 +441,19 @@ def unfilled_row(it: dict[str, Any]) -> dict[str, Any]:
         "account_kind": str(it.get("account_kind") or "unknown"),
         "status": "UNRESOLVED",
     }
+
+
+def _commission_r(deal: dict[str, Any], denom: float | None) -> float | None:
+    """Commission in R. A PROP ledger row whose fees were never read (`commission: None` on every
+    E8 TradeLocker row: the order history carries no fee field) has an UNMEASURED commission --
+    reading it as 0.0 would publish the prop books as fee-free. Fusion deals keep the historic
+    read, where an absent commission field has always been the venue's zero."""
+    if not denom:
+        return None
+    comm = _f(deal.get("commission"))
+    if comm is None and str(deal.get("book") or "") in ("e8", "ftmo"):
+        return None
+    return (comm or 0.0) / denom
 
 
 def r_denominator(deal: dict[str, Any]) -> tuple[float | None, str]:
@@ -537,6 +554,71 @@ def deal_row(deal: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def self_sufficient(deal: dict[str, Any]) -> bool:
+    """A prop ledger row that names BOTH the price it asked for and the price it got.
+
+    `prop/e8_fills.py` writes `intended_entry` (the resting stop's price, from e8_gold's own leg)
+    beside `entry_price` (the venue's avgPrice), and `ftmo_follower.compose_fills` does the same
+    from the order's `price_open`. Such a row measures its own slippage: no intent is needed."""
+    asked, got = _f(deal.get("intended_entry")), _f(deal.get("entry_price"))
+    return bool(asked and asked > 0 and got and got > 0)
+
+
+def ledger_row(deal: dict[str, Any]) -> dict[str, Any]:
+    """A REALISED FILL WITH ITS SLIPPAGE, FROM ONE PROP LEDGER ROW ALONE (`join: "ledger_row"`).
+
+    slip in price = direction x (entry_price - intended_entry), worse > 0
+    slip_r        = slip / |intended_entry - sl|   (the stop the order was SENT with)
+    realized_r    = the row's own r_multiple (derived from P&L only when it is absent)
+
+    WHAT IT DOES NOT HAVE IS THE QUOTE. No bid/ask is on the ledger row, so the spread stays None
+    and `realised_cost.fill_cost` leaves the round trip's total UNMEASURED -- a fill whose spread
+    was never read is not a cheap fill. A fee the ledger never read stays None the same way.
+    """
+    denom, denom_basis = r_denominator(deal)
+    asked, fill = _f(deal.get("intended_entry")), _f(deal.get("entry_price"))
+    sl = _f(deal.get("sl"))
+    d = _i(deal.get("direction"))
+    direction = d if d in (1, -1) else position_direction(deal)
+    slip = ((fill - asked) * direction) if (fill and asked and direction) else None
+    stop_dist = abs(asked - sl) if (asked and sl and sl > 0) else None
+    point = _point_from(asked, fill, sl, _f(deal.get("tp")))
+    stamp = str(deal.get("time") or "")
+    sent = str(deal.get("entry_time_box_utc") or deal.get("entry_time") or "")
+    rr = _f(deal.get("r_multiple"))
+    return {
+        "record_id": f"deal:{deal.get('deal')}|{stamp}",
+        "intent_id": "", "ticket": _i(deal.get("entry_order")), "deal": _i(deal.get("deal")),
+        "schema_version": fc.SCHEMA_VERSION,
+        "account_kind": str(deal.get("account_kind") or "prop"),
+        "join": "ledger_row",
+        "join_keys": {"basis": "ledger_row", "entry_order": str(deal.get("entry_order") or ""),
+                      "position_id": str(deal.get("position_id") or ""),
+                      "r_denominator": "|intended_entry - sl| (slip_r); " + denom_basis,
+                      "why": "the prop ledger row carries intended_entry and entry_price; no "
+                             "intent joined, so no quote: spread is UNMEASURED, never zero"},
+        "sources": ["live_ledger.jsonl"],
+        "symbol": str(deal.get("symbol") or ""), "sleeve": str(deal.get("sleeve") or ""),
+        "decided_at": sent, "sent_at": sent, "filled_at": str(deal.get("entry_time") or ""),
+        "exit_at": stamp,
+        "side": {1: "buy", -1: "sell"}.get(direction, ""), "direction": direction,
+        "order_type": "", "execution_style": "",
+        "lots": _f(deal.get("volume")), "requested_price": asked,
+        "quote_bid": None, "quote_ask": None, "quote_mid_at_decision": None,
+        "fill_price": fill, "filled_frac": 1.0, "retcode": None, "rejected": False,
+        "slip_frac": (slip / asked) if (slip is not None and asked) else None,
+        "slip_r": (slip / stop_dist) if (slip is not None and stop_dist) else None,
+        "slip_points": (slip / point) if (slip is not None and point) else None,
+        "spread_frac_at_decision": None, "spread_points_at_decision": None,
+        "spread_status": "UNMEASURED", "point": point,
+        "stop_frac": (stop_dist / fill) if (stop_dist and fill) else None,
+        "commission_r": _commission_r(deal, denom),
+        "latency_decision_to_send_ms": None, "latency_send_to_ack_ms": None,
+        "realized_r": rr if rr is not None else realized_r(deal, denom),
+        "status": "FILLED",
+    }
+
+
 def supersede_rows(pairs: list[tuple[dict[str, Any], dict[str, Any], str]],
                    existing: dict[str, str], prefix: str = "") -> list[dict[str, Any]]:
     """A SUPERSEDED marker for every deal_only key an earlier pass wrote for a deal now joined.
@@ -587,6 +669,34 @@ def e8_intents(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "fill_price": None,
             "intent_id": f"e8|{r.get('tag') or ''}|{r.get('at') or ''}",
             "account_kind": "prop", "source_file": "e8_intents.jsonl", "book": "e8",
+        })
+    return out
+
+
+def e8_gold_intents(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The E8 GOLD lane's resting stops (`prop/e8_gold.py`'s `_record` rows), in the intent shape.
+
+    A SENT row is `{at, window, side: buy_stop|sell_stop, price, sl, tp, lot, status, order_id}`
+    (`adopted: True` when a retry re-owned a leg that had landed). `order_id` is the TradeLocker
+    order id `e8_fills.compose_fills` writes as the closed position's `entry_order`, so the join is
+    `ticket == entry_order`. One row per order id: an adoption re-records the same order. The row
+    carries no quote, so spread stays None; no fill price is invented from `price`."""
+    out: list[dict[str, Any]] = []
+    seen: set[int] = set()
+    for r in rows:
+        oid = _i(r.get("order_id"))
+        if str(r.get("status") or "").strip().upper() != "SENT" or oid is None or oid in seen:
+            continue
+        seen.add(oid)
+        window = str(r.get("window") or "")
+        out.append({
+            "time": r.get("at"), "symbol": str(r.get("symbol") or "XAUUSD"),
+            "sleeve": f"gold_{window}" if window else "e8_gold", "side": r.get("side"),
+            "lot": _f(r.get("lot")), "intended": _f(r.get("price")),
+            "sl": _f(r.get("sl")), "tp": _f(r.get("tp")), "ticket": oid,
+            "order_type": "stop", "retcode": None, "fill_price": None,
+            "intent_id": f"e8|gold|{window}|{r.get('side') or ''}|{oid}",
+            "account_kind": "prop", "source_file": "e8_gold_intents.jsonl", "book": "e8",
         })
     return out
 
@@ -653,6 +763,7 @@ def prop_deals(rows: list[dict[str, Any]], book: str) -> list[dict[str, Any]]:
     both are execution charges; swap is financing and stays separate.
     """
     out: list[dict[str, Any]] = []
+    seen: set[int] = set()
     for r in rows:
         if str(r.get("book") or "").strip().lower() != book:
             continue
@@ -664,6 +775,9 @@ def prop_deals(rows: list[dict[str, Any]], book: str) -> list[dict[str, Any]]:
         contract = _f(r.get("contract_size"))
         if contract is None and rq and entry and sl and vol and abs(entry - sl) > 0:
             contract = abs(rq) / (abs(entry - sl) * vol)
+        if pid in seen:
+            continue                # ONE ROW PER (book, position_id): one close is one fill
+        seen.add(pid)
         comm, fees = _f(r.get("commission")), _f(r.get("fees"))
         out.append({
             "deal": pid, "position_id": pid, "entry_order": _i(r.get("entry_order")),
@@ -676,6 +790,9 @@ def prop_deals(rows: list[dict[str, Any]], book: str) -> list[dict[str, Any]]:
             "r_multiple": _f(r.get("r_multiple")), "risk_quote": rq,
             "time": r.get("time") or r.get("exit_time"), "entry_time": r.get("entry_time"),
             "entry_side": r.get("entry_side"), "side": r.get("side"),
+            "direction": _i(r.get("direction")),
+            "intended_entry": _f(r.get("intended_entry")),
+            "entry_time_box_utc": r.get("entry_time_box_utc"),
             "account_kind": str(r.get("account_kind") or "prop"),
             "account_key": r.get("account_key"), "book": book,
         })
@@ -773,7 +890,8 @@ def build(budget_s: float = 120.0, *, dry_run: bool = False) -> dict[str, Any]:
     for it in fusion_intents:
         it.setdefault("book", "fusion")
     # EVERY ACCOUNT PLACES REAL ORDERS. The prop books were never opened by this organ.
-    prop = e8_intents(_read_jsonl(E8_INTENTS))
+    prop = (e8_intents(_read_jsonl(E8_INTENTS))
+            + e8_gold_intents(_read_jsonl(E8_GOLD_INTENTS)))
     ftmo = (ftmo_exec_intents(_read_jsonl(FTMO_EXEC_INTENTS))
             + ftmo_follower_intents(_read_jsonl(FTMO_FOLLOWER_INTENTS)))
     intents = fusion_intents + prop + ftmo
@@ -797,7 +915,8 @@ def build(budget_s: float = 120.0, *, dry_run: bool = False) -> dict[str, Any]:
     # pooled mean would average three venues' frictions into one that none of them pays.
     inputs = {"fusion": (fusion_intents, fusion_deals, "order_intents.jsonl",
                          "live_ledger.jsonl"),
-              "e8": (prop, e8_deals, "e8_intents.jsonl", "live_ledger_prop.jsonl"),
+              "e8": (prop, e8_deals, "e8_intents.jsonl|e8_gold_intents.jsonl",
+                     "live_ledger_prop.jsonl"),
               "ftmo": (ftmo, ftmo_deals, "ftmo_exec_intents.jsonl|ftmo_follower_intents.jsonl",
                        "live_ledger_prop.jsonl")}
     rows: list[dict[str, Any]] = []
@@ -814,8 +933,17 @@ def build(budget_s: float = 120.0, *, dry_run: bool = False) -> dict[str, Any]:
         b_rows += [unfilled_row(it) for it in b_unf]
         # THE DEALS THE OLD JOIN THREW AWAY. Every executed deal is a realised fill whether or
         # not an intent row survived beside it; only its slippage needs one.
-        b_rows += [deal_row(d) for d in b_unm]
-        b_census["deal_only"] = len(b_unm)
+        # A PROP LEDGER ROW THAT NAMES ITS OWN ASKED PRICE MEASURES ITS OWN SLIPPAGE. Deduped on
+        # (book, position_id): a position that joined an intent is never also written bare.
+        prop_book = book != "fusion"
+        joined_pids = {_i(d.get("position_id")) for _it, d, _h in b_pairs}
+        b_unm = [d for d in b_unm
+                 if not prop_book or _i(d.get("position_id")) not in joined_pids]
+        selfs = [d for d in b_unm if prop_book and self_sufficient(d)]
+        b_rows += [ledger_row(d) for d in selfs]
+        b_rows += [deal_row(d) for d in b_unm if not (prop_book and self_sufficient(d))]
+        b_census["ledger_row"] = len(selfs)
+        b_census["deal_only"] = len(b_unm) - len(selfs)
         # A DEAL THE JOIN NOW REACHES WAS RECORDED EARLIER AS `deal_only` UNDER ITS OWN KEY. The
         # corpus keeps the last row per key, so without this the same fill would read twice --
         # once joined, once bare. The old key is re-appended as SUPERSEDED, naming the row that
