@@ -71,6 +71,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 
 from libs.moat import registry as reg  # noqa: E402
 from libs.ops.phase_stamp import PhaseStamp  # noqa: E402
+from libs.research import hypothesis_graph as hg  # noqa: E402
 from libs.research import mechanism_ontology as onto  # noqa: E402
 from research import axis_registry as ar  # noqa: E402
 from research import negative_knowledge as nk  # noqa: E402
@@ -288,13 +289,26 @@ def _gate_of_graph_row(row: dict[str, Any]) -> str:
     return m.group(1) if m else ""
 
 
+#: The fates whose rows the graveyard reads in full: the dead, and the survivors their siblings are
+#: measured against. Every other node is needed only as an id (for "already in the graph").
+JUDGED_FATES = frozenset({"FAILED", "BURIED", "CERTIFIED"})
+
+
+def read_graph_with_ids(limit: int = MAX_ROWS) -> tuple[list[dict[str, Any]], set[str]]:
+    """(the latest row of every JUDGED node, newest first and at most `limit`, every node id).
+
+    THE GRAPH IS READ BY PATTERN, NOT PARSED WHOLE (2026-11-03). The old read was a full
+    `json.loads` of the graph's FIRST `limit` lines: on the box's 4.4 GB file that is the oldest
+    rows, every pass, at ~6 MB/s, and the leg was killed at its cap on 1,934 runs with 0
+    candidates from 271k dead cells. `hg.latest_rows` parses only the judged rows, the newest
+    `limit` of them.
+    """
+    return hg.latest_rows(JUDGED_FATES, GRAPH, limit)
+
+
 def read_graph(limit: int = MAX_ROWS) -> list[dict[str, Any]]:
-    """Every graph row, latest write per id -- the graph is append-only with re-statements."""
-    latest: dict[str, dict[str, Any]] = {}
-    for row in _jsonl(GRAPH, limit):
-        if str(row.get("id") or ""):
-            latest[str(row["id"])] = row
-    return list(latest.values())
+    """The latest row of every judged node (FAILED, BURIED, CERTIFIED), in file order."""
+    return read_graph_with_ids(limit)[0]
 
 
 def dead_cells(rows: list[dict[str, Any]], limit: int = MAX_ROWS) -> list[Dead]:
@@ -633,7 +647,8 @@ def combination_for(dead: Dead, qs: dict[str, Any]) -> dict[str, Any] | None:
 
 
 # ------------------------------------------------------------------------------ 5. the run
-def _acceptable(p: dict[str, Any], known: set[str], names: list[str]) -> str:
+def _acceptable(p: dict[str, Any], known: set[str], names: list[str],
+                graph_ids: set[str] | frozenset[str] = frozenset()) -> str:
     """'' when the proposal may leave, else the reason it may not."""
     sym, fam = str(p.get("symbol") or ""), _family_root(p.get("family"))
     if not sym or not fam:
@@ -649,6 +664,9 @@ def _acceptable(p: dict[str, Any], known: set[str], names: list[str]) -> str:
     if blocked:
         return f"the graveyard's do_not_repeat entry '{blocked}' covers this family"
     if reg.content_hash(str(p.get("family") or ""), sym, p.get("params")) in known:
+        return "the graph already carries this exact cell"
+    params = p.get("params") if isinstance(p.get("params"), dict) else {}
+    if graph_ids and hg.node_id(sym, str(p.get("family") or ""), params) in graph_ids:
         return "the graph already carries this exact cell"
     return ""
 
@@ -691,7 +709,7 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
     t0 = time.monotonic()
     stamp = PhaseStamp("graveyard_resurrection", OUT.with_name(OUT.stem + ".phase.json"))
     stamp.enter("read_graph")
-    rows = read_graph(max_rows)
+    rows, graph_ids = read_graph_with_ids(max_rows)
     stamp.enter("dead_cells")
     dead = dead_cells(rows, max_rows)
     stamp.enter("siblings")
@@ -769,7 +787,7 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
                     for p in ([*props, comb] if comb is not None else props):
                         if len(accepted) >= max_candidates or per_family[fam] >= fam_cap:
                             break
-                        why = _acceptable(p, known, names)
+                        why = _acceptable(p, known, names, graph_ids)
                         if why:
                             refusals.append({"cell": str(p.get("parent")), "why": why})
                             continue
@@ -821,7 +839,7 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
             "why": ("a gate this organ's table does not know leaves its cell UNMEASURED and spawns "
                     f"nothing; a question with fewer than {MIN_SIBLINGS} judged siblings is "
                     "UNMEASURED with its n. Neither is a zero")},
-        "sources": {"hypothesis_graph": len(rows), "gate_ledger": str(GATE_LEDGER),
+        "sources": {"hypothesis_graph": len(graph_ids), "graph_rows_read": len(rows), "gate_ledger": str(GATE_LEDGER),
                     "forward_clocks": sum(1 for d in dead if d.origin == "forward_clock"),
                     "graveyard_markdown": dnr.get("n_entries", 0),
                     "do_not_repeat_tags": dnr.get("tags", {})},

@@ -31,6 +31,7 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
         sys.path.insert(0, _p)
 
 from libs.moat import registry as R  # noqa: E402
+from libs.research import hypothesis_graph as hg  # noqa: E402
 from research import axis_registry as ar  # noqa: E402
 from research import graveyard_resurrection as gr  # noqa: E402
 from research import universe_policy as up  # noqa: E402
@@ -91,7 +92,9 @@ def _graph() -> list[dict[str, Any]]:
              exp_r=-0.02, t_stat=-3.1),
         _row("r_mystery", "XAUUSD", "range_fade", "FAILED", {"mystery_gate": {"passed": False}}),
         # ---- the widened repair of r_unstable ALREADY EXISTS in the graph: never re-donated.
-        _row("r_known", "GBPUSD", "range_fade", "BORN", None, {"lookback": 40}),
+        # A BORN row is read by id only (hg.latest_rows), so its id is the graph's own node id.
+        _row(hg.node_id("GBPUSD", "range_fade", {"lookback": 40}), "GBPUSD", "range_fade",
+             "BORN", None, {"lookback": 40}),
         # ---- a one-way payer whose sign may not be mirrored.
         _row("c_flip", "EURUSD", "carry_roll", "FAILED", DEFLATED, {"side": 1},
              exp_r=-0.02, t_stat=-4.0),
