@@ -804,8 +804,13 @@ def prop_block(symbol: object, side: object, *, now: datetime | None = None,
     if errors:
         # A refused row or an unreadable registry may be an account holding positions that no
         # trace on disk names yet: fail closed until the registry reads clean (audit MF1).
-        return (f"cross-account fence: the prop account registry has errors ({errors[0]}"
-                f"{'' if len(errors) == 1 else f' +{len(errors) - 1} more'}); fail closed")
+        # This blocks every non-gold entry on every lane, so it is never silent: it pages RED
+        # and bills each blocked entry to the missed-growth ledger (audit of 08525399).
+        why = (f"cross-account fence: the prop account registry has errors ({errors[0]}"
+               f"{'' if len(errors) == 1 else f' +{len(errors) - 1} more'}); fail closed")
+        registry_block_seen(errors, symbol, side, now=now)
+        return why
+    registry_clean_seen()
     skip = set(exclude)
     for name in prop_names():
         if name in skip:
@@ -817,6 +822,62 @@ def prop_block(symbol: object, side: object, *, now: datetime | None = None,
         if hit is not None:
             return hit
     return None
+
+
+#: The registry-error block's RED alert, and the journal each blocked entry is billed to
+#: (research/missed_growth.published_prop_registry_block_lines). Paged at most once per
+#: REGISTRY_PAGE_S per process (the provenance outbox dedups and repages while it stands).
+REGISTRY_ALERT_ID = "xacct_prop_registry_error"
+REGISTRY_BLOCKS_NAME = "prop_registry_blocks.jsonl"
+REGISTRY_PAGE_S = 600.0
+_REG_ALERT: dict[str, float] = {}
+
+
+def registry_block_seen(errors: list[str], symbol: object, side: object, *,
+                        now: datetime | None = None) -> None:
+    """Bill one blocked entry and keep the RED page open. Never raises."""
+    at = now or datetime.now(tz=UTC)
+    try:
+        with (XACCT_DIR / REGISTRY_BLOCKS_NAME).open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"at": at.isoformat(timespec="seconds"), "symbol": str(symbol),
+                                 "side": str(side), "rail": "prop_registry_error",
+                                 "errors": errors[:3]}) + "\n")
+    except OSError:
+        pass
+    t = time.monotonic()
+    if t - _REG_ALERT.get("paged", -1e18) < REGISTRY_PAGE_S:
+        return
+    _REG_ALERT["paged"] = t
+    msg = (f"[cross_account] data/prop_accounts.json has errors ({'; '.join(errors[:3])}): the "
+           f"prop fence fails closed, so EVERY non-gold entry on Fusion, E8 and every prop "
+           f"account is refused until the registry reads clean. Fix the registry row.")
+    try:
+        from libs.ops.alert_ledger import AlertLedger
+        ledger = AlertLedger(_alert_ledger_path())
+        ledger.observe(REGISTRY_ALERT_ID, msg, scope="RUNTIME")
+        ledger.save()
+    except Exception:
+        pass
+    _send(REGISTRY_ALERT_ID, "OPEN", "REGISTRY_ERROR",
+          "RED PROP REGISTRY ERROR: all non-gold entries blocked", msg)
+
+
+def registry_clean_seen() -> None:
+    """Close the registry alert once, when this process paged it and the registry reads clean."""
+    if "paged" not in _REG_ALERT:
+        return
+    _REG_ALERT.clear()
+    try:
+        from libs.ops.alert_ledger import AlertLedger
+        ledger = AlertLedger(_alert_ledger_path())
+        alert = ledger.alerts.get(REGISTRY_ALERT_ID)
+        if alert is not None and alert.open:
+            ledger.verify(REGISTRY_ALERT_ID, still_firing=False)
+            ledger.save()
+    except Exception:
+        pass
+    _send(REGISTRY_ALERT_ID, "OK", "recovered", "PROP REGISTRY OK again",
+          "[cross_account] data/prop_accounts.json reads clean; the prop fence is open again")
 
 
 def prop_peer_book(name: str, *, now: datetime | None = None

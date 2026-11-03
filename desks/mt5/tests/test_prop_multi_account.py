@@ -51,6 +51,10 @@ def data(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (d / "xacct").mkdir(parents=True)
     monkeypatch.setattr(xa, "XACCT_DIR", d / "xacct")    # its own data/, never the shared basetemp
     monkeypatch.setattr(pa, "DATA", d)
+    # a registry-error block pages: never into the real outbox or alert ledger from a test
+    monkeypatch.setattr(xa, "_send", lambda *a, **k: {})
+    monkeypatch.setattr(xa, "_REG_ALERT", {})
+    monkeypatch.setattr(xa, "_alert_ledger_path", lambda: tmp_path / "alerts.json")
     monkeypatch.setattr(pa, "REPORTS", tmp_path / "reports")
     monkeypatch.setattr(pa, "LOGS", tmp_path / "logs")
     return d
@@ -165,6 +169,25 @@ def test_a_registry_error_fails_the_fence_closed(data: Path) -> None:
     assert "registry has errors" in (xa.ftmo_block("EURUSD", "buy", now=NOW) or "")
     (data / pa.REGISTRY_NAME).write_text("{not json")
     assert "fail closed" in (xa.prop_block("EURUSD", "buy", now=NOW) or "")
+
+
+def test_a_registry_block_pages_red_and_is_billed(data: Path, monkeypatch) -> None:
+    import missed_growth as mg
+    pages: list[tuple[str, str]] = []
+    monkeypatch.setattr(xa, "_send", lambda aid, st, sig, t, b: pages.append((aid, st)) or {})
+    monkeypatch.setattr(xa, "_REG_ALERT", {})
+    monkeypatch.setattr(xa, "_alert_ledger_path", lambda: data / "alerts.json")
+    _registry(data, [_row("BAD")])
+    assert xa.prop_block("EURUSD", "buy", now=NOW)
+    assert xa.prop_block("GBPUSD", "sell", now=NOW)
+    assert pages == [(xa.REGISTRY_ALERT_ID, "OPEN")]           # paged once, not per entry
+    line = mg.published_prop_registry_block_lines()["rails"]["prop_registry_error"]
+    assert line["n"] == 2 and line["by_symbol"] == {"EURUSD": 1, "GBPUSD": 1}
+    _registry(data, [_row("a")])
+    assert xa.prop_block("EURUSD", "buy", now=NOW) is None
+    assert pages[-1] == (xa.REGISTRY_ALERT_ID, "OK")            # recovery paged once
+    xa.prop_block("EURUSD", "buy", now=NOW)
+    assert len(pages) == 2
 
 
 def test_an_unregistered_account_on_disk_still_fences(data: Path) -> None:

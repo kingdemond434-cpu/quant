@@ -899,6 +899,29 @@ def published_ftmo_executor_lines() -> dict[str, Any]:
     return out
 
 
+def published_prop_registry_block_lines() -> dict[str, Any]:
+    """The prop fence's registry-error block (cross_account.registry_block_seen, audit of
+    08525399): while data/prop_accounts.json has errors, every non-gold entry on every lane is
+    refused. Each refusal is a row; the line counts them by symbol. Published, not priced: the
+    row holds what was refused, not what it would have earned."""
+    from mt5desk import cross_account as _xa
+    path = _xa.XACCT_DIR / _xa.REGISTRY_BLOCKS_NAME
+    rows = _jsonl(path)
+    if rows is None:
+        return {"source": path.name, "unreadable": [path.name], "rails": {}}
+    if not rows:
+        return {"source": path.name, "rails": {}}
+    by: dict[str, int] = {}
+    for r in rows:
+        by[str(r.get("symbol"))] = by.get(str(r.get("symbol")), 0) + 1
+    return {"source": path.name, "rails": {"prop_registry_error": {
+        "verdict": UNMEASURED, "n": len(rows), "by_symbol": by,
+        "first_at": rows[0].get("at"), "last_at": rows[-1].get("at"),
+        "last_errors": rows[-1].get("errors"),
+        "why": ("entries refused while the prop registry did not read clean; the refusal is "
+                "billed, not priced")}}}
+
+
 def prop_exec_journals() -> list[tuple[str, Path]]:
     """(account id, its executor journal) for the legacy FTMO account and every directory under
     data/prop/ -- read off DISK, not the registry, so an account whose row was refused or
@@ -1220,6 +1243,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                     "fusion_book_rails": published_fusion_book_lines(),
                                     "ftmo_follower_rails": published_ftmo_follower_lines(),
                                     "ftmo_executor_rails": published_ftmo_executor_lines(),
+                                    "prop_registry_block": (
+                                        published_prop_registry_block_lines()),
                                     "gauntlet_watchdog": organ_published_lines(GAUNTLET_STALL),
                                     "judge_priority_raise": organ_published_lines(
                                         JUDGE_PRIORITY_RAISES,
