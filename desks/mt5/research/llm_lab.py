@@ -1519,6 +1519,15 @@ def _election_role(*, budget_s: float) -> dict[str, Any]:
         return {"state": "ERROR", "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
 
 
+def _refunding_role(*, budget_s: float) -> dict[str, Any]:
+    """`treasury_refunding`: the QRA's size and guidance surprise as a PIT series and cells."""
+    try:
+        import treasury_refunding
+        return treasury_refunding.run(budget_s=budget_s)
+    except Exception as exc:                           # pragma: no cover - defensive
+        return {"state": "ERROR", "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
+
+
 def _collector_role(*, budget_s: float, max_llm: int) -> dict[str, Any]:
     """collector_author's replacement (`collector_lab`): declarative specs, fixed fetcher."""
     try:
@@ -1633,6 +1642,11 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
     elections: dict[str, Any] = {"state": "NOT_RUN"} if not dry_run else {"state": "dry run"}
     if not dry_run and budget_s - (time.time() - started) > 90:
         elections = _election_role(budget_s=min(60.0, budget_s * 0.1))
+    # ---- phase 0e: the TREASURY REFUNDING surprise (idea F5). Fixed code again: coupon sizes
+    # and size guidance read from the statements themselves, surprise vs Treasury's own guidance.
+    refunding: dict[str, Any] = {"state": "NOT_RUN"} if not dry_run else {"state": "dry run"}
+    if not dry_run and budget_s - (time.time() - started) > 90:
+        refunding = _refunding_role(budget_s=min(60.0, budget_s * 0.1))
 
     # ---- phase 1: the independent first pass. No lab sees another lab's current answers.
     own_recent: dict[tuple[str, str], list[str]] = {}
@@ -1895,6 +1909,9 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         "collector": collector,
         "elections": {k: elections.get(k) for k in ("state", "countries", "cells_total",
                                                     "cells_donated", "why") if k in elections},
+        "refunding": {k: refunding.get(k) for k in ("state", "statements_on_record", "measured",
+                                                    "cells_total", "cells_donated", "why")
+                      if k in refunding},
         "donations": donations,
         "roles": role_report,
         "model_coverage": {k: coverage.get(k) for k in ("verdict", "red", "models_available",
