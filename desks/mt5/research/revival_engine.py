@@ -90,8 +90,9 @@ def candidates(graph_rows: list[dict[str, Any]], gm: Any, changed: dict[str, Any
 def run(write: bool = True) -> dict[str, Any]:
     try:
         from libs.research.graveyard_model import GraveyardModel
-        from libs.research.hypothesis_graph import Graph
-        rows = Graph().rows()
+        from libs.research.hypothesis_graph import latest_rows
+        # Judged rows only, read by pattern: candidates are the dead, the model fits the judged.
+        rows, _ids = latest_rows({"FAILED", "BURIED", "CERTIFIED"})
         gm = GraveyardModel().fit(rows) if rows else None
     except Exception as exc:                                     # noqa: BLE001
         rows, gm = [], None

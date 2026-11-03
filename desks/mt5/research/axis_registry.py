@@ -814,10 +814,16 @@ def build(max_proposals: int = MAX_PROPOSALS) -> tuple[dict[str, Any], dict[str,
     """(report, cells, proposals). Reads everything tolerantly; never raises on a missing input."""
     note: dict[str, str] = {}
     max_proposals = min(int(max_proposals), MAX_PROPOSALS)   # the ceiling is structural, not a flag
+    from libs.ops.phase_stamp import PhaseStamp
+    stamp = PhaseStamp("axis_registry", OUT_REPORT.with_name(OUT_REPORT.stem + ".phase.json"))
+    stamp.enter("collect_cells")
     cells = collect_cells(note)
+    stamp.enter("fit_prior")
     model, prior_source = fit_prior(cells)
+    stamp.enter("empty_regions")
     families = registered_families()
     regions = empty_regions(cells, model, families)
+    stamp.enter("select")
     selection = select(cells, model, regions, max_proposals)
     proposals = [p for mode, _ in SHARES for p in selection[mode]]
     why_none = "" if proposals else (
@@ -834,6 +840,7 @@ def build(max_proposals: int = MAX_PROPOSALS) -> tuple[dict[str, Any], dict[str,
               "families_registered": len(families), "family_table_size": len(FAMILY_TABLE),
               "candidate_regions": len(candidate_regions(cells, families)),
               "why_no_proposals": why_none}
+    report["phases"] = stamp.done()
     return report, cells, proposals
 
 

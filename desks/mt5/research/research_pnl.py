@@ -79,8 +79,9 @@ def _json(path: Path) -> dict:
 
 def _graph_rows() -> tuple[list[dict], str | None]:
     try:
-        from libs.research.hypothesis_graph import Graph
-        rows = Graph().rows()
+        from libs.research.hypothesis_graph import iter_fields
+        # The census reads source and fate of the last row per id -- nothing else (2026-11-03).
+        rows = list(iter_fields(("source", "fate")))
     except Exception as exc:
         return [], f"hypothesis graph unreadable: {type(exc).__name__}: {exc}"
     return rows, (None if rows else "hypothesis graph absent or empty on this host")

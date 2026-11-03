@@ -1330,6 +1330,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # Derives each instrument's own session from its own bars and mints the
                      # breakout aimed at it, instead of porting gold's hours everywhere.
                      "session_structure",
+                     # THE VPS-ONLY SEATS, given a box clock (producer revival 2026-10-29):
+                     # seed_miners.py and run_all_miners.py, whose only clocks were VPS timers.
+                     "seed_miners", "external_miners",
                      # The culture-gap producers: each zero-coverage culture gap's participant
                      # structure (fixing, settlement window, tax month, local session) turned
                      # into registered-family cells on the gap's own clock.
@@ -1338,8 +1341,9 @@ LEG_DEPARTMENT: dict[str, str] = {
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "session_variant_remap",
                      "intake_catchup", "compile_candidates", "merge_docket",
-                     "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
-                     "requeue_unrunnable", "queue_cycle", "queue_compact", "miner_conversion",
+                     "deepen", "alpha_evolution", "proposer_rotation", "alpha_rl", "ml_layer",
+                     "ensemble_optimizer", "requeue_unrunnable", "queue_cycle", "queue_compact",
+                     "miner_conversion",
                      "recertify_canon", "session_chart_expansion", "experiment_design",
                      "experiment_cache", "probation", "axis_proposer", "program_alpha_lane",
                      "trajectory_evolution", "descendants", "card_explosion", "alpha_lineage",
@@ -2038,6 +2042,15 @@ def _producer(name: str, script: str,
 #: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
+    # THE PRODUCER REVIVAL LEGS (2026-10-29). proposer_rotation: hourly_discovery's
+    # BOX_ROTATION_BUDGET_S (1,500 s, passed as --budget-s so `_self_stop_floor_s` floors it) plus
+    # its KILL_GRACE_S. seed_miners: nineteen single-page sources plus the regional hunters, each
+    # writing its own seat file as it finishes, so a cap costs only the tail. external_miners:
+    # twenty-five miners at <= QUANT_MINER_TIMEOUT_S (180 s) each, started at an hour-rotated
+    # offset so a cap never starves the same tail twice running.
+    "proposer_rotation": 1_800,
+    "seed_miners": 1_500,
+    "external_miners": 1_800,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -4150,6 +4163,16 @@ def main() -> None:
     # ITS OUTPUT, ONTO THE BUDGET'S TRIAL LEDGER: the budget is authoritative only once the
     # held-out comparison of these rows admits its uplift (research_budget.contract_verdict).
     _bandit_observe("alpha_evolution", _aev_rec)
+    # THE PROPOSERS THE BOX NEVER FINISHED (producer revival, 2026-10-29). Nine proposers ran on
+    # the box only inside the daily chain, which MT5-Daily terminates at its time limit (process
+    # health 2026-10-29T11:30Z: last result 267014), and on the VPS's hourly-discovery timer, whose
+    # output stopped reaching the box when intel-ship/send went silent (2026-10-14T01:50Z).
+    # PRODUCER_YIELD read every one DEAD or UNMEASURED. One staleness-ordered, budgeted pass over
+    # hourly_discovery.BOX_ROTATION each hour; each organ runs in its own killed-at-budget child
+    # and its outcome lands in HOURLY_DISCOVERY.json. Adds a clock; removes none.
+    prr = _costed("proposer_rotation", lambda: _producer(
+        "proposer_rotation", "research/hourly_discovery.py", "--box-rotation",
+        "--budget-s", "1500"))
     # The closed-loop attestation: every flag derived from another organ's artifact.
     clp = _costed("closed_loop", lambda: _producer("closed_loop", "scripts/check_closed_loop.py"))
     rc = _costed("regime_coverage", regime_coverage)
@@ -5953,6 +5976,19 @@ def main() -> None:
         "graveyard_model", "libs/research/graveyard_model.py"))
     wc = _costed("world_crawler", lambda: _producer(
         "world_crawler", "side_channels/world_crawler.py"))
+    # THE SEATS ONLY THE VPS EVER CLOCKED (producer revival, 2026-10-29). Thirty-odd intelligence
+    # seats -- aaii, cot, central_banks, darwinex, collective2, quant_se, arxiv_qfin, youtube,
+    # github, ... -- were written ONLY by `seed_miners.py` (quant-seed-miners.timer) and
+    # `run_all_miners.py` (full-pipeline.timer) on the VPS and reached this box through the
+    # intel-ship/send transport, whose last commit is 2026-10-14T01:50Z. MT5-IntelShip still runs
+    # here (result 0) and adopts nothing new, so PRODUCER_YIELD 2026-10-29T11:43Z read every one
+    # DEAD with no cause. The same code runs here now, on the box's own clock: each source writes
+    # its own `data/intelligence/<seat>/discoveries_*.json`, robots/wall dispositions stay inside
+    # the miners (SOURCE_WALLS, fetch_error rows), and nothing is bypassed.
+    sdm = _costed("seed_miners", lambda: _producer(
+        "seed_miners", "side_channels/seed_miners.py"))
+    exm = _costed("external_miners", lambda: _producer(
+        "external_miners", "side_channels/run_all_miners.py"))
     # THE PROPOSER SEAT (2026-09-23). An OPTIONAL external-model prior over which expression
     # skeletons and which mechanism names are worth a trial. It proposes candidates and never a
     # verdict: every proposal enters the population with provenance, is charged effective trials,
@@ -6501,6 +6537,7 @@ def main() -> None:
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
                     "frontier_ontology": fo, "exit_study": xs,
                     "graveyard_model": gm, "world_crawler": wc,
+                    "seed_miners": sdm, "external_miners": exm,
                     "proposer_seat": prs, "committees": cmt,
                     "committee_ensembles": cme, "kimi_hunt": kh,
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
@@ -6552,7 +6589,8 @@ def main() -> None:
                     "falsifier_run": fz, "style_novelty": snv, "merge_docket": mh,
                     "backtest": bt,
                     "wiring_audit": wa, "brain_ab": ab, "alpha_breadth": cm,
-                    "alpha_evolution": aev, "research_bandit": rbd, "closed_loop": clp,
+                    "alpha_evolution": aev, "proposer_rotation": prr,
+                    "research_bandit": rbd, "closed_loop": clp,
                     "alpha_periodic_table": pt, "queue_cycle": qcy,
                     "microstructure_census": mx, "entry_timing": ety,
                     "spread_provenance": sp, "tape_features": tf,

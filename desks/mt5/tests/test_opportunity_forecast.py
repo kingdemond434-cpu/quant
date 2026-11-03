@@ -57,10 +57,8 @@ def test_empty_graph_is_unmeasured_and_main_writes_the_report(tmp_path: Path, mo
     assert of.forecast([], NOW)["status"] == "UNMEASURED"
     import libs.research.hypothesis_graph as hg
 
-    class _G:
-        def rows(self):
-            return [_row("XAUUSD", "f", "CERTIFIED", 1)]
-    monkeypatch.setattr(hg, "Graph", _G)
+    monkeypatch.setattr(hg, "iter_fields",
+                        lambda fields, path=hg.LEDGER: iter([_row("XAUUSD", "f", "CERTIFIED", 1)]))
     monkeypatch.setattr(of, "OUT", tmp_path / "of.json")
     assert of.main([]) == 0
     doc = json.loads((tmp_path / "of.json").read_text("utf-8"))

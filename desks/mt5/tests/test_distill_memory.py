@@ -555,3 +555,16 @@ def test_prompt_context_surfaces_the_corpse_for_a_deepening_task(tmp_path, memdi
     assert len(tight) <= 120 and tight.count("\n") == 0
     assert mem.prompt_context({}) == ""
     assert mem.prompt_context({"title": "zzzz qqqq"}) == ""
+
+
+def test_a_lineage_row_in_a_format_the_prefilter_cannot_read_is_counted(tmp_path) -> None:
+    src = sorted(my.LINEAGE_SOURCES)[0]
+    g = tmp_path / "g.jsonl"
+    g.write_text(json.dumps({"id": "a", "source": src, "fate": "BORN"}) + "\n"
+                 + json.dumps({"id": "b", "source": src, "fate": "BORN"}, separators=(",", " : "))
+                 + "\n" + json.dumps({"id": "c", "source": "gauntlet", "fate": "BURIED"}) + "\n",
+                 encoding="utf-8")
+    stats: dict[str, int] = {}
+    rows = my._lineage_lines(g, stats)
+    assert [r["id"] for r in rows] == ["a"]
+    assert stats == {"suspect_skipped": 1}, "the re-spaced row is a number, not a silent 0"

@@ -1054,8 +1054,9 @@ def breadth_credit() -> dict[str, Any]:
     """
     try:
         from libs.research.breadth_credit import credits, occupied_shares
-        from libs.research.hypothesis_graph import Graph
-        rows = [r for r in Graph().rows() if isinstance(r, dict)]
+        from libs.research.hypothesis_graph import iter_fields
+        # The share needs source, kind and the cluster keys only (2026-11-03).
+        rows = list(iter_fields(("source", "kind", "family", "cell", "name", "fate")))
         state = None
         try:
             from libs.research.breadth_credit import book_state
@@ -1289,10 +1290,15 @@ def temperature_ladder(graph_rows: Iterable[dict[str, Any]],
 def run(seed: int = 0, write: bool = True,
         variant: str = CONTROLLER_VARIANT) -> dict[str, Any]:
     try:
-        from libs.research.hypothesis_graph import Graph
-        rows = Graph().rows()
+        from libs.research.hypothesis_graph import latest_fields
+        # `evidence` and `temperature_ladder` read the last row per id, and of it only these
+        # fields (2026-11-03); `graph_rows` keeps counting the rows read.
+        read: dict[str, int] = {}
+        rows = list(latest_fields(("source", "fate", "kind", "at", "ts", "_t"),
+                                  stats=read).values())
+        n_graph_rows = int(read.get("rows", len(rows)))
     except Exception:
-        rows = []
+        rows, n_graph_rows = [], 0
     marginal = _marginal_by_arm()
     ct, ct_why = _cost_table()
     mc = (measured_cost(ct) if ct is not None else
@@ -1310,7 +1316,7 @@ def run(seed: int = 0, write: bool = True,
     shares = allocate({a: v for a, v in ev.items() if a in ARMS}, np.random.default_rng(seed),
                       credit=bc.get("credit"), audit=audit)
     costed = sorted(a for a in ARMS if a in mc)
-    doc = {"generated_utc": datetime.now(tz=UTC).isoformat(), "graph_rows": len(rows),
+    doc = {"generated_utc": datetime.now(tz=UTC).isoformat(), "graph_rows": n_graph_rows,
            "controller_variant": variant,
            "explore": EXPLORE, "pseudo_counts": PSEUDO, "shares": shares, "arms": ev,
            "cost_basis": {
