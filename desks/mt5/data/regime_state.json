@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-03T10:30:04.692137+00:00",
+  "swept_at": "2026-11-03T10:45:04.294829+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -2868,8 +2868,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 28,
-      "shadow_exp_r": -0.0988,
+      "shadow_n": 90,
+      "shadow_exp_r": -0.5581,
       "woke_on_shadow": false
     },
     "NAS100|cross_asset_residual_continuous": {
@@ -2923,8 +2923,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 36,
-      "shadow_exp_r": -0.039,
+      "shadow_n": 69,
+      "shadow_exp_r": -0.0493,
       "woke_on_shadow": false
     },
     "NAS100|pca_residual_continuous": {
@@ -3221,7 +3221,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0444,
+      "shadow_exp_r": -0.064,
       "woke_on_shadow": false
     },
     "NZDJPY|vol_transition_continuous": {
