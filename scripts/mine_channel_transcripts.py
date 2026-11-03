@@ -12,6 +12,8 @@ Rules (desk LAWS 5e + principal rulings):
 Outputs (under --out, default ./video_mining_out):
   ledger.jsonl                       one row per video, latest row per video_id wins
   transcripts/<handle>/<video_id>.txt
+  descriptions/<handle>/<video_id>.txt  video description
+  links.json                         every description link -> videos citing it
   coverage_summary.json              counts per channel per status
   video_mining_out.zip               everything above, for transfer
 
@@ -57,6 +59,27 @@ def enumerate_tab(handle: str, tab: str) -> list[dict]:
                 out.append({"video_id": vid, "title": x.get("title") or "",
                             "duration": x.get("duration"), "tab": tab})
     return out
+
+
+LINK_RE = None
+
+
+def fetch_description(vid: str) -> tuple[str, list[str], dict]:
+    """Public video metadata (description + every link in it) via yt-dlp, no download."""
+    import re
+    global LINK_RE
+    LINK_RE = LINK_RE or re.compile(r"https?://[^\s)\"'<>]+")
+    cmd = [sys.executable, "-m", "yt_dlp", "--skip-download", "-J", "--no-warnings",
+           f"https://www.youtube.com/watch?v={vid}"]
+    p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if p.returncode != 0:
+        return "", [], {"desc_error": ((p.stderr or "").strip().splitlines() or [""])[-1][:200]}
+    d = json.loads(p.stdout)
+    desc = d.get("description") or ""
+    meta = {"upload_date": d.get("upload_date"), "duration": d.get("duration"),
+            "view_count": d.get("view_count"), "chapters": [c.get("title") for c in
+                                                          (d.get("chapters") or [])]}
+    return desc, sorted(set(LINK_RE.findall(desc))), meta
 
 
 def load_ledger(path: Path) -> dict[str, dict]:
@@ -159,7 +182,8 @@ def main() -> int:
                 seen.add(v["video_id"])
                 v["channel"] = ch["handle"]
                 prev = ledger.get(v["video_id"])
-                if prev and prev["status"] in ("FULL", "NO_TRANSCRIPT", "UNAVAILABLE"):
+                if (prev and prev["status"] in ("FULL", "NO_TRANSCRIPT", "UNAVAILABLE")
+                        and "links" in prev):
                     continue
                 if not prev:
                     write({**v, "status": "PENDING", "ts": now()})
@@ -171,10 +195,22 @@ def main() -> int:
     for v in todo:
         if args.limit and fetched >= args.limit:
             break
-        status, text, meta = fetch_transcript(api, v["video_id"])
+        prev = ledger.get(v["video_id"]) or {}
+        if prev.get("status") in ("FULL", "NO_TRANSCRIPT", "UNAVAILABLE"):
+            status, text, meta = prev["status"], None, {}
+        else:
+            status, text, meta = fetch_transcript(api, v["video_id"])
         fetched += 1
-        row = {**v, "status": status, "ts": now(), **meta}
-        if status == "FULL":
+        row = {**prev, **v, "status": status, "ts": now(), **meta}
+        if status != "ACCESS_LIMIT":
+            desc, links, dmeta = fetch_description(v["video_id"])
+            row.update(dmeta)
+            row["links"] = links
+            if desc:
+                dd = out / "descriptions" / v["channel"].lstrip("@")
+                dd.mkdir(parents=True, exist_ok=True)
+                (dd / f"{v['video_id']}.txt").write_text(desc, encoding="utf-8")
+        if status == "FULL" and text is not None:
             d = out / "transcripts" / v["channel"].lstrip("@")
             d.mkdir(parents=True, exist_ok=True)
             (d / f"{v['video_id']}.txt").write_text(
@@ -198,6 +234,12 @@ def main() -> int:
         c[r["status"]] = c.get(r["status"], 0) + 1
     for c in summary["channels"].values():
         c["total"] = sum(c.values())
+    links: dict[str, list[str]] = {}
+    for r in ledger.values():
+        for u in r.get("links", []):
+            links.setdefault(u, []).append(r["video_id"])
+    summary["distinct_links"] = len(links)
+    (out / "links.json").write_text(json.dumps(links, indent=1), encoding="utf-8")
     (out / "coverage_summary.json").write_text(json.dumps(summary, indent=1), encoding="utf-8")
     print(json.dumps(summary, indent=1))
 
