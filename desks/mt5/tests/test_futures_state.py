@@ -534,3 +534,29 @@ def test_a_pair_ends_where_its_stalest_leg_ends():
     assert len(out) == 1
     _oid, _feat, idx, _targets, _kind = out[0]
     assert idx.max() == m_short[-1]
+
+
+def test_crack_spread_scales_a_product_leg():
+    """A crack is 42 gal/bbl x the product's $/gal minus crude's $/bbl."""
+    d = pd.date_range("2024-01-01", periods=40, freq="B", tz="UTC")
+    yc = pd.DataFrame({"GAS": 2.5, "WTI": 80.0}, index=d)
+    cv = {"id": "physical", "mode": "pairs", "window": 20,
+          "pairs": [{"id": "GASOLINE_CRACK", "base": "GAS", "base_mult": 42.0, "quote": "WTI",
+                     "targets": ["XTIUSD"]}]}
+    (oid, feat, _idx, targets, _kind), = fs.fred_outputs(cv, yc)
+    assert oid == "fred_physical_gasoline_crack" and targets == ["XTIUSD"]
+    assert np.allclose(feat["diff"].to_numpy(), 42.0 * 2.5 - 80.0)
+
+
+def test_small_traders_are_a_class_and_lead_the_mint():
+    """Nonreportables (retail) and other reportables come through as classes, ranked headline."""
+    df = pd.DataFrame({"open_interest_all": [100.0, 120.0],
+                       "nonrept_positions_long_all": [30.0, 40.0],
+                       "nonrept_positions_short_all": [10.0, 5.0],
+                       "other_rept_positions_long": [5.0, 6.0],
+                       "other_rept_positions_short": [7.0, 2.0]})
+    p = fs.positioning(df)
+    assert list(p["nonrept_net"]) == [20.0, 35.0]
+    assert list(p["other_rept_net"]) == [-2.0, 4.0]
+    assert fs._col_rank("nonrept_net_oi") == (0, 0)
+    assert fs._col_rank("other_rept_net") == (0, 0)

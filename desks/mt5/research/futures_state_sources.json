@@ -1422,6 +1422,44 @@
      "USDSGD"
     ]
    }
+  },
+  {
+   "id": "physical",
+   "mode": "pairs",
+   "avail_lag_days": 10,
+   "window": 252,
+   "note": "physical spreads from EIA spot prices on FRED, daily, $/bbl. EIA posts its daily spot table once a week, so a row is held 10 days after its date (worst case: a Monday print published the following week). Brent-WTI is the seaborne vs landlocked dislocation; the cracks are refiner margin (gasoline and heating oil at NY Harbor, x42 gal/bbl, minus WTI).",
+   "pairs": [
+    {
+     "id": "BRENT_WTI",
+     "base": "DCOILBRENTEU",
+     "quote": "DCOILWTICO",
+     "targets": [
+      "XTIUSD",
+      "XBRUSD"
+     ]
+    },
+    {
+     "id": "GASOLINE_CRACK",
+     "base": "DGASNYH",
+     "base_mult": 42.0,
+     "quote": "DCOILWTICO",
+     "targets": [
+      "XTIUSD",
+      "XBRUSD"
+     ]
+    },
+    {
+     "id": "HEATOIL_CRACK",
+     "base": "DHOILNYH",
+     "base_mult": 42.0,
+     "quote": "DCOILWTICO",
+     "targets": [
+      "XTIUSD",
+      "XBRUSD"
+     ]
+    }
+   ]
   }
  ],
  "cftc_release_calendar": {

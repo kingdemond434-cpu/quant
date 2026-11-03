@@ -532,7 +532,9 @@ def fred_outputs(cv: Mapping[str, Any], yc: pd.DataFrame
     """One FRED set -> its feature frames, by mode.
 
     curve   the set is one term structure (level per tenor, slope, curvature).
-    pairs   each pair is base minus quote, e.g. euro-area minus US 3M rate for EURUSD: the
+    pairs   each pair is base minus quote (each optionally scaled by `base_mult`/`quote_mult`, so a
+            crack spread is 42 x a $/gal product minus $/bbl crude), e.g. euro-area minus US 3M
+            rate for EURUSD: the
             interest-rate differential a forward prices, compared against the swap the broker
             charges elsewhere (GAP_MAP row 64). One series per pair, with that pair's targets.
     levels  each series alone, level and log change (reserves: the change is the intervention
@@ -555,7 +557,8 @@ def fred_outputs(cv: Mapping[str, Any], yc: pd.DataFrame
             b, q = "b", "q"
             if len(both) < MIN_ROWS:
                 continue
-            diff = pd.DataFrame({"diff": both[b] - both[q]}, index=both.index)
+            bm, qm = float(pr.get("base_mult", 1.0)), float(pr.get("quote_mult", 1.0))
+            diff = pd.DataFrame({"diff": bm * both[b] - qm * both[q]}, index=both.index)
             out.append((f"fred_{cv['id']}_{str(pr['id']).lower()}",
                         dynamics(diff, ["diff"], window=int(cv.get("window", 252))),
                         pd.DatetimeIndex(both.index), list(pr.get("targets") or []),
@@ -975,7 +978,8 @@ def cell_hash(sid: str, col: str, tf: str, sym: str, chart: str) -> str:
 #: flood minted at once would sit unjudged while charging the program for every one. The queue
 #: is ordered so the headline state goes first; nothing is dropped, the rest leads next pass.
 MAX_MINT_PER_PASS = 3000
-_HEADLINE = ("m_money", "lev_money", "noncomm", "_opt", "flow_price", "oi_price", "slope",
+_HEADLINE = ("m_money", "lev_money", "noncomm", "nonrept", "other_rept", "_opt", "flow_price",
+             "oi_price", "slope",
              "roll_yield", "curvature", "mof_q_net", "mof_net_4q", "mof_m_gross", "x")
 _DERIVED = ("_chg", "_acc", "_pct")
 
