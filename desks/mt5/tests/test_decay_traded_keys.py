@@ -544,3 +544,20 @@ def test_an_e8_copy_is_matched_on_its_utc_signal_hour_never_its_tradelocker_cloc
     assert st["n"] == 1
     # three same-venue trades in one hour stay three
     assert len(D.episodes([fusion, dict(fusion), dict(fusion)])) == 3
+
+
+def test_fusion_and_e8_share_the_utc_hour_on_a_day_ftmo_skipped() -> None:
+    """#540 audit SF (46a8e8f78): Fusion's rows carry no signal_hour_utc, so their UTC hour is the
+    server entry hour less the server offset at that date (+3 in US summer, +2 in winter)."""
+    assert D._server_to_utc_hour("2026-10-29T07:26:14+00:00") == "2026-10-29T04"
+    assert D._server_to_utc_hour("2026-11-03T07:30:01+00:00") == "2026-11-03T05"
+    fusion = {"sleeve": "gold_asia", "entry_side": 0, "r_multiple": -0.03, "_venue": "fusion",
+              "timestamp_basis": "broker_deal_epoch",
+              "entry_time": "2026-10-29T07:26:14+00:00", "time": "2026-10-29T09:09:15+00:00"}
+    e8 = {"sleeve": "gold_asia", "direction": 1, "r_multiple": -0.05, "_venue": "e8",
+          "signal_hour_utc": "2026-10-29T04:00:00+00:00",
+          "timestamp_basis": "tradelocker_order_ms_utc",
+          "entry_time": "2026-10-29T04:00:03+00:00", "time": "2026-10-29T09:09:00+00:00"}
+    eps = D.episodes([fusion, e8])
+    assert len(eps) == 1 and eps[0]["_venues"] == ["fusion", "e8"]
+    assert D.SEQ_KEEP_DEALS == 3 * 4 * D.TRAIL_MAX_TRADES

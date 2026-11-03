@@ -258,17 +258,45 @@ def _direction(r: dict) -> object:
     return {0: 1, 1: -1}.get(side, side)
 
 
+#: The MT5 server clock (Fusion, FTMO and E8's MT5 feed): midnight is 17:00 New York, so +3 in
+#: summer and +2 in winter -- the rule prop/e8_guard.server_offset_hours derives and
+#: data/broker_clock_measured.json measures on the box (UTC+2 by 10 symbols, 2026-11-03).
+SERVER_ANCHOR_TZ = "America/New_York"
+SERVER_MIDNIGHT_ET_HOUR = 17
+
+
+def _server_to_utc_hour(server_stamp: str) -> str | None:
+    """A server-clock stamp (written with a +00:00 label) as its true UTC hour, YYYY-MM-DDTHH, or
+    None when it does not parse. The offset is taken at the stamp's own date."""
+    from zoneinfo import ZoneInfo
+    try:
+        naive = datetime.fromisoformat(server_stamp.replace("Z", "+00:00")).replace(tzinfo=None)
+    except ValueError:
+        return None
+    guess = (naive - timedelta(hours=3)).replace(tzinfo=UTC)          # within an hour of true
+    et_off = guess.astimezone(ZoneInfo(SERVER_ANCHOR_TZ)).utcoffset() or timedelta(0)
+    off = timedelta(hours=24 - SERVER_MIDNIGHT_ET_HOUR) + et_off
+    return (naive - off).strftime("%Y-%m-%dT%H")
+
+
 def _hour_keys(r: dict) -> set[str]:
     """The signal hour(s) a row can be matched on. `signal_hour_utc` when the writer derived it
     (E8 and FTMO, prop fills ledger): the one clock every venue shares. The entry_time hour
     only when it is on the MT5 server clock (Fusion, FTMO): E8's TradeLocker stamps are UTC and
     must never be compared with a server hour."""
     keys: set[str] = set()
-    if r.get("signal_hour_utc"):
-        keys.add("utc:" + str(r["signal_hour_utc"])[:13])
     on_server = (str(r.get("_venue")) != "e8"
                  and "tradelocker" not in str(r.get("timestamp_basis") or "").lower())
     et = r.get("entry_time") or r.get("time")
+    if r.get("signal_hour_utc"):
+        keys.add("utc:" + str(r["signal_hour_utc"])[:13])
+    elif on_server and r.get("entry_time"):
+        # A server-clock row with no derived signal hour (Fusion's ledger rows): its UTC hour is
+        # the server entry hour less the server offset AT THAT DATE (#540 audit SF), so it shares
+        # a key with an E8 copy on a day FTMO did not take the signal.
+        utc = _server_to_utc_hour(str(r["entry_time"]))
+        if utc:
+            keys.add("utc:" + utc)
     if on_server and et:
         keys.add("srv:" + str(et)[:13])
     return keys or {"row:" + str(r.get("time"))}
@@ -599,9 +627,11 @@ DECAY_ALPHA = 0.30
 DECAY_RHO = 20.0
 #: Live trades before the soft doors may zero: N_MIN_VERDICT, the desk's own verdict count.
 DECAY_MIN_N = N_MIN_VERDICT
-#: Deal ids remembered per key, so a trade still in the window is never folded twice; well past
-#: the window's own TRAIL_MAX_TRADES.
-SEQ_KEEP_DEALS = 4 * TRAIL_MAX_TRADES
+#: Ids remembered per key, so a trade still in the window is never folded twice. DERIVATION: an
+#: episode is remembered under up to 3 aliases (utc, srv, and a #k same-hour suffix of either),
+#: so 3 x the earlier 4 x TRAIL_MAX_TRADES keeps the same four-window dedup horizon in trades
+#: (#540 audit SF, 46a8e8f78).
+SEQ_KEEP_DEALS = 3 * 4 * TRAIL_MAX_TRADES
 
 
 def _deal_id(t: dict) -> str:
