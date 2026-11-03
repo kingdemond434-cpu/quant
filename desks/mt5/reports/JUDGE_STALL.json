@@ -1,39 +1,41 @@
 {
- "at": "2026-11-03T10:46:03+00:00",
+ "at": "2026-11-03T11:01:04+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 0.02,
-   "why": "no new verdict for 0.0h (last 2026-11-03T10:44:41+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 0.27,
+   "why": "no new verdict for 0.3h (last 2026-11-03T10:44:41+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "resident_dead": {
    "open": false,
-   "heartbeat_age_min": 0.2,
+   "heartbeat_age_min": 0.1,
    "pid_alive": true,
-   "why": "resident SWEEPING pid 21384: heartbeat 0.2 min old (limit 10), pid alive"
+   "why": "resident SWEEPING pid 21384: heartbeat 0.1 min old (limit 10), pid alive"
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 3.57,
+   "hours": 0.22,
    "limit_h": 25.59,
-   "why": "3.6h since the last sweep ended (2026-11-03T07:11:52+00:00), status SWEEPING; limit 25.59h"
+   "why": "0.2h since the last sweep ended (2026-11-03T10:47:53+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
-   "open": null,
+   "open": false,
+   "cells": 11725,
+   "basis": "n_judged",
    "read": "first 1048576 and last 262144 bytes",
-   "why": "UNMEASURED: universal_gates_external.json carries no result stamped inside the last sweep (2026-11-03T03:10:28+00:00 .. 2026-11-03T07:11:52+00:00) -- an rc-0 sweep that wrote no result reads this way"
+   "why": "the sweep that ended 2026-11-03T10:47:53+00:00 judged 11725 cell(s) (n_judged)"
   },
   "sweep_dead": {
    "open": false,
-   "pid": 14172,
-   "why": "sweep child pid 14172 alive"
+   "pid": 33484,
+   "why": "sweep child pid 33484 alive"
   },
   "phase_overrun": {
    "open": false,
-   "phase": "merge_and_publish",
-   "hours": 0.28,
+   "phase": "plan",
+   "hours": 0.21,
    "known_phase": true,
-   "why": "sweep phase merge_and_publish has run 0.3h since 2026-11-03T10:29:19+00:00 (limit 3h)"
+   "why": "sweep phase plan has run 0.2h since 2026-11-03T10:48:14+00:00 (limit 4.5h)"
   },
   "host_unreadable": {
    "open": false,
@@ -75,8 +77,8 @@
  "resident": {
   "status": "SWEEPING",
   "pid": 21384,
-  "heartbeat_utc": "2026-11-03T10:45:54+00:00",
-  "last_sweep_ended_utc": "2026-11-03T07:11:52+00:00",
+  "heartbeat_utc": "2026-11-03T11:00:56+00:00",
+  "last_sweep_ended_utc": "2026-11-03T10:47:53+00:00",
   "last_rc": 0
  },
  "host": "trading box",
