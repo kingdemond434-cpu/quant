@@ -2,6 +2,21 @@
  "doc": "Experiment contracts: every registered hourly leg declares hypothesis, metric, falsifier, budget and owner (libs/tiers/experiment_contract.py). budget and owner are DERIVED from hourly_cycle.LEG_BUDGET_SEC / LEG_DEPARTMENT when absent; the metric half is DERIVED from tier_s_program.json leg_contracts when that programme wrote one. Fence: scripts/check_experiment_contracts.py (law gate). Hourly reading: leg experiment_contracts -> desks/mt5/reports/EXPERIMENT_CONTRACTS.json.",
  "schema": "experiment-contracts-registry/1",
  "legs": {
+  "cost_basis": {
+   "hypothesis": "Joining closed live deals to their decision rows by exact ticket measures the realised slippage, commission and spread each LIVE sleeve pays, so admission and sizing can be priced at real-fill cost instead of the modelled spread alone.",
+   "metric": {
+    "gain": "EXECUTION_CAPTURE",
+    "metric": "n_matched",
+    "better": "up",
+    "organ": "report:COST_BASIS.json"
+   },
+   "falsifier": {
+    "metric": "matched_share",
+    "op": "<",
+    "threshold": 0.05,
+    "after": "14 days: under 5% of closed deals join a decision row, so no cost cell can be measured"
+   }
+  },
   "tape_fresh": {
    "hypothesis": "Reading both tick tapes by their own newest-tick stamp on the box that writes them, every hour, turns a recorder that silently stopped (MT5-TickRecorder sat dead from 2026-10-12 with only boot/logon triggers) into a named RED row within one cycle, so no more than two hours of open-market quotes are lost unseen.",
    "metric": {

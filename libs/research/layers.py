@@ -617,7 +617,7 @@ LEG_LAYER: dict[str, str] = {
     # Walking inside a registered ground's own front door is COLLECTION: it fetches documents and
     # files them as that ground's claims. It mints nothing and predicts nothing.
     "ground_depth": "information",
-    "fill_recorder": "execution", "cost_surfaces": "execution",
+    "fill_recorder": "execution", "cost_surfaces": "execution", "cost_basis": "execution",
     # Classifying the live book's bad fills by cause is EXECUTION; ranking why cells never built,
     # reading every leg's experiment contract and the health board are the machine measuring
     # itself: META.
