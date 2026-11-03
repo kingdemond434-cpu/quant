@@ -645,6 +645,8 @@ def run(*, now: datetime | None = None, shadow: Sequence[dict[str, Any]] | None 
         per_series.append(slim)
     doc = {"generated_at": at, "organ": "research/decay_accuracy.py",
            "acts_on": "nothing -- a report; decay_monitor alone moves a sleeve",
+           "lead_r_meaning": ("R given back from the drawdown's peak before the alarm fired: "
+                              "SMALLER is earlier and better"),
            "current_rule": IMPORT_NOTE,
            "constants": {"CUSUM_K": CUSUM_K, "CUSUM_H": CUSUM_H, "CERT_SD_R": CERT_SD_R,
                          "CUSUM_SD_ARMS": list(CUSUM_SD_ARMS),
