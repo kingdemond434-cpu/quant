@@ -20,7 +20,8 @@ THE RULE. "Audit HOLD beats green CI" stands. A PR into LIVE merges only when AL
   3. Every CI check run on the head has finished, none failed, and the gating jobs
      (quality, mt5-money-path, coverage-floor) each succeeded.
   4. The PR is from this repository (never a fork) and targets LIVE.
-  5. zuck's own `APPROVE MERGES` comment on #453 is newer than that CLEAR (see below).
+  5. zuck's own `APPROVE MERGES` comment on #453 is newer than that CLEAR (see below) -- or,
+     for a PROTECTED PR only, that CLEAR has stood through the 24h VETO WINDOW (see below).
 
 Then the gate marks a draft ready, merges through the REST API PINNED TO THE HEAD SHA (GitHub
 refuses the merge if the head moved), and dispatches ci.yml on LIVE: a merge made with the
@@ -98,6 +99,17 @@ configuration): a `pull_request` run executes the PR's own copy of those, so the
 self-attested; until a base-run lane judges such PRs, keeping them on the manual path is what keeps
 every gate above automatic and real. A secrets path never merges at all (REFUSED).
 
+THE VETO WINDOW (2026-11-03, zuck: "Allow the box to auto-merge .github/ops release changes after
+an auditor CLEAR and 24h veto window" / "Do it now"). A PROTECTED PR no longer waits for his
+`APPROVE MERGES`: its CLEAR also merges it once VETO_WINDOW_H hours have passed since the CLEAR
+was posted, with the CI rule unchanged. Anything in the window stops it: an `AUDIT HOLD`, a
+trusted comment that is exactly `VETO` on the PR (a HOLD, so only a newer CLEAR -- which restarts
+the window -- lifts it), an edited trusted comment, or a `DEACTIVATE RELEASE CONTROLLER` on #453
+(the window counts only while the release controller is ON). The window runs from the CLEAR, so
+a clean merge-in of LIVE (same patch-id) keeps its clock and any new change needs a new CLEAR and
+a new window. Nothing fires when a window closes, so the box sweep (every 10 min) is what merges.
+zuck's `APPROVE MERGES` still merges at once; a REFUSED (secrets) PR still never merges.
+
 STEP C. The PROTECTED floor above is widened by ops/release/protected_paths.txt (every LAWS 5m
 rail, test configuration, signing, kill switches); an unreadable list makes every PR PROTECTED.
 The AUTO jobs come from .github/workflows/release-gates.yml. A gating job counts only from GitHub
@@ -126,7 +138,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable, Iterable, Mapping
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -141,6 +153,10 @@ APPROVALS_ISSUE = 453
 APPROVE = "APPROVE MERGES"
 ACTIVATE = "ACTIVATE RELEASE CONTROLLER"
 DEACTIVATE = "DEACTIVATE RELEASE CONTROLLER"
+#: A PROTECTED PR's CLEAR merges it without APPROVE once it has stood this long (the veto window).
+VETO_WINDOW_H = 24.0
+#: A trusted comment that is exactly this, on the PR, stops it like an AUDIT HOLD.
+VETO = "VETO"
 #: LOW tier: where, what kind of file, and what it may never be named.
 LOW_DIRS = ("docs/", "context/", "desks/mt5/docs/", "reports/")
 LOW_EXTS = (".md", ".png", ".jpg", ".jpeg", ".svg", ".gif")
@@ -255,6 +271,17 @@ def verdicts(comments: Iterable[Mapping[str, Any]]) -> list[dict[str, str]]:
                     "sha": m.group(2) if m else "0" * 40,
                     "method": "merge",
                     "by": by + " (an edited comment)",
+                }
+            )
+            continue
+        if m is None and str(c.get("body") or "").strip() == VETO:
+            out.append(
+                {
+                    "at": str(c.get("created_at") or ""),
+                    "verdict": "HOLD",
+                    "sha": "0" * 40,
+                    "method": "merge",
+                    "by": by + " (VETO)",
                 }
             )
             continue
@@ -415,6 +442,27 @@ def approved(clear: Mapping[str, str], at: str | None) -> tuple[bool, str]:
             "it waits for the next one"
         )
     return True, f"approved by zuck at {at}"
+
+
+def _utcnow() -> datetime:
+    return datetime.now(UTC)
+
+
+def veto_window(clear: Mapping[str, str], now: datetime | None = None) -> tuple[bool, str]:
+    """Has this CLEAR stood through the veto window? An unreadable time has not."""
+    try:
+        at = datetime.fromisoformat(clear["at"].replace("Z", "+00:00"))
+    except (KeyError, ValueError):
+        return False, f"the CLEAR's time {clear.get('at')!r} is unreadable: no veto window"
+    if at.tzinfo is None:
+        return False, f"the CLEAR's time {clear['at']!r} has no zone: no veto window"
+    ends = at + timedelta(hours=VETO_WINDOW_H)
+    if (now or _utcnow()) < ends:
+        return False, (
+            f"veto window open until {ends.strftime('%Y-%m-%dT%H:%M:%SZ')} "
+            f"(post `{VETO}` or an AUDIT HOLD on the PR to stop it)"
+        )
+    return True, f"the {VETO_WINDOW_H:.0f}h veto window passed with no veto"
 
 
 def cleared(
@@ -997,7 +1045,15 @@ def run(
         ap = _gh(
             f"repos/{repo}/issues/{approvals_issue}/comments?per_page=100", "--paginate", "--slurp"
         )
-        ok, awhy = approved(clear, approval_at(_flat(ap)))
+        board = _flat(ap)
+        ok, awhy = approved(clear, approval_at(board))
+        if not ok and level == "PROTECTED":  # the veto window: zuck 2026-11-03
+            on, owhy = activated(board)
+            if not on:
+                awhy = f"{awhy}; no veto window: {owhy}"
+            else:
+                ok, vwhy = veto_window(clear)
+                awhy = vwhy if ok else f"{awhy}; {vwhy}"
         return (clear if ok else None), f"{why}; {awhy}"
 
     clear, why = verdict_now()

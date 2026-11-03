@@ -8,6 +8,7 @@ import importlib.util
 import json
 import subprocess
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -2816,3 +2817,111 @@ def test_a_gh_timeout_on_one_pr_never_kills_the_sweep(monkeypatch: pytest.Monkey
     monkeypatch.setattr(ag, "_gh", gh)
     monkeypatch.setattr(ag, "run", lambda repo, n, *a, **k: ran.append(n) or 0)
     assert ag.sweep("o/r", ag.LIVE) == 1 and ran == [2]
+
+
+# --------------------------------------------------------------------------- the veto window
+
+GATE = ".github/scripts/audit_gate.py"
+CLEARED_AT = "2026-11-01T10:00:00Z"
+CONTROLLER_ON = [_ok("2026-10-28T20:00:00Z", body=ag.ACTIVATE)]
+
+
+@pytest.fixture
+def veto_hub(hub: Any, monkeypatch: pytest.MonkeyPatch) -> Any:
+    """A PROTECTED PR CLEARed at CLEARED_AT, no APPROVE from zuck, the controller ON, and the
+    clock `hours` after the CLEAR."""
+
+    def make(hours: float = 25.0, **kw: Any) -> Any:
+        kw.setdefault("files", (GATE,))
+        kw.setdefault("comments", [_c(f"AUDIT CLEAR {A}", CLEARED_AT)])
+        kw.setdefault("approvals", list(CONTROLLER_ON))
+        h = hub(**kw)
+        now = datetime.fromisoformat(CLEARED_AT.replace("Z", "+00:00")) + timedelta(hours=hours)
+        monkeypatch.setattr(ag, "_utcnow", lambda: now)
+        return h
+
+    return make
+
+
+@pytest.mark.parametrize("box", [False, True])
+def test_a_protected_clear_merges_once_the_window_passes_with_no_approval(
+    veto_hub: Any, box: bool
+) -> None:
+    for name in (GATE, ".github/workflows/ci.yml", "ops/release/ceilings.json"):
+        h = veto_hub(files=(name,))
+        if name.startswith(".github/workflows/") and not box:
+            continue  # the Actions token leaves a workflow PR to the box
+        assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=box) == 0
+        (merge,) = _merges(h)
+        assert f"sha={A}" in merge
+
+
+@pytest.mark.parametrize(
+    ("hours", "comments", "approvals"),
+    [
+        (23.9, None, None),  # the window is still open
+        (25.0, [_c(f"AUDIT CLEAR {A}", CLEARED_AT), _c("VETO", "2026-11-01T12:00:00Z")], None),
+        (
+            25.0,
+            [_c(f"AUDIT CLEAR {A}", CLEARED_AT), _c(f"AUDIT HOLD {A}", "2026-11-01T12:00:00Z")],
+            None,
+        ),
+        (25.0, None, [*CONTROLLER_ON, _ok("2026-11-01T12:00:00Z", body=ag.DEACTIVATE)]),
+        (25.0, None, []),  # the release controller was never switched on
+        (25.0, [_c(f"AUDIT CLEAR {C}", CLEARED_AT)], None),  # the CLEAR is for another change
+        (
+            25.0,
+            [{**_c(f"AUDIT CLEAR {A}", CLEARED_AT), "updated_at": "2026-11-01T11:00:00Z"}],
+            None,
+        ),  # an edited CLEAR is a HOLD
+    ],
+)
+def test_anything_in_the_window_stops_the_merge(
+    veto_hub: Any,
+    hours: float,
+    comments: list[dict[str, Any]] | None,
+    approvals: list[dict[str, Any]] | None,
+) -> None:
+    kw: dict[str, Any] = {"hours": hours}
+    if comments is not None:
+        kw["comments"] = comments
+    if approvals is not None:
+        kw["approvals"] = approvals
+    h = veto_hub(**kw)
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+
+
+def test_a_veto_lifts_only_with_a_newer_clear_which_restarts_the_window(veto_hub: Any) -> None:
+    comments = [
+        _c(f"AUDIT CLEAR {A}", CLEARED_AT),
+        _c("VETO", "2026-11-01T12:00:00Z"),
+        _c(f"AUDIT CLEAR {A}", "2026-11-02T09:00:00Z"),
+    ]
+    h = veto_hub(hours=25.0, comments=comments)  # 11:00Z on 11-02: the new window is open
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+    h = veto_hub(hours=48.0, comments=comments)
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    assert len(_merges(h)) == 1
+
+
+def test_only_a_trusted_exact_veto_counts() -> None:
+    found = ag.verdicts(
+        [
+            _c("VETO", "2026-11-01T12:00:00Z", assoc="NONE"),
+            _c("VETO this please", "2026-11-01T12:01:00Z"),
+            _c(" VETO \n", "2026-11-01T12:02:00Z"),
+        ]
+    )
+    assert [(v["verdict"], v["at"]) for v in found] == [("HOLD", "2026-11-01T12:02:00Z")]
+
+
+def test_the_window_never_opens_for_an_auto_tier_pr_on_the_manual_path(veto_hub: Any) -> None:
+    """Only PROTECTED takes the window; an AUTO PR off its no-comment path still needs APPROVE."""
+    h = veto_hub(files=("scripts/x.py",), hours=100.0)
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+
+
+@pytest.mark.parametrize("at", ["", "yesterday", "2026-11-01T10:00:00"])
+def test_an_unreadable_clear_time_never_opens_the_window(at: str) -> None:
+    ok, _ = ag.veto_window({"at": at}, datetime(2027, 1, 1, tzinfo=UTC))
+    assert not ok
