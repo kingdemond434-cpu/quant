@@ -83,7 +83,6 @@ import sqlite3
 import sys
 import time
 import urllib.parse
-import urllib.robotparser
 from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime
@@ -95,6 +94,10 @@ ROOT = DESK.parents[1]
 for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+
+#: robots.txt is read by THE ONE parser, `polite_fetch.RobotsRules` (RFC 9309); no second
+#: robots reader lives here (tests/data/test_robots_coverage.py).
+from libs.data import polite_fetch as _pf  # noqa: E402
 
 UNMEASURED = "UNMEASURED"
 GENERATOR = "paid_substitute_engine"
@@ -636,7 +639,7 @@ def union_asia_tables(parsed: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
 def _robots_ok(
     url: str,
     fetch: Callable[[str], tuple[int | None, str]],
-    cache: dict[str, urllib.robotparser.RobotFileParser | None],
+    cache: dict[str, _pf.RobotsRules | None],
 ) -> bool:
     p = urllib.parse.urlparse(url)
     base = f"{p.scheme}://{p.netloc}"
@@ -645,9 +648,7 @@ def _robots_ok(
         if status is None or status >= 500:
             cache[base] = None  # unreachable robots: do not fetch (conservative)
         else:
-            parser = urllib.robotparser.RobotFileParser()
-            parser.parse(body.splitlines() if status < 400 else [])
-            cache[base] = parser
+            cache[base] = _pf.parse_robots(body if status < 400 else "")
     rp = cache[base]
     return bool(rp is not None and rp.can_fetch(USER_AGENT, url))
 
@@ -786,7 +787,7 @@ def crawl_catalogue(
     except Exception as exc:
         stats["status"] = f"{UNMEASURED}: fetch unavailable ({type(exc).__name__})"
         return stats
-    robots: dict[str, urllib.robotparser.RobotFileParser | None] = {}
+    robots: dict[str, _pf.RobotsRules | None] = {}
     n = len(listings)
     for i in range(min(n, CRAWL_PAGES_PER_PASS)):
         if time.monotonic() >= deadline:
