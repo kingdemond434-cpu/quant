@@ -561,7 +561,7 @@ def cboe_pass(*, now: datetime, bars: Path, dry_run: bool = False,
                 held = str(why)                       # a person-held stop for the whole site
             continue
         st.update({"empty_streak": 0, "fail_reason": None, "fetched_at": _iso(now),
-                   "last_day": str(s.index.max().date()), "n": int(len(s))})
+                   "last_day": str(s.index.max().date()), "n": len(s)})
         if not dry_run:
             res = wdh.ingest_series(d["provider"], d["dataset"], d["name"],
                                     [_series(d["code"], s, d["name"], targets[d["family"]])],
@@ -618,9 +618,10 @@ def cboe_pass(*, now: datetime, bars: Path, dry_run: bool = False,
         "available": f"a close of day D at D 00:00 UTC + {CBOE_RELEASE_H}h",
         "targets": {k: list(v) for k, v in targets.items()},
         "cells": "world_macro_proposer mints these keys as `implied_vol` (options_implied)",
-        "missed_growth": terms["missed_growth"] if not held else {**(terms["missed_growth"] or {}), "delta_elogw": UNMEASURED,
-              "cause": f"cdn.cboe.com held for a person ({held}): the state is not refreshed; "
-                       "delta E[log W] UNMEASURED"},
+        "missed_growth": (terms["missed_growth"] if not held else {
+            **(terms["missed_growth"] or {}), "delta_elogw": UNMEASURED,
+            "cause": (f"cdn.cboe.com held for a person ({held}): the state is not refreshed; "
+                      "delta E[log W] UNMEASURED")}),
         "status": ("RED: Cboe doors empty > "
                    f"{CBOE_EMPTY_RED_RUNS} runs: {', '.join(red)}") if red else "OK",
     }

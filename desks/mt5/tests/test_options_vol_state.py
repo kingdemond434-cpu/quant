@@ -240,7 +240,8 @@ def test_implied_vol_family_is_registered_and_files_into_the_options_cluster():
     from mt5desk.families_orthogonal import ORTHOGONAL_FAMILIES
     assert ORTHOGONAL_FAMILIES["implied_vol"] is F.family_implied_vol
     assert acl.classify_family("implied_vol") == "options_implied"
-    assert F.IMPLIED_PROVIDERS == frozenset({O.CBOE_PROVIDER, O.STATE_PROVIDER})
+    want = frozenset({O.CBOE_PROVIDER, O.STATE_PROVIDER})
+    assert want == F.IMPLIED_PROVIDERS
 
 
 def test_options_state_reaches_the_proposer_as_implied_vol_cells(store, bars_dir):
