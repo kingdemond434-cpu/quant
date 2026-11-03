@@ -100,7 +100,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: pip
+          # no `cache: pip` (#637 audit MF1): trusted-eval runs PR code under pull_request_target in
+          # the base's cache scope, so a base-scope pip cache could be poisoned for these gating jobs
 
       - name: Install (pinned dev extras)
         id: dev_install
@@ -171,7 +172,9 @@ jobs:
   # point-in-time provenance (PIT census, ratcheted). Any of the four failing blocks the merge.
   mt5-money-path:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 60, NOT 30 (2026-11-03): green runs took 18-29 min, so a slow runner hit the 30 min cap
+    # and the LIVE run on 26b861921 was cancelled at 30:25, which holds every box release.
+    timeout-minutes: 60
     outputs:
       suite: ${{ steps.evidence.outputs.suite }}
     steps:
@@ -180,7 +183,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: pip
+          # no `cache: pip` (#637 audit MF1): trusted-eval runs PR code under pull_request_target in
+          # the base's cache scope, so a base-scope pip cache could be poisoned for these gating jobs
 
       - name: Install (pinned dev extras)
         run: |

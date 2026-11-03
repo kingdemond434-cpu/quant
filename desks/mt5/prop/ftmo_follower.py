@@ -83,6 +83,7 @@ for _p in (str(DESK), str(ROOT)):
 from mt5desk import cancel_pending as _cancel_req  # noqa: E402
 from mt5desk import cross_account as _xa  # noqa: E402
 from mt5desk import gold_oco as _oco  # noqa: E402
+from mt5desk import mt5_ratchet as _ratchet  # noqa: E402
 from mt5desk import position_manager as _pm  # noqa: E402
 from mt5desk.decision_core import (  # noqa: E402
     BRACKET_TTL_HOURS,
@@ -880,7 +881,9 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     st = st if isinstance(st, dict) else {}
     if st.get("date") != today:
         st = {"date": today, "windows": {}, "requests": st.get("requests") or {},
-              "logged": {}, "followed": st.get("followed") or {}, "account": st.get("account")}
+              "logged": {}, "followed": st.get("followed") or {}, "account": st.get("account"),
+              # R is the OPENING stop distance; a carried position keeps it across the rollover
+              "orig_stop_dist": st.get("orig_stop_dist") or {}}
     st.setdefault("followed", {})
     st["account"] = _carry_day_start(st.get("account"), doc["account"], cet)
     doc["account"] = st["account"]
@@ -1050,17 +1053,33 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
                 act["shadow"] = True
             doc["actions"].append(act)
             continue
-        e8_pid = (sig or {}).get("e8_position_id") or w.get("e8_position_id")
-        if not isinstance(e8_doc, dict) or not e8_pid:
-            continue
         cur = float(getattr(p, "sl", 0.0) or 0.0) or None
-        new = mirrored_stop(e8_doc, str(e8_pid), side, cur)
-        if new is None or cur is None:
+        if cur is None:
             continue
         sgn: Any = 1 if side == "long" else -1
+        # SAME MECHANISM AS EVERY OTHER ACCOUNT (zuck 2026-11-03): this position runs the
+        # gateway's own chandelier trail + costed break-even floor natively, on this terminal's
+        # bars and this account's commission. E8's acknowledged stop is still mirrored on top,
+        # and whichever protects MORE is sent; neither can loosen the stop.
+        try:                                        # a failed read leaves the mirror running
+            native = _ratchet.wanted_stop(mt5, p, store=st.setdefault("orig_stop_dist", {}),
+                                          floor_only=False, log=log)
+        except Exception as exc:
+            native = {"ticket": int(p.ticket), "act": "SKIP",
+                      "why": f"{type(exc).__name__}: {exc}"[:200]}
+        doc.setdefault("native_manage", []).append(
+            {k: native.get(k) for k in ("ticket", "act", "new_stop", "why")})
+        e8_pid = (sig or {}).get("e8_position_id") or w.get("e8_position_id")
+        mirror = (mirrored_stop(e8_doc, str(e8_pid), side, cur)
+                  if isinstance(e8_doc, dict) and e8_pid else None)
+        best = _pm.tightest_stop(side=sgn, stops=[native.get("new_stop"), mirror, cur])
+        if best is None or best == cur:
+            continue
+        new = float(best)
         rests, rwhy = _pm.stop_rests_at_venue(stop=new, side=sgn, bid=float(tick.bid),
                                               ask=float(tick.ask))
         act = {"act": "ratchet_stop", "position": int(p.ticket), "before": cur, "after": new,
+               "source": "native" if new == native.get("new_stop") else "e8_mirror",
                "ok": False}
         if not rests:
             act["why"] = rwhy
@@ -1076,6 +1095,8 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
         else:
             act["shadow"] = True
         doc["actions"].append(act)
+
+    _ratchet.prune(st.setdefault("orig_stop_dist", {}), {int(p.ticket) for p in own_pos})
 
     # ---------------------------------------------------------------- the fills ledger
     doc["fills_ledger"] = record_fills(mt5, key, {int(p.ticket) for p in positions}, now)
