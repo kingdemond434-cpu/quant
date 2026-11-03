@@ -518,7 +518,7 @@ def measure(spec: Spec, desk: Path, corpus: Corpus | None, now: datetime) -> dic
         for w in want:
             if w.lower() not in names:
                 missing.append(f"{key}:{w}")
-    if spec.min_files and len(files) < spec.min_files:
+    if files and spec.min_files and len(files) < spec.min_files:
         missing.append(f"files: {len(files)} of the {spec.min_files} declared")
     complete = UNMEASURED if not files and spec.paths else "PARTIAL" if missing else "COMPLETE"
     row["completeness"], row["missing"] = complete, missing[:40]
