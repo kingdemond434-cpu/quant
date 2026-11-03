@@ -169,13 +169,56 @@ def test_a_pass_the_quota_stopped_is_unmeasured_never_red(tmp_path: Path) -> Non
     assert doc["pass"]["stopped_by"]
 
 
-def test_metadata_refused_falls_back_to_raw_readme_without_licence(tmp_path: Path) -> None:
+def test_metadata_5xx_falls_back_to_raw_readme_without_licence(tmp_path: Path) -> None:
     routes = _routes()
-    routes[f"{API}/repos/alice/gold-breakout"] = (403, "")
+    routes[f"{API}/repos/alice/gold-breakout"] = (503, "")
     routes[f"{RAW}/alice/gold-breakout/HEAD/README.md"] = (200, GOLD_README)
     _run(tmp_path, Fake(routes), _seeds(tmp_path))
     rows = _donated(tmp_path, "github_repos")
     assert rows and rows[0]["license"] == "UNKNOWN" and "quote" not in rows[0]
+
+
+class Refusing(Fake):
+    """Answers the first repo's metadata call with a fixed refusal and its headers."""
+
+    def __init__(self, status: int, heads: dict[str, str], body: str = "") -> None:
+        super().__init__(_routes())
+        self.refusal = (status, body, heads)
+
+    def __call__(self, url: str, accept: str = "") -> tuple[int | None, str, dict[str, str]]:
+        if url == f"{API}/repos/alice/gold-breakout":
+            self.calls.append(url)
+            return self.refusal
+        return super().__call__(url, accept)
+
+
+def _raw_calls(fake: Fake) -> list[str]:
+    return [u for u in fake.calls if u.startswith(RAW)]
+
+
+@pytest.mark.parametrize("status,heads", [
+    (403, {"X-RateLimit-Remaining": "4000", "Retry-After": "60"}),
+    (429, {"X-RateLimit-Remaining": "4000"}),
+])
+def test_a_rate_limit_answer_ends_the_pass_with_no_raw_fetch(
+        tmp_path: Path, status: int, heads: dict[str, str]) -> None:
+    fake = Refusing(status, heads)
+    doc = _run(tmp_path, fake, _seeds(tmp_path))
+    assert doc["pass"]["stopped_by"] and str(status) in doc["pass"]["stopped_by"]
+    assert _raw_calls(fake) == []
+    assert not any(u.startswith(f"{API}/repos/carol") for u in fake.calls)   # pass ended
+    assert not (tmp_path / "intel").exists()
+
+
+@pytest.mark.parametrize("status", [401, 403])
+def test_an_auth_refusal_is_per_repo_unreached_with_no_raw_fetch(
+        tmp_path: Path, status: int) -> None:
+    fake = Refusing(status, {"X-RateLimit-Remaining": "4000"})
+    doc = _run(tmp_path, fake, _seeds(tmp_path))
+    assert doc["per_repo"]["alice/gold-breakout"]["status"] == f"UNREACHED: HTTP {status}"
+    assert not any(u.startswith(f"{RAW}/alice/") for u in fake.calls)
+    assert not doc["pass"]["stopped_by"]
+    assert _donated(tmp_path, "firm_mining")               # the next repo is still read
 
 
 def test_lists_queue_their_links_and_searches_feed_the_firm_lane(tmp_path: Path) -> None:

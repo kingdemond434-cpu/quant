@@ -153,9 +153,11 @@ class Quota:
         self.exhausted = ""
 
     def may(self, kind: str) -> bool:
+        if self.exhausted:                     # a hard stop ends the pass for every kind
+            return False
         left = self.search if kind == "search" else self.core
         if left is None:                       # an unread counter: try, and read the headers
-            return not self.exhausted
+            return True
         floor = 1 if kind == "search" else self.reserve
         if left <= floor:
             self.exhausted = self.exhausted or f"{kind} quota at {left} (reserve {floor})"
@@ -190,14 +192,29 @@ def read_quota(fetch: Fetch) -> tuple[dict[str, Any], Quota]:
     return snap, Quota(core, search, reserve)
 
 
+def rate_limited(status: int | None, text: str, heads: dict[str, str]) -> str:
+    """Why this response is a RATE-LIMIT HARD STOP, or ''. A 429, any response carrying
+    Retry-After, a 403 with the primary counter at 0, or a 403 whose body names the secondary
+    limit: each ends the pass. A plain 401/403 is about one repository and is not this."""
+    low = {k.lower(): v for k, v in heads.items()}
+    if "retry-after" in low:
+        return f"HTTP {status} with Retry-After {low['retry-after']}"
+    if status == 429:
+        return "HTTP 429"
+    if status == 403 and (str(low.get("x-ratelimit-remaining")) == "0"
+                          or "rate limit" in (text or "").lower()):
+        return "HTTP 403 rate limit"
+    return ""
+
+
 def _api(fetch: Fetch, quota: Quota, path: str, kind: str = "core") -> tuple[int | None, Any]:
     if not quota.may(kind):
         return None, None
     status, text, heads = fetch(f"{API}{path}", "application/vnd.github+json")
     quota.note(kind, heads)
-    if status == 403 and str({k.lower(): v for k, v in heads.items()}
-                             .get("x-ratelimit-remaining")) == "0":
-        quota.exhausted = quota.exhausted or f"{kind} quota hit 0 (HTTP 403)"
+    why = rate_limited(status, text, heads)
+    if why:
+        quota.exhausted = quota.exhausted or f"{kind}: {why}"
     if status is None or not (200 <= status < 300) or not text:
         return status, None
     try:
@@ -584,11 +601,16 @@ def run(*, budget_s: float = 300.0, write: bool = True, fetch: Fetch | None = No
         if not isinstance(meta_raw, dict):
             if quota.exhausted:
                 per_repo[full] = {"status": "NOT_REACHED_THIS_PASS", "why": quota.exhausted}
+                break                            # a rate-limit stop ends the pass
+            if not (status is None or status >= 500):
+                # AN AUTH OR ACCESS REFUSAL (401, a plain 403, any other 4xx) IS AN ANSWER
+                # ABOUT THIS REPOSITORY: recorded UNREACHED with its status, never worked round.
+                per_repo[full] = {"status": f"UNREACHED: HTTP {status}"}
                 continue
-            # THE METADATA CALL FAILED BUT THE REPOSITORY MAY STILL BE READABLE. raw.github
-            # serves README text outside the API quota (and outside a proxy's per-repo API
-            # gate), so the prose half still runs. Without metadata the licence is UNKNOWN,
-            # which is treated as not copy-permitted, and there is no tree, so no code half.
+            # RAW FALLBACK ONLY ON A TRANSPORT FAILURE OR A 5xx: the API did not answer, so the
+            # README is read from raw.githubusercontent.com. It is never used to get past an
+            # auth or rate-limit response -- those stop above. Without metadata the licence is
+            # UNKNOWN (not copy-permitted) and there is no tree, so no code half.
             meta_raw, via = {"html_url": f"https://github.com/{full}"}, f"raw (api HTTP {status})"
         meta = {"url": meta_raw.get("html_url"), "pushed_at": meta_raw.get("pushed_at"),
                 "license": ((meta_raw.get("license") or {}).get("spdx_id")
