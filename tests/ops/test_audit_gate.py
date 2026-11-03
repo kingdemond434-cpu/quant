@@ -1237,7 +1237,9 @@ def test_a_rail_list_may_grow_but_never_shrink(head: str | None, lost: str | Non
     ],
 )
 def test_a_list_source_pin_holds_one_of_its_reviewed_expressions(src: str, breach: bool) -> None:
-    ceil = {"source": {"p.py": {"OUT": ["DESK / 'a.json'", "_PATHS['out']"]}}}
+    ceil = {
+        "source": {"p.py": {"OUT": {"any_of": ["DESK / 'a.json'", "_PATHS['out']"], "until_pr": 1}}}
+    }
     bad = ri.check(ceil, _reader(p=src), _reader(p=src))
     assert bool(bad) is breach, bad
 
@@ -1247,6 +1249,33 @@ def test_the_live_tree_is_inside_its_ceilings() -> None:
 
     ceilings = json.loads((ROOT / "ops/release/ceilings.json").read_text(encoding="utf-8"))
     assert ri.check(ceilings, ri.git_reader("HEAD"), ri.git_reader("HEAD")) == []
+    # an any_of pin expires when its PR lands (#590 audit should-fix)
+    assert ri.stale_any_of_pins(ceilings, ri.git_reader("HEAD")) == []
+
+
+@pytest.mark.parametrize(
+    ("src", "stale"),
+    [
+        ("OUT = DESK / 'a.json'\n", False),  # the PR has not landed
+        ("OUT = _PATHS['out']\n", True),  # it has: the old expression must go
+    ],
+)
+def test_an_any_of_pin_expires_when_its_pr_lands(src: str, stale: bool) -> None:
+    ceil = {
+        "source": {"p.py": {"OUT": {"any_of": ["DESK / 'a.json'", "_PATHS['out']"], "until_pr": 7}}}
+    }
+    bad = ri.stale_any_of_pins(ceil, _reader(p=src))
+    assert bool(bad) is stale and (not stale or "#7" in bad[0]), bad
+
+
+@pytest.mark.parametrize(
+    "want", [["a", "b"], {"any_of": ["a", "b"]}, {"any_of": ["a"], "until_pr": 1}, 3]
+)
+def test_a_pin_without_an_expiry_is_malformed(want: object) -> None:
+    bad = ri.check(
+        {"source": {"p.py": {"OUT": want}}}, _reader(p="OUT = a\n"), _reader(p="OUT = a\n")
+    )
+    assert any("malformed" in b for b in bad), bad
 
 
 # ----------------------------------------------------------------- step C: independent review

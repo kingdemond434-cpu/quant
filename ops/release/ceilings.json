@@ -121,33 +121,51 @@
       "ACCOUNT": "_PROCESS[0]",
       "ACCOUNT_ERROR": "_PROCESS[1]",
       "ACCOUNT_ID": "ACCOUNT.id",
-      "ALLOCATOR": [
-        "DESK / 'reports' / 'FTMO_ALLOCATOR.json'",
-        "_PATHS['alloc_report']"
-      ],
-      "ARMED_MARKER": [
-        "DESK / 'data' / 'FTMO_EXECUTOR_ARMED'",
-        "_PATHS['exec_armed']"
-      ],
+      "ALLOCATOR": {
+        "any_of": [
+          "DESK / 'reports' / 'FTMO_ALLOCATOR.json'",
+          "_PATHS['alloc_report']"
+        ],
+        "until_pr": 590
+      },
+      "ARMED_MARKER": {
+        "any_of": [
+          "DESK / 'data' / 'FTMO_EXECUTOR_ARMED'",
+          "_PATHS['exec_armed']"
+        ],
+        "until_pr": 590
+      },
       "BOOK_KEY": "ACCOUNT.book_key",
       "DAY_TZ": "_VENUE.get('day_tz', _fw.DAY_TZ)",
-      "INTENTS": [
-        "DESK / 'data' / 'ftmo_exec_intents.jsonl'",
-        "_PATHS['exec_intents']"
-      ],
-      "LOG": [
-        "DESK / 'logs' / 'ftmo_executor.log'",
-        "_PATHS['exec_log']"
-      ],
+      "INTENTS": {
+        "any_of": [
+          "DESK / 'data' / 'ftmo_exec_intents.jsonl'",
+          "_PATHS['exec_intents']"
+        ],
+        "until_pr": 590
+      },
+      "LOG": {
+        "any_of": [
+          "DESK / 'logs' / 'ftmo_executor.log'",
+          "_PATHS['exec_log']"
+        ],
+        "until_pr": 590
+      },
       "MAX_LOSS": "_VENUE.get('max_loss', _fw.MAX_LOSS_FRAC)",
-      "OUT": [
-        "DESK / 'reports' / 'FTMO_EXEC.json'",
-        "_PATHS['exec_out']"
-      ],
-      "STATE": [
-        "DESK / 'data' / 'ftmo_executor_state.json'",
-        "_PATHS['exec_state']"
-      ],
+      "OUT": {
+        "any_of": [
+          "DESK / 'reports' / 'FTMO_EXEC.json'",
+          "_PATHS['exec_out']"
+        ],
+        "until_pr": 590
+      },
+      "STATE": {
+        "any_of": [
+          "DESK / 'data' / 'ftmo_executor_state.json'",
+          "_PATHS['exec_state']"
+        ],
+        "until_pr": 590
+      },
       "XACCT": "ACCOUNT.xacct"
     },
     "desks/mt5/prop/ftmo_follower.py": {
@@ -160,31 +178,49 @@
       "ACCOUNT": "_PROCESS[0]",
       "ACCOUNT_ERROR": "_PROCESS[1]",
       "ACCOUNT_ID": "ACCOUNT.id",
-      "BARS_DIR": [
-        "DESK / 'data' / 'universe_ftmo'",
-        "_FIRM['bars']"
-      ],
-      "LOG": [
-        "DESK / 'logs' / 'ftmo_venue_reader.log'",
-        "_PATHS['reader_log']"
-      ],
-      "PHASES": [
-        "DESK / 'data' / 'ftmo_phase_state.json'",
-        "_PATHS['phase_state']"
-      ],
+      "BARS_DIR": {
+        "any_of": [
+          "DESK / 'data' / 'universe_ftmo'",
+          "_FIRM['bars']"
+        ],
+        "until_pr": 590
+      },
+      "LOG": {
+        "any_of": [
+          "DESK / 'logs' / 'ftmo_venue_reader.log'",
+          "_PATHS['reader_log']"
+        ],
+        "until_pr": 590
+      },
+      "PHASES": {
+        "any_of": [
+          "DESK / 'data' / 'ftmo_phase_state.json'",
+          "_PATHS['phase_state']"
+        ],
+        "until_pr": 590
+      },
       "PROGRAM": "None if ACCOUNT.legacy else ACCOUNT.program",
-      "REGISTRY_OUT": [
-        "DESK / 'data' / 'ftmo_registry.json'",
-        "_FIRM['registry']"
-      ],
-      "STATE_OUT": [
-        "DESK / 'reports' / 'FTMO_ACCOUNT_STATE.json'",
-        "_PATHS['venue_state']"
-      ],
-      "SURFACE_OUT": [
-        "DESK / 'data' / 'cost_surface_ftmo.json'",
-        "_FIRM['surface']"
-      ],
+      "REGISTRY_OUT": {
+        "any_of": [
+          "DESK / 'data' / 'ftmo_registry.json'",
+          "_FIRM['registry']"
+        ],
+        "until_pr": 590
+      },
+      "STATE_OUT": {
+        "any_of": [
+          "DESK / 'reports' / 'FTMO_ACCOUNT_STATE.json'",
+          "_PATHS['venue_state']"
+        ],
+        "until_pr": 590
+      },
+      "SURFACE_OUT": {
+        "any_of": [
+          "DESK / 'data' / 'cost_surface_ftmo.json'",
+          "_FIRM['surface']"
+        ],
+        "until_pr": 590
+      },
       "TERMINAL_NAME": "'FTMO Global Markets MT5 Terminal' if ACCOUNT.firm == _pa.LEGACY_FIRM else f'{ACCOUNT.firm} MT5 terminal ({ACCOUNT.id})'"
     },
     "desks/mt5/prop/prop_fleet.py": {
