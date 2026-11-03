@@ -2816,7 +2816,8 @@ def test_a_gh_timeout_on_one_pr_never_kills_the_sweep(monkeypatch: pytest.Monkey
     ran: list[int] = []
     monkeypatch.setattr(ag, "_gh", gh)
     monkeypatch.setattr(ag, "run", lambda repo, n, *a, **k: ran.append(n) or 0)
-    assert ag.sweep("o/r", ag.LIVE) == 1 and ran == [2]
+    # the unread PR is ordered last, never dropped: its own full run decides (#617 audit SF)
+    assert ag.sweep("o/r", ag.LIVE) == 1 and ran == [2, 1]
 
 
 # ------------------------------------------------ the registry path (D-20261103-005)

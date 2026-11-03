@@ -1421,6 +1421,7 @@ def sweep(
             except (RuntimeError, subprocess.SubprocessError) as exc:
                 _summary(f"#{n}: its checks could not be read: {exc}")
                 rc = 1
+                ready.append((4, i, n))  # a failed order read only orders it last (#617 audit SF)
                 continue
             runs = (got or {}).get("check_runs") or []
             state = checks(runs, GATING_JOBS, lambda r: True)[0]
