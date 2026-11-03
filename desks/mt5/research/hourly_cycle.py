@@ -378,6 +378,14 @@ def record_tape() -> dict:
     return results
 
 
+def tape_fresh() -> dict:
+    """`tape_fresh`: RED when the bronze recorder's or the silver tape's newest tick is over 2 h
+    old during FX hours, or absent/unstamped/future (UNMEASURED). MT5-TickRecorder sat dead for
+    two days from 2026-10-12 with nothing acting on it; `scripts/check_tape_fresh.py` writes
+    `reports/TAPE_FRESHNESS.json`, which the box publishes."""
+    return _producer("tape_fresh", "scripts/check_tape_fresh.py")
+
+
 def publish_state() -> dict:
     """Publish this box's state to git -- a SECOND, independent path to the dashboard.
 
@@ -1059,6 +1067,8 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
     "model_skill": (2,),
     "deep_forest": (1,),
     "maintain_miners": (2,),
+    # `cro_noon_freshness` exits 2 for RED: no landed noon CRO pass in 26 h is the reading.
+    "cro_noon_freshness": (2,),
     # `daily_cycle` exits 75 (EXIT_STOOD_DOWN) when another chain healthily holds its lock and
     # this bounded caller ran nothing: the holder is running the same steps (v1.2).
     "daily": (DAILY_CYCLE_STOOD_DOWN,),
@@ -1075,7 +1085,10 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
 #:                       hung MT5-Daily (daily_cycle.EXIT_HOLDER_HUNG)
 #:   daily 77 / 78     -- the day's stamp could not be READ, so no step ran; 78 once that has
 #:                       lasted past 3 consecutive passes (daily_cycle.EXIT_STAMP_UNREADABLE*)
+#:   attestation_remint 3 -- enrolment still frozen after one full sweep, or a row re-stamped
+#:                       under the current attestation without a re-judge (EXIT_BREACH)
 NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
+    "attestation_remint": {3: "REMINT_BREACH"},
     "judge_coverage": {3: "TIMEOUT_UNCOMMITTED", 4: "REUSE_STALE", 5: "RECOVERY_REFUSED"},
     "daily": {DAILY_CYCLE_HOLDER_HUNG: "HOLDER_HUNG",
               DAILY_CYCLE_STAMP_UNREADABLE: "STAMP_UNREADABLE",
@@ -1106,12 +1119,17 @@ def _exit_outcome(name: str, code: int) -> str:
 HOURLY_PLAN = str(os.environ.get("HOURLY_PLAN", "all") or "all").strip().lower()
 CORE_LEGS: frozenset[str] = frozenset({
     "smoke_release", "health", "release_identity", "input_identity", "burn_in", "record_tape",
+    # Whether either tick tape has moved within 2 h of open market, read by each tape's own
+    # newest-tick stamp right after `record_tape`: two small JSON reads, every hour (2026-10-14).
+    "tape_fresh",
     # `state_vector` is listed here for the reader's sake and runs on NEITHER plan: it is in
     # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
-    "forward_reconcile", "clock_liveness", "certificate_clock_law",
+    "forward_reconcile", "clock_liveness", "certificate_clock_law", "clock_accrual",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
+    # The noon CRO pass must land a ledger row every day; one file read, so it is core.
+    "cro_noon_freshness",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
     # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
     # ledger append; it must run every hour, so it is core.
@@ -1132,6 +1150,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # complete on a pass this cycle never ran; if the seal were only refreshed on the heavy plan
     # a certificate minted by that task would wait for one. It reads two small JSON files.
     "canon_publication",
+    # THE RE-MINT QUEUE IS CORE FOR THE SAME REASON (2026-09-30): an attestation change freezes
+    # enrolment whole, and `MT5-Gauntlet` can sweep on a pass this cycle never ran. It reads two
+    # small JSON files, byte-scans the docket and appends only what is missing.
+    "attestation_remint",
     # THE LOCKBOX v4 RE-CERTIFICATION LEDGER (pass-2 P0, 2026-09-30), right after the seal it
     # reads: per canon certificate, lockbox Sharpe before and after the re-mint. Two small JSON
     # reads, seconds.
@@ -1269,7 +1291,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "effective_trials",
                      "occupancy_map", "dsr_inputs"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
-    **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
+    **dict.fromkeys(("world_crawler", "deep_forest", "cell_emitter", "moat_miner",
+                     "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
                      "frontier_implementer", "hunt12", "scout_roster", "analyst_pipeline",
@@ -1313,8 +1336,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "replication_civilization", "certificate_truth", "model_search",
                      "loop_liveness", "counterexample_agent", "blas_differential",
                      "judging_throughput",
-                     "duty_cycle", "forward_enrolment", "residual_gate",
+                     "duty_cycle", "forward_enrolment", "clock_accrual", "residual_gate",
                      "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
+                     "attestation_remint",
                      "lockbox_recert",
                      # each hunted family's own pipeline on null data: the gates' real
                      # false-positive rate, per family
@@ -1397,7 +1421,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "build_failure_bank", "experiment_contracts", "health_board",
                      "runtime_attestation", "self_repair", "desk_self_heal",
                      "tier5_acceptance", "mission_control", "tier_s", "tier_s_door",
-                     "research_live_identity",
+                     "research_live_identity", "cro_noon_freshness",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
                      "unknown_census"), "meta"),
@@ -2035,6 +2059,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Reads canon, five lane state files and its own history, then writes two files. No market
     # data, no venue, no terminal call -- it is arithmetic over rows the enrolment leg just wrote.
     "certificate_clock_law": 180,
+    # Reads the canon (through the admission door), three lane state files and the sleeve
+    # registry, and writes one report. No bars, no terminal: arithmetic over the rows above.
+    "clock_accrual": 180,
     # THE JUDGE WAS BEING KILLED AT 27% OF ITS OWN BUDGET (measured 2026-09-23). The sealed
     # gauntlet builds cells under `FRESH_BUILD_BUDGET_SEC = 2700` and stops ITSELF at that mark
     # to write `universal_gates_external.json`. This leg had no entry here, so it fell through to
@@ -2091,6 +2118,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # RECOVERY_BUDGET_SEC of 240. The cap sits above that plus the read, for the reason every
     # other entry here gives: a cap below an organ's own budget truncates it at the same prefix.
     "canon_publication": 600,
+    # THE RE-MINT QUEUE byte-scans the ~440 MB docket once (4 MB reads, no JSON parse) and appends
+    # in place; the git call that dates a new attestation is bounded at 20 s.
+    "attestation_remint": 300,
     # THE FOUR ACTIVATION LEGS ARE SEARCHES, NOT RENDERERS. `weak_signals` rebuilds member
     # signals for up to 24 members across 67 symbols and its own `run()` already self-limits at
     # 2400s; a cycle budget below that would kill it at the same prefix every hour, which is the
@@ -2207,6 +2237,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "forward_calibration": 180,
     "desk_self_heal": 240,
     "tier5_acceptance": 180,
+    "cro_noon_freshness": 60,
     "mission_control": 180,
     # The producer census relights at most six dark producers at 240s each and re-measures after
     # every repair; the cap sits above 6*240 so a pass is never cut inside a repair it has
@@ -2288,6 +2319,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # sits above its budget, the cap is exported to the child (QUANT_LEG_BUDGET_S) so it
     # self-stops inside whatever the pricer grants, and it checkpoints per ground regardless.
     "deep_forest_miner": 1_020,
+    # The cell emitter stops itself at --budget-s 300 (it reads QUANT_LEG_BUDGET_S too); the cap
+    # sits above it so the pass writes its report, cursor and donations rather than being cut.
+    "cell_emitter": 420,
     # A FOREST IS GIVEN THE BUDGET IT IS ASKED FOR. Each leg passes `--budget-s 3000` down to
     # `forest_runner`, which divides it across eleven parallel agents; a 720 s cycle cap would
     # SIGKILL every forest at the same prefix every hour -- the truncated-job failure that cost
@@ -3381,6 +3415,19 @@ def deep_forest() -> dict:
     return _producer("deep_forest_miner", "research/deep_forest_miner.py", "--budget-s", "900")
 
 
+def cell_emitter() -> dict:
+    """Open-source STRATEGY CODE read as cells (the lost 2026-09-25 lane, rebuilt 2026-09-30).
+
+    Grounds in `data/cell_emitter_sources.json` (vn.py, backtrader, zipline, pysystemtrade,
+    EA31337 MQL, freqtrade/jesse on crypto CFDs only, Pine, TradingView); each pass lists and
+    fetches a cursor's slice, statically reads each file's indicator calls into a registered
+    family + exact params (or a STRUCTURED_HYPOTHESIS), maps instruments through
+    universe_policy, donates to data/intelligence/cell_emitter/ for miner_candidate_compiler,
+    and writes reports/CELL_EMITTER.json with per-ground yield and drop reasons.
+    """
+    return _producer("cell_emitter", "research/cell_emitter.py", "--once", "--budget-s", "300")
+
+
 def session_structure() -> dict:
     """Derive every instrument's own session from its own bars, and aim the breakout at it.
 
@@ -3993,6 +4040,7 @@ def main() -> None:
     # compiles and merges discoveries generated during this pass.
     _costed("intake_catchup", catch_up_intake)
     t = _costed("record_tape", record_tape)
+    tfr = _costed("tape_fresh", tape_fresh)
     s = _costed("state_vector", state_vector)
     rg = _costed("regime_monitor", refresh_regime)
     d = _costed("daily", daily)
@@ -5287,6 +5335,16 @@ def main() -> None:
     # refuse what the judge itself refuses terminally before a bar is read. It deletes nothing.
     fa = _costed("fast_admission", lambda: _producer(
         "fast_admission", "research/fast_admission.py"))
+    # RE-JUDGED, NEVER RE-STAMPED, AND FIRST (2026-09-30, lockbox v4). Immediately before the judge:
+    # when gate_policy.ATTESTATION changes, every certificate judged under the old one is refused
+    # whole by shadow_admission, and the sealed writer's way out is a re-stamp. This leg queues
+    # every certificate whose gates predate the attestation in force (exact certified params,
+    # PIT-stamped, charged to the trial census like any cell), writes the priority record the
+    # patched judge puts first, and publishes reports/REMINT_STATUS.json -- frozen since, pending,
+    # oldest age, ETA from the measured judge rate. Exit 3 = enrolment frozen past one sweep, or a
+    # row re-stamped rather than re-judged.
+    arm = _costed("attestation_remint", lambda: _producer(
+        "attestation_remint", "research/attestation_remint.py", "--apply"))
     gt = _costed("external_gauntlet", lambda: _producer(
         "external_gauntlet", "scripts/external_gauntlet.py"))
     # THE CANON'S LAST MISSING LINK, IMMEDIATELY AFTER THE JUDGE. `external_gauntlet.py` is a
@@ -5340,6 +5398,13 @@ def main() -> None:
     # promotes, sizes and retires nothing.
     ccl = _costed("certificate_clock_law", lambda: _producer(
         "certificate_clock_law", "scripts/check_certificate_clock_law.py"))
+    # AND FOR EVERY CLOCK THAT IS NOT TICKING, WHY -- as one named reason per certificate
+    # (NOT_ENROLLED, KEY_MISMATCH, FAMILY_UNBUILDABLE, BAR_FILE_MISSING, ENGINE_NOT_REACHED,
+    # GATE_NEVER_OPENS, ...). The two legs above count; this one routes. It writes
+    # reports/CLOCK_ACCRUAL.json, whose headline is the non-accruing count by reason and whose
+    # `bars_wanted` the MT5-Universe collector fetches first. It enrols and retires nothing.
+    cac = _costed("clock_accrual", lambda: _producer(
+        "clock_accrual", "research/clock_accrual.py", "--once"))
     # THE FALSIFIERS RUN AGAINST THE FRESH CANON (Tier-1 item V4, 2026-09-09). libs/validation/
     # falsifiers.py had zero callers; every certificate was minted and never attacked. The
     # producer budgets itself (600 s default) under this leg's timeout and writes
@@ -5627,6 +5692,9 @@ def main() -> None:
         "placebo_audit", "research/placebo_audit.py"))
     fr = _costed("frontier", frontier)
     df = _costed("deep_forest", deep_forest)
+    # OPEN-SOURCE CODE -> CELLS: donates to data/intelligence/cell_emitter/, which the next
+    # pass's `compile_candidates` reads. Network leg; self-stops inside its budget.
+    cem = _costed("cell_emitter", cell_emitter)
     ssm_leg = _costed("session_structure", session_structure)
     mm = _costed("maintain_miners", maintain_miners)
     # MEASURE THE CONVERSION WHERE THE DISCOVERIES ARE, AND ON THIS HOUR'S CODE. Nothing on this
@@ -5903,6 +5971,11 @@ def main() -> None:
         "meta_rnd", "research/meta_rnd.py", "--once", "--budget-s", "180"))
     ac = _costed("acceptance", lambda: _producer(
         "acceptance", "scripts/check_acceptance_properties.py"))
+    # RED WHEN THE NOON CRO PASS STOPS LANDING (2026-10-29). It was driven from a laptop session
+    # parked since 09-29 and the ledger held two noon rows in a month with nothing turning red.
+    # The pass now runs here as MT5-CycleNoon; this reads its rows and fails the leg past 26 h.
+    cnf = _costed("cro_noon_freshness", lambda: _producer(
+        "cro_noon_freshness", "scripts/check_cro_noon_freshness.py"))
     # THE REBUILT 25-SEP LANES (2026-09-30), after every leg whose output they read:
     #   build_failure_bank    compile_candidates, run_external_backtest and the sealed gauntlet's
     #                         report -> why cells never BUILT, ranked into fix work
@@ -6079,7 +6152,7 @@ def main() -> None:
     # permanently dirty. Pinned by tests/test_sync_marker_is_written_lf.py.
     (BASE / "data" / "sync_marker.json").write_text(
         json.dumps({"last_cycle": datetime.now(UTC).isoformat(),
-                    "health": h, "tape": t, "state_vector": s, "daily": d,
+                    "health": h, "tape": t, "tape_fresh": tfr, "state_vector": s, "daily": d,
                     "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "breadth_sweep": bs, "mass_screen": msc,
@@ -6215,6 +6288,7 @@ def main() -> None:
                     "forward_reconcile": fwr,
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
+                    "cell_emitter": cem,
                     "session_structure": ssm_leg,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
@@ -6233,6 +6307,7 @@ def main() -> None:
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
+                    "cro_noon_freshness": cnf,
                     "build_failure_bank": bfb, "trade_pathology": tpa,
                     "experiment_contracts": exc_, "health_board": hbd,
                     "preregistration": prg, "organ_census": ogc,
@@ -6265,9 +6340,10 @@ def main() -> None:
                     "moat_candidate_compiler": mcp, "algorithm_db": adb,
                     "blas_differential": bld,
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
-                    "certificate_clock_law": ccl,
+                    "certificate_clock_law": ccl, "clock_accrual": cac,
                     "external_gauntlet": gt, "fast_admission": fa,
                     "canon_publication": cpub, "judging_burndown": jbd, "lockbox_recert": lrc,
+                    "attestation_remint": arm,
                     "rejection_throughput": rjt,
                     "falsifier_run": fz, "style_novelty": snv, "merge_docket": mh,
                     "backtest": bt,
