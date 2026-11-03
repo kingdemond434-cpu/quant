@@ -109,3 +109,16 @@ def test_corpus_collector_is_gated(tmp_path, monkeypatch) -> None:
     cov.write_text(json.dumps({"last_sweep": (now - timedelta(seconds=60)).isoformat()}))
     monkeypatch.setattr(sys, "argv", ["x"])
     assert c.main() == 0
+
+
+def test_seed_handles_include_the_config_channels(tmp_path, monkeypatch) -> None:
+    c = _load("collect_youtube_corpus_s", ROOT / "scripts" / "collect_youtube_corpus.py")
+    cfg = tmp_path / "ch.json"
+    cfg.write_text(json.dumps({"channels": [{"handle": "@NewOne"}, {"handle": "@QuantGuild"},
+                                            {"handle": "no-at"}, "junk"]}))
+    monkeypatch.setattr(c, "CHANNEL_CONFIG", cfg)
+    seeds = c.seed_queries()
+    assert {"@QuantGuild", "@Algovibes", "@saleh.m", "@NewOne"} <= set(seeds)
+    assert seeds.count("@QuantGuild") == 1 and "no-at" not in seeds
+    monkeypatch.setattr(c, "CHANNEL_CONFIG", tmp_path / "absent.json")
+    assert "@saleh.m" in c.seed_queries()

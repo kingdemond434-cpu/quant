@@ -46,7 +46,25 @@ MAX_VIDEOS_PER_CHANNEL = 50    # per run; cursoring covers the backlog across da
 SEED_QUERIES = [
     "DaviddTech", "ResponsibleForexTrading", "Lewis Jackson trading", "Goshawk Trades",
     "Unbiased Trading", "AI Pathways trading", "IQ Capital trading",
+    # zuck's 2026-11-03 channels (config/video_mining_channels.json, PR #655), by exact handle
+    "@QuantGuild", "@Algovibes", "@saleh.m",
 ]
+#: The video-mining channel config, when present, adds its handles to the seeds (a REGISTRY,
+#: never a boundary): a channel added there is followed here without a code change.
+CHANNEL_CONFIG = ROOT / "config" / "video_mining_channels.json"
+
+
+def seed_queries() -> list[str]:
+    seeds = list(SEED_QUERIES)
+    try:
+        rows = json.loads(CHANNEL_CONFIG.read_text("utf-8")).get("channels", [])
+    except (OSError, ValueError, AttributeError):
+        rows = []
+    for row in rows if isinstance(rows, list) else []:
+        h = str((row or {}).get("handle") or "").strip() if isinstance(row, dict) else ""
+        if h.startswith("@") and h not in seeds:
+            seeds.append(h)
+    return seeds
 LINK_RE = re.compile(r"https?://[^\s)\"']+")
 
 
@@ -150,10 +168,11 @@ def main() -> int:
         # guessed from the seed name with spaces stripped; a miss falls back to ONE budgeted
         # search only when the search quota works at all this run.
         search_dead = False
-        unresolved = [q for q in SEED_QUERIES if q not in reg["channels"]
+        unresolved = [q for q in seed_queries() if q not in reg["channels"]
                       and q not in reg["discovered"]][:6]
         for q in unresolved:
-            handle = "@" + re.sub(r"[^A-Za-z0-9]", "", q)
+            # An exact "@handle" seed is used as given; a name seed has its handle guessed.
+            handle = q if q.startswith("@") else "@" + re.sub(r"[^A-Za-z0-9]", "", q)
             try:
                 d = api("channels", spent, LIST_COST, part="snippet", forHandle=handle)
                 items = d.get("items", [])
