@@ -40,6 +40,9 @@ ROUTES = {
     "cenyzlota": "nbp_gold.json", "stopy_procentowe": "nbp_rates.xml",
     "SECBREPOEFF": "swea_policy.json", "SEKUSDPMI": "swea_usdsek.json",
     "SEKEURPMI": "swea_usdsek.json", "swestr": "swestr.json", "api.scb.se": "scb_cpi.json",
+    # the World Gold Council pack's public pages (test_country_pack_wgc.py tests them)
+    "monthly-central-bank-statistics": "wgc_cb_monthly.html",
+    "gold-etfs-holdings-and-flows": "wgc_etf_flows.html",
 }
 
 
