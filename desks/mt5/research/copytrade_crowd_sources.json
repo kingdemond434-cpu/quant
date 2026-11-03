@@ -1,0 +1,63 @@
+{
+  "_doc": "Copy-trade crowd sources (Tier-1 sweep row #10, class A2). ROWS, NEVER CODE: an adapter of 'none' is a named gap with its blocked_by. Public, logged-out pages only. A login wall, robots Disallow or 401/403/429/451 is recorded and never routed around: no login, cookie, proxy, CAPTCHA or paywall step exists in this producer.",
+  "sources": {
+    "mql5_signals": {
+      "adapter": "mql5",
+      "host": "www.mql5.com",
+      "population_pages": [
+        "https://www.mql5.com/en/signals/mt5",
+        "https://www.mql5.com/en/signals/mt5/page{n}",
+        "https://www.mql5.com/en/signals/mt4",
+        "https://www.mql5.com/en/signals/mt4/page{n}"
+      ],
+      "population_max_pages": 25,
+      "account_url": "https://www.mql5.com/en/signals/{id}",
+      "books": ["flow"],
+      "positions": "BLOCKED_AUTH",
+      "positions_evidence": "measured 2026-11-03: /en/signals/<id>/positions serves only 'To see trades in realtime, please log in or register'. Open positions are never read. The public page's per-symbol Distribution table and Long/Short trade counts are read instead, and their change between visits is the flow book.",
+      "per_pass_accounts": 220
+    },
+    "fxblue": {
+      "adapter": "fxblue",
+      "host": "api.fxblue.com",
+      "population_file": "desks/mt5/data/intelligence/fxblue/population.txt",
+      "account_url": "https://api.fxblue.com/wl/view.aspx?id={id}&mode=overview&isinline=1",
+      "positions_url": "https://api.fxblue.com/wl/view.aspx?id={id}&mode=openpositions&isinline=1",
+      "books": ["positions"],
+      "positions": "UNMEASURED",
+      "positions_evidence": "2026-11-03 cloud probe of a stub account showed the statement shell with no rows; whether a live public account serves open positions logged out is measured by the first box pass (a login wall is recorded as BLOCKED_AUTH and the route stops).",
+      "per_pass_accounts": 120
+    },
+    "myfxbook": {
+      "adapter": "myfxbook",
+      "host": "www.myfxbook.com",
+      "population_pages": ["https://www.myfxbook.com/systems"],
+      "population_max_pages": 1,
+      "account_url": "https://www.myfxbook.com/members/{id}",
+      "books": ["positions"],
+      "positions": "UNMEASURED",
+      "positions_evidence": "public system pages carry an Open Trades tab unless the owner hides it; read from the served HTML only. robots.txt could not be read from the cloud on 2026-11-03: an unread robots.txt fails closed on the box.",
+      "per_pass_accounts": 80
+    },
+    "myfxbook_api": {
+      "adapter": "none",
+      "blocked_by": "BLOCKED_AUTH: the Myfxbook API needs a login session and only returns the session owner's own accounts. The held MYFXBOOK key cannot read the public crowd.",
+      "next": "none; the public system pages above are the lawful route"
+    },
+    "darwinex": {
+      "adapter": "none",
+      "blocked_by": "NO_PUBLIC_POSITIONS: DARWIN public pages show returns and risk, not open positions; robots Disallow /api.",
+      "next": "read public DARWIN return series as a quality cohort only if a positions source appears"
+    },
+    "zulutrade": {
+      "adapter": "none",
+      "blocked_by": "TODO: probe public leader pages for an open-positions table from the box.",
+      "next": "add a row with adapter=generic_table once a logged-out route is measured"
+    },
+    "etoro_popular_investors": {
+      "adapter": "none",
+      "blocked_by": "TODO: public profile portfolio is client-rendered; check for a public JSON the page itself loads without login, within robots.",
+      "next": "box probe"
+    }
+  }
+}
