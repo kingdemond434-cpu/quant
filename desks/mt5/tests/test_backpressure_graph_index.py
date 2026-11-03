@@ -159,3 +159,36 @@ def test_first_seen_dates_are_stored_grouped_by_day(tmp_path) -> None:
     doc = json.loads((tmp_path / "graph.jsonl.bp_index.json").read_text("utf-8"))
     assert doc["schema"] == 2 and "first" not in doc
     assert sum(len(v) // 16 for v in doc["first_by_date"].values()) == 41   # h0..h39, n1
+
+
+def test_a_cold_rebuild_past_its_deadline_checkpoints_returns_nothing_and_resumes(
+        tmp_path, monkeypatch) -> None:
+    """Audit SF on 6cfd93835: a cold index is bounded. Past the deadline the reader stops at the
+    next checkpoint, hands on NO rows (an oldest-first partial holds no recent births), names it,
+    and the next pass resumes from the checkpoint to exactly the uninterrupted answer."""
+    g = tmp_path / "graph.jsonl"
+    _graph(g, _base())
+    expect, _, _, _ = _both(g, index=tmp_path / "ref.json")
+    monkeypatch.setattr(gb, "GRAPH_INDEX_CHECKPOINT_BYTES", 200)
+    ip = tmp_path / "idx.json"
+    note: dict = {}
+    rows = gb._read_graph_indexed(g, note, since=SINCE, index_path=ip, deadline=0.0)
+    assert rows == []
+    assert note[g.name].startswith("TRUNCATED_BUDGET_COLD_INDEX(")
+    saved = json.loads(ip.read_text("utf-8"))
+    assert 0 < int(saved["offset"]) < os.path.getsize(g)
+    note2: dict = {}
+    assert gb._read_graph_indexed(g, note2, since=SINCE, index_path=ip) == expect
+    assert note2[g.name] == "READ"
+
+
+def test_a_warm_index_ignores_a_passed_deadline_below_one_checkpoint(tmp_path) -> None:
+    g = tmp_path / "graph.jsonl"
+    _graph(g, _base())
+    ip = tmp_path / "idx.json"
+    gb._read_graph_indexed(g, {}, since=SINCE, index_path=ip)
+    with g.open("a", encoding="utf-8") as fh:
+        fh.write(_line("n2", NOW - timedelta(hours=1), fate="born"))
+    note: dict = {}
+    rows = gb._read_graph_indexed(g, note, since=SINCE, index_path=ip, deadline=0.0)
+    assert any(r.get("id") == "n2" for r in rows) and note[g.name] == "READ"

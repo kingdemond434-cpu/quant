@@ -480,13 +480,21 @@ def _save_graph_index(ip: Path, side: Path, idx: dict[str, Any], recent: list[st
 
 
 def _read_graph_indexed(path: Path, note: dict[str, str], *, since: datetime,
-                        index_path: Path | None = None) -> list[dict[str, Any]]:
+                        index_path: Path | None = None,
+                        deadline: float | None = None) -> list[dict[str, Any]]:
     """`_read_jsonl(path, note, since=since, births=True)`, reading only appended lines.
 
     The index rebuilds from byte 0 when the file's head changed, it shrank, or the horizon moved
     back past the lines the sidecar kept. A row without an
     `id` cannot mark an id as born earlier, exactly as in the second scan; a row without a date
-    is never a horizon row. Lines the writer has not finished (no newline yet) wait."""
+    is never a horizon row. Lines the writer has not finished (no newline yet) wait.
+
+    `deadline` (a `time.monotonic()` value) bounds a COLD rebuild (first run, lost or invalid
+    index), which reads the whole log from byte 0 oldest-first: past it, the reader stops at
+    the next checkpoint (already saved, so the next pass resumes there) and returns NO rows with
+    the note `TRUNCATED_BUDGET_COLD_INDEX(...)`. A partial oldest-first read holds none of the
+    recent births the windows measure, so it is never handed on as a reading."""
+    import time as _time
     ip = index_path if index_path is not None else path.with_name(
         path.name + ".bp_index.json") if path != _BOX_GRAPH else GRAPH_INDEX
     side = ip.with_name(ip.name + ".recent.jsonl")
@@ -546,6 +554,10 @@ def _read_graph_indexed(path: Path, note: dict[str, str], *, since: datetime,
                                              "lines": total - 1, "first": first, "cut": cut},
                                   recent)
                 next_save = offset + GRAPH_INDEX_CHECKPOINT_BYTES
+                if deadline is not None and _time.monotonic() > deadline:
+                    note[path.name] = (f"TRUNCATED_BUDGET_COLD_INDEX(checkpointed at byte "
+                                       f"{offset - len(raw)} of {size}; resumes next pass)")
+                    return []
             line = raw.decode("utf-8", errors="replace")
             if offset == len(raw) and line.startswith("\ufeff"):
                 line = line[1:]                          # utf-8-sig, as the stream opened it
@@ -1116,16 +1128,18 @@ def build(now: datetime | None = None, budget_s: float | None = None,
     note: dict[str, str] = {}
     _PAIR_AXES.clear()
     _REG_MEMO.clear()
-    # THE LEDGER HAS A DEADLINE: it may spend up to 85% of the budget, so the arithmetic below and
-    # the write always have time. The graph needs none -- its indexed read costs only the bytes
-    # appended since the last pass. No budget = no deadline.
+    # THE BUDGET IS SPLIT, NOT SHARED: the graph may spend 60% of it and the ledger what is left
+    # of 85%, so the arithmetic below and the write always have time. No budget = no deadline.
+    # A warm graph index costs only the bytes appended since the last pass; the graph deadline
+    # binds only a cold rebuild, which checkpoints and resumes on the next pass.
+    graph_deadline = None if budget_s is None else t0 + 0.60 * float(budget_s)
     ledger_deadline = None if budget_s is None else t0 + 0.85 * float(budget_s)
     horizon = at - timedelta(days=HORIZON_DAYS)
     # The graph is read INCREMENTALLY (only bytes appended since the last pass, checkpointed, so
     # an interrupted rebuild resumes); the ledger is read backwards under its deadline, NOT
     # date-filtered: `priors` are a lifetime pass rate per bucket, over the newest MAX_LINES
     # verdicts, which is where the windows live.
-    born = born_cells(_read_graph_indexed(GRAPH, note, since=horizon))
+    born = born_cells(_read_graph_indexed(GRAPH, note, since=horizon, deadline=graph_deadline))
     vers = verdicts(_read_jsonl(GATE_LEDGER, note, deadline=ledger_deadline))
     windows = {name: window_measure(born, vers, at, hours, note) for name, hours in WINDOWS}
     primary = windows[WINDOWS[0][0]]
@@ -1379,6 +1393,13 @@ def main(argv: list[str] | None = None) -> int:
         except Exception as exc:  # pragma: no cover - defensive; the full build follows
             print(f"  core republish failed: {type(exc).__name__}: {exc}")
     doc = build(budget_s=a.budget_s, started=started)
+    graph_state = str((doc.get("unmeasured") or {}).get(GRAPH.name) or "")
+    if graph_state.startswith("TRUNCATED_BUDGET_COLD_INDEX"):
+        # A COLD graph index still rebuilding has no recent births: publishing these windows
+        # would stamp `full_at` over empty ones. The core above is already republished, the
+        # index is checkpointed, and `backpressure_stale` keeps paging until a full pass lands.
+        print(f"  full build deferred: graph {graph_state}")
+        return 0
     doc["mode"] = "full"
     doc["full_at"] = doc["at"]
     w = doc["windows"][WINDOWS[0][0]]
