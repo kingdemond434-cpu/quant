@@ -38,7 +38,7 @@ import inspect
 import json
 import subprocess
 import sys
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -626,7 +626,8 @@ def write_report(broken: int, *, held_since: dict[str, str] | None = None,
             t = datetime.fromisoformat(starts[k])
         except (KeyError, ValueError):
             return None
-        return (t + timedelta(hours=HOLD_EXPIRY_H)).isoformat(timespec="seconds")
+        end = datetime.fromtimestamp(t.timestamp() + HOLD_EXPIRY_H * 3600.0, tz=t.tzinfo or UTC)
+        return end.isoformat(timespec="seconds")
 
     days = [x["forward_days_lost"] for x in gone if isinstance(x["forward_days_lost"], float)]
     doc = {
