@@ -46,3 +46,13 @@ def test_a_full_pass_attests_before_its_first_organ() -> None:
     first_organ = body.index("for name, fn in plan:")
     assert first_attest < first_organ, "a pass killed mid-organ would leave no attestation"
     assert body.count("_attest(errors)") >= 2, "the end-of-pass attestation was dropped"
+
+
+def test_the_evidence_carries_at_and_says_why_it_does_not_count(tmp_path: Path) -> None:
+    """A box read for `at` found None (2026-10-06): the stamp is written under both names, and an
+    uncounted file says why in the identity helper's words."""
+    doc = box_evidence.attest(out=tmp_path / "box_evidence.json", host="vmi3571445",
+                              machine_id=None)
+    assert doc["at"] == doc["generated_utc"] and doc["at"]
+    assert doc["counts_toward_done"] is False
+    assert "unreadable" in doc["counts_toward_done_why"]

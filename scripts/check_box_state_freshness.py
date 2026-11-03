@@ -9,8 +9,9 @@ fence anywhere was red about it. The box went on computing; only delivery had st
 
 WHAT IT MEASURES, AT A GIT REF (default: the live branch's remote-tracking ref, else HEAD):
 
-  1. the newest commit on that ref, by a box identity (author matching --box-author, default
-     "Contabo"), that touched any path the box publisher carries (`$relPaths` in
+  1. the newest commit on that ref, by a box identity (its SUBJECT is the publisher's own
+     "mt5 box state <stamp> (published onto origin...)" / legacy "mt5 shadow state sync", or its
+     author matches --box-author, default "Contabo"), that touched any path the box publisher carries (`$relPaths` in
      sync_shadow_to_git.ps1, parsed by libs.ops.state_publication -- one list, never restated);
   2. the newest time stamp written INSIDE those files as they sit at that ref (`updated_at`,
      `generated_at`, `measured_at`, `checked_at`, `generated_utc`, `last_cycle`) -- because a
@@ -54,6 +55,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -69,6 +71,15 @@ from libs.ops.state_publication import FLOW_REL, published_paths  # noqa: E402
 LIVE_BRANCH = "claude/llm-auto-upgrade-verify-gcjac3"
 THRESHOLD_H = 6.0
 BOX_AUTHOR = "Contabo"
+#: THE BOX IS NAMED BY WHAT IT WRITES, NOT WHO IT SAYS IT IS (2026-10-13). Since the publisher
+#: moved to commit-tree, box commits carry the git identity "Codex" -- the same author the VPS and
+#: the Codex lanes commit code under -- so an author match found no box commit at all and the
+#: fence read UNMEASURED on a branch the box was publishing to every fifteen minutes. The subject
+#: is the publisher's own (sync_shadow_to_git.ps1 `$msg`); no other writer uses it.
+BOX_SUBJECT_RE = re.compile(r"^mt5 (?:box state \d{4}-\d{2}-\d{2}_\d{4} \(published onto origin"
+                            r"|shadow state sync\b)")
+BOX_SUBJECT_GREP = r"^mt5 (box state [0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{4} \(published onto origin" \
+                   r"|shadow state sync)"
 OUT_REL = "desks/mt5/reports/BOX_STATE_FRESHNESS.json"
 OUT = ROOT / OUT_REL
 #: stall_watch.ps1's own state file (box-local, written every ten minutes by MT5-StallWatch).
@@ -84,6 +95,37 @@ def _git(root: Path, *args: str) -> tuple[int, str]:
     except (OSError, subprocess.SubprocessError) as exc:
         return 127, f"{type(exc).__name__}: {exc}"
     return r.returncode, r.stdout
+
+
+def is_box_commit(author: str, subject: str, box_author: str = BOX_AUTHOR) -> bool:
+    """A box write: the publisher's subject, or (older commits) the box's own author name."""
+    if BOX_SUBJECT_RE.match(subject.strip()):
+        return True
+    return bool(box_author) and box_author.lower() in author.strip().lower()
+
+
+def _newest_box_commit(root: Path, use: str, paths: list[str],
+                       box_author: str) -> tuple[int, str, str] | None:
+    """(commit time, short sha, author) of the newest box write touching `paths` at `use`."""
+    best: tuple[int, str, str] | None = None
+    for sel in (["-E", f"--grep={BOX_SUBJECT_GREP}"], ["-F", f"--author={box_author}"]):
+        # git's ^ anchors on EVERY message line, so a code commit whose body quotes the subject
+        # also matches the grep; the subject itself is re-checked here before it counts.
+        rc, out = _git(root, "log", "-n", "50", *sel, "--format=%ct%x09%h%x09%an%x09%s", use,
+                       "--", *paths)
+        if rc != 0:
+            continue
+        for line in out.splitlines():
+            ct, sha, who, subject = [*line.split("\t", 3), "", "", ""][:4]
+            if not is_box_commit(who, subject, box_author):
+                continue
+            try:
+                row = (int(ct), sha, who)
+            except ValueError:
+                continue
+            best = row if best is None or row[0] > best[0] else best
+            break
+    return best
 
 
 def _parse(v: Any) -> datetime | None:
@@ -172,18 +214,30 @@ def _measure(root: Path, doc: dict[str, Any], *, ref: str | None, threshold_h: f
         doc.update(verdict="UNMEASURED",
                    why="no git ref to read" if not use else "no publisher allowlist at the ref")
         return doc
-    rc, out = _git(root, "log", "-1", "-F", f"--author={box_author}", "--format=%ct %h %an",
-                   use, "--", *paths)
+    newest = _newest_box_commit(root, use, paths, box_author)
     commit_at = None
-    if rc == 0 and out.strip():
-        ct, sha, *who = out.split()
-        commit_at = datetime.fromtimestamp(int(ct), UTC)
-        doc["newest_box_commit"] = {"sha": sha, "author": " ".join(who),
+    if newest:
+        ct, sha, who = newest
+        commit_at = datetime.fromtimestamp(ct, UTC)
+        doc["newest_box_commit"] = {"sha": sha, "author": who,
                                     "at": commit_at.isoformat(timespec="seconds")}
     stamps: dict[str, str] = {}
+    not_box_written: dict[str, str] = {}
     newest_stamp = None
     for rel in paths:
         if not rel.endswith(".json"):
+            continue
+        # ONLY THE BOX'S OWN WRITE COUNTS (2026-10-06). RELEASE.json is on the publisher's list,
+        # but since release promotion (#90) CI's "seal release" commit rewrites it with a fresh
+        # `generated_utc` every release -- measured on 2d61e69a1, that stamp (11:11Z) read the
+        # fence FRESH at 4.3h while the newest box-authored commit on any published path was
+        # bcbec41f0 of 2026-09-24. A stamp counts only when the newest commit touching its file
+        # at the ref is a box identity's; anyone else's write is listed, never believed.
+        rc_a, line = _git(root, "log", "-1", "--format=%an%x09%s", use, "--", rel)
+        writer, _, subject = line.strip().partition("\t")
+        if rc_a != 0 or not is_box_commit(writer, subject, box_author):
+            if writer.strip():
+                not_box_written[rel] = writer.strip()
             continue
         rc, text = _git(root, "show", f"{use}:{rel}")
         if rc != 0:
@@ -204,13 +258,14 @@ def _measure(root: Path, doc: dict[str, Any], *, ref: str | None, threshold_h: f
             stamps[rel] = best.isoformat(timespec="seconds")
             newest_stamp = best if newest_stamp is None or best > newest_stamp else newest_stamp
     doc["stamps_inside_state"] = stamps
+    doc["stamps_ignored_not_box_written"] = not_box_written
     doc["newest_stamp_inside_state"] = newest_stamp.isoformat(timespec="seconds") \
         if newest_stamp else None
     freshest = newest_stamp or commit_at
     doc["basis"] = "stamp_inside_state" if newest_stamp else "box_commit_date"
     if freshest is None:
         doc.update(verdict="UNMEASURED",
-                   why=f"no commit by a '{box_author}' identity touches the published paths at "
+                   why=f"no box commit (publisher subject or a '{box_author}' author) touches the published paths at "
                        f"{use}, and no published file carries a parseable stamp")
         return doc
     age_h = (now - freshest).total_seconds() / 3600

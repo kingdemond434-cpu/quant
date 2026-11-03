@@ -137,11 +137,29 @@ done
 # hours behind the one the gauntlet actually judges, and tonight a bond backfill that DID land on
 # the desk box (6,270 rows, 214 bond candidates) left this box still reporting the class as
 # starved from a 6,024-row copy.
-for f in external_survivors.json coverage_search_results.json; do
-  scp -pq "$REMOTE:C:/opt/quant/desks/mt5/data/hypotheses/$f" \
-      "desks/mt5/data/hypotheses/$f.tmp" 2>/dev/null \
-    && mv "desks/mt5/data/hypotheses/$f.tmp" "desks/mt5/data/hypotheses/$f"
-done
+# The docket reached 1.9 GB on 2026-10-13. This 4 GB publication host has neither the placement
+# authority nor the disk headroom to mirror that campaign bank; attempting an atomic refresh needs
+# old + new concurrently and repeatedly filled the 38 GB volume. The Windows judge owns the rows
+# and its pulled desk_state carries the consumed candidate count. Pull only the producer's native
+# identity here so freshness remains measurable without pretending this host owns current rows.
+# Row-consuming conversion remains on the approved Windows/8 GB workers.
+_docket="desks/mt5/data/hypotheses/external_survivors.json"
+_docket_meta="${_docket}.remote_meta"
+_remote_meta="$(
+  ssh -o BatchMode=yes -o ConnectTimeout=15 "$REMOTE" \
+    "powershell -NoProfile -NonInteractive -Command \"\$p=Get-Item 'C:\\opt\\quant\\desks\\mt5\\data\\hypotheses\\external_survivors.json'; Write-Output (\$p.Length.ToString() + ':' + \$p.LastWriteTimeUtc.Ticks.ToString() + ':' + \$p.LastWriteTimeUtc.ToString('o'))\"" \
+    2>/dev/null | tr -d '\r' | tail -1
+)"
+if [ -n "$_remote_meta" ]; then
+  printf '%s\n' "$_remote_meta" > "${_docket_meta}.tmp"
+  mv "${_docket_meta}.tmp" "$_docket_meta"
+  echo "pull recorded external_survivors.json remote identity; campaign rows remain on owner"
+fi
+rm -f "${_docket_meta}.tmp" 2>/dev/null || true
+scp -pq "$REMOTE:C:/opt/quant/desks/mt5/data/hypotheses/coverage_search_results.json" \
+    "desks/mt5/data/hypotheses/coverage_search_results.json.tmp" 2>/dev/null \
+  && mv "desks/mt5/data/hypotheses/coverage_search_results.json.tmp" \
+        "desks/mt5/data/hypotheses/coverage_search_results.json"
 
 # THE TRADING HALT MARKER. The desk auto-pauses itself when placement passes are rejected, and
 # it writes a file saying exactly why. Nothing pulled that file and nothing read it, so the desk

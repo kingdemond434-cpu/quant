@@ -1,0 +1,130 @@
+{
+ "class": "supply_chain",
+ "label": "Supply-chain pressure, freight and delivery times",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:bloomberg:bi_supply_chain_splc",
+   "vendor": "Bloomberg",
+   "dataset": "BI supply chain (SPLC)",
+   "class": "supply_chain",
+   "region": "global",
+   "measures": "Company supplier/customer relationships",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:cass_information_systems:cass_freight_index",
+   "vendor": "Cass Information Systems",
+   "dataset": "Cass Freight Index",
+   "class": "supply_chain",
+   "region": "US",
+   "measures": "North American freight shipments and expenditures",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "MACHINE_SERIES",
+    "kind": "vendor_public_release",
+    "url": "https://fred.stlouisfed.org/series/FRGSHPUSM649NCIS",
+    "endpoints": [
+     "https://fred.stlouisfed.org/graph/fredgraph.csv?id=FRGSHPUSM649NCIS"
+    ],
+    "series": "FRGSHPUSM649NCIS",
+    "source": "web_search:2026-09-30",
+    "note": "Cass Freight Index: Shipments, republished on FRED"
+   }
+  },
+  {
+   "id": "paid:everstream_analytics:supply_chain_risk",
+   "vendor": "Everstream Analytics",
+   "dataset": "Supply chain risk",
+   "class": "supply_chain",
+   "region": "global",
+   "measures": "Supply chain risk signals",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:flexport:ocean_timeliness_indicator",
+   "vendor": "Flexport",
+   "dataset": "Ocean Timeliness Indicator",
+   "class": "supply_chain",
+   "region": "global",
+   "measures": "Transit times China/Europe to US",
+   "frequency": "weekly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "HEADLINE_ONLY",
+    "kind": "vendor_press_release",
+    "url": "https://www.flexport.com/research/ocean-timeliness-indicator/",
+    "endpoints": [],
+    "source": "web_search:2026-09-30",
+    "note": "indicator published free on the vendor's research page"
+   }
+  },
+  {
+   "id": "paid:kodata:south_korean_business_network_intelligence",
+   "vendor": "KoDATA",
+   "dataset": "South Korean business network intelligence",
+   "class": "supply_chain",
+   "region": "KR",
+   "measures": "Business network intelligence on 13m+ companies",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://www.neudata.co/1/vendors/kodata",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:resilinc:supply_chain_event_monitoring",
+   "vendor": "Resilinc",
+   "dataset": "Supply chain event monitoring",
+   "class": "supply_chain",
+   "region": "global",
+   "measures": "Supplier disruption events",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  }
+ ]
+}

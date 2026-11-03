@@ -49,7 +49,7 @@ def test_only_a_cells_first_real_verdict_is_a_drain(tmp_path: Path) -> None:
     ]), encoding="utf-8")
     d = JB.drain(NOW, led)
     assert d["first_rulings"] == {"24h": 2, "7d": 3}
-    assert d["rows"]["24h"] == {"ruled": 3, "unknown": 1, "not_run": 1}
+    assert d["rows"]["24h"] == {"ruled": 3, "not_testable": 0, "unknown": 1, "not_run": 1}
 
 
 def test_inflow_is_the_dockets_first_seen_clock(tmp_path: Path) -> None:
@@ -63,13 +63,34 @@ def test_inflow_is_the_dockets_first_seen_clock(tmp_path: Path) -> None:
 def test_the_verdict_is_growing_when_creation_outruns_first_rulings() -> None:
     b = {"status": "MEASURED", "unjudged": 1_400_000}
     d = {"status": "MEASURED", "first_rulings_per_hour": {"7d": 220.0, "24h": 220.0}}
-    i = {"status": "MEASURED", "created_per_hour": {"7d": 345.0, "24h": 345.0}}
+    i = {"status": "MEASURED", "created_per_hour": {"7d": 345.0, "24h": 345.0},
+         "readmitted": {"status": "MEASURED", "readmitted": {"7d": 0, "24h": 0}}}
     v = JB.verdict(b, d, i)
     assert v["status"] == "GROWING" and v["net_per_day"] == pytest.approx(-3000.0)
     assert v["needed_first_rulings_per_hour"] == pytest.approx(345.0 + 1_400_000 / 720.0, 0.01)
     d["first_rulings_per_hour"]["7d"] = 3000.0
     assert JB.verdict(b, d, i)["status"] == "DRAINING"
     assert JB.verdict({"status": "UNMEASURED", "why": "x"}, d, i)["status"] == "UNMEASURED"
+
+
+
+def test_an_empty_backlog_is_not_drained_while_cells_await_conversion(tmp_path: Path) -> None:
+    """NO CELL ENDS UNTESTABLE: parked cells with the converter are still owed a ruling."""
+    b = {"status": "MEASURED", "unjudged": 0}
+    d = {"status": "MEASURED", "first_rulings_per_hour": {"7d": 10.0, "24h": 10.0}}
+    i = {"status": "MEASURED", "created_per_hour": {"7d": 0.0, "24h": 0.0},
+         "readmitted": {"status": "MEASURED", "readmitted": {"7d": 0, "24h": 0}}}
+    h = tmp_path / "conversion_handoff.json"
+    h.write_text(json.dumps({"generated_utc": _at(1.0), "n": 12, "rows": []}), encoding="utf-8")
+    v = JB.verdict(b, d, i, conv=JB.awaiting_conversion(h, NOW))
+    assert v["status"] == "AWAITING_CONVERSION" and v["awaiting_conversion"] == 12
+    assert JB.verdict(b, d, i, conv=JB.awaiting_conversion(tmp_path / "no.json", NOW))[
+        "status"] == "UNMEASURED"
+    h.write_text(json.dumps({"generated_utc": _at(1.0), "n": 0, "rows": []}), encoding="utf-8")
+    assert JB.verdict(b, d, i, conv=JB.awaiting_conversion(h, NOW))["status"] == "DRAINED"
+    # A handoff the coverage pass stopped rewriting is no reading at all.
+    h.write_text(json.dumps({"generated_utc": _at(7.0), "n": 0, "rows": []}), encoding="utf-8")
+    assert JB.awaiting_conversion(h, NOW)["status"] == "UNMEASURED"
 
 
 def _plant_sweep(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, order_at: str,
