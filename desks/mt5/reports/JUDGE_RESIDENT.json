@@ -17,7 +17,7 @@
  "uptime_s": 583601.4,
  "last_sweep_ended_utc": "2026-11-03T10:47:53+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-03T14:35:11+00:00",
+ "heartbeat_utc": "2026-11-03T14:50:13+00:00",
  "sweep_phase": {
   "pid": 33484,
   "sweep_started_utc": "2026-11-03T10:48:14+00:00",
@@ -236,42 +236,42 @@
      }
     },
     "merge_and_publish": {
-     "samples": 41,
+     "samples": 134,
      "top": [
       {
-       "stack": "<frozen abc>:__instancecheck__:117 < datetimes.py:_new_DatetimeIndex:78 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857",
-       "n": 3,
-       "share": 0.073
+       "stack": "hypothesis_graph.py:<genexpr>:768 < hypothesis_graph.py:_fold_fates:732 < hypothesis_graph.py:_fate_index:768 < hypothesis_graph.py:record_gauntlet_verdicts:804 < external_gauntlet.py:<lambda>:3960 < external_gauntlet.py:_safe:2170",
+       "n": 22,
+       "share": 0.164
       },
       {
-       "stack": "datetimelike.py:_cmp_method:1048 < arraylike.py:__lt__:48 < common.py:new_method:76 < base.py:_cmp_method:7263 < arraylike.py:__lt__:48 < common.py:new_method:76",
-       "n": 3,
-       "share": 0.073
+       "stack": "preregistration.py:spec_index:286 < hypothesis_graph.py:record_gauntlet_verdicts:795 < external_gauntlet.py:<lambda>:3960 < external_gauntlet.py:_safe:2170 < external_gauntlet.py:main:3960 < external_gauntlet.py:run_sharded:4844",
+       "n": 15,
+       "share": 0.112
       },
       {
-       "stack": "_methods.py:_sum:49 < pbo.py:probability_backtest_overfitting:85 < external_gauntlet.py:run_gauntlet:3137 < external_gauntlet.py:main:3883 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
-       "n": 2,
-       "share": 0.049
+       "stack": "_linalg.py:eigvalsh:1359 < trial_ledger.py:participation_ratio:239 < trial_ledger.py:family_census:260 < trial_ledger.py:census:275 < external_gauntlet.py:structural_trial_census:2226 < external_gauntlet.py:<lambda>:3341",
+       "n": 12,
+       "share": 0.09
       },
       {
-       "stack": "base.py:_reset_identity:832 < base.py:_simple_new:666 < datetimes.py:_new_DatetimeIndex:95 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808",
-       "n": 2,
-       "share": 0.049
+       "stack": "_axis_nan_policy.py:_broadcast_shapes:100 < _axis_nan_policy.py:_broadcast_arrays:55 < _axis_nan_policy.py:axis_nan_policy_wrapper:541 < dsr.py:probabilistic_sharpe_ratio:35 < dsr.py:deflated_sharpe_ratio:85 < external_gauntlet.py:run_gauntlet:3184",
+       "n": 4,
+       "share": 0.03
       },
       {
-       "stack": "base.py:_simple_new:662 < datetimes.py:_new_DatetimeIndex:95 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857",
-       "n": 2,
-       "share": 0.049
+       "stack": "_function_base_impl.py:place:2149 < _distn_infrastructure.py:cdf:2169 < dsr.py:probabilistic_sharpe_ratio:41 < dsr.py:deflated_sharpe_ratio:85 < external_gauntlet.py:run_gauntlet:3184 < external_gauntlet.py:main:3883",
+       "n": 4,
+       "share": 0.03
       }
      ],
      "process": {
-      "cpu_s": 425.0,
-      "page_faults": 11757805.0,
-      "read_bytes": 460764028.0,
-      "write_bytes": 70940.0,
-      "sampled_s": 400.0,
-      "rss_mb_max": 5511.0,
-      "cpu_share_of_wall": 1.062
+      "cpu_s": 1358.3,
+      "page_faults": 26160471.0,
+      "read_bytes": 8062456636.0,
+      "write_bytes": 33312210.0,
+      "sampled_s": 1330.0,
+      "rss_mb_max": 5786.8,
+      "cpu_share_of_wall": 1.021
      }
     }
    }

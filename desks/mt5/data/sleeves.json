@@ -55381,6 +55381,126 @@
       "retired_at": "2026-11-03T12:03:06+00:00",
       "retire_reason": "CHFDKK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
       "retired_by": "live_policy"
+    },
+    {
+      "name": "CHFSGD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=16",
+      "symbol": "CHFSGD",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "STANDBY",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.0,
+        "joined": "joined on 'chfsgd|asia' (different mechanism: not a reading for this sleeve)",
+        "why": "standby on the current reading -- the only allocator row on 'chfsgd|asia' prices 'overnight_gap_decay', not 'cross_asset_residual'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-03T14:48:01+00:00",
+      "shadow_exp": 0.1604599799326529,
+      "family": "cross_asset_residual",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "CHFSGD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=16",
+      "sleeve_id": "c2052ced697e69adfdb9",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "beta_win": 240,
+        "entry_z": 2.0,
+        "factor_symbols": [
+          "NZDUSD",
+          "USDHUF"
+        ],
+        "lookback": 240,
+        "session": "ny",
+        "side_mode": "revert",
+        "timeframe": "M5",
+        "ttl_bars": 16
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-03T14:48:06+00:00",
+      "retire_reason": "CHFSGD is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "EURZAR.carry.asia@M15#input_symbol=EURZAR_require_quiet=False_session=ny",
+      "symbol": "EURZAR",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['eurzar.carry.asia@m15#input_symbol=eurzar_require_quiet=false_session=ny', 'eurzar|carry|asia', 'eurzar|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['eurzar.carry.asia@m15#input_symbol=eurzar_require_quiet=false_session=ny', 'eurzar|carry|asia', 'eurzar|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-03T14:48:02+00:00",
+      "shadow_exp": 0.30055327607246485,
+      "family": "carry",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "EURZAR.carry.asia@M15#input_symbol=EURZAR_require_quiet=False_session=ny",
+      "sleeve_id": "29b34d3fa77dd721d006",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "input_symbol": "EURZAR",
+        "require_quiet": false,
+        "session": "ny",
+        "timeframe": "M15"
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-03T14:48:06+00:00",
+      "retire_reason": "EURZAR admits only ['eurzar_carry_asia_p_8339edce23032d21'] for live capital; 'EURZAR.carry.asia@M15#input_symbol=EURZAR_require_quiet=False_session=ny' is a different parameter set on the same instrument -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "NZDJPY.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=72",
+      "symbol": "NZDJPY",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of [\"nzdjpy.cross_asset_residual.asia@m15#beta_win=240_entry_z=2.0_factor_symbols=['usdx']_lookback=240_side_mode=revert_ttl_bars=72\", 'nzdjpy|cross_asset_residual|asia', 'nzdjpy|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of [\"nzdjpy.cross_asset_residual.asia@m15#beta_win=240_entry_z=2.0_factor_symbols=['usdx']_lookback=240_side_mode=revert_ttl_bars=72\", 'nzdjpy|cross_asset_residual|asia', 'nzdjpy|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-03T14:49:53+00:00",
+      "shadow_exp": 0.22316439451264303,
+      "family": "cross_asset_residual",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "NZDJPY.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=72",
+      "sleeve_id": "57675bd11f2807c77599",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "beta_win": 240,
+        "entry_z": 2.0,
+        "factor_symbols": [
+          "USDX"
+        ],
+        "lookback": 240,
+        "side_mode": "revert",
+        "timeframe": "M15",
+        "ttl_bars": 72
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-03T14:49:55+00:00",
+      "retire_reason": "NZDJPY is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     }
   ]
 }
