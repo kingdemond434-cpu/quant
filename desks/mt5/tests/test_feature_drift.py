@@ -160,3 +160,32 @@ def test_feature_drift_is_a_contracted_hourly_leg() -> None:
     root = _DESK.parents[1]
     legs = json.loads((root / "docs/research/experiment_contracts.json").read_text())["legs"]
     assert "feature_drift" in legs
+
+
+def test_window_hours_mirror_the_gold_book() -> None:
+    from mt5desk import decision_core as DC
+    assert set(FD.GOLD_WINDOWS) == {w[0] for w in DC.GOLD_WINDOWS}
+    for label, sig, rng in DC.GOLD_WINDOWS:
+        assert FD.WINDOW_HOURS[label] == (tuple(rng) if rng is not None else (0, sig)), label
+
+
+def test_a_session_still_trading_is_not_judged() -> None:
+    b = _bars(days=30)
+    last = pd.Timestamp("2026-05-27", tz="UTC")   # a Wednesday inside the bars
+    full = FD.daily_features(b[b.index < last + pd.Timedelta(hours=7)], "asia")
+    part = FD.daily_features(b[b.index < last + pd.Timedelta(hours=4)], "asia")
+    assert full.index[-1] == last
+    assert part.index[-1] < last
+    pd.testing.assert_frame_equal(part, full.iloc[:-1])
+
+
+def test_the_flag_reports_its_own_null(tmp_path: Path) -> None:
+    (row,) = _run(tmp_path, _bars(seed=4))["sleeves"]
+    nul = row["null"]
+    assert nul["draws"] == FD.NULL_DRAWS
+    assert nul["p95"] <= nul["p99"] and 0.0 <= nul["p_flag"] <= 1.0
+    assert 0.0 < nul["p_value"] <= 1.0
+    (again,) = _run(tmp_path, _bars(seed=4))["sleeves"]
+    assert again["null"] == nul
+    (shifted,) = _run(tmp_path, _bars(shift_from="2026-05-05", spread_after=30.0))["sleeves"]
+    assert shifted["null"]["p_value"] < 0.05

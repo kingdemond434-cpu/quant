@@ -76,6 +76,12 @@ ATR_N = 20
 FALLBACK_DAYS = 750
 FALLBACK_GAP_DAYS = 60
 FEATURES = ("session_range_atr", "atr_frac", "spread_points", "session_volume")
+#: Permutation null for the flag: NULL_DRAWS random RECENT_DAYS blocks of the reference itself,
+#: each judged against the rest of the reference exactly as the live block is. Reported beside
+#: the fixed PSI_FLAG so the bar's false-alarm rate on THIS sleeve's own history is measured,
+#: never assumed. Seeded, so the same history always gives the same null.
+NULL_DRAWS = 200
+NULL_SEED = 20261103
 
 #: Session windows in broker hours [start, end). The gold book's windows mirror
 #: decision_core.GOLD_WINDOWS: asia's range is the night up to its 07:00 signal hour; the two
@@ -177,8 +183,14 @@ def daily_features(bars: pd.DataFrame, window: str | None) -> pd.DataFrame:
             "spread_points": (float(g["spread"].median()) if "spread" in g else np.nan),
             "session_volume": (float(g["tick_volume"].sum()) if "tick_volume" in g
                                else np.nan),
+            "_last_hour": int(last.hour),
         })
-    return pd.DataFrame(rows).set_index("date")
+    out = pd.DataFrame(rows).set_index("date")
+    # The newest date is kept only once its window has printed its final bar: a session still
+    # trading has a short range and a partial volume, and judging it would read as drift.
+    if len(out) and out["_last_hour"].iloc[-1] < hi - 1:
+        out = out.iloc[:-1]
+    return out.drop(columns="_last_hour")
 
 
 # ================================================================================ roster
@@ -302,8 +314,38 @@ def judge_sleeve(sleeve: Mapping[str, Any], bars: pd.DataFrame | None, canon: An
     row["features"] = per
     row["max_psi"] = max((v["psi"] for v in per.values() if v["psi"] is not None), default=None)
     row["flagged_features"] = flagged
+    row["null"] = permutation_null(ref, row["max_psi"])
     row["verdict"] = "EDGE_DECAY_CANDIDATE" if flagged else "STABLE"
     return row
+
+
+def permutation_null(ref: pd.DataFrame, observed: float | None,
+                     draws: int = NULL_DRAWS, seed: int = NULL_SEED) -> dict[str, Any]:
+    """Max-over-FEATURES PSI of random RECENT_DAYS blocks of the reference, each against the
+    reference with that block removed. Gives the flag's false-alarm rate on this history
+    (`p_flag`), the 95th/99th percentiles, and the observed max PSI's empirical p-value."""
+    n = len(ref)
+    if n < MIN_REFERENCE or n <= RECENT_DAYS:
+        return {"draws": 0, "verdict": "UNMEASURED: reference too short for a null"}
+    rng = np.random.default_rng(seed)
+    starts = rng.integers(0, n - RECENT_DAYS + 1, size=draws)
+    vals = []
+    for s0 in starts:
+        blk = ref.iloc[s0:s0 + RECENT_DAYS]
+        rest = pd.concat([ref.iloc[:s0], ref.iloc[s0 + RECENT_DAYS:]])
+        raw = [psi(rest[f].to_numpy(), blk[f].to_numpy()) for f in FEATURES]
+        ps = [p for p in raw if p is not None]
+        if ps:
+            vals.append(max(ps))
+    if not vals:
+        return {"draws": 0, "verdict": "UNMEASURED: no feature measurable in the null"}
+    arr = np.asarray(vals)
+    out: dict[str, Any] = {"draws": len(arr), "p95": _r(np.quantile(arr, 0.95), 4),
+                           "p99": _r(np.quantile(arr, 0.99), 4),
+                           "p_flag": _r(float((arr > PSI_FLAG).mean()), 4)}
+    if observed is not None:
+        out["p_value"] = _r(float((1 + (arr >= observed).sum()) / (1 + len(arr))), 4)
+    return out
 
 
 def _r(v: Any, k: int = 6) -> float | None:
