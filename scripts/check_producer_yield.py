@@ -114,6 +114,8 @@ STARVED_FRACTION = 0.05
 
 #: producer -> the alternative that inherits its budget if it is ever declared DEAD. Declared in
 #: advance, by intent, so a dead producer has a decision attached to it rather than a question.
+#: An entry that names a REPAIR to a clocked, living organ rather than a successor.
+REVIVAL_PREFIX = "REVIVAL (not retired)"
 REPLACEMENTS: dict[str, str] = {
     "alpha_evolution": "representation_discovery -- same expression search, driven by measured "
                        "representations rather than by a funded book it does not have",
@@ -198,6 +200,34 @@ REPLACEMENTS: dict[str, str] = {
                 "retail ground also reaches the desk through asia_plane and TFX positioning",
     "readitrades_africa": "regional_survivors -- ready-trade.com serves no records (FETCH_ERROR); "
                           "its seat directory still refreshes, empty",
+    # REVIVALS, NOT RETIREMENTS (same probe). These organs are clocked and alive; each entry names
+    # what stops it writing and who owns the remedy, so the row is a decision, not a question.
+    "mathlab": "REVIVAL (not retired) -- math_lab.build_panels skipped targets whose bars exist "
+               "(XAGUSD read 'no H1 bars'); fixed 2026-11-03 in producer-revival",
+    "physics_lab": "REVIVAL (not retired) -- shares math_lab.build_panels; same 2026-11-03 fix",
+    "trajectory_evolution": "REVIVAL (not retired) -- the graph read spent the whole budget, 0 "
+                            "children; evolution keeps 25% of it since 2026-11-03",
+    "descendants": "REVIVAL (not retired) -- setup spent the walk budget, '0 of 638 roots'; the "
+                   "walk has its own clock since 2026-11-03",
+    "factor_residual": "REVIVAL (not retired) -- a daily_cycle step whose last report is "
+                       "2026-10-05: MT5-Daily's chain, revived by #524 (Desk health)",
+    "joint_evolution": "REVIVAL (not retired) -- MT5-FrontierAudit's daily step, last report "
+                       "2026-10-26 with 480 genomes and none beating the incumbent out of sample",
+    "ftmo_allocator": "prop_challenge_allocator -- the seat is the allocator's gap-request "
+                      "by-product (ftmo_gap_hypotheses.jsonl), owned by the FTMO allocator thread",
+    "conversion_maximiser": "REVIVAL (not retired) -- healthy (634 new cells 2026-11-03); its "
+                            "output is registry status changes, and this seat only takes its "
+                            "naming and acquisition requests",
+    "missed_trade_archaeologist": "REVIVAL (not retired) -- alive (120 hypotheses 2026-11-03); "
+                                  "every family|symbol|session key the sleeves allow is already "
+                                  "donated, so new cells wait on new sleeves",
+    "event_response_atlas": "REVIVAL (not retired) -- an honest null: 636 event cells measured "
+                            "2026-11-03 and none clears both its t bar and its cost proxy",
+    "residual_queue": "REVIVAL (not retired) -- all 220 open residuals sit at level 'returns', "
+                      "which no registered family expresses; it needs a family, not a retry",
+    "discovery_compiler": "REVIVAL (not retired) -- 200 children generated, 0 compiled: 165 "
+                          "data:no_chart (bars the desk does not hold) and 35 economically "
+                          "incompatible; 195 discoveries deferred by its 180 s budget",
 }
 
 
@@ -565,7 +595,8 @@ def cause_of(name: str, seat: str | None, ev: dict[str, Any]) -> dict[str, Any]:
 
     if name in LEG_NAME_COLLISIONS:
         legs = set()
-    if rep and not legs and not box_tasks:
+    # A REVIVAL entry names a repair, not a successor: it never reads as a retirement.
+    if rep and not rep.startswith(REVIVAL_PREFIX) and not legs and not box_tasks:
         return _cause("RETIRED_SUPERSEDED", "REPLACEMENT_DECLARED",
                       "no clock on this host runs it; REPLACEMENTS names its successor",
                       replacement=rep)
