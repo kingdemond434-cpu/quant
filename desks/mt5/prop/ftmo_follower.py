@@ -105,9 +105,9 @@ OUT = DESK / "reports" / "FTMO_FOLLOWER.json"
 INTENTS = DESK / "data" / "ftmo_follower_intents.jsonl"
 LOG = DESK / "logs" / "ftmo_follower.log"
 #: THE PROP FILLS LEDGER (schema prop-fills-v1): every closed FTMO position, book "ftmo", so
-#: FTMO is measured from its first trade. Written by THIS module (compose_fills / append_fills);
-#: no prop/fills_ledger.py exists in any branch (checked 2026-10-28), and no E8 writer appends
-#: here today -- the O_APPEND one-line writes keep a second writer safe if one is added.
+#: FTMO is measured from its first trade. Written by THIS module (compose_fills / append_fills)
+#: and, for book "e8", by prop/e8_fills.py through the same `append_fills` -- the O_APPEND
+#: one-line writes keep the two writers from tearing each other's lines.
 PROP_LEDGER = DESK / "data" / "live_ledger_prop.jsonl"
 PROP_SCHEMA = "prop-fills-v1"
 #: The ledger's refusal list: a row carrying any of these is never written.
@@ -522,8 +522,36 @@ def deal_fees(deals: list[Any]) -> tuple[dict[str, float | None], list[str], str
         "the MT5 deal history lacks " + ", ".join(missing) + "; null, never 0.0")
 
 
+def signal_hour_utc(server_day: str | None, window: str, offset_h: int | None
+                    ) -> tuple[str | None, str]:
+    """(the UTC hour a gold window's signal fired on `server_day`, its basis) or (None, why).
+
+    THE EPISODE KEY (2026-11-03): FTMO follows E8's gold_asia, so one signal reaches the ledger
+    as a row in each book. The Auditor collapses them into one episode by (sleeve, direction,
+    signal_hour_utc), so both writers derive the hour the same way: the window's own signal hour
+    (`decision_core.GOLD_WINDOWS`, server clock) on the trade's server date, less the server's
+    MEASURED UTC offset. Nothing is assumed: no day, no window or no offset -> None. Pure."""
+    from mt5desk.decision_core import GOLD_WINDOWS
+    hours = {label: int(h) for label, h, _rng in GOLD_WINDOWS}
+    if window not in hours:
+        return None, f"UNMEASURED: {window!r} is not a GOLD_WINDOWS window"
+    if not server_day:
+        return None, "UNMEASURED: the trade's server date is unreadable"
+    if not isinstance(offset_h, int) or isinstance(offset_h, bool) or not 0 <= offset_h <= 4:
+        return None, "UNMEASURED: the server's UTC offset is unmeasured"
+    try:
+        day = datetime.fromisoformat(str(server_day)[:10])
+    except ValueError:
+        return None, f"UNMEASURED: {server_day!r} is not a date"
+    at = day.replace(hour=hours[window], tzinfo=UTC) - timedelta(hours=offset_h)
+    return at.isoformat(timespec="seconds"), (
+        f"GOLD_WINDOWS {window} {hours[window]:02d}:00 server on {str(server_day)[:10]}, "
+        f"less the measured server offset UTC+{offset_h}")
+
+
 def compose_fills(deals: Any, orders: Any, open_ids: set[int], *, account_key: str | None,
-                  contract: float | None, recorded_at: str) -> list[dict[str, Any]]:
+                  contract: float | None, recorded_at: str,
+                  server_offset_h: int | None = None) -> list[dict[str, Any]]:
     """prop-fills-v1 rows (the schema's field names; there is no prop/fills_ledger.py module --
     this writer IS the ledger's FTMO side) for every CLOSED FTMO position this lane opened: an
     entry deal (DEAL_ENTRY_IN) under MAGIC and at least one exit deal (OUT / OUT_BY) on its
@@ -578,11 +606,17 @@ def compose_fills(deals: Any, orders: Any, open_ids: set[int], *, account_key: s
         fees, fees_measured, fees_status = deal_fees([e, *outs])
         pl_quote = (round(sum(float(x) for x in pl), 2)
                     if all(isinstance(x, (int, float)) for x in pl) else None)
+        # MT5 stamps the deal with the server's wall clock as if it were UTC: its date IS the
+        # server date the window's signal hour is read on.
+        sig_at, sig_basis = signal_hour_utc(
+            (_iso_epoch(getattr(e, "time", None)) or "")[:10] or None, WINDOW, server_offset_h)
         rows.append({
             "schema": PROP_SCHEMA, "book": LANE, "venue": "mt5", "lane": "ftmo_follower",
             "provenance": "ftmo_follower:mt5_deal_history", "recorded_at": recorded_at,
             "time": _iso_epoch(getattr(last, "time", None)), "sleeve": CERT_KEY,
             "symbol": SYMBOL, "entry_side": 0 if dirn == 1 else 1, "side": 1 if dirn == 1 else 0,
+            "direction": dirn, "window": WINDOW, "signal_hour_utc": sig_at,
+            "signal_hour_basis": sig_basis,
             "entry_time": _iso_epoch(getattr(e, "time", None)),
             "exit_time": _iso_epoch(getattr(last, "time", None)),
             "timestamp_basis": "mt5_server_epoch", "venue_clock_skew_ms": None,
@@ -615,10 +649,11 @@ def compose_fills(deals: Any, orders: Any, open_ids: set[int], *, account_key: s
 
 
 def append_fills(rows: list[dict[str, Any]], path: Path | None = None) -> int:
-    """Append rows the ledger does not hold, deduped by "ftmo:" + position id. TWO WRITERS (E8
-    appends here too): each row is ONE os.write of one whole line on an O_APPEND descriptor, so
-    the OS places every line at the end in one piece and no writer can interleave into or
-    overwrite another's. Refuses any row carrying a login-shaped field (the ledger's
+    """Append rows the ledger does not hold, deduped by the row's book + ":" + position id
+    ("ftmo:<id>", "e8:<id>"; a row naming no book is "ftmo"). TWO WRITERS (prop/e8_fills.py
+    appends book "e8" here): each row is ONE os.write of one whole line on an O_APPEND
+    descriptor, so the OS places every line at the end in one piece and no writer can interleave
+    into or overwrite another's. Refuses any row carrying a login-shaped field (the ledger's
     rule). Returns how many were written; RAISES OSError / ValueError."""
     path = Path(path or PROP_LEDGER)
     for r in rows:
@@ -637,7 +672,12 @@ def append_fills(rows: list[dict[str, Any]], path: Path | None = None) -> int:
                 d = json.loads(ln)
                 if isinstance(d, dict):
                     have.add(f"{d.get('book')}:{d.get('position_id')}")
-    new = [r for r in rows if f"ftmo:{r.get('position_id')}" not in have]
+    new: list[dict[str, Any]] = []
+    for r in rows:
+        k = f"{r.get('book') or LANE}:{r.get('position_id')}"
+        if k not in have:
+            have.add(k)
+            new.append(r)
     if not new:
         return 0
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -662,8 +702,13 @@ def record_fills(mt5: Any, key: str | None, open_ids: set[int], now: datetime) -
             return {"written": 0, "why": "the deal/order history is unreadable"}
         info = mt5.symbol_info(SYMBOL)
         contract = float(getattr(info, "trade_contract_size", 0.0) or 0.0) or None
+        try:        # the episode key's offset, read off live ticks; unreadable -> null + why
+            offset: int | None = server_offset_from_tick(freshest_tick_epoch(mt5), now)
+        except ValueError:
+            offset = None
         rows = compose_fills(deals, orders, open_ids, account_key=key, contract=contract,
-                             recorded_at=now.isoformat(timespec="seconds"))
+                             recorded_at=now.isoformat(timespec="seconds"),
+                             server_offset_h=offset)
         return {"written": append_fills(rows), "closed_seen": len(rows)}
     except Exception as exc:
         return {"written": 0, "why": f"{type(exc).__name__}: {exc}"[:160]}
