@@ -603,8 +603,21 @@ def _cert_of(name: str, roster: dict[str, dict]) -> str | None:
     return None
 
 
+def book_live_keys(path: Path | None) -> dict[str, list[str]]:
+    """Every key data/CERT_BOOK_LIVE.json puts live, with its venues ({} when the file is absent,
+    unreadable or disabled)."""
+    doc = _read_json(path, None) if path is not None else None
+    if not isinstance(doc, dict) or doc.get("enabled") is False:
+        return {}
+    out: dict[str, list[str]] = {}
+    for venue in ("fusion", "e8", "ftmo"):
+        for k in (doc.get(venue) or {}) if isinstance(doc.get(venue), dict) else ():
+            out.setdefault(str(k), []).append(venue)
+    return out
+
+
 def decay_zero_doc(live: dict[str, dict], now: str, roster: dict[str, dict] | None = None,
-                   prev: dict | None = None) -> dict:
+                   prev: dict | None = None, book_path: Path | None = None) -> dict:
     """DECAY_ZERO.json: every key that traded in the window outside the LIVE roster rows the loop
     in `main` already judges, the keys the promoter's bars ZERO, and the keys they would zero
     but are FLAGGED to the principal instead.
@@ -684,7 +697,20 @@ def decay_zero_doc(live: dict[str, dict], now: str, roster: dict[str, dict] | No
         if isinstance(zeros[k], dict):
             zeros[k]["since"] = z.get("since") or now
         flags.pop(k, None)
+    # THE CERTIFIED LIVE BOOK IS ALWAYS NAMED (hourly pass 25, 2026-11-03, idea 271). A key on
+    # data/CERT_BOOK_LIVE.json trades on Fusion, E8 or FTMO whatever the roster says; one that
+    # closed no Fusion trade in the window is listed UNMEASURED with its venues, never left out,
+    # so allocator liveness can tell "judged, nothing to say" from "never looked at".
+    book = book_live_keys(book_path)
+    judged_stems = {_stem(k) for part in (judged, unmeasured, zeros, flags) for k in part}
+    for key, venues in book.items():
+        if _stem(key) not in judged_stems:
+            unmeasured[key] = {"verdict": "UNMEASURED", "venues": venues,
+                               "why": (f"on the certified live book ({', '.join(venues)}) with no "
+                                       f"live Fusion trade in the last {TRAIL_DAYS} days; E8 and "
+                                       f"FTMO fills are not in the ledger this monitor reads")}
     return {"checked_at": now, "trail_days": TRAIL_DAYS, "zeros": zeros, "flags": flags,
+            "book_live_keys": book,
             "lifted": lifted, "judged": judged, "unmeasured": unmeasured,
             "sequential": sequential,
             "zeroed_heat_redeployed": False,
@@ -1160,7 +1186,8 @@ def main(write_queue: bool = True) -> int:
                     "flags": prim.get("flags") or good.get("flags") or {},
                     "sequential": _union_sequential(good.get("sequential"),
                                                     prim.get("sequential"))}
-        zero_doc = decay_zero_doc(live, now, roster_rows(doc), prev_doc)
+        zero_doc = decay_zero_doc(live, now, roster_rows(doc), prev_doc,
+                                  book_path=SLEEVES_FILE.parent / "CERT_BOOK_LIVE.json")
         before_z, before_f = set(prev_doc.get("zeros") or {}), set(prev_doc.get("flags") or {})
         for k, z in zero_doc["zeros"].items():
             if k not in before_z:

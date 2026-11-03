@@ -426,15 +426,28 @@ def _judge_coverage(now: float) -> dict[str, Any]:
     torn = (f"{DECAY_ZERO_NAME} exists and is unreadable; the gateway is on its last good copy "
             f"and the decay monitor refuses to rewrite it"
             if zpath.exists() and _read(zpath) is None else "")
-    problems = unjudged + [x for x in (stale, torn) if x]
+    # A LIVE BOOK WITH NO DECAY VERDICT IS RED (hourly pass 25, idea 271): every key the
+    # certified live book names must appear in DECAY_ZERO.json (judged, flagged, zeroed or
+    # explicitly UNMEASURED with its venues), whether or not it closed a trade.
+    book_keys: list[str] = []
+    book = _read(DATA / "CERT_BOOK_LIVE.json") or {}
+    if book.get("enabled") is not False:
+        for venue in ("fusion", "e8", "ftmo"):
+            if isinstance(book.get(venue), dict):
+                book_keys += [str(k) for k in book[venue]]
+    book_unjudged = sorted({k for k in book_keys if k[:_STEM] not in by_zero})
+    no_book = (f"{len(book_unjudged)} certified live book key(s) have no decay verdict: "
+               f"{', '.join(book_unjudged[:8])}" if book_unjudged else "")
+    problems = unjudged + [x for x in (stale, torn, no_book) if x]
     return {"status": "GAP" if problems else "OK", "n_traded": len(traded),
+            "book_unjudged": book_unjudged,
             "n_judged": len(by_live | by_zero), "decay_checked_at": live.get("checked_at"),
             "zero_checked_at": zero.get("checked_at"), "unjudged": unjudged, "stale": stale,
             "torn": torn,
             "why": ("; ".join(x for x in (
                         (f"{len(unjudged)} key(s) closed live trades the decay monitor has not "
                          f"judged since: {', '.join(unjudged[:8])}") if unjudged else "",
-                        stale, torn) if x) if problems
+                        stale, torn, no_book) if x) if problems
                     else f"every one of {len(traded)} traded key(s) was judged after its close")}
 
 

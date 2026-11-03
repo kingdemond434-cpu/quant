@@ -436,3 +436,38 @@ def test_a_certificate_whose_own_forward_clock_has_no_edge_is_zeroed_when_live_l
     _write(desk, roster, _trades(FREE[:27], DECAYED))
     D.main(write_queue=False)
     assert "reliably below zero" in _zero(desk)["zeros"][FREE[:27]]["why"]
+
+
+def test_every_certified_live_book_key_is_named_in_the_zero_file(desk) -> None:
+    """Hourly pass 25 (idea 271): gold_asia is live on E8/FTMO/Fusion through CERT_BOOK_LIVE.json
+    whatever the roster says. A book key that closed no Fusion trade is listed UNMEASURED with its
+    venues, never left out; a disabled book names nothing."""
+    book = {"enabled": True, "fusion": {"gold_london_am": 0.01}, "e8": {"gold_asia": 0.01},
+            "ftmo": {"gold_asia": 0.01}}
+    (desk / "CERT_BOOK_LIVE.json").write_text(json.dumps(book), "utf-8")
+    roster = [{"name": "gold_asia", "status": "STANDBY", "symbol": "XAUUSD"}]
+    _write(desk, roster, _trades("gold_london_am", [0.6, -0.3] * 6, symbol="XAUUSD"))
+    D.main(write_queue=False)
+    doc = _zero(desk)
+    assert doc["book_live_keys"] == {"gold_london_am": ["fusion"], "gold_asia": ["e8", "ftmo"]}
+    assert "gold_london_am" in doc["judged"]
+    assert doc["unmeasured"]["gold_asia"]["venues"] == ["e8", "ftmo"]
+    (desk / "CERT_BOOK_LIVE.json").write_text(json.dumps({**book, "enabled": False}), "utf-8")
+    D.main(write_queue=False)
+    assert _zero(desk)["book_live_keys"] == {} and "gold_asia" not in _zero(desk)["unmeasured"]
+
+
+def test_a_live_book_key_with_no_decay_verdict_is_red(tmp_path, monkeypatch) -> None:
+    AL, data = _liveness_sandbox(tmp_path, monkeypatch)
+    (data / "live_ledger.jsonl").write_text("", "utf-8")
+    (data / "CERT_BOOK_LIVE.json").write_text(json.dumps(
+        {"enabled": True, "e8": {"gold_asia": 0.01}, "fusion": {"gold_london_am": 0.01}}), "utf-8")
+    (data / "DECAY_ZERO.json").write_text(json.dumps(
+        {"checked_at": NOW.isoformat(), "judged": {"gold_london_am": {}}}), "utf-8")
+    j = AL._judge_coverage(NOW.timestamp())
+    assert j["status"] == "GAP" and j["book_unjudged"] == ["gold_asia"]
+    assert "certified live book" in j["why"]
+    (data / "DECAY_ZERO.json").write_text(json.dumps(
+        {"checked_at": NOW.isoformat(), "judged": {"gold_london_am": {}},
+         "unmeasured": {"gold_asia": {"venues": ["e8"]}}}), "utf-8")
+    assert AL._judge_coverage(NOW.timestamp())["status"] == "OK"
