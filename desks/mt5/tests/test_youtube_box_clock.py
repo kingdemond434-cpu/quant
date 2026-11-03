@@ -122,3 +122,24 @@ def test_seed_handles_include_the_config_channels(tmp_path, monkeypatch) -> None
     assert seeds.count("@QuantGuild") == 1 and "no-at" not in seeds
     monkeypatch.setattr(c, "CHANNEL_CONFIG", tmp_path / "absent.json")
     assert "@saleh.m" in c.seed_queries()
+
+
+def test_corpus_errors_never_carry_the_key(tmp_path, monkeypatch) -> None:
+    c = _load("collect_youtube_corpus_r", ROOT / "scripts" / "collect_youtube_corpus.py")
+    key = "AIzaSECRET-zz9"
+    kf = tmp_path / "key"
+    kf.write_text(key)
+    monkeypatch.setattr(c, "KEYFILE", kf)
+    monkeypatch.setattr(c, "COVERAGE", tmp_path / "cov.json")
+    monkeypatch.setattr(c, "REGISTRY", tmp_path / "reg.json")
+    monkeypatch.setattr(c, "OUTDIR", tmp_path / "out")
+    monkeypatch.setattr(c, "CHANNEL_CONFIG", tmp_path / "absent.json")
+
+    def boom(url, timeout=30):
+        raise OSError(f"cannot open {url}")
+    monkeypatch.setattr(c.urllib.request, "urlopen", boom)
+    monkeypatch.setattr(sys, "argv", ["x", "--force"])
+    assert c.main() == 0
+    written = (tmp_path / "cov.json").read_text("utf-8")
+    assert key not in written and "key=***" in written
+    assert c._redact("x?key=other123&y=1") == "x?key=***&y=1"

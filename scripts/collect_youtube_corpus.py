@@ -89,6 +89,19 @@ def _key() -> str:
     return k or os.environ.get("YOUTUBE_API_KEY", "").strip()
 
 
+def _redact(text: str) -> str:
+    """Scrub the key out of an error string before it can reach the report.
+
+    The report lands under data/intelligence/, which is published, and some urllib/http.client
+    exceptions echo the request URL -- which carries `key=`. Every appended error passes here.
+    """
+    k = _key()
+    text = str(text)
+    if k:
+        text = text.replace(k, "***")
+    return re.sub(r"([?&]key=)[^&\s'\"]+", r"\1***", text)
+
+
 def read_json(p: Path, default):
     try:
         return json.loads(p.read_text("utf-8"))
@@ -183,7 +196,7 @@ def main() -> int:
                     report["discovered_channels"] += 1
                     continue
             except Exception as exc:
-                report["errors"].append(f"forHandle {handle}: {exc}")
+                report["errors"].append(_redact(f"forHandle {handle}: {exc}"))
             if search_dead:
                 continue
             try:
@@ -196,7 +209,7 @@ def main() -> int:
                 reg["channels"].setdefault(q, {})
             except Exception as exc:
                 search_dead = True
-                report["errors"].append(f"search {q}: {exc}")
+                report["errors"].append(_redact(f"search {q}: {exc}"))
 
         # 2. ENUMERATION: for every followed channel id, incremental uploads sweep.
         follow: dict[str, str] = {}
@@ -243,9 +256,9 @@ def main() -> int:
                     reg["cursors"][cid] = newest_seen
                 report["channels_swept"] += 1
             except Exception as exc:
-                report["errors"].append(f"channel {title}: {exc}")
+                report["errors"].append(_redact(f"channel {title}: {exc}"))
     except RuntimeError as exc:
-        report["errors"].append(str(exc))
+        report["errors"].append(_redact(str(exc)))
 
     # 3. TRANSCRIPTS, best-effort, newest videos first, hard-capped per run.
     got_t, attempted = 0, 0
