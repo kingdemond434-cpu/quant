@@ -463,12 +463,34 @@ def parse_generic_json(text_or_doc: Any) -> list[dict[str, Any]]:
 
 
 _JSON_BLOB = re.compile(r"(\{[^<>]{20,}?\}|\[[^<>]{20,}?\])", re.DOTALL)
-_PCT_PAIR = re.compile(
-    r"(?P<sym>[A-Z]{3}/?[A-Z]{3}|[A-Z][A-Za-z0-9 ]{1,24}?)\W{0,40}?"
-    r"(?:(?P<l1>\d{1,3}(?:\.\d+)?)\s*%\s*(?:of [a-z ]{0,30})?long\W{1,60}?"
-    r"(?P<s1>\d{1,3}(?:\.\d+)?)\s*%\s*(?:of [a-z ]{0,30})?short"
-    r"|(?P<s2>\d{1,3}(?:\.\d+)?)\s*%\s*(?:of [a-z ]{0,30})?short\W{1,60}?"
-    r"(?P<l2>\d{1,3}(?:\.\d+)?)\s*%\s*(?:of [a-z ]{0,30})?long)", re.IGNORECASE)
+_LABELLED_PCT = re.compile(r"(\d{1,3}(?:\.\d+)?)\s*%\s*(?:of [a-z ]{0,30}?)?\b(long|short)\b",
+                           re.IGNORECASE)
+_NAME_TAIL = re.compile(r"([A-Z][A-Za-z0-9/&.\-]*(?: [A-Z0-9][A-Za-z0-9/&.\-]*){0,2})\s*$")
+
+
+def _text_pairs(text: str) -> list[dict[str, Any]]:
+    """'N% long' / 'M% short' pairs, each named by the instrument written just before it."""
+    hits = list(_LABELLED_PCT.finditer(text))
+    out: list[dict[str, Any]] = []
+    i, prev_end = 0, 0
+    while i + 1 < len(hits):
+        a, b = hits[i], hits[i + 1]
+        la, lb = a.group(2).lower(), b.group(2).lower()
+        if la == lb or b.start() - a.end() > 120:
+            i += 1
+            continue
+        name = _NAME_TAIL.search(text[prev_end:a.start()].strip())
+        if name:
+            lv = a.group(1) if la == "long" else b.group(1)
+            sv = b.group(1) if lb == "short" else a.group(1)
+            o = normalise(name.group(1).strip(), lv, sv)
+            if o:
+                out.append(o)
+        prev_end = b.end()
+        tail = re.match(r"[a-z ,.]{0,40}", text[prev_end:])     # "... on this market"
+        prev_end += tail.end() if tail else 0
+        i += 2
+    return out
 
 
 def _strip_tags(html: str) -> str:
@@ -494,12 +516,7 @@ def parse_html(html: str) -> list[dict[str, Any]]:
         if o:
             out.append(o)
     if not out:
-        for m in _PCT_PAIR.finditer(_strip_tags(html or "")):
-            lv = m.group("l1") or m.group("l2")
-            sv = m.group("s1") or m.group("s2")
-            o = normalise(m.group("sym").strip(), lv, sv)
-            if o:
-                out.append(o)
+        out.extend(_text_pairs(_strip_tags(html or "")))
     return _dedupe(out)
 
 
