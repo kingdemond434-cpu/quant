@@ -1,15 +1,15 @@
-"""ROBOTS.TXT IS RESPECTED DESK-WIDE (LAWS 5e as amended by the principal, 2026-10-14).
+"""ROBOTS.TXT IS AN ACCESS LABEL, NEVER A REFUSAL (LIVE docs/LAWS.md 5e).
 
-Every scraping-shaped organ Breadth listed (reports/robots_noncompliant_fetchers_2026-10-14.txt)
-now consults the site's holds and the URL's own origin robots.txt through THE ONE implementation,
-`libs.data.polite_fetch.HostAccess` (robots via the `DESK_UA_PRODUCT` group, else `*`, longest
-match; 5xx/unreachable = no fetch; 404 = allow; 401/403/429 = a hold). These tests run each
-fixed organ against a loopback server and count the PAGE requests that reached it:
+"robots.txt Disallow treated as a refusal" is in `access_classifier.REMOVED_BRAKES`, and
+ACCESS_UNCLEAR is mined with its label. Every scraping-shaped organ still READS the URL's own
+origin robots.txt through THE ONE implementation, `libs.data.polite_fetch.HostAccess` (the
+`DESK_UA_PRODUCT` group, else `*`, longest match), and turns it into a label. These tests run
+each organ against a loopback server and count the PAGE requests that reached it:
 
-* a `Disallow` at the exact path      -> zero page requests, for every organ;
-* a 404 robots.txt                    -> the page is fetched (RFC 9309: no rules);
-* a 503 robots.txt                    -> zero page requests (unreadable is not consent);
-* a 429 page                          -> held: the next call sends nothing.
+* a `Disallow` at the exact path      -> the page IS fetched, labelled PUBLIC_WITH_TERMS;
+* a 404 robots.txt                    -> the page is fetched, PUBLIC (RFC 9309: no rules);
+* a 503 robots.txt                    -> the page IS fetched, labelled ACCESS_UNCLEAR;
+* a 429 page                          -> held: the next call sends nothing (an access control).
 
 No test leaves the loopback interface, and the shared access record is a tmp file.
 """
@@ -103,7 +103,6 @@ def _organs() -> dict[str, Any]:
     import alt_proxies
     import asia_collector
     import axis_ingest
-    import data_acquisition_scientist as das
     import fetch_dukascopy
     import global_survivor_frontier as gsf
     import index_discovery
@@ -112,7 +111,6 @@ def _organs() -> dict[str, Any]:
     import seed_miners
     import shadow_institutional
     import world_dataset_hunter
-    from archaeology import civilization
     from research.countries.br import data_plane as br
 
     from libs.data import cot_source, free_stack, prediction_markets
@@ -148,6 +146,15 @@ def _organs() -> dict[str, Any]:
         "shadow_institutional.Guard.get": lambda u: shadow_institutional.Guard(
             no_fetch=False).get(shadow_institutional.Sensor(**_sensor_kwargs(
                 shadow_institutional, u))),
+    }
+
+
+def _checkers() -> dict[str, Any]:
+    """name -> f(url) for the organs that ASK before fetching (no page request of their own)."""
+    import data_acquisition_scientist as das
+    import moat_collectors
+    from archaeology import civilization
+    return {
         "data_acquisition_scientist._robots_allows": das._robots_allows,
         "civilization._machine_use_from_robots": lambda u: civilization._machine_use_from_robots(
             u, fetch=True),
@@ -159,20 +166,36 @@ ORGANS = sorted(_organs())
 
 
 @pytest.mark.parametrize("name", ORGANS)
-def test_a_disallow_at_the_exact_path_sends_no_request(web: str, name: str) -> None:
+def test_a_disallow_at_the_exact_path_is_fetched_with_its_label(web: str, name: str) -> None:
+    """LAWS 5e: a Disallow is PUBLIC_WITH_TERMS and the fetch PROCEEDS, for every organ."""
     fn = _organs()[name]
     _swallow(lambda: fn(f"{web}/blocked/data.json"))
-    assert _H.pages == [], (name, _H.pages)
+    assert "/blocked/data.json" in _H.pages, (name, _H.pages)
+    assert _H.robots_reads, f"{name} never read robots.txt"
+
+
+@pytest.mark.parametrize("name", sorted(_checkers()))
+def test_no_checker_reads_a_disallow_as_a_refusal(web: str, name: str) -> None:
+    got = _checkers()[name](f"{web}/blocked/x")
+    if name == "moat_collectors.robots_barred":
+        assert got == "", got                               # not barred: only a hold bars
+    elif name == "data_acquisition_scientist._robots_allows":
+        assert got[0] is True and got[1].startswith("PUBLIC_WITH_TERMS"), got
+    else:
+        from archaeology import snapshots as snap
+        assert got[0] != snap.FORBIDDEN and got[1].startswith("PUBLIC_WITH_TERMS"), got
     assert _H.robots_reads, f"{name} never read robots.txt"
 
 
 @pytest.mark.parametrize("name", ["polite_urlopen", "asia_collector.collect_one",
                                   "world_dataset_hunter.urllib_fetch", "seed_miners.fetch",
                                   "index_discovery._get"])
-def test_a_5xx_robots_is_no_fetch(web: str, name: str) -> None:
+def test_a_5xx_robots_is_fetched_as_access_unclear(web: str, name: str) -> None:
     _H.robots = (503, b"down")
     _swallow(lambda: _organs()[name](f"{web}/open/data.json"))
-    assert _H.pages == [], (name, _H.pages)
+    assert "/open/data.json" in _H.pages, (name, _H.pages)
+    assert pf.default_access().peek_label(f"{web}/open/data.json")["access_label"] == \
+        "ACCESS_UNCLEAR"
 
 
 @pytest.mark.parametrize("name", ["polite_urlopen", "global_survivor_frontier._get_text",
@@ -183,30 +206,39 @@ def test_a_404_robots_allows(web: str, name: str) -> None:
     assert _H.pages == ["/blocked/data.json"], (name, _H.pages)
 
 
-def test_the_refusal_is_named_and_robots_checkers_say_no(web: str) -> None:
-    import data_acquisition_scientist as das
-    import moat_collectors
-    from archaeology import civilization
+def test_the_label_is_named_and_no_checker_says_no(web: str) -> None:
+    """The robots Disallow is a LABEL on what every seam returns, never a refusal."""
     url = f"{web}/blocked/x"
     ok, why = pf.admit(url)
-    assert not ok and why == "ROBOTS_DISALLOW"
-    assert das._robots_allows(url)[0] is False
-    assert moat_collectors.robots_barred(url)
-    assert civilization._machine_use_from_robots(url, fetch=True)[1].startswith(
-        civilization.ROBOTS_REFUSAL)
-    with pytest.raises(pf.PoliteRefused) as info:
-        pf.polite_urlopen(url, timeout=5)
-    assert info.value.verdict == "ROBOTS_DISALLOW"
+    assert ok and why == ""
+    lab = pf.access_label(url)
+    assert lab["access_label"] == "PUBLIC_WITH_TERMS" and "Disallow" in lab["terms_note"]
+    assert lab["redistribute_allowed"] is False
+    with pf.polite_urlopen(url, timeout=5) as fh:
+        assert json.loads(fh.read()) == {"ok": [1, 2, 3]}
+        assert fh.access_label == "PUBLIC_WITH_TERMS"
     r = pf.polite_requests_get(url, timeout=5)
-    assert r.status_code == 0 and r.verdict == "ROBOTS_DISALLOW" and not r.ok
-    assert _H.pages == []
+    assert r.ok and r.status_code == 200 and r.verdict == ""
+    assert r.access_label == "PUBLIC_WITH_TERMS" and r.redistribute_allowed is False
+    assert _H.pages == ["/blocked/x", "/blocked/x"]
 
 
-def test_asia_collector_names_the_refusal_and_fetches_nothing(web: str) -> None:
+def test_asia_collector_fetches_and_labels_the_row(web: str) -> None:
     import asia_collector
     rec = asia_collector.collect_one({"id": "robots_probe", "url": f"{web}/blocked/a.json",
                                       "expect": "json", "access": "public"}, timeout=5)
-    assert rec["status"] == "BLOCKED_BY_ROBOTS" and rec["robots_disallows"] is True
+    assert rec["status"] != "BLOCKED_BY_ROBOTS"
+    assert rec["access_label"] == "PUBLIC_WITH_TERMS" and rec["robots_disallows"] is True
+    assert rec["redistribute_allowed"] is False and "Disallow" in rec["terms_note"]
+    assert _H.pages == ["/blocked/a.json"]
+
+
+def test_a_robots_hold_is_still_a_refusal(web: str) -> None:
+    """The ONE refusal left: an access control on robots.txt itself holds the site."""
+    _H.robots = (403, b"forbidden")
+    with pytest.raises(pf.PoliteRefused) as info:
+        pf.polite_urlopen(f"{web}/open/a.json", timeout=5)
+    assert info.value.verdict == "METHOD_BLOCKED"
     assert _H.pages == []
 
 
@@ -242,10 +274,13 @@ def test_a_keyed_url_is_admitted_and_its_hold_never_stores_the_key(web: str,
     assert _H.pages == ["/open/series?series_id=X&api_key=SECRETVALUE123"]
 
 
-def test_a_keyed_disallowed_url_sends_nothing(web: str) -> None:
-    with pytest.raises(pf.PoliteRefused):
-        pf.polite_urlopen(f"{web}/blocked/s?api_key=SECRETVALUE123", timeout=5)
-    assert _H.pages == []
+def test_a_keyed_disallowed_url_is_fetched_with_its_label_and_never_stores_the_key(
+        web: str, tmp_path: Path) -> None:
+    with pf.polite_urlopen(f"{web}/blocked/s?api_key=SECRETVALUE123", timeout=5) as fh:
+        assert fh.access_label == "PUBLIC_WITH_TERMS"
+    assert _H.pages == ["/blocked/s?api_key=SECRETVALUE123"]
+    state = (tmp_path / "access.json").read_text("utf-8")
+    assert "SECRETVALUE123" not in state and "labelled" in state
 
 
 # ---------------------------------------------------------------- RFC 9309 matching
@@ -286,7 +321,7 @@ def test_another_agents_group_does_not_bind_the_desk() -> None:
 def test_a_robots_redirect_into_a_fenced_route_is_not_followed(tmp_path: Path,
                                                                 loc: str) -> None:
     """robots.txt 302 -> a login wall or a held source: the hop is never requested, the rules
-    are unreadable, and nothing on the origin is fetched (fail closed)."""
+    are unreadable, and the origin is fetched as ACCESS_UNCLEAR (LAWS 5e: never a refusal)."""
     import email.message
     sent: list[str] = []
 
@@ -297,8 +332,9 @@ def test_a_robots_redirect_into_a_fenced_route_is_not_followed(tmp_path: Path,
         raise urllib.error.HTTPError(req.full_url, 302, "Found", h, None)
 
     acc = pf.HostAccess(tmp_path / "access.json")
-    ok, why = acc.permits("https://origin.example.org/data.csv", send=send)
-    assert not ok and why.startswith("ROBOTS_UNREADABLE"), why
+    ok, why, label = acc.permits_labelled("https://origin.example.org/data.csv", send=send)
+    assert ok and why == "", why
+    assert label["access_label"] == "ACCESS_UNCLEAR" and label["redistribute_allowed"] is False
     assert sent == ["https://origin.example.org/robots.txt"]
 
 
