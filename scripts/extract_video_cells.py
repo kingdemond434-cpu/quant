@@ -32,6 +32,8 @@ sys.path.insert(0, str(ROOT / "desks" / "mt5"))
 from libs.ops import openrouter_free as orf  # noqa: E402
 
 OUT_DIR = ROOT / "desks" / "mt5" / "data" / "intelligence" / "youtube_transcripts"
+#: Per-run summary (videos, mechanisms, key source name): the organ's own artifact.
+REPORT = ROOT / "desks" / "mt5" / "reports" / "VIDEO_CELLS.json"
 CHUNK = 14000
 KINDS = ("signal", "feature", "sizing", "risk", "execution", "validation")
 
@@ -89,6 +91,7 @@ def main() -> int:
     key, key_src = orf.resolve_key()
     if not key:
         print("no OpenRouter key resolvable; nothing extracted (recorded, not silent)")
+        _report({"ts": now_iso(), "videos": 0, "mechanisms": 0, "state": "NO_KEY"})
         return 2
     models = orf.free_models(key)
     models = models[0] if isinstance(models, tuple) else models
@@ -154,8 +157,16 @@ def main() -> int:
         from side_channels.discovery_io import write_discoveries
         ts = datetime.now(UTC).strftime("%Y%m%d_%H%M")
         write_discoveries(OUT_DIR / f"discoveries_{ts}.json", rows_out)
-    print(json.dumps({"videos": n, "mechanisms": len(rows_out), "key_source": key_src}))
+    res = {"ts": now_iso(), "videos": n, "mechanisms": len(rows_out), "key_source": key_src,
+           "state": "OK"}
+    _report(res)
+    print(json.dumps(res))
     return 0
+
+
+def _report(res: dict) -> None:
+    REPORT.parent.mkdir(parents=True, exist_ok=True)
+    REPORT.write_text(json.dumps(res, indent=1), encoding="utf-8")
 
 
 if __name__ == "__main__":

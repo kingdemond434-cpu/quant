@@ -37,6 +37,10 @@ from pathlib import Path
 EXCHANGE_BRANDS = ("binance", "coinbase", "kraken", "bybit", "okx", "kucoin", "bitget",
                    "gate.io", "huobi", "htx", "mexc", "bitfinex", "bitmex", "deribit", "crypto.com")
 
+_ROOT = Path(__file__).resolve().parent.parent
+#: The box-side coverage proof (written by --report-only in the hourly Quant-VideoCells run).
+REPORT = _ROOT / "desks" / "mt5" / "reports" / "VIDEO_MINING_COVERAGE.json"
+
 STATUSES = ("FULL", "NO_TRANSCRIPT", "UNAVAILABLE", "ACCESS_LIMIT", "FETCH_FAILED")
 
 
@@ -180,6 +184,23 @@ def fetch_transcript(api, vid: str):
         return "FETCH_FAILED", "", {"error": f"{type(exc).__name__}: {str(exc)[:200]}"}
 
 
+def coverage(ledger: dict[str, dict], enum_report: dict, stopped: str | None) -> dict:
+    """Per-channel status counts (every enumerated video has exactly one) + distinct links."""
+    summary: dict = {"ts": now(), "enumeration": enum_report, "stopped": stopped, "channels": {}}
+    for r in ledger.values():
+        c = summary["channels"].setdefault(r["channel"], {})
+        c[r["status"]] = c.get(r["status"], 0) + 1
+    for c in summary["channels"].values():
+        c["total"] = sum(c.values())
+    links: dict[str, list[str]] = {}
+    for r in ledger.values():
+        for u in r.get("links", []):
+            links.setdefault(u, []).append(r["video_id"])
+    summary["distinct_links"] = len(links)
+    summary["_links"] = links
+    return summary
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default="config/video_mining_channels.json")
@@ -191,7 +212,22 @@ def main() -> int:
     ap.add_argument("--per-query", type=int, default=20)
     ap.add_argument("--backoff-min", type=float, default=90.0,
                     help="after an access wall, later runs exit until this many minutes pass")
+    ap.add_argument("--report-only", action="store_true",
+                    help="no network: publish the coverage report from an existing ledger "
+                         "(the box's hourly Quant-VideoCells run uses this on unsealed bundles)")
+    ap.add_argument("--report", default="", help="also write the coverage summary here")
     args = ap.parse_args()
+
+    if args.report_only:
+        led = load_ledger(Path(args.out) / "ledger.jsonl")
+        summary = coverage(led, {}, None)
+        summary.pop("_links")
+        summary["mode"] = "report-only (box)"
+        rep = Path(args.report) if args.report else REPORT
+        rep.parent.mkdir(parents=True, exist_ok=True)
+        rep.write_text(json.dumps(summary, indent=1), encoding="utf-8")
+        print(json.dumps({k: summary[k] for k in ("channels", "distinct_links")}))
+        return 0
 
     from youtube_transcript_api import YouTubeTranscriptApi  # type: ignore
     api = YouTubeTranscriptApi()
@@ -293,17 +329,8 @@ def main() -> int:
     lf.close()
 
     # 3. coverage summary: every enumerated video has exactly one status
-    summary: dict = {"ts": now(), "enumeration": enum_report, "stopped": stopped, "channels": {}}
-    for r in ledger.values():
-        c = summary["channels"].setdefault(r["channel"], {})
-        c[r["status"]] = c.get(r["status"], 0) + 1
-    for c in summary["channels"].values():
-        c["total"] = sum(c.values())
-    links: dict[str, list[str]] = {}
-    for r in ledger.values():
-        for u in r.get("links", []):
-            links.setdefault(u, []).append(r["video_id"])
-    summary["distinct_links"] = len(links)
+    summary = coverage(ledger, enum_report, stopped)
+    links = summary.pop("_links")
     (out / "links.json").write_text(json.dumps(links, indent=1), encoding="utf-8")
     (out / "coverage_summary.json").write_text(json.dumps(summary, indent=1), encoding="utf-8")
     print(json.dumps(summary, indent=1))
