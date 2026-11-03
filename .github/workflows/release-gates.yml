@@ -179,10 +179,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 200
     steps:
-      # the base only: the PR's code never runs in the reviewer's job
+      # the base only: the PR's code never runs in the reviewer's job. LIVE'S TIP, NOT THE EVENT'S
+      # BASE SHA, for a PR into LIVE (2026-11-03): a re-run replays the original event, so with
+      # base.sha every re-queued review (audit_gate.requeue) ran the reviewer as it was when the
+      # PR last moved -- #474's re-runs kept asking llama3.1:8b and two votes hours after #579
+      # unpinned it, and timed out each time. LIVE is protected, so its tip is as trusted as any
+      # base sha; any other base keeps its exact sha.
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
+          ref: >-
+            ${{ github.event.pull_request.base.ref == 'claude/llm-auto-upgrade-verify-gcjac3'
+            && github.event.pull_request.base.ref || github.event.pull_request.base.sha }}
           sparse-checkout: ops/release
           persist-credentials: false
 
