@@ -522,11 +522,15 @@ def adoption_age(now: datetime | None = None, *, root: Path | None = None,
                      timeout=30, check=False)
         return r.stdout if r.returncode == 0 else ""
 
-    try:
-        line = _git(["log", "-1", "--format=%H %cI", LIVE_REF, "--", ".",
-                     *_STATE_PATHSPECS]).strip()
-    except (OSError, subprocess.SubprocessError):
-        line = ""
+    line = ""
+    # No checkout here (a test's tmp root, a copied report dir): LIVE's side is UNMEASURED, and
+    # no git process is started to find that out.
+    if git is not None or (base / ".git").exists():
+        try:
+            line = _git(["log", "-1", "--format=%H %cI", LIVE_REF, "--", ".",
+                         *_STATE_PATHSPECS]).strip()
+        except (OSError, subprocess.SubprocessError, ValueError, TypeError):
+            line = ""
     sha, _, at = line.partition(" ")
     live_at = _parse_utc(at) if at else None
     out["live_code_sha"] = sha or None

@@ -497,14 +497,13 @@ def _carry_bar(prev: Any, path: Path, sym: str, tf: str, now: datetime) -> dict[
     base = {"symbol": sym, "timeframe": tf, "file": path.name, "time_clock": "broker"}
     checked = _checked_at(prev)
     if checked is None:
-        return {**base, "status": "UNMEASURED",
-                "reason": "time budget exhausted; never read (queued first next pass)"}
+        return {**base, "status": "UNMEASURED", "reason": "time budget exhausted",
+                "carry": "never read; queued first next pass"}
     check_age = _age_h(now, checked)
     if check_age is None or check_age > CARRY_MAX_H:
-        return {**base, "status": "UNMEASURED", "checked_at": _iso(checked),
-                "check_age_h": check_age,
-                "reason": f"time budget exhausted; last read {check_age}h ago, beyond the "
-                          f"{CARRY_MAX_H:g}h carry bound"}
+        return {**base, "status": "UNMEASURED", "reason": "time budget exhausted",
+                "checked_at": _iso(checked), "check_age_h": check_age,
+                "carry": f"last read {check_age}h ago, beyond the {CARRY_MAX_H:g}h carry bound"}
     row = {**prev, "carried": True, "checked_at": _iso(checked), "check_age_h": check_age}
     mt = _mtime(path)
     row["mtime_age_h"] = _age_h(now, mt)
@@ -523,10 +522,9 @@ def _carry_tape(prev: Any, sym: str, now: datetime) -> dict[str, Any]:
     checked = _checked_at(prev)
     check_age = _age_h(now, checked) if checked else None
     if checked is None or check_age is None or check_age > CARRY_MAX_H:
-        return {"symbol": sym, "status": "UNMEASURED",
-                "reason": ("time budget exhausted; never read" if checked is None else
-                           f"time budget exhausted; last read {check_age}h ago, beyond the "
-                           f"{CARRY_MAX_H:g}h carry bound")}
+        return {"symbol": sym, "status": "UNMEASURED", "reason": "time budget exhausted",
+                "carry": ("never read; queued first next pass" if checked is None else
+                          f"last read {check_age}h ago, beyond the {CARRY_MAX_H:g}h carry bound")}
     row = {**prev, "carried": True, "checked_at": _iso(checked), "check_age_h": check_age}
     utc = _utc_iso_or_none(prev.get("last_tick_utc"))
     if utc is not None:

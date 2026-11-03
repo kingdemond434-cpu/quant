@@ -85,7 +85,7 @@ def test_a_carried_reading_beyond_the_bound_is_unmeasured_and_the_fence_red(
     assert first["fx_freshness"]["verdict"] == "GREEN"
     later = NOW + timedelta(hours=bs.CARRY_MAX_H + 1)
     doc = _pass(uni, tmp_path, first, later, budget=3.0)
-    carried_out = [r for r in doc["bars"] if "carry bound" in str(r.get("reason"))]
+    carried_out = [r for r in doc["bars"] if "carry bound" in str(r.get("carry"))]
     assert carried_out and all(r["status"] == "UNMEASURED" for r in carried_out)
     assert doc["fx_freshness"]["verdict"] == "RED"
     assert doc["fx_freshness"]["fx_unmeasured"] >= len(carried_out)

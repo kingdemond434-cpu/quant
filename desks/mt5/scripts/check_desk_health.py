@@ -375,9 +375,14 @@ def check_bars_state(path: Path | None = None, now: datetime | None = None) -> N
             _ok(line)
     # THE FX FENCE (row 74): every FX symbol x M1..D1 cell, read in rotation and carried at most
     # bars_state.CARRY_MAX_H. RED names the cells; a report without the block is UNMEASURED.
+    # A report from the writer before rotation (no `carry_max_h`) has no fence to read; one from
+    # the rotating writer without the block is UNMEASURED. process_health's adoption block is what
+    # says the box has not taken the new writer.
     fx = doc.get("fx_freshness") if isinstance(doc, dict) else None
     fxv = str(fx.get("verdict") or "UNMEASURED") if isinstance(fx, dict) else "UNMEASURED"
-    if isinstance(fx, dict) and fxv == "GREEN":
+    if fx is None and "carry_max_h" not in summary:
+        pass
+    elif isinstance(fx, dict) and fxv == "GREEN":
         _ok(f"FX bars: all {fx.get('fx_cells')} cells of {fx.get('fx_symbols')} FX symbols fresh")
     elif isinstance(fx, dict) and fxv == "RED":
         worst = ", ".join(f"{o.get('symbol')}_{o.get('timeframe')} {o.get('state')}"
