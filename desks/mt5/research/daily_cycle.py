@@ -377,6 +377,33 @@ def _state_admission() -> None:
          + (f" ({', '.join(doc['graveyard'])})" if doc["graveyard"] else ""))
 
 
+PROPOSER_CURSOR = BASE / "data" / "daily_proposers_cursor.json"
+
+
+def rotated(names: tuple[str, ...], cursor: Path) -> list[str]:
+    """`names` starting at the stored cursor (0 when absent or unreadable)."""
+    try:
+        start = int(json.loads(cursor.read_text("utf-8")).get("next", 0)) % max(1, len(names))
+    except (OSError, ValueError, TypeError, AttributeError):
+        start = 0
+    return [*names[start:], *names[:start]]
+
+
+def advance_cursor(names: tuple[str, ...], current: str, cursor: Path) -> None:
+    """Point the cursor PAST `current` before it runs: a pass killed inside it resumes at the
+    next proposer, so one slow or hanging proposer can never pin the rotation."""
+    try:
+        nxt = (names.index(current) + 1) % len(names)
+        cursor.parent.mkdir(parents=True, exist_ok=True)
+        tmp = cursor.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"next": nxt, "after": current,
+                                   "at": datetime.now(UTC).isoformat(timespec="seconds")}),
+                       "utf-8")
+        os.replace(tmp, cursor)
+    except (OSError, ValueError):
+        pass
+
+
 def _proposers() -> None:
     """The proposer sweeps that hand the gauntlet cells it would never otherwise see.
 
@@ -394,7 +421,7 @@ def _proposers() -> None:
     except Exception:
         def arm_weight(source, kind=None):                        # type: ignore[misc]
             return 1.0
-    for name in ("plumbing_miner", "transition_alpha", "weak_signal_compiler",
+    proposers = ("plumbing_miner", "transition_alpha", "weak_signal_compiler",
                  "fund_playbook", "microstructure_miner", "alpha_evolution",
                  "style_premia_sweep", "cross_asset_graph", "anomaly_factory",
                  "tail_alpha_search", "survivor_distiller", "factor_model_coevolution",
@@ -421,7 +448,14 @@ def _proposers() -> None:
                  # THE PUBLIC TRADER GENOME WITH ITS GRAVEYARD (2026-10-06, audit row 35): the
                  # own-book forensics plus the alive+dead genome, its base rates, failure memory,
                  # crowding prior and style-analogue cells through the donor door.
-                 "book_forensics"):
+                 "book_forensics")
+    # THE LOOP ROTATES (2026-11-03, box read): run sequentially from the same first miner,
+    # every pass was killed at MT5-Daily's 10 h limit or the budget before the tail --
+    # learned_miners, regime_split_miner, book_forensics and three more had NEVER run on the
+    # box and the learned-models weekly contract froze on 10-07. Each pass now starts where
+    # the last one stopped, so every proposer gets a turn within a few passes.
+    for name in rotated(proposers, PROPOSER_CURSOR):
+        advance_cursor(proposers, name, PROPOSER_CURSOR)
         try:
             mod = __import__(name)
             kwargs = {}
