@@ -151,3 +151,15 @@ def test_latest_sweep_reading_beats_an_older_power_only_store_entry(tmp_path, mo
     store.write_text(json.dumps({c: ["deflated_sharpe"]}), encoding="utf-8")
     monkeypatch.setattr(wsc, "FAILED_GATES_STORE", store)
     assert wsc.power_deficient() == {}
+
+
+def test_a_deferred_row_with_empty_failed_gates_does_not_block_the_store(tmp_path, monkeypatch):
+    row = _row("EURUSD", "pca_residual", {"rr": 2.75})
+    c = cell_id({**row, "sym": "EURUSD"})
+    _write(tmp_path, monkeypatch, [{"cell": c, "sym": "EURUSD", "family": "pca_residual",
+                                    "terminal_gate": "NOT_RUN_BUILD_BUDGET_DEFERRED",
+                                    "passed": False, "failed_gates": []}], [row])
+    store = tmp_path / "failed_gates.json"
+    store.write_text(json.dumps({c: ["deflated_sharpe"]}), encoding="utf-8")
+    monkeypatch.setattr(wsc, "FAILED_GATES_STORE", store)
+    assert [m["cell"] for m in wsc.power_deficient()["EURUSD"]] == [c]

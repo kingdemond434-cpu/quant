@@ -159,7 +159,11 @@ def power_deficient(max_per_symbol: int = MAX_MEMBERS) -> dict[str, list[dict]]:
         # store below (audit MF, #636). So it is claimed before the filter, not after.
         _add(cell, str(v.get("sym") or v.get("symbol") or ""),
              str(v.get("family") or ""), failed, sharpe)
-        if cell:
+        # An empty failed_gates on a deferred row is NOT a reading (audit nit): only real stage
+        # detail, a recorded failure, or an explicit pass claims the cell.
+        measured = (isinstance(stages, dict) and bool(stages)) or bool(failed) \
+            or v.get("passed") is True
+        if cell and measured:
             seen.add(cell)
     # EVERY EARLIER SWEEP TOO. A cell whose full failed-gate set some sweep recorded stays a member
     # after later sweeps defer it; the latest sweep's own reading wins where both exist.
