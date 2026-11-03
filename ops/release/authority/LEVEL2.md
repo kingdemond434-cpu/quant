@@ -9,7 +9,7 @@ login then cannot land code that way. It is staged, and nothing here is on until
 | 1 | The authority posts the `release-authority` commit status on each PR head. CLEAR on AUTO/LOW gives success. CLEAR on CONTROLLER gives success only once `veto_hours` have passed since its FIRST signed CLEAR. ROOT, HOLD and FAIL give failure. It is on only while `C:\opt\audit_registry\POST_STATUS` exists. | built (#650) |
 | 2 | A state publisher under its own Windows account holds a "quant-state" App key and pushes a box commit to LIVE only if every path is a state path (`libs/ops/release.py` `STATE_PREFIXES`). It replaces the direct `git push` in sync_shadow_to_git.ps1, Adopt-Release.ps1 and sign_train_leg.ps1. | built (#650) |
 | 3 | `workflow_gate.ps1` and `sign_train_leg.ps1` use a "quant-merger" App token (`ops/release/merger/merger_env.ps1`; Contents, Pull requests and Workflows write) instead of zuck's gh login, whenever `C:\opt\merger\config.json` exists. | built (#650) |
-| 4 | Once the merger is installed, the CRO cycle's agents (Run-DeskCycle.ps1) push code to `cro/<lane>-<date>` and open a PR, never LIVE (built in #650). Still to build: CI's seal job stops pushing LIVE with GITHUB_TOKEN. It uses the state App's token from an Actions **environment restricted to the LIVE branch**, so a PR's own workflow never sees that token. | to build |
+| 4 | Once the merger is installed, the CRO cycle's agents (Run-DeskCycle.ps1) push code to `cro/<lane>-<date>` and open a PR, never LIVE (built in #650). Built (#650): CI's seal job stops pushing LIVE with GITHUB_TOKEN. It uses the state App's token from an Actions **environment restricted to the LIVE branch**, so a PR's own workflow never sees that token. | to build |
 | 5 | The owner's setup: authority App commit statuses set to Read & write; create the two Apps; `New-Item C:\opt\audit_registry\POST_STATUS`; put the state App's id in place of `actor_id: 0`, run `python ops/release/authority/check_ruleset.py` until it prints `SAFE to import`, then import `ruleset_live.json`; `gh auth logout` and clear the box's git credential. | after 2-4 run on the box |
 
 Why each piece is needed:
@@ -41,9 +41,10 @@ Each step is safe to stop after, and nothing is enforced until step 6.
 2. **Authority App:** on its settings page, set Commit statuses to Read & write. Then run `New-Item C:\opt\audit_registry\POST_STATUS` and the authority starts posting the check.
 3. **Create the "quant-merger" App** with Contents, Pull requests and Workflows Read & write, and Metadata Read. No webhook; install it on quant only. Then run `install_merger.ps1 -AppId N`.
 4. **Create the "quant-state-publisher" App** with Contents Read & write and Metadata Read. Then:
+   - in the repo, go to Settings, Environments, `live-seal`; set Deployment branches to the selected branches `claude/llm-auto-upgrade-verify-gcjac3` and `desk-sync-clean`; add the secret `STATE_APP_KEY` (a second private key of this App, generated for CI); and add the variable `STATE_APP_ID`;
    - run `install_publisher.ps1 -AppId N`;
    - write `C:\opt\audit_registry\STATE_APP.json` as `{"login": "quant-state-publisher[bot]"}`, which starts the push-log detector with a baseline.
-5. **Wait a day.** Check that the state publisher's log shows pushes, and that the CI seal step (step 4 above) is built.
+5. **Wait a day.** Check that the state publisher's log shows pushes and that LIVE's seal commits are authored by the state App.
 6. **Enforce:**
    - put the state App's id in `ruleset_live.json`;
    - run `python ops\release\authority\check_ruleset.py` until it prints `SAFE to import`;

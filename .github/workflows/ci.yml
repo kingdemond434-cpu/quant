@@ -310,10 +310,25 @@ jobs:
     # run. Never a tip nobody tested.
     outputs:
       release_commit: ${{ steps.push.outputs.release_commit }}
+    # LEVEL 2 (ops/release/authority/LEVEL2.md step 4). Once the LIVE ruleset is on, GITHUB_TOKEN can't
+    # push LIVE: GitHub Actions is never a bypass actor, because a PR's own workflow holds one. The
+    # seal pushes as the state App instead. Its key lives only in this environment, whose
+    # deployment branches are LIVE and desk-sync-clean, so no PR run (refs/pull/*) and no other
+    # branch can read it. Until the owner sets vars.STATE_APP_ID, this is the old GITHUB_TOKEN push.
+    environment: live-seal
     steps:
+      - name: State App token (Level 2 only)
+        id: app
+        if: ${{ vars.STATE_APP_ID != '' }}
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.STATE_APP_ID }}
+          private-key: ${{ secrets.STATE_APP_KEY }}
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ steps.app.outputs.token || github.token }}
 
       - uses: actions/setup-python@v5
         with:
