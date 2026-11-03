@@ -96,8 +96,9 @@ def test_ftmo_and_e8_fills_are_ingested_with_their_own_account(tmp_path: Path,
     assert by_book["e8"]["symbol"] == "XAUUSD" and by_book["e8"]["fill_price"] == 2000.2
     assert by_book["ftmo"]["fill_price"] == 4000.5
     # FTMO's pending stop filled 0.5 above the trigger: worse than asked is positive slippage
-    assert by_book["ftmo"]["slip_r"] == pytest.approx(0.5 / 10.0)
-    assert by_book["ftmo"]["commission_r"] == pytest.approx(-0.7 / (10.0 * 0.1 * 100.0))
+    # R is the position's own |entry - stop| = 10.5, the contract recovered from risk_quote
+    assert by_book["ftmo"]["slip_r"] == pytest.approx(0.5 / 10.5)
+    assert by_book["ftmo"]["commission_r"] == pytest.approx(-0.7 / (10.5 * 0.1 * 100.0))
     assert by_book["e8"]["record_id"].startswith("e8|")
     assert by_book["ftmo"]["record_id"].startswith("ftmo|")
     assert "live_ledger_prop.jsonl" in by_book["ftmo"]["sources"]
