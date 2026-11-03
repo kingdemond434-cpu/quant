@@ -595,8 +595,13 @@ def cause_of(name: str, seat: str | None, ev: dict[str, Any]) -> dict[str, Any]:
 
     if name in LEG_NAME_COLLISIONS:
         legs = set()
-    # A REVIVAL entry names a repair, not a successor: it never reads as a retirement.
-    if rep and not rep.startswith(REVIVAL_PREFIX) and not legs and not box_tasks:
+    # A REVIVAL entry names a repair, not a successor: it never reads as a retirement. And a
+    # successor named for a ground that REFUSES us does not hide the refusal (2026-11-03: the
+    # copy-trading seats name regional_survivors, and their cause stays FETCH_FAILURE).
+    retired = bool(rep and not rep.startswith(REVIVAL_PREFIX) and not legs and not box_tasks)
+    refused = any(ev["walls"].get(k) or ev["platforms"].get(k) or ev["blocked"].get(k)
+                  for k in keys)
+    if retired and not refused:
         return _cause("RETIRED_SUPERSEDED", "REPLACEMENT_DECLARED",
                       "no clock on this host runs it; REPLACEMENTS names its successor",
                       replacement=rep)
@@ -629,6 +634,10 @@ def cause_of(name: str, seat: str | None, ev: dict[str, Any]) -> dict[str, Any]:
             return _cause("FETCH_FAILURE", f"BLOCKED:{blk.get('diagnosis') or 'BLOCKED'}",
                           f"blocked_sources.json: {blk.get('diagnosis')} -- "
                           f"{str(blk.get('fix_hint') or '')[:120]}")
+    if retired:                       # a refusal that is history no longer hides the successor
+        return _cause("RETIRED_SUPERSEDED", "REPLACEMENT_DECLARED",
+                      "no clock on this host runs it; REPLACEMENTS names its successor",
+                      replacement=rep)
     up = UPSTREAM.get(name)
     if up:
         age = ev["bars"].get("newest_bar_age_h" if up == "bars" else "newest_tick_age_h")
