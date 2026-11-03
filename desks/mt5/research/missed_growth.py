@@ -1021,6 +1021,35 @@ def organ_published_lines(path: Path, *, recent: int = 20, spill: Path | None = 
             "why": "measured cost in its own units; the E[log W] price is UNMEASURED"}
 
 
+#: Gates that register no rail (the register is sealed) but DO append their daily bill to LEDGER.
+#: `missed_growth.run` reads LEDGER per registered rail, so without this carry their lines would
+#: sit in the ledger and never reach MISSED_GROWTH.json. `congress_attestation_gate` is
+#: research/informed_capital.py's 5 U.S.C. 13107(c) switch (QUANT_CONGRESS_ATTEST).
+LEDGER_GATES: tuple[str, ...] = ("congress_attestation_gate",)
+
+
+def ledger_gate_lines(rows: list[dict], rail: str, *, recent: int = 20) -> dict[str, Any]:
+    """An unregistered gate's lines, read from the LEDGER rows it appended. A line whose value is
+    not a number (the gate forgoes data it never read) keeps the whole carry UNMEASURED with its
+    value None -- never priced as zero. No line at all is NOT_BINDING: the gate is open."""
+    lines = [x for x in rows if isinstance(x, dict) and x.get("rail") == rail]
+    if not lines:
+        return {"verdict": NOT_BINDING, "lines": [], "source": "data/missed_growth.jsonl",
+                "why": f"no {rail} line in the ledger: the gate has not held anything back"}
+    priced = [float(x["value"]) for x in lines if isinstance(x.get("value"), (int, float))
+              and not isinstance(x.get("value"), bool)]
+    unpriced = len(lines) - len(priced)
+    return {"verdict": UNMEASURED if unpriced else COSTS,
+            "source": "data/missed_growth.jsonl", "lines": lines[-recent:],
+            "n_lines": len(lines), "n_unpriced": unpriced,
+            "days": sorted({str(x.get("day")) for x in lines}),
+            "cells": sorted({str(x.get("cell")) for x in lines}),
+            "value_logw_per_day": None if unpriced else round(sum(priced), 12),
+            "why": ("UNMEASURED: the gate's forgone cells were never read, so their growth has "
+                    "no price; it is carried as None, never as a zero cost") if unpriced
+            else "the gate's own priced lines, summed"}
+
+
 #: THE HEAVY ADMISSION SCAN EVERY 4TH HOURLY PASS (2026-10-21, principal zuck: Option B), was
 #: every ~2.6 h measured. Like the stop-geometry gate it registers no rail (the register is
 #: sealed), so its line is PUBLISHED here beside the rails. A STANDBY row needs TWO distinct
@@ -1201,7 +1230,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         CANON_PUBLICATION),
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
-                                    "admission_scan_cadence": admission_cadence_line(alloc)},
+                                    "admission_scan_cadence": admission_cadence_line(alloc),
+                                    **{g: ledger_gate_lines(rows, g) for g in LEDGER_GATES}},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

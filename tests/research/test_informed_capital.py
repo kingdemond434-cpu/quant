@@ -591,3 +591,27 @@ def test_hourly_leg_and_layer_are_wired() -> None:
     assert "informed_capital" in layers.__dict__.get("LEG_LAYER", {}) or \
         '"informed_capital": "information"' in (ROOT / "libs" / "research" / "layers.py"
                                                ).read_text(encoding="utf-8")
+
+
+def test_congress_gate_lines_reach_missed_growth_json_as_unmeasured(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The gate is not a registered rail (the register is sealed), and `missed_growth.run` reads
+    the ledger per registered rail -- so its lines are CARRIED into MISSED_GROWTH.json, with
+    value None and verdict UNMEASURED, never a zero cost."""
+    from research import missed_growth as mg
+    ledger = tmp_path / "missed_growth.jsonl"
+    monkeypatch.setattr(organ, "MISSED_GROWTH", ledger)
+    monkeypatch.delenv("QUANT_CONGRESS_ATTEST", raising=False)
+    organ.congress_missed_growth(datetime(2026, 7, 17, tzinfo=UTC))
+    monkeypatch.setattr(mg, "LEDGER", ledger)
+    monkeypatch.setattr(mg, "OUT", tmp_path / "MISSED_GROWTH.json")
+    monkeypatch.setattr(mg, "CALIBRATION", tmp_path / "rail_calibration.json")
+    monkeypatch.setattr(mg, "RAILS", ())
+    mg.run(write=True, today="2026-07-17")
+    doc = json.loads((tmp_path / "MISSED_GROWTH.json").read_text())
+    gate = doc["published_gate_lines"]["congress_attestation_gate"]
+    assert gate["verdict"] == "UNMEASURED" and gate["value_logw_per_day"] is None
+    assert gate["n_lines"] == 3 and gate["n_unpriced"] == 3
+    assert set(gate["cells"]) == {"house:member", "senate:member", "congress_agg:all"}
+    assert all(x["value"] is None for x in gate["lines"])
+    assert mg.ledger_gate_lines([], "congress_attestation_gate")["verdict"] == "NOT_BINDING"
