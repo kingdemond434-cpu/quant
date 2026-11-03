@@ -743,3 +743,36 @@ def test_the_sign_train_leg_never_stacks_a_sign_and_is_watched() -> None:
     assert 'TASK name="Quant-SignTrain"' in rows
     inst = (ROOT / "ops/box/install_unattended.ps1").read_text(encoding="utf-8")
     assert "Add-QuantTask 'Quant-SignTrain' 'sign_train_leg.ps1'" in inst
+
+
+def test_live_first_stops_at_its_budget_and_loses_nothing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """2026-11-03 23:31Z: unbounded under 100% CPU, live-first outran Quant-WorkflowGate's 30-min
+    limit, the task was killed and the gate sweep behind it never ran. Past the budget nothing
+    more is cancelled, and an owed re-run it never reached is carried with its count unchanged."""
+    lf = _lf()
+    live = {"id": 1, "event": "push", "head_branch": lf.LIVE, "created_at": "2000-01-01T00:00:00Z"}
+    pr = {"id": 2, "event": "pull_request", "head_branch": "b1", "head_sha": "h1",
+          "created_at": "1999-12-31T00:00:00Z"}  # fmt: skip
+    state = tmp_path / "lf.json"
+    state.write_text(json.dumps({"owed": [{"id": 9, "attempt": 1, "calls": 2}]}))
+    calls: list[tuple[str, str]] = []
+
+    def gh(path: str, method: str = "GET") -> Any:
+        calls.append((method, path))
+        if "status=queued" in path:
+            return {"workflow_runs": [live, pr]}
+        if "/pulls?" in path:
+            return [{"head": {"ref": "b1", "sha": "h1"}}]
+        if "/comments" in path:
+            return []
+        return {"status": "queued", "run_attempt": 1}
+
+    monkeypatch.setattr(lf, "_gh", gh)
+    t = iter(range(0, 10_000, 100))  # every clock read is 100 s later
+    assert lf.run("o/r", lf.LIVE, state, settle_s=0, sleep=lambda s: None,
+                  clock=lambda: float(next(t)), budget_s=150) == 0  # fmt: skip
+    assert not any(p.endswith(("/cancel", "/rerun")) for _, p in calls)
+    assert json.loads(state.read_text())["owed"] == [{"id": 9, "attempt": 1, "calls": 2}]
+    assert lf.BUDGET_S <= 600  # well inside the gate task's 30-minute limit

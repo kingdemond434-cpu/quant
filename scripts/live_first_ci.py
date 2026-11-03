@@ -53,6 +53,15 @@ MAX_CALLS = 6
 #: The ledger: re-runs owed and what the last call did (box-local: reports/ is gitignored).
 REPORT = ROOT / "desks" / "mt5" / "reports" / "LIVE_FIRST_CI.json"
 LIVE_EVENTS = ("push", "workflow_dispatch")
+#: THE WHOLE CALL'S WALL-CLOCK BUDGET (2026-11-03 23:31Z, box at 100% CPU). This runs inside
+#: Quant-WorkflowGate BEFORE the audit gate, under the task's 30-minute limit. Unbounded, it made
+#: one `gh api` call per cleared-check comment page and two per cancel; at 13-120 s per call
+#: under load it outran the limit, the scheduler killed the task (0x41306), and the gate sweep
+#: behind it -- the only automatic merge path -- never ran. Past the budget this call stops
+#: ordering: a branch it has not read is ordered as uncleared, a run it has not cancelled stays
+#: where it is, and an owed re-run it has not reached is carried unchanged. Nothing is lost; the
+#: next call, ten minutes later, continues.
+BUDGET_S = 300.0
 
 
 def _gh(path: str, method: str = "GET") -> Any:
@@ -151,12 +160,23 @@ def _clear_at() -> Callable[..., Any]:
     return cast(Callable[..., Any], mod.clear_at)
 
 
-def _cleared(repo: str, queued: list[dict[str, Any]], heads: dict[str, str]) -> frozenset[str]:
+def _cleared(
+    repo: str,
+    queued: list[dict[str, Any]],
+    heads: dict[str, str],
+    over: Callable[[], bool] = lambda: False,
+) -> frozenset[str]:
     """The head branches with a queued run whose current head is audit-CLEARed. A comment read
-    that fails leaves that PR uncleared: it is only ordered, never dropped."""
+    that fails, or one the budget did not reach, leaves that PR uncleared: it is only ordered,
+    never dropped."""
     clear_at = _clear_at()
     out = set()
-    for b in {str(r.get("head_branch")) for r in queued if r.get("event") == "pull_request"}:
+    for b in sorted(
+        {str(r.get("head_branch")) for r in queued if r.get("event") == "pull_request"}
+    ):
+        if over():
+            print("  cleared-first: budget spent; the remaining branches are ordered as uncleared")
+            break
         n = _NUMBERS.get(b)
         if not n or b not in heads:
             continue
@@ -198,13 +218,19 @@ def run(
     dry: bool = False,
     sleep: Callable[[float], None] = time.sleep,
     clock: Callable[[], float] = time.monotonic,
+    budget_s: float = BUDGET_S,
 ) -> int:
+    stop = clock() + budget_s
+
+    def over() -> bool:
+        return clock() >= stop
+
     now = datetime.now(UTC)
     at = now.isoformat(timespec="seconds")
     queued = _queued(repo)  # runs BEFORE heads: a head moving in between reads as current
     heads = _heads(repo)
     try:  # CLEARed-first never costs LIVE-first: any failure here orders by LIVE alone (#556 SF1)
-        cleared = _cleared(repo, queued, heads)
+        cleared = _cleared(repo, queued, heads, over)
     except Exception as exc:
         print(f"  cleared-first skipped: {type(exc).__name__}: {exc}")
         cleared = frozenset()
@@ -216,6 +242,9 @@ def run(
         return 0
     cancelled: list[dict[str, int]] = []
     for rid in waste + ahead:
+        if over():
+            print("  budget spent: the remaining runs keep their place until the next call")
+            break
         try:
             cur = _gh(f"repos/{repo}/actions/runs/{rid}")
             if cur.get("status") != "queued":
@@ -229,8 +258,12 @@ def run(
             print(f"  cancel {rid}: {exc}")
     deadline = clock() + (settle_s if cancelled else 0.0)
     left: list[dict[str, int]] = []
+    carried: list[dict[str, int]] = []  # not reached this call: carried with its count unchanged
     rerun = 0
     for row in cancelled + owed:
+        if over() and row not in cancelled:
+            carried.append(row)
+            continue
         rid = row["id"]
         while True:
             try:
@@ -257,7 +290,7 @@ def run(
                 left.append(row)  # still cancelling: the next call re-runs it
                 break
             sleep(5)
-    keep: list[dict[str, int]] = []
+    keep: list[dict[str, int]] = list(carried)
     given_up = 0
     for row in left:
         row = {**row, "calls": row["calls"] + 1}
@@ -280,9 +313,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--state", type=Path, default=REPORT, help="the ledger of owed re-runs")
     ap.add_argument("--dry-run", action="store_true", help="say what it would do, touch nothing")
     ap.add_argument("--settle-s", type=float, default=60.0, help="wait for cancels to finish")
+    ap.add_argument("--budget-s", type=float, default=BUDGET_S, help="the whole call's budget")
     a = ap.parse_args(argv)
     try:
-        return run(a.repo, a.base, a.state, a.settle_s, a.dry_run)
+        return run(a.repo, a.base, a.state, a.settle_s, a.dry_run, budget_s=a.budget_s)
     except RuntimeError as exc:  # an API failure does nothing more
         print(f"live-first: stopped ({exc})")
         return 1
