@@ -47,21 +47,16 @@ except (ImportError, AttributeError):
     UA = ("quant-mt5-research-desk/1.0 (+https://github.com/kingdemond434-cpu/quant/issues; "
           "internal research; honours robots.txt)")
 UA_PRODUCT = UA.split("/", 1)[0]
-#: A refusal is a HARD STOP, never retried around: the run ends and the leg holds until a person
-#: clears it (`research/cot_fx_refresh.py`).
+#: AN ACCESS CONTROL is a HARD STOP, never retried around: the run ends and the leg holds until a
+#: person clears it (`research/cot_fx_refresh.py`). That is LAWS 5e's hard boundary act 2 ("no
+#: bypassing an access control"), and it is the ONLY refusal here: a robots.txt Disallow and an
+#: unreadable robots.txt are routing labels on the row, never a stop (5e REMOVED_BRAKES).
 HARD_STOP_STATUS: frozenset[int] = frozenset({401, 403, 429})
 
 
 class HardStop(RuntimeError):
-    """The source refused us (401/403/429, a WAF page, or an explicit robots Disallow). Nothing
-    more is fetched, and the clock holds until a person clears it."""
-
-
-class RobotsUnreadable(RuntimeError):
-    """robots.txt could not be read (timeout, DNS, a 5xx, any transport error). Fail closed for
-    THIS run -- nothing is fetched -- but it is a transient, not a refusal: the clock's ordinary
-    failure backoff retries it. Deliberately NOT a HardStop (auditor HOLD on 76fb31217b: one
-    network blip used to hold both CFTC datasets until a person acted)."""
+    """An access control answered (401/403/429, or a WAF / challenge page). Nothing more is
+    fetched, and the clock holds until a person clears it."""
 
 
 Opener = Callable[[urllib.request.Request, float], Any]
@@ -77,29 +72,73 @@ def robots_url(url: str) -> str:
     return f"{u.scheme}://{u.netloc}/robots.txt"
 
 
-def robots_allows(url: str, opener: Opener = _open) -> tuple[bool, str]:
-    """robots.txt decides, fail closed: a 404 is "no rules" (allowed); a refusal is a hard stop;
-    any other unreadable answer raises RobotsUnreadable (this run fetches nothing; the clock
-    retries after its backoff). Read from the URL's own host (shared with `fetch_tff`, whose
-    bulk files live on www.cftc.gov). (False, why) means an explicit Disallow."""
+#: THE ACCESS LABELS this writer can put on a fetch, in LAWS 5e's vocabulary
+#: (`libs.research.access_classifier.ACCESS_LABELS`). CFTC data is an official public release.
+PUBLIC = "PUBLIC"
+PUBLIC_WITH_TERMS = "PUBLIC_WITH_TERMS"
+ACCESS_UNCLEAR = "ACCESS_UNCLEAR"
+
+
+def redistribute_allowed(label: str) -> bool:
+    """Whether the label keeps `redistribute` among its allowed uses (access_classifier.ROUTING);
+    False when the classifier cannot be read, because redistribution is the one use a label can
+    withhold and it is never assumed."""
+    try:
+        from libs.research.access_classifier import ROUTING
+    except ImportError:
+        return False
+    row = ROUTING.get(label)  # type: ignore[call-overload]
+    return bool(row) and "redistribute" in tuple(row.get("allowed_uses") or ())
+
+
+def access_label(url: str, opener: Opener = _open) -> dict[str, Any]:
+    """robots.txt READ AS A LABEL, never as a refusal (LAWS 5e: "robots.txt Disallow read as a
+    refusal" is a deleted brake). Read from the URL's own host (shared with `fetch_tff`, whose
+    bulk files live on www.cftc.gov):
+
+        allowed, or absent (404)   -> PUBLIC
+        an explicit Disallow       -> PUBLIC_WITH_TERMS, the Disallow carried as terms_note
+        unreadable (timeout, DNS,  -> ACCESS_UNCLEAR, mined with the label attached
+          a 5xx, any transport error)
+        401 / 403 / 429            -> HardStop: an access control (hard boundary act 2)
+
+    `redistribute_allowed` comes from the classifier's routing table: false for all three here,
+    since none of them is an open-data licence."""
     req = urllib.request.Request(robots_url(url), headers={"User-Agent": UA})
+    label, note = PUBLIC, ""
     try:
         with opener(req, 30) as resp:
             text = resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
-        if exc.code == 404:
-            return True, "robots.txt absent (404): no rules"
         if exc.code in HARD_STOP_STATUS:
             raise HardStop(f"robots.txt answered HTTP {exc.code}") from exc
-        raise RobotsUnreadable(f"robots.txt unreadable (HTTP {exc.code}): this run fetches "
-                               "nothing, fail closed") from exc
+        if exc.code == 404:
+            note = "robots.txt absent (404): no rules"
+        else:
+            label, note = ACCESS_UNCLEAR, f"robots.txt unreadable (HTTP {exc.code})"
+        text = ""
     except (OSError, ValueError) as exc:
-        raise RobotsUnreadable(f"robots.txt unreadable ({type(exc).__name__}): this run fetches "
-                               "nothing, fail closed") from exc
-    rp = urllib.robotparser.RobotFileParser()
-    rp.parse(text.splitlines())
-    ok = rp.can_fetch(UA_PRODUCT, url)
-    return ok, "robots.txt allows" if ok else "robots.txt disallows this path for the desk's UA"
+        label, note = ACCESS_UNCLEAR, f"robots.txt unreadable ({type(exc).__name__})"
+        text = ""
+    if text:
+        rp = urllib.robotparser.RobotFileParser()
+        rp.parse(text.splitlines())
+        if rp.can_fetch(UA_PRODUCT, url):
+            note = "robots.txt allows"
+        else:
+            label = PUBLIC_WITH_TERMS
+            note = (f"robots.txt Disallow for {UA_PRODUCT} on this path: mined in full, "
+                    "redistribution withheld (LAWS 5e)")
+    return {"access_label": label, "terms_note": note,
+            "redistribute_allowed": redistribute_allowed(label)}
+
+
+def label_rows(df: pd.DataFrame, access: dict[str, Any]) -> pd.DataFrame:
+    """The fetch's access label ON THE DATA ROWS, so it travels with every reader."""
+    out = df.copy()
+    for k in ("access_label", "terms_note", "redistribute_allowed"):
+        out[k] = access[k]
+    return out
 
 
 def _terms_check(url: str) -> None:
@@ -210,15 +249,15 @@ def _atomic_parquet(df: pd.DataFrame, path: Path) -> None:
 
 def fetch_all(out: Path | None = None, opener: Opener = _open,
               log: Callable[[str], None] = print) -> dict[str, Any]:
-    """Every contract in TARGETS into `out/<slug>.parquet`. Raises HardStop on a refusal (nothing
-    after it is fetched); returns per-slug rows and newest report date."""
+    """Every contract in TARGETS into `out/<slug>.parquet`, each row carrying the fetch's access
+    label. Raises HardStop on an access control (nothing after it is fetched); returns per-slug
+    rows and newest report date, and the label under "access"."""
     out = out or OUT
     out.mkdir(parents=True, exist_ok=True)
     _terms_check(BASE)
-    ok, why = robots_allows(BASE, opener)
-    if not ok:
-        raise HardStop(why)
-    got: dict[str, Any] = {}
+    access = access_label(BASE, opener)
+    log(f"access: {access['access_label']} ({access['terms_note']})")
+    got: dict[str, Any] = {"access": access}
     for slug, candidates in TARGETS:
         df = None
         for cand in candidates:
@@ -229,7 +268,7 @@ def fetch_all(out: Path | None = None, opener: Opener = _open,
             got[slug] = {"rows": 0, "why": f"no rows for {candidates}"}
             log(f"{slug:>10}: FAILED (no rows for {candidates})")
             continue
-        _atomic_parquet(df, out / f"{slug}.parquet")
+        _atomic_parquet(label_rows(df, access), out / f"{slug}.parquet")
         got[slug] = {"rows": len(df), "newest": str(df["report_date"].max().date()),
                      "market": str(df["contract_market_name"].iloc[0])}
         log(f"{slug:>10}: {len(df)} rows  "

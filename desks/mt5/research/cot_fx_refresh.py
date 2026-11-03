@@ -17,10 +17,15 @@ report should exist: when now is past the Friday 21:00 UTC that follows the next
 the newest report on disk. Otherwise it writes a NOT_DUE receipt and returns in milliseconds. A
 pass that fetched and found nothing newer (a holiday or shutdown slip) backs off BACKOFF_H.
 
-POLITE AND FAIL-CLOSED. The desk's honest UA, robots.txt read first (unreadable -> refused), and a
-401 / 403 / 429 / WAF page is a HARD STOP: `data/COT_FX_HARD_STOP.json` is written and every later
-pass holds until a person removes that file. Free, keyless, no crypto host (the legacy schema's
-FX, metals and index contracts only; `side_channels/fetch_cot.py`, the BTC/ETH twin, is not run).
+HONEST, LABELLED, AND STOPPED ONLY BY AN ACCESS CONTROL (LAWS 5e). The desk's honest UA; robots.txt
+read as an access LABEL carried on the receipt and on every data row -- an explicit Disallow is
+PUBLIC_WITH_TERMS (terms_note, redistribute withheld), an unreadable robots.txt ACCESS_UNCLEAR, and
+both are fetched in full ("robots.txt Disallow read as a refusal" is a deleted brake). A
+401 / 403 / 429 / WAF page is a HARD STOP (hard boundary act 2): `data/COT_FX_HARD_STOP.json` is
+written and every later pass holds until a person removes that file. A real fetch failure (the
+data request failing in transport) is FAILED and retried after BACKOFF_H. Free, keyless, no
+crypto host (the legacy schema's FX, metals and index contracts only; `side_channels/fetch_cot.py`,
+the BTC/ETH twin, is not run).
 
 THE SIBLING, cot_tff (2026-11-03): `mt5desk/fetch_tff.py` -- the Traders in Financial Futures
 report, the only home of EURO FX positioning -- had the same defect and now runs on this clock
@@ -169,7 +174,7 @@ def run(*, now: datetime | None = None, force: bool = False, cot_dir: Path = COT
         got = fetch.fetch_all(out=cot_dir)
     except fetch.HardStop as exc:
         stop = {"at": now.isoformat(timespec="seconds"), "why": str(exc),
-                "rule": "a 401/403/429, a WAF page or a robots refusal is a hard stop; "
+                "rule": "a 401/403/429 or a WAF page is an access control and a hard stop; "
                         "a person clears it by deleting this file"}
         hard_stop.parent.mkdir(parents=True, exist_ok=True)
         tmp = hard_stop.with_suffix(".json.tmp")
@@ -180,6 +185,10 @@ def run(*, now: datetime | None = None, force: bool = False, cot_dir: Path = COT
         doc.update(status="FAILED", error=f"{type(exc).__name__}: {exc}"[:400])
     else:
         after = newest_report(cot_dir)
+        access = got.pop("access", None) if isinstance(got, dict) else None
+        if isinstance(access, dict):
+            doc.update({k: access.get(k) for k in ("access_label", "terms_note",
+                                                   "redistribute_allowed")})
         doc["contracts"] = got
         doc["newest_after"] = after.isoformat() if after else "UNMEASURED"
         doc["status"] = ("FETCHED" if after is not None and (newest is None or after > newest)

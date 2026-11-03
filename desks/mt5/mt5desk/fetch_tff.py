@@ -13,7 +13,9 @@ ran. `research/cot_fx_refresh.py` now runs it on the cot_fx leg's clock with the
 fetch only after the Friday release that should carry a newer report. A refresh pulls the
 current year's file only (and last year's in January) and merges it into what is on disk; an
 empty store pulls the whole history. Manners are fetch_cot's: the desk's honest UA (it sent
-"Mozilla/5.0"), robots.txt first and fail closed, 401/403/429 or a non-zip answer a HardStop,
+"Mozilla/5.0"), robots.txt read as an access LABEL on the rows (LAWS 5e: a Disallow is
+PUBLIC_WITH_TERMS, an unreadable robots ACCESS_UNCLEAR, both mined in full), 401/403/429 or a
+non-zip answer a HardStop,
 certificate verification ON (it ran with verification disabled), atomic writes.
 """
 
@@ -46,7 +48,8 @@ from mt5desk.fetch_cot import (
     _atomic_parquet,
     _open,
     _terms_check,
-    robots_allows,
+    access_label,
+    label_rows,
 )
 
 OUT = DATA / "cot_tff"
@@ -144,9 +147,8 @@ def fetch_all(out: Path | None = None, opener: Opener = _open,
     out.mkdir(parents=True, exist_ok=True)
     probe = URL.format(year=now.year)
     _terms_check(probe)
-    ok, why = robots_allows(probe, opener)
-    if not ok:
-        raise HardStop(why)
+    access = access_label(probe, opener)
+    log(f"access: {access['access_label']} ({access['terms_note']})")
     frames: dict[str, list[pd.DataFrame]] = {slug: [] for slug, _ in TARGETS}
     years = years_to_fetch(out, now)
     loaded = 0
@@ -161,7 +163,7 @@ def fetch_all(out: Path | None = None, opener: Opener = _open,
             if not sub.empty:
                 frames[slug].append(sub)
         log(f"{year}: ok")
-    got: dict[str, Any] = {"years": years, "years_loaded": loaded}
+    got: dict[str, Any] = {"years": years, "years_loaded": loaded, "access": access}
     for slug, _ in TARGETS:
         if not frames[slug]:
             got[slug] = {"rows": 0, "why": "no rows in the fetched years"}
@@ -174,7 +176,7 @@ def fetch_all(out: Path | None = None, opener: Opener = _open,
             except Exception as exc:
                 log(f"{slug}: prior file unreadable ({type(exc).__name__}); rewritten from "
                     "the fetched years only")
-        all_df = pd.concat(parts, ignore_index=True)
+        all_df = label_rows(pd.concat(parts, ignore_index=True), access)
         all_df = (all_df.sort_values("report_date")
                   .drop_duplicates("report_date", keep="last"))
         _atomic_parquet(all_df, prior)

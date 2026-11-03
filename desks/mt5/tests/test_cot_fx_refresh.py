@@ -137,15 +137,21 @@ def test_the_user_agent_is_the_desks_honest_one() -> None:
     assert '"User-Agent": "Mozilla' not in src
 
 
-def test_robots_disallow_403_and_a_waf_page_each_stop_the_run(tmp_path: Path) -> None:
-    with pytest.raises(fc.HardStop, match="disallows"):
-        fc.fetch_all(tmp_path, _opener("User-agent: *\nDisallow: /resource/\n"), log=lambda m: None)
+def test_only_an_access_control_stops_the_run(tmp_path: Path) -> None:
+    """LAWS 5e: 401/403/429 and a WAF page are access controls (hard boundary act 2); a robots
+    Disallow and an unreadable robots.txt are labels, and the fetch goes ahead."""
     with pytest.raises(fc.HardStop, match="403"):
         fc.fetch_all(tmp_path, _opener("", 403), log=lambda m: None)
+    with pytest.raises(fc.HardStop, match="429"):
+        fc.fetch_all(tmp_path, _opener(429), log=lambda m: None)
     with pytest.raises(fc.HardStop, match="WAF"):
         fc.fetch_all(tmp_path, _opener("", b"<html>challenge</html>"), log=lambda m: None)
-    with pytest.raises(fc.RobotsUnreadable, match="fail closed"):
-        fc.fetch_all(tmp_path, _opener(500), log=lambda m: None)
+    got = fc.fetch_all(tmp_path, _opener("User-agent: *\nDisallow: /resource/\n"),
+                       log=lambda m: None)
+    assert got["access"]["access_label"] == "PUBLIC_WITH_TERMS"
+    got = fc.fetch_all(tmp_path, _opener(500), log=lambda m: None)
+    assert got["access"]["access_label"] == "ACCESS_UNCLEAR"
+    assert not hasattr(fc, "RobotsUnreadable") and not hasattr(fc, "robots_allows")
 
 
 def test_importing_the_writer_creates_no_directory() -> None:
@@ -237,15 +243,12 @@ def test_tff_refusals_are_hard_stops(tmp_path: Path) -> None:
     from mt5desk import fetch_tff
     now = datetime(2026, 11, 7, tzinfo=UTC)
     quiet = {"log": lambda m: None, "now": now}
-    with pytest.raises(fc.HardStop, match="disallows"):
-        fetch_tff.fetch_all(tmp_path, _tff_opener("User-agent: *\nDisallow: /files/\n", {}, []),
-                            **quiet)
     with pytest.raises(fc.HardStop, match="403"):
         fetch_tff.fetch_all(tmp_path, _tff_opener("", {2018: 403}, []), **quiet)
     with pytest.raises(fc.HardStop, match="non-zip"):
         fetch_tff.fetch_all(tmp_path, _tff_opener("", {2018: b"<html>waf</html>"}, []), **quiet)
-    with pytest.raises(fc.RobotsUnreadable, match="fail closed"):
-        fetch_tff.fetch_all(tmp_path, _tff_opener(503, {}, []), **quiet)
+    with pytest.raises(fc.HardStop, match="429"):
+        fetch_tff.fetch_all(tmp_path, _tff_opener(429, {}, []), **quiet)
 
 
 def test_tff_rides_the_cot_fx_clock_with_its_own_receipt_and_hard_stop(
@@ -272,51 +275,80 @@ def test_the_registry_carries_cot_tff_on_the_weekly_box_clock() -> None:
     assert rows["eur_cot_blocked"]["superseded_by"] == "cot_tff"
 
 
-# ------------------------------------------------------------------ auditor HOLD on 76fb31217b
-def _robots_down(kind: str) -> object:
+# ------------------------------------------------------------------ LAWS 5e: robots is a LABEL
+_COT_ROW = [{"report_date_as_yyyy_mm_dd": "2026-11-03T00:00:00.000", "commodity_name": "GOLD",
+             "contract_market_name": "GOLD - COMMODITY EXCHANGE INC.",
+             "open_interest_all": "500000", "noncomm_positions_long_all": "200000",
+             "noncomm_positions_short_all": "50000"}]
+
+
+def _robots_then_data(robots: str, dataset: str) -> object:
+    """robots.txt answers per `robots` (urlerror / 5xx / a Disallow body); the data is served."""
     def op(req: object, timeout: float) -> _Resp:
         url = req.full_url  # type: ignore[attr-defined]
+        assert "Mozilla" not in req.get_header("User-agent")  # type: ignore[attr-defined]
         if url.endswith("robots.txt"):
-            if kind == "urlerror":
+            if robots == "urlerror":
                 raise urllib.error.URLError("temporary failure in name resolution")
-            raise urllib.error.HTTPError(url, 503, "x", None, None)  # type: ignore[arg-type]
-        raise AssertionError(f"fetched {url} although robots.txt was unreadable")
+            if robots == "5xx":
+                raise urllib.error.HTTPError(url, 503, "x", None, None)  # type: ignore[arg-type]
+            return _Resp(robots.encode())
+        if dataset == "cot_fx":
+            return _Resp(json.dumps(_COT_ROW).encode())
+        if url.endswith("_2026.zip"):
+            return _Resp(_tff_zip(["2026-11-03"]))
+        raise urllib.error.HTTPError(url, 404, "x", None, None)  # type: ignore[arg-type]
     return op
 
 
-@pytest.mark.parametrize("kind", ["urlerror", "5xx"])
-@pytest.mark.parametrize("dataset", ["cot_fx", "cot_tff"])
-def test_an_unreadable_robots_is_a_failed_retry_never_a_hard_stop(
-        tmp_path: Path, kind: str, dataset: str) -> None:
-    """One network blip on robots.txt used to write the hard-stop file and hold BOTH CFTC
-    datasets until a person acted. It is fail-closed for the run (nothing fetched) and FAILED,
-    so the clock's ordinary backoff retries it."""
+def _labelled_run(tmp_path: Path, robots: str, dataset: str) -> tuple[dict, dict]:
     from mt5desk import fetch_tff
     mod = fc if dataset == "cot_fx" else fetch_tff
     p = _paths(tmp_path)
     _cot(p["cot_dir"], TUE)
-    shim = SimpleNamespace(
-        fetch_all=lambda out: mod.fetch_all(out, _robots_down(kind), log=lambda m: None),
-        HardStop=fc.HardStop)
-    now = datetime(2026, 11, 7, 1, 0, tzinfo=UTC)
-    doc = cfr.run(now=now, fetch=shim, dataset=dataset, **p)
-    assert doc["status"] == "FAILED" and "robots.txt unreadable" in doc["error"]
+    op = _robots_then_data(robots, dataset)
+    shim = SimpleNamespace(fetch_all=lambda out: mod.fetch_all(out, op, log=lambda m: None),
+                           HardStop=fc.HardStop)
+    doc = cfr.run(now=datetime(2026, 11, 7, 1, 0, tzinfo=UTC), fetch=shim, dataset=dataset, **p)
+    return doc, p
+
+
+@pytest.mark.parametrize("kind", ["urlerror", "5xx"])
+@pytest.mark.parametrize("dataset", ["cot_fx", "cot_tff"])
+def test_an_unreadable_robots_is_fetched_labelled_access_unclear(
+        tmp_path: Path, kind: str, dataset: str) -> None:
+    """LAWS 5e: ACCESS_UNCLEAR is mined with its label attached -- no quarantine, no stop."""
+    doc, p = _labelled_run(tmp_path, kind, dataset)
+    assert doc["status"] == "FETCHED", doc
+    assert doc["access_label"] == "ACCESS_UNCLEAR" and "robots.txt unreadable" in doc["terms_note"]
+    assert doc["redistribute_allowed"] is False
     assert not p["hard_stop"].exists()
-    # the backoff path, not a hold: six hours later it tries again
-    retry = cfr.run(now=now.replace(hour=7, minute=5), fetch=_fake(
-        new_last=datetime(2026, 11, 3, tzinfo=UTC)), dataset=dataset, **p)
-    assert retry["status"] == "FETCHED"
+    slug = "gold" if dataset == "cot_fx" else "eur"
+    rows = pd.read_parquet(p["cot_dir"] / f"{slug}.parquet")
+    assert set(rows["access_label"]) == {"ACCESS_UNCLEAR"}
 
 
-def test_an_explicit_disallow_is_still_a_hard_stop(tmp_path: Path) -> None:
-    p = _paths(tmp_path)
-    _cot(p["cot_dir"], TUE)
-    shim = SimpleNamespace(
-        fetch_all=lambda out: fc.fetch_all(out, _opener("User-agent: *\nDisallow: /\n"),
-                                           log=lambda m: None),
-        HardStop=fc.HardStop)
-    doc = cfr.run(now=datetime(2026, 11, 7, 1, 0, tzinfo=UTC), fetch=shim, **p)
-    assert doc["status"] == "HARD_STOP" and p["hard_stop"].exists()
+@pytest.mark.parametrize("dataset", ["cot_fx", "cot_tff"])
+def test_an_explicit_disallow_is_fetched_labelled_public_with_terms(
+        tmp_path: Path, dataset: str) -> None:
+    """LAWS 5e REMOVED_BRAKES: "robots.txt Disallow treated as a refusal" is deleted. The fetch
+    proceeds as PUBLIC_WITH_TERMS, the Disallow carried as terms_note, redistribute withheld."""
+    doc, p = _labelled_run(tmp_path, "User-agent: *\nDisallow: /\n", dataset)
+    assert doc["status"] == "FETCHED" and not p["hard_stop"].exists()
+    assert doc["access_label"] == "PUBLIC_WITH_TERMS" and "Disallow" in doc["terms_note"]
+    assert doc["redistribute_allowed"] is False
+    slug = "gold" if dataset == "cot_fx" else "eur"
+    rows = pd.read_parquet(p["cot_dir"] / f"{slug}.parquet")
+    assert set(rows["access_label"]) == {"PUBLIC_WITH_TERMS"}
+    assert rows["redistribute_allowed"].eq(False).all()
+    assert rows["terms_note"].str.contains("Disallow").all()
+
+
+def test_the_labels_are_the_access_classifiers_own() -> None:
+    from libs.research.access_classifier import ACCESS_LABELS
+    for lab in (fc.PUBLIC, fc.PUBLIC_WITH_TERMS, fc.ACCESS_UNCLEAR):
+        assert lab in ACCESS_LABELS
+        assert fc.redistribute_allowed(lab) is False
 
 
 def test_the_hard_stop_file_is_written_atomically(tmp_path: Path,
