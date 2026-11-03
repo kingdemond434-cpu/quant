@@ -300,7 +300,8 @@ def collect_edgar_index(http: Any, state: dict[str, Any], deadline: float, ua: s
     and 13F-HR filings. A 404 on a past day is a weekend or holiday and closes that day."""
     rep: dict[str, Any] = {"days": 0, "queued": 0, "errors": Counter(), "form3_seen": 0}
     queue: list[list[str]] = state.setdefault("queue", [])
-    seen = set(state.get("queued_ids") or [])
+    seen_order: list[str] = list(state.get("queued_ids") or [])
+    seen = set(seen_order)
     cursor = date.fromisoformat(str(state.get("index_next") or
                                     (now.date() - timedelta(days=7)).isoformat()))
     last_closed = now.date() - timedelta(days=1)
@@ -326,20 +327,19 @@ def collect_edgar_index(http: Any, state: dict[str, Any], deadline: float, ua: s
                 rep["form3_seen"] += 1
                 continue
             if f in ("4", "5") or ic.is_13d(f) or ic.is_13g(f) or f == "13F-HR":
-                key = f"{f}|{r['accession']}|{r['cik']}"
-                if r["accession"] in seen and f not in ("4", "5"):
+                # ONE FETCH PER ACCESSION: a Form 4 is listed under the issuer AND the owner, a
+                # 13D under the subject AND the filer; the document is the same.
+                if r["accession"] in seen:
                     continue
-                if key in seen:
-                    continue
-                seen.add(key)
                 seen.add(r["accession"])
+                seen_order.append(r["accession"])
                 queue.append([f, r["cik"], r["file"], r["date"], r["accession"], r["company"]])
                 rep["queued"] += 1
         rep["days"] += 1
         cursor += timedelta(days=1)
         state["index_next"] = cursor.isoformat()
     state["queue"] = queue[-QUEUE_CAP:]
-    state["queued_ids"] = sorted(seen)[-4 * QUEUE_CAP:]
+    state["queued_ids"] = seen_order[-4 * QUEUE_CAP:]
     rep["queue_len"] = len(state["queue"])
     rep["errors"] = dict(rep["errors"])
     return rep
@@ -369,7 +369,7 @@ def drain_queue(http: Any, state: dict[str, Any], deadline: float, ua: str,
                                       headers={"User-Agent": ua}, deadline=deadline)
             if not _ok(st):
                 rep["errors"][err or f"HTTP {st}"] += 1
-                if st not in (404, 403):
+                if st != 404:                  # a 403/429/5xx is a "later", never a loss
                     left.append(item)
                 continue
             rep["fetched"]["form4"] += 1
@@ -711,9 +711,10 @@ def collect(*, now: datetime, budget_s: float, http: Any = None,
             rows.extend(got)
             for s in ("sec_form4", "sec_13d", "sec_13f"):
                 if s in sec:
-                    report[s] = {"status": "FETCHED" if idx["days"] or sum(
-                        drained["fetched"].values()) else "FAILED", "index": idx,
-                        "drain": drained}
+                    fetched = sum(drained["fetched"].values())
+                    broken = bool(idx["errors"]) or (bool(drained["errors"]) and not fetched)
+                    report[s] = {"status": "FAILED" if broken else "FETCHED", "index": idx,
+                                 "drain": drained}
         if "sec_form345_ds" in sec and time.monotonic() < dl:
             got, rep = collect_form345_ds(http, state, dl, ua, now)
             rows.extend(got)
