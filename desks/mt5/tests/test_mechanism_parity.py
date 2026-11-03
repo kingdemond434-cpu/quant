@@ -50,6 +50,29 @@ OPENS_POSITIONS: tuple[str, ...] = ("TRADE_ACTION_DEAL", "TRADE_ACTION_PENDING",
                                    ".place(")
 
 
+#: account -> its lanes. Folded in from the superseded account-parity draft (#630): the lane test
+#: above proves each MANAGER calls the shared decision; this proves each ACCOUNT carries every
+#: mechanism across its lanes, so a firm cannot go live missing one.
+ACCOUNTS: dict[str, tuple[str, ...]] = {
+    "fusion": ("mt5desk/gateway.py",),
+    "e8": ("prop/e8_gold.py", "prop/e8_executor.py"),
+    "ftmo": ("prop/ftmo_follower.py", "prop/ftmo_executor.py"),
+}
+
+#: mechanism -> source markers; an account has it when any of its lanes holds any marker. There
+#: is no exemption list: a firm's caps are parameters of a mechanism, never a reason to skip it.
+MECHANISMS: dict[str, tuple[str, ...]] = {
+    "trail_and_breakeven_ratchet": ("_pm.ratchet(", "_mm.stop_move(", "trail_decision("),
+    "fixed_bracket_breakeven_floor": ("floor_only=", "_pm.breakeven_armed("),
+    "stop_rests_at_venue": ("stop_rests_at_venue(", "_mm.stop_move("),
+    "opposite_side_fence": ("opposite_block(", "ftmo_block(", "_xa."),
+    "order_door": ("order_door",),
+}
+
+#: Anything that sends to a venue: a MetaTrader send, a venue stop modify or a placement.
+_SENDS = ("order_send(", ".modify_stop(", ".place(")
+
+
 def _calls(fn: ast.FunctionDef) -> set[str]:
     out = set()
     for node in ast.walk(fn):
@@ -292,3 +315,21 @@ def test_a_decided_no_move_keeps_ftmo_s_own_stop_not_e8_s(monkeypatch) -> None:
     # and a read that could not be made does report failure
     mt5.symbol_info = lambda sym: None
     assert ff.native_stop(mt5, {}, p)[2] is True
+
+
+def test_every_order_sender_belongs_to_an_account() -> None:
+    owned = {f for lanes in ACCOUNTS.values() for f in lanes} | set(NOT_LANES)
+    senders = {f.relative_to(_DESK).as_posix()
+               for sub in ("prop", "mt5desk") for f in sorted((_DESK / sub).glob("*.py"))
+               if any(m in f.read_text("utf-8") for m in _SENDS)}
+    stray = sorted(senders - owned)
+    assert not stray, f"{stray} can send orders but belong to no account in ACCOUNTS"
+    assert set(LANES) == {f for lanes in ACCOUNTS.values() for f in lanes}
+
+
+@pytest.mark.parametrize("account", sorted(ACCOUNTS))
+def test_every_account_runs_every_mechanism(account: str) -> None:
+    text = "\n".join((_DESK / f).read_text("utf-8") for f in ACCOUNTS[account])
+    missing = [m for m, marks in MECHANISMS.items() if not any(mk in text for mk in marks)]
+    assert not missing, (f"account {account!r} does not run {missing}: every live account runs "
+                         f"the same mechanisms (zuck 2026-11-03)")
