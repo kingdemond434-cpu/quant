@@ -72,7 +72,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 from libs.research import trade_identity as ti  # noqa: E402
 
 DATA = DESK / "data"
-LIVE_LEDGER = DATA / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER = _audited_ledger_path(DATA / "live_ledger.jsonl")
 INTENTS = DATA / "order_intents.jsonl"
 DECISIONS = DATA / "decision_ledger.jsonl"
 SLEEVES = DATA / "sleeves.json"

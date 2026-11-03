@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 _DESK = Path(__file__).resolve().parents[1]
@@ -142,7 +143,8 @@ def test_an_absent_backpressure_artifact_is_unmeasured_not_an_empty_queue(
 
 
 def test_queue_depth_is_read_from_the_gauntlets_own_artifact(tmp_path, monkeypatch) -> None:
-    doc = {"capacity": {"declared": {"per_worker_mb": 768.0, "declared_need_mb": 1200.0},
+    doc = {"at": datetime.now(UTC).isoformat(),
+           "capacity": {"declared": {"per_worker_mb": 768.0, "declared_need_mb": 1200.0},
                         "measured": {"n_cells_discovered": 21_391, "n_judged": 1_395,
                                      "workers": 1, "n_cells_deferred_build_budget": 3_490}},
            "windows": {"24h": {"testing": {"per_hour": 101.583}}}}
@@ -155,6 +157,27 @@ def test_queue_depth_is_read_from_the_gauntlets_own_artifact(tmp_path, monkeypat
     assert q["gates_per_hour"] == 101.583
     assert q["deferred_build_budget"] == 3_490
     assert jt.declared_costs() == {"per_worker_mb": 768.0, "declared_need_mb": 1200.0}
+
+
+def test_stale_backpressure_cannot_masquerade_as_current_capacity(tmp_path, monkeypatch):
+    path = tmp_path / "backpressure.json"
+    path.write_text(json.dumps({"at": "2026-10-03T12:44:22+00:00",
+                               "capacity": {"measured": {"n_cells_discovered": 63513,
+                                                          "n_judged": 3679}}}))
+    monkeypatch.setattr(jt, "BACKPRESSURE", path)
+    q = jt.measure_queue(datetime(2026, 10, 9, tzinfo=UTC))
+    assert q["status"] == q["depth"] == q["gates_per_hour"] == UNMEASURED
+    assert q["source_age_seconds"] > 6 * 3600
+
+
+def test_actual_sharded_and_resident_processes_are_recognized():
+    assert jt._is_judge(["python.exe", "-u", r"scripts\run_sharded_gauntlet.py"])
+    assert jt._is_judge(["python.exe", "-c",
+                         "from scripts.external_gauntlet import shard_worker;shard_worker()"])
+    assert jt._runs_script(["python.exe", r"C:\opt\quant\scripts\gateway_resident.py"],
+                           {"gateway.py", "gateway_resident.py"})
+    assert not jt._is_judge(["python.exe", "-c", "print('run_sharded_gauntlet.py')"])
+    assert not jt._runs_script(["python.exe", "-c", "print('gateway.py')"], {"gateway.py"})
 
 
 def test_the_env_carries_exactly_what_the_sealed_file_reads(tmp_path) -> None:
@@ -225,3 +248,31 @@ def test_an_env_measured_on_another_machine_is_refused(tmp_path) -> None:
     target: dict[str, str] = {}
     assert jt.apply_env(path, target) == {}
     assert target == {}, "an env from a box of another shape is ignored, never applied"
+
+
+# ------------------------------------------- CRO 2026-09-30 gap 2: artifacts before `schtasks`
+def test_every_artifact_is_on_disk_before_the_task_limit_is_queried(tmp_path, monkeypatch) -> None:
+    """The `schtasks` limit query used to run ahead of every write and timed out on the box, so a
+    hung query cost the hour its measurement. Now the env file, JUDGING_RATE and JUDGING_THROUGHPUT
+    exist before the first `schtasks` call, and a limit that moved is written after it."""
+    out, rate, env = (tmp_path / "JT.json", tmp_path / "RATE.json", tmp_path / "env.json")
+    for name, p in (("OUT", out), ("RATE_OUT", rate), ("ENV_FILE", env)):
+        monkeypatch.setattr(jt, name, p)
+    monkeypatch.setattr(jt, "measure_box", lambda now=None: dict(BIG_BOX))
+    monkeypatch.setattr(jt, "declared_costs", lambda: dict(COSTS))
+    monkeypatch.setattr(jt, "measure_queue", lambda: dict(DEEP_QUEUE))
+    monkeypatch.setattr(jt, "measure_rate", lambda q, d, now=None: {"status": "MEASURED"})
+    monkeypatch.setattr(jt, "apply_env", lambda *a, **k: {})
+    monkeypatch.setattr(jt, "apply_machine_env", lambda d, b: {"status": "STUB"})
+    monkeypatch.setattr(jt, "apply_cadence", lambda m, b: {"status": "STUB"})
+    seen: list[tuple[bool, bool, bool]] = []
+
+    def limit(task: str = "") -> float:
+        seen.append((out.exists(), rate.exists(), env.exists()))
+        return 7_200.0
+
+    monkeypatch.setattr(jt, "task_time_limit_s", limit)
+    doc = jt.run(write=True, apply=True)
+    assert seen == [(True, True, True)], "every artifact is published before `schtasks` runs"
+    assert doc["decision"]["task_time_limit_basis"] == "schtasks"
+    assert json.loads(out.read_text("utf-8"))["decision"]["task_time_limit_s"] == 7_200.0

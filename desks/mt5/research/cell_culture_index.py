@@ -978,12 +978,17 @@ def run(budget_s: float = 240.0, *, graph: Path = GRAPH, docket: Path = DOCKET,
         g_note = scan_graph(p, deadline, graph)
         if g_note.get("reset") and INDEX.exists():
             # a replaced graph restarts the index, so a reader never mixes two files; tiers
-            # (a) and (b) are re-resolved in full on every pass, so they are rewritten below
+            # (a) and (b) are re-resolved in full on every pass, so they are rewritten below.
+            # Close BEFORE unlink: Windows refuses to delete a file with an open handle
+            # (WinError 32), and the leg would die on the same reset every hour.
+            p.close()
             INDEX.unlink()
             cursor.pop("docket_digest", None)
+            # the registry's rows lived in the deleted file too; its cursor restarts with it
+            # or those cells are never re-indexed and read as missing
+            cursor.pop("registry", None)
             cursor["lineage"] = {}
             p.lineage = cursor["lineage"]
-            p.close()
             scan_targets(p, tgts, lin, registry)
         r_note = scan_registry(p, t0 + max(5.0, budget_s - WRITE_RESERVE_S / 2), registry)
     finally:

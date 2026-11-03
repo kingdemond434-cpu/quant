@@ -235,70 +235,173 @@ def _read_capacity_report(path: Path, note: dict[str, str]) -> Any:
 #: How far back the append-only logs are DECODED. Two of the longest window (7d this window and
 #: the 7d before it, which `window_measure` compares against); older rows are only scanned.
 HORIZON_DAYS = 14.0
-_AT_RE = re.compile(r'"(?:at|born_at)"\s*:\s*"(\d{4}-\d\d-\d\d)')
-_ID_RE = re.compile(r'"id"\s*:\s*"([^"]+)"')
+_AT_RE = re.compile(rb'"(?:at|born_at)"\s*:\s*"(\d{4}-\d\d-\d\d)')
+_ID_RE = re.compile(rb'"id"\s*:\s*"([^"]+)"')
+#: THE REVERSE READER'S STOP RULE. The log is append-ordered but not perfectly date-ordered
+#: (measured on the committed graph: 30,256 of 108,189 rows are external verdict rows appended
+#: carrying an OLDER `at`), so one old line does not end the horizon. The scan stops only after
+#: this many CONSECUTIVE lines dated before it -- a run that long is the file's past, not a batch.
+STOP_RUN_LINES = 500_000
+READ_BLOCK_BYTES = 4 * 1024 * 1024
+#: The organ's own wall clock. The hourly leg's cap has been 720 s and the organ ran past it on
+#: every pass (CRO 2026-09-30); it now stops itself inside this and writes what it has, and every
+#: reading it could not finish is named in `unmeasured` rather than published as a full one.
+BUDGET_S = 480.0
+
+
+def _reverse_lines(path: Path):  # type: ignore[no-untyped-def]
+    """Yield the lines of `path` NEWEST FIRST, in bounded blocks, never loading the file."""
+    with path.open("rb") as fh:
+        fh.seek(0, os.SEEK_END)
+        pos = fh.tell()
+        tail = b""
+        while pos > 0:
+            step = min(READ_BLOCK_BYTES, pos)
+            pos -= step
+            fh.seek(pos)
+            buf = fh.read(step) + tail
+            parts = buf.split(b"\n")
+            tail = parts[0]
+            for raw in reversed(parts[1:]):
+                yield raw
+        if tail:
+            yield tail
+
+
+def _decode(raw: bytes) -> dict[str, Any] | None:
+    try:
+        row = json.loads(raw.decode("utf-8", "replace").lstrip("\ufeff"))
+    except ValueError:
+        return None
+    return row if isinstance(row, dict) else None
+
+
+#: How often (in lines) the reader looks at its clock: often enough to stop inside the budget,
+#: rarely enough that the clock costs nothing on a 5M-line log.
+DEADLINE_EVERY = 20_000
 
 
 def _read_jsonl(path: Path, note: dict[str, str], *, since: datetime | None = None,
-                births: bool = False) -> list[dict[str, Any]]:
-    """The NEWEST rows of an append-only JSONL log, streamed line by line, never loaded whole.
+                births: bool = False, deadline: float | None = None) -> list[dict[str, Any]]:
+    """The NEWEST rows of an append-only JSONL log, read BACKWARDS from its end.
 
     THE DEFECT THIS REPLACES (CRO pass 2026-09-30, read-only on the box). The reader stopped at
     the FIRST `MAX_LINES` rows. `hypothesis_graph.jsonl` had grown to 5.7M lines, so the 500k it
     read were rows from 2026-09-04, both windows came back empty, and the organ -- which also ran
-    past its 720 s leg budget on every pass -- last published on 2026-09-25: the judge's
-    controllers were reading a week-old backpressure file. An append-only log's OLDEST rows are
-    the ones a trailing-window report needs least.
+    past its 720 s leg budget on every pass -- last published on 2026-09-25. The first repair
+    streamed the whole file forwards, twice; that fixed the windows and kept the timeout, because
+    the recent rows of an append-only log sit at its END and a forward scan pays for every old
+    line to reach them.
 
-    Now: every line is scanned with a date regex (no JSON decode), rows dated inside `since` (the
-    report's `HORIZON_DAYS`) are decoded, and when more than `MAX_LINES` qualify the NEWEST are
-    kept (a bounded deque) and the note says so. `births=True` (the graph) adds a second scan:
-    the graph is append-on-change, so an id whose first row is OLDER than the horizon was born
-    before it, and its later fate rows must not read as births -- those ids are dropped.
-    A row with no parseable date is kept only when `since` is None.
+    Now the file is read from the end in `READ_BLOCK_BYTES` blocks. With `since`, rows dated
+    inside it (a date regex, no JSON decode) are decoded until `MAX_LINES` are held, the horizon is
+    still COUNTED past that so the truncation note is exact, and the read stops after
+    `STOP_RUN_LINES` consecutive older lines. Without `since` (the verdict ledger) it stops at
+    `MAX_LINES` decoded rows -- exactly the rows the old deque kept, without reading the rest.
+
+    `births=True` (the graph) continues backwards through the older part with an id regex only:
+    the graph is append-on-change, so an id seen OLDER than the horizon was born before it and its
+    later fate rows must not read as births. `deadline` (a `time.monotonic()` value) bounds the
+    whole read; what it cut is named in the note, newest rows kept first by construction.
     """
-    from collections import deque
+    import time as _time
 
-    cut = None if since is None else (since - timedelta(days=1)).date().isoformat()
-    rows: deque[dict[str, Any]] = deque(maxlen=MAX_LINES)
-    total = decoded = 0
+    cut = None if since is None else (since - timedelta(days=1)).date().isoformat().encode()
+    rows: list[dict[str, Any]] = []
+    ids: set[str] = set()          # ids held so far -- every one of them NEWER than the cursor
+    older: set[str] = set()        # held ids that also have a row older than the horizon
+    # Old-dated rows met BEFORE their id's in-horizon row (appended later, read first backwards):
+    # remembered here and joined against the held ids once the scan is done.
+    early_old: set[str] = set()
+    total = in_horizon = older_run = 0
+    stopped = ""
+    births_note = ""
+    track = births and cut is not None
+
+    in_scan = [True]               # False once the horizon scan ends: ids are then complete
+
+    def _older_line(raw: bytes) -> None:
+        if not track:
+            return
+        mi = _ID_RE.search(raw)
+        if mi is None:
+            return
+        rid = mi.group(1).decode("utf-8", "replace")
+        if rid in ids:
+            older.add(rid)
+        elif in_scan[0]:
+            early_old.add(rid)
+
+    lines = None
     try:
-        with path.open(encoding="utf-8-sig", errors="replace") as fh:
-            for raw in fh:
-                total += 1
-                if not raw.strip():
+        lines = _reverse_lines(path)
+        for raw in lines:
+            total += 1
+            if deadline is not None and total % DEADLINE_EVERY == 0 \
+                    and _time.monotonic() > deadline:
+                stopped = "BUDGET"
+                break
+            if not raw.strip():
+                continue
+            if cut is not None:
+                m = _AT_RE.search(raw)
+                if m is None or m.group(1) < cut:
+                    _older_line(raw)
+                    older_run += 1
+                    if older_run >= STOP_RUN_LINES:
+                        stopped = "HORIZON"
+                        break
                     continue
-                if cut is not None:
-                    m = _AT_RE.search(raw)
-                    if m is None or m.group(1) < cut:
-                        continue
-                try:
-                    row = json.loads(raw)
-                except ValueError:
+                older_run = 0
+                in_horizon += 1
+                if len(rows) >= MAX_LINES:
                     continue
-                if isinstance(row, dict):
-                    decoded += 1
-                    rows.append(row)
-        if births and cut is not None and rows:
-            recent = {str(r.get("id") or "") for r in rows} - {""}
-            older: set[str] = set()
-            with path.open(encoding="utf-8-sig", errors="replace") as fh:
-                for raw in fh:
-                    m = _AT_RE.search(raw)
-                    if m is None or m.group(1) >= cut:
-                        continue
-                    mi = _ID_RE.search(raw)
-                    if mi is not None and mi.group(1) in recent:
-                        older.add(mi.group(1))
-            if older:
-                rows = deque((r for r in rows if str(r.get("id") or "") not in older),
-                             maxlen=MAX_LINES)
+            elif len(rows) >= MAX_LINES:
+                stopped = "CAP"
+                break
+            row = _decode(raw)
+            if row is not None:
+                rows.append(row)
+                if track:
+                    ids.add(str(row.get("id") or ""))
+        # THE BIRTHS REFINEMENT carries on backwards through the file's past with an id regex
+        # only: an id held in the horizon that also has an OLDER row was born before it.
+        in_scan[0] = False
+        if track and stopped == "HORIZON":
+            scanned = 0
+            for raw in lines:
+                scanned += 1
+                if deadline is not None and scanned % DEADLINE_EVERY == 0 \
+                        and _time.monotonic() > deadline:
+                    births_note = "; BIRTHS_PARTIAL(budget spent in the older scan)"
+                    break
+                m = _AT_RE.search(raw)
+                if m is not None and m.group(1) < cut:
+                    _older_line(raw)
+        elif track and stopped == "BUDGET":
+            births_note = "; BIRTHS_UNREFINED(budget spent before the older scan)"
     except OSError:
         note[path.name] = "ABSENT"
         return []
-    note[path.name] = (f"TRUNCATED_KEPT_NEWEST({MAX_LINES} of {decoded} in horizon, "
-                       f"{total} lines)" if decoded > MAX_LINES else "READ")
-    return list(rows)
+    finally:
+        if lines is not None:
+            lines.close()
+    rows.reverse()
+    older |= early_old & ids
+    if older:
+        rows = [r for r in rows if str(r.get("id") or "") not in older]
+    if stopped == "BUDGET":
+        note[path.name] = (f"TRUNCATED_BUDGET(kept the newest {len(rows)} rows from {total} lines "
+                           f"read backwards before the organ's own budget ran out){births_note}")
+    elif cut is not None and in_horizon > MAX_LINES:
+        note[path.name] = (f"TRUNCATED_KEPT_NEWEST({MAX_LINES} of {in_horizon} in horizon, "
+                           f"{total} lines){births_note}")
+    elif stopped == "CAP":
+        note[path.name] = (f"TRUNCATED_KEPT_NEWEST({MAX_LINES} of more; read backwards and "
+                           f"stopped at the cap after {total} lines){births_note}")
+    else:
+        note[path.name] = "READ" + births_note
+    return rows
 
 
 def _rel(path: Path) -> str:
@@ -322,6 +425,39 @@ def axes_of(symbol: Any, family: Any, params: Any = None) -> dict[str, str]:
     except Exception:
         return {"asset_class": UNKNOWN, "chart": UNKNOWN, "session": UNKNOWN,
                 "mechanism": UNKNOWN, "information_source": UNKNOWN}
+
+
+#: THE AXES ARE COMPUTED ONCE PER ROW (CRO 2026-09-30, gap 2). Profiled on a synthetic 2M-line
+#: graph and 600k-row ledger: 1,566,665 `axis_cell` calls took 87 of the pass's 148 seconds,
+#: because every born row was classified again by each of the two windows, again by the duplicate
+#: reading and again by the cold-exploration reading, and every verdict row twice more (cold
+#: share and priors) although a verdict carries only (symbol, family). On the box's 5.7M-line
+#: graph that is the 720 s leg timeout by itself. A born row now carries its axes under `_ax`
+#: from the first reading on, and a verdict's axes are memoised on (symbol, family) for the
+#: length of ONE pass -- the memo is cleared at the top of `build`, so a test that repoints the
+#: asset-class table, or an hour in which the universe changed, never reads a stale class.
+_PAIR_AXES: dict[tuple[str, str], dict[str, str]] = {}
+_REG_MEMO: dict[str, Any] = {}
+
+
+def row_axes(r: dict[str, Any]) -> dict[str, str]:
+    """The axes of an intake row, computed at most once per row."""
+    got = r.get("_ax")
+    if isinstance(got, dict):
+        return got
+    a = axes_of(r.get("symbol"), r.get("family"), r.get("params"))
+    r["_ax"] = a
+    return a
+
+
+def pair_axes(symbol: Any, family: Any) -> dict[str, str]:
+    """The axes of a verdict row (which carries no params), memoised for one pass."""
+    key = (str(symbol or ""), str(family or ""))
+    got = _PAIR_AXES.get(key)
+    if got is None:
+        got = axes_of(symbol, family)
+        _PAIR_AXES[key] = got
+    return got
 
 
 def gate_class(gate: Any) -> str | None:
@@ -405,7 +541,7 @@ def duplicate_share(born: list[dict[str, Any]], note: dict[str, str]) -> dict[st
     """
     hashes: Counter[str] = Counter()
     for r in born:
-        a = axes_of(r.get("symbol"), r.get("family"), r.get("params"))
+        a = row_axes(r)
         hashes[json.dumps([str(r.get("family") or ""), str(r.get("symbol") or ""),
                            r.get("params") if isinstance(r.get("params"), dict) else {},
                            a.get("chart"), a.get("session")], sort_keys=True, default=str)] += 1
@@ -416,7 +552,9 @@ def duplicate_share(born: list[dict[str, Any]], note: dict[str, str]) -> dict[st
                          "share": _share(repeats, len(born)),
                          "why": "rows sharing (family, symbol, params, chart, session)"}}
     reg: dict[str, Any] = {"status": "UNMEASURED", "why": "libs.moat.registry unavailable"}
-    if _registry is not None:
+    if _registry is not None and "registry" in _REG_MEMO:
+        reg = dict(_REG_MEMO["registry"])
+    elif _registry is not None:
         try:
             rows = _registry.candidates(limit=100000)
             dup = sum(1 for r in rows if int(r.get("search_count") or 1) > 1)
@@ -428,6 +566,9 @@ def duplicate_share(born: list[dict[str, Any]], note: dict[str, str]) -> dict[st
                            "rows to count. The content-hash reading is the fallback."})
         except Exception as exc:
             reg = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+        # ONE READ PER PASS: the registry's dedupe is a lifetime count and does not depend on the
+        # window, and each read loads up to 100,000 candidate rows.
+        _REG_MEMO["registry"] = dict(reg)
     out["registry"] = reg
     nov = _read_json(NOVELTY, note)
     if isinstance(nov, dict) and nov.get("n_screened"):
@@ -469,7 +610,7 @@ def window_measure(born: list[dict[str, Any]], vers: list[dict[str, Any]], now: 
         (by_class if cls else unmapped)[cls or gate] += n
     n_classified = sum(by_class.values())
 
-    axes = [axes_of(r.get("symbol"), r.get("family"), r.get("params")) for r in b]
+    axes = [row_axes(r) for r in b]
     grid = Counter(f"{a.get('asset_class')}|{a.get('chart')}|{a.get('session')}" for a in axes)
     top_grid = grid.most_common(TOP_GRID_CELLS)
     fx = sum(1 for a in axes if str(a.get("asset_class")) in FX_CLASSES
@@ -530,7 +671,7 @@ def cold_exploration(born: list[dict[str, Any]], vers: list[dict[str, Any]],
     warm: set[str] = set()
     seen: set[str] = set()
     for r in vers:
-        a = axes_of(r.get("sym") or r.get("symbol"), r.get("family"))
+        a = pair_axes(r.get("sym") or r.get("symbol"), r.get("family"))
         key = f"{a.get('asset_class')}|{a.get('mechanism')}"
         seen.add(key)
         if r.get("passed") is True:
@@ -538,7 +679,7 @@ def cold_exploration(born: list[dict[str, Any]], vers: list[dict[str, Any]],
     b = [r for r in born if r.get("_t") is not None and r["_t"] >= since]
     cold = 0
     for r in b:
-        a = axes_of(r.get("symbol"), r.get("family"), r.get("params"))
+        a = row_axes(r)
         if f"{a.get('asset_class')}|{a.get('mechanism')}" not in warm:
             cold += 1
     floor = 0.20
@@ -645,7 +786,7 @@ def priors(vers: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if r.get("passed") is None:
             continue
         fam = str(r.get("family") or UNKNOWN)
-        a = axes_of(r.get("sym") or r.get("symbol"), fam)
+        a = pair_axes(r.get("sym") or r.get("symbol"), fam)
         b = buckets[(fam, str(a.get("chart") or UNKNOWN), str(a.get("asset_class") or UNKNOWN))]
         b["n"] += 1
         if r.get("passed") is True:
@@ -721,7 +862,8 @@ def bandit_view(rows: list[dict[str, Any]], w: dict[str, Any]) -> dict[str, Any]
                            "evidence_path": "bandit.evidence(graph_rows) -- pure, read-only"}
     try:
         from libs.research import bandit
-        ev = bandit.evidence([{k: v for k, v in r.items() if k != "_t"} for r in rows])
+        ev = bandit.evidence([{k: v for k, v in r.items() if k not in ("_t", "_ax")}
+                              for r in rows])
         arms = {a: {k: d[k] for k in ("born", "failed", "certified", "p_survivor", "group")}
                 for a, d in ev.items() if isinstance(d, dict)}
     except Exception as exc:
@@ -780,14 +922,28 @@ def trial_budget(out: Path | None = None) -> dict[str, Any]:
     }
 
 
-def build(now: datetime | None = None) -> dict[str, Any]:
+def build(now: datetime | None = None, budget_s: float | None = None,
+          started: float | None = None) -> dict[str, Any]:
+    """`started` is the caller's `time.monotonic()` at entry: the budget is the LEG's wall clock,
+    so time the caller spent before the build (the core republish) is charged against it too
+    (audit of 53fade9ec)."""
+    import time as _time
+
+    t0 = _time.monotonic() if started is None else float(started)
     at = now or _now()
     note: dict[str, str] = {}
+    _PAIR_AXES.clear()
+    _REG_MEMO.clear()
+    # THE BUDGET IS SPLIT, NOT SHARED: the graph may spend 60% of it and the ledger what is left
+    # of 85%, so the arithmetic below and the write always have time. No budget = no deadline.
+    graph_deadline = None if budget_s is None else t0 + 0.60 * float(budget_s)
+    ledger_deadline = None if budget_s is None else t0 + 0.85 * float(budget_s)
     horizon = at - timedelta(days=HORIZON_DAYS)
-    born = born_cells(_read_jsonl(GRAPH, note, since=horizon, births=True))
-    # The ledger is streamed whole too, but NOT date-filtered: `priors` are a lifetime pass rate
-    # per bucket. On truncation it keeps the NEWEST rows, where the windows live.
-    vers = verdicts(_read_jsonl(GATE_LEDGER, note))
+    born = born_cells(_read_jsonl(GRAPH, note, since=horizon, births=True,
+                                  deadline=graph_deadline))
+    # The ledger is read backwards too, but NOT date-filtered: `priors` are a lifetime pass rate
+    # per bucket, over the newest MAX_LINES verdicts, which is where the windows live.
+    vers = verdicts(_read_jsonl(GATE_LEDGER, note, deadline=ledger_deadline))
     windows = {name: window_measure(born, vers, at, hours, note) for name, hours in WINDOWS}
     primary = windows[WINDOWS[0][0]]
     # THE MESSAGES ARE MEASURED ON ONE WINDOW AND IT IS NAMED. The first window with any intake
@@ -828,6 +984,8 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     msgs = messages(windows[msg_window], cold, msg_window)
     return {
         "at": at.isoformat(timespec="seconds"), "windows": windows, "messages": msgs,
+        "elapsed_s": round(_time.monotonic() - t0, 2),
+        "budget_s": None if budget_s is None else float(budget_s),
         "messages_window": msg_window,
         "fired": [m["code"] for m in msgs if m["fired"]],
         "priors": pri, "priors_written": 0,
@@ -859,24 +1017,187 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     }
 
 
+#: THE CORE REPUBLISH (2026-10-20). Measured on the box: GAUNTLET_BACKPRESSURE.json was stamped
+#: 2026-10-03 on 2026-10-20 -- the full build streams the 5.7M-line hypothesis graph TWICE and
+#: timed out its hourly leg on every pass, so `judging_throughput` read the queue as UNMEASURED
+#: for seventeen days. The judge's controllers need two things from this file: the last sweep's
+#: `capacity` (root scalars streamed off the sweep report) and the 24h testing rate (the verdict
+#: ledger, date-filtered by regex before any decode). `build_core` measures exactly those, never
+#: touches the graph or the registry, and is run (a) by the resident judge launcher after EVERY
+#: sweep and (b) at the START of every full run, so a full build that is killed still leaves a
+#: fresh core behind. Every heavy block it does not re-measure is carried forward UNCHANGED under
+#: `full_at`, so no reader can mistake a carried window for a fresh one.
+CORE_WINDOW_H = 24.0
+
+
+def _core_testing(at: datetime) -> dict[str, Any]:
+    """The 24h testing rate, from the verdict ledger alone. An absent or unreadable ledger is
+    UNMEASURED -- never 0.0, which would read as a judge that judged nothing."""
+    note: dict[str, str] = {}
+    since = at - timedelta(hours=CORE_WINDOW_H)
+    vers = verdicts(_read_jsonl(GATE_LEDGER, note, since=since))
+    state = note.get(GATE_LEDGER.name, "READ")
+    if state not in ("READ",) and not str(state).startswith("TRUNCATED_KEPT_NEWEST"):
+        return {"status": UNMEASURED_CORE, "verdicts": UNMEASURED_CORE,
+                "cells_judged": UNMEASURED_CORE, "per_hour": UNMEASURED_CORE,
+                "passed": UNMEASURED_CORE, "ledger": state,
+                "measured_at": at.isoformat(timespec="seconds"), "source": "build_core"}
+    v = [r for r in vers if r.get("_t") is not None and r["_t"] >= since]
+    judged = {str(r.get("cell") or "") for r in v if r.get("passed") is not None}
+    return {"status": "MEASURED", "verdicts": len(v), "cells_judged": len(judged),
+            "per_hour": round(len(judged) / CORE_WINDOW_H, 3),
+            "passed": sum(1 for r in v if r.get("passed") is True), "ledger": state,
+            "measured_at": at.isoformat(timespec="seconds"), "source": "build_core"}
+
+
+UNMEASURED_CORE = "UNMEASURED"
+
+
+def build_core(now: datetime | None = None, prev: dict[str, Any] | None = None,
+               testing: dict[str, Any] | None = None,
+               cap: dict[str, Any] | None = None) -> dict[str, Any]:
+    """The cheap, every-sweep half of the report, merged onto the previous full report.
+
+    ONE VINTAGE PER BLOCK (audit of be6a305b7): the core never edits `windows` -- a fresh
+    testing rate divided into a backlog carried from an old full build is a number of no
+    vintage. The fresh rate goes to `core.testing_24h`; `capacity` is the sweep's own reading.
+    """
+    at = now or _now()
+    note: dict[str, str] = {}
+    testing = testing if testing is not None else _core_testing(at)
+    cap = cap if cap is not None else capacity(note, at)
+    doc: dict[str, Any] = dict(prev) if isinstance(prev, dict) else {}
+    full_at = doc.get("full_at") or (doc.get("at") if doc.get("mode") != "core" else None)
+    doc.update({
+        "at": at.isoformat(timespec="seconds"), "mode": "core", "full_at": full_at,
+        "capacity": cap,
+        "core": {"at": at.isoformat(timespec="seconds"), "inputs": dict(note),
+                 "testing_24h": testing,
+                 "re_measured": ["capacity", "core.testing_24h"],
+                 "carried_from_full_at": full_at,
+                 "why": ("every block other than `capacity` and `core.testing_24h` is the last "
+                         "FULL build's, stamped `full_at`, and unchanged; a reader that needs "
+                         "a fresh window must check `full_at`, never `at`")},
+    })
+    return doc
+
+
+#: Both writers of OUT -- the detached core after every sweep and the hourly full build -- hold
+#: this lock for their read-merge-write, so a core can never replace a full build that finished
+#: between its read and its write (audit of be6a305b7).
+WRITE_LOCK_WAIT_S = 30.0
+
+
+def _write_lock(path: Path, wait_s: float = WRITE_LOCK_WAIT_S) -> Any:
+    try:
+        from libs.research.artifact_chain import _locked
+        return _locked(path, wait_s)
+    except Exception:  # pragma: no cover - libs always present on the box
+        import contextlib
+        return contextlib.nullcontext(False)
+
+
+def write_core(now: datetime | None = None, path: Path | None = None) -> Path | None:
+    """Measure the core, then merge it onto the CURRENT report under the write lock.
+
+    The measurement happens outside the lock (it reads the ledger); only read-merge-write is
+    serialised. No lock inside the wait -> nothing is written (the full build is writing a
+    fresher file), and None says so.
+    """
+    target = path or OUT
+    at = now or _now()
+    testing, cap = _core_testing(at), capacity({}, at)
+    with _write_lock(target) as held:
+        if not held:
+            return None
+        prev = _read_json(target, {})
+        return _write_unlocked(build_core(at, prev if isinstance(prev, dict) else None,
+                                          testing=testing, cap=cap), target)
+
+
 def _atomic_write(path: Path, text: str) -> Path:
+    """Atomic replace through a temporary name UNIQUE to this writer (two writers sharing one
+    `.tmp` could each rename the other's half-written bytes into place)."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.{os.urandom(4).hex()}.tmp")
     tmp.write_text(text, encoding="utf-8")
     os.replace(tmp, path)
     return path
 
 
+def _write_unlocked(doc: dict[str, Any], path: Path) -> Path:
+    return _atomic_write(path, json.dumps(doc, indent=1, default=str))
+
+
 def write(doc: dict[str, Any], path: Path | None = None) -> Path:
-    return _atomic_write(path or OUT, json.dumps(doc, indent=1, default=str))
+    """The full build's write, under the same lock as the core's (tolerant: a lock that cannot
+    be had in the wait still writes -- the full build is the fresher of the two)."""
+    target = path or OUT
+    with _write_lock(target):
+        prev = _read_json(target, {})
+        return _write_unlocked(_keep_fresher_core(doc, prev if isinstance(prev, dict) else {}),
+                               target)
+
+
+def _stamp(value: Any) -> datetime | None:
+    try:
+        got = datetime.fromisoformat(str(value))
+    except (TypeError, ValueError):
+        return None
+    return got if got.tzinfo else got.replace(tzinfo=UTC)
+
+
+def _keep_fresher_core(doc: dict[str, Any], prev: dict[str, Any]) -> dict[str, Any]:
+    """A full build measured at `doc.at` must not replace a core measured AFTER it (audit HOLD
+    of d465792f118: capacity went sweep#3 -> sweep#2 and the core block vanished). The core's
+    two blocks -- `capacity` and `core` -- are carried over when they are the fresher reading;
+    every other block is the full build's."""
+    core = prev.get("core")
+    if not isinstance(core, dict):
+        return doc
+    core_at, full_at = _stamp(core.get("at")), _stamp(doc.get("at"))
+    if core_at is None or full_at is None or core_at <= full_at:
+        return doc
+    out = dict(doc)
+    out["core"] = {**core, "carried_from_full_at": doc.get("full_at") or doc.get("at"),
+                   "kept_over_full_build_at": doc.get("at")}
+    if "capacity" in prev:
+        out["capacity"] = prev["capacity"]
+    return out
 
 
 def main(argv: list[str] | None = None) -> int:
+    import time as _time
+
+    started = _time.monotonic()
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--dry-run", action="store_true",
                     help="measure and print; write no report and no prior")
+    ap.add_argument("--budget-s", type=float, default=BUDGET_S,
+                    help="the organ's own wall clock; it stops reading and writes inside it")
+    ap.add_argument("--core", action="store_true",
+                    help="re-measure only capacity and the 24h testing rate (seconds, not the "
+                         "graph) and publish them over the last full report; run every sweep")
     a = ap.parse_args(argv)
-    doc = build()
+    if a.core:
+        if a.dry_run:
+            core = build_core(prev=_read_json(OUT, {}) or None)
+            print(f"gauntlet backpressure core {core['at']} (dry run): "
+                  f"testing={core['core']['testing_24h']}")
+            return 0
+        print(f"-> {write_core() or 'NOT WRITTEN (write lock held by the full build)'}  "
+              "(core: capacity + 24h testing re-measured)")
+        return 0
+    if not a.dry_run:
+        # THE CORE GOES FIRST, so a full build killed by its leg budget still republishes the two
+        # blocks the judge's controllers read. Best effort: a core failure never stops the build.
+        try:
+            write_core()
+        except Exception as exc:  # pragma: no cover - defensive; the full build follows
+            print(f"  core republish failed: {type(exc).__name__}: {exc}")
+    doc = build(budget_s=a.budget_s, started=started)
+    doc["mode"] = "full"
+    doc["full_at"] = doc["at"]
     w = doc["windows"][WINDOWS[0][0]]
     print(f"gauntlet backpressure {doc['at']}")
     for name, _ in WINDOWS:
@@ -895,7 +1216,20 @@ def main(argv: list[str] | None = None) -> int:
     if a.dry_run:
         print("  --dry-run: nothing written")
         return 0
-    res = write_priors(doc["priors"], doc["at"])
+    # THE ARTIFACT IS WRITTEN FIRST. The registry write is the one call here that can block on a
+    # lock held by another organ, and the measurement must never wait on it (the same order the
+    # judging_throughput repair put its artifacts before `schtasks`). It is rewritten after.
+    doc["prior_write"] = {"status": "PENDING", "why": "report published before the registry write"}
+    write(doc)
+    ledger_state = str((doc.get("unmeasured") or {}).get(GATE_LEDGER.name) or "")
+    if ledger_state.startswith("TRUNCATED_BUDGET"):
+        # A budget-cut ledger read holds only the newest verdicts it reached: upserting those
+        # partial-sample pass rates over the lifetime priors would overwrite a measurement with a
+        # smaller one (audit of 53fade9ec). The registry keeps the last full priors.
+        res = {"status": "SKIPPED", "written": 0,
+               "why": f"gate ledger read was {ledger_state[:120]}: priors not written"}
+    else:
+        res = write_priors(doc["priors"], doc["at"])
     doc["priors_written"] = res.get("written", 0)
     doc["prior_write"] = res
     print(f"-> {write(doc)}  ({doc['priors_written']} prior(s) into the registry)")

@@ -1,0 +1,130 @@
+{
+ "class": "credit",
+ "label": "Credit spreads, CDS and corporate bond aggregates",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:ice_data_services:ice_bofa_bond_indices",
+   "vendor": "ICE Data Services",
+   "dataset": "ICE BofA bond indices",
+   "class": "credit",
+   "region": "global",
+   "measures": "Bond index OAS and returns",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "MACHINE_SERIES",
+    "kind": "vendor_public_release",
+    "url": "https://fred.stlouisfed.org/series/BAMLH0A0HYM2",
+    "endpoints": [
+     "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2"
+    ],
+    "series": "BAMLH0A0HYM2",
+    "source": "web_search:2026-09-30",
+    "note": "ICE publishes the index's OAS through FRED; the full constituent/total-return set stays paid"
+   }
+  },
+  {
+   "id": "paid:kodata:south_korean_credit_ratings",
+   "vendor": "KoDATA",
+   "dataset": "South Korean credit ratings",
+   "class": "credit",
+   "region": "KR",
+   "measures": "Corporate credit ratings",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://www.neudata.co/1/vendors/kodata",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:marketaxess:cp_and_trace_analytics",
+   "vendor": "MarketAxess",
+   "dataset": "CP+ and TRACE analytics",
+   "class": "credit",
+   "region": "US",
+   "measures": "Corporate bond pricing and liquidity",
+   "frequency": "intraday",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:markit_s_p_global:cds_pricing",
+   "vendor": "Markit (S&P Global)",
+   "dataset": "CDS pricing",
+   "class": "credit",
+   "region": "global",
+   "measures": "Single-name and index CDS spreads",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:moody_s:credit_economic_data",
+   "vendor": "Moody's",
+   "dataset": "Credit & Economic Data",
+   "class": "credit",
+   "region": "global",
+   "measures": "Credit ratings, economic data, and risk models",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://londonstrategicedge.com/directory/alternative-data/",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:stamdata:fixed_income_data",
+   "vendor": "Stamdata",
+   "dataset": "Fixed income data",
+   "class": "credit",
+   "region": "EU",
+   "measures": "Nordic bond markets and financial instruments",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://datarade.ai/data-categories/climate-data/providers",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  }
+ ]
+}

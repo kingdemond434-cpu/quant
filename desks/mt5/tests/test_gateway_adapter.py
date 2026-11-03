@@ -38,6 +38,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
 from mt5desk import account_profile as _acct_real  # noqa: E402
 from mt5desk import config as _cfg  # noqa: E402
 from mt5desk import decision_core as dc  # noqa: E402
+from mt5desk.broker_clock import broker_to_utc  # noqa: E402
 from mt5desk import provenance as _prov_real  # noqa: E402
 from mt5desk.sizing import decay_factor  # noqa: E402
 
@@ -93,7 +94,11 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
     seed.update(ns)
     keep = [n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef) and n.name in names]
     assert {n.name for n in keep} == set(names), f"missing from gateway.py: {set(names)}"
-    exec(compile(ast.Module(body=keep, type_ignores=[]), "<gw>", "exec"), seed)
+    # These are unchanged production AST nodes, including their source line numbers.
+    # Credit actual exercised branches to their source, rather than an anonymous <gw>
+    # file that coverage cannot join back to the money-path report.
+    exec(compile(ast.Module(body=keep, type_ignores=[]),
+                 str(_DESK / "mt5desk" / "gateway.py"), "exec"), seed)
     return seed
 
 
@@ -188,30 +193,30 @@ def test_allocator_book_reads_once_and_lets_the_core_decide(tmp_path, monkeypatc
            "book": {"a": 0.12, "b": 0.08},
            "book_fallback": {"name": "inverse_vol", "book": {"a": 0.09, "b": 0.11}}}
     (tmp_path / "reports" / "pf_allocation.json").write_text(json.dumps(art))
-    ns = _exec(("allocator_book",), {"BASE": tmp_path,
+    ns = _exec(("_allocator_book",), {"BASE": tmp_path,
                                      "allocator_heat": lambda: (0.2, "allocator book (ok)")})
     monkeypatch.setattr(ap, "read_certificate", lambda root: (None, "proof failed"))
-    book, why = ns["allocator_book"]()
+    book, why = ns["_allocator_book"]()
     assert book == {"a": 0.09, "b": 0.11} and "inverse_vol" in why and "withheld" in why
     monkeypatch.setattr(ap, "read_certificate", lambda root: ({"passed": True}, "proof 1h old"))
-    book, why = ns["allocator_book"]()
+    book, why = ns["_allocator_book"]()
     assert book == {"a": 0.12, "b": 0.08} and "proof 1h old" in why
     # No fallback carried and no proof: rank but do not size.
     art["book_fallback"] = {}
     (tmp_path / "reports" / "pf_allocation.json").write_text(json.dumps(art))
     monkeypatch.setattr(ap, "read_certificate", lambda root: (None, "proof failed"))
-    assert ns["allocator_book"]()[0] is None
+    assert ns["_allocator_book"]()[0] is None
     # Every read fails closed with its own reason.
     (tmp_path / "reports" / "pf_allocation.json").write_text("{ nope")
     monkeypatch.setattr(ap, "read_certificate", lambda root: ({"passed": True}, "ok"))
-    assert ns["allocator_book"]()[1] == "pf_allocation unreadable (JSONDecodeError)"
+    assert ns["_allocator_book"]()[1] == "pf_allocation unreadable (JSONDecodeError)"
 
     def _boom(root):
         raise OSError("disk")
     monkeypatch.setattr(ap, "read_certificate", _boom)
-    assert ns["allocator_book"]()[1] == "proof unreadable (OSError: disk)"
+    assert ns["_allocator_book"]()[1] == "proof unreadable (OSError: disk)"
     ns["allocator_heat"] = lambda: (None, "no pf_allocation.json")
-    assert ns["allocator_book"]() == (None, "no allocator book: no pf_allocation.json")
+    assert ns["_allocator_book"]() == (None, "no allocator book: no pf_allocation.json")
 
 
 def test_the_book_is_the_allocator_that_won_in_this_state(tmp_path, monkeypatch) -> None:
@@ -229,7 +234,7 @@ def test_the_book_is_the_allocator_that_won_in_this_state(tmp_path, monkeypatch)
            "book": {"a": 0.12, "b": 0.08},
            "book_fallback": {"name": "inverse_vol", "book": {"a": 0.09, "b": 0.11}}}
     (tmp_path / "reports" / "pf_allocation.json").write_text(json.dumps(art))
-    ns = _exec(("allocator_book",), {"BASE": tmp_path,
+    ns = _exec(("_allocator_book",), {"BASE": tmp_path,
                                      "allocator_heat": lambda: (0.2, "allocator book (ok)")})
     cert = {"passed": True, "why": "global ok", "best_baseline": "risk_parity",
             "books": {"risk_parity": {"a": 0.05, "b": 0.15}},
@@ -237,19 +242,19 @@ def test_the_book_is_the_allocator_that_won_in_this_state(tmp_path, monkeypatch)
                                            "scores": {"risk_parity": 0.004}, "n_worlds": 96,
                                            "why": "risk_parity beat it here"}}}
     monkeypatch.setattr(ap, "read_certificate", lambda root: (cert, "proof 1h old"))
-    book, why = ns["allocator_book"]()
+    book, why = ns["_allocator_book"]()
     assert book == {"a": 0.05, "b": 0.15}, "the state's winner did not size the book"
     assert "state-conditioned" in why and "risk_parity" in why
     assert "authoritative" not in why, "a challenger's book is not the certified one"
 
     # The same state, won by the dynamic allocator: the certified book, exactly as before.
     cert["by_state"]["asia|calm|MON"] = {"passed": True, "n_worlds": 96, "why": "dynamic won"}
-    book, why = ns["allocator_book"]()
+    book, why = ns["_allocator_book"]()
     assert book == {"a": 0.12, "b": 0.08} and "authoritative" in why and "proof 1h old" in why
 
     # No per-state bucket at all -> the global verdict, which is what the desk had before.
     cert["by_state"] = {}
-    book, why = ns["allocator_book"]()
+    book, why = ns["_allocator_book"]()
     assert book == {"a": 0.12, "b": 0.08} and "authoritative" in why
 
     # The state's winner has no finite score: `select` refuses, and a refusal sizes the
@@ -257,7 +262,7 @@ def test_the_book_is_the_allocator_that_won_in_this_state(tmp_path, monkeypatch)
     cert["by_state"] = {"asia|calm|MON": {"passed": False, "best": "risk_parity",
                                           "scores": {"risk_parity": float("nan")},
                                           "n_worlds": 96, "why": "all wiped out"}}
-    book, why = ns["allocator_book"]()
+    book, why = ns["_allocator_book"]()
     assert book == {"a": 0.09, "b": 0.11} and "inverse_vol" in why and "withheld" in why
 
 
@@ -324,7 +329,9 @@ def _fake_mt5(rows: list[dict]) -> SimpleNamespace:
         TIMEFRAME_H1=16385, TRADE_ACTION_DEAL=1, ORDER_TYPE_BUY=0, ORDER_TYPE_SELL=1, sent=sent,
         copy_rates_from_pos=lambda symbol, tf, start, count: rows,
         symbol_info_tick=lambda symbol: SimpleNamespace(bid=1.1100, ask=1.1102),
-        symbol_info=lambda symbol: SimpleNamespace(volume_min=0.01, volume_step=0.01),
+        symbol_info=lambda symbol: SimpleNamespace(volume_min=0.01, volume_step=0.01,
+                                                   trade_tick_size=0.00001,
+                                                   trade_tick_value=1.0),
         # single-position discipline (2026-09-15) reads the open book before sizing
         positions_get=lambda *a, **k: [],
         order_send=lambda req: (sent.append(req) or SimpleNamespace(retcode=10009, order=9,
@@ -391,7 +398,10 @@ def _family_ns(tmp_path: Path, mt5: SimpleNamespace, monkeypatch, *, armed_file:
                   # allocator book key and the shared order-comment helper.
                   "_sleeve_positions", "_book_key", "order_comment", "_exec_route", "_send_error",
                   # 2026-09-16: the per-symbol same-side cap and its refusal journal
-                  "same_side_count", "journal_refusal"), ns)
+                  "same_side_count", "journal_refusal",
+                  # OCO v2s MF-A: every XAU send asks the gold direction lock first
+                  "gold_oco_send_refusal", "gold_oco_after_send", "bill_gold_oco_send",
+                  "_order_risk_usd"), ns)
 
 
 def _run_family(ns: dict, st: dict, sleeves: list[dict], equity: float) -> None:
@@ -414,6 +424,27 @@ def _run_family(ns: dict, st: dict, sleeves: list[dict], equity: float) -> None:
 def _sleeve(**over) -> dict:
     return {"name": _NAME, "symbol": "EURUSD", "exec": "family_market", "family": "fam",
             "selector": "asia", "side": "LONG", "risk_frac": 0.03, "lot": "auto_ramp", **over}
+
+
+@pytest.mark.parametrize("bid,expected_retry", [(1.1110, True), (1.1160, False)])
+def test_rollover_spread_waits_for_quote_but_expired_signal_is_consumed(
+        tmp_path, monkeypatch, bid, expected_retry) -> None:
+    rows = _rows()
+    mt5 = _fake_mt5(rows)
+    quote = SimpleNamespace(bid=bid, ask=1.1170)
+    mt5.symbol_info_tick = lambda symbol: quote
+    ns = _family_ns(tmp_path, mt5, monkeypatch, armed_file=True,
+                    sig_hour=_sig_hour(rows))
+    state = {"armed": True}
+    _run_family(ns, state, [_sleeve()], 10_000.0)
+    assert mt5.sent == []
+    marked = state.get("generic", {}).get(_NAME, {}).get("last_signal_bar")
+    assert bool(marked) is not expected_retry
+    quote.bid, quote.ask = 1.1100, 1.1102
+    _run_family(ns, state, [_sleeve()], 10_000.0)
+    assert len(mt5.sent) == int(expected_retry)
+    _run_family(ns, state, [_sleeve()], 10_000.0)
+    assert len(mt5.sent) == int(expected_retry), "same signal must never send twice"
 
 
 def test_unarmed_the_family_executor_logs_the_exact_order_and_marks_the_bar(tmp_path,
@@ -517,13 +548,17 @@ def test_an_entry_that_drifted_from_the_signal_close_is_bracketed_from_the_entry
 def test_a_signal_the_market_has_already_played_out_is_refused_as_stale(tmp_path,
                                                                         monkeypatch) -> None:
     """A short whose certified target sat half a pip below its bar's close, with the bid now a
-    further half pip lower: the replay's trade has already taken its profit. Opening one here is
+    further half pip lower on both quote sides: the replay's trade has already taken its profit. Opening one here is
     not the certified trade, so it is refused, journaled, and the bar is consumed."""
     rows = _rows()
     mt5 = _fake_mt5(rows)
     frame = dc.h1_frame(rows)
     bar = frame.index[-2]
     px = float(frame["close"].loc[bar])
+    # A short exits at ask. Both quote sides must cross the target for this to
+    # model an expired trade rather than a temporarily untradeable wide spread.
+    mt5.symbol_info_tick = lambda symbol: SimpleNamespace(bid=px - 0.0001,
+                                                        ask=px - 0.000075)
     ns = _family_ns(tmp_path, mt5, monkeypatch, armed_file=True, sig_hour=_sig_hour(rows),
                     signals=lambda closed, side: [_signal(bar, stop=px + 0.0010,
                                                           target=px - 0.00005)])
@@ -924,6 +959,279 @@ def test_filled_gold_sibling_cancel_is_shadow_only_when_disarmed() -> None:
     assert sent == []
 
 
+def _withdraw_world(monkeypatch, tmp_path, lanes: object) -> tuple[list, list, dict]:
+    """The gateway's gold lane holds one resting MAGIC XAUUSD entry (and a foreign order and a
+    MAGIC EURUSD order it must never touch); GOLD_OCO_MODE declares `lanes`."""
+    from mt5desk import fusion_rails, gold_oco
+    mode = tmp_path / "GOLD_OCO_MODE.json"
+    mode.write_text(lanes if isinstance(lanes, str) else json.dumps({"lanes": lanes}))
+    monkeypatch.setattr(gold_oco, "MODE_FILE", mode)
+    monkeypatch.setattr(fusion_rails, "LEDGER", tmp_path / "fusion_book_rails.jsonl")
+    monkeypatch.delenv("QUANT_GOLD_LANE", raising=False)
+    sent: list[dict] = []
+    orders = [
+        SimpleNamespace(ticket=21, symbol="XAUUSD", magic=341953, comment="DWgold_asia",
+                        volume_current=0.02, price_open=4000.0, sl=3990.0),
+        SimpleNamespace(ticket=22, symbol="XAUUSD", magic=999, comment="manual",
+                        volume_current=0.02, price_open=4000.0, sl=3990.0),
+        SimpleNamespace(ticket=23, symbol="EURUSD", magic=341953, comment="DWfx",
+                        volume_current=0.10, price_open=1.1, sl=1.09),
+    ]
+
+    def send(req: dict) -> SimpleNamespace:
+        sent.append(req)
+        orders[:] = [o for o in orders if o.ticket != req["order"]]
+        return SimpleNamespace(retcode=10009, comment="")
+
+    mt5 = SimpleNamespace(
+        orders_get=lambda symbol=None: [o for o in orders if symbol in (None, o.symbol)],
+        symbol_info=lambda sym: SimpleNamespace(trade_tick_value=1.0, trade_tick_size=0.01),
+        TRADE_ACTION_REMOVE=8, order_send=send)
+    ns = _exec(("withdraw_lane_gold", "_order_risk_usd"),
+               {"mt5": mt5, "log": lambda *_: None, "MAGIC": 341953, "GOLD_SYMBOL": "XAUUSD",
+                "datetime": datetime, "UTC": UTC})
+    return sent, orders, ns
+
+
+@pytest.mark.parametrize(("lanes", "armed"), [(["e8", "ftmo"], True), (["e8", "fusion"], False),
+                                              ("absent", True)])
+def test_a_removed_or_paused_gold_lane_withdraws_its_resting_gold_entries(
+        monkeypatch, tmp_path, lanes: object, armed: bool) -> None:
+    """2026-10-28, ticket 111616773: a lane taken out of GOLD_OCO_MODE (or paused) kept its
+    resting entry, which filled. The gateway's gold lane withdraws its own MAGIC gold entries on
+    the next pass -- sent although unarmed (a cancel opens nothing), billed at their own risk --
+    and touches nothing else. An ABSENT mode file means the default lanes; with "fusion" in
+    them the lane stays, so the absent case here uses QUANT_GOLD_LANE=ftmo, a lane the default
+    leaves out."""
+    sent, orders, ns = _withdraw_world(monkeypatch, tmp_path, lanes)
+    if lanes == "absent":
+        from mt5desk import gold_oco
+        gold_oco.MODE_FILE.unlink()
+        monkeypatch.setenv("QUANT_GOLD_LANE", "ftmo")
+    assert ns["withdraw_lane_gold"]({"armed": armed}) == 1
+    assert sent == [{"action": 8, "order": 21}]
+    assert sorted(o.ticket for o in orders) == [22, 23]
+    from mt5desk import fusion_rails
+    (bill,) = [json.loads(ln) for ln in fusion_rails.LEDGER.read_text().splitlines()]
+    assert bill["rail"] == "cancel_requested" and bill["reason"] == "lane_withdrawn"
+    assert bill["order"] == 21 and bill["missed_growth_risk_usd"] > 0
+    assert ns["withdraw_lane_gold"]({"armed": armed}) == 0 and len(sent) == 1
+
+
+@pytest.mark.parametrize(("lanes", "st"), [
+    ("{torn", {"armed": True}),                                  # MF1: unreadable mode file
+    ('{"lanes": "e8,fusion"}', {"armed": True}),                 # MF1: lanes not a list
+    (["e8", "fusion"], {"armed": False, "armed_default": True}),  # MF2: absent state's default
+])
+def test_an_unmeasured_read_never_withdraws_a_gold_entry(monkeypatch, tmp_path, lanes: object,
+                                                         st: dict) -> None:
+    """v14 audit MF1 + MF2: a mode file present but unreadable or malformed, and a disarm that
+    is only an absent gateway_state.json's default, are UNMEASURED, not declarations: nothing is
+    cancelled, and the pass is billed UNMEASURED once a day on the rails ledger."""
+    sent, orders, ns = _withdraw_world(monkeypatch, tmp_path, lanes)
+    if lanes == "{torn":
+        monkeypatch.setenv("QUANT_GOLD_LANE", "ftmo")   # a lane the default would leave out
+    assert ns["withdraw_lane_gold"](st) == 0 and sent == [] and len(orders) == 3
+    from mt5desk import fusion_rails
+    (line,) = [json.loads(ln) for ln in fusion_rails.LEDGER.read_text().splitlines()]
+    assert line["status"] == "UNMEASURED" and line["reason"] == "lane_withdrawn"
+    ns["withdraw_lane_gold"](st)                                 # once a day, not every pass
+    assert len(fusion_rails.LEDGER.read_text().splitlines()) == 1
+
+
+def test_the_absent_state_default_is_marked_and_a_human_arm_clears_it(tmp_path) -> None:
+    state = tmp_path / "gateway_state.json"
+    ns = _exec(("load_state",), {"STATE": state, "json": json})
+    st = ns["load_state"]()
+    assert st["armed"] is False and st["armed_default"] is True
+    state.write_text(json.dumps({**st, "armed": True}))
+    assert "armed_default" not in ns["load_state"]()
+    state.write_text(json.dumps({"armed": False}))                # a human's pause
+    assert "armed_default" not in ns["load_state"]()
+
+
+def test_a_declared_armed_gold_lane_keeps_its_resting_entries(monkeypatch, tmp_path) -> None:
+    sent, orders, ns = _withdraw_world(monkeypatch, tmp_path, ["e8", "fusion"])
+    assert ns["withdraw_lane_gold"]({"armed": True}) == 0
+    assert sent == [] and len(orders) == 3
+
+
+def test_live_ledger_sees_broker_wall_time_close_once_and_filters_other_magic(tmp_path) -> None:
+    """An observed close labelled UTC+3 must be recorded now, rather than three hours late."""
+    observed = datetime(2026, 10, 8, 22, 59, tzinfo=UTC)
+    class FrozenClock:
+        @staticmethod
+        def now(tz=None):
+            return observed
+
+        fromtimestamp = staticmethod(datetime.fromtimestamp)
+
+    own = SimpleNamespace(ticket=209521615, entry=1, magic=341953,
+                          position_id=233700226, comment="[tp 0.57870]", symbol="AUDCHF",
+                          profit=2.57, commission=-0.81, swap=0.0, type=1, volume=0.4,
+                          price=0.57871, time=int((observed+timedelta(hours=3)).timestamp()),
+                          order=233702129)
+    foreign = SimpleNamespace(**{**vars(own), "magic":99, "ticket":88})
+    calls = []
+
+    def history(start, end):
+        calls.append((start,end))
+        return [d for d in (own,foreign) if start.timestamp() <= d.time <= end.timestamp()]
+
+    venue = SimpleNamespace(DEAL_ENTRY_OUT=1, DEAL_ENTRY_OUT_BY=3, POSITION_TYPE_BUY=0,
+                            history_deals_get=history, account_info=lambda:None,
+                            symbol_info=lambda _:SimpleNamespace(trade_contract_size=100000,
+                                                                 trade_tick_value=1,
+                                                                 trade_tick_size=0.00001))
+    ledger = tmp_path/"live_ledger.jsonl"
+    ns = _exec(("record_trades",), {
+        "mt5":venue, "datetime":FrozenClock, "LEDGER":ledger, "log":lambda *_:None,
+        "now":lambda:observed.isoformat(),
+        "_prov":SimpleNamespace(current_account=lambda _:None, stamp=lambda _:{}),
+        "_position_entry":lambda _:{"entry_price":0.57865,"sl":0.577,"tp":0.57870,
+                                   "comment":"DWaudchf_overnight_gap_decay_asia",
+                                   "entry_side":0, "entry_time":observed.isoformat(),
+                                   "entry_order":233700226, "entry_deal":209520348,
+                                   "entry_volume":0.4, "entry_cost":-0.81,
+                                   "entry_cost_measured":True}})
+    ns["record_trades"]({"armed":True}, [])
+    ns["record_trades"]({"armed":True}, [])
+    rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+    assert len(rows) == 1 and rows[0]["deal"] == own.ticket
+    assert rows[0]["position_id"] == 233700226
+    assert rows[0]["timestamp_basis"] == "broker_deal_epoch"
+    assert rows[0]["exit_time"] == datetime.fromtimestamp(own.time,UTC).isoformat()
+    assert rows[0]["time"] == observed.isoformat()
+    assert rows[0]["pl_quote"] == pytest.approx(0.95)
+    assert rows[0]["entry_cost_allocated"] == pytest.approx(-0.81)
+    assert rows[0]["net_cost_status"] == "MEASURED"
+    assert calls[0] == (observed-timedelta(days=30),observed+timedelta(days=1))
+    ns["record_trades"]({"armed":False}, [])
+    assert len(calls) == 2, "unarmed adapter must not query or write the ledger"
+
+
+def test_entry_cost_is_collected_from_all_opening_fills():
+    venue = SimpleNamespace(DEAL_ENTRY_IN=0,
+        history_orders_get=lambda **_:[],
+        history_deals_get=lambda **_:[
+            SimpleNamespace(entry=0, ticket=1, order=7, type=0, price=1.2,
+                            volume=0.2, commission=-0.4, fee=-0.1, swap=0, time=100),
+            SimpleNamespace(entry=0, ticket=2, order=7, type=0, price=1.2,
+                            volume=0.3, commission=-0.6, fee=-0.15, swap=0, time=101),
+            SimpleNamespace(entry=1, volume=0.5, commission=-1.0, fee=0, swap=0)])
+    ns = _exec(("_position_entry",), {"mt5":venue,"log":lambda *_:None})
+    ctx = ns["_position_entry"](7)
+    assert ctx["entry_volume"] == pytest.approx(0.5)
+    assert ctx["entry_cost"] == pytest.approx(-1.25)
+    assert ctx["entry_deal"] == 1 and ctx["entry_cost_measured"]
+
+
+@pytest.mark.parametrize("cost_measured", [True, False])
+def test_partial_closes_allocate_entry_cost_once_proportionally(tmp_path, cost_measured):
+    common = {"entry":1, "magic":341953, "position_id":7, "comment":"DWtest",
+              "symbol":"AUDCHF", "profit":2, "commission":-0.5, "swap":0, "fee":-0.1,
+              "type":1, "price":1.21, "time":100, "order":8}
+    closes = [SimpleNamespace(**common,ticket=11,volume=0.2),
+              SimpleNamespace(**common,ticket=12,volume=0.3)]
+    venue = SimpleNamespace(DEAL_ENTRY_OUT=1,DEAL_ENTRY_OUT_BY=3,POSITION_TYPE_BUY=0,
+        history_deals_get=lambda *_:closes,account_info=lambda:None,
+        symbol_info=lambda _:SimpleNamespace(trade_contract_size=100000))
+    ledger=tmp_path/"ledger.jsonl"
+    ns = _exec(("record_trades",), {"mt5":venue,"LEDGER":ledger,
+        "log":lambda *_:None,"now":lambda:"2026-10-09T00:00:00Z",
+        "_prov":SimpleNamespace(current_account=lambda _:None,stamp=lambda _:{}),
+        "_position_entry":lambda _:{"entry_price":1.2,"sl":1.19,"tp":1.22,
+            "comment":"DWtest","entry_side":0,"entry_time":None,
+            "entry_order":7,"entry_deal":1,"entry_volume":0.5,
+            "entry_cost":-1.25,"entry_cost_measured":cost_measured}})
+    ns["record_trades"]({"armed":True},[])
+    original=ledger.read_bytes()
+    ns["record_trades"]({"armed":True},[])
+    assert ledger.read_bytes()==original
+    rows=[json.loads(line) for line in original.splitlines()]
+    if cost_measured:
+        assert sum(r["entry_cost_allocated"] for r in rows)==pytest.approx(-1.25)
+        assert sum(r["pl_quote"] for r in rows)==pytest.approx(1.55)
+        assert all(not r["r_unreconstructible"] for r in rows)
+    else:
+        assert all(r["entry_cost_allocated"] is None for r in rows)
+        assert all(r["net_cost_status"] == "UNMEASURED_ENTRY_COST" for r in rows)
+        assert all(r["r_unreconstructible"] for r in rows)
+
+
+def test_market_book_exit_requires_complete_broker_evidence_and_survives_restart(tmp_path):
+    from mt5desk.netting import TheoreticalBook
+
+    name="audchf_overnight_gap_decay_asia_principal"
+    symbol="AUDCHF"
+    path=tmp_path/"book.jsonl"
+    book=TheoreticalBook(path)
+    book.set_target(name,symbol,0.4,"family_market",price=0.57865)
+    book.fill(name,symbol,0.4,0.57865)
+    prefix=path.read_bytes()
+    history=[SimpleNamespace(entry=1,volume=0.2,price=0.57871)]
+    positions=[]
+    term=SimpleNamespace(DEAL_ENTRY_OUT=1,POSITION_TYPE_BUY=0,
+        positions_get=lambda **_:positions,
+        account_info=lambda:SimpleNamespace(login=424242,server="FusionMarkets-Live"),
+        history_deals_get=lambda **_:history)
+    ns=_exec(("_record_closed_market_book","_closing_fill","order_comment"),
+             {"mt5":term,"_netting_book":lambda:book,"log":lambda *_:None})
+    deal=SimpleNamespace(symbol=symbol,position_id=7,magic=341953)
+    ctx={"comment":ns["order_comment"](name),"entry_cost_measured":True,
+         "entry_volume":0.4,"entry_side":0}
+    sleeves=[{"name":name,"symbol":symbol,"exec":"family_market"}]
+    ns["_record_closed_market_book"](deal,ctx,sleeves)
+    assert path.read_bytes()==prefix, "a partial history cannot prove a complete exit"
+    history.append(SimpleNamespace(entry=1,volume=0.2,price=0.57873))
+    positions.append(SimpleNamespace(ticket=7))
+    ns["_record_closed_market_book"](deal,ctx,sleeves)
+    assert path.read_bytes()==prefix, "a still-open position cannot be erased"
+    positions[0]=SimpleNamespace(ticket=99)
+    ns["_record_closed_market_book"](deal,ctx,sleeves)
+    assert path.read_bytes()==prefix, "another position makes the legacy book match ambiguous"
+    positions.clear()
+    term.account_info=lambda:None
+    ns["_record_closed_market_book"](deal,ctx,sleeves)
+    assert path.read_bytes()==prefix, "unknown account identity cannot create a receipt"
+    term.account_info=lambda:SimpleNamespace(login=424242,server="FusionMarkets-Live")
+    ns["_record_closed_market_book"](deal,ctx,sleeves+sleeves)
+    assert path.read_bytes()==prefix, "ambiguous sleeve tags cannot own an exit"
+    ns["_record_closed_market_book"](deal,ctx,sleeves)
+    assert path.read_bytes().startswith(prefix)
+    assert book.account_position(symbol)==0 and book.theoretical(symbol)=={}
+    repaired=path.read_bytes()
+    assert len(repaired.splitlines())==len(prefix.splitlines())+1
+    book=TheoreticalBook(path)
+    assert book.theoretical(symbol)=={}, "exit and target reset must replay together"
+    ns["_record_closed_market_book"](deal,ctx,sleeves)
+    assert path.read_bytes()==repaired
+    assert book.account_position(symbol)==0
+
+
+def test_netting_fill_receipt_deduplicates_after_restart_and_failed_write(tmp_path,monkeypatch):
+    from mt5desk.netting import TheoreticalBook
+
+    path=tmp_path/"fills.jsonl"
+    book=TheoreticalBook(path)
+    original=book._append
+    def broken(_):
+        raise OSError("disk unavailable")
+    monkeypatch.setattr(book,"_append",broken)
+    with pytest.raises(OSError):
+        book.set_target("a","AUDCHF",0.4,price=1.0)
+    assert book.theoretical("AUDCHF")=={}
+    with pytest.raises(OSError):
+        book.fill("a","AUDCHF",0.4,1.0,event_id="deal/7")
+    assert book.account_position("AUDCHF")==0
+    monkeypatch.setattr(book,"_append",original)
+    assert book.fill("a","AUDCHF",0.4,1.0,event_id="deal/7") is not None
+    prefix=path.read_bytes()
+    replay=TheoreticalBook(path)
+    assert replay.fill("a","AUDCHF",0.4,1.0,event_id="deal/7") is None
+    assert replay.account_position("AUDCHF")==0.4 and path.read_bytes()==prefix
+
+
 def test_close_by_deals_are_closing_fills_not_lost_attribution() -> None:
     deals = [SimpleNamespace(entry=3, volume=0.02, price=4317.5)]
     mt5 = SimpleNamespace(DEAL_ENTRY_OUT=1, DEAL_ENTRY_OUT_BY=3,
@@ -950,7 +1258,8 @@ def test_no_bracket_is_sent_at_or_after_the_cancel_hour() -> None:
     sig = loop.index('if hour < s["sig_hour"]:')
     cancel = loop.index("if _past_cancel_hour(hour):")
     assert sig < cancel < loop.index("sym = mt5.symbol_info(s[\"symbol\"])")
-    assert "st[\"placement_pass\"] = tnow.isoformat()" in _GW_SRC
+    assert 'st["placement_pass"] = _now_utc.isoformat(timespec="seconds")' in _GW_SRC
+    assert 'st["placement_pass_clock"] = "utc"' in _GW_SRC
 
 
 # ------------------------------------------- main(): the pause file and placement idempotence
@@ -963,14 +1272,18 @@ def test_no_bracket_is_sent_at_or_after_the_cancel_hour() -> None:
 #: A Tuesday, 09:30 UTC: past the asia window's 07:00 signal hour, before london_am (13:00),
 #: afternoon (17:00), the 19:30 close and the 20:30 cancel. `main()` dates the tick against the
 #: wall clock, so the clock it reads is pinned here too.
+#: `_WHEN` is the BROKER's clock -- the tick and the bars are stamped in it, and the windows are
+#: written in it. The wall clock the gateway reads is that instant's true UTC (06:30 on this
+#: date, New York on daylight time), which is how the stale-tick gate ages a live tick as fresh.
 _WHEN = datetime(2026, 9, 8, 9, 30, tzinfo=UTC)
+_WHEN_UTC = broker_to_utc(_WHEN).to_pydatetime()
 _DAY = "2026-09-08"
 
 
 class _Clock(datetime):
     @classmethod
     def now(cls, tz=None):
-        return _WHEN.astimezone(tz) if tz else _WHEN.replace(tzinfo=None)
+        return _WHEN_UTC.astimezone(tz) if tz else _WHEN_UTC.replace(tzinfo=None)
 
 
 def _gold_rows(n: int = 400) -> list[dict]:
@@ -1047,8 +1360,21 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
     """`main` and the placement path exec'd from the source, over the real core, with the
     pause file read by THE REAL READER (`mt5desk.config.gateway_paused`) pointed at a private
     data/ directory, and every venue read, file write and sibling adapter faked."""
+    # The clock is 09:30 server, 2.5h past asia's 07:00: the late-gold-send rule (r6,
+    # decision_core.GOLD_SEND_GRACE_MIN) is lifted for these mechanics tests and pinned in
+    # test_fusion_book_r6.py, which runs `main` with it back on.
+    monkeypatch.setattr(dc, "GOLD_SEND_GRACE_MIN", 24 * 60.0)
     data = tmp_path / "data"
     data.mkdir(exist_ok=True)
+    # Keep the real staleness guard, but give this isolated fake venue its own
+    # research heartbeat and report. The test must not depend on a live checkout.
+    from mt5desk import desk_staleness
+    heartbeat = data / "research_heartbeat.json"
+    heartbeat.write_text("{}", "utf-8")
+    reader = desk_staleness.staleness
+    monkeypatch.setattr(desk_staleness, "staleness",
+                        lambda: reader(heartbeats=(heartbeat,)))
+    monkeypatch.setattr(desk_staleness, "OUT", data / "DESK_STALE.json")
     pause = data / "GATEWAY_PAUSED"
     monkeypatch.setattr(_cfg, "PAUSE_FILE", pause)
     if paused:
@@ -1068,6 +1394,9 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
         "sleeve_set": lambda: dc.roster({}, [])[0],
         "manage_open_positions": lambda st, sleeves: None,
         "release_gate": lambda: (True, "release identity ok (test)"),
+        # The armed-deadman gate (r6) is faked like the release gate; test_fusion_book_r6.py runs
+        # `main` with the REAL reader and no stamp, and pins that nothing is sent.
+        "fusion_deadman_armed": lambda: (True, "fusion deadman LIVE (test)"),
         "regime_hibernate": lambda sleeves: set(),
         "load_sleeves": lambda: [],
         "ledger_rows": lambda: [],
@@ -1087,6 +1416,7 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
         "_record_vetoed_bracket": lambda *a, **k: False,
         "_expiry_request": lambda symbol, sleeve="", window=None: {"type_time": 0},
         "expire_stale_brackets": lambda st: 0,
+        "cancel_requested": lambda st: 0,
         "cancel_filled_gold_siblings": lambda st: 0,
         "collapse_opposing_gold_positions": lambda st: 0,
         "cancel_pending": lambda st, symbol: None,
@@ -1119,7 +1449,10 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
     return _exec(("main", "_past_cancel_hour", "place_bracket", "note_placement",
                   "_rejection_streak_expired", "load_state", "save_state", "now",
                   "_sleeve_identity", "resolve_pending_bracket", "bracket_lane_lot",
-                  "_book_key", "order_comment", "_sleeve_positions", "close_sleeve_positions", "family_position_tags", "scalp_position_tags", "_send_error"), ns)
+                  "_book_key", "order_comment", "_sleeve_positions", "close_sleeve_positions", "family_position_tags", "scalp_position_tags", "_send_error",
+                  "gold_one_at_risk", "cancel_gold_against_direction",
+                  "flatten_gold_against_direction", "_missed_usd", "gold_follow_state",
+                  "gold_follow_grace_min", "_iso_utc"), ns)
 
 
 def test_main_with_the_pause_file_present_sends_nothing_and_writes_no_state(
@@ -1157,7 +1490,11 @@ def test_a_second_pass_in_one_day_recovers_the_bracket_the_terminal_holds_and_se
     ns["main"]()                                          # same day, state intact: the guard
     assert len(mt5.sent) == 2
 
-    mt5.pending = [SimpleNamespace(ticket=i + 1, symbol="XAUUSD", price_open=r["price"])
+    # The resting legs carry the window's own comment, as the venue's do: the one-gold-at-risk
+    # guard (decision_core.gold_at_risk_block) lets a window's OWN pending bracket through to
+    # this recovery path and blocks only another window's, or an unlabelled one.
+    mt5.pending = [SimpleNamespace(ticket=i + 1, symbol="XAUUSD", price_open=r["price"],
+                                   comment=r["comment"])
                    for i, r in enumerate(mt5.sent)]
     ns["_state_file"].write_text(json.dumps({"armed": True, "brackets": {},
                                              "last_bracket_date": None}), "utf-8")
@@ -1175,10 +1512,12 @@ def test_fusion_suppresses_the_same_opposing_gold_leg_as_e8(tmp_path, monkeypatc
     mt5 = _Terminal(rows, *_quote(rows))
     # Any readable open long XAU exposure makes a new sell-stop a self-hedge.  The position is
     # deliberately manual (magic 0), proving the rule reads economic exposure rather than a
-    # fragile comment convention.
+    # fragile comment convention.  Its stop is at break-even (sl == entry): since the
+    # one-gold-trade-at-risk guard, a long still AT RISK blocks the whole window, so the
+    # self-hedge fence is exercised on the exposure that guard lets through.
     mt5.positions = [SimpleNamespace(symbol="XAUUSD", type=mt5.POSITION_TYPE_BUY,
                                      volume=0.01, magic=0, comment="manual", ticket=77,
-                                     price_open=2000.0, sl=1900.0, tp=2200.0,
+                                     price_open=2000.0, sl=2000.0, tp=2200.0,
                                      time=int(_WHEN.timestamp()))]
     ns = _main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
 
@@ -1248,6 +1587,47 @@ def test_a_fixed_family_position_uses_only_the_fast_floor_not_the_trail() -> Non
     assert not any("ATR unavailable" in x for x in ns["_logs"])
 
 
+def test_a_refused_family_position_off_the_roster_keeps_its_fixed_bracket() -> None:
+    """2026-10-13: a sleeve the live policy refuses leaves the roster, but its open position
+    was opened on a fixed bracket. It is still managed (its symbol may be on no other row), and
+    as a fixed bracket: the floor path, never the trail."""
+    sent: list = []
+    ns = _manage_ns(_manage_mt5(f"DW{_NAME}", sent))
+    st = {"armed": True, "generic": {_NAME: {"trail_k": 0.0, "open_ttl_until": "x"}}}
+    ns["manage_open_positions"](st, [])
+    assert sent == []
+    assert any("fewer than 1 M1 bars since entry" in x for x in ns["_logs"])
+    assert not any("H1 bars since entry" in x for x in ns["_logs"])
+
+
+def test_a_refused_position_on_a_roster_symbol_gets_the_floor_never_the_trail() -> None:
+    """Its symbol is still traded by another roster row: the refused name keeps its fixed
+    bracket there too (it is in the family lane's state), so the trail never runs on it."""
+    sent: list = []
+    ns = _manage_ns(_manage_mt5("DWretired_eurusd_fam", sent))
+    st = {"armed": True, "generic": {"retired_eurusd_fam": {"trail_k": 0.0}}}
+    ns["manage_open_positions"](st, [_sleeve()])
+    assert sent == []
+    assert any("fewer than 1 M1 bars since entry" in x for x in ns["_logs"])
+    assert not any("H1 bars since entry" in x for x in ns["_logs"])
+
+
+def test_an_exit_only_symbol_never_manages_an_untagged_position() -> None:
+    """A symbol on no roster row is visited only for a refused sleeve's own tagged positions;
+    a manual or untagged position sitting on it is left alone."""
+    sent: list = []
+    mt5 = _manage_mt5(f"DW{_NAME}", sent)
+    tagged = SimpleNamespace(ticket=501, type=0, price_open=1.1100, sl=1.1050, tp=1.1150,
+                             comment=f"DW{_NAME}", time=1_800_000_000, symbol="CHFNOK")
+    manual = SimpleNamespace(**{**vars(tagged), "ticket": 777, "comment": ""})
+    book = [tagged, manual]
+    mt5.positions_get = lambda symbol=None: [p for p in book if symbol in (None, p.symbol)]
+    ns = _manage_ns(mt5)
+    ns["manage_open_positions"]({"armed": True, "generic": {_NAME: {"trail_k": 0.0}}}, [])
+    seen = [x for x in ns["_logs"] if "bars since entry" in x]
+    assert sent == [] and len(seen) == 1           # the tagged position only, never the manual
+
+
 def test_a_family_position_whose_signal_carried_a_trail_is_still_managed() -> None:
     sent: list = []
     ns = _manage_ns(_manage_mt5(f"DW{_NAME}", sent))
@@ -1299,6 +1679,75 @@ def test_retired_sleeves_open_positions_are_closed_from_the_queue(tmp_path) -> N
     book.clear()
     ns["close_retired_positions"]({"armed": True})
     assert len(sent) == 1 and json.loads(queue.read_text("utf-8"))["names"] == []
+
+
+def _refused_ns(book, sent, logs, booked, tmp_path):
+    mt5 = SimpleNamespace(
+        TRADE_ACTION_DEAL=1, ORDER_TYPE_BUY=0, ORDER_TYPE_SELL=1, POSITION_TYPE_BUY=0,
+        positions_get=lambda *a, **k: [p for p in book
+                                       if not k.get("symbol") or p.symbol == k["symbol"]],
+        symbol_info_tick=lambda symbol: SimpleNamespace(bid=0.7130, ask=0.7132),
+        order_send=lambda req: (sent.append(req) or SimpleNamespace(retcode=10009)))
+    flag = tmp_path / "GENERIC_EXEC_ENABLED"
+    flag.write_text("1", "utf-8")
+    return _exec(("close_refused_sleeve_ttls", "close_sleeve_positions", "_sleeve_positions",
+                  "order_comment"),
+                 {"mt5": mt5, "log": logs.append, "MAGIC": 1, "GENERIC_EXEC_ENABLED": flag,
+                  "_book_target": lambda *a: booked.append(a)})
+
+
+def test_a_refused_sleeve_still_gets_its_time_exit(tmp_path) -> None:
+    """2026-10-13: the live policy refuses a quarantined row (no new entries), and the TTL loop
+    walks the roster, so its open position outlived its certified time exit. The family lane's
+    own state names it; once the deadline passes it is closed by its tag, on its own symbol."""
+    sent: list[dict] = []
+    logs: list[str] = []
+    booked: list[tuple] = []
+    book = [SimpleNamespace(ticket=905, type=0, volume=0.02, symbol="CHFNOK",
+                            comment=f"DW{_NAME}")]
+    ns = _refused_ns(book, sent, logs, booked, tmp_path)
+    st = {"armed": True, "generic": {_NAME: {"open_ttl_until": "2000-01-01T00:00:00+00:00"},
+                                      "on_roster": {"open_ttl_until": "2000-01-01T00:00:00"}}}
+    ns["close_refused_sleeve_ttls"](st, [{"name": "on_roster", "symbol": "AUDCHF"}])
+    (req,) = sent
+    assert req["position"] == 905 and req["symbol"] == "CHFNOK" and req["type"] == 1
+    assert booked == [(_NAME, "CHFNOK", 0.0, "ttl")]
+    assert "open_ttl_until" not in st["generic"][_NAME]
+    assert st["generic"]["on_roster"]["open_ttl_until"]     # the roster's own loop owns it
+
+
+def test_an_off_roster_name_sharing_a_live_rows_tag_is_never_ttl_closed(tmp_path) -> None:
+    """order_comment truncates to COMMENT_MAX: a retired name and a LIVE row can share one tag.
+    The retired name's expired deadline must never close the live sleeve's position."""
+    live = "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
+    retired = "audchf_overnight_gap_decay_asia_p_44136fa355b3678a"
+    sent: list[dict] = []
+    logs: list[str] = []
+    booked: list[tuple] = []
+    ns = _refused_ns([], sent, logs, booked, tmp_path)
+    assert ns["order_comment"](live) == ns["order_comment"](retired)
+    book = [SimpleNamespace(ticket=907, type=0, volume=0.02, symbol="AUDCHF",
+                            comment=ns["order_comment"](live))]
+    ns = _refused_ns(book, sent, logs, booked, tmp_path)
+    st = {"armed": True, "generic": {retired: {"open_ttl_until": "2000-01-01T00:00:00+00:00"}}}
+    ns["close_refused_sleeve_ttls"](st, [{"name": live, "symbol": "AUDCHF"}])
+    assert sent == [] and booked == []
+    assert any("shared with a roster sleeve" in x for x in logs)
+
+
+def test_a_refused_sleeve_before_its_deadline_or_unarmed_is_left_alone(tmp_path) -> None:
+    sent: list[dict] = []
+    logs: list[str] = []
+    booked: list[tuple] = []
+    book = [SimpleNamespace(ticket=906, type=1, volume=0.02, symbol="USDJPY",
+                            comment=f"DW{_NAME}")]
+    ns = _refused_ns(book, sent, logs, booked, tmp_path)
+    st = {"armed": True, "generic": {_NAME: {"open_ttl_until": "2999-01-01T00:00:00+00:00"}}}
+    ns["close_refused_sleeve_ttls"](st, [])
+    assert sent == [] and st["generic"][_NAME]["open_ttl_until"]
+    st = {"armed": False, "generic": {_NAME: {"open_ttl_until": "2000-01-01T00:00:00+00:00"}}}
+    ns["close_refused_sleeve_ttls"](st, [])
+    assert sent == [] and any("SHADOW would TTL-close off-roster" in x for x in logs)
 
 
 def test_unarmed_the_retired_close_only_logs(tmp_path) -> None:

@@ -70,15 +70,18 @@ def test_main_uses_configured_terminal_and_never_runs_on_failed_attach(tmp_path,
 
 def test_a_window_is_planned_once_at_or_after_its_signal_hour_before_the_cancel_hour() -> None:
     df = _bars()
-    # 07:30 server: the Asia window (signal hour 7, range 00-07) is due; london_am (13) is not.
-    due = g.plan(df, 7.5, {"windows": {}})
+    # 07:03 server: the Asia window (signal hour 7, range 00-07) is due; london_am (13) is not.
+    due = g.plan(df, 7.05, {"windows": {}})
     assert [d["window"] for d in due] == ["asia"]
     spec = due[0]["spec"]
     assert spec["buy_stop"]["price"] == due[0]["hi"] and spec["sell_stop"]["price"] == due[0]["lo"]
     assert spec["buy_stop"]["sl"] < spec["buy_stop"]["price"] < spec["buy_stop"]["tp"]
     assert spec["sell_stop"]["tp"] < spec["sell_stop"]["price"] < spec["sell_stop"]["sl"]
     # Already placed today: not again.
-    assert g.plan(df, 7.5, {"windows": {"asia": {}}}) == []
+    assert g.plan(df, 7.05, {"windows": {"asia": {}}}) == []
+    # Past signal hour + GOLD_SEND_GRACE_MIN (5 min): late, not planned, and named (r6).
+    assert g.plan(df, 7.5, {"windows": {}}) == []
+    assert [w for w, _ in g.late_windows(7.5, {"windows": {}})] == ["asia"]
     # Past the cancel hour: nothing is placed.
     assert g.plan(df, CANCEL_HOUR + 0.1, {"windows": {}}) == []
     # Before the signal hour: nothing.
@@ -186,8 +189,11 @@ def test_a_late_pass_never_places_a_window_whose_session_has_ended() -> None:
     """2026-09-21/23/24 on E8: windows placed hours late off stale ranges (-950 USD in one
     second on 09-24). Due inside its session, refused once the next window's hour arrives."""
     df = _bars()
-    assert [d["window"] for d in g.plan(df, 12.9, {"windows": {}})] == ["asia"]
+    # Inside its session but past the send grace (r6): late, held back, and named as late.
+    assert g.plan(df, 12.9, {"windows": {}}) == []
+    assert [w for w, _ in g.late_windows(12.9, {"windows": {}})] == ["asia"]
     assert "asia" not in [d["window"] for d in g.plan(df, 13.0, {"windows": {}})]
+    assert "asia" not in [w for w, _ in g.late_windows(13.0, {"windows": {}})]
     # 20:29 server, the 09-21 catch-up pass: nothing at all.
     assert g.plan(df, 20.49, {"windows": {}}) == []
 

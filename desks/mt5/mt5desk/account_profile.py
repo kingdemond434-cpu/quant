@@ -55,6 +55,7 @@ among them and the SIZE of them differ, and only those two are tuned here.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -229,7 +230,7 @@ MIN_VIABLE_EXPECTANCY = 0.02
 
 
 def risk_for_expectancy(exp_r: float | None,
-                        profile: "AccountProfile | None" = None) -> tuple[float, str]:
+                        profile: AccountProfile | None = None) -> tuple[float, str]:
     """Fastest safe risk fraction for a MEASURED expectancy. Returns (risk_frac, why).
 
     Unmeasured expectancy returns the conservative default and says so. It never guesses upward:
@@ -279,14 +280,38 @@ DECLARATIONS_REL = "desks/mt5/data/ACCOUNT_PROFILES.json"
 #: Key shape in that file: "<login>@<server>" -> profile name. Login alone is not enough, for the
 #: reason `provenance.same_account` already gives: a broker that reuses logins across servers
 #: would collide, and the demo and live sides of one broker differ by exactly this pair.
-def account_key(acc: dict[str, Any] | None) -> str | None:
-    """The declaration key for a `provenance.current_account()` dict, or None if unidentifiable."""
+def declaration_key(acc: dict[str, Any] | None) -> str | None:
+    """The declaration key for a `provenance.current_account()` dict, or None if unidentifiable.
+
+    PLAIN "<login>@<server>" -- the RAW LOGIN, by design: it is the key of the box-local,
+    gitignored ACCOUNT_PROFILES.json. Renamed from `account_key` (v5c) so it can never be
+    mistaken for `libs.ops.provenance.account_key`, the keyed HMAC that rows are stamped with.
+    It must never reach a published or committed file; the login fence refuses one that does
+    (its `N@server` rule and the declared-number match)."""
     if not acc:
         return None
     login, server = acc.get("login"), acc.get("server")
     if login in (None, "") or server in (None, ""):
         return None
     return f"{login}@{server}"
+
+
+def reason_label(acc: dict[str, Any] | None) -> str:
+    """How a REASON STRING names the connected account: its HMAC account key
+    (`libs.ops.provenance.account_key(login, server, create=False)`), or the text
+    "declared prop account" when that key is unavailable (no provenance on this tree, no box key,
+    an unreadable login). NEVER the "<login>@<server>" declaration key: these reasons reach
+    `cap_by_heat`'s note and gateway.log, and a log line is not where a login lives (coordinator
+    ruling, r7). Display only -- the declaration lookup still uses `account_key`. Never raises."""
+    try:
+        from libs.ops import provenance
+        key = provenance.account_key((acc or {}).get("login"), (acc or {}).get("server"),
+                                     create=False)
+    except Exception:
+        key = None
+    if isinstance(key, str) and re.fullmatch(r"sha256:[0-9a-f]{16}", key):
+        return f"account {key}"
+    return "declared prop account"
 
 
 def read_declarations(root: Path) -> tuple[dict[str, str] | None, str]:
@@ -346,7 +371,7 @@ def envelope_for_connected(acc: dict[str, Any] | None,
     declared, why = read_declarations(root)
     if declared is None:
         return None, f"{why}; the account envelope is unchanged from the desk's own"
-    key = account_key(acc)
+    key = declaration_key(acc)
     if key is None:
         return E8_PRO, (
             f"the terminal did not name the connected account (login/server missing) while "
@@ -358,14 +383,14 @@ def envelope_for_connected(acc: dict[str, Any] | None,
         # missing declaration. An operator reading "not named" after a torn write would go and
         # add a line that is already there.
         return E8_PRO, (
-            f"account {key} is not declared ({why}); failing closed to "
+            f"{reason_label(acc)} is not declared ({why}); failing closed to "
             f"{E8_PRO.name} rather than sizing an undeclared account at the live envelope")
     prof = PROFILES.get(name)
     if prof is None:
         return E8_PRO, (
-            f"account {key} is declared as {name!r}, which is not a known profile "
+            f"{reason_label(acc)} is declared as {name!r}, which is not a known profile "
             f"({', '.join(sorted(PROFILES))}); failing closed to {E8_PRO.name}")
-    return prof, f"account {key} is declared {prof.name} ({why})"
+    return prof, f"{reason_label(acc)} is declared {prof.name} ({why})"
 
 
 def venue_heat_cap(acc: dict[str, Any] | None, root: Path) -> tuple[float | None, str]:

@@ -363,7 +363,15 @@ def simulate(df: pd.DataFrame, sigs: Sequence[Sig], meta: Mapping[str, Any]) -> 
             if hit is None:
                 continue
             fill_i, entry = hit, float(s.trigger)
-        unit = abs(entry - s.stop)
+        # A venue fill needs a finite bracket in the position's direction.
+        # A machine-rounding residual cannot define a unit of economic risk.
+        levels = (entry, float(s.stop), float(s.target))
+        if s.side not in (-1, 1) or not all(math.isfinite(x) for x in levels):
+            continue
+        precision = 8 * math.ulp(max(abs(x) for x in levels))
+        unit = s.side * (entry - s.stop)
+        if unit <= precision or s.side * (s.target - entry) <= precision:
+            continue
         exit_px: float | None = None
         exit_i = -1
         why = "ttl"
