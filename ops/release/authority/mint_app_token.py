@@ -36,10 +36,30 @@ def jwt(app_id: str, key_pem: bytes, now: float | None = None) -> str:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--app-id", required=True)
-    ap.add_argument("--installation-id", required=True)
+    ap.add_argument("--installation-id")
     ap.add_argument("--key", required=True)
+    ap.add_argument("--find-installation", metavar="OWNER",
+                    help="print the App's installation id on OWNER's account and exit")  # fmt: skip
     a = ap.parse_args(argv)
     token = jwt(a.app_id, Path(a.key).read_bytes())
+    if a.find_installation:
+        req = urllib.request.Request(
+            "https://api.github.com/app/installations",
+            headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"},
+        )
+        with urllib.request.urlopen(req, timeout=30) as r:
+            got = [
+                i["id"] for i in json.loads(r.read())
+                if str((i.get("account") or {}).get("login", "")).lower()
+                == a.find_installation.lower()
+            ]  # fmt: skip
+        if not got:
+            print("NOT INSTALLED: install the App on the repository first", file=sys.stderr)
+            return 3
+        print(got[0])
+        return 0
+    if not a.installation_id:
+        ap.error("--installation-id is required")
     req = urllib.request.Request(
         f"https://api.github.com/app/installations/{a.installation_id}/access_tokens",
         method="POST",
