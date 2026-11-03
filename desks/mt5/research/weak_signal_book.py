@@ -733,10 +733,24 @@ def publish_coverage(cov, cells: dict, pm: dict, ext: dict, book: dict,
     return out
 
 
+def below_normal() -> str:
+    """The combiner never outranks release, adoption or risk tasks on the box (zuck 11-03 23:41Z:
+    heavy research load stays below them). Lowers this process's priority and says if it took."""
+    try:
+        import psutil
+        me = psutil.Process()
+        want = psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == "nt" else 10
+        me.nice(want)
+        return f"applied={me.nice() == want}"
+    except Exception as exc:  # noqa: BLE001 - a priority we cannot set is reported, not fatal
+        return f"not applied: {type(exc).__name__}"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--budget-s", type=float, default=1200.0)
     a = ap.parse_args()
+    print(f"priority below normal: {below_normal()}")
     d = run(budget_s=a.budget_s)
     c, b = d["coverage"], d["book"]
     print(f"WEAK-SIGNAL BOOK  coverage {c['status']} eligible={c['eligible']} "
