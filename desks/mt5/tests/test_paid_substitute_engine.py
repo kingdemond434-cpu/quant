@@ -18,6 +18,7 @@ import json
 import re
 import sqlite3
 import sys
+from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -226,6 +227,25 @@ def _acquire(tmp: Path, sub_ids: list[str]) -> Path:
     return out
 
 
+#: In-memory registry connections the tests below open; closed after each test, so none is
+#: left for the garbage collector to report as an unclosed database inside a LATER test
+#: (filterwarnings=error turns that ResourceWarning into an unrelated test's failure).
+_OPEN: list[sqlite3.Connection] = []
+
+
+def _mem() -> sqlite3.Connection:
+    conn = sqlite3.connect(":memory:")
+    _OPEN.append(conn)
+    return conn
+
+
+@pytest.fixture(autouse=True)
+def _close_registry_conns() -> Iterator[None]:
+    yield
+    while _OPEN:
+        _OPEN.pop().close()
+
+
 def test_every_enrolled_substitute_feeds_all_three_uses(tmp_path: Path) -> None:
     """Standing rule 2026-09-30: an enrolled substitute feeds direct cells, exogenous_gate
     cells and WORLD_STATE_INPUTS at enrolment, every cell carrying the dataset_id."""
@@ -236,7 +256,7 @@ def test_every_enrolled_substitute_feeds_all_three_uses(tmp_path: Path) -> None:
                                 "utf-8")
     door = _Door()
     doc = pse.run(now=NOW, fetch=False, paths=p, environ={}, door=door, asia_globs=[],
-                  registry_conn=sqlite3.connect(":memory:"))
+                  registry_conn=_mem())
     enrolled = json.loads(p["enrolled"].read_text("utf-8"))["enrolled"]
     ids = {e["dataset_id"] for e in enrolled}
     assert ids == {"psub_fred_bamlh0a0hym2", "psub_cboe_vix"} and doc["headline"]["enrolled"] == 2
@@ -268,7 +288,7 @@ def test_every_enrolled_substitute_feeds_all_three_uses(tmp_path: Path) -> None:
     # idempotent: a second pass enqueues nothing new
     n = len(door.calls)
     pse.run(now=NOW, fetch=False, paths=p, environ={}, door=door, asia_globs=[],
-            registry_conn=sqlite3.connect(":memory:"))
+            registry_conn=_mem())
     assert len(door.calls) == n
 
 
@@ -278,7 +298,7 @@ def test_nothing_is_minted_before_the_series_exists(tmp_path: Path) -> None:
     p = _paths(tmp_path)
     door = _Door()
     doc = pse.run(now=NOW, fetch=False, paths=p, environ={}, door=door, asia_globs=[],
-                  registry_conn=sqlite3.connect(":memory:"))
+                  registry_conn=_mem())
     assert door.calls == [] and doc["headline"]["enrolled"] == 0
     assert doc["headline"]["ready_awaiting_acquisition"] > 0
     lib = {s["id"]: s for s in pse.load_library()}
