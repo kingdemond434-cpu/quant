@@ -90,7 +90,7 @@ def _clean_text(v: Any, cap: int) -> str:
 
 
 def _scalar(v: Any) -> bool:
-    if isinstance(v, bool) or isinstance(v, str):
+    if isinstance(v, (bool, str)):
         return not isinstance(v, str) or len(v) <= 40
     if isinstance(v, int):
         return abs(v) <= 10**9
@@ -135,7 +135,7 @@ def screen(row: Any, *, families: Mapping[str, Iterable[str]] | None = None,
         reasons.append(f"keys outside the contract: {extra[:5]}")
     kind = row.get("kind")
     if kind not in KINDS:
-        return Verdict(False, None, reasons + [f"kind {kind!r} not in {KINDS}"])
+        return Verdict(False, None, [*reasons, f"kind {kind!r} not in {KINDS}"])
 
     out: dict[str, Any] = {"kind": kind}
     for k, cap in TEXT_CAPS.items():
@@ -217,7 +217,7 @@ def screen(row: Any, *, families: Mapping[str, Iterable[str]] | None = None,
             reasons.append("revival needs diagnosis and tweak")
     if kind == "triage":
         try:
-            prior = float(row.get("prior"))
+            prior = float(row.get("prior"))  # type: ignore[arg-type]
         except (TypeError, ValueError):
             prior = float("nan")
         if not (0.0 <= prior <= 1.0):

@@ -24,6 +24,7 @@ WHAT IT DOES PER PASS.
 from __future__ import annotations
 
 import ast
+import contextlib
 import json
 import math
 import os
@@ -235,7 +236,7 @@ class Models:
             ids = {str(m.get("id")).lower() for m in cat if isinstance(m, dict)}
             if ids:
                 self.ladder = [m for m in self.ladder if m.lower() in ids] or self.ladder
-        except Exception as exc:  # noqa: BLE001 -- the catalogue is an optimisation only
+        except Exception as exc:
             self.errors["catalog"] = f"{type(exc).__name__}: {str(exc)[:120]}"
 
     def _headers(self) -> dict[str, str]:
@@ -260,7 +261,7 @@ class Models:
                 if exc.code in (401, 403, 404, 413, 429) or exc.code >= 500:
                     self.dead.add(model)
                 continue
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 self.errors[model] = f"{type(exc).__name__}: {str(exc)[:120]}"
                 self.dead.add(model)
         return None, ""
@@ -287,8 +288,9 @@ def parse_rows(text: str | None) -> list[Any]:
             return doc
         if isinstance(doc, dict):
             for k in ("rows", "kill", "items", "candidates"):
-                if isinstance(doc.get(k), list):
-                    return doc[k]
+                found = doc.get(k)
+                if isinstance(found, list):
+                    return found
     return []
 
 
@@ -363,10 +365,8 @@ def run(*, token: str, n_calls: int = 24, deadline_s: float = 2400.0, out: Path,
     hyp_syms = sorted(s for s, c in uni.items() if c in HYPOTHESIS_CLASSES)
     producers = {str(p.get("producer")) for p in material["producers"] if p.get("producer")}
     seen: set[str] = set()
-    try:
+    with contextlib.suppress(OSError):
         seen = set((root / SEEN_REL).read_text("utf-8").split())
-    except OSError:
-        pass
     scorecard = _read_json(root / SCORECARD_REL)
     weights = role_weights(scorecard)
     schedule = [only_role] * n_calls if only_role else plan(n_calls, weights, material)

@@ -9,11 +9,13 @@
                                 downloaded with the box's own gh, and EVERY row is re-screened
                                 here with the real catalogues (`libs/research/paperclip_lab/
                                 contract.py`) -- the runner's screen is never trusted. Survivors:
-                                  recipe/hypothesis -> data/intelligence/paperclip/discoveries_*.json
-                                                       (the seat door; the compiler and the sealed
-                                                       gauntlet take it from there)
-                                  revival           -> desks/mt5/data/paperclip/revival_proposals.jsonl
-                                                       (for the producer's owner; never applied here)
+                                  recipe/hypothesis -> data/intelligence/paperclip/
+                                                       discoveries_*.json (the seat door; the
+                                                       compiler and the sealed gauntlet take it
+                                                       from there)
+                                  revival           -> desks/mt5/data/paperclip/
+                                                       revival_proposals.jsonl (for the producer's
+                                                       owner; never applied here)
                                   triage            -> desks/mt5/data/paperclip/triage_priors.jsonl
                                                        (ADVISORY: nothing reads it as an order until
                                                        the scorecard measures its precision)
@@ -148,7 +150,7 @@ def export_inbox(limit: int = 400) -> dict[str, Any]:
                           "sym": spec.get("sym") or spec.get("symbol"),
                           "family": spec.get("family"), "params": spec.get("params"),
                           "mechanism": str(spec.get("mechanism") or "")[:300]})
-    except Exception as exc:  # noqa: BLE001 -- an unreadable queue is UNMEASURED, said so
+    except Exception as exc:
         queue = []
         queue_err = f"{type(exc).__name__}: {exc}"[:200]
     else:
@@ -222,12 +224,12 @@ def _box_catalogues() -> tuple[dict[str, list[str]], list[str], set[str]]:
     try:
         from miner_candidate_compiler import _registered_family
         fams = {f: p for f, p in fams.items() if _registered_family(f)} or fams
-    except Exception:  # noqa: BLE001 -- the AST catalogue already mirrors the registration rule
+    except Exception:
         pass
     try:
         from family_policy import family_banned
         fams = {f: p for f, p in fams.items() if not family_banned(f)}
-    except Exception:  # noqa: BLE001
+    except Exception:
         pass
     uni = lab.universe(ROOT)
     syms = sorted(s for s, c in uni.items() if c in lab.HYPOTHESIS_CLASSES)
@@ -324,7 +326,7 @@ def _cell_ids(rows: list[dict[str, Any]]) -> dict[str, str]:
     """cell id -> role, for every donated cell whose identity the box can compute."""
     try:
         from frontier_identity import cell_id
-    except Exception:  # noqa: BLE001
+    except Exception:
         return {}
     out: dict[str, str] = {}
     for r in rows:
@@ -332,7 +334,7 @@ def _cell_ids(rows: list[dict[str, Any]]) -> dict[str, str]:
             try:
                 out[cell_id({"sym": s, "family": r.get("family"),
                              "params": r.get("params") or {}})] = str(r.get("role"))
-            except Exception:  # noqa: BLE001
+            except Exception:
                 continue
     return out
 
