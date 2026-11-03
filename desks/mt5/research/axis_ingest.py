@@ -387,6 +387,26 @@ FRED_DERIVED = {
     "T10YIE": ("DGS10", "DFII10", "10y breakeven inflation (derived: DGS10 - DFII10)"),
 }
 
+#: WHEN EACH PRINT BECAME KNOWABLE -- the discipline COT's `KNOWABLE_LAG_DAYS` applies, recorded
+#: per series so a consumer can shift its join. FRED stamps a point with the day it DESCRIBES.
+#: H.15 (DGS10, DGS2, DFII10) for day d is published business day d+1, so 1 BUSINESS day: a
+#: Friday print is knowable Monday, and a reader adding calendar days would see it on Saturday.
+#: DTWEXBGS is H.10, which the Board releases WEEKLY (Mondays) for the prior week's daily values,
+#: so its worst case is a Monday print knowable the next Monday, or Tuesday after a holiday: 8.
+#: Rounded up, as COT's is: late costs edge, early invents it. A derived spread is as late as its
+#: later leg.
+FRED_KNOWABLE_LAG_DAYS = {"DGS10": 1, "DGS2": 1, "DFII10": 1, "DTWEXBGS": 8}
+FRED_KNOWABLE_LAG_BASIS = ("business days after the date FRED stamps the point (H.15: published "
+                           "business day d+1; H.10 DTWEXBGS: weekly Monday release)")
+
+
+def _fred_lag(sid: str) -> int:
+    if sid in FRED_DERIVED:
+        a, b, _ = FRED_DERIVED[sid]
+        return max(FRED_KNOWABLE_LAG_DAYS[a], FRED_KNOWABLE_LAG_DAYS[b])
+    return FRED_KNOWABLE_LAG_DAYS[sid]
+
+
 #: THIRD-PARTY COPYRIGHTED SERIES: IDEAS_ONLY, NEVER LIVE INPUT (auditor ruling 2026-10-14:
 #: "FRED/CBOE copyrighted series are IDEAS_ONLY"). Each is recorded in the axis document so its
 #: absence reads as a terms decision, never as an empty fetch and never as zero.
@@ -568,7 +588,8 @@ def ingest_fred(fetch=None, key: str | None | bool = True) -> dict:
                     transport[sid] = route
                 break
         if pts:
-            series[sid] = _series_doc(what, pts, transport=transport[sid])
+            series[sid] = _series_doc(what, pts, transport=transport[sid],
+                                      knowable_lag_days=_fred_lag(sid))
             state[sid] = "OK"
         else:
             failed[sid] = "; ".join(reasons)[:400]
@@ -589,7 +610,8 @@ def ingest_fred(fetch=None, key: str | None | bool = True) -> dict:
             failed[sid] = f"EMPTY: {a} and {b} share no date"
             state[sid] = "EMPTY"
             continue
-        series[sid] = _series_doc(what, pts, derived_from=[a, b])
+        series[sid] = _series_doc(what, pts, derived_from=[a, b],
+                                  knowable_lag_days=_fred_lag(sid))
         state[sid] = "OK"
 
     return {"axis": "macro_state", "id": "fred_series",
@@ -598,6 +620,8 @@ def ingest_fred(fetch=None, key: str | None | bool = True) -> dict:
             "n_series": len(series), "n_failed": len(failed), "failed": failed,
             "series_state": state,
             "key_present": bool(api_key),
+            "knowable_lag_days": {sid: _fred_lag(sid) for sid in (*FRED_SERIES, *FRED_DERIVED)},
+            "knowable_lag_basis": FRED_KNOWABLE_LAG_BASIS,
             "transport": transport,
             "ideas_only": {sid: {"terms": why, "missed_growth": FRED_IDEAS_ONLY_MISSED_GROWTH}
                            for sid, why in FRED_IDEAS_ONLY.items()},
@@ -668,11 +692,12 @@ def publish(axis: str, doc: dict, out_dir: Path | None = None,
     base = out_dir or OUT_DIR
     base.mkdir(parents=True, exist_ok=True)
     out = base / f"{axis}.json"
-    out.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+    # ATOMIC, through the driver's one writer (tmp + os.replace, Windows PermissionError fallback).
+    from axis_ingest_all import atomic_write_text
+    atomic_write_text(out, json.dumps(doc, indent=1))
     if report is not None:
-        report.parent.mkdir(parents=True, exist_ok=True)
-        report.write_text(json.dumps({k: v for k, v in doc.items() if k != "rows"}, indent=1),
-                          encoding="utf-8")
+        atomic_write_text(report, json.dumps({k: v for k, v in doc.items() if k != "rows"},
+                                             indent=1))
     return out
 
 

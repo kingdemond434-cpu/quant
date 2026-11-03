@@ -199,7 +199,7 @@ def test_red_only_after_more_than_two_consecutive_empty_passes_and_green_on_reco
     for i in range(3):
         doc = AIA.update_liveness(doc, _axes(False), t0 + timedelta(hours=i))
         verdicts.append(doc["verdict"])
-    assert verdicts == ["GREEN", "GREEN", "RED"]
+    assert verdicts == ["AMBER", "AMBER", "RED"]          # a missed pass is never GREEN
     assert doc is not None and "fred" in doc["red"] and "fred/DGS10" in doc["red"]
     assert doc["dependencies"]["fred/DGS10"]["empty_streak"] == 3
     assert doc["dependencies"]["fred/DGS10"]["first_empty_at"] == t0.isoformat()
@@ -265,3 +265,120 @@ def test_the_red_check_is_contracted_on_the_ingest_clock() -> None:
     src = (_ROOT / "ops" / "organ_contract.py").read_text("utf-8")
     assert '"MT5-AxisIngest (dependency liveness)"' in src
     assert "DEPENDENCY_LIVENESS.json" in src
+
+
+# ------------------------------------------------------------------ Auditor should-fixes
+def test_any_amber_dependency_makes_the_top_line_amber_never_green() -> None:
+    """Should-fix 1: one series missing a pass, nothing past the RED streak yet."""
+    axes = _axes(True)
+    axes["fred"]["series_state"]["DGS2"] = "ERROR"
+    axes["fred"]["failed"] = {"DGS2": "api: RESET"}
+    doc = AIA.update_liveness(None, axes, datetime(2026, 10, 29, tzinfo=UTC))
+    assert doc["verdict"] == "AMBER" and doc["amber"] == ["fred/DGS2"] and doc["n_red"] == 0
+    assert AIA.update_liveness(None, _axes(True), datetime(2026, 10, 29, tzinfo=UTC))[
+        "verdict"] == "GREEN"
+
+
+def test_process_health_reads_amber_as_a_verdict_not_a_fault(tmp_path: Path) -> None:
+    p = tmp_path / "DEPENDENCY_LIVENESS.json"
+    p.write_text(json.dumps(AIA.update_liveness(None, _axes(False),
+                                                datetime(2026, 10, 29, tzinfo=UTC))), "utf-8")
+    summary = PH.dependency_liveness(p)
+    assert summary["verdict"] == "AMBER" and summary["red"] == []
+    assert "fred/DGS10" in summary["not_delivering"]
+
+
+def test_atomic_write_falls_back_on_a_windows_permission_error(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Should-fix 2: a destination held open on Windows refuses os.replace; the write still
+    lands, and the temp file never survives."""
+    def refuse(*_a: Any) -> None:
+        raise PermissionError(13, "The process cannot access the file")
+
+    monkeypatch.setattr(AIA.os, "replace", refuse)
+    monkeypatch.setattr(AIA, "REPLACE_BACKOFF_S", 0)
+    target = tmp_path / "fred.json"
+    assert AIA.atomic_write_text(target, '{"n_series": 1}') == "direct_fallback"
+    assert json.loads(target.read_text("utf-8")) == {"n_series": 1}
+    assert list(tmp_path.glob("*.tmp")) == []
+
+
+def test_atomic_write_is_atomic_when_it_can_be(tmp_path: Path) -> None:
+    target = tmp_path / "x.json"
+    target.write_text("old", "utf-8")
+    assert AIA.atomic_write_text(target, "new") == "atomic"
+    assert target.read_text("utf-8") == "new" and list(tmp_path.glob("*.tmp")) == []
+
+
+def test_an_unwritable_axis_is_write_failed_never_a_crash(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def refuse(*_a: Any, **_k: Any) -> None:
+        raise PermissionError(5, "Access is denied")
+
+    monkeypatch.setattr(AIA, "atomic_write_text", refuse)   # read-only: both routes refuse
+    out = AIA._write_axis(tmp_path / "fred.json", {"n_series": 1}, 1)
+    assert out["written"] is False and out["write_state"] == "WRITE_FAILED"
+
+
+def test_the_liveness_file_and_report_go_through_the_atomic_writer(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    written: list[str] = []
+    real = AIA.atomic_write_text
+
+    def spy(path: Path, text: str) -> str:
+        written.append(path.name)
+        return real(path, text)
+
+    monkeypatch.setattr(AIA, "atomic_write_text", spy)
+    monkeypatch.setattr(AIA, "OUT_DIR", tmp_path / "axes")
+    monkeypatch.setattr(AIA, "REPORT", tmp_path / "AXIS_INGEST.json")
+    monkeypatch.setattr(AIA, "LIVENESS", tmp_path / "DEPENDENCY_LIVENESS.json")
+    monkeypatch.setattr(AI, "INGESTERS", {"cot": lambda: {"n_rows": 3, "symbols": ["XAUUSD"]}})
+    assert AIA.main(["--apply"]) == 0
+    assert written == ["cot.json", "AXIS_INGEST.json", "DEPENDENCY_LIVENESS.json"]
+
+
+def test_a_partial_pass_carries_what_it_did_not_refresh_marked_stale(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Should-fix 3: DGS2 fails, so T10Y2Y cannot be derived -- the prior file's DGS2 and T10Y2Y
+    stay, marked stale with the time they last refreshed, instead of being erased. A series the
+    ingester no longer asks for (an IDEAS_ONLY copyrighted one) is never carried back in."""
+    out = tmp_path / "axes"
+    out.mkdir()
+    pts = [{"d": "2026-10-20", "v": 1.0}]
+    prior = {"at": "2026-10-28T10:00:00+00:00", "n_series": 4,
+             "series": {sid: {"what": sid, "n": 1, "points": pts}
+                        for sid in ("DGS10", "DGS2", "T10Y2Y", "VIXCLS")}}
+    (out / "fred.json").write_text(json.dumps(prior), "utf-8")
+    monkeypatch.setattr(AIA, "OUT_DIR", out)
+
+    def api(sid: str) -> Any:
+        if sid == "DGS2":
+            return ConnectionResetError(10054, "reset")
+        return _api_body(GOOD[sid])
+
+    doc = AI.ingest_fred(fetch=Fetch(api=api, graph=TimeoutError("timed out")), key=KEY)
+    assert doc["n_series"] > 0 and "DGS2" in doc["failed"] and "T10Y2Y" in doc["failed"]
+    res = AIA._write_axis(out / "fred.json", doc, doc["n_series"])
+    assert res["written"] is True and res["stale_carried"] == ["DGS2", "T10Y2Y"]
+    on_disk = json.loads((out / "fred.json").read_text("utf-8"))
+    for sid in ("DGS2", "T10Y2Y"):
+        s = on_disk["series"][sid]
+        assert s["stale"] is True and s["stale_since"] == prior["at"] and s["points"] == pts
+    assert "stale" not in on_disk["series"]["DGS10"] and on_disk["series"]["DGS10"]["n"] == 2
+    assert "VIXCLS" not in on_disk["series"]
+    assert on_disk["stale_series"] == ["DGS2", "T10Y2Y"]
+    assert on_disk["series_state"]["DGS2"] != "OK"          # the liveness streak still advances
+    # a later partial pass keeps the ORIGINAL stale_since, not the carrying pass's time
+    doc2 = AI.ingest_fred(fetch=Fetch(api=api, graph=TimeoutError("timed out")), key=KEY)
+    AIA._write_axis(out / "fred.json", doc2, doc2["n_series"])
+    again = json.loads((out / "fred.json").read_text("utf-8"))
+    assert again["series"]["T10Y2Y"]["stale_since"] == prior["at"]
+
+
+def test_every_series_records_when_it_became_knowable() -> None:
+    """Should-fix 4: H.15 day d is published business day d+1; H.10 weekly; derived = later leg."""
+    doc = AI.ingest_fred(fetch=Fetch(api=lambda sid: _api_body(GOOD[sid])), key=KEY)
+    lags = {sid: v["knowable_lag_days"] for sid, v in doc["series"].items()}
+    assert lags == {"DGS10": 1, "DGS2": 1, "DFII10": 1, "DTWEXBGS": 8, "T10Y2Y": 1, "T10YIE": 1}
+    assert doc["knowable_lag_days"] == lags and "business" in doc["knowable_lag_basis"]

@@ -492,14 +492,16 @@ DEPENDENCY_LIVENESS = ROOT / "desks" / "mt5" / "reports" / "DEPENDENCY_LIVENESS.
 
 
 def dependency_liveness(path: Path | None = None) -> dict[str, Any]:
-    """The streak verdict, summarised: RED / GREEN / UNMEASURED and which dependencies are RED.
+    """The streak verdict, summarised: RED / AMBER / GREEN / UNMEASURED and which are RED.
+    AMBER (a dependency missed a pass, none past the RED streak) is shown, never a fault.
     Absent or unreadable is UNMEASURED (a host that never ran the ingest), never GREEN."""
     p = path or DEPENDENCY_LIVENESS
     try:
         doc = json.loads(p.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {"verdict": "UNMEASURED", "why": f"{p.name} absent or unreadable on this host"}
-    if not isinstance(doc, dict) or doc.get("verdict") not in ("RED", "GREEN", "UNMEASURED"):
+    if not isinstance(doc, dict) or doc.get("verdict") not in ("RED", "AMBER", "GREEN",
+                                                               "UNMEASURED"):
         return {"verdict": "UNMEASURED", "why": f"{p.name} carries no verdict"}
     deps = doc.get("dependencies") or {}
     return {
