@@ -2026,6 +2026,18 @@ def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None =
             # reason stands on it so the gap is visible rather than silent.
             changed = changed or json.dumps(s, sort_keys=True, default=str) != before
             continue
+        hold = str(s.get("standby_reason") or "").strip()
+        if cap["status"] == "LIVE" and status == "STANDBY" and hold:
+            # A STANDBY SOMEONE ORDERED IS NOT THE PROMOTER'S TO LIFT (2026-10-14). The promoter
+            # writes its own demotions as `demote_reason` and may reverse them on evidence;
+            # `standby_reason` is a hold written by an order from outside it (the 2026-10-13
+            # stop-the-bleed on the AUDCHF/ZAR gap-decay principals), and an allocator reading
+            # does not answer the reason it was written for. The reading is still recorded on
+            # the row; the hold ends when whoever wrote it deletes the field.
+            plog(f"HELD {s['name']} at STANDBY despite an admitting reading -- standby_reason: "
+                 f"{hold[:120]}")
+            changed = changed or json.dumps(s, sort_keys=True, default=str) != before
+            continue
         if cap["status"] == "LIVE" and status == "STANDBY":
             s.update({"status": "LIVE", "risk_frac": cap["risk_frac"],
                       "risk_frac_source": "allocator_marginal",
