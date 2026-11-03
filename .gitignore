@@ -478,6 +478,7 @@ desks/mt5/data/import_stems_cache.json
 # $relPaths: CRO D17 reads box_state_age_hours off the branch, and the plain-English desk health
 # check had no reader off the box at all.
 !desks/mt5/reports/BOX_STATE_FRESHNESS.json
+!desks/mt5/reports/MERGE_PIPELINE.json
 !desks/mt5/reports/DESK_HEALTH.json
 !desks/mt5/reports/process_health.json
 # BACKUP_STATE (v5f): whether the box is backed up and a restore was rehearsed, scheme only
@@ -504,6 +505,7 @@ desks/mt5/data/import_stems_cache.json
 # off-box evidence that the pager itself is running
 !desks/mt5/reports/JUDGE_STALL.json
 !desks/mt5/reports/GAUNTLET_HEARTBEAT.json
+!desks/mt5/reports/BOX_BACKLOG.json
 !desks/mt5/reports/GAUNTLET_STALL.json
 !desks/mt5/reports/judge_alive_fence.json
 !desks/mt5/reports/DEEPENING_MEMORY_GUARD.json
