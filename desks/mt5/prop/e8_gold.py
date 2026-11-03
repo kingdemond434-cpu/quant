@@ -1578,7 +1578,22 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
 
     # OUR OWN ORDERS AND POSITIONS, RE-DERIVED FROM THE VENUE EVERY PASS -- so a rollover (or a
     # lost state file) can neither orphan a position from management nor leave a GTC leg resting.
-    own = own_entry_orders(_journal_rows(), state)
+    journal = _journal_rows()
+    own = own_entry_orders(journal, state)
+    # THE PROP FILLS LEDGER (prop/e8_fills.py): every closed E8 gold position, book "e8", from
+    # the readings this pass already holds -- no new venue call. NEVER RAISES.
+    try:
+        from prop import e8_fills as _e8f
+        doc["fills_ledger"] = _e8f.record_fills(
+            venue, hist_rows, own, journal, position_ids,
+            history_ok="history_unreadable" not in doc, positions_ok=positions_ok,
+            instrument_id=iid, account_key=(doc.get("gold_oco") or {}).get("key"),
+            server_time=doc.get("server_time"), now=now,
+            venue_clock_skew_ms=venue_clock_skew_ms(journal, hist_rows))
+        if doc["fills_ledger"].get("written"):
+            log(f"prop fills ledger: {doc['fills_ledger']['written']} closed E8 position(s)")
+    except Exception as exc:
+        doc["fills_ledger"] = {"written": 0, "why": f"{type(exc).__name__}: {exc}"[:160]}
     if positions_ok and iid:
         for act in readopt_positions(state, filled, position_ids, own):
             log(f"[{act['window']}] RE-ADOPTED position {act['position_id']} "
