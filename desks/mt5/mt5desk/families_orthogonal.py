@@ -2588,6 +2588,25 @@ FAMILY_INPUTS["alt_release_drift"] = (
 # the cell carries (`_h1` keeps the caller's bar clock), and the hold is `hold_days` times the
 # chart's own measured bars per day, so it is the same market rule on every rung of the ladder.
 
+# INFORMED FLOW DRIFT (2026-11-03, `research/informed_capital.py`): SEC Form 4/5 role cells,
+# SC 13D/13G stakes, 13F diffs, House/Senate PTRs and Kalshi/Polymarket odds moves, stored at the
+# OBSERVABLE instant (acceptance, never the trade date) and replayed here from that store. One
+# family, three relations -- direct (share CFDs, news lane), aggregate (insider/congressional
+# breadth on the US index CFDs) and odds (macro contracts on FX, indices, gold, oil, rates).
+# `symbol`, `source` and `relation` are REQUIRED, so the sweep names it unsuppliable.
+from mt5desk.family_informed_flow import family_informed_flow_drift  # noqa: E402
+
+ORTHOGONAL_FAMILIES["informed_flow_drift"] = family_informed_flow_drift
+FAMILY_INPUTS["informed_flow_drift"] = (
+    "point-in-time insider, activist, institutional, congressional and prediction-market "
+    "events, placed at their observable instant (research/informed_capital.py)",
+    "desks/mt5/data/informed_capital/events.jsonl")
+FAMILY_TIMEFRAMES["informed_flow_drift"] = (
+    ("H1",),
+    "a disclosure is a daily-cadence event measured at +1/+5/+21 trading days; its hold is "
+    "counted in H1 bars per trading day, and the tracker that set the measured side read H1 "
+    "closes")
+
 # SPECIALIST FAMILIES (2026-09-30, `research/specialist_cell.py`). Four mechanisms an asset-class
 # specialist names and no registered family expressed: carry harvested in calm and unwound in
 # risk-off, the fixed-weight allocator's month-end rebalancing flow, a day-of-year weather or crop

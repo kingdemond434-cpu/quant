@@ -216,8 +216,11 @@ CROSS_SECTIONAL_FAMILIES = frozenset({
 #: `alt_release_drift` (2026-09-30) fires only on a dated free alt-data release that the
 #: alt_proxies equity hand-off names as bearing on the share -- a public datum about the name's
 #: demand, first seen at its recorded `available_time` -- so it is the event lane, not a hunt.
+#: `informed_flow_drift` (2026-11-03) fires only on a dated public filing ABOUT the name -- a
+#: Form 4/5, an SC 13D/13G, a 13F change or a congressional PTR -- placed at its acceptance
+#: instant (research/informed_capital.py), so on a share CFD it is the event lane too.
 NEWS_LANE_FAMILIES = frozenset({"analyst_revision_drift", "analyst_cross_market_lead",
-                                "alt_release_drift"})
+                                "alt_release_drift", "informed_flow_drift"})
 
 
 def is_equity(symbol: str) -> bool:
