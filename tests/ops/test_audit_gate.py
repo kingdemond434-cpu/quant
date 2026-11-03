@@ -1811,6 +1811,29 @@ def test_identical_books_pass_and_prose_is_not_a_decision(tmp_path: Path) -> Non
     assert rep["intents_compared"] == 4
 
 
+@pytest.mark.parametrize(
+    ("lane", "ftmo", "unmeasured"),
+    [
+        (True, {"error": "RuntimeError: boom"}, "the base FTMO leg raised"),
+        (True, {"exec": {"sleeves": []}}, "decided on no sleeve"),
+        (False, {"error": "RuntimeError: boom"}, None),  # no lane on the base: nothing owed
+    ],
+)
+def test_the_ftmo_leg_is_owed_where_the_base_has_the_lane(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, lane: bool, ftmo: dict, unmeasured: str | None
+) -> None:
+    base, head = tmp_path / "b", tmp_path / "h"
+    for t in (base, head):
+        (t / "desks/mt5/prop").mkdir(parents=True)
+        if lane:
+            (t / rs.FTMO_EXECUTOR).write_text("X = 1\n")
+    step = {"hour": 7.0, "doc": {}, "intents": [{"a": 1}], "error": None, "ftmo": ftmo}
+    monkeypatch.setattr(rs, "run_tree", lambda tree, sc: {"steps": [step], "imported": []})
+    rep = rs.compare(base, head, [], [{"id": "s", "hours": [7.0]}])
+    hits = [p for p in rep["problems"] if "FTMO" in p]
+    assert (hits == []) if unmeasured is None else any(unmeasured in p for p in hits), hits
+
+
 def test_a_changed_decision_fails(tmp_path: Path) -> None:
     base = _tree(tmp_path / "base")
     head = _tree(tmp_path / "head", _BOOK.replace("LOT = 0.1", "LOT = 0.2"))
