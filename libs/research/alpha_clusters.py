@@ -255,6 +255,7 @@ FAMILY_CLUSTER: dict[str, str] = {
     "cross_sectional_class_reversal": "cross_sectional_fx",
     "cross_sectional_class_value": "cross_sectional_fx",
     "cross_sectional_class_low_vol": "cross_sectional_fx",
+    "cross_sectional_class_carry": "cross_sectional_fx",
     # Slow updaters within a class: the payer is the late repricer, which is this cluster's.
     "lead_lag_class_catchup": "cross_asset_lead_lag",
     # Fires ONLY in a lagged class-stress regime and is idle otherwise: forced deleveraging.
