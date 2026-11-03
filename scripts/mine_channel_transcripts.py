@@ -184,7 +184,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default="config/video_mining_channels.json")
     ap.add_argument("--out", default="video_mining_out")
-    ap.add_argument("--sleep", type=float, default=6.0, help="base seconds between caption fetches")
+    ap.add_argument("--sleep", type=float, default=45.0, help="base seconds between caption fetches")
     ap.add_argument("--limit", type=int, default=0, help="max caption fetches this run (0 = all)")
     ap.add_argument("--discover", action="store_true",
                     help="also find new channels from config discovery_queries")
@@ -202,8 +202,10 @@ def main() -> int:
     wall = out / "last_access_wall.txt"
     if wall.exists():
         age_min = (time.time() - wall.stat().st_mtime) / 60
-        if age_min < args.backoff_min:
-            print(f"in backoff after access wall ({age_min:.0f} < {args.backoff_min:.0f} min)")
+        walls = wall.read_text("utf-8").count("\n")
+        need = args.backoff_min * min(2 ** max(walls - 1, 0), 8)   # 90, 180, 360, 720 min cap
+        if age_min < need:
+            print(f"in backoff after access wall #{walls} ({age_min:.0f} < {need:.0f} min)")
             return 0
     ledger_path = out / "ledger.jsonl"
     ledger = load_ledger(ledger_path)
@@ -245,6 +247,10 @@ def main() -> int:
                     write({**v, "status": "PENDING", "ts": now()})
                 todo.append(v)
 
+    # long-form first (where mechanisms live), shorts last
+    order = {"videos": 0, "streams": 1, "shorts": 2}
+    todo.sort(key=lambda v: order.get(v.get("tab"), 3))
+
     # 2. fetch captions, politely; stop the whole run at the first access wall (no bypass)
     fetched = 0
     stopped = None
@@ -258,7 +264,7 @@ def main() -> int:
             status, text, meta = fetch_transcript(api, v["video_id"])
         fetched += 1
         row = {**prev, **v, "status": status, "ts": now(), **meta}
-        if status != "ACCESS_LIMIT":
+        if status != "ACCESS_LIMIT" and v.get("tab") != "shorts":
             desc, links, dmeta = fetch_description(v["video_id"])
             row.update(dmeta)
             row["links"] = links
@@ -274,12 +280,15 @@ def main() -> int:
                 encoding="utf-8")
             row["chars"] = len(text)
         write(row)
+        if status == "FULL" and wall.exists() and fetched >= 20:
+            wall.unlink()   # a clean stretch resets the escalation
         print(f"[{fetched}/{len(todo)}] {v['channel']} {v['video_id']} {status} "
               f"{row.get('chars', '')} {v['title'][:60]}", flush=True)
         if status == "ACCESS_LIMIT":
             stopped = f"access wall at {v['video_id']} ({meta.get('error')}); stopping, no bypass"
             print(stopped, flush=True)
-            wall.write_text(f"{now()} {stopped}\n", encoding="utf-8")
+            with wall.open("a", encoding="utf-8") as wf:
+                wf.write(f"{now()} {stopped}\n")
             break
         time.sleep(args.sleep + random.uniform(0, args.sleep / 2))
     lf.close()
