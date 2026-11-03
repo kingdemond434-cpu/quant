@@ -421,7 +421,7 @@ LEG_LAYER: dict[str, str] = {
     # decision -- what the desk knew before it predicted -- which is information, exactly as
     # `residual_hunt` is.
     "research_evolution": "meta", "compute_economics": "meta",
-    "missed_trade_archaeologist": "information",
+    "missed_trade_archaeologist": "information", "loss_learning": "meta",
     # THE ANYTIME-VALID SCIENCE CONTROLLER (LAWS 5k/5m): online-FDR wealth per lineage, the
     # effective-trial census and the genome archive. It predicts, sizes and times nothing; it
     # measures whether the machine's evidence is still evidence after an unbounded stream of

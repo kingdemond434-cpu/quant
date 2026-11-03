@@ -155,6 +155,11 @@ REPLACEMENTS: dict[str, str] = {
                       "(representation) and role R (code_lab) once #332 lands",
     "world_lab": "dislocation_lab -- the macro department's cross-asset shock ground; world_lab "
                  "reads a causal graph frozen since 2026-09-08 (causal_graph leg)",
+    # SUPERSEDED, 2026-11-03: `recombinants/` was the seat of the retired side-channel
+    # recombiner (side_channels/alpha_recombination.py, last write 2026-09-12); the research
+    # organ that replaced it donates to its own seat `alpha_recombination` every heavy pass.
+    "recombinants": "alpha_recombination -- the research-organ recombiner that superseded the "
+                    "side-channel writer of this seat",
     "literature": "academic -- academic_miner and seed_miners arxiv_qfin, the same "
                   "papers-with-a-mechanism ground; literature was a one-off 2026-09-16 hand seed",
 }

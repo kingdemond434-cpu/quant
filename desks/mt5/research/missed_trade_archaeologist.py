@@ -90,6 +90,14 @@ NF_MIN_ROWS = 3
 SESSION_PHRASE: dict[str, str] = {"asia": "asian session", "london_am": "london open",
                                   "afternoon": "afternoon session", "ny_open": "new york open"}
 SLEEVES = DATA / "sleeves.json"
+#: The gateway's gold windows, the only clocks with a one-to-one sleeve (see `clock_sleeve`).
+GOLD_WINDOW_NAMES: tuple[str, ...] = ("asia", "london_am", "afternoon")
+#: A cell already donated is donated AGAIN only once this many NEW setups have joined it. The
+#: old rule donated each (family, symbol, session) once in its life, so after the first pass the
+#: seat wrote nothing ever again (PRODUCER_YIELD: DEAD) while the dataset kept growing.
+NF_REDONATE_GROWTH = NF_MIN_ROWS
+#: Episode kinds whose dug answers become TWEAK CELLS of the parent sleeve's family.
+TWEAK_KINDS: tuple[str, ...] = ("large_adverse_move", "missed_forward_move", "bad_exit")
 NF_RULE = ("known_at is the decision's own timestamp; every feature is computed from bars whose "
            "period had CLOSED by known_at (features.as_of <= known_at - 1 bar); the label is the "
            "move over the next HORIZON_BARS completed bars and is written only once "
@@ -320,6 +328,20 @@ def find_episodes(decisions: list[dict[str, Any]], live: list[dict[str, Any]],
         sleeve = str(f.get("sleeve") or "")
         sym = _sym(f.get("symbol"))
         joined = [(t, d) for (t, d) in taken_by_sleeve.get(sleeve, []) if t <= t_exit]
+        # THE FILL'S OWN ENTRY IS A DECISION TIME (root cause, 2026-11-03). Promoted and scalp
+        # sleeves write no `taken` decision row, and MetaTrader truncates the sleeve into the
+        # comment, so the join above failed for 59 of 62 live losses (USDNOK -1.08R among them)
+        # and every one was parked UNMEASURED -- the loss lane minted nothing. The order's own
+        # broker-stamped entry instant is when the desk decided; the state is reconstructed from
+        # bars closed before it, exactly as for a joined decision.
+        t_entry = _at(f.get("entry_time"))
+        if not joined and t_entry is not None and t_entry <= t_exit:
+            out.append({"kind": "large_adverse_move", "lane": "live", "symbol": sym,
+                        "sleeve": sleeve, "decision_time": t_entry,
+                        "decision_time_basis": "fill_entry_time", "side": f.get("entry_side"),
+                        "outcome": {"r": round(loss_r, 3), "deal": f.get("deal")},
+                        "status": "SELECTED"})
+            continue
         if not joined:
             out.append({"kind": "large_adverse_move", "lane": "live", "symbol": sym,
                         "sleeve": sleeve, "decision_time": None, "outcome": {"r": loss_r},
@@ -407,6 +429,10 @@ def find_episodes(decisions: list[dict[str, Any]], live: list[dict[str, Any]],
                             "decision_time": t_in, "exit_time": t_out, "side": side,
                             "exit_reason": reason, "outcome": oc, "status": "SELECTED",
                             "sub_kind": "stopped_then_reversed"})
+    # (e) THE UNRECORDED MISS: a forward-clock trade on a gold window the live book never
+    # placed and never even decided on (a floor pause, a gateway stop). The gateway writes no
+    # decision row while paused, so (b) cannot see those days at all; the shadow clock can.
+    out.extend(unfilled_forward(shadow, decisions, live))
     for clock, rs in regime_rows.items():
         if len(rs) < REGIME_MIN_TRADES:
             continue
@@ -417,6 +443,57 @@ def find_episodes(decisions: list[dict[str, Any]], live: list[dict[str, Any]],
                         "sleeve": clock, "decision_time": last["t"],
                         "regime": clock.split(".")[2],
                         "outcome": {"n": len(rs), "mean_r": round(mean_r, 3)},
+                        "status": "SELECTED"})
+    return out
+
+
+def clock_sleeve(clock: str) -> str | None:
+    """The gateway sleeve a shadow clock forwards for: XAUUSD.asia -> gold_asia. Only the gold
+    windows have this one-to-one map; any other clock returns None and is never guessed."""
+    parts = str(clock).split(".")
+    if len(parts) == 2 and _sym(parts[0]) == "XAUUSD" and parts[1] in GOLD_WINDOW_NAMES:
+        return f"gold_{parts[1]}"
+    return None
+
+
+def unfilled_forward(shadow: dict[str, list[dict[str, Any]]], decisions: list[dict[str, Any]],
+                     live: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Forward-clock trades on a gold window whose UTC date carries neither a live fill nor any
+    decision row for that window's sleeves. Selected by outcome (only rows the clock closed
+    with R > 0 -- a miss that would have lost is not a miss), decision time = the clock's own
+    entry, so the reconstruction rule is the same as every other episode's."""
+    def _days(rows: list[dict[str, Any]], key_t: tuple[str, ...]) -> dict[str, set[str]]:
+        seen: dict[str, set[str]] = defaultdict(set)
+        for r in rows:
+            t = next((_at(r.get(k)) for k in key_t if _at(r.get(k)) is not None), None)
+            name = str(r.get("sleeve") or r.get("strategy_id") or "")
+            if t is None or not name:
+                continue
+            for win in GOLD_WINDOW_NAMES:
+                if name.startswith(f"gold_{win}"):
+                    seen[win].add(t.date().isoformat())
+        return seen
+    filled = _days(live, ("entry_time", "time"))
+    decided = _days(decisions, ("decided_at", "time"))
+    out: list[dict[str, Any]] = []
+    for clock, rows in sorted(shadow.items()):
+        sleeve = clock_sleeve(clock)
+        if sleeve is None:
+            continue
+        win = sleeve[len("gold_"):]
+        for r in rows:
+            t_in = _at(r.get("entry_time"))
+            rm = r.get("r_multiple")
+            if t_in is None or not isinstance(rm, (int, float)) or float(rm) <= 0:
+                continue
+            day = t_in.date().isoformat()
+            if day in filled.get(win, set()) or day in decided.get(win, set()):
+                continue
+            out.append({"kind": "missed_forward_move", "lane": "shadow_unfilled",
+                        "symbol": "XAUUSD", "sleeve": sleeve, "clock": clock,
+                        "decision_time": t_in, "side": r.get("side"),
+                        "veto_reason": "no_decision_recorded",
+                        "outcome": {"r": round(float(rm), 3), "reason": r.get("reason")},
                         "status": "SELECTED"})
     return out
 
@@ -737,6 +814,71 @@ def non_fired_cells(rows: dict[str, dict[str, Any]], sleeves: dict[str, dict[str
     return out, {"groups": len(groups), "cells": len(out), "unplaced": dict(unplaced)}
 
 
+def redonate(prior: Any, cell: dict[str, Any]) -> bool:
+    """True when the cell was never donated, or has gained NF_REDONATE_GROWTH setups since.
+    A legacy record (a bare timestamp) carries no count, so it is read as zero setups."""
+    if prior is None:
+        return True
+    n_then = int(prior.get("n_setups") or 0) if isinstance(prior, dict) else 0
+    return int(cell["evidence"].get("n_setups") or 0) - n_then >= NF_REDONATE_GROWTH
+
+
+def resolve_sleeve(label: str, sleeves: dict[str, dict[str, Any]]) -> str | None:
+    """The registry name a (possibly comment-truncated) sleeve label means: exact, else the one
+    name it is a prefix of. Two candidates is ambiguous and resolves to None, never a guess."""
+    if label in sleeves:
+        return label
+    hits = [n for n in sleeves if label and n.startswith(label)]
+    return hits[0] if len(hits) == 1 else None
+
+
+def tweak_cells(dug: list[dict[str, Any]], hypotheses: list[dict[str, Any]],
+                sleeves: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    """One structured hypothesis per dug loss/miss episode and frozen answer, in the parent
+    sleeve's registered family. Unplaceable sleeves are skipped (counted by the caller via
+    `parents`), never given an invented family."""
+    by_id = {str(h["hypothesis_id"]): h for h in hypotheses}
+    out: list[dict[str, Any]] = []
+    for ep in dug:
+        if ep.get("kind") not in TWEAK_KINDS:
+            continue
+        label = str(ep.get("sleeve") or "")
+        parent = resolve_sleeve(label, sleeves) or clock_sleeve(label) or label
+        fam, sess = sleeve_cell(parent, sleeves)
+        sym = str(ep.get("symbol") or "")
+        if not fam or not sym:
+            continue
+        for hid in ep.get("hypotheses") or []:
+            h = by_id.get(str(hid))
+            if h is None or h.get("absent") == "dataset":
+                continue                     # a dataset request is the acquirer's, not a cell
+            phrase = SESSION_PHRASE.get(sess or "", "")
+            out.append({
+                "source": SEAT, "kind": "hypothesis", "family": fam, "symbol": sym,
+                "symbols": [sym], "url": "",
+                "title": f"tweak of {parent}: {h['what']}"[:120],
+                "mechanism": (f"{fam} on {sym}" + (f" in the {phrase}" if phrase else "")
+                              + f", conditioned on {h['what']}: the {ep['kind']} of "
+                              f"{ep.get('decision_time')} ({ep.get('outcome')}) had it "
+                              "absent at the decision.")[:400],
+                "available_time": h["frozen_at"],
+                "evidence": {"parent_sleeve": parent, "episode_id": ep.get("episode_id"),
+                             "episode_kind": ep["kind"], "lane": ep.get("lane"),
+                             "hypothesis_id": hid, "tweak_axis": h.get("absent"),
+                             "tweak": h.get("what"), "session": sess or None,
+                             "replace_rule": ("a tweak replaces its parent only after beating "
+                                              "it forward on the promoter's own comparison; "
+                                              "this lane never retires a parent"),
+                             "credit_rule": CREDIT_RULE},
+            })
+    return out
+
+
+def _donate_tweaks(cells: list[dict[str, Any]], tests_run: int) -> Any:
+    from research.proposer_common import donate
+    return donate(SEAT, cells, tests_run, suffix="tweak")
+
+
 def _donate(candidates: list[dict[str, Any]], tests_run: int) -> Any:
     """The seam: the intake door every proposer shares (PIT stamp, lane filter, preregistration).
     One import, one call, so a test can watch what leaves without a live intake."""
@@ -844,7 +986,7 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
     def _cell_key(c: dict[str, Any]) -> str:
         return f"{c['family']}|{c['symbol']}|{c['evidence'].get('session') or ''}"
 
-    new_cells = [c for c in cells if _cell_key(c) not in donated_before]
+    new_cells = [c for c in cells if redonate(donated_before.get(_cell_key(c)), c)]
     donated_path = None
     if new_cells and not dry_run:
         try:
@@ -854,7 +996,19 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
                                "why": f"{type(exc).__name__}: {exc}"})
         if donated_path is not None:
             for c in new_cells:
-                donated_before[_cell_key(c)] = _iso(now)
+                donated_before[_cell_key(c)] = {
+                    "at": _iso(now), "n_setups": int(c["evidence"].get("n_setups") or 0)}
+    # THE LOSS AND MISS LANE AS TWEAK CELLS: each dug episode whose sleeve the registry can
+    # place becomes a structured hypothesis of the PARENT's family, carrying the parent and the
+    # absent input as its tweak. It goes through the same door, compiler and gauntlet as every
+    # other cell, so it is a counted trial; it reaches capital only through the promoter.
+    tweaks = tweak_cells(dug, hypotheses, _sleeve_map(SLEEVES))
+    tweak_path = None
+    if tweaks and not dry_run:
+        try:
+            tweak_path = _donate_tweaks(tweaks, len(dug))
+        except Exception as exc:                                        # pragma: no cover - env
+            unmeasured.append({"what": "tweak donation", "why": f"{type(exc).__name__}: {exc}"})
     nf["cells"] = {**census, "new": len(new_cells),
                    "donated": 0 if donated_path is None else len(new_cells),
                    "path": None if donated_path is None else str(donated_path),
@@ -879,6 +1033,11 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
                       "data/non_fired_setups.jsonl -> non-fired cells donated through "
                       "proposer_common.donate to data/intelligence/missed_trade_archaeologist/"],
         "non_fired": nf,
+        "tweak_cells": {"generated": len(tweaks),
+                        "donated": 0 if tweak_path is None else len(tweaks),
+                        "path": None if tweak_path is None else str(tweak_path),
+                        "parents": sorted({str(t["evidence"]["parent_sleeve"])
+                                           for t in tweaks})[:40]},
         "unmeasured": unmeasured,
     }
     if not dry_run:
@@ -905,6 +1064,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  non-fired setups: {nf['setups']} in the dataset (+{nf['would_append']} this pass) "
           f"{nf['by_class']}, labels {nf['by_label']}; cells {nf['cells']['cells']}, "
           f"{nf['cells']['donated']} donated this pass -> {nf['path']}")
+    tw = doc["tweak_cells"]
+    print(f"  tweak cells: {tw['generated']} generated, {tw['donated']} donated "
+          f"(parents {tw['parents'][:6]})")
     for u in doc["unmeasured"][:8]:
         print(f"  UNMEASURED {u['what']}: {u['why']}")
     return 0

@@ -1374,7 +1374,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
                      "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
-                     "missed_trade_archaeologist", "portfolio_bounty",
+                     "missed_trade_archaeologist", "loss_learning",
+                     "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
                      "clock_liveness", "allocator_liveness", "allocator_trigger",
                      "forward_calibration"),
@@ -4526,6 +4527,11 @@ def main() -> None:
     mta = _costed("missed_trade_archaeologist", lambda: _producer(
         "missed_trade_archaeologist", "research/missed_trade_archaeologist.py",
         "--once", "--budget-s", "600"))
+    # THE LOSS-LEARNING FUNNEL (2026-11-03): losses and misses seen -> tweak cells donated ->
+    # judged -> promoted -> beat their parent forward, each with its last nonzero instant.
+    # Runs straight after the archaeologist so it reads this pass's donations.
+    mll = _costed("loss_learning", lambda: _producer("loss_learning",
+                                                     "scripts/check_loss_learning.py"))
     mfe = _costed("forward_exploitation", lambda: _producer("forward_exploitation",
                                                              "research/forward_exploitation.py"))
     mar = _costed("alpha_recombination", lambda: _producer("alpha_recombination",
@@ -6219,7 +6225,7 @@ def main() -> None:
                     "paradigm_router": prr, "meta_controller": mtc, "lead_replication": lrp,
                     "experiment_spine": exs, "implementer": imp,
                     "research_evolution": rev, "compute_economics": cec,
-                    "missed_trade_archaeologist": mta,
+                    "missed_trade_archaeologist": mta, "loss_learning": mll,
                     "replication_civilization": rpc,
                     "science_controller": scc,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
