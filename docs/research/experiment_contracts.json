@@ -176,6 +176,21 @@
     "after": "7 days with LIVE rows on the roster (roster_rows_seen > 0) and none judged: the verdict loop is not reading the roster the promoter writes"
    }
   },
+  "decay_accuracy": {
+   "hypothesis": "Replaying every sleeve's trades causally through each decay detector and scoring lead R, misses and false-alarm cost on the same >=3R drawdowns lets a faster detector (lower CUSUM, feature drift) replace the current FADE/RETIRE rule only when it cuts the R lost before the alarm without missing more events or forgoing more growth.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "detectors.CURRENT.n_events",
+    "better": "up",
+    "organ": "report:DECAY_ACCURACY.json"
+   },
+   "falsifier": {
+    "metric": "detectors.CURRENT.n_series",
+    "op": "<",
+    "threshold": 1,
+    "after": "7 days of hourly runs with shadow or live ledgers on the host: the replay scores no series, so no detector is ever measured and no faster one can earn the right to act"
+   }
+  },
   "fill_markout": {
    "hypothesis": "Joining every order intent to its fill and its closing deal measures the slippage the book actually pays in R, so execution drag is a number the desk can drive down instead of an assumption in the backtest.",
    "metric": {
