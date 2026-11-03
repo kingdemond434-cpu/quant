@@ -32,7 +32,3 @@ pytest==9.1.0
 pytest-cov==7.1.0
 hypothesis==6.155.2
 mypy==2.1.0
-
-# Video channel miner (scripts/mine_channel_transcripts.py), installed by the operator, never at runtime
-yt-dlp
-youtube-transcript-api
