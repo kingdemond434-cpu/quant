@@ -59,7 +59,8 @@ function Watch {
         $script = Join-Path $Clone "scripts\merge_pipeline_watch.py"
         if (-not $py -or -not (Test-Path -LiteralPath $script)) { Say "watch: no Python or no watcher in the clone"; return }
         $report = Join-Path $QuantRoot "desks\mt5\reports\MERGE_PIPELINE.json"
-        $wout = (& $py -I -u $script --repo $Repo --base $Live --out $report --heartbeat $beat 2>&1 | Out-String)
+        $sign = Join-Path $LogDir "sign_train.json"  # Quant-SignTrain's heartbeat (#541 audit MF3)
+        $wout = (& $py -I -u $script --repo $Repo --base $Live --out $report --heartbeat $beat --sign-heartbeat $sign 2>&1 | Out-String)
         Say "watch rc=$LASTEXITCODE $($wout.Trim())"
     } catch {
         Say "watch failed: $($_.Exception.Message)"
@@ -128,6 +129,17 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "git checkout failed ($LASTEXITCODE)" }
     $at = (& git -C $Clone rev-parse --short=9 HEAD)
 
+    # LIVE first (zuck 2026-10-29 19:50Z "yes"): PR runs queued ahead of a waiting LIVE push run
+    # are cancelled and re-run behind it, and runs on moved heads are cancelled. A failure here is
+    # logged and never stops the sweep.
+    try {
+        $env:GH_BIN = $Gh
+        & $Python -I -u (Join-Path $Clone "scripts\live_first_ci.py") --repo $Repo --base $Live --state (Join-Path $QuantRoot "desks\mt5\reports\LIVE_FIRST_CI.json") 2>&1 | ForEach-Object { Say "live-first $_" }
+        Say "live-first rc=$LASTEXITCODE"  # 2: a re-run was given up on; 1: it stopped on an API error
+    } catch {
+        Say "live-first failed: $($_.Exception.Message)"
+    }
+
     Push-Location -LiteralPath $Clone
     try {
         # Streamed, one log line per gate line as it comes (2026-10-29: a sweep killed by the
@@ -140,7 +152,8 @@ try {
         $rc = $LASTEXITCODE
         $out = $lines -join "`n"
     } finally { Pop-Location }
-    $merged = @($out -split "`r?`n" | Where-Object { $_ -match 'MERGED' }).Count
+    # case-sensitive, the gate's own word: -match counted every "merged" in any line (20:20Z: 5)
+    $merged = @($out -split "`r?`n" | Where-Object { $_ -cmatch ': MERGED \(' }).Count
     $note = "gate@{0}: {1} merged" -f $at, $merged
     if (-not $scope) { $note += "; NO workflow scope: run once  gh auth refresh -h github.com -s workflow" }
     Beat $rc $note $scope

@@ -385,10 +385,15 @@ def test_the_box_sweep_skips_pending_prs_streams_and_stops_on_budget(
         raise AssertionError(path)
 
     ran: list[int] = []
+
+    def fake_run(repo: str, n: int, *a: Any, **k: Any) -> int:
+        ran.append(n)
+        return 0
+
     monkeypatch.setattr(ag, "_gh", gh)
-    monkeypatch.setattr(ag, "run", lambda repo, n, *a, **k: ran.append(n) or 0)
-    assert ag.sweep("o/r", ag.LIVE) == 0 and ran == [1, 3]
-    ticks = iter([0.0, 0.0, 10_000.0, 10_000.0])
+    monkeypatch.setattr(ag, "run", fake_run)
+    assert ag.sweep("o/r", ag.LIVE) == 0 and ran == [1, 3, 2]  # still running: last
+    ticks = iter([0.0] * 5 + [10_000.0] * 5)  # start, three pre-reads, one run, then out
     ran.clear()
     ag.sweep("o/r", ag.LIVE, budget_s=60, clock=lambda: next(ticks))
     assert ran == [1]
@@ -414,3 +419,252 @@ def test_one_manifest_row_per_task_and_the_watcher_has_an_independent_contract()
     assert dup == []
     oc = (ROOT / "ops/organ_contract.py").read_text(encoding="utf-8")
     assert '"desks/mt5/reports/MERGE_PIPELINE.json", 45' in oc
+
+
+def _lf() -> Any:
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("lf", ROOT / "scripts/live_first_ci.py")
+    assert spec and spec.loader
+    lf = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(lf)
+    return lf
+
+
+def test_live_first_moves_pr_runs_queued_ahead_of_a_waiting_live_run_behind_it() -> None:
+    """2026-10-29 19:45Z: ~120 PR runs queued before LIVE's push runs held every runner."""
+    lf = _lf()
+    live = {"id": 1, "event": "push", "head_branch": lf.LIVE, "created_at": _iso(30)}
+    old = {"id": 2, "event": "pull_request", "head_branch": "b1", "head_sha": "h1",
+           "created_at": _iso(60)}  # fmt: skip
+    moved = {**old, "id": 3, "head_sha": "gone"}
+    later = {**old, "id": 4, "created_at": _iso(10)}
+    rerun = {**old, "id": 5, "run_started_at": _iso(1)}  # a re-run joined the queue again
+    target = {**old, "id": 6, "event": "pull_request_target", "head_sha": "base-sha"}
+    other = {**old, "id": 7, "head_branch": "not-a-pr", "head_sha": "x"}
+    heads = {"b1": "h1"}
+    waste, ahead = lf.plan(NOW, [live, old, moved, later, rerun, target, other], heads)
+    assert waste == [3] and ahead == [2]  # audit-gate and unknown branches are never touched
+    fresh = dict(live, created_at=_iso(2))  # LIVE queued under 5 min: nothing moves yet
+    assert lf.plan(NOW, [fresh, old, moved], heads) == ([3], [])
+    assert lf.plan(NOW, [old, moved], heads) == ([3], [])  # no LIVE run waiting
+    assert lf.plan(NOW, [live, old, moved], {}) == ([], [])  # no PR read: nothing cancelled
+    dispatch = dict(live, event="workflow_dispatch")  # the gate's merge is a LIVE run too
+    assert lf.plan(NOW, [dispatch, old], heads) == ([], [2])
+    gate = (ROOT / "ops/box/workflow_gate.ps1").read_text(encoding="utf-8")
+    assert "scripts\\live_first_ci.py" in gate and "live-first rc=" in gate
+
+
+def test_a_cleared_pr_waits_like_live_and_uncleared_runs_ahead_of_it_go_behind() -> None:
+    """zuck 2026-10-29 22:08Z: the CLEARed fixes waited an hour behind 155 uncleared runs."""
+    lf = _lf()
+    clr = {"id": 1, "event": "pull_request", "head_branch": "c", "head_sha": "hc",
+           "created_at": _iso(30)}  # fmt: skip
+    old = {"id": 2, "event": "pull_request", "head_branch": "u", "head_sha": "hu",
+           "created_at": _iso(60)}  # fmt: skip
+    old_clr = {**clr, "id": 3, "created_at": _iso(90)}  # a CLEARed run is never moved
+    heads = {"c": "hc", "u": "hu"}
+    assert lf.plan(NOW, [clr, old, old_clr], heads, cleared=frozenset({"c"})) == ([], [2])
+    assert lf.plan(NOW, [clr, old], heads) == ([], [])  # no CLEAR, no LIVE: nothing moves
+    fresh = dict(clr, created_at=_iso(2))
+    assert lf.plan(NOW, [fresh, old], heads, cleared=frozenset({"c"})) == ([], [])
+    stale_clr = dict(clr, head_sha="old")  # a run of a superseded head is waste, not a waiter
+    assert lf.plan(NOW, [stale_clr, old], heads, cleared=frozenset({"c"})) == ([1], [])
+
+
+def test_cleared_reads_a_trusted_unedited_clear_of_the_current_head(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    lf = _lf()
+    lf._NUMBERS.update({"c": 7, "u": 8, "e": 9})
+    heads = {"c": "abcdef1234", "u": "1234abcd", "e": "eeeeeee99"}
+
+    def note(body: str, assoc: str = "OWNER", edited: bool = False) -> dict[str, Any]:
+        return {"body": body, "author_association": assoc, "created_at": "t",
+                "updated_at": "t2" if edited else "t"}  # fmt: skip
+
+    by = {7: [note("AUDIT CLEAR abcdef1")], 8: [note("AUDIT CLEAR 1234abcd", assoc="NONE")],
+          9: [note("AUDIT CLEAR eeeeeee", edited=True)]}  # fmt: skip
+
+    def gh(path: str, method: str = "GET") -> Any:
+        return by[int(path.split("/issues/")[1].split("/")[0])]
+
+    monkeypatch.setattr(lf, "_gh", gh)
+    queued = [{"event": "pull_request", "head_branch": b} for b in heads]
+    assert lf._cleared("o/r", queued, heads) == {"c"}
+
+
+def test_a_broken_cleared_read_never_stops_live_first(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """#556 audit SF1: CLEARed-first failing leaves LIVE-first intact."""
+    lf = _lf()
+
+    def boom(*a: Any) -> Any:
+        raise ImportError("no watcher")
+
+    monkeypatch.setattr(lf, "_cleared", boom)
+    monkeypatch.setattr(lf, "_queued", lambda repo: [])
+    monkeypatch.setattr(lf, "_heads", lambda repo: {})
+    assert lf.run("o/r", lf.LIVE, tmp_path / "s.json", settle_s=0, sleep=lambda s: None) == 0
+
+
+def test_live_first_owes_before_it_cancels_and_reruns_only_its_own_cancel(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    lf = _lf()
+    live = {"id": 1, "event": "push", "head_branch": lf.LIVE, "created_at": "2000-01-01T00:00:00Z"}
+    pr = {"id": 2, "event": "pull_request", "head_branch": "b1", "head_sha": "h1",
+          "created_at": "1999-12-31T00:00:00Z"}  # fmt: skip
+    state = tmp_path / "lf.json"
+    runs = {2: {**pr, "status": "queued", "run_attempt": 1}}
+    calls: list[tuple[str, str]] = []
+
+    def gh(path: str, method: str = "GET") -> Any:
+        calls.append((method, path))
+        if "status=queued" in path:
+            return {"workflow_runs": [live, pr]}
+        if "/pulls?" in path:
+            return [{"head": {"ref": "b1", "sha": "h1"}}]
+        if path.endswith("/cancel"):
+            assert json.loads(state.read_text())["owed"][0]["id"] == 2  # owed BEFORE the cancel
+            runs[2] = {**runs[2], "status": "completed", "conclusion": "cancelled"}
+            return None
+        if path.endswith("/rerun"):
+            return None
+        return runs[int(path.rsplit("/", 1)[1])]
+
+    monkeypatch.setattr(lf, "_gh", gh)
+    assert lf.run("o/r", lf.LIVE, state, settle_s=0, sleep=lambda s: None) == 0
+    assert ("POST", "repos/o/r/actions/runs/2/rerun") in calls
+    assert json.loads(state.read_text())["owed"] == []
+    # a run that completed on its own (not cancelled) is never re-run
+    calls.clear()
+    runs[2] = {**pr, "status": "queued", "run_attempt": 1}
+
+    def gh2(path: str, method: str = "GET") -> Any:
+        if path.endswith("/cancel"):
+            runs[2] = {**runs[2], "status": "completed", "conclusion": "success"}
+            calls.append((method, path))
+            return None
+        out = gh(path, method)
+        return out
+
+    monkeypatch.setattr(lf, "_gh", gh2)
+    assert lf.run("o/r", lf.LIVE, state, settle_s=0, sleep=lambda s: None) == 0
+    assert not any(p.endswith("/rerun") for _, p in calls)
+
+
+def test_the_box_sweep_runs_merge_ready_prs_first_and_failed_ones_last(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Desk health 2026-10-29 20:20Z: in listing order, a green PR waited behind PRs that could
+    not merge. Every check green first, then gating green, then a failed gating check."""
+    prs = [{"number": n, "head": {"sha": f"{n:040d}"}} for n in (1, 2, 3, 4)]
+
+    def ok(j: str, c: str = "success") -> dict[str, Any]:
+        return {"name": j, "status": "completed", "conclusion": c, "started_at": "t"}
+
+    gating = [ok(j) for j in ag.GATING_JOBS]
+    every = gating + [ok(j) for j in ag.AUTO_JOBS]
+    red = [ok(ag.GATING_JOBS[0], "failure"), *gating[1:]]
+    by = {1: gating, 2: red, 3: every, 4: gating}
+
+    def gh(path: str, *a: Any, **k: Any) -> Any:
+        if path.startswith("repos/o/r/pulls?"):
+            return [prs]
+        if "/check-runs" in path:
+            return {"check_runs": by[int(path.split("/")[4])]}
+        raise AssertionError(path)
+
+    ran: list[int] = []
+    budgets: list[list[int]] = []
+
+    def fake_run(repo: str, n: int, *a: Any, **k: Any) -> int:
+        ran.append(n)
+        budgets.append(k["bring_ups"])
+        return 0
+
+    monkeypatch.setattr(ag, "_gh", gh)
+    monkeypatch.setattr(ag, "run", fake_run)
+    # #552 audit SF4: a failed PR still gets its run (it quarantines and counts), last
+    assert ag.sweep("o/r", ag.LIVE) == 0 and ran == [3, 1, 4, 2]
+    # SF2: one bring-up budget for the whole pass
+    assert all(b is budgets[0] for b in budgets) and budgets[0] == [ag.BRING_UPS_PER_SWEEP]
+    ps = (ROOT / "ops/box/workflow_gate.ps1").read_text(encoding="utf-8")
+    assert "-cmatch ': MERGED \\('" in ps  # the count reads the gate's own word only
+
+
+def test_a_queued_live_push_run_is_red() -> None:
+    """2026-10-29 19:45Z: LIVE's push runs sat queued behind ~120 PR runs and Adopt-And-Seal
+    waited on them; nothing went RED because no PR check was the one waiting."""
+    live = [_commit("fix", 1)]
+    run = {"event": "push", "head_branch": mp.LIVE, "created_at": _iso(45)}
+    rep = mp.assess(NOW, [], {}, {}, [run], 20, live)
+    assert [r.split(":")[0] for r in rep["red"]] == ["LIVE_CI_QUEUED"]
+    pr_run = dict(run, event="pull_request")
+    assert (
+        mp.assess(NOW, [], {}, {}, [pr_run, dict(run, created_at=_iso(5))], 20, live)["status"]
+        == "GREEN"
+    )
+
+
+def test_the_sign_train_heartbeat_reds_when_stale_failing_wedged_or_unread() -> None:
+    """#541 audit MF3: a failing or wedged sign train is never silent."""
+    live = [_commit("fix", 1)]
+    ok = {"at": _iso(5), "rc": 0, "fail_runs": 0, "mutex_held_runs": 0}
+    rep = mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=ok, sign_expected=True)
+    assert rep["status"] == "GREEN" and rep["sign_train"]["rc"] == 0
+    cases = (
+        (dict(ok, at=_iso(45)), "SIGN_TRAIN_STALE"),
+        (dict(ok, rc=1, fail_runs=3), "SIGN_TRAIN_FAILING"),
+        (dict(ok, rc=4, mutex_held_runs=3), "SIGN_TRAIN_WEDGED"),
+        (None, "SIGN_TRAIN_BLIND"),
+    )
+    for beat, kind in cases:
+        rep = mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=beat, sign_expected=True)
+        assert [r.split(":")[0] for r in rep["red"]] == [kind]
+    waiting = dict(ok, waiting_on="claude/sign-train-abc", waiting_since=_iso(150))
+    rep = mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=waiting, sign_expected=True)
+    assert [r.split(":")[0] for r in rep["red"]] == ["SIGN_TRAIN_WAITING"]
+    two = dict(ok, rc=1, fail_runs=2)  # two in a row is not yet RED
+    assert mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=two, sign_expected=True)["red"] == []
+    # v3: a closed-unmerged wait carries waiting_on too, so it reds like an open one
+    closed = dict(ok, waiting_on="claude/sign-train-def", waiting_since=_iso(150),
+                  note="a sign PR for def was closed unmerged; waiting for LIVE to move")
+    rep = mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=closed, sign_expected=True)
+    assert [r.split(":")[0] for r in rep["red"]] == ["SIGN_TRAIN_WAITING"]
+    # v3 SF: an untimeable wait, or a counter that is not a number, reds instead of raising
+    for odd in (dict(ok, waiting_on="claude/sign-train-abc", waiting_since="soon"),
+                dict(ok, fail_runs={"n": 1}), dict(ok, mutex_held_runs="x")):
+        rep = mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=odd, sign_expected=True)
+        assert rep["status"] == "RED"
+    swept = {"at": _iso(5), "rc": 0, "mutex_held_runs": [1]}
+    rep = mp.assess(NOW, [], {}, {}, [], 0, live, beat=swept, beat_expected=True)
+    assert [r.split(":")[0] for r in rep["red"]] == ["SWEEP_WEDGED"]
+
+
+def test_the_sign_train_leg_never_stacks_a_sign_and_is_watched() -> None:
+    ps = (ROOT / "ops/box/sign_train_leg.ps1").read_text(encoding="utf-8")
+    # #541 audit MF1/v2: every train branch from git, each asked by its exact head
+    assert "'refs/heads/claude/sign-train-*'" in ps and "'--head', $b, '--state', 'open'" in ps
+    # v2 MF1: never reuse a pushed branch; sign locally and force-push the box's own commit
+    assert "reused the" not in ps and "--push" not in ps
+    assert "--body-file $bodyFile" in ps and "--body $" not in ps  # v2 MF2: nothing to argv
+    assert "'--state', 'closed'" in ps  # a closed sign PR is not reopened for the same head
+    # v3 MF1: a closed wait is timed like an open one; gh counts are stdout-only numbers
+    assert 'Wait $branch "a sign PR' in ps and ps.count("GhCount @('pr', 'list'") == 2
+    assert "-notmatch '^\\d+$'" in ps
+    # v3 SF: leased push, one single-parent commit touching exactly the two sealed-state files
+    assert "--force-with-lease=$lease" in ps and "push -q --force origin" not in ps
+    assert "desks/mt5/data/IMMUTABLE_MANIFEST.json,desks/mt5/research/quantbench.py" in ps
+    assert "rev-list --parents -n 1 HEAD" in ps and "Set-Content" not in ps  # no BOM
+    assert "AbandonedMutexException" in ps and "mutex_held_runs" in ps  # S1, S2
+    assert "--principal" not in ps.split("& $Python", 1)[1].split("\n", 1)[0]
+    assert "signed \\d+ file" not in ps  # S3: read from git, not the wording
+    gate = (ROOT / "ops/box/workflow_gate.ps1").read_text(encoding="utf-8")
+    assert "--sign-heartbeat $sign" in gate
+    rows = (ROOT / "desks/mt5/ops/box_tasks.manifest").read_text(encoding="utf-8")
+    assert 'TASK name="Quant-SignTrain"' in rows
+    inst = (ROOT / "ops/box/install_unattended.ps1").read_text(encoding="utf-8")
+    assert "Add-QuantTask 'Quant-SignTrain' 'sign_train_leg.ps1'" in inst

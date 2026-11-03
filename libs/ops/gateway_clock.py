@@ -22,6 +22,15 @@ WHY NOT `session_phase.broker_utc_offset_h()` (audit of #328, 2026-10-13). It an
 host: `h1_source.broker_utc_offset_hours` is pinned to 0.0 and `data/broker_clock.json` records 0,
 so subtracting it was a no-op that left every reader three hours wrong. The venue clock is a
 calendar rule measured on the desk's own bars, so it needs no live terminal to answer.
+
+THE SOURCE FIX (2026-10-29). `gateway.main` now writes `placement_pass` as the real UTC instant of
+the pass with `placement_pass_clock: "utc"`, keeps the raw venue stamp as the naive
+`placement_tick_broker`, and judges its stale-tick guard ("never trade a closed market") on the
+tick's true UTC instant (`mt5desk.broker_clock`, the scalar form of `server_to_utc`) -- before,
+a dead terminal mid-week read 2-3 h younger than it was and the pass traded on it.
+`clock_verdict` is the RED check the placement-interlock fence reads: a new-format state without
+the mark, or a pass stamped more than `FUTURE_TOLERANCE_S` ahead of the
+real clock, is the defect coming back.
 """
 from __future__ import annotations
 
@@ -29,6 +38,12 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 UTC_MARK = "utc"
+#: A pass stamp further than this AHEAD of the real clock is not skew, it is a mislabelled clock:
+#: the venue runs two or three hours ahead, so a broker stamp under a UTC mark lands far past it.
+FUTURE_TOLERANCE_S = 300.0
+#: Keys only the post-fix gateway writes. Their presence marks a state as NEW-FORMAT, where a
+#: missing UTC mark is a regression rather than a legacy file.
+NEW_FORMAT_KEYS = ("placement_tick_broker", "placement_tick_utc", "broker_utc_offset_h")
 
 
 def _parse(value: Any) -> datetime | None:
@@ -44,6 +59,42 @@ def broker_stamp_to_utc(ts: datetime) -> datetime:
     from libs.regime.session_clock import server_to_utc
     out: datetime = server_to_utc([ts.astimezone(UTC).replace(tzinfo=None)])[0].to_pydatetime()
     return out
+
+
+def clock_verdict(state: Any, now: datetime | None = None) -> dict[str, Any]:
+    """Is `gateway_state.json`'s pass stamp on the right clock? OK, LEGACY, RED or UNMEASURED.
+
+    RED when a NEW-FORMAT state (one carrying `NEW_FORMAT_KEYS`) lacks the `utc` mark, or when the
+    pass -- read through `placement_pass_utc` -- sits more than `FUTURE_TOLERANCE_S` in the
+    future. LEGACY is an unmarked stamp from a gateway that predates the fix: converted, not red.
+    Freshness is not judged here; an old stamp is somebody else's verdict.
+    """
+    t_now = datetime.now(tz=UTC) if now is None else now
+    if not isinstance(state, dict) or not state.get("placement_pass"):
+        return {"verdict": "UNMEASURED", "why": "no placement_pass in the gateway state"}
+    marked = str(state.get("placement_pass_clock") or "").lower() == UTC_MARK
+    new_format = any(k in state for k in NEW_FORMAT_KEYS)
+    at = placement_pass_utc(state)
+    out: dict[str, Any] = {"placement_pass": state.get("placement_pass"),
+                           "placement_pass_clock": state.get("placement_pass_clock"),
+                           "new_format": new_format,
+                           "pass_utc": at.isoformat(timespec="seconds") if at else None}
+    if at is None:
+        return {**out, "verdict": "UNMEASURED", "why": "placement_pass is unreadable"}
+    ahead = (at - t_now).total_seconds()
+    out["ahead_s"] = round(ahead, 1)
+    if new_format and not marked:
+        return {**out, "verdict": "RED",
+                "why": ("new-format gateway state without placement_pass_clock='utc': the pass "
+                        "stamp's clock is unknown, the L3 broker-clock defect is back")}
+    if ahead > FUTURE_TOLERANCE_S:
+        return {**out, "verdict": "RED",
+                "why": (f"placement_pass is {ahead / 60:.0f} min in the future (limit "
+                        f"{FUTURE_TOLERANCE_S / 60:.0f} min): a broker stamp wearing a UTC label")}
+    if not marked:
+        return {**out, "verdict": "LEGACY",
+                "why": "unmarked broker-clock stamp from a pre-fix gateway; read converted"}
+    return {**out, "verdict": "OK", "why": "real UTC, marked"}
 
 
 def placement_pass_utc(state: Any) -> datetime | None:

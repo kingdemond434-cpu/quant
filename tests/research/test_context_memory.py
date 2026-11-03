@@ -6,6 +6,8 @@ import json
 import runpy
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[2]
 CTX = runpy.run_path(str(ROOT / "scripts" / "context.py"))
 
@@ -47,6 +49,36 @@ def test_recovered_journal_gaps_never_reuse_a_receipt_id(tmp_path):
     assert first["id"] == f"D-{day}-020"
     assert second["id"] == f"D-{day}-021"
     assert j.read_text(encoding="utf-8").startswith(original)
+
+
+def test_ids_are_minted_past_the_fetched_live_copy_too(tmp_path):
+    """The box's file ended at 002 while LIVE carried 003 (2026-10-29 23:01Z): the next id must
+    clear both and every open PR branch, or two hosts give two decisions one identity."""
+    import subprocess
+    day = CTX["datetime"].now(CTX["UTC"]).strftime("%Y%m%d")
+    j = tmp_path / "decision_journal.jsonl"
+
+    def git(*args):
+        subprocess.run(["git", "-C", str(tmp_path), *args], check=True, capture_output=True)
+
+    git("init", "-q")
+    rows = [{"id": f"D-{day}-00{n}"} for n in (1, 2, 3)]
+    j.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    git("add", j.name)
+    git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "live")
+    git("update-ref", f"refs/remotes/origin/{CTX['LIVE']}", "HEAD")
+    # an open PR branch already holds 004 and 005: they reach LIVE when it merges
+    j.write_text("".join(json.dumps({"id": f"D-{day}-00{n}"}) + "\n" for n in (4, 5)),
+                 encoding="utf-8")
+    git("add", j.name)
+    git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "pr")
+    git("update-ref", "refs/remotes/origin/claude/some-pr", "HEAD")
+    git("update-ref", "refs/heads/claude/local-pr", "HEAD")
+    git("checkout", "-q", "--orphan", "box")
+    j.write_text("".join(json.dumps(r) + "\n" for r in rows[:2]), encoding="utf-8")
+    a = argparse.Namespace(title="t", decision="d", why="w", by="me", owner="",
+                           evidence=[], supersedes="")
+    assert CTX["decide"](a, j)["id"] == f"D-{day}-006"
 
 
 def test_rationale_sync_refreshes_generated_block_and_keeps_human_text(tmp_path):
@@ -95,3 +127,14 @@ def test_portable_archive_requires_exact_digest_and_confined_path(tmp_path, monk
     registry.write_text(json.dumps(index))
     assert CTX["_check_pointer"](pointer) == "MISSING"
     assert CTX["_check_pointer"]("C:/unknown/receipt.json") == "MISSING"
+
+
+def test_decide_refuses_an_evidence_pointer_that_cannot_resolve(tmp_path):
+    j = tmp_path / "j.jsonl"
+    a = argparse.Namespace(title="t", decision="d", why="w", by="me", owner="",
+                           evidence=["PR #999999"], supersedes="")
+    with pytest.raises(SystemExit):
+        CTX["decide"](a, j)
+    assert not j.exists()
+    a.evidence = ["pr:999999"]
+    assert CTX["decide"](a, j)["evidence"] == ["pr:999999"]
