@@ -283,7 +283,7 @@ def size_lambda(r: np.ndarray, cfg: BookConfig) -> dict[str, Any]:
 
 
 def breadth(pool: Pool, unit: np.ndarray, book_oos: np.ndarray | None = None,
-            max_members: int = 200) -> dict:
+            max_members: int = 200) -> dict[str, Any]:
     """How many independent bets the book really holds, net of cost, and how it behaves in crisis.
 
     eff_n_weights        1 / sum(d^2): how evenly the weight is spread
@@ -300,7 +300,8 @@ def breadth(pool: Pool, unit: np.ndarray, book_oos: np.ndarray | None = None,
     act = act[np.argsort(-unit[act])][:max_members]
     d = unit[act] / unit[act].sum()
     x = np.where(pool.avail[:, act], pool.r3[:, act], 0.0).astype(np.float64)
-    out = {"n_active": int((unit > 0).sum()), "eff_n_weights": round(float(1 / np.sum(d ** 2)), 2)}
+    out: dict[str, Any] = {"n_active": int((unit > 0).sum()),
+                           "eff_n_weights": round(float(1 / np.sum(d ** 2)), 2)}
     if len(act) < 2:
         out.update(eff_n_independent=1.0, crisis=None)
         return out
