@@ -121,6 +121,8 @@ def test_apply_holds_the_window_and_publishes_red(tmp_path, monkeypatch):
     assert row["status"] == "IDENTITY_BROKEN" and "window_before_rebase" not in row
     report = json.loads((desk / "reports" / "IDENTITY_HEALER.json").read_text("utf-8"))
     assert report["verdict"] == "RED" and report["held"][0]["key"] == "K"
+    # a row with no break stamp gets the hold start written into the registry itself
+    assert row["status_at"] == report["held"][0]["since"]
 
 
 def test_without_a_hold_the_rebase_path_is_unchanged(tmp_path, monkeypatch):
@@ -210,5 +212,3 @@ def test_a_lost_report_cannot_restart_the_hold():
     later = (now - timedelta(hours=1)).isoformat(timespec="seconds")
     assert heal.hold_start(later, row) == broke
     assert heal.hold_start(later, {"status": "LIVE", "status_at": broke}) == later
-    # no report and no break stamp: the clock's own start bounds the hold
-    assert heal.hold_start(None, {"status": "IDENTITY_BROKEN", "forward_start": broke}) == broke

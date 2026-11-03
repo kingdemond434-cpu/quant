@@ -500,6 +500,8 @@ def main() -> int:
                 if hold and not hold_expired(start, now):
                     held.append((key, hold))
                     held_since[key] = start or now.isoformat(timespec="seconds")
+                    if not row.get("status_at"):
+                        stamp_hold_start(key, held_since[key])
                     continue
                 expired_hold = hold
             fwd = row.get("forward_start")
@@ -567,12 +569,17 @@ def hold_start(reported: str | None, row: dict[str, Any]) -> str | None:
     known = [(t, str(v)) for v in (reported, stamped) if v and (t := _ts(v)) is not None]
     if known:
         return min(known)[1]
-    if reported:
-        return reported                 # unreadable -> hold_expired() expires it
-    # Nothing recorded the hold's start. The hold cannot be older than the clock, so the
-    # forward_start bounds it: this can only expire a hold early, never let it restart.
-    fwd = row.get("forward_start")
-    return str(fwd) if fwd and _ts(fwd) is not None else None
+    return reported or None             # unreadable -> hold_expired() expires it
+
+
+def stamp_hold_start(key: str, start: str) -> None:
+    """Write the hold's start onto a broken row that carries no `status_at`, so the start is
+    durable in the registry and a lost report cannot restart it (Auditor nit, 11-03)."""
+    doc = reg._read(reg.REGISTRY)
+    row = (doc.get("sleeves") or {}).get(key)
+    if isinstance(row, dict) and not row.get("status_at"):
+        row["status_at"] = start
+        reg._write(doc)
 
 
 def hold_expired(since: str | None, now: datetime) -> bool:
