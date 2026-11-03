@@ -30,6 +30,12 @@ rem through :run, which records a non-zero exit (negative crash codes included: 
 rem `if errorlevel 1`, which misses them) and carries on, because one organ's failure must not
 rem starve the measurements after it. The lane exits 1 if ANY organ failed and names them in the
 rem log, so `Get-ScheduledTaskInfo MT5-FrontierAudit` finally says what the log says.
+rem THE FLAGS ARE THE ORGAN'S OWN (2026-10-29). world_model, meta_rnd and quantbench write by
+rem default and never had an --apply: they were passed one anyway, argparse exited 2 with
+rem "unrecognized arguments: --apply" and the quantbench and meta_rnd lanes were dark from
+rem 10-20/10-22 behind a lane that only said "4 organs failed". They take --once, as the hourly
+rem cycle already calls them. tests/ops/test_wrapper_organ_flags.py parses every organ line in
+rem every ops wrapper against the organ's real argparse, so a flag the organ does not accept fails CI.
 set /a FAILED=0
 set "FAILED_NAMES="
 >>"%LOG%" echo === MT5-FrontierAudit start %DATE% %TIME%
@@ -39,7 +45,7 @@ call :run "desks\mt5\research\pit_audit.py" --apply
 call :run "desks\mt5\research\forward_calibration.py" --apply
 call :run "desks\mt5\research\orthogonality.py" --apply
 call :run "desks\mt5\research\unknown_unknowns.py" --apply
-call :run "desks\mt5\research\world_model.py" --apply
+call :run "desks\mt5\research\world_model.py" --once
 rem TWO MEASUREMENTS THAT WERE DARK (Tier-5 audit XCI/107 and XCIV, 2026-09-29).
 rem market_posteriors is F3, the nine-axis posteriors split off world_model on 2026-09-17;
 rem chart_allocator publishes the per-chart hunting weights edge_search already draws from.
@@ -76,7 +82,7 @@ call :run "desks\mt5\research\meta_controller.py" --apply
 rem RECURSIVE META-R&D (F25), immediately BEFORE the bench and the verifier so it records
 rem the arena state as it stood this pass. Its three arenas are the bench, the adversary
 rem and the credit record -- which is why it could not be built before them.
-call :run "desks\mt5\research\meta_rnd.py" --apply
+call :run "desks\mt5\research\meta_rnd.py" --once
 rem THE BENCH RUNS LAST (F18), and the order is the point: every probe reads an artifact
 rem this lane has just regenerated, so a stale report cannot be mistaken for a returned
 rem defect. It reports UNMEASURABLE on an artifact older than the code that produces it.
@@ -112,7 +118,7 @@ rem THE INDEPENDENT VERIFIER (item 15, 2026-09-29). A second implementation, imp
 rem code, rebuilds every promoted certificate from its frozen spec and is compared trade by
 rem trade with the original. Daily, not hourly: it reloads every certified chart's bars.
 call :run "desks\mt5\research\independent_verifier.py" --apply --budget-s 1200
-call :run "desks\mt5\research\quantbench.py" --apply
+call :run "desks\mt5\research\quantbench.py" --once
 rem DORMANT COMPONENTS (DP2, 2026-09-30). The dead-architecture census names UNREACHED organs
 rem every run and nobody acted on the list. This takes the ones that ALSO have no clock in the
 rem component registry and no artifact update in 14 days (disk and git) and files each one to
