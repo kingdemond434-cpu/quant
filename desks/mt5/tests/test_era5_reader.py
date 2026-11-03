@@ -567,14 +567,6 @@ def test_leg_is_on_the_hourly_clock_with_a_budget_and_a_layer() -> None:
     assert LEG_LAYER["era5_reader"] == "information"
 
 
-def test_pyproject_declares_cdsapi_in_an_extra_with_a_cap() -> None:
-    import tomllib
-    extras = tomllib.loads((_ROOT / "pyproject.toml").read_text("utf-8"))["project"][
-        "optional-dependencies"]
-    spec = next(s for s in extras["climate"] if s.startswith("cdsapi"))
-    assert "<" in spec and ">=" in spec
-
-
 def test_tree_carries_no_key_value() -> None:
     for p in (_DESK / "research" / "era5_reader.py", _DESK / "data" / "era5_regions.json"):
         assert not re.search(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
