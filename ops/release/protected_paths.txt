@@ -1,6 +1,8 @@
-# PROTECTED paths: a PR touching any of these never merges without zuck (auditor CLEAR plus his
-# APPROVE MERGES on #453). One fnmatch pattern per line, "*" crosses "/". This whole directory
-# is itself protected, so no AUTO-tier change can shrink the list.
+# FORMERLY PROTECTED paths (the AUTO floor). Until 2026-10-29 a PR touching any of these never
+# merged without zuck. zuck then removed that ("remove all protected", "make all unprotected",
+# "always", "so i never have to approve"): these now merge with no comment, but always on the
+# AUTO path with every AUTO job, never LOW. One fnmatch pattern per line, "*" crosses "/".
+# What still needs zuck is only the controller's PROTECTED tuple (the checks that judge a PR).
 #
 # Edit protected_head.txt, then run ops/release/gen_protected_paths.py.
 
