@@ -245,10 +245,14 @@ def _default_sender() -> Sender:
     def send(title: str, body: str) -> dict[str, Any]:
         if str(ROOT) not in sys.path:
             sys.path.insert(0, str(ROOT))
-        from libs.ops import alert_channels
-        return alert_channels.send_all(title, body,
+        from libs.ops import alert_digest
+        # Opt-in digest (2026-11-03): every UNMEASURED backup reminder (drill, offsite job, key
+        # backup, ops redundancy, reboot drill); none is live money.
+        return alert_digest.send(title, body,
                                        config=ROOT / "data" / "secrets" / "alert_channels.json",
-                                       ledger=ROOT / "data" / "alert_delivery.jsonl")
+                                       ledger=ROOT / "data" / "alert_delivery.jsonl",
+                                       digest_class=("backup_unmeasured"
+                                                     if "UNMEASURED" in title else None))
     return send
 
 
