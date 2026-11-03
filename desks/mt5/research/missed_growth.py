@@ -1134,7 +1134,8 @@ FRED_COPYRIGHTED_CUT_ARTIFACTS: tuple[tuple[str, Path], ...] = (
     ("screen_fred_macro_axis", BASE.parent.parent / "data" / "fred_macro_screen.json"),
     ("run_cot_screen", BASE.parent.parent / "data" / "cot_screen_summary.json"),
     ("fetch_sge_premium", BASE / "reports" / "sge_premium.json"),
-    ("macro_view", BASE / "reports" / "MACRO_VIEW.json"),
+    # macro_view's VIX lean line is NOT gathered here: it is billed ONCE, under
+    # `vix_risk_lean_cut` (vix_risk_lean_cut_line), never twice
 )
 
 
