@@ -109,30 +109,112 @@ def test_implied_vol_is_exogenous_not_price_only():
 
 
 # ------------------------------------------------------------------------ entry alpha ---
-def test_entry_alpha_changes_only_the_entry():
+SPR = 0.01      # a fixed spread in price units for the synthetic bars (override arm)
+
+
+def test_entry_alpha_changes_only_the_entry_and_demands_trade_through():
     df = _bars()
     base = family_trend_ma_cross(df)
-    got = reach.family_entry_alpha(df, base_family="trend_ma_cross", offset_atr=0.5, wait_bars=4)
+    got = reach.family_entry_alpha(df, base_family="trend_ma_cross", offset_atr=0.5, wait_bars=4,
+                                   spread_price_override=SPR)
     assert base and len(got) == len(base)
     for b, e in zip(base, got, strict=True):
         assert e.time == b.time and e.side == b.side and e.wait_bars == 4
         assert e.trigger is not None
         ref = float(df["close"].loc[b.time])
-        assert e.side * (ref - e.trigger) > 0                       # a BETTER price: a limit
-        assert abs((e.trigger - e.stop) - (ref - b.stop)) < 1e-9 * ref   # same risk distance
-        assert abs((e.target - e.trigger) - (b.target - ref)) < 1e-9 * ref
+        if e.side > 0:
+            # the engine touches L - spread, so the real ask fill is L; exits keep L's distances
+            limit = e.trigger + SPR
+            assert ref - limit > 0                                  # a BETTER price: a limit
+            assert abs((limit - e.stop) - (ref - b.stop)) < 1e-9 * ref
+            assert abs((e.target - limit) - (b.target - ref)) < 1e-9 * ref
+        else:
+            # the short trades through by one spread and is priced AT the trigger it fills at
+            assert e.trigger - SPR > ref
+            assert abs((e.stop - e.trigger) - (b.stop - ref)) < 1e-9 * ref
+            assert abs((e.trigger - e.target) - (ref - b.target)) < 1e-9 * ref
 
 
 @pytest.mark.parametrize("kw", ({"offset_atr": 0.0}, {"wait_bars": 0},
-                                {"base_family": "entry_alpha"}, {"base_family": "nope"}))
+                                {"base_family": "entry_alpha"}, {"base_family": "nope"},
+                                {"spread_mult": 0.5}, {"spread_price_override": 0.0}))
 def test_entry_alpha_refuses_malformed_cells(kw):
-    assert reach.family_entry_alpha(_bars(days=120), **kw) == []
+    args = {"spread_price_override": SPR, **kw}
+    assert reach.family_entry_alpha(_bars(days=120), **args) == []
+
+
+def test_entry_alpha_without_a_measured_spread_emits_nothing(tmp_path, monkeypatch):
+    """No symbol, or a symbol with no measured spread: UNMEASURED, never a touch fill."""
+    df = _bars(days=200)
+    assert reach.family_entry_alpha(df) == []                       # no symbol at all
+    uni = tmp_path / "universe.json"
+    uni.write_text(json.dumps({"ZZZ": {"tick_size": 0.001, "median_spread_pts": 0.0},
+                               "YYY": {"tick_size": 0.001, "median_spread_pts": 20.0}}))
+    monkeypatch.setattr(reach, "UNIVERSE", uni)
+    monkeypatch.setattr(reach, "COST_SURFACE", tmp_path / "absent.json")
+    assert reach.family_entry_alpha(df, symbol="ZZZ") == []
+    got = reach.family_entry_alpha(df, symbol="YYY")
+    assert got and all(x.tag.endswith("thru1spr") for x in got)
+    assert reach.spread_price("YYY", [3, 4]) == pytest.approx(0.02)
+
+
+def test_spread_is_the_worst_measured_fill_hour(tmp_path, monkeypatch):
+    uni = tmp_path / "universe.json"
+    uni.write_text(json.dumps({"XXX": {"tick_size": 0.01, "median_spread_pts": 5.0}}))
+    surf = tmp_path / "cost_surface.json"
+    surf.write_text(json.dumps({"symbols": {"XXX": {"hours": {
+        "3": {"status": "MEASURED", "p50": 40.0}, "4": {"status": "MEASURED", "p50": 10.0}}}}}))
+    monkeypatch.setattr(reach, "UNIVERSE", uni)
+    monkeypatch.setattr(reach, "COST_SURFACE", surf)
+    assert reach.spread_price("XXX", [3, 4]) == pytest.approx(0.40)
+    assert reach.spread_price("XXX", [7]) == pytest.approx(0.05)    # unmeasured hour -> pooled
+
+
+def _touch_only_frame() -> tuple[pd.DataFrame, pd.Timestamp, float]:
+    """Flat bars, then ONE bar whose low exactly touches the limit and never trades through,
+    then a rally through the target: an edge that exists only if a touch is a fill."""
+    n = 120
+    idx = pd.date_range("2024-03-04", periods=n, freq="h", tz="UTC")
+    close = np.full(n, 100.0)
+    high = close + 0.10
+    low = close - 0.10
+    df = pd.DataFrame({"open": close.copy(), "high": high, "low": low, "close": close,
+                       "tick_volume": 100}, index=idx)
+    sig_at = idx[60]
+    return df, sig_at, 0.10
+
+
+def test_stress_arm_a_touch_only_edge_disappears_under_trade_through(monkeypatch):
+    from mt5desk.engine import Costs, Signal, run_backtest
+    df, sig_at, _ = _touch_only_frame()
+    base = Signal(time=sig_at, side=1, stop=99.0, target=101.0, ttl_bars=24, tag="base",
+                  trigger=None, wait_bars=1)
+    monkeypatch.setattr(reach, "_base_signals", lambda d, f, p, s: [base])
+    atr = float(reach._atr(reach._h1(df), 20).loc[sig_at])
+    limit = 100.0 - 0.5 * atr
+    # bar 61 touches the limit EXACTLY (bid low == L) and goes no lower; bars 62+ rally
+    df.loc[df.index[61], ["open", "high", "low", "close"]] = [100.0, 100.05, limit, 100.0]
+    for j in range(62, 120):
+        px = 100.0 + 0.05 * (j - 61)
+        df.loc[df.index[j], ["open", "high", "low", "close"]] = [px, px + 0.05, px - 0.02, px]
+    costs = Costs(spread_per_lot=0.05, commission_per_lot=0.0, contract_oz=1.0)
+    # TOUCH arm (the old rule): a vanishing trade-through reproduces the engine's touch fill
+    touch = reach.family_entry_alpha(df, offset_atr=0.5, wait_bars=4,
+                                     spread_price_override=1e-12)
+    r_touch = run_backtest(df, touch, costs)
+    assert r_touch.n == 1 and r_touch.trades[0].r_multiple > 0
+    # TRADE-THROUGH arm: the ask never reached L, so there is no fill and no edge at all
+    thru = reach.family_entry_alpha(df, offset_atr=0.5, wait_bars=4,
+                                    spread_price_override=SPR)
+    assert thru and thru[0].trigger == pytest.approx(limit - SPR)
+    assert run_backtest(df, thru, costs).n == 0
 
 
 def test_sealed_build_cell_builds_entry_alpha():
     import external_gauntlet as eg
     df = _bars(days=400)
-    cell = eg.build_cell("IDX", "entry_alpha", {"base_family": "trend_ma_cross"}, {},
+    cell = eg.build_cell("IDX", "entry_alpha", {"base_family": "trend_ma_cross",
+                                                "spread_price_override": SPR}, {},
                          h1_override=df)
     assert cell is not None, eg.LAST_BUILD_FAILURE
     assert cell["sigs"]

@@ -232,7 +232,10 @@ def _forced_cells(cluster: str, universe: dict[str, Any], turn: int
         for i, sym in enumerate(syms[:CELLS_PER_CLUSTER]):
             base = reach.ENTRY_BASES[(turn + i) % len(reach.ENTRY_BASES)]
             off = ENTRY_OFFSETS[(turn + i) % len(ENTRY_OFFSETS)]
-            picks.append((sym, {"base_family": base, "offset_atr": off, "wait_bars": 4}))
+            # `symbol` is REQUIRED for the trade-through rule: the family prices the limit's
+            # trade-through from that symbol's measured spread and emits nothing without it.
+            picks.append((sym, {"base_family": base, "offset_atr": off, "wait_bars": 4,
+                                "symbol": sym}))
     elif cluster == "options_implied":
         fam = "implied_vol"
         gaps: list[str] = []
