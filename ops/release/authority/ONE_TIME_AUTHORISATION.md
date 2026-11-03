@@ -43,6 +43,8 @@ and none of them can be done legitimately by a code-writing agent.
    with your App ID in place of the number:
    `powershell -ExecutionPolicy Bypass -File C:\opt\quant\ops\release\authority\install_authority.ps1 -AppId 1234567`
    - The App ID is the number at the top of the App's settings page.
+   - The path is the box gate's own clean checkout of LIVE. The gate refreshes it every 10
+     minutes, so the installer is there even while `C:\opt\quant` waits for adoption.
    - The installer finds everything else itself: it moves the App key you downloaded out of
      Downloads into the key folder, and asks GitHub for the installation id.
    - It then creates the `quant-authority` account, its folders, the signing key, the pin and the
