@@ -868,7 +868,10 @@ NODES: tuple[Node, ...] = (
                  "desks/mt5/reports/EMPTY_CLUSTER_FORCER.json",
                  "desks/mt5/data/intelligence/breadth/"),
          freshness_s={"desks/mt5/reports/BREADTH_MANDATE.json": 6 * 3600,
-                      "desks/mt5/reports/EMPTY_CLUSTER_FORCER.json": 6 * 3600}),
+                      "desks/mt5/reports/EMPTY_CLUSTER_FORCER.json": 6 * 3600},
+         # Its forced cells reach a decision only through the compiler that reads the breadth
+         # seat, so it is priced there, as cell_emitter and intake_catchup are.
+         billed_as=("miner_candidate_compiler",)),
     Node("region_yield", "desks/mt5/research/region_yield.py",
          reads=("desks/mt5/data/deep_forest_sources.json",
                 "desks/mt5/data/deep_forest_vector_stats.json",
