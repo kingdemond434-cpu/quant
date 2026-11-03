@@ -18,6 +18,7 @@ it (a starved key tomorrow costs more than a thinner sweep today).
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 import urllib.parse
@@ -52,11 +53,22 @@ LINK_RE = re.compile(r"https?://[^\s)\"']+")
 def api(endpoint: str, spent: list[int], cost: int, **params) -> dict:
     if spent[0] + cost > UNIT_BUDGET:
         raise RuntimeError(f"unit budget {UNIT_BUDGET} would be exceeded; standing down")
-    params["key"] = KEYFILE.read_text("utf-8").strip()
+    params["key"] = _key()
     url = f"{API}/{endpoint}?{urllib.parse.urlencode(params)}"
     with urllib.request.urlopen(url, timeout=30) as r:
         spent[0] += cost
         return json.load(r)
+
+
+def _key() -> str:
+    """The key file first, else YOUTUBE_API_KEY. Measured 2026-11-03: the box carries the key as a
+    User-scope environment variable and has NO key file, so a file-only read left the collector
+    "exiting quietly" there forever. The value is never printed or written."""
+    try:
+        k = KEYFILE.read_text("utf-8").strip()
+    except OSError:
+        k = ""
+    return k or os.environ.get("YOUTUBE_API_KEY", "").strip()
 
 
 def read_json(p: Path, default):
@@ -97,9 +109,32 @@ def fetch_transcript(video_id: str) -> tuple[str | None, str | None]:
     return (text[:20000], None) if text else (None, "TRANSCRIPT_UNAVAILABLE")
 
 
+#: THE BOX CLOCK (2026-11-03). The VPS timer `ops/quant-youtube-corpus.timer` (hourly, :37) was
+#: this collector's only clock; the box held a mirror, so the corpus froze when the VPS did (last
+#: real file videos_20261022.json). hourly_cycle now runs it as the `youtube_corpus` leg of the
+#: intel department, whose passes can come faster than hourly, so a pass inside MIN_INTERVAL_S of
+#: the last recorded sweep returns NOT_DUE without spending a unit.
+MIN_INTERVAL_S = 3_000
+
+
+def _not_due(now: datetime) -> float | None:
+    """Seconds since the last sweep when it is under MIN_INTERVAL_S, else None (due)."""
+    last = read_json(COVERAGE, {}).get("last_sweep")
+    try:
+        age = (now - datetime.fromisoformat(str(last))).total_seconds()
+    except (TypeError, ValueError):
+        return None
+    return age if 0 <= age < MIN_INTERVAL_S else None
+
+
 def main() -> int:
-    if not KEYFILE.exists():
-        print("youtube key absent (data/secrets/youtube_api_key) -- nothing collected, "
+    if "--force" not in sys.argv[1:]:
+        age = _not_due(datetime.now(tz=UTC))
+        if age is not None:
+            print(f"youtube corpus: NOT_DUE (last sweep {int(age)}s ago)")
+            return 0
+    if not _key():
+        print("youtube key absent (data/secrets/youtube_api_key, YOUTUBE_API_KEY) -- nothing collected, "
               "exiting quietly; the dig falls back to text/code routes")
         return 0
     now = datetime.now(tz=UTC)
