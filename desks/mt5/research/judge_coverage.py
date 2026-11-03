@@ -913,6 +913,65 @@ def judged_index(path: Path | None = None, *, now: datetime | None = None,
     return seen, total, in_window
 
 
+#: THE DOCKET MUST SHIP EVERY CYCLE (2026-10-29). MergeDocket died on 10-27 on a Windows replace of
+#: the 1.55M-row docket and nothing went RED for two days: the judge kept judging the old docket and
+#: only JUDGE_COVERAGE_REUSE's refusal hinted at it. Merge runs every hourly cycle; a merge older
+#: than this is more than one missed pass plus a long cycle.
+MERGE_LAG_H = 3.0
+#: A docket PRESERVED (merge ran, 0 fresh rows) for longer than this since its last real merge is
+#: RED: a day with no producer reaching the docket is a producer outage, not a quiet hour.
+PRESERVE_MAX_H = 24.0
+
+
+#: Consecutive merge passes whose ordering timed out before docket_merge reads RED.
+ORDER_TIMEOUT_RED_STREAK = 3
+
+
+def docket_merge_lag(at: datetime, path: Path | None = None, *,
+                     lag_h: float = MERGE_LAG_H) -> dict[str, Any]:
+    """RED when `merge_report.json` says the docket was last merged more than `lag_h` ago;
+    UNMEASURED when the report is absent, unreadable or carries no `merged_at`."""
+    src = path or MERGE_REPORT
+    out: dict[str, Any] = {"source": str(src), "lag_h": lag_h}
+    doc = _read(src)
+    merged = _ts(doc.get("merged_at")) if isinstance(doc, dict) else None
+    if merged is None:
+        out.update(status="UNMEASURED", merged_at=None,
+                   why="merge_report.json absent, unreadable or without merged_at")
+        return out
+    age = (at - merged).total_seconds() / 3600.0
+    out.update(merged_at=merged.isoformat(timespec="seconds"), age_h=round(age, 2))
+    checked = _ts(doc.get("checked_at")) if doc.get("preserved") is True else None
+    if (age > lag_h and checked is not None and age <= PRESERVE_MAX_H
+            and (at - checked).total_seconds() / 3600.0 <= lag_h):
+        # The merge RAN and found nothing fresh, so it kept the docket: its own state, never OK
+        # (no new cell reached the judge) and never RED (the writer is not broken).
+        out.update(status="PRESERVED", checked_at=checked.isoformat(timespec="seconds"),
+                   why=(f"the merge ran {(at - checked).total_seconds() / 3600:.1f} h ago with "
+                        f"0 fresh rows and kept the docket last merged {age:.1f} h ago"))
+        return out
+    if age > lag_h and checked is not None and age > PRESERVE_MAX_H:
+        out.update(status="RED", checked_at=checked.isoformat(timespec="seconds"),
+                   why=(f"the merge has run with 0 fresh rows for {age:.1f} h (past "
+                        f"{PRESERVE_MAX_H:g} h): no producer is reaching the docket"))
+        return out
+    if age > lag_h:
+        out.update(status="RED", why=(f"the docket was last merged {age:.1f} h ago (past "
+                                      f"{lag_h:g} h): the merge is not shipping, so the judge "
+                                      "is judging a stale docket"))
+    else:
+        streak = doc.get("order_timeout_streak")
+        if isinstance(streak, int) and streak >= ORDER_TIMEOUT_RED_STREAK:
+            out.update(status="RED", order_timeout_streak=streak,
+                       why=(f"the docket ships, but its family ordering has hit its budget "
+                            f"{streak} passes running: the judge gets least-judged order, never "
+                            "the family interleave -- raise the merge leg's cap or speed the "
+                            "ordering"))
+        else:
+            out.update(status="OK", why=f"docket merged {age:.1f} h ago")
+    return out
+
+
 def not_testable_index(bank: dict[str, dict[str, Any]] | None = None
                        ) -> dict[str, str]:
     """cell id -> reason, for every cell the unrunnable bank holds as NOT TESTABLE right now.
@@ -3922,6 +3981,7 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
                  f"{FLOOR_SHARE:.0%} of measured capacity to every family holding backlog), then "
                  "the remainder in proportion to backlog; the docket ships whole, interleaved, "
                  "so every prefix the judge's budget reaches is family-balanced"),
+        "docket_merge": docket_merge_lag(at),
         "families": table,
         "totals": totals,
         "quota": quota,
@@ -4090,7 +4150,8 @@ def _prescreen(rows: list[dict[str, Any]], *, publish: bool,
 
 
 def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
-                 now: datetime | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+                 now: datetime | None = None, deadline: tuple[float, float] | None = None
+                 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """THE INTAKE CALL. Return the docket re-ordered for coverage, and the table it implies.
 
     `merge_hypotheses` calls this as the last thing it does before writing the file the sealed
@@ -4101,10 +4162,11 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
     able to cost the desk a docket (L1.28a).
     """
     with _pass_memo():
-        return _order_docket(rows, publish=publish, now=now)
+        return _order_docket(rows, publish=publish, now=now, deadline=deadline)
 
 
-def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | None
+def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | None,
+                  deadline: tuple[float, float] | None = None
                   ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     doc: dict[str, Any] | None = None
     # THE ROWS AS THEY ARRIVED (audit of v1.2, MF2): any failure returns these, unfiltered, so a
@@ -4113,7 +4175,7 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
     entry_rows = list(rows)
     commit_reached = False
     try:
-        doc = build(rows, now=now, defer=publish)
+        doc = build(rows, now=now, defer=publish, deadline=deadline)
         if not doc.get("families"):
             _txn = doc.pop("_txn", None)
             # THE ROWS SHIP UNFILTERED HERE, so nothing is parked out of this docket: the parked
@@ -4124,6 +4186,10 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
                 commit_reached = True
                 _txn.commit()
             return rows, doc
+        # THE ORDERING STEPS AFTER build ARE BOUNDED TOO (audit of v5): the deadline was read
+        # only between build's phases, so a hang in the screen, the split or the write held the
+        # docket lane past it. Each step checks it; a timeout ships the rows as they arrived.
+        _check_budget("order_filter")
         quota = {str(k): int(v) for k, v in (doc.get("quota") or {}).items()}
         banned = banned_from_capital()
         judged_cells, _, _ = judged_index(now=now)
@@ -4165,6 +4231,7 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
             "rule": ("rows parked as build_input_missing, and rows the pre-build screen removed "
                      "under CANON, stay in the trial census (effective_trials reads them beside "
                      "the docket): neither parking nor screening moves a charge")}
+        _check_budget("order_prescreen")
         judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
         study = [r for r in rows if str(r.get("family") or "") in banned]
         # CHARGE VARIANTS AGAINST THEIR PARENT. The split marks the rows; the two orders below
@@ -4190,6 +4257,7 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
                 "min_never_fires": SIBLING_NEVER_FIRES_MIN,
                 "rule": ("a (family, symbol) with this many parked never-firing cells and no "
                          "verdict with a named gate ranks after every other row; nothing dropped")}
+        _check_budget("order_split")
         ordered_j, doc["fireability"] = fireability_order(ordered_j)
         ordered = ordered_j + study
         was, now_ = _unseen_in_prefix(before, cap), _unseen_in_prefix(ordered_j, cap)
@@ -4234,6 +4302,7 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
         for row in ordered:
             for _k in ("_cell", "_variant", "_keff", "_occ", "_orth", "_famdup"):
                 row.pop(_k, None)
+        _check_budget("order_write")
         if publish:
             commit_reached = True
             write(doc)

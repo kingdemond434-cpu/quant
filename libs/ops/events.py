@@ -81,6 +81,11 @@ KINDS = (
     # held the judge for 108 h with no row anywhere; it now has a time on it here and a fence
     # (check_judge_coverage `judge_stop`, WARN 12 h / FAIL 24 h).
     "JUDGE_STOP_HONOURED", "JUDGE_STOP_LAPSED",
+    # A LOCK OWNER STOPPED BY THE HOURLY job_lock_health LEG (2026-10-29): a research job whose
+    # whole process tree made no CPU progress for two hours, terminated with its descendants.
+    # The row names the lock, the pid, the command line and how long the tree was idle, so a
+    # kill is a transition with a time on it, never a report row the next pass overwrites.
+    "JOB_LOCK_STOPPED",
 )
 
 #: Legs whose completion IS a domain transition. Every other leg emits only LEG_DONE.

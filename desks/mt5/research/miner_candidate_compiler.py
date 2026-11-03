@@ -29,6 +29,8 @@ if str(BASE) not in sys.path:
     # ``desks/mt5/`` to sys.path, so exact recipes otherwise cannot see the family registry and
     # are silently routed to deepening instead of the gauntlet.
     sys.path.insert(0, str(BASE))
+from libs.ops.atomic_replace import replace_with_retry  # noqa: E402
+
 UNIVERSE = BASE / "data" / "universe"
 INTEL_ROOTS = (BASE / "data" / "intelligence", ROOT / "data" / "intelligence")
 OUT = BASE / "data" / "hypotheses" / "miner_candidates.json"
@@ -379,7 +381,7 @@ def _atomic_json(path: Path, document: dict) -> None:
                                          suffix=".tmp", delete=False) as handle:
             temporary = Path(handle.name)
             json.dump(document, handle, indent=1, default=str)
-        os.replace(temporary, path)
+        replace_with_retry(temporary, path)
     finally:
         if temporary is not None:
             temporary.unlink(missing_ok=True)
@@ -1989,7 +1991,7 @@ def main() -> int:
             target = FACTORY_RECEIPTS / f"{receipt['input_version_id']}.json"
             tmp = target.with_suffix(".json.tmp")
             tmp.write_text(json.dumps(receipt, indent=1) + "\n", "utf-8")
-            os.replace(tmp, target)
+            replace_with_retry(tmp, target)
     _save_cursor()
     if bank is not None:
         bank.flush()

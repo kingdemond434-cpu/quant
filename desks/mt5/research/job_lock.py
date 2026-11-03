@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import math
 import os
 import socket
 import sys
@@ -12,10 +13,22 @@ from collections.abc import Iterable, Iterator
 from contextlib import contextmanager, suppress
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
 LOCK_ROOT = BASE / "data" / ".job_locks"
 STALE_SECONDS = 45 * 60
+
+#: ALIVE IS NOT PROGRESSING (2026-10-29). The merge_hypotheses lock was held 15 h by a living pid
+#: (18040, ~2 GB) and MT5-LocalConvert refused behind it every hour, reading only "owner ALIVE".
+#: A wedged process still breathes, so liveness alone cannot tell a long job from a stuck one.
+#: Its CPU time can: an owner whose CPU seconds have not advanced for this long is WEDGED. It is
+#: still never robbed (a living owner can resume, and two writers is the worse failure), but it is
+#: named RED in JOB_LOCK_HEALTH.json so the stop is somebody's job instead of nobody's.
+WEDGED_AFTER_S = 30 * 60
+#: CPU seconds an owner must add between two observations to count as progress.
+PROGRESS_CPU_S = 1.0
+HEALTH_REPORT = BASE / "reports" / "JOB_LOCK_HEALTH.json"
 
 #: How long a job that does not fit will WAIT for a neighbour to exit before standing down.
 #: Bounded well under the hourly trigger so a waiting job can never overlap its own next run.
@@ -311,6 +324,318 @@ def _owner_state(path: Path) -> str:
     return "ALIVE"
 
 
+def _owner_cpu_s(pid: int) -> float | None:
+    """CPU seconds of the owner's WHOLE TREE: itself, its reaped children, its live descendants.
+
+    A parent that holds the lock while a child does the work (hourly_cycle holding
+    `miner_candidate_compiler` around a compile child; warm_gauntlet_cache's pool) uses almost no
+    CPU of its own. Counting only its own time read it WEDGED while the child burned (audit of
+    v5, MF1: 0.02 s parent against 3.9 s child). `children_*` carries reaped children on POSIX
+    (zero on Windows) and is summed for every descendant too, so a grandchild's time survives its
+    exit there. On Windows a descendant that exits makes the sum DROP; `owner_progress` rebases
+    the baseline down and keeps the idle clock running -- a drop is not progress."""
+    try:
+        import psutil
+
+        proc = psutil.Process(pid)
+        t = proc.cpu_times()
+        total = float(t.user + t.system + getattr(t, "children_user", 0.0)
+                      + getattr(t, "children_system", 0.0))
+        for child in proc.children(recursive=True):
+            with suppress(Exception):
+                c = child.cpu_times()
+                total += float(c.user + c.system + getattr(c, "children_user", 0.0)
+                               + getattr(c, "children_system", 0.0))
+        return total
+    except Exception:
+        return None
+
+
+#: Files beside the locks that are not locks.
+SIDECAR_SUFFIXES = (".peaks.json", ".progress.json", ".beat.json")
+
+
+def _progress_path(lock: Path) -> Path:
+    return lock.with_name(lock.stem + ".progress.json")
+
+
+#: A beaten phase's limit is clamped here, so an infinite budget can never disable WEDGED.
+BEAT_EXPECT_MAX_S = 6 * 3600.0
+#: Cores of tree CPU at or above which a beaten owner is BUSY, and is never auto-stopped.
+BUSY_CPU_RATE = 0.25
+#: A beat stamped further ahead than this is unreadable, never PROGRESSING forever.
+BEAT_FUTURE_SLACK_S = 120.0
+
+
+def _beat_path(lock: Path) -> Path:
+    return lock.with_name(lock.stem + ".beat.json")
+
+
+def heartbeat(name: str, phase: str, *, expect_s: float | None = None,
+              now: float | None = None) -> bool:
+    """The lock OWNER says it reached `phase`, which may take up to `expect_s` seconds.
+
+    WHY A BEAT AND NOT ONLY CPU (audit of judge atomic-replace v6). The 15 h merge owner of
+    2026-10-29 burned ~2.3 s of CPU a minute while making no progress, which a CPU threshold of
+    1 s per window reads as PROGRESSING: the CPU signal alone would not have caught the incident
+    it was written for. An owner that beats is judged by its beats -- WEDGED once a phase runs
+    past max(`expect_s`, WEDGED_AFTER_S) with no new beat, whatever its CPU does. Written only
+    when this process holds the lock (its pid is the lock's), so a beat can never vouch for
+    another owner. Never raises: bookkeeping must not break the owner."""
+    lock = LOCK_ROOT / f"{name}.json"
+    try:
+        row = json.loads(lock.read_text("utf-8"))
+        if row.get("pid") != os.getpid() or row.get("host") != socket.gethostname():
+            return False
+        rec = {"token": str(row.get("token") or ""), "phase": str(phase),
+               "at": time.time() if now is None else float(now),
+               "expect_s": (min(float(expect_s), BEAT_EXPECT_MAX_S)
+                            if expect_s and expect_s > 0 else None)}
+        dst = _beat_path(lock)
+        tmp = dst.with_name(f"{dst.name}.{os.getpid()}.tmp")
+        try:
+            tmp.write_text(json.dumps(rec), "utf-8")
+            os.replace(tmp, dst)          # a reader holding it open refuses on Windows: the
+        except OSError:                   # next beat lands; this one is simply skipped
+            with suppress(OSError):
+                tmp.unlink()
+            return False
+        return True
+    except Exception:
+        return False
+
+
+#: The window a CPU rate is measured over: an hourly observer lands inside it, a contender's
+#: look seconds later does not, and a clock jump or a stale baseline falls outside it.
+RATE_WINDOW_MIN_S = 15 * 60.0
+RATE_WINDOW_MAX_S = 3 * 3600.0
+
+
+def _num(x: object) -> float | None:
+    """A finite real number, or None (a bool, NaN or infinity is not a reading)."""
+    if isinstance(x, bool) or not isinstance(x, (int, float)) or not math.isfinite(float(x)):
+        return None
+    return float(x)
+
+
+def _finite(x: object) -> bool:
+    return _num(x) is not None
+
+
+def _cpu_rate(lock: Path, token: str, cpu: float | None, t: float) -> float | None:
+    """Cores of tree CPU since the previous observation of this owner (sidecar `obs_*`), or
+    None on the first observation or an unreadable reading -- never a guessed zero.
+
+    ONLY OVER A MEASURING WINDOW (audit of v9, SF1). Contenders call this too, so a baseline
+    seconds old made a 0.8-core owner with a 2 s IO stall read 0.0 and be stopped; a clock jump
+    diluted it the other way. The rate counts only when the baseline is finite, not in the
+    future, and RATE_WINDOW_MIN_S..RATE_WINDOW_MAX_S old. A younger baseline is KEPT (never
+    overwritten by a short look); an older or unusable one is re-seeded with rate None."""
+    side = _progress_path(lock)
+    try:
+        prev = json.loads(side.read_text("utf-8"))
+    except (OSError, ValueError):
+        prev = {}
+    if not isinstance(prev, dict) or prev.get("token") != token:
+        prev = {"token": token}
+    rate = None
+    pc, pt = _num(prev.get("obs_cpu")), _num(prev.get("obs_t"))
+    if cpu is not None and pc is not None and pt is not None and cpu >= pc and pt <= t:
+        window = t - pt
+        if window < RATE_WINDOW_MIN_S:
+            return None                   # too short to measure: keep the older baseline
+        if window <= RATE_WINDOW_MAX_S:
+            rate = round((cpu - pc) / window, 4)
+    if cpu is not None and math.isfinite(cpu):
+        with suppress(OSError):
+            side.write_text(json.dumps({**prev, "obs_cpu": cpu, "obs_t": t}), "utf-8")
+    return rate
+
+
+def _beat_progress(lock: Path, token: str, t: float,
+                   out: dict[str, Any]) -> dict[str, Any] | None:
+    """The owner's state from its beats, or None when this owner has never beaten."""
+    try:
+        beat = json.loads(_beat_path(lock).read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(beat, dict) or beat.get("token") != token:
+        return None
+    at = beat.get("at")
+    at_s = _num(at)
+    if at_s is None or at_s > t + BEAT_FUTURE_SLACK_S:
+        return None
+    expect = beat.get("expect_s")
+    limit = max(float(WEDGED_AFTER_S),
+                min(float(expect), BEAT_EXPECT_MAX_S) if isinstance(expect, (int, float))
+                else 0.0)
+    idle = max(0.0, t - at_s)
+    phase = str(beat.get("phase") or "?")
+    out.update(signal="beat", phase=phase, idle_s=round(idle, 1), limit_s=round(limit, 1))
+    if idle > limit:
+        out.update(status="WEDGED", why=(f"owner alive but its phase '{phase}' has run "
+                                         f"{idle / 60:.0f} min with no beat (limit "
+                                         f"{limit / 60:.0f} min)"))
+    else:
+        out.update(status="PROGRESSING", why=(f"owner in phase '{phase}' for "
+                                              f"{idle / 60:.0f} min (limit {limit / 60:.0f} min)"))
+    return out
+
+
+def owner_progress(lock: Path, *, now: float | None = None,
+                   cpu_of=None) -> dict[str, Any]:
+    """PROGRESSING / IDLE / WEDGED / UNMEASURED for a lock's owner, from its TREE's CPU time.
+
+    Each observer records the owner's CPU seconds and the last time they advanced in a sidecar
+    beside the lock (keyed on the lock's token, so a new owner starts afresh). WEDGED means the
+    owner's CPU time has not advanced by `PROGRESS_CPU_S` for `WEDGED_AFTER_S`."""
+    t = time.time() if now is None else now
+    try:
+        row = json.loads(lock.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {"status": "UNMEASURED", "why": "lock unreadable"}
+    pid, token = row.get("pid"), str(row.get("token") or "")
+    out: dict[str, Any] = {"pid": pid, "started_at": row.get("started_at")}
+    beaten = _beat_progress(lock, token, t, out)
+    if beaten is not None:
+        if isinstance(pid, int):          # every observation seeds the rate's baseline
+            beaten["cpu_rate"] = _cpu_rate(lock, token, (cpu_of or _owner_cpu_s)(pid), t)
+        return beaten
+    out["signal"] = "cpu"
+    cpu = (cpu_of or _owner_cpu_s)(pid) if isinstance(pid, int) else None
+    if cpu is None:
+        out.update(status="UNMEASURED", why="owner CPU time unreadable")
+        return out
+    side = _progress_path(lock)
+    try:
+        prev = json.loads(side.read_text("utf-8"))
+    except (OSError, ValueError):
+        prev = None
+    base_cpu = float(prev.get("cpu_s") or 0.0) if isinstance(prev, dict) else 0.0
+    if (not isinstance(prev, dict) or prev.get("token") != token
+            or cpu >= base_cpu + PROGRESS_CPU_S):
+        rec = {"token": token, "cpu_s": cpu, "cpu_at": t}
+        with suppress(OSError):
+            side.write_text(json.dumps(rec), "utf-8")
+        first = not isinstance(prev, dict) or prev.get("token") != token
+        out.update(status="UNMEASURED" if first else "PROGRESSING", cpu_s=cpu, idle_s=0.0,
+                   why=("first observation of this owner" if first
+                        else "the owner tree's CPU time advanced since the last observation"))
+        return out
+    if cpu < base_cpu - 1e-6:
+        # A descendant exited (Windows keeps no reaped-child time): rebase the baseline DOWN so
+        # the next child's work counts, but keep the idle clock -- a drop is not progress, or a
+        # wedged tree whose idle helper exits every two hours would never reach the stop.
+        with suppress(OSError):
+            side.write_text(json.dumps({**prev, "cpu_s": cpu}), "utf-8")
+    at = prev.get("cpu_at")
+    idle = t - (float(at) if isinstance(at, (int, float)) else t)
+    out.update(cpu_s=cpu, idle_s=round(idle, 1))
+    if idle > WEDGED_AFTER_S:
+        out.update(status="WEDGED", why=(f"owner alive but its CPU time has not advanced for "
+                                         f"{idle / 60:.0f} min (> {WEDGED_AFTER_S // 60} min)"))
+    else:
+        out.update(status="IDLE", why=f"no CPU progress for {idle / 60:.0f} min")
+    return out
+
+
+#: Auto-stops shown in JOB_LOCK_HEALTH.json, newest last, read from `STOPS_LEDGER`.
+STOP_HISTORY_MAX = 50
+#: Every auto-stop, appended once by the hourly leg. The report's `stops` is this file's tail, so
+#: a contender rewriting the report from a stale copy can never drop one (audit of v6, SF7).
+STOPS_LEDGER = BASE / "reports" / "JOB_LOCK_STOPS.jsonl"
+
+
+def _stops_tail() -> list[Any]:
+    try:
+        lines = STOPS_LEDGER.read_text("utf-8").splitlines()[-STOP_HISTORY_MAX:]
+    except OSError:
+        return []
+    out = []
+    for line in lines:
+        with suppress(ValueError):
+            out.append(json.loads(line))
+    return out
+
+
+def _read_health() -> dict[str, Any]:
+    try:
+        doc = json.loads(HEALTH_REPORT.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def _write_health(locks: dict[str, Any], t: float) -> None:
+    wedged = sorted(k for k, v in locks.items()
+                    if isinstance(v, dict) and v.get("status") == "WEDGED")
+    doc = {"at": datetime.fromtimestamp(t, UTC).isoformat(timespec="seconds"),
+           "locks": locks, "wedged": wedged, "status": "RED" if wedged else "OK",
+           "stops": _stops_tail(),
+           "rule": (f"an owner that beats is WEDGED when a phase outruns max(its expect_s, "
+                    f"{WEDGED_AFTER_S // 60} min) with no new beat; an owner that never beats is "
+                    f"WEDGED when its process tree makes no CPU progress for "
+                    f"{WEDGED_AFTER_S // 60} min; it is never reclaimed by a "
+                    "contender. The hourly job_lock_health leg stops an allowlisted research "
+                    "owner after its tree has made no progress for two hours, and names every "
+                    "other one RED for an operator")}
+    try:
+        HEALTH_REPORT.parent.mkdir(parents=True, exist_ok=True)
+        tmp = HEALTH_REPORT.with_name(f"{HEALTH_REPORT.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(doc, indent=1), "utf-8")
+        root = str(BASE.parents[1])
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from libs.ops.atomic_replace import replace_with_retry
+        try:
+            replace_with_retry(tmp, HEALTH_REPORT, max_wait_s=30.0)
+        finally:
+            with suppress(OSError):
+                tmp.unlink()
+    except (OSError, ImportError, TypeError, ValueError) as exc:
+        # Bookkeeping never blocks the lock decision, but a lost health report is said aloud:
+        # the disk refused it (OSError), the atomic-replace helper would not import, or a lock
+        # row would not serialise. Each is named so JOB_LOCK_HEALTH.json going stale has a cause.
+        print(f"job_lock: JOB_LOCK_HEALTH.json NOT written ({type(exc).__name__}: {exc})",
+              file=sys.stderr)
+
+
+def _stamp(health: dict[str, Any], t: float) -> dict[str, Any]:
+    return {**health, "observed_at": datetime.fromtimestamp(t, UTC).isoformat(
+        timespec="seconds")}
+
+
+def _publish_health(name: str, health: dict[str, Any], *, now: float | None = None) -> None:
+    """One contender's row in JOB_LOCK_HEALTH.json; RED when any row is WEDGED.
+
+    An unlocked read-modify-write: two writers at once can drop each other's row. Benign for a
+    report -- the hourly `job_lock_health` leg rewrites the WHOLE report each pass
+    (`write_health_report`), dropping rows for locks no longer held."""
+    t = time.time() if now is None else now
+    doc = _read_health()
+    prior = doc.get("locks")
+    locks: dict[str, Any] = prior if isinstance(prior, dict) else {}
+    locks[name] = _stamp(health, t)
+    _write_health(locks, t)
+
+
+def write_health_report(rows: dict[str, Any], *, now: float | None = None,
+                        new_stops: list[Any] | None = None) -> None:
+    """The hourly leg's FULL report: exactly the locks held now, written every pass -- also when
+    none is held, so a quiet hour reads fresh and a WEDGED row whose owner died is gone (audit
+    of v5, MF3). Auto-stops are appended to STOPS_LEDGER, so a kill outlives its pass."""
+    t = time.time() if now is None else now
+    if new_stops:
+        try:
+            STOPS_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+            with STOPS_LEDGER.open("a", encoding="utf-8") as fh:
+                for row in new_stops:
+                    fh.write(json.dumps(row, default=str) + "\n")
+        except OSError:
+            pass                          # the JOB_LOCK_STOPPED event still carries it
+    _write_health({k: _stamp(v, t) for k, v in rows.items()}, t)
+
+
 def free_mb() -> int | None:
     """The BINDING memory headroom -- min(available physical, available COMMIT) -- or None.
 
@@ -471,8 +796,16 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
             elif state == "ALIVE" and stale:
                 # LIVENESS VETOES AGE. The holder is running; the lock is not abandoned, it is
                 # merely old. Reclaiming here is what produced two concurrent sweeps.
-                print(f"{name}: lock is older than {STALE_SECONDS // 60}min but its owner is "
-                      f"ALIVE -- not reclaiming; a long job is not an abandoned one")
+                health = owner_progress(path)
+                _publish_health(name, health)
+                if health.get("status") == "WEDGED":
+                    print(f"{name}: lock owner pid {health.get('pid')} is WEDGED -- "
+                          f"{health.get('why')}; not reclaiming (a living owner can resume), "
+                          f"RED in {HEALTH_REPORT.name} for an operator to stop it")
+                else:
+                    print(f"{name}: lock is older than {STALE_SECONDS // 60}min but its owner "
+                          f"is ALIVE ({health.get('status')}) -- not reclaiming; a long job is "
+                          "not an abandoned one")
                 stale = False
             if stale:
                 with suppress(OSError):
@@ -485,6 +818,14 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
             with os.fdopen(fd, "w", encoding="utf-8") as handle:
                 handle.write(payload)
             owned = True
+            # A row left WEDGED by the previous owner clears the moment the lock changes hands.
+            try:
+                _prior = json.loads(HEALTH_REPORT.read_text("utf-8")).get("locks", {}).get(name)
+            except (OSError, ValueError, AttributeError):
+                _prior = None
+            if isinstance(_prior, dict) and _prior.get("status") != "ACQUIRED":
+                _publish_health(name, {"status": "ACQUIRED", "pid": os.getpid(),
+                                       "why": "lock acquired by a new owner"})
             break
     if not owned:
         print(f"{name}: REFUSED writer; stale lock could not be recovered")
@@ -511,5 +852,16 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
             current = json.loads(path.read_text("utf-8"))
             if current.get("token") == token:
                 path.unlink()
+                with suppress(OSError):
+                    _progress_path(path).unlink()
+                # A row left WEDGED or IDLE clears when the owner lets go, not only when the
+                # next contender arrives (audit SF1 of 70b4df4a0).
+                try:
+                    _row = json.loads(HEALTH_REPORT.read_text("utf-8")).get("locks", {}).get(name)
+                except (OSError, ValueError, AttributeError):
+                    _row = None
+                if isinstance(_row, dict) and _row.get("status") not in ("RELEASED", "OK"):
+                    _publish_health(name, {"status": "RELEASED", "pid": os.getpid(),
+                                           "why": "lock released by its owner"})
         except (OSError, ValueError, AttributeError):
             pass

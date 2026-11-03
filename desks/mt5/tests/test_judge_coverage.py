@@ -600,3 +600,102 @@ def test_parked_cells_are_handed_to_the_converter(tmp_path: Path) -> None:
     # EMPTY IS WRITTEN: absence must never read as zero cells awaiting conversion.
     assert jc.write_conversion_handoff({}, at="t", path=out) == 0
     assert json.loads(out.read_text("utf-8"))["rows"] == []
+
+
+def test_a_docket_merge_older_than_the_lag_is_red(tmp_path: Path) -> None:
+    """10-27: MergeDocket died on a Windows replace and the judge judged a stale docket for two
+    days with nothing RED."""
+    mr = tmp_path / "merge_report.json"
+    mr.write_text(json.dumps({"merged_at": (NOW - timedelta(hours=50)).isoformat()}), "utf-8")
+    red = jc.docket_merge_lag(NOW, mr)
+    assert red["status"] == "RED" and red["age_h"] == pytest.approx(50.0)
+    mr.write_text(json.dumps({"merged_at": (NOW - timedelta(minutes=40)).isoformat()}), "utf-8")
+    assert jc.docket_merge_lag(NOW, mr)["status"] == "OK"
+    assert jc.docket_merge_lag(NOW, tmp_path / "absent.json")["status"] == "UNMEASURED"
+
+
+def test_the_fence_fails_a_stale_docket_merge(tmp_path: Path) -> None:
+    report = tmp_path / "JUDGE_COVERAGE.json"
+    report.write_text(json.dumps({
+        "at": NOW.isoformat(), "totals": {},
+        "docket_merge": {"status": "RED", "why": "merged 50.0 h ago"},
+        "families": {"alpha": {"unjudged": 40, "queued": 10, "judged_window": 12, "quota": 10,
+                               "window_h": 4.0}}}), "utf-8")
+    doc = fence.judge(report, now=NOW)
+    assert doc["verdict"] == "FAIL"
+    assert any(c["metric"] == "docket_merge" and c["state"] == "FAIL" for c in doc["checks"])
+
+
+def test_a_preserved_docket_reads_preserved_never_ok_never_red(tmp_path: Path) -> None:
+    mr = tmp_path / "merge_report.json"
+    mr.write_text(json.dumps({"merged_at": (NOW - timedelta(hours=6)).isoformat(),
+                              "preserved": True,
+                              "checked_at": (NOW - timedelta(minutes=30)).isoformat()}), "utf-8")
+    doc = jc.docket_merge_lag(NOW, mr)
+    assert doc["status"] == "PRESERVED"
+    # A preserve stamp that is itself stale is the merge not running: RED.
+    mr.write_text(json.dumps({"merged_at": (NOW - timedelta(hours=6)).isoformat(),
+                              "preserved": True,
+                              "checked_at": (NOW - timedelta(hours=5)).isoformat()}), "utf-8")
+    assert jc.docket_merge_lag(NOW, mr)["status"] == "RED"
+    report = tmp_path / "JUDGE_COVERAGE.json"
+    report.write_text(json.dumps({
+        "at": NOW.isoformat(), "totals": {},
+        "docket_merge": {"status": "PRESERVED", "why": "kept"},
+        "families": {"alpha": {"unjudged": 40, "queued": 10, "judged_window": 12, "quota": 10,
+                               "window_h": 4.0}}}), "utf-8")
+    out = fence.judge(report, now=NOW)
+    assert any(c["metric"] == "docket_merge" and c["state"] == "WARN" for c in out["checks"])
+    assert out["verdict"] != "FAIL"
+
+
+def test_order_docket_past_its_deadline_ships_every_row_unordered(tmp_path: Path) -> None:
+    """2026-10-29: the merge wedged after alpha_rl, in the ordering, holding the docket lane.
+    A deadline already past stops the build uncommitted and the rows ship as they arrived."""
+    import time as _t
+    rows = _rows({"alpha": 30, "beta": 6})
+    before = [dict(r) for r in rows]
+    out, doc = jc.order_docket(rows, publish=False, now=NOW,
+                               deadline=(_t.monotonic() - 10.0, _t.monotonic() - 5.0))
+    assert out == before
+    assert doc.get("verdict") == "UNMEASURED" and "JudgeCoverageTimeout" in doc.get("why", "")
+
+
+def test_a_docket_preserved_for_over_a_day_is_red(tmp_path: Path) -> None:
+    """Audit of e9bb02582: PRESERVED must not stay WARN forever while producers are silent."""
+    mr = tmp_path / "merge_report.json"
+    mr.write_text(json.dumps({"merged_at": (NOW - timedelta(hours=30)).isoformat(),
+                              "preserved": True,
+                              "checked_at": (NOW - timedelta(minutes=20)).isoformat()}), "utf-8")
+    doc = jc.docket_merge_lag(NOW, mr)
+    assert doc["status"] == "RED" and "no producer" in doc["why"]
+
+
+def test_an_ordering_that_times_out_pass_after_pass_is_red(tmp_path: Path) -> None:
+    sys.path.insert(0, str(Path(jc.__file__).parent))
+    import merge_hypotheses as mh
+    mr = tmp_path / "merge_report.json"
+    assert mh.order_timeout_streak(mr, True) == 1
+    mr.write_text(json.dumps({"order_timeout_streak": 2}), "utf-8")
+    assert mh.order_timeout_streak(mr, True) == 3
+    assert mh.order_timeout_streak(mr, False) == 0
+    fresh = (NOW - timedelta(minutes=40)).isoformat()
+    mr.write_text(json.dumps({"merged_at": fresh, "order_timeout_streak": 2}), "utf-8")
+    assert jc.docket_merge_lag(NOW, mr)["status"] == "OK"
+    mr.write_text(json.dumps({"merged_at": fresh,
+                              "order_timeout_streak": jc.ORDER_TIMEOUT_RED_STREAK}), "utf-8")
+    red = jc.docket_merge_lag(NOW, mr)
+    assert red["status"] == "RED" and "interleave" in red["why"]
+
+
+def test_the_merge_ordering_budget_follows_the_leg_cap(monkeypatch) -> None:
+    sys.path.insert(0, str(Path(jc.__file__).parent))
+    import merge_hypotheses as mh
+    monkeypatch.delenv("QUANT_LEG_BUDGET_S", raising=False)
+    assert mh._order_budget_s() == mh.ORDER_BUDGET_S
+    monkeypatch.setenv("QUANT_LEG_BUDGET_S", "1800")
+    monkeypatch.setattr(mh, "_T0", __import__("time").monotonic())
+    assert mh._order_budget_s() <= 1800 - mh.REPLACE_TAIL_S - mh.ORDER_WRITE_RESERVE_S
+    from research import hourly_cycle as hc
+    # a core leg: its cap stays inside the core plan's kill (audit of v7, MF3)
+    assert hc.LEG_BUDGET_SEC.get("merge_hypotheses", hc.SEARCH_BUDGET_SEC) <= hc.SEARCH_BUDGET_SEC

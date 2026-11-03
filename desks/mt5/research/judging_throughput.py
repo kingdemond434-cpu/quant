@@ -76,6 +76,8 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.ops.atomic_replace import replace_with_retry  # noqa: E402
+
 OUT = BASE / "reports" / "JUDGING_THROUGHPUT.json"
 #: The judge's RATE against its BACKLOG, hourly: verdicts/hour, backlog, creation rate, ETA.
 RATE_OUT = BASE / "reports" / "JUDGING_RATE.json"
@@ -1012,7 +1014,7 @@ def write_env(decision: dict[str, Any], path: Path | None = None,
     p.parent.mkdir(parents=True, exist_ok=True)
     tmp = p.with_suffix(p.suffix + ".tmp")
     tmp.write_text(json.dumps(payload, indent=1), encoding="utf-8")
-    os.replace(tmp, p)
+    replace_with_retry(tmp, p)
     return payload
 
 
