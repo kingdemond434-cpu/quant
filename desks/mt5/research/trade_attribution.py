@@ -38,8 +38,8 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
         sys.path.insert(0, _p)
 
 # The live readers are the loss learner's and the archaeologist's, reused, not re-written.
-from loss_learner import _jsonl, _ledger_path, _num, _ts  # noqa: E402
-from missed_trade_archaeologist import _atomic_write, _sym  # noqa: E402
+from research.loss_learner import _jsonl, _ledger_path, _num, _ts  # noqa: E402
+from research.missed_trade_archaeologist import _atomic_write, _sym  # noqa: E402
 
 DATA = DESK / "data"
 REPORTS = DESK / "reports"
@@ -71,7 +71,8 @@ def _f(v: Any) -> float | None:
             v = float(v)
         except ValueError:
             return None
-    return _num(v)
+    out: float | None = _num(v)
+    return out
 
 
 def _direction(row: dict[str, Any]) -> int | None:
