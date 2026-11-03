@@ -43,7 +43,9 @@ def test_known_series_shifts_by_the_declared_lag() -> None:
     k = data_os.known_series(s, "cot_fx")
     assert k.index[0] == pd.Timestamp("2026-03-07")                       # Saturday 00:00
     assert data_os.lag_of("fred_macro", "PCOPPUSDM") > data_os.lag_of("fred_macro", "DGS10")
-    assert data_os.lag_of("fred_macro", "DGS10") == data_os.lag_of("fred_macro")
+    # DGS10 is timed by the H.15 calendar: a Friday print is known after the weekend, not 27h on
+    fri = datetime(2026, 10, 2, tzinfo=UTC)
+    assert data_os.knowledge_at("fred_macro", fri, "DGS10") > fri + data_os.lag_of("fred_macro")
 
 
 def test_known_as_of_drops_unpublished_prints() -> None:

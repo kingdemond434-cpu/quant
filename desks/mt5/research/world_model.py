@@ -80,6 +80,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 from libs.research import representations as R  # noqa: E402
+from libs.tiers import data_os  # noqa: E402
 
 UNIVERSE_DIR = DESK / "data" / "universe"
 UNIVERSE_JSON = UNIVERSE_DIR / "universe.json"
@@ -275,8 +276,15 @@ def _axis_region(axis_id: str) -> str:
     return "UNKNOWN"
 
 
-def _points_from_rows(rows: list[Any], value_key: str, time_keys: tuple[str, ...]
-                      ) -> list[R.Point]:
+#: stamps that name the date a point DESCRIBES rather than when it was known
+_DESCRIBED_KEYS = ("d", "period_time", "as_of")
+
+
+def _points_from_rows(rows: list[Any], value_key: str, time_keys: tuple[str, ...],
+                      described_lag: timedelta | None = None) -> list[R.Point]:
+    """`described_lag`: when the stamp found is a DESCRIBED date (`d`, `period_time`, `as_of`)
+    and the axis declares a publication lag (`data_os.AXIS_SOURCES`), the point is knowable only
+    that lag later -- never just the clock pad after the day it describes (Tier S AC3)."""
     out: list[R.Point] = []
     for row in rows:
         if not isinstance(row, dict):
@@ -288,12 +296,16 @@ def _points_from_rows(rows: list[Any], value_key: str, time_keys: tuple[str, ...
             value = float(raw_value)
         except (TypeError, ValueError):
             continue
-        stamp = next((str(row[k]) for k in time_keys if row.get(k)), "")
+        key = next((k for k in time_keys if row.get(k)), "")
+        stamp = str(row[key]) if key else ""
         parsed = R.parse_time(stamp)
         if parsed is None or not math.isfinite(value):
             continue
         period = str(row.get("period_time") or row.get("d") or row.get("as_of") or stamp)
-        available = (parsed + timedelta(hours=CLOCK_PAD_H)).isoformat()
+        pad = timedelta(hours=CLOCK_PAD_H)
+        if described_lag is not None and key in _DESCRIBED_KEYS:
+            pad = max(pad, described_lag)
+        available = (parsed + pad).isoformat()
         out.append(R.Point(available_time=available, period_time=period, value=value,
                            vintage_id=row.get("vintage_id")))
     return out
@@ -326,10 +338,13 @@ def load_inputs(*, max_series: int = 240) -> Inputs:
                                        "why": "fewer points than a prior needs",
                                        "measured_by": "a longer collection history"})
                     continue
+                src = data_os.AXIS_SOURCES.get(path.stem)
                 points = _points_from_rows(
                     pts[-MAX_POINTS_PER_SERIES:],
                     "v" if "v" in (pts[0] or {}) else "value",
-                    ("available_time", "knowable_at", "d", "period_time"))
+                    ("available_time", "knowable_at", "d", "period_time"),
+                    described_lag=(None if src is None else data_os.effective_lag(
+                        src, str(name) if src == "fred_macro" else None)))
                 if points:
                     series.append(R.Series(series_id=f"{axis_id}:{name}", points=tuple(points),
                                            dataset=f"axis:{axis_id}", region=region,
@@ -357,6 +372,13 @@ def load_inputs(*, max_series: int = 240) -> Inputs:
             if not isinstance(rows, list) or len(rows) < R.MIN_PRIOR:
                 continue
             points: list[R.Point] = []
+            # THE SERIES' OWN DECLARED LAG, never less than a day plus the pad (Tier S AC3,
+            # 2026-10-06): the flat day admitted a monthly M2 print weeks before H.6 published it
+            # and the weekly-posted dollar index days early (`data_os.FRED_SERIES_LAGS`).
+            # Rule-timed series (H.15, VIX, SOFR, DFF, OAS, WTI) are placed by their own release
+            # calendar per point (`data_os.knowledge_at`, 2026-10-07), weekends and holidays
+            # included, never sooner than the day plus the pad.
+            floor = timedelta(days=1, hours=CLOCK_PAD_H)
             for row in rows[-MAX_POINTS_PER_SERIES:]:
                 if not isinstance(row, (list, tuple)) or len(row) < 2:
                     continue
@@ -368,8 +390,10 @@ def load_inputs(*, max_series: int = 240) -> Inputs:
                 if stamp is None or not math.isfinite(value):
                     continue
                 # A daily market print is knowable the next day; the pad then covers the broker
-                # clock. This is `libs/data/pit_stamp.DEFAULT_LAG_DAYS["daily"]`, not a guess.
-                available = (stamp + timedelta(days=1, hours=CLOCK_PAD_H)).isoformat()
+                # clock (`libs/data/pit_stamp.DEFAULT_LAG_DAYS["daily"]`); a slower series waits
+                # its own declared cadence.
+                available = data_os.knowledge_at("fred_macro", stamp, str(name),
+                                                 min_lag=floor).isoformat()
                 points.append(R.Point(available_time=available, period_time=str(row[0]),
                                       value=value))
             if len(points) >= R.MIN_PRIOR:

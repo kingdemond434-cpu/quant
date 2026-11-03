@@ -587,8 +587,40 @@ def default_bars(symbol: str, chart: str = "H1") -> pd.DataFrame | None:
     return frame if len(frame) > 10 else None
 
 
+def _data_os() -> Any:
+    """`libs.tiers.data_os` -- the point-in-time doors (the repo root joins sys.path if absent)."""
+    import sys
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    return importlib.import_module("libs.tiers.data_os")
+
+
+def _known_days(axis: str, key: str, points: Sequence[tuple[str, float]]
+                ) -> list[tuple[str, float]]:
+    """REFERENCE-dated axis points re-dated to the first DAY each value could inform, read through
+    the bitemporal store (`data_os.known_axis_series`: knowledge time from the series' own declared
+    release timing). A value known at any instant inside day D is usable from day D+1; one known at
+    D 00:00 from D. Several values first usable on one day keep the newest (the store's
+    `latest_known`), so no day carries a print that was not yet published when it opened."""
+    if not points:
+        return []
+    raw = pd.Series([v for _, v in points],
+                    index=pd.to_datetime([d for d, _ in points], utc=True, errors="coerce"),
+                    dtype=float)
+    raw = raw[~raw.index.isna()].sort_index()
+    known = _data_os().known_axis_series(axis, key, raw)
+    out: dict[str, float] = {}
+    for t, v in known.items():
+        ts = pd.Timestamp(t)
+        day = ts.normalize() if ts == ts.normalize() else ts.normalize() + pd.Timedelta(days=1)
+        out[str(day.date())] = float(v)
+    return sorted(out.items())
+
+
 def default_series(name: str) -> list[tuple[str, float]]:
-    """A dated macro observation series from the desk's axes. Empty is a MEASUREMENT."""
+    """A dated macro observation series from the desk's axes, every stamp a KNOWLEDGE day: the
+    first day the value could have informed (fred/ecb through the bitemporal store at their
+    declared lags, `_known_days`; cot/bis by their own `knowable_at`). Empty is a MEASUREMENT."""
     axis, _, key = str(name).partition(":")
     doc = _read_json(AXES_DIR / f"{axis}.json")
     if not isinstance(doc, dict):
@@ -597,8 +629,9 @@ def default_series(name: str) -> list[tuple[str, float]]:
         series = doc.get("series")
         row = series.get(key) if isinstance(series, dict) else None
         points = row.get("points") if isinstance(row, dict) else None
-        return [(str(p["d"]), float(p["v"])) for p in (points or [])
-                if isinstance(p, dict) and _num(p.get("v")) is not None]
+        return _known_days(axis, key, [(str(p["d"]), float(p["v"])) for p in (points or [])
+                                       if isinstance(p, dict) and p.get("d")
+                                       and _num(p.get("v")) is not None])
     if axis == "cot":
         out = [(str(r.get("knowable_at")), _num(r.get("net_pct_oi")))
                for r in (doc.get("rows") or [])
@@ -1127,7 +1160,10 @@ def mine_positioning(ctx: Ctx) -> dict[str, Any]:
 # =============================================================================================
 def _aligned(points: Sequence[tuple[str, float]], frame: pd.DataFrame
              ) -> tuple[np.ndarray, np.ndarray, list[str]] | None:
-    """Daily factor changes aligned to the next day's instrument return. No lookahead."""
+    """Daily factor changes joined to the instrument return OF THE DAY THEY ARE STAMPED. No
+    lookahead because the stamps are KNOWLEDGE days (`default_series`): a factor change first
+    usable on day D -- published before D opened -- is paired with the close-to-close return
+    realised over D, never with the day it describes."""
     if not points or frame is None or frame.empty:
         return None
     closes = frame["close"].resample("1D").last().dropna()

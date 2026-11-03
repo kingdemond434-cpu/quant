@@ -179,6 +179,10 @@ def _known_by_date() -> dict[str, Any]:
     return {"status": "MEASURED", "verdict": doc.get("verdict"),
             "accounting": doc.get("accounting"), "arrived": doc.get("arrived"),
             "certificate_inputs": (doc.get("certificate_inputs") or {}).get("verdict"),
+            # Tier S AC3: macro/alt producers read through the bitemporal store vs not
+            "producers": {k: (doc.get("producers") or {}).get(k)
+                          for k in ("n", "pit_routed", "not_pit_routed", "pit_routed_share",
+                                    "counts", "not_pit", "arrived", "verdict")},
             "reports": ["desks/mt5/reports/KNOWN_BY_DATE.json",
                         "desks/mt5/reports/PIT_LAG_CENSUS.json"]}
 

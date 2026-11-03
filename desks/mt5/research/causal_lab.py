@@ -295,6 +295,31 @@ def _daily_returns(path: Path) -> tuple[list[str], np.ndarray] | None:
     return [str(d.date()) for d in r.index], r.to_numpy(dtype="float64")
 
 
+def _known_days(stem: str, sid: str, vals: list[tuple[str, float]]) -> list[tuple[str, float]]:
+    """A fred/ecb axis series, stamped with the day it DESCRIBES, re-keyed to the first whole
+    trading day on which it was KNOWN -- read through the bitemporal store
+    (`data_os.known_axis_series`, Tier S AC3). A knowledge time past midnight belongs to the next
+    day: a panel row at 00:00 could not have held it."""
+    import pandas as pd
+
+    from libs.tiers import data_os
+    if stem not in data_os.AXIS_SOURCES:
+        return vals
+    try:
+        ser = pd.Series([v for _, v in vals],
+                        index=pd.to_datetime([d for d, _ in vals], utc=True, errors="coerce"))
+    except (TypeError, ValueError):
+        return []
+    ser = ser[ser.index.notna()].sort_index()
+    known = data_os.known_axis_series(stem, sid, ser)
+    out: list[tuple[str, float]] = []
+    for t, v in known.items():
+        day = t.normalize()
+        out.append(((day if t == day else day + pd.Timedelta(days=1)).strftime("%Y-%m-%d"),
+                    float(v)))
+    return out
+
+
 def _axis_series(axes_dir: Path, symbols: set[str]) -> tuple[dict[str, list[tuple[str, float]]],
                                                              list[dict[str, str]]]:
     """(name -> [(knowable_at, level)]) and the unmeasured rows. LEVELS ONLY: the difference and
@@ -324,7 +349,7 @@ def _axis_series(axes_dir: Path, symbols: set[str]) -> tuple[dict[str, list[tupl
                 vals = [(str(q.get("d")), float(q.get("v"))) for q in (blob or {}).get("points", [])
                         if isinstance(q, dict) and q.get("v") is not None]
                 if vals:
-                    out[f"{stem}.{sid}"] = vals
+                    out[f"{stem}.{sid}"] = _known_days(stem, sid, vals)
         else:
             unmeasured.append({"what": f"axis {stem}", "why": (
                 f"no rows or series in the file (n_failed={doc.get('n_failed', '?')}); it "
