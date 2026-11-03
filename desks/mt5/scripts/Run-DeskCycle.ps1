@@ -68,6 +68,7 @@ $ErrorActionPreference = "Stop"
 
 $DeskRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $RepoRoot = (Resolve-Path (Join-Path $DeskRoot "..\..")).Path
+$LaneClone = Join-Path (Split-Path $RepoRoot -Parent) "quant-cro-midnight"
 $Prompt   = Join-Path $RepoRoot "docs\cro\CRO_CYCLE.md"
 $Constitution = Join-Path $RepoRoot "docs\cro\QUANT_CONSTITUTION.md"
 $Reference    = Join-Path $RepoRoot "docs\cro\QUANT_REFERENCE.md"
@@ -271,10 +272,31 @@ if ($agentName -eq "claude") {
         "Write(scripts/run_deadman_switch.py)", "Read(data/secrets/**)"
     )
 } elseif ($agentName -eq "codex") {
-    # --full-auto is Codex's sandboxed unattended mode (workspace-write, no approval prompts).
-    $agentArgs = @("exec", "--full-auto", "-")
+    # --full-auto is Codex's sandboxed unattended mode (workspace-write, no approval prompts). Its
+    # writable root is the workspace, and that is NEVER the live tree: the sandbox may add its own
+    # write ACEs to the root, undoing the live-desk ACL lock (auditor HOLD on PR #439). The lane
+    # works in its own clone (provision_midnight_lane_clone.ps1); no extra writable dir is added.
+    if (-not (Test-Path -LiteralPath (Join-Path $LaneClone ".git"))) {
+        Write-Cycle ("FATAL: lane clone {0} missing; run provision_midnight_lane_clone.ps1 elevated" -f $LaneClone)
+        exit 3
+    }
+    # The clone must still be SEALED: the sandbox may write inside it, never replace what this
+    # account trusts there (.git, its config and hooks, the folder itself). Same check as provisioning.
+    . (Join-Path $PSScriptRoot "lane_clone_guard.ps1")
+    $me = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+    $unsealed = @(Get-LaneCloneProblems $LaneClone @("S-1-5-32-544", "S-1-5-18", $me))
+    if ($unsealed.Count) {
+        Write-Cycle ("FATAL: lane clone not sealed, refusing to run Codex: {0}" -f ($unsealed -join " | "))
+        exit 3
+    }
+    $agentArgs = @("exec", "--full-auto", "--cd", $LaneClone, "-")
 }
 $streamJson = ($agentName -eq "claude")
+$isolationWhere = if ($agentName -eq "codex") {
+    "Your workspace is the lane's own clone $LaneClone (the live tree and its .git are read-only to you): git fetch origin, git checkout -B cro/$Lane-$Today origin/<box branch>, make code changes there"
+} else {
+    "Make code changes in a worktree (git worktree add ..\quant-cro-$Lane -B cro/$Lane-$Today origin/<box branch>)"
+}
 $Stream = Join-Path $LogDir ("cycle_{0}_stream.jsonl" -f $Lane)
 $Review = Join-Path $DeskRoot "reports\TIER1_BREADTH_REVIEW.json"
 
@@ -362,8 +384,7 @@ its report. Its checkpoint (work_items[] carries commits, tests and release iden
 The shared history of every pass is $Ledger (one JSON row per start and end).
 
 ISOLATION. Other sessions may be editing the live checkout at $RepoRoot. Never edit code there
-directly and never git stash / commit -a. Make code changes in a worktree
-(git worktree add ..\quant-cro-$Lane -B cro/$Lane-$Today origin/<box branch>), test there, rebase
+directly and never git stash / commit -a. $isolationWhere, test there, rebase
 on origin/<box branch> and push to that branch. MT5-AdoptRelease adopts origin into the live tree
 hourly and records the release in desks/mt5/data/RELEASE.json: that is the canonical release path.
 Remove the worktree when done.
@@ -386,7 +407,7 @@ eleven-line COMPACT REPORT). The launcher marks DONE only on a clean exit.
 
 THIS IS AN ACTION CYCLE, NOT A REPORTING CYCLE.
 STEP 4B (the daily tier-1 breadth review) runs every pass: answer from live data whether breadth, production and global ingestion are maxed out at tier-1 level and what tier the quant is today, rank the gaps, act on the biggest, and write desks/mt5/reports/TIER1_BREADTH_REVIEW.json.
-Duties D15-D26 (judging rate, UNKNOWN by cause, box state freshness, unfed datasets, paid substitutes, cross-culture orthogonality, live code drift, decay and markout, confident kills, credentials, pass-2 queue age, six-event trend) are checked every pass with their artifacts; an absent artifact is UNMEASURED, which is MISSED.
+Duties D15-D44 (judging rate, UNKNOWN by cause, box state freshness, unfed datasets, paid substitutes, cross-culture orthogonality, live code drift, decay and markout, confident kills, credentials, pass-2 queue age, six-event trend, committee health, global coverage tensor, never-attempted, stranded, silent, empty clusters, source ROI, backpressure, GitHub resident miner, QuantConnect/WorldQuant/fund lanes, institutional coverage, judge efficiency, effective breadth, timeframe and session breadth, nothing is a museum, ontology never closed, allocator integrity, self-evolution) are checked every pass with their artifacts; an absent artifact is UNMEASURED, which is MISSED. Start from desks/mt5/reports/CRO_DUTIES.json, which the launcher measured from this host before you started; it re-checks after you finish and turns any MET it cannot back with an artifact into MISSED.
 REFUSED TOOLS ARE RECORDED. A tool call outside this lane's allowlist is refused, and the launcher records each refusal in the CRO ledger as UNMEASURED (counts_as MISSED) and marks the duty that step served MISSED in TIER1_BREADTH_REVIEW.json. Never score a duty MET when a step it needed was refused; name the refused step and its disposition instead. WebFetch is granted only for the hosts in ops/agent_webfetch_domains.json.
 "@
 
@@ -416,6 +437,22 @@ Add-LedgerRow @{
     release_code_sha = $(if ($startIdentity.release) { $startIdentity.release.code_sha } else { $null })
 }
 
+# THE DUTY TABLE IS MEASURED BEFORE THE AGENT READS IT. check_cro_duties.py reads every artifact
+# each STEP 4B row names and writes reports/CRO_DUTIES.json, so the pass starts from what is on
+# this host rather than from what the table says should be. Its failure is logged, never fatal.
+function Invoke-DutyCheck([string[]]$extra) {
+    $prevEap = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+    Push-Location $RepoRoot
+    $out = (& $Python scripts\check_cro_duties.py --json @extra 2>&1 | Out-String)
+    Pop-Location
+    $ErrorActionPreference = $prevEap
+    $last = ($out.Trim() -split "`n")[-1]
+    Write-Cycle ("duty artifacts: {0}" -f $last)
+    # The parsed verdict, so the end ledger row carries the ENFORCED misses, not the agent's own.
+    try { return ($last | ConvertFrom-Json) } catch { return $null }
+}
+$null = Invoke-DutyCheck @()
+
 $started = Get-Date
 try {
     # Stdin rather than an argument: the brief is multi-line and quoting it through Task
@@ -433,6 +470,16 @@ try {
         # line) and only non-JSON lines (the CLI's stderr) reach the human log directly; the
         # pass's final result text is written into the log by record_agent_denials.py below.
         if ($streamJson) { Set-Content -LiteralPath $Stream -Value $null -Encoding UTF8 }
+        # PIN GIT TO THE CLONE'S OWN .git FOR THE CODEX PASS. The sandbox can add files to .git
+        # (git needs index.lock there), so a .git\commondir planted mid-pass would redirect config
+        # to a folder it owns, and a nested sub\.git could be discovered from a subfolder. These
+        # override both. Set for the agent only and cleared after: the launcher's own git runs in
+        # $RepoRoot and must never inherit them.
+        if ($agentName -eq "codex") {
+            $env:GIT_DIR = Join-Path $LaneClone ".git"
+            $env:GIT_COMMON_DIR = $env:GIT_DIR
+            $env:GIT_WORK_TREE = $LaneClone
+        }
         $brief | & $resolved.Source @agentArgs 2>&1 | ForEach-Object {
             $text = "$_"
             if ($streamJson) {
@@ -448,12 +495,39 @@ try {
         }
         $code = $LASTEXITCODE
     } finally {
+        Remove-Item Env:GIT_DIR, Env:GIT_COMMON_DIR, Env:GIT_WORK_TREE -ErrorAction SilentlyContinue
         Pop-Location
         $ErrorActionPreference = $prev
     }
 } catch {
     Write-Cycle ("FATAL: agent invocation raised: {0}" -f $_.Exception.Message)
     exit 4
+}
+
+# THE LOCK STILL HOLDS AFTER A CODEX PASS. Codex's sandbox may grant itself write on a root it
+# was given; the live tree was never given, and this proves it rather than assuming it. A leak
+# fails the pass, so the task history shows it.
+if ($agentName -eq "codex") {
+    # icacls prints the bare SID when a name does not resolve, so match the group's SID too.
+    $sbx = Get-LocalGroup -Name "CodexSandboxUsers" -ErrorAction SilentlyContinue
+    $leakPattern = "CodexSandbox" + $(if ($sbx) { "|" + [regex]::Escape($sbx.SID.Value) } else { "" })
+    $aclLeak = @(& icacls $RepoRoot 2>$null) + @(& icacls (Join-Path $RepoRoot ".git") 2>$null) |
+        Select-String -Pattern $leakPattern
+    if ($aclLeak) {
+        Write-Cycle ("DEFECT: live tree ACL lists a Codex sandbox principal after the pass: {0}" -f (($aclLeak | ForEach-Object { "$_".Trim() }) -join " | "))
+        if ($code -eq 0) { $code = 7 }
+    } else {
+        Write-Cycle "live tree ACL after pass: no Codex sandbox principal (lock holds)"
+    }
+    # And the clone is still sealed: anything the pass planted (commondir, .codex, a loosened ACL)
+    # is a defect now, before any unsandboxed git or a human runs in the clone.
+    $after = @(Get-LaneCloneProblems $LaneClone @("S-1-5-32-544", "S-1-5-18", $me))
+    if ($after.Count) {
+        Write-Cycle ("DEFECT: lane clone unsealed by the pass: {0}" -f ($after -join " | "))
+        if ($code -eq 0) { $code = 7 }
+    } else {
+        Write-Cycle "lane clone after pass: sealed"
+    }
 }
 
 # EVERY REFUSED STEP IS A MISSED STEP, AND IT LEAVES A ROW. The recorder reads the teed stream,
@@ -476,6 +550,19 @@ if ($streamJson) {
                      $deniedCount, (@($rec.changed_duties) -join ","))
     } else {
         Write-Cycle ("permission denials UNMEASURED: recorder failed ({0})" -f $recJson.Trim())
+    }
+}
+
+# AND AFTER IT: a duty the pass scored MET whose artifacts this host cannot show is MISSED.
+$dutyCheck = Invoke-DutyCheck @("--review", $Review, "--started-at", $started.ToUniversalTime().ToString("o"))
+# What the check enforced, for the end row: a field the check did not produce reads UNMEASURED,
+# never an empty list (an empty list would read as "nothing missed").
+$enforced = @{ duties_missed = "UNMEASURED"; pass_questions_missed = "UNMEASURED"; judging_sweep_missed = "UNMEASURED" }
+if ($dutyCheck) {
+    if ($null -ne $dutyCheck.missed) { $enforced.duties_missed = @($dutyCheck.missed) }
+    if ($dutyCheck.review -and $dutyCheck.review.applied) {
+        if ($null -ne $dutyCheck.review.pass_questions_missed) { $enforced.pass_questions_missed = @($dutyCheck.review.pass_questions_missed) }
+        if ($null -ne $dutyCheck.review.judging_sweep_missed) { $enforced.judging_sweep_missed = @($dutyCheck.review.judging_sweep_missed) }
     }
 }
 
@@ -530,6 +617,9 @@ Add-LedgerRow @{
     completed = $completed; work_items = $items; binding_constraint = $binding
     research_supervisor = $supState
     permission_denials = $deniedCount
+    duties_missed = $enforced.duties_missed
+    pass_questions_missed = $enforced.pass_questions_missed
+    judging_sweep_missed = $enforced.judging_sweep_missed
 }
 
 # Release the lease whatever the outcome, so the other lane is never locked out by a finished
