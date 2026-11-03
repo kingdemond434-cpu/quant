@@ -623,16 +623,16 @@ def test_two_identical_passes_charge_once_and_new_data_recharges(
     assert len(calls) == 3
 
 
-def test_daily_passes_for_a_year_charge_each_cell_once() -> None:
-    """The phantom-trial arithmetic, pinned: +1 row a day never crosses the growth bar twice
-    in a way that tracks the calendar -- it re-charges only as the series compounds."""
-    rows, at_charge, charges = 1000, 1000, 0
+def test_a_year_of_daily_rows_on_a_backfilled_series_never_recharges() -> None:
+    """The phantom-trial arithmetic, pinned: ERA5 backfills from 1991 (~12k daily rows), so a
+    year of +1 row a day is ~3% growth and charges nothing; the old key charged 365 times."""
+    rows, at_charge, charges = 2000, 2000, 0
     for _ in range(365):
         rows += 1
         if e5.material_change(rows, at_charge):
             charges += 1
             at_charge = rows
-    assert charges == 0, "a year of ERA5T days on a 1000-row series is under 25% growth"
+    assert charges == 0, "a year of ERA5T days on a 2000-row series is under 25% growth"
 
 
 def test_a_v1_ledger_string_migrates_without_a_recharge() -> None:
