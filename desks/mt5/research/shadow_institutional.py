@@ -1337,12 +1337,26 @@ def run(*, budget_s: float = 300.0, no_fetch: bool = True, dry_run: bool = True,
 #: stamps at the period START, so a row is available one period after its stamp. Binance keeps
 #: only ~30 days of OI and ratio history, so those series ACCRUE forward from the first pass;
 #: funding history reaches back to the perpetual's listing. 401/403/418/429/451 stop the
-#: collector for the pass and are recorded; robots.txt is honoured (a Disallow skips the path).
+#: collector for the pass and are recorded. robots.txt is READ AND LABELLED, never a veto (LAWS
+#: 5e): a Disallow labels the series PUBLIC_WITH_TERMS, an unreadable file ACCESS_UNCLEAR, both
+#: with redistribution withheld, and the fetch proceeds.
 LEVERAGE_PERPS: dict[str, str] = {"BTCUSDT": "BTCUSD", "ETHUSDT": "ETHUSD", "SOLUSDT": "SOLUSD"}
 LEVERAGE_SERIES = DESK / "data" / "lake" / "series"
 _BDATA = "https://fapi.binance.com/futures/data"
 _HARD = (401, 403, 418, 429, 451)
 _HOUR_MS = 3_600_000
+#: Provenance columns written on every series row. Labels, never signals, and never merged.
+LEVERAGE_LABEL_COLS = ("access_label", "redistribute_allowed")
+
+
+def robots_label(verdict: Any) -> tuple[str, str]:
+    """A robots verdict -> (access label, why). Disallow and unreadable are labels, not skips."""
+    ok, why = (verdict if isinstance(verdict, tuple) else (bool(verdict), ""))
+    if not ok:
+        return "PUBLIC_WITH_TERMS", why or "robots.txt disallows this path for our agent"
+    if "unreadable" in str(why) or "UNMEASURED" in str(why):
+        return "ACCESS_UNCLEAR", str(why)
+    return "PUBLIC", str(why)
 
 
 class LeverageStop(Exception):
@@ -1401,6 +1415,7 @@ def merge_leverage(old: Any, rows: Sequence[Mapping[str, Any]]) -> Any:
     new["available_time"] = pd.to_datetime(new.pop("available_ms"), unit="ms", utc=True)
     long = new.melt(id_vars=["event_time", "available_time"], var_name="col").dropna()
     if old is not None and len(old):
+        old = old.drop(columns=[c for c in LEVERAGE_LABEL_COLS if c in old.columns])
         held = old.melt(id_vars=["event_time", "available_time"], var_name="col").dropna()
         long = pd.concat([held, long])
     long = long.drop_duplicates(["event_time", "col"], keep="last")
@@ -1416,7 +1431,8 @@ def collect_leverage(*, get: Any = None, root: Path | None = None, dry_run: bool
     import pandas as pd
     fetch = get or _lev_get
     base = Path(root) if root is not None else LEVERAGE_SERIES
-    report: dict[str, Any] = {"at": now_iso(), "series": {}, "hard_stop": None, "skipped": []}
+    report: dict[str, Any] = {"at": now_iso(), "series": {}, "hard_stop": None, "labels": []}
+    rank = {"PUBLIC": 0, "ACCESS_UNCLEAR": 1, "PUBLIC_WITH_TERMS": 2}
     for perp, cfd in LEVERAGE_PERPS.items():
         path = base / f"crypto_lev_{perp.lower()}.parquet"
         try:
@@ -1436,11 +1452,14 @@ def collect_leverage(*, get: Any = None, root: Path | None = None, dry_run: bool
                 (f"{_BDATA}/globalLongShortAccountRatio?symbol={perp}&period=1h&limit=500",
                  "ls")]
         rows: list[dict[str, Any]] = []
+        label = "PUBLIC"
         try:
             for url, kind in urls:
-                if robots is not None and not robots(url):
-                    report["skipped"].append({"url": url, "why": "robots.txt disallows"})
-                    continue
+                if robots is not None:
+                    lab, why = robots_label(robots(url))
+                    if lab != "PUBLIC":
+                        report["labels"].append({"url": url, "access_label": lab, "why": why})
+                    label = lab if rank[lab] > rank[label] else label
                 payload = fetch(url)
                 if kind == "funding":
                     rows += funding_rows(payload)
@@ -1455,12 +1474,14 @@ def collect_leverage(*, get: Any = None, root: Path | None = None, dry_run: bool
         if merged is None or not len(merged):
             report["series"][perp] = {"cfd": cfd, "rows": 0, "status": "UNMEASURED"}
             continue
+        merged = merged.assign(access_label=label, redistribute_allowed=False)
         if not dry_run:
             base.mkdir(parents=True, exist_ok=True)
             tmp = path.with_suffix(".tmp")
             merged.to_parquet(tmp, index=False)
             os.replace(tmp, path)
-        report["series"][perp] = {"cfd": cfd, "rows": int(len(merged)), "new_rows": len(rows),
+        report["series"][perp] = {"cfd": cfd, "rows": len(merged), "new_rows": len(rows),
+                                  "access_label": label, "redistribute_allowed": False,
                                   "last_event": str(merged["event_time"].max())}
     return report
 
@@ -1525,7 +1546,7 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({"hard_stop": json.loads(stop.read_text("utf-8") or "{}")}))
             return 0
         guard = Guard(budget_s=a.budget_s, no_fetch=False)
-        rep = collect_leverage(dry_run=a.dry_run, robots=lambda u: guard.robots_ok(u)[0])
+        rep = collect_leverage(dry_run=a.dry_run, robots=guard.robots_ok)
         if rep["hard_stop"] and not a.dry_run:
             _write_atomic(stop, {**rep["hard_stop"], "at": rep["at"]})
         rep["cells_new"] = mint_leverage_cells(rep, dry_run=a.dry_run)

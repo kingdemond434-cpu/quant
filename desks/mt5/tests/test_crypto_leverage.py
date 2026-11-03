@@ -45,7 +45,7 @@ def test_period_aggregates_are_available_one_period_after_their_stamp(tmp_path):
 
 
 def test_funding_resumes_after_the_last_held_row_and_never_duplicates(tmp_path):
-    get, calls = _fake()
+    get, _ = _fake()
     si.collect_leverage(get=get, root=tmp_path)
     get2, calls2 = _fake()
     si.collect_leverage(get=get2, root=tmp_path)
@@ -62,10 +62,26 @@ def test_a_hard_status_stops_the_pass(tmp_path):
     assert rep["hard_stop"]["code"] == 451 and not list(tmp_path.iterdir())
 
 
-def test_robots_disallow_skips_the_path(tmp_path):
+def test_robots_disallow_is_a_label_and_the_fetch_proceeds(tmp_path):
+    """LAWS 5e: a Disallow labels the series PUBLIC_WITH_TERMS, redistribution withheld."""
     get, calls = _fake()
-    rep = si.collect_leverage(get=get, root=tmp_path, robots=lambda u: "futures/data" not in u)
-    assert all("futures/data" not in u for u in calls) and rep["skipped"]
+    rep = si.collect_leverage(get=get, root=tmp_path,
+                              robots=lambda u: ("futures/data" not in u, "robots disallows"))
+    assert any("futures/data" in u for u in calls)
+    row = rep["series"]["BTCUSDT"]
+    assert row["access_label"] == "PUBLIC_WITH_TERMS" and row["redistribute_allowed"] is False
+    df = pd.read_parquet(tmp_path / "crypto_lev_btcusdt.parquet")
+    assert set(df["access_label"]) == {"PUBLIC_WITH_TERMS"} and not df["redistribute_allowed"].any()
+    again = si.collect_leverage(get=get, root=tmp_path)
+    assert again["series"]["BTCUSDT"]["access_label"] == "PUBLIC"
+
+
+def test_unreadable_robots_is_access_unclear_not_a_refusal(tmp_path):
+    get, calls = _fake()
+    rep = si.collect_leverage(get=get, root=tmp_path,
+                              robots=lambda u: (True, "robots.txt unreadable: URLError"))
+    assert rep["series"]["ETHUSDT"]["access_label"] == "ACCESS_UNCLEAR"
+    assert len(calls) == 3 * len(si.LEVERAGE_PERPS)
 
 
 def test_cells_condition_the_mt5_cfd_only():
