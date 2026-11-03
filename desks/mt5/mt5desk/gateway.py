@@ -4941,6 +4941,7 @@ def main() -> None:
         return
     equity = float(mt5.account_info().equity)
     st["equity"] = round(equity, 2)
+    from mt5desk.fusion_equity_reference import sizing_equity
 
     # STALENESS MUST DISARM (principal, 2026-09-16). If every research heartbeat on this box has
     # been silent for DISARM_DAYS the desk is trading blind: no new risk this pass, loudly. At
@@ -5007,7 +5008,7 @@ def main() -> None:
 
     sleeves = sleeve_set()
     try:
-        sleeves = minlot_override_roster(sleeves, equity)
+        sleeves = minlot_override_roster(sleeves, sizing_equity(equity))
     except Exception as exc:
         # FAIL CLOSED: an override that cannot be read is off, and every mark it may have left
         # is cleared, so the pass sizes exactly as sovereignty sizes it.
@@ -5110,6 +5111,11 @@ def main() -> None:
                 log(f"daily-loss rail: resting gold brackets not cancelled "
                     f"({type(exc).__name__}: {exc}); they still carry their stops")
     save_state(st)
+    # A PRINCIPAL WITHDRAWAL IS NOT A LOSS (2026-11-03, mt5desk.fusion_equity_reference). The
+    # daily-loss rail above and the published equity read the real number; from here on `equity`
+    # is what every sizer, the promoted-sleeve gate and the heat cap size from.
+    equity = sizing_equity(equity)
+    st["sizing_equity"] = round(equity, 2)
     # THE FUSION BOOK FOR THE OTHER ACCOUNT'S FENCE (mt5desk.cross_account), every pass, so an E8
     # lane never reads a book older than this pass. Never takes the pass down.
     # Under the placement lock, from a reading taken under it (audit round 2, must-fix 2): a

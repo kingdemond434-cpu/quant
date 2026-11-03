@@ -1,0 +1,147 @@
+{
+ "class": "web_scraped_corporate",
+ "label": "Web-scraped corporate KPIs (store counts, hiring, pricing pages)",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:bright_data:web_scraping",
+   "vendor": "Bright Data",
+   "dataset": "Web Scraping",
+   "class": "web_scraped_corporate",
+   "region": "global",
+   "measures": "Structured web data via proxy network",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://londonstrategicedge.com/directory/alternative-data/",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:diffbot:web_data_extraction",
+   "vendor": "Diffbot",
+   "dataset": "Web Data Extraction",
+   "class": "web_scraped_corporate",
+   "region": "global",
+   "measures": "General web scraping and knowledge graph structuring",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:nasdaq_quandl:core_us_fundamentals_and_alt_data",
+   "vendor": "Nasdaq (Quandl)",
+   "dataset": "Core US fundamentals and alt data",
+   "class": "web_scraped_corporate",
+   "region": "US",
+   "measures": "Data marketplace packages",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:quiver_quantitative:alternative_data_api",
+   "vendor": "Quiver Quantitative",
+   "dataset": "Alternative data API",
+   "class": "web_scraped_corporate",
+   "region": "US",
+   "measures": "Government contracts, lobbying, congress trades",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:thinknum:web_scraped_data",
+   "vendor": "Thinknum",
+   "dataset": "Web-Scraped Data",
+   "class": "web_scraped_corporate",
+   "region": "global",
+   "measures": "Pricing, hiring, store counts on 500K+ companies",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://londonstrategicedge.com/directory/alternative-data/",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:thinknum_alternative_data:web_scraped_corporate_data",
+   "vendor": "Thinknum Alternative Data",
+   "dataset": "Web-Scraped Corporate Data",
+   "class": "web_scraped_corporate",
+   "region": "global",
+   "measures": "Job postings, LinkedIn metrics, app ratings",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:ubs_evidence_lab:alternative_data",
+   "vendor": "UBS Evidence Lab",
+   "dataset": "Alternative Data",
+   "class": "web_scraped_corporate",
+   "region": "global",
+   "measures": "Satellite, web, and transaction data",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://londonstrategicedge.com/directory/alternative-data/",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  }
+ ]
+}
