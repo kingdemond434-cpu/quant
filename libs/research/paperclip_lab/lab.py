@@ -18,7 +18,7 @@ WHAT IT DOES PER PASS.
   3. Per call: one role, one rotating slice of its material, the family catalogue and the MT5
      universe; the model returns JSON rows.
   4. Screen every row with `contract.screen` (deterministic red team: schema, registry, leak,
-     hostile content, dedup), then one LLM red-team pass over the survivors.
+     hostile content, dedup), then one LLM red-team round over the survivors.
   5. Write the bundle: rows, refusals by reason, spend by role and model.
 """
 from __future__ import annotations
@@ -329,7 +329,7 @@ def _prompt(role: Role, items: list[dict[str, Any]], fams: dict[str, list[str]],
 
 def red_team(models: Models, rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
                                                                    list[dict[str, Any]]]:
-    """One LLM pass over the hour's conversion rows. Fails OPEN on an unavailable model (the
+    """One LLM round over the hour's conversion rows. Fails OPEN on an unavailable model (the
     deterministic screen already ran, and the gauntlet is the judge); every kill is recorded."""
     cands = [r for r in rows if r["kind"] in ("recipe", "hypothesis")]
     if not cands:
