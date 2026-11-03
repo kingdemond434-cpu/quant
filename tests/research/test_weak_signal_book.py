@@ -4,7 +4,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from libs.portfolio import weak_signal_book as wsb
+from libs.research import weak_signal_book as wsb
 
 DAYS = pd.bdate_range("2019-01-01", periods=1500)
 

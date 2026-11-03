@@ -5,7 +5,7 @@
     series   = each cell's daily net-R at 1x and 3x cost, taken from the gauntlet's own cache
                when it holds it, otherwise rebuilt with the gauntlet's own `_warm_one`, under a
                time budget, never-ingested cells first and then oldest first
-    book     = libs.portfolio.weak_signal_book.judge: purged walk-forward weights, DSR on the
+    book     = libs.research.weak_signal_book.judge: purged walk-forward weights, DSR on the
                lifetime trial union plus every recipe this book has run, 3x-cost gate, must beat
                its best single member, E[log W] sizing inside half the firm rails
     coverage = eligible versus ingested, by cause. Any gap is RED.
@@ -46,7 +46,7 @@ for p in (str(_ROOT), str(_DESK), str(_DESK / "research"), str(_DESK / "scripts"
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from libs.portfolio import weak_signal_book as wsb  # noqa: E402
+from libs.research import weak_signal_book as wsb  # noqa: E402
 
 REPORTS = _DESK / "reports"
 DATA = _DESK / "data"
