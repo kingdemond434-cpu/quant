@@ -251,3 +251,24 @@ def test_markout_slip_is_never_a_measurability_input(desk: Path) -> None:
         "at": AT, "n_deals": 3, "n_unmatched_deals": 0, "mean_slip_r": 99.0,
         "mean_slip_quote": -5.0, "edge_share": -1.27}), "utf-8")
     assert cm.measure(NOW)["subjects"] == base
+
+
+def test_a_lost_canon_rewrites_the_report_to_zero_and_falsifies(desk: Path,
+                                                                monkeypatch) -> None:
+    """Audit of #387 v3, MF1: with no certificates the report used to be left as it was, so the
+    contract kept reading last hour's n_subjects and its n_subjects == 0 falsifier never fired."""
+    from libs.tiers import experiment_contract as ec
+    report, state = desk / "out" / "MEASURABILITY.json", desk / "out" / "state.json"
+    monkeypatch.setattr(cm, "REPORT", report)
+    monkeypatch.setattr(cm, "STATE", state)
+    assert cm.main(["--now", NOW.isoformat()]) == 0
+    assert json.loads(report.read_text("utf-8"))["n_subjects"] >= 1
+    kept = state.read_text("utf-8")
+    monkeypatch.setattr(cm, "CANON", desk / "none.json")
+    assert cm.main(["--now", NOW.isoformat()]) == 0
+    doc = json.loads(report.read_text("utf-8"))
+    assert doc["verdict"] == "NOT_APPLICABLE" and doc["n_subjects"] == 0
+    assert state.read_text("utf-8") == kept            # first-unmeasured dates survive
+    contract = json.loads((ROOT / "docs/research/experiment_contracts.json").read_text(
+        "utf-8"))["legs"]["measurability"]
+    assert ec.judge_falsifier(contract, doc)["verdict"] == ec.FALSIFIED

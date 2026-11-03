@@ -342,7 +342,10 @@ def measure(now: datetime | None = None) -> dict[str, Any]:
     doc: dict[str, Any] = {"generated_utc": at.isoformat(timespec="seconds"), "source": source,
                            "grace_s": GRACE_S, "converters": CONVERTERS}
     if not certs:
-        doc.update({"verdict": "NOT_APPLICABLE", "subjects": {}, "red": [], "unmeasured": []})
+        # COUNTS EVEN HERE (audit of #387 v3, MF1): the leg's contract falsifies on
+        # n_subjects == 0, and a report that carried no count kept the previous hour's 5 alive.
+        doc.update({"verdict": "NOT_APPLICABLE", "subjects": {}, "red": [], "unmeasured": [],
+                    "n_subjects": 0, "n_red": 0, "n_unmeasured": None})
         return doc
     classes = _classes()
     novelty, surface, universe = _json(NOVELTY), _json(COST_SURFACE), _json(UNIVERSE)
@@ -448,9 +451,13 @@ def main(argv: list[str] | None = None) -> int:
     doc = measure(now)
     state = _json(STATE) or {}
     doc, new_state = judge(doc, state if isinstance(state, dict) else {}, now)
-    if not args.no_write and doc.get("verdict") != "NOT_APPLICABLE":
+    if not args.no_write:
+        # The report is ALWAYS rewritten, so a host that lost its canon reads n_subjects 0 now
+        # rather than an hour-old count; the state is kept, so the first-unmeasured dates survive
+        # a transient loss of the canon (audit of #387 v3, MF1).
         _atomic(REPORT, json.dumps(doc, indent=1, default=str))
-        _atomic(STATE, json.dumps(new_state, indent=1))
+        if doc.get("verdict") != "NOT_APPLICABLE":
+            _atomic(STATE, json.dumps(new_state, indent=1))
     if args.json:
         print(json.dumps({k: doc.get(k) for k in ("verdict", "n_certificates", "n_live_sleeves",
                                                   "unmeasured_by_field", "red")}, default=str))

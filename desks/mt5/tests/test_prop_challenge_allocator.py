@@ -25,6 +25,12 @@ from prop import ftmo_venue_reader as fvr  # noqa: E402
 R = pca.FTMO_2STEP
 
 
+@pytest.fixture(autouse=True)
+def _no_gap_file_in_the_real_tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A test run never writes a donation file under the real data/intelligence (audit #489)."""
+    monkeypatch.setattr(pca, "GAP_REQUESTS", tmp_path / "ftmo_gap_hypotheses.jsonl")
+
+
 def _paths(rows: list[list[float]]) -> np.ndarray:
     """(paths=1, days, sleeves=1) from one path's daily R."""
     return np.asarray(rows, dtype=float)[None]
@@ -274,7 +280,7 @@ def test_only_executable_keys_are_ever_written(tmp_path: Path) -> None:
     assert set(json.loads(book.read_text())["ftmo"]) == {"gold_asia"}
 
 
-def test_e8_symbols_keep_own_sleeves_out(tmp_path: Path, monkeypatch) -> None:
+def test_e8_symbols_are_read_for_the_overlap_mark(tmp_path: Path, monkeypatch) -> None:
     p = tmp_path / "b.json"
     p.write_text(json.dumps({"enabled": True, "e8": {"gold_asia": 0.006, "AUDCHF_x_asia": 0.0}}))
     monkeypatch.setattr(pca, "CERT_BOOK", p)
@@ -336,3 +342,115 @@ def test_gap_requests_name_one_symbol_per_row(tmp_path: Path) -> None:
     out = pca.write_gap_requests(uni, datetime.now(tz=UTC), tmp_path / "g.jsonl")
     rows = [json.loads(x) for x in (tmp_path / "g.jsonl").read_text().splitlines()]
     assert out["rows"] == 3 and all(len(r["symbols"]) == 1 for r in rows)
+
+
+def test_an_e8_overlap_sleeve_is_sized_never_sent_without_an_executor() -> None:
+    # zuck's 2026-10-29 override admits E8's symbols; the opposite-side fence is the executor's.
+    # The follower's key is the gold copy alone (behind the gold direction lock); every other
+    # key needs the sleeve executor's spec (prop/ftmo_executor.py, which carries the fence).
+    assert frozenset({"gold_asia"}) == pca.FTMO_EXECUTABLE
+    assert not pca.executor_runs("AUDNZD_overnight_gap_decay_asia", {})
+
+
+def _synthetic_universe(extra: bool) -> dict:
+    g = np.random.default_rng(7)
+    gold = g.choice([-1.0, 0.0, 0.0, 0.0, 1.8], size=(8, 256))
+    cols, slices = ["gold_asia"], [gold]
+    if extra:   # a Tier S gold window the venue lists but no FTMO executor can send
+        cols.append("XAUUSD_session_range_breakout_london")
+        slices.append(np.where(g.random((8, 256)) < 0.8, gold, 0.0))
+    return {"status": "OK", "cols": cols, "r": np.stack(slices, axis=2),
+            "columns": {c: {"admitted": True} for c in cols}, "caps": {}, "costs": {},
+            "posterior": {}, "listing_source": "test", "unpriced": [], "screen": []}
+
+
+def test_a_column_with_no_executor_never_moves_the_deployed_book(tmp_path, monkeypatch) -> None:
+    # audit #489 MF1: the joint solve could shift risk from the column that trades to a correlated
+    # one that cannot, cutting the traded size by side effect. The deployed book is solved over
+    # the executable columns alone, so an extra column changes nothing that is sent.
+    monkeypatch.setattr(pca, "GAP_REQUESTS", tmp_path / "gaps.jsonl")
+    books = []
+    for extra in (False, True):
+        monkeypatch.setattr(pca, "build_universe", lambda seed=0, e=extra: _synthetic_universe(e))
+        doc = pca.solve("ftmo", n_paths=200, seed=3, state=pca.AccountState())
+        books.append(doc)
+    assert books[0]["executable"] == books[1]["executable"]
+    assert books[0]["book"] == books[1]["book"]
+    assert "XAUUSD_session_range_breakout_london" not in books[1]["book"]
+    assert "joint_book" in books[1] and "missed_growth_no_executor" in books[1]
+
+
+# ------------------------------------------------------------------ the empty book (2026-10-29)
+
+def _slow_world(mu: float = 0.25) -> tuple[pca.World, dict[str, np.ndarray]]:
+    """A positive edge, and a later phase that never funds inside the horizon: J is 0 at every
+    size, as it was at 15:33Z when phase 1 was too slow for the chain to fund within H."""
+    rng = np.random.default_rng(3)
+    solve_w, _ = pca.make_worlds(rng.normal(mu, 1.0, (8, 256, 1)), 300, 160, 0)
+    never = {"est": np.full(300, np.inf), "halved": np.full(300, np.inf)}
+    return solve_w, never
+
+
+def test_a_flat_zero_j_still_sizes_the_largest_survivable_book() -> None:
+    """The 15:33Z defect: J exactly 0 everywhere feasible left the search on the zero book, and
+    the zero deployed over an admitted sleeve. Progress to the target breaks the tie."""
+    solve_w, never = _slow_world()
+    st = pca.AccountState()
+    h, v = pca.search(solve_w, R, "phase1", st, never, 0.05, np.random.default_rng(0), 0.04)
+    assert v == 0.0 and h[0] > 0
+    assert pca.evaluate(solve_w, h, R, "phase1", st, never)["risk"] <= 0.04
+
+
+def test_the_tie_break_never_sizes_a_negative_edge() -> None:
+    solve_w, never = _slow_world(mu=-0.2)
+    h, _ = pca.search(solve_w, R, "phase1", pca.AccountState(), never, 0.05,
+                      np.random.default_rng(0), 0.04)
+    assert h[0] == 0.0
+
+
+def test_an_empty_book_with_a_feasible_size_is_a_search_defect_not_a_zero() -> None:
+    solve_w, never = _slow_world()
+    hit = pca.empty_book_probe(solve_w, np.array([0.009]), R, "phase1", pca.AccountState(),
+                               never, 0.05, 0.04)
+    assert hit is not None and hit["risk"] <= 0.04 and hit["progress"] > 0
+    neg, never = _slow_world(mu=-0.2)
+    assert pca.empty_book_probe(neg, np.array([0.009]), R, "phase1", pca.AccountState(),
+                                never, 0.05, 0.04) is None
+
+
+def test_a_search_defect_never_deploys(tmp_path: Path, monkeypatch) -> None:
+    """The guard behind the fix: a phase block flagged EMPTY_BOOK_SEARCH_DEFECT is not deployable,
+    so apply_book leaves the principal's block as it stands, and it is RED from the first pass."""
+    monkeypatch.setattr(pca, "search", lambda w, rules, phase, st, cont, cap, rng, margin: (
+        (np.zeros(1), 0.0) if margin is not None else (np.array([0.009]), 0.13)))
+    monkeypatch.setattr(pca, "build_universe", lambda seed: {
+        "status": "OK", "cols": ["gold_asia"], "r": np.random.default_rng(3).normal(
+            0.25, 1.0, (8, 256, 1)), "caps": {"gold_asia": 0.009}, "columns": {}})
+    monkeypatch.setattr(pca, "write_gap_requests", lambda uni, now: {})
+    st = pca.AccountState(phase="phase2", status="MEASURED")
+    doc = pca.solve("ftmo", n_paths=300, state=st)
+    assert doc["status"].startswith("EMPTY_BOOK_SEARCH_DEFECT") and doc["deployable"] is False
+    assert doc["book_deployed"] is False and "RED" in doc["red"]
+    armed = tmp_path / "ARMED"
+    armed.touch()
+    book = tmp_path / "CERT_BOOK_LIVE.json"
+    book.write_text(json.dumps({"enabled": True, "ftmo": {"gold_asia": 0.009}}))
+    assert pca.apply_book(doc, book, armed)["applied"] is False
+    assert json.loads(book.read_text())["ftmo"] == {"gold_asia": 0.009}
+
+
+def test_a_standing_defect_is_red_with_its_age(tmp_path: Path, monkeypatch) -> None:
+    """Rule 23: a defect that persists keeps the old block deployed, so it is RED every pass
+    and carries when it began; a sound pass clears it."""
+    out = tmp_path / "FTMO_ALLOCATOR.json"
+    doc = {"status": "EMPTY_BOOK_SEARCH_DEFECT: x", "generated_at": "2026-10-29T16:00:00+00:00"}
+    pca.mark_defect(doc, {"status": "EMPTY_BOOK_SEARCH_DEFECT: x",
+                          "defect_since": "2026-10-29T15:00:00+00:00"})
+    assert doc["defect_since"] == "2026-10-29T15:00:00+00:00" and "since" in doc["red"]
+    fresh = {"status": "EMPTY_BOOK_SEARCH_DEFECT: x", "generated_at": "t1"}
+    pca.mark_defect(fresh, {"status": "OK"})
+    assert fresh["defect_since"] == "t1"
+    ok = {"status": "OK", "generated_at": "t2"}
+    pca.mark_defect(ok, {"status": "EMPTY_BOOK_SEARCH_DEFECT: x", "defect_since": "t0"})
+    assert "red" not in ok and "defect_since" not in ok
+    assert not out.exists()

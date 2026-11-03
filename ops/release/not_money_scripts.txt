@@ -1,0 +1,5 @@
+# REVIEWED EXCEPTIONS to "every script under desks/mt5/scripts/ and desks/mt5/ops/ is money path"
+# (ops/release/replay_shadow.py, money_scripts). One repo path per line; after `#`, why it runs
+# no order, sizing, switch or book. PROTECTED: a PR never lists itself. A listed script is
+# still money path while its text names the money path, a venue word or a switch, or the PR
+# adds a dynamic-execution line its reviewed base did not have.
