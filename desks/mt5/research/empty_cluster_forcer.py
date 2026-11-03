@@ -290,7 +290,9 @@ def plan(mandate: dict[str, Any] | None = None) -> dict[str, Any]:
     cells: list[dict[str, Any]] = []
     for c in empty:
         n = int(counts.get(c, 0))
-        forced = _forced_cells(c, universe, turn) if n == 0 else None
+        # Forced only on a MEASURED zero: with no counts the mandate could not read the docket,
+        # and an unmeasured cluster is not a never-attempted one (L1.28a).
+        forced = _forced_cells(c, universe, turn) if (counts and n == 0) else None
         if forced is not None:
             fam, fcells, gap = forced
             verdict, why = family_verdict_of(fam)
