@@ -1,5 +1,5 @@
 {
- "at": "2026-11-03T17:32:35+00:00",
+ "at": "2026-11-03T20:52:01+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,9 +9,9 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-11-03T17:32:20+00:00",
+   "at": "2026-11-03T20:51:20+00:00",
    "bandit_at": "2026-11-03T05:29:32.986928+00:00",
-   "hour": "2026-11-03T17",
+   "hour": "2026-11-03T20",
    "arm": "control",
    "wanted_s": 480,
    "floor_s": 240,
@@ -42,7 +42,7 @@
    "department_why": "exchange not authoritative: sample binds but the desk measures no per-department denominator for it (None); reported, never spent; x compute policy (compute policy MEASURED from compute_policy.json: split {'exploitation': 0.6274, 'exploration': 0.283, 'frontier': 0.0896} learned from survivors per hour, two-sided)",
    "archive_factor": 1.0,
    "auction_factor": 2.0,
-   "auction_why": "auction: department discovery cleared x2.00 for epoch 2026-11-03T00",
+   "auction_why": "auction: department discovery cleared x2.00 for epoch 2026-11-03T18",
    "engine_factor": 1.0,
    "engine_why": "engine registry: no share for leg 'alpha_evolution'; par",
    "meta_factor": 2.0,
