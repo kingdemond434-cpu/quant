@@ -516,7 +516,10 @@ def rate_leg(yc: pd.DataFrame, ref: Any) -> pd.Series | None:
         if s.empty:
             continue
         if i:
+            last = s.index.max()
             s = s.resample("MS").mean().dropna()
+            # a month still in progress has a mean of a few days that changes every refetch
+            s = s[s.index + pd.offsets.MonthEnd(0) <= last.normalize()]
         if leg is None:
             leg = s
         else:
@@ -547,6 +550,8 @@ def fred_outputs(cv: Mapping[str, Any], yc: pd.DataFrame
             if b is None or q is None:
                 continue
             both = pd.concat({"b": b, "q": q}, axis=1).sort_index().ffill().dropna()
+            # a pair ends where its stalest leg ends: a forward-filled leg is not a fresh print
+            both = both[both.index <= min(b.index.max(), q.index.max())]
             b, q = "b", "q"
             if len(both) < MIN_ROWS:
                 continue
