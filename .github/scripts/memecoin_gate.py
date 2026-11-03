@@ -28,6 +28,7 @@ reverted on main, using audit_gate.auto_revert in the memecoin clone.
 
     python memecoin_gate.py --box --clone C:\\ProgramData\\QuantBox\\memecoin-gate
 """
+
 from __future__ import annotations
 
 import argparse
@@ -55,14 +56,28 @@ LIVE_PATHS = (
     "config/chains.yaml", "src/execution/*", "src/research/promotion_gate.py",
     "ops/autodeploy.py", "ops/bounded_release.py", "*.env", "*.env.*", "*secret*", "*wallet*",
     "*keypair*",
+    # the Rust transaction builder and signer
+    "native/solana_fastpath/src/transaction.rs", "native/solana_fastpath/src/bindings.rs",
+    "native/solana_fastpath/src/message.rs", "native/solana_fastpath/build.rs",
+    # dependency manifests: a supply-chain path to the key and the signer
+    "pyproject.toml", "*/pyproject.toml", "requirements*.txt", "*/requirements*.txt",
+    "Cargo.toml", "*/Cargo.toml", "Cargo.lock", "*/Cargo.lock", "*.lock", "package.json",
+    "*/package.json", "package-lock.json", "*/package-lock.json", "setup.py", "setup.cfg",
 )  # fmt: skip
 #: A diff line naming one of these touches the paper/live switch or the live ladder.
 LIVE_WORDS = re.compile(
     r"ALLOW_LIVE_TRADING|dry_run|live_submission|paper_equity|Stage\.(CANARY|LIVE)"
-    r"|promotion_gate|signer|keypair|private_key|jito|send_transaction|sendTransaction",
+    r"|promotion_gate|signer|keypair|private_key|jito|send_transaction|sendTransaction"
+    # the CLI switch, the signer acknowledgement and its halves, and ANY environment write
+    r"|yes-i-understand|LIVE_TRADING|i-understand|dry_override|args\.live|--live|is_live"
+    r"|os\.environ\s*\[|environ\.(setdefault|update)|putenv"
+    # Rust signing
+    r"|\.sign\(|SigningKey|Signature::new",
     re.IGNORECASE,
 )
 OK = ("success", "skipped", "neutral")
+#: Only GitHub Actions' own check runs count for REQUIRED_JOBS; any installed App can post a name.
+ACTIONS_APP = "github-actions"
 MAX_FILES = 3000
 
 
@@ -77,7 +92,9 @@ def fenced(files: Iterable[Mapping[str, Any]]) -> str | None:
             if any(fnmatch.fnmatch(path, p) for p in LIVE_PATHS):
                 return f"{path} is on the live fence"
         patch = f.get("patch")
-        if patch is None and int(f.get("changes") or 0) > 0:
+        pure_rename = f.get("status") == "renamed" and int(f.get("changes") or 0) == 0
+        if patch is None and not pure_rename:
+            # a binary file or an oversized diff has no patch: fail closed
             return f"{name}: the API returned no patch to read, so the fence cannot clear it"
         for line in str(patch or "").splitlines():
             if line[:1] in "+-" and not line.startswith(("+++", "---")) and LIVE_WORDS.search(line):
@@ -100,17 +117,28 @@ def green(runs: Iterable[Mapping[str, Any]]) -> tuple[bool, str]:
                 return False, f"{name} is still {r.get('status')}"
             if r.get("conclusion") not in OK:
                 return False, f"{name} concluded {r.get('conclusion')}"
-    missing = [j for j in REQUIRED_JOBS if not any(
-        r.get("conclusion") == "success" for r in by.get(j, []))]
+    missing = [
+        j
+        for j in REQUIRED_JOBS
+        if not any(
+            r.get("conclusion") == "success" and (r.get("app") or {}).get("slug") == ACTIONS_APP
+            for r in by.get(j, [])
+        )
+    ]
     if missing:
         return False, f"no passing run of {missing}"
     return True, "every required job passed"
 
 
-def decide(pr: Mapping[str, Any], files: list[Mapping[str, Any]], runs: list[Mapping[str, Any]],
-           behind: int | None, rows: list[dict[str, Any]],
-           window: Callable[[], tuple[datetime | None, str]], now: datetime
-           ) -> tuple[str, str]:
+def decide(
+    pr: Mapping[str, Any],
+    files: list[Mapping[str, Any]],
+    runs: list[Mapping[str, Any]],
+    behind: int | None,
+    rows: list[dict[str, Any]],
+    window: Callable[[], tuple[datetime | None, str]],
+    now: datetime,
+) -> tuple[str, str]:
     """("merge" | "bring_up" | "wait" | "zuck", why) for one PR. Pure apart from `window`."""
     if pr.get("draft"):
         return "wait", "draft"
@@ -152,23 +180,44 @@ def sweep(registry: str, clone: str | None, now: datetime | None = None) -> int:
     for pr in prs:
         n, head = int(pr["number"]), str(pr["head"]["sha"])
         try:
-            files = ag._flat(ag._gh(f"repos/{REPO}/pulls/{n}/files?per_page=100",
-                                    "--paginate", "--slurp"))
-            pages = ag._flat_pages(ag._gh(f"repos/{REPO}/commits/{head}/check-runs?per_page=100",
-                                          "--paginate", "--slurp"))
+            files = ag._flat(
+                ag._gh(f"repos/{REPO}/pulls/{n}/files?per_page=100", "--paginate", "--slurp")
+            )
+            pages = ag._flat_pages(
+                ag._gh(
+                    f"repos/{REPO}/commits/{head}/check-runs?per_page=100", "--paginate", "--slurp"
+                )
+            )
             runs = [r for pg in pages if isinstance(pg, dict) for r in pg.get("check_runs") or []]
             cmp = ag._gh(f"repos/{REPO}/compare/{BASE}...{head}") or {}
             behind = cmp.get("behind_by")
             verdict, why = decide(
-                pr, files, runs, behind if isinstance(behind, int) else None, rows,
-                lambda n=n, head=head: ag.registry_window(seen, n, head, now, ag.run_notify), now)
+                pr,
+                files,
+                runs,
+                behind if isinstance(behind, int) else None,
+                rows,
+                lambda n=n, head=head: ag.registry_window(seen, n, head, now, ag.run_notify),
+                now,
+            )
             if verdict == "bring_up":
-                ag._gh(f"repos/{REPO}/pulls/{n}/update-branch", "-X", "PUT",
-                       data={"expected_head_sha": head})
+                ag._gh(
+                    f"repos/{REPO}/pulls/{n}/update-branch",
+                    "-X",
+                    "PUT",
+                    data={"expected_head_sha": head},
+                )
             elif verdict == "merge":
-                ag._gh(f"repos/{REPO}/pulls/{n}/merge", "-X", "PUT", data={
-                    "sha": head, "merge_method": "merge",
-                    "commit_title": f"Merge #{n}: {ag.REGISTRY_TITLE} {head[:9]}"})
+                ag._gh(
+                    f"repos/{REPO}/pulls/{n}/merge",
+                    "-X",
+                    "PUT",
+                    data={
+                        "sha": head,
+                        "merge_method": "merge",
+                        "commit_title": f"Merge #{n}: {ag.REGISTRY_TITLE} {head[:9]}",
+                    },
+                )
             ag._summary(f"memecoin #{n} {head[:9]}: {verdict.upper()} -- {why}")
         except (RuntimeError, KeyError, TypeError, ValueError) as exc:
             ag._summary(f"memecoin #{n}: skipped this sweep ({exc})")

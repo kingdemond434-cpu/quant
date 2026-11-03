@@ -1,4 +1,5 @@
 """The memecoin auto-merge path: CLEAR + green + window merges; the live switch never does."""
+
 from __future__ import annotations
 
 import importlib.util
@@ -9,7 +10,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / ".github" / "scripts"))
 _spec = importlib.util.spec_from_file_location(
-    "memecoin_gate", ROOT / ".github" / "scripts" / "memecoin_gate.py")
+    "memecoin_gate", ROOT / ".github" / "scripts" / "memecoin_gate.py"
+)
 assert _spec and _spec.loader
 mg = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(mg)
@@ -26,7 +28,10 @@ def _files(*items):
     return [{"filename": f, "patch": p, "changes": 1} for f, p in items]
 
 
-GREEN = [{"name": j, "status": "completed", "conclusion": "success"} for j in mg.REQUIRED_JOBS]
+GREEN = [
+    {"name": j, "status": "completed", "conclusion": "success", "app": {"slug": "github-actions"}}
+    for j in mg.REQUIRED_JOBS
+]
 ROW = [{"pr": 143, "sha": HEAD, "verdict": "CLEAR", "at": (NOW - timedelta(hours=30)).isoformat()}]
 
 
@@ -35,8 +40,9 @@ def _old_window():
 
 
 def _decide(files=None, runs=GREEN, behind=0, rows=ROW, window=_old_window, pr=None):
-    return mg.decide(pr or _pr(), files or _files(("ops/health.py", "+x = 1")), runs, behind,
-                     rows, window, NOW)
+    return mg.decide(
+        pr or _pr(), files or _files(("ops/health.py", "+x = 1")), runs, behind, rows, window, NOW
+    )
 
 
 def test_a_cleared_green_current_change_past_its_window_merges():
@@ -44,16 +50,78 @@ def test_a_cleared_green_current_change_past_its_window_merges():
 
 
 def test_the_live_switch_is_zucks_by_path_and_by_word():
-    for path in ("config/chains.yaml", ".github/workflows/ci.yml", "src/execution/signer.py",
-                 "deploy/systemd/memecoin-health.service", "src/research/promotion_gate.py"):
+    for path in (
+        "config/chains.yaml",
+        ".github/workflows/ci.yml",
+        "src/execution/signer.py",
+        "deploy/systemd/memecoin-health.service",
+        "src/research/promotion_gate.py",
+    ):
         assert _decide(files=_files((path, "+x = 1")))[0] == "zuck", path
-    for line in ("+    dry_run = False", "-ALLOW_LIVE_TRADING=1", "+stage = Stage.CANARY",
-                 "+from src.execution import signer"):
+    for line in (
+        "+    dry_run = False",
+        "-ALLOW_LIVE_TRADING=1",
+        "+stage = Stage.CANARY",
+        "+from src.execution import signer",
+    ):
         assert _decide(files=_files(("src/main.py", line)))[0] == "zuck", line
     # a rename OUT of a fenced path is fenced too
-    moved = [{"filename": "src/x.py", "previous_filename": "src/execution/jupiter_jito.py",
-              "patch": "", "changes": 0}]
+    moved = [
+        {
+            "filename": "src/x.py",
+            "previous_filename": "src/execution/jupiter_jito.py",
+            "patch": "",
+            "changes": 0,
+        }
+    ]
     assert _decide(files=moved)[0] == "zuck"
+
+
+def test_the_audited_bypasses_are_all_zucks():
+    for line in (
+        '+    mode.add_argument("--live", action="store_true", default=True)',
+        '+os.environ["ALLOW_"+"LIVE_TRADING"]="yes-"+"i-understand"',
+        '+os.environ.setdefault("X", "1")',
+        "+    dry_override = False",
+        "+    if champion_challenger.is_live:",
+        "+        tx.sign(&[&kp], blockhash)?;",
+    ):
+        assert _decide(files=_files(("src/main.py", line)))[0] == "zuck", line
+    for path in (
+        "native/solana_fastpath/src/transaction.rs",
+        "native/solana_fastpath/Cargo.toml",
+        "Cargo.lock",
+        "pyproject.toml",
+        "requirements-dev.txt",
+        "setup.py",
+        "dashboard/web/package.json",
+        "native/solana_fastpath/pyproject.toml",
+    ):
+        assert _decide(files=_files((path, "+x = 1")))[0] == "zuck", path
+
+
+def test_a_binary_file_without_a_patch_fails_closed_but_a_pure_rename_passes():
+    assert (
+        _decide(
+            files=[{"filename": "assets/x.bin", "patch": None, "changes": 0, "status": "modified"}]
+        )[0]
+        == "zuck"
+    )
+    rename = [
+        {
+            "filename": "docs/b.md",
+            "previous_filename": "docs/a.md",
+            "patch": None,
+            "changes": 0,
+            "status": "renamed",
+        }
+    ]
+    assert _decide(files=rename)[0] == "merge"
+
+
+def test_a_check_named_like_a_required_job_from_another_app_does_not_count():
+    forged = [{**r, "app": {"slug": "some-app"}} for r in GREEN]
+    assert _decide(runs=forged)[0] == "wait"
 
 
 def test_an_unreadable_patch_or_empty_list_fails_closed():
@@ -87,6 +155,7 @@ def test_behind_is_brought_up_and_unknown_waits_and_drafts_wait():
 
 def test_its_merge_title_is_one_auto_revert_recognises():
     import audit_gate as ag
+
     assert ag.is_registry_merge(f"Merge #143: {ag.REGISTRY_TITLE} {HEAD[:9]}")
 
 
