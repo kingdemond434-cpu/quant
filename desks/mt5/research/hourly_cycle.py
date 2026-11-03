@@ -1411,7 +1411,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                     "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
-                     "daily", "hunt12_forward", "regime_router",
+                     "daily", "hunt12_forward", "regime_router", "state_ensemble",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
                      "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
@@ -2040,6 +2040,12 @@ def _producer(name: str, script: str,
 #: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
+    # THE STATE ENSEMBLE: measured 2026-11-03 at ~4.5 s per symbol refit (six engines) plus ~47 s
+    # for the incumbent-HMM walk-forward on gold, ~10 s on a pass whose bars did not move; the
+    # weekly allocation contract (1,293 s for 65 re-solves on the 4-core build host) runs
+    # RESUMABLY in 600 s slices; the daily near-miss re-test has 600 s. Sub-budgets 420 + 600 +
+    # 600, so the cap sits above all three for the pass on which every cadence comes due.
+    "state_ensemble": 1_800,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -4533,6 +4539,16 @@ def main() -> None:
     # active only where it beats the unrouted model out of sample. Forward department.
     rgr = _costed("regime_router", lambda: _producer("regime_router",
                                                       "research/regime_router.py"))
+    # THE STATE-ENGINE ENSEMBLE (2026-11-03): HSMM / GJR-GARCH / SV-Kalman / particle / Hawkes
+    # / base rate, fused by prequential log score, published per symbol with its walk-forward
+    # calibration against the plain base rate and the incumbent gold HMM
+    # (reports/STATE_ENSEMBLE.json, every pass, a symbol refitted only when its newest day
+    # moved); the allocation contract geo_ensemble vs geo_hmm weekly
+    # (reports/STATE_ENSEMBLE_CONTRACT.json); near-miss cells re-tested inside ensemble regimes
+    # daily through the donor door (reports/STATE_ENSEMBLE_NEARMISS.json). Sizes nothing; the
+    # allocator owner wires the reader on `promotion.admits`. Forward department.
+    sen = _costed("state_ensemble", lambda: _producer("state_ensemble",
+                                                       "research/state_ensemble_run.py"))
     # MACRO INTELLIGENCE FUSION (LAWS 5c, the second half of the principal's order). Every
     # macro-relevant ingested unit fused into regime posteriors, nowcasts, next-decision
     # expectations, a ranked news lane and TWO-SIDED suggestions the allocator MAY read through
@@ -6395,7 +6411,8 @@ def main() -> None:
                     "representation_forge": rfg,
                     "registry_sync": rsy, "axis_proposer": axp,
                     "program_alpha_lane": pal, "trajectory_evolution": tev,
-                    "research_os_archive": roa, "regime_router": rgr, "moat_series": mos,
+                    "research_os_archive": roa, "regime_router": rgr,
+                    "state_ensemble": sen, "moat_series": mos,
                     "scout_roster": scr, "descendants": dsc, "forward_slot_ranker": fsr,
                     "htf_anchor": htf, "empty_cluster_forcer": ecf,
                     "analyst_pipeline": anp, "knowledge_graph": kng, "card_explosion": mce,
