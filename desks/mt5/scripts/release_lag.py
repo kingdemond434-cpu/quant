@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """How far is the box behind the newest GREEN release? A measurement and an alarm, never a decision.
 
-    python desks/mt5/scripts/release_lag.py           # measure, write the report, print it
-    python desks/mt5/scripts/release_lag.py --json    # the report only
+A LIBRARY, NOT AN EXECUTABLE: its one clock is MT5-BoxHeartbeat, which imports it. By hand:
+    python -c "import sys; sys.path.insert(0, 'desks/mt5/scripts'); import release_lag as r; \
+print(r.refresh(force=True)['reason'])"
 
 WHY (2026-11-03). The box sat on the 10-29 release for five days and nothing alarmed. Two causes
 stacked: LIVE had no green CI run (the mt5-money-path job timed out), so no newer release was
@@ -49,7 +50,6 @@ Writes `desks/mt5/reports/RELEASE_LAG.json` (a state path; the box may write it)
 """
 from __future__ import annotations
 
-import argparse
 import contextlib
 import json
 import subprocess
@@ -405,19 +405,3 @@ def check(now: float, path: Path = OUT) -> dict[str, Any]:
             "newest_green": str(ng.get("sha") or "")[:12] or None,
             "adopted": str(((doc or {}).get("adopted") or {}).get("sha") or "")[:12] or None,
             "fail": verdict != "GREEN"}
-
-
-def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=(__doc__ or "").split("\n")[0])
-    ap.add_argument("--json", action="store_true")
-    a = ap.parse_args(argv)
-    doc = refresh(force=True)
-    if a.json:
-        print(json.dumps(doc, indent=1, default=str))
-    else:
-        print(f"release lag: {doc.get('verdict')} {doc.get('kind')} -- {doc.get('reason')}")
-    return 0 if doc.get("verdict") == "GREEN" else 2
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
