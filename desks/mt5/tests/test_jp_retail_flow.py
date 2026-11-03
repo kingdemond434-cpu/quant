@@ -164,7 +164,7 @@ def test_jpx_archive_value_file_reads_its_period_and_drops_a_row_that_does_not_c
     got = J.parse_jpx_investor_type(_fx("stock_val_1_261003.xls"), "stock_val_1_261003.xls")
     assert got is not None
     assert (got["week_start"], got["week_end"]) == (date(2026, 10, 13), date(2026, 10, 16))
-    assert got["rows"]["foreigners"]["net"] == pytest.approx(0.5)
+    assert got["rows"]["foreigners"]["net"] == pytest.approx(500.0)       # 千円 -> bn JPY
     assert "investment_trusts" not in got["rows"]                 # net 999 != buy - sell
 
 
@@ -377,7 +377,8 @@ def test_end_to_end_series_reach_research_and_the_footprint_frame(box):
     assert set(fp) == {"tfx_click365", "jpx_investor_type", "ffaj_otc_fx"}
     assert all(r["class"] == "retail" and r["region"] == "JP" for r in fp.values())
     tfx = J.footprint_frame("tfx_click365")
-    assert {"usdjpy_net_ratio", "audjpy_contrarian_z", "available_utc"} <= set(tfx.columns)
+    assert {"usdjpy_net_ratio", "audjpy_oi_logchg", "available_utc"} <= set(tfx.columns)
+    assert "usdjpy_contrarian_z" not in tfx.columns                 # 4 weeks < Z_MIN: none yet
     assert str(tfx["available_utc"].dt.tz) == "UTC"
     assert tfx.loc["2026-10-27", "available_utc"] == pd.Timestamp("2026-10-28 09:00", tz="UTC")
     jpx = J.footprint_frame("jpx_investor_type")

@@ -304,8 +304,8 @@ def jp_holidays(year: int) -> frozenset[date]:
     """Tokyo exchange non-business weekdays, WIDE on purpose: both candidate equinox days, the
     year-end closure, Happy-Monday holidays, substitute days and the September bridge day. A day
     too many only stamps a JPX release later than it was; a day too few could stamp it early."""
-    fixed = [(1, 1), (1, 2), (1, 3), (1, 4), (2, 11), (2, 23), (3, 20), (3, 21), (4, 29), (5, 3),
-             (5, 4), (5, 5), (5, 6), (8, 11), (9, 22), (9, 23), (11, 3), (11, 23), (12, 31)]
+    fixed = [(1, 1), (1, 2), (1, 3), (2, 11), (2, 23), (3, 20), (3, 21), (4, 29), (5, 3),
+             (5, 4), (5, 5), (8, 11), (9, 22), (9, 23), (11, 3), (11, 23), (12, 31)]
     days = {date(year, m, d) for m, d in fixed}
     days |= {_nth_weekday(year, 1, 0, 2), _nth_weekday(year, 7, 0, 3),
              _nth_weekday(year, 9, 0, 3), _nth_weekday(year, 10, 0, 2)}
