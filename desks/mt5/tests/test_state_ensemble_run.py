@@ -225,5 +225,8 @@ def test_leg_is_wired_end_to_end() -> None:
                            .read_text("utf-8"))
     c = contracts["legs"]["state_ensemble"]
     assert c["metric"]["organ"] == "report:STATE_ENSEMBLE.json"
-    from libs.tiers.experiment_contract import problems
-    assert problems({**c, "budget": 2100, "owner": "forward"}) == []
+    from libs.tiers.experiment_contract import problems, resolve
+    full = resolve("state_ensemble", c, budget_s=hc.LEG_BUDGET_SEC["state_ensemble"],
+                   department=hc.LEG_DEPARTMENT["state_ensemble"])
+    assert hc.LEG_DEPARTMENT["state_ensemble"] == "forward"
+    assert problems(full) == []
