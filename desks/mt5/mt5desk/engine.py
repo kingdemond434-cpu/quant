@@ -433,6 +433,13 @@ class Signal:
     add_every_r: float = 0.0   # 0 = no adds; else spacing between adds, in R
     add_max: int = 0           # hard cap on the number of adds
     add_frac: float = 0.0      # size of each add relative to the initial unit
+    # --- MARKET-STATE EXIT (2026-11-03, principal: "based on market conditions reversals etc").
+    # Once `reversal_after` bars have been held, a bar that CLOSES back through `reversal_level`
+    # against the position (a long closing below it, a short above) exits at the NEXT bar's open:
+    # the decision is taken on a completed bar and filled after it, never on the bar's own close.
+    # None = off, so every signal written before this field walks exactly as it did.
+    reversal_level: float | None = None
+    reversal_after: int = 0
     # After add k the stop for the WHOLE stack moves to the (k-1)th add level --
     # breakeven on the first add. Without this the stack's open risk grows with
     # every add, which is how a pyramid turns into the thing it is not supposed
@@ -782,6 +789,8 @@ def run_backtest(
         runner_trail_k = sig.runner_trail_k
         trail_tighten_k = sig.trail_tighten_k
         trail_stall_bars = sig.trail_stall_bars
+        rev_level = sig.reversal_level
+        rev_after = sig.reversal_after
         banked = False
         banked_at = 0.0
         trail_ext = entry
@@ -893,6 +902,11 @@ def run_backtest(
                 if not banked and lo <= target and not (limit_entry and j == fill_bar):
                     exit_price, reason = target, "target"
                     break
+            if (rev_level is not None and bars_held >= rev_after and j + 1 < len(idx)
+                    and side * (float(close_px[j]) - rev_level) < 0):
+                exit_price, reason = float(o[j + 1]), "reversal"
+                bars_held += 1
+                break
         if exit_price is None:
             exit_idx = min(fill_bar + ttl, len(idx) - 1)
             exit_price = float(o[exit_idx])

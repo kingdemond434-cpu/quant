@@ -803,6 +803,96 @@ def family_session_range_breakout(
     return signals
 
 
+#: The exit policies `session_exit_overlay` tries on the live gold session breakout. The live
+#: entry is untouched; each policy rewrites only what happens after the fill, so a verdict on a
+#: variant is a verdict on its EXIT against the identical trades.
+#:
+#:   ratchet        the live management as the engine can express it: chandelier 4xATR,
+#:                  tightened to 1xATR after 3 bars without a new extreme (position_manager
+#:                  K_TREND / K_STALLED / STALL_BARS), target kept at rr. The +0.85R break-even
+#:                  floor has no engine field, so this is the trail alone.
+#:   partial_1r     bank half at +1R, runner stop to break-even, runner on the same trail.
+#:   partial_2r     bank half at the rr target, runner on the trail -- the right tail kept.
+#:   time_4         the ratchet, flat after 4 hours whatever the trade is doing.
+#:   time_8         the same at 8 hours (12 is the parent's own ttl, so it would repeat
+#:                  the ratchet).
+#:   regime         by the vol bucket known at the signal (ATR vs its 200-bar median): a hot
+#:                  tape keeps the wide ratchet; a quiet one banks half at +1R, protects at
+#:                  break-even and is flat by 12 hours, because a quiet session rarely pays 2R.
+#:   reversal       the ratchet, plus a market-state exit: from the second bar on, an H1 close
+#:                  back through the breakout level (the break failed) exits at the next open.
+SESSION_EXIT_POLICIES = ("ratchet", "partial_1r", "partial_2r", "time_4", "time_8", "regime",
+                         "reversal")
+
+
+def _exit_rewrite(sig: Signal, policy: str, atr: float, hot: bool) -> Signal:
+    from dataclasses import replace
+    level = sig.trigger if sig.trigger is not None else sig.stop
+    dist = abs(level - sig.stop)
+    if not (dist > 0 and atr > 0):
+        return sig
+    trail = {"runner_trail_k": 4.0 * atr / dist, "trail_tighten_k": 1.0 * atr / dist,
+             "trail_stall_bars": 3}
+    one_r = level + sig.side * dist
+    if policy == "regime":
+        policy = "ratchet" if hot else "_quiet"
+    if policy == "ratchet":
+        return replace(sig, **trail)
+    if policy == "partial_1r":
+        return replace(sig, target=one_r, bank_frac=0.5, bank_protect_k=0.0, **trail)
+    if policy == "partial_2r":
+        return replace(sig, bank_frac=0.5, bank_protect_k=0.0, **trail)
+    if policy in ("time_4", "time_8"):
+        return replace(sig, ttl_bars=min(sig.ttl_bars, int(policy.split("_")[1])), **trail)
+    if policy == "reversal":
+        return replace(sig, reversal_level=level, reversal_after=2, **trail)
+    if policy == "_quiet":
+        return replace(sig, target=one_r, bank_frac=0.5, bank_protect_k=0.0,
+                       ttl_bars=min(sig.ttl_bars, 12), **trail)
+    raise ValueError(f"unknown exit policy {policy!r}")
+
+
+@register_family(param_grid={
+    "exit_policy": list(SESSION_EXIT_POLICIES),
+}, tags=["exit_overlay", "gold_session"])
+def family_session_exit_overlay(
+    df: pd.DataFrame,
+    *,
+    exit_policy: str = "ratchet",
+    range_start: int = 7,
+    wait_bars: int = 8,
+    atr_n: int = 20,
+    ttl_bars: int = 12,
+    rr: float = 2.0,
+) -> list[Signal]:
+    """The live gold session breakout with its EXIT replaced: in-trade management as trials.
+
+    WHY A FAMILY AND NOT A LIVE SWITCH (principal 2026-11-03: manage trades like a human trader,
+    breakeven, trailing, partials, time stops, market conditions). Every exit policy is a claim
+    that it raises growth, and the desk's only judge of such a claim is the gauntlet. Registering
+    the overlay puts each policy in front of the judge as one charged trial, on exactly the entries
+    `session_range_breakout` makes with the same defaults the live roster uses (asia range to
+    07:00 broker, rr 2.0, ATR 20). Nothing here reaches an order: a survivor is a certificate the
+    allocator may weigh, and the live ratchet stays what it is until one beats it forward.
+    """
+    if exit_policy not in SESSION_EXIT_POLICIES:
+        raise ValueError(f"exit_policy must be one of {SESSION_EXIT_POLICIES}, got {exit_policy!r}")
+    parent = family_session_range_breakout(df, range_start=range_start, wait_bars=wait_bars,
+                                           atr_n=atr_n, ttl_bars=ttl_bars, rr=rr)
+    if not parent:
+        return parent
+    h1 = _h1(df)
+    atr = _atr(h1, atr_n)
+    atr_med = atr.rolling(200, min_periods=60).median()
+    out = []
+    for sig in parent:
+        a = float(atr.get(sig.time, np.nan))
+        m = float(atr_med.get(sig.time, np.nan))
+        hot = bool(np.isnan(m) or a > m)
+        out.append(_exit_rewrite(sig, exit_policy, a if a == a else 0.0, hot))
+    return out
+
+
 @register_family(param_grid={
     "mode": ["momentum", "fade"],
     "min_gap_atr": [0.15, 0.2, 0.3],

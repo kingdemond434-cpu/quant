@@ -4576,6 +4576,15 @@ def main(argv: list[str] | None = None) -> int:
     else:
         for line in render(doc):
             print(line)
+    # THE EXIT-POLICY TABLE RIDES THIS CLOCK (2026-11-03). The judge is what turns each
+    # `session_exit_overlay` policy into a verdict, so the hourly table of where those policies
+    # stand is published on the judge's own hourly leg rather than a new unclocked organ.
+    # Bookkeeping only: it can never fail this pass.
+    try:
+        from research import exit_variants
+        exit_variants.publish()
+    except Exception as exc:
+        print(f"judge coverage: EXIT_VARIANTS not published ({type(exc).__name__}: {exc})")
     return 0
 
 
