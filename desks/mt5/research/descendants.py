@@ -597,8 +597,14 @@ def build(*, max_per_root: int = MAX_PER_ROOT, budget_s: float = BUDGET_S,
     known: set[str] = {r["root_id"] for r in roots}
     unreachable: dict[str, int] = {}
     stopped = 0
+    # THE WALK HAS ITS OWN CLOCK (2026-11-03). The budget was measured from before the roots and
+    # the graph's fates were read, so a slow read spent it all: the box's last report says "the
+    # 240s budget ran out after 0 of 638 roots", 0 donated. Setup is mandatory and reported
+    # (`setup_s`); the budget now bounds the walk it was written to bound.
+    walk_t0 = time.monotonic()
+    setup_s = round(walk_t0 - t0, 2)
     for i, root in enumerate(roots):
-        if time.monotonic() - t0 > budget_s:
+        if time.monotonic() - walk_t0 > budget_s:
             stopped = len(roots) - i
             break
         nb, skip = neighbours(root, ctx)
@@ -645,7 +651,7 @@ def build(*, max_per_root: int = MAX_PER_ROOT, budget_s: float = BUDGET_S,
                    "coverage": r["coverage"], "coverage_overall": r["coverage_overall"]}
                   for r in sorted(walked, key=lambda r: (-LANE_RANK.get(r["lane"], 0),
                                                          -int(r["forward_n"]), r["root_id"]))],
-        "inputs": note, "budget_s": budget_s, "budget_stopped": bool(stopped),
+        "inputs": note, "budget_s": budget_s, "budget_stopped": bool(stopped), "setup_s": setup_s,
         "seconds": round(time.monotonic() - t0, 2), "unmeasured": unmeasured, "rule": RULE}
     return report, record, rows
 

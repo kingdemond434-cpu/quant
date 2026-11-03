@@ -175,6 +175,29 @@ REPLACEMENTS: dict[str, str] = {
                 "this one holds a single 2026-09-12 file from the VPS",
     "firm_mining": "fund_playbook -- the declared institutional mechanism claims; firm_mining was "
                    "a one-off 2026-09-27 hand seed (scripts/max_audit.py)",
+    # THE 2026-11-03 TRIAGE (backlog row 77; box probe 17:09Z, 133,617 ledger rows, read-only:
+    # /mnt/project-files/reports/producer_revival/dead_legs_probe.json). Seats with no writer in
+    # the tree, report-only organs, and copy-trading grounds whose site refuses or moved.
+    "statarb": "fund_playbook -- no writer in the tree or its history; the box directory is the "
+               "2026-09-27 firm-mining hand seed's statarb_multistrat cluster (f30456ccb)",
+    "alpha_periodic_table": "research_tree -- the periodic table's empty cells are research "
+                            "TARGETS it writes to reports/ALPHA_PERIODIC_TABLE.json; it has no "
+                            "seat writer, and research_tree is the organ that turns gaps into "
+                            "cells (31k rows/3d)",
+    "srb_uncorrelated_sweep": "srb_basket_judge -- the sweep writes reports/"
+                              "SRB_UNCORRELATED_SWEEP.json, which that judge reads; it never "
+                              "donated to a seat",
+    "equiti_copy": "regional_survivors -- the same copy-trading leaderboards; equiti's ratings "
+                   "page is client-rendered (JS_APP_NEEDS_API) and has not fetched since 09-30",
+    "octa_masters": "regional_survivors -- octa's rating page returns no parseable records "
+                    "(UNKNOWN_SHAPE) since 09-30",
+    "hfm_pamm": "regional_survivors -- HFM answers 403: a refusal, person-released, never bypassed",
+    "followme_cn": "regional_survivors -- followme answers 403: a refusal, person-released, never "
+                   "bypassed; the China copy ground also reaches the desk through asia_plane",
+    "minfx_jp": "regional_survivors -- min-fx.jp's strategy page returns 404 (moved); the Japan "
+                "retail ground also reaches the desk through asia_plane and TFX positioning",
+    "readitrades_africa": "regional_survivors -- ready-trade.com serves no records (FETCH_ERROR); "
+                          "its seat directory still refreshes, empty",
 }
 
 

@@ -452,9 +452,17 @@ def build_panels(max_targets: int = MAX_TARGETS) -> tuple[list[Panel], dict[str,
         symbol = str(row.get("symbol") or row.get("target") or "")
         if symbol in allowed:
             by_symbol.setdefault(symbol, []).append(row)
-    ranked = sorted(by_symbol, key=lambda s: -len(by_symbol[s]))[:max_targets]
-    if not ranked:
-        ranked = allowed[:max_targets]
+    # A TARGET WITH NO BARS GIVES ITS SLOT TO THE NEXT ONE (2026-11-03). The ranking is by
+    # residual rows, which says nothing about whether the desk holds the instrument's H1 file;
+    # USDDKK headed it on the box with no parquet, and a slot spent on it is a panel never built.
+    # The skipped names are reported, never silently dropped.
+    order = sorted(by_symbol, key=lambda s: -len(by_symbol[s])) or list(allowed)
+    ranked = [s for s in order if (UNIVERSE / f"{s}_H1.parquet").exists()][:max_targets]
+    no_bars = [s for s in order[:order.index(ranked[-1]) + 1] if s not in ranked] if ranked else \
+        order[:max_targets]
+    for s in no_bars:
+        status["unmeasured"].append(f"target {s}: no H1 bars under {UNIVERSE}; its slot went "
+                                    "to the next-ranked target")
     status["targets"] = ranked
     status["residual_store"] = {"rows": len(rows), "horizon": horizon, "symbols": len(by_symbol)}
 
@@ -464,11 +472,25 @@ def build_panels(max_targets: int = MAX_TARGETS) -> tuple[list[Panel], dict[str,
         loaded = bar_frames(symbol)
         if loaded is not None:
             peer_pool[symbol] = (loaded[0], loaded[1])
+    # THE TARGETS ARE LOADED AS TARGETS, NOT FOUND IN THE PEER PREFIX (2026-11-03). `ranked` is
+    # ordered by residual rows, the pool by `allowed`'s order, so a target outside the first
+    # MAX_PEERS + len(ranked) allowed symbols was reported "no H1 bars" with its parquet on disk.
+    # Measured on the box 2026-11-03: USDDKK and XAGUSD, both with H1 files, were the pass's two
+    # targets and both read missing, so physics_lab and math_lab built no panel and donated
+    # nothing since 10-10. Targets join the lookup only; the peer set stays the allowed prefix.
+    target_frames: dict[str, tuple[dict[str, np.ndarray], np.ndarray]] = {}
+    for symbol in ranked:
+        if symbol in peer_pool:
+            target_frames[symbol] = peer_pool[symbol]
+            continue
+        loaded = bar_frames(symbol)
+        if loaded is not None:
+            target_frames[symbol] = (loaded[0], loaded[1])
 
     panels: list[Panel] = []
     sources: dict[str, str] = {}
     for symbol in ranked:
-        loaded = peer_pool.get(symbol)
+        loaded = target_frames.get(symbol)
         if loaded is None:
             status["unmeasured"].append(f"target {symbol}: no H1 bars under {UNIVERSE}")
             continue
