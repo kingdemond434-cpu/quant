@@ -169,7 +169,7 @@ def _report(window: bool = False, at: datetime | None = None) -> dict:
 @pytest.fixture
 def _out(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(LL, "ACTIONS", tmp_path / "replacements.jsonl")
-    monkeypatch.setattr(LL, "WINDOW_REQUESTS", tmp_path / "WINDOW_REPLACEMENTS.json")
+    monkeypatch.setattr(LL, "WINDOW_REQUESTS", tmp_path / "BOOK_ROLLOUTS.json")
     return tmp_path
 
 
@@ -338,8 +338,28 @@ def test_a_window_parent_is_requested_never_edited(_out: Path) -> None:
     before = sp.read_text()
     res = LL.act(_report(window=True), sleeves_path=sp)
     assert res["window_requests"] == 1 and sp.read_text() == before
-    req = json.loads((_out / "WINDOW_REPLACEMENTS.json").read_text())["requests"]
-    assert req[0]["variant_clock"] == "VAR.clock"
+    req = json.loads((_out / "BOOK_ROLLOUTS.json").read_text())["requests"]
+    assert req[0]["variant_clock"] == "VAR.clock" and req[0]["book"] == "fusion"
+
+
+def test_a_replacement_rolls_out_to_every_book_the_parent_trades(_out: Path,
+                                                                monkeypatch) -> None:
+    monkeypatch.setattr(LL, "_note_retirement_door", lambda *a: None)
+    sp = _roster(_out, variant_live=True, frac=0.012)
+    rep = _report(window=True)
+    rep["replacements"]["verdicts"][0]["books"] = ["e8", "ftmo", "fusion"]
+    LL.act(rep, sleeves_path=sp)
+    req = json.loads((_out / "BOOK_ROLLOUTS.json").read_text())["requests"]
+    assert sorted(r["book"] for r in req) == ["e8", "ftmo", "fusion"]
+    assert all(r["firm_rails"] for r in req)
+    # A Fusion roster parent also on a prop book: the roster row is retired here, and the
+    # prop book gets its request.
+    rep = _report()
+    rep["replacements"]["verdicts"][0]["books"] = ["fusion", "ftmo"]
+    sp = _roster(_out, variant_live=True, frac=0.012)
+    res = LL.act(rep, sleeves_path=sp)
+    req = json.loads((_out / "BOOK_ROLLOUTS.json").read_text())["requests"]
+    assert [r["book"] for r in req] == ["ftmo"] and res["done"][0]["action"] == "RETIRED_PARENT"
 
 
 def test_lineage_counts_every_variant_of_a_parent() -> None:

@@ -40,7 +40,7 @@ any certificate (AUTOMATIC PROMOTION, 2026-09-04); the allocator funds it by dE[
 adds only the REPLACEMENT: retiring the parent once the variant has proved forward superiority.
 A gateway window parent (the gold windows on Fusion, E8 and FTMO) is not a sleeves.json row and
 its sizing lives in CERT_BOOK_LIVE.json, so a REPLACE there is written to
-`data/loss_learning/WINDOW_REPLACEMENTS.json` as a request for the allocator owners; nothing
+`data/loss_learning/BOOK_ROLLOUTS.json` as a request for that book's allocator; nothing
 here edits a sizing file.
 
 MISSED TRADES are TRACKED here (a live book that did not trade a day its sibling book traded, per
@@ -79,7 +79,20 @@ DATA = _DESK / "data"
 OUT_DIR = DATA / "loss_learning"
 LINEAGE = OUT_DIR / "lineage.jsonl"
 ACTIONS = OUT_DIR / "replacements.jsonl"
-WINDOW_REQUESTS = OUT_DIR / "WINDOW_REPLACEMENTS.json"
+#: Per-book rollout requests: one row per (REPLACE verdict, book this organ cannot write).
+WINDOW_REQUESTS = OUT_DIR / "BOOK_ROLLOUTS.json"
+#: Who sizes each book, and the firm rails the rollout is sized inside.
+BOOK_CONSUMERS = {
+    "fusion": "Fusion allocator (pf_allocator / CERT_BOOK_LIVE.json fusion block)",
+    "e8": "E8 book owners (prop/e8_book, CERT_BOOK_LIVE.json e8 block)",
+    "ftmo": "FTMO allocator (research/prop_challenge_allocator.py, CERT_BOOK_LIVE.json ftmo block)",
+}
+BOOK_RAILS = {
+    "fusion": "max E[log W] within survival; heat floor 20%",
+    "e8": ("E8 Pro: 2.5% daily loss incl. floating, 2%/day profit cap, floor $90k, no "
+           "cross-account opposite trades, no Scandi pairs"),
+    "ftmo": "FTMO 2-Step: 5% daily loss, 10% max loss; never on a symbol E8 trades",
+}
 REPORT = _DESK / "reports" / "LOSS_LEARNER.json"
 SLEEVES = DATA / "sleeves.json"
 REGISTRY = DATA / "sleeve_registry.json"
@@ -764,6 +777,7 @@ def run(now: datetime | None = None, dry_run: bool = False) -> dict[str, Any]:
             new_lineage.append({"at": now.isoformat(timespec="seconds"), "id": v["id"],
                                 "parent": ident["clock"], "parent_sleeve": name,
                                 "parent_window": is_window(name),
+                                "books": sorted(info["books"]),
                                 "symbol": v["symbol"], "family": v["family"],
                                 "selector": v.get("selector"), "params": v["params"],
                                 "operator": v["operator"], "mode": v["mode"],
@@ -817,6 +831,10 @@ def judge_replacements(lineage: list[dict[str, Any]]) -> dict[str, Any]:
                                 lifetime_trials(parent, lineage))
         verdicts.append({"parent": parent, "parent_sleeve": r.get("parent_sleeve"),
                          "parent_window": bool(r.get("parent_window")), "variant_id": r["id"],
+                         "books": list(r.get("books") or ["fusion"]),
+                         "variant_symbol": r.get("symbol"), "variant_family": r.get("family"),
+                         "variant_selector": r.get("selector"),
+                         "variant_params": r.get("params"),
                          "variant_clock": key, **v})
     return {"status": how, "certified_variants": len(keys), "verdicts": verdicts}
 
@@ -830,7 +848,7 @@ def act(report: dict[str, Any] | None = None, sleeves_path: Path | None = None,
     """Apply REPLACE verdicts. A sleeves.json parent is RETIRED only when its variant's row is
     LIVE with risk_frac > 0, so capital moves to the variant and is never simply removed; the
     position is queued for close through decay_monitor's queue. A gateway-window parent is
-    written to WINDOW_REPLACEMENTS.json as a request: its sizing is in CERT_BOOK_LIVE.json,
+    written to BOOK_ROLLOUTS.json as a per-book request: its sizing is in CERT_BOOK_LIVE.json,
     which this organ never edits."""
     now = now or datetime.now(tz=UTC)
     report = report or _json(REPORT, {})
@@ -859,9 +877,19 @@ def act(report: dict[str, Any] | None = None, sleeves_path: Path | None = None,
     for v in verdicts:
         if v.get("verdict") != "REPLACE":
             continue
+        # EVERY BOOK THE PARENT TRADES GETS THE REPLACEMENT (principal 2026-11-03: "all things
+        # get applied to all accounts"). A book this organ cannot write -- a gateway window on any
+        # account, and every prop book, whose sizing lives in CERT_BOOK_LIVE.json under its
+        # firm's rails -- gets a rollout request for its own allocator; the Fusion roster row is
+        # retired here, below.
+        for book in v.get("books") or ["fusion"]:
+            if book == "fusion" and not v.get("parent_window"):
+                continue
+            window_requests.append({**v, "book": book,
+                                    "requested_at": now.isoformat(timespec="seconds"),
+                                    "consumer": BOOK_CONSUMERS.get(book, "allocator owners"),
+                                    "firm_rails": BOOK_RAILS.get(book, "")})
         if v.get("parent_window"):
-            window_requests.append({**v, "requested_at": now.isoformat(timespec="seconds"),
-                                    "consumer": "allocator owners (CERT_BOOK_LIVE.json)"})
             continue
         vrow = by_name.get(str(v.get("variant_clock")))
         prow = by_name.get(str(v.get("parent_sleeve"))) or by_name.get(str(v.get("parent")))
@@ -965,8 +993,9 @@ def act(report: dict[str, Any] | None = None, sleeves_path: Path | None = None,
     WINDOW_REQUESTS.parent.mkdir(parents=True, exist_ok=True)
     WINDOW_REQUESTS.write_text(json.dumps({"at": now.isoformat(timespec="seconds"),
                                            "requests": window_requests,
-                                           "rule": "a gateway window is replaced by the "
-                                                   "allocator owners, never by this organ"},
+                                           "rule": "a gateway window or a prop book is replaced "
+                                                   "by that book's allocator inside its firm's "
+                                                   "rails, never by this organ"},
                                           indent=1, default=str), "utf-8")
     return {"status": "OK", "done": done, "window_requests": len(window_requests)}
 
