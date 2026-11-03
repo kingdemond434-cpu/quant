@@ -125,6 +125,7 @@ _UNWRAPPABLE: frozenset[str] = frozenset({
     "cot_change_fade", "cot_change_momentum", "cot_comm_follow", "event_reaction",
     "cross_sectional", "discovered", "generic", "joint_genome", "alt_conditioned",
     "exit_operated", "sync_gated", "entropy_gated", "fisher_rao_gated", "absorption_gated",
+    "markov_vol_gated", "rough_vol_gated",
 })
 
 

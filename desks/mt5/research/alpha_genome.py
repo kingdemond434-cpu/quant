@@ -93,6 +93,7 @@ MECHANISM_CLASS: dict[str, str] = {
     # family_state_gates.sync_gated reads the gate DIRECTION off them.
     "sync_gated": "regime", "entropy_gated": "regime",
     "fisher_rao_gated": "regime", "absorption_gated": "regime",
+    "markov_vol_gated": "regime", "rough_vol_gated": "regime",
 }
 
 DIRECTION_BIAS = {"trend": "with", "breakout": "with", "reversion": "against",
