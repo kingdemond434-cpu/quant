@@ -61,7 +61,7 @@ def test_censor_flag_is_none_without_bounds_never_zero() -> None:
 
 
 def test_fixture_finds_the_ru_censorship_events(tmp_path: Path) -> None:
-    rep = T.run(_paths(tmp_path), fixtures=FIX, now=NOW, onion=False)
+    rep = T.run(_paths(tmp_path), fixtures=FIX, now=NOW)
     st = json.loads(T.Paths(tmp_path).state.read_text("utf-8"))
     pts = T.build_points(st, {"relay": 72.0, "bridge": 72.0})
     ru = {p["d"]: p for p in pts[("relay", "ru")]}
@@ -169,7 +169,7 @@ def test_country_map_uses_registry_and_records_unmapped() -> None:
 
 
 def test_run_records_unmapped_and_owes_cells_until_live_points(tmp_path: Path) -> None:
-    rep = T.run(_paths(tmp_path), fixtures=FIX, now=NOW, onion=False)
+    rep = T.run(_paths(tmp_path), fixtures=FIX, now=NOW)
     assert "(all)" in rep["unmapped"]
     assert rep["mapped"]["ru"] == {"USDRUB": 1}
     # the fixture holds 26 RU relay days: below the conditioner's floor, so OWED with its count
@@ -184,7 +184,7 @@ def test_run_records_unmapped_and_owes_cells_until_live_points(tmp_path: Path) -
 
 def test_dry_run_writes_only_the_report(tmp_path: Path) -> None:
     p = _paths(tmp_path)
-    rep = T.run(p, fixtures=FIX, now=NOW, dry_run=True, onion=False)
+    rep = T.run(p, fixtures=FIX, now=NOW, dry_run=True)
     assert p.report.exists() and not p.state.exists() and not p.axis.exists()
     assert rep["lake_written"] == 0
 
@@ -193,7 +193,7 @@ def test_no_data_is_unmeasured_never_zero(tmp_path: Path) -> None:
     def refused(kind: str, start: date, end: date, *, deadline: float | None):
         return "", {"http_status": None, "verdict": "", "error": "Tunnel connection failed: 403"}
     p = _paths(tmp_path)
-    rep = T.run(p, now=NOW, fetcher=refused, onion=False)
+    rep = T.run(p, now=NOW, fetcher=refused)
     assert rep["status"].startswith("UNMEASURED")
     assert all(m["status"].startswith("UNMEASURED") for m in rep["fetches"].values())
     assert rep["n_censorship_events_7d"] == 0 and rep["n_series"] == 0

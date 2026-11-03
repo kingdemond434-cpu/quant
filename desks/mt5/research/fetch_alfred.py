@@ -59,12 +59,12 @@ from pathlib import Path
 
 import pandas as pd
 try:
-    from libs.data.polite_fetch import polite_requests_get
+    from libs.data.polite_fetch import polite_requests_get, redact_text
 except ImportError:  # run as a script: the repo root is not on the path
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
-    from libs.data.polite_fetch import polite_requests_get
+    from libs.data.polite_fetch import polite_requests_get, redact_text
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -75,6 +75,14 @@ OUT.mkdir(parents=True, exist_ok=True)
 
 API = "https://api.stlouisfed.org/fred/series/observations"
 RELEASES = "https://api.stlouisfed.org/fred/release/dates"
+
+
+def _safe(text: object, key: str | None = None) -> str:
+    """Anything this hourly leg prints about a failure: a requests/urllib error quotes the URL,
+    and the URL carries `api_key`. `polite_fetch.redact_text` blanks every credential-looking
+    `name=value`; the key itself is blanked too, wherever else it appears."""
+    out = redact_text(text)
+    return out.replace(key, "REDACTED") if key else out
 #: The hourly leg renews a series once its file is this old ...
 REFRESH_H = 24.0
 #: ... and at most this many per pass (one full vintage history each; memory stays one series).
@@ -172,7 +180,7 @@ def fetch_vintages(series_id: str, key: str, timeout: int = 60) -> pd.DataFrame 
                                   "realtime_end": "9999-12-31"},    # FRED's maximum
                      timeout=timeout)
     if r.status_code != 200:
-        print(f"  {series_id}: HTTP {r.status_code} {r.text[:120]}", flush=True)
+        print(f"  {series_id}: HTTP {r.status_code} {_safe(r.text[:120], key)}", flush=True)
         return None
     obs = r.json().get("observations", [])
     if not obs:
@@ -325,7 +333,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             df = fetch_vintages(sid, key)
         except Exception as exc:                                    # noqa: BLE001
-            print(f"  {sid}: {type(exc).__name__}: {exc}", flush=True)
+            print(f"  {sid}: {type(exc).__name__}: {_safe(exc, key)}", flush=True)
             failed.append(sid)
             continue
         if df is None or df.empty:

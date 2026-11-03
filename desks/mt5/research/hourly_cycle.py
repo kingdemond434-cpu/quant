@@ -5765,9 +5765,9 @@ def main() -> None:
         "alt_proxies", "research/alt_proxies.py", "--once", "--budget-s", "300"))
     # TOR METRICS (2026-10-29): CC0 per-country Tor relay/bridge users -> users z, censorship
     # events (users outside the detector's range) and a 28-day stress state, PIT-stamped by the
-    # measured publication lag, through the lake / axis door / registry cells. Its report also
-    # carries the onion allowlist fetcher, which stays OFF until QUANT_TOR_SOCKS and the
-    # auditor's egress ruling both exist (every row UNMEASURED:NEEDS_TOR otherwise).
+    # measured publication lag, through the lake / axis door / registry cells. Clearnet only:
+    # onion / Tor egress is permanently refused (auditor 2026-11-03) and this leg never calls
+    # research/onion_mirrors.py.
     tmx = _costed("tor_metrics", lambda: _producer(
         "tor_metrics", "research/tor_metrics.py", "--once", "--budget-s", "240"))
     # AFTER the collector has recorded its verdicts: every source it could not read gets the

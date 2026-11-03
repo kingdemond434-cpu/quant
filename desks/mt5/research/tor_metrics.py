@@ -48,8 +48,9 @@ WHERE IT GOES (the doors that already exist, no second lane):
   * `data/axes/alt_tor_metrics.json` in the axis-door shape (`series[<name>].points`);
   * cells: `libs.moat.registry.record_discovery` + `enqueue_candidate` (family
     exogenous_conditioner, D1), the same door `pack_cells` uses -- the gauntlet judges them;
-  * `reports/TOR_METRICS.json`, the leg's artifact, which also carries the onion allowlist
-    section (`research/onion_mirrors.py`, OFF until the auditor rules).
+  * `reports/TOR_METRICS.json`, the leg's artifact. It carries NO onion section: onion / Tor
+    egress is permanently refused (auditor ruling 2026-11-03); this module never imports
+    `research/onion_mirrors.py` and reads only Tor Metrics' public clearnet statistics.
 
 COUNTRY -> INSTRUMENT. A country's currency is looked up in the broker's registry
 (`data/universe/universe.json`): USD<ccy> (+1: stress weakens the currency), <ccy>USD (-1), else
@@ -581,8 +582,7 @@ def _load_fixture(fixtures: Path, kind: str) -> str | None:
 # ============================================================================ the pass
 def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 240.0, dry_run: bool = False,
         fixtures: Path | None = None, now: datetime | None = None,
-        fetcher: Callable[..., tuple[str, dict[str, Any]]] | None = None,
-        onion: bool = True) -> dict[str, Any]:
+        fetcher: Callable[..., tuple[str, dict[str, Any]]] | None = None) -> dict[str, Any]:
     t0 = time.monotonic()
     now = now or datetime.now(UTC)
     deadline = t0 + budget_s * 0.7
@@ -634,14 +634,6 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 240.0, dry_run: bool 
         _atomic(paths.axis, axis_doc(points, now))
         _atomic(paths.state, state)
     cells = emit_cells(points, mapped, dry_run=dry_run)
-    onion_section: dict[str, Any] = {}
-    if onion:
-        try:
-            from research import onion_mirrors
-            onion_section = onion_mirrors.run(dry_run=dry_run)
-        except Exception as exc:
-            onion_section = {"status": f"{UNMEASURED}:ERROR",
-                             "error": f"{type(exc).__name__}: {str(exc)[:160]}"}
     any_rows = any(int(m.get("rows") or 0) for m in fetches.values())
     report = {
         "generated_at": _iso(now), "source": SOURCE, "terms_verdict": verdict,
@@ -656,7 +648,6 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 240.0, dry_run: bool 
         "latest_events": events,
         "n_censorship_events_7d": sum(1 for e in events if e.get("censor_flag")),
         "lake_written": len(lake), "cells": cells,
-        "onion_mirrors": onion_section,
         "live_yield": ("UNMEASURED until the trading box runs this leg; the build container's "
                        "proxy refuses metrics.torproject.org"),
         "elapsed_s": round(time.monotonic() - t0, 2)}
@@ -671,9 +662,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true",
                     help="fetch and measure; write only the report (no state, lake or cells)")
     ap.add_argument("--fixtures", type=Path, default=None)
-    ap.add_argument("--no-onion", action="store_true")
     a = ap.parse_args(argv)
-    rep = run(budget_s=a.budget_s, dry_run=a.dry_run, fixtures=a.fixtures, onion=not a.no_onion)
+    rep = run(budget_s=a.budget_s, dry_run=a.dry_run, fixtures=a.fixtures)
     print(json.dumps({k: rep[k] for k in ("status", "terms_verdict", "n_series",
                                           "n_censorship_events_7d", "lake_written")},
                      default=str))

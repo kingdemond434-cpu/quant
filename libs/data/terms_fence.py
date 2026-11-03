@@ -216,26 +216,28 @@ SOURCE_POLICY: dict[str, dict[str, Any]] = {
                               "reading": ("the DATA (the CSVs) is CC0: no condition on automated "
                                           "access or internal research use; only the rendered "
                                           "graphs carry CC-BY, and the desk reads no graph")}},
-    # THE ONION ALLOWLIST (2026-10-29). Every .onion host resolves HERE, so no onion page is ever
-    # live input (IDEAS_ONLY), whatever it serves. Fetching is narrower still: only the addresses
-    # in desks/mt5/data/onion_allowlist.json (lawful public mirrors, each citing its publisher's
-    # own announcement page), only through QUANT_TOR_SOCKS, and only after the auditor rules on
-    # Tor egress (reports/audit/2026-10-29/ONION_LANE.md). Markets, carding/hub forums, leak
-    # sites, stolen data and MNPI are OUT, always: the allowlist validator refuses them.
+    # THE ONION LANE: PERMANENTLY REFUSED (auditor ruling 2026-11-03). No onion or Tor egress,
+    # ever. research/onion_mirrors.py refuses unconditionally (a hard-coded constant, no env-var
+    # or file override) and research/tor_metrics.py never imports it. Every .onion host still
+    # resolves HERE, so no onion page is ever input of any kind.
     "onion_mirrors": {"hosts": ("onion",), "status": IDEAS_ONLY,
                       "sources": ("onion_mirrors",), "source_prefixes": ("onion_",),
                       "routes": ("onion_mirrors",),
-                      "why": ("allowlisted public onion mirrors read for ideas only, never live "
-                              "input: each mirror's own terms are UNREAD, and UNREAD terms never "
-                              "permit live input; off until the auditor rules on Tor egress "
-                              "versus the no-egress-rotation rule"),
-                      "unblock": ("the auditor's ruling on Tor egress (ONION_LANE.md), then a "
-                                  "per-mirror terms clause quoted here for any LIVE use"),
+                      "ruling": {"verdict": "PERMANENTLY_REFUSED", "ruled_by": "auditor",
+                                 "ruled_at": "2026-11-03",
+                                 "text": "no onion or Tor egress, ever; the lane is "
+                                         "permanently off"},
+                      "why": ("permanently refused, auditor 2026-11-03: no onion or Tor "
+                              "egress, ever; the onion lane is permanently off and nothing "
+                              "is fetched from any .onion host"),
+                      "unblock": "none: the ruling is permanent",
                       "missed_growth": {"delta_elogw": "UNMEASURED",
-                                        "cause": ("no onion mirror has been fetched (NEEDS_TOR, "
-                                                  "awaiting the auditor's egress ruling), so "
-                                                  "the ideas forgone are UNMEASURED, never "
-                                                  "zero")},
+                                        "cause": ("the onion lane is permanently refused "
+                                                  "(auditor 2026-11-03), so no onion mirror is "
+                                                  "ever fetched and the ideas forgone are "
+                                                  "UNMEASURED, never zero; the lawful public "
+                                                  "signal stays covered by Tor Metrics' "
+                                                  "clearnet CC0 statistics")},
                       "terms": {"url": "https://onion.torproject.org/",
                                 "checked_at": "2026-10-29",
                                 "unread": {"per-mirror": ("each mirror's publisher terms are "

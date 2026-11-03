@@ -1399,6 +1399,18 @@ def redact_url(url: str) -> str:
     return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(q), parts.fragment))
 
 
+#: A `name=value` pair anywhere in free text (an exception message quoting a URL, a log line).
+_TEXT_PAIR = re.compile(r"([A-Za-z_][\w-]*)=([^&\s'\"<>;,)]+)")
+
+
+def redact_text(text: object) -> str:
+    """`text` (an exception, a log line) with every credential-looking `name=value` pair's value
+    replaced by `REDACTED` -- the free-text sibling of `redact_url`, for anything printed."""
+    return _TEXT_PAIR.sub(
+        lambda m: f"{m.group(1)}=REDACTED" if _SECRET_PARAM.search(m.group(1)) else m.group(0),
+        str(text))
+
+
 def carries_secret(url: str) -> bool:
     return redact_url(url) != url
 

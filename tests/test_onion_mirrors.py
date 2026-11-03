@@ -1,14 +1,11 @@
-"""The onion allowlist fetcher, with no network and no Tor: the gates (NEEDS_TOR, awaiting the
-auditor's ruling), the scope validator (markets / forums / leaks refused), the SOCKS5h handshake
-against a fake proxy, the refusal of any non-onion host, and that a redirect is never followed.
-"""
+"""The onion lane is permanently refused (auditor ruling 2026-11-03): no env var or ruling file
+can open it, and the Tor Metrics producer never imports or calls it."""
 from __future__ import annotations
 
+import ast
 import json
 import socket
 import sys
-import threading
-import urllib.error
 from pathlib import Path
 from typing import Any
 
@@ -22,149 +19,64 @@ import pytest  # noqa: E402
 
 from research import onion_mirrors as O  # noqa: E402
 
-ONION = "a" * 56 + ".onion"
-ALLOWED = frozenset({"news", "public_institution", "open_data_project"})
 
-
-def _entry(**kw: Any) -> dict[str, Any]:
-    e = {"id": "x", "publisher": "Example Public Broadcaster", "category": "news",
-         "url": f"http://{ONION}/", "announced_at": "https://example.org/onion",
-         "why": "public news mirror"}
-    e.update(kw)
-    return e
-
-
-def test_committed_allowlist_validates_and_cites_publisher_pages() -> None:
-    doc = O.load_allowlist()
-    allowed = frozenset(doc["allowed_categories"])
-    assert doc["entries"]
-    for e in doc["entries"]:
-        assert O.validate(e, allowed) == "", e["id"]
-        assert e["announced_at"].startswith("https://")
-
-
-@pytest.mark.parametrize("bad, why", [
-    ({"url": "https://example.org/"}, "not a v3"),
-    ({"url": "http://abcdefghijklmnop.onion/"}, "not a v3"),
-    ({"url": f"http://{ONION}/?q=1"}, "query"),
-    ({"category": "market"}, "category"),
-    ({"why": "a carding forum mirror"}, "out of scope"),
-    ({"publisher": "Some Leaks Site"}, "out of scope"),
-    ({"why": "ransomware group blog"}, "out of scope"),
-    ({"announced_at": f"http://{ONION}/"}, "announced_at"),
-])
-def test_validator_refuses_out_of_scope_entries(bad: dict[str, Any], why: str) -> None:
-    assert why in O.validate(_entry(**bad), ALLOWED)
-
-
-def _allow(tmp: Path, entries: list[dict[str, Any]]) -> Path:
-    p = tmp / "allow.json"
-    p.write_text(json.dumps({"allowed_categories": sorted(ALLOWED), "entries": entries}), "utf-8")
-    return p
-
-
-def test_absent_socks_is_needs_tor_for_every_row(tmp_path: Path) -> None:
-    rep = O.run(environ={}, allowlist=_allow(tmp_path, [_entry(), _entry(id="y")]),
-                ruling=tmp_path / "none.json", write_report=False)
-    assert rep["gate"] == "UNMEASURED:NEEDS_TOR"
-    assert [r["status"] for r in rep["rows"]] == ["UNMEASURED:NEEDS_TOR"] * 2
-    assert rep["n_measured"] == 0
-
-
-def test_socks_without_ruling_stays_off(tmp_path: Path) -> None:
-    rep = O.run(environ={O.SOCKS_ENV: "127.0.0.1:9050"},
-                allowlist=_allow(tmp_path, [_entry()]), ruling=tmp_path / "none.json",
-                write_report=False)
-    assert rep["rows"][0]["status"] == "UNMEASURED:AWAITING_AUDITOR_RULING"
-    half = tmp_path / "half.json"
-    half.write_text(json.dumps({"allowed": True}), "utf-8")        # no named auditor
-    assert O.egress_ruling(half)[0] is False
-
-
-def test_refused_entries_are_reported_not_fetched(tmp_path: Path) -> None:
-    rep = O.run(environ={}, allowlist=_allow(tmp_path, [_entry(category="forum")]),
-                ruling=tmp_path / "none.json", write_report=False)
-    assert rep["rows"][0]["status"] == "REFUSED" and rep["n_refused"] == 1
-
-
-def test_socks5_connect_refuses_non_onion_before_any_socket() -> None:
-    with pytest.raises(OSError, match="non-onion"):
-        O.socks5_connect(("127.0.0.1", 1), "example.org", 80, 1.0)
-
-
-def _fake_socks() -> tuple[tuple[str, int], dict[str, Any], threading.Thread]:
-    srv = socket.socket()
-    srv.bind(("127.0.0.1", 0))
-    srv.listen(1)
-    seen: dict[str, Any] = {}
-
-    def serve() -> None:
-        c, _ = srv.accept()
-        with c:
-            seen["greet"] = c.recv(3)
-            c.sendall(b"\x05\x00")
-            head = c.recv(5)
-            name = c.recv(head[4])
-            port = c.recv(2)
-            seen["atyp"], seen["name"], seen["port"] = head[3], name.decode(), port
-            c.sendall(b"\x05\x00\x00\x01" + b"\x00" * 6)
-        srv.close()
-    t = threading.Thread(target=serve, daemon=True)
-    t.start()
-    return srv.getsockname(), seen, t
-
-
-def test_socks5_handshake_lets_the_proxy_resolve_the_name() -> None:
-    addr, seen, t = _fake_socks()
-    s = O.socks5_connect(addr, ONION, 80, 5.0)
-    s.close()
-    t.join(5)
-    assert seen["greet"] == b"\x05\x01\x00"
-    assert seen["atyp"] == 3 and seen["name"] == ONION and seen["port"] == b"\x00\x50"
-
-
-def test_open_gate_fetches_listed_url_only_and_never_follows_redirects(tmp_path: Path,
-                                                                       monkeypatch) -> None:
-    ruling = tmp_path / "ruling.json"
+def test_refuses_even_with_socks_env_and_an_allow_ruling(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("QUANT_TOR_SOCKS", "127.0.0.1:9050")
+    ruling = tmp_path / "ONION_EGRESS_RULING.json"
     ruling.write_text(json.dumps({"allowed": True, "ruled_by": "auditor",
-                                  "ruled_at": "2026-10-30"}), "utf-8")
-    monkeypatch.setattr(O, "RAW", tmp_path / "raw")
-    asked: list[str] = []
+                                  "ruled_at": "2026-11-03"}), "utf-8")
 
-    class _Resp:
-        status = 200
-        def __init__(self, url: str) -> None:
-            self.url = url
-            self.headers = {"Content-Type": "text/html"}
+    def no_socket(*a: Any, **k: Any) -> Any:
+        raise AssertionError("onion_mirrors opened a socket")
+    monkeypatch.setattr(socket, "create_connection", no_socket)
+    monkeypatch.setattr(socket.socket, "connect", no_socket)
+    rep = O.run(environ={"QUANT_TOR_SOCKS": "127.0.0.1:9050"}, ruling=ruling, dry_run=False)
+    assert O.REFUSED is True
+    assert rep["gate"] == O.GATE and rep["refused"] is True
+    assert rep["n_measured"] == 0 and rep["rows"] == []
 
-        def read(self, n: int = -1) -> bytes:
-            return b"<html><title>Mirror</title></html>"
 
-        def __enter__(self) -> _Resp:
-            return self
+def test_module_has_no_override_path() -> None:
+    src = (DESK / "research" / "onion_mirrors.py").read_text("utf-8")
+    tree = ast.parse(src)
+    names = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name)}
+    attrs = {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)}
+    imported = {a.name.split(".")[0] for n in ast.walk(tree)
+                if isinstance(n, (ast.Import, ast.ImportFrom)) for a in n.names}
+    imported |= {(n.module or "").split(".")[0] for n in ast.walk(tree)
+                 if isinstance(n, ast.ImportFrom)}
+    assert "environ" not in attrs and "getenv" not in attrs and "environ" not in names
+    assert not imported & {"os", "socket", "ssl", "http", "urllib", "libs"}
+    assert "QUANT_TOR_SOCKS" not in src and "ONION_EGRESS_RULING" not in src
+    assert not (DESK / "data" / "onion_allowlist.json").exists()
 
-        def __exit__(self, *a: Any) -> None:
-            return None
 
-    def opener(req: Any, timeout: float | None = None, context: Any = None) -> Any:
-        url = req.full_url
-        asked.append(url)
-        if url.endswith("/robots.txt"):
-            raise urllib.error.HTTPError(url, 404, "nf", {}, None)  # type: ignore[arg-type]
-        if "moved" in url:
-            raise urllib.error.HTTPError(url, 302, "Found",
-                                         {"Location": "http://elsewhere.onion/"},  # type: ignore[arg-type]
-                                         None)
-        return _Resp(url)
+def test_tor_metrics_never_imports_or_calls_onion_mirrors() -> None:
+    src = (DESK / "research" / "tor_metrics.py").read_text("utf-8")
+    tree = ast.parse(src)
+    for n in ast.walk(tree):
+        if isinstance(n, ast.ImportFrom):
+            assert "onion_mirrors" not in (n.module or "")
+            assert all("onion_mirrors" not in a.name for a in n.names)
+        elif isinstance(n, ast.Import):
+            assert all("onion_mirrors" not in a.name for a in n.names)
+        elif isinstance(n, ast.Attribute):
+            assert not (isinstance(n.value, ast.Name) and n.value.id == "onion_mirrors")
+    import importlib
+    T = importlib.import_module("research.tor_metrics")
+    assert "onion" not in T.run.__code__.co_varnames[:T.run.__code__.co_argcount
+                                                     + T.run.__code__.co_kwonlyargcount]
 
-    from libs.data import polite_fetch as pf
-    acc = pf.HostAccess(tmp_path / "access.json")
-    monkeypatch.setattr(pf, "default_access", lambda: acc)
-    entries = [_entry(id="ok"), _entry(id="moved", url=f"http://{'b' * 56}.onion/moved")]
-    rep = O.run(environ={O.SOCKS_ENV: "127.0.0.1:9050"}, allowlist=_allow(tmp_path, entries),
-                ruling=ruling, opener=opener, write_report=False)
-    by = {r["id"]: r for r in rep["rows"]}
-    assert by["ok"]["status"] == "MEASURED" and by["ok"]["title"] == "Mirror"
-    assert by["moved"]["status"] == "REDIRECT_NOT_FOLLOWED"
-    assert not any("elsewhere" in u for u in asked)
-    assert {u.split("/")[2] for u in asked} <= {ONION, "b" * 56 + ".onion"}
+
+def test_terms_row_states_the_ruling_with_missed_growth() -> None:
+    from libs.data import terms_fence as tf
+    row = tf.SOURCE_POLICY["onion_mirrors"]
+    assert "permanently refused" in row["why"] and "2026-11-03" in row["why"]
+    assert row["missed_growth"]["delta_elogw"]
+    assert tf.input_source("http://" + "a" * 56 + ".onion/") == "onion_mirrors"
+
+
+@pytest.mark.parametrize("argv", [[], ["--once"], ["--once", "--dry-run"]])
+def test_cli_refuses(argv: list[str], capsys) -> None:
+    assert O.main(argv) == 0
+    assert O.GATE in capsys.readouterr().out
