@@ -36,6 +36,9 @@ ROOT = Path(__file__).resolve().parents[2]
 WRAPPER = "WRAPPER"
 NOT_SCRAPING = "NOT_SCRAPING"
 PENDING = "PENDING"
+#: A door that reads robots.txt as a routing LABEL under LAWS 5e (5e REMOVED_BRAKES) and keeps every
+#: other polite_fetch rule (holds, honest UA, host spacing, hard stop on an access control).
+LABELLED_ROBOTS = "LABELLED_ROBOTS"
 
 #: path -> (category, reason). Keep it EXPLICIT: one line per file, never a directory glob.
 ALLOWED: dict[str, tuple[str, str]] = {
@@ -84,6 +87,11 @@ ALLOWED: dict[str, tuple[str, str]] = {
                                                              "(testnet orders), keyed"),
     "scripts/_retired/pull_cme.py": (NOT_SCRAPING, "retired licensed keyed historical-data API "
                                                    "(Databento), under contract"),
+    # ---- robots read as a LABEL (docs/LAWS.md 5e: "robots.txt Disallow read as a refusal" is a
+    # deleted brake); the person-held holds, DESK_UA, polite_fetch.GATE spacing and the
+    # 401/403/429/WAF hard stop (recorded with polite_fetch.hold_site) are all kept
+    "desks/mt5/research/jp_retail_flow.py": (LABELLED_ROBOTS, "TFX / JPX / FFAJ doors: robots "
+                                                              "is access_label(), never a stop"),
     # ---- pending: changed on another branch of the 2026-10-14 landing train
     "desks/mt5/research/source_fixer.py": (PENDING, "claude/source-fixer-hard-stop (fixer probes "
                                                     "+ Wayback; holds in the shared store)"),
@@ -172,7 +180,7 @@ def test_every_allowlisted_file_exists_and_still_needs_its_entry() -> None:
 
 def test_every_entry_names_a_category_and_a_reason() -> None:
     for rel, (cat, why) in ALLOWED.items():
-        assert cat in (WRAPPER, NOT_SCRAPING, PENDING), rel
+        assert cat in (WRAPPER, NOT_SCRAPING, PENDING, LABELLED_ROBOTS), rel
         assert len(why) > 10, rel
 
 

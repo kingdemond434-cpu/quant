@@ -169,10 +169,13 @@ def desk_transport(url: str, timeout: float) -> bytes:
         raise HardStop("held", url, f"site held for a person ({held})")
     _pf.GATE.wait(_pf.hostname_of(url), at_least=POLITE_GAP_S)     # per-host spacing, shared
     req = urllib.request.Request(url, headers=_pf.honest_headers({"Accept": "*/*"}))
-    opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=_pf.ssl_context()),
-                                         _Redirects())
+    # A RAW SEND, audited on tests/data/test_no_raw_fetchers.ALLOWED: polite_fetch's seams read
+    # robots as a refusal, which LAWS 5e lists among the deleted brakes; robots is read here as a
+    # label instead (`access_label`), and the seam's holds, honest UA and host gate are kept above.
     try:
-        with opener.open(req, timeout=timeout) as resp:
+        with urllib.request.build_opener(
+                urllib.request.HTTPSHandler(context=_pf.ssl_context()),
+                _Redirects()).open(req, timeout=timeout) as resp:
             body = resp.read(MAX_BYTES + 1)
             headers, status = resp.headers, int(getattr(resp, "status", 200) or 200)
     except HardStop:
