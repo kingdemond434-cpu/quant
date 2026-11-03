@@ -113,7 +113,8 @@ MAX_SAMPLES = 96
 #: writes `""` for an evaluated, unruled row; reading that as broken would fail on nearly every
 #: healthy clock. Mirrors `forward_enrolment.ACCRUING_STATUSES` ON PURPOSE -- the two must agree
 #: about what "working" means, and disagree only about whether a label is evidence of it.
-WORKING_STATUSES = frozenset({"", "ACTIVE", "NONE", "UNMEASURED"})
+WORKING_STATUSES = frozenset({"", "ACTIVE", "NONE", "UNMEASURED", "ACCUMULATING",
+                              "PROXY_SHADOW"})
 
 #: A verdict, not a stall: the clock did its job and the desk decided.
 DECIDED_STATUSES = frozenset({"KILL", "PROMOTED", "DEAD", "REJECTED", "RETIRED",
@@ -219,6 +220,16 @@ def clock_keys(certs: list[dict[str, Any]],
     keys: dict[str, str] = {}
     notes: list[str] = []
     for c in certs:
+        # THE SCALP AND QQUANT LANES DO NOT KEY BY `sleeve_key`. A scalp clock is its candidate
+        # row under `scalp_shadow_state.json["sleeves"]`; a qquant clock is keyed by the
+        # certificate's own name. Deriving the H1 key for them convicted running clocks of
+        # NO_CLOCK (research/clock_accrual.clock_address is the same rule).
+        if c["name"].startswith("scalp."):
+            keys[c["name"]] = c["name"][len("scalp."):]
+            continue
+        if c["name"].startswith("qquant."):
+            keys[c["name"]] = c["name"]
+            continue
         try:
             keys[c["name"]] = sf.sleeve_key(c["symbol"], c["selector"], dict(c["params"]),
                                             c["family"], c["side"])
@@ -239,6 +250,11 @@ def clock_rows(desk: Path | None = None) -> tuple[dict[str, dict[str, Any]], lis
         for key, row in doc.items():
             if isinstance(row, dict) and "n" in row:
                 rows.setdefault(str(key), {**row, "lane": lane})
+        nested = doc.get("sleeves")
+        if isinstance(nested, dict):
+            for key, row in nested.items():
+                if isinstance(row, dict) and "n" in row:
+                    rows.setdefault(str(key), {**row, "lane": lane})
     if not rows:
         notes.append(f"no lane state file under {base} carries a clock row: clocks {UNMEASURED}")
     return rows, notes

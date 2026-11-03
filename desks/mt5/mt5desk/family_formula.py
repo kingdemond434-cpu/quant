@@ -84,6 +84,18 @@ def family_formula(
     close = d["close"].to_numpy(dtype=float)
     idx = d.index
     flip = 1 if side_mode == "follow" else -1
+    from mt5desk import families_vector as _vec
+    if _vec.enabled():
+        # Speed only: the same signals from the bars that pass the filters (families_vector).
+        try:
+            fast = _vec.formula_emit(z=z, atr=atr, close=close, idx=idx, norm=norm,
+                                     entry_z=entry_z, hold_bars=hold_bars, flip=flip,
+                                     side_mode=side_mode, stop_atr=stop_atr, rr=rr)
+        except Exception as exc:
+            _vec.fell_back("formula", exc)
+            fast = None
+        if fast is not None:
+            return fast
     signals: list[Signal] = []
     last = -10 ** 9
     for i in range(int(norm), len(idx) - 1):

@@ -63,7 +63,8 @@ def test_the_real_step_order_is_shadow_then_promoter_then_markout():
     # 2026-09-17: the day now CLOSES with the research OS release train (M20); the export step
     # stays, immediately before it.
     assert "export_aurum" in names and names[-1] == "daily_research_os"
-    assert names[-2] == "export_aurum" and names[0] == "research_gap_map"
+    assert names[-2] == "export_aurum"
+    assert names[:2] == ["weekly_hunt_refresh", "research_gap_map"]
 
 
 def test_it_runs_once_per_utc_day(cyc, monkeypatch):

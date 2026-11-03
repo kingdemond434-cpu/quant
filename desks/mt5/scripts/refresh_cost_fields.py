@@ -29,7 +29,10 @@ editing when the universe changes.
 from __future__ import annotations
 
 import json
+import os
 import sys
+import tempfile
+import argparse
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -43,11 +46,12 @@ REGISTRY = BASE / "data" / "universe" / "universe.json"
 OUT = BASE / "data" / "cost_field_refresh.json"
 
 
-def refresh(registry: dict[str, Any], mt5: Any) -> tuple[dict[str, Any], dict[str, Any]]:
+def refresh(registry: dict[str, Any], mt5: Any, *, symbols: set[str] | None = None) -> tuple[dict[str, Any], dict[str, Any]]:
     """Return (merged registry, report). Pure apart from the mt5 reads, so it is testable."""
     incoming: dict[str, Any] = {}
     unanswered: list[str] = []
-    for sym in sorted(k for k, v in registry.items() if isinstance(v, dict)):
+    for sym in sorted(k for k, v in registry.items() if isinstance(v, dict)
+                      and (symbols is None or k in symbols)):
         try:
             mt5.symbol_select(sym, True)
             info = mt5.symbol_info(sym)
@@ -67,6 +71,12 @@ def refresh(registry: dict[str, Any], mt5: Any) -> tuple[dict[str, Any], dict[st
         present = registry.get(sym) or {}
         fields = {k: v for k, v in cost_fields_from_symbol_info(info).items()
                   if present.get(k) in (None, 0, 0.0, "")}
+        # The promoter's live cost identity includes both financing directions. These are
+        # genuine broker terms even when one direction is zero; keep the broker's mode too.
+        for key in ("swap_long", "swap_short", "swap_mode"):
+            value = getattr(info, key, None)
+            if value is not None and present.get(key) is None:
+                fields[key] = value
         if fields:
             incoming[sym] = fields
         elif present.get("tick_value") in (None, 0, 0.0):
@@ -89,6 +99,9 @@ def refresh(registry: dict[str, Any], mt5: Any) -> tuple[dict[str, Any], dict[st
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--symbols", nargs="*", help="restrict broker refresh to these registry symbols")
+    args = ap.parse_args()
     try:
         import MetaTrader5 as mt5
     except ImportError:
@@ -97,13 +110,31 @@ def main() -> int:
     if mt5.terminal_info() is None and not mt5.initialize():
         print(f"refresh_cost_fields: terminal unavailable {mt5.last_error()}")
         return 2
-    try:
-        registry = json.loads(REGISTRY.read_text("utf-8"))
-    except (OSError, ValueError) as exc:
-        print(f"refresh_cost_fields: registry unreadable ({exc}) -- REFUSING to write")
+    wanted = set(args.symbols) if args.symbols else None
+    for attempt in range(3):
+        try:
+            before = REGISTRY.read_bytes()
+            registry = json.loads(before)
+        except (OSError, ValueError) as exc:
+            print(f"refresh_cost_fields: registry unreadable ({exc}) -- REFUSING to write")
+            return 2
+        merged, report = refresh(registry, mt5, symbols=wanted)
+        if REGISTRY.read_bytes() != before:
+            continue  # an independent collector wrote meanwhile; recompute on its new state
+        fd, tmp = tempfile.mkstemp(prefix=".cost-refresh-", suffix=".json", dir=REGISTRY.parent)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as out:
+                json.dump(merged, out, indent=2)
+            if REGISTRY.read_bytes() != before:
+                continue
+            os.replace(tmp, REGISTRY)
+        finally:
+            if Path(tmp).exists():
+                Path(tmp).unlink()
+        break
+    else:
+        print("refresh_cost_fields: registry changed three times -- refusing to clobber")
         return 2
-    merged, report = refresh(registry, mt5)
-    REGISTRY.write_text(json.dumps(merged, indent=2), encoding="utf-8")
     OUT.write_text(json.dumps(report, indent=1), encoding="utf-8")
     print(f"refresh_cost_fields: costable {report['costable_before']} -> "
           f"{report['costable_after']} of {report['rows']} "

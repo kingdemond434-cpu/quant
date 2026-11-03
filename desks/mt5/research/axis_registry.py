@@ -168,8 +168,6 @@ _FAMILY_GROUPS: dict[str, str] = {
     "positioning_crowding positioning market": "cot_change_fade cot_change_momentum"
                                                " cot_comm_follow cot_net_fade cot_positioning"
                                                " retail_overlap_reversal",
-    "calendar_seasonality seasonality market": "calendar_month dow_effect turn_of_month"
-                                               " mass_screen_clock",
     "relative_value_dislocation cross_asset market": "correlation_regime cross_asset_residual"
                                                      " cross_sectional pca_residual"
                                                      " relative_value style_premia"
@@ -177,10 +175,11 @@ _FAMILY_GROUPS: dict[str, str] = {
                                                      " cross_sectional_class_low_vol",
     "relative_value_dislocation microstructure limit": "triangle",
     "cross_market_lead cross_asset market": "gold_dxy_shock lead_lag lead_lag_class_catchup"
-                                            " gnn_propagation mass_screen_lead",
+                                            " gnn_propagation mass_screen_lead"
+                                            " ae_latent",
     # The learned attention forecast (2026-09-30, research/learned_miners): whether a move is a
     # concession that reverts or information that continues, read off the recent path.
-    "inventory_shock price_only market": "attention_ts",
+    "inventory_shock price_only market": "attention_ts rocket_ts sig_path",
     # The Alpha Capture substitute (2026-09-30): a dated public view ABOUT the instrument drifts
     # because holders under-react (trend_persistence's payer); another market's view leads the
     # instrument because the slow venue reprices late (cross_market_lead's payer).
@@ -191,8 +190,23 @@ _FAMILY_GROUPS: dict[str, str] = {
     "trend_persistence cross_asset market": "cross_sectional_class_momentum",
     "range_reversion cross_asset market": "cross_sectional_class_reversal",
     "forced_liquidation cross_asset market": "crisis_only_class_defensive",
+    # The specialist families of 2026-09-30 (`mt5desk.families_specialist`). Carry unwound on a
+    # risk proxy's break is a margin call on the levered carry holder; the month-end rebalance
+    # bets on a fixed-weight allocator's flow against the equity-minus-bond gap; a crop-cycle
+    # window is a calendar-constrained hedger's premium. `entry_conditioned` is an OPERATOR over a
+    # base cell, like `exit_operated`: its mechanism is its base's, so no single row names it.
+    # NEITHER OF THE FIRST TWO IS PRICE-ONLY: carry_risk_off reads the swap terms (exogenous) and
+    # a risk proxy's bars; month_end_rebalance conditions on a bond proxy's bars. Their
+    # information source is `carry` / `cross_asset` here and `exogenous` / `conditioned` in
+    # `gauntlet_buildability.information_class`; a test pins that neither reads `price_only`.
+    "forced_liquidation carry market": "carry_risk_off",
+    "calendar_seasonality cross_asset market": "month_end_rebalance",
+    "calendar_seasonality seasonality market": "calendar_month dow_effect turn_of_month"
+                                               " mass_screen_clock seasonal_window",
+    # hunt16_cell (2026-09-30) rebuilds the hunt16 dav_range_filter_adx cells (side, signal hour,
+    # day state) through the registry door, so it sits with its base family.
     "range_reversion price_only limit": "dav_range_filter_adx ict_fvg mean_reversion_bollinger"
-                                        " mean_reversion_rsi range_reversion",
+                                        " mean_reversion_rsi range_reversion hunt16_cell",
     "range_reversion price_only market": "engulfing_reversal pin_bar_reversal",
     "breakout_liquidity price_only stop": "anti_donchian_breakout d1_swing_break level_breakout"
                                           " london_ny_breakout opening_range"
@@ -214,7 +228,7 @@ _FAMILY_GROUPS: dict[str, str] = {
     # feature-threshold rule names no payer, so the mechanism is UNKNOWN and counted, not guessed.
     f"{UNKNOWN} price_only market": "discovered mass_screen_cond mass_screen_thresh",
     f"{UNKNOWN} price_only {UNKNOWN}": "ensemble formula generic joint_genome exit_operated"
-                                       " alt_conditioned",
+                                       " alt_conditioned entry_conditioned",
     # Registered 2026-09-23/24 in `families_orthogonal`. `exit_operated` is an OPERATOR over any
     # base family's entries, so its mechanism and style are its base's and no single row names
     # them. `exogenous_conditioner` bets on a data pack's own published series (a market-order
@@ -238,7 +252,7 @@ for _key, _fams in _FAMILY_GROUPS.items():
 #: configuration) that only research/learned_miners names and charges; proposed bare they would
 #: carry no panel and fire nothing.
 NOT_A_FAMILY = frozenset({"generic", "formula", "ensemble", "cross_sectional", "joint_genome",
-                          "gnn_propagation", "attention_ts"})
+                          "gnn_propagation", "attention_ts", "rocket_ts", "ae_latent", "sig_path"})
 
 RULE = ("a cell is UNMEASURED until a source says otherwise, the strongest source wins "
         "(LIVE>FORWARD>CERTIFIED>MEASURED_FAIL>UNMEASURED), an unmapped family is UNKNOWN and "

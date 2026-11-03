@@ -120,7 +120,8 @@ VERIFIED = DATA / "spread_repair_verified.json"
 #: the quote published here, so a sleeve whose symbol this organ never measured would be
 #: UNRESOLVED in that fence forever -- the audit must cover what it audits.
 SLEEVE_REGISTRY = DATA / "sleeve_registry.json"
-LIVE_LEDGER = DATA / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER = _audited_ledger_path(DATA / "live_ledger.jsonl")
 INTENTS = DATA / "order_intents.jsonl"
 #: The fill recorder's measurement of the desk's own executions. Impact was published here as
 #: UNMEASURED "because matched_fills is 0" -- a sentence, not a reading, and it stayed after the
@@ -835,12 +836,9 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
         # The login is WITHHELD: this snapshot is committed, and a tracked file must never name
         # the live account (tests/ops/test_live_infrastructure_is_not_published.py). Nothing
         # reads it from here; the terminal itself answers mt5.account_info().login on the box.
-        out["account"] = {"login_withheld": getattr(acct, "login", None) is not None,
-                          "currency": getattr(acct, "currency", None),
-                          "company": getattr(acct, "company", None),
-                          "server": getattr(acct, "server", None),
-                          "margin_mode": getattr(acct, "margin_mode", None),
-                          "leverage": getattr(acct, "leverage", None)}
+        # The SAME rule the publisher applies to an already-written copy (v5g): one helper.
+        from libs.ops.account_withhold import account_block
+        out["account"] = account_block(acct)
         out["terminal"] = {"name": getattr(term, "name", None),
                            "connected": getattr(term, "connected", None),
                            "build": getattr(term, "build", None)}

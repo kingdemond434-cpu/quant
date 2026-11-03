@@ -71,6 +71,8 @@ import numpy as np
 
 BASE = Path(__file__).resolve().parent.parent          # desks/mt5
 ROOT = BASE.parent.parent                              # repo root
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 N_BUCKETS = 1 << 15
 TOKENISER = "v1:alnum2+cjk1"
@@ -118,6 +120,7 @@ def home() -> Path:
 def sources() -> dict[str, Path]:
     """Every corpus source by kind. `commit` has no path -- it is read from git."""
     desk, repo = _desk(), _repo()
+    from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
     return {"lesson": repo / "docs" / "desk_lessons.jsonl",
             "hypothesis": desk / "data" / "hypothesis_graph.jsonl",
             "verdict": desk / "data" / "hypotheses" / "gate_verdict_ledger.jsonl",
@@ -125,7 +128,7 @@ def sources() -> dict[str, Path]:
             "claim": desk / "reports" / "DEEP_FOREST.json",
             "llm_hypothesis": desk / "data" / "intelligence",
             "genome": desk / "reports" / "ALPHA_GENOME.json",
-            "trade_outcome": desk / "data" / "live_ledger.jsonl"}
+            "trade_outcome": _audited_ledger_path(desk / "data" / "live_ledger.jsonl")}
 
 
 @dataclass
