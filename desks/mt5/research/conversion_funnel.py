@@ -671,20 +671,95 @@ def conversion_fence(funnel: Iterable[Mapping[str, Any]],
                     "never GREEN"}
 
 
-def refresh_conversion_ledger(desk: Path, *, deadline: float) -> dict[str, Any]:
+def _ledger_shape(doc: Any) -> dict[str, Any]:
+    """The parts of conversion_ledger.json its readers allocate from: per-stage rates, the
+    binding stage, and each cell type's share of trials (trial_allocator / build_allocator)."""
+    if not isinstance(doc, Mapping):
+        return {}
+    stages = {str(s.get("name")): s.get("rate") for s in (doc.get("stages") or [])
+              if isinstance(s, Mapping) and s.get("name")}
+    cells = [c for c in (doc.get("cell_type_yield") or []) if isinstance(c, Mapping)]
+    total = sum(float(c.get("tried") or 0) for c in cells)
+    shares = ({f"{c.get('family')} x {c.get('asset_class')}":
+               round(float(c.get("tried") or 0) / total, 6) for c in cells} if total > 0 else {})
+    return {"generated_utc": doc.get("generated_utc"), "binding_stage": doc.get("binding_stage"),
+            "binding_rate": doc.get("binding_rate"), "stage_rates": stages,
+            "trial_shares": shares}
+
+
+def refresh_delta(before: Any, after: Any, *, top: int = 20) -> dict[str, Any]:
+    """WHAT A REFRESH MOVED (audit of #611). build_allocator, bottleneck_law and trial_allocator
+    allocate research compute from this ledger, so a re-measure after a long freeze shifts that
+    allocation in one step. The before/after stage rates, binding stage and cell-type trial
+    shares are published beside it, so the jump is a recorded transition, never a quiet edit."""
+    b, a = _ledger_shape(before), _ledger_shape(after)
+    if not b:
+        return {"status": "NO_PRIOR", "after": {k: a.get(k) for k in
+                                                ("generated_utc", "binding_stage", "binding_rate")}}
+
+    def _diff(x: Mapping[str, Any], y: Mapping[str, Any]) -> list[dict[str, Any]]:
+        rows = []
+        for k in sorted(set(x) | set(y)):
+            vx, vy = x.get(k), y.get(k)
+            d = (round(float(vy) - float(vx), 6)
+                 if isinstance(vx, (int, float)) and isinstance(vy, (int, float)) else None)
+            if vx != vy:
+                rows.append({"key": k, "before": vx, "after": vy, "delta": d})
+        rows.sort(key=lambda r: -abs(r["delta"]) if r["delta"] is not None else 0.0)
+        return rows[:top]
+
+    prior_at = _parse_ts(b.get("generated_utc"))
+    stage_moves = _diff(b["stage_rates"], a.get("stage_rates") or {})
+    share_moves = _diff(b["trial_shares"], a.get("trial_shares") or {})
+    return {
+        "status": "MEASURED",
+        "before_generated_utc": b.get("generated_utc"),
+        "after_generated_utc": a.get("generated_utc"),
+        "prior_age_h": (round((_now() - prior_at).total_seconds() / 3600, 1)
+                        if prior_at else None),
+        "binding_before": b.get("binding_stage"), "binding_after": a.get("binding_stage"),
+        "binding_changed": b.get("binding_stage") != a.get("binding_stage"),
+        "binding_rate_before": b.get("binding_rate"), "binding_rate_after": a.get("binding_rate"),
+        "stage_rate_moves": stage_moves,
+        "trial_share_moves": share_moves,
+        "max_abs_stage_rate_delta": max((abs(r["delta"]) for r in stage_moves
+                                         if r["delta"] is not None), default=0.0),
+        "max_abs_trial_share_delta": max((abs(r["delta"]) for r in share_moves
+                                          if r["delta"] is not None), default=0.0),
+        "readers": ["research/build_allocator.py", "research/bottleneck_law.py",
+                    "research/trial_allocator.py"],
+    }
+
+
+def refresh_conversion_ledger(desk: Path, *, deadline: float,
+                              events_path: Path | None = None) -> dict[str, Any]:
     """Re-measure data/conversion_ledger.json on this clock. It was last written 2026-09-05 (its
     only caller, hourly_discovery, runs nowhere) while build_allocator, bottleneck_law and
-    trial_allocator kept reading it. Skipped, and SAID so, when the pass has no time left."""
+    trial_allocator kept reading it. Skipped, and SAID so, when the pass has no time left.
+    Every refresh publishes its `refresh_delta` and appends one DATA_UPDATED event."""
     if time.monotonic() > deadline:
         return {"status": "SKIPPED", "why": "pass budget spent before the ledger refresh"}
+    before = _read(desk / "data" / "conversion_ledger.json")
     try:
         from research import conversion_ledger
         doc = conversion_ledger.run(desk)
     except Exception as exc:
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}"}
+    delta = refresh_delta(before, doc)
+    with contextlib.suppress(Exception):
+        from libs.ops import events
+        events.emit("DATA_UPDATED", events_path, producer=SEAT,
+                    topic="conversion_ledger_refresh",
+                    artifact="desks/mt5/data/conversion_ledger.json",
+                    status=delta.get("status"), prior_age_h=delta.get("prior_age_h"),
+                    binding_before=delta.get("binding_before"),
+                    binding_after=delta.get("binding_after"),
+                    binding_changed=delta.get("binding_changed"),
+                    max_abs_stage_rate_delta=delta.get("max_abs_stage_rate_delta"),
+                    max_abs_trial_share_delta=delta.get("max_abs_trial_share_delta"))
     return {"status": "WRITTEN", "artifact": "desks/mt5/data/conversion_ledger.json",
             "binding_stage": doc.get("binding_stage"), "binding_rate": doc.get("binding_rate"),
-            "stages_measured": doc.get("stages_measured")}
+            "stages_measured": doc.get("stages_measured"), "refresh_delta": delta}
 
 
 def build(paths: Paths, conn: sqlite3.Connection | None, *, budget_s: float,
@@ -785,6 +860,8 @@ def main(argv: list[str] | None = None) -> int:
     _atomic_write(paths.out, doc)
     doc["conversion_ledger"] = refresh_conversion_ledger(
         a.desk, deadline=t_start + budget * 0.5)
+    doc["refresh_delta"] = doc["conversion_ledger"].pop(
+        "refresh_delta", {"status": doc["conversion_ledger"].get("status")})
     _atomic_write(paths.out, doc)
     if a.json:
         print(json.dumps(doc, indent=1, default=str))

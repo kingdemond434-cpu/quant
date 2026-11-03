@@ -6,9 +6,12 @@ pin the per-stage fence, its carried stall counter, the ledger refresh, and the 
 """
 from __future__ import annotations
 
+import json
 import sys
 import time
 from pathlib import Path
+
+import pytest
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
@@ -74,3 +77,62 @@ def test_the_funnel_and_the_ledger_are_published_from_the_box() -> None:
     for rel in ("desks/mt5/reports/CONVERSION_FUNNEL.json",
                 "desks/mt5/data/conversion_ledger.json"):
         assert f'"{rel}"' in block, rel
+
+
+def _ledger(at: str, binding: str, rates: dict[str, float],
+            tried: dict[tuple[str, str], int]) -> dict:
+    return {"generated_utc": at, "binding_stage": binding, "binding_rate": min(rates.values()),
+            "stages": [{"name": k, "rate": v} for k, v in rates.items()],
+            "cell_type_yield": [{"family": f, "asset_class": c, "tried": n}
+                                for (f, c), n in tried.items()]}
+
+
+def test_a_refresh_records_what_it_moved() -> None:
+    before = _ledger("2026-09-05T14:36:50+00:00", "verdict -> cert",
+                     {"verdict -> cert": 0.001, "cert -> clock": 1.0},
+                     {("discovered", "equity"): 75, ("srb", "fx"): 25})
+    after = _ledger("2026-11-03T17:00:00+00:00", "card -> verdict",
+                    {"verdict -> cert": 0.02, "cert -> clock": 1.0, "card -> verdict": 0.0001},
+                    {("discovered", "equity"): 25, ("srb", "fx"): 75})
+    d = cf.refresh_delta(before, after)
+    assert d["status"] == "MEASURED" and d["binding_changed"] is True
+    assert d["binding_before"] == "verdict -> cert" and d["binding_after"] == "card -> verdict"
+    moves = {r["key"]: r for r in d["stage_rate_moves"]}
+    assert moves["verdict -> cert"]["delta"] == pytest.approx(0.019)
+    assert moves["card -> verdict"]["before"] is None
+    assert "cert -> clock" not in moves
+    shares = {r["key"]: r for r in d["trial_share_moves"]}
+    assert shares["discovered x equity"]["delta"] == pytest.approx(-0.5)
+    assert d["max_abs_trial_share_delta"] == pytest.approx(0.5)
+    assert d["prior_age_h"] is not None and d["prior_age_h"] > 24
+
+
+def test_a_first_refresh_says_there_was_no_prior() -> None:
+    d = cf.refresh_delta(None, _ledger("2026-11-03T17:00:00+00:00", "a", {"a": 0.1}, {}))
+    assert d["status"] == "NO_PRIOR" and d["after"]["binding_stage"] == "a"
+
+
+def test_the_refresh_publishes_its_delta_and_one_event(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    desk = tmp_path / "desk"
+    (desk / "data").mkdir(parents=True)
+    old = _ledger("2026-09-05T14:36:50+00:00", "x", {"x": 0.001}, {("a", "b"): 1})
+    (desk / "data" / "conversion_ledger.json").write_text(json.dumps(old), "utf-8")
+    new = _ledger("2026-11-03T17:00:00+00:00", "y", {"x": 0.5, "y": 0.0001}, {("a", "b"): 1})
+
+    import research.conversion_ledger as cl
+
+    def fake_run(base: Path) -> dict:
+        (base / "data" / "conversion_ledger.json").write_text(json.dumps(new), "utf-8")
+        return dict(new)
+
+    monkeypatch.setattr(cl, "run", fake_run)
+    events_path = tmp_path / "events.jsonl"
+    out = cf.refresh_conversion_ledger(desk, deadline=time.monotonic() + 60,
+                                       events_path=events_path)
+    assert out["status"] == "WRITTEN"
+    assert out["refresh_delta"]["binding_changed"] is True
+    rows = [json.loads(x) for x in events_path.read_text("utf-8").splitlines()]
+    assert len(rows) == 1
+    assert rows[0]["kind"] == "DATA_UPDATED" and rows[0]["topic"] == "conversion_ledger_refresh"
+    assert rows[0]["binding_after"] == "y" and not rows[0].get("unknown_kind")
