@@ -490,12 +490,12 @@ def checks(
 GH_TIMEOUT_S = 120
 
 
-def _gh(*args: str, data: Mapping[str, Any] | None = None) -> Any:
+def _gh(*args: str, data: Mapping[str, Any] | None = None, timeout: float | None = None) -> Any:
     cmd = ["gh", "api", *args]
     if data is not None:
         cmd += ["--input", "-"]
     try:
-        p = _gh_run(cmd, data)
+        p = _gh_run(cmd, data) if timeout is None else _gh_run(cmd, data, timeout)
     except subprocess.TimeoutExpired as exc:
         # A TIMEOUT IS A FAILED CALL, NOT A CRASH (2026-11-03): raised raw, one slow check-runs
         # read aborted the whole box sweep -- 378 times from 10-30 to 11-03, no merge in between.
@@ -506,7 +506,9 @@ def _gh(*args: str, data: Mapping[str, Any] | None = None) -> Any:
     return json.loads(p.stdout) if p.stdout.strip() else None
 
 
-def _gh_run(cmd: list[str], data: Mapping[str, Any] | None) -> subprocess.CompletedProcess[str]:
+def _gh_run(
+    cmd: list[str], data: Mapping[str, Any] | None, timeout: float | None = None
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         cmd,
         input=json.dumps(data) if data is not None else None,
@@ -519,7 +521,7 @@ def _gh_run(cmd: list[str], data: Mapping[str, Any] | None) -> subprocess.Comple
         check=False,
         # A hung gh held the box sweep's mutex from 13:53Z on 2026-10-29 and no sweep ran after:
         # every call ends, and a timeout is an error the sweep logs (it never merges on one).
-        timeout=GH_TIMEOUT_S,
+        timeout=GH_TIMEOUT_S if timeout is None else timeout,
     )
 
 
@@ -1274,6 +1276,13 @@ def run(
 
 #: How long one box sweep may run before it stops and leaves the rest to the next one.
 SWEEP_BUDGET_S = 15 * 60
+#: THE ORDER READ IS CHEAP OR IT IS SKIPPED (Desk health 2026-11-03 19:08Z: inside the box task a
+#: check-runs read averaged 13 s with 120 s stalls, so 209 open PRs spent the whole budget on the
+#: pre-read and no sweep reached a merge from 17:07Z). Each read gets PRE_READ_TIMEOUT_S, and the
+#: pre-read stops at PRE_READ_SHARE of the budget; a PR it did not reach is ordered last, never
+#: dropped, and its full run still decides.
+PRE_READ_TIMEOUT_S = 20.0
+PRE_READ_SHARE = 0.4
 
 
 def to_revert(commits: list[Mapping[str, Any]], ci: Mapping[str, list[str]]) -> list[str]:
@@ -1380,18 +1389,33 @@ def sweep(
     # quarantines it and counts in rc; #552 audit SF4), then checks still running. The read is
     # ORDER ONLY: no PR is dropped on it, so a forged check run can reorder but never hide one
     # (#552 audit SF3); every merge and bring-up decides on provenance-checked runs.
+    # REGISTRY FIRST: a PR whose latest registry row CLEARs its exact listed head is the one a
+    # sweep can merge without zuck, so it is run before any order read (an ordering only: its
+    # full run still checks the window, every job and the HOLDs).
+    reg_rows, _ = registry_rows(os.environ.get(REGISTRY_ENV))
+    latest = {r.get("pr"): r for r in reg_rows}
     ready: list[tuple[int, int, int]] = []
     bring_ups = [BRING_UPS_PER_SWEEP]
+    read_until = clock() + budget_s * PRE_READ_SHARE
+    unread = 0
     for i, p in enumerate(_flat(pages)):
-        if clock() > deadline:  # the pre-read is inside the budget too (#552 audit SF6)
-            _summary("sweep budget spent while reading checks; the next sweep goes on")
-            break
         n = int(p["number"])
         head = str((p.get("head") or {}).get("sha") or "")
+        row = latest.get(n) or {}
+        if head and row.get("verdict") == "CLEAR" and row.get("sha") == head:
+            ready.append((-1, i, n))
+            continue
+        if clock() > min(deadline, read_until):  # the pre-read is inside the budget (#552 SF6)
+            unread += 1
+            ready.append((4, i, n))  # never dropped: ordered after every PR that was read
+            continue
         rank = 1
         if head:  # no sha in the listing: no shortcut, the full run decides
             try:
-                got = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100")
+                got = _gh(
+                    f"repos/{repo}/commits/{head}/check-runs?per_page=100",
+                    timeout=PRE_READ_TIMEOUT_S,
+                )
             # A TIMEOUT SKIPS ONE PR (Desk health 2026-11-03: 378 sweeps since 10-30 died on one
             # 120 s gh TimeoutExpired here, so every sweep read "0 looked at" and merged nothing).
             except (RuntimeError, subprocess.SubprocessError) as exc:
@@ -1410,6 +1434,9 @@ def sweep(
                 every = checks(runs, GATING_JOBS + AUTO_JOBS, lambda r: True)[0]
                 rank = 0 if every == "pass" else 1
         ready.append((rank, i, n))
+    if unread:
+        _summary(f"order read stopped at {PRE_READ_SHARE:.0%} of the budget; {unread} PR(s) unread "
+                 "go last")  # fmt: skip
     for _rank, _i, n in sorted(ready):
         if clock() > deadline:
             _summary(f"sweep budget of {budget_s / 60:.0f} min spent after {looked} PRs; "
