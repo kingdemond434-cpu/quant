@@ -1653,7 +1653,9 @@ _TEXT_PAIR = re.compile(r"([A-Za-z_][\w-]*)=([^&\s'\"<>;,)]+)")
 
 
 #: In free text: the path segment after `/key/`, `/apikey/` or `/api_key/` (case-insensitive).
-_TEXT_PATH_KEY = re.compile(r"(?i)(/(?:api_?key|apikey|key)/)([^/\s'\"<>?#&;,)]+)")
+#: A `{placeholder}` segment is a template, not a key, and is left as written.
+_TEXT_PATH_KEY = re.compile(r"(?i)(/(?:api_?key|apikey|key)/)(?!\{\w*\}(?:[/\s'\"<>?#&;,)]|$))"
+                            r"([^/\s'\"<>?#&;,)]+)")
 
 
 def redact_text(text: object) -> str:

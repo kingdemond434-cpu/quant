@@ -308,6 +308,9 @@ def test_a_bps_refusal_never_writes_the_key_to_the_access_ledger(box, monkeypatc
         raise urllib.error.HTTPError(req.full_url, status, "refused", email.message.Message(),
                                      io.BytesIO(b""))
 
+    # BPS's row is not a live-input route today, so the fence refuses it before any request;
+    # the fence is lifted HERE ONLY so the refusal path the day it is admitted is exercised.
+    monkeypatch.setattr(tf, "input_source", lambda url, *a, **k: None)
     ledger = tmp_path / "world_crawler_access.json"
     monkeypatch.setattr(pf, "open_no_redirect", wire)
     monkeypatch.setattr(pf, "_ACCESS", pf.HostAccess(ledger))
