@@ -27,6 +27,7 @@ import json
 import statistics
 import sys
 from collections import Counter
+from collections.abc import Container, Iterable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -83,8 +84,8 @@ def _lineage_lines(path: Path) -> list[dict[str, Any]]:
     them in its bytes cannot qualify, so it is skipped unparsed. The kept rows are exactly the
     ones the full reader would have passed the same filter.
     """
-    marks = tuple(f'"source": "{s}'.encode() for s in LINEAGE_SOURCES) + tuple(
-        f'"source": "miner:{s}'.encode() for s in LINEAGE_SOURCES) + (b'"operator"', b'"generator"')
+    marks = (*(f'"source":{sp}"{pre}{s}'.encode() for s in LINEAGE_SOURCES
+               for pre in ("", "miner:") for sp in (" ", "")), b'"operator"', b'"generator"')
     out: list[dict[str, Any]] = []
     try:
         fh = path.open("rb")
@@ -111,6 +112,16 @@ def _graph_rows(inputs: dict[str, str]) -> list[dict[str, Any]]:
         return []
     inputs["hypothesis_graph"] = f"{len(rows)} rows" if rows else f"no rows at {GRAPH}"
     return rows
+
+
+def _graph_verdicts(keep: set[str], inputs: dict[str, str]) -> dict[str, dict[str, Any]]:
+    from libs.research.hypothesis_graph import iter_fields
+
+    try:
+        return verdicts(iter_fields(("fate", "at"), GRAPH), keep)
+    except Exception as exc:
+        inputs["hypothesis_graph_verdicts"] = f"unreadable: {type(exc).__name__}: {exc}"
+        return {}
 
 
 def _lineage_from_graph(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
@@ -192,13 +203,19 @@ def lineage_rows(graph_rows: list[dict[str, Any]],
 # Verdicts and depth
 # ------------------------------------------------------------------------------------------
 
-def verdicts(graph_rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
-    """Per node: the CURRENT fate, and when the FIRST verdict landed (time-to-verdict's end)."""
+def verdicts(graph_rows: Iterable[dict[str, Any]],
+             keep: Container[str] | None = None) -> dict[str, dict[str, Any]]:
+    """Per node: the CURRENT fate, and when the FIRST verdict landed (time-to-verdict's end).
+
+    `keep` limits the index to the nodes a tally will look up; the rows may be a stream.
+    """
     out: dict[str, dict[str, Any]] = {}
     for r in graph_rows:
         if not isinstance(r, dict) or not r.get("id"):
             continue
         nid = str(r["id"])
+        if keep is not None and nid not in keep:
+            continue
         v = out.setdefault(nid, {"fate": None, "first_verdict_at": None, "born_at": None})
         v["fate"] = r.get("fate")
         if r.get("fate") == "BORN" and v["born_at"] is None:
@@ -348,7 +365,9 @@ def run(write: bool = True) -> dict[str, Any]:
     inputs: dict[str, str] = {}
     graph_rows = _graph_rows(inputs)
     rows = lineage_rows(graph_rows, inputs)
-    verd = verdicts(graph_rows)
+    # Verdict rows carry source "gauntlet", so the lineage prefilter drops them: the fates are
+    # streamed separately as (id, fate, at) and kept only for the lineage nodes (2026-11-03).
+    verd = _graph_verdicts(set(rows), inputs)
     depth = depth_of(rows, _parent_index(_json(CANON)))
     by_operator = tally(rows, verd, depth, "operator")
     by_source = tally(rows, verd, depth, "source")

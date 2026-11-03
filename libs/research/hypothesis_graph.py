@@ -528,7 +528,10 @@ class Graph:
 
     def buried(self) -> dict[str, list[dict[str, Any]]]:
         """region -> the FAILED/BURIED rows in it. This is the negative-knowledge index."""
-        if not self._snapshot and self._current is None:
+        if (not self._snapshot and self._current is None
+                and type(self).rows is Graph.rows and type(self).current is Graph.current):
+            # A subclass that overrides the readers (compiler.PassGraph freezes a snapshot) keeps
+            # its own view: the fast path below would read past it to the file.
             # THE DEAD ARE READ WITHOUT THE LIVING (2026-11-03). `current()` materialises every
             # row; the index needs only rows whose present fate is FAILED or BURIED, in the same
             # order, so the cold read goes through `latest_rows` and caches on the same stamp.
