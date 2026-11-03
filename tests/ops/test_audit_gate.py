@@ -1227,11 +1227,55 @@ def test_a_rail_list_may_grow_but_never_shrink(head: str | None, lost: str | Non
     assert (bad == []) if lost is None else any(lost in b for b in bad), bad
 
 
+@pytest.mark.parametrize(
+    ("src", "breach"),
+    [
+        ("OUT = DESK / 'a.json'\n", False),  # the base's expression
+        ("OUT = _PATHS['out']\n", False),  # the pending PR's expression
+        ("OUT = DESK / 'b.json'\n", True),  # anything else
+        ("OUT = DESK / 'a.json'\nOUT = _PATHS['x']\n", True),  # every value must match
+    ],
+)
+def test_a_list_source_pin_holds_one_of_its_reviewed_expressions(src: str, breach: bool) -> None:
+    ceil = {
+        "source": {"p.py": {"OUT": {"any_of": ["DESK / 'a.json'", "_PATHS['out']"], "until_pr": 1}}}
+    }
+    bad = ri.check(ceil, _reader(p=src), _reader(p=src))
+    assert bool(bad) is breach, bad
+
+
 def test_the_live_tree_is_inside_its_ceilings() -> None:
     import json
 
     ceilings = json.loads((ROOT / "ops/release/ceilings.json").read_text(encoding="utf-8"))
     assert ri.check(ceilings, ri.git_reader("HEAD"), ri.git_reader("HEAD")) == []
+    # an any_of pin expires when its PR lands (#590 audit should-fix)
+    assert ri.stale_any_of_pins(ceilings, ri.git_reader("HEAD")) == []
+
+
+@pytest.mark.parametrize(
+    ("src", "stale"),
+    [
+        ("OUT = DESK / 'a.json'\n", False),  # the PR has not landed
+        ("OUT = _PATHS['out']\n", True),  # it has: the old expression must go
+    ],
+)
+def test_an_any_of_pin_expires_when_its_pr_lands(src: str, stale: bool) -> None:
+    ceil = {
+        "source": {"p.py": {"OUT": {"any_of": ["DESK / 'a.json'", "_PATHS['out']"], "until_pr": 7}}}
+    }
+    bad = ri.stale_any_of_pins(ceil, _reader(p=src))
+    assert bool(bad) is stale and (not stale or "#7" in bad[0]), bad
+
+
+@pytest.mark.parametrize(
+    "want", [["a", "b"], {"any_of": ["a", "b"]}, {"any_of": ["a"], "until_pr": 1}, 3]
+)
+def test_a_pin_without_an_expiry_is_malformed(want: object) -> None:
+    bad = ri.check(
+        {"source": {"p.py": {"OUT": want}}}, _reader(p="OUT = a\n"), _reader(p="OUT = a\n")
+    )
+    assert any("malformed" in b for b in bad), bad
 
 
 # ----------------------------------------------------------------- step C: independent review
@@ -1795,6 +1839,29 @@ def test_identical_books_pass_and_prose_is_not_a_decision(tmp_path: Path) -> Non
     rep = rs.compare(base, head, [], _grid())
     assert rep["verdict"] == "PASS", rep["problems"]
     assert rep["intents_compared"] == 4
+
+
+@pytest.mark.parametrize(
+    ("lane", "ftmo", "unmeasured"),
+    [
+        (True, {"error": "RuntimeError: boom"}, "the base FTMO leg raised"),
+        (True, {"exec": {"sleeves": []}}, "decided on no sleeve"),
+        (False, {"error": "RuntimeError: boom"}, None),  # no lane on the base: nothing owed
+    ],
+)
+def test_the_ftmo_leg_is_owed_where_the_base_has_the_lane(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, lane: bool, ftmo: dict, unmeasured: str | None
+) -> None:
+    base, head = tmp_path / "b", tmp_path / "h"
+    for t in (base, head):
+        (t / "desks/mt5/prop").mkdir(parents=True)
+        if lane:
+            (t / rs.FTMO_EXECUTOR).write_text("X = 1\n")
+    step = {"hour": 7.0, "doc": {}, "intents": [{"a": 1}], "error": None, "ftmo": ftmo}
+    monkeypatch.setattr(rs, "run_tree", lambda tree, sc: {"steps": [step], "imported": []})
+    rep = rs.compare(base, head, [], [{"id": "s", "hours": [7.0]}])
+    hits = [p for p in rep["problems"] if "FTMO" in p]
+    assert (hits == []) if unmeasured is None else any(unmeasured in p for p in hits), hits
 
 
 def test_a_changed_decision_fails(tmp_path: Path) -> None:
