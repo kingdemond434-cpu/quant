@@ -53,6 +53,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import io
+import itertools
 import json
 import math
 import os
@@ -796,6 +797,10 @@ def frame_from_payload(raw: bytes, mode: str, spec: dict[str, Any]) -> Any:
         return _cpc_ascii_frame(raw, str(spec.get("series_code") or "index"))
     if mode == "eia_v2":
         return _eia_v2_frame(raw, str(spec.get("series_code") or "value"))
+    if mode == "eia_ngs":
+        return _eia_ngs_frame(raw, str(spec.get("series_code") or "natgas_storage"))
+    if mode == "cpc_degree_days":
+        return _cpc_degree_day_frame(raw)
     if mode == "mof_weekly":
         return _mof_weekly_frame(raw)
     if mode == "tic_slt":
@@ -1053,6 +1058,7 @@ def direct_sources(now: datetime | None = None) -> list[dict[str, Any]]:
     out += gap_doors()
     out += fund_flow_doors()
     out += agri_nowcast_doors(now)
+    out += energy_weather_doors(now)
     out += country_pack_doors()
     for sid in _fred_ids():
         out.append({"provider": "FRED", "dataset": sid, "name": f"FRED {sid}", "mode": "csv",
@@ -1123,9 +1129,14 @@ def gap_doors() -> list[dict[str, Any]]:
                     "currencies": ["AUD"] if ds == "ONI" else [], "stems": _SOFTS_AND_GAS,
                     "url": url})
     for sid, code, kind, name in _EIA_SERIES:
-        out.append({"provider": "EIA", "dataset": sid, "name": name, "mode": "eia_v2",
+        gas = kind == "natural_gas"
+        out.append({"provider": "EIA", "dataset": sid, "name": name,
+                    # natural gas storage is read by `eia_ngs`: the same v2 payload, stamped at
+                    # EIA's own WNGSR release instant and carrying the five-year-average surprise
+                    "mode": "eia_ngs" if gas else "eia_v2",
                     "series_code": code, "freq": "weekly", "lag_days": _EIA_LAG[kind],
                     "key_env": "EIA_API_KEY",
+                    **({"liveness": ENERGY_AGRI} if gas else {}),
                     "stems": ["XNG"] if kind == "natural_gas" else ["XTI", "XBR"],
                     "currencies": ["USD", "CAD"] if kind == "petroleum" else ["USD"],
                     "url": (f"https://api.eia.gov/v2/seriesid/{sid}?"
@@ -1928,10 +1939,15 @@ def ideas_only_lines() -> list[dict[str, Any]]:
 _NASS_API = "https://quickstats.nass.usda.gov/api/api_GET/?"
 _NASS_QUERIES = (("CORN", "CONDITION"), ("CORN", "PROGRESS"), ("SOYBEANS", "CONDITION"),
                  ("SOYBEANS", "PROGRESS"), ("WHEAT", "CONDITION"), ("WHEAT", "PROGRESS"),
-                 ("COTTON", "CONDITION"))
+                 ("COTTON", "CONDITION"), ("COTTON", "PROGRESS"),
+                 ("SUGARBEETS", "PROGRESS"))
 #: FAS ESR commodity codes (the API's own `/api/esr/commodities` list; UNVERIFIED from this
 #: sandbox, whose reader got client_error on the OpenData page: a wrong code reads as a named
 #: empty/404 failure on the box, never as a zero).
+#: NASS names sugar's weekly crop by its US crop (sugarbeets: planted / harvested progress; NASS
+#: publishes no weekly sugarcane or sugarbeet CONDITION). It informs SUGAR, kept out of
+#: AGRI_STEMS because WASDE has no sugarbeet balance and `agri_mapping` reports per USDA commodity.
+_NASS_STEMS: dict[str, str | None] = {**AGRI_STEMS, "sugarbeets": "SUGAR"}
 _ESR_COMMODITIES = (("401", "corn", "CORN"), ("801", "soybeans", "SOYBEAN"),
                     ("107", "wheat", "WHEAT"), ("1404", "cotton_upland", "COTTON"))
 _ESR_API = "https://apps.fas.usda.gov/OpenData/api/esr/exports/commodityCode/"
@@ -1952,7 +1968,7 @@ def agri_nowcast_doors(now: datetime) -> list[dict[str, Any]]:
                     "name": f"USDA NASS crop {stat_.lower()} {comm.lower()} weekly national",
                     "mode": "nass_quickstats", "series_code": f"{comm.lower()}",
                     "freq": "weekly", "key_env": "NASS_API_KEY", "currencies": [],
-                    "stems": [AGRI_STEMS[comm.lower()] or ""],
+                    "stems": [_NASS_STEMS[comm.lower()] or ""], "liveness": ENERGY_AGRI,
                     "url": _NASS_API + "key={api_key}&" + urllib.parse.urlencode(
                         {"commodity_desc": comm, "statisticcat_desc": stat_,
                          "agg_level_desc": "NATIONAL", "freq_desc": "WEEKLY",
@@ -1965,7 +1981,8 @@ def agri_nowcast_doors(now: datetime) -> list[dict[str, Any]]:
                 for my in range(y - 10, y - 1)]
         out.append({"provider": "USDA_FAS", "dataset": f"ESR_{ccode}",
                     "name": f"USDA FAS weekly export sales {name.replace('_', ' ')}",
-                    "mode": "fas_esr", "series_code": name, "freq": "weekly",
+                    "liveness": ENERGY_AGRI, "mode": "fas_esr", "series_code": name,
+                    "freq": "weekly",
                     "currencies": [], "stems": [stem], "url": urls[-1]["url"], "urls": urls,
                     "urls_backfill": back})
     months = [(now.replace(day=1) - timedelta(days=31 * k)) for k in (2, 1, 0)]
@@ -1978,7 +1995,8 @@ def agri_nowcast_doors(now: datetime) -> list[dict[str, Any]]:
     out.append({"provider": "USDA_WASDE", "dataset": "wasde_balance",
                 "name": "USDA WASDE as-reported ending stocks, total use and stocks-to-use "
                         "(corn soybeans wheat cotton sugar, US and world)",
-                "mode": "wasde_csv", "series_code": "wasde", "freq": "monthly",
+                "liveness": ENERGY_AGRI, "mode": "wasde_csv", "series_code": "wasde",
+                "freq": "monthly",
                 "currencies": [], "stems": sorted({s for s in AGRI_STEMS.values() if s}),
                 "url": recent[-1]["url"], "urls": recent, "urls_backfill": back})
     out.append({"provider": "NYFED", "dataset": "staff_nowcast",
@@ -1986,6 +2004,357 @@ def agri_nowcast_doors(now: datetime) -> list[dict[str, Any]]:
                 "mode": "nowcast_vintage", "series_code": "nyfed_nowcast", "freq": "daily",
                 "currencies": ["USD"], "stems": [], "url": _NYFED_NOWCAST})
     return out
+
+
+# ------------------------------------- natgas storage and degree days (2026-11-03) ----
+#: XNGUSD's two fundamental prints, as doors of THIS organ (no second lane): EIA's Weekly Natural
+#: Gas Storage Report and NOAA CPC's population-weighted degree days. Both land in the same PIT
+#: store, `build_exposure` maps them to XNGUSD by stem, and `world_macro_proposer` mints
+#: `world_macro_state` cells the sealed gauntlet judges -- trial accounting and sizing untouched.
+#:
+#: THE STORAGE SURPRISE IS AGAINST THE FIVE-YEAR AVERAGE, NEVER A CONSENSUS. A survey consensus
+#: is not free, so the surprise is the week's net change minus the mean net change of the same
+#: report week in each of the five prior years (EIA's own five-year-average construction), read
+#: from the same EIA series. Every input of the average was released years before the week it
+#: describes, so the derived value is known exactly when the week's own print is.
+#:
+#: RELEASE INSTANTS. WNGSR: Thursday 10:30 ET for the week ending the Friday before, with the
+#: holiday alternates EIA's schedule names (https://ir.eia.gov/ngs/schedule.html, read
+#: 2026-11-03, quoted in EIA_NGS_ALTERNATES). A week the schedule does not list (history before
+#: 2025, the future past 2026) falls to a rule that errs LATE: a federal holiday Monday-Wednesday
+#: of the release week moves it to Friday 12:00 ET, a Thursday holiday to the next business
+#: Monday 12:00 ET (EIA released Christmas 2025's week on Monday 29 December). CPC states no
+#: release time on its degree-day page; the 2026 daily file's listing read 02-Nov-2026 08:09 and
+#: held days through 2026-10-31, so a day's value is stamped D+2 14:00 UTC (later than 08:09 in
+#: either US Eastern offset). pit_series keys a value the hunter WATCHED arrive on
+#: max(stamp, first_seen), so a late file is never read early.
+ENERGY_AGRI = "energy_agri"
+#: More than this many consecutive attempts that land nothing is RED (as the country packs).
+ENERGY_AGRI_RED_RUNS = 2
+#: The normal Thursday a holiday displaced -> (actual release day, hour, minute ET), verbatim from
+#: EIA's WNGSR schedule page (read 2026-11-03).
+EIA_NGS_ALTERNATES: dict[date, tuple[date, int, int]] = {
+    date(2025, 1, 2): (date(2025, 1, 3), 10, 30),      # New Year's Day
+    date(2025, 1, 9): (date(2025, 1, 8), 12, 0),       # National Day of Mourning
+    date(2025, 6, 19): (date(2025, 6, 18), 12, 0),     # Juneteenth
+    date(2025, 11, 13): (date(2025, 11, 14), 10, 30),  # Veterans Day
+    date(2025, 11, 27): (date(2025, 11, 26), 12, 0),   # Thanksgiving Day
+    date(2025, 12, 25): (date(2025, 12, 29), 12, 0),   # Christmas Day
+    date(2026, 1, 1): (date(2025, 12, 31), 12, 0),     # New Year's Day
+    date(2026, 11, 12): (date(2026, 11, 13), 10, 30),  # Veterans Day
+    date(2026, 11, 26): (date(2026, 11, 25), 12, 0),   # Thanksgiving Day
+}
+EIA_NGS_SCHEDULE = "https://ir.eia.gov/ngs/schedule.html"
+#: The years whose alternates the schedule above lists in full; outside them the late rule rules.
+EIA_NGS_SCHEDULE_YEARS = (2025, 2026)
+#: Prior years in the five-year average (EIA's own window).
+NGS_AVG_YEARS = 5
+#: How far a prior year's report week may sit from this week's calendar day and still be "the
+#: same week" (weeks end on Fridays, so the same Friday a year back is within three days).
+NGS_WEEK_MATCH_D = 3
+CPC_DD_DAILY = "https://ftp.cpc.ncep.noaa.gov/htdocs/degree_days/weighted/daily_data/"
+CPC_DD_RELEASE_LAG_D = 2
+CPC_DD_RELEASE_HOUR_UTC = 14
+#: Years of daily files read each pass: five for the same-day five-year normal, plus ten years
+#: of history that carry one. ~32 small text files a day, under CPC's one-retry-a-minute ask.
+CPC_DD_YEARS = 16
+
+
+def ngs_release(week_ending: date) -> str:
+    """WNGSR release instant (ISO UTC) for the storage week ending `week_ending` (a Friday)."""
+    thu = week_ending + timedelta(days=(3 - week_ending.weekday()) % 7 or 7)
+    if thu in EIA_NGS_ALTERNATES:
+        d, hh, mm = EIA_NGS_ALTERNATES[thu]
+        return _et_utc(d, hh, mm)
+    if thu.year in EIA_NGS_SCHEDULE_YEARS:
+        return _et_utc(thu, 10, 30)                # the schedule lists no alternate: standard
+    monday = thu - timedelta(days=3)
+    if _holiday(thu):
+        d = thu + timedelta(days=4)                # the next Monday, past the closed Friday
+        while d.weekday() >= 5 or _holiday(d):
+            d += timedelta(days=1)
+        return _et_utc(d, 12, 0)
+    if any(_holiday(monday + timedelta(days=i)) for i in range(3)):
+        # noon, the later of the two times EIA's alternates use (10:30 and 12:00)
+        return _et_utc(thu + timedelta(days=1), 12, 0)
+    return _et_utc(thu, 10, 30)
+
+
+def _same_week_back(target: date, have: dict[date, float], years: int) -> float | None:
+    """The value of the report week `years` back whose end sits within NGS_WEEK_MATCH_D days of
+    the same calendar day; None when that year holds no such week."""
+    try:
+        anchor = target.replace(year=target.year - years)
+    except ValueError:                             # 29 February
+        anchor = target.replace(year=target.year - years, day=28)
+    for k in range(NGS_WEEK_MATCH_D + 1):
+        for d in (anchor - timedelta(days=k), anchor + timedelta(days=k)):
+            if d in have:
+                return have[d]
+    return None
+
+
+def _five_year_mean(target: date, have: dict[date, float], years: int = NGS_AVG_YEARS
+                    ) -> float | None:
+    vals = [_same_week_back(target, have, k) for k in range(1, years + 1)]
+    if any(v is None for v in vals):
+        return None                                # a partial average is not EIA's average
+    return sum(float(v) for v in vals if v is not None) / years
+
+
+def _eia_ngs_frame(raw: bytes, code: str) -> Any:
+    """EIA v2 weekly working gas in storage -> the level plus four derived series, every one
+    stamped at the WNGSR release instant of its week:
+      `<code>`                 level (Bcf), period = the week-ending Friday (EIA's own label)
+      `<code>_change`          net injection(+)/withdrawal(-) vs the week before (7 days apart)
+      `<code>_change_5y_avg`   mean net change of the same week in the five prior years
+      `<code>_surprise`        change minus that five-year average (no consensus: not free)
+      `<code>_vs_5y`           level minus the five-year average level (surplus/deficit)
+    A week with a gap before it, or without five prior years, simply has no derived value."""
+    import pandas as pd
+
+    base = _eia_v2_frame(raw, code)
+    lvl: dict[date, float] = {}
+    for per, v in zip(base["period"], base["value"], strict=False):
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(per)):
+            lvl[date.fromisoformat(str(per))] = float(v)
+    if not lvl:
+        raise FetchError("unparseable", f"eia ngs {code}: no weekly periods")
+    days = sorted(lvl)
+    chg = {d: lvl[d] - lvl[p] for p, d in itertools.pairwise(days)
+           if (d - p).days == 7}
+    rows: list[dict[str, Any]] = []
+    for d in days:
+        rel = ngs_release(d)
+        out: dict[str, float | None] = {code: lvl[d], f"{code}_vs_5y": None}
+        avg_lvl = _five_year_mean(d, lvl)
+        if avg_lvl is not None:
+            out[f"{code}_vs_5y"] = lvl[d] - avg_lvl
+        if d in chg:
+            out[f"{code}_change"] = chg[d]
+            avg = _five_year_mean(d, chg)
+            if avg is not None:
+                out[f"{code}_change_5y_avg"] = avg
+                out[f"{code}_surprise"] = chg[d] - avg
+        for sc, v in out.items():
+            if v is not None:
+                rows.append({"series_code": sc, "period": d.isoformat(), "value": float(v),
+                             "release_utc": rel})
+    return pd.DataFrame(rows, columns=["series_code", "period", "value", "release_utc"])
+
+
+def cpc_dd_release(day: date) -> str:
+    """CPC daily degree days: the day's value is in the file by D+2 (measured, see above)."""
+    d = day + timedelta(days=CPC_DD_RELEASE_LAG_D)
+    return datetime(d.year, d.month, d.day, CPC_DD_RELEASE_HOUR_UTC, tzinfo=UTC).isoformat()
+
+
+def _cpc_degree_day_frame(raw: bytes) -> Any:
+    """One CPC `Population.Heating.txt` / `Population.Cooling.txt` year file: a short header
+    (`Product: Daily Heating Degree Days`, `Weights: Population`) then a pipe table whose header
+    is `Region|YYYYMMDD|...` and whose CONUS row is the US population-weighted daily value.
+    Only CONUS is read (the census divisions are not separate instruments). The kind comes from
+    the file's own `Product:` line, never from its URL. Negative values (CPC's missing marker)
+    are absent observations, never zeros."""
+    import pandas as pd
+
+    text = raw.decode("utf-8", "replace")
+    if text.lstrip()[:1] == "<":
+        raise FetchError("served_html", "cpc degree days")
+    product = next((ln.split(":", 1)[1].strip().lower() for ln in text.splitlines()[:12]
+                    if ln.lower().startswith("product:")), "")
+    weights = next((ln.split(":", 1)[1].strip().lower() for ln in text.splitlines()[:12]
+                    if ln.lower().startswith("weights:")), "")
+    kind = "hdd" if "heating" in product else "cdd" if "cooling" in product else ""
+    if not kind or weights != "population":
+        raise FetchError("unparseable", f"cpc degree days: product={product!r} "
+                                        f"weights={weights!r}")
+    header: list[str] | None = None
+    rows: list[dict[str, Any]] = []
+    for ln in text.splitlines():
+        cells = [c.strip() for c in ln.split("|")]
+        if cells and cells[0].lower() == "region":
+            header = cells
+            continue
+        if header is None or not cells or cells[0].upper() != "CONUS":
+            continue
+        for stamp, v in zip(header[1:], cells[1:], strict=False):
+            f = _num_or_none(v)
+            if not re.fullmatch(r"\d{8}", stamp) or f is None or f < 0:
+                continue
+            d = date(int(stamp[:4]), int(stamp[4:6]), int(stamp[6:]))
+            rows.append({"series_code": f"{kind}_us_pop", "period": d.isoformat(),
+                         "value": f, "release_utc": cpc_dd_release(d), "freq": "daily"})
+    df = pd.DataFrame(rows, columns=["series_code", "period", "value", "release_utc", "freq"])
+    if df.empty:
+        raise FetchError("empty", f"cpc degree days {kind}: no CONUS row")
+    return df
+
+
+def _degree_day_features(df: Any) -> Any:
+    """Daily CONUS HDD/CDD -> the features natgas trades on, appended to the daily rows:
+      `<k>_us_pop_vs_5y`     daily value minus the same calendar day's five-prior-year mean
+      `<k>_us_pop_wk`        sum over the EIA storage week (Saturday..Friday), complete weeks only
+      `tdd_us_pop_wk`        HDD + CDD over that week (total weather-driven gas burn)
+      `<..>_wk_vs_5y`        a week's sum minus the same week's five-prior-year mean
+    A weekly row's period is its Saturday (the hunter's weekly label, so `period_end` is the
+    Friday) and it is stamped when its Friday's daily value is. Nothing is derived from a year
+    the frame does not hold: a missing prior year means no `_vs_5y` value, never a short mean."""
+    import pandas as pd
+
+    daily = df[df["freq"] == "daily"] if "freq" in df.columns else df
+    out = [df]
+    weekly: dict[str, dict[date, float]] = {}
+    for kind in ("hdd", "cdd"):
+        g = daily[daily["series_code"] == f"{kind}_us_pop"]
+        have = {date.fromisoformat(str(p)): float(v)
+                for p, v in zip(g["period"], g["value"], strict=False)}
+        rows = []
+        for d, v in sorted(have.items()):
+            if (d.month, d.day) == (2, 29):
+                continue
+            prior = [have.get(d.replace(year=d.year - k)) for k in range(1, NGS_AVG_YEARS + 1)]
+            if all(p is not None for p in prior):
+                rows.append({"series_code": f"{kind}_us_pop_vs_5y", "period": d.isoformat(),
+                             "value": v - sum(float(p) for p in prior if p is not None)
+                             / NGS_AVG_YEARS,
+                             "release_utc": cpc_dd_release(d), "freq": "daily"})
+        wk: dict[date, float] = {}
+        for d in have:
+            fri = d + timedelta(days=(4 - d.weekday()) % 7)
+            days = [fri - timedelta(days=i) for i in range(7)]
+            if fri not in wk and all(x in have for x in days):
+                wk[fri] = sum(have[x] for x in days)
+        weekly[kind] = wk
+        out.append(pd.DataFrame(rows))
+    both = set(weekly.get("hdd", {})) & set(weekly.get("cdd", {}))
+    weekly["tdd"] = {f: weekly["hdd"][f] + weekly["cdd"][f] for f in both}
+    for kind, wk in weekly.items():
+        rows = []
+        for fri, v in sorted(wk.items()):
+            base = {"period": (fri - timedelta(days=6)).isoformat(),
+                    "release_utc": cpc_dd_release(fri), "freq": "weekly"}
+            rows.append({"series_code": f"{kind}_us_pop_wk", "value": v, **base})
+            avg = _five_year_mean(fri, wk)
+            if avg is not None:
+                rows.append({"series_code": f"{kind}_us_pop_wk_vs_5y", "value": v - avg, **base})
+        out.append(pd.DataFrame(rows))
+    res = pd.concat([o for o in out if len(o)], ignore_index=True)
+    return res.drop_duplicates(["series_code", "period"], keep="last")
+
+
+#: Post-concat feature builders a door names with `derive`: they need every payload of the door at
+#: once (a five-year normal spans five year files), so they run after the parts are joined.
+DERIVERS: dict[str, Callable[[Any], Any]] = {"degree_days": _degree_day_features}
+
+
+def energy_weather_doors(now: datetime) -> list[dict[str, Any]]:
+    """The CPC population-weighted degree-day door (the EIA storage door is a `gap_doors` row,
+    extended in place to `eia_ngs`). One dataset holds both kinds, every year file each pass."""
+    y = now.year
+    urls = [{"url": f"{CPC_DD_DAILY}{yy:04d}/Population.{kind}.txt"}
+            for yy in range(y - CPC_DD_YEARS + 1, y + 1) for kind in ("Heating", "Cooling")]
+    return [{"provider": "NOAA_CPC", "dataset": "DEGREE_DAYS_POP",
+             "name": ("NOAA CPC population-weighted heating and cooling degree days, CONUS, "
+                      "daily and EIA-storage-week, with five-year-normal departures"),
+             "mode": "cpc_degree_days", "derive": "degree_days", "liveness": ENERGY_AGRI,
+             "currencies": [], "stems": ["XNG"], "url": urls[-1]["url"], "urls": urls}]
+
+
+#: robots.txt as this desk read it for each door host (2026-11-03, through the session reader;
+#: this sandbox's proxy refuses the hosts themselves). LAWS 5e: a reading is a LABEL, never a
+#: brake -- a Disallow labels the door PUBLIC_WITH_TERMS with the Disallow in `terms_note`; an
+#: unreadable robots labels it ACCESS_UNCLEAR. Neither stops a fetch here.
+ROBOTS_READ: dict[str, dict[str, str]] = {
+    "api.eia.gov": {"robots": "unknown", "read": "client_error to the reader on 2026-11-03"},
+    "ftp.cpc.ncep.noaa.gov": {"robots": "unknown",
+                              "read": "client_error to the reader on 2026-11-03"},
+    "www.cpc.ncep.noaa.gov": {"robots": "unknown",
+                              "read": "client_error to the reader on 2026-11-03"},
+    "quickstats.nass.usda.gov": {"robots": "disallowed",
+                                 "read": ("robots_disallowed to the reader on 2026-11-03 (as on "
+                                          "2026-10-29): the reader's robots check refused the "
+                                          "host")},
+    "apps.fas.usda.gov": {"robots": "unknown", "read": "not read on 2026-11-03"},
+    "www.usda.gov": {"robots": "allowed",
+                     "read": ("read 2026-11-03: the User-agent * group's only /sites/ rule is "
+                              "`Disallow: /sites/README.txt`; nothing matches "
+                              "/sites/default/files/documents/")},
+}
+
+
+def door_access(url: str) -> dict[str, Any]:
+    """The access label of one door (libs.research.access_classifier), with `redistribute_allowed`
+    read from its ROUTING row and failing CLOSED (False unless the row grants `redistribute`)."""
+    from libs.data import terms_fence as _tf
+    from libs.research import access_classifier as ac
+
+    host = urllib.parse.urlsplit(url).hostname or ""
+    reading = ROBOTS_READ.get(host) or {"robots": "unknown", "read": "never read"}
+    key = _tf.source_of_url(url)
+    clauses = ((_tf.SOURCE_POLICY.get(key) or {}).get("terms") or {}).get("clauses") or {}
+    licence = " ".join(str(v) for v in clauses.values()).lower()
+    robots = reading["robots"]
+    if robots == "disallowed":
+        v = ac.classify({"url": url, "obtained": "api", "robots": "disallowed"})
+    elif robots == "allowed":
+        v = ac.classify({"url": url, "obtained": "api",
+                         "licence": "public domain" if "public domain" in licence else ""})
+    else:
+        v = ac.classify({})                        # nothing resolves access: ACCESS_UNCLEAR
+        assert v.access_label == "ACCESS_UNCLEAR"
+    try:
+        redist = "redistribute" in tuple(ac.ROUTING[v.access_label]["allowed_uses"])
+    except Exception:
+        redist = False
+    note = (f"robots Disallow: {reading['read']}" if robots == "disallowed"
+            else f"robots unreadable: {reading['read']}" if robots != "allowed" else None)
+    return {"access_label": v.access_label,
+            "basis": v.basis if robots == "allowed" else note,
+            "terms_note": note,
+            "robots_read": reading["read"], "redistribute_allowed": bool(redist),
+            "policy_row": key}
+
+
+def energy_agri_report(cat: dict[str, Any], now: datetime | None = None) -> dict[str, Any]:
+    """Liveness, terms and access of every door on the ENERGY_AGRI watch, and the features each
+    lands for the natgas and softs CFDs. A door RED (more than ENERGY_AGRI_RED_RUNS consecutive
+    attempts that landed nothing) names itself in `status`, which `build_report` lifts into the
+    organ's own status line -- the board the desk already reads."""
+    from libs.data import terms_fence as _tf
+    rows = cat.get("datasets") or {}
+    doors = []
+    for spec in direct_sources(now):
+        if spec.get("liveness") != ENERGY_AGRI:
+            continue
+        key = f"{spec['provider']}/{spec['dataset']}"
+        st = _door_state(rows.get(key), spec)
+        st["door"] = key
+        st["access"] = door_access(spec["url"])
+        pol = st["policy_row"]
+        st["terms_state"] = _tf.terms_state(pol) if pol else _tf.UNREAD
+        st["live_sizing"] = ("PERMITTED: verbatim clause on row " + pol
+                             if pol and _tf.terms_state(pol) == "READ" and not
+                             _tf.input_source(spec["url"].replace("{api_key}", "x"))
+                             else "RESEARCH_ONLY: no verbatim permitting clause read")
+        meta = _read_json(meta_path(spec["provider"], spec["dataset"]), {}) or {}
+        st["features"] = sorted(s["key"] for s in (meta.get("series") or {}).values()
+                                if s.get("quality") == "PASS" and s.get("instruments")) \
+            or UNMEASURED
+        st["stems"] = spec.get("stems") or []
+        if st["state"] == "RED":
+            st["missed_growth"] = {"kind": "door_red", "source": key,
+                                   "delta_elogw": UNMEASURED,
+                                   "line": ("the features this door lands for "
+                                            + ", ".join(st["stems"]) + " are absent from "
+                                            "every cell while it is RED")}
+        doors.append(st)
+    red = [d["door"] for d in doors if d["state"] == "RED"]
+    return {"doors": doors, "red_doors": red, "red_after_empty_runs": ENERGY_AGRI_RED_RUNS,
+            "eia_schedule": EIA_NGS_SCHEDULE,
+            "status": (f"RED: energy/agri doors empty > {ENERGY_AGRI_RED_RUNS} runs: "
+                       + ", ".join(red)) if red else "OK"}
+
 
 
 # ------------------------------------------------------ country open-data packs (2026-11-03) ----
@@ -2905,6 +3274,8 @@ def _fetch_direct(client: Client, spec: dict[str, Any], now: datetime, *,
               .drop_duplicates(["series_code", "period"], keep="last"))
     elif len(frames) > 1:
         df = df.drop_duplicates(["series_code", "period"], keep="last")
+    if spec.get("derive") in DERIVERS:
+        df = DERIVERS[str(spec["derive"])](df)
     return series_from_long(df, freq=spec.get("freq", ""), hint=spec.get("name", ""))
 
 
@@ -2936,6 +3307,12 @@ def fetch_direct(client: Client, cat: dict[str, Any], *, now: datetime, until: f
                 stats["direct:terms_ideas_only"] += 1
                 continue
             row["last_attempt_at"] = _iso(now)
+        # A door on a liveness watch (a country pack, or the ENERGY_AGRI doors) counts its
+        # consecutive attempts that landed nothing; the watch's report turns it RED.
+        watched = bool(pack or spec.get("liveness"))
+        if watched and not pack:
+            row["liveness"] = spec["liveness"]
+            row["last_attempt_at"] = _iso(now)
         try:
             series = _fetch_direct(client, spec, now, misses=misses,
                                    backfill=not int(row.get("rows") or 0))
@@ -2945,7 +3322,7 @@ def fetch_direct(client: Client, cat: dict[str, Any], *, now: datetime, until: f
             row["fail_count"] = int(row.get("fail_count") or 0) + 1
             row["fail_reason"] = exc.reason
             row["next_due"] = _iso(now + timedelta(hours=DIRECT_REFRESH_H))
-            if pack:
+            if watched:
                 _pack_empty_run(row, exc.reason)
             stats[f"direct:{exc.reason}"] += 1
             by_provider[spec["provider"]]["failed"] += 1
@@ -2954,7 +3331,7 @@ def fetch_direct(client: Client, cat: dict[str, Any], *, now: datetime, until: f
             row["fail_count"] = int(row.get("fail_count") or 0) + 1
             row["fail_reason"] = f"parse:{type(exc).__name__}"
             row["next_due"] = _iso(now + timedelta(hours=DIRECT_REFRESH_H))
-            if pack:
+            if watched:
                 _pack_empty_run(row, row["fail_reason"])
             stats[f"direct:parse:{type(exc).__name__}"] += 1
             continue
@@ -2964,7 +3341,7 @@ def fetch_direct(client: Client, cat: dict[str, Any], *, now: datetime, until: f
                             hint_stems=spec.get("stems", ()), qstats=qstats,
                             pin_instruments=spec.get("pin"))
         row["partial_misses"] = dict(misses) or None
-        if pack:
+        if watched:
             row.update({"pack_state": "FETCHED", "empty_streak": 0, "needs_key": None})
         row.update({"fetched_at": _iso(now), "fail_count": 0, "fail_reason": None,
                     "series_total": len(series), "series_passed": res["passed"],
@@ -3474,10 +3851,13 @@ def build_report(cat: dict[str, Any], exposure: dict[str, Any], *, stats: Counte
     measured = bool(cat["datasets"]) or client.ok > 0
     rates = _history_rates(now)
     packs = country_pack_report(cat)
+    energy_agri = energy_agri_report(cat, now)
+    red_lines = [x["status"] for x in (packs, energy_agri) if x["status"] != "OK"]
     return {
-        # the organ's own last reading (health_board reads it): a RED country-pack door names
-        # itself here, so the desk's board turns the organ from GREEN without a second board
-        "status": packs["status"],
+        # the organ's own last reading (health_board reads it): a RED country-pack door, or a
+        # RED energy/agri door, names itself here, so the desk's board turns the organ from
+        # GREEN without a second board
+        "status": "; ".join(red_lines) if red_lines else "OK",
         "generated_at": _iso(now),
         "organ": "desks/mt5/research/world_dataset_hunter.py",
         "leg": "hourly_cycle:world_dataset_hunt",
@@ -3513,6 +3893,9 @@ def build_report(cat: dict[str, Any], exposure: dict[str, Any], *, stats: Counte
         # GAP #4 / #5 (2026-10-29): which USDA commodities reach an MT5 symbol and which do not,
         # and the IDEAS_ONLY nowcast/crop sources with their missed-growth lines.
         "agri_supply_map": agri_mapping(),
+        # natgas storage + degree days and the agri doors: liveness, access label, terms basis
+        # and the features each lands (2026-11-03)
+        "energy_agri": energy_agri,
         "ideas_only": ideas_only_lines(),
         "registry": registry,
         "country_packs": packs,
