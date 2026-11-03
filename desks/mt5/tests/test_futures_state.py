@@ -498,3 +498,20 @@ def test_discontinued_eia_curves_are_named_not_read(tmp_desk: Path) -> None:
                                               bars=lambda s: None)
     assert not built
     assert any(n.get("source") == "eia_futures" and n["status"] == "UNMEASURED" for n in notes)
+
+
+def test_rate_leg_fallback_only_extends_past_the_primary():
+    """The euro-area OECD row stops; ESTR carries the leg on as month-start means, and never
+    overwrites a month the primary published."""
+    m = pd.date_range("2025-07-01", periods=7, freq="MS", tz="UTC")
+    d = pd.date_range("2025-07-01", "2026-03-31", freq="D", tz="UTC")
+    yc = pd.concat({"OECD": pd.Series(2.0, index=m), "ON": pd.Series(1.0, index=d)},
+                   axis=1).sort_index()
+    leg = fs.rate_leg(yc, ["OECD", "ON"])
+    assert leg is not None
+    assert (leg[leg.index <= m[-1]] == 2.0).all()
+    tail = leg[leg.index > m[-1]]
+    assert list(tail.index) == list(pd.date_range("2026-02-01", periods=2, freq="MS", tz="UTC"))
+    assert (tail == 1.0).all()
+    assert fs.rate_leg(yc, "OECD").equals(yc["OECD"].dropna())
+    assert fs.rate_leg(yc, ["MISSING"]) is None
