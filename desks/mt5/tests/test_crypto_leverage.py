@@ -50,7 +50,8 @@ def test_funding_resumes_after_the_last_held_row_and_never_duplicates(tmp_path):
     get2, calls2 = _fake()
     si.collect_leverage(get=get2, root=tmp_path)
     f = pd.read_parquet(tmp_path / "crypto_lev_btcusdt.parquet")
-    assert f["event_time"].is_unique
+    assert not f.duplicated(["event_time", "available_time"]).any()
+    assert f["funding_rate"].notna().sum() == 3 and f["oi_usd"].notna().sum() == 2
     assert any("startTime=" in u for u in calls2 if "fundingRate" in u)
 
 
