@@ -57,8 +57,10 @@ def test_formula_follow_and_fade_are_mirror_images_and_the_dsl_parses_both_forms
     # the rendered call form reads as the same tree
     rend, _ = rc.resolve_spec("formula", {"expr": "neg(mean(spread, 5))"}, "asia", "LONG")
     assert rend is not None and rend["expr"] == ["neg", ["mean", "spread", 5]]
-    # no spread column: the terminal is absent, so the rule never fires (no invented series)
-    assert rf.SPECS["formula"].build(_bars(spread=False), fol) == []
+    # no spread column: the terminal is absent, so the rule is REFUSED by name -- never an
+    # invented series, and never an empty order list the forward lane would read as MISMATCH
+    with pytest.raises(rc.RuleRefusal, match="spread"):
+        rf.SPECS["formula"].build(_bars(spread=False), fol)
 
 
 def test_formula_operators_match_their_written_definitions() -> None:
@@ -276,3 +278,76 @@ def test_the_rebuild_agrees_with_the_desks_implementation(sym: str, fam: str,
     b = {f.entry_t for f in fills}
     assert len(a & b) / max(1, len(a | b)) >= 0.95, (len(a), len(b), len(a & b))
     assert ours is not None and abs(ours - theirs) <= 0.05 * max(abs(theirs), 0.05)
+
+
+# ------------------------------------------------------------------ refusals stay UNMEASURED
+def _stamp(ns: int) -> str:
+    return str(np.datetime64(ns, "ns")).replace("T", " ")[:19] + "+00:00"
+
+
+def test_a_missing_column_is_unmeasured_on_both_lanes_never_a_mismatch() -> None:
+    """AUDIT HOLD c21afd792: a box whose parquet carries no spread column must not quarantine a
+    healthy forward clock. The rule is refused by name on the certificate AND the forward lane."""
+    b = _bars(spread=False)
+    params = {"expr": ["neg", ["mean", "spread", 5]], "side_mode": "follow", "hold_bars": 8}
+    cert = rc.replicate_certificate(
+        {"shadow_spec": {"symbol": "TESTFX", "family": "formula", "selector": "asia",
+                         "params": params}, "gates": {"in_sample_screen": {"sharpe": 0.3}}},
+        meta={}, bars=b)
+    assert cert["verdict"] == rc.UNMEASURED and "spread" in cert["why"][0], cert
+    t0 = int(b.t[len(b) // 2])
+    ledger = [{"entry_time": _stamp(t0 + k * 10 * HOUR),
+               "exit_time": _stamp(t0 + (k * 10 + 8) * HOUR), "side": 1,
+               "r_multiple": 0.5, "reason": "ttl"} for k in range(20)]
+    fwd = rc.replicate_forward(
+        {"key": "TESTFX.formula.asia", "forward_start": _stamp(t0),
+         "identity": {"family": "formula", "symbol": "TESTFX", "direction": "LONG",
+                      "timeframe": "H1", "selector": "asia", "params": params}},
+        meta={}, bars=b, ledger=ledger)
+    assert fwd["verdict"] == rc.UNMEASURED and "rule refused" in fwd["why"][0], fwd
+    assert fwd["verdict"] != rc.MISMATCH
+
+
+def test_too_short_a_history_is_a_refusal_not_an_empty_rebuild() -> None:
+    p, why = rc.resolve_spec("formula", {"expr": ["neg", ["mean", "spread", 5]],
+                                         "side_mode": "follow"}, "asia", "LONG")
+    assert p is not None, why
+    with pytest.raises(rc.RuleRefusal, match="bars"):
+        rf.SPECS["formula"].build(_bars(n=200), p)
+
+
+def test_a_numeric_param_that_is_not_a_number_is_refused_at_resolve() -> None:
+    p, why = rc.resolve_spec("relative_value", {"peer_symbol": "A", "entry_z": None},
+                             "asia", "LONG")
+    assert p is None and "entry_z" in why
+    p, why = rc.resolve_spec("relative_value", {"peer_symbol": "A", "lookback": 12.5},
+                             "asia", "LONG")
+    assert p is None and "lookback" in why
+    p, why = rc.resolve_spec("relative_value", {"peer_symbol": "A", "lookback": "96"},
+                             "asia", "LONG")
+    assert p is not None and p["lookback"] == 96, why
+
+
+def test_an_input_on_another_chart_is_unmeasured_never_joined() -> None:
+    """Inputs load on the chart of the bars being judged; a peer on a coarser chart would join
+    an H1 row to a bar whose close lies in its future."""
+    own = _bars()
+    seen: list[str] = []
+
+    def loader(sym: str, tf: str) -> rc.Bars:
+        seen.append(tf)
+        return _bars(seed=9)
+
+    p, why = rc.resolve_spec("relative_value", {"peer_symbol": "PEER", "timeframe": "M15"},
+                             "asia", "LONG")
+    assert p is not None, why
+    assert rc.attach_inputs("relative_value", {"peer_symbol": "PEER", "timeframe": "M15"}, p,
+                            loader, own=own) is None
+    assert seen == ["H1"]                       # the target's own chart, not the param's
+
+    def coarse(sym: str, tf: str) -> rc.Bars:
+        b = _bars(n=3000, seed=9)
+        return rc.bars_from_arrays(b.t[::4], b.o[::4], b.h[::4], b.low[::4], b.c[::4])
+
+    why2 = rc.attach_inputs("relative_value", {"peer_symbol": "PEER"}, dict(p), coarse, own=own)
+    assert why2 is not None and "minute" in why2

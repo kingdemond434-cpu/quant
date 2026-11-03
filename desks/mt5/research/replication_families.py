@@ -35,7 +35,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from replication_civilization import Bars, Order, RuleSpec, atr
+from replication_civilization import Bars, Order, RuleRefusal, RuleSpec, atr
 
 HOUR_NS = 3_600_000_000_000
 
@@ -313,14 +313,18 @@ def evaluate(expr: Any, frames: dict[str, pd.Series], n: int) -> pd.Series:
         with warnings.catch_warnings(), np.errstate(all="ignore"):
             warnings.simplefilter("ignore")
             out = _ev(expr, frames, n, nan)
-    except Exception:
-        out = nan
+    except RuleRefusal:
+        raise
+    except Exception as exc:
+        raise RuleRefusal(f"expression does not evaluate: {type(exc).__name__}: {exc}") from exc
     return out.astype(float).replace([np.inf, -np.inf], np.nan)
 
 
 def _ev(e: Any, f: dict[str, pd.Series], n: int, nan: pd.Series) -> pd.Series:
     if isinstance(e, str):
-        return f.get(e, nan)
+        if e not in f:
+            raise RuleRefusal(f"terminal {e!r} has no column in these bars")
+        return f[e]
     op = str(e[0])
     if op in F_UNARY:
         a = evaluate(e[1], f, n)
@@ -384,13 +388,13 @@ def _ev(e: Any, f: dict[str, pd.Series], n: int, nan: pd.Series) -> pd.Series:
 def _build_formula(b: Bars, p: dict[str, Any]) -> list[Order]:
     norm, hold = int(p["norm"]), int(p["hold_bars"])
     if len(b) < max(2 * norm, 300):
-        return []
+        raise RuleRefusal(f"{len(b)} bars, the rule needs {max(2 * norm, 300)}")
     frames = _terminals(b, int(p["atr_n"]))
     v = evaluate(p["expr"], frames, len(b))
     r = v.rolling(norm, min_periods=norm)
     z = ((v - r.mean()) / r.std()).to_numpy(dtype=float)
     if np.isfinite(z).sum() < 0.05 * z.size:
-        return []
+        raise RuleRefusal("fewer than 5% of the normalised values are finite")
     a = atr(b, int(p["atr_n"]))
     flip = 1 if p["side_mode"] == "follow" else -1
     sa, rr, ez = float(p["stop_atr"]), float(p["rr"]), float(p["entry_z"])
@@ -465,19 +469,21 @@ def rolling_ols_residual(y: np.ndarray, x: np.ndarray, win: int) -> np.ndarray:
 
 def _build_cross_asset_residual(b: Bars, p: dict[str, Any]) -> list[Order]:
     factors = list(p.get("_inputs") or [])
-    if not factors or p["side_mode"] not in ("revert", "continue"):
-        return []
+    if not factors:
+        raise RuleRefusal("no factor bars attached")
+    if p["side_mode"] not in ("revert", "continue"):
+        raise RuleRefusal(f"side_mode {p['side_mode']!r} has no written rule")
     lb = int(p["lookback"])
     bwin = int(p["beta_win"]) if p.get("beta_win") else lb
     t, closes = _join(b, factors)
     if len(t) < bwin + 2 * lb:
-        return []
+        raise RuleRefusal(f"{len(t)} joined rows, the rule needs {bwin + 2 * lb}")
     with np.errstate(all="ignore"):
         rets = [np.concatenate([[np.nan], np.diff(np.log(c))]) for c in closes]
     mat = np.vstack(rets)
     ok = np.all(np.isfinite(mat), axis=0)
     if ok.sum() < bwin + 2 * lb:
-        return []
+        raise RuleRefusal(f"{int(ok.sum())} finite joined returns, the rule needs {bwin + 2 * lb}")
     resid = rolling_ols_residual(mat[0, ok], mat[1:, ok].T, bwin)
     cum = pd.Series(np.where(np.isfinite(resid), resid, 0.0).cumsum()).where(
         pd.Series(np.isfinite(resid)))
@@ -522,11 +528,11 @@ RV_TEXT = (
 def _build_relative_value(b: Bars, p: dict[str, Any]) -> list[Order]:
     peers = list(p.get("_inputs") or [])
     if not peers:
-        return []
+        raise RuleRefusal("no peer bars attached")
     lb = int(p["lookback"])
     t, (ca, cb) = _join(b, peers[:1])
     if len(t) < 2 * lb:
-        return []
+        raise RuleRefusal(f"{len(t)} joined rows, the rule needs {2 * lb}")
     with np.errstate(all="ignore"):
         spread = pd.Series(np.log(ca) - np.log(cb))
         r = spread.rolling(lb, min_periods=lb)
@@ -607,7 +613,19 @@ def _resolve(family: str, params: Mapping[str, Any] | None, selector: str | None
             p["side_mode"] = val
             continue
         if k in p:
-            p[k] = v
+            d = p[k]
+            if isinstance(d, (int, float)) and not isinstance(d, bool):
+                # a numeric parameter takes its default's type or the certificate is refused:
+                # `entry_z: None` reaching the build raised there and aborted the whole pass
+                try:
+                    num = float(v)
+                except (TypeError, ValueError):
+                    return None, f"{family} {k}={v!r} is not a number"
+                if not np.isfinite(num) or (isinstance(d, int) and num != int(num)):
+                    return None, f"{family} {k}={v!r} is not a finite {type(d).__name__}"
+                p[k] = int(num) if isinstance(d, int) else num
+            else:
+                p[k] = v
             continue
         if k == "session":
             if val not in SESSION_WINDOWS:

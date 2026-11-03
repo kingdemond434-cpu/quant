@@ -316,3 +316,25 @@ def test_the_count_is_a_floor_and_rule_bearing_unjudged_certificates_go_first(
     assert seen[:6] == [f"G{i}" for i in range(6)]       # all six, past the floor of two
     assert not any(s.startswith("U") for s in loaded)     # no rule, no parquet opened
     assert doc["n"] == len(seen)
+
+
+def test_a_row_that_raises_is_unmeasured_and_the_pass_still_writes(tmp_path: Path,
+                                                                    monkeypatch) -> None:
+    """One malformed certificate used to abort build() with no artifact at all."""
+    def boom(row, *, meta, bars):
+        if row["certificate"] == "BAD":
+            raise TypeError("float() argument must be a string or a real number, not 'NoneType'")
+        return {"lane": "certificate", "key": row["certificate"],
+                "certificate": row["certificate"], "verdict": rc.UNMEASURED, "why": []}
+
+    monkeypatch.setattr(rc, "replicate_certificate", boom)
+    certs = [{"certificate": k, "shadow_spec": {"symbol": "TESTFX",
+                                                "family": "overnight_gap_decay"}}
+             for k in ("BAD", "OK")]
+    doc = rc.build(certificates=certs, forward=[], universe_meta={},
+                   bars_loader=lambda *_: None, cursor_path=tmp_path / "cursor.json",
+                   dry_run=True, max_per_pass=4)
+    rows = {r["key"]: r for r in doc["rows"]} if "rows" in doc else None
+    assert doc["counts"][rc.UNMEASURED] == 2
+    if rows is not None:
+        assert "TypeError" in rows["BAD"]["why"][0]

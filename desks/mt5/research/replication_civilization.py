@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import functools
 import json
 import os
 import sys
@@ -286,6 +287,14 @@ def rsi(close: np.ndarray, n: int) -> np.ndarray:
 
 
 # ------------------------------------------------------------------------------- the rules
+class RuleRefusal(Exception):
+    """A written rule that cannot be evaluated on the inputs at hand: a column the bars do not
+    carry, too short a history, an expression that does not evaluate. It is UNMEASURED by name.
+    Returning no orders instead would read as "the rebuild produced NO fill", which the forward
+    lane judges MISMATCH and quarantines -- so a box whose parquet lacks a column would quarantine
+    healthy clocks (AUDIT HOLD c21afd792, 2026-11-03)."""
+
+
 @dataclass
 class Order:
     """One signal as the rule book states it: the bar it is known at, the side, the protective
@@ -951,6 +960,20 @@ def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | 
 HUNT16_FAMILIES = frozenset({"dav_range_filter_adx", "hunt16_cell"})
 
 
+def _guarded(lane: str, key: str, judge: Callable[..., dict[str, Any]], *args: Any,
+             loader: Callable[[], Any] | None = None, **kwargs: Any) -> dict[str, Any]:
+    """One row that raises (its bars loader included) is UNMEASURED by name; it never aborts
+    the pass and its artifact."""
+    try:
+        if loader is not None:
+            kwargs["bars"] = loader()
+        return judge(*args, **kwargs)
+    except Exception as exc:
+        return {"lane": lane, "key": key, "certificate": key if lane == "certificate" else None,
+                "verdict": UNMEASURED, "why": [f"row raised {type(exc).__name__}: {exc}"],
+                "ours": {}, "theirs": {}}
+
+
 def rebuild(family: str, bars: Bars, p: Mapping[str, Any], cost_units: float
             ) -> tuple[list[Order], list[Fill]]:
     orders = SPEC_BOOK[family].build(bars, dict(p))
@@ -1111,14 +1134,23 @@ def ledger_for(key: str, identity: Mapping[str, Any], shadow_dir: Path = SHADOW_
     return []
 
 
+TF_BY_MINUTES = {1: "M1", 5: "M5", 15: "M15", 30: "M30", 60: "H1", 240: "H4", 1440: "D1"}
+
+
 def attach_inputs(family: str, params: Mapping[str, Any] | None, p: dict[str, Any],
-                  inputs_loader: Callable[[str, str], Bars | None] | None = None) -> str | None:
+                  inputs_loader: Callable[[str, str], Bars | None] | None = None,
+                  own: Bars | None = None) -> str | None:
     """Load the other symbols' bars a rule reads (factors, a peer) through THIS lane's loader,
-    on the cell's own chart, into `p["_inputs"]`; the named reason when one is absent."""
+    on the chart of the bars being judged (`own`), into `p["_inputs"]`; the named reason when
+    one is absent. One chart for both: an input on a coarser chart than the target would join
+    an M15 row to an H1 bar whose close lies in that row's future."""
     names = input_symbols(family, params)
     if not names:
         return None
-    tf = str(dict(params or {}).get("timeframe") or "H1")
+    tf = (TF_BY_MINUTES.get(int(own.minutes)) if own is not None
+          else str(dict(params or {}).get("timeframe") or "H1"))
+    if tf is None:
+        return f"target bars at {own.minutes if own is not None else '?'} minutes name no chart"
     loader = inputs_loader or load_bars
     got = []
     for name in names:
@@ -1126,6 +1158,8 @@ def attach_inputs(family: str, params: Mapping[str, Any] | None, p: dict[str, An
         if bars is None or len(bars) < MIN_BARS:
             return (f"input {name} {tf} bars absent or shorter than {MIN_BARS} rows: a partial "
                     "basket is a different model")
+        if own is not None and int(bars.minutes) != int(own.minutes):
+            return f"input {name} is on {bars.minutes}-minute bars, the target on {own.minutes}"
         got.append(bars)
     p["_inputs"] = got
     return None
@@ -1149,12 +1183,16 @@ def replicate_certificate(row: Mapping[str, Any], *, meta: Mapping[str, Any],
     if bars is None or len(bars) < MIN_BARS:
         out["why"] = [f"{sym} bars absent or shorter than {MIN_BARS} rows"]
         return out
-    missing = attach_inputs(fam, spec.get("params"), p, inputs_loader)
+    missing = attach_inputs(fam, spec.get("params"), p, inputs_loader, own=bars)
     if missing:
         out["why"] = [missing]
         return out
     cost = cost_spec(meta)
-    _orders, fills = rebuild(fam, bars, p, cost.price_units)
+    try:
+        _orders, fills = rebuild(fam, bars, p, cost.price_units)
+    except RuleRefusal as exc:
+        out["why"] = [f"rule refused: {exc}"]
+        return out
     ours, n_days = sharpe(fills)
     gates = row.get("gates") if isinstance(row.get("gates"), dict) else {}
     iss = gates.get("in_sample_screen") if isinstance(gates.get("in_sample_screen"), dict) else {}
@@ -1191,12 +1229,16 @@ def replicate_forward(row: Mapping[str, Any], *, meta: Mapping[str, Any], bars: 
     if bars is None or len(bars) < MIN_BARS:
         out["why"] = [f"{sym} bars absent or shorter than {MIN_BARS} rows"]
         return out
-    missing = attach_inputs(fam, ident.get("params"), p, inputs_loader)
+    missing = attach_inputs(fam, ident.get("params"), p, inputs_loader, own=bars)
     if missing:
         out["why"] = [missing]
         return out
     cost = cost_spec(meta)
-    _orders, fills = rebuild(fam, bars, p, cost.price_units)
+    try:
+        _orders, fills = rebuild(fam, bars, p, cost.price_units)
+    except RuleRefusal as exc:
+        out["why"] = [f"rule refused: {exc}"]
+        return out
     start = str(row.get("forward_start") or "")
     try:
         t0 = int(np.datetime64(start.replace(" ", "T").split("+")[0], "ns").astype("int64"))
@@ -1356,9 +1398,10 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         tf = str((spec.get("params") or {}).get("timeframe") or "H1")
         # bars only for a rule that can read them: a family with no written rule resolves to
         # UNMEASURED before the bars are touched, so opening its parquet was pure cost
-        rows.append(replicate_certificate(row, meta=dict(meta_all.get(sym) or {}),
-                                          bars=bars_loader(sym, tf) if _has_rule(idx)
-                                          else None))
+        rows.append(_guarded("certificate", certificate_id(row), replicate_certificate, row,
+                             meta=dict(meta_all.get(sym) or {}),
+                             loader=functools.partial(bars_loader, sym, tf) if _has_rule(idx)
+                             else (lambda: None)))
         taken += 1
         if n >= len(first):
             cursor["certificates"] = (idx + 1) % len(certs)
@@ -1369,9 +1412,10 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         row = fwd[(fi + k) % len(fwd)]
         ident = row.get("identity") or {}
         sym, tf = str(ident.get("symbol") or ""), str(ident.get("timeframe") or "H1")
-        rows.append(replicate_forward(row, meta=dict(meta_all.get(sym) or {}),
-                                      bars=bars_loader(sym, tf),
-                                      ledger=ledger_loader(str(row.get("key") or ""), ident)))
+        rows.append(_guarded("forward", str(row.get("key") or ""), replicate_forward, row,
+                             meta=dict(meta_all.get(sym) or {}),
+                             loader=functools.partial(bars_loader, sym, tf),
+                             ledger=ledger_loader(str(row.get("key") or ""), ident)))
         cursor["forward"] = (fi + k + 1) % len(fwd)
     recorded = record(rows, conn=conn, dry_run=dry_run, quarantine_path=quarantine_path)
     counts = {v: sum(1 for r in rows if r["verdict"] == v)
