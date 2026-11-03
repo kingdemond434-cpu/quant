@@ -210,20 +210,27 @@ STATUS_CONTEXT = "release-authority"
 STATUS_FLAG = "POST_STATUS"  # in the registry folder (Administrators-write): Level 2 is on
 
 
-def first_signed(out: Path, pr: int, head: str, digest: str) -> datetime | None:
-    """When this (pr, head) was FIRST signed CLEAR under this policy, from the signed statements
-    themselves (never file times): the start of the veto the ruleset enforces."""
-    best: datetime | None = None
-    for f in out.glob(f"pr{pr}-{head[:12]}-CLEAR-{digest[:8]}-*.json"):
-        try:
-            st = json.loads(f.read_text(encoding="utf-8"))["statement"]
-            if st.get("head_sha") != head:
+def first_signed(
+    out: Path, pr: int, head: str, digest: str, now: datetime | None = None
+) -> datetime | None:
+    """The start of the veto the ruleset enforces: the FIRST CLEAR signed on this (pr, head) under
+    this policy AFTER its latest signed HOLD (a HOLD raised and lifted restarts the window), read
+    from the signed statements themselves, never file times. A statement dated in the future is
+    ignored. FAIL and WAIT are never signed, so they do not restart it (LEVEL2.md)."""
+    now = now or datetime.now(UTC)
+    seen: dict[str, list[datetime]] = {"CLEAR": [], "HOLD": []}
+    for verdict, got in seen.items():
+        for f in out.glob(f"pr{pr}-{head[:12]}-{verdict}-{digest[:8]}-*.json"):
+            try:
+                st = json.loads(f.read_text(encoding="utf-8"))["statement"]
+                t = datetime.fromisoformat(str(st["issued_at"]))
+            except (OSError, ValueError, KeyError, TypeError):
                 continue
-            t = datetime.fromisoformat(str(st["issued_at"]))
-        except (OSError, ValueError, KeyError, TypeError):
-            continue
-        best = t if best is None or t < best else best
-    return best
+            if st.get("head_sha") == head and st.get("verdict", verdict) == verdict and t <= now:
+                got.append(t)
+    last_hold = max(seen["HOLD"], default=None)
+    clears = [t for t in seen["CLEAR"] if last_hold is None or t > last_hold]
+    return min(clears, default=None)
 
 
 def status_for(
@@ -240,6 +247,8 @@ def status_for(
     a merge inside the 24 h window even from a rewritten gate. ROOT never gets success: it goes
     through the owner's admin pull-request bypass."""
     now = now or datetime.now(UTC)
+    if f.get("cls") not in ("AUTO", "LOW", "CONTROLLER"):
+        return "failure", f"{f.get('cls')}: the owner's path, never this status"[:140]
     if verdict == "CLEAR":
         if f.get("cls") in ("AUTO", "LOW"):
             return "success", "CLEAR"

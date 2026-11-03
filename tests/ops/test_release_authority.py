@@ -409,7 +409,7 @@ def test_status_controller_waits_out_the_veto() -> None:
                                            ("WAIT", "pending")])  # fmt: skip
 def test_status_never_success_without_clear(verdict: str, state: str) -> None:
     a = _auth()
-    got = a.status_for({"cls": "ROOT"}, verdict, ["root file"], since=None, veto_h=24)
+    got = a.status_for({"cls": "CONTROLLER"}, verdict, ["why"], since=None, veto_h=24)
     assert got[0] == state
 
 
@@ -424,14 +424,57 @@ def test_first_signed_reads_the_earliest_statement(tmp_path: Path) -> None:
         json.dumps({"statement": {"head_sha": "b" * 40, "issued_at": "2026-11-01T00:00:00+00:00"}}),
         encoding="utf-8",
     )
-    got = a.first_signed(tmp_path, 7, head, "deadbeef" + "0" * 56)
+    from datetime import UTC, datetime
+
+    now = datetime(2026, 11, 4, tzinfo=UTC)
+    got = a.first_signed(tmp_path, 7, head, "deadbeef" + "0" * 56, now=now)
     assert got is not None and got.hour == 8 and got.day == 3
+    # a HOLD at 09:00 restarts the window: only the 10:00 CLEAR counts
+    (tmp_path / f"pr7-{head[:12]}-HOLD-deadbeef-h.json").write_text(
+        json.dumps({"statement": {"head_sha": head, "issued_at": "2026-11-03T09:00:00+00:00",
+                                  "verdict": "HOLD"}}), encoding="utf-8")  # fmt: skip
+    got = a.first_signed(tmp_path, 7, head, "deadbeef" + "0" * 56, now=now)
+    assert got is not None and got.hour == 10
+    # a future-dated CLEAR is ignored
+    (tmp_path / f"pr7-{head[:12]}-CLEAR-deadbeef-f.json").write_text(
+        json.dumps({"statement": {"head_sha": head, "issued_at": "2026-11-09T00:00:00+00:00"}}),
+        encoding="utf-8",
+    )
+    got = a.first_signed(tmp_path, 7, head, "deadbeef" + "0" * 56, now=now)
+    assert got is not None and got.hour == 10
 
 
-def test_live_ruleset_requires_the_authority_app_and_never_lets_admin_push() -> None:
+def test_status_is_failure_outside_the_delegated_classes_even_on_clear() -> None:
+    a = _auth()
+    for cls in ("ROOT", "REFUSED", None):
+        assert a.status_for({"cls": cls}, "CLEAR", [], since=None, veto_h=24)[0] == "failure"
+
+
+def _check_ruleset() -> Any:
+    return sb_mod._load("check_ruleset", ROOT / "ops/release/authority/check_ruleset.py")
+
+
+def test_prepared_ruleset_is_refused_until_the_state_app_is_named() -> None:
+    cr = _check_ruleset()
     rs = json.loads((ROOT / "ops/release/authority/ruleset_live.json").read_text(encoding="utf-8"))
-    checks = next(r for r in rs["rules"] if r["type"] == "required_status_checks")
-    need = checks["parameters"]["required_status_checks"]
-    assert need == [{"context": "release-authority", "integration_id": 5601819}]
-    admin = [b for b in rs["bypass_actors"] if b["actor_type"] == "RepositoryRole"]
-    assert admin and all(b["bypass_mode"] == "pull_request" for b in admin)
+    assert cr.problems(rs) == [
+        "bypass actor Integration has a placeholder id: fill in the state App's id"
+    ]
+    for b in rs["bypass_actors"]:
+        if b["actor_id"] == 0:
+            b["actor_id"] = 7777777
+    assert cr.problems(rs) == []
+
+
+@pytest.mark.parametrize("bad", [
+    {"actor_type": "Integration", "actor_id": 15368, "bypass_mode": "always"},
+    {"actor_type": "RepositoryRole", "actor_id": 5, "bypass_mode": "always"},
+    {"actor_type": "DeployKey", "actor_id": 1, "bypass_mode": "always"},
+])  # fmt: skip
+def test_ruleset_check_refuses_unsafe_bypass(bad: dict[str, Any]) -> None:
+    cr = _check_ruleset()
+    rs = json.loads((ROOT / "ops/release/authority/ruleset_live.json").read_text(encoding="utf-8"))
+    rs["bypass_actors"] = [b for b in rs["bypass_actors"] if b["actor_id"] != 0]
+    rs["bypass_actors"] += [{"actor_type": "Integration", "actor_id": 7777777,
+                             "bypass_mode": "always"}, bad]  # fmt: skip
+    assert cr.problems(rs)

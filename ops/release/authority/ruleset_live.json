@@ -4,24 +4,38 @@
   "enforcement": "active",
   "conditions": {
     "ref_name": {
-      "include": ["refs/heads/claude/llm-auto-upgrade-verify-gcjac3"],
+      "include": [
+        "refs/heads/claude/llm-auto-upgrade-verify-gcjac3"
+      ],
       "exclude": []
     }
   },
   "bypass_actors": [
-    {"actor_type": "RepositoryRole", "actor_id": 5, "bypass_mode": "pull_request"},
-    {"actor_type": "Integration", "actor_id": 15368, "bypass_mode": "always"},
-    {"actor_type": "Integration", "actor_id": 0, "bypass_mode": "always"}
+    {
+      "actor_type": "RepositoryRole",
+      "actor_id": 5,
+      "bypass_mode": "pull_request"
+    },
+    {
+      "actor_type": "Integration",
+      "actor_id": 0,
+      "bypass_mode": "always"
+    }
   ],
   "rules": [
-    {"type": "deletion"},
+    {
+      "type": "deletion"
+    },
     {
       "type": "required_status_checks",
       "parameters": {
         "strict_required_status_checks_policy": false,
         "do_not_enforce_on_create": false,
         "required_status_checks": [
-          {"context": "release-authority", "integration_id": 5601819}
+          {
+            "context": "release-authority",
+            "integration_id": 5601819
+          }
         ]
       }
     }

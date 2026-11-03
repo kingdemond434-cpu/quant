@@ -5,7 +5,8 @@
     "ops/release/authority/*",
     ".github/scripts/audit_gate.py",
     ".github/workflows/trusted-eval.yml",
-    "ops/box/workflow_gate.ps1"
+    "ops/box/workflow_gate.ps1",
+    "ops/release/publisher/*"
   ],
   "grow_only": [
     "ops/release/protected_paths.txt",
