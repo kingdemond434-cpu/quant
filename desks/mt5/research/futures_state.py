@@ -600,6 +600,12 @@ def robots_label(url: str, get_text: Callable[[str], str]) -> tuple[str, str]:
     return "PUBLIC_WITH_TERMS", "robots disallows this path: recorded as a label, not a refusal"
 
 
+def robots_allow(url: str, get_text: Callable[[str], str]) -> bool:
+    """Compatibility shim for importers (global_flow, #659): True only for a PUBLIC label.
+    New code calls `robots_label` and carries the label instead of skipping (LAWS 5e)."""
+    return robots_label(url, get_text)[0] == "PUBLIC"
+
+
 def mof_sign(pair: str) -> float:
     """+1 when the yen was BOUGHT (support), -1 when sold, 0 for an operation not against yen."""
     p = pair.lower()

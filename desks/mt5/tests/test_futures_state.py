@@ -512,3 +512,10 @@ def test_discontinued_eia_curves_are_named_not_read(tmp_desk: Path) -> None:
                                               bars=lambda s: None)
     assert not built
     assert any(n.get("source") == "eia_futures" and n["status"] == "UNMEASURED" for n in notes)
+
+
+def test_robots_allow_shim_survives_for_importers() -> None:
+    def get_text(url: str) -> str:
+        return "User-agent: *\nDisallow: /x\n"
+    assert fs.robots_allow("https://h/a.csv", get_text) is True
+    assert fs.robots_allow("https://h/x/a.csv", get_text) is False
