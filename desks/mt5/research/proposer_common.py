@@ -490,8 +490,14 @@ def _blinded(source: str, candidates: list[dict]) -> tuple[list[dict], dict[str,
 
 
 def donate(source: str, candidates: list[dict], tests_run: int,
-           suffix: str = "") -> Path | None:
+           suffix: str = "", *, registry: bool = True) -> Path | None:
     """Write the discovery contract. A control run must NEVER call this.
+
+    `registry=False` is for a producer that has ALREADY written each row to the canonical
+    registry itself, with the same (family, symbol, params, chart) identity: a second write here
+    would be a second candidate for one rule whenever the two writes spell chart or horizon
+    differently, and the registry's docket feed would then put that rule in front of the judge
+    twice. The contract file (and its `tests_run` charge) is written either way.
 
     POINT-IN-TIME BY CONSTRUCTION AND BY REFUSAL. Every row that leaves here carries
     available_time, ingested_time, source_version and a payload hash, so a joiner can refuse it
@@ -545,8 +551,26 @@ def donate(source: str, candidates: list[dict], tests_run: int,
                                          "here and counted, never written: absence of an "
                                          "available_time is not permission to use the row")},
                                indent=1, default=str), "utf-8")
-    _record_in_registry(source, candidates)
+    if registry:
+        _record_in_registry(source, candidates)
     return path
+
+
+def _dataset_links(c: dict) -> dict[str, Any]:
+    """The dataset a cell declares it reads, carried into the registry row (2026-09-30).
+
+    A cell whose family loads its input from a fixed store names nothing in `params` (a dataset
+    key there would reach the family's call and be refused), so the only place a donor can say
+    WHICH dataset fed the cell is the registry row's `required_data` / `lineage` -- which is where
+    the D18 dataset-exploitation census looks. Passed only when the donor wrote them in the
+    shapes that census reads (a list, a dict); nothing else about the row changes, and the rule's
+    content hash does not read either field."""
+    out: dict[str, Any] = {}
+    if isinstance(c.get("required_data"), list) and c["required_data"]:
+        out["required_data"] = [str(x) for x in c["required_data"]]
+    if isinstance(c.get("lineage"), dict) and c["lineage"]:
+        out["lineage"] = dict(c["lineage"])
+    return out
 
 
 def _record_in_registry(source: str, candidates: list[dict]) -> None:
@@ -600,7 +624,8 @@ def _record_in_registry(source: str, candidates: list[dict]) -> None:
                         family=family, symbol=symbol, params=params, origin=origin,
                         mechanism=mechanism, status="donated", generator=source, source_id=source,
                         discovery_id=did, transformation="compiled",
-                        chart=str(c.get("chart") or c.get("timeframe") or ""), conn=conn)
+                        chart=str(c.get("chart") or c.get("timeframe") or ""), conn=conn,
+                        **_dataset_links(c))
         finally:
             conn.close()
         el = _time.perf_counter() - t0
