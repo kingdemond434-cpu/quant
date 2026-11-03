@@ -54,9 +54,10 @@ def _read(path: Path) -> Any:
         return None
 
 
-def _age_h(doc: Any, now: datetime) -> float | None:
+def _age_h(doc: Any, now: datetime, key: str | None = None) -> float | None:
     try:
-        at = datetime.fromisoformat(str(doc.get("at") or doc.get("generated_at")))
+        raw = doc.get(key) if key else (doc.get("at") or doc.get("generated_at"))
+        at = datetime.fromisoformat(str(raw))
     except (AttributeError, TypeError, ValueError):
         return None
     if at.tzinfo is None:
@@ -118,6 +119,16 @@ def state(now: datetime) -> list[str]:
         if age is None or age > STALE_H:
             bad.append(f"{path.name} is {age if age is None else round(age, 1)}h old "
                        f"(> {STALE_H}h): its leg stopped")
+        elif path == BACKPRESSURE:
+            # THE CORE REFRESHES `at` EVERY SWEEP; the windows the tensor reads are the last FULL
+            # build's, stamped `full_at` (audit of 53fade9ec). A fresh `at` over a stale full
+            # build is exactly the case this fence exists to see.
+            full_at = doc.get("full_at") or (doc.get("at") if doc.get("mode") != "core" else None)
+            fage = _age_h({"full_at": full_at}, now, "full_at") if full_at else None
+            if fage is None or fage > STALE_H:
+                bad.append(f"{path.name} full build is "
+                           f"{'UNMEASURED (no full_at)' if fage is None else f'{fage:.1f}h old'} "
+                           f"(> {STALE_H}h): the windows the tensor throttles on are stale")
     return bad
 
 

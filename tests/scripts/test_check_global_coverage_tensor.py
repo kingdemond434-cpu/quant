@@ -60,3 +60,17 @@ def test_the_box_half_needs_all_three_artifacts_fresh(arts):
                                     "utf-8")
     bad = F.state(NOW)
     assert len(bad) == 1 and "B.json" in bad[0] and "stopped" in bad[0]
+
+
+def test_a_fresh_core_over_a_stale_full_build_fails_the_box_half(arts):
+    """Audit of 53fade9ec: the core refreshes `at` every sweep; the windows are `full_at`'s."""
+    for k in ("REPORT", "ROI"):
+        arts[k].write_text(json.dumps(_good()), "utf-8")
+    arts["BACKPRESSURE"].write_text(json.dumps({
+        "at": NOW.isoformat(), "mode": "core",
+        "full_at": (NOW - timedelta(days=7)).isoformat()}), "utf-8")
+    bad = F.state(NOW)
+    assert len(bad) == 1 and "full build" in bad[0]
+    arts["BACKPRESSURE"].write_text(json.dumps({"at": NOW.isoformat(), "mode": "core",
+                                                "full_at": NOW.isoformat()}), "utf-8")
+    assert F.state(NOW) == []

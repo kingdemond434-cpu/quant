@@ -310,18 +310,27 @@ def _read_jsonl(path: Path, note: dict[str, str], *, since: datetime | None = No
     rows: list[dict[str, Any]] = []
     ids: set[str] = set()          # ids held so far -- every one of them NEWER than the cursor
     older: set[str] = set()        # held ids that also have a row older than the horizon
+    # Old-dated rows met BEFORE their id's in-horizon row (appended later, read first backwards):
+    # remembered here and joined against the held ids once the scan is done.
+    early_old: set[str] = set()
     total = in_horizon = older_run = 0
     stopped = ""
     births_note = ""
     track = births and cut is not None
 
+    in_scan = [True]               # False once the horizon scan ends: ids are then complete
+
     def _older_line(raw: bytes) -> None:
-        if track and ids:
-            mi = _ID_RE.search(raw)
-            if mi is not None:
-                rid = mi.group(1).decode("utf-8", "replace")
-                if rid in ids:
-                    older.add(rid)
+        if not track:
+            return
+        mi = _ID_RE.search(raw)
+        if mi is None:
+            return
+        rid = mi.group(1).decode("utf-8", "replace")
+        if rid in ids:
+            older.add(rid)
+        elif in_scan[0]:
+            early_old.add(rid)
 
     lines = None
     try:
@@ -357,6 +366,7 @@ def _read_jsonl(path: Path, note: dict[str, str], *, since: datetime | None = No
                     ids.add(str(row.get("id") or ""))
         # THE BIRTHS REFINEMENT carries on backwards through the file's past with an id regex
         # only: an id held in the horizon that also has an OLDER row was born before it.
+        in_scan[0] = False
         if track and stopped == "HORIZON":
             scanned = 0
             for raw in lines:
@@ -377,6 +387,7 @@ def _read_jsonl(path: Path, note: dict[str, str], *, since: datetime | None = No
         if lines is not None:
             lines.close()
     rows.reverse()
+    older |= early_old & ids
     if older:
         rows = [r for r in rows if str(r.get("id") or "") not in older]
     if stopped == "BUDGET":
@@ -911,10 +922,14 @@ def trial_budget(out: Path | None = None) -> dict[str, Any]:
     }
 
 
-def build(now: datetime | None = None, budget_s: float | None = None) -> dict[str, Any]:
+def build(now: datetime | None = None, budget_s: float | None = None,
+          started: float | None = None) -> dict[str, Any]:
+    """`started` is the caller's `time.monotonic()` at entry: the budget is the LEG's wall clock,
+    so time the caller spent before the build (the core republish) is charged against it too
+    (audit of 53fade9ec)."""
     import time as _time
 
-    t0 = _time.monotonic()
+    t0 = _time.monotonic() if started is None else float(started)
     at = now or _now()
     note: dict[str, str] = {}
     _PAIR_AXES.clear()
@@ -1152,6 +1167,9 @@ def _keep_fresher_core(doc: dict[str, Any], prev: dict[str, Any]) -> dict[str, A
 
 
 def main(argv: list[str] | None = None) -> int:
+    import time as _time
+
+    started = _time.monotonic()
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--dry-run", action="store_true",
                     help="measure and print; write no report and no prior")
@@ -1177,7 +1195,7 @@ def main(argv: list[str] | None = None) -> int:
             write_core()
         except Exception as exc:  # pragma: no cover - defensive; the full build follows
             print(f"  core republish failed: {type(exc).__name__}: {exc}")
-    doc = build(budget_s=a.budget_s)
+    doc = build(budget_s=a.budget_s, started=started)
     doc["mode"] = "full"
     doc["full_at"] = doc["at"]
     w = doc["windows"][WINDOWS[0][0]]
@@ -1203,7 +1221,15 @@ def main(argv: list[str] | None = None) -> int:
     # judging_throughput repair put its artifacts before `schtasks`). It is rewritten after.
     doc["prior_write"] = {"status": "PENDING", "why": "report published before the registry write"}
     write(doc)
-    res = write_priors(doc["priors"], doc["at"])
+    ledger_state = str((doc.get("unmeasured") or {}).get(GATE_LEDGER.name) or "")
+    if ledger_state.startswith("TRUNCATED_BUDGET"):
+        # A budget-cut ledger read holds only the newest verdicts it reached: upserting those
+        # partial-sample pass rates over the lifetime priors would overwrite a measurement with a
+        # smaller one (audit of 53fade9ec). The registry keeps the last full priors.
+        res = {"status": "SKIPPED", "written": 0,
+               "why": f"gate ledger read was {ledger_state[:120]}: priors not written"}
+    else:
+        res = write_priors(doc["priors"], doc["at"])
     doc["priors_written"] = res.get("written", 0)
     doc["prior_write"] = res
     print(f"-> {write(doc)}  ({doc['priors_written']} prior(s) into the registry)")

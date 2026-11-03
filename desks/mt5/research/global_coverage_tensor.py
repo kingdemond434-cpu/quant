@@ -788,11 +788,112 @@ def _head_hash(path: Path, n: int = 4096) -> str:
         return ""
 
 
+#: Bytes per backward block, and how many consecutive lines dated before the backfill horizon end
+#: a backfill (the log is append-ordered, not perfectly date-ordered: one old row is not the end).
+BACKFILL_BLOCK_BYTES = 1 << 20
+BACKFILL_STOP_RUN = 2_000
+_BACKFILL_AT_RE = re.compile(rb'"(?:at|born_at)"\s*:\s*"(\d{4}-\d\d-\d\d)')
+#: Bytes a decoded row is budgeted at, and the share of free physical memory the rows of one pass
+#: may hold. The cap is DERIVED on the machine running the pass (CLAUDE.md: never size off the
+#: other box); MAX_ROWS_PER_LOG stays the ceiling and BACKFILL_MIN_ROWS the floor.
+ROW_BYTES = 2_048
+ROW_MEMORY_SHARE = 0.10
+BACKFILL_MIN_ROWS = 50_000
+
+
+def rows_cap() -> int:
+    """Rows one log may decode this pass, from MEASURED free memory. Unreadable reads the ceiling's
+    floor-safe minimum, never the ceiling: a cap is a memory bound, and an unmeasured box is not
+    a big one. A smaller cap costs nothing but passes -- the backfill resumes where it stopped."""
+    try:
+        import psutil  # type: ignore[import-untyped,unused-ignore]
+        free = float(psutil.virtual_memory().available)
+    except Exception:                                                        # noqa: BLE001
+        return BACKFILL_MIN_ROWS
+    return int(max(BACKFILL_MIN_ROWS, min(MAX_ROWS_PER_LOG, free * ROW_MEMORY_SHARE / ROW_BYTES)))
+
+
+def _lines_back(fh: Any, end: int) -> Iterable[tuple[int, bytes]]:
+    """(start offset, line) NEWEST FIRST from byte `end` down to 0, in bounded blocks."""
+    pos, tail = end, b""
+    while pos > 0:
+        step = min(BACKFILL_BLOCK_BYTES, pos)
+        pos -= step
+        fh.seek(pos)
+        buf = fh.read(step) + tail
+        parts = buf.split(b"\n")
+        starts = [0] * len(parts)
+        acc = 0
+        for i, part in enumerate(parts):
+            starts[i] = acc
+            acc += len(part) + 1
+        tail = parts[0]
+        for i in range(len(parts) - 1, 0, -1):
+            yield pos + starts[i], parts[i]
+    if tail:
+        yield 0, tail
+
+
+def _backfill(path: Path, *, end: int, since: datetime, deadline: float,
+              cap: int) -> tuple[list[dict[str, Any]], int | None, str]:
+    """Rows dated on or after `since`, read BACKWARDS from byte `end`.
+
+    Returns (rows oldest first, `low`, why). `low` is the start offset of the oldest line consumed
+    when the read was CUT (cap or budget): every byte from `low` to `end` is done, so the next pass
+    resumes below `low` and nothing is decoded twice. `low` is None once the horizon is reached
+    (BACKFILL_STOP_RUN consecutive older lines, or the start of the file)."""
+    if cap <= 0:
+        return [], end, "CAP"
+    cut = (since - timedelta(days=1)).date().isoformat().encode()
+    rows: list[dict[str, Any]] = []
+    older_run = n = 0
+    low: int | None = None
+    why = "HORIZON"
+    with path.open("rb") as fh:
+        for start, raw in _lines_back(fh, end):
+            n += 1
+            if len(rows) >= cap or (n % 5_000 == 0 and time.monotonic() > deadline):
+                low = min(end, start + len(raw) + 1)
+                why = "CAP" if len(rows) >= cap else "BUDGET"
+                break
+            if not raw.strip():
+                continue
+            m = _BACKFILL_AT_RE.search(raw)
+            if m is None or m.group(1) < cut:
+                older_run += 1
+                if older_run >= BACKFILL_STOP_RUN:
+                    break
+                continue
+            older_run = 0
+            with contextlib.suppress(ValueError):
+                obj = json.loads(raw.decode("utf-8", "replace").lstrip("\ufeff"))
+                if isinstance(obj, dict):
+                    rows.append(obj)
+    rows.reverse()
+    return rows, low, why
+
+
+def _complete_end(path: Path, size: int) -> int:
+    """The end of the last COMPLETE line: a line still being written is left to the next pass."""
+    if size <= 0:
+        return 0
+    with path.open("rb") as fh:
+        back = min(size, BACKFILL_BLOCK_BYTES)
+        fh.seek(size - back)
+        buf = fh.read(back)
+    if buf.endswith(b"\n"):
+        return size
+    i = buf.rfind(b"\n")
+    return 0 if i < 0 and back == size else (size - back + i + 1 if i >= 0 else size)
+
+
 def read_log(path: Path, cursor: dict[str, Any], *, now: datetime, deadline: float,
              absent: Absent, name: str) -> list[dict[str, Any]]:
     """Rows APPENDED since the durable cursor; on a first pass (or a rewritten file) the newest
     BACKFILL_DAYS, read backwards. The cursor advances only over what was actually decoded, so a
-    pass cut by its budget resumes where it stopped."""
+    pass cut by its budget resumes where it stopped -- the forward delta at `offset`, and an
+    unfinished backfill below `backfill_low` (audit of 53fade9ec: the cursor used to jump to the
+    file's end over rows a truncated backfill never read)."""
     try:
         size = path.stat().st_size
     except OSError:
@@ -800,6 +901,7 @@ def read_log(path: Path, cursor: dict[str, Any], *, now: datetime, deadline: flo
         return []
     cur = cursor.get(name) if isinstance(cursor.get(name), dict) else None
     head_n = min(4096, size)
+    cap = rows_cap()
     rows: list[dict[str, Any]] = []
     if (cur and 0 < int(cur.get("offset") or 0) <= size
             and cur.get("head") == _head_hash(path, int(cur.get("head_n") or 4096))):
@@ -814,30 +916,35 @@ def read_log(path: Path, cursor: dict[str, Any], *, now: datetime, deadline: flo
                     obj = json.loads(raw.decode("utf-8", "replace"))
                     if isinstance(obj, dict):
                         rows.append(obj)
-                if len(rows) >= MAX_ROWS_PER_LOG or time.monotonic() > deadline:
+                if len(rows) >= cap or time.monotonic() > deadline:
                     absent.note(f"{name}_delta", f"delta read stopped at {len(rows)} rows "
                                                  "(cap or budget); the cursor resumes there")
                     break
-        cursor[name] = {"head": _head_hash(path, head_n), "head_n": head_n, "offset": offset,
-                        "size": size, "mode": "delta"}
+        nxt = {"head": _head_hash(path, head_n), "head_n": head_n, "offset": offset,
+               "size": size, "mode": "delta"}
+        low = cur.get("backfill_low")
+        if isinstance(low, int) and low > 0:
+            since = _at(cur.get("backfill_since")) or now - timedelta(days=BACKFILL_DAYS)
+            more, low2, why = _backfill(path, end=low, since=since, deadline=deadline,
+                                        cap=max(0, cap - len(rows)))
+            rows = more + rows
+            if low2 is not None:
+                nxt.update({"backfill_low": low2, "backfill_since": cur.get("backfill_since"),
+                            "mode": "delta+backfill"})
+                absent.note(f"{name}_backfill", f"backfill still {why}-cut at byte {low2}: the "
+                                                "older rows resume next pass, UNMEASURED till then")
+        cursor[name] = nxt
         return rows
-    try:
-        import gauntlet_backpressure as GB
-    except Exception:                                                        # noqa: BLE001
-        from research import gauntlet_backpressure as GB
-    note: dict[str, str] = {}
-    old_cap = GB.MAX_LINES
-    try:
-        GB.MAX_LINES = MAX_ROWS_PER_LOG
-        rows = GB._read_jsonl(path, note, since=now - timedelta(days=BACKFILL_DAYS),
-                              deadline=deadline)
-    finally:
-        GB.MAX_LINES = old_cap
-    if note.get(path.name, "READ") != "READ":
-        absent.note(f"{name}_backfill", note[path.name])
-    cursor[name] = {"head": _head_hash(path, head_n), "head_n": head_n, "offset": size,
-                    "size": size, "mode": "backfill",
-                    "backfill_days": BACKFILL_DAYS}
+    end = _complete_end(path, size)
+    since = now - timedelta(days=BACKFILL_DAYS)
+    rows, low, why = _backfill(path, end=end, since=since, deadline=deadline, cap=cap)
+    nxt = {"head": _head_hash(path, head_n), "head_n": head_n, "offset": end, "size": size,
+           "mode": "backfill", "backfill_days": BACKFILL_DAYS}
+    if low is not None:
+        nxt.update({"backfill_low": low, "backfill_since": since.isoformat(timespec="seconds")})
+        absent.note(f"{name}_backfill", f"backfill {why}-cut at byte {low} after {len(rows)} rows "
+                                        f"(cap {cap}): the older rows resume next pass")
+    cursor[name] = nxt
     return rows
 
 
@@ -1300,28 +1407,75 @@ def log_rates(graph_rows: Sequence[Mapping[str, Any]], ledger_rows: Sequence[Map
             "span_end": _iso(hi), "age_h": round((now - hi).total_seconds() / 3600.0, 2)}
 
 
+#: The backpressure inputs whose cut makes the 24h ratio a PARTIAL reading. A budget-cut graph
+#: read under-counts births and an unrefined one over-counts them; either way the ratio is not a
+#: measurement a throttle may act on (audit of 53fade9ec, MF1).
+_PARTIAL_MARKS = ("TRUNCATED_BUDGET", "BIRTHS_PARTIAL", "BIRTHS_UNREFINED")
+
+
+def _backpressure_partial(doc: Mapping[str, Any]) -> str | None:
+    um = doc.get("unmeasured") or {}
+    if not isinstance(um, Mapping):
+        return None
+    for k in ("hypothesis_graph.jsonl", "gate_verdict_ledger.jsonl"):
+        v = str(um.get(k) or "")
+        if any(mark in v for mark in _PARTIAL_MARKS):
+            return f"{k}: {v[:160]}"
+    return None
+
+
 def judging_vs_creation(state: dict[str, Any], absent: Absent,
-                        fallback: Mapping[str, Any] | None = None) -> dict[str, Any]:
-    """created/day and judged/day, from the backpressure organ first (its 24h window)."""
+                        fallback: Mapping[str, Any] | None = None,
+                        now: datetime | None = None) -> dict[str, Any]:
+    """created/day and judged/day, from the backpressure organ first (its 24h window).
+
+    THE VINTAGE IS THE FULL BUILD'S (audit of 53fade9ec, MF1). `windows` is carried from the last
+    FULL build, stamped `full_at`; the per-sweep core refreshes `at` without touching it. So the
+    reading's age is `full_at`'s, a missing `full_at` is an age the throttle cannot know, the
+    judged count is the core's fresh `core.testing_24h` when it measured, and a full build cut by
+    its own budget is partial -- each of which prices compute but never throttles."""
+    now = now or datetime.now(UTC)
     doc = _read_json(BACKPRESSURE)
     if isinstance(doc, Mapping):
         w = ((doc.get("windows") or {}).get("24h") or {})
         born = (w.get("intake") or {}).get("born_cells")
         judged = (w.get("testing") or {}).get("cells_judged")
+        judged_basis = "windows.24h.testing"
+        core = ((doc.get("core") or {}).get("testing_24h") or {})
+        if core.get("status") == "MEASURED" and isinstance(core.get("cells_judged"), (int, float)):
+            judged, judged_basis = core["cells_judged"], "core.testing_24h (fresh)"
+        full_at = doc.get("full_at") or (doc.get("at") if doc.get("mode") != "core" else None)
+        ft = _at(full_at)
         if isinstance(born, (int, float)) and isinstance(judged, (int, float)) and born > 0:
-            return {"status": "MEASURED", "created_per_day": float(born),
-                    "judged_per_day": float(judged),
-                    "judged_per_hour": round(float(judged) / 24.0, 4),
-                    "ratio": round(float(judged) / float(born), 6),
-                    "basis": "GAUNTLET_BACKPRESSURE.json windows.24h", "at": doc.get("at")}
+            out: dict[str, Any] = {
+                "status": "MEASURED", "created_per_day": float(born),
+                "judged_per_day": float(judged),
+                "judged_per_hour": round(float(judged) / 24.0, 4),
+                "ratio": round(float(judged) / float(born), 6),
+                "basis": f"GAUNTLET_BACKPRESSURE.json windows.24h intake; judged from "
+                         f"{judged_basis}", "at": doc.get("at"), "full_at": full_at,
+                "age_h": (round((now - ft).total_seconds() / 3600.0, 2)
+                          if ft is not None else None)}
+            if ft is None:
+                out["throttle_unmeasured"] = "the backpressure report carries no full_at"
+            partial = _backpressure_partial(doc)
+            if partial:
+                out["throttle_unmeasured"] = f"the full build was cut by its budget ({partial})"
+            return out
     doc = _read_json(MINING_METRICS)
     if isinstance(doc, Mapping):
         c, j = doc.get("cells_created_24h"), doc.get("cells_evaluated_24h")
         if isinstance(c, (int, float)) and isinstance(j, (int, float)) and c > 0:
-            return {"status": "MEASURED", "created_per_day": float(c), "judged_per_day": float(j),
-                    "judged_per_hour": round(float(j) / 24.0, 4),
-                    "ratio": round(float(j) / float(c), 6),
-                    "basis": "mining/MINING_METRICS.json (#133)"}
+            ma = _at(doc.get("at") or doc.get("generated_at"))
+            out = {"status": "MEASURED", "created_per_day": float(c), "judged_per_day": float(j),
+                   "judged_per_hour": round(float(j) / 24.0, 4),
+                   "ratio": round(float(j) / float(c), 6),
+                   "basis": "mining/MINING_METRICS.json (#133)",
+                   "age_h": (round((now - ma).total_seconds() / 3600.0, 2)
+                             if ma is not None else None)}
+            if ma is None:
+                out["throttle_unmeasured"] = "MINING_METRICS.json carries no timestamp"
+            return out
     absent.note("judging_vs_creation", f"neither {BACKPRESSURE.name} nor {MINING_METRICS.name} "
                                        "carries a 24h window: the log span is read instead")
     if fallback is not None and fallback.get("status") == "MEASURED":
@@ -1334,30 +1488,62 @@ def judging_vs_creation(state: dict[str, Any], absent: Absent,
 THROTTLE_MAX_AGE_H = 48.0
 
 
-def throttle(jvc: Mapping[str, Any]) -> dict[str, Any]:
+def throttle(jvc: Mapping[str, Any], at: str | None = None) -> dict[str, Any]:
     ratio = jvc.get("ratio")
     age = jvc.get("age_h")
     stale = isinstance(age, (int, float)) and age > THROTTLE_MAX_AGE_H
-    if jvc.get("status") != "MEASURED" or ratio is None or ratio >= 1.0 or stale:
+    unknown = jvc.get("throttle_unmeasured")
+    if jvc.get("status") != "MEASURED" or ratio is None or ratio >= 1.0 or stale or unknown:
         factor = 1.0
         why = ("the reading is stale ({age}h): it may not throttle".format(age=age) if stale
+               else f"UNMEASURED for throttling: {unknown}" if unknown
                else "judging keeps up with creation" if jvc.get("status") == "MEASURED"
                else "UNMEASURED: no throttle engages on an absent reading")
     else:
         factor = max(0.0, float(ratio))
         why = (f"judged/day {jvc.get('judged_per_day')} < created/day "
-               f"{jvc.get('created_per_day')}: this organ's own emission is scaled by "
-               f"{factor:.3f}, onboarding first, never below the {MISSION_FLOOR}-mission floor")
+               f"{jvc.get('created_per_day')} (reading {age}h old): this organ's own emission is "
+               f"scaled by {factor:.3f}, onboarding first, never below the {MISSION_FLOOR}-mission "
+               "floor")
     n = max(MISSION_FLOOR, int(math.ceil(MAX_MISSIONS * factor)))
     # Onboarding is what the throttle cuts first, and even it keeps one slot: new ground is the
     # exploration floor of this organ, and a floor at zero is not a floor.
     onboard = max(1, int(math.floor(n * ONBOARDING_SHARE * factor)))
     if factor >= 1.0:
         onboard = int(round(n * ONBOARDING_SHARE))
-    return {"engaged": factor < 1.0, "factor": round(factor, 6), "missions": n,
-            "onboarding_missions_max": onboard, "floor": MISSION_FLOOR, "why": why,
-            "scope": "this organ's own mission emission and onboarding share only; no miner, "
-                     "acquirer or source is slowed by it"}
+    out = {"engaged": factor < 1.0, "factor": round(factor, 6), "missions": n,
+           "onboarding_missions_max": onboard, "floor": MISSION_FLOOR, "why": why,
+           "scope": "this organ's own mission emission and onboarding share only; no miner, "
+                    "acquirer or source is slowed by it"}
+    out["missed_growth"] = throttle_missed_growth(out, at) if out["engaged"] else []
+    return out
+
+
+def throttle_missed_growth(thr: Mapping[str, Any], at: str | None) -> list[dict[str, Any]]:
+    """THE TWO-SIDED LINE FOR THE MISSION THROTTLE (GROWTH_GOVERNANCE Rule 1; audit of 53fade9ec).
+
+    COST: missions deferred this pass (MAX_MISSIONS minus the throttled count, onboarding first).
+    GAIN: the judge is not handed cells faster than it judges them, so the backlog it already
+    holds is judged sooner. Neither side is priced in E[log W] yet: UNMEASURED, never zero.
+    Published on GLOBAL_COVERAGE_TENSOR.json and carried by `missed_growth.run`."""
+    at = at or datetime.now(UTC).isoformat(timespec="seconds")
+    deferred = MAX_MISSIONS - int(thr.get("missions") or MAX_MISSIONS)
+    onboard_full = int(round(MAX_MISSIONS * ONBOARDING_SHARE))
+    base = {"day": at[:10], "at": at, "rail": "global_coverage_tensor.mission_throttle",
+            "kind": "opportunity_cost", "value": None, "verdict": "UNMEASURED",
+            "e_log_w": "UNMEASURED", "factor": thr.get("factor"),
+            "missions_deferred": deferred,
+            "onboarding_deferred": onboard_full - int(thr.get("onboarding_missions_max") or 0)}
+    return [
+        {**base, "side": "cost", "units": "missions deferred this pass",
+         "why": ("deferred missions mint no new cells this pass; forgone growth = the forward "
+                 "E[log W] of the survivors they would have produced, unpriced until the "
+                 "source ROI publishes survivors per mission")},
+        {**base, "side": "gain", "units": "judge backlog not grown this pass",
+         "why": ("the judge is not handed cells faster than it judges them, so the backlog it "
+                 "holds is judged sooner; priced when judge latency per backlog cell is "
+                 "measured")},
+    ]
 
 
 # =============================================================================== the source ROI
@@ -1728,8 +1914,8 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, now: datetime | 
         eff_measured = effective_dimensions(measured_keys)
         eff_design = effective_dimensions(list(gen))
 
-        jvc = judging_vs_creation(state, absent, log_rates(graph_rows, ledger_rows, now))
-        thr = throttle(jvc)
+        jvc = judging_vs_creation(state, absent, log_rates(graph_rows, ledger_rows, now), now=now)
+        thr = throttle(jvc, at)
         sym_by_class: dict[str, list[str]] = defaultdict(list)
         for s, klass in sorted(sym_class.items()):
             sym_by_class[klass].append(s)
@@ -1818,6 +2004,7 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, now: datetime | 
             "by_region": dict(sorted(by_region.items())),
             "by_source_class": dict(sorted(by_class.items())),
             "judging_vs_creation": jvc, "throttle": thr,
+            "missed_growth": thr.get("missed_growth") or [],
             "missions": {"n_holes": mis["n_holes"], "n_moves": mis["n_moves"],
                          "emitted": len(mis["emitted"]),
                          "deferred": mis["deferred"], "deferred_why": mis["deferred_why"],

@@ -316,6 +316,90 @@ def test_incremental_keff_uses_the_books_own_correlation():
 
 
 # ------------------------------------------------------------------------------ the cursor
+def _bp(desk, **doc: Any) -> None:
+    body = {"windows": {"24h": {"intake": {"born_cells": 1000},
+                                "testing": {"cells_judged": 100}}}, **doc}
+    desk["BACKPRESSURE"].write_text(json.dumps(body), "utf-8")
+
+
+def test_a_fresh_core_over_a_stale_full_build_never_throttles(desk):
+    """Audit of 53fade9ec MF1: the core refreshes `at`, the windows are `full_at`'s."""
+    _bp(desk, at=NOW.isoformat(), mode="core",
+        full_at=(NOW - timedelta(days=7)).isoformat())
+    jvc = G.judging_vs_creation({}, G.Absent(), now=NOW)
+    assert jvc["age_h"] == pytest.approx(168.0)
+    thr = G.throttle(jvc)
+    assert thr["engaged"] is False and thr["missions"] == G.MAX_MISSIONS
+    assert "stale" in thr["why"]
+
+
+def test_a_core_with_no_full_at_is_unmeasured_for_the_throttle(desk):
+    _bp(desk, at=NOW.isoformat(), mode="core")
+    thr = G.throttle(G.judging_vs_creation({}, G.Absent(), now=NOW))
+    assert thr["engaged"] is False and "UNMEASURED" in thr["why"]
+
+
+@pytest.mark.parametrize("mark", ["TRUNCATED_BUDGET(kept the newest 5 rows)",
+                                  "READ; BIRTHS_UNREFINED(budget spent before the older scan)",
+                                  "READ; BIRTHS_PARTIAL(budget spent in the older scan)"])
+def test_a_budget_cut_full_build_never_throttles(desk, mark):
+    _bp(desk, at=NOW.isoformat(), full_at=NOW.isoformat(), mode="full",
+        unmeasured={"hypothesis_graph.jsonl": mark})
+    thr = G.throttle(G.judging_vs_creation({}, G.Absent(), now=NOW))
+    assert thr["engaged"] is False and "cut by its budget" in thr["why"]
+
+
+def test_the_judged_count_is_the_cores_fresh_reading(desk):
+    _bp(desk, at=NOW.isoformat(), mode="core", full_at=NOW.isoformat(),
+        core={"testing_24h": {"status": "MEASURED", "cells_judged": 400}})
+    jvc = G.judging_vs_creation({}, G.Absent(), now=NOW)
+    assert jvc["judged_per_day"] == 400.0 and jvc["ratio"] == pytest.approx(0.4)
+    assert "core.testing_24h" in jvc["basis"]
+
+
+def test_an_engaged_throttle_publishes_its_two_sided_missed_growth_line(desk):
+    _bp(desk, at=NOW.isoformat())
+    _seat(desk, "arxiv", pit=True)
+    doc = _build()
+    lines = doc["missed_growth"]
+    assert {ln["side"] for ln in lines} == {"cost", "gain"}
+    assert all(ln["verdict"] == "UNMEASURED" and ln["value"] is None for ln in lines)
+    assert lines[0]["missions_deferred"] == G.MAX_MISSIONS - G.MISSION_FLOOR
+    assert G.throttle({"status": "MEASURED", "ratio": 2.0})["missed_growth"] == []
+
+
+def test_a_cut_backfill_resumes_below_where_it_stopped_and_counts_nothing_twice(desk, monkeypatch):
+    """Audit of 53fade9ec: the cursor used to jump to the end over rows the cut never read."""
+    _seat(desk, "arxiv", pit=True)
+    _jsonl(desk["GRAPH"], [_born(i, hours_ago=10.0 - i * 0.01) for i in range(30)])
+    monkeypatch.setattr(G, "rows_cap", lambda: 12)
+    first = _build()
+    cur = first["state"]["cursor"]["hypothesis_graph"]
+    assert first["observations"]["evidence"]["graph_births"] == 12
+    assert isinstance(cur.get("backfill_low"), int) and cur["backfill_low"] > 0
+    _jsonl(desk["GRAPH"], [_born(99, sym="GBPUSD", hours_ago=0.5)], mode="a")
+    second = _build()
+    third = _build()
+    got = sum(d["observations"]["evidence"]["graph_births"] for d in (first, second, third))
+    assert got == 31, "every row read exactly once across the resumed passes"
+    assert "backfill_low" not in third["state"]["cursor"]["hypothesis_graph"]
+    state = json.loads(desk["STATE"].read_text("utf-8"))
+    assert state["sources"]["seat:arxiv"]["compiled"] == 31
+
+
+def test_the_rows_cap_is_derived_from_this_machines_free_memory(monkeypatch):
+    class VM:
+        available = 8 * 1024 ** 3
+    import types
+    fake = types.SimpleNamespace(virtual_memory=lambda: VM())
+    monkeypatch.setitem(sys.modules, "psutil", fake)
+    assert G.rows_cap() == int(8 * 1024 ** 3 * G.ROW_MEMORY_SHARE / G.ROW_BYTES)
+    VM.available = 1
+    assert G.rows_cap() == G.BACKFILL_MIN_ROWS
+    VM.available = 10 ** 15
+    assert G.rows_cap() == G.MAX_ROWS_PER_LOG
+
+
 def test_the_delta_cursor_reads_only_what_was_appended(desk):
     _seat(desk, "arxiv", pit=True)
     _jsonl(desk["GRAPH"], [_born(1)])
