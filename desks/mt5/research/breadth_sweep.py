@@ -282,6 +282,8 @@ VOID_AT_DEFAULTS: dict[str, str] = {
     "regime_split": _VOID.format(why="the base family and regime come from regime_split_miner"),
     "triangle": _VOID.format(why="the legs come from triangle_miner.closed_triangles"),
     "world_macro_state": _VOID.format(why="the world series comes from world_macro_proposer"),
+    "implied_vol": _VOID.format(why="the options/vol state series comes from "
+                                    "world_macro_proposer"),
     "lead_lag": ("UNRUNNABLE at defaults (audit 0b66b08de p2): no driver series -- the driver "
                  "and lag are measured by cross_asset_graph, which mints its own cells"),
 }
