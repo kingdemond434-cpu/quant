@@ -1,5 +1,5 @@
 {
- "at": "2026-11-03T00:02:08+00:00",
+ "at": "2026-11-03T00:26:55+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,7 +9,7 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-11-02T23:59:59+00:00",
+   "at": "2026-11-03T00:26:13+00:00",
    "bandit_at": "2026-11-02T07:24:57.495637+00:00",
    "hour": "2026-11-03T00",
    "arm": "treated",
@@ -42,11 +42,11 @@
    "department_why": "exchange not authoritative: sample binds but the desk measures no per-department denominator for it (None); reported, never spent; x compute policy (compute policy MEASURED from compute_policy.json: split {'exploitation': 0.6274, 'exploration': 0.283, 'frontier': 0.0896} learned from survivors per hour, two-sided)",
    "archive_factor": 1.0,
    "auction_factor": 2.0,
-   "auction_why": "auction: department discovery cleared x2.00 for epoch 2026-11-02T06",
+   "auction_why": "auction: department discovery cleared x2.00 for epoch 2026-11-03T00",
    "engine_factor": 1.0,
    "engine_why": "engine registry: no share for leg 'alpha_evolution'; par",
    "meta_factor": 2.0,
-   "meta_why": "meta controller: leg 'alpha_evolution' serves kind(s) ['new_hypothesis', 'evolve_family'] priced 0.1931 on the info_per_cell board vs median 0.04955 = x3.90 -> x2.00 (one-sided: it may fund above par and never below it)",
+   "meta_why": "meta controller: leg 'alpha_evolution' serves kind(s) ['new_hypothesis', 'evolve_family'] priced 0.1931 on the info_per_cell board vs median 0.04956 = x3.90 -> x2.00 (one-sided: it may fund above par and never below it)",
    "graveyard_factor": 1.0,
    "graveyard_why": "graveyard: no survival row for source 'alpha_evolution'; par",
    "paradigm_factor": 1.0,

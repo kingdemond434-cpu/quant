@@ -55158,6 +55158,43 @@
       "retired_at": "2026-11-02T19:54:45+00:00",
       "retire_reason": "USDZAR is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
       "retired_by": "live_policy"
+    },
+    {
+      "name": "AUDSGD.cross_asset_residual.asia@M30#factor_symbols=['BNBUSD']_ttl_bars=6",
+      "symbol": "AUDSGD",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of [\"audsgd.cross_asset_residual.asia@m30#factor_symbols=['bnbusd']_ttl_bars=6\", 'audsgd|cross_asset_residual|asia', 'audsgd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of [\"audsgd.cross_asset_residual.asia@m30#factor_symbols=['bnbusd']_ttl_bars=6\", 'audsgd|cross_asset_residual|asia', 'audsgd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-03T00:14:15+00:00",
+      "shadow_exp": 0.165489577426211,
+      "family": "cross_asset_residual",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "AUDSGD.cross_asset_residual.asia@M30#factor_symbols=['BNBUSD']_ttl_bars=6",
+      "sleeve_id": "8ab09dc021eec50fe1c8",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "factor_symbols": [
+          "BNBUSD"
+        ],
+        "timeframe": "M30",
+        "ttl_bars": 6
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-03T00:14:16+00:00",
+      "retire_reason": "AUDSGD is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     }
   ]
 }
