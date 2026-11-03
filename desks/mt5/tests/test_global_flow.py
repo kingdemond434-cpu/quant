@@ -56,10 +56,13 @@ TOTAL,530000,630000,3900000,4400000,1,1,1,1,1,1,1,1,1,1
 def _cboe(spot: float = 5000.0) -> str:
     opts = []
     for k in range(4500, 5501, 50):
-        opts.append({"option": f"SPX261120C0{k}000", "gamma": 0.001, "open_interest": 1000,
-                     "volume": 10})
+        x = (k - spot) / spot
+        opts.append({"option": f"SPX261120C0{k}000", "gamma": 0.001,
+                     "open_interest": 5000 if k == 5200 else 1000, "volume": 10,
+                     "iv": 0.15, "delta": max(0.01, min(0.99, 0.5 - 4 * x))})
         opts.append({"option": f"SPX261120P0{k}000", "gamma": 0.002 if k < 4900 else 0.0005,
-                     "open_interest": 1500, "volume": 20})
+                     "open_interest": 6000 if k == 4800 else 1500, "volume": 20,
+                     "iv": 0.20 if k < spot else 0.16, "delta": -max(0.01, min(0.99, 0.5 + 4 * x))})
     return json.dumps({"timestamp": "2026-11-03 16:15:00",
                        "data": {"current_price": spot, "options": opts}})
 
@@ -103,7 +106,12 @@ def test_nse_unknown_layout_reads_nothing():
 def test_cboe_gamma_sign_and_ratios():
     snap = gf.parse_cboe_chain(_cboe())
     assert snap["spot"] == 5000.0
-    assert snap["pc_oi"] == pytest.approx(1.5)
+    assert snap["call_wall"] == pytest.approx(0.04)
+    assert snap["put_wall"] == pytest.approx(-0.04)
+    assert snap["skew"] > 0                      # puts richer than calls
+    assert snap["atm_iv"] > 0 and np.isfinite(snap["vanna_bn"])
+    assert -0.1 <= snap["max_pain"] <= 0.1 and np.isfinite(snap["pin_dist"])
+    assert snap["near_exp_oi_share"] == 0.0      # the only expiry is 17 days out
     assert snap["pc_vol"] == pytest.approx(2.0)
     assert np.isfinite(snap["gex_bn"]) and np.isfinite(snap["gex_near_bn"])
     assert snap["gex_bn"] < 0           # heavy put gamma below spot: dealers short gamma

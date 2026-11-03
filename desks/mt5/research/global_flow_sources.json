@@ -61,10 +61,11 @@
    "region": "US",
    "adapter": "cboe_snapshot",
    "url": "https://cdn.cboe.com/api/global/delayed_quotes/options/{symbol}.json",
-   "robots_url": "https://cdn.cboe.com/api/global/delayed_quotes/options/_SPX.json",
    "symbols": [
     "_SPX",
-    "_NDX"
+    "_NDX",
+    "_RUT",
+    "_DJX"
    ],
    "max_bytes": 80000000,
    "avail_lag_days": 0,
@@ -73,10 +74,158 @@
    "targets": [
     "US500",
     "NAS100",
-    "US30",
-    "US2000"
+    "US2000",
+    "US30"
    ],
-   "why": "Dealer gamma sign decides whether hedging damps or amplifies index moves (pinning vs trend days); put/call OI is the options crowd. Snapshot history accrues from the first pass."
+   "why": "Index options: dealer gamma/vanna sign decides whether hedging damps or amplifies moves (pin vs trend days); OI walls and max pain pull price into expiry; skew and put/call are the hedging crowd.",
+   "robots_url": "https://cdn.cboe.com/api/global/delayed_quotes/options/_SPX.json"
+  },
+  {
+   "id": "cboe_vix_opts",
+   "class": "dealer",
+   "region": "US",
+   "adapter": "cboe_snapshot",
+   "url": "https://cdn.cboe.com/api/global/delayed_quotes/options/{symbol}.json",
+   "symbols": [
+    "_VIX"
+   ],
+   "max_bytes": 80000000,
+   "avail_lag_days": 0,
+   "avail_hour_utc": 23,
+   "window": 120,
+   "targets": [
+    "US500",
+    "NAS100",
+    "XAUUSD",
+    "USDJPY"
+   ],
+   "why": "VIX options: the vol-of-vol crowd; call-heavy VIX OI is crash-hedging demand.",
+   "robots_url": "https://cdn.cboe.com/api/global/delayed_quotes/options/_SPX.json"
+  },
+  {
+   "id": "cboe_metals_opts",
+   "class": "dealer",
+   "region": "US",
+   "adapter": "cboe_snapshot",
+   "url": "https://cdn.cboe.com/api/global/delayed_quotes/options/{symbol}.json",
+   "symbols": [
+    "GLD",
+    "SLV"
+   ],
+   "max_bytes": 80000000,
+   "avail_lag_days": 0,
+   "avail_hour_utc": 23,
+   "window": 120,
+   "targets": [
+    "XAUUSD",
+    "XAGUSD",
+    "XAUEUR",
+    "XAUAUD"
+   ],
+   "why": "Gold and silver ETF options: dealer gamma, walls and skew in the metals' largest listed options market.",
+   "robots_url": "https://cdn.cboe.com/api/global/delayed_quotes/options/_SPX.json"
+  },
+  {
+   "id": "cboe_energy_opts",
+   "class": "dealer",
+   "region": "US",
+   "adapter": "cboe_snapshot",
+   "url": "https://cdn.cboe.com/api/global/delayed_quotes/options/{symbol}.json",
+   "symbols": [
+    "USO",
+    "UNG"
+   ],
+   "max_bytes": 80000000,
+   "avail_lag_days": 0,
+   "avail_hour_utc": 23,
+   "window": 120,
+   "targets": [
+    "XTIUSD",
+    "XBRUSD",
+    "XNGUSD"
+   ],
+   "why": "Oil and gas ETF options: retail-heavy energy options crowd and dealer hedging.",
+   "robots_url": "https://cdn.cboe.com/api/global/delayed_quotes/options/_SPX.json"
+  },
+  {
+   "id": "cboe_rates_opts",
+   "class": "dealer",
+   "region": "US",
+   "adapter": "cboe_snapshot",
+   "url": "https://cdn.cboe.com/api/global/delayed_quotes/options/{symbol}.json",
+   "symbols": [
+    "TLT",
+    "IEF"
+   ],
+   "max_bytes": 80000000,
+   "avail_lag_days": 0,
+   "avail_hour_utc": 23,
+   "window": 120,
+   "targets": [
+    "UST10Y",
+    "UST05Y",
+    "USDJPY"
+   ],
+   "why": "Treasury ETF options: duration hedging flow and the bond-crowd skew.",
+   "robots_url": "https://cdn.cboe.com/api/global/delayed_quotes/options/_SPX.json"
+  },
+  {
+   "id": "cboe_fx_opts",
+   "class": "dealer",
+   "region": "US",
+   "adapter": "cboe_snapshot",
+   "url": "https://cdn.cboe.com/api/global/delayed_quotes/options/{symbol}.json",
+   "symbols": [
+    "FXE",
+    "FXY",
+    "FXB",
+    "FXA",
+    "FXC",
+    "UUP"
+   ],
+   "max_bytes": 80000000,
+   "avail_lag_days": 0,
+   "avail_hour_utc": 23,
+   "window": 120,
+   "targets": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "AUDUSD",
+    "USDCAD",
+    "USDX"
+   ],
+   "why": "Currency ETF options: the only free listed FX skew and put/call (fills fx_options_risk_reversals, which has no free vendor source).",
+   "robots_url": "https://cdn.cboe.com/api/global/delayed_quotes/options/_SPX.json"
+  },
+  {
+   "id": "cboe_em_opts",
+   "class": "dealer",
+   "region": "US",
+   "adapter": "cboe_snapshot",
+   "url": "https://cdn.cboe.com/api/global/delayed_quotes/options/{symbol}.json",
+   "symbols": [
+    "FXI",
+    "EEM",
+    "EWJ",
+    "EWZ",
+    "EWY",
+    "INDA"
+   ],
+   "max_bytes": 80000000,
+   "avail_lag_days": 0,
+   "avail_hour_utc": 23,
+   "window": 120,
+   "targets": [
+    "CHINAH",
+    "HK50",
+    "JPN225",
+    "USDBRL",
+    "USDKRW",
+    "USDINR"
+   ],
+   "why": "Country ETF options: US-listed hedging and speculation on China, EM, Japan, Brazil, Korea, India.",
+   "robots_url": "https://cdn.cboe.com/api/global/delayed_quotes/options/_SPX.json"
   },
   {
    "id": "mof_weekly",
@@ -174,6 +323,55 @@
    "adapter": "none",
    "blocked_by": "to build next: month/quarter-end equity-vs-bond drift since last rebalance from desk bars (60/40 drift) feeding forced_flow_calendar windows.",
    "why": "Balanced funds and pensions must sell the winner and buy the loser at month and quarter end; the size is estimable from the drift."
+  },
+  {
+   "id": "cme_options_volume",
+   "class": "dealer",
+   "region": "US",
+   "adapter": "none",
+   "blocked_by": "futures_state source cme_settlements is HELD (CME terms restrict automated access, F2). CFTC combined-minus-futures-only already gives the options-on-futures book per class (live)."
+  },
+  {
+   "id": "eurex_options",
+   "class": "dealer",
+   "region": "EU",
+   "adapter": "none",
+   "blocked_by": "Eurex daily statistics (OI/volume per series for ODAX, OESX, Bund options) published as reports; terms and route unread from the cloud. Box read needed."
+  },
+  {
+   "id": "ose_options",
+   "class": "dealer",
+   "region": "JP",
+   "adapter": "none",
+   "blocked_by": "JPX/OSE Nikkei 225 options OI by strike and participant breakdown: futures_state jpx_osaka is HELD (F4)."
+  },
+  {
+   "id": "nse_option_chain",
+   "class": "dealer",
+   "region": "IN",
+   "adapter": "none",
+   "blocked_by": "NSE option-chain JSON needs a browser cookie session (never bypassed). Participant-wise options OI is live via nse_part_oi."
+  },
+  {
+   "id": "cn_commodity_options",
+   "class": "dealer",
+   "region": "CN",
+   "adapter": "none",
+   "blocked_by": "DCE/CZCE/SHFE commodity options (iron ore, soy meal, copper, gold): same terms block as cn_dce_czce_gfex_cffex."
+  },
+  {
+   "id": "hkex_options",
+   "class": "dealer",
+   "region": "CN/HK",
+   "adapter": "none",
+   "blocked_by": "HKEX HSI/HSCEI options daily reports: route and terms to read."
+  },
+  {
+   "id": "lme_flows",
+   "class": "institutional",
+   "region": "global",
+   "adapter": "none",
+   "blocked_by": "LME commitments of traders and warehouse data: futures_state lme is HELD (F2)."
   }
  ],
  "already_live": [
@@ -242,6 +440,30 @@
    "class": "corporate_hedger",
    "region": "US",
    "where": "futures_state.py cftc (legacy commercial, disagg producer/merchant and swap dealer nets)"
+  },
+  {
+   "id": "crypto_options",
+   "class": "dealer",
+   "region": "global",
+   "where": "shadow_institutional.py Deribit ATM IV, term structure, 25d RR, IV-RV, OI-by-strike as sensors for MT5 targets"
+  },
+  {
+   "id": "cftc_options_book",
+   "class": "dealer",
+   "region": "US",
+   "where": "futures_state.py *_opt series (combined minus futures-only per class)"
+  },
+  {
+   "id": "cftc_large_traders",
+   "class": "institutional",
+   "region": "US",
+   "where": "futures_state.py positioning(): top-4/top-8 trader concentration tilt and per-class trader head-counts (added with #659)"
+  },
+  {
+   "id": "own_tick_tape",
+   "class": "dealer",
+   "region": "global",
+   "where": "Tick moat recorder + tape families (LCR, Breadth, Judge): the desk's own order-flow tape"
   }
  ],
  "player_classes": [

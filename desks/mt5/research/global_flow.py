@@ -185,15 +185,35 @@ def parse_nse_participant_oi(text: str) -> dict[str, float]:
 _OPT = re.compile(r"^[A-Z]+W?(\d{6})([CP])(\d{8})$")
 
 
-def parse_cboe_chain(text: str) -> dict[str, float]:
-    """Cboe delayed-quotes chain JSON -> dealer gamma and crowd positioning for one snapshot.
+def _bs_vanna(spot: float, k: np.ndarray, t: np.ndarray, iv: np.ndarray) -> np.ndarray:
+    """Black-Scholes vanna (dDelta/dVol, per 1.00 of vol), zero rates: -phi(d1) * d2 / iv."""
+    with np.errstate(divide="ignore", invalid="ignore"):
+        sd = iv * np.sqrt(t)
+        d1 = (np.log(spot / k) + 0.5 * iv * iv * t) / sd
+        d2 = d1 - sd
+        out = -np.exp(-0.5 * d1 * d1) / np.sqrt(2 * np.pi) * d2 / iv
+    return np.where(np.isfinite(out), out, 0.0)
 
-    gex_bn     sum(call gamma*OI) - sum(put gamma*OI), * 100 * S^2 * 1%, in $bn per 1% move:
-               the standard dealer-long-calls / short-puts convention (positive = dealers
-               long gamma, damping moves; negative = amplifying)
-    gex_near   the same over strikes within 5% of spot
-    flip_dist  (spot - the strike where cumulative GEX by strike changes sign) / spot
-    pc_oi      put OI / call OI;  pc_vol  put volume / call volume
+
+def parse_cboe_chain(text: str) -> dict[str, float]:
+    """Cboe delayed-quotes chain JSON -> dealer positioning and crowd state for one snapshot.
+
+    Dealer convention throughout: customers are net long calls and long puts, dealers the other
+    side hedged, so dealer gamma is +call -put (the industry GEX convention; a convention, not a
+    measurement of who holds what -- the judge decides whether it carries information).
+
+    gex_bn        sum(+-gamma*OI) * 100 * S^2 * 1%, $bn per 1% move (+ dampens, - amplifies)
+    gex_near_bn   the same within 5% of spot
+    flip_dist     (spot - the strike where cumulative GEX by strike changes sign) / spot
+    vanna_bn      sum(+-vanna*OI) * 100 * S * 1 vol point, $bn of delta per vol point: how
+                  dealer hedges move when implied vol falls (the vol-crush bid)
+    call_wall / put_wall   (strike of max call / put OI - spot) / spot: the OI walls
+    pin_dist      (strike of max total OI in the nearest expiry - spot) / spot: expiry pinning
+    max_pain      (strike minimising option holders' payout at nearest expiry - spot) / spot
+    atm_iv        OI-free mean iv of the 4 strikes nearest spot in the nearest expiry >= 7d
+    skew          iv(OTM put ~0.25 delta) - iv(OTM call ~0.25 delta), same expiry
+    pc_oi / pc_vol        put/call open interest and volume
+    near_exp_oi_share     share of OI expiring within 7 days (0DTE/weekly crowding)
     """
     doc = json.loads(text)
     data = doc.get("data") or {}
@@ -201,31 +221,71 @@ def parse_cboe_chain(text: str) -> dict[str, float]:
     opts = data.get("options") or []
     if not (spot > 0) or not opts:
         return {}
+    asof = pd.to_datetime(doc.get("timestamp") or data.get("last_trade_time"), errors="coerce")
     rows = []
     for o in opts:
         m = _OPT.match(str(o.get("option") or ""))
         if not m:
             continue
-        k = int(m.group(3)) / 1000.0
-        g, oi, vol = _num(o.get("gamma")), _num(o.get("open_interest")), _num(o.get("volume"))
+        g, oi = _num(o.get("gamma")), _num(o.get("open_interest"))
         if not (np.isfinite(g) and np.isfinite(oi)):
             continue
-        sign = 1.0 if m.group(2) == "C" else -1.0
-        rows.append((k, m.group(2), sign * g * oi * 100.0 * spot * spot * 0.01,
-                     oi, vol if np.isfinite(vol) else 0.0))
+        vol, iv, dl = _num(o.get("volume")), _num(o.get("iv")), _num(o.get("delta"))
+        rows.append((pd.Timestamp(f"20{m.group(1)}"), int(m.group(3)) / 1000.0, m.group(2),
+                     g, oi, vol if np.isfinite(vol) else 0.0, iv, dl))
     if not rows:
         return {}
-    df = pd.DataFrame(rows, columns=["k", "cp", "gex", "oi", "vol"])
-    near = df[(df["k"] - spot).abs() <= 0.05 * spot]
-    by_k = df.groupby("k")["gex"].sum().sort_index()
-    cum = by_k.cumsum()
+    df = pd.DataFrame(rows, columns=["exp", "k", "cp", "g", "oi", "vol", "iv", "delta"])
+    sign = np.where(df["cp"] == "C", 1.0, -1.0)
+    df["gex"] = sign * df["g"] * df["oi"] * 100.0 * spot * spot * 0.01
+    out: dict[str, float] = {"spot": spot, "gex_bn": df["gex"].sum() / 1e9}
+    out["gex_near_bn"] = df.loc[(df["k"] - spot).abs() <= 0.05 * spot, "gex"].sum() / 1e9
+    cum = df.groupby("k")["gex"].sum().sort_index().cumsum()
     flips = cum.index[np.sign(cum).diff().fillna(0) != 0]
     flip = float(flips[np.argmin(np.abs(flips - spot))]) if len(flips) else math.nan
+    out["flip_dist"] = (spot - flip) / spot if np.isfinite(flip) else math.nan
     calls, puts = df[df["cp"] == "C"], df[df["cp"] == "P"]
-    return {"spot": spot, "gex_bn": df["gex"].sum() / 1e9, "gex_near_bn": near["gex"].sum() / 1e9,
-            "flip_dist": (spot - flip) / spot if np.isfinite(flip) else math.nan,
-            "pc_oi": puts["oi"].sum() / calls["oi"].sum() if calls["oi"].sum() else math.nan,
-            "pc_vol": puts["vol"].sum() / calls["vol"].sum() if calls["vol"].sum() else math.nan}
+    out["pc_oi"] = puts["oi"].sum() / calls["oi"].sum() if calls["oi"].sum() else math.nan
+    out["pc_vol"] = puts["vol"].sum() / calls["vol"].sum() if calls["vol"].sum() else math.nan
+    if len(calls):
+        out["call_wall"] = (calls.groupby("k")["oi"].sum().idxmax() - spot) / spot
+    if len(puts):
+        out["put_wall"] = (puts.groupby("k")["oi"].sum().idxmax() - spot) / spot
+    if pd.notna(asof):
+        day = asof.normalize()
+        t = ((df["exp"] - day).dt.days.clip(lower=0) + 0.5) / 365.0
+        ok = df["iv"].notna() & (df["iv"] > 0)
+        van = _bs_vanna(spot, df["k"].to_numpy(float), t.to_numpy(float),
+                        df["iv"].fillna(0).to_numpy(float))
+        out["vanna_bn"] = float((sign * van * df["oi"] * 100.0 * spot * 0.01)[ok].sum() / 1e9)
+        tot = df["oi"].sum()
+        out["near_exp_oi_share"] = float(df.loc[(df["exp"] - day).dt.days <= 7, "oi"].sum()
+                                         / tot) if tot else math.nan
+        live = df[df["exp"] >= day]
+        if len(live):
+            near = live[live["exp"] == live["exp"].min()]
+            byk = near.groupby("k")["oi"].sum()
+            out["pin_dist"] = (byk.idxmax() - spot) / spot if byk.sum() else math.nan
+            ks = np.array(sorted(near["k"].unique()))
+            c_oi = near[near["cp"] == "C"].groupby("k")["oi"].sum()
+            p_oi = near[near["cp"] == "P"].groupby("k")["oi"].sum()
+            pay = [float((c_oi * np.maximum(x - c_oi.index.to_numpy(), 0)).sum()
+                         + (p_oi * np.maximum(p_oi.index.to_numpy() - x, 0)).sum()) for x in ks]
+            out["max_pain"] = (ks[int(np.argmin(pay))] - spot) / spot if len(ks) else math.nan
+            later = live[(live["exp"] - day).dt.days >= 7]
+            if len(later):
+                e = later[later["exp"] == later["exp"].min()]
+                e = e[e["iv"].notna() & (e["iv"] > 0)]
+                if len(e):
+                    atm = e.iloc[(e["k"] - spot).abs().argsort()[:4]]
+                    out["atm_iv"] = float(atm["iv"].mean())
+                    pp = e[(e["cp"] == "P") & e["delta"].notna()]
+                    cc = e[(e["cp"] == "C") & e["delta"].notna()]
+                    if len(pp) and len(cc):
+                        p25 = pp.iloc[(pp["delta"] + 0.25).abs().argsort()[:1]]["iv"].iloc[0]
+                        c25 = cc.iloc[(cc["delta"] - 0.25).abs().argsort()[:1]]["iv"].iloc[0]
+                        out["skew"] = float(p25 - c25)
+    return out
 
 
 _WEEK_END = re.compile(r"(\d{4})[./-](\d{1,2})[./-](\d{1,2})\s*[~\uFF5E\-\u2013]\s*"
