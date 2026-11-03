@@ -1526,6 +1526,17 @@ SOURCE_POLICY.update({
         "robots": ("tradeidds.censtatd.gov.hk refused the terms reader's agent by robots on the "
                    "API spec PDF (2026-10-29); polite_fetch reads robots for DESK_UA on every "
                    "request, and a Disallow is recorded as a hold, never routed around"),
+        # THE API PATH'S OWN ROBOTS READING (auditor should-fix 2026-11-03): the hold above is on
+        # the spec PDF; the path the leg actually requests is /api/get, read for DESK_UA.
+        "robots_check": {"url": "https://tradeidds.censtatd.gov.hk/robots.txt",
+                         "path": "/api/get", "agent": "DESK_UA",
+                         "checked_at": "2026-11-03",
+                         "verdict": "UNMEASURED",
+                         "reason": ("unreadable from the build container: its egress proxy "
+                                    "refused CONNECT to tradeidds.censtatd.gov.hk:443 (HTTP "
+                                    "403, connect_rejected) on 2026-11-03, so robots.txt was "
+                                    "never reached; the box's polite_fetch reads it for DESK_UA "
+                                    "on every request and a Disallow there is a hold")},
         "credit": ("Source: Census and Statistics Department, HKSAR Government (via "
                    "DATA.GOV.HK); figures modified by the desk (net flow, z-score)"),
         "terms": {"url": "https://data.gov.hk/en/terms-and-conditions",
