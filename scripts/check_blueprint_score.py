@@ -431,7 +431,7 @@ def score(root: Path = ROOT, *, now: datetime | None = None, branch: str | None 
             "ledgers": ledgers,
             "open_ranked": [{k: r[k] for k in ("ledger", "id", "item", "state", "marks",
                                                 "weight", "money_path", "gap")}
-                            for r in open_rows[:40]],
+                            for r in open_rows],
             "rows": [{k: r[k] for k in ("ledger", "id", "claim", "state", "marks", "weight",
                                         "promotable")} for r in rows],
             "previous": {k: (v or {}).get("counts") for k, v in prev_ledgers.items()},
