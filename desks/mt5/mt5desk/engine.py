@@ -671,6 +671,19 @@ class _LegMemo:
 _LEGS = _LegMemo()
 
 
+def _spread_px(costs: Costs) -> float:
+    """The spread in PRICE units: `spread_per_lot` is points x tick x contract (see `Costs`)."""
+    return max(0.0, float(costs.spread_per_lot) / float(costs.contract_oz or 1.0))
+
+
+def _walk_key(idx: Any, signals: Any, costs: Costs, limit_fill: str) -> tuple[Any, ...]:
+    """Everything besides the bar arrays that the trade PATH reads: the index's zone, and -- for
+    a list that rests a trigger under trade-through fills -- the fill rule and the spread."""
+    resting = limit_fill == "trade_through" and any(
+        getattr(s, "trigger", None) is not None for s in signals)
+    return (str(getattr(idx, "tz", None)), limit_fill, _spread_px(costs) if resting else None)
+
+
 def _leg_memo_on() -> bool:
     return os.environ.get("MT5_ENGINE_LEG_MEMO", "1").strip() != "0"
 
@@ -723,11 +736,8 @@ def run_backtest(
     # the spread key the memo only when a signal rests a trigger: a cell with none keeps its
     # pre-warm hit at the 3x stress arm, and a limit cell re-walks it (a wider spread fills
     # fewer limits, which is part of what the stress arm measures).
-    resting = limit_fill == "trade_through" and any(
-        getattr(s, "trigger", None) is not None for s in signals)
-    spread_px = max(0.0, float(costs.spread_per_lot) / float(costs.contract_oz or 1.0))
-    walked = ((str(getattr(idx, "tz", None)), limit_fill, spread_px if resting else None),
-              o, h, lows, idx_ns)
+    spread_px = _spread_px(costs)
+    walked = (_walk_key(idx, signals, costs, limit_fill), o, h, lows, idx_ns)
     memo_hit = _LEGS.lookup(df, signals, max_hold_bars, walked) if memo_on else None
     # A HIT WALKS NOTHING: the legs below were walked on this exact frame and signal list by the
     # previous call (`_LegMemo`), so the loop is given no signals and only the pricing runs.
