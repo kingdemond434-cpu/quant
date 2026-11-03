@@ -357,3 +357,53 @@ def test_a_failed_ignore_read_is_unmeasured(box: tuple[Path, Path],
     monkeypatch.setattr(bb, "_git", broken)
     doc = bb.run(repo, upstream="origin/live", push=True)
     assert doc["verdict"] == "UNMEASURED" and doc["push"]["pushed"] is False
+
+
+# AUDIT HOLD ON #210 (2026-11-03): the screen must be linear, and paths must survive git quoting.
+_ADVERSARIAL_UNITS = ("token", "token_", "secret_", "api_key_", "api-", "token=", "a.", "a=",
+                      "_KEY", "A_KEY=", "bearer ", "basic a", "://a:", "ghp_", "a", "=", " ",
+                      "PRIVATE ", "-----BEGIN ")
+
+
+@pytest.mark.parametrize("unit", _ADVERSARIAL_UNITS)
+def test_every_screen_pattern_is_linear_on_adversarial_input(unit: str) -> None:
+    """The class fix: each pattern, on 2 MB of a repeated adversarial unit, finishes inside a
+    hard bound. The quadratic pattern took 8 s on 40 KB, i.e. hours on 2 MB."""
+    import time
+    text = (unit * (2_000_000 // len(unit) + 1))[:2_000_000] + "!"
+    for p in (*bb.STRONG_SECRET_PATTERNS, *bb.WEAK_SECRET_PATTERNS):
+        t0 = time.perf_counter()
+        p.search(text)
+        took = time.perf_counter() - t0
+        assert took < 3.0, f"{getattr(p, 'pattern', p)!r} took {took:.1f}s on {unit!r}"
+
+
+def test_a_text_over_the_screen_cap_is_withheld_never_clean() -> None:
+    assert bb.secret_strength("x" * (bb.MAX_SCREEN_CHARS + 1)) == "weak"
+
+
+def test_the_credential_assignment_still_matches_inside_identifiers() -> None:
+    for text in ("MT5_PASSWORD=x", "$mt5Password = 'x'", "aws_secret_access_key: x",
+                 '"token": "x"', "password%3Dx", "tokentoken = 1"):
+        assert bb.secret_strength(text) is not None, text
+    assert bb.secret_strength("tokenizer(x)") is None
+
+
+def test_a_quoted_path_reaches_the_drain(box: tuple[Path, Path]) -> None:
+    """Audit should-fix: without -z git C-quotes `caf\303\251.py`, and the quoted name matched no
+    tree entry, so a non-ASCII code path dropped out of the backlog silently."""
+    repo, _ = box
+    _write(repo, "libs/café.py", "X = 1\n")
+    _write(repo, 'libs/a"b.py', "Y = 1\n")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-qm", "box code with odd names")
+    doc = bb.run(repo, upstream="origin/live", push=False)
+    assert {"libs/café.py", 'libs/a"b.py'} <= set(doc["code_paths"]), doc["code_paths"]
+
+
+def test_the_report_is_replaced_atomically(tmp_path: Path) -> None:
+    out = tmp_path / "r" / "BOX_BACKLOG.json"
+    bb.write_report(out, {"verdict": "MEASURED"})
+    bb.write_report(out, {"verdict": "UNMEASURED"})
+    assert json.loads(out.read_text("utf-8")) == {"verdict": "UNMEASURED"}
+    assert [q.name for q in out.parent.iterdir()] == ["BOX_BACKLOG.json"], "no temp file left"
