@@ -77,6 +77,9 @@ def _same(tree: Path, targets: list[str]) -> dict[str, Any]:
 
 
 def _reach(base: dict[str, str], head: dict[str, str], changed: list[str], **kw: Any) -> Any:
+    uni = '{"XAUUSD": {"symbol": "XAUUSD", "asset_class": "Commodities"}}'
+    base = {rr.UNIVERSE_JSON: uni, **base}
+    head = {rr.UNIVERSE_JSON: uni, **head}
     read = _reader({BASE: base, HEAD: head})
     return rr.reach(BASE, HEAD, changed, changed, read, set(head), rs.ENTRY_POINTS,
                     canon=rs.canon, **kw)  # fmt: skip
@@ -371,3 +374,22 @@ def test_the_allocator_on_the_slice_is_deterministic_and_traces_function_lines()
         for x in range(n.lineno, (n.end_lineno or n.lineno) + 1)
     }
     assert hits <= fn_lines, "a module-body line was recorded as executed"
+
+
+def test_an_unreadable_universe_proves_no_superset() -> None:
+    head = REG_SRC.replace('"b": "y",\n', '"b": "y",\n    "e": "w",\n')
+    for missing in (BASE, HEAD):
+        files = {BASE: {REG: REG_SRC, rr.UNIVERSE_JSON: '{"XAUUSD": {}}'},
+                 HEAD: {REG: head, rr.UNIVERSE_JSON: '{"XAUUSD": {}}'}}  # fmt: skip
+        del files[missing][rr.UNIVERSE_JSON]
+        rep = rr.reach(BASE, HEAD, [REG], [REG], _reader(files), {REG}, rs.ENTRY_POINTS,
+                       canon=rs.canon, run=_run_with({REG: []}))  # fmt: skip
+        assert REG not in rep["covered"], missing
+        assert "universe.json unreadable" in rep["unmeasured"][REG]
+        assert rep["excused_knobs"] == {}
+
+
+def test_the_gate_checks_out_the_universe_in_both_trees() -> None:
+    wf = (ROOT / ".github" / "workflows" / "release-gates.yml").read_text("utf-8")
+    assert wf.count("/desks/mt5/data/universe/universe.json") == 2
+    assert wf.count("/desks/mt5/research/") == 2

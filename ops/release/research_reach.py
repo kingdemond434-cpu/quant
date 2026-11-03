@@ -542,7 +542,11 @@ def reach(
     excused: dict[str, list[str]] = {}
     problems: list[str] = []
     others = [f for f in changed if f.endswith(".py") and not _is_test(f)]
-    lanes = lane_values([read(base, UNIVERSE_JSON), read(head, UNIVERSE_JSON)])
+    universes = [read(base, UNIVERSE_JSON), read(head, UNIVERSE_JSON)]
+    lanes = lane_values(universes)
+    # #reach audit v2: lane membership is measured from BOTH trees' universe or not at all; an
+    # unreadable or empty universe proves no superset (fail closed: the file goes to the trace)
+    universe_ok = all(lane_values([u]) for u in universes)
     trace: list[str] = []
     proven: dict[str, dict[str, list[str]]] = {}
     for f in uncovered:
@@ -555,6 +559,8 @@ def reach(
             unmeasured[f] = "added or deleted: nothing to compare against"
             continue
         try:
+            if not universe_ok:
+                raise NotSuperset("universe.json unreadable: lane membership unmeasurable")
             grown = superset(f, b, h, lanes)
             for name in grown:
                 for g in others:
