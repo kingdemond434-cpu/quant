@@ -908,14 +908,23 @@ def _execution_costs(names: Any, account: str = "fusion") -> dict[str, Any]:
     A name that carries no session token is UNPRICED and says so; it is not guessed at, because a
     guessed fill hour prices the sleeve at an hour it does not trade.
     """
-    from libs.portfolio.execution_cost import costs_for
     rows = [{"name": str(c), "symbol": str(c).split("_")[0], "selector": str(c)} for c in names]
+    try:
+        from libs.portfolio.execution_cost import costs_for
+    except ImportError as exc:
+        # A BROKEN IMPORT DEGRADES TO UNPRICED, never a crash of the allocator: every sleeve
+        # keeps the pre-instrument zero bias and the artifact names why.
+        return {"sleeves": {},
+                "summary": {"n_sleeves": 0, "n_measured": 0, "n_unpriced": 0,
+                            "n_undercharged": 0, "n_overcharged": 0, "n_clipped": 0,
+                            "n_registry_defect": 0, "n_no_spread_provenance": 0,
+                            "worst_undercharge": None,
+                            "verdict": f"execution cost unimportable ({type(exc).__name__})"}}
     try:
         surface = json.loads((BASE / "data" / "cost_surface.json").read_text("utf-8"))
     except (OSError, ValueError) as exc:
-        # NO SURFACE IS NO BASELINE: every sleeve is unpriced, so the venue's realised cost has
-        # nothing measured to be a credit or debit against and creates no bias; the artifact's
-        # execution_cost_realised names each as "UNMEASURED: no measured baseline".
+        # NO SURFACE IS NO MODEL: every sleeve's modelled bias is 0.0, and the venue's realised
+        # cost still corrects it where its realised-minus-replay difference is MEASURED.
         blank = costs_for(rows, None)
         blank["summary"]["verdict"] = f"no cost surface on this host ({type(exc).__name__})"
         return _with_realised(blank, rows, account)
@@ -944,12 +953,22 @@ def _with_realised(doc: dict[str, Any], rows: list[dict[str, Any]],
     MEASURED the sleeve's cost is the empirical-Bayes blend of that and the model, so a venue that
     fills cheaper than modelled LOWERS the cost and one that fills dearer raises it. Stale (>48h),
     unreadable or UNMEASURED falls back to the modelled cost and the artifact says so."""
-    from libs.portfolio.execution_cost import apply_realised
+    try:
+        from libs.portfolio.execution_cost import apply_realised
+    except ImportError as exc:
+        _EXEC_COST_META.clear()
+        _EXEC_COST_META.update({"usable": False, "fallback": "MODELLED",
+                                "why": f"apply_realised unimportable ({type(exc).__name__})"})
+        return doc
     try:
         realised: Any = json.loads((BASE / "reports" / "REALISED_COST.json").read_text("utf-8"))
     except (OSError, ValueError):
         realised = None
-    out = apply_realised(doc, realised, account=account,
+    # ONE ACCOUNT PER SLEEVE, READ FROM THE ROW WHEN IT SAYS. The allocator's rows carry no book
+    # field today (sleeves.json is the Fusion book's registry), so every sleeve reads `account`;
+    # a row that names its `book` (fusion / e8 / ftmo) reads that account's cells instead.
+    accounts = {str(r["name"]): str(r["book"]).lower() for r in rows if r.get("book")}
+    out = apply_realised(doc, realised, account=account, accounts=accounts or None,
                          symbols={str(r["name"]): str(r["symbol"]) for r in rows})
     _EXEC_COST_META.clear()
     _EXEC_COST_META.update(out["summary"].get("realised") or {})

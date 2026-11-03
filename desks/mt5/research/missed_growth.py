@@ -902,9 +902,9 @@ DEEPENING_GUARD = BASE / "reports" / "DEEPENING_MEMORY_GUARD.json"
 CANON_PUBLICATION = BASE / "reports" / "CANON_PUBLICATION.json"
 GLOBAL_COVERAGE = BASE / "reports" / "GLOBAL_COVERAGE_TENSOR.json"
 #: The realised-execution-cost modifier's lines (capital_modifiers "realised_execution_cost"):
-#: the share of the venue's own measured cost the empirical-Bayes shrinkage holds back toward the
-#: MEASURED cost-surface cell, per sleeve, in BOTH directions -- read from the allocator's
-#: artifact by `realised_cost_lines`, not from this report, which has no measured baseline.
+#: the share of (realised-minus-replay-charged difference - modelled bias) the empirical-Bayes
+#: shrinkage holds back toward the modelled bias, per sleeve, in BOTH directions -- read from the
+#: allocator's artifact by `realised_cost_lines`, where the modelled bias is known.
 REALISED_COST = BASE / "reports" / "REALISED_COST.json"
 
 
@@ -1030,11 +1030,11 @@ def realised_cost_lines(alloc: dict[str, Any]) -> dict[str, Any]:
     """The realised-execution-cost shrinkage's lines, as the ALLOCATOR measured them.
 
     They are read from `pf_allocation.json`'s `execution_cost_realised` block (written by
-    `execution_cost.apply_realised`), because only there is the gap measured against the
-    sleeve's MEASURED cost-surface cell -- REALISED_COST.json alone has no baseline but the
-    unmeasured `BASE_COST_R` scalar (Auditor HOLD on b3b1ee181). Absent -> UNMEASURED; a usable
-    block with no line -> NOT_BINDING, or UNMEASURED when realised cells exist that have no
-    measured baseline (their gap is unknown, not zero)."""
+    `execution_cost.apply_realised`), because only there is the realised-minus-replay difference
+    set against each sleeve's MODELLED bias (Auditor HOLDs on b3b1ee181 and 59ae9ea7c: never
+    against a scalar). Absent -> UNMEASURED; a usable block with no line -> NOT_BINDING, or
+    UNMEASURED when realised cells exist whose difference is not measured (their gap is unknown,
+    not zero)."""
     blk = (alloc or {}).get("execution_cost_realised")
     src = "reports/pf_allocation.json execution_cost_realised"
     if not isinstance(blk, dict) or not blk.get("usable"):
@@ -1046,12 +1046,14 @@ def realised_cost_lines(alloc: dict[str, Any]) -> dict[str, Any]:
         if blk.get("n_no_baseline"):
             return {"verdict": UNMEASURED, "lines": [], "source": src,
                     "n_no_baseline": blk.get("n_no_baseline"),
-                    "why": "UNMEASURED: no measured baseline for the realised cells"}
+                    "why": ("UNMEASURED: no measured realised-minus-replay difference for "
+                            "the realised cells")}
         return {"verdict": NOT_BINDING, "lines": [], "source": src,
                 "why": "no sleeve's cost was replaced by a realised one: the shrinkage never bound"}
     return {"verdict": UNMEASURED, "source": src, "lines": lines, "n_lines": len(lines),
             "n_no_baseline": blk.get("n_no_baseline", 0),
-            "why": "measured gap vs the surface cell, in R; the E[log W] price is UNMEASURED"}
+            "why": ("measured realised-minus-replay difference vs the modelled bias, in R; the "
+                    "E[log W] price is UNMEASURED")}
 
 
 #: THE HEAVY ADMISSION SCAN EVERY 4TH HOURLY PASS (2026-10-21, principal zuck: Option B), was

@@ -160,8 +160,27 @@ def test_unattributed_and_duplicate_rows_never_enter_a_cell() -> None:
     assert doc["corpus_census"]["duplicates_collapsed"] == 1
 
 
+#: the real pricer, captured before the autouse fixture swaps it out
+_REAL_PRICER = rc.gauntlet_pricer
+
+
+def _charge(r: float | None) -> Any:
+    """A replay pricer that charged every fill `r` R (None: the replay could not price it)."""
+    def price(_row: dict[str, Any]) -> tuple[float | None, str]:
+        return r, ("test charge" if r is not None else "UNMEASURED: test unpriced")
+    return price
+
+
+@pytest.fixture(autouse=True)
+def _no_gauntlet_import(monkeypatch: Any) -> None:
+    """`build` defaults to the gauntlet's own pricer; these tests price with a declared charge
+    unless they import the gauntlet on purpose."""
+    monkeypatch.setattr(rc, "gauntlet_pricer", lambda *a, **k: _charge(0.0))
+
+
 def test_the_shrinkage_is_n_over_n_plus_k_toward_the_model() -> None:
     assert rc.SHRINK_K == ec.REALISED_K == 20.0
+    assert rc.MIN_DIFF_N == ec.REALISED_MIN_N == 5
     val, w = rc.shrink(0.25, 20, 0.05)
     assert w == pytest.approx(0.5) and val == pytest.approx(0.15)
     val, w = rc.shrink(0.25, 180, 0.05)
@@ -170,33 +189,63 @@ def test_the_shrinkage_is_n_over_n_plus_k_toward_the_model() -> None:
     rows = [_fill("fusion", "EURUSD", 0.1, 0.0, 0.01, 0.0, f"r{i}") for i in range(5)]
     sh = rc.build(rows, fill_report=None)["accounts"]["fusion"]["symbols"]["EURUSD"]["shrink"]
     assert sh["weight"] == pytest.approx(5 / 25)
-    # NO BLEND AGAINST THE UNMEASURED SCALAR: the allocator blends against the surface cell
+    # NO BLEND AGAINST ANY SCALAR here: the allocator shrinks vs_replay toward its modelled bias
     assert "shrunk_cost_r" not in sh and "prior_cost_r" not in sh
 
 
-def test_one_extreme_slip_barely_moves_the_shrunk_cost() -> None:
+def test_one_extreme_slip_barely_moves_the_difference() -> None:
     """A single 4,138-point fill (here a 50R slip among 0.05R fills) is clipped at the cell's own
     quantiles before the shrinkage; the raw mean still publishes it."""
     calm = [_fill("fusion", "XAUUSD", 0.05, 0.0, 0.01, 0.0, f"c{i}") for i in range(24)]
     spike = _fill("fusion", "XAUUSD", 50.0, 0.0, 0.01, 0.0, "spike")
     for n_calm, method in ((24, "p5/p95"), (9, "p10/p90")):
-        base = rc.build(calm[:n_calm])["accounts"]["fusion"]["symbols"]["XAUUSD"]["shrink"]
-        hit = rc.build([*calm[:n_calm], spike])["accounts"]["fusion"]["symbols"]["XAUUSD"]
-        sh = hit["shrink"]
-        assert method in sh["mean_method"]
-        assert sh["raw_mean_cost_r"] > 1.0                   # the raw mean sees the spike
+        base = rc.build(calm[:n_calm], pricer=_charge(0.05))[
+            "accounts"]["fusion"]["symbols"]["XAUUSD"]
+        hit = rc.build([*calm[:n_calm], spike], pricer=_charge(0.05))[
+            "accounts"]["fusion"]["symbols"]["XAUUSD"]
+        sh, vr = hit["shrink"], hit["vs_replay"]
+        assert method in sh["mean_method"] and method in vr["diff_method"]
+        assert sh["raw_mean_cost_r"] > 1.0 and vr["raw_diff_mean_r"] > 1.0
         assert sh["realised_mean_cost_r"] == pytest.approx(0.05)
-        # one more fill moves the clipped mean by nothing, against ~1.4R+ unclipped
-        assert abs(sh["realised_mean_cost_r"] - base["realised_mean_cost_r"]) < 0.002
-    # the allocator reads the winsorized value, not the raw one
-    doc = rc.build([*calm, spike])
-    model = ec.costs_for([{"name": "XAUUSD_asia_brk", "symbol": "XAUUSD"}],
-                         *_surface("XAUUSD", {1: 5.0}, pooled=5.0)[:1],
-                         registry=_surface("XAUUSD", {1: 5.0}, pooled=5.0)[1])
+        assert vr["diff_mean_r"] == pytest.approx(0.0, abs=1e-9)
+        assert abs(vr["diff_mean_r"] - base["vs_replay"]["diff_mean_r"]) < 0.002
+    # the allocator reads the winsorized difference, not the raw one
+    doc = rc.build([*calm, spike], pricer=_charge(0.05))
+    surface, registry = _surface("XAUUSD", {1: 5.0}, pooled=5.0)
+    model = ec.costs_for([{"name": "XAUUSD_asia_brk", "symbol": "XAUUSD"}], surface,
+                         registry=registry)
     row = ec.apply_realised(model, doc, symbols={"XAUUSD_asia_brk": "XAUUSD"})["sleeves"][
         "XAUUSD_asia_brk"]
-    assert row["realised"]["realised_mean_cost_r"] == pytest.approx(0.05)
+    assert row["realised"]["diff_mean_r"] == pytest.approx(0.0, abs=1e-9)
     assert row["cost_bias_r"] == pytest.approx(0.0, abs=1e-6)
+
+
+def test_each_fill_records_the_replay_charge_and_the_difference() -> None:
+    rows = [_fill("fusion", "EURUSD", 0.01, 0.0001, 0.01, -0.01, f"r{i}") for i in range(5)]
+    vr = rc.build(rows, pricer=_charge(0.02))["accounts"]["fusion"]["symbols"]["EURUSD"][
+        "vs_replay"]
+    # realised 0.01 + 0.0001/0.01 + 0.01 = 0.03R against a 0.02R charge
+    assert vr["status"] == "MEASURED" and vr["n"] == 5
+    assert vr["charged_mean_r"] == pytest.approx(0.02)
+    assert vr["realised_mean_r"] == pytest.approx(0.03)
+    assert vr["diff_mean_r"] == pytest.approx(0.01)
+    assert all(f["replay_charged_cost_r"] == pytest.approx(0.02)
+               and f["diff_r"] == pytest.approx(0.01) for f in vr["fills"])
+
+
+def test_the_replay_charge_is_the_gauntlets_pooled_cost_over_the_trades_own_stop() -> None:
+    """Imported, never copied: external_gauntlet.costs_for on today's registry row. XAUUSD at
+    14.5 pts x 0.01 x 100 = 14.50 per lot of spread, plus 2 x 2.00 commission carried by
+    quote_per_account (100 x 0.01 / tick_value 1.0 = 1.0) -> 18.50 / 100 = 0.185 in price, over a
+    10.0 stop -> 0.0185R. The fill's stop distance is stop_frac x fill_price."""
+    meta = {"XAUUSD": {"contract_size": 100.0, "tick_size": 0.01, "tick_value": 1.0,
+                       "median_spread_pts": 14.5}}
+    price = _REAL_PRICER(meta)
+    got, basis = price({"symbol": "XAUUSD", "fill_price": 2000.0, "stop_frac": 10.0 / 2000.0})
+    assert got == pytest.approx(0.0185) and "costs_for" in basis
+    # a symbol the registry does not price, and a fill with no stop geometry, are UNMEASURED
+    assert price({"symbol": "NOPE", "fill_price": 1.0, "stop_frac": 0.01})[0] is None
+    assert price({"symbol": "XAUUSD", "fill_price": 2000.0, "stop_frac": None})[0] is None
 
 
 def test_hour_buckets_publish_only_when_they_hold_enough_fills() -> None:
@@ -221,16 +270,16 @@ def test_no_fills_is_unmeasured_never_a_zero_cost() -> None:
 
 
 def test_the_shrinkage_withheld_share_is_a_two_sided_missed_growth_line() -> None:
-    """The lines are the ALLOCATOR's, measured against the surface cell (0.10R here), and the
-    realised-cost report publishes none against the unmeasured scalar."""
+    """The lines are the ALLOCATOR's, measured against each sleeve's MODELLED bias (0.05R for
+    EURUSD here), and the realised-cost report publishes none of its own."""
     rows = [_fill("fusion", "EURUSD", 0.30, 0.0, 0.01, 0.0, "up")]
     assert "missed_growth" not in rc.build(rows)
     up = ec.apply_realised(_modelled(), _realised(0.30, 20), symbols=_SYMS)
-    down = ec.apply_realised(_modelled(), _realised(0.02, 20), symbols=_SYMS)
+    down = ec.apply_realised(_modelled(), _realised(-0.03, 20), symbols=_SYMS)
     (lu,) = up["summary"]["realised"]["missed_growth"]
     (ld,) = down["summary"]["realised"]["missed_growth"]
-    assert lu["direction"] == "cost_up" and lu["baseline_cost_r"] == pytest.approx(0.10)
-    assert lu["gap_r"] == pytest.approx(0.20) and lu["withheld_r"] == pytest.approx(0.10)
+    assert lu["direction"] == "cost_up" and lu["modelled_bias_r"] == pytest.approx(0.05)
+    assert lu["gap_r"] == pytest.approx(0.25) and lu["withheld_r"] == pytest.approx(0.125)
     assert ld["direction"] == "cost_down" and ld["gap_r"] == pytest.approx(-0.08)
     assert ld["withheld_r"] == pytest.approx(-0.04)
     assert all(x["verdict"] == "UNMEASURED" for x in (lu, ld))
@@ -240,18 +289,23 @@ def test_the_shrinkage_withheld_share_is_a_two_sided_missed_growth_line() -> Non
     assert got["verdict"] == "UNMEASURED" and got["lines"] == [lu]
     assert "pf_allocation.json" in got["source"]
     assert mg.realised_cost_lines({})["verdict"] == "UNMEASURED"
-    none = ec.apply_realised(_modelled(), _realised(0.30, 20, symbol="GBPUSD"), symbols=_SYMS)
+    none = ec.apply_realised(_modelled(), _realised(0.30, 4, status="UNMEASURED"),
+                             symbols=_SYMS)
     nb = mg.realised_cost_lines({"execution_cost_realised": none["summary"]["realised"]})
-    assert nb["verdict"] == "UNMEASURED" and "no measured baseline" in nb["why"]
+    assert nb["verdict"] == "UNMEASURED" and "realised-minus-replay" in nb["why"]
 
 
 # --------------------------------------------------------------------------- the allocator
-def _realised(mean: float, n: int, account: str = "fusion", symbol: str = "EURUSD",
-              age_h: float = 1.0) -> dict[str, Any]:
+def _realised(diff: float, n: int, account: str = "fusion", symbol: str = "EURUSD",
+              age_h: float = 1.0, status: str = "MEASURED",
+              charged: float = 0.02) -> dict[str, Any]:
     at = (datetime.now(tz=UTC) - timedelta(hours=age_h)).isoformat(timespec="seconds")
     return {"measured_at": at, "status": "MEASURED",
             "accounts": {account: {"symbols": {symbol: {
-                "status": "MEASURED", "shrink": {"n": n, "realised_mean_cost_r": mean}}}}}}
+                "status": "MEASURED", "shrink": {"n": n, "realised_mean_cost_r": charged + diff},
+                "vs_replay": {"status": status, "n": n, "diff_mean_r": diff,
+                              "charged_mean_r": charged, "realised_mean_r": charged + diff,
+                              "why": "" if status == "MEASURED" else "UNMEASURED: test"}}}}}}
 
 
 def _surface(symbol: str, hours: dict[int, float], pooled: float
@@ -267,7 +321,7 @@ def _surface(symbol: str, hours: dict[int, float], pooled: float
 
 def _modelled(hours: dict[int, float] | None = None, pooled: float = 10.0) -> dict[str, Any]:
     """EURUSD priced off a MEASURED surface cell at its asia fill hour (01): p50 20 against the
-    pooled 10 -> cost_r 0.10R. GBPUSD is not in the surface: no measured baseline."""
+    pooled 10 -> modelled bias 0.05 x (2 - 1) = 0.05R. GBPUSD is unpriced: modelled bias 0."""
     surface, registry = _surface("EURUSD", hours or {1: 20.0, 2: 5.0}, pooled)
     return {**ec.costs_for([{"name": "EURUSD_asia_brk", "symbol": "EURUSD"},
                             {"name": "GBPUSD_asia_brk", "symbol": "GBPUSD"}],
@@ -277,73 +331,126 @@ def _modelled(hours: dict[int, float] | None = None, pooled: float = 10.0) -> di
 _SYMS = {"EURUSD_asia_brk": "EURUSD", "GBPUSD_asia_brk": "GBPUSD"}
 
 
-def test_a_fresh_realised_cost_replaces_the_model_and_is_two_sided() -> None:
-    base = _modelled()
-    assert base["sleeves"]["EURUSD_asia_brk"]["source"] == "MEASURED"
-    assert base["sleeves"]["EURUSD_asia_brk"]["cost_r"] == pytest.approx(0.10)
-    cheap = ec.apply_realised(base, _realised(0.02, 20), symbols=_SYMS)
-    row = cheap["sleeves"]["EURUSD_asia_brk"]
-    # w = 0.5: 0.5 x 0.02 + 0.5 x 0.10 = 0.06R against the 0.10R cell -- a -0.04R CREDIT
+def test_replay_charged_002_realised_003_is_dearer_never_a_credit() -> None:
+    """THE AUDITOR'S CASE. A sleeve whose replay already netted 0.02R and whose real fills cost
+    0.03R is DEARER than modelled, wherever the surface's 0.05 x ratio sits. Measured against the
+    scalar it read 0.03 - 0.05, a credit; against the replay's own charge it is +0.01R."""
+    rows = [_fill("fusion", "EURUSD", 0.01, 0.0001, 0.01, -0.01, f"r{i}") for i in range(5)]
+    doc = rc.build(rows, pricer=_charge(0.02))
+    flat = _modelled({1: 10.0, 2: 10.0})                 # ratio 1: 0.05R surface cost, bias 0
+    assert flat["sleeves"]["EURUSD_asia_brk"]["cost_r"] == pytest.approx(ec.BASE_COST_R)
+    row = ec.apply_realised(flat, doc, symbols=_SYMS)["sleeves"]["EURUSD_asia_brk"]
     assert row["source"] == "REALISED"
-    assert row["cost_bias_r"] == pytest.approx(0.06 - 0.10)
-    assert row["realised"]["surface_cost_r"] == pytest.approx(0.10)
+    assert row["cost_bias_r"] > 0
+    assert row["cost_bias_r"] == pytest.approx(5 / 25 * 0.01)
+    # and on a sleeve the surface prices dearer still (0.05 x 2), never below its modelled bias
+    dear = ec.apply_realised(_modelled(), doc, symbols=_SYMS)["sleeves"]["EURUSD_asia_brk"]
+    assert dear["cost_bias_r"] > 0
+    assert dear["cost_bias_r"] == pytest.approx(0.2 * 0.01 + 0.8 * 0.05)
+
+
+def test_replay_charged_005_realised_003_over_five_fills_is_a_credit() -> None:
+    rows = [_fill("fusion", "GBPUSD", 0.01, 0.0001, 0.01, -0.01, f"r{i}") for i in range(5)]
+    doc = rc.build(rows, pricer=_charge(0.05))
+    out = ec.apply_realised(_modelled(), doc, symbols=_SYMS)
+    row = out["sleeves"]["GBPUSD_asia_brk"]
+    # modelled bias 0 (unpriced); w = 5/25; diff -0.02 -> -0.004R, a CREDIT
+    assert row["source"] == "REALISED" and row["cost_bias_r"] == pytest.approx(-0.004)
+    assert out["summary"]["realised"]["n_cheaper"] == 1
+
+
+def test_four_fills_move_nothing() -> None:
+    rows = [_fill("fusion", "GBPUSD", 0.01, 0.0001, 0.01, -0.01, f"r{i}") for i in range(4)]
+    doc = rc.build(rows, pricer=_charge(0.05))
+    vr = doc["accounts"]["fusion"]["symbols"]["GBPUSD"]["vs_replay"]
+    assert vr["status"] == "UNMEASURED" and "5-fill floor" in vr["why"]
+    base = _modelled()
+    out = ec.apply_realised(base, doc, symbols=_SYMS)
+    assert out["sleeves"] == base["sleeves"]
+    assert out["summary"]["realised"]["no_baseline"]["GBPUSD_asia_brk"]["verdict"] == \
+        ec.NO_BASELINE
+    # and the allocator holds the floor itself, whatever a report claims
+    lying = _realised(-0.5, 4, symbol="GBPUSD")
+    assert ec.apply_realised(base, lying, symbols=_SYMS)["sleeves"] == base["sleeves"]
+
+
+def test_one_unpriced_term_keeps_the_modelled_bias() -> None:
+    rows = [_fill("fusion", "EURUSD", 0.01, 0.0001, 0.01, -0.01, f"r{i}") for i in range(6)]
+    charges = iter([0.05, 0.05, 0.05, 0.05, 0.05, None])
+
+    def price(_row: dict[str, Any]) -> tuple[float | None, str]:
+        c = next(charges)
+        return c, ("test" if c is not None else "UNMEASURED: not in the registry")
+    doc = rc.build(rows, pricer=price)
+    vr = doc["accounts"]["fusion"]["symbols"]["EURUSD"]["vs_replay"]
+    assert vr["status"] == "UNMEASURED" and vr["n_unpriced_by_replay"] == 1
+    assert "1 of 6" in vr["why"]
+    base = _modelled()
+    out = ec.apply_realised(base, doc, symbols=_SYMS)
+    assert out["sleeves"]["EURUSD_asia_brk"] == base["sleeves"]["EURUSD_asia_brk"]
+    assert out["sleeves"]["EURUSD_asia_brk"]["cost_bias_r"] == pytest.approx(0.05)
+    # a realised term missing (no commission) is never counted and never becomes a zero
+    partial = [{**r, "commission_r": None} for r in rows]
+    vr = rc.build(partial, pricer=_charge(0.05))["accounts"]["fusion"]["symbols"]["EURUSD"][
+        "vs_replay"]
+    assert vr["status"] == "UNMEASURED" and vr["n"] == 0
+
+
+def test_a_fresh_realised_cost_corrects_the_model_and_is_two_sided() -> None:
+    base = _modelled()
+    cheap = ec.apply_realised(base, _realised(-0.03, 20), symbols=_SYMS)
+    row = cheap["sleeves"]["EURUSD_asia_brk"]
+    # w = 0.5: 0.5 x -0.03 + 0.5 x 0.05 = 0.01R, below the 0.05R modelled bias
+    assert row["source"] == "REALISED"
+    assert row["cost_bias_r"] == pytest.approx(0.01)
+    assert row["realised"]["modelled_cost_bias_r"] == pytest.approx(0.05)
     dear = ec.apply_realised(base, _realised(0.30, 20), symbols=_SYMS)
-    assert dear["sleeves"]["EURUSD_asia_brk"]["cost_bias_r"] == pytest.approx(0.20 - 0.10)
-    # the sleeve with no measured cell keeps its modelled entry untouched
+    assert dear["sleeves"]["EURUSD_asia_brk"]["cost_bias_r"] == pytest.approx(0.175)
+    # the sleeve with no realised cell keeps its modelled entry untouched
     assert cheap["sleeves"]["GBPUSD_asia_brk"] == base["sleeves"]["GBPUSD_asia_brk"]
     blk = cheap["summary"]["realised"]
     assert blk["usable"] and blk["n_realised"] == 1 and blk["n_cheaper"] == 1
     assert dear["summary"]["realised"]["n_dearer"] == 1
+    assert "BASE_COST_R" not in json.dumps(blk)
 
 
 def test_a_stale_or_absent_realised_cost_falls_back_to_the_model_and_says_so() -> None:
     base = _modelled()
-    stale = ec.apply_realised(base, _realised(0.01, 500, age_h=49.0), symbols=_SYMS)
+    stale = ec.apply_realised(base, _realised(-0.01, 500, age_h=49.0), symbols=_SYMS)
     assert stale["sleeves"] == base["sleeves"]
     assert stale["summary"]["realised"]["fallback"] == "MODELLED"
     assert "STALE" in stale["summary"]["realised"]["why"]
     absent = ec.apply_realised(base, None, symbols=_SYMS)
     assert absent["sleeves"] == base["sleeves"] and not absent["summary"]["realised"]["usable"]
-    unmeasured = ec.apply_realised(base, {**_realised(0.01, 5), "status": "UNMEASURED"},
+    unmeasured = ec.apply_realised(base, {**_realised(-0.01, 5), "status": "UNMEASURED"},
                                    symbols=_SYMS)
     assert unmeasured["sleeves"] == base["sleeves"]
 
 
-def test_the_baseline_is_the_surface_cell_never_the_scalar() -> None:
-    """A cell CHEAPER than the scalar (p50 5 vs pooled 10 -> 0.025R) is the baseline as it
-    stands: realised 0.025R is no bias at all, though it sits half the unmeasured 0.05R."""
-    base = _modelled({1: 5.0, 2: 15.0})
-    assert base["sleeves"]["EURUSD_asia_brk"]["cost_r"] == pytest.approx(0.025)
-    row = ec.apply_realised(base, _realised(0.025, 40), symbols=_SYMS)["sleeves"][
-        "EURUSD_asia_brk"]
-    assert row["source"] == "REALISED" and row["cost_bias_r"] == pytest.approx(0.0, abs=1e-9)
-    assert row["realised"]["surface_cost_r"] == pytest.approx(0.025)
-    assert row["realised"]["surface_cost_r"] != pytest.approx(ec.BASE_COST_R)
-
-
-def test_no_surface_cell_gives_no_realised_bias() -> None:
-    base = _modelled()
-    out = ec.apply_realised(base, _realised(0.01, 500, symbol="GBPUSD"), symbols=_SYMS)
-    assert out["sleeves"] == base["sleeves"]                   # untouched, both sleeves
-    blk = out["summary"]["realised"]
-    assert blk["n_realised"] == 0 and blk["n_no_baseline"] == 1
-    assert blk["verdict"] == ec.NO_BASELINE == "UNMEASURED: no measured baseline"
-    assert blk["no_baseline"]["GBPUSD_asia_brk"]["verdict"] == ec.NO_BASELINE
-    assert blk["missed_growth"] == []
-    # and no surface at all is the same answer for every sleeve
+def test_no_surface_still_corrects_where_the_difference_is_measured() -> None:
+    """The surface is the MODEL, not the anchor: with none, every modelled bias is 0 and the
+    measured realised-minus-replay difference corrects it; an unmeasured one moves nothing."""
     blank = ec.costs_for([{"name": "EURUSD_asia_brk", "symbol": "EURUSD"}], None)
-    out = ec.apply_realised(blank, _realised(0.01, 500), symbols=_SYMS)
-    assert out["sleeves"] == blank["sleeves"]
-    assert out["summary"]["realised"]["verdict"] == ec.NO_BASELINE
+    out = ec.apply_realised(blank, _realised(-0.02, 20), symbols=_SYMS)
+    assert out["sleeves"]["EURUSD_asia_brk"]["cost_bias_r"] == pytest.approx(-0.01)
+    none = ec.apply_realised(blank, _realised(-0.02, 20, status="UNMEASURED"), symbols=_SYMS)
+    assert none["sleeves"] == blank["sleeves"]
+    assert none["summary"]["realised"]["verdict"] == ec.NO_BASELINE
+    assert none["summary"]["realised"]["missed_growth"] == []
 
 
 def test_the_allocator_reads_only_its_own_account() -> None:
     base = _modelled()
-    other = ec.apply_realised(base, _realised(0.01, 100, account="ftmo"), symbols=_SYMS)
+    other = ec.apply_realised(base, _realised(-0.01, 100, account="ftmo"), symbols=_SYMS)
     assert other["sleeves"] == base["sleeves"]
-    mine = ec.apply_realised(base, _realised(0.01, 100, account="ftmo"), symbols=_SYMS,
+    mine = ec.apply_realised(base, _realised(-0.01, 100, account="ftmo"), symbols=_SYMS,
                              account="ftmo")
     assert mine["sleeves"]["EURUSD_asia_brk"]["source"] == "REALISED"
+    # per sleeve: a sleeve mapped to its own book reads that book alone
+    per = ec.apply_realised(base, _realised(-0.01, 100, account="ftmo"), symbols=_SYMS,
+                            accounts={"EURUSD_asia_brk": "ftmo"})
+    assert per["sleeves"]["EURUSD_asia_brk"]["realised"]["account"] == "ftmo"
+    assert per["summary"]["realised"]["accounts"] == ["ftmo", "fusion"]
 
 
 def test_pf_allocator_cost_input_uses_the_realised_report(tmp_path: Path,
@@ -352,12 +459,11 @@ def test_pf_allocator_cost_input_uses_the_realised_report(tmp_path: Path,
     (tmp_path / "reports").mkdir()
     monkeypatch.setattr(pa, "BASE", tmp_path)
     (tmp_path / "reports" / "REALISED_COST.json").write_text(
-        json.dumps(_realised(0.01, 20)), "utf-8")
-    # NO COST SURFACE ON THIS HOST: no measured baseline, so the realised cost moves nothing
+        json.dumps(_realised(-0.03, 20)), "utf-8")
+    # NO COST SURFACE: modelled bias 0, corrected by the measured difference alone
     doc = pa._execution_costs(["EURUSD_asia_brk"])
-    assert doc["sleeves"]["EURUSD_asia_brk"]["cost_bias_r"] == 0.0
-    assert doc["sleeves"]["EURUSD_asia_brk"]["source"] != "REALISED"
-    assert pa._EXEC_COST_META["verdict"] == "UNMEASURED: no measured baseline"
+    assert doc["sleeves"]["EURUSD_asia_brk"]["source"] == "REALISED"
+    assert doc["sleeves"]["EURUSD_asia_brk"]["cost_bias_r"] == pytest.approx(-0.015)
     surface, registry = _surface("EURUSD", {1: 20.0, 2: 5.0}, 10.0)
     (tmp_path / "data" / "universe").mkdir(parents=True)
     (tmp_path / "data" / "cost_surface.json").write_text(json.dumps(surface), "utf-8")
@@ -365,16 +471,26 @@ def test_pf_allocator_cost_input_uses_the_realised_report(tmp_path: Path,
         json.dumps({"symbols": registry}), "utf-8")
     doc = pa._execution_costs(["EURUSD_asia_brk"])
     assert doc["sleeves"]["EURUSD_asia_brk"]["source"] == "REALISED"
-    assert doc["sleeves"]["EURUSD_asia_brk"]["cost_bias_r"] == pytest.approx(0.055 - 0.10)
+    assert doc["sleeves"]["EURUSD_asia_brk"]["cost_bias_r"] == pytest.approx(0.01)
     assert pa._EXEC_COST_META["usable"] is True
-    assert pa._EXEC_COST_META["missed_growth"][0]["baseline_cost_r"] == pytest.approx(0.10)
+    assert pa._EXEC_COST_META["missed_growth"][0]["modelled_bias_r"] == pytest.approx(0.05)
     (tmp_path / "reports" / "REALISED_COST.json").write_text(
-        json.dumps(_realised(0.01, 20, age_h=72.0)), "utf-8")
+        json.dumps(_realised(-0.03, 20, age_h=72.0)), "utf-8")
     doc = pa._execution_costs(["EURUSD_asia_brk"])
     # stale: the modelled surface entry stands (its own 0.05R under-charge), unblended
     assert doc["sleeves"]["EURUSD_asia_brk"]["cost_bias_r"] == pytest.approx(0.05)
     assert doc["sleeves"]["EURUSD_asia_brk"]["source"] == "MEASURED"
     assert pa._EXEC_COST_META["fallback"] == "MODELLED"
+
+
+def test_a_broken_execution_cost_import_degrades_to_unpriced(tmp_path: Path,
+                                                             monkeypatch: Any) -> None:
+    from research import pf_allocator as pa
+    monkeypatch.setattr(pa, "BASE", tmp_path)
+    monkeypatch.setitem(sys.modules, "libs.portfolio.execution_cost", None)
+    doc = pa._execution_costs(["EURUSD_asia_brk"])
+    assert doc["sleeves"] == {}
+    assert "unimportable (ImportError)" in doc["summary"]["verdict"]
 
 
 def test_a_negative_cost_bias_raises_the_sleeves_worlds() -> None:
