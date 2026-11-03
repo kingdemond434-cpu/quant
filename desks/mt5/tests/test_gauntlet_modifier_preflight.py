@@ -57,6 +57,10 @@ def test_loky_reuses_the_gauntlets_measured_worker_ceiling() -> None:
     ("cross_asset_residual", {"factor_symbols": []}, "no complete named factor basket"),
     ("clock_transition", {"stamp_hour": 24}, "integer stamp_hour"),
     ("usd_session_shock", {}, "named FX driver"),
+    ("lead_lag", {}, "no driver_symbol"),
+    ("lead_lag", {"driver_symbol": ""}, "no driver_symbol"),
+    ("calendar_month", {}, "active_month and side_bias"),
+    ("calendar_month", {"active_month": 1}, "side_bias"),
 ])
 def test_required_input_preflight_matches_builder_and_preserves_spec(
         monkeypatch, family, params, reason):

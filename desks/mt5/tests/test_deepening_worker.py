@@ -41,6 +41,13 @@ _TASK = {
 }
 
 
+@pytest.fixture(autouse=True)
+def _isolated_memory_guard_report(monkeypatch, tmp_path):
+    """A pass publishes reports/DEEPENING_MEMORY_GUARD.json; no test writes the desk's own."""
+    monkeypatch.setattr(dw, "MEMORY_GUARD_REPORT", tmp_path / "DEEPENING_MEMORY_GUARD.json")
+
+
+
 def _chat(payload: dict | str):
     """A seat that returns exactly what the test dictates."""
     body = payload if isinstance(payload, str) else json.dumps(payload)

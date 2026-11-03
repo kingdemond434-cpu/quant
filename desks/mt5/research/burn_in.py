@@ -49,6 +49,8 @@ REPO = BASE.parent.parent
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
+from libs.ops.gateway_clock import placement_pass_utc  # noqa: E402
+
 OUT_ROWS = BASE / "reports" / "burn_in.jsonl"
 OUT = BASE / "reports" / "burn_in.json"
 TARGET_DAYS = 30.0
@@ -162,6 +164,9 @@ def observe(now: datetime | None = None, *, base: Path | None = None,
         "paused": paused,
         "armed": gw.get("armed"),
         "placement_pass": gw.get("placement_pass"),
+        # the same instant in real UTC (L3: the raw stamp is broker time under a UTC label)
+        "placement_pass_utc": (_pp.isoformat(timespec="seconds")
+                               if (_pp := placement_pass_utc(gw)) else None),
         "rejection_streak": (hist.get("consecutive_total_rejections")
                              if isinstance(hist, dict) else None),
         "deals_24h": len(deals),

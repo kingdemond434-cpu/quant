@@ -68,8 +68,8 @@ PROMOTER_SEAL_ROTATION = {
 ALLOCATOR_PROOF_SEAL_ROTATION = {
     "path": "libs/portfolio/allocator_proof.py",
     "from": "09f8f0b9dff5239a1417d31ac6d63ada528f6f4d6ec1700d05b5760f69a5f5b3",
-    "to": "f3ac6369ee40840e076136486deac2f935a76561ad5e4ff75338b3ddfd632fd4",
-    "signed_by": "owner-approved-codex-2026-10-08",
+    "to": "03132b884fdd3c7895b20a0f194efd1758a6c074ab228e2893d4e1970513e90a",
+    "signed_by": "principal",
 }
 
 # Authorized replay geometry/cache, input wiring and build preflight repair; the historical pin

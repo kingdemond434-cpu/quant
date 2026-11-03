@@ -1,6 +1,6 @@
 {
- "signed_utc": "2026-10-13T07:23:40.551268+00:00",
- "signed_by": "Codex under principal instruction: maximise and repair build bottleneck canonically; policy and record seals preserved",
+ "signed_utc": "2026-10-13T16:50:25.269944+00:00",
+ "signed_by": "principal",
  "files": {
   "desks/mt5/scripts/external_gauntlet.py": "f56bc72fc5532a67",
   "desks/mt5/research/universal_gate.py": "2923194e016d27ee",
@@ -13,7 +13,7 @@
   "libs/ops/live_ledger_migration.py": "74ef5609d1ce37a4",
   "scripts/migrate_live_ledger_view.py": "87cf8fced3671929",
   "libs/ops/live_ledger_view.py": "5cc676fb56625f2a",
-  "libs/portfolio/allocator_proof.py": "f3ac6369ee40840e",
+  "libs/portfolio/allocator_proof.py": "03132b884fdd3c78",
   "libs/portfolio/rails.py": "7a678df5ceb7a4b4",
   "libs/portfolio/capital_modifiers.py": "f73e125559423ec0",
   "libs/validation/redteam.py": "bf1c019bfeee360e",
@@ -2473,7 +2473,6 @@
  "records_sealed_by": "tier1 W19 builder",
  "record_rule": "the ledgers, the live fills, the cost surface and the lineage chain are RECORDS: the sealed prefix may never change, only grow, and a measured cost surface may be rebuilt, never back-dated",
  "rotation_signers": {
-  "libs/portfolio/allocator_proof.py": "owner-approved-codex-2026-10-08",
   "desks/mt5/research/universal_gate.py": "Codex, principal-authorized repair",
   "desks/mt5/research/multiplicity.py": "Codex, principal-authorized repair",
   "desks/mt5/research/gate_policy.py": "Codex, principal-authorized repair",

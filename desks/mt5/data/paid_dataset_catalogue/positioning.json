@@ -1,0 +1,90 @@
+{
+ "class": "positioning",
+ "label": "Positioning (COT-like, investor-type flows, short interest)",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:cme_group:datamine_cot_and_settlement_data",
+   "vendor": "CME Group",
+   "dataset": "DataMine COT and settlement data",
+   "class": "positioning",
+   "region": "US",
+   "measures": "Futures settlements, volume, open interest",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "MACHINE_SERIES",
+    "kind": "public_origin",
+    "url": "https://www.cftc.gov/MarketReports/CommitmentsofTraders/HistoricalCompressed/index.htm",
+    "endpoints": [
+     "https://www.cftc.gov/dea/newcot/FinFutWk.txt"
+    ],
+    "series": "cftc_tff",
+    "source": "web_search:2026-09-30",
+    "note": "the COT half of the product is CFTC's own free release; settlements stay paid"
+   }
+  },
+  {
+   "id": "paid:ortex:short_interest_estimates",
+   "vendor": "ORTEX",
+   "dataset": "Short interest estimates",
+   "class": "positioning",
+   "region": "global",
+   "measures": "Estimated short interest and cost to borrow",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:s3_partners:short_interest_analytics",
+   "vendor": "S3 Partners",
+   "dataset": "Short interest analytics",
+   "class": "positioning",
+   "region": "US",
+   "measures": "Real-time short interest and crowding",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:s_p_global_ihs_markit:securities_finance",
+   "vendor": "S&P Global (IHS Markit)",
+   "dataset": "Securities Finance",
+   "class": "positioning",
+   "region": "global",
+   "measures": "Stock borrow, short interest and utilisation",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  }
+ ]
+}

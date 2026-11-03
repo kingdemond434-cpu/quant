@@ -807,6 +807,95 @@ def ratchet(previous_floor: Mapping[str, float] | float | None,
                     "used to lower it"}
 
 
+# ================================================================ THE GLOBAL TENSOR (2026-09-30)
+#: THE PRINCIPAL'S FOURTEEN AXES, extending -- not replacing -- the world and forest tensors. The
+#: world tensor asks "which market cell has evidence"; the forest asks "which ground is mapped";
+#: this one asks both at once and adds WHO pays (participant), WHAT dated thing moves them (event
+#: type), the positioning and cross-asset state the mechanism needs, and how it is executed.
+#: `instrument` is the MT5 instrument CLASS of the hypothesis lane (the symbol rides in evidence),
+#: `session` is read on the broker clock (New York + 7h, never a box offset file).
+GLOBAL = "global"
+GLOBAL_AXES: tuple[str, ...] = ("region", "language", "source_class", "mechanism",
+                                "asset_transmission", "instrument", "horizon", "session",
+                                "regime", "participant", "event_type", "positioning_state",
+                                "cross_asset_state", "execution_state")
+
+#: The twenty-four source classes, in the principal's order (2026-09-30). Every source the desk
+#: registers lands in exactly one; the ten forest layers above are a coarser, older cut of the
+#: same ground and stay as they are.
+SOURCE_CLASSES: tuple[str, ...] = (
+    "market_native", "rates_monetary", "government_macro", "sovereign_fiscal", "fx_reserves",
+    "credit", "options_vol", "positioning_flows", "commodity_physical", "transport_logistics",
+    "energy_infra", "payments_consumer", "corporate", "news_events", "geopolitical_policy",
+    "weather_climate", "attention_search", "retail_social", "strategy_code_archaeology",
+    "academic", "alternative_public_proxies", "prediction_disagreement", "historical_archives",
+    "country_specific_oddities")
+
+#: THE PRINCIPAL'S STATUS LADDER IS A VIEW OF THE WORLD LADDER, NOT A SECOND ONE. A second ladder
+#: would need a second `advance`, a second set of down-moves and a second place for a verdict to
+#: be recorded, and the day the two disagreed nobody could say which was true. So the global
+#: tensor stores WORLD_LADDER states (it shares `WORLD_LADDER_SPEC`, below) and every reading in
+#: the principal's vocabulary is DERIVED through `principal_view`.
+PRINCIPAL_LADDER: tuple[str, ...] = ("UNEXPLORED", "SOURCED", "INGESTED", "COMPILED", "JUDGED",
+                                     "CERTIFIED", "FORWARD", "LIVE")
+PRINCIPAL_TERMINALS: tuple[str, ...] = ("FAILED", "DUPLICATE", "NO_EDGE", "NOT_TRADEABLE",
+                                        "BLOCKED_WITH_SUBSTITUTE", "LOW_EV_RETIRED")
+#: world state -> principal stage. REPRESENTED is ingested data with a transform on it (still
+#: INGESTED to the principal); TESTING is a docketed cell with no verdict yet (COMPILED -- a cell
+#: counts as JUDGED only when a MEASURED OUTCOME exists); FAILED is judged with a terminal.
+PRINCIPAL_OF_WORLD: dict[str, str] = {
+    "UNOBSERVED": "UNEXPLORED", "SOURCE_HUNT": "SOURCED", "INGESTED": "INGESTED",
+    "REPRESENTED": "INGESTED", "CANDIDATES": "COMPILED", "TESTING": "COMPILED",
+    "FAILED": "JUDGED", "FORWARD": "FORWARD", "CERTIFIED": "CERTIFIED", "LIVE": "LIVE",
+    "DECAYED": "JUDGED"}
+#: The terminal a world state carries when nothing more specific was recorded.
+DEFAULT_TERMINAL_OF_WORLD: dict[str, str] = {"FAILED": "FAILED", "DECAYED": "LOW_EV_RETIRED"}
+#: The gauntlet's failure classes (`gauntlet_backpressure.GATE_FAILURE_CLASS`) in terminal words.
+#: `unstable` and `regime_specific` are FAILED -- the number did not hold -- which is a different
+#: statement from NO_EDGE (nothing there) and from NOT_TRADEABLE (there, but not at our costs or
+#: on this instrument).
+TERMINAL_OF_FAILURE_CLASS: dict[str, str] = {
+    "no_edge": "NO_EDGE", "wrong_asset": "NOT_TRADEABLE", "cost_killed": "NOT_TRADEABLE",
+    "unstable": "FAILED", "regime_specific": "FAILED", "duplicate": "DUPLICATE"}
+#: The principal stages at which a cell holds a MEASURED OUTCOME -- the end of the proven path.
+MEASURED_OUTCOME_STAGES: frozenset[str] = frozenset({"JUDGED", "CERTIFIED", "FORWARD", "LIVE"})
+
+
+def principal_view(state: str, terminal: str | None = None) -> dict[str, str | None]:
+    """A world-ladder state in the principal's words: {stage, terminal}.
+
+    `terminal` wins when given (a recorded DUPLICATE on a FAILED cell is a DUPLICATE); otherwise a
+    FAILED cell reads FAILED and a DECAYED one LOW_EV_RETIRED. A terminal that is not one of the
+    six is refused: a free-text terminal is how a vocabulary drifts.
+    """
+    WORLD_LADDER_SPEC.check(state)
+    stage = PRINCIPAL_OF_WORLD[state]
+    term = terminal or DEFAULT_TERMINAL_OF_WORLD.get(state)
+    if term is not None and term not in PRINCIPAL_TERMINALS:
+        raise ValueError(f"{term!r} is not a principal terminal {PRINCIPAL_TERMINALS}")
+    return {"stage": stage, "terminal": term}
+
+
+def terminal_of_gate_class(failure_class: str | None) -> str | None:
+    """The principal terminal for a gauntlet failure class; None for an unmapped one (UNMEASURED
+    gates such as `observations` are work not done, never a terminal)."""
+    return TERMINAL_OF_FAILURE_CLASS.get(str(failure_class or ""))
+
+
+_LADDERS[GLOBAL] = WORLD_LADDER_SPEC
+_AXES[GLOBAL] = GLOBAL_AXES
+RUNG_COST[GLOBAL] = dict(RUNG_COST[WORLD])
+
+
+def nominal_cells(vocabulary: Mapping[str, Sequence[str]]) -> int:
+    """The LITERAL Cartesian product of the vocabularies -- the number the generator refuses to
+    enumerate, published so the distinct count has something to be distinct from."""
+    out = 1
+    for vals in vocabulary.values():
+        out *= max(len(tuple(vals)), 1)
+    return out
+
+
 # ----------------------------------------------------------------------------- the named examples
 #: The three frontier rows the specification names. Each is a full coordinate of one tensor and
 #: the sentence it stands for, so a test can construct it and a reader can recognise it.
