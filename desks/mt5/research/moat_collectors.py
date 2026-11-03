@@ -38,11 +38,13 @@ belongs to `deep_forest_miner`: `_http` (its headers, its Accept-Language, its 2
 `html_text`, `html_links`, `_title`, `page_meta`, `parse_feed`, `youtube_transcript`,
 `wayback_snapshot`. This module calls those. The one thing it adds is `fetch_bytes`, which is
 `_http` with the decode step removed, because `errors="replace"` destroys a PDF and a shared
-text client cannot be asked to return one. Robots is not re-litigated here either: the live
-re-probe is `side_channels/seed_miners._robots_still_disallows` and is called through an
-optional import, fail-closed; youtube.com's own caption endpoints stay barred by its robots.txt
-(measured 2026-08-27) and are never tried -- the transcript route is the keyless mirror rotation
-`scripts/fetch_video_transcript.py` already owns.
+text client cannot be asked to return one. Robots is not re-litigated here either: it is a
+LABEL (LAWS 5e; "robots.txt Disallow treated as a refusal" is a deleted brake). `robots_barred`
+refuses only a person-held site hold; a Disallow -- live, or the youtube.com caption paths
+measured 2026-08-27 -- and an unreadable robots.txt come back from `robots_label` as
+PUBLIC_WITH_TERMS / ACCESS_UNCLEAR and ride on the capture's `extra`. The transcript route stays
+the keyless mirror rotation `scripts/fetch_video_transcript.py` owns because it works, not
+because robots forbids the alternative.
 
 TRANSLATION IS RECORDED, NEVER PERFORMED. The language heuristic is script ranges only (CJK,
 Cyrillic, Arabic, Latin) -- no new dependency, no model, no guess about which of three languages
@@ -82,7 +84,7 @@ for _p in (str(_ROOT), str(_DESK), str(_DESK / "research"), str(_DESK / "side_ch
 
 import deep_forest_miner as dfm  # noqa: E402  (the desk's ONE http client)
 
-from libs.data.polite_fetch import admit, polite_urlopen  # noqa: E402
+from libs.data.polite_fetch import access_label, access_row, admit, polite_urlopen  # noqa: E402
 from libs.moat import registry as reg  # noqa: E402
 from libs.research import lead_schema as ls  # noqa: E402
 
@@ -140,8 +142,8 @@ _EXT_MEDIA: dict[str, str] = {
 }
 _MEDIA_EXT: dict[str, str] = {"html": "html", "pdf": "pdf", "transcript": "txt", "table": "csv",
                               "notebook": "ipynb", "chart": "bin", "slides": "pdf"}
-#: Paths this desk has MEASURED as barred by their host's robots.txt (SS13, 2026-08-27). Never
-#: fetched, never retried, and named here so the refusal is auditable rather than folklore.
+#: Paths this desk has MEASURED as Disallow in their host's robots.txt (SS13, 2026-08-27). A
+#: LABEL, never a refusal (LAWS 5e): a url under one is fetched and carries PUBLIC_WITH_TERMS.
 ROBOTS_BARRED: tuple[tuple[str, str], ...] = (("youtube.com", "/api/"),
                                               ("youtube.com", "/youtubei/"),
                                               ("www.youtube.com", "/api/"),
@@ -261,32 +263,45 @@ def translation_note(script: str) -> str:
 
 # --------------------------------------------------------------------------- fetching (reused)
 def robots_barred(url: str) -> str:
-    """Why this url must not be fetched, or "". The measured hard stops first, then the LIVE
-    check (LAWS 5e amended 2026-10-14): the site's holds and the url's own origin robots.txt,
-    read by THE ONE implementation (`polite_fetch.HostAccess` via `admit`). Fails closed: an
-    unreadable (5xx/unreachable) robots.txt is not consent, and neither is a check that raised."""
-    low = str(url or "").lower()
-    for host, prefix in ROBOTS_BARRED:
-        if host in low and prefix in low:
-            return f"{host}{prefix} is Disallow in {host}/robots.txt (measured 2026-08-27)"
+    """Why this url must not be fetched, or "". ONLY A PERSON-HELD SITE HOLD (a 401/403/429 or a
+    challenge, hard-boundary act 2) or the method fence refuses, read by THE ONE implementation
+    (`polite_fetch.HostAccess` via `admit`). A robots Disallow and an unreadable robots.txt are
+    LABELS (`robots_label`), never a refusal: LAWS 5e REMOVED_BRAKES. The name is kept for its
+    callers."""
     if not url:
         return ""
     try:
         ok, why = admit(url)
-    except Exception as exc:  # a check that fails proves nothing; the wall stands
-        return f"robots/holds check failed ({type(exc).__name__}): not fetched"
-    return "" if ok else f"{why}: {urlsplit(url).netloc} robots.txt or hold (live check)"
+    except Exception:  # a check that raised proves nothing either way: the fetch proceeds labelled
+        return ""
+    return "" if ok else f"{why}: {urlsplit(url).netloc} is held for a person (live check)"
+
+
+def robots_label(url: str, *, read: bool = True) -> dict[str, Any]:
+    """robots.txt AS A LABEL for `url` (LAWS 5e): {access_label, terms_note,
+    redistribute_allowed}. The measured youtube.com Disallow paths first (PUBLIC_WITH_TERMS
+    without a network read), then the live origin robots.txt via `polite_fetch.access_label`
+    (`read=False`: only what this process already read; {} when nothing was)."""
+    low = str(url or "").lower()
+    for host, prefix in ROBOTS_BARRED:
+        if host in low and prefix in low:
+            return access_row("PUBLIC_WITH_TERMS",
+                              f"{host}{prefix} is Disallow in {host}/robots.txt (measured "
+                              "2026-08-27): fetched, redistribution withheld (LAWS 5e)")
+    if not url:
+        return access_row("ACCESS_UNCLEAR", "no url to read robots.txt for")
+    return access_label(url, read=read)
 
 
 def robots_still_disallows(host: str, user_agent: str = "*") -> bool:
-    """The desk's one robots reader (`polite_fetch.HostAccess`, via `admit`) at `host`'s root.
-    True (refused) when it cannot be read. `user_agent` is kept for callers; the desk is matched
-    as itself (DESK_UA_PRODUCT, then `*`)."""
+    """Is `host` refused at its root? Only by a person-held site hold (`admit`): a robots
+    Disallow or an unreadable robots.txt is a label, never a refusal (LAWS 5e). `user_agent` is
+    kept for callers; the desk is matched as itself (DESK_UA_PRODUCT, then `*`)."""
     del user_agent
     try:
         ok, _why = admit(f"https://{host}/")
-    except Exception:  # a probe that fails proves nothing; the wall stands
-        return True
+    except Exception:  # a probe that raised proves nothing; it does not invent a refusal
+        return False
     return not ok
 
 
@@ -386,6 +401,12 @@ def _declared_knowable(row: Mapping[str, Any]) -> str:
 def _capture(row: Mapping[str, Any], data: bytes, media_type: str, *, url: str, status: int,
              ext: str | None = None, **fields: Any) -> Capture:
     source_id = str(row.get("source_id") or "unknown")
+    # THE ACCESS LABEL RIDES ON THE CAPTURE (LAWS 5e): what robots.txt said about this url, from
+    # what the fetch already read (no extra request). A Disallow is PUBLIC_WITH_TERMS and an
+    # unreadable robots.txt ACCESS_UNCLEAR; both were fetched, the label routes redistribution.
+    label = robots_label(url, read=False) if url else {}
+    if label:
+        fields["extra"] = {**label, **dict(fields.get("extra") or {})}
     path, sha, created = write_capture(source_id, data, ext or _MEDIA_EXT.get(media_type, "bin"))
     return Capture(source_id=source_id, url=url, media_type=media_type, sha256=sha,
                    raw_path=str(path), created=created, fetched_at=_now(), http_status=status,
@@ -471,7 +492,7 @@ def collect_transcript(row: Mapping[str, Any], budget_s: float) -> list[Capture]
     url = str(row.get("url") or "")
     if budget_s <= 0 or not url:
         return []
-    barred = robots_barred(url)
+    barred = robots_barred(url)                 # a person-held site hold only (LAWS 5e)
     if barred:
         return [_capture(row, b"", "transcript", url=url, status=0, ext="txt", unmeasured=barred)]
     vid = _YT_ID.search(url)

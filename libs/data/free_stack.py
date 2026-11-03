@@ -1156,18 +1156,22 @@ def fetch_gtrends(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any
         hs.robots_remember(cache, base, robots[0], robots[1], now)
         h.cursor["robots"] = cache
     disallowed = 0
+    labels: dict[str, str] = {}
 
     def get(url: str) -> tuple[bytes | None, bool]:
-        """(body, stop). robots first; a refusal places the hold and stops the pass."""
+        """(body, stop). robots is READ AS A LABEL (LAWS 5e): a Disallow or an unavailable
+        robots.txt is fetched and noted; only an access control places the hold and stops."""
         nonlocal disallowed
         verdict = hs.robots_verdict(url, robots[0], robots[1])
-        if verdict["state"] == "UNAVAILABLE":
-            h.status, h.detail = "ROBOTS_UNAVAILABLE", str(verdict["detail"])
+        if not verdict.get("proceed", True):
             return None, True
+        lab = str(verdict.get("access_label") or "PUBLIC")
+        if lab != "PUBLIC":
+            labels.setdefault(lab, str(verdict.get("terms_note") or verdict.get("detail")))
         if not verdict["allowed"]:
             disallowed += 1
-            h.notes.append(f"robots disallows {verdict['path'][:80]}: not fetched")
-            return None, False
+            h.notes.append(f"{lab}: robots disallows {verdict['path'][:80]}; fetched with the "
+                           "label (LAWS 5e)")
         h.requests += 1
         try:
             body = fetch(url, GTRENDS_HEADERS, None)
@@ -1210,12 +1214,18 @@ def fetch_gtrends(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any
             h.obs.append({"key": col, "period_end": d1, STAMP_AT_FETCH: True,
                           "value": round(math.log((1.0 + v1) / (1.0 + v0)), 5)})
         h.raw += [{"term": term, "day": d, "value": v} for d, v in pts[-7:]]
+    if labels:
+        # THE ROBOTS LABEL ON THE HARVEST (LAWS 5e): the URLs were fetched; the label routes
+        # redistribution. The most restrictive label wins the column's provenance.
+        lab = "PUBLIC_WITH_TERMS" if "PUBLIC_WITH_TERMS" in labels else next(iter(labels))
+        note = "; ".join(f"{k}: {v}" for k, v in sorted(labels.items()))[:600]
+        for col_meta in h.columns.values():
+            col_meta.update({"access_label": lab, "terms_note": note})
+        for raw_row in h.raw:
+            raw_row.update({"access_label": lab, "terms_note": note})
     if not h.obs:
-        h.status = ("ROBOTS_DISALLOWED" if terms and disallowed >= len(terms) else
-                    "BLOCKED" if h.failures else "EMPTY")
-        h.detail = ", ".join(f"{k}x{v}" for k, v in h.failures.items()) or (
-            "robots.txt disallows every gtrends URL" if h.status == "ROBOTS_DISALLOWED"
-            else "no points")
+        h.status = "BLOCKED" if h.failures else "EMPTY"
+        h.detail = ", ".join(f"{k}x{v}" for k, v in h.failures.items()) or "no points"
     return h
 
 

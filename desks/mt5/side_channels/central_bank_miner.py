@@ -62,14 +62,12 @@ FEEDS: dict[str, dict[str, str]] = {
     # replacement route (§38) is owed. Absence must never read as a clean verdict (WS-005).
     "RBA": {"url": "https://www.rba.gov.au/rss/rss-cb-media-releases.xml", "currency": "AUD"},
     "BoC": {"url": "https://www.bankofcanada.ca/content_type/press-releases/feed/", "currency": "CAD"},
-    # BIS REMOVED 2026-08-28 (§13). https://www.bis.org/doclist/cbspeeches.rss lives under
-    # `Disallow: /doclist/` in bis.org/robots.txt -- the access boundary is a hard limit, not a
-    # preference, and this miner had been reading it. BIS's own RSS path now redirects to the
-    # allowed listing page whose only content link is the free full-text research download at
-    # /speeches/speeches.zip (no robots bar, terms allow noncommercial use). That corpus is
-    # strictly better ground anyway -- 20,728 DATED speeches with BODIES back to 1996, against
-    # this feed's headline-only stream -- and it is mined by side_channels/bis_speech_tone.py.
-    # Its currency was "XXX", so no MT5 leg loses coverage by the removal.
+    # BIS RESTORED (LAWS 5e, live). It was removed 2026-08-28 because the feed sits under
+    # `Disallow: /doclist/` in bis.org/robots.txt -- "robots.txt Disallow treated as a refusal",
+    # a deleted brake. It is read again, and every row carries PUBLIC_WITH_TERMS with the
+    # Disallow as its terms_note (redistribution withheld). The full-text corpus is still mined
+    # by side_channels/bis_speech_tone.py; this feed is the dated headline stream beside it.
+    "BIS": {"url": "https://www.bis.org/doclist/cbspeeches.rss", "currency": "XXX"},
 }
 
 #: Currency -> the MT5/Fusion instruments whose price a statement by that bank moves. Derived
@@ -189,12 +187,17 @@ def mine_central_banks() -> list[dict[str, Any]]:
             # A dead feed is a REPORTED fact, never a silent empty result (the heartbeat lesson).
             print(f"central_bank: {bank} feed unreachable -- {type(exc).__name__}: {exc}")
             continue
+        # THE ROBOTS LABEL ON EVERY ROW (LAWS 5e): PUBLIC, PUBLIC_WITH_TERMS (a Disallow, as
+        # the BIS feed carries) or ACCESS_UNCLEAR -- all fetched; the label routes redistribution.
+        label = {"access_label": str(getattr(resp, "access_label", "") or ""),
+                 "terms_note": str(getattr(resp, "terms_note", "") or ""),
+                 "redistribute_allowed": bool(getattr(resp, "redistribute_allowed", False))}
         for row in parse_feed(resp.text, bank, info["currency"], info["url"]):
             key = f"{row['bank']}|{row['link']}"
             if key in seen:
                 continue
             seen.add(key)
-            fresh.append(row)
+            fresh.append({**row, **label} if label["access_label"] else row)
     return fresh
 
 

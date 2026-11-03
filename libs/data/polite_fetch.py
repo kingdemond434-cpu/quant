@@ -22,16 +22,27 @@ concurrency buys coverage per second without buying a ban.
 MEASURED, NEVER ASSUMED. `STATS` counts fetches, successes, HTTP and transport failures, bytes
 and seconds per `leg` label, so a miner can publish its own fetches/second.
 
-HONEST, AND ROBOTS DECIDES (auditor ruling 2026-10-14). Every request carries `DESK_UA`; a
-caller-supplied User-Agent that looks like a browser or another company's crawler is REPLACED by
-it (`honest_headers`), so no caller can make this module impersonate one. Before every request --
-the URL and each redirect hop -- `HostAccess.permits` reads the exact origin's robots.txt (24h
-cache) against the `DESK_UA_PRODUCT` token: unreadable robots (network error, 5xx) means no
-fetch; a 4xx other than 401/403/429, or an HTML soft-404, means allow (RFC 9309). 401
-(NEEDS_KEY), 403 and 429 (METHOD_BLOCKED), and a challenge recognised by markup, header or status
-(a Cloudflare 503 included), are a HARD STOP for the whole site: no retry, no sibling host, no
-other route, recorded in the shared access state as a PERSON-HELD hold that no clock
-releases (`release`, `--release site:<site> --by <name>`). There is no IP, egress or User-Agent
+HONEST, AND ROBOTS LABELS (auditor ruling 2026-10-14; LAWS 5e, live). Every request carries
+`DESK_UA`; a caller-supplied User-Agent that looks like a browser or another company's crawler is
+REPLACED by it (`honest_headers`), so no caller can make this module impersonate one. Before every
+request -- the URL and each redirect hop -- `HostAccess.permits_labelled` reads the exact origin's
+robots.txt (24h cache) against the `DESK_UA_PRODUCT` token and turns it into an ACCESS LABEL,
+never a refusal (LAWS 5e REMOVED_BRAKES: "robots.txt Disallow treated as a refusal"):
+
+    allowed, absent (4xx), or an HTML soft-404   -> PUBLIC
+    an explicit Disallow for the desk's token     -> PUBLIC_WITH_TERMS, the Disallow as terms_note
+    unreadable (network error, 5xx, a redirect   -> ACCESS_UNCLEAR, mined with the label attached
+      loop or a redirect into a fenced route)
+
+The fetch PROCEEDS in all three cases, and the label rides on the `Response` / seam response
+(`access_label`, `terms_note`, `redistribute_allowed`), on the leg's `stats`, and on the shared
+access ledger (`labelled`). `redistribute_allowed` comes from
+`libs.research.access_classifier.ROUTING` and fails closed. What still refuses is an ACCESS
+CONTROL (hard boundary act 2): 401 (NEEDS_KEY), 403 and 429 (METHOD_BLOCKED), and a challenge
+recognised by markup, header or status (a Cloudflare 503 included), on a page or on robots.txt,
+are a HARD STOP for the whole site: no retry, no sibling host, no other route, recorded in the
+shared access state as a PERSON-HELD hold that no clock releases (`release`,
+`--release site:<site> --by <name>`). There is no IP, egress or User-Agent
 rotation anywhere in this module. `HostAccess` is the ONE implementation: the world crawler
 subclasses it.
 
@@ -211,13 +222,40 @@ ROBOTS_TTL_S = 24 * 3600
 #: (`release(key, by)`, or `python -m libs.data.polite_fetch --release site:<site> --by <name>`).
 #: There is no recheck clock: a row is active while `released_by` is null, and a legacy row that
 #: still carries a `recheck_after_ts` is active too -- time never releases a hold.
-#: Redirect hops followed per fetch; every hop passes the hold and robots checks again.
+#: Redirect hops followed per fetch; every hop passes the hold check and is robots-labelled again.
 MAX_REDIRECTS = 5
 MAX_ROBOTS_BYTES = 512_000
 ROBOTS_TIMEOUT_S = 12.0
 REDIRECT_STATUS: frozenset[int] = frozenset({301, 302, 303, 307, 308})
 #: The verdict each refusal status is recorded as. A hard stop: never retried, never routed around.
 BLOCK_STATUS: dict[int, str] = {401: "NEEDS_KEY", 403: "METHOD_BLOCKED", 429: "METHOD_BLOCKED"}
+
+#: THE ACCESS LABELS robots.txt can put on a fetch, in LAWS 5e's vocabulary
+#: (`libs.research.access_classifier.ACCESS_LABELS`). robots.txt is a LABEL, never a refusal.
+PUBLIC = "PUBLIC"
+PUBLIC_WITH_TERMS = "PUBLIC_WITH_TERMS"
+ACCESS_UNCLEAR = "ACCESS_UNCLEAR"
+#: The access ledger keeps a labelled origin's row this long after it was last seen.
+LABEL_TTL_S = 7 * 24 * 3600
+
+
+def redistribute_allowed(label: str) -> bool:
+    """Whether the label keeps `redistribute` among its allowed uses (access_classifier.ROUTING);
+    False when the classifier cannot be read, because redistribution is the one use a label can
+    withhold and it is never assumed."""
+    try:
+        from libs.research.access_classifier import ROUTING
+    except ImportError:
+        return False
+    row = ROUTING.get(label)  # type: ignore[call-overload]
+    return bool(row) and "redistribute" in tuple(row.get("allowed_uses") or ())
+
+
+def access_row(label: str, note: str) -> dict[str, Any]:
+    """The three fields every labelled fetch carries: access_label, terms_note,
+    redistribute_allowed (from the classifier's routing table, fail closed)."""
+    return {"access_label": label, "terms_note": note,
+            "redistribute_allowed": redistribute_allowed(label)}
 
 #: The Public Suffix List, VENDORED (snapshot 2025-12-28, MPL-2.0, from publicsuffix.org): no
 #: network at runtime and no new dependency. ICANN and PRIVATE sections both apply, so github.io,
@@ -728,11 +766,14 @@ class _LedgerLock:
 class HostAccess:
     """robots.txt per scheme://host[:port] and the refusals each site has given.
 
-    THE RULES (auditor ruling 2026-10-14):
-      * robots.txt decides every fetch, read for the exact origin -- a subdomain or a port has
-        its own file -- and matched against `DESK_UA_PRODUCT`. Cached `ROBOTS_TTL_S`.
-      * robots.txt unreadable (network error, 5xx) means NO fetch to that origin this run;
-        a 404/410 (any other 4xx) on robots.txt means allow all, per the standard.
+    THE RULES (auditor ruling 2026-10-14; LAWS 5e, live):
+      * robots.txt LABELS every fetch, read for the exact origin -- a subdomain or a port has
+        its own file -- and matched against `DESK_UA_PRODUCT`. Cached `ROBOTS_TTL_S`. A
+        Disallow is PUBLIC_WITH_TERMS (the Disallow carried as terms_note) and the fetch
+        proceeds; it is never a refusal (LAWS 5e REMOVED_BRAKES).
+      * robots.txt unreadable (network error, 5xx) is ACCESS_UNCLEAR and the fetch proceeds
+        with that label; a 404/410 (any other 4xx) on robots.txt means no rules (PUBLIC).
+      * Every label that is not PUBLIC is written to the shared ledger's `labelled` rows.
       * 401 (NEEDS_KEY), 403 and 429 (METHOD_BLOCKED), on a page or on robots.txt, are a hard stop
         for the whole site: nothing else is sent to it, by any route. Every hold (429 and WAF
         included) waits for a person's `release`; no clock ends it.
@@ -750,7 +791,13 @@ class HostAccess:
         self._parsers: dict[str, Any] = {}
         self._unreadable: dict[str, str] = {}
         self.robots_fetches = 0
+        #: fetches that went ahead under a robots Disallow, labelled PUBLIC_WITH_TERMS
         self.disallowed = 0
+        #: origin -> the latest non-PUBLIC access label seen there (the ledger's `labelled` rows)
+        self.labelled: dict[str, dict[str, Any]] = {}
+        #: label -> how many URLs this process labelled with it
+        self.label_counts: dict[str, int] = {}
+        self._labelled_saved: set[tuple[str, str]] = set()
         self._lock = threading.RLock()
         self._origin_locks: dict[str, threading.Lock] = {}
         #: every save this process refused (unreadable ledger, lock timeout), newest last
@@ -834,6 +881,12 @@ class HostAccess:
             if mine is None or float(v.get("fetched_ts") or 0) > float(mine.get("fetched_ts") or 0):
                 self.robots[str(k)] = v
                 self._parsers.pop(str(k), None)
+        for k, v in (data.get("labelled") or {}).items():
+            if not isinstance(v, dict):
+                continue
+            mine = self.labelled.get(str(k))
+            if mine is None or float(v.get("at_ts") or 0) > float(mine.get("at_ts") or 0):
+                self.labelled[str(k)] = v
 
     def save(self) -> bool:
         """Read-merge-replace the shared ledger under a cross-process lock file. Returns False
@@ -857,6 +910,8 @@ class HostAccess:
                 now = self.now()
                 robots = {k: v for k, v in self.robots.items()
                           if now - float(v.get("fetched_ts") or 0) < ROBOTS_TTL_S}
+                labelled = {k: v for k, v in self.labelled.items()
+                            if now - float(v.get("at_ts") or 0) < LABEL_TTL_S}
                 payload = {
                     "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                     "user_agent": self.user_agent,
@@ -864,13 +919,17 @@ class HostAccess:
                              "polite fetcher. Every 401/403/429/WAF hold is active while "
                              "released_by is null; no clock releases it. A person releases one "
                              "with `python -m libs.data.polite_fetch --release site:<site> "
-                             "--by <name>`."),
+                             "--by <name>`. `labelled` is every origin whose robots.txt put a "
+                             "label other than PUBLIC on a fetch (LAWS 5e): a Disallow is "
+                             "PUBLIC_WITH_TERMS and an unreadable robots.txt ACCESS_UNCLEAR; both "
+                             "were FETCHED, the label routes redistribution only."),
                     # every row's URL redacted again at the write: a row adopted from another
                     # writer, or written before redaction reached it, never carries a key.
                     "blocked": {k: ({**v, "url": redact_url(str(v["url"]))}
                                     if isinstance(v, dict) and v.get("url") else v)
                                 for k, v in self.blocked.items()},
                     "robots": robots,
+                    "labelled": labelled,
                 }
                 try:
                     self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -1021,27 +1080,91 @@ class HostAccess:
             return parser
 
     def permits(self, url: str, send: Send | None = None) -> tuple[bool, str]:
-        """(may fetch, reason if not). Holds first, then the origin's own robots.txt. `send` is
-        the opener robots.txt is read through (default: this object's own seam)."""
+        """(may fetch, reason if not). Holds first, then the origin's own robots.txt -- read as a
+        LABEL, never a refusal (`permits_labelled`). `send` is the opener robots.txt is read
+        through (default: this object's own seam)."""
+        ok, why, _label = self.permits_labelled(url, send)
+        return ok, why
+
+    def access_label(self, url: str, send: Send | None = None) -> dict[str, Any]:
+        """robots.txt READ AS A LABEL for `url` (LAWS 5e): {access_label, terms_note,
+        redistribute_allowed}. Allowed or absent -> PUBLIC; an explicit Disallow for the desk's
+        token -> PUBLIC_WITH_TERMS with the Disallow as terms_note; unreadable -> ACCESS_UNCLEAR.
+        Pure with respect to the counters and the ledger (`permits_labelled` records)."""
+        origin = origin_of(url)
+        return self._label_from(url, self._parser(origin, send or self.send))
+
+    def peek_label(self, url: str) -> dict[str, Any]:
+        """`access_label` from what this process has ALREADY read, with no network: {} when the
+        origin's robots.txt has not been read yet. For a caller stamping rows after its fetch."""
+        origin = origin_of(url)
+        with self._lock:
+            unreadable = origin in self._unreadable
+            parser = self._parsers.get(origin)
+        if not unreadable and parser is None:
+            return {}
+        return self._label_from(url, None if unreadable else parser)
+
+    def _label_from(self, url: str, parser: Any) -> dict[str, Any]:
+        if parser is None:
+            why = self._unreadable.get(origin_of(url), "") or "robots.txt unreadable"
+            return access_row(ACCESS_UNCLEAR, f"{why}: robots.txt could not be read this run; "
+                                              "fetched and mined with the label (LAWS 5e)")
+        if not parser.can_fetch(self.product, ascii_url(url)):
+            path = urlsplit(ascii_url(url)).path or "/"
+            return access_row(PUBLIC_WITH_TERMS,
+                              f"robots.txt Disallow for {self.product} on {path[:120]}: fetched "
+                              "and mined in full, redistribution withheld (LAWS 5e)")
+        return access_row(PUBLIC, "")
+
+    def permits_labelled(self, url: str, send: Send | None = None
+                         ) -> tuple[bool, str, dict[str, Any]]:
+        """(may fetch, reason if not, access label). Refuses ONLY on a person-held hold (a
+        401/403/429 or challenge, here or on robots.txt itself) or a non-HTTP scheme. A robots
+        Disallow and an unreadable robots.txt PROCEED with their label (LAWS 5e), which is
+        counted and written to the shared ledger's `labelled` rows."""
         held = self.hold(url)
         if held:
-            return False, held
+            return False, held, {}
         if urlsplit(url).scheme.lower() not in ("http", "https"):
-            return False, "SCHEME_REFUSED"
+            return False, "SCHEME_REFUSED", {}
+        label = self.access_label(url, send)
+        held = self.hold(url)              # reading robots.txt may itself have placed a hold
+        if held:
+            return False, held, {}
+        self._note_label(url, label)
+        return True, "", label
+
+    def _note_label(self, url: str, label: Mapping[str, Any]) -> None:
+        """Count the label and, for any label but PUBLIC, write the origin's `labelled` row to
+        the shared ledger (saved once per origin and label per process). Never raises."""
+        lab = str(label.get("access_label") or "")
         origin = origin_of(url)
-        parser = self._parser(origin, send or self.send)
-        if parser is None:
-            held = self.hold(url)
-            return False, held or f"ROBOTS_UNREADABLE {self._unreadable.get(origin, '')}".strip()
-        if not parser.can_fetch(self.product, ascii_url(url)):
-            with self._lock:
+        first = False
+        with self._lock:
+            self.label_counts[lab] = self.label_counts.get(lab, 0) + 1
+            if lab == PUBLIC_WITH_TERMS:
                 self.disallowed += 1
-            return False, "ROBOTS_DISALLOW"
-        return True, ""
+            if lab and lab != PUBLIC:
+                prev = self.labelled.get(origin) or {}
+                same = prev.get("access_label") == lab
+                self.labelled[origin] = {
+                    "access_label": lab, "terms_note": str(label.get("terms_note") or ""),
+                    "redistribute_allowed": bool(label.get("redistribute_allowed")),
+                    "last_url": redact_url(url)[:300], "at_ts": self.now(),
+                    "n_seen": int(prev.get("n_seen") or 0) + 1 if same else 1,
+                    "fetched": True}
+                key = (origin, lab)
+                first = key not in self._labelled_saved
+                self._labelled_saved.add(key)
+        if first:
+            with contextlib.suppress(Exception):
+                self.save()
 
     def crawl_delay(self, url: str, send: Send | None = None) -> float:
         """The origin's robots.txt Crawl-delay for the desk's token, in seconds (0 when none or
-        when robots is unreadable -- an unreadable origin is not fetched at all)."""
+        when robots is unreadable -- the origin is then fetched as ACCESS_UNCLEAR at the host's
+        ordinary politeness interval)."""
         parser = self._parser(origin_of(url), send or self.send)
         if parser is None:
             return 0.0
@@ -1057,8 +1180,12 @@ class HostAccess:
     def summary(self) -> dict[str, Any]:
         with self._lock:
             return {"user_agent": self.user_agent, "robots_fetches": self.robots_fetches,
+                    # fetched under a Disallow, labelled PUBLIC_WITH_TERMS (never refused)
                     "robots_disallowed": self.disallowed,
+                    # origins whose robots.txt was unreadable: fetched as ACCESS_UNCLEAR
                     "robots_unreadable": dict(self._unreadable),
+                    "access_labels": dict(sorted(self.label_counts.items())),
+                    "labelled": {k: dict(v) for k, v in sorted(self.labelled.items())},
                     "holds": {k: {kk: v.get(kk) for kk in ("key", "verdict", "status", "host",
                                                             "waits_for", "released_by")}
                               for k, v in self.blocked.items() if person_held(v)}}
@@ -1092,10 +1219,17 @@ class LegStats:
     #: site -> the missed_growth line of every person-held hold this leg met (recorded or was
     #: refused by), so each fetcher's own artifact (`fetch_stats`) carries the bill
     held: dict[str, dict[str, Any]] = field(default_factory=dict)
+    #: access label -> fetches that returned content under it (LAWS 5e: robots is a label)
+    access_labels: dict[str, int] = field(default_factory=dict)
+    #: origin -> the latest non-PUBLIC label a fetch of this leg carried (bounded)
+    labelled: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     def as_row(self) -> dict[str, Any]:
         return {"access_holds": [self.held[k] for k in sorted(self.held)],
                 "n_access_holds": len(self.held),
+                "access_labels": dict(sorted(self.access_labels.items())),
+                "labelled": [{"origin": k, **self.labelled[k]}
+                             for k in sorted(self.labelled)][:LEG_LABELLED_CAP],
                 "fetches": self.fetches, "ok": self.ok, "http_errors": self.http_errors,
                 "transport_errors": self.transport_errors, "retries": self.retries,
                 "refused": self.refused,
@@ -1105,6 +1239,24 @@ class LegStats:
 
 _STATS: dict[str, LegStats] = {}
 _STATS_LOCK = threading.Lock()
+#: How many labelled origins one leg's stats row lists (the counts in `access_labels` are whole).
+LEG_LABELLED_CAP = 50
+
+
+def _note_label_stat(leg: str, url: str, label: Mapping[str, Any]) -> None:
+    """Carry a fetch's access label into `leg`'s stats: a count per label, and the origin's row
+    for any label but PUBLIC. Never raises."""
+    with contextlib.suppress(Exception):
+        lab = str(label.get("access_label") or "")
+        if not lab:
+            return
+        with _STATS_LOCK:
+            s = _STATS.setdefault(leg, LegStats())
+            s.access_labels[lab] = s.access_labels.get(lab, 0) + 1
+            if lab != PUBLIC:
+                s.labelled[origin_of(url)] = {
+                    "access_label": lab, "terms_note": str(label.get("terms_note") or ""),
+                    "redistribute_allowed": bool(label.get("redistribute_allowed"))}
 
 
 def _stat(leg: str, **inc: Any) -> None:
@@ -1119,7 +1271,7 @@ def _stat(leg: str, **inc: Any) -> None:
 
 def _note_held(leg: str, acc: HostAccess, url: str) -> None:
     """Carry the missed_growth line of the person-held hold on `url`'s site into `leg`'s stats.
-    A refusal that is not a hold (robots, a fence) adds nothing. Never raises."""
+    A refusal that is not a hold (a fence) adds nothing. Never raises."""
     with contextlib.suppress(Exception):
         site = site_of(hostname_of(url))
         with acc._lock:
@@ -1171,14 +1323,16 @@ def fenced_urlopen(req: Any, timeout: float | None = None,
     organ passes `live_input=True`: an IDEAS_ONLY or held route is then refused on every hop.
 
     The same robots + hold checks as `get`: before the first request and every redirect hop the
-    site's person-held hold and the hop's origin robots.txt are asked (`access`, default
-    `default_access()`); a refusal raises `AccessRefused` (a `MethodRefused`) with nothing sent,
-    and a 401/403/429 or challenge holds the refusing site until a person releases it."""
+    site's person-held hold is asked and the hop's origin robots.txt is read AS A LABEL (`access`,
+    default `default_access()`); a hold raises `AccessRefused` (a `MethodRefused`) with nothing
+    sent, a robots Disallow or an unreadable robots.txt proceeds with its label (set on the
+    response as `access_label` / `terms_note` / `redistribute_allowed`), and a 401/403/429 or
+    challenge holds the refusing site until a person releases it."""
     return _tf.guarded_urlopen(req, timeout=timeout, context=context, live_input=live_input,
                                access=access)
 
 
-#: The door's polite refusal (a `MethodRefused`): a person-held hold or robots.txt.
+#: The door's polite refusal (a `MethodRefused`): a person-held hold (robots.txt never refuses).
 AccessRefused = _tf.AccessRefused
 
 
@@ -1241,9 +1395,16 @@ class Response:
     error: str = ""
     elapsed_s: float = 0.0
     attempts: int = 0
-    #: NEEDS_KEY / METHOD_BLOCKED / ROBOTS_DISALLOW / ROBOTS_UNREADABLE when the fetch was
-    #: refused or held; '' otherwise. A refusal is a recorded answer, never routed around.
+    #: NEEDS_KEY / METHOD_BLOCKED (a person-held hold) when the fetch was refused; '' otherwise.
+    #: A refusal is a recorded answer, never routed around. robots.txt never sets it (LAWS 5e).
     verdict: str = ""
+    #: THE ACCESS LABEL robots.txt put on the URL the content came from (LAWS 5e): PUBLIC,
+    #: PUBLIC_WITH_TERMS (a Disallow, named in `terms_note`) or ACCESS_UNCLEAR (robots.txt
+    #: unreadable). '' when nothing was admitted. `redistribute_allowed` comes from
+    #: access_classifier.ROUTING and fails closed.
+    access_label: str = ""
+    terms_note: str = ""
+    redistribute_allowed: bool = False
     #: The body as bytes (content-encoding undone, bounded): what a raw landing stores.
     body: bytes = b""
     #: Every redirect hop the fetch followed, [(code, from, to)] -- redirects are VISIBLE.
@@ -1280,8 +1441,10 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
     """GET `url` once, politely, with bounded retries. NEVER RAISES: the Response carries the
     status or the error, so a caller can record what happened rather than a stack trace.
 
-    Before every request -- `url` and each redirect hop -- `access.permits` checks the site's
-    holds and the hop's own origin robots.txt (read through the same `opener`). A refusal
+    Before every request -- `url` and each redirect hop -- `access.permits_labelled` checks the
+    site's holds and reads the hop's own origin robots.txt (through the same `opener`) AS A LABEL:
+    a Disallow or an unreadable robots.txt proceeds and the label lands on the Response
+    (`access_label`, `terms_note`, `redistribute_allowed`) and in `leg`'s stats (LAWS 5e). A hold
     returns with `verdict` set and nothing sent. 401/403/429 record a site hold and stop: no
     retry, no other route. The User-Agent sent is always honest (`honest_headers`).
 
@@ -1334,12 +1497,15 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
             _stat(leg, error=(refusal.status if fenced == "login_wall"
                               else f"terms_fenced:{fenced}"))
             break
-        allowed, why = acc.permits(cur, send=_send)
+        allowed, why, label = acc.permits_labelled(cur, send=_send)
         if not allowed:
             resp.status, resp.error = None, why
             resp.verdict = why.split(" ")[0].split(":")[0]
             _stat(leg, refused=1, error=resp.verdict)
             break
+        resp.access_label = str(label.get("access_label") or "")
+        resp.terms_note = str(label.get("terms_note") or "")
+        resp.redistribute_allowed = bool(label.get("redistribute_allowed"))
         host = hostname_of(cur)
         if gate is not None and host:
             # Robots Crawl-delay widens the host's spacing, never narrows it.
@@ -1363,12 +1529,15 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                 if final != cur and final != ascii_url(cur):
                     # An opener that followed a redirect itself: the target was not checked
                     # before it was read, so check it now and discard the body if refused.
-                    ok2, why2 = acc.permits(final, send=_send)
+                    ok2, why2, label2 = acc.permits_labelled(final, send=_send)
                     if not ok2:
                         resp.status, resp.error = None, why2
                         resp.verdict = why2.split(" ")[0].split(":")[0]
                         _stat(leg, refused=1, error=resp.verdict)
                         break
+                    resp.access_label = str(label2.get("access_label") or "")
+                    resp.terms_note = str(label2.get("terms_note") or "")
+                    resp.redistribute_allowed = bool(label2.get("redistribute_allowed"))
                 raw = fh.read(max_bytes)
                 h = getattr(fh, "headers", None)
                 ctype = str(h.get("Content-Type") or "") if h is not None else ""
@@ -1394,6 +1563,9 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                 resp.redirects.extend(getattr(fh, "redirects", None) or [])
                 resp.error = ""
                 _stat(leg, ok=1, bytes=len(raw))
+                _note_label_stat(leg, final, {"access_label": resp.access_label,
+                                              "terms_note": resp.terms_note,
+                                              "redistribute_allowed": resp.redistribute_allowed})
                 break
         except MethodRefused as exc:
             # A held source or a 30x into one or into a login wall: refused, never followed,
@@ -1487,9 +1659,10 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
 
 
 class FetchRefused(RuntimeError):
-    """A polite fetch that did not return content: a hold, a robots refusal, an HTTP error or a
-    transport failure. `code` is the HTTP status when there was one (so a caller's own `code ==
-    429` check still reads it) and `verdict` is NEEDS_KEY / METHOD_BLOCKED / ROBOTS_* or ''."""
+    """A polite fetch that did not return content: a hold, an HTTP error or a transport failure
+    (robots.txt is a label, never a refusal: LAWS 5e). `code` is the HTTP status when there was
+    one (so a caller's own `code == 429` check still reads it) and `verdict` is NEEDS_KEY /
+    METHOD_BLOCKED or ''."""
 
     def __init__(self, url: str, status: int | None, verdict: str, error: str) -> None:
         url = redact_url(url)                  # a refusal is logged: never with its key
@@ -1504,7 +1677,8 @@ def get_text(url: str, *, headers: Mapping[str, str] | None = None, timeout: flo
              retries: int = 1, leg: str = "default", access: HostAccess | None = None,
              opener: Callable[..., Any] | None = None) -> str:
     """`get()` for callers written against `urlopen(...).read().decode()`: the body text, or
-    `FetchRefused`. Same honest UA, robots check per hop and 401/403/429 site hold as `get()`."""
+    `FetchRefused`. Same honest UA, robots label per hop (in `leg`'s stats) and 401/403/429 site
+    hold as `get()`."""
     r = get(url, headers=headers, timeout=timeout, retries=retries, leg=leg, access=access,
             opener=opener)
     if r.verdict or not r.ok:
@@ -1530,15 +1704,16 @@ def _post(url: str, data: bytes, *, headers: Mapping[str, str] | None = None,
           timeout: float = 20.0, leg: str = "default", access: HostAccess | None = None,
           opener: Callable[..., Any] | None = None) -> str:
     """One POST (a GraphQL search, say), under the same rules as `get()`: honest UA, the site's
-    holds and the origin's robots.txt checked first, redirects not followed, and 401/403/429 or a
-    challenge record a hold and raise `FetchRefused`. Never retried: a POST is not idempotent."""
+    holds checked and the origin's robots.txt read as a label first (into `leg`'s stats),
+    redirects not followed, and 401/403/429 or a challenge record a hold and raise
+    `FetchRefused`. Never retried: a POST is not idempotent."""
     acc = access if access is not None else default_access()
     open_ = opener or open_no_redirect
 
     def _send(req: urllib.request.Request, t: float) -> Any:
         return open_(req, timeout=t, context=ssl_context())
 
-    ok, why = acc.permits(url, send=_send)
+    ok, why, label = acc.permits_labelled(url, send=_send)
     if not ok:
         raise FetchRefused(url, None, why.split(" ")[0].split(":")[0], why)
     host = hostname_of(url)
@@ -1579,6 +1754,7 @@ def _post(url: str, data: bytes, *, headers: Mapping[str, str] | None = None,
         _stat(leg, fetches=1, refused=1, error="WAF")
         raise FetchRefused(url, status, v, f"{v}: challenge page")
     _stat(leg, fetches=1, ok=1, bytes=len(raw))
+    _note_label_stat(leg, url, label)
     return text
 
 
@@ -1654,9 +1830,10 @@ def carries_secret(url: str) -> bool:
 
 def admit(url: str, *, access: HostAccess | None = None,
           opener: Callable[..., Any] | None = None) -> tuple[bool, str]:
-    """(may fetch, why not): the method fence, then the site's holds and the origin's robots.txt
-    (`HostAccess.permits`). For a caller that must send the request itself (a keyed API whose
-    credential rides in the query); it reports a 401/403/429 back with `refuse_status`."""
+    """(may fetch, why not): the method fence, then the site's holds (`HostAccess.permits`;
+    robots.txt is read as a label and never refuses -- `access_label` returns it). For a caller
+    that must send the request itself (a keyed API whose credential rides in the query); it
+    reports a 401/403/429 back with `refuse_status`."""
     fenced = _tf.platform_of_url(url) or _tf.fenced_request(url, {}) or (
         "login_wall" if _tf.login_wall(url) else None)
     if fenced:
@@ -1670,6 +1847,30 @@ def admit(url: str, *, access: HostAccess | None = None,
     return acc.permits(url, send=_send)
 
 
+def access_label(url: str, *, access: HostAccess | None = None,
+                 opener: Callable[..., Any] | None = None, read: bool = True) -> dict[str, Any]:
+    """robots.txt AS A LABEL for `url` (LAWS 5e): {access_label, terms_note,
+    redistribute_allowed}, for a caller that writes its own rows (`admit` says whether a hold
+    refuses; this says what the row carries). Never raises: a failure reads as ACCESS_UNCLEAR.
+    `read=False` never touches the network: it answers from robots.txt files this process has
+    already read (the fetch just made read its origin's), and {} when there is none."""
+    acc = access if access is not None else default_access()
+    if not read:
+        try:
+            return acc.peek_label(url)
+        except Exception:
+            return {}
+    open_ = opener or open_no_redirect
+
+    def _send(req: urllib.request.Request, t: float) -> Any:
+        return open_(req, timeout=t, context=ssl_context())
+
+    try:
+        return acc.access_label(url, send=_send)
+    except Exception as exc:
+        return access_row(ACCESS_UNCLEAR, f"robots label unreadable ({type(exc).__name__})")
+
+
 def refuse_status(url: str, status: int, *, access: HostAccess | None = None) -> str:
     """Record a 401/403/429 a caller received as the site's hold (on the redacted URL)."""
     acc = access if access is not None else default_access()
@@ -1677,9 +1878,10 @@ def refuse_status(url: str, status: int, *, access: HostAccess | None = None) ->
 
 
 class PoliteRefused(urllib.error.URLError):
-    """A seam fetch that was refused before or without a status (a hold, robots, the method
-    fence, a transport error). A `URLError`, so an `except URLError` / `except OSError` caller
-    written for urlopen still catches it. `verdict` is the refusal's name or ''."""
+    """A seam fetch that was refused before or without a status (a hold, the method fence, a
+    transport error; robots.txt is a label and never refuses). A `URLError`, so an
+    `except URLError` / `except OSError` caller written for urlopen still catches it.
+    `verdict` is the refusal's name or ''."""
 
     def __init__(self, url: str, verdict: str, error: str) -> None:
         super().__init__(f"{verdict or 'FETCH_FAILED'}: {error} ({redact_url(url)[:160]})")
@@ -1690,11 +1892,17 @@ class SeamResponse:
     """What `polite_urlopen` returns: a file-like body (`read`, context manager) with `status`,
     `code`, `headers`, `url` and `geturl()`, like the object urlopen returns."""
 
-    def __init__(self, url: str, status: int, body: bytes, content_type: str = "") -> None:
+    def __init__(self, url: str, status: int, body: bytes, content_type: str = "",
+                 label: Mapping[str, Any] | None = None) -> None:
         import io
         self._buf = io.BytesIO(body)
         self.url = url
         self.status = self.code = status
+        #: robots.txt's access label for this URL (LAWS 5e), carried like urlopen's headers
+        lab = dict(label or {})
+        self.access_label = str(lab.get("access_label") or "")
+        self.terms_note = str(lab.get("terms_note") or "")
+        self.redistribute_allowed = bool(lab.get("redistribute_allowed"))
         msg = Message()
         if content_type:
             msg["Content-Type"] = content_type
@@ -1763,8 +1971,8 @@ def _keyed_open_once(url: str, hdr: dict[str, str], data: bytes | None, method: 
                      timeout: float, max_bytes: int, acc: HostAccess,
                      opener: Callable[..., Any] | None, live_input: bool = False
                      ) -> SeamResponse:
-    """A request whose URL carries a credential: admitted first (holds + robots), sent once
-    through the module's no-redirect door (a 30x is returned as HTTPError, never followed), and
+    """A request whose URL carries a credential: admitted first (holds; robots as a label), sent
+    once through the module's no-redirect door (a 30x is returned as HTTPError, never followed), and
     a 401/403/429 held on the REDACTED url. `live_input` also refuses an IDEAS_ONLY route."""
     if live_input:
         src = _tf.input_source(url)
@@ -1775,6 +1983,7 @@ def _keyed_open_once(url: str, hdr: dict[str, str], data: bytes | None, method: 
         raise _tf.TermsFenced(why.split(":", 1)[1], redact_url(url))
     if not ok:
         raise PoliteRefused(url, why.split(" ")[0].split(":")[0], why)
+    label = access_label(url, access=acc, opener=opener)
     open_ = opener or open_no_redirect
     host = hostname_of(url)
     if GATE is not None and host:
@@ -1799,7 +2008,7 @@ def _keyed_open_once(url: str, hdr: dict[str, str], data: bytes | None, method: 
         raise PoliteRefused(url, "", f"body longer than {max_bytes} bytes")
     ctype = str(h.get("Content-Type") or "") if h is not None else ""
     return SeamResponse(url, status, inflate(raw, str(h.get("Content-Encoding") or "")
-                                             if h is not None else ""), ctype)
+                                             if h is not None else ""), ctype, label)
 
 
 def polite_urlopen(req: urllib.request.Request | str, timeout: float = 30.0, *,
@@ -1809,8 +2018,10 @@ def polite_urlopen(req: urllib.request.Request | str, timeout: float = 30.0, *,
                    live_input: bool = False, context: Any = None) -> SeamResponse:
     """`urllib.request.urlopen` for a desk fetcher, under this module's rules. Returns a
     `SeamResponse`; raises `urllib.error.HTTPError` for an HTTP status >= 400 (a 401/403/429
-    has already been held) and `PoliteRefused` (a URLError) for a refusal -- robots, a hold, the
-    method fence -- or a transport failure. Nothing is sent to a disallowed or held URL.
+    has already been held) and `PoliteRefused` (a URLError) for a refusal -- a hold or the
+    method fence -- or a transport failure. Nothing is sent to a held URL. A robots Disallow or
+    an unreadable robots.txt is FETCHED, and its label rides on the returned response as
+    `access_label` / `terms_note` / `redistribute_allowed` (LAWS 5e).
     `context` is accepted and ignored: TLS is always this module's verified `ssl_context()`."""
     del context
     if isinstance(req, urllib.request.Request):
@@ -1841,13 +2052,16 @@ def polite_urlopen(req: urllib.request.Request | str, timeout: float = 30.0, *,
             if exc.code is not None:
                 raise _seam_http_error(url, int(exc.code), exc.error) from None
             raise PoliteRefused(url, exc.verdict, exc.error) from None
-        return SeamResponse(url, 200, text.encode("utf-8"), "text/plain; charset=utf-8")
+        return SeamResponse(url, 200, text.encode("utf-8"), "text/plain; charset=utf-8",
+                            access_label(url, access=acc, opener=opener))
     r = get(url, headers=hdr, timeout=timeout, retries=retries, leg=leg,
             max_bytes=max_bytes + 1, access=acc, opener=opener, live_input=live_input)
     if r.ok:
         if len(r.body) > max_bytes:
             raise PoliteRefused(url, "", f"body longer than {max_bytes} bytes")
-        return SeamResponse(r.final_url or url, int(r.status or 200), r.body, r.content_type)
+        return SeamResponse(r.final_url or url, int(r.status or 200), r.body, r.content_type,
+                            {"access_label": r.access_label, "terms_note": r.terms_note,
+                             "redistribute_allowed": r.redistribute_allowed})
     if r.status is not None and (r.status >= 400 or r.status == 304):
         # urlopen raises for a 304 too; a conditional-GET caller reads it from the HTTPError
         raise _seam_http_error(url, int(r.status), r.error, r.headers, r.error_body)
@@ -1864,9 +2078,15 @@ class SeamRequestsResponse:
     `raise_for_status()` raises `FetchRefused` for anything but a 2xx/3xx."""
 
     def __init__(self, url: str, status: int, content: bytes, text: str, content_type: str,
-                 verdict: str = "", error: str = "") -> None:
+                 verdict: str = "", error: str = "",
+                 label: Mapping[str, Any] | None = None) -> None:
         self.url = redact_url(url)               # a credential never rides on a response
         self.status_code = status
+        lab = dict(label or {})
+        #: robots.txt's access label for this URL (LAWS 5e)
+        self.access_label = str(lab.get("access_label") or "")
+        self.terms_note = str(lab.get("terms_note") or "")
+        self.redistribute_allowed = bool(lab.get("redistribute_allowed"))
         self.content = content
         self.text = text
         self.headers = {"Content-Type": content_type} if content_type else {}
@@ -1896,7 +2116,8 @@ def polite_requests_get(url: str, params: Mapping[str, Any] | None = None, *,
     """`requests.get` for a desk fetcher, under this module's rules. NEVER RAISES: a refusal or
     failure is a response with `status_code` 0 (or the HTTP status) and `verdict`/`error` set.
     `allow_redirects`, `verify`, `stream` and similar keywords are ignored: redirects are always
-    followed hop by hop under robots and holds, and TLS is always verified."""
+    followed hop by hop under holds (robots read as a label, carried on the response), and TLS
+    is always verified."""
     if params:
         from urllib.parse import urlencode
         sep = "&" if urlsplit(url).query else "?"
@@ -1913,13 +2134,18 @@ def polite_requests_get(url: str, params: Mapping[str, Any] | None = None, *,
         return SeamRequestsResponse(url, 0, b"", "", "", "terms_fenced", str(exc.reason))
     raw = r.read()
     ctype = str(r.headers.get("Content-Type") or "")
-    return SeamRequestsResponse(r.url, r.status, raw, decode_body(raw, ctype), ctype)
+    return SeamRequestsResponse(r.url, r.status, raw, decode_body(raw, ctype), ctype,
+                                label={"access_label": getattr(r, "access_label", ""),
+                                       "terms_note": getattr(r, "terms_note", ""),
+                                       "redistribute_allowed":
+                                           getattr(r, "redistribute_allowed", False)})
 
 
 class PoliteSession:
     """`requests.Session` for a desk fetcher: `headers` persist across calls and every `get` is
-    `polite_requests_get` (holds and robots.txt first, honest UA). Nothing else of a Session --
-    cookies, adapters, auth -- exists here, by design: a fetcher that needs a login is not one."""
+    `polite_requests_get` (holds first, robots.txt as a label, honest UA). Nothing else of a
+    Session -- cookies, adapters, auth -- exists here, by design: a fetcher that needs a login
+    is not one."""
 
     def __init__(self, leg: str = "seam") -> None:
         self.headers: dict[str, str] = {}

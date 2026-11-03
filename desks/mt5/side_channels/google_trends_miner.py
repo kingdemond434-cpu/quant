@@ -51,8 +51,8 @@ if str(BASE.parents[1]) not in sys.path:
 #: there, so no clock and no other fetcher's view can release trends.google.com.
 from libs.data import polite_fetch as _pf  # noqa: E402
 # THE ONE FETCH DOOR (LAWS 5e amended 2026-10-14): every request below -- robots.txt included --
-# goes through polite_fetch, which reads the origin's holds and robots.txt first. The hard stop
-# and robots_verdict below still decide on what comes back; the two never disagree to fetch.
+# goes through polite_fetch, which reads the origin's holds first and robots.txt AS A LABEL. The
+# hard stop below decides on what comes back; robots_verdict only LABELS the row (LAWS 5e).
 from libs.data.polite_fetch import polite_requests_get  # noqa: E402
 
 # Search terms that move markets
@@ -207,7 +207,8 @@ def mine_google_trends(now: datetime | None = None) -> list[dict]:
     discoveries: list[dict] = []
     prior = _load_block()
     LAST_PASS.clear()
-    LAST_PASS.update({"requests": 0, "ok_responses": 0, "block": None, "robots_disallowed": 0})
+    LAST_PASS.update({"requests": 0, "ok_responses": 0, "block": None, "robots_disallowed": 0,
+                      "robots_unavailable": 0})
     held = hard_stop.active_hold(BLOCKED_REGISTER, [hard_stop.host_key(HOST)], prior)
     # One person's release reaches both records (see free_stack.fetch_gtrends).
     rel = (hard_stop._register(BLOCKED_REGISTER).get("holds") or {}).get(
@@ -234,9 +235,10 @@ def mine_google_trends(now: datetime | None = None) -> list[dict]:
             # Use Google Trends explore page (HTML scraping)
             url = ("https://trends.google.com/trends/explore?q="
                    f"{term.replace(' ', '+')}&date=today+12-m")
-            # ROBOTS (audit 0b66b08de MF5; principal's scope rule 2026-10-13): read at the host
-            # at most once a day, judged per exact path. A refusal on robots.txt itself is a
-            # person-held hold; an unavailable one stops this pass; a Disallow skips the URL.
+            # ROBOTS (audit 0b66b08de MF5): read at the host at most once a day, judged per exact
+            # path. An access control on robots.txt itself (401/403/429, a challenge) is a
+            # person-held hold. A Disallow or an unavailable robots.txt is a LABEL on the row and
+            # the URL is FETCHED (LAWS 5e: "robots.txt Disallow treated as a refusal" is deleted).
             if robots is None:
                 robots = _robots(url, now)
                 if (verdict0 := hard_stop.refusal(robots[0], robots[2], robots[1])):
@@ -246,14 +248,13 @@ def mine_google_trends(now: datetime | None = None) -> list[dict]:
                     break
             verdict = hard_stop.robots_verdict(url, robots[0], robots[1])
             LAST_PASS["robots"] = verdict
-            if verdict["state"] == "UNAVAILABLE":
+            if not verdict.get("proceed", True):
                 blocked = True
-                LAST_PASS.update({"status": "ROBOTS_UNAVAILABLE",
-                                  "http_status": verdict.get("http_status")})
                 break
-            if not verdict["allowed"]:
+            if verdict["state"] == "UNAVAILABLE":
+                LAST_PASS["robots_unavailable"] += 1
+            elif not verdict["allowed"]:
                 LAST_PASS["robots_disallowed"] += 1
-                continue
             try:
                 resp = polite_requests_get(url, headers=HEADERS, timeout=15)
             except Exception:
@@ -297,22 +298,26 @@ def mine_google_trends(now: datetime | None = None) -> list[dict]:
                     "symbols": syms,
                     "confidence": min(0.7, abs(trend_pct) / 50),
                     "description": f"'{term}' search volume {trend_pct:+.1f}% vs 4-week avg",
+                    # THE ROBOTS LABEL ON THE ROW (LAWS 5e): PUBLIC, PUBLIC_WITH_TERMS (a
+                    # Disallow) or ACCESS_UNCLEAR (robots.txt unavailable) -- all fetched.
+                    "access_label": verdict.get("access_label") or "PUBLIC",
+                    "terms_note": verdict.get("terms_note") or "",
+                    "redistribute_allowed": bool(verdict.get("redistribute_allowed")),
                 })
         if blocked:
             break
 
     if not blocked:
         # FETCHED only when a timeline was actually read: a 200 that carried none is not data
-        n_terms = sum(len(t) for t in SEARCH_TERMS.values())
-        if LAST_PASS["robots_disallowed"] == n_terms:
-            LAST_PASS["status"] = "ROBOTS_DISALLOWED"
+        # A Disallow is a label: the URLs were fetched, and the label is noted on the work
+        # queue (never a refusal; LAWS 5e). The pass status says what the fetch READ.
+        if LAST_PASS["robots_disallowed"]:
             try:
                 hard_stop.note_robots(LAST_PASS.get("robots") or {}, BLOCKED_REGISTER,
                                       source_key=REGISTER_KEY)
             except Exception as exc:
                 LAST_PASS["persist_error"] = f"{type(exc).__name__}: {exc}"[:200]
-        else:
-            LAST_PASS["status"] = "FETCHED" if LAST_PASS["timelines_read"] else "FAILED"
+        LAST_PASS["status"] = "FETCHED" if LAST_PASS["timelines_read"] else "FAILED"
     return discoveries
 
 
