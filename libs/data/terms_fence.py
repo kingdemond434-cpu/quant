@@ -1227,8 +1227,8 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
     # redistribution and LIVE USE -- and a minted cell feeds automatic live promotion, so the
     # fence holds them from cells (coordinator's decision 2026-11-03: keep the fence). Status
     # IDEAS_ONLY is the register's word for exactly that: `platform_of_url` does not hold the
-    # host (the fetch proceeds), `input_source` refuses it as live input. Terms re-read on 2026-11-03: no clause names research, delayed data or
-    # automated access, s.2 is personal non-commercial only and s.4 says the Materials "are not
+    # host (the fetch proceeds), `input_source` refuses it as live input. Terms re-read on
+    # 2026-11-03: no clause names research, delayed data or automated access, s.2 is personal non-commercial only and s.4 says the Materials "are not
     # intended for trading purposes" -- so no clause permits live use, MACRO_VIEW's VIX risk lean
     # stays cut (missed_growth.vix_risk_lean_cut) and nothing here is wired to sizing.
     "cboe_cdn_index_history": {
