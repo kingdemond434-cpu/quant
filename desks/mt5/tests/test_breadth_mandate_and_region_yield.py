@@ -31,7 +31,7 @@ import pytest
 
 _DESK = Path(__file__).resolve().parents[1]
 _ROOT = _DESK.parent.parent
-for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
+for p in (str(_DESK), str(_DESK / "research"), str(_DESK / "scripts"), str(_ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
