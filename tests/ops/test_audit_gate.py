@@ -2816,7 +2816,8 @@ def test_a_gh_timeout_on_one_pr_never_kills_the_sweep(monkeypatch: pytest.Monkey
     ran: list[int] = []
     monkeypatch.setattr(ag, "_gh", gh)
     monkeypatch.setattr(ag, "run", lambda repo, n, *a, **k: ran.append(n) or 0)
-    assert ag.sweep("o/r", ag.LIVE) == 1 and ran == [2]
+    # the unread PR is ordered last, never dropped: its own full run decides (#617 audit SF)
+    assert ag.sweep("o/r", ag.LIVE) == 1 and ran == [2, 1]
 
 
 # ------------------------------------------------ the registry path (D-20261103-005)
@@ -2939,3 +2940,8 @@ def test_send_alert_succeeds_only_when_a_channel_delivered(monkeypatch: Any) -> 
     assert mod.main(["t", "b"]) == 1
     monkeypatch.setattr(mod, "send_all", lambda t, b: {"armed": 1, "delivered": 1})
     assert mod.main(["t", "b"]) == 0 and mod.main(["t"]) == 2
+
+
+def test_the_githooks_are_protected_again() -> None:
+    # #246 audit (2026-11-03): an AUTO edit could make the money-path guard's hooks no-ops
+    assert ag.is_protected("ops/githooks/pre-push") and ag.is_protected("ops/githooks/pre-commit")
