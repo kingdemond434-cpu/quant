@@ -54,6 +54,7 @@ import argparse
 import hashlib
 import io
 import json
+import math
 import os
 import re
 import shutil
@@ -337,8 +338,9 @@ def _classify(exc: BaseException) -> str:
 Fetcher = Callable[[str, float], bytes]
 
 
-def urllib_fetch(url: str, timeout: float) -> bytes:
-    """Default transport: polite_fetch's urlopen seam, the named UA. LIVE-INPUT CHECK
+def urllib_fetch(url: str, timeout: float, headers: dict[str, str] | None = None) -> bytes:
+    """Default transport: polite_fetch's urlopen seam, the named UA (plus a country pack's
+    credential header when one is set). LIVE-INPUT CHECK
     (libs/data/terms_fence.py): a URL on an IDEAS_ONLY or held source is refused before any
     request, and a 30x into a held source or a login wall is never followed. ROBOTS DECIDES
     (LAWS 5e amended 2026-10-14): the site's holds and the origin's robots.txt are checked on
@@ -348,7 +350,8 @@ def urllib_fetch(url: str, timeout: float) -> bytes:
     if _tf.input_source(url):
         raise FetchError("terms_fenced", url)
     req = urllib.request.Request(url, headers={"User-Agent": UA,
-                                               "Accept": "application/json, text/csv, */*"})
+                                               "Accept": "application/json, text/csv, */*",
+                                               **(headers or {})})
     try:
         with _pf.polite_urlopen(req, timeout=timeout, live_input=True,
                                 max_bytes=MAX_DIRECT_BYTES + 1, retries=0,
@@ -389,7 +392,7 @@ class Client:
     def remaining(self) -> float:
         return self.deadline - time.monotonic()
 
-    def get(self, url: str) -> bytes:
+    def get(self, url: str, headers: dict[str, str] | None = None) -> bytes:
         left = self.remaining()
         if left < 2.0:
             raise FetchError("budget_exhausted", url)
@@ -399,7 +402,10 @@ class Client:
         self._last = time.monotonic()
         self.requests += 1
         try:
-            raw = self.fetch(url, min(HTTP_TIMEOUT_S, max(2.0, left - 1.0)))
+            t = min(HTTP_TIMEOUT_S, max(2.0, left - 1.0))
+            # a credential header (a country pack's gateway key) travels only when one is set,
+            # so every two-argument fetcher keeps working unchanged
+            raw = self.fetch(url, t, headers) if headers else self.fetch(url, t)  # type: ignore[call-arg]
         except FetchError as exc:
             self.failures[exc.reason] += 1
             raise
@@ -651,7 +657,10 @@ def merge_observations(existing: Any, series: list[dict[str, Any]], *, now: date
     for s in series:
         freq = s.get("freq") or ""
         per_lag = s.get("lag_by_period") or {}
-        released = s.get("released") or {}
+        # `released` (a publisher's release instant) and `available` (a door that knows each
+        # value's actual release, e.g. the MoF intervention file released a quarter at a time)
+        # are the same fact: period -> ISO UTC instant, never before the period ends.
+        released = {**(s.get("available") or {}), **(s.get("released") or {})}
         for per, val in s["points"]:
             end, f = period_end(per, freq)
             if end is None:
@@ -951,11 +960,13 @@ def series_from_long(df: Any, *, freq: str = "", hint: str = "") -> list[dict[st
     value's availability on instead of a cadence lag."""
     out = []
     dim_cols = [c for c in df.columns if c not in ("series_code", "period", "value", "lag_days",
-                                                   "release_utc", "stem", "market_year")]
+                                                   "release_utc", "stem", "market_year",
+                                                   "available_utc", "freq")]
     for code, g in df.groupby("series_code", sort=False):
         dims = {c: str(g[c].iloc[0]) for c in dim_cols} if dim_cols else {}
         pts = [(str(p), float(v)) for p, v in zip(g["period"], g["value"], strict=False)]
-        fq = freq or dims.get("FREQ", "")
+        fq = ((str(g["freq"].iloc[0]) if "freq" in g.columns else "") or freq
+              or dims.get("FREQ", ""))
         row: dict[str, Any] = {"code": str(code), "name": f"{hint} {code}".strip(),
                                "freq": norm_freq(fq), "dims": dims, "points": pts}
         if "lag_days" in g.columns:
@@ -972,6 +983,9 @@ def series_from_long(df: Any, *, freq: str = "", hint: str = "") -> list[dict[st
             row["released"] = {str(p): str(r) for p, r in zip(g["period"], g["release_utc"],
                                                               strict=False)
                                if isinstance(r, str) and r}
+        if "available_utc" in g.columns:
+            row["available"] = {str(p): str(a) for p, a in zip(g["period"], g["available_utc"],
+                                                               strict=False) if a}
         out.append(row)
     return out
 
@@ -1013,6 +1027,7 @@ def direct_sources(now: datetime | None = None) -> list[dict[str, Any]]:
     out += gap_doors()
     out += fund_flow_doors()
     out += agri_nowcast_doors(now)
+    out += country_pack_doors()
     for sid in _fred_ids():
         out.append({"provider": "FRED", "dataset": sid, "name": f"FRED {sid}", "mode": "csv",
                     "url": ("https://fred.stlouisfed.org/graph/fredgraph.csv?"
@@ -1944,6 +1959,523 @@ def agri_nowcast_doors(now: datetime) -> list[dict[str, Any]]:
     return out
 
 
+# ------------------------------------------------------ country open-data packs (2026-11-03) ----
+#: THE COUNTRY OPEN-DATA PACKS (REGION_GAP_RANK 2026-11-03: Indonesia rank 2, Singapore 7, Saudi
+#: Arabia 9; Japan and China named weak). Each pack is a set of direct doors of THIS organ -- no
+#: second lane: their series land in the same PIT store, `build_exposure` hands them to
+#: `world_macro_proposer`, and the gauntlet sees them as `world_macro_state` cells.
+#:
+#: TERMS DECIDE LIVE INPUT. Every door names its row of the one register
+#: (libs/data/terms_fence.SOURCE_POLICY). A door whose URL `input_source` refuses (IDEAS_ONLY or
+#: held) is never requested as data: the pass records it as IDEAS_ONLY with the register's
+#: missed-growth line (delta E[log W] UNMEASURED), and its parser is exercised on fixtures only.
+#: A door whose key is absent reads NEEDS_KEY by name, never zero.
+#:
+#: LIVENESS. Each door counts its consecutive attempts that landed nothing (`empty_streak`, reset
+#: by a fetch that lands rows). More than PACK_EMPTY_RED_RUNS in a row is RED, and a RED door
+#: puts its name in the report's top-level `status`, which `health_board` reads as the organ's
+#: own last reading (the desk's existing RED path; no new board).
+#:
+#: China is a pack WITHOUT a door here: its exchanges' daily warehouse receipts and member
+#: rankings already have an organ (libs/data/free_stack_cnx.py under the free-stack hunter), and
+#: its rows (cnx_shfe / cnx_dce / cnx_czce) hold it on terms. The pack reports that organ's
+#: terms state and instrument map so the gap is visible in one place, and builds nothing twice.
+PACK_EMPTY_RED_RUNS = 2
+#: MoF publishes the DAILY breakdown of intervention a quarter at a time (latest read 2026-11-03:
+#: "April - June 2026 (August 7, 2026)", 38 days after the quarter); the monthly totals follow
+#: each month's last business day. The daily file is stamped at quarter end + this many days at
+#: 10:00 UTC (19:00 JST) -- a bound later than the stated release; late only costs edge.
+MOF_FEIO_RELEASE_LAG_D = 45
+_MOF_FEIO_CSV = ("https://www.mof.go.jp/english/policy/international_policy/reference/feio/"
+                 "foreign_exchange_intervention_operations.csv")
+_MAS_GW = "https://eservices.mas.gov.sg/apimg-gw/server/monthly_statistical_bulletin_non610mssql/"
+_BOJ_API = "https://www.stat-search.boj.or.jp/api/v1/getDataCode?"
+_MONTHS = {m: i for i, m in enumerate(("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug",
+                                       "sep", "oct", "nov", "dec"), start=1)}
+_MONTHS.update({"mei": 5, "agu": 8, "agt": 8, "okt": 10, "des": 12, "januari": 1,
+                "februari": 2, "maret": 3, "juni": 6, "juli": 7, "agustus": 8,
+                "oktober": 10, "desember": 12})
+
+
+def _decode_any(raw: bytes) -> str:
+    for enc in ("utf-8-sig", "cp932", "latin-1"):
+        try:
+            return raw.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    return raw.decode("utf-8", "replace")
+
+
+def _quarter_of_date(d: date) -> tuple[int, int]:
+    return d.year, (d.month - 1) // 3 + 1
+
+
+def mof_feio_release(year: int, quarter: int) -> datetime:
+    """The instant a quarter's daily intervention breakdown is treated as public (see
+    MOF_FEIO_RELEASE_LAG_D)."""
+    end = _month_end(year, quarter * 3)
+    return datetime(end.year, end.month, end.day, 10, tzinfo=UTC) + timedelta(
+        days=MOF_FEIO_RELEASE_LAG_D)
+
+
+def _mof_feio_frame(raw: bytes) -> Any:
+    """MoF `foreign_exchange_intervention_operations.csv`: nine columns (Japanese era year, month,
+    day, then the Western year, month and day, the amount in 100 million yen, the currency pair in
+    Japanese and in English). Year and month are blank on rows that continue them; quarterly
+    `期計` rows carry the period in English ("July - September 2022") and the quarter's total.
+
+    Produces `yen_bought_100m_jpy` (each operation, + when the yen was bought, - when sold) and
+    `qtr_net_yen_bought_100m_jpy` (every quarter the file lists, 0 when nothing was done), both
+    stamped at the quarter's release, never at the operation date."""
+    import csv
+
+    import pandas as pd
+
+    text = _decode_any(raw)
+    if text.lstrip()[:1] == "<":
+        raise FetchError("served_html", "mof feio")
+    year = month = None
+    ops: list[tuple[date, float]] = []
+    quarters: set[tuple[int, int]] = set()
+    for row in csv.reader(io.StringIO(text)):
+        cells = [c.strip() for c in row] + [""] * 9
+        head = cells[0]
+        if "期計" in head or re.search(r"[A-Za-z]+\s*-\s*[A-Za-z]+\s+\d{4}", cells[3]):
+            m = re.search(r"([A-Za-z]+)\s*-\s*([A-Za-z]+)\s+(\d{4})", cells[3])
+            mon = _MONTHS.get((m[2] if m else "")[:3].lower())
+            if m and mon:
+                quarters.add((int(m[3]), (mon - 1) // 3 + 1))
+            continue
+        if cells[3].isdigit() and len(cells[3]) == 4:
+            year = int(cells[3])
+        if cells[4][:3].lower() in _MONTHS:
+            month = _MONTHS[cells[4][:3].lower()]
+        amount = _num_or_none(cells[6])
+        if not cells[5].isdigit() or amount is None or year is None or month is None:
+            continue
+        pair = cells[8].lower()
+        if "japanese yen (bought)" in pair:
+            sign = 1.0
+        elif "japanese yen (sold)" in pair:
+            sign = -1.0
+        else:
+            continue                      # a non-yen operation: not this series' quantity
+        try:
+            ops.append((date(year, month, int(cells[5])), sign * amount))
+        except ValueError:
+            continue
+    rows: list[dict[str, Any]] = []
+    by_q: dict[tuple[int, int], float] = defaultdict(float)
+    for d, v in ops:
+        q = _quarter_of_date(d)
+        by_q[q] += v
+        quarters.add(q)
+        rows.append({"series_code": "yen_bought_100m_jpy", "period": d.isoformat(),
+                     "value": v, "freq": "event",
+                     "available_utc": mof_feio_release(*q).isoformat()})
+    for (y, qn) in sorted(quarters):
+        rows.append({"series_code": "qtr_net_yen_bought_100m_jpy", "period": f"{y}-Q{qn}",
+                     "value": by_q.get((y, qn), 0.0), "freq": "quarterly",
+                     "available_utc": mof_feio_release(y, qn).isoformat()})
+    df = pd.DataFrame(rows, columns=["series_code", "period", "value", "freq", "available_utc"])
+    if df.empty:
+        raise FetchError("empty", "mof feio")
+    return df
+
+
+_RECORD_WRAPPERS = ("elements", "records", "data", "result", "results", "items", "rows",
+                    "value", "observations")
+_DATE_FIELDS = ("end_of_day", "end_of_week", "end_of_month", "end_of_period", "date", "Date",
+                "period", "periode", "obs_date", "as_of", "month", "week")
+
+
+def _record_lists(doc: Any, depth: int = 0) -> list[list[dict[str, Any]]]:
+    """Every list of row dicts inside a JSON document, outermost first (wrappers vary)."""
+    out: list[list[dict[str, Any]]] = []
+    if depth > 4:
+        return out
+    if isinstance(doc, list):
+        rows = [r for r in doc if isinstance(r, dict)]
+        if rows:
+            out.append(rows)
+        for x in doc:
+            if isinstance(x, (list, dict)):
+                out += _record_lists(x, depth + 1)
+    elif isinstance(doc, dict):
+        for k in _RECORD_WRAPPERS:
+            if k in doc:
+                out += _record_lists(doc[k], depth + 1)
+    return out
+
+
+def _records_of(doc: Any, date_fields: Iterable[str] = _DATE_FIELDS) -> list[dict[str, Any]]:
+    """The first row list whose rows carry a date field (BPS puts a paging dict beside its rows),
+    else the first row list found."""
+    lists = _record_lists(doc)
+    fields = tuple(date_fields)
+    return next((rows for rows in lists if any(f in rows[0] for f in fields)),
+                lists[0] if lists else [])
+
+
+def _records_frame(raw: bytes, spec: dict[str, Any]) -> Any:
+    """JSON rows (MAS API gateway, SAMA open data, BPS indicators): one date field per row and
+    one series per numeric field (`value_fields` when the spec names them). A row's text values
+    are never read as numbers."""
+    import pandas as pd
+
+    doc = json.loads(raw.decode("utf-8-sig", "replace"))
+    dfields = tuple(spec.get("date_fields") or _DATE_FIELDS)
+    recs = _records_of(doc, dfields)
+    if not recs:
+        raise FetchError("empty", spec.get("url", ""))
+    dfield = next((f for f in dfields if f in recs[0]), None)
+    if dfield is None:
+        raise FetchError("no_date_column", spec.get("url", ""))
+    want = spec.get("value_fields")
+    code_field = spec.get("code_field")
+    rows: list[dict[str, Any]] = []
+    for r in recs:
+        stamp = pd.to_datetime(str(r.get(dfield) or "").strip(), errors="coerce", utc=True,
+                               format="mixed")
+        if pd.isna(stamp):
+            continue
+        per = stamp.strftime("%Y-%m-%d") if spec.get("freq") != "monthly" else stamp.strftime(
+            "%Y-%m")
+        fields = want or [k for k in r if k != dfield and k != code_field]
+        for f in fields:
+            v = _num_or_none(r.get(f))
+            if v is None:
+                continue
+            code = _slug(f"{r.get(code_field)}_{f}") if code_field else _slug(f)
+            rows.append({"series_code": code, "period": per, "value": v})
+    df = pd.DataFrame(rows, columns=["series_code", "period", "value"])
+    if df.empty:
+        raise FetchError("empty", spec.get("url", ""))
+    return df
+
+
+def _boj_survey_period(s: str) -> str | None:
+    s = str(s or "").strip()
+    if re.fullmatch(r"\d{8}", s):
+        return f"{s[:4]}-{s[4:6]}-{s[6:]}"
+    if re.fullmatch(r"\d{6}", s):
+        return f"{s[:4]}-{s[4:]}"
+    if m := re.fullmatch(r"(\d{4})0?([1-4])", s):
+        return f"{m[1]}-Q{m[2]}"
+    return None
+
+
+def _boj_api_frame(raw: bytes) -> Any:
+    """BOJ Time-Series Data Search API `getDataCode` (format=json): per series SERIES_CODE,
+    FREQUENCY, SURVEY_DATES and VALUES; a missing value is null and is absent, never zero."""
+    import pandas as pd
+
+    doc = json.loads(raw.decode("utf-8-sig", "replace"))
+    found: list[dict[str, Any]] = []
+
+    def walk(x: Any, depth: int = 0) -> None:
+        if depth > 6:
+            return
+        if isinstance(x, dict):
+            if "SERIES_CODE" in x and "VALUES" in x:
+                found.append(x)
+                return
+            for v in x.values():
+                walk(v, depth + 1)
+        elif isinstance(x, list):
+            for v in x:
+                walk(v, depth + 1)
+
+    walk(doc)
+    rows: list[dict[str, Any]] = []
+    for s in found:
+        vals = s.get("VALUES")
+        if isinstance(vals, dict):                         # {SURVEY_DATES: [...], VALUES: [...]}
+            dates, values = vals.get("SURVEY_DATES") or [], vals.get("VALUES") or []
+        else:
+            dates, values = s.get("SURVEY_DATES") or [], vals or []
+        for d, v in zip(dates, values, strict=False):
+            per, f = _boj_survey_period(str(d)), _num_or_none(v)
+            if per and f is not None:
+                rows.append({"series_code": _slug(str(s["SERIES_CODE"])), "period": per,
+                             "value": f})
+    df = pd.DataFrame(rows, columns=["series_code", "period", "value"])
+    if df.empty:
+        raise FetchError("empty", "boj api")
+    return df
+
+
+_TR = re.compile(r"<tr\b[^>]*>(.*?)</tr>", re.I | re.S)
+_TD = re.compile(r"<t[dh]\b[^>]*>(.*?)</t[dh]>", re.I | re.S)
+
+
+def _table_date(text: str) -> str | None:
+    t = re.sub(r"\s+", " ", text).strip()
+    if m := re.fullmatch(r"(\d{1,2})[ -]([A-Za-z]+)[ -](\d{4})", t):
+        mon = _MONTHS.get(m[2].lower()) or _MONTHS.get(m[2][:3].lower())
+        if mon:
+            return f"{int(m[3]):04d}-{mon:02d}-{int(m[1]):02d}"
+    if m := re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", t):
+        return t
+    if m := re.fullmatch(r"(\d{1,2})/(\d{1,2})/(\d{4})", t):          # BI prints d/m/yyyy
+        return f"{int(m[3]):04d}-{int(m[2]):02d}-{int(m[1]):02d}"
+    return None
+
+
+def _bi_table_frame(raw: bytes, spec: dict[str, Any]) -> Any:
+    """Bank Indonesia statistic tables (JISDOR, BI-Rate, reserve assets): an HTML table whose
+    rows carry a date cell and a number cell ("16,250.00", "4.75 %"). The first date cell and the
+    first separator-marked number make an observation."""
+    import pandas as pd
+
+    html = _decode_any(raw)
+    rows: list[dict[str, Any]] = []
+    for tr in _TR.findall(html):
+        cells = [re.sub(r"<[^>]+>", " ", c) for c in _TD.findall(tr)]
+        per = next((p for p in (_table_date(c) for c in cells) if p), None)
+        if not per:
+            continue
+        # a bare integer cell is the table's row counter ("No"); a published value carries a
+        # decimal or thousands separator or a % sign, so it wins when the row has one
+        texts = [c.strip() for c in cells if not _table_date(c)]
+        marked = [c for c in texts if re.search(r"[.,%]", c)]
+        nums = [_num_or_none(c.replace("%", "").strip()) for c in (marked or texts)]
+        v = next((x for x in nums if x is not None), None)
+        if v is not None:
+            rows.append({"series_code": str(spec.get("series_code") or "value"),
+                         "period": per, "value": v})
+    df = pd.DataFrame(rows, columns=["series_code", "period", "value"])
+    if df.empty:
+        raise FetchError("empty", spec.get("url", ""))
+    return df.drop_duplicates(["series_code", "period"], keep="first")
+
+
+#: mode -> parser(raw, spec). The pack doors dispatch here before `frame_from_payload`, whose
+#: HTML refusal would otherwise reject the Bank Indonesia tables.
+PACK_PARSERS: dict[str, Callable[[bytes, dict[str, Any]], Any]] = {
+    "mof_feio_csv": lambda raw, spec: _mof_feio_frame(raw),
+    "records_json": _records_frame,
+    "boj_api_json": lambda raw, spec: _boj_api_frame(raw),
+    "bi_table_html": _bi_table_frame,
+}
+
+
+def _sama_doors() -> list[dict[str, Any]]:
+    """SAMA's doors are read from the Saudi data plane's own catalogue (one declaration of each
+    URL, never restated). Unreadable -> no door, and the pack says so."""
+    try:
+        try:
+            from research.countries.sa.data_plane import SamaLane
+        except ImportError:
+            from countries.sa.data_plane import (  # type: ignore[import-not-found,no-redef]
+                SamaLane,
+            )
+    except Exception:
+        return []
+    want = {"saibor_daily": "daily", "sama_net_foreign_assets": "monthly",
+            "sama_money_weekly": "weekly", "sama_monetary_monthly": "monthly"}
+    out = []
+    for row in SamaLane.CATALOGUE:
+        if row.dataset_id in want and row.url:
+            out.append({"dataset": row.dataset_id, "name": f"SAMA {row.coverage}",
+                        "mode": "records_json", "freq": want[row.dataset_id],
+                        "lag_days": max(1, math.ceil(row.publication_lag_days)),
+                        "url": row.url})
+    return out
+
+
+#: pack -> country, the instruments it is FOR (named by the brief; checked against the broker's
+#: registry each pass, so an absent one is reported unmapped, never invented), the register rows,
+#: and its doors. `pin` = the door informs exactly the named instruments the registry holds.
+COUNTRY_PACKS: dict[str, dict[str, Any]] = {
+    "indonesia": {
+        "country": "ID", "instruments": ["USDIDR"], "currencies": ["IDR"],
+        "policy_rows": ["id_bank_indonesia", "id_bps_webapi"],
+        "doors": [
+            {"dataset": "BI_JISDOR", "name": "Bank Indonesia JISDOR USD/IDR reference rate",
+             "mode": "bi_table_html", "series_code": "jisdor_idr_per_usd", "freq": "daily",
+             "lag_days": 1,
+             "url": "https://www.bi.go.id/en/statistik/informasi-kurs/jisdor/default.aspx"},
+            {"dataset": "BI_RATE", "name": "Bank Indonesia BI-Rate policy rate decisions",
+             "mode": "bi_table_html", "series_code": "bi_rate_pct", "freq": "monthly",
+             "lag_days": 1,
+             "url": "https://www.bi.go.id/en/fungsi-utama/moneter/bi-rate/default.aspx"},
+            {"dataset": "BI_RESERVES", "name": "Bank Indonesia official reserve assets",
+             "mode": "bi_table_html", "series_code": "reserve_assets_usd_bn", "freq": "monthly",
+             "lag_days": 10, "url": "https://www.bi.go.id/en/statistik/indikator/default.aspx"},
+            {"dataset": "BPS_INDICATORS", "name": "BPS Indonesia strategic indicators",
+             "mode": "records_json", "freq": "monthly", "lag_days": 2,
+             "date_fields": ["periode", "period"], "code_field": "title",
+             "value_fields": ["value"], "key_env": "BPS_API_KEY",
+             "url": ("https://webapi.bps.go.id/v1/api/list/model/indicators/lang/eng/domain/"
+                     "0000/key/{api_key}/")}]},
+    "singapore": {
+        "country": "SG", "instruments": ["USDSGD"], "currencies": ["SGD"],
+        "policy_rows": ["sg_mas_api"],
+        "doors": [
+            {"dataset": "MAS_DOMESTIC_RATES_DAILY",
+             "name": "MAS SORA and domestic interest rates (daily)", "mode": "records_json",
+             "freq": "daily", "lag_days": 1, "date_fields": ["end_of_day"],
+             "key_env": "MAS_API_KEY", "key_header": "KeyId",
+             "url": _MAS_GW + "domestic_interest_rates_daily/views/domestic_interest_rates_daily"},
+            {"dataset": "MAS_FX_DAILY",
+             "name": "MAS SGD exchange rates, end of period (the S$NEER basket's legs)",
+             "mode": "records_json", "freq": "daily", "lag_days": 1,
+             "date_fields": ["end_of_day"], "key_env": "MAS_API_KEY", "key_header": "KeyId",
+             "url": (_MAS_GW + "exchange_rates_end_of_period_daily/views/"
+                     "exchange_rates_end_of_period_daily")},
+            {"dataset": "MAS_RESERVES_MONTHLY", "name": "MAS official foreign reserves",
+             "mode": "records_json", "freq": "monthly", "lag_days": 8,
+             "date_fields": ["end_of_month"], "key_env": "MAS_API_KEY", "key_header": "KeyId",
+             "url": _MAS_GW + "official_foreign_reserves/views/official_foreign_reserves"}]},
+    "saudi_arabia": {
+        "country": "SA", "instruments": ["USDSAR", "XBRUSD", "XTIUSD"], "currencies": [],
+        "pin": True, "policy_rows": ["sa_sama"], "doors": "sama_data_plane"},
+    "japan": {
+        "country": "JP", "instruments": ["USDJPY", "JPN225"], "currencies": ["JPY"],
+        "pin": True, "policy_rows": ["jp_mof_feio", "jp_boj_stat_search", "jp_jquants"],
+        "doors": [
+            {"dataset": "MOF_FEIO", "name": "Japan MoF foreign exchange intervention operations",
+             "mode": "mof_feio_csv", "url": _MOF_FEIO_CSV},
+            {"dataset": "BOJ_FM01_CALL", "name": "BOJ uncollateralized overnight call rate",
+             "mode": "boj_api_json", "freq": "daily", "lag_days": 1,
+             "url": _BOJ_API + "format=json&lang=en&db=FM01&code=STRDCLUCON"},
+            {"dataset": "BOJ_MD01_BASE", "name": "BOJ monetary base (average outstanding)",
+             "mode": "boj_api_json", "freq": "monthly", "lag_days": 3,
+             "url": _BOJ_API + "format=json&lang=en&db=MD01&code=MABS1AN11"}]},
+    "china": {
+        "country": "CN", "instruments": ["XAUUSD", "XAGUSD", "XCUUSD", "XALUSD", "XZNUSD",
+                                         "XNIUSD", "XPBUSD", "XBRUSD", "XTIUSD", "SOYBEAN",
+                                         "CORN", "COTTON", "SUGAR", "AUDUSD", "USDCNH"],
+        "currencies": [], "policy_rows": ["cnx_shfe", "cnx_dce", "cnx_czce"],
+        "organ": "libs/data/free_stack_cnx.py (free_stack_hunter, roster rows cnx_*)",
+        "doors": []},
+}
+
+
+def _pack_doors(pack: str, p: dict[str, Any]) -> list[dict[str, Any]]:
+    doors = _sama_doors() if p.get("doors") == "sama_data_plane" else list(p.get("doors") or [])
+    out = []
+    for d in doors:
+        out.append({**d, "provider": f"PACK_{p['country']}", "pack": pack,
+                    "currencies": list(p.get("currencies") or []),
+                    "pin": list(p["instruments"]) if p.get("pin") else None})
+    return out
+
+
+def country_pack_doors() -> list[dict[str, Any]]:
+    return [d for pack, p in COUNTRY_PACKS.items() for d in _pack_doors(pack, p)]
+
+
+def pack_terms_hold(spec: dict[str, Any]) -> str | None:
+    """The register row that refuses this door as LIVE INPUT (IDEAS_ONLY or held), else None.
+    The URL is judged with its placeholders in, so no key is ever handed to the check."""
+    from libs.data import terms_fence as _tf
+    return _tf.input_source(spec["url"])
+
+
+def _pack_empty_run(row: dict[str, Any], reason: str) -> None:
+    """An attempt that landed nothing. A missing key is its own state (NEEDS_KEY), not an empty
+    run: the door was never asked."""
+    if reason == "needs_key":
+        row["pack_state"] = "NEEDS_KEY"
+        return
+    row["pack_state"] = "EMPTY"
+    row["empty_streak"] = int(row.get("empty_streak") or 0) + 1
+
+
+def _door_state(row: dict[str, Any] | None, spec: dict[str, Any]) -> dict[str, Any]:
+    from libs.data import terms_fence as _tf
+    held = pack_terms_hold(spec)
+    key_env = str(spec.get("key_env") or "")
+    out: dict[str, Any] = {"dataset": spec["dataset"], "url": spec["url"],
+                           "policy_row": held or _tf.source_of_url(spec["url"]),
+                           "empty_streak": int((row or {}).get("empty_streak") or 0),
+                           "last_attempt_at": (row or {}).get("last_attempt_at") or UNMEASURED,
+                           "fetched_at": (row or {}).get("fetched_at") or UNMEASURED,
+                           "fail_reason": (row or {}).get("fail_reason")}
+    if key_env:
+        out["key"] = key_env if os.environ.get(key_env) else f"NEEDS_KEY:{key_env}"
+    if held:
+        out["state"] = "IDEAS_ONLY"
+        out["missed_growth"] = _tf.held_missed_growth(
+            held, source=f"{spec['provider']}/{spec['dataset']}", live_input_refusal=True)
+    elif key_env and not os.environ.get(key_env):
+        out["state"] = "NEEDS_KEY"
+    elif out["empty_streak"] > PACK_EMPTY_RED_RUNS:
+        out["state"] = "RED"
+        out["why"] = (f"{out['empty_streak']} consecutive attempts landed nothing "
+                      f"(last: {out['fail_reason']}); RED above {PACK_EMPTY_RED_RUNS}")
+    elif (row or {}).get("pack_state") == "FETCHED":
+        out["state"] = "GREEN"
+    elif out["empty_streak"]:
+        out["state"] = "AMBER"
+    else:
+        out["state"] = UNMEASURED                       # never attempted on this host
+    return out
+
+
+def country_pack_report(cat: dict[str, Any]) -> dict[str, Any]:
+    """Per pack: each door's liveness and terms state, the named instruments the registry holds
+    (and those it does not: unmapped, recorded), the series that reach research, and a verdict.
+    RED > GREEN (every live door landing) > AMBER > HELD (no live door: ideas only / no key) >
+    UNMEASURED (nothing attempted here)."""
+    from libs.data import terms_fence as _tf
+    uni = {sym for sym, _, _ in hypothesis_universe()}
+    rows_by_key = cat.get("datasets") or {}
+    packs: dict[str, Any] = {}
+    for pack, p in COUNTRY_PACKS.items():
+        doors = [_door_state(rows_by_key.get(f"{d['provider']}/{d['dataset']}"), d)
+                 for d in _pack_doors(pack, p)]
+        states = Counter(d["state"] for d in doors)
+        live = [d for d in doors if d["state"] not in ("IDEAS_ONLY", "NEEDS_KEY")]
+        if states.get("RED"):
+            verdict = "RED"
+        elif live and all(d["state"] == "GREEN" for d in live):
+            verdict = "GREEN"
+        elif any(d["state"] in ("GREEN", "AMBER") for d in live):
+            verdict = "AMBER"
+        elif not live and doors:
+            verdict = "HELD"
+        else:
+            verdict = UNMEASURED
+        series: list[str] = []
+        declared = p.get("doors")
+        for d in declared if isinstance(declared, list) else []:
+            meta = _read_json(meta_path(f"PACK_{p['country']}", d["dataset"]), {}) or {}
+            series += [s["key"] for s in (meta.get("series") or {}).values()
+                       if s.get("quality") == "PASS" and s.get("instruments")]
+        policy = {}
+        for k in p.get("policy_rows") or []:
+            row = _tf.SOURCE_POLICY.get(k) or {}
+            policy[k] = {"status": _tf.live_input_status(k) if row else UNMEASURED,
+                         "terms": _tf.terms_state(k) if row else UNMEASURED,
+                         "terms_url": (row.get("terms") or {}).get("url")}
+            if row and (row.get("status") == _tf.IDEAS_ONLY or row.get("held_route")):
+                policy[k]["missed_growth"] = _tf.held_missed_growth(
+                    k, source=f"country_pack:{pack}", live_input_refusal=True)
+        entry: dict[str, Any] = {
+            "country": p["country"], "verdict": verdict, "doors": doors,
+            "door_states": dict(states), "policy": policy,
+            "instruments_named": list(p["instruments"]),
+            "instruments_mapped": sorted(s for s in p["instruments"] if s in uni),
+            "unmapped": sorted(s for s in p["instruments"] if s not in uni),
+            "series_to_research": series if series else UNMEASURED}
+        if p.get("organ"):
+            entry["organ"] = p["organ"]
+            entry["verdict"] = ("HELD" if all(v["status"] == _tf.IDEAS_ONLY
+                                              for v in policy.values()) else UNMEASURED)
+        if p.get("doors") == "sama_data_plane" and not doors:
+            entry["verdict"] = UNMEASURED
+            entry["why"] = "the Saudi data plane's catalogue could not be read on this host"
+        packs[pack] = entry
+    red = [f"{pk}/{d['dataset']}" for pk, e in packs.items() for d in e["doors"]
+           if d["state"] == "RED"]
+    return {"packs": packs, "red_doors": red, "red_after_empty_runs": PACK_EMPTY_RED_RUNS,
+            "status": (f"RED: country-pack doors empty > {PACK_EMPTY_RED_RUNS} runs: "
+                       + ", ".join(red)) if red else "OK"}
+
+
 def _fred_ids() -> list[str]:
     ids: set[str] = set()
     reg = _read_json(REGISTRY, {})
@@ -2168,8 +2700,13 @@ def _load_frame(path: Path) -> Any:
 def ingest_series(provider: str, dataset: str, dname: str, series: list[dict[str, Any]], *,
                   now: datetime, base_score: float, declared_lag: int | None = None,
                   hint_ccys: Iterable[str] = (), hint_stems: Iterable[str] = (),
-                  qstats: Counter[str]) -> dict[str, Any]:
-    """Quality-check, PIT-merge and describe one batch of series from one dataset."""
+                  qstats: Counter[str],
+                  pin_instruments: Iterable[str] | None = None) -> dict[str, Any]:
+    """Quality-check, PIT-merge and describe one batch of series from one dataset.
+
+    `pin_instruments` (a country pack's named instruments) replaces the inferred mapping: only
+    the named symbols the broker registry holds in the hypothesis lane are informed."""
+    pinned = None if pin_instruments is None else {str(x) for x in pin_instruments}
     path = dataset_path(provider, dataset)
     frame, added = merge_observations(_load_frame(path), series, now=now,
                                       declared_lag=declared_lag)
@@ -2193,6 +2730,8 @@ def ingest_series(provider: str, dataset: str, dname: str, series: list[dict[str
             ccys = sorted(set(mapping["currencies"]) | {c.upper() for c in hint_ccys})
             stems = sorted(set(mapping["stems"]) | {x.upper() for x in hint_stems if x})
         insts = instruments_for(ccys, stems) if (ccys or stems) else []
+        if pinned is not None:
+            insts = sorted(sym for sym, _, _ in hypothesis_universe() if sym in pinned)
         fb = FREQ_RULES.get(freq, (0, 0, 0.0))[2]
         score = round(base_score + fb + (2.0 if ccys else 0.0) + (3.0 if stems else 0.0), 3)
         ends = [period_end(p, freq)[0] for p, _ in s["points"]]
@@ -2281,10 +2820,13 @@ def _fetch_direct(client: Client, spec: dict[str, Any], now: datetime, *,
     payload fails does the door fail (with the first reason)."""
     key_env = str(spec.get("key_env") or "")
     key = ""
+    headers: dict[str, str] | None = None
     if key_env:
         key = os.environ.get(key_env) or ""
         if not key:
             raise FetchError("needs_key", key_env)        # named, never a silent skip or a zero
+        if spec.get("key_header"):
+            headers = {str(spec["key_header"]): key}      # travels in the header, never the URL
     parts = list(spec.get("urls") or [{"url": spec["url"]}])
     if backfill:
         parts = list(spec.get("urls_backfill") or []) + parts
@@ -2296,10 +2838,15 @@ def _fetch_direct(client: Client, spec: dict[str, Any], now: datetime, *,
         if key_env:
             url = url.replace("{api_key}", urllib.parse.quote(key, safe=""))
         try:
-            raw = client.get(url)
+            raw = client.get(url, headers) if headers else client.get(url)
             # the parser sees the TEMPLATE url: a key never rides into an error's detail
             sub = {**spec, **part, "url": str(part["url"])}
-            df = _lbma_frame(raw) if mode == "lbma_json" else frame_from_payload(raw, mode, sub)
+            if mode in PACK_PARSERS:
+                df = PACK_PARSERS[mode](raw, sub)
+            elif mode == "lbma_json":
+                df = _lbma_frame(raw)
+            else:
+                df = frame_from_payload(raw, mode, sub)
         except FetchError as exc:
             if exc.reason == "budget_exhausted" or len(parts) == 1:
                 raise
@@ -2339,6 +2886,19 @@ def fetch_direct(client: Client, cat: dict[str, Any], *, now: datetime, until: f
         if not _due(row, now):
             continue
         misses: Counter[str] = Counter()
+        pack = spec.get("pack")
+        if pack:
+            row["pack"] = pack
+            held = pack_terms_hold(spec)
+            if held:
+                # IDEAS_ONLY / held on the register: never requested as data. Not a failure and
+                # not an empty run -- the hold is the state, and its missed growth is reported.
+                row.update({"pack_state": "IDEAS_ONLY", "policy_row": held,
+                            "fail_reason": "terms_ideas_only",
+                            "next_due": _iso(now + timedelta(hours=DIRECT_REFRESH_H))})
+                stats["direct:terms_ideas_only"] += 1
+                continue
+            row["last_attempt_at"] = _iso(now)
         try:
             series = _fetch_direct(client, spec, now, misses=misses,
                                    backfill=not int(row.get("rows") or 0))
@@ -2348,6 +2908,8 @@ def fetch_direct(client: Client, cat: dict[str, Any], *, now: datetime, until: f
             row["fail_count"] = int(row.get("fail_count") or 0) + 1
             row["fail_reason"] = exc.reason
             row["next_due"] = _iso(now + timedelta(hours=DIRECT_REFRESH_H))
+            if pack:
+                _pack_empty_run(row, exc.reason)
             stats[f"direct:{exc.reason}"] += 1
             by_provider[spec["provider"]]["failed"] += 1
             continue
@@ -2355,13 +2917,18 @@ def fetch_direct(client: Client, cat: dict[str, Any], *, now: datetime, until: f
             row["fail_count"] = int(row.get("fail_count") or 0) + 1
             row["fail_reason"] = f"parse:{type(exc).__name__}"
             row["next_due"] = _iso(now + timedelta(hours=DIRECT_REFRESH_H))
+            if pack:
+                _pack_empty_run(row, row["fail_reason"])
             stats[f"direct:parse:{type(exc).__name__}"] += 1
             continue
         res = ingest_series(spec["provider"], spec["dataset"], spec.get("name", ""), series,
                             now=now, base_score=row["score"], declared_lag=spec.get("lag_days"),
                             hint_ccys=spec.get("currencies", ()),
-                            hint_stems=spec.get("stems", ()), qstats=qstats)
+                            hint_stems=spec.get("stems", ()), qstats=qstats,
+                            pin_instruments=spec.get("pin"))
         row["partial_misses"] = dict(misses) or None
+        if pack:
+            row.update({"pack_state": "FETCHED", "empty_streak": 0, "needs_key": None})
         row.update({"fetched_at": _iso(now), "fail_count": 0, "fail_reason": None,
                     "series_total": len(series), "series_passed": res["passed"],
                     "rows": res["rows_total"],
@@ -2741,7 +3308,11 @@ def build_report(cat: dict[str, Any], exposure: dict[str, Any], *, stats: Counte
 
     measured = bool(cat["datasets"]) or client.ok > 0
     rates = _history_rates(now)
+    packs = country_pack_report(cat)
     return {
+        # the organ's own last reading (health_board reads it): a RED country-pack door names
+        # itself here, so the desk's board turns the organ from GREEN without a second board
+        "status": packs["status"],
         "generated_at": _iso(now),
         "organ": "desks/mt5/research/world_dataset_hunter.py",
         "leg": "hourly_cycle:world_dataset_hunt",
@@ -2779,6 +3350,7 @@ def build_report(cat: dict[str, Any], exposure: dict[str, Any], *, stats: Counte
         "agri_supply_map": agri_mapping(),
         "ideas_only": ideas_only_lines(),
         "registry": registry,
+        "country_packs": packs,
         "research_door": ("reports/WORLD_MACRO_PROPOSER.json <- world_macro_proposer reads "
                           "exposure.json and mints world_macro_state cells; the family reloads "
                           "each series by series_key"),
