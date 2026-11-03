@@ -1522,7 +1522,12 @@ class Pass:
                      f"({type(exc).__name__}); nothing done")
             return
         state = str(doc.get("state") or "") if isinstance(doc, dict) else ""
-        at = _parse_iso(doc.get("observed_at")) if isinstance(doc, dict) else None
+        raw_at = doc.get("observed_at") if isinstance(doc, dict) else None
+        # The launcher stamps EPOCH SECONDS (box read 2026-11-03: 1793738850); ISO is accepted too.
+        if isinstance(raw_at, (int, float)) and not isinstance(raw_at, bool):
+            at: float | None = float(raw_at) / (1000.0 if raw_at > 1e12 else 1.0)
+        else:
+            at = _parse_iso(raw_at)
         age = None if at is None else self.now - at
         facts = {"spot_state": state or None,
                  "status_age_s": None if age is None else round(age)}

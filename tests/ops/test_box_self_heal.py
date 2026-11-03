@@ -1701,9 +1701,11 @@ def test_send_alert_reads_only_the_admin_only_copy(monkeypatch: pytest.MonkeyPat
 
 
 # ------------------------------------------------------------------------- memecoin spot restart
-def _spot(fb: FakeBox, state: str, age_s: float, now: float = NOW) -> None:
-    fb.spot.write_text(json.dumps({"state": state, "observed_at": datetime.fromtimestamp(
-        now - age_s, tz=UTC).isoformat()}), "utf-8")
+def _spot(fb: FakeBox, state: str, age_s: float, now: float = NOW, *, epoch: bool = False
+          ) -> None:
+    at: Any = (int(now - age_s) if epoch
+               else datetime.fromtimestamp(now - age_s, tz=UTC).isoformat())
+    fb.spot.write_text(json.dumps({"state": state, "observed_at": at}), "utf-8")
 
 
 def _spot_kw(tmp: Path) -> dict[str, Path]:
@@ -1737,8 +1739,8 @@ def test_spot_running_or_freshly_bounded_is_left_alone(tmp_path: Path) -> None:
         doc = bsh.run(box=fb.box(), now=t, **kw)
     assert rows(doc, "memecoin_spot_restart")[0]["verdict"] == "RUNNING"
     fb = FakeBox(tmp_path, [], running={bsh.MEMECOIN_SPOT_TASK: False})
-    for t in (NOW, NOW + 5 * MIN, NOW + 10 * MIN):
-        _spot(fb, "BOUNDED", 5, now=t)
+    for i, t in enumerate((NOW, NOW + 5 * MIN, NOW + 10 * MIN)):
+        _spot(fb, "BOUNDED", 5, now=t, epoch=bool(i % 2))      # the launcher stamps epoch s
         doc = bsh.run(box=fb.box(), now=t, **kw)
         assert rows(doc, "memecoin_spot_restart")[0]["verdict"] == "BOUNDED"
     assert fb.started == []
