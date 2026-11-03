@@ -233,3 +233,11 @@ def test_first_seen_floors_recent_rows_and_keeps_backfill():
     assert at.iloc[1] == pd.Timestamp(now)                  # recent row: never before first seen
     later = gf.first_seen_floor("mof_weekly", idx, rule, state, datetime(2026, 12, 1, tzinfo=UTC))
     assert later.iloc[1] == pd.Timestamp(now)               # the stamp never moves
+
+
+def test_robots_disallow_is_a_label_not_a_stop(tmp_raw):
+    notes: list = []
+    built, _ = gf.collect(get=lambda url, **k: _gld(), state={}, notes=notes,
+                          get_text=lambda url: "User-agent: *\nDisallow: /", registry=_reg())
+    assert built["flow_gld_holdings"]["access_label"] == "PUBLIC_WITH_TERMS"
+    assert any(n.get("access_label") == "PUBLIC_WITH_TERMS" for n in notes)

@@ -21,7 +21,8 @@ WHAT IS NEW HERE (everything else in the coverage map was already live elsewhere
     mof_weekly     Japan MoF weekly portfolio flows: Japanese buying of foreign bonds and
                    stocks, foreign buying of Japanese ones (the institutional yen flow)
 
-HONEST ACCESS. Robots are read first; 401/403/429/451 is a hard stop recorded in state and
+HONEST ACCESS. Robots is read as a routing label (LAWS 5e: PUBLIC / PUBLIC_WITH_TERMS /
+ACCESS_UNCLEAR, carried on each series); 401/403/429/451 is a hard stop recorded in state and
 never retried; no login, key, captcha or paywall is touched. The cloud build cannot reach any
 of these hosts, so every parser is written to the publisher's documented layout, tested on a
 fixture, and its live yield is UNMEASURED until the box runs it. A parser that reads zero rows
@@ -437,6 +438,7 @@ def collect(*, get: Callable[..., str] | None, state: dict[str, Any], notes: lis
     stops = state.setdefault("hard_stops", {})
     built: dict[str, dict[str, Any]] = {}
     frames: dict[str, pd.DataFrame] = {}
+    access: dict[str, str] = {}
     for src in reg.get("sources") or []:
         sid, adapter = str(src["id"]), str(src.get("adapter") or "none")
         if adapter == "none":
@@ -446,12 +448,17 @@ def collect(*, get: Callable[..., str] | None, state: dict[str, Any], notes: lis
         if live and get_text is not None:
             probe = src.get("robots_url") or src["url"].format(
                 ddmmyyyy="01012024", symbol=(src.get("symbols") or ["_SPX"])[0])
+            # LAWS 5e: robots is a ROUTING LABEL, never a refusal (the #651 access_label
+            # pattern). Only 401/403/429/451 or a WAF page stop a source (HardStop below).
             try:
-                live = robots_allow(probe, get_text)
+                label = "PUBLIC" if robots_allow(probe, get_text) else "PUBLIC_WITH_TERMS"
             except Exception:
-                live = False
-            if not live:
-                notes.append({"source": sid, "status": "ROBOTS_DISALLOW_OR_UNREAD"})
+                label = "ACCESS_UNCLEAR"
+            access[sid] = label
+            if label != "PUBLIC":
+                notes.append({"source": sid, "access_label": label,
+                              "terms_note": "robots.txt disallows or is unreadable; read under"
+                                            " LAWS 5e, nothing redistributed"})
         try:
             if live and adapter in PARSERS:
                 df = _whole_file(src, get, PARSERS[adapter], notes)
@@ -485,6 +492,7 @@ def collect(*, get: Callable[..., str] | None, state: dict[str, Any], notes: lis
         frames[fid] = stamped(feat.reset_index(drop=True), at, fid, idx)
         built[fid] = {"targets": list(src.get("targets") or []), "kind": f"flow_{src['class']}",
                       "region": src.get("region"), "rows": len(df),
+                      "access_label": access.get(sid, "UNREAD_THIS_PASS"),
                       "last_event": str(idx.max()), "why": src.get("why", "")}
     return built, frames
 
