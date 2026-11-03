@@ -6097,6 +6097,7 @@ def main() -> None:
     # and real-money rebalancers MUST trade, from public data, as stamped lake series and
     # pre-registered exogenous_conditioner cells donated once each through proposer_common.
     # After futures_state, whose CFTC series it re-stamps at the exact 15:30 New York release.
+    # It lowers its own priority first (BELOW_NORMAL / nice 10), so release and risk tasks win.
     pfp = _costed("player_footprint", lambda: _producer(
         "player_footprint", "research/player_footprint.py", "--once"))
     # THE FRONT DOOR IS NOT THE GROUND (2026-09-23). 15 of the 121 document-holding grounds named

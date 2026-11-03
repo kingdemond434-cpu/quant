@@ -903,7 +903,8 @@ def donate(new: Sequence[dict[str, Any]], state: dict[str, Any], now: datetime,
 
 
 def build(*, dry_run: bool = False, offline: bool = False,
-          bars: Callable[[str], pd.DataFrame | None] | None = None) -> dict[str, Any]:
+          bars: Callable[[str], pd.DataFrame | None] | None = None,
+          priority: Mapping[str, Any] | None = None) -> dict[str, Any]:
     t0 = time.monotonic()
     now = datetime.now(UTC)
     state = _read(STATE, {}) or {}
@@ -953,12 +954,33 @@ def build(*, dry_run: bool = False, offline: bool = False,
         "held_for_data": held,
         "donation": donation,
         "hard_stops": state.get("hard_stops", {}),
+        "priority": dict(priority or {"applied": False, "how": "not requested (library call)"}),
         "seconds": round(time.monotonic() - t0, 1),
     }
     if not dry_run:
         _write(STATE, state)
         _write(OUT, doc)
     return doc
+
+
+def below_normal() -> dict[str, Any]:
+    """RELEASE AND RISK WIN THE CPU. Lower this leg's own priority before any work (BELOW_NORMAL
+    on Windows, nice 10 elsewhere) -- the same self-demotion `judge_prescreen._below_normal`
+    uses, and the class `department_resident` gives its children -- and SAY whether it took.
+    No new process and no resident: one hourly subprocess that yields to everything else."""
+    try:
+        import psutil
+
+        me = psutil.Process()
+        want = psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == "nt" else 10
+        if os.name != "nt" and me.nice() >= want:
+            return {"applied": True, "observed": str(me.nice()), "how": "already lower"}
+        me.nice(want)
+        got = me.nice()
+        return {"applied": bool(got == want), "requested": str(want), "observed": str(got),
+                "how": "psutil"}
+    except Exception as exc:
+        return {"applied": False, "how": "none", "why": type(exc).__name__}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -969,11 +991,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--release-hard-stops", action="store_true",
                     help="clear recorded 401/403/429/451 hard stops (a human decision)")
     a = ap.parse_args(argv)
+    prio = below_normal()
     if a.release_hard_stops:
         st = _read(STATE, {}) or {}
         st.pop("hard_stops", None)
         _write(STATE, st)
-    doc = build(dry_run=a.dry_run, offline=a.offline)
+    doc = build(dry_run=a.dry_run, offline=a.offline, priority=prio)
     p = doc["producers"]
     print(f"player footprint: {len(doc['series'])} series, {doc['hypotheses_defined']} "
           f"hypotheses defined, {doc['new_this_pass']} new this pass, "

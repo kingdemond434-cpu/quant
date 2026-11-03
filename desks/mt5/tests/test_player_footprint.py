@@ -391,3 +391,15 @@ def test_the_leg_is_on_the_hourly_clock_and_billed_to_information() -> None:
     assert LEG_LAYER.get("player_footprint") == "information"
     src = Path(HC.__file__).read_text("utf-8")
     assert '"research/player_footprint.py", "--once"' in src
+
+
+def test_the_leg_yields_the_cpu_to_release_and_risk_tasks() -> None:
+    import subprocess
+    paths = [str(_DESK), str(_DESK / "research"), str(_ROOT)]
+    code = (f"import sys; sys.path[:0]={paths!r}; "
+            "from research import player_footprint as P; print(P.below_normal())")
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                         timeout=120, check=True).stdout
+    assert "'applied': True" in out
+    src = Path(P.__file__).read_text("utf-8")
+    assert "prio = below_normal()" in src.split("def main", 1)[1]
