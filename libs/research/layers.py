@@ -663,6 +663,8 @@ LEG_LAYER: dict[str, str] = {
     # free replicas of paid datasets: catalogue, hunt, score, enrol -- what the desk KNOWS
     "paid_substitute_engine": "information",
     "free_stack_hunt": "information", "free_stack_proposer": "prediction",
+    # the state-gated wrappers' cells are claims about where a base's entry pays: prediction
+    "state_gate_proposer": "prediction",
     "factory_throughput": "prediction",
     "source_experiment_census": "information", "world_dataset_hunt": "information",
     "world_macro_proposer": "prediction",
@@ -670,8 +672,8 @@ LEG_LAYER: dict[str, str] = {
     "excursions": "exit", "exit_accounts": "exit",
     "state_replay_audit": "execution", "why_not_report": "execution",
     "forward_calibration": "prediction",
-    "certificate_clock_law": "meta", "desk_self_heal": "meta", "mission_control": "meta",
-    "clock_accrual": "meta",
+    "certificate_clock_law": "meta", "measurability": "meta", "desk_self_heal": "meta",
+    "mission_control": "meta", "clock_accrual": "meta",
     "tier5_acceptance": "meta",
     "cro_noon_freshness": "meta",
 }

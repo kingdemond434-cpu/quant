@@ -2471,6 +2471,25 @@ ORTHOGONAL_FAMILIES["alt_conditioned"] = family_alt_conditioned
 FAMILY_INPUTS["alt_conditioned"] = (
     "a price-only base family's bars plus an alt series' regime on its available_time clock",
     "data/universe/*_H1.parquet + data/lake/series/fs_<source>.parquet")
+# THE STATE-GATED WRAPPERS (2026-10-14, GAP_MAP rows 87-88): the alt_conditioned shape with the
+# gate read off PRICES -- a price-only base family's own signals kept only where the FX+gold
+# panel's Kuramoto synchronisation (`sync_gated`, direction fixed by the base's mechanism class)
+# or the symbol's own permutation entropy (`entropy_gated`, fixed at "low") says so. Both load
+# what they need from the bar store, so the sealed gauntlet's `fn(h1, **params)` rebuilds them.
+from mt5desk.family_state_gates import STATE_GATE_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(STATE_GATE_FAMILIES)
+FAMILY_INPUTS["sync_gated"] = (
+    "a price-only base family's bars plus the 28 FX crosses + XAUUSD panel's phase "
+    "synchronisation at signal time", "data/universe/*_H1.parquet")
+FAMILY_INPUTS["entropy_gated"] = (
+    "a price-only base family's bars plus the symbol's own permutation-entropy z",
+    "data/universe/*_H1.parquet")
+FAMILY_TIMEFRAMES["sync_gated"] = (
+    ("H1",),
+    "the synchronisation panel is read from the H1 bar store and `window` counts H1 closes; on "
+    "another chart the base's signals would be gated by an hourly state under a name claiming "
+    "that chart")
 
 # CROSS-SECTIONAL CLASS BOOKS, ONE LEG PER CELL (2026-09-30). The desk read k_eff 2.53 on 453
 # nominal sleeves with 6 of 15 alpha clusters empty, and `cross_sectional_fx` had never held a

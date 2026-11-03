@@ -1129,7 +1129,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `state_vector` is listed here for the reader's sake and runs on NEITHER plan: it is in
     # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
-    "forward_reconcile", "clock_liveness", "certificate_clock_law", "clock_accrual",
+    "forward_reconcile", "clock_liveness", "certificate_clock_law", "measurability",
+    "clock_accrual",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     # The noon CRO pass must land a ledger row every day; one file read, so it is core.
@@ -1350,6 +1351,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
                      "cross_sectional_breadth",
+                     # the state-gated wrappers' cells: one per (wrapper, base, symbol)
+                     "state_gate_proposer",
                      # the alt_proxies equity hand-off minted into the event lane and the
                      # class books (share CFDs never mint anywhere else)
                      "alt_equity_handoff",
@@ -2122,6 +2125,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Reads canon, five lane state files and its own history, then writes two files. No market
     # data, no venue, no terminal call -- it is arithmetic over rows the enrolment leg just wrote.
     "certificate_clock_law": 180,
+    # Reads seven artifacts and one state file; no bars, no venue.
+    "measurability": 120,
     # Reads the canon (through the admission door), three lane state files and the sleeve
     # registry, and writes one report. No bars, no terminal: arithmetic over the rows above.
     "clock_accrual": 180,
@@ -2379,6 +2384,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "free_stack_hunt": 720,
     # Its proposer mints a 1,500-row ring slice; the registry write is the long part.
     "free_stack_proposer": 900,
+    # The state-gate proposer mints at most 1,500 never-charged cells a pass; the registry write
+    # is the long part.
+    "state_gate_proposer": 900,
     # A reader of the factory's report and journal tail; seconds.
     "factory_throughput": 180,
     # The closed co-evolution stops itself at --budget-s 900 (breeding, then the islands) and
@@ -5076,6 +5084,14 @@ def main() -> None:
     # donated to the one gauntlet with every minted cell charged. Writes FREE_STACK_PROPOSER.json.
     fsp = _costed("free_stack_proposer", lambda: _producer(
         "free_stack_proposer", "research/free_stack_proposer.py", "--once"))
+    # THE STATE-GATED WRAPPERS (2026-10-14, GAP_MAP rows 87-88): every hypothesis-lane H1
+    # instrument x the price-only base families, minted as sync_gated (panel phase
+    # synchronisation, direction fixed by the base's mechanism) and entropy_gated (own
+    # permutation entropy, low) cells -- one per (wrapper, base, symbol), each donated and
+    # charged exactly once (the charged set is read from its own contracts). Writes
+    # STATE_GATE_PROPOSER.json.
+    sgp = _costed("state_gate_proposer", lambda: _producer(
+        "state_gate_proposer", "research/state_gate_proposer.py", "--once"))
     # THE WORLD DATASET HUNTER: discovers, fetches, quality-checks, PIT-stamps and registers
     # thousands of public datasets (DBnomics backbone + BIS bulk, CFTC, Treasury, FRED, and the
     # registry's own DISCOVERED rows), then publishes the per-symbol exposure that
@@ -5560,6 +5576,13 @@ def main() -> None:
     # promotes, sizes and retires nothing.
     ccl = _costed("certificate_clock_law", lambda: _producer(
         "certificate_clock_law", "scripts/check_certificate_clock_law.py"))
+    # NEVER UNMEASURED PAST ONE CYCLE (principal 2026-10-13: "all sleeves must be able to be
+    # measureed all certs never unmeasured excuse"). Right after the clock law it reads: every
+    # certificate and every LIVE sleeve, every field (class, novelty, fill cost, tradability,
+    # forward clock, live attribution), dated, RED past two hours, each with its converter named.
+    # Writes reports/MEASURABILITY.json; sizes, retires and enrols nothing.
+    msr = _costed("measurability", lambda: _producer(
+        "measurability", "scripts/check_measurability.py"))
     # AND FOR EVERY CLOCK THAT IS NOT TICKING, WHY -- as one named reason per certificate
     # (NOT_ENROLLED, KEY_MISMATCH, FAMILY_UNBUILDABLE, BAR_FILE_MISSING, ENGINE_NOT_REACHED,
     # GATE_NEVER_OPENS, ...). The two legs above count; this one routes. It writes
@@ -6424,6 +6447,7 @@ def main() -> None:
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
                     "acquire_datasets": acq, "paid_substitute_engine": pse, "free_stack_hunt": fsh,
                     "free_stack_proposer": fsp, "factory_throughput": fxt,
+                    "state_gate_proposer": sgp,
                     "world_dataset_hunt": wdh,
                     "world_macro_proposer": wmp,
                     "source_experiment_census": sxc,
@@ -6541,7 +6565,8 @@ def main() -> None:
                     "moat_candidate_compiler": mcp, "algorithm_db": adb,
                     "blas_differential": bld,
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
-                    "certificate_clock_law": ccl, "clock_accrual": cac,
+                    "certificate_clock_law": ccl, "measurability": msr,
+                    "clock_accrual": cac,
                     "external_gauntlet": gt, "fast_admission": fa,
                     "gauntlet_guard": ggd,
                     "srb_uncorrelated_sweep": suw,
