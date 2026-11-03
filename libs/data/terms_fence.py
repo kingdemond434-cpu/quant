@@ -1221,6 +1221,52 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
                             "publish, rent, sublicense, distribute, or otherwise use in whole "
                             "or in part in any other manner the Materials without Cboe's prior "
                             "written consent")}}},
+    # THE CBOE PUBLIC DAILY FILES (2026-11-03, options_implied cluster): the VIX-family index
+    # histories and the put/call archive on cdn.cboe.com. LAWS 5e: the terms are a LABEL, so the
+    # files are MINED AND TESTED (research input to `implied_vol` cells); what the terms withhold
+    # is redistribution and LIVE SIZING. Status IDEAS_ONLY is the register's word for exactly
+    # that: `platform_of_url` does not hold the host (the fetch proceeds), `input_source` refuses
+    # it as live input. Terms re-read on 2026-11-03: no clause names research, delayed data or
+    # automated access, s.2 is personal non-commercial only and s.4 says the Materials "are not
+    # intended for trading purposes" -- so no clause permits live use, MACRO_VIEW's VIX risk lean
+    # stays cut (missed_growth.vix_risk_lean_cut) and nothing here is wired to sizing.
+    "cboe_cdn_index_history": {
+        "hosts": ("cdn.cboe.com",), "status": IDEAS_ONLY,
+        "sources": ("cboe_cdn_index_history", "cboe_put_call_archive"),
+        "access_label": "PUBLIC_WITH_TERMS", "redistribute": False, "live_sizing_input": False,
+        # what the access router reads to DERIVE the label (libs.research.access_classifier)
+        "access_meta": {"url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/",
+                        "obtained": "public_page", "source_class": "institutional",
+                        "machine_use_allowed": False,
+                        "terms": ("personal non-commercial use only; not intended for trading "
+                                  "purposes; no redistribution without Cboe's written consent")},
+        "terms_note": ("Cboe terms s.2 (personal non-commercial copy only) and s.4 (not intended "
+                       "for trading purposes): research input only, redistribution withheld"),
+        "why": ("Cboe's public daily index histories (VIX, VIX9D, VIX3M, VVIX, SKEW, OVX, GVZ) "
+                "and put/call ratio files, fetched politely with the desk's own agent and mined "
+                "and tested as research input (LAWS 5e); no clause permits live use, so never "
+                "live input, never a sizing input, never redistributed"),
+        "unblock": "a Cboe 'Request to Use Cboe Content' consent, or a licensed data feed",
+        "robots": ("UNMEASURED from the build host (its egress proxy refused cdn.cboe.com and "
+                   "www.cboe.com with CONNECT 403 on 2026-11-03); polite_fetch reads "
+                   "cdn.cboe.com/robots.txt before every request on the box"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": ("delta E[log W] UNMEASURED: the Cboe implied-vol state is "
+                                    "researched and tested but cannot size a live position or "
+                                    "restore MACRO_VIEW's VIX risk lean until Cboe consents in "
+                                    "writing; no conversion of it is on record")},
+        "terms": {"url": "https://www.cboe.com/terms", "checked_at": "2026-11-03",
+                  "clauses": {
+                      "2": ("You may view, print and download one copy of the Materials for "
+                            "your personal non-commercial use [...] You may not otherwise copy, "
+                            "reproduce, alter, store either in hard copy or in an electronic "
+                            "retrieval system, create a derivative work [...] without Cboe's "
+                            "prior written consent"),
+                      "2:consent": ("To formally request such consent you must submit a Request "
+                                    "to Use Cboe Content."),
+                      "4": ("the Materials are provided for general informational and "
+                            "educational purposes only and are not intended for trading "
+                            "purposes")}}},
     # ---- PASS 5 holds (2026-10-14; auditor: one register). Each USED to be a second register
     # (an alt_proxies Source/TERMS row, a `terms` field on the free-stack roster); the clauses
     # are the ones pass 5 quoted, moved here verbatim. Nothing is fetched for any of them.

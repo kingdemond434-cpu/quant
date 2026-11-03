@@ -69,6 +69,60 @@ def family_world_macro_state(
     flip = DIRECTIONS.get(str(direction))
     if not series_key or flip is None or float(z_hi) <= float(z_lo):
         return []
+    return _band_signals(df, tag="world_macro_state", series_key=str(series_key),
+                         z_obs=z_obs, z_lo=z_lo, z_hi=z_hi, flip=flip, direction=str(direction),
+                         hold_bars=hold_bars, atr_n=atr_n, stop_atr=stop_atr, rr=rr)
+
+
+#: The providers whose series are OPTIONS-IMPLIED state (research/options_implied.py part 3: the
+#: Cboe index histories and put/call ratios, and the state derived from them). Only these may be
+#: traded as `implied_vol`; the realised-vol PROXY family is never implied vol.
+IMPLIED_PROVIDERS: frozenset[str] = frozenset({"CBOE", "CBOE_STATE"})
+
+
+def _provider(series_key: str) -> str | None:
+    try:
+        from research.world_dataset_hunter import _key_location
+    except ImportError:                                        # desk-root callers
+        from world_dataset_hunter import _key_location  # type: ignore[no-redef]
+    loc = _key_location(series_key)
+    return str(loc[0]) if loc else None
+
+
+def family_implied_vol(
+    df: pd.DataFrame,
+    *,
+    side: int | None = None,
+    series_key: str = "",
+    z_obs: int = 24,
+    z_lo: float = 1.0,
+    z_hi: float = 99.0,
+    direction: str = "long",
+    hold_bars: int = 24,
+    atr_n: int = 20,
+    stop_atr: float = 2.0,
+    rr: float = 1.5,
+) -> list[Signal]:
+    """THE OPTIONS-IMPLIED STATE (the `options_implied` cluster): the same z band on one named
+    series as `world_macro_state`, restricted to the options-implied providers -- the variance
+    risk premium, the VIX term-structure slope, VVIX/VIX, SKEW, put/call ratios, and the GVZ and
+    OVX premiums over the desk's own realised vol. The payer is the cluster's: dealers short
+    gamma who hedge into the move, and the premium of implied over realised. Refuses ([]) any
+    series from another provider, so the cluster label is never borrowed."""
+    del side
+    flip = DIRECTIONS.get(str(direction))
+    if not series_key or flip is None or float(z_hi) <= float(z_lo):
+        return []
+    if _provider(str(series_key)) not in IMPLIED_PROVIDERS:
+        return []
+    return _band_signals(df, tag="implied_vol", series_key=str(series_key), z_obs=z_obs,
+                         z_lo=z_lo, z_hi=z_hi, flip=flip, direction=str(direction),
+                         hold_bars=hold_bars, atr_n=atr_n, stop_atr=stop_atr, rr=rr)
+
+
+def _band_signals(df: pd.DataFrame, *, tag: str, series_key: str, z_obs: int, z_lo: float,
+                  z_hi: float, flip: int, direction: str, hold_bars: int, atr_n: int,
+                  stop_atr: float, rr: float) -> list[Signal]:
     raw, align = _series(str(series_key))
     if raw is None or len(raw) < int(z_obs) + 2:
         return []
@@ -95,7 +149,7 @@ def family_world_macro_state(
         px = close[i]
         out.append(Signal(time=idx[i], side=flip, stop=px - flip * stop_atr * a,
                           target=px + flip * stop_atr * a * rr, ttl_bars=int(hold_bars),
-                          tag=f"world_macro_state:{series_key}:{direction}",
+                          tag=f"{tag}:{series_key}:{direction}",
                           trigger=None, wait_bars=1))
         last = i
     return out

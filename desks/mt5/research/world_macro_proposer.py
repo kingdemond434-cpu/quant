@@ -30,7 +30,11 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from mt5desk.family_world_macro import family_world_macro_state  # noqa: E402
+from mt5desk.family_world_macro import (  # noqa: E402
+    IMPLIED_PROVIDERS,
+    family_implied_vol,
+    family_world_macro_state,
+)
 
 from research import proposer_common as pc  # noqa: E402
 from research import world_dataset_hunter as W  # noqa: E402
@@ -46,6 +50,17 @@ BANDS: tuple[tuple[float, float], ...] = ((-99.0, -1.5), (-1.5, -0.5), (0.5, 1.5
 DIRECTIONS: tuple[str, ...] = ("long", "short")
 HOLDS: tuple[int, ...] = (24, 72)
 Z_OBS = 24
+
+
+#: A key from the options-implied providers is the SAME z band, minted under `implied_vol` so the
+#: cell files into the options_implied cluster (same grid, same deflation, same trial count).
+IMPLIED_FAMILY = "implied_vol"
+_FAMILY_FN = {FAMILY: family_world_macro_state, IMPLIED_FAMILY: family_implied_vol}
+
+
+def family_for_key(key: str) -> str:
+    loc = W._key_location(key)
+    return IMPLIED_FAMILY if loc and loc[0] in IMPLIED_PROVIDERS else FAMILY
 
 
 def _cursor_path() -> Path:
@@ -103,22 +118,24 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, now: datetime | None = None,
             continue
         unf = pc.artifact_hours(d)
         for key in W.exposed_keys(sym, now=now, doc=doc):
+            fam = family_for_key(key)
+            fn = _FAMILY_FN[fam]
             for lo, hi in BANDS:
                 for direction in DIRECTIONS:
                     for hold in HOLDS:
                         params = {"series_key": key, "z_obs": Z_OBS, "z_lo": lo, "z_hi": hi,
                                   "direction": direction, "hold_bars": hold}
-                        sig = family_world_macro_state(d, **params)
+                        sig = fn(d, **params)
                         sc = pc.screen(d, sig, cost, unf)
                         if sc is None:
                             continue
-                        rows.append({"cell": f"{sym}.{FAMILY}.{key}", "symbol": sym,
-                                     "params": params, **sc})
+                        rows.append({"cell": f"{sym}.{fam}.{key}", "symbol": sym,
+                                     "family": fam, "params": params, **sc})
         swept.append(sym)
     rows = pc.deflate(rows)
     proposals = pc.best_per_cell(rows)
     cands = [pc.candidate(
-        SOURCE, r["symbol"], FAMILY, dict(r["params"]),
+        SOURCE, r["symbol"], r.get("family") or FAMILY, dict(r["params"]),
         mechanism=(f"{_label(r['params']['series_key'])} sits in z band "
                    f"[{r['params']['z_lo']}, {r['params']['z_hi']}) against its own last "
                    f"{Z_OBS} prints: the flows that official statistic describes lean "
