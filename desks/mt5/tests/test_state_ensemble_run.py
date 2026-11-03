@@ -58,7 +58,7 @@ def _h1(days: int = 720, seed: int = 4) -> pd.DataFrame:
 def sandbox(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     uni = tmp_path / "universe"
     uni.mkdir()
-    _h1().to_parquet(uni / "XAUTST_H1.parquet")
+    _h1(days=1000).to_parquet(uni / "XAUTST_H1.parquet")
     monkeypatch.setattr(cr, "bar_path", lambda s, dirs=(uni,): (uni / f"{s}_H1.parquet")
                         if (uni / f"{s}_H1.parquet").exists() else None)
     monkeypatch.setattr(cr, "BAR_DIRS", (uni,))
