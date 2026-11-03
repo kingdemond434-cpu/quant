@@ -1,0 +1,1 @@
+Sealed YouTube transcript bundles for the box (RSA-OAEP + AES-GCM, box-only key). Not readable here by design: creator captions are PUBLIC_WITH_TERMS (no redistribution). See scripts/video_transcript_vault.py on the live branch.
