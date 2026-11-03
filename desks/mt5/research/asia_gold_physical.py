@@ -412,7 +412,9 @@ def tr_release_at(sid: str, period: date) -> datetime:
     if sid == TR_IMPORT_ID:
         t = datetime(period.year, period.month, period.day, 8, tzinfo=UTC) + timedelta(days=31)
     elif sid == TR_RESERVE_ID:
-        return datetime(period.year, period.month, period.day, 12, tzinfo=UTC) + timedelta(6)
+        # +6 days from the Friday reading is the Thursday release; a reading dated any other
+        # day must still land on a weekday, so this branch takes the same weekend roll.
+        t = datetime(period.year, period.month, period.day, 12, tzinfo=UTC) + timedelta(days=6)
     else:
         t = datetime(period.year, period.month, period.day, 6, tzinfo=UTC) + timedelta(days=1)
     while t.weekday() >= 5:

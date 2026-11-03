@@ -3851,15 +3851,30 @@ TR_EVDS_CODE_ENV = {_agp.TR_PRICE_ID: "ALT_EVDS_GOLD_PRICE_SERIES",
                     _agp.TR_RESERVE_ID: "ALT_EVDS_GOLD_RESERVE_SERIES"}
 
 
-def parse_tr_evds(body: bytes, ctx: Ctx) -> list[Obs]:
-    """One EVDS series body -> Obs of the row's series (the request part names the row). The
-    stamp is the row's release rule (EVDS prints none)."""
-    sid = ctx.part
+def _parse_tr_series(body: bytes, sid: str) -> list[Obs]:
+    """One EVDS series body -> Obs of row `sid`'s series. The stamp is the row's release rule
+    (EVDS prints none)."""
     if sid not in _agp.TR_SERIES:
         return []
     code = config_value(TR_EVDS_CODE_ENV[sid])
     return [Obs(_agp.TR_SERIES[sid], date.fromisoformat(r["date"]), float(r["value"]))
             for r in _agp.parse_evds(body, code)]
+
+
+def parse_tr_evds(body: bytes, ctx: Ctx) -> list[Obs]:
+    """One EVDS series body -> Obs of the row the request part names."""
+    return _parse_tr_series(body, ctx.part)
+
+
+def _tr_parser(sid: str) -> Callable[[bytes, Ctx], list[Obs]]:
+    """The parser bound to ONE EVDS row. The three rows share one URL and one body shape, so the
+    row is the SOURCE's identity, never something read back off the request: keyed on
+    `ctx.part` alone, any caller whose Ctx did not carry the row id (a re-parse of a stored body,
+    a fixture check) got nothing at all from a body that held the series."""
+    def parse(body: bytes, ctx: Ctx) -> list[Obs]:
+        return _parse_tr_series(body, sid)
+    parse.__name__ = f"parse_tr_evds_{sid}"
+    return parse
 
 
 def parse_tr_bist(body: bytes, ctx: Ctx) -> list[Obs]:
@@ -3899,7 +3914,7 @@ TR_GOLD_SOURCES: tuple[Source, ...] = (
                                  "quote lags the cross, a timing artefact, not demand"),
         note=("premium = TRY/gram / (XAUUSD x USDTRY / 31.1035 g at 995 fine) - 1, both MT5 legs "
               "at the 12:00 UTC H1 bar; PIT: next weekday 06:00 UTC (late on purpose)"),
-        **_TR_EVDS_META),
+        **{**_TR_EVDS_META, "parse": _tr_parser(_agp.TR_PRICE_ID)}),
     Source(
         id=_agp.TR_IMPORT_ID, name="Turkish monthly gold imports, surge vs prior months (CBRT "
         "EVDS)", cadence="monthly", rule=_tr_rule(_agp.TR_IMPORT_ID),
@@ -3912,7 +3927,7 @@ TR_GOLD_SOURCES: tuple[Source, ...] = (
                                  "mechanically"),
         note=("monthly; PIT: month end + 31 days 08:00 UTC, the TÜİK foreign-trade release "
               "(late on purpose); the state artifact carries the import-surge z"),
-        **_TR_EVDS_META),
+        **{**_TR_EVDS_META, "parse": _tr_parser(_agp.TR_IMPORT_ID)}),
     Source(
         id=_agp.TR_RESERVE_ID, name="CBRT gold reserves, weekly change (CBRT EVDS)",
         cadence="weekly", rule=_tr_rule(_agp.TR_RESERVE_ID), transform="diff_weekly",
@@ -3922,7 +3937,7 @@ TR_GOLD_SOURCES: tuple[Source, ...] = (
         participant_structure=("policy_driven",),
         failure_mode_hypothesis="fails when valuation, not tonnage, moves the reported total",
         note="weekly; PIT: the reading's date + 6 days 12:00 UTC (the Thursday release)",
-        **_TR_EVDS_META),
+        **{**_TR_EVDS_META, "parse": _tr_parser(_agp.TR_RESERVE_ID)}),
     Source(
         id=_agp.TR_BIST_ID, name="Borsa Istanbul precious-metals gold price premium (TRY/kg)",
         url=BIST_METAL_URL, cadence="daily", parse=parse_tr_bist,
