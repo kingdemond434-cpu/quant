@@ -193,9 +193,21 @@ def discovery_organs(rosters: tuple[Path, ...] = ROSTERS) -> tuple[list[str], li
     return ([n for n in names if n not in owned], [n for n in names if n in owned], basis)
 
 
+#: lease path -> the token this process wrote into it. Release unlinks only a lease holding it.
+_TOKENS: dict[str, str] = {}
+
+
 def take_lease(path: Path | None = None, now: float | None = None,
                stale_s: float = LEASE_STALE_S) -> tuple[bool, str]:
-    """O_EXCL lease: (held_by_us, why). A lease older than `stale_s` is a killed pass's."""
+    """O_EXCL lease: (held_by_us, why). A lease older than `stale_s` is a killed pass's.
+
+    A STALE LEASE IS RENAMED, NEVER UNLINKED (audit of ebdc349e9). Two passes that both see it
+    stale would each unlink it, and the second could delete the first's FRESH lease. Here each
+    renames it to its own unique tombstone: only one rename can succeed, and only the pass whose
+    rename did may try the O_EXCL create. A tombstone that turns out fresh -- another pass's new
+    lease, renamed after that pass took over -- is put back (os.link, which never overwrites)
+    and this pass stands down."""
+    import uuid
     p = path or LEASE
     now = time.time() if now is None else now
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -210,19 +222,50 @@ def take_lease(path: Path | None = None, now: float | None = None,
                 continue  # released between the two calls: try once more
             if age < stale_s:
                 return False, f"another pass holds the lease ({age:.0f}s old)"
+            tomb = p.with_name(f"{p.name}.stale.{os.getpid()}.{uuid.uuid4().hex}")
+            try:
+                os.rename(p, tomb)
+            except OSError:
+                continue  # another pass renamed it first: its lease, if any, wins the create
+            try:
+                tage = now - tomb.stat().st_mtime
+            except OSError:
+                tage = stale_s
+            if tage < stale_s:
+                with contextlib.suppress(OSError):
+                    os.link(tomb, p)
+                with contextlib.suppress(OSError):
+                    tomb.unlink()
+                return False, "another pass took over the stale lease first"
             with contextlib.suppress(OSError):
-                p.unlink()
+                tomb.unlink()
             why = f"took over a stale lease ({age:.0f}s old, over {stale_s:.0f}s)"
             continue
+        token = uuid.uuid4().hex
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            fh.write(json.dumps({"pid": os.getpid(), "at": _now_iso()}))
+            fh.write(json.dumps({"pid": os.getpid(), "lease_id": token, "at": _now_iso()}))
+        _TOKENS[str(p)] = token
         return True, why
     return False, "the lease could not be taken"
 
 
-def release_lease(path: Path | None = None) -> None:
+def release_lease(path: Path | None = None) -> bool:
+    """Unlink the lease only when it still holds OUR token; True when it was ours and removed.
+    A lease another pass took over after ours went stale is never deleted by our finally."""
+    p = path or LEASE
+    token = _TOKENS.pop(str(p), None)
+    if token is None:
+        return False
+    try:
+        held = json.loads(p.read_text(encoding="utf-8")).get("lease_id")
+    except (OSError, ValueError, AttributeError):
+        return False
+    if held != token:
+        return False
     with contextlib.suppress(OSError):
-        (path or LEASE).unlink()
+        p.unlink()
+        return True
+    return False
 
 
 def refused_by_host(refused: list[dict[str, Any]]) -> tuple[dict[str, Any], list[str]]:

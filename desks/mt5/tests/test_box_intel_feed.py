@@ -522,3 +522,66 @@ def test_the_exclusion_pathspecs_really_keep_git_off_the_box_written_files(tmp_p
     assert (intel / "seed_miners_state.json").read_text() == "box"
     assert (intel / "latest_discoveries.json").read_text() == "box"
     assert (intel / "kimi.json").read_text() == "ship"
+
+
+# --------------------------------------------- the lease takeover and release (audit of ebdc349e9)
+def _stale(p: Path, stale_s: float) -> None:
+    import os
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps({"pid": 1, "lease_id": "dead"}))
+    old = time.time() - stale_s - 10
+    os.utime(p, (old, old))
+
+
+def test_a_pass_that_loses_the_stale_rename_never_deletes_the_winner_s_lease(
+        iso, monkeypatch) -> None:
+    """A and B both see the lease stale. A renames it and creates its own. B's rename then
+    targets A's FRESH lease: B must put it back and stand down, not delete it."""
+    import os
+    _stale(feed.LEASE, feed.LEASE_STALE_S)
+    real_rename = os.rename
+    seen: dict[str, bool] = {}
+
+    def racing_rename(src, dst):
+        if not seen:
+            seen["a"] = True
+            assert feed.take_lease()[0]  # A wins the race first, inside B's window
+        return real_rename(src, dst)
+
+    monkeypatch.setattr(feed.os, "rename", racing_rename)
+    held, why = feed.take_lease()          # B
+    monkeypatch.setattr(feed.os, "rename", real_rename)
+    a_token = json.loads(feed.LEASE.read_text())["lease_id"]
+    assert not held and "took over the stale lease first" in why
+    assert feed.LEASE.exists(), "B deleted A's fresh lease"
+    assert a_token == feed._TOKENS[str(feed.LEASE)]
+    assert not [p for p in feed.LEASE.parent.iterdir() if ".stale." in p.name], "tombstone left"
+
+
+def test_a_rename_lost_outright_does_not_create_over_the_winner(iso, monkeypatch) -> None:
+    import os
+    _stale(feed.LEASE, feed.LEASE_STALE_S)
+
+    def lost(src, dst):
+        os.unlink(src)            # the winner renamed it away...
+        feed.LEASE.write_text(json.dumps({"lease_id": "winner"}))  # ...and created its own
+        raise FileNotFoundError(src)
+
+    monkeypatch.setattr(feed.os, "rename", lost)
+    held, why = feed.take_lease()
+    assert not held and "holds the lease" in why
+    assert json.loads(feed.LEASE.read_text())["lease_id"] == "winner"
+
+
+def test_release_unlinks_only_a_lease_holding_our_token(iso) -> None:
+    assert feed.take_lease()[0]
+    # our lease went stale and another pass took it over: our finally must leave theirs alone
+    feed.LEASE.write_text(json.dumps({"pid": 999, "lease_id": "theirs"}))
+    assert feed.release_lease() is False
+    assert json.loads(feed.LEASE.read_text())["lease_id"] == "theirs"
+    feed.LEASE.unlink()
+    assert feed.take_lease()[0]
+    assert feed.release_lease() is True and not feed.LEASE.exists()
+    # never taken by this process: nothing is touched
+    feed.LEASE.write_text(json.dumps({"lease_id": "someone"}))
+    assert feed.release_lease() is False and feed.LEASE.exists()
