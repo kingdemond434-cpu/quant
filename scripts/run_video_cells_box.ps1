@@ -34,5 +34,7 @@ foreach ($f in $files) {
 }
 python scripts\video_transcript_vault.py open --src $sealed --dst $open
 python scripts\extract_video_cells.py --mined $open --max-videos $MaxVideos
+# box-side coverage proof: every enumerated video id and its status, from the PC's own ledger
+python scripts\mine_channel_transcripts.py --out $open --report-only --report desks\mt5\reports\VIDEO_MINING_COVERAGE.json
 $stamp = @{ ts = (Get-Date).ToUniversalTime().ToString("s") + "Z"; bundles = (Get-ChildItem $sealed -Filter *.vault).Count } | ConvertTo-Json
 Set-Content -Path (Join-Path $vault "LAST_RUN.json") -Value $stamp

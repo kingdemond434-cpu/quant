@@ -28,7 +28,10 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-ROOT = Path(os.environ.get("QUANT_ROOT") or Path(__file__).resolve().parent.parent)
+_HERE = Path(__file__).resolve().parent.parent
+ROOT = Path(os.environ.get("QUANT_ROOT") or _HERE)
+#: Per-run open summary (opened / failed bundle counts): the organ's own artifact.
+REPORT = _HERE / "desks" / "mt5" / "reports" / "VIDEO_VAULT.json"
 PRIV = ROOT / "data" / "secrets" / "video_vault_key.pem"
 PUB = ROOT / "data" / "video_vault_pub.pem"
 OAEP = padding.OAEP(mgf=padding.MGF1(hashes.SHA256()), algorithm=hashes.SHA256(), label=None)
@@ -94,7 +97,10 @@ def open_all(src: Path, dst: Path) -> None:
                             fh.write(z.read(name))
                     else:
                         target.write_bytes(z.read(name))
-        except Exception as exc:  # noqa: BLE001 - one bad bundle never stalls the rest
+        except OSError as exc:  # transient (read/lock): retry on the next run, never retire
+            print(f"RETRY {f.name}: {type(exc).__name__}: {str(exc)[:200]}")
+            continue
+        except Exception as exc:  # crypto/magic/path-escape/zip: permanent, recorded
             failed[f.name] = f"{type(exc).__name__}: {str(exc)[:200]}"
             fail_path.write_text(json.dumps(failed, indent=1))
             print(f"FAILED {f.name}: {failed[f.name]}")
@@ -102,6 +108,9 @@ def open_all(src: Path, dst: Path) -> None:
         done.add(f.name)
         done_path.write_text(json.dumps(sorted(done)))   # persisted per bundle
         print(f"opened {f.name}")
+    REPORT.parent.mkdir(parents=True, exist_ok=True)
+    REPORT.write_text(json.dumps({"opened": len(done), "failed": len(failed),
+                                  "failed_names": sorted(failed)}, indent=1), encoding="utf-8")
 
 
 def main() -> int:
