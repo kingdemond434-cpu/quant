@@ -144,7 +144,7 @@ def test_robots_disallow_403_and_a_waf_page_each_stop_the_run(tmp_path: Path) ->
         fc.fetch_all(tmp_path, _opener("", 403), log=lambda m: None)
     with pytest.raises(fc.HardStop, match="WAF"):
         fc.fetch_all(tmp_path, _opener("", b"<html>challenge</html>"), log=lambda m: None)
-    with pytest.raises(fc.HardStop, match="fail closed"):
+    with pytest.raises(fc.RobotsUnreadable, match="fail closed"):
         fc.fetch_all(tmp_path, _opener(500), log=lambda m: None)
 
 
@@ -244,7 +244,7 @@ def test_tff_refusals_are_hard_stops(tmp_path: Path) -> None:
         fetch_tff.fetch_all(tmp_path, _tff_opener("", {2018: 403}, []), **quiet)
     with pytest.raises(fc.HardStop, match="non-zip"):
         fetch_tff.fetch_all(tmp_path, _tff_opener("", {2018: b"<html>waf</html>"}, []), **quiet)
-    with pytest.raises(fc.HardStop, match="fail closed"):
+    with pytest.raises(fc.RobotsUnreadable, match="fail closed"):
         fetch_tff.fetch_all(tmp_path, _tff_opener(503, {}, []), **quiet)
 
 
@@ -270,3 +270,67 @@ def test_the_registry_carries_cot_tff_on_the_weekly_box_clock() -> None:
     assert rows["cot_tff"]["path"] == "data/cot_tff/*.parquet"
     assert rows["cot_tff"]["cadence"] == "weekly" and rows["cot_tff"]["produced_on"] == "box"
     assert rows["eur_cot_blocked"]["superseded_by"] == "cot_tff"
+
+
+# ------------------------------------------------------------------ auditor HOLD on 76fb31217b
+def _robots_down(kind: str) -> object:
+    def op(req: object, timeout: float) -> _Resp:
+        url = req.full_url  # type: ignore[attr-defined]
+        if url.endswith("robots.txt"):
+            if kind == "urlerror":
+                raise urllib.error.URLError("temporary failure in name resolution")
+            raise urllib.error.HTTPError(url, 503, "x", None, None)  # type: ignore[arg-type]
+        raise AssertionError(f"fetched {url} although robots.txt was unreadable")
+    return op
+
+
+@pytest.mark.parametrize("kind", ["urlerror", "5xx"])
+@pytest.mark.parametrize("dataset", ["cot_fx", "cot_tff"])
+def test_an_unreadable_robots_is_a_failed_retry_never_a_hard_stop(
+        tmp_path: Path, kind: str, dataset: str) -> None:
+    """One network blip on robots.txt used to write the hard-stop file and hold BOTH CFTC
+    datasets until a person acted. It is fail-closed for the run (nothing fetched) and FAILED,
+    so the clock's ordinary backoff retries it."""
+    from mt5desk import fetch_tff
+    mod = fc if dataset == "cot_fx" else fetch_tff
+    p = _paths(tmp_path)
+    _cot(p["cot_dir"], TUE)
+    shim = SimpleNamespace(
+        fetch_all=lambda out: mod.fetch_all(out, _robots_down(kind), log=lambda m: None),
+        HardStop=fc.HardStop)
+    now = datetime(2026, 11, 7, 1, 0, tzinfo=UTC)
+    doc = cfr.run(now=now, fetch=shim, dataset=dataset, **p)
+    assert doc["status"] == "FAILED" and "robots.txt unreadable" in doc["error"]
+    assert not p["hard_stop"].exists()
+    # the backoff path, not a hold: six hours later it tries again
+    retry = cfr.run(now=now.replace(hour=7, minute=5), fetch=_fake(
+        new_last=datetime(2026, 11, 3, tzinfo=UTC)), dataset=dataset, **p)
+    assert retry["status"] == "FETCHED"
+
+
+def test_an_explicit_disallow_is_still_a_hard_stop(tmp_path: Path) -> None:
+    p = _paths(tmp_path)
+    _cot(p["cot_dir"], TUE)
+    shim = SimpleNamespace(
+        fetch_all=lambda out: fc.fetch_all(out, _opener("User-agent: *\nDisallow: /\n"),
+                                           log=lambda m: None),
+        HardStop=fc.HardStop)
+    doc = cfr.run(now=datetime(2026, 11, 7, 1, 0, tzinfo=UTC), fetch=shim, **p)
+    assert doc["status"] == "HARD_STOP" and p["hard_stop"].exists()
+
+
+def test_the_hard_stop_file_is_written_atomically(tmp_path: Path,
+                                                  monkeypatch: pytest.MonkeyPatch) -> None:
+    p = _paths(tmp_path)
+    _cot(p["cot_dir"], TUE)
+    moved: list[tuple[str, str]] = []
+    real = cfr.os.replace
+
+    def spy(src: object, dst: object) -> None:
+        moved.append((Path(str(src)).name, Path(str(dst)).name))
+        real(src, dst)  # type: ignore[arg-type]
+    monkeypatch.setattr(cfr.os, "replace", spy)
+    cfr.run(now=datetime(2026, 11, 7, 1, 0, tzinfo=UTC),
+            fetch=_fake(exc=fc.HardStop("HTTP 403")), **p)
+    assert ("COT_FX_HARD_STOP.json.tmp", "COT_FX_HARD_STOP.json") in moved
+    assert not list(tmp_path.glob("*.tmp"))

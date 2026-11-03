@@ -53,7 +53,15 @@ HARD_STOP_STATUS: frozenset[int] = frozenset({401, 403, 429})
 
 
 class HardStop(RuntimeError):
-    """The source refused us (401/403/429, a WAF page, or robots). Nothing more is fetched."""
+    """The source refused us (401/403/429, a WAF page, or an explicit robots Disallow). Nothing
+    more is fetched, and the clock holds until a person clears it."""
+
+
+class RobotsUnreadable(RuntimeError):
+    """robots.txt could not be read (timeout, DNS, a 5xx, any transport error). Fail closed for
+    THIS run -- nothing is fetched -- but it is a transient, not a refusal: the clock's ordinary
+    failure backoff retries it. Deliberately NOT a HardStop (auditor HOLD on 76fb31217b: one
+    network blip used to hold both CFTC datasets until a person acted)."""
 
 
 Opener = Callable[[urllib.request.Request, float], Any]
@@ -71,8 +79,9 @@ def robots_url(url: str) -> str:
 
 def robots_allows(url: str, opener: Opener = _open) -> tuple[bool, str]:
     """robots.txt decides, fail closed: a 404 is "no rules" (allowed); a refusal is a hard stop;
-    any other unreadable answer refuses this run. Read from the URL's own host (shared with
-    `fetch_tff`, whose bulk files live on www.cftc.gov)."""
+    any other unreadable answer raises RobotsUnreadable (this run fetches nothing; the clock
+    retries after its backoff). Read from the URL's own host (shared with `fetch_tff`, whose
+    bulk files live on www.cftc.gov). (False, why) means an explicit Disallow."""
     req = urllib.request.Request(robots_url(url), headers={"User-Agent": UA})
     try:
         with opener(req, 30) as resp:
@@ -82,9 +91,11 @@ def robots_allows(url: str, opener: Opener = _open) -> tuple[bool, str]:
             return True, "robots.txt absent (404): no rules"
         if exc.code in HARD_STOP_STATUS:
             raise HardStop(f"robots.txt answered HTTP {exc.code}") from exc
-        return False, f"robots.txt unreadable (HTTP {exc.code}): refused, fail closed"
+        raise RobotsUnreadable(f"robots.txt unreadable (HTTP {exc.code}): this run fetches "
+                               "nothing, fail closed") from exc
     except (OSError, ValueError) as exc:
-        return False, f"robots.txt unreadable ({type(exc).__name__}): refused, fail closed"
+        raise RobotsUnreadable(f"robots.txt unreadable ({type(exc).__name__}): this run fetches "
+                               "nothing, fail closed") from exc
     rp = urllib.robotparser.RobotFileParser()
     rp.parse(text.splitlines())
     ok = rp.can_fetch(UA_PRODUCT, url)

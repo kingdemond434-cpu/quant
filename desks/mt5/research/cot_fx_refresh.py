@@ -172,7 +172,9 @@ def run(*, now: datetime | None = None, force: bool = False, cot_dir: Path = COT
                 "rule": "a 401/403/429, a WAF page or a robots refusal is a hard stop; "
                         "a person clears it by deleting this file"}
         hard_stop.parent.mkdir(parents=True, exist_ok=True)
-        hard_stop.write_text(json.dumps(stop, indent=1), "utf-8")
+        tmp = hard_stop.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(stop, indent=1), "utf-8")
+        os.replace(tmp, hard_stop)
         doc.update(status="HARD_STOP", error=str(exc))
     except Exception as exc:
         doc.update(status="FAILED", error=f"{type(exc).__name__}: {exc}"[:400])
