@@ -463,7 +463,7 @@ def _recursive_over_ancestor(seg: Sequence[str], cwds: Sequence[str | None] = (N
     return False
 
 
-def _cd_target(seg: Sequence[str]) -> str | None:
+def _cd_target(seg: Sequence[str]) -> str:
     """The directory a `cd`/`pushd` segment moves to ("~" for a bare `cd`)."""
     args = [a for a in seg[1:] if a not in ("-L", "-P", "-e", "-@", "--")]
     return args[0] if args else "~"
