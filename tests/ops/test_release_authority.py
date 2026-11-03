@@ -237,10 +237,16 @@ def test_a_raise_past_the_hard_max_or_more_than_one_step_is_root(env: Any) -> No
     assert any("one step" in b for b in bad)
 
 
-def test_a_firm_rule_is_never_raised_and_lowering_is_always_fine(env: Any) -> None:
+def test_a_firm_rule_is_never_raised(env: Any) -> None:
     bad = env["pol"].envelope_check(_ceil(d=0.05), _ceil(d=0.06), env["env"])
     assert any("firm rule" in b for b in bad)
-    assert env["pol"].envelope_check(_ceil(d=0.05), _ceil(d=0.04), env["env"]) == []
+
+
+def test_a_lowered_ceiling_is_not_delegated_either(env: Any) -> None:
+    """#637 audit MF2: NEVER REDUCE AGGRESSIVENESS -- a cap lowered by fiat is zuck's call."""
+    bad = env["pol"].envelope_check(_ceil(m=0.08), _ceil(m=0.06), env["env"])
+    assert any("lowered" in b for b in bad)
+    assert env["pol"].envelope_check(_ceil(m=0.08), _ceil(m=0.08), env["env"]) == []
 
 
 def test_pins_and_rail_lists_cannot_move_through_the_envelope(env: Any) -> None:
