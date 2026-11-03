@@ -176,3 +176,28 @@ def test_authority_detects_a_state_app_push_of_code() -> None:
         f"activity 8 push by {bot}: file list unreadable or truncated",
         "activity 9 force_push by zuck",
     ]
+
+
+def test_activity_paging_follows_the_link_cursor_and_freezes_on_a_torn_cursor(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = ROOT / "ops/release/authority/authority.py"
+    spec = importlib.util.spec_from_file_location("auth_for_paging", path)
+    assert spec is not None and spec.loader is not None
+    a = importlib.util.module_from_spec(spec)
+    sys.modules["auth_for_paging"] = a
+    spec.loader.exec_module(a)
+    out = (
+        'HTTP/2.0 200 OK\r\nLink: <https://api.github.com/repositories/9/activity?after=X>; '
+        'rel="next"\r\n\r\n[{"id": 3}]'
+    )
+    monkeypatch.setattr(a.subprocess, "run", lambda *x, **k: subprocess.CompletedProcess(
+        [], 0, stdout=out, stderr=""))  # fmt: skip
+    got, nxt = a.activity_page("o/r", "repos/o/r/activity")
+    assert got == [{"id": 3}] and nxt == "repositories/9/activity?after=X"
+    att = tmp_path / "attestations"
+    att.mkdir()
+    (tmp_path / "STATE_APP.json").write_text('{"login": "bot[bot]"}', encoding="utf-8")
+    (att / a.CURSOR_FILE).write_text('{"last_', encoding="utf-8")
+    msg = a.check_state_app(object(), "o/r", "live", att)
+    assert msg is not None and msg.startswith("RED") and (att / "DEACTIVATE").exists()

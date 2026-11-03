@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 from collections.abc import Callable
@@ -314,24 +315,26 @@ def check_state_app(ag: Any, repo: str, base: str, out: Path) -> str | None:
         return "STATE_APP.json has no login: detector not run"
     pub = _load("state_publisher", ROOT / "ops" / "release" / "publisher" / "publish.py")
     cur_path = out / CURSOR_FILE
-    try:
-        last = int(json.loads(cur_path.read_text(encoding="utf-8"))["last_id"])
-    except (OSError, ValueError, KeyError, TypeError):
+    if cur_path.exists():
+        try:  # present but unreadable never re-baselines (that would skip judging): freeze
+            last = int(json.loads(cur_path.read_text(encoding="utf-8"))["last_id"])
+        except (OSError, ValueError, KeyError, TypeError):
+            return _freeze(out, [f"{CURSOR_FILE} is unreadable"])
+    else:
         last = 0
     if not last:  # first run: baseline at the newest push, never judge history before Level 2
-        got = ag._gh(f"repos/{repo}/activity?ref=refs/heads/{base}&per_page=1")
-        top = max((int(e.get("id") or 0) for e in got or []), default=0)
+        got, _ = activity_page(repo, f"repos/{repo}/activity?ref=refs/heads/{base}&per_page=1")
+        top = max((int(e.get("id") or 0) for e in got), default=0)
         if top:
-            cur_path.write_text(json.dumps({"last_id": top}), encoding="utf-8")
+            _write_cursor(cur_path, top)
         return f"LIVE push log: baseline set at activity {top}"
-    new: list[dict[str, Any]] = []
-    for page in range(1, 11):  # newest first; stop at the cursor
-        got = ag._gh(f"repos/{repo}/activity?ref=refs/heads/{base}&per_page=100&page={page}")
-        if not got:
-            break
+    new: dict[int, dict[str, Any]] = {}
+    url: str | None = f"repos/{repo}/activity?ref=refs/heads/{base}&per_page=100"
+    for _ in range(10):  # newest first, following the Link `next` cursor; stop at the cursor
+        got, url = activity_page(repo, str(url))
         fresh = [e for e in got if int(e.get("id") or 0) > last]
-        new += fresh
-        if len(fresh) < len(got):
+        new.update({int(e["id"]): e for e in fresh})
+        if len(fresh) < len(got) or not url:
             break
     else:
         return _freeze(out, ["more than 1,000 LIVE pushes since the last check"])
@@ -343,13 +346,36 @@ def check_state_app(ag: Any, repo: str, base: str, out: Path) -> str | None:
             return None
         return [str(f.get("filename")) for f in files]
 
-    bad = state_app_violations(new, login, files_between, pub.publishable)
+    bad = state_app_violations(list(new.values()), login, files_between, pub.publishable)
     if bad:
         return _freeze(out, bad)
     if new:
-        top = max(int(e.get("id") or 0) for e in new)
-        cur_path.write_text(json.dumps({"last_id": top}), encoding="utf-8")
+        _write_cursor(cur_path, max(new))
     return f"LIVE push log: {len(new)} new push(es) since {last}, clean"
+
+
+def activity_page(repo: str, url: str) -> tuple[list[dict[str, Any]], str | None]:
+    """One page of the activity log and the Link header's `next` URL (cursor-paged, not page=)."""
+    import re
+
+    p = subprocess.run(["gh", "api", "-i", url], capture_output=True, text=True,
+                       encoding="utf-8", errors="replace", timeout=120, check=False)  # fmt: skip
+    if p.returncode != 0:
+        raise RuntimeError(f"gh api {url}: {p.stderr.strip()[:200]}")
+    head, _, body = p.stdout.replace("\r\n", "\n").partition("\n\n")
+    nxt = None
+    for line in head.splitlines():
+        if line.lower().startswith("link:"):
+            m = re.search(r'<https://api\.github\.com/([^>]+)>;\s*rel="next"', line)
+            nxt = m.group(1) if m else None
+    got = json.loads(body or "[]")
+    return (got if isinstance(got, list) else []), nxt
+
+
+def _write_cursor(path: Path, top: int) -> None:
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps({"last_id": top}), encoding="utf-8")
+    os.replace(tmp, path)
 
 
 def _freeze(out: Path, bad: list[str]) -> str:
