@@ -55,6 +55,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import hashlib
+import itertools
 import json
 import math
 import sys
@@ -337,7 +338,7 @@ def walk_forward(x: np.ndarray, y: np.ndarray, entries: Sequence[pd.Timestamp],
     if n <= MIN_TRAIN:
         return np.array([], dtype=int), np.array([]), np.array([])
     edges = np.linspace(MIN_TRAIN, n, N_FOLDS + 1).astype(int)
-    for a, b in zip(edges[:-1], edges[1:], strict=True):
+    for a, b in itertools.pairwise(edges):
         if b <= a:
             continue
         tr = purged_train_index(entries, exits, entries[a])
@@ -496,7 +497,8 @@ def charge(new: Sequence[dict[str, Any]], path: Path) -> dict[str, Any]:
     for r in new:
         union[r["trial_id"]] = r
     trials = [TL.Trial(trial_id=k, family=str(v.get("family") or "meta_label"),
-                       descriptors={str(a): str(b) for a, b in (v.get("descriptors") or {}).items()},
+                       descriptors={str(a): str(b)
+                                    for a, b in (v.get("descriptors") or {}).items()},
                        params=dict(v.get("params") or {}))
               for k, v in union.items()]
     cen = TL.census(trials)
@@ -611,9 +613,10 @@ def run(*, ledger_dirs: Sequence[Path] = LEDGER_DIRS, bar_dirs: Sequence[Path] =
                 len(pools[fam_of[st]]) > 1:
             scope_of[st] = f"family:{fam_of[st]}"
         else:
+            pooled = sum(len(hist_of[s]) for s in pools[fam_of[st]])
             rows[st]["why"] = (f"{len(hist_of[st])} trades (< {MIN_SLEEVE_TRADES}) and family "
-                               f"'{fam_of[st]}' pools {sum(len(hist_of[s]) for s in pools[fam_of[st]])}"
-                               f" over {len(pools[fam_of[st]])} sleeve(s) (< {MIN_POOL_TRADES})")
+                               f"'{fam_of[st]}' pools {pooled} over {len(pools[fam_of[st]])} "
+                               f"sleeve(s) (< {MIN_POOL_TRADES})")
     scopes: dict[str, dict[str, Any]] = {}
     pending: list[dict[str, Any]] = []
     with _one_native_thread():

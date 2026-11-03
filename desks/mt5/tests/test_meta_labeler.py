@@ -51,10 +51,8 @@ def _ledger(bars: pd.DataFrame, *, planted: bool, seed: int = 1, n: int = 500) -
     starts = bars.index[300::7][:n]
     for t in starts:
         side = int(rng.choice([-1, 1]))
-        if planted:
-            win = rng.random() < (0.9 if t.hour < 12 else 0.1)
-        else:
-            win = rng.random() < 0.5
+        p_win = (0.9 if t.hour < 12 else 0.1) if planted else 0.5
+        win = rng.random() < p_win
         rows.append({"entry_time": str(t), "exit_time": str(t + pd.Timedelta(hours=2)),
                      "side": side, "entry": 1.0, "exit": 1.0,
                      "r_multiple": 1.0 if win else -1.0, "reason": "target" if win else "stop"})
@@ -127,7 +125,7 @@ def test_planted_label_is_recovered_and_sized_two_sided(tmp_path: Path) -> None:
     hours = np.asarray([trades[i].entry.hour for i in keep])
     m = ML.bet_multiplier(ML.predict(model, x), float(y.mean()), len(y))
     assert m[hours < 12].mean() > 1.0 > m[hours >= 12].mean()
-    assert 0.0 <= m.min() and m.max() <= ML.MAX_MULT
+    assert m.min() >= 0.0 and m.max() <= ML.MAX_MULT
 
 
 def test_noise_labels_give_no_gain_and_unit_multiplier(tmp_path: Path) -> None:
