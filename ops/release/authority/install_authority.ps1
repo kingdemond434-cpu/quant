@@ -71,10 +71,17 @@ if (-not (Get-LocalUser -Name $User -ErrorAction SilentlyContinue)) {
 Step "The App's private key"
 if (-not $AppKey) {
     $dl = Join-Path $env:USERPROFILE "Downloads"
-    $AppKey = (Get-ChildItem -LiteralPath $dl -Filter "*.private-key.pem" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
+    $pems = @(Get-ChildItem -LiteralPath $dl -Filter "*.private-key.pem" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending)
+    if ($pems.Count -gt 0) { $AppKey = $pems[0].FullName }
+    # several keys downloaded: the newest is used; the older ones stay valid on GitHub until deleted
+    if ($pems.Count -gt 1) {
+        Write-Host "   $($pems.Count) App keys in Downloads; using the NEWEST. Afterwards delete the older key(s) on the App's settings page (Private keys) and in Downloads:" -ForegroundColor Yellow
+        $pems | Select-Object -Skip 1 | ForEach-Object { Write-Host "     older: $($_.Name) ($($_.LastWriteTime))" -ForegroundColor Yellow }
+    }
 }
 $appPem = Join-Path $Key "app.pem"
 if ($AppKey -and (Test-Path -LiteralPath $AppKey)) {
+    Write-Host "   using App key: $(Split-Path -Leaf $AppKey) ($((Get-Item -LiteralPath $AppKey).LastWriteTime))"
     Move-Item -Force -LiteralPath $AppKey -Destination $appPem
 } elseif (-not (Test-Path -LiteralPath $appPem)) {
     throw "No App private key found. On the App's settings page click 'Generate a private key' (it downloads a .pem), then run this again."
