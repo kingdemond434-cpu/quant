@@ -4147,6 +4147,11 @@ _TERMINAL_ARTIFACTS = {
         "land in reports/real_campaign.json and reports/intraday_rotation_{15m,1h}.json, and "
         "the two deferred rows (H9 conditional on the 15m result, H4/H5 on the moat tape) "
         "carry their blockers in the text.",
+    "docs/research/EB_SHRINKAGE_PREREGISTRATION.md":
+        "PRE-REGISTRATION (2026-11-03, before the box run) of the empirical-Bayes shrinkage "
+        "test: bars P1/P2 fixed in the text and copied into eb_shrinkage_oos.py. Immutable by "
+        "design; the run lands in desks/mt5/reports/EB_SHRINKAGE_OOS.json and the decision "
+        "journal, never back in this file.",
     "docs/research/DISCRETIONARY_PLAYBOOK_PREREGISTRATION.md":
         "PRE-REGISTRATION of the principal's playbook + tier list as hypotheses H1-H11 "
         "(2026-08-04), sizing module rejected under R0143 in the text itself. Immutable by "
