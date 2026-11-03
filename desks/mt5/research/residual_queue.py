@@ -58,6 +58,8 @@ EXECQ = DESK / "reports" / "execution_quality.json"
 from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
 LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 POSTERIOR = DESK / "reports" / "POSTERIOR_ALPHA.json"
+#: The gateway's sleeve registry: where a losing sleeve's FAMILY is read from.
+SLEEVES = DESK / "data" / "sleeves.json"
 RESIDUAL_SEARCH = DESK / "reports" / "RESIDUAL_SEARCH.json"
 QUEUE = DESK / "data" / "residual_queue.jsonl"
 REPORT = DESK / "reports" / "RESIDUAL_QUEUE.json"
@@ -185,6 +187,37 @@ def item(level: str, symbol: Any, key: str, magnitude: Any, unit: str, share: An
             "source": source, "why": why, "family": family, "params": dict(params or {})}
 
 
+def sleeve_family(name: Any, path: Path | None = None) -> str | None:
+    """The registered family of the sleeve a loss belongs to, or None.
+
+    ROOT CAUSE OF THE DEAD SEAT (2026-11-03): every `strategy_loss` item -- a live loss, a
+    sleeve's shortfall against its posterior -- was built with no family, and
+    `donation_candidates` refuses a family-less row. So the one level that carries realised
+    losses could never donate, and `residual_queue` wrote 0 rows. The family is not invented:
+    it is the sleeve's own registry row, by exact name or by the ONE name a MetaTrader-truncated
+    comment is a prefix of (two matches is ambiguous and returns None). The legacy gold windows
+    carry no family on the row and are the session-range-breakout gateway windows.
+    """
+    label = str(name or "").strip()
+    if not label:
+        return None
+    doc = _read_json(path or SLEEVES)
+    rows = doc.get("sleeves") if isinstance(doc, dict) else doc
+    reg = {str(r.get("name")): r for r in (rows if isinstance(rows, list) else [])
+           if isinstance(r, dict) and r.get("name")}
+    hits = [label] if label in reg else [n for n in reg if n.startswith(label)]
+    if len(hits) == 1:
+        fam = reg[hits[0]].get("family")
+        if isinstance(fam, str) and fam:
+            return fam
+        name_ = hits[0]
+    else:
+        name_ = label
+    import re
+    return "session_range_breakout" if re.match(r"^gold_(asia|london_am|afternoon)(_v\d+)?$",
+                                                name_) else None
+
+
 # ------------------------------------------------------------------------------- producers
 # HOW EACH PRODUCER'S OWN NUMBER BECOMES "the share still unexplained", stated once so a reader
 # can argue with the mapping instead of reverse-engineering it out of nine call sites:
@@ -243,7 +276,8 @@ def _standing() -> list[dict]:
         out.append(item("strategy_loss", f.get("symbol"), f"unexplained_loss:{f.get('sleeve')}",
                         f.get("mean_r") or f.get("loss_r") or f.get("residual_r"), "R", 1.0,
                         "standing_questions:Q5",
-                        "a live loss no factor the desk regresses R on accounts for"))
+                        "a live loss no factor the desk regresses R on accounts for",
+                        family=sleeve_family(f.get("sleeve"))))
     for f in (qs.get("Q6") or {}).get("findings") or []:
         if not f.get("covered"):
             out.append(item("macro_reaction", (f.get("symbols") or [""])[0],
@@ -428,7 +462,7 @@ def _losses() -> list[dict]:
                         "live_ledger",
                         f"{name} realised {got:+.3f} R over {cell['n']} trade(s) against a "
                         f"posterior of {mu:+.3f} R; the gap is what the desk's model of this "
-                        f"sleeve did not predict"))
+                        f"sleeve did not predict", family=sleeve_family(name)))
     return [r for r in out if r]
 
 

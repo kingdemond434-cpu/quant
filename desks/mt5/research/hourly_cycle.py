@@ -1411,7 +1411,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
                      "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
-                     "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
+                     "missed_trade_archaeologist", "loss_learner",
+                     "loss_learning_funnel", "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
                      "clock_liveness", "allocator_liveness", "allocator_trigger",
                      "forward_calibration"),
@@ -4637,6 +4638,11 @@ def main() -> None:
     # replacement verdicts are acted on by the daily step `loss_replace`. Forward department.
     mll = _costed("loss_learner", lambda: _producer(
         "loss_learner", "research/loss_learner.py", "--once"))
+    # THE LOSS-LEARNING FUNNEL (2026-11-03): losses and misses seen -> tweak cells donated ->
+    # judged -> promoted -> beat their parent forward, each with its last nonzero instant.
+    # Runs after the archaeologist and the loss learner, reading their outputs.
+    mlf = _costed("loss_learning_funnel", lambda: _producer(
+        "loss_learning_funnel", "scripts/check_loss_learning.py"))
     mfe = _costed("forward_exploitation", lambda: _producer("forward_exploitation",
                                                              "research/forward_exploitation.py"))
     mar = _costed("alpha_recombination", lambda: _producer("alpha_recombination",
@@ -6419,6 +6425,7 @@ def main() -> None:
                     "experiment_spine": exs, "implementer": imp,
                     "research_evolution": rev, "compute_economics": cec,
                     "missed_trade_archaeologist": mta, "loss_learner": mll,
+                    "loss_learning_funnel": mlf,
                     "replication_civilization": rpc,
                     "science_controller": scc,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
