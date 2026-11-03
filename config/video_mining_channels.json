@@ -1,0 +1,71 @@
+{
+ "_": "Config-driven channel list for scripts/mine_channel_transcripts.py. Add a channel by adding a row; no code change. tabs = which channel tabs to enumerate (every video ever posted = videos + shorts + streams).",
+ "channels": [
+  {
+   "handle": "@QuantGuild",
+   "name": "Quant Guild",
+   "tabs": [
+    "videos",
+    "shorts",
+    "streams"
+   ],
+   "added": "2026-11-03",
+   "requested_by": "zuck"
+  },
+  {
+   "handle": "@Algovibes",
+   "name": "Algovibes",
+   "tabs": [
+    "videos",
+    "shorts",
+    "streams"
+   ],
+   "added": "2026-11-03",
+   "requested_by": "zuck"
+  },
+  {
+   "handle": "@DaviddTech",
+   "name": "DaviddTech",
+   "tabs": [
+    "videos",
+    "shorts",
+    "streams"
+   ],
+   "added": "2026-11-03",
+   "requested_by": "zuck"
+  },
+  {
+   "handle": "@saleh.m",
+   "name": "saleh.m",
+   "tabs": [
+    "videos",
+    "shorts",
+    "streams"
+   ],
+   "added": "2026-11-03",
+   "requested_by": "zuck"
+  }
+ ],
+ "discovery_queries": [
+  "quant trading strategy backtest",
+  "algorithmic trading python backtest",
+  "quantitative finance lecture",
+  "forex algorithmic strategy backtest",
+  "statistical arbitrage pairs trading",
+  "mean reversion strategy backtest",
+  "volatility trading strategy quant",
+  "machine learning trading strategy python",
+  "market microstructure order flow",
+  "trading strategy walk forward optimization",
+  "gold XAUUSD algorithmic strategy",
+  "kelly criterion position sizing",
+  "regime detection hidden markov trading",
+  "time series momentum carry strategy",
+  "ゴールド 相場 解説 トレード",
+  "金 先物 トレード 手法",
+  "原油 相場 解説 先物",
+  "銀 価格 予想 投資",
+  "ドル円 仲値 トレード",
+  "日経先物 デイトレ 手法"
+ ]
+}
