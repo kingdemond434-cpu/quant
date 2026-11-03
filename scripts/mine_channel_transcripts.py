@@ -241,7 +241,7 @@ def main() -> int:
                 v["channel"] = ch["handle"]
                 prev = ledger.get(v["video_id"])
                 if (prev and prev["status"] in ("FULL", "NO_TRANSCRIPT", "UNAVAILABLE")
-                        and "links" in prev):
+                        and ("links" in prev or v.get("tab") == "shorts")):
                     continue
                 if not prev:
                     write({**v, "status": "PENDING", "ts": now()})
