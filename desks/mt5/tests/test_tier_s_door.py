@@ -358,6 +358,9 @@ def test_a_suspended_organ_never_drops_its_withhold_silently(monkeypatch: Any,
     assert {r["organ"] for r in noted} >= {"online_fdr", "immune"}
     assert all(r["reason"] == "DOOR_SUSPENDED" for r in noted)
     assert any("ONLINE_FDR_OVER_BUDGET" in r["why"] for r in noted)
+    immune = [r for r in noted if r["organ"] == "immune"]
+    assert immune and all(r["name"] == "EURUSD.x" for r in immune), (
+        "the freeze check must be told which certificate it is holding, never '*'")
     assert not pa.LEDGER.exists(), "a pass is not a missed-growth row"
 
     pa.FDR_ROWS.write_text("{torn", "utf-8")
