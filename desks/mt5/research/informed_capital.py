@@ -751,7 +751,7 @@ def collect(*, now: datetime, budget_s: float, http: Any = None,
 
 # ------------------------------------------------------------------------------ store
 def _content_hash(row: Mapping[str, Any]) -> str:
-    keep = {k: v for k, v in row.items() if k not in ("first_seen_at",)}
+    keep = {k: v for k, v in row.items() if k not in ("first_seen_at", "_h")}
     return hashlib.sha256(json.dumps(keep, sort_keys=True, default=str).encode()).hexdigest()[:16]
 
 
