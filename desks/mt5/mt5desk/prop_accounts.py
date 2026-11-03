@@ -303,21 +303,41 @@ def account_of_xacct(name: str, data: Path | None = None) -> Account | None:
     return None
 
 
-def bind_terminal(follower: Any, acct: Account) -> dict[str, Any]:
-    """Point the FTMO follower module's shared helpers (bound_account, loss_guard, cet_day, the
-    terminal path) at `acct` for this process's life, and return its program. The legacy account
-    is the module's defaults and is left untouched. ValueError when the program is unknown."""
-    progs, _ = programs()
-    prog = progs.get(acct.program)
-    if prog is None:
-        raise ValueError(f"prop account {acct.id}: program {acct.program!r} is unknown")
-    if acct.legacy:
-        return prog
-    follower.ACCOUNT_FILE = paths(acct)["declaration"]
-    follower.TERMINAL_PATH = str(acct.terminal_path)
-    follower.TERMINAL_ENV = f"QUANT_PROP_{acct.id.upper()}_TERMINAL"
-    follower.ACCOUNT_TYPES = {acct.program: float(prog["daily_loss"])}
-    follower.DAILY_LOSS_FRAC = float(prog["daily_loss"])
-    follower.MAX_LOSS_FRAC = float(prog["max_loss"])
-    follower.DAY_TZ = str(prog["day_tz"])
-    return prog
+#: WHICH ACCOUNT A PROP PROCESS SERVES (2026-11-03, replacing the per-process rebinding of
+#: module globals, which the release gate cannot bound): read ONCE, at import, from this
+#: variable. Unset is the legacy FTMO account, so every existing task is unchanged; the fleet
+#: runner (prop/prop_fleet.py) sets it per child. A process's account never changes after import.
+PROCESS_ENV = "QUANT_PROP_ACCOUNT"
+#: The account a process is given when its variable names no usable account: its files live
+#: under data/prop/refused/, where nothing is ever armed, and the process refuses to run.
+REFUSED = Account(id="refused", firm="refused", program="refused", terminal_path=None,
+                  enabled=False)
+
+
+def for_process(environ: Any = None, data: Path | None = None) -> tuple[Account, str | None]:
+    """(the account this process serves, why it may not run or None). Never raises: an
+    unregistered id or an unknown program is REFUSED with its reason."""
+    import os
+    raw = str((os.environ if environ is None else environ).get(PROCESS_ENV) or "").strip()
+    try:
+        acct = get(raw or LEGACY, data)
+    except ValueError as exc:
+        return REFUSED, str(exc)
+    if acct.program not in programs(data)[0]:
+        return REFUSED, f"prop account {acct.id}: program {acct.program!r} is unknown"
+    return acct, None
+
+
+def venue(acct: Account, data: Path | None = None) -> dict[str, Any]:
+    """What a non-legacy account changes in the follower's shared helpers, passed to them as
+    arguments: its terminal, its declaration, its program's loss limits and trading day. The
+    legacy account (and REFUSED) is {}: every helper's own default, byte-identical."""
+    prog = programs(data)[0].get(acct.program)
+    if acct.legacy or acct is REFUSED or prog is None:
+        return {}
+    return {"terminal_path": str(acct.terminal_path),
+            "terminal_env": f"QUANT_PROP_{acct.id.upper()}_TERMINAL",
+            "account_file": paths(acct, data=data)["declaration"],
+            "account_types": {acct.program: float(prog["daily_loss"])},
+            "daily_loss": float(prog["daily_loss"]), "max_loss": float(prog["max_loss"]),
+            "day_tz": str(prog["day_tz"]), "program": acct.program}

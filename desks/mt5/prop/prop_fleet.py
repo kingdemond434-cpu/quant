@@ -24,9 +24,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
-from datetime import UTC, datetime
+import datetime as _dt
 from pathlib import Path
 from typing import Any
 
@@ -34,6 +35,8 @@ DESK = Path(__file__).resolve().parents[1]
 if str(DESK) not in sys.path:
     sys.path.insert(0, str(DESK))
 
+#: mt5desk.prop_accounts.PROCESS_ENV, restated so this runner imports nothing at load.
+PROCESS_ENV = "QUANT_PROP_ACCOUNT"
 SCRIPTS = {"reader": DESK / "prop" / "ftmo_venue_reader.py",
            "executor": DESK / "prop" / "ftmo_executor.py"}
 #: A child is killed only when it is plainly hung: a reader pass is under a minute and an
@@ -55,20 +58,23 @@ def accounts(data: Path | None = None) -> tuple[list[Any], list[str]]:
 def run_role(role: str, *, popen: Any = subprocess.Popen,
              data: Path | None = None) -> dict[str, Any]:
     accts, errors = accounts(data)
-    started = datetime.now(tz=UTC)
+    started = _dt.datetime.now(tz=_dt.UTC)
     procs: list[tuple[Any, Any]] = []
     rows = []
     for a in accts:
         cmd = [sys.executable, str(SCRIPTS[role]), "--account", a.id]
         try:
-            procs.append((a, popen(cmd, cwd=str(DESK), stdout=subprocess.PIPE,
+            # THE ACCOUNT IS THE CHILD'S ENVIRONMENT (mt5desk.prop_accounts.for_process), read
+            # once at its import; --account is only the child's cross-check of it.
+            env = {**os.environ, PROCESS_ENV: a.id}
+            procs.append((a, popen(cmd, cwd=str(DESK), env=env, stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT, text=True)))
         except OSError as exc:
             rows.append({"account": a.id, "firm": a.firm, "program": a.program,
                          "enabled": a.enabled, "rc": None,
                          "tail": f"not started ({type(exc).__name__}: {exc})"})
     for a, proc in procs:
-        left = max(1.0, CHILD_TIMEOUT_S - (datetime.now(tz=UTC) - started).total_seconds())
+        left = max(1.0, CHILD_TIMEOUT_S - (_dt.datetime.now(tz=_dt.UTC) - started).total_seconds())
         try:
             out, _ = proc.communicate(timeout=left)
             rc, tail = proc.returncode, (out or "")[-800:]
@@ -78,10 +84,10 @@ def run_role(role: str, *, popen: Any = subprocess.Popen,
             rc, tail = None, f"killed after {CHILD_TIMEOUT_S}s (hung); " + (out or "")[-600:]
         rows.append({"account": a.id, "firm": a.firm, "program": a.program,
                      "enabled": a.enabled, "rc": rc,
-                     "seconds": round((datetime.now(tz=UTC) - started).total_seconds(), 1),
+                     "seconds": round((_dt.datetime.now(tz=_dt.UTC) - started).total_seconds(), 1),
                      "tail": tail.strip()})
     failed = [r["account"] for r in rows if r["rc"] != 0]
-    return {"generated_at": datetime.now(tz=UTC).isoformat(timespec="seconds"), "role": role,
+    return {"generated_at": _dt.datetime.now(tz=_dt.UTC).isoformat(timespec="seconds"), "role": role,
             "status": "OK" if not failed else "CHILD_FAILED", "failed": failed,
             "accounts": rows, "registry_errors": errors}
 

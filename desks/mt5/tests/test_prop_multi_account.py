@@ -226,33 +226,81 @@ def test_missed_growth_reads_every_accounts_journal(data: Path, monkeypatch) -> 
 
 # ------------------------------------------------------------------ the binds
 
-def test_executor_and_reader_bind_to_the_account(data: Path, monkeypatch) -> None:
+@pytest.fixture
+def as_account(monkeypatch):
+    """Re-import the executor and the reader as a process serving `aid` would (the account is
+    read once, at import, from QUANT_PROP_ACCOUNT), and restore the FTMO account's afterwards."""
+    import importlib
+
     from prop import ftmo_executor as fx
-    from prop import ftmo_follower as ff
     from prop import ftmo_venue_reader as fvr
-    for mod, names in ((fx, ("ARMED_MARKER", "ALLOCATOR", "STATE", "OUT", "INTENTS", "LOG",
-                              "XACCT", "BOOK_KEY", "ACCOUNT_ID")),
-                       (fvr, ("STATE_OUT", "PHASES", "LOG", "REGISTRY_OUT", "SURFACE_OUT",
-                              "BARS_DIR", "PROGRAM", "ACCOUNT_ID", "TERMINAL_NAME")),
-                       (ff, ("ACCOUNT_FILE", "TERMINAL_PATH", "TERMINAL_ENV", "ACCOUNT_TYPES",
-                             "DAILY_LOSS_FRAC", "MAX_LOSS_FRAC", "DAY_TZ"))):
-        for n in names:
-            monkeypatch.setattr(mod, n, getattr(mod, n))
+
+    def go(aid: str | None):
+        if aid is None:
+            monkeypatch.delenv(pa.PROCESS_ENV, raising=False)
+        else:
+            monkeypatch.setenv(pa.PROCESS_ENV, aid)
+        return importlib.reload(fx), importlib.reload(fvr)
+
+    yield go
+    monkeypatch.delenv(pa.PROCESS_ENV, raising=False)
+    importlib.reload(fx)
+    importlib.reload(fvr)
+
+
+def test_the_ftmo_account_keeps_every_original_path(data: Path, as_account) -> None:
+    fx, fvr = as_account(None)
+    assert fx.ARMED_MARKER == data / "FTMO_EXECUTOR_ARMED"
+    assert (fx.STATE, fx.INTENTS) == (data / "ftmo_executor_state.json",
+                                      data / "ftmo_exec_intents.jsonl")
+    assert (fx.ALLOCATOR, fx.OUT) == (pa.REPORTS / "FTMO_ALLOCATOR.json",
+                                      pa.REPORTS / "FTMO_EXEC.json")
+    assert fx.LOG == pa.LOGS / "ftmo_executor.log"
+    assert (fx.XACCT, fx.BOOK_KEY, fx.ACCOUNT_ID, fx.ACCOUNT_ERROR) == ("ftmo", "ftmo", "ftmo",
+                                                                        None)
+    assert fx._VENUE == {} and fx.MAX_LOSS == 0.10 and fx.DAY_TZ == "Europe/Prague"
+    assert fvr.STATE_OUT == pa.REPORTS / "FTMO_ACCOUNT_STATE.json"
+    assert fvr.REGISTRY_OUT == data / "ftmo_registry.json" and fvr.PROGRAM is None
+    assert fvr.TERMINAL_NAME == "FTMO Global Markets MT5 Terminal"
+
+
+def test_a_process_serves_the_account_its_environment_names(data: Path, as_account) -> None:
     _registry(data, [_row("a")])
-    assert fx.bind("ftmo").legacy and fx.XACCT == "ftmo"                   # legacy: no change
-    fx.bind("a")
-    assert (fx.XACCT, fx.BOOK_KEY, fx.ACCOUNT_ID) == ("prop_a", "prop_a", "a")
+    fx, fvr = as_account("a")
+    assert (fx.XACCT, fx.BOOK_KEY, fx.ACCOUNT_ID, fx.ACCOUNT_ERROR) == ("prop_a", "prop_a", "a",
+                                                                        None)
     assert data / "prop" / "a" / "EXECUTOR_ARMED" == fx.ARMED_MARKER
-    assert fx.ALLOCATOR.name == "ALLOCATOR.json" and "a" in fx.ALLOCATOR.parts
-    assert ff.DAILY_LOSS_FRAC == 0.04 and ff.MAX_LOSS_FRAC == 0.08
-    assert ff.TERMINAL_PATH.endswith(r"a\terminal64.exe")
-    assert ff.TERMINAL_ENV == "QUANT_PROP_A_TERMINAL"
-    fvr.bind("a")
-    assert fvr.PROGRAM == "x_2step" and data / "prop" / "firm_firmx" / \
-        "registry.json" == fvr.REGISTRY_OUT
+    assert fx.ALLOCATOR == pa.REPORTS / "prop" / "a" / "ALLOCATOR.json"
+    assert fx.MAX_LOSS == 0.08 and fx.DAY_TZ == "America/New_York"
+    assert fx._VENUE["account_types"] == {"x_2step": 0.04}
+    assert fx._VENUE["terminal_path"].endswith(r"a\terminal64.exe")
+    assert fx._VENUE["terminal_env"] == "QUANT_PROP_A_TERMINAL"
+    assert fvr.PROGRAM == "x_2step"
+    assert data / "prop" / "firm_firmx" / "registry.json" == fvr.REGISTRY_OUT
     assert "FTMO" not in fvr.TERMINAL_NAME
-    with pytest.raises(ValueError):
-        fx.bind("nobody")
+    from prop import ftmo_follower as ff                    # the follower is never touched
+    assert ff.MAX_LOSS_FRAC == 0.10 and ff.DAILY_LOSS_FRAC == 0.05
+    assert ff.TERMINAL_ENV == "QUANT_FTMO_TERMINAL"
+
+
+def test_an_unusable_account_refuses_to_run(data: Path, as_account) -> None:
+    _registry(data, [_row("a")])
+    fx, fvr = as_account("nobody")
+    assert fx.ACCOUNT_ERROR and fx.ACCOUNT is pa.REFUSED
+    assert "refused" in fx.ARMED_MARKER.parts                # never an armed path
+    assert fx.main([]) == 1 and fvr.main([]) == 1
+    fx, _ = as_account("a")
+    assert fx.main(["--account", "b"]) == 1                    # the flag only cross-checks
+
+
+def test_the_follower_helpers_take_another_programs_rules() -> None:
+    from prop import ftmo_follower as ff
+    ok, _ = ff.loss_guard(100_000.0, 92_000.0, 91_900.0, 100.0)              # FTMO floor 90k
+    assert ok
+    ok, why = ff.loss_guard(100_000.0, 92_000.0, 91_900.0, 100.0, max_frac=0.08)  # floor 92k
+    assert not ok and "max loss" in why
+    day, _ = ff.cet_day(NOW, "America/New_York")
+    assert day == "2026-11-03"
 
 
 def test_allocator_binds_and_restores(data: Path) -> None:

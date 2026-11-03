@@ -324,15 +324,17 @@ def trade_risk(lot: float, dist: float, contract: float) -> float:
 
 
 def loss_guard(initial: float, day_start_balance: float, equity: float,
-               new_risk: float, *, daily_frac: float = DAILY_LOSS_FRAC) -> tuple[bool, str]:
+               new_risk: float, *, daily_frac: float = DAILY_LOSS_FRAC,
+               max_frac: float = MAX_LOSS_FRAC) -> tuple[bool, str]:
     """FTMO's daily (`daily_frac`: 5% 2-Step, 3% 1-Step) and 10% maximum loss: may `new_risk`
-    be added now?"""
+    be added now? Another prop firm's account passes its own program's `max_frac`
+    (mt5desk.prop_accounts.venue); this lane always uses the default."""
     daily = daily_frac * initial
     today_loss = max(0.0, day_start_balance - equity)
-    floor = initial * (1.0 - MAX_LOSS_FRAC)
+    floor = initial * (1.0 - max_frac)
     why = (f"today's loss {today_loss:,.2f} + this trade {new_risk:,.2f} (stop + "
            f"{SLIP_ALLOWANCE_PTS} pt slip) against the {daily_frac:.0%} daily limit "
-           f"{daily:,.2f}; equity {equity:,.2f} - risk against the {MAX_LOSS_FRAC:.0%} floor "
+           f"{daily:,.2f}; equity {equity:,.2f} - risk against the {max_frac:.0%} floor "
            f"{floor:,.2f}")
     if today_loss + new_risk >= daily:
         return False, f"daily loss: {why}"
@@ -351,10 +353,11 @@ def near_market_close(now: datetime, hours: float = GAP_GUARD_H) -> bool:
     return (close - ny).total_seconds() <= hours * 3600.0
 
 
-def cet_day(now: datetime) -> tuple[str, datetime]:
-    """(FTMO's trading date, its midnight in UTC)."""
+def cet_day(now: datetime, tz: str = DAY_TZ) -> tuple[str, datetime]:
+    """(FTMO's trading date, its midnight in UTC). Another prop firm's account passes its own
+    program's day zone (`tz`); this lane always uses the default."""
     from zoneinfo import ZoneInfo
-    local = now.astimezone(ZoneInfo(DAY_TZ))
+    local = now.astimezone(ZoneInfo(tz))
     midnight = local.replace(hour=0, minute=0, second=0, microsecond=0)
     return local.date().isoformat(), midnight.astimezone(UTC)
 
@@ -714,10 +717,15 @@ def _canon(login: object) -> object:
     return None if login in (None, "") else _xa.norm_login(login)
 
 
-def bound_account(mt5: Any) -> tuple[str | None, dict[str, Any], str]:
-    """(keyed account key, the declaration, why). Key None -> the lane does nothing at all."""
+def bound_account(mt5: Any, *, account_file: Path | None = None,
+                  account_types: dict[str, float] | None = None
+                  ) -> tuple[str | None, dict[str, Any], str]:
+    """(keyed account key, the declaration, why). Key None -> the lane does nothing at all.
+    Another prop firm's account passes its own declaration and program (`account_file`,
+    `account_types`: mt5desk.prop_accounts.venue); this lane always uses the defaults."""
+    types = ACCOUNT_TYPES if account_types is None else account_types
     try:
-        doc = json.loads(ACCOUNT_FILE.read_text(encoding="utf-8-sig"))
+        doc = json.loads((account_file or ACCOUNT_FILE).read_text(encoding="utf-8-sig"))
     except FileNotFoundError:
         return None, {}, "data/FTMO_LIVE_ACCOUNT.json is absent: no account is declared"
     except (OSError, ValueError) as exc:
@@ -732,7 +740,7 @@ def bound_account(mt5: Any) -> tuple[str | None, dict[str, Any], str]:
     except (TypeError, ValueError):
         return None, {}, "data/FTMO_LIVE_ACCOUNT.json carries an unreadable trade_mode/balance"
     acct_type = str(doc.get("account_type") or "").strip().lower()
-    if acct_type not in ACCOUNT_TYPES:
+    if acct_type not in types:
         return None, {}, ("data/FTMO_LIVE_ACCOUNT.json must declare account_type \"2-step\" or "
                           "\"1-step\" (FTMO's daily loss limit is 5% or 3% by type)")
     acc = mt5.account_info()
@@ -750,7 +758,7 @@ def bound_account(mt5: Any) -> tuple[str | None, dict[str, Any], str]:
     except _oco.IdentityUnavailable as exc:
         return None, {}, f"gold OCO identity: {exc}"
     return key, {"initial_balance": initial, "trade_mode": want_mode, "account_type": acct_type,
-                 "daily_loss_frac": ACCOUNT_TYPES[acct_type],
+                 "daily_loss_frac": types[acct_type],
                  "max_lot": doc.get("max_lot")}, "account bound"
 
 

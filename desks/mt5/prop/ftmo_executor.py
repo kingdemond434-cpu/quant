@@ -70,18 +70,31 @@ for _p in (str(DESK), str(DESK / "research"), str(DESK.parent.parent)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from mt5desk import prop_accounts as _pa  # noqa: E402
 from prop import ftmo_follower as _fw  # noqa: E402
 
 LANE = "ftmo"
 TAG = "FX"
 #: Distinct from the follower's 341955: each lane manages only what it opened.
 MAGIC = 341956
-ARMED_MARKER = DESK / "data" / "FTMO_EXECUTOR_ARMED"
-ALLOCATOR = DESK / "reports" / "FTMO_ALLOCATOR.json"
-STATE = DESK / "data" / "ftmo_executor_state.json"
-OUT = DESK / "reports" / "FTMO_EXEC.json"
-INTENTS = DESK / "data" / "ftmo_exec_intents.jsonl"
-LOG = DESK / "logs" / "ftmo_executor.log"
+#: THE ACCOUNT THIS PROCESS SERVES (2026-11-03, several prop accounts at once), fixed at import
+#: from QUANT_PROP_ACCOUNT (`mt5desk.prop_accounts.for_process`; unset = the FTMO account, every
+#: path below then exactly the lane's original). The fleet runner sets it per child process; no
+#: name here is ever rebound afterwards. A process whose variable names no usable account gets
+#: ACCOUNT_ERROR and refuses to run (`main`).
+_PROCESS = _pa.for_process()
+ACCOUNT = _PROCESS[0]
+ACCOUNT_ERROR = _PROCESS[1]
+#: What a non-FTMO account changes in the follower's shared helpers, passed as arguments ({} for
+#: the FTMO account: every helper's own default).
+_VENUE = _pa.venue(ACCOUNT)
+_PATHS = _pa.paths(ACCOUNT)
+ARMED_MARKER = _PATHS["exec_armed"]
+ALLOCATOR = _PATHS["alloc_report"]
+STATE = _PATHS["exec_state"]
+OUT = _PATHS["exec_out"]
+INTENTS = _PATHS["exec_intents"]
+LOG = _PATHS["exec_log"]
 #: The allocator runs hourly; a report older than this is not today's book.
 ALLOC_MAX_AGE_S = 3 * 3600
 #: Gold has one FTMO owner, the follower.
@@ -98,12 +111,14 @@ REQUEST_HARD_CAP = 1950
 #: The reference tick (EURUSD) may trail the symbol's own forming bar by this much.
 STALE_GRACE_S = 60.0
 KEEP_TRADED = 400
-#: This lane's names (2026-11-03, several prop accounts): its data/xacct book and its block in
-#: CERT_BOOK_LIVE.json. The FTMO account keeps "ftmo"; `bind` points a run at another registered
-#: account (`mt5desk.prop_accounts`), which publishes and reads as `prop_<id>`.
-XACCT = "ftmo"
-BOOK_KEY = "ftmo"
-ACCOUNT_ID = "ftmo"
+#: This lane's names: its data/xacct book and its block in CERT_BOOK_LIVE.json. The FTMO account
+#: keeps "ftmo"; another registered account publishes and reads as `prop_<id>`.
+XACCT = ACCOUNT.xacct
+BOOK_KEY = ACCOUNT.book_key
+ACCOUNT_ID = ACCOUNT.id
+#: The account's program's static maximum loss (FTMO's 10% for the FTMO account).
+MAX_LOSS = _VENUE.get("max_loss", _fw.MAX_LOSS_FRAC)
+DAY_TZ = _VENUE.get("day_tz", _fw.DAY_TZ)
 TF_HOURS = {"M1": 1 / 60, "M5": 5 / 60, "M15": 0.25, "M30": 0.5, "H1": 1.0, "H4": 4.0,
             "D1": 24.0}
 #: 10010 is a partial fill: a live position, counted as sent (audit MF3).
@@ -431,7 +446,8 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     doc: dict[str, Any] = {"at": now.isoformat(timespec="seconds"), "armed": bool(armed),
                            "lane": LANE, "account": ACCOUNT_ID, "sleeves": [], "actions": [],
                            "alerts": []}
-    key, decl, why = _fw.bound_account(mt5)
+    key, decl, why = _fw.bound_account(mt5, account_file=_VENUE.get("account_file"),
+                                       account_types=_VENUE.get("account_types"))
     if key is None:
         doc.update(status="ACCOUNT_REFUSED", why=why)
         _veto(doc, now, armed)
@@ -440,7 +456,7 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     st = _fw._read_json(STATE)
     st = st if isinstance(st, dict) else {}
     st.setdefault("traded", {})
-    cet, cet_midnight = _fw.cet_day(now)
+    cet, cet_midnight = _fw.cet_day(now, DAY_TZ)
     positions, orders = mt5.positions_get(), mt5.orders_get()
     if positions is None or orders is None:
         doc.update(status="NO_BROKER_SNAPSHOT", why="the terminal did not answer positions/orders")
@@ -723,7 +739,7 @@ def _entries(mt5: Any, st: dict[str, Any], doc: dict[str, Any],
         ok, gwhy = _fw.loss_guard(float(decl["initial_balance"]), start, equity,
                                   risk_now + committed + risk,
                                   daily_frac=float(decl.get("daily_loss_frac")
-                                                   or _fw.DAILY_LOSS_FRAC))
+                                                   or _fw.DAILY_LOSS_FRAC), max_frac=MAX_LOSS)
         row["loss_guard"] = gwhy
         if not ok:
             done("RAIL_BLOCKED", gwhy, rail="ftmo_loss_guard", missed=True)
@@ -808,7 +824,8 @@ def _send_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], row: dict[st
                     else:
                         ok, gwhy = _fw.loss_guard(guard["initial"], guard["start"], eq,
                                                   risk_now + guard["risk"],
-                                                  daily_frac=guard["daily_frac"])
+                                                  daily_frac=guard["daily_frac"],
+                                                  max_frac=MAX_LOSS)
                         if not ok:
                             why, rail = gwhy, "ftmo_loss_guard"
         if why is not None:
@@ -889,36 +906,21 @@ def _write_out(doc: dict[str, Any], st: dict[str, Any] | None) -> None:
         log(f"state/report write failed: {exc}")
 
 
-def bind(account_id: str) -> Any:
-    """Point this process at registered prop account `account_id` (`mt5desk.prop_accounts`,
-    2026-11-03): its files, its terminal, its declaration and its firm's loss rules. The FTMO
-    account ("ftmo") is the module's defaults and changes nothing. Raises ValueError when the
-    account is not registered or its program is unknown."""
-    global ARMED_MARKER, ALLOCATOR, STATE, OUT, INTENTS, LOG, XACCT, BOOK_KEY, ACCOUNT_ID
-    from mt5desk import prop_accounts as _pa
-    acct = _pa.get(account_id)
-    _pa.bind_terminal(_fw, acct)
-    if acct.legacy:
-        return acct
-    p = _pa.paths(acct)
-    ARMED_MARKER, ALLOCATOR, STATE = p["exec_armed"], p["alloc_report"], p["exec_state"]
-    OUT, INTENTS, LOG = p["exec_out"], p["exec_intents"], p["exec_log"]
-    XACCT = BOOK_KEY = acct.xacct
-    ACCOUNT_ID = acct.id
-    return acct
-
-
 def main(argv: list[str] | None = None) -> int:
     import argparse
     ap = argparse.ArgumentParser(description="FTMO / prop sleeve executor, one account per run")
-    ap.add_argument("--account", default="ftmo",
-                    help="registered prop account id (data/prop_accounts.json); default ftmo")
+    ap.add_argument("--account", default=None,
+                    help="refuse unless this process serves this account (it is chosen by "
+                         f"{_pa.PROCESS_ENV}, never by this flag)")
     a = ap.parse_args(argv)
-    try:
-        acct = bind(a.account)
-    except ValueError as exc:
-        log(f"not run: {exc}")
+    if ACCOUNT_ERROR is not None:
+        log(f"not run: {ACCOUNT_ERROR}")
         return 1
+    if a.account is not None and a.account != ACCOUNT_ID:
+        log(f"not run: --account {a.account} but this process serves {ACCOUNT_ID} "
+            f"({_pa.PROCESS_ENV})")
+        return 1
+    acct = ACCOUNT
     ok, why = _fw.interactive_session()
     if not ok:
         log(f"not run: {why}")
@@ -930,7 +932,8 @@ def main(argv: list[str] | None = None) -> int:
         import os
 
         import MetaTrader5 as mt5
-        path = os.environ.get(_fw.TERMINAL_ENV) or _fw.TERMINAL_PATH
+        path = os.environ.get(_VENUE.get("terminal_env") or _fw.TERMINAL_ENV) \
+            or _VENUE.get("terminal_path") or _fw.TERMINAL_PATH
         if not mt5.initialize(path=path, timeout=15000):
             log(f"{ACCOUNT_ID} terminal unavailable: {mt5.last_error()}")
             return 1
