@@ -2490,6 +2490,25 @@ FAMILY_TIMEFRAMES["sync_gated"] = (
     "the synchronisation panel is read from the H1 bar store and `window` counts H1 closes; on "
     "another chart the base's signals would be gated by an hourly state under a name claiming "
     "that chart")
+# GAP_MAP rows 90-91 (2026-10-14): the same operator with a GEOMETRY state -- the Fisher-Rao
+# distance between Student-t fits of the symbol's own trailing and previous H1 return windows
+# (`fisher_rao_gated`) -- and the hypothesis-lane panel's standardised absorption-ratio shift
+# (`absorption_gated`, Kritzman-Li 2011). Both gate entries only; neither touches heat or size.
+FAMILY_INPUTS["fisher_rao_gated"] = (
+    "a price-only base family's bars plus the Fisher-Rao velocity of the symbol's own H1 "
+    "return distribution at signal time", "data/universe/*_H1.parquet")
+FAMILY_INPUTS["absorption_gated"] = (
+    "a price-only base family's bars plus the hypothesis-lane panel's standardised "
+    "absorption-ratio shift at signal time", "data/universe/*_H1.parquet")
+FAMILY_TIMEFRAMES["fisher_rao_gated"] = (
+    ("H1",),
+    "`window` counts H1 log returns (120 = five trading days); on another chart the fits would "
+    "span a different horizon under a recipe registered for this one")
+FAMILY_TIMEFRAMES["absorption_gated"] = (
+    ("H1",),
+    "the absorption panel is read from the H1 bar store and `window` = 360 counts H1 returns "
+    "(15 trading days); on another chart the base would be gated by an hourly state under a "
+    "name claiming that chart")
 
 # CROSS-SECTIONAL CLASS BOOKS, ONE LEG PER CELL (2026-09-30). The desk read k_eff 2.53 on 453
 # nominal sleeves with 6 of 15 alpha clusters empty, and `cross_sectional_fx` had never held a
