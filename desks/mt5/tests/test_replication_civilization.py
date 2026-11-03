@@ -437,3 +437,18 @@ def test_a_short_certificate_is_filtered_short_and_an_unnamed_param_is_refused()
     label, _ = rc.resolve_spec("overnight_gap_decay", {"representation": "x", "selector": "asia"},
                                "asia", "LONG")
     assert label is not None
+
+
+def test_the_rules_own_side_is_the_certificates_when_the_cell_writes_none() -> None:
+    """Audit on 03984943c: a SHORT clock_transition cell with no `side` param took the rule
+    default +1 and was rebuilt long. Absent certificate side stays LONG (the canon's reading);
+    a side that is neither is UNMEASURED by name."""
+    cell = {"label": "tokyo_open", "stamp_hour": 0}
+    short, _ = rc.resolve_spec("clock_transition", cell, "asia", "SHORT")
+    assert short is not None and short["side"] == -1
+    absent, _ = rc.resolve_spec("clock_transition", cell, "asia", None)
+    assert absent is not None and absent["side"] == 1
+    written, _ = rc.resolve_spec("clock_transition", {**cell, "side": 1}, "asia", "SHORT")
+    assert written is not None and written["side"] == 1
+    odd, why = rc.resolve_spec("overnight_gap_decay", {}, "asia", "SIDEWAYS")
+    assert odd is None and "SIDEWAYS" in why

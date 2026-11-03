@@ -1077,10 +1077,23 @@ def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | 
         if k in VARIANT_KEYS:
             return None, f"variant {k}={v!r} has no written rule in the spec book"
         return None, f"param {k!r} is not named by the written rule for {family!r}"
+    # THE RULE'S SIDE IS THE CERTIFICATE'S (audit on 03984943c): a clock_transition cell whose
+    # params write no `side` took the rule default +1, so a SHORT certificate was rebuilt long,
+    # judged a different strategy and could be quarantined. An absent certificate side is LONG,
+    # the convention the canon and the forward clock read (`spec.get("side") or "LONG"`); a side
+    # that is present but neither LONG nor SHORT is UNMEASURED by name, never assumed.
+    cert_side = ({"LONG": 1, "1": 1, "SHORT": -1, "-1": -1}.get(str(side).strip().upper())
+                 if side not in (None, "") else 1)
+    if cert_side is None and family not in OWN_SIDE_RULES:
+        return None, f"certificate side {side!r} is not LONG or SHORT"
     if spec.params_own_session_and_side:
+        if "side" not in raw:
+            p["side"] = cert_side
         try:
             p["side"] = int(p["side"])
         except (TypeError, ValueError):
+            return None, f"side {p.get('side')!r} is not +1 or -1"
+        if p["side"] not in (1, -1):
             return None, f"side {p.get('side')!r} is not +1 or -1"
     session = str(raw.get("session") or "all").strip().lower()
     if session not in SESSIONS and family not in OWN_SIDE_RULES:

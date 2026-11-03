@@ -46,7 +46,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from mt5desk.provenance import DEMO, UNKNOWN, row_account, split_by_account
+from mt5desk.provenance import DEMO, UNKNOWN, split_by_account
 
 #: MT5 order type constants, inlined so this module imports on a research box where the
 #: MetaTrader5 package does not exist. Fixed by the platform, not by the broker.

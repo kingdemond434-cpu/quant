@@ -343,10 +343,18 @@ def run(*, budget_s: float = 900.0, repair: bool = True,
             cov = coverage(census, active_keys(docs.get("farm")), now)
     stale = [lane["lane"] for lane in lanes if lane["verdict"] == STALE]
     red = bool(stale) or cov.get("verdict") == "RED"
+    # A PROMOTING LANE THAT CANNOT BE READ IS NOT A GREEN ONE (audit HOLD on 03984943c): the
+    # headline used to read GREEN off the coverage alone while a promoting lane's state file
+    # was missing. Every promoting lane is required unless LANES marks it `optional`.
+    unread = [lane["lane"] for lane in lanes if lane["verdict"] == UNMEASURED
+              and LANES[lane["lane"]].get("promoting")
+              and not LANES[lane["lane"]].get("optional")]
     doc: dict[str, Any] = {
         "generated_at": now.isoformat(timespec="seconds"),
         "producer": "desks/mt5/research/forward_lane_fence.py",
-        "verdict": "RED" if red else ("GREEN" if cov.get("verdict") == "GREEN" else UNMEASURED),
+        "verdict": ("RED" if red else UNMEASURED if unread
+                    else "GREEN" if cov.get("verdict") == "GREEN" else UNMEASURED),
+        "unmeasured_promoting_lanes": unread,
         "stale_lanes": stale, "lanes": lanes, "coverage": cov,
         "census_source": census_source, "repairs": repairs,
         "common_clock": common_clock({k: v for k, v in docs.items()

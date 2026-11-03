@@ -73,3 +73,13 @@ def test_e8_is_named_unmeasured_and_the_leg_is_wired(tmp_path, monkeypatch) -> N
     assert doc["tape_source"].startswith(ef.UNMEASURED)
     text = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
     assert '_costed("execution_feedback"' in text
+
+
+def test_an_unmeasured_cost_component_is_unmeasured_never_zero(tmp_path, monkeypatch) -> None:
+    """Audit on 03984943c: a deal with no swap or commission field summed the measured parts
+    only and reported the sleeve's cost as if those parts were 0.0R."""
+    deal = _deal(1, 1.1002)
+    del deal["swap"], deal["commission"]
+    c = ef.sleeve_costs([_intent(1, 1.1000, 1.0980)], [deal])["s1"]
+    assert c["costs_r"]["swap_r"].get("mean") is None
+    assert c["total_cost_r_mean"] == ef.UNMEASURED

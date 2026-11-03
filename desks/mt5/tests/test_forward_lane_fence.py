@@ -148,3 +148,25 @@ def test_a_silent_active_row_in_a_fresh_farm_is_reported_never_restarted(
                          [{"key": "K", "enrolled": True}], enrolled=["K"])
     assert ran == [] and doc["stale_lanes"] == ["farm"]
     assert [r["status"] for r in doc["repairs"]] == ["REPORTED"]
+
+
+def test_a_missing_promoting_lane_never_reads_green(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit HOLD on 03984943c: full coverage and fresh lanes, but the main lane's state file is
+    missing -- the headline read GREEN. It must read UNMEASURED and name the lane."""
+    shadow = tmp_path / "shadow"
+    (shadow / "farm").mkdir(parents=True)
+    for name, spec in flf.LANES.items():
+        if name != "main":
+            path = shadow / spec["state"]
+            path.write_text(json.dumps(_lane(0.1, {"A": _clock(0.1)} if name == "farm" else {})))
+    monkeypatch.setattr(flf, "SHADOW", shadow)
+    monkeypatch.setattr(flf, "_now", lambda: NOW)
+    monkeypatch.setattr(flf, "enrolment_census", lambda now: ({"certificates": [
+        {"key": "A", "enrolled": True}]}, "test"))
+    monkeypatch.setattr(flf, "coverage", lambda census, keys, now: {"verdict": "GREEN"})
+    doc = flf.run(out=tmp_path / "out.json", repair=False)
+    assert doc["verdict"] == flf.UNMEASURED and doc["unmeasured_promoting_lanes"] == ["main"]
+    (shadow / "shadow_state.json").write_text(json.dumps(_lane(0.1, {})))
+    doc = flf.run(out=tmp_path / "out.json", repair=False)
+    assert doc["verdict"] == "GREEN" and doc["unmeasured_promoting_lanes"] == []

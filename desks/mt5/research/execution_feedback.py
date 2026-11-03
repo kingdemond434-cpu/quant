@@ -134,7 +134,7 @@ def _fractions() -> dict[str, float]:
 def sleeve_costs(intents: list[dict[str, Any]], deals: list[dict[str, Any]]
                  ) -> dict[str, dict[str, Any]]:
     """Per-sleeve cost decomposition in R on the initial risk, plus fill rate and latency."""
-    from mt5desk.markout import _entry_fill, _join_ticket, _direction, risk_price
+    from mt5desk.markout import _direction, _entry_fill, _join_ticket, risk_price
     by_ticket = {i.get("ticket"): i for i in intents if i.get("ticket") is not None}
     acc: dict[str, dict[str, list[Any]]] = defaultdict(lambda: defaultdict(list))
     joined: set[Any] = set()
@@ -182,13 +182,17 @@ def sleeve_costs(intents: list[dict[str, Any]], deals: list[dict[str, Any]]
         a = acc.get(name, {})
         costs = {k: _stats(list(a.get(k, []))) for k in
                  ("slip_r", "half_spread_r", "commission_r", "swap_r")}
-        total = sum(c["mean"] for c in costs.values() if c.get("mean") is not None)
+        # A cost component with no measurement is UNMEASURED, never 0.0R (audit on 03984943c):
+        # summing only the measured parts reported a sleeve with no fills as costing nothing.
+        means = [c.get("mean") for c in costs.values()]
+        total: float | str = (UNMEASURED if any(m is None for m in means)
+                              else round(sum(float(m) for m in means), 5))
         hours = [h for h in a.get("hour", []) if h is not None]
         out[name] = {
             "symbol": next((s for s in a.get("symbol", []) if s), None),
             "intents_sent": sent.get(name, 0), "unfilled_brackets": unfilled.get(name, 0),
             "fills": len(a.get("hour", [])),
-            "costs_r": costs, "total_cost_r_mean": round(total, 5),
+            "costs_r": costs, "total_cost_r_mean": total,
             "realized_r": _stats(list(a.get("realized_r", []))),
             "latency_ms": _stats(list(a.get("latency_ms", []))),
             "entry_hours": sorted(set(hours)),
@@ -198,7 +202,7 @@ def sleeve_costs(intents: list[dict[str, Any]], deals: list[dict[str, Any]]
             "median_risk_price": None,
         }
         risks = []
-        for t, i in by_ticket.items():
+        for i in by_ticket.values():
             if str(i.get("sleeve") or "?") == name:
                 r, _b = risk_price(i, {})
                 if r:
@@ -265,7 +269,8 @@ def build() -> dict[str, Any]:
     props = proposals(costs, alpha, _fractions())
     e8 = _jsonl(E8_INTENTS)
     book = [c for c in costs.values() if c["fills"]]
-    w = sum(c["fills"] for c in book) or 1
+    priced = [c for c in book if isinstance(c["total_cost_r_mean"], (int, float))]
+    w = sum(c["fills"] for c in priced)
     return {
         "generated_at": _now(), "producer": "desks/mt5/research/execution_feedback.py",
         "accounts": {
@@ -275,8 +280,10 @@ def build() -> dict[str, Any]:
                    "why": ("the prop executor records orders as sent with no fill price and "
                            "no deal ledger, so no E8 execution cost is measurable yet")},
         },
-        "book_cost_r_fill_weighted": round(sum(c["total_cost_r_mean"] * c["fills"]
-                                               for c in book) / w, 5),
+        "book_cost_r_fill_weighted": (round(sum(c["total_cost_r_mean"] * c["fills"]
+                                                for c in priced) / w, 5) if w else UNMEASURED),
+        "sleeves_cost_unmeasured": sorted(n for n, c in costs.items()
+                                          if c["fills"] and c not in priced),
         "sleeves": costs,
         "tape_source": ("reports/EXECUTION_ALPHA.json" if isinstance(alpha, dict)
                         else f"{UNMEASURED}: reports/EXECUTION_ALPHA.json absent"),
@@ -300,9 +307,10 @@ def main(argv: list[str] | None = None) -> int:
     tmp.replace(args.out)
     print(f"execution_feedback: sleeves={len(doc['sleeves'])} "
           f"fills={doc['accounts']['fusion']['fills']} "
-          f"book_cost={doc['book_cost_r_fill_weighted']:+.4f}R "
+          f"book_cost={doc['book_cost_r_fill_weighted']}R "
           f"proposals={len(doc['proposals'])} supported={doc['supported']} -> {args.out}")
-    worst = sorted(((n, c) for n, c in doc["sleeves"].items() if c["fills"]),
+    worst = sorted(((n, c) for n, c in doc["sleeves"].items()
+                    if c["fills"] and isinstance(c["total_cost_r_mean"], (int, float))),
                    key=lambda kv: -kv[1]["total_cost_r_mean"])[:8]
     for n, c in worst:
         cr = c["costs_r"]

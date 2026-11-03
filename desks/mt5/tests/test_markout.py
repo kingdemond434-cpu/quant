@@ -16,7 +16,7 @@ _DESK = Path(__file__).resolve().parents[1]
 if str(_DESK) not in sys.path:
     sys.path.insert(0, str(_DESK))
 
-from mt5desk.markout import Markout, _direction, compute, load_jsonl, render  # noqa: E402
+from mt5desk.markout import _direction, compute, load_jsonl, render  # noqa: E402
 
 BUY, SELL = 0, 1
 
