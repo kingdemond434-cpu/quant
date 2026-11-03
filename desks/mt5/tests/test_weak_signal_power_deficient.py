@@ -135,3 +135,19 @@ def test_members_survive_a_sweep_that_deferred_them(tmp_path, monkeypatch):
     pool = wsc.power_deficient()
     assert [m["cell"] for m in pool["EURUSD"]] == [ck]
     assert pool["EURUSD"][0]["params"] == {"rr": 2.0}
+
+
+@pytest.mark.parametrize("latest", [
+    {"deflated_sharpe": {"passed": False}, "pbo": {"passed": False}},   # validity failure now
+    {"deflated_sharpe": {"passed": True}, "pbo": {"passed": True}},     # passed outright now
+])
+def test_latest_sweep_reading_beats_an_older_power_only_store_entry(tmp_path, monkeypatch,
+                                                                     latest):
+    row = _row("EURUSD", "pca_residual", {"rr": 2.5})
+    c = cell_id({**row, "sym": "EURUSD"})
+    _write(tmp_path, monkeypatch,
+           [{"cell": c, "sym": "EURUSD", "family": "pca_residual", "stages": latest}], [row])
+    store = tmp_path / "failed_gates.json"
+    store.write_text(json.dumps({c: ["deflated_sharpe"]}), encoding="utf-8")
+    monkeypatch.setattr(wsc, "FAILED_GATES_STORE", store)
+    assert wsc.power_deficient() == {}

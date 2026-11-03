@@ -153,8 +153,14 @@ def power_deficient(max_per_symbol: int = MAX_MEMBERS) -> dict[str, list[dict]]:
             failed, sharpe = {str(g) for g in v["failed_gates"]}, 0.0
         else:
             continue
-        _add(str(v.get("cell") or ""), str(v.get("sym") or v.get("symbol") or ""),
+        cell = str(v.get("cell") or "")
+        # THE LATEST MEASURED READING DECIDES, whatever it says: a cell this sweep failed on
+        # validity, or passed outright, must not be revived from an older power-only record in the
+        # store below (audit MF, #636). So it is claimed before the filter, not after.
+        _add(cell, str(v.get("sym") or v.get("symbol") or ""),
              str(v.get("family") or ""), failed, sharpe)
+        if cell:
+            seen.add(cell)
     # EVERY EARLIER SWEEP TOO. A cell whose full failed-gate set some sweep recorded stays a member
     # after later sweeps defer it; the latest sweep's own reading wins where both exist.
     try:
