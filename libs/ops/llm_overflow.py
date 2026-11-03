@@ -173,9 +173,11 @@ def chat(prompt: str, *, system: str = "", max_tokens: int = 3000, temperature: 
     return "", "free overflow exhausted for today (per-day): every GitHub model refused or spent"
 
 
-def chat_with_overflow(prompt: str, **kw: Any) -> tuple[str, str | None]:
-    """`llm_seat.chat`, and the GitHub overflow only when OpenRouter's DAY is gone."""
-    text, err = llm_seat.chat(prompt, **kw)
+def chat_with_overflow(prompt: str, *, primary: Any = None, **kw: Any
+                       ) -> tuple[str, str | None]:
+    """`primary` (default `llm_seat.chat`), and the GitHub overflow only when OpenRouter's DAY
+    is gone."""
+    text, err = (primary or llm_seat.chat)(prompt, **kw)
     day_gone = "budget exhausted" in (err or "") or (
         "429" in (err or "") and llm_seat._is_daily_free_refusal(err or ""))
     if day_gone:
