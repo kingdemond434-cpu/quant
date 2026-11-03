@@ -1384,7 +1384,6 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
         rate["attempt"] = attempt.pointer()
         _write_atomic(RATE_OUT, rate)
         attempt.phase("rate_written")
-    attempt.phase("task_limit")
     # THE BUILD BUDGET, FROM THE TASK'S OWN LIMIT. Measured 2026-09-24: the pre-warm shares the
     # build deadline and spent 2,874 s of a 2,700 s budget on a 250,992-cell docket, leaving
     # 67,910 cells never built. This gives the judge the wall clock its own scheduled task already
@@ -1474,26 +1473,33 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
         payload["measure_seconds"] = round(_time.monotonic() - t0, 1)
         payload["attempt"] = attempt.pointer()
         _write_atomic(OUT, payload)
+    # THE FRESH LIMIT, AFTER THE ARTIFACTS AND INSIDE ITS OWN PHASE (attempt PHASES order:
+    # rate_written -> task_limit -> written). The report above already stands on the last pass's
+    # limit; a `schtasks` that hangs is bounded by the apply budget and a kill inside it is named
+    # `task_limit`. Only a limit that MOVED rewrites the env file and the report.
+    attempt.phase("task_limit")
+    if box.get("is_judging_box"):
+        _APPLY_DEADLINE[:] = [_time.monotonic() + APPLY_BUDGET_S]
+        try:
+            fresh_limit = task_time_limit_s()
+        except Exception:          # the budget ran out: the published limit stands
+            fresh_limit = None
+        if fresh_limit is not None:
+            decision["task_time_limit_basis"] = "schtasks"
+            if fresh_limit != _limit:
+                _fresh, _fresh_why = fresh_budget_s(fresh_limit, _current_budget)
+                decision["fresh_budget_s"] = _fresh
+                decision["fresh_budget_why"] = _fresh_why
+                decision["task_time_limit_s"] = fresh_limit
+                if write:
+                    write_env(decision, box=box)
+                    applied["process_env"] = apply_env()
+                    _write_atomic(OUT, payload)
+    if write:
         attempt.phase("written")
     if apply:
         _APPLY_DEADLINE[:] = [_time.monotonic() + APPLY_BUDGET_S]
         try:
-            if box.get("is_judging_box"):
-                try:
-                    fresh_limit = task_time_limit_s()
-                except Exception:          # the apply budget ran out: the published limit stands
-                    fresh_limit = None
-                if fresh_limit is not None:
-                    decision["task_time_limit_basis"] = "schtasks"
-                    if fresh_limit != _limit:
-                        _fresh, _fresh_why = fresh_budget_s(fresh_limit, _current_budget)
-                        decision["fresh_budget_s"] = _fresh
-                        decision["fresh_budget_why"] = _fresh_why
-                        decision["task_time_limit_s"] = fresh_limit
-                        if write:
-                            write_env(decision, box=box)
-                            applied["process_env"] = apply_env()
-                            _write_atomic(OUT, payload)
             steps: tuple[tuple[str, Any], ...] = (
                 ("machine_env", lambda: apply_machine_env(decision, box)),
                 ("cadence", lambda: apply_cadence(int(decision["cadence_minutes"]), box)))
