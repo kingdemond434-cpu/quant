@@ -378,3 +378,60 @@ def test_every_root_file_is_protected_so_no_no_comment_path_can_merge_it(
     files = [{"filename": path, "status": "modified", "additions": 1, "deletions": 0}]
     assert sb.ag.tier(files, 1, lambda n: False)[0] == "PROTECTED"
     assert sb.auth.pol._match(path, sb.policy["root_files"])
+
+
+# ---- Level 2: the commit status the LIVE ruleset requires -------------------------------------
+
+
+def _auth() -> Any:
+    return sb_mod._load("authority_service_l2", ROOT / "ops/release/authority/authority.py")
+
+
+def test_status_auto_clear_is_success() -> None:
+    a = _auth()
+    assert a.status_for({"cls": "AUTO"}, "CLEAR", [], since=None, veto_h=24)[0] == "success"
+
+
+def test_status_controller_waits_out_the_veto() -> None:
+    from datetime import UTC, datetime, timedelta
+
+    a = _auth()
+    now = datetime(2026, 11, 4, tzinfo=UTC)
+    f = {"cls": "CONTROLLER"}
+    assert a.status_for(f, "CLEAR", [], since=None, veto_h=24, now=now)[0] == "pending"
+    early = a.status_for(f, "CLEAR", [], since=now - timedelta(hours=23), veto_h=24, now=now)
+    assert early[0] == "pending" and "1.0 h left" in early[1]
+    late = a.status_for(f, "CLEAR", [], since=now - timedelta(hours=24), veto_h=24, now=now)
+    assert late[0] == "success"
+
+
+@pytest.mark.parametrize("verdict,state", [("HOLD", "failure"), ("FAIL", "failure"),
+                                           ("WAIT", "pending")])  # fmt: skip
+def test_status_never_success_without_clear(verdict: str, state: str) -> None:
+    a = _auth()
+    got = a.status_for({"cls": "ROOT"}, verdict, ["root file"], since=None, veto_h=24)
+    assert got[0] == state
+
+
+def test_first_signed_reads_the_earliest_statement(tmp_path: Path) -> None:
+    a = _auth()
+    head = "a" * 40
+    for i, t in enumerate(["2026-11-03T10:00:00+00:00", "2026-11-03T08:00:00+00:00"]):
+        (tmp_path / f"pr7-{head[:12]}-CLEAR-deadbeef-{i}.json").write_text(
+            json.dumps({"statement": {"head_sha": head, "issued_at": t}}), encoding="utf-8"
+        )
+    (tmp_path / f"pr7-{head[:12]}-CLEAR-deadbeef-x.json").write_text(
+        json.dumps({"statement": {"head_sha": "b" * 40, "issued_at": "2026-11-01T00:00:00+00:00"}}),
+        encoding="utf-8",
+    )
+    got = a.first_signed(tmp_path, 7, head, "deadbeef" + "0" * 56)
+    assert got is not None and got.hour == 8 and got.day == 3
+
+
+def test_live_ruleset_requires_the_authority_app_and_never_lets_admin_push() -> None:
+    rs = json.loads((ROOT / "ops/release/authority/ruleset_live.json").read_text(encoding="utf-8"))
+    checks = next(r for r in rs["rules"] if r["type"] == "required_status_checks")
+    need = checks["parameters"]["required_status_checks"]
+    assert need == [{"context": "release-authority", "integration_id": 5601819}]
+    admin = [b for b in rs["bypass_actors"] if b["actor_type"] == "RepositoryRole"]
+    assert admin and all(b["bypass_mode"] == "pull_request" for b in admin)

@@ -206,6 +206,58 @@ def fresh_exists(
     return False
 
 
+STATUS_CONTEXT = "release-authority"
+STATUS_FLAG = "POST_STATUS"  # in the registry folder (Administrators-write): Level 2 is on
+
+
+def first_signed(out: Path, pr: int, head: str, digest: str) -> datetime | None:
+    """When this (pr, head) was FIRST signed CLEAR under this policy, from the signed statements
+    themselves (never file times): the start of the veto the ruleset enforces."""
+    best: datetime | None = None
+    for f in out.glob(f"pr{pr}-{head[:12]}-CLEAR-{digest[:8]}-*.json"):
+        try:
+            st = json.loads(f.read_text(encoding="utf-8"))["statement"]
+            if st.get("head_sha") != head:
+                continue
+            t = datetime.fromisoformat(str(st["issued_at"]))
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+        best = t if best is None or t < best else best
+    return best
+
+
+def status_for(
+    f: dict[str, Any],
+    verdict: str,
+    reasons: list[str],
+    *,
+    since: datetime | None,
+    veto_h: float,
+    now: datetime | None = None,
+) -> tuple[str, str]:
+    """The commit status the LIVE ruleset requires (Level 2). success only on a CLEAR; for a
+    CONTROLLER PR only once the veto has run from its FIRST signed CLEAR, so GitHub itself refuses
+    a merge inside the 24 h window even from a rewritten gate. ROOT never gets success: it goes
+    through the owner's admin pull-request bypass."""
+    now = now or datetime.now(UTC)
+    if verdict == "CLEAR":
+        if f.get("cls") in ("AUTO", "LOW"):
+            return "success", "CLEAR"
+        if since is None:
+            return "pending", "CLEAR, veto window not started"
+        left = timedelta(hours=veto_h) - (now - since)
+        if left > timedelta(0):
+            return "pending", f"CLEAR, veto window: {left.total_seconds() / 3600:.1f} h left"
+        return "success", f"CLEAR, veto window of {veto_h:g} h elapsed"
+    state = "pending" if verdict == "WAIT" else "failure"
+    return state, f"{verdict}: {'; '.join(reasons)}"[:140]
+
+
+def post_status(ag: Any, repo: str, head: str, state: str, desc: str) -> None:
+    ag._gh(f"repos/{repo}/statuses/{head}", "-X", "POST",
+           data={"state": state, "context": STATUS_CONTEXT, "description": desc[:140]})  # fmt: skip
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--repo", required=True)
@@ -215,6 +267,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--root-pin", required=True)
     ap.add_argument("--pr", type=int)
     ap.add_argument("--dry-run", action="store_true", help="decide and print; sign nothing")
+    ap.add_argument("--post-status", action="store_true",
+                    help=f"also post the {STATUS_CONTEXT!r} commit status (on by itself when "
+                         f"{STATUS_FLAG} exists beside the attestations folder)")  # fmt: skip
     a = ap.parse_args(argv)
     policy = pol.load_policy()
     digest = tree_digest("HEAD", policy)
@@ -238,6 +293,8 @@ def main(argv: list[str] | None = None) -> int:
         pages = ag._gh(f"repos/{a.repo}/pulls?state=open&base={base}&per_page=100", "--paginate",
                        "--slurp")  # fmt: skip
         prs = [int(p["number"]) for p in ag._flat(pages)]
+    post = a.post_status or (Path(a.out).parent / STATUS_FLAG).exists()
+    veto_h = float(policy.get("veto_hours", 24))
     rc = 0
     for n in prs:
         try:
@@ -256,6 +313,15 @@ def main(argv: list[str] | None = None) -> int:
             env = issue(f, verdict, reasons, repo=a.repo, digest=digest, key=key, kid=kid,
                         ttl_h=float(policy.get("attestation_ttl_hours", 48)))  # fmt: skip
             line += f" -> {write(Path(a.out), env, n, f['head'], verdict, digest).name}"
+        if post and not a.dry_run and f.get("open") and f.get("same_repo") and f.get("base_ok"):
+            since = first_signed(Path(a.out), n, f["head"], digest)
+            state, desc = status_for(f, verdict, reasons, since=since, veto_h=veto_h)
+            try:
+                post_status(ag, a.repo, f["head"], state, desc)
+                line += f" [status {state}]"
+            except RuntimeError as exc:
+                line += f" [status not posted: {exc}]"
+                rc = 1
         print(line, flush=True)
     return rc
 
