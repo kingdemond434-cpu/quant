@@ -164,7 +164,7 @@ _FAMILY_GROUPS: dict[str, str] = {
     "macro_release macro market": "macro_conditional macro_gold_yield",
     "macro_release event market": "event_reaction",
     "macro_release cross_asset market": "usd_session_shock",
-    "carry_rollover carry market": "carry mass_screen_carry",
+    "carry_rollover carry market": "carry mass_screen_carry cross_sectional_class_carry",
     "positioning_crowding positioning market": "cot_change_fade cot_change_momentum"
                                                " cot_comm_follow cot_net_fade cot_positioning"
                                                " retail_overlap_reversal",
