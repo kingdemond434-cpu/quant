@@ -612,6 +612,9 @@ LEG_LAYER: dict[str, str] = {
     "pack_cells": "information", "timeframe_fanout": "prediction",
     # Futures positioning, curves and FX state turned into stamped series and cells.
     "futures_state": "information",
+    # Whether every collected dataset is fresh, complete and read by a clocked organ: the
+    # machine measuring its own inputs, like clock_liveness measures its clocks.
+    "dataset_usage": "meta",
     # the culture-gap producers turn a culture's participant structure into cells: information.
     "culture_gap_cells": "information",
     # Walking inside a registered ground's own front door is COLLECTION: it fetches documents and

@@ -1190,6 +1190,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
     "source_evig", "source_drain", "pack_cells", "futures_state", "ground_depth",
     "timeframe_fanout",
+    # the dataset-usage census (BACKLOG row 61): a reader of registries, file stats and the
+    # code tree, ~8 s; a fence that never ran is a claim the desk cannot cash (L1.49).
+    "dataset_usage",
     # The culture-gap producers (2026-09-30): a data-driven recipe walk, well under a second
     # when nothing is new, so every gap's cells are minted on the core clock.
     "culture_gap_cells",
@@ -1308,7 +1311,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
-                     "unused_information", "ingestion_ledger", "representation_forge",
+                     "unused_information", "ingestion_ledger", "dataset_usage",
+                     "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
                      "judge_coverage", "judge_prescreen", "orthogonality_yield",
                      "effective_trials",
@@ -2383,6 +2387,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "free_stack_proposer": 900,
     # A reader of the factory's report and journal tail; seconds.
     "factory_throughput": 180,
+    # THE DATASET-USAGE CENSUS stops itself at --budget-s 240 (8 s measured: registries, parquet
+    # column statistics, one regex pass over the code tree); the cap sits above so it writes.
+    "dataset_usage": 300,
     # The closed co-evolution stops itself at --budget-s 900 (breeding, then the islands) and
     # writes COEVOLUTION.json; the cap sits above it so it is never cut at the same prefix.
     "coevolution": 1_020,
@@ -6088,6 +6095,14 @@ def main() -> None:
     # 401/403/429/451 is a hard stop per source.
     fst = _costed("futures_state", lambda: _producer(
         "futures_state", "research/futures_state.py", "--once"))
+    # THE DATASET-USAGE CENSUS (BACKLOG row 61, principal 2026-09-30: "fix partial and unfed
+    # datasets fully, unstarved and collected"). Every dataset a registry says the desk collects
+    # -- data_registry, the free stack, futures_state's series, acquired series, alt platforms --
+    # gets freshness against its own cadence, completeness against its declared parts, and its
+    # SCHEDULED readers; FED / UNFED / STARVED / UNMEASURED, and a RED fence past 24 h. It runs
+    # after every collector so it judges this hour's writes. Measurement only; it fetches nothing.
+    dsu = _costed("dataset_usage", lambda: _producer(
+        "dataset_usage", "research/dataset_usage.py", "--once", "--budget-s", "240"))
     # THE FRONT DOOR IS NOT THE GROUND (2026-09-23). 15 of the 121 document-holding grounds named
     # no instrument for ONE reason `pack_cells.resolve_ground` had already written: the documents
     # held are the landing page. This walks inside those grounds' own doors -- ranked links and
@@ -6522,7 +6537,7 @@ def main() -> None:
                     "preregistration": prg, "organ_census": ogc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
-                    "culture_gap_cells": cgc, "futures_state": fst,
+                    "culture_gap_cells": cgc, "futures_state": fst, "dataset_usage": dsu,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
                     "actor_pressure": apr, "destroyer_pool": dpo,
