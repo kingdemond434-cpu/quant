@@ -378,6 +378,32 @@ def _write_cursor(path: Path, top: int) -> None:
     os.replace(tmp, path)
 
 
+FAILS_FILE = "state_app_failures.json"
+MAX_DETECTOR_FAILS = 3
+
+
+def detector_pass(ag: Any, repo: str, base: str, out: Path) -> str | None:
+    """check_state_app, failing CLOSED: three passes in a row that can't read the push log
+    freeze, so a lasting API or auth break can't leave the detector blind (#650 audit SF)."""
+    fails = out / FAILS_FILE
+    try:
+        seen = check_state_app(ag, repo, base, out)
+    except (RuntimeError, ValueError, OSError, subprocess.SubprocessError) as exc:
+        try:
+            n = int(json.loads(fails.read_text(encoding="utf-8"))["n"]) + 1
+        except (OSError, ValueError, KeyError, TypeError):
+            n = 1
+        tmp = fails.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"n": n}), encoding="utf-8")
+        os.replace(tmp, fails)
+        if n >= MAX_DETECTOR_FAILS:
+            return _freeze(out, [f"push-log detector failed {n} passes in a row: {exc}"])
+        return f"state App detector failed ({n}/{MAX_DETECTOR_FAILS}): {exc}"
+    if fails.exists():
+        fails.unlink()
+    return seen
+
+
 def _freeze(out: Path, bad: list[str]) -> str:
     (out / "DEACTIVATE").write_text("LIVE push log violation: " + "; ".join(bad) + "\n",
                                     encoding="utf-8")  # fmt: skip
@@ -419,10 +445,7 @@ def main(argv: list[str] | None = None) -> int:
         pages = ag._gh(f"repos/{a.repo}/pulls?state=open&base={base}&per_page=100", "--paginate",
                        "--slurp")  # fmt: skip
         prs = [int(p["number"]) for p in ag._flat(pages)]
-    try:
-        seen = check_state_app(ag, a.repo, base, Path(a.out))
-    except (RuntimeError, ValueError, OSError) as exc:
-        seen = f"state App detector failed: {exc}"
+    seen = detector_pass(ag, a.repo, base, Path(a.out))
     if seen:
         print(seen, flush=True)
         if seen.startswith("RED"):

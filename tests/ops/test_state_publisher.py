@@ -201,3 +201,26 @@ def test_activity_paging_follows_the_link_cursor_and_freezes_on_a_torn_cursor(
     (att / a.CURSOR_FILE).write_text('{"last_', encoding="utf-8")
     msg = a.check_state_app(object(), "o/r", "live", att)
     assert msg is not None and msg.startswith("RED") and (att / "DEACTIVATE").exists()
+
+
+def test_detector_fails_closed_after_three_failures(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = ROOT / "ops/release/authority/authority.py"
+    spec = importlib.util.spec_from_file_location("auth_for_fails", path)
+    assert spec is not None and spec.loader is not None
+    a = importlib.util.module_from_spec(spec)
+    sys.modules["auth_for_fails"] = a
+    spec.loader.exec_module(a)
+
+    def boom(*_: Any) -> str:
+        raise RuntimeError("api down")
+
+    monkeypatch.setattr(a, "check_state_app", boom)
+    got = [a.detector_pass(None, "o/r", "live", tmp_path) for _ in range(3)]
+    assert not got[0].startswith("RED") and not got[1].startswith("RED")
+    assert got[2].startswith("RED") and (tmp_path / "DEACTIVATE").exists()
+    monkeypatch.setattr(a, "check_state_app", lambda *_: "clean")
+    (tmp_path / "DEACTIVATE").unlink()
+    assert a.detector_pass(None, "o/r", "live", tmp_path) == "clean"
+    assert not (tmp_path / a.FAILS_FILE).exists()
