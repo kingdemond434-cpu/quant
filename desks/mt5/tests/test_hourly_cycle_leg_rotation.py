@@ -137,3 +137,9 @@ def test_the_sixteen_that_were_dark_are_on_the_roster() -> None:
             "counterfactual_timeframes", "producer_census"}
     assert dark <= roster, f"not rostered: {sorted(dark - roster)}"
     assert dark <= set(hourly_cycle.CORE_LEGS), "these are core legs and must stay core"
+
+
+def test_the_decay_monitor_is_never_rotated_out() -> None:
+    """2026-11-03: the "rest" plan skipped decay_monitor every pass and live decay went 26h
+    unwatched; the demotion half of the promotion door runs every hour, like the promoter."""
+    assert "decay_monitor" in LR.ALWAYS_RUN and "promoter" in LR.ALWAYS_RUN

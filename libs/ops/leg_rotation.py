@@ -116,6 +116,11 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     # money path now, and it runs every hour.
     "tier_s",
     "tier_s_door",
+    # THE DEMOTION HALF OF THE PROMOTION DOOR (2026-11-03). decay_monitor applies the promoter's
+    # own FADE / RETIRE bars to every LIVE sleeve's live record; deferred, decay goes unwatched.
+    # Measured on the box 2026-11-03 15:04Z: the "rest" plan ranked it 202nd and SKIPPED_BY_PLAN it
+    # every pass, and data/decay_live.json was 26.2h stale.
+    "decay_monitor",
     # ... and the writer of the door's fourth input, reports/REPLICATION.json (heavy plan).
     "replication_civilization",
     # Without this, the core rotation can leave the judge's worker plan and measured
