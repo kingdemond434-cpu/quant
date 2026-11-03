@@ -967,16 +967,35 @@ if ($due) {
     # runs only measure and report the backlog. Adding --push here waits on the audit's clearance.
     $pyArgs = @("-m", "libs.ops.box_backlog")
     if (-not (Test-Path -LiteralPath $py)) { $py = "py"; $pyArgs = @("-3") + $pyArgs }
+    # A PROCESS TIMEOUT (audit HOLD on #259, 2026-11-03). This pass holds Local\MT5-GitWriter, so
+    # a drain that never returned would hold the sync slot and block MT5-AdoptRelease on every
+    # slot after it. The drain gets $BacklogTimeoutSec; past that its whole process tree is killed
+    # (taskkill /T), the log names the timeout, and the state publish above stands.
+    $BacklogTimeoutSec = 600
+    $drainOut = Join-Path ([System.IO.Path]::GetTempPath()) ("mt5-backlog-{0}.out" -f $PID)
+    $drainErr = Join-Path ([System.IO.Path]::GetTempPath()) ("mt5-backlog-{0}.err" -f $PID)
     $prev = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     try {
-        Push-Location $RepoRoot
-        $summary = @(& $py @pyArgs 2>&1 | ForEach-Object { "$_" })
-        $drainRc = $LASTEXITCODE
+        $proc = Start-Process -FilePath $py -ArgumentList $pyArgs -WorkingDirectory $RepoRoot `
+                              -NoNewWindow -PassThru -RedirectStandardOutput $drainOut `
+                              -RedirectStandardError $drainErr
+        $null = $proc.Handle   # cache the handle, or ExitCode reads empty on Windows PowerShell 5
+        if ($proc.WaitForExit($BacklogTimeoutSec * 1000)) {
+            $proc.WaitForExit()
+            $drainRc = $proc.ExitCode
+        } else {
+            & taskkill.exe /PID $proc.Id /T /F | Out-Null
+            $drainRc = 124
+            Write-SyncLog ("backlog drain TIMED OUT after {0}s; process tree {1} killed (state publish above is unaffected)" -f
+                           $BacklogTimeoutSec, $proc.Id)
+        }
+        $summary = @(Get-Content -LiteralPath @($drainOut, $drainErr) -ErrorAction SilentlyContinue |
+                     ForEach-Object { "$_" })
     } catch {
         $summary = @("could not start: " + $_.Exception.Message); $drainRc = 127
     } finally {
-        Pop-Location
+        Remove-Item -LiteralPath @($drainOut, $drainErr) -ErrorAction SilentlyContinue
         $ErrorActionPreference = $prev
     }
     foreach ($l in @($summary | Where-Object { $_ -match '\S' } | Select-Object -Last 3)) { Write-SyncLog ("backlog drain: " + $l.Trim()) }

@@ -7,8 +7,10 @@ box-only CODE to `box/backlog-<stamp>` -- never the live branch -- and reports t
 from __future__ import annotations
 
 import base64
+import bz2
 import gzip
 import json
+import lzma
 import os
 import subprocess
 from datetime import UTC, datetime
@@ -193,9 +195,9 @@ def test_ordinary_code_is_not_denied() -> None:
 
 
 def test_a_weak_hit_withholds_one_file_and_never_wedges_the_drain(box: tuple[Path, Path]) -> None:
-    """Audit D2, third condition: code that merely READS a token must not block every drain."""
+    """Audit D2, third condition: one suspicious file is withheld, the rest still drains."""
     repo, remote = box
-    _write(repo, "libs/c.py", 'token = os.environ.get("GITHUB_TOKEN")\n')
+    _write(repo, "libs/c.py", 'password = "hunter2"\n')
     _git(repo, "add", ".")
     _git(repo, "commit", "-qm", "box code that reads a token")
     doc = bb.run(repo, upstream="origin/live", push=True)
@@ -277,8 +279,14 @@ def test_any_unscreenable_blob_is_withheld(data: bytes) -> None:
     assert bb.screen_bytes(data) in ("weak", "strong")
 
 
-@pytest.mark.parametrize("text", ["def f(xs): return sorted(xs, key=len)", 'row = {"key": 1}',
-                                  "the basic functionality of the module"])
+@pytest.mark.parametrize("text", [
+    "def f(xs): return sorted(xs, key=len)", 'row = {"key": 1}',
+    "the basic functionality of the module",
+    # audit rescore 2026-10-06: the broad pattern 0 flagged 23.5% of code files on these
+    '{"authority": "ramp"}', '{"passed": true}', "author: zuck", "pass: the next slot retries",
+    "def f(token: str) -> None:", '{"api_key": key}', "secret: the reason it stays local",
+    'token = os.environ.get("GITHUB_TOKEN")', "password = None", "sort_key=by_date",
+])
 def test_ordinary_code_is_not_withheld(text: str) -> None:
     assert bb.secret_strength(text) is None
 
@@ -359,10 +367,81 @@ def test_a_failed_ignore_read_is_unmeasured(box: tuple[Path, Path],
     assert doc["verdict"] == "UNMEASURED" and doc["push"]["pushed"] is False
 
 
+# AUDIT RESCORE (2026-10-06, rescore/PR210_v3.md): what --push still needs.
+_HEX32 = "0123456789abcdef" * 2
+
+
+@pytest.mark.parametrize("text", [
+    f"eia_key={_HEX32}", f"Eia_Key = '{_HEX32}'", f"https://api.eia.gov/v2/x?key={_HEX32}",
+    f"https://x.org/q?a=1&api_key={_HEX32}", f'{{"key": "{_HEX32}"}}', f'{{"key":"{_HEX32}"}}',
+])
+def test_any_key_name_with_a_long_value_is_withheld(text: str) -> None:
+    assert bb.secret_strength(text) in ("weak", "strong"), text
+
+
+@pytest.mark.parametrize("data", [
+    lzma.compress(b"plain text"), bz2.compress(b"plain text"),
+    b"7z\xbc\xaf\x27\x1c\x00\x04" + b"\x80" * 16,      # a 7z header
+    "caf\u00e9 latin-1".encode("latin-1"),
+])
+def test_any_blob_that_is_not_utf8_is_withheld(data: bytes) -> None:
+    assert bb.screen_bytes(data) in ("weak", "strong")
+
+
+def test_the_screen_withholds_few_of_this_repositorys_own_code_files() -> None:
+    """The rescore measured 23.5% of code files withheld by the broad pattern. A screen that
+    withholds a quarter of the tree drains nothing; this pins the narrowed rate below 5%."""
+    import subprocess as sp
+    files = sp.run(["git", "-C", str(bb.ROOT), "ls-files", "*.py", "*.ps1", "*.sh"],
+                   capture_output=True, text=True, check=True).stdout.split()
+    assert len(files) > 100
+    held = 0
+    for rel in files:
+        try:
+            data = (bb.ROOT / rel).read_bytes()
+        except OSError:
+            continue
+        held += bb.screen_bytes(data) is not None
+    assert held / len(files) < 0.05, f"{held}/{len(files)} withheld"
+
+
+# AUDIT OF #259: the four shapes the widened screen still passed.
+@pytest.mark.parametrize("text", [
+    # YAML plain scalars
+    "password: hunter", "  api_key: abcdefgh", "- token: abcdef  # rotated", "db_password: letmein",
+    "MT5_PASSWORD: hunter",
+    # %-encoding of the value, the name and the separator (once and twice)
+    "password=p%40ssw0rd", "pass%77ord=hunter2x", "token%253Dabcdef", "secret%3Dhunter",
+    # the walrus / Pascal := and the hash arrow =>
+    'password := "hunter2"', "token := s3cr3t!", "'password' => 'hunter2'", ":api_key => 'abc123'",
+    # PowerShell and CLI parameters
+    "Connect-Box -Password 'hunter2'", "Connect-Box -Password hunter2", "Invoke-X -Token:abcdef",
+    'New-Thing -ApiKey "abc123def"', "tool --password hunter", "tool --api-key abc123",
+])
+def test_the_audited_gaps_are_withheld(text: str) -> None:
+    assert bb.secret_strength(text) in ("weak", "strong"), text
+
+
+@pytest.mark.parametrize("text", [
+    "    token: str", "    token: str | None = None", "    password: Optional[str]",
+    "secret: the reason it stays local", "Connect-Box -Credential $cred",
+    "Invoke-X -Token $env:GITHUB_TOKEN", "tool --password-file path/to/f --verbose",
+    "gh auth login --with-token < tokenfile", "if ($x -eq 1) { re-auth }",
+    "x = 100%", "progress: 50%",
+])
+def test_the_new_shapes_do_not_read_ordinary_code(text: str) -> None:
+    assert bb.secret_strength(text) is None, text
+
+
 # AUDIT HOLD ON #210 (2026-11-03): the screen must be linear, and paths must survive git quoting.
 _ADVERSARIAL_UNITS = ("token", "token_", "secret_", "api_key_", "api-", "token=", "a.", "a=",
                       "_KEY", "A_KEY=", "bearer ", "basic a", "://a:", "ghp_", "a", "=", " ",
-                      "PRIVATE ", "-----BEGIN ")
+                      "PRIVATE ", "-----BEGIN ",
+                      # #259's patterns: the shapes the audit timed, and their neighbours
+                      "key=", "key=1", "token=1", "token:=", "token%3d", "token:", "-token:=",
+                      "-token ", "--api-key a", "password: a#", "\npassword: ", "\nexport token=",
+                      "aPassword=", "aToken=1", "_KEY=1", "?key", "&apikey=", "%40", "%25",
+                      "p%40ss", "mt5password=", "token_1_", "- api_key: ", "1")
 
 
 @pytest.mark.parametrize("unit", _ADVERSARIAL_UNITS)
@@ -375,7 +454,8 @@ def test_every_screen_pattern_is_linear_on_adversarial_input(unit: str) -> None:
         t0 = time.perf_counter()
         p.search(text)
         took = time.perf_counter() - t0
-        assert took < 3.0, f"{getattr(p, 'pattern', p)!r} took {took:.1f}s on {unit!r}"
+        # Linear patterns take ~2 s here on a loaded runner; the quadratic ones took hours.
+        assert took < 15.0, f"{getattr(p, 'pattern', p)!r} took {took:.1f}s on {unit!r}"
 
 
 def test_a_text_over_the_screen_cap_is_withheld_never_clean() -> None:
@@ -383,8 +463,9 @@ def test_a_text_over_the_screen_cap_is_withheld_never_clean() -> None:
 
 
 def test_the_credential_assignment_still_matches_inside_identifiers() -> None:
-    for text in ("MT5_PASSWORD=x", "$mt5Password = 'x'", "aws_secret_access_key: x",
-                 '"token": "x"', "password%3Dx", "tokentoken = 1"):
+    # The narrowed screen (audit rescore) needs a value with a digit or symbol, or a quote.
+    for text in ("MT5_PASSWORD=hunter2", "$mt5Password = 'x'", "aws_secret_access_key: s3cr3t",
+                 '"token": "x"', "password%3Dhunter", "mt5password = 'x'"):
         assert bb.secret_strength(text) is not None, text
     assert bb.secret_strength("tokenizer(x)") is None
 
@@ -407,3 +488,31 @@ def test_the_report_is_replaced_atomically(tmp_path: Path) -> None:
     bb.write_report(out, {"verdict": "UNMEASURED"})
     assert json.loads(out.read_text("utf-8")) == {"verdict": "UNMEASURED"}
     assert [q.name for q in out.parent.iterdir()] == ["BOX_BACKLOG.json"], "no temp file left"
+
+
+def test_secret_strength_is_linear_on_adversarial_input() -> None:
+    """The audit timed secret_strength at 85 s on 100 KB: every decoding re-runs every pattern,
+    so the whole screen, not only each pattern, must be linear."""
+    import time
+    for unit in _ADVERSARIAL_UNITS:
+        # 200 KB: the audit measured 85 s on 100 KB, so a quadratic screen cannot pass this.
+        text = (unit * (200_000 // len(unit) + 1))[:200_000]
+        t0 = time.perf_counter()
+        bb.secret_strength(text)
+        took = time.perf_counter() - t0
+        assert took < 5.0, f"secret_strength took {took:.1f}s on {unit!r}"
+
+
+def test_an_over_budget_screen_is_withheld_never_clean(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(bb, "SCREEN_BUDGET_S", -1.0)
+    assert bb.screen_bytes(b"def f(x):\n    return x\n") == "weak"
+
+
+@pytest.mark.parametrize("text", [
+    "token = " + "a1" * 200,               # a value longer than the bound still counts
+    "Connect-Box -Password " + "x" * 300,
+    "EIA_KEY=" + "y" * 300,
+    "mt5password = 'x'",
+])
+def test_the_bounds_never_turn_a_hit_into_a_miss(text: str) -> None:
+    assert bb.secret_strength(text) is not None, text[:40]
