@@ -271,11 +271,23 @@ def repo_links(readme: str, self_full: str = "") -> list[str]:
 README_NAMES = ("README.md", "readme.md", "README.MD", "Readme.md", "README.rst", "README")
 
 
-def readme_text(fetch: Fetch, full: str, branch: Any = None) -> str | None:
-    """The README's text from the raw host, or None when no README name answers."""
+def readme_text(fetch: Fetch, full: str, branch: Any = None,
+                quota: Quota | None = None) -> str | None:
+    """The README's text from the raw host, or None when no README name answers.
+
+    THE RAW HOST'S LIMITS ARE HONOURED LIKE THE API'S. A 429, a Retry-After or a rate-limit
+    403 from raw.githubusercontent.com sets `quota.exhausted` and stops at once: no further
+    README name is tried, and the caller ends the pass."""
     ref = quote(str(branch)) if branch else "HEAD"
     for name in README_NAMES:
-        status, text, _h = fetch(f"{RAW}/{full}/{ref}/{name}", "")
+        if quota is not None and quota.exhausted:
+            return None
+        status, text, heads = fetch(f"{RAW}/{full}/{ref}/{name}", "")
+        why = rate_limited(status, text, heads)
+        if why:
+            if quota is not None:
+                quota.exhausted = quota.exhausted or f"raw: {why}"
+            return None
         if status and 200 <= status < 300 and text:
             return text
     return None
@@ -416,7 +428,12 @@ def code_rows(fetch: Fetch, quota: Quota, full: str, meta: dict[str, Any], seed:
             drops["budget_stop"] += 1
             break
         url = f"{RAW}/{full}/{branch}/{quote(p)}"
-        status, src, _h = fetch(url, "")                   # raw host: outside the API quota
+        status, src, heads = fetch(url, "")                # raw host: outside the API quota
+        why = rate_limited(status, src, heads)
+        if why:                                  # the raw host's limit ends the pass too
+            quota.exhausted = quota.exhausted or f"raw: {why}"
+            drops["raw_rate_limited"] += 1
+            break
         if not (status and 200 <= status < 300 and src):
             drops[f"fetch_{status or 'transport'}"] += 1
             continue
@@ -629,7 +646,10 @@ def run(*, budget_s: float = 300.0, write: bool = True, fetch: Fetch | None = No
             st["status"] = "UNCHANGED (pushed_at as last scan)"
             lane_reached[lane] += 1
         else:
-            readme = readme_text(fetch, full, meta.get("default_branch"))
+            readme = readme_text(fetch, full, meta.get("default_branch"), quota)
+            if quota.exhausted:
+                per_repo[full] = {"status": "NOT_REACHED_THIS_PASS", "why": quota.exhausted}
+                break                            # a rate-limit stop ends the pass
             if readme is None:
                 st["status"] = f"UNREACHED: metadata {via}, README absent on raw"
                 if via != "api":

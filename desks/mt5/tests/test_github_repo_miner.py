@@ -210,6 +210,24 @@ def test_a_rate_limit_answer_ends_the_pass_with_no_raw_fetch(
     assert not (tmp_path / "intel").exists()
 
 
+def test_a_raw_host_429_with_retry_after_ends_the_pass(tmp_path: Path) -> None:
+    class RawLimited(Fake):
+        def __call__(self, url: str, accept: str = "") -> tuple[int | None, str, dict[str, str]]:
+            if url.startswith(RAW):
+                self.calls.append(url)
+                return 429, "", {"Retry-After": "30"}
+            return super().__call__(url, accept)
+
+    fake = RawLimited(_routes())
+    doc = _run(tmp_path, fake, _seeds(tmp_path))
+    raw = [u for u in fake.calls if u.startswith(RAW)]
+    assert raw == [f"{RAW}/alice/gold-breakout/main/README.md"]    # no further README name
+    first_raw = fake.calls.index(raw[0])
+    assert fake.calls[first_raw + 1:] == []                         # no API call after it
+    assert "429" in doc["pass"]["stopped_by"] and doc["pass"]["rows_total"] == 0
+    assert not (tmp_path / "intel").exists()
+
+
 @pytest.mark.parametrize("status", [401, 403])
 def test_an_auth_refusal_is_per_repo_unreached_with_no_raw_fetch(
         tmp_path: Path, status: int) -> None:
