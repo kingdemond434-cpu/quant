@@ -4305,6 +4305,11 @@ class Request:
 def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
     """The requests one pass makes for a source. Paged and area sources expand here."""
     key = os.environ.get(src.key_env or "", "") if src.key_env else ""
+    if key:
+        # FIRMS, BOK ECOS, Seoul open data and INEGI carry the key as a PATH segment: registered
+        # with the access ledger's redactor so a 401/403 hold never stores it.
+        from libs.data import polite_fetch as _pf_keys
+        _pf_keys.register_secret(key)
     if src.id == "cn_firms_industrial":
         out: list[Request] = []
         end = (now - timedelta(days=1)).date()

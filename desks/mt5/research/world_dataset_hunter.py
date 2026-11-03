@@ -306,6 +306,19 @@ def meta_path(provider: str, dataset: str) -> Path:
 
 
 # ------------------------------------------------------------------------------------ HTTP ----
+def url_template(text: object, key: str) -> str:
+    """`text` (a URL, an error detail) with the credential `key` -- raw or percent-quoted --
+    written back as `{key}`, so a stored or logged URL is the door's TEMPLATE, never the keyed
+    request (BPS carries its key as a PATH segment, `/key/<key>/`). Anything else credential-shaped
+    is blanked by `polite_fetch.redact_text`."""
+    from libs.data import polite_fetch as _pf
+    out = str(text)
+    if key:
+        for form in {urllib.parse.quote(key, safe=""), key}:
+            out = out.replace(form, "{key}")
+    return _pf.redact_text(out)
+
+
 class FetchError(Exception):
     """A classified fetch failure. `reason` is the bucket the report counts."""
 
@@ -2841,6 +2854,11 @@ def _fetch_direct(client: Client, spec: dict[str, Any], now: datetime, *,
         key = os.environ.get(key_env) or ""
         if not key:
             raise FetchError("needs_key", key_env)        # named, never a silent skip or a zero
+        # THE KEY IS REGISTERED WITH THE ACCESS LEDGER'S REDACTOR before any request: a 401/403
+        # on a keyed door (BPS puts it in the PATH, `/key/<key>/`) holds the site with the
+        # URL redacted, never with the key (audit HOLD on 4ac92d8316).
+        from libs.data import polite_fetch as _pf
+        _pf.register_secret(key)
         if spec.get("key_header"):
             headers = {str(spec["key_header"]): key}      # travels in the header, never the URL
     parts = list(spec.get("urls") or [{"url": spec["url"]}])
@@ -2864,8 +2882,11 @@ def _fetch_direct(client: Client, spec: dict[str, Any], now: datetime, *,
             else:
                 df = frame_from_payload(raw, mode, sub)
         except FetchError as exc:
+            if key:
+                # a stored or logged failure names the door's TEMPLATE (`{key}`), never the key
+                exc = FetchError(exc.reason, url_template(exc.detail, key))
             if exc.reason == "budget_exhausted" or len(parts) == 1:
-                raise
+                raise exc from None
             first = first or exc
             if misses is not None:
                 misses[exc.reason] += 1

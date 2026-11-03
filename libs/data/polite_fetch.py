@@ -1652,12 +1652,23 @@ def redact_url(url: str) -> str:
 _TEXT_PAIR = re.compile(r"([A-Za-z_][\w-]*)=([^&\s'\"<>;,)]+)")
 
 
+#: In free text: the path segment after `/key/`, `/apikey/` or `/api_key/` (case-insensitive).
+_TEXT_PATH_KEY = re.compile(r"(?i)(/(?:api_?key|apikey|key)/)([^/\s'\"<>?#&;,)]+)")
+
+
 def redact_text(text: object) -> str:
-    """`text` (an exception, a log line) with every credential-looking `name=value` pair's value
-    replaced by `REDACTED` -- the free-text sibling of `redact_url`, for anything printed."""
-    return _TEXT_PAIR.sub(
+    """`text` (an exception, a log line) with every credential blanked as `REDACTED`: a
+    credential-looking `name=value` pair's value, the path segment after `/key/`, `/apikey/` or
+    `/api_key/`, and every registered secret (`register_secret`) wherever it appears -- the
+    free-text sibling of `redact_url`, for anything printed."""
+    out = _TEXT_PAIR.sub(
         lambda m: f"{m.group(1)}=REDACTED" if _SECRET_PARAM.search(m.group(1)) else m.group(0),
         str(text))
+    out = _TEXT_PATH_KEY.sub(lambda m: f"{m.group(1)}REDACTED", out)
+    for secret in sorted(_REGISTERED_SECRETS, key=len, reverse=True):
+        if secret in out:
+            out = out.replace(secret, "REDACTED")
+    return out
 
 
 def carries_secret(url: str) -> bool:

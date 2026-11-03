@@ -277,3 +277,48 @@ def test_every_pack_row_is_in_the_one_register_with_its_clause_or_unread_reason(
     assert tf.input_source("https://api.jquants.com/v1/prices/daily_quotes") == "jp_jquants"
     assert tf.input_source("https://www.bi.go.id/en/statistik/") == "id_bank_indonesia"
     assert tf.terms_state("id_bank_indonesia") == tf.UNREAD
+
+
+# ------------------------------------------------- a keyed door's refusal never stores its key --
+_BPS_KEY = "BPSKEY0123456789abcdef"
+
+
+@pytest.mark.parametrize("status", [401, 403])
+def test_a_bps_refusal_never_writes_the_key_to_the_access_ledger(box, monkeypatch, tmp_path,
+                                                                 status: int) -> None:
+    """BPS carries its key as a PATH segment (`/key/<key>/`). A 401/403 holds the site in
+    world_crawler_access.json with the URL redacted, and the error the hunter stores or logs
+    names the door's TEMPLATE (`{key}`), never the key (audit HOLD on 4ac92d8316)."""
+    import email.message
+    import io
+    import urllib.error
+    import urllib.response
+
+    from libs.data import polite_fetch as pf
+
+    sent: list[str] = []
+
+    def wire(req, timeout=None, context=None):
+        sent.append(req.full_url)
+        if req.full_url.endswith("/robots.txt"):
+            hdrs = email.message.Message()
+            hdrs["Content-Type"] = "text/plain"
+            return urllib.response.addinfourl(io.BytesIO(b"User-agent: *\nDisallow:\n"), hdrs,
+                                              req.full_url, 200)
+        raise urllib.error.HTTPError(req.full_url, status, "refused", email.message.Message(),
+                                     io.BytesIO(b""))
+
+    ledger = tmp_path / "world_crawler_access.json"
+    monkeypatch.setattr(pf, "open_no_redirect", wire)
+    monkeypatch.setattr(pf, "_ACCESS", pf.HostAccess(ledger))
+    monkeypatch.setenv("BPS_API_KEY", _BPS_KEY)
+    spec = next(d for d in W.country_pack_doors() if d["dataset"] == "BPS_INDICATORS")
+    client = W.Client(None, deadline=__import__("time").monotonic() + 60)
+    with pytest.raises(W.FetchError) as exc:
+        W._fetch_direct(client, spec, NOW)
+    assert any(_BPS_KEY in u for u in sent), "the keyed request itself was never sent"
+    assert ledger.exists(), "the refusal was not held"
+    text = ledger.read_text("utf-8")
+    assert "webapi.bps.go.id" in text and _BPS_KEY not in text
+    assert _BPS_KEY not in str(exc.value) and _BPS_KEY not in exc.value.detail
+    assert W.url_template(f"https://x/key/{_BPS_KEY}/", _BPS_KEY) == "https://x/key/{key}/"
