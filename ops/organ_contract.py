@@ -397,6 +397,17 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     "MT5-FrontierAudit (chart allocation)": (
         "desks/mt5/reports/CHART_ALLOCATION.json", 1560,
         "research effort per chart, inverse to the docket share each chart already holds"),
+    # THE ADOPTER'S PRODUCT IS ADOPTED CODE, NOT A LOG LINE (2026-11-03). The box sat five days
+    # on the 10-29 release while MT5-AdoptRelease ran hourly and read UNCONTRACTED here. Its
+    # contract is the release-lag report's `green_at` (INTERNAL_STAMPS below): the last instant
+    # the box ran the newest green release (or that release was inside its 3h window) AND LIVE
+    # had no code left unreleased past 24h. desks/mt5/scripts/release_lag.py measures it, from
+    # MT5-BoxHeartbeat every 15 min; it goes RED at 3h behind, so this row reads STALE an hour
+    # after the box first goes RED, and ABSENT before the first reading -- never OK on nothing.
+    "MT5-AdoptRelease": (
+        "desks/mt5/reports/RELEASE_LAG.json", 60,
+        "the box runs the newest green release and CI is still promoting LIVE (green_at: the "
+        "last GREEN release-lag reading, written by MT5-BoxHeartbeat via release_lag.py)"),
 }
 
 
@@ -407,6 +418,8 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
 #: the task.
 INTERNAL_STAMPS: dict[str, str] = {
     "desks/mt5/reports/TAPE_RECORDER.json": "last_tick_utc",
+    # Rewritten every 15 min whatever the verdict; only a GREEN reading moves `green_at`.
+    "desks/mt5/reports/RELEASE_LAG.json": "green_at",
 }
 
 #: A stamp further than this past now is a clock defect, never freshness.
