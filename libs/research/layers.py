@@ -675,6 +675,8 @@ LEG_LAYER: dict[str, str] = {
     "certificate_clock_law": "meta", "desk_self_heal": "meta", "mission_control": "meta",
     "clock_accrual": "meta",
     "tier5_acceptance": "meta",
+    # Measures every LIVE row's marginal admission: the machine measuring its own book.
+    "marginal_census": "meta",
     "cro_noon_freshness": "meta",
 }
 

@@ -1130,7 +1130,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
     "forward_reconcile", "clock_liveness", "certificate_clock_law", "clock_accrual",
-    "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
+    "forward_calibration", "desk_self_heal", "tier5_acceptance", "marginal_census",
+    "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     # The noon CRO pass must land a ledger row every day; one file read, so it is core.
     "cro_noon_freshness",
@@ -1465,7 +1466,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # machine measuring its own build path, experiments and organs: meta.
                      "build_failure_bank", "experiment_contracts", "health_board",
                      "runtime_attestation", "self_repair", "desk_self_heal",
-                     "tier5_acceptance", "mission_control", "tier_s", "tier_s_door",
+                     "tier5_acceptance", "marginal_census", "mission_control", "tier_s",
+                     "tier_s_door",
                      "research_live_identity", "cro_noon_freshness",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
@@ -2314,6 +2316,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "forward_calibration": 180,
     "desk_self_heal": 240,
     "tier5_acceptance": 180,
+    # One allocation read and one capital_verdict per LIVE row: seconds.
+    "marginal_census": 120,
     "cro_noon_freshness": 60,
     "mission_control": 180,
     # The producer census relights at most six dark producers at 240s each and re-measures after
@@ -5126,6 +5130,10 @@ def main() -> None:
         "desk_self_heal", "research/run_desk_self_heal.py", "--apply"))
     # DOCTRINE -> RUNTIME ACCEPTANCE. The static fence proves the ledger tells no repository lie;
     # this host proof makes every LIVE row show CURRENT, STALE or MISSING each core pass.
+    # EVERY LIVE ROW'S MARGINAL, AND HOW LONG IT HAS BEEN UNMEASURED (blueprint CS5/D7). The
+    # promoter's own capital_verdict per LIVE row; report-only, it moves no risk.
+    mgc = _costed("marginal_census", lambda: _producer(
+        "marginal_census", "research/marginal_census.py"))
     t5a = _costed("tier5_acceptance", lambda: _producer(
         "tier5_acceptance", "scripts/check_tier5_audit.py", "--runtime-out",
         "desks/mt5/reports/TIER5_ACCEPTANCE.json"))
@@ -6443,6 +6451,7 @@ def main() -> None:
                     "external_federation": xfd, "archaeology": arch, "sares": srs,
                     "certificate_truth": ctt, "forward_calibration": fcal,
                     "desk_self_heal": dsh, "tier5_acceptance": t5a,
+                    "marginal_census": mgc,
                     "mission_control": msc,
                     "runtime_attestation": rta,
                     "self_repair": slf,
