@@ -1,5 +1,9 @@
 """ONE STOP-MANAGEMENT DECISION FOR EVERY MT5 ACCOUNT (Fusion gateway, FTMO, every prop account).
 
+The Fusion gateway keeps its own inline copy (`gateway.manage_open_positions`, unchanged here);
+`tests/test_mechanism_parity.py` drives both on the same terminals and fails if they ever decide
+differently, so the copy cannot drift.
+
 WHY (zuck 2026-11-03 19:58Z: "ftmo fusion etc must always have same mechanisms ... all must be
 just as same as each other"). Until this module the Fusion gateway ratcheted every open position
 (`gateway.manage_open_positions`: the chandelier trail plus the costed break-even floor), while
@@ -7,7 +11,7 @@ the FTMO gold follower only COPIED E8's acknowledged stop moves (`ftmo_follower.
 and the FTMO sleeve executor ran no stop management at all. Measured on the box 2026-11-03:
 the follower's log held 0 `ratchet_stop` actions since FTMO went live on 2026-10-22.
 
-THE RULE IS THE GATEWAY'S, MOVED HERE VERBATIM so each lane calls one function and cannot drift:
+THE RULE IS THE GATEWAY'S, step for step:
   * a fixed-bracket certificate (a family sleeve with no `trail_k`) gets the break-even FLOOR
     only, read off M1 so a fast winner is protected on its first completed minute -- never the
     trail (2026-09-16: trailing a fixed-bracket certificate is a lookalike strategy);
@@ -27,13 +31,13 @@ from itertools import pairwise
 from typing import Any
 
 import pandas as pd
+from mt5desk import decision_core as _dc
 from mt5desk import position_manager as _pm
-from mt5desk.decision_core import ATR_N, atr_last
 
-#: Fusion's measured commission per lot per side (libs.portfolio.fusion_cost), the default cost
-#: of the break-even floor. A venue with a lower commission gets a floor a little further into
-#: profit than its exact break-even: more protection, never less.
-DEFAULT_COMMISSION_PER_LOT_SIDE = 2.0
+# NO TUNABLE LIVES HERE. Every number is the one the Fusion gateway already uses, read from its
+# owner: the ATR length from `decision_core`, the break-even floor's commission from
+# `libs.portfolio.fusion_cost` (a venue with a lower commission gets a floor a little further
+# into profit than its exact break-even: more protection, never less).
 
 
 @dataclass(frozen=True)
@@ -45,8 +49,8 @@ class StopMove:
     decision: Any = None
 
 
-def rates_since(mt5: Any, symbol: str, timeframe: int, opened_at: int,
-                *, count: int = 2000) -> pd.DataFrame:
+def rates_since(mt5: Any, symbol: str, timeframe: int, opened_at: int, count: int
+                ) -> pd.DataFrame:
     """Terminal bars from the position's containing bar, in broker-clock space (positional read,
     filtered on the bar's own server time: no UTC/server offset enters)."""
     raw = mt5.copy_rates_from_pos(symbol, timeframe, 0, int(count))
@@ -61,15 +65,16 @@ def rates_since(mt5: Any, symbol: str, timeframe: int, opened_at: int,
     return bars[bars["time"].astype("int64") >= start].reset_index(drop=True)
 
 
-def round_trip_per_price_unit(info: Any, *, commission_per_lot_side: float =
-                              DEFAULT_COMMISSION_PER_LOT_SIDE) -> float | None:
+def round_trip_per_price_unit(info: Any) -> float | None:
     """The round-trip commission in PRICE units (the venue's tick value / tick size converts),
     or None when the venue reports a degenerate tick value (the floor then waits, never guesses)."""
+    import libs.portfolio.fusion_cost as _fc  # as the gateway reads it: at use, not at import
+
     tick_value = float(getattr(info, "trade_tick_value", 0.0) or 0.0)
     tick_size = float(getattr(info, "trade_tick_size", 0.0) or 0.0)
     if not (tick_value > 0 and tick_size > 0):
         return None
-    return (2.0 * float(commission_per_lot_side)) / (tick_value / tick_size)
+    return (2.0 * float(_fc.COMMISSION_PER_LOT_PER_SIDE)) / (tick_value / tick_size)
 
 
 def original_stop_distance(store: dict[str, Any], ticket: int, price_open: float,
@@ -89,14 +94,14 @@ def original_stop_distance(store: dict[str, Any], ticket: int, price_open: float
     return float(store[key]), False
 
 
-def stop_move(mt5: Any, p: Any, info: Any, *, original_dist: float, floor_only: bool,
-              commission_per_lot_side: float = DEFAULT_COMMISSION_PER_LOT_SIDE) -> StopMove:
+def stop_move(mt5: Any, p: Any, info: Any, *, original_dist: float, floor_only: bool
+              ) -> StopMove:
     """The stop this pass moves position `p` to, or why not. Exactly the gateway's sequence."""
     symbol = str(p.symbol)
     side = 1 if int(p.type) == int(getattr(mt5, "POSITION_TYPE_BUY", 0)) else -1
     h1 = int(getattr(mt5, "TIMEFRAME_H1", 16385))
     timeframe = int(getattr(mt5, "TIMEFRAME_M1", h1)) if floor_only else h1
-    bars = rates_since(mt5, symbol, timeframe, int(p.time))
+    bars = rates_since(mt5, symbol, timeframe, int(p.time), 2000)
     minimum = 1 if floor_only else 2
     if len(bars) < minimum:
         return StopMove(None, f"fewer than {minimum} {'M1' if floor_only else 'H1'} bars since "
@@ -104,14 +109,14 @@ def stop_move(mt5: Any, p: Any, info: Any, *, original_dist: float, floor_only: 
     atr = 0.0
     if not floor_only:
         raw = mt5.copy_rates_from_pos(symbol, h1, 0, 400)
-        if raw is None or len(raw) < ATR_N + 1:
+        if raw is None or len(raw) < _dc.ATR_N + 1:
             return StopMove(None, "ATR unavailable")
-        atr = atr_last(pd.DataFrame(raw))
+        atr = _dc.atr_last(pd.DataFrame(raw))
         if not atr > 0:
             return StopMove(None, "ATR non-positive")
     extreme, stall = _pm.extreme_and_stall(highs=[float(x) for x in bars["high"]],
                                            lows=[float(x) for x in bars["low"]], side=side)
-    cost = round_trip_per_price_unit(info, commission_per_lot_side=commission_per_lot_side)
+    cost = round_trip_per_price_unit(info)
     spread = float(getattr(info, "spread", 0) or 0) * float(getattr(info, "point", 0.0) or 0.0)
     decision = _pm.ratchet(entry=float(p.price_open), current_stop=float(p.sl),
                            stop_distance=float(original_dist), extreme=extreme, atr=atr,

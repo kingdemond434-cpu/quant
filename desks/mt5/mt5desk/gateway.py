@@ -45,7 +45,6 @@ import pandas as pd
 from mt5desk import account_profile as _acct
 from mt5desk import order_door as _door
 from mt5desk import decision_core as _core
-from mt5desk import mt5_manage as _mm
 from mt5desk import position_manager as _pm
 from mt5desk import provenance as _prov
 from mt5desk.config import desk_root, gateway_paused, terminal_path
@@ -2297,11 +2296,47 @@ def _original_stop_distance(st: dict, ticket: int, price_open: float, sl: float)
     return float(store[key])
 
 
+def _round_trip_per_price_unit(info: object, symbol: str) -> float | None:
+    """The round-trip commission expressed in PRICE units, or None if it cannot be derived.
+
+    THE UNIT TRAP THIS EXISTS TO AVOID. Commission is quoted in ACCOUNT currency per lot
+    (`fusion_cost.COMMISSION_PER_LOT_PER_SIDE = 2.00`, measured -- p10 = p50 = p90 over all 433 live
+    deals); a break-even stop is a PRICE. Converting between them by hand is where a
+    EUR-denominated account trading a USD-quoted instrument quietly books a small loss on every
+    scratch. `trade_tick_value / trade_tick_size` is the venue's own answer to "how much account
+    currency is one price unit worth, per lot", so the quote-currency conversion is the broker's
+    rather than ours, and the position's volume cancels out of both sides.
+
+    Returns None rather than a guess when the venue reports a degenerate tick value. A stop is
+    then left to the trail alone, which is the existing behaviour -- absence is never permission
+    to invent the number that decides where protection sits.
+    """
+    # Imported here rather than at module scope to match every other `libs` use in this file.
+    from libs.portfolio.fusion_cost import COMMISSION_PER_LOT_PER_SIDE
+
+    tick_value = float(getattr(info, "trade_tick_value", 0.0) or 0.0)
+    tick_size = float(getattr(info, "trade_tick_size", 0.0) or 0.0)
+    if not (tick_value > 0 and tick_size > 0):
+        log(f"MANAGE {symbol}: tick value/size degenerate "
+            f"({tick_value}/{tick_size}); break-even floor unavailable this pass")
+        return None
+    per_price_unit_per_lot = tick_value / tick_size
+    return (2.0 * COMMISSION_PER_LOT_PER_SIDE) / per_price_unit_per_lot
+
+
 def _rates_since_position(symbol: str, timeframe: int, opened_at: int,
                           *, count: int = 2000) -> pd.DataFrame:
-    """Return terminal bars from the position's containing bar in broker-clock space
-    (`mt5_manage.rates_since`, the one reader every MT5 lane manages with)."""
-    return _mm.rates_since(mt5, symbol, timeframe, opened_at, count=count)
+    """Return terminal bars from the position's containing bar in broker-clock space."""
+    raw = mt5.copy_rates_from_pos(symbol, timeframe, 0, int(count))
+    if raw is None or len(raw) == 0:
+        return pd.DataFrame()
+    bars = pd.DataFrame(raw)
+    if "time" not in bars:
+        return pd.DataFrame()
+    ts = sorted({int(x) for x in bars["time"]})
+    step = min((b - a for a, b in zip(ts, ts[1:]) if b > a), default=60)
+    start = int(opened_at) - (int(opened_at) % max(1, step))
+    return bars[bars["time"].astype("int64") >= start].reset_index(drop=True)
 
 
 def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
@@ -2377,17 +2412,95 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
                     f"nothing to ratchet against and none invented")
                 continue
 
-            # ONE DECISION FOR EVERY MT5 ACCOUNT (zuck 2026-11-03): the bars since entry, the ATR,
-            # the extreme, the costed break-even floor, the chandelier, the one-step floor and the
-            # rests-at-venue check all live in `mt5desk.mt5_manage.stop_move`, which the FTMO and
-            # every prop lane call too. The reasons each step exists are kept there.
-            tag = f"MANAGE ticket {p.ticket} ({symbol})"
-            _move = _mm.stop_move(mt5, p, info, original_dist=dist, floor_only=_floor_only)
-            if _move.new_stop is None:
-                log(f"{tag}: {_move.why}")
+            # The floor consumes only the post-entry extreme, so it reads M1 and can protect a
+            # fast winner on the first completed minute. The certified chandelier remains H1.
+            timeframe = (getattr(mt5, "TIMEFRAME_M1", mt5.TIMEFRAME_H1)
+                         if _floor_only else mt5.TIMEFRAME_H1)
+            bars = _rates_since_position(symbol, timeframe, int(p.time))
+            minimum = 1 if _floor_only else 2
+            if len(bars) < minimum:
+                log(f"MANAGE ticket {p.ticket} ({symbol}): fewer than {minimum} "
+                    f"{'M1' if _floor_only else 'H1'} bars since entry; too early to locate "
+                    f"an extreme (broker-clock positional read)")
                 continue
-            decision = _move.decision
+
+            # ATR on a longer window than the holding period, because a young position has too
+            # few bars of its own to characterise volatility with.
+            # THE FLOOR MUST NOT DEPEND ON A NUMBER IT NEVER READS. ATR scales the chandelier and
+            # nothing else; in floor-only mode no chandelier is computed, so requiring 21 hours
+            # of H1 history would refuse the break-even stop on exactly the young position that
+            # has just run 0.85R in a fast tape -- a protection withheld for an input the
+            # decision does not consume.
+            atr = 0.0
+            if not _floor_only:
+                h1 = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_H1, 0, 400)
+                if h1 is None or len(h1) < ATR_N + 1:
+                    log(f"MANAGE ticket {p.ticket} ({symbol}): ATR unavailable; skipped")
+                    continue
+                atr = atr_last(pd.DataFrame(h1))
+                if not (atr > 0):
+                    log(f"MANAGE ticket {p.ticket} ({symbol}): ATR non-positive; skipped")
+                    continue
+
+            extreme, stall = _pm.extreme_and_stall(
+                highs=[float(x) for x in bars["high"]],
+                lows=[float(x) for x in bars["low"]], side=side)
+            # THE BREAK-EVEN FLOOR'S TWO INPUTS, BOTH READ FROM THE VENUE THIS PASS. `spread` is
+            # charged only on the short leg, because these are bid bars; `position_manager`
+            # owns that asymmetry and this only supplies the number.
+            cost_unit = _round_trip_per_price_unit(info, symbol)
+            spread_price = (float(getattr(info, "spread", 0) or 0)
+                            * float(getattr(info, "point", 0.0) or 0.0))
+            decision = _pm.ratchet(
+                entry=float(p.price_open), current_stop=float(p.sl), stop_distance=dist,
+                extreme=extreme, atr=atr, side=side, bars_since_extreme=stall,
+                cost_per_unit=cost_unit, spread=spread_price, floor_only=_floor_only)
+
+            tag = f"MANAGE ticket {p.ticket} ({symbol})"
+            if not decision.moves:
+                log(f"{tag}: {decision.reason}")
+                continue
+            # THE IMPROVEMENT FLOOR IS THE VENUE'S STOP STEP, NOT 0.05R (2026-09-29). A modify
+            # pays no spread and no commission; the 0.05R floor skipped real tightenings of the
+            # trail -- and, before the break-even exemption, the break-even move itself -- to
+            # save a request. Any move the venue can represent (one `trade_tick_size`, else one
+            # `point`) is sent, whether it is the trail or the break-even floor.
+            _step = (float(getattr(info, "trade_tick_size", 0.0) or 0.0)
+                     or float(getattr(info, "point", 0.0) or 0.0))
+            if not _pm.tightens_by_min_step(side=side, new_stop=float(decision.new_stop),
+                                            current_stop=float(p.sl), step=_step):
+                log(f"{tag}: move {p.sl:.5f} -> {decision.new_stop:.5f} is under one venue "
+                    f"stop step ({_step:g}); nothing the broker can represent")
+                continue
+
+            # THE LEVEL MUST STILL BE A STOP WHEN IT ARRIVES, and the venue's own minimum
+            # distance is only half of that question. This block asked one thing -- is the
+            # proposed level inside `stops_level` of the market -- and only when the broker
+            # states a `stops_level` at all; on a symbol reporting zero it asked nothing. It
+            # never asked the other half: WHICH SIDE of the market the level is on. A trail
+            # computed off an extreme that price has since retraced past comes out BEHIND the
+            # market, which is not a tight stop but a market exit, and `ratchet` cannot see it
+            # because it compares the candidate to the current stop and never to the quote.
+            #
+            # HERE THAT COSTS NOTHING AND THAT IS WHY IT SURVIVED: MetaTrader answers 10016
+            # ("Invalid stops") and the account keeps the stop it had -- this log holds 92 such
+            # refusals against 15 accepted modifies. The desk's OTHER account has no such
+            # backstop: on 2026-09-24 TradeLocker accepted the identical mistake on E8 position
+            # 360287970193246861 and filled it at market, 24.13 points and 386.08 USD past the
+            # level the desk had just proven protected more. One predicate now answers both
+            # halves on both venues; `min_distance` folds the old stops_level test into it.
+            stops_level = int(getattr(info, "trade_stops_level", 0) or 0)
             tick_size = float(getattr(info, "trade_tick_size", 0.0) or 0.0)
+            tick_now = mt5.symbol_info_tick(symbol)
+            if tick_now is not None:
+                rests, why_rest = _pm.stop_rests_at_venue(
+                    stop=float(decision.new_stop), side=side,
+                    bid=float(tick_now.bid), ask=float(tick_now.ask),
+                    min_distance=(stops_level * tick_size
+                                  if stops_level and tick_size else 0.0))
+                if not rests:
+                    log(f"{tag}: {why_rest}")
+                    continue
 
             if not st["armed"]:
                 log(f"SHADOW would modify {tag}: sl {p.sl:.5f} -> {decision.new_stop:.5f} "
