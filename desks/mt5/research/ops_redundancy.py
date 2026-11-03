@@ -294,7 +294,12 @@ def terminal_health() -> dict[str, Any]:
                 out["terminal"] = {"status": "FAIL", "why": f"unreachable ({mt5.last_error()})"}
             else:
                 tick = mt5.symbol_info_tick("XAUUSD")
-                tick_age = (time.time() - float(tick.time)) if tick is not None else None
+                # `tick.time` is broker wall-clock seconds (New York + 7 h): its age is taken on
+                # the true UTC instant, or a live quote reads 2-3 h in the future (a negative age).
+                from mt5desk.broker_clock import broker_epoch_to_utc
+                tick_at = broker_epoch_to_utc(tick.time) if tick is not None else None
+                tick_age = ((datetime.now(tz=UTC) - tick_at).total_seconds()
+                            if tick_at is not None else None)
                 ok = bool(ti.connected) and bool(ti.trade_allowed)
                 out["terminal"] = {
                     "status": "PASS" if ok else "FAIL",
