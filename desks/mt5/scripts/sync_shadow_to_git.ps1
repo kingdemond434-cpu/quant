@@ -809,6 +809,8 @@ $reportPaths = @(
     # the weak-signal combiner's coverage (2026-11-03, hourly leg weak_signal_book): eligible vs
     # ingested signals with reasons, breadth, decay retirements; the hourly pass reads it here
     "desks/mt5/reports/COMBINER_COVERAGE.json",
+    # the carry-crash gate (footprint row 7, written by the same leg): hazard, proof, armed flag
+    "desks/mt5/reports/CARRY_CRASH.json",
     # breadth in independent hypothesis families, the daily new-independent metric and the
     # merge census that carries it (2026-10-28, research/hypothesis_families.py); and the
     # gauntlet novelty set-aside, measured before any trial-count decision (audit 8628268b6)

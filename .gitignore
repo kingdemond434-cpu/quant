@@ -493,6 +493,8 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/JUDGE_COVERAGE.json
 # the weak-signal combiner's coverage (2026-11-03, hourly leg weak_signal_book), on $reportPaths
 !desks/mt5/reports/COMBINER_COVERAGE.json
+# the carry-crash gate (footprint row 7): hazard, Rule-1 proof, armed flag, missed growth
+!desks/mt5/reports/CARRY_CRASH.json
 # breadth in independent hypothesis families + the daily new-independent metric (2026-10-28,
 # research/hypothesis_families.py via merge_docket; capped summary), and the gauntlet's novelty
 # set-aside census, published so any trial-count decision is made on a measurement
