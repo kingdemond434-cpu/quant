@@ -210,3 +210,5 @@ def test_a_lost_report_cannot_restart_the_hold():
     later = (now - timedelta(hours=1)).isoformat(timespec="seconds")
     assert heal.hold_start(later, row) == broke
     assert heal.hold_start(later, {"status": "LIVE", "status_at": broke}) == later
+    # no report and no break stamp: the clock's own start bounds the hold
+    assert heal.hold_start(None, {"status": "IDENTITY_BROKEN", "forward_start": broke}) == broke

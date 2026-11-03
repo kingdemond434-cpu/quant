@@ -567,7 +567,12 @@ def hold_start(reported: str | None, row: dict[str, Any]) -> str | None:
     known = [(t, str(v)) for v in (reported, stamped) if v and (t := _ts(v)) is not None]
     if known:
         return min(known)[1]
-    return reported or None             # unreadable -> hold_expired() expires it
+    if reported:
+        return reported                 # unreadable -> hold_expired() expires it
+    # Nothing recorded the hold's start. The hold cannot be older than the clock, so the
+    # forward_start bounds it: this can only expire a hold early, never let it restart.
+    fwd = row.get("forward_start")
+    return str(fwd) if fwd and _ts(fwd) is not None else None
 
 
 def hold_expired(since: str | None, now: datetime) -> bool:
