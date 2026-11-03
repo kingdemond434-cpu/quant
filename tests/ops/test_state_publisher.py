@@ -161,10 +161,18 @@ def test_authority_detects_a_state_app_push_of_code() -> None:
     spec.loader.exec_module(a)
     m = _mod()
     bot = "quant-state-publisher[bot]"
-    commits = [{"sha": "1" * 40, "author": {"login": bot}},
-               {"sha": "2" * 40, "author": {"login": bot}},
-               {"sha": "3" * 40, "author": {"login": "someone"}}]  # fmt: skip
-    files = {"1" * 40: ["desks/mt5/data/x.json"], "2" * 40: ["desks/mt5/gateway.py"],
-             "3" * 40: ["desks/mt5/gateway.py"]}  # fmt: skip
-    got = a.state_app_violations(commits, bot, files.__getitem__, m.publishable)
-    assert got == ["222222222222: desks/mt5/gateway.py"]
+    acts = [
+        {"id": 5, "activity_type": "push", "actor": {"login": bot}, "before": "a", "after": "b"},
+        {"id": 6, "activity_type": "push", "actor": {"login": bot}, "before": "b", "after": "c"},
+        {"id": 7, "activity_type": "push", "actor": {"login": "zuck"}, "before": "c", "after": "d"},
+        {"id": 8, "activity_type": "push", "actor": {"login": bot}, "before": "d", "after": "e"},
+        {"id": 9, "activity_type": "force_push", "actor": {"login": "zuck"}},
+    ]
+    files = {("a", "b"): ["desks/mt5/data/x.json"], ("b", "c"): ["desks/mt5/gateway.py"],
+             ("c", "d"): ["desks/mt5/gateway.py"], ("d", "e"): None}  # fmt: skip
+    got = a.state_app_violations(acts, bot, lambda x, y: files[(x, y)], m.publishable)
+    assert got == [
+        f"activity 6 push by {bot}: desks/mt5/gateway.py",
+        f"activity 8 push by {bot}: file list unreadable or truncated",
+        "activity 9 force_push by zuck",
+    ]

@@ -270,27 +270,42 @@ def post_status(ag: Any, repo: str, head: str, state: str, desc: str) -> None:
 STATE_APP_FILE = "STATE_APP.json"  # in the registry folder: {"login": "<slug>[bot]"} (Level 2)
 
 
+CURSOR_FILE = "state_app_cursor.json"  # in the attestations folder, authority-written
+
+
 def state_app_violations(
-    commits: list[dict[str, Any]], login: str, files_of: Callable[[str], list[str]],
-    publishable: Callable[[str], bool],
+    activities: list[dict[str, Any]], login: str,
+    files_between: Callable[[str, str], list[str] | None], publishable: Callable[[str], bool],
 ) -> list[str]:  # fmt: skip
-    """LIVE commits the state App authored that touch anything but publishable state. The App
-    bypasses the ruleset, so this is the check on its KEY, not on publish.py (#650 audit SF1)."""
+    """Judge LIVE by its PUSHES, never commit metadata (#650 audit: a key holder can write any
+    author email). A force-push or a branch deletion by anyone is a violation; a push by the state
+    App is one when before..after touches any non-publishable path, or when its file list can't
+    be read in full (None)."""
     bad: list[str] = []
-    for c in commits:
-        who = {str((c.get(k) or {}).get("login") or "") for k in ("author", "committer")}
-        if login not in who:
+    for ev in activities:
+        kind = str(ev.get("activity_type") or "")
+        who = str((ev.get("actor") or {}).get("login") or "")
+        tag = f"activity {ev.get('id')} {kind} by {who or '?'}"
+        if kind in ("force_push", "branch_deletion"):
+            bad.append(tag)
             continue
-        sha = str(c.get("sha"))
-        wrong = [f for f in files_of(sha) if not publishable(f)]
+        if who != login:
+            continue
+        files = files_between(str(ev.get("before")), str(ev.get("after")))
+        if files is None:
+            bad.append(f"{tag}: file list unreadable or truncated")
+            continue
+        wrong = [f for f in files if not publishable(f)]
         if wrong:
-            bad.append(f"{sha[:12]}: {', '.join(wrong[:5])}")
+            bad.append(f"{tag}: {', '.join(wrong[:5])}")
     return bad
 
 
 def check_state_app(ag: Any, repo: str, base: str, out: Path) -> str | None:
-    """Level 2 detector. On a violation it writes the DEACTIVATE kill file beside the
-    attestations, which stops every authority merge until a person looks."""
+    """Level 2 detector, on while STATE_APP.json exists (create it once the state App exists, so
+    the baseline is taken before Level 2). Reads LIVE's push log from a stored cursor, so no burst
+    of pushes can slide a violation out of view; on a violation it writes the DEACTIVATE kill file
+    beside the attestations, which stops every authority merge until a person looks."""
     cfg = out.parent / STATE_APP_FILE
     if not cfg.exists():
         return None
@@ -298,19 +313,49 @@ def check_state_app(ag: Any, repo: str, base: str, out: Path) -> str | None:
     if not login:
         return "STATE_APP.json has no login: detector not run"
     pub = _load("state_publisher", ROOT / "ops" / "release" / "publisher" / "publish.py")
-    commits = ag._flat(ag._gh(f"repos/{repo}/commits?sha={base}&per_page=50"))
+    cur_path = out / CURSOR_FILE
+    try:
+        last = int(json.loads(cur_path.read_text(encoding="utf-8"))["last_id"])
+    except (OSError, ValueError, KeyError, TypeError):
+        last = 0
+    if not last:  # first run: baseline at the newest push, never judge history before Level 2
+        got = ag._gh(f"repos/{repo}/activity?ref=refs/heads/{base}&per_page=1")
+        top = max((int(e.get("id") or 0) for e in got or []), default=0)
+        if top:
+            cur_path.write_text(json.dumps({"last_id": top}), encoding="utf-8")
+        return f"LIVE push log: baseline set at activity {top}"
+    new: list[dict[str, Any]] = []
+    for page in range(1, 11):  # newest first; stop at the cursor
+        got = ag._gh(f"repos/{repo}/activity?ref=refs/heads/{base}&per_page=100&page={page}")
+        if not got:
+            break
+        fresh = [e for e in got if int(e.get("id") or 0) > last]
+        new += fresh
+        if len(fresh) < len(got):
+            break
+    else:
+        return _freeze(out, ["more than 1,000 LIVE pushes since the last check"])
 
-    def files_of(sha: str) -> list[str]:
-        doc = ag._gh(f"repos/{repo}/commits/{sha}")
-        return [str(f.get("filename")) for f in doc.get("files") or []]
+    def files_between(before: str, after: str) -> list[str] | None:
+        doc = ag._gh(f"repos/{repo}/compare/{before}...{after}")
+        files = doc.get("files") or []
+        if len(files) >= 300 or doc.get("status") not in ("ahead", "identical"):
+            return None
+        return [str(f.get("filename")) for f in files]
 
-    bad = state_app_violations(commits, login, files_of, pub.publishable)
-    if not bad:
-        return f"state App {login}: last 50 LIVE commits clean"
-    (out / "DEACTIVATE").write_text(
-        "state App pushed non-state paths: " + "; ".join(bad) + "\n", encoding="utf-8"
-    )
-    return f"RED: state App {login} pushed non-state paths, DEACTIVATE raised: {'; '.join(bad)}"
+    bad = state_app_violations(new, login, files_between, pub.publishable)
+    if bad:
+        return _freeze(out, bad)
+    if new:
+        top = max(int(e.get("id") or 0) for e in new)
+        cur_path.write_text(json.dumps({"last_id": top}), encoding="utf-8")
+    return f"LIVE push log: {len(new)} new push(es) since {last}, clean"
+
+
+def _freeze(out: Path, bad: list[str]) -> str:
+    (out / "DEACTIVATE").write_text("LIVE push log violation: " + "; ".join(bad) + "\n",
+                                    encoding="utf-8")  # fmt: skip
+    return f"RED: LIVE push log violation, DEACTIVATE raised: {'; '.join(bad)}"
 
 
 def main(argv: list[str] | None = None) -> int:
