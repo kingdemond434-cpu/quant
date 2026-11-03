@@ -1328,6 +1328,182 @@ def run(*, budget_s: float = 300.0, no_fetch: bool = True, dry_run: bool = True,
     return doc
 
 
+# ------------------------------------------------------------- crypto leverage history (PIT)
+#: LEVERAGE HISTORY FOR THE MT5 CRYPTO CFDs (2026-11-03, footprint sweep row 12). The leveraged
+#: crowd's own record -- perpetual funding, open interest, the global long/short account ratio --
+#: kept as point-in-time lake series and read ONLY as conditioners of the MT5 CFD named beside
+#: each perpetual. No crypto ground is hunted: the perpetual is an input, the CFD is the trade.
+#: Funding is public at its funding time. OI and the ratio are period aggregates that Binance
+#: stamps at the period START, so a row is available one period after its stamp. Binance keeps
+#: only ~30 days of OI and ratio history, so those series ACCRUE forward from the first pass;
+#: funding history reaches back to the perpetual's listing. 401/403/418/429/451 stop the
+#: collector for the pass and are recorded; robots.txt is honoured (a Disallow skips the path).
+LEVERAGE_PERPS: dict[str, str] = {"BTCUSDT": "BTCUSD", "ETHUSDT": "ETHUSD", "SOLUSDT": "SOLUSD"}
+LEVERAGE_SERIES = DESK / "data" / "lake" / "series"
+_BDATA = "https://fapi.binance.com/futures/data"
+_HARD = (401, 403, 418, 429, 451)
+_HOUR_MS = 3_600_000
+
+
+class LeverageStop(Exception):
+    def __init__(self, code: int, url: str) -> None:
+        super().__init__(f"HTTP {code} {url}")
+        self.code = code
+
+
+def _lev_get(url: str, timeout: float = 20.0) -> Any:
+    """One honest GET, no retry. A hard status raises LeverageStop; anything else returns None."""
+    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read(8_000_000).decode("utf-8", "replace"))
+    except urllib.error.HTTPError as exc:
+        if exc.code in _HARD:
+            raise LeverageStop(exc.code, url) from exc
+        return None
+    except (urllib.error.URLError, OSError, ValueError):
+        return None
+
+
+def funding_rows(payload: Any) -> list[dict[str, Any]]:
+    """fapi/v1/fundingRate -> rows stamped at the funding time (public at that instant)."""
+    out = []
+    for r in payload if isinstance(payload, list) else []:
+        try:
+            t, v = int(r["fundingTime"]), float(r["fundingRate"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if math.isfinite(v):
+            out.append({"event_ms": t, "available_ms": t, "funding_rate": v})
+    return out
+
+
+def period_rows(payload: Any, field: str, column: str, period_ms: int) -> list[dict[str, Any]]:
+    """futures/data period aggregates -> rows available one period after their stamp."""
+    out = []
+    for r in payload if isinstance(payload, list) else []:
+        try:
+            t, v = int(r["timestamp"]), float(r[field])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if math.isfinite(v):
+            out.append({"event_ms": t, "available_ms": t + period_ms, column: v})
+    return out
+
+
+def merge_leverage(old: Any, rows: Sequence[Mapping[str, Any]]) -> Any:
+    """Union of the held series and new rows, one row per (event, column), newest value kept."""
+    import pandas as pd
+    new = pd.DataFrame(list(rows))
+    if new.empty:
+        return old
+    new["event_time"] = pd.to_datetime(new.pop("event_ms"), unit="ms", utc=True)
+    new["available_time"] = pd.to_datetime(new.pop("available_ms"), unit="ms", utc=True)
+    long = new.melt(id_vars=["event_time", "available_time"], var_name="col").dropna()
+    if old is not None and len(old):
+        held = old.melt(id_vars=["event_time", "available_time"], var_name="col").dropna()
+        long = pd.concat([held, long])
+    long = long.drop_duplicates(["event_time", "col"], keep="last")
+    wide = long.pivot_table(index=["event_time", "available_time"], columns="col",
+                            values="value", aggfunc="last").reset_index()
+    wide.columns.name = None
+    return wide.sort_values("event_time").reset_index(drop=True)
+
+
+def collect_leverage(*, get: Any = None, root: Path | None = None, dry_run: bool = False,
+                     robots: Any = None) -> dict[str, Any]:
+    """Fetch, merge and write `crypto_lev_<perp>.parquet` for every LEVERAGE_PERPS row."""
+    import pandas as pd
+    fetch = get or _lev_get
+    base = Path(root) if root is not None else LEVERAGE_SERIES
+    report: dict[str, Any] = {"at": now_iso(), "series": {}, "hard_stop": None, "skipped": []}
+    for perp, cfd in LEVERAGE_PERPS.items():
+        path = base / f"crypto_lev_{perp.lower()}.parquet"
+        try:
+            old = pd.read_parquet(path) if path.exists() else None
+        except Exception:
+            old = None
+        last_f = None
+        if old is not None and "funding_rate" in old.columns:
+            got = old.dropna(subset=["funding_rate"])
+            if len(got):
+                last_f = int(pd.Timestamp(got["event_time"].max()).value // 1_000_000)
+        q = {"symbol": perp, "limit": "1000"}
+        if last_f is not None:
+            q["startTime"] = str(last_f + 1)
+        urls = [(f"{_BFUT}/fundingRate?{urllib.parse.urlencode(q)}", "funding"),
+                (f"{_BDATA}/openInterestHist?symbol={perp}&period=1h&limit=500", "oi"),
+                (f"{_BDATA}/globalLongShortAccountRatio?symbol={perp}&period=1h&limit=500",
+                 "ls")]
+        rows: list[dict[str, Any]] = []
+        try:
+            for url, kind in urls:
+                if robots is not None and not robots(url):
+                    report["skipped"].append({"url": url, "why": "robots.txt disallows"})
+                    continue
+                payload = fetch(url)
+                if kind == "funding":
+                    rows += funding_rows(payload)
+                elif kind == "oi":
+                    rows += period_rows(payload, "sumOpenInterestValue", "oi_usd", _HOUR_MS)
+                else:
+                    rows += period_rows(payload, "longShortRatio", "ls_ratio", _HOUR_MS)
+        except LeverageStop as stop:
+            report["hard_stop"] = {"code": stop.code, "perp": perp}
+            break
+        merged = merge_leverage(old, rows)
+        if merged is None or not len(merged):
+            report["series"][perp] = {"cfd": cfd, "rows": 0, "status": "UNMEASURED"}
+            continue
+        if not dry_run:
+            base.mkdir(parents=True, exist_ok=True)
+            tmp = path.with_suffix(".tmp")
+            merged.to_parquet(tmp, index=False)
+            os.replace(tmp, path)
+        report["series"][perp] = {"cfd": cfd, "rows": int(len(merged)), "new_rows": len(rows),
+                                  "last_event": str(merged["event_time"].max())}
+    return report
+
+
+def mint_leverage_cells(report: Mapping[str, Any], *, enqueue: Any = None,
+                        dry_run: bool = False) -> int:
+    """One exogenous_conditioner cell per (series column, transform, chart) on its own CFD.
+    The registry's content hash makes a re-enqueue a no-op, so a cell is never charged twice."""
+    if dry_run:
+        return 0
+    if enqueue is None:
+        try:
+            from libs.moat.registry import enqueue_candidate as enqueue
+        except Exception:
+            return 0
+    n = 0
+    for perp, row in (report.get("series") or {}).items():
+        if not row.get("rows"):
+            continue
+        sid = f"crypto_lev_{perp.lower()}"
+        for col in ("funding_rate", "oi_usd", "ls_ratio"):
+            for tf in ("level_z", "delta_z"):
+                for chart in ("H1", "H4", "D1"):
+                    mech = (f"{perp} {col}: the leveraged crowd's own positioning conditions "
+                            f"the MT5 CFD {row['cfd']} (a sensor, never a hunted venue)")
+                    try:
+                        _cid, created = enqueue(
+                            family="exogenous_conditioner", symbol=row["cfd"],
+                            params={"source": sid, "signal": col, "transform": tf},
+                            origin="shadow_institutional", mechanism=mech, chart=chart,
+                            horizon=chart, source_id=sid, generator="crypto_leverage",
+                            department="information", asset_class="crypto_cfd",
+                            transformation="leverage_state",
+                            required_data=[f"desks/mt5/data/lake/series/{sid}.parquet"],
+                            pit_status="STAMPED", causal_rationale=mech,
+                            falsifier=f"the {tf} of {sid}.{col} has no relation to "
+                                      f"{row['cfd']} at {chart} out of sample")
+                    except Exception:
+                        continue
+                    n += int(bool(created))
+    return n
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="the free shadow-institutional stack")
     ap.add_argument("--fetch", action="store_true",
@@ -1337,7 +1513,26 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true", help="measure and write nothing")
     ap.add_argument("--budget-s", type=float, default=300.0)
     ap.add_argument("--risk-target", default="US500")
+    ap.add_argument("--leverage-history", action="store_true",
+                    help="only collect the crypto leverage history for the MT5 crypto CFDs")
     a = ap.parse_args(argv)
+    if a.leverage_history:
+        if str(DESK.parent.parent) not in sys.path:
+            sys.path.insert(0, str(DESK.parent.parent))
+        stop = DESK / "data" / "CRYPTO_LEVERAGE_STOP.json"
+        if stop.exists():
+            # A hard status is a standing refusal until a person reads it and deletes the file.
+            print(json.dumps({"hard_stop": json.loads(stop.read_text("utf-8") or "{}")}))
+            return 0
+        guard = Guard(budget_s=a.budget_s, no_fetch=False)
+        rep = collect_leverage(dry_run=a.dry_run, robots=lambda u: guard.robots_ok(u)[0])
+        if rep["hard_stop"] and not a.dry_run:
+            _write_atomic(stop, {**rep["hard_stop"], "at": rep["at"]})
+        rep["cells_new"] = mint_leverage_cells(rep, dry_run=a.dry_run)
+        if not a.dry_run:
+            _write_atomic(DESK / "reports" / "CRYPTO_LEVERAGE.json", rep)
+        print(json.dumps({k: rep[k] for k in ("series", "hard_stop", "cells_new")}))
+        return 0
     doc = run(budget_s=a.budget_s, no_fetch=not a.fetch, dry_run=a.dry_run,
               risk_target=a.risk_target)
     for row in doc["ensembles"]:
