@@ -1,7 +1,49 @@
 {
-  "_": "Config-driven channel list for scripts/mine_channel_transcripts.py. Add a channel by adding a row; no code change. tabs = which channel tabs to enumerate (every video ever posted = videos + shorts + streams).",
-  "channels": [
-    {"handle": "@QuantGuild", "name": "Quant Guild", "tabs": ["videos", "shorts", "streams"], "added": "2026-11-03", "requested_by": "zuck"},
-    {"handle": "@Algovibes", "name": "Algovibes", "tabs": ["videos", "shorts", "streams"], "added": "2026-11-03", "requested_by": "zuck"}
-  ]
+ "_": "Config-driven channel list for scripts/mine_channel_transcripts.py. Add a channel by adding a row; no code change. tabs = which channel tabs to enumerate (every video ever posted = videos + shorts + streams).",
+ "channels": [
+  {
+   "handle": "@QuantGuild",
+   "name": "Quant Guild",
+   "tabs": [
+    "videos",
+    "shorts",
+    "streams"
+   ],
+   "added": "2026-11-03",
+   "requested_by": "zuck"
+  },
+  {
+   "handle": "@Algovibes",
+   "name": "Algovibes",
+   "tabs": [
+    "videos",
+    "shorts",
+    "streams"
+   ],
+   "added": "2026-11-03",
+   "requested_by": "zuck"
+  },
+  {
+   "handle": "@DaviddTech",
+   "name": "DaviddTech",
+   "tabs": [
+    "videos",
+    "shorts",
+    "streams"
+   ],
+   "added": "2026-11-03",
+   "requested_by": "zuck"
+  },
+  {
+   "handle": "@saleh.m",
+   "name": "saleh.m",
+   "tabs": [
+    "videos",
+    "shorts",
+    "streams"
+   ],
+   "added": "2026-11-03",
+   "requested_by": "zuck"
+  }
+ ]
 }
