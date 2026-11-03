@@ -707,17 +707,22 @@ def registry_clear(
     head: str,
     window: Callable[[], tuple[datetime | None, str]],
     now: datetime | None = None,
+    same: Callable[[str], bool] = lambda sha: False,
 ) -> tuple[dict[str, str] | None, str]:
-    """(the CLEAR that lets the box merge `head`, or None; why). The exact head only. `window`
-    is called only once the row itself qualifies, and gives the gate's own window start."""
+    """(the CLEAR that lets the box merge `head`, or None; why). The exact head, or (Desk
+    health 2026-11-03 19:47Z) a head whose own change is BYTE-IDENTICAL to the cleared one's
+    (`same`: patch_id, the manual path's carry): a pure merge of the base into a cleared PR
+    keeps its CLEAR, so bringing a PR up to date never costs a new row. Any change of the PR's
+    own diff fails `same` and needs a new row. `window` is called only once the row itself
+    qualifies, and gives the gate's own window start."""
     now = now or datetime.now(UTC)
     mine = [r for r in rows if r.get("pr") == pr]
     if not mine:
         return None, "no registry verdict"
     last = mine[-1]
-    if last.get("verdict") != "CLEAR" or last.get("sha") != head:
-        sha = str(last.get("sha"))[:9]
-        return None, f"the latest registry verdict is {last.get('verdict')} {sha}"
+    sha = str(last.get("sha") or "")
+    if last.get("verdict") != "CLEAR" or not (sha == head or (len(sha) == 40 and same(sha))):
+        return None, f"the latest registry verdict is {last.get('verdict')} {sha[:9]}"
     try:
         at = datetime.fromisoformat(str(last.get("at") or "").replace("Z", "+00:00"))
     except ValueError:
@@ -735,7 +740,10 @@ def registry_clear(
             f"registry CLEAR {head[:9]}: the veto window is {age_h:.1f} of {REGISTRY_HOLD_H:.0f} h"
         )
     got = {"verdict": "CLEAR", "sha": head, "method": "merge", "at": start.isoformat()}
-    return {**got, "by": "registry"}, f"{REGISTRY_TITLE} {head[:9]} ({age_h:.0f} h, no veto)"
+    carried = "" if sha == head else f", carried from {sha[:9]} (same change)"
+    return {**got, "by": "registry"}, (
+        f"{REGISTRY_TITLE} {head[:9]} ({age_h:.0f} h, no veto{carried})"
+    )
 
 
 BEHIND = "it is behind"
@@ -1169,11 +1177,30 @@ def run(
             return None, f"{mwhy}; registry: {owhy}"
         fresh, fwhy = up_to_date(base, head)
         if not fresh:
+            # BEHIND IS NOT A DEMOTION here either (Desk health 2026-11-03 19:47Z: every registry
+            # PR was refused as behind LIVE). The box merges LIVE in, as on the AUTO path; the
+            # cleared change carries to the new head by patch_id, and the next run decides.
+            if (
+                fwhy.startswith(BEHIND)
+                and str(p["head"].get("ref") or "").startswith("claude/")
+                and (bring_ups is None or bring_ups[0] > 0)
+                and bring_up(repo, pr, head, base)
+            ):
+                if bring_ups is not None:
+                    bring_ups[0] -= 1
+                return None, f"{mwhy}; registry: {fwhy}: LIVE merged in; the next run decides"
             return None, f"{mwhy}; registry: {fwhy}"
         now = datetime.now(UTC)
         seen = Path(path + ".window.json")
+        cleared_sha = str(([r for r in rows if r.get("pr") == pr] or [{}])[-1].get("sha") or head)
+        # the window belongs to the CLEARED change: a pure base merge keeps it running
         return registry_clear(
-            rows, pr, head, lambda: registry_window(seen, pr, head, now, run_notify), now
+            rows,
+            pr,
+            head,
+            lambda: registry_window(seen, pr, cleared_sha, now, run_notify),
+            now,
+            same_change,
         )
 
     clear, why = verdict_now()
