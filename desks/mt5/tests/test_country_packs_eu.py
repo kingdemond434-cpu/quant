@@ -43,6 +43,9 @@ ROUTES = {
     # the World Gold Council pack's public pages (test_country_pack_wgc.py tests them)
     "monthly-central-bank-statistics": "wgc_cb_monthly.html",
     "gold-etfs-holdings-and-flows": "wgc_etf_flows.html",
+    # the metal ETF issuers' pages (test_country_pack_etf_issuers.py tests them)
+    "GLD_US_archive": "spdr_gld_archive.csv", "ishares-silver-trust": "ishares_slv.html",
+    "ishares-gold-trust": "ishares_iau.html",
 }
 
 
@@ -280,7 +283,8 @@ def test_a_door_empty_on_three_consecutive_runs_turns_red_and_recovers(box) -> N
 def test_no_door_reached_is_unmeasured_never_green(box) -> None:
     down = W.FetchError("blocked_proxy", "x")
     rep = W.run(budget_s=120, fetch=Web({"api.": down, "static.nbp": down, "tcmb": down,
-                                         "gold.org": down}), now=NOW)
+                                         "gold.org": down, "spdrgoldshares": down,
+                                         "ishares": down}), now=NOW)
     assert rep["country_packs"]["verdict"] == "UNMEASURED"
     assert rep["country_packs"]["packs"]["pl"]["doors"]["pl_fx_usd"]["rows"] == "UNMEASURED"
 
