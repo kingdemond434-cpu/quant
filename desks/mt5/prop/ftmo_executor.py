@@ -378,9 +378,10 @@ def protect(mt5: Any, st: dict[str, Any], doc: dict[str, Any], p: Any, *, cet: s
     opened = getattr(p, "price_open", None)
     if not isinstance(opened, (int, float)) or not opened > 0:
         return
+    opened_sl, comm = _mm.opening_facts(mt5, int(p.ticket))
     dist, _new = _mm.original_stop_distance(st.setdefault("orig_stop_dist", {}), int(p.ticket),
                                             float(opened),
-                                            float(getattr(p, "sl", 0.0) or 0.0))
+                                            float(getattr(p, "sl", 0.0) or 0.0), opened_sl)
     if dist is None:
         return
     info = mt5.symbol_info(str(p.symbol))
@@ -388,7 +389,8 @@ def protect(mt5: Any, st: dict[str, Any], doc: dict[str, Any], p: Any, *, cet: s
         doc.setdefault("manage_unmeasured", []).append(f"{p.symbol} #{p.ticket}: no symbol_info")
         return
     try:
-        move = _mm.stop_move(mt5, p, info, original_dist=dist, floor_only=not trail > 0.0)
+        move = _mm.stop_move(mt5, p, info, original_dist=dist, floor_only=not trail > 0.0,
+                             commission_per_lot_side=comm)
     except Exception as exc:  # a read this pass could not make never takes the pass down
         doc.setdefault("manage_unmeasured", []).append(
             f"{p.symbol} #{p.ticket}: stop management unavailable ({type(exc).__name__}: {exc})"

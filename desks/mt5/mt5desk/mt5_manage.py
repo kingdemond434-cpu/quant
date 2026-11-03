@@ -26,6 +26,7 @@ Pure apart from the reads it is handed (`mt5` is any object with the MetaTrader5
 """
 from __future__ import annotations
 
+import contextlib
 from dataclasses import dataclass
 from itertools import pairwise
 from typing import Any
@@ -65,28 +66,59 @@ def rates_since(mt5: Any, symbol: str, timeframe: int, opened_at: int, count: in
     return bars[bars["time"].astype("int64") >= start].reset_index(drop=True)
 
 
-def round_trip_per_price_unit(info: Any) -> float | None:
+def round_trip_per_price_unit(info: Any, commission_per_lot_side: float | None
+                              ) -> float | None:
     """The round-trip commission in PRICE units (the venue's tick value / tick size converts),
-    or None when the venue reports a degenerate tick value (the floor then waits, never guesses)."""
-    import libs.portfolio.fusion_cost as _fc  # as the gateway reads it: at use, not at import
+    or None when the venue reports a degenerate tick value (the floor then waits, never guesses).
+    `commission_per_lot_side` is the ACCOUNT's own (FTMO's is not Fusion's: audit of 730b0952c
+    SF1); None means Fusion's measured figure (`libs.portfolio.fusion_cost`), which the gateway
+    uses for its own account."""
+    if commission_per_lot_side is None:
+        import libs.portfolio.fusion_cost as _fc  # as the gateway reads it: at use, not import
 
+        commission_per_lot_side = float(_fc.COMMISSION_PER_LOT_PER_SIDE)
     tick_value = float(getattr(info, "trade_tick_value", 0.0) or 0.0)
     tick_size = float(getattr(info, "trade_tick_size", 0.0) or 0.0)
     if not (tick_value > 0 and tick_size > 0):
         return None
-    return (2.0 * float(_fc.COMMISSION_PER_LOT_PER_SIDE)) / (tick_value / tick_size)
+    return (2.0 * float(commission_per_lot_side)) / (tick_value / tick_size)
+
+
+def opening_facts(mt5: Any, ticket: int) -> tuple[float | None, float | None]:
+    """(the stop the position was OPENED with, its commission per lot per side), read off the
+    account's own history, each None when unreadable. The opening order's sl is the initial
+    risk even when the stop has since moved (audit SF2: a position already open at deploy, or
+    re-stopped by hand, would otherwise record its moved stop as the risk); the entry deal's
+    commission is this account's own cost of the instrument (SF1)."""
+    sl = comm = None
+    with contextlib.suppress(Exception):
+        orders = mt5.history_orders_get(position=int(ticket)) or []
+        first = min(orders, key=lambda o: float(getattr(o, "time_setup", 0) or 0), default=None)
+        v = float(getattr(first, "sl", 0.0) or 0.0) if first is not None else 0.0
+        sl = v if v > 0 else None
+    with contextlib.suppress(Exception):
+        deals = [d for d in (mt5.history_deals_get(position=int(ticket)) or [])
+                 if int(getattr(d, "entry", -1)) == 0]
+        if deals:
+            vol = sum(float(d.volume) for d in deals)
+            if vol > 0:
+                comm = abs(sum(float(getattr(d, "commission", 0.0) or 0.0) for d in deals)) / vol
+    return sl, comm
 
 
 def original_stop_distance(store: dict[str, Any], ticket: int, price_open: float,
-                           sl: float) -> tuple[float | None, bool]:
-    """(the stop distance the position was OPENED with, captured_now). Captured on first sight and
+                           sl: float, opened_sl: float | None
+                           ) -> tuple[float | None, bool]:
+    """(the stop distance the position was OPENED with, captured_now). Captured once and
     remembered in `store` (the lane's own state), because once the stop moves `sl` no longer
-    encodes the initial risk. No stop -> None: no denominator is ever invented."""
-    if not sl:
-        return None, False
+    encodes the initial risk. `opened_sl`, the opening order's own stop when the history has it,
+    wins over the live one (audit SF2). No stop -> None: no denominator is ever invented."""
     key = str(int(ticket))
     if key not in store:
-        dist = abs(float(price_open) - float(sl))
+        basis = opened_sl if opened_sl else sl
+        if not basis:
+            return None, False
+        dist = abs(float(price_open) - float(basis))
         if not dist > 0:
             return None, False
         store[key] = dist
@@ -94,8 +126,8 @@ def original_stop_distance(store: dict[str, Any], ticket: int, price_open: float
     return float(store[key]), False
 
 
-def stop_move(mt5: Any, p: Any, info: Any, *, original_dist: float, floor_only: bool
-              ) -> StopMove:
+def stop_move(mt5: Any, p: Any, info: Any, *, original_dist: float, floor_only: bool,
+              commission_per_lot_side: float | None) -> StopMove:
     """The stop this pass moves position `p` to, or why not. Exactly the gateway's sequence."""
     symbol = str(p.symbol)
     side = 1 if int(p.type) == int(getattr(mt5, "POSITION_TYPE_BUY", 0)) else -1
@@ -116,7 +148,7 @@ def stop_move(mt5: Any, p: Any, info: Any, *, original_dist: float, floor_only: 
             return StopMove(None, "ATR non-positive")
     extreme, stall = _pm.extreme_and_stall(highs=[float(x) for x in bars["high"]],
                                            lows=[float(x) for x in bars["low"]], side=side)
-    cost = round_trip_per_price_unit(info)
+    cost = round_trip_per_price_unit(info, commission_per_lot_side)
     spread = float(getattr(info, "spread", 0) or 0) * float(getattr(info, "point", 0.0) or 0.0)
     decision = _pm.ratchet(entry=float(p.price_open), current_stop=float(p.sl),
                            stop_distance=float(original_dist), extreme=extreme, atr=atr,

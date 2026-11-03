@@ -113,37 +113,57 @@ def _terminal(*, side: int, entry: float, sl: float, highs: list[float], lows: l
 def test_a_winner_past_the_trigger_gets_the_break_even_floor() -> None:
     mt5, p, info = _terminal(side=1, entry=100.0, sl=99.0, highs=[100.5, 101.2],
                              lows=[99.8, 100.4], bid=101.0, ask=101.02)
-    move = mm.stop_move(mt5, p, info, original_dist=1.0, floor_only=True)
+    move = mm.stop_move(mt5, p, info, original_dist=1.0, floor_only=True,
+                       commission_per_lot_side=None)
     assert move.new_stop is not None and move.new_stop >= 100.0 and move.breakeven_floor
 
 
 def test_a_trade_short_of_the_trigger_keeps_its_stop() -> None:
     mt5, p, info = _terminal(side=1, entry=100.0, sl=99.0, highs=[100.3, 100.5],
                              lows=[99.8, 100.1], bid=100.4, ask=100.42)
-    assert mm.stop_move(mt5, p, info, original_dist=1.0, floor_only=True).new_stop is None
+    assert mm.stop_move(mt5, p, info, original_dist=1.0, floor_only=True,
+                       commission_per_lot_side=None).new_stop is None
 
 
 def test_a_level_behind_the_market_is_never_sent() -> None:
     # the floor is earned, but price has fallen back under it: a stop there is a market exit
     mt5, p, info = _terminal(side=1, entry=100.0, sl=99.0, highs=[101.2, 100.2],
                              lows=[100.0, 99.9], bid=99.95, ask=99.97)
-    move = mm.stop_move(mt5, p, info, original_dist=1.0, floor_only=True)
+    move = mm.stop_move(mt5, p, info, original_dist=1.0, floor_only=True,
+                       commission_per_lot_side=None)
     assert move.new_stop is None
 
 
 def test_a_short_gets_the_mirror_image() -> None:
     mt5, p, info = _terminal(side=-1, entry=100.0, sl=101.0, highs=[100.2, 99.6],
                              lows=[99.5, 98.8], bid=98.98, ask=99.0)
-    move = mm.stop_move(mt5, p, info, original_dist=1.0, floor_only=True)
+    move = mm.stop_move(mt5, p, info, original_dist=1.0, floor_only=True,
+                       commission_per_lot_side=None)
     assert move.new_stop is not None and move.new_stop <= 100.0
 
 
 def test_the_initial_risk_is_captured_once_and_kept() -> None:
     store: dict = {}
-    assert mm.original_stop_distance(store, 7, 100.0, 99.0) == (1.0, True)
+    assert mm.original_stop_distance(store, 7, 100.0, 99.0, None) == (1.0, True)
     # the stop has moved since: R stays measured against the opening risk
-    assert mm.original_stop_distance(store, 7, 100.0, 100.2) == (1.0, False)
-    assert mm.original_stop_distance(store, 8, 100.0, 0.0) == (None, False)
+    assert mm.original_stop_distance(store, 7, 100.0, 100.2, None) == (1.0, False)
+    assert mm.original_stop_distance(store, 8, 100.0, 0.0, None) == (None, False)
+    # first seen AFTER a move (open at deploy, or re-stopped by hand): the opening order's stop
+    # is the risk, never the moved one (audit SF2)
+    assert mm.original_stop_distance(store, 9, 100.0, 100.5, 98.0) == (2.0, True)
+
+
+def test_the_opening_facts_are_the_accounts_own() -> None:
+    mt5 = SimpleNamespace(
+        history_orders_get=lambda position: [SimpleNamespace(time_setup=2, sl=99.5),
+                                             SimpleNamespace(time_setup=1, sl=98.0)],
+        history_deals_get=lambda position: [
+            SimpleNamespace(entry=0, volume=0.5, commission=-1.25),
+            SimpleNamespace(entry=1, volume=0.5, commission=-1.25)])
+    assert mm.opening_facts(mt5, 7) == (98.0, 2.5)
+    broken = SimpleNamespace(history_orders_get=lambda position: None,
+                             history_deals_get=lambda position: 1 / 0)
+    assert mm.opening_facts(broken, 7) == (None, None)
 
 
 # ------------------------------------------- the FTMO lanes run it on their own positions
@@ -184,8 +204,8 @@ def test_the_ftmo_gold_lane_manages_its_own_position_without_e8() -> None:
            {"time": h0 + 3600, "open": 99.6, "high": 99.6, "low": 98.8, "close": 98.99}]
     mt5.copy_rates_from_pos = lambda sym, tf, start, n: h1
     mt5.symbol_info = lambda sym: info
-    new, why = ff.native_stop(mt5, {}, p)
-    assert new is not None and new <= 100.0, why
+    new, why, failed = ff.native_stop(mt5, {}, p)
+    assert new is not None and new <= 100.0 and not failed, why
 
 
 # ------------------------------------------- the Fusion gateway decides exactly like the shared one
@@ -234,7 +254,8 @@ def test_the_gateway_decides_like_the_shared_one(side: int, highs: list[float],
     sleeves = [{"name": "fam_x", "symbol": "XAUUSD", "exec": "family_market"}] if floor_only else []
     ns["manage_open_positions"](st, sleeves)
     gw = sent[0]["sl"] if sent else None
-    shared = mm.stop_move(mt5, p, info, original_dist=1.0, floor_only=floor_only).new_stop
+    shared = mm.stop_move(mt5, p, info, original_dist=1.0, floor_only=floor_only,
+                         commission_per_lot_side=None).new_stop
     assert gw == shared, (gw, shared, logs)
     if bid in (101.0, 98.98, 103.0):  # the winners: the comparison is never vacuous
         assert gw is not None, logs
@@ -251,3 +272,23 @@ def test_a_mirror_equal_to_the_venue_stop_sends_nothing() -> None:
                                        step=0.01)
     src = (_DESK / "prop" / "ftmo_follower.py").read_text("utf-8")
     assert "NO NO-OP MODIFIES" in src and "tightens_by_min_step(side=1 if side ==" in src
+
+
+def test_a_decided_no_move_keeps_ftmo_s_own_stop_not_e8_s(monkeypatch) -> None:
+    """Audit of 730b0952c MF: E8's acknowledged stop is the fallback only when FTMO's own decision
+    could not be MADE. A decided "no move" (floor not reached) keeps FTMO's stop even when E8's is
+    tighter, exactly as Fusion's would stay -- the tighter of two mechanisms is a third one."""
+    from prop import ftmo_follower as ff
+
+    mt5, p, info = _terminal(side=1, entry=100.0, sl=99.0, highs=[100.3, 100.5],
+                             lows=[99.8, 100.1], bid=100.4, ask=100.42)
+    mt5.symbol_info = lambda sym: info
+    new, why, failed = ff.native_stop(mt5, {}, p)
+    assert new is None and not failed, why
+    # the follower's use of it: only `failed` opens the mirror
+    src = (_DESK / "prop" / "ftmo_follower.py").read_text("utf-8")
+    assert "new, how, failed = native_stop(mt5, st, p)" in src
+    assert "if new is None and failed:" in src
+    # and a read that could not be made does report failure
+    mt5.symbol_info = lambda sym: None
+    assert ff.native_stop(mt5, {}, p)[2] is True
