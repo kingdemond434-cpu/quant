@@ -160,6 +160,13 @@ def _wall_due(name: str, st: dict) -> bool:
     return age >= REPROBE_DAYS
 
 
+def _rail_refused(exc: BaseException) -> bool:
+    """A refusal by the box's data rails (`box_rails`, installed only on the box's intel feed),
+    never by the source itself. Off the box the module is not loaded and this is always False."""
+    rails = sys.modules.get("box_rails")
+    return rails is not None and isinstance(exc, getattr(rails, "RailRefusal", ()))
+
+
 def _robots_still_disallows(host: str, ua_token: str) -> bool:
     """Re-read robots.txt and report whether this agent is still refused.
 
@@ -168,7 +175,9 @@ def _robots_still_disallows(host: str, ua_token: str) -> bool:
     """
     try:
         txt = fetch(f"https://{host}/robots.txt")
-    except Exception:
+    except Exception as exc:
+        if _rail_refused(exc):
+            raise  # the box never asked: that is UNMEASURED, not "still disallows"
         return True
     group_ua, disallowed = None, False
     for raw in txt.splitlines():
@@ -193,6 +202,8 @@ def _probe_wall(name: str, wall: dict) -> tuple[bool, str]:
     try:
         fetch(wall["url"])
     except Exception as exc:
+        if _rail_refused(exc):
+            raise  # the box never asked: that is UNMEASURED, not "still blocked"
         return False, f"still blocked: {str(exc)[:120]}"
     return True, "target URL now answers -- source resumable"
 
@@ -681,8 +692,20 @@ def run_and_save() -> dict:
             # `walled` row carrying its verdict and evidence -- so the corpus records WHY the
             # channel is dark -- and it is fetched only when its rediscovery probe comes due.
             if _wall_due(name, st):
-                lifted, note = _probe_wall(name, wall)
-                probes[name] = datetime.now(tz=UTC).isoformat(timespec="seconds")
+                # A PROBE THE BOX'S RAILS REFUSED NEVER HAPPENED (2026-11-03). The box never
+                # contacts a VPS-walled host, so its "probe" learned nothing: it is recorded as
+                # UNMEASURED and the probe clock is NOT advanced -- the wall's rediscovery stays
+                # owed to the clock that may ask, instead of reading as asked-and-still-walled.
+                try:
+                    lifted, note = _probe_wall(name, wall)
+                    measured = True
+                except Exception as exc:
+                    if not _rail_refused(exc):
+                        raise
+                    lifted, measured = False, False
+                    note = f"probe UNMEASURED, refused by the box rails: {str(exc)[:120]}"
+                if measured:
+                    probes[name] = datetime.now(tz=UTC).isoformat(timespec="seconds")
                 if lifted:
                     try:
                         rows_ = fn()
@@ -699,7 +722,8 @@ def run_and_save() -> dict:
                     rows_ = [row(name, "walled", f"{wall['verdict']}: {note}",
                                  wall.get("url", f"https://{wall['host']}/"),
                                  wall["evidence"], verdict=wall["verdict"],
-                                 walled_since=wall["since"], needs_selector_work=False)]
+                                 walled_since=wall["since"], needs_selector_work=False,
+                                 probe="MEASURED" if measured else "UNMEASURED")]
             else:
                 rows_ = [row(name, "walled", f"{wall['verdict']} (probe not due)",
                              wall.get("url", f"https://{wall['host']}/"), wall["evidence"],

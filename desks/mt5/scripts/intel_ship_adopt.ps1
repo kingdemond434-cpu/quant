@@ -96,6 +96,12 @@ if ($lastSha -and $lastSha -eq $shipSha) {
     exit 0
 }
 
+# The paths the box itself writes, excluded from every checkout (git ':!' pathspec magic).
+$boxWritten = @(
+    ':!desks/mt5/data/intelligence/seed_miners_state.json',
+    ':!desks/mt5/data/intelligence/latest_discoveries.json'
+)
+
 # 2. wait for MT5-ShadowSync the way Adopt-And-Seal does (sync limit is 10 min; give it 9)
 $waited = 0
 while ((Get-ScheduledTask -TaskName "MT5-ShadowSync" -ErrorAction SilentlyContinue).State -eq "Running") {
@@ -126,7 +132,11 @@ if (-not $gotLock) { Log ("another git writer held " + $script:GitWriterHandle.N
 try {
     # 4. land ONLY the two discovery trees from the dedicated ref. The expensive transfer above
     # happened before this lock window; only the bounded index/worktree write is serialized.
-    & git checkout $shipRef -- data/intelligence desks/mt5/data/intelligence 2>&1 | Out-Null
+    # THE BOX-WRITTEN FILES ARE NEVER CHECKED OUT OVER (audit HOLD on 84e1e474b). Since
+    # 2026-11-03 the box's own `intel_feed` leg rewrites these every sweep; a VPS that came back
+    # and shipped would otherwise revert them to its copies. Each per-source discoveries_<ts>
+    # file has a unique name, so the ship's archive still lands beside the box's.
+    & git checkout $shipRef -- data/intelligence desks/mt5/data/intelligence @boxWritten 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) { Log "git checkout failed (rc=$LASTEXITCODE)"; exit 4 }
 
     # 5. verify a marker from the ship is actually on disk (the ship always carries the

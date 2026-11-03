@@ -8,8 +8,12 @@ The miners were written for the VPS and send a browser User-Agent (`seed_miners.
 `libs.data.polite_fetch.BROWSER_UA`, and each external miner's own header). A browser UA defeats
 every robots.txt group that names an agent -- forexpeacearmy refused ClaudeBot in writing and was
 still being fetched under a Chrome string. The box's feed widens those fetches onto the box's
-own IP, so on THAT path every HTTP request in the process (and in the miner children
-`run_all_miners` spawns) goes through these rails, whatever the miner's own code says:
+own IP, so on THAT path every HTTP request in the process goes through these rails, whatever
+the miner's own code says. The feed spawns no miner processes of its own: seed_miners runs its
+sources (regional_survivor_hunters included) in-process and never calls `run_all_miners`, and
+each `hourly_discovery --organ` child installs the rails itself from QUANT_BOX_RAILS=1. The rails
+cover `requests` and `urllib.request`; no file the feed runs imports another HTTP client
+(test_box_intel_feed pins that over the whole local import closure):
 
 1. AN HONEST USER-AGENT. Every request is re-stamped `USER_AGENT`: the project's research
    crawler, with the public repository as its contact. No email, no browser string.
@@ -45,9 +49,9 @@ from typing import Any
 from urllib.parse import urlsplit
 
 ENV = "QUANT_BOX_RAILS"
-#: When set, every refusal in this process AND in every child that inherits the environment (the
-#: miner processes `run_all_miners` spawns) is appended here as one JSON line, so the unit's
-#: report names the children's refusals too, not only its own process's.
+#: When set, every refusal in this process AND in every child that inherits the environment (each
+#: `hourly_discovery --organ` child) is appended here as one JSON line, so the feed's report
+#: names the children's refusals too, not only its own process's.
 LOG_ENV = "QUANT_BOX_RAILS_LOG"
 REPO_URL = "https://github.com/kingdemond434-cpu/quant"
 AGENT_TOKEN = "QuantResearchCrawler"  # noqa: S105 - a robots.txt agent token, not a secret
@@ -196,6 +200,11 @@ def _refuse(url: str, why: str, exc_t: type[Exception] = RailRefusal) -> None:
                 pass
     print(f"BOX_RAILS REFUSED {url[:200]} -- {why}", flush=True)
     raise exc_t(f"box rails refused {url[:200]}: {why}")
+
+
+def is_refusal(exc: BaseException) -> bool:
+    """Was `exc` raised by these rails (as opposed to the source failing on its own)?"""
+    return isinstance(exc, RailRefusal)
 
 
 def refused() -> list[dict[str, Any]]:

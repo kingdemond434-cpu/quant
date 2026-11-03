@@ -20,10 +20,25 @@ WHAT A PASS DOES, inside BUDGET_S (hourly_cycle's LEG_BUDGET_SEC cap sits above 
      source, and no contact at all with a host the VPS walls (`seed_miners.SOURCE_WALLS`). The
      miner's own browser-string header never reaches the wire from this box.
   2. hourly_discovery over the organs NOTHING ELSE ON THE BOX ALREADY CLOCKS, with whatever budget
-     is left. Organs hourly_cycle already runs as legs of their own (world_crawler, deep_forest,
-     alpha_evolution, ...) are excluded, read from hourly_cycle's own `_producer` calls, so no
-     organ gets two writers. The same rails reach every organ child through the environment
-     (`hourly_discovery --organ` installs them when QUANT_BOX_RAILS=1).
+     is left. An organ named by EITHER box roster is excluded -- hourly_cycle (world_crawler,
+     deep_forest, alpha_evolution, ...) and daily_cycle (its proposers, world miners and
+     fetch_futures_curves) -- read from the two files' own source, so no organ ever has two
+     non-atomic writers and an hourly UNMEASURED never overwrites a daily MEASURED verdict
+     (audit HOLD on 84e1e474b). An unreadable roster excludes the pinned fallback: fail closed.
+     The same rails reach every organ child through the environment (`hourly_discovery
+     --organ` installs them when QUANT_BOX_RAILS=1).
+
+ONE PASS AT A TIME. The cadence check runs under an O_EXCL lease (`data/locks/
+box_intel_feed.lease`), so two concurrent intel passes can never both start the feed; a lease
+older than LEASE_STALE_S belongs to a killed pass and is taken over, and says so.
+
+ONLY ON THE INTEL DEPARTMENT'S CLOCK. hourly_cycle pins the leg to HOURLY_PLAN=dept:intel
+(`DEPT_ONLY_LEGS`): an `all`, `heavy` or `core` pass skips it, so it can never sit inline ahead
+of release_identity, burn_in or fill_recorder.
+
+A REFUSED SOURCE IS NAMED, NEVER SILENT. Every rail refusal is grouped by host in the report's
+`refused_sources`, with a `missed_growth` line per host: a source the box may not fetch is dark
+by policy, and the growth it would have fed is a recorded cost.
 
 CPU. Both children are spawned BELOW_NORMAL explicitly -- the miners' class, which is the class
 `judge_priority` levels the judge to -- and NO affinity is set: miners are never confined to
@@ -67,6 +82,9 @@ for _p in (str(HERE), str(BASE), str(BASE / "research"), str(ROOT)):
 REPORT = BASE / "reports" / "BOX_INTEL_FEED.json"
 STATE = BASE / "data" / "box_intel_feed_state.json"
 HOURLY_CYCLE = BASE / "research" / "hourly_cycle.py"
+DAILY_CYCLE = BASE / "research" / "daily_cycle.py"
+ROSTERS: tuple[Path, ...] = (HOURLY_CYCLE, DAILY_CYCLE)
+LEASE = BASE / "data" / "locks" / "box_intel_feed.lease"
 DISCOVERY = BASE / "research" / "hourly_discovery.py"
 MEMORY_GUARD = ROOT / "scripts" / "memory_guard.py"
 
@@ -92,14 +110,18 @@ BELOW_NORMAL_PRIORITY_CLASS = 0x00004000
 RESULT_PREFIX = "INTEL_FEED_RESULT "
 REFUSALS_SHOWN = 10
 
-#: The organs hourly_cycle runs as legs of their own, if its source cannot be read. Kept in step
-#: with the regex below by test_box_intel_feed.
+#: The organs the two box rosters run, if a roster cannot be read. Kept in step with the live
+#: reading by test_box_intel_feed. hourly_cycle legs first, then daily_cycle's.
 BOX_OWNED_FALLBACK: frozenset[str] = frozenset({
     "world_crawler", "deep_forest_miner", "acquire_datasets", "weak_signal_compiler",
     "alpha_evolution", "cross_asset_graph", "world_causal_graph", "execution_twin",
     "factor_model_coevolution",
+    "plumbing_miner", "transition_alpha", "fund_playbook", "microstructure_miner",
+    "style_premia_sweep", "anomaly_factory", "tail_alpha_search", "survivor_distiller",
+    "repo_miner", "data_prospector", "fetch_futures_curves",
 })
-_PRODUCER_RE = re.compile(r'_producer\(\s*"[^"]*"\s*,\s*"(?:[\w.]+/)*(\w+)\.py"')
+#: A kill of the leg at its cycle cap (2,400 s) leaves its lease behind; past this it is stale.
+LEASE_STALE_S = 3000.0
 
 Runner = Callable[[list[str], float, dict[str, str]], tuple[int | None, str]]
 
@@ -133,21 +155,88 @@ def _iso_ts(v: Any) -> float | None:
     return dt.timestamp()
 
 
-def box_owned_organs(cycle: Path = HOURLY_CYCLE) -> tuple[frozenset[str], str]:
-    """(script stems hourly_cycle already runs through `_producer`, basis)."""
-    try:
-        text = cycle.read_text(encoding="utf-8")
-    except OSError as exc:
-        return BOX_OWNED_FALLBACK, f"fallback: {cycle.name} unreadable ({type(exc).__name__})"
-    return frozenset(_PRODUCER_RE.findall(text)), f"{cycle.name} _producer calls"
+def _named_in(text: str, organ: str) -> bool:
+    """Does a roster's source run `organ`? A quoted name (a `_producer` leg, a daily proposer
+    tuple, an `__import__` roster), an import, or a script path. Over-matching only ever
+    EXCLUDES an organ here, which is the safe direction: it still runs on the roster naming it."""
+    o = re.escape(organ)
+    return bool(re.search(rf'["\']{o}["\']|\bimport {o}\b|\bfrom {o} import\b|/{o}\.py\b',
+                          text))
 
 
-def discovery_organs(cycle: Path = HOURLY_CYCLE) -> tuple[list[str], list[str], str]:
+def box_owned_organs(organs: list[str] | None = None,
+                     rosters: tuple[Path, ...] = ROSTERS) -> tuple[frozenset[str], str]:
+    """(organs any box roster already runs, basis). An unreadable roster adds the fallback."""
+    if organs is None:
+        import hourly_discovery
+        organs = list(hourly_discovery.ORGANS)
+    owned: set[str] = set()
+    basis: list[str] = []
+    for roster in rosters:
+        try:
+            text = roster.read_text(encoding="utf-8")
+        except OSError as exc:
+            owned |= BOX_OWNED_FALLBACK
+            basis.append(f"{roster.name} unreadable ({type(exc).__name__}): fallback")
+            continue
+        hit = {o for o in organs if _named_in(text, o)}
+        owned |= hit
+        basis.append(f"{roster.name}: {len(hit)}")
+    return frozenset(owned), "rosters " + "; ".join(basis)
+
+
+def discovery_organs(rosters: tuple[Path, ...] = ROSTERS) -> tuple[list[str], list[str], str]:
     """(organs this leg runs, organs excluded because the box already clocks them, basis)."""
     import hourly_discovery
-    owned, basis = box_owned_organs(cycle)
     names = list(hourly_discovery.ORGANS)
+    owned, basis = box_owned_organs(names, rosters)
     return ([n for n in names if n not in owned], [n for n in names if n in owned], basis)
+
+
+def take_lease(path: Path | None = None, now: float | None = None,
+               stale_s: float = LEASE_STALE_S) -> tuple[bool, str]:
+    """O_EXCL lease: (held_by_us, why). A lease older than `stale_s` is a killed pass's."""
+    p = path or LEASE
+    now = time.time() if now is None else now
+    p.parent.mkdir(parents=True, exist_ok=True)
+    why = "lease taken"
+    for _attempt in range(2):
+        try:
+            fd = os.open(str(p), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            try:
+                age = now - p.stat().st_mtime
+            except OSError:
+                continue  # released between the two calls: try once more
+            if age < stale_s:
+                return False, f"another pass holds the lease ({age:.0f}s old)"
+            with contextlib.suppress(OSError):
+                p.unlink()
+            why = f"took over a stale lease ({age:.0f}s old, over {stale_s:.0f}s)"
+            continue
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(json.dumps({"pid": os.getpid(), "at": _now_iso()}))
+        return True, why
+    return False, "the lease could not be taken"
+
+
+def release_lease(path: Path | None = None) -> None:
+    with contextlib.suppress(OSError):
+        (path or LEASE).unlink()
+
+
+def refused_by_host(refused: list[dict[str, Any]]) -> tuple[dict[str, Any], list[str]]:
+    """({host: {n, why}}, missed_growth lines): every refusal named, never a silent zero."""
+    from urllib.parse import urlsplit
+    hosts: dict[str, dict[str, Any]] = {}
+    for r in refused:
+        h = urlsplit(str(r.get("url", ""))).hostname or "?"
+        e = hosts.setdefault(h, {"n": 0, "why": str(r.get("why", ""))[:200]})
+        e["n"] += 1
+    lines = [f"{h}: {e['n']} request(s) refused by the box rails ({e['why']}); this source is "
+             f"dark on the box by policy, and whatever it would have fed is not mined here"
+             for h, e in sorted(hosts.items())]
+    return hosts, lines
 
 
 def due(state: dict[str, Any], now: float | None = None,
@@ -234,13 +323,27 @@ def _discovery_summary(path: Path) -> dict[str, Any]:
 
 def run_pass(budget_s: float = BUDGET_S, *, runner: Runner | None = None,
              now: float | None = None, force: bool = False, write: bool = True,
-             cycle: Path = HOURLY_CYCLE) -> dict[str, Any]:
-    runner = runner or _default_runner
-    state = _read(STATE)
-    ok, why = due(state, now)
-    if not ok and not force:
-        # NOT_DUE writes nothing: the report keeps saying what the last real pass did.
-        return {"status": "NOT_DUE", "why": why}
+             rosters: tuple[Path, ...] = ROSTERS) -> dict[str, Any]:
+    held, lease_why = take_lease(now=now)
+    if not held:
+        return {"status": "LEASE_HELD", "why": lease_why}
+    try:
+        state = _read(STATE)
+        ok, why = due(state, now)
+        if not ok and not force:
+            # NOT_DUE writes nothing: the report keeps saying what the last real pass did.
+            return {"status": "NOT_DUE", "why": why}
+        rep = _pass(state, why, budget_s, runner or _default_runner, write, rosters)
+        rep["lease"] = lease_why
+        if write:
+            _write(REPORT, rep)
+        return rep
+    finally:
+        release_lease()
+
+
+def _pass(state: dict[str, Any], why: str, budget_s: float, runner: Runner, write: bool,
+          rosters: tuple[Path, ...]) -> dict[str, Any]:
     t0 = time.monotonic()
     state["last_started_at"] = _now_iso()
     if write:
@@ -264,7 +367,7 @@ def run_pass(budget_s: float = BUDGET_S, *, runner: Runner | None = None,
                 "tail": "" if res else tail[-400:]}
         rep["seed_miners"] = seed
         # 2. hourly_discovery over the organs nothing else on the box clocks
-        organs, excluded, basis = discovery_organs(cycle)
+        organs, excluded, basis = discovery_organs(rosters)
         left = budget_s - (time.monotonic() - t0)
         disc_budget = left - DISCOVERY_GRACE_S - WRITE_MARGIN_S
         disc: dict[str, Any] = {"organs": organs, "excluded_box_owned": excluded,
@@ -289,6 +392,9 @@ def run_pass(budget_s: float = BUDGET_S, *, runner: Runner | None = None,
         refused = box_rails.logged_refusals(log)
         with contextlib.suppress(OSError):
             os.unlink(log)
+    hosts, missed = refused_by_host(refused)
+    rep["refused_sources"] = hosts
+    rep["missed_growth"] = missed
     rep["rails"] = {"user_agent": box_rails.USER_AGENT,
                     "robots_tokens": list(box_rails.ROBOTS_TOKENS),
                     "refused_n": len(refused),
@@ -304,7 +410,6 @@ def run_pass(budget_s: float = BUDGET_S, *, runner: Runner | None = None,
                   "last_discovery_status": rep["discovery"].get("status")})
     if write:
         _write(STATE, state)
-        _write(REPORT, rep)
     return rep
 
 
@@ -350,8 +455,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"excluded, already box legs ({basis}): {', '.join(excluded)}")
         return 0
     rep = run_pass(a.budget_s, force=a.force)
-    if rep.get("status") == "NOT_DUE":
-        print(f"INTEL FEED not due: {rep['why']}", flush=True)
+    if rep.get("status") in ("NOT_DUE", "LEASE_HELD"):
+        print(f"INTEL FEED {rep['status']}: {rep['why']}", flush=True)
         return 0
     print(f"INTEL FEED {rep['status']} seed={rep['seed_miners']['status']} "
           f"discovery={rep['discovery'].get('status')} refused={rep['rails']['refused_n']} "

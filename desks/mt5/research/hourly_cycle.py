@@ -1542,16 +1542,26 @@ OWN_CLOCK_LEGS: frozenset[str] = frozenset({
 })
 
 
+#: LEGS THAT RUN ONLY ON THEIR OWN DEPARTMENT'S RESIDENT (audit HOLD on 84e1e474b, 2026-11-03).
+#: `intel_feed` takes up to forty minutes. Under the default `all` plan (MT5Hourly.cmd sets none)
+#: it would sit inline AHEAD of release_identity, burn_in and fill_recorder; under `heavy` it
+#: would duplicate the intel resident. So it runs under HOURLY_PLAN=dept:intel and nowhere else.
+DEPT_ONLY_LEGS: frozenset[str] = frozenset({"intel_feed"})
+
+
 def in_plan(name: str, plan: str | None = None) -> bool:
     """Does leg `name` run under `plan`? core = CORE_LEGS only; heavy = every non-core leg;
     dept:<d> = the non-core legs of department d; all = everything.
     An `auto_*` leg is already filtered by its own plan in run_auto_legs and always passes.
-    A leg in `OWN_CLOCK_LEGS` runs on its own scheduled task and in no plan."""
+    A leg in `OWN_CLOCK_LEGS` runs on its own scheduled task and in no plan.
+    A leg in `DEPT_ONLY_LEGS` runs only under its own department's plan -- never all/heavy/core."""
     p = (plan if plan is not None else HOURLY_PLAN)
     if name.startswith("auto_"):
         return True
     if name in OWN_CLOCK_LEGS:
         return False
+    if name in DEPT_ONLY_LEGS:
+        return p == f"dept:{department_of(name)}"
     if p == "core":
         return name in CORE_LEGS
     if p == "heavy":

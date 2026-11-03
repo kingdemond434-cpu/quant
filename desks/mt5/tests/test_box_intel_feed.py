@@ -40,6 +40,7 @@ def iso(tmp_path, monkeypatch):
     monkeypatch.setattr(feed, "STATE", tmp_path / "data" / "box_intel_feed_state.json")
     monkeypatch.setattr(feed, "REPORT", tmp_path / "reports" / "BOX_INTEL_FEED.json")
     monkeypatch.setattr(feed, "BASE", tmp_path)
+    monkeypatch.setattr(feed, "LEASE", tmp_path / "data" / "locks" / "box_intel_feed.lease")
     return tmp_path
 
 
@@ -136,21 +137,88 @@ def test_killed_failed_and_memory_deferred_children_are_named(iso) -> None:
 
 def test_discovery_never_runs_an_organ_another_box_leg_already_clocks() -> None:
     owned, basis = feed.box_owned_organs()
-    assert "_producer calls" in basis
+    assert "hourly_cycle.py" in basis and "daily_cycle.py" in basis
     organs, excluded, _ = feed.discovery_organs()
     assert set(organs).isdisjoint(owned)
     assert set(organs) | set(excluded) == set(hd.ORGANS)
-    # the ones the box already runs hourly, by name
     for organ in ("world_crawler", "deep_forest_miner", "alpha_evolution", "acquire_datasets"):
         assert organ in excluded
-    # the fallback list covers every organ the live source excludes
+    # the fallback list covers every organ the live rosters exclude
     assert set(excluded) <= feed.BOX_OWNED_FALLBACK
-    assert "seed_miners" not in organs and organs, "nothing would run"
+    assert organs, "nothing would run"
 
 
-def test_an_unreadable_cycle_falls_back_to_the_pinned_list(tmp_path) -> None:
-    owned, basis = feed.box_owned_organs(tmp_path / "absent.py")
-    assert owned == feed.BOX_OWNED_FALLBACK and basis.startswith("fallback")
+def _daily_roster() -> set[str]:
+    """Every module daily_cycle runs, read from its own source independently of the feed's
+    matcher: the `__import__` rosters (_proposers, _world_miners) and every step's `import X`."""
+    import ast
+    tree = ast.parse((DESK / "research" / "daily_cycle.py").read_text(encoding="utf-8"))
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            names |= {a.name.split(".")[-1] for a in node.names}
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            names |= {a.name for a in node.names} | {node.module.split(".")[-1]}
+        elif isinstance(node, ast.Constant) and isinstance(node.value, str):
+            names.add(node.value)
+    return names
+
+
+def test_every_organ_daily_cycle_runs_is_excluded() -> None:
+    """Audit HOLD on 84e1e474b: fetch_futures_curves ran here AND in daily_cycle's
+    `futures_curves` step -- two non-atomic writers of data/futures_curves/*.parquet and
+    reports/futures_curve_coverage.json, and an hourly UNMEASURED over the daily MEASURED."""
+    daily = _daily_roster() & set(hd.ORGANS)
+    assert "fetch_futures_curves" in daily and "plumbing_miner" in daily and "repo_miner" in daily
+    organs, excluded, _ = feed.discovery_organs()
+    both = sorted(daily - set(excluded))
+    assert not both, f"run by daily_cycle AND the feed: {both}"
+    assert not daily & set(organs)
+
+
+def test_an_unreadable_roster_fails_closed_to_the_pinned_list(tmp_path) -> None:
+    owned, basis = feed.box_owned_organs(list(hd.ORGANS), (tmp_path / "absent.py",))
+    assert owned == feed.BOX_OWNED_FALLBACK and "fallback" in basis
+    organs, _, _ = feed.discovery_organs((tmp_path / "a.py", tmp_path / "b.py"))
+    assert set(organs).isdisjoint(feed.BOX_OWNED_FALLBACK)
+
+
+def test_two_concurrent_passes_cannot_both_start_the_feed(iso) -> None:
+    held, _ = feed.take_lease()
+    assert held
+    rep = feed.run_pass(2040.0, runner=_Runner())
+    assert rep["status"] == "LEASE_HELD"
+    assert not feed.STATE.exists(), "a pass without the lease touched the clock"
+    feed.release_lease()
+    assert feed.run_pass(2040.0, runner=_Runner())["status"] == "OK"
+    assert not feed.LEASE.exists(), "the lease outlived its pass"
+
+
+def test_a_stale_lease_from_a_killed_pass_is_taken_over(iso) -> None:
+    import os
+    feed.LEASE.parent.mkdir(parents=True, exist_ok=True)
+    feed.LEASE.write_text("{}")
+    old = time.time() - feed.LEASE_STALE_S - 10
+    os.utime(feed.LEASE, (old, old))
+    rep = feed.run_pass(2040.0, runner=_Runner())
+    assert rep["status"] == "OK" and rep["lease"].startswith("took over a stale lease")
+
+
+def test_rail_refusals_are_named_by_host_with_a_missed_growth_line(iso, monkeypatch) -> None:
+    import box_rails
+
+    def runner(cmd, timeout_s, env):
+        with open(env["QUANT_BOX_RAILS_LOG"], "a", encoding="utf-8") as fh:
+            for u in ("https://api.github.com/repos/a/b", "https://api.github.com/repos/c/d"):
+                fh.write(json.dumps({"url": u, "why": "robots.txt disallows user-agent '*'",
+                                     "pid": 1}) + "\n")
+        return (0, 'INTEL_FEED_RESULT {"status": "OK", "sources": 1, "rows": 1}')
+
+    rep = feed.run_pass(2040.0, runner=runner)
+    assert rep["refused_sources"]["api.github.com"]["n"] == 4  # two children, two rows each
+    assert len(rep["missed_growth"]) == 1 and "api.github.com" in rep["missed_growth"][0]
+    assert "dark on the box by policy" in rep["missed_growth"][0]
+    assert rep["rails"]["user_agent"] == box_rails.USER_AGENT
 
 
 def test_the_seed_child_installs_the_rails_before_any_miner(monkeypatch, capsys) -> None:
@@ -277,3 +345,180 @@ def test_the_adopted_sha_is_recorded_only_after_a_real_checkout() -> None:
     assert 'if ($LASTEXITCODE -ne 0) { Log "git checkout failed' in SHIP[checkout:write]
     assert "last_adopted_sha = $shipSha" in SHIP[checkout:write]
     assert "intel_ship_adopt_state.json" in SHIP
+
+
+# --------------------------------------------------- the cycle plan: dept:intel and nowhere else
+def test_the_feed_runs_only_on_the_intel_department_s_plan() -> None:
+    """Audit HOLD on 84e1e474b: under the default `all` plan the 40-minute leg ran inline ahead
+    of release_identity, burn_in and fill_recorder."""
+    import hourly_cycle as hc
+    assert "intel_feed" in hc.DEPT_ONLY_LEGS
+    assert hc.in_plan("intel_feed", "dept:intel")
+    for plan in ("all", "heavy", "core", "dept:discovery", "dept:rest", "dept:data"):
+        assert not hc.in_plan("intel_feed", plan), plan
+    # nothing else changed: the money legs still run under `all`
+    for leg in ("release_identity", "burn_in"):
+        assert hc.in_plan(leg, "all")
+
+
+# ----------------------------------------------- seed_miners: a rail-refused probe is UNMEASURED
+def test_a_rail_refused_wall_probe_is_unmeasured_and_does_not_advance_its_clock(
+        tmp_path, monkeypatch) -> None:
+    import box_rails
+    import seed_miners as sm
+    monkeypatch.setattr(sm, "INTEL", tmp_path)
+    monkeypatch.setattr(sm, "STATE", tmp_path / "seed_miners_state.json")
+    name = next(iter(sm.SOURCE_WALLS))
+    monkeypatch.setattr(sm, "MINERS", {name: lambda: pytest.fail("a walled miner ran")})
+    monkeypatch.setitem(sys.modules, "cohort_and_identity",
+                        type(sys)("cohort_and_identity"))
+    sys.modules["cohort_and_identity"].run_and_save = lambda: None
+    monkeypatch.setenv("QUANT_PROPOSER_SEAT", "0")
+
+    def refuse(*a, **k):
+        raise box_rails.RailRefusal("box rails refused: walled on the VPS")
+
+    monkeypatch.setattr(sm, "fetch", refuse)
+    res = sm.run_and_save()
+    st = json.loads(sm.STATE.read_text())
+    assert name not in (st.get("wall_probes") or {}), "a probe that never happened moved the clock"
+    row = res[name]["discoveries"][0]
+    assert row["probe"] == "UNMEASURED" and "UNMEASURED" in row["title"]
+    # a real, measured "still blocked" still advances it
+    monkeypatch.setattr(sm, "fetch", lambda *a, **k: (_ for _ in ()).throw(OSError("403")))
+    sm.run_and_save()
+    assert name in json.loads(sm.STATE.read_text())["wall_probes"]
+
+
+def test_off_the_box_a_failed_probe_is_never_mistaken_for_a_rail_refusal(monkeypatch) -> None:
+    import seed_miners as sm
+    monkeypatch.delitem(sys.modules, "box_rails", raising=False)
+    assert not sm._rail_refused(OSError("x"))
+
+
+# ------------------------------------------- repo_miner: dark by policy is named, never silence
+def test_repo_miner_names_a_rail_refused_source_as_missed_growth(tmp_path, monkeypatch) -> None:
+    import box_rails
+    import repo_miner as rm
+    monkeypatch.setattr(rm, "_watchlist", lambda: {"repos": ["a/b"]})
+    monkeypatch.setattr(rm, "CACHE", tmp_path / "cache")
+
+    def refuse(*a, **k):
+        raise box_rails.RailRefusal("robots.txt disallows user-agent '*'")
+
+    monkeypatch.setattr(rm, "_get", refuse)
+    doc = rm.run(fetch=True, write=False)
+    assert doc["refused_sources"] == [{"repo": "a/b", "host": "github",
+                                       "why": "robots.txt disallows user-agent '*'"}]
+    assert doc["unreachable"] == [] and len(doc["missed_growth"]) == 1
+    assert "github" in doc["missed_growth"][0]
+    # an ordinary network failure is still `unreachable`, with no missed_growth line
+    monkeypatch.setattr(rm, "_get", lambda *a, **k: (_ for _ in ()).throw(OSError("down")))
+    doc = rm.run(fetch=True, write=False)
+    assert doc["unreachable"] == ["a/b"] and doc["missed_growth"] == []
+
+
+# ------------------------------------ the rails cover every HTTP route the feed's files can take
+BANNED_CLIENTS = ("http.client", "httpx", "aiohttp", "pycurl", "urllib3", "curl_cffi",
+                  "requests_html", "httplib2")
+
+
+def _closure(start: list[Path]) -> dict[Path, set[str]]:
+    import ast
+    roots = (DESK / "side_channels", DESK / "research", DESK, ROOT)
+
+    def resolve(mod: str) -> Path | None:
+        for r in roots:
+            p = r.joinpath(*mod.split(".")).with_suffix(".py")
+            if p.exists():
+                return p
+        return None
+
+    seen: dict[Path, set[str]] = {}
+    todo = list(start)
+    while todo:
+        f = todo.pop()
+        if f in seen:
+            continue
+        mods: set[str] = set()
+        for n in ast.walk(ast.parse(f.read_text(encoding="utf-8"))):
+            if isinstance(n, ast.Import):
+                mods |= {a.name for a in n.names}
+            elif isinstance(n, ast.ImportFrom) and n.module and not n.level:
+                mods.add(n.module)
+        seen[f] = mods
+        todo += [p for m in mods if (p := resolve(m)) is not None and p not in seen]
+    return seen
+
+
+def test_no_file_the_feed_runs_imports_an_http_client_the_rails_do_not_patch() -> None:
+    """box_rails patches `requests` and `urllib.request`. A seed or discovery-organ file -- or
+    anything local they import -- that reaches the wire another way would fetch with no honest
+    UA and no robots.txt check, so it fails here."""
+    organs, _, _ = feed.discovery_organs()
+    start = [DESK / "side_channels" / "seed_miners.py",
+             *[DESK / "research" / f"{o}.py" for o in organs]]
+    assert all(p.exists() for p in start)
+    closure = _closure(start)
+    assert len(closure) > len(start), "the closure walk found nothing: the pin would prove nothing"
+    bad = {str(f.relative_to(ROOT)): sorted(m for m in mods if any(
+        m == b or m.startswith(b + ".") for b in BANNED_CLIENTS))
+        for f, mods in closure.items()}
+    assert not {k: v for k, v in bad.items() if v}
+    shell = re.compile(r"""["'](curl|wget)(\.exe)?["']""")
+    assert not [str(f.relative_to(ROOT)) for f in closure
+                if shell.search(f.read_text(encoding="utf-8"))]
+
+
+def test_the_rails_docstring_no_longer_claims_seed_miners_spawns_run_all_miners() -> None:
+    import box_rails
+    assert "never calls `run_all_miners`" in (box_rails.__doc__ or "")
+    src = (DESK / "side_channels" / "seed_miners.py").read_text(encoding="utf-8")
+    assert "run_all_miners" not in src
+
+
+def test_the_ship_checkout_never_lands_over_the_box_written_files() -> None:
+    """Audit HOLD on 84e1e474b: a VPS that came back would check out over the files the box's
+    feed rewrites every sweep."""
+    assert "& git checkout $shipRef -- data/intelligence desks/mt5/data/intelligence @boxWritten" \
+        in SHIP
+    block = SHIP[SHIP.index("$boxWritten = @("):SHIP.index("# 2. wait for MT5-ShadowSync")]
+    for rel in ("desks/mt5/data/intelligence/seed_miners_state.json",
+                "desks/mt5/data/intelligence/latest_discoveries.json"):
+        assert f"':!{rel}'" in block
+    import seed_miners as sm
+    assert sm.STATE.name == "seed_miners_state.json"
+    assert (sm.INTEL / "latest_discoveries.json").parent == sm.STATE.parent
+
+
+def test_the_exclusion_pathspecs_really_keep_git_off_the_box_written_files(tmp_path) -> None:
+    """The same arguments the script passes, run through git: the shipped archive lands, the
+    box-written state does not."""
+    import subprocess
+    block = SHIP[SHIP.index("$boxWritten = @("):SHIP.index("# 2. wait for MT5-ShadowSync")]
+    excludes = re.findall(r"'(:![^']+)'", block)
+    assert len(excludes) == 2
+
+    def git(*a: str) -> None:
+        subprocess.run(["git", "-C", str(tmp_path), *a], check=True, capture_output=True)
+
+    git("init", "-q")
+    git("config", "user.email", "t@t")
+    git("config", "user.name", "t")
+    git("config", "commit.gpgsign", "false")
+    intel = tmp_path / "desks" / "mt5" / "data" / "intelligence"
+    intel.mkdir(parents=True)
+    (tmp_path / "data" / "intelligence").mkdir(parents=True)
+    (tmp_path / "data" / "intelligence" / "x.json").write_text("v1")
+    for n in ("seed_miners_state.json", "latest_discoveries.json", "kimi.json"):
+        (intel / n).write_text("ship")
+    git("add", "-A")
+    git("commit", "-qm", "ship")
+    git("update-ref", "refs/remotes/intel-ship/send", "HEAD")
+    for n in ("seed_miners_state.json", "latest_discoveries.json", "kimi.json"):
+        (intel / n).write_text("box")
+    git("checkout", "refs/remotes/intel-ship/send", "--", "data/intelligence",
+        "desks/mt5/data/intelligence", *excludes)
+    assert (intel / "seed_miners_state.json").read_text() == "box"
+    assert (intel / "latest_discoveries.json").read_text() == "box"
+    assert (intel / "kimi.json").read_text() == "ship"
