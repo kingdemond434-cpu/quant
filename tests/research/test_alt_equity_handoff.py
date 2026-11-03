@@ -106,6 +106,35 @@ def test_release_drift_uses_first_vintage_on_the_broker_clock(tmp_path: Path) ->
     assert far.family_alt_release_drift(_bars(), source="absent", prior_sign=1) == []
 
 
+def test_a_backfilled_value_is_never_a_release(tmp_path: Path) -> None:
+    """alt_proxies stamps bulk history pit_quality=backfill: the CURRENT vintage of an old period.
+    Paired with a first-release instant it is a number that did not exist when the bar traded."""
+    _lake(tmp_path)
+    p = tmp_path / f"{LAKE}.csv"
+    df = pd.read_csv(p)
+    df.loc[df.index < len(df) // 2, "pit_quality"] = "backfill"
+    df.to_csv(p, index=False)
+    far._CACHE.clear()
+    ev = far.releases(LAKE, root=tmp_path)
+    assert 0 < len(ev) < 90                                 # only first-release rows remain
+    dropped, read = far.BACKFILL_DROPPED[str(p)]
+    assert dropped == len(df) // 2 and read == len(df)
+    df["pit_quality"] = "backfill"
+    df.to_csv(p, index=False)
+    far._CACHE.clear()
+    assert far.releases(LAKE, root=tmp_path) == []
+    assert far.family_alt_release_drift(_bars(), source=LAKE, prior_sign=1,
+                                        series_root=tmp_path) == []
+
+
+def test_a_multi_day_bar_fires_nothing(tmp_path: Path) -> None:
+    _lake(tmp_path)
+    far._CACHE.clear()
+    weekly = _bars().resample("W").last().dropna()
+    assert far.family_alt_release_drift(weekly, source=LAKE, prior_sign=1,
+                                        series_root=tmp_path) == []
+
+
 def test_the_handoff_runs_through_to_donated_charged_cells(tmp_path: Path,
                                                            monkeypatch: pytest.MonkeyPatch
                                                            ) -> None:
@@ -160,6 +189,51 @@ def test_the_handoff_runs_through_to_donated_charged_cells(tmp_path: Path,
     assert reg.read_bytes() == before                    # a present row is never rewritten
     assert again["donated_this_pass"] == 0 and again["measured_this_pass"] == 0
     assert again["held"].get("ALREADY_DONATED") == rep["donated_this_pass"]
+
+
+def test_a_row_the_door_refused_is_never_marked_donated(tmp_path: Path,
+                                                        monkeypatch: pytest.MonkeyPatch) -> None:
+    """The door writes a path when ANY row survives; the rows it turned away are retried."""
+    lake = tmp_path / "lake"
+    _lake(lake)
+    hp = tmp_path / "handoff.json"
+    hp.write_text(json.dumps(_handoff()), "utf-8")
+    reg = tmp_path / "data_registry.json"
+    reg.write_text(json.dumps({"schema_version": 1, "datasets": {}}), "utf-8")
+    for mod in (aeh, far, fec):
+        monkeypatch.setattr(mod, "SERIES_DIR", lake)
+    cm._ALT_CACHE.clear()
+    monkeypatch.setattr(aeh, "REPORT", tmp_path / "ALT_EQUITY_HANDOFF.json")
+    monkeypatch.setattr(aeh, "STATE", tmp_path / "state.json")
+    monkeypatch.setattr(aeh, "DATA_REGISTRY", reg)
+    bars = _bars()
+    monkeypatch.setattr(aeh, "_bars", lambda _sym: bars)
+    monkeypatch.setattr(aeh, "class_book_registry", lambda: {
+        "families": {"cross_sectional_class_momentum": _daily_family},
+        "grid": {"cross_sectional_class_momentum": {"hold_d": [5]}}, "scoped": {},
+        "basis": "test"})
+    monkeypatch.setattr(ap, "DEFAULT_PATHS", ap.Paths(tmp_path / "desk"))
+    monkeypatch.setattr(pc, "INTEL", tmp_path / "intel")
+    monkeypatch.setattr(pc, "_record_in_registry", lambda *_a, **_k: None)
+    monkeypatch.setattr(pc, "_preregister", lambda *_a, **_k: {"preregistered": 0, "failed": 0})
+    real = pc._lane_filtered
+    shut = {"on": True}
+
+    def _door(rows: list) -> tuple[list, list]:
+        kept, refused = real(rows)
+        if shut["on"]:
+            refused = refused + [r for r in kept if r["family"] == "alt_release_drift"]
+            kept = [r for r in kept if r["family"] != "alt_release_drift"]
+        return kept, refused
+    monkeypatch.setattr(pc, "_lane_filtered", _door)
+    rep = aeh.run(handoff_path=hp)
+    state = json.loads((tmp_path / "state.json").read_text("utf-8"))["cells"]
+    marked = [v for v in state.values() if v.get("donated_at")]
+    assert marked and all(v.get("family") != "alt_release_drift" for v in marked)
+    assert rep["donation"]["refused_by_door"] > 0
+    shut["on"] = False
+    again = aeh.run(handoff_path=hp)
+    assert again["donated_this_pass"] == rep["donation"]["refused_by_door"]   # retried
 
 
 def test_an_unreadable_handoff_is_unmeasured_not_zero(tmp_path: Path,
