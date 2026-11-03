@@ -1,0 +1,36 @@
+{
+  "at": "2026-10-12T00:48:17.053062+00:00",
+  "state": "VERIFIED_SOURCE_REPAIR_NOT_DEPLOYED",
+  "regressions": {
+    "tests": 79,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "mypy": {
+    "state": "PASS",
+    "source_files": 1093
+  },
+  "root_and_desk_lint": "PASS",
+  "conversion_before": "Three scheduled_chatgpt LVC exact recipes were withheld by a family-wide past-batch sample warning.",
+  "conversion_replay_after": "All three unchanged source recipes enter the canonical docket with provenance, zero silent conversion loss, and the historical warning retained as advisory metadata.",
+  "validation_preserved": "The evaluator still decides sample sufficiency, costs, multiplicity, profitability and certification. Incomplete prose still needs extraction; missing fields are not fabricated.",
+  "detector_repair": "Deepening requires exact durable queue identities. Family warnings cannot hide unqueued cells or lost standing verdicts; charts and parameter versions remain separate.",
+  "ci_diagnostics_repair": "Full root software tests can collect diagnostics after a failed law fence when dependencies installed. Law failure still fails quality, coverage/release dependents and promotion.",
+  "integrated_prior_ci": {
+    "run_id": 38188635473,
+    "quality": "FAILED",
+    "law_fences": 41,
+    "law_breaches": 1,
+    "remaining_breach": "Historical 151-record live_ledger sealed prefix differs: 889d4da1d61ba909 -> 2beb77874c7ff1ae."
+  },
+  "historical_reconciliation": {
+    "state": "BLOCKED_UNPROVEN_HISTORICAL_CORRECTION_LINEAGE",
+    "evidence_available": "Deal-joined records preserve broker price, volume, P&L, commission and swap; both historical versions are retained in Git.",
+    "missing_proof": "Authoritative historical clock conversion and execution-link/attribution reconstruction supporting changed timestamps and linkage fields. A read-only comparison receipt does not supply that reconstruction lineage.",
+    "safe_next_action": "Recover authoritative history/reconstruction inputs, reconcile a versioned raw-record/projection migration and prove all consumers. Do not reseal the changed prefix or restore incorrect derived fields blindly.",
+    "record_and_seal_changed": false
+  },
+  "deployed": false,
+  "full_integrated_release_passed": false
+}

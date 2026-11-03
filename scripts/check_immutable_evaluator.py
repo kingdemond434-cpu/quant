@@ -41,6 +41,9 @@ IMMUTABLE: tuple[str, ...] = (
     "desks/mt5/research/heat_policy.py",
     "desks/mt5/research/promoter.py",
     "desks/mt5/mt5desk/gateway_config_fallback.py",
+    "libs/ops/live_ledger_migration.py",
+    "scripts/migrate_live_ledger_view.py",
+    "libs/ops/live_ledger_view.py",
     "libs/portfolio/allocator_proof.py",
     "libs/portfolio/rails.py",
     "libs/portfolio/capital_modifiers.py",
@@ -66,6 +69,8 @@ IMMUTABLE: tuple[str, ...] = (
 #: (path-or-one-directory-glob, mode, why). `lines` = one record per line (jsonl); `rows` = a
 #: JSON list, or a document with a "rows" list, whose elements are the records.
 APPEND_ONLY: tuple[tuple[str, str, str], ...] = (
+    ("desks/mt5/data/live_ledger_corrections.jsonl", "lines",
+     "audited metadata amendments; original broker record prefixes remain immutable"),
     ("desks/mt5/data/live_ledger.jsonl", "lines",
      "the live ledger -- the actual execution records every attribution is measured on"),
     ("desks/mt5/data/research_artifacts.jsonl", "lines",
@@ -694,6 +699,14 @@ def generator_isolation(part: int = 0, parts: int = 1) -> dict[str, Any]:
 _TRUNCATING_ON_TARGET = ("write_text", "unlink", "truncate", "write_bytes")
 _TRUNCATING_ON_DEST = {"replace": 1, "rename": 1, "move": 1, "copy": 1, "copyfile": 1}
 INPLACE_DECLARED: dict[str, str] = {
+    "libs/ops/live_ledger_migration.py":
+        "Verification fixture only: writes amendments and their manifest inside its "
+        "own TemporaryDirectory to exercise the actual audited reader before adoption. "
+        "This pure planner never writes the live ledger or live manifest.",
+    "scripts/migrate_live_ledger_view.py":
+        "Released adoption handoff only: restores the original sealed prefix under an "
+        "exclusive Windows handle, retains every newer broker row, preserves all old seals, "
+        "and proves the effective consumer view identical before writing. No financial edits.",
     "scripts/backfill_live_ledger_r.py":
         "DECLARED whole-file rewriter (2026-09-16): repairs `r_multiple` on rows the writer "
         "floored at zero, stamping r_backfilled / r_basis / r_multiple_before. It recomputes from "
@@ -1115,6 +1128,20 @@ def main() -> int:
         if not isinstance(doc, dict):
             doc = {}
         files = _hashes()
+        # A file-only re-sign changes the global signer. Preserve the original
+        # authorization of unchanged hashes for exact-hash rotation consumers.
+        rotations = doc.get("rotation_signers")
+        rotations = dict(rotations) if isinstance(rotations, dict) else {}
+        prior_files = doc.get("files")
+        prior_by = doc.get("signed_by")
+        rotations = {path: signer for path, signer in rotations.items()
+                     if isinstance(prior_files, dict) and path in files
+                     and prior_files.get(path) == files[path]}
+        if isinstance(prior_files, dict) and isinstance(prior_by, str):
+            for path, digest in prior_files.items():
+                if path in files and files[path] == digest:
+                    rotations.setdefault(path, prior_by)
+        doc["rotation_signers"] = rotations
         doc["files"] = files
         doc["signed_utc"] = datetime.now(tz=UTC).isoformat()
         doc["signed_by"] = a.by

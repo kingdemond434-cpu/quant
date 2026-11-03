@@ -623,6 +623,12 @@ def to_discovery(url: str, page: dict[str, Any], digest: str, terms_note: str = 
         "n_endpoints": len(page.get("endpoints") or []),
         "vault_sha": digest,
         "host": urlparse(url).netloc,
+        # SOURCE PROVENANCE in the desk's one vocabulary (libs.research.source_provenance), so the
+        # compiler carries the page, the fetch time and the vaulted bytes' hash onto every cell.
+        "source_url": url,
+        "retrieved_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "content_hash": digest,
+        "ground": urlparse(url).netloc,
         # THE CLAIMS THEMSELVES, verbatim with their instrument mapping, so the compiler's
         # deepening path can ask the seat about the sentence rather than the page title.
         "claims": [{k: c.get(k) for k in ("claim", "lang", "quantities", "direction", "horizon",
@@ -920,9 +926,22 @@ def frontier_seeds() -> tuple[str, ...]:
         return ()
 
 
+def paid_substitute_seeds() -> tuple[str, ...]:
+    """Landing pages of the free substitutes research/paid_substitute_engine.py matched to paid
+    datasets (data/paid_substitutes/crawl_seeds.json, rewritten hourly). The crawler walks out
+    from them to the data files they link. Absent or unreadable: no seeds, and the crawl runs."""
+    try:
+        doc = json.loads((BASE / "data" / "paid_substitutes" / "crawl_seeds.json")
+                         .read_text("utf-8"))
+    except (OSError, ValueError):
+        return ()
+    urls = doc.get("urls") if isinstance(doc, dict) else None
+    return tuple(str(u) for u in (urls or []) if str(u).startswith(("http://", "https://")))
+
+
 def seed(sources: dict[str, wf.Source]) -> int:
     added = 0
-    for url in (*SEEDS, *frontier_seeds()):
+    for url in (*SEEDS, *frontier_seeds(), *paid_substitute_seeds()):
         if wf.add(sources, url, via="seed"):
             added += 1
     return added

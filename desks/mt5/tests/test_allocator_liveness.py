@@ -291,7 +291,8 @@ def _gateway_book_key():
     src = (DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
     start = src.index("def _book_key(")
     end = src.index("\ndef ", start + 1)
-    ns: dict = {"re": _re}
+    from mt5desk.decision_core import book_name   # the one version rule (r6), pure
+    ns: dict = {"re": _re, "book_name": book_name}
     exec(textwrap.dedent(src[start:end]), ns)
     return ns["_book_key"]
 

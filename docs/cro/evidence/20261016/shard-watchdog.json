@@ -1,0 +1,11 @@
+{
+  "state": "TESTED_NOT_DEPLOYED",
+  "pure_controls_passed": 10,
+  "observed_initial_shards_killed": 14,
+  "watchdog_log": "desks/mt5/logs/MT5-StallWatch.log",
+  "watchdog_kill_receipt_utc": "2026-10-15T11:52:24Z",
+  "wave": "218a39cec77c4df48acb9a14c1f4ee8d",
+  "root_cause": "Duplicate classifier rejects real shard processes below sibling venv launchers",
+  "stall_memory_money_exclusions_unchanged": true,
+  "separate_unresolved_issue": "USDCZK_H1.parquet read PermissionError in serial retry; next attempt succeeded"
+}

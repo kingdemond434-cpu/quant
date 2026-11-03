@@ -133,6 +133,10 @@ _PANEL = _DESK / "data" / "intelligence" / "broker_swaps"
 _TERMS = _DESK / "data" / "tape" / "contract_terms"
 _UNIVERSE = _DESK / "data" / "universe"
 _OUT = _DESK / "data" / "carry_state.json"
+#: The box's swap capture age (`mt5desk.tape.publish_swap_panel`). A swap the desk cannot show is
+#: live is not a rate it holds: every reader ages it from `last_capture_at` on its OWN clock.
+_FRESHNESS = _DESK / "reports" / "BROKER_SWAPS_FRESHNESS.json"
+SWAP_FEED_USABLE = ("FRESH", "PARTIAL")
 
 CARRY_STATE_VERSION = "carry-state-2026-08-29-a"
 
@@ -347,8 +351,39 @@ def _side_report(side: str, series: list[tuple[str, float, float]], idx: int,
     }
 
 
+def feed_status(feed: dict[str, Any] | None, now: datetime | None = None) -> dict[str, Any]:
+    """The swap feed's status RECOMPUTED here: age from `last_capture_at` against this clock, so a
+    report the box stopped rewriting still goes STALE. Absent is MISSING, never usable."""
+    now = now or datetime.now(UTC)
+    if not feed:
+        return {"status": "MISSING", "usable": False, "age_h": None,
+                "why": f"{_FRESHNESS.name} absent: no box capture has ever been recorded"}
+    stale_h = float(feed.get("stale_after_h") or 26.0)
+    try:
+        t = datetime.fromisoformat(str(feed.get("last_capture_at")))
+        age = (now - (t if t.tzinfo else t.replace(tzinfo=UTC))).total_seconds() / 3600
+    except (TypeError, ValueError):
+        return {"status": "UNMEASURED", "usable": False, "age_h": None,
+                "why": "no capture with live terminal evidence"}
+    status = "STALE" if age > stale_h else str(feed.get("status") or "UNMEASURED")
+    return {"status": status, "usable": status in SWAP_FEED_USABLE, "age_h": round(age, 2),
+            "last_capture_at": feed.get("last_capture_at"),
+            "why": f"captured {age:.1f}h ago (stale past {stale_h:g}h)"}
+
+
+def swap_feed(now: datetime | None = None, path: Path | None = None) -> dict[str, Any]:
+    """`feed_status` of the box's freshness report on disk -- the one gate every swap reader
+    (this module, the carry conditioner) asks before using a swap rate."""
+    try:
+        doc = json.loads((path or _FRESHNESS).read_text("utf-8"))
+    except (OSError, ValueError):
+        doc = None
+    return {**feed_status(doc if isinstance(doc, dict) else None, now), "report": doc}
+
+
 def build(panel_dir: Path | None = None, terms_dir: Path | None = None,
-          universe_dir: Path | None = None) -> dict[str, Any]:
+          universe_dir: Path | None = None,
+          feed: dict[str, Any] | None = None) -> dict[str, Any]:
     panel_dir = panel_dir or _PANEL
     terms_dir = terms_dir or _TERMS
     universe_dir = universe_dir or _UNIVERSE
@@ -405,6 +440,8 @@ def build(panel_dir: Path | None = None, terms_dir: Path | None = None,
     return {
         "version": CARRY_STATE_VERSION,
         "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        # the feed's own report, re-aged by every reader (`swap_per_lot` refuses an unusable one)
+        "feed": (swap_feed().get("report") if feed is None else feed),
         "panel": str(panel_dir),
         "terms": str(terms_dir),
         "day_count": DAY_COUNT,
@@ -430,7 +467,8 @@ def build(panel_dir: Path | None = None, terms_dir: Path | None = None,
     }
 
 
-def swap_per_lot(state: dict, symbol: str, side: str) -> float | None:
+def swap_per_lot(state: dict, symbol: str, side: str,
+                 now: datetime | None = None) -> float | None:
     """The COST per lot per night for `financing.assess(swap_per_lot=...)`, or None.
 
     Positive is a cost, which is `financing.drag_r`'s convention and the NEGATION of the artifact's
@@ -441,6 +479,8 @@ def swap_per_lot(state: dict, symbol: str, side: str) -> float | None:
     `assess()`, which renders it UNMEASURED. Substituting 0.0 reinstates exactly the defect this
     module exists to end (L1.28a).
     """
+    if not feed_status(state.get("feed"), now)["usable"]:     # STALE, UNMEASURED or MISSING
+        return None
     sym = (state.get("symbols") or {}).get(symbol)
     if not sym:
         return None

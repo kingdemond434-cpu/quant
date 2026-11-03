@@ -108,6 +108,9 @@ def outcome(row: dict[str, Any]) -> tuple[str, str]:
         return "unconfident", "not_run"
     if kind == "unknown":
         return "unconfident", "unknown_gate"
+    if kind == "not_testable":
+        # Under 60 daily observations: not a kill and not an unrecognised gate -- its own name.
+        return "unconfident", "not_testable"
     if row.get("passed") is True:
         return "survivor", "passed"
     gate = str(row.get("terminal_gate") or "")

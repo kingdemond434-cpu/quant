@@ -26,7 +26,7 @@ import numpy as np
 import pytest
 
 from libs.portfolio import allocator_proof as ap
-from libs.portfolio.robust_elog import SleeveEvidence, WorldConfig, sample_worlds
+from libs.portfolio.robust_elog import SleeveEvidence, WorldConfig, sample_worlds, score_book
 
 
 def _ev(name: str, mu: float, sd: float = 1.0, n: int = 400, seed: int = 0) -> SleeveEvidence:
@@ -60,6 +60,25 @@ def test_all_four_baselines_are_present(book) -> None:
                      {"a": 0.05}, cfg=WorldConfig(seed=7, n_worlds=64, n_rows=128))
     assert set(res["scores"]) >= {"dynamic", "equal_weight", "inverse_vol", "risk_parity",
                                   "static_incumbent"}
+
+
+def test_contest_reuses_exact_evidence_correlation_for_all_books(book, monkeypatch) -> None:
+    worlds = sample_worlds(book, WorldConfig(seed=7, n_worlds=32, n_rows=64))
+    dynamic = {"a": 0.04, "b": 0.02, "c": 0.01}
+    expected = score_book(book, dynamic, worlds=worlds)
+    original = ap._corr_abs
+    calls = 0
+
+    def counted(evidence):
+        nonlocal calls
+        calls += 1
+        return original(evidence)
+
+    monkeypatch.setattr(ap, "_corr_abs", counted)
+    result = ap.contest(book, dynamic, worlds=worlds)
+    assert result["scores"]["dynamic"] == expected
+    assert len(result["scores"]) > 1
+    assert calls == 1
 
 
 def test_the_incumbent_is_scored_at_its_own_heat_not_rescaled(book) -> None:
@@ -178,10 +197,31 @@ def test_previous_verdicts_read_the_fresh_certificate_and_hold_nothing_when_stal
 
 def test_the_contest_carries_the_previous_verdict_into_its_hysteresis(book, monkeypatch,
                                                                        tmp_path: Path) -> None:
-    monkeypatch.setattr(ap, "score_book", lambda ev, b, cfg=None, worlds=None: {
+    monkeypatch.setattr(ap, "score_book", lambda ev, b, **_kw: {
         "robust_score": 0.02 if sum(b.values()) > 0.0999 else 0.01})
     res = ap.contest(book, {"a": 0.05, "b": 0.03, "c": 0.02}, root=tmp_path)
     assert res["hysteresis"]["holding_global"] is False
     ap.certify(res, root=tmp_path, book={"a": 0.05, "b": 0.03, "c": 0.02})
     res2 = ap.contest(book, {"a": 0.05, "b": 0.03, "c": 0.02}, root=tmp_path)
     assert res2["hysteresis"]["holding_global"] == bool(res["passed"])
+
+
+# ------------------------------------------------- a re-solve of the dynamic book is not a rival
+
+def test_a_copy_of_the_dynamic_book_within_solver_noise_is_one_book() -> None:
+    """2026-10-13 on the box: "dynamic 0.018999 vs best baseline posterior 0.019000 (needs >
+    0.019380)". The posterior re-solve differed from the dynamic book by solver noise, entered as
+    a rival at 1e-6, and the dynamic book could never beat its own copy by the margin."""
+    dyn = {"a": 0.04, "b": 0.02, "c": 0.01}
+    noisy = {"a": 0.04002, "b": 0.01999, "c": 0.00999}
+    assert ap._same_book(dyn, noisy, 0.07)
+    assert not ap._same_book(dyn, {"a": 0.03, "b": 0.03, "c": 0.01}, 0.07)
+
+
+def test_a_near_identical_incumbent_is_not_entered_as_a_rival(book) -> None:
+    dyn = {"a": 0.04, "b": 0.02, "c": 0.01}
+    res = ap.contest(book, dyn, {"a": 0.04001, "b": 0.02, "c": 0.01},
+                     cfg=WorldConfig(seed=7, n_worlds=64, n_rows=128))
+    assert "static_incumbent" not in res["scores"]
+    res = ap.contest(book, dyn, {"a": 0.05}, cfg=WorldConfig(seed=7, n_worlds=64, n_rows=128))
+    assert "static_incumbent" in res["scores"]                # a distinct book still contests

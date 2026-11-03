@@ -9,7 +9,8 @@ Honest caveats baked in, not hidden:
   * Commission is NOT in ``symbol_info``; it is an asset-class prior (Fusion Zero ECN ~ $7/lot RT
     on FX/metals, spread-only on indices/crypto/equities). Override per real statements.
   * Slippage is a prior (a fraction of the live spread per side) until calibrated on real fills.
-  * Swap is converted points -> money only for USD-quoted symbols; otherwise it is approximate.
+  * Swap is converted in the unit its swap_mode names; points -> money is exact only for
+    USD-quoted symbols, and an annual-percent mode needs the caller's price.
 The point is to make results *more* conservative than a flat fee, never less.
 """
 
@@ -32,7 +33,15 @@ _COMMISSION_PER_LOT: dict[AssetClass, float] = {
     AssetClass.CRYPTO: 0.0,
     AssetClass.EQUITY: 0.0,
 }
-_SWAP_MODE_POINTS = 0  # mt5.SYMBOL_SWAP_MODE_POINTS
+# MT5 ENUM_SYMBOL_SWAP_MODE. THIS READ `_SWAP_MODE_POINTS = 0` UNTIL 2026-10-07: mode 0 is
+# DISABLED and POINTS is 1, so every points symbol was taken as money and every disabled one as
+# points -- and mode 5 (annual percent of notional, 138 of Fusion's 248 swap symbols) as money.
+_SWAP_MODE_DISABLED = 0
+_SWAP_MODE_POINTS = 1
+_SWAP_MODE_DEPOSIT = 4
+_SWAP_MODES_INTEREST = (5, 6)
+_SWAP_MODES_REOPEN = (7, 8)
+_SWAP_DAY_COUNT = 360.0
 
 
 @runtime_checkable
@@ -55,6 +64,7 @@ def calibrate(
     commission_per_lot: float | None = None,
     slippage_fraction_of_spread: float = 0.5,
     gap_risk_fraction: float = 0.0,
+    price: float | None = None,
 ) -> CostParams:
     """Build :class:`CostParams` from a live ``symbol_info`` snapshot.
 
@@ -70,7 +80,7 @@ def calibrate(
         else _COMMISSION_PER_LOT.get(asset_class, 0.0)
     )
     slippage_per_side = spread_price * slippage_fraction_of_spread
-    swap_long, swap_short = _swap_to_money(info, contract_size)
+    swap_long, swap_short = _swap_to_money(info, contract_size, price=price, symbol=symbol)
     return CostParams(
         instrument=symbol,
         contract_size=contract_size if contract_size > 0 else 1.0,
@@ -83,16 +93,34 @@ def calibrate(
     )
 
 
-def _swap_to_money(info: SymbolInfoLike, contract_size: float) -> tuple[float, float]:
-    """Convert swap to account-ccy cost-to-hold per lot per night (cost = positive).
+def _swap_to_money(info: SymbolInfoLike, contract_size: float, *, price: float | None = None,
+                   symbol: str = "") -> tuple[float, float]:
+    """Convert swap to cost-to-hold per lot per night (cost = positive), in the unit swap_mode
+    names.
 
-    MT5 swap is a credit when positive; our model wants a *cost*, so we negate. For point-mode
-    swaps we convert to money via point x contract size (exact for USD-quoted symbols).
+    MT5 swap is a credit when positive; our model wants a *cost*, so we negate.
+      0 DISABLED -> 0; 1 POINTS and 7/8 REOPEN (+/- points) -> x point x contract size (exact
+      for USD-quoted symbols); 4 DEPOSIT -> already money; 5/6 INTEREST -> annual percent of
+      notional, x price x contract / 100 / 360 -- REQUIRES `price`.
+    Anything else, or an interest mode without a price, raises CostError naming it: an
+    unpriceable swap is UNMEASURED, never money and never zero.
     """
-    if int(info.swap_mode) == _SWAP_MODE_POINTS:
+    mode = int(info.swap_mode)
+    lo, sh = float(info.swap_long), float(info.swap_short)
+    if mode == _SWAP_MODE_DISABLED:
+        return (0.0, 0.0)
+    if mode == _SWAP_MODE_POINTS or mode in _SWAP_MODES_REOPEN:
         scale = float(info.point) * contract_size
-        return (-float(info.swap_long) * scale, -float(info.swap_short) * scale)
-    return (-float(info.swap_long), -float(info.swap_short))
+        return (-lo * scale, -sh * scale)
+    if mode == _SWAP_MODE_DEPOSIT:
+        return (-lo, -sh)
+    if mode in _SWAP_MODES_INTEREST:
+        if price is None or not price > 0:
+            raise CostError(f"UNMEASURED: {symbol!r} swap_mode {mode} is an annual percent of "
+                            "notional and needs a price")
+        scale = float(price) * contract_size / 100.0 / _SWAP_DAY_COUNT
+        return (-lo * scale, -sh * scale)
+    raise CostError(f"UNMEASURED: {symbol!r} swap_mode {mode} has no money conversion here")
 
 
 def round_turn_cost_fraction(params: CostParams, price: float) -> float:

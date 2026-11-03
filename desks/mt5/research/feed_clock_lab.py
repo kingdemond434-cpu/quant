@@ -820,7 +820,8 @@ def impact_pass(*, base: Path, budget_s: float, dry_run: bool, conn: Any = None
     deadline = t0 + max(5.0, budget_s * 0.8)
     corpus = ll.read_jsonl(base / "data" / "fill_corpus.jsonl")
     intents = ll.read_jsonl(base / "data" / "order_intents.jsonl")
-    ledger = ll.read_jsonl(base / "data" / "live_ledger.jsonl")
+    from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+    ledger = ll.read_jsonl(_audited_ledger_path(base / "data" / "live_ledger.jsonl"))
     sent = _dedupe([*_corpus_orders(corpus), *_intent_orders(intents)])
     closes = _ledger_orders(ledger)
     days = tape_days(base / "data" / "tape" / "ticks")

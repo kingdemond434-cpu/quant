@@ -198,9 +198,12 @@ def test_every_declared_credential_is_actually_READ_somewhere_in_the_repo() -> N
     import subprocess
     root = Path(CC.__file__).resolve().parent.parent
     for cred in CC.CREDENTIALS:
+        # Consumers must be committed source, not bytecode or temporary copies.
+        # Bound the search so a broken native tool fails this check without killing pytest.
         hits = subprocess.run(
-            ["grep", "-rl", f"data/secrets/{cred.name}", "scripts", "libs", "ops"],
-            cwd=root, capture_output=True, text=True, check=False).stdout.split()
+            ["git", "grep", "-l", "-F", "--", f"data/secrets/{cred.name}",
+             "scripts", "libs", "ops"],
+            cwd=root, capture_output=True, text=True, check=False, timeout=60).stdout.split()
         consumers = [h for h in hits if "check_credentials" not in h]
         assert consumers, f"{cred.name} is declared but nothing reads it"
 

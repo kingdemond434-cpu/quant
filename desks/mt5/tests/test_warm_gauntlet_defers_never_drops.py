@@ -110,6 +110,38 @@ def test_an_empty_ledger_defers_nothing(tmp_path: Path) -> None:
     assert len(send) == 6 and held == [] and rows == {}
 
 
+def test_failed_spec_capture_preserves_inputs_and_uses_receipt_clock():
+    spec = {"sym": "EURUSD", "family": "cross_asset_residual", "tf": "M5",
+            "params": {"factor_symbols": ["USDX", "UST10Y"]}, "day": "2026-10-09",
+            "_retry_of": {"first_failed_at": 1.0}}
+    captured = W.capture_failed_spec(spec, 123.0)
+    same = W.capture_failed_spec(spec, 456.0)
+    assert captured["source_spec_sha256"] == same["source_spec_sha256"]
+    assert captured["source_spec_observed_at"] == 123.0
+    assert "_retry_of" not in captured["source_spec"]
+    assert "not publication or preregistration" in captured["source_spec_clock_basis"]
+    spec["params"]["factor_symbols"].append("EURJPY")
+    assert captured["source_spec"]["params"]["factor_symbols"] == ["USDX", "UST10Y"]
+    assert W.capture_failed_spec(spec, 456.)["source_spec_sha256"] != same["source_spec_sha256"]
+
+
+def test_missing_and_nonfinite_specs_are_not_fabricated():
+    assert "source_spec" not in W.capture_failed_spec({}, 123.)
+    invalid = {"sym": "EURUSD", "family": "carry", "tf": "H1", "params": {"x": float("nan")}}
+    assert "source_spec" not in W.capture_failed_spec(invalid, 123.)
+    assert W.capture_failed_spec(invalid, 123.)["source_spec_capture_error"].startswith("INVALID:")
+
+
+def test_deferral_census_exposes_missing_legacy_specs(tmp_path):
+    captured = W.capture_failed_spec(_cells(1)[0], 123.)
+    rows = {"new": {"first_failed_at": 123., "why": "failed", **captured},
+            "legacy": {"first_failed_at": 1., "why": "failed"}}
+    census = W.publish_deferrals(rows, [], 456., {})
+    assert census["n_with_frozen_spec"] == census["n_without_frozen_spec"] == 1
+    assert rows["legacy"] == {"first_failed_at": 1., "why": "failed"}
+    assert json.loads(W.DEFERRALS.read_text())["rows"]["new"]["source_spec"] == captured["source_spec"]
+
+
 def test_failed_warm_build_carries_the_judges_exact_refusal(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     frame = pd.DataFrame({"close": [1.0]}, index=pd.date_range("2026-10-01", periods=1, tz="UTC"))
@@ -120,7 +152,8 @@ def test_failed_warm_build_carries_the_judges_exact_refusal(
     )
     monkeypatch.setitem(sys.modules, "external_gauntlet", judge)
     key, outcome = W._warm_one({"ckey": "candidate", "sym": "EURUSD", "tf": "M5",
-                                "family": "cross_asset_residual", "params": {}})
+                                "family": "cross_asset_residual",
+                                "params": {"factor_symbols": ["UST10Y"]}})
     assert key == "candidate"
     assert outcome == "failed|factor basket incomplete: no M5 bars for UST10Y"
 
