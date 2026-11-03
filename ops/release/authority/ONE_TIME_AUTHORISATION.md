@@ -20,6 +20,14 @@ and none of them can be done legitimately by a code-writing agent.
   `DEACTIVATE RELEASE CONTROLLER` on #453. Either one stops all signing and all authority merges
   at once.
 
+**Two honest limits, from the Auditor's review:**
+- `trusted-eval` starts running PR code (read-only token, no secrets) on every same-repo PR the
+  moment this merges. That's why this PR also removes `cache: pip` from the gating workflows:
+  PR code runs in the base's cache scope, so no gating job may read a cache.
+- A `trusted-eval` green proves the base's tests pass against an *honest* head. A hostile head
+  could fake one. Against a hostile author, the defences are independent review, the 24 h veto
+  and auto-revert, plus Level 2 below.
+
 ## The steps (about 20 minutes, once)
 
 1. **Review and merge this PR through your own path.** Post `AUDIT CLEAR <head>` on the PR,
@@ -107,7 +115,11 @@ and the ruleset. I'll build it on your word.
 - Firm rules are `fixed`: FTMO `DAILY_LOSS_FRAC` 5% and `MAX_LOSS_FRAC` 10%. E8's 2.5% daily and
   the $90k floor live in the rails, which are `superset` and `equal` pins. None of these can ever
   be raised this way.
-- Lowering a ceiling is always allowed.
+- Lowering a ceiling is not delegated either. NEVER REDUCE AGGRESSIVENESS means no cap by fiat,
+  so a lowering goes to your path.
+- Per-trade risk is clipped at run time to the remaining firm headroom by the rails, which no
+  envelope raise can move. For example, MAX_RISK_FRAC 0.10 never means risking 10% against
+  E8's 2.5% daily limit.
 
 **The honest gap.** The `hard_max` values are set to today's ceilings (MAX_RISK_FRAC 0.10,
 BASE_RISK_FRAC 0.03, MAX_NOTIONAL_X 5.0), so nothing can be raised yet. The right `hard_max` is
