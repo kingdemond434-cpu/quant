@@ -484,7 +484,7 @@ def run(*, budget_s: float = 300.0, write: bool = True, fetch: Fetch | None = No
     stamp = now.isoformat(timespec="seconds")
     reg = _load(seeds, {})
     policy = dict(reg.get("policy") or {})
-    rescan_h = float(policy.get("rescan_after_h") or 168)
+    rescan_h = float(168 if policy.get("rescan_after_h") is None else policy["rescan_after_h"])
     universe = _universe(universe_path)
     state = _load(state_path, {})
     repos_st: dict[str, dict[str, Any]] = dict(state.get("repos") or {})
