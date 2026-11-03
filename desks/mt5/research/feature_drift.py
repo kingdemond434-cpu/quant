@@ -314,8 +314,16 @@ def judge_sleeve(sleeve: Mapping[str, Any], bars: pd.DataFrame | None, canon: An
     row["features"] = per
     row["max_psi"] = max((v["psi"] for v in per.values() if v["psi"] is not None), default=None)
     row["flagged_features"] = flagged
-    row["null"] = permutation_null(ref, row["max_psi"])
-    row["verdict"] = "EDGE_DECAY_CANDIDATE" if flagged else "STABLE"
+    nul = row["null"] = permutation_null(ref, row["max_psi"])
+    # The fixed bar alone is not a warning on a trending history: on the XAUUSD asia
+    # certificate (2,101 days) every 20-day block of the reference itself clears 0.25
+    # (p_flag 1.0, measured 2026-11-03). So when the null is measured, the sleeve flags only
+    # when its max PSI also beats the null's 95th percentile; the fixed bar is the floor.
+    bar = nul.get("p95") if nul.get("draws") else None
+    row["flag_rule"] = (f"psi>{PSI_FLAG} and max_psi>null_p95={bar}" if bar is not None
+                        else f"psi>{PSI_FLAG} (null unmeasured)")
+    beats_null = bar is None or (row["max_psi"] is not None and row["max_psi"] > bar)
+    row["verdict"] = "EDGE_DECAY_CANDIDATE" if flagged and beats_null else "STABLE"
     return row
 
 

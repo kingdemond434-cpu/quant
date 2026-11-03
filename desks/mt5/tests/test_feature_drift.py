@@ -189,3 +189,12 @@ def test_the_flag_reports_its_own_null(tmp_path: Path) -> None:
     assert again["null"] == nul
     (shifted,) = _run(tmp_path, _bars(shift_from="2026-05-05", spread_after=30.0))["sleeves"]
     assert shifted["null"]["p_value"] < 0.05
+
+
+def test_a_bar_its_own_history_always_clears_is_not_a_flag(tmp_path: Path, monkeypatch) -> None:
+    real = FD.permutation_null
+    monkeypatch.setattr(FD, "permutation_null",
+                        lambda ref, obs: {**real(ref, obs), "p95": 99.0, "p_flag": 1.0})
+    (row,) = _run(tmp_path, _bars(shift_from="2026-05-05", spread_after=30.0))["sleeves"]
+    assert row["flagged_features"] and row["verdict"] == "STABLE"
+    assert "null_p95=99.0" in row["flag_rule"]
