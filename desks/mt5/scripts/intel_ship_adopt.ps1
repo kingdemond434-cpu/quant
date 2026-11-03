@@ -21,9 +21,19 @@
     never stages into an index a sync is mid-rewrite, and it waits for MT5-ShadowSync the way
     Adopt-And-Seal does. A commit is never made here -- only a path checkout, so the risk is an
     index-lock collision, and the mutex is what prevents that.
+
+    A FROZEN SHIP IS NEVER RE-ADOPTED (2026-11-03). hel8 shipped last at 2026-11-03T02:50Z and the
+    box now writes the feed itself (the `intel_feed` leg of MT5-Dept-Intel, writing straight into
+    desks/mt5/data/intelligence). Checking out the frozen ref every hour would revert those
+    box-written files to their stale 02:50Z copies -- and refresh their mtimes, so the staleness
+    contracts would read the reverted feed as fresh. So the checkout is SKIPPED, and the log says
+    why, when the ref's commit is older than -MaxShipAgeHours (6 h), or when the ref has not moved
+    since the last adoption (its sha is kept in desks/mt5/data/intel_ship_adopt_state.json). A
+    skip exits 0: it is the organ working, not failing.
 #>
 param(
-    [string] $RepoRoot
+    [string] $RepoRoot,
+    [double] $MaxShipAgeHours = 6
 )
 $ErrorActionPreference = "Continue"
 if (-not $RepoRoot) { $RepoRoot = "C:\opt\quant" }
@@ -50,6 +60,41 @@ $shipRef = "refs/remotes/intel-ship/send"
 # canonical adopter's later commit.
 & git -c maintenance.auto=false -c gc.auto=0 fetch --no-write-fetch-head origin "+refs/heads/intel-ship/send:$shipRef" 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) { Log "git fetch failed (rc=$LASTEXITCODE)"; exit 3 }
+
+# 1b. SKIP A FROZEN OR UNCHANGED SHIP (2026-11-03) -- before any wait or lock, so a skip costs
+# nothing. The last adopted sha is this task's own state; an unreadable state file is "never
+# adopted", which only ever lets an adoption through, never invents a skip.
+$adoptState = Join-Path $RepoRoot "desks\mt5\data\intel_ship_adopt_state.json"
+$shipSha = (& git rev-parse $shipRef 2>$null | Out-String).Trim()
+if ($LASTEXITCODE -ne 0 -or -not $shipSha) { Log "could not resolve $shipRef after the fetch"; exit 3 }
+$shipCtText = (& git log -1 --format=%ct $shipRef 2>$null | Out-String).Trim()
+[int64] $shipCt = 0
+if (-not [int64]::TryParse($shipCtText, [ref] $shipCt) -or $shipCt -le 0) {
+    Log "could not read the commit time of $shipRef ($shipSha); not adopting what cannot be dated"
+    exit 3
+}
+$nowEpoch = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+$shipAgeH = ($nowEpoch - $shipCt) / 3600.0
+$shipAt = [DateTimeOffset]::FromUnixTimeSeconds($shipCt).UtcDateTime.ToString('o')
+if ($shipAgeH -gt $MaxShipAgeHours) {
+    $why = ("SKIP: {0} was committed {1}, {2:N1} h ago (over {3} h): the VPS has stopped " +
+            "shipping, and checking it out would revert the box-written feed in " +
+            "desks/mt5/data/intelligence to stale copies") -f $shipSha.Substring(0, 12), $shipAt,
+           $shipAgeH, $MaxShipAgeHours
+    Log $why
+    exit 0
+}
+$lastSha = ""
+if (Test-Path $adoptState) {
+    try { $lastSha = [string]((Get-Content -Raw -Path $adoptState | ConvertFrom-Json).last_adopted_sha) }
+    catch { $lastSha = "" }
+}
+if ($lastSha -and $lastSha -eq $shipSha) {
+    $why = ("SKIP: {0} is unchanged since the last adoption: nothing new shipped, and " +
+            "re-checking it out would only overwrite what the box wrote since") -f $shipSha.Substring(0, 12)
+    Log $why
+    exit 0
+}
 
 # 2. wait for MT5-ShadowSync the way Adopt-And-Seal does (sync limit is 10 min; give it 9)
 $waited = 0
@@ -88,6 +133,13 @@ try {
     #    discovery per-miner corpus; count what came down)
     $n = (Get-ChildItem -Recurse -File "C:\opt\quant\data\intelligence","C:\opt\quant\desks\mt5\data\intelligence" -ErrorAction SilentlyContinue | Measure-Object).Count
     $head = (& git rev-parse --short $shipRef | Out-String).Trim()
+    # Record what was adopted, so an unchanged ref is skipped next hour (step 1b).
+    $stateDoc = [ordered]@{ last_adopted_sha = $shipSha; ship_committed_at = $shipAt;
+                            adopted_at = (Get-Date).ToUniversalTime().ToString('o') }
+    try {
+        New-Item -ItemType Directory -Force -Path (Split-Path $adoptState) | Out-Null
+        [System.IO.File]::WriteAllText($adoptState, ($stateDoc | ConvertTo-Json -Compress))
+    } catch { Log ("adopted, but the state file could not be written: " + $_.Exception.Message) }
     Log "adopted $head onto disk ($n intelligence files); leaving conversion to the box's own pipeline"
     exit 0
 }

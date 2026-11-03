@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import inspect
 import json
+import os
 import subprocess
 import sys
 import time
@@ -212,6 +213,37 @@ def _child_cmd(name: str, budget_s: float) -> list[str]:
     return inner
 
 
+def _run_tree(cmd: list[str], **kw: Any) -> Any:
+    """`subprocess.run` whose timeout kills the WHOLE tree (`libs.ops.proctree`), where it exists.
+
+    The child is `memory_guard -> organ`; a plain timeout kills only memory_guard, and on Windows
+    (the box runs this pass since 2026-11-03) the organ under it lives on as an orphan."""
+    try:
+        from libs.ops.proctree import run as _run
+    except Exception:
+        _run = subprocess.run
+    return _run(cmd, **kw)
+
+
+#: THE BOX'S DATA RAILS (2026-11-03). When the box's intel feed (`side_channels/box_intel_feed.py`)
+#: runs this pass it sets QUANT_BOX_RAILS=1, and every organ child installs `box_rails` before the
+#: organ is imported: an honest User-Agent, robots.txt on every source, no VPS-walled host. Rails
+#: that cannot install mean the organ does not run -- never that it fetches without them.
+RAILS_ENV = "QUANT_BOX_RAILS"
+
+
+def _install_rails() -> str:
+    """'' when the rails are on (or not asked for); the reason when they were asked and failed."""
+    if os.environ.get(RAILS_ENV) != "1":
+        return ""
+    try:
+        import box_rails
+        box_rails.install()
+    except Exception as exc:
+        return f"box rails could not install, nothing fetched: {type(exc).__name__}: {exc}"
+    return ""
+
+
 def run_pass(total_s: float = TOTAL_BUDGET_S, only: set[str] | None = None, *,
              runner: Any = None, write: bool = True) -> dict[str, Any]:
     """The hourly pass. `runner(cmd, timeout_s) -> (rc, tail)` is injectable for tests."""
@@ -230,8 +262,8 @@ def run_pass(total_s: float = TOTAL_BUDGET_S, only: set[str] | None = None, *,
             if runner is not None:
                 rc, tail = runner(cmd, budget + KILL_GRACE_S)
             else:
-                r = subprocess.run(cmd, capture_output=True, text=True,
-                                   timeout=budget + KILL_GRACE_S, check=False)
+                r = _run_tree(cmd, capture_output=True, text=True,
+                              timeout=budget + KILL_GRACE_S, check=False)
                 rc, tail = r.returncode, ((r.stdout or "") + (r.stderr or ""))[-600:]
         except subprocess.TimeoutExpired as exc:
             rc, tail = None, f"killed at budget {budget:.0f}s + grace: " + str(
@@ -290,6 +322,10 @@ def main() -> int:
         if a.organ not in ORGANS:
             print(f"unknown organ {a.organ!r}", flush=True)
             return 2
+        refused = _install_rails()
+        if refused:
+            print(f"{a.organ}: {refused}"[:400], flush=True)
+            return 3
         rep = run_organ(a.organ, a.budget_s)
         res = rep.get("result")
         summary = (json.dumps(res, default=str)[:800] if isinstance(res, dict)

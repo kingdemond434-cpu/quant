@@ -1333,7 +1333,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # The culture-gap producers: each zero-coverage culture gap's participant
                      # structure (fixing, settlement window, tax month, local session) turned
                      # into registered-family cells on the gap's own clock.
-                     "culture_gap_cells"),
+                     "culture_gap_cells",
+                     # hel8's intel feed (seed_miners + hourly_discovery), produced on the box
+                     # since the VPS went silent (2026-11-03). See side_channels/box_intel_feed.py.
+                     "intel_feed"),
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "session_variant_remap",
@@ -2038,6 +2041,10 @@ def _producer(name: str, script: str,
 #: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
+    # THE INTEL FEED stops itself at --budget-s 2040 (seed_miners, then hourly_discovery with what
+    # is left) and writes BOX_INTEL_FEED.json; 2,040 s plus the 15% write margin is 2,346 s, so
+    # this cap is never under the organ's own floor and the leg never passes forty minutes.
+    "intel_feed": 2_400,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -5947,6 +5954,13 @@ def main() -> None:
         "graveyard_model", "libs/research/graveyard_model.py"))
     wc = _costed("world_crawler", lambda: _producer(
         "world_crawler", "side_channels/world_crawler.py"))
+    # THE INTEL FEED, ON THE BOX (2026-11-03). hel8 produced it hourly (seed_miners at :22,
+    # hourly_discovery at :35) and shipped it on intel-ship/send; it went silent at 02:50Z. This
+    # leg produces it here, into desks/mt5/data/intelligence where local_converter reads it: the
+    # seed miners under box_rails (honest UA, robots.txt, no VPS-walled host), then the discovery
+    # organs no other box leg clocks. Self-gated to hourly; BELOW_NORMAL; no paid seat.
+    ifd = _costed("intel_feed", lambda: _producer(
+        "intel_feed", "side_channels/box_intel_feed.py", "--budget-s", "2040"))
     # THE PROPOSER SEAT (2026-09-23). An OPTIONAL external-model prior over which expression
     # skeletons and which mechanism names are worth a trial. It proposes candidates and never a
     # verdict: every proposal enters the population with provenance, is charged effective trials,
@@ -6494,7 +6508,7 @@ def main() -> None:
                     "execution_resolver": xr, "counterfactual_world": cw,
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
                     "frontier_ontology": fo, "exit_study": xs,
-                    "graveyard_model": gm, "world_crawler": wc,
+                    "graveyard_model": gm, "world_crawler": wc, "intel_feed": ifd,
                     "proposer_seat": prs, "committees": cmt,
                     "committee_ensembles": cme, "kimi_hunt": kh,
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
