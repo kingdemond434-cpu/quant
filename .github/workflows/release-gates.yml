@@ -15,6 +15,13 @@ on:
   pull_request:
     branches: ["claude/llm-auto-upgrade-verify-gcjac3"]
 
+# A new head supersedes the old head's run, queued or running: only the head's checks count.
+# MEASURED 2026-10-29: with no group here, runs for heads already replaced still queued for the
+# free runner pool (8 of them, beside 189 current runs), each with a reviewer job of 20-100 min.
+concurrency:
+  group: release-gates-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: read

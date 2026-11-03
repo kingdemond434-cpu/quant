@@ -1,12 +1,13 @@
 # MAKE THE BOX NEED NOBODY AFTER A REBOOT, AND MERGE WORKFLOW-FILE PRs ITSELF (2026-10-28).
 #
-# zuck: "I wish we could make it so even these become automated not needing me". Registers three
+# zuck: "I wish we could make it so even these become automated not needing me". Registers four
 # tasks for THIS user (interactive, elevated, the way the bridge watchdog and the FTMO follower
 # already run), all from admin-only copies under C:\ProgramData\QuantBox\bin:
 #
 #   Quant-BootSession   at logon:        ops\box\unattended_boot.ps1 -Mode Logon
 #   Quant-BootRecord    every 10 min:    ops\box\unattended_boot.ps1 -Mode Record
 #   Quant-WorkflowGate  logon + 10 min:  ops\box\workflow_gate.ps1
+#   Quant-SignTrain     logon + 10 min:  ops\box\sign_train_leg.ps1  (the audit signs, D-20261027-003)
 #
 # and REPORTS (reads only) the two things only zuck can give, once:
 #
@@ -22,7 +23,7 @@
 #   THE `workflow` SCOPE on zuck's gh login, which merging workflow-file PRs needs. If missing, zuck runs
 #   once:  gh auth refresh -h github.com -s workflow
 #
-# Idempotent; touches only these three tasks and C:\ProgramData\QuantBox.
+# Idempotent; touches only these four tasks and C:\ProgramData\QuantBox.
 #
 #   powershell -NoProfile -ExecutionPolicy Bypass -File ops\box\install_unattended.ps1 [-StageAutologon]
 
@@ -67,7 +68,7 @@ foreach ($path in @($Root) + @(Get-ChildItem -LiteralPath $Root -Force -Recurse 
     }
 }
 
-foreach ($name in @('unattended_boot.ps1', 'workflow_gate.ps1')) {
+foreach ($name in @('unattended_boot.ps1', 'workflow_gate.ps1', 'sign_train_leg.ps1')) {
     $src = Join-Path $PSScriptRoot $name
     if (-not (Test-Path -LiteralPath $src)) { throw "$name missing at $src" }
     $dst = Join-Path $BinDir $name
@@ -102,6 +103,8 @@ Add-QuantTask 'Quant-BootRecord' 'unattended_boot.ps1' '-Mode Record' @(Every10)
     'Record which MT5 terminals run in this desktop session, for Quant-BootSession after a reboot.'
 Add-QuantTask 'Quant-WorkflowGate' 'workflow_gate.ps1' '' @($atLogon, (Every10)) 30 `
     'Merge audit-CLEARed, CI-green PRs into LIVE (no label needed; workflow-file PRs too), with zuck''s gh login, from a clean checkout of LIVE.'
+Add-QuantTask 'Quant-SignTrain' 'sign_train_leg.ps1' '' @($atLogon, (Every10)) 20 `
+    'Sign moved sealed files whose CLEAR row is committed in SEAL_CLEARS.jsonl, and open the sign-train PR into LIVE, from a clean checkout of LIVE.'
 Start-ScheduledTask -TaskName 'Quant-BootRecord'
 
 if ($StageAutologon) {
