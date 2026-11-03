@@ -30,7 +30,7 @@ import shutil
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 #: Discovery never adopts a crypto-exchange's own channel (MT5 mandate; crypto = CFDs only).
@@ -41,7 +41,7 @@ STATUSES = ("FULL", "NO_TRANSCRIPT", "UNAVAILABLE", "ACCESS_LIMIT", "FETCH_FAILE
 
 
 def now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def channel_url(handle: str) -> str:
@@ -176,7 +176,7 @@ def fetch_transcript(api, vid: str):
         return "NO_TRANSCRIPT", "", {"error": type(exc).__name__}
     except gone as exc:
         return "UNAVAILABLE", "", {"error": type(exc).__name__}
-    except Exception as exc:  # noqa: BLE001 - typed into the ledger, never swallowed
+    except Exception as exc:  # typed into the ledger, never swallowed
         return "FETCH_FAILED", "", {"error": f"{type(exc).__name__}: {str(exc)[:200]}"}
 
 
@@ -228,7 +228,7 @@ def main() -> int:
         for tab in ch.get("tabs", ["videos", "shorts", "streams"]):
             try:
                 vids = enumerate_tab(ch["handle"], tab)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 enum_report[f"{ch['handle']}/{tab}"] = f"ERROR {exc}"
                 print(f"[enum] {ch['handle']}/{tab}: ERROR {exc}", flush=True)
                 continue
@@ -262,7 +262,7 @@ def main() -> int:
             status, text, meta = prev["status"], None, {}
         else:
             status, text, meta = fetch_transcript(api, v["video_id"])
-        fetched += 1
+        fetched += 1  # noqa: SIM113 -- counted after the limit check, read before it
         row = {**prev, **v, "status": status, "ts": now(), **meta}
         if status != "ACCESS_LIMIT" and v.get("tab") != "shorts":
             desc, links, dmeta = fetch_description(v["video_id"])
@@ -290,7 +290,7 @@ def main() -> int:
             with wall.open("a", encoding="utf-8") as wf:
                 wf.write(f"{now()} {stopped}\n")
             break
-        time.sleep(args.sleep + random.uniform(0, args.sleep / 2))
+        time.sleep(args.sleep + random.uniform(0, args.sleep / 2))  # noqa: S311 -- polite jitter
     lf.close()
 
     # 3. coverage summary: every enumerated video has exactly one status
