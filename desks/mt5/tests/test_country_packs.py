@@ -143,8 +143,10 @@ def test_mof_door_is_live_lands_pit_rows_and_reaches_only_the_named_instruments(
     # the research door serves it keyed on the release instant (world_macro_state reads this)
     idx = pd.date_range("2022-01-01", "2026-11-01", freq="D", tz="UTC")
     s = W.world_series_for("USDJPY", idx, now=NOW)[f"world_{qs['key']}"]
-    assert s.loc[:"2022-11-14"].iloc[-1] == 28382                   # Q4 2022 not yet public
-    assert s.loc["2023-02-15":].iloc[0] == 56202 + 7296             # public after its release
+    # Q3 2022 is released 2022-11-14 10:00 UTC: the day's 00:00 bar still sees Q2 (0)
+    assert s.loc["2022-11-14"] == 0 and s.loc["2022-11-15"] == 28382
+    assert s.loc["2023-02-14"] == 28382                              # Q4 2022 not yet public
+    assert s.loc["2023-02-15"] == 56202 + 7296                       # public after its release
     pk = _pack(rep, "japan")
     assert pk["instruments_mapped"] == ["JPN225", "USDJPY"] and pk["unmapped"] == []
     assert qs["key"] in pk["series_to_research"]
@@ -229,7 +231,7 @@ def test_records_parser_reads_mas_sama_and_bps_shapes():
 
 def test_boj_and_bank_indonesia_parsers():
     boj = W._boj_api_frame((FIX / "boj_fm01.json").read_bytes())
-    assert boj["series_code"].unique().tolist() == ["strdclucon"]
+    assert boj["series_code"].unique().tolist() == ["STRDCLUCON"]
     assert boj["period"].tolist() == ["2026-10-28", "2026-10-30"]       # null skipped
     bi = W._bi_table_frame((FIX / "bi_jisdor.html").read_bytes(),
                            {"series_code": "jisdor_idr_per_usd"})

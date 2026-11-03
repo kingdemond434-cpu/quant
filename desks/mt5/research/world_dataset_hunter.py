@@ -1184,24 +1184,32 @@ _DATE_FIELDS = ("end_of_day", "end_of_week", "end_of_month", "end_of_period", "d
                 "period", "periode", "obs_date", "as_of", "month", "week")
 
 
-def _records_of(doc: Any, depth: int = 0) -> list[dict[str, Any]]:
-    """The first list of row dicts inside a JSON document (wrappers vary by gateway)."""
+def _record_lists(doc: Any, depth: int = 0) -> list[list[dict[str, Any]]]:
+    """Every list of row dicts inside a JSON document, outermost first (wrappers vary)."""
+    out: list[list[dict[str, Any]]] = []
+    if depth > 4:
+        return out
     if isinstance(doc, list):
         rows = [r for r in doc if isinstance(r, dict)]
         if rows:
-            return rows
+            out.append(rows)
         for x in doc:
-            got = _records_of(x, depth + 1) if depth < 4 else []
-            if got:
-                return got
-        return []
-    if isinstance(doc, dict) and depth < 4:
+            if isinstance(x, (list, dict)):
+                out += _record_lists(x, depth + 1)
+    elif isinstance(doc, dict):
         for k in _RECORD_WRAPPERS:
             if k in doc:
-                got = _records_of(doc[k], depth + 1)
-                if got:
-                    return got
-    return []
+                out += _record_lists(doc[k], depth + 1)
+    return out
+
+
+def _records_of(doc: Any, date_fields: Iterable[str] = _DATE_FIELDS) -> list[dict[str, Any]]:
+    """The first row list whose rows carry a date field (BPS puts a paging dict beside its rows),
+    else the first row list found."""
+    lists = _record_lists(doc)
+    fields = tuple(date_fields)
+    return next((rows for rows in lists if any(f in rows[0] for f in fields)),
+                lists[0] if lists else [])
 
 
 def _records_frame(raw: bytes, spec: dict[str, Any]) -> Any:
@@ -1211,10 +1219,11 @@ def _records_frame(raw: bytes, spec: dict[str, Any]) -> Any:
     import pandas as pd
 
     doc = json.loads(raw.decode("utf-8-sig", "replace"))
-    recs = _records_of(doc)
+    dfields = tuple(spec.get("date_fields") or _DATE_FIELDS)
+    recs = _records_of(doc, dfields)
     if not recs:
         raise FetchError("empty", spec.get("url", ""))
-    dfield = next((f for f in (spec.get("date_fields") or _DATE_FIELDS) if f in recs[0]), None)
+    dfield = next((f for f in dfields if f in recs[0]), None)
     if dfield is None:
         raise FetchError("no_date_column", spec.get("url", ""))
     want = spec.get("value_fields")
@@ -1311,7 +1320,7 @@ def _table_date(text: str) -> str | None:
 def _bi_table_frame(raw: bytes, spec: dict[str, Any]) -> Any:
     """Bank Indonesia statistic tables (JISDOR, BI-Rate, reserve assets): an HTML table whose
     rows carry a date cell and a number cell ("16,250.00", "4.75 %"). The first date cell and the
-    first number after it make an observation."""
+    first separator-marked number make an observation."""
     import pandas as pd
 
     html = _decode_any(raw)
@@ -1321,7 +1330,11 @@ def _bi_table_frame(raw: bytes, spec: dict[str, Any]) -> Any:
         per = next((p for p in (_table_date(c) for c in cells) if p), None)
         if not per:
             continue
-        nums = [_num_or_none(c.replace("%", "").strip()) for c in cells if not _table_date(c)]
+        # a bare integer cell is the table's row counter ("No"); a published value carries a
+        # decimal or thousands separator or a % sign, so it wins when the row has one
+        texts = [c.strip() for c in cells if not _table_date(c)]
+        marked = [c for c in texts if re.search(r"[.,%]", c)]
+        nums = [_num_or_none(c.replace("%", "").strip()) for c in (marked or texts)]
         v = next((x for x in nums if x is not None), None)
         if v is not None:
             rows.append({"series_code": str(spec.get("series_code") or "value"),
