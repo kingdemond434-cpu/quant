@@ -2615,8 +2615,6 @@ from mt5desk.family_stop_cluster import STOP_CLUSTER_FAMILIES  # noqa: E402
 for _sc_name, _sc_fn in STOP_CLUSTER_FAMILIES.items():
     ORTHOGONAL_FAMILIES[_sc_name] = _sc_fn
     FAMILY_INPUTS[_sc_name] = ("price only", "data/universe/*_H1.parquet")
-    FAMILY_TIMEFRAMES[_sc_name] = (
-        ("M1", "M5", "M15", "M30", "H1", "H4"),
-        "two of its four level sources are calendar-day objects (yesterday's high/low and "
-        "today's Asian range); on a daily bar the prior day is simply the previous bar and the "
-        "Asian range does not exist, so the map would be a different, thinner claim")
+    # ALL SEVEN CHARTS. On D1 the Asian source is absent by construction (a daily bar has no
+    # hour inside the session) and the prior day is the previous bar, so the map there is round
+    # figures, prior-day extremes and swings only: thinner, still the same claim, still judged.

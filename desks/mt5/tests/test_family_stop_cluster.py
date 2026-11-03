@@ -121,7 +121,7 @@ def test_both_families_are_registered_for_the_sweep_and_the_gauntlet() -> None:
     for name in ("stop_cluster_revert", "stop_cluster_cascade"):
         assert FO.ORTHOGONAL_FAMILIES[name] is SC.STOP_CLUSTER_FAMILIES[name]
         assert FO.FAMILY_INPUTS[name][0] == "price only"
-        assert FO.timeframe_refusal(name, "D1") and FO.timeframe_refusal(name, "M5") is None
+        assert FO.timeframe_refusal(name, "D1") is None and FO.timeframe_refusal(name, "M5") is None
 
 
 def test_the_compiler_routes_stop_hunt_prose_to_the_family() -> None:

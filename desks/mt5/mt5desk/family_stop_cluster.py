@@ -25,7 +25,7 @@ WHAT IS IN THE MAP, ALL CAUSAL (every level is known strictly before the bar tha
              100 on US30/NAS100/GER40)
   prior_day  yesterday's high and low on the broker clock (known from today's first bar)
   asia       today's Asian-session high and low (broker hours < `asia_end_h`), usable only
-             once the session has closed
+             once the session has closed (absent on D1, where no bar sits inside the session)
   swing      the latest `n_swings` swing highs and lows from `failed_breakout.swing_levels`,
              each usable only after its `k_swing` confirmation bars have closed
 Density is the number of DISTINCT sources within `tol_atr` ATR of a level. A cluster needs
