@@ -483,6 +483,33 @@ def account_key_backup() -> dict[str, Any]:
         return {"state": "UNMEASURED", "why": type(exc).__name__}
 
 
+#: The department residents' FIFO queue (desks/mt5/research/department_resident.py writes it).
+DEPT_QUEUE = ROOT / "desks" / "mt5" / "reports" / "DEPT_QUEUE.json"
+#: A RED older than this is a stale report (no waiter left to rewrite it), not a live alarm.
+DEPT_QUEUE_MAX_AGE_MIN = 60.0
+
+
+def department_queue(path: Path | None = None) -> dict[str, Any]:
+    """The residents' queue verdict. RED (a ticket waiting over 2 h) is a fault; absent or
+    unreadable is reported as such but does not fault the board -- no waiters, no report."""
+    p = path or DEPT_QUEUE
+    age = _age_min(p)
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {"state": "ABSENT", "fault": False}
+    except (OSError, ValueError) as exc:
+        return {"state": "UNREADABLE", "why": type(exc).__name__, "fault": False}
+    if not isinstance(doc, dict):
+        return {"state": "UNREADABLE", "why": "not an object", "fault": False}
+    verdict = str(doc.get("verdict") or "UNMEASURED")
+    stale = age is None or age > DEPT_QUEUE_MAX_AGE_MIN
+    return {"state": verdict if not stale else f"STALE_{verdict}",
+            "why": doc.get("why"), "age_min": None if age is None else round(age, 1),
+            "starved": list(doc.get("starved") or [])[:12],
+            "fault": verdict == "RED" and not stale}
+
+
 def build() -> dict[str, Any]:
     contracts = _contracts()
     now = datetime.now(tz=UTC)
@@ -624,7 +651,8 @@ def build() -> dict[str, Any]:
               else ("ATTENTION" if brief_faults else "UNMEASURED")
               if not run_history_read
               else "OK" if not bad else "ATTENTION")
-    if key_fault or backup_fault:
+    dept_queue = department_queue()
+    if key_fault or backup_fault or dept_queue["fault"]:
         status = "ATTENTION"   # a definite fault: the worst finding wins over UNMEASURED too
     return {
         "at": now.isoformat(timespec="seconds"),
@@ -645,7 +673,10 @@ def build() -> dict[str, Any]:
         # fails closed (account_key None), and fail-closed must never be silent.
         "status": status,
         "run_history": "MEASURED" if run_history_read else "UNMEASURED",
-        "n_needing_attention": len(bad) + int(key_fault) + int(backup_fault),
+        "n_needing_attention": (len(bad) + int(key_fault) + int(backup_fault)
+                                + int(dept_queue["fault"])),
+        # THE DEPARTMENT QUEUE (2026-11-03): a ticket starved over 2 h is RED here.
+        "department_queue": dept_queue,
         "account_key_file": key,
         # THE BACKUP (v5e): present, size, and whether it matches the live key -- a hash compare
         # done in-process; no hash is ever printed or written. Missing or mismatched: ATTENTION.
