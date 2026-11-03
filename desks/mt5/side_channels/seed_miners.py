@@ -271,6 +271,33 @@ def mine_myfxbook_outlook() -> list[dict]:
     return out[:60]
 
 
+def _cdx_page(st: dict, key: str, url_pattern: str) -> list:
+    """One page of a Wayback CDX walk that NEVER ENDS (2026-11-03, principal: every miner 24/7).
+
+    The offset used to only grow, so once the archive was walked every pass returned nothing and
+    the seat went quiet for good. Now an empty page ends a LAP: the offset wraps to 0 and the next
+    lap asks only for captures made since the previous lap began (`from=`), so the walk keeps
+    polling the archive for what is new instead of finishing.
+    """
+    offset = int(st.get(f"{key}_offset", 0))
+    since = str(st.get(f"{key}_from") or "")
+    q = (f"http://web.archive.org/cdx/search/cdx?url={url_pattern}&output=json&limit=300"
+         f"&offset={offset}&collapse=urlkey" + (f"&from={since}" if since else ""))
+    txt = fetch(q, timeout=40)
+    rows_ = json.loads(txt) if txt.strip() else []
+    got = max(len(rows_) - 1, 0)
+    if got:
+        st[f"{key}_offset"] = offset + got
+        st.setdefault(f"{key}_lap_started", datetime.now(UTC).strftime("%Y%m%d"))
+    else:                                   # lap complete: poll for new captures from here on
+        st[f"{key}_offset"] = 0
+        st[f"{key}_from"] = str(st.pop(f"{key}_lap_started", "") or
+                                datetime.now(UTC).strftime("%Y%m%d"))
+        st[f"{key}_laps"] = int(st.get(f"{key}_laps", 0)) + 1
+    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    return rows_
+
+
 # ---------------------------------------------------------------- S11 Darwinex
 def mine_darwinex() -> list[dict]:
     """DARWIN population via Wayback CDX -- the live listing was destroyed at source.
@@ -282,11 +309,7 @@ def mine_darwinex() -> list[dict]:
     a live enumerator of a dead index, and a 404 repeated 88 times is not evidence of absence
     until someone asks a second door.
     """
-    st = _state()
-    offset = int(st.get("darwinex_cdx_offset", 0))
-    txt = fetch("http://web.archive.org/cdx/search/cdx?url=darwinex.com/darwin/*"
-                f"&output=json&limit=300&offset={offset}&collapse=urlkey", timeout=40)
-    rows_ = json.loads(txt) if txt.strip() else []
+    rows_ = _cdx_page(_state(), "darwinex_cdx", "darwinex.com/darwin/*")
     out = []
     for r_ in rows_[1:]:
         try:
@@ -298,8 +321,6 @@ def mine_darwinex() -> list[dict]:
                        f"DARWIN {code.group(1)}" if code else orig[:120],
                        f"https://web.archive.org/web/{ts}/{orig}",
                        darwin=code.group(1) if code else ""))
-    st["darwinex_cdx_offset"] = offset + max(len(rows_) - 1, 0)
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
     return out[:120]
 
 # ---------------------------------------------------------------- S12 TradingView scripts
@@ -421,11 +442,7 @@ def mine_ff_calendar_vintage() -> list[dict]:
 
 # ---------------------------------------------------------------- S18 Forex-TSD CDX
 def mine_forextsd_cdx() -> list[dict]:
-    st = _state()
-    offset = int(st.get("forextsd_offset", 0))
-    txt = fetch("http://web.archive.org/cdx/search/cdx?url=forex-tsd.com*&output=json"
-                f"&limit=300&offset={offset}&collapse=urlkey", timeout=40)
-    rows_ = json.loads(txt)
+    rows_ = _cdx_page(_state(), "forextsd", "forex-tsd.com*")
     out = []
     for r_ in rows_[1:]:
         try:
@@ -434,8 +451,6 @@ def mine_forextsd_cdx() -> list[dict]:
             continue
         out.append(row("forextsd_cdx", "era_archive", orig[:120],
                        f"https://web.archive.org/web/{ts}/{orig}"))
-    st["forextsd_offset"] = offset + max(len(rows_) - 1, 0)
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
     return out[:120]
 
 
