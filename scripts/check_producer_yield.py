@@ -176,6 +176,24 @@ def _read(p: Path, default: Any = None) -> Any:
         return default if default is not None else {}
 
 
+def _count_lines(path: str) -> int:
+    """Lines in a file, as iterating it in text mode counts them, without decoding it.
+
+    Counting newlines in 1 MiB binary chunks gives the same number as `sum(1 for _ in fh)` (a
+    final line with no newline still counts) at a fraction of the cost. The text-mode decode of
+    every in-window seat file is what pushed this fence past its battery slice on the box.
+    """
+    n = 0
+    last = b""
+    with open(path, "rb") as fh:
+        while chunk := fh.read(1 << 20):
+            n += chunk.count(b"\n")
+            last = chunk
+    if last and not last.endswith(b"\n"):
+        n += 1
+    return n
+
+
 def _seat_output(window_days: float) -> dict[str, int]:
     """Rows each intelligence seat donated inside the window, from the files themselves.
 
@@ -192,8 +210,7 @@ def _seat_output(window_days: float) -> dict[str, int]:
                     if os.path.getmtime(f) < cutoff:
                         out.setdefault(seat, 0)
                         continue
-                    with open(f, encoding="utf-8", errors="replace") as fh:
-                        n = sum(1 for _ in fh)
+                    n = _count_lines(f)
                 except OSError:
                     continue
                 out[seat] += max(n, 1)

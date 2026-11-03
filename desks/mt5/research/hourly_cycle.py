@@ -1171,7 +1171,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # Every silent organ by name, fenced RED on a new one (principal: "eliminate silent research
     # organs to 100%, every day"). Reads two small JSON files; core so it runs every pass.
     "silent_organs",
-    "producer_census", "productivity_census", "producer_breadth", "preregistration",
+    "producer_census", "producer_yield", "productivity_census", "producer_breadth",
+    "preregistration",
     # The north star over certified edges and the per-producer contracts it feeds (Tier-1
     # #9/#11): artifact readers, seconds each, on the core clock with the census they join.
     "alpha_rank", "factory_contracts",
@@ -2324,6 +2325,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # compute ledger; it finishes in seconds and its own --budget-s 300 bounds a pathological
     # registry, so the cap only has to sit above that.
     "productivity_census": 400,
+    # PRODUCER YIELD (its own leg since 2026-11-03). Measured on the box: 20 s walking 64k seat
+    # files, 74 s reading the 24h window of the 6.6 GB registry, 33 s of breadth -- about 130 s
+    # before the rest. As a fence-battery organ it was handed the pass's leftover 42 s and
+    # PRODUCER_YIELD.json went 7h+ stale; the cap sits well above the measured run.
+    "producer_yield": 480,
     # PRODUCER BREADTH reads the registry with one grouped query and at most 384 MB of seat files
     # (its own MAX_SEAT_BYTES_TOTAL); measured 0.6 s on a tree without the registry. Generous.
     "producer_breadth": 300,
@@ -6297,6 +6303,11 @@ def main() -> None:
     # cells -> submitted -> survivors -> certificates -> forward -> live), the four marginal
     # ratios, the region roll-up that answers "is the world crawler alpha or noise", and the list
     # of producers that burned compute for no unique cell, ranked by compute.
+    # EVERY PRODUCER PRODUCES / OWES CELLS, measured BEFORE the census that reads it
+    # (`productivity_census._orthogonality_added` reads PRODUCER_YIELD.json). Its own leg, not a
+    # fence-battery slice: the slice could never hold a ~130 s run (box, 2026-11-03).
+    pyld = _costed("producer_yield", lambda: _producer(
+        "producer_yield", "scripts/check_producer_yield.py"))
     prodc = _costed("productivity_census", lambda: _producer(
         "productivity_census", "research/productivity_census.py", "--once", "--budget-s", "300"))
     # PRODUCER BREADTH (principal 2026-09-30: every producer at worldwide orthogonal breadth,
@@ -6539,6 +6550,7 @@ def main() -> None:
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "silent_organs": sil, "producer_census": prdc,
+                    "producer_yield": pyld,
                     "productivity_census": prodc, "producer_breadth": pbr,
                     "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
