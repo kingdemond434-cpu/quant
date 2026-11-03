@@ -41,9 +41,13 @@ which is a verdict and never a pass):
 
 THE ENGINE CONTRACT (restated from `mt5desk.engine.run_backtest`'s docstring and Signal fields):
     * a signal at bar t is acted on from bar t+1: market entries fill at bar t+1's OPEN
-    * a trigger (stop/limit entry) rests from bar t+1 for `wait_bars` bars and fills AT the trigger
-      on the first bar whose [low, high] contains it; it is a LIMIT when it sits on the favourable
-      side of bar t+1's open, and a limit fill bar may not also pay the target
+    * a trigger (stop/limit entry) rests from bar t+1 for `wait_bars` bars; it is a LIMIT when it
+      sits on the favourable side of bar t+1's open, and a limit fill bar may not also pay the
+      target. A STOP entry fills AT the trigger on the first bar whose [low, high] contains it.
+      A LIMIT fills only when its own quote trades THROUGH it (2026-11-03; bars are BID, spread =
+      the round trip's spread part): a buy limit at L on the first bar with low < L - spread,
+      recorded at L - spread; a sell limit on the first bar with high > L, recorded at L. A
+      signal whose generator already priced that in (`through_priced`) fills on a touch, at L
     * stop and target are checked intrabar from the fill bar; if both are touched the STOP wins
     * after `ttl_bars` bars from the fill the position closes at the OPEN of bar fill+ttl
     * one position at a time: a signal whose entry bar is at or before the last exit is skipped;
@@ -86,6 +90,7 @@ class Sig:
     ttl: int
     trigger: float | None = None
     wait: int = 1
+    through_priced: bool = False
 
 
 @dataclass(frozen=True)
@@ -298,12 +303,18 @@ def signals_for(family: str, df: pd.DataFrame, params: Mapping[str, Any]
 
 
 # ------------------------------------------------------------------------------- costs
+def spread_price(meta: Mapping[str, Any]) -> float:
+    cs = float(meta.get("contract_size", 1e5) or 1e5)
+    ts = float(meta.get("tick_size", 0.0) or 0.0)
+    pts = float(meta.get("median_spread_pts", 0.0) or 0.0)
+    return max(pts * ts * cs, MIN_SPREAD_PER_LOT) / cs
+
+
 def round_trip_price(meta: Mapping[str, Any]) -> float:
     cs = float(meta.get("contract_size", 1e5) or 1e5)
     ts = float(meta.get("tick_size", 0.0) or 0.0)
     tv = float(meta.get("tick_value", 0.0) or 0.0)
-    pts = float(meta.get("median_spread_pts", 0.0) or 0.0)
-    spread = max(pts * ts * cs, MIN_SPREAD_PER_LOT) / cs
+    spread = spread_price(meta)
     comm = 2.0 * COMMISSION_PER_LOT_SIDE * (ts / tv if (tv > 0 and ts > 0) else 1.0 / cs)
     return spread + comm
 
@@ -340,6 +351,7 @@ def simulate(df: pd.DataFrame, sigs: Sequence[Sig], meta: Mapping[str, Any]) -> 
     ix = df.index
     pos = {t: i for i, t in enumerate(ix)}
     rt = round_trip_price(meta)
+    sp = spread_price(meta)
     swap = swap_price_per_night(meta)
     busy = -1
     out: list[Fill] = []
@@ -358,11 +370,19 @@ def simulate(df: pd.DataFrame, sigs: Sequence[Sig], meta: Mapping[str, Any]) -> 
         fill_i, entry, limit = i, ref, False
         if s.trigger is not None:
             limit = (s.side > 0 and s.trigger < ref) or (s.side < 0 and s.trigger > ref)
-            hit = next((j for j in range(i, min(i + s.wait, len(ix)))
-                        if lo[j] <= s.trigger <= h[j]), None)
+            L = float(s.trigger)
+            window = range(i, min(i + s.wait, len(ix)))
+            if limit and not s.through_priced:
+                if s.side > 0:
+                    hit = next((j for j in window if lo[j] < L - sp), None)
+                    L -= sp
+                else:
+                    hit = next((j for j in window if h[j] > L), None)
+            else:
+                hit = next((j for j in window if lo[j] <= L <= h[j]), None)
             if hit is None:
                 continue
-            fill_i, entry = hit, float(s.trigger)
+            fill_i, entry = hit, L
         # A venue fill needs a finite bracket in the position's direction.
         # A machine-rounding residual cannot define a unit of economic risk.
         levels = (entry, float(s.stop), float(s.target))
