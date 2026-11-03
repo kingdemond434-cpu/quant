@@ -148,3 +148,10 @@ def test_recipe_dispersion_can_only_raise_the_bar():
     wide = wsb.judge(pool, wsb.BookConfig(), n_trials=1000,
                      recipe_sharpes=[-0.5, 0.0, 0.5])["gates"]["deflated_sharpe"]
     assert wide["sr0"] >= base["sr0"]
+
+
+def test_armed_lambda_never_exceeds_what_the_holdout_supports():
+    out = wsb.judge(_pool(n_weak=80, mu=0.05), wsb.BookConfig(), n_trials=1000)
+    s = out["sizing"]
+    assert out["passed"]
+    assert s["lambda_armed"] <= min(s["lambda"], s["holdout"]["lambda_from_earlier_folds"])

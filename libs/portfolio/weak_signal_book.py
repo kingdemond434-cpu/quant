@@ -341,7 +341,15 @@ def judge(pool: Pool, cfg: BookConfig, *, n_trials: int | None,
             "last_fold_growth_per_day": (float(np.mean(np.log1p(lam_h * tail)))
                                          if lam_h > 0 else 0.0),
             "last_fold_worst_day": float(lam_h * tail.min()) if lam_h > 0 else 0.0}
-    lam = sizing["lambda"] if passed else 0.0
+    # ARMED = the smaller of the full-OOS lambda and the one the holdout supports (audit 11-03),
+    # and zero when the holdout fold lost money at its own lambda.
+    lam = sizing["lambda"]
+    h = sizing.get("holdout")
+    if h is not None:
+        lam = min(lam, h["lambda_from_earlier_folds"])
+        if h["last_fold_growth_per_day"] <= 0:
+            lam = 0.0
+    lam = lam if passed else 0.0
     members = sorted(((pool.ids[i], float(unit[i])) for i in np.flatnonzero(unit > 0)),
                      key=lambda x: -x[1])
     return {

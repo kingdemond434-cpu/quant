@@ -129,6 +129,14 @@ def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
 
+def _atomic_write(path: Path, text: str) -> None:
+    """tmp + replace: a reader never sees a torn file (a torn record darkens the whole book)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
+
+
 def _read_json(path: Path, default):
     try:
         return json.loads(path.read_text("utf-8"))
@@ -405,7 +413,7 @@ def run(budget_s: float = 1200.0, cfg: wsb.BookConfig | None = None) -> dict:
         if "failed_gates" in st:
             failed_rec[c] = st["failed_gates"]
     STORE.mkdir(parents=True, exist_ok=True)
-    FAILED_GATES.write_text(json.dumps(failed_rec, sort_keys=True), encoding="utf-8")
+    _atomic_write(FAILED_GATES, json.dumps(failed_rec, sort_keys=True))
     validity, power = gate_classes()
 
     # Eligibility and refusals. Every cell lands in exactly one bucket.
@@ -457,7 +465,7 @@ def run(budget_s: float = 1200.0, cfg: wsb.BookConfig | None = None) -> dict:
         except Exception as exc:
             built_status[f"{type(exc).__name__}: {str(exc)[:60]}"] += 1
     STORE.mkdir(parents=True, exist_ok=True)
-    STORE_INDEX.write_text(json.dumps(_INDEX, sort_keys=True), encoding="utf-8")
+    _atomic_write(STORE_INDEX, json.dumps(_INDEX, sort_keys=True))
 
     # Load the pool and close the coverage books.
     series: dict[str, tuple[pd.Series, pd.Series | None]] = {}
@@ -530,7 +538,7 @@ def run(budget_s: float = 1200.0, cfg: wsb.BookConfig | None = None) -> dict:
         "status": ("PROPOSE" if book.get("passed") else "NO_BOOK"),
         "authority": "proposes only; nothing here arms or sizes a live order",
     }
-    REPORT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+    _atomic_write(REPORT, json.dumps(doc, indent=1, default=str))
     with TRIALS.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps({"at": doc["generated_utc"], "recipe": recipe,
                              "members": len(pool.ids), "passed": bool(book.get("passed")),
