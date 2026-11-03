@@ -140,3 +140,82 @@ def test_every_axis_names_the_fence_that_already_owns_it() -> None:
         assert (ROOT / "scripts" / ax.fence[0]).is_file(), ax.fence[0]
     gate = (ROOT / "scripts" / "run_law_gate.py").read_text(encoding="utf-8")
     assert "check_birth_obligations.py" in gate, "the fence must run on the law gate"
+
+
+# ------------------------------------------------------------------ family floor only shrinks
+#: The 58 families recorded 2026-11-03 as the family axis's first MEASURED floor (it had been
+#: floored while UNMEASURED). The list is debt to drive DOWN: a name may leave it (its first
+#: judged cell) but none may join it -- a new unjudged family must fail the fence, never be
+#: parked here (audit SF on 0cdd2241c).
+FAMILY_FLOOR_2026_11_03 = frozenset({
+    "ae_latent",
+    "alt_conditioned",
+    "alt_series_momentum",
+    "analyst_cross_market_lead",
+    "analyst_revision_drift",
+    "anti_donchian_breakout",
+    "anti_three_bar_momentum",
+    "attention_ts",
+    "calendar_month",
+    "carry_rollover",
+    "conditioning_model",
+    "crisis_only_class_defensive",
+    "cross_sectional",
+    "cross_sectional_class_low_vol",
+    "cross_sectional_class_momentum",
+    "cross_sectional_class_reversal",
+    "cross_sectional_class_value",
+    "dav_abc_structure",
+    "dav_bb_meanrev",
+    "dav_breakout_fakeout",
+    "dav_ema_trend_pullback",
+    "dav_fakeout_reverse",
+    "dav_hull_trend",
+    "dav_keltner_break",
+    "dav_macd_qqe",
+    "dav_momentum_cont",
+    "dav_rsi_div_rev",
+    "dav_squeeze_expansion",
+    "dav_supertrend_trail",
+    "dav_t3_trend",
+    "ensemble",
+    "event_reaction",
+    "execution_microstructure",
+    "fair_value_gap",
+    "forced_flow",
+    "fx_fixing_flow",
+    "gnn_propagation",
+    "lead_lag_class_catchup",
+    "liquidity_regime",
+    "macro_release",
+    "mass_screen_carry",
+    "mass_screen_clock",
+    "mass_screen_cond",
+    "mass_screen_lead",
+    "mass_screen_thresh",
+    "ny_open@M15",
+    "orderflow_imbalance",
+    "positioning_crowding",
+    "regime_split",
+    "regional_information",
+    "relative_value_dislocation",
+    "rocket_ts",
+    "sig_path",
+    "triangle",
+    "unknown",
+    "usd_session_shock",
+    "volatility_shock",
+    "world_macro_state",
+})
+
+
+def test_the_family_floor_only_shrinks() -> None:
+    import json as _json
+    from pathlib import Path as _Path
+    doc = _json.loads((_Path(__file__).resolve().parents[2] / "docs" / "research"
+                       / "birth_obligations.json").read_text("utf-8"))
+    fam = doc["axes"]["family"]
+    added = set(fam.get("incomplete") or []) - FAMILY_FLOOR_2026_11_03
+    assert not added, f"names added to the family floor (it may only shrink): {sorted(added)}"
+    assert int(fam.get("count") or 0) <= len(FAMILY_FLOOR_2026_11_03)
+    assert not fam.get("names_dropped")
