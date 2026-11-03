@@ -1,0 +1,47 @@
+{
+  "_doc": "THE ROOT POLICY of the release authority (ops/release/authority/ONE_TIME_AUTHORISATION.md). Everything here is ROOT: a PR that changes this file, or any file in root_files, is never CLEARed by the authority; it takes zuck's own CLEAR + APPROVE MERGES path, and after it merges zuck re-pins the root digest on the box (pin_root.py). The authority and the gate both refuse to act when the digest of these files on LIVE differs from the box pin, so a root change that reached LIVE any other way switches the attestation path off instead of on.",
+  "version": 1,
+  "root_files": [
+    "ops/release/authority/*",
+    ".github/scripts/audit_gate.py",
+    ".github/workflows/trusted-eval.yml",
+    "ops/box/workflow_gate.ps1"
+  ],
+  "grow_only": [
+    "ops/release/protected_paths.txt",
+    "ops/release/risk_suites.txt",
+    "ops/release/trusted_eval_suites.txt"
+  ],
+  "controller_requires": [
+    "trusted-eval"
+  ],
+  "veto_hours": 24,
+  "attestation_ttl_hours": 48,
+  "envelope": {
+    "_doc": "The pre-delegated sizing envelope (zuck 2026-11-03 19:19Z: raise risk limits toward the max E[log W] optimum autonomously, safely). A PR may RAISE a ceiling in ops/release/ceilings.json `max` autonomously only for a knob listed in `raisable`, only up to its hard_max, and by at most max_step_frac of the old value per PR; every other gate (replay-shadow, risk-invariants, independent-review, trusted-eval, the 24 h veto, auto-revert) still binds. A knob in `fixed` is an external firm rule and can never be raised by anyone through this path. Any other raise of any `max` ceiling, any change to an `equal` or `source` pin, or any member removed from a `superset` list is ROOT. Lowering a `max` ceiling is ROOT too (NEVER REDUCE AGGRESSIVENESS, GROWTH GOVERNANCE Rule 1: no cap by fiat). Every raisable knob's effect is still clipped at run time to the remaining firm headroom (E8 2.5% daily, FTMO 5%/10%) by the rails, which no envelope raise can move. hard_max values are proposals in ONE_TIME_AUTHORISATION.md and take effect only when zuck pins this file.",
+    "fixed": {
+      "desks/mt5/prop/ftmo_follower.py": [
+        "DAILY_LOSS_FRAC",
+        "MAX_LOSS_FRAC"
+      ]
+    },
+    "raisable": {
+      "desks/mt5/mt5desk/sizing.py": {
+        "MAX_RISK_FRAC": {
+          "hard_max": 0.1,
+          "max_step_frac": 0.25
+        },
+        "BASE_RISK_FRAC": {
+          "hard_max": 0.03,
+          "max_step_frac": 0.25
+        }
+      },
+      "desks/mt5/prop/ftmo_follower.py": {
+        "MAX_NOTIONAL_X": {
+          "hard_max": 5.0,
+          "max_step_frac": 0.25
+        }
+      }
+    }
+  }
+}
