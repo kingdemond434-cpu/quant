@@ -913,8 +913,9 @@ def _execution_costs(names: Any, account: str = "fusion") -> dict[str, Any]:
     try:
         surface = json.loads((BASE / "data" / "cost_surface.json").read_text("utf-8"))
     except (OSError, ValueError) as exc:
-        # NO MODEL IS NOT NO FILLS: the venue's own realised cost still applies where measured,
-        # against the unpriced base (every sleeve's modelled bias 0.0, as before).
+        # NO SURFACE IS NO BASELINE: every sleeve is unpriced, so the venue's realised cost has
+        # nothing measured to be a credit or debit against and creates no bias; the artifact's
+        # execution_cost_realised names each as "UNMEASURED: no measured baseline".
         blank = costs_for(rows, None)
         blank["summary"]["verdict"] = f"no cost surface on this host ({type(exc).__name__})"
         return _with_realised(blank, rows, account)

@@ -19,23 +19,24 @@ WHAT THIS ORGAN PUBLISHES, per ACCOUNT x SYMBOL (and x UTC decision hour where a
                                   only on a fill that carries all three; a missing component is
                                   never a zero
     latency                       decision -> send and send -> ack, ms
-    shrunk_cost_r                 w x realised mean + (1 - w) x the modelled prior,
-                                  w = n / (n + SHRINK_K): empirical-Bayes toward the model. The
+    shrink                        the realised mean and its weight w = n / (n + SHRINK_K). The
                                   realised mean is WINSORIZED (each fill clipped at the cell's
                                   own p5/p95, p10/p90 under 20 fills) so one extreme fill cannot
                                   set the cost; the raw mean is published beside it
 
-The allocator re-shrinks against ITS OWN per-sleeve modelled cost with the same weight
-(`execution_cost.apply_realised`); `shrunk_cost_r` here is the same blend against the desk-wide
-base, published so the cell can be read on its own.
+NO BLEND IS PUBLISHED HERE (Auditor HOLD on b3b1ee181). A shrunk cost is a credit or debit against
+a baseline, and the only baseline this report could reach is `BASE_COST_R`, a scalar nobody
+measured. The allocator blends with the same weight against each sleeve's MEASURED cost-surface
+cell (`execution_cost.apply_realised`) and publishes the withheld share as its missed-growth
+lines in `pf_allocation.json`; a sleeve with no measured cell gets no realised bias at all.
 
 UNMEASURED IS A VERDICT (L1.28a). An account with no fills, or a cell whose fills carry no total
 cost, is UNMEASURED with the reason -- never a zero cost and never "cheap".
 
 TWO-SIDED BY CONSTRUCTION. Realised cost can sit above OR below the model; the allocator applies
 both directions (GROWTH_GOVERNANCE Rule 2: a venue that fills cheaper than modelled earns capital).
-The part of the evidence the shrinkage withholds is published as `missed_growth` lines, both
-directions, carried into MISSED_GROWTH.json by `missed_growth.published_gate_lines`.
+The part of the evidence the shrinkage withholds is published by the allocator, both directions,
+and carried into MISSED_GROWTH.json by `missed_growth.realised_cost_lines`.
 
 READ ONLY. It reads the corpus and writes one report; it sizes, routes and vetoes nothing.
 
@@ -58,7 +59,7 @@ for _p in (str(DESK), str(ROOT)):
         sys.path.insert(0, _p)
 
 from libs.execution import fill_corpus as fc  # noqa: E402
-from libs.portfolio.execution_cost import BASE_COST_R, REALISED_K  # noqa: E402
+from libs.portfolio.execution_cost import REALISED_K  # noqa: E402
 
 CORPUS = DESK / "data" / "fill_corpus.jsonl"
 FILL_REPORT = DESK / "reports" / "FILL_RECORDER.json"
@@ -68,8 +69,6 @@ SCHEMA = "realised-cost/1"
 #: The empirical-Bayes prior strength, in fills: at n = K a cell's realised mean and the model
 #: weigh equally. Declared here and in `execution_cost.REALISED_K` (one constant, imported).
 SHRINK_K = REALISED_K
-#: The prior the published `shrunk_cost_r` blends toward: the allocator's desk-wide base cost.
-PRIOR_COST_R = BASE_COST_R
 #: Fills an hour bucket needs before it is published (a bucket of two is a quote, not a cost).
 MIN_HOUR_N = 5
 #: Fills a cell needs before its winsorizing clip widens from p10/p90 to p5/p95.
@@ -231,17 +230,16 @@ def cell(fills: list[dict[str, Any]]) -> dict[str, Any]:
     tot = out["total_cost_r"]
     wmean, method = winsorized_mean([float(x) for x in col.get("total_cost_r", [])
                                      if x is not None])
-    shrunk, w = shrink(wmean, int(tot["n"]), PRIOR_COST_R)
-    out["shrink"] = {"n": int(tot["n"]), "k": SHRINK_K, "weight": round(w, 6),
+    n_tot = int(tot["n"])
+    w = (n_tot / (n_tot + float(SHRINK_K))) if (wmean is not None and n_tot > 0) else 0.0
+    out["shrink"] = {"n": n_tot, "k": SHRINK_K, "weight": round(w, 6),
                      # THE ALLOCATOR READS THIS ONE: one 4,000-point fill must not set a cell's
                      # cost, so each fill is clipped at the cell's own quantiles first
                      "realised_mean_cost_r": (round(wmean, 8) if wmean is not None else None),
                      "raw_mean_cost_r": tot["mean"], "mean_method": method,
-                     "prior_cost_r": PRIOR_COST_R,
-                     "prior_basis": "execution_cost.BASE_COST_R (the desk-wide modelled base); "
-                                    "the allocator re-shrinks against each sleeve's own "
-                                    "modelled cost with this same weight",
-                     "shrunk_cost_r": (round(shrunk, 8) if shrunk is not None else None)}
+                     "baseline": ("none here: the allocator blends with this weight against "
+                                  "the sleeve's MEASURED cost_surface cell "
+                                  "(execution_cost.apply_realised); no measured cell, no bias")}
     out["status"] = MEASURED if tot["n"] else UNMEASURED
     if not tot["n"]:
         missing = [k for k in ("slip_r", "spread_frac", "commission_r")
@@ -273,7 +271,6 @@ def build(rows: list[dict[str, Any]] | None = None, *, fill_report: dict[str, An
     rows = fc.read_rows(CORPUS) if rows is None else rows
     fills, census = latest_fills(rows)
     accounts: dict[str, Any] = {}
-    lines: list[dict[str, Any]] = []
     n_cells = n_measured = 0
     for book in BOOKS:
         mine = [r for r in fills if r["_book"] == book]
@@ -292,20 +289,6 @@ def build(rows: list[dict[str, Any]] | None = None, *, fill_report: dict[str, An
         accounts[book] = {"status": MEASURED if meas else UNMEASURED, "n_fills": len(mine),
                           "n_symbols": len(syms), "n_symbols_measured": len(meas),
                           "symbols": syms}
-        for s in meas:
-            sh = syms[s]["shrink"]
-            gap = float(sh["realised_mean_cost_r"]) - PRIOR_COST_R
-            lines.append({
-                "at": now.isoformat(timespec="seconds"), "rail": "realised_cost_shrinkage",
-                "account": book, "symbol": s, "n": sh["n"], "weight": sh["weight"],
-                "withheld_share": round(1.0 - float(sh["weight"]), 6),
-                "gap_r": round(gap, 8),
-                "withheld_r": round((1.0 - float(sh["weight"])) * gap, 8),
-                "direction": "cost_up" if gap > 0 else "cost_down" if gap < 0 else "none",
-                "verdict": UNMEASURED,
-                "why": ("the shrinkage holds (1 - w) of the realised-minus-modelled gap back "
-                        "toward the model, in either direction; its E[log W] price is "
-                        "UNMEASURED until the allocator's re-solve is ledgered")})
     fr = fill_report
     if fr is None:
         try:
@@ -323,15 +306,17 @@ def build(rows: list[dict[str, Any]] | None = None, *, fill_report: dict[str, An
         "n_fills_used": len(fills), "n_cells": n_cells, "n_cells_measured": n_measured,
         "upstream_realised_fills": upstream,
         "corpus_census": census, "accounts": accounts,
-        "shrink_k": SHRINK_K, "prior_cost_r": PRIOR_COST_R, "min_hour_n": MIN_HOUR_N,
-        "missed_growth": lines,
+        "shrink_k": SHRINK_K, "min_hour_n": MIN_HOUR_N,
+        "missed_growth_source": ("pf_allocation.json execution_cost_realised.missed_growth: the "
+                                 "gap is measured there, against the surface cell"),
         "units": {"*_frac": "fraction of price (cost > 0)",
                   "*_r": "R per trade: the position's own |entry - stop| (cost > 0)",
                   "hours_utc": "UTC hour of the decision"},
         "consumers": ["libs/portfolio/execution_cost.apply_realised via "
                       "pf_allocator._execution_costs (the shrunk realised cost replaces the "
                       "modelled one per account x symbol; stale > 48h falls back)",
-                      "research/missed_growth.published_gate_lines (realised_execution_cost)",
+                      "research/missed_growth.realised_cost_lines (realised_execution_cost, "
+                      "via pf_allocation.json)",
                       "research/health_board (RED when stale, or zero cells while fills flow)"],
         "boundary": "READ ONLY: reads the fill corpus, writes this report; sizes nothing.",
     }

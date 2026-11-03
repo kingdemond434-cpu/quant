@@ -77,11 +77,14 @@ is that it "has never been validated against a real fill". `research/realised_co
 what each account actually paid per symbol (slip + spread + commission, in R, from the fill
 corpus), and `apply_realised` replaces the modelled per-trade cost with the empirical-Bayes blend
 
-    shrunk = w x realised_mean + (1 - w) x (base_cost_r + modelled cost_bias_r),
+    shrunk = w x realised_mean + (1 - w) x surface_cost,
     w = n / (n + REALISED_K)
 
-so `cost_bias_r = shrunk - base_cost_r`, which is NEGATIVE when the venue fills cheaper than the
-replay charged. That is a measurement, not a model, so it is allowed to credit: a capital modifier
+so `cost_bias_r = shrunk - surface_cost`, which is NEGATIVE when the venue fills cheaper than the
+measured surface. `surface_cost` is `costs_for`'s MEASURED `cost_r` at the sleeve's broker fill
+hour -- never `BASE_COST_R`, which was never measured (Auditor HOLD on b3b1ee181); a sleeve with
+no measured surface cell gets NO realised bias and reads "UNMEASURED: no measured baseline".
+That is a measurement, not a model, so it is allowed to credit: a capital modifier
 on this desk must be two-sided (GROWTH_GOVERNANCE, `capital_modifiers.REGISTRY`
 "realised_execution_cost"). A REALISED_COST report older than `REALISED_MAX_AGE_H`, unreadable,
 or holding no cell for the sleeve's account and symbol leaves the modelled cost exactly as it was,
@@ -98,6 +101,7 @@ from typing import Any
 __all__ = [
     "BASE_COST_R",
     "MAX_RATIO",
+    "NO_BASELINE",
     "REALISED_K",
     "REALISED_MAX_AGE_H",
     "SESSION_FILL_HOUR",
@@ -381,58 +385,109 @@ def realised_state(doc: Any, now: datetime | None = None,
     return True, f"REALISED_COST.json fresh ({age_h:.1f}h)", round(age_h, 2)
 
 
+#: What a sleeve reads when the surface holds no measured cell for its symbol at its fill hour:
+#: the realised cost has nothing measured to be a credit or debit AGAINST, so it moves nothing.
+NO_BASELINE = "UNMEASURED: no measured baseline"
+
+
 def apply_realised(cost_doc: Mapping[str, Any], realised: Any, *,
                    symbols: Mapping[str, str], account: str = "fusion",
-                   base_cost_r: float = BASE_COST_R, k: float = REALISED_K,
-                   now: datetime | None = None,
+                   k: float = REALISED_K, now: datetime | None = None,
                    max_age_h: float = REALISED_MAX_AGE_H) -> dict[str, Any]:
     """`costs_for`'s output with each sleeve's cost replaced by the shrunk REALISED cost of its
     symbol on `account`, where one is measured. TWO-SIDED: the blend moves toward the venue's
     own mean whichever side of the model it lies, so `cost_bias_r` may go negative (a credit).
 
+    THE BASELINE IS THE MEASURED SURFACE CELL, NEVER THE SCALAR (Auditor HOLD on b3b1ee181). A
+    credit or debit is only as real as the number it is measured against, and `BASE_COST_R` was
+    never measured. So the baseline is `costs_for`'s own `cost_r` for the sleeve -- the cost at
+    its symbol's broker fill hour off `data/cost_surface.json` -- and only where that entry is
+    `source: MEASURED`:
+
+        shrunk      = w x realised_mean + (1 - w) x surface_cost,   w = n / (n + k)
+        cost_bias_r = shrunk - surface_cost
+
+    A sleeve whose surface cell is not MEASURED keeps its modelled entry UNTOUCHED -- the realised
+    cost creates no bias at all -- and is named in `no_baseline` as "UNMEASURED: no measured
+    baseline". Never a fallback to the scalar.
+
     Never mixes accounts: only `realised["accounts"][account]` is read. A sleeve whose symbol has
-    no MEASURED cell there keeps its modelled entry untouched and is counted in `n_model`."""
+    no MEASURED realised cell keeps its modelled entry untouched and is counted in `n_model`.
+    `missed_growth` carries, per realised sleeve, the share of the realised-minus-surface gap the
+    shrinkage holds back, in BOTH directions."""
     sleeves = {n: dict(v) for n, v in (cost_doc.get("sleeves") or {}).items()}
     summary = dict(cost_doc.get("summary") or {})
     usable, why, age_h = realised_state(realised, now, max_age_h)
     block: dict[str, Any] = {"account": account, "usable": usable, "why": why, "age_h": age_h,
                              "k": float(k), "n_realised": 0, "n_model": len(sleeves),
-                             "n_cheaper": 0, "n_dearer": 0, "two_sided": True}
+                             "n_cheaper": 0, "n_dearer": 0, "n_no_baseline": 0,
+                             "no_baseline": {}, "two_sided": True,
+                             "baseline": ("costs_for cost_r: the cost_surface cell at the "
+                                          "sleeve's broker fill hour, MEASURED only"),
+                             "missed_growth": []}
     if not usable:
         block["fallback"] = "MODELLED"
         summary["realised"] = block
         return {"sleeves": sleeves, "summary": summary}
+    at = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
     cells = (((realised.get("accounts") or {}).get(account) or {}).get("symbols") or {})
     for name, entry in sleeves.items():
-        c = cells.get(str(symbols.get(name) or ""))
+        sym = str(symbols.get(name) or "")
+        c = cells.get(sym)
         sh = (c or {}).get("shrink") or {}
         mean, n = sh.get("realised_mean_cost_r"), int(sh.get("n") or 0)
         if (not isinstance(c, Mapping) or c.get("status") != MEASURED or n <= 0
                 or not isinstance(mean, (int, float)) or not math.isfinite(float(mean))):
             continue
-        model_bias = float(entry.get("cost_bias_r", 0.0) or 0.0)
-        model_level = float(base_cost_r) + model_bias
+        surface_cost = entry.get("cost_r")
+        if (str(entry.get("source") or "") != MEASURED
+                or not isinstance(surface_cost, (int, float))
+                or not math.isfinite(float(surface_cost))):
+            block["n_no_baseline"] += 1
+            block["no_baseline"][name] = {
+                "symbol": sym, "verdict": NO_BASELINE, "n": n,
+                "realised_mean_cost_r": round(float(mean), 8),
+                "why": (f"{NO_BASELINE}: the cost surface holds no MEASURED cell for {sym} at "
+                        f"this sleeve's fill hour ({entry.get('why') or 'unpriced'}); the "
+                        "realised cost has nothing measured to be a credit or debit against, so "
+                        "it creates no bias")}
+            continue
+        base = float(surface_cost)
         w = n / (n + float(k))
-        shrunk = w * float(mean) + (1.0 - w) * model_level
+        shrunk = w * float(mean) + (1.0 - w) * base
+        model_bias = float(entry.get("cost_bias_r", 0.0) or 0.0)
         entry.update({
-            "cost_bias_r": round(shrunk - float(base_cost_r), 6),
+            "cost_bias_r": round(shrunk - base, 6),
             # the uncertainty scale moves with the level, as on the modelled path
-            "cost_r": round(abs(shrunk) if shrunk else float(base_cost_r), 6),
+            "cost_r": round(abs(shrunk) if shrunk else base, 6),
             "source": "REALISED",
             "realised": {"account": account, "n": n, "weight": round(w, 6),
                          "realised_mean_cost_r": round(float(mean), 8),
-                         "modelled_cost_r": round(model_level, 8),
+                         "surface_cost_r": round(base, 8),
                          "modelled_cost_bias_r": round(model_bias, 8),
                          "shrunk_cost_r": round(shrunk, 8)},
-            "why": (f"realised {account} {symbols.get(name)} cost {float(mean):.4f}R over {n} "
-                    f"fill(s), shrunk at w={w:.3f} toward the modelled {model_level:.4f}R"),
+            "why": (f"realised {account} {sym} cost {float(mean):.4f}R over {n} fill(s), shrunk "
+                    f"at w={w:.3f} toward the measured surface cost {base:.4f}R"),
         })
         block["n_realised"] += 1
         block["n_model"] -= 1
-        if shrunk < model_level:
+        if shrunk < base:
             block["n_cheaper"] += 1
-        elif shrunk > model_level:
+        elif shrunk > base:
             block["n_dearer"] += 1
+        gap = float(mean) - base
+        block["missed_growth"].append({
+            "at": at, "rail": "realised_cost_shrinkage", "account": account, "sleeve": name,
+            "symbol": sym, "n": n, "weight": round(w, 6), "withheld_share": round(1.0 - w, 6),
+            "baseline_cost_r": round(base, 8), "gap_r": round(gap, 8),
+            "withheld_r": round((1.0 - w) * gap, 8),
+            "direction": "cost_up" if gap > 0 else "cost_down" if gap < 0 else "none",
+            "verdict": UNMEASURED,
+            "why": ("the shrinkage holds (1 - w) of the realised-minus-surface gap back toward "
+                    "the measured surface cost, in either direction; its E[log W] price is "
+                    "UNMEASURED until the allocator's re-solve is ledgered")})
     block["fallback"] = "NONE" if block["n_model"] == 0 else "MODELLED_WHERE_UNMEASURED"
+    if block["n_no_baseline"] and not block["n_realised"]:
+        block["verdict"] = NO_BASELINE
     summary["realised"] = block
     return {"sleeves": sleeves, "summary": summary}
