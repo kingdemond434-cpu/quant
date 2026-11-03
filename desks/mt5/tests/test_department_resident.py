@@ -136,3 +136,57 @@ def test_main_once_exits_with_the_pass_result(monkeypatch, tmp_path):
     monkeypatch.setattr(dr, "free_phys_mb", lambda: None)
     assert dr.main(["--dept", "intel", "--once"]) == 0
     assert (tmp_path / "logs" / "department_resident.log").exists()
+
+
+def test_queue_order_is_longest_wait_from_readiness_not_arrival(monkeypatch, tmp_path):
+    """A resident that sat in the memory guard became ready FIRST; it must not be served after
+    every resident that reached the queue while it waited (2026-10-29: 3-5 h waits)."""
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dr, "_ticket_alive", lambda _path, _pid: True)
+    ready_early = time.time_ns() - 1_800 * 10**9          # ready 30 min ago, held by memory
+    arrived_first = dr._wait_ticket("forward")
+    time.sleep(0.001)
+    longest = dr._wait_ticket("forest_europe", ready_ns=ready_early)
+    assert dr._oldest_waiter() == longest
+    longest.unlink()
+    assert dr._oldest_waiter() == arrived_first
+    arrived_first.unlink()
+
+
+def test_admission_records_the_wait_and_never_cuts_a_slot(monkeypatch, tmp_path):
+    import json
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dr, "LOGS", tmp_path / "logs")
+    monkeypatch.setattr(dr, "_ticket_alive", lambda _path, _pid: True)
+    monkeypatch.setattr(dr, "MAX_WAIT_S", 5.0)
+    held = [dr.claim_capacity_slot(3) for _ in range(2)]
+    handle = dr.wait_for_capacity("execution", slots=3, poll_s=1,
+                                  ready_ns=time.time_ns() - 10 * 10**9)
+    try:
+        doc = json.loads((tmp_path / "locks" / "dept_queue_execution.json").read_text("utf-8"))
+        assert doc["waited_s"] >= 10.0 and doc["slots"] == dr.CONCURRENT_PASSES
+        log = (tmp_path / "logs" / "department_resident.log").read_text("utf-8")
+        assert "PAST the 5s wait bound" in log
+        assert dr.claim_capacity_slot(3) is None, "all three slots stay in use: none was cut"
+    finally:
+        handle.close()
+        for h in held:
+            h.close()
+    assert not list((tmp_path / "locks").glob("dept_wait_*.ticket")), "ticket released"
+
+
+def test_longest_waiters_are_admitted_in_order_as_slots_free(monkeypatch, tmp_path):
+    """Seven waiters, two slots: each freed slot goes to the longest waiter still queued."""
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dr, "_ticket_alive", lambda _path, _pid: True)
+    base = time.time_ns()
+    order = ["rest", "data", "intel", "forest_japan", "validate", "forward", "execution"]
+    tickets = {d: dr._wait_ticket(d, ready_ns=base - (len(order) - i) * 10**9)
+               for i, d in enumerate(order)}
+    served = []
+    while tickets:
+        head = dr._oldest_waiter()
+        dept = next(d for d, t in tickets.items() if t == head)
+        served.append(dept)
+        tickets.pop(dept).unlink()
+    assert served == order

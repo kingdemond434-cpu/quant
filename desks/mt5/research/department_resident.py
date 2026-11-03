@@ -58,6 +58,16 @@ PASS_BUDGET_FILL = min(
 )
 BELOW_NORMAL_PRIORITY_CLASS = 0x00004000
 
+# THE QUEUE'S WAIT BOUND (2026-10-29). On the box ~15 dept/forest residents finished passes of
+# 1,200-9,231 s and then sat 3-5 h on "waiting: bounded department slots or older pass(es) ahead",
+# and nothing measured it: a wait raises no error and writes nothing, the same silence as a leg
+# that never runs. Each resident now records how long it waited for a slot and how long its pass
+# took (data/locks/dept_queue_<dept>.json), and `libs.ops.leg_rotation.resident_liveness` turns a
+# resident waiting past this bound RED, by name, in LEG_ROTATION.json's liveness block. The bound
+# is a MEASUREMENT line, never a slot cut and never a pass shortened: if it is RED with
+# `oversubscribed` set, the slot count or the box is what must move.
+MAX_WAIT_S = float(os.environ.get("DEPT_MAX_WAIT_S", "7200"))
+
 
 def log(dept: str, msg: str) -> None:
     line = f"{datetime.now(tz=UTC).isoformat(timespec='seconds')} dept[{dept}]: {msg}"
@@ -146,10 +156,16 @@ def claim_capacity_slot(slots: int = CONCURRENT_PASSES):
     return None
 
 
-def _wait_ticket(dept: str) -> Path:
-    """An OS-visible FIFO ticket; the department singleton permits only one per department."""
+def _wait_ticket(dept: str, ready_ns: int | None = None) -> Path:
+    """An OS-visible FIFO ticket; the department singleton permits only one per department.
+
+    LONGEST WAIT FIRST, MEASURED FROM WHEN THE RESIDENT BECAME READY (`ready_ns`), not from when
+    it reached this line. A resident that spent half an hour in `wait_for_memory` before asking
+    for a slot used to join the queue behind every resident that arrived during that half hour --
+    it was the longest waiter and was served last."""
     LOCKS.mkdir(parents=True, exist_ok=True)
-    path = LOCKS / f"dept_wait_{time.time_ns()}_{os.getpid()}_{dept}.ticket"
+    stamp = int(ready_ns) if ready_ns is not None else time.time_ns()
+    path = LOCKS / f"dept_wait_{stamp}_{os.getpid()}_{dept}.ticket"
     path.touch(exist_ok=False)
     return path
 
@@ -188,18 +204,49 @@ def _oldest_waiter() -> Path | None:
     return min(contenders)[2] if contenders else None
 
 
+def record_queue(dept: str, **fields: object) -> None:
+    """Merge `fields` into data/locks/dept_queue_<dept>.json. One file per department, written
+    only by that department's singleton, so concurrent residents never race on it."""
+    import json
+    path = LOCKS / f"dept_queue_{dept}.json"
+    try:
+        LOCKS.mkdir(parents=True, exist_ok=True)
+        try:
+            doc = json.loads(path.read_text("utf-8"))
+        except (OSError, ValueError):
+            doc = {}
+        if not isinstance(doc, dict):
+            doc = {}
+        doc.update({"dept": dept, "slots": CONCURRENT_PASSES, "max_wait_s": MAX_WAIT_S,
+                    **fields})
+        tmp = path.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(doc), "utf-8")
+        tmp.replace(path)
+    except OSError:
+        pass
+
+
 def wait_for_capacity(dept: str, *, slots: int = CONCURRENT_PASSES,
-                      poll_s: int = PAUSE_S):
-    """Wait FIFO for bounded capacity; reacquiring departments rejoin at the tail."""
+                      poll_s: int = PAUSE_S, ready_ns: int | None = None):
+    """Wait for bounded capacity, LONGEST WAIT FIRST; a department that just finished a pass
+    becomes ready again only after it, so it rejoins behind every resident already waiting."""
     announced = False
-    ticket = _wait_ticket(dept)
+    ticket = _wait_ticket(dept, ready_ns)
+    since_ns = int(ready_ns) if ready_ns is not None else time.time_ns()
     try:
         while True:
             if _oldest_waiter() == ticket:
                 handle = claim_capacity_slot(slots)
                 if handle is not None:
-                    if announced:
-                        log(dept, f"capacity available: admitted to one of {slots} department slots")
+                    waited = max(0.0, (time.time_ns() - since_ns) / 1e9)
+                    over = waited > MAX_WAIT_S
+                    if announced or over:
+                        log(dept, f"capacity available: admitted to one of {slots} department "
+                                  f"slots after {waited:.0f}s"
+                                  + (f" -- PAST the {MAX_WAIT_S:.0f}s wait bound" if over
+                                     else ""))
+                    record_queue(dept, waited_s=round(waited, 1),
+                                 admitted_at=datetime.now(tz=UTC).isoformat(timespec="seconds"))
                     return handle
             if not announced:
                 log(dept, "waiting: bounded department slots or older pass(es) ahead")
@@ -368,8 +415,10 @@ def main(argv: list[str] | None = None) -> int:
     try:
         while True:
             passes += 1
+            # The wait clock starts HERE, before the memory guard: see `_wait_ticket`.
+            ready_ns = time.time_ns()
             wait_for_memory(dept)
-            capacity = wait_for_capacity(dept)
+            capacity = wait_for_capacity(dept, ready_ns=ready_ns)
             started = time.monotonic()
             heartbeat(dept, passes)
             try:
@@ -381,6 +430,8 @@ def main(argv: list[str] | None = None) -> int:
                 with contextlib.suppress(OSError):
                     capacity.close()
             log(dept, f"pass {passes}: {res['status']} rc={res['rc']} in {res['seconds']}s")
+            record_queue(dept, pass_s=res.get("seconds"), pass_status=res.get("status"),
+                         pass_done_at=datetime.now(tz=UTC).isoformat(timespec="seconds"))
             heartbeat(dept, passes, done_inc=1)
             if a.once:
                 return 0 if res["status"] == "ok" else 1
