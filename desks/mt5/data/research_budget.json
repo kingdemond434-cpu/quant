@@ -1,28 +1,17 @@
 {
- "generated_utc": "2026-11-02T07:24:57.495637+00:00",
+ "generated_utc": "2026-11-03T05:29:32.986928+00:00",
  "controller_variant": "A",
  "shares": {
   "new_mechanism": 0.0818,
-  "mutate_survivor": 0.1032,
-  "combine_survivors": 0.0969,
-  "conditional_state_edge": 0.103,
-  "execution_improvement": 0.0953,
-  "exit_improvement": 0.111,
-  "cross_asset_signal": 0.1671,
+  "mutate_survivor": 0.1023,
+  "combine_survivors": 0.0974,
+  "conditional_state_edge": 0.1034,
+  "execution_improvement": 0.0944,
+  "exit_improvement": 0.1108,
+  "cross_asset_signal": 0.1653,
   "alt_data_hypothesis": 0.0182,
-  "failure_derived": 0.1068,
-  "model_architecture": 0.0985,
+  "failure_derived": 0.1127,
+  "model_architecture": 0.0956,
   "external_screen": 0.0182
- },
- "authoritative": true,
- "authority_evidence": "2 leg(s) spent by the controller's prices this hour (acquire_datasets, forest_mena); not authoritative -- alpha_evolution: uplift ran as the trial, contract UNDECIDED (Welch t=0.856 over 25 treated vs 14 held-out leg-runs in the last 14 days); deepen: the base is the leg's unlimited sentinel; nothing to govern",
- "research_budget_authoritative": false,
- "research_budget_why": "not authoritative -- alpha_evolution: uplift ran as the trial, contract UNDECIDED (Welch t=0.856 over 25 treated vs 14 held-out leg-runs in the last 14 days); deepen: the base is the leg's unlimited sentinel; nothing to govern",
- "research_budget_contract": {
-  "gain": "INFO_PER_COMPUTE",
-  "metric": "control_arm.admitted",
-  "better": "up",
-  "bar": 1.0,
-  "organ": "report:RESEARCH_BUDGET.json"
  }
 }
