@@ -361,14 +361,15 @@ def test_a_donated_row_compiles_as_an_exact_recipe_of_a_buildable_family() -> No
 def test_the_family_reads_the_written_series_and_never_enters_before_release(
         tmp_path: Path) -> None:
     from mt5desk.family_exogenous_conditioner import family_exogenous_conditioner
-    idx = pd.date_range("2025-06-02", periods=24 * 120, freq="1h", tz="UTC")
+    idx = pd.date_range("2025-06-02", periods=24 * 7 * 60, freq="1h", tz="UTC")
     rng = np.random.default_rng(7)
     h1 = pd.DataFrame({"close": 1.1 + np.cumsum(rng.normal(0, 1e-4, len(idx)))}, index=idx)
     h1["open"] = h1["close"]
     h1["high"] = h1["close"] + 2e-4
     h1["low"] = h1["close"] - 2e-4
-    tues = pd.date_range("2025-06-03", periods=17, freq="W-TUE")
-    vals = rng.normal(0, 1, len(tues))
+    tues = pd.date_range("2025-06-03", periods=50, freq="W-TUE")
+    # alternating +-1e-3 has |z| ~ 1 everywhere, so the one spike is the only extreme
+    vals = np.where(np.arange(len(tues)) % 2 == 0, 1e-3, -1e-3)
     vals[-3] = 9.0
     av = [P.cot_usable_from(t, CAL) for t in tues]
     frame = pd.DataFrame({"event_time": tues.tz_localize("UTC"), "available_time": av,
