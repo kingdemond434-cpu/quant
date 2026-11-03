@@ -355,6 +355,89 @@ def _stand_down(now: float) -> dict[str, Any]:
                                and str(doc.get("status") or "").upper() == "STOOD_DOWN")}
 
 
+#: THE DECAY MONITOR MUST HAVE JUDGED EVERY KEY THAT IS TRADING (zuck 2026-10-29: "u shouldve
+#: noticed"). From 2026-09-16 to 2026-10-29 the monitor printed "0 live sleeve(s), 0 flagged"
+#: every hour while book keys closed live trades -- usdnok_carry 23 of them for -9.36R -- and no
+#: organ read "judged nothing while money moved" as a fault. A key with a live close older than
+#: the grace (one hourly decay pass plus slack) and inside the window must appear in the
+#: monitor's verdicts or its book-key judgements, from a pass that ran after that close.
+#: File names under DATA, resolved at call time (a sandbox that moves DATA moves them too).
+DECAY_LIVE_NAME, DECAY_ZERO_NAME, LIVE_LEDGER_NAME = ("decay_live.json", "DECAY_ZERO.json",
+                                                     "live_ledger.jsonl")
+JUDGE_GRACE_S = 2 * 3600
+JUDGE_WINDOW_S = 26 * 3600
+#: decay_monitor.LEDGER_NAME_MAX: the ledger names a sleeve by its truncated order comment.
+_STEM = 27
+
+
+def _ts(v: Any) -> float | None:
+    try:
+        d = datetime.fromisoformat(str(v).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return (d if d.tzinfo else d.replace(tzinfo=UTC)).timestamp()
+
+
+def _judge_coverage(now: float) -> dict[str, Any]:
+    """Which keys closed a live trade in (now - window, now - grace] that the decay monitor has
+    not judged since. UNMEASURED when the live ledger is absent; GAP names every unjudged key."""
+    try:
+        from libs.ops.live_ledger_view import ledger_path
+        ledger = ledger_path(DATA / LIVE_LEDGER_NAME)      # the corrected view, not a bare Path
+    except Exception:
+        ledger = DATA / LIVE_LEDGER_NAME
+    try:
+        lines = ledger.read_text("utf-8").splitlines()
+    except OSError:
+        return {"status": UNMEASURED, "why": f"no live ledger at {ledger.name}"}
+    traded: dict[str, float] = {}
+    for line in lines[-5000:]:
+        try:
+            r = json.loads(line) if line.strip() else None
+        except ValueError:
+            continue
+        # A broker-rewritten comment ("[sl ...]", "#123 by #456") names no key to judge.
+        if not isinstance(r, dict) or not r.get("sleeve") \
+                or str(r["sleeve"]).startswith(("[", "#")):
+            continue
+        t = _ts(r.get("time"))
+        if t is not None and now - JUDGE_WINDOW_S < t <= now - JUDGE_GRACE_S:
+            k = str(r["sleeve"])[:_STEM]
+            traded[k] = max(traded.get(k, 0.0), t)
+    live = _read(DATA / DECAY_LIVE_NAME) or {}
+    zero = _read(DATA / DECAY_ZERO_NAME) or {}
+    # Each file is judged by ITS OWN clock (#494 audit MF4b): a LIVE verdict by decay_live's
+    # checked_at, a book-key judgement by DECAY_ZERO's.
+    live_at = _ts(live.get("checked_at")) or 0.0
+    zero_at = _ts(zero.get("checked_at")) or 0.0
+    by_live = {str(k)[:_STEM] for k in (live.get("verdicts") or {})}
+    by_zero = {str(k)[:_STEM] for part in ("judged", "unmeasured", "flags", "zeros")
+               for k in (zero.get(part) or {})}
+    unjudged = sorted(k for k, t in traded.items()
+                      if not ((k in by_live and live_at >= t) or (k in by_zero and zero_at >= t)))
+    # STALE ZEROS (#494 audit S1): zeros the gateway is honouring from a file no pass rewrote. A
+    # zeroed key no longer trades, so this is checked whether or not anything closed.
+    stale = (f"DECAY_ZERO.json holds {len(zero['zeros'])} zero(s) last rewritten "
+             f"{(now - zero_at) / 3600:.1f}h ago"
+             if zero.get("zeros") and zero_at and now - zero_at > JUDGE_GRACE_S else "")
+    # A TORN ZERO FILE (#494 audit MF1): it exists and does not parse, so the gateway is on the
+    # last good copy and no pass can rewrite it.
+    zpath = DATA / DECAY_ZERO_NAME
+    torn = (f"{DECAY_ZERO_NAME} exists and is unreadable; the gateway is on its last good copy "
+            f"and the decay monitor refuses to rewrite it"
+            if zpath.exists() and _read(zpath) is None else "")
+    problems = unjudged + [x for x in (stale, torn) if x]
+    return {"status": "GAP" if problems else "OK", "n_traded": len(traded),
+            "n_judged": len(by_live | by_zero), "decay_checked_at": live.get("checked_at"),
+            "zero_checked_at": zero.get("checked_at"), "unjudged": unjudged, "stale": stale,
+            "torn": torn,
+            "why": ("; ".join(x for x in (
+                        (f"{len(unjudged)} key(s) closed live trades the decay monitor has not "
+                         f"judged since: {', '.join(unjudged[:8])}") if unjudged else "",
+                        stale, torn) if x) if problems
+                    else f"every one of {len(traded)} traded key(s) was judged after its close")}
+
+
 def measure(*, now: float | None = None) -> dict[str, Any]:
     """The whole liveness reading. Pure: reads artifacts, writes nothing."""
     now = time.time() if now is None else now
@@ -432,6 +515,9 @@ def measure(*, now: float | None = None) -> dict[str, Any]:
                                     f"not declare it UNMEASURED ({r['declared']})"})
     if str(join.get("status")) == "BROKEN":
         breaches.append({"check": "JOIN", "why": str(join.get("why"))[:300]})
+    judge = _judge_coverage(now)
+    if judge["status"] == "GAP":
+        breaches.append({"check": "DECAY_UNJUDGED", "why": str(judge["why"])[:300]})
 
     # A CYCLE THAT PRODUCED NEITHER. The only legal states are "there is a fresh allocation" and
     # "there is a named stand-down that covers the gap". Nothing is the third state, and it is
@@ -457,6 +543,7 @@ def measure(*, now: float | None = None) -> dict[str, Any]:
         "n_inputs_unmeasured": sum(1 for r in in_rows if r["verdict"] == UNMEASURED),
         "heat": heat,
         "join": join,
+        "decay_judging": judge,
         "stand_down": sd,
         "breaches": breaches,
         "boundary": ("REPORT ONLY. This organ reads artifacts and publishes ages, declarations "

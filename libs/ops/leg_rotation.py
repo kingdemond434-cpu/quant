@@ -116,6 +116,11 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     # money path now, and it runs every hour.
     "tier_s",
     "tier_s_door",
+    # THE DEMOTION HALF OF THE PROMOTION DOOR (2026-10-29). decay_monitor writes DECAY_ZERO, which
+    # the gateway reads to send nothing for a key whose live record failed the promoter's bars;
+    # the core rotation had listed it NEVER RUN since 2026-10-21 (decay_live.json last written
+    # 10-21 11:06 on the box) while keys kept closing live trades.
+    "decay_monitor",
     # ... and the writer of the door's fourth input, reports/REPLICATION.json (heavy plan).
     "replication_civilization",
     # Without this, the core rotation can leave the judge's worker plan and measured
