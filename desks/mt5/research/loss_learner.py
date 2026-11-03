@@ -107,6 +107,8 @@ DEFAULT_HOLD_BARS = 12
 #: The forward replacement bar mirrors promotion's (forward_verdict): 20 paired days over 14.
 MIN_PAIRED_DAYS = 20
 MIN_SPAN_DAYS = 14
+#: Oldest report `act` will take verdicts from (the hourly leg's cadence, with a day of slack).
+REPORT_MAX_AGE_H = 26
 #: Fallback risk fraction for pricing log-growth when no book names the parent's size.
 DEFAULT_FRAC = 0.01
 
@@ -836,6 +838,18 @@ def act(report: dict[str, Any] | None = None, sleeves_path: Path | None = None,
     doc = _json(sp, {})
     rows = doc.get("sleeves") if isinstance(doc, dict) else None
     verdicts = ((report.get("replacements") or {}).get("verdicts") or [])
+    # A DEAD HOURLY LEG MUST NOT RETIRE ON YESTERDAY'S BOUND. The verdicts are only as current
+    # as the report that carries them; past REPORT_MAX_AGE_H nothing is acted on, and says so.
+    gen = _ts(report.get("generated_at"))
+    if verdicts and (gen is None or now - gen > timedelta(hours=REPORT_MAX_AGE_H)):
+        res = {"status": (f"STALE_REPORT: {REPORT.name} generated_at "
+                          f"{report.get('generated_at')!r} is older than {REPORT_MAX_AGE_H}h "
+                          "or unreadable; no verdict acted on"), "done": []}
+        ACTIONS.parent.mkdir(parents=True, exist_ok=True)
+        with ACTIONS.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"at": now.isoformat(timespec="seconds"),
+                                 "action": "STALE_REPORT", "why": res["status"]}) + "\n")
+        return res
     done: list[dict[str, Any]] = []
     window_requests: list[dict[str, Any]] = []
     if not isinstance(rows, list):
@@ -909,6 +923,13 @@ def act(report: dict[str, Any] | None = None, sleeves_path: Path | None = None,
                     d["action"] = "SUPERSEDED"
                     d["why"] = (f"another writer left this row {row.get('status')!r} before this "
                                 f"pass could retire it; nothing written")
+                    continue
+                vfresh = fresh_by.get(str(d.get("variant")))
+                if vfresh is None or str(vfresh.get("status") or "").upper() != "LIVE" \
+                        or not (_num(vfresh.get("risk_frac")) or 0) > 0:
+                    d["action"] = "SUPERSEDED"
+                    d["why"] = ("the variant row is no longer LIVE with capital in the roster "
+                                "re-read just before the write; the parent keeps its risk")
                     continue
                 row.update({k: mine[k] for k in ("status", "risk_frac", "risk_frac_source",
                                                  "retired_at", "retired_by", "retire_reason")})

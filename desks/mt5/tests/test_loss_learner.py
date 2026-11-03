@@ -159,8 +159,9 @@ def _roster(tmp: Path, variant_live: bool, frac: float) -> Path:
     return p
 
 
-def _report(window: bool = False) -> dict:
-    return {"replacements": {"verdicts": [{"verdict": "REPLACE", "parent": "P.clock",
+def _report(window: bool = False, at: datetime | None = None) -> dict:
+    return {"generated_at": (at or datetime.now(tz=UTC)).isoformat(),
+            "replacements": {"verdicts": [{"verdict": "REPLACE", "parent": "P.clock",
                                            "parent_sleeve": "PARENT", "parent_window": window,
                                            "variant_clock": "VAR.clock", "why": "beat it"}]}}
 
@@ -284,6 +285,37 @@ def test_a_superseded_row_records_no_door(_out: Path, monkeypatch) -> None:
     monkeypatch.setattr(LL, "_json", _racing)
     res = LL.act(_report(), sleeves_path=sp)
     assert res["done"][0]["action"] == "SUPERSEDED" and doors == []
+
+
+def test_a_stale_report_retires_nothing(_out: Path, monkeypatch) -> None:
+    monkeypatch.setattr(LL, "_note_retirement_door", lambda *a: None)
+    sp = _roster(_out, variant_live=True, frac=0.012)
+    old = datetime.now(tz=UTC) - timedelta(hours=LL.REPORT_MAX_AGE_H + 1)
+    res = LL.act(_report(at=old), sleeves_path=sp)
+    assert res["status"].startswith("STALE_REPORT") and res["done"] == []
+    assert json.loads(sp.read_text())["sleeves"][0]["status"] == "LIVE"
+
+
+def test_a_variant_that_lost_capital_before_the_write_retires_nothing(_out: Path,
+                                                                     monkeypatch) -> None:
+    doors: list[str] = []
+    monkeypatch.setattr(LL, "_note_retirement_door", lambda n, *a: doors.append(n))
+    sp = _roster(_out, variant_live=True, frac=0.012)
+    real = LL._json
+    reads = {"n": 0}
+
+    def _racing(path, default):
+        doc = real(path, default)
+        if path == sp and isinstance(doc, dict):
+            reads["n"] += 1
+            if reads["n"] > 1:
+                doc["sleeves"][1]["risk_frac"] = 0.0      # allocator zeroed the variant
+        return doc
+
+    monkeypatch.setattr(LL, "_json", _racing)
+    res = LL.act(_report(), sleeves_path=sp)
+    assert res["done"][0]["action"] == "SUPERSEDED" and doors == []
+    assert json.loads(sp.read_text())["sleeves"][0]["status"] == "LIVE"
 
 
 def test_act_moves_capital_never_drops_it(_out: Path, monkeypatch) -> None:
