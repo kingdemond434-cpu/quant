@@ -310,16 +310,18 @@ jobs:
     # run. Never a tip nobody tested.
     outputs:
       release_commit: ${{ steps.push.outputs.release_commit }}
-    # LEVEL 2 (ops/release/authority/LEVEL2.md step 4). Once the LIVE ruleset is on, GITHUB_TOKEN can't
+    # LEVEL 2 (ops/release/authority/LEVEL2.md). Once the LIVE ruleset is on, GITHUB_TOKEN can't
     # push LIVE: GitHub Actions is never a bypass actor, because a PR's own workflow holds one. The
-    # seal pushes as the state App instead. Its key lives only in this environment, whose
-    # deployment branches are LIVE and desk-sync-clean, so no PR run (refs/pull/*) and no other
-    # branch can read it. Until the owner sets vars.STATE_APP_ID, this is the old GITHUB_TOKEN push.
-    environment: live-seal
+    # seal pushes as the state App instead. Its key lives only in this environment, whose only
+    # deployment branch is LIVE, so no PR run (refs/pull/*) and no other branch -- desk-sync-clean
+    # included, which the VPS pushes unreviewed -- can read it. desk-sync-clean's seal runs with no
+    # environment and pushes its own branch with GITHUB_TOKEN. Until vars.STATE_APP_ID is set,
+    # LIVE's seal is the old GITHUB_TOKEN push too.
+    environment: ${{ github.ref == 'refs/heads/claude/llm-auto-upgrade-verify-gcjac3' && 'live-seal' || '' }}
     steps:
       - name: State App token (Level 2 only)
         id: app
-        if: ${{ vars.STATE_APP_ID != '' }}
+        if: ${{ vars.STATE_APP_ID != '' && github.ref == 'refs/heads/claude/llm-auto-upgrade-verify-gcjac3' }}
         uses: actions/create-github-app-token@v1
         with:
           app-id: ${{ vars.STATE_APP_ID }}
@@ -394,9 +396,10 @@ jobs:
   #   4. syncs master by the tree-take merge of 99704ba1 / PR #66 -- parents (master, release),
   #      tree = release's tree -- pushed without force, rebuilt if master moved.
   # The trading box adopts `production` (Adopt-And-Seal.ps1 -> `release_promotion.py gate`), so
-  # the branch tip reaches the money path only once this job has run. Pushes made with the
-  # workflow's GITHUB_TOKEN start no workflow run, so this cannot loop.
-  # Protect `production` in the repository settings: no force pushes, no deletions.
+  # the branch tip reaches the money path only once this job has run. It cannot loop: ci.yml
+  # runs on push only for LIVE and desk-sync-clean, so its master/production/tag pushes start
+  # nothing, and promote is idempotent per target (an existing tag is reused). Under Level 2
+  # these pushes are made by the state App, which ruleset_master.json alone admits.
   promote:
     if: >-
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
@@ -409,10 +412,24 @@ jobs:
     concurrency:
       group: release-promotion
       cancel-in-progress: false
+    # LEVEL 2: master (whose trusted-eval.yml pull_request_target runs) and production (what the
+    # box adopts) take updates only from the state App (ruleset_master.json). This job runs on
+    # LIVE pushes alone, so it shares the seal's LIVE-only environment and pushes as that App.
+    # Until vars.STATE_APP_ID is set, it is the old GITHUB_TOKEN push.
+    environment: live-seal
     steps:
+      - name: State App token (Level 2 only)
+        id: app
+        if: ${{ vars.STATE_APP_ID != '' }}
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.STATE_APP_ID }}
+          private-key: ${{ secrets.STATE_APP_KEY }}
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ steps.app.outputs.token || github.token }}
 
       - uses: actions/setup-python@v5
         with:

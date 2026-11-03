@@ -377,7 +377,7 @@ def test_every_root_file_is_protected_so_no_no_comment_path_can_merge_it(
     """A root file on the AUTO path would merge with no authority at all once AUTO is active."""
     files = [{"filename": path, "status": "modified", "additions": 1, "deletions": 0}]
     assert sb.ag.tier(files, 1, lambda n: False)[0] == "PROTECTED"
-    assert sb.auth.pol._match(path, sb.policy["root_files"])
+    assert sb.auth.pol._match(path, [*sb.policy["root_files"], *sb.policy["enforced_root_files"]])
 
 
 # ---- Level 2: the commit status the LIVE ruleset requires -------------------------------------
@@ -480,13 +480,15 @@ def test_ruleset_check_refuses_unsafe_bypass(bad: dict[str, Any]) -> None:
     assert cr.problems(rs)
 
 
-def test_seal_environment_must_admit_exactly_the_two_branches() -> None:
+def test_seal_environment_must_admit_live_alone() -> None:
+    """desk-sync-clean is pushed by the VPS with no review: a ci.yml edited there must never run
+    in the environment that holds the state App's key (that App bypasses the LIVE ruleset)."""
     cr = _check_ruleset()
     ok = {"deployment_branch_policy": {"protected_branches": False, "custom_branch_policies": True}}
-    two = [{"name": "claude/llm-auto-upgrade-verify-gcjac3", "type": "branch"},
-           {"name": "desk-sync-clean", "type": "branch"}]  # fmt: skip
-    assert cr.env_problems(ok, two) == []
-    assert cr.env_problems({"deployment_branch_policy": None}, two)
-    assert cr.env_problems(ok, [*two, {"name": "claude/*", "type": "branch"}])
-    assert cr.env_problems(ok, two[:1])
-    assert cr.env_problems(ok, [*two, {"name": "v*", "type": "tag"}])
+    live = [{"name": "claude/llm-auto-upgrade-verify-gcjac3", "type": "branch"}]
+    assert cr.env_problems(ok, live) == []
+    assert cr.env_problems({"deployment_branch_policy": None}, live)
+    assert cr.env_problems(ok, [*live, {"name": "desk-sync-clean", "type": "branch"}])
+    assert cr.env_problems(ok, [*live, {"name": "claude/*", "type": "branch"}])
+    assert cr.env_problems(ok, [])
+    assert cr.env_problems(ok, [*live, {"name": "v*", "type": "tag"}])

@@ -5,8 +5,11 @@
     "ops/release/authority/*",
     ".github/scripts/audit_gate.py",
     ".github/workflows/trusted-eval.yml",
+    "ops/release/publisher/*"
+  ],
+  "_enforced_doc": "RELEASE MACHINERY THAT IS ROOT ONLY WHILE NOTHING BUT THE BOX ENFORCES THE AUTHORITY. Until GitHub's own LIVE ruleset requires the authority App's release-authority status (Level 2, LEVEL2.md), the box gate and the merger identity are what keep an unapproved PR off LIVE, so a change to them is ROOT. Once the authority itself reads that rule as active on LIVE this pass (authority.level2_enforced, fail closed), a rewritten gate or merger can no longer land anything the authority did not pass, so these files become CONTROLLER: trusted-eval plus the 24 h veto, approved by the authority, no owner step. They are outside the root digest, so a CONTROLLER merge of one does not switch the authority off. The publisher stays ROOT for good: its path filter is the only bound on the state App's ruleset bypass. audit_gate.py stays ROOT: the authority itself loads it.",
+  "enforced_root_files": [
     "ops/box/workflow_gate.ps1",
-    "ops/release/publisher/*",
     "ops/release/merger/*"
   ],
   "grow_only": [

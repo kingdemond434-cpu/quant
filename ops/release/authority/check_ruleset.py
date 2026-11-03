@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Refuse to apply ruleset_live.json until it is safe to (ops/release/authority/LEVEL2.md step 5).
 
-    python ops/release/authority/check_ruleset.py --repo OWNER/NAME [ruleset.json]  # 0: safe
+    python ops/release/authority/check_ruleset.py --repo OWNER/NAME [live.json] [--master m.json]
 
 Safe means:
 - the required check is pinned to the authority App;
@@ -49,13 +49,44 @@ def problems(rs: dict[str, Any]) -> list[str]:
     return out
 
 
+#: master's trusted-eval.yml is what pull_request_target runs (the default branch's file), and
+#: the box adopts `production`: whoever can move either can fake the base-run evaluation or roll
+#: the box back. Only CI's promote job (LIVE's own ci.yml, in the LIVE-only seal environment,
+#: holding the state App's token) may update them.
+PROMOTED_REFS = ["refs/heads/master", "refs/heads/production"]
+
+
+def master_problems(rs: dict[str, Any], state_app: Any) -> list[str]:
+    out: list[str] = []
+    if rs.get("enforcement") != "active":
+        out.append("master ruleset: enforcement must be active")
+    inc = sorted(((rs.get("conditions") or {}).get("ref_name") or {}).get("include") or [])
+    if inc != sorted(PROMOTED_REFS):
+        out.append(f"master ruleset must cover exactly {PROMOTED_REFS}, got {inc}")
+    types = {r.get("type"): r for r in rs.get("rules") or []}
+    upd = (types.get("update") or {}).get("parameters") or {}
+    if "update" not in types or upd.get("update_allows_fetch_and_merge") is not False:
+        out.append("master ruleset must restrict updates to its bypass actor")
+    if not {"deletion", "non_fast_forward"} <= set(types):
+        out.append("master ruleset must refuse deletion and force pushes")
+    bys = rs.get("bypass_actors") or []
+    if [(b.get("actor_type"), b.get("actor_id")) for b in bys] != [("Integration", state_app)] \
+            or not state_app:
+        out.append("master ruleset: the state App alone may update master and production")
+    return out
+
+
 SEAL_ENV = "live-seal"
-SEAL_BRANCHES = frozenset({"claude/llm-auto-upgrade-verify-gcjac3", "desk-sync-clean"})
+#: LIVE ALONE. desk-sync-clean is pushed directly by the VPS with no review, so a ci.yml edited
+#: there would run in this environment and could read the state App's key -- and that App
+#: bypasses the LIVE ruleset. The desk-sync-clean seal pushes its own unprotected branch with
+#: GITHUB_TOKEN and needs no environment (ci.yml).
+SEAL_BRANCHES = frozenset({"claude/llm-auto-upgrade-verify-gcjac3"})
 
 
 def env_problems(env: dict[str, Any], branch_policies: list[dict[str, Any]]) -> list[str]:
-    """The seal environment holds the state App's key: it must admit only LIVE and desk-sync-clean,
-    or a push-triggered run of a modified ci.yml on any branch could read it (#650 audit)."""
+    """The seal environment holds the state App's key: it must admit only LIVE, or a
+    push-triggered run of a modified ci.yml on any other branch could read it (#650 audit)."""
     pol = env.get("deployment_branch_policy") or {}
     if not pol.get("custom_branch_policies") or pol.get("protected_branches"):
         return [f"environment {SEAL_ENV} must use custom branch policies (selected branches)"]
@@ -84,8 +115,18 @@ def main(argv: list[str] | None = None) -> int:
         i = args.index("--repo")
         repo = args[i + 1]
         args = args[:i] + args[i + 2:]
+    mpath = Path(__file__).with_name("ruleset_master.json")
+    if "--master" in args:
+        i = args.index("--master")
+        mpath = Path(args[i + 1])
+        args = args[:i] + args[i + 2:]
     path = Path(args[0]) if args else Path(__file__).with_name("ruleset_live.json")
-    got = problems(json.loads(path.read_text(encoding="utf-8")))
+    live = json.loads(path.read_text(encoding="utf-8"))
+    got = problems(live)
+    state = [b.get("actor_id") for b in live.get("bypass_actors") or []
+             if b.get("actor_type") == "Integration"]  # fmt: skip
+    got += master_problems(json.loads(mpath.read_text(encoding="utf-8")),
+                           state[0] if len(state) == 1 else None)  # fmt: skip
     if repo is None:
         got.append("run with --repo OWNER/NAME so the live-seal environment is checked too")
     else:

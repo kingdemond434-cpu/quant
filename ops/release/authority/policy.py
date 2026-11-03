@@ -3,8 +3,10 @@ gathered itself. No model, no session, no comment text decides here; the same fa
 the same verdict, so the decision can be re-derived by anyone from the evidence it names.
 
 CLASSES (strictest file wins):
-  ROOT        -- a file in ROOT_POLICY.json root_files, ROOT_POLICY.json itself, a shrunk
-                 grow_only list, or a ceiling change the envelope does not allow. The authority
+  ROOT        -- a file in ROOT_POLICY.json root_files (or in enforced_root_files while GitHub
+                 does not yet enforce the authority's status on LIVE), ROOT_POLICY.json
+                 itself, a shrunk grow_only list, or a ceiling change the envelope does not
+                 allow. The authority
                  never CLEARs ROOT; it signs a HOLD saying so, and zuck's own path decides.
   CONTROLLER  -- the gate's PROTECTED tier (a check that judges PRs: .github/, ops/release/, test
                  configuration). Needs the base-run `trusted-eval` job on top of every gating and
@@ -129,11 +131,17 @@ def classify(
     policy: Mapping,
     read_base: Callable[[str], str | None],
     read_head: Callable[[str], str | None],
+    enforced: bool = False,
 ) -> tuple[str, list[str]]:
-    """(class, reasons). `files`: every changed path (both sides of a rename)."""
+    """(class, reasons). `files`: every changed path (both sides of a rename). `enforced`: the
+    authority READ GitHub's LIVE ruleset requiring its status as active this pass (Level 2);
+    False on any doubt, which keeps `enforced_root_files` ROOT."""
     if gate_tier == "REFUSED":
         return "REFUSED", ["a secrets path: never merged"]
+    machinery = [f for f in files if _match(f, policy.get("enforced_root_files") or ())]
     root = [f for f in files if _match(f, policy["root_files"])]
+    if not enforced:
+        root += [f for f in machinery if f not in root]
     reasons = [f"root file {f}" for f in root]
     for f in files:
         if _match(f, policy.get("grow_only") or ()):
@@ -156,6 +164,9 @@ def classify(
         ]
     if reasons:
         return "ROOT", reasons
+    if machinery:
+        return "CONTROLLER", ["release machinery under the Level 2 ruleset: base-run "
+                              "trusted-eval and the veto window required"]  # fmt: skip
     if gate_tier == "PROTECTED":
         return "CONTROLLER", ["changes a check that judges PRs: base-run trusted-eval required"]
     return gate_tier, []

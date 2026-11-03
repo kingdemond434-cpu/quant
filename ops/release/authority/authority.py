@@ -39,6 +39,8 @@ from typing import Any
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 VERSION = "authority/v1"
+#: the authority's own GitHub App: the only identity whose release-authority status counts
+AUTHORITY_APP_ID = 5601819
 
 
 def _load(name: str, path: Path) -> Any:
@@ -91,8 +93,29 @@ def pinned(pin_path: str, digest: str) -> tuple[bool, str]:
     return True, "root pin matches"
 
 
-def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any]) -> dict[str, Any]:
-    """Everything decide() needs, read by the authority itself. Any read error raises."""
+def level2_enforced(ag: Any, repo: str, base: str) -> tuple[bool, str]:
+    """Whether GitHub ITSELF refuses a LIVE merge the authority did not pass: an active rule on
+    `base` requires the release-authority status from the authority App and nothing looser.
+    Read every pass from the public rules endpoint; any error, any doubt: False (fail closed),
+    which keeps the release machinery ROOT."""
+    try:
+        rules = ag._gh(f"repos/{repo}/rules/branches/{base}?per_page=100")
+    except (RuntimeError, ValueError, OSError, subprocess.SubprocessError) as exc:
+        return False, f"rules unreadable ({type(exc).__name__}): enforcement not assumed"
+    want = {"context": STATUS_CONTEXT, "integration_id": AUTHORITY_APP_ID}
+    for r in rules if isinstance(rules, list) else []:
+        if not isinstance(r, dict) or r.get("type") != "required_status_checks":
+            continue
+        checks = (r.get("parameters") or {}).get("required_status_checks") or []
+        if any(isinstance(c, dict) and {k: c.get(k) for k in want} == want for c in checks):
+            return True, f"ruleset {r.get('ruleset_id')} requires {STATUS_CONTEXT} on {base}"
+    return False, f"no active rule on {base} requires {STATUS_CONTEXT} from the authority App"
+
+
+def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any],
+          enforced: bool = False) -> dict[str, Any]:  # fmt: skip
+    """Everything decide() needs, read by the authority itself. Any read error raises.
+    `enforced`: level2_enforced() this pass."""
     p = ag._gh(f"repos/{repo}/pulls/{pr}")
     head = str(p["head"]["sha"])
     f: dict[str, Any] = {
@@ -122,7 +145,8 @@ def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any]) -> dic
 
         return read
 
-    cls, why = pol.classify(names, level, policy, reader(f"origin/{base}"), reader(head))
+    cls, why = pol.classify(names, level, policy, reader(f"origin/{base}"), reader(head),
+                            enforced=enforced)  # fmt: skip
     f.update(tier=level, tier_why=twhy, cls=cls, cls_reasons=why, files=names)
     found = ag.verdicts(ag._flat(ag._gh(f"repos/{repo}/issues/{pr}/comments?per_page=100",
                                         "--paginate", "--slurp")))  # fmt: skip
@@ -451,11 +475,13 @@ def main(argv: list[str] | None = None) -> int:
         if seen.startswith("RED"):
             return 2
     post = a.post_status or (Path(a.out).parent / STATUS_FLAG).exists()
+    enforced, ewhy = level2_enforced(ag, a.repo, base)
+    print(f"level 2: {'ENFORCED' if enforced else 'not enforced'} -- {ewhy}", flush=True)
     veto_h = float(policy.get("veto_hours", 24))
     rc = 0
     for n in prs:
         try:
-            f = facts(ag, a.repo, n, base, policy)
+            f = facts(ag, a.repo, n, base, policy, enforced=enforced)
             verdict, reasons = pol.decide(f)
         except (RuntimeError, subprocess.SubprocessError, KeyError, TypeError, ValueError) as exc:
             print(f"#{n}: not judged: {exc}")
