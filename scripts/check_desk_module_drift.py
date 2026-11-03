@@ -291,6 +291,8 @@ MODULES = [
     "libs/execution/digital_twin.py",
     "desks/mt5/mt5desk/risk_units.py",
     "desks/mt5/mt5desk/position_manager.py",
+    # the same ratchet on every MetaTrader account (FTMO imports it; zuck 2026-11-03 parity)
+    "desks/mt5/mt5desk/mt5_ratchet.py",
     "desks/mt5/mt5desk/provenance.py",
     "desks/mt5/mt5desk/independence.py",
     "desks/mt5/mt5desk/multiplicity.py",
