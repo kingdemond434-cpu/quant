@@ -1311,6 +1311,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # gap #5: ALFRED real-time vintages, renewed a few series a pass; gap #2:
                      # the implied-vol register and the realized-vol PROXY family (2026-10-29)
                      "fetch_alfred", "options_implied",
+                     # Tor Metrics per-country usage / censorship events as PIT series
+                     "tor_metrics",
                      # the alt seats' readings as PIT series the compiler mints cells from
                      "alt_seat_cells",
                      # walking inside a registered ground's own door is collection, like the
@@ -2223,6 +2225,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Six feeds, each one robots read (12 s cap) plus one GET (20 s, one retry), sequential:
     # ~200 s worst case; the cap sits above it so a slow feed never truncates the report.
     "central_bank_miner": 300,
+    # tor_metrics stops fetching at 70% of --budget-s 240 and writes; cap above it.
+    "tor_metrics": 330,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
     "replication_civilization": 1_000,
@@ -5759,6 +5763,13 @@ def main() -> None:
     # reports/ALT_PROXIES_ALLOCATION_INTEL.json. After the collector, before the forge.
     alp = _costed("alt_proxies", lambda: _producer(
         "alt_proxies", "research/alt_proxies.py", "--once", "--budget-s", "300"))
+    # TOR METRICS (2026-10-29): CC0 per-country Tor relay/bridge users -> users z, censorship
+    # events (users outside the detector's range) and a 28-day stress state, PIT-stamped by the
+    # measured publication lag, through the lake / axis door / registry cells. Its report also
+    # carries the onion allowlist fetcher, which stays OFF until QUANT_TOR_SOCKS and the
+    # auditor's egress ruling both exist (every row UNMEASURED:NEEDS_TOR otherwise).
+    tmx = _costed("tor_metrics", lambda: _producer(
+        "tor_metrics", "research/tor_metrics.py", "--once", "--budget-s", "240"))
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
     # webmaster's variants tried and the Wayback copy located (`research/source_fixer.py`).
     sfx = _costed("source_fixer", lambda: _producer("source_fixer", "research/source_fixer.py"))
@@ -6403,6 +6414,7 @@ def main() -> None:
                     "sge_premium": sge,
                     "asia_collector": aco,
                     "alt_proxies": alp,
+                    "tor_metrics": tmx,
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,

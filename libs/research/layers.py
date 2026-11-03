@@ -291,6 +291,8 @@ LEG_LAYER: dict[str, str] = {
     "terms_basis_census": "meta",
     # dated central-bank press documents: information the text legs read
     "central_bank_miner": "information",
+    # Tor usage and censorship events per country: a dated political-stress input (2026-10-29)
+    "tor_metrics": "information",
     # the alt seats' readings as PIT series, and Form 4 filings as clusters + a breadth series:
     # both turn a public source into a dated input the families condition on (2026-10-14)
     "alt_seat_cells": "information",
