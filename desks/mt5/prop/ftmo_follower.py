@@ -1093,6 +1093,15 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
             if how:
                 doc.setdefault("manage_notes", []).append(f"#{int(p.ticket)}: {how}")
             continue
+        # NO NO-OP MODIFIES (Desk health 2026-11-03: the terminal journal showed a "sl unchanged,
+        # skipped" request every minute after a mirror, each one spent from FTMO's daily request
+        # budget). Only a move the venue can represent -- one tick, else one point -- is sent.
+        _info = mt5.symbol_info(SYMBOL)
+        _step = (float(getattr(_info, "trade_tick_size", 0.0) or 0.0)
+                 or float(getattr(_info, "point", 0.0) or 0.0)) if _info is not None else 0.0
+        if not _pm.tightens_by_min_step(side=1 if side == "long" else -1, new_stop=float(new),
+                                        current_stop=float(cur), step=_step):
+            continue
         sgn: Any = 1 if side == "long" else -1
         rests, rwhy = _pm.stop_rests_at_venue(stop=new, side=sgn, bid=float(tick.bid),
                                               ask=float(tick.ask))

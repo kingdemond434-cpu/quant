@@ -238,3 +238,16 @@ def test_the_gateway_decides_like_the_shared_one(side: int, highs: list[float],
     assert gw == shared, (gw, shared, logs)
     if bid in (101.0, 98.98, 103.0):  # the winners: the comparison is never vacuous
         assert gw is not None, logs
+
+
+def test_a_mirror_equal_to_the_venue_stop_sends_nothing() -> None:
+    """Desk health 2026-11-03: after a mirror the follower re-sent the same stop every minute
+    ("sl unchanged"), each one spent from FTMO's daily request budget."""
+    from prop import ftmo_follower as ff
+
+    assert not ff._pm.tightens_by_min_step(side=-1, new_stop=3952.66 - 1e-9,
+                                           current_stop=3952.66, step=0.01)
+    assert ff._pm.tightens_by_min_step(side=-1, new_stop=3951.60, current_stop=3952.66,
+                                       step=0.01)
+    src = (_DESK / "prop" / "ftmo_follower.py").read_text("utf-8")
+    assert "NO NO-OP MODIFIES" in src and "tightens_by_min_step(side=1 if side ==" in src
