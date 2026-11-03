@@ -166,3 +166,39 @@ def test_the_census_sees_this_process(tmp_path):
     if held is None:
         pytest.skip("no readable /proc on this host")
     assert os.getcwd() in held
+
+
+def _with_owner(d: Path, pid: int, age_s: float) -> Path:
+    (d / law_gate._OWNER_PID).write_text(str(pid))
+    stamp = time.time() - age_s
+    os.utime(d, (stamp, stamp))
+    return d
+
+
+def test_a_live_owner_keeps_an_unheld_checkout(fake_tmp, monkeypatch):
+    """Auditor 11-03: a live gate using its checkout only through short git/pytest children
+    holds no cwd or fd there between steps; its pid file must keep a concurrent gate off it."""
+    age = law_gate._UNHELD_AFTER_S + 60
+    live = _with_owner(_checkout(fake_tmp, "lawgate-head-live", age), os.getpid(), age)
+    monkeypatch.setattr(law_gate, "_held_paths", lambda: {"/somewhere/else"})
+
+    assert law_gate._reap_stale_checkouts(_ROOT) == 0
+    assert live.exists()
+
+
+def test_a_dead_owner_does_not_keep_an_unheld_checkout(fake_tmp, monkeypatch):
+    import subprocess
+    child = subprocess.Popen([sys.executable, "-c", "pass"])
+    child.wait()
+    age = law_gate._UNHELD_AFTER_S + 60
+    dead = _with_owner(_checkout(fake_tmp, "lawgate-head-dead", age), child.pid, age)
+    monkeypatch.setattr(law_gate, "_held_paths", lambda: {"/somewhere/else"})
+
+    assert law_gate._reap_stale_checkouts(_ROOT) == 1
+    assert not dead.exists()
+
+
+def test_a_garbled_pid_file_says_nothing(tmp_path):
+    (tmp_path / law_gate._OWNER_PID).write_text("not-a-pid")
+    assert law_gate._owner_alive(tmp_path) is False
+    assert law_gate._owner_alive(tmp_path / "absent") is False

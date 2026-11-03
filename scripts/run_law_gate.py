@@ -34,6 +34,7 @@ enforcement itself).
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import shutil
@@ -797,6 +798,35 @@ def _within(path: str, d: Path) -> bool:
     return path == ds or path.startswith(ds + os.sep)
 
 
+_OWNER_PID = "owner.pid"
+
+
+def _owner_alive(d: Path) -> bool:
+    """True when the gate that allocated `d` is still running, by the pid file it wrote there.
+
+    A live gate whose own cwd sits elsewhere and touches its checkout only through short git or
+    pytest children holds NO cwd or fd inside it between steps, so the /proc census alone would
+    read it as unheld and a concurrent gate could reap it mid-run. The pid file closes that gap.
+    A missing or unreadable pid file says nothing either way (False); a pid we may not signal is
+    alive (PermissionError), and a reused pid only delays the reap to the 2 h rule -- never early.
+    """
+    try:
+        pid = int((d / _OWNER_PID).read_text().strip())
+    except (OSError, ValueError):
+        return False
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+    return True
+
+
 def _held_paths() -> set[str] | None:
     """Every cwd and open file of every live process, or None when /proc cannot say.
 
@@ -873,7 +903,8 @@ def _reap_stale_checkouts(root: Path, *, now: float | None = None) -> int:
             age = now - d.stat().st_mtime
             # Unheld: reap past the short floor. Held, or holders UNMEASURED: only past the
             # lifetime a live run cannot reach -- never reap what a running gate may be using.
-            unheld = held is not None and not any(_within(h, d) for h in held)
+            unheld = (held is not None and not any(_within(h, d) for h in held)
+                      and not _owner_alive(d))
             if age < (_UNHELD_AFTER_S if unheld else _ORPHAN_AFTER_S):
                 continue
         except OSError:
@@ -913,6 +944,9 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
         return root, "cwd==HEAD (tree clean)", []
     _reap_stale_checkouts(root)             # sweep our own dead before allocating another 150MB
     tmp = Path(tempfile.mkdtemp(prefix="lawgate-head-", dir=_checkout_base()))
+    # No pid file (write failed): the 2 h rule still guards a held dir.
+    with contextlib.suppress(OSError):
+        (tmp / _OWNER_PID).write_text(str(os.getpid()))
     wt = tmp / "t"
     try:
         # HEAD now contains 49,295 files / 3.8GB on the trading host. Parallel
