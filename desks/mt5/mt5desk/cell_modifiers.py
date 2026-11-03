@@ -48,8 +48,13 @@ import pandas as pd
 MODIFIER_KEYS = frozenset({
     "regime", "side_mode", "entry_timing", "execution_style", "entry_style", "representation",
     "cost_aware", "residual", "residual_tag", "conditioner", "macro_axis", "macro_state",
-    "publication_lag_d", "transform", "selector",
+    "publication_lag_d", "transform", "selector", "release_gate",
 })
+
+#: Keys moved out of the call EVEN for a family that takes `**kwargs`: such a family would swallow
+#: the key and trade ungated under the gated cell's name. No cell carries one before DATA-46, so
+#: every call that runs today is the call it was.
+ALWAYS_MODIFIER_KEYS = frozenset({"release_gate"})
 
 #: Labels: they name the coordinate a cell occupies and change nothing about how it trades.
 #: `representation` is the information-type axis the child was filed under (the same value as
@@ -114,6 +119,17 @@ ENTRY_TIMINGS = frozenset({"", "instant", "delayed"})
 MARKET_STYLES = frozenset({"", "market"})
 
 
+def _release_clock() -> Any:
+    import sys
+
+    root = str(Path(__file__).resolve().parents[3])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.mining import release_clock
+
+    return release_clock
+
+
 def _accepts(fn: Any) -> tuple[frozenset[str], bool]:
     try:
         params = inspect.signature(fn).parameters
@@ -128,7 +144,8 @@ def split(fn: Any, params: dict[str, Any] | None) -> tuple[dict[str, Any], dict[
     kwargs = dict(params or {})
     names, varkw = _accepts(fn)
     if varkw:
-        return kwargs, {}
+        return kwargs, {k: kwargs.pop(k) for k in list(kwargs)
+                        if k in ALWAYS_MODIFIER_KEYS and k not in names}
     mods = {k: kwargs.pop(k) for k in list(kwargs) if k in MODIFIER_KEYS and k not in names}
     return kwargs, mods
 
@@ -151,6 +168,10 @@ def refusal(mods: dict[str, Any]) -> str | None:
         if _alt_series(spec[0], spec[1]) is None:
             return (f"conditioner={mods['conditioner']!r}: the series {spec[0]}.{spec[1]} is not "
                     "on this box (UNMEASURED), so the interaction cannot be measured here")
+    if "release_gate" in mods:
+        why = _release_clock().refusal(mods["release_gate"])
+        if why:
+            return str(why)
     if "macro_axis" in mods or "macro_state" in mods:
         return (f"macro condition {mods.get('macro_axis')!r}={mods.get('macro_state')!r}: no "
                 "point-in-time macro state series is wired into the replay")
@@ -228,6 +249,13 @@ def apply(sigs: list, bars: pd.DataFrame, mods: dict[str, Any]) -> list:
         from mt5desk.family_call import session_filter
 
         out = session_filter(out, mods.get("selector"))
+    if "release_gate" in mods:
+        # THE SESSION-TRANSFER TEST (DATA-46): a signal survives only once the seat's state is
+        # public (release <= bar), in the k-th session after that release, and while the state
+        # keeps DECAY_FLOOR of its strength. Broker wall time, DST-aware via New York + 7h.
+        keep = _release_clock().gate([getattr(s, "time", None) for s in out],
+                                     mods["release_gate"])
+        out = [s for s, k in zip(out, keep, strict=True) if k]
     side = _s(mods.get("side_mode"))
     if side == "revert":
         out = [f for f in (_flip(s, bars) for s in out) if f is not None]

@@ -165,6 +165,20 @@ def _producer_calls() -> dict[str, tuple[str, tuple[str, ...]]]:
                 args.extend(e.value for e in a.elts
                             if isinstance(e, ast.Constant) and isinstance(e.value, str))
         out[name.value] = (script.value, tuple(args))
+    # A LEG NAMED DIFFERENTLY FROM ITS PRODUCER (2026-10-07). `compile_candidates` calls
+    # `_producer("miner_candidate_compiler", ...)`, so the leg's spec carried only hourly_cycle.py
+    # and its runtime_state row read `code: []` -- the compiler had no row a reader could find by
+    # its file. The leg function that holds exactly one `_producer` call names that script too;
+    # a producer name that IS a leg keeps its own entry.
+    for fn in ast.walk(tree):
+        if not isinstance(fn, ast.FunctionDef) or fn.name in out:
+            continue
+        calls = [c for c in ast.walk(fn) if isinstance(c, ast.Call)
+                 and isinstance(c.func, ast.Name) and c.func.id == "_producer"
+                 and c.args and isinstance(c.args[0], ast.Constant)
+                 and isinstance(c.args[0].value, str) and c.args[0].value in out]
+        if len(calls) == 1:
+            out[fn.name] = out[str(getattr(calls[0].args[0], "value", ""))]
     return out
 
 
