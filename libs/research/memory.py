@@ -288,8 +288,10 @@ def _ingest_graph(root: Path, t: _Tally) -> None:
         t.inputs["hypothesis_graph"] = "absent"
         return
     try:
-        from libs.research.hypothesis_graph import Graph
-        current = Graph(path).current()
+        from libs.research.hypothesis_graph import latest_rows
+        # Only buried and certified rows are read below; the rest stay unparsed (2026-11-03).
+        current = {str(r.get("id")): r
+                   for r in latest_rows({"FAILED", "BURIED", "CERTIFIED"}, path)[0]}
     except Exception as exc:
         t.inputs["hypothesis_graph"] = f"unreadable: {type(exc).__name__}: {exc}"
         return

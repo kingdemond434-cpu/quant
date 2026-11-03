@@ -53,7 +53,7 @@ import hashlib
 import json
 import re
 import sys
-from collections.abc import Container, Iterable, Mapping
+from collections.abc import Container, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -359,7 +359,7 @@ def latest_rows(fates: frozenset[str] | set[str], path: Path = LEDGER,
     rows in full and only the ids of the rest. Pass one reads ids, fates and line offsets by
     pattern, as `current_fates` does; pass two seeks to and parses only the lines asked for, newest
     first, so `limit` keeps the most RECENT rows rather than the first ones in the file; they
-    come back in file order, as `Graph.current()` returns them.
+    come back in `Graph.current()`'s order (each id where it first appeared).
     Last row per id wins, exactly as `Graph.current()`; a line the pattern cannot explain falls
     back to `json.loads`.
     """
@@ -387,10 +387,12 @@ def latest_rows(fates: frozenset[str] | set[str], path: Path = LEDGER,
                 continue
             if isinstance(r, dict) and r.get("id") is not None:
                 last[str(r["id"])] = (str(r.get("fate") or BORN).upper(), here)
-        picks = sorted((o for fate, o in last.values() if fate in want), reverse=True)
-        if limit is not None:
-            picks = picks[: max(0, int(limit))]
-        picks.sort()                            # the newest `limit`, returned in file order
+        # `last` keeps each id at its FIRST appearance (dict order), which is exactly the order
+        # `Graph.current()` yields; `limit` keeps the newest rows, in that same order.
+        picks = [o for fate, o in last.values() if fate in want]
+        if limit is not None and len(picks) > max(0, int(limit)):
+            keep = set(sorted(picks, reverse=True)[: max(0, int(limit))])
+            picks = [o for o in picks if o in keep]
         rows: list[dict[str, Any]] = []
         for o in picks:
             fh.seek(o)
@@ -401,6 +403,50 @@ def latest_rows(fates: frozenset[str] | set[str], path: Path = LEDGER,
             if isinstance(r, dict):
                 rows.append(r)
     return rows, set(last)
+
+
+def iter_fields(fields: Sequence[str], path: Path = LEDGER) -> Iterator[dict[str, Any]]:
+    """Every row of the ledger as `{"id", *fields}`, streamed: nothing else is kept.
+
+    WHY THIS EXISTS (2026-11-03, the whole-graph readers). `Graph().rows()` materialises every
+    row -- the box's graph is 4.4 GB, ~5.7M rows of 2-3 KB -- and the organs that called it for a
+    census of source, fate, symbol or timestamp sat in that read for ~11 min (measured by Desk
+    health's stack sample) before their own budget clock could stop anything. This parses each
+    line, keeps only the named top-level fields and drops the row, so memory is the projection's
+    and the answer is exactly `{f: row.get(f)}` of the full reader. Measured on the 108k-row
+    checkout: the same speed as a bare `json.loads` loop. A torn line costs that line only.
+    """
+    try:
+        fh = path.open("rb")
+    except OSError:
+        return
+    with fh:
+        for ln in fh:
+            if not ln.strip():
+                continue
+            try:
+                r = json.loads(ln)
+            except ValueError:
+                continue
+            if isinstance(r, dict) and r.get("id") is not None:
+                yield {"id": str(r["id"]), **{f: r.get(f) for f in fields}}
+
+
+def latest_fields(fields: Sequence[str], path: Path = LEDGER,
+                  stats: dict[str, int] | None = None) -> dict[str, dict[str, Any]]:
+    """`Graph.current()` projected to `fields`: id -> the LAST row's `{"id", *fields}`.
+
+    `stats["rows"]` (when a dict is passed) receives the number of rows read, which is what a
+    caller that used to report `len(Graph().rows())` should keep reporting.
+    """
+    out: dict[str, dict[str, Any]] = {}
+    n = 0
+    for r in iter_fields(fields, path):
+        out[r["id"]] = r
+        n += 1
+    if stats is not None:
+        stats["rows"] = n
+    return out
 
 
 class Graph:
@@ -415,6 +461,7 @@ class Graph:
         self._snapshot = False
         self._current: dict[str, dict[str, Any]] | None = None
         self._buried: dict[str, list[dict[str, Any]]] | None = None
+        self._buried_stamp: tuple[float, int] | None = None
 
     def snapshot(self) -> Graph:
         """A pass-local read view unaffected by concurrent ledger appends."""
@@ -481,6 +528,22 @@ class Graph:
 
     def buried(self) -> dict[str, list[dict[str, Any]]]:
         """region -> the FAILED/BURIED rows in it. This is the negative-knowledge index."""
+        if not self._snapshot and self._current is None:
+            # THE DEAD ARE READ WITHOUT THE LIVING (2026-11-03). `current()` materialises every
+            # row; the index needs only rows whose present fate is FAILED or BURIED, in the same
+            # order, so the cold read goes through `latest_rows` and caches on the same stamp.
+            try:
+                st = self.path.stat()
+                stamp = (st.st_mtime, st.st_size)
+            except OSError:
+                return {}
+            if self._buried is None or self._buried_stamp != stamp:
+                dead, _ids = latest_rows({FAILED, BURIED}, self.path)
+                out_: dict[str, list[dict[str, Any]]] = {}
+                for r in dead:
+                    out_.setdefault(str(r.get("region")), []).append(r)
+                self._buried, self._buried_stamp = out_, stamp
+            return self._buried
         cur = self.current()
         if self._buried is None:
             out: dict[str, list[dict[str, Any]]] = {}

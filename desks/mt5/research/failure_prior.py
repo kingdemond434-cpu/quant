@@ -96,11 +96,12 @@ def build(recent_days: float = RECENT_DAYS) -> dict[str, Any]:
     now = datetime.now(tz=UTC)
     try:
         from libs.research.graveyard_model import GraveyardModel
-        from libs.research.hypothesis_graph import Graph
+        from libs.research.hypothesis_graph import latest_rows
     except ImportError as exc:
         return {"at": now.isoformat(timespec="seconds"), "status": "UNMEASURED",
                 "why": f"graveyard model / hypothesis graph unavailable ({exc})"}
-    rows = Graph().rows()
+    # The model reads only judged rows; reading them by pattern, not the whole graph (2026-11-03).
+    rows, _ids = latest_rows({"FAILED", "BURIED", "CERTIFIED"})
     if not rows:
         return {"at": now.isoformat(timespec="seconds"), "status": "UNMEASURED",
                 "why": "the hypothesis graph holds no rows on this box"}

@@ -287,8 +287,8 @@ def _graveyard_premortems(certs: dict[str, dict]) -> tuple[dict[str, dict], str]
     """The graveyard model's failure class per certificate."""
     try:
         from libs.research.graveyard_model import GraveyardModel
-        from libs.research.hypothesis_graph import Graph
-        gm = GraveyardModel().fit(Graph().rows())
+        from libs.research.hypothesis_graph import latest_rows
+        gm = GraveyardModel().fit(latest_rows({"FAILED", "BURIED", "CERTIFIED"})[0])
     except Exception as exc:
         return {}, f"catalogue order only: graveyard model unavailable ({type(exc).__name__})"
     if gm.n < MIN_JUDGED_FOR_PREMORTEM:

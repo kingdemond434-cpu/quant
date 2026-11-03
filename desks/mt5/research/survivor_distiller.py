@@ -32,12 +32,14 @@ written on it, and the gauntlet decides as for everything else.
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import math
 import statistics
 import sys
 import time
 from collections import Counter
+from collections.abc import Iterable, Iterator
 from datetime import UTC, datetime
 from itertools import pairwise
 from pathlib import Path
@@ -134,16 +136,26 @@ def _with_categorical(params: dict[str, Any], name: str, value_json: str) -> dic
 # The inputs: certificates and the graph
 # ------------------------------------------------------------------------------------------
 
-def _graph_rows(skipped: dict[str, str]) -> list[dict[str, Any]]:
+def _graph_view(skipped: dict[str, str]) -> tuple[list[dict[str, Any]], set[str], int]:
+    """(the latest judged rows, every node id, the number of nodes) -- by pattern, not parse."""
     try:
-        from libs.research.hypothesis_graph import Graph
-        rows = Graph(GRAPH).rows()
+        from libs.research.hypothesis_graph import latest_rows
+        judged, ids = latest_rows({"FAILED", "BURIED", "CERTIFIED"}, GRAPH)
     except Exception as exc:
         skipped["hypothesis_graph"] = f"unreadable: {type(exc).__name__}: {exc}"
-        return []
-    if not rows:
+        return [], set(), 0
+    if not ids:
         skipped["hypothesis_graph"] = f"no rows at {GRAPH}"
-    return rows
+    return judged, ids, len(ids)
+
+
+def _grid_rows() -> Iterator[dict[str, Any]]:
+    """Each graph row's family and params, streamed for `grid_values`."""
+    try:
+        from libs.research.hypothesis_graph import iter_fields
+        yield from iter_fields(("family", "params"), GRAPH)
+    except Exception:
+        return
 
 
 def _current(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
@@ -371,7 +383,7 @@ def state_neighbours(certified: list[dict[str, Any]], by_state: dict[str, dict[s
 # (c) the neighbours
 # ------------------------------------------------------------------------------------------
 
-def grid_values(rows: list[dict[str, Any]]) -> dict[str, dict[str, list[float]]]:
+def grid_values(rows: Iterable[dict[str, Any]]) -> dict[str, dict[str, list[float]]]:
     """The grid the desk has actually enumerated, per family and numeric param -- a step is a
     move to the next value on it, which is what `REGION_WIDTH` buckets and the sweeps mean."""
     grid: dict[str, dict[str, set[float]]] = {}
@@ -658,16 +670,19 @@ def run(budget_s: float = 900.0, symbols: list[str] | None = None,
     canon = _json(CANON)
     if not canon:
         skipped["canon"] = f"no survivors canon at {CANON}"
-    rows = _graph_rows(skipped)
-    current = _current(rows)
+    # THE GRAPH IS STREAMED, NEVER HELD (2026-11-03). `current` needs only the judged rows,
+    # `existing` only the ids and the grid only each row's family and params, so the 4.4 GB box
+    # graph is read twice by pattern and stream instead of materialised once (~11 min there).
+    judged, graph_ids, n_rows = _graph_view(skipped)
+    current = {str(r.get("id")): r for r in judged}
     certified = load_certified(canon, current, skipped)
     failed = [r for r in current.values() if r.get("fate") in ("FAILED", "BURIED")]
     prior = survivor_prior(certified, failed)
     mot = motifs(certified)
     by_state = motifs_by_state(certified)
-    grid = grid_values(rows + certified)
+    grid = grid_values(itertools.chain(_grid_rows(), certified))
     weights, weights_note = _weights()
-    existing = set(current) | {c["id"] for c in certified}
+    existing = set(graph_ids) | {c["id"] for c in certified}
     sv = _survivor_values(certified)
     todo = [c for c in certified if not symbols or c["symbol"] in {s.upper() for s in symbols}]
     neighbours: list[dict[str, Any]] = []
@@ -726,7 +741,7 @@ def run(budget_s: float = 900.0, symbols: list[str] | None = None,
     unscreened, mix = mix_by_mechanism(unscreened)
     tasks = [_task(m, why) for m, why in unscreened[:MAX_TASKS]]
     rep: dict[str, Any] = {
-        "generated_at": datetime.now(tz=UTC).isoformat(), "graph_rows": len(rows),
+        "generated_at": datetime.now(tz=UTC).isoformat(), "graph_rows": n_rows,
         "certified_cells": len(certified), "certified_swept": len(todo),
         "prior": prior, "motifs": mot, "motifs_by_state": by_state,
         "state_neighbours": len(conditioned), "weights": weights_note,

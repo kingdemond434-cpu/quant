@@ -723,8 +723,10 @@ def _gauntlet_cell_seconds(path: Path | None = None) -> float | None:
 
 def _fates() -> dict[str, dict[str, Any]]:
     try:
-        from libs.research.hypothesis_graph import Graph
-        return Graph().current()
+        from libs.research.hypothesis_graph import latest_rows
+        # Only judged fates settle a contract; the rest are never read (2026-11-03).
+        rows, _ids = latest_rows({"FAILED", "BURIED", "CERTIFIED"})
+        return {str(r.get("id")): r for r in rows}
     except Exception:
         return {}
 

@@ -131,9 +131,10 @@ def forecast(rows: list[dict[str, Any]], now: datetime | None = None) -> dict[st
 
 
 def main(argv: list[str] | None = None) -> int:
-    from libs.research.hypothesis_graph import Graph
+    from libs.research.hypothesis_graph import iter_fields
     try:
-        rows = Graph().rows()
+        # Every row's scalars only: `cells` reads symbol, family, fate, at and source (2026-11-03).
+        rows = list(iter_fields(("symbol", "family", "fate", "at", "source")))
     except Exception as exc:
         rows, err = [], f"{type(exc).__name__}: {exc}"
     else:

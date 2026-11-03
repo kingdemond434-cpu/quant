@@ -76,10 +76,36 @@ def _at(value: Any) -> datetime | None:
 # Lineage rows: from the graph and from the discovery contract
 # ------------------------------------------------------------------------------------------
 
+def _lineage_lines(path: Path) -> list[dict[str, Any]]:
+    """Every graph row `_lineage_from_graph` can use, without parsing the rest (2026-11-03).
+
+    A row qualifies by its source or by an `operator`/`generator` key; a line that names none of
+    them in its bytes cannot qualify, so it is skipped unparsed. The kept rows are exactly the
+    ones the full reader would have passed the same filter.
+    """
+    marks = tuple(f'"source": "{s}'.encode() for s in LINEAGE_SOURCES) + tuple(
+        f'"source": "miner:{s}'.encode() for s in LINEAGE_SOURCES) + (b'"operator"', b'"generator"')
+    out: list[dict[str, Any]] = []
+    try:
+        fh = path.open("rb")
+    except OSError:
+        return out
+    with fh:
+        for ln in fh:
+            if not any(m in ln for m in marks):
+                continue
+            try:
+                r = json.loads(ln)
+            except ValueError:
+                continue
+            if isinstance(r, dict):
+                out.append(r)
+    return out
+
+
 def _graph_rows(inputs: dict[str, str]) -> list[dict[str, Any]]:
     try:
-        from libs.research.hypothesis_graph import Graph
-        rows = Graph(GRAPH).rows()
+        rows = _lineage_lines(GRAPH)
     except Exception as exc:
         inputs["hypothesis_graph"] = f"unreadable: {type(exc).__name__}: {exc}"
         return []

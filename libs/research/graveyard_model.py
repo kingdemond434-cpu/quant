@@ -323,8 +323,9 @@ def build(rows: Iterable[dict[str, Any]] | None = None) -> dict[str, Any]:
     """
     if rows is None:
         try:
-            from libs.research.hypothesis_graph import Graph
-            rows = Graph().rows()
+            from libs.research.hypothesis_graph import latest_rows
+            # `fit` keeps only judged rows; the rest are never parsed (2026-11-03).
+            rows = latest_rows({"FAILED", "BURIED", "CERTIFIED"})[0]
         except Exception as exc:                                        # pragma: no cover
             return {"status": "UNMEASURED",
                     "why": f"hypothesis graph unreadable: {type(exc).__name__}: {exc}"}

@@ -1765,7 +1765,11 @@ SURVIVOR_HORIZON_DAYS = 30
 
 
 def _fate(fates: Mapping[str, Any], gid: str) -> str:
-    return str((fates.get(gid) or {}).get("fate") or "") if gid else ""
+    """The fate of `gid`, from a `current_fates` map (id -> fate) or a row map (id -> row)."""
+    if not gid:
+        return ""
+    v = fates.get(gid)
+    return v if isinstance(v, str) else str((v or {}).get("fate") or "")
 
 
 def _stamp_fates(state: dict[str, Any], fates: Mapping[str, Any], now_ts: float) -> None:
@@ -1825,8 +1829,9 @@ def _outcome_fn(examined: Sequence[Mapping[str, Any]], fates: Mapping[str, Any],
 
 def _fates() -> dict[str, Any]:
     try:
-        from libs.research.hypothesis_graph import Graph
-        return dict(Graph().current())
+        from libs.research.hypothesis_graph import current_fates
+        # A fate per id is all `_fate` reads; never the rows themselves (2026-11-03).
+        return dict(current_fates())
     except Exception:
         return {}
 
