@@ -42,6 +42,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 import zlib
 from datetime import UTC, datetime
 from pathlib import Path
@@ -79,10 +80,20 @@ DENY_GLOBS: tuple[str, ...] = ("*.ini", "*.env", ".env*", "*secret*", "*credenti
 #: (MT5_PASSWORD=, FRED_API_KEY=), URL-encoded separators, header values, longer GitHub tokens,
 #: Slack/Google/Telegram shapes, credentials inside a URL, a PEM header split across a string
 #: concatenation, and encoded payloads (see `screen_bytes`).
+#:
+#: EVERY PATTERN HERE IS LINEAR IN ITS INPUT (audit HOLD on #210, 2026-11-03). The first weak
+#: pattern, `token[\w-]*...`, retried `[\w-]*` from every `token` inside one long identifier, so
+#: 40 KB of repeated "token" took 8 s -- and blobs up to MAX_BLOB_BYTES are screened by a drain
+#: that holds the git-writer mutex, so one such blob would hang the sync slot and block every
+#: adoption. The rules: no quantified run may be re-entered from many starts (a lookbehind pins
+#: a run to its first character, and the run is possessive), and every run a candidate scans
+#: past its anchor is BOUNDED. A pure `search` needs no more than the minimum of an open-ended
+#: tail (`{36,}` and `{36}` find the same texts), so those tails are fixed-width.
+#: tests/ops/test_box_backlog.py times each pattern on adversarial input under a hard bound.
 STRONG_SECRET_PATTERNS: tuple[re.Pattern[str], ...] = tuple(re.compile(p) for p in (
-    r"\bgh[pousr]_[A-Za-z0-9]{36,}", r"\bgithub_pat_[A-Za-z0-9_]{60,}",
-    r"\bsk-(?:proj-|ant-)?[A-Za-z0-9_-]{20,}", r"\b(?:AKIA|ASIA)[0-9A-Z]{16}\b",
-    r"\bxox[abposr]-[A-Za-z0-9-]{10,}", r"\bAIza[0-9A-Za-z_-]{35}",
+    r"\bgh[pousr]_[A-Za-z0-9]{36}", r"\bgithub_pat_[A-Za-z0-9_]{60}",
+    r"\bsk-(?:proj-|ant-)?[A-Za-z0-9_-]{20}", r"\b(?:AKIA|ASIA)[0-9A-Z]{16}\b",
+    r"\bxox[abposr]-[A-Za-z0-9-]{10}", r"\bAIza[0-9A-Za-z_-]{35}",
     r"\b[0-9]{8,10}:AA[0-9A-Za-z_-]{33}",                      # Telegram bot token
     r"-----BEGIN[A-Z ]{0,40}PRIVATE KEY", r"PRIVATE KEY-----",   # whole or split PEM header
 ))
@@ -92,64 +103,97 @@ STRONG_SECRET_PATTERNS: tuple[re.Pattern[str], ...] = tuple(re.compile(p) for p 
 _CRED_WORD = (r"(?:password|passwd|pwd|token|secret|api[_-]?key|access[_-]?key"
               r"|auth(?:orization)?|bearer|credentials?)")
 _NOT_A_VALUE = r"(?!(?:none|null|true|false|nil|undefined)\b)"
+#: How far past its anchor any candidate may scan (audit HOLD on #259, 2026-11-03). Every
+#: open-ended run a candidate reads is cut at this length, so each candidate costs a bounded
+#: number of steps and the whole search is linear. A value that reaches the bound is itself
+#: taken as a value (the `{_RUN}` alternatives below): a cut never turns a hit into a miss.
+_RUN = 64
+#: Characters that end an unquoted value.
+_VALUE_STOP = r"\s\"'()\[\]{},;$%"
 #: A VALUE worth withholding: any quoted literal, or an unquoted token carrying a digit or a symbol
 #: (hunter2, s3cr3t!, a hex key). An unquoted plain word after a colon is a type annotation, a
 #: variable or prose (`token: str`, `"api_key": key`, `secret: the ...`) and is not a value.
-_CRED_VALUE = (r"(?:[\"'][^\"'\s]+|" + _NOT_A_VALUE +
-               r"(?=[^\s\"'()\[\]{},;$%]*[0-9+/~!@#^*])[A-Za-z0-9+/_~!@#^*-][^\s\"'()\[\]{},;$%]{2,}"
-               r"(?=[\s\"',;}&]|$))")
+#: BOUNDED (audit HOLD on #259): the digit must sit in the first _RUN characters, and the value
+#: either ends inside _RUN characters or reaches _RUN, so a long `a=a=a=` run is never rescanned.
+_CRED_VALUE = (r"(?:[\"'][^\"'\s]|" + _NOT_A_VALUE
+               + r"(?=[^" + _VALUE_STOP + r"]{0," + str(_RUN) + r"}?[0-9+/~!@#^*])"
+               + r"[A-Za-z0-9+/_~!@#^*-](?:[^" + _VALUE_STOP + r"]{2," + str(_RUN - 1) + r"}"
+               + r"(?=[\s\"',;}&]|$)|[^" + _VALUE_STOP + r"]{" + str(_RUN) + r"}))")
 #: The assignment separators: `=` and `:` (ini, env, JSON, YAML), the walrus and Pascal/Go `:=`,
 #: the PHP/Ruby/Perl hash arrow `=>`, and their %-encoded forms (`%3D`, `%3A`).
-_SEP = r"[\"']?[ \t]*(?::=|=>|[=:]|%3[ad])[ \t]*"
+_SEP = r"[\"']?[ \t]{0,64}(?::=|=>|[=:]|%3[ad])[ \t]{0,64}"
 #: Words that follow a colon as a TYPE, not a value (`token: str`, a dataclass field), so a YAML
 #: plain scalar rule never reads a Python annotation as a credential.
 _TYPE_WORD = (r"(?!(?:str|int|float|bool|bytes|object|any|none|null|true|false|nil|optional|dict"
               r"|list|tuple|set|path|callable|sequence|mapping|iterable)\b)")
+#: AN IDENTIFIER WITH A CREDENTIAL WORD AS WHOLE SEGMENTS, IN LINEAR TIME (audit HOLD on #259).
+#: The old `(?<![a-z])(?:[a-z0-9]+[_-])*CRED(?:[_-][a-z0-9]+)*(?![a-z0-9])` split one identifier
+#: into segments a quadratic number of ways (13 s on 40 KB). Here the identifier is entered only
+#: at its first character (lookbehind); a lazy lookahead that cannot leave it finds a credential
+#: word that starts where no letter precedes it (as the old lookbehind required, so `mt5password`
+#: still counts) and ends where no letter or digit follows; then the identifier is consumed
+#: possessively. Each character is scanned a bounded number of times.
+_IDENT_CRED = (r"(?<![a-z0-9_-])(?=[a-z0-9_-]*?(?<![a-z])" + _CRED_WORD + r"(?![a-z0-9]))"
+               r"[a-z0-9_-]++")
+#: An identifier ending in `key`, one possessive run per identifier.
+_IDENT_KEY = r"(?<![a-z0-9_-])[a-z0-9_-]*+(?<=key)"
 _CI = re.IGNORECASE | re.M
 WEAK_SECRET_PATTERNS: tuple[re.Pattern[str], ...] = (*(re.compile(p, _CI) for p in (
     # 0. A credential word as its own segment (snake_case, kebab, a JSON key, an env name:
     #    MT5_PASSWORD, db_password, "access_key", password%3D), assigned a value.
-    r"(?<![a-z])(?:[a-z0-9]+[_-])*" + _CRED_WORD + r"(?:[_-][a-z0-9]+)*(?![a-z0-9])" + _SEP
-    + _CRED_VALUE,
+    _IDENT_CRED + _SEP + _CRED_VALUE,
     # 1. An env / ini / dotenv line: NAME=plainword to the end of the line (MT5_PASSWORD=hunter).
-    r"^[ \t]*(?:export[ \t]+|set[ \t]+|\$env:)?(?:[a-z0-9]+[_-])*" + _CRED_WORD
-    + r"(?:[_-][a-z0-9]+)*[ \t]*=[ \t]*" + _NOT_A_VALUE + r"[^\s\"'$%(]{3,}(?=[ \t]*(?:#|$))",
+    #    Anchored at a line start, so one candidate per line.
+    r"^[ \t]*+(?:export[ \t]+|set[ \t]+|\$env:)?" + _IDENT_CRED + r"[ \t]*+=[ \t]*+"
+    + _NOT_A_VALUE + r"[^\s\"'$%(]{3,}(?=[ \t]*(?:#|$))",
     # 2. A URL-encoded separator is a query string, so any value counts (token%3Aabc).
-    r"(?<![a-z])(?:[a-z0-9]+[_-])*" + _CRED_WORD + r"(?:[_-][a-z0-9]+)*%3[ad][^&\s\"'#]{3,}",
+    _IDENT_CRED + r"%3[ad][^&\s\"'#]{3}",
     # An Authorization header value; the digit lookahead keeps "basic functionality" prose out.
-    r"\b(?:bearer|basic)\s+(?=[A-Za-z0-9._~+/=-]*[0-9])[A-Za-z0-9._~+/=-]{12,}",
+    r"\b(?:bearer|basic)\s{1,64}(?=[A-Za-z0-9._~+/=-]{0," + str(_RUN) + r"}?[0-9])"
+    r"[A-Za-z0-9._~+/=-]{12}",
     r"x-api-key",
-    r"\b[a-z][a-z0-9+.-]*://[^\s/:@'\"]+:[^\s/@'\"]+@",          # scheme://user:password@host
+    # scheme://user:password@host, every run bounded.
+    r"\b[a-z][a-z0-9+.-]{0,31}://[^\s/:@'\"]{1,256}:[^\s/@'\"]{1,256}@",
     r"-----BEGIN",
     # 7. ANY name ending in key (eia_key, Eia_Key, "key", api-key) holding a LONG value: 16+ key
     #    characters with a digit in them. Python's `key=len` and `sort_key=fn` stay out.
-    r"[a-z0-9_-]*key" + _SEP + r"[\"']?(?=[A-Za-z0-9+/_=-]*[0-9])[A-Za-z0-9+/_=-]{16,}",
+    _IDENT_KEY + _SEP + r"[\"']?(?=[A-Za-z0-9+/_=-]{0," + str(_RUN) + r"}?[0-9])"
+    r"[A-Za-z0-9+/_=-]{16}",
     # 8. A key in a query string: ?key=, &api_key=, &apikey= with any 8+ character value.
-    r"[?&][a-z0-9_-]*key=[^&\s\"'#]{8,}",
+    r"[?&][a-z0-9_-]*+(?<=key)=[^&\s\"'#]{8}",
     # 9. A YAML PLAIN SCALAR (audit of #259): `password: hunter`, `- api_key: abcdef  # x`. One
     #    unquoted word to the end of the line, so YAML prose (`secret: the reason it stays local`)
-    #    and Python annotations (`token: str`, `token: str | None`) stay out.
-    r"^[ \t]*(?:-[ \t]+)?(?:[a-z0-9]+[_-])*" + _CRED_WORD + r"(?:[_-][a-z0-9]+)*[ \t]*:[ \t]+"
+    #    and Python annotations (`token: str`, `token: str | None`) stay out. One candidate per
+    #    line (anchored).
+    r"^[ \t]*+(?:-[ \t]+)?" + _IDENT_CRED + r"[ \t]*+:[ \t]++"
     + _NOT_A_VALUE + _TYPE_WORD + r"[^\s\"'$%(){}\[\],;|&*!<>]{3,}[ \t]*(?:#.*)?$",
     # 10. A PowerShell / CLI parameter (audit of #259): `-Password 'x'`, `-Token:hunter`,
     #    `--api-key abc123`. A variable (`-Credential $cred`), a subexpression or another flag is
-    #    not a value; a quoted literal or a bare word is.
-    #    The name prefix is one bounded class (`-AuthToken`, `--db-password`): a nested quantifier
-    #    here backtracked exponentially on long hyphenated lines. No suffix: `--password-file p`
-    #    names a file, not a password.
-    r"(?<![a-z0-9_-])--?[a-z0-9_-]{0,24}?" + _CRED_WORD + r"(?::|[ \t]+)"
-    + r"(?:[\"'][^\"'\s$]{3,}[\"']|" + _NOT_A_VALUE
-    + r"(?![-$@(])[^\s\"'$(){}\[\],;|&<>`]{3,}(?=[\s;|)]|$))",
+    #    not a value; a quoted literal or a bare word is. The name prefix is one bounded class
+    #    and the value is bounded (or reaches the bound). No suffix: `--password-file p` names a
+    #    file, not a password.
+    r"(?<![a-z0-9_-])--?[a-z0-9_-]{0,24}?" + _CRED_WORD + r"(?::|[ \t]{1,64})"
+    + r"(?:[\"'][^\"'\s$]{3," + str(_RUN) + r"}[\"']|" + _NOT_A_VALUE
+    + r"(?![-$@(])(?:[^\s\"'$(){}\[\],;|&<>`]{3," + str(_RUN - 1) + r"}(?=[\s;|)]|$)"
+    + r"|[^\s\"'$(){}\[\],;|&<>`]{" + str(_RUN) + r"}))",
 )),
-    # 9. camelCase (case-SENSITIVE): $mt5Password, dbToken, myApiKey -- the word starts a new
-    #    capitalised segment, so "authority" or "passed" never match.
+    # camelCase (case-SENSITIVE): $mt5Password, dbToken, myApiKey -- the word starts a new
+    # capitalised segment, so "authority" or "passed" never match.
     re.compile(r"[a-z0-9](?:Password|Passwd|Pwd|Token|Secret|ApiKey|AccessKey|Auth|Authorization"
                r"|Bearer|Credentials?)(?![a-z])" + _SEP + _CRED_VALUE, re.M),
-    # 10. Upper-case env names ending in KEY (EIA_KEY=abc, MY_KEY: x), case-SENSITIVE so Python's
-    #    `key=` keyword and JSON "key": do not withhold half the tree.
-    re.compile(r"\b[A-Z][A-Z0-9_]*_KEY\b" + _SEP + r"(?:" + _CRED_VALUE + r"|" + _NOT_A_VALUE
-               + r"[^\s\"'$%(]{3,}(?=[ \t]*(?:#|$)))", re.M),
+    # Upper-case env names ending in KEY (EIA_KEY=abc, MY_KEY: x), case-SENSITIVE so Python's
+    # `key=` keyword and JSON "key": do not withhold half the tree. One possessive run per name.
+    re.compile(r"(?<![A-Za-z0-9_])[A-Z][A-Z0-9_]*+(?<=_KEY)(?![A-Za-z0-9_])" + _SEP + r"(?:"
+               + _CRED_VALUE + r"|" + _NOT_A_VALUE + r"(?:[^\s\"'$%(]{3," + str(_RUN - 1)
+               + r"}(?=[ \t]*(?:#|$))|[^\s\"'$%(]{" + str(_RUN) + r"}))", re.M),
 )
+#: A text longer than this is not regex-screened at all: it is WITHHELD, by name (audit HOLD on
+#: #210). Every pattern above is linear, so this bounds the screen's time per blob outright.
+MAX_SCREEN_CHARS = 2_000_000
+#: Wall-clock budget for screening ONE blob, every decoding of it included (audit HOLD on #259).
+#: The patterns are linear, so this should never bind; if it does, the blob is WITHHELD -- an
+#: over-budget read is never a clean one.
+SCREEN_BUDGET_S = 20.0
 #: An encoded run worth decoding and re-screening (base64 and its url-safe form).
 _B64_RUN = re.compile(r"[A-Za-z0-9+/_-]{20,}={0,2}")
 #: A %XX escape: a text carrying one is also screened %-decoded (see `_percent_decoded`).
@@ -207,20 +251,23 @@ def classify(root: Path, upstream: str) -> dict[str, Any]:
     doc["ahead"] = int(out.strip() or 0)
     rc, out, _ = _git(root, "rev-list", "--count", "--merges", f"{upstream}..HEAD")
     doc["merges"] = int(out.strip() or 0) if rc == 0 else None
-    # One pass: "@@<sha>" header per non-merge commit, then the paths it touched.
-    rc, out, err = _git(root, "log", "--no-merges", "--format=@@%H", "--name-only",
+    # One pass: "@@<sha>" header per non-merge commit, then the paths it touched. -z (audit
+    # should-fix): without it git C-quotes a non-ASCII or odd path ("caf\303\251.py") and the
+    # quoted spelling then matches no tree entry, so that path silently dropped out of the drain.
+    rc, out, err = _git(root, "log", "-z", "--no-merges", "--format=@@%H", "--name-only",
                         f"{upstream}..HEAD")
     if rc != 0:
         doc.update(verdict="UNMEASURED", why=f"cannot read the backlog: {err.strip()[:300]}")
         return doc
     commits: dict[str, list[str]] = {}
     cur = None
-    for line in out.splitlines():
-        if line.startswith("@@"):
-            cur = line[2:].strip()
+    for tok in out.split("\0"):
+        tok = tok.removeprefix("\n")
+        if tok.startswith("@@"):
+            cur = tok[2:].strip()
             commits[cur] = []
-        elif line.strip() and cur:
-            commits[cur].append(line.strip())
+        elif tok and cur:
+            commits[cur].append(tok)
     code_commits = [c for c, paths in commits.items() if any(not is_state(p) for p in paths)]
     code_paths = sorted({p for c in code_commits for p in commits[c] if not is_state(p)})
     doc.update(non_merge=len(commits), state_only=len(commits) - len(code_commits),
@@ -240,17 +287,18 @@ def differing_blobs(root: Path, upstream: str,
     skipped: list[dict[str, Any]] = []
     for i in range(0, len(paths), 200):
         chunk = paths[i:i + 200]
-        rc_h, head_out, err_h = _git(root, "ls-tree", "-l", "HEAD", "--", *chunk)
-        rc_u, up_out, err_u = _git(root, "ls-tree", upstream, "--", *chunk)
+        # -z: paths verbatim, never C-quoted (see classify).
+        rc_h, head_out, err_h = _git(root, "ls-tree", "-z", "-l", "HEAD", "--", *chunk)
+        rc_u, up_out, err_u = _git(root, "ls-tree", "-z", upstream, "--", *chunk)
         if rc_h != 0 or rc_u != 0:
             raise Unmeasured(f"ls-tree failed: {(err_h or err_u).strip()[:300]}")
         up = {}
-        for line in up_out.splitlines():
+        for line in up_out.split("\0"):
             meta, _, rel = line.partition("\t")
             f = meta.split()
             if len(f) >= 3:
                 up[rel] = f[2]
-        for line in head_out.splitlines():
+        for line in head_out.split("\0"):
             meta, _, rel = line.partition("\t")
             f = meta.split()
             if len(f) < 4 or f[1] != "blob":
@@ -286,16 +334,20 @@ def _drop_origin_history(root: Path, upstream: str,
     paths = [b[2] for b in blobs]
     for i in range(0, len(paths), 200):
         chunk = paths[i:i + 200]
-        rc, out, err = _git(root, "log", "--full-history", "-m", "--format=", "--raw",
+        # -z: ":<meta>\0<path>\0" per entry, the path verbatim. A C-quoted path here matched
+        # no blob, so an adopted origin blob read as box code and would have been drained.
+        rc, out, err = _git(root, "log", "-z", "--full-history", "-m", "--format=", "--raw",
                             "--no-abbrev", "--no-renames", upstream, "--", *chunk)
         if rc != 0:
             raise Unmeasured(f"origin history unreadable: {err.strip()[:300]}")
-        for line in out.splitlines():
-            if not line.startswith(":"):
+        toks = out.split("\0")
+        for i, meta in enumerate(toks[:-1]):
+            meta = meta.removeprefix("\n")
+            if not meta.startswith(":"):
                 continue
-            meta, _, rel = line.partition("\t")
             f = meta.split()
             if len(f) >= 4:
+                rel = toks[i + 1]
                 seen.add((rel, f[2]))
                 seen.add((rel, f[3]))
     keep = [b for b in blobs if (b[2], b[1]) not in seen]
@@ -308,12 +360,20 @@ def _denied_name(rel: str) -> bool:
     return any(fnmatch.fnmatch(base, g) or fnmatch.fnmatch(low, g) for g in DENY_GLOBS)
 
 
-def _plain_strength(text: str) -> str | None:
-    if any(p.search(text) for p in STRONG_SECRET_PATTERNS):
-        return "strong"
-    if any(p.search(text) for p in WEAK_SECRET_PATTERNS):
-        return "weak"
-    return None
+def _plain_strength(text: str, deadline: float | None = None) -> str | None:
+    if len(text) > MAX_SCREEN_CHARS:
+        return "weak"   # too long to screen is not clean: withheld, never passed
+    for pat in STRONG_SECRET_PATTERNS:
+        if pat.search(text):
+            return "strong"
+    level: str | None = None
+    for pat in WEAK_SECRET_PATTERNS:
+        if deadline is not None and time.monotonic() > deadline:
+            return "weak"   # over budget: withheld, never passed
+        if pat.search(text):
+            level = "weak"
+            break
+    return level
 
 
 def _worse(a: str | None, b: str | None) -> str | None:
@@ -358,18 +418,21 @@ def _percent_decoded(text: str) -> list[str]:
     return out
 
 
-def secret_strength(text: str, _depth: int = 0) -> str | None:
+def secret_strength(text: str, _depth: int = 0,
+                    deadline: float | None = None) -> str | None:
     """'strong', 'weak' or None for a blob's text (or a commit message), base64 runs and
-    %-encodings included."""
-    level = _plain_strength(text)
+    %-encodings included. Past `deadline` (time.monotonic) the answer is at least 'weak'."""
+    level = _plain_strength(text, deadline)
     if level == "strong" or _depth >= 2:
         return level
     for decoded in _percent_decoded(text):
-        level = _worse(level, _plain_strength(decoded))
+        level = _worse(level, _plain_strength(decoded, deadline))
         if level == "strong":
             return level
     for decoded in _b64_decoded(text):
-        level = _worse(level, secret_strength(decoded, _depth + 1))
+        if deadline is not None and time.monotonic() > deadline:
+            return _worse(level, "weak")
+        level = _worse(level, secret_strength(decoded, _depth + 1, deadline))
         if level == "strong":
             break
     return level
@@ -404,8 +467,9 @@ def screen_bytes(data: bytes) -> str | None:
         if inflated is not None:
             texts.append(inflated.decode("utf-8", errors="replace"))
     level: str | None = "weak" if binary else None
+    deadline = time.monotonic() + SCREEN_BUDGET_S
     for t in texts:
-        level = _worse(level, secret_strength(t))
+        level = _worse(level, secret_strength(t, deadline=deadline))
         if level == "strong":
             break
     return level
@@ -426,11 +490,12 @@ def screen_secrets(root: Path, upstream: str,
         # tree, so a box-local file under an ignored path is refused even if the box tracked it.
         # --stdin, not argv: Windows caps a command line near 32K characters (audit should-fix).
         # rc 1 means "none ignored"; anything else but 0 is a failed read, hence UNMEASURED.
-        rc, out, err = _git(root, "check-ignore", "--no-index", "--stdin",
-                            stdin="".join(b[2] + "\n" for b in rest))
+        # -z both ways: names verbatim in and out (a quoted name never matched, so it passed).
+        rc, out, err = _git(root, "check-ignore", "--no-index", "--stdin", "-z",
+                            stdin="".join(b[2] + "\0" for b in rest))
         if rc not in (0, 1):
             raise Unmeasured(f"check-ignore failed: {err.strip()[:300]}")
-        ignored = {ln.strip() for ln in out.splitlines() if ln.strip()}
+        ignored = {t for t in out.split("\0") if t}
         denied += [b[2] for b in rest if b[2] in ignored]
         rest = [b for b in rest if b[2] not in ignored]
     strong: list[str] = []
@@ -540,6 +605,22 @@ def run(root: Path, *, upstream: str, push: bool, now: datetime | None = None,
     return doc
 
 
+def write_report(out: Path, doc: dict[str, Any]) -> None:
+    """Write via a temporary file in the same directory, then replace (audit should-fix): a
+    reader -- the publisher carries this file off the box -- never sees a half-written report,
+    and a crash mid-write leaves the previous one standing."""
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix=out.name + ".", suffix=".tmp", dir=str(out.parent))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(json.dumps(doc, indent=2))
+        os.replace(tmp, out)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.unlink(tmp)
+        raise
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--upstream", default="@{u}")
@@ -548,8 +629,7 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     doc = run(ROOT, upstream=args.upstream, push=args.push, out=args.out)
     try:
-        args.out.parent.mkdir(parents=True, exist_ok=True)
-        args.out.write_text(json.dumps(doc, indent=2), "utf-8")
+        write_report(args.out, doc)
     except OSError as exc:
         print(f"box backlog: report not written ({exc})", file=sys.stderr)
     push = doc.get("push") or {}

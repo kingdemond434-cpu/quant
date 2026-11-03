@@ -431,3 +431,88 @@ def test_the_audited_gaps_are_withheld(text: str) -> None:
 ])
 def test_the_new_shapes_do_not_read_ordinary_code(text: str) -> None:
     assert bb.secret_strength(text) is None, text
+
+
+# AUDIT HOLD ON #210 (2026-11-03): the screen must be linear, and paths must survive git quoting.
+_ADVERSARIAL_UNITS = ("token", "token_", "secret_", "api_key_", "api-", "token=", "a.", "a=",
+                      "_KEY", "A_KEY=", "bearer ", "basic a", "://a:", "ghp_", "a", "=", " ",
+                      "PRIVATE ", "-----BEGIN ",
+                      # #259's patterns: the shapes the audit timed, and their neighbours
+                      "key=", "key=1", "token=1", "token:=", "token%3d", "token:", "-token:=",
+                      "-token ", "--api-key a", "password: a#", "\npassword: ", "\nexport token=",
+                      "aPassword=", "aToken=1", "_KEY=1", "?key", "&apikey=", "%40", "%25",
+                      "p%40ss", "mt5password=", "token_1_", "- api_key: ", "1")
+
+
+@pytest.mark.parametrize("unit", _ADVERSARIAL_UNITS)
+def test_every_screen_pattern_is_linear_on_adversarial_input(unit: str) -> None:
+    """The class fix: each pattern, on 2 MB of a repeated adversarial unit, finishes inside a
+    hard bound. The quadratic pattern took 8 s on 40 KB, i.e. hours on 2 MB."""
+    import time
+    text = (unit * (2_000_000 // len(unit) + 1))[:2_000_000] + "!"
+    for p in (*bb.STRONG_SECRET_PATTERNS, *bb.WEAK_SECRET_PATTERNS):
+        t0 = time.perf_counter()
+        p.search(text)
+        took = time.perf_counter() - t0
+        # Linear patterns take ~2 s here on a loaded runner; the quadratic ones took hours.
+        assert took < 15.0, f"{getattr(p, 'pattern', p)!r} took {took:.1f}s on {unit!r}"
+
+
+def test_a_text_over_the_screen_cap_is_withheld_never_clean() -> None:
+    assert bb.secret_strength("x" * (bb.MAX_SCREEN_CHARS + 1)) == "weak"
+
+
+def test_the_credential_assignment_still_matches_inside_identifiers() -> None:
+    # The narrowed screen (audit rescore) needs a value with a digit or symbol, or a quote.
+    for text in ("MT5_PASSWORD=hunter2", "$mt5Password = 'x'", "aws_secret_access_key: s3cr3t",
+                 '"token": "x"', "password%3Dhunter", "mt5password = 'x'"):
+        assert bb.secret_strength(text) is not None, text
+    assert bb.secret_strength("tokenizer(x)") is None
+
+
+def test_a_quoted_path_reaches_the_drain(box: tuple[Path, Path]) -> None:
+    """Audit should-fix: without -z git C-quotes `caf\303\251.py`, and the quoted name matched no
+    tree entry, so a non-ASCII code path dropped out of the backlog silently."""
+    repo, _ = box
+    _write(repo, "libs/café.py", "X = 1\n")
+    _write(repo, 'libs/a"b.py', "Y = 1\n")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-qm", "box code with odd names")
+    doc = bb.run(repo, upstream="origin/live", push=False)
+    assert {"libs/café.py", 'libs/a"b.py'} <= set(doc["code_paths"]), doc["code_paths"]
+
+
+def test_the_report_is_replaced_atomically(tmp_path: Path) -> None:
+    out = tmp_path / "r" / "BOX_BACKLOG.json"
+    bb.write_report(out, {"verdict": "MEASURED"})
+    bb.write_report(out, {"verdict": "UNMEASURED"})
+    assert json.loads(out.read_text("utf-8")) == {"verdict": "UNMEASURED"}
+    assert [q.name for q in out.parent.iterdir()] == ["BOX_BACKLOG.json"], "no temp file left"
+
+
+def test_secret_strength_is_linear_on_adversarial_input() -> None:
+    """The audit timed secret_strength at 85 s on 100 KB: every decoding re-runs every pattern,
+    so the whole screen, not only each pattern, must be linear."""
+    import time
+    for unit in _ADVERSARIAL_UNITS:
+        # 200 KB: the audit measured 85 s on 100 KB, so a quadratic screen cannot pass this.
+        text = (unit * (200_000 // len(unit) + 1))[:200_000]
+        t0 = time.perf_counter()
+        bb.secret_strength(text)
+        took = time.perf_counter() - t0
+        assert took < 5.0, f"secret_strength took {took:.1f}s on {unit!r}"
+
+
+def test_an_over_budget_screen_is_withheld_never_clean(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(bb, "SCREEN_BUDGET_S", -1.0)
+    assert bb.screen_bytes(b"def f(x):\n    return x\n") == "weak"
+
+
+@pytest.mark.parametrize("text", [
+    "token = " + "a1" * 200,               # a value longer than the bound still counts
+    "Connect-Box -Password " + "x" * 300,
+    "EIA_KEY=" + "y" * 300,
+    "mt5password = 'x'",
+])
+def test_the_bounds_never_turn_a_hit_into_a_miss(text: str) -> None:
+    assert bb.secret_strength(text) is not None, text[:40]
