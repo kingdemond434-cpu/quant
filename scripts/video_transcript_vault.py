@@ -70,31 +70,38 @@ def open_all(src: Path, dst: Path) -> None:
     done_path = dst / ".opened.json"
     done = set(json.loads(done_path.read_text())) if done_path.exists() else set()
     dst.mkdir(parents=True, exist_ok=True)
+    fail_path = dst / ".failed.json"
+    failed = json.loads(fail_path.read_text()) if fail_path.exists() else {}
     for f in sorted(src.glob("*.vault")):
-        if f.name in done:
+        if f.name in done or f.name in failed:
             continue
-        b = f.read_bytes()
-        if b[:4] != MAGIC:
-            print(f"skip {f.name}: bad magic")
+        try:
+            b = f.read_bytes()
+            if b[:4] != MAGIC:
+                raise ValueError("bad magic")
+            n = int.from_bytes(b[4:6], "big")
+            key = sk.decrypt(b[6:6 + n], OAEP)
+            nonce, ct = b[6 + n:18 + n], b[18 + n:]
+            data = AESGCM(key).decrypt(nonce, ct, MAGIC)
+            with zipfile.ZipFile(io.BytesIO(data)) as z:
+                for name in z.namelist():
+                    target = (dst / name).resolve()
+                    if dst.resolve() not in target.parents:
+                        raise ValueError(f"path escape: {name}")
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    if name.endswith("ledger.jsonl"):
+                        with open(target, "ab") as fh:  # latest row per id wins downstream
+                            fh.write(z.read(name))
+                    else:
+                        target.write_bytes(z.read(name))
+        except Exception as exc:  # noqa: BLE001 - one bad bundle never stalls the rest
+            failed[f.name] = f"{type(exc).__name__}: {str(exc)[:200]}"
+            fail_path.write_text(json.dumps(failed, indent=1))
+            print(f"FAILED {f.name}: {failed[f.name]}")
             continue
-        n = int.from_bytes(b[4:6], "big")
-        key = sk.decrypt(b[6:6 + n], OAEP)
-        nonce, ct = b[6 + n:18 + n], b[18 + n:]
-        data = AESGCM(key).decrypt(nonce, ct, MAGIC)
-        with zipfile.ZipFile(io.BytesIO(data)) as z:
-            for name in z.namelist():
-                target = (dst / name).resolve()
-                if dst.resolve() not in target.parents:
-                    raise ValueError(f"path escape in {f.name}: {name}")
-                target.parent.mkdir(parents=True, exist_ok=True)
-                if name.endswith("ledger.jsonl"):
-                    with open(target, "ab") as fh:  # ledgers append; latest row per id wins
-                        fh.write(z.read(name))
-                else:
-                    target.write_bytes(z.read(name))
         done.add(f.name)
+        done_path.write_text(json.dumps(sorted(done)))   # persisted per bundle
         print(f"opened {f.name}")
-    done_path.write_text(json.dumps(sorted(done)))
 
 
 def main() -> int:
