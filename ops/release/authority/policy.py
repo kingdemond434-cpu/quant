@@ -87,8 +87,13 @@ def envelope_check(base: Mapping | None, head: Mapping | None, env: Mapping) -> 
                 if new != old:
                     out.append(f"{path}:{knob} ceiling is not a number")
                 continue
-            if new <= old:
-                continue  # tighter or equal: always allowed
+            if new == old:
+                continue
+            if new < old:
+                # NEVER REDUCE AGGRESSIVENESS (principal 2026-09-08) and GROWTH GOVERNANCE Rule 1:
+                # a cap lowered by fiat is not delegated (#637 audit MF2); zuck's path decides
+                out.append(f"{path}:{knob} ceiling lowered {old} -> {new}: not delegated")
+                continue
             if knob in (fixed.get(path) or ()):
                 out.append(f"{path}:{knob} is a firm rule ({old} -> {new}): never raised")
                 continue
