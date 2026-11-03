@@ -411,6 +411,8 @@ def protect(mt5: Any, st: dict[str, Any], doc: dict[str, Any], p: Any, *, cet: s
             act["why"] += f"; FAILED {type(exc).__name__}: {exc}"[:200]
     else:
         act["shadow"] = True
+    log(f"stop {p.symbol} #{int(p.ticket)} {act['before']} -> {act['after']} ({act['act']}): "
+        f"{'shadow' if act.get('shadow') else ('ok' if act['ok'] else act['why'])}")
     doc["actions"].append(act)
 
 

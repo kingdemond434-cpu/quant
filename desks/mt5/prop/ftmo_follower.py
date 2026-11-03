@@ -1111,6 +1111,10 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
                 act["why"] = f"{type(exc).__name__}: {exc}"[:160]
         else:
             act["shadow"] = True
+        # EVERY STOP MOVE IS LOGGED, sent or not (Desk health 2026-11-03: only failures were, so
+        # an FTMO stop that ran an hour ahead of E8's could not be traced afterwards).
+        log(f"[{WINDOW}] stop {int(p.ticket)} {cur} -> {new} ({how}): "
+            f"{'shadow' if act.get('shadow') else ('ok' if act['ok'] else act.get('why'))}")
         doc["actions"].append(act)
 
     # ---------------------------------------------------------------- the fills ledger
