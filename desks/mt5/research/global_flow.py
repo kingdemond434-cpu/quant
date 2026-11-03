@@ -480,12 +480,38 @@ def collect(*, get: Callable[..., str] | None, state: dict[str, Any], notes: lis
         at = (idx.dt.tz_localize("UTC") if idx.dt.tz is None else idx).dt.normalize() + \
             pd.Timedelta(days=float(src.get("avail_lag_days", 1)),
                          hours=float(src.get("avail_hour_utc", 23)))
+        at = first_seen_floor(sid, idx, at, state, now)
         fid = f"flow_{sid}"
         frames[fid] = stamped(feat.reset_index(drop=True), at, fid, idx)
         built[fid] = {"targets": list(src.get("targets") or []), "kind": f"flow_{src['class']}",
                       "region": src.get("region"), "rows": len(df),
                       "last_event": str(idx.max()), "why": src.get("why", "")}
     return built, frames
+
+
+FIRST_SEEN_DAYS = 14
+
+
+def first_seen_floor(sid: str, idx: pd.Series, at: pd.Series, state: dict[str, Any],
+                     now: datetime) -> pd.Series:
+    """A rule-derived publication time is a GUESS; the pass that first held the row is a FACT.
+    For any row whose rule time is within FIRST_SEEN_DAYS of the pass that first saw it, the
+    availability is max(rule, first seen): a late release (a Japanese holiday week) or a snapshot
+    fetched before its own rule hour can never be stamped earlier than it was observed. Older
+    rows (the back-fill) keep the rule time. First-seen stamps persist in state, so a row's
+    stamp never moves on a later pass."""
+    seen = state.setdefault("global_flow_first_seen", {}).setdefault(sid, {})
+    now_ts = pd.Timestamp(now).tz_convert("UTC") if pd.Timestamp(now).tzinfo else \
+        pd.Timestamp(now).tz_localize("UTC")
+    out = []
+    for d, a in zip(idx, at, strict=True):
+        key = pd.Timestamp(d).strftime("%Y-%m-%d")
+        if key not in seen:
+            seen[key] = now_ts.isoformat() if now_ts - a < pd.Timedelta(days=FIRST_SEEN_DAYS) \
+                else None
+        fs = seen[key]
+        out.append(max(a, pd.Timestamp(fs)) if fs else a)
+    return pd.Series(out, index=at.index)
 
 
 def coverage(registry: Mapping[str, Any] | None = None) -> dict[str, Any]:

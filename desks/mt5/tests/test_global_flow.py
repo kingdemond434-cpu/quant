@@ -221,3 +221,15 @@ def test_grid_names_unsearched_cells():
     cov = gf.coverage(reg)
     assert sorted(cov["unsearched"]) == ["cta|US", "retail|JP"]
     assert cov["grid_cells"] == 4 and cov["grid_covered"] == 2
+
+
+def test_first_seen_floors_recent_rows_and_keeps_backfill():
+    idx = pd.Series(pd.to_datetime(["2026-01-03", "2026-10-31"]))
+    rule = pd.Series(pd.to_datetime(["2026-01-08", "2026-11-05"], utc=True))
+    state: dict = {}
+    now = datetime(2026, 11, 6, 2, 0, tzinfo=UTC)          # late release: seen after the rule
+    at = gf.first_seen_floor("mof_weekly", idx, rule, state, now)
+    assert at.iloc[0] == rule.iloc[0]                       # back-fill keeps the rule time
+    assert at.iloc[1] == pd.Timestamp(now)                  # recent row: never before first seen
+    later = gf.first_seen_floor("mof_weekly", idx, rule, state, datetime(2026, 12, 1, tzinfo=UTC))
+    assert later.iloc[1] == pd.Timestamp(now)               # the stamp never moves
