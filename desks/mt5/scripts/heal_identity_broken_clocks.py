@@ -496,9 +496,10 @@ def main() -> int:
             expired_hold = None
             if reg.verify(key, ident) == ["code_hash"]:
                 hold = reattach_hold(row)
-                if hold and not hold_expired(since.get(key), now):
+                start = hold_start(since.get(key), row)
+                if hold and not hold_expired(start, now):
                     held.append((key, hold))
-                    held_since[key] = since.get(key) or now.isoformat(timespec="seconds")
+                    held_since[key] = start or now.isoformat(timespec="seconds")
                     continue
                 expired_hold = hold
             fwd = row.get("forward_start")
@@ -506,7 +507,7 @@ def main() -> int:
             if why:
                 rebased.append((key, why))
                 if expired_hold:
-                    lost.append(lost_window(key, since.get(key), fwd, now))
+                    lost.append(lost_window(key, hold_start(since.get(key), row), fwd, now))
                 continue
             refused.append((key, "drift is not code_hash alone -- a strategy change stays dead"))
         else:
@@ -514,7 +515,7 @@ def main() -> int:
             if not drift:
                 resumed.append((key, "identity intact again -- window would be KEPT"))
             elif (drift == ["code_hash"] and (hold := reattach_hold(row))
-                  and not hold_expired(since.get(key), now)):
+                  and not hold_expired(hold_start(since.get(key), row), now)):
                 held.append((key, hold))
             elif drift == ["code_hash"]:
                 rebased.append((key, f"code {row['identity'].get('code_hash')} -> "
@@ -544,6 +545,29 @@ def prior_hold_since(path: Path | None = None) -> dict[str, str]:
         return {}
     return {str(r["key"]): str(r["since"]) for r in doc.get("held") or []
             if isinstance(r, dict) and r.get("key") and r.get("since")}
+
+
+def _ts(value: Any) -> datetime | None:
+    try:
+        t = datetime.fromisoformat(str(value))
+    except ValueError:
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
+def hold_start(reported: str | None, row: dict[str, Any]) -> str | None:
+    """The EARLIER of the published hold start and the registry's own break stamp.
+
+    A hold leaves the row untouched, so its `status_at` is when it went IDENTITY_BROKEN and
+    survives a lost or unreadable IDENTITY_HEALER.json; the report alone would let every pass
+    restart the 72h (Auditor should-fix, 11-03).
+    """
+    stamped = (row.get("status_at")
+               if str(row.get("status") or "").upper() == "IDENTITY_BROKEN" else None)
+    known = [(t, str(v)) for v in (reported, stamped) if v and (t := _ts(v)) is not None]
+    if known:
+        return min(known)[1]
+    return reported or None             # unreadable -> hold_expired() expires it
 
 
 def hold_expired(since: str | None, now: datetime) -> bool:

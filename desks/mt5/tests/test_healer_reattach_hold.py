@@ -196,3 +196,17 @@ def test_a_hold_that_outlives_its_expiry_is_rebased_and_priced(tmp_path, monkeyp
     mg = rep["missed_growth"]
     assert mg["clocks_rebased_on_expiry"] == 1 and mg["forward_days_lost"] > 30
     assert mg["rows"][0]["held_since"] == old
+
+
+def test_a_lost_report_cannot_restart_the_hold():
+    """The hold start falls back to the registry's own break stamp, and the earlier one wins,
+    so deleting or corrupting IDENTITY_HEALER.json never makes a hold permanent."""
+    from datetime import UTC, datetime, timedelta
+    now = datetime.now(tz=UTC)
+    broke = (now - timedelta(hours=heal.HOLD_EXPIRY_H + 5)).isoformat(timespec="seconds")
+    row = {"status": "IDENTITY_BROKEN", "status_at": broke}
+    assert heal.hold_start(None, row) == broke
+    assert heal.hold_expired(heal.hold_start(None, row), now)
+    later = (now - timedelta(hours=1)).isoformat(timespec="seconds")
+    assert heal.hold_start(later, row) == broke
+    assert heal.hold_start(later, {"status": "LIVE", "status_at": broke}) == later
