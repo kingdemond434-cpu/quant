@@ -156,6 +156,28 @@ EXECUTOR_SKIP_SYMBOLS = frozenset({"XAUUSD"})
 #: Every other column must be the FTMO account's own Tier S sleeve, off every E8 symbol.
 COPY_COLUMNS = {"gold_asia": "principal override 2026-10-28 14:31Z: FTMO copies E8 gold_asia"}
 COPY_PRINCIPAL = BASE / "data" / "FTMO_COPY_PRINCIPAL.json"
+#: WHICH PROP ACCOUNT THIS PROCESS IS SOLVING (`bind_account`). "ftmo" is the legacy account and
+#: every module default above is its; another registered account (`mt5desk.prop_accounts`) is
+#: solved by rebinding the account globals (its state, report, armed marker, CERT_BOOK_LIVE block)
+#: and the firm globals (`bind_firm`: its terminal's registry and cost surface). Accounts are
+#: independent challenges -- their payoffs add and each one's rails are its own -- so one solve per
+#: account IS the joint optimum; only the universe is shared, built once per firm.
+ACCOUNT_ID = "ftmo"
+BOOK_KEY = "ftmo"
+#: The substring a venue file's terminal name must carry to be this firm's (FTMO's files are
+#: also written by other tools; a firm directory under data/prop/ holds only its own reader's).
+VENUE_TAG = "FTMO"
+#: RE-SOLVE CADENCE (`--if-due`, run every 10 minutes): a solve is due on any change that can move
+#: the argmax -- the phase or the account key, the program day rolling over (the daily-loss room
+#: resets), the balance moving by RESOLVE_BALANCE_MOVE of the initial, or any universe input
+#: changing (`inputs_fingerprint`) -- and in any case once the report is RESOLVE_MAX_AGE_S old. The
+#: executor refuses a report older than 3 h, so the cap keeps a quiet account's book fresh with
+#: margin. A due-check costs file stats; a solve ~2 min of one core.
+RESOLVE_MAX_AGE_S = 50 * 60
+RESOLVE_BALANCE_MOVE = 0.005
+#: One allocator process at a time (the 10-minute task and the hourly leg share the CERT_BOOK
+#: writer). A lock older than this is a dead process's and is taken over.
+LOCK_STALE_S = 90 * 60
 #: Fusion's measured commission per lot per side (cost_truth.py: 2.00 EUR on every symbol),
 #: taken as 2.00 in the account currency so the FTMO excess over it is never under-stated.
 FUSION_COMMISSION_PER_SIDE = 2.0
@@ -195,6 +217,25 @@ E8_PRO = VenueRules(
 RULES = {"ftmo": FTMO_2STEP, "e8": E8_PRO}
 
 
+def rules_for(program: str) -> VenueRules:
+    """A registered prop program's rule text (`mt5desk.prop_accounts.programs`) as VenueRules.
+    FTMO 2-Step is FTMO_2STEP itself. ValueError when the program is unknown or unsourced."""
+    if program == "ftmo_2step":
+        return FTMO_2STEP
+    from mt5desk import prop_accounts as _pa
+    progs, errors = _pa.programs()
+    row = progs.get(program)
+    if row is None:
+        tail = f" ({'; '.join(errors)})" if errors else ""
+        raise ValueError(f"prop program {program!r} is not a known, sourced rule set{tail}")
+    return VenueRules(name=program, daily_loss=float(row["daily_loss"]),
+                      max_loss=float(row["max_loss"]), min_days=int(row["min_days"]),
+                      targets={k: float(v) for k, v in row["targets"].items()},
+                      next_phase=dict(row["next_phase"]),
+                      profit_cap=(float(row["profit_cap"]) if row.get("profit_cap") else None),
+                      source=str(row["source"]))
+
+
 def _read_json(path: Path) -> Any:
     try:
         return json.loads(path.read_text(encoding="utf-8-sig"))
@@ -221,12 +262,12 @@ class AccountState:
         return self.status == "MEASURED"
 
 
-def read_account_state(path: Path = ACCOUNT_STATE, *, now: datetime | None = None,
+def read_account_state(path: Path | None = None, *, now: datetime | None = None,
                        rules: VenueRules = FTMO_2STEP) -> AccountState:
     """The venue reader's snapshot, or a fresh phase-1 account flagged as ASSUMED (never deployed
     from). Phase changes are the reader's to detect (new account key or balance reset)."""
     now = now or datetime.now(tz=UTC)
-    doc = _read_json(path)
+    doc = _read_json(path or ACCOUNT_STATE)
     if not isinstance(doc, dict) or doc.get("status") not in ("OK", "UNMEASURED") \
             or "balance" not in doc:
         why = "no FTMO account state" if doc is None else f"state status {doc.get('status')!r}"
@@ -372,7 +413,7 @@ def venue_listing() -> tuple[dict[str, dict[str, Any]], str]:
     if isinstance(doc, dict) and isinstance(doc.get("symbols"), dict) and doc["symbols"]:
         return doc["symbols"], f"{FTMO_REGISTRY.name} ({doc.get('generated_at')})"
     q = _read_json(FTMO_QUOTES)
-    if isinstance(q, dict) and "FTMO" in str((q.get("terminal") or {}).get("name", "")):
+    if isinstance(q, dict) and VENUE_TAG in str((q.get("terminal") or {}).get("name", "")):
         rows = {s: v for s, v in (q.get("symbols") or {}).items()
                 if isinstance(v, dict) and v.get("status") != "UNMEASURED"}
         return rows, f"{FTMO_QUOTES.name} FTMO-terminal snapshot ({q.get('at')})"
@@ -483,7 +524,7 @@ def ftmo_commissions() -> dict[str, float]:
         doc = _read_json(path)
         if not isinstance(doc, dict):
             continue
-        if "FTMO" not in str((doc.get("terminal") or {}).get("name", "")):
+        if VENUE_TAG not in str((doc.get("terminal") or {}).get("name", "")):
             continue
         for d in doc.get("deals") or []:
             try:
@@ -836,14 +877,18 @@ def frontier(world: World, h: np.ndarray, rules: VenueRules, phase: str, st: Acc
 
 
 def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
-          state: AccountState | None = None) -> dict[str, Any]:
+          state: AccountState | None = None, uni: dict[str, Any] | None = None,
+          rules: VenueRules | None = None) -> dict[str, Any]:
+    """One account's solve. `uni` is its firm's universe when the caller built it once for every
+    account of that firm (`run_accounts`); `rules` its program's, when not the venue default."""
     import kelly_survival as ks
     from mt5desk.sizing import MAX_RISK_FRAC
 
     from libs.portfolio.posterior_growth import EPS_STOP as EPS_DEATH
-    rules = RULES[venue]
+    rules = rules or RULES[venue]
     now = datetime.now(tz=UTC)
     st = state or read_account_state(rules=rules, now=now)
+    basis = due_basis(st)
     doc: dict[str, Any] = {
         "generated_at": now.isoformat(timespec="seconds"), "venue": venue, "rules": rules.name,
         "rules_source": rules.source,
@@ -860,7 +905,10 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
                                   if st.phase in rules.targets else None),
                     "to_daily_limit": round(st.equity - (st.day_start - rules.daily_loss), 5),
                     "to_max_loss": round(st.equity - (1 - rules.max_loss), 5)}}
-    uni = build_universe(seed)
+    uni = uni if uni is not None else build_universe(seed)
+    doc["account_id"] = ACCOUNT_ID
+    doc["book_key"] = BOOK_KEY
+    doc["due_basis"] = basis
     doc["universe"] = {k: uni.get(k) for k in ("status", "columns", "costs", "posterior",
                                                "listing_source", "unpriced")}
     doc["gap_requests"] = write_gap_requests(uni, now)
@@ -1059,9 +1107,11 @@ def write_gap_requests(uni: dict[str, Any], now: datetime,
 
 # ===================================================================== deployment
 
-def apply_book(doc: dict[str, Any], path: Path = CERT_BOOK, armed: Path = ARMED,
+def apply_book(doc: dict[str, Any], path: Path = CERT_BOOK, armed: Path | None = None,
                principal: Path | None = None) -> dict[str, Any]:
-    """Lay the executable keys into CERT_BOOK_LIVE's `ftmo` block, only when armed and sound."""
+    """Lay the executable keys into CERT_BOOK_LIVE's block for this account (`BOOK_KEY`: `ftmo`
+    for the legacy account, `prop_<id>` for another), only when armed and sound."""
+    armed = armed or ARMED
     if not armed.exists():
         return {"applied": False, "why": f"standby: {armed.name} absent"}
     if not doc.get("deployable"):
@@ -1071,7 +1121,7 @@ def apply_book(doc: dict[str, Any], path: Path = CERT_BOOK, armed: Path = ARMED,
     book = _read_json(path)
     if not isinstance(book, dict) or book.get("enabled") is not True:
         return {"applied": False, "why": "CERT_BOOK_LIVE.json unreadable or not enabled"}
-    block = dict(book.get("ftmo") or {})
+    block = dict(book.get(BOOK_KEY) or {})
     # Every key the solve can execute, and every numeric key already in the block: one the solve
     # no longer funds is written 0 (fail closed), never left at its old size.
     keys = set(FTMO_EXECUTABLE) | set(doc.get("executable") or {}) | {
@@ -1089,41 +1139,270 @@ def apply_book(doc: dict[str, Any], path: Path = CERT_BOOK, armed: Path = ARMED,
     if all(abs(block.get(k, -1) - v) < 1e-9 for k, v in new.items()):
         return {"applied": False, "why": "unchanged"}
     block.update(new)
-    book["ftmo"] = block
-    book["ftmo_by"] = (f"research/prop_challenge_allocator.py {doc['generated_at']} "
-                       f"({doc['account']['phase']}, J-mix solve; armed by "
-                       f"{armed.name})")
+    book[BOOK_KEY] = block
+    book[f"{BOOK_KEY}_by"] = (f"research/prop_challenge_allocator.py {doc['generated_at']} "
+                              f"({ACCOUNT_ID} {doc['account']['phase']}, J-mix solve; armed by "
+                              f"{armed.name})")
     # The follower reads this file every minute: tmp + fsync + os.replace, retried on Windows'
     # PermissionError -- the follower's own writer.
     from prop.ftmo_follower import _atomic_write
     _atomic_write(path, json.dumps(book, indent=1))
-    return {"applied": True, "ftmo": new}
+    return {"applied": True, BOOK_KEY: new}
+
+
+# ===================================================================== accounts and cadence
+
+_DEFAULTS = {k: globals()[k] for k in ("OUT", "ACCOUNT_STATE", "ARMED", "FTMO_EXECUTABLE",
+                                       "GAP_REQUESTS", "ACCOUNT_ID", "BOOK_KEY", "FTMO_REGISTRY",
+                                       "FTMO_QUOTES", "FTMO_SURFACE", "VENUE_TAG")}
+#: The program day's zone (the daily-loss room resets at its midnight); FTMO's is CE(S)T.
+DAY_TZ = "Europe/Prague"
+_DEFAULTS["DAY_TZ"] = DAY_TZ
+
+
+def bind_firm(firm: str) -> None:
+    """Point the universe at `firm`'s venue files (its terminal's registry and cost surface).
+    FTMO's are the module defaults; another firm's live under data/prop/firm_<firm>/ and are
+    written only by that firm's venue reader, so no foreign file can price it (the FTMO quotes
+    snapshot is pointed at a path that never exists)."""
+    g = globals()
+    for k in ("FTMO_REGISTRY", "FTMO_QUOTES", "FTMO_SURFACE", "VENUE_TAG"):
+        g[k] = _DEFAULTS[k]
+    if firm == "ftmo":
+        return
+    from mt5desk import prop_accounts as _pa
+    f = _pa.firm_paths(firm, data=BASE / "data")
+    g["FTMO_REGISTRY"], g["FTMO_SURFACE"] = f["registry"], f["surface"]
+    g["FTMO_QUOTES"] = f["registry"].parent / "no_foreign_quotes.json"
+    g["VENUE_TAG"] = ""
+
+
+def bind_account(acct: Any) -> VenueRules:
+    """Point the solve's account globals at `acct` (a `prop_accounts.Account`) and its firm, and
+    return its program's rules. The legacy account restores every default."""
+    g = globals()
+    for k in ("OUT", "ACCOUNT_STATE", "ARMED", "FTMO_EXECUTABLE", "GAP_REQUESTS", "ACCOUNT_ID",
+              "BOOK_KEY", "DAY_TZ"):
+        g[k] = _DEFAULTS[k]
+    bind_firm(acct.firm)
+    if acct.legacy:
+        return FTMO_2STEP
+    from mt5desk import prop_accounts as _pa
+    p = _pa.paths(acct, data=BASE / "data", reports=BASE / "reports", logs=BASE / "logs")
+    g["OUT"], g["ACCOUNT_STATE"], g["ARMED"] = p["alloc_report"], p["venue_state"], p["alloc_armed"]
+    # Gold has ONE follower, the legacy account's: another account's gold columns are solved and
+    # published (sized-no-executor) but never deployed until a follower exists for it.
+    g["FTMO_EXECUTABLE"] = frozenset()
+    g["GAP_REQUESTS"] = (BASE / "data" / "intelligence" / "ftmo_allocator"
+                         / f"prop_{acct.firm}_gap_hypotheses.jsonl")
+    g["ACCOUNT_ID"], g["BOOK_KEY"] = acct.id, acct.book_key
+    progs, _ = _pa.programs(BASE / "data")
+    g["DAY_TZ"] = str((progs.get(acct.program) or {}).get("day_tz") or _DEFAULTS["DAY_TZ"])
+    return rules_for(acct.program)
+
+
+def inputs_fingerprint() -> str:
+    """A digest of every input file that can move this account's solve but is not its account
+    state: worlds, certificate store, Tier S doors, live-sleeve policy, universe registry, the
+    firm's cost surface, the principal's copy file, the live ledger (risk per lot) and the armed
+    marker. Stats only (name, size, mtime); the 5-minute registry rewrite is deliberately out."""
+    import hashlib
+
+    import kelly_survival as ks
+    paths = [ks.WORLDS, BASE / "reports" / "UNIVERSAL_SURVIVORS.json",
+             BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json", DOORS, SLEEVE_POLICY, UNIVERSE,
+             FTMO_SURFACE, FUSION_SURFACE, COPY_PRINCIPAL, Path(ks.LEDGER), ARMED]
+    h = hashlib.sha256()
+    for q in paths:
+        try:
+            st = q.stat()
+            h.update(f"{q}|{st.st_size}|{st.st_mtime_ns}\n".encode())
+        except OSError:
+            h.update(f"{q}|absent\n".encode())
+    return h.hexdigest()[:16]
+
+
+def program_day(now: datetime) -> str:
+    from zoneinfo import ZoneInfo
+    return now.astimezone(ZoneInfo(DAY_TZ)).date().isoformat()
+
+
+def due_basis(st: AccountState, now: datetime | None = None) -> dict[str, Any]:
+    """What the solve was made against; `due_reasons` compares the next pass's to it."""
+    now = now or datetime.now(tz=UTC)
+    return {"phase": st.phase, "account_key": st.detail.get("account_key"),
+            "state_status": st.status, "balance_x_initial": round(st.balance, 6),
+            "day": program_day(now), "fingerprint": inputs_fingerprint()}
+
+
+def due_reasons(prev: Any, st: AccountState, now: datetime | None = None) -> list[str]:
+    """Why this account needs a fresh solve now ([] = its last report still stands)."""
+    now = now or datetime.now(tz=UTC)
+    if not isinstance(prev, dict) or not isinstance(prev.get("due_basis"), dict):
+        return ["no prior report with a due basis"]
+    try:
+        age = (now - datetime.fromisoformat(str(prev["generated_at"]))).total_seconds()
+    except (KeyError, TypeError, ValueError):
+        return ["prior report undated"]
+    old, cur = prev["due_basis"], due_basis(st, now)
+    out = []
+    if age >= RESOLVE_MAX_AGE_S:
+        out.append(f"report {age / 60:.0f} min old")
+    for k in ("phase", "account_key", "state_status", "day", "fingerprint"):
+        if old.get(k) != cur[k]:
+            out.append(f"{k} {old.get(k)!r} -> {cur[k]!r}")
+    try:
+        moved = abs(float(cur["balance_x_initial"]) - float(old["balance_x_initial"]))
+    except (KeyError, TypeError, ValueError):
+        moved = float("inf")
+    if moved >= RESOLVE_BALANCE_MOVE:
+        out.append(f"balance moved {moved:.4f} of initial")
+    if prev.get("status") != "OK" and not out:
+        # A failed or unestablished pass is retried at the 10-minute cadence, not left an hour.
+        out.append(f"last status {prev.get('status')!r}")
+    return out
+
+
+class Busy(RuntimeError):
+    pass
+
+
+class RunLock:
+    """An exclusive-create lock file; a lock older than LOCK_STALE_S is a dead run's."""
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+
+    def __enter__(self) -> RunLock:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        for _ in range(2):
+            try:
+                fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            except FileExistsError:
+                try:
+                    age = datetime.now(tz=UTC).timestamp() - self.path.stat().st_mtime
+                except OSError:
+                    continue
+                if age < LOCK_STALE_S:
+                    raise Busy(f"{self.path.name} held ({age:.0f}s)") from None
+                try:
+                    self.path.unlink()
+                except OSError:
+                    pass
+                continue
+            with os.fdopen(fd, "w") as fh:
+                fh.write(f"{os.getpid()} {datetime.now(tz=UTC).isoformat()}\n")
+            return self
+        raise Busy(f"{self.path.name} could not be taken")
+
+    def __exit__(self, *exc: object) -> None:
+        try:
+            self.path.unlink()
+        except OSError:
+            pass
+
+
+LOCK = BASE / "reports" / "prop" / "ALLOCATOR.lock"
+
+
+def write_report(doc: dict[str, Any], out: Path) -> None:
+    out.parent.mkdir(parents=True, exist_ok=True)
+    tmp = out.with_suffix(".tmp")
+    tmp.write_text(json.dumps(doc, indent=1, default=float), encoding="utf-8")
+    os.replace(tmp, out)
+
+
+def run_account(acct: Any, *, n_paths: int, seed: int, if_due: bool,
+                universes: dict[str, Any]) -> dict[str, Any]:
+    """Solve, deploy and report ONE account; the firm's universe is built once and shared."""
+    try:
+        rules = bind_account(acct)
+    except ValueError as exc:
+        return {"account": acct.id, "solved": False, "why": f"REFUSED: {exc}"}
+    if not acct.enabled:
+        return {"account": acct.id, "solved": False, "why": "disabled in the registry"}
+    now = datetime.now(tz=UTC)
+    st = read_account_state(rules=rules, now=now)
+    prev = _read_json(OUT)
+    reasons = due_reasons(prev, st, now) if if_due else ["forced"]
+    if not reasons:
+        return {"account": acct.id, "solved": False, "why": "not due"}
+    if acct.firm not in universes:
+        universes[acct.firm] = build_universe(seed)
+    doc = solve("ftmo", n_paths=n_paths, seed=seed, state=st, uni=universes[acct.firm],
+                rules=rules)
+    doc["due_reasons"] = reasons
+    mark_defect(doc, prev)
+    if doc.get("red"):
+        print(f"[{acct.id}] {doc['red']}", file=sys.stderr)
+    try:
+        doc["deploy"] = apply_book(doc)
+    except Exception as exc:                              # the report is written regardless
+        doc["deploy"] = {"applied": False, "why": f"write failed ({type(exc).__name__}: {exc})"}
+    write_report(doc, OUT)
+    ph = (doc.get("phases") or {}).get(doc["account"]["phase"]) or {}
+    return {"account": acct.id, "solved": True, "why": "; ".join(reasons),
+            "status": doc.get("status"), "phase": doc["account"]["phase"],
+            "account_status": doc["account"]["status"], "book": doc.get("book"),
+            "J": (ph.get("validation") or {}).get("score"), "deploy": doc.get("deploy")}
+
+
+def run_accounts(only: str | None, *, n_paths: int, seed: int, if_due: bool) -> dict[str, Any]:
+    """Every registered prop account (or `only`), firm by firm, under the run lock."""
+    from mt5desk import prop_accounts as _pa
+    accts, errors = _pa.load(BASE / "data")
+    if only is not None:
+        accts = [a for a in accts if a.id == only]
+        if not accts:
+            return {"status": "UNKNOWN_ACCOUNT", "account": only, "registry_errors": errors}
+    accts.sort(key=lambda a: (a.firm, not a.legacy, a.id))
+    universes: dict[str, Any] = {}
+    rows = []
+    try:
+        for a in accts:
+            rows.append(run_account(a, n_paths=n_paths, seed=seed, if_due=if_due,
+                                    universes=universes))
+    finally:
+        bind_account(_pa.get(_pa.LEGACY, BASE / "data"))
+    return {"generated_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            "status": "OK", "if_due": if_due, "registry_errors": errors, "accounts": rows,
+            "universes_built": sorted(universes)}
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--venue", choices=sorted(RULES), default="ftmo")
+    ap.add_argument("--venue", choices=sorted(RULES), default="ftmo",
+                    help="ftmo = every registered prop account; e8 = one diagnostic solve")
+    ap.add_argument("--account", default="all",
+                    help="'all' (default) or one registered prop account id")
+    ap.add_argument("--if-due", action="store_true",
+                    help="solve only accounts whose inputs moved or whose report is stale")
     ap.add_argument("--paths", type=int, default=N_PATHS)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--out", type=Path, default=OUT)
+    ap.add_argument("--out", type=Path, default=None,
+                    help="report path for --venue e8 (prop accounts write their own)")
     a = ap.parse_args(argv)
-    doc = solve(a.venue, n_paths=a.paths, seed=a.seed)
-    mark_defect(doc, _read_json(a.out))
-    if doc.get("red"):
-        print(doc["red"], file=sys.stderr)
-    if a.venue == "ftmo":
-        try:
-            doc["deploy"] = apply_book(doc)
-        except Exception as exc:                          # the report is written regardless
-            doc["deploy"] = {"applied": False, "why": f"write failed ({type(exc).__name__}: {exc})"}
-    a.out.parent.mkdir(parents=True, exist_ok=True)
-    tmp = a.out.with_suffix(".tmp")
-    tmp.write_text(json.dumps(doc, indent=1, default=float), encoding="utf-8")
-    os.replace(tmp, a.out)
-    ph = (doc.get("phases") or {}).get(doc["account"]["phase"]) or {}
-    print(f"prop_challenge_allocator[{a.venue}]: {doc.get('status')} phase="
-          f"{doc['account']['phase']} ({doc['account']['status']}) book={doc.get('book')} "
-          f"J={((ph.get('validation') or {}).get('score'))} deploy={doc.get('deploy')}")
+    if a.venue != "ftmo":
+        doc = solve(a.venue, n_paths=a.paths, seed=a.seed)
+        out = a.out or BASE / "reports" / f"PROP_ALLOCATOR_{a.venue.upper()}.json"
+        mark_defect(doc, _read_json(out))
+        write_report(doc, out)
+        print(f"prop_challenge_allocator[{a.venue}]: {doc.get('status')} book={doc.get('book')}")
+        return 0
+    try:
+        with RunLock(LOCK):
+            summary = run_accounts(None if a.account == "all" else a.account,
+                                   n_paths=a.paths, seed=a.seed, if_due=a.if_due)
+    except Busy as exc:
+        print(f"prop_challenge_allocator: another run holds the lock ({exc}); skipped")
+        return 0
+    write_report(summary, BASE / "reports" / "prop" / "ALLOCATOR_RUN.json")
+    for row in summary.get("accounts") or []:
+        print(f"prop_challenge_allocator[{row['account']}]: " + ", ".join(
+            f"{k}={v}" for k, v in row.items() if k != "account"))
+    if summary.get("status") != "OK":
+        print(f"prop_challenge_allocator: {summary}", file=sys.stderr)
+        return 1
     return 0
 
 

@@ -98,6 +98,12 @@ REQUEST_HARD_CAP = 1950
 #: The reference tick (EURUSD) may trail the symbol's own forming bar by this much.
 STALE_GRACE_S = 60.0
 KEEP_TRADED = 400
+#: This lane's names (2026-11-03, several prop accounts): its data/xacct book and its block in
+#: CERT_BOOK_LIVE.json. The FTMO account keeps "ftmo"; `bind` points a run at another registered
+#: account (`mt5desk.prop_accounts`), which publishes and reads as `prop_<id>`.
+XACCT = "ftmo"
+BOOK_KEY = "ftmo"
+ACCOUNT_ID = "ftmo"
 TF_HOURS = {"M1": 1 / 60, "M5": 5 / 60, "M15": 0.25, "M30": 0.5, "H1": 1.0, "H4": 4.0,
             "D1": 24.0}
 #: 10010 is a partial fill: a live position, counted as sent (audit MF3).
@@ -370,6 +376,12 @@ def manage(mt5: Any, st: dict[str, Any], doc: dict[str, Any], own: list[Any], *,
     """Time exits and the both-ways opposite rule for this lane's open positions."""
     from mt5desk import cross_account as _xa
     books = {a: _xa.read_book(a, now=now) for a in ("fusion", "e8")}
+    # every other prop account too (2026-11-03): an unarmed one that never published is no block
+    for name in _xa.prop_names():
+        if name != XACCT:
+            pbook, pwhy, required = _xa.prop_peer_book(name, now=now)
+            if pbook is not None or required:
+                books[name] = (pbook, pwhy)
     for p in own:
         side = _side_of(int(getattr(p, "type", -1)))
         why = None
@@ -446,11 +458,11 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     # recorded and the readers fail closed on its age while this lane is armed.
     from mt5desk import cross_account as _xa
     doc["book_published"] = _xa.publish_under_lock(
-        lambda: _xa.publish_mt5(mt5, source="ftmo_executor", account="ftmo"),
+        lambda: _xa.publish_mt5(mt5, source="ftmo_executor", account=XACCT),
         holder="ftmo_executor:pass") or "ok"
 
     from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
-    cert = load_cert_book(CERT_BOOK_FILE, "ftmo")
+    cert = load_cert_book(CERT_BOOK_FILE, BOOK_KEY)
     sleeves, bwhy = book_sleeves(_fw._read_json(ALLOCATOR), cert, now)
     doc["book"] = {"why": bwhy, "keys": [k for k, _, _ in sleeves]}
     if not sleeves:
@@ -773,6 +785,9 @@ def _send_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], row: dict[st
                            f"the cross-firm copy override is switched off")
                     break
         if why is None:
+            # every other prop account (2026-11-03): no account goes opposite another
+            why = _xa.prop_block(sym, side, now=now, exclude=(XACCT,))
+        if why is None:
             live_p, live_o = mt5.positions_get(), mt5.orders_get()
             if live_p is None or live_o is None:
                 why = "the FTMO book is unreadable under the lock; fail closed"
@@ -835,7 +850,7 @@ def _send_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], row: dict[st
             # The symbol is held IN FLIGHT on the FTMO book first, so the gateway and the E8
             # executor see both sides held until the send returns (or its hold expires).
             res = _xa.bounded(lambda: mt5.order_send(req),
-                              what=f"ftmo_executor:{sym} send", account="ftmo", symbol=sym)
+                              what=f"ftmo_executor:{sym} send", account=XACCT, symbol=sym)
         except Exception as exc:
             row.update(status="REJECTED", why=f"{type(exc).__name__}: {exc}"[:200])
             doc["sleeves"].append(row)
@@ -843,7 +858,7 @@ def _send_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], row: dict[st
             return
         finally:
             with contextlib.suppress(Exception):     # the readers fail closed on its age
-                _xa.bounded(lambda: _xa.publish_mt5(mt5, source="ftmo_executor", account="ftmo"),
+                _xa.bounded(lambda: _xa.publish_mt5(mt5, source="ftmo_executor", account=XACCT),
                             timeout_s=_xa.LOCKED_PUBLISH_TIMEOUT_S,
                             what="ftmo_executor publish")
         code = getattr(res, "retcode", None)
@@ -873,20 +888,50 @@ def _write_out(doc: dict[str, Any], st: dict[str, Any] | None) -> None:
         log(f"state/report write failed: {exc}")
 
 
+def bind(account_id: str) -> Any:
+    """Point this process at registered prop account `account_id` (`mt5desk.prop_accounts`,
+    2026-11-03): its files, its terminal, its declaration and its firm's loss rules. The FTMO
+    account ("ftmo") is the module's defaults and changes nothing. Raises ValueError when the
+    account is not registered or its program is unknown."""
+    global ARMED_MARKER, ALLOCATOR, STATE, OUT, INTENTS, LOG, XACCT, BOOK_KEY, ACCOUNT_ID
+    from mt5desk import prop_accounts as _pa
+    acct = _pa.get(account_id)
+    _pa.bind_terminal(_fw, acct)
+    if acct.legacy:
+        return acct
+    p = _pa.paths(acct)
+    ARMED_MARKER, ALLOCATOR, STATE = p["exec_armed"], p["alloc_report"], p["exec_state"]
+    OUT, INTENTS, LOG = p["exec_out"], p["exec_intents"], p["exec_log"]
+    XACCT = BOOK_KEY = acct.xacct
+    ACCOUNT_ID = acct.id
+    return acct
+
+
 def main(argv: list[str] | None = None) -> int:
-    del argv
+    import argparse
+    ap = argparse.ArgumentParser(description="FTMO / prop sleeve executor, one account per run")
+    ap.add_argument("--account", default="ftmo",
+                    help="registered prop account id (data/prop_accounts.json); default ftmo")
+    a = ap.parse_args(argv)
+    try:
+        acct = bind(a.account)
+    except ValueError as exc:
+        log(f"not run: {exc}")
+        return 1
     ok, why = _fw.interactive_session()
     if not ok:
         log(f"not run: {why}")
         return 1
-    armed = ARMED_MARKER.exists()
+    # a disabled account still runs (its positions are managed and its book published) but
+    # never armed: it adds no risk
+    armed = ARMED_MARKER.exists() and acct.enabled
     try:
         import os
 
         import MetaTrader5 as mt5
         path = os.environ.get(_fw.TERMINAL_ENV) or _fw.TERMINAL_PATH
         if not mt5.initialize(path=path, timeout=15000):
-            log(f"FTMO terminal unavailable: {mt5.last_error()}")
+            log(f"{ACCOUNT_ID} terminal unavailable: {mt5.last_error()}")
             return 1
     except Exception as exc:
         log(f"MetaTrader5 unavailable ({type(exc).__name__}: {exc})")
@@ -896,7 +941,7 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         mt5.shutdown()
     sent = sum(1 for r in doc.get("sleeves", []) if r.get("status") in ("SENT", "WOULD_SEND"))
-    log(f"ftmo executor: {'ARMED' if armed else 'STANDBY'} status={doc.get('status')} "
+    log(f"{ACCOUNT_ID} executor: {'ARMED' if armed else 'STANDBY'} status={doc.get('status')} "
         f"sleeves={len(doc.get('sleeves', []))} sent_or_would={sent}")
     return 0
 

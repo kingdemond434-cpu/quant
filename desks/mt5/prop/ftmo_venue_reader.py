@@ -49,6 +49,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 
 STATE_OUT = DESK / "reports" / "FTMO_ACCOUNT_STATE.json"
 REGISTRY_OUT = DESK / "data" / "ftmo_registry.json"
+#: The name stamped on the registry: the allocator prices a firm only off files carrying its tag.
+TERMINAL_NAME = "FTMO Global Markets MT5 Terminal"
 SURFACE_OUT = DESK / "data" / "cost_surface_ftmo.json"
 BARS_DIR = DESK / "data" / "universe_ftmo"
 PHASES = DESK / "data" / "ftmo_phase_state.json"
@@ -60,6 +62,10 @@ SURFACE_MAX_AGE_S = 24 * 3600
 DEAL_TYPES_TRADE = (0, 1)        # DEAL_TYPE_BUY / DEAL_TYPE_SELL
 DEAL_TYPE_BALANCE = 2
 DEAL_ENTRY_IN = 0
+#: The rule program this run reads phases against (2026-11-03: `bind` sets another registered
+#: prop account's); None is FTMO 2-Step.
+PROGRAM: str | None = None
+ACCOUNT_ID = "ftmo"
 
 
 def log(msg: str) -> None:
@@ -143,7 +149,9 @@ def mark_passed(chain: dict[str, Any], key: str, *, balance: float, initial: flo
 def trading_days(deals: list[Any], since_epoch: float | None) -> int:
     """Distinct CE(S)T dates with a position OPENED (FTMO's definition of a trading day)."""
     from zoneinfo import ZoneInfo
-    tz = ZoneInfo("Europe/Prague")
+
+    from prop import ftmo_follower as ff
+    tz = ZoneInfo(ff.DAY_TZ)
     days = set()
     for d in deals:
         if int(getattr(d, "type", -1)) in DEAL_TYPES_TRADE \
@@ -157,7 +165,8 @@ def trading_days(deals: list[Any], since_epoch: float | None) -> int:
 
 def run(mt5: Any, now: datetime | None = None) -> dict[str, Any]:
     from mt5desk import gold_oco as _oco
-    from prop_challenge_allocator import FTMO_2STEP as rules
+    from prop_challenge_allocator import FTMO_2STEP, rules_for
+    rules = FTMO_2STEP if PROGRAM is None else rules_for(PROGRAM)
 
     from prop import ftmo_follower as ff
     now = now or datetime.now(tz=UTC)
@@ -229,7 +238,7 @@ def run(mt5: Any, now: datetime | None = None) -> dict[str, Any]:
                         "swap_short": s.swap_short, "volume_min": s.volume_min,
                         "volume_step": s.volume_step, "trade_mode": s.trade_mode}
     reg = {"generated_at": now.isoformat(timespec="seconds"),
-           "terminal": {"name": "FTMO Global Markets MT5 Terminal"}, "symbols": syms,
+           "terminal": {"name": TERMINAL_NAME}, "symbols": syms,
            "deals": [{"sym": d.symbol, "vol": float(d.volume), "comm": float(d.commission)}
                      for d in deals if int(getattr(d, "type", -1)) in DEAL_TYPES_TRADE
                      and float(d.volume) > 0]}
@@ -262,8 +271,39 @@ def build_surface(mt5: Any, symbols: list[str]) -> None:
     log(f"FTMO cost surface: {doc.get('n_symbols')} symbols")
 
 
+def bind(account_id: str) -> Any:
+    """Point this process at registered prop account `account_id` (`mt5desk.prop_accounts`): its
+    declaration, terminal and day, its state and phase-chain files, and its firm's shared venue
+    files. "ftmo" is the module's defaults."""
+    global STATE_OUT, PHASES, LOG, REGISTRY_OUT, SURFACE_OUT, BARS_DIR, PROGRAM, ACCOUNT_ID
+    global TERMINAL_NAME
+    from mt5desk import prop_accounts as _pa
+
+    from prop import ftmo_follower as ff
+    acct = _pa.get(account_id)
+    _pa.bind_terminal(ff, acct)
+    if acct.legacy:
+        return acct
+    p, f = _pa.paths(acct), _pa.firm_paths(acct.firm)
+    STATE_OUT, PHASES, LOG = p["venue_state"], p["phase_state"], p["reader_log"]
+    REGISTRY_OUT, SURFACE_OUT, BARS_DIR = f["registry"], f["surface"], f["bars"]
+    PROGRAM, ACCOUNT_ID = acct.program, acct.id
+    if acct.firm != _pa.LEGACY_FIRM:
+        TERMINAL_NAME = f"{acct.firm} MT5 terminal ({acct.id})"
+    return acct
+
+
 def main(argv: list[str] | None = None) -> int:
-    del argv
+    import argparse
+    ap = argparse.ArgumentParser(description="FTMO / prop venue reader, one account per run")
+    ap.add_argument("--account", default="ftmo",
+                    help="registered prop account id (data/prop_accounts.json); default ftmo")
+    a = ap.parse_args(argv)
+    try:
+        bind(a.account)
+    except ValueError as exc:
+        log(f"not run: {exc}")
+        return 1
     from prop import ftmo_follower as ff
     ok, why = ff.interactive_session()
     if not ok:
@@ -273,7 +313,7 @@ def main(argv: list[str] | None = None) -> int:
         import MetaTrader5 as mt5
         if not mt5.initialize(path=os.environ.get(ff.TERMINAL_ENV) or ff.TERMINAL_PATH,
                               timeout=15000):
-            log(f"FTMO terminal unavailable: {mt5.last_error()}")
+            log(f"{ACCOUNT_ID} terminal unavailable: {mt5.last_error()}")
             return 1
     except Exception as exc:
         log(f"MetaTrader5 unavailable ({type(exc).__name__}: {exc})")
@@ -282,7 +322,7 @@ def main(argv: list[str] | None = None) -> int:
         doc = run(mt5)
     finally:
         mt5.shutdown()
-    log(f"ftmo venue reader: {doc.get('status')} phase={doc.get('phase')} ({doc.get('phase_why')})")
+    log(f"{ACCOUNT_ID} venue reader: {doc.get('status')} phase={doc.get('phase')} ({doc.get('phase_why')})")
     return 0
 
 
