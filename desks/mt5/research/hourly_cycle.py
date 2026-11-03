@@ -1193,6 +1193,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # when nothing is new, so every gap's cells are minted on the core clock.
     "culture_gap_cells",
     "fill_recorder", "cost_surfaces",
+    # META-LABELING + BET SIZING per sleeve (AFML ch. 3): ledgers and parquet reads plus a small
+    # numpy logistic per scope, ~2 s on the repo's data; publish only (META_LABEL.json).
+    "meta_labeler",
     # THE REBUILT 25-SEP LANES (2026-09-30): four artifact readers, seconds each. The bank ranks
     # why cells never BUILT, the pathology report classifies the live book's bad fills, the
     # contracts leg reads every leg's declared experiment against its own report, and the health
@@ -1414,7 +1417,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
                      "clock_liveness", "allocator_liveness", "allocator_trigger",
-                     "forward_calibration"),
+                     "forward_calibration", "meta_labeler"),
                     "forward"),
     # meta: the machine that runs the machine (the heavy part of it)
     **dict.fromkeys(("issue_board", "publish_state", "model_league", "ml_layer_meta",
@@ -2045,6 +2048,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The paid-substitute engine: a 120 s catalogue crawl (its own deadline) plus ~2-10 s of
     # scoring, enrolment and queue writes; the cap sits above so the report is always written.
     "paid_substitute_engine": 300,
+    # The meta-labeler stops itself at --budget-s 300 and writes; the cap sits above.
+    "meta_labeler": 360,
     # THE WORLD DATASET HUNTER stops itself at --budget-s 900 and writes its catalog, registry
     # rows and DATASET_HUNT.json; the cap sits above so the write is never the part cut off.
     # Its per-dataset cursor means a short pass still advances the frontier.
@@ -6117,6 +6122,13 @@ def main() -> None:
     # API, and COST_SURFACES.json lists the consumers that have NOT adopted it yet. ~0.1 s.
     csf = _costed("cost_surfaces", lambda: _producer(
         "cost_surfaces", "research/cost_surfaces.py", "--once"))
+    # META-LABELING AND BET SIZING FOR EVERY SLEEVE (AFML ch. 3). Each sleeve's shadow/forward
+    # trades joined to decision-time features recomputed causally from H1 bars, an L2 logistic
+    # judged by purged walk-forward, and the AFML two-sided bet size scored heat-neutral on OOS
+    # E[log W], deflated over every sleeve x config trial. Publish only: the multiplier is 1.0
+    # unless GAIN, and nothing on the money path reads META_LABEL.json yet.
+    mlb = _costed("meta_labeler", lambda: _producer(
+        "meta_labeler", "research/meta_labeler.py", "--once", "--budget-s", "300"))
     apr = _costed("actor_pressure", lambda: _producer(
         "actor_pressure", "research/actor_pressure.py", "--once", "--budget-s", "300"))
     dpo = _costed("destroyer_pool", lambda: _producer(
@@ -6516,6 +6528,7 @@ def main() -> None:
                     "culture_gap_cells": cgc,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
+                    "meta_labeler": mlb,
                     "actor_pressure": apr, "destroyer_pool": dpo,
                     "quantbench": qbn, "evidence_chain": evc, "identity_chain": idc,
                     "clock_ledger": ckl,

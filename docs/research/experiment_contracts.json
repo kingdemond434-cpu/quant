@@ -265,6 +265,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "meta_labeler": {
+   "hypothesis": "A regularised secondary model on causal decision-time features (AFML meta-labeling), mapped to a two-sided bet size and judged heat-neutral by purged walk-forward, raises out-of-sample E[log W] per trade on at least one sleeve after the deflated-Sharpe charge over every sleeve x model configuration tried.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "summary.n_gain",
+    "better": "up",
+    "organ": "report:META_LABEL.json"
+   },
+   "falsifier": {
+    "metric": "summary.n_gain",
+    "op": "<",
+    "threshold": 1,
+    "after": "90 days with at least three sleeves MEASURED (summary.n_measured >= 3) and no GAIN: the secondary model adds no deflated OOS growth on this desk's trades and the multiplier stays 1.0 everywhere"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
