@@ -95,6 +95,8 @@ jobs:
             /desks/mt5/data/*.json
             /desks/mt5/reports/*.json
             /data/*.json
+            # the FTMO lane's admission gate (prop/ftmo_executor, e8_executor import it from research/)
+            /desks/mt5/research/admission_integrity.py
             /pyproject.toml
           persist-credentials: false
 
@@ -112,6 +114,8 @@ jobs:
             /desks/mt5/data/*.json
             /desks/mt5/reports/*.json
             /data/*.json
+            # the FTMO lane's admission gate (prop/ftmo_executor, e8_executor import it from research/)
+            /desks/mt5/research/admission_integrity.py
           persist-credentials: false
 
       - uses: actions/setup-python@v5
