@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-03T12:45:04.607282+00:00",
+  "swept_at": "2026-11-03T13:00:07.901813+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -2538,8 +2538,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 12,
-      "shadow_exp_r": -0.4363,
+      "shadow_n": 49,
+      "shadow_exp_r": -0.3379,
       "woke_on_shadow": false
     },
     "GBPSGD|cross_asset_residual_continuous": {
@@ -2561,7 +2561,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.013,
+      "shadow_exp_r": -0.0387,
       "woke_on_shadow": false
     },
     "GBPSGD|overnight_gap_decay_continuous": {
@@ -3221,7 +3221,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.064,
+      "shadow_exp_r": -0.0403,
       "woke_on_shadow": false
     },
     "NZDJPY|vol_transition_continuous": {
