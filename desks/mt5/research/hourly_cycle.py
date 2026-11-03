@@ -1398,7 +1398,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # the macro-conditioned dip sweep, read point-in-time through the store
                      "macro_conditioned_sweep",
                      # the Alpha Capture substitute: public analyst views -> PIT events
-                     "alpha_capture"), "macro"),
+                     "alpha_capture",
+                     # informed capital: insider/13D/13F/congress/odds disclosures -> PIT events
+                     "informed_capital"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "why_not_report", "state_replay_audit",
                      "excursions", "exit_accounts",
@@ -2224,6 +2226,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "event_surprise": 400,
     # Stops itself at --budget-s 300 (60% of it collecting); the cap sits above it.
     "alpha_capture": 420,
+    # Stops itself at --budget-s 300 (70% of it collecting); the cap sits above it.
+    "informed_capital": 420,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
     # The hand-off consumer stops itself at --budget-s 240 and writes; the cap sits above it.
@@ -4431,6 +4435,14 @@ def main() -> None:
     # inside the organ, so an hourly leg fetches only what is due.
     acap = _costed("alpha_capture", lambda: _producer(
         "alpha_capture", "research/alpha_capture.py", "--once", "--budget-s", "300"))
+    # INFORMED CAPITAL (2026-11-03): SEC Form 4/5 role cells (and the quarterly data sets as the
+    # backfill), SC 13D/13G stakes, 13F diffs, House PTRs (Senate awaiting the principal) and
+    # Kalshi/Polymarket macro odds, each stored at the instant it became PUBLIC -- acceptance,
+    # never the trade date -- tracked against a shifted-date placebo and emitted as
+    # informed_flow_drift cells; its fence (RED on a PIT violation or a failing source) is on
+    # the issue board. Writes reports/INFORMED_CAPITAL.json.
+    icap = _costed("informed_capital", lambda: _producer(
+        "informed_capital", "research/informed_capital.py", "--once", "--budget-s", "300"))
     # THE ADVERSARY THAT ATTACKS A HYPOTHESIS BEFORE A TRIAL IS SPENT ON IT (W6): placebo
     # symbol, placebo date, sign flip, neighbouring parameter, excluded window. It records
     # evidence on the registry row and changes no status: the sealed gauntlet and the
@@ -6371,6 +6383,7 @@ def main() -> None:
                     "alt_equity_handoff": aeh,
                     "specialist_cell": spcl,
                     "event_surprise": esur, "alpha_capture": acap,
+                    "informed_capital": icap,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,

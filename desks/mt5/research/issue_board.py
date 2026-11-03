@@ -136,6 +136,10 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
      "research/cross_sectional_breadth.py"),
     ("alt_equity_handoff", "desks/mt5/reports/ALT_EQUITY_HANDOFF.json", 3600,
      "research/alt_equity_handoff.py"),
+    # Informed capital (2026-11-03): insider, stake, congressional and odds disclosures. Its
+    # producer is argless-safe (`--once` is a no-op flag) and its fence is read below.
+    ("informed_capital", "desks/mt5/reports/INFORMED_CAPITAL.json", 3600,
+     "research/informed_capital.py"),
     # The silent-organ census reads two small JSON files; its own clock here means the fence
     # still runs when a slow earlier leg ends the hourly pass before it is reached.
     ("silent_organs", "desks/mt5/reports/SILENT_ORGANS.json", 3600,
@@ -451,9 +455,40 @@ def silent_organ_issues(root: Path | None = None) -> list[Issue]:
     return out
 
 
+INFORMED_CAPITAL = "desks/mt5/reports/INFORMED_CAPITAL.json"
+
+
+def informed_capital_issues(root: Path | None = None) -> list[Issue]:
+    """THE INFORMED-CAPITAL FENCE, ON THE BOARD (2026-11-03). `research/informed_capital.py`
+    writes `fence` GREEN / RED / UNMEASURED every pass. RED -- an event observable before its own
+    transaction date, a configured source failing three passes running, or a store that stopped
+    growing -- is STALLED; UNMEASURED (no EDGAR User-Agent, the Senate switch unset, an empty
+    store) is BLIND. Neither is auto-repaired: the fix is the named source's. An absent or stale
+    report is already a `missing:`/`stale:informed_capital` issue from CADENCE."""
+    r = root or ROOT
+    try:
+        doc = json.loads((r / INFORMED_CAPITAL).read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    f = doc.get("fence") if isinstance(doc, dict) else None
+    if not isinstance(f, dict):
+        return []
+    status = str(f.get("fence") or "")
+    if status == "RED":
+        return [Issue("informed_capital:red", "STALLED", "the informed-capital fence is RED",
+                      "; ".join(str(x) for x in f.get("red") or [])[:400] or "no reason recorded",
+                      repair=None, auto=False)]
+    if status == "UNMEASURED":
+        return [Issue("informed_capital:unmeasured", "BLIND",
+                      "the informed-capital organ cannot measure",
+                      "; ".join(str(x) for x in f.get("unmeasured") or [])[:400]
+                      or "no reason recorded", repair=None, auto=False)]
+    return []
+
+
 def collect(root: Path | None = None) -> list[Issue]:
     return (stale_producers(root) + raised_alarms(root) + desk_state_issues(root)
-            + silent_organ_issues(root))
+            + silent_organ_issues(root) + informed_capital_issues(root))
 
 
 def repair_budget_s() -> float | None:
