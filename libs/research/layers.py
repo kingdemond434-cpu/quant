@@ -191,6 +191,9 @@ LEG_LAYER: dict[str, str] = {
     # The FRED archive and the macro view it feeds are inputs about the world, refreshed hourly
     # when older than six hours: information, and the state the allocator conditions on.
     "fred_macro": "information",
+    # Player footprints: who is forced to trade (retail crowd positioning, vol-control and
+    # risk-parity deleveraging) is an input about the world, recorded or derived: information.
+    "retail_crowd": "information", "volcontrol_flow": "information",
     # Route repair for dead sources and bars-file integrity are both about whether the desk's
     # inputs can be read at all: information.
     "source_fixer": "information",

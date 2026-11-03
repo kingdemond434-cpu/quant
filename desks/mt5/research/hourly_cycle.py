@@ -1123,6 +1123,9 @@ def _exit_outcome(name: str, code: int) -> str:
 HOURLY_PLAN = str(os.environ.get("HOURLY_PLAN", "all") or "all").strip().lower()
 CORE_LEGS: frozenset[str] = frozenset({
     "smoke_release", "health", "release_identity", "input_identity", "burn_in", "record_tape",
+    # RETAIL CROWD POSITIONING IS A NOW-SNAPSHOT NOBODY ARCHIVES: an hour not recorded is lost,
+    # so the recorder is core (one light HTTP call per source; it lowers its own priority).
+    "retail_crowd",
     # Whether either tick tape has moved within 2 h of open market, read by each tape's own
     # newest-tick stamp right after `record_tape`: two small JSON reads, every hour (2026-10-14).
     "tape_fresh",
@@ -1385,7 +1388,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "srb_uncorrelated_sweep"),
                     "validate"),
     # macro: the cross-asset / macro brain
-    **dict.fromkeys(("fred_macro", "futures_lead_lag", "bar_clock_probe", "causal_graph",
+    **dict.fromkeys(("fred_macro", "volcontrol_flow", "futures_lead_lag", "bar_clock_probe", "causal_graph",
                      "residual_factors", "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
                      "counterfactual_world", "opportunity_forecast", "forecast_contract",
                      "exposure_decomposition", "event_response_atlas", "causal_lab",
@@ -2331,6 +2334,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # 1,200-row slice, which the first pass measured at roughly four rows a second; the cap sits
     # above census + registration so the slice lands rather than being cut at the same prefix.
     "htf_anchor": 900,
+    # The retail crowd recorder: five plain GETs at a 25 s timeout and an append. The vol-control
+    # estimator reads one daily close series per index and fits nothing heavier than an EWMA.
+    "retail_crowd": 240,
+    "volcontrol_flow": 300,
     # The forcer reads two reports and writes at most CELLS_PER_CLUSTER rows per cluster.
     "empty_cluster_forcer": 180,
     # The north star reads ~60 certificates and their instruments' daily bars (measured ~1 s
@@ -5844,6 +5851,16 @@ def main() -> None:
     exo = _costed("exogenous_search", exogenous_search)
     srx = _costed("stop_reverse", stop_reverse_census)
     fwr = _costed("forward_reconcile", forward_reconcile_leg)
+    # PLAYER FOOTPRINTS (2026-11-03), AFTER the release, promotion and risk legs above so they
+    # never outrank them; both children also drop to BELOW_NORMAL themselves. `retail_crowd`
+    # records hourly retail positioning point-in-time (capture is irreversible: core plan and
+    # leg_rotation.ALWAYS_RUN) and `volcontrol_flow` estimates vol-target / risk-parity forced
+    # flow from the bars on disk. Each donates pre-registered hypotheses to
+    # data/intelligence/<seat>/ exactly once (its emitted.jsonl), for the compiler.
+    rcr = _costed("retail_crowd", lambda: _producer("retail_crowd", "research/retail_crowd.py",
+                                                    "--once"))
+    vcf = _costed("volcontrol_flow", lambda: _producer("volcontrol_flow",
+                                                       "research/volcontrol_flow.py", "--once"))
     ms = _costed("model_skill", model_skill)
     fcx = _costed("forecast_contract", forecast_contract)
     mz = _costed("model_league", model_league)
@@ -6398,6 +6415,7 @@ def main() -> None:
                     "research_os_archive": roa, "regime_router": rgr, "moat_series": mos,
                     "scout_roster": scr, "descendants": dsc, "forward_slot_ranker": fsr,
                     "htf_anchor": htf, "empty_cluster_forcer": ecf,
+                    "retail_crowd": rcr, "volcontrol_flow": vcf,
                     "analyst_pipeline": anp, "knowledge_graph": kng, "card_explosion": mce,
                     "alpha_lineage": mal, "graveyard_resurrection": mgr, "shadow_discovery": msd,
                     "forward_exploitation": mfe, "alpha_recombination": mar,

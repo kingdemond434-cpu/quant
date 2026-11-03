@@ -244,6 +244,25 @@ def mine_mql5_signals() -> list[dict]:
 
 # ---------------------------------------------------------------- S10 Myfxbook outlook
 def mine_myfxbook_outlook() -> list[dict]:
+    """The OFFICIAL API first (`research/retail_crowd.fetch_myfxbook_api`, credentials read on
+    the host through libs.core.secrets / the declared env names, never logged), the public page
+    only as the fallback when the API is unconfigured or failing. The hourly PIT record itself
+    is `research/retail_crowd.py`; this row set is the seed corpus's view of the same call."""
+    try:
+        import sys as _sys
+        _r = str(Path(__file__).resolve().parents[1] / "research")
+        if _r not in _sys.path:
+            _sys.path.insert(0, _r)
+        import retail_crowd as _rc
+        api = _rc.fetch_myfxbook_api()
+    except Exception as exc:          # the fallback below is the old path, unchanged
+        api = {"status": "UNREACHABLE", "obs": [], "why": f"{type(exc).__name__}"}
+    if api.get("status") == "OK":
+        return [row("myfxbook_outlook", "positioning", f"{o['raw_symbol']} retail positioning",
+                    "https://www.myfxbook.com/api/get-community-outlook.json",
+                    symbols=[o["raw_symbol"]], long_pct=o["long_pct"], short_pct=o["short_pct"],
+                    via="api")
+                for o in api.get("obs") or []][:60]
     html = fetch("https://www.myfxbook.com/community/outlook")
     out = []
     for m in re.finditer(r'symbolOutlook[^>]*?>([A-Z]{6})</a>.*?(\d{1,2})%.*?(\d{1,2})%',

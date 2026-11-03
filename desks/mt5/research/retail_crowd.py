@@ -250,6 +250,21 @@ def _universe(path: Path | None = None) -> dict[str, dict[str, Any]]:
     return {k: v for k, v in doc.items() if isinstance(v, dict)}
 
 
+def below_normal() -> dict[str, Any]:
+    """Run beneath the release and risk tasks (the judge_prescreen mechanism): lower this
+    process's own priority and SAY whether it took. Never fails the pass."""
+    try:
+        import psutil
+
+        me = psutil.Process()
+        want = psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == "nt" else 10
+        me.nice(want)
+        got = me.nice()
+        return {"applied": bool(got == want), "requested": str(want), "observed": str(got)}
+    except Exception as exc:
+        return {"applied": False, "why": f"{type(exc).__name__}: {exc}"[:160]}
+
+
 # ------------------------------------------------------------------ symbols
 def map_symbol(raw: str, universe: Iterable[str]) -> str | None:
     """A site's instrument name -> the registry's own spelling, or None (never a guess)."""
@@ -896,7 +911,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--once", action="store_true", help="one pass (the hourly leg)")
     ap.add_argument("--no-fetch", action="store_true", help="rebuild features from the store")
     a = ap.parse_args(argv)
+    prio = below_normal()
     doc = run(do_fetch=not a.no_fetch)
+    print(f"  priority: {prio}")
     rec = doc.get("record") or {}
     print(f"retail_crowd: status={doc['status']} appended={rec.get('appended', 0)} "
           f"symbols={doc['n_symbols']} extremes={len(doc['extremes'])} "

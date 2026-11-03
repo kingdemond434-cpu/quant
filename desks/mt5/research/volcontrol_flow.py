@@ -128,6 +128,21 @@ def _write_atomic(p: Path, text: str) -> None:
             Path(tmp).unlink()
 
 
+def below_normal() -> dict[str, Any]:
+    """Run beneath the release and risk tasks (the judge_prescreen mechanism): lower this
+    process's own priority and SAY whether it took. Never fails the pass."""
+    try:
+        import psutil
+
+        me = psutil.Process()
+        want = psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == "nt" else 10
+        me.nice(want)
+        got = me.nice()
+        return {"applied": bool(got == want), "requested": str(want), "observed": str(got)}
+    except Exception as exc:
+        return {"applied": False, "why": f"{type(exc).__name__}: {exc}"[:160]}
+
+
 def index_symbols(path: Path = UNIVERSE) -> list[str]:
     """Equity-index CFDs from the registry's own asset class (never a hard-coded list)."""
     doc = _read_json(path, {}) or {}
@@ -428,11 +443,13 @@ def run(*, now: datetime | None = None, loader: Loader = load_daily_close,
         doc |= {"status": "UNMEASURED", "why": "no index has enough daily bars on this host",
                 "hypotheses": {"specified": 0, "donated": 0}}
     else:
-        doc["vintages_appended"] = write_outputs(wide, latest, at)
+        doc["vintages_appended"] = write_outputs(wide, latest, at, series=SERIES,
+                                                vintages=VINTAGES, sidecar=SIDECAR)
         doc["latest"] = latest
         doc["deleveraging_now"] = sorted(s for s, v in latest.items()
                                          if not s.startswith("_") and (v.get("flow_z") or 0) <= -2)
-        doc["hypotheses"] = emit(specs(wide.columns, _lane), at)
+        doc["hypotheses"] = emit(specs(wide.columns, _lane), at, emitted_path=EMITTED,
+                                 intel_dir=INTEL)
         doc["status"] = "OK"
         doc["series"] = str(SERIES.relative_to(DESK))
     doc["elapsed_s"] = round(time.time() - t0, 2)
@@ -444,7 +461,9 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--once", action="store_true", help="one pass (the hourly leg)")
     ap.parse_args(argv)
+    prio = below_normal()
     doc = run()
+    print(f"  priority: {prio}")
     h = doc.get("hypotheses") or {}
     print(f"volcontrol_flow: status={doc['status']} measured={len(doc.get('latest') or {})} "
           f"unmeasured={len(doc['unmeasured'])} donated={h.get('donated', 0)} "
