@@ -322,6 +322,18 @@ def slice_s(budget_s: float) -> float:
     return max(MIN_SLICE_S, min(MAX_SLICE_S, budget_s * PER_ENTRY_SHARE))
 
 
+def need_s(last: dict[str, Any] | None, per: float) -> float:
+    """Seconds an organ needs before it may start: its last clean run with headroom, or the full
+    slice when it has no clean history (never run, timed out, failed to start)."""
+    if not isinstance(last, dict) or last.get("verdict") not in ("OK", "FAILED"):
+        return per
+    try:
+        took = float(last.get("s") or 0.0)
+    except (TypeError, ValueError):
+        return per
+    return min(per, max(MIN_SLICE_S, 1.5 * took + 5.0))
+
+
 # ------------------------------------------------------------------------------- the rotation
 def _read(path: Path) -> dict[str, Any]:
     try:
@@ -408,6 +420,18 @@ def run_battery(battery: str, budget_s: float, *, root: Path | None = None,
                             "why": f"free {free_now:.0f}MB below the derived floor "
                                    f"{floor_mb:.0f}MB ({MEM_FLOOR_SHARE:.0%} of "
                                    f"{total_mb:.0f}MB measured here)"})
+            break
+        # A SLICE IS ONLY STARTED WHEN IT CAN FINISH. Starting an organ with whatever is left of
+        # the pass hands the same late-roster organ a stub (42 s against a 150 s slice, measured
+        # 2026-11-03 on `check_producer_yield`), it times out, and its artifact goes stale for
+        # hours while every verdict reads "ran". An organ that will not fit stops the pass with
+        # the cursor ON it, so the next pass starts with it and a full slice. The first organ of
+        # a pass always fits (the slice is a share of the budget), so the rotation still moves.
+        need = need_s(runs.get(entry.path), per)
+        if remaining < need:
+            skipped.append({"path": entry.path,
+                            "why": f"deferred: needs {need:.0f}s, {remaining:.0f}s left in this "
+                                   f"pass; it runs first next pass with a full slice"})
             break
         res = run_one(entry, min(per, remaining), base)
         runs[entry.path] = {**res, "at": _now()}
