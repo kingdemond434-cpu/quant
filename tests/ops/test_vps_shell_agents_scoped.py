@@ -409,3 +409,37 @@ def test_ordinary_cd_chains_stay_allowed(cmd: str) -> None:
 def test_the_structural_limit_is_written_down() -> None:
     doc = lg.__doc__ or ""
     assert "STRUCTURAL LIMIT" in doc and "scripts/**" in doc and "operating system" in doc
+
+
+# AUDIT HOLD ON #199 (2026-11-03, second): Grep and Glob walk their root; no path is the cwd.
+@pytest.mark.parametrize("tool,inp", [
+    ("Grep", {"pattern": "token"}),
+    ("Grep", {"pattern": "token", "path": "data"}),
+    ("Grep", {"pattern": "token", "path": "."}),
+    ("Grep", {"pattern": "token", "path": "data/secrets"}),
+    ("Grep", {"pattern": "token", "path": "/"}),
+    ("Glob", {"pattern": "**/*"}),
+    ("Glob", {"pattern": "**/*", "path": "data"}),
+    ("Glob", {"pattern": "*", "path": "data/secrets"}),
+    ("Glob", {"pattern": "data/*/k*"}),
+    ("Glob", {"pattern": "s*/*", "path": "data"}),
+], ids=["grep_no_path", "grep_data", "grep_dot", "grep_inside", "grep_slash", "glob_all",
+        "glob_all_data", "glob_inside", "glob_descends", "glob_descends_from_data"])
+def test_grep_and_glob_walks_over_secrets_are_refused(tool: str, inp: dict[str, str]) -> None:
+    assert lg.refusal(tool, inp, cwd=str(ROOT)), (tool, inp)
+
+
+def test_grep_with_no_path_from_inside_data_is_refused() -> None:
+    assert lg.refusal("Grep", {"pattern": "x"}, cwd=str(ROOT / "data"))
+    assert lg.refusal("Glob", {"pattern": "**/*.json"}, cwd=str(ROOT / "data"))
+
+
+@pytest.mark.parametrize("tool,inp", [
+    ("Grep", {"pattern": "edge", "path": "docs"}),
+    ("Grep", {"pattern": "edge", "path": "libs/ops/lane_guard.py"}),
+    ("Glob", {"pattern": "**/*.md", "path": "docs"}),
+    ("Glob", {"pattern": "*.md"}),
+    ("Glob", {"pattern": "libs/**/*.py"}),
+], ids=["grep_docs", "grep_file", "glob_docs", "glob_top_level", "glob_libs"])
+def test_ordinary_grep_and_glob_stay_allowed(tool: str, inp: dict[str, str]) -> None:
+    assert lg.refusal(tool, inp, cwd=str(ROOT)) is None, (tool, inp)

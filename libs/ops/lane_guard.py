@@ -588,6 +588,65 @@ def secrets_refusal(command: str, cwd: str | None = None) -> str | None:
     return _secrets_refusal(command, [start.replace("\\", "/")])
 
 
+def _segs_can_enter(psegs: Sequence[str], rel: Sequence[str]) -> bool:
+    """Whether glob segments (with `**`) can match some path that runs through `rel` and on."""
+    if not rel:
+        return bool(psegs)
+    if not psegs:
+        return False
+    if psegs[0] == "**":
+        return _segs_can_enter(psegs[1:], rel) or _segs_can_enter(psegs, rel[1:])
+    return fnmatch.fnmatchcase(rel[0], psegs[0]) and _segs_can_enter(psegs[1:], rel[1:])
+
+
+def _glob_can_descend(pattern: str, root: str) -> bool:
+    """A Glob pattern, rooted at `root`, that can match a path inside a secrets directory below
+    it (a known one, or a `data/secrets` / `secrets` found on disk)."""
+    psegs = [x for x in _norm(pattern.replace("\\", "/")).split("/") if x and x != "."]
+    rsegs = [x for x in root.split("/") if x]
+    dirs = list(SECRET_DIRS)
+    if os.path.isdir(posixpath.join(root, "data", "secrets")):
+        dirs.append(posixpath.join(root, "data", "secrets"))
+    if root.endswith("/data") and os.path.isdir(posixpath.join(root, "secrets")):
+        dirs.append(posixpath.join(root, "secrets"))
+    for d in dirs:
+        dsegs = [x for x in _norm(d).split("/") if x]
+        if dsegs[:len(rsegs)] == rsegs and _segs_can_enter(psegs, dsegs[len(rsegs):]):
+            return True
+    return _glob_reaches_secrets(_norm(pattern))
+
+
+def _search_walk_refusal(tool: str, tool_input: dict[str, object], start: str) -> str | None:
+    """Grep and Glob WALK their root (audit HOLD on #199, 2026-11-03). A missing `path` means
+    the start directory, so `Grep(pattern=x)` is the same recursive content search as `grep -r x
+    .` and is judged the same way: Grep is refused when its effective root is data/secrets, under
+    it, or an ANCESTOR of it -- name a path that is neither. Glob is refused when its root is
+    inside, or when it is an ancestor and the pattern can match beneath it."""
+    if tool not in ("Grep", "Glob"):
+        return None
+    raw = tool_input.get("path")
+    if raw is not None and not isinstance(raw, str):
+        return f"{tool} path is not a string -- refused"
+    where = raw if raw else "."
+    if _EXPANSION.search(where) or _GLOB.search(where):
+        return f"{tool} path {where!r} cannot be resolved statically -- refused"
+    root = _abs(where, start)
+    if root is None:
+        return f"{tool} root cannot be resolved -- refused"
+    if _inside_secrets(root):
+        return f"{tool} root is inside {SECRETS} -- secrets never leave the box"
+    if not _ancestor_of_secrets(root):
+        return None
+    if tool == "Grep":
+        return (f"Grep over {where!r} walks into {SECRETS} (no path means the start directory) "
+                "-- name a path that is neither inside nor above it")
+    pat = tool_input.get("pattern")
+    if not isinstance(pat, str) or _glob_can_descend(pat, root):
+        return (f"Glob {pat!r} under {where!r} can match inside {SECRETS} -- name a path "
+                "that is neither inside nor above it")
+    return None
+
+
 def refusal(tool: str, tool_input: object, current_branch: str | None = None,
             cwd: str | None = None) -> str | None:
     """The guard's verdict for one tool call: a reason to refuse, or None to let the CLI decide."""
@@ -599,6 +658,9 @@ def refusal(tool: str, tool_input: object, current_branch: str | None = None,
             return "Bash call without a command string -- refused"
         return push_refusal(cmd, current_branch) or secrets_refusal(cmd, cwd)
     start = (str(cwd) if cwd else str(ROOT)).replace("\\", "/")
+    walk = _search_walk_refusal(tool, tool_input, start)
+    if walk:
+        return walk
     for k in ("file_path", "path", "notebook_path", "pattern"):
         v = tool_input.get(k)
         if isinstance(v, str) and _reaches_secrets(v, [start]):
