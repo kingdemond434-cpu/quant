@@ -97,6 +97,9 @@ class TestAChainNeverASingleName:
             {"model": "some/other-model", "base_url": "https://openrouter.ai/api/v1",
              "key": "sk-test"}]}), "utf-8")
         monkeypatch.setattr(K, "KEYS", keys)
+        # This test isolates roster routing from the independently tested catalogue.
+        # A changing live model list must never enter an offline routing fixture.
+        monkeypatch.setattr(K, "_served_first", lambda declared: declared)
         # 2026-08-20: routine (deep=False, the default) and --deep now use DIFFERENT chains --
         # free-tier-first for the 8x/day heartbeat, paid-first only for the 2x/week deep pass.
         # The routing property under test (a seat can serve a chain model it is not named as)

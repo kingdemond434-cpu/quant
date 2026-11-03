@@ -20,9 +20,12 @@ WHAT IT CHECKS, on hour scales (the disarm rule works in days; this is its early
                while the FX market is open -- a closed market legitimately stops the pass
     watchdog   `data/stall_watch.json` older than WATCHDOG_MAX_MIN
     disk       free space on the repo's drive under DISK_MIN_GB
+    silent     `reports/SILENT_ORGANS.json` fence RED (a NEW silent organ or an escalation) or
+               UNMEASURED (an input unreadable, stale or existence-only), or the census older
+               than SILENT_MAX_MIN -- audit R2, 2026-09-30: the fence paged nobody before this
 
 All healthy: GET the ping URL. Anything failing: POST `<url>/fail` with the failing checks, and
-on the TRANSITION into failing, one page through `libs.ops.alert_channels.send_all` (whatever is
+whenever a check JOINS the failing set (or the silent fence names a new organ), one page through `libs.ops.alert_channels.send_all` (whatever is
 armed there; unarmed is recorded, never silent). A failing check does not stop the ping: `/fail`
 is itself a ping, so "the box is alive and something on it is wrong" and "the box is gone" stay
 two different pages.
@@ -59,6 +62,9 @@ SECRETS = (ROOT / "data" / "secrets" / "box_heartbeat_url.json",
 OUT = BASE / "reports" / "BOX_HEARTBEAT.json"
 GATEWAY_BEAT = BASE / "reports" / "DESK_STALE.json"
 WATCHDOG_BEAT = BASE / "data" / "stall_watch.json"
+SILENT_ORGANS = BASE / "reports" / "SILENT_ORGANS.json"
+#: The census is an hourly leg plus an issue-board clock; three hours is two missed passes.
+SILENT_MAX_MIN = 180.0
 RESEARCH_MAX_H = 6.0
 GATEWAY_MAX_MIN = 30.0
 WATCHDOG_MAX_MIN = 30.0
@@ -119,9 +125,26 @@ def measure(now: float | None = None, *, research: dict[str, Any] | None = None,
     checks["disk"] = {"free_gb": None if disk_free_gb is None else round(disk_free_gb, 2),
                       "min_gb": DISK_MIN_GB,
                       "fail": disk_free_gb is None or disk_free_gb < DISK_MIN_GB}
+    checks["silent"] = silent_check(t)
     failing = sorted(k for k, v in checks.items() if v["fail"])
     return {"at": dt.isoformat(timespec="seconds"), "checks": checks, "failing": failing,
             "verdict": "FAIL" if failing else "OK"}
+
+
+def silent_check(now: float, path: Path | None = None) -> dict[str, Any]:
+    """The silent-organ fence as a heartbeat check. RED and UNMEASURED fail; so does a census
+    that is missing or older than SILENT_MAX_MIN (a fence that stopped is not a GREEN one)."""
+    p = path or SILENT_ORGANS
+    age = _age_min(p, now)
+    doc: Any = None
+    with contextlib.suppress(OSError, ValueError):
+        doc = json.loads(p.read_text("utf-8"))
+    fence = str(doc.get("fence") or doc.get("status") or "") if isinstance(doc, dict) else ""
+    new = sorted(str(n) for n in (doc.get("new_silent") or [])) if isinstance(doc, dict) else []
+    return {"fence": fence or None, "age_min": None if age is None else round(age, 1),
+            "max_min": SILENT_MAX_MIN, "new_silent": new[:12],
+            "fail": (age is None or age > SILENT_MAX_MIN or not fence
+                     or fence in ("RED", "UNMEASURED"))}
 
 
 def _url(paths: tuple[Path, ...] = SECRETS) -> str:
@@ -146,6 +169,15 @@ def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = S
     prev: dict[str, Any] = {}
     with contextlib.suppress(OSError, ValueError):
         prev = json.loads(out.read_text("utf-8"))
+    # A CRASHING JUDGE STALL PAGER IS A FAILING CHECK (audit of e759c01f6). `main` records the
+    # pager's exit in this file after each run; a failed one fails the NEXT heartbeat, so the
+    # healthchecks.io /fail route -- which needs no alert channel -- says so off the box.
+    js = prev.get("judge_stall_pager") if isinstance(prev, dict) else None
+    if isinstance(js, dict) and "ok" in js:
+        doc.setdefault("checks", {})["judge_stall_pager"] = {
+            "rc": js.get("rc"), "at": js.get("at"), "fail": not js.get("ok")}
+        doc["failing"] = sorted(k for k, v in doc["checks"].items() if v.get("fail"))
+        doc["verdict"] = "FAIL" if doc["failing"] else "OK"
     body = (f"box {doc['verdict']}: " + (", ".join(
         f"{k} {json.dumps({a: b for a, b in doc['checks'][k].items() if a != 'fail'})}"
         for k in doc["failing"]) or "all organs fresh"))
@@ -161,7 +193,15 @@ def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = S
             doc["ping"] = {"status": "SENT", "detail": _ping(url, body, bool(doc["failing"]))}
         except Exception as exc:
             doc["ping"] = {"status": "ERROR", "detail": type(exc).__name__}
-    newly = doc["verdict"] == "FAIL" and prev.get("verdict") != "FAIL"
+    # PAGE ON EVERY NEW FAILURE, not only on the first (audit R2): a box already failing `disk`
+    # must still page when the silent fence turns RED, and a RED fence naming a NEW organ pages
+    # again even though the `silent` check was already failing.
+    prev_failing = set(prev.get("failing") or []) if prev.get("verdict") == "FAIL" else set()
+    prev_new = set(((prev.get("checks") or {}).get("silent") or {}).get("new_silent") or [])
+    now_new = set((doc["checks"].get("silent") or {}).get("new_silent") or [])
+    newly = doc["verdict"] == "FAIL" and (bool(set(doc["failing"]) - prev_failing)
+                                          or ("silent" in doc["failing"]
+                                              and bool(now_new - prev_new)))
     doc["paged"] = None
     if newly and not dry_run:
         try:
@@ -177,14 +217,66 @@ def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = S
     return doc
 
 
+#: THE JUDGE STALL PAGER RIDES THIS CLOCK (2026-10-21). A stalled judge is an organ gone quiet,
+#: and this is the five-minute watchdog that already runs on the box, so `judge_stall_pager.py`
+#: is invoked here rather than given a task of its own that would wait on a human to install it.
+#: A bounded subprocess: its outcome is its own (JUDGE_STALL.json and its page state), and
+#: nothing it does -- a hang, a crash, a pager failure -- can touch this heartbeat's ping,
+#: verdict or exit code.
+JUDGE_STALL = BASE / "scripts" / "judge_stall_pager.py"
+#: Inside the task's 2-minute ExecutionTimeLimit, after this heartbeat has already pinged and
+#: written its report.
+JUDGE_STALL_TIMEOUT_S = 60.0
+
+
+def _judge_stall(out: Path = OUT) -> dict[str, Any]:
+    """Run the pager, bounded, and record its exit in this heartbeat's own report. Never raises.
+
+    The rc is recorded rather than discarded (audit of e759c01f6): exit 0 is a pager that ran;
+    anything else -- a send error, an unwritable state, a crash, the timeout -- is `ok: false`,
+    and `run` turns it into a failing check on the next heartbeat."""
+    import subprocess
+    at = datetime.now(UTC).isoformat(timespec="seconds")
+    try:
+        r = subprocess.run([sys.executable, "-W", "ignore", str(JUDGE_STALL)], cwd=str(ROOT),
+                           capture_output=True, timeout=JUDGE_STALL_TIMEOUT_S, check=False)
+        rec: dict[str, Any] = {"at": at, "rc": r.returncode, "ok": r.returncode == 0}
+    except subprocess.TimeoutExpired:
+        rec = {"at": at, "rc": "TIMEOUT", "ok": False}
+    except Exception as exc:
+        rec = {"at": at, "rc": f"ERROR {type(exc).__name__}", "ok": False}
+    with contextlib.suppress(OSError, ValueError, TypeError):
+        doc = json.loads(out.read_text("utf-8"))
+        doc["judge_stall_pager"] = rec
+        tmp = out.with_name(f"{out.name}.tmp")
+        tmp.write_text(json.dumps(doc, indent=1), "utf-8")
+        tmp.replace(out)
+    return rec
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
     doc = run(dry_run=a.dry_run)
+    if not a.dry_run:
+        _judge_stall()
     print(json.dumps({"verdict": doc["verdict"], "failing": doc["failing"],
                       "ping": doc["ping"]["status"]}))
+    if not a.dry_run:
+        print(json.dumps({"account_key_alerts": deliver_account_key_alerts()}))
     return 0
+
+
+def deliver_account_key_alerts() -> dict[str, Any]:
+    """Deliver the account-key alert outbox (v5f): the order path only enqueues, this 5-minute
+    task delivers, so no page is ever sent between order_send and a bracket leg. NEVER RAISES."""
+    try:
+        from libs.ops import provenance
+        res = provenance.deliver_pending()
+        return {k: res.get(k) for k in ("rows", "sent", "ledger", "error")}
+    except Exception as exc:
+        return {"error": type(exc).__name__}
 
 
 if __name__ == "__main__":

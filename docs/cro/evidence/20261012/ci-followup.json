@@ -1,0 +1,103 @@
+{
+  "at": "2026-10-12T00:08:22.554151+00:00",
+  "state": "PREPARED_CI_FOLLOWUP_NOT_DEPLOYED",
+  "published_pr": "https://github.com/kingdemond434-cpu/quant/pull/320",
+  "published_sha": "f6c6e0ed3438915cd2c6d4f403c3e3b282fc2297",
+  "ci_run": 38182639350,
+  "gateway_tests": {
+    "tests": 86,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "source_and_record_tests": {
+    "tests": 44,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "gateway_coverage_focused": {
+    "covered_lines": 1020,
+    "num_statements": 1969,
+    "percent_covered": 49.53165979767703,
+    "percent_covered_display": "50",
+    "missing_lines": 949,
+    "excluded_lines": 0,
+    "percent_statements_covered": 51.80294565769426,
+    "percent_statements_covered_display": "52",
+    "num_branches": 700,
+    "num_partial_branches": 112,
+    "covered_branches": 302,
+    "missing_branches": 398,
+    "percent_branches_covered": 43.142857142857146,
+    "percent_branches_covered_display": "43"
+  },
+  "coverage_floor_changed": false,
+  "source_context": "Isolated source copies cannot prove live detector or judge receipts. Runtime require-state remains strict; missing source-code obligations remain fatal.",
+  "sealed_backfill_prevention": "A declared backfill now refuses to replace any canonical sealed prefix; missing/corrupt manifest refuses. Existing records and seal remain unchanged.",
+  "ledger_forensics": {
+    "join": "unique broker deal identifier; no index alignment",
+    "old_rows": 151,
+    "canonical_rows": 255,
+    "matched_old_deals": 151,
+    "added_deals": 104,
+    "changed_fields_by_deal": {
+      "close_order": 6,
+      "sleeve": 45,
+      "r_multiple": 141,
+      "entry_order": 6,
+      "position_id": 6,
+      "risk_quote": 151,
+      "r_backfilled": 136,
+      "entry_deal": 6,
+      "time": 144,
+      "magic": 6
+    },
+    "broker_fact_fields_unchanged_by_deal": [
+      "deal",
+      "symbol",
+      "volume",
+      "pl_quote",
+      "commission",
+      "swap",
+      "entry_price",
+      "fill_price",
+      "sl",
+      "tp",
+      "order"
+    ],
+    "source_old_sha": "f6c6e0ed3438915cd2c6d4f403c3e3b282fc2297",
+    "source_canonical_sha": "46a70354618726d22d69768b1e5d5af3836dc9cd",
+    "disposition": "RECONCILIATION_REQUIRED_PRESERVE_BOTH_VERSIONS",
+    "missing_proof": "Versioned reconstruction lineage for clock, risk/R and linkage corrections; canonical consumer migration must retain raw sealed history.",
+    "record_or_seal_modified": false
+  },
+  "full_validation_passed": false,
+  "code_deployed": false,
+  "remaining": [
+    "Canonical integrated CI must pass after publication.",
+    "Sealed ledger/versioned correction reconciliation remains unresolved.",
+    "Production 100000/day unique terminal throughput is unproved.",
+    "Forward identity mismatches, stale admission and dark producers need measured production closure."
+  ],
+  "integrated_source_checks": {
+    "check_birth_obligations.py": {
+      "rc": 0,
+      "failures": [],
+      "manual": null,
+      "family_verdict": "UNMEASURED"
+    },
+    "check_self_repair.py": {
+      "rc": 0,
+      "failures": [
+        "Could not parse diagnostic output"
+      ],
+      "manual": null,
+      "family_verdict": null
+    }
+  },
+  "mypy": {
+    "state": "PASS",
+    "source_files": 1093
+  }
+}

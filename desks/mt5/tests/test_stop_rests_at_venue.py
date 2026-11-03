@@ -115,6 +115,10 @@ _NOW = pd.Timestamp("2026-09-24 16:00", tz="UTC")
 
 
 class _Api:
+    # The test venue's TLAPI identity (r7.2): the conftest declares this account in its tmp
+    # E8_ACCOUNT.json, so an armed E8-Gold pass joins its declaration.
+    account_id = 31337
+    _credentials = {"server": "E8-Test"}  # noqa: RUF012
     @staticmethod
     def get_all_orders(history: bool = False, lookback_period: str = "") -> list:
         return []

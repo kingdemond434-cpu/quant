@@ -1,0 +1,16 @@
+{
+  "name": "live-branch-guard",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": ["refs/heads/claude/llm-auto-upgrade-verify-gcjac3"],
+      "exclude": []
+    }
+  },
+  "rules": [
+    {"type": "deletion"},
+    {"type": "non_fast_forward"}
+  ],
+  "bypass_actors": []
+}

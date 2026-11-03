@@ -60,6 +60,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from libs.ops import openrouter_guard
+
 _ROOT = Path(__file__).resolve().parents[2]
 SECRETS = _ROOT / "data" / "secrets" / "llm_panel.json"
 SPEND_LEDGER = _ROOT / "data" / "llm_spend.jsonl"
@@ -282,7 +284,12 @@ def discover_model(seat: Seat, *, timeout: float = 20.0) -> tuple[str, str | Non
     An explicit `<NAME>_MODEL` environment variable still wins -- discovery is the default, never
     an override of the principal's choice.
     """
-    if seat.model:
+    # A PINNED PAID ID ON OPENROUTER IS NOT A CHOICE THE GUARD WILL HONOUR, so it is not
+    # returned: discovery below picks the best free id instead of the seat going dark on a
+    # refusal (convert_swarm pins one model per lane from the secrets file).
+    pin_refused = bool(seat.model) and openrouter_guard.refusal(
+        f"{seat.base_url}/chat/completions", {"model": seat.model}) is not None
+    if seat.model and not pin_refused:
         return seat.model, None
     body, err = _get(f"{seat.base_url}/models", seat.key, timeout=timeout)
     if err:
@@ -291,7 +298,9 @@ def discover_model(seat: Seat, *, timeout: float = 20.0) -> tuple[str, str | Non
     ids = [i for i in ids if i]
     if not ids:
         return "", "provider listed no models"
-    if free_tier_only():
+    guarded = openrouter_guard.refusal(f"{seat.base_url}/chat/completions",
+                                       {"model": ""}) is not None
+    if free_tier_only() or guarded:
         # FREE FIRST -- AND THE SUFFIX MUST COME OFF BEFORE RANKING, or this goes dark.
         #
         # `:free` and `-free` are in _DOWNGRADE_TOKENS, so flagship_rank REFUSES every free id by
@@ -323,6 +332,9 @@ def discover_model(seat: Seat, *, timeout: float = 20.0) -> tuple[str, str | Non
             # Free models exist but none carries a parseable version. Take one rather than going
             # dark -- an unrankable free seat still answers, and a dark seat answers nothing.
             return sorted(free_ids)[0], None
+        if guarded:
+            return "", ("no ':free' model listed on OpenRouter, and paid ids are refused "
+                        f"unless {openrouter_guard.PAID_ENV}=1")
     ranked = [(r, i) for i in ids if (r := flagship_rank(i)) is not None]
     if ranked:
         return max(ranked)[1], None
@@ -566,10 +578,17 @@ def note_free_limit_hit(detail: str, now: datetime | None = None) -> None:
 
 
 def free_daily_max() -> int:
+    # The ACCOUNT's own allowance from OpenRouter's /key endpoint (50 without credit, 1,000 with)
+    # replaces the assumed default, so buying credit scales this with no edit. An explicit
+    # QUANT_FREE_DAILY_MAX still wins; an UNMEASURED reading keeps the default.
+    default = DEFAULT_FREE_DAILY_MAX
+    measured = openrouter_guard.daily_limit(cached_only=True)
+    if measured:
+        default = max(1, measured - max(1, measured // 20))    # room for retries
     try:
-        configured = max(1, int(os.environ.get("QUANT_FREE_DAILY_MAX", DEFAULT_FREE_DAILY_MAX)))
+        configured = max(1, int(os.environ.get("QUANT_FREE_DAILY_MAX", default)))
     except ValueError:
-        configured = DEFAULT_FREE_DAILY_MAX
+        configured = default
     seen = observed_free_ceiling()
     # The MEASURED ceiling wins whenever it is lower, and only for the UTC day it was measured
     # on. It never raises the budget: a day that happened to stop early is not evidence the
@@ -910,6 +929,8 @@ def _post_with_degrade(url: str, key: str, req: dict[str, Any], *, timeout: floa
 
 def _post(url: str, key: str, payload: bytes, *, timeout: float
           ) -> tuple[dict[str, Any], str | None]:
+    if why := openrouter_guard.refusal(url, payload):
+        return {}, why
     req = urllib.request.Request(url, data=payload, headers=_headers(key), method="POST")
     return _send(req, timeout)
 

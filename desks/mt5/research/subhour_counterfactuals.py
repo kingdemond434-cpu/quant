@@ -45,7 +45,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 
 UNI = DESK / "data" / "universe"
 SLEEVES = DESK / "data" / "sleeves.json"
-LEDGER = DESK / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 OUT = DESK / "reports" / "SUBHOUR_COUNTERFACTUALS.json"
 
 #: Timeframes this organ can replay at, finest first. A sleeve is replayed on the FINEST frame the

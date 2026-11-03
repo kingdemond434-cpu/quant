@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-12T03:11:33.847930+00:00",
+  "state": "SOURCE_REPAIR_NOT_DEPLOYED",
+  "tests": {
+    "passed": 12,
+    "failed": 0
+  },
+  "archived_receipts": 7,
+  "historical_journal_rows_modified": false,
+  "canonical_seals_or_records_modified": false,
+  "privacy_false_positive": "NULL_LAB q99=7.495044 is a decimal measurement, not a brokerage identifier.",
+  "remaining": [
+    "Integrated historical ledger prefix reconciliation",
+    "Canonical runtime snapshots still publish execution identity or prose account identity",
+    "Canonical account_state exemption is stale after writer redaction"
+  ],
+  "deployed": false
+}

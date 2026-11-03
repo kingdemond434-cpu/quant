@@ -455,3 +455,27 @@ def test_the_banned_discovered_path_is_not_fed():
     fam = (DESK / "mt5desk" / "families_orthogonal.py").read_text("utf-8")
     assert "world_series_for" not in es and "ext_world_" not in es
     assert "world_feature" not in fam
+
+
+def test_parity_targets_get_a_share_of_the_never_fetched_tier(tmp_path, monkeypatch):
+    """UNMEASURED regional-parity cells reach the hunter as one seat in PARITY_EVERY of the
+    never-fetched tier: same total, refresh tier untouched, relevance order kept otherwise."""
+    monkeypatch.setattr(W, "DESK", tmp_path)
+    now = datetime(2026, 10, 6, tzinfo=UTC)
+    ds = {f"P/d{i}": {"source": "dbnomics", "name": f"industrial output {i}", "provider": "P",
+                      "score": 100.0 - i} for i in range(8)}
+    ds["Q/cpi"] = {"source": "dbnomics", "name": "Consumer price index", "provider": "Q",
+                   "score": 1.0}
+    ds["P/old"] = {"source": "dbnomics", "name": "old", "provider": "P", "score": 999.0,
+                   "fetched_at": "2026-01-01T00:00:00+00:00"}
+    cat = {"datasets": ds, "providers": {"Q": {"name": "Statistics Mongolia", "region": "Asia"}}}
+    plain = W._fetch_order(cat, now)
+    assert plain[-2:] == ["Q/cpi", "P/old"]
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "parity_hunt_targets.json").write_text(json.dumps({"classes": {
+        "Inflation:CPI": {"terms": r"consumer\s+price|\bcpi\b", "country_names": ["mongolia"]}}}),
+        "utf-8")
+    order = W._fetch_order(cat, now)
+    assert sorted(order) == sorted(plain) and order[-1] == "P/old"
+    assert order.index("Q/cpi") == W.PARITY_EVERY - 1
+    assert [k for k in order if k.startswith("P/d")] == [f"P/d{i}" for i in range(8)]
