@@ -371,7 +371,9 @@ def test_pf_allocator_cost_input_uses_the_realised_report(tmp_path: Path,
     (tmp_path / "reports" / "REALISED_COST.json").write_text(
         json.dumps(_realised(0.01, 20, age_h=72.0)), "utf-8")
     doc = pa._execution_costs(["EURUSD_asia_brk"])
-    assert doc["sleeves"]["EURUSD_asia_brk"]["cost_bias_r"] == 0.0
+    # stale: the modelled surface entry stands (its own 0.05R under-charge), unblended
+    assert doc["sleeves"]["EURUSD_asia_brk"]["cost_bias_r"] == pytest.approx(0.05)
+    assert doc["sleeves"]["EURUSD_asia_brk"]["source"] == "MEASURED"
     assert pa._EXEC_COST_META["fallback"] == "MODELLED"
 
 
