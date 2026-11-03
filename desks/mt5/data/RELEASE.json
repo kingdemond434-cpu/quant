@@ -1,13 +1,13 @@
 {
- "generated_utc": "2026-10-28T14:36:12.487484+00:00",
- "live_sha": "c0a45e0b7ddb249944bb8a11b7bef7da390c8f4e",
- "code_sha": "c0a45e0b7ddb249944bb8a11b7bef7da390c8f4e",
- "parent_sha": "a1eefc148a7a0a1cc4a557d2e127b7d0ee599c2f",
- "tree_sha": "ae422f1c889c4576c920e0aeb1f8d00cbb71b155",
+ "generated_utc": "2026-10-29T14:28:39.300167+00:00",
+ "live_sha": "318392111090b06aa0958054ff9e2f33c214712b",
+ "code_sha": "318392111090b06aa0958054ff9e2f33c214712b",
+ "parent_sha": "5de0361b51b63e41ecf16a788102e7e643708ee2",
+ "tree_sha": "af1e6a1100e302e227fdd40d72c3da1d30ce383f",
  "config_hash": "e0d1bfe75cb0d2c3",
  "survivor_registry_hash": "d3f308039b71e195",
- "allocator_hash": "063b38b3676ecd46",
- "money_path_hash": "5a22f949bf0dc009",
+ "allocator_hash": "52c6533febaabaea",
+ "money_path_hash": "3ed81ff0312ee753",
  "data_schema_version": "pit-1;features-2026-09-04.1",
  "money_path": [
   "desks/mt5/mt5desk/gateway.py",
@@ -34,7 +34,7 @@
   "libs/portfolio/capital_modifiers.py"
  ],
  "money_path_files": {
-  "desks/mt5/mt5desk/gateway.py": "cbc339c4a2d83240",
+  "desks/mt5/mt5desk/gateway.py": "ca14236c82493dcd",
   "desks/mt5/mt5desk/decision_core.py": "57ab351459a4a9f4",
   "desks/mt5/mt5desk/sizing.py": "1b00a8466361c3d6",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "510a350593f45297",
@@ -44,8 +44,8 @@
   "desks/mt5/mt5desk/netting.py": "c920e4ccd5ad15ea",
   "desks/mt5/mt5desk/execution_policy.py": "1f6d594c98bf6dcf",
   "desks/mt5/mt5desk/execution_registry.py": "d808fd311311cd16",
-  "desks/mt5/mt5desk/families.py": "cd3d3f741e8f342b",
-  "desks/mt5/research/pf_allocator.py": "21097601ddac7951",
+  "desks/mt5/mt5desk/families.py": "aaabcf083953d577",
+  "desks/mt5/research/pf_allocator.py": "00730d8f5dde3ea8",
   "desks/mt5/research/heat_policy.py": "09ec45796cd4f34a",
   "desks/mt5/research/promoter.py": "0a412b6780057595",
   "desks/mt5/research/shadow_forward.py": "643c6aaccf73578c",
@@ -112,16 +112,16 @@
   "desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json"
  ],
  "immutable_hash": "261b4b3c48653265",
- "release_id": "86da4b1cae1a",
+ "release_id": "db941d1608a3",
  "sealed": true,
- "sealed_at": "2026-10-28T14:36:12.487484+00:00",
+ "sealed_at": "2026-10-29T14:28:39.300167+00:00",
  "sealed_by": "Adopt-And-Seal",
  "ci_run_id": null,
  "tested_sha": null,
  "worktree_dirty": [],
  "worktree_dirty_scope": "release_code_paths",
- "previous_code_sha": "88b07042d3a9a5c86be384e4920d844cf831599f",
- "previous_release_id": "180ea8e6d0a9",
+ "previous_code_sha": "c0a45e0b7ddb249944bb8a11b7bef7da390c8f4e",
+ "previous_release_id": "86da4b1cae1a",
  "signature_algo": "hmac-sha256-v1",
- "signature": "1a7e30dbed948a8864b5a8295f3171bed4b7f28634289f3136cf84d7efcaeb2f"
+ "signature": "f0220ac1a02753d79aa8cf4e94759621aae917389f21c45618fda5690b4a96c9"
 }
