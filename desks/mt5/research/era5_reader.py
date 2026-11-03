@@ -246,19 +246,28 @@ def _read_json(path: Path, default: Any = None) -> Any:
         return default
 
 
-def _atomic(path: Path, doc: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
-    tmp.write_text(json.dumps(doc, indent=1, ensure_ascii=False, default=str), "utf-8")
+def _replace(tmp: Path, path: Path) -> None:
+    """os.replace with the Windows fallback: a destination held open by a reader is retried, then
+    overwritten in place; if even that is refused the tmp is removed and the error raised, so the
+    caller's report names it instead of leaving a stray tmp beside the lake."""
     for i in range(6):
         try:
             os.replace(tmp, path)
             return
         except PermissionError:  # Windows: a held destination is retried
             time.sleep(0.2 * (i + 1))
-    path.write_text(tmp.read_text("utf-8"), "utf-8")
-    with contextlib.suppress(OSError):
-        tmp.unlink()
+    try:
+        path.write_bytes(tmp.read_bytes())
+    finally:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
+
+
+def _atomic(path: Path, doc: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    tmp.write_text(json.dumps(doc, indent=1, ensure_ascii=False, default=str), "utf-8")
+    _replace(tmp, path)
 
 
 _UUIDISH = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
@@ -516,7 +525,10 @@ def make_client(*, read: Callable[[str], str | None] | None = None,
     except Exception as exc:
         return None, UNAVAILABLE, (f"cdsapi not importable ({type(exc).__name__}); install the "
                                    "pyproject extra `climate`")
-    key = read(KEY_NAME)
+    try:
+        key = read(KEY_NAME)
+    except Exception as exc:     # a missing or corrupt key catalog is UNAVAILABLE, never a crash
+        return None, UNAVAILABLE, f"key catalog unreadable ({type(exc).__name__})"
     if not key:
         return None, BLOCKED_AUTH, f"{KEY_NAME} is not set (process env or machine registry)"
     try:
@@ -663,7 +675,7 @@ def merge_point(paths: Paths, pid: str, days: Mapping[date, Mapping[str, float]]
             for d in sorted(have):
                 r = have[d]
                 w.writerow([d.isoformat(), *(r[k] for k in POINT_COLS[1:5]), r["first_seen_at"]])
-        os.replace(tmp, paths.points / f"{pid}.csv")
+        _replace(tmp, paths.points / f"{pid}.csv")
     return {"added": added, "revisions_ignored": revised}
 
 
@@ -868,7 +880,7 @@ def write_lake(paths: Paths, name: str, rows: list[dict[str, Any]]) -> str | Non
         w.writerow(LAKE_COLS)
         for r in rows:
             w.writerow([r[c] for c in LAKE_COLS])
-    os.replace(tmp, target)
+    _replace(tmp, target)
     return target.name
 
 
@@ -956,11 +968,16 @@ def gain_tests(paths: Paths, doc: Mapping[str, Any],
 CELL_SPEC_VERSION = "era5-cell/1"
 
 
-def cell_charge_key(doc: Mapping[str, Any], key: str,
-                    rows: Mapping[tuple[str, str], list[dict[str, Any]]]) -> str:
-    """What a trial charge is FOR: (cell id, spec hash, data fingerprint). A cell is charged once
-    per key and re-charged only when its spec or its ERA5 data (last valid date, row count)
-    changes -- never because another hourly pass re-ran the same test (zuck's trial rule)."""
+#: A MATERIAL DATA CHANGE, declared: the series has grown by at least this share of the rows it
+#: held when the cell was last charged. ERA5T advancing a day, or one more backfill pass, is not
+#: one -- re-charging on every new row put ~9k phantom trials a year on the shared family-wise
+#: budget for one fixed hypothesis set (audit of 686f8f5c7). A spec change always re-charges.
+RECHARGE_ROW_GROWTH = 0.25
+
+
+def cell_charge_key(doc: Mapping[str, Any], key: str) -> str:
+    """What a trial charge is FOR: (cell id, spec hash). The data side is judged separately by
+    `material_change`, against the row count stored with the charge."""
     rid, field, sym = key.split("|")
     prior = next((sg for r, f, s_, sg in mapped_cells(doc) if (r, f, s_) == (rid, field, sym)),
                  None)
@@ -968,34 +985,81 @@ def cell_charge_key(doc: Mapping[str, Any], key: str,
             "transform": "level_z", "threshold": 1.0, "lag_hours": 24, "prior": prior,
             "lag_days": lag_days(doc)}
     spec_hash = hashlib.sha256(json.dumps(spec, sort_keys=True).encode()).hexdigest()[:16]
-    rs = rows.get((rid, field)) or []
-    last = max((str(r.get("d") or r.get("event_time") or "") for r in rs), default="")
-    return f"{key}#{spec_hash}#{last}|{len(rs)}"
+    return f"{key}#{spec_hash}"
+
+
+def _charged_entry(v: Any) -> tuple[str, int] | None:
+    """(spec key, rows at charge) from a ledger entry. The /1 string form
+    `<cell>#<spec>#<last>|<n>` is read as its spec key and n, so the migration re-charges nothing."""
+    if isinstance(v, dict) and isinstance(v.get("key"), str):
+        try:
+            return v["key"], int(v.get("rows") or 0)
+        except (TypeError, ValueError):
+            return v["key"], 0
+    if isinstance(v, str) and "#" in v:
+        parts = v.split("#")
+        n = 0
+        with contextlib.suppress(ValueError, IndexError):
+            n = int(parts[-1].rsplit("|", 1)[1])
+        return "#".join(parts[:2]), n
+    return None
+
+
+def material_change(rows_now: int, rows_at_charge: int) -> bool:
+    if rows_at_charge <= 0:
+        return rows_now > 0
+    return rows_now >= rows_at_charge * (1.0 + RECHARGE_ROW_GROWTH)
 
 
 def fresh_charges(paths: Paths, doc: Mapping[str, Any],
                   gains: Mapping[str, Mapping[str, Any]],
-                  rows: Mapping[tuple[str, str], list[dict[str, Any]]]) -> dict[str, str]:
-    """Tested cells (verdict not UNMEASURED) whose charge key is not the one already charged."""
+                  rows: Mapping[tuple[str, str], list[dict[str, Any]]]
+                  ) -> dict[str, dict[str, Any]]:
+    """Tested cells (verdict not UNMEASURED) never charged under this spec, or whose series has
+    changed MATERIALLY since its charge. Everything else keeps its earlier charge."""
     led = _read_json(paths.charges, {}) or {}
     charged = led.get("cells") if isinstance(led.get("cells"), dict) else {}
-    out: dict[str, str] = {}
+    out: dict[str, dict[str, Any]] = {}
     for key, g in sorted(gains.items()):
         if g.get("verdict") == UNMEASURED:
             continue
-        ck = cell_charge_key(doc, key, rows)
-        if charged.get(key) != ck:
-            out[key] = ck
+        rid, field, _sym = key.split("|")
+        n = len(rows.get((rid, field)) or [])
+        ck = cell_charge_key(doc, key)
+        prev = _charged_entry(charged.get(key))
+        if prev is None or prev[0] != ck:
+            out[key] = {"key": ck, "rows": n, "why": "first charge under this spec"}
+        elif material_change(n, prev[1]):
+            out[key] = {"key": ck, "rows": n,
+                        "why": f"series grew {prev[1]} -> {n} rows (>= {RECHARGE_ROW_GROWTH:.0%})"}
     return out
 
 
-def record_charges(paths: Paths, fresh: Mapping[str, str], now: datetime) -> None:
+def record_charges(paths: Paths, fresh: Mapping[str, Mapping[str, Any]], now: datetime,
+                   pending: list[str] | None = None) -> None:
     led = _read_json(paths.charges, {}) or {}
     cells = dict(led.get("cells") or {}) if isinstance(led.get("cells"), dict) else {}
-    cells.update(fresh)
-    _atomic(paths.charges, {"schema": "era5_trial_charges/1", "updated_at": _iso(now),
-                            "rule": "one charge per (cell, spec hash, data fingerprint)",
-                            "cells": dict(sorted(cells.items()))})
+    cells.update({k: {**v, "at": _iso(now)} for k, v in fresh.items()})
+    keep = sorted(set(led.get("pending_donation") or []) | set(pending or []))
+    _atomic(paths.charges, {"schema": "era5_trial_charges/2", "updated_at": _iso(now),
+                            "rule": ("one charge per (cell, spec hash); re-charged on a spec "
+                                     f"change or a series grown >= {RECHARGE_ROW_GROWTH:.0%} "
+                                     "since its charge"),
+                            "cells": dict(sorted(cells.items())),
+                            "pending_donation": keep})
+
+
+def pending_donations(paths: Paths) -> set[str]:
+    led = _read_json(paths.charges, {}) or {}
+    return {str(k) for k in led.get("pending_donation") or []}
+
+
+def clear_pending(paths: Paths, done: set[str], now: datetime) -> None:
+    led = _read_json(paths.charges, {}) or {}
+    pend = [k for k in led.get("pending_donation") or [] if k not in done]
+    if pend == list(led.get("pending_donation") or []):
+        return
+    _atomic(paths.charges, {**led, "updated_at": _iso(now), "pending_donation": pend})
 
 
 def direct_cells(doc: Mapping[str, Any], gains: Mapping[str, Mapping[str, Any]],
@@ -1209,22 +1273,37 @@ def _publish(paths: Paths, doc: Mapping[str, Any], rep: dict[str, Any], *, now: 
                     "passed": len(cells),
                     "verdicts": {k: g.get("verdict") for k, g in sorted(gains.items())}}
     rep["direct_cells"] = [c["cell"] for c in cells]
-    # ONE CHARGE PER (cell, spec, data). An unchanged cell re-tested this pass is neither
-    # re-charged nor re-donated; its earlier charge stands.
+    # ONE CHARGE PER (cell, spec), re-charged only on a material data change. An unchanged cell
+    # re-tested this pass is neither re-charged nor re-donated; its earlier charge stands. A
+    # passing cell whose donation errored after its trials were charged waits in
+    # `pending_donation` and is donated on a later pass WITHOUT a second charge.
     fresh = fresh_charges(paths, doc, gains, rows)
-    new_cells = [c for c in cells
-                 if f"{c['provenance']['region']}|{c['provenance']['field']}|{c['symbol']}"
-                 in fresh]
+    pend = pending_donations(paths)
+
+    def _ck(c: Mapping[str, Any]) -> str:
+        return f"{c['provenance']['region']}|{c['provenance']['field']}|{c['symbol']}"
+
+    new_cells = [c for c in cells if _ck(c) in fresh]
+    retry = [c for c in cells if _ck(c) in pend and _ck(c) not in fresh]
     rep["gains"]["charged"] = len(fresh)
     rep["gains"]["unchanged_not_recharged"] = tested - len(fresh)
+    rep["gains"]["pending_donation_retried"] = len(retry)
     if not dry_run:
-        if fresh:
-            rep["donation"] = donor(paths, new_cells, len(fresh), now)
-            if not (isinstance(rep["donation"], dict) and rep["donation"].get("error")):
-                record_charges(paths, fresh, now)
+        if fresh or retry:
+            rep["donation"] = donor(paths, new_cells + retry, len(fresh), now)
+            don = rep["donation"] if isinstance(rep["donation"], dict) else {}
+            failed = bool(don.get("error"))
+            if fresh and (don.get("path") or don.get("null_trials_charged")):
+                # The trials WERE charged (discovery file or the null-trials ledger): record them,
+                # or the next pass charges the same tests again.
+                record_charges(paths, fresh, now,
+                               pending=[_ck(c) for c in new_cells] if failed else None)
+            if retry and not failed:
+                clear_pending(paths, {_ck(c) for c in retry}, now)
         else:
             rep["donation"] = {"donated": 0, "path": None,
-                               "why": "no cell's spec or data changed: nothing re-charged"}
+                               "why": "no cell's spec changed and no series grew materially: "
+                                      "nothing re-charged"}
         _atomic(paths.allocation_intel, allocation_intel(doc, rows, gains, now))
     rep["uses"] = {"direct_cells": len(cells), "conditioning_series": len(lake),
                    "axes": len(regions_rep) - sum(1 for v in regions_rep.values()

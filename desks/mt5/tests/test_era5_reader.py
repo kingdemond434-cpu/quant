@@ -599,7 +599,7 @@ def test_two_identical_passes_charge_once_and_new_data_recharges(
 
     def donor(p: Any, cands: list[Any], tested: int, now: Any) -> dict[str, Any]:
         calls.append((len(cands), tested))
-        return {"donated": len(cands)}
+        return {"donated": len(cands), "path": "discoveries.json"}
 
     first = e5.run(paths, now=NOW, fetch=False, mint=lambda s: True, donor=donor)
     second = e5.run(paths, now=NOW, fetch=False, mint=lambda s: True, donor=donor)
@@ -607,12 +607,62 @@ def test_two_identical_passes_charge_once_and_new_data_recharges(
     assert first["gains"]["charged"] == 2 and second["gains"]["charged"] == 0
     assert second["gains"]["unchanged_not_recharged"] == 2
     assert second["donation"]["donated"] == 0
-    # a later pass that fetched new ERA5 days changes the data fingerprint: charged again
+    # A PASS A DAY LATER that fetched new ERA5 days is NOT a re-charge (audit of 686f8f5c7):
+    # ERA5T advancing is not a material change, or every tested cell is charged daily.
     e5.run(paths, now=NOW + timedelta(days=3), client_factory=_factory(FakeClient()),
            key_reader=lambda n: None, mint=lambda s: True, donor=donor)
+    assert len(calls) == 1, "new days on the same series never re-charge below the growth bar"
+    # a series grown past the declared share IS a material change: charged again
+    monkeypatch.setattr(e5, "RECHARGE_ROW_GROWTH", 1e-9)
+    e5.run(paths, now=NOW + timedelta(days=3), fetch=False, mint=lambda s: True, donor=donor)
     assert calls[-1] == (1, 2) and len(calls) == 2
+    monkeypatch.setattr(e5, "RECHARGE_ROW_GROWTH", 0.25)
     # and a spec change re-charges too
     monkeypatch.setattr(e5, "CELL_SPEC_VERSION", "era5-cell/test-bump")
     e5.run(paths, now=NOW + timedelta(days=3), fetch=False, mint=lambda s: True, donor=donor)
     assert len(calls) == 3
+
+
+def test_daily_passes_for_a_year_charge_each_cell_once() -> None:
+    """The phantom-trial arithmetic, pinned: +1 row a day never crosses the growth bar twice
+    in a way that tracks the calendar -- it re-charges only as the series compounds."""
+    rows, at_charge, charges = 1000, 1000, 0
+    for _ in range(365):
+        rows += 1
+        if e5.material_change(rows, at_charge):
+            charges += 1
+            at_charge = rows
+    assert charges == 0, "a year of ERA5T days on a 1000-row series is under 25% growth"
+
+
+def test_a_v1_ledger_string_migrates_without_a_recharge() -> None:
+    assert e5._charged_entry("r|f|S#abc123#2026-09-01|400") == ("r|f|S#abc123", 400)
+    assert e5._charged_entry({"key": "r|f|S#abc123", "rows": 7}) == ("r|f|S#abc123", 7)
+    assert e5._charged_entry(None) is None
+
+
+def test_a_failed_donation_records_its_charge_and_retries_without_a_second_one(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    paths, _, _ = _fetched(tmp_path)
+    verdicts = {"us_test_belt|cdd_anom_7d|CORN": {"verdict": "PASS", "ic": 0.2, "n": 60}}
+    monkeypatch.setattr(e5, "gain_tests", lambda *a, **k: dict(verdicts))
+    calls: list[tuple[int, int]] = []
+    fail = [True]
+
+    def donor(p: Any, cands: list[Any], tested: int, now: Any) -> dict[str, Any]:
+        calls.append((len(cands), tested))
+        if fail[0]:
+            return {"donated": 0, "path": None, "error": "OSError: held",
+                    "null_trials_charged": tested}
+        return {"donated": len(cands), "path": "discoveries.json"}
+
+    e5.run(paths, now=NOW, fetch=False, mint=lambda s: True, donor=donor)
+    led = json.loads(paths.charges.read_text("utf-8"))
+    assert "us_test_belt|cdd_anom_7d|CORN" in led["cells"], "the null-trials charge is recorded"
+    assert led["pending_donation"] == ["us_test_belt|cdd_anom_7d|CORN"]
+    fail[0] = False
+    rep = e5.run(paths, now=NOW, fetch=False, mint=lambda s: True, donor=donor)
+    assert calls[-1] == (1, 0), "the retry donates the cell and charges no new test"
+    assert rep["gains"]["charged"] == 0 and rep["gains"]["pending_donation_retried"] == 1
+    assert json.loads(paths.charges.read_text("utf-8"))["pending_donation"] == []
 

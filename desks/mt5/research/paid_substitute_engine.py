@@ -216,7 +216,9 @@ CORR_FIT_MIN = 12
 CORR_HOLDOUT_MIN = 12
 CORR_HOLDOUT_SHARE = 0.30
 #: Month offsets of the substitute tried on the fit window (0 = same month).
-CORR_LAGS: tuple[int, ...] = (-1, 0, 1)
+#: Non-negative only: lag -1 paired the paid month with the substitute's NEXT month, crediting
+#: the substitute with information it does not have when it is used (audit of 686f8f5c7).
+CORR_LAGS: tuple[int, ...] = (0, 1)
 #: What a catalogue row's `public_sample` can be. Only MACHINE_SERIES can ever be correlated.
 SAMPLE_STATUSES = ("MACHINE_SERIES", "HEADLINE_ONLY", "FREE_TIER", "NONE_KNOWN")
 #: The two enrolment lanes. A substitute whose correlation to a paid set was MEASURED at or above
