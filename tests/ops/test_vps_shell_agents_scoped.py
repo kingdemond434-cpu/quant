@@ -335,3 +335,77 @@ def test_every_lane_carries_the_hook(name: str) -> None:
     cmd = hooks[0]["hooks"][0]["command"]
     assert hooks[0]["matcher"] == "*" and "lane_guard.py" in cmd and cmd.endswith("|| exit 2")
     assert "Write(libs/ops/lane_guard.py)" in vls.LANE_DENIED
+
+
+# AUDIT HOLD ON #199 (2026-11-03): relative operands are read from the cwd they run in.
+@pytest.mark.parametrize("cmd", [
+    "cd data && grep -r x secrets",
+    "cd data && head secrets/keys.env",
+    "cd data; cat secrets/keys.env",
+    "cd data && grep -rn token .",
+    "cd data/secrets && ls",
+    "cd data && cd secrets",
+    "cd /home/quant/quant-platform/data && tail secrets/k",
+    "cd data && cd .. && cd data && head ./secrets/k",
+    "pushd data && head secrets/k",
+    "cd data && head s*/k",
+    "cd data && head $SUB/k",
+    "(cd data && head secrets/k)",
+    "bash -c 'cd data && head secrets/k'",
+    "tar -C data -czf - secrets",
+    "git -C data show HEAD:secrets/k",
+    "cd - && head k",
+    "cd $DIR && head k",
+    "cd data && bash -c 'head secrets/k'",
+    "cd data || true; head secrets/k",
+    "cd data && ls; head secrets/k",
+    "cd nowhere; head data/../data/secrets/k",
+], ids=["grep_r_after_cd", "head_after_cd", "semicolon", "grep_r_dot_after_cd", "cd_into_ls",
+        "cd_chain_into", "cd_absolute", "cd_round_trip", "pushd", "glob_after_cd",
+        "var_after_cd", "subshell", "nested_shell", "tar_dash_C", "git_dash_C", "cd_dash",
+        "cd_var", "nested_after_cd", "or_then_semicolon", "and_then_semicolon", "failed_cd"])
+def test_relative_operands_are_read_from_the_tracked_cwd(cmd: str) -> None:
+    assert lg.secrets_refusal(cmd, str(ROOT)), cmd
+
+
+def test_a_cwd_persisted_from_an_earlier_call_is_tracked() -> None:
+    """`cd data`, then `cd secrets`, then `head k`: each a separate call, the cwd carried by the
+    payload. The middle step is refused, and so is anything run from inside."""
+    data = str(ROOT / "data")
+    assert lg.secrets_refusal("cd data", str(ROOT)) is None
+    assert lg.secrets_refusal("cd secrets", data)
+    assert lg.secrets_refusal("head k", data + "/secrets")
+    assert lg.secrets_refusal("ls", data + "/secrets")
+    assert lg.secrets_refusal("grep -r x secrets", data)
+    assert lg.secrets_refusal("grep -rn x .", data)
+    assert lg.refusal("Read", {"file_path": "secrets/k"}, cwd=data)
+    assert lg.refusal("Read", {"file_path": "k"}, cwd=data + "/secrets")
+
+
+def test_the_hook_reads_the_payload_cwd(tmp_path: Path) -> None:
+    (tmp_path / "data" / "secrets").mkdir(parents=True)
+    r = _hook(json.dumps({"tool_name": "Bash", "cwd": str(tmp_path / "data"),
+                          "tool_input": {"command": "grep -r x secrets"}}))
+    assert r.returncode == 2 and lg.REFUSAL in r.stderr
+    r = _hook(json.dumps({"tool_name": "Bash", "cwd": str(tmp_path / "data" / "secrets"),
+                          "tool_input": {"command": "head k"}}))
+    assert r.returncode == 2
+    r = _hook(json.dumps({"tool_name": "Bash", "cwd": str(tmp_path),
+                          "tool_input": {"command": "cd data && grep -rn x ."}}))
+    assert r.returncode == 2, "a walk over a directory holding secrets/ on disk"
+
+
+@pytest.mark.parametrize("cmd", [
+    "cd docs && grep -rn edge .", "cd desks/mt5 && head data/universe.json",
+    "cd data && head universe.json", "cd data && ls", "cd ops && ./run_cro_ai.sh",
+    "cd .. && ls", "git -C docs log -1", "(cd docs && grep -rn edge .) && ls",
+    "cd data | head secrets.md",
+], ids=["grep_r_docs", "desk_data", "data_catalog", "ls_data", "run_script", "parent", "git_C",
+        "subshell_docs", "pipeline_cd_does_not_move"])
+def test_ordinary_cd_chains_stay_allowed(cmd: str) -> None:
+    assert lg.secrets_refusal(cmd, str(ROOT)) is None, cmd
+
+
+def test_the_structural_limit_is_written_down() -> None:
+    doc = lg.__doc__ or ""
+    assert "STRUCTURAL LIMIT" in doc and "scripts/**" in doc and "operating system" in doc

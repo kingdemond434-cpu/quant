@@ -29,6 +29,23 @@ WHAT THIS MODULE DOES. It parses the WHOLE command the way a shell would split i
     the program (`cat`, `head`, `tail`, `grep`, `jq`, `scripts/*`, anything);
   * a non-Bash tool whose path/pattern input reaches `data/secrets`.
 
+EVERY PATH IS READ FROM THE WORKING DIRECTORY IT RUNS IN (audit HOLD on #199, 2026-11-03).
+`cd data && grep -r x secrets`, and `cd data`, then `cd secrets`, then `head k` across three
+calls, named the directory relatively and passed. Each relative operand is now resolved against
+the payload's `cwd` (which carries a `cd` from an earlier call forward), against every `cd`,
+`pushd` target earlier in the same command (all are kept: a `cd` in a pipeline or subshell does
+not persist) and against a program's own `-C`/`--directory`/`--chdir`. A `cd` into the secrets
+directory is refused, every command whose cwd is inside it is refused, and a cwd that cannot be
+read (`cd -`, `cd $X`) refuses the operands after it.
+
+WHAT THIS GUARD CANNOT SEE: A STRUCTURAL LIMIT. It judges the command line, not what a program
+does. The CODE lanes may write `scripts/**` (and other code) and may also run it, so a lane can
+write a script that opens data/secrets and then run it with nothing secrets-shaped on the line;
+a symlink planted earlier is the same hole. No command-line parser closes that. The real fence is
+the operating system: data/secrets must be unreadable to the user the lanes run as (a separate
+owner and mode 0700, or a user the lanes cannot become). Until that is set on the VPS, this guard
+narrows the path; it does not seal it.
+
 It is wired as a PreToolUse hook (`hook_settings`), which sees the full command before the CLI's
 own allow/deny lists run: exit 2 blocks the call and the reason goes back to the seat. The wording
 begins "Permission denied by the VPS lane guard", which libs/ops/agent_denials._REFUSAL_MARKERS
@@ -44,6 +61,7 @@ from __future__ import annotations
 
 import fnmatch
 import json
+import os
 import posixpath
 import re
 import shlex
@@ -58,6 +76,14 @@ SECRETS = "data/secrets"
 #: The secrets directory's absolute path on the VPS, for a recursive walk named from above it.
 VPS_SECRETS = "/home/quant/quant-platform/data/secrets"
 REFUSAL = "Permission denied by the VPS lane guard"
+#: The tree this guard ships in; a missing payload cwd is read as this one.
+ROOT = Path(__file__).resolve().parents[2]
+#: Every secrets directory known by absolute path (normalised as `_norm` does).
+SECRET_DIRS: tuple[str, ...] = tuple(dict.fromkeys(
+    posixpath.normpath(d.replace("\\", "/")).lower()
+    for d in (VPS_SECRETS, str(ROOT / "data" / "secrets"))))
+#: Programs whose `cd`-like argument moves the cwd for the rest of the command.
+_CD = ("cd", "pushd", "chdir")
 
 _OPERATORS = {";", "&&", "||", "|", "&", "|&", ";;", "(", ")", "\n"}
 #: git global options that take a separate value (`git -C dir push`).
@@ -257,16 +283,70 @@ def _glob_reaches_secrets(path: str) -> bool:
     return False
 
 
-def _reaches_secrets(token: str) -> bool:
+def _abs(path: str, cwd: str | None) -> str | None:
+    """`path` as an absolute, normalised, lower-cased path read from `cwd`; None when a relative
+    path meets an unknown cwd."""
+    p = path.replace("\\", "/")
+    if p.startswith("~"):
+        p = os.path.expanduser(p).replace("\\", "/")
+    if not p.startswith("/"):
+        if cwd is None:
+            return None
+        p = cwd.rstrip("/") + "/" + p
+    return _norm(p)
+
+
+def _inside_secrets(absp: str) -> bool:
+    """An absolute path that IS a secrets directory or lies under one: a known one by path, any
+    `.../data/secrets/...` pair, or a glob that can expand to either."""
+    if any(absp == d or absp.startswith(d + "/") for d in SECRET_DIRS):
+        return True
+    segs = [x for x in absp.split("/") if x]
+    if any(segs[i] == "data" and segs[i + 1] == "secrets" for i in range(len(segs) - 1)):
+        return True
+    return bool(_GLOB.search(absp)) and _glob_reaches_secrets(absp)
+
+
+def _ancestor_of_secrets(absp: str) -> bool:
+    """A directory a recursive walk from which enters a secrets directory: an ancestor of a
+    known one (globs read per segment), or one holding `data/secrets` or `secrets` on disk."""
+    if absp == "/" or _inside_secrets(absp):
+        return True
+    psegs = [x for x in absp.split("/") if x]
+    for d in SECRET_DIRS:
+        dsegs = [x for x in d.split("/") if x]
+        if len(psegs) < len(dsegs) and all(
+                fnmatch.fnmatchcase(dsegs[i], psegs[i]) for i in range(len(psegs))):
+            return True
+    if _GLOB.search(absp):
+        return False
+    return (os.path.isdir(posixpath.join(absp, "data", "secrets"))
+            or (absp.endswith("/data") and os.path.isdir(posixpath.join(absp, "secrets"))))
+
+
+def _reaches_secrets(token: str, cwds: Sequence[str | None] = (None,)) -> bool:
+    """A token (a path operand, or the value of `--opt=value`) that reaches data/secrets, read
+    as written AND from every cwd the command may be in (audit HOLD on #199: `cd data && grep
+    -r x secrets` named the directory relatively and passed)."""
     raw = token.split("=", 1)[1] if token.startswith("-") and "=" in token else token
     p = _norm(raw)
     if not p or p == ".":
-        return False
+        return any(c is not None and _inside_secrets(_norm(c)) for c in cwds)
     if SECRETS in p or ("secret" in p and "/" in p):
         return True
-    if _EXPANSION.search(raw) and "data" in p:
-        return True  # `data/$X/key`, `data/$(echo secrets)` -- cannot be read statically
-    return bool(_GLOB.search(p)) and _glob_reaches_secrets(p)
+    if _EXPANSION.search(raw):
+        if "data" in p:
+            return True  # `data/$X/key`, `data/$(echo secrets)` -- cannot be read statically
+        # from inside data/, a bare `$X` may itself be `secrets`
+        if any(c is not None and _norm(c).rsplit("/", 1)[-1] == "data" for c in cwds):
+            return True
+    if bool(_GLOB.search(p)) and _glob_reaches_secrets(p):
+        return True
+    for c in cwds:
+        absp = _abs(raw, c)
+        if absp is not None and _inside_secrets(absp):
+            return True
+    return False
 
 
 #: GNU grep short options that take a value: the characters after one are its value, not flags.
@@ -357,8 +437,9 @@ def _grep_walk(seg: Sequence[str]) -> tuple[bool, bool, list[str]]:
     return recursive, excluded, operands if pattern_given else operands[1:]
 
 
-def _recursive_over_ancestor(seg: Sequence[str]) -> bool:
-    """`grep -r pat .` / `grep -d recurse pat data` (or no path at all) walks into data/secrets."""
+def _recursive_over_ancestor(seg: Sequence[str], cwds: Sequence[str | None] = (None,)) -> bool:
+    """`grep -r pat .` / `grep -d recurse pat data` (or no path at all) walks into data/secrets.
+    Every operand is resolved from every cwd the command may be in."""
     prog = posixpath.basename(seg[0]) if seg else ""
     if prog not in ("grep", "egrep", "fgrep", "rg"):
         return False
@@ -370,39 +451,145 @@ def _recursive_over_ancestor(seg: Sequence[str]) -> bool:
         recursive, excluded, paths = _grep_walk(seg)
     if not recursive or excluded:
         return False
-    if not paths:
-        return True  # recursive grep with no path walks the cwd, i.e. the repo
-    for a in paths:
-        p = _norm(a.replace("~", "/home/quant", 1) if a.startswith("~") else a)
-        if p in (".", "data", "/") or p == ".." or p.startswith("../"):
+    for a in paths or ["."]:   # no path walks the cwd
+        if _SHELL_EXPANDS.search(a):
+            return True  # `grep -r k $DIR`: may expand to an ancestor
+        for c in cwds:
+            absp = _abs(a, c)
+            if absp is None or _ancestor_of_secrets(absp):
+                return True
+        if _norm(a) in ("data",) or (_GLOB.search(a) and fnmatch.fnmatchcase("data", _norm(a))):
             return True
-        if p.startswith("/") and VPS_SECRETS.startswith(p.rstrip("/") + "/"):
-            return True
-        if _SHELL_EXPANDS.search(a) or (_GLOB.search(p) and fnmatch.fnmatchcase("data", p)):
-            return True  # `grep -r k $DIR` / `grep -r k d*`: may expand to an ancestor
     return False
 
 
-def secrets_refusal(command: str) -> str | None:
-    """Why this command is refused for reaching data/secrets, or None."""
+def _cd_target(seg: Sequence[str]) -> str | None:
+    """The directory a `cd`/`pushd` segment moves to ("~" for a bare `cd`)."""
+    args = [a for a in seg[1:] if a not in ("-L", "-P", "-e", "-@", "--")]
+    return args[0] if args else "~"
+
+
+def _dash_c_dirs(seg: Sequence[str]) -> list[str]:
+    """Directories a program is told to run from (`tar -C d`, `make -C d`, `git -C d`,
+    `env --chdir=d`): its relative operands are read from there too."""
+    out: list[str] = []
+    for i, a in enumerate(seg[1:], 1):
+        if a in ("-C", "--directory", "--chdir", "--cwd") and i + 1 < len(seg):
+            out.append(seg[i + 1])
+        elif a.startswith(("--directory=", "--chdir=", "--cwd=")):
+            out.append(a.split("=", 1)[1])
+        elif a.startswith("-C") and len(a) > 2 and not a.startswith("--"):
+            out.append(a[2:])
+    return out
+
+
+def _judge_segment(seg: Sequence[str], cwds: Sequence[str | None]) -> str | None:
+    """Why one simple command, run from any of `cwds`, reaches data/secrets; or None."""
+    if any(c is not None and _inside_secrets(_norm(c)) for c in cwds):
+        return (f"the working directory is inside {SECRETS} -- every command there reads it; "
+                "cd out of it first")
+    seg_cwds = list(cwds)
+    for d in _dash_c_dirs(seg):
+        seg_cwds += [None] if _EXPANSION.search(d) else [_abs(d, c) for c in cwds]
+    if None in seg_cwds and len(seg) > 1:
+        return ("the working directory cannot be resolved (`cd -`, `cd $X` or `-C $X`), so "
+                f"{seg[0]}'s operands cannot be shown to stay out of {SECRETS} -- refused")
+    for t in seg:
+        if _reaches_secrets(t, seg_cwds):
+            return f"{seg[0]} reaches {SECRETS} ({t!r}) -- secrets never leave the box"
+    if _recursive_over_ancestor(seg, seg_cwds):
+        return (f"recursive {seg[0]} over an ancestor of {SECRETS} -- add "
+                "--exclude-dir=secrets or name the subtree")
+    return None
+
+
+def _secrets_refusal(command: str, start: list[str | None]) -> str | None:
+    """THE CWD IS TRACKED THROUGH THE COMMAND (audit HOLD on #199), as the shell moves it:
+
+    * `cd T && x`: x runs only if the cd succeeded, so x is read from T alone; at the next `;`,
+      `||` or newline the cd may have FAILED, so the old cwd comes back beside T;
+    * `cd T; x` / `cd T || x` / a newline: the cd may have failed, so x is read from both;
+    * `cd T | x`, `cd T & x`: a pipeline stage or a background job does not move the shell;
+    * `( ... )`: a subshell's cd ends at its `)`.
+    Every operand is judged from every cwd it may run in."""
     toks = _tokens(command)
     if toks is None:
         return "unparseable command (unbalanced quotes) -- refused rather than guessed"
-    for seg in _segments(toks):
-        for t in seg:
-            if _reaches_secrets(t):
-                return f"{seg[0]} reaches {SECRETS} ({t!r}) -- secrets never leave the box"
-        if _recursive_over_ancestor(seg):
-            return (f"recursive {seg[0]} over an ancestor of {SECRETS} -- add "
-                    "--exclude-dir=secrets or name the subtree")
+    cwds: list[str | None] = list(start)
+    fallback: list[str | None] = []   # cwds a failed `cd ... &&` leaves the shell in
+    stack: list[tuple[list[str | None], list[str | None]]] = []
+    pending: tuple[list[str | None], list[str | None]] | None = None  # (old, new) of the last cd
+    seg: list[str] = []
+    seen: list[str | None] = list(start)   # every cwd any part of the command may run in
+
+    def union(*lists: list[str | None]) -> list[str | None]:
+        return list(dict.fromkeys(c for lst in lists for c in lst))
+
+    def flush() -> str | None:
+        nonlocal pending
+        if not seg:
+            return None
+        if posixpath.basename(seg[0]) in _CD:
+            target = _cd_target(seg)
+            if target == "-" or _EXPANSION.search(target):
+                new: list[str | None] = [None]   # cannot be read statically
+            else:
+                new = [_abs(target, c) for c in cwds]
+                for n in new:
+                    if n is not None and _inside_secrets(n):
+                        return f"cd into {SECRETS} ({target!r}) -- secrets never leave the box"
+            pending = (list(cwds), list(dict.fromkeys(new)))
+            seen.extend(pending[1])
+            return None
+        pending = None
+        return _judge_segment(seg, cwds)
+
+    for t in [*toks, ";"]:
+        if not (t in _OPERATORS or (t and set(t) <= set(";&|()\n"))):
+            seg.append(t)
+            continue
+        why = flush()
+        if why:
+            return why
+        seg = []
+        for ch in t:
+            if ch == "(":
+                stack.append((list(cwds), list(fallback)))
+                fallback = []
+            elif ch == ")" and stack:
+                cwds, fallback = stack.pop()
+                pending = None
+        op = t.replace("(", "").replace(")", "")
+        if pending is not None:
+            old, new = pending
+            if op == "&&":
+                cwds, fallback = new, union(fallback, old)
+            elif op in ("|", "&", "|&"):
+                cwds = old
+            else:   # ; || newline, end
+                cwds = union(old, new)
+            pending = None
+        if op in (";", "||", "\n", ";;", "") and fallback and ")" not in t:
+            cwds, fallback = union(cwds, fallback), []
+    # A quoted command (`bash -c "..."`, `$(...)`) runs from wherever its segment ran, so it is
+    # read from every cwd the outer command reached.
     for inner in _nested(toks):
-        why = secrets_refusal(inner)
+        why = _secrets_refusal(inner, list(dict.fromkeys(seen)))
         if why:
             return why
     return None
 
 
-def refusal(tool: str, tool_input: object, current_branch: str | None = None) -> str | None:
+def secrets_refusal(command: str, cwd: str | None = None) -> str | None:
+    """Why this command is refused for reaching data/secrets, or None. `cwd` is the directory
+    the command starts in -- the hook payload's, which carries a `cd` from an EARLIER call
+    forward (`cd data`, then `cd secrets`, then `head k`) -- and defaults to this tree's root."""
+    start = str(cwd) if cwd else str(ROOT)
+    return _secrets_refusal(command, [start.replace("\\", "/")])
+
+
+def refusal(tool: str, tool_input: object, current_branch: str | None = None,
+            cwd: str | None = None) -> str | None:
     """The guard's verdict for one tool call: a reason to refuse, or None to let the CLI decide."""
     if not isinstance(tool_input, dict):
         return None
@@ -410,10 +597,11 @@ def refusal(tool: str, tool_input: object, current_branch: str | None = None) ->
         cmd = tool_input.get("command")
         if not isinstance(cmd, str):
             return "Bash call without a command string -- refused"
-        return push_refusal(cmd, current_branch) or secrets_refusal(cmd)
+        return push_refusal(cmd, current_branch) or secrets_refusal(cmd, cwd)
+    start = (str(cwd) if cwd else str(ROOT)).replace("\\", "/")
     for k in ("file_path", "path", "notebook_path", "pattern"):
         v = tool_input.get(k)
-        if isinstance(v, str) and _reaches_secrets(v):
+        if isinstance(v, str) and _reaches_secrets(v, [start]):
             return f"{tool} {k} reaches {SECRETS} -- secrets never leave the box"
     return None
 
@@ -440,7 +628,8 @@ def hook(stdin_text: str) -> tuple[int, str]:
         if tool == "Bash" and isinstance(tool_input, dict) and "push" in str(
                 tool_input.get("command", "")):
             branch = current_branch(payload.get("cwd"))
-        why = refusal(tool, tool_input, branch)
+        cwd = payload.get("cwd")
+        why = refusal(tool, tool_input, branch, cwd if isinstance(cwd, str) else None)
     except Exception as e:  # the guard fails CLOSED on its own error
         return 2, f"{REFUSAL}: guard error ({type(e).__name__}) -- refused, counts as MISSED"
     if why:
@@ -465,7 +654,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(msg, file=sys.stderr)
         return rc
     if args[:1] == ["check"] and len(args) == 2:
-        why = push_refusal(args[1], current_branch(None)) or secrets_refusal(args[1])
+        why = push_refusal(args[1], current_branch(None)) or secrets_refusal(args[1], os.getcwd())
         print(why or "ALLOWED")
         return 2 if why else 0
     print("usage: lane_guard.py hook < payload.json | lane_guard.py check '<command>'",
