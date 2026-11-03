@@ -220,7 +220,10 @@ def _default_sender(root: Path) -> Sender:
         # records a channel's credentials.
         return alert_channels.send_all(
             title, body, config=root / "data/secrets/alert_channels.json",
-            ledger=root / "data/alert_delivery.jsonl")
+            ledger=root / "data/alert_delivery.jsonl",
+            # Opt-in digest (2026-11-03): the publication meter's silent/flowing reminders.
+            digest_class=("state_meter"
+                          if ("METER SILENT" in title or "FLOWING again" in title) else None))
     return send
 
 

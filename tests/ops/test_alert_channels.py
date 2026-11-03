@@ -123,7 +123,7 @@ def test_unknown_kind_is_ignored_not_crashed(tmp_path: Path) -> None:
     assert ac.load_channels(cfg) == []
 
 
-def test_measurement_gap_notices_page_once_a_day_and_money_reds_never_held(
+def test_opted_in_class_pages_once_a_day_and_default_callers_never_held(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     led = tmp_path / "led.jsonl"
     cfg = _cfg(tmp_path, [{"kind": "webhook", "url": "https://a"}])
@@ -135,24 +135,33 @@ def test_measurement_gap_notices_page_once_a_day_and_money_reds_never_held(
 
     monkeypatch.setitem(ac._SENDERS, "webhook", fake)
     for _ in range(4):
-        ac.send_all("Restore drill UNMEASURED on vmi1", "b", config=cfg, ledger=led)
+        ac.send_all("Restore drill UNMEASURED", "b", config=cfg, ledger=led,
+                    digest_class="restore_drill_unmeasured")
     assert len(sent) == 1
-    held = ac.send_all("LOGIN FENCE UNMEASURED: x", "b", config=cfg, ledger=led)
-    assert held["suppressed"] and held["delivered"] == 1 and len(sent) == 1
+    # a caller that did NOT opt in pages every time, whatever its title says (audit HOLD e5110a958)
     for _ in range(3):
-        ac.send_all("MT5 box unhealthy", "b", config=cfg, ledger=led)
+        ac.send_all("FTMO follow UNMEASURED", "b", config=cfg, ledger=led)
     assert len(sent) == 4
+    # another class is independent of the first
+    jc = {"config": cfg, "ledger": led, "digest_class": "judge_coverage"}
+    res = ac.send_all("JUDGE COVERAGE RED", "b", **jc)
+    assert not res.get("suppressed") and len(sent) == 5
+    held = ac.send_all("JUDGE COVERAGE RED", "b", **jc)
+    assert held["suppressed"] and held["delivered"] == 1 and len(sent) == 5
     # a canary is never held
-    ac.send_all("x UNMEASURED", "b", config=cfg, ledger=led, canary=True)
-    assert len(sent) == 5
+    ac.send_all("x", "b", config=cfg, ledger=led, canary=True, digest_class="judge_coverage")
+    assert len(sent) == 6
     # after the cooldown the next page carries the held count
     st = tmp_path / "alert_digest_state.json"
     doc = json.loads(st.read_text("utf-8"))
-    doc["unmeasured"]["last_paged"] = "2000-01-01T00:00:00+00:00"
+    doc["restore_drill_unmeasured"]["last_paged"] = "2000-01-01T00:00:00+00:00"
     st.write_text(json.dumps(doc), "utf-8")
-    ac.send_all("Restore drill UNMEASURED on vmi1", "b", config=cfg, ledger=led)
-    assert sent[-1][1].startswith("(+4 repeat(s)")
-    assert (tmp_path / "alert_digest.jsonl").read_text("utf-8").count("\n") == 4
+    ac.send_all("Restore drill UNMEASURED", "b", config=cfg, ledger=led,
+                digest_class="restore_drill_unmeasured")
+    assert sent[-1][1].startswith("(+3 repeat(s)")
+    lines = (tmp_path / "alert_digest.jsonl").read_text("utf-8").splitlines()
+    digest = [json.loads(x) for x in lines]
+    assert len(digest) == 4 and digest[0]["title"] == "Restore drill UNMEASURED"
     assert ac.all_silent_since(1.0, ledger=led) is False
 
 
@@ -163,5 +172,5 @@ def test_digest_state_corruption_fails_open(tmp_path: Path,
     (tmp_path / "alert_digest_state.json").write_text("{not json", "utf-8")
     sent: list[str] = []
     monkeypatch.setitem(ac._SENDERS, "webhook", lambda _c, t, _b: sent.append(t) or "ok")
-    ac.send_all("BOX STATE METER SILENT", "b", config=cfg, ledger=led)
+    ac.send_all("BOX STATE METER SILENT", "b", config=cfg, ledger=led, digest_class="state_meter")
     assert sent == ["BOX STATE METER SILENT"]

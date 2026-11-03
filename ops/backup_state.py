@@ -246,9 +246,12 @@ def _default_sender() -> Sender:
         if str(ROOT) not in sys.path:
             sys.path.insert(0, str(ROOT))
         from libs.ops import alert_channels
+        # Opt-in digest (2026-11-03): only the UNMEASURED "no drill on record" reminder.
         return alert_channels.send_all(title, body,
                                        config=ROOT / "data" / "secrets" / "alert_channels.json",
-                                       ledger=ROOT / "data" / "alert_delivery.jsonl")
+                                       ledger=ROOT / "data" / "alert_delivery.jsonl",
+                                       digest_class=("restore_drill_unmeasured"
+                                                     if "UNMEASURED" in title else None))
     return send
 
 

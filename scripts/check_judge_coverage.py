@@ -741,7 +741,7 @@ def _default_page_sender(root: Path) -> PageSender:
         # unarmed. Nothing here reads, prints or records a channel's credentials.
         return alert_channels.send_all(
             title, body, config=root / "data/secrets/alert_channels.json",
-            ledger=root / "data/alert_delivery.jsonl")
+            ledger=root / "data/alert_delivery.jsonl", digest_class="judge_coverage")
     return send
 
 
