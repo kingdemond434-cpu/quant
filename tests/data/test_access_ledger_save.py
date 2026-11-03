@@ -62,15 +62,15 @@ def test_unreadable_ledger_is_left_in_place_and_not_overwritten(tmp_path: Path,
     led = tmp_path / "a.json"
     led.write_text(json.dumps({"blocked": {"o.example": {"verdict": "HTTP_429"}}}), "utf-8")
     acc = pf.HostAccess(led)
-    real = Path.read_text
+    real = Path.read_bytes
 
-    def boom(self: Path, *a: object, **k: object) -> str:
+    def boom(self: Path) -> bytes:
         if self == led:
             raise PermissionError("share violation")
-        return real(self, *a, **k)
-    monkeypatch.setattr(Path, "read_text", boom)
+        return real(self)
+    monkeypatch.setattr(Path, "read_bytes", boom)
     assert acc.save() is False
-    monkeypatch.setattr(Path, "read_text", real)
+    monkeypatch.setattr(Path, "read_bytes", real)
     assert "o.example" in json.loads(led.read_text("utf-8"))["blocked"]
     assert not list(tmp_path.glob("a.json.corrupt.*"))
 
