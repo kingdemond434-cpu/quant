@@ -759,7 +759,10 @@ def emit_world(row: dict[str, Any], *, dry_run: bool = False,
                 origin="pack_cells", generator="pack_cells.world",
                 assets=targets, exact_rule_if_known="", horizons=list(CHARTS),
                 note=(f"claim {cl['claim_id']} held since the crawl; knowable_at "
-                      f"{cl['knowable_at'] or 'UNMEASURED'}"))
+                      f"{cl['knowable_at'] or 'UNMEASURED'}"),
+                # CULTURE DECLARED AT BIRTH: the ground's own country and its claim's text;
+                # the structure and failure mode are inferred by libs/research/cell_culture.
+                source_culture=row.get("country"), claim=text)
             n_disc += 1
         except Exception as exc:
             errors.append(f"{sid}: {type(exc).__name__}: {str(exc)[:50]}")
@@ -789,7 +792,8 @@ def emit_world(row: dict[str, Any], *, dry_run: bool = False,
                     transformation="world_ground", pit_status="UNMEASURED",
                     causal_rationale=mech_src,
                     falsifier=(f"documents from {sid} have no measurable relation to {sym} "
-                               f"at {chart} out of sample"))
+                               f"at {chart} out of sample"),
+                    source_culture=row.get("country"))
                 created += int(bool(was_new))
             except Exception as exc:
                 errors.append(f"{sid}/{sym}/{chart}: {type(exc).__name__}: {str(exc)[:40]}")
@@ -814,7 +818,8 @@ def emit_for(pack: dict[str, Any], signals: list[str], targets: list[str], *,
                 source_id=pid, source_type="data_pack", mechanism=mech,
                 origin="pack_cells", generator="pack_cells", assets=list(targets),
                 exact_rule_if_known="", horizons=list(CHARTS),
-                note="represented pack; cells minted per signal, transform, target and chart")
+                note="represented pack; cells minted per signal, transform, target and chart",
+                source_culture=pack.get("country"))
         except Exception as exc:
             return {"id": pid, "emitted": 0, "created": 0,
                     "error": f"record_discovery: {type(exc).__name__}: {str(exc)[:70]}"}
@@ -840,7 +845,8 @@ def emit_for(pack: dict[str, Any], signals: list[str], targets: list[str], *,
                             pit_status="STAMPED",
                             causal_rationale=mech,
                             falsifier=(f"the {tf} of {pid}.{sig} has no measurable relation to "
-                                       f"{sym} at {chart} out of sample"))
+                                       f"{sym} at {chart} out of sample"),
+                            source_culture=pack.get("country"), url=pack.get("url"))
                         created += int(bool(was_new))
                     except Exception as exc:
                         errors.append(f"{sig}/{tf}/{sym}/{chart}: "
