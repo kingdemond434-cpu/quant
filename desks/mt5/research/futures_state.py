@@ -11,21 +11,24 @@ WHAT THIS ORGAN DOES, end to end, and every stage publishes a number:
   1. COLLECTS from the rows in `research/futures_state_sources.json` -- rows, never code. The OPEN
      sources are the CFTC public reporting API (legacy, disaggregated and TFF, each futures-only
      AND futures+options combined, so the difference is the delta-adjusted OPTIONS-ON-FUTURES
-     book), EIA's republished NYMEX contracts 1-4 (WTI, Henry Hub: a dated curve from a
-     public-domain source now that Yahoo is IDEAS_ONLY), FRED's curves, rate differentials and
-     reserves, and Japan's MoF intervention record (every intervention day since 1991, signed,
+     book), FRED's curves, rate differentials and reserves, and Japan's MoF intervention record (every intervention day since 1991, signed,
      stamped at its quarterly disclosure; monthly totals stamped at their release). Every other
-     venue is a row with its terms state (TO_CONFIRM / HELD / IDEAS_ONLY /
-     OWNED_ELSEWHERE) and is COUNTED as a named gap, never fetched.
+     venue is a row with its terms state (TO_CONFIRM / HELD / IDEAS_ONLY / OWNED_ELSEWHERE /
+     DISCONTINUED: EIA's NYMEX contracts 1-4 stopped after 2024-04-05) and is COUNTED as a named
+     gap, never fetched. CFTC is read incrementally, past the newest held week, and only once the
+     next report is out; every request goes through `libs.data.polite_fetch` with retries off.
 
   2. HONEST ACCESS. One User-Agent that says who we are, no retries, and 401/403/429/451 is a
      HARD STOP for that source written to state; it is not fetched again until
      `source_fixer --release` clears it. Nothing here routes around a refusal.
 
-  3. POINT IN TIME. Every row carries `available_time` in UTC: CFTC data is available the Friday
-     after its Tuesday report date (stamped Friday 21:00 UTC, after the 15:30 ET release in both
-     DST regimes); EIA and daily FRED closes are stamped the next day 23:00 UTC;
-     monthly sets after their own publication lag. `family_exogenous_conditioner` then holds
+  3. POINT IN TIME. Every row carries `available_time` in UTC: a CFTC report is stamped 21:00 UTC
+     on the day CFTC published it (after the 15:30 ET release in both DST regimes): the Friday
+     after its as-of day, the next business day when a federal holiday or closure falls in
+     between, and the dates of CFTC's own catch-up notices after a shutdown
+     (`cftc_release_calendar` in the registry). Daily FRED closes are stamped the next business
+     day 23:00 UTC; monthly sets after their own publication lag. A series silent past three
+     times its own cadence is STALE and mints nothing. `family_exogenous_conditioner` then holds
      every value back a further publication day before it can touch a bar.
 
   4. FEATURES. Each base column becomes level / change / acceleration / rolling percentile; a
@@ -35,7 +38,8 @@ WHAT THIS ORGAN DOES, end to end, and every stage publishes a number:
      change z, plus the OI/price quadrant). Transmission rows join two markets' columns into a
      spread or z-gap (copper vs gold managed money, crude curve vs speculative length, ...).
 
-  5. CELLS. Each feature series lands in `data/lake/series/futstate_<id>.parquet` and every
+  5. CELLS. Each feature series lands in `data/lake/series/<id>.parquet`, the id prefixed by
+     its source (`cot_`, `fred_`, `mof_`, `xfer_`, `eia_`), and every
      (column x transform x target x chart) becomes ONE `exogenous_conditioner` candidate through
      `libs.moat.registry.enqueue_candidate`, the same door `pack_cells` uses. A cell is enqueued
      ONCE in its life (state keeps the hash), so a pass never bumps another search_count: trials
@@ -112,19 +116,33 @@ def _write(p: Path, doc: Any) -> None:
     p.parent.mkdir(parents=True, exist_ok=True)
     tmp = p.with_suffix(p.suffix + ".tmp")
     tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
-    tmp.replace(p)
+    _replace(tmp, p)
+
+
+class FetchError(Exception):
+    """A non-refusal failure, with the status when there was one (a 404 robots.txt allows)."""
+
+    def __init__(self, code: int | None, url: str, why: str):
+        super().__init__(why)
+        self.code, self.url = code, url
+
+
+#: Spacing, retries and stats come from the desk's one polite fetcher. Retries are OFF: a 429
+#: here is the server asking us to stop, and it becomes a hard stop, never a retry.
+def _polite(url: str, accept: str, timeout: float) -> str:
+    from libs.data import polite_fetch
+    r = polite_fetch.get(url, headers={"User-Agent": UA, "Accept": accept}, timeout=timeout,
+                         retries=0, leg="futures_state")
+    if r.status in HARD_STOP:
+        raise HardStop(int(r.status or 0), url)
+    if not r.ok:
+        raise FetchError(r.status, url, r.error or f"HTTP {r.status}")
+    return r.text
 
 
 def fetch_json(url: str, timeout: float = 40.0) -> Any:
     """One honest GET. No retry: a 429 is the server asking us to stop, so we stop."""
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            return json.loads(r.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        if exc.code in HARD_STOP:
-            raise HardStop(exc.code, url) from exc
-        raise
+    return json.loads(_polite(url, "application/json", timeout))
 
 
 # ----------------------------------------------------------------------------- features (pure)
@@ -253,17 +271,54 @@ def flow_price(net_chg: pd.Series, oi_chg: pd.Series | None, px_chg: pd.Series,
 
 # ----------------------------------------------------------------------------- PIT stamps
 
-def cftc_available(report_date: pd.Series) -> pd.Series:
-    """Tuesday report -> Friday 21:00 UTC. A holiday-delayed release is later still, and the
-    conditioner's own 24h hold absorbs a one-day slip; a longer one is caught by the release
-    calendar lane, not guessed here."""
-    d = pd.to_datetime(report_date, utc=True, errors="coerce").dt.normalize()
-    return d + pd.Timedelta(days=3, hours=21)
+def _us_holidays(closures: Sequence[str] = ()) -> frozenset[pd.Timestamp]:
+    from pandas.tseries.holiday import USFederalHolidayCalendar
+    h = USFederalHolidayCalendar().holidays("1986-01-01", "2040-12-31")
+    return frozenset({pd.Timestamp(x).normalize() for x in h} |
+                     {pd.Timestamp(x).normalize() for x in closures})
+
+
+def cftc_release_day(report_day: pd.Timestamp, calendar: Mapping[str, Any] | None = None,
+                     holidays: frozenset[pd.Timestamp] | None = None) -> pd.Timestamp:
+    """The day a report dated `report_day` was PUBLIC. Normally the Friday after (15:30 ET).
+    A federal holiday or a CFTC closure between the report day and that Friday moves it to the
+    next business day after the Friday, which is the rule every 2026 delayed release follows
+    (CFTC release schedule). A shutdown is never inferred: `calendar["releases"]` maps an
+    as-of day to the date CFTC published it, and `calendar["windows"]` holds a not-before date
+    for every report dated inside a window whose exact catch-up dates are not on record."""
+    cal = calendar or {}
+    d = pd.Timestamp(report_day).tz_localize(None).normalize()
+    exact = (cal.get("releases") or {}).get(d.date().isoformat())
+    if exact:
+        return pd.Timestamp(exact)
+    hol = holidays if holidays is not None else _us_holidays(cal.get("closures") or ())
+    friday = d + pd.Timedelta(days=(4 - d.weekday()) % 7 or 7)
+    rel = friday
+    if any(d < h <= friday for h in hol):
+        rel = friday + pd.Timedelta(days=1)
+        while rel.weekday() >= 5 or rel in hol:
+            rel += pd.Timedelta(days=1)
+    for w in cal.get("windows") or []:
+        if pd.Timestamp(w["from"]) <= d <= pd.Timestamp(w["to"]):
+            rel = max(rel, pd.Timestamp(w["not_before"]))
+    return rel
+
+
+def cftc_available(report_date: pd.Series, calendar: Mapping[str, Any] | None = None
+                   ) -> pd.Series:
+    """Report day -> its release day at 21:00 UTC (after 15:30 ET in both DST regimes)."""
+    hol = _us_holidays((calendar or {}).get("closures") or ())
+    d = pd.to_datetime(report_date, utc=True, errors="coerce")
+    out = [pd.NaT if pd.isna(x) else
+           (cftc_release_day(x, calendar, hol) + pd.Timedelta(hours=21)).tz_localize("UTC")
+           for x in d]
+    return pd.Series(pd.to_datetime(out, utc=True), index=report_date.index)
 
 
 def daily_available(day: pd.Series) -> pd.Series:
-    d = pd.to_datetime(day, utc=True, errors="coerce").dt.normalize()
-    return d + pd.Timedelta(days=1, hours=23)
+    """A daily close is public the next BUSINESS day (FRED posts Friday's H.15 on Monday)."""
+    d = pd.to_datetime(day, utc=True, errors="coerce").dt.tz_localize(None).dt.normalize()
+    return (d + pd.offsets.BDay(1) + pd.Timedelta(hours=23)).dt.tz_localize("UTC")
 
 
 def stamped(feat: pd.DataFrame, available: pd.Series, source_id: str,
@@ -279,7 +334,8 @@ def stamped(feat: pd.DataFrame, available: pd.Series, source_id: str,
 
 # ----------------------------------------------------------------------------- collectors
 
-def _socrata(url: str, market: Mapping[str, Any], get: Callable[[str], Any]) -> pd.DataFrame:
+def _socrata(url: str, market: Mapping[str, Any], get: Callable[[str], Any],
+             after: str | None = None) -> pd.DataFrame:
     """A market is EITHER an exact-name rename chain (`names`, preferred: a substring or LIKE can
     swallow a cross contract, which is how cot_tff/eur.parquet came to be one third EUR/JPY) or a
     `like` pattern whose every hit is reported."""
@@ -288,15 +344,61 @@ def _socrata(url: str, market: Mapping[str, Any], get: Callable[[str], Any]) -> 
         where = "upper(market_and_exchange_names) in (" + ",".join(f"'{n}'" for n in names) + ")"
     else:
         where = f"upper(market_and_exchange_names) like '{str(market['like']).upper()}'"
+    if after:
+        # Incremental: only weeks past the newest one already held.
+        where += f" AND report_date_as_yyyy_mm_dd > '{after}'"
     q = urllib.parse.urlencode({"$where": where, "$order": "report_date_as_yyyy_mm_dd ASC",
                                 "$limit": str(CFTC_LIMIT)})
     rows = get(f"{url}?{q}")
     return pd.DataFrame(rows or [])
 
 
+def _read_rows(p: Path) -> pd.DataFrame:
+    try:
+        return pd.DataFrame(json.loads(p.read_text(encoding="utf-8")))
+    except Exception:
+        return pd.DataFrame()
+
+
+def _replace(tmp: Path, p: Path) -> None:
+    """os.replace, with the Windows fallback: a destination another process holds open raises
+    PermissionError there, so it is removed and the rename retried once."""
+    try:
+        os.replace(tmp, p)
+    except PermissionError:
+        p.unlink(missing_ok=True)
+        os.replace(tmp, p)
+
+
+def _atomic_json_rows(p: Path, df: pd.DataFrame) -> None:
+    p.parent.mkdir(parents=True, exist_ok=True)
+    tmp = p.with_suffix(p.suffix + ".tmp")
+    df.to_json(tmp, orient="records")
+    _replace(tmp, p)
+
+
+def _atomic_parquet(p: Path, df: pd.DataFrame, *, index: bool = True) -> None:
+    p.parent.mkdir(parents=True, exist_ok=True)
+    tmp = p.with_suffix(p.suffix + ".tmp")
+    df.to_parquet(tmp, index=index)
+    _replace(tmp, p)
+
+
+def _cftc_due(last: str | None, calendar: Mapping[str, Any] | None,
+              now: datetime | None) -> bool:
+    """Fetch only when the report after the newest held one has been released: weekly data is
+    asked for once a week, never every hour."""
+    if not last:
+        return True
+    nxt = pd.Timestamp(last) + pd.Timedelta(days=7)
+    out = (cftc_release_day(nxt, calendar) + pd.Timedelta(hours=21)).tz_localize("UTC")
+    return bool(pd.Timestamp(now or datetime.now(UTC)) >= out)
+
+
 def cftc_market(market: Mapping[str, Any], sources: Mapping[str, Mapping[str, Any]],
-                get: Callable[[str], Any], state: dict[str, Any]
-                ) -> tuple[pd.DataFrame, dict[str, Any]]:
+                get: Callable[[str], Any], state: dict[str, Any],
+                calendar: Mapping[str, Any] | None = None, now: datetime | None = None,
+                budget: float | None = None) -> tuple[pd.DataFrame, dict[str, Any]]:
     """One market across every OPEN CFTC set. Futures-only and combined both kept, so the
     options book is their difference; each set's classes are prefixed by its family."""
     info: dict[str, Any] = {"market": market["id"], "sets": {}}
@@ -311,18 +413,27 @@ def cftc_market(market: Mapping[str, Any], sources: Mapping[str, Mapping[str, An
                 info["sets"][sid] = "NOT_FETCHED"
                 continue
             raw_path = RAW / f"{sid}__{market['id']}.json"
-            try:
-                df = _socrata(str(src["url"]), market, get)
-                if not df.empty:
-                    raw_path.parent.mkdir(parents=True, exist_ok=True)
-                    df.to_json(raw_path, orient="records")
-            except HardStop as hs:
-                state.setdefault("hard_stops", {})[sid] = {"code": hs.code, "at": _now()}
-                info["sets"][sid] = f"HARD_STOP {hs.code}"
-                continue
-            except Exception as exc:
-                info["sets"][sid] = f"ERROR {type(exc).__name__}"
-                df = pd.read_json(raw_path) if raw_path.exists() else pd.DataFrame()
+            held = _read_rows(raw_path)
+            last = (str(held["report_date_as_yyyy_mm_dd"].max())[:10]
+                    if "report_date_as_yyyy_mm_dd" in held.columns and len(held) else None)
+            df = held
+            if not _cftc_due(last, calendar, now):
+                info["sets"][sid] = "HELD (next release not out yet)"
+            elif budget is not None and time.monotonic() > budget:
+                info["sets"][sid] = "HELD (pass budget spent)"
+            else:
+                try:
+                    new = _socrata(str(src["url"]), market, get,
+                                   after=f"{last}T00:00:00.000" if last else None)
+                    if len(new):
+                        df = pd.concat([held, new], ignore_index=True)
+                        _atomic_json_rows(raw_path, df)
+                except HardStop as hs:
+                    state.setdefault("hard_stops", {})[sid] = {"code": hs.code, "at": _now()}
+                    info["sets"][sid] = f"HARD_STOP {hs.code}"
+                    continue
+                except Exception as exc:
+                    info["sets"][sid] = f"ERROR {type(exc).__name__}"
             if df.empty or "report_date_as_yyyy_mm_dd" not in df.columns:
                 info["sets"].setdefault(sid, "NO_ROWS")
                 continue
@@ -338,7 +449,17 @@ def cftc_market(market: Mapping[str, Any], sources: Mapping[str, Mapping[str, An
             dup = int(df.duplicated("report_date_as_yyyy_mm_dd").sum())
             if dup:
                 info.setdefault("overlap_weeks", {})[sid] = dup
-            df = df.drop_duplicates("report_date_as_yyyy_mm_dd", keep="last")
+            # Deterministic across a rename chain: the NEWEST declared name wins a shared week
+            # (chains are listed oldest first), never whichever row the API returned last.
+            order = [str(n).upper() for n in market.get("names") or []]
+            rank = (df["market_and_exchange_names"].astype(str).str.upper().map(
+                {n: i for i, n in enumerate(order)}).fillna(-1)
+                if "market_and_exchange_names" in df.columns and order
+                else pd.Series(0, index=df.index))
+            df = (df.assign(_rank=rank.to_numpy())
+                  .sort_values(["report_date_as_yyyy_mm_dd", "_rank"], kind="stable")
+                  .drop_duplicates("report_date_as_yyyy_mm_dd", keep="last")
+                  .drop(columns="_rank"))
             df.index = pd.to_datetime(df["report_date_as_yyyy_mm_dd"], utc=True)
             per[kind] = positioning(df).add_prefix(f"{fam}_")
             info["sets"].setdefault(sid, f"OK {len(df)}")
@@ -452,21 +573,9 @@ _MOF_MON = {m: i for i, m in enumerate(("Jan", "Feb", "Mar", "Apr", "May", "Jun"
 
 
 def fetch_text(url: str, timeout: float = 40.0) -> str:
-    """One honest GET of a page or file. Same rules as `fetch_json`: no retry, hard stop."""
-    req = urllib.request.Request(url, headers={"User-Agent": UA})
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            raw: bytes = r.read()
-    except urllib.error.HTTPError as exc:
-        if exc.code in HARD_STOP:
-            raise HardStop(exc.code, url) from exc
-        raise
-    for enc in ("utf-8-sig", "cp932"):
-        try:
-            return raw.decode(enc)
-        except UnicodeDecodeError:
-            continue
-    return raw.decode("utf-8", errors="replace")
+    """One honest GET of a page or file. Same rules as `fetch_json`: no retry, hard stop.
+    The body is decoded by the polite fetcher (header charset, then the page's own meta)."""
+    return _polite(url, "text/html,text/csv,*/*;q=0.8", timeout)
 
 
 def robots_allow(url: str, get_text: Callable[[str], str]) -> bool:
@@ -478,8 +587,8 @@ def robots_allow(url: str, get_text: Callable[[str], str]) -> bool:
     rp = urllib.robotparser.RobotFileParser()
     try:
         rp.parse(get_text(f"{p.scheme}://{p.netloc}/robots.txt").splitlines())
-    except urllib.error.HTTPError as exc:
-        return exc.code == 404
+    except (urllib.error.HTTPError, FetchError) as exc:
+        return getattr(exc, "code", None) == 404
     return rp.can_fetch(UA, url)
 
 
@@ -605,7 +714,9 @@ def mof_collect(src: Mapping[str, Any], get_text: Callable[[str], str] | None,
                 text = get_text(str(src["csv_url"]))
                 if mof_days(text)[1]:
                     csv_path.parent.mkdir(parents=True, exist_ok=True)
-                    csv_path.write_text(text, encoding="utf-8")
+                    tmp = csv_path.with_suffix(".csv.tmp")
+                    tmp.write_text(text, encoding="utf-8")
+                    _replace(tmp, csv_path)
                 index = get_text(str(src["monthly_index_url"]))
                 base = str(src["monthly_index_url"]).rsplit("/", 1)[0]
                 links = sorted(set(re.findall(r"monthly/(\d{8}e?)\.html", index)) |
@@ -639,9 +750,8 @@ def _universe() -> frozenset[str]:
 
 
 def _write_series(sid: str, frame: pd.DataFrame) -> Path:
-    SERIES.mkdir(parents=True, exist_ok=True)
     p = SERIES / f"{sid}.parquet"
-    frame.to_parquet(p, index=False)
+    _atomic_parquet(p, frame, index=False)
     return p
 
 
@@ -659,7 +769,8 @@ def _feature_cols(frame: pd.DataFrame) -> list[str]:
 
 def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any] | None,
                         state: dict[str, Any], bars: Callable[[str], pd.DataFrame | None],
-                        get_text: Callable[[str], str] | None = None
+                        get_text: Callable[[str], str] | None = None,
+                        now: datetime | None = None, budget: float | None = None
                         ) -> tuple[dict[str, dict[str, Any]], dict[str, pd.DataFrame],
                                     list[dict[str, Any]]]:
     """Every OPEN source -> stamped feature frames. `get=None` means offline (held raw only)."""
@@ -668,9 +779,10 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
     frames: dict[str, pd.DataFrame] = {}
     notes: list[dict[str, Any]] = []
     offline_get = _offline_get
+    calendar = registry.get("cftc_release_calendar") or {}
 
     for m in registry.get("cftc_markets") or []:
-        pos, info = cftc_market(m, sources, get or offline_get, state)
+        pos, info = cftc_market(m, sources, get or offline_get, state, calendar, now, budget)
         notes.append(info)
         if pos.empty or len(pos) < MIN_ROWS:
             continue
@@ -694,14 +806,18 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
                 oi_chg = pos["oi"].diff() if "oi" in pos.columns else None
                 feat = feat.join(flow_price(pos[head].diff() * sign, oi_chg, px))
         sid = f"cot_{m['id']}"
-        frames[sid] = stamped(feat.reset_index(drop=True), cftc_available(pd.Series(pos.index)),
+        frames[sid] = stamped(feat.reset_index(drop=True),
+                              cftc_available(pd.Series(pos.index), calendar),
                               sid, pd.Series(pos.index))
         built[sid] = {"targets": list(m.get("targets") or []), "kind": "cftc",
                       "rows": len(pos), "last_event": str(pos.index.max())}
 
     eia = sources.get("eia_futures") or {}
     key = next((os.environ.get(k) for k in eia.get("key_env") or [] if os.environ.get(k)), "")
-    for cv in registry.get("eia_curves") or []:
+    if eia.get("terms") != "OPEN":
+        notes.append({"source": "eia_futures", "status": "UNMEASURED",
+                      "why": str(eia.get("terms")), "note": eia.get("note", "")})
+    for cv in (registry.get("eia_curves") or []) if eia.get("terms") == "OPEN" else []:
         sid = f"eia_{cv['id']}"
         raw_path = RAW / f"{sid}.parquet"
         px = pd.DataFrame()
@@ -710,8 +826,7 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
             try:
                 px = eia_curve(cv, key, get)
                 if not px.empty:
-                    raw_path.parent.mkdir(parents=True, exist_ok=True)
-                    px.to_parquet(raw_path)
+                    _atomic_parquet(raw_path, px)
             except HardStop as hs:
                 state.setdefault("hard_stops", {})["eia_futures"] = {"code": hs.code, "at": _now()}
             except Exception as exc:
@@ -744,8 +859,7 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
             try:
                 yc = fred_curve(cv, fkey, get)
                 if not yc.empty:
-                    raw_path.parent.mkdir(parents=True, exist_ok=True)
-                    yc.to_parquet(raw_path)
+                    _atomic_parquet(raw_path, yc)
             except HardStop as hs:
                 state.setdefault("hard_stops", {})["fred_rates"] = {"code": hs.code, "at": _now()}
             except Exception as exc:
@@ -954,6 +1068,31 @@ def lab_inputs(built: Mapping[str, Any], frames: Mapping[str, pd.DataFrame]
     return rows
 
 
+#: Wall-clock budget for one pass's network reads; past it every source serves what it holds.
+FETCH_BUDGET_S = 600.0
+
+
+def stale_series(built: Mapping[str, Any], frames: Mapping[str, pd.DataFrame],
+                 registry: Mapping[str, Any], now: datetime) -> dict[str, str]:
+    """A series whose newest row is far older than its own cadence is STALE: the conditioner
+    would carry its last value forward for ever. Stale means silent past 3x the series' median
+    publication gap and at least 30 days. A transmission with a stale leg is stale too."""
+    out: dict[str, str] = {}
+    t = pd.Timestamp(now)
+    for sid in built:
+        at = pd.to_datetime(frames[sid]["available_time"], utc=True).sort_values()
+        gap = at.diff().median()
+        bound = max(pd.Timedelta(days=30), 3 * gap if pd.notna(gap) else pd.Timedelta(days=30))
+        if len(at) and t - at.iloc[-1] > bound:
+            out[sid] = f"last published {at.iloc[-1].date()}, silent beyond {bound.days}d"
+    for tr in registry.get("transmissions") or []:
+        sid = f"xfer_{tr['id']}"
+        legs = [str(tr["a"]), str(tr["b"])]
+        if sid in built and any(leg in out for leg in legs):
+            out[sid] = "a leg is stale: " + ", ".join(leg for leg in legs if leg in out)
+    return out
+
+
 def build(*, dry_run: bool = False, offline: bool = False) -> dict[str, Any]:
     t0 = time.monotonic()
     registry = _read(REGISTRY, {}) or {}
@@ -963,9 +1102,15 @@ def build(*, dry_run: bool = False, offline: bool = False) -> dict[str, Any]:
     except Exception:
         def bars(sym: str) -> pd.DataFrame | None:
             return None
+    now = datetime.now(UTC)
     built, frames, notes = build_market_series(
         registry, get=None if offline else fetch_json, state=state, bars=bars,
-        get_text=None if offline else fetch_text)
+        get_text=None if offline else fetch_text, now=now,
+        budget=time.monotonic() + FETCH_BUDGET_S)
+    for sid, why in stale_series(built, frames, registry, now).items():
+        built.pop(sid, None)
+        frames.pop(sid, None)
+        notes.append({"series": sid, "status": "UNMEASURED", "why": f"STALE: {why}"})
     if not dry_run:
         for sid, f in frames.items():
             _write_series(sid, f)

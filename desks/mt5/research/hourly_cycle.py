@@ -6033,7 +6033,7 @@ def main() -> None:
     pkc = _costed("pack_cells", lambda: _producer(
         "pack_cells", "research/pack_cells.py", "--once", "--budget-s", "240"))
     # FUTURES STATE (principal 2026-10-19): CFTC positioning incl. the options-on-futures book,
-    # EIA and FRED curves, FX rate differentials and reserves, Japan's MoF intervention record
+    # FRED curves, FX rate differentials and reserves, Japan's MoF intervention record
     # and cross-market transmissions become stamped series and exogenous_conditioner cells
     # through the same registry door, each cell minted once in its life, headline state first.
     # 401/403/429/451 is a hard stop per source.

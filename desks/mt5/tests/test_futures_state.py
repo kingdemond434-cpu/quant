@@ -406,3 +406,95 @@ def test_mof_is_not_fetched_when_robots_disallows(tmp_desk: Path) -> None:
                     "monthly_index_url": "https://h/m/index.html"}, get_text, {}, notes)
     assert calls == ["https://h/robots.txt"]
     assert notes[0]["why"] == "robots disallows"
+
+
+def _registry_calendar() -> dict:
+    import json
+
+    return json.loads(fs.REGISTRY.read_text(encoding="utf-8"))["cftc_release_calendar"]
+
+
+@pytest.mark.parametrize(
+    ("as_of", "published"),
+    [
+        ("2026-08-11", "2026-08-14"),  # an ordinary week: the Friday after
+        ("2026-11-24", "2026-11-30"),  # Thanksgiving: CFTC's 2026 schedule says Monday 11/30
+        ("2026-06-16", "2026-06-22"),  # Juneteenth on the Friday
+        ("2026-11-10", "2026-11-16"),  # Veterans Day on the Wednesday
+        ("2025-12-30", "2026-01-05"),  # New Year's Day on the Thursday
+        ("2025-01-07", "2025-01-13"),  # the 2025-01-09 closure (National Day of Mourning)
+        ("2025-10-21", "2025-12-02"),  # the 2025 lapse: CFTC's catch-up table, not a guess
+        ("2019-01-15", "2019-03-08"),  # the 2018-19 lapse: held to the end of the catch-up
+    ],
+)
+def test_cot_rows_are_stamped_at_the_day_cftc_actually_published(as_of: str,
+                                                                 published: str) -> None:
+    at = fs.cftc_available(pd.Series(pd.to_datetime([as_of], utc=True)),
+                           _registry_calendar()).iloc[0]
+    assert at == pd.Timestamp(f"{published} 21:00", tz="UTC")
+
+
+def test_weekly_reports_are_fetched_once_after_release_and_incrementally(
+        tmp_desk: Path) -> None:
+    rows = _cot_rows(60, 3, "GOLD - COMMODITY EXCHANGE INC.")
+    get = _fake_get({"GOLD - COMMODITY EXCHANGE": rows})
+    src = {"cftc_disagg_futonly": {"terms": "OPEN", "url": "https://h/72hh-3qpy.json"}}
+    mkt = {"id": "gold", "names": ["GOLD - COMMODITY EXCHANGE INC."]}
+    last = pd.Timestamp(rows[-1]["report_date_as_yyyy_mm_dd"][:10])
+    pos, _ = fs.cftc_market(mkt, src, get, {}, now=last.tz_localize("UTC"))
+    assert len(pos) == 60 and len(get.calls) == 1
+    # Before the next report is out: nothing is asked for, the held rows serve.
+    before = (last + pd.Timedelta(days=9)).tz_localize("UTC")
+    pos, info = fs.cftc_market(mkt, src, get, {}, now=before)
+    assert len(get.calls) == 1 and len(pos) == 60
+    assert info["sets"]["cftc_disagg_futonly"].startswith("HELD")
+    # After it is out: one call, asking only for weeks past the newest held one.
+    after = (last + pd.Timedelta(days=10, hours=22)).tz_localize("UTC")
+    fs.cftc_market(mkt, src, get, {}, now=after)
+    assert len(get.calls) == 2
+    q = urllib.parse.parse_qs(urllib.parse.urlsplit(get.calls[1]).query)["$where"][0]
+    assert f"> '{last.date()}" in q
+
+
+def test_a_shared_week_across_a_rename_keeps_the_newest_name(tmp_desk: Path) -> None:
+    old = _cot_rows(40, 4, "CRUDE OIL, LIGHT SWEET - NEW YORK MERCANTILE EXCHANGE")
+    new = [dict(r, market_and_exchange_names="WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE",
+                open_interest_all="999") for r in old[-5:]]
+
+    def get(url: str) -> list:
+        return new + old  # the API's order must not decide
+
+    src = {"cftc_disagg_futonly": {"terms": "OPEN", "url": "https://h/72hh-3qpy.json"}}
+    mkt = {"id": "wti", "names": ["CRUDE OIL, LIGHT SWEET - NEW YORK MERCANTILE EXCHANGE",
+                                  "WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE"]}
+    pos, info = fs.cftc_market(mkt, src, get, {})
+    assert (pos["oi"].iloc[-5:] == 999).all() and (pos["oi"].iloc[:-5] != 999).all()
+    assert info["overlap_weeks"]["cftc_disagg_futonly"] == 5
+
+
+def test_a_silent_series_is_stale_and_mints_nothing() -> None:
+    from datetime import UTC, datetime
+
+    weeks = pd.date_range("2022-01-07", periods=60, freq="7D", tz="UTC")
+    f = pd.DataFrame({"x": range(60), "available_time": weeks})
+    built = {"cot_a": {"targets": []}, "cot_b": {"targets": []}, "xfer_ab": {"targets": []}}
+    fresh = f.assign(available_time=pd.date_range(end=datetime.now(UTC), periods=60,
+                                                  freq="7D"))
+    frames = {"cot_a": f, "cot_b": fresh, "xfer_ab": fresh}
+    reg = {"transmissions": [{"id": "ab", "a": "cot_a", "b": "cot_b"}]}
+    out = fs.stale_series(built, frames, reg, datetime.now(UTC))
+    assert set(out) == {"cot_a", "xfer_ab"}
+
+
+def test_a_friday_close_is_public_on_monday() -> None:
+    at = fs.daily_available(pd.Series(pd.to_datetime(["2026-10-30"], utc=True))).iloc[0]
+    assert at == pd.Timestamp("2026-11-02 23:00", tz="UTC")
+
+
+def test_discontinued_eia_curves_are_named_not_read(tmp_desk: Path) -> None:
+    reg = {"sources": [{"id": "eia_futures", "terms": "DISCONTINUED", "note": "x"}],
+           "eia_curves": [{"id": "wti", "series": ["RCLC1"], "targets": ["XTIUSD"]}]}
+    built, _f, notes = fs.build_market_series(reg, get=lambda u: 1 / 0, state={},
+                                              bars=lambda s: None)
+    assert not built
+    assert any(n.get("source") == "eia_futures" and n["status"] == "UNMEASURED" for n in notes)

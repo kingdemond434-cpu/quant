@@ -40,14 +40,14 @@
   },
   {
    "id": "eia_futures",
-   "adapter": "eia",
-   "terms": "OPEN",
+   "adapter": "none",
+   "terms": "DISCONTINUED",
    "key_env": [
     "EIA_API_KEY",
     "EIA_KEY"
    ],
    "url": "https://api.eia.gov/v2/",
-   "note": "NYMEX contracts 1-4 as republished by EIA (public domain US government data)"
+   "note": "EIA stopped publishing NYMEX futures prices after 2024-04-05 (pet_pri_fut_s1_d, read 2026-11-03), and its table was weekly, not daily. No dated WTI/Henry Hub curve from a public-domain source now: a named gap."
   },
   {
    "id": "fred_rates",
@@ -199,7 +199,6 @@
  "cftc_markets": [
   {
    "id": "gold",
-   "like": "GOLD - COMMODITY EXCHANGE%",
    "targets": [
     "XAUUSD",
     "XAUEUR",
@@ -207,20 +206,24 @@
     "XAGUSD",
     "AUDUSD",
     "USDJPY"
+   ],
+   "names": [
+    "GOLD - COMMODITY EXCHANGE INC."
    ]
   },
   {
    "id": "silver",
-   "like": "SILVER - COMMODITY EXCHANGE%",
    "targets": [
     "XAGUSD",
     "XAGEUR",
     "XAUUSD"
+   ],
+   "names": [
+    "SILVER - COMMODITY EXCHANGE INC."
    ]
   },
   {
    "id": "copper",
-   "like": "COPPER%COMMODITY EXCHANGE%",
    "targets": [
     "XCUUSD",
     "AUDUSD",
@@ -228,29 +231,36 @@
     "XALUSD",
     "XZNUSD",
     "XNIUSD"
+   ],
+   "names": [
+    "COPPER-GRADE #1 - COMMODITY EXCHANGE INC.",
+    "COPPER- #1 - COMMODITY EXCHANGE INC."
    ]
   },
   {
    "id": "platinum",
-   "like": "PLATINUM - NEW YORK MERCANTILE%",
    "targets": [
     "XPTUSD",
     "USDZAR",
     "XPDUSD"
+   ],
+   "names": [
+    "PLATINUM - NEW YORK MERCANTILE EXCHANGE"
    ]
   },
   {
    "id": "palladium",
-   "like": "PALLADIUM - NEW YORK MERCANTILE%",
    "targets": [
     "XPDUSD",
     "XPTUSD",
     "USDRUB"
+   ],
+   "names": [
+    "PALLADIUM - NEW YORK MERCANTILE EXCHANGE"
    ]
   },
   {
    "id": "wti",
-   "like": "WTI-PHYSICAL - NEW YORK MERCANTILE%",
    "targets": [
     "XTIUSD",
     "XBRUSD",
@@ -258,102 +268,133 @@
     "CADJPY",
     "USDMXN",
     "CA60"
+   ],
+   "names": [
+    "CRUDE OIL, LIGHT SWEET - NEW YORK MERCANTILE EXCHANGE",
+    "WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE"
    ]
   },
   {
    "id": "brent",
-   "like": "BRENT LAST DAY - NEW YORK MERCANTILE%",
    "targets": [
     "XBRUSD",
     "XTIUSD"
+   ],
+   "names": [
+    "BRENT LAST DAY - NEW YORK MERCANTILE EXCHANGE"
    ]
   },
   {
    "id": "natgas",
-   "like": "NAT GAS NYME - NEW YORK MERCANTILE%",
    "targets": [
     "XNGUSD"
+   ],
+   "names": [
+    "NATURAL GAS - NEW YORK MERCANTILE EXCHANGE",
+    "NAT GAS NYME - NEW YORK MERCANTILE EXCHANGE"
    ]
   },
   {
    "id": "rbob",
-   "like": "GASOLINE RBOB - NEW YORK MERCANTILE%",
    "targets": [
     "XTIUSD",
     "XBRUSD"
+   ],
+   "names": [
+    "GASOLINE BLENDSTOCK (RBOB) - NEW YORK MERCANTILE EXCHANGE",
+    "GASOLINE RBOB - NEW YORK MERCANTILE EXCHANGE"
    ]
   },
   {
    "id": "ulsd",
-   "like": "NY HARBOR ULSD - NEW YORK MERCANTILE%",
    "targets": [
     "XBRUSD",
     "XTIUSD"
+   ],
+   "names": [
+    "#2 HEATING OIL- NY HARBOR-ULSD - NEW YORK MERCANTILE EXCHANGE",
+    "NY HARBOR ULSD - NEW YORK MERCANTILE EXCHANGE"
    ]
   },
   {
    "id": "corn",
-   "like": "CORN - CHICAGO BOARD OF TRADE%",
    "targets": [
     "CORN",
     "WHEAT",
     "SOYBEAN"
+   ],
+   "names": [
+    "CORN - CHICAGO BOARD OF TRADE"
    ]
   },
   {
    "id": "wheat_srw",
-   "like": "WHEAT-SRW - CHICAGO BOARD OF TRADE%",
    "targets": [
     "WHEAT",
     "CORN"
+   ],
+   "names": [
+    "WHEAT-SRW - CHICAGO BOARD OF TRADE"
    ]
   },
   {
    "id": "soybeans",
-   "like": "SOYBEANS - CHICAGO BOARD OF TRADE%",
    "targets": [
     "SOYBEAN",
     "CORN",
     "USDBRL"
+   ],
+   "names": [
+    "SOYBEANS - CHICAGO BOARD OF TRADE"
    ]
   },
   {
    "id": "sugar",
-   "like": "SUGAR NO. 11 - ICE FUTURES U.S.%",
    "targets": [
     "SUGAR",
     "USDBRL"
+   ],
+   "names": [
+    "SUGAR NO. 11 - ICE FUTURES U.S."
    ]
   },
   {
    "id": "coffee",
-   "like": "COFFEE C - ICE FUTURES U.S.%",
    "targets": [
     "COFARA",
     "COFROB",
     "USDBRL"
+   ],
+   "names": [
+    "COFFEE C - ICE FUTURES U.S."
    ]
   },
   {
    "id": "cocoa",
-   "like": "COCOA - ICE FUTURES U.S.%",
    "targets": [
     "USCOCOA",
     "UKCOCOA"
+   ],
+   "names": [
+    "COCOA - ICE FUTURES U.S."
    ]
   },
   {
    "id": "cotton",
-   "like": "COTTON NO. 2 - ICE FUTURES U.S.%",
    "targets": [
     "COTTON"
+   ],
+   "names": [
+    "COTTON NO. 2 - ICE FUTURES U.S."
    ]
   },
   {
    "id": "fcoj",
-   "like": "%ORANGE JUICE%ICE FUTURES U.S.%",
    "targets": [
     "OJ"
+   ],
+   "names": [
+    "FRZN CONCENTRATED ORANGE JUICE - ICE FUTURES U.S."
    ]
   },
   {
@@ -382,71 +423,89 @@
   },
   {
    "id": "djia",
-   "like": "DJIA x $5 - CHICAGO BOARD OF TRADE%",
    "targets": [
     "US30"
+   ],
+   "names": [
+    "DJIA x $5 - CHICAGO BOARD OF TRADE"
    ]
   },
   {
    "id": "russell",
-   "like": "RUSSELL E-MINI - CHICAGO MERCANTILE%",
    "targets": [
     "US2000"
+   ],
+   "names": [
+    "RUSSELL E-MINI - CHICAGO MERCANTILE EXCHANGE"
    ]
   },
   {
    "id": "nikkei",
-   "like": "NIKKEI STOCK AVERAGE YEN DENOM%",
    "targets": [
     "JPN225",
     "USDJPY"
+   ],
+   "names": [
+    "NIKKEI STOCK AVERAGE YEN DENOM - CHICAGO MERCANTILE EXCHANGE"
    ]
   },
   {
    "id": "vix",
-   "like": "VIX FUTURES - CBOE FUTURES EXCHANGE%",
    "targets": [
     "US500",
     "NAS100",
     "USDJPY",
     "XAUUSD",
     "AUDJPY"
+   ],
+   "names": [
+    "VIX FUTURES - CBOE FUTURES EXCHANGE"
    ]
   },
   {
    "id": "ust10y",
-   "like": "UST 10Y NOTE - CHICAGO BOARD OF TRADE%",
    "targets": [
     "UST10Y",
     "USDJPY",
     "XAUUSD",
     "US500"
+   ],
+   "names": [
+    "10-YEAR U.S. TREASURY NOTES - CHICAGO BOARD OF TRADE",
+    "UST 10Y NOTE - CHICAGO BOARD OF TRADE"
    ]
   },
   {
    "id": "ust5y",
-   "like": "UST 5Y NOTE - CHICAGO BOARD OF TRADE%",
    "targets": [
     "UST05Y",
     "USDJPY"
+   ],
+   "names": [
+    "5-YEAR U.S. TREASURY NOTES - CHICAGO BOARD OF TRADE",
+    "UST 5Y NOTE - CHICAGO BOARD OF TRADE"
    ]
   },
   {
    "id": "bitcoin",
-   "like": "BITCOIN - CHICAGO MERCANTILE%",
    "targets": [
     "BTCUSD",
     "ETHUSD",
     "SOLUSD",
     "NAS100"
+   ],
+   "names": [
+    "BITCOIN - CHICAGO MERCANTILE EXCHANGE"
    ]
   },
   {
    "id": "ether",
-   "like": "ETHER CASH SETTLED - CHICAGO MERCANTILE%",
    "targets": [
     "ETHUSD",
     "BTCUSD"
+   ],
+   "names": [
+    "ETHER CASH SETTLED - CHICAGO MERCANTILE EXCHANGE"
    ]
   },
   {
@@ -486,29 +545,35 @@
   },
   {
    "id": "cad",
-   "like": "CANADIAN DOLLAR - CHICAGO MERCANTILE%",
    "targets": [
     "USDCAD",
     "CADJPY"
    ],
-   "sign": -1
+   "sign": -1,
+   "names": [
+    "CANADIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE"
+   ]
   },
   {
    "id": "chf",
-   "like": "SWISS FRANC - CHICAGO MERCANTILE%",
    "targets": [
     "USDCHF",
     "EURCHF"
    ],
-   "sign": -1
+   "sign": -1,
+   "names": [
+    "SWISS FRANC - CHICAGO MERCANTILE EXCHANGE"
+   ]
   },
   {
    "id": "aud",
-   "like": "AUSTRALIAN DOLLAR - CHICAGO MERCANTILE%",
    "targets": [
     "AUDUSD",
     "AUDJPY",
     "AUDNZD"
+   ],
+   "names": [
+    "AUSTRALIAN DOLLAR - CHICAGO MERCANTILE EXCHANGE"
    ]
   },
   {
@@ -524,37 +589,47 @@
   },
   {
    "id": "mxn",
-   "like": "MEXICAN PESO - CHICAGO MERCANTILE%",
    "targets": [
     "USDMXN",
     "MXNJPY"
    ],
-   "sign": -1
+   "sign": -1,
+   "names": [
+    "MEXICAN PESO - CHICAGO MERCANTILE EXCHANGE"
+   ]
   },
   {
    "id": "brl",
-   "like": "BRAZILIAN REAL - CHICAGO MERCANTILE%",
    "targets": [
     "USDBRL"
    ],
-   "sign": -1
+   "sign": -1,
+   "names": [
+    "BRAZILIAN REAL - CHICAGO MERCANTILE EXCHANGE"
+   ]
   },
   {
    "id": "zar",
-   "like": "SO AFRICAN RAND - CHICAGO MERCANTILE%",
    "targets": [
     "USDZAR",
     "ZARJPY"
    ],
-   "sign": -1
+   "sign": -1,
+   "names": [
+    "SOUTH AFRICAN RAND - CHICAGO MERCANTILE EXCHANGE",
+    "SO AFRICAN RAND - CHICAGO MERCANTILE EXCHANGE"
+   ]
   },
   {
    "id": "usd_index",
-   "like": "USD INDEX - ICE FUTURES U.S.%",
    "targets": [
     "USDX",
     "EURUSD",
     "XAUUSD"
+   ],
+   "names": [
+    "U.S. DOLLAR INDEX - ICE FUTURES U.S.",
+    "USD INDEX - ICE FUTURES U.S."
    ]
   },
   {
@@ -585,6 +660,7 @@
     "USDX"
    ],
    "names": [
+    "2-YEAR U.S. TREASURY NOTES - CHICAGO BOARD OF TRADE",
     "UST 2Y NOTE - CHICAGO BOARD OF TRADE"
    ]
   },
@@ -597,6 +673,7 @@
     "USDJPY"
    ],
    "names": [
+    "U.S. TREASURY BONDS - CHICAGO BOARD OF TRADE",
     "UST BOND - CHICAGO BOARD OF TRADE"
    ]
   },
@@ -617,6 +694,7 @@
     "US500"
    ],
    "names": [
+    "ULTRA U.S. TREASURY BONDS - CHICAGO BOARD OF TRADE",
     "ULTRA UST BOND - CHICAGO BOARD OF TRADE"
    ]
   },
@@ -897,20 +975,6 @@
     "USDJPY"
    ],
    "why": "leveraged funds long equity futures and short VIX futures at once is a one-sided crowd"
-  },
-  {
-   "id": "crude_curve_vs_mm",
-   "a": "eia_wti",
-   "b": "cot_wti",
-   "column_a": "roll_yield_12",
-   "column_b": "disagg_m_money_net_oi",
-   "op": "zgap",
-   "targets": [
-    "XTIUSD",
-    "XBRUSD",
-    "USDCAD"
-   ],
-   "why": "curve backwardation without speculative length (or the reverse) is physical tightness the crowd has not priced"
   },
   {
    "id": "real_yield_vs_gold_mm",
@@ -1297,5 +1361,43 @@
     ]
    }
   }
- ]
+ ],
+ "cftc_release_calendar": {
+  "_doc": "When each COT report became PUBLIC. Normal: the Friday after the as-of day, 15:30 ET. A US federal holiday or a CFTC closure between the as-of day and that Friday moves it to the next business day (rule matches every delayed date on CFTC's 2026 schedule). releases = exact as-of -> publish dates from CFTC notices. windows = a conservative not-before date where the exact catch-up dates are not on record.",
+  "closures": [
+   "2025-01-09"
+  ],
+  "closures_source": "CFTC special announcement 2025-01-07: offices closed Thu 2025-01-09 (National Day of Mourning), report released Mon 2025-01-13",
+  "releases": {
+   "2025-09-30": "2025-11-19",
+   "2025-10-07": "2025-11-21",
+   "2025-10-14": "2025-11-25",
+   "2025-10-21": "2025-12-02",
+   "2025-10-28": "2025-12-05",
+   "2025-11-04": "2025-12-09",
+   "2025-11-10": "2025-12-10",
+   "2025-11-18": "2025-12-12",
+   "2025-11-25": "2025-12-15",
+   "2025-12-02": "2025-12-17",
+   "2025-12-09": "2025-12-19",
+   "2025-12-16": "2025-12-23",
+   "2025-12-23": "2025-12-29"
+  },
+  "releases_source": "CFTC special announcement 2025-12-09 (supersedes 2025-11-18): lapse 2025-10-01..11-12, normal schedule from 2025-12-29",
+  "windows": [
+   {
+    "from": "2018-12-18",
+    "to": "2019-03-05",
+    "not_before": "2019-03-08",
+    "source": "CFTC press release 7864-19 (2019-01-29): reports from the 2018-12-24 data published in order from Fri 2019-02-01, two a week, until current. The exact dates are projected, not recorded, so every report in the window is held until the projected catch-up end."
+   },
+   {
+    "from": "2013-09-24",
+    "to": "2013-11-19",
+    "not_before": "2013-12-06",
+    "source": "2013-10-01..10-16 lapse. Catch-up dates not on record here: conservative not-before, an estimate that errs late"
+   }
+  ]
+ },
+ "_names_doc": "Every market is an exact-name chain, OLDEST name first and the current CFTC name last (current names copied from CFTC's TFF and disaggregated listings for 2026-09). A shared week keeps the newest name."
 }
