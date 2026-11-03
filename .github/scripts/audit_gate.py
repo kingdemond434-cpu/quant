@@ -165,6 +165,9 @@ PROTECTED = (
     "ops/gates.sh", "pyproject.toml", "conftest.py", "*/conftest.py", "setup.cfg", "setup.py",
     "pytest.ini", "tox.ini", "*sitecustomize.py", "*usercustomize.py", "*.pth",
     ".pre-commit-config.yaml", "scripts/moneypath_precommit_guard.py",
+    # the hooks that run the money-path guard on every commit and push (#246 audit, 2026-11-03):
+    # an AUTO edit could turn them into no-ops, so they take the registry or zuck's path
+    "ops/githooks/*",
 )  # fmt: skip
 #: Never merged by anyone: a secret in this public repo is leaked the moment it is pushed.
 SECRETS = ("data/secrets/*", "*/data/secrets/*")
