@@ -452,6 +452,10 @@ def test_the_docket_writer_runs_the_census_and_reaims_every_hour(monkeypatch, tm
     # order_docket owns JUDGE_COVERAGE.json, the ratchet and the bank; stand it in, and FILTER
     # nothing here (the filtered case is the P2 tests above)
     monkeypatch.setattr(jc, "order_docket", lambda rows, **k: (rows, {}))
+    # The learned pre-judge's report and model dir are desk state too (audit MF2 of 8c77ac60e).
+    from research import prejudge_model as pjm
+    monkeypatch.setattr(pjm, "REPORT", tmp_path / "PREJUDGE.json")
+    monkeypatch.setattr(pjm, "MODEL_DIR", tmp_path / "prejudge_model")
     monkeypatch.setattr(hf, "_daily", lambda s, u: None)
     monkeypatch.setattr(hf, "_lawful", lambda: (lambda s, f: True))
     monkeypatch.setattr(hf, "_unrunnable", lambda: NOBLOCK)

@@ -44,3 +44,19 @@ def test_cli_keeps_writer_ownership_until_merge_returns(monkeypatch):
     monkeypatch.setattr(merger, "main", merge)
     assert merger.run_cli() == 7
     assert not active
+
+
+def test_a_re_minted_row_keeps_its_earliest_first_seen():
+    """Audit of #330: re-docketing never resets a cell's age (the pre-judge flag bound reads it)."""
+    from datetime import UTC, datetime
+
+    mh = merger
+    now = datetime(2026, 10, 13, 12, 0, tzinfo=UTC)
+    row = {"first_seen": "2026-10-13T11:00:00+00:00"}
+    mh.keep_earliest_first_seen(row, {"first_seen": "2026-10-01T00:00:00Z"}, now)
+    assert row["first_seen"] == "2026-10-01T00:00:00Z"
+    mh.keep_earliest_first_seen(row, {"first_seen": "2026-10-12T00:00:00+00:00"}, now)
+    assert row["first_seen"] == "2026-10-01T00:00:00Z"
+    fresh: dict = {}
+    mh.keep_earliest_first_seen(fresh, {"merged_at": "garbage"}, now)
+    assert fresh["first_seen"] == now.isoformat()
