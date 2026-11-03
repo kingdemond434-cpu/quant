@@ -1118,6 +1118,7 @@ YAHOO_CUT_ARTIFACTS: tuple[tuple[str, Path], ...] = (
     ("fetch_futures_curves", BASE / "reports" / "futures_curve_coverage.json"),
     ("futures_lead_lag", BASE / "reports" / "FUTURES_LEAD_LAG.json"),
     ("alpha_capture", BASE / "reports" / "ANALYST_VIEWS.json"),
+    ("bar_clock_probe", BASE / "reports" / "BAR_CLOCK.json"),
 )
 
 
@@ -1133,7 +1134,31 @@ FRED_COPYRIGHTED_CUT_ARTIFACTS: tuple[tuple[str, Path], ...] = (
     ("screen_fred_macro_axis", BASE.parent.parent / "data" / "fred_macro_screen.json"),
     ("run_cot_screen", BASE.parent.parent / "data" / "cot_screen_summary.json"),
     ("fetch_sge_premium", BASE / "reports" / "sge_premium.json"),
+    ("macro_view", BASE / "reports" / "MACRO_VIEW.json"),
 )
+
+
+def vix_risk_lean_cut_line() -> dict[str, Any]:
+    """THE LOST VIX RISK LEAN (audit HOLD on 06cab1824, 2026-11-03). The third-party FRED cut
+    removed VIXCLS from three capital readers: `mt5desk.macro_view` (the 0.6-1.4 two-sided
+    `macro_view` modifier the gateway applies in resolve_family_order), `macro_state`'s `risk`
+    dimension and `leg_factors`' `d_vix`. Dropping one side of a two-sided capital modifier is a
+    Rule 1 change, so it is billed here from the modifier's own definition -- never from an
+    artifact that may not exist on this host -- with delta E[log W] UNMEASURED and the licensed
+    substitute (US500_RV21 from own bars) that would restore it, which is NOT wired."""
+    try:
+        from mt5desk.macro_view import risk_leg_missed_growth
+        line = risk_leg_missed_growth()
+    except Exception as exc:                       # unreadable is UNMEASURED
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": f"mt5desk.macro_view unreadable ({type(exc).__name__}): the cut's line "
+                       "could not be built"}
+    if line is None:
+        return {"verdict": NOT_BINDING, "lines": [],
+                "why": "VIXCLS is readable as live input: the risk lean is intact"}
+    return {"verdict": UNMEASURED, "lines": [line], "n_cut": 1,
+            "source": "mt5desk.macro_view.risk_leg_missed_growth",
+            "why": "the VIX risk lean is removed; its delta E[log W] is UNMEASURED"}
 
 
 def _cut_lines(policy_row: str, artifacts: tuple[tuple[str, Path], ...]
@@ -1313,7 +1338,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         CANON_PUBLICATION),
                                     "admission_scan_cadence": admission_cadence_line(alloc),
                                     "yahoo_live_input_cut": yahoo_cut_lines(),
-                                    "fred_copyrighted_cut": fred_copyrighted_cut_lines()},
+                                    "fred_copyrighted_cut": fred_copyrighted_cut_lines(),
+                                    "vix_risk_lean_cut": vix_risk_lean_cut_line()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

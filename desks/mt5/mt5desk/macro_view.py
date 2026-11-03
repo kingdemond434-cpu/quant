@@ -135,6 +135,43 @@ def _third_party(series_id: str) -> bool:
         return series_id.upper() in ("VIXCLS", "BAMLH0A0HYM2")
 
 
+#: The licensed substitute that WOULD restore the risk leg: the realised-vol proxy the macro desk
+#: already publishes from the desk's own MT5 US500 bars (`research/macro_desk.RV_PROXY`). It is
+#: NOT wired into the lean here: wiring it is a new sizing change with its own Rule 1 proof.
+RISK_LEG_SUBSTITUTE = "mt5_own_bars:US500 -> US500_RV21 (macro_desk.RV_PROXY, cross_asset_anchors)"
+
+
+def risk_leg_missed_growth() -> dict[str, Any] | None:
+    """The missed-growth line for the VIX risk lean this view (and macro_state's `risk`
+    dimension, and leg_factors' `d_vix`) no longer carries, or None while VIXCLS is readable.
+
+    Removing one side of a two-sided capital modifier (capital_modifiers `macro_view`, band
+    0.6-1.4) is a capital change under growth-governance Rule 1, so the lost lean is billed:
+    delta E[log W] UNMEASURED, never zero, until the licensed substitute is wired and proven."""
+    if not _third_party("VIXCLS"):
+        return None
+    return {"kind": "capital_modifier_cut", "policy_row": "fred_copyrighted",
+            "source": "macro_view:VIXCLS", "fred_series": "VIXCLS",
+            "series_status": "UNMEASURED_NO_LICENSED_SOURCE",
+            "modifier": "macro_view", "band": [MULT_MIN, MULT_MAX],
+            "lost": "the VIX risk lean (risk-on / haven currencies and the risk half of gold)",
+            "effect": ("risk-on (" + " ".join(RISK_ON) + ") and haven (" + " ".join(HAVENS)
+                       + ") currencies publish no lean, so a pair whose legs are both risk-on "
+                       "or haven sizes at macro 1.0 and a pair with one such leg is read off "
+                       "its other leg only; XAU/XAG lean is dollar-only (-0.6 x dxy); view "
+                       "confidence is the dollar driver's strength alone. Same cut: "
+                       "libs/portfolio/macro_state `risk` dimension absent, "
+                       "libs/portfolio/leg_factors `d_vix` factor absent (no loading)"),
+            "consumers": ["mt5desk.macro_view.multiplier -> gateway.resolve_family_order",
+                          "libs.portfolio.macro_state.now (risk dimension)",
+                          "libs.portfolio.leg_factors.daily_factor_returns (d_vix)"],
+            "delta_elogw": "UNMEASURED", "verdict": "UNMEASURED",
+            "licensed_substitute": RISK_LEG_SUBSTITUTE, "substitute_wired": False,
+            "restores_when": ("the US500_RV21 proxy is wired into the risk leg as a separate "
+                              "sizing change carrying its own Rule 1 E[log W] proof"),
+            "waits_for": "a sizing change with a Rule 1 proof, or a licensed VIX feed"}
+
+
 def view() -> dict[str, Any]:
     """The lean per currency, the confidence, and why."""
     series, newest, age = _load()
@@ -143,7 +180,8 @@ def view() -> dict[str, Any]:
     if "DTWEXBGS" not in ranks and "VIXCLS" not in ranks:
         return {"status": "UNMEASURED", "why": "neither a dollar nor a risk series with "
                 f"{RANK_WINDOW}+ observations in {FRED.name}", "lean": {}, "confidence": 0.0,
-                "ranks": ranks, "newest_print": newest, "age_days": age}
+                "ranks": ranks, "newest_print": newest, "age_days": age,
+                "missed_growth": [x for x in (risk_leg_missed_growth(),) if x]}
 
     # Centred drivers in [-1, 1]: +1 means "at the top of its year".
     dxy = 2.0 * (ranks.get("DTWEXBGS", 0.5) - 0.5)
@@ -152,7 +190,11 @@ def view() -> dict[str, Any]:
 
     has_risk = "VIXCLS" in ranks
     unmeasured: dict[str, str] = {}
+    missed: list[dict[str, Any]] = []
     if not has_risk:
+        line = risk_leg_missed_growth()
+        if line:
+            missed.append(line)
         # THE RISK LEG IS ABSENT, NOT NEUTRAL. With no licensed VIX (VIXCLS is Cboe's, refused as
         # live input) the risk-on and haven currencies get NO lean -- never a lean of 0 that reads
         # as "risk is at the middle of its year" -- and gold is read off the dollar alone.
@@ -184,7 +226,8 @@ def view() -> dict[str, Any]:
             "why": why, "lean": {k: round(v, 3) for k, v in lean.items()},
             "confidence": conf, "freshness": round(fresh, 3), "strength": round(strength, 3),
             "ranks": {k: round(v, 3) for k, v in ranks.items()},
-            "newest_print": newest, "age_days": age, "unmeasured": unmeasured}
+            "newest_print": newest, "age_days": age, "unmeasured": unmeasured,
+            "missed_growth": missed}
 
 
 def _legs(symbol: str) -> tuple[str, str] | None:
