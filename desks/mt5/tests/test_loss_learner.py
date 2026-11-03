@@ -393,10 +393,16 @@ def test_live_set_is_the_current_books_only() -> None:
     live = LL.live_sleeves({"sleeves": [{"name": "R", "status": "RETIRED"},
                                         {"name": "L", "status": "LIVE", "risk_frac": 0.01}]},
                            {"e8": {"gold_asia": 0.006, "z": 0.0}, "ftmo": {"gold_asia": 0.009}},
-                           {"enabled": True, "target_risk": 0.0075, "sleeves": ["gold_asia"]})
+                           (frozenset({"gold_asia"}), 0.0075))
     assert set(live) == {"L", "gold_asia"}
     assert live["gold_asia"]["books"] == {"e8", "ftmo", "fusion"}
     assert live["gold_asia"]["frac"] == pytest.approx(0.009)
+
+
+def test_minlot_scope_comes_from_the_core_not_the_switch() -> None:
+    from mt5desk import decision_core as dcore
+    names, frac = LL.minlot_scope()
+    assert names == dcore.MINLOT_OVERRIDE_SLEEVES and frac == dcore.MINLOT_OVERRIDE_TARGET_FRAC
 
 
 def test_dry_run_writes_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -404,7 +410,7 @@ def test_dry_run_writes_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
         monkeypatch.setattr(LL, name, tmp_path / name)
     monkeypatch.setattr(LL, "SLEEVES", tmp_path / "none.json")
     monkeypatch.setattr(LL, "CERT_BOOK", tmp_path / "none.json")
-    monkeypatch.setattr(LL, "MINLOT", tmp_path / "none.json")
+    monkeypatch.setattr(LL, "minlot_scope", lambda: (frozenset(), None))
     monkeypatch.setattr(LL, "FUSION_LEDGER", tmp_path / "live_ledger.jsonl")
     monkeypatch.setattr(LL, "PROP_LEDGER", tmp_path / "prop.jsonl")
     monkeypatch.setattr(LL, "_graph_state", lambda: (set(), {}, "stub"))
