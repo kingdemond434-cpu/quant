@@ -43,6 +43,7 @@ import json
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -135,10 +136,11 @@ def _member_stats(r: np.ndarray, avail: np.ndarray) -> tuple[np.ndarray, np.ndar
 
 
 def _project_nonneg(w: np.ndarray) -> np.ndarray:
-    return np.maximum(w, 0.0)
+    return np.asarray(np.maximum(w, 0.0))
 
 
-def fit_weights(r: np.ndarray, avail: np.ndarray, cfg: BookConfig) -> tuple[np.ndarray, dict]:
+def fit_weights(r: np.ndarray, avail: np.ndarray,
+                cfg: BookConfig) -> tuple[np.ndarray, dict[str, Any]]:
     """Long-only shrunk Kelly weights from TRAINING rows only. Returns (w over all N, receipt).
 
     Kelly in the quadratic (log-growth) approximation: maximise w'mu - 0.5 w'Sigma w, w >= 0.
@@ -199,7 +201,7 @@ def _blocks(t: int, n_blocks: int) -> list[tuple[int, int]]:
     return [(int(edges[i]), int(edges[i + 1])) for i in range(n_blocks)]
 
 
-def walk_forward(pool: Pool, cfg: BookConfig) -> dict:
+def walk_forward(pool: Pool, cfg: BookConfig) -> dict[str, Any]:
     """Purged, embargoed, anchored walk-forward. Block 0 only trains; blocks 1.. are OOS.
 
     Each OOS block is traded with the UNIT direction (weights / sum) fit before it, so the OOS
@@ -233,7 +235,7 @@ def walk_forward(pool: Pool, cfg: BookConfig) -> dict:
                       "test": [str(pool.dates[a].date()), str(pool.dates[b - 1].date())],
                       "invested": bool(s > 0), "best_single": pool.ids[bi] if bi >= 0 else None,
                       **rec})
-    def cat(xs: list) -> np.ndarray:
+    def cat(xs: list[np.ndarray]) -> np.ndarray:
         return np.concatenate(xs) if xs else np.zeros(0)
 
     return {"oos1": cat(oos1), "oos3": cat(oos3), "best1": cat(best1),
@@ -242,7 +244,7 @@ def walk_forward(pool: Pool, cfg: BookConfig) -> dict:
             "real_3x_weight_share": min(share3) if share3 else 1.0}
 
 
-def size_lambda(r: np.ndarray, cfg: BookConfig) -> dict:
+def size_lambda(r: np.ndarray, cfg: BookConfig) -> dict[str, Any]:
     """lambda maximising mean log(1 + lambda r) inside the daily-loss and drawdown caps."""
     if len(r) == 0 or not np.any(r):
         return {"lambda": 0.0, "lambda_growth_opt": 0.0, "lambda_survival": 0.0,
@@ -282,11 +284,11 @@ def size_lambda(r: np.ndarray, cfg: BookConfig) -> dict:
 
 def judge(pool: Pool, cfg: BookConfig, *, n_trials: int | None,
           variance_of_sharpes: float | None = None,
-          recipe_sharpes: Sequence[float] = ()) -> dict:
+          recipe_sharpes: Sequence[float] = ()) -> dict[str, Any]:
     """Run the walk-forward, the five gates, the sizing, and the final full-history weights."""
     wf = walk_forward(pool, cfg)
     o1, o3, b1 = wf["oos1"], wf["oos3"], wf["best1"]
-    gates: dict[str, dict] = {}
+    gates: dict[str, dict[str, Any]] = {}
     gates["oos_days"] = {"passed": len(o1) >= cfg.min_oos_days, "days": len(o1),
                          "required": cfg.min_oos_days}
     sr = sharpe_ratio(o1) if len(o1) > 1 else 0.0
@@ -389,7 +391,7 @@ class Coverage:
     def refuse(self, cause: str) -> None:
         self.refused[cause] = self.refused.get(cause, 0) + 1
 
-    def as_dict(self) -> dict:
+    def as_dict(self) -> dict[str, Any]:
         missing = sum(self.gaps.values())
         return {"status": "GREEN" if missing == 0 and self.eligible > 0 else "RED",
                 "eligible": self.eligible, "ingested": self.ingested,
@@ -401,6 +403,6 @@ class Coverage:
                         "series in the pool is a gap and turns this RED"}
 
 
-def recipe_trials(ledger_rows: Sequence[Mapping]) -> int:
+def recipe_trials(ledger_rows: Sequence[Mapping[str, Any]]) -> int:
     """Distinct recipes ever run: each is one more trial in the book's DSR charge."""
     return len({str(r.get("recipe")) for r in ledger_rows if r.get("recipe")})
