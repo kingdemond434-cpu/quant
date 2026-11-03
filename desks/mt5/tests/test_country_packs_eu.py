@@ -279,8 +279,8 @@ def test_a_door_empty_on_three_consecutive_runs_turns_red_and_recovers(box) -> N
 
 def test_no_door_reached_is_unmeasured_never_green(box) -> None:
     down = W.FetchError("blocked_proxy", "x")
-    rep = W.run(budget_s=120, fetch=Web({"api.": down, "static.nbp": down, "tcmb": down}),
-                now=NOW)
+    rep = W.run(budget_s=120, fetch=Web({"api.": down, "static.nbp": down, "tcmb": down,
+                                         "gold.org": down}), now=NOW)
     assert rep["country_packs"]["verdict"] == "UNMEASURED"
     assert rep["country_packs"]["packs"]["pl"]["doors"]["pl_fx_usd"]["rows"] == "UNMEASURED"
 
