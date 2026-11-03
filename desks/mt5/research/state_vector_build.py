@@ -531,6 +531,44 @@ def world_conditioning(symbols: list[str]) -> tuple[dict[str, list[dict]], str]:
 _FLUSH_EVERY_FITS = 1
 
 
+#: A role candidate whose newest H1 bar is older than this is a DEAD QUOTE, not a slow one.
+#: MEASURED 2026-11-03 on the box: Fusion stopped quoting UST10Y and UST05Y at 2025-12-31 11:00Z,
+#: yet the recorder rewrites their parquets every pass with +0 bars, so the files EXIST and look
+#: fresh by mtime. Picking the first file that exists put a 10-month-old rates factor on the
+#: vector while UKGILT -- the role's own third choice -- was current to the hour. Seven days
+#: clears every weekend and holiday gap and is still four orders short of a delisting.
+ROLE_MAX_LAG_S = 7 * 86_400.0
+
+
+def role_symbol(candidates: tuple[str, ...], now: datetime,
+                uni: Path | None = None) -> tuple[str | None, str]:
+    """The first candidate, in the role's own preference order, whose H1 bars are still live.
+
+    Returns (symbol, note). A candidate passed over for staleness is NAMED in the note, so the
+    swap is a recorded fact and never a silent substitution. When every candidate that has bars
+    is stale, the freshest of them is kept (its age is carried on the vector and decays its
+    weight) and the note says so -- dropping the role would lose the factor, and pretending it
+    is fresh would lie about it.
+    """
+    uni = UNI if uni is None else uni
+    stale: list[tuple[str, float]] = []
+    for c in candidates:
+        bars = _bars(c, "H1", uni)
+        if bars is None:
+            continue
+        age = (now - bars.index[-1].to_pydatetime()).total_seconds()
+        if age <= ROLE_MAX_LAG_S:
+            note = "" if not stale else "passed over stale " + ", ".join(
+                f"{s} (last H1 {a / 86_400:.0f}d ago)" for s, a in stale)
+            return c, note
+        stale.append((c, age))
+    if not stale:
+        return None, f"none of {candidates} has H1 bars here"
+    sym, age = min(stale, key=lambda t: t[1])
+    return sym, (f"every candidate of {candidates} is stale; kept {sym} "
+                 f"(last H1 {age / 86_400:.0f}d ago)")
+
+
 def build(budget_s: float = 900.0, symbols: list[str] | None = None) -> StateVector:
     now = datetime.now(tz=UTC)
     cache = FitCache(path=CACHE)
@@ -564,9 +602,10 @@ def build(budget_s: float = 900.0, symbols: list[str] | None = None) -> StateVec
 
     factors = {}
     for role, candidates in ROLES.items():
-        sym = next((c for c in candidates if (UNI / f"{c}_H1.parquet").exists()), None)
+        sym, why = role_symbol(candidates, now)
+        if why:
+            gaps[f"factor:{role}"] = why
         if sym is None:
-            gaps[f"factor:{role}"] = f"none of {candidates} has H1 bars here"
             continue
         for clock in FACTOR_CLOCKS:
             st = _fit(sym, clock, f"factor:{role}@{clock}")

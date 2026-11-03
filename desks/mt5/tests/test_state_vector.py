@@ -255,3 +255,49 @@ def test_liquidity_reports_a_state_or_says_it_is_unmeasured():
     if why:
         pytest.skip(why)
     assert liq["state"] in set(STATES) | {UNMEASURED}
+
+
+# ------------------------------------------------------------------------------------------
+# A role's symbol is the first LIVE candidate, not the first file that exists
+# ------------------------------------------------------------------------------------------
+
+def _h1(uni: Path, sym: str, last: datetime, n: int = 48) -> None:
+    idx = pd.date_range(end=last, periods=n, freq="h", tz=UTC)
+    pd.DataFrame({"close": np.linspace(100.0, 101.0, n)}, index=idx).to_parquet(
+        uni / f"{sym}_H1.parquet")
+
+
+def test_a_dead_quote_is_passed_over_for_the_next_live_candidate(tmp_path):
+    # The box on 2026-11-03: UST10Y and UST05Y stopped at 2025-12-31, UKGILT is current.
+    now = datetime(2026, 11, 3, 23, 0, tzinfo=UTC)
+    _h1(tmp_path, "UST10Y", datetime(2025, 12, 31, 11, 0, tzinfo=UTC))
+    _h1(tmp_path, "UST05Y", datetime(2025, 12, 31, 11, 0, tzinfo=UTC))
+    _h1(tmp_path, "UKGILT", now - timedelta(hours=5))
+    svb._bars.cache_clear()
+    sym, why = svb.role_symbol(("UST10Y", "UST05Y", "UKGILT"), now, tmp_path)
+    assert sym == "UKGILT"
+    # The swap is said out loud, naming what was skipped and how old it was.
+    assert "UST10Y" in why and "UST05Y" in why and "stale" in why
+
+
+def test_a_live_first_choice_is_kept_with_no_note(tmp_path):
+    now = datetime(2026, 11, 3, 23, 0, tzinfo=UTC)
+    _h1(tmp_path, "UST10Y", now - timedelta(days=3))  # a long weekend is not a delisting
+    _h1(tmp_path, "UKGILT", now - timedelta(hours=1))
+    svb._bars.cache_clear()
+    assert svb.role_symbol(("UST10Y", "UST05Y", "UKGILT"), now, tmp_path) == ("UST10Y", "")
+
+
+def test_when_every_candidate_is_stale_the_freshest_is_kept_and_flagged(tmp_path):
+    now = datetime(2026, 11, 3, 23, 0, tzinfo=UTC)
+    _h1(tmp_path, "UST10Y", now - timedelta(days=300))
+    _h1(tmp_path, "UKGILT", now - timedelta(days=30))
+    svb._bars.cache_clear()
+    sym, why = svb.role_symbol(("UST10Y", "UST05Y", "UKGILT"), now, tmp_path)
+    assert sym == "UKGILT" and "every candidate" in why
+
+
+def test_no_bars_at_all_is_still_the_named_gap(tmp_path):
+    svb._bars.cache_clear()
+    sym, why = svb.role_symbol(("UST10Y",), datetime(2026, 11, 3, tzinfo=UTC), tmp_path)
+    assert sym is None and "has H1 bars here" in why
