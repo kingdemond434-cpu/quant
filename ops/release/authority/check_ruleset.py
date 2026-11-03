@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Refuse to apply ruleset_live.json until it is safe to (ops/release/authority/LEVEL2.md step 5).
 
-    python ops/release/authority/check_ruleset.py [ruleset.json]   # exit 0: safe to import
+    python ops/release/authority/check_ruleset.py --repo OWNER/NAME [ruleset.json]  # 0: safe
 
 Safe means:
 - the required check is pinned to the authority App;
@@ -49,10 +49,52 @@ def problems(rs: dict[str, Any]) -> list[str]:
     return out
 
 
+SEAL_ENV = "live-seal"
+SEAL_BRANCHES = frozenset({"claude/llm-auto-upgrade-verify-gcjac3", "desk-sync-clean"})
+
+
+def env_problems(env: dict[str, Any], branch_policies: list[dict[str, Any]]) -> list[str]:
+    """The seal environment holds the state App's key: it must admit only LIVE and desk-sync-clean,
+    or a push-triggered run of a modified ci.yml on any branch could read it (#650 audit)."""
+    pol = env.get("deployment_branch_policy") or {}
+    if not pol.get("custom_branch_policies") or pol.get("protected_branches"):
+        return [f"environment {SEAL_ENV} must use custom branch policies (selected branches)"]
+    names = {str(b.get("name")) for b in branch_policies if b.get("type", "branch") == "branch"}
+    tags = [b for b in branch_policies if b.get("type") == "tag"]
+    out = []
+    if names != SEAL_BRANCHES or any(ch in n for n in names for ch in "*?[") or tags:
+        out.append(f"environment {SEAL_ENV} must admit exactly {sorted(SEAL_BRANCHES)}, got "
+                   f"{sorted(names)}{' and tags' if tags else ''}")  # fmt: skip
+    return out
+
+
+def _gh(path: str) -> Any:
+    import subprocess
+
+    p = subprocess.run(["gh", "api", path], capture_output=True, text=True, check=False)
+    if p.returncode != 0:
+        raise RuntimeError(f"gh api {path}: {p.stderr.strip()[:200]}")
+    return json.loads(p.stdout)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = sys.argv[1:] if argv is None else argv
+    repo = None
+    if "--repo" in args:
+        i = args.index("--repo")
+        repo = args[i + 1]
+        args = args[:i] + args[i + 2:]
     path = Path(args[0]) if args else Path(__file__).with_name("ruleset_live.json")
     got = problems(json.loads(path.read_text(encoding="utf-8")))
+    if repo is None:
+        got.append("run with --repo OWNER/NAME so the live-seal environment is checked too")
+    else:
+        try:
+            env = _gh(f"repos/{repo}/environments/{SEAL_ENV}")
+            pols = _gh(f"repos/{repo}/environments/{SEAL_ENV}/deployment-branch-policies")
+            got += env_problems(env, list(pols.get("branch_policies") or []))
+        except (RuntimeError, ValueError) as exc:
+            got.append(f"could not read environment {SEAL_ENV}: {exc}")
     for p in got:
         print(f"NOT SAFE: {p}")
     if not got:

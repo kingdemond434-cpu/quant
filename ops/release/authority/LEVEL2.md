@@ -10,7 +10,7 @@ login then cannot land code that way. It is staged, and nothing here is on until
 | 2 | A state publisher under its own Windows account holds a "quant-state" App key and pushes a box commit to LIVE only if every path is a state path (`libs/ops/release.py` `STATE_PREFIXES`). It replaces the direct `git push` in sync_shadow_to_git.ps1, Adopt-Release.ps1 and sign_train_leg.ps1. | built (#650) |
 | 3 | `workflow_gate.ps1` and `sign_train_leg.ps1` use a "quant-merger" App token (`ops/release/merger/merger_env.ps1`; Contents, Pull requests and Workflows write) instead of zuck's gh login, whenever `C:\opt\merger\config.json` exists. | built (#650) |
 | 4 | Once the merger is installed, the CRO cycle's agents (Run-DeskCycle.ps1) push code to `cro/<lane>-<date>` and open a PR, never LIVE (built in #650). Built (#650): CI's seal job stops pushing LIVE with GITHUB_TOKEN. It uses the state App's token from an Actions **environment restricted to the LIVE branch**, so a PR's own workflow never sees that token. | to build |
-| 5 | The owner's setup: authority App commit statuses set to Read & write; create the two Apps; `New-Item C:\opt\audit_registry\POST_STATUS`; put the state App's id in place of `actor_id: 0`, run `python ops/release/authority/check_ruleset.py` until it prints `SAFE to import`, then import `ruleset_live.json`; `gh auth logout` and clear the box's git credential. | after 2-4 run on the box |
+| 5 | The owner's setup: authority App commit statuses set to Read & write; create the two Apps; `New-Item C:\opt\audit_registry\POST_STATUS`; put the state App's id in place of `actor_id: 0`, run `python ops/release/authority/check_ruleset.py --repo kingdemond434-cpu/quant` until it prints `SAFE to import` (it also checks that the live-seal environment admits only LIVE and desk-sync-clean), then import `ruleset_live.json`; `gh auth logout` and clear the box's git credential. | after 2-4 run on the box |
 
 Why each piece is needed:
 - A ruleset requiring a status refuses direct pushes too, and today five box writers push LIVE with
@@ -53,6 +53,6 @@ Each step is safe to stop after, and nothing is enforced until step 6.
 
    Then:
    - put the state App's id in `ruleset_live.json`;
-   - run `python ops\release\authority\check_ruleset.py` until it prints `SAFE to import`;
+   - run `python ops\release\authority\check_ruleset.py --repo kingdemond434-cpu/quant` until it prints `SAFE to import` (it also checks that the live-seal environment admits only LIVE and desk-sync-clean);
    - import the ruleset (Settings, Rules, Rulesets, Import);
    - on the box, run `gh auth logout`, and remove zuck's github.com entry from Windows Credential Manager.

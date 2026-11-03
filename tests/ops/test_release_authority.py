@@ -478,3 +478,15 @@ def test_ruleset_check_refuses_unsafe_bypass(bad: dict[str, Any]) -> None:
     rs["bypass_actors"] += [{"actor_type": "Integration", "actor_id": 7777777,
                              "bypass_mode": "always"}, bad]  # fmt: skip
     assert cr.problems(rs)
+
+
+def test_seal_environment_must_admit_exactly_the_two_branches() -> None:
+    cr = _check_ruleset()
+    ok = {"deployment_branch_policy": {"protected_branches": False, "custom_branch_policies": True}}
+    two = [{"name": "claude/llm-auto-upgrade-verify-gcjac3", "type": "branch"},
+           {"name": "desk-sync-clean", "type": "branch"}]  # fmt: skip
+    assert cr.env_problems(ok, two) == []
+    assert cr.env_problems({"deployment_branch_policy": None}, two)
+    assert cr.env_problems(ok, [*two, {"name": "claude/*", "type": "branch"}])
+    assert cr.env_problems(ok, two[:1])
+    assert cr.env_problems(ok, [*two, {"name": "v*", "type": "tag"}])
