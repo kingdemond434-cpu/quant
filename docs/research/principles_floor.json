@@ -1,8 +1,11 @@
 {
- "updated_utc": "2026-10-07T02:05:53+00:00",
+ "updated_utc": "2026-11-03T00:00:00+00:00",
  "measured_by": "scripts/check_principles.py",
  "law": "ARCH-32: these names are pre-existing debt. The floor only shrinks; a name not listed here that appears is an arrival and fails the law gate.",
- "findings": [],
+ "findings": [
+  "P5:floor_fell:docs/research/COVERAGE_RATCHET.json:high_water.repo_pct",
+  "P7:ontology_static"
+ ],
  "unmeasured": [
   "P2_RELEARN_ON_CHANGE",
   "P3_CASH_IS_AN_ALLOCATION",
