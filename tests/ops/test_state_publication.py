@@ -228,14 +228,15 @@ def test_the_default_sender_is_the_desks_alert_path_anchored_on_the_root(
     from libs.ops import alert_channels
     seen: dict = {}
 
-    def fake_send_all(title, body, *, config, ledger, canary=False):
-        seen.update(config=config, ledger=ledger)
+    def fake_send_all(title, body, *, config, ledger, canary=False, audience="principal"):
+        seen.update(config=config, ledger=ledger, audience=audience)
         return {"armed": 0, "delivered": 0, "results": []}
 
     monkeypatch.setattr(alert_channels, "send_all", fake_send_all)
     assert sp.page_flow(tmp_path, _flow("STALLED"))["sent"]
     assert seen["config"] == tmp_path / "data/secrets/alert_channels.json"
     assert seen["ledger"] == tmp_path / "data/alert_delivery.jsonl"
+    assert seen["audience"] == "desk"          # box state flowing/stale never reaches the phone
 
 
 # ------------------------------------------------------------ the independent watcher (gap 1)

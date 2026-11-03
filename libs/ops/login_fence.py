@@ -745,12 +745,16 @@ def record_alert(doc: dict[str, Any], root: Path | None = None) -> str | None:
     return "OPEN"
 
 
-def _default_sender(root: Path) -> Sender:
+def _default_sender(root: Path, *, resolved: bool = False) -> Sender:
+    """`resolved=True` for the recovery-to-OK page: it CLEARS the desk alert row (a recovery
+    that refreshed the row would hold the desk RED it reports cleared)."""
     def send(title: str, body: str) -> dict[str, Any]:
         from libs.ops import alert_channels
+        # DESK, both verdicts: UNMEASURED is a missing declaration a thread supplies, and REFUSED
+        # means the fence BLOCKED the publication (nothing leaked) -- a thread fixes the blob.
         return alert_channels.send_all(
             title, body, config=root / "data/secrets/alert_channels.json",
-            ledger=root / "data/alert_delivery.jsonl")
+            ledger=root / "data/alert_delivery.jsonl", audience="desk", resolved=resolved)
     return send
 
 
@@ -788,7 +792,7 @@ def page(doc: dict[str, Any], root: Path | None = None, *, sender: Sender | None
     else:
         return {"sent": False, "reason": "OK: nothing to page"}
     body = f"{_why(doc) or status}\n(values withheld; see desks/mt5/reports/LOGIN_FENCE.json)"
-    res = (sender or _default_sender(base))(title, body[:1500])
+    res = (sender or _default_sender(base, resolved=status == "OK"))(title, body[:1500])
     res = res if isinstance(res, dict) else {}
     # A page that reached NOBODY was not a page (v5b): `delivered` 0, absent or falsy leaves the
     # dedup state untouched, so the next pass sends it again instead of deduplicating silence.

@@ -241,14 +241,18 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     return doc
 
 
-def _default_sender() -> Sender:
+def _default_sender(*, resolved: bool = False) -> Sender:
+    """`resolved=True` for the recovery page: it CLEARS the desk alert row instead of refreshing
+    it (a recovery that re-upserts the row would hold the desk RED it reports cleared)."""
     def send(title: str, body: str) -> dict[str, Any]:
         if str(ROOT) not in sys.path:
             sys.path.insert(0, str(ROOT))
         from libs.ops import alert_channels
+        # DESK: a stale or failed restore drill is re-run by a thread.
         return alert_channels.send_all(title, body,
                                        config=ROOT / "data" / "secrets" / "alert_channels.json",
-                                       ledger=ROOT / "data" / "alert_delivery.jsonl")
+                                       ledger=ROOT / "data" / "alert_delivery.jsonl",
+                                       audience="desk", resolved=resolved)
     return send
 
 
@@ -297,7 +301,7 @@ def page(doc: dict[str, Any]) -> dict[str, Any]:
         else:
             title = f"Restore drill recovered on {host}"
             body = drill["why"]
-        res = (SENDER or _default_sender())(title, body[:1500])
+        res = (SENDER or _default_sender(resolved=not open_))(title, body[:1500])
         res = res if isinstance(res, dict) else {}
         if not res.get("delivered"):
             _LAST_TRY[memo] = time.monotonic()

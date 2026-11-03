@@ -287,7 +287,9 @@ def _alert_delivery(path: Path) -> float | None:
             row = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if not row.get("ok"):
+        # a ROUTED row is a deliberate non-send (a desk page kept off a personal channel): it
+        # proves nothing about delivery, exactly as alert_channels.last_success_per_channel reads it
+        if not row.get("ok") or row.get("routed"):
             continue
         ts = str(row.get("ts", ""))
         try:

@@ -28,7 +28,6 @@ logic is unit-tested without keys, network, or a roster file on disk.
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -107,15 +106,19 @@ def resolve_ids(preferred: list[str], roster_ids: list[str], n: int | None = Non
 
 
 def _page(msg: str) -> None:
-    """Best-effort ntfy page; never raises into the caller (an organ must not die on telemetry)."""
+    """Best-effort DESK page; never raises into the caller (an organ must not die on telemetry).
+
+    AUDIENCE: DESK (owner, 2026-10-29: "only notify me on things which need me ... handle rest n
+    don't tell me"; rule in libs/ops/alert_channels.py). A lost seat is a roster defect a thread
+    re-points; it asks the owner to do nothing. So this no longer curls ntfy.sh directly: it goes
+    through send_all, which ledgers it, mirrors it to the non-personal channels and records the
+    phone as routed."""
     try:
-        cfg = json.loads((ROOT / "data/secrets/ntfy.json").read_text("utf-8"))
-        topic = cfg.get("topic") or cfg.get("ntfy_topic")
-        if not topic:
-            return
-        subprocess.run(["curl", "-fsS", "-m", "10", "-H", "Title: SEATS",
-                        "-d", msg, f"https://ntfy.sh/{topic}"],
-                       check=False, capture_output=True, timeout=15)
+        import sys
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.ops.alert_channels import send_all
+        send_all("SEATS", msg, audience="desk")
     except Exception:
         return
 

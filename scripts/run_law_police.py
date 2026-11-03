@@ -274,7 +274,8 @@ def main(argv: list[str] | None = None) -> int:
             send_all(f"LAW POLICE: {len(rep['unexplained_falls'])} unexplained regression(s)",
                      "\n".join(rep["unexplained_falls"][:10])
                      + "\n\nA check vanished or went blind with no recorded cause. The law it "
-                       "enforced is unenforced as of this run.")
+                       "enforced is unenforced as of this run.",
+                     audience="desk")      # a regression a thread explains or repairs
         except Exception as exc:
             print(f"  (paging failed: {type(exc).__name__}: {exc})", file=sys.stderr)
     print(f"-> {OUT}")

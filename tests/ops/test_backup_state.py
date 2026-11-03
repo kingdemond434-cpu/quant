@@ -46,7 +46,8 @@ def box(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
         "state": "OK", "present": True, "size_bytes": 32, "matches": True, "box_local": True})
     pages = _Pages()
     monkeypatch.setattr(bs, "SENDER", pages)
-    monkeypatch.setattr(bs, "_default_sender", lambda: pytest.fail("the real sender was reached"))
+    monkeypatch.setattr(bs, "_default_sender",
+                        lambda **_k: pytest.fail("the real sender was reached"))
     (tmp_path / "desks" / "mt5" / "reports").mkdir(parents=True)
     (tmp_path / "data").mkdir()
     return tmp_path

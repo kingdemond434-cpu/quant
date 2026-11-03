@@ -24,11 +24,53 @@ import argparse
 import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
-from libs.ops.alert_channels import all_silent_since, send_all, status
+from libs.ops.alert_channels import (
+    all_silent_since,
+    clear_desk_alert,
+    personal_channel_health,
+    record_desk_alert,
+    send_all,
+    status,
+)
 
 _STATE = Path("data/alert_canary_state.json")
 _SILENT_FLAG = Path("data/ALERT_CHANNELS_SILENT")
+_NTFY_SECRET = Path("data/secrets/ntfy.json")
+#: desk alert key for a personal channel that is no longer proven to deliver
+PERSONAL_STALE_KEY = "personal_channel_stale:ntfy"
+
+
+def sent_count(res: dict[str, Any] | None) -> int | str:
+    """Real deliveries only. A ROUTED row (a personal channel the desk canary is kept off) is
+    counted in send_all's `delivered` for dedupe, but it delivered nothing, so it is not 'sent'."""
+    if not res:
+        return "throttled"
+    return int(res.get("delivered", 0)) - int(res.get("routed", 0))
+
+
+def check_personal_channel(*, ntfy_known: bool | None = None) -> dict[str, Any]:
+    """THE PHONE'S OWN LIVENESS, WITHOUT TOUCHING THE PHONE. ntfy now carries principal pages
+    only, so between incidents nothing exercises it; a dead topic would surface on the one page
+    that mattered. When a REAL attempt has failed since its last real success, this writes a DESK
+    alert row -- a RED in DESK_ALERTS.json that check_desk_health surfaces -- and clears it once a
+    real success lands. A quiet channel is not a failing one, so silence alone raises nothing.
+    Never a page."""
+    known = ntfy_known
+    if known is None:
+        known = _NTFY_SECRET.exists() or "ntfy" in status()["armed_kinds"]
+    h = personal_channel_health("ntfy")
+    if not known:
+        return {**h, "stale": False, "why": "no ntfy topic configured on this box"}
+    if h["stale"]:
+        # key + fixed title only (the artifact is published): a thread follows the key to this
+        # function, then reads data/alert_delivery.jsonl for the failing ntfy rows
+        record_desk_alert(PERSONAL_STALE_KEY, "personal channel ntfy: a real send failed",
+                          source="scripts/run_alert_canary.py", public_title=True)
+    else:
+        clear_desk_alert(PERSONAL_STALE_KEY)
+    return h
 
 
 def _due(interval_h: float, *, state: Path = _STATE) -> bool:
@@ -61,7 +103,10 @@ def main() -> int:
         sent = send_all("quant canary",
                         f"synthetic canary {datetime.now(tz=UTC).isoformat()} -- "
                         "no action needed; this proves the alert path can deliver",
-                        canary=True)
+                        canary=True,
+                        # DESK: a canary must never reach the phone. It still exercises the
+                        # route through hc /log; the personal channels get a routed row.
+                        audience="desk")
         _stamp()
 
     silent = all_silent_since(args.lookback_h)
@@ -75,8 +120,10 @@ def main() -> int:
     elif _SILENT_FLAG.exists():
         _SILENT_FLAG.unlink()      # cleared on recovery; a stale flag is its own silent failure
 
+    personal = check_personal_channel()
     print(f"alert canary: armed={st['armed']} {st['armed_kinds']} "
-          f"sent={sent['delivered'] if sent else 'throttled'} silent_{args.lookback_h:.0f}h={silent}")
+          f"sent={sent_count(sent)} silent_{args.lookback_h:.0f}h={silent} "
+          f"ntfy_stale={personal['stale']}")
     if st["arming_owed"]:
         print("  NOT-ARMED (human step owed): drop credentials at "
               "data/secrets/alert_channels.json -- until then ntfy is the only path, which is "

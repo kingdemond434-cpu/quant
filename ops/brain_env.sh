@@ -159,8 +159,38 @@ brain_mem_gate() {
 }
 
 # --- D3 self-healing (founders directive, principal 2026-07-19) ---
+brain_principal_action_once() {
+    # usage: brain_principal_action_once MARKER MESSAGE   -- never fails the caller.
+    # A ONE-TIME entry on data/PRINCIPAL_ACTION.md (the desk's human-escalation page, read by
+    # run_alerts as the PRINCIPAL key `principal_action_needed`): written through the append-safe
+    # libs/ops/principal_page.page ONLY when no line already starts with MARKER, so a recurring
+    # condition neither stacks copies nor jumps back over another ask on line 1.
+    (cd /home/quant/quant-platform 2>/dev/null && PA_MARKER="$1" PA_MSG="$2" \
+        timeout 30 python3 -c '
+import os
+from libs.ops import principal_page
+mk = os.environ["PA_MARKER"]
+p = principal_page.PAGE
+have = p.read_text("utf-8").splitlines() if p.exists() else []
+if not any(ln.startswith(mk) for ln in have):
+    principal_page.page(os.environ["PA_MSG"], marker=mk)
+') >/dev/null 2>&1 || true
+    return 0
+}
 _brain_page() {
-    # page the principal via the desk pager topic (ntfy.sh); never fails the caller
+    # usage: _brain_page MSG [desk|info|principal]   (default desk); never fails the caller
+    # "info" is desk delivery WITHOUT a DESK_ALERTS.json row (send_all desk_row=False): a
+    # self-healing notice -- the chain fell back and carried on -- is not a problem to hold the
+    # desk RED for a day.
+    #
+    # AUDIENCE (owner, 2026-10-29: "only notify me on things which need me or Else it's confusing
+    # handle rest n don't tell me"; rule in libs/ops/alert_channels.py). Brain plumbing -- model
+    # fallback active, quota walls, the metered fallback absent, a law-gate breach -- is DESK:
+    # send_all ledgers it, sends it to hc /log, records a DESK_ALERTS.json row, and keeps it off
+    # the phone. BRAIN AUTH DOWN is the one PRINCIPAL caller: its fix is `claude setup-token`, the
+    # account holder's own interactive login (run_alerts' auth_broken is principal for the same
+    # reason); it goes through page_principal, which also uses the ntfy.json topic when the
+    # registry arms no ntfy channel. Nothing here curls ntfy.sh directly any more.
     #
     # PER-MESSAGE DEDUPE (2026-08-05). This bypassed run_alerts' entire dedupe discipline -- no
     # state, no throttle -- and sent 191 near-identical "LAW GUARD: DOCTRINE-GAP" pages in 24h,
@@ -170,18 +200,40 @@ _brain_page() {
     # is exactly what exhausted the quota 07-11 -> 07-16 and silently dropped EVERY page for five
     # days including a dead-man fire (run_alerts.py:332-335). Same 6h window run_alerts uses for
     # slow-moving conditions; identical text inside it is dropped, changed text pages immediately.
-    local topic stampdir stamp
-    topic="$(python3 -c "import json;d=json.load(open('/home/quant/quant-platform/data/secrets/ntfy.json'));print(d.get('topic') or d.get('ntfy_topic') or '')" 2>/dev/null)"
-    [ -n "$topic" ] || return 0
+    local stampdir stamp aud
+    aud="${2:-desk}"
+    case "$aud" in principal|info) ;; *) aud="desk" ;; esac
     stampdir="/home/quant/quant-platform/data/.brain_page_stamps"
     mkdir -p "$stampdir" 2>/dev/null || true
-    stamp="$stampdir/$(printf '%s' "$1" | sha1sum | cut -c1-16)"
+    # THE STAMP CARRIES THE AUDIENCE for principal pages, so a message once paged desk is never
+    # suppressed when it escalates to principal. Desk keeps the bare-message hash, because
+    # libs/ops/lawful._page computes that same hash to dedupe BEFORE spawning bash.
+    if [ "$aud" = "principal" ]; then
+        stamp="$stampdir/$(printf 'principal|%s' "$1" | sha1sum | cut -c1-16)"
+    else
+        stamp="$stampdir/$(printf '%s' "$1" | sha1sum | cut -c1-16)"
+    fi
     # -mmin -360 = pushed within the last 6h; suppress the repeat, keep the caller's contract
     if [ -n "$(find "$stamp" -mmin -360 2>/dev/null)" ]; then
         return 0
     fi
-    if curl -fsS -m 10 -H "Title: BRAIN" -H "Priority: high" -H "Tags: robot" \
-        -d "$1" "https://ntfy.sh/$topic" >/dev/null 2>&1; then
+    # "success" = send_all RAN: a desk page's destination is the delivery ledger, and send_all
+    # writes a row there for every outcome (routed, delivered, failed, NOT-ARMED). Stamping on a
+    # per-channel success instead would leave an unarmed box with NO stamps, so every call would
+    # re-spawn python -- and libs/ops/lawful._page's pre-spawn dedupe reads these same stamps;
+    # without them it re-buys the 2026-08-26 OOM loop. Only a crash (exit != 0) retries.
+    if (cd /home/quant/quant-platform 2>/dev/null && BRAIN_PAGE_MSG="$1" BRAIN_PAGE_AUD="$aud" \
+        timeout 30 python3 -c '
+import os
+from libs.ops.alert_channels import page_principal, send_all
+m = os.environ.get("BRAIN_PAGE_MSG", "")
+aud = os.environ.get("BRAIN_PAGE_AUD")
+if aud == "principal":
+    page_principal("BRAIN: " + m[:120], m)
+else:
+    send_all("BRAIN: " + m[:120], m, audience="desk", key="ops/brain_env.sh:_brain_page",
+             source="ops/brain_env.sh", desk_row=aud != "info")
+') >/dev/null 2>&1; then
         : > "$stamp" 2>/dev/null || true    # stamp ONLY on success, so a failed page retries
     fi
     # prune stamps older than a week so the dir cannot grow without bound
@@ -398,7 +450,7 @@ brain_auth_check() {
             # next successful ping, so a stale or wrong memo self-heals on first contact.
             brain_quota_record open 0 "${_BRAIN_ORGAN:-brain}" "PING-OK on $m"
             if [ "$m" != "${_BRAIN_MODEL_CHAIN%% *}" ]; then
-                _brain_page "model fallback ACTIVE: primary starved, organs running on $m"
+                _brain_page "model fallback ACTIVE: primary starved, organs running on $m" info
             fi
             return 0
         fi
@@ -426,7 +478,7 @@ brain_auth_check() {
         export ANTHROPIC_API_KEY
         out="$(claude -p 'Reply with exactly: PING-OK' --allowedTools "" --max-turns 1 2>&1 | tail -3)"
         if printf '%s' "$out" | grep -q "PING-OK"; then
-            _brain_page "Brain hit subscription quota -- FELL BACK to metered API key; cycles continue on metered spend"
+            _brain_page "Brain hit subscription quota -- FELL BACK to metered API key; cycles continue on metered spend" info
             return 0
         fi
     elif printf '%s' "$out" | grep -qiE "limit|usage credits"; then
@@ -439,8 +491,19 @@ brain_auth_check() {
         # none, because nobody looks for it. Deliberately NOT deleting the branch: it becomes
         # live the moment the principal drops the key at that path, and removing a capability to
         # silence a warning is the wrong direction. Page instead, so the gap is dated and loud.
+        #
+        # TWO READERS, TWO AUDIENCES (2026-10-29). The OUTAGE is desk (it resets on its own; the
+        # desk row below is the RED a thread reads). The GAP -- no key at that path -- only the
+        # principal can close (a credential he holds), so it is ALSO a ONE-TIME entry on
+        # data/PRINCIPAL_ACTION.md (libs/ops/principal_page.page, append-safe; run_alerts pages
+        # line 1 as `principal_action_needed`, a PRINCIPAL key). Written only when no R0360 entry
+        # is already there, so a recurring wall never re-stacks or re-orders his page.
         _brain_page "Brain hit subscription quota and the metered fallback is UNREACHABLE -- no \
 anthropic_api_key at data/secrets/; organs are down until the subscription resets or the key lands (R0360)"
+        brain_principal_action_once "R0360 METERED FALLBACK MISSING:" \
+            "R0360 METERED FALLBACK MISSING: the brain hit its subscription quota and there is no \
+data/secrets/anthropic_api_key, so every claude-invoking organ is down until the quota resets. \
+Drop a metered key there (bash ops/setup_brain_api_key.sh) and clear this entry."
     fi
     # LAST RESORT BEFORE GIVING THE SLOT AWAY: if the failure names its own reset time, wait for
     # it once and re-run the whole chain. Strictly after every existing fallback has been tried,
@@ -453,13 +516,25 @@ anthropic_api_key at data/secrets/; organs are down until the subscription reset
         _wait="$(brain_reset_wait_s "$out")"
         if [ -n "$_wait" ]; then
             _BRAIN_RESET_RETRIED=1
-            _brain_page "session limit -- sleeping ${_wait}s to the stated reset, then ONE retry"
+            _brain_page "session limit -- sleeping ${_wait}s to the stated reset, then ONE retry" info
             sleep "$_wait"
             brain_auth_check && return 0
             return 1
         fi
     fi
-    _brain_page "BRAIN AUTH DOWN, cycle aborted: $(printf '%s' "$out" | head -1 | cut -c1-140)"
+    # PRINCIPAL: an auth failure is fixed only by the account holder's own `claude setup-token`.
+    # CREDITS ARE PRINCIPAL TOO, under their own name: "Credit balance is too low" / exhausted
+    # "usage credits" need a TOP-UP only he can buy -- they never reset on their own, and calling
+    # them AUTH DOWN sent him to re-login when the fix is billing. The one desk case is a
+    # session/subscription LIMIT falling through to here: it resets on its own (the missing
+    # metered key is his one-time R0360 entry above), so it stays desk rather than buzz him.
+    local _aud=principal _what="BRAIN AUTH DOWN, cycle aborted"
+    if printf '%s' "$out" | grep -qiE "credit balance is too low|usage credits"; then
+        _what="BRAIN CREDITS EXHAUSTED (top-up needed), cycle aborted"
+    elif printf '%s' "$out" | grep -qiE "limit"; then
+        _aud=desk _what="BRAIN QUOTA LIMIT (resets on its own), cycle aborted"
+    fi
+    _brain_page "$_what: $(printf '%s' "$out" | head -1 | cut -c1-140)" "$_aud"
     return 1
 }
 

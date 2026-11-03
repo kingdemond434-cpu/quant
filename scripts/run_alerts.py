@@ -45,6 +45,27 @@ _DEDUPE_OVERRIDES_S = {"growth_defect": 24 * 3600, "data_health": 24 * 3600,
                        "trade_class_bleeding": 24 * 3600, "auth_broken": 12 * 3600,
                        # the chain runs once a day; its failures can only change once a day
                        "research_chain_failed": 24 * 3600}
+#: WHO EACH PAGE IS FOR (owner, 2026-10-29: "only notify me on things which need me ... handle
+#: rest n don't tell me"; rule in libs/ops/alert_channels.py). Only these keys reach the phone:
+#: each asks for a HUMAN action no organ can take -- reset a fired ruin rail, remove a kill file
+#: only he can judge unintended, open a human-only door. auth_broken is one: its only fix is
+#: `claude setup-token`, the account holder's own interactive login, which no organ or thread can
+#: perform. Every other check (organ liveness, brain, diggers, research chain, slots, data health,
+#: forensics) is DESK: ledgered, recorded in DESK_ALERTS.json, sent to hc /log, and remediated by
+#: the brain/threads -- never pushed to ntfy.
+PRINCIPAL_KEYS = frozenset({"deadman_latched", "kill_switch_stuck", "principal_action_needed",
+                            "auth_broken"})
+
+
+def audience_for(key: str) -> str:
+    return "principal" if key in PRINCIPAL_KEYS else "desk"
+
+
+def _dedupe_key(key: str) -> str:
+    """The pager state's stamp for a key: the key AND its audience (see main's dedupe)."""
+    return f"{key}@{audience_for(key)}"
+
+
 _HB = Path("data/cashcarry_exec_heartbeat")
 _PAGER_BACKOFF = Path("data/.pager_backoff")
 _KILL = Path("data/CASHCARRY_KILL")
@@ -61,7 +82,8 @@ def _topic() -> str:
     return topic
 
 
-def _push(topic: str, title: str, body: str) -> None:
+def _push(topic: str, title: str, body: str, *, audience: str = "principal",
+          key: str | None = None, resolved: bool = False) -> None:
     # HTTP headers must be latin-1 (urllib/http.client encode them that way); a title with an
     # emoji or other non-latin-1 char raises UnicodeEncodeError BEFORE the request is ever sent,
     # silently killing this and every future push (2026-07-19: broke ALL paging for 29h+,
@@ -69,6 +91,17 @@ def _push(topic: str, title: str, body: str) -> None:
     # ntfy already renders an icon from Tags, so titles stay plain ASCII; this encode is a
     # defense-in-depth backstop against the same class recurring via a future non-ASCII edit.
     safe_title = title.encode("latin-1", "ignore").decode("latin-1")
+    if audience == "desk":
+        # DESK: the ledger and the non-personal channels only. The direct ntfy push below is the
+        # phone, so it is skipped -- and RECORDED as routed, never silently dropped.
+        _second_channel(f"{safe_title}: {body}", audience="desk")
+        with contextlib.suppress(Exception):
+            from libs.ops.alert_channels import send_all
+            # the title is "WARNING|RESOLVED Quant desk: <check key>" -- a check name, no values
+            send_all(safe_title, body, audience="desk", key=key, source="run_alerts",
+                     resolved=resolved, public_title=True)
+        _ledger_ok("ntfy", "routed: desk audience", safe_title, routed="desk")
+        return
     # 429 backoff (2026-07-20): ntfy rate-limits the topic; a due re-page retried on
     # every 3-min tick keeps the topic throttled forever (observed self-DoS loop,
     # journalctl 06:47Z). After any 429, cool down 1h before the next push attempt.
@@ -89,7 +122,7 @@ def _push(topic: str, title: str, body: str) -> None:
     # observable instead of being the thing nobody notices for five days.
     with contextlib.suppress(Exception):
         from libs.ops.alert_channels import send_all
-        send_all(safe_title, body)
+        send_all(safe_title, body, audience="principal")
     req = urllib.request.Request(f"https://ntfy.sh/{topic}", data=body.encode(),
                                  headers={"Title": safe_title, "Priority": "high",
                                           "Tags": "rotating_light"})
@@ -106,12 +139,13 @@ def _push(topic: str, title: str, body: str) -> None:
         raise
 
 
-def _ledger_ok(channel: str, detail: str, title: str, *, ok: bool = True) -> None:
+def _ledger_ok(channel: str, detail: str, title: str, *, ok: bool = True,
+               routed: str | None = None) -> None:
     """Record the PRIMARY path's outcome in the same ledger as the registry channels, so the
     silence check sees one unified view. Never raises -- a logging failure must not kill a page."""
     with contextlib.suppress(Exception):
         from libs.ops.alert_channels import _log
-        _log(channel, ok, detail, title)
+        _log(channel, ok, detail, title, routed=routed)
 
 
 # --- PRINCIPAL REPLY CHANNEL (2026-07-31) --------------------------------------------------
@@ -172,7 +206,8 @@ def _poll_replies(topic: str) -> None:
                 out = ("REARM is retired: the cash-carry size governor it re-armed was deleted "
                        "with the crypto-exchange universe (2026-09-05). Nothing was changed.")
                 with contextlib.suppress(Exception):
-                    _push(topic, "Quant desk: REARM received", out)
+                    _push(topic, "Quant desk: REARM received", out,
+                          audience="principal")      # answers his own reply
         if last_id:
             _REPLY_STATE.write_text(
                 json.dumps({"last_id": last_id,
@@ -242,16 +277,21 @@ def _digger_health() -> list[tuple[str, str]]:
     return out
 
 
-def _second_channel(text: str) -> None:
+def _second_channel(text: str, *, audience: str = "principal") -> None:
     """INDEPENDENT alert path (gap #38). ntfy is a single point of failure -- a header-encoding
     bug killed it silently for 29h across a live dead-man fire. healthchecks.io is already
     configured for the heartbeat; POSTing to its /fail endpoint triggers whatever notification
     the operator set up there, through completely different infrastructure. Best-effort: this
-    must NEVER raise into the primary alert path."""
+    must NEVER raise into the primary alert path.
+
+    Only a PRINCIPAL page uses /fail (which notifies). A desk page uses /log: recorded on the
+    check, notifies nobody, and does not mark the box down -- the 3-minute heartbeat ping is what
+    proves the box alive, and it is untouched."""
     with contextlib.suppress(Exception):
         hb = json.loads(Path("data/secrets/heartbeat_url.json").read_text("utf-8")).get("url")
         if hb:
-            req = urllib.request.Request(hb.rstrip("/") + "/fail",
+            req = urllib.request.Request(hb.rstrip("/") + ("/log" if audience == "desk"
+                                                           else "/fail"),
                                          data=text.encode("utf-8", "ignore")[:900])
             with urllib.request.urlopen(req, timeout=10):
                 pass
@@ -520,7 +560,7 @@ def main() -> None:
         return
     if "--test" in sys.argv:
         _push(topic, "Quant desk pager: TEST", "pager wired -- you will only hear from me "
-              "when something is genuinely wrong")
+              "when something needs you", audience="principal")   # he ran --test himself
         print(f"test page sent -> https://ntfy.sh/{topic}")
         return
     _poll_replies(topic)          # read principal replies BEFORE computing pages: a fresh
@@ -534,18 +574,24 @@ def main() -> None:
     active = {k for k, _ in checks}
     paged = set(state.get("_paged", []))
     for key, msg in checks:
-        if now - float(state.get(key, 0)) < _DEDUPE_OVERRIDES_S.get(key, _DEDUPE_S):
+        # THE DEDUPE KEY CARRIES THE AUDIENCE: a key that moves desk -> principal (auth_broken did,
+        # 2026-10-29) must page the phone at once, not wait out a window its desk page started.
+        dk = _dedupe_key(key)
+        if now - float(state.get(dk, 0)) < _DEDUPE_OVERRIDES_S.get(key, _DEDUPE_S):
             paged.add(key)                                 # still-alerting, still track for resolve
             continue
         # FAILURE BACKOFF (2026-07-16): a failed push used to retry every 3-min tick forever --
         # the sustained hammering kept the free ntfy.sh quota exhausted from 07-11 on, so EVERY
         # page (including the 07-13 dead-man fire) was silently dropped. One attempt per key per
         # 30min keeps total volume far under quota and lets it refill.
-        if now - float(state.get(f"_try_{key}", 0)) < 1800:
+        if now - float(state.get(f"_try_{dk}", 0)) < 1800:
             continue
-        state[f"_try_{key}"] = now
+        state[f"_try_{dk}"] = now
         try:
-            _push(topic, f"WARNING Quant desk: {key}", msg)
+            _push(topic, f"WARNING Quant desk: {key}", msg, audience=audience_for(key), key=key)
+            state[dk] = now
+            # the bare key stays too: libs/ops/derisk_ladder.unacked_since reads state[key] as
+            # "when was this last pushed", and this change must not move the ladder's clock
             state[key] = now
             paged.add(key)
             sent += 1
@@ -559,9 +605,11 @@ def main() -> None:
         if key not in active:
             with contextlib.suppress(Exception):
                 _push(topic, f"RESOLVED Quant desk: {key}",
-                      "auto-fixed / cleared -- no action needed")
+                      "auto-fixed / cleared -- no action needed", audience=audience_for(key),
+                      key=key, resolved=True)
             paged.discard(key)
             state.pop(key, None)
+            state.pop(_dedupe_key(key), None)
     state["_paged"] = sorted(paged)
     # SELF-HEAL: auto-retry a failed daily brain cycle + event-trigger the brain on a remediable
     # alert -- so the desk fixes itself without waiting for the operator (2026-07-18).

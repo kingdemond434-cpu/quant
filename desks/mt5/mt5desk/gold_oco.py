@@ -261,9 +261,12 @@ def page_identity(lane: str, why: str | None, *,
             res = PAGER(title, body[:1500])
         else:
             from libs.ops import alert_channels
+            # DESK: an unnamed account FAILS CLOSED (every gold leg refused) and the fix is the
+            # box-held key answering again -- no order or position is left needing the owner.
             res = alert_channels.send_all(title, body[:1500],
                                           config=root / "data/secrets/alert_channels.json",
-                                          ledger=root / "data/alert_delivery.jsonl")
+                                          ledger=root / "data/alert_delivery.jsonl",
+                                          audience="desk")
         res = res if isinstance(res, dict) else {}
         out = {"sent": bool(res.get("delivered")), "reason": reason, "armed": res.get("armed"),
                "delivered": res.get("delivered")}

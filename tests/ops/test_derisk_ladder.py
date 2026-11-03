@@ -131,6 +131,16 @@ def test_a_paged_key_with_no_stamp_at_all_contributes_nothing() -> None:
     assert DL.unacked_since(_state(["ghost"]), ack_ts=0.0, prior=None) is None
 
 
+def test_a_desk_audience_key_is_not_an_unacked_page() -> None:
+    """A desk page never reached the phone (alert_channels), so it has no ack to wait for:
+    run_alerts stamps it `<key>@desk` beside the bare key, and the ladder skips it."""
+    desk_only = {"_paged": ["brain_down"], "brain_down": 300.0, "brain_down@desk": 300.0}
+    assert DL.unacked_since(desk_only, ack_ts=0.0, prior=None) is None
+    mixed = {**desk_only, "_paged": ["brain_down", "deadman_latched"],
+             "deadman_latched": 500.0, "deadman_latched@principal": 500.0}
+    assert DL.unacked_since(mixed, ack_ts=0.0, prior=None) == 500.0
+
+
 # ------------------------------------------------------------------ monotonicity
 
 def _fresh(tmp_path: Path) -> DL.LadderState:

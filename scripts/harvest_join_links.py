@@ -183,7 +183,9 @@ def main(argv: list[str] | None = None) -> int:
         body = ("Rooms the miner found and cannot enter. Join any that look worth it, then drop "
                 "their content into data/inbox for the desk to read.\n\n"
                 + "\n\n".join(lines) + extra)
-        send_all(f"{len(rep['links'])} join link(s) found", body)
+        # PRINCIPAL: joining a closed room is a membership, i.e. a person -- the one step on this
+        # loop only the owner can take, and the push asks him to take it.
+        send_all(f"{len(rep['links'])} join link(s) found", body, audience="principal")
         pushed = len(rep["links"])
         _record(rep["links"], SEEN)          # recorded ONLY after a push was attempted
     elif rep["links"]:
