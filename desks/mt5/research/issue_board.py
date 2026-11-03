@@ -132,6 +132,10 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
      "research/rank_recovery.py"),
     ("cross_sectional_breadth", "desks/mt5/reports/CROSS_SECTIONAL_BREADTH.json", 3600,
      "research/cross_sectional_breadth.py"),
+    ("specialist_cell", "desks/mt5/reports/SPECIALIST_CELLS.json", 3600,
+     "research/specialist_cell.py"),
+    ("residual_search", "desks/mt5/reports/RESIDUAL_SEARCH.json", 3600,
+     "research/residual_search.py"),
     ("attribution_census", "desks/mt5/reports/ATTRIBUTION_COVERAGE.json", 3600,
      "research/attribution_census.py"),
     ("coverage_tensor", "desks/mt5/reports/COVERAGE_TENSOR.json", 3600,
@@ -164,6 +168,11 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
     # turns "the seat errored" into "this leg spent the audit lane's budget at 01:42".
     ("llm_budget_census", "desks/mt5/reports/LLM_BUDGET_CENSUS.json", 3600,
      "research/llm_budget_census.py"),
+    # The judge's pulse (hourly `judge_alive` leg): a verdict that stops being rewritten is a
+    # judge nobody is watching.
+    # No auto-repair: its producer is the hourly cycle's `judge_alive` leg
+    # (`scripts/check_judge_coverage.py --liveness --require-state`), which takes arguments.
+    ("judge_alive", "desks/mt5/reports/judge_alive_fence.json", 3600, None),
 )
 
 #: Alarm files any detector on this tree may raise. Presence IS the issue; the file's first line
@@ -183,6 +192,9 @@ ALARMS: tuple[tuple[str, str, str], ...] = (
     ("SAMEDAY_ALARM.txt", "BLIND", "the same-day pipeline fence is breached"),
     ("FENCE_ALARM.txt", "BLIND", "a standing fence is breached"),
     ("PROMPT_PREFIX_ALARM.txt", "DEGRADED", "the prompt prefix drifted"),
+    ("JUDGE_ALIVE_ALARM.txt", "STALLED",
+     "the judge's sweep was killed for making no progress (or its watchdog is wedged) and no "
+     "sweep has finished since: no verdict is being written"),
 )
 
 #: Repairs that may NEVER be automated, and why. An actuator that can quietly fix one of these

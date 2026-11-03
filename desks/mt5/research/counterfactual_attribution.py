@@ -95,7 +95,8 @@ MACRO_STATE = DESK / "data" / "macro_state.json"
 WORLD_STATE = DESK / "data" / "world_state.json"
 AXES = DESK / "data" / "axes"
 SLEEVES = DESK / "data" / "sleeves.json"
-LIVE_LEDGER = DESK / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 SHADOW = DESK / "reports" / "shadow"
 COST_SURFACE = DESK / "data" / "cost_surface.json"
 ORDER_INTENTS = DESK / "data" / "order_intents.jsonl"

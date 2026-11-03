@@ -19,6 +19,11 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from libs.core.json_array import count_object_array  # noqa: E402
+
 DESK = ROOT / "desks" / "mt5"
 OUT = ROOT / "web" / "desk_state.json"
 
@@ -67,7 +72,9 @@ def _timestamp(value: Any) -> datetime | None:
 
 
 def _ledger() -> list[dict[str, Any]]:
-    path = DESK / "data" / "live_ledger.jsonl"
+    from libs.ops.live_ledger_view import ledger_path
+
+    path = ledger_path(DESK / "data" / "live_ledger.jsonl")
     try:
         return [json.loads(line) for line in path.read_text("utf-8").splitlines()
                 if line.strip()]
@@ -278,13 +285,27 @@ def _ledger_stats(rows: list[dict[str, Any]]) -> dict[str, Any]:
     return out
 
 
+def _count_json_array_items(path: Path, *, chunk_size: int = 1024 * 1024) -> int | None:
+    """Count a top-level JSON array without materialising its campaign-sized rows.
+
+    The canonical docket is a list of objects and is already larger than 1.5 GB.  A
+    dashboard counter used to ``read_text`` and ``json.loads`` the whole file after
+    every cross-box pull.  Under the pull service's 200 MB memory rail that produced
+    hours of reclaim pressure followed by an OOM kill, so a fresh 3 MB box snapshot
+    never reached the public dashboard.
+
+    This scanner retains only structural state.  It understands nested arrays and
+    objects plus escaped quotes, rejects a non-array root and fails closed on a
+    truncated/malformed structure.  Docket rows must be objects; accepting arbitrary
+    scalar values here would make a corrupt producer look like valid candidates.
+    """
+    return count_object_array(path, chunk_size=chunk_size)
+
+
 def _funnel_docket() -> int | None:
-    try:
-        rows = json.loads((DESK / "data" / "hypotheses" / "external_survivors.json")
-                          .read_text("utf-8"))
-        return len(rows) if isinstance(rows, list) else None
-    except (OSError, json.JSONDecodeError):
-        return None
+    return _count_json_array_items(
+        DESK / "data" / "hypotheses" / "external_survivors.json"
+    )
 
 
 def _gate_stat(key: str) -> int | None:
@@ -425,7 +446,9 @@ def _observability_graph(payload: dict[str, Any], allocator: dict[str, Any] | No
             "why": "one SOURCE->P&L path; a break is a stage the desk cannot see, not a zero"}
 
 
-def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
+def _funnel(
+    universal: dict[str, Any], *, docket_candidates: int | None = None
+) -> dict[str, Any]:
     """Stage counts for the ONE pipeline: discovered -> backtested -> certified -> forward -> live."""
     hyp = None
     for cand in (DESK / "data" / "hypotheses" / "external_backtest_results.json",
@@ -555,7 +578,9 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
         # under-reported the machine by an order of magnitude and read as a stall (principal:
         # "thousands flowed through the gauntlet but backtesting is so low"). Docket size and
         # the last sweep's judged/unmeasured are the real funnel.
-        "docket_candidates": _funnel_docket(),
+        "docket_candidates": (
+            docket_candidates if docket_candidates is not None else _funnel_docket()
+        ),
         "gauntlet_last_judged": _gate_stat("n_judged"),
         "gauntlet_last_unmeasured": _gate_stat("n_unmeasured"),
         # THE TEN-GATE VERDICT, NOT THE FILE'S ROW COUNT. `n` is `len(survivors)`, which includes
@@ -1415,6 +1440,10 @@ def _ceo_digest(key: str, doc: dict[str, Any]) -> dict[str, Any]:
 
 
 def build() -> dict[str, Any]:
+    pulled_snapshot_path = os.environ.get("QUANT_DESK_PULL_SNAPSHOT")
+    pulled_snapshot = (
+        _read(Path(pulled_snapshot_path)) if pulled_snapshot_path else {}
+    )
     gateway = _read(DESK / "data" / "gateway_state.json")
     # NEVER FALL BACK TO gateway_state FOR THE ACCOUNT (2026-09-04). On a box with no MT5
     # terminal _mt5_snapshot() returns None, account_state.json is often absent, and this fell
@@ -1428,7 +1457,11 @@ def build() -> dict[str, Any]:
     # best available truth and is preserved rather than replaced.
     account = _mt5_snapshot() or _read(DESK / "data" / "account_state.json")
     if not account:
-        _pulled = _read(ROOT / "web" / "desk_state.json").get("account") or {}
+        _pulled = (
+            pulled_snapshot.get("account")
+            or _read(ROOT / "web" / "desk_state.json").get("account")
+            or {}
+        )
         account = _pulled if _number(_find(_pulled, "equity", "account_equity")) else {}
     qquant = _read(DESK / "reports" / "QQUANT_GATES.json")
     universal = _read(DESK / "reports" / "UNIVERSAL_SURVIVORS.json")
@@ -1626,7 +1659,13 @@ def build() -> dict[str, Any]:
                                         "ops/process_health.py. No reading is not a clean board.")})
     payload["stats"] = _ledger_stats(rows)
     payload["stats"]["today_pnl"] = payload["account"]["today_pnl"]
-    payload["pipeline"] = _funnel(universal)
+    pulled_docket = _number(
+        (pulled_snapshot.get("pipeline") or {}).get("docket_candidates")
+    )
+    payload["pipeline"] = _funnel(
+        universal,
+        docket_candidates=int(pulled_docket) if pulled_docket is not None else None,
+    )
     payload["graph"] = _observability_graph(
         payload, _read(DESK / "reports" / "pf_allocator.json"),
         _read(DESK / "data" / "hypotheses" / "miner_candidates.json"))

@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -34,29 +35,17 @@ FLOOR = ROOT / "docs" / "research" / "self_repair_floor.json"
 
 
 def _trading_host(base: Path) -> bool:
-    """Is the live gateway writing here? By the file's age AND its own stamps: gateway_state.json
-    is tracked, so a checkout resets its mtime and a fresh clone read as the trading host."""
-    import time as _t
-    from datetime import datetime
-    path = base / "desks" / "mt5" / "data" / "gateway_state.json"
-    try:
-        age = _t.time() - path.stat().st_mtime
-    except OSError:
-        return False
-    try:
-        doc = json.loads(path.read_text(encoding="utf-8-sig"))
-    except (OSError, ValueError):
-        doc = {}
-    stamps: list[float] = []
-    for key in ("last_reconcile", "placement_pass", "updated_at", "at", "ts"):
-        try:
-            stamps.append(datetime.fromisoformat(
-                str(doc[key]).replace("Z", "+00:00")).timestamp())
-        except (KeyError, TypeError, ValueError):
-            continue
-    if stamps:
-        age = max(age, _t.time() - max(stamps))
-    return age < 3 * 3600
+    """The trading box, by its machine id -- the one helper `check_birth_obligations` asks.
+
+    It used to answer from `gateway_state.json`'s mtime and stamps. That file is TRACKED and the
+    box publishes it to origin, so for three hours after every box commit any cloud checkout read
+    as the trading host: this fence went red on clean trees, the merge-base included, and every
+    thread's push stalled (2026-10-13). An UNMEASURED id with the trading hostname still answers
+    yes (`may_be_trading`), so the box itself stays fail-closed. `base` is kept for the callers'
+    signature; the answer is about this machine, not a checkout."""
+    del base
+    from libs.ops import host_identity
+    return host_identity.identify().may_be_trading
 
 
 def measure(root: Path | None = None, *, require: bool = False) -> dict[str, Any]:
@@ -69,7 +58,10 @@ def measure(root: Path | None = None, *, require: bool = False) -> dict[str, Any
     # artifact there is a fact about the machine, not about the class -- and a fence that is red
     # on the day it is built gets switched off (L1.43). `--require-state` arms the half that the
     # box's own law gate runs, which is where silence IS the defect.
-    trading = _trading_host(base)
+    # A detached source checkout contains copied timestamps, not running detectors.
+    # --require-state still binds even if a caller inherits the source-view flag.
+    source_view = os.environ.get("QUANT_LAWGATE_SOURCE_VIEW") == "1"
+    trading = _trading_host(base) and not source_view
     floor_path = base / "docs" / "research" / "self_repair_floor.json"
     try:
         floor = json.loads(floor_path.read_text(encoding="utf-8-sig"))

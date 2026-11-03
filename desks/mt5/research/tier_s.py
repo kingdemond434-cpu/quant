@@ -106,7 +106,8 @@ RATIFICATIONS = ROOT / "docs" / "research" / "tier_s_ratifications.jsonl"
 SURVIVORS = (REPORTS / "UNIVERSAL_SURVIVORS.json", DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json")
 REGISTRY = DESK / "data" / "sleeve_registry.json"
 GATE_LEDGER = DESK / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
-LIVE_LEDGER = DESK / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER = _audited_ledger_path(DESK / "data" / "live_ledger.jsonl")
 ORDER_INTENTS = DESK / "data" / "order_intents.jsonl"
 DECISIONS = DESK / "data" / "decision_ledger.jsonl"
 EVENTS = DESK / "data" / "events.jsonl"

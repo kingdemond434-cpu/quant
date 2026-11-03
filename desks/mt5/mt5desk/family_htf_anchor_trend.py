@@ -113,6 +113,25 @@ def family_htf_anchor_trend(
     px = close.to_numpy(dtype=float)
     idx = d.index
 
+    from mt5desk import families_vector as _vec
+    fast = None
+    if _vec.enabled():
+        # Speed only: the same entries from the crossing bars alone (families_vector).
+        try:
+            fast = _vec.htf_anchor_trend_emit(
+                frame=d, idx=idx, diff=diff, anch=anch, atr=atr, px=px, stop_atr=stop_atr, rr=rr,
+                max_hold_bars=max_hold_bars, anchor_mult=anchor_mult)
+        except Exception as exc:
+            _vec.fell_back("htf_anchor_trend", exc)
+            fast = None
+    if fast is not None:
+        return apply_exit_operators(
+            d, fast,
+            expansion_mult=float(expansion_mult),
+            exit_on_anchor_flip=bool(exit_on_anchor_flip),
+            anchor=anchor,
+            atr_n=int(atr_n),
+        )
     signals: list[Signal] = []
     last_exit = -1
     for i in range(1, len(d) - 1):

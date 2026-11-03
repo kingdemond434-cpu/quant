@@ -37,6 +37,38 @@ INTENTS = BASE / "data" / "order_intents.jsonl"
 PAUSED = BASE / "data" / "GATEWAY_PAUSED"              # the gateway ALREADY honours this file
 BREACH_LOG = BASE / "logs" / "fusion_deadman.log"
 STAMP = BASE / "data" / "fusion_deadman_state.json"
+#: THE PRINCIPAL'S ARMING MARKER (audit r5 must-fix 4). `--live` acts ONLY while this file exists
+#: and reads {"armed_by": "zuck", ...}; it is gitignored, so no adoption, restore or session can
+#: create it -- the principal writes it on the box. Without it a `--live` pass runs as DRY-RUN and
+#: says so on the stamp; with it the dry-run task steps aside, so one stamp has one writer.
+ARMED_MARKER = BASE / "data" / "FUSION_DEADMAN_ARMED.json"
+
+#: THE BROKER DAY (r6, coordinator must-fix 2026-10-20). The daily-loss rail measured "today" from
+#: UTC midnight, so between the server's midnight (17:00 New York = 21:00Z in summer) and 24:00Z a
+#: new broker day was still judged on the previous one's losses -- the box's stamp at 22:20Z read
+#: halt_codes [DAILY_LOSS] that way. The day is the SERVER's, by the convention this desk already
+#: uses: `prop/e8_guard.server_day` (server midnight == 17:00 America/New_York) and the gateway's
+#: tick-clock `day_key`, which is what `gateway_state.json`'s `day_start_equity.date` carries.
+SERVER_ANCHOR_TZ = "America/New_York"
+SERVER_MIDNIGHT_ET_HOUR = 17
+
+
+def broker_day(now: datetime | None = None) -> str:
+    """The broker (server) trading day at `now`, as YYYY-MM-DD."""
+    from zoneinfo import ZoneInfo
+    et = (now or datetime.now(tz=UTC)).astimezone(ZoneInfo(SERVER_ANCHOR_TZ))
+    return (et + timedelta(hours=24 - SERVER_MIDNIGHT_ET_HOUR)).strftime("%Y-%m-%d")
+
+
+def broker_day_start(now: datetime | None = None) -> datetime:
+    """The UTC instant the current broker day began (the server's midnight)."""
+    from zoneinfo import ZoneInfo
+    tz = ZoneInfo(SERVER_ANCHOR_TZ)
+    from datetime import date
+    day = date.fromisoformat(broker_day(now))
+    start_et = datetime.combine(day - timedelta(days=1), datetime.min.time(), tzinfo=tz) \
+        .replace(hour=SERVER_MIDNIGHT_ET_HOUR)
+    return start_et.astimezone(UTC)
 
 # ---------------------------------------------------------------- RAILS
 #: PRINCIPAL-SET. ~8 full-risk losers at the account's realised q -- a legitimately bad day stays
@@ -153,6 +185,48 @@ def ledger_rows() -> list[dict]:
     return out
 
 
+#: The box's declared Fusion live login (gitignored; decision_core.FUSION_ACCOUNT_FILE) and its
+#: server: the ledger rows this rail judges are THAT account's live rows and nothing else.
+FUSION_ACCOUNT = BASE / "data" / "FUSION_LIVE_ACCOUNT.json"
+FUSION_LIVE_SERVER = "FusionMarkets-Live"
+
+
+def ledger_checked(path: Path | None = None,
+                   account_path: Path | None = None) -> tuple[list[dict] | None, str]:
+    """(the declared Fusion LIVE account's ledger rows, why) -- or (None, why) when that cannot be
+    MEASURED (audit r6: an absent ledger read as zero loss). None when the ledger is absent or
+    unreadable, a line other than a torn LAST line does not parse, or the box declares no Fusion
+    login. Rows are filtered to `account == login`, `server == FUSION_LIVE_SERVER` and
+    `account_kind == "live"`; an empty filtered list IS a measurement (no trade yet)."""
+    p = path or LEDGER
+    ap = account_path or FUSION_ACCOUNT
+    try:
+        decl = json.loads(ap.read_text(encoding="utf-8-sig"))
+        login = decl.get("login") if isinstance(decl, dict) else None
+        if isinstance(login, bool) or not isinstance(login, int) or login <= 0 \
+                or decl.get("server") != FUSION_LIVE_SERVER:
+            return None, f"{ap.name} declares no integer login on {FUSION_LIVE_SERVER}"
+    except (OSError, ValueError) as exc:
+        return None, f"{ap.name} absent or unreadable ({type(exc).__name__})"
+    try:
+        lines = p.read_text("utf-8").splitlines()
+    except (OSError, ValueError) as exc:
+        return None, f"{p.name} absent or unreadable ({type(exc).__name__}); loss UNMEASURED"
+    rows: list[dict] = []
+    body = [ln.strip() for ln in lines if ln.strip()]
+    for i, line in enumerate(body):
+        try:
+            r = json.loads(line)
+        except ValueError:
+            if i == len(body) - 1:
+                continue                          # a torn last line is a write in progress
+            return None, f"{p.name} line {i + 1} does not parse; loss UNMEASURED"
+        if isinstance(r, dict) and r.get("account_kind") == "live" \
+                and r.get("server") == FUSION_LIVE_SERVER and r.get("account") == login:
+            rows.append(r)
+    return rows, f"{len(rows)} live row(s) of the declared Fusion account in {p.name}"
+
+
 def realised_pl_since(rows: list[dict], since: datetime) -> float:
     total = 0.0
     for r in rows:
@@ -230,7 +304,8 @@ def size_guard(positions: list[dict], expected: dict[int, float] | None
 
 def evaluate(account: dict, positions: list[dict], rows: list[dict],
              peak_equity: float, halt_codes: tuple = (),
-             expected: dict[int, float] | None = None) -> list[tuple[str, str]]:
+             expected: dict[int, float] | None = None, *,
+             now: datetime | None = None) -> list[tuple[str, str]]:
     """Pure function: state in, breach reasons out. Testable without MT5 attached.
 
     `expected` (order ticket -> the lot the sizer sent, see `expected_lots`) arms the size guard;
@@ -238,7 +313,7 @@ def evaluate(account: dict, positions: list[dict], rows: list[dict],
     """
     breaches: list[tuple[str, str]] = []
     equity = float(account.get("equity", 0.0) or 0.0)
-    now = datetime.now(tz=UTC)
+    now = now or datetime.now(tz=UTC)
 
     # HYSTERESIS: once halted on the floor, the account must climb back to floor x 1.05 before
     # this stops reporting a breach -- so the CLEAR condition is strictly harder than the BREACH
@@ -250,12 +325,29 @@ def evaluate(account: dict, positions: list[dict], rows: list[dict],
                          f"EQUITY FLOOR: {equity:.2f} < {floor:.2f} -- the account "
                          f"can no longer size its own policy"))
 
-    day_start = datetime.combine(now.date(), datetime.min.time(), tzinfo=UTC)
+    # THE CURRENT BROKER DAY ONLY (r6): realised P/L since the server's midnight, and the
+    # equity against THAT day's opening balance (the gateway's `day_start_equity` anchor, used
+    # only when it is dated to this broker day -- a stale anchor is no opening balance).
+    day = broker_day(now)
+    day_start = broker_day_start(now)
     day_pl = realised_pl_since(rows, day_start)
     day_ref = max(peak_equity, equity)
+    anchor = account.get("day_start_equity")
+    opening = None
+    if isinstance(anchor, dict) and anchor.get("date") == day:
+        try:
+            opening = float(anchor.get("equity"))
+        except (TypeError, ValueError):
+            opening = None
     if day_ref > 0 and day_pl < -DAILY_LOSS_PCT * day_ref:
         breaches.append(("DAILY_LOSS",
-                         f"DAILY LOSS: {day_pl:.2f} beyond {DAILY_LOSS_PCT:.0%} of {day_ref:.2f}"))
+                         f"DAILY LOSS: {day_pl:.2f} beyond {DAILY_LOSS_PCT:.0%} of {day_ref:.2f} "
+                         f"(broker day {day})"))
+    elif opening and opening > 0 and equity > 0 \
+            and equity <= opening * (1.0 - DAILY_LOSS_PCT):
+        breaches.append(("DAILY_LOSS",
+                         f"DAILY LOSS: equity {equity:.2f} is {DAILY_LOSS_PCT:.0%}+ below broker "
+                         f"day {day}'s opening {opening:.2f}"))
 
     week_pl = realised_pl_since(rows, now - timedelta(days=7))
     if day_ref > 0 and week_pl < -WEEKLY_LOSS_PCT * day_ref:
@@ -273,13 +365,22 @@ def evaluate(account: dict, positions: list[dict], rows: list[dict],
                          f"MARGIN: free {free_margin:.2f} < {MIN_FREE_MARGIN_FRAC:.0%} of equity"))
 
     last = account.get("last_reconcile")
-    if positions and last:
+    # RESTING PENDINGS ARE RISK TOO (audit r5 should-fix): a stop entry that fills while the
+    # gateway is not reconciling is unmanaged exactly like an open position.
+    pendings = list(account.get("pending") or [])
+    exposed = len(positions) + len(pendings)
+    if exposed and not last:
+        breaches.append(("STALE_GATEWAY",
+                         f"STALE GATEWAY: no last_reconcile with {len(positions)} position(s) "
+                         f"and {len(pendings)} pending order(s) -- treated as stale"))
+    if exposed and last:
         try:
             age_min = (now - datetime.fromisoformat(str(last))).total_seconds() / 60
             if age_min > STALE_HEARTBEAT_MIN:
                 breaches.append(("STALE_GATEWAY",
                                  f"STALE GATEWAY: {age_min:.0f}min since reconcile with "
-                                 f"{len(positions)} position(s) open -- unmanaged risk"))
+                                 f"{len(positions)} position(s) open and {len(pendings)} "
+                                 f"pending order(s) -- unmanaged risk"))
         except ValueError:
             breaches.append(("STALE_GATEWAY",
                              "STALE GATEWAY: last_reconcile unparseable -- treated as stale"))
@@ -414,6 +515,36 @@ def rails() -> dict:
             "STALE_HEARTBEAT_MIN": STALE_HEARTBEAT_MIN, "CONFIRM_READS": CONFIRM_READS}
 
 
+def clear_stale_daily_loss(stamp: dict, day: str, *, ours: bool = False) -> str | None:
+    """Drop a DAILY_LOSS latch measured on another broker day than `day`. Returns what it cleared
+    (None when nothing was stale). When the pause is OURS the code stays for `try_rearm`, whose
+    declared clear condition for it is exactly a new trading day; only the day it holds is
+    refreshed so it no longer reads as today's halt. Pure over `stamp`."""
+    codes = list(stamp.get("halt_codes") or [])
+    if "DAILY_LOSS" not in codes or stamp.get("daily_loss_day") == day:
+        return None
+    was = stamp.get("daily_loss_day")
+    if not ours:
+        stamp["halt_codes"] = [c for c in codes if c != "DAILY_LOSS"]
+    stamp["daily_loss_day"] = None
+    why = f"stale DAILY_LOSS from broker day {was or 'unknown'} cleared on {day}"
+    log(why)
+    return why
+
+
+def principal_armed(path: Path | None = None) -> tuple[bool, str]:
+    """Whether the principal has armed the rail: `ARMED_MARKER` exists and reads
+    {"armed_by": "zuck", ...}. Anything else is NOT armed (fail closed to dry-run)."""
+    p = path or ARMED_MARKER
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError):
+        return False, f"{p.name} absent or unreadable"
+    if not isinstance(doc, dict) or doc.get("armed_by") != "zuck":
+        return False, f"{p.name} does not carry armed_by \"zuck\""
+    return True, f"armed by the principal ({p.name})"
+
+
 def main(dry_run: bool = True) -> int:
     """Default DRY-RUN. A rail that arms itself on first execution is not reviewable.
 
@@ -422,29 +553,75 @@ def main(dry_run: bool = True) -> int:
     it judged and the rails it judged them by. In dry-run `would.executed` is false and no file
     but the stamp and the log is touched; arming (`--live`) is the principal's decision.
     """
+    armed, armed_why = principal_armed()
+    if dry_run and armed:
+        # The LIVE task owns the stamp once the principal has armed the rail.
+        log(f"dry-run pass stands aside: {armed_why}; MT5-FusionDeadmanLive owns the stamp")
+        return 0
+    demoted = (not dry_run) and not armed
+    if demoted:
+        dry_run = True
+        log(f"--live requested but NOT armed ({armed_why}); this pass runs as DRY-RUN")
     st = _read(STATE, {})
     account = {"equity": st.get("equity", 0.0), "margin_free": st.get("margin_free", 0.0),
-               "last_reconcile": st.get("last_reconcile")}
+               "last_reconcile": st.get("last_reconcile"), "pending": st.get("pending") or [],
+               "day_start_equity": st.get("day_start_equity")}
     positions = st.get("position") or []
     stamp = _read(STAMP, {"peak_equity": 0.0, "consecutive": 0, "halt_codes": [],
                           "rearm_history": {}, "escalated": [], "cleared_at": None})
     peak = max(float(stamp.get("peak_equity", 0.0)), float(account["equity"] or 0.0))
     expected = expected_lots(intent_rows())
+    day = broker_day()
+    # A STALE DAILY_LOSS IS CLEARED BEFORE ANY FLATTEN DECISION (r6): the latch is for the broker
+    # day it was measured on, never carried into the next. Our own pause keeps the code so
+    # try_rearm lifts it by its declared clear condition ("a new trading day began").
+    stale_cleared = clear_stale_daily_loss(stamp, day, ours=halted_by_us() is not None)
+    if stamp.get("consecutive_day") != day:
+        stamp["consecutive"] = 0                  # a confirm count never spans broker days
 
-    breaches = evaluate(account, positions, ledger_rows(), peak,
+    # THE LEDGER IS A PRECONDITION (audit r6): absent or unreadable is UNMEASURED, never a zero
+    # loss. The realised rule is skipped (nothing is assumed), arming refuses, and a LIVE stamp
+    # carrying ledger.ok == False makes the gateway's gate refuse new Fusion risk.
+    led_rows, led_why = ledger_checked()
+    breaches = evaluate(account, positions, led_rows or [], peak,
                         tuple(stamp.get('halt_codes') or ()), expected=expected)
     codes = [c for c, _ in breaches]
     messages = [m for _, m in breaches]
     stamp["peak_equity"] = peak
     stamp.pop("rearm_verdict", None)
 
+    # ARMING NEVER FLATTENS (r6). The first LIVE pass after DRY-RUN refuses to arm while the
+    # current broker day's DAILY_LOSS halt is set (latched today or observed now) and says why;
+    # it stays DRY-RUN, so the gateway's gate (decision_core.fusion_deadman_armed) keeps new
+    # Fusion risk off. Otherwise it arms with a fresh confirm count: a dry-run count is not a
+    # live read.
+    refused = None
+    if not dry_run and stamp.get("mode") != "LIVE":
+        today_halt = ("DAILY_LOSS" in (stamp.get("halt_codes") or [])
+                      and stamp.get("daily_loss_day") == day) or "DAILY_LOSS" in codes
+        if led_rows is None:
+            refused = (f"arming refused: the live ledger is UNMEASURED ({led_why}); the rail "
+                       f"stays DRY-RUN until it reads the declared account's ledger")
+            log(refused)
+            dry_run = True
+        elif today_halt:
+            refused = (f"arming refused: a DAILY_LOSS halt is set for broker day {day}; the rail "
+                       f"stays DRY-RUN (no flatten) and arms on the next broker day")
+            log(refused)
+            dry_run = True
+        else:
+            stamp["consecutive"] = 0
+
     if breaches:
         stamp["consecutive"] = int(stamp.get("consecutive", 0)) + 1
+        stamp["consecutive_day"] = day
         stamp["cleared_at"] = None
         log(f"BREACH ({stamp['consecutive']}/{CONFIRM_READS}) {codes}: {messages}")
         if stamp["consecutive"] >= CONFIRM_READS:
             flatten_and_halt(messages, dry_run=dry_run)
             stamp["halt_codes"] = sorted(set(stamp.get("halt_codes", [])) | set(codes))
+            if "DAILY_LOSS" in codes:
+                stamp["daily_loss_day"] = day
             action = "HALT_AND_FLATTEN"
         else:
             action = "WAIT_FOR_CONFIRMATION"
@@ -460,6 +637,12 @@ def main(dry_run: bool = True) -> int:
             action = "NOTHING"
 
     stamp["mode"] = "DRY-RUN" if dry_run else "LIVE"
+    stamp["armed"] = {"principal": armed, "why": armed_why,
+                      "live_requested_but_unarmed": demoted, "refused": refused}
+    stamp["broker_day"] = day
+    stamp["ledger"] = {"ok": led_rows is not None, "why": led_why,
+                       "rows": len(led_rows) if led_rows is not None else None}
+    stamp["stale_daily_loss_cleared"] = stale_cleared
     stamp["checked_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
     stamp["readings"] = {"equity": account["equity"], "margin_free": account["margin_free"],
                          "last_reconcile": account["last_reconcile"],
