@@ -190,8 +190,15 @@ def mint(handoff: dict[str, Any], registry: dict[str, Any] | None = None
         lake = str(r.get("lake_file") or "")
         sid, series = str(r.get("source") or ""), str(r.get("series") or "")
         meta = _meta(sid)
-        for sym, sign in sorted((r.get("shares") or {}).items()):
-            sign = 1 if int(sign) > 0 else -1
+        for sym, raw_sign in sorted((r.get("shares") or {}).items()):
+            try:
+                sign = int(raw_sign)
+            except (TypeError, ValueError):
+                sign = 0
+            if sign not in (1, -1):
+                # a zero or unreadable prior is no direction: never coerced to -1
+                held["PRIOR_UNSIGNED"] += 1
+                continue
             common = {"handoff_row": f"{sid}|{series}", "source_id": sid, "series": series,
                       "lake_file": lake, "prior_sign": sign, "meta": meta}
             ev = {"source": lake, "prior_sign": sign, **EVENT_PARAMS}
@@ -230,6 +237,16 @@ def _bars(symbol: str) -> Any:
 
 def _series_present(lake: str) -> bool:
     return any((SERIES_DIR / f"{lake}{s}").exists() for s in (".parquet", ".csv"))
+
+
+def _written_cells(path: Path) -> set[str]:
+    """The `cell` ids the door actually wrote into its discovery file; empty when unreadable."""
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return set()
+    rows = doc.get("discoveries") if isinstance(doc, dict) else None
+    return {str(r.get("cell")) for r in rows or [] if isinstance(r, dict) and r.get("cell")}
 
 
 def measure(cell: dict[str, Any], d: Any, reg: dict[str, Any]) -> dict[str, int]:
@@ -427,9 +444,15 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False, now: datetime | None 
             donation = ap._donate(ap.DEFAULT_PATHS, SOURCE, cands, measured, dict(by_family),
                                   now)
             if donation.get("path"):
+                # ONLY THE ROWS THE DOOR WROTE: a row it turned away (wrong lane, unstamped,
+                # blinded) is retried next pass and counted here, never marked donated and lost
+                written = _written_cells(Path(str(donation["path"])))
                 at = now.isoformat(timespec="seconds")
                 for c in cands:
-                    state["cells"].setdefault(str(c["cell"]), {})["donated_at"] = at
+                    if str(c["cell"]) in written:
+                        state["cells"].setdefault(str(c["cell"]), {})["donated_at"] = at
+                donation["refused_by_door"] = sum(1 for c in cands
+                                                  if str(c["cell"]) not in written)
         _atomic(STATE, state)
     donated_total = sum(1 for v in state["cells"].values() if v.get("donated_at"))
     rep = {

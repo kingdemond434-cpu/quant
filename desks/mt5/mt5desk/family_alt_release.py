@@ -56,6 +56,11 @@ except Exception:  # pragma: no cover
 _CACHE: dict[tuple[str, float, str], list[tuple[pd.Timestamp, float]]] = {}
 
 
+#: (backfill rows dropped, rows read) per series file on its last read: the share a cell's report
+#: carries so a series that is mostly revised history reads as thin, never as clean.
+BACKFILL_DROPPED: dict[str, tuple[int, int]] = {}
+
+
 def series_path(source: str, root: Path | None = None) -> Path | None:
     base = root or SERIES_DIR
     if not source or any(c in str(source) for c in ("/", "\\", "..")):
@@ -89,6 +94,15 @@ def releases(source: str, column: str = "surprise_z", *, root: Path | None = Non
         return []
     if df is None or df.empty or column not in df.columns or "available_time" not in df.columns:
         return []
+    if "pit_quality" in df.columns:
+        # A BACKFILLED row is the CURRENT vintage of an old period (alt_proxies stamps it
+        # pit_quality=backfill): a revised value paired with a first-release instant, i.e. a
+        # number that did not exist when the bar traded. Only first-release rows are a release.
+        kept = df["pit_quality"].astype(str).str.lower() != "backfill"
+        BACKFILL_DROPPED[str(path)] = (int((~kept).sum()), len(df))
+        df = df[kept]
+        if df.empty:
+            return []
     avail = pd.to_datetime(df["available_time"], errors="coerce", utc=True)
     val = pd.to_numeric(df[column], errors="coerce")
     period = (df["event_time"].astype(str) if "event_time" in df.columns
@@ -130,6 +144,9 @@ def family_alt_release_drift(
     index = pd.DatetimeIndex(d.index)
     if index.tz is None:
         index = index.tz_localize("UTC")
+    if len(index) > 1 and pd.Series(index).diff().median() > pd.Timedelta(days=1):
+        # W1/MN: one bar spans several days, so `hold_days` cannot be counted in bars per day
+        return []
     per_day = max(1, round(float(pd.Series(index.normalize()).value_counts().median())))
     ttl = int(max(1, int(hold_days)) * per_day)
     atr = _atr(d, atr_n).to_numpy()
