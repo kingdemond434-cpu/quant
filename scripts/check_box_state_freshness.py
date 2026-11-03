@@ -9,8 +9,9 @@ fence anywhere was red about it. The box went on computing; only delivery had st
 
 WHAT IT MEASURES, AT A GIT REF (default: the live branch's remote-tracking ref, else HEAD):
 
-  1. the newest commit on that ref, by a box identity (author matching --box-author, default
-     "Contabo"), that touched any path the box publisher carries (`$relPaths` in
+  1. the newest commit on that ref, by a box identity (its SUBJECT is the publisher's own
+     "mt5 box state <stamp> (published onto origin...)" / legacy "mt5 shadow state sync", or its
+     author matches --box-author, default "Contabo"), that touched any path the box publisher carries (`$relPaths` in
      sync_shadow_to_git.ps1, parsed by libs.ops.state_publication -- one list, never restated);
   2. the newest time stamp written INSIDE those files as they sit at that ref (`updated_at`,
      `generated_at`, `measured_at`, `checked_at`, `generated_utc`, `last_cycle`) -- because a
@@ -70,6 +71,15 @@ from libs.ops.state_publication import FLOW_REL, published_paths  # noqa: E402
 LIVE_BRANCH = "claude/llm-auto-upgrade-verify-gcjac3"
 THRESHOLD_H = 6.0
 BOX_AUTHOR = "Contabo"
+#: THE BOX IS NAMED BY WHAT IT WRITES, NOT WHO IT SAYS IT IS (2026-10-13). Since the publisher
+#: moved to commit-tree, box commits carry the git identity "Codex" -- the same author the VPS and
+#: the Codex lanes commit code under -- so an author match found no box commit at all and the
+#: fence read UNMEASURED on a branch the box was publishing to every fifteen minutes. The subject
+#: is the publisher's own (sync_shadow_to_git.ps1 `$msg`); no other writer uses it.
+BOX_SUBJECT_RE = re.compile(r"^mt5 (?:box state \d{4}-\d{2}-\d{2}_\d{4} \(published onto origin"
+                            r"|shadow state sync\b)")
+BOX_SUBJECT_GREP = r"^mt5 (box state [0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{4} \(published onto origin" \
+                   r"|shadow state sync)"
 OUT_REL = "desks/mt5/reports/BOX_STATE_FRESHNESS.json"
 OUT = ROOT / OUT_REL
 #: stall_watch.ps1's own state file (box-local, written every ten minutes by MT5-StallWatch).
@@ -88,12 +98,40 @@ def _git(root: Path, *args: str) -> tuple[int, str]:
 
 
 def is_box(name: str, box_author: str = BOX_AUTHOR) -> bool:
-    """THE ONE BOX-IDENTITY PREDICATE (audit should-fix, 2026-10-06). It used to be two: the
-    commit search used git's `--author` (a case-sensitive substring of "name <email>") and the
-    per-file check a case-insensitive substring of %an, so "Not Contabo" passed one and a
-    lower-cased name only the other. Now: the author NAME begins with the box identity as a whole
-    word, case-insensitive ("Contabo MT5 Desk" yes; "Contabot", "ex-Contabo" no)."""
+    """THE ONE AUTHOR PREDICATE (audit should-fix, 2026-10-06). It used to be two: the commit
+    search used git's `--author` (a case-sensitive substring of "name <email>") and the per-file
+    check a case-insensitive substring of %an, so "Not Contabo" passed one and a lower-cased name
+    only the other. Now: the author NAME begins with the box identity as a whole word,
+    case-insensitive ("Contabo MT5 Desk" yes; "Contabot", "ex-Contabo" no)."""
+    if not box_author:
+        return False
     return re.match(rf"\s*{re.escape(box_author)}(?![\w-])", name or "", re.I) is not None
+
+
+def is_box_commit(author: str, subject: str, box_author: str = BOX_AUTHOR) -> bool:
+    """A box write: the publisher's subject (every box commit since the commit-tree publisher,
+    authored "Codex" like the VPS's code), or, for older commits, the box's own author name by
+    the one predicate above. Used by the commit search AND the per-file check."""
+    if BOX_SUBJECT_RE.match(subject.strip()):
+        return True
+    return is_box(author, box_author)
+
+
+def _newest_box_commit(root: Path, use: str, paths: list[str],
+                       box_author: str) -> tuple[int, str, str] | None:
+    """(commit time, short sha, author) of the newest box write touching `paths` at `use`.
+
+    One log, judged row by row by `is_box_commit` -- the same predicate the per-file check uses
+    (no git `--author` / `--grep` pre-filter, whose matching rules differ from it)."""
+    rc, out = _git(root, "log", "-n", "20000", "--format=%ct%x09%h%x09%an%x09%s", use,
+                   "--", *paths)
+    if rc != 0:
+        return None
+    for line in out.splitlines():
+        ct, sha, who, subject = [*line.split("\t", 3), "", "", ""][:4]
+        if ct.isdigit() and is_box_commit(who, subject, box_author):
+            return int(ct), sha, who
+    return None
 
 
 #: How far down a merge's parents the writer search goes before calling the file unattributed.
@@ -108,14 +146,15 @@ def file_writer(root: Path, rev: str, rel: str, box_author: str = BOX_AUTHOR,
     whenever the merge is not TREESAME to any parent for that file (a conflict resolution, a JSON
     union), and the merger's name then hid the box's write. When the newest commit touching the
     file is a merge, the content came from its parents: it is box-written when every parent side
-    that carries the file was box-written, and named after the first one that was not."""
-    rc, out = _git(root, "log", "-1", "--format=%P%x09%an", rev, "--", rel)
+    that carries the file was box-written, and named after the first one that was not. A
+    non-merge write is judged by `is_box_commit` (subject or author), as the commit search is."""
+    rc, out = _git(root, "log", "-1", "--format=%P%x09%an%x09%s", rev, "--", rel)
     if rc != 0 or not out.strip():
         return "", False
-    parents, name = [*out.strip("\n").split("\t"), ""][:2]
+    parents, name, subject = [*out.strip("\n").split("\t", 2), "", ""][:3]
     plist = parents.split()
     if len(plist) < 2 or depth >= MERGE_DEPTH:
-        return name, is_box(name, box_author)
+        return name, is_box_commit(name, subject, box_author)
     sides = []
     for par in plist:
         rc_p, _ = _git(root, "cat-file", "-e", f"{par}:{rel}")
@@ -215,16 +254,23 @@ def _measure(root: Path, doc: dict[str, Any], *, ref: str | None, threshold_h: f
         return doc
     rc_s, shallow = _git(root, "rev-parse", "--is-shallow-repository")
     doc["shallow"] = rc_s == 0 and shallow.strip() == "true"
-    # The newest box commit, by the same predicate the per-file check uses (`is_box`).
-    rc, out = _git(root, "log", "-n", "20000", "--format=%ct%x09%h%x09%an", use, "--", *paths)
+    if doc["shallow"]:
+        # A SHALLOW CLONE CANNOT ATTRIBUTE ANYTHING (audit must-fix of #268). At depth 1 (every
+        # CI checkout) the graft commit is the newest commit touching EVERY file, so whoever made
+        # it -- a box publish included -- "wrote" every stamp, and a fortnight-old stamp re-carried
+        # under a fresh publish read FRESH. Authorship is truncated at the graft, so the verdict is
+        # UNMEASURED with that reason, whatever the stamps say; never FRESH.
+        doc.update(verdict="UNMEASURED",
+                   why=f"shallow clone: authorship history at {use} is truncated at the graft, so "
+                       "no stamp can be attributed to the box (fetch with --unshallow to measure)")
+        return doc
+    newest = _newest_box_commit(root, use, paths, box_author)
     commit_at = None
-    for line in out.splitlines() if rc == 0 else []:
-        ct, sha, who = [*line.split("\t"), "", ""][:3]
-        if ct.isdigit() and is_box(who, box_author):
-            commit_at = datetime.fromtimestamp(int(ct), UTC)
-            doc["newest_box_commit"] = {"sha": sha, "author": who,
-                                        "at": commit_at.isoformat(timespec="seconds")}
-            break
+    if newest:
+        ct, sha, who = newest
+        commit_at = datetime.fromtimestamp(ct, UTC)
+        doc["newest_box_commit"] = {"sha": sha, "author": who,
+                                    "at": commit_at.isoformat(timespec="seconds")}
     stamps: dict[str, str] = {}
     not_box_written: dict[str, str] = {}
     newest_stamp = None
@@ -239,8 +285,8 @@ def _measure(root: Path, doc: dict[str, Any], *, ref: str | None, threshold_h: f
         # at the ref is a box identity's; anyone else's write is listed, never believed.
         writer, boxed = file_writer(root, use, rel, box_author)
         if not boxed:
-            if writer:
-                not_box_written[rel] = writer
+            if writer.strip():
+                not_box_written[rel] = writer.strip()
             continue
         rc, text = _git(root, "show", f"{use}:{rel}")
         if rc != 0:
@@ -266,16 +312,9 @@ def _measure(root: Path, doc: dict[str, Any], *, ref: str | None, threshold_h: f
         if newest_stamp else None
     freshest = newest_stamp or commit_at
     doc["basis"] = "stamp_inside_state" if newest_stamp else "box_commit_date"
-    if freshest is None and doc["shallow"]:
-        # A shallow clone ends at its graft: "no box commit" may only mean the box's commits are
-        # below the cut (audit should-fix, 2026-10-06). Name THAT, not an absent box.
-        doc.update(verdict="UNMEASURED",
-                   why=f"shallow clone: authorship history at {use} is truncated at the graft, so "
-                       "the box's commits may lie below it (fetch with --unshallow to measure)")
-        return doc
     if freshest is None:
         doc.update(verdict="UNMEASURED",
-                   why=f"no commit by a '{box_author}' identity touches the published paths at "
+                   why=f"no box commit (publisher subject or a '{box_author}' author) touches the published paths at "
                        f"{use}, and no published file carries a parseable stamp")
         return doc
     age_h = (now - freshest).total_seconds() / 3600

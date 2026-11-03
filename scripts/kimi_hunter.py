@@ -412,6 +412,8 @@ def _ask(base, key, system, user, timeout=240.0, model: str = MODEL) -> str:
     req = urllib.request.Request(base.rstrip("/") + "/chat/completions", data=body, method="POST",
                                  headers={"Authorization": f"Bearer {key}",
                                           "Content-Type": "application/json"})
+    from libs.ops import openrouter_guard
+    openrouter_guard.check_request(req)
     with urllib.request.urlopen(req, timeout=timeout, context=CTX) as r:
         out = json.loads(r.read())
     # A 200 WITH AN ERROR BODY IS THE PROVIDER TALKING, NOT A BUG IN THIS FILE.
@@ -759,6 +761,10 @@ def main() -> None:
     _seen_before: set[str] = set(state.vectors)
     _wave_vectors: dict[int, set[str]] = {}
     transcript, findings, dropped = {}, [], []
+    # DONATE AFTER EVERY WAVE (2026-10-13, PRODUCER_YIELD: kimi DEAD 3 days). Findings were
+    # donated only after Wave 3 returned, so a pass the hourly leg's cap cut during Wave 3 (each
+    # ask may wait 240 s and walk the chain) lost Wave 2's findings with it -- every hour.
+    donated_upto, donated = 0, None
     for w in (1, 2, 3):
         name, brief = WAVES[w]
         prior = "\n\n".join(f"WAVE {k} OUTPUT:\n{v[:2500]}" for k, v in transcript.items())
@@ -855,17 +861,19 @@ def main() -> None:
                              "benefit": parts[2][:180], "cost": parts[3][:140],
                              "dependencies": parts[4][:140], "success_metric": parts[5][:180],
                              "kill_condition": parts[6][:180], "status": "proposed"})
+        if findings[donated_upto:]:
+            with LEDGER.open("a", encoding="utf-8") as fh:
+                for f in findings[donated_upto:]:
+                    fh.write(json.dumps(f) + "\n")
+            donated = _donate(findings[donated_upto:]) or donated
+            print(f"    wave {w}: {len(findings) - donated_upto} finding(s) -> {donated}")
+            donated_upto = len(findings)
 
     print(f"\n  {len(findings)} charter-complete findings, {len(dropped)} dropped")
     for d in dropped:
         print(f"    dropped (wave {d['wave']}): {d['reason']}")
-    donated = None
     if findings:
-        with LEDGER.open("a", encoding="utf-8") as fh:
-            for f in findings:
-                fh.write(json.dumps(f) + "\n")
         print(f"  -> {LEDGER}  (audit trail)")
-        donated = _donate(findings)
         print(f"  -> {donated}  (the compiler's tree: a docket row or a deepening task on its "
               "next pass, through the same gate as every other contributor)")
     print("\n  ZERO PROMOTION AUTHORITY. These are raw ore. Next stops: mechanism board "

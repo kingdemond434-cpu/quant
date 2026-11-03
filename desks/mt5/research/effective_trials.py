@@ -108,6 +108,63 @@ def read_docket(path: Path | None = None, *, limit: int = MAX_ROWS) -> list[dict
     return [r for r in rows[:limit] if isinstance(r, dict)]
 
 
+#: The rows `judge_coverage` parked as `build_input_missing`, written beside the docket
+#: (`judge_coverage.PARKED_TRIAL_ROWS`; a test pins the name). They are trials the desk minted
+#: and still owes, so they stay in the census: parking a cell must move no charge.
+PARKED_TRIALS_NAME = "build_input_parked_trials.json"
+
+
+#: The fields `libs.research.trial_ledger.trial_from_record` reads; equal to
+#: `judge_coverage.TRIAL_KEYS` (a test pins both against the census itself).
+TRIAL_KEYS: frozenset[str] = frozenset({
+    "params", "params_json", "genome", "family", "trial_family", "declared_width",
+    "search_width", "claim_selection_trials", "claim_family", "lineage", "family_id",
+    "trial_id", "id", "candidate_id", "hypothesis_id", "cell",
+    "mechanism", "data", "representation", "geography", "state", "horizon", "execution",
+    "failure", "symbol", "sym", "chart", "timeframe", "session", "regime", "information",
+    "asset_class", "model_family", "dataset", "feature", "signal", "method"})
+
+
+def _trial_identity(row: dict[str, Any]) -> str:
+    return json.dumps({k: v for k, v in row.items() if k in TRIAL_KEYS}, sort_keys=True,
+                      default=str)
+
+
+def read_parked_trials(path: Path) -> list[dict[str, Any]]:
+    """The parked rows as written; absent or malformed is none (nothing was parked)."""
+    try:
+        raw = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    return [r for r in raw if isinstance(r, dict)] if isinstance(raw, list) else []
+
+
+def census_rows(docket: Path | None = None, *, limit: int = MAX_ROWS
+                ) -> tuple[list[dict[str, Any]], int]:
+    """(rows the census measures, how many of them are parked rows): the docket, then the rows
+    parked out of it, up to `limit` in all."""
+    rows = read_docket(docket, limit=limit)
+    parked = read_parked_trials((docket or DOCKET).parent / PARKED_TRIALS_NAME)
+    # A PARKED ROW THE DOCKET ALREADY HOLDS IS COUNTED ONCE (audit of v1.1, MF2): a list left
+    # by an earlier pass names rows that shipped again. Matched one-for-one on the fields the
+    # census reads, so a row is never dropped for a twin it was not paired with.
+    held: dict[str, int] = {}
+    for r in rows:
+        k = _trial_identity(r)
+        held[k] = held.get(k, 0) + 1
+    extra: list[dict[str, Any]] = []
+    room = max(0, limit - len(rows))
+    for r in parked:
+        if len(extra) >= room:
+            break
+        k = _trial_identity(r)
+        if held.get(k, 0) > 0:
+            held[k] -= 1
+            continue
+        extra.append(r)
+    return rows + extra, len(extra)
+
+
 def spec_fixed_trial_count(path: Path | None = None) -> int | None:
     """The standing campaign charge as the sealed judge will read it, from the spec itself."""
     try:
@@ -178,7 +235,10 @@ def charge(census_dict: dict[str, Any], *, nominal: int = NOMINAL_CAMPAIGN_TRIAL
     fams = {row["family"]: FamilyCharge(
         str(row["family"]), int(row["n_nominal"]), float(row["n_effective"]),
         int(row.get("n_grid_cells") or 0), int(row.get("n_identities") or 0),
-        float(row.get("ratio") or 1.0), str(row.get("basis") or ""))
+        float(row.get("ratio") or 1.0), str(row.get("basis") or ""),
+        # the source's own selection, charged once (#: FamilyCharge.selection_trials). The merge
+        # resolution in fda104165 dropped it, so the re-read census reported 0 for every family.
+        int(row.get("selection_trials") or 0))
         for row in census_dict.get("by_family") or []}
     census = ChargeCensus(int(census_dict.get("n_nominal") or 0),
                           float(census_dict.get("n_effective") or 0.0),
@@ -305,7 +365,7 @@ def build(*, docket: Path | None = None, spec: Path | None = None,
     the hour it is measured.
     """
     t0 = time.time()
-    rows = read_docket(docket)
+    rows, n_parked = census_rows(docket)
     census = measure(rows)
     variance, variance_basis = measured_variance_of_sharpes(dsr_inputs_path)
     standing = spec_fixed_trial_count(spec)
@@ -327,7 +387,8 @@ def build(*, docket: Path | None = None, spec: Path | None = None,
                  "participation ratio of (grid cell, content) identity sizes within each "
                  "mechanism -- never in docket rows; no gate is lowered, no cell removed, no "
                  "producer capped, and every failure path returns the unchanged nominal charge"),
-        "docket_rows": len(rows),
+        "docket_rows": len(rows) - n_parked,
+        "parked_rows_counted": n_parked,
         "nominal": census.get("n_nominal"),
         "effective": census.get("n_effective"),
         "ratio_nominal_per_effective": census.get("ratio"),

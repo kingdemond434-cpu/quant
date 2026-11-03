@@ -360,14 +360,16 @@ def test_a_declared_rewriter_is_named_rather_than_hidden(
     assert out["undeclared"] == [] and out["declared"] == ["scripts/backfill.py"]
 
 
-def test_the_real_desk_has_exactly_one_declared_rewriter_and_no_undeclared_one() -> None:
+def test_the_real_desk_names_guarded_rewriters_and_verification_fixture() -> None:
     """The enumeration is the claim (L1.49). `backfill_live_ledger_r.py` is a REAL whole-file
     rewriter -- it repaired `r_multiple` on 141 of 151 live rows the writer had floored at zero,
     reaching it through `--ledger`, which is why the scan follows a CLI default -- and the desk
     must be able to name every such organ on demand."""
     out = M.inplace_rewrite_scan()
     assert out["n_scanned"] >= 40, out["n_scanned"]
-    assert out["declared"] == ["scripts/backfill_live_ledger_r.py"], out["declared"]
+    assert out["declared"] == ["libs/ops/live_ledger_migration.py",
+                               "scripts/backfill_live_ledger_r.py",
+                               "scripts/migrate_live_ledger_view.py"], out["declared"]
     assert out["declared_missing"] == []
     assert out["undeclared"] == [], out["undeclared"]
 
@@ -467,3 +469,26 @@ def test_sign_files_leaves_the_record_seals_untouched(box: Path, capsys: pytest.
     assert after["append_only"] == before
     assert after["signed_by"] == "test"
     capsys.readouterr()
+
+
+@pytest.mark.parametrize("existing_signer", [None, "earlier-exact-rotation"])
+def test_file_resign_preserves_authority_only_for_unchanged_hashes(box, monkeypatch,
+                                                                existing_signer):
+    prior = {"files": {"stable.py": "stable", "changed.py": "old", "removed.py": "old",
+                       "phantom.py": None},
+             "signed_by": "previous-owner", "append_only": {"fixed-prefix": "evidence"},
+             "vintage": {"fixed-vintage": "evidence"}}
+    if existing_signer:
+        prior["rotation_signers"] = {"stable.py": existing_signer,
+                                     "changed.py": "stale-owner", "removed.py": "stale-owner"}
+    (box / "manifest.json").write_text(json.dumps(prior), encoding="utf-8")
+    monkeypatch.setattr(M, "_hashes", lambda: {"stable.py": "stable", "changed.py": "new"})
+    monkeypatch.setattr(sys, "argv", ["check", "--sign-files", "--by", "new-owner"])
+    assert M.main() == 0
+    after = json.loads((box / "manifest.json").read_text("utf-8"))
+    assert after["rotation_signers"]["stable.py"] == (existing_signer or "previous-owner")
+    assert "changed.py" not in after["rotation_signers"]
+    assert "removed.py" not in after["rotation_signers"]
+    assert "phantom.py" not in after["rotation_signers"]
+    assert after["append_only"] == prior["append_only"]
+    assert after["vintage"] == prior["vintage"]

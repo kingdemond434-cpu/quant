@@ -235,6 +235,9 @@ def test_openrouter_prefixed_ids_are_understood(monkeypatch) -> None:
     the free-tier behaviour has its own file.
     """
     monkeypatch.setenv("QUANT_FREE_TIER", "0")
+    # Paid OpenRouter ids also need the principal's own switch since 2026-10-13
+    # (libs/ops/openrouter_guard.py); without it the free id wins whatever QUANT_FREE_TIER says.
+    monkeypatch.setenv("QUANT_LLM_LAB_PAID", "1")
     monkeypatch.setenv("OPENROUTER_API_KEY", "or-test")
     monkeypatch.setattr(llm_seat, "_get", lambda *a, **k: ({"data": [{"id": i} for i in (
         "openai/gpt-5", "openai/gpt-5-mini", "anthropic/claude-opus-4",
@@ -368,11 +371,20 @@ def test_a_known_family_still_wins_over_an_unknown_one(monkeypatch) -> None:
 
 # ------------------------------------------------------- pinned models elsewhere on the desk
 
+def _paid_listing(monkeypatch) -> None:
+    """These listings carry no `:free` id, so the pin check needs paid ranking on: since
+    2026-10-13 an OpenRouter seat with no free id goes dark rather than paid unless the
+    principal sets QUANT_LLM_LAB_PAID=1 (libs/ops/openrouter_guard.py)."""
+    monkeypatch.setenv("QUANT_FREE_TIER", "0")
+    monkeypatch.setenv("QUANT_LLM_LAB_PAID", "1")
+
+
 def test_a_pin_below_the_flagship_is_reported(monkeypatch) -> None:
     """THE COVERAGE THIS MODULE DOES NOT OTHERWISE HAVE. Discovery keeps THIS seat current, but
     eleven other organs read llm_panel.json where every provider carries a hardcoded model. A pin
     is invisible by construction: the organ runs, returns text, reports success, and quietly
     executes something superseded -- for years, if nobody looks."""
+    _paid_listing(monkeypatch)
     llm_seat.SECRETS.parent.mkdir(parents=True, exist_ok=True)
     llm_seat.SECRETS.write_text(json.dumps(
         {"providers": [{"name": "panel", "key": "k", "model": "gpt-4o"}]}), "utf-8")
@@ -385,6 +397,7 @@ def test_a_pin_below_the_flagship_is_reported(monkeypatch) -> None:
 
 
 def test_a_pin_at_the_flagship_is_not_flagged(monkeypatch) -> None:
+    _paid_listing(monkeypatch)
     llm_seat.SECRETS.parent.mkdir(parents=True, exist_ok=True)
     llm_seat.SECRETS.write_text(json.dumps(
         {"providers": [{"name": "panel", "key": "k", "model": "gpt-5"}]}), "utf-8")
@@ -401,6 +414,7 @@ def test_an_unpinned_seat_needs_no_check(monkeypatch) -> None:
 
 def test_stale_pins_reach_status(monkeypatch) -> None:
     """So it lands in front of the CRO and the doctor without anyone remembering to ask."""
+    _paid_listing(monkeypatch)
     llm_seat.SECRETS.parent.mkdir(parents=True, exist_ok=True)
     llm_seat.SECRETS.write_text(json.dumps(
         {"providers": [{"name": "panel", "key": "k", "model": "gpt-4o"}]}), "utf-8")

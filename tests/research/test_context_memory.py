@@ -73,3 +73,25 @@ def test_coverage_is_read_only(tmp_path):
     cov = CTX["coverage"](s, out)
     assert cov["missing_file"] == ["Y"] and not out.exists()
 
+
+
+def test_portable_archive_requires_exact_digest_and_confined_path(tmp_path, monkeypatch):
+    import hashlib
+    env = CTX["_check_pointer"].__globals__
+    monkeypatch.setitem(env, "ROOT", tmp_path)
+    (tmp_path / "context").mkdir()
+    archive = tmp_path / "docs/cro/evidence/receipt.json"
+    archive.parent.mkdir(parents=True)
+    archive.write_text('{"tests": 33}')
+    pointer = "C:/original/receipt.json"
+    index = {pointer: {"path": "docs/cro/evidence/receipt.json",
+                       "sha256": hashlib.sha256(archive.read_bytes()).hexdigest()}}
+    registry = tmp_path / "context/evidence_archives.json"
+    registry.write_text(json.dumps(index))
+    assert CTX["_check_pointer"](pointer) == "OK"
+    archive.write_text('{"tests": 34}')
+    assert CTX["_check_pointer"](pointer) == "MISSING"
+    index[pointer]["path"] = "context/evidence_archives.json"
+    registry.write_text(json.dumps(index))
+    assert CTX["_check_pointer"](pointer) == "MISSING"
+    assert CTX["_check_pointer"]("C:/unknown/receipt.json") == "MISSING"
