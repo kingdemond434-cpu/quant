@@ -490,7 +490,7 @@ def test_a_broken_execution_cost_import_degrades_to_unpriced(tmp_path: Path,
     monkeypatch.setitem(sys.modules, "libs.portfolio.execution_cost", None)
     doc = pa._execution_costs(["EURUSD_asia_brk"])
     assert doc["sleeves"] == {}
-    assert "unimportable (ImportError)" in doc["summary"]["verdict"]
+    assert "execution cost unimportable" in doc["summary"]["verdict"]
 
 
 def test_a_negative_cost_bias_raises_the_sleeves_worlds() -> None:
