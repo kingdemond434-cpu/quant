@@ -574,6 +574,245 @@
    "targets": [
     "EURGBP"
    ]
+  },
+  {
+   "id": "ust2y",
+   "targets": [
+    "UST05Y",
+    "UST10Y",
+    "USDJPY",
+    "EURUSD",
+    "USDX"
+   ],
+   "names": [
+    "UST 2Y NOTE - CHICAGO BOARD OF TRADE"
+   ]
+  },
+  {
+   "id": "ust_bond",
+   "targets": [
+    "UST10Y",
+    "XAUUSD",
+    "US500",
+    "USDJPY"
+   ],
+   "names": [
+    "UST BOND - CHICAGO BOARD OF TRADE"
+   ]
+  },
+  {
+   "id": "ust_ultra10y",
+   "targets": [
+    "UST10Y",
+    "UST05Y"
+   ],
+   "names": [
+    "ULTRA UST 10Y - CHICAGO BOARD OF TRADE"
+   ]
+  },
+  {
+   "id": "ust_ultra_bond",
+   "targets": [
+    "UST10Y",
+    "US500"
+   ],
+   "names": [
+    "ULTRA UST BOND - CHICAGO BOARD OF TRADE"
+   ]
+  },
+  {
+   "id": "fed_funds",
+   "targets": [
+    "USDJPY",
+    "XAUUSD",
+    "EURUSD",
+    "US500",
+    "USDX"
+   ],
+   "names": [
+    "FED FUNDS - CHICAGO BOARD OF TRADE",
+    "30-DAY FEDERAL FUNDS - CHICAGO BOARD OF TRADE"
+   ]
+  },
+  {
+   "id": "sofr3m",
+   "targets": [
+    "USDJPY",
+    "XAUUSD",
+    "EURUSD",
+    "US500",
+    "USDX"
+   ],
+   "names": [
+    "SOFR-3M - CHICAGO MERCANTILE EXCHANGE"
+   ]
+  },
+  {
+   "id": "estr",
+   "targets": [
+    "EURUSD",
+    "GER40",
+    "EUSTX50",
+    "EURJPY"
+   ],
+   "names": [
+    "EURO SHORT TERM RATE - CHICAGO MERCANTILE EXCHANGE"
+   ]
+  },
+  {
+   "id": "msci_em",
+   "targets": [
+    "CHINAH",
+    "HK50",
+    "USDZAR",
+    "USDBRL",
+    "USDMXN",
+    "AUDUSD"
+   ],
+   "names": [
+    "MSCI EM INDEX - ICE FUTURES U.S."
+   ]
+  },
+  {
+   "id": "msci_eafe",
+   "targets": [
+    "GER40",
+    "UK100",
+    "EUSTX50",
+    "JPN225"
+   ],
+   "names": [
+    "MSCI EAFE  - ICE FUTURES U.S.",
+    "MSCI EAFE - ICE FUTURES U.S."
+   ]
+  },
+  {
+   "id": "bbg_commodity",
+   "targets": [
+    "AUDUSD",
+    "USDCAD",
+    "XAUUSD",
+    "XTIUSD"
+   ],
+   "names": [
+    "BBG COMMODITY - CHICAGO BOARD OF TRADE",
+    "BLOOMBERG COMMODITY INDEX - CHICAGO BOARD OF TRADE"
+   ]
+  },
+  {
+   "id": "ig_credit",
+   "targets": [
+    "US500",
+    "US2000",
+    "UST10Y"
+   ],
+   "names": [
+    "BLOOMBERG IG CREDIT FUTURES - CHICAGO BOARD OF TRADE"
+   ]
+  },
+  {
+   "id": "hy_credit",
+   "targets": [
+    "US500",
+    "US2000",
+    "USDJPY"
+   ],
+   "names": [
+    "BLOOMBERG HY CREDIT FUTURES - CHICAGO BOARD OF TRADE"
+   ]
+  },
+  {
+   "id": "sp400",
+   "targets": [
+    "US2000",
+    "US500"
+   ],
+   "names": [
+    "E-MINI S&P 400 STOCK INDEX - CHICAGO MERCANTILE EXCHANGE"
+   ]
+  },
+  {
+   "id": "spx_tech",
+   "targets": [
+    "NAS100",
+    "US500"
+   ],
+   "names": [
+    "E-MINI S&P TECHNOLOGY INDEX - CHICAGO MERCANTILE EXCHANGE"
+   ]
+  },
+  {
+   "id": "spx_energy",
+   "targets": [
+    "XTIUSD",
+    "XBRUSD",
+    "US500"
+   ],
+   "names": [
+    "E-MINI S&P ENERGY INDEX - CHICAGO MERCANTILE EXCHANGE"
+   ]
+  },
+  {
+   "id": "spx_financial",
+   "targets": [
+    "US500",
+    "US2000",
+    "US30"
+   ],
+   "names": [
+    "E-MINI S&P FINANCIAL INDEX - CHICAGO MERCANTILE EXCHANGE"
+   ]
+  },
+  {
+   "id": "soybean_oil",
+   "targets": [
+    "SOYBEAN",
+    "CORN"
+   ],
+   "names": [
+    "SOYBEAN OIL - CHICAGO BOARD OF TRADE"
+   ]
+  },
+  {
+   "id": "soybean_meal",
+   "targets": [
+    "SOYBEAN",
+    "CORN"
+   ],
+   "names": [
+    "SOYBEAN MEAL - CHICAGO BOARD OF TRADE"
+   ]
+  },
+  {
+   "id": "wheat_hrw",
+   "targets": [
+    "WHEAT",
+    "CORN"
+   ],
+   "names": [
+    "WHEAT-HRW - CHICAGO BOARD OF TRADE"
+   ]
+  },
+  {
+   "id": "aluminum",
+   "targets": [
+    "XALUSD",
+    "XCUUSD"
+   ],
+   "names": [
+    "ALUMINUM MWP - COMMODITY EXCHANGE INC."
+   ]
+  },
+  {
+   "id": "wti_financial",
+   "targets": [
+    "XTIUSD",
+    "XBRUSD",
+    "USDCAD"
+   ],
+   "names": [
+    "WTI FINANCIAL CRUDE OIL - NEW YORK MERCANTILE EXCHANGE"
+   ]
   }
  ],
  "eia_curves": [
@@ -699,6 +938,49 @@
     "AUDJPY"
    ],
    "why": "carry that leveraged funds are not positioned for (or crowded beyond) is where yen carry unwinds start; cot_jpy is already signed to USDJPY"
+  },
+  {
+   "id": "policy_vs_duration_lev",
+   "a": "cot_sofr3m",
+   "b": "cot_ust10y",
+   "column": "tff_lev_money_net_oi",
+   "op": "zgap",
+   "targets": [
+    "USDJPY",
+    "XAUUSD",
+    "UST10Y",
+    "EURUSD"
+   ],
+   "why": "leveraged funds positioned for the front end and the long end in opposite directions is a curve bet the crowd has crowded; its unwind moves the dollar and gold"
+  },
+  {
+   "id": "credit_vs_equity_assetmgr",
+   "a": "cot_ig_credit",
+   "b": "cot_sp500",
+   "column": "tff_asset_mgr_net_oi",
+   "op": "zgap",
+   "targets": [
+    "US500",
+    "US2000",
+    "USDJPY"
+   ],
+   "why": "asset managers long equity futures while cutting credit futures (or the reverse) is the credit-equity disagreement that usually resolves in equity"
+  },
+  {
+   "id": "em_vs_dollar_lev",
+   "a": "cot_msci_em",
+   "b": "cot_usd_index",
+   "column_a": "tff_lev_money_net_oi",
+   "column_b": "legacy_noncomm_net_oi",
+   "op": "zgap",
+   "targets": [
+    "USDZAR",
+    "USDBRL",
+    "USDMXN",
+    "AUDUSD",
+    "CHINAH"
+   ],
+   "why": "EM equity length the dollar positioning does not support is the EM risk-on crowd ahead of the funding currency"
   }
  ],
  "fred_curves": [
