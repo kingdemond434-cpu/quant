@@ -443,6 +443,12 @@ class Signal:
     # this so the engine fills it on a touch of that shifted level instead of charging the spread
     # a second time. Default False: every other resting limit must trade through.
     fill_through_priced: bool = False
+    # The ORDER TYPE of a resting trigger, when the family knows it (2026-11-03, audit should-fix).
+    # None infers it from the trigger against the next bar's open (the families that predate the
+    # field). "stop": a buy-stop the open has already gapped past fills AT THAT OPEN (inference
+    # would read it as a limit and demand a trade-through it never needed). "limit": a limit the
+    # open already sits through is marketable and fills at the open; otherwise it rests.
+    order_type: str | None = None
 
 
 @dataclass
@@ -776,37 +782,46 @@ def run_backtest(
             tgt = sig.trigger
             # A LIMIT entry sits on the far side of the market from the trade's
             # direction (buy below, sell above); a STOP entry sits beyond it.
-            # The distinction is inferred rather than declared so it also covers
-            # the families that predate this field.
-            limit_entry = ((sig.side > 0 and tgt < entry)
-                           or (sig.side < 0 and tgt > entry))
-            hit = -1
-            through = (limit_entry and limit_fill == "trade_through"
-                       and not sig.fill_through_priced)
-            for j in range(i, min(i + sig.wait_bars, len(idx))):
-                if through:
-                    # TRADE-THROUGH, NOT TOUCH (2026-11-03). The bars are BID. A buy limit at
-                    # L is filled only when the ASK trades below L (bid low < L - spread); a
-                    # sell limit only when the BID trades above L. A bar whose range merely
-                    # reaches L may not fill a resting order at all -- the queue ahead of it
-                    # takes the touch -- and on a buy the bid touching L is the ask still a
-                    # spread above it. The touch fill credited every limit-entry trade about
-                    # one spread and kept the trades that only touched.
-                    if (float(lows[j]) < tgt - spread_px if sig.side > 0
-                            else float(h[j]) > tgt):
+            # The distinction is inferred unless the family declares `order_type`, so it
+            # also covers the families that predate that field.
+            favourable = ((sig.side > 0 and tgt < entry)
+                          or (sig.side < 0 and tgt > entry))
+            kind = sig.order_type
+            if kind not in (None, "stop", "limit"):
+                raise ValueError(f"order_type must be 'stop', 'limit' or None, got {kind!r}")
+            if (kind == "stop" and favourable) or (kind == "limit" and not favourable):
+                # the open is already past a stop's level, or through a limit's: the order is
+                # marketable on arrival and fills at the open, like a market entry
+                pass
+            else:
+                limit_entry = favourable
+                hit = -1
+                through = (limit_entry and limit_fill == "trade_through"
+                           and not sig.fill_through_priced)
+                for j in range(i, min(i + sig.wait_bars, len(idx))):
+                    if through:
+                        # TRADE-THROUGH, NOT TOUCH (2026-11-03). The bars are BID. A buy limit at
+                        # L is filled only when the ASK trades below L (bid low < L - spread); a
+                        # sell limit only when the BID trades above L. A bar whose range merely
+                        # reaches L may not fill a resting order at all -- the queue ahead of it
+                        # takes the touch -- and on a buy the bid touching L is the ask still a
+                        # spread above it. The touch fill credited every limit-entry trade about
+                        # one spread and kept the trades that only touched.
+                        if (float(lows[j]) < tgt - spread_px if sig.side > 0
+                                else float(h[j]) > tgt):
+                            hit = j
+                            break
+                    elif float(h[j]) >= tgt >= float(lows[j]):
                         hit = j
                         break
-                elif float(h[j]) >= tgt >= float(lows[j]):
-                    hit = j
-                    break
-            if hit < 0:
-                continue
-            fill_bar = hit
-            # A filled buy limit pays the ask, L; the cost model adds the spread to the
-            # recorded (bid) entry, so the bid-side record is L - spread. A sell fills at the
-            # bid, L. A STOP entry is unchanged: the bid reaching L is later than the ask
-            # reaching L - spread, so the touch rule there is the pessimistic side already.
-            entry = float(tgt) - (spread_px if through and sig.side > 0 else 0.0)
+                if hit < 0:
+                    continue
+                fill_bar = hit
+                # A filled buy limit pays the ask, L; the cost model adds the spread to the
+                # recorded (bid) entry, so the bid-side record is L - spread. A sell fills at the
+                # bid, L. A STOP entry is unchanged: the bid reaching L is later than the ask
+                # reaching L - spread, so the touch rule there is the pessimistic side already.
+                entry = float(tgt) - (spread_px if through and sig.side > 0 else 0.0)
         side = sig.side
         stop = sig.stop
         target = sig.target

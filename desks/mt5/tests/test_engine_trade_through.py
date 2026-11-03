@@ -131,3 +131,59 @@ def test_a_generator_that_priced_the_trade_through_is_not_charged_twice() -> Non
     assert len(trades) == 1 and trades[0].entry == pytest.approx(99.5)
     engine._LEGS.slot = None
     assert run_backtest(df, [_buy_limit(df)], COSTS).trades == []
+
+
+def test_a_declared_buy_stop_the_open_gapped_past_fills_at_that_open() -> None:
+    """Audit should-fix (a): inference reads a gapped buy-stop as a limit and demands a
+    trade-through it never needed. Declared as a stop, it is marketable and fills at the open."""
+    df = _frame(lows=[99.9, 99.9], highs=[100.1, 100.1])
+    gapped = Signal(time=df.index[0], side=1, stop=98.0, target=106.0, ttl_bars=4, tag="s",
+                    trigger=99.5, wait_bars=3, order_type="stop")   # open 100 is already above
+    trades = run_backtest(df, [gapped], COSTS).trades
+    assert len(trades) == 1
+    assert trades[0].entry == pytest.approx(100.0) and trades[0].entry_time == df.index[1]
+    engine._LEGS.slot = None
+    inferred = Signal(time=df.index[0], side=1, stop=98.0, target=106.0, ttl_bars=4, tag="s",
+                      trigger=99.5, wait_bars=3)
+    assert run_backtest(df, [inferred], COSTS).trades == []
+
+
+def test_a_declared_limit_the_open_already_sits_through_fills_at_the_open() -> None:
+    df = _frame(lows=[99.9, 99.9], highs=[100.1, 100.1])
+    marketable = Signal(time=df.index[0], side=1, stop=98.0, target=106.0, ttl_bars=4, tag="l",
+                        trigger=100.5, wait_bars=3, order_type="limit")
+    trades = run_backtest(df, [marketable], COSTS).trades
+    assert len(trades) == 1 and trades[0].entry == pytest.approx(100.0)
+
+
+def test_an_unknown_order_type_is_refused() -> None:
+    df = _frame(lows=[99.9], highs=[100.1])
+    bad = Signal(time=df.index[0], side=1, stop=98.0, target=106.0, ttl_bars=4, tag="x",
+                 trigger=99.5, wait_bars=3, order_type="market")
+    with pytest.raises(ValueError):
+        run_backtest(df, [bad], COSTS)
+
+
+# Audit should-fix (b): only a generator that prices the trade-through into its own trigger may
+# opt out of the engine's rule. Today that is entry_alpha, in families_cluster_reach.py.
+FILL_THROUGH_PRICED_ALLOWED = {"desks/mt5/mt5desk/families_cluster_reach.py"}
+
+
+def test_only_the_allowlisted_generator_opts_out_of_trade_through() -> None:
+    import re
+    repo = DESK.parents[1]
+    setter = re.compile(r"fill_through_priced\s*=\s*(?!False)")
+    offenders = []
+    for path in repo.rglob("*.py"):
+        rel = path.relative_to(repo).as_posix()
+        if "/tests/" in f"/{rel}" or rel.startswith(("tests/", ".")) or "site-packages" in rel:
+            continue
+        if rel == "desks/mt5/mt5desk/engine.py" or rel in FILL_THROUGH_PRICED_ALLOWED:
+            continue
+        try:
+            text = path.read_text("utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if setter.search(text):
+            offenders.append(rel)
+    assert offenders == [], f"fill_through_priced set outside the allowlist: {offenders}"
