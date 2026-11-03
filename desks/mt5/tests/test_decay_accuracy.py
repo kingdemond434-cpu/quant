@@ -189,4 +189,4 @@ def test_an_arm_promotes_only_on_the_trial_charged_floor() -> None:
     assert A.cusum_family_verdict(cur, agg)["verdict"] == A.UNMEASURED   # 6 < 5 x 4
     cur20 = dict(cur, n_events=20)
     v = A.cusum_family_verdict(cur20, {a: dict(good, n_events=20) for a in A.cusum_arm_names()})
-    assert v["verdict"] == "PROMOTABLE" and len(v["arms"]) == len(A.cusum_arm_names())
+    assert v["verdict"] == "PROMOTABLE" and len(v["winning_arms"]) == len(A.cusum_arm_names())

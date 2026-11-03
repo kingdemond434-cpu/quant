@@ -565,12 +565,13 @@ def cusum_family_verdict(cur: Mapping[str, Any], agg: Mapping[str, Mapping[str, 
     floor = MIN_EVENTS * n_trials
     n_ev = int(cur.get("n_events") or 0)
     winners = [a for a, v in per.items() if v["verdict"] == "PROMOTABLE"]
+    verdict: dict[str, Any]
     if n_ev < floor:
         verdict = {"verdict": UNMEASURED,
                    "why": f"{n_ev} drawdown event(s) < {floor} ({MIN_EVENTS} x {n_trials} sd "
                           f"arms tried): too few to pick an arm"}
     elif winners:
-        verdict = {"verdict": "PROMOTABLE", "arms": winners,
+        verdict = {"verdict": "PROMOTABLE", "winning_arms": winners,
                    "why": f"{len(winners)} of {n_trials} sd arms beat CURRENT on "
                           f">= {floor} events"}
     else:
@@ -671,7 +672,7 @@ def run(*, now: datetime | None = None, shadow: Sequence[dict[str, Any]] | None 
                              "detectors": r.get("detectors"),
                              "diagnostic_current": r.get("diagnostic_current")}
                           for r in per_series if r.get("seed_case")],
-           "missed_growth": missed_growth_lines(agg, at),
+           "missed_growth": missed_growth_lines({d: agg[d] for d in DETECTORS}, at),
            "missed_growth_note": ("published on this report in organ_published_lines' shape; the "
                                   "carry line in missed_growth.py lands after PR #540"),
            "series": per_series}
