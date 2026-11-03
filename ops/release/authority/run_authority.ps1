@@ -6,17 +6,17 @@
 # the box gate reads. It never merges, pushes, comments or labels.
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory)] [string] $AppId,
-    [Parameter(Mandatory)] [string] $InstallationId,
-    [string] $Python = "C:\Program Files\Python314\python.exe",
     [string] $Repo = "kingdemond434-cpu/quant",
     [string] $Live = "claude/llm-auto-upgrade-verify-gcjac3",
     [string] $Home_ = "C:\opt\authority",
-    [string] $Registry = "C:\opt\audit_registry",
-    [string] $Gh = "C:\Users\Administrator\tools\gh\bin\gh.exe"
+    [string] $Registry = "C:\opt\audit_registry"
 )
 $ErrorActionPreference = 'Stop'
 $Clone = Join-Path $Home_ "repo"
+# written by install_authority.ps1: the App and installation ids and the machine-wide Python
+$cfg = Get-Content -Raw (Join-Path $Home_ "config.json") | ConvertFrom-Json
+$AppId = $cfg.app_id; $InstallationId = $cfg.installation_id; $Python = $cfg.python
+$Gh = Join-Path $Home_ "bin\gh.exe"
 $log = Join-Path $Home_ "authority.log"
 function Say([string] $l) { Add-Content -LiteralPath $log -Value ("{0} {1}" -f (Get-Date -Format o), $l) }
 foreach ($v in @('GITHUB_TOKEN', 'GH_TOKEN')) { Remove-Item -LiteralPath "env:$v" -ErrorAction SilentlyContinue }

@@ -39,18 +39,22 @@ and none of them can be done legitimately by a code-writing agent.
      Issues, Commit statuses.
    - No webhook. Install it on `kingdemond434-cpu/quant` only.
    - Note the App ID and the Installation ID, and generate one private key (a .pem download).
-3. **On the box, over RDP, elevated:**
-   `powershell -File C:\opt\quant\ops\release\authority\install_authority.ps1 -AppId <id> -InstallationId <id>`
-   - It creates the `quant-authority` account, its folders and their ACLs, generates the signing
-     key inside that account's own folder (no key is ever shown or typed), writes the public key
-     and the root pin, and registers the 10-minute task.
-   - Then move the App .pem you downloaded to `C:\opt\authority\key\app.pem` yourself.
+3. **On the box, over RDP**, open PowerShell with *Run as administrator* and paste one line,
+   with your App ID in place of the number:
+   `powershell -ExecutionPolicy Bypass -File C:\opt\quant\ops\release\authority\install_authority.ps1 -AppId 1234567`
+   - The App ID is the number at the top of the App's settings page.
+   - The installer finds everything else itself: it moves the App key you downloaded out of
+     Downloads into the key folder, and asks GitHub for the installation id.
+   - It then creates the `quant-authority` account, its folders, the signing key, the pin and the
+     10-minute task.
+   - It prints exactly what to fix if something is missing.
 4. **Dry run.** Run `schtasks /Run /TN Quant-ReleaseAuthority` once, then read
    `C:\opt\authority\authority.log`. You'll see one verdict line per open PR. Nothing merges yet,
    because the gate isn't reading the authority until step 6.
 5. **Sandbox proof on the box.** Run `python C:\opt\quant\ops\release\authority\sandbox.py`.
    It ends `DEMO PASS` (the full sign, notify, 24 h and pinned-merge flow against a fake GitHub).
-6. **Turn it on.** Set three machine environment variables (elevated):
+6. **Turn it on.** Run the same line again with ` -Activate` at the end. Or set the three machine
+   environment variables yourself (elevated):
    - `setx /M QUANT_AUTHORITY_PUBKEY C:\opt\audit_registry\authority.pub`
    - `setx /M QUANT_AUTHORITY_ATTESTATIONS C:\opt\audit_registry\attestations`
    - `setx /M QUANT_AUTHORITY_ROOT_PIN C:\opt\audit_registry\ROOT_PIN.json`
