@@ -579,6 +579,7 @@ def test_a_routed_handoff_carries_a_mechanism_a_family_implements(desk):
 def test_the_route_follows_the_lane(desk, monkeypatch):
     lanes = {"EURUSD": "hypothesis", "AAPL": "event", "QQQX": "unclassified"}
     monkeypatch.setattr(IL, "_lane", lambda s: lanes.get(s, "unclassified"))
+    monkeypatch.setattr(IL, "_class_registry_read", lambda: True)
     fx = IL.Unit("tape_day", "EURUSD/2026-09-01", symbols=("EURUSD",))
     eq = IL.Unit("universe_bars", "AAPL.H1", symbols=("AAPL",), chart="H1")
     un = IL.Unit("tape_day", "QQQX/2026-09-01", symbols=("QQQX",))
@@ -595,15 +596,129 @@ def test_the_route_follows_the_lane(desk, monkeypatch):
 
 
 def test_an_unclassified_symbol_is_blocked_with_its_reason_not_left_stranded(desk, monkeypatch):
+    """The handoff is BLOCKED with its reason, and the block is a ROUTE re-derived every pass --
+    never a disposition (MF1): counting it would raise the share and lower the stranded count."""
     _populate(desk)
     monkeypatch.setattr(IL, "_lane", lambda s: "unclassified" if s == "NOKJPY" else "hypothesis")
+    monkeypatch.setattr(IL, "_class_registry_read", lambda: True)
     _run()
     nok = [d for d in R.discoveries(limit=500) if d["source_type"] == "ingestion"
            and "NOKJPY" in (d.get("assets_json") or "")]
     assert nok and all(d["state"] == "BLOCKED" and "UNCLASSIFIED" in d["blocked_reason"]
                        for d in nok)
     doc = _run()
-    assert doc["dispositions"]["tape_day"]["BLOCKED"] >= 1
+    assert doc["dispositions"]["tape_day"]["BLOCKED"] == 0
+    assert doc["stranded_routing"]["by_action"].get("block_unclassified", 0) >= 1
+    assert doc["index"]["blocked_keys"] == 0
+    # classified since: the route's own block is lifted and the unit goes to the drain
+    monkeypatch.setattr(IL, "_lane", lambda s: "hypothesis")
+    _run()
+    nok = [d for d in R.discoveries(limit=500) if d["source_type"] == "ingestion"
+           and "NOKJPY" in (d.get("assets_json") or "")]
+    assert nok and all(d["state"] == "UNPROCESSED" for d in nok)
+
+
+def test_an_unread_class_registry_blocks_nothing_and_never_flatters_the_fences(desk,
+                                                                                monkeypatch):
+    """MF1: universe.json absent or unreadable makes every symbol UNCLASSIFIED. That is
+    UNMEASURED input -- no handoff may be BLOCKED on it, and the dispositions must not move."""
+    _populate(desk)
+    monkeypatch.setattr(IL, "_lane", lambda s: "unclassified" if s == "NOKJPY" else "hypothesis")
+    monkeypatch.setattr(IL, "_class_registry_read", lambda: False)
+    first = _run()
+    second = _run()
+    nok = [d for d in R.discoveries(limit=500) if d["source_type"] == "ingestion"
+           and "NOKJPY" in (d.get("assets_json") or "")]
+    assert not any(d["state"] == "BLOCKED" for d in nok)
+    for doc in (first, second):
+        assert doc["dispositions"]["tape_day"]["BLOCKED"] == 0
+        assert doc["stranded_routing"]["by_action"].get("await_registry", 0) >= 1
+        assert "block_unclassified" not in doc["stranded_routing"]["by_action"]
+        assert doc["stranded_routing"]["unrouted"] == 0
+        assert any(g["what"] == "universe class registry" for g in doc["unmeasured"])
+    assert second["n_stranded_units"] >= first["n_stranded_units"]
+
+
+def test_an_incomplete_index_routes_nothing_and_feeds_no_ratchet(desk, monkeypatch):
+    """MF2: an index read that raised (or a deadline that stopped it) may not act. No routing
+    write, no handoff BLOCKED, and the stranded count is published UNMEASURED."""
+    _populate(desk)
+    monkeypatch.setattr(IL, "_lane", lambda s: "unclassified" if s == "NOKJPY" else "hypothesis")
+    monkeypatch.setattr(IL, "_class_registry_read", lambda: True)
+    real = IL.build_index
+
+    def broken(*a, **kw):
+        idx = real(*a, **kw)
+        idx.errors.append("research_candidates: OperationalError: disk I/O error")
+        return idx
+    monkeypatch.setattr(IL, "build_index", broken)
+    doc = _run()
+    assert R.discoveries(limit=500) == []                    # no handoff minted, none blocked
+    assert not (desk["tmp"] / "ingestion_routes.json").exists()
+    assert desk["drained"] == []
+    assert doc["stranded_routing"]["writes_skipped"]
+    assert doc["stranded_units_measured"] is False
+    assert any(g["what"] == "registry index" for g in doc["unmeasured"])
+    sys.path.insert(0, str(_DESK.parent.parent / "scripts"))
+    import check_ingestion_exploitation as CIE
+    held = CIE.stranded_units({**doc, "n_stranded_units": 0}, 400)
+    assert not held["measured"] and held["floor"] == 400 and not held["over"]
+
+
+def test_a_converted_handoff_is_never_blocked_by_the_router(desk, monkeypatch):
+    """MF2: set_discovery_state has no state check, so the router must hold one: a unit that a
+    stale index reads STRANDED keeps its COMPILED handoff."""
+    _populate(desk)
+    monkeypatch.setattr(IL, "_lane", lambda s: "hypothesis")
+    _run()
+    nok = [d for d in R.discoveries(limit=500) if d["source_type"] == "ingestion"
+           and "NOKJPY" in (d.get("assets_json") or "")]
+    assert nok
+    for d in nok:
+        R.set_discovery_state(d["discovery_id"], "COMPILED", compiled_cells=1)
+    monkeypatch.setattr(IL, "_lane", lambda s: "unclassified" if s == "NOKJPY" else "hypothesis")
+    monkeypatch.setattr(IL, "_class_registry_read", lambda: True)
+    unit = IL.Unit("tape_day", json.loads(nok[0]["payload_json"])["unit_id"],
+                   symbols=("NOKJPY",))
+    conn = R.connect()
+    try:
+        out = IL.route_stranded([unit], conn, routes_path=desk["tmp"] / "r.json")
+    finally:
+        conn.close()
+    assert out["by_action"] == {"block_unclassified": 1}
+    after = {d["discovery_id"]: d["state"] for d in R.discoveries(limit=500)}
+    assert after[nok[0]["discovery_id"]] == "COMPILED"
+
+
+def test_an_unread_ledger_tail_leaves_the_stranded_count_unmeasured(desk):
+    """SF1: population() used to fall back to this pass's rows on OSError, and the fence took
+    min() of that slice -- a floor lowered by a read failure."""
+    _populate(desk)
+    _run()
+    IL.LEDGER.unlink()
+    IL.LEDGER.mkdir()                                     # reading it now raises an OSError
+    doc = _run(dry_run=True)
+    assert doc["stranded_units_measured"] is False
+    assert any(g["what"] == str(IL.LEDGER) for g in doc["unmeasured"])
+    sys.path.insert(0, str(_DESK.parent.parent / "scripts"))
+    import check_ingestion_exploitation as CIE
+    held = CIE.stranded_units({**doc, "n_stranded_units": 0}, 400)
+    assert not held["measured"] and held["floor"] == 400
+
+
+def test_an_all_share_cfd_text_unit_routes_with_no_symbols(desk, monkeypatch):
+    """SF4: the compiler reads an ABSENT symbols key as "use the discovery's assets", so the
+    route must name symbols=[] explicitly or a share CFD gets a single-name statistical cell."""
+    monkeypatch.setattr(IL, "_lane", lambda s: "event")
+    unit = IL.Unit("claim", "c-aapl", symbols=("AAPL", "MSFT"))
+    route = IL.route_of(unit)
+    assert route["action"] == "compile_now" and route["symbols"] == []
+    from research import discovery_compiler as DC
+    row = {"discovery_id": "d1", "assets_json": json.dumps(["AAPL", "MSFT"]),
+           "payload_json": "{}", "mechanism": "earnings_drift"}
+    named_none = DC.registry_parent(row, {"symbols": []})
+    assert named_none["assets"] == [] and named_none["symbol"] == ""
+    assert set(DC.registry_parent(row, {})["assets"]) == {"AAPL", "MSFT"}
 
 
 def test_the_index_reads_past_the_first_twenty_thousand_rows(desk, monkeypatch):

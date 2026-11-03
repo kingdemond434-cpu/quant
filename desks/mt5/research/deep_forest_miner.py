@@ -104,6 +104,11 @@ from libs.research import mechanism_claims as mc  # noqa: E402
 SOURCE = "deep_forest"
 KIND = "story_mechanism"
 SOURCES = _DESK / "data" / "deep_forest_sources.json"
+#: Grounds OTHER organs queue for the forest to mine, one JSON file per producer
+#: (`{"grounds": [...]}`), merged after the registered grounds. First, so far, is
+#: research/paid_substitute_engine.py (free substitutes for paid datasets); its grounds carry
+#: their own `cluster`, so the round-robin gives the whole file one fair turn.
+GROUND_QUEUE = _DESK / "data" / "deep_forest_queue"
 CLAIMS = _DESK / "data" / "deep_forest_claims.jsonl"
 DATASETS = _DESK / "data" / "deep_forest_datasets.jsonl"
 SEEN = _DESK / "data" / "deep_forest_seen.json"
@@ -1393,9 +1398,35 @@ def data_endpoints(page: str, base: str) -> list[str]:
 # ------------------------------------------------------------------------------- ledgers
 def _load_sources() -> dict[str, Any]:
     try:
-        return json.loads(SOURCES.read_text("utf-8"))
+        cfg = json.loads(SOURCES.read_text("utf-8"))
     except (OSError, ValueError):
-        return {"grounds": []}
+        cfg = {"grounds": []}
+    queued = queued_grounds({str(g.get("name")) for g in cfg.get("grounds") or []
+                             if isinstance(g, dict)})
+    if queued:
+        cfg = {**cfg, "grounds": [*(cfg.get("grounds") or []), *queued]}
+    return cfg
+
+
+def queued_grounds(registered: set[str] | None = None,
+                   queue_dir: Path | None = None) -> list[dict[str, Any]]:
+    """Grounds other organs queued in `data/deep_forest_queue/*.json`. A registered ground of
+    the same name wins (the grounds file is the registry); a malformed file is skipped."""
+    seen = set(registered or ())
+    out: list[dict[str, Any]] = []
+    for f in sorted((queue_dir or GROUND_QUEUE).glob("*.json")):
+        try:
+            doc = json.loads(f.read_text("utf-8"))
+        except (OSError, ValueError):
+            continue
+        for g in (doc.get("grounds") if isinstance(doc, dict) else None) or []:
+            if not isinstance(g, dict) or not g.get("name") or not g.get("route"):
+                continue
+            if str(g["name"]) in seen:
+                continue
+            seen.add(str(g["name"]))
+            out.append(g)
+    return out
 
 
 def _load_seen() -> dict[str, Any]:
@@ -1504,8 +1535,23 @@ def _frontier_bucket(g: dict[str, Any], frontier_state: Any | None,
     return 4 if recent else 3
 
 
+def culture_gaps() -> frozenset[str]:
+    """Jurisdiction codes (lower-case) `reports/CELL_CULTURE.json` lists as zero or thin cells.
+
+    The CULTURE GAP LIST is the producers' to-do list (research/cell_culture_index.py): an MT5
+    asset class a culture's participants move, with no cells mined from that culture's own
+    sources. Empty -- and therefore reordering nothing -- when the summary is absent.
+    """
+    try:
+        from research.cell_culture_index import gap_cultures
+        return frozenset(gap_cultures())
+    except Exception:
+        return frozenset()
+
+
 def schedule(grounds: list[dict[str, Any]], cursor: int = 0, *, only: set[str] | None = None,
              region: str | None = None, frontier_state: Any | None = None,
+             gaps: frozenset[str] | None = None,
              retired: set[str] | frozenset[str] = frozenset()) -> list[dict[str, Any]]:
     """The order a run works grounds in: round-robin across clusters (heaviest weight first
     inside each), rotated by the cursor the previous run left, so every forest gets its turn
@@ -1538,13 +1584,21 @@ def schedule(grounds: list[dict[str, Any]], cursor: int = 0, *, only: set[str] |
     # ground has no attempt and sorts first; ground tried an hour ago sorts behind ground tried a
     # week ago. The cursor alone could not do this: it only advanced when a run finished, and a
     # run the cycle killed left it where it was, so every hour re-hit the same head.
+    # CULTURE GAPS FIRST INSIDE EACH BUCKET (2026-09-30). A ground standing in a culture the
+    # cell-culture index lists as a zero/thin gap is worked before a ground of a culture already
+    # holding cells, then least-recently-attempted as before. It never crosses a frontier bucket
+    # and never removes a ground: a reorder, so an absent gap list changes nothing. `run()`
+    # passes `culture_gaps()`; a direct call with no `gaps` keeps the historic order exactly.
+    gap = gaps or frozenset()
     out: list[dict[str, Any]] = []
     for bucket in buckets:
         ordered = _fair_order(bucket)
         if ordered:
             start = cursor % len(ordered)
             rotated = ordered[start:] + ordered[:start]
-            out.extend(sorted(rotated, key=lambda g: _last_attempt(g, frontier_state)))
+            out.extend(sorted(rotated, key=lambda g: (
+                str(g.get("region") or "").lower() not in gap,
+                _last_attempt(g, frontier_state))))
     return out
 
 
@@ -2700,6 +2754,8 @@ def _write_discoveries(rows: list[dict[str, Any]]) -> Path | None:
     try:
         WORLD.mkdir(parents=True, exist_ok=True)
         out = WORLD / f"discoveries_deepforest_{datetime.now(tz=UTC):%Y%m%d_%H%M}.json"
+        from libs.research.source_provenance import stamp_rows
+        rows = stamp_rows([dict(r) for r in rows])
         out.write_text(json.dumps(rows, indent=1, ensure_ascii=False, default=str), "utf-8")
         return out
     except OSError:
@@ -2824,11 +2880,30 @@ def _task(row: dict[str, Any], tellings: list[dict[str, Any]] | None = None) -> 
             "evidence_grade": row.get("evidence_grade"), "claimed_performance": perf,
             "transfer_only": inst.get("transfer_only") or [], "claim_hash": row.get("claim_hash"),
             "provenance": prov, "n_tellings": len(prov),
+            # SOURCE PROVENANCE in the compiler's vocabulary (libs.research.source_provenance):
+            # the page the best telling came from, when it was fetched, and the page's hash.
+            "source_url": str(row.get("url") or ""),
+            "retrieved_at": row.get("available_time") or row.get("fetched_utc"),
+            "content_hash": row.get("source_hash") or row.get("claim_hash"),
+            "ground": row.get("ground"),
             "event_time": row.get("event_time"), "published_time": row.get("published_time"),
             "available_time": row.get("available_time") or row.get("fetched_utc"),
             "score": row.get("score"), "status": None,
+            # CULTURE PROVENANCE DECLARED AT THE SOURCE (libs/research/cell_culture.py): the
+            # ground's region and language are known here and nowhere downstream, so they ride
+            # the task into compile_row -> _candidate -> the docket.
+            **_culture_of(row),
             "consumer": "deepening_worker (story_mechanism) -> miner_candidate_compiler "
                         "-> gauntlet"}
+
+
+def _culture_of(row: dict[str, Any]) -> dict[str, Any]:
+    try:
+        from libs.research import cell_culture as _cc
+        got = _cc.infer({**row, "kind": row.get("kind") or row.get("ground_kind")})
+    except Exception:  # provenance may never cost a task
+        return {}
+    return got
 
 
 def build_tasks(rows: list[dict[str, Any]], *, decided: set[str] | None = None,
@@ -2929,6 +3004,7 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
         frontier_state = None
     # THE PERSISTED HOLDS (MF-C): a site that refused this agent stays held across runs.
     seed_persisted_holds(r, grounds, frontier_state)
+    culture_gap = culture_gaps()
     # LOW_EV_RETIRED is derived from the counters every pass (`research/forest_attempts.py`):
     # retired grounds are scheduled LAST, never dropped, and reopen on a named condition.
     try:
@@ -2938,7 +3014,7 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
     except Exception:  # a damaged accounting file may never stop the miner
         retired = set()
     order = schedule(grounds, cursor, only=r.only, region=region,
-                     frontier_state=frontier_state, retired=retired)
+                     frontier_state=frontier_state, gaps=culture_gap, retired=retired)
     # THE PROPOSER SEAT, OPTIONAL: which registered GROUND is worth this pass's seconds first.
     # An ORDER over the grounds the registry already holds -- the seat may reorder the crawl and
     # may never widen it, so a name it invents is discarded and no unregistered ground can be
@@ -2963,6 +3039,8 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
             # frontier bucket first, then least-recently-attempted, the seat's rank breaking ties
             order = sorted(seat_order,
                            key=lambda g: (_frontier_bucket(g, frontier_state, now, retired),
+                                          str(g.get("region") or "").lower()
+                                          not in culture_gap,
                                           _last_attempt(g, frontier_state)))
     except Exception as _exc:                             # pragma: no cover - optional seat
         seat_hint = {"verdict": "UNMEASURED", "why": f"{type(_exc).__name__}: {_exc}"}
@@ -3157,6 +3235,8 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            "frontier_added": frontier_added,
            "source_shares": share_meta,
            "proposer_seat": seat_hint,
+           # the culture gap list this run worked first (reports/CELL_CULTURE.json `gaps`)
+           "culture_gaps_first": sorted(culture_gap),
            "source_expansion": expansion,
            "fetch_notes": [s for s in r.status if "url" in s][:40],
            "top_claims": [{k: t.get(k) for k in ("title", "symbols", "channel", "mechanism_class",

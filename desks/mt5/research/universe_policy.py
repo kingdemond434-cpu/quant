@@ -203,7 +203,7 @@ def lane(symbol: str) -> str:
 CROSS_SECTIONAL_FAMILIES = frozenset({
     "cross_sectional_class_momentum", "cross_sectional_class_reversal",
     "cross_sectional_class_value", "cross_sectional_class_low_vol",
-    "crisis_only_class_defensive", "lead_lag_class_catchup",
+    "crisis_only_class_defensive", "lead_lag_class_catchup", "cross_sectional_class_carry",
 })
 
 
@@ -213,10 +213,14 @@ CROSS_SECTIONAL_FAMILIES = frozenset({
 #: instant, so they are the event lane's executor, not a statistical hunt over the price path. They
 #: are admitted for share CFDs exactly as the class books are; every other statistical family stays
 #: out. `event_reaction` is NOT here: its events are the macro calendar, not news about the name.
+#: `alt_release_drift` (2026-09-30) fires only on a dated free alt-data release that the
+#: alt_proxies equity hand-off names as bearing on the share -- a public datum about the name's
+#: demand, first seen at its recorded `available_time` -- so it is the event lane, not a hunt.
 NEWS_LANE_FAMILIES = frozenset({"analyst_revision_drift", "analyst_cross_market_lead",
                                 # Form 4 insider purchase clusters on the name (form4_lane.py):
                                 # a dated SEC filing about the issuer, first public at acceptance.
-                                "insider_cluster_drift"})
+                                "insider_cluster_drift",
+                                "alt_release_drift"})
 
 
 def is_equity(symbol: str) -> bool:
