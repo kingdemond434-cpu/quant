@@ -2930,11 +2930,12 @@ def test_a_revert_that_does_not_apply_leaves_the_checkout_clean(monkeypatch: Any
 
 def test_send_alert_succeeds_only_when_a_channel_delivered(monkeypatch: Any) -> None:
     spec = importlib.util.spec_from_file_location(
-        "send_alert", Path(__file__).resolve().parents[2] / "scripts" / "send_alert.py"
+        "send_alert", Path(__file__).resolve().parents[2] / "libs" / "ops" / "send_alert.py"
     )
     assert spec is not None and spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
+    monkeypatch.chdir(Path.cwd())  # main() moves to the tree root; monkeypatch puts it back
     monkeypatch.setattr(mod, "send_all", lambda t, b: {"armed": 1, "delivered": 0})
     assert mod.main(["t", "b"]) == 1
     monkeypatch.setattr(mod, "send_all", lambda t, b: {"armed": 1, "delivered": 1})
