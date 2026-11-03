@@ -821,11 +821,15 @@ def family_session_range_breakout(
 #:                  break-even and is flat by 12 hours, because a quiet session rarely pays 2R.
 #:   reversal       the ratchet, plus a market-state exit: from the second bar on, an H1 close
 #:                  back through the breakout level (the break failed) exits at the next open.
+#:   liquidity      the ratchet, plus a liquidity-drain exit: an H1 bar whose spread is above
+#:                  the p95 of the last 20 days' bars at that hour, or whose tick count is below
+#:                  their p5, exits at the next open (hourly-pass idea 286).
 SESSION_EXIT_POLICIES = ("ratchet", "partial_1r", "partial_2r", "time_4", "time_8", "regime",
-                         "reversal")
+                         "reversal", "liquidity")
 
 
-def _exit_rewrite(sig: Signal, policy: str, atr: float, hot: bool) -> Signal:
+def _exit_rewrite(sig: Signal, policy: str, atr: float, hot: bool,
+                  liq: tuple[float | None, float | None] = (None, None)) -> Signal:
     from dataclasses import replace
     level = sig.trigger if sig.trigger is not None else sig.stop
     dist = abs(level - sig.stop)
@@ -846,6 +850,8 @@ def _exit_rewrite(sig: Signal, policy: str, atr: float, hot: bool) -> Signal:
         return replace(sig, ttl_bars=min(sig.ttl_bars, int(policy.split("_")[1])), **trail)
     if policy == "reversal":
         return replace(sig, reversal_level=level, reversal_after=2, **trail)
+    if policy == "liquidity":
+        return replace(sig, liquidity_spread_max=liq[0], liquidity_ticks_min=liq[1], **trail)
     if policy == "_quiet":
         return replace(sig, target=one_r, bank_frac=0.5, bank_protect_k=0.0,
                        ttl_bars=min(sig.ttl_bars, 12), **trail)
@@ -884,12 +890,29 @@ def family_session_exit_overlay(
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
     atr_med = atr.rolling(200, min_periods=60).median()
+    liq_by_hour: dict[int, tuple[pd.Series | None, pd.Series | None]] = {}
+    if exit_policy == "liquidity":
+        # Per clock hour, the p95 spread and p5 tick count of the PREVIOUS 20 bars at that hour
+        # (shift(1): a bar never sets its own threshold). The signal carries the values known at
+        # its own time, applied to every bar it holds.
+        for hr, grp in h1.groupby(h1.index.hour):
+            sp = (grp["spread"].rolling(20, min_periods=10).quantile(0.95).shift(1)
+                  if "spread" in grp.columns else None)
+            tk = (grp["tick_volume"].rolling(20, min_periods=10).quantile(0.05).shift(1)
+                  if "tick_volume" in grp.columns else None)
+            liq_by_hour[int(hr)] = (sp, tk)
     out = []
     for sig in parent:
         a = float(atr.get(sig.time, np.nan))
         m = float(atr_med.get(sig.time, np.nan))
         hot = bool(np.isnan(m) or a > m)
-        out.append(_exit_rewrite(sig, exit_policy, a if a == a else 0.0, hot))
+        liq: tuple[float | None, float | None] = (None, None)
+        if exit_policy == "liquidity":
+            sp, tk = liq_by_hour.get(int(pd.Timestamp(sig.time).hour), (None, None))
+            vs = float(sp.get(sig.time, np.nan)) if sp is not None else np.nan
+            vt = float(tk.get(sig.time, np.nan)) if tk is not None else np.nan
+            liq = (vs if vs == vs else None, vt if vt == vt and vt > 0 else None)
+        out.append(_exit_rewrite(sig, exit_policy, a if a == a else 0.0, hot, liq))
     return out
 
 

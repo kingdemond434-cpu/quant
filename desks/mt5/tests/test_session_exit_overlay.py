@@ -53,6 +53,18 @@ def test_the_reversal_waits_its_bars() -> None:
     assert run_backtest(df, [sig], COSTS).trades[0].reason == "target"
 
 
+def test_a_spread_blowout_exits_at_the_next_open() -> None:
+    df = _path([100, 100, 101, 102, 103, 104, 105, 105, 105, 105]).assign(
+        spread=[10, 10, 10, 10, 90, 10, 10, 10, 10, 10],
+        tick_volume=[500] * 10)
+    sig = Signal(time=df.index[0], side=1, stop=95.0, target=120.0, ttl_bars=8, tag="t",
+                 liquidity_spread_max=50.0, liquidity_ticks_min=100.0)
+    tr = run_backtest(df, [sig], COSTS).trades
+    assert tr[0].reason == "liquidity" and tr[0].exit == pytest.approx(104.0)
+    thin = df.assign(spread=10, tick_volume=[500, 500, 500, 40, 500, 500, 500, 500, 500, 500])
+    assert run_backtest(thin, [sig], COSTS).trades[0].exit == pytest.approx(103.0)
+
+
 def _gold_like() -> pd.DataFrame:
     idx = pd.date_range("2026-01-01", periods=24 * 120, freq="1h", tz="UTC")
     base = [100 + ((i * 7) % 23) - 11 + (i // 24) * 0.05 for i in range(len(idx))]

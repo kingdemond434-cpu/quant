@@ -440,6 +440,12 @@ class Signal:
     # None = off, so every signal written before this field walks exactly as it did.
     reversal_level: float | None = None
     reversal_after: int = 0
+    # --- LIQUIDITY-DRAIN EXIT (2026-11-03). A completed bar whose spread is above
+    # `liquidity_spread_max`, or whose tick count is below `liquidity_ticks_min`, exits at the next
+    # open: the book is draining and price alone has not said so yet. Thresholds are fixed per
+    # signal from history known at the signal, so the walk never looks ahead. None = off.
+    liquidity_spread_max: float | None = None
+    liquidity_ticks_min: float | None = None
     # After add k the stop for the WHOLE stack moves to the (k-1)th add level --
     # breakeven on the first add. Without this the stack's open risk grows with
     # every add, which is how a pyramid turns into the thing it is not supposed
@@ -700,6 +706,8 @@ def run_backtest(
     lows = df["low"].to_numpy()
     # The price a rollover is charged at (price-linked swap modes only): the bar's close.
     close_px = df["close"].to_numpy() if "close" in df.columns else o
+    spread_px = df["spread"].to_numpy() if "spread" in df.columns else None
+    ticks_px = df["tick_volume"].to_numpy() if "tick_volume" in df.columns else None
     # KEEP THE PANDAS INDEX. `df.index.to_numpy()` on a tz-AWARE index returns an object array
     # of Timestamps and warns "no explicit representation of timezones available for
     # np.datetime64" -- benign in production, but under `filterwarnings = error` it turns the
@@ -791,6 +799,8 @@ def run_backtest(
         trail_stall_bars = sig.trail_stall_bars
         rev_level = sig.reversal_level
         rev_after = sig.reversal_after
+        liq_spread = sig.liquidity_spread_max
+        liq_ticks = sig.liquidity_ticks_min
         banked = False
         banked_at = 0.0
         trail_ext = entry
@@ -905,6 +915,14 @@ def run_backtest(
             if (rev_level is not None and bars_held >= rev_after and j + 1 < len(idx)
                     and side * (float(close_px[j]) - rev_level) < 0):
                 exit_price, reason = float(o[j + 1]), "reversal"
+                bars_held += 1
+                break
+            if (j + 1 < len(idx) and (
+                    (liq_spread is not None and spread_px is not None
+                     and float(spread_px[j]) > liq_spread)
+                    or (liq_ticks is not None and ticks_px is not None
+                        and float(ticks_px[j]) < liq_ticks))):
+                exit_price, reason = float(o[j + 1]), "liquidity"
                 bars_held += 1
                 break
         if exit_price is None:
