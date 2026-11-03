@@ -100,7 +100,7 @@ def test_purge_excludes_overlapping_trades() -> None:
     t0 = pd.Timestamp("2026-01-10 00:00", tz="UTC")
     entries = [t0 - pd.Timedelta(hours=100), t0 - pd.Timedelta(hours=30),
                t0 - pd.Timedelta(hours=10), t0 + pd.Timedelta(hours=1)]
-    exits = [t0 - pd.Timedelta(hours=90), t0 - pd.Timedelta(hours=26),
+    exits = [t0 - pd.Timedelta(hours=90), t0 - pd.Timedelta(hours=20),
              t0 + pd.Timedelta(hours=2), t0 + pd.Timedelta(hours=3)]
     # #0 is clean; #1 exits inside the 24 h embargo; #2 overlaps the block; #3 is in it.
     assert ML.purged_train_index(entries, exits, t0, embargo_h=24.0) == [0]
