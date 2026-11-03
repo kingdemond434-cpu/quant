@@ -59,6 +59,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import re
 import sys
 from collections import Counter
@@ -420,6 +421,27 @@ def diagnose(t: dict[str, Any], bars: Any, hold_bars: int, offset_h: int = 0
             "tp_r": None if tp_r is None else round(tp_r, 4)}
 
 
+#: Which book's row is read when several copied one signal: the Fusion ledger carries the
+#: richest per-trade fields (stop, target, exit reason), so it is preferred where it exists.
+BOOK_ORDER = ("fusion", "ftmo", "e8")
+
+
+def episodes_of(trades: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """ONE EPISODE PER DECISION, NOT PER BOOK. Two books copying one signal are one episode; two
+    separate trades the same day are two.
+
+    The key is the SIGNAL HOUR and the direction -- the copies share the entry bar -- not the day.
+    Keying on the day collapsed a sleeve's second same-direction trade of the day and under-counted
+    its mode support."""
+    uniq: dict[str, dict[str, Any]] = {}
+    for t in sorted(trades, key=lambda r: (BOOK_ORDER.index(str(r.get("_book")))
+                                           if str(r.get("_book")) in BOOK_ORDER
+                                           else len(BOOK_ORDER), str(r.get("_book")))):
+        et = _ts(t.get("entry_time")) or t["_t"]
+        uniq.setdefault(f"{et.replace(minute=0, second=0, microsecond=0)}:{_direction(t)}", t)
+    return sorted(uniq.values(), key=lambda r: r["_t"])
+
+
 def active_modes(diags: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     """Every mode with its support; `active` when it clears both MIN_EPISODES and the share."""
     read = [x for x in diags if "exit_kind" in x]
@@ -716,11 +738,7 @@ def run(now: datetime | None = None, dry_run: bool = False) -> dict[str, Any]:
         if bars is None:
             rep["diagnosis"] = f"UNMEASURED: no H1 bars for {sym} on this host"
             continue
-        # One trade per position: two books copying one signal are one episode, not two.
-        uniq: dict[str, dict[str, Any]] = {}
-        for t in trades:
-            uniq.setdefault(f"{t['_t'].date()}:{_direction(t)}", t)
-        episodes = list(uniq.values())
+        episodes = episodes_of(trades)
         off = bar_offset_hours(episodes, bars)
         hold = _hold_of(ident["params"])
         diags = [diagnose(t, bars, hold, off) for t in episodes]
@@ -838,18 +856,65 @@ def act(report: dict[str, Any] | None = None, sleeves_path: Path | None = None,
                          "why": "variant has not been promoted LIVE with capital yet; the "
                                 "parent keeps every unit of its risk until it is"})
             continue
-        prow.update({"status": "RETIRED", "retired_at": now.isoformat(timespec="seconds"),
-                     "retired_by": SOURCE,
-                     "retire_reason": (f"replaced by forward-superior loss-learning variant "
-                                       f"{v.get('variant_clock')}: {v.get('why')}")})
+        reason = (f"replaced by forward-superior loss-learning variant "
+                  f"{v.get('variant_clock')}: {v.get('why')}")
+        # THE SAME FIELDS EVERY OTHER RETIREMENT PATH WRITES (promoter.retire_banned /
+        # retire_unrunnable / retire_tier_s_live). A RETIRED row left carrying a positive
+        # risk_frac is still a fraction to anyone who sums the roster, and a door the
+        # alpha-state ledger never sees is a transition the desk cannot reconstruct.
+        was = str(prow.get("status") or "")
+        prow.update({"status": "RETIRED", "risk_frac": 0.0, "risk_frac_source": "none",
+                     "retired_at": now.isoformat(timespec="seconds"), "retired_by": SOURCE,
+                     "retire_reason": reason})
+        _note_retirement_door(str(prow.get("name") or ""), was, reason, v)
         changed = True
         done.append({"parent": prow.get("name"), "variant": v.get("variant_clock"),
-                     "action": "RETIRED_PARENT", "why": v.get("why")})
+                     "action": "RETIRED_PARENT", "why": v.get("why"),
+                     # RULE 1, RECORDED. A retirement is a zero on the parent, so the growth it
+                     # gives up is written beside the growth it buys -- both sides measured, from
+                     # the verdict that decided it, in log-wealth per day at the parent's own
+                     # fraction. Not appended to data/missed_growth.jsonl: that ledger is keyed
+                     # by the sealed rails registry (libs.portfolio.rails) and this is not a rail.
+                     "opportunity_cost": {
+                         "unit": "forward log-wealth per day, at frac "
+                                 f"{v.get('frac')}",
+                         "parent_forgone_per_day": v.get("mean_diff_r"),
+                         "variant_gain_per_day": v.get("mean_diff_r"),
+                         "lower_bound_r": v.get("lower_bound_r"),
+                         "paired_days": v.get("paired_days"), "alpha": v.get("alpha"),
+                         "two_sided": True,
+                         "why": ("the parent keeps every unit of its risk until this bound "
+                                 "clears; the measured difference IS the growth the "
+                                 "retirement buys")}})
     if changed:
-        sp.write_text(json.dumps(doc, indent=2, default=str), "utf-8")
+        # ATOMIC, AND RE-READ FIRST. The hourly promoter writes this same file from another
+        # process, so a plain read-modify-write can lose its pass or be lost by it. The rows are
+        # re-read here and only the parents this pass retires are re-applied, onto whatever the
+        # promoter left; the replace is atomic so no reader ever sees a half-written roster.
+        fresh = _json(sp, None)
+        if isinstance(fresh, dict) and isinstance(fresh.get("sleeves"), list):
+            fresh_by = {str(r.get("name")): r for r in fresh["sleeves"] if isinstance(r, dict)}
+            for d in done:
+                if d.get("action") != "RETIRED_PARENT":
+                    continue
+                row, mine = fresh_by.get(str(d["parent"])), by_name.get(str(d["parent"]))
+                if row is None or mine is None:
+                    continue
+                if str(row.get("status") or "").upper() != "LIVE":
+                    d["action"] = "SUPERSEDED"
+                    d["why"] = (f"another writer left this row {row.get('status')!r} before this "
+                                f"pass could retire it; nothing written")
+                    continue
+                row.update({k: mine[k] for k in ("status", "risk_frac", "risk_frac_source",
+                                                 "retired_at", "retired_by", "retire_reason")})
+            doc = fresh
+        tmp = sp.with_suffix(sp.suffix + f".loss_learner.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(doc, indent=2, default=str), "utf-8")
+        os.replace(tmp, sp)
         try:
             from research.decay_monitor import queue_close
-            queue_close([d["parent"] for d in done if d["action"] == "RETIRED_PARENT"],
+            queue_close([str(d["parent"]) for d in done
+                         if d["action"] == "RETIRED_PARENT"],
                         path=sp.parent / "RETIRED_CLOSE_QUEUE.json")
         except Exception as exc:
             done.append({"action": "CLOSE_QUEUE_FAILED", "why": f"{type(exc).__name__}: {exc}"})
@@ -866,6 +931,28 @@ def act(report: dict[str, Any] | None = None, sleeves_path: Path | None = None,
                                                    "allocator owners, never by this organ"},
                                           indent=1, default=str), "utf-8")
     return {"status": "OK", "done": done, "window_requests": len(window_requests)}
+
+
+def _note_retirement_door(name: str, from_status: str, reason: str,
+                          v: dict[str, Any]) -> None:
+    """Write the RETIRED door onto the alpha-state ledger, through the promoter's own writer.
+
+    Retirement is the one door the ledger always accepts. A failure to take a note must never
+    abort the retirement itself (the `plog` lesson, 2026-09-03), so it is named and swallowed."""
+    try:
+        from research import promoter
+        promoter.note_door(name, door="RETIRED", from_status=from_status or "LIVE",
+                           to_status="RETIRED", reason=reason,
+                           evidence={"replaced_by": v.get("variant_clock"),
+                                     "lower_bound_r": v.get("lower_bound_r"),
+                                     "paired_days": v.get("paired_days"),
+                                     "alpha": v.get("alpha"),
+                                     "lineage_trials": v.get("lineage_trials"),
+                                     "retired_by": SOURCE})
+        promoter.flush_door_events()
+    except Exception as exc:                            # pragma: no cover - note-taking only
+        print(f"{SOURCE}: RETIRED door not recorded for {name} "
+              f"({type(exc).__name__}: {exc})", flush=True)
 
 
 def main(argv: list[str] | None = None) -> int:

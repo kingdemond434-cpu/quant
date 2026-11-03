@@ -75,6 +75,17 @@ def test_bar_offset_is_measured_from_the_entry_prices() -> None:
     assert LL.bar_offset_hours(trades, bars) == 2
 
 
+def test_two_same_day_trades_are_two_episodes_and_two_books_are_one() -> None:
+    rows = []
+    for book in ("ftmo", "fusion"):
+        for hour in (3, 9):
+            t = _trade(100 + hour, 90 + hour, 130 + hour, 95 + hour, hour, hour + 2)
+            rows.append({**t, "_book": book, "_t": T0 + timedelta(hours=hour + 2)})
+    eps = LL.episodes_of(rows)
+    assert len(eps) == 2                                  # two decisions, not four rows
+    assert {e["_book"] for e in eps} == {"fusion"}         # the richest ledger is the one read
+
+
 def test_modes_need_support_before_they_act() -> None:
     read = [{"mode": "RAN_PAST_TARGET", "exit_kind": "target"}] * 2 + \
            [{"mode": None, "exit_kind": "stop"}] * 8
@@ -161,7 +172,62 @@ def _out(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return tmp_path
 
 
-def test_act_moves_capital_never_drops_it(_out: Path) -> None:
+def test_a_retired_parent_carries_zero_risk_and_a_recorded_door(_out: Path,
+                                                                monkeypatch) -> None:
+    doors: list[dict] = []
+    monkeypatch.setattr(LL, "_note_retirement_door",
+                        lambda n, f, r, v: doors.append({"name": n, "from": f, "reason": r}))
+    sp = _roster(_out, variant_live=True, frac=0.012)
+    LL.act(_report(), sleeves_path=sp)
+    row = {r["name"]: r for r in json.loads(sp.read_text())["sleeves"]}["PARENT"]
+    assert row["risk_frac"] == 0.0 and row["risk_frac_source"] == "none"
+    assert doors and doors[0]["name"] == "PARENT" and doors[0]["from"] == "LIVE"
+
+
+def test_another_writer_is_not_overwritten(_out: Path, monkeypatch) -> None:
+    sp = _roster(_out, variant_live=True, frac=0.012)
+    monkeypatch.setattr(LL, "_note_retirement_door", lambda *a: None)
+
+    real = LL._json
+
+    reads = {"n": 0}
+
+    def _racing(path, default):            # the promoter's pass lands mid-act
+        doc = real(path, default)
+        if path == sp and isinstance(doc, dict):
+            reads["n"] += 1
+            if reads["n"] == 1:
+                return doc                 # act() reads the roster it decides on
+            for r in doc["sleeves"]:
+                if r["name"] == "PARENT":
+                    r["status"] = "STANDBY"
+                if r["name"] == "NEWCOMER":
+                    return doc
+            doc["sleeves"].append({"name": "NEWCOMER", "status": "LIVE", "risk_frac": 0.02})
+        return doc
+
+    monkeypatch.setattr(LL, "_json", _racing)
+    res = LL.act(_report(), sleeves_path=sp)
+    rows = {r["name"]: r for r in json.loads(sp.read_text())["sleeves"]}
+    assert rows["NEWCOMER"]["status"] == "LIVE"          # the other writer's row survived
+    assert rows["PARENT"]["status"] == "STANDBY"         # and its verdict was not overwritten
+    assert res["done"][0]["action"] == "SUPERSEDED"
+
+
+def test_a_retirement_records_both_sides_of_the_growth(_out: Path, monkeypatch) -> None:
+    monkeypatch.setattr(LL, "_note_retirement_door", lambda *a: None)
+    sp = _roster(_out, variant_live=True, frac=0.012)
+    rep = _report()
+    rep["replacements"]["verdicts"][0].update({"mean_diff_r": 0.004, "lower_bound_r": 0.001,
+                                               "paired_days": 25, "alpha": 0.05, "frac": 0.01})
+    res = LL.act(rep, sleeves_path=sp)
+    oc = res["done"][0]["opportunity_cost"]
+    assert oc["two_sided"] and oc["parent_forgone_per_day"] == 0.004
+    assert oc["lower_bound_r"] == 0.001 and "log-wealth per day" in oc["unit"]
+
+
+def test_act_moves_capital_never_drops_it(_out: Path, monkeypatch) -> None:
+    monkeypatch.setattr(LL, "_note_retirement_door", lambda *a: None)
     sp = _roster(_out, variant_live=False, frac=0.0)
     res = LL.act(_report(), sleeves_path=sp)
     assert res["done"][0]["action"] == "PENDING_VARIANT_LIVE"
