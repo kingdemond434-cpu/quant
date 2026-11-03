@@ -237,6 +237,9 @@ def _read_capacity_report(path: Path, note: dict[str, str]) -> Any:
 HORIZON_DAYS = 14.0
 _AT_RE = re.compile(rb'"(?:at|born_at)"\s*:\s*"(\d{4}-\d\d-\d\d)')
 _ID_RE = re.compile(rb'"id"\s*:\s*"([^"]+)"')
+#: The same two patterns over text, for the indexed graph reader (it decodes each line once).
+_AT_RE_S = re.compile(r'"(?:at|born_at)"\s*:\s*"(\d{4}-\d\d-\d\d)')
+_ID_RE_S = re.compile(r'"id"\s*:\s*"([^"]+)"')
 #: THE REVERSE READER'S STOP RULE. The log is append-ordered but not perfectly date-ordered
 #: (measured on the committed graph: 30,256 of 108,189 rows are external verdict rows appended
 #: carrying an OLDER `at`), so one old line does not end the horizon. The scan stops only after
@@ -538,7 +541,7 @@ def _read_graph_indexed(path: Path, note: dict[str, str], *, since: datetime,
             total += 1
             if offset >= next_save:
                 recent = [ln for ln in recent
-                          if (mm := _AT_RE.search(ln)) is not None and mm.group(1) >= cut]
+                          if (mm := _AT_RE_S.search(ln)) is not None and mm.group(1) >= cut]
                 _save_graph_index(ip, side, {**idx, "head": head, "offset": offset - len(raw),
                                              "lines": total - 1, "first": first, "cut": cut},
                                   recent)
@@ -546,10 +549,10 @@ def _read_graph_indexed(path: Path, note: dict[str, str], *, since: datetime,
             line = raw.decode("utf-8", errors="replace")
             if offset == len(raw) and line.startswith("\ufeff"):
                 line = line[1:]                          # utf-8-sig, as the stream opened it
-            m = _AT_RE.search(line)
+            m = _AT_RE_S.search(line)
             if m is None:
                 continue
-            mi = _ID_RE.search(line)
+            mi = _ID_RE_S.search(line)
             if mi is not None:
                 d = _id_digest(mi.group(1))
                 if d not in first or m.group(1) < first[d]:
@@ -557,7 +560,7 @@ def _read_graph_indexed(path: Path, note: dict[str, str], *, since: datetime,
                     first[d] = dates.setdefault(m.group(1), m.group(1))
             if line.strip():
                 recent.append(line if line.endswith("\n") else line + "\n")
-    recent = [ln for ln in recent if (mm := _AT_RE.search(ln)) is not None and mm.group(1) >= cut]
+    recent = [ln for ln in recent if (mm := _AT_RE_S.search(ln)) is not None and mm.group(1) >= cut]
     idx.update({"head": head, "offset": offset, "lines": total, "first": first, "cut": cut,
                 "updated_at": datetime.now(UTC).isoformat(timespec="seconds")})
     _save_graph_index(ip, side, idx, recent)
