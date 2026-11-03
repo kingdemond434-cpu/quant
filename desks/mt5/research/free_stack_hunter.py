@@ -23,6 +23,8 @@ WHAT ONE PASS DOES, in order, inside its own wall budget:
   5. FEEDS THE CATALOGUE QUEUES. Dataset links found in open catalogues go to
      `data/world_datasets/discovery_queue.json` (the #92 world dataset hunter's store) and to
      `data/free_stack/discovered_catalogue.json`, which `data_scout` and `data_prospector` read.
+  7. WRITES `reports/CN_AGGREGATOR_LICENCE.json` (DATA-24): each AKShare / TuShare / BaoStock /
+     jqdatasdk upstream's terms verdict with its quote or reason; `free_stack_proposer` reads it.
   6. WRITES `reports/FREE_STACK_YIELD.json`: per source status, attempts, successes, requests,
      observations added, columns, last success, last error, and the 24h / 7d yield. A source that
      has never run reads UNMEASURED, never 0.
@@ -86,6 +88,8 @@ class Store:
         self.universe = desk / "data" / "universe" / "universe.json"
         self.report = desk / "reports" / REPORT.name
         self.alt_state = desk / "reports" / "ALT_REGIME_STATE.json"
+        #: DATA-24: the AKShare / TuShare / BaoStock licence validation, written every pass
+        self.licence = desk / "reports" / fs.LICENCE_REPORT
 
 
 def _now() -> datetime:
@@ -619,6 +623,9 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
     report = build_report(rows, complaints, cursor, columns, ran, store, now,
                           seconds=time.monotonic() - t0, alloc=alloc, live=live)
     write_json(store.report, report)
+    # DATA-24: every pass re-reads the one terms table, so a flip (or a new refusal) reaches the
+    # report -- and the proposer, which fences archived columns by it -- within the hour.
+    write_json(store.licence, fs.licence_validation(now))
     return report
 
 
