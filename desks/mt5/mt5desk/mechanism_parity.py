@@ -34,6 +34,7 @@ LANES: dict[str, tuple[str, tuple[str, ...]]] = {
 NOT_LANES: dict[str, str] = {
     "mt5desk/order_door.py": "the guard every lane's sends pass through, not a lane",
     "mt5desk/position_manager.py": "the shared stop decision itself",
+    "mt5desk/mechanism_parity.py": "this registry (it names the markers below)",
 }
 
 #: What marks a module as one that opens positions (MT5 request actions, TradeLocker place calls).
