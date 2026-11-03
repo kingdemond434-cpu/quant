@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-03T10:00:24.301522+00:00",
+  "swept_at": "2026-11-03T10:30:04.692137+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -976,8 +976,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 49,
-      "shadow_exp_r": -0.2847,
+      "shadow_n": 90,
+      "shadow_exp_r": 0.0456,
       "woke_on_shadow": false
     },
     "CHFSGD|cross_asset_residual_continuous": {
@@ -1031,8 +1031,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 56,
-      "shadow_exp_r": 0.0135,
+      "shadow_n": 90,
+      "shadow_exp_r": 0.1332,
       "woke_on_shadow": false
     },
     "CHFSGD|pca_residual_continuous": {
@@ -1868,7 +1868,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 41,
-      "shadow_exp_r": -0.1932,
+      "shadow_exp_r": -0.192,
       "woke_on_shadow": false
     },
     "GBPAUD|cross_asset_residual_continuous": {
@@ -1912,7 +1912,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0328,
+      "shadow_exp_r": -0.035,
       "woke_on_shadow": false
     },
     "GBPAUD|relative_value_continuous": {
@@ -2143,7 +2143,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0859,
+      "shadow_exp_r": -0.0621,
       "woke_on_shadow": false
     },
     "GBPJPY|macro_conditional_continuous": {
@@ -2561,7 +2561,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0452,
+      "shadow_exp_r": -0.013,
       "woke_on_shadow": false
     },
     "GBPSGD|overnight_gap_decay_continuous": {
@@ -2868,8 +2868,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.5581,
+      "shadow_n": 28,
+      "shadow_exp_r": -0.0988,
       "woke_on_shadow": false
     },
     "NAS100|cross_asset_residual_continuous": {
@@ -2923,8 +2923,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 69,
-      "shadow_exp_r": -0.0493,
+      "shadow_n": 36,
+      "shadow_exp_r": -0.039,
       "woke_on_shadow": false
     },
     "NAS100|pca_residual_continuous": {
