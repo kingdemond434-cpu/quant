@@ -680,13 +680,20 @@ def run_backtest(
     signals: list[Signal],
     costs: Costs,
     max_hold_bars: int | None = None,
+    limit_fill: str = "trade_through",
 ) -> BacktestResult:
     """Simulate trades from signals against an OHLC frame (index = UTC).
 
     Entries fill at the open of the first bar strictly after the signal time.
     Stops checked intrabar via low/high; targets similarly. TTL and max-hold
     force exits. Position closed at next bar open if no stop/target hit.
+
+    A resting LIMIT entry fills only when the side's own executable quote TRADES THROUGH it
+    (`limit_fill="trade_through"`, the default; see `limit_fills`). `"touch"` is the old
+    bar-range touch, kept for stress arms that measure what the touch fill was worth.
     """
+    if limit_fill not in ("trade_through", "touch"):
+        raise ValueError(f"limit_fill={limit_fill!r}: 'trade_through' or 'touch'")
     memo_on = _leg_memo_on()
     o = df["open"].to_numpy()
     h = df["high"].to_numpy()
@@ -712,7 +719,15 @@ def run_backtest(
     # survived: the gauntlet dropped 118 of 122 cells as untestable and nothing said why.
     # `as_unit("ns")` pins the comparison to one resolution regardless of what wrote the file.
     idx_ns = np.asarray(pd.DatetimeIndex(idx).as_unit("ns").asi8, dtype="int64")
-    walked = (str(getattr(idx, "tz", None)), o, h, lows, idx_ns)
+    # The walk reads the spread only through a trade-through LIMIT fill, so the fill rule and
+    # the spread key the memo only when a signal rests a trigger: a cell with none keeps its
+    # pre-warm hit at the 3x stress arm, and a limit cell re-walks it (a wider spread fills
+    # fewer limits, which is part of what the stress arm measures).
+    resting = limit_fill == "trade_through" and any(
+        getattr(s, "trigger", None) is not None for s in signals)
+    spread_px = max(0.0, float(costs.spread_per_lot) / float(costs.contract_oz or 1.0))
+    walked = ((str(getattr(idx, "tz", None)), limit_fill, spread_px if resting else None),
+              o, h, lows, idx_ns)
     memo_hit = _LEGS.lookup(df, signals, max_hold_bars, walked) if memo_on else None
     # A HIT WALKS NOTHING: the legs below were walked on this exact frame and signal list by the
     # previous call (`_LegMemo`), so the loop is given no signals and only the pricing runs.
@@ -726,6 +741,8 @@ def run_backtest(
     #: One entry per trade the path produced, in signal order: everything pricing reads.
     legs: list[tuple[Any, ...]] = []
     per_oz_cost = costs.per_oz_roundtrip() / costs.contract_oz
+    # `spread_px` (above) is the spread in PRICE units -- the same spread `per_oz_cost` charges
+    # (`spread_per_lot` is points x tick x contract, see `Costs`). The bars are BID.
     last_exit_idx = -1  # single-position discipline: no overlapping trades
 
     for sig, i0 in zip(walk, locs, strict=True):
@@ -749,14 +766,31 @@ def run_backtest(
             limit_entry = ((sig.side > 0 and tgt < entry)
                            or (sig.side < 0 and tgt > entry))
             hit = -1
+            through = limit_entry and limit_fill == "trade_through"
             for j in range(i, min(i + sig.wait_bars, len(idx))):
-                if float(h[j]) >= tgt >= float(lows[j]):
+                if through:
+                    # TRADE-THROUGH, NOT TOUCH (2026-11-03). The bars are BID. A buy limit at
+                    # L is filled only when the ASK trades below L (bid low < L - spread); a
+                    # sell limit only when the BID trades above L. A bar whose range merely
+                    # reaches L may not fill a resting order at all -- the queue ahead of it
+                    # takes the touch -- and on a buy the bid touching L is the ask still a
+                    # spread above it. The touch fill credited every limit-entry trade about
+                    # one spread and kept the trades that only touched.
+                    if (float(lows[j]) < tgt - spread_px if sig.side > 0
+                            else float(h[j]) > tgt):
+                        hit = j
+                        break
+                elif float(h[j]) >= tgt >= float(lows[j]):
                     hit = j
                     break
             if hit < 0:
                 continue
             fill_bar = hit
-            entry = float(tgt)
+            # A filled buy limit pays the ask, L; the cost model adds the spread to the
+            # recorded (bid) entry, so the bid-side record is L - spread. A sell fills at the
+            # bid, L. A STOP entry is unchanged: the bid reaching L is later than the ask
+            # reaching L - spread, so the touch rule there is the pessimistic side already.
+            entry = float(tgt) - (spread_px if through and sig.side > 0 else 0.0)
         side = sig.side
         stop = sig.stop
         target = sig.target
