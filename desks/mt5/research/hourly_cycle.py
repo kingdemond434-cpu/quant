@@ -1066,6 +1066,8 @@ def _allocator_mode_for_the_hour(art: Path | None = None, now: datetime | None =
 VERDICT_EXITS: dict[str, tuple[int, ...]] = {
     "model_skill": (2,),
     "deep_forest": (1,),
+    # `github_miner_alive` exits 2 for UNMEASURED (no report on this host yet); 1 is RED.
+    "github_miner_alive": (2,),
     "maintain_miners": (2,),
     # `cro_noon_freshness` exits 2 for RED: no landed noon CRO pass in 26 h is the reading.
     "cro_noon_freshness": (2,),
@@ -1149,6 +1151,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # heartbeat and stall record were read only by the law gate's rotation, which reaches a given
     # fence every few hours -- so a stalled judge could sit unread that long. Two small JSON reads.
     "judge_alive",
+    # THE GITHUB MINER'S PULSE (row 100, 2026-11-03): one JSON read. `firm_mining` sat DEAD for
+    # five weeks because nothing wrote it and nothing watched it; this reads the miner's own
+    # per-seat verdict every hour and raises GITHUB_MINER_ALARM.txt on RED.
+    "github_miner_alive",
     "mutation_yield", "credit_assignment", "publish_survivors", "publish_dashboard",
     # CANON PUBLICATION IS CORE. `MT5-Gauntlet` is the judge's own hourly task, so a sweep can
     # complete on a pass this cycle never ran; if the seal were only refreshed on the heavy plan
@@ -1312,7 +1318,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "effective_trials",
                      "occupancy_map", "dsr_inputs"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
-    **dict.fromkeys(("world_crawler", "deep_forest", "cell_emitter", "moat_miner",
+    **dict.fromkeys(("world_crawler", "deep_forest", "cell_emitter", "github_repo_miner",
+                     "moat_miner",
                      "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
@@ -2397,6 +2404,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The cell emitter stops itself at --budget-s 300 (it reads QUANT_LEG_BUDGET_S too); the cap
     # sits above it so the pass writes its report, cursor and donations rather than being cut.
     "cell_emitter": 420,
+    # The GitHub repo miner stops itself at --budget-s 300 (and reads QUANT_LEG_BUDGET_S); the
+    # cap sits above it so the pass writes its donations, state and report rather than being cut.
+    "github_repo_miner": 420,
     # A FOREST IS GIVEN THE BUDGET IT IS ASKED FOR. Each leg passes `--budget-s 3000` down to
     # `forest_runner`, which divides it across eleven parallel agents; a 720 s cycle cap would
     # SIGKILL every forest at the same prefix every hour -- the truncated-job failure that cost
@@ -3506,6 +3516,28 @@ def cell_emitter() -> dict:
     and writes reports/CELL_EMITTER.json with per-ground yield and drop reasons.
     """
     return _producer("cell_emitter", "research/cell_emitter.py", "--once", "--budget-s", "300")
+
+
+def github_repo_miner() -> dict:
+    """Public GitHub DISCOVERED, not hand-listed (row 99/100, 2026-11-03).
+
+    Seeds in `data/github_repo_seeds.json` (the EliteQuant 20-repo batch, seven awesome-lists and
+    firm-replication searches); lists are walked for the repos they link and searches page on a
+    pushed-date cursor, so every pass reaches repositories nobody typed. README claims and
+    strategy files become hypothesis rows in data/intelligence/github_repos/ and, for the firm
+    lane, data/intelligence/firm_mining/ -- the seat PRODUCER_YIELD read DEAD -- deduplicated
+    against every row it ever donated. Writes reports/GITHUB_REPO_MINER.json with the per-seat
+    liveness verdict that `github_miner_alive` reads.
+    """
+    return _producer("github_repo_miner", "research/github_repo_miner.py", "--once",
+                     "--budget-s", "300")
+
+
+def github_miner_alive() -> dict:
+    """`github_miner_alive`: RED (exit 1) when the miner reached GitHub in 72 h and donated
+    nothing to a seat, or its report is older than 6 h; UNMEASURED (exit 2) when absent.
+    Writes reports/github_miner_alive_fence.json and raises data/GITHUB_MINER_ALARM.txt."""
+    return _producer("github_miner_alive", "research/github_repo_miner.py", "--check")
 
 
 def session_structure() -> dict:
@@ -5851,6 +5883,9 @@ def main() -> None:
     # OPEN-SOURCE CODE -> CELLS: donates to data/intelligence/cell_emitter/, which the next
     # pass's `compile_candidates` reads. Network leg; self-stops inside its budget.
     cem = _costed("cell_emitter", cell_emitter)
+    # PUBLIC GITHUB, DISCOVERED: donates to data/intelligence/github_repos/ and firm_mining/.
+    ghm = _costed("github_repo_miner", github_repo_miner)
+    gha = _costed("github_miner_alive", github_miner_alive)
     ssm_leg = _costed("session_structure", session_structure)
     mm = _costed("maintain_miners", maintain_miners)
     # MEASURE THE CONVERSION WHERE THE DISCOVERIES ARE, AND ON THIS HOUR'S CODE. Nothing on this
@@ -6483,6 +6518,7 @@ def main() -> None:
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
                     "cell_emitter": cem,
+                    "github_repo_miner": ghm, "github_miner_alive": gha,
                     "session_structure": ssm_leg,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,

@@ -157,6 +157,13 @@ REPLACEMENTS: dict[str, str] = {
                  "reads a causal graph frozen since 2026-09-08 (causal_graph leg)",
     "literature": "academic -- academic_miner and seed_miners arxiv_qfin, the same "
                   "papers-with-a-mechanism ground; literature was a one-off 2026-09-16 hand seed",
+    # MEASURED DEAD 2026-11-03 (0 rows in 3 days, no inheritor) because it was a one-off
+    # 2026-09-27 hand donation with no clock. Its writer is now the firm lane of
+    # research/github_repo_miner.py (hourly, intel department), watched by github_miner_alive.
+    # Should that lane die too, the papers half of the same ground is academic's.
+    "firm_mining": "academic -- academic_miner and seed_miners arxiv_qfin carry the firms' "
+                   "published papers; the hourly writer is github_repo_miner's firm lane",
+    "github_repos": "cell_emitter -- the code half of the same public-repository ground",
 }
 
 

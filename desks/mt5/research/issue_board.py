@@ -181,6 +181,11 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
     # No auto-repair: its producer is the hourly cycle's `judge_alive` leg
     # (`scripts/check_judge_coverage.py --liveness --require-state`), which takes arguments.
     ("judge_alive", "desks/mt5/reports/judge_alive_fence.json", 3600, None),
+    # The GitHub repo miner (intel department) and its pulse (core). The miner refreshes its own
+    # report; the pulse takes an argument, so it has no auto-repair here.
+    ("github_repo_miner", "desks/mt5/reports/GITHUB_REPO_MINER.json", 21600,
+     "research/github_repo_miner.py"),
+    ("github_miner_alive", "desks/mt5/reports/github_miner_alive_fence.json", 3600, None),
 )
 
 #: Alarm files any detector on this tree may raise. Presence IS the issue; the file's first line
@@ -200,6 +205,9 @@ ALARMS: tuple[tuple[str, str, str], ...] = (
     ("SAMEDAY_ALARM.txt", "BLIND", "the same-day pipeline fence is breached"),
     ("FENCE_ALARM.txt", "BLIND", "a standing fence is breached"),
     ("PROMPT_PREFIX_ALARM.txt", "DEGRADED", "the prompt prefix drifted"),
+    ("GITHUB_MINER_ALARM.txt", "DEGRADED",
+     "the GitHub repo miner reached GitHub and donated nothing to a seat in 72 h (github_repos "
+     "or firm_mining), or its report stopped being rewritten"),
     ("JUDGE_ALIVE_ALARM.txt", "STALLED",
      "the judge's sweep was killed for making no progress (or its watchdog is wedged) and no "
      "sweep has finished since: no verdict is being written"),

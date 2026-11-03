@@ -1,0 +1,63 @@
+{
+ "note": "SEEDS for desks/mt5/research/github_repo_miner.py, the scheduled public-GitHub repo miner. A seed is where the walk STARTS, never where it ends: lists are walked for the repositories they link, searches page forward on a pushed-date cursor, and every repository found is queued in the miner's own state (data/github_repo_miner_state.json). Concepts are reimplemented through the compiler's door; no fetched code is executed or copied, and a quote is kept only under a copy-permitted licence (libs.data.datahub.COPY_PERMITTED).",
+ "policy": {
+  "files_per_repo": 6,
+  "max_file_bytes": 400000,
+  "max_readme_bytes": 400000,
+  "max_links_per_list": 400,
+  "list_depth": 2,
+  "rescan_after_h": 168,
+  "code_extensions": [".py", ".pine", ".mq5", ".mq4"],
+  "code_path_pattern": "(?i)(strateg|signal|alpha|factor|indicator|backtest|trade|rule)"
+ },
+ "lists": [
+  {"repo": "EliteQuant/EliteQuant", "why": "zuck 2026-09-30: mine it and every repo it links, deep and wide"},
+  {"repo": "thuquant/awesome-quant", "why": "Tsinghua-curated CN quant resources (EliteQuant thread, 2026-09-30)"},
+  {"repo": "wilsonfreitas/awesome-quant", "why": "the canonical cross-language quant library list"},
+  {"repo": "paperswithbacktest/awesome-systematic-trading", "why": "systematic strategies with published backtests"},
+  {"repo": "grananqvist/Awesome-Quant-Machine-Learning-Trading", "why": "ML-for-trading papers and code"},
+  {"repo": "firmai/financial-machine-learning", "why": "practitioner ML repos, ranked"},
+  {"repo": "georgezouq/awesome-ai-in-finance", "why": "AI-in-finance strategies and research"}
+ ],
+ "repos": [
+  {"repo": "waditu/czsc", "batch": "elitequant_20_2026-09-30", "lane": "repo", "disposition": "mine", "why": "CN Chan-theory signal library (Apache-2.0)"},
+  {"repo": "QuantaAlpha/QuantaAlpha", "batch": "elitequant_20_2026-09-30", "lane": "repo", "disposition": "mine", "why": "factor mining agent; no LICENSE file at the cloned commit, ideas only"},
+  {"repo": "charliedream1/ai_quant_trade", "batch": "elitequant_20_2026-09-30", "lane": "repo", "disposition": "mine", "why": "index rotation and broker-report metadata (Apache-2.0)"},
+  {"repo": "LongOnly/Quantitative-Notebooks", "batch": "elitequant_20_2026-09-30", "lane": "repo", "disposition": "mine", "why": "research notebooks (Apache-2.0)"},
+  {"repo": "shinnytech/tqsdk-python", "batch": "elitequant_20_2026-09-30", "lane": "repo", "disposition": "mine", "why": "CN futures SDK demo strategies (Apache-2.0)", "default_instruments": ["XAUUSD", "XAGUSD", "XTIUSD", "XCUUSD", "CHINAH"]},
+  {"repo": "Micro-sheep/efinance", "batch": "elitequant_20_2026-09-30", "lane": "repo", "disposition": "mine", "why": "Eastmoney endpoint map (MIT)"},
+  {"repo": "yli188/WorldQuant_alpha101_code", "batch": "elitequant_20_2026-09-30", "lane": "firm", "firm": "WorldQuant", "disposition": "mine", "why": "Alpha101 lineage; routed to the QuantConnect/WorldQuant/fund thread, so it donates to the firm lane"},
+  {"name": "QuantumultX", "repo": null, "batch": "elitequant_20_2026-09-30", "lane": "repo", "disposition": "not_relevant", "why": "a proxy-config repository with no quant content (coordinator, 2026-09-30); recorded so the batch is complete, never fetched"},
+  {"repo": "cybergeekgyan/Quant-Developers-Resources", "batch": "elitequant_20_2026-09-30", "lane": "repo", "disposition": "list", "why": "a resource list; walked for the repositories it links"},
+  {"repo": "QuantFans/quantdigger", "batch": "elitequant_20_2026-09-30", "lane": "repo", "disposition": "mine", "why": "CN backtest framework and its sample strategies"},
+  {"repo": "LLMQuant/quant-wiki", "batch": "elitequant_20_2026-09-30", "lane": "repo", "disposition": "list", "why": "CN quant wiki; walked and read for calendar and index rules"},
+  {"repo": "quant-science/sunday-quant-scientist", "batch": "elitequant_20_2026-09-30", "lane": "repo", "disposition": "mine", "why": "48 newsletter strategy scripts; no licence, ideas only"},
+  {"repo": "AI-Efficiency/Awesome-Model-Quantization", "batch": "elitequant_20_2026-09-30", "lane": "repo", "disposition": "method_only", "why": "neural-network compression, not trading: only inference speed-ups apply (coordinator, 2026-09-30); recorded, never walked, so its 1,600 vision papers never enter the queue"},
+  {"repo": "PyPatel/Quant-Finance-Resources", "batch": "elitequant_20_2026-09-30", "lane": "repo", "disposition": "list", "why": "a single README of courses, books and blogs"},
+  {"repo": "Ricktho1/Quant_resources", "batch": "elitequant_20_2026-09-30", "lane": "repo", "disposition": "list", "why": "README links only; its PDFs look redistributed without rights and are never opened"},
+  {"repo": "LukePrior/Australian-Open-Banking-Data-Database", "batch": "elitequant_20_2026-09-30", "lane": "repo", "disposition": "mine", "why": "AU bank product-rate API register (MIT): AUD rate-expectation claims", "default_instruments": ["AUDUSD", "AUDJPY", "AUS200"]},
+  {"repo": "Finnhub-Stock-API/finnhub-python", "batch": "elitequant_20_2026-09-30", "lane": "repo", "disposition": "mine", "why": "client only; free-tier endpoints for the share-CFD event lane"},
+  {"repo": "yorkeccak/finance", "batch": "elitequant_20_2026-09-30", "lane": "repo", "disposition": "mine", "why": "finance research agent (MIT)"},
+  {"repo": "mega-byte2600/hedge-desk", "batch": "elitequant_20_2026-09-30", "lane": "repo", "disposition": "mine", "why": "zuck linked its issue #99; the repository's README and strategies are read"},
+  {"repo": "IdealAuror/all-weather-portfolio", "batch": "elitequant_20_2026-09-30", "lane": "firm", "firm": "Bridgewater", "disposition": "mine", "why": "Bridgewater All Weather replication; AGPL-3.0, ideas only"}
+ ],
+ "searches": [
+  {"q": "time series momentum replication", "lane": "firm", "firm": "AQR"},
+  {"q": "betting against beta", "lane": "firm", "firm": "AQR"},
+  {"q": "value and momentum everywhere", "lane": "firm", "firm": "AQR"},
+  {"q": "quality minus junk", "lane": "firm", "firm": "AQR"},
+  {"q": "currency carry factor", "lane": "firm", "firm": "AQR"},
+  {"q": "man ahl trend following", "lane": "firm", "firm": "Man AHL"},
+  {"q": "all weather risk parity", "lane": "firm", "firm": "Bridgewater"},
+  {"q": "worldquant alpha101", "lane": "firm", "firm": "WorldQuant"},
+  {"q": "renaissance medallion", "lane": "firm", "firm": "Renaissance"},
+  {"q": "two sigma factor lens", "lane": "firm", "firm": "Two Sigma"},
+  {"q": "winton trend following", "lane": "firm", "firm": "Winton"},
+  {"q": "kakushadze 101 formulaic alphas", "lane": "firm", "firm": "WorldQuant"},
+  {"q": "forex strategy backtest", "lane": "repo"},
+  {"q": "gold xauusd strategy", "lane": "repo"},
+  {"q": "cta futures strategy", "lane": "repo"},
+  {"q": "topic:algorithmic-trading", "lane": "repo"},
+  {"q": "topic:quantitative-finance", "lane": "repo"}
+ ]
+}

@@ -53,6 +53,9 @@ LEG_LAYER: dict[str, str] = {
     # Published strategy CODE read into family cells: what the desk knows (a rule someone
     # wrote), not a prediction -- the gauntlet does the predicting.
     "cell_emitter": "information",
+    # Public GitHub repositories DISCOVERED (lists walked, searches paged) and read into
+    # hypothesis rows: what the desk knows, like cell_emitter -- the gauntlet predicts.
+    "github_repo_miner": "information",
     # Whether either tick tape moved within 2 h of open market (2026-10-14): a measurement of the
     # desk's own data wiring, not information about the market: meta.
     "tape_fresh": "meta",
@@ -226,6 +229,7 @@ LEG_LAYER: dict[str, str] = {
     "placement_interlock": "meta",
     # Whether the judge's own sweep is alive and progressing is the machine watching itself: meta.
     "judge_alive": "meta",
+    "github_miner_alive": "meta",
     # THE TIER-1 CLOSED-LOOP B ROWS (2026-09-23).
     # Whether the running code may create new exposure, which scientist earned what, which
     # structures have started surviving again, and one EVIG price over every research resource
