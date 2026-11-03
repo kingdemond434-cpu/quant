@@ -26,6 +26,8 @@ def healer(tmp_path, monkeypatch):
     spec.loader.exec_module(mod)
     sleeves = tmp_path / "sleeves.json"
     monkeypatch.setattr(mod, "SLEEVES", sleeves)
+    # The healer now restores only against a readable stops record (principal_stops, 2026-10-14).
+    (tmp_path / "PRINCIPAL_STOPS.json").write_text('{"stops": []}', encoding="utf-8")
 
     def run(rows: list[dict]) -> dict[str, str]:
         sleeves.write_text(json.dumps({"sleeves": rows}), encoding="utf-8")
