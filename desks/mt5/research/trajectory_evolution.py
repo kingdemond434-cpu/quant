@@ -80,6 +80,8 @@ OUT = DESK / "reports" / "TRAJECTORY_EVOLUTION.json"
 
 #: One run's ceiling on children and the wall clock it may not pass. Caps, never targets.
 MAX_CHILDREN, BUDGET_S = 30, 240
+#: The share of the budget the graph read may take, and the share evolution is always left.
+SETUP_SHARE, EVOLVE_FLOOR_SHARE = 0.6, 0.25
 #: Genomes HELD. Every judged cell is CENSUSED; these bound only what stays in memory, because the
 #: graph is 18 MB of JSON and the box holding the live terminal has 8 GB. An unattributed genome
 #: seeds nothing, so a sample is enough to hold -- the COUNT of them is never sampled.
@@ -798,9 +800,16 @@ def build(*, max_children: int = MAX_CHILDREN, budget_s: int = BUDGET_S,
     at = datetime.now(UTC).isoformat(timespec="seconds")
     memory = load_memory()
     outcomes = refresh_memory(memory, verdict_index())
-    genomes, inputs, unmeasured, census = assemble(deadline)
+    # THE SETUP NEVER EATS THE GENERATION (2026-11-03). Assembly streamed the graph until the ONE
+    # deadline and evolution then checked the same deadline before its first child: measured on
+    # the box, 16,952 genomes held, 24 seeds drawn, 0 children and `stopped_early: budget` at
+    # 280.7 s of 240, on every pass since 09-24. Assembly now stops at SETUP_SHARE of the budget
+    # and evolution always gets at least EVOLVE_FLOOR_SHARE of it, so a slow read costs genomes
+    # held (reported), never the whole generation.
+    genomes, inputs, unmeasured, census = assemble(started + SETUP_SHARE * max(1, int(budget_s)))
     run_seed = int(seed) if seed is not None else _salt(at[:10], len(genomes))
-    out = evolve(genomes, memory, max(0, int(max_children)), deadline, run_seed)
+    evolve_deadline = max(deadline, time.monotonic() + EVOLVE_FLOOR_SHARE * max(1, int(budget_s)))
+    out = evolve(genomes, memory, max(0, int(max_children)), evolve_deadline, run_seed)
     report = {
         # n_genomes is the CENSUS -- every judged cell the graph and ledger name. `genomes_held`
         # is what fitted in memory and could therefore be evolved this hour.

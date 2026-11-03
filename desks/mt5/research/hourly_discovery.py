@@ -115,6 +115,27 @@ ORGANS: dict[str, str] = {
 }
 
 
+#: THE BOX'S OWN PROPOSER ROTATION (producer revival, 2026-10-29; first drafted 2026-10-14 on
+#: claude/coverage-matrix and never merged). On the trading box these proposers are clocked only
+#: by the DAILY chain (`daily_cycle._proposers`), and that chain does not finish: process_health
+#: at 2026-10-29T11:30Z read MT5-Daily FAILING with last result 267014 (0x41306, terminated at its
+#: time limit), and `hourly_cycle.daily()` caps the same chain at 900 s. Their other clock is the
+#: VPS's quant-hourly-discovery.timer, whose output reached the box only through intel-ship/send,
+#: silent since 2026-10-14T01:50Z. PRODUCER_YIELD 2026-10-29T11:43Z read every one of them DEAD or
+#: UNMEASURED. The hourly_cycle leg `proposer_rotation` runs THIS list through the same
+#: staleness-ordered, budgeted pass (`--box-rotation`), so each gets a turn every hour and a killed
+#: or failed organ is recorded in HOURLY_DISCOVERY.json. Proposers that already have an hourly box
+#: leg (alpha_evolution, cross_asset_graph, weak_signals -> weak_signal_compiler) are not repeated.
+#: It ADDS a clock and removes none: the daily chain still runs them too.
+BOX_ROTATION: tuple[str, ...] = (
+    "plumbing_miner", "transition_alpha", "fund_playbook", "microstructure_miner",
+    "style_premia_sweep", "anomaly_factory", "tail_alpha_search", "survivor_distiller",
+    "factor_model_coevolution",
+)
+#: The rotation's share of the hour on the box: the leg budget minus the kill grace.
+BOX_ROTATION_BUDGET_S = 1500.0
+
+
 def _read(p: Path) -> dict[str, Any]:
     try:
         d = json.loads(p.read_text("utf-8"))
@@ -285,6 +306,8 @@ def main() -> int:
     ap.add_argument("--only", default="", help="comma-separated organ names")
     ap.add_argument("--dry-run", action="store_true", help="print the plan, run nothing")
     ap.add_argument("--organ", default="", help="child mode: run ONE organ in-process")
+    ap.add_argument("--box-rotation", action="store_true",
+                    help="run only BOX_ROTATION (the trading box's own proposer clock)")
     a = ap.parse_args()
     if a.organ:
         if a.organ not in ORGANS:
@@ -298,6 +321,8 @@ def main() -> int:
         print(YIELD_PREFIX + json.dumps(yield_of(res)), flush=True)
         return int(rep.get("rc") or 0)
     only = {s.strip() for s in a.only.split(",") if s.strip()} or None
+    if a.box_rotation:
+        only = set(BOX_ROTATION)
     if a.dry_run:
         for name, b in plan(_read(STATE), a.budget_s, only):
             print(f"{name:28s} {b:7.1f}s", flush=True)
