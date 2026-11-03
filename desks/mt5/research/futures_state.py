@@ -11,8 +11,9 @@ WHAT THIS ORGAN DOES, end to end, and every stage publishes a number:
   1. COLLECTS from the rows in `research/futures_state_sources.json` -- rows, never code. The OPEN
      sources are the CFTC public reporting API (legacy, disaggregated and TFF, each futures-only
      AND futures+options combined, so the difference is the delta-adjusted OPTIONS-ON-FUTURES
-     book), FRED's curves, rate differentials and reserves, and Japan's MoF intervention record (every intervention day since 1991, signed,
-     stamped at its quarterly disclosure; monthly totals stamped at their release). Every other
+     book), FRED's curves, rate differentials and reserves, and Japan's MoF intervention record
+     (every intervention day since 1991, signed, stamped at its quarterly disclosure; monthly
+     totals stamped at their release). Every other
      venue is a row with its terms state (TO_CONFIRM / HELD / IDEAS_ONLY / OWNED_ELSEWHERE /
      DISCONTINUED: EIA's NYMEX contracts 1-4 stopped after 2024-04-05) and is COUNTED as a named
      gap, never fetched. CFTC is read incrementally, past the newest held week, and only once the
