@@ -2940,3 +2940,8 @@ def test_send_alert_succeeds_only_when_a_channel_delivered(monkeypatch: Any) -> 
     assert mod.main(["t", "b"]) == 1
     monkeypatch.setattr(mod, "send_all", lambda t, b: {"armed": 1, "delivered": 1})
     assert mod.main(["t", "b"]) == 0 and mod.main(["t"]) == 2
+
+
+def test_the_githooks_are_protected_again() -> None:
+    # #246 audit (2026-11-03): an AUTO edit could make the money-path guard's hooks no-ops
+    assert ag.is_protected("ops/githooks/pre-push") and ag.is_protected("ops/githooks/pre-commit")
