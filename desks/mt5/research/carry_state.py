@@ -204,11 +204,27 @@ def _load_terms(terms_dir: Path) -> dict[str, dict[str, Any]]:
     return out
 
 
-def _load_panel(panel_dir: Path) -> dict[str, list[tuple[str, float, float]]]:
-    """Per-symbol swap SERIES from the hourly broker panel, oldest first."""
-    series: dict[str, list[tuple[str, float, float]]] = {}
+def _when(raw: object) -> datetime | None:
+    """An ISO stamp as an aware UTC instant; naive reads as UTC; unparseable is None."""
+    try:
+        t = datetime.fromisoformat(str(raw))
+    except (TypeError, ValueError):
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
+def _load_panel(panel_dir: Path, captured: dict[str, str] | None = None
+                ) -> dict[str, list[tuple[str, float, float]]]:
+    """Per-symbol swap SERIES from the hourly broker panel, oldest first. `captured`, when given,
+    receives each symbol's latest EVIDENCED capture: the `observed_at` of a row the box wrote with
+    live terminal evidence (`last_evidence_at`). A copied or seed row with no evidence vouches for
+    nothing. Stamps are compared as instants, never as strings (`+00:00` against `Z`, or a naive
+    stamp, would otherwise order wrongly)."""
+    series: dict[str, list[tuple[datetime, str, float, float]]] = {}
+    best: dict[str, datetime] = {}
     if not panel_dir.exists():
-        return series
+        return {}
+    floor = datetime.min.replace(tzinfo=UTC)
     for f in sorted(panel_dir.glob("*.json")):
         try:
             rows = json.loads(f.read_text("utf-8"))
@@ -225,11 +241,19 @@ def _load_panel(panel_dir: Path) -> dict[str, list[tuple[str, float, float]]]:
             lo, sh = r.get("swap_long"), r.get("swap_short")
             if lo is None or sh is None:
                 continue
-            series.setdefault(str(syms[0]), []).append(
-                (str(r.get("found_at", "")), float(lo), float(sh)))
-    for v in series.values():
-        v.sort()
-    return series
+            sym = str(syms[0])
+            found = str(r.get("found_at", ""))
+            series.setdefault(sym, []).append((_when(found) or floor, found, float(lo), float(sh)))
+            seen = _when(r.get("observed_at"))
+            if (captured is not None and seen is not None and _when(r.get("last_evidence_at"))
+                    and seen > best.get(sym, floor)):
+                best[sym] = seen
+                captured[sym] = seen.isoformat(timespec="seconds")
+    out: dict[str, list[tuple[str, float, float]]] = {}
+    for sym, v in series.items():
+        v.sort(key=lambda x: (x[0], x[1]))
+        out[sym] = [(found, lo, sh) for _, found, lo, sh in v]
+    return out
 
 
 def _last_close(symbol: str, universe_dir: Path) -> float | None:
@@ -355,7 +379,7 @@ def feed_status(feed: dict[str, Any] | None, now: datetime | None = None) -> dic
     """The swap feed's status RECOMPUTED here: age from `last_capture_at` against this clock, so a
     report the box stopped rewriting still goes STALE. Absent is MISSING, never usable."""
     now = now or datetime.now(UTC)
-    if not feed:
+    if not isinstance(feed, dict) or not feed:
         return {"status": "MISSING", "usable": False, "age_h": None,
                 "why": f"{_FRESHNESS.name} absent: no box capture has ever been recorded"}
     stale_h = float(feed.get("stale_after_h") or 26.0)
@@ -388,7 +412,8 @@ def build(panel_dir: Path | None = None, terms_dir: Path | None = None,
     terms_dir = terms_dir or _TERMS
     universe_dir = universe_dir or _UNIVERSE
 
-    panel = _load_panel(panel_dir)
+    captured: dict[str, str] = {}
+    panel = _load_panel(panel_dir, captured)
     terms = _load_terms(terms_dir)
     reg_path = universe_dir / "universe.json"
     try:
@@ -429,6 +454,7 @@ def build(panel_dir: Path | None = None, terms_dir: Path | None = None,
             "price_used": price,
             "spread_money_per_lot": None if spread_money is None else round(spread_money, 6),
             "terms_observed_at": t.get("observed_at"),
+            "last_captured_at": captured.get(sym),
             "first_obs": series[0][0],
             "last_obs": series[-1][0],
             "long": _side_report("long", series, 1, t, price, spread_money),
@@ -479,10 +505,17 @@ def swap_per_lot(state: dict, symbol: str, side: str,
     `assess()`, which renders it UNMEASURED. Substituting 0.0 reinstates exactly the defect this
     module exists to end (L1.28a).
     """
-    if not feed_status(state.get("feed"), now)["usable"]:     # STALE, UNMEASURED or MISSING
+    feed = feed_status(state.get("feed"), now)
+    if not feed["usable"]:                                     # STALE, UNMEASURED or MISSING
         return None
     sym = (state.get("symbols") or {}).get(symbol)
-    if not sym:
+    if not isinstance(sym, dict):
+        return None
+    # A PARTIAL feed vouches only for the symbols it captured: each symbol is aged on its own last
+    # capture, so one fresh symbol never lends its age to 247 the terminal stopped answering for.
+    own = feed_status({**state["feed"], "last_capture_at": sym.get("last_captured_at"),
+                       "status": "FRESH"}, now)
+    if not own["usable"]:
         return None
     leg = sym.get(side)
     if not leg:

@@ -122,3 +122,61 @@ def test_the_seed_miner_stamps_the_registry_reading_time(tmp_path: Path,
     assert eur["found_at"] == eur["observed_at"] == "2026-09-03T04:40:20+00:00"
     assert ("GBPUSD", "swap_table") not in rows                 # no reading time: UNMEASURED
     assert ("GBPUSD", "unmeasured") in rows
+
+
+def test_corrupt_freshness_or_state_files_self_heal_and_never_read_fresher(box: Path) -> None:
+    (box / "BROKER_SWAPS_FRESHNESS.json").write_text("[]")
+    (box / "swap_panel_state.json").write_text('{"EURUSD": 7}')
+    doc = tape.publish_swap_panel(_terms(T0), now=T0)
+    assert doc["status"] == "FRESH" and len(_panels(box)) == 1
+    later = T0 + timedelta(hours=tape.SWAP_STALE_H + 1)
+    (box / "BROKER_SWAPS_FRESHNESS.json").write_text('"garbage"')
+    doc = tape.publish_swap_panel(_terms(later, connected=False), now=later)
+    assert doc["status"] == "UNMEASURED"              # no trusted previous capture: fails closed
+
+
+def test_the_broker_clock_converts_without_a_tz_database(monkeypatch: pytest.MonkeyPatch) -> None:
+    import zoneinfo
+
+    def missing(key: str) -> None:
+        raise zoneinfo.ZoneInfoNotFoundError(key)
+    monkeypatch.setattr(zoneinfo, "ZoneInfo", missing)
+    for wall, utc in ((datetime(2026, 7, 15, 12, 0), "2026-07-15T09:00:00+00:00"),
+                      (datetime(2026, 1, 15, 12, 0), "2026-01-15T10:00:00+00:00"),
+                      (datetime(2026, 3, 8, 10, 30), "2026-03-08T07:30:00+00:00"),  # 03:30 EDT
+                      (datetime(2026, 3, 8, 8, 30), "2026-03-08T06:30:00+00:00")):  # 01:30 EST
+        sec = int(wall.replace(tzinfo=UTC).timestamp())
+        assert tape.broker_epoch_to_utc(sec) == utc, wall
+
+
+def test_a_spring_gap_quote_takes_the_earlier_instant() -> None:
+    # 2026-03-08 02:30 New York does not exist; broker wall 09:30 epoch. Fold 0 reads 07:30 UTC
+    # (an hour fresher), fold 1 reads 06:30 UTC: the earlier reading can only age the quote.
+    sec = int(datetime(2026, 3, 8, 9, 30, tzinfo=UTC).timestamp())
+    assert tape.broker_epoch_to_utc(sec) == "2026-03-08T06:30:00+00:00"
+
+
+def test_the_broker_clock_is_measured_from_the_newest_live_quote(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    summer = datetime(2026, 7, 15, 12, 0, tzinfo=UTC)
+    live = summer.timestamp() + 3 * 3600 - 20          # broker = UTC+3, quote 20 s old
+    got = tape.broker_clock([live, live - 900, None], summer)
+    assert got["verdict"] == "MATCH" and got["observed_offset_h"] == 3
+    assert tape.broker_clock([live - 3600], summer)["verdict"] == "MISMATCH"
+    weekend = tape.broker_clock([summer.timestamp() - 40 * 3600], summer)
+    assert weekend["verdict"] == "UNMEASURED" and weekend["expected_offset_h"] == 3
+    assert tape.broker_clock([], summer)["verdict"] == "UNMEASURED"
+    winter = datetime(2026, 1, 15, 12, 0, tzinfo=UTC)
+    want = tape.broker_clock([winter.timestamp() + 2 * 3600], winter)
+    assert want["verdict"] == "MATCH"
+
+    import builtins
+    real = builtins.__import__
+
+    def no_tz(name: str, *a: Any, **k: Any) -> Any:
+        if name == "zoneinfo":
+            raise KeyError(name)
+        return real(name, *a, **k)
+    monkeypatch.setattr(builtins, "__import__", no_tz)
+    assert tape.broker_clock([winter.timestamp() + 2 * 3600], winter) == want
+    assert tape.broker_clock([live], summer)["verdict"] == "MATCH"
