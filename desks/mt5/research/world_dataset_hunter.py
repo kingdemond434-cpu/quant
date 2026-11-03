@@ -649,11 +649,13 @@ def merge_observations(existing: Any, series: list[dict[str, Any]], *, now: date
     rows = []
     for s in series:
         freq = s.get("freq") or ""
+        per_lag = s.get("lag_by_period") or {}
         for per, val in s["points"]:
             end, f = period_end(per, freq)
             if end is None:
                 continue
-            lag = lag_days(f or freq, declared_lag)
+            lag = (max(0, int(per_lag[per])) if per in per_lag
+                   else lag_days(f or freq, declared_lag))
             rows.append((s["code"], per, pd.Timestamp(end, tz="UTC"), float(val),
                          pd.Timestamp(end, tz="UTC") + pd.Timedelta(days=lag)))
     if not rows:
@@ -747,6 +749,14 @@ def frame_from_payload(raw: bytes, mode: str, spec: dict[str, Any]) -> Any:
         return _cpc_ascii_frame(raw, str(spec.get("series_code") or "index"))
     if mode == "eia_v2":
         return _eia_v2_frame(raw, str(spec.get("series_code") or "value"))
+    if mode == "mof_weekly":
+        return _mof_weekly_frame(raw)
+    if mode == "tic_slt":
+        return _tic_slt_frame(raw, str(spec.get("series_prefix") or "tic"))
+    if mode == "ecb_sdmx_csv":
+        return _ecb_sdmx_csv_frame(raw)
+    if mode == "z1_ddp_zip":
+        return _z1_ddp_frame(raw)
     if mode == "json_records":
         doc = json.loads(raw.decode("utf-8", "replace"))
         recs = doc.get(spec["data_key"]) if spec.get("data_key") else doc
@@ -916,13 +926,20 @@ def _eia_v2_frame(raw: bytes, code: str) -> Any:
 
 def series_from_long(df: Any, *, freq: str = "", hint: str = "") -> list[dict[str, Any]]:
     out = []
-    dim_cols = [c for c in df.columns if c not in ("series_code", "period", "value")]
+    dim_cols = [c for c in df.columns if c not in ("series_code", "period", "value", "lag_days")]
     for code, g in df.groupby("series_code", sort=False):
         dims = {c: str(g[c].iloc[0]) for c in dim_cols} if dim_cols else {}
         pts = [(str(p), float(v)) for p, v in zip(g["period"], g["value"], strict=False)]
         fq = freq or dims.get("FREQ", "")
-        out.append({"code": str(code), "name": f"{hint} {code}".strip(), "freq": norm_freq(fq),
-                    "dims": dims, "points": pts})
+        row: dict[str, Any] = {"code": str(code), "name": f"{hint} {code}".strip(),
+                               "freq": norm_freq(fq), "dims": dims, "points": pts}
+        if "lag_days" in g.columns:
+            # A PER-PERIOD release lag (a publisher whose release slips around holidays): the
+            # stamp a period gets, overriding the spec's one lag for that period only.
+            row["lag_by_period"] = {str(p): int(lg) for p, lg in
+                                    zip(g["period"], g["lag_days"], strict=False)
+                                    if lg == lg}
+        out.append(row)
     return out
 
 
@@ -961,6 +978,7 @@ def direct_sources(now: datetime | None = None) -> list[dict[str, Any]]:
                  "od/avg_interest_rates?sort=-record_date&page%5Bsize%5D=10000")},
     ]
     out += gap_doors()
+    out += fund_flow_doors()
     for sid in _fred_ids():
         out.append({"provider": "FRED", "dataset": sid, "name": f"FRED {sid}", "mode": "csv",
                     "url": ("https://fred.stlouisfed.org/graph/fredgraph.csv?"
@@ -1037,6 +1055,293 @@ def gap_doors() -> list[dict[str, Any]]:
                     "currencies": ["USD", "CAD"] if kind == "petroleum" else ["USD"],
                     "url": (f"https://api.eia.gov/v2/seriesid/{sid}?"
                             "api_key={api_key}&length=5000")})
+    return out
+
+
+# ----------------------------------------------- fund-flow gap doors (data-class gap #1) ----
+#: FUND FLOWS (DATA_CLASS_GAP #1, score 7.07, no producer before this). Four official publishers
+#: of cross-border and fund flows, each a direct door landing in THIS store, so `build_exposure`
+#: maps the series to the hypothesis-lane symbols and `world_macro_proposer` mints
+#: `world_macro_state` cells (a z-score band on one flow series) the sealed gauntlet judges as a
+#: state for USDJPY, JPN225, EURUSD, US500 and the rest. Terms are rows of the ONE register:
+#: `jp_mof` (PUBLIC_PAGE, PDL 1.0), `ecb_data_portal` (API_PERMITTED, ESCB reuse policy),
+#: `fed_board` (PUBLIC_PAGE, public domain), `us_tic` (IDEAS_ONLY: no clause read). A door on an
+#: IDEAS_ONLY row is refused at `urllib_fetch` (`terms_fenced`) and its missed-growth line is
+#: published in the report (`terms_doors`); its parser is still built and pinned on fixtures.
+_MOF_ITS = ("https://www.mof.go.jp/policy/international_policy/reference/"
+            "itn_transactions_in_securities/")
+_TIC_DOCS = "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/"
+_ECB_IVF = "https://data-api.ecb.europa.eu/service/data/IVF/"
+_Z1_DATA = "https://www.federalreserve.gov/releases/z1/data/"
+
+#: MoF weekly columns F2..F23 (week.csv, read 2026-10-29): per side, equity (acquisition,
+#: disposition, net), long-term debt (acq, disp, net), subtotal net, short-term debt (acq, disp,
+#: net), total net. Unit 100 million yen. Side 1 = portfolio investment ASSETS (residents of
+#: Japan buying and selling FOREIGN securities); side 2 = LIABILITIES (non-residents buying and
+#: selling JAPANESE securities). Only the NET columns are kept: the flow is the state.
+_MOF_NET_COLS = {3: "jp_outward_equity_net", 6: "jp_outward_ltdebt_net",
+                 7: "jp_outward_subtotal_net", 10: "jp_outward_stdebt_net",
+                 11: "jp_outward_total_net", 14: "foreign_inward_equity_net",
+                 17: "foreign_inward_ltdebt_net", 18: "foreign_inward_subtotal_net",
+                 21: "foreign_inward_stdebt_net", 22: "foreign_inward_total_net"}
+_MOF_WEEK = re.compile(r"^\s*(\d{4})\s*[.]\s*(\d{1,2})\s*[.]\s*(\d{1,2})\s*[~\u301c-]\s*"
+                       r"(?:(\d{4})\s*[.]\s*)?(\d{1,2})\s*[.]\s*(\d{1,2})\s*$")
+
+#: MoF RELEASE TIME (schedule.htm, read 2026-10-29): "Release time is 8:50 AM (Japan Standard
+#: Time)", normally the Thursday after the Sunday-Saturday week, but holiday weeks slip: the
+#: 2026 calendar shows Friday releases (Oct 16, Nov 6, Nov 27) and Sep 13-19 + Sep 20-26 both
+#: released Thu Oct 1 (12 days after the first week ended). A week's value is therefore stamped
+#: Saturday + 6 days (Friday 00:00 UTC = 09:00 JST, after a Friday 08:50 release), and a week
+#: ending inside a Japanese holiday cluster (Golden Week, Silver Week, year end) + 14 days. Late
+#: only costs edge; early would invent it. A value the hunter watches arrive is keyed on its own
+#: first_seen_utc whenever that is later (`pit_series`).
+_MOF_LAG_D = 6
+_MOF_HOLIDAY_LAG_D = 14
+_MOF_HOLIDAY_WINDOWS = (((4, 25), (5, 10)), ((9, 13), (9, 23)), ((12, 20), (12, 31)),
+                        ((1, 1), (1, 10)))
+
+
+def _mof_lag(week_end: date) -> int:
+    md = (week_end.month, week_end.day)
+    return (_MOF_HOLIDAY_LAG_D if any(a <= md <= b for a, b in _MOF_HOLIDAY_WINDOWS)
+            else _MOF_LAG_D)
+
+
+def _decode_jp(raw: bytes) -> str:
+    """MoF CSVs are Shift_JIS (cp932); a UTF-8 copy is accepted too."""
+    for enc in ("utf-8-sig", "cp932"):
+        try:
+            return raw.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    return raw.decode("cp932", "replace")
+
+
+def _mof_weekly_frame(raw: bytes) -> Any:
+    """MoF `week.csv` -> one row per (net series, week). The period cell reads like
+    `2005.1.2~ 1.8` or `2006.12.31~ 2007.1.6`, written with FULL-WIDTH stops and tilde
+    (U+FF0E, U+FF5E) and NFKC-normalised here before the match; the
+    period is stamped so `period_end` (period + 6 days for weekly) is the week's own last day,
+    and `lag_days` carries the per-week release lag. Non-data rows (title, units, headers,
+    blanks) have no parseable period and are skipped; a file with none is unparseable."""
+    import csv
+    import unicodedata
+
+    import pandas as pd
+
+    rows: list[dict[str, Any]] = []
+    for rec in csv.reader(io.StringIO(_decode_jp(raw))):
+        if not rec:
+            continue
+        m = _MOF_WEEK.match(unicodedata.normalize("NFKC", rec[0]))
+        if not m:
+            continue
+        try:
+            start = date(int(m[1]), int(m[2]), int(m[3]))
+            end = date(int(m[4] or m[1]), int(m[5]), int(m[6]))
+        except ValueError:
+            continue
+        if end < start:                       # `2006.12.31~ 1.6` written without the new year
+            end = date(end.year + 1, end.month, end.day)
+        if not 0 <= (end - start).days <= 7:
+            continue
+        period = (end - timedelta(days=6)).isoformat()
+        for idx, code in _MOF_NET_COLS.items():
+            if idx >= len(rec):
+                continue
+            v = _num_or_none(unicodedata.normalize("NFKC", rec[idx]).strip())
+            if v is not None:
+                rows.append({"series_code": code, "period": period, "value": v,
+                             "lag_days": _mof_lag(end)})
+    df = pd.DataFrame(rows, columns=["series_code", "period", "value", "lag_days"])
+    if df.empty:
+        raise FetchError("unparseable", "mof weekly: no week rows")
+    return df
+
+
+#: TIC slt_table1.txt / slt_table2.txt (read 2026-10-29): five preamble lines, then three header
+#: rows (groups, display names, machine field names `country country_code date for_lt_*`), then
+#: tab-separated rows per country and month (`2026-08`), newest first; "n.a." is absent, never 0.
+#: Table 1 is FOREIGN holdings of US long-term securities, its `*_net` the net US sales to
+#: foreigners (positive = foreign position up); table 2 is US holdings of FOREIGN securities.
+#: Kept: the net-flow fields of every country the hunter's fact table names, plus total rows.
+#: RELEASE (release-dates-of-tic-data, read 2026-10-29): "All data releases occur at 4 p.m.
+#: Washington, D.C. time", month M in mid-month M+2; the 2026 maximum is 49 days after the
+#: month ends (Feb 18 for December), so a month is stamped month end + 50 days. Pre-2026 release
+#: dates were not read (the 2025 shutdown may have delayed some): UNMEASURED.
+_TIC_LAG_D = 50
+
+
+def _tic_slt_frame(raw: bytes, prefix: str) -> Any:
+    import pandas as pd
+
+    lines = raw.decode("utf-8-sig", "replace").splitlines()
+    head = next((i for i, ln in enumerate(lines[:40])
+                 if ln.split("\t")[:3] == ["country", "country_code", "date"]), None)
+    if head is None:
+        raise FetchError("unparseable", "tic slt: no machine field-name row")
+    fields = [f.strip() for f in lines[head].split("\t")]
+    keep = [(i, f) for i, f in enumerate(fields) if f.endswith("_net")]
+    rows: list[dict[str, Any]] = []
+    for ln in lines[head + 1:]:
+        tok = ln.split("\t")
+        if len(tok) < len(fields) or not re.fullmatch(r"\d{4}-\d{2}", tok[2].strip()):
+            continue
+        country = tok[0].strip()
+        low = country.lower()
+        if not (low in _NAME_TO_ISO2 or "total" in low or low.startswith("all countries")):
+            continue
+        for i, f in keep:
+            v = _num_or_none(tok[i].strip())
+            if v is not None:
+                rows.append({"series_code": f"{prefix}_{_slug(country)}_{f}",
+                             "period": tok[2].strip(), "value": v,
+                             "country": country})
+    df = pd.DataFrame(rows, columns=["series_code", "period", "value", "country"])
+    if df.empty:
+        raise FetchError("unparseable", "tic slt: no country rows")
+    return df
+
+
+#: ECB SDMX `format=csvdata`: one row per observation, KEY + TIME_PERIOD + OBS_VALUE (+ TITLE
+#: when the API sends it). IVF monthly; the ECB's own release lag for monthly investment fund
+#: statistics was not read on 2026-10-29: stamped month end + 45 days, release time UNMEASURED.
+_ECB_IVF_LAG_D = 45
+_ECB_IVF_KEYS = (
+    # Total investment funds, investment fund shares/units, total maturity, NET ISSUES (flows),
+    # world not allocated, all currencies, euro (dimension labels read on the ECB Data Portal
+    # series page 2026-10-29): euro-area fund net sales, the EPFR-class demand state in public.
+    ("M.U2.N.T0.L30.A.0.Z5.0000.Z01.E", "ecb_ivf_total_funds_net_issues"),
+)
+
+
+def _ecb_sdmx_csv_frame(raw: bytes) -> Any:
+    import pandas as pd
+
+    df = pd.read_csv(io.StringIO(raw.decode("utf-8-sig", "replace")), low_memory=False)
+    need = {"KEY", "TIME_PERIOD", "OBS_VALUE"}
+    if not need <= set(df.columns):
+        raise FetchError("unparseable", "ecb csvdata without KEY/TIME_PERIOD/OBS_VALUE")
+    out = pd.DataFrame({"series_code": df["KEY"].astype(str),
+                        "period": df["TIME_PERIOD"].astype(str).str.strip(),
+                        "value": pd.to_numeric(df["OBS_VALUE"], errors="coerce")})
+    out = out.dropna(subset=["value"])
+    if out.empty:
+        raise FetchError("empty", "ecb csvdata")
+    return out
+
+
+#: Fed Z.1 (releases/z1, read 2026-10-29): quarterly, "typically released during the second week
+#: of March, June, September, and December", next at 12:00 noon ET. 2023-2026 releases were
+#: 68-100 days after quarter end (2025:Q3 on 2026-01-09 after the shutdown, 2025:Q4 on 2026-03-19
+#: at 78): stamped quarter end + 80 days, 2025:Q3 + 101. The package is the Data Download Program
+#: CSV zip (`FRB_Z1_csv.zip`): DDP layout, metadata rows then `Time Period` + series ids. Kept:
+#: the sector prefixes whose flows are fund flows -- rest of world (26), money market funds (63),
+#: mutual funds (65), ETFs (56) -- as unadjusted flows (FU) and levels (FL). The live zip's inner
+#: layout and size were not readable from the build sandbox: UNMEASURED until the box fetches it.
+_Z1_LAG_D = 80
+_Z1_LAG_OVERRIDE = {"2025Q3": 101}
+_Z1_PREFIXES = ("FU26", "FU63", "FU65", "FU56", "FL63", "FL65", "FL56")
+_Z1_MAX_SERIES = 600
+
+
+def _ddp_rows(text: str) -> list[tuple[str, str, float]]:
+    """One DDP 'seriescolumn' CSV -> (series id, period, value). Metadata rows precede the
+    `Time Period` row, whose cells are the series ids; ND / NA cells are absent."""
+    import csv
+
+    out: list[tuple[str, str, float]] = []
+    ids: list[str] | None = None
+    for rec in csv.reader(io.StringIO(text)):
+        if not rec:
+            continue
+        first = rec[0].strip()
+        if ids is None:
+            if first.lower() == "time period":
+                ids = [c.strip().split("/")[-1] for c in rec[1:]]
+            continue
+        if not re.fullmatch(r"\d{4}(?:Q[1-4]|-\d{2}(?:-\d{2})?)?", first):
+            continue
+        for sid, cell in zip(ids, rec[1:], strict=False):
+            v = _num_or_none(cell.strip())
+            if v is not None and sid:
+                out.append((sid, first, v))
+    return out
+
+
+def _z1_ddp_frame(raw: bytes) -> Any:
+    import pandas as pd
+
+    rows: list[dict[str, Any]] = []
+    with zipfile.ZipFile(io.BytesIO(raw)) as zf:
+        for name in zf.namelist():
+            if not name.lower().endswith(".csv"):
+                continue
+            text = zf.read(name).decode("utf-8-sig", "replace")
+            for sid, per, v in _ddp_rows(text):
+                if not sid.upper().startswith(_Z1_PREFIXES):
+                    continue
+                rows.append({"series_code": sid.upper(), "period": per, "value": v,
+                             "lag_days": _Z1_LAG_OVERRIDE.get(per, _Z1_LAG_D)})
+    df = pd.DataFrame(rows, columns=["series_code", "period", "value", "lag_days"])
+    if df.empty:
+        raise FetchError("unparseable", "z1 ddp: no fund-flow sector series")
+    keep = sorted(df["series_code"].unique())[:_Z1_MAX_SERIES]
+    return df[df["series_code"].isin(keep)]
+
+
+def fund_flow_doors() -> list[dict[str, Any]]:
+    """The fund-flow doors as direct specs (`direct_sources` appends them)."""
+    out: list[dict[str, Any]] = [
+        {"provider": "JP_MOF", "dataset": "ITS_WEEKLY",
+         "name": ("Japan Ministry of Finance weekly international transactions in securities: "
+                  "net purchases of foreign stocks and bonds by residents of Japan and of "
+                  "Japanese stocks and bonds by foreign investors (100 million yen)"),
+         "mode": "mof_weekly", "freq": "weekly", "lag_days": _MOF_LAG_D,
+         "currencies": ["JPY"], "url": _MOF_ITS + "week.csv"}]
+    for table, side, prefix in (("slt_table1", "foreign purchases of United States long-term "
+                                 "securities", "foreign_in"),
+                                ("slt_table2", "United States purchases of foreign long-term "
+                                 "securities", "us_out")):
+        out.append({"provider": "US_TIC", "dataset": table,
+                    "name": f"US Treasury TIC monthly {side} by country (net, USD millions)",
+                    "mode": "tic_slt", "series_prefix": prefix, "freq": "monthly",
+                    "lag_days": _TIC_LAG_D, "currencies": ["USD"],
+                    "url": _TIC_DOCS + f"{table}.txt"})
+    for key, code in _ECB_IVF_KEYS:
+        out.append({"provider": "ECB_IVF", "dataset": code,
+                    "name": ("ECB euro area investment fund statistics: investment fund shares "
+                             "net issues, total funds (euro)"),
+                    "mode": "ecb_sdmx_csv", "freq": "monthly", "lag_days": _ECB_IVF_LAG_D,
+                    "currencies": ["EUR"], "url": _ECB_IVF + key + "?format=csvdata"})
+    out.append({"provider": "FED_Z1", "dataset": "FUND_FLOWS",
+                "name": ("Federal Reserve Z.1 Financial Accounts of the United States: rest of "
+                         "world, money market fund, mutual fund and ETF flows and levels"),
+                "mode": "z1_ddp_zip", "freq": "quarterly", "lag_days": _Z1_LAG_D,
+                "currencies": ["USD"], "url": _Z1_DATA + "FRB_Z1_csv.zip"})
+    return out
+
+
+def terms_doors() -> list[dict[str, Any]]:
+    """Every direct door's reading in the ONE register: its row, live status and terms state.
+    A door the register refuses as live input carries `terms_fence.held_missed_growth` (kind
+    ideas_only_refusal, delta E[log W] UNMEASURED) -- the growth governance line for the hold."""
+    from libs.data import terms_fence as _tf
+
+    out: list[dict[str, Any]] = []
+    for spec in direct_sources():
+        url = str(spec.get("url") or "")
+        key = _tf.source_of_url(url)
+        refused = _tf.input_source(url)
+        row: dict[str, Any] = {"door": f"{spec['provider']}/{spec['dataset']}",
+                               "policy_row": key,
+                               "status": _tf.live_input_status(key) if key else "UNLISTED",
+                               "terms_state": _tf.terms_state(key) if key else _tf.UNREAD,
+                               "live_input": "REFUSED" if refused else "PERMITTED"}
+        if refused:
+            row["missed_growth"] = _tf.held_missed_growth(refused, source=row["door"],
+                                                          live_input_refusal=True)
+        out.append(row)
     return out
 
 
@@ -1825,6 +2130,8 @@ def build_report(cat: dict[str, Any], exposure: dict[str, Any], *, stats: Counte
         "http_failures_by_reason": dict(client.failures),
         "quality_by_reason": dict(qstats),
         "legacy_discovered": cat.get("legacy") or UNMEASURED,
+        # every direct door's row in the one terms register; a refused door's missed growth
+        "terms_doors": _terms_doors_or_unmeasured(),
         "registry": registry,
         "research_door": ("reports/WORLD_MACRO_PROPOSER.json <- world_macro_proposer reads "
                           "exposure.json and mints world_macro_state cells; the family reloads "
@@ -1832,6 +2139,13 @@ def build_report(cat: dict[str, Any], exposure: dict[str, Any], *, stats: Counte
         "rule": ("absence is UNMEASURED, never 0; every observation carries available_time and "
                  "first_seen_utc; a revision is a new row, never an overwrite"),
     }
+
+
+def _terms_doors_or_unmeasured() -> Any:
+    try:
+        return terms_doors()
+    except Exception as exc:                       # the register unreadable is a reading too
+        return {"state": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:200]}
 
 
 def main(argv: list[str] | None = None) -> int:

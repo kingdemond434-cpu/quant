@@ -286,6 +286,8 @@ LEG_LAYER: dict[str, str] = {
     "data_class_gap": "information",
     # every certificate's inputs joined to the one terms register: the machine auditing itself
     "terms_basis_census": "meta",
+    # dated central-bank press documents: information the text legs read
+    "central_bank_miner": "information",
     # the alt seats' readings as PIT series, and Form 4 filings as clusters + a breadth series:
     # both turn a public source into a dated input the families condition on (2026-10-14)
     "alt_seat_cells": "information",

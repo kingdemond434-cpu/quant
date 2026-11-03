@@ -535,6 +535,7 @@ desks/mt5/data/VECTOR_FAMILIES_MISMATCH.json
 desks/mt5/data/VECTOR_FAMILIES_MISMATCH.json.tmp
 !desks/mt5/reports/DATA_CLASS_GAP.json
 !desks/mt5/reports/TERMS_BASIS_CENSUS.json
+!desks/mt5/reports/CENTRAL_BANK_MINER.json
 # Judge-owned box state, read on the box only (audit of PR #290): never published by a git add sweep.
 desks/mt5/data/hypotheses/unrunnable_specs.json
 desks/mt5/data/hypotheses/unrunnable_specs.json.tmp

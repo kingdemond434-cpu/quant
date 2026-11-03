@@ -1224,6 +1224,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE DATA-CLASS GAP LIST AND THE TERMS-BASIS CENSUS (2026-10-29): two report-only readers of
     # the repo, the register and the certificate canon; seconds each, so every hour.
     "data_class_gap", "terms_basis_census",
+    # THE DATED CENTRAL-BANK DOCUMENT STREAM (data-class gap #6, 2026-10-29): six RSS feeds
+    # through the polite door, seconds a pass; its archive is the text the NLP legs read.
+    "central_bank_miner",
     "wiring_ceo", "live_system_state", "hazard_engine", "posterior_alpha", "semantic_memory",
     "model_role_benchmark", "research_departments", "qd_frontier", "value_of_data",
     "research_api_status", "artifact_chain", "residual_queue", "unseen_frontier",
@@ -1337,7 +1340,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "sandbox_roster", "proposer_seat", "kimi_hunt",
                      # Derives each instrument's own session from its own bars and mints the
                      # breakout aimed at it, instead of porting gold's hours everywhere.
-                     "session_structure"),
+                     "session_structure",
+                     # dated central-bank press documents (attention for the text legs)
+                     "central_bank_miner"),
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "session_variant_remap",
@@ -2207,6 +2212,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # box; the cap is generous so a cold disk never truncates the artifact.
     "data_class_gap": 180,
     "terms_basis_census": 180,
+    # Six feeds, each one robots read (12 s cap) plus one GET (20 s, one retry), sequential:
+    # ~200 s worst case; the cap sits above it so a slow feed never truncates the report.
+    "central_bank_miner": 300,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
     "replication_civilization": 1_000,
@@ -4295,6 +4303,13 @@ def main() -> None:
     tbc = _costed("terms_basis_census", lambda: _producer("terms_basis_census",
                                                           "research/terms_basis_census.py",
                                                           "--once"))
+    # THE DATED CENTRAL-BANK DOCUMENT STREAM (data-class gap #6, text sentiment by language):
+    # the Fed/ECB/BoJ/BoE/RBA/BoC press feeds, fetched through polite_fetch (robots first; a
+    # 403 holds the site for a person), appended to central_banks/cb_documents.jsonl, which
+    # nlp_event_factors and the compiler read. Report: reports/CENTRAL_BANK_MINER.json.
+    cbm = _costed("central_bank_miner", lambda: _producer("central_bank_miner",
+                                                          "side_channels/central_bank_miner.py",
+                                                          "--once"))
     # NOTHING IS PARKED (principal 2026-09-23): every queue in the desk, its depth, its oldest
     # row's age and its measured drain rate, in one artifact. scripts/check_no_queues.py fences it.
     qcn = _costed("queue_census", lambda: _producer("queue_census", "research/queue_census.py",
@@ -6257,6 +6272,7 @@ def main() -> None:
                     "semantic_memory": smm, "model_role_benchmark": mrb,
                     "live_system_state": lss, "tier1_scorecard": t1s, "tier1_gap": t1g,
                     "data_class_gap": dcg, "terms_basis_census": tbc,
+                    "central_bank_miner": cbm,
                     "wiring_ceo": wce,
                     "queue_census": qcn,
                     "research_departments": rdp, "qd_frontier": qdf, "blind_reviewer": bvr,
