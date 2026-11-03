@@ -249,7 +249,7 @@ def _forced_cells(cluster: str, universe: dict[str, Any], turn: int
         if not picks:
             return fam, [], ("no free implied-vol series is readable on this host -- "
                              + "; ".join(gaps[:1]) + " (LIVE's FRED pull registers VIXCLS in "
-                             "data/data_registry.json `fred_macro`; the box's copy is the source)")
+                             "data/data_registry.json; the box's copy is the source)")
         start = (turn * CELLS_PER_CLUSTER) % len(picks)
         picks = (picks[start:] + picks[:start])[:CELLS_PER_CLUSTER]
     elif cluster == "news_reaction":

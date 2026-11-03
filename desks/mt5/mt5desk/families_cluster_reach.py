@@ -57,6 +57,10 @@ FRED_MACRO = REPO / "data" / "fred_macro.json"
 #: The lake copy written by `research/fetch_fred.py`.
 LAKE = DESK / "data" / "lake"
 
+#: Whole days between an implied print dated d and the first bar it may condition (see the module
+#: docstring: the bar clock is broker time, so one day lands before the print exists).
+IMPLIED_PUBLICATION_LAG_D = 2
+
 #: Implied-vol series the family accepts, and the MT5 underlyings each one prices. Only VIXCLS is
 #: in LIVE's registered FRED pull today; the others are read when the store holds them.
 IMPLIED_UNDERLYINGS: dict[str, tuple[str, ...]] = {
@@ -232,7 +236,7 @@ def family_implied_vol(
     z_window: int = 252,
     z_entry: float = 1.0,
     hold_d: int = 5,
-    lag_days: int = 2,
+    lag_days: int = IMPLIED_PUBLICATION_LAG_D,
     side_bias: int = 1,
     atr_n: int = 20,
     stop_atr: float = 2.0,
