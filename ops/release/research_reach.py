@@ -8,17 +8,21 @@ path. This module MEASURES MORE AND EXEMPTS NOTHING: a file leaves UNMEASURED on
 proofs, both recorded in the report (ops/release spec REPLAY_RESEARCH_REACH, the Auditor's six
 conditions of 2026-11-03 18:20Z):
 
-1. SUPERSET (AST, nothing run). The file's module body is AST-identical to the base's except for
-   module-level registry literals that only GREW: new dict keys, new set members, members appended
-   to a tuple or list, with every existing key and value byte-identical (as an ast). Every added
-   key and value is a plain literal. No added key may collide with any other key of the same
-   literal (an override), every key of the literal must be statically visible, and no file in the
-   head's closure may mutate or rebind the name (`.update()`, `NAME[k] =`, `|=`, a second binding).
-   No other file this PR changes may mention the name (code that reads the registry). Lane-policy
-   sets never qualify: universe_policy.py as a whole, any name that reads as a symbol, class, lane,
-   sleeve, account, book or routing table, and any added member that reads as an instrument.
-   Adding to one of those is a principal-order lane boundary: a measured scenario or a ceilings
-   row.
+1. SUPERSET (AST proof, then the slice). The file's module body is AST-identical to the base's
+   except for module-level registry literals that only GREW: new dict keys, new set members,
+   members appended to a tuple or list, with every existing key and value byte-identical (as an
+   ast). Every added key and value is a plain literal. No added key may collide with any other key
+   of the same literal (an override), every key of the literal must be statically visible, and no
+   file in the head's closure may mutate or rebind the name (`.update()`, `NAME[k] =`, `|=`, a
+   second binding). No other file this PR changes may mention the name (code that reads the
+   registry). Lane-policy sets never qualify: universe_policy.py as a whole, any name that reads as
+   a symbol, class, lane, sleeve, account, book, market, session or routing table (LANE_WORDS, as
+   substrings), and any added key or member that is a symbol or asset class of either tree's
+   universe.json (or reads as one). Adding to one of those is a principal-order lane boundary: a
+   measured scenario or a ceilings row. Deny, exclude and retire registries (DENY_WORDS) never
+   qualify either: adding to one REMOVES behaviour. A proven file is covered only if the
+   allocator's money outputs on the pinned slice are also identical, base against head (its line
+   trace is waived: a literal runs at import, so no line of it can be traced).
 
 2. LINE TRACE on the pinned slice. research_child.py runs the capital allocator on the pinned tape
    slice (ops/release/research_slice, its manifest's sha256 pinned in SLICE_SHA256 here) once on
@@ -67,22 +71,41 @@ SCOPE = ("desks/mt5/research/", "libs/research/")
 #: Condition 5: never through this path, whatever directory it sits in (matched on the file stem).
 NEVER = re.compile(
     r"gateway|decision_core|sizing|alloc|heat|kelly|executor|rail|guard|kill|e8|ftmo|fusion"
-    r"|venue|order|deadman|live_door|promot|cert|ceiling",
+    r"|venue|order|deadman|live_door|promot|cert|ceiling"
+    # #reach audit SF: stems in research/ that feed the money side (decay and retirement, the loss
+    # loop, execution cost). Substrings on purpose: a false hit only costs the manual path.
+    r"|risk|stop|exit|lot|margin|leverage|exposure|capital|position|execut|fill|slip|cost"
+    r"|decay|retire|sleeve|book|clock|live|loss|modifier|survival|drawdown",
     re.IGNORECASE,
 )
 #: Condition 4: whole files that are lane policy.
 LANE_FILES = frozenset({"desks/mt5/research/universe_policy.py"})
-#: Condition 4: a name made of any of these words is a symbol, class or lane routing table.
-LANE_WORDS = frozenset(
+#: Condition 4: a name CONTAINING any of these (as a substring, so SYMBOLMAP and PEERCLASSES
+#: match too) is a symbol, class or lane routing table. Over-matching only costs the trace.
+LANE_WORDS = (
+    "LANE", "ROUTE", "ROUTING", "SYMBOL", "CLASS", "KLASS", "UNIVERSE", "SLEEVE", "ACCOUNT",
+    "BOOK", "VENUE", "BROKER", "DESK", "INSTRUMENT", "PAIR", "CROSS_SECTIONAL", "ALLOW", "LIVE",
+    "MARKET", "TICKER", "ASSET", "PEER", "MEMBER", "SESSION", "WINDOW", "HOUR", "REGION",
+    "CURRENC", "CCY", "EXCHANGE", "EQUIT", "FX", "METAL", "INDEX", "INDIC", "CFD",
+)  # fmt: skip
+#: #reach audit MF1: a member added to a deny, exclude or retire registry REMOVES something from
+#: what the desk does; it is never a pure addition. Substrings of the registry's name.
+DENY_WORDS = (
+    "NOT", "EXCLUDE", "SKIP", "BLOCK", "DENY", "RETIRE", "DISABLE", "IGNORE", "BAN", "VETO",
+    "KILL", "STOP", "FORBID", "OFF",
+)  # fmt: skip
+#: Condition 4 backstop: an added member that reads as an instrument (EURUSD, XAUUSD.m, US500).
+#: The authority is the universe itself (`lane_values`): every symbol and asset class it lists.
+INSTRUMENT = re.compile(r"^(?:[A-Z]{6}|XA[UG][A-Z]{3}|[A-Z]{2,5}\d{2,4})(?:[._-]\w+)?$")
+UNIVERSE_JSON = "desks/mt5/data/universe/universe.json"
+#: Asset-class words, whatever the universe calls them: a member made of one is a lane boundary.
+CLASS_TOKENS = frozenset(
     {
-        "LANE", "LANES", "ROUTE", "ROUTES", "ROUTING", "SYMBOL", "SYMBOLS", "CLASS", "CLASSES",
-        "UNIVERSE", "SLEEVE", "SLEEVES", "ACCOUNT", "ACCOUNTS", "BOOK", "BOOKS", "VENUE",
-        "VENUES", "BROKER", "BROKERS", "DESK", "DESKS", "INSTRUMENT", "INSTRUMENTS", "PAIR",
-        "PAIRS", "CROSS_SECTIONAL", "ALLOWED", "ALLOW", "LIVE",
+        "fx", "forex", "exotic", "exotics", "equity", "equities", "stock", "stocks", "share",
+        "shares", "metal", "metals", "index", "indices", "crypto", "commodity", "commodities",
+        "energy", "energies", "bond", "bonds", "soft", "softs", "rates", "cfd", "cfds",
     }
 )  # fmt: skip
-#: Condition 4: an added member that reads as an instrument (EURUSD, XAUUSD.m, US500, BTCUSD).
-INSTRUMENT = re.compile(r"^(?:[A-Z]{6}|XA[UG][A-Z]{3}|[A-Z]{2,5}\d{2,4})(?:[._-]\w+)?$")
 #: Methods that change a container in place.
 MUTATORS = frozenset(
     {
@@ -262,12 +285,53 @@ def _target(stmt: ast.stmt) -> tuple[str, ast.AST, str] | None:
 
 
 def is_lane_name(name: str) -> bool:
-    words = set(name.upper().strip("_").split("_"))
-    return bool(words & LANE_WORDS) or "CROSS_SECTIONAL" in name.upper()
+    up = name.upper()
+    return any(w in up for w in LANE_WORDS)
 
 
-def superset(path: str, base_src: str, head_src: str) -> dict[str, list[str]]:
-    """{registry name: [added members]} when the change is a pure addition; raises NotSuperset."""
+def is_deny_name(name: str) -> bool:
+    up = name.upper()
+    return any(w in up for w in DENY_WORDS)
+
+
+def lane_values(texts: Iterable[str | None]) -> frozenset[str]:
+    """Every symbol and asset class the universe lists (lower case), from each tree's
+    universe.json. An unreadable universe adds nothing; the regex and CLASS_TOKENS still bind."""
+    out: set[str] = set()
+    for text in texts:
+        try:
+            doc = json.loads(text or "{}")
+        except ValueError:
+            continue
+        if not isinstance(doc, dict):
+            continue
+        for sym, row in doc.items():
+            out.add(str(sym).lower())
+            if isinstance(row, dict):
+                for k in ("symbol", "asset_class", "class", "path"):
+                    v = row.get(k)
+                    if isinstance(v, str) and v.strip():
+                        out.add(v.strip().lower())
+                        out.add(re.sub(r"\W+", "_", v.strip().lower()))
+    return frozenset(out)
+
+
+def lane_member(text: str, lanes: frozenset[str]) -> bool:
+    """Whether an added key or member reads as a symbol or an asset class."""
+    low = text.lower()
+    if INSTRUMENT.match(text) or low in lanes or re.sub(r"\W+", "_", low) in lanes:
+        return True
+    tokens = [t for t in re.split(r"[^a-z0-9]+", low) if t]
+    if any(t in CLASS_TOKENS for t in tokens):
+        return True
+    return any(len(t) >= 4 and t in lanes for t in tokens)
+
+
+def superset(
+    path: str, base_src: str, head_src: str, lanes: frozenset[str] = frozenset()
+) -> dict[str, list[str]]:
+    """{registry name: [added members]} when the change is a pure addition; raises NotSuperset.
+    `lanes` is `lane_values` of both trees' universe."""
     if path in LANE_FILES:
         raise NotSuperset("lane policy (condition 4): a measured scenario or a ceilings row")
     try:
@@ -286,12 +350,14 @@ def superset(path: str, base_src: str, head_src: str) -> dict[str, list[str]]:
         name = ht_[0]
         if is_lane_name(name):
             raise NotSuperset(f"{name} is a symbol, class or lane table (condition 4)")
+        if is_deny_name(name):
+            raise NotSuperset(f"{name} is a deny or exclude registry: adding removes behaviour")
         added: list[str] = []
         _grow(bt_[1], ht_[1], added)
         for a in added:
             text = a.strip("'\"")
-            if INSTRUMENT.match(text):
-                raise NotSuperset(f"{name} gains {a}, which reads as an instrument (condition 4)")
+            if lane_member(text, lanes):
+                raise NotSuperset(f"{name} gains {a}, a symbol or asset class (condition 4)")
         grown.setdefault(name, []).extend(added)
     if not grown:
         raise NotSuperset("no registry literal grew")
@@ -476,7 +542,9 @@ def reach(
     excused: dict[str, list[str]] = {}
     problems: list[str] = []
     others = [f for f in changed if f.endswith(".py") and not _is_test(f)]
+    lanes = lane_values([read(base, UNIVERSE_JSON), read(head, UNIVERSE_JSON)])
     trace: list[str] = []
+    proven: dict[str, dict[str, list[str]]] = {}
     for f in uncovered:
         ok, why = in_scope(f, entry)
         if not ok:
@@ -487,7 +555,7 @@ def reach(
             unmeasured[f] = "added or deleted: nothing to compare against"
             continue
         try:
-            grown = superset(f, b, h)
+            grown = superset(f, b, h, lanes)
             for name in grown:
                 for g in others:
                     if g == f:
@@ -501,23 +569,26 @@ def reach(
                         bad = mutations(src, name, defining=(g == f))
                         if bad:
                             raise NotSuperset(f"{g} changes {name}: {bad[0]}")
-            covered[f] = {"how": "superset", "added": grown}
-            excused[f] = sorted(grown)
+            proven[f] = grown
+            unmeasured[f] = "a pure addition, not yet measured on the slice"
         except NotSuperset as exc:
             trace.append(f)
             unmeasured[f] = f"not a pure addition: {exc}"
     ran = False
-    if trace:
+    # #reach audit MF2: a superset proof never stands alone. The slice runs whenever anything is
+    # proven or traced, and a proven file is covered only if the money outputs are identical (its
+    # line trace is waived: a literal runs at import, so no line of it can be traced).
+    if trace or proven:
         ran = True
         rb, rh = run(base, trace), run(head, trace)
         if "crash" in rb or rb.get("error"):
             why = rb.get("crash") or rb.get("error")
-            for f in trace:
+            for f in [*trace, *proven]:
                 unmeasured[f] += f"; the base tree cannot run the slice ({why})"[:400]
         elif "crash" in rh or rh.get("error"):
             why = rh.get("crash") or rh.get("error")
             problems.append(f"research reach: the PR's tree fails on the slice ({why})"[:500])
-            for f in trace:
+            for f in [*trace, *proven]:
                 unmeasured[f] += "; the PR's tree fails on the slice"
         else:
             mb = money(rb.get("doc") or {}, canon)
@@ -530,6 +601,13 @@ def reach(
                     f"research reach: the PR's allocator decides differently on the slice on "
                     f"{', '.join(differs)}: base {was} PR {now}"
                 )
+            for f, grown in proven.items():
+                if differs:
+                    unmeasured[f] = "a pure addition, but the money outputs differ on the slice"
+                else:
+                    covered[f] = {"how": "superset", "added": grown, "money_identical": True}
+                    excused[f] = sorted(grown)
+                    unmeasured.pop(f, None)
             for f in trace:
                 added, stand_in = changed_lines(read(base, f) or "", read(head, f) or "")
                 misses = unexecuted(read(head, f) or "", added, stand_in,

@@ -67,7 +67,13 @@ def _reader(files: dict[Path, dict[str, str]]) -> Any:
 
 
 def _no_run(tree: Path, targets: list[str]) -> dict[str, Any]:
-    raise AssertionError("a superset proof must not need the slice")
+    raise AssertionError("an out-of-scope file must never reach the slice")
+
+
+def _same(tree: Path, targets: list[str]) -> dict[str, Any]:
+    """The slice deciding identically on both trees, tracing nothing."""
+    assert targets == [], "a superset-proven file is never traced"
+    return {"error": None, "doc": {"book": {"gold_asia": 0.01}}, "hits": {}}
 
 
 def _reach(base: dict[str, str], head: dict[str, str], changed: list[str], **kw: Any) -> Any:
@@ -79,10 +85,30 @@ def _reach(base: dict[str, str], head: dict[str, str], changed: list[str], **kw:
 # ------------------------------------------------------------------------ condition 3: superset
 def test_a_new_dict_key_is_a_superset_and_excuses_only_that_knob() -> None:
     head = REG_SRC.replace('"b": "y",\n', '"b": "y",\n    "e": "w",\n')
-    rep = _reach({REG: REG_SRC}, {REG: head}, [REG], run=_no_run)
-    assert rep["covered"][REG] == {"how": "superset", "added": {"FAMILY_CLUSTER": ["'e'"]}}
+    rep = _reach({REG: REG_SRC}, {REG: head}, [REG], run=_same)
+    assert rep["covered"][REG] == {
+        "how": "superset",
+        "added": {"FAMILY_CLUSTER": ["'e'"]},
+        "money_identical": True,
+    }
     assert rep["excused_knobs"] == {REG: ["FAMILY_CLUSTER"]}
-    assert not rep["ran"]
+    assert rep["ran"], "a superset proof never stands alone: the slice runs (audit MF2)"
+
+
+def test_a_pure_addition_that_flips_money_on_the_slice_is_unmeasured() -> None:
+    head = REG_SRC.replace('"b": "y",\n', '"b": "y",\n    "e": "w",\n')
+
+    def run(tree: Path, targets: list[str]) -> dict[str, Any]:
+        book = {"gold_asia": 0.01} if tree == BASE else {"gold_asia": 0.01, "e_sleeve": 0.005}
+        return {"error": None, "doc": {"book": book}, "hits": {}}
+
+    rep = _reach({REG: REG_SRC}, {REG: head}, [REG], run=run)
+    assert REG not in rep["covered"]
+    assert "money outputs differ" in rep["unmeasured"][REG]
+    assert rep["excused_knobs"] == {}
+    assert any("decides differently on the slice on book" in p for p in rep["problems"])
+    crash = _reach({REG: REG_SRC}, {REG: head}, [REG], run=lambda t, x: {"crash": "rc 1"})
+    assert REG not in crash["covered"] and crash["excused_knobs"] == {}
 
 
 def test_a_fromkeys_member_and_a_frozenset_member_and_an_appended_tuple_member() -> None:
@@ -150,8 +176,16 @@ def test_a_changed_reader_of_the_registry_refuses_the_superset() -> None:
 def test_a_test_file_naming_the_registry_does_not_block_it() -> None:
     head = REG_SRC.replace('"b": "y",\n', '"b": "y",\n    "e": "w",\n')
     t = "desks/mt5/tests/test_clusters.py"
-    rep = _reach({REG: REG_SRC}, {REG: head, t: "FAMILY_CLUSTER\n"}, [REG, t], run=_no_run)
+    rep = _reach({REG: REG_SRC}, {REG: head, t: "FAMILY_CLUSTER\n"}, [REG, t], run=_same)
     assert rep["covered"][REG]["how"] == "superset"
+
+
+def test_a_deny_or_exclude_registry_is_never_a_superset() -> None:
+    for name in ("NOT_SOURCED_HERE", "EXCLUDED_FAMILIES", "SKIPLIST", "RETIRED", "KILLED",
+                 "BLOCKLIST", "DISABLED", "VETOES", "STOPLIST", "IGNORE"):  # fmt: skip
+        src = f'{name} = {{"a": 1}}\n'
+        with pytest.raises(rr.NotSuperset, match="deny or exclude"):
+            rr.superset(REG, src, src.replace('"a": 1', '"a": 1, "b": 2'))
 
 
 # --------------------------------------------------------------------- condition 4: lane sets
@@ -165,10 +199,31 @@ def test_lane_policy_sets_never_qualify_as_a_superset() -> None:
         src = f'{name} = {{"a": 1}}\n'
         with pytest.raises(rr.NotSuperset, match="lane table"):
             rr.superset(REG, src, src.replace('"a": 1', '"a": 1, "b": 2'))
-    src = 'FAMILY_MARKETS = {"a": 1}\n'
+    for name in ("SYMBOLMAP", "PEERCLASSES", "MARKETMAP", "TICKERSET", "CCYGROUPS", "FXSET"):
+        src = f'{name} = {{"a": 1}}\n'
+        with pytest.raises(rr.NotSuperset, match="lane table"):
+            rr.superset(REG, src, src.replace('"a": 1', '"a": 1, "b": 2'))
+    src = 'FAMILY_GROUPS = {"a": 1}\n'
     for member in ("EURUSD", "XAUUSD", "US500", "GBPJPY.m"):
-        with pytest.raises(rr.NotSuperset, match="instrument"):
+        with pytest.raises(rr.NotSuperset, match="symbol or asset class"):
             rr.superset(REG, src, src.replace('"a": 1', f'"a": 1, "{member}": 2'))
+
+
+def test_universe_symbols_and_asset_classes_are_lane_members() -> None:
+    uni = '{"AAPL": {"symbol": "AAPL", "asset_class": "Equities"}, "NVDA": {"symbol": "NVDA"},'
+    uni += ' "XAUUSD": {"asset_class": "Commodities"}}'
+    lanes = rr.lane_values([uni, None, "not json"])
+    src = 'FAMILY_GROUPS = frozenset({"a"})\n'
+    for member in ("AAPL", "nvda", "Equities", "commodities", "equity", "fx_usd", "metals",
+                   "crypto", "aapl_momentum"):  # fmt: skip
+        with pytest.raises(rr.NotSuperset, match="symbol or asset class"):
+            rr.superset(REG, src, src.replace('"a"', f'"a", "{member}"'), lanes)
+    assert rr.superset(REG, src, src.replace('"a"', '"a", "carry_rank"'), lanes)
+    # the reach reads universe.json from both trees
+    head = REG_SRC.replace('"b": "y",\n', '"b": "y",\n    "AMZN": "w",\n')
+    u2 = '{"AMZN": {"asset_class": "Equities"}}'
+    rep = _reach({REG: REG_SRC}, {REG: head, rr.UNIVERSE_JSON: u2}, [REG], run=_run_with({REG: []}))
+    assert REG not in rep["covered"] and "condition 4" in rep["unmeasured"][REG]
 
 
 # ------------------------------------------------------------------------ condition 5: scope
