@@ -127,7 +127,7 @@ def test_a_sidecar_replaced_without_its_index_is_never_appended_twice(
 
 def test_lines_split_on_newline_only(tmp_path) -> None:
     g = tmp_path / "graph.jsonl"
-    _graph(g, [*_base(), _line("u1", NOW - timedelta(days=1), note="a b\x0cc")])
+    _graph(g, [*_base(), _line("u1", NOW - timedelta(days=1), note="a\u2028b\x0cc")])
     gb._read_graph_indexed(g, {}, since=SINCE)
     old, new, na, nb = _both(g)                       # the second read comes off the sidecar
     assert new == old and any(r.get("id") == "u1" for r in new)
