@@ -1329,6 +1329,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "research_tree", "residual_map", "frontier_ceo",
                      "federation_ops", "sandbox_runner", "sandbox_provision",
                      "sandbox_roster", "proposer_seat", "kimi_hunt",
+                     # YouTube's two producers: their only clocks were VPS units (2026-11-03)
+                     "youtube_corpus", "youtube_miner",
                      # Derives each instrument's own session from its own bars and mints the
                      # breakout aimed at it, instead of porting gold's hours everywhere.
                      "session_structure",
@@ -2104,6 +2106,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # the default 720 s a slow Wave 3 was cut and (before it donated per wave) lost every finding.
     # PRODUCER_YIELD read the seat DEAD for 3 days on 2026-10-13. Three full waves fit here.
     "kimi_hunt": 1_020,
+    # The corpus sweep is list calls plus three transcript fetches; the miner self-stops at 75% of
+    # QUANT_MINER_TIMEOUT_S (180 s). Both return NOT_DUE in milliseconds between real passes.
+    "youtube_corpus": 600,
+    "youtube_miner": 300,
     "enrol_clocks": 2_700,
     # Both stop themselves at --budget-s 300 and write their artifact; the caps sit above their
     # own budgets for the reason `enrol_clocks` was raised -- a cap below an organ's budget
@@ -6009,6 +6015,14 @@ def main() -> None:
     # only, so the cadence spends nothing; a run with no credential records its own BLOCKER and
     # exits, which is a measurement rather than a failing leg.
     kh = _costed("kimi_hunt", lambda: _producer("kimi_hunt", "scripts/kimi_hunter.py"))
+    # YOUTUBE HAD NO BOX CLOCK (measured 2026-11-03). Same shape as kimi above: the corpus
+    # collector's clock was `ops/quant-youtube-corpus.timer` and the miner's was `run_all_miners`,
+    # both on the VPS. The box held a mirror -- five 0-byte videos_*.json landed 11-01 -- and the
+    # judge saw no YouTube row for a week. Both gate themselves to a quota-safe cadence.
+    ytc = _costed("youtube_corpus", lambda: _producer(
+        "youtube_corpus", "scripts/collect_youtube_corpus.py"))
+    ytm = _costed("youtube_miner", lambda: _producer(
+        "youtube_miner", "side_channels/youtube_miner.py"))
     # P0.1, THE LAST UNSCHEDULED CAPABILITY OF THE NINETY-FOUR. `release_identity.py` has a
     # main() and nothing on either machine ever called it: the registry names its ARTIFACT as the
     # producer, so `scheduler_for` searched for a schedule matching a .json path and found none,
@@ -6536,6 +6550,7 @@ def main() -> None:
                     "graveyard_model": gm, "world_crawler": wc, "intel_feed": ifd,
                     "proposer_seat": prs, "committees": cmt,
                     "committee_ensembles": cme, "kimi_hunt": kh,
+                    "youtube_corpus": ytc, "youtube_miner": ytm,
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
