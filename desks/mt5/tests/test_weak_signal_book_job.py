@@ -79,8 +79,11 @@ def _setup(tmp: Path, monkeypatch, cells: list[dict], index_extra: dict | None =
                       "DECAY_ZERO": tmp / "DECAY_ZERO.json",
                       "FEATURE_DRIFT": tmp / "FEATURE_DRIFT.json",
                       "DECAY_EXEMPT": tmp / "DECAY_EXEMPT.json",
+                      "PACK_CELLS": tmp / "PACK_CELLS.json",
                       "EXTRA_PARAM_SOURCES": ()}.items():
         monkeypatch.setattr(job, name, val)
+    import carry_crash_gate
+    monkeypatch.setattr(carry_crash_gate, "REPORT", tmp / "CARRY_CRASH.json")
     eg = _fake_gauntlet(tmp)
     monkeypatch.setattr(job, "_gauntlet", lambda: eg)
     return ids
@@ -230,3 +233,34 @@ def test_unreadable_first_seen_is_red_not_young(tmp_path, monkeypatch):
     job.run(budget_s=60)
     c = json.loads((tmp_path / "COMBINER_COVERAGE.json").read_text())
     assert c["red_over_24h"] == 1 and c["red_sample"][0]["age_hours"] == "UNMEASURED"
+
+
+def test_footprint_packs_are_tracked_to_the_pool(tmp_path, monkeypatch):
+    """Footprint sweep row 24: every pack's series is followed to this pool; a represented
+    series with no pooled member after 24h is RED, an upstream stop names its stage."""
+    from datetime import UTC, datetime, timedelta
+    pc = tmp_path / "PACK_CELLS.json"
+    pc.write_text(json.dumps({"rows": [
+        {"id": "cot_jpy", "stage": "cells_judged", "n_signals": 3, "cells_emitted": 9,
+         "cells_judged": 9},
+        {"id": "retail_crowd", "stage": "cells_emitted", "n_signals": 2, "cells_emitted": 4,
+         "cells_judged": 0},
+        {"id": "etf_gld", "stage": "bytes", "reason": "the chain stops at bytes"}]}))
+    monkeypatch.setattr(job, "PACK_CELLS", pc)
+    pm = {"USDJPY.exogenous_conditioner.p=a": {"params": {"source": "cot_jpy"}},
+          "USDJPY.exogenous_conditioner.p=b": {"params": {"source": "cot_jpy"}}}
+    now = datetime.now(tz=UTC)
+    first = {"PACK:retail_crowd": (now - timedelta(hours=30)).isoformat()}
+    fp = job.footprints(pm, {"USDJPY.exogenous_conditioner.p=a"}, first, now)
+    by = {r["pack"]: r for r in fp["rows"]}
+    assert by["cot_jpy"]["state"] == "IN_POOL" and by["cot_jpy"]["in_pool"] == 1
+    assert by["retail_crowd"]["state"] == "AWAITING_JUDGE"
+    assert by["etf_gld"]["state"] == "UPSTREAM"
+    assert fp["status"] == "RED" and [r["pack"] for r in fp["red_sample"]] == ["retail_crowd"]
+
+
+def test_footprints_unreadable_is_red(tmp_path, monkeypatch):
+    from datetime import UTC, datetime
+    monkeypatch.setattr(job, "PACK_CELLS", tmp_path / "absent.json")
+    fp = job.footprints({}, set(), {}, datetime.now(tz=UTC))
+    assert fp["status"] == "UNMEASURED" and fp["red"] == 1

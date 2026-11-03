@@ -94,6 +94,10 @@ CACHE_LOOKBACK_DAYS = 21   # how far back to look for a gauntlet-cached series o
 REFUSED_GATES = {"symbol_eligibility": "symbol_untradeable", "observations": "judge_unmeasured"}
 GATE_SPEC = _DESK / "policy" / "gate_spec.yaml"
 FAILED_GATES = STORE / "failed_gates.json"
+#: Every data pack's path to cells (research/pack_cells.py). Footprint series (positioning, crowd,
+#: options, ETF, fixing flows) land as packs, so this is where row 24 of the footprint sweep
+#: is measured: series -> cells emitted -> cells judged -> members of this pool.
+PACK_CELLS = REPORTS / "PACK_CELLS.json"
 #: Judge stages gate_spec.yaml does not classify. swap_cost is a cost-model failure: VALIDITY.
 EXTRA_VALIDITY = frozenset({"swap_cost"})
 
@@ -615,6 +619,13 @@ def run(budget_s: float = 1200.0, cfg: wsb.BookConfig | None = None) -> dict:
         live_series[name] = (s, None)
     ext = external_inputs(cov)
     series.update(ext)
+    # The carry-crash gate (footprint row 7) reads the same carry members this pass loaded.
+    try:
+        import carry_crash_gate
+        carry_doc = carry_crash_gate.run_from(series)
+        carry_status = str(carry_doc.get("status"))
+    except Exception as exc:  # noqa: BLE001 - the book must not die with its side report
+        carry_status = f"ERROR {type(exc).__name__}: {str(exc)[:80]}"
 
     lt, lt_basis = lifetime_trials()
     rows = trial_rows()
@@ -638,7 +649,8 @@ def run(budget_s: float = 1200.0, cfg: wsb.BookConfig | None = None) -> dict:
                                               if m["cell"].startswith("LIVE:")), 6),
                      "note": "never armed: realised and backtest R on one calendar"}
     by_source = Counter(pm[c]["source"].split(":")[0] for c in series if c in pm)
-    coverage_doc = publish_coverage(cov, cells, pm, ext, book, retired_members, decay_basis, now)
+    coverage_doc = publish_coverage(cov, cells, pm, ext, book, retired_members, decay_basis, now,
+                                    ingested=set(series))
     doc = {
         "generated_utc": _now(), "elapsed_s": round(time.time() - t0, 1),
         "coverage": {**cov.as_dict(), "stale_over_max_age": stale,
@@ -656,6 +668,7 @@ def run(budget_s: float = 1200.0, cfg: wsb.BookConfig | None = None) -> dict:
                  "last": str(pool.dates[-1].date()) if len(pool.dates) else None},
         "book": book,
         "combiner_coverage": str(COVERAGE_OUT.name),
+        "carry_crash": carry_status,
         "book_with_live_sleeves": with_live,
         "status": ("PROPOSE" if book.get("passed") else "NO_BOOK"),
         "authority": "proposes only; nothing here arms or sizes a live order",
@@ -669,8 +682,61 @@ def run(budget_s: float = 1200.0, cfg: wsb.BookConfig | None = None) -> dict:
     return doc
 
 
+def footprints(pm: dict, ingested: set[str], first: dict, now: datetime) -> dict:
+    """Every data pack, by how far its series got toward this pool. A pack with a represented
+    series and no pooled member RED_AFTER_HOURS after first seen that way is RED."""
+    doc = _read_json(PACK_CELLS, None)
+    if not isinstance(doc, dict) or not isinstance(doc.get("rows"), list):
+        return {"status": "UNMEASURED", "why": f"{PACK_CELLS.name} absent or unreadable",
+                "red": 1}
+    pooled: Counter = Counter()
+    judged_here: Counter = Counter()
+    for c, v in pm.items():
+        src = str((v.get("params") or {}).get("source") or "")
+        if src:
+            judged_here[src] += 1
+            if c in ingested:
+                pooled[src] += 1
+    stamp = now.isoformat(timespec="seconds")
+    rows, red = [], []
+    for r in doc["rows"]:
+        if not isinstance(r, dict) or not r.get("id"):
+            continue
+        pid = str(r["id"])
+        n_sig = int(r.get("n_signals") or 0)
+        row = {"pack": pid, "stage": r.get("stage"), "signals": n_sig,
+               "cells_emitted": int(r.get("cells_emitted") or 0),
+               "cells_judged": int(r.get("cells_judged") or 0),
+               "eligible_here": judged_here.get(pid, 0), "in_pool": pooled.get(pid, 0)}
+        if row["in_pool"]:
+            row["state"] = "IN_POOL"
+        elif n_sig <= 0:
+            row["state"], row["reason"] = "UPSTREAM", str(r.get("reason") or r.get("stage"))
+        else:
+            key = f"PACK:{pid}"
+            first.setdefault(key, stamp)
+            try:
+                age = round((now - datetime.fromisoformat(first[key])).total_seconds() / 3600, 1)
+            except (TypeError, ValueError):
+                age = None
+            row["represented_hours"] = age
+            row["state"] = ("JUDGED_NOT_POOLED" if row["eligible_here"] else
+                            "AWAITING_JUDGE" if row["cells_emitted"] else "NO_CELLS")
+            row["reason"] = str(r.get("reason") or row["state"])
+            if age is None or age > RED_AFTER_HOURS:
+                red.append(row)
+        rows.append(row)
+    by_state = Counter(r["state"] for r in rows)
+    return {"status": "RED" if red else "GREEN", "packs": len(rows),
+            "by_state": dict(by_state), "red": len(red), "red_sample": red[:100],
+            "rows": rows[:400],
+            "rule": "a pack with a represented series and no member in this pool "
+                    f"{RED_AFTER_HOURS:.0f}h after first seen represented is RED"}
+
+
 def publish_coverage(cov, cells: dict, pm: dict, ext: dict, book: dict,
-                     retired_members: list[str], decay_basis: str, now: datetime) -> dict:
+                     retired_members: list[str], decay_basis: str, now: datetime,
+                     ingested: set[str] | None = None) -> dict:
     """COMBINER_COVERAGE.json: the ONE file the hourly pass reads (item 37).
 
     Any eligible signal not ingested within RED_AFTER_HOURS of first being seen is RED. New
@@ -683,6 +749,7 @@ def publish_coverage(cov, cells: dict, pm: dict, ext: dict, book: dict,
         first.setdefault(c, stamp)
     for cid, _ in cov.missing:
         first.setdefault(cid, stamp)
+    fp = footprints(pm, set(ingested or ()), first, now)
     _atomic_write(FIRST_SEEN, json.dumps(first, sort_keys=True))
     red = []
     rows = []
@@ -707,8 +774,9 @@ def publish_coverage(cov, cells: dict, pm: dict, ext: dict, book: dict,
     b = book.get("breadth") or {}
     out = {
         "generated_utc": stamp,
-        "status": cd["status"],
+        "status": "RED" if fp.get("red") else cd["status"],
         "red_over_24h": len(red),
+        "footprints": fp,
         "rule": f"every eligible signal is ingested, refused by a named rule, or listed here with "
                 f"its reason; one not ingested {RED_AFTER_HOURS:.0f}h after first seen is RED",
         "eligible": cd["eligible"], "ingested": cd["ingested"], "missing": cd["missing"],
