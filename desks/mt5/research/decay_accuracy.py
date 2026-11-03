@@ -164,6 +164,12 @@ except Exception:  # pragma: no cover
 CUSUM_K = 0.5
 CUSUM_H = 4.0
 CERT_SD_R = 1.0
+#: CUSUM's sd sets its power, so on a certified anchor (no measured dispersion) the declared 1R
+#: alone would decide whether CUSUM can ever promote. Sensitivity arms, declared before any
+#: result (Auditor should-fix on f0ba78733): the fixed sd values plus the series' own measured
+#: sd on its first SELF_ANCHOR_N trades (scored only after them). Every arm is a trial.
+CUSUM_SD_ARMS: tuple[float, ...] = (0.75, 1.0, 1.5)
+CUSUM_MEASURED_ARM = "CUSUM_sd_measured"
 SELF_ANCHOR_N = 30
 SELF_ANCHOR_SD_FLOOR = 0.1
 DD_EVENT_R = 3.0
@@ -484,6 +490,18 @@ def evaluate_series(s: Mapping[str, Any], survivors: Sequence[Mapping[str, Any]]
     cus = cusum_alarms(rs, mu0, sd, start)
     det: dict[str, Any] = {"CURRENT": score(rs, cur, _onsets(cur), start),
                            "CUSUM": score(rs, cus, [j for j, v in enumerate(cus) if v], start)}
+    for arm_sd in CUSUM_SD_ARMS:
+        a = cusum_alarms(rs, mu0, arm_sd, start)
+        det[f"CUSUM_sd{arm_sd}"] = score(rs, a, [j for j, v in enumerate(a) if v], start)
+    if len(rs) > SELF_ANCHOR_N:
+        m_start = max(start, SELF_ANCHOR_N)
+        m_sd = max(statistics.stdev(rs[:SELF_ANCHOR_N]), SELF_ANCHOR_SD_FLOOR)
+        a = cusum_alarms(rs, mu0, m_sd, m_start)
+        det[CUSUM_MEASURED_ARM] = {**score(rs, a, [j for j, v in enumerate(a) if v], m_start),
+                                   "sd": round(m_sd, 4), "scored_from": m_start}
+    else:
+        det[CUSUM_MEASURED_ARM] = {"verdict": UNMEASURED,
+                                   "why": f"n <= {SELF_ANCHOR_N}: no measured sd"}
     eps = ((drift_state or {}).get(str(s["name"])) or {}).get("episodes") if drift_state else None
     fd = drift_alarms(pts, eps or [])
     det["FEATURE_DRIFT"] = (score(rs, fd, [j for j, v in enumerate(fd) if v], start)
@@ -530,6 +548,35 @@ def promotion_verdict(cur: Mapping[str, Any], new: Mapping[str, Any],
             "why": f"{name} misses <= CURRENT, earlier median lead ({nl}R vs {cl}R), and costs "
                    f"no more in false alarms; acting on it still needs a reviewed "
                    f"decay_monitor change"}
+
+
+def cusum_arm_names() -> list[str]:
+    return [f"CUSUM_sd{x}" for x in CUSUM_SD_ARMS] + [CUSUM_MEASURED_ARM]
+
+
+def cusum_family_verdict(cur: Mapping[str, Any], agg: Mapping[str, Mapping[str, Any]]
+                         ) -> dict[str, Any]:
+    """The CUSUM promotion after its sensitivity arms. Each arm is a trial, so the event floor is
+    charged by the trial count: an arm promotes only on >= MIN_EVENTS x n_trials events. The
+    per-arm verdicts are published beside it, so the sd that decides is always visible."""
+    arms = cusum_arm_names()
+    per = {a: promotion_verdict(cur, agg.get(a, {"verdict": UNMEASURED}), a) for a in arms}
+    n_trials = len(arms)
+    floor = MIN_EVENTS * n_trials
+    n_ev = int(cur.get("n_events") or 0)
+    winners = [a for a, v in per.items() if v["verdict"] == "PROMOTABLE"]
+    if n_ev < floor:
+        verdict = {"verdict": UNMEASURED,
+                   "why": f"{n_ev} drawdown event(s) < {floor} ({MIN_EVENTS} x {n_trials} sd "
+                          f"arms tried): too few to pick an arm"}
+    elif winners:
+        verdict = {"verdict": "PROMOTABLE", "arms": winners,
+                   "why": f"{len(winners)} of {n_trials} sd arms beat CURRENT on "
+                          f">= {floor} events"}
+    else:
+        verdict = {"verdict": "NOT_PROMOTABLE",
+                   "why": f"no sd arm of {n_trials} beats CURRENT on {n_ev} events"}
+    return {**verdict, "n_trials": n_trials, "event_floor": floor, "arms": per}
 
 
 def missed_growth_lines(agg: Mapping[str, Mapping[str, Any]], at: str) -> list[dict[str, Any]]:
@@ -582,7 +629,7 @@ def run(*, now: datetime | None = None, shadow: Sequence[dict[str, Any]] | None 
             drift_state = None
     survivors = survivor_index(canon)
     rows = [evaluate_series(s, survivors, drift_state) for s in [*shadow, *live]]
-    agg = {d: aggregate(rows, d) for d in DETECTORS}
+    agg = {d: aggregate(rows, d) for d in (*DETECTORS, *cusum_arm_names())}
     if drift_note and agg["FEATURE_DRIFT"].get("verdict") == UNMEASURED:
         agg["FEATURE_DRIFT"]["why"] = drift_note
     per_series = []
@@ -599,6 +646,7 @@ def run(*, now: datetime | None = None, shadow: Sequence[dict[str, Any]] | None 
            "acts_on": "nothing -- a report; decay_monitor alone moves a sleeve",
            "current_rule": IMPORT_NOTE,
            "constants": {"CUSUM_K": CUSUM_K, "CUSUM_H": CUSUM_H, "CERT_SD_R": CERT_SD_R,
+                         "CUSUM_SD_ARMS": list(CUSUM_SD_ARMS),
                          "SELF_ANCHOR_N": SELF_ANCHOR_N, "DD_EVENT_R": DD_EVENT_R,
                          "FA_HORIZON": FA_HORIZON, "MIN_EVENTS": MIN_EVENTS,
                          "FADE_FACTOR": FADE_FACTOR, "N_MIN_VERDICT": N_MIN_VERDICT,
@@ -614,6 +662,7 @@ def run(*, now: datetime | None = None, shadow: Sequence[dict[str, Any]] | None 
                                          and r["anchor"]["basis"] == "self")},
            "detectors": agg,
            "promotion": {"CUSUM": promotion_verdict(agg["CURRENT"], agg["CUSUM"]),
+                         "CUSUM_sensitivity": cusum_family_verdict(agg["CURRENT"], agg),
                          "FEATURE_DRIFT": promotion_verdict(agg["CURRENT"], agg["FEATURE_DRIFT"],
                                                             "FEATURE_DRIFT")},
            "seed_cases": [{k: r.get(k) for k in ("name", "source", "n", "seed_case", "scored")}

@@ -165,3 +165,28 @@ def test_organ_writes_only_its_report(tmp_path: Path, monkeypatch: pytest.Monkey
     assert doc["series"][-1]["anchor"]["basis"] == "certified_exact"
     assert {x["rail"] for x in doc["missed_growth"]} == {f"decay_accuracy.{d}" for d in A.DETECTORS}
     assert json.loads(report.read_text())["generated_at"] == doc["generated_at"]
+
+
+def test_cusum_sd_arms_are_reported_and_each_is_a_trial(tmp_path: Path) -> None:
+    rng = random.Random(11)  # noqa: S311
+    rs = [rng.gauss(0.3, 0.8) for _ in range(40)] + [rng.gauss(-0.6, 0.8) for _ in range(40)]
+    doc = A.run(shadow=[_series("EURUSD_carry_asia", rs)], live=[], canon=CANON,
+                drift_state={}, report_path=tmp_path / "r.json")
+    for arm in A.cusum_arm_names():
+        assert arm in doc["detectors"], arm
+    sens = doc["promotion"]["CUSUM_sensitivity"]
+    assert sens["n_trials"] == len(A.CUSUM_SD_ARMS) + 1
+    assert sens["event_floor"] == A.MIN_EVENTS * sens["n_trials"]
+    assert set(sens["arms"]) == set(A.cusum_arm_names())
+    measured = doc["series"][0]["detectors"][A.CUSUM_MEASURED_ARM]
+    assert measured["scored_from"] >= A.SELF_ANCHOR_N and measured["sd"] > 0
+
+
+def test_an_arm_promotes_only_on_the_trial_charged_floor() -> None:
+    cur = {"n_events": 6, "misses": 2, "median_lead_r": 3.0, "false_alarm_cost_r": 4.0}
+    good = {"n_events": 6, "misses": 1, "median_lead_r": 1.5, "false_alarm_cost_r": 3.0}
+    agg = dict.fromkeys(A.cusum_arm_names(), good)
+    assert A.cusum_family_verdict(cur, agg)["verdict"] == A.UNMEASURED   # 6 < 5 x 4
+    cur20 = dict(cur, n_events=20)
+    v = A.cusum_family_verdict(cur20, {a: dict(good, n_events=20) for a in A.cusum_arm_names()})
+    assert v["verdict"] == "PROMOTABLE" and len(v["arms"]) == len(A.cusum_arm_names())
