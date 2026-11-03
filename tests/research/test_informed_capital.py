@@ -438,7 +438,8 @@ def paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(organ, "TICKERS_CACHE", tmp_path / "tickers.json")
     monkeypatch.setattr(organ, "_donate", lambda c, n: None)
     monkeypatch.setattr(av, "bar_clock", lambda: av.identity_clock)
-    monkeypatch.delenv("QUANT_SENATE_EFD_ATTEST", raising=False)
+    monkeypatch.setattr(organ, "MISSED_GROWTH", tmp_path / "missed_growth.jsonl")
+    monkeypatch.delenv("QUANT_CONGRESS_ATTEST", raising=False)
     return tmp_path
 
 
@@ -490,6 +491,47 @@ def test_one_pass_collects_stores_and_reports(paths: Path,
     again = organ.append(stored, now=now, path=store)
     assert again["added"] == 0
     assert not any("efdsearch" in u for u in http.calls)        # the Senate was never touched
+    census = written["odds_listing_census"]["kalshi"]["KXFED"]
+    assert census["open"] == 1 and census["settled"] == 1 and census["page_capped"] is False
+    assert any("status=settled" in u for u in http.calls)       # resolved contracts are read
+
+
+def test_no_congressional_fetch_without_the_switch_and_the_gate_is_billed(
+        paths: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    now = datetime(2026, 7, 17, 12, tzinfo=UTC)
+    http = FakeHttp({"FD.zip": b"PK", "ptr-pdfs": b"%PDF", "efdsearch": "x"})
+    rep = organ.run(now=now, http=http, store=paths / "events.jsonl", loader=lambda _s: None,
+                    universe_doc={}, only=["house_ptr", "senate_ptr"], n_placebo=5)
+    assert rep["sources"]["house_ptr"]["status"] == "AWAITING_PRINCIPAL"
+    assert rep["sources"]["senate_ptr"]["status"] == "AWAITING_PRINCIPAL"
+    assert http.calls == []                                     # not one congressional request
+    lines = [json.loads(x) for x in (paths / "missed_growth.jsonl").read_text().splitlines()]
+    assert {x["cell"] for x in lines} == {"house:member", "senate:member", "congress_agg:all"}
+    assert all(x["rail"] == "congress_attestation_gate" and x["status"] == "UNMEASURED"
+               for x in lines)
+    organ.run(now=now, http=http, store=paths / "events.jsonl", loader=lambda _s: None,
+              universe_doc={}, only=["house_ptr"], n_placebo=5)
+    again = (paths / "missed_growth.jsonl").read_text().splitlines()
+    assert len(again) == 3                                      # one bill per cell per day
+    monkeypatch.setenv("QUANT_CONGRESS_ATTEST", "1")
+    assert organ.congress_missed_growth(now, path=paths / "other.jsonl") == []
+    _rows, house = organ.collect_house(http, {}, 1e18, now)
+    assert house["status"] != "AWAITING_PRINCIPAL" and any("FD.zip" in u for u in http.calls)
+
+
+def test_polymarket_reads_resolved_markets_and_publishes_a_census() -> None:
+    gamma = json.dumps([{"id": "9", "question": "Fed decreases rates by 25 bps?",
+                         "outcomes": '["Yes","No"]', "clobTokenIds": '["tok1","tok2"]'},
+                        {"id": "10", "question": "Who wins the Oscar?",
+                         "outcomes": '["Yes","No"]', "clobTokenIds": '["t3","t4"]'}])
+    http = FakeHttp({"gamma-api": gamma,
+                     "prices-history": json.dumps({"history": [{"t": 1_780_000_000, "p": 0.2},
+                                                               {"t": 1_780_086_400, "p": 0.5}]})})
+    _rows, rep = organ.collect_polymarket(http, {}, 1e18, datetime(2026, 7, 17, tzinfo=UTC))
+    c = rep["listing_census"]
+    assert c["active"]["listed"] == 2 and c["resolved"]["listed"] == 2
+    assert c["resolved"]["by_category"] == {"fed": 1, "non_macro": 1}
+    assert any("closed=true" in u for u in http.calls)
 
 
 def test_sec_without_user_agent_is_unconfigured_not_zero(paths: Path,

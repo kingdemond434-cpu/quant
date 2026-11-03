@@ -8,7 +8,7 @@ tracked against the MT5 universe and turned into gauntlet cells.
     sec_form345_ds      SEC Insider Transactions Data Sets (quarterly ZIP)     filing date (+1d 04Z)
     sec_13d             EDGAR daily form index, SC 13D / SC 13G, .hdr.sgml     acceptance datetime
     sec_13f             EDGAR 13F-HR info tables, diffed against the prior one acceptance (as ET)
-    house_ptr           Clerk yearly FD index + e-filed PTR PDFs               filing date (+2d 04Z)
+    house_ptr           Clerk yearly FD index + e-filed PTR PDFs (OFF, below)  filing date (+2d 04Z)
     senate_ptr          eFD search API + PTR pages (OFF by default, see below) filing date (+2d 04Z)
     kalshi              trade-api/v2 series, markets, daily candlesticks       candle end
     polymarket          gamma-api markets + clob prices-history                price timestamp
@@ -31,13 +31,15 @@ ONE PASS, FIVE STEPS, EVERY ONE WRITING SOMETHING.
      issue board reads: RED on a point-in-time violation, a configured source failing three passes
      running, or a store that has stopped growing.
 
-THE SENATE COLLECTOR IS OFF UNTIL THE PRINCIPAL SAYS OTHERWISE. eFD shows every visitor an
-agreement that the reports will not be used for a commercial purpose (5 U.S.C. 13107(c)) and
-requires clicking it before the search API answers. Clicking an attestation is not this
-session's call to make for a trading desk; the parser is built and tested, and
-`QUANT_SENATE_EFD_ATTEST=1` turns the collector on. The House site carries the same statute with
-no click-through; the desk already reads its index in `libs/data/free_stack.fetch_congress`, so
-it is read here too, and the note rides on every row's provenance.
+BOTH CONGRESSIONAL COLLECTORS ARE OFF UNTIL THE PRINCIPAL SAYS OTHERWISE (audit MF1). 5 U.S.C.
+13107(c) makes it unlawful to obtain or use a congressional financial disclosure report for a
+commercial purpose, and it binds the House report exactly as it binds the Senate one: eFD merely
+makes the visitor click the statute before its search answers, the Clerk's site does not. Whether
+a trading desk's use is commercial is not this session's call. The parsers are built and tested;
+`QUANT_CONGRESS_ATTEST=1` (one switch, both chambers) turns the two collectors on. While it is
+unset they report AWAITING_PRINCIPAL, fetch nothing, and the cells they would have fed
+(house:member, senate:member, congress_agg:all) are billed once a day to
+`data/missed_growth.jsonl` under rail `congress_attestation_gate`, so the gate is never free.
 
 LIVE YIELD IS UNMEASURED UNTIL THE TRADING BOX RUNS IT: the container this was built in reaches
 none of these hosts. The parsers are proven on recorded payload shapes (tests).
@@ -48,6 +50,7 @@ none of these hosts. The parsers are proven on recorded payload shapes (tests).
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import json
 import os
@@ -135,12 +138,12 @@ SOURCES: dict[str, dict[str, Any]] = {
     "house_ptr": {"host": "disclosures-clerk.house.gov", "access_label": "PUBLIC_WITH_TERMS",
                   "cadence_s": 6 * 3600, "auth": "none",
                   "pit": "index FilingDate -> +2 UTC days 04:00 (posting lag)",
-                  "licence": STATUTE},
+                  "licence": STATUTE + "; the collector runs only with QUANT_CONGRESS_ATTEST=1"},
     "senate_ptr": {"host": "efdsearch.senate.gov", "access_label": "PUBLIC_WITH_TERMS",
                    "cadence_s": 6 * 3600, "auth": "click-through attestation",
                    "pit": "date received -> +2 UTC days 04:00 (posting lag)",
                    "licence": STATUTE + "; the site requires clicking that agreement, so the "
-                              "collector runs only with QUANT_SENATE_EFD_ATTEST=1"},
+                              "collector runs only with QUANT_CONGRESS_ATTEST=1"},
     "kalshi": {"host": "api.elections.kalshi.com", "venue": "kalshi", "cadence_s": 3600,
                "auth": "none (public market data)", "pit": "candle end_period_ts",
                "licence": "terms gate: research.prediction_markets.BY_NAME['kalshi']"},
@@ -149,6 +152,64 @@ SOURCES: dict[str, dict[str, Any]] = {
                    "licence": "terms gate: research.prediction_markets.BY_NAME['polymarket']"},
 }
 SEC_SOURCES = ("sec_form4", "sec_form345_ds", "sec_13d", "sec_13f")
+CONGRESS_SWITCH = "QUANT_CONGRESS_ATTEST"
+#: The cells the congressional gate forgoes while it is shut -- billed to the missed-growth ledger.
+CONGRESS_CELLS: tuple[tuple[str, str], ...] = (
+    ("house_ptr", "house:member"), ("senate_ptr", "senate:member"),
+    ("house_ptr+senate_ptr", "congress_agg:all"))
+MISSED_GROWTH = DESK / "data" / "missed_growth.jsonl"
+
+
+def congress_attested() -> bool:
+    """The principal's one switch for both chambers (5 U.S.C. 13107(c))."""
+    return os.environ.get(CONGRESS_SWITCH, "").strip() == "1"
+
+
+def _awaiting_congress(chamber: str) -> dict[str, Any]:
+    return {"status": "AWAITING_PRINCIPAL",
+            "why": (f"the {chamber} report is a congressional financial disclosure: 5 U.S.C. "
+                    f"13107(c) bars obtaining or using it for a commercial purpose, so nothing is "
+                    f"fetched until the principal sets {CONGRESS_SWITCH}=1 (both chambers). The "
+                    "parser is built and tested; the forgone cells are on the missed-growth "
+                    "ledger (rail congress_attestation_gate)")}
+
+
+def congress_missed_growth(now: datetime, *, path: Path | None = None,
+                           apply: bool = True) -> list[dict[str, Any]]:
+    """GROWTH GOVERNANCE (Rule 1): the gate's daily bill, one line per forgone cell. The value is
+    UNMEASURED -- nothing was collected, so no drift exists to price -- and says so, rather than
+    reading as a zero cost."""
+    if congress_attested():
+        return []
+    path = path or MISSED_GROWTH
+    day = now.date().isoformat()
+    have: set[tuple[str, str]] = set()
+    try:
+        for ln in path.read_text("utf-8").splitlines():
+            try:
+                r = json.loads(ln)
+            except ValueError:
+                continue
+            if isinstance(r, dict) and r.get("rail") == "congress_attestation_gate":
+                have.add((str(r.get("day")), str(r.get("cell"))))
+    except OSError:
+        pass
+    fresh = [{"day": day, "rail": "congress_attestation_gate", "value": None,
+              "status": UNMEASURED, "at": now.isoformat(), "cell": cell, "source": src,
+              "family": FAMILY, "two_sided": True,
+              "targets": (list(ic.AGG_TARGETS) if cell.startswith("congress_agg")
+                          else "share CFDs named in the reports (news lane)"),
+              "why": (f"{cell} cells forgone while {CONGRESS_SWITCH} is unset (5 U.S.C. "
+                      "13107(c)); the growth given up is UNMEASURED because the reports were "
+                      "never read -- set the switch, or retire the gate, to price it")}
+             for src, cell in CONGRESS_CELLS if (day, cell) not in have]
+    if apply and fresh:
+        with contextlib.suppress(OSError):
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open("a", encoding="utf-8") as fh:
+                for row in fresh:
+                    fh.write(json.dumps(row) + "\n")
+    return fresh
 
 
 # ------------------------------------------------------------------------------ helpers
@@ -506,6 +567,8 @@ def collect_house(http: Any, state: dict[str, Any], deadline: float, now: dateti
                   ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """The Clerk's yearly index (parsed by `free_stack.parse_house_fd_index`, reused), then the
     e-filed PTR PDFs not yet read. A PDF with no extractable text is a paper filing: counted."""
+    if not congress_attested():
+        return [], _awaiting_congress("House")
     from libs.data.free_stack import HOUSE_FD_ZIP, parse_house_fd_index
     try:
         from pypdf import PdfReader
@@ -551,11 +614,8 @@ def collect_house(http: Any, state: dict[str, Any], deadline: float, now: dateti
 
 def collect_senate(http: Any, state: dict[str, Any], deadline: float, now: datetime
                    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    if os.environ.get("QUANT_SENATE_EFD_ATTEST", "").strip() != "1":
-        return [], {"status": "AWAITING_PRINCIPAL",
-                    "why": "eFD requires clicking a non-commercial-use attestation "
-                           "(5 U.S.C. 13107(c)); QUANT_SENATE_EFD_ATTEST=1 is the principal's "
-                           "switch. The parser is built and tested."}
+    if not congress_attested():
+        return [], _awaiting_congress("Senate")
     done = set(state.get("senate_done") or [])
     st, _t, err = http.text(f"{SENATE}/search/home/", deadline=deadline)
     token = http.cookie("csrftoken")
@@ -595,9 +655,12 @@ def collect_senate(http: Any, state: dict[str, Any], deadline: float, now: datet
 
 def collect_kalshi(http: Any, state: dict[str, Any], deadline: float, now: datetime
                    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """Public Kalshi series in the macro categories, their open markets, and daily candles."""
+    """Public Kalshi series in the macro categories, their OPEN AND SETTLED markets, and daily
+    candles. Reading only the open list would be survivorship: every resolved contract would
+    vanish from the history the tracker measures. `listing_census` counts both per series, so
+    the bias that remains (a page cap) is measurable, not assumed away (audit SF2)."""
     rows: list[dict[str, Any]] = []
-    rep: dict[str, Any] = {"series": 0, "markets": 0, "errors": Counter()}
+    rep: dict[str, Any] = {"series": 0, "markets": 0, "errors": Counter(), "listing_census": {}}
     series: list[str] = []
     for cat in KALSHI_CATEGORIES:
         st, text, err = http.text(f"{KALSHI}/series?category={cat}", deadline=deadline)
@@ -612,18 +675,25 @@ def collect_kalshi(http: Any, state: dict[str, Any], deadline: float, now: datet
                     f"{s.get('title', '')} {s.get('ticker', '')}"):
                 series.append(str(s["ticker"]))
     rep["series"] = len(series)
-    start = int((now - timedelta(days=120)).timestamp())
     end = int(now.timestamp())
     for s in series:
         if time.monotonic() >= deadline or rep["markets"] >= MAX_ODDS_MARKETS:
             break
-        st, text, _err = http.text(f"{KALSHI}/markets?series_ticker={s}&status=open&limit=20",
-                                   deadline=deadline)
-        try:
-            markets = ic.parse_kalshi_markets(json.loads(text)) if _ok(st) else []
-        except ValueError:
-            markets = []
-        for m in markets[:5]:
+        listed: dict[str, list[dict[str, Any]]] = {}
+        census: dict[str, Any] = {}
+        for status in ("open", "settled"):
+            st, text, _err = http.text(f"{KALSHI}/markets?series_ticker={s}&status={status}"
+                                       "&limit=100", deadline=deadline)
+            try:
+                listed[status] = ic.parse_kalshi_markets(json.loads(text)) if _ok(st) else []
+            except ValueError:
+                listed[status] = []
+            census[status] = len(listed[status]) if _ok(st) else UNMEASURED
+        census["page_capped"] = any(len(v) >= 100 for v in listed.values())
+        rep["listing_census"][s] = census
+        picks = [(m, 120) for m in listed["open"][:5]] + [(m, 400) for m in listed["settled"][:5]]
+        for m, days in picks:
+            start = int((now - timedelta(days=days)).timestamp())
             if time.monotonic() >= deadline or rep["markets"] >= MAX_ODDS_MARKETS:
                 break
             st, text, _err = http.text(
@@ -644,18 +714,33 @@ def collect_kalshi(http: Any, state: dict[str, Any], deadline: float, now: datet
 
 def collect_polymarket(http: Any, state: dict[str, Any], deadline: float, now: datetime
                        ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """Open Polymarket markets by 24h volume, the macro ones by question, and their daily path
-    from the CLOB price history (endpoints shared with `libs.data.prediction_markets`)."""
+    """Polymarket markets, ACTIVE AND CLOSED (by volume), the macro ones by question, and their
+    daily path from the CLOB price history (endpoints shared with `libs.data.prediction_markets`).
+    The closed list is read so resolved contracts stay in the history (no survivorship), and the
+    `listing_census` counts both, per macro category, so what a page cap still drops is visible."""
     from libs.data.prediction_markets import _CLOB, _GAMMA
-    st, text, err = http.text(f"{_GAMMA}/markets?closed=false&limit=500&order=volume24hr"
-                              "&ascending=false", deadline=deadline)
-    try:
-        markets = ic.parse_polymarket_markets(json.loads(text)) if _ok(st) else []
-    except ValueError:
-        markets = []
-    if not _ok(st):
-        return [], {"status": "FAILED", "error": err or f"HTTP {st}"}
-    macro = [m for m in markets if ic.odds_category(m["question"])][:MAX_ODDS_MARKETS]
+    lists: dict[str, list[dict[str, Any]]] = {}
+    census: dict[str, Any] = {}
+    err = ""
+    for state_name, closed in (("active", "false"), ("resolved", "true")):
+        st, text, e = http.text(f"{_GAMMA}/markets?closed={closed}&limit=500&order=volumeNum"
+                                "&ascending=false", deadline=deadline)
+        try:
+            lists[state_name] = ic.parse_polymarket_markets(json.loads(text)) if _ok(st) else []
+        except ValueError:
+            lists[state_name] = []
+        if not _ok(st):
+            err = err or e or f"HTTP {st}"
+        cats = Counter(ic.odds_category(m["question"]) or "non_macro" for m in lists[state_name])
+        census[state_name] = {"listed": len(lists[state_name]) if _ok(st) else UNMEASURED,
+                              "page_capped": len(lists[state_name]) >= 500,
+                              "by_category": dict(cats)}
+    markets = lists["active"] + lists["resolved"]
+    if not markets:
+        return [], {"status": "FAILED", "error": err or "no market list", "listing_census": census}
+    half = MAX_ODDS_MARKETS // 2
+    macro = ([m for m in lists["active"] if ic.odds_category(m["question"])][:half]
+             + [m for m in lists["resolved"] if ic.odds_category(m["question"])][:half])
     rows: list[dict[str, Any]] = []
     n = 0
     for m in macro:
@@ -670,7 +755,8 @@ def collect_polymarket(http: Any, state: dict[str, Any], deadline: float, now: d
         n += 1
         rows.extend(ic.odds_events("polymarket", m["id"], m["question"], ic.daily_points(pts)))
     return rows, {"status": "FETCHED" if n else "FAILED", "markets_listed": len(markets),
-                  "macro_markets": len(macro), "histories": n, "events": len(rows)}
+                  "macro_markets": len(macro), "histories": n, "events": len(rows),
+                  "listing_census": census}
 
 
 def _due(state: Mapping[str, Any], sid: str, now: datetime) -> bool:
@@ -995,6 +1081,7 @@ def run(*, budget_s: float = 300.0, apply: bool = True, collect_enabled: bool = 
     path = _donate(cands, max(trials, len(cands))) if (apply and cands) else None
     fam_counts = Counter(str(r.get("family")) for r in rows)
     fnc = fence(rows=rows, sources=sources, state=state, now=now)
+    missed = congress_missed_growth(now, apply=apply)
     report = {
         "at": now.isoformat(), "source": SOURCE, "family": FAMILY,
         "elapsed_s": round(time.monotonic() - started, 2),
@@ -1015,6 +1102,11 @@ def run(*, budget_s: float = 300.0, apply: bool = True, collect_enabled: bool = 
                   "status": ("donated" if path else
                              "nothing cleared the screen yet: history accrues one pass and one "
                              "backfilled quarter at a time" if not cands else "dry run")},
+        "congress_gate": {"switch": CONGRESS_SWITCH, "attested": congress_attested(),
+                          "missed_growth_appended": len(missed),
+                          "rail": "congress_attestation_gate"},
+        "odds_listing_census": {v: (sources.get(v) or {}).get("listing_census", UNMEASURED)
+                                for v in ("kalshi", "polymarket")},
         "transmission": {"direct": "share CFDs (news lane: informed_flow_drift is in "
                                    "universe_policy.NEWS_LANE_FAMILIES)",
                          "aggregate": list(ic.AGG_TARGETS),
