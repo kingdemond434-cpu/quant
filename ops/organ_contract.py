@@ -134,6 +134,10 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                            "which free data axes this box can actually reach"),
     "MT5-AxisIngest":     ("desks/mt5/reports/AXIS_INGEST.json", 1560,
                            "reachable axes turned into dated series a family can condition on"),
+    # THE RED CHECK ON THE SAME CLOCK (Rule 23, 2026-10-29): every external source and series
+    # the ingest reads, with its consecutive-empty streak; process_health reads its verdict.
+    "MT5-AxisIngest (dependency liveness)": ("desks/mt5/reports/DEPENDENCY_LIVENESS.json", 1560,
+                           "which data publishers have returned nothing for more than two passes"),
     "MT5-CEODocket":      ("desks/mt5/reports/CEO_DOCKET.json", 1560,
                            "the daily ranked proposals the frontier scout produced"),
     "MT5-NeverStale":     ("desks/mt5/reports/NEVER_STALE.json", 60,
