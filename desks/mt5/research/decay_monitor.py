@@ -72,6 +72,8 @@ ROOT = BASE.parent.parent
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
 from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
 LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
+#: FTMO's (and E8's, once written) closed prop-account trades, in the live ledger's own schema.
+PROP_LEDGER = BASE / "data" / "live_ledger_prop.jsonl"
 OUT = BASE / "data" / "decay_live.json"
 ACTIONS = BASE / "data" / "decay_actions.jsonl"
 #: Names the gateway must close out on its next pass: a sleeve that leaves the roster leaves the
@@ -184,13 +186,21 @@ def _write_atomic(p: Path, doc: Any) -> None:
             tmp.unlink()
 
 
-def sleeve_trades(name: str) -> list[dict]:
-    """Trailing closed deals for one sleeve, oldest first."""
-    if not LEDGER.exists():
-        return []
+def book_ledgers() -> tuple[Path, ...]:
+    """The ledgers a BOOK key is judged on: Fusion's live ledger and the prop ledger (FTMO, and
+    E8 once its writer exists). A book key's edge is one mechanism on every venue, and its zero
+    is honoured on every venue (decision_core.decay_zero), so its evidence is pooled too."""
+    return (LEDGER, PROP_LEDGER)
+
+
+def sleeve_trades(name: str, ledgers: tuple[Path, ...] | None = None) -> list[dict]:
+    """Trailing closed deals for one sleeve, oldest first, across `ledgers` (Fusion's alone by
+    default, which is what the LIVE-roster loop has always read)."""
     cutoff = datetime.now(tz=UTC) - timedelta(days=TRAIL_DAYS)
     rows = []
-    for line in LEDGER.read_text("utf-8").splitlines():
+    lines = [ln for p in (ledgers or (LEDGER,)) if p.exists()
+             for ln in p.read_text("utf-8").splitlines()]
+    for line in lines:
         line = line.strip()
         if not line:
             continue
@@ -225,6 +235,8 @@ def sleeve_trades(name: str) -> list[dict]:
             ts = ts.replace(tzinfo=UTC)
         if ts is None or ts >= cutoff:
             rows.append(r)
+    if ledgers:
+        rows.sort(key=lambda r: str(r.get("time") or ""))
     return rows[-TRAIL_MAX_TRADES:]
 
 
@@ -339,13 +351,14 @@ def unattributed(sleeve: str) -> bool:
     return sleeve.startswith(("[", "#"))
 
 
-def traded_names() -> list[str]:
-    """Every sleeve name the live ledger holds a closed deal for inside the trailing window."""
-    if not LEDGER.exists():
-        return []
+def traded_names(ledgers: tuple[Path, ...] | None = None) -> list[str]:
+    """Every sleeve name `ledgers` (Fusion's live ledger by default) hold a closed deal for inside
+    the trailing window."""
     cutoff = datetime.now(tz=UTC) - timedelta(days=TRAIL_DAYS)
     seen: dict[str, None] = {}
-    for line in LEDGER.read_text("utf-8").splitlines():
+    lines = [ln for p in (ledgers or (LEDGER,)) if p.exists()
+             for ln in p.read_text("utf-8").splitlines()]
+    for line in lines:
         try:
             r = json.loads(line) if line.strip() else None
         except ValueError:
@@ -519,7 +532,7 @@ SEQ_KEEP_DEALS = 4 * TRAIL_MAX_TRADES
 
 
 def _deal_id(t: dict) -> str:
-    d = t.get("deal") or t.get("position_id") or t.get("order")
+    d = (t.get("deal") or t.get("position_id") or t.get("close_order") or t.get("order"))
     return str(d) if d not in (None, "") else f"{t.get('time')}|{t.get('r_multiple')}"
 
 
@@ -589,7 +602,7 @@ def _union_sequential(a: object, b: object) -> dict:
 
 def _traded_recently(name: str) -> bool:
     """A replacement must actually TRADE before it ends the gold_asia exemption (audit S)."""
-    return bool(sleeve_trades(name))
+    return bool(sleeve_trades(name, book_ledgers()))
 
 
 def _cert_of(name: str, roster: dict[str, dict]) -> str | None:
@@ -642,11 +655,13 @@ def decay_zero_doc(live: dict[str, dict], now: str, roster: dict[str, dict] | No
     flags: dict[str, dict] = {}
     lifted: dict[str, dict] = {}
     live_stems = {str(k)[:LEDGER_NAME_MAX] for k in live}
-    for name in traded_names():
+    for name in traded_names(book_ledgers()):
         if name in live or name in live_stems:
             continue                                  # the LIVE loop judges it, on its own bars
-        trades = [t for t in sleeve_trades(name)
-                  if str(t.get("account_kind") or "live").lower() == "live"]
+        # Real-money fills only: Fusion's live account and the prop accounts (FTMO, E8); a demo
+        # fill is not live evidence.
+        trades = [t for t in sleeve_trades(name, book_ledgers())
+                  if str(t.get("account_kind") or "live").lower() in ("live", "prop")]
         rs = [float(t["r_multiple"]) for t in trades]
         v, why, facts = book_key_verdict(rs)
         sequential[name] = fold_sequential(prev_seq.get(name), trades)
@@ -699,16 +714,16 @@ def decay_zero_doc(live: dict[str, dict], now: str, roster: dict[str, dict] | No
         flags.pop(k, None)
     # THE CERTIFIED LIVE BOOK IS ALWAYS NAMED (hourly pass 25, 2026-11-03, idea 271). A key on
     # data/CERT_BOOK_LIVE.json trades on Fusion, E8 or FTMO whatever the roster says; one that
-    # closed no Fusion trade in the window is listed UNMEASURED with its venues, never left out,
-    # so allocator liveness can tell "judged, nothing to say" from "never looked at".
+    # closed no trade on any venue in the window is listed UNMEASURED with its venues, never left
+    # out, so allocator liveness can tell "judged, nothing to say" from "never looked at".
     book = book_live_keys(book_path)
     judged_stems = {_stem(k) for part in (judged, unmeasured, zeros, flags) for k in part}
     for key, venues in book.items():
         if _stem(key) not in judged_stems:
             unmeasured[key] = {"verdict": "UNMEASURED", "venues": venues,
                                "why": (f"on the certified live book ({', '.join(venues)}) with no "
-                                       f"live Fusion trade in the last {TRAIL_DAYS} days; E8 and "
-                                       f"FTMO fills are not in the ledger this monitor reads")}
+                                       f"closed live trade on any venue in the last "
+                                       f"{TRAIL_DAYS} days")}
     return {"checked_at": now, "trail_days": TRAIL_DAYS, "zeros": zeros, "flags": flags,
             "book_live_keys": book,
             "lifted": lifted, "judged": judged, "unmeasured": unmeasured,

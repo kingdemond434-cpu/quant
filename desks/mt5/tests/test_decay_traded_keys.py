@@ -48,6 +48,7 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(D, "OUT", tmp_path / "decay_live.json")
     monkeypatch.setattr(D, "ACTIONS", tmp_path / "decay_actions.jsonl")
     monkeypatch.setattr(D, "LEDGER", tmp_path / "live_ledger.jsonl")
+    monkeypatch.setattr(D, "PROP_LEDGER", tmp_path / "live_ledger_prop.jsonl")
     monkeypatch.setattr(D, "SHADOW_LEDGER_DIRS", (tmp_path / "shadow",))
     monkeypatch.setattr(rc, "QUEUE", tmp_path / "queue.json")
     monkeypatch.setattr(dc, "DECAY_ZERO_FILE", tmp_path / "DECAY_ZERO.json")
@@ -471,3 +472,21 @@ def test_a_live_book_key_with_no_decay_verdict_is_red(tmp_path, monkeypatch) -> 
         {"checked_at": NOW.isoformat(), "judged": {"gold_london_am": {}},
          "unmeasured": {"gold_asia": {"venues": ["e8"]}}}), "utf-8")
     assert AL._judge_coverage(NOW.timestamp())["status"] == "OK"
+
+
+def test_a_book_key_is_judged_on_its_prop_account_fills_too(desk) -> None:
+    """gold_asia trades on FTMO through data/live_ledger_prop.jsonl: those real-money fills are
+    its decay evidence (pooled with Fusion's), and a demo fill is not."""
+    (desk / "CERT_BOOK_LIVE.json").write_text(json.dumps(
+        {"enabled": True, "ftmo": {"gold_asia": 0.01}}), "utf-8")
+    _write(desk, [{"name": "gold_asia", "status": "STANDBY", "symbol": "XAUUSD"}], [])
+    prop = _trades("gold_asia", [0.6, -0.3] * 6, symbol="XAUUSD", account_kind="prop",
+                   book="ftmo")
+    demo = _trades("eurusd_demo_only", [-1.0, 0.5] * 6, account_kind="demo")
+    (desk / "live_ledger_prop.jsonl").write_text(
+        "\n".join(json.dumps(t) for t in prop + demo), "utf-8")
+    D.main(write_queue=False)
+    doc = _zero(desk)
+    assert doc["judged"]["gold_asia"]["n"] == 12 and "gold_asia" not in doc["unmeasured"]
+    assert "eurusd_demo_only" not in doc["judged"]
+    assert D.sleeve_trades("gold_asia") == []              # the LIVE-roster loop: Fusion only

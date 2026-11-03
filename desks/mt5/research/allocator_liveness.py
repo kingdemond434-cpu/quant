@@ -47,6 +47,7 @@ import argparse
 import json
 import sys
 import time
+from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -364,6 +365,7 @@ def _stand_down(now: float) -> dict[str, Any]:
 #: File names under DATA, resolved at call time (a sandbox that moves DATA moves them too).
 DECAY_LIVE_NAME, DECAY_ZERO_NAME, LIVE_LEDGER_NAME = ("decay_live.json", "DECAY_ZERO.json",
                                                      "live_ledger.jsonl")
+PROP_LEDGER_NAME = "live_ledger_prop.jsonl"
 JUDGE_GRACE_S = 2 * 3600
 JUDGE_WINDOW_S = 26 * 3600
 #: decay_monitor.LEDGER_NAME_MAX: the ledger names a sleeve by its truncated order comment.
@@ -390,6 +392,9 @@ def _judge_coverage(now: float) -> dict[str, Any]:
         lines = ledger.read_text("utf-8").splitlines()
     except OSError:
         return {"status": UNMEASURED, "why": f"no live ledger at {ledger.name}"}
+    # The prop accounts' closes count too (FTMO, E8): the decay monitor judges book keys on both.
+    with suppress(OSError):
+        lines += (DATA / PROP_LEDGER_NAME).read_text("utf-8").splitlines()
     traded: dict[str, float] = {}
     for line in lines[-5000:]:
         try:
