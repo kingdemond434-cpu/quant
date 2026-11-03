@@ -196,6 +196,69 @@ SOURCE_POLICY: dict[str, dict[str, Any]] = {
 }
 
 
+#: THE DATA-CLASS GAP DOORS (2026-10-29, research/data_class_gap.py item 14). Three public
+#: statistical publishers the world dataset hunter now reads directly; each row quotes the
+#: publisher's OWN terms page, read 2026-10-29, so live input from them stands on a clause.
+SOURCE_POLICY.update({
+    "us_treasury_fiscaldata": {
+        "hosts": ("api.fiscaldata.treasury.gov", "fiscaldata.treasury.gov"),
+        "status": API_PERMITTED, "sources": ("us_treasury_fiscaldata", "treasury_fiscaldata"),
+        "why": ("US Treasury Fiscal Data's keyless API (auction results, average interest rates, "
+                "daily statement); its About page grants copy and use for commercial purposes"),
+        "terms": {"url": "https://fiscaldata.treasury.gov/about-us/", "checked_at": "2026-10-29",
+                  "clauses": {
+                      "reuse": ("The data on this site is available to copy, adapt, "
+                                "redistribute, or otherwise use for non-commercial and "
+                                "commercial purposes."),
+                      "api": ("You can find all the information you'll need to access our data "
+                              "via APIs on the API Documentation page.")}}},
+    "noaa_cpc": {
+        "hosts": ("cpc.ncep.noaa.gov",), "status": PUBLIC_PAGE, "sources": ("noaa_cpc",),
+        "why": ("NOAA Climate Prediction Center index tables (ONI, NAO, AO, PNA); the "
+                "Disclaimer linked from every CPC page footer is the NWS disclaimer, which puts "
+                "NWS pages in the public domain for any lawful purpose"),
+        "terms": {"url": "https://www.weather.gov/disclaimer", "checked_at": "2026-10-29",
+                  "clauses": {
+                      "public_domain": ("The information on National Weather Service (NWS) Web "
+                                        "pages are in the public domain, unless specifically "
+                                        "noted otherwise,"),
+                      "use": ("may be used without charge for any lawful purpose so long as you "
+                              "do not: 1) claim it is your own"),
+                      "automated": ("If a Web Service isn't available users should limit the "
+                                    "number of retries to 1 minute intervals.")},
+                  "also_read": {"https://www.cpc.ncep.noaa.gov/products/precip/CWlink/pna/"
+                                "nao.shtml": "footer: Disclaimer -> "
+                                             "http://www.weather.gov/disclaimer.php",
+                                "https://www.cpc.ncep.noaa.gov/information/disclaimer.shtml":
+                                    "client_error to the reader on 2026-10-29"}}},
+    "eia_api": {
+        "hosts": ("api.eia.gov",), "status": API_PERMITTED, "sources": ("eia_api",),
+        # The data routes need EIA_API_KEY, but the KEY is checked by the door that uses it
+        # (world_dataset_hunter raises the named `needs_key` and sends nothing), not here: a
+        # `key_env` would make this row NEEDS_KEY and hold the host's keyless discovery root
+        # (countries/atlantic_energy lists https://api.eia.gov/v2/), which no terms bar.
+        "key_checked_by": "desks/mt5/research/world_dataset_hunter.py (EIA_API_KEY)",
+        "why": ("EIA Open Data API v2 with the desk's registered key, within its throttle; EIA "
+                "content is US-government public domain and the API terms permit retrieval "
+                "and analysis"),
+        "terms": {"url": "https://www.eia.gov/opendata/register.php", "checked_at": "2026-10-29",
+                  "clauses": {
+                      "api_use": ("You may use the EIA API to develop a service to search, "
+                                  "display, analyze, retrieve, view and otherwise"),
+                      "attribution": ("You should use the \"EIA\" or the \"U.S. Energy "
+                                      "Information Administration\" names in order to identify "
+                                      "the source"),
+                      "public_domain": ("U.S. government publications are in the public domain "
+                                        "and are not subject to copyright protection."),
+                      "use": ("You may use and/or distribute any of our data, files, databases, "
+                              "reports, graphs, charts, and other information products")},
+                  "also_read": {"https://www.eia.gov/about/copyrights_reuse.php":
+                                "public_domain and use clauses above",
+                                "https://www.eia.gov/opendata/documentation.php":
+                                "programs must throttle requests per second and per hour"}}},
+})
+
+
 def _feed_row(feed_url: str, status_: str, why: str, terms_url: str, read: str,
               clause: str = "") -> dict[str, Any]:
     """One macro event-ledger RSS feed's row (desks/mt5/macro/sources.py `_OFFICIAL_FEEDS`),
