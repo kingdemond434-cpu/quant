@@ -29,7 +29,8 @@ def test_verify_catches_missing_evidence_and_bad_rows(tmp_path):
 
 def test_decide_appends_with_sequential_ids(tmp_path):
     j = tmp_path / "j.jsonl"
-    a = argparse.Namespace(title="t", decision="d", why="w", by="me", owner="", evidence=[],
+    a = argparse.Namespace(title="t", decision="d", why="w", by="me", owner="",
+                           evidence=["scripts/context.py"],
                            supersedes="")
     r1, r2 = CTX["decide"](a, j), CTX["decide"](a, j)
     assert r1["id"].endswith("-001") and r2["id"].endswith("-002")
@@ -44,7 +45,7 @@ def test_recovered_journal_gaps_never_reuse_a_receipt_id(tmp_path):
     original = "".join(json.dumps(row) + "\n" for row in rows)
     j.write_text(original, encoding="utf-8")
     a = argparse.Namespace(title="t", decision="d", why="w", by="me", owner="",
-                           evidence=[], supersedes="")
+                           evidence=["scripts/context.py"], supersedes="")
     first, second = CTX["decide"](a, j), CTX["decide"](a, j)
     assert first["id"] == f"D-{day}-020"
     assert second["id"] == f"D-{day}-021"
@@ -77,7 +78,7 @@ def test_ids_are_minted_past_the_fetched_live_copy_too(tmp_path):
     git("checkout", "-q", "--orphan", "box")
     j.write_text("".join(json.dumps(r) + "\n" for r in rows[:2]), encoding="utf-8")
     a = argparse.Namespace(title="t", decision="d", why="w", by="me", owner="",
-                           evidence=[], supersedes="")
+                           evidence=["scripts/context.py"], supersedes="")
     assert CTX["decide"](a, j)["id"] == f"D-{day}-006"
 
 
@@ -138,3 +139,44 @@ def test_decide_refuses_an_evidence_pointer_that_cannot_resolve(tmp_path):
     assert not j.exists()
     a.evidence = ["pr:999999"]
     assert CTX["decide"](a, j)["evidence"] == ["pr:999999"]
+
+
+def test_decide_refuses_a_row_with_no_evidence(tmp_path):
+    a = argparse.Namespace(title="t", decision="d", why="w", by="me", owner="", evidence=[],
+                           supersedes="")
+    with pytest.raises(SystemExit):
+        CTX["decide"](a, tmp_path / "j.jsonl")
+
+
+def test_amend_appends_a_correction_and_never_rewrites_the_original(tmp_path):
+    j = tmp_path / "j.jsonl"
+    orig = {"id": "D-20260101-001", "at": "x", "title": "t", "decision": "d", "why": "w",
+            "by": "b", "evidence": []}
+    j.write_text(json.dumps(orig) + "\n", encoding="utf-8")
+    before = j.read_text(encoding="utf-8")
+    ok, problems = CTX["verify"](j)
+    assert not ok and any("missing ['evidence']" in p for p in problems)
+    a = argparse.Namespace(of="D-20260101-001", why="named late", by="me",
+                           evidence=["scripts/context.py"])
+    row = CTX["amend"](a, j)
+    assert row["amends"] == "D-20260101-001" and row["amend"] == "evidence"
+    assert j.read_text(encoding="utf-8").startswith(before)  # append-only
+    assert CTX["verify"](j) == (True, [])
+
+
+def test_amend_refuses_an_unknown_target_or_a_bad_pointer(tmp_path):
+    j = tmp_path / "j.jsonl"
+    j.write_text(json.dumps({"id": "D-20260101-001"}) + "\n", encoding="utf-8")
+    for of, ev in (("D-29990101-001", ["scripts/context.py"]), ("D-20260101-001", ["no/such"]),
+                   ("D-20260101-001", [])):
+        with pytest.raises(SystemExit):
+            CTX["amend"](argparse.Namespace(of=of, why="w", by="b", evidence=ev), j)
+
+
+def test_verify_refuses_an_amendment_of_a_later_or_unknown_row(tmp_path):
+    j = tmp_path / "j.jsonl"
+    rows = [{"id": "D-2", "at": "x", "title": "t", "decision": "d", "why": "w", "by": "b",
+             "evidence": ["scripts/context.py"], "amends": "D-9", "amend": "evidence"}]
+    j.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    ok, problems = CTX["verify"](j)
+    assert not ok and any("amends unknown or later" in p for p in problems)
