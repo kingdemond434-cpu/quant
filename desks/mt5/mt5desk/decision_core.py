@@ -2154,6 +2154,25 @@ def load_sleeves_verbose(path: Path) -> tuple[list[dict], list[str]]:
     return keep, notes
 
 
+def stop_roster(sleeves: list[dict], path: Path) -> tuple[list[dict], list[str]]:
+    """The FINAL roster with every principal stop applied: `(rows to place, log notes)`.
+
+    `load_sleeves_verbose` drops stopped rows from sleeves.json, but two paths add rows AFTER it.
+    `roster` emits the gold windows itself, and `minlot_override_rows` re-admits pinned FX rows
+    the LIVE-only roster does not carry. A stop on a gold window or on a pinned sleeve therefore
+    never reached the placer's roster (audit 2026-11-03, should-fix 1 on #475). The gateway runs
+    this once, on the roster it is about to place from, so no admission path can follow it.
+    Open positions are still managed from the venue's own book; this decides only new risk.
+    """
+    from mt5desk.principal_stops import split
+    keep, stopped, problem = split(sleeves, path)
+    notes = [f"PRINCIPAL STOP holds {r.get('name') or r.get('symbol')} on the final roster: {why}"
+             for r, why in stopped]
+    if problem and stopped:
+        notes.append(f"PRINCIPAL STOPS UNMEASURED on the final roster: {problem}")
+    return keep, notes
+
+
 def stamp_feed_health(sleeves: list[dict], path: Path) -> int:
     """Annotate each sleeve with its instrument's feed-health reading from `path`, in place.
 

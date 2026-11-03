@@ -209,3 +209,77 @@ def test_an_emptied_file_or_a_typo_in_a_stop_never_releases_a_built_in_stop(
     resume = {**STOP, "resumed": {"by": "principal", "at": "x", "message": "cmsg_z resume"}}
     sl = _write(tmp_path, [AUD, CARRY], [resume])
     assert len(dc.load_sleeves_verbose(sl)[0]) == 2, "only the recorded resume releases it"
+
+
+def test_the_final_roster_holds_a_stopped_gold_window_and_a_pinned_row(tmp_path) -> None:
+    """Audit 2026-11-03 should-fix 1: gold windows and min-lot pinned rows join the roster AFTER
+    `load_sleeves_verbose`, so the stop must bind the final roster the placer reads."""
+    stops = tmp_path / "PRINCIPAL_STOPS.json"
+    stops.write_text(
+        json.dumps(
+            {
+                "stops": [
+                    {
+                        "name": "gold_london_am",
+                        "by": "principal",
+                        "at": "2026-11-03T00:00:00+00:00",
+                        "authority": "test",
+                    },
+                    {
+                        "identity": "gbpusd|session_range_breakout|london",
+                        "by": "principal",
+                        "at": "2026-11-03T00:00:00+00:00",
+                        "authority": "test",
+                    },
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    rows = [
+        {"name": "gold_asia", "symbol": "XAUUSD", "status": "LIVE"},
+        {"name": "gold_london_am", "symbol": "XAUUSD", "status": "LIVE"},
+        {
+            "name": "fx_pinned",
+            "symbol": "GBPUSD",
+            "family": "session_range_breakout",
+            "selector": "london",
+            "status": "LIVE",
+            "risk_frac_source": "minlot_override",
+        },
+        {
+            "name": "audchf_x",
+            "symbol": "AUDCHF",
+            "family": "overnight_gap_decay",
+            "selector": "asia",
+            "status": "LIVE",
+        },
+    ]
+    keep, notes = dc.stop_roster(rows, stops)
+    assert [r["name"] for r in keep] == ["gold_asia"]
+    assert len(notes) == 3 and all("final roster" in n for n in notes)
+
+
+def test_the_final_roster_fails_closed_on_the_built_in_stops_when_the_file_is_absent(
+    tmp_path,
+) -> None:
+    rows = [
+        {"name": "gold_asia", "symbol": "XAUUSD", "status": "LIVE"},
+        {
+            "name": "a",
+            "symbol": "AUDCHF",
+            "family": "overnight_gap_decay",
+            "selector": "asia",
+            "status": "LIVE",
+        },
+    ]
+    keep, notes = dc.stop_roster(rows, tmp_path / "PRINCIPAL_STOPS.json")
+    assert [r["name"] for r in keep] == ["gold_asia"]
+    assert any("UNMEASURED" in n for n in notes)
+
+
+def test_the_gateway_applies_the_stops_after_management_and_before_placement() -> None:
+    src = (Path(__file__).resolve().parents[1] / "mt5desk" / "gateway.py").read_text("utf-8")
+    at = src.index("sleeves, _stop_notes = stop_roster(")
+    assert src.index("manage_scalp_baskets(st, sleeves)") < at
+    assert at < src.index("reg_killed = regime_hibernate(sleeves)")

@@ -344,6 +344,9 @@ from mt5desk.decision_core import (
     minlot_override_rows as minlot_override_rows,
 )
 from mt5desk.decision_core import (
+    stop_roster as stop_roster,
+)
+from mt5desk.decision_core import (
     stamp_minlot_override as stamp_minlot_override,
 )
 from mt5desk.decision_core import (
@@ -5185,6 +5188,18 @@ def main() -> None:
         manage_scalp_baskets(st, sleeves)
     except Exception as exc:
         log(f"SCALP-MANAGE FAILED (positions left untouched): {type(exc).__name__}: {exc}")
+
+    # THE STOPS BIND THE ROSTER THE PLACER READS, gold windows and pinned rows included
+    # (decision_core.stop_roster). AFTER management, like the hibernation below: a stopped
+    # sleeve's open position still gets its exits. A stops fence that raises places nothing new.
+    try:
+        sleeves, _stop_notes = stop_roster(sleeves, SLEEVES_FILE.with_name("PRINCIPAL_STOPS.json"))
+        for note in _stop_notes:
+            log(note)
+    except Exception as exc:
+        log(f"PRINCIPAL STOPS failed on the final roster ({type(exc).__name__}: {exc}); "
+            f"no new sleeve is placed this pass")
+        sleeves = []
 
     reg_killed = regime_hibernate(sleeves)
     # THE VETOED SLEEVES ARE KEPT ASIDE, NOT FORGOTTEN. They are removed from `sleeves` so nothing
