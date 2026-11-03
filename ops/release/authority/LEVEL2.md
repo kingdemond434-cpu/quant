@@ -9,8 +9,8 @@ login then cannot land code that way. It is staged, and nothing here is on until
 | 1 | The authority posts the `release-authority` commit status on each PR head. CLEAR on AUTO/LOW gives success. CLEAR on CONTROLLER gives success only once `veto_hours` have passed since its FIRST signed CLEAR. ROOT, HOLD and FAIL give failure. It is on only while `C:\opt\audit_registry\POST_STATUS` exists. | built (#650) |
 | 2 | A state publisher under its own Windows account holds a "quant-state" App key and pushes a box commit to LIVE only if every path is a state path (`libs/ops/release.py` `STATE_PREFIXES`). It replaces the direct `git push` in sync_shadow_to_git.ps1, Adopt-Release.ps1 and sign_train_leg.ps1. | built (#650) |
 | 3 | `workflow_gate.ps1` and `sign_train_leg.ps1` use a "quant-merger" App token (`ops/release/merger/merger_env.ps1`; Contents, Pull requests and Workflows write) instead of zuck's gh login, whenever `C:\opt\merger\config.json` exists. | built (#650) |
-| 4 | Once the merger is installed, the CRO cycle's agents (Run-DeskCycle.ps1) push code to `cro/<lane>-<date>` and open a PR, never LIVE (built in #650). Built (#650): CI's seal job stops pushing LIVE with GITHUB_TOKEN. It uses the state App's token from an Actions **environment restricted to the LIVE branch**, so a PR's own workflow never sees that token. | to build |
-| 5 | The owner's setup: authority App commit statuses set to Read & write; create the two Apps; `New-Item C:\opt\audit_registry\POST_STATUS`; put the state App's id in place of `actor_id: 0`, run `python ops/release/authority/check_ruleset.py --repo kingdemond434-cpu/quant` until it prints `SAFE to import` (it also checks that the live-seal environment admits only LIVE and desk-sync-clean), then import `ruleset_live.json`; `gh auth logout` and clear the box's git credential. | after 2-4 run on the box |
+| 4 | Once the merger is installed, the CRO cycle's agents push code to `cro/<lane>-<date>` and open a PR, never LIVE. CI's seal and promote jobs push LIVE, master and production as the state App, from an environment that admits LIVE alone. | built (#650) |
+| 5 | The owner's one bootstrap run (below). | ready |
 
 Why each piece is needed:
 - A ruleset requiring a status refuses direct pushes too, and today five box writers push LIVE with
@@ -33,26 +33,49 @@ restart it; they stop the status at failure or pending while they stand.
 The required check is pinned to the authority App (`integration_id` 5601819), so no other identity
 can post a status that satisfies it.
 
-## The owner's Level 2 setup, in order (once #650 is merged and adopted)
+## The bootstrap: one owner run, once (`bootstrap_level2.ps1`)
 
-Each step is safe to stop after, and nothing is enforced until step 6.
+Everything the owner did by hand in the earlier six-step list is now one elevated run on the box,
+`powershell -ExecutionPolicy Bypass -File C:\opt\authority\repo\ops\release\authority\bootstrap_level2.ps1`
+(after `git -C C:\opt\authority\repo fetch` and a checkout of the cleared #650 head, or of LIVE
+once #650 is in). It is resumable and enforces nothing until its last step. Inside it, the owner
+makes five decisions in his browser and the script does the rest:
 
-1. **Re-pin** (#650 is ROOT): run `python ops\release\authority\pin_root.py --write C:\opt\audit_registry\ROOT_PIN.json` from a clean checkout of LIVE.
-2. **Authority App:** on its settings page, set Commit statuses to Read & write. Then run `New-Item C:\opt\audit_registry\POST_STATUS` and the authority starts posting the check.
-3. **Create the "quant-merger" App** with Contents, Pull requests and Workflows Read & write, and Metadata Read. **Never** give it Administration or Commit statuses: `install_merger.ps1` reads the installation's permissions and refuses if it has either. No webhook; install it on quant only. Then run `install_merger.ps1 -AppId N`.
-4. **Create the "quant-state-publisher" App** with Contents Read & write and Metadata Read. Then:
-   - in the repo, go to Settings, Environments, `live-seal`; set Deployment branches to the selected branches `claude/llm-auto-upgrade-verify-gcjac3` and `desk-sync-clean`; add the secret `STATE_APP_KEY` (a second private key of this App, generated for CI); and add the variable `STATE_APP_ID`;
-   - run `install_publisher.ps1 -AppId N`;
-   - write `C:\opt\audit_registry\STATE_APP.json` as `{"login": "quant-state-publisher[bot]"}`, which starts the push-log detector with a baseline.
-5. **Wait a day.** Check that the state publisher's log shows pushes and that LIVE's seal commits are authored by the state App.
-6. **Enforce.** This is gated, like `check_ruleset.py`, on every LIVE writer being converted:
-   - the state publisher pushes state (step 2);
-   - the CI seal uses the state App (step 4b);
-   - the gate and the sign train use the merger (the sign train already pushes only its own `claude/sign-train-*` branch plus a PR, never LIVE);
-   - the CRO agents open PRs.
+| # | What the script does | The owner's act | Why it cannot be delegated |
+|---|---|---|---|
+| 1 | Checks #650's exact head against the gate's ROOT bar (`bootstrap_github.py ready`: every gating and AUTO check genuine and green, the latest trusted audit verdict a CLEAR of that head), then merges pinned to that head | starting the script | #650 changes the authority itself. No authority may approve its own change, and every other identity on the box is an agent's |
+| 2 | Re-pins the root digest from a clean LIVE checkout | none (the run is elevated) | `ROOT_PIN.json` is admin-write on purpose: the pin is what an agent must never move |
+| 3 | Creates `POST_STATUS`, runs the authority, and waits until it has posted a status | ticks Commit statuses: Read and write on the authority App, Saves, and Accepts on the installation | GitHub has no API that changes an App's permissions; only the App's owner can grant them |
+| 4 | Serves the manifest for `quant-merger`, converts the code itself, writes the key into the App's own folder (no download), opens the install page, runs `install_merger.ps1` | clicks Create GitHub App, then Install on quant only | Creating an identity with write access to the repository is an account owner's act on github.com |
+| 5 | The same for `quant-state-publisher`; configures `live-seal` (LIVE alone), `STATE_APP_KEY` and `STATE_APP_ID`; runs `install_publisher.ps1`; writes `STATE_APP.json` | the same two clicks | as 4, and environments and secrets are admin settings |
+| 6 | Waits for a clean publisher pass and a merger token | none | |
+| 7 | Fills the state App's id into both rulesets, runs `check_ruleset.py`, applies them, and reads LIVE's rules back the way the authority does every pass | none (his gh login, which he is running) | rulesets are admin settings |
+| 8 | `gh auth logout`, and removes github.com entries from Credential Manager and every gh `hosts.yml` on the box | none | |
 
-   Then:
-   - put the state App's id in `ruleset_live.json`;
-   - run `python ops\release\authority\check_ruleset.py --repo kingdemond434-cpu/quant` until it prints `SAFE to import` (it also checks that the live-seal environment admits only LIVE and desk-sync-clean);
-   - import the ruleset (Settings, Rules, Rulesets, Import);
-   - on the box, run `gh auth logout`, and remove zuck's github.com entry from Windows Credential Manager.
+After that run:
+- A routine PR (AUTO/LOW) and a protected one (CONTROLLER) need no owner act. The authority clears
+  it, GitHub requires the authority's status, the merger merges it, and CI seals and promotes it as
+  the state App.
+- `ops/box/workflow_gate.ps1` and `ops/release/merger/*` move from ROOT to CONTROLLER by
+  themselves. `ROOT_POLICY.json` `enforced_root_files` makes that switch, and it happens only while
+  the authority reads GitHub's rule as active (`authority.level2_enforced`, which fails closed).
+  Once GitHub enforces the status, a rewritten gate or merger cannot land anything the authority
+  did not pass.
+- **ROOT stays exceptional, and it is named.** These files remain ROOT:
+  - `ops/release/authority/*` (the authority's code, policy, pin tools and rulesets);
+  - `ops/release/publisher/*` (its path filter is the only bound on the state App's bypass);
+  - `.github/scripts/audit_gate.py` (the authority loads it);
+  - `.github/workflows/trusted-eval.yml` (the authority's base-run evidence).
+
+  A change to one of them is merged by the owner through the admin bypass, which works in
+  pull_request mode only, and is then re-pinned. There is no other way, by design.
+- `master` and `production` take updates only from the state App (`ruleset_master.json`). master's
+  `trusted-eval.yml` is the file pull_request_target runs, and production is what the box adopts.
+  Before this, any write-capable login could move either: it could fake the base-run evaluation or
+  roll the box back.
+
+What the bootstrap does NOT make autonomous:
+- the CLI logins of the CRO lanes' standard account (`claude /login`, `codex login`), which belong
+  to the owner's Anthropic and OpenAI accounts;
+- any box agent session that still pushes with the owner's gh login. Step 8 removes that login, and
+  such sessions must use the merger identity (`merger_env.ps1`) from then on.
