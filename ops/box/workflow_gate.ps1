@@ -152,6 +152,25 @@ try {
         $rc = $LASTEXITCODE
         $out = $lines -join "`n"
     } finally { Pop-Location }
+    # THE MEMECOIN REPO (zuck 2026-11-03, "zero taps everywhere"): the same box, login and veto
+    # window merge a CLEARed, green memecoin PR that does not touch its live switch
+    # (.github/scripts/memecoin_gate.py). It runs only when MEMECOIN_AUDIT_REGISTRY is set on the
+    # box, and a failure here is logged and never stops the quant sweep's heartbeat.
+    if ($env:MEMECOIN_AUDIT_REGISTRY) {
+        try {
+            $mClone = Join-Path (Split-Path -Parent $Clone) "memecoin-gate"
+            $env:GIT_CONFIG_COUNT = '2'
+            $env:GIT_CONFIG_KEY_1 = 'safe.directory'
+            $env:GIT_CONFIG_VALUE_1 = ($mClone -replace '\\', '/')
+            if (-not (Test-Path -LiteralPath (Join-Path $mClone ".git"))) {
+                & git clone -q "https://github.com/kingdemond434-cpu/memecoin.git" $mClone 2>&1 | ForEach-Object { Say "memecoin clone: $_" }
+            }
+            & $Python -I -u (Join-Path $Clone ".github\scripts\memecoin_gate.py") --box --clone $mClone 2>&1 | ForEach-Object { Say "memecoin@$at $_" }
+            Say "memecoin rc=$LASTEXITCODE"
+        } catch {
+            Say "memecoin sweep failed: $($_.Exception.Message)"
+        }
+    }
     # case-sensitive, the gate's own word: -match counted every "merged" in any line (20:20Z: 5)
     $merged = @($out -split "`r?`n" | Where-Object { $_ -cmatch ': MERGED \(' }).Count
     $note = "gate@{0}: {1} merged" -f $at, $merged
