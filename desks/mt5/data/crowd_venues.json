@@ -1,0 +1,45 @@
+{
+ "note": "WHERE EACH COUNTRY'S TRADING CROWD GATHERS, biggest public venue first (zuck 2026-11-03: 'go where most of their trading crowd is'). status BUILT = a deep_forest ground mines it (ground names it); SEARCH = reached through an existing route; BLOCKED_AUTH = needs a login/cookie/key, so it is NOT mined and never worked around; TODO = public and not yet built (next pass builds it). Hard limits: logged out only, no cookies, no proxies/IP rotation, no CAPTCHA solving, stop on 429.",
+ "countries": {
+  "cn": [
+   {"venue": "Eastmoney Guba 东方财富股吧", "status": "BUILT", "ground": "东方财富股吧 商品"},
+   {"venue": "WeChat public articles 公众号 (via Sogou)", "status": "BUILT", "ground": "微信公众号 商品 via 搜狗"},
+   {"venue": "WeChat groups 微信群", "status": "BLOCKED_AUTH", "why": "private, membership + login; harvest_join_links only flags public invite links to zuck"},
+   {"venue": "Xueqiu 雪球", "status": "BLOCKED_AUTH", "why": "search API refuses requests without a session cookie"},
+   {"venue": "Bilibili B站", "status": "BUILT", "ground": "Bilibili 商品 黄金白银", "why": "metadata+tags; subtitles need login so are not read"},
+   {"venue": "Baidu Tieba 贴吧", "status": "BUILT", "ground": "百度贴吧 黄金期货"},
+   {"venue": "Baidu Index 百度指数", "status": "BLOCKED_AUTH", "why": "requires a Baidu login"},
+   {"venue": "Baijiahao 百家号", "status": "TODO", "why": "reached only through Baidu web search, which serves a security check to bots"},
+   {"venue": "Zhihu 知乎", "status": "BLOCKED_AUTH", "why": "search needs login / signed headers"},
+   {"venue": "Weibo 微博", "status": "BLOCKED_AUTH", "why": "search needs login"},
+   {"venue": "Juejin 掘金", "status": "BUILT", "ground": "existing juejin ground"}
+  ],
+  "jp": [
+   {"venue": "Yahoo! Finance JP 掲示板", "status": "BUILT", "ground": "Yahoo!ファイナンス 掲示板 商品ETF"},
+   {"venue": "YouTube JP", "status": "BUILT", "ground": "YouTube JP 商品相場", "why": "captions via the residential video miner (PR #655)"},
+   {"venue": "5ch 株式/市況板", "status": "BUILT", "ground": "5ch 株式・市況板"},
+   {"venue": "niconico", "status": "BUILT", "ground": "niconico 相場 トレード"},
+   {"venue": "note.com", "status": "SEARCH", "why": "rides the search route; the JSON endpoint moved (measured 404)"},
+   {"venue": "Qiita / Zenn / Hatena", "status": "BUILT", "ground": "existing foreign grounds"},
+   {"venue": "minkabu みんかぶ", "status": "TODO"}
+  ],
+  "kr": [
+   {"venue": "Naver Finance 종목토론실", "status": "BUILT", "ground": "Naver 종목토론실 원자재 ETF"},
+   {"venue": "DCInside 주식갤러리", "status": "SEARCH"},
+   {"venue": "Naver search API", "status": "BLOCKED_AUTH", "why": "needs a client key"},
+   {"venue": "KakaoTalk open chats", "status": "BLOCKED_AUTH"}
+  ],
+  "in": [
+   {"venue": "TradingQnA (Zerodha)", "status": "BUILT", "ground": "TradingQnA (Zerodha) commodities"},
+   {"venue": "ValuePickr", "status": "BUILT", "ground": "ValuePickr commodities"},
+   {"venue": "Traderji forum", "status": "TODO"}
+  ],
+  "ru": [{"venue": "Smart-Lab", "status": "BUILT", "ground": "existing smartlab ground"}, {"venue": "Habr / vc.ru", "status": "BUILT"}, {"venue": "Telegram public channels (t.me/s)", "status": "BUILT"}],
+  "tr": [{"venue": "Eksi Sozluk", "status": "BUILT"}, {"venue": "Investing.com TR comments", "status": "TODO"}],
+  "vn": [{"venue": "Tinhte", "status": "BUILT"}, {"venue": "F319 forum", "status": "TODO"}],
+  "id": [{"venue": "Stockbit", "status": "BLOCKED_AUTH"}, {"venue": "Kaskus forum", "status": "TODO"}],
+  "br": [{"venue": "ADVFN Brasil forum", "status": "TODO"}],
+  "tw": [{"venue": "PTT Stock board", "status": "TODO", "why": "public web mirror; Futures board too"}],
+  "th": [{"venue": "Pantip (Sinthorn room)", "status": "TODO"}]
+ }
+}

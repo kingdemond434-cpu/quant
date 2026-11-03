@@ -435,6 +435,11 @@ def _offline(monkeypatch, tmp_path: Path) -> list:
     for name in dfm.FOREIGN_FNS:
         monkeypatch.setattr(foreign_sources, name, lambda q, **kw: (art, None))
     monkeypatch.setattr(cn_sources, "juejin", lambda q, **kw: (art, None))
+    from libs.data import crowd_sources
+    for name in dfm.CROWD_FNS:
+        monkeypatch.setattr(crowd_sources, name, lambda q, **kw: (art, None))
+        monkeypatch.setitem(crowd_sources.CROWD_FNS, name, lambda q, **kw: (art, None))
+    monkeypatch.setattr(dfm, "LEARNED", tmp_path / "learned.json")
     monkeypatch.setattr(cn_sources, "sogou_weixin", lambda q, **kw: (art, None))
     monkeypatch.setattr(bilibili, "search", lambda q, **kw: ([_Vid()], None))
     paper = _Art("Carry and the fix", "https://arxiv.org/abs/1", "The carry trade usually gains for a month "
@@ -464,6 +469,8 @@ def test_the_grounds_file_is_a_world_with_a_regions_index_and_every_ground_is_ro
             assert g.get("fn") in dfm.FOREIGN_FNS
         if g["route"] == "papers":
             assert g.get("fn") in dfm.PAPER_FNS
+        if g["route"] == "crowd":
+            assert g.get("fn") in dfm.CROWD_FNS
         if g.get("kind") == "dataset":
             assert g.get("dataset_class") in dfm.DATASET_CLASSES, f"{g['name']}: dataset class"
         if g["route"] != "unreachable":
@@ -689,3 +696,32 @@ def test_a_ground_that_yields_only_momentum_says_so(monkeypatch, tmp_path) -> No
          "url": "https://m.test/"}])
     assert doc["momentum_only_grounds"] == ["Momentum only"]
     assert doc["grounds"][0]["classes"] == {"momentum": doc["grounds"][0]["claims"]}
+
+
+def test_crowd_venue_registry_names_only_real_grounds_and_never_mines_a_blocked_venue() -> None:
+    """Every BUILT crowd venue points at a ground that exists; no ground mines a BLOCKED_AUTH
+    venue (a login wall is never worked around)."""
+    reg = json.loads((_DESK / "data" / "crowd_venues.json").read_text("utf-8"))
+    names = {g["name"] for g in _SRC["grounds"]}
+    for country, venues in reg["countries"].items():
+        for v in venues:
+            assert v["status"] in ("BUILT", "SEARCH", "BLOCKED_AUTH", "TODO"), v
+            g = v.get("ground", "")
+            if v["status"] == "BUILT" and g and not g.startswith("existing"):
+                assert g in names, f"{country}: {g} is not a ground"
+    blob = json.dumps([g for g in _SRC["grounds"] if g.get("route") == "crowd"],
+                      ensure_ascii=False).lower()
+    for host in ("xueqiu.com", "index.baidu.com", "weibo.com", "zhihu.com", "stockbit"):
+        assert host not in blob
+
+
+def test_learned_queries_expand_from_crowd_tags_and_retire_when_barren(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(dfm, "LEARNED", tmp_path / "learned.json")
+    monkeypatch.setattr(dfm, "SEEN", tmp_path / "seen.json")
+    assert dfm.tag_terms("金 #ゴールド #12345 #http://x #仲値トレード") == ["ゴールド", "仲値トレード"]
+    assert dfm.record_learned("g", {}, ["ゴールド", "ゴールド", "仲値トレード"], ["base"]) == 2
+    assert set(dfm.learned_for("g", 5)) == {"ゴールド", "仲値トレード"}
+    for _ in range(dfm.LEARN_RETIRE_AFTER):
+        dfm.record_learned("g", {"ゴールド": 0, "仲値トレード": 1}, [], ["base"])
+    assert dfm.learned_for("g", 5) == ["仲値トレード"]
+    assert dfm.record_learned("g", {}, ["ゴールド"], ["base"]) == 0   # retired stays retired

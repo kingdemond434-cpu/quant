@@ -163,7 +163,7 @@ GRADE = {"competition": "COMPETITION_RECORD", "interview": "INTERVIEW",
 #: or a paywall wearing a measurement's clothes.
 ROUTES: frozenset[str] = frozenset({
     "http", "render", "search", "juejin", "sogou", "bilibili", "gitee", "foreign", "papers",
-    "rss", "reddit", "wayback", "nitter", "youtube", "telegram", "unreachable",
+    "rss", "reddit", "wayback", "nitter", "youtube", "telegram", "crowd", "unreachable",
 })
 #: libs.data.foreign_sources functions a ground may name. `coinpan` (a crypto forum) is fenced
 #: out by the standing order -- the ONLY exclusion here, and it is the MT5 universe mandate, not
@@ -172,6 +172,19 @@ ROUTES: frozenset[str] = frozenset({
 FOREIGN_FNS: frozenset[str] = frozenset({
     "qiita", "zenn", "hatena", "velog", "habr", "vcru", "smartlab", "tinhte", "eksisozluk",
 })
+#: libs.data.crowd_sources functions a `crowd` ground may name: the big public retail boards of
+#: each country (Guba, Tieba, niconico, Yahoo JP boards, 5ch, Naver, Discourse forums).
+CROWD_FNS: frozenset[str] = frozenset({
+    "niconico", "yahoo_jp_board", "fivech", "guba", "tieba", "naver_board", "discourse",
+})
+#: SELF-EXPANDING QUERIES (zuck 2026-11-03: "constantly evolve breadth ... more sources"). Tags
+#: the crowd itself attaches to posts that yielded a mechanism claim become new queries for that
+#: ground; each run spends a few slots on the least-recently-tried learned queries; a learned
+#: query that yields nothing in LEARN_RETIRE_AFTER uses is retired for good.
+LEARNED = _DESK / "data" / "deep_forest_learned_queries.json"
+LEARN_PER_RUN = 3
+LEARN_CAP_PER_GROUND = 60
+LEARN_RETIRE_AFTER = 5
 PAPER_FNS: frozenset[str] = frozenset({"arxiv", "ssrn", "openreview"})
 #: The dataset classes a ground of kind `dataset` must declare (principal 2026-09-05).
 DATASET_CLASSES: frozenset[str] = frozenset({
@@ -677,6 +690,67 @@ def _atomic_text(path: Path, text: str) -> None:
             tmp.unlink()
 
 
+
+_TAG_RE = re.compile("#([^\\s#,\uff0c\u3001\u3002!?\uff01\uff1f]{2,20})")
+
+
+def tag_terms(text: str) -> list[str]:
+    """`#tag` tokens from a crowd post's searchable text, minus pure numbers and URLs."""
+    return [t for t in _TAG_RE.findall(text or "")
+            if not t.isdigit() and "/" not in t and "http" not in t.lower()]
+
+
+def _learned_doc() -> dict[str, Any]:
+    try:
+        doc = json.loads(LEARNED.read_text(encoding="utf-8"))
+        return doc if isinstance(doc, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def learned_for(ground: str, k: int) -> list[str]:
+    """The k live learned queries of a ground, least-recently-tried first."""
+    live = (_learned_doc().get(ground) or {}).get("live") or {}
+    return sorted(live, key=lambda q: (live[q].get("last_used") or "", q))[: max(0, k)]
+
+
+def record_learned(ground: str, results: dict[str, int], harvested: list[str],
+                   base: list[str]) -> int:
+    """Score the learned queries just tried, retire the barren ones, add new tags. Returns the
+    number added. Locked across processes; a lock miss degrades to an unlocked write."""
+    now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    with _xlock("deep_forest_learned"):
+        doc = _learned_doc()
+        g = doc.setdefault(ground, {"live": {}, "retired": []})
+        live, retired = g.setdefault("live", {}), g.setdefault("retired", [])
+        for q, n in results.items():
+            r = live.get(q)
+            if r is None:
+                continue
+            r["uses"] = int(r.get("uses", 0)) + 1
+            r["claims"] = int(r.get("claims", 0)) + int(n)
+            r["last_used"] = now
+            if r["uses"] >= LEARN_RETIRE_AFTER and r["claims"] == 0:
+                retired.append(q)
+                del live[q]
+        added = 0
+        counts: dict[str, int] = {}
+        for t in harvested:
+            counts[t] = counts.get(t, 0) + 1
+        for t, _n in sorted(counts.items(), key=lambda kv: -kv[1]):
+            if len(live) >= LEARN_CAP_PER_GROUND:
+                break
+            if t in live or t in retired or t in base:
+                continue
+            live[t] = {"added": now, "last_used": "", "uses": 0, "claims": 0}
+            added += 1
+        g["retired"] = retired[-500:]
+        with contextlib.suppress(OSError):
+            LEARNED.parent.mkdir(parents=True, exist_ok=True)
+            _atomic_text(LEARNED, json.dumps(doc, ensure_ascii=False, indent=1, sort_keys=True))
+    return added
+
+
 def _claims_rows() -> list[dict[str, Any]]:
     try:
         return [json.loads(ln) for ln in CLAIMS.read_text("utf-8").splitlines() if ln.strip()]
@@ -1138,10 +1212,25 @@ class _Run:
         from libs.data import foreign_sources
         return self._articles(g, getattr(foreign_sources, name), f"foreign:{name}")
 
+    def ground_crowd(self, g: dict[str, Any]) -> dict[str, Any]:
+        """A libs.data.crowd_sources venue: where a country's retail trading crowd gathers.
+        Logged out; the fetcher stops itself on HTTP 429 or any access wall."""
+        name = str(g.get("fn") or "")
+        if name not in CROWD_FNS:
+            return {"error": f"crowd fn {name!r} is not on the allowlist"}
+        from libs.data import crowd_sources
+        return self._articles(g, crowd_sources.CROWD_FNS[name], f"crowd:{name}")
+
     def _articles(self, g: dict[str, Any], fn: Any, route: str) -> dict[str, Any]:
         claims = articles = 0
         errors: list[str] = []
-        for q in g.get("queries") or []:
+        learn = bool(g.get("learn", route.startswith("crowd:")))
+        base = [str(q) for q in g.get("queries") or []]
+        k = int(g.get("learn_per_run") or LEARN_PER_RUN)
+        learned = learned_for(str(g.get("name")), k) if learn else []
+        results: dict[str, int] = {}
+        harvested: list[str] = []
+        for q in base + [x for x in learned if x not in base]:
             if self.over() or not self._net_ok():
                 break
             self.counts["queries"] += 1
@@ -1149,13 +1238,26 @@ class _Run:
             self._note_net(err is None or "HTTP" in str(err))
             if err:
                 errors.append(str(err)[:100])
+                if "stopped for this run" in str(err):
+                    break                      # 429 / access wall: stop the ground, never retry
+            got = 0
             for a in arts:
                 articles += 1
-                claims += self.take(a.searchable, ground=g, url=a.url, title=a.title, route=route)
+                n = self.take(a.searchable, ground=g, url=a.url, title=a.title, route=route)
+                got += n
+                if n and learn:
+                    harvested.extend(tag_terms(a.searchable))
                 self.follow(a.url, a.title, via=f"{SOURCE}:{g.get('name')}")
+            claims += got
+            if q in learned:
+                results[q] = got
             time.sleep(1.2)
-        return {"queries": len(g.get("queries") or []), "articles": articles, "claims": claims,
-                "errors": errors[:4]}
+        if learn and (results or harvested):
+            added = record_learned(str(g.get("name")), results, harvested, base)
+            key = "learned_queries_added"
+            self.counts[key] = self.counts.get(key, 0) + added
+        return {"queries": len(base), "learned_tried": len(results), "articles": articles,
+                "claims": claims, "errors": errors[:4]}
 
     def ground_papers(self, g: dict[str, Any]) -> dict[str, Any]:
         """arXiv / SSRN / OpenReview through libs.data.papers: mechanism claims from ABSTRACTS."""
@@ -1480,6 +1582,8 @@ class _Run:
                 out = self.ground_gitee(g)
             elif route == "foreign":
                 out = self.ground_foreign(g)
+            elif route == "crowd":
+                out = self.ground_crowd(g)
             elif route == "papers":
                 out = self.ground_papers(g)
             elif route == "rss":
