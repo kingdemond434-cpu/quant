@@ -138,6 +138,12 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     # the ingest reads, with its consecutive-empty streak; process_health reads its verdict.
     "MT5-AxisIngest (dependency liveness)": ("desks/mt5/reports/DEPENDENCY_LIVENESS.json", 1560,
                            "which data publishers have returned nothing for more than two passes"),
+    # THE COUNTRY-PACK RED CHECK ON THE HOURLY CLOCK (Rule 23, 2026-11-03): leg
+    # world_dataset_hunt writes every pack door's consecutive-empty streak; process_health reads
+    # its verdict (RED after more than two empty attempts).
+    "MT5-Hourly (country pack liveness)": ("desks/mt5/reports/COUNTRY_PACK_LIVENESS.json", 240,
+                           "which country open-data doors have returned nothing for more than "
+                           "two attempts"),
     "MT5-CEODocket":      ("desks/mt5/reports/CEO_DOCKET.json", 1560,
                            "the daily ranked proposals the frontier scout produced"),
     "MT5-NeverStale":     ("desks/mt5/reports/NEVER_STALE.json", 60,

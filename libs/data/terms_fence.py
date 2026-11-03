@@ -1706,6 +1706,142 @@ SOURCE_POLICY.update({
                       "no terms link; footer links only 'Kişisel Verilerin Korunması' "  # noqa: RUF001
                       "(https://www.iar.com.tr/Kurumsal/kvkk/148), 2026-10-29")}}},
 })
+#: THE COUNTRY OPEN-DATA PACKS (2026-11-03, REGION_GAP_RANK ranks 3/4/5/10: Turkey, Poland, South
+#: Africa, Sweden). One row per publisher; each row governs its pack's door NAMES (`sources`,
+#: `hosts` empty), so the world crawler's idea grounds on the same hosts keep their own rows. The
+#: doors are `research/country_packs.py`, fetched by `world_dataset_hunter`'s direct doors (no
+#: second lane). LIVE only on a clause quoted from the publisher's own page; the two IDEAS_ONLY
+#: rows carry their missed-growth line. Flipping a row is the only unblock or revert.
+_PACK_MISSED = ("delta E[log W] UNMEASURED: the {what} cannot reach world_macro_state cells for "
+                "{syms} until this row's terms are read with a clause permitting automated access "
+                "for internal research; no conversion of it is on record")
+SOURCE_POLICY.update({
+    "tr_evds_macro": {
+        "hosts": (), "url_level": False, "status": API_PERMITTED, "key_env": ("EVDS_API_KEY",),
+        "sources": ("tr_usdtry_cbrt", "tr_funding_cost", "tr_cpi", "tr_fx_reserves",
+                    "tr_current_account"),
+        "why": ("the CBRT EVDS web service, the same API and the same terms as tr_evds_gold "
+                "(clauses quoted there and here): use and publication by third parties with the "
+                "source credited, commercial use included; the key travels in the `key` header "
+                "only. One-line revert: status -> IDEAS_ONLY, as for tr_evds_gold"),
+        "api": "https://evds3.tcmb.gov.tr/igmevdsms-dis/",
+        "credit": SOURCE_POLICY["tr_evds_gold"]["credit"],
+        "robots": SOURCE_POLICY["tr_evds_gold"]["robots"],
+        "terms": SOURCE_POLICY["tr_evds_gold"]["terms"]},
+    "pl_nbp": {
+        "hosts": (), "url_level": False, "status": API_PERMITTED,
+        "sources": ("pl_fx_usd", "pl_fx_eur", "pl_gold", "pl_policy_rates"),
+        "why": ("the NBP Web API (api.nbp.pl, keyless JSON) and NBP's published interest-rate "
+                "file; NBP's Terms of Use of its website (clauses quoted) raise no objection to "
+                "saving files and copying pages, require the source to be stated when its "
+                "materials are used, and treat automatic downloading as a problem only when it "
+                "overloads the site (one request per door per pass here, ranges capped at the "
+                "API's 93 days). Read for INTERNAL research only, credited. One-line revert: "
+                "status -> IDEAS_ONLY if the auditor reads s.1(6) 'personal use' as excluding a "
+                "desk's internal research"),
+        "api": "https://api.nbp.pl/en.html",
+        "credit": "Source: Narodowy Bank Polski (www.nbp.pl); z-scores computed by the desk",
+        "robots": "read per request by guarded_urlopen for the hunter UA (a Disallow is a hold)",
+        "terms": {"url": "https://static.nbp.pl/dokumenty/regulaminy/regulamin_nbppl_en.pdf",
+                  "checked_at": "2026-11-03",
+                  "clauses": {
+                      "1.6": ("makes no objections to saving files, copying pages in full or in "
+                              "part or making printouts for personal use"),
+                      "1.8": ("the user is required to state their source along with a link to "
+                              "the website www.nbp.pl"),
+                      "5.1": ("may in particular cases be regarded as a denial of service (DoS) "
+                              "attack")},
+                  "api_page": {"url": "https://api.nbp.pl/en.html",
+                               "quote": ("a single enquiry cannot cover a period longer than "
+                                         "93 days")}}},
+    "se_riksbank": {
+        "hosts": (), "url_level": False, "status": API_PERMITTED,
+        "sources": ("se_policy_rate", "se_usdsek", "se_eursek", "se_swestr"),
+        "why": ("the Riksbank's open REST APIs (SWEA interest and exchange rates; SWESTR), "
+                "keyless. The API page's own statement (quoted) is that the API exists so "
+                "quotations can be retrieved AUTOMATICALLY, and the SWESTR conditions (quoted) "
+                "provide SWESTR free of charge for use and re-publication with the Riksbank "
+                "named as source. The page bodies render by script (the reader saw the page "
+                "description only), so the quoted sentence is the page's own description. "
+                "One-line revert: status -> IDEAS_ONLY if the auditor wants a body clause"),
+        "api": "https://api.riksbank.se/",
+        "credit": "Source: Sveriges Riksbank; z-scores computed by the desk",
+        "robots": "read per request by guarded_urlopen for the hunter UA (a Disallow is a hold)",
+        "terms": {"url": ("https://www.riksbank.se/sv/statistik/rantor-och-valutakurser/"
+                          "hamta-rantor-och-valutakurser-via-api/"),
+                  "checked_at": "2026-11-03",
+                  "clauses": {
+                      "api": ("Riksbanken har ett öppet API (Application Programming Interface) "
+                              "som gör det möjligt att automatiserat hämta noteringar"),
+                      "swestr_free": ("is provided free of charge without any licensing "
+                                      "expenses being demanded for use or re-publication"),
+                      "swestr_source": ("It must be made clear that the Riksbank is the source "
+                                        "of re-published information about SWESTR.")},
+                  "swestr_conditions": (
+                      "https://www.riksbank.se/globalassets/media/statistik/swestr/"
+                      "publicering-210621/decision-annex-conditions-for-re-publication-and-use-"
+                      "of-the-reference-interest-rate-swestr-as-well-as-average-rates-and-index-"
+                      "based-on-swestr.pdf")}},
+    "se_scb": {
+        "hosts": (), "url_level": False, "status": API_PERMITTED,
+        "sources": ("se_cpi",),
+        "why": ("Statistics Sweden's PxWeb API; its open-data terms (clauses quoted) put the data "
+                "under CC0, free of charge, with a ten-calls-per-ten-seconds limit (one call per "
+                "pass here)"),
+        "api": "https://api.scb.se/OV0104/v1/doris/en/ssd/",
+        "credit": "Source: Statistics Sweden (processed by the desk)",
+        "robots": "read per request by guarded_urlopen for the hunter UA (a Disallow is a hold)",
+        "terms": {"url": ("https://www.scb.se/en/About-us/about-the-website-and-terms-of-use/"
+                          "open-data-api/"),
+                  "checked_at": "2026-11-03",
+                  "clauses": {
+                      "free": "You may use Statistics Sweden’s open data free of charge.",  # noqa: RUF001
+                      "licence": "We use the licence CC0 for this data",
+                      "limit": ("You may perform a maximum of ten call-ups in a 10-second period "
+                                "from an IP address.")}}},
+    "za_sarb": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("za_sarb_rates",),
+        "why": ("the SARB website disclaimer (clause quoted) forbids copying, reproducing or "
+                "distributing its material without prior written consent, and names no "
+                "exception for its web API, so SARB rates are never automated live input; the "
+                "parser is ready on fixtures. SA policy rates still reach the desk through the "
+                "BIS WS_CBPOL direct door"),
+        "unblock": ("SARB's written consent (or an open-data licence for the SarbWebApi) quoted "
+                    "into this row, and the row flipped"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _PACK_MISSED.format(
+                              what="SARB repo, prime and JIBAR rates and ZAR reserves",
+                              syms="USDZAR, EURZAR, GBPZAR, ZARJPY")},
+        "robots": "never requested (held before any fetch)",
+        "terms": {"url": "https://www.resbank.co.za/en/home/quick-links/disclaimer",
+                  "checked_at": "2026-11-03",
+                  "clauses": {
+                      "ip": ("All intellectual property rights, including but not limited to "
+                             "copyright and trademarks in the material contained on this "
+                             "website is held by the South African Reserve Bank"),
+                      "copying": ("may not be copied, reproduced, adapted, published or "
+                                  "distributed in any form whatsoever without the prior written "
+                                  "consent of the South African Reserve Bank.")}}},
+    "za_statssa_macro": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("za_statssa_cpi",),
+        "why": ("statssa.gov.za serves an Incapsula challenge to fetchers (a WAF is a hard "
+                "stop) and no Stats SA terms page was readable, so its terms are UNREAD and "
+                "UNREAD terms never permit automated live input; no machine-readable series "
+                "door is known, so no parser is built"),
+        "unblock": ("a Stats SA machine-readable series endpoint and its own terms read with a "
+                    "clause permitting automated access, quoted into this row"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _PACK_MISSED.format(what="South African CPI and current "
+                                                            "account",
+                                                       syms="USDZAR, EURZAR, GBPZAR, ZARJPY")},
+        "robots": "never requested (held before any fetch)",
+        "terms": {"url": "https://www.statssa.gov.za/", "checked_at": "2026-11-03",
+                  "unread": {"https://www.statssa.gov.za/": (
+                      "Incapsula challenge to fetchers (alt_proxies za_statssa_retail evidence); "
+                      "no terms page readable, 2026-11-03")}}},
+})
 #: The held-route rows, by key (read by `alt_proxies.HELD_ROUTES`).
 HELD_ROUTE_KEYS: frozenset[str] = frozenset(
     k for k, r in SOURCE_POLICY.items() if r.get("held_route"))

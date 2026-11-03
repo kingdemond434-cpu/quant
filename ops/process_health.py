@@ -490,6 +490,12 @@ def account_key_backup() -> dict[str, Any]:
 #: here from 2026-09-12 to 2026-10-29 -- so the board reads the streak itself.
 DEPENDENCY_LIVENESS = ROOT / "desks" / "mt5" / "reports" / "DEPENDENCY_LIVENESS.json"
 
+#: THE COUNTRY-PACK LIVENESS VERDICT (Rule 23, 2026-11-03). Written by world_dataset_hunter
+#: (leg world_dataset_hunt) in the same DEPENDENCY_LIVENESS shape and read by the same helper: RED
+#: when any country-pack door (CBRT EVDS, NBP, Riksbank, SCB) has delivered nothing on more than
+#: two consecutive attempts. The leg exits 0 either way, so the board reads the streak itself.
+COUNTRY_PACK_LIVENESS = ROOT / "desks" / "mt5" / "reports" / "COUNTRY_PACK_LIVENESS.json"
+
 
 def dependency_liveness(path: Path | None = None) -> dict[str, Any]:
     """The streak verdict, summarised: RED / GREEN / UNMEASURED and which dependencies are RED.
@@ -518,7 +524,7 @@ def dependency_liveness(path: Path | None = None) -> dict[str, Any]:
                            for k, d in sorted(deps.items())
                            if isinstance(d, dict) and d.get("verdict") in ("RED", "AMBER")},
         "sources": doc.get("sources") or {},
-        "artifact": "desks/mt5/reports/DEPENDENCY_LIVENESS.json",
+        "artifact": str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else p.name,
     }
 
 
@@ -661,11 +667,13 @@ def build() -> dict[str, Any]:
     backup_fault = backup.get("state") in BACKUP_FAULT_STATES
     deps = dependency_liveness()
     dep_fault = deps.get("verdict") == "RED"
+    packs = dependency_liveness(COUNTRY_PACK_LIVENESS)
+    pack_fault = packs.get("verdict") == "RED"
     status = ("UNMEASURED" if not rows or not scheduler_status.startswith("OK ")
               else ("ATTENTION" if brief_faults else "UNMEASURED")
               if not run_history_read
               else "OK" if not bad else "ATTENTION")
-    if key_fault or backup_fault or dep_fault:
+    if key_fault or backup_fault or dep_fault or pack_fault:
         status = "ATTENTION"   # a definite fault: the worst finding wins over UNMEASURED too
     return {
         "at": now.isoformat(timespec="seconds"),
@@ -686,13 +694,16 @@ def build() -> dict[str, Any]:
         # fails closed (account_key None), and fail-closed must never be silent.
         "status": status,
         "run_history": "MEASURED" if run_history_read else "UNMEASURED",
-        "n_needing_attention": len(bad) + int(key_fault) + int(backup_fault) + int(dep_fault),
+        "n_needing_attention": len(bad) + int(key_fault) + int(backup_fault) + int(dep_fault)
+                               + int(pack_fault),
         "account_key_file": key,
         # THE BACKUP (v5e): present, size, and whether it matches the live key -- a hash compare
         # done in-process; no hash is ever printed or written. Missing or mismatched: ATTENTION.
         "account_key_backup": backup,
         # A PUBLISHER THAT RETURNS NOTHING, PASS AFTER PASS, WHILE ITS TASK EXITS 0 (Rule 23).
         "dependency_liveness": deps,
+        # A COUNTRY-PACK DOOR THAT RETURNS NOTHING, PASS AFTER PASS, WHILE ITS LEG EXITS 0.
+        "country_pack_liveness": packs,
         # WHICH READ TIMED OUT, ITS BOUND, AND THE MEMORY THEN (v5f), each figure stamped with
         # the host it was read on and that host's total. Empty when every read answered.
         "scheduler_timeouts": list(TIMEOUTS),

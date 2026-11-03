@@ -87,6 +87,8 @@ HISTORY = STORE / "hunt_history.jsonl"
 REGISTRY = DESK / "data" / "data_registry.json"
 UNIVERSE = DESK / "data" / "universe" / "universe.json"
 REPORT = DESK / "reports" / "DATASET_HUNT.json"
+#: The country packs' liveness, in the DEPENDENCY_LIVENESS shape (RED after >2 empty attempts).
+PACK_LIVENESS = DESK / "reports" / "COUNTRY_PACK_LIVENESS.json"
 
 DBNOMICS = "https://api.db.nomics.world/v22"
 UNMEASURED = "UNMEASURED"
@@ -335,12 +337,15 @@ def _classify(exc: BaseException) -> str:
     return "connection"
 
 
-Fetcher = Callable[[str, float], bytes]
+#: (url, timeout) -> body. A country-pack door that needs a request header (the EVDS key) or a
+#: POST body (SCB) passes them as `headers=` / `data=` keywords; every other door calls with two.
+Fetcher = Callable[..., bytes]
 
 
-def urllib_fetch(url: str, timeout: float, headers: dict[str, str] | None = None) -> bytes:
+def urllib_fetch(url: str, timeout: float, headers: dict[str, str] | None = None,
+                 data: bytes | None = None) -> bytes:
     """Default transport: polite_fetch's urlopen seam, the named UA (plus a country pack's
-    credential header when one is set). LIVE-INPUT CHECK
+    credential header or POST body when one is set). LIVE-INPUT CHECK
     (libs/data/terms_fence.py): a URL on an IDEAS_ONLY or held source is refused before any
     request, and a 30x into a held source or a login wall is never followed. ROBOTS DECIDES
     (LAWS 5e amended 2026-10-14): the site's holds and the origin's robots.txt are checked on
@@ -349,9 +354,10 @@ def urllib_fetch(url: str, timeout: float, headers: dict[str, str] | None = None
     from libs.data import terms_fence as _tf
     if _tf.input_source(url):
         raise FetchError("terms_fenced", url)
-    req = urllib.request.Request(url, headers={"User-Agent": UA,
-                                               "Accept": "application/json, text/csv, */*",
-                                               **(headers or {})})
+    req = urllib.request.Request(url, data=data, headers={"User-Agent": UA,
+                                                          "Accept": ("application/json, "
+                                                                     "text/csv, */*"),
+                                                          **(headers or {})})
     try:
         with _pf.polite_urlopen(req, timeout=timeout, live_input=True,
                                 max_bytes=MAX_DIRECT_BYTES + 1, retries=0,
@@ -392,7 +398,8 @@ class Client:
     def remaining(self) -> float:
         return self.deadline - time.monotonic()
 
-    def get(self, url: str, headers: dict[str, str] | None = None) -> bytes:
+    def get(self, url: str, headers: dict[str, str] | None = None,
+            data: bytes | None = None) -> bytes:
         left = self.remaining()
         if left < 2.0:
             raise FetchError("budget_exhausted", url)
@@ -402,10 +409,9 @@ class Client:
         self._last = time.monotonic()
         self.requests += 1
         try:
-            t = min(HTTP_TIMEOUT_S, max(2.0, left - 1.0))
-            # a credential header (a country pack's gateway key) travels only when one is set,
-            # so every two-argument fetcher keeps working unchanged
-            raw = self.fetch(url, t, headers) if headers else self.fetch(url, t)  # type: ignore[call-arg]
+            timeout = min(HTTP_TIMEOUT_S, max(2.0, left - 1.0))
+            raw = (self.fetch(url, timeout, headers=headers, data=data) if headers or data
+                   else self.fetch(url, timeout))
         except FetchError as exc:
             self.failures[exc.reason] += 1
             raise
@@ -660,7 +666,8 @@ def merge_observations(existing: Any, series: list[dict[str, Any]], *, now: date
         # `released` (a publisher's release instant) and `available` (a door that knows each
         # value's actual release, e.g. the MoF intervention file released a quarter at a time)
         # are the same fact: period -> ISO UTC instant, never before the period ends.
-        released = {**(s.get("available") or {}), **(s.get("released") or {})}
+        released = {**(s.get("available") or {}), **(s.get("release_at") or {}),
+                    **(s.get("released") or {})}
         for per, val in s["points"]:
             end, f = period_end(per, freq)
             if end is None:
@@ -2943,6 +2950,124 @@ def fetch_direct(client: Client, cat: dict[str, Any], *, now: datetime, until: f
         by_provider[spec["provider"]]["rows"] += res["rows_added"]
 
 
+def _packs() -> Any:
+    try:
+        from research import country_packs as cp
+    except ImportError:                                                       # pragma: no cover
+        import country_packs as cp  # type: ignore[no-redef]
+    return cp
+
+
+def fetch_country_packs(client: Client, cat: dict[str, Any], *, now: datetime, until: float,
+                        stats: Counter[str], qstats: Counter[str],
+                        by_provider: dict[str, Counter[str]]) -> None:
+    """THE COUNTRY OPEN-DATA PACKS (research/country_packs.py) as direct doors of this organ.
+
+    Each door is gated on its terms_fence row BEFORE any request (HELD / NEEDS_KEY /
+    NEEDS_CONFIG are recorded with their cause and never counted as a failure), fetched through
+    this client (budgeted, terms-fenced, robots-checked by guarded_urlopen), PIT-stamped by its
+    publisher's release instant and ingested like every other direct door. `empty_streak`
+    counts consecutive attempts that delivered nothing; the pack liveness reads it."""
+    cp = _packs()
+    for door in cp.DOORS:
+        if time.monotonic() >= until:
+            break
+        key = f"{door.provider}/{door.id}"
+        row = cat["datasets"].setdefault(key, {"provider": door.provider, "code": door.id,
+                                               "lifecycle": "DISCOVERED",
+                                               "discovered_at": _iso(now), "source": "direct"})
+        row.update({"name": door.name, "pack": door.pack, "policy": door.policy,
+                    "score": dataset_score(door.provider, door.name) + 4.0})
+        if not _due(row, now):
+            continue
+        held = cp.gate(door)
+        if held:
+            row.update({"pack_state": held[0], "fail_reason": held[1],
+                        "next_due": _iso(now + timedelta(hours=DIRECT_REFRESH_H))})
+            stats[f"pack:{held[0]}"] += 1
+            continue
+        row["pack_state"] = "LIVE"
+        first = not row.get("fetched_at")
+
+        def _get(req: Any) -> bytes:
+            return client.get(req.url, headers=req.headers or None, data=req.data)
+
+        reason = None
+        series: list[dict[str, Any]] = []
+        try:
+            series = cp.fetch_door(door, _get, now, first=first)
+            if not series:
+                reason = "empty"
+        except FetchError as exc:
+            if exc.reason == "budget_exhausted":
+                break
+            reason = exc.reason
+        except Exception as exc:
+            reason = f"parse:{type(exc).__name__}"
+        if reason:
+            row["empty_streak"] = int(row.get("empty_streak") or 0) + 1
+            row.setdefault("first_empty_at", _iso(now))
+            row["fail_count"] = int(row.get("fail_count") or 0) + 1
+            row["fail_reason"] = reason
+            row["next_due"] = _iso(now + timedelta(hours=cp.RETRY_FAIL_H))
+            stats[f"pack:{reason}"] += 1
+            by_provider[door.provider]["failed"] += 1
+            continue
+        res = ingest_series(door.provider, door.id, door.name, series, now=now,
+                            base_score=row["score"], hint_ccys=door.currencies,
+                            hint_stems=door.stems, qstats=qstats)
+        row.update({"fetched_at": _iso(now), "fail_count": 0, "fail_reason": None,
+                    "empty_streak": 0, "first_empty_at": None,
+                    "series_total": len(series), "series_passed": res["passed"],
+                    "rows": res["rows_total"],
+                    "next_due": _iso(now + timedelta(hours=cp.REFRESH_OK_H)),
+                    "path": _rel(dataset_path(door.provider, door.id))})
+        _promote(row, "INGESTED")
+        if res["passed"]:
+            _promote(row, "QUALITY-PASSED")
+        stats["datasets_fetched"] += 1
+        stats["pack:delivered"] += 1
+        stats["rows_appended"] += res["rows_added"]
+        by_provider[door.provider]["fetched"] += 1
+        by_provider[door.provider]["rows"] += res["rows_added"]
+
+
+def country_packs_eu_report(cat: dict[str, Any], now: datetime) -> dict[str, Any]:
+    """research/country_packs.py's packs (tr / pl / se / za). Per pack: each door's state and
+    mapped instruments, the unmapped local indices, the
+    held rows' missed-growth lines and the liveness verdict (also written to its own file)."""
+    cp = _packs()
+    rows = {d.id: cat["datasets"].get(f"{d.provider}/{d.id}") or {} for d in cp.DOORS}
+    uni = {sym for sym, _, _ in hypothesis_universe()}
+    live = cp.liveness(rows, now)
+    packs: dict[str, Any] = {}
+    for k, p in cp.PACKS.items():
+        doors = {}
+        for d in (d for d in cp.DOORS if d.pack == k):
+            r = rows[d.id]
+            meta = _read_json(meta_path(d.provider, d.id), {}) or {}
+            ser = meta.get("series") or {}
+            doors[d.id] = {
+                "verdict": live["dependencies"][d.id]["verdict"], "policy": d.policy,
+                "state": r.get("pack_state") or UNMEASURED, "why": r.get("fail_reason"),
+                "rows": r.get("rows") if r.get("fetched_at") else UNMEASURED,
+                "series": {c: {"quality": v.get("quality"), "instruments": v.get("instruments"),
+                               "key": v.get("key")} for c, v in ser.items()} or UNMEASURED,
+                "instruments": (sorted({i for v in ser.values() for i in v.get("instruments")
+                                        or ()}) if ser else instruments_for(d.currencies,
+                                                                            d.stems)),
+                "release_rule": d.what}
+        packs[k] = {"country": p.country, "currency": p.currency, "publishers": p.publishers,
+                    "verdict": live["sources"][k], "doors": doors,
+                    "local_indices_mapped": cp.mapped_indices(uni)[k],
+                    "local_indices_unmapped": cp.unmapped_indices(uni)[k],
+                    "not_built": [{"series": a, "why": b} for a, b in p.not_built]}
+    write_json(PACK_LIVENESS, live)
+    return {"verdict": live["verdict"], "red": live["red"], "packs": packs,
+            "missed_growth": cp.missed_growth_lines(),
+            "liveness_artifact": _rel(PACK_LIVENESS)}
+
+
 def attempt_legacy(client: Client, cat: dict[str, Any], *, now: datetime, until: float,
                    stats: Counter[str], qstats: Counter[str]) -> None:
     """Try every DISCOVERED registry row once a day, by its own door and by a frontier search."""
@@ -3246,6 +3371,8 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: Fetcher | None = None,
             attempt_legacy(client, cat, now=now, until=deadline, stats=stats, qstats=qstats)
             fetch_direct(client, cat, now=now, until=t0 + (deadline - t0) * 0.55, stats=stats,
                          qstats=qstats, by_provider=by_provider)
+            fetch_country_packs(client, cat, now=now, until=t0 + (deadline - t0) * 0.65,
+                                stats=stats, qstats=qstats, by_provider=by_provider)
             fetch_dbnomics(client, cat, now=now, until=deadline, stats=stats, qstats=qstats,
                            by_provider=by_provider)
     cat["updated_at"] = _iso(now)
@@ -3266,6 +3393,19 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: Fetcher | None = None,
                           by_provider_pass=by_provider, now=now, elapsed=elapsed,
                           budget_s=budget_s, stood_down=stood_down, disk=disk,
                           registry=reg_res)
+    # TWO PACK SETS, ONE REPORT KEY: the hunter's own COUNTRY_PACKS (id / sg / sa / jp / cn,
+    # `build_report`) and research/country_packs.py's (tr / pl / se / za). Pack names never
+    # overlap; the liveness verdict and its artifact are the latter's (COUNTRY_PACK_LIVENESS.json),
+    # and a RED there turns the organ's own status RED as a RED door of the former does.
+    eu = country_packs_eu_report(cat, now)
+    own = report.get("country_packs") or {}
+    report["country_packs"] = {**own, **eu,
+                               "packs": {**(own.get("packs") or {}), **(eu.get("packs") or {})}}
+    if eu.get("verdict") == "RED":
+        red = ", ".join(eu.get("red") or [])
+        report["status"] = (f"{report['status']}; RED: country-pack liveness: {red}"
+                            if str(report.get("status", "")).startswith("RED")
+                            else f"RED: country-pack liveness: {red}")
     write_json(REPORT, report)
     return report
 
@@ -3382,6 +3522,10 @@ def main(argv: list[str] | None = None) -> int:
           f"rows_this_pass={p['rows_appended']}", flush=True)
     if p.get("network_blocked_by"):
         print(f"   blocked by: {p['network_blocked_by']}", flush=True)
+    cpk = rep.get("country_packs") or {}
+    print(f"   country packs: {cpk.get('verdict')} "
+          + " ".join(f"{k}={v.get('verdict')}" for k, v in (cpk.get("packs") or {}).items())
+          + (f" RED: {', '.join(cpk['red'])}" if cpk.get("red") else ""), flush=True)
     return 0
 
 
