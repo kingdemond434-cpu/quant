@@ -320,9 +320,14 @@ def judge_sleeve(sleeve: Mapping[str, Any], bars: pd.DataFrame | None, canon: An
     # (p_flag 1.0, measured 2026-11-03). So when the null is measured, the sleeve flags only
     # when its max PSI also beats the null's 95th percentile; the fixed bar is the floor.
     bar = nul.get("p95") if nul.get("draws") else None
-    row["flag_rule"] = (f"psi>{PSI_FLAG} and max_psi>null_p95={bar}" if bar is not None
-                        else f"psi>{PSI_FLAG} (null unmeasured)")
-    beats_null = bar is None or (row["max_psi"] is not None and row["max_psi"] > bar)
+    if bar is None:
+        # The fixed bar alone was measured as a constant alarm on gold_asia (Auditor, 11-03):
+        # with no null to read it against, the honest answer is UNMEASURED, never a flag.
+        row["flag_rule"] = f"psi>{PSI_FLAG} and max_psi>null_p95 (null unmeasured)"
+        row["verdict"] = f"UNMEASURED: no permutation null ({nul.get('verdict')})"
+        return row
+    row["flag_rule"] = f"psi>{PSI_FLAG} and max_psi>null_p95={bar}"
+    beats_null = row["max_psi"] is not None and row["max_psi"] > bar
     row["verdict"] = "EDGE_DECAY_CANDIDATE" if flagged and beats_null else "STABLE"
     return row
 

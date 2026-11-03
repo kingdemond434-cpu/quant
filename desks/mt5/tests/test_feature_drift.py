@@ -198,3 +198,10 @@ def test_a_bar_its_own_history_always_clears_is_not_a_flag(tmp_path: Path, monke
     (row,) = _run(tmp_path, _bars(shift_from="2026-05-05", spread_after=30.0))["sleeves"]
     assert row["flagged_features"] and row["verdict"] == "STABLE"
     assert "null_p95=99.0" in row["flag_rule"]
+
+
+def test_no_null_reads_unmeasured_never_a_flag(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(FD, "permutation_null",
+                        lambda ref, obs: {"draws": 0, "verdict": "UNMEASURED: test"})
+    (row,) = _run(tmp_path, _bars(shift_from="2026-05-05", spread_after=30.0))["sleeves"]
+    assert row["flagged_features"] and row["verdict"].startswith("UNMEASURED")
