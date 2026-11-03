@@ -38,6 +38,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
 from mt5desk import account_profile as _acct_real  # noqa: E402
 from mt5desk import config as _cfg  # noqa: E402
 from mt5desk import decision_core as dc  # noqa: E402
+from mt5desk import mt5_manage as _mm  # noqa: E402
 from mt5desk.broker_clock import broker_to_utc  # noqa: E402
 from mt5desk import provenance as _prov_real  # noqa: E402
 from mt5desk.sizing import decay_factor  # noqa: E402
@@ -877,7 +878,7 @@ def test_position_bars_use_the_broker_clock_not_wall_clock() -> None:
     raw = [{"time": first + i * 3600, "open": 100 + i, "high": 102 + i,
             "low": 99 + i, "close": 101 + i} for i in range(5)]
     mt5 = SimpleNamespace(copy_rates_from_pos=lambda *a: raw)
-    ns = _exec(("_rates_since_position",), {"mt5": mt5})
+    ns = _exec(("_rates_since_position",), {"mt5": mt5, "_mm": _mm})
     got = ns["_rates_since_position"]("XAUUSD", 60, opened)
     assert got["time"].tolist() == [opened - (opened % 3600),
                                     opened - (opened % 3600) + 3600,
@@ -1559,7 +1560,7 @@ def test_the_pause_file_readers_look_under_data_and_main_consults_gateway_paused
 
 def _manage_ns(mt5: SimpleNamespace) -> dict:
     logs: list[str] = []
-    ns = {"mt5": mt5, "log": logs.append, "MAGIC": 1, "_logs": logs}
+    ns = {"mt5": mt5, "log": logs.append, "MAGIC": 1, "_logs": logs, "_mm": _mm}
     return _exec(("manage_open_positions", "order_comment", "_original_stop_distance",
                   "_rates_since_position"), ns)
 

@@ -365,9 +365,53 @@ def _close(mt5: Any, st: dict[str, Any], p: Any, *, cet: str, armed: bool, why: 
     return act
 
 
+def protect(mt5: Any, st: dict[str, Any], doc: dict[str, Any], p: Any, *, cet: str,
+            armed: bool) -> None:
+    """THE SAME STOP MANAGEMENT AS EVERY OTHER ACCOUNT (zuck 2026-11-03: "ftmo fusion etc must
+    always have same mechanisms"). `mt5_manage.stop_move`, the Fusion gateway's own decision: a
+    certified fixed bracket gets the costed break-even FLOOR only (never the trail, 2026-09-16), a
+    sleeve whose send recorded a `trail_k` gets the chandelier as well. Until this, an FTMO sleeve's
+    stop was whatever the entry attached, for the whole trade. Only ever tightens."""
+    from mt5desk import mt5_manage as _mm
+    hold = (st.get("holds") or {}).get(str(int(p.ticket)))
+    trail = float((hold or {}).get("trail_k") or 0.0) if isinstance(hold, dict) else 0.0
+    dist, _new = _mm.original_stop_distance(st.setdefault("orig_stop_dist", {}), int(p.ticket),
+                                            float(p.price_open),
+                                            float(getattr(p, "sl", 0.0) or 0.0))
+    if dist is None:
+        return
+    info = mt5.symbol_info(str(p.symbol))
+    if info is None:
+        doc.setdefault("manage_unmeasured", []).append(f"{p.symbol} #{p.ticket}: no symbol_info")
+        return
+    move = _mm.stop_move(mt5, p, info, original_dist=dist, floor_only=not trail > 0.0)
+    if move.new_stop is None:
+        return
+    act = {"act": "breakeven_floor" if move.breakeven_floor else "ratchet_stop",
+           "symbol": str(p.symbol), "position": int(p.ticket),
+           "before": float(p.sl), "after": move.new_stop, "why": move.why, "ok": False}
+    if armed:
+        try:
+            res = _send(mt5, st, {"action": mt5.TRADE_ACTION_SLTP, "symbol": str(p.symbol),
+                                  "position": int(p.ticket), "sl": move.new_stop,
+                                  "tp": float(getattr(p, "tp", 0.0) or 0.0), "magic": MAGIC},
+                        cet=cet)
+            act["ok"] = getattr(res, "retcode", None) in OK_CODES
+            act["retcode"] = getattr(res, "retcode", None)
+        except Exception as exc:
+            act["why"] += f"; FAILED {type(exc).__name__}: {exc}"[:200]
+    else:
+        act["shadow"] = True
+    doc["actions"].append(act)
+
+
 def manage(mt5: Any, st: dict[str, Any], doc: dict[str, Any], own: list[Any], *, cet: str,
            armed: bool, now: datetime, server_epoch: float) -> None:
-    """Time exits and the both-ways opposite rule for this lane's open positions."""
+    """Time exits, the both-ways opposite rule and the shared stop management (`protect`) for
+    this lane's open positions."""
+    live = {str(int(p.ticket)) for p in own}
+    st["orig_stop_dist"] = {k: v for k, v in (st.get("orig_stop_dist") or {}).items()
+                            if k in live}
     from mt5desk import cross_account as _xa
     books = {a: _xa.read_book(a, now=now) for a in ("fusion", "e8")}
     for p in own:
@@ -403,6 +447,7 @@ def manage(mt5: Any, st: dict[str, Any], doc: dict[str, Any], own: list[Any], *,
         elif why is None and server_epoch >= due:
             why = "the certified time exit has passed"
         if why is None:
+            protect(mt5, st, doc, p, cet=cet, armed=armed)
             continue
         act = _close(mt5, st, p, cet=cet, armed=armed, why=why)
         if "opposite" in why:
