@@ -126,7 +126,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable, Iterable, Mapping
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -493,7 +493,20 @@ def _gh(*args: str, data: Mapping[str, Any] | None = None) -> Any:
     cmd = ["gh", "api", *args]
     if data is not None:
         cmd += ["--input", "-"]
-    p = subprocess.run(
+    try:
+        p = _gh_run(cmd, data)
+    except subprocess.TimeoutExpired as exc:
+        # A TIMEOUT IS A FAILED CALL, NOT A CRASH (2026-11-03): raised raw, one slow check-runs
+        # read aborted the whole box sweep -- 378 times from 10-30 to 11-03, no merge in between.
+        # As a RuntimeError every caller's per-PR handling logs it and the sweep goes on.
+        raise RuntimeError(f"gh api {' '.join(args)}: timed out after {exc.timeout}s") from exc
+    if p.returncode != 0:
+        raise RuntimeError(f"gh api {' '.join(args)}: {p.stderr.strip()[:300]}")
+    return json.loads(p.stdout) if p.stdout.strip() else None
+
+
+def _gh_run(cmd: list[str], data: Mapping[str, Any] | None) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
         cmd,
         input=json.dumps(data) if data is not None else None,
         capture_output=True,
@@ -507,9 +520,6 @@ def _gh(*args: str, data: Mapping[str, Any] | None = None) -> Any:
         # every call ends, and a timeout is an error the sweep logs (it never merges on one).
         timeout=GH_TIMEOUT_S,
     )
-    if p.returncode != 0:
-        raise RuntimeError(f"gh api {' '.join(args)}: {p.stderr.strip()[:300]}")
-    return json.loads(p.stdout) if p.stdout.strip() else None
 
 
 def _git(*args: str) -> str:
@@ -663,6 +673,22 @@ def _is_state_path() -> Callable[[str], bool] | None:
     # #521 audit MF1: a sign row, a pin, the survivor canon, the allocator proof or a switch is
     # state that governs code: a PR tested against the old copy merges the base in first.
     return lambda rel: bool(state(rel)) and not governed(rel)
+
+
+#: A draft whose PR has not moved for this long is brought up like a ready PR: no session is
+#: pushing to it, so a merge commit breaks no one's next push (#552 audit SF5 still holds for a
+#: draft in motion). MEASURED 2026-11-03: 98 of 100 open PRs were drafts, none audited by comment,
+#: so none was ever brought up and none could be up to date.
+QUIET_DRAFT_H = 6.0
+
+
+def quiet(p: Mapping[str, Any], now: datetime | None = None) -> bool:
+    """Has this PR gone QUIET_DRAFT_H hours without an update? An unreadable time is not quiet."""
+    try:
+        at = datetime.fromisoformat(str(p.get("updated_at") or "").replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return ((now or datetime.now(UTC)) - at).total_seconds() >= QUIET_DRAFT_H * 3600.0
 
 
 def state_only_lag(base_ref: str, head: str) -> int | None:
@@ -916,7 +942,7 @@ def run(
                 # a session's branch only, and a draft only once audited: a merge commit on a
                 # branch someone is still pushing breaks their next push (#552 audit SF5)
                 and str(p["head"].get("ref") or "").startswith("claude/")
-                and (not p.get("draft") or bool(audited))
+                and (not p.get("draft") or bool(audited) or quiet(p))
                 and (bring_ups is None or bring_ups[0] > 0)
                 and bring_up(repo, pr, head, base)
             ):
@@ -1109,7 +1135,9 @@ def sweep(
         if head:  # no sha in the listing: no shortcut, the full run decides
             try:
                 got = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100")
-            except RuntimeError as exc:
+            # A TIMEOUT SKIPS ONE PR (Desk health 2026-11-03: 378 sweeps since 10-30 died on one
+            # 120 s gh TimeoutExpired here, so every sweep read "0 looked at" and merged nothing).
+            except (RuntimeError, subprocess.SubprocessError) as exc:
                 _summary(f"#{n}: its checks could not be read: {exc}")
                 rc = 1
                 continue
