@@ -63,6 +63,7 @@ from __future__ import annotations
 
 import json
 import math
+from collections import Counter
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -198,9 +199,9 @@ def sleeve_trades(name: str, ledgers: tuple[Path, ...] | None = None) -> list[di
     default, which is what the LIVE-roster loop has always read)."""
     cutoff = datetime.now(tz=UTC) - timedelta(days=TRAIL_DAYS)
     rows = []
-    lines = [ln for p in (ledgers or (LEDGER,)) if p.exists()
+    lines = [(p, ln) for p in (ledgers or (LEDGER,)) if p.exists()
              for ln in p.read_text("utf-8").splitlines()]
-    for line in lines:
+    for src, line in lines:
         line = line.strip()
         if not line:
             continue
@@ -234,10 +235,38 @@ def sleeve_trades(name: str, ledgers: tuple[Path, ...] | None = None) -> list[di
         if ts is not None and ts.tzinfo is None:
             ts = ts.replace(tzinfo=UTC)
         if ts is None or ts >= cutoff:
-            rows.append(r)
+            rows.append({**r, "_venue": "fusion" if src == LEDGER
+                         else str(r.get("book") or "prop")} if ledgers else r)
     if ledgers:
-        rows.sort(key=lambda r: str(r.get("time") or ""))
+        rows = episodes(rows)
     return rows[-TRAIL_MAX_TRADES:]
+
+
+#: Which venue's copy of one signal stands for the episode: Fusion's first (its R is the one the
+#: certificate was measured on), then the prop books.
+VENUE_ORDER = ("fusion", "ftmo", "e8")
+
+
+def episodes(rows: list[dict]) -> list[dict]:
+    """ONE EPISODE PER DECISION, NOT PER VENUE (#540 audit, 26ca7f548 HOLD). The same signal copied
+    to Fusion and FTMO is one piece of evidence about the edge; counting it twice shrinks the
+    sequential bound ~sqrt(2) too fast, and the zero then moves capital on every venue. Copies
+    share the sleeve, the signal's entry hour and the direction (both venues stamp entry_time on
+    the broker server clock), as `loss_learner.episodes_of` keys them; Fusion's row is kept, and
+    `_venues` records every venue that took the signal. Oldest first."""
+    def rank(r: dict) -> int:
+        v = str(r.get("_venue"))
+        return VENUE_ORDER.index(v) if v in VENUE_ORDER else len(VENUE_ORDER)
+    uniq: dict[str, dict] = {}
+    for r in sorted(rows, key=rank):
+        et = str(r.get("entry_time") or r.get("time") or "")[:13]       # YYYY-MM-DDTHH
+        side = r.get("entry_side", r.get("side"))
+        key = f"{str(r.get('sleeve'))[:LEDGER_NAME_MAX]}|{et}|{side}"
+        if key in uniq:
+            uniq[key]["_venues"].append(str(r.get("_venue")))
+        else:
+            uniq[key] = {**r, "_venues": [str(r.get("_venue"))], "_episode": key}
+    return sorted(uniq.values(), key=lambda r: str(r.get("time") or ""))
 
 
 def stats(rs: list[float]) -> dict:
@@ -532,6 +561,10 @@ SEQ_KEEP_DEALS = 4 * TRAIL_MAX_TRADES
 
 
 def _deal_id(t: dict) -> str:
+    # An episode is identified by its signal, never by whichever venue's copy closed first: a
+    # Fusion close an hour after the FTMO copy must not be folded in as a second trade.
+    if t.get("_episode"):
+        return f"ep:{t['_episode']}"
     d = (t.get("deal") or t.get("position_id") or t.get("close_order") or t.get("order"))
     return str(d) if d not in (None, "") else f"{t.get('time')}|{t.get('r_multiple')}"
 
@@ -666,6 +699,9 @@ def decay_zero_doc(live: dict[str, dict], now: str, roster: dict[str, dict] | No
         v, why, facts = book_key_verdict(rs)
         sequential[name] = fold_sequential(prev_seq.get(name), trades)
         facts["live_record_n"] = sequential[name]["n"]
+        # Per venue: how many of these episodes each venue took (Fusion's R stands for a copy).
+        facts["venues"] = dict(sorted(Counter(v for t in trades
+                                              for v in (t.get("_venues") or ["fusion"])).items()))
         symbol = next((str(t.get("symbol")) for t in reversed(trades) if t.get("symbol")), "")
         # The certificate's own forward bad-streak band is REPORTED beside the verdict (a fact for
         # the reader and for the regime work to come); the verdict is the live record's own test.

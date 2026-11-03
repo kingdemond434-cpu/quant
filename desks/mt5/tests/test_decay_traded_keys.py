@@ -490,3 +490,28 @@ def test_a_book_key_is_judged_on_its_prop_account_fills_too(desk) -> None:
     assert doc["judged"]["gold_asia"]["n"] == 12 and "gold_asia" not in doc["unmeasured"]
     assert "eurusd_demo_only" not in doc["judged"]
     assert D.sleeve_trades("gold_asia") == []              # the LIVE-roster loop: Fusion only
+
+
+def test_one_signal_on_two_venues_is_one_episode(desk) -> None:
+    """#540 audit (26ca7f548 HOLD): FTMO's copy of a Fusion signal is the same evidence. One
+    signal on two venues is n=1, Fusion's R stands, the venues are counted, and a later run that
+    sees the other venue's copy first never folds the signal in twice."""
+    (desk / "CERT_BOOK_LIVE.json").write_text(json.dumps(
+        {"enabled": True, "fusion": {"gold_asia": 0.01}, "ftmo": {"gold_asia": 0.01}}), "utf-8")
+    sig = {"sleeve": "gold_asia", "symbol": "XAUUSD", "entry_side": 1, "risk_quote": 10.0,
+           "entry_time": "2026-10-29T07:26:14+00:00", "time": NOW.isoformat()}
+    fusion = {**sig, "r_multiple": -0.035, "deal": 217155220}
+    ftmo = {**sig, "r_multiple": -0.0383, "account_kind": "prop", "book": "ftmo",
+            "entry_time": "2026-10-29T07:30:01+00:00"}
+    _write(desk, [{"name": "gold_asia", "status": "STANDBY", "symbol": "XAUUSD"}], [fusion])
+    (desk / "live_ledger_prop.jsonl").write_text(json.dumps(ftmo), "utf-8")
+    eps = D.sleeve_trades("gold_asia", D.book_ledgers())
+    assert len(eps) == 1 and eps[0]["r_multiple"] == -0.035
+    assert eps[0]["_venues"] == ["fusion", "ftmo"]
+    D.main(write_queue=False)
+    doc = _zero(desk)
+    assert doc["sequential"]["gold_asia"]["n"] == 1
+    # the prop copy alone (Fusion's not yet closed) folds the same episode, never a second one
+    st = D.fold_sequential(None, D.episodes([{**ftmo, "_venue": "ftmo"}]))
+    st = D.fold_sequential(st, eps)
+    assert st["n"] == 1
