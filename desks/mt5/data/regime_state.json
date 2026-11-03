@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-03T05:30:05.306830+00:00",
+  "swept_at": "2026-11-03T06:00:17.607457+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1153,7 +1153,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1976,
+      "shadow_exp_r": -0.2149,
       "woke_on_shadow": false
     },
     "EURCHF|discovered_asia": {
@@ -1912,7 +1912,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0575,
+      "shadow_exp_r": -0.0552,
       "woke_on_shadow": false
     },
     "GBPAUD|relative_value_continuous": {
@@ -2143,7 +2143,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0918,
+      "shadow_exp_r": -0.0841,
       "woke_on_shadow": false
     },
     "GBPJPY|macro_conditional_continuous": {
@@ -2561,7 +2561,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0908,
+      "shadow_exp_r": -0.0731,
       "woke_on_shadow": false
     },
     "GBPSGD|overnight_gap_decay_continuous": {
@@ -3144,7 +3144,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5571,
+      "shadow_exp_r": -0.5575,
       "woke_on_shadow": false
     },
     "NZDHUF|carry_continuous": {
@@ -3198,8 +3198,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 48,
-      "shadow_exp_r": -0.1392,
+      "shadow_n": 16,
+      "shadow_exp_r": 0.0382,
       "woke_on_shadow": false
     },
     "NZDJPY|cross_asset_residual_continuous": {
@@ -3782,7 +3782,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.6899,
+      "shadow_exp_r": -0.7011,
       "woke_on_shadow": false
     },
     "USDJPY|asia": {
@@ -4540,8 +4540,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 0,
-      "shadow_exp_r": 0.0,
+      "shadow_n": 51,
+      "shadow_exp_r": -0.0341,
       "woke_on_shadow": false
     },
     "XAGUSD|cross_asset_residual_continuous": {
