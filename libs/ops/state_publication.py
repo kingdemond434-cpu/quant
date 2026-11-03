@@ -214,11 +214,11 @@ Sender = Callable[[str, str], dict[str, Any]]
 
 def _default_sender(root: Path) -> Sender:
     def send(title: str, body: str) -> dict[str, Any]:
-        from libs.ops import alert_channels
+        from libs.ops import alert_digest
         # The sender reads its own config where it always has; anchored on the repo root so the
         # leg's working directory cannot make an armed box look unarmed. Nothing here reads or
         # records a channel's credentials.
-        return alert_channels.send_all(
+        return alert_digest.send(
             title, body, config=root / "data/secrets/alert_channels.json",
             ledger=root / "data/alert_delivery.jsonl",
             # Opt-in digest (2026-11-03): the publication meter's silent/flowing reminders.

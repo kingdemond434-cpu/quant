@@ -171,54 +171,8 @@ _CANARY_SENDERS: dict[str, _CanarySender] = {"hc": _send_hc}
 _CANARY_AWARE = frozenset(_CANARY_SENDERS)
 
 
-#: DIGEST (2026-11-03, the principal: "I got tons of ntfy things"). The box's 41 pages in 48h were
-#: 26 six-hourly repeats of three measurement-gap notices, none needing his click or touching live
-#: money. A caller may OPT IN by passing `digest_class=`: that class then pages at most once per
-#: DIGEST_COOLDOWN_H, repeats go to the digest file, and the next page carries the held count. The
-#: default is None, so every caller that does not opt in -- every live-money path -- pages exactly
-#: as before by construction. Never classify by title substring here (audit HOLD e5110a958).
-DIGEST_COOLDOWN_H = 24.0
-
-
-def _digest_paths(ledger: Path) -> tuple[Path, Path]:
-    return ledger.parent / "alert_digest_state.json", ledger.parent / "alert_digest.jsonl"
-
-
-def _write_atomic(path: Path, text: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(text, "utf-8")
-    tmp.replace(path)
-
-
-def _digest_gate(cls: str | None, title: str, ledger: Path, now: datetime) -> tuple[bool, int]:
-    """(hold, repeats_owed). Fails OPEN: any state error lets the page through."""
-    if not cls:
-        return False, 0
-    state_p, digest_p = _digest_paths(ledger)
-    try:
-        state = json.loads(state_p.read_text("utf-8")) if state_p.exists() else {}
-        row = state.get(cls) or {}
-        last = datetime.fromisoformat(row["last_paged"]) if row.get("last_paged") else None
-        if last is not None and (now - last).total_seconds() < DIGEST_COOLDOWN_H * 3600.0:
-            row["held"] = int(row.get("held", 0)) + 1
-            state[cls] = row
-            _write_atomic(state_p, json.dumps(state, indent=1))
-            entry = {"ts": now.isoformat(), "class": cls, "title": title[:80]}
-            with digest_p.open("a", encoding="utf-8") as fh:
-                fh.write(json.dumps(entry) + "\n")
-            return True, 0
-        held = int(row.get("held", 0))
-        state[cls] = {"last_paged": now.isoformat(), "held": 0}
-        _write_atomic(state_p, json.dumps(state, indent=1))
-        return False, held
-    except (OSError, ValueError, TypeError, AttributeError, KeyError):
-        return False, 0
-
-
 def send_all(title: str, body: str, *, config: Path = _CONFIG,
-             ledger: Path = _LEDGER, canary: bool = False,
-             digest_class: str | None = None) -> dict[str, Any]:
+             ledger: Path = _LEDGER, canary: bool = False) -> dict[str, Any]:
     """Fire EVERY armed channel; one channel's failure can never stop another's.
 
     Returns {"armed": n, "delivered": n, "results": [...]}. When nothing is armed the result says
@@ -235,19 +189,6 @@ def send_all(title: str, body: str, *, config: Path = _CONFIG,
         return {"armed": 0, "delivered": 0, "results": [],
                 "note": "second-channel arming is a HUMAN step: drop credentials at "
                         "data/secrets/alert_channels.json on the box"}
-    if not canary:
-        suppress, held = _digest_gate(digest_class, title, ledger, datetime.now(tz=UTC))
-        if suppress:
-            # Recorded, never silent; ok=False so all_silent_since() stays honest.
-            _log("digest", False, f"HELD: {digest_class} paged within "
-                 f"{DIGEST_COOLDOWN_H:g}h; counted in the next page", title, ledger)
-            # `delivered` 1 = the digest took it, so callers record the notice as handled and do
-            # not retry every tick (their contract: delivered 0 means "re-send next pass").
-            return {"armed": len(channels), "delivered": 1, "suppressed": True,
-                    "results": [{"channel": "digest", "ok": True, "detail": "held"}]}
-        if held:
-            body = (f"(+{held} repeat(s) of this notice held in the last "
-                    f"{DIGEST_COOLDOWN_H:g}h)\n") + body
     results = []
     for cfg in channels:
         kind = str(cfg.get("kind"))

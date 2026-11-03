@@ -228,7 +228,7 @@ def test_the_default_sender_is_the_desks_alert_path_anchored_on_the_root(
     from libs.ops import alert_channels
     seen: dict = {}
 
-    def fake_send_all(title, body, *, config, ledger, canary=False, digest_class=None):
+    def fake_send_all(title, body, *, config, ledger, canary=False):
         seen.update(config=config, ledger=ledger)
         return {"armed": 0, "delivered": 0, "results": []}
 

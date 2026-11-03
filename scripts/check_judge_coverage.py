@@ -736,10 +736,10 @@ def _default_page_sender(root: Path) -> PageSender:
     def send(title: str, body: str) -> Any:
         if str(root) not in sys.path:
             sys.path.insert(0, str(root))
-        from libs.ops import alert_channels
+        from libs.ops import alert_digest
         # Anchored on the repo root so the leg's working directory cannot make an armed box look
         # unarmed. Nothing here reads, prints or records a channel's credentials.
-        return alert_channels.send_all(
+        return alert_digest.send(
             title, body, config=root / "data/secrets/alert_channels.json",
             ledger=root / "data/alert_delivery.jsonl", digest_class="judge_coverage")
     return send
