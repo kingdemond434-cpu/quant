@@ -517,3 +517,30 @@ def test_one_signal_on_two_venues_is_one_episode(desk) -> None:
     assert st["n"] == 1
     # two separate trades on ONE venue in the same hour stay two
     assert len(D.episodes([{**fusion, "_venue": "fusion"}, {**fusion, "_venue": "fusion"}])) == 2
+
+
+def test_an_e8_copy_is_matched_on_its_utc_signal_hour_never_its_tradelocker_clock() -> None:
+    """#540 audit SF (before #589's E8 rows land): E8's TradeLocker entry_time is UTC, not the MT5
+    server clock, so a copy is matched on `signal_hour_utc`; FTMO carries both keys and bridges
+    a Fusion row that has only its server hour."""
+    fusion = {"sleeve": "gold_asia", "entry_side": 0, "r_multiple": -0.03, "_venue": "fusion",
+              "entry_time": "2026-10-29T07:26:14+00:00", "time": "2026-10-29T12:09:01+00:00"}
+    ftmo = {"sleeve": "gold_asia", "direction": 1, "r_multiple": -0.04, "_venue": "ftmo",
+            "signal_hour_utc": "2026-10-29T04:00:00+00:00", "timestamp_basis": "mt5_server_epoch",
+            "entry_time": "2026-10-29T07:30:01+00:00", "time": "2026-10-29T12:09:01+00:00"}
+    e8 = {"sleeve": "gold_asia", "direction": 1, "r_multiple": -0.05, "_venue": "e8",
+          "signal_hour_utc": "2026-10-29T04:00:00+00:00",
+          "timestamp_basis": "tradelocker_order_ms_utc (lastModified of the filled order)",
+          "entry_time": "2026-10-29T07:00:03+00:00", "time": "2026-10-29T09:09:00+00:00"}
+    eps = D.episodes([fusion, ftmo, e8])
+    assert len(eps) == 1 and eps[0]["r_multiple"] == -0.03
+    assert eps[0]["_venues"] == ["fusion", "ftmo", "e8"]
+    # E8 alone never matches Fusion on a TradeLocker hour that happens to equal the server hour
+    assert len(D.episodes([fusion, {**e8, "signal_hour_utc": None}])) == 2
+    # whichever copy closes first, the signal folds once
+    st = D.fold_sequential(None, D.episodes([e8]))
+    st = D.fold_sequential(st, D.episodes([ftmo]))
+    st = D.fold_sequential(st, eps)
+    assert st["n"] == 1
+    # three same-venue trades in one hour stay three
+    assert len(D.episodes([fusion, dict(fusion), dict(fusion)])) == 3

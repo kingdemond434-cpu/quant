@@ -248,34 +248,69 @@ def sleeve_trades(name: str, ledgers: tuple[Path, ...] | None = None) -> list[di
 VENUE_ORDER = ("fusion", "ftmo", "e8")
 
 
+def _direction(r: dict) -> object:
+    """+1 buy / -1 sell: the row's own `direction` when it carries one (the prop fills writers),
+    else MT5's entry deal type (0 buy, 1 sell)."""
+    d = r.get("direction")
+    if d in (1, -1):
+        return int(d)
+    side = r.get("entry_side", r.get("side"))
+    return {0: 1, 1: -1}.get(side, side)
+
+
+def _hour_keys(r: dict) -> set[str]:
+    """The signal hour(s) a row can be matched on. `signal_hour_utc` when the writer derived it
+    (E8 and FTMO, prop fills ledger): the one clock every venue shares. The entry_time hour
+    only when it is on the MT5 server clock (Fusion, FTMO): E8's TradeLocker stamps are UTC and
+    must never be compared with a server hour."""
+    keys: set[str] = set()
+    if r.get("signal_hour_utc"):
+        keys.add("utc:" + str(r["signal_hour_utc"])[:13])
+    on_server = (str(r.get("_venue")) != "e8"
+                 and "tradelocker" not in str(r.get("timestamp_basis") or "").lower())
+    et = r.get("entry_time") or r.get("time")
+    if on_server and et:
+        keys.add("srv:" + str(et)[:13])
+    return keys or {"row:" + str(r.get("time"))}
+
+
 def episodes(rows: list[dict]) -> list[dict]:
     """ONE EPISODE PER DECISION, NOT PER VENUE (#540 audit, 26ca7f548 HOLD). The same signal copied
-    to Fusion and FTMO is one piece of evidence about the edge; counting it twice shrinks the
-    sequential bound ~sqrt(2) too fast, and the zero then moves capital on every venue. Copies
-    share the sleeve, the signal's entry hour and the direction (both venues stamp entry_time on
-    the broker server clock), as `loss_learner.episodes_of` keys them; Fusion's row is kept, and
-    `_venues` records every venue that took the signal. Oldest first."""
+    to Fusion, FTMO or E8 is one piece of evidence about the edge; counting it twice shrinks the
+    sequential bound ~sqrt(2) too fast, and the zero then moves capital on every venue.
+
+    A copy shares the sleeve and the direction with the episode and at least one signal-hour key
+    (`_hour_keys`: the UTC signal hour where the writer derived it, the server-clock entry hour
+    where the row is on the MT5 clock), and comes from a venue the episode does not already
+    hold. A second row on a venue that already took the signal is a separate trade (two scalps in
+    one hour) and keeps its own episode. Fusion's row and R stand; `_venues` names every venue
+    that took the signal and `_aliases` every key the episode is known by, which the cumulative
+    fold uses so the signal is counted once whichever copy closed first. Oldest first."""
     def rank(r: dict) -> int:
         v = str(r.get("_venue"))
         return VENUE_ORDER.index(v) if v in VENUE_ORDER else len(VENUE_ORDER)
-    uniq: dict[str, dict] = {}
+    eps: list[dict] = []
     for r in sorted(rows, key=rank):
-        et = str(r.get("entry_time") or r.get("time") or "")[:13]       # YYYY-MM-DDTHH
-        side = r.get("entry_side", r.get("side"))
-        base = f"{str(r.get('sleeve'))[:LEDGER_NAME_MAX]}|{et}|{side}"
-        venue = str(r.get("_venue"))
-        # A copy is the same signal on ANOTHER venue. A second row on a venue that already took
-        # this key is a separate trade (two scalps in one hour), and keeps its own episode.
+        stem, venue = str(r.get("sleeve"))[:LEDGER_NAME_MAX], str(r.get("_venue"))
+        base = {f"{stem}|{h}|{_direction(r)}" for h in _hour_keys(r)}
         k = 0
-        key = base
-        while key in uniq and venue in uniq[key]["_venues"]:
-            k += 1
-            key = f"{base}#{k}"
-        if key in uniq:
-            uniq[key]["_venues"].append(venue)
-        else:
-            uniq[key] = {**r, "_venues": [venue], "_episode": key}
-    return sorted(uniq.values(), key=lambda r: str(r.get("time") or ""))
+        while True:
+            keys = base if k == 0 else {f"{x}#{k}" for x in base}
+            hits = [e for e in eps if e["_aliases_set"] & keys]
+            if not hits:
+                eps.append({**r, "_venues": [venue], "_aliases_set": set(keys)})
+                break
+            home = next((e for e in hits if venue not in e["_venues"]), None)
+            if home is not None:
+                home["_venues"].append(venue)
+                home["_aliases_set"] |= keys
+                break
+            k += 1                      # this venue already took that hour: a separate trade
+    out = []
+    for e in eps:
+        al = sorted(e.pop("_aliases_set"))
+        out.append({**e, "_aliases": al, "_episode": al[0]})
+    return sorted(out, key=lambda r: str(r.get("time") or ""))
 
 
 def stats(rs: list[float]) -> dict:
@@ -586,13 +621,18 @@ def fold_sequential(state: dict | None, trades: list[dict]) -> dict:
     deals = [str(d) for d in (st.get("deals") or [])]
     seen = set(deals)
     for t in trades:
-        d = _deal_id(t)
-        if d in seen:
+        # An episode is known by every alias it has (#540: the FTMO copy may close first under its
+        # UTC hour, Fusion's later under its server hour); seen under any of them, it is counted.
+        ids = [f"ep:{a}" for a in t["_aliases"]] if t.get("_aliases") else [_deal_id(t)]
+        if seen.intersection(ids):
+            new = [d for d in ids if d not in seen]
+            deals.extend(new)
+            seen.update(new)
             continue
         r = float(t["r_multiple"])
         n, sx, sxx = n + 1, sx + r, sxx + r * r
-        deals.append(d)
-        seen.add(d)
+        deals.extend(ids)
+        seen.update(ids)
     return {"n": n, "sum": round(sx, 10), "sumsq": round(sxx, 10),
             "deals": deals[-SEQ_KEEP_DEALS:]}
 
