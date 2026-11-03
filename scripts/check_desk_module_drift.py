@@ -153,6 +153,7 @@ MODULES = [
     "desks/mt5/research/research_bandit.py",
     "desks/mt5/research/state_admission_run.py",
     "desks/mt5/research/decay_monitor.py",
+    "desks/mt5/research/loss_learner.py",
     "desks/mt5/research/forward_reconcile.py",
     "desks/mt5/research/portfolio_evidence.py",
     "desks/mt5/research/shadow_forward.py",
