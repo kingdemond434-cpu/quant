@@ -608,3 +608,25 @@ def test_the_budget_clock_starts_at_the_callers_entry(organ, monkeypatch):
     doc = gb.build(now=NOW, budget_s=50.0, started=_t.monotonic() - 100.0)
     assert any(str(v).startswith("TRUNCATED_BUDGET") for v in doc["unmeasured"].values())
     assert doc["elapsed_s"] >= 100.0
+
+
+def test_a_cold_graph_index_defers_the_full_write(organ, monkeypatch):
+    """A cold index still rebuilding has no recent births: the full build publishes nothing and
+    never stamps `full_at` over empty windows (audit SF on 6cfd93835)."""
+    _plant(organ, _baseline_born(), [_verdict("EURUSD", "carry", n=i) for i in range(25)])
+    calls: list[int] = []
+    monkeypatch.setattr(gb, "write_priors", lambda p, at: calls.append(1) or {"written": 9})
+    real = gb.build
+
+    def cold(**kw: Any) -> dict[str, Any]:
+        doc = real(**kw)
+        doc["unmeasured"][organ["GRAPH"].name] = "TRUNCATED_BUDGET_COLD_INDEX(at byte 9 of 99)"
+        return doc
+
+    monkeypatch.setattr(gb, "build", cold)
+    before = organ["OUT"].read_text("utf-8") if organ["OUT"].exists() else None
+    assert gb.main([]) == 0
+    after = json.loads(organ["OUT"].read_text("utf-8")) if organ["OUT"].exists() else None
+    assert calls == []
+    assert after is None or after.get("mode") == "core" or before is not None
+    assert not (after and after.get("mode") == "full")
