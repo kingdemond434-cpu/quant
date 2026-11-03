@@ -26,7 +26,6 @@ from typing import Any
 import pandas as pd
 
 BASE = "https://publicreporting.cftc.gov/resource/6dca-aqww.json"
-ROBOTS = "https://publicreporting.cftc.gov/robots.txt"
 # WRITE WHERE THE READERS LOOK. This wrote to the retired laptop's checkout
 # (C:\Users\dell\mt5-research), while `research/edge_search.py` and
 # `research/orthogonal_sweep.py` read COT from the desk's own tree. Writer and reader
@@ -64,10 +63,17 @@ def _open(req: urllib.request.Request, timeout: float) -> Any:
     return urllib.request.urlopen(req, timeout=timeout)
 
 
+def robots_url(url: str) -> str:
+    """The robots.txt that governs `url`: its own scheme and host."""
+    u = urllib.parse.urlsplit(url)
+    return f"{u.scheme}://{u.netloc}/robots.txt"
+
+
 def robots_allows(url: str, opener: Opener = _open) -> tuple[bool, str]:
     """robots.txt decides, fail closed: a 404 is "no rules" (allowed); a refusal is a hard stop;
-    any other unreadable answer refuses this run."""
-    req = urllib.request.Request(ROBOTS, headers={"User-Agent": UA})
+    any other unreadable answer refuses this run. Read from the URL's own host (shared with
+    `fetch_tff`, whose bulk files live on www.cftc.gov)."""
+    req = urllib.request.Request(robots_url(url), headers={"User-Agent": UA})
     try:
         with opener(req, 30) as resp:
             text = resp.read().decode("utf-8", errors="replace")

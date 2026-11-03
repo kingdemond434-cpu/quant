@@ -22,6 +22,10 @@ POLITE AND FAIL-CLOSED. The desk's honest UA, robots.txt read first (unreadable 
 pass holds until a person removes that file. Free, keyless, no crypto host (the legacy schema's
 FX, metals and index contracts only; `side_channels/fetch_cot.py`, the BTC/ETH twin, is not run).
 
+THE SIBLING, cot_tff (2026-11-03): `mt5desk/fetch_tff.py` -- the Traders in Financial Futures
+report, the only home of EURO FX positioning -- had the same defect and now runs on this clock
+under the same rule, with its own receipt (reports/COT_TFF_FETCH.json) and its own hard stop.
+
     python desks/mt5/research/cot_fx_refresh.py [--force]
 """
 from __future__ import annotations
@@ -44,6 +48,17 @@ for _p in (str(DESK), str(REPO)):
 OUT = DESK / "reports" / "COT_FX_FETCH.json"
 COT_DIR = DESK / "data" / "cot"
 HARD_STOP_FILE = DESK / "data" / "COT_FX_HARD_STOP.json"
+#: THE SIBLING DATASET ON THE SAME CLOCK: CFTC Traders in Financial Futures (data/cot_tff), the
+#: only home of EURO FX positioning. Its own receipt and its own hard stop -- its bulk files live
+#: on www.cftc.gov, a different host from the Socrata API, so one refusal never holds the other.
+TFF_OUT = DESK / "reports" / "COT_TFF_FETCH.json"
+TFF_DIR = DESK / "data" / "cot_tff"
+TFF_HARD_STOP_FILE = DESK / "data" / "COT_TFF_HARD_STOP.json"
+#: name -> (writer module, terms host)
+DATASETS: dict[str, tuple[str, str]] = {
+    "cot_fx": ("fetch_cot", "publicreporting.cftc.gov"),
+    "cot_tff": ("fetch_tff", "www.cftc.gov"),
+}
 #: After a fetch that found nothing newer, or failed, wait this long before the next try.
 BACKOFF_H = 6.0
 #: Report Tuesday -> the NEXT report's publication Friday, 21:00 UTC (after 15:30 ET in both
@@ -91,11 +106,11 @@ def _ts(v: Any) -> datetime | None:
 
 
 def decide(newest: datetime | None, prev: dict[str, Any], now: datetime,
-           held: dict[str, Any] | None) -> tuple[bool, str]:
+           held: dict[str, Any] | None, hard_stop: Path = HARD_STOP_FILE) -> tuple[bool, str]:
     """(fetch?, why). Pure, so every branch is testable."""
     if held:
         return False, (f"HARD STOP held since {held.get('at')}: {held.get('why')} -- remove "
-                       f"{HARD_STOP_FILE.relative_to(DESK).as_posix()} to clear")
+                       f"{hard_stop.name} (desks/mt5/data) to clear")
     last = _ts(prev.get("attempted_at"))
     if last is not None and prev.get("status") in ("NO_NEW_REPORT", "FAILED") \
             and (now - last) < timedelta(hours=BACKOFF_H):
@@ -117,21 +132,22 @@ def _write(doc: dict[str, Any], out: Path = OUT) -> None:
 
 def run(*, now: datetime | None = None, force: bool = False, cot_dir: Path = COT_DIR,
         out: Path = OUT, hard_stop: Path = HARD_STOP_FILE,
-        fetch: Any = None) -> dict[str, Any]:
+        fetch: Any = None, dataset: str = "cot_fx") -> dict[str, Any]:
     now = now or datetime.now(UTC)
     t0 = time.monotonic()
     prev = _read(out)
     held = _read(hard_stop) or None
     newest = newest_report(cot_dir)
-    go, why = decide(newest, prev, now, held)
+    go, why = decide(newest, prev, now, held, hard_stop)
+    writer, host = DATASETS[dataset]
     if force and not held:
         go, why = True, "forced"
     doc: dict[str, Any] = {
         "generated_utc": now.isoformat(timespec="seconds"),
         "organ": "desks/mt5/research/cot_fx_refresh.py",
-        "writer": "desks/mt5/mt5desk/fetch_cot.py",
-        "dataset": "cot_fx", "cadence": "weekly",
-        "terms_basis": ("publicreporting.cftc.gov has no SOURCE_POLICY row: the policy's "
+        "writer": f"desks/mt5/mt5desk/{writer}.py",
+        "dataset": dataset, "cadence": "weekly",
+        "terms_basis": (f"{host} has no SOURCE_POLICY row: the policy's "
                         "PUBLIC_PAGE default for an unlisted host; libs.data.terms_fence.check_url "
                         "is consulted whenever it is on this tree"),
         "newest_before": newest.isoformat() if newest else "UNMEASURED",
@@ -141,13 +157,13 @@ def run(*, now: datetime | None = None, force: bool = False, cot_dir: Path = COT
     }
     if not go:
         doc["status"] = "HELD" if held else "NOT_DUE"
-        print(f"WRITE_OR_EXPLAIN: NO_OP {why}", flush=True)
+        print(f"WRITE_OR_EXPLAIN: NO_OP {dataset}: {why}", flush=True)
         doc["elapsed_s"] = round(time.monotonic() - t0, 3)
         _write(doc, out)
         return doc
     if fetch is None:
-        from mt5desk import fetch_cot as _fc
-        fetch = _fc
+        import importlib
+        fetch = importlib.import_module(f"mt5desk.{writer}")
     doc["attempted_at"] = now.isoformat(timespec="seconds")
     try:
         got = fetch.fetch_all(out=cot_dir)
@@ -168,7 +184,7 @@ def run(*, now: datetime | None = None, force: bool = False, cot_dir: Path = COT
                          else "NO_NEW_REPORT")
     doc["elapsed_s"] = round(time.monotonic() - t0, 3)
     _write(doc, out)
-    print(json.dumps({k: doc.get(k) for k in ("status", "decision", "newest_before",
+    print(json.dumps({k: doc.get(k) for k in ("dataset", "status", "decision", "newest_before",
                                                 "newest_after", "error")}), flush=True)
     return doc
 
@@ -177,9 +193,11 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--force", action="store_true", help="fetch now unless a hard stop holds")
     a = ap.parse_args(argv)
-    doc = run(force=a.force)
+    docs = [run(force=a.force),
+            run(force=a.force, dataset="cot_tff", cot_dir=TFF_DIR, out=TFF_OUT,
+                hard_stop=TFF_HARD_STOP_FILE)]
     # A failure and the pass that HIT a hard stop are loud; a pass that holds behind one is not.
-    return 1 if doc.get("status") in ("FAILED", "HARD_STOP") else 0
+    return 1 if any(d.get("status") in ("FAILED", "HARD_STOP") for d in docs) else 0
 
 
 if __name__ == "__main__":

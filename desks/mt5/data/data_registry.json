@@ -65,6 +65,19 @@
       "cadence_basis": "CFTC reports Tuesday positions on Friday 15:30 ET; hourly leg cot_fx (research/cot_fx_refresh.py, 2026-11-03) fetches after the Friday release that should carry a newer report. Before it no clock ran mt5desk/fetch_cot.py and the box's newest report was 2026-08-11",
       "produced_on": "box"
     },
+    "cot_tff": {
+      "lifecycle": "INGESTED",
+      "source": "CFTC Traders in Financial Futures, futures-only (bulk fut_fin_txt_YYYY.zip)",
+      "contracts": ["jpy", "eur", "gbp", "cad", "aud", "nzd", "chf", "sp500", "nasdaq100"],
+      "format": "parquet",
+      "path": "data/cot_tff/*.parquet",
+      "coverage": "2018-2026 weekly",
+      "notes": "Dealer / asset manager / leveraged money long+short and open interest. The only home of EURO FX positioning (absent from the legacy schema). No metals, no DXY.",
+      "provenance": "www.cftc.gov/files/dea/history via mt5desk/fetch_tff.py",
+      "cadence": "weekly",
+      "cadence_basis": "CFTC reports Tuesday positions on Friday 15:30 ET; the hourly cot_fx leg (research/cot_fx_refresh.py) refreshes it after the Friday release that should carry a newer report, current year's file merged into the store (2026-11-03). Before that no clock ran fetch_tff.py",
+      "produced_on": "box"
+    },
     "bis_eer": {
       "lifecycle": "DISCOVERED",
       "source": "BIS stats API",
@@ -226,7 +239,7 @@
       "notes": "EUR positioning via FRED rates differentials + EURUSD H1 for now",
       "quarantined": true,
       "superseded_by": "cot_tff",
-      "superseded_why": "EURO FX positioning lives in the CFTC Traders-in-Financial-Futures report, which mt5desk/fetch_tff.py writes to data/cot_tff/<slug>.parquet (eur included). FOUND 2026-11-03: fetch_tff.py is on no clock either -- the same defect cot_fx had; its revival is the next step for this row, not done here"
+      "superseded_why": "EURO FX positioning lives in the CFTC Traders-in-Financial-Futures report, which mt5desk/fetch_tff.py writes to data/cot_tff/<slug>.parquet (eur included). fetch_tff.py was on no clock either (the defect cot_fx had); since 2026-11-03 it runs on the cot_fx leg's clock -- see the cot_tff row"
     },
     "gdelt": {
       "lifecycle": "DISCOVERED",
