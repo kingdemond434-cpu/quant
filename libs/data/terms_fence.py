@@ -265,7 +265,8 @@ SOURCE_POLICY.update({
                               "via APIs on the API Documentation page.")}}},
     "noaa_cpc": {
         "hosts": ("cpc.ncep.noaa.gov",), "status": PUBLIC_PAGE, "sources": ("noaa_cpc",),
-        "why": ("NOAA Climate Prediction Center index tables (ONI, NAO, AO, PNA); the "
+        "why": ("NOAA Climate Prediction Center index tables (ONI, NAO, AO, PNA) and its "
+                "population-weighted daily degree-day files (ftp.cpc.ncep.noaa.gov); the "
                 "Disclaimer linked from every CPC page footer is the NWS disclaimer, which puts "
                 "NWS pages in the public domain for any lawful purpose"),
         "terms": {"url": "https://www.weather.gov/disclaimer", "checked_at": "2026-10-29",
@@ -281,7 +282,12 @@ SOURCE_POLICY.update({
                                 "nao.shtml": "footer: Disclaimer -> "
                                              "http://www.weather.gov/disclaimer.php",
                                 "https://www.cpc.ncep.noaa.gov/information/disclaimer.shtml":
-                                    "client_error to the reader on 2026-10-29"}}},
+                                    "client_error to the reader on 2026-10-29",
+                                "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/"
+                                "cdus/degree_days/": ("read 2026-11-03: daily data 'provided "
+                                                      "in a pipe-delimited spreadsheet "
+                                                      "friendly format by year'; no release "
+                                                      "time is stated")}}},
     "eia_api": {
         "hosts": ("api.eia.gov",), "status": API_PERMITTED, "sources": ("eia_api",),
         # The data routes need EIA_API_KEY, but the KEY is checked by the door that uses it

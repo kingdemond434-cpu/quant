@@ -383,8 +383,8 @@ CLASSES: tuple[dict[str, Any], ...] = (
      "candidates": [
          _c("noaa_cpc_indices", "NOAA CPC ENSO (ONI), NAO, AO, PNA index tables",
             "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt", "US/global", "en"),
-         _c("noaa_cpc_degree_days", "NOAA CPC weekly/monthly degree days by region",
-            "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/cdus/degree_days/",
+         _c("noaa_cpc_degree_days", "NOAA CPC population-weighted daily degree days (CONUS)",
+            "https://ftp.cpc.ncep.noaa.gov/htdocs/degree_days/weighted/daily_data/",
             "US", "en"),
          _c("ecmwf_open_data", "ECMWF open data (IFS/AIFS forecasts, CC BY 4.0)",
             "https://data.ecmwf.int/forecasts/", "EU/global", "en"),
