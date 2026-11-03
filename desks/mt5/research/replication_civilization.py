@@ -106,7 +106,10 @@ UNMEASURED = "UNMEASURED"
 FORBIDDEN_IMPORTS: tuple[str, ...] = (
     "mt5desk.families", "mt5desk.families_orthogonal", "mt5desk.families_edge_queue",
     "mt5desk.engine", "mt5desk.family_call", "proposer_common", "external_gauntlet",
-    "lead_replication", "shadow_forward", "external_shadow")
+    "lead_replication", "shadow_forward", "external_shadow",
+    # the formula family and the grammar it evaluates: the lane reads `expr` with its own parser
+    # and its own operators, so a defect in either cannot replicate itself
+    "mt5desk.family_formula", "libs.research.alpha_grammar", "mt5desk.families_vector")
 
 RULE = ("a second implementation from the written specification and the raw bars only; a "
         "material disagreement on fills, P&L, position state or costs is quarantined by name")
@@ -153,6 +156,9 @@ class Bars:
     low: np.ndarray
     c: np.ndarray
     minutes: int
+    #: The broker's recorded spread (points) and tick count per bar, when the file carries them.
+    spread: np.ndarray | None = None
+    activity: np.ndarray | None = None
 
     def __len__(self) -> int:
         return int(self.t.size)
@@ -228,11 +234,18 @@ def load_bars(symbol: str, timeframe: str = "H1", universe: Path | None = None) 
         if t_ns is None:
             return None
         arrs = [frame[cols[k]].to_numpy(dtype="float64")[keep] for k in need]
+        extra = {name: frame[cols[col]].to_numpy(dtype="float64")[keep]
+                 for col, name in (("spread", "spread"), ("tick_volume", "activity"))
+                 if col in cols and cols[col] in frame.columns}
     except Exception:
         return None
     if len(t_ns) < 2:
         return None
-    return bars_from_arrays(np.asarray(t_ns, dtype="int64"), *arrs)
+    out = bars_from_arrays(np.asarray(t_ns, dtype="int64"), *arrs)
+    order = np.argsort(np.asarray(t_ns, dtype="int64"), kind="stable")
+    out.spread = extra["spread"][order] if "spread" in extra else None
+    out.activity = extra["activity"][order] if "activity" in extra else None
+    return out
 
 
 # ------------------------------------------------------------------------------ indicators
@@ -856,6 +869,286 @@ SPEC_BOOK.update({
 })
 
 
+# ------------------------------------------------------------------- formula (alpha grammar)
+#: The grammar's operators this lane has a written reading of. An expression naming any other
+#: operator or terminal (the macro drivers, the external roles, the peer-group statistics) is
+#: UNMEASURED by name: no written rule here, never a guess.
+FORMULA_UNARY = frozenset({"neg", "abs", "sign"})
+FORMULA_WINDOWED = frozenset({"delay", "delta", "mean", "std", "min", "max", "sum", "ts_rank",
+                              "zscore", "decay", "bars_since_max", "bars_since_min",
+                              "ts_backfill", "scale"})
+FORMULA_BINARY = frozenset({"add", "sub", "mul", "div", "max2", "min2", "trade_when"})
+FORMULA_TERMINALS = frozenset({"close", "open", "high", "low", "ret", "range", "body", "atr",
+                               "vol", "spread", "activity", "flow"})
+FORMULA_VOL_N = 24
+#: Values that agree to this share of their size are one value (see `_strict_std`).
+FLAT_TOL = 1e-9
+
+
+class FormulaUnsupported(ValueError):
+    """The expression names something this lane has no written rule for."""
+
+
+def parse_formula(raw: Any) -> Any:
+    """The expression as nested lists: a list as written, or the rendered call `op(a, b, 3)`.
+
+    This lane's own reader of the rendered form, so a rendering defect in the desk's parser
+    cannot be shared by its replication."""
+    if isinstance(raw, (list, tuple)):
+        return list(raw)
+    text = str(raw or "").strip()
+    if not text:
+        raise FormulaUnsupported("the certificate names no expression")
+    if text.startswith("["):
+        import ast
+        try:
+            return ast.literal_eval(text)
+        except (ValueError, SyntaxError) as exc:
+            raise FormulaUnsupported(f"expression {text!r} is not a literal list") from exc
+    pos = 0
+
+    def node() -> Any:
+        nonlocal pos
+        start = pos
+        while pos < len(text) and (text[pos].isalnum() or text[pos] in "_.-"):
+            pos += 1
+        name = text[start:pos]
+        if not name:
+            raise FormulaUnsupported(f"expression {text!r} is malformed at {start}")
+        if pos < len(text) and text[pos] == "(":
+            pos += 1
+            args = [name]
+            while True:
+                while pos < len(text) and text[pos] == " ":
+                    pos += 1
+                args.append(node())
+                while pos < len(text) and text[pos] == " ":
+                    pos += 1
+                if pos < len(text) and text[pos] == ",":
+                    pos += 1
+                    continue
+                if pos < len(text) and text[pos] == ")":
+                    pos += 1
+                    return args
+                raise FormulaUnsupported(f"expression {text!r} is malformed at {pos}")
+        try:
+            return int(name)
+        except ValueError:
+            return name
+
+    out = node()
+    if pos != len(text):
+        raise FormulaUnsupported(f"expression {text!r} has trailing text")
+    return out
+
+
+def _strict_window(x: np.ndarray, w: int, fn: Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
+    """fn over every full window of w bars, NaN where the window is short or holds a NaN."""
+    out = np.full(x.size, np.nan)
+    if w < 1 or x.size < w:
+        return out
+    from numpy.lib.stride_tricks import sliding_window_view
+    win = sliding_window_view(x, w)
+    ok = np.isfinite(win).all(axis=1)
+    with np.errstate(all="ignore"):
+        vals = fn(np.where(np.isfinite(win), win, 0.0))
+    out[w - 1:] = np.where(ok, vals, np.nan)
+    return out
+
+
+def _strict_std(x: np.ndarray, w: int) -> np.ndarray:
+    """Sample std over strict w-bar windows; a window whose values agree to 1e-9 of their size
+    deviates by exactly 0 (never the 1e-17 that floating-point cancellation leaves, which a
+    z-score turns into a signal)."""
+    if w < 2:
+        return np.full(x.size, np.nan)
+    sd = _strict_window(x, w, lambda v: v.std(axis=1, ddof=1))
+    flat = _strict_window(x, w, lambda v: (
+        (v.max(axis=1) - v.min(axis=1))
+        <= FLAT_TOL * np.maximum(1.0, np.abs(v).max(axis=1))).astype("float64"))
+    return np.where(flat == 1.0, 0.0, sd)
+
+
+def _shift(x: np.ndarray, k: int) -> np.ndarray:
+    out = np.full(x.size, np.nan)
+    if k < x.size:
+        out[k:] = x[:x.size - k]
+    return out
+
+
+def _ffill(x: np.ndarray, limit: int | None = None) -> np.ndarray:
+    out = x.copy()
+    last, gap = np.nan, 0
+    for i in range(out.size):
+        if np.isfinite(out[i]):
+            last, gap = out[i], 0
+        elif np.isfinite(last) and (limit is None or gap < limit):
+            out[i] = last
+            gap += 1
+        else:
+            gap += 1
+    return out
+
+
+def formula_terminals(b: Bars, atr_n: int) -> dict[str, np.ndarray]:
+    """The written terminals on this lane's own bars."""
+    c, o, h, lo = b.c, b.o, b.h, b.low
+    with np.errstate(all="ignore"):
+        prev = _shift(c, 1)
+        ret = np.log(c) - np.log(prev)
+        tr = np.fmax(np.fmax(h - lo, np.abs(h - prev)), np.abs(lo - prev))
+        out = {"close": c, "open": o, "high": h, "low": lo, "ret": ret,
+               "range": (h - lo) / c, "body": (c - o) / c,
+               "atr": _strict_window(tr, atr_n, lambda w: w.mean(axis=1)),
+               "vol": _strict_std(ret, FORMULA_VOL_N)}
+    if b.spread is not None:
+        out["spread"] = b.spread.astype("float64")
+    if b.activity is not None:
+        out["activity"] = b.activity.astype("float64")
+        out["flow"] = np.nan_to_num(np.sign(out["body"]), nan=0.0) * out["activity"]
+    return out
+
+
+def formula_value(expr: Any, t: Mapping[str, np.ndarray], n: int) -> np.ndarray:
+    """The expression's value per bar under the written reading of each operator.
+
+    Every node's infinities read as undefined (NaN). Windowed statistics need a full window of
+    defined values; `ts_rank` is the share of the previous w values at or below the current one
+    (a comparison with an undefined value is false); `decay` is the linearly weighted mean with
+    weight w on the current bar down to 1; `ts_backfill` carries the last defined value over at
+    most w undefined bars; `scale` divides by the window sum of |x|; `trade_when(g, x)` takes x
+    where g > 0 and otherwise holds the last value taken; `div` is undefined where |b| <= 1e-12;
+    `max2` / `min2` ignore an undefined side."""
+    def go(e: Any) -> np.ndarray:
+        if isinstance(e, str):
+            if e not in FORMULA_TERMINALS:
+                raise FormulaUnsupported(f"terminal {e!r} has no written reading here")
+            if e not in t:
+                raise FormulaUnsupported(f"terminal {e!r} is not in these bars")
+            return np.asarray(t[e], dtype="float64")
+        if not isinstance(e, (list, tuple)) or not e:
+            raise FormulaUnsupported(f"node {e!r} is not an expression")
+        op = str(e[0])
+        with np.errstate(all="ignore"):
+            if op in FORMULA_UNARY:
+                a = go(e[1])
+                v = -a if op == "neg" else np.abs(a) if op == "abs" else np.sign(a)
+            elif op in FORMULA_WINDOWED:
+                a, w = go(e[1]), int(e[2])
+                if w < 1 or w > n:
+                    v = np.full(n, np.nan)
+                elif op == "delay":
+                    v = _shift(a, w)
+                elif op == "delta":
+                    v = a - _shift(a, w)
+                elif op in ("mean", "sum", "min", "max"):
+                    f = {"mean": np.mean, "sum": np.sum, "min": np.min, "max": np.max}[op]
+                    v = _strict_window(a, w, lambda x, f=f: f(x, axis=1))
+                elif op == "std":
+                    v = _strict_std(a, w)
+                elif op == "zscore":
+                    v = (a - _strict_window(a, w, lambda x: x.mean(axis=1))) / _strict_std(a, w)
+                elif op == "ts_rank":
+                    v = np.full(n, np.nan)
+                    for i in range(w, n):
+                        v[i] = float(np.mean(a[i - w:i] <= a[i]))
+                elif op == "decay":
+                    wts = np.arange(w, 0, -1, dtype="float64")
+                    acc = np.zeros(n)
+                    for k in range(w):
+                        acc = acc + _shift(a, k) * wts[k]
+                    v = acc / wts.sum()
+                elif op in ("bars_since_max", "bars_since_min"):
+                    v = np.full(n, np.nan)
+                    fill = -np.inf if op == "bars_since_max" else np.inf
+                    pick = np.argmax if op == "bars_since_max" else np.argmin
+                    for i in range(w - 1, n):
+                        win = a[i - w + 1:i + 1]
+                        v[i] = (w - 1) - int(pick(np.where(np.isfinite(win), win, fill)))
+                elif op == "ts_backfill":
+                    v = _ffill(a, limit=w)
+                else:                                                   # scale
+                    den = _strict_window(np.abs(a), w, lambda x: x.sum(axis=1))
+                    v = a / np.where(den > 1e-12, den, np.nan)
+            elif op in FORMULA_BINARY:
+                a, c = go(e[1]), go(e[2])
+                if op == "add":
+                    v = a + c
+                elif op == "sub":
+                    v = a - c
+                elif op == "mul":
+                    v = a * c
+                elif op == "div":
+                    v = a / np.where(np.abs(c) > 1e-12, c, np.nan)
+                elif op == "max2":
+                    v = np.fmax(a, c)
+                elif op == "min2":
+                    v = np.fmin(a, c)
+                else:                                                   # trade_when
+                    v = _ffill(np.where(a > 0, c, np.nan))
+            else:
+                raise FormulaUnsupported(f"operator {op!r} has no written reading here")
+        v = np.asarray(v, dtype="float64")
+        return np.where(np.isfinite(v), v, np.nan)
+
+    return go(expr)
+
+
+def _build_formula(b: Bars, p: dict[str, Any]) -> list[Order]:
+    expr = parse_formula(p.get("expr"))
+    mode = str(p.get("side_mode") or "follow")
+    if mode not in ("follow", "fade"):
+        raise FormulaUnsupported(f"side_mode {mode!r} has no written reading")
+    norm, hold, atr_n = int(p["norm"]), int(p["hold_bars"]), int(p["atr_n"])
+    entry_z, stop_atr, rr = float(p["entry_z"]), float(p["stop_atr"]), float(p["rr"])
+    n = len(b)
+    if n < max(2 * norm, 300):
+        return []
+    v = formula_value(expr, formula_terminals(b, atr_n), n)
+    with np.errstate(all="ignore"):
+        m = _strict_window(v, norm, lambda x: x.mean(axis=1))
+        z = (v - m) / _strict_std(v, norm)
+    z = np.where(np.isfinite(z), z, np.nan)
+    if np.isfinite(z).sum() < 0.05 * n:
+        return []
+    a = atr(b, atr_n)
+    flip = 1 if mode == "follow" else -1
+    out: list[Order] = []
+    last = -10 ** 9
+    for i in range(norm, n - 1):
+        if i - last < hold:
+            continue
+        zi, ai = z[i], a[i]
+        if not np.isfinite(zi) or abs(zi) < entry_z or not np.isfinite(ai) or ai <= 0:
+            continue
+        side = int(np.sign(zi)) * flip
+        if side == 0:
+            continue
+        px = float(b.c[i])
+        out.append(Order(int(b.t[i]), side, px - side * stop_atr * ai,
+                         px + side * stop_atr * ai * rr, hold))
+        last = i
+    return out
+
+
+SPEC_BOOK.update({
+    "formula": RuleSpec(
+        "formula",
+        "One alpha-grammar expression (expr) evaluated on the bars: terminals close, open, high, "
+        "low, ret = log close change, range = (high - low) / close, body = (close - open) / "
+        "close, atr = strict atr_n-bar mean true range, vol = strict 24-bar std of ret, spread = "
+        "the broker's recorded spread, activity = tick count, flow = sign(body) x activity; "
+        "operators as `formula_value` writes them. z = (value - its strict norm-bar mean) / its "
+        "strict norm-bar std; nothing when the bars are fewer than max(2 x norm, 300) or z is "
+        "defined on under 5% of them. From bar norm on, a signal where |z| >= entry_z and "
+        "ATR(atr_n) > 0, side = sign(z) (follow) or -sign(z) (fade), stop stop_atr x ATR from "
+        "the close, target rr x that, entry next open, time exit after hold_bars, and no new "
+        "signal within hold_bars of the last. The cell's `session` keeps only signals inside it.",
+        {"expr": None, "norm": 240, "entry_z": 1.5, "side_mode": "follow", "hold_bars": 8,
+         "atr_n": 20, "stop_atr": 2.0, "rr": 1.5, "population": None},
+        _build_formula),
+})
+
 #: Session selector -> [start, end) broker hours a non-breakout signal must fall in.
 SESSIONS: dict[str, tuple[int, int] | None] = {
     "asia": (0, 8), "london": (8, 16), "ny": (14, 22), "all": None, "continuous": None,
@@ -1242,7 +1535,11 @@ def replicate_certificate(row: Mapping[str, Any], *, meta: Mapping[str, Any],
         out["why"] = [f"{sym} bars absent or shorter than {MIN_BARS} rows"]
         return out
     cost = cost_spec(meta)
-    _orders, fills = rebuild(fam, bars, p, cost.price_units)
+    try:
+        _orders, fills = rebuild(fam, bars, p, cost.price_units)
+    except FormulaUnsupported as exc:
+        out["why"] = [str(exc)]
+        return out
     ours, n_days = sharpe(fills)
     gates = row.get("gates") if isinstance(row.get("gates"), dict) else {}
     iss = gates.get("in_sample_screen") if isinstance(gates.get("in_sample_screen"), dict) else {}
@@ -1277,7 +1574,11 @@ def replicate_forward(row: Mapping[str, Any], *, meta: Mapping[str, Any], bars: 
         out["why"] = [f"{sym} bars absent or shorter than {MIN_BARS} rows"]
         return out
     cost = cost_spec(meta)
-    _orders, fills = rebuild(fam, bars, p, cost.price_units)
+    try:
+        _orders, fills = rebuild(fam, bars, p, cost.price_units)
+    except FormulaUnsupported as exc:
+        out["why"] = [str(exc)]
+        return out
     start = str(row.get("forward_start") or "")
     try:
         t0 = int(np.datetime64(start.replace(" ", "T").split("+")[0], "ns").astype("int64"))

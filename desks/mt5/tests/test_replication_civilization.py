@@ -397,3 +397,73 @@ def test_a_short_certificate_is_filtered_short_and_an_unnamed_param_is_refused()
     label, _ = rc.resolve_spec("overnight_gap_decay", {"representation": "x", "selector": "asia"},
                                "asia", "LONG")
     assert label is not None
+
+
+def _spread_bars(n: int = 1600, seed: int = 11) -> tuple[rc.Bars, Any]:
+    import pandas as pd
+    rng = np.random.default_rng(seed)
+    idx = pd.date_range("2025-01-01", periods=n, freq="h", tz="UTC")
+    close = 1.1 * np.exp(np.cumsum(rng.normal(0, 0.0008, n)))
+    open_ = np.concatenate([[1.1], close[:-1]])
+    high = np.maximum(open_, close) * (1 + rng.uniform(0, 0.0008, n))
+    low = np.minimum(open_, close) * (1 - rng.uniform(0, 0.0008, n))
+    spread = rng.integers(5, 40, n).astype("float64")
+    ticks = rng.integers(50, 900, n).astype("float64")
+    df = pd.DataFrame({"open": open_, "high": high, "low": low, "close": close,
+                       "spread": spread.astype("int32"), "tick_volume": ticks.astype("uint64")},
+                      index=idx)
+    b = rc.bars_from_arrays(idx.as_unit("ns").asi8, open_, high, low, close)
+    b.spread, b.activity = spread, ticks
+    return b, df
+
+
+FORMULA_EXPRS = [
+    ["ts_backfill", ["decay", "spread", 3], 3],
+    ["neg", ["mean", "spread", 5]],
+    ["zscore", ["ts_backfill", ["trade_when", "range", "spread"], 240], 24],
+    ["delay", ["decay", "spread", 3], 3],
+    ["max", ["mean", "spread", 8], 48],
+    ["sub", ["ts_rank", "close", 12], ["abs", ["delta", "body", 2]]],
+    ["div", ["scale", "flow", 24], ["std", "ret", 12]],
+    ["max2", ["mean", "spread", 5], ["min", "spread", 24]],
+    ["bars_since_max", "high", 24],
+    ["mul", "vol", "atr"],
+]
+
+
+@pytest.mark.parametrize("expr", FORMULA_EXPRS, ids=[str(i) for i in range(len(FORMULA_EXPRS))])
+@pytest.mark.parametrize("mode", ["follow", "fade"])
+def test_the_written_formula_rule_emits_the_desks_signals(expr: Any, mode: str) -> None:
+    """The lane's own grammar reader must emit exactly what `family_formula` emits, called as
+    the forward clock calls it. 356 of the 589 clockless certificates (2026-11-03) were formula
+    cells held at the door for want of this rule."""
+    from mt5desk.family_call import signals
+    from mt5desk.family_formula import family_formula
+    bars, df = _spread_bars()
+    params = {"expr": expr, "norm": 120, "entry_z": 1.2, "side_mode": mode, "hold_bars": 6,
+              "atr_n": 14, "stop_atr": 2.0, "rr": 1.5}
+    p, why = rc.resolve_spec("formula", params, "asia", "LONG")
+    assert p is not None, why
+    orders, _ = rc.rebuild("formula", bars, p, 0.0)
+    desk = signals(family_formula, df, side=1, params=dict(params))
+    assert len(orders) == len(desk) > 5
+    for o, s in zip(orders, desk, strict=True):
+        assert o.t_ns == s.time.value and o.side == s.side and o.ttl_bars == s.ttl_bars
+        assert o.stop == pytest.approx(s.stop) and o.target == pytest.approx(s.target)
+
+
+def test_a_rendered_formula_parses_to_the_same_tree() -> None:
+    assert rc.parse_formula("ts_backfill(decay(spread, 3), 3)") == \
+        ["ts_backfill", ["decay", "spread", 3], 3]
+    assert rc.parse_formula("['neg', ['mean', 'spread', 5]]") == ["neg", ["mean", "spread", 5]]
+    assert rc.parse_formula("close") == "close"
+
+
+def test_a_formula_naming_an_unwritten_operator_is_unmeasured_by_name() -> None:
+    bars, _ = _spread_bars()
+    row = {"shadow_spec": {"family": "formula", "symbol": "TESTFX", "selector": "asia",
+                           "side": "LONG", "params": {"expr": ["group_rank", "close", "usd", 24]}},
+           "gates": {"in_sample_screen": {"sharpe": 0.4}}}
+    out = rc.replicate_certificate(row, meta=META, bars=bars)
+    assert out["verdict"] == rc.UNMEASURED
+    assert any("group_rank" in w for w in out["why"])
