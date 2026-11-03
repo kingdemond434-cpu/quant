@@ -471,8 +471,11 @@ def native_stop(mt5: Any, st: dict[str, Any], p: Any) -> tuple[float | None, str
     costed break-even floor and the H1 chandelier -- on THIS account's position, bars and quote.
     Until this, FTMO only copied E8's acknowledged stop, so it was managed only while E8 was
     alive, held the same position, and published the move. (new stop, why) or (None, why)."""
+    opened = getattr(p, "price_open", None)
+    if not isinstance(opened, (int, float)) or not opened > 0:
+        return None, "the position carries no readable open price"
     dist, captured = _mm.original_stop_distance(st.setdefault("orig_stop_dist", {}),
-                                                int(p.ticket), float(p.price_open),
+                                                int(p.ticket), float(opened),
                                                 float(getattr(p, "sl", 0.0) or 0.0))
     if dist is None:
         return None, "no stop on the position; none invented"
@@ -481,7 +484,10 @@ def native_stop(mt5: Any, st: dict[str, Any], p: Any) -> tuple[float | None, str
     info = mt5.symbol_info(SYMBOL)
     if info is None:
         return None, "no symbol_info this pass"
-    move = _mm.stop_move(mt5, p, info, original_dist=dist, floor_only=False)
+    try:
+        move = _mm.stop_move(mt5, p, info, original_dist=dist, floor_only=False)
+    except Exception as exc:  # a read this pass could not make never takes the pass down
+        return None, f"own ratchet unavailable this pass ({type(exc).__name__}: {exc})"[:200]
     return move.new_stop, move.why
 
 

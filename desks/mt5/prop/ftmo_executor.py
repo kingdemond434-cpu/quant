@@ -375,8 +375,11 @@ def protect(mt5: Any, st: dict[str, Any], doc: dict[str, Any], p: Any, *, cet: s
     from mt5desk import mt5_manage as _mm
     hold = (st.get("holds") or {}).get(str(int(p.ticket)))
     trail = float((hold or {}).get("trail_k") or 0.0) if isinstance(hold, dict) else 0.0
+    opened = getattr(p, "price_open", None)
+    if not isinstance(opened, (int, float)) or not opened > 0:
+        return
     dist, _new = _mm.original_stop_distance(st.setdefault("orig_stop_dist", {}), int(p.ticket),
-                                            float(p.price_open),
+                                            float(opened),
                                             float(getattr(p, "sl", 0.0) or 0.0))
     if dist is None:
         return
@@ -384,7 +387,13 @@ def protect(mt5: Any, st: dict[str, Any], doc: dict[str, Any], p: Any, *, cet: s
     if info is None:
         doc.setdefault("manage_unmeasured", []).append(f"{p.symbol} #{p.ticket}: no symbol_info")
         return
-    move = _mm.stop_move(mt5, p, info, original_dist=dist, floor_only=not trail > 0.0)
+    try:
+        move = _mm.stop_move(mt5, p, info, original_dist=dist, floor_only=not trail > 0.0)
+    except Exception as exc:  # a read this pass could not make never takes the pass down
+        doc.setdefault("manage_unmeasured", []).append(
+            f"{p.symbol} #{p.ticket}: stop management unavailable ({type(exc).__name__}: {exc})"
+            [:200])
+        return
     if move.new_stop is None:
         return
     act = {"act": "breakeven_floor" if move.breakeven_floor else "ratchet_stop",
