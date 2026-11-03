@@ -233,7 +233,7 @@ def run_state(budget_s: float = STATE_BUDGET_S, symbols: list[str] | None = None
                 last = None
         old = prev_rows.get(sym) if isinstance(prev_rows, dict) else None
         if isinstance(old, dict) and last and old.get("last_day") == last \
-                and old.get("status") == "MEASURED" and sym in prev_diff:
+                and (sym in prev_diff or old.get("status") != "MEASURED"):
             rows[sym], cache[sym] = old, prev_diff[sym]
             carried += 1
         elif stood is not None:
