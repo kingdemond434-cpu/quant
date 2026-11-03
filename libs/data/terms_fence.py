@@ -1729,19 +1729,28 @@ SOURCE_POLICY.update({
         "robots": SOURCE_POLICY["tr_evds_gold"]["robots"],
         "terms": SOURCE_POLICY["tr_evds_gold"]["terms"]},
     "pl_nbp": {
-        "hosts": (), "url_level": False, "status": API_PERMITTED,
+        # IDEAS_ONLY (2026-11-03, the row's own revert line applied): the only permitting clause
+        # quoted, s.1(6), grants copying "for personal use", which is not a permission for a
+        # desk's research; FAIL CLOSED FOR LIVE INPUT (auditor ruling 2026-10-14).
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
         "sources": ("pl_fx_usd", "pl_fx_eur", "pl_gold", "pl_policy_rates"),
         "why": ("the NBP Web API (api.nbp.pl, keyless JSON) and NBP's published interest-rate "
-                "file; NBP's Terms of Use of its website (clauses quoted) raise no objection to "
-                "saving files and copying pages, require the source to be stated when its "
-                "materials are used, and treat automatic downloading as a problem only when it "
-                "overloads the site (one request per door per pass here, ranges capped at the "
-                "API's 93 days). Read for INTERNAL research only, credited. One-line revert: "
-                "status -> IDEAS_ONLY if the auditor reads s.1(6) 'personal use' as excluding a "
-                "desk's internal research"),
+                "file; NBP's Terms of Use of its website (clauses quoted) permit saving and "
+                "copying only 'for personal use' (s.1(6)), which does not cover a desk's "
+                "internal research, and no clause names automated access for that use: ideas "
+                "only, parsers exercised on fixtures. Applied as the row's own one-line revert "
+                "(status -> IDEAS_ONLY on s.1(6) 'personal use'). PLN policy rates still reach "
+                "the desk through the BIS WS_CBPOL direct door"),
+        "unblock": ("an NBP clause (or written permission) that permits automated use of the "
+                    "NBP Web API data for a firm's internal research, quoted into this row, and "
+                    "the row flipped back to API_PERMITTED"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _PACK_MISSED.format(
+                              what="NBP USD/PLN and EUR/PLN fixings, gold in PLN and NBP rates",
+                              syms="USDPLN, EURPLN")},
         "api": "https://api.nbp.pl/en.html",
         "credit": "Source: Narodowy Bank Polski (www.nbp.pl); z-scores computed by the desk",
-        "robots": "read per request by guarded_urlopen for the hunter UA (a Disallow is a hold)",
+        "robots": "never requested as live input (held before any fetch)",
         "terms": {"url": "https://static.nbp.pl/dokumenty/regulaminy/regulamin_nbppl_en.pdf",
                   "checked_at": "2026-11-03",
                   "clauses": {
