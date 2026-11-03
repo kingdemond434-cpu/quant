@@ -171,6 +171,59 @@ _CANARY_SENDERS: dict[str, _CanarySender] = {"hc": _send_hc}
 _CANARY_AWARE = frozenset(_CANARY_SENDERS)
 
 
+#: NOTICE CLASSES (2026-11-03, the principal: "I got tons of ntfy things"). The box's 41 pages in
+#: 48h were 26 repeats of three measurement-gap notices, each re-paging every 6h, none needing his
+#: click or touching live money. A title matching one of these substrings pages at most ONCE per
+#: DIGEST_COOLDOWN_H per class; repeats inside the window go to the digest file and the next page of
+#: that class carries the count. Anything NOT listed pages exactly as before, so a live-money RED
+#: (dead-man, E8/FTMO guard, box unhealthy, OCO) can never be held back by this.
+_DIGEST_CLASSES: tuple[tuple[str, str], ...] = (
+    ("UNMEASURED", "unmeasured"),
+    ("METER SILENT", "state_meter"),
+    ("FLOWING again", "state_meter"),
+    ("JUDGE COVERAGE", "judge_coverage"),
+)
+DIGEST_COOLDOWN_H = 24.0
+
+
+def digest_class(title: str) -> str | None:
+    for needle, cls in _DIGEST_CLASSES:
+        if needle in title:
+            return cls
+    return None
+
+
+def _digest_paths(ledger: Path) -> tuple[Path, Path]:
+    return ledger.parent / "alert_digest_state.json", ledger.parent / "alert_digest.jsonl"
+
+
+def _digest_gate(title: str, ledger: Path, now: datetime) -> tuple[bool, int]:
+    """(suppress, repeats_owed). Fails OPEN: any state error lets the page through."""
+    cls = digest_class(title)
+    if cls is None:
+        return False, 0
+    state_p, digest_p = _digest_paths(ledger)
+    try:
+        state = json.loads(state_p.read_text("utf-8")) if state_p.exists() else {}
+        row = state.get(cls) or {}
+        last = datetime.fromisoformat(row["last_paged"]) if row.get("last_paged") else None
+        if last is not None and (now - last).total_seconds() < DIGEST_COOLDOWN_H * 3600.0:
+            row["held"] = int(row.get("held", 0)) + 1
+            state[cls] = row
+            state_p.write_text(json.dumps(state, indent=1), "utf-8")
+            with digest_p.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps({"ts": now.isoformat(), "class": cls, "title_sha": sha256(
+                    title.encode("utf-8", "ignore")).hexdigest()[:12]}) + "\n")
+            return True, 0
+        held = int(row.get("held", 0))
+        state[cls] = {"last_paged": now.isoformat(), "held": 0}
+        state_p.parent.mkdir(parents=True, exist_ok=True)
+        state_p.write_text(json.dumps(state, indent=1), "utf-8")
+        return False, held
+    except (OSError, ValueError, TypeError, AttributeError, KeyError):
+        return False, 0
+
+
 def send_all(title: str, body: str, *, config: Path = _CONFIG,
              ledger: Path = _LEDGER, canary: bool = False) -> dict[str, Any]:
     """Fire EVERY armed channel; one channel's failure can never stop another's.
@@ -189,6 +242,19 @@ def send_all(title: str, body: str, *, config: Path = _CONFIG,
         return {"armed": 0, "delivered": 0, "results": [],
                 "note": "second-channel arming is a HUMAN step: drop credentials at "
                         "data/secrets/alert_channels.json on the box"}
+    if not canary:
+        suppress, held = _digest_gate(title, ledger, datetime.now(tz=UTC))
+        if suppress:
+            # Recorded, never silent; ok=False so all_silent_since() stays honest.
+            _log("digest", False, f"HELD: {digest_class(title)} paged within "
+                 f"{DIGEST_COOLDOWN_H:g}h; counted in the next page", title, ledger)
+            # `delivered` 1 = the digest took it, so callers record the notice as handled and do
+            # not retry every tick (their contract: delivered 0 means "re-send next pass").
+            return {"armed": len(channels), "delivered": 1, "suppressed": True,
+                    "results": [{"channel": "digest", "ok": True, "detail": "held"}]}
+        if held:
+            body = (f"(+{held} repeat(s) of this notice held in the last "
+                    f"{DIGEST_COOLDOWN_H:g}h)\n") + body
     results = []
     for cfg in channels:
         kind = str(cfg.get("kind"))
