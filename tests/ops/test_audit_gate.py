@@ -8,6 +8,7 @@ import importlib.util
 import json
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -2818,47 +2819,123 @@ def test_a_gh_timeout_on_one_pr_never_kills_the_sweep(monkeypatch: pytest.Monkey
     assert ag.sweep("o/r", ag.LIVE) == 1 and ran == [2]
 
 
-# ------------------------------------------------ the registry path (D-20261103-004)
+# ------------------------------------------------ the registry path (D-20261103-005)
 _H = "a" * 40
 _NOW = ag.datetime(2026, 11, 5, 12, 0, tzinfo=ag.UTC)
+_OLD = ag.datetime(2026, 11, 4, 11, 0, tzinfo=ag.UTC)  # 25 h before _NOW
 
 
 def _row(**k: Any) -> dict[str, Any]:
     return {"pr": 9, "sha": _H, "verdict": "CLEAR", "at": "2026-11-04T11:00:00Z", **k}
 
 
-def test_a_registry_clear_merges_only_the_exact_head_after_the_veto_window() -> None:
-    got, why = ag.registry_clear([_row()], 9, _H, _NOW)
+def _win(at: Any = _OLD) -> Callable[[], tuple[Any, str]]:
+    return lambda: (at, "" if at else "no notice yet")
+
+
+def test_a_registry_clear_merges_only_the_exact_head_after_the_gates_own_window() -> None:
+    got, why = ag.registry_clear([_row()], 9, _H, _win(), _NOW)
     assert got is not None and got["sha"] == _H and ag.REGISTRY_TITLE in why
-    assert ag.registry_clear([_row()], 9, "b" * 40, _NOW)[0] is None  # another head: no carry
-    young = _row(at="2026-11-05T00:00:00Z")  # 12 h: still inside the 24 h veto window
-    assert ag.registry_clear([young], 9, _H, _NOW)[0] is None
-    assert ag.registry_clear([_row(), _row(verdict="HOLD")], 9, _H, _NOW)[0] is None  # vetoed
-    assert ag.registry_clear([_row(at="2026-11-04T11:00:00")], 9, _H, _NOW)[0] is None  # no tz
-    assert ag.registry_clear([_row(pr=8)], 9, _H, _NOW)[0] is None
+    assert ag.registry_clear([_row()], 9, "b" * 40, _win(), _NOW)[0] is None  # no carry-over
+    young = ag.datetime(2026, 11, 5, 0, 0, tzinfo=ag.UTC)  # 12 h into the 24 h veto window
+    assert ag.registry_clear([_row()], 9, _H, _win(young), _NOW)[0] is None
+    assert ag.registry_clear([_row()], 9, _H, _win(None), _NOW)[0] is None  # notice not sent
+    held = [_row(), _row(verdict="HOLD")]
+    assert ag.registry_clear(held, 9, _H, _win(), _NOW)[0] is None  # vetoed
+    assert ag.registry_clear([_row(at="2026-11-04T11:00:00")], 9, _H, _win(), _NOW)[0] is None
+    assert ag.registry_clear([_row(pr=8)], 9, _H, _win(), _NOW)[0] is None
+    future = _row(at="2026-11-06T12:00:00Z")
+    assert ag.registry_clear([future], 9, _H, _win(), _NOW)[0] is None
 
 
-def test_an_unreadable_registry_is_no_registry(tmp_path: Path) -> None:
-    assert ag.registry_rows(None) == [] and ag.registry_rows(str(tmp_path / "none")) == []
+def test_a_backdated_row_never_starts_the_window(tmp_path: Path) -> None:
+    # #591 audit MF3: the row says 2020, but the window starts when the gate's notice went out
+    sent: list[str] = []
+    seen = tmp_path / "r.jsonl.window.json"
+    row = _row(at="2020-01-01T00:00:00Z")
+
+    def win(now: Any, ok: bool = True) -> Callable[[], tuple[Any, str]]:
+        return lambda: ag.registry_window(seen, 9, _H, now, lambda t, b: sent.append(t) or ok)
+
+    assert ag.registry_clear([row], 9, _H, win(_OLD, ok=False), _OLD)[0] is None
+    assert not seen.exists() and len(sent) == 1  # not delivered: no window, retried next sweep
+    assert ag.registry_clear([row], 9, _H, win(_OLD), _OLD)[0] is None  # delivered: starts now
+    assert json.loads(seen.read_text(encoding="utf-8")) == {f"9:{_H}": _OLD.isoformat()}
+    early = ag.datetime(2026, 11, 5, 10, 0, tzinfo=ag.UTC)  # 23 h later: still inside
+    assert ag.registry_clear([row], 9, _H, win(early), early)[0] is None
+    got, _ = ag.registry_clear([row], 9, _H, win(_NOW), _NOW)
+    assert got is not None and len(sent) == 2  # 25 h after delivery; no second notice
+    seen.write_text("not json", encoding="utf-8")
+    assert ag.registry_clear([row], 9, _H, win(_NOW), _NOW)[0] is None  # a broken record: none
+
+
+def test_an_unreadable_registry_is_no_registry_and_says_so(tmp_path: Path) -> None:
+    assert ag.registry_rows(None)[0] == [] and ag.registry_rows(str(tmp_path / "none"))[0] == []
     bad = tmp_path / "r.jsonl"
     bad.write_text(json.dumps(_row()) + "\nnot json\n", encoding="utf-8")
-    assert ag.registry_rows(str(bad)) == []  # one bad line voids it: zuck's path, never a guess
+    rows, why = ag.registry_rows(str(bad))
+    assert rows == [] and "unreadable" in why  # one bad line voids it, and the summary says so
     bad.write_text(json.dumps(_row()) + "\n", encoding="utf-8")
-    assert ag.registry_rows(str(bad)) == [_row()]
+    assert ag.registry_rows(str(bad)) == ([_row()], "")
 
 
-def test_only_a_red_unreverted_registry_merge_is_reverted() -> None:
-    def c(sha: str, msg: str) -> dict[str, Any]:
-        return {"sha": sha, "commit": {"message": msg}}
+def test_only_a_registry_merge_that_broke_green_live_ci_is_reverted() -> None:
+    def c(sha: str, msg: str, parent: str = "0" * 40) -> dict[str, Any]:
+        return {"sha": sha, "commit": {"message": msg}, "parents": [{"sha": parent}]}
 
-    reg, ok, old = "1" * 40, "2" * 40, "3" * 40
+    reg, ok, old, inh = "1" * 40, "2" * 40, "3" * 40, "6" * 40
+    green, red = "7" * 40, "8" * 40
     commits = [
-        c(reg, f"Merge #9 ({ag.REGISTRY_TITLE} aaaaaaaaa, from the box)"),
-        c(ok, f"Merge #8 ({ag.REGISTRY_TITLE} bbbbbbbbb, from the box)"),
-        c("4" * 40, "Merge #7 (merge): audit CLEAR ccccccccc"),
+        c(reg, f"Merge #9 ({ag.REGISTRY_TITLE} aaaaaaaaa, from the box)", green),
+        c(ok, f"Merge #8 ({ag.REGISTRY_TITLE} bbbbbbbbb, from the box)", green),
+        c(inh, f"Merge #5 ({ag.REGISTRY_TITLE} eeeeeeeee, from the box)", red),
+        c("4" * 40, "Merge #7 (merge): audit CLEAR ccccccccc", green),
         c("5" * 40, f"Revert\n\nThis reverts commit {old}."),
-        c(old, f"Merge #6 ({ag.REGISTRY_TITLE} ddddddddd, from the box)"),
+        c(old, f"Merge #6 ({ag.REGISTRY_TITLE} ddddddddd, from the box)", green),
     ]
-    ci = {reg: ["failure"], ok: ["success", "cancelled"], "4" * 40: ["failure"], old: ["failure"]}
-    assert ag.to_revert(commits, ci) == [reg]  # not a zuck merge, not a green one, never twice
-    assert ag.to_revert(commits, {reg: ["cancelled"]}) == []
+    ci = {
+        reg: ["failure"], ok: ["success", "cancelled"], inh: ["failure"],
+        "4" * 40: ["failure"], old: ["failure"], green: ["success"], red: ["failure"],
+    }  # fmt: skip
+    # not zuck's merge, not a green one, not one that inherited a red base, never twice
+    assert ag.to_revert(commits, ci) == [reg]
+    assert ag.to_revert(commits, {reg: ["cancelled"], green: ["success"]}) == []
+
+
+def test_a_revert_that_does_not_apply_leaves_the_checkout_clean(monkeypatch: Any) -> None:
+    # #591 audit MF5: a conflicting revert is aborted and the checkout goes back to the base
+    reg, green = "1" * 40, "7" * 40
+    msg = f"Merge #9 ({ag.REGISTRY_TITLE} aaaaaaaaa, from the box)"
+
+    def gh(path: str, *a: Any, **k: Any) -> Any:
+        if path.startswith("repos/o/r/commits"):
+            return [{"sha": reg, "commit": {"message": msg}, "parents": [{"sha": green}]}]
+        concl = "failure" if f"head_sha={reg}" in path else "success"
+        return {"workflow_runs": [{"name": "ci", "status": "completed", "conclusion": concl}]}
+
+    calls: list[tuple[str, ...]] = []
+
+    def git(*args: str) -> str:
+        calls.append(args)
+        if args[0] == "revert" and args[1] != "--abort":
+            raise subprocess.CalledProcessError(1, "git revert")
+        return ""
+
+    monkeypatch.setattr(ag, "_gh", gh)
+    monkeypatch.setattr(ag, "_git", git)
+    assert ag.auto_revert("o/r", ag.LIVE) == 1
+    assert not any(c[0] == "push" for c in calls)
+    assert calls[-2] == ("revert", "--abort") and calls[-1][:2] == ("checkout", "-q")
+
+
+def test_send_alert_succeeds_only_when_a_channel_delivered(monkeypatch: Any) -> None:
+    spec = importlib.util.spec_from_file_location(
+        "send_alert", Path(__file__).resolve().parents[2] / "scripts" / "send_alert.py"
+    )
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    monkeypatch.setattr(mod, "send_all", lambda t, b: {"armed": 1, "delivered": 0})
+    assert mod.main(["t", "b"]) == 1
+    monkeypatch.setattr(mod, "send_all", lambda t, b: {"armed": 1, "delivered": 1})
+    assert mod.main(["t", "b"]) == 0 and mod.main(["t"]) == 2
