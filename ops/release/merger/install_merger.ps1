@@ -39,7 +39,10 @@ $Inst = (& $Python -I (Join-Path $Clone "ops\release\authority\mint_app_token.py
 if ($LASTEXITCODE -ne 0 -or -not $Inst) { throw "The App is not installed. On the App page click 'Install App', choose the quant repository only, then run this again." }
 # The merger must never be able to change the rules it merges under (#650 audit SFa): no
 # Administration (rulesets, settings) and no Statuses (the authority's check).
-$perms = (& $Python -I (Join-Path $Clone "ops\release\authority\mint_app_token.py") --app-id $AppId --key $appPem --permissions "$Inst".Trim() | Out-String) | ConvertFrom-Json
+$permsText = (& $Python -I (Join-Path $Clone "ops\release\authority\mint_app_token.py") --app-id $AppId --key $appPem --permissions "$Inst".Trim() | Out-String)
+if ($LASTEXITCODE -ne 0 -or -not $permsText.Trim()) { throw "Could not read quant-merger's permissions from GitHub; nothing installed. Run this again." }
+$perms = $permsText | ConvertFrom-Json
+if ($null -eq $perms -or -not $perms.PSObject.Properties.Name) { throw "quant-merger's permissions came back empty; nothing installed." }
 foreach ($bad in @('administration', 'statuses')) {
     if ($perms.PSObject.Properties.Name -contains $bad) { throw "quant-merger has the '$bad' permission. Remove it on the App's page (Permissions), accept the change on the installation, then run this again." }
 }
