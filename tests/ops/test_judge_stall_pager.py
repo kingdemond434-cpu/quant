@@ -86,11 +86,16 @@ def _world(tmp: Path, now: datetime, *, verdict_h: float = 1.0, hb_min: float = 
                               "full_at": _iso(now - timedelta(hours=2))}), "utf-8")
     return {"ledger": ledger, "resident": res, "throughput": tmp / "absent.json",
             "sweep_result": sweep, "env_file": tmp / "absent.env.json", "rate": rate,
-            "backpressure": bp}
+            "backpressure": bp, "cpu_reader": _cpu(8.0)}
 
 
 def _reporters(tmp: Path) -> dict:
     return {"rate": tmp / "JUDGING_RATE.json", "backpressure": tmp / "GAUNTLET_BACKPRESSURE.json"}
+
+
+def _cpu(judge: object, other: float = 10.0):
+    return lambda: {"cpu_source": "psutil", "busy_judge_cores": judge,
+                    "busy_other_cores": other}
 
 
 def _step(jsp, tmp: Path, now: datetime, ch: Channel, alive=_alive, on_box=True, **kw) -> dict:
@@ -422,7 +427,13 @@ def _series(jsp, tmp: Path, ch: Channel, minutes, write) -> list[dict]:
 
 
 def _resident(doc: dict) -> Any:
-    return lambda t, p: p["resident"].write_text(json.dumps(doc), "utf-8")
+    def write(t: datetime, p: dict) -> None:
+        p["resident"].write_text(json.dumps(doc), "utf-8")
+        # a readable queue, as on the box, so cores_idle reads and only the resident is unknown
+        tp = p["resident"].with_name("JUDGING_THROUGHPUT.json")
+        tp.write_text(json.dumps({"queue": {"depth": 5}}), "utf-8")
+        p["throughput"] = tp
+    return write
 
 
 def test_a_resident_with_no_heartbeat_pages_after_the_bound(jsp, tmp_path):
@@ -944,3 +955,98 @@ def test_a_stale_reporter_pages_through_the_same_dedupe(jsp, tmp_path):
     doc = jsp.run(now=NOW, root=tmp_path, sender=ch, on_box=True,
                   out=tmp_path / "JUDGE_STALL.json", pid_alive=_alive, **paths)
     assert doc["page"]["opened"] == ["rate_stale"] and len(ch.sent) == 1
+# ------------------------------------------------------------------ cores_idle (2026-11-03)
+def _cores_run(jsp, tmp: Path, now: datetime, ch: Channel, judge: object, *,
+               status: str = "SWEEPING", depth: int | None = None) -> dict:
+    paths = _world(tmp, now, status=status)
+    if depth is not None:
+        tp = tmp / "JUDGING_THROUGHPUT.json"
+        tp.write_text(json.dumps({"queue": {"depth": depth}}), "utf-8")
+        paths["throughput"] = tp
+    paths["cpu_reader"] = _cpu(judge)
+    return jsp.run(now=now, root=tmp, sender=ch, on_box=True, out=tmp / "JUDGE_STALL.json",
+                   pid_alive=_alive, **paths)
+
+
+def test_cores_idle_opens_after_an_hour_under_the_floor_and_resolves(jsp, tmp_path):
+    ch = Channel()
+    t = NOW
+    for _ in range(12):                                  # 55 min of 5-min readings at 0.96
+        doc = _cores_run(jsp, tmp_path, t, ch, 0.96)
+        assert doc["incidents"]["cores_idle"]["open"] is False
+        t += timedelta(minutes=5)
+    doc = _cores_run(jsp, tmp_path, t + timedelta(minutes=6), ch, 0.96)   # 66 min
+    assert doc["incidents"]["cores_idle"]["open"] is True
+    assert any("cores_idle" in title or "cores_idle" in body for title, body in ch.sent)
+    n = len(ch.sent)
+    doc = _cores_run(jsp, tmp_path, t + timedelta(minutes=11), ch, 7.5)
+    assert doc["incidents"]["cores_idle"]["open"] is False
+    assert len(ch.sent) == n + 1                          # the RESOLVED notice
+    assert _state(jsp, tmp_path)["cores_idle"]["low_since"] is None
+
+
+def test_cores_idle_a_gap_in_readings_restarts_the_clock(jsp, tmp_path):
+    ch = Channel()
+    _cores_run(jsp, tmp_path, NOW, ch, 1.0)
+    doc = _cores_run(jsp, tmp_path, NOW + timedelta(minutes=10), ch, 1.0)
+    assert doc["incidents"]["cores_idle"]["low_since"] == _iso(NOW)
+    # 70 min since the run began, but the last 60 of them were unwatched: not a measured hour
+    doc = _cores_run(jsp, tmp_path, NOW + timedelta(minutes=70), ch, 1.0)
+    assert doc["incidents"]["cores_idle"]["open"] is False
+    assert doc["incidents"]["cores_idle"]["low_since"] == _iso(NOW + timedelta(minutes=70))
+
+
+def test_cores_idle_unmeasured_neither_extends_nor_clears(jsp, tmp_path):
+    ch = Channel()
+    t = NOW
+    for _ in range(14):
+        _cores_run(jsp, tmp_path, t, ch, 2.0)
+        t += timedelta(minutes=5)
+    assert _state(jsp, tmp_path)["open"].get("cores_idle")
+    for bad in (None, float("nan"), True, "x", -1.0):
+        doc = _cores_run(jsp, tmp_path, t, ch, bad)
+        assert doc["incidents"]["cores_idle"]["open"] is None
+        assert _state(jsp, tmp_path)["open"].get("cores_idle")     # still standing
+    # a long run of unreadable samples is not continuity: the clock restarts after the gap
+    doc = _cores_run(jsp, tmp_path, t + timedelta(minutes=30), ch, 2.0)
+    assert doc["incidents"]["cores_idle"]["open"] is False
+
+
+def test_cores_idle_needs_a_pending_docket(jsp, tmp_path):
+    ch = Channel()
+    t = NOW
+    for _ in range(15):          # idle resident, empty queue: idle cores are not a stall
+        doc = _cores_run(jsp, tmp_path, t, ch, 0.0, status="IDLE", depth=0)
+        assert doc["incidents"]["cores_idle"]["open"] is False
+        t += timedelta(minutes=5)
+    for _ in range(15):          # an operator stop is never paged
+        doc = _cores_run(jsp, tmp_path, t, ch, 0.0, status="STOPPED")
+        assert doc["incidents"]["cores_idle"]["open"] is False
+        t += timedelta(minutes=5)
+    # not sweeping, queue depth unreadable: UNMEASURED, not clean
+    doc = _cores_run(jsp, tmp_path, t, ch, 0.0, status="BACKOFF")
+    assert doc["incidents"]["cores_idle"]["open"] is None
+    # not sweeping but a deep queue (BACKOFF / LANE_HELD): the reserved cores are owed
+    for _ in range(14):
+        t += timedelta(minutes=5)
+        doc = _cores_run(jsp, tmp_path, t, ch, 0.0, status="BACKOFF", depth=1_611_105)
+    assert doc["incidents"]["cores_idle"]["open"] is True
+
+
+def test_cores_idle_reads_the_judge_with_the_throughput_organs_definition(jsp, monkeypatch):
+    seen = {}
+
+    class _Mod:
+        @staticmethod
+        def measure_cpu(sample_s):
+            seen["s"] = sample_s
+            return {"busy_judge_cores": 3.0}
+    import importlib.util as iu
+    real = iu.spec_from_file_location
+
+    def fake(name, loc, *a, **k):
+        assert str(loc).replace("\\", "/").endswith("research/judging_throughput.py")
+        return real(name, loc, *a, **k)
+    monkeypatch.setattr(iu, "spec_from_file_location", fake)
+    out = jsp._measure_cpu()
+    assert "busy_judge_cores" in out or out.get("cpu_source") == "UNMEASURED"

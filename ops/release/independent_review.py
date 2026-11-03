@@ -24,8 +24,9 @@ diff (every hunk header and every changed line that names a risk word); and a fi
 the manifest with every part's findings. A local answer whose prompt the server counted as
 truncated is unreadable, never a vote (MF4).
 
-PASS needs VOTES passes, each from a different model family (the vendor before the `/`), and no
-FAIL from any model. One FAIL is final: a model that FAILs is never outvoted by asking another.
+PASS needs VOTES passes (local_models.json `votes`, else 2), each from a different model family
+(the vendor before the `/`), and no FAIL from any model. One FAIL is final: a model that FAILs is
+never outvoted by asking another.
 An unreadable answer (a refusal, a broken format) gets one retry from the same model and is a
 FAIL after that.
 
@@ -996,12 +997,19 @@ def main(argv: list[str] | None = None) -> int:
         print(n)
     cfg = json.loads(LOCAL.read_text(encoding="utf-8"))
     local = {str(m["name"]) for m in cfg["models"]}
-    whole = reads_whole(ladder, local)
-    verdict, log = (
-        review(diff, files, ladder, int(cfg["num_ctx"]), whole_only=whole, closure=closure)
-        if ladder
-        else ("UNAVAILABLE", ["no free model"])
-    )
+    # The pinned set says how many families must PASS (zuck 2026-11-03 16:22Z, journal
+    # D-20261103-003: llama3.1:8b FAILed 25 of 25 heads the Auditor read clean, so it is unpinned).
+    global VOTES
+    saved, VOTES = VOTES, max(1, int(cfg.get("votes", VOTES)))
+    try:
+        whole = reads_whole(ladder, local)
+        verdict, log = (
+            review(diff, files, ladder, int(cfg["num_ctx"]), whole_only=whole, closure=closure)
+            if ladder
+            else ("UNAVAILABLE", ["no free model"])
+        )
+    finally:
+        VOTES = saved
     for line in log:
         print(line)
     print(f"independent review @ {a.head[:9]}: {verdict}")

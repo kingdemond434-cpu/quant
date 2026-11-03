@@ -243,6 +243,7 @@ FAMILY_CLUSTER: dict[str, str] = {
     "cb_tone": "news_reaction",
     "news_reaction": "news_reaction",
     "analyst_revision_drift": "news_reaction",
+    "alt_release_drift": "news_reaction",
     # -- cross-sectional selection
     "cross_sectional": "cross_sectional_fx",
     "style_premia": "cross_sectional_fx",
@@ -253,10 +254,15 @@ FAMILY_CLUSTER: dict[str, str] = {
     "cross_sectional_class_reversal": "cross_sectional_fx",
     "cross_sectional_class_value": "cross_sectional_fx",
     "cross_sectional_class_low_vol": "cross_sectional_fx",
+    "cross_sectional_class_carry": "cross_sectional_fx",
     # Slow updaters within a class: the payer is the late repricer, which is this cluster's.
     "lead_lag_class_catchup": "cross_asset_lead_lag",
     # Fires ONLY in a lagged class-stress regime and is idle otherwise: forced deleveraging.
     "crisis_only_class_defensive": "crisis_drawdown",
+    # the specialist families (desks/mt5/mt5desk/families_specialist.py, 2026-09-30)
+    "carry_risk_off": "macro_rates",
+    "month_end_rebalance": "fixing_roll_calendar",
+    "seasonal_window": "fixing_roll_calendar",
     # -- crisis and drawdown alpha
     "drawdown_conditional": "crisis_drawdown",
     "crisis_only": "crisis_drawdown",

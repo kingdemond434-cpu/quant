@@ -433,7 +433,7 @@ def measure_queue(now: datetime | None = None) -> dict[str, Any]:
     out: dict[str, Any] = {"status": UNMEASURED, "depth": UNMEASURED,
                            "gates_per_hour": UNMEASURED, "workers_last_sweep": UNMEASURED,
                            "source": str(BACKPRESSURE), **_breach_backlog(),
-                           **_burndown()}
+                           **_burndown(), **_judge_environment()}
     if not isinstance(doc, dict) or not doc:
         out["why"] = f"{BACKPRESSURE.name} absent or unreadable: queue depth is UNMEASURED"
         return out
@@ -529,6 +529,31 @@ def _burndown() -> dict[str, Any]:
                        bd.get("needed_first_rulings_per_hour", UNMEASURED)),
             "burndown_outflow_unit": bd.get("outflow_unit", UNMEASURED),
             "burndown_source": BURNDOWN.name}
+
+
+#: The judge's ENVIRONMENT (`scripts/gauntlet_guard.py`, leg `gauntlet_guard`, recovered box patch
+#: 08): commit headroom, torn universe frames and how many passes reached the epilogue. Read here,
+#: never written here -- and REPORTED ONLY. A pass that died on the commit ceiling is not a reason
+#: to size the judge down; the sizing above is one-way and this changes no worker count.
+GAUNTLET_PASSES = BASE / "reports" / "GAUNTLET_PASSES.json"
+
+
+def _judge_environment() -> dict[str, Any]:
+    """Whether the judge's passes reach their epilogue, from the guard. Absent is UNMEASURED."""
+    doc = _read_json(GAUNTLET_PASSES, None)
+    if not isinstance(doc, dict):
+        return {"judge_env_status": UNMEASURED,
+                "judge_env_why": (f"{GAUNTLET_PASSES.name} absent: the judge's environment is "
+                                  f"UNMEASURED, which is never clean")}
+    commit = doc.get("commit") if isinstance(doc.get("commit"), dict) else {}
+    frames = doc.get("frame_integrity") if isinstance(doc.get("frame_integrity"), dict) else {}
+    return {"judge_env_status": "MEASURED",
+            "judge_env_reach_rate": doc.get("reach_rate", UNMEASURED),
+            "judge_env_passes_closed": doc.get("passes_closed", UNMEASURED),
+            "judge_env_commit_headroom_gb": commit.get("headroom_gb", UNMEASURED),
+            "judge_env_commit_ceiling_touched": commit.get("peak_touched_ceiling", UNMEASURED),
+            "judge_env_torn_frames": frames.get("n_torn", UNMEASURED),
+            "judge_env_source": GAUNTLET_PASSES.name}
 
 
 def _breach_backlog() -> dict[str, Any]:
@@ -1359,20 +1384,28 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
         rate["attempt"] = attempt.pointer()
         _write_atomic(RATE_OUT, rate)
         attempt.phase("rate_written")
-    attempt.phase("task_limit")
     # THE BUILD BUDGET, FROM THE TASK'S OWN LIMIT. Measured 2026-09-24: the pre-warm shares the
     # build deadline and spent 2,874 s of a 2,700 s budget on a 250,992-cell docket, leaving
     # 67,910 cells never built. This gives the judge the wall clock its own scheduled task already
     # allows and floors it at the sealed default, so it can only ever add time. A query that times
     # out reuses the last limit this organ read on this box, and says so.
-    _limit = task_time_limit_s() if box.get("is_judging_box") else None
-    _limit_basis = "schtasks" if _limit is not None else UNMEASURED
-    if _limit is None and box.get("is_judging_box"):
+    #
+    # NO `schtasks` BEFORE THE ARTIFACTS (CRO 2026-09-30, gap 2). The limit query used to run
+    # here, ahead of every write, and on the box it was one of the calls that timed out. The
+    # published decision now starts from the limit the LAST pass read (named as such), the
+    # artifacts are written, and the fresh `schtasks` read happens inside the bounded apply
+    # phase below -- which rewrites the env file and the report only if the limit moved.
+    _limit: float | None = None
+    _limit_basis = UNMEASURED
+    if box.get("is_judging_box"):
         prev = ((_read_json(OUT, {}) or {}).get("decision") or {}).get("task_time_limit_s")
-        if isinstance(prev, (int, float)) and prev > 0:
-            _limit, _limit_basis = float(prev), "previous_pass (schtasks query unanswered)"
+        if isinstance(prev, (int, float)) and prev >= 0:
+            _limit, _limit_basis = float(prev), "previous_pass (re-read in the apply phase)"
+    # AN UNLIMITED TASK KEEPS ITS BOUNDED BUILD BUDGET (live): the budget this box's env already
+    # carries is read BEFORE this pass rewrites the env, so a limit of 0 -- read now or in the
+    # apply phase -- retains it instead of dropping back to the sealed default.
     _current_budget = None
-    if _limit == 0:
+    if box.get("is_judging_box"):
         previous_env = _read_json(ENV_FILE, {}) or {}
         stamp = previous_env.get("measured_on") or {}
         if (stamp.get("cores") == box.get("cores")
@@ -1440,6 +1473,29 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
         payload["measure_seconds"] = round(_time.monotonic() - t0, 1)
         payload["attempt"] = attempt.pointer()
         _write_atomic(OUT, payload)
+    # THE FRESH LIMIT, AFTER THE ARTIFACTS AND INSIDE ITS OWN PHASE (attempt PHASES order:
+    # rate_written -> task_limit -> written). The report above already stands on the last pass's
+    # limit; a `schtasks` that hangs is bounded by the apply budget and a kill inside it is named
+    # `task_limit`. Only a limit that MOVED rewrites the env file and the report.
+    attempt.phase("task_limit")
+    if box.get("is_judging_box"):
+        _APPLY_DEADLINE[:] = [_time.monotonic() + APPLY_BUDGET_S]
+        try:
+            fresh_limit = task_time_limit_s()
+        except Exception:          # the budget ran out: the published limit stands
+            fresh_limit = None
+        if fresh_limit is not None:
+            decision["task_time_limit_basis"] = "schtasks"
+            if fresh_limit != _limit:
+                _fresh, _fresh_why = fresh_budget_s(fresh_limit, _current_budget)
+                decision["fresh_budget_s"] = _fresh
+                decision["fresh_budget_why"] = _fresh_why
+                decision["task_time_limit_s"] = fresh_limit
+                if write:
+                    write_env(decision, box=box)
+                    applied["process_env"] = apply_env()
+                    _write_atomic(OUT, payload)
+    if write:
         attempt.phase("written")
     if apply:
         _APPLY_DEADLINE[:] = [_time.monotonic() + APPLY_BUDGET_S]

@@ -1317,7 +1317,8 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
                 else:
                     _fbook, _fwhy = _xa.read_book("fusion")
                     _xwhy = _xa.opposite_block(_fbook, sym, side, account="fusion",
-                                               why_absent=_fwhy)
+                                               why_absent=_fwhy) \
+                        or _xa.ftmo_block(sym, side)
                 if _xwhy is None:
                     # SEND-TO-ACK, MEASURED AROUND THE ONE CALL THAT CROSSES THE WIRE. Without it
                     # a prop order carried no latency at all, so the shortfall model had nothing
