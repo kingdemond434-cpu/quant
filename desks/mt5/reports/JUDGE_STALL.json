@@ -1,10 +1,10 @@
 {
- "at": "2026-11-03T03:16:03+00:00",
+ "at": "2026-11-03T03:31:03+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 0.09,
-   "why": "no new verdict for 0.1h (last 2026-11-03T03:10:41+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 0.34,
+   "why": "no new verdict for 0.3h (last 2026-11-03T03:10:41+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "resident_dead": {
    "open": false,
@@ -14,9 +14,9 @@
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 0.01,
+   "hours": 0.26,
    "limit_h": 25.59,
-   "why": "0.0h since the last sweep ended (2026-11-03T03:15:28+00:00), status SWEEPING; limit 25.59h"
+   "why": "0.3h since the last sweep ended (2026-11-03T03:15:28+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
@@ -26,16 +26,16 @@
    "why": "the sweep that ended 2026-11-03T03:15:28+00:00 judged 7605 cell(s) (n_judged)"
   },
   "sweep_dead": {
-   "open": true,
-   "pid": 35292,
-   "why": "sweep child pid 35292 NOT ALIVE"
+   "open": false,
+   "pid": 25140,
+   "why": "sweep child pid 25140 alive"
   },
   "phase_overrun": {
    "open": false,
-   "phase": "done",
-   "hours": 0.02,
+   "phase": "plan",
+   "hours": 0.25,
    "known_phase": true,
-   "why": "sweep phase done has run 0.0h since 2026-11-03T03:15:03+00:00 (limit 1h)"
+   "why": "sweep phase plan has run 0.3h since 2026-11-03T03:15:54+00:00 (limit 4.5h)"
   },
   "host_unreadable": {
    "open": false,
@@ -77,23 +77,16 @@
  "resident": {
   "status": "SWEEPING",
   "pid": 21384,
-  "heartbeat_utc": "2026-11-03T03:15:50+00:00",
+  "heartbeat_utc": "2026-11-03T03:30:52+00:00",
   "last_sweep_ended_utc": "2026-11-03T03:15:28+00:00",
   "last_rc": 0
  },
  "host": "trading box",
  "page": {
-  "sent": true,
-  "open": [
-   "sweep_dead"
-  ],
-  "opened": [
-   "sweep_dead"
-  ],
+  "sent": false,
+  "open": [],
+  "opened": [],
   "reminded": [],
-  "resolved": [],
-  "title": "JUDGE STALLED: sweep_dead",
-  "armed": 1,
-  "delivered": 1
+  "resolved": []
  }
 }

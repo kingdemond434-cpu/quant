@@ -17,7 +17,7 @@
  "uptime_s": 556456.0,
  "last_sweep_ended_utc": "2026-11-03T03:15:28+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-03T03:20:21+00:00",
+ "heartbeat_utc": "2026-11-03T03:35:22+00:00",
  "sweep_phase": {
   "pid": 25140,
   "sweep_started_utc": "2026-11-03T03:15:54+00:00",
@@ -26,57 +26,60 @@
   "phase_started_utc": "2026-11-03T03:15:54+00:00",
   "plan_steps": {
    "lane_and_docket": 85.8,
-   "docket_grouping": 125.7
+   "docket_grouping": 125.7,
+   "gate0": 221.0,
+   "preflight": 238.6
   },
-  "plan_step": "gate0",
-  "plan_step_started_utc": "2026-11-03T03:19:25+00:00",
+  "plan_step": "cache_prune",
+  "plan_step_started_utc": "2026-11-03T03:27:05+00:00",
   "plan_counts": {
    "docket_rows": 1623472,
-   "unique_cells": 1622830
+   "unique_cells": 1622830,
+   "gate0_advance": 1622830
   },
-  "plan_last_marker": "Unique cells to evaluate: 1622830",
+  "plan_last_marker": "Build preflight: 766579 incomplete input/variant(s) conserved without spending build/gate compute; 856251 executable cell(s) remain",
   "wall_profile": {
    "every_s": 10.0,
    "depth": 6,
    "authority": "report_only",
    "phases": {
     "plan": {
-     "samples": 22,
+     "samples": 106,
      "top": [
+      {
+       "stack": "__init__.py:stat:659 < external_gauntlet.py:main:3613 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622 < run_sharded_gauntlet.py:main:3601",
+       "n": 34,
+       "share": 0.321
+      },
+      {
+       "stack": "__init__.py:exists:676 < external_gauntlet.py:symbol_is_tradeable:933 < external_gauntlet.py:partition_at_economic_prior:979 < external_gauntlet.py:main:3569 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
+       "n": 13,
+       "share": 0.123
+      },
       {
        "stack": "external_gauntlet.py:refill:3387 < external_gauntlet.py:iter_json_array:3421 < external_gauntlet.py:main:3516 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
        "n": 9,
-       "share": 0.409
+       "share": 0.085
       },
       {
        "stack": "external_gauntlet.py:refill:3387 < external_gauntlet.py:iter_json_array:3421 < external_gauntlet.py:main:3464 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
        "n": 6,
-       "share": 0.273
+       "share": 0.057
       },
       {
-       "stack": "job_lock.py:_median_free:409 < job_lock.py:exclusive_job:430 < contextlib.py:__enter__:141 < external_gauntlet.py:run_sharded:4833 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
-       "n": 2,
-       "share": 0.091
-      },
-      {
-       "stack": "__init__.py:dumps:234 < external_gauntlet.py:main:3527 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622 < run_sharded_gauntlet.py:main:3601",
-       "n": 1,
-       "share": 0.045
-      },
-      {
-       "stack": "__init__.py:exists:676 < external_gauntlet.py:symbol_is_tradeable:933 < external_gauntlet.py:partition_at_economic_prior:979 < external_gauntlet.py:main:3569 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
-       "n": 1,
-       "share": 0.045
+       "stack": "__init__.py:unlink:1047 < external_gauntlet.py:main:3614 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622 < run_sharded_gauntlet.py:main:3601",
+       "n": 5,
+       "share": 0.047
       }
      ],
      "process": {
-      "cpu_s": 187.9,
-      "page_faults": 5003656.0,
-      "read_bytes": 4233241676.0,
-      "write_bytes": 72331.0,
-      "sampled_s": 210.0,
-      "rss_mb_max": 2874.5,
-      "cpu_share_of_wall": 0.895
+      "cpu_s": 638.4,
+      "page_faults": 8205370.0,
+      "read_bytes": 5756292337.0,
+      "write_bytes": 119862.0,
+      "sampled_s": 1050.0,
+      "rss_mb_max": 3456.6,
+      "cpu_share_of_wall": 0.608
      }
     }
    }
