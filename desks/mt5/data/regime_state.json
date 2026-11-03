@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-03T12:30:05.207167+00:00",
+  "swept_at": "2026-11-03T12:45:04.607282+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -361,7 +361,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0881,
+      "shadow_exp_r": -0.0817,
       "woke_on_shadow": false
     },
     "BTCUSD|cross_asset_residual_continuous": {
@@ -1153,7 +1153,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2164,
+      "shadow_exp_r": -0.2012,
       "woke_on_shadow": false
     },
     "EURCHF|discovered_asia": {
@@ -1868,7 +1868,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 41,
-      "shadow_exp_r": -0.192,
+      "shadow_exp_r": -0.2154,
       "woke_on_shadow": false
     },
     "GBPAUD|cross_asset_residual_continuous": {
@@ -1912,7 +1912,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.035,
+      "shadow_exp_r": -0.0089,
       "woke_on_shadow": false
     },
     "GBPAUD|relative_value_continuous": {
@@ -2132,7 +2132,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1858,
+      "shadow_exp_r": -0.1745,
       "woke_on_shadow": false
     },
     "GBPJPY|macro_conditional_asia": {
@@ -2143,7 +2143,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0621,
+      "shadow_exp_r": -0.021,
       "woke_on_shadow": false
     },
     "GBPJPY|macro_conditional_continuous": {
@@ -2538,8 +2538,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 49,
-      "shadow_exp_r": -0.3379,
+      "shadow_n": 12,
+      "shadow_exp_r": -0.4363,
       "woke_on_shadow": false
     },
     "GBPSGD|cross_asset_residual_continuous": {
@@ -3782,7 +3782,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.6828,
+      "shadow_exp_r": -0.6943,
       "woke_on_shadow": false
     },
     "USDJPY|asia": {
