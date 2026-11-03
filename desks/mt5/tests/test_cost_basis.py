@@ -81,7 +81,8 @@ def test_shrinkage_toward_modelled() -> None:
 
 
 def test_main_writes_both_reports(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr(cb, "build", lambda: _build())
+    doc = _build()
+    monkeypatch.setattr(cb, "build", lambda: doc)
     out, srf = tmp_path / "COST_BASIS.json", tmp_path / "S.json"
     assert cb.main(["--once", "--out", str(out), "--surface-out", str(srf)]) == 0
     assert out.exists() and srf.exists()
