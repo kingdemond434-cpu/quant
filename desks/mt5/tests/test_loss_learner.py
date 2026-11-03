@@ -222,8 +222,68 @@ def test_a_retirement_records_both_sides_of_the_growth(_out: Path, monkeypatch) 
                                                "paired_days": 25, "alpha": 0.05, "frac": 0.01})
     res = LL.act(rep, sleeves_path=sp)
     oc = res["done"][0]["opportunity_cost"]
-    assert oc["two_sided"] and oc["parent_forgone_per_day"] == 0.004
+    assert oc["two_sided"] and oc["net_per_day"] == 0.004
     assert oc["lower_bound_r"] == 0.001 and "log-wealth per day" in oc["unit"]
+
+
+def test_the_growth_sides_are_each_clocks_own() -> None:
+    rng = np.random.default_rng(11)
+    parent = list(rng.normal(0.05, 0.4, 60))
+    v = LL.replacement_verdict(_series(parent), _series([p + 0.35 for p in parent]), 0.01, 1)
+    assert v["variant_growth_r"] > v["parent_growth_r"]
+    assert v["mean_diff_r"] == pytest.approx(v["variant_growth_r"] - v["parent_growth_r"],
+                                             abs=1e-4)
+
+
+def test_a_refused_replace_retries_and_leaves_no_temp(_out: Path, monkeypatch) -> None:
+    monkeypatch.setattr(LL, "REPLACE_SLEEP_S", 0.0)
+    doors: list[str] = []
+    monkeypatch.setattr(LL, "_note_retirement_door", lambda n, *a: doors.append(n))
+    real = LL.os.replace
+    calls = {"n": 0}
+
+    def _once(src, dst):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise PermissionError(5, "Access is denied")
+        return real(src, dst)
+
+    monkeypatch.setattr(LL.os, "replace", _once)
+    sp = _roster(_out, variant_live=True, frac=0.012)
+    res = LL.act(_report(), sleeves_path=sp)
+    assert res["done"][0]["action"] == "RETIRED_PARENT" and calls["n"] == 2
+    assert not list(_out.glob("*.tmp")) and doors == ["PARENT"]
+
+
+def test_a_failed_write_records_no_door(_out: Path, monkeypatch) -> None:
+    monkeypatch.setattr(LL, "REPLACE_SLEEP_S", 0.0)
+    doors: list[str] = []
+    monkeypatch.setattr(LL, "_note_retirement_door", lambda n, *a: doors.append(n))
+    monkeypatch.setattr(LL, "_write_roster", lambda sp, doc: (False, "locked"))
+    sp = _roster(_out, variant_live=True, frac=0.012)
+    res = LL.act(_report(), sleeves_path=sp)
+    assert res["done"][0]["action"] == "WRITE_FAILED" and doors == []
+    assert json.loads(sp.read_text())["sleeves"][0]["status"] == "LIVE"
+
+
+def test_a_superseded_row_records_no_door(_out: Path, monkeypatch) -> None:
+    doors: list[str] = []
+    monkeypatch.setattr(LL, "_note_retirement_door", lambda n, *a: doors.append(n))
+    sp = _roster(_out, variant_live=True, frac=0.012)
+    real = LL._json
+    reads = {"n": 0}
+
+    def _racing(path, default):
+        doc = real(path, default)
+        if path == sp and isinstance(doc, dict):
+            reads["n"] += 1
+            if reads["n"] > 1:
+                doc["sleeves"][0]["status"] = "STANDBY"
+        return doc
+
+    monkeypatch.setattr(LL, "_json", _racing)
+    res = LL.act(_report(), sleeves_path=sp)
+    assert res["done"][0]["action"] == "SUPERSEDED" and doors == []
 
 
 def test_act_moves_capital_never_drops_it(_out: Path, monkeypatch) -> None:

@@ -57,6 +57,7 @@ reason, never read as "no losses".
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import math
 import os
@@ -646,8 +647,9 @@ def replacement_verdict(parent_rows: list[tuple[datetime, float]],
         vv[t.date().isoformat()] = vv.get(t.date().isoformat(), 0.0) + r
     days = sorted(set(pv) | set(vv))
     f = frac if frac and frac > 0 else DEFAULT_FRAC
-    diffs = [(math.log1p(max(f * vv.get(d, 0.0), -0.99)) -
-              math.log1p(max(f * pv.get(d, 0.0), -0.99))) / f for d in days]
+    p_g = [math.log1p(max(f * pv.get(d, 0.0), -0.99)) / f for d in days]
+    v_g = [math.log1p(max(f * vv.get(d, 0.0), -0.99)) / f for d in days]
+    diffs = [b - a for a, b in zip(p_g, v_g, strict=True)]
     span = (datetime.fromisoformat(days[-1]) - datetime.fromisoformat(days[0])).days if days else 0
     alpha = SEQ_ALPHA / max(1, lineage_n)
     lb = sequential_lower_bound(diffs, alpha=alpha) if diffs else float("-inf")
@@ -655,6 +657,8 @@ def replacement_verdict(parent_rows: list[tuple[datetime, float]],
     base = {"paired_days": len(days), "span_days": span, "alpha": round(alpha, 6),
             "lineage_trials": lineage_n, "frac": f,
             "mean_diff_r": round(sum(diffs) / len(diffs), 5) if diffs else None,
+            "parent_growth_r": round(sum(p_g) / len(p_g), 5) if p_g else None,
+            "variant_growth_r": round(sum(v_g) / len(v_g), 5) if v_g else None,
             "lower_bound_r": None if lb == float("-inf") else round(lb, 5),
             "variant_forward": {k: own.get(k) for k in ("promote", "n", "exp_r", "reason")},
             "parent_forward_n": len(pv)}
@@ -866,10 +870,10 @@ def act(report: dict[str, Any] | None = None, sleeves_path: Path | None = None,
         prow.update({"status": "RETIRED", "risk_frac": 0.0, "risk_frac_source": "none",
                      "retired_at": now.isoformat(timespec="seconds"), "retired_by": SOURCE,
                      "retire_reason": reason})
-        _note_retirement_door(str(prow.get("name") or ""), was, reason, v)
         changed = True
         done.append({"parent": prow.get("name"), "variant": v.get("variant_clock"),
                      "action": "RETIRED_PARENT", "why": v.get("why"),
+                     "_door": (was, reason, v),
                      # RULE 1, RECORDED. A retirement is a zero on the parent, so the growth it
                      # gives up is written beside the growth it buys -- both sides measured, from
                      # the verdict that decided it, in log-wealth per day at the parent's own
@@ -878,8 +882,9 @@ def act(report: dict[str, Any] | None = None, sleeves_path: Path | None = None,
                      "opportunity_cost": {
                          "unit": "forward log-wealth per day, at frac "
                                  f"{v.get('frac')}",
-                         "parent_forgone_per_day": v.get("mean_diff_r"),
-                         "variant_gain_per_day": v.get("mean_diff_r"),
+                         "parent_forgone_per_day": v.get("parent_growth_r"),
+                         "variant_gain_per_day": v.get("variant_growth_r"),
+                         "net_per_day": v.get("mean_diff_r"),
                          "lower_bound_r": v.get("lower_bound_r"),
                          "paired_days": v.get("paired_days"), "alpha": v.get("alpha"),
                          "two_sided": True,
@@ -908,9 +913,19 @@ def act(report: dict[str, Any] | None = None, sleeves_path: Path | None = None,
                 row.update({k: mine[k] for k in ("status", "risk_frac", "risk_frac_source",
                                                  "retired_at", "retired_by", "retire_reason")})
             doc = fresh
-        tmp = sp.with_suffix(sp.suffix + f".loss_learner.{os.getpid()}.tmp")
-        tmp.write_text(json.dumps(doc, indent=2, default=str), "utf-8")
-        os.replace(tmp, sp)
+        wrote, how = _write_roster(sp, doc)
+        if not wrote:
+            for d in done:
+                if d.get("action") == "RETIRED_PARENT":
+                    d["action"] = "WRITE_FAILED"
+                    d["why"] = f"roster not written ({how}); nothing retired"
+        # DOORS ONLY AFTER THE WRITE, AND ONLY FOR ROWS ACTUALLY RETIRED. RETIRED is one-way on
+        # the alpha-state ledger; a door for a row the re-read superseded or a write that failed
+        # would record a retirement that never happened.
+        for d in done:
+            door = d.pop("_door", None)
+            if door is not None and d.get("action") == "RETIRED_PARENT":
+                _note_retirement_door(str(d["parent"]), *door)
         try:
             from research.decay_monitor import queue_close
             queue_close([str(d["parent"]) for d in done
@@ -918,6 +933,8 @@ def act(report: dict[str, Any] | None = None, sleeves_path: Path | None = None,
                         path=sp.parent / "RETIRED_CLOSE_QUEUE.json")
         except Exception as exc:
             done.append({"action": "CLOSE_QUEUE_FAILED", "why": f"{type(exc).__name__}: {exc}"})
+    for d in done:
+        d.pop("_door", None)
     if done:
         ACTIONS.parent.mkdir(parents=True, exist_ok=True)
         with ACTIONS.open("a", encoding="utf-8") as fh:
@@ -931,6 +948,42 @@ def act(report: dict[str, Any] | None = None, sleeves_path: Path | None = None,
                                                    "allocator owners, never by this organ"},
                                           indent=1, default=str), "utf-8")
     return {"status": "OK", "done": done, "window_requests": len(window_requests)}
+
+
+#: os.replace onto a file another process holds open raises WinError 5 on Windows (Python
+#: opens without FILE_SHARE_DELETE, and the gateway reads sleeves.json every pass).
+REPLACE_TRIES = 5
+REPLACE_SLEEP_S = 0.2
+
+
+def _write_roster(sp: Path, doc: Any) -> tuple[bool, str]:
+    """Atomic replace, retried while a reader holds the file; then an in-place write; the temp
+    file never survives. Returns (written, how). Never raises."""
+    import time
+
+    body = json.dumps(doc, indent=2, default=str)
+    tmp = sp.with_suffix(sp.suffix + f".loss_learner.{os.getpid()}.tmp")
+    try:
+        tmp.write_text(body, "utf-8")
+    except OSError as exc:
+        return False, f"temp write failed: {type(exc).__name__}: {exc}"
+    last: Exception | None = None
+    try:
+        for _ in range(REPLACE_TRIES):
+            try:
+                os.replace(tmp, sp)
+                return True, "atomic replace"
+            except PermissionError as exc:
+                last = exc
+                time.sleep(REPLACE_SLEEP_S)
+        try:
+            sp.write_text(body, "utf-8")
+            return True, f"in-place write after {REPLACE_TRIES} refused replaces ({last})"
+        except OSError as exc:
+            return False, f"replace refused ({last}) and in-place write failed: {exc}"
+    finally:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
 
 
 def _note_retirement_door(name: str, from_status: str, reason: str,
