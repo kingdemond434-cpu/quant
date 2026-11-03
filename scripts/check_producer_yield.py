@@ -203,14 +203,17 @@ REPLACEMENTS: dict[str, str] = {
     # REVIVALS, NOT RETIREMENTS (same probe). These organs are clocked and alive; each entry names
     # what stops it writing and who owns the remedy, so the row is a decision, not a question.
     "mathlab": "REVIVAL (not retired) -- math_lab.build_panels skipped targets whose bars exist "
-               "(XAGUSD read 'no H1 bars'); fixed 2026-11-03 in producer-revival",
-    "physics_lab": "REVIVAL (not retired) -- shares math_lab.build_panels; same 2026-11-03 fix",
+               "(XAGUSD read 'no H1 bars'); fix in producer-revival, unadopted until the "
+               "box runs it",
+    "physics_lab": "REVIVAL (not retired) -- shares math_lab.build_panels; same fix in "
+                   "producer-revival, unadopted until the box runs it",
     "trajectory_evolution": "REVIVAL (not retired) -- the graph read spent the whole budget, 0 "
-                            "children; evolution keeps 25% of it since 2026-11-03",
+                            "children; evolution keeps 25% of it (producer-revival, unadopted)",
     "descendants": "REVIVAL (not retired) -- setup spent the walk budget, '0 of 638 roots'; the "
-                   "walk has its own clock since 2026-11-03",
+                   "walk has its own clock (producer-revival, unadopted)",
     "factor_residual": "REVIVAL (not retired) -- a daily_cycle step whose last report is "
-                       "2026-10-05: MT5-Daily's chain, revived by #524 (Desk health)",
+                       "2026-10-05: revival pending on MT5-Daily, which is FAILING (#524, "
+                       "Desk health)",
     "joint_evolution": "REVIVAL (not retired) -- MT5-FrontierAudit's daily step, last report "
                        "2026-10-26 with 480 genomes and none beating the incumbent out of sample",
     "ftmo_allocator": "prop_challenge_allocator -- the seat is the allocator's gap-request "
