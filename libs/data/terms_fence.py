@@ -1223,8 +1223,9 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
                             "written consent")}}},
     # THE CBOE PUBLIC DAILY FILES (2026-11-03, options_implied cluster): the VIX-family index
     # histories and the put/call archive on cdn.cboe.com. LAWS 5e: the terms are a LABEL, so the
-    # files are MINED AND TESTED (research input to `implied_vol` cells); what the terms withhold
-    # is redistribution and LIVE SIZING. Status IDEAS_ONLY is the register's word for exactly
+    # files are MINED (landed as research-only lake packs); what the terms withhold is
+    # redistribution and LIVE USE -- and a minted cell feeds automatic live promotion, so the
+    # fence holds them from cells (coordinator's decision 2026-11-03: keep the fence). Status IDEAS_ONLY is the register's word for exactly
     # that: `platform_of_url` does not hold the host (the fetch proceeds), `input_source` refuses
     # it as live input. Terms re-read on 2026-11-03: no clause names research, delayed data or
     # automated access, s.2 is personal non-commercial only and s.4 says the Materials "are not
@@ -1252,9 +1253,17 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
                    "cdn.cboe.com/robots.txt before every request on the box"),
         "missed_growth": {"delta_elogw": "UNMEASURED",
                           "cause": ("delta E[log W] UNMEASURED: the Cboe implied-vol state is "
-                                    "researched and tested but cannot size a live position or "
-                                    "restore MACRO_VIEW's VIX risk lean until Cboe consents in "
-                                    "writing; no conversion of it is on record")},
+                                    "landed for research but mints no cell (a cell feeds "
+                                    "automatic live promotion, which s.4 forbids), sizes no "
+                                    "position and cannot restore MACRO_VIEW's VIX risk lean "
+                                    "until Cboe consents in writing; no conversion of it is on "
+                                    "record"),
+                          "substitute": ("the desk's own MT5 bars: the mt5vol_<symbol> packs "
+                                         "(realised-vol term structure, vol-of-vol, realised "
+                                         "skew, Parkinson/Garman-Klass range vol and jumps) for "
+                                         "US500, NAS100, XAUUSD, XTIUSD, XBRUSD and "
+                                         "mt5vol_gold_oil_ratio, landed by "
+                                         "research/options_implied.py and minted by pack_cells")},
         "terms": {"url": "https://www.cboe.com/terms", "checked_at": "2026-11-03",
                   "clauses": {
                       "2": ("You may view, print and download one copy of the Materials for "

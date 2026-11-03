@@ -602,9 +602,11 @@ def main(argv: list[str] | None = None) -> int:
     state = _read(STATE, {})
     prior = {k: dict(v) for k, v in state.items() if isinstance(v, dict)}
     now = time.time()
-    # A TRANSPORT CARRIES OTHER SOURCES AND HAS NO ENDPOINT OF ITS OWN TO COLLECT.
+    # A TRANSPORT CARRIES OTHER SOURCES AND HAS NO ENDPOINT OF ITS OWN TO COLLECT. A LANDED pack
+    # is written into the lake by its own organ (the row's `why` names it): nothing to fetch.
     todo = [s for s in sources
-            if str(s.get("role") or "mechanism") != "transport" and (args.id or due(s, state, now))]
+            if str(s.get("role") or "mechanism") not in ("transport", "landed")
+            and (args.id or due(s, state, now))]
     # FETCH IN EXPECTED-INFORMATION-GAIN ORDER (Tier-1 B14). The pass budget is spent in registry
     # order otherwise, so whichever sources sat late in a hand-written file were the ones deferred
     # every hour. `source_evig` prices each source BEFORE it is fetched -- prior uncertainty on the

@@ -1719,15 +1719,6 @@ ORTHOGONAL_FAMILIES["world_macro_state"] = family_world_macro_state
 FAMILY_INPUTS["world_macro_state"] = ("one world series, named on the recipe (series_key)",
                                       "data/world_datasets (world_dataset_hunter)")
 
-# THE OPTIONS-IMPLIED STATE (2026-11-03): the same band on one named series, restricted to the
-# Cboe options and volatility state (research/options_implied.py part 3), so its cells file into
-# the `options_implied` cluster. Research input (Cboe terms: research-only, never redistributed).
-from mt5desk.family_world_macro import family_implied_vol  # noqa: E402
-
-ORTHOGONAL_FAMILIES["implied_vol"] = family_implied_vol
-FAMILY_INPUTS["implied_vol"] = ("one Cboe options/vol state series, named on the recipe "
-                                "(series_key)", "data/world_datasets (options_implied)")
-
 # AQR'S SIX STYLES AND THEIR PUBLIC COMBINATIONS (2026-09-04): trend, carry (Fusion's own
 # rollover), value, defensive (BAB against the risk driver), volatility, momentum.
 from mt5desk.family_style_premia import family_style_premia  # noqa: E402
@@ -2063,11 +2054,6 @@ FAMILY_TIMEFRAMES: dict[str, tuple[tuple[str, ...], str]] = {
         "at sub-hourly sampling that matrix is dominated by asynchronous quoting, and a "
         "Marchenko-Pastur cut on a noise structure that is not sampling noise keeps the wrong "
         "eigenvalues"),
-    "implied_vol": (
-        ("H1", "H4", "D1"),
-        "the conditioning variable is a daily options-implied close; a decision on every "
-        "sub-hourly bar asserts hundreds of independent decisions from a number that moves once "
-        "a day"),
     "world_macro_state": (
         ("H1", "H4", "D1"),
         "the conditioning variable is an official statistic printed daily at best and usually "

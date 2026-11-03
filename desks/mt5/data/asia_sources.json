@@ -4938,6 +4938,466 @@
     "XAUUSD"
    ],
    "mechanism": "East African artisanal and mine gold exports are a supply leg outside South Africa, and the central bank's own purchase programme is an official bid on it"
+  },
+  {
+   "id": "cboe_vix",
+   "plane": "options_vol",
+   "country": "us",
+   "name": "Cboe VIX index daily close (research-only, PUBLIC_WITH_TERMS)",
+   "url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "role": "landed",
+   "pit": {
+    "event_time": "US trading date",
+    "publication_lag_hours": 36
+   },
+   "targets": [
+    "US500",
+    "NAS100",
+    "XAUUSD",
+    "USDJPY",
+    "EURJPY",
+    "GBPJPY",
+    "AUDJPY",
+    "CADJPY"
+   ],
+   "mechanism": "options-implied state (dealer gamma, the implied-realised premium) leans on the targets; RESEARCH-ONLY: Cboe's terms permit no live use, so the fence holds it from cells",
+   "why": "landed by desks/mt5/research/options_implied.py; role landed: nothing for the collector to fetch"
+  },
+  {
+   "id": "cboe_vix9d",
+   "plane": "options_vol",
+   "country": "us",
+   "name": "Cboe VIX9D index daily close (research-only, PUBLIC_WITH_TERMS)",
+   "url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX9D_History.csv",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "role": "landed",
+   "pit": {
+    "event_time": "US trading date",
+    "publication_lag_hours": 36
+   },
+   "targets": [
+    "US500",
+    "NAS100",
+    "XAUUSD",
+    "USDJPY",
+    "EURJPY",
+    "GBPJPY",
+    "AUDJPY",
+    "CADJPY"
+   ],
+   "mechanism": "options-implied state (dealer gamma, the implied-realised premium) leans on the targets; RESEARCH-ONLY: Cboe's terms permit no live use, so the fence holds it from cells",
+   "why": "landed by desks/mt5/research/options_implied.py; role landed: nothing for the collector to fetch"
+  },
+  {
+   "id": "cboe_vix3m",
+   "plane": "options_vol",
+   "country": "us",
+   "name": "Cboe VIX3M index daily close (research-only, PUBLIC_WITH_TERMS)",
+   "url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX3M_History.csv",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "role": "landed",
+   "pit": {
+    "event_time": "US trading date",
+    "publication_lag_hours": 36
+   },
+   "targets": [
+    "US500",
+    "NAS100",
+    "XAUUSD",
+    "USDJPY",
+    "EURJPY",
+    "GBPJPY",
+    "AUDJPY",
+    "CADJPY"
+   ],
+   "mechanism": "options-implied state (dealer gamma, the implied-realised premium) leans on the targets; RESEARCH-ONLY: Cboe's terms permit no live use, so the fence holds it from cells",
+   "why": "landed by desks/mt5/research/options_implied.py; role landed: nothing for the collector to fetch"
+  },
+  {
+   "id": "cboe_vvix",
+   "plane": "options_vol",
+   "country": "us",
+   "name": "Cboe VVIX index daily close (research-only, PUBLIC_WITH_TERMS)",
+   "url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VVIX_History.csv",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "role": "landed",
+   "pit": {
+    "event_time": "US trading date",
+    "publication_lag_hours": 36
+   },
+   "targets": [
+    "US500",
+    "NAS100",
+    "XAUUSD",
+    "USDJPY",
+    "EURJPY",
+    "GBPJPY",
+    "AUDJPY",
+    "CADJPY"
+   ],
+   "mechanism": "options-implied state (dealer gamma, the implied-realised premium) leans on the targets; RESEARCH-ONLY: Cboe's terms permit no live use, so the fence holds it from cells",
+   "why": "landed by desks/mt5/research/options_implied.py; role landed: nothing for the collector to fetch"
+  },
+  {
+   "id": "cboe_skew",
+   "plane": "options_vol",
+   "country": "us",
+   "name": "Cboe SKEW index daily close (research-only, PUBLIC_WITH_TERMS)",
+   "url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/SKEW_History.csv",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "role": "landed",
+   "pit": {
+    "event_time": "US trading date",
+    "publication_lag_hours": 36
+   },
+   "targets": [
+    "US500",
+    "NAS100",
+    "XAUUSD",
+    "USDJPY",
+    "EURJPY",
+    "GBPJPY",
+    "AUDJPY",
+    "CADJPY"
+   ],
+   "mechanism": "options-implied state (dealer gamma, the implied-realised premium) leans on the targets; RESEARCH-ONLY: Cboe's terms permit no live use, so the fence holds it from cells",
+   "why": "landed by desks/mt5/research/options_implied.py; role landed: nothing for the collector to fetch"
+  },
+  {
+   "id": "cboe_ovx",
+   "plane": "options_vol",
+   "country": "us",
+   "name": "Cboe OVX index daily close (research-only, PUBLIC_WITH_TERMS)",
+   "url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/OVX_History.csv",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "role": "landed",
+   "pit": {
+    "event_time": "US trading date",
+    "publication_lag_hours": 36
+   },
+   "targets": [
+    "XTIUSD",
+    "XBRUSD"
+   ],
+   "mechanism": "options-implied state (dealer gamma, the implied-realised premium) leans on the targets; RESEARCH-ONLY: Cboe's terms permit no live use, so the fence holds it from cells",
+   "why": "landed by desks/mt5/research/options_implied.py; role landed: nothing for the collector to fetch"
+  },
+  {
+   "id": "cboe_gvz",
+   "plane": "options_vol",
+   "country": "us",
+   "name": "Cboe GVZ index daily close (research-only, PUBLIC_WITH_TERMS)",
+   "url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/GVZ_History.csv",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "role": "landed",
+   "pit": {
+    "event_time": "US trading date",
+    "publication_lag_hours": 36
+   },
+   "targets": [
+    "XAUUSD"
+   ],
+   "mechanism": "options-implied state (dealer gamma, the implied-realised premium) leans on the targets; RESEARCH-ONLY: Cboe's terms permit no live use, so the fence holds it from cells",
+   "why": "landed by desks/mt5/research/options_implied.py; role landed: nothing for the collector to fetch"
+  },
+  {
+   "id": "cboe_pc_total",
+   "plane": "options_vol",
+   "country": "us",
+   "name": "Cboe total put/call volume ratio (research-only, PUBLIC_WITH_TERMS)",
+   "url": "https://cdn.cboe.com/resources/options/volume_and_call_put_ratios/totalpc.csv",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "role": "landed",
+   "pit": {
+    "event_time": "US trading date",
+    "publication_lag_hours": 36
+   },
+   "targets": [
+    "US500",
+    "NAS100",
+    "XAUUSD",
+    "USDJPY",
+    "EURJPY",
+    "GBPJPY",
+    "AUDJPY",
+    "CADJPY"
+   ],
+   "mechanism": "options-implied state (dealer gamma, the implied-realised premium) leans on the targets; RESEARCH-ONLY: Cboe's terms permit no live use, so the fence holds it from cells",
+   "why": "landed by desks/mt5/research/options_implied.py; role landed: nothing for the collector to fetch"
+  },
+  {
+   "id": "cboe_pc_index",
+   "plane": "options_vol",
+   "country": "us",
+   "name": "Cboe index put/call volume ratio (research-only, PUBLIC_WITH_TERMS)",
+   "url": "https://cdn.cboe.com/resources/options/volume_and_call_put_ratios/indexpc.csv",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "role": "landed",
+   "pit": {
+    "event_time": "US trading date",
+    "publication_lag_hours": 36
+   },
+   "targets": [
+    "US500",
+    "NAS100",
+    "XAUUSD",
+    "USDJPY",
+    "EURJPY",
+    "GBPJPY",
+    "AUDJPY",
+    "CADJPY"
+   ],
+   "mechanism": "options-implied state (dealer gamma, the implied-realised premium) leans on the targets; RESEARCH-ONLY: Cboe's terms permit no live use, so the fence holds it from cells",
+   "why": "landed by desks/mt5/research/options_implied.py; role landed: nothing for the collector to fetch"
+  },
+  {
+   "id": "cboe_pc_equity",
+   "plane": "options_vol",
+   "country": "us",
+   "name": "Cboe equity put/call volume ratio (research-only, PUBLIC_WITH_TERMS)",
+   "url": "https://cdn.cboe.com/resources/options/volume_and_call_put_ratios/equitypc.csv",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "role": "landed",
+   "pit": {
+    "event_time": "US trading date",
+    "publication_lag_hours": 36
+   },
+   "targets": [
+    "US500",
+    "NAS100",
+    "XAUUSD",
+    "USDJPY",
+    "EURJPY",
+    "GBPJPY",
+    "AUDJPY",
+    "CADJPY"
+   ],
+   "mechanism": "options-implied state (dealer gamma, the implied-realised premium) leans on the targets; RESEARCH-ONLY: Cboe's terms permit no live use, so the fence holds it from cells",
+   "why": "landed by desks/mt5/research/options_implied.py; role landed: nothing for the collector to fetch"
+  },
+  {
+   "id": "cboe_vol_state",
+   "plane": "options_vol",
+   "country": "us",
+   "name": "Cboe-derived cboe_vol_state (research-only, PUBLIC_WITH_TERMS)",
+   "url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "role": "landed",
+   "pit": {
+    "event_time": "US trading date",
+    "publication_lag_hours": 36
+   },
+   "targets": [
+    "US500",
+    "NAS100",
+    "XAUUSD",
+    "USDJPY",
+    "EURJPY",
+    "GBPJPY",
+    "AUDJPY",
+    "CADJPY"
+   ],
+   "mechanism": "variance risk premium and vol term structure; RESEARCH-ONLY (Cboe inputs), fenced from cells",
+   "why": "landed by desks/mt5/research/options_implied.py; role landed: nothing for the collector to fetch"
+  },
+  {
+   "id": "cboe_gold_vol_premium",
+   "plane": "options_vol",
+   "country": "us",
+   "name": "Cboe-derived cboe_gold_vol_premium (research-only, PUBLIC_WITH_TERMS)",
+   "url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/GVZ_History.csv",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "role": "landed",
+   "pit": {
+    "event_time": "US trading date",
+    "publication_lag_hours": 36
+   },
+   "targets": [
+    "XAUUSD"
+   ],
+   "mechanism": "variance risk premium and vol term structure; RESEARCH-ONLY (Cboe inputs), fenced from cells",
+   "why": "landed by desks/mt5/research/options_implied.py; role landed: nothing for the collector to fetch"
+  },
+  {
+   "id": "cboe_oil_vol_premium",
+   "plane": "options_vol",
+   "country": "us",
+   "name": "Cboe-derived cboe_oil_vol_premium (research-only, PUBLIC_WITH_TERMS)",
+   "url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/OVX_History.csv",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "role": "landed",
+   "pit": {
+    "event_time": "US trading date",
+    "publication_lag_hours": 36
+   },
+   "targets": [
+    "XTIUSD",
+    "XBRUSD"
+   ],
+   "mechanism": "variance risk premium and vol term structure; RESEARCH-ONLY (Cboe inputs), fenced from cells",
+   "why": "landed by desks/mt5/research/options_implied.py; role landed: nothing for the collector to fetch"
+  },
+  {
+   "id": "mt5vol_us500",
+   "plane": "options_vol",
+   "country": "global",
+   "name": "realised vol state of US500 from the desk's own MT5 bars",
+   "url": "",
+   "expect": "csv",
+   "access": "own_bars",
+   "cadence": "daily",
+   "role": "landed",
+   "pit": {
+    "event_time": "UTC day",
+    "publication_lag_hours": 24
+   },
+   "targets": [
+    "US500",
+    "NAS100",
+    "USDJPY",
+    "EURJPY",
+    "GBPJPY",
+    "AUDJPY",
+    "CADJPY",
+    "XAUUSD"
+   ],
+   "mechanism": "the licensed SUBSTITUTE for the fenced Cboe implied state: realised-vol term structure, vol-of-vol, realised skew and range-vol jumps lean on the instrument's next move the way the implied surface would",
+   "why": "landed by desks/mt5/research/options_implied.py; role landed: nothing for the collector to fetch"
+  },
+  {
+   "id": "mt5vol_nas100",
+   "plane": "options_vol",
+   "country": "global",
+   "name": "realised vol state of NAS100 from the desk's own MT5 bars",
+   "url": "",
+   "expect": "csv",
+   "access": "own_bars",
+   "cadence": "daily",
+   "role": "landed",
+   "pit": {
+    "event_time": "UTC day",
+    "publication_lag_hours": 24
+   },
+   "targets": [
+    "NAS100",
+    "US500",
+    "USDJPY",
+    "EURJPY",
+    "AUDJPY"
+   ],
+   "mechanism": "the licensed SUBSTITUTE for the fenced Cboe implied state: realised-vol term structure, vol-of-vol, realised skew and range-vol jumps lean on the instrument's next move the way the implied surface would",
+   "why": "landed by desks/mt5/research/options_implied.py; role landed: nothing for the collector to fetch"
+  },
+  {
+   "id": "mt5vol_xauusd",
+   "plane": "options_vol",
+   "country": "global",
+   "name": "realised vol state of XAUUSD from the desk's own MT5 bars",
+   "url": "",
+   "expect": "csv",
+   "access": "own_bars",
+   "cadence": "daily",
+   "role": "landed",
+   "pit": {
+    "event_time": "UTC day",
+    "publication_lag_hours": 24
+   },
+   "targets": [
+    "XAUUSD"
+   ],
+   "mechanism": "the licensed SUBSTITUTE for the fenced Cboe implied state: realised-vol term structure, vol-of-vol, realised skew and range-vol jumps lean on the instrument's next move the way the implied surface would",
+   "why": "landed by desks/mt5/research/options_implied.py; role landed: nothing for the collector to fetch"
+  },
+  {
+   "id": "mt5vol_xtiusd",
+   "plane": "options_vol",
+   "country": "global",
+   "name": "realised vol state of XTIUSD from the desk's own MT5 bars",
+   "url": "",
+   "expect": "csv",
+   "access": "own_bars",
+   "cadence": "daily",
+   "role": "landed",
+   "pit": {
+    "event_time": "UTC day",
+    "publication_lag_hours": 24
+   },
+   "targets": [
+    "XTIUSD",
+    "XBRUSD"
+   ],
+   "mechanism": "the licensed SUBSTITUTE for the fenced Cboe implied state: realised-vol term structure, vol-of-vol, realised skew and range-vol jumps lean on the instrument's next move the way the implied surface would",
+   "why": "landed by desks/mt5/research/options_implied.py; role landed: nothing for the collector to fetch"
+  },
+  {
+   "id": "mt5vol_xbrusd",
+   "plane": "options_vol",
+   "country": "global",
+   "name": "realised vol state of XBRUSD from the desk's own MT5 bars",
+   "url": "",
+   "expect": "csv",
+   "access": "own_bars",
+   "cadence": "daily",
+   "role": "landed",
+   "pit": {
+    "event_time": "UTC day",
+    "publication_lag_hours": 24
+   },
+   "targets": [
+    "XBRUSD",
+    "XTIUSD"
+   ],
+   "mechanism": "the licensed SUBSTITUTE for the fenced Cboe implied state: realised-vol term structure, vol-of-vol, realised skew and range-vol jumps lean on the instrument's next move the way the implied surface would",
+   "why": "landed by desks/mt5/research/options_implied.py; role landed: nothing for the collector to fetch"
+  },
+  {
+   "id": "mt5vol_gold_oil_ratio",
+   "plane": "options_vol",
+   "country": "global",
+   "name": "gold/oil realised-vol ratio from the desk's own MT5 bars",
+   "url": "",
+   "expect": "csv",
+   "access": "own_bars",
+   "cadence": "daily",
+   "role": "landed",
+   "pit": {
+    "event_time": "UTC day",
+    "publication_lag_hours": 24
+   },
+   "targets": [
+    "XAUUSD",
+    "XTIUSD",
+    "XBRUSD"
+   ],
+   "mechanism": "the licensed SUBSTITUTE for the fenced Cboe implied state: realised-vol term structure, vol-of-vol, realised skew and range-vol jumps lean on the instrument's next move the way the implied surface would",
+   "why": "landed by desks/mt5/research/options_implied.py; role landed: nothing for the collector to fetch"
   }
  ],
  "miners": {

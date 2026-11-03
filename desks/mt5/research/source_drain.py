@@ -165,9 +165,12 @@ def chain_for(src: dict[str, Any], state: dict[str, Any],
     row: dict[str, Any] = dict(_row) if isinstance(_row, dict) else {}
     status = str(row.get("last_status") or "")
     vault_hit = (VAULT / sid).exists()
-    collected = bool(status in OK_STATUSES or vault_hit)
     series = next((p for p in (SERIES / f"{sid}.parquet", SERIES / f"{sid}.json",
                                SERIES / f"{sid}.csv") if p.exists()), None)
+    # A LANDED pack (registry role `landed`) is written into the lake by its own organ, which is
+    # its collection: the frame on disk is the evidence, the collector never fetches it.
+    landed = str(src.get("role") or "") == "landed" and series is not None
+    collected = bool(status in OK_STATUSES or vault_hit or landed)
     pit = SERIES / f"{sid}.pit.json"
     pit_doc = _read(pit, {}) if pit.exists() else {}
     frames = (pit_doc.get("frames") if isinstance(pit_doc, dict) else None) or []

@@ -79,9 +79,6 @@ MISSING_ARTIFACT = {
                       "whose arrival time is itself the signal. The 3,854 STRUCTURED_CB_SPEECH "
                       "cells minted on 2026-09-15 are its input and currently route to "
                       "event_reaction, which is the wrong clock."),
-    # SUPERSEDED 2026-11-03: `implied_vol` (mt5desk/family_world_macro.py) classifies here and
-    # is owned by world_macro_proposer (CLUSTER_PROPOSER); this text is read only if that family
-    # is ever unregistered.
     "options_implied": ("NO ARTIFACT MAKES THIS REACHABLE ON THIS ACCOUNT. Fusion quotes no "
                         "options on any instrument in the universe registry, so there is no "
                         "implied surface to trade and no implied series to condition on. This "
@@ -104,10 +101,6 @@ def _read(p: Path, default: Any = None) -> Any:
 #: so its cluster is reached by a proposer that supplies the input -- and naming that proposer is
 #: the remedy, where "no family reaches it" would have been wrong.
 CLUSTER_PROPOSER = {
-    "options_implied": "world_macro_proposer mints `implied_vol` cells on the Cboe options and "
-                       "volatility state that research/options_implied.py lands (VRP, VIX term "
-                       "slope, VVIX/VIX, SKEW, put/call, GVZ and OVX premiums); research input "
-                       "only -- Cboe's terms permit no live use",
     "cross_sectional_fx": "style_premia_sweep / a cross_sectional proposer -- the families exist "
                           "(cross_sectional, style_premia) and need a PEER PANEL, which a donated "
                           "row with family defaults cannot supply",
