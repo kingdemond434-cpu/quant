@@ -83,6 +83,7 @@ for _p in (str(DESK), str(ROOT)):
 from mt5desk import cancel_pending as _cancel_req  # noqa: E402
 from mt5desk import cross_account as _xa  # noqa: E402
 from mt5desk import gold_oco as _oco  # noqa: E402
+from mt5desk import mt5_manage as _mm  # noqa: E402
 from mt5desk import position_manager as _pm  # noqa: E402
 from mt5desk.decision_core import (  # noqa: E402
     BRACKET_TTL_HOURS,
@@ -464,6 +465,39 @@ def mirrored_stop(e8_doc: dict[str, Any], e8_position_id: str, side: str,
     return best if best is not None and best != current else None
 
 
+def native_stop(mt5: Any, st: dict[str, Any], p: Any) -> tuple[float | None, str, bool]:
+    """THE SAME STOP MANAGEMENT AS EVERY OTHER ACCOUNT (zuck 2026-11-03: "ftmo fusion etc must
+    always have same mechanisms"): `mt5_manage.stop_move`, the Fusion gateway's own decision -- the
+    costed break-even floor and the H1 chandelier -- on THIS account's position, bars, quote and
+    commission. Until this, FTMO only copied E8's acknowledged stop, so it was managed only while
+    E8 was alive, held the same position, and published the move.
+
+    (new stop or None, why, failed). `failed` is True only when the decision could not be MADE (no
+    open price, no symbol, a read raised); a decided "no move" is False, and then FTMO keeps its
+    own stop exactly as Fusion would -- never E8's tighter one (audit of 730b0952c MF)."""
+    opened = getattr(p, "price_open", None)
+    if not isinstance(opened, (int, float)) or not opened > 0:
+        return None, "the position carries no readable open price", True
+    opened_sl, comm = _mm.opening_facts(mt5, int(p.ticket))
+    dist, captured = _mm.original_stop_distance(st.setdefault("orig_stop_dist", {}),
+                                                int(p.ticket), float(opened),
+                                                float(getattr(p, "sl", 0.0) or 0.0), opened_sl)
+    if dist is None:
+        return None, "no stop on the position; none invented", True
+    if captured:
+        log(f"[{WINDOW}] manage capture: ticket {int(p.ticket)} initial stop distance {dist:.5f} "
+            f"({'opening order' if opened_sl else 'first sight'})")
+    info = mt5.symbol_info(SYMBOL)
+    if info is None:
+        return None, "no symbol_info this pass", True
+    try:
+        move = _mm.stop_move(mt5, p, info, original_dist=dist, floor_only=False,
+                             commission_per_lot_side=comm)
+    except Exception as exc:  # a read this pass could not make never takes the pass down
+        return None, f"own ratchet unavailable this pass ({type(exc).__name__}: {exc})"[:200], True
+    return move.new_stop, move.why, False
+
+
 def history_spent(mt5: Any, today: str, now: datetime) -> tuple[bool | None, str]:
     """(spent, why): has this account ANY MAGIC gold order or deal dated `today` on the server
     clock (`gold_oco.trading_date`, as every lane dates its day)? None when the history cannot
@@ -782,7 +816,7 @@ def order_risk_usd(mt5: Any, order: Any) -> float | None:
     """The account-currency risk of a resting MAGIC entry to its stop: volume x |price - sl| x
     the contract size. None when any of them is unreadable (the bill is then UNPRICED, never 0)."""
     try:
-        vol = float(getattr(order, "volume_current", None) or getattr(order, "volume_initial"))
+        vol = float(getattr(order, "volume_current", None) or order.volume_initial)
         dist = abs(float(order.price_open) - float(order.sl))
         contract = float(mt5.symbol_info(SYMBOL).trade_contract_size)
     except (AttributeError, TypeError, ValueError):
@@ -1024,6 +1058,9 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
              for p in own_pos]
     _flat = {r["id"] for r in _oco.positions_to_flatten(entry if entry_why is None else None,
                                                         _rows, date=today)}
+    _live = {str(int(p.ticket)) for p in own_pos}
+    st["orig_stop_dist"] = {k: v for k, v in (st.get("orig_stop_dist") or {}).items()
+                            if k in _live}
     for p in own_pos:
         side = "long" if int(getattr(p, "type", -1)) == 0 else "short"
         if int(p.ticket) in _flat or hour >= CLOSE_HOUR:
@@ -1050,18 +1087,33 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
                 act["shadow"] = True
             doc["actions"].append(act)
             continue
-        e8_pid = (sig or {}).get("e8_position_id") or w.get("e8_position_id")
-        if not isinstance(e8_doc, dict) or not e8_pid:
-            continue
         cur = float(getattr(p, "sl", 0.0) or 0.0) or None
-        new = mirrored_stop(e8_doc, str(e8_pid), side, cur)
+        new, how, failed = native_stop(mt5, st, p)
+        if new is None and failed:
+            # E8's acknowledged stop is the fallback only: when this terminal cannot read the bars
+            # or the ATR its own ratchet needs, the position is still not left unmanaged.
+            e8_pid = (sig or {}).get("e8_position_id") or w.get("e8_position_id")
+            if isinstance(e8_doc, dict) and e8_pid:
+                new = mirrored_stop(e8_doc, str(e8_pid), side, cur)
+                how = f"E8's acknowledged stop (own ratchet: {how})"
         if new is None or cur is None:
+            if how:
+                doc.setdefault("manage_notes", []).append(f"#{int(p.ticket)}: {how}")
+            continue
+        # NO NO-OP MODIFIES (Desk health 2026-11-03: the terminal journal showed a "sl unchanged,
+        # skipped" request every minute after a mirror, each one spent from FTMO's daily request
+        # budget). Only a move the venue can represent -- one tick, else one point -- is sent.
+        _info = mt5.symbol_info(SYMBOL)
+        _step = (float(getattr(_info, "trade_tick_size", 0.0) or 0.0)
+                 or float(getattr(_info, "point", 0.0) or 0.0)) if _info is not None else 0.0
+        if not _pm.tightens_by_min_step(side=1 if side == "long" else -1, new_stop=float(new),
+                                        current_stop=float(cur), step=_step):
             continue
         sgn: Any = 1 if side == "long" else -1
         rests, rwhy = _pm.stop_rests_at_venue(stop=new, side=sgn, bid=float(tick.bid),
                                               ask=float(tick.ask))
         act = {"act": "ratchet_stop", "position": int(p.ticket), "before": cur, "after": new,
-               "ok": False}
+               "how": how, "ok": False}
         if not rests:
             act["why"] = rwhy
         elif armed:
@@ -1075,6 +1127,10 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
                 act["why"] = f"{type(exc).__name__}: {exc}"[:160]
         else:
             act["shadow"] = True
+        # EVERY STOP MOVE IS LOGGED, sent or not (Desk health 2026-11-03: only failures were, so
+        # an FTMO stop that ran an hour ahead of E8's could not be traced afterwards).
+        log(f"[{WINDOW}] stop {int(p.ticket)} {cur} -> {new} ({how}): "
+            f"{'shadow' if act.get('shadow') else ('ok' if act['ok'] else act.get('why'))}")
         doc["actions"].append(act)
 
     # ---------------------------------------------------------------- the fills ledger
