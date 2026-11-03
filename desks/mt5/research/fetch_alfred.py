@@ -72,6 +72,11 @@ from mt5desk.config import DATA, REPORTS  # noqa: E402
 
 OUT = DATA / "lake" / "alfred"
 OUT.mkdir(parents=True, exist_ok=True)
+#: The leg's own artifact, written on every exit path; bound by name so the component
+#: registry (desks/mt5/ops/components.own_artifact, which parses and never imports) can see it;
+#: it is mt5desk.config.REPORTS. Writes go through `REPORTS / REPORT.name` so a test that
+#: repoints REPORTS still captures the report.
+REPORT = Path(__file__).resolve().parents[1] / "reports" / "alfred_vintages.json"
 
 API = "https://api.stlouisfed.org/fred/series/observations"
 RELEASES = "https://api.stlouisfed.org/fred/release/dates"
@@ -298,7 +303,7 @@ def main(argv: list[str] | None = None) -> int:
             "fix": ("free key at https://fredaccount.stlouisfed.org/apikeys, then write it to "
                     "secrets/fred_api_key (one line) or export FRED_API_KEY"),
             "written": 0})
-        (REPORTS / "alfred_vintages.json").write_text(json.dumps(report, indent=2),
+        (REPORTS / REPORT.name).write_text(json.dumps(report, indent=2),
                                                       encoding="utf-8")
         print("ALFRED NEEDS_KEY -- no API key.")
         print(report["fix"])
@@ -380,7 +385,7 @@ def main(argv: list[str] | None = None) -> int:
     if once and not wanted:
         report.update({"status": "FRESH", "written": 0, "path": str(OUT),
                        "why": f"every series renewed within {REFRESH_H:.0f} h"})
-        (REPORTS / "alfred_vintages.json").write_text(json.dumps(report, indent=2),
+        (REPORTS / REPORT.name).write_text(json.dumps(report, indent=2),
                                                       encoding="utf-8")
         print("ALFRED: every series fresh")
         return 0
@@ -389,7 +394,7 @@ def main(argv: list[str] | None = None) -> int:
                    "failed": failed, "release_lag_days": lags,
                    "path": str(OUT),
                    "usage": "research: from research.fetch_alfred import vintage_as_of"})
-    (REPORTS / "alfred_vintages.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    (REPORTS / REPORT.name).write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(f"\n{written} written to {OUT}"
           + (f", {len(skipped)} already present" if skipped else "")
           + (f", {len(failed)} REJECTED/failed: {', '.join(failed)}" if failed else ""))
