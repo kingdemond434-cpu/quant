@@ -153,6 +153,7 @@ MODULES = [
     "desks/mt5/research/research_bandit.py",
     "desks/mt5/research/state_admission_run.py",
     "desks/mt5/research/decay_monitor.py",
+    "desks/mt5/research/loss_learner.py",
     "desks/mt5/research/forward_reconcile.py",
     "desks/mt5/research/portfolio_evidence.py",
     "desks/mt5/research/shadow_forward.py",
@@ -290,6 +291,8 @@ MODULES = [
     "libs/execution/digital_twin.py",
     "desks/mt5/mt5desk/risk_units.py",
     "desks/mt5/mt5desk/position_manager.py",
+    # the same ratchet on every MetaTrader account (FTMO imports it; zuck 2026-11-03 parity)
+    "desks/mt5/mt5desk/mt5_ratchet.py",
     "desks/mt5/mt5desk/provenance.py",
     "desks/mt5/mt5desk/independence.py",
     "desks/mt5/mt5desk/multiplicity.py",
