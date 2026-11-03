@@ -2816,3 +2816,49 @@ def test_a_gh_timeout_on_one_pr_never_kills_the_sweep(monkeypatch: pytest.Monkey
     monkeypatch.setattr(ag, "_gh", gh)
     monkeypatch.setattr(ag, "run", lambda repo, n, *a, **k: ran.append(n) or 0)
     assert ag.sweep("o/r", ag.LIVE) == 1 and ran == [2]
+
+
+# ------------------------------------------------ the registry path (D-20261103-004)
+_H = "a" * 40
+_NOW = ag.datetime(2026, 11, 5, 12, 0, tzinfo=ag.UTC)
+
+
+def _row(**k: Any) -> dict[str, Any]:
+    return {"pr": 9, "sha": _H, "verdict": "CLEAR", "at": "2026-11-04T11:00:00Z", **k}
+
+
+def test_a_registry_clear_merges_only_the_exact_head_after_the_veto_window() -> None:
+    got, why = ag.registry_clear([_row()], 9, _H, _NOW)
+    assert got is not None and got["sha"] == _H and ag.REGISTRY_TITLE in why
+    assert ag.registry_clear([_row()], 9, "b" * 40, _NOW)[0] is None  # another head: no carry
+    young = _row(at="2026-11-05T00:00:00Z")  # 12 h: still inside the 24 h veto window
+    assert ag.registry_clear([young], 9, _H, _NOW)[0] is None
+    assert ag.registry_clear([_row(), _row(verdict="HOLD")], 9, _H, _NOW)[0] is None  # vetoed
+    assert ag.registry_clear([_row(at="2026-11-04T11:00:00")], 9, _H, _NOW)[0] is None  # no tz
+    assert ag.registry_clear([_row(pr=8)], 9, _H, _NOW)[0] is None
+
+
+def test_an_unreadable_registry_is_no_registry(tmp_path: Path) -> None:
+    assert ag.registry_rows(None) == [] and ag.registry_rows(str(tmp_path / "none")) == []
+    bad = tmp_path / "r.jsonl"
+    bad.write_text(json.dumps(_row()) + "\nnot json\n", encoding="utf-8")
+    assert ag.registry_rows(str(bad)) == []  # one bad line voids it: zuck's path, never a guess
+    bad.write_text(json.dumps(_row()) + "\n", encoding="utf-8")
+    assert ag.registry_rows(str(bad)) == [_row()]
+
+
+def test_only_a_red_unreverted_registry_merge_is_reverted() -> None:
+    def c(sha: str, msg: str) -> dict[str, Any]:
+        return {"sha": sha, "commit": {"message": msg}}
+
+    reg, ok, old = "1" * 40, "2" * 40, "3" * 40
+    commits = [
+        c(reg, f"Merge #9 ({ag.REGISTRY_TITLE} aaaaaaaaa, from the box)"),
+        c(ok, f"Merge #8 ({ag.REGISTRY_TITLE} bbbbbbbbb, from the box)"),
+        c("4" * 40, "Merge #7 (merge): audit CLEAR ccccccccc"),
+        c("5" * 40, f"Revert\n\nThis reverts commit {old}."),
+        c(old, f"Merge #6 ({ag.REGISTRY_TITLE} ddddddddd, from the box)"),
+    ]
+    ci = {reg: ["failure"], ok: ["success", "cancelled"], "4" * 40: ["failure"], old: ["failure"]}
+    assert ag.to_revert(commits, ci) == [reg]  # not a zuck merge, not a green one, never twice
+    assert ag.to_revert(commits, {reg: ["cancelled"]}) == []

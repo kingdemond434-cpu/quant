@@ -590,6 +590,62 @@ BRING_UP_CAP = 4
 #: Bring-ups per sweep (#552 audit SF2): each one starts a full CI run on the shared free pool,
 #: and the most merge-ready PRs come first, so a few per pass drain the queue without flooding it.
 BRING_UPS_PER_SWEEP = 2
+
+# THE REGISTRY PATH (zuck 2026-11-03 17:00Z: "The box may auto-merge everything autonomously ...
+# don't ever make me merge again"; journal D-20261103-004). Only the box's run reads it, from a
+# file on the box that no PR can write: the Auditor's lane appends one row per verdict there
+# ({"pr", "sha", "verdict": "CLEAR"|"HOLD", "at"}) and Desk health's sender posts a ntfy notice
+# when a CLEAR lands. A PR the manual path would hold for zuck merges from the box instead only
+# when ALL of these hold: the PR's latest row is a CLEAR naming the EXACT head; it is
+# REGISTRY_HOLD_H old (the veto window: a HOLD row, or any AUDIT HOLD or edited comment on the PR
+# after it, stops it); the head is up to date with the base; and every gating AND every AUTO job
+# (replay-shadow included) passed. The gate that judges a PR is always the base's copy, so a gate
+# change is judged by the gate it would replace, never by itself.
+REGISTRY_ENV = "QUANT_AUDIT_REGISTRY"
+REGISTRY_HOLD_H = 24.0
+#: The marker in a registry merge's commit title (auto_revert() looks for it).
+REGISTRY_TITLE = "registry CLEAR"
+
+
+def registry_rows(path: str | None) -> list[dict[str, Any]]:
+    """The registry's rows, oldest first. No path, or any unreadable line, reads as no rows: the
+    registry only ever adds a merge path, so failing closed falls back to zuck's."""
+    if not path:
+        return []
+    try:
+        text = Path(path).read_text(encoding="utf-8-sig")
+        rows = [json.loads(line) for line in text.splitlines() if line.strip()]
+    except (OSError, ValueError):
+        return []
+    return rows if all(isinstance(r, dict) for r in rows) else []
+
+
+def registry_clear(
+    rows: list[dict[str, Any]], pr: int, head: str, now: datetime | None = None
+) -> tuple[dict[str, str] | None, str]:
+    """(the CLEAR that lets the box merge `head`, or None; why). The exact head only."""
+    mine = [r for r in rows if r.get("pr") == pr]
+    if not mine:
+        return None, "no registry verdict"
+    last = mine[-1]
+    if last.get("verdict") != "CLEAR" or last.get("sha") != head:
+        sha = str(last.get("sha"))[:9]
+        return None, f"the latest registry verdict is {last.get('verdict')} {sha}"
+    try:
+        at = datetime.fromisoformat(str(last.get("at") or "").replace("Z", "+00:00"))
+    except ValueError:
+        return None, "the registry CLEAR has no readable time"
+    if at.tzinfo is None:
+        return None, "the registry CLEAR has no time zone"
+    age_h = ((now or datetime.now(UTC)) - at).total_seconds() / 3600.0
+    if age_h < REGISTRY_HOLD_H:
+        return None, (
+            f"registry CLEAR {head[:9]} is {age_h:.1f} h old (veto window {REGISTRY_HOLD_H:.0f} h)"
+        )
+    got = {"verdict": "CLEAR", "sha": head, "method": "merge", "at": at.isoformat()}
+    return {**got, "by": "registry"}, f"{REGISTRY_TITLE} {head[:9]} ({age_h:.0f} h, no veto)"
+
+
 BEHIND = "it is behind"
 
 
@@ -957,8 +1013,10 @@ def run(
                 return 0
             else:
                 twhy = f"{twhy}, but {fwhy}: it takes the CLEAR + APPROVE path"
-    low = mode != "manual"  # no verdict or approval needed on this path
-    required = GATING_JOBS + (AUTO_JOBS if mode == "auto" else ())
+    if box and mode == "manual" and registry_rows(os.environ.get(REGISTRY_ENV)):
+        mode = "registry"  # the box's registry path: every AUTO job too (see REGISTRY_ENV)
+    low = mode not in ("manual", "registry")  # no verdict or approval needed on this path
+    required = GATING_JOBS + (AUTO_JOBS if mode in ("auto", "registry") else ())
     _summary(f"#{pr} @ {head[:9]}: {twhy}")
     wf = touches_workflows(files)
     if wf and not box:
@@ -991,6 +1049,16 @@ def run(
             return {"verdict": mode.upper(), "sha": head, "method": "merge", "at": "", "by": ""}, (
                 twhy
             )
+        if mode == "registry":
+            got, rwhy = registry_clear(registry_rows(os.environ.get(REGISTRY_ENV)), pr, head)
+            if got is None:
+                return None, rwhy
+            if found and found[-1]["verdict"] != "CLEAR":  # a HOLD (or an edit) on the PR wins
+                return None, f"{rwhy}, but AUDIT HOLD {found[-1]['sha'][:9]} stands on the PR"
+            fresh, fwhy = up_to_date(base, head)
+            if not fresh:
+                return None, f"{rwhy}, but {fwhy}"
+            return got, rwhy
         clear, why = cleared(found, head, same_change)
         if clear is None:
             return None, why
@@ -1081,6 +1149,8 @@ def run(
             "commit_title": (
                 f"Merge #{pr} ({mode.upper()} tier, no comment: {twhy})"[:250]
                 if clear["verdict"] == mode.upper()
+                else f"Merge #{pr} ({REGISTRY_TITLE} {head[:9]}, from the box)"
+                if mode == "registry"
                 else f"Merge #{pr} ({clear['method']}): audit CLEAR {clear['sha'][:9]}"
             ),
         },
@@ -1099,6 +1169,55 @@ def run(
 SWEEP_BUDGET_S = 15 * 60
 
 
+def to_revert(commits: list[Mapping[str, Any]], ci: Mapping[str, list[str]]) -> list[str]:
+    """The registry merges on the base (newest first) whose LIVE ci FAILED and that no later
+    commit reverts. `commits`: the base's recent commits, newest first; `ci`: sha -> conclusions
+    of its completed ci runs. Cancelled or still-running is never a failure."""
+    reverted = {
+        m.group(1)
+        for c in commits
+        for m in re.finditer(r"This reverts commit ([0-9a-f]{40})", str(c["commit"]["message"]))
+    }
+    out = []
+    for c in commits:
+        msg, sha = str(c["commit"]["message"]), str(c["sha"])
+        registry = msg.startswith("Merge #") and REGISTRY_TITLE in msg.split("\n", 1)[0]
+        if registry and "failure" in ci.get(sha, []) and sha not in reverted:
+            out.append(sha)
+    return out
+
+
+def auto_revert(repo: str, base: str) -> int:
+    """AUTO-REVERT (journal D-20261103-004): a registry merge whose LIVE ci failed is reverted
+    on the base at once, by the box, so the tree goes back to the one LIVE ran green before it.
+    Any failure here is logged and leaves the base as it is (rc 1); it never merges anything."""
+    try:
+        commits = _gh(f"repos/{repo}/commits?sha={base}&per_page=30") or []
+        ci: dict[str, list[str]] = {}
+        for c in commits:
+            msg = str(c["commit"]["message"])
+            if msg.startswith("Merge #") and REGISTRY_TITLE in msg.split("\n", 1)[0]:
+                runs = _gh(f"repos/{repo}/actions/runs?head_sha={c['sha']}&per_page=20") or {}
+                ci[str(c["sha"])] = [
+                    str(r.get("conclusion"))
+                    for r in runs.get("workflow_runs") or []
+                    if r.get("name") == "ci" and r.get("status") == "completed"
+                ]
+        bad = to_revert(commits, ci)
+        for sha in bad:
+            _git("fetch", "-q", "--no-tags", "origin", base)
+            _git("checkout", "-q", "-B", "gate-auto-revert", f"origin/{base}")
+            _git("revert", "-m", "1", "--no-edit", sha)
+            _git("push", "-q", "origin", f"HEAD:{base}")
+            _summary(
+                f"AUTO-REVERT: {sha[:9]} (a registry merge) failed LIVE ci; reverted on {base}"
+            )
+        return 0
+    except (RuntimeError, subprocess.SubprocessError, KeyError, TypeError) as exc:
+        _summary(f"AUTO-REVERT failed, nothing reverted: {exc}")
+        return 1
+
+
 def sweep(
     repo: str,
     base: str,
@@ -1113,8 +1232,9 @@ def sweep(
     limit, so the sweep was killed before its first log line, every time, from 13:14Z. Now one
     cheap read skips a PR whose gating checks are still running (a skip never merges anything),
     each line is flushed as it is written, and the pass stops at `budget_s`."""
+    # a red registry merge goes back before anything new merges (only where registry merges run)
+    rc = auto_revert(repo, base) if os.environ.get(REGISTRY_ENV) else 0
     pages = _gh(f"repos/{repo}/pulls?state=open&base={base}&per_page=100", "--paginate", "--slurp")
-    rc = 0
     deadline = clock() + budget_s
     looked = skipped = failed = 0
     # MERGE-READY FIRST (Desk health 2026-10-29 20:20Z: ~6 PRs a sweep, in listing order, so a
