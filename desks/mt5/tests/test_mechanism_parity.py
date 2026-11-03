@@ -115,3 +115,38 @@ def test_the_initial_risk_is_captured_once_and_kept() -> None:
     # the stop has moved since: R stays measured against the opening risk
     assert mm.original_stop_distance(store, 7, 100.0, 100.2) == (1.0, False)
     assert mm.original_stop_distance(store, 8, 100.0, 0.0) == (None, False)
+
+
+# ------------------------------------------- the FTMO lanes run it on their own positions
+
+def test_the_ftmo_sleeve_lane_sends_the_floor_on_its_own_position() -> None:
+    from prop import ftmo_executor as fx
+
+    mt5, p, info = _terminal(side=1, entry=100.0, sl=99.0, highs=[100.5, 101.2],
+                             lows=[99.8, 100.4], bid=101.0, ask=101.02)
+    sent: list[dict] = []
+    mt5.TRADE_ACTION_SLTP = 6
+    mt5.symbol_info = lambda sym: info
+    mt5.order_send = lambda req: (sent.append(req), SimpleNamespace(retcode=10009))[1]
+    st: dict = {}
+    doc: dict = {"actions": [], "alerts": []}
+    fx.protect(mt5, st, doc, p, cet="2026-11-03", armed=True)
+    (req,) = sent
+    assert req["action"] == 6 and req["position"] == 7 and req["sl"] >= 100.0
+    assert doc["actions"][0]["act"] == "breakeven_floor" and doc["actions"][0]["ok"]
+    # shadow when unarmed: the decision is recorded, nothing is sent
+    sent.clear()
+    p.sl = 99.0
+    doc = {"actions": [], "alerts": []}
+    fx.protect(mt5, {}, doc, p, cet="2026-11-03", armed=False)
+    assert sent == [] and doc["actions"][0].get("shadow")
+
+
+def test_the_ftmo_gold_lane_manages_its_own_position_without_e8() -> None:
+    from prop import ftmo_follower as ff
+
+    mt5, p, info = _terminal(side=-1, entry=100.0, sl=101.0, highs=[100.2, 99.6],
+                             lows=[99.5, 98.8], bid=98.98, ask=99.0)
+    mt5.symbol_info = lambda sym: info
+    new, why = ff.native_stop(mt5, {}, p)
+    assert new is not None and new <= 100.0, why
