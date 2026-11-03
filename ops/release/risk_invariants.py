@@ -147,13 +147,18 @@ def check(ceilings: dict[str, Any], read: Any, read_base: Any = None) -> list[st
             bad.append(f"{path}: missing or unparseable")
             continue
         for name, want in pins.items():
-            pinned = ast.dump(ast.parse(want, mode="eval").body)
+            # A LIST pins a knob to one of several exact, reviewed expressions: the base's and
+            # the one a pending PR moves it to (a pin must hold the live tree AND that PR's head,
+            # since the ceilings are read from the base). Drop the old one once the PR lands.
+            wants = want if isinstance(want, list) else [want]
+            pinned = {ast.dump(ast.parse(w, mode="eval").body) for w in wants}
             given = found.get(name)
             if not given:
                 if _base_has(path, name, literal=False):
                     bad.append(f"{path}: {name} is gone")
-            elif any(g != pinned for g in given):
-                bad.append(f"{path}: {name} is no longer exactly `{want}`")
+            elif any(g not in pinned for g in given):
+                shown = " or ".join(f"`{w}`" for w in wants)
+                bad.append(f"{path}: {name} is no longer exactly {shown}")
     return bad
 
 

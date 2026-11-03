@@ -1226,6 +1226,21 @@ def test_a_rail_list_may_grow_but_never_shrink(head: str | None, lost: str | Non
     assert (bad == []) if lost is None else any(lost in b for b in bad), bad
 
 
+@pytest.mark.parametrize(
+    ("src", "breach"),
+    [
+        ("OUT = DESK / 'a.json'\n", False),  # the base's expression
+        ("OUT = _PATHS['out']\n", False),  # the pending PR's expression
+        ("OUT = DESK / 'b.json'\n", True),  # anything else
+        ("OUT = DESK / 'a.json'\nOUT = _PATHS['x']\n", True),  # every value must match
+    ],
+)
+def test_a_list_source_pin_holds_one_of_its_reviewed_expressions(src: str, breach: bool) -> None:
+    ceil = {"source": {"p.py": {"OUT": ["DESK / 'a.json'", "_PATHS['out']"]}}}
+    bad = ri.check(ceil, _reader(p=src), _reader(p=src))
+    assert bool(bad) is breach, bad
+
+
 def test_the_live_tree_is_inside_its_ceilings() -> None:
     import json
 

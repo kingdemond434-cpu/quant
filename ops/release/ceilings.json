@@ -46,6 +46,25 @@
     },
     "desks/mt5/prop/ftmo_follower.py": {
       "MAGIC": 341955
+    },
+    "desks/mt5/mt5desk/cross_account.py": {
+      "PROP_PREFIX": "prop_",
+      "REGISTRY_ALERT_ID": "xacct_prop_registry_error",
+      "REGISTRY_BLOCKS_NAME": "prop_registry_blocks.jsonl",
+      "REGISTRY_PAGE_S": 600.0
+    },
+    "desks/mt5/mt5desk/prop_accounts.py": {
+      "LEGACY": "ftmo",
+      "LEGACY_FIRM": "ftmo",
+      "LEGACY_PROGRAM": "ftmo_2step",
+      "LEGACY_TERMINAL": "C:\\Program Files\\FTMO Global Markets MT5 Terminal\\terminal64.exe",
+      "PROCESS_ENV": "QUANT_PROP_ACCOUNT",
+      "PROGRAMS_NAME": "prop_programs.json",
+      "REGISTRY_NAME": "prop_accounts.json"
+    },
+    "desks/mt5/prop/prop_fleet.py": {
+      "CHILD_TIMEOUT_S": 600,
+      "PROCESS_ENV": "QUANT_PROP_ACCOUNT"
     }
   },
   "superset": {
@@ -67,6 +86,115 @@
     },
     "desks/mt5/mt5desk/calendar_us.py": {
       "NFP_MOVED": "{(2026, 7): (7, 2)}"
+    },
+    "desks/mt5/mt5desk/cross_account.py": {
+      "prop_block(exclude=)": "()",
+      "prop_block(now=)": "None",
+      "prop_peer_book(now=)": "None",
+      "registry_block_seen(now=)": "None"
+    },
+    "desks/mt5/mt5desk/prop_accounts.py": {
+      "BUILTIN_PROGRAMS": "{'ftmo_2step': {'daily_loss': 0.05, 'max_loss': 0.1, 'min_days': 4, 'targets': {'phase1': 0.1, 'phase2': 0.05}, 'next_phase': {'phase1': 'phase2', 'phase2': 'funded'}, 'day_tz': 'Europe/Prague', 'profit_cap': None, 'max_loss_basis': 'static_initial', 'daily_loss_basis': 'day_start_balance', 'source': 'ftmo.com/en/trading-objectives + /en/2-step-challenge, read 2026-10-28'}}",
+      "DATA": "_DESK / 'data'",
+      "FIRM_RE": "re.compile('^[a-z0-9][a-z0-9_]{0,31}$')",
+      "ID_RE": "re.compile('^[a-z0-9][a-z0-9_]{0,23}$')",
+      "LOGS": "_DESK / 'logs'",
+      "MODELLED_DAILY_LOSS_BASIS": "('day_start_balance',)",
+      "MODELLED_MAX_LOSS_BASIS": "('static_initial',)",
+      "PROGRAM_FIELDS": "('daily_loss', 'max_loss', 'min_days', 'targets', 'next_phase', 'day_tz', 'source', 'max_loss_basis', 'daily_loss_basis')",
+      "REFUSED": "Account(id='refused', firm='refused', program='refused', terminal_path=None, enabled=False)",
+      "REPORTS": "_DESK / 'reports'",
+      "account_of_xacct(data=)": "None",
+      "firm_paths(data=)": "None",
+      "for_process(data=)": "None",
+      "for_process(environ=)": "None",
+      "get(data=)": "None",
+      "load(data=)": "None",
+      "paths(data=)": "None",
+      "paths(logs=)": "None",
+      "paths(reports=)": "None",
+      "programs(data=)": "None",
+      "venue(data=)": "None",
+      "xacct_names(data=)": "None"
+    },
+    "desks/mt5/prop/ftmo_executor.py": {
+      "ACCOUNT": "_PROCESS[0]",
+      "ACCOUNT_ERROR": "_PROCESS[1]",
+      "ACCOUNT_ID": "ACCOUNT.id",
+      "ALLOCATOR": [
+        "DESK / 'reports' / 'FTMO_ALLOCATOR.json'",
+        "_PATHS['alloc_report']"
+      ],
+      "ARMED_MARKER": [
+        "DESK / 'data' / 'FTMO_EXECUTOR_ARMED'",
+        "_PATHS['exec_armed']"
+      ],
+      "BOOK_KEY": "ACCOUNT.book_key",
+      "DAY_TZ": "_VENUE.get('day_tz', _fw.DAY_TZ)",
+      "INTENTS": [
+        "DESK / 'data' / 'ftmo_exec_intents.jsonl'",
+        "_PATHS['exec_intents']"
+      ],
+      "LOG": [
+        "DESK / 'logs' / 'ftmo_executor.log'",
+        "_PATHS['exec_log']"
+      ],
+      "MAX_LOSS": "_VENUE.get('max_loss', _fw.MAX_LOSS_FRAC)",
+      "OUT": [
+        "DESK / 'reports' / 'FTMO_EXEC.json'",
+        "_PATHS['exec_out']"
+      ],
+      "STATE": [
+        "DESK / 'data' / 'ftmo_executor_state.json'",
+        "_PATHS['exec_state']"
+      ],
+      "XACCT": "ACCOUNT.xacct"
+    },
+    "desks/mt5/prop/ftmo_follower.py": {
+      "bound_account(account_file=)": "None",
+      "bound_account(account_types=)": "None",
+      "cet_day(tz=)": "DAY_TZ",
+      "loss_guard(max_frac=)": "MAX_LOSS_FRAC"
+    },
+    "desks/mt5/prop/ftmo_venue_reader.py": {
+      "ACCOUNT": "_PROCESS[0]",
+      "ACCOUNT_ERROR": "_PROCESS[1]",
+      "ACCOUNT_ID": "ACCOUNT.id",
+      "BARS_DIR": [
+        "DESK / 'data' / 'universe_ftmo'",
+        "_FIRM['bars']"
+      ],
+      "LOG": [
+        "DESK / 'logs' / 'ftmo_venue_reader.log'",
+        "_PATHS['reader_log']"
+      ],
+      "PHASES": [
+        "DESK / 'data' / 'ftmo_phase_state.json'",
+        "_PATHS['phase_state']"
+      ],
+      "PROGRAM": "None if ACCOUNT.legacy else ACCOUNT.program",
+      "REGISTRY_OUT": [
+        "DESK / 'data' / 'ftmo_registry.json'",
+        "_FIRM['registry']"
+      ],
+      "STATE_OUT": [
+        "DESK / 'reports' / 'FTMO_ACCOUNT_STATE.json'",
+        "_PATHS['venue_state']"
+      ],
+      "SURFACE_OUT": [
+        "DESK / 'data' / 'cost_surface_ftmo.json'",
+        "_FIRM['surface']"
+      ],
+      "TERMINAL_NAME": "'FTMO Global Markets MT5 Terminal' if ACCOUNT.firm == _pa.LEGACY_FIRM else f'{ACCOUNT.firm} MT5 terminal ({ACCOUNT.id})'"
+    },
+    "desks/mt5/prop/prop_fleet.py": {
+      "DESK": "Path(__file__).resolve().parents[1]",
+      "REPORTS": "DESK / 'reports' / 'prop'",
+      "SCRIPTS": "{'reader': DESK / 'prop' / 'ftmo_venue_reader.py', 'executor': DESK / 'prop' / 'ftmo_executor.py'}",
+      "accounts(data=)": "None",
+      "main(argv=)": "None",
+      "run_role(data=)": "None",
+      "run_role(popen=)": "subprocess.Popen"
     }
   }
 }
