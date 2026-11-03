@@ -46,6 +46,10 @@
     },
     "desks/mt5/prop/ftmo_follower.py": {
       "MAGIC": 341955
+    },
+    "desks/mt5/scripts/heal_identity_broken_clocks.py": {
+      "HOLD_EXPIRY_H": 72.0,
+      "SOURCE_LOOKBACK": 400
     }
   },
   "superset": {
@@ -67,6 +71,14 @@
     },
     "desks/mt5/mt5desk/calendar_us.py": {
       "NFP_MOVED": "{(2026, 7): (7, 2)}"
+    },
+    "desks/mt5/scripts/heal_identity_broken_clocks.py": {
+      "REPO": "DESK.parents[1]",
+      "REPORT": "DESK / 'reports' / 'IDENTITY_HEALER.json'",
+      "frozen_source_revision(lookback=)": "SOURCE_LOOKBACK",
+      "prior_hold_since(path=)": "None",
+      "write_report(held_since=)": "None",
+      "write_report(lost=)": "None"
     }
   }
 }
