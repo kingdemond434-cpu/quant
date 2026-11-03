@@ -172,6 +172,29 @@ def test_the_shrinkage_is_n_over_n_plus_k_toward_the_model() -> None:
     assert sh["shrunk_cost_r"] == pytest.approx(0.2 * 0.1 + 0.8 * rc.PRIOR_COST_R)
 
 
+def test_one_extreme_slip_barely_moves_the_shrunk_cost() -> None:
+    """A single 4,138-point fill (here a 50R slip among 0.05R fills) is clipped at the cell's own
+    quantiles before the shrinkage; the raw mean still publishes it."""
+    calm = [_fill("fusion", "XAUUSD", 0.05, 0.0, 0.01, 0.0, f"c{i}") for i in range(24)]
+    spike = _fill("fusion", "XAUUSD", 50.0, 0.0, 0.01, 0.0, "spike")
+    for n_calm, method in ((24, "p5/p95"), (9, "p10/p90")):
+        base = rc.build(calm[:n_calm])["accounts"]["fusion"]["symbols"]["XAUUSD"]["shrink"]
+        hit = rc.build([*calm[:n_calm], spike])["accounts"]["fusion"]["symbols"]["XAUUSD"]
+        sh = hit["shrink"]
+        assert method in sh["mean_method"]
+        assert sh["raw_mean_cost_r"] > 1.0                   # the raw mean sees the spike
+        assert sh["realised_mean_cost_r"] == pytest.approx(0.05)
+        # one more fill only moves the weight: under 0.002R, against ~1.4R+ unclipped
+        assert abs(sh["shrunk_cost_r"] - base["shrunk_cost_r"]) < 0.002
+    # the allocator reads the winsorized value, not the raw one
+    doc = rc.build([*calm, spike])
+    model = ec.costs_for([{"name": "XAUUSD_asia_brk", "symbol": "XAUUSD"}], None)
+    row = ec.apply_realised(model, doc, symbols={"XAUUSD_asia_brk": "XAUUSD"})["sleeves"][
+        "XAUUSD_asia_brk"]
+    assert row["realised"]["realised_mean_cost_r"] == pytest.approx(0.05)
+    assert row["cost_bias_r"] == pytest.approx(0.0, abs=1e-6)
+
+
 def test_hour_buckets_publish_only_when_they_hold_enough_fills() -> None:
     rows = [_fill("fusion", "EURUSD", 0.1, 0.0, 0.01, 0.0, f"r{i}") for i in range(5)]
     rows.append(_fill("fusion", "EURUSD", 0.1, 0.0, 0.01, 0.0, "late",

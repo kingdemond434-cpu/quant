@@ -20,7 +20,10 @@ WHAT THIS ORGAN PUBLISHES, per ACCOUNT x SYMBOL (and x UTC decision hour where a
                                   never a zero
     latency                       decision -> send and send -> ack, ms
     shrunk_cost_r                 w x realised mean + (1 - w) x the modelled prior,
-                                  w = n / (n + SHRINK_K): empirical-Bayes toward the model
+                                  w = n / (n + SHRINK_K): empirical-Bayes toward the model. The
+                                  realised mean is WINSORIZED (each fill clipped at the cell's
+                                  own p5/p95, p10/p90 under 20 fills) so one extreme fill cannot
+                                  set the cost; the raw mean is published beside it
 
 The allocator re-shrinks against ITS OWN per-sleeve modelled cost with the same weight
 (`execution_cost.apply_realised`); `shrunk_cost_r` here is the same blend against the desk-wide
@@ -69,6 +72,8 @@ SHRINK_K = REALISED_K
 PRIOR_COST_R = BASE_COST_R
 #: Fills an hour bucket needs before it is published (a bucket of two is a quote, not a cost).
 MIN_HOUR_N = 5
+#: Fills a cell needs before its winsorizing clip widens from p10/p90 to p5/p95.
+WINSOR_FULL_N = 20
 BOOKS: tuple[str, ...] = ("fusion", "e8", "ftmo")
 UNMEASURED = "UNMEASURED"
 MEASURED = "MEASURED"
@@ -185,6 +190,27 @@ def _hour(row: dict[str, Any]) -> int | None:
     return t.astimezone(UTC).hour
 
 
+def _rank(s: list[float], q: float) -> float:
+    """Nearest-rank quantile of a sorted list (the same rule `_stats` uses for p90)."""
+    return s[min(len(s) - 1, max(0, math.ceil(q * len(s)) - 1))]
+
+
+def winsorized_mean(xs: list[float]) -> tuple[float | None, str]:
+    """(mean of xs clipped at their own quantiles, the method). p5/p95 from WINSOR_FULL_N fills,
+    p10/p90 below it -- a thin cell clips harder because one outlier is a larger share of it.
+    The clip bounds come from the cell itself, never from another account or a constant."""
+    if not xs:
+        return None, "none: no fill carries a whole round-trip cost"
+    s = sorted(xs)
+    lo_q, hi_q = (0.05, 0.95) if len(s) >= WINSOR_FULL_N else (0.10, 0.90)
+    lo, hi = _rank(s, lo_q), _rank(s, hi_q)
+    clipped = [min(max(x, lo), hi) for x in s]
+    return (sum(clipped) / len(clipped),
+            f"winsorized mean: each fill's total_cost_r clipped at this cell's own "
+            f"p{round(lo_q * 100)}/p{round(hi_q * 100)} (nearest rank, n={len(s)}; "
+            f"p5/p95 from n>={WINSOR_FULL_N})")
+
+
 def shrink(mean: float | None, n: int, prior: float, k: float = SHRINK_K
            ) -> tuple[float | None, float]:
     """(w x mean + (1 - w) x prior, w) with w = n / (n + k). None mean -> the prior stands, w 0."""
@@ -203,9 +229,15 @@ def cell(fills: list[dict[str, Any]]) -> dict[str, Any]:
               "latency_send_to_ack_ms"):
         out[k] = _stats([float(x) for x in col.get(k, []) if x is not None])
     tot = out["total_cost_r"]
-    shrunk, w = shrink(tot["mean"], int(tot["n"]), PRIOR_COST_R)
+    wmean, method = winsorized_mean([float(x) for x in col.get("total_cost_r", [])
+                                     if x is not None])
+    shrunk, w = shrink(wmean, int(tot["n"]), PRIOR_COST_R)
     out["shrink"] = {"n": int(tot["n"]), "k": SHRINK_K, "weight": round(w, 6),
-                     "realised_mean_cost_r": tot["mean"], "prior_cost_r": PRIOR_COST_R,
+                     # THE ALLOCATOR READS THIS ONE: one 4,000-point fill must not set a cell's
+                     # cost, so each fill is clipped at the cell's own quantiles first
+                     "realised_mean_cost_r": (round(wmean, 8) if wmean is not None else None),
+                     "raw_mean_cost_r": tot["mean"], "mean_method": method,
+                     "prior_cost_r": PRIOR_COST_R,
                      "prior_basis": "execution_cost.BASE_COST_R (the desk-wide modelled base); "
                                     "the allocator re-shrinks against each sleeve's own "
                                     "modelled cost with this same weight",
