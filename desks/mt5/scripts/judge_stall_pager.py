@@ -44,6 +44,16 @@ snapshots, 2026-10-14..10-21), and the evidence is beside each constant below:
                      past IDLE_OVERDUE_H in any other live status -- which is how a resident stuck
                      in LANE_HELD or BACKOFF reads, since neither ever reaches phase_overrun.
   zero_judged_sweep  the last sweep completed rc 0 and the judge's own result for it judged 0 cells.
+  cores_idle         the judge's process tree has used fewer than CORES_IDLE_FLOOR cores on every
+                     reading for more than CORES_IDLE_H while a docket is pending (the resident is
+                     SWEEPING, or JUDGING_THROUGHPUT's queue depth is above zero). 8 of the box's
+                     18 cores are reserved for the judge (principal, 2026-10-29); measured
+                     2026-11-01..03, 15 of 15 hourly samples read the judge at 0.0..4.1 cores
+                     with ~14 cores busy elsewhere, through prewarm and build_shards alike, and
+                     no organ said so. Readings are this pager's own psutil sample of the judge
+                     tree (judging_throughput.measure_cpu, CORES_SAMPLE_S), one per run; a gap
+                     longer than CORES_GAP_MAX_MIN between readings restarts the clock, so
+                     continuity is measured, never assumed.
   inputs_unmeasured  ANY incident above has read UNMEASURED (`open: None`) for at least
                      UNMEASURED_SHARE of its readings over a full window of UNMEASURED_PAGE_MIN
                      (UNMEASURED_BOUND_MIN overrides it per incident). A window share, not a
@@ -184,15 +194,23 @@ INFLIGHT_RETRY_MIN = 30.0
 #: The desk's reminder convention (state_publication.REPAGE_H, run_alerts._DEDUPE_S).
 REPAGE_H = 6.0
 INCIDENTS = ("no_verdict", "resident_dead", "sweep_dead", "phase_overrun", "sweep_overdue",
-             "zero_judged_sweep", "inputs_unmeasured", "host_unreadable")
+             "zero_judged_sweep", "cores_idle", "inputs_unmeasured", "host_unreadable")
 #: Bytes read from the ledger's end. Rows are a few hundred bytes; the newest stamp is in here.
 TAIL_BYTES = 256 * 1024
 #: Statuses in which the resident has stopped ON PURPOSE and its heartbeat is expected to stop.
 OPERATOR_STOPPED = ("STOPPED", "DONE")
+#: cores_idle: the floor the judge's tree must reach, how long it may stay under it with a docket
+#: pending, the psutil sample length, and the longest gap between readings that still counts as
+#: continuous (the pager runs every 5 min; three missed runs break the chain).
+CORES_IDLE_FLOOR = 4.0
+CORES_IDLE_H = 1.0
+CORES_SAMPLE_S = 1.0
+CORES_GAP_MAX_MIN = 15.0
 
 _AT = re.compile(r'"at"\s*:\s*"([^"]+)"')
 
 Sender = Callable[[str, str], Any]
+CpuReader = Callable[[], dict[str, Any]]
 PidAlive = Callable[[object, datetime | None], bool | None]
 
 
@@ -521,11 +539,115 @@ def phase_limits(budget_s: float) -> dict[str, float]:
     return limits
 
 
+def _measure_cpu() -> dict[str, Any]:
+    """The judge tree's cores, sampled now by the organ that sizes the judge (one definition of
+    "the judge" for both). Never raises: an import or psutil failure reads UNMEASURED."""
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "judging_throughput_cores", BASE / "research" / "judging_throughput.py")
+        if spec is None or spec.loader is None:
+            raise ImportError("judging_throughput.py not loadable")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return dict(mod.measure_cpu(CORES_SAMPLE_S))
+    except Exception as exc:
+        return {"cpu_source": UNMEASURED, "cpu_why": f"{type(exc).__name__}: {exc}"[:200]}
+
+
+def _docket_depth(throughput: Path) -> int | None:
+    doc = _read_json(throughput)
+    q = doc.get("queue") if isinstance(doc, dict) else None
+    d = q.get("depth") if isinstance(q, dict) else None
+    if isinstance(d, bool) or not isinstance(d, (int, float)) or not math.isfinite(d):
+        return None
+    return int(d)
+
+
+def _cores_reading(status: str | None, throughput: Path,
+                   cpu_reader: CpuReader | None) -> dict[str, Any]:
+    """One cores_idle reading: `low` True/False/None. `open` is decided by `_page`."""
+    row: dict[str, Any] = {"open": None, "low": None, "floor": CORES_IDLE_FLOOR}
+    if status in OPERATOR_STOPPED:
+        row.update(open=False, low=False, why=f"resident {status}: stopped on purpose")
+        return row
+    depth = _docket_depth(throughput)
+    row["docket_depth"] = depth
+    pending: bool | None
+    if status == "SWEEPING" or (depth is not None and depth > 0):
+        pending = True
+    elif depth == 0:
+        pending = False
+    else:
+        pending = None
+    if pending is False:
+        row.update(open=False, low=False, why="no docket pending")
+        return row
+    cpu = (cpu_reader or _measure_cpu)()
+    judge, other = cpu.get("busy_judge_cores"), cpu.get("busy_other_cores")
+    if isinstance(judge, bool) or not isinstance(judge, (int, float)) \
+            or not math.isfinite(judge) or judge < 0:
+        row["why"] = f"{UNMEASURED}: judge cores unreadable ({cpu.get('cpu_why') or judge})"
+        return row
+    row.update(busy_judge_cores=round(float(judge), 2), busy_other_cores=other)
+    if pending is None:
+        row["why"] = (f"{UNMEASURED}: judge at {judge:.2f} cores, but neither a sweep in flight "
+                      f"nor a readable queue depth says whether a docket is pending")
+        return row
+    row["low"] = judge < CORES_IDLE_FLOOR
+    row["why"] = (f"judge tree at {judge:.2f} cores (others {other}) with a docket pending "
+                  f"(resident {status or UNMEASURED}, queue depth {depth}); floor "
+                  f"{CORES_IDLE_FLOOR:g}")
+    return row
+
+
+def _cores_verdict(prev: object, row: dict[str, Any] | None,
+                   now: datetime) -> tuple[dict[str, Any], dict[str, Any]]:
+    """(incident, state): open once every reading for more than CORES_IDLE_H was low.
+
+    `low_since` is the first of an unbroken run of low readings. A high reading or no docket
+    clears it; a gap past CORES_GAP_MAX_MIN since the last reading restarts it at this one (an
+    unwatched hour is not a measured idle hour); an UNMEASURED reading neither extends nor clears
+    it, and the incident reads UNMEASURED."""
+    p = prev if isinstance(prev, dict) else {}
+    inc = dict(row or {"open": None, "low": None, "why": f"{UNMEASURED}: no reading"})
+    last = _stamp(p.get("last_at"))
+    since = _stamp(p.get("low_since"))
+    if last is None or last > now or (now - last) > timedelta(minutes=CORES_GAP_MAX_MIN):
+        since = None
+    low = inc.get("low")
+    state: dict[str, Any] = {"last_at": now.isoformat(timespec="seconds")}
+    if low is None:
+        # the clock neither runs nor resets on a reading that could not be made
+        state["low_since"] = since.isoformat(timespec="seconds") if since else None
+        if since is not None:
+            state["last_at"] = p.get("last_at")
+        inc["open"] = None
+        return inc, state
+    if low is False:
+        state["low_since"] = None
+        inc["open"] = False
+        return inc, state
+    since = since or now
+    state["low_since"] = since.isoformat(timespec="seconds")
+    h = (now - since).total_seconds() / 3600.0
+    inc["low_since"] = state["low_since"]
+    inc["hours"] = round(h, 2)
+    inc["open"] = h > CORES_IDLE_H
+    inc["why"] = f"{inc.get('why')}; under the floor on every reading for {h:.1f}h " \
+                 f"(limit {CORES_IDLE_H:g}h)"
+    return inc, state
+
+
 def measure(now: datetime | None = None, *, ledger: Path = LEDGER,
             throughput: Path = THROUGHPUT, resident: Path = RESIDENT,
             sweep_result: Path = SWEEP_RESULT, env_file: Path = ENV_FILE,
-            pid_alive: PidAlive = _pid_alive) -> dict[str, Any]:
-    """Each incident: True (open), False (clear) or None (UNMEASURED), with its reading."""
+            pid_alive: PidAlive = _pid_alive,
+            cpu_reader: CpuReader | None = None) -> dict[str, Any]:
+    """Each incident: True (open), False (clear) or None (UNMEASURED), with its reading.
+
+    cores_idle carries the READING here (`low`); whether it has lasted CORES_IDLE_H is decided
+    in `_page` against the previous readings, so `open` stays None until then."""
     at = now or datetime.now(tz=UTC)
     budget, budget_src = fresh_budget_s(throughput, env_file)
     limits = phase_limits(budget)
@@ -542,7 +664,10 @@ def measure(now: datetime | None = None, *, ledger: Path = LEDGER,
                                           "idle_overdue_h": IDLE_OVERDUE_H,
                                           "unmeasured_page_min": UNMEASURED_PAGE_MIN,
                                           "unmeasured_share": UNMEASURED_SHARE,
-                                          "unmeasured_bound_min": UNMEASURED_BOUND_MIN}}
+                                          "unmeasured_bound_min": UNMEASURED_BOUND_MIN,
+                                          "cores_idle_floor": CORES_IDLE_FLOOR,
+                                          "cores_idle_h": CORES_IDLE_H,
+                                          "cores_gap_max_min": CORES_GAP_MAX_MIN}}
     inc: dict[str, dict[str, Any]] = out["incidents"]
 
     lv = last_verdict(at, ledger=ledger, throughput=throughput)
@@ -562,8 +687,10 @@ def measure(now: datetime | None = None, *, ledger: Path = LEDGER,
         for k in ("resident_dead", "sweep_dead", "phase_overrun", "sweep_overdue",
                   "zero_judged_sweep"):
             inc[k] = {"open": None, "why": why}
+        inc["cores_idle"] = _cores_reading(None, throughput, cpu_reader)
         return out
     status = str(doc.get("status") or "")
+    inc["cores_idle"] = _cores_reading(status, throughput, cpu_reader)
     out["resident"] = {"status": status, "pid": doc.get("pid"),
                        "heartbeat_utc": doc.get("heartbeat_utc"),
                        "last_sweep_ended_utc": doc.get("last_sweep_ended_utc"),
@@ -745,6 +872,10 @@ def _page(reading: dict[str, Any], *, root: Path, now: datetime, sender: Sender 
     # UNMEASURED IS A VERDICT THAT PAGES ONCE IT PERSISTS (audits of e759c01f6 and e60b42212).
     # EVERY incident's reading is kept, and any that read UNMEASURED on at least
     # UNMEASURED_SHARE of a full window opens `inputs_unmeasured`.
+    cores_inc, cores_state = _cores_verdict(prev.get("cores_idle"), inc.get("cores_idle"), now)
+    inc["cores_idle"] = cores_inc
+    if isinstance(reading.get("incidents"), dict):
+        reading["incidents"]["cores_idle"] = cores_inc
     hist = _unmeasured_history(prev.get("unmeasured_hist"), inc, now)
     inc["inputs_unmeasured"] = _unmeasured_verdict(hist, inc, now)
     if isinstance(reading.get("incidents"), dict):    # the artifact carries the verdict it paged
@@ -789,6 +920,7 @@ def _page(reading: dict[str, Any], *, root: Path, now: datetime, sender: Sender 
             _write_atomic(path, json.dumps({
                 "at": stamp,
                 "unmeasured_hist": hist,
+                "cores_idle": cores_state,
                 "open": state_open, "resolving": resolving, "last": {
                     k: out.get(k) for k in ("sent", "title", "armed", "delivered", "error",
                                             "opened", "reminded", "resolved")}},
@@ -904,7 +1036,7 @@ def main(argv: list[str] | None = None) -> int:
     return 1 if page_doc.get("error") or page_doc.get("state_write_error") else 0
 
 
-__all__ = ["FUTURE_SKEW_S", "HEARTBEAT_STALE_MIN", "IDLE_OVERDUE_H", "INCIDENTS",
+__all__ = ["CORES_GAP_MAX_MIN", "CORES_IDLE_FLOOR", "CORES_IDLE_H", "FUTURE_SKEW_S", "HEARTBEAT_STALE_MIN", "IDLE_OVERDUE_H", "INCIDENTS",
            "NO_VERDICT_H", "PAGE_STATE_REL", "PHASE_LIMIT_H", "REPAGE_H", "SWEEP_OVERDUE_H",
            "UNKNOWN_PHASE_LIMIT_H", "UNMEASURED_BOUND_MIN", "UNMEASURED_PAGE_MIN",
            "UNMEASURED_SHARE", "fresh_budget_s", "last_verdict", "main", "measure", "page",
