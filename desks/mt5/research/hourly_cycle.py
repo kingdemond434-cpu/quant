@@ -1189,6 +1189,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
     "source_evig", "source_drain", "pack_cells", "futures_state", "ground_depth",
+    # Three participant footprints (CTA replication + CFTC leveraged money, GLD holdings, asset
+    # managers + period-end rebalance) as stamped series and once-charged cells; reads
+    # futures_state's series, so it runs after it. Seconds of daily arithmetic.
+    "player_footprint",
     "timeframe_fanout",
     # The culture-gap producers (2026-09-30): a data-driven recipe walk, well under a second
     # when nothing is new, so every gap's cells are minted on the core clock.
@@ -1304,7 +1308,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
-                     "asia_plane", "futures_state", "archive_tape", "reclaim_disk",
+                     "asia_plane", "futures_state", "player_footprint", "archive_tape",
+                     "reclaim_disk",
                      "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
@@ -6088,6 +6093,12 @@ def main() -> None:
     # 401/403/429/451 is a hard stop per source.
     fst = _costed("futures_state", lambda: _producer(
         "futures_state", "research/futures_state.py", "--once"))
+    # PLAYER FOOTPRINTS (2026-11-03): where trend followers, gold-ETF authorised participants
+    # and real-money rebalancers MUST trade, from public data, as stamped lake series and
+    # pre-registered exogenous_conditioner cells donated once each through proposer_common.
+    # After futures_state, whose CFTC series it re-stamps at the exact 15:30 New York release.
+    pfp = _costed("player_footprint", lambda: _producer(
+        "player_footprint", "research/player_footprint.py", "--once"))
     # THE FRONT DOOR IS NOT THE GROUND (2026-09-23). 15 of the 121 document-holding grounds named
     # no instrument for ONE reason `pack_cells.resolve_ground` had already written: the documents
     # held are the landing page. This walks inside those grounds' own doors -- ranked links and
@@ -6523,6 +6534,7 @@ def main() -> None:
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
                     "culture_gap_cells": cgc, "futures_state": fst,
+                    "player_footprint": pfp,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
                     "actor_pressure": apr, "destroyer_pool": dpo,
