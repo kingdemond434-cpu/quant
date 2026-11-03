@@ -1404,6 +1404,9 @@ def terms_doors() -> list[dict[str, Any]]:
             row["missed_growth"] = _tf.held_missed_growth(refused, source=row["door"],
                                                           live_input_refusal=True)
         out.append(row)
+    return out
+
+
 # --------------------------------------- agri supply and nowcast vintage doors (2026-10-29) ----
 #: GAP #4 (agri_supply) AND #5 (macro_nowcasts_vintages) OF research/data_class_gap.py, landed in
 #: this organ's store so `world_macro_proposer` mints `world_macro_state` cells from them. Each
