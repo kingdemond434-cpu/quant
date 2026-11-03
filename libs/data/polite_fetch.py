@@ -1069,7 +1069,7 @@ def _note_held(leg: str, acc: HostAccess, url: str) -> None:
         site = site_of(hostname_of(url))
         with acc._lock:
             row = acc.blocked.get(site)
-        if not person_held(row):
+        if row is None or not person_held(row):
             return
         mg = row.get("missed_growth") if isinstance(row.get("missed_growth"), dict) else None
         line = dict(mg) if mg else hold_missed_growth(
