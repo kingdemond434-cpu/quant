@@ -130,6 +130,8 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
      "research/pack_cells.py"),
     ("futures_state", "desks/mt5/reports/FUTURES_STATE.json", 3600,
      "research/futures_state.py"),
+    ("dataset_usage", "desks/mt5/reports/DATASET_USAGE.json", 3600,
+     "research/dataset_usage.py"),
     ("independence_intake", "desks/mt5/reports/INDEPENDENCE_INTAKE.json", 3600,
      "research/independence_intake.py"),
     ("rank_recovery", "desks/mt5/reports/RANK_RECOVERY.json", 3600,
@@ -453,9 +455,49 @@ def silent_organ_issues(root: Path | None = None) -> list[Issue]:
     return out
 
 
+DATASET_USAGE = "desks/mt5/reports/DATASET_USAGE.json"
+
+
+def dataset_usage_issues(root: Path | None = None) -> list[Issue]:
+    """THE DATASET-USAGE FENCE, ON THE BOARD (BACKLOG row 61).
+
+    `research/dataset_usage.py` writes RED when a collected dataset has been UNFED (no
+    scheduled reader) or STARVED (a reader, but stale or partial data) for more than 24 h. RED is
+    DEGRADED -- the desk still trades, on less than it collects -- and UNMEASURED is BLIND. Neither
+    is auto-repairable: the fix belongs to the dataset's collector or consumer, both named in the
+    artifact. An absent or stale census is already a `missing:`/`stale:dataset_usage` issue.
+    """
+    r = root or ROOT
+    try:
+        doc = json.loads((r / DATASET_USAGE).read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(doc, dict):
+        return []
+    fence = str(doc.get("fence") or "")
+    if fence == "RED":
+        red = [d for d in doc.get("red") or [] if isinstance(d, dict)]
+        ahead = [d for d in doc.get("lookahead") or [] if isinstance(d, dict)]
+        names = [f"{d.get('registry')}:{d.get('id')} LOOKAHEAD" for d in ahead] + \
+            [f"{d.get('registry')}:{d.get('id')} {d.get('verdict')}" for d in red]
+        return [Issue(
+            "dataset_usage:red", "DEGRADED",
+            (f"{len(ahead)} dataset(s) carry future-stamped observations; " if ahead else "")
+            + f"{len(red)} collected dataset(s) unfed or starved for more than 24h",
+            "Named: " + ", ".join(names[:8]) + (" ..." if len(names) > 8 else "")
+            + f". Read {DATASET_USAGE} for each row's readers, freshness and missing parts.",
+            repair=None, auto=False)]
+    if fence == "UNMEASURED":
+        return [Issue(
+            "dataset_usage:unmeasured", "BLIND",
+            "the dataset-usage census cannot see every collected dataset",
+            str(doc.get("fence_why") or "no reason recorded")[:400], repair=None, auto=False)]
+    return []
+
+
 def collect(root: Path | None = None) -> list[Issue]:
     return (stale_producers(root) + raised_alarms(root) + desk_state_issues(root)
-            + silent_organ_issues(root))
+            + silent_organ_issues(root) + dataset_usage_issues(root))
 
 
 def repair_budget_s() -> float | None:
