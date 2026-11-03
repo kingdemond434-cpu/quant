@@ -810,6 +810,15 @@ $reportPaths = @(
     "desks/mt5/reports/TIER1_SCORECARD.json",
     "desks/mt5/reports/ALT_DATA_YIELD.json",
     "desks/mt5/reports/PRODUCER_YIELD.json",
+    # the per-stage conversion funnel with its RED fence (row 78, research/conversion_funnel.py,
+    # leg conversion_funnel) and the stage ledger it refreshes (data/conversion_ledger.json, read
+    # by build_allocator / bottleneck_law / trial_allocator, frozen at 2026-09-05 until then)
+    "desks/mt5/reports/CONVERSION_FUNNEL.json",
+    "desks/mt5/data/conversion_ledger.json",
+    # the box-task freshness contracts' two new stamps (2026-11-03): what MT5-IntelShip last
+    # landed and when it was shipped, and MT5-AdoptRelease's started/finished heartbeat
+    "desks/mt5/reports/INTEL_SHIP.json",
+    "desks/mt5/reports/ADOPTION_HEARTBEAT.json",
     "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json",
     "desks/mt5/reports/FORWARD_ENROLMENT.json",
     "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",

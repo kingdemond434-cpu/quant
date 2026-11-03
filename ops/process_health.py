@@ -437,10 +437,118 @@ def _contracts() -> dict[str, tuple[str, int, str]]:
     """The curated organ -> (artifact, max_age_min, purpose) map, if it is importable."""
     try:
         sys.path.insert(0, str(ROOT / "ops"))
-        from organ_contract import CONTRACTS  # type: ignore[import-not-found]
-        return dict(CONTRACTS)
+        import organ_contract  # type: ignore[import-not-found]
     except Exception:
         return {}
+    # EVERY BOX TASK, not only the curated organs (2026-11-03): the box-task table and the
+    # derived residents too, so a desk task with no artifact reads RED instead of UNCONTRACTED.
+    fn = getattr(organ_contract, "all_contracts", None)
+    try:
+        return dict(fn() if callable(fn) else organ_contract.CONTRACTS)
+    except Exception:
+        return dict(getattr(organ_contract, "CONTRACTS", {}) or {})
+
+
+def _desk_prefixes() -> tuple[str, ...]:
+    try:
+        if str(ROOT / "ops") not in sys.path:
+            sys.path.insert(0, str(ROOT / "ops"))
+        from organ_contract import DESK_TASK_PREFIXES  # type: ignore[import-not-found]
+        return tuple(DESK_TASK_PREFIXES)
+    except Exception:
+        return ("MT5-", "E8-", "Quant-", "Claude-Bridge-", "Codex-")
+
+
+def is_desk_task(name: str) -> bool:
+    """A task this desk owns. Anything else on the box's scheduler is FOREIGN: listed, and never
+    a desk fault, because its absence of a contract says nothing about the desk."""
+    return str(name).startswith(_desk_prefixes())
+
+
+#: Bound at import: the scheduler probe's tests replace `subprocess.run` with a schtasks-only fake,
+#: and the adoption read must not reach (or be refused by) that fake.
+_RUN_GIT = subprocess.run
+
+#: Code waiting on LIVE longer than this, unadopted by the box, is an adoption STALL: the adopter
+#: fires hourly at :12, so three hours is two missed adoptions plus a slow one.
+ADOPTION_MAX_LAG_H = 3.0
+LIVE_REF = "origin/claude/llm-auto-upgrade-verify-gcjac3"
+#: Box-written state prefixes: a commit touching only these is not code the box must adopt.
+_STATE_PATHSPECS: tuple[str, ...] = (
+    ":(exclude)desks/mt5/data", ":(exclude)desks/mt5/reports", ":(exclude)desks/mt5/logs",
+    ":(exclude)data", ":(exclude)reports", ":(exclude)logs", ":(exclude)web", ":(exclude)docs",
+)
+
+
+def _parse_utc(text: Any) -> datetime | None:
+    try:
+        at = datetime.fromisoformat(str(text).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return at if at.tzinfo else at.replace(tzinfo=UTC)
+
+
+def adoption_age(now: datetime | None = None, *, root: Path | None = None,
+                 git: Any = None) -> dict[str, Any]:
+    """HOW OLD IS THE CODE THE BOX RUNS, AGAINST THE CODE LIVE HOLDS.
+
+    release_at   desks/mt5/data/RELEASE.json `generated_utc` -- when the box last sealed
+    live_code_at the commit time of LIVE's newest commit that touches anything outside the
+                 box-written state prefixes (a box-state commit is not code to adopt)
+    lag_h        live_code_at - release_at, floored at 0: how long shipped code has waited
+
+    STALE when lag_h > ADOPTION_MAX_LAG_H; UNMEASURED when either side cannot be read -- never OK
+    by default. MT5-AdoptRelease's own contract (ADOPTION_HEARTBEAT.json) says the task fires;
+    this says whether firing is landing anything.
+    """
+    now = now or datetime.now(tz=UTC)
+    base = root or ROOT
+    out: dict[str, Any] = {"live_ref": LIVE_REF, "max_lag_h": ADOPTION_MAX_LAG_H}
+    try:
+        rel = json.loads((base / "desks" / "mt5" / "data" / "RELEASE.json")
+                         .read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        rel = None
+    release_at = _parse_utc(rel.get("generated_utc")) if isinstance(rel, dict) else None
+    out["release_sha"] = (rel or {}).get("live_sha") if isinstance(rel, dict) else None
+    out["release_at"] = release_at.isoformat(timespec="seconds") if release_at else None
+    out["release_age_h"] = (round((now - release_at).total_seconds() / 3600, 2)
+                            if release_at else None)
+
+    def _git(args: list[str]) -> str:
+        if git is not None:
+            return str(git(args))
+        r = _RUN_GIT(["git", "-C", str(base), *args], capture_output=True, text=True,
+                     timeout=30, check=False)
+        return r.stdout if r.returncode == 0 else ""
+
+    try:
+        line = _git(["log", "-1", "--format=%H %cI", LIVE_REF, "--", ".",
+                     *_STATE_PATHSPECS]).strip()
+    except (OSError, subprocess.SubprocessError):
+        line = ""
+    sha, _, at = line.partition(" ")
+    live_at = _parse_utc(at) if at else None
+    out["live_code_sha"] = sha or None
+    out["live_code_at"] = live_at.isoformat(timespec="seconds") if live_at else None
+    out["live_code_age_h"] = (round((now - live_at).total_seconds() / 3600, 2)
+                              if live_at else None)
+    if release_at is None or live_at is None:
+        out["lag_h"] = None
+        out["verdict"] = "UNMEASURED"
+        out["why"] = ("RELEASE.json unreadable or unstamped" if release_at is None
+                      else f"{LIVE_REF} has no readable code commit on this checkout")
+        return out
+    lag = max(0.0, (live_at - release_at).total_seconds() / 3600)
+    out["lag_h"] = round(lag, 2)
+    if lag > ADOPTION_MAX_LAG_H:
+        out["verdict"] = "STALE"
+        out["why"] = (f"LIVE's code head is {lag:.1f} h newer than the box's sealed release: "
+                      f"MT5-AdoptRelease has not landed it")
+    else:
+        out["verdict"] = "OK"
+        out["why"] = f"sealed release within {ADOPTION_MAX_LAG_H:g} h of LIVE's code head"
+    return out
 
 
 #: Account-key states that are a definite fault: every stamp fails closed until a human restores
@@ -537,9 +645,12 @@ def build() -> dict[str, Any]:
                                                     "succeeded is UNMEASURED")
         elif code is not None and code not in (0, 267009, 267011) and not _running:
             verdict, why = "FAILING", RESULT_MEANING.get(code, f"exit code {code}")
+        elif not artifact and not is_desk_task(name):
+            verdict, why = "FOREIGN", "not a desk task (no desk prefix); listed, never judged"
         elif not artifact:
             verdict, why = "UNCONTRACTED", ("no artifact contract: this process could stop and "
-                                            "nothing would notice")
+                                            "nothing would notice -- add it to "
+                                            "ops/organ_contract.py BOX_TASK_CONTRACTS")
         else:
             verdict, why = "OK", ("" if code is not None else
                                   "artifact fresh; last result not read this pass")
@@ -603,15 +714,18 @@ def build() -> dict[str, Any]:
 
     order = {"NOT_SCHEDULED": 0, "SCHEDULER_UNMEASURED": 0, "FAILING": 1,
              "NO_ARTIFACT": 2, "STALE": 3,
-             "DISABLED": 4, "UNCONTRACTED": 5, "OK": 6}
+             "DISABLED": 4, "UNCONTRACTED": 5, "OK": 6, "FOREIGN": 7}
     rows.sort(key=lambda r: (order.get(str(r["verdict"]), 9), str(r["name"])))
     counts: dict[str, int] = {}
     for r in rows:
         counts[str(r["verdict"])] = counts.get(str(r["verdict"]), 0) + 1
 
     # DISABLED IS A FAULT (v5b ruling) unless the task is EXPECTED_DISABLED.
+    # UNCONTRACTED IS RED (2026-11-03): a desk task with no artifact contract is a task whose
+    # stall nothing would notice -- MT5-AdoptRelease and MT5-IntelShip both stalled that way.
     bad = [r for r in rows if r["verdict"] in ("NOT_SCHEDULED", "SCHEDULER_UNMEASURED",
-                                             "FAILING", "NO_ARTIFACT", "STALE")
+                                             "FAILING", "NO_ARTIFACT", "STALE",
+                                             "UNCONTRACTED")
            or (r["verdict"] == "DISABLED" and not r.get("expected_disabled"))]
     run_history_read = scheduler_status == "OK schtasks"
     brief_faults = [r for r in rows if r["verdict"] in BRIEF_DEFINITE_FAULTS
@@ -624,7 +738,9 @@ def build() -> dict[str, Any]:
               else ("ATTENTION" if brief_faults else "UNMEASURED")
               if not run_history_read
               else "OK" if not bad else "ATTENTION")
-    if key_fault or backup_fault:
+    adoption = adoption_age(now, root=ROOT)
+    adoption_fault = adoption.get("verdict") == "STALE"
+    if key_fault or backup_fault or adoption_fault:
         status = "ATTENTION"   # a definite fault: the worst finding wins over UNMEASURED too
     return {
         "at": now.isoformat(timespec="seconds"),
@@ -645,7 +761,11 @@ def build() -> dict[str, Any]:
         # fails closed (account_key None), and fail-closed must never be silent.
         "status": status,
         "run_history": "MEASURED" if run_history_read else "UNMEASURED",
-        "n_needing_attention": len(bad) + int(key_fault) + int(backup_fault),
+        "n_needing_attention": (len(bad) + int(key_fault) + int(backup_fault)
+                                + int(adoption_fault)),
+        # ADOPTION AGE (2026-11-03): the box's RELEASE.json against LIVE's newest code commit.
+        # STALE is ATTENTION; UNMEASURED is published as such and never reads as OK.
+        "adoption": adoption,
         "account_key_file": key,
         # THE BACKUP (v5e): present, size, and whether it matches the live key -- a hash compare
         # done in-process; no hash is ever printed or written. Missing or mismatched: ATTENTION.
