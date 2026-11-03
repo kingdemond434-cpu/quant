@@ -1090,6 +1090,14 @@ def main(argv: list[str] | None = None) -> int:
                                                                                     or [])}))
         return 0
     rep = run(dry_run=a.dry_run)
+    if not a.dry_run:
+        # LLM SIZING SHADOW (2026-11-03): deliberate on fresh gold signals before they close,
+        # score closed ones by E[log W]. Shadow only; a failure never costs this leg.
+        try:
+            from research import llm_sizing_shadow
+            llm_sizing_shadow.run()
+        except Exception as exc:
+            print(f"llm_sizing_shadow: {type(exc).__name__}: {exc}"[:200])
     print(json.dumps({"sleeves": len(rep["sleeves"]), "minted": rep["minted"],
                       "donated": rep["donation"].get("donated"),
                       "books": rep["books"],
