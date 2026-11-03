@@ -191,7 +191,7 @@ def test_fixture_run_is_marked_and_donates_nothing(tmp_path: Path) -> None:
     fq = doc["per_source"]["freqtrade strategies"]
     assert fq["dropped"] == {"crypto_venue_native_mechanism": 1}
     # a ground with no fixture reports UNMEASURED (None), never 0
-    assert doc["per_source"]["TradingView open-source strategies"]["fetched"] is None
+    assert doc["per_source"]["GitHub Pine strategy search"]["fetched"] is None
     assert doc["trial_census"]["n_raw"] == doc["yield"]["cells"]
     assert json.loads((tmp_path / "CELL_EMITTER.json").read_text())["mode"] == "FIXTURE"
 
@@ -272,3 +272,30 @@ def test_the_leg_is_on_the_clock_with_a_layer_budget_and_department() -> None:
     import hourly_cycle as hc
     assert hc.LEG_BUDGET_SEC["cell_emitter"] > 300
     assert hc.LEG_DEPARTMENT["cell_emitter"] == "intel"
+
+
+def test_an_unreadable_universe_is_unmeasured_and_persists_nothing(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """#116 audit MF1: no universe means no verdict, and no file is marked seen."""
+    calls = _fake_network(monkeypatch)
+    monkeypatch.setattr(ce, "UNIVERSE", tmp_path / "missing_universe.json")
+    doc = ce.run(write=True, state_path=tmp_path / "state.json", donate_dir=tmp_path / "d",
+                 report_path=tmp_path / "r.json")
+    assert doc["yield"]["why"].startswith(ce.UNMEASURED)
+    assert not calls and not (tmp_path / "state.json").exists()
+    assert not (tmp_path / "d").exists()
+
+
+def test_a_registry_dependent_drop_is_read_again() -> None:
+    """#116 audit MF1: only a verdict about the file's content marks it seen."""
+    from collections import Counter
+    assert ce._registry_dependent(Counter({"no_admissible_instrument": 1}))
+    assert ce._registry_dependent(Counter({"lane_unclassified": 1}))
+    assert not ce._registry_dependent(Counter({"crypto_venue_native_mechanism": 1}))
+    assert not ce._registry_dependent(Counter())
+
+
+def test_fx_carry_funding_is_not_a_venue_mechanism() -> None:
+    """#116 audit SF3: 'funding' in FX carry code is the rate differential, not a perp."""
+    assert not ce.VENUE_NATIVE.search("funding_ccy = 'JPY'  # funding leg of the carry trade")
+    assert ce.VENUE_NATIVE.search("self.dp.funding_rate(pair)")

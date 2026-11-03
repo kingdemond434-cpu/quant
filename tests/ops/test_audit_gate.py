@@ -2780,3 +2780,29 @@ def test_money_files_match_case_blind_as_ntfs_does() -> None:
     assert ir.is_money_file("desks/mt5/research/Heat_Policy.py",
                             frozenset({"desks/mt5/research/heat_policy.py"}))  # fmt: skip
     assert ir.is_money_file("Desks/MT5/Prop/x.py", frozenset())
+
+
+def test_a_quiet_draft_is_brought_up_and_a_moving_one_is_not() -> None:
+    """2026-11-03: 98 of 100 open PRs were drafts, so none was ever brought up to date."""
+    now = ag.datetime(2026, 11, 3, 16, 0, tzinfo=ag.UTC)
+    assert ag.quiet({"updated_at": "2026-11-03T09:00:00Z"}, now)
+    assert not ag.quiet({"updated_at": "2026-11-03T15:00:00Z"}, now)
+    assert not ag.quiet({"updated_at": "soon"}, now)
+    assert not ag.quiet({}, now)
+
+
+def test_a_gh_timeout_on_one_pr_never_kills_the_sweep(monkeypatch: pytest.MonkeyPatch) -> None:
+    """2026-11-03: one 120 s TimeoutExpired in the pre-read ended 378 sweeps at "0 looked at"."""
+    prs = [{"number": n, "head": {"sha": f"{n:040d}"}} for n in (1, 2)]
+
+    def gh(path: str, *a: Any, **k: Any) -> Any:
+        if path.startswith("repos/o/r/pulls?"):
+            return [prs]
+        if path.endswith(f"{1:040d}/check-runs?per_page=100"):
+            raise subprocess.TimeoutExpired("gh", 120)
+        return {"check_runs": []}
+
+    ran: list[int] = []
+    monkeypatch.setattr(ag, "_gh", gh)
+    monkeypatch.setattr(ag, "run", lambda repo, n, *a, **k: ran.append(n) or 0)
+    assert ag.sweep("o/r", ag.LIVE) == 1 and ran == [2]

@@ -115,7 +115,8 @@ _NUM = re.compile(r"^[+-]?\d+(?:\.\d+)?$")
 #: Code-level evidence of a crypto-exchange-native mechanism. Read on the code with comments
 #: stripped, so a docstring that mentions an exchange by name does not drop an EMA cross.
 VENUE_NATIVE = re.compile(
-    r"funding|perpetual|\bperp\b|liquidation|open_interest|openinterest|order_?book|"
+    r"funding[_ ]?(?:rate|fee|interval|payment|time)|fetch_funding|perpetual|\bperp\b|liquidation|"
+    r"open_interest|openinterest|order_?book|"
     r"fetch_order_book|mark_price|basis_rate", re.I)
 _PAIR = re.compile(r"\b([A-Z]{2,6})\s*[/_-]\s*(USDT|USDC|BUSD|USD|TUSD|FDUSD)\b")
 
@@ -570,6 +571,12 @@ def _universe() -> dict[str, dict[str, Any]]:
         return {}
 
 
+def _registry_dependent(drops: Counter[str]) -> bool:
+    """True when a file's drop reasons turn on registry state rather than on its content."""
+    return any(n and (k == "no_admissible_instrument" or k.startswith("lane_")
+                      or k == "crypto_ground_non_crypto_cfd") for k, n in drops.items())
+
+
 def _is_crypto(sym: str) -> bool:
     from research import universe_policy as up
     return up.asset_class_of(sym) in {"crypto", "cryptocurrency"}
@@ -825,6 +832,19 @@ def run(*, budget_s: float = 300.0, write: bool = True, fixtures: Path | None = 
     exts = tuple(str(e).lower() for e in policy.get("extensions") or [".py", ".pine", ".mq5"])
     uni_rows = _universe()
     universe = set(uni_rows)
+    if not universe:
+        # AN UNREADABLE UNIVERSE IS UNMEASURED, NEVER A CLEAN PASS (#116 audit MF1). With no
+        # registry every file would drop as no_admissible_instrument and be recorded as seen, so
+        # a mid-rewrite universe.json would silence those files for good under an "OK".
+        doc = {"generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+               "organ": SOURCE, "mode": "FIXTURE" if fixtures else "LIVE",
+               "yield": {"why": f"{UNMEASURED}: universe registry {UNIVERSE} missing, empty or "
+                                f"unreadable; nothing fetched, nothing persisted"},
+               "grounds": len(grounds), "grounds_worked": 0, "grounds_reached": 0,
+               "seconds": round(time.monotonic() - t0, 2)}
+        if write:
+            _atomic_write(report_path, doc)
+        return doc
     fixture_map = _fixture_files(fixtures) if fixtures else None
     state = {} if fixture_map is not None else _load_json(state_path, {})
     cursors: dict[str, int] = dict(state.get("file_cursor") or {})
@@ -913,7 +933,10 @@ def run(*, budget_s: float = 300.0, write: bool = True, fixtures: Path | None = 
                 st["donated"] += 1
                 st["cells"] += len(r["symbols"])
             rows.extend(got)
-            if fixture_map is None:
+            # SEEN ONLY ON A VERDICT ABOUT THE FILE ITSELF (#116 audit MF1). A drop that turns on
+            # the universe or the lane registry (no admissible instrument, an unclassified lane)
+            # can change when the registry does, so that file is read again next pass.
+            if fixture_map is None and (got or not _registry_dependent(drops)):
                 seen[digest] = datetime.now(tz=UTC).isoformat(timespec="seconds")
         if http_errors and not st["fetched"]:
             st["status"] = "UNREACHED: raw fetch " + ", ".join(f"{k}x{v}"
