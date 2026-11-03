@@ -1426,7 +1426,8 @@ _ICI_BACKFILL_WEEKS = 110
 _ICI_DATELINE = re.compile(r"Washington,\s*D\.?C\.?\s*[;,]\s*([A-Z][a-z]+\s+\d{1,2},\s*\d{4})")
 _ICI_DATE = re.compile(r"\b(\d{1,2})/(\d{1,2})/(\d{4})\b")
 _TAG = re.compile(r"<[^>]+>")
-_MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+_ICI_MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov",
+               "dec"]
 _TR = re.compile(r"<tr\b[^>]*>(.*?)</tr>", re.I | re.S)
 _TD = re.compile(r"<t[dh]\b[^>]*>(.*?)</t[dh]>", re.I | re.S)
 
@@ -1472,7 +1473,7 @@ def _ici_mmf_frame(raw: bytes, spec: dict[str, Any] | None = None) -> Any:
         raise FetchError("unparseable", "ici mmf: no dateline")
     mo, dd, yy = m[1].replace(",", " ").split()
     try:
-        released = date(int(yy), _MONTHS.index(mo[:3].lower()) + 1, int(dd))
+        released = date(int(yy), _ICI_MONTHS.index(mo[:3].lower()) + 1, int(dd))
     except ValueError as exc:
         raise FetchError("unparseable", "ici mmf: dateline date") from exc
     week: date | None = None

@@ -57,7 +57,7 @@ def test_ici_page_keeps_only_the_current_week_stamped_after_its_own_dateline():
     assert got["ici_mmf_total_retail"] == 1487.37
     assert len(got) == 12
     assert set(df["period"]) == {"2021-04-01"}               # period_end = Wed 2021-04-07
-    assert set(df["release_utc"]) == {"2021-04-09T00:00:00Z"}  # dateline Apr 8 + 1 day 00:00
+    assert {pd.Timestamp(x) for x in df["release_utc"]} == {_t("2021-04-09")}  # dateline + 1d
 
 
 def test_ici_without_a_dateline_is_unparseable_never_zero():
@@ -153,7 +153,7 @@ def test_adzuna_count_is_stamped_at_the_fetch_instant():
                                 "fetched_at": "2026-11-03T12:00:00Z"})
     r = df.iloc[0]
     assert r["value"] == 1012345.0 and r["period"] == "2026-11-03"
-    assert r["release_utc"] == "2026-11-03T12:00:00Z"
+    assert pd.Timestamp(r["release_utc"]) == _t("2026-11-03T12:00")
 
 
 def test_adzuna_is_held_with_a_missed_growth_line_and_reads_both_keys_by_name(store,
