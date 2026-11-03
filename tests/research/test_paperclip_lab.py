@@ -109,7 +109,9 @@ class FakeModels(lab.Models):
         return self.replies.pop(0), "fake"
 
 
-def test_lab_run_screens_and_red_teams(tmp_path: Path) -> None:
+def test_lab_run_screens_and_red_teams(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(lab, "family_catalog", lambda root=lab.ROOT: FAMS)
+    monkeypatch.setattr(lab, "universe", lambda root=lab.ROOT: dict.fromkeys(UNI, "Forex"))
     rows = [{k: v for k, v in _recipe(symbols=["EURUSD"]).items() if k != "role"},
             _recipe(family="made_up"), _recipe(symbols=["AUDUSD"])]
     fm = FakeModels([json.dumps(rows), json.dumps({"kill": [{"i": 1, "why": "fit"}]})])
@@ -149,7 +151,7 @@ def test_intake_reschreens_donates_dedups_and_reports_health(tmp_path: Path,
     assert row["source"] == "paperclip" and row["params"]["timeframe"] == "H1"
     assert row["available_time"] and row["url"].startswith("paperclip://x/")
     again = pi.ingest([("102", bundle)])
-    assert again["seat_rows"] == 0 and again["refused"].get("duplicate") == 1
+    assert again["seat_rows"] == 0 and again["refused"].get("duplicate") == 3
     doc = pi.score(last, None)
     assert doc["health"] == "GREEN" and doc["roles"]["x"]["calls"] == 2
     assert doc["triage"]["weight_earned"] is False

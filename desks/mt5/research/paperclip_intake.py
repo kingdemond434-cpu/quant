@@ -268,7 +268,8 @@ def ingest(bundles: list[tuple[str, dict[str, Any]]]) -> dict[str, Any]:
     refused: dict[str, int] = {}
     for rid, b in bundles:
         for role, c in ((b.get("spend") or {}).get("calls_by_role") or {}).items():
-            stats.setdefault(role, {})["calls"] = stats.setdefault(role, {}).get("calls", 0) + int(c)
+            st = stats.setdefault(role, {})
+            st["calls"] = st.get("calls", 0) + int(c)
         for row in b.get("rows") or []:
             if not isinstance(row, dict):
                 continue
@@ -282,7 +283,8 @@ def ingest(bundles: list[tuple[str, dict[str, Any]]]) -> dict[str, Any]:
                 continue
             r = dict(v.row, dedup_key=v.key, role=role, model=row.get("model"), run_id=rid)
             keys.append(v.key)
-            stats.setdefault(role, {})["accepted"] = stats[role].get("accepted", 0) + 1
+            st = stats.setdefault(role, {})
+            st["accepted"] = st.get("accepted", 0) + 1
             if r["kind"] in ("recipe", "hypothesis"):
                 seat.append(_seat_row(r, generated))
             elif r["kind"] == "revival":
