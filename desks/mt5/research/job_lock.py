@@ -256,6 +256,10 @@ def measured_need_mb(name: str, declared: int) -> tuple[int, str]:
                      f"{typical}MB -- admitting on what it typically uses{tail}")
 
 
+def _host_key(name: object) -> str:
+    return str(name or "").strip().casefold().split(".")[0]
+
+
 def _pid_exists(pid: int) -> bool:
     """Read liveness without sending a signal; Windows kill(pid, 0) terminates."""
     if sys.platform == "win32":
@@ -290,7 +294,9 @@ def _owner_state(path: Path) -> str:
         row = json.loads(path.read_text("utf-8"))
     except (OSError, ValueError):
         return "UNKNOWN"                  # unreadable: fall back to the age rule, never guess
-    if str(row.get("host") or "") != socket.gethostname():
+    # Compared as hostnames compare (casefolded, no domain suffix): Windows may report the same
+    # machine as "VMI3571445" or "vmi3571445", and a case flip must not disown our own lock.
+    if _host_key(row.get("host")) != _host_key(socket.gethostname()):
         return "UNKNOWN"                  # another machine's lock is not ours to judge
     pid = row.get("pid")
     if not isinstance(pid, int) or pid <= 0:

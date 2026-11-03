@@ -296,3 +296,14 @@ def test_an_unwritable_ledger_never_costs_the_run(tmp_path, monkeypatch):
     jl.record_peak("gauntlet", 4882)                                # must not raise
     assert jl.observed_peaks("gauntlet") == []
     assert jl.measured_need_mb("gauntlet", 1200) == (1200, "declared 1200MB (no run measured yet)")
+
+
+def test_a_case_flipped_hostname_still_owns_its_lock(tmp_path, monkeypatch):
+    """Windows may report the box as "VMI3571445" or "vmi3571445"; the lock is still ours."""
+    path = _lock(tmp_path, monkeypatch, host="vmi3571445")
+    monkeypatch.setattr(J.socket, "gethostname", lambda: "VMI3571445")
+    monkeypatch.setattr(J, "_pid_exists", lambda pid: False)
+    assert J._owner_state(path) == "DEAD"
+    # an unrelated host's lock is still not ours to judge
+    monkeypatch.setattr(J.socket, "gethostname", lambda: "vm")
+    assert J._owner_state(path) == "UNKNOWN"

@@ -39,7 +39,30 @@ def test_an_unreadable_or_unrecorded_id_is_unmeasured_not_a_guess() -> None:
     assert off.verdict == hi.UNMEASURED and off.may_be_trading is False
     # a prefix is not a match: the build box's name shares the trading box's first letters
     assert hi.classify(None, "vmi35714450", CFG).hostname_match is False
+    # any case of the bare label is the box (Windows reports it upper-case) ...
+    for name in ("VMI3571445", "Vmi3571445", " vmi3571445 ", "vmi3571445."):
+        assert hi.classify(None, name, CFG).hostname_match is True, name
+    # ... but an untrusted domain is not: no stamp written on the box ever carried one, and
+    # dropping any suffix let a spoofed name read as the box (audit of #267)
+    for name in ("vmi3571445.evil.com", "VMI3571445.attacker.net",
+                 "VMI3571445.contaboserver.net"):
+        assert hi.classify(None, name, CFG).hostname_match is False, name
+
+
+def test_host_key_keeps_an_untrusted_domain() -> None:
+    assert hi.TRUSTED_DOMAINS == ()
+    assert hi.host_key("VMI3571445") == "vmi3571445"
+    assert hi.host_key("vmi3571445.evil.com") == "vmi3571445.evil.com"
+    assert hi.host_key(None) == ""
+    assert hi.names_host("VMI3571445", "vmi3571445")
+    assert not hi.names_host("", "vmi3571445")
+    assert not hi.names_host("vmi3571445.evil.com", ("vmi3571445",))
+
+
+def test_a_trusted_domain_is_the_only_suffix_that_still_names_the_host(monkeypatch) -> None:
+    monkeypatch.setattr(hi, "TRUSTED_DOMAINS", ("contaboserver.net",))
     assert hi.classify(None, "VMI3571445.contaboserver.net", CFG).hostname_match is True
+    assert hi.classify(None, "vmi3571445.evil.com", CFG).hostname_match is False
 
 
 def test_a_committed_document_is_judged_by_the_id_it_carries() -> None:
