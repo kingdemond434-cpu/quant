@@ -604,3 +604,15 @@ desks/mt5/data/universe_ftmo/
 # bar_clock_probe's atomic-write temporaries; the ledger and summary themselves are tracked state.
 desks/mt5/data/bar_clock_probes.jsonl.tmp
 desks/mt5/data/bar_clock_probes.summary.json.tmp
+# the footprint producers' summaries, published by sync_shadow_to_git.ps1 (2026-11-03, Tier-1
+# footprint sweep item 0: each was on a clock and UNMEASURED off the box)
+!desks/mt5/reports/FUTURES_STATE.json
+!desks/mt5/reports/SHADOW_INSTITUTIONAL.json
+!desks/mt5/reports/ACTOR_ATLAS.json
+!desks/mt5/reports/ACTOR_PRESSURE.json
+!desks/mt5/reports/MARKET_ECOLOGY.json
+!desks/mt5/reports/EVENT_SURPRISE.json
+!desks/mt5/reports/MACRO_STATE_ENGINE.json
+!desks/mt5/reports/PREDICTION_MARKETS.json
+!desks/mt5/reports/sge_premium.json
+!desks/mt5/reports/ASIA_PLANE.json
