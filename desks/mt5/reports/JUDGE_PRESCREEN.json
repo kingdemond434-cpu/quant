@@ -1,6 +1,6 @@
 {
  "schema": "judge_prescreen/1.3",
- "generated_at": "2026-10-29T22:43:30+00:00",
+ "generated_at": "2026-11-03T15:21:18+00:00",
  "producer": "desks/mt5/research/judge_prescreen.py (hourly leg judge_prescreen)",
  "mode": "SHADOW",
  "canon_switch": "the code constant judge_prescreen.CANON (a reviewed commit flips it)",
@@ -42,58 +42,58 @@
  },
  "sibling_dead": {
   "status": "MEASURED",
-  "ledger_rows": 1055671,
-  "series_judgements": 1048940,
-  "cells_replayed": 966510,
+  "ledger_rows": 1361658,
+  "series_judgements": 1354698,
+  "cells_replayed": 1254470,
   "population_by_tier": {
-   "unknown": 544838,
-   "in_sample_fail": 371931,
-   "cleared_in_sample": 48385,
-   "true_survivor": 1356
+   "unknown": 647607,
+   "in_sample_fail": 540014,
+   "cleared_in_sample": 65140,
+   "true_survivor": 1709
   },
-  "true_survivors_unprotected": 853,
+  "true_survivors_unprotected": 1047,
   "true_survivors_reached_by_k": {
    "5": {
-    "reached": 484,
+    "reached": 666,
     "reached_by_half": {
-     "select": 242,
-     "confirm": 242
+     "select": 333,
+     "confirm": 333
     },
-    "exposed_uncleared": 11,
+    "exposed_uncleared": 15,
     "floor_met": true
    },
    "10": {
-    "reached": 309,
+    "reached": 482,
     "reached_by_half": {
-     "select": 154,
-     "confirm": 155
+     "select": 241,
+     "confirm": 241
+    },
+    "exposed_uncleared": 9,
+    "floor_met": true
+   },
+   "20": {
+    "reached": 321,
+    "reached_by_half": {
+     "select": 160,
+     "confirm": 161
     },
     "exposed_uncleared": 6,
     "floor_met": true
    },
-   "20": {
-    "reached": 170,
-    "reached_by_half": {
-     "select": 85,
-     "confirm": 85
-    },
-    "exposed_uncleared": 5,
-    "floor_met": true
-   },
    "40": {
-    "reached": 106,
+    "reached": 229,
     "reached_by_half": {
-     "select": 53,
-     "confirm": 53
+     "select": 114,
+     "confirm": 115
     },
     "exposed_uncleared": 4,
     "floor_met": true
    },
    "80": {
-    "reached": 90,
+    "reached": 207,
     "reached_by_half": {
-     "select": 45,
-     "confirm": 45
+     "select": 103,
+     "confirm": 104
     },
     "exposed_uncleared": 3,
     "floor_met": true
@@ -103,40 +103,40 @@
   "by_k": {
    "5": {
     "k": 5,
-    "killed": 193813,
-    "kill_rate": 0.200529,
+    "killed": 288619,
+    "kill_rate": 0.230072,
     "killed_by_tier": {
-     "unknown": 58022,
-     "in_sample_fail": 134715,
-     "cleared_in_sample": 1065,
-     "true_survivor": 11
+     "unknown": 84953,
+     "in_sample_fail": 202029,
+     "cleared_in_sample": 1622,
+     "true_survivor": 15
     },
     "false_kill_rate_by_tier": {
-     "unknown": 0.106494,
-     "in_sample_fail": 0.362204,
-     "cleared_in_sample": 0.022011,
-     "true_survivor": 0.008112
+     "unknown": 0.13118,
+     "in_sample_fail": 0.374118,
+     "cleared_in_sample": 0.0249,
+     "true_survivor": 0.008777
     },
     "true_survivors_reached": {
-     "reached": 484,
+     "reached": 666,
      "reached_by_half": {
-      "select": 242,
-      "confirm": 242
+      "select": 333,
+      "confirm": 333
      },
-     "exposed_uncleared": 11,
+     "exposed_uncleared": 15,
      "floor_met": true
     },
     "killed_by_tier_select_half": {
-     "unknown": 2815,
-     "in_sample_fail": 8742,
-     "cleared_in_sample": 149,
-     "true_survivor": 2
+     "unknown": 4337,
+     "in_sample_fail": 14308,
+     "cleared_in_sample": 232,
+     "true_survivor": 3
     },
     "killed_by_tier_confirm_half": {
-     "unknown": 55207,
-     "in_sample_fail": 125973,
-     "cleared_in_sample": 916,
-     "true_survivor": 9
+     "unknown": 80616,
+     "in_sample_fail": 187721,
+     "cleared_in_sample": 1390,
+     "true_survivor": 12
     },
     "sample_false_kills_cleared_or_better": [
      "EURJPY@M15.session_range_breakout.p=b1d5e9999f9b2feb",
@@ -149,54 +149,54 @@
      "USDDKK@M30.vol_transition.p=3095fbcaa4e26afe",
      "USDSGD@M30.vol_transition.p=326e4a3c3634365c",
      "XAGEUR@M30.vol_transition.p=326e4a3c3634365c",
+     "AUDSGD@M15.vol_transition.p=c866181b8b391f92",
+     "AUDSGD@M15.vol_transition.p=3b0b28d35db7bfe5",
      "CHFJPY@M15.vol_transition.p=3b0b28d35db7bfe5",
      "EURHKD@M15.vol_transition.p=c866181b8b391f92",
      "GBPDKK@M15.vol_transition.p=3b0b28d35db7bfe5",
-     "SOLUSD@M15.vol_transition.p=3b0b28d35db7bfe5",
-     "US30@M15.vol_transition.p=c866181b8b391f92",
-     "GBPNZD@M5.vol_transition.p=8096f8256b850d90",
-     "GER40@M5.vol_transition.p=4e85a20d7825cc13",
-     "NAS100@M5.vol_transition.p=4e85a20d7825cc13",
-     "USDCHF@H4.cot_positioning.p=4e3d4e24f6375067",
-     "XAGUSD@H4.cot_positioning.p=0cd90c816f474b3f"
+     "GBPJPY@M15.vol_transition.p=c866181b8b391f92",
+     "GBPJPY@M15.vol_transition.p=3b0b28d35db7bfe5",
+     "NAS100@M15.vol_transition.p=3b0b28d35db7bfe5",
+     "NZDJPY@M15.vol_transition.p=2c77d984347817cc",
+     "SOLUSD@M15.vol_transition.p=3b0b28d35db7bfe5"
     ]
    },
    "10": {
     "k": 10,
-    "killed": 140666,
-    "kill_rate": 0.14554,
+    "killed": 216420,
+    "kill_rate": 0.172519,
     "killed_by_tier": {
-     "unknown": 36507,
-     "in_sample_fail": 103658,
-     "cleared_in_sample": 495,
-     "true_survivor": 6
+     "unknown": 58256,
+     "in_sample_fail": 157371,
+     "cleared_in_sample": 784,
+     "true_survivor": 9
     },
     "false_kill_rate_by_tier": {
-     "unknown": 0.067005,
-     "in_sample_fail": 0.278702,
-     "cleared_in_sample": 0.01023,
-     "true_survivor": 0.004425
+     "unknown": 0.089956,
+     "in_sample_fail": 0.29142,
+     "cleared_in_sample": 0.012036,
+     "true_survivor": 0.005266
     },
     "true_survivors_reached": {
-     "reached": 309,
+     "reached": 482,
      "reached_by_half": {
-      "select": 154,
-      "confirm": 155
+      "select": 241,
+      "confirm": 241
      },
-     "exposed_uncleared": 6,
+     "exposed_uncleared": 9,
      "floor_met": true
     },
     "killed_by_tier_select_half": {
-     "unknown": 2088,
-     "in_sample_fail": 6994,
-     "cleared_in_sample": 60,
-     "true_survivor": 0
+     "unknown": 25523,
+     "in_sample_fail": 63154,
+     "cleared_in_sample": 392,
+     "true_survivor": 4
     },
     "killed_by_tier_confirm_half": {
-     "unknown": 34419,
-     "in_sample_fail": 96664,
-     "cleared_in_sample": 435,
-     "true_survivor": 6
+     "unknown": 32733,
+     "in_sample_fail": 94217,
+     "cleared_in_sample": 392,
+     "true_survivor": 5
     },
     "sample_false_kills_cleared_or_better": [
      "GBPJPY@M5.session_range_breakout.p=acbc6b0adbfa7643",
@@ -223,40 +223,40 @@
    },
    "20": {
     "k": 20,
-    "killed": 97474,
-    "kill_rate": 0.100852,
+    "killed": 149599,
+    "kill_rate": 0.119253,
     "killed_by_tier": {
-     "unknown": 22975,
-     "in_sample_fail": 74319,
-     "cleared_in_sample": 175,
-     "true_survivor": 5
+     "unknown": 38658,
+     "in_sample_fail": 110659,
+     "cleared_in_sample": 276,
+     "true_survivor": 6
     },
     "false_kill_rate_by_tier": {
-     "unknown": 0.042168,
-     "in_sample_fail": 0.199819,
-     "cleared_in_sample": 0.003617,
-     "true_survivor": 0.003687
+     "unknown": 0.059694,
+     "in_sample_fail": 0.204919,
+     "cleared_in_sample": 0.004237,
+     "true_survivor": 0.003511
     },
     "true_survivors_reached": {
-     "reached": 170,
+     "reached": 321,
      "reached_by_half": {
-      "select": 85,
-      "confirm": 85
+      "select": 160,
+      "confirm": 161
      },
-     "exposed_uncleared": 5,
+     "exposed_uncleared": 6,
      "floor_met": true
     },
     "killed_by_tier_select_half": {
-     "unknown": 12064,
-     "in_sample_fail": 35023,
-     "cleared_in_sample": 119,
-     "true_survivor": 1
+     "unknown": 15538,
+     "in_sample_fail": 55738,
+     "cleared_in_sample": 150,
+     "true_survivor": 5
     },
     "killed_by_tier_confirm_half": {
-     "unknown": 10911,
-     "in_sample_fail": 39296,
-     "cleared_in_sample": 56,
-     "true_survivor": 4
+     "unknown": 23120,
+     "in_sample_fail": 54921,
+     "cleared_in_sample": 126,
+     "true_survivor": 1
     },
     "sample_false_kills_cleared_or_better": [
      "USDHUF.formula.p=8c3041b0823b04f9",
@@ -283,40 +283,40 @@
    },
    "40": {
     "k": 40,
-    "killed": 73697,
-    "kill_rate": 0.076251,
+    "killed": 108005,
+    "kill_rate": 0.086096,
     "killed_by_tier": {
-     "unknown": 16723,
-     "in_sample_fail": 56908,
-     "cleared_in_sample": 62,
+     "unknown": 26711,
+     "in_sample_fail": 81194,
+     "cleared_in_sample": 96,
      "true_survivor": 4
     },
     "false_kill_rate_by_tier": {
-     "unknown": 0.030694,
-     "in_sample_fail": 0.153007,
-     "cleared_in_sample": 0.001281,
-     "true_survivor": 0.00295
+     "unknown": 0.041246,
+     "in_sample_fail": 0.150355,
+     "cleared_in_sample": 0.001474,
+     "true_survivor": 0.002341
     },
     "true_survivors_reached": {
-     "reached": 106,
+     "reached": 229,
      "reached_by_half": {
-      "select": 53,
-      "confirm": 53
+      "select": 114,
+      "confirm": 115
      },
      "exposed_uncleared": 4,
      "floor_met": true
     },
     "killed_by_tier_select_half": {
-     "unknown": 8932,
-     "in_sample_fail": 32436,
-     "cleared_in_sample": 40,
-     "true_survivor": 2
+     "unknown": 16721,
+     "in_sample_fail": 57682,
+     "cleared_in_sample": 62,
+     "true_survivor": 4
     },
     "killed_by_tier_confirm_half": {
-     "unknown": 7791,
-     "in_sample_fail": 24472,
-     "cleared_in_sample": 22,
-     "true_survivor": 2
+     "unknown": 9990,
+     "in_sample_fail": 23512,
+     "cleared_in_sample": 34,
+     "true_survivor": 0
     },
     "sample_false_kills_cleared_or_better": [
      "USDIDR.formula.p=5abe01438fc98ac2",
@@ -343,40 +343,40 @@
    },
    "80": {
     "k": 80,
-    "killed": 60963,
-    "kill_rate": 0.063075,
+    "killed": 85416,
+    "kill_rate": 0.068089,
     "killed_by_tier": {
-     "unknown": 15340,
-     "in_sample_fail": 45584,
-     "cleared_in_sample": 36,
+     "unknown": 21293,
+     "in_sample_fail": 64076,
+     "cleared_in_sample": 44,
      "true_survivor": 3
     },
     "false_kill_rate_by_tier": {
-     "unknown": 0.028155,
-     "in_sample_fail": 0.12256,
-     "cleared_in_sample": 0.000744,
-     "true_survivor": 0.002212
+     "unknown": 0.03288,
+     "in_sample_fail": 0.118656,
+     "cleared_in_sample": 0.000675,
+     "true_survivor": 0.001755
     },
     "true_survivors_reached": {
-     "reached": 90,
+     "reached": 207,
      "reached_by_half": {
-      "select": 45,
-      "confirm": 45
+      "select": 103,
+      "confirm": 104
      },
      "exposed_uncleared": 3,
      "floor_met": true
     },
     "killed_by_tier_select_half": {
-     "unknown": 7917,
-     "in_sample_fail": 23913,
-     "cleared_in_sample": 20,
-     "true_survivor": 2
+     "unknown": 15340,
+     "in_sample_fail": 48723,
+     "cleared_in_sample": 37,
+     "true_survivor": 3
     },
     "killed_by_tier_confirm_half": {
-     "unknown": 7423,
-     "in_sample_fail": 21671,
-     "cleared_in_sample": 16,
-     "true_survivor": 1
+     "unknown": 5953,
+     "in_sample_fail": 15353,
+     "cleared_in_sample": 7,
+     "true_survivor": 0
     },
     "sample_false_kills_cleared_or_better": [
      "SOLUSD.formula.p=5ccb4690a49c8756",
@@ -404,78 +404,78 @@
   },
   "by_k_any_judged_basis_report_only": {
    "5": {
-    "killed": 468252,
-    "kill_rate": 0.484477,
+    "killed": 606440,
+    "kill_rate": 0.483423,
     "killed_by_tier": {
-     "unknown": 302909,
-     "in_sample_fail": 162907,
-     "cleared_in_sample": 2411,
-     "true_survivor": 25
+     "unknown": 365672,
+     "in_sample_fail": 237611,
+     "cleared_in_sample": 3127,
+     "true_survivor": 30
     }
    },
    "10": {
-    "killed": 358702,
-    "kill_rate": 0.371131,
+    "killed": 481727,
+    "kill_rate": 0.384008,
     "killed_by_tier": {
-     "unknown": 225629,
-     "in_sample_fail": 131535,
-     "cleared_in_sample": 1522,
-     "true_survivor": 16
+     "unknown": 282598,
+     "in_sample_fail": 197117,
+     "cleared_in_sample": 1992,
+     "true_survivor": 20
     }
    },
    "20": {
-    "killed": 237960,
-    "kill_rate": 0.246205,
+    "killed": 324389,
+    "kill_rate": 0.258586,
     "killed_by_tier": {
-     "unknown": 137192,
-     "in_sample_fail": 99759,
-     "cleared_in_sample": 998,
-     "true_survivor": 11
+     "unknown": 178681,
+     "in_sample_fail": 144495,
+     "cleared_in_sample": 1198,
+     "true_survivor": 15
     }
    },
    "40": {
-    "killed": 151869,
-    "kill_rate": 0.157131,
+    "killed": 205120,
+    "kill_rate": 0.163511,
     "killed_by_tier": {
-     "unknown": 75772,
-     "in_sample_fail": 75379,
-     "cleared_in_sample": 711,
-     "true_survivor": 7
+     "unknown": 97985,
+     "in_sample_fail": 106343,
+     "cleared_in_sample": 784,
+     "true_survivor": 8
     }
    },
    "80": {
-    "killed": 112063,
-    "kill_rate": 0.115946,
+    "killed": 144453,
+    "kill_rate": 0.115151,
     "killed_by_tier": {
-     "unknown": 51608,
-     "in_sample_fail": 59891,
-     "cleared_in_sample": 559,
+     "unknown": 62855,
+     "in_sample_fail": 81011,
+     "cleared_in_sample": 582,
      "true_survivor": 5
     }
    }
   },
-  "selected_k_on_select_half": 10,
+  "selected_k_on_select_half": null,
   "canon_k": null,
   "canon_ready": false,
   "canon_eligible_in_code": false,
   "canon_rule": "per K, only the true survivors that K REACHED count (>= K named siblings at their first verdict, no protection dated before it); split them at their time-ordered median, require >= 20 in each half, pick the smallest K with zero survivor kills on the earlier half and confirm zero on the later. A survivor no K could reach proves nothing, so a world of fresh-bucket survivors reads None. Even when ready, the rule acts only if RULES['sibling_dead']['canon_eligible'] is set True by a reviewed commit.",
   "holdout": "1 in 20 would-kills (sha256 of the cell id) still reach the judge in canon, so false kills stay in the gate ledger this replay reads",
-  "buckets": 63508
+  "buckets": 66513
  },
  "survivor_spec_audit": {
-  "specs_audited": 416,
+  "specs_audited": 469,
   "provable_rule_fired_on_certified": 0,
   "fired": []
  },
  "ledger": {
   "path": "C:\\opt\\quant\\desks\\mt5\\data\\hypotheses\\gate_verdict_ledger.jsonl",
   "present": true,
-  "bytes": 302721378
+  "bytes": 407030317
  },
  "timing_s": {
-  "charts": 211.999,
-  "replay": 135.486,
-  "total": 460.408
+  "charts": 123.912,
+  "replay": 191.692,
+  "total": 452.805
  },
  "priority": {
   "applied": true,
@@ -487,29 +487,26 @@
   "charged_to_screen": 0,
   "rule": "each cell the screen killed is charged exactly once, unless the hypothesis graph (the source experiment_ledger counts) already holds a counted fate for it, joined on the graph's own id at read time; shadow writes nothing",
   "sources": {
-   "status": "PARTIAL",
-   "provisional": true,
-   "cells": 969327,
-   "both": 0,
-   "gate_ruled_not_graph_counted": 34167,
+   "status": "MEASURED",
+   "provisional": false,
+   "cells": 1257515,
+   "both": 1131525,
+   "gate_ruled_not_graph_counted": 123625,
    "graph_counted_not_gate_ruled": 0,
-   "neither": 2366,
-   "pending_graph_read": 932794,
-   "cells_without_graph_id": 36533,
-   "graph_ids_found": 76777,
-   "graph_ids_wanted": 932794,
+   "neither": 2365,
+   "pending_graph_read": 0,
+   "cells_without_graph_id": 36419,
+   "graph_ids_found": 1131656,
+   "graph_ids_wanted": 1221095,
    "coverage": {
-    "gate_bytes_read": 302721378,
-    "gate_bytes": 302721378,
-    "graph_bytes_read": 992985302,
-    "graph_bytes": 4160752600,
+    "gate_bytes_read": 407030317,
+    "gate_bytes": 407030317,
+    "graph_bytes_read": 4399965064,
+    "graph_bytes": 4399965064,
     "backfill_ids_waiting": 0,
     "backfill_cursor": null,
     "backfill_end": null,
-    "reset_this_pass": [
-     "gate",
-     "graph"
-    ],
+    "reset_this_pass": [],
     "checkpoint_saved": true
    },
    "budget_s": 90.0,
@@ -527,13 +524,13 @@
    ],
    "sample_graph_only": [],
    "charge_joins_on": "the hypothesis graph (the source experiment_ledger counts)",
-   "seconds": 108.2
+   "seconds": 129.277
   }
  },
  "missed_growth": [
   {
-   "day": "2026-10-29",
-   "at": "2026-10-29T22:43:30+00:00",
+   "day": "2026-11-03",
+   "at": "2026-11-03T15:21:18+00:00",
    "rail": "judge_prescreen",
    "side": "cost",
    "kind": "opportunity_cost",
@@ -547,23 +544,23 @@
    },
    "would_act_sibling_dead": {
     "k": 5,
-    "true_survivors_killed": 11,
-    "cleared_in_sample_killed": 1065,
+    "true_survivors_killed": 15,
+    "cleared_in_sample_killed": 1622,
     "basis": "MEASURED by the look-ahead-free ledger replay"
    }
   },
   {
-   "day": "2026-10-29",
-   "at": "2026-10-29T22:43:30+00:00",
+   "day": "2026-11-03",
+   "at": "2026-11-03T15:21:18+00:00",
    "rail": "judge_prescreen",
    "side": "gain",
    "kind": "compute_freed",
-   "value": null,
-   "verdict": "UNMEASURED",
+   "value": 0.0,
+   "verdict": "MEASURED",
    "units": "judge build seconds freed (rows removed x measured judge seconds per cell)",
    "rows_removed": 0,
-   "seconds_per_cell": null,
-   "would_free_seconds_if_all_rules_acted": null
+   "seconds_per_cell": 0.1300531050178823,
+   "would_free_seconds_if_all_rules_acted": 35095.9
   }
  ]
 }

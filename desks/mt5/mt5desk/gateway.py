@@ -4169,7 +4169,8 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             else:
                 _e8_book, _e8_why = _xa.read_book("e8")
                 _xwhy = _xa.opposite_block(_e8_book, s["symbol"], side, account="e8",
-                                           why_absent=_e8_why)
+                                           why_absent=_e8_why) \
+                    or _xa.ftmo_block(s["symbol"], side)
             # THE GOLD DIRECTION LOCK (OCO v2s, MF-A): an XAU send here asks the bracket path's
             # own gate, under this same lock -- the day's direction and every gold lane (FTMO
             # included), fail closed.
@@ -4701,7 +4702,8 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             else:
                 _e8_book, _e8_why = _xa.read_book("e8")
                 _xwhy = _xa.opposite_block(_e8_book, s["symbol"], side, account="e8",
-                                           why_absent=_e8_why)
+                                           why_absent=_e8_why) \
+                    or _xa.ftmo_block(s["symbol"], side)
             # THE GOLD DIRECTION LOCK (OCO v2s, MF-A), as on the family lane: the same gate as
             # the bracket path, under this same lock.
             _owhy = gold_oco_send_refusal(s["symbol"], side, tick) \
@@ -4936,6 +4938,7 @@ def main() -> None:
         return
     equity = float(mt5.account_info().equity)
     st["equity"] = round(equity, 2)
+    from mt5desk.fusion_equity_reference import sizing_equity
 
     # STALENESS MUST DISARM (principal, 2026-09-16). If every research heartbeat on this box has
     # been silent for DISARM_DAYS the desk is trading blind: no new risk this pass, loudly. At
@@ -5002,7 +5005,7 @@ def main() -> None:
 
     sleeves = sleeve_set()
     try:
-        sleeves = minlot_override_roster(sleeves, equity)
+        sleeves = minlot_override_roster(sleeves, sizing_equity(equity))
     except Exception as exc:
         # FAIL CLOSED: an override that cannot be read is off, and every mark it may have left
         # is cleared, so the pass sizes exactly as sovereignty sizes it.
@@ -5105,6 +5108,11 @@ def main() -> None:
                 log(f"daily-loss rail: resting gold brackets not cancelled "
                     f"({type(exc).__name__}: {exc}); they still carry their stops")
     save_state(st)
+    # A PRINCIPAL WITHDRAWAL IS NOT A LOSS (2026-11-03, mt5desk.fusion_equity_reference). The
+    # daily-loss rail above and the published equity read the real number; from here on `equity`
+    # is what every sizer, the promoted-sleeve gate and the heat cap size from.
+    equity = sizing_equity(equity)
+    st["sizing_equity"] = round(equity, 2)
     # THE FUSION BOOK FOR THE OTHER ACCOUNT'S FENCE (mt5desk.cross_account), every pass, so an E8
     # lane never reads a book older than this pass. Never takes the pass down.
     # Under the placement lock, from a reading taken under it (audit round 2, must-fix 2): a
@@ -5730,7 +5738,8 @@ def main() -> None:
                     _e8_book, _e8_why = _xa.read_book("e8")
                     for _leg in ("buy_stop", "sell_stop"):
                         _w = _xa.opposite_block(_e8_book, s["symbol"], _leg, account="e8",
-                                                why_absent=_e8_why)
+                                                why_absent=_e8_why) \
+                            or _xa.ftmo_block(s["symbol"], _leg)
                         if _w:
                             _xblocked[_leg] = _w
                 # THE GOLD DIRECTION LOCK (mt5desk.gold_oco): read under the same lock, every
