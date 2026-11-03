@@ -344,3 +344,17 @@ libs/research/source_provenance.py
 desks/mt5/mt5desk/local_clock.py
 desks/mt5/mt5desk/fusion_equity_reference.py
 desks/mt5/mt5desk/family_alt_release.py
+desks/mt5/mt5desk/families_carry.py
+desks/mt5/mt5desk/families_class_moments.py
+desks/mt5/mt5desk/families_cn_cta.py
+desks/mt5/mt5desk/families_elitequant.py
+desks/mt5/mt5desk/families_quantguild.py
+desks/mt5/mt5desk/families_quanttrading.py
+desks/mt5/mt5desk/families_queued_repos.py
+desks/mt5/mt5desk/families_roman.py
+desks/mt5/mt5desk/family_zoo_alpha.py
+desks/mt5/research/gate_policy.py
+libs/research/conditional_expectation.py
+libs/research/path_representations.py
+libs/research/point_process.py
+libs/research/state_space.py
