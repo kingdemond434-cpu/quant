@@ -373,7 +373,9 @@ def test_a_second_merger_looks_when_checks_complete() -> None:
 
 def test_every_gh_call_of_the_gate_can_time_out() -> None:
     src = (ROOT / ".github/scripts/audit_gate.py").read_text(encoding="utf-8")
-    assert "timeout=GH_TIMEOUT_S" in src.split("def _gh(", 1)[1].split("\ndef ", 1)[0]
+    # #571 moved the subprocess call into _gh_run; _gh turns its timeout into a RuntimeError
+    assert "timeout=GH_TIMEOUT_S" in src.split("def _gh_run(", 1)[1].split("\ndef ", 1)[0]
+    assert "except subprocess.TimeoutExpired" in src.split("def _gh(", 1)[1].split("\ndef ", 1)[0]
     assert '"pr", "ready"' in src and "check=True, timeout=GH_TIMEOUT_S" in src
 
 
