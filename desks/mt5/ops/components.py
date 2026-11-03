@@ -914,23 +914,6 @@ def explicit_specs() -> list[ComponentSpec]:
             schedule="daily_cycle:proposers", artifact_class="daily",
             notes=("book_forensics.run() inside daily_cycle._proposers on MT5-Daily: the "
                    "alive+dead genome, its base rates, priors and screened cells")),
-        # PROP-FIRM PAYOUT SHOWCASES (2026-11-03, BACKLOG row 38): prop_showcase_miner.run()
-        # inside daily_cycle._proposers (imported by name, so declared here like the genome).
-        ComponentSpec(
-            component_id="daily:proposers:prop_showcase",
-            kind="daily_step", host="box",
-            code_paths=("desks/mt5/research/daily_cycle.py",
-                        "desks/mt5/research/prop_showcase_miner.py"),
-            outputs=("desks/mt5/reports/PROP_SHOWCASE.json",
-                     "desks/mt5/data/prop_showcase_claims.jsonl"),
-            consumers=("desks/mt5/research/productivity_census.py",),
-            cadence_s=86_400, timeout_s=3_600, progress_metric=UNMEASURED,
-            expected_artifact_schema="desks/mt5/reports/PROP_SHOWCASE.json",
-            owner="daily_cycle", restart_action="restart:task:MT5-Daily",
-            criticality="optional", resource_budget={"budget_s": 1800},
-            schedule="daily_cycle:proposers", artifact_class="daily",
-            notes=("prop_showcase_miner.run() inside daily_cycle._proposers on MT5-Daily: "
-                   "public funded-trader stories -> claims -> screened, charged cells")),
         ComponentSpec(
             component_id="resident:gateway",
             kind="task", host="box",

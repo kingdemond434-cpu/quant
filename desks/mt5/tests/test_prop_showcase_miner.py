@@ -159,13 +159,9 @@ def test_every_screened_cell_is_charged(tmp_path: Path, monkeypatch: pytest.Monk
     assert again["skipped"]["already screened on these bars"] == rep["tests_run"]
 
 
-def test_daily_cycle_and_component_declare_the_producer() -> None:
+def test_daily_cycle_runs_the_producer() -> None:
     src = (DESK / "research" / "daily_cycle.py").read_text("utf-8")
     assert '"prop_showcase_miner"' in src and callable(psm.run)
-    from desks.mt5.ops.components import explicit_specs
-    spec = next(s for s in explicit_specs() if s.component_id == "daily:proposers:prop_showcase")
-    assert spec.outputs[0] == "desks/mt5/reports/PROP_SHOWCASE.json"
-    assert spec.restart_action == "restart:task:MT5-Daily"
 
 
 def test_source_is_external_in_the_registry() -> None:
