@@ -1171,7 +1171,7 @@ def bind_firm(firm: str) -> None:
     if firm == "ftmo":
         return
     from mt5desk import prop_accounts as _pa
-    f = _pa.firm_paths(firm, data=BASE / "data")
+    f = _pa.firm_paths(firm)
     g["FTMO_REGISTRY"], g["FTMO_SURFACE"] = f["registry"], f["surface"]
     g["FTMO_QUOTES"] = f["registry"].parent / "no_foreign_quotes.json"
     g["VENUE_TAG"] = ""
@@ -1188,7 +1188,7 @@ def bind_account(acct: Any) -> VenueRules:
     if acct.legacy:
         return FTMO_2STEP
     from mt5desk import prop_accounts as _pa
-    p = _pa.paths(acct, data=BASE / "data", reports=BASE / "reports", logs=BASE / "logs")
+    p = _pa.paths(acct)
     g["OUT"], g["ACCOUNT_STATE"], g["ARMED"] = p["alloc_report"], p["venue_state"], p["alloc_armed"]
     # Gold has ONE follower, the legacy account's: another account's gold columns are solved and
     # published (sized-no-executor) but never deployed until a follower exists for it.
@@ -1196,7 +1196,7 @@ def bind_account(acct: Any) -> VenueRules:
     g["GAP_REQUESTS"] = (BASE / "data" / "intelligence" / "ftmo_allocator"
                          / f"prop_{acct.firm}_gap_hypotheses.jsonl")
     g["ACCOUNT_ID"], g["BOOK_KEY"] = acct.id, acct.book_key
-    progs, _ = _pa.programs(BASE / "data")
+    progs, _ = _pa.programs()
     g["DAY_TZ"] = str((progs.get(acct.program) or {}).get("day_tz") or _DEFAULTS["DAY_TZ"])
     return rules_for(acct.program)
 
@@ -1350,12 +1350,12 @@ def run_account(acct: Any, *, n_paths: int, seed: int, if_due: bool,
 def run_accounts(only: str | None, *, n_paths: int, seed: int, if_due: bool) -> dict[str, Any]:
     """Every registered prop account (or `only`), firm by firm, under the run lock."""
     from mt5desk import prop_accounts as _pa
-    accts, errors = _pa.load(BASE / "data")
+    accts, errors = _pa.load()
     if only is not None:
         accts = [a for a in accts if a.id == only]
         if not accts:
             return {"status": "UNKNOWN_ACCOUNT", "account": only, "registry_errors": errors}
-    accts.sort(key=lambda a: (a.firm, not a.legacy, a.id))
+    accts.sort(key=lambda a: (not a.legacy, a.firm, a.id))
     universes: dict[str, Any] = {}
     rows = []
     try:
@@ -1363,7 +1363,7 @@ def run_accounts(only: str | None, *, n_paths: int, seed: int, if_due: bool) -> 
             rows.append(run_account(a, n_paths=n_paths, seed=seed, if_due=if_due,
                                     universes=universes))
     finally:
-        bind_account(_pa.get(_pa.LEGACY, BASE / "data"))
+        bind_account(_pa.get(_pa.LEGACY))
     return {"generated_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
             "status": "OK", "if_due": if_due, "registry_errors": errors, "accounts": rows,
             "universes_built": sorted(universes)}

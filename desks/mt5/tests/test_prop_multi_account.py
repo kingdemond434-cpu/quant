@@ -47,7 +47,9 @@ def _row(aid: str, firm: str = "firmx", term: str | None = None, **kw) -> dict:
 @pytest.fixture
 def data(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """A hermetic data/ dir: the registry module, the fence and the allocator all read it."""
-    d = xa.XACCT_DIR.parent
+    d = tmp_path / "data"
+    (d / "xacct").mkdir(parents=True)
+    monkeypatch.setattr(xa, "XACCT_DIR", d / "xacct")    # its own data/, never the shared basetemp
     monkeypatch.setattr(pa, "DATA", d)
     monkeypatch.setattr(pa, "REPORTS", tmp_path / "reports")
     monkeypatch.setattr(pa, "LOGS", tmp_path / "logs")
