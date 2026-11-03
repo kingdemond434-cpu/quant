@@ -19,7 +19,12 @@ MERGES). It also FAILS when:
   walk, nothing run) of every entry point the box's tasks run to size or place orders, plus the
   desk's books and state directories, plus every script under desks/mt5/scripts/ and ops/
   except the reviewed exceptions in ops/release/not_money_scripts.txt (`money_scripts`, fail
-  closed) (#457 audit MF2, #508 audit);
+  closed) (#457 audit MF2, #508 audit). RESEARCH REACH (ops/release/research_reach.py) can
+  measure such a file only when it sits under desks/mt5/research/ or libs/research/, is no entry
+  point, gateway, sizing or rail, and either (a) its change is an AST-verified pure addition to a
+  registry literal that is no lane-policy table, or (b) the allocator on the pinned slice EXECUTED
+  every changed line (traced, import time excluded) and decided identically on both trees. The
+  report names every file it covered and how, and every one it left UNMEASURED and why;
 - it changes a module-level UPPER_CASE constant in a money-path file (a knob: a rail count, a
   margin, a grace) that ops/release/ceilings.json does not already bound. A grid exercises the
   knobs it reaches; this catches the ones it does not (#457 audit MF1);
@@ -638,8 +643,15 @@ def bounded() -> dict[str, set[str]]:
 
 
 def knob_changes(
-    base: Path, head: Path, changed: list[str], closure: set[str], exempt: set[str] | None = None
+    base: Path,
+    head: Path,
+    changed: list[str],
+    closure: set[str],
+    exempt: set[str] | None = None,
+    excused: dict[str, list[str]] | None = None,
 ) -> list[str]:
+    """`excused` is research reach's SUPERSET proof only: {file: registry names it proved grew by
+    pure literal additions and nothing else}. Every other name in the file is still held."""
     problems = []
     held = bounded()
     for f in changed:
@@ -652,7 +664,11 @@ def knob_changes(
             problems.append(f"{f}: cannot be parsed ({exc.msg}); its knobs are unmeasured")
             continue
         for name in sorted(set(was) | set(now)):
-            if was.get(name) != now.get(name) and name not in held.get(f, set()):
+            if (
+                was.get(name) != now.get(name)
+                and name not in held.get(f, set())
+                and name not in set((excused or {}).get(f, ()))
+            ):
                 problems.append(
                     f"{f}: the money-path knob {name} changed; knobs the ceilings do not bound "
                     "take the manual path"
@@ -808,10 +824,20 @@ def compare(
         and not (f == MANIFEST and rows_only)
     )  # fmt: skip
     not_money = sorted(f for f in changed if is_script(f) and f in exempt)
+    # RESEARCH REACH (ops/release/research_reach.py): a research closure file the grid never ran
+    # leaves UNMEASURED only through an AST superset proof or a line trace on the pinned slice.
+    reach = research_reach().reach(
+        base, head, changed, uncovered, read, closure, ENTRY_POINTS, canon=canon
+    ) if uncovered else {"ran": False, "covered": {}, "unmeasured": {}, "excused_knobs": {},
+                         "problems": [], "slice_sha256": None}  # fmt: skip
+    uncovered = [f for f in uncovered if f not in reach["covered"]]
+    problems += reach["problems"]
     problems += [
-        f"UNMEASURED money-path change (the replay never imported it): {f}" for f in uncovered
+        f"UNMEASURED money-path change (the replay never imported it): {f}"
+        + (f" [research reach: {reach['unmeasured'][f]}]" if f in reach["unmeasured"] else "")
+        for f in uncovered
     ]
-    problems += knob_changes(base, head, changed, closure, exempt)
+    problems += knob_changes(base, head, changed, closure, exempt, reach["excused_knobs"])
     return {
         "verdict": "FAIL" if problems else "PASS",
         "scenarios": len(grid),
@@ -822,7 +848,24 @@ def compare(
         "not_money_scripts": not_money,
         # the manifest changed only in TASK rows that name nothing money (manifest_is_money)
         "not_money_manifest": rows_only,
+        # every file research reach covered and how, and every one it left UNMEASURED and why
+        "research_reach": reach,
     }
+
+
+def research_reach() -> Any:
+    """ops/release/research_reach.py from THIS checkout (the base's harness), loaded by path:
+    `python -I` puts no script directory on sys.path."""
+    import importlib.util
+
+    mod = sys.modules.get("research_reach")
+    if mod is None:
+        spec = importlib.util.spec_from_file_location("research_reach", HERE / "research_reach.py")
+        assert spec is not None and spec.loader is not None
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules["research_reach"] = mod
+        spec.loader.exec_module(mod)
+    return mod
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -842,6 +885,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     for p in rep["problems"][:200]:
         print(" -", p)
+    rr = rep["research_reach"]
+    for f, how in sorted(rr["covered"].items()):
+        print(f" + research reach covered {f} by {how['how']}")
+    for f, why in sorted(rr["unmeasured"].items()):
+        print(f" ? research reach left {f} UNMEASURED: {why}"[:600])
     return 0 if rep["verdict"] == "PASS" else 1
 
 

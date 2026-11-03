@@ -78,7 +78,8 @@ jobs:
           sparse-checkout: ops/release
           persist-credentials: false
 
-      # Each tree holds on disk only what the live book imports and reads (code, books, state).
+      # Each tree holds on disk only what the live book imports and reads (code, books, state),
+      # plus desks/mt5/research/ for the research reach (ops/release/research_reach.py).
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.base.sha }}
@@ -90,6 +91,7 @@ jobs:
             /libs/
             /desks/mt5/mt5desk/
             /desks/mt5/prop/
+            /desks/mt5/research/
             /desks/mt5/*.py
             /desks/mt5/data/*.json
             /desks/mt5/reports/*.json
@@ -107,6 +109,7 @@ jobs:
             /libs/
             /desks/mt5/mt5desk/
             /desks/mt5/prop/
+            /desks/mt5/research/
             /desks/mt5/*.py
             /desks/mt5/data/*.json
             /desks/mt5/reports/*.json
