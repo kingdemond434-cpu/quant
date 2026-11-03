@@ -50,6 +50,8 @@ from typing import Any
 
 import numpy as np
 
+from libs.portfolio.eb_shrinkage import eb_armed, eb_k, group_rollup, pooled_vol
+
 __all__ = [
     "AllocationResult",
     "SleeveEvidence",
@@ -248,6 +250,11 @@ class WorldConfig:
     #: swap, and a history of OOM kills, so the population is trimmed to fit rather than sized by
     #: hope. `sample_worlds` reduces n_worlds/n_rows to respect it and says so in `Worlds.note`.
     max_elements: int = 12_000_000
+    #: DATA-DRIVEN SHRINKAGE STRENGTH (`libs.portfolio.eb_shrinkage`). Read from the desk's arm at
+    #: construction, so every book that samples worlds (E8, Fusion, FTMO/prop) switches together.
+    #: Off, the posterior is bit-for-bit the fixed-k posterior; on, k is the James-Stein estimate
+    #: bounded to [0.25x fixed k, K_MAX] (two-sided), with se kept at today's widening.
+    eb_shrinkage: bool = field(default_factory=eb_armed)
 
 
 @dataclass(frozen=True)
@@ -361,7 +368,8 @@ def _asset_class(symbol: str) -> str:
 
 
 def _posterior_mu(ev: Sequence[SleeveEvidence], rng: np.random.Generator,
-                  n_worlds: int, diag: dict[str, Any] | None = None,
+                  n_worlds: int, diag: dict[str, Any] | None = None, *,
+                  eb: bool = False,
                   ) -> tuple[np.ndarray, np.ndarray]:
     """Hierarchical posterior draws of each sleeve's mean daily R.
 
@@ -471,10 +479,35 @@ def _posterior_mu(ev: Sequence[SleeveEvidence], rng: np.random.Generator,
     #: Pseudo-observations of the no-edge prior. 60 days is the scale at which the desk starts
     #: believing a mean: below it the sleeve is mostly its family, above it mostly itself.
     k_sleeve, k_family = 60.0, 120.0
-    lam_s = eff / (eff + k_sleeve)
     fam_eff = np.array([fam_w[[i for i, f in enumerate(families) if f == families[j]]].sum()
                         for j in range(n)])
-    lam_f = fam_eff / (fam_eff + k_family)
+    # EMPIRICAL-BAYES STRENGTH (`eb`, armed only after the preregistered OOS test). The fixed k
+    # says every family is equally heterogeneous; James-Stein measures each family's true
+    # between-member spread and pools hardest where that spread is mostly noise, and less where
+    # members measurably differ -- two-sided, bounded to [0.25x fixed k, K_MAX] (eb_shrinkage).
+    s_wide = s
+    k_s_vec: np.ndarray | float = k_sleeve
+    k_f_vec: np.ndarray | float = k_family
+    if eb:
+        s_pool = pooled_vol(s, obs, families)
+        s_wide = np.maximum(s, s_pool)
+        eb_diag: dict[str, dict[str, float]] = {}
+        k_s_vec = eb_k(m, s_pool, eff, families, k_sleeve, diag=eb_diag)
+        fam_keys, fam_m, fam_tot = group_rollup(m, fam_w, families)
+        fam_s = np.array([float(np.sqrt(np.average(s_pool[[i for i, f in enumerate(families)
+                                                            if f == key]] ** 2)))
+                          for key in fam_keys])
+        fam_cls = [_asset_class(ev[families.index(key)].symbol) for key in fam_keys]
+        cls_diag: dict[str, dict[str, float]] = {}
+        k_fam = eb_k(fam_m, fam_s, fam_tot, fam_cls, k_family, diag=cls_diag)
+        k_f_vec = np.array([k_fam[fam_keys.index(f)] for f in families])
+        if diag is not None:
+            diag["eb"] = {"family": eb_diag, "class": cls_diag,
+                          "k_sleeve": {e.name: float(np.asarray(k_s_vec)[i])
+                                       for i, e in enumerate(ev)},
+                          "k_family": {e.name: float(k_f_vec[i]) for i, e in enumerate(ev)}}
+    lam_s = eff / (eff + k_s_vec)
+    lam_f = fam_eff / (fam_eff + k_f_vec)
 
     # ------------------------------------------------ ASSET CLASS, THE LEVEL ABOVE THE MECHANISM
     # MEASURED 2026-09-08 (Tier-1 item P11): the hierarchy was sleeve -> family -> ZERO, and
@@ -508,8 +541,12 @@ def _posterior_mu(ev: Sequence[SleeveEvidence], rng: np.random.Generator,
     # Posterior sd of the mean, floored so a sleeve with two observations is not treated as
     # certain. Widened by the shrinkage that was applied: pulling an estimate does not make it
     # more certain, and pretending otherwise would let a heavily-shrunk sleeve look precise.
-    se = np.where(obs > 1, s / np.sqrt(np.maximum(obs, 1.0)), np.abs(m) + 1e-3)
-    se = se * (2.0 - lam_s)
+    se = np.where(obs > 1, s_wide / np.sqrt(np.maximum(obs, 1.0)), np.abs(m) + 1e-3)
+    # The widening is charged at the FIXED-k shrinkage even when EB is armed: a James-Stein pull
+    # is borrowed precision (the family's evidence), so charging the larger EB pull here would
+    # double-count it and, measured on synthetic books, delete heat a true edge earns. The fixed
+    # factor keeps se exactly at today's level (or wider, via the pooled vol) -- never narrower.
+    se = se * (2.0 - eff / (eff + k_sleeve))
 
     # ------------------------------------------------------------------ STATE, THE FOURTH LEVEL
     # THE HOUR IS PART OF THE EDGE AND THE BOOK COULD NOT SEE IT. Everything above is measured on
@@ -680,7 +717,7 @@ def sample_worlds(ev: Sequence[SleeveEvidence], cfg: WorldConfig | None = None) 
                     axis=1)                                                     # (obs, N)
     sample_mean = hist.mean(axis=0)
 
-    mu_draws, _post = _posterior_mu(ev, rng, n_worlds)
+    mu_draws, _post = _posterior_mu(ev, rng, n_worlds, eb=cfg.eb_shrinkage)
 
     # Decay: a multiplicative haircut on the EDGE only, never on the noise. An edge that has
     # halved still has its old volatility, and modelling decay as a scale on the whole return

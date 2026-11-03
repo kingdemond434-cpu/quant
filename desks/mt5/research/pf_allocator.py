@@ -5019,7 +5019,19 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--mode", choices=("fast", "normal", "heavy"), default="normal")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--eb-oos", action="store_true",
+                    help="run the preregistered EB-shrinkage OOS test (eb_shrinkage_oos) and exit")
+    ap.add_argument("--eb-arm-on-pass", action="store_true",
+                    help="with --eb-oos: place EB_SHRINKAGE_ARMED only if both bars pass")
     args = ap.parse_args()
+    if args.eb_oos:
+        try:
+            from research import eb_shrinkage_oos as _ebo
+        except ModuleNotFoundError:
+            import eb_shrinkage_oos as _ebo  # type: ignore[no-redef]
+        res = _ebo.measure(arm_on_pass=args.eb_arm_on_pass)
+        print(json.dumps({k: res.get(k) for k in ("verdict", "p1", "p2", "armed")}, default=str))
+        return 0
 
     # ONE LOCK ACROSS ALL THREE CLOCKS, not one per mode. The clocks overlap by design -- a heavy
     # pass takes ~5 minutes and the fast clock fires every 5 -- and three allocators resident at
