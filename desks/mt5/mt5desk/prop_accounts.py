@@ -61,13 +61,22 @@ FIRM_RE = re.compile(r"^[a-z0-9][a-z0-9_]{0,31}$")
 #: (where its rule text was read) -- an unsourced program is refused, never guessed.
 PROGRAMS_NAME = "prop_programs.json"
 PROGRAM_FIELDS = ("daily_loss", "max_loss", "min_days", "targets", "next_phase", "day_tz",
-                  "source")
+                  "source", "max_loss_basis", "daily_loss_basis")
+#: THE ONLY RULE SHAPES THE SOLVE AND THE EXECUTOR'S LOSS GUARD MODEL (audit of 580b6f99): a
+#: maximum loss STATIC off the initial balance, and a daily loss measured from the day's starting
+#: BALANCE. A firm whose rule is a trailing drawdown, or a day start taken from equity, or a
+#: profit cap the executor would have to enforce, is REFUSED until that shape is modelled --
+#: sizing it as if it were FTMO's would under-state the barrier. Each row must declare both
+#: bases explicitly, so a trailing-drawdown firm can never enter by omission.
+MODELLED_MAX_LOSS_BASIS = ("static_initial",)
+MODELLED_DAILY_LOSS_BASIS = ("day_start_balance",)
 BUILTIN_PROGRAMS: dict[str, dict[str, Any]] = {
     "ftmo_2step": {
         "daily_loss": 0.05, "max_loss": 0.10, "min_days": 4,
         "targets": {"phase1": 0.10, "phase2": 0.05},
         "next_phase": {"phase1": "phase2", "phase2": "funded"},
         "day_tz": "Europe/Prague", "profit_cap": None,
+        "max_loss_basis": "static_initial", "daily_loss_basis": "day_start_balance",
         "source": "ftmo.com/en/trading-objectives + /en/2-step-challenge, read 2026-10-28"},
 }
 
@@ -126,9 +135,14 @@ def program_error(pid: object, row: object) -> str | None:
         return "next_phase must chain every challenge phase to another phase or 'funded'"
     if "phase1" not in tg:
         return "the chain must start at phase1"
-    pc = row.get("profit_cap")
-    if pc is not None and (isinstance(pc, bool) or not isinstance(pc, (int, float)) or pc <= 0):
-        return "profit_cap must be null or a positive fraction"
+    if row.get("profit_cap") is not None:
+        return "profit_cap is not enforced by the prop executor yet; refused until it is"
+    if row["max_loss_basis"] not in MODELLED_MAX_LOSS_BASIS:
+        return (f"max_loss_basis {row['max_loss_basis']!r} is not modelled (only "
+                f"{list(MODELLED_MAX_LOSS_BASIS)}); a trailing drawdown is refused")
+    if row["daily_loss_basis"] not in MODELLED_DAILY_LOSS_BASIS:
+        return (f"daily_loss_basis {row['daily_loss_basis']!r} is not modelled (only "
+                f"{list(MODELLED_DAILY_LOSS_BASIS)})")
     try:
         from zoneinfo import ZoneInfo
         ZoneInfo(str(row["day_tz"]))

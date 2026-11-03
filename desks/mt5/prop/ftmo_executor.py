@@ -133,7 +133,7 @@ def _record(row: dict[str, Any], now: datetime, armed: bool) -> None:
         INTENTS.parent.mkdir(parents=True, exist_ok=True)
         with INTENTS.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps({"at": now.isoformat(timespec="seconds"), "lane": LANE,
-                                 "armed": armed, **row}, default=str) + "\n")
+                                 "account": ACCOUNT_ID, "armed": armed, **row}, default=str) + "\n")
     except OSError as exc:
         log(f"intent row not written ({exc})")
 
@@ -429,7 +429,8 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     mt5 = _door.guard(mt5, caller="ftmo_executor", log=log)
     now = now or datetime.now(tz=UTC)
     doc: dict[str, Any] = {"at": now.isoformat(timespec="seconds"), "armed": bool(armed),
-                           "lane": LANE, "sleeves": [], "actions": [], "alerts": []}
+                           "lane": LANE, "account": ACCOUNT_ID, "sleeves": [], "actions": [],
+                           "alerts": []}
     key, decl, why = _fw.bound_account(mt5)
     if key is None:
         doc.update(status="ACCOUNT_REFUSED", why=why)

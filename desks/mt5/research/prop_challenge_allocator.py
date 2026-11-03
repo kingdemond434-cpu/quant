@@ -176,8 +176,10 @@ VENUE_TAG = "FTMO"
 RESOLVE_MAX_AGE_S = 50 * 60
 RESOLVE_BALANCE_MOVE = 0.005
 #: One allocator process at a time (the 10-minute task and the hourly leg share the CERT_BOOK
-#: writer). A lock older than this is a dead process's and is taken over.
-LOCK_STALE_S = 90 * 60
+#: writer). The holder refreshes the lock before every account (`RunLock.beat`); one account's
+#: universe build plus solve is ~3 minutes, so a lock not refreshed for this long is a dead
+#: process's and is taken over -- a killed run blocks the cadence for minutes, not an hour.
+LOCK_STALE_S = 20 * 60
 #: Fusion's measured commission per lot per side (cost_truth.py: 2.00 EUR on every symbol),
 #: taken as 2.00 in the account currency so the FTMO excess over it is never under-stated.
 FUSION_COMMISSION_PER_SIDE = 2.0
@@ -1268,7 +1270,10 @@ class Busy(RuntimeError):
 
 
 class RunLock:
-    """An exclusive-create lock file; a lock older than LOCK_STALE_S is a dead run's."""
+    """An exclusive-create lock file, refreshed by its holder (`beat`); one not refreshed for
+    LOCK_STALE_S is a dead run's. Breaking it is an atomic RENAME to a name unique to the breaker,
+    so of two processes that both judge it stale only one takes it away; the other's rename finds
+    nothing and it retries the exclusive create like any contender."""
 
     def __init__(self, path: Path) -> None:
         self.path = path
@@ -1285,8 +1290,10 @@ class RunLock:
                     continue
                 if age < LOCK_STALE_S:
                     raise Busy(f"{self.path.name} held ({age:.0f}s)") from None
+                dead = self.path.with_name(f"{self.path.name}.stale.{os.getpid()}")
                 try:
-                    self.path.unlink()
+                    os.replace(self.path, dead)
+                    dead.unlink()
                 except OSError:
                     pass
                 continue
@@ -1294,6 +1301,13 @@ class RunLock:
                 fh.write(f"{os.getpid()} {datetime.now(tz=UTC).isoformat()}\n")
             return self
         raise Busy(f"{self.path.name} could not be taken")
+
+    def beat(self) -> None:
+        """Refresh the lock's mtime: the holder is alive."""
+        try:
+            os.utime(self.path)
+        except OSError:
+            pass
 
     def __exit__(self, *exc: object) -> None:
         try:
@@ -1306,10 +1320,11 @@ LOCK = BASE / "reports" / "prop" / "ALLOCATOR.lock"
 
 
 def write_report(doc: dict[str, Any], out: Path) -> None:
-    out.parent.mkdir(parents=True, exist_ok=True)
-    tmp = out.with_suffix(".tmp")
-    tmp.write_text(json.dumps(doc, indent=1, default=float), encoding="utf-8")
-    os.replace(tmp, out)
+    """The executor reads this report every pass: tmp + fsync + os.replace retried on Windows'
+    PermissionError (the follower's writer), so a reader holding it open cannot leave the report
+    behind a CERT_BOOK_LIVE that apply_book already changed."""
+    from prop.ftmo_follower import _atomic_write
+    _atomic_write(out, json.dumps(doc, indent=1, default=float))
 
 
 def run_account(acct: Any, *, n_paths: int, seed: int, if_due: bool,
@@ -1347,7 +1362,8 @@ def run_account(acct: Any, *, n_paths: int, seed: int, if_due: bool,
             "J": (ph.get("validation") or {}).get("score"), "deploy": doc.get("deploy")}
 
 
-def run_accounts(only: str | None, *, n_paths: int, seed: int, if_due: bool) -> dict[str, Any]:
+def run_accounts(only: str | None, *, n_paths: int, seed: int, if_due: bool,
+                 lock: RunLock | None = None) -> dict[str, Any]:
     """Every registered prop account (or `only`), firm by firm, under the run lock."""
     from mt5desk import prop_accounts as _pa
     accts, errors = _pa.load()
@@ -1360,12 +1376,20 @@ def run_accounts(only: str | None, *, n_paths: int, seed: int, if_due: bool) -> 
     rows = []
     try:
         for a in accts:
-            rows.append(run_account(a, n_paths=n_paths, seed=seed, if_due=if_due,
-                                    universes=universes))
+            if lock is not None:
+                lock.beat()
+            try:
+                rows.append(run_account(a, n_paths=n_paths, seed=seed, if_due=if_due,
+                                        universes=universes))
+            except Exception as exc:     # one account's failure never starves the next (audit)
+                rows.append({"account": a.id, "solved": False,
+                             "why": f"FAILED: {type(exc).__name__}: {exc}"})
     finally:
         bind_account(_pa.get(_pa.LEGACY))
     return {"generated_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
-            "status": "OK", "if_due": if_due, "registry_errors": errors, "accounts": rows,
+            "status": "OK" if not any(str(r.get("why", "")).startswith("FAILED")
+                                      for r in rows) else "ACCOUNT_FAILED",
+            "if_due": if_due, "registry_errors": errors, "accounts": rows,
             "universes_built": sorted(universes)}
 
 
@@ -1390,9 +1414,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"prop_challenge_allocator[{a.venue}]: {doc.get('status')} book={doc.get('book')}")
         return 0
     try:
-        with RunLock(LOCK):
+        with RunLock(LOCK) as lock:
             summary = run_accounts(None if a.account == "all" else a.account,
-                                   n_paths=a.paths, seed=a.seed, if_due=a.if_due)
+                                   n_paths=a.paths, seed=a.seed, if_due=a.if_due, lock=lock)
     except Busy as exc:
         print(f"prop_challenge_allocator: another run holds the lock ({exc}); skipped")
         return 0

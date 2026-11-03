@@ -448,21 +448,52 @@ def expected_key(account: str) -> str | None:
         "invalid:the declared Fusion login's key is unresolvable (libs.ops.provenance or box key)"
 
 
-def _prop_accounts() -> list[Any]:
+def _prop_registry() -> tuple[list[Any], list[str]]:
     from mt5desk import prop_accounts as _pa
-    return _pa.load(XACCT_DIR.parent)[0]
+    return _pa.load(XACCT_DIR.parent)
+
+
+def _prop_accounts() -> list[Any]:
+    return _prop_registry()[0]
+
+
+def _disk_prop_names() -> set[str]:
+    """Every prop account that has LEFT A TRACE, whatever the registry says now (audit of 580b6f99
+    MF1): a published book (XACCT_DIR/prop_<id>_book.json) or an account directory under
+    data/prop/ holding a declaration or an arm file. A row the registry refused, or a registry
+    that is unreadable, must never hide an account that may hold positions."""
+    from mt5desk import prop_accounts as _pa
+    out: set[str] = set()
+    try:
+        for f in XACCT_DIR.glob(f"{PROP_PREFIX}*_book.json"):
+            aid = f.name[len(PROP_PREFIX):-len("_book.json")]
+            if _pa.ID_RE.match(aid):
+                out.add(PROP_PREFIX + aid)
+    except OSError:
+        pass
+    try:
+        for d in (XACCT_DIR.parent / "prop").iterdir():
+            if d.is_dir() and _pa.ID_RE.match(d.name) and not d.name.startswith("firm_") and \
+                    ((d / "ACCOUNT.json").exists() or (d / "EXECUTOR_ARMED").exists()):
+                out.add(PROP_PREFIX + d.name)
+    except OSError:
+        pass
+    return out
 
 
 def is_peer(account: str) -> bool:
-    """A name that publishes a book here: the three named peers, or a registered prop account."""
+    """A name that publishes a book here: the three named peers, or a prop account (registered,
+    or with a trace on disk)."""
     if account in PEERS:
         return True
-    return account.startswith(PROP_PREFIX) and any(a.xacct == account for a in _prop_accounts())
+    return account.startswith(PROP_PREFIX) and account in prop_names()
 
 
 def prop_names() -> tuple[str, ...]:
-    """Every registered prop account's book name, the FTMO account ("ftmo") first."""
-    return tuple(a.xacct for a in _prop_accounts())
+    """Every prop account's book name, the FTMO account ("ftmo") first: the registry's, then any
+    account with a trace on disk the registry does not list."""
+    reg = [a.xacct for a in _prop_accounts()]
+    return tuple(reg + sorted(_disk_prop_names() - set(reg)))
 
 
 def _prop_files(account: str) -> tuple[Path, Path]:
@@ -769,6 +800,12 @@ def prop_block(symbol: object, side: object, *, now: datetime | None = None,
     sym = norm(symbol)
     if sym and any(same_instrument(sym, g) for g in FTMO_FENCE_SKIPS):
         return None
+    _, errors = _prop_registry()
+    if errors:
+        # A refused row or an unreadable registry may be an account holding positions that no
+        # trace on disk names yet: fail closed until the registry reads clean (audit MF1).
+        return (f"cross-account fence: the prop account registry has errors ({errors[0]}"
+                f"{'' if len(errors) == 1 else f' +{len(errors) - 1} more'}); fail closed")
     skip = set(exclude)
     for name in prop_names():
         if name in skip:
@@ -790,7 +827,9 @@ def prop_peer_book(name: str, *, now: datetime | None = None
         book, why = read_book(name, now=now)
         return book, why, True
     book, why = read_book(name, now=now, max_age_s=float("inf"))
-    return book, why, False
+    # A book that EXISTS but does not read (malformed, unstamped, another account's key) is not
+    # "the lane never ran": its positions are unknown, so it fails closed (audit SF).
+    return book, why, book is None and book_path(name).exists()
 
 
 #: Tokens this process holds now (re-entry) and tokens it released but could not unlink.

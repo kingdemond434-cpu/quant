@@ -12,7 +12,6 @@ import json
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
@@ -30,6 +29,7 @@ PROG = {"daily_loss": 0.04, "max_loss": 0.08, "min_days": 3,
         "targets": {"phase1": 0.08, "phase2": 0.05},
         "next_phase": {"phase1": "phase2", "phase2": "funded"},
         "day_tz": "America/New_York", "profit_cap": None,
+        "max_loss_basis": "static_initial", "daily_loss_basis": "day_start_balance",
         "source": "example firm rule page, read in a test"}
 
 
@@ -101,6 +101,17 @@ def test_unsourced_program_is_refused(data: Path) -> None:
         pca.rules_for("x_2step")
 
 
+@pytest.mark.parametrize("bad", [{"max_loss_basis": "trailing_equity_high"},
+                                 {"daily_loss_basis": "day_start_equity"},
+                                 {"profit_cap": 0.02}, {"max_loss_basis": None}])
+def test_an_unmodelled_rule_shape_is_refused(bad: dict) -> None:
+    row = {**PROG, **bad}
+    if bad.get("max_loss_basis", "x") is None:
+        row.pop("max_loss_basis")
+    assert pa.program_error("x_2step", row) is not None
+    assert pa.program_error("x_2step", PROG) is None
+
+
 def test_program_rules_reach_the_allocator(data: Path) -> None:
     _registry(data, [_row("a")])
     r = pca.rules_for("x_2step")
@@ -145,6 +156,49 @@ def test_unarmed_prop_book_fences_at_any_age(data: Path) -> None:
     _registry(data, [_row("a")])
     _book("prop_a", {"GBPUSD": {"long": False, "short": True}}, at=NOW - timedelta(days=3))
     assert "prop_a" in (xa.prop_block("GBPUSD", "buy", now=NOW) or "")
+
+
+def test_a_registry_error_fails_the_fence_closed(data: Path) -> None:
+    _registry(data, [_row("a"), _row("BAD")])
+    hit = xa.prop_block("EURUSD", "buy", now=NOW) or ""
+    assert "registry has errors" in hit and "fail closed" in hit
+    assert "registry has errors" in (xa.ftmo_block("EURUSD", "buy", now=NOW) or "")
+    (data / pa.REGISTRY_NAME).write_text("{not json")
+    assert "fail closed" in (xa.prop_block("EURUSD", "buy", now=NOW) or "")
+
+
+def test_an_unregistered_account_on_disk_still_fences(data: Path) -> None:
+    """A removed row never hides an account that may hold positions (audit MF1)."""
+    _registry(data, [])
+    _book("prop_gone", {"EURUSD": {"long": True, "short": False}})
+    assert "prop_gone" in xa.prop_names() and xa.is_peer("prop_gone")
+    assert "prop_gone" in (xa.prop_block("EURUSD", "sell", now=NOW) or "")
+    (data / "prop" / "armedonly").mkdir(parents=True)
+    (data / "prop" / "armedonly" / "EXECUTOR_ARMED").write_text("")
+    assert "fail closed" in (xa.prop_block("GBPUSD", "buy", now=NOW) or "")
+
+
+def test_an_existing_malformed_book_fails_closed(data: Path) -> None:
+    _registry(data, [_row("a")])
+    (xa.XACCT_DIR / "prop_a_book.json").write_text("{broken")
+    assert "fail closed" in (xa.prop_block("EURUSD", "buy", now=NOW) or "")
+
+
+def test_missed_growth_reads_every_accounts_journal(data: Path, monkeypatch) -> None:
+    import missed_growth as mg
+    legacy = data / "ftmo_exec_intents.jsonl"
+    monkeypatch.setattr(mg, "FTMO_EXEC_INTENTS", legacy)
+    legacy.write_text(json.dumps({"rail": "loss_guard", "status": "RAIL_BLOCKED",
+                                  "missed_growth_risk_usd": 10.0, "at": "x"}) + "\n")
+    (data / "prop" / "a").mkdir(parents=True)
+    (data / "prop" / "a" / "exec_intents.jsonl").write_text(json.dumps(
+        {"rail": "cross_account_opposite", "status": "RAIL_BLOCKED",
+         "missed_growth_risk_usd": 5.0, "at": "y"}) + "\n")
+    (data / "prop" / "firm_firmx").mkdir(parents=True)
+    rails = mg.published_ftmo_executor_lines()["rails"]
+    assert rails["loss_guard"]["accounts"] == ["ftmo"]
+    assert rails["cross_account_opposite"]["accounts"] == ["a"]
+    assert rails["cross_account_opposite"]["undeployed_risk_usd"] == 5.0
 
 
 # ------------------------------------------------------------------ the binds
@@ -255,6 +309,32 @@ def test_run_lock(tmp_path: Path) -> None:
         pass
 
 
+def test_a_stale_lock_is_broken_and_a_live_one_beats(tmp_path: Path) -> None:
+    import os
+    lock = tmp_path / "L.lock"
+    with pca.RunLock(lock) as held:
+        old = datetime.now(tz=UTC).timestamp() - pca.LOCK_STALE_S + 30
+        os.utime(lock, (old, old))
+        held.beat()                                            # refreshed: still held
+        with pytest.raises(pca.Busy):
+            pca.RunLock(lock).__enter__()
+    assert not list(tmp_path.glob("*.stale.*"))
+
+
+def test_one_account_failing_does_not_starve_the_next(data: Path, monkeypatch) -> None:
+    _registry(data, [_row("a"), _row("b")])
+
+    def boom(acct, **kw):
+        if acct.id == "a":
+            raise RuntimeError("solve exploded")
+        return {"account": acct.id, "solved": True, "why": "forced"}
+
+    monkeypatch.setattr(pca, "run_account", boom)
+    out = pca.run_accounts(None, n_paths=10, seed=0, if_due=False)
+    assert [r["account"] for r in out["accounts"]] == ["ftmo", "a", "b"]
+    assert out["accounts"][1]["why"].startswith("FAILED") and out["status"] == "ACCOUNT_FAILED"
+
+
 def test_run_accounts_builds_one_universe_per_firm(data: Path, monkeypatch, tmp_path) -> None:
     _registry(data, [_row("a"), _row("b"), _row("c", firm="firmy"), _row("off", enabled=False)])
     built: list[str] = []
@@ -291,18 +371,27 @@ def test_run_accounts_builds_one_universe_per_firm(data: Path, monkeypatch, tmp_
 # ------------------------------------------------------------------ the fleet runner
 
 def test_fleet_runs_each_non_legacy_account_alone(data: Path) -> None:
+    import subprocess
+
     from prop import prop_fleet
     _registry(data, [_row("a"), _row("b", firm="firmy")])
     calls: list[list[str]] = []
 
-    def runner(cmd, **kw):
-        calls.append(cmd)
-        if cmd[-1] == "b":
-            import subprocess
-            raise subprocess.TimeoutExpired(cmd, 1)
-        return SimpleNamespace(returncode=0, stdout="ok", stderr="")
+    class Proc:
+        def __init__(self, cmd, **kw) -> None:
+            calls.append(cmd)
+            self.cmd, self.returncode, self.killed = cmd, 0, False
 
-    doc = prop_fleet.run_role("executor", runner=runner, data=data)
+        def communicate(self, timeout=None):
+            if self.cmd[-1] == "b" and not self.killed:
+                raise subprocess.TimeoutExpired(self.cmd, timeout)
+            return "ok", None
+
+        def kill(self) -> None:
+            self.killed = True
+
+    doc = prop_fleet.run_role("executor", popen=Proc, data=data)
     assert [c[-1] for c in calls] == ["a", "b"]               # legacy is its own task
     assert all(c[1].endswith("ftmo_executor.py") for c in calls)
     assert doc["status"] == "CHILD_FAILED" and doc["failed"] == ["b"]
+    assert "killed" in [r for r in doc["accounts"] if r["account"] == "b"][0]["tail"]
