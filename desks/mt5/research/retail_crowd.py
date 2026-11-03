@@ -37,12 +37,15 @@ THE STORE (shared layout with the copy-trade crowd recorder):
                                              access_label, payload_sha. Never rewritten.
   data/lake/series/retail_crowd.pit.json     the PIT sidecar: clock, stamp rule, columns, sources.
   data/crowd/retail/raw/<source>/<ts>.json.gz  every response body, immutable, one file per fetch.
-  data/lake/series/retail_crowd_wide.csv     DERIVED VIEW rebuilt from the long store each pass:
-                                             one row per hour, `<SYM>__net` = mean net_frac across
-                                             sources, with `available_time` = the latest capture
-                                             in that hour. It is what `exogenous_conditioner` and
-                                             `alt_series_momentum` read; history lives in the long
-                                             store, so rebuilding it overwrites nothing.
+  data/lake/series/rfx_<SYMBOL>.parquet       DERIVED, one per symbol, the copy-trade book's
+  data/lake/series/rfx_<SYMBOL>.pit.json      `ctc_<SYMBOL>` layout: one row per UTC hour,
+                                             net_frac / long_pct / short_pct = mean across
+                                             sources, n_sources, available_time = the latest
+                                             capture in that hour. It is what
+                                             `exogenous_conditioner` and `alt_series_momentum`
+                                             read (source=rfx_<SYMBOL>, signal=net_frac). History
+                                             lives in the long store, so rebuilding these
+                                             overwrites nothing.
 
 PIT. `captured_at` is the UTC instant the response arrived; a reading cannot have been known
 before it, so `available_time = captured_at`. The hypotheses below carry `lag_hours = 3`, which
@@ -96,8 +99,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 SERIES_DIR = DESK / "data" / "lake" / "series"
 STORE = SERIES_DIR / "retail_crowd.csv"
 SIDECAR = SERIES_DIR / "retail_crowd.pit.json"
-WIDE = SERIES_DIR / "retail_crowd_wide.csv"
-WIDE_SOURCE = "retail_crowd_wide"            # the `source` param the families read
+SERIES_PREFIX = "rfx_"                        # rfx_<SYMBOL>.parquet: the `source` the families read
 CROWD_DIR = DESK / "data" / "crowd" / "retail"
 RAW_DIR = CROWD_DIR / "raw"
 STATE = CROWD_DIR / "state.json"
@@ -212,7 +214,6 @@ _ALIASES: dict[str, str] = {
     "NATGAS": "XNGUSD", "NATURALGAS": "XNGUSD", "COPPER": "XCUUSD",
     "PLATINUM": "XPTUSD", "PALLADIUM": "XPDUSD",
 }
-_SUFFIX = re.compile(r"(?:\.(?:X|R|M|PRO|ECN|RAW|I)|_?(?:M|PRO|ECN|RAW|I))$")
 
 Fetcher = Callable[[str], tuple[int, str]]
 
@@ -266,18 +267,71 @@ def below_normal() -> dict[str, Any]:
 
 
 # ------------------------------------------------------------------ symbols
+#: A PRIVATE COPY of `libs/data/crowd_symbols.canonical` (draft PR #671, the copy-trade crowd
+#: book), same signature and same logic, used only while that module is not importable. Once #671
+#: merges this copy should be deleted and `canonical` imported unconditionally.
+_CS_ALIASES: dict[str, str] = {**_ALIASES, "XAU": "XAUUSD", "GOLDUSD": "XAUUSD", "XAG": "XAGUSD",
+                               "SILVERUSD": "XAGUSD", "WS30": "US30", "USA500": "US500",
+                               "USA100": "NAS100", "USTECH": "NAS100", "TECH100": "NAS100",
+                               "ESP35": "E35", "SPA35": "E35", "IBEX35": "E35",
+                               "CHINA50": "CHINAH", "XTI": "XTIUSD", "XBR": "XBRUSD",
+                               "DXY": "USDX", "USDINDEX": "USDX"}
+_CS_SUFFIXES = ("MICRO", "MINI", "CASH", "SPOT", "ECN", "PRO", "RAW", "STD", "STP", "VIP", "ZERO",
+                "PLUS", "FX", "M", "I", "C", "Z", "X", "E", "R", "B", "S", "A", "N", "P", "Q")
+_CS_NON_ALNUM = re.compile(r"[^A-Z0-9]")
+
+
+def _cs_known(name: str, uni: frozenset[str]) -> str | None:
+    if name in _CS_ALIASES:
+        return _CS_ALIASES[name]
+    return name if name in uni else None
+
+
+def _canonical_copy(raw: object, uni: frozenset[str] | None = None) -> str | None:
+    u = frozenset(x.upper() for x in (uni or ()))
+    s = str(raw or "").strip().upper()
+    if not s:
+        return None
+    head = re.split(r"[._#+\-/ ]", s, maxsplit=1)[0]
+    for cand in (s, head):
+        name = _CS_NON_ALNUM.sub("", cand)
+        hit = _cs_known(name, u)
+        if hit:
+            return hit
+        cur = name
+        for _ in range(3):
+            for suf in _CS_SUFFIXES:
+                if len(cur) > len(suf) + 2 and cur.endswith(suf):
+                    cur = cur[: -len(suf)]
+                    hit = _cs_known(cur, u)
+                    if hit:
+                        return hit
+                    break
+            else:
+                break
+        if len(name) > 6 and name[:6].isalpha():
+            hit = _cs_known(name[:6], u)
+            if hit:
+                return hit
+    return None
+
+
+def canonical(raw: object, uni: frozenset[str] | None = None) -> str | None:
+    """`libs.data.crowd_symbols.canonical` when importable, else the private copy above."""
+    try:
+        from libs.data.crowd_symbols import canonical as _shared
+    except ImportError:
+        return _canonical_copy(raw, uni)
+    return _shared(raw, uni)
+
+
 def map_symbol(raw: str, universe: Iterable[str]) -> str | None:
     """A site's instrument name -> the registry's own spelling, or None (never a guess)."""
     names = {u.upper(): u for u in universe}
-    t = re.sub(r"[^A-Za-z0-9.]", "", str(raw or "")).upper()
-    if not t:
+    hit = canonical(raw, frozenset(names))
+    if not hit:
         return None
-    for cand in (t, _SUFFIX.sub("", t), t.replace(".", "")):
-        c = cand.replace(".", "")
-        hit = _ALIASES.get(c, c)
-        if hit.upper() in names:
-            return names[hit.upper()]
-    return None
+    return names.get(hit.upper())
 
 
 def _hypothesis_lane(symbol: str) -> bool:
@@ -673,7 +727,8 @@ def write_sidecar(path: Path = SIDECAR) -> None:
            "available_time_rule": "available_time = captured_at (the instant the response "
                                   "arrived); nothing is known before it",
            "append_only": True, "cohort": "all", "columns": list(COLUMNS),
-           "derived_view": {"path": WIDE.name, "source_param": WIDE_SOURCE,
+           "derived_view": {"path": f"{SERIES_PREFIX}<SYMBOL>.parquet",
+                            "source_param": f"{SERIES_PREFIX}<SYMBOL>", "signal": "net_frac",
                             "rule": "mean net_frac across sources per UTC hour; available_time "
                                     "= latest capture in the hour; rebuilt each pass"},
            "lag_hours_in_hypotheses": LAG_HOURS,
@@ -731,46 +786,56 @@ def record_pass(results: dict[str, dict[str, Any]], at: datetime, universe: Iter
 
 
 # ------------------------------------------------------------------ derived view and features
-def build_wide(store: Path = STORE, wide: Path = WIDE) -> Any:
-    """The hourly consensus frame the families read, or None when the store is empty."""
+def build_series(store: Path = STORE, series_dir: Path = SERIES_DIR) -> dict[str, Any]:
+    """{symbol: hourly frame}; each also written as rfx_<SYMBOL>.parquet + .pit.json."""
     import pandas as pd
     if not store.exists():
-        return None
+        return {}
     try:
-        df = pd.read_csv(store, usecols=["captured_at", "symbol", "net_frac"])
+        df = pd.read_csv(store, usecols=["captured_at", "symbol", "source", "net_frac",
+                                         "long_pct", "short_pct"])
     except (ValueError, OSError):
-        return None
-    if df.empty:
-        return None
+        return {}
     df["captured_at"] = pd.to_datetime(df["captured_at"], utc=True, errors="coerce")
-    df["net_frac"] = pd.to_numeric(df["net_frac"], errors="coerce")
-    df = df.dropna()
+    for c in ("net_frac", "long_pct", "short_pct"):
+        df[c] = pd.to_numeric(df[c], errors="coerce")
+    df = df.dropna(subset=["captured_at", "symbol", "net_frac"])
     if df.empty:
-        return None
+        return {}
     df["hour"] = df["captured_at"].dt.floor("h")
-    avail = df.groupby("hour")["captured_at"].max()
-    w = df.pivot_table(index="hour", columns="symbol", values="net_frac", aggfunc="mean")
-    w.columns = [f"{c}__net" for c in w.columns]
-    w = w.sort_index()
-    w.insert(0, "available_time", avail.reindex(w.index).map(lambda t: t.isoformat()))
-    out = w.reset_index(drop=True)
-    _write_atomic(wide, out.to_csv(index=False))
+    out: dict[str, Any] = {}
+    series_dir.mkdir(parents=True, exist_ok=True)
+    for sym, g in df.groupby("symbol"):
+        f = g.groupby("hour").agg(available_time=("captured_at", "max"),
+                                  net_frac=("net_frac", "mean"), long_pct=("long_pct", "mean"),
+                                  short_pct=("short_pct", "mean"),
+                                  n_sources=("source", "nunique")).reset_index(drop=True)
+        f = f.sort_values("available_time").reset_index(drop=True)
+        sid = f"{SERIES_PREFIX}{sym}"
+        p = series_dir / f"{sid}.parquet"
+        tmp = p.with_suffix(".parquet.tmp")
+        f.to_parquet(tmp, index=False)
+        os.replace(tmp, p)
+        _write_atomic(series_dir / f"{sid}.pit.json", json.dumps(
+            {"source_id": sid, "symbol": str(sym), "clock": "utc",
+             "available_time": f["available_time"].iloc[-1].isoformat(),
+             "available_time_rule": "latest capture in the UTC hour; nothing known before it",
+             "derived_from": STORE.name, "producer": "retail_crowd"}, indent=1) + "\n")
+        out[str(sym)] = f
     return out
 
 
-def features(wide: Any, now: datetime) -> dict[str, dict[str, Any]]:
+def features(series: dict[str, Any], now: datetime) -> dict[str, dict[str, Any]]:
     """Per symbol: net %, z vs its own trailing history, change 1h / 24h, contrarian extreme."""
     import numpy as np
     import pandas as pd
     out: dict[str, dict[str, Any]] = {}
-    if wide is None or len(wide) == 0:
-        return out
-    t = pd.to_datetime(wide["available_time"], utc=True, errors="coerce")
-    for col in [c for c in wide.columns if c.endswith("__net")]:
-        s = pd.Series(pd.to_numeric(wide[col], errors="coerce").to_numpy(), index=t).dropna()
+    for sym, frame in sorted(series.items()):
+        t = pd.to_datetime(frame["available_time"], utc=True, errors="coerce")
+        s = pd.Series(pd.to_numeric(frame["net_frac"], errors="coerce").to_numpy(),
+                      index=t).dropna()
         if s.empty:
             continue
-        sym = col[: -len("__net")]
         mu = s.rolling(Z_WINDOW, min_periods=Z_MIN_OBS).mean()
         sd = s.rolling(Z_WINDOW, min_periods=Z_MIN_OBS).std(ddof=0)
         z = (s - mu) / sd.replace(0.0, np.nan)
@@ -815,7 +880,7 @@ def _emitted(path: Path = EMITTED) -> set[str]:
 def specs_for(symbol: str) -> list[dict[str, Any]]:
     out = []
     for h in HYPOTHESES:
-        params = {"source": WIDE_SOURCE, "signal": f"{symbol}__net", **h["params"]}
+        params = {"source": f"{SERIES_PREFIX}{symbol}", "signal": "net_frac", **h["params"]}
         out.append({"id": hypothesis_id(symbol, h["family"], params), "key": h["key"],
                     "symbol": symbol, "family": h["family"], "params": params,
                     "mechanism": h["mechanism"]})
@@ -900,15 +965,14 @@ def run(*, do_fetch: bool = True, fetch: Fetcher = http_get, now: datetime | Non
     uni = _universe()
     doc: dict[str, Any] = {"generated_at": _iso(at), "writer": "research/retail_crowd.py",
                            "store": str(STORE.relative_to(DESK)),
-                           "wide_view": str(WIDE.relative_to(DESK))}
+                           "series": f"data/lake/series/{SERIES_PREFIX}<SYMBOL>.parquet"}
     if do_fetch:
         results = fetch_all(fetch)
         doc["record"] = record_pass(results, at, uni.keys())
     else:
         doc["record"] = {"status": "NOT_FETCHED", "why": "--no-fetch"}
     write_sidecar()
-    wide = build_wide()
-    feats = features(wide, at)
+    feats = features(build_series(), at)
     doc["features"] = feats
     doc["n_symbols"] = len(feats)
     doc["extremes"] = sorted(s for s, f in feats.items() if f["contrarian_extreme"])

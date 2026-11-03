@@ -182,19 +182,20 @@ def _store_with_history(tmp_path: Path, hours: int, start: datetime) -> Path:
     return store
 
 
-def test_wide_view_and_features(tmp_path: Path) -> None:
+def test_per_symbol_series_and_features(tmp_path: Path) -> None:
     start = datetime(2026, 9, 1, tzinfo=UTC)
     store = _store_with_history(tmp_path, 100, start)
-    wide = rc.build_wide(store, tmp_path / "wide.csv")
-    assert wide is not None and "EURUSD__net" in wide.columns and len(wide) == 100
-    assert "available_time" in wide.columns
-    f = rc.features(wide, start + timedelta(hours=100))["EURUSD"]
+    series = rc.build_series(store, tmp_path)
+    frame = pd.read_parquet(tmp_path / "rfx_EURUSD.parquet")
+    assert len(frame) == 100 and {"available_time", "net_frac", "n_sources"} <= set(frame.columns)
+    assert json.loads((tmp_path / "rfx_EURUSD.pit.json").read_text("utf-8"))["clock"] == "utc"
+    f = rc.features(series, start + timedelta(hours=100))["EURUSD"]
     assert f["n_obs"] == 100 and f["net_z"] is not None
     assert f["chg_1h"] is not None and f["chg_24h"] is not None
     assert f["contrarian_side"] in (-1, 0, 1)
-    # the conditioner the hypotheses name can read the view
+    # the conditioner the hypotheses name can read the series, lagged before any join
     from mt5desk.family_exogenous_conditioner import conditioner
-    s = conditioner("wide", "EURUSD__net", "level_z", lag_hours=3, z_window=24, root=tmp_path)
+    s = conditioner("rfx_EURUSD", "net_frac", "level_z", lag_hours=3, z_window=24, root=tmp_path)
     assert s is not None and s.index.min() >= pd.Timestamp(start) + pd.Timedelta(hours=3)
 
 
@@ -214,7 +215,7 @@ def test_hypotheses_wait_for_history_then_charge_once(tmp_path: Path) -> None:
     assert h1["donated"] == 3 and h1["set_aside_not_hypothesis_lane"] == ["Apple"]
     rows = json.loads(next(intel.glob("*.json")).read_text("utf-8"))
     assert {r["family"] for r in rows} == {"exogenous_conditioner", "alt_series_momentum"}
-    assert all(r["params"]["source"] == rc.WIDE_SOURCE and r["available_time"] for r in rows)
+    assert all(r["params"]["source"] == "rfx_EURUSD" and r["available_time"] for r in rows)
     # every later pass: nothing re-donated, nothing re-charged
     for k in range(3):
         hk = rc.hypotheses(ready, now + timedelta(hours=k + 1), emitted_path=emitted,
