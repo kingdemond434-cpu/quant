@@ -415,7 +415,7 @@ def hold_record(site: str, url: str, verdict: str, status: int | str | None, now
     host = hostname_of(url) or site
     return {"key": f"site:{site}", "verdict": verdict,
             "status": status if isinstance(status, int) else (status or None),
-            "host": host, "url": url[:300], "held_at": now,
+            "host": host, "url": redact_url(url)[:300], "held_at": now,
             "released_by": None, "released_at": None,
             "since_utc": datetime.fromtimestamp(now, tz=UTC).isoformat(timespec="seconds"),
             "waits_for": "a person",
@@ -865,7 +865,11 @@ class HostAccess:
                              "released_by is null; no clock releases it. A person releases one "
                              "with `python -m libs.data.polite_fetch --release site:<site> "
                              "--by <name>`."),
-                    "blocked": dict(self.blocked),
+                    # every row's URL redacted again at the write: a row adopted from another
+                    # writer, or written before redaction reached it, never carries a key.
+                    "blocked": {k: ({**v, "url": redact_url(str(v["url"]))}
+                                    if isinstance(v, dict) and v.get("url") else v)
+                                for k, v in self.blocked.items()},
                     "robots": robots,
                 }
                 try:
@@ -912,6 +916,7 @@ class HostAccess:
         included, waits for a person: the row is the shared person-held record (`hold_record`)."""
         verdict = verdict or (BLOCK_STATUS.get(status, "METHOD_BLOCKED")
                               if isinstance(status, int) else "METHOD_BLOCKED")
+        url = redact_url(url)                  # a credential never reaches the shared ledger
         host = hostname_of(url)
         site = site_of(host)
         with self._lock:
@@ -1374,7 +1379,7 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                 if marker:
                     # A 200 challenge page is a block, not content: held, never ingested.
                     resp.status, resp.final_url = status, final
-                    resp.verdict = acc.block(final, "WAF", "METHOD_BLOCKED",
+                    resp.verdict = acc.block(redact_url(final), "WAF", "METHOD_BLOCKED",
                                              f"challenge page ({marker!r}) served as content")
                     resp.error = f"{resp.verdict}: challenge page ({marker})"
                     _stat(leg, refused=1, error="WAF")
@@ -1437,14 +1442,14 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
             resp.error_body = ebody
             _stat(leg, http_errors=1, error=f"HTTP {code}")
             if code in BLOCK_STATUS:
-                resp.verdict = acc.block(cur, code)
+                resp.verdict = acc.block(redact_url(cur), code)
                 resp.error = f"{resp.verdict}: HTTP {code}"
                 break                              # hard stop: no retry, no other route
             marker = looks_challenged(ebody, getattr(exc, "headers", None), code)
             if marker:
                 # A challenge on an error status (Cloudflare's 503 interstitial, say) is a
                 # refusal, not a "come back later": held like a 429, never retried (P4).
-                resp.verdict = acc.block(cur, "WAF", "METHOD_BLOCKED",
+                resp.verdict = acc.block(redact_url(cur), "WAF", "METHOD_BLOCKED",
                                          f"challenge ({marker!r}) on HTTP {code}")
                 resp.error = f"{resp.verdict}: challenge on HTTP {code} ({marker})"
                 _stat(leg, refused=1, error="WAF")
@@ -1487,6 +1492,7 @@ class FetchRefused(RuntimeError):
     429` check still reads it) and `verdict` is NEEDS_KEY / METHOD_BLOCKED / ROBOTS_* or ''."""
 
     def __init__(self, url: str, status: int | None, verdict: str, error: str) -> None:
+        url = redact_url(url)                  # a refusal is logged: never with its key
         super().__init__(f"{verdict or 'FETCH_FAILED'}: {error or status} ({url[:160]})")
         self.url = url
         self.code = status
@@ -1556,18 +1562,20 @@ def _post(url: str, data: bytes, *, headers: Mapping[str, str] | None = None,
             exc.close()
         _stat(leg, fetches=1, http_errors=1, error=f"HTTP {code}")
         if code in BLOCK_STATUS:
-            v = acc.block(url, code)
+            v = acc.block(redact_url(url), code)
             raise FetchRefused(url, code, v, f"{v}: HTTP {code}") from None
         marker = looks_challenged(ebody, exc.headers, code)
         if marker:
-            v = acc.block(url, "WAF", "METHOD_BLOCKED", f"challenge ({marker!r}) on HTTP {code}")
+            v = acc.block(redact_url(url), "WAF", "METHOD_BLOCKED",
+                          f"challenge ({marker!r}) on HTTP {code}")
             raise FetchRefused(url, code, v, f"{v}: challenge on HTTP {code}") from None
         raise FetchRefused(url, code, "", f"HTTP {code}") from None
     ctype = str(h.get("Content-Type") or "") if h is not None else ""
     text = decode_body(raw, ctype, str(h.get("Content-Encoding") or "") if h is not None else "")
     marker = looks_challenged(text, h, status)
     if marker:
-        v = acc.block(url, "WAF", "METHOD_BLOCKED", f"challenge ({marker!r}) served as content")
+        v = acc.block(redact_url(url), "WAF", "METHOD_BLOCKED",
+                      f"challenge ({marker!r}) served as content")
         _stat(leg, fetches=1, refused=1, error="WAF")
         raise FetchRefused(url, status, v, f"{v}: challenge page")
     _stat(leg, fetches=1, ok=1, bytes=len(raw))
@@ -1590,15 +1598,54 @@ _SECRET_PARAM = re.compile(r"(?i)(?:^|_|-)(?:api_?key|apikey|key|token|secret|si
 SEAM_MAX_BYTES = 128_000_000
 
 
+#: A path segment that NAMES a credential: the segment after it is the key (BPS's
+#: `/key/<key>/`, and the `/apikey/<key>`, `/api_key/<key>` shapes). Case-insensitive.
+_SECRET_PATH_MARKERS = frozenset({"key", "apikey", "api_key"})
+#: Credential VALUES the process holds, registered by the connector that holds them
+#: (`register_secret`). polite_fetch never reads a secrets file: a caller that already has the
+#: key in memory hands it here so any path segment or query value equal to it is blanked.
+_REGISTERED_SECRETS: set[str] = set()
+_SECRET_MIN_LEN = 8          # never blank an ordinary short path word that happens to match
+
+
+def register_secret(value: object) -> None:
+    """Register a credential value this process holds, so `redact_url` / every hold the access
+    ledger records blanks it wherever it appears in a URL. Values under 8 characters are ignored
+    (too likely to equal an ordinary path segment). Never logged, never persisted."""
+    v = str(value or "").strip()
+    if len(v) >= _SECRET_MIN_LEN:
+        _REGISTERED_SECRETS.add(v)
+
+
+def _redact_path(path: str) -> str:
+    from urllib.parse import unquote
+    segs = path.split("/")
+    out = []
+    after_marker = False
+    for seg in segs:
+        plain = unquote(seg)
+        if seg and (after_marker or plain in _REGISTERED_SECRETS):
+            out.append("REDACTED")
+        else:
+            out.append(seg)
+        after_marker = plain.lower() in _SECRET_PATH_MARKERS
+    return "/".join(out)
+
+
 def redact_url(url: str) -> str:
-    """`url` with every credential-looking query value replaced by `REDACTED`."""
+    """`url` with every credential blanked as `REDACTED`: a credential-looking query value, the
+    path segment after `/key/`, `/apikey/` or `/api_key/` (case-insensitive), and any path segment
+    or query value equal to a registered secret (`register_secret`)."""
     from urllib.parse import parse_qsl, urlencode
-    parts = urlsplit(url)
+    parts = urlsplit(str(url))
+    path = _redact_path(parts.path)
     if not parts.query:
-        return url
-    q = [(k, "REDACTED" if _SECRET_PARAM.search(k) else v)
+        if path == parts.path:
+            return str(url)
+        return urlunsplit((parts.scheme, parts.netloc, path, parts.query, parts.fragment))
+    q = [(k, "REDACTED" if _SECRET_PARAM.search(k) or v in _REGISTERED_SECRETS else v)
          for k, v in parse_qsl(parts.query, keep_blank_values=True)]
-    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(q), parts.fragment))
+    return urlunsplit((parts.scheme, parts.netloc, path, urlencode(q), parts.fragment))
 
 
 #: A `name=value` pair anywhere in free text (an exception message quoting a URL, a log line).
@@ -1947,7 +1994,8 @@ def main(argv: list[str] | None = None) -> int:
     acc = HostAccess.load(ACCESS_STATE)
     for site, row in sorted(acc.blocked.items()):
         if person_held(row):
-            print(f"site:{site}\t{row.get('verdict')}\t{row.get('status')}\t{row.get('url')}")
+            print(f"site:{site}\t{row.get('verdict')}\t{row.get('status')}\t"
+              f"{redact_url(str(row.get('url') or ''))}")
     return 0
 
 
