@@ -541,6 +541,9 @@ LEG_LAYER: dict[str, str] = {
     "ingestion_exploitation": "meta",
     # the deep-forest attempt ledger and its daily-floor fence measure the miner itself
     "forest_attempts": "meta",
+    # the per-region forest yield report and the leg-artifact liveness fence measure the
+    # machine's own output and freshness (rows 72/75)
+    "region_yield": "meta", "leg_artifact_liveness": "meta",
     # INDEPENDENCE AT INTAKE measures how much independent ground an hour of judge bought, and
     # moves intake order, operator mix and generation targets accordingly: the machine measuring
     # and scheduling itself, which is meta.

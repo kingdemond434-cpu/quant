@@ -28,6 +28,20 @@ calling them news_reaction would make the register green and change nothing abou
 cluster would still be empty, and the next session would have to rediscover why. An unreachable
 cluster is reported with the file that must exist for it to become reachable.
 
+THE THIRD CASE IS NOW TWO FAMILIES AND A CLASSIFICATION (row 72, 2026-11-03). `jump` -- the
+calendar-free discontinuity family -- classifies into news_reaction; `entry_alpha` (a resting-limit
+re-entry of a market-entry base) reaches execution_entry; `implied_vol` (VIX against the index's
+own realised vol, from LIVE's FRED pull) reaches options_implied. `mt5desk/families_cluster_reach`
+holds both. A cluster with ZERO cells and a buildable forcing family is FORCED here on the
+family's explicit parameters (an EXACT_RECIPE row); a forcing family whose input this host cannot
+read is DATA_GAP with the path named, never minted blind and never reported clean.
+
+THIS LEG ALSO WRITES THE MANDATE. `BREADTH_MANDATE.json` was written only by a fence in the
+rotating battery, which loaded the whole 1.8M-cell docket inside a 150 s slice and timed out
+before writing -- the file froze on 2026-10-29 while this leg ran every hour. The mandate now
+counts from JUDGE_COVERAGE's family census and is written here, before the plan reads it and again
+after, so its FORCED_PENDING rows name what this pass minted.
+
     python desks/mt5/research/empty_cluster_forcer.py            # report only
     python desks/mt5/research/empty_cluster_forcer.py --donate   # mint and donate the cells
 """
@@ -186,11 +200,87 @@ def _symbols_for(family: str, universe: dict[str, Any], turn: int) -> list[str]:
     return [s for s in PREFERRED if s in universe]
 
 
-def plan() -> dict[str, Any]:
+#: Clusters whose reach is a NAMED forcing family: minted on explicit parameters whenever the
+#: cluster holds zero cells. `params(turn, i)` -> the i-th cell's params; `symbols` -> where.
+ENTRY_OFFSETS = (0.25, 0.5, 1.0)
+IMPLIED_MODES = ("harvest", "stress")
+JUMP_MODES = ("continue", "revert")
+
+
+def _mandate_module() -> Any:
+    import importlib.util
+    path = ROOT / "scripts" / "check_breadth_mandate.py"
+    spec = importlib.util.spec_from_file_location("check_breadth_mandate", path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"cannot load {path}")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _forced_cells(cluster: str, universe: dict[str, Any], turn: int
+                  ) -> tuple[str, list[dict[str, Any]], str] | None:
+    """(family, cells, data_gap) for a cluster with a named forcing family, or None.
+
+    `data_gap` non-empty means the family's input is unreadable on this host and nothing is
+    minted -- the cluster is UNMEASURED with that gap named, never NEVER_ATTEMPTED, never clean."""
+    from mt5desk import families_cluster_reach as reach
+    picks: list[tuple[str, dict[str, Any]]] = []
+    if cluster == "execution_entry":
+        fam = "entry_alpha"
+        syms = _symbols_for(fam, universe, turn)
+        for i, sym in enumerate(syms[:CELLS_PER_CLUSTER]):
+            base = reach.ENTRY_BASES[(turn + i) % len(reach.ENTRY_BASES)]
+            off = ENTRY_OFFSETS[(turn + i) % len(ENTRY_OFFSETS)]
+            picks.append((sym, {"base_family": base, "offset_atr": off, "wait_bars": 4}))
+    elif cluster == "options_implied":
+        fam = "implied_vol"
+        gaps: list[str] = []
+        for series, unders in reach.IMPLIED_UNDERLYINGS.items():
+            ok, why = reach.source_state(series)
+            if not ok:
+                gaps.append(why)
+                continue
+            for sym in unders:
+                if universe and sym not in universe:
+                    continue
+                for mode in IMPLIED_MODES:
+                    picks.append((sym, {"vol_series": series, "mode": mode}))
+        if not picks:
+            return fam, [], ("no free implied-vol series is readable on this host -- "
+                             + "; ".join(gaps[:1]) + " (LIVE's FRED pull registers VIXCLS in "
+                             "data/data_registry.json `fred_macro`; the box's copy is the source)")
+        start = (turn * CELLS_PER_CLUSTER) % len(picks)
+        picks = (picks[start:] + picks[:start])[:CELLS_PER_CLUSTER]
+    elif cluster == "news_reaction":
+        fam = "jump"
+        syms = _symbols_for(fam, universe, turn)
+        picks = [(sym, {"mode": JUMP_MODES[(turn + i) % 2]})
+                 for i, sym in enumerate(syms[:CELLS_PER_CLUSTER])]
+    else:
+        return None
+    cells = [{
+        "kind": "hypothesis", "family": fam, "symbols": [sym], "params": params,
+        "source": "breadth:empty_cluster_forcer", "url": "",
+        "title": f"empty-cluster forcing: {cluster}", "alpha_cluster": cluster,
+        "mechanism_status": "NAMED",
+        "mechanism": (f"forced breadth cell for the never-attempted cluster {cluster}: "
+                      f"{fam} on {sym} with {params}"),
+        "text": (f"{fam} on {sym} ({params}). FORCED BREADTH CELL for the alpha cluster "
+                 f"{cluster}, which held ZERO docket cells. A hypothesis for the ten gates, "
+                 f"not a claim."),
+    } for sym, params in picks]
+    return fam, cells, ""
+
+
+def plan(mandate: dict[str, Any] | None = None) -> dict[str, Any]:
     breadth = _read(BREADTH, {})
     clusters = breadth.get("clusters") or {}
-    empty = sorted(set(clusters.get("empty_in_both") or []))
-    counts = (_read(MANDATE, {}) or {}).get("cluster_cell_counts") or {}
+    mdoc = mandate if mandate is not None else (_read(MANDATE, {}) or {})
+    # The mandate's `empty` already unions EFFECTIVE_BREADTH's empty set with every declared
+    # cluster holding zero cells, so a stale breadth report cannot hide a never-attempted one.
+    empty = sorted(set(clusters.get("empty_in_both") or []) | set(mdoc.get("empty") or []))
+    counts = mdoc.get("cluster_cell_counts") or {}
     by_cluster, registered = _families_by_cluster()
     universe = _read(UNIVERSE, {})
     turn = int(datetime.now(UTC).timestamp() // 3600)
@@ -200,6 +290,25 @@ def plan() -> dict[str, Any]:
     cells: list[dict[str, Any]] = []
     for c in empty:
         n = int(counts.get(c, 0))
+        forced = _forced_cells(c, universe, turn) if n == 0 else None
+        if forced is not None:
+            fam, fcells, gap = forced
+            verdict, why = family_verdict_of(fam)
+            if gap:
+                rows.append({"cluster": c, "cells_in_docket": 0, "verdict": "DATA_GAP",
+                             "families": [fam], "cells_minted": 0, "data_gap": gap,
+                             "why": f"{fam} reaches this cluster and its input is unreadable "
+                                    f"here; nothing minted, the gap is named: {gap}"})
+                continue
+            if verdict == "BUILDABLE" and fcells:
+                cells.extend(fcells)
+                symbols_used.update(s for cell in fcells for s in cell["symbols"])
+                rows.append({"cluster": c, "cells_in_docket": 0, "verdict": "FORCED",
+                             "families": [fam], "cells_minted": len(fcells),
+                             "why": (f"zero cells ever; {fam} reaches it and the sealed "
+                                     f"gauntlet builds it ({why}); {len(fcells)} cell(s) "
+                                     f"minted on explicit params this pass")})
+                continue
         fams = by_cluster.get(c) or []
         reg = registered.get(c) or []
         testable, untestable = _testable(reg)
@@ -292,12 +401,28 @@ def plan() -> dict[str, Any]:
     }
 
 
+def family_verdict_of(family: str) -> tuple[str, str]:
+    """The sealed gauntlet's buildability verdict; an unimportable probe is UNMEASURED."""
+    try:
+        from research.gauntlet_buildability import family_verdict
+        return family_verdict(family)
+    except Exception as exc:
+        return "UNMEASURED", f"gauntlet_buildability unimportable: {type(exc).__name__}"
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--donate", action="store_true", help="write the minted cells to the seat")
     args = ap.parse_args(argv)
 
-    doc = plan()
+    # THE MANDATE FIRST, so the plan reads this hour's counts and the artifact moves every pass.
+    try:
+        mandate_mod = _mandate_module()
+        mandate: dict[str, Any] | None = mandate_mod.write()
+    except Exception as exc:
+        mandate_mod, mandate = None, None
+        print(f"breadth mandate NOT written: {type(exc).__name__}: {exc}")
+    doc = plan(mandate)
     cells = doc.pop("cells")
     if args.donate and cells:
         SEAT.mkdir(parents=True, exist_ok=True)
@@ -308,11 +433,19 @@ def main(argv: list[str] | None = None) -> int:
         tmp.replace(out)
         doc["donated_to"] = str(out)
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+    tmp_out = OUT.with_suffix(".tmp")
+    tmp_out.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+    tmp_out.replace(OUT)
+    # AND AGAIN AFTER, so FORCED_PENDING / DATA_GAP in the mandate name THIS pass's dispositions.
+    if mandate_mod is not None:
+        try:
+            mandate_mod.write()
+        except Exception as exc:
+            print(f"breadth mandate re-write failed: {type(exc).__name__}: {exc}")
 
     print(f"empty-cluster forcer: {doc['n_empty']} empty cluster(s) -> {doc['census']}")
     for r in doc["clusters"]:
-        mark = {"FORCED": "  FORCED ", "UNREACHABLE": "  NO FAM ",
+        mark = {"FORCED": "  FORCED ", "UNREACHABLE": "  NO FAM ", "DATA_GAP": "  DATAGAP",
                 "PROPOSER_OWNED": "  propsr ", "BLOCKED_BY_SEALED_GAUNTLET": "  SEALED ",
                 "ALREADY_ATTACKED": "  attackd"}.get(str(r["verdict"]), "  ?      ")
         print(f"{mark} {r['cluster']!s:24} {r['cells_in_docket']:6} in docket  "

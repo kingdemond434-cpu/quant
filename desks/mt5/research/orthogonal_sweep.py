@@ -591,6 +591,14 @@ NOT_SOURCED_HERE = {
                     "research/specialist_cell enumerates each asset-class desk's catalogue, "
                     "builds every cell through the sealed build_cell and charges its own trials; "
                     "sweeping it here would charge them twice"),
+    # The cluster-reach families (row 72): minted on explicit params by
+    # research/empty_cluster_forcer for the clusters that held zero cells; `entry_alpha` needs a
+    # named base and `implied_vol` a named implied series, so a blind sweep would charge trials
+    # on cells nobody specified.
+    **dict.fromkeys(("entry_alpha", "implied_vol"),
+                    "research/empty_cluster_forcer mints these on explicit parameters for the "
+                    "never-attempted execution_entry / options_implied clusters; sweeping them "
+                    "here would charge the trials twice"),
     "entry_conditioned": "an OPERATOR over a certified cell: its base and its hour, weekday, "
                          "regime or cross-asset filter are named by research/residual_search "
                          "from a BH-corrected residual finding, which charges its own tests. "

@@ -1231,6 +1231,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE FOREST-ATTEMPT FENCE (2026-09-30): every deep-forest ground attempted daily, or
     # LOW_EV_RETIRED by name; a reader of the miner's per-ground ledgers, a second at most.
     "forest_attempts",
+    # THE PER-REGION YIELD REPORT and THE LEG-ARTIFACT LIVENESS FENCE (rows 72/75, 2026-11-03):
+    # two readers of artifacts other legs write, seconds each. The fence must NOT ride the clock
+    # of the legs it judges, or a dead department would also silence its own alarm.
+    "region_yield", "leg_artifact_liveness",
     # THE LIVE-TRUTH ORGANS (Tier-1 audit #6/#17/#18/#19/#20, 2026-09-29): readers of artifacts
     # the desk already writes, each a few seconds. The calibration posterior runs before the
     # tracker, which reads it.
@@ -1426,6 +1430,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "research_roi", "experiment_spine", "implementer",
                      "research_debt", "paradigm_router", "meta_controller", "research_bandit",
                      "ingestion_exploitation", "forest_attempts",
+                     "region_yield", "leg_artifact_liveness",
                      "coverage_tensor", "regional_parity", "global_coverage_tensor",
                      "research_evolution",
                      "compute_economics", "control_plane", "attribution_reconcile",
@@ -2331,6 +2336,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "htf_anchor": 900,
     # The forcer reads two reports and writes at most CELLS_PER_CLUSTER rows per cluster.
     "empty_cluster_forcer": 180,
+    # The region yield report streams two append-only ledgers and reads four registries; the
+    # liveness fence reads a handful of stamps. Both are bounded far below their caps.
+    "region_yield": 300,
+    "leg_artifact_liveness": 60,
     # The north star reads ~60 certificates and their instruments' daily bars (measured ~1 s
     # here); the contracts join three JSON artifacts. Both caps are generous and never bind.
     "alpha_rank": 240,
@@ -4703,6 +4712,14 @@ def main() -> None:
     # deep-forest ground, one history line an hour, RED when never-attempted does not fall.
     fat = _costed("forest_attempts", lambda: _producer(
         "forest_attempts", "scripts/check_forest_attempts.py"))
+    # THE PER-REGION YIELD REPORT (row 75): sources -> rows -> claims -> cells minted -> judged ->
+    # certificates for every region in every source registry, ranked by gap, RED by name.
+    ryd = _costed("region_yield", lambda: _producer("region_yield", "research/region_yield.py"))
+    # THE LEG-ARTIFACT LIVENESS FENCE (row 72): RED when a scheduled leg's contracted artifact
+    # (BREADTH_MANDATE.json, REGION_YIELD.json, ...) stops moving. Exit 2 is NOT a declared
+    # verdict, so check_silent_organs names it and pages.
+    lal = _costed("leg_artifact_liveness", lambda: _producer(
+        "leg_artifact_liveness", "scripts/check_leg_artifact_liveness.py"))
     # THE MINING OBJECTIVE (M17/M18): the five sovereign KPIs, the miner reward and the
     # separation-of-powers check, from the registry. Meta.
     mob = _costed("mining_objective", lambda: _producer("mining_objective",
@@ -6391,6 +6408,7 @@ def main() -> None:
                     "research_debt": rdb,
                     "ingestion_ledger": igl, "ingestion_exploitation": ige,
                     "forest_attempts": fat,
+                    "region_yield": ryd, "leg_artifact_liveness": lal,
                     "macro_intelligence": mci, "market_constitution": mcc,
                     "mining_objective": mob, "research_gap_map": rgm,
                     "evidence_router": evr, "research_roi": rroi,
