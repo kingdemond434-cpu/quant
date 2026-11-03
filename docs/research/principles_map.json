@@ -1,0 +1,136 @@
+{
+ "schema": 1,
+ "item": "ARCH-32 (PM delivery check 2026-10-07): enforce autonomously and forever the seven principles of the research institution",
+ "rule": "Every principle names the organs that enforce it TODAY. Each organ is verified against the tree on every pass (a leg must be on the hourly cycle, a fence must be wired into the law gate, a task must be in the box manifest, a code organ must still carry its token). A principle whose organs all fail to resolve is UNENFORCED and fails scripts/check_principles.py; an organ that stops resolving is a MISSING_ORGAN finding and fails it too. Edit this file to add organs; removing one needs the organ itself to be gone or replaced, and the fence says which.",
+ "organ_kinds": {
+  "leg": "`_costed(\"<name>\"` appears in desks/mt5/research/hourly_cycle.py",
+  "fence": "scripts/<name> exists and is named in scripts/run_law_gate.py",
+  "task": "desks/mt5/ops/box_tasks.manifest carries TASK name=\"<name>\" and the script it runs exists",
+  "code": "<path> exists and contains <token>"
+ },
+ "principles": [
+  {
+   "id": "P1_NO_SACRED",
+   "text": "No sacred strategy, model, source or geography: everything live has a retirement path, and nothing is hard-coded as exempt from retirement or from the gauntlet.",
+   "measure": "no_sacred",
+   "organs": [
+    {"kind": "leg", "name": "promoter", "role": "automatic retirement of LIVE sleeves (retire_banned, retire_unrunnable, gold window retirement)"},
+    {"kind": "code", "path": "desks/mt5/research/promoter.py", "token": "def retire_unrunnable", "role": "retirement path for every promoted row"},
+    {"kind": "code", "path": "desks/mt5/mt5desk/decision_core.py", "token": "THE GOLD BOOK DECAYS LIKE EVERYTHING ELSE", "role": "the gold book is retirable; v2..v4 aliases fold into the canonical window"},
+    {"kind": "leg", "name": "decay_monitor", "role": "FADE/RETIRE of live sleeves on their own live ledger"},
+    {"kind": "leg", "name": "probation", "role": "re-judges admitted sleeves"},
+    {"kind": "leg", "name": "certificate_truth", "role": "residue certificates and banned families retired from every derived store"},
+    {"kind": "leg", "name": "experimental_budget", "role": "principal overrides kept in their own ledger, never silently sacred"},
+    {"kind": "leg", "name": "graveyard_resurrection", "role": "no sacred death either: the dead are re-tested"},
+    {"kind": "fence", "name": "check_no_retirement_on_absence.py", "role": "retirement only on evidence"},
+    {"kind": "fence", "name": "check_strategy_breadth.py", "role": "never limited to one family (L1.32)"},
+    {"kind": "fence", "name": "check_regional_parity.py", "role": "no region absent or privileged"},
+    {"kind": "code", "path": "libs/tiers/principles.py", "token": "def sacred_constants", "role": "ARCH-32 lint: no module-level exemption constant in the research trees"}
+   ]
+  },
+  {
+   "id": "P2_RELEARN_ON_CHANGE",
+   "text": "Structural change triggers relearning: a regime-break or decay detector exists and a refit or re-judge is wired to it.",
+   "measure": "relearn_on_change",
+   "organs": [
+    {"kind": "task", "name": "MT5-ShiftWatch", "role": "distribution-shift detector (KS/variance ratio + Page CUSUM) over every LIVE symbol -> reports/DIST_SHIFT.json"},
+    {"kind": "leg", "name": "decay_monitor", "role": "live decay detector -> data/decay_live.json"},
+    {"kind": "leg", "name": "regime_monitor", "role": "regime state -> data/regime_state.json"},
+    {"kind": "leg", "name": "regime_hierarchy", "role": "hourly regime refit -> reports/REGIME_HIERARCHY.json"},
+    {"kind": "code", "path": "libs/ops/queue_cycle.py", "token": "def _structural_change", "role": "ARCH-32 wire: each shift/decay trigger queues a `recertify` task for the validation role"},
+    {"kind": "leg", "name": "queue_cycle", "role": "runs the structural_change producer every hour"},
+    {"kind": "leg", "name": "recertify_canon", "role": "claims `recertify` tasks and re-runs the certificate gates"},
+    {"kind": "leg", "name": "swap_rejudge", "role": "re-prices every certificate when the cost model changes"}
+   ]
+  },
+  {
+   "id": "P3_CASH_IS_AN_ALLOCATION",
+   "text": "Cash is an allocation: the allocator scores holding capital back against every sleeve rather than being handed full investment.",
+   "measure": "cash_is_allocation",
+   "organs": [
+    {"kind": "leg", "name": "pf_allocator", "role": "the optimiser; publishes heat.free_optimum (the cash-admissible optimum) beside the resolved book"},
+    {"kind": "code", "path": "libs/portfolio/robust_elog.py", "token": "def project_capped_simplex", "role": "sum(h) <= cap: the book may hold back when nothing is worth betting on"},
+    {"kind": "code", "path": "libs/portfolio/wealth_retention.py", "token": "def reserve_option_value", "role": "retained capital priced as an option, compared with the marginal sleeve"},
+    {"kind": "fence", "name": "check_allocator_liveness.py", "role": "the allocator ran, proved and published"},
+    {"kind": "fence", "name": "check_growth_governance.py", "role": "two-sided: cash wins only on evidence, never by a rule"}
+   ]
+  },
+  {
+   "id": "P4_RESEARCH_NEVER_STOPS",
+   "text": "Research never stops: the mining and judge legs run every cycle and the backlog drains at a non-zero rate.",
+   "measure": "research_never_stops",
+   "organs": [
+    {"kind": "leg", "name": "mine"},
+    {"kind": "leg", "name": "compile_candidates"},
+    {"kind": "leg", "name": "external_gauntlet"},
+    {"kind": "leg", "name": "judge_coverage"},
+    {"kind": "leg", "name": "judging_throughput"},
+    {"kind": "leg", "name": "research_bandit"},
+    {"kind": "leg", "name": "alpha_replenishment"},
+    {"kind": "fence", "name": "check_judge_coverage.py"},
+    {"kind": "fence", "name": "check_coverage_drain.py"},
+    {"kind": "fence", "name": "check_write_or_explain.py"},
+    {"kind": "fence", "name": "check_dead_architecture.py"}
+   ]
+  },
+  {
+   "id": "P5_VALIDATION_NEVER_RELAXES",
+   "text": "Validation never relaxes: gate thresholds and coverage floors only ratchet tighter, checked against git history and the floor files.",
+   "measure": "validation_never_relaxes",
+   "organs": [
+    {"kind": "fence", "name": "check_immutable_evaluator.py", "role": "gate_spec.yaml and the judging code are hash-sealed"},
+    {"kind": "fence", "name": "check_constitution_core.py"},
+    {"kind": "fence", "name": "check_known_by_date.py"},
+    {"kind": "leg", "name": "null_lab", "role": "each family's own gates measured on data with no edge"},
+    {"kind": "leg", "name": "placebo_audit", "role": "the gates graded against planted defects"},
+    {"kind": "code", "path": "libs/tiers/principles.py", "token": "def gate_threshold_ratchet", "role": "ARCH-32: every gate_spec bound compared with its strictest value in git history"}
+   ],
+   "floors": [
+    {"path": "docs/research/COVERAGE_RATCHET.json", "keys": ["high_water.repo_pct", "high_water.money_path_pct"], "direction": "up"},
+    {"path": "docs/research/UNIVERSE_FLOOR.json", "keys": ["high_water_symbols"], "direction": "up"}
+   ]
+  },
+  {
+   "id": "P6_EXECUTION_TEACHES_RESEARCH",
+   "text": "Execution teaches research: realized fills and P&L reach a research consumer that changes what is searched or how it is priced.",
+   "measure": "execution_teaches_research",
+   "organs": [
+    {"kind": "leg", "name": "fill_recorder"},
+    {"kind": "leg", "name": "fill_attribution"},
+    {"kind": "leg", "name": "trade_autopsy"},
+    {"kind": "leg", "name": "trade_pathology"},
+    {"kind": "leg", "name": "execution_science"},
+    {"kind": "leg", "name": "cost_surfaces"},
+    {"kind": "leg", "name": "live_calibration_posterior"},
+    {"kind": "leg", "name": "credit_assignment"},
+    {"kind": "leg", "name": "residual_queue"},
+    {"kind": "leg", "name": "execution_alpha"}
+   ],
+   "feeds": [
+    {"artifact": "live_ledger.jsonl", "consumers": ["desks/mt5/research/credit_assignment.py", "desks/mt5/research/residual_queue.py", "desks/mt5/research/axis_proposer.py", "desks/mt5/research/execution_alpha_miner.py", "desks/mt5/research/drawdown_alpha_miner.py"]},
+    {"artifact": "fill_corpus.jsonl", "consumers": ["desks/mt5/research/fill_attribution.py", "desks/mt5/research/execution_alpha_miner.py", "desks/mt5/research/cost_surfaces.py"]}
+   ],
+   "consumer_reports": ["desks/mt5/reports/CREDIT_ASSIGNMENT.json", "desks/mt5/reports/RESIDUAL_QUEUE.json", "desks/mt5/reports/EXECUTION_ALPHA.json", "desks/mt5/reports/FILL_ATTRIBUTION.json", "desks/mt5/reports/AXIS_PROPOSER.json"]
+  },
+  {
+   "id": "P7_ONTOLOGY_STAYS_OPEN",
+   "text": "The ontology stays open: the family and feature registries accept new entries and have grown recently.",
+   "measure": "ontology_open",
+   "organs": [
+    {"kind": "code", "path": "desks/mt5/mt5desk/families.py", "token": "def register_family"},
+    {"kind": "code", "path": "libs/features/registry.py", "token": "def register_feature"},
+    {"kind": "leg", "name": "frontier_ontology"},
+    {"kind": "leg", "name": "axis_registry"},
+    {"kind": "leg", "name": "axis_proposer"},
+    {"kind": "leg", "name": "feature_compiler"},
+    {"kind": "leg", "name": "representation_discovery"},
+    {"kind": "leg", "name": "unknown_census"},
+    {"kind": "leg", "name": "unseen_frontier"}
+   ],
+   "registries": [
+    {"path": "desks/mt5/mt5desk/families.py", "symbol": "FAMILY_REGISTRY", "register": "register_family", "growth_token": "@register_family", "growth_tree": "desks/mt5/mt5desk"},
+    {"path": "libs/features/registry.py", "symbol": "DEFAULT_REGISTRY", "register": "register_feature"}
+   ]
+  }
+ ]
+}

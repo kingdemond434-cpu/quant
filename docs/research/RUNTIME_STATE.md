@@ -217,7 +217,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:timeframe_coverage` | `hourly_cycle:timeframe_coverage` | 2026-09-12T10:58:00+00:00 exit_code=1 | `desks/mt5/reports/TIMEFRAME_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=1 |
 | `leg:world_crawler` | `hourly_cycle:world_crawler` | 2026-09-12T11:03:41+00:00 ok | `desks/mt5/reports/SOURCE_REGISTRY.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
 
-## NEVER (822)
+## NEVER (824)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -1043,6 +1043,8 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:global_coverage_tensor` | `hourly_cycle:global_coverage_tensor` | UNMEASURED UNMEASURED | `desks/mt5/reports/GLOBAL_COVERAGE_TENSOR.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:loss_learner` | `hourly_cycle:loss_learner` | UNMEASURED UNMEASURED | `desks/mt5/reports/LOSS_LEARNER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:futures_state` | `hourly_cycle:futures_state` | UNMEASURED UNMEASURED | `desks/mt5/reports/FUTURES_STATE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `fence:check_principles` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:principles` | `hourly_cycle:principles` | UNMEASURED UNMEASURED | `desks/mt5/reports/PRINCIPLES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
 ## UNMEASURED (43)
 
