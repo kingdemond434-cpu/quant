@@ -121,7 +121,8 @@ FENCES: tuple[Entry, ...] = (
     _e("scripts/check_oom_pressure.py", "organ deaths by OOM, the largest unmeasured loss"),
     _e("scripts/check_pegged_duplicates.py", "two tickers, one bet: the orthogonality hole"),
     _e("scripts/check_perishability.py", "does delay cost DELAY, or THE DATA"),
-    _e("scripts/check_producer_yield.py", "every producer produces, or it is replaced"),
+    # scripts/check_producer_yield.py LEFT THIS ROSTER 2026-11-03 for its own core leg
+    # (`producer_yield` in hourly_cycle.py): ~130 s measured on the box, never fits a slice.
     _e("scripts/check_reachability.py", "every capability reaches a decision, or is advisory"),
     _e("scripts/check_research_allocation.py", "what the search budget bought, per mechanism"),
     _e("scripts/check_research_health.py", "the WHOLE hourly loop, and the call for repair"),
