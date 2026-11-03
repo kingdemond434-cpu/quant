@@ -960,6 +960,7 @@ DEEPENING_GUARD = BASE / "reports" / "DEEPENING_MEMORY_GUARD.json"
 #: canon_publication's record: the lockbox v4 re-judge parking publishes its two-sided line here
 #: (the rail register is sealed), cost and gain both UNMEASURED until priced.
 CANON_PUBLICATION = BASE / "reports" / "CANON_PUBLICATION.json"
+GLOBAL_COVERAGE = BASE / "reports" / "GLOBAL_COVERAGE_TENSOR.json"
 
 
 def _spill_lines(spill: Path | None) -> tuple[list[dict[str, Any]], int]:
@@ -1262,6 +1263,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         DEEPENING_GUARD),
                                     "canon_rejudge_parking": organ_published_lines(
                                         CANON_PUBLICATION),
+                                    "global_coverage_mission_throttle": organ_published_lines(
+                                        GLOBAL_COVERAGE),
                                     "admission_scan_cadence": admission_cadence_line(alloc)},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
