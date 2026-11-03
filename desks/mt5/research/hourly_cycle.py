@@ -1072,6 +1072,9 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
     # `daily_cycle` exits 75 (EXIT_STOOD_DOWN) when another chain healthily holds its lock and
     # this bounded caller ran nothing: the holder is running the same steps (v1.2).
     "daily": (DAILY_CYCLE_STOOD_DOWN,),
+    # `fill_hour_reprice` exits 1 when a LIVE/STANDBY certificate is negative at its fill hour or
+    # was never charged a cost: that is the alarm it exists to raise, not a crash.
+    "fill_hour_reprice": (1,),
     # `silent_organs` IS DELIBERATELY ABSENT (audit R2, 2026-09-30). It exits 2 on a RED fence and
     # 3 on an UNMEASURED one, and a declared verdict records as `verdict_exit=N`, which every
     # streak and completion reader counts as ok -- so a RED fence paged nobody. Recorded as
@@ -1132,6 +1135,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     "forward_reconcile", "clock_liveness", "certificate_clock_law", "clock_accrual",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
+    # EVERY CERTIFICATE PRICED AT THE HOUR IT FILLS (2026-10-13: EURZAR/USDZAR fired for six days
+    # into a broker-01 book whose spread sat past their target). Self-gated to every 6 h.
+    "fill_hour_reprice",
     # The noon CRO pass must land a ledger row every day; one file read, so it is core.
     "cro_noon_freshness",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
@@ -1466,7 +1472,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "build_failure_bank", "experiment_contracts", "health_board",
                      "runtime_attestation", "self_repair", "desk_self_heal",
                      "tier5_acceptance", "mission_control", "tier_s", "tier_s_door",
-                     "research_live_identity", "cro_noon_freshness",
+                     "research_live_identity", "fill_hour_reprice", "cro_noon_freshness",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
                      "unknown_census"), "meta"),
@@ -2314,6 +2320,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "forward_calibration": 180,
     "desk_self_heal": 240,
     "tier5_acceptance": 180,
+    # Three replays per certificate (pooled, fill hour, 2x) plus two shifted-fill children for
+    # each in-scope gap-decay certificate: ~52 certificates x ~1 s per replay on the box.
+    "fill_hour_reprice": 900,
     "cro_noon_freshness": 60,
     "mission_control": 180,
     # The producer census relights at most six dark producers at 240s each and re-measures after
@@ -5126,6 +5135,8 @@ def main() -> None:
         "desk_self_heal", "research/run_desk_self_heal.py", "--apply"))
     # DOCTRINE -> RUNTIME ACCEPTANCE. The static fence proves the ledger tells no repository lie;
     # this host proof makes every LIVE row show CURRENT, STALE or MISSING each core pass.
+    fhr = _costed("fill_hour_reprice", lambda: _producer(
+        "fill_hour_reprice", "research/fill_hour_reprice.py"))
     t5a = _costed("tier5_acceptance", lambda: _producer(
         "tier5_acceptance", "scripts/check_tier5_audit.py", "--runtime-out",
         "desks/mt5/reports/TIER5_ACCEPTANCE.json"))
@@ -6443,6 +6454,7 @@ def main() -> None:
                     "external_federation": xfd, "archaeology": arch, "sares": srs,
                     "certificate_truth": ctt, "forward_calibration": fcal,
                     "desk_self_heal": dsh, "tier5_acceptance": t5a,
+                    "fill_hour_reprice": fhr,
                     "mission_control": msc,
                     "runtime_attestation": rta,
                     "self_repair": slf,
