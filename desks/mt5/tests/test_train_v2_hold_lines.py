@@ -12,7 +12,7 @@ import io
 import sys
 import urllib.error
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 
@@ -60,16 +60,20 @@ def test_missed_growth_carries_the_vix_lean_line_without_an_artifact() -> None:
     out = mg.vix_risk_lean_cut_line()
     assert out["verdict"] == mg.UNMEASURED and out["n_cut"] == 1
     assert out["lines"][0]["kind"] == "capital_modifier_cut"
-    assert ("macro_view", mg.BASE / "reports" / "MACRO_VIEW.json") in \
-        mg.FRED_COPYRIGHTED_CUT_ARTIFACTS
+    # billed ONCE: macro_view's own artifact is not also gathered under fred_copyrighted_cut
+    assert all(organ != "macro_view" for organ, _p in mg.FRED_COPYRIGHTED_CUT_ARTIFACTS)
 
 
 def test_missed_growth_run_publishes_the_vix_lean_cut(monkeypatch: pytest.MonkeyPatch,
                                                       tmp_path: Path) -> None:
     monkeypatch.setattr(mg, "LEDGER", tmp_path / "mg.jsonl")
     doc = mg.run(write=False)
-    got = doc["published_gate_lines"]["vix_risk_lean_cut"]
+    gl = doc["published_gate_lines"]
+    got = gl["vix_risk_lean_cut"]
     assert got["verdict"] == mg.UNMEASURED and got["lines"]
+    every = [x for v in gl.values() if isinstance(v, dict) for x in (v.get("lines") or [])
+             if isinstance(x, dict)]
+    assert sum(1 for x in every if x.get("source") == "macro_view:VIXCLS") == 1
 
 
 # ------------------------------------------------------------------------- run_cot_screen --
@@ -139,7 +143,7 @@ class _R403:
 
 class _Body(io.BytesIO):
     status = 200
-    headers: dict[str, str] = {}
+    headers: ClassVar[dict[str, str]] = {}
     url = ""
 
 
@@ -159,3 +163,33 @@ def test_a_fetchers_stats_carry_its_access_hold_lines(tmp_path: Path) -> None:
                 gate=None)
     assert r2.verdict and pf.stats(leg)["n_access_holds"] == 1
     pf.reset_stats(leg)
+
+
+class _Keyed403:
+    def __call__(self, req: Any, timeout: float = 0, context: Any = None) -> Any:
+        if req.full_url.split("?")[0].endswith("/robots.txt"):
+            return _Body(b"User-agent: *\nDisallow:\n")
+        raise urllib.error.HTTPError(req.full_url, 403, "Forbidden", None, io.BytesIO(b""))
+
+
+def test_post_and_keyed_seams_carry_their_access_holds(tmp_path: Path,
+                                                       monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(pf, "GATE", None)
+    acc = pf.HostAccess(tmp_path / "acc.json")
+    leg = "test_train_v2_post_leg"
+    pf.reset_stats(leg)
+    with pytest.raises(pf.FetchRefused):
+        pf.post("https://poster.example/q", b"{}", leg=leg, access=acc, opener=_Keyed403())
+    assert pf.stats(leg)["n_access_holds"] == 1
+    pf.reset_stats(leg)
+    leg2 = "test_train_v2_keyed_leg"
+    pf.reset_stats(leg2)
+    with pytest.raises(urllib.error.HTTPError):
+        pf.polite_urlopen("https://keyed.example/x?api_key=SECRET", leg=leg2, access=acc,
+                          opener=_Keyed403())
+    assert pf.stats(leg2)["n_access_holds"] == 1
+    with pytest.raises(pf.PoliteRefused):      # now refused BY the hold, nothing sent
+        pf.polite_urlopen("https://keyed.example/y?api_key=SECRET", leg=leg2, access=acc,
+                          opener=_Keyed403())
+    assert pf.stats(leg2)["n_access_holds"] == 1
+    pf.reset_stats(leg2)

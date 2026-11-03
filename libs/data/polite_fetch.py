@@ -423,10 +423,16 @@ def hold_record(site: str, url: str, verdict: str, status: int | str | None, now
                 site, verdict, status if status is not None else "", f"{verdict} from {host}")}
 
 
+class ReleaseNotSaved(OSError):
+    """A person's release that could not be written to the shared ledger (unreadable ledger,
+    lock timeout, write failure): the hold still stands on disk, so the release is not done."""
+
+
 def release(key: str, by: str, path: Path | None = None) -> dict[str, Any]:
     """A PERSON releases one hold: the only way a hold ever ends. `key` is `site:<site>` (or the
     bare site). Sets released_by / released_at on disk and in the process-wide record; the row
-    stays as the audit trail. KeyError when no such hold exists; ValueError without a name."""
+    stays as the audit trail. KeyError when no such hold exists; ValueError without a name;
+    ReleaseNotSaved when the ledger refused the save (nothing in memory is changed then)."""
     who = str(by or "").strip()
     if not who:
         raise ValueError("a release names the person releasing the hold (--by <name>)")
@@ -439,7 +445,9 @@ def release(key: str, by: str, path: Path | None = None) -> dict[str, Any]:
             raise KeyError(key)
         row = {**row, "key": f"site:{site}", "released_by": who, "released_at": time.time()}
         acc.blocked[site] = row
-    acc.save()
+    if not acc.save():
+        why = acc.save_refusals[-1]["why"] if acc.save_refusals else "save refused"
+        raise ReleaseNotSaved(f"release of {key} by {who} was NOT saved: {why}")
     live = _ACCESS
     if live is not None and (live.path or ACCESS_STATE) == target:
         with live._lock:
@@ -494,7 +502,10 @@ def adopt_release(url: str, by: Any, released_at: Any, key: str = "",
                 return False
         if placed > at:
             return False
-    release(f"site:{site}", who, path=acc.path or ACCESS_STATE)
+    try:
+        release(f"site:{site}", who, path=acc.path or ACCESS_STATE)
+    except ReleaseNotSaved:
+        return False                   # not on disk: the hold stands, and says so
     with acc._lock:
         cur = acc.blocked.get(site)
         if isinstance(cur, dict) and not cur.get("released_by"):
@@ -637,13 +648,49 @@ SAVE_LOCK_STALE_S = 120.0
 
 class _LedgerLock:
     """A cross-process lock on the shared access ledger: `<ledger>.lock`, created with O_EXCL
-    (atomic on POSIX and on Windows/NTFS, no fcntl/msvcrt). Bounded wait; a lock older than
-    SAVE_LOCK_STALE_S is a dead writer's and is broken."""
+    (atomic on POSIX and on Windows/NTFS, no fcntl/msvcrt) and stamped with this holder's TOKEN
+    (pid + random nonce). Bounded wait. A lock older than SAVE_LOCK_STALE_S is a dead writer's:
+    it is broken by RENAMING it to a unique name first (only one waiter's rename can succeed;
+    the loser retries the acquire), and a renamed lock that turns out fresh -- a live peer's,
+    re-created between the age check and the rename -- is put back, never deleted. `release`
+    removes the lock only while it still carries this holder's token."""
 
     def __init__(self, ledger: Path, wait_s: float | None = None) -> None:
         self.path = ledger.with_name(f"{ledger.name}.lock")
         self.wait_s = SAVE_LOCK_WAIT_S if wait_s is None else wait_s
+        self.token = f"{os.getpid()} {os.urandom(8).hex()}"
         self.held = False
+
+    def _read_token(self, path: Path | None = None) -> str:
+        try:
+            return (path or self.path).read_bytes().decode("utf-8", "replace").strip()
+        except OSError:
+            return ""
+
+    def _break_stale(self) -> None:
+        """Break the lock if it is stale. Never deletes a lock that is not stale."""
+        try:
+            if time.time() - self.path.stat().st_mtime <= SAVE_LOCK_STALE_S:
+                return
+        except OSError:
+            return
+        aside = self.path.with_name(f"{self.path.name}.stale.{os.getpid()}."
+                                    f"{os.urandom(6).hex()}")
+        try:
+            os.rename(self.path, aside)
+        except OSError:
+            return                  # another waiter broke (renamed) it first: retry the acquire
+        try:
+            fresh = time.time() - aside.stat().st_mtime <= SAVE_LOCK_STALE_S
+        except OSError:
+            fresh = False
+        if fresh:
+            # a live peer's lock, created after our age check: put it back (link fails if the
+            # name is taken again, which leaves the newer holder's lock alone)
+            with contextlib.suppress(OSError):
+                os.link(aside, self.path)
+        with contextlib.suppress(OSError):
+            aside.unlink()
 
     def acquire(self) -> bool:
         deadline = time.monotonic() + self.wait_s
@@ -653,16 +700,14 @@ class _LedgerLock:
             try:
                 fd = os.open(str(self.path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             except FileExistsError:
-                with contextlib.suppress(OSError):
-                    if time.time() - self.path.stat().st_mtime > SAVE_LOCK_STALE_S:
-                        self.path.unlink()
-                        continue
+                self._break_stale()
             except OSError:
                 pass                      # Windows: PermissionError while another unlinks it
             else:
-                with contextlib.suppress(OSError):
-                    os.write(fd, f"{os.getpid()} {time.time():.3f}".encode())
-                os.close(fd)
+                try:
+                    os.write(fd, self.token.encode())
+                finally:
+                    os.close(fd)
                 self.held = True
                 return True
             if time.monotonic() >= deadline:
@@ -670,8 +715,12 @@ class _LedgerLock:
             time.sleep(0.02 + random.random() * 0.03)  # noqa: S311 - lock jitter
 
     def release(self) -> None:
-        if self.held:
-            self.held = False
+        """Unlink the lock only if it still carries this holder's token (a peer that broke it
+        as stale owns whatever lock is there now)."""
+        if not self.held:
+            return
+        self.held = False
+        if self._read_token() == self.token:
             with contextlib.suppress(OSError):
                 self.path.unlink()
 
@@ -731,13 +780,14 @@ class HostAccess:
         if self.path is None:
             return {}, ""
         try:
-            raw = self.path.read_text("utf-8")
+            raw = self.path.read_bytes()
         except FileNotFoundError:
             return {}, ""
         except OSError as exc:
             return None, f"unreadable ({type(exc).__name__}: {exc})"
         try:
-            data = json.loads(raw)
+            # invalid UTF-8 (UnicodeDecodeError) is a ValueError too: CORRUPT, quarantined
+            data = json.loads(raw.decode("utf-8"))
         except ValueError as exc:
             data, why = None, f"corrupt ({type(exc).__name__}: {exc})"
         else:
@@ -1459,6 +1509,20 @@ def get_text(url: str, *, headers: Mapping[str, str] | None = None, timeout: flo
 def post(url: str, data: bytes, *, headers: Mapping[str, str] | None = None,
          timeout: float = 20.0, leg: str = "default", access: HostAccess | None = None,
          opener: Callable[..., Any] | None = None) -> str:
+    """`_post`, with a hold it met carried into `leg`'s stats (`access_holds`)."""
+    acc = access if access is not None else default_access()
+    try:
+        return _post(url, data, headers=headers, timeout=timeout, leg=leg, access=acc,
+                     opener=opener)
+    except FetchRefused as exc:
+        if exc.verdict:
+            _note_held(leg, acc, url)
+        raise
+
+
+def _post(url: str, data: bytes, *, headers: Mapping[str, str] | None = None,
+          timeout: float = 20.0, leg: str = "default", access: HostAccess | None = None,
+          opener: Callable[..., Any] | None = None) -> str:
     """One POST (a GraphQL search, say), under the same rules as `get()`: honest UA, the site's
     holds and the origin's robots.txt checked first, redirects not followed, and 401/403/429 or a
     challenge record a hold and raise `FetchRefused`. Never retried: a POST is not idempotent."""
@@ -1644,7 +1708,26 @@ def _seam_http_error(url: str, status: int, error: str,
 
 def _keyed_open(url: str, hdr: dict[str, str], data: bytes | None, method: str | None,
                 timeout: float, max_bytes: int, acc: HostAccess,
-                opener: Callable[..., Any] | None, live_input: bool = False) -> SeamResponse:
+                opener: Callable[..., Any] | None, live_input: bool = False,
+                leg: str = "seam") -> SeamResponse:
+    """`_keyed_open_once`, with a hold it met carried into `leg`'s stats (`access_holds`)."""
+    try:
+        return _keyed_open_once(url, hdr, data, method, timeout, max_bytes, acc, opener,
+                                live_input)
+    except urllib.error.HTTPError as exc:
+        if exc.code in BLOCK_STATUS:
+            _note_held(leg, acc, url)
+        raise
+    except PoliteRefused as exc:
+        if exc.verdict:
+            _note_held(leg, acc, url)
+        raise
+
+
+def _keyed_open_once(url: str, hdr: dict[str, str], data: bytes | None, method: str | None,
+                     timeout: float, max_bytes: int, acc: HostAccess,
+                     opener: Callable[..., Any] | None, live_input: bool = False
+                     ) -> SeamResponse:
     """A request whose URL carries a credential: admitted first (holds + robots), sent once
     through the module's no-redirect door (a 30x is returned as HTTPError, never followed), and
     a 401/403/429 held on the REDACTED url. `live_input` also refuses an IDEAS_ONLY route."""
@@ -1711,7 +1794,8 @@ def polite_urlopen(req: urllib.request.Request | str, timeout: float = 30.0, *,
     acc = access if access is not None else default_access()
     hdr = honest_headers(hdrs)
     if carries_secret(url) or (method not in ("GET", "HEAD") and body is None):
-        return _keyed_open(url, hdr, body, method, timeout, max_bytes, acc, opener, live_input)
+        return _keyed_open(url, hdr, body, method, timeout, max_bytes, acc, opener, live_input,
+                           leg=leg)
     if body is not None:
         if live_input and _tf.input_source(url):
             raise _tf.TermsFenced(str(_tf.input_source(url)), redact_url(url))
@@ -1853,7 +1937,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.release:
         if not args.by:
             ap.error("--release needs --by <name>")
-        row = release(args.release, args.by)
+        try:
+            row = release(args.release, args.by)
+        except ReleaseNotSaved as exc:
+            print(str(exc))
+            return 1
         print(f"released {row['key']} by {row['released_by']}")
         return 0
     acc = HostAccess.load(ACCESS_STATE)
