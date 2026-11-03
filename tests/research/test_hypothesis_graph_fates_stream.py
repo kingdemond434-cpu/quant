@@ -47,7 +47,7 @@ def test_latest_rows_parses_only_the_asked_fates_like_the_full_reader(tmp_path: 
     assert next(r for r in rows if r["id"] == "a") == full["a"]          # last row per id wins
     # A torn line costs that one row, never the read.
     torn_rows, torn_ids = hg.latest_rows({"FAILED", "CERTIFIED"}, _ledger(tmp_path, torn=True))
-    assert {r["id"] for r in torn_rows} == {"a", 'q"uote'} and ids <= torn_ids | ids
+    assert {r["id"] for r in torn_rows} == {"a", 'q"uote'} and torn_ids == ids
 
 
 def test_latest_rows_limit_keeps_the_newest_and_returns_them_in_file_order(tmp_path: Path) -> None:
