@@ -209,6 +209,7 @@ def walk_forward(pool: Pool, cfg: BookConfig) -> dict:
     """
     t = pool.r1.shape[0]
     oos1, oos3, best1, folds = [], [], [], []
+    share3: list[float] = []
     oos_dates: list[pd.Timestamp] = []
     for k, (a, b) in enumerate(_blocks(t, cfg.n_blocks)):
         if k == 0:
@@ -223,6 +224,7 @@ def walk_forward(pool: Pool, cfg: BookConfig) -> dict:
                       mu * nobs / (nobs + cfg.mean_shrink_k) / np.where(sd > 0, sd, 1), -np.inf)
         bi = int(np.argmax(sh)) if np.isfinite(sh).any() else -1
         d = w / s if s > 0 else w
+        share3.append(float(d[pool.has_3x].sum()) if s > 0 else 1.0)
         oos1.append(pool.r1[a:b] @ d)
         oos3.append(pool.r3[a:b] @ d)
         best1.append(pool.r1[a:b, bi] if bi >= 0 else np.zeros(b - a))
@@ -235,7 +237,9 @@ def walk_forward(pool: Pool, cfg: BookConfig) -> dict:
         return np.concatenate(xs) if xs else np.zeros(0)
 
     return {"oos1": cat(oos1), "oos3": cat(oos3), "best1": cat(best1),
-            "dates": pd.DatetimeIndex(oos_dates), "folds": folds}
+            "dates": pd.DatetimeIndex(oos_dates), "folds": folds,
+            "fold_lengths": [len(x) for x in oos1],
+            "real_3x_weight_share": min(share3) if share3 else 1.0}
 
 
 def size_lambda(r: np.ndarray, cfg: BookConfig) -> dict:
@@ -277,7 +281,8 @@ def size_lambda(r: np.ndarray, cfg: BookConfig) -> dict:
 
 
 def judge(pool: Pool, cfg: BookConfig, *, n_trials: int | None,
-          variance_of_sharpes: float | None = None) -> dict:
+          variance_of_sharpes: float | None = None,
+          recipe_sharpes: Sequence[float] = ()) -> dict:
     """Run the walk-forward, the five gates, the sizing, and the final full-history weights."""
     wf = walk_forward(pool, cfg)
     o1, o3, b1 = wf["oos1"], wf["oos3"], wf["best1"]
@@ -289,20 +294,34 @@ def judge(pool: Pool, cfg: BookConfig, *, n_trials: int | None,
         gates["deflated_sharpe"] = {"passed": False, "why": "n_trials UNMEASURED or no OOS: "
                                     "fails closed", "n_trials": n_trials}
     else:
+        # THE LARGER OF TWO DISPERSION BASES (audit 11-03): members' full-history Sharpes, and
+        # the OOS Sharpes of every book recipe tried. A larger variance raises SR0: strict side.
+        var_members = None
         if variance_of_sharpes is None:
             mu, sd, nobs = _member_stats(pool.r1, pool.avail)
             shs = np.where((nobs >= cfg.min_obs) & (sd > 0), mu / np.where(sd > 0, sd, 1), np.nan)
             shs = shs[np.isfinite(shs)]
-            variance_of_sharpes = float(np.var(shs, ddof=1)) if len(shs) > 1 else 1.0
+            var_members = float(np.var(shs, ddof=1)) if len(shs) > 1 else 1.0
+            variance_of_sharpes = var_members
+        rs = np.asarray([x for x in recipe_sharpes if x is not None and np.isfinite(x)], float)
+        var_recipes = float(np.var(rs, ddof=1)) if len(rs) > 1 else None
+        if var_recipes is not None:
+            variance_of_sharpes = max(variance_of_sharpes, var_recipes)
         d = deflated_sharpe_ratio(o1, n_trials=int(n_trials),
                                   variance_of_sharpes=variance_of_sharpes, threshold=cfg.dsr_bar)
         gates["deflated_sharpe"] = {"passed": bool(d.passed), "dsr": round(float(d.dsr), 4),
                                     "sr0": round(float(d.sr0_threshold), 4),
                                     "sr_daily": round(float(d.sr_observed), 4),
                                     "n_trials": int(n_trials),
-                                    "variance_of_sharpes": round(float(variance_of_sharpes), 6)}
-    gates["cost_3x"] = {"passed": bool(len(o3) and o3.mean() > 0),
-                        "oos_mean_r_3x": float(o3.mean()) if len(o3) else None}
+                                    "variance_of_sharpes": round(float(variance_of_sharpes), 6),
+                                    "variance_members": var_members,
+                                    "variance_recipes": var_recipes}
+    # NEVER VACUOUS (L1.49, audit 11-03): a member with no 3x arm carries r3 = r1, so the gate
+    # holds only when every unit of OOS weight sat on members with a real 3x series.
+    share = float(wf["real_3x_weight_share"])
+    gates["cost_3x"] = {"passed": bool(len(o3) and o3.mean() > 0 and share >= 1.0 - 1e-9),
+                        "oos_mean_r_3x": float(o3.mean()) if len(o3) else None,
+                        "real_3x_weight_share_min_fold": round(share, 6)}
     sb = sharpe_ratio(b1) if len(b1) > 1 else 0.0
     gates["beats_best_single"] = {"passed": bool(sr > sb), "book_sr_daily": round(sr, 4),
                                   "best_single_sr_daily": round(sb, 4)}
@@ -311,6 +330,17 @@ def judge(pool: Pool, cfg: BookConfig, *, n_trials: int | None,
     s = w.sum()
     unit = w / s if s > 0 else w
     sizing = size_lambda(o1, cfg)
+    sizing["oos_growth_per_day_note"] = "in-sample for lambda: lambda was chosen on this series"
+    fl = wf["fold_lengths"]
+    if len(fl) >= 2 and fl[-1] > 0:
+        head, tail = o1[: -fl[-1]], o1[-fl[-1]:]
+        lam_h = size_lambda(head, cfg)["lambda"]
+        sizing["holdout"] = {
+            "lambda_from_earlier_folds": lam_h,
+            "last_fold_days": fl[-1],
+            "last_fold_growth_per_day": (float(np.mean(np.log1p(lam_h * tail)))
+                                         if lam_h > 0 else 0.0),
+            "last_fold_worst_day": float(lam_h * tail.min()) if lam_h > 0 else 0.0}
     lam = sizing["lambda"] if passed else 0.0
     members = sorted(((pool.ids[i], float(unit[i])) for i in np.flatnonzero(unit > 0)),
                      key=lambda x: -x[1])

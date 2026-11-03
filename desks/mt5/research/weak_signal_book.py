@@ -27,13 +27,18 @@ import hashlib
 import json
 import os
 import sys
-import time
-from collections import Counter, defaultdict
-from datetime import UTC, date, datetime, timedelta
-from pathlib import Path
 
-import numpy as np
-import pandas as pd
+# Research-pool citizen: never more than two BLAS threads, so the leg cannot spill onto the
+# judge's reserved cores (judge-reserved-cores) through a numpy thread pool.
+for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+    os.environ.setdefault(_v, "2")
+import time  # noqa: E402
+from collections import Counter, defaultdict  # noqa: E402
+from datetime import UTC, date, datetime, timedelta  # noqa: E402
+from pathlib import Path  # noqa: E402
+
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
 
 _DESK = Path(__file__).resolve().parents[1]
 _ROOT = _DESK.parents[1]
@@ -68,6 +73,56 @@ MAX_AGE_DAYS = 7           # a stored series older than this is rebuilt (rotatio
 CACHE_LOOKBACK_DAYS = 21   # how far back to look for a gauntlet-cached series of the same cell
 #: A cell the judge itself could not give a series is refused BY RULE (counted, not missing).
 REFUSED_GATES = {"symbol_eligibility": "symbol_untradeable", "observations": "judge_unmeasured"}
+GATE_SPEC = _DESK / "policy" / "gate_spec.yaml"
+FAILED_GATES = STORE / "failed_gates.json"
+#: Judge stages gate_spec.yaml does not classify. swap_cost is a cost-model failure: VALIDITY.
+EXTRA_VALIDITY = frozenset({"swap_cost"})
+
+
+def gate_classes() -> tuple[frozenset[str], frozenset[str]]:
+    """(VALIDITY, POWER) from the judge's own registry, never a hand-kept copy.
+
+    VALIDITY failures (a corrupt series: leakage, overfit selection, cost or lockbox failure)
+    are REFUSED by rule and never pooled, because their contamination persists into every test
+    block and the training fit would favour them (audit HOLD 11-03). Only POWER failures -- real
+    effects too weak to stand alone -- enter the pool. An unreadable registry refuses everything.
+    """
+    try:
+        import yaml
+        doc = yaml.safe_load(GATE_SPEC.read_text("utf-8")) or {}
+        cls = doc.get("gate_classifications") or {}
+        val = frozenset(str(g) for g in cls.get("validity") or ())
+        pwr = frozenset(str(g) for g in cls.get("power") or ())
+    except Exception:
+        return frozenset(), frozenset()
+    if not val or not pwr:
+        return frozenset(), frozenset()
+    return val | EXTRA_VALIDITY, pwr
+
+
+def admission(cell: str, st: dict, failed: list[str] | None,
+              validity: frozenset[str], power: frozenset[str]) -> tuple[str, str]:
+    """('admit'|'refuse'|'gap', cause). Fail closed on anything unclassified or unrecorded."""
+    gate = st.get("terminal_gate")
+    if gate in REFUSED_GATES or st.get("unmeasured"):
+        return "refuse", REFUSED_GATES.get(gate, "judge_unmeasured")
+    if not validity:
+        return "gap", "gate_registry_unreadable"
+    if st.get("passed") or gate == "PASSED":
+        return "admit", ""
+    if gate in validity:
+        return "refuse", "validity_failed"
+    if failed is None:
+        # Only the TERMINAL gate is on record, and the judge stops recording at the first
+        # failure: whether a later validity gate also failed is unknown. Not pooled until a
+        # sweep records the full list; a gap, because a re-judge closes it.
+        return "gap", "validity_unrecorded"
+    unknown = [g for g in failed if g not in validity and g not in power]
+    if unknown:
+        return "gap", f"unclassified_gate:{unknown[0]}"
+    if any(g in validity for g in failed):
+        return "refuse", "validity_failed"
+    return "admit", ""
 
 
 def _now() -> str:
@@ -111,6 +166,8 @@ def eligible_cells() -> tuple[dict[str, dict], dict[str, str]]:
         row["terminal_gate"] = v.get("terminal_gate") or row.get("terminal_gate")
         row["passed"] = bool(v.get("passed"))
         row["unmeasured"] = bool(v.get("unmeasured"))
+        if isinstance(v.get("failed_gates"), list):
+            row["failed_gates"] = [str(g) for g in v["failed_gates"]]
         if isinstance(v.get("params"), dict):
             row["params"] = v["params"]
             row["sym"], row["family"] = v.get("sym"), v.get("family")
@@ -342,14 +399,26 @@ def run(budget_s: float = 1200.0, cfg: wsb.BookConfig | None = None) -> dict:
             pm.setdefault(c, {"sym": st["sym"], "family": st["family"], "params": st["params"],
                               "source": "latest_sweep"})
 
+    # The full failed-gate list survives only one sweep in the judge's report; keep it here.
+    failed_rec: dict[str, list[str]] = _read_json(FAILED_GATES, {}) or {}
+    for c, st in cells.items():
+        if "failed_gates" in st:
+            failed_rec[c] = st["failed_gates"]
+    STORE.mkdir(parents=True, exist_ok=True)
+    FAILED_GATES.write_text(json.dumps(failed_rec, sort_keys=True), encoding="utf-8")
+    validity, power = gate_classes()
+
     # Eligibility and refusals. Every cell lands in exactly one bucket.
     todo: list[str] = []
     unrec_family: Counter = Counter()
     for c, st in cells.items():
         cov.eligible += 1
-        gate = st.get("terminal_gate")
-        if gate in REFUSED_GATES or st.get("unmeasured"):
-            cov.refuse(REFUSED_GATES.get(gate, "judge_unmeasured"))
+        verdict, cause = admission(c, st, failed_rec.get(c), validity, power)
+        if verdict == "refuse":
+            cov.refuse(cause)
+            continue
+        if verdict == "gap":
+            cov.gap(cause, c)
             continue
         if c not in pm:
             cov.gap("params_unrecoverable", c)
@@ -410,19 +479,36 @@ def run(budget_s: float = 1200.0, cfg: wsb.BookConfig | None = None) -> dict:
         cov.eligible += 1
         cov.gap("live_ledger_unreadable", str(LIVE_LEDGER.name))
         live = {}
+    # LIVE SLEEVES ARE A SEPARATE VARIANT (audit 11-03). Realised R has no 3x arm and is a
+    # different measurement from backtest R; the armable book is the cells-only book, and the
+    # with-live book is reported beside it, never armed.
+    live_series: dict[str, tuple[pd.Series, None]] = {}
     for name, s in live.items():
         cov.eligible += 1
         cov.ingested += 1
-        series[name] = (s, None)
+        live_series[name] = (s, None)
 
     lt, lt_basis = lifetime_trials()
     rows = trial_rows()
     recipe = cfg.digest()
     n_recipes = wsb.recipe_trials([*rows, {"recipe": recipe}])
     n_trials = (lt + n_recipes) if lt is not None else None
+    latest_by_recipe: dict[str, float] = {}
+    for r in rows:
+        if r.get("recipe") and r.get("oos_sr_daily") is not None:
+            latest_by_recipe[str(r["recipe"])] = float(r["oos_sr_daily"])
+    recipe_srs = list(latest_by_recipe.values())
     pool = wsb.build_pool(series)
-    book = wsb.judge(pool, cfg, n_trials=n_trials) if pool.ids else {
+    book = wsb.judge(pool, cfg, n_trials=n_trials, recipe_sharpes=recipe_srs) if pool.ids else {
         "passed": False, "why": "empty pool", "recipe": recipe}
+    with_live = None
+    if live_series and pool.ids:
+        lp = wsb.build_pool({**series, **live_series})
+        wl = wsb.judge(lp, cfg, n_trials=n_trials, recipe_sharpes=recipe_srs)
+        with_live = {"passed_informative": wl["passed"], "gates": wl["gates"], "oos": wl["oos"],
+                     "live_weight": round(sum(m["weight"] for m in wl["members"]
+                                              if m["cell"].startswith("LIVE:")), 6),
+                     "note": "never armed: realised and backtest R on one calendar"}
     by_source = Counter(pm[c]["source"].split(":")[0] for c in series if c in pm)
     doc = {
         "generated_utc": _now(), "elapsed_s": round(time.time() - t0, 1),
@@ -432,13 +518,15 @@ def run(budget_s: float = 1200.0, cfg: wsb.BookConfig | None = None) -> dict:
                      "eligibility_sources": sources,
                      "ingested_by_producer": dict(by_source.most_common(50)),
                      "params_unrecoverable_by_family": dict(unrec_family.most_common(30)),
-                     "live_sleeves": sorted(live)},
+                     "live_sleeves": sorted(live),
+                     "gate_classes": {"validity": sorted(validity), "power": sorted(power)}},
         "trials": {"lifetime": lt, "lifetime_basis": lt_basis, "book_recipes": n_recipes,
                    "charged": n_trials},
         "pool": {"members": len(pool.ids), "days": len(pool.dates),
                  "first": str(pool.dates[0].date()) if len(pool.dates) else None,
                  "last": str(pool.dates[-1].date()) if len(pool.dates) else None},
         "book": book,
+        "book_with_live_sleeves": with_live,
         "status": ("PROPOSE" if book.get("passed") else "NO_BOOK"),
         "authority": "proposes only; nothing here arms or sizes a live order",
     }

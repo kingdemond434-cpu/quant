@@ -125,3 +125,26 @@ def test_every_recipe_is_a_charged_trial():
     b = wsb.BookConfig(n_blocks=7).digest()
     assert a != b
     assert wsb.recipe_trials([{"recipe": a}, {"recipe": a}, {"recipe": b}]) == 2
+
+
+def test_cost_gate_is_never_vacuous_on_members_without_a_3x_arm():
+    rng = np.random.default_rng(4)
+    series = {f"w{i}": (_series(rng, 0.05), None) for i in range(80)}
+    out = wsb.judge(wsb.build_pool(series), wsb.BookConfig(), n_trials=1000)
+    g = out["gates"]["cost_3x"]
+    assert g["real_3x_weight_share_min_fold"] == 0.0
+    assert not g["passed"] and not out["passed"]
+
+
+def test_lambda_is_scored_on_a_fold_it_was_not_chosen_on():
+    out = wsb.judge(_pool(n_weak=80, mu=0.05), wsb.BookConfig(), n_trials=1000)
+    h = out["sizing"]["holdout"]
+    assert h["last_fold_days"] > 0 and h["lambda_from_earlier_folds"] > 0
+
+
+def test_recipe_dispersion_can_only_raise_the_bar():
+    pool = _pool(n_weak=80, mu=0.05)
+    base = wsb.judge(pool, wsb.BookConfig(), n_trials=1000)["gates"]["deflated_sharpe"]
+    wide = wsb.judge(pool, wsb.BookConfig(), n_trials=1000,
+                     recipe_sharpes=[-0.5, 0.0, 0.5])["gates"]["deflated_sharpe"]
+    assert wide["sr0"] >= base["sr0"]
