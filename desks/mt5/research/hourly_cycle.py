@@ -1413,7 +1413,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
                      "daily", "hunt12_forward", "regime_router",
                      "forward_slot_ranker", "forward_exploitation", "shadow_discovery",
-                     "missed_trade_archaeologist", "loss_learner", "portfolio_bounty",
+                     "missed_trade_archaeologist", "loss_learner", "trade_attribution",
+                     "portfolio_bounty",
                      "drawdown_alpha_miner", "trade_autopsy", "counterfactual_attribution",
                      "clock_liveness", "allocator_liveness", "allocator_trigger",
                      "forward_calibration"),
@@ -2047,6 +2048,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The paid-substitute engine: a 120 s catalogue crawl (its own deadline) plus ~2-10 s of
     # scoring, enrolment and queue writes; the cap sits above so the report is always written.
     "paid_substitute_engine": 300,
+    # AC7 trade attribution: one pass over the live ledger, decision index and M1 bars per
+    # traded symbol; seconds in practice, capped small so it can never starve the hour.
+    "trade_attribution": 120,
     # THE WORLD DATASET HUNTER stops itself at --budget-s 900 and writes its catalog, registry
     # rows and DATASET_HUNT.json; the cap sits above so the write is never the part cut off.
     # Its per-dataset cursor means a short pass still advances the frontier.
@@ -4639,6 +4643,10 @@ def main() -> None:
     # replacement verdicts are acted on by the daily step `loss_replace`. Forward department.
     mll = _costed("loss_learner", lambda: _producer(
         "loss_learner", "research/loss_learner.py", "--once"))
+    # TRADE ATTRIBUTION (blueprint AC7, 2026-11-03): signal->fill->markout per live fill and each
+    # trade's R split into signal/entry/cost/exit/sizing, weekly per sleeve. Report-only.
+    mta7 = _costed("trade_attribution", lambda: _producer(
+        "trade_attribution", "research/trade_attribution.py", "--once"))
     mfe = _costed("forward_exploitation", lambda: _producer("forward_exploitation",
                                                              "research/forward_exploitation.py"))
     mar = _costed("alpha_recombination", lambda: _producer("alpha_recombination",
@@ -6428,6 +6436,7 @@ def main() -> None:
                     "experiment_spine": exs, "implementer": imp,
                     "research_evolution": rev, "compute_economics": cec,
                     "missed_trade_archaeologist": mta, "loss_learner": mll,
+                    "trade_attribution": mta7,
                     "replication_civilization": rpc,
                     "science_controller": scc,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
