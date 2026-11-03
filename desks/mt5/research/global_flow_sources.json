@@ -249,7 +249,7 @@
    "class": "retail",
    "region": "CN",
    "adapter": "none",
-   "blocked_by": "fetcher BUILT (libs/data/free_stack_cnx.py: quotes, OI, top-20 member ranks, warehouse stocks) but terms rows are to_confirm since 2026-10-06: DCE/CFFEX legal pages robots-disallow the cloud, GFEX serves a bot check, CZCE footer link unread. The box must read each 法律声明 from China-reachable IP and flip terms in free_stack_sources.json. SHFE/INE refused (non-commercial only).",
+   "blocked_by": "Read from the box 2026-11-03 23:13Z (/mnt/project-files/flow/CN_EXCHANGE_TERMS.md): CFFEX 版权声明 requires written authorisation for any non-private or commercial use (REFUSED; licensing via 中金所数据有限公司). DCE and CZCE answer HTTP 412 anti-bot challenges and GFEX 520 to an honest client, from the cloud and the box alike: never bypassed, so their data is unreachable as well as unread. SHFE/INE refused (non-commercial only). Fetcher libs/data/free_stack_cnx.py stays fail-closed. Lawful substitutes in use: Chinese retail forum chatter (cn_weibo/xueqiu/guba, local-language content thread) and the China night-session window (21:00-02:30 BJT = 13:00-18:30 UTC) tested on the desk's own XCUUSD/XAUUSD/XAGUSD/SOYBEAN/CORN/COTTON/SUGAR bars.",
    "why": "China's retail-dominated commodity futures (iron ore, rebar, coking coal, soy meal, palm oil, rubber, copper) and their night session lead the global contracts the desk trades."
   },
   {
