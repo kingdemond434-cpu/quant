@@ -249,6 +249,56 @@ def is_governed_state(rel: str) -> bool:
     )
 
 
+#: THE BOX PUBLISHES ITS STATE WITHOUT COMMITTING IT (2026-10-30). MT5-ShadowSync
+#: (sync_shadow_to_git.ps1) builds each fifteen-minute state commit with commit-tree onto origin's
+#: tip and pushes it; the box's own HEAD never takes it. So sleeves.json and BARS_STATE.json, which
+#: only the box writes, read here as "origin changed it, the box did not", and ADOPT_TIP took the
+#: tip's blob of each: a new blob every fifteen minutes that no CLEAR row could ever pin. Every pass
+#: from 10-30 10:30Z held on exactly those two paths (HOLD_UNAUDITED 2 of 92). A state path whose
+#: target blob IS the blob this box itself last published is the box's measurement, exactly like
+#: one the box committed. The proof is the box's own sync log, which never leaves the box: a commit
+#: is the box's only when that log names it, it is a non-merge commit inside merge-base..target,
+#: and its subject is the publisher's. A missing log proves nothing and exempts nothing.
+PUBLISH_LOG_REL = "desks/mt5/logs/sync_shadow_to_git.log"
+_PUBLISHED = re.compile(r"published box state onto origin/\S+ as ([0-9a-f]{12}) \(")
+_BOX_SUBJECT = re.compile(r"^mt5 box state \d{4}-\d{2}-\d{2}_\d{4} \(published onto origin")
+
+
+def box_published(root: Path, base: str, target: str) -> dict[str, str]:
+    """Every path's object as this box last published it onto origin in `base..target`."""
+    try:
+        log = (root / PUBLISH_LOG_REL).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return {}
+    ours = set(_PUBLISHED.findall(log))
+    if not ours:
+        return {}
+    out = _git(
+        root,
+        "log",
+        "--reverse",
+        "--no-merges",
+        "--raw",
+        "--no-abbrev",
+        "--no-renames",
+        "-z",
+        "--format=%x01%H %s",
+        f"{base}..{target}",
+    )
+    blobs: dict[str, str] = {}
+    for chunk in out.split("\x01")[1:]:
+        head, _, raw = chunk.partition("\n")
+        sha, _, subject = head.partition(" ")
+        if sha[:12] not in ours or not _BOX_SUBJECT.match(subject):
+            continue
+        fields = [f for f in raw.split("\0") if f.strip()]
+        for meta, rel in zip(fields[0::2], fields[1::2], strict=False):
+            parts = meta.strip().split()
+            if len(parts) == 5 and parts[0].startswith(":"):
+                blobs[rel] = parts[3]
+    return blobs
+
+
 def governed_delta(root: Path, sealed: str, target: str, head: str = "HEAD") -> list[str]:
     """Every path this adoption would change on the box that needs an auditor's word.
 
@@ -257,7 +307,8 @@ def governed_delta(root: Path, sealed: str, target: str, head: str = "HEAD") -> 
     exactly what the seal is about to vouch for, so it needs a CLEAR like any other (adopter v2
     audit, probe 16). STATE: changed by origin since the box and origin diverged and NOT changed
     by the box in that time (Adopt-Release keeps the box's copy of those), where the target's
-    object differs from what the box holds.
+    object differs from what the box holds and is not the object the box itself last published
+    onto origin (`box_published`).
     """
     head = _rev(root, head)
     mb = _git(root, "merge-base", head, target).strip()
@@ -265,10 +316,13 @@ def governed_delta(root: Path, sealed: str, target: str, head: str = "HEAD") -> 
     origin_changed = set(_changed(root, mb, target)) if HEX40.match(mb) else set()
     t_tree, h_tree = _tree(root, target), _tree(root, head)
     code = {p for p in _changed(root, sealed, target) if is_code(p)}
+    published = box_published(root, mb, target) if HEX40.match(mb) else {}
     state = {
         p
         for p in origin_changed - box_changed
-        if is_governed_state(p) and t_tree.get(p) != h_tree.get(p)
+        if is_governed_state(p)
+        and t_tree.get(p) != h_tree.get(p)
+        and (p not in published or published[p] != t_tree.get(p))
     }
     return sorted(code | state)
 

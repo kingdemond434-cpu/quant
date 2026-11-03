@@ -51,6 +51,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import gzip
+import itertools
 import json
 import os
 import re
@@ -152,13 +153,16 @@ class Tree:
         self.legs = set(_LEG_RE.findall(self.sched_text))
         self.tracked = tracked if tracked is not None else self._git_tracked()
 
-    def _git_tracked(self) -> set[str]:
+    def _git_tracked(self) -> set[str] | None:
+        """Tracked paths, or None when git cannot say (then no file may fall back to its mtime)."""
         try:
-            out = subprocess.run(["git", "-C", str(self.root), "ls-files"], capture_output=True,
-                                 text=True, timeout=60, check=False).stdout
+            res = subprocess.run(["git", "-C", str(self.root), "ls-files"], capture_output=True,
+                                 text=True, timeout=60, check=False)
         except (OSError, subprocess.SubprocessError):
-            return set()
-        return set(out.splitlines())
+            return None
+        if res.returncode != 0:
+            return None
+        return set(res.stdout.splitlines())
 
     def exists(self, rel: str) -> bool:
         return (self.root / rel).exists()
@@ -183,9 +187,7 @@ class Tree:
             # A directory runs when its newest file does; the directory's own mtime is the
             # checkout's, not a run. Bounded: a lake of files is sampled, never walked whole.
             ages = []
-            for i, f in enumerate(sorted(p.rglob("*"))):
-                if i >= DIR_SCAN_MAX:
-                    break
+            for f in itertools.islice(p.rglob("*"), DIR_SCAN_MAX):
                 if f.is_file():
                     h = self.age_h(f.relative_to(self.root).as_posix(), now)
                     if h is not None:
@@ -204,7 +206,8 @@ class Tree:
                     stamp = _ts(doc.get(k)) if doc.get(k) else None
                     if stamp:
                         break
-        if stamp is None and rel not in self.tracked:
+        # An unreadable index is UNMEASURED: a checkout's mtimes would read every file as fresh.
+        if stamp is None and self.tracked is not None and rel not in self.tracked:
             try:
                 stamp = datetime.fromtimestamp(p.stat().st_mtime, tz=UTC)
             except OSError:

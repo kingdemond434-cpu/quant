@@ -173,3 +173,23 @@ def test_committed_claims_verify_against_this_tree() -> None:
 
 def test_leg_is_wired_into_the_hourly_cycle() -> None:
     assert "mandate_audit" in ma.Tree().legs
+
+
+def test_unreadable_git_index_never_grades_off_mtimes(tmp_path: Path) -> None:
+    # tmp_path is not a repository, so `git ls-files` fails: no file may read fresh off its mtime.
+    (tmp_path / "out.txt").write_text("x", "utf-8")
+    tree = ma.Tree(root=tmp_path)
+    assert tree.tracked is None
+    assert tree.age_h("out.txt", datetime.now(UTC)) is None
+
+
+def test_directory_age_is_bounded_and_reads_newest(tmp_path: Path, monkeypatch) -> None:
+    lake = tmp_path / "lake"
+    lake.mkdir()
+    stamp = json.dumps({"generated_at": datetime.now(UTC).isoformat()})
+    for i in range(5):
+        (lake / f"f{i}.json").write_text(stamp, "utf-8")
+    monkeypatch.setattr(ma, "DIR_SCAN_MAX", 3)
+    tree = ma.Tree(root=tmp_path, tracked=set())
+    h = tree.age_h("lake", datetime.now(UTC) + timedelta(hours=1))
+    assert h is not None and 0.9 < h < 1.1
