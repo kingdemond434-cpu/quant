@@ -2040,9 +2040,7 @@ def test_an_unreadable_listed_script_is_money_path(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     real = rs.read
-    monkeypatch.setattr(
-        rs, "read", lambda t, f: None if f.endswith("backup.ps1") else real(t, f)
-    )
+    monkeypatch.setattr(rs, "read", lambda t, f: None if f.endswith("backup.ps1") else real(t, f))
     assert "desks/mt5/scripts/backup.ps1" in _money(tmp_path, {})
 
 
@@ -2292,7 +2290,8 @@ def test_the_box_task_table_is_money_unless_only_gate_rows_change(
         (t / "desks/mt5/ops").mkdir(parents=True)
         (t / rs.COMPONENTS).write_text(
             'REQUIRED_TASKS: frozenset[str] = frozenset({"MT5-ClockFixer"})\n'
-            'TASK_CANONICAL: dict[str, str] = {"MT5-Hourly": "x"}\n', "utf-8"
+            'TASK_CANONICAL: dict[str, str] = {"MT5-Hourly": "x"}\n',
+            "utf-8",
         )
         if text is not None:
             (t / rs.MANIFEST).write_text(text, "utf-8")
@@ -2780,6 +2779,17 @@ def test_money_files_match_case_blind_as_ntfs_does() -> None:
     assert ir.is_money_file("desks/mt5/research/Heat_Policy.py",
                             frozenset({"desks/mt5/research/heat_policy.py"}))  # fmt: skip
     assert ir.is_money_file("Desks/MT5/Prop/x.py", frozenset())
+
+
+def test_a_gh_timeout_is_a_failed_call_not_a_crash(monkeypatch) -> None:
+    import subprocess as sp
+
+    def slow(cmd, data):
+        raise sp.TimeoutExpired(cmd, 120)
+
+    monkeypatch.setattr(ag, "_gh_run", slow)
+    with pytest.raises(RuntimeError, match="timed out after 120"):
+        ag._gh("repos/o/r/commits/abc/check-runs?per_page=100")
 
 
 def test_a_quiet_draft_is_brought_up_and_a_moving_one_is_not() -> None:

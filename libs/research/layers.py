@@ -285,6 +285,8 @@ LEG_LAYER: dict[str, str] = {
     "trend_core": "prediction",
     # the within-class rank legs are claims about relative returns: prediction, like trend_core
     "cross_sectional_breadth": "prediction",
+    # share-CFD cells from the alt hand-off (event lane + conditioned class books): prediction
+    "alt_equity_handoff": "prediction",
     "specialist_cell": "prediction",
     "event_surprise": "information",
     # public analyst views collected and stamped at first sighting: information
@@ -377,6 +379,10 @@ LEG_LAYER: dict[str, str] = {
     # the same question `source_routes`, `value_of_data` and `unseen_frontier` are information for
     # -- even though the frontier rows it writes become research work downstream. LAWS 5f.
     "coverage_tensor": "information",
+    # THE GLOBAL COVERAGE TENSOR: the same question as `coverage_tensor` on the principal's
+    # fourteen axes, counted on a proven path -- which inputs exist and which have ever reached a
+    # measured outcome. Its missions become research work downstream, as the tensor's do.
+    "global_coverage_tensor": "information",
     # REGIONAL PARITY BY EQUIVALENCE. Which country holds which local functional equivalent of
     # each information class (directive CORE LAW / PART III), disposed against a frozen ontology
     # and projected from the tensor above: a question about the desk's INPUTS, asked before any
