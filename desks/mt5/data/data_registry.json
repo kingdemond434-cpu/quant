@@ -76,7 +76,11 @@
       "provenance": "www.cftc.gov/files/dea/history via mt5desk/fetch_tff.py",
       "cadence": "weekly",
       "cadence_basis": "CFTC reports Tuesday positions on Friday 15:30 ET; the hourly cot_fx leg (research/cot_fx_refresh.py) refreshes it after the Friday release that should carry a newer report, current year's file merged into the store (2026-11-03). Before that no clock ran fetch_tff.py",
-      "produced_on": "box"
+      "produced_on": "box",
+      "pit": {
+        "publication_lag_days": 4,
+        "valid": "report date (Tuesday); the same CFTC Friday release as cot_fx (owned_data._COT_PUBLICATION_LAG_DAYS = 4)"
+      }
     },
     "bis_eer": {
       "lifecycle": "DISCOVERED",
