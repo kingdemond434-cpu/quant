@@ -296,11 +296,13 @@ def test_a_revival_entry_is_a_repair_never_a_retirement() -> None:
 
 
 def test_every_triaged_dead_producer_of_2026_11_03_has_a_declaration() -> None:
-    triaged = ("alpha_periodic_table axis_registry conversion_maximiser descendants "
-               "discovery_compiler equiti_copy event_response_atlas factor_residual followme_cn "
-               "ftmo_allocator graveyard_resurrection hfm_pamm joint_evolution mathlab minfx_jp "
-               "missed_trade_archaeologist octa_masters physics_lab qd_frontier "
-               "readitrades_africa residual_queue srb_uncorrelated_sweep statarb "
-               "trajectory_evolution").split()
+    triaged = [
+        "alpha_periodic_table", "axis_registry", "conversion_maximiser", "descendants",
+        "discovery_compiler", "equiti_copy", "event_response_atlas", "factor_residual",
+        "followme_cn", "ftmo_allocator", "graveyard_resurrection", "hfm_pamm", "joint_evolution",
+        "mathlab", "minfx_jp", "missed_trade_archaeologist", "octa_masters", "physics_lab",
+        "qd_frontier", "readitrades_africa", "residual_queue", "srb_uncorrelated_sweep",
+        "statarb", "trajectory_evolution",
+    ]
     missing = [n for n in triaged if n not in fence.REPLACEMENTS]
     assert set(missing) <= {"axis_registry", "graveyard_resurrection", "qd_frontier"}, missing

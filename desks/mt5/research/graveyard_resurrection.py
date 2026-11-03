@@ -70,6 +70,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 from libs.moat import registry as reg  # noqa: E402
+from libs.ops.phase_stamp import PhaseStamp  # noqa: E402
 from libs.research import mechanism_ontology as onto  # noqa: E402
 from research import axis_registry as ar  # noqa: E402
 from research import negative_knowledge as nk  # noqa: E402
@@ -688,14 +689,19 @@ def _reclassify_wrong_asset(dead: list[Dead], sibs: list[Sibling], by_cls: Count
 def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
           dry_run: bool = False, max_rows: int = MAX_ROWS) -> dict[str, Any]:
     t0 = time.monotonic()
+    stamp = PhaseStamp("graveyard_resurrection", OUT.with_name(OUT.stem + ".phase.json"))
+    stamp.enter("read_graph")
     rows = read_graph(max_rows)
+    stamp.enter("dead_cells")
     dead = dead_cells(rows, max_rows)
+    stamp.enter("siblings")
     sibs = _siblings(rows)
     dnr = do_not_repeat()
     names = list(dnr.get("names") or [])
     fam_cap = max(1, int(max_candidates * MAX_FAMILY_SHARE))
     conn = None if dry_run else reg.connect()
     try:
+        stamp.enter("classify_all")
         by_cls, marked, deferred = _classify_all(dead, conn, t0, budget_s)
         reclassified = _reclassify_wrong_asset(dead, sibs, by_cls)
 
@@ -714,6 +720,7 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
                 clusters.setdefault((_family_root(d.family),
                                      d.axes.get("mechanism", ar.UNKNOWN),
                                      d.failure_class), []).append(d)
+        stamp.enter("known_hashes")
         known = {reg.content_hash(str(r.get("family") or ""), str(r.get("symbol") or ""),
                                   r.get("params") if isinstance(r.get("params"), dict) else {})
                  for r in rows}
@@ -733,6 +740,7 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
         n_unmeasured_q = 0
         budget_stop = False
 
+        stamp.enter("clusters")
         for (fam, mech, cls), deaths in sorted(clusters.items(), key=lambda kv: -len(kv[1])):
             if time.monotonic() - t0 > budget_s:
                 budget_stop = True
@@ -788,6 +796,7 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
                                   f"{mech} but {alt}")})
             cluster_rows.append({"family": fam, "mechanism": mech, "failure_class": cls,
                                  "n": len(deaths), "questions": qs, "resurrections": made})
+        stamp.enter("write")
         donated = 0 if dry_run or not accepted else _write(accepted, conn, refusals)
     finally:
         if conn is not None:
@@ -797,7 +806,9 @@ def build(*, max_candidates: int = MAX_CANDIDATES, budget_s: float = BUDGET_S,
     if not dry_run:
         _lower_priors(prior_rows)
         _remember_counters(counters)
+    phases = stamp.done()
     return {
+        "phases": phases,
         "at": _now(), "n_failed_cells": len(dead), "by_failure_class": dict(by_cls.most_common()),
         "clusters": sorted(cluster_rows, key=lambda r: -r["n"])[:60],
         "candidates_generated": len(accepted), "candidates_donated": donated,

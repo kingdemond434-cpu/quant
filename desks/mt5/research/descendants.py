@@ -69,6 +69,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.ops.phase_stamp import PhaseStamp  # noqa: E402
 from libs.research import hypothesis_graph as hg  # noqa: E402
 from research import axis_registry as ar  # noqa: E402
 
@@ -585,12 +586,16 @@ def build(*, max_per_root: int = MAX_PER_ROOT, budget_s: float = BUDGET_S,
     t0 = time.monotonic()
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     note: dict[str, str] = {}
+    stamp = PhaseStamp("descendants", OUT.with_name(OUT.stem + ".phase.json"))
+    stamp.enter("collect_roots")
     roots, unmeasured = collect_roots(note)
+    stamp.enter("graph_fates")
     fates = graph_fates()
     if not fates:
         unmeasured.append({"what": "the hypothesis graph", "why": f"no readable ledger at "
                            f"{GRAPH_LEDGER.name}: every descendant reads as unborn, so this run "
                            "can re-donate cells the desk has already judged"})
+    stamp.enter("neighbourhood_and_record")
     ctx, record = Neighbourhood(), load_record()
     families: dict[str, Any] = {}
     picked: list[dict[str, Any]] = []
@@ -601,6 +606,7 @@ def build(*, max_per_root: int = MAX_PER_ROOT, budget_s: float = BUDGET_S,
     # the graph's fates were read, so a slow read spent it all: the box's last report says "the
     # 240s budget ran out after 0 of 638 roots", 0 donated. Setup is mandatory and reported
     # (`setup_s`); the budget now bounds the walk it was written to bound.
+    stamp.enter("walk")
     walk_t0 = time.monotonic()
     setup_s = round(walk_t0 - t0, 2)
     for i, root in enumerate(roots):
@@ -613,6 +619,7 @@ def build(*, max_per_root: int = MAX_PER_ROOT, budget_s: float = BUDGET_S,
             unreachable[axis] = unreachable.get(axis, 0) + 1
         known.update(d["cell_id"] for d in row["descendants"])
         picked.extend(pick(root, nb, known, max(0, int(max_per_root))))
+    stamp.enter("rows_for")
     rows = rows_for(picked)
 
     for root_id, row in record.get("families", {}).items():
@@ -653,6 +660,7 @@ def build(*, max_per_root: int = MAX_PER_ROOT, budget_s: float = BUDGET_S,
                                                          -int(r["forward_n"]), r["root_id"]))],
         "inputs": note, "budget_s": budget_s, "budget_stopped": bool(stopped), "setup_s": setup_s,
         "seconds": round(time.monotonic() - t0, 2), "unmeasured": unmeasured, "rule": RULE}
+    report["phases"] = stamp.done()
     return report, record, rows
 
 
