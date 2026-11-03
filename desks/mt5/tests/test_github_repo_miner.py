@@ -200,7 +200,31 @@ def test_check_reads_absent_as_unmeasured_and_old_as_red(tmp_path: Path) -> None
     assert gm.check(tmp_path / "nope.json")[0] == 2
     _run(tmp_path, Fake(_routes()), _seeds(tmp_path))
     assert gm.check(tmp_path / "report.json", now=NOW)[0] == 0
-    assert gm.check(tmp_path / "report.json", now=NOW + timedelta(hours=5))[0] == 1
+    assert gm.check(tmp_path / "report.json", now=NOW + timedelta(hours=7))[0] == 1
+
+
+def test_red_raises_the_issue_board_alarm_and_green_clears_it(tmp_path: Path) -> None:
+    import issue_board
+    assert "GITHUB_MINER_ALARM.txt" in {a[0] for a in issue_board.ALARMS}
+    alarm = tmp_path / "data" / "GITHUB_MINER_ALARM.txt"
+    gm.raise_alarm(1, "RED: firm_mining: nothing donated", alarm)
+    assert alarm.read_text("utf-8").startswith("RED")
+    gm.raise_alarm(0, "OK", alarm)
+    assert not alarm.exists()
+
+
+def test_the_legs_are_on_the_clock_with_a_layer_budget_and_department() -> None:
+    from libs.research import layers
+    assert layers.LEG_LAYER["github_repo_miner"] == "information"
+    assert layers.LEG_LAYER["github_miner_alive"] == "meta"
+    cycle = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
+    assert '_costed("github_repo_miner", github_repo_miner)' in cycle
+    assert '_costed("github_miner_alive", github_miner_alive)' in cycle
+    import hourly_cycle as hc
+    assert hc.LEG_BUDGET_SEC["github_repo_miner"] > 300
+    assert hc.LEG_DEPARTMENT["github_repo_miner"] == "intel"
+    assert "github_miner_alive" in hc.CORE_LEGS
+    assert hc.VERDICT_EXITS["github_miner_alive"] == (2,)
 
 
 def test_the_miner_never_executes_what_it_reads() -> None:
