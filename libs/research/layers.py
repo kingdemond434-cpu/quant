@@ -612,6 +612,8 @@ LEG_LAYER: dict[str, str] = {
     "pack_cells": "information", "timeframe_fanout": "prediction",
     # Futures positioning, curves and FX state turned into stamped series and cells.
     "futures_state": "information",
+    # CFTC positioning fetched weekly into data/cot: collection.
+    "cot_fx": "information",
     # Whether every collected dataset is fresh, complete and read by a clocked organ: the
     # machine measuring its own inputs, like clock_liveness measures its clocks.
     "dataset_usage": "meta",

@@ -38,6 +38,21 @@ PER DATASET:
                 SCHEDULED when a clock (hourly/daily cycle, ops units and scripts, box tasks)
                 names it or reaches it through imports -- an unwired reader feeds nothing (III.16).
 
+BOX TRUTH (2026-11-03). A dataset whose only producer is the trading box -- a data_registry row
+declaring `"produced_on": "box"`, and every alt platform -- is judged only on a host that may be
+the box (`libs.ops.host_identity`). Anywhere else its files are a frozen build-host snapshot
+(the bar parquets are gitignored; the tracked copies date from 2026-09-30), and the row reads
+UNMEASURED with `freshness: BOX_TRUTH_ONLY`, the snapshot's own verdict kept beside it. The first
+census, run on the build host, called the H1 universe, the XAUUSD scalp bars and four alt
+platforms STARVED from those snapshots while all of them were fresh on the box.
+
+CADENCE. data_registry rows declare `cadence`; acquired rows carry the cadence their own span
+implies (`libs.data.timeframe.publication_cadence`, written by acquire_datasets, inferred here for
+older rows); alt platforms carry `alt_data_yield.PLATFORM_CADENCE` (PRODUCER_CADENCE here when the
+report predates it). A registry row with no path is listed with its state: SUPERSEDED (it names
+the row that replaced it), HELD (a terms or method hold, with its unblock and missed_growth line),
+or NEVER_COLLECTED.
+
 VERDICT, never defaulted to clean (L1.28a):
 
     UNMEASURED  no file of the dataset on this host, or its registry unreadable
@@ -70,6 +85,8 @@ from typing import Any
 
 DESK = Path(__file__).resolve().parents[1]
 REPO = DESK.parents[1]
+if str(REPO) not in sys.path:          # libs.* (the leg runs this file as a script)
+    sys.path.insert(0, str(REPO))
 
 UNMEASURED = "UNMEASURED"
 #: The leg's own artifact (the runtime attestation reads this binding); ARTIFACT is its
@@ -85,7 +102,23 @@ FALLBACK_CADENCE_H = 168.0
 RED_AFTER_H = 24.0
 #: A stamp this far past now is lookahead, not freshness.
 FUTURE_TOLERANCE_H = 1.0
-CADENCE_H = {"hourly": 1.0, "4h": 4.0, "daily": 24.0, "weekly": 168.0, "monthly": 744.0}
+#: "business_daily" is a weekday series (FX reference rates, exchange statistics): its longest
+#: ordinary gap is a weekend plus a holiday, so its period is two days, not one -- judged as
+#: "daily" every Monday morning would read STALE on a series that missed nothing.
+CADENCE_H = {"hourly": 1.0, "4h": 4.0, "daily": 24.0, "business_daily": 48.0, "weekly": 168.0,
+             "monthly": 744.0, "quarterly": 2232.0}
+#: THE PRODUCER'S OWN SCHEDULE, for a registry whose rows an organ writes and that predates a
+#: per-row cadence. alt_platforms: the regional hunters run hourly with a rotating three-page
+#: cursor, so a platform yields on some passes and not others; its data is judged per DAY (the
+#: same word `research/alt_data_yield.PLATFORM_CADENCE` now writes on every row).
+PRODUCER_CADENCE: dict[str, str] = {"alt_platforms": "daily"}
+#: BOX TRUTH. A dataset whose only producer is the trading box (the MT5 terminal, or a box leg)
+#: and whose files are not synced anywhere else: on any other host the copy on disk is a frozen
+#: build-host snapshot (desks/*/data/**/*.parquet is gitignored; the tracked copies date from
+#: 2026-09-30), so its age there says nothing about the box. Such a row is judged on a host that
+#: may be the trading box (`libs.ops.host_identity.may_be_trading`, fail-loud: an unrecorded id
+#: with the box's hostname still judges) and reads UNMEASURED / BOX_TRUTH_ONLY everywhere else.
+BOX_TRUTH_ONLY = "BOX_TRUTH_ONLY"
 DEFAULT_BUDGET_S = 240.0
 
 #: Readers that only COUNT a dataset: an audit is not a consumer.
@@ -122,6 +155,8 @@ class Spec:
     fresh_override: tuple[str, str] | None = None                # (state, why) from its owner
     last_write_override: str | None = None
     extra_partial: list[str] = field(default_factory=list)
+    box_only: bool = False                                       # see BOX_TRUTH_ONLY
+    name_stamped: bool = False                                   # see _name_stamp
 
 
 # ------------------------------------------------------------------ small readers
@@ -188,10 +223,24 @@ def from_data_registry(desk: Path) -> tuple[list[Spec], list[dict[str, Any]], st
             continue
         path = r.get("path")
         if not isinstance(path, str) or not path:
-            not_collected.append({"id": k, "registry": "data_registry",
-                                  "lifecycle": r.get("lifecycle", UNMEASURED),
-                                  "why": "registry row declares no path: discovered, never "
-                                         "collected"})
+            # A row with no path is listed, never judged. It says WHY when it can: superseded by
+            # another row, or HELD (a terms or method hold with its missed-growth line). Only a
+            # row that says neither is "discovered, never collected".
+            nc: dict[str, Any] = {"id": k, "registry": "data_registry",
+                                  "lifecycle": r.get("lifecycle", UNMEASURED)}
+            hold = r.get("hold") if isinstance(r.get("hold"), dict) else None
+            if r.get("superseded_by"):
+                nc.update(state="SUPERSEDED", superseded_by=str(r["superseded_by"]),
+                          why=f"superseded by {r['superseded_by']}")
+            elif hold is not None:
+                nc.update(state="HELD", hold_status=hold.get("status", UNMEASURED),
+                          why=str(hold.get("why") or "held"),
+                          unblock=hold.get("unblock", UNMEASURED),
+                          missed_growth=hold.get("missed_growth", UNMEASURED))
+            else:
+                nc.update(state="NEVER_COLLECTED",
+                          why="registry row declares no path: discovered, never collected")
+            not_collected.append(nc)
             continue
         cad = CADENCE_H.get(str(r.get("cadence") or ""))
         parts: dict[str, list[str]] = {}
@@ -207,7 +256,8 @@ def from_data_registry(desk: Path) -> tuple[list[Spec], list[dict[str, Any]], st
             cadence_source="declared" if cad else "UNDECLARED_FALLBACK",
             parts=parts, min_files=int(sym) if isinstance(sym, int) else 0,
             groups=[[{k}], *path_groups(path)], writers=writers,
-            declared_consumers=re.findall(r"[\w/]+\.py", str(r.get("consumer") or ""))))
+            declared_consumers=re.findall(r"[\w/]+\.py", str(r.get("consumer") or "")),
+            box_only=str(r.get("produced_on") or "") == "box"))
     return specs, not_collected, None
 
 
@@ -287,9 +337,17 @@ def from_acquired(desk: Path) -> tuple[list[Spec], list[dict[str, Any]], str | N
         if not isinstance(r, dict):
             continue
         base = Path(str(r.get("path") or f"{sid}.parquet").replace("\\", "/")).name
+        # The row's own cadence (acquire_datasets writes it since 2026-11-03); else the cadence
+        # the series' registered span implies -- rows over [first, last] -- named as inferred.
+        word, src = str(r.get("cadence") or ""), "declared"
+        if word not in CADENCE_H:
+            from libs.data.timeframe import publication_cadence
+            word, src = publication_cadence(r.get("rows"), r.get("first"), r.get("last")) or "", \
+                "inferred_from_span"
+        cad = CADENCE_H.get(word)
         specs.append(Spec(
             id=str(sid), registry="acquired", paths=[f"data/acquired/{base}"],
-            cadence_h=None, cadence_source="UNDECLARED_FALLBACK",
+            cadence_h=cad, cadence_source=src if cad else "UNDECLARED_FALLBACK",
             groups=[[{str(sid)}], [dir_tokens("data/acquired")]],
             writers=["desks/mt5/research/acquire_datasets.py"]))
     return specs, [], None
@@ -315,12 +373,20 @@ def from_alt_platforms(desk: Path) -> tuple[list[Spec], list[dict[str, Any]], st
             continue
         last = r.get("last_success") if _ts(r.get("last_success")) else (
             r.get("last_attempt") if r.get("last_state") == "ok" else None)
+        word = str(r.get("cadence") or "")
+        src = "declared" if word in CADENCE_H else "producer_schedule"
+        cad = CADENCE_H.get(word) or CADENCE_H[PRODUCER_CADENCE["alt_platforms"]]
+        # FRESHNESS FROM THE DISCOVERIES THEMSELVES, the coverage stamp only when none is on
+        # disk: the coverage registry is the hunter's own ledger, and a platform whose rows
+        # reach `data/intelligence/<name>/` by another route is fed whatever that ledger says.
         specs.append(Spec(
-            id=str(name), registry="alt_platforms", paths=[], cadence_h=None,
-            cadence_source="UNDECLARED_FALLBACK", groups=[[intel]],
+            id=str(name), registry="alt_platforms",
+            paths=[f"data/intelligence/{name}/discoveries_*.json"], cadence_h=cad,
+            cadence_source=src, groups=[[intel]],
             writers=["desks/mt5/research/deep_forest_miner.py",
-                     "desks/mt5/research/regional_survivor_hunters.py"],
-            last_write_override=str(last) if last else None))
+                     "desks/mt5/side_channels/regional_survivor_hunters.py"],
+            last_write_override=str(last) if last else None, box_only=True,
+            name_stamped=True))
     return specs, not_collected, None
 
 
@@ -422,6 +488,22 @@ def clock_roots(repo: Path, files: list[str]) -> set[str]:
 
 
 # ------------------------------------------------------------------ measurement
+_NAME_STAMP = re.compile(r"_(\d{8})_(\d{4})(?:\.[a-z]+)+$")
+
+
+def _name_stamp(p: Path) -> datetime | None:
+    """`discoveries_20260912_0538.json` -> 2026-09-12 05:38 UTC: the writer's own stamp. A file's
+    mtime is the checkout's on any host that received it by git, so where the name carries the
+    write time, the name is the reading."""
+    m = _NAME_STAMP.search(p.name)
+    if not m:
+        return None
+    try:
+        return datetime.strptime(m.group(1) + m.group(2), "%Y%m%d%H%M").replace(tzinfo=UTC)
+    except ValueError:
+        return None
+
+
 def _newest_obs(p: Path, now: datetime) -> tuple[datetime | None, bool]:
     """The largest timestamp in a parquet's column statistics; (None, False) when it has none.
     The flag is True when a stamp sat in the future and was set aside (lookahead)."""
@@ -470,6 +552,11 @@ def measure(spec: Spec, desk: Path, corpus: Corpus | None, now: datetime) -> dic
     lookahead = False
     for f in files:
         obs, fut = (_newest_obs(f, now) if f.suffix == ".parquet" else (None, False))
+        if obs is None and spec.name_stamped:
+            st = _name_stamp(f)
+            if st is not None and (st - now).total_seconds() > FUTURE_TOLERANCE_H * 3600:
+                fut, st = True, None
+            obs = st
         lookahead = lookahead or fut
         if obs is not None:
             obs_l.append(obs)
@@ -586,11 +673,40 @@ def _onset(row: Mapping[str, Any], prev: Mapping[str, Any], now: datetime) -> da
     return min(cands)
 
 
+def host_role_now() -> dict[str, Any]:
+    """Is this host possibly the trading box? Fail loud: an identity that cannot be read judges
+    box-only datasets as if it were (a stale box must never read clean by being called off-box)."""
+    try:
+        from libs.ops.host_identity import identify
+        ident = identify()
+        return {"may_be_trading": ident.may_be_trading, "verdict": ident.verdict,
+                "hostname": ident.hostname, "why": ident.why}
+    except Exception as exc:
+        return {"may_be_trading": True, "verdict": UNMEASURED,
+                "why": f"host identity unreadable ({type(exc).__name__}): judged as the box"}
+
+
+def box_truth_only(row: dict[str, Any], host_role: Mapping[str, Any]) -> dict[str, Any]:
+    """A box-only dataset measured off the box: what this host's copy says is kept for the
+    record, and the verdict is UNMEASURED -- a build-host snapshot is no reading of the box."""
+    out = dict(row)
+    out["snapshot_verdict"], out["snapshot_why"] = row.get("verdict"), row.get("why")
+    out["freshness"] = BOX_TRUTH_ONLY
+    out["verdict"] = UNMEASURED
+    out["why"] = (f"{BOX_TRUTH_ONLY}: produced only on the trading box; this host "
+                  f"({host_role.get('hostname', '?')}, identity {host_role.get('verdict')}) "
+                  "holds a build-host snapshot, judged on the box's own pass")
+    return out
+
+
 def build(desk: Path = DESK, repo: Path = REPO, *, budget_s: float = DEFAULT_BUDGET_S,
           now: datetime | None = None, corpus: Corpus | None = None,
-          scan: bool = True) -> dict[str, Any]:
+          scan: bool = True, on_box: bool | None = None) -> dict[str, Any]:
     t0 = time.monotonic()
     now = now or _now()
+    host_role = host_role_now() if on_box is None else (
+        {"may_be_trading": on_box, "verdict": "GIVEN", "why": "passed by the caller"})
+    judge_box = bool(host_role.get("may_be_trading"))
     specs: list[Spec] = []
     not_collected: list[dict[str, Any]] = []
     registries: dict[str, str] = {}
@@ -625,6 +741,8 @@ def build(desk: Path = DESK, repo: Path = REPO, *, budget_s: float = DEFAULT_BUD
                          "why": "budget exhausted before this dataset was measured"})
             continue
         r = measure(sp, desk, corpus, now)
+        if sp.box_only and not judge_box:
+            r = box_truth_only(r, host_role)
         if r["verdict"] in ("UNFED", "STARVED"):
             since = _onset(r, prev.get((sp.registry, sp.id), {}), now)
             r["bad_since"] = since.isoformat(timespec="seconds")
@@ -659,6 +777,7 @@ def build(desk: Path = DESK, repo: Path = REPO, *, budget_s: float = DEFAULT_BUD
     return {
         "generated_utc": now.isoformat(timespec="seconds"),
         "host": socket.gethostname(),
+        "host_role": dict(host_role),
         "organ": "desks/mt5/research/dataset_usage.py",
         "ask": "BACKLOG row 61 (principal 2026-09-30): fix partial and unfed datasets fully, "
                "unstarved and collected",
@@ -673,6 +792,8 @@ def build(desk: Path = DESK, repo: Path = REPO, *, budget_s: float = DEFAULT_BUD
         "top_unfed": _top("UNFED"), "top_starved": _top("STARVED"),
         "registries": registries,
         "not_collected": not_collected,
+        "box_truth_only": sorted(f"{r['registry']}:{r['id']}" for r in rows
+                                 if r.get("freshness") == BOX_TRUTH_ONLY),
         "cadence_undeclared": sorted(f"{r['registry']}:{r['id']}" for r in rows
                                      if r.get("cadence_source") == "UNDECLARED_FALLBACK"),
         "reader_scan": ({"files": corpus.n_files, "files_with_hits": len(corpus.found),

@@ -294,3 +294,122 @@ def test_the_artifact_is_declared_attested_and_on_the_board(tmp_path: Path) -> N
     (rep / "DATASET_USAGE.json").write_text(json.dumps({"fence": "UNMEASURED",
                                                          "fence_why": "x"}), "utf-8")
     assert ib.dataset_usage_issues(tmp_path)[0].severity == "BLIND"
+
+
+# ------------------------------------------------------------------ box truth (2026-11-03)
+def _box_tree(tmp: Path) -> tuple[Path, Path]:
+    return _tree(tmp, registry={"datasets": {
+        "bars": {"lifecycle": "CORE", "path": "data/universe/*_H1.parquet", "symbols": 2,
+                 "cadence": "daily", "produced_on": "box"}}})
+
+
+def test_a_box_only_dataset_off_the_box_is_box_truth_only_never_starved(tmp_path: Path) -> None:
+    """The first census, run on the build host, called the H1 universe and the scalp bars
+    STARVED from gitignored snapshots that were fresh on the box."""
+    repo, desk = _box_tree(tmp_path)
+    for s in ("AAA", "BBB"):
+        _bars(desk / "data" / "universe" / f"{s}_H1.parquet", NOW - timedelta(days=40))
+    off = du.build(desk, repo, now=NOW, budget_s=60, on_box=False)
+    r = _row(off, "bars")
+    assert r["verdict"] == "UNMEASURED" and r["freshness"] == du.BOX_TRUTH_ONLY
+    assert r["snapshot_verdict"] == "STARVED"
+    assert off["box_truth_only"] == ["data_registry:bars"] and off["fence"] != "RED"
+
+
+def test_the_same_box_only_dataset_on_the_box_is_judged(tmp_path: Path) -> None:
+    repo, desk = _box_tree(tmp_path)
+    for s in ("AAA", "BBB"):
+        _bars(desk / "data" / "universe" / f"{s}_H1.parquet", NOW - timedelta(days=40))
+    on = du.build(desk, repo, now=NOW, budget_s=60, on_box=True)
+    assert _row(on, "bars")["verdict"] == "STARVED" and on["fence"] == "RED"
+
+
+def test_an_unreadable_identity_judges_as_the_box(monkeypatch: pytest.MonkeyPatch) -> None:
+    import libs.ops.host_identity as hi
+
+    def boom() -> None:
+        raise OSError("no id")
+    monkeypatch.setattr(hi, "identify", boom)
+    assert du.host_role_now()["may_be_trading"] is True
+
+
+def _yield(desk: Path, rows: dict) -> None:
+    (desk / "reports").mkdir(parents=True, exist_ok=True)
+    (desk / "reports" / "ALT_DATA_YIELD.json").write_text(json.dumps(
+        {"platforms": {"rows_by_platform": rows}}), "utf-8")
+
+
+def test_alt_platforms_read_their_discoveries_name_stamps_and_declare_a_cadence(
+        tmp_path: Path) -> None:
+    repo, desk = _tree(tmp_path)
+    _yield(desk, {"litefinance": {"best_rows": 15, "last_state": "ok",
+                                  "last_attempt": "2026-09-12T04:00:30+00:00"}})
+    d = desk / "data" / "intelligence" / "litefinance"
+    d.mkdir(parents=True)
+    (d / "discoveries_20261103_0538.json").write_text("[]", "utf-8")   # mtime: now, irrelevant
+    (d / "discoveries_20260912_0435.json").write_text("[]", "utf-8")
+    r = _row(du.build(desk, repo, now=NOW, budget_s=60, on_box=True), "litefinance")
+    assert r["newest"] == "2026-11-03T05:38:00+00:00" and r["freshness_basis"] == "observation"
+    assert r["cadence_source"] == "producer_schedule" and r["cadence_h"] == 24.0
+    from research import alt_data_yield
+    assert du.PRODUCER_CADENCE["alt_platforms"] == alt_data_yield.PLATFORM_CADENCE
+    rows = alt_data_yield.platforms({"platforms": {"x": {"best_rows": 1}}})["rows_by_platform"]
+    assert rows["x"]["cadence"] == alt_data_yield.PLATFORM_CADENCE
+
+
+def test_acquired_rows_carry_the_cadence_of_their_own_span(tmp_path: Path) -> None:
+    repo, desk = _tree(tmp_path)
+    (desk / "data" / "acquired").mkdir(parents=True)
+    (desk / "data" / "acquired" / "registry.json").write_text(json.dumps({"series": {
+        "ecb_usd": {"rows": 7085, "first": "1999-01-04 00:00:00+00:00",
+                    "last": "2026-09-03 00:00:00+00:00"},
+        "declared": {"rows": 3, "first": "2026-01-01", "last": "2026-03-01",
+                     "cadence": "monthly"}}}), "utf-8")
+    doc = du.build(desk, repo, now=NOW, budget_s=60, on_box=True)
+    assert _row(doc, "ecb_usd")["cadence_source"] == "inferred_from_span"
+    assert _row(doc, "ecb_usd")["cadence_h"] == du.CADENCE_H["business_daily"]
+    assert _row(doc, "declared")["cadence_source"] == "declared"
+    assert not [c for c in doc["cadence_undeclared"] if c.startswith("acquired:")]
+    src = (DESK / "research" / "acquire_datasets.py").read_text("utf-8")
+    assert '"cadence": publication_cadence(' in src
+
+
+def test_publication_cadence_reads_the_span() -> None:
+    from libs.data.timeframe import publication_cadence as pc
+    assert pc(7085, "1999-01-04", "2026-09-03") == "business_daily"
+    assert pc(53, "2025-01-07", "2026-01-06") == "weekly"
+    assert pc(13, "2025-01-31", "2026-01-31") == "monthly"
+    assert pc(366, "2025-01-01", "2026-01-01") == "daily"
+    assert pc(2, "2025-01-01", "2026-01-01") is None and pc("x", None, None) is None
+
+
+def test_rows_without_a_path_say_held_or_superseded(tmp_path: Path) -> None:
+    repo, desk = _tree(tmp_path, registry={"datasets": {
+        "old": {"lifecycle": "CORE", "superseded_by": "new"},
+        "held": {"lifecycle": "DISCOVERED", "hold": {
+            "status": "IDEAS_ONLY", "why": "terms unread", "unblock": "read them",
+            "missed_growth": {"delta_elogw": "UNMEASURED", "cause": "x"}}},
+        "bare": {"lifecycle": "DISCOVERED"}}})
+    nc = {n["id"]: n for n in _run(repo, desk)["not_collected"]}
+    assert nc["old"]["state"] == "SUPERSEDED" and nc["old"]["superseded_by"] == "new"
+    assert nc["held"]["state"] == "HELD" and nc["held"]["missed_growth"]["cause"] == "x"
+    assert nc["bare"]["state"] == "NEVER_COLLECTED"
+
+
+# ------------------------------------------------------------------ the live registry
+def test_the_live_data_registry_declares_cadence_box_truth_and_every_hold() -> None:
+    doc = json.loads((DESK / "data" / "data_registry.json").read_text("utf-8"))
+    rows = doc["datasets"]
+    for k, r in rows.items():
+        if r.get("path"):
+            assert r.get("cadence") in du.CADENCE_H, k
+            continue
+        assert r.get("superseded_by") or r.get("hold"), f"{k}: no path and no reason"
+        if r.get("hold"):
+            h = r["hold"]
+            assert h["status"] in ("IDEAS_ONLY", "METHOD_BLOCKED"), k
+            assert h["missed_growth"]["cause"] and h["unblock"], k
+    for k in ("mt5_h1_universe", "xauusd_scalp_bars", "cot_fx"):
+        assert rows[k]["produced_on"] == "box", k
+    assert "Vantage" not in rows["xauusd_scalp_bars"]["source"]
+    assert "Fusion" in rows["xauusd_scalp_bars"]["source"]

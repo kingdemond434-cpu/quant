@@ -4,26 +4,32 @@
   "datasets": {
     "mt5_h1_universe": {
       "lifecycle": "INGESTED",
-      "source": "Vantage MT5 terminal (execution truth)",
+      "source": "Fusion Markets MT5 terminal on the trading box (FusionMarkets-Live; execution truth)",
       "symbols": 19,
       "format": "parquet",
       "path": "data/universe/*_H1.parquet",
       "coverage": "2018-2026 H1",
       "ingested": "2026-08-16",
-      "notes": "XAUUSD spread overridden to measured live 0.48",
-      "provenance": "MT5 copy_rates_from_pos"
+      "notes": "XAUUSD spread overridden to measured live 0.48. FLAGGED 2026-11-03 (desk health, read on the box): the bar stamps are BROKER time (UTC+2 winter / UTC+3 summer) labelled with a UTC tzinfo -- a last bar stamped 20:00 is about 18:00Z. Not changed here; the bar writer owns it.",
+      "provenance": "MT5 copy_rates_from_pos",
+      "cadence": "daily",
+      "cadence_basis": "daily_cycle step refresh_bars (scripts/refresh_tail.py) extends every H1 parquet once a day; the MT5-Universe task and fetch_universe add symbols. daily, not hourly: a weekend is a 2-day gap in an H1 series and must not read STALE",
+      "produced_on": "box"
     },
     "xauusd_scalp_bars": {
       "lifecycle": "RESEARCH-USEFUL",
-      "source": "Vantage Markets live MT5 terminal, read-only account",
+      "source": "Fusion Markets live MT5 terminal on the trading box (FusionMarkets-Live, per XAUUSD_scalp_source.json source_server)",
       "symbol": "XAUUSD",
       "timeframes": ["M1", "M5", "M15"],
-      "bars_per_timeframe": 90000,
+      "bars_per_timeframe": 20000,
       "format": "parquet",
       "path": "data/universe/XAUUSD_M*.parquet",
       "ingested": "2026-08-22",
-      "notes": "Paged in 5k blocks below MT5's native request crash boundary and retains broker spread points. Used as price/spread proxy for scalp falsification; Fusion Zero execution arm adds official $4.50/lot round-turn commission. Not Fusion-native history and therefore has no capital-promotion authority.",
-      "provenance": "fetch_gold_scalp.py via MT5 copy_rates_from_pos"
+      "notes": "Paged in 5k blocks below MT5's native request crash boundary and retains broker spread points. Fusion Zero execution arm adds official $4.50/lot round-turn commission. CORRECTED 2026-11-03: the registry said Vantage; the routine refresh reads the desk's own FusionMarkets-Live terminal (XAUUSD_scalp_source.json: source_company Fusion Markets Pty Ltd, promotion_authority true), 20,000 bars per timeframe. Promotion authority is the source file's flag, per refresh.",
+      "provenance": "research/shadow_cycle.py _refresh_scalp_bars (fetch_gold_scalp._paged_rates) via MT5 copy_rates_from_pos",
+      "cadence": "daily",
+      "cadence_basis": "shadow_cycle refreshes M1/M5/M15 whenever the bars are older than its 75-minute producer SLA during an open session; judged daily so the weekend close is not read as starvation",
+      "produced_on": "box"
     },
     "fred_macro": {
       "lifecycle": "CORE",
@@ -39,7 +45,9 @@
       "coverage": "1934-2026",
       "ingested": "2026-08-16",
       "notes": "Current vintage only; ALFRED key = point-in-time upgrade path. DTWEXM ends 2019 (discontinued); BAMLH0A0HYM2 starts 2023; gold PM fix series 404s on FRED (XAUUSD H1 covers gold pricing)",
-      "provenance": "fred.stlouisfed.org"
+      "provenance": "fred.stlouisfed.org",
+      "cadence": "daily",
+      "cadence_basis": "FRED daily series (the slowest, WALCL weekly and PCOPPUSDM monthly, are judged on the file's last write). FOUND 2026-11-03: the writer research/fetch_fred.py hard-codes OUT to the retired laptop (C:\\Users\\dell\\mt5-research\\data\\lake) and no clock runs it; the macro readers take data/fred_macro.json from the VPS FRED collector instead. Not revived here (no file on the build host; box truth pending)."
     },
     "cot_fx": {
       "lifecycle": "CORE",
@@ -52,14 +60,29 @@
       "ingested": "2026-08-16",
       "notes": "EUR FX absent from legacy schema (known CFTC quirk; euro lives in disaggregated/TFF only - registered as EUR_COT_BLOCKED). sp500 broad group ends 2021-09; nasdaq100 market = NASDAQ MINI since 2021. JPY crosses all map to the yen contract.",
       "provenance": "publicreporting.cftc.gov",
-      "mapping": "mt5desk/data.py _SYMBOL_SLUG"
+      "mapping": "mt5desk/data.py _SYMBOL_SLUG",
+      "cadence": "weekly",
+      "cadence_basis": "CFTC reports Tuesday positions on Friday 15:30 ET; hourly leg cot_fx (research/cot_fx_refresh.py, 2026-11-03) fetches after the Friday release that should carry a newer report. Before it no clock ran mt5desk/fetch_cot.py and the box's newest report was 2026-08-11",
+      "produced_on": "box"
     },
     "bis_eer": {
       "lifecycle": "DISCOVERED",
       "source": "BIS stats API",
       "status": "blocked - /api/v2/data 500/501 on all standard paths (2026-08-16)",
       "notes": "EER need covered pragmatically by FRED DTWEXBGS/DTWEXM; retry BIS web bulk download later",
-      "quarantined": true
+      "quarantined": true,
+      "hold": {
+        "status": "IDEAS_ONLY",
+        "checked_at": "2026-11-03",
+        "why": "BIS's site terms (bis.org/terms_conditions.htm, quoted in SOURCE_POLICY bis_speeches, checked 2026-10-29) clause 2.1 permits download and redistribution for NON-COMMERCIAL purposes only; data.bis.org's own statistics terms are unread. The 2026-08-16 API probe also answered 500/501",
+        "unblock": "a data.bis.org licence clause permitting the desk's use, quoted into a SOURCE_POLICY row",
+        "terms": "BIS clause 2.1 (non-commercial only); data.bis.org statistics terms UNREAD",
+        "missed_growth": {
+          "delta_elogw": "UNMEASURED",
+          "cause": "delta E[log W] UNMEASURED: the BIS effective exchange rate (broad trade-weighted USD and crosses) for the XAUUSD/XAGUSD windows is cut as live input until a data.bis.org licence clause permitting the desk's use, quoted into a SOURCE_POLICY row; no certificate, sleeve or shadow clock reads it, so the forgone growth is UNMEASURED, never zero"
+        },
+        "substitute": "FRED DTWEXBGS (fred_macro), already collected"
+      }
     },
     "spdr_gld_holdings": {
       "lifecycle": "DISCOVERED",
@@ -67,70 +90,162 @@
       "status": "blocked - all URLs 404",
       "priority": "miner task",
       "notes": "Retry mirrors/archives; historical XLSX + bar lists",
-      "quarantined": true
+      "quarantined": true,
+      "hold": {
+        "status": "IDEAS_ONLY",
+        "checked_at": "2026-11-03",
+        "why": "research/fetch_gld.py exists but writes to the retired laptop path and no clock runs it; spdrgoldshares.com has no SOURCE_POLICY row and its terms are unread, so it is not wired",
+        "unblock": "spdrgoldshares.com (World Gold Trust Services) terms read and a permitting clause quoted into a SOURCE_POLICY row; then put fetch_gld.py on a daily clock with OUT under desk_root()",
+        "terms": "UNREAD: no SOURCE_POLICY row (libs/data/terms_fence.py on the data line); the build session's egress refused www.spdrgoldshares.com (proxy 403, 2026-11-03), so no verbatim permitting clause was read. UNREAD terms never permit automated live input",
+        "missed_growth": {
+          "delta_elogw": "UNMEASURED",
+          "cause": "delta E[log W] UNMEASURED: GLD physical holdings flow for the XAUUSD/XAGUSD windows is cut as live input until spdrgoldshares.com (World Gold Trust Services) terms read and a permitting clause quoted into a SOURCE_POLICY row; then put fetch_gld.py on a daily clock with OUT under desk_root(); no certificate, sleeve or shadow clock reads it, so the forgone growth is UNMEASURED, never zero"
+        }
+      }
     },
     "sge_benchmark": {
       "lifecycle": "DISCOVERED",
       "source": "Shanghai Gold Exchange",
       "status": "not yet fetched",
       "priority": "high",
-      "notes": "Shanghai Gold Benchmark Price + reports"
+      "notes": "Shanghai Gold Benchmark Price + reports",
+      "hold": {
+        "status": "IDEAS_ONLY",
+        "checked_at": "2026-11-03",
+        "why": "SOURCE_POLICY['sge'] (data line, checked 2026-10-29): the SGE site prints only a copyright line and links no terms page, so its terms are UNREAD and the source is IDEAS_ONLY; asia_collector reads it for ideas only",
+        "unblock": "an SGE statement permitting automated access to its quotation data, quoted into SOURCE_POLICY['sge']",
+        "terms": "SOURCE_POLICY['sge']: IDEAS_ONLY, terms UNREAD",
+        "missed_growth": {
+          "delta_elogw": "UNMEASURED",
+          "cause": "delta E[log W] UNMEASURED: the Shanghai Gold Benchmark premium for the XAUUSD/XAGUSD windows is cut as live input until an SGE statement permitting automated access to its quotation data, quoted into SOURCE_POLICY['sge']; no certificate, sleeve or shadow clock reads it, so the forgone growth is UNMEASURED, never zero"
+        }
+      }
     },
     "shfe_gold": {
       "lifecycle": "DISCOVERED",
       "source": "Shanghai Futures Exchange",
       "status": "not yet fetched",
       "priority": "high",
-      "notes": "Gold futures volume/OI/market statistics"
+      "notes": "Gold futures volume/OI/market statistics",
+      "hold": {
+        "status": "IDEAS_ONLY",
+        "checked_at": "2026-11-03",
+        "why": "SOURCE_POLICY['cnx_shfe'] (data line): the SHFE site statement grants non-commercial browse/download only (基于非商业目的), whole-host hold on shfe.com.cn",
+        "unblock": "SHFE's written permission (书面许可), quoted into SOURCE_POLICY['cnx_shfe']",
+        "terms": "SOURCE_POLICY['cnx_shfe']: non-commercial only",
+        "missed_growth": {
+          "delta_elogw": "UNMEASURED",
+          "cause": "delta E[log W] UNMEASURED: SHFE gold futures volume and open interest for the XAUUSD/XAGUSD windows is cut as live input until SHFE's written permission (书面许可), quoted into SOURCE_POLICY['cnx_shfe']; no certificate, sleeve or shadow clock reads it, so the forgone growth is UNMEASURED, never zero"
+        }
+      }
     },
     "lbma_vaults": {
       "lifecycle": "DISCOVERED",
       "source": "LBMA",
       "status": "not yet fetched",
       "priority": "high",
-      "notes": "London vault holdings, clearing statistics"
+      "notes": "London vault holdings, clearing statistics",
+      "hold": {
+        "status": "IDEAS_ONLY",
+        "checked_at": "2026-11-03",
+        "why": "lbma.org.uk has no SOURCE_POLICY row and its terms are unread",
+        "unblock": "LBMA's website terms read and a clause permitting automated retrieval of the vault-holdings statistics quoted into a SOURCE_POLICY row",
+        "terms": "UNREAD: no SOURCE_POLICY row (libs/data/terms_fence.py on the data line); the build session's egress refused www.lbma.org.uk (proxy 403, 2026-11-03), so no verbatim permitting clause was read. UNREAD terms never permit automated live input",
+        "missed_growth": {
+          "delta_elogw": "UNMEASURED",
+          "cause": "delta E[log W] UNMEASURED: London vault gold holdings for the XAUUSD/XAGUSD windows is cut as live input until LBMA's website terms read and a clause permitting automated retrieval of the vault-holdings statistics quoted into a SOURCE_POLICY row; no certificate, sleeve or shadow clock reads it, so the forgone growth is UNMEASURED, never zero"
+        }
+      }
     },
     "swiss_customs_gold": {
       "lifecycle": "DISCOVERED",
       "source": "Swiss Customs",
       "status": "not yet fetched",
       "priority": "high",
-      "notes": "Gold imports/exports by country; monthly from 2012, granular since 2021"
+      "notes": "Gold imports/exports by country; monthly from 2012, granular since 2021",
+      "hold": {
+        "status": "IDEAS_ONLY",
+        "checked_at": "2026-11-03",
+        "why": "the Swiss Federal Office for Customs and Border Security (BAZG, Swiss-Impex) has no SOURCE_POLICY row and its terms are unread",
+        "unblock": "the BAZG / opendata.swiss licence for the gold trade series read and quoted into a SOURCE_POLICY row (a federal open-data licence would make it API_PERMITTED)",
+        "terms": "UNREAD: no SOURCE_POLICY row (libs/data/terms_fence.py on the data line); the build session's egress refused the BAZG / Swiss-Impex hosts (proxy 403, 2026-11-03), so no verbatim permitting clause was read. UNREAD terms never permit automated live input",
+        "missed_growth": {
+          "delta_elogw": "UNMEASURED",
+          "cause": "delta E[log W] UNMEASURED: Swiss gold refinery import/export flows for the XAUUSD/XAGUSD windows is cut as live input until the BAZG / opendata.swiss licence for the gold trade series read and quoted into a SOURCE_POLICY row (a federal open-data licence would make it API_PERMITTED); no certificate, sleeve or shadow clock reads it, so the forgone growth is UNMEASURED, never zero"
+        }
+      }
     },
     "wgc_goldhub": {
       "lifecycle": "DISCOVERED",
       "source": "World Gold Council Goldhub",
       "status": "not yet fetched",
       "priority": "medium",
-      "notes": "Supply/demand datasets"
+      "notes": "Supply/demand datasets",
+      "hold": {
+        "status": "IDEAS_ONLY",
+        "checked_at": "2026-11-03",
+        "why": "gold.org (Goldhub) has no SOURCE_POLICY row and its terms are unread",
+        "unblock": "the World Gold Council's Goldhub terms read and a clause permitting automated download for internal research quoted into a SOURCE_POLICY row",
+        "terms": "UNREAD: no SOURCE_POLICY row (libs/data/terms_fence.py on the data line); the build session's egress refused www.gold.org (proxy 403, 2026-11-03), so no verbatim permitting clause was read. UNREAD terms never permit automated live input",
+        "missed_growth": {
+          "delta_elogw": "UNMEASURED",
+          "cause": "delta E[log W] UNMEASURED: WGC supply/demand and ETF-flow datasets for the XAUUSD/XAGUSD windows is cut as live input until the World Gold Council's Goldhub terms read and a clause permitting automated download for internal research quoted into a SOURCE_POLICY row; no certificate, sleeve or shadow clock reads it, so the forgone growth is UNMEASURED, never zero"
+        }
+      }
     },
     "cme_gc": {
       "lifecycle": "DISCOVERED",
       "source": "CME Group public",
       "status": "not yet fetched",
       "priority": "medium",
-      "notes": "GC futures/options OI, volatility analytics, settlement; delayed quotes only"
+      "notes": "GC futures/options OI, volatility analytics, settlement; delayed quotes only",
+      "hold": {
+        "status": "IDEAS_ONLY",
+        "checked_at": "2026-11-03",
+        "why": "CME's Terms of Use (SOURCE_POLICY cme_margin_changes / comex_warehouse_stocks, checked 2026-10-14): s.12 bars copying and derivative works, s.8(vi) bars data use for machine learning, the Data Terms of Use bar scripts without written permission, and robots.txt disallows Python-urllib",
+        "unblock": "a written CME authorisation, or a licensed vendor feed",
+        "terms": "CME Terms of Use s.12, s.8(vi); Data Terms of Use (automated access)",
+        "missed_growth": {
+          "delta_elogw": "UNMEASURED",
+          "cause": "delta E[log W] UNMEASURED: COMEX GC open interest and settlement for the XAUUSD/XAGUSD windows is cut as live input until a written CME authorisation, or a licensed vendor feed; no certificate, sleeve or shadow clock reads it, so the forgone growth is UNMEASURED, never zero"
+        }
+      }
     },
     "cot": {
       "lifecycle": "CORE",
       "source": "CFTC public",
       "status": "fetched - see cot_fx entry",
       "priority": "done",
-      "notes": "superseded by cot_fx (multi-contract lake)"
+      "notes": "superseded by cot_fx (multi-contract lake)",
+      "superseded_by": "cot_fx"
     },
     "eur_cot_blocked": {
       "lifecycle": "DISCOVERED",
       "source": "CFTC",
       "status": "blocked - EURO FX absent from legacy futures-only schema; disaggregated Socrata schema id 72ab-3q3s returns 404",
       "notes": "EUR positioning via FRED rates differentials + EURUSD H1 for now",
-      "quarantined": true
+      "quarantined": true,
+      "superseded_by": "cot_tff",
+      "superseded_why": "EURO FX positioning lives in the CFTC Traders-in-Financial-Futures report, which mt5desk/fetch_tff.py writes to data/cot_tff/<slug>.parquet (eur included). FOUND 2026-11-03: fetch_tff.py is on no clock either -- the same defect cot_fx had; its revival is the next step for this row, not done here"
     },
     "gdelt": {
       "lifecycle": "DISCOVERED",
       "source": "GDELT 2.0",
       "status": "not yet fetched",
       "priority": "low",
-      "notes": "Translated news 100+ languages, 15-min updates; quarantined research input"
+      "notes": "Translated news 100+ languages, 15-min updates; quarantined research input",
+      "hold": {
+        "status": "IDEAS_ONLY",
+        "checked_at": "2026-11-03",
+        "why": "gdeltproject.org has no SOURCE_POLICY row and its terms are unread here. GDELT event aggregates already reach the desk through alt_proxies (lake series alt_gdelt_events_country__*, carried by alt_proxies_equity_handoff) under the policy's PUBLIC_PAGE default for an unlisted host; this row's full 15-minute GKG collection is not wired",
+        "unblock": "GDELT's terms of use read and the permitting clause quoted into a SOURCE_POLICY row (data line), which then also covers the alt_proxies route",
+        "terms": "UNREAD: no SOURCE_POLICY row (libs/data/terms_fence.py on the data line); the build session's egress refused www.gdeltproject.org (proxy 403, 2026-11-03), so no verbatim permitting clause was read. UNREAD terms never permit automated live input",
+        "missed_growth": {
+          "delta_elogw": "UNMEASURED",
+          "cause": "delta E[log W] UNMEASURED: the full GDELT 15-minute event/tone stream for the XAUUSD/XAGUSD windows is cut as live input until GDELT's terms of use read and the permitting clause quoted into a SOURCE_POLICY row (data line), which then also covers the alt_proxies route; no certificate, sleeve or shadow clock reads it, so the forgone growth is UNMEASURED, never zero"
+        },
+        "covered_by": "alt_proxies_equity_handoff (alt_gdelt_events_country__* lake series)"
+      }
     },
     "alt_proxies_equity_handoff": {
       "lifecycle": "INGESTED",
@@ -154,6 +269,8 @@
         "alt_us_tsa_throughput__travelers"
       ],
       "consumer": "research/alt_equity_handoff.py (event lane + class books)",
+      "cadence": "hourly",
+      "cadence_basis": "hourly_cycle leg alt_proxies (--once) rewrites the hand-off on every pass",
       "provenance": "desks/mt5/research/alt_proxies.py equity_handoff()",
       "pit": {
         "publication_lag_days": 0,

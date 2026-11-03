@@ -132,6 +132,8 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
      "research/futures_state.py"),
     ("dataset_usage", "desks/mt5/reports/DATASET_USAGE.json", 3600,
      "research/dataset_usage.py"),
+    ("cot_fx", "desks/mt5/reports/COT_FX_FETCH.json", 3600,
+     "research/cot_fx_refresh.py"),
     ("independence_intake", "desks/mt5/reports/INDEPENDENCE_INTAKE.json", 3600,
      "research/independence_intake.py"),
     ("rank_recovery", "desks/mt5/reports/RANK_RECOVERY.json", 3600,

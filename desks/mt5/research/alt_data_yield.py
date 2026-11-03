@@ -95,6 +95,12 @@ def forest_legs() -> list[str]:
 
 
 # --------------------------------------------------------------------------- platforms
+#: THE CADENCE EACH PLATFORM ROW IS JUDGED ON (the dataset-usage census reads it). The regional
+#: hunters run hourly with a rotating three-page cursor, so a platform yields on some passes and
+#: not on others: a day without a new discovery file is the signal, an hour is noise.
+PLATFORM_CADENCE = "daily"
+
+
 def platforms(cov: Any) -> dict[str, Any]:
     if not isinstance(cov, dict) or not isinstance(cov.get("platforms"), dict):
         return {"status": UNMEASURED, "why": f"{COVERAGE.name} absent or unreadable here"}
@@ -120,6 +126,7 @@ def platforms(cov: Any) -> dict[str, Any]:
             "last_success": e.get("last_success") or UNMEASURED,
             "last_via": e.get("last_via") or UNMEASURED,
             "counted_since": e.get("counted_since") or UNMEASURED,
+            "cadence": PLATFORM_CADENCE,
             **({} if counted else {"why_unmeasured": why_unm}),
         }
     yielding = [n for n, r in rows.items()

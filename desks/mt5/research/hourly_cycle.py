@@ -1193,6 +1193,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # the dataset-usage census (BACKLOG row 61): a reader of registries, file stats and the
     # code tree, ~8 s; a fence that never ran is a claim the desk cannot cash (L1.49).
     "dataset_usage",
+    # the cot_fx clock: a NOT_DUE receipt in milliseconds six days a week, one CFTC fetch after
+    # Friday's release; the leg ran nowhere before and the data stood at 2026-08-11.
+    "cot_fx",
     # The culture-gap producers (2026-09-30): a data-driven recipe walk, well under a second
     # when nothing is new, so every gap's cells are minted on the core clock.
     "culture_gap_cells",
@@ -1311,7 +1314,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
-                     "unused_information", "ingestion_ledger", "dataset_usage",
+                     "unused_information", "ingestion_ledger", "dataset_usage", "cot_fx",
                      "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
                      "judge_coverage", "judge_prescreen", "orthogonality_yield",
@@ -2390,6 +2393,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # THE DATASET-USAGE CENSUS stops itself at --budget-s 240 (8 s measured: registries, parquet
     # column statistics, one regex pass over the code tree); the cap sits above so it writes.
     "dataset_usage": 300,
+    # THE COT_FX CLOCK: NOT_DUE in milliseconds; a due pass is twelve contracts of CFTC Socrata
+    # (one to three 5,000-row pages each, 90 s socket cap), about a minute measured by hand.
+    "cot_fx": 600,
     # The closed co-evolution stops itself at --budget-s 900 (breeding, then the islands) and
     # writes COEVOLUTION.json; the cap sits above it so it is never cut at the same prefix.
     "coevolution": 1_020,
@@ -6095,6 +6101,11 @@ def main() -> None:
     # 401/403/429/451 is a hard stop per source.
     fst = _costed("futures_state", lambda: _producer(
         "futures_state", "research/futures_state.py", "--once"))
+    # THE COT_FX CLOCK (2026-11-03). `data/cot/*.parquet` had no writer on any clock -- the
+    # one-shot `mt5desk/fetch_cot.py` ran on the retired laptop -- so every COT reader judged a
+    # tape frozen at 2026-08-11. Weekly by its own decision (fetches only after the Friday
+    # release that should carry a newer report), honest UA, robots first, 401/403/429 a hard stop.
+    cfx = _costed("cot_fx", lambda: _producer("cot_fx", "research/cot_fx_refresh.py"))
     # THE DATASET-USAGE CENSUS (BACKLOG row 61, principal 2026-09-30: "fix partial and unfed
     # datasets fully, unstarved and collected"). Every dataset a registry says the desk collects
     # -- data_registry, the free stack, futures_state's series, acquired series, alt platforms --
@@ -6537,7 +6548,8 @@ def main() -> None:
                     "preregistration": prg, "organ_census": ogc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
-                    "culture_gap_cells": cgc, "futures_state": fst, "dataset_usage": dsu,
+                    "culture_gap_cells": cgc, "futures_state": fst, "cot_fx": cfx,
+                    "dataset_usage": dsu,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
                     "actor_pressure": apr, "destroyer_pool": dpo,

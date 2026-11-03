@@ -48,6 +48,7 @@ if str(_ROOT) not in sys.path:
 
 from libs.data.pit_certificate import certify  # noqa: E402
 from libs.data.pit_certificate import write as write_certificate  # noqa: E402
+from libs.data.timeframe import publication_cadence  # noqa: E402
 from libs.research import country_lab as country_lab  # noqa: E402
 
 WORLD = DESK / "data" / "intelligence" / "world"
@@ -469,6 +470,11 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
                 "path": str(path), "url": url, "host": host,
                 "rows": int(s.notna().sum()),
                 "first": str(s.index.min()), "last": str(s.index.max()),
+                # THE SERIES' OWN PUBLICATION CADENCE, from its span, so the dataset-usage
+                # census judges an ECB daily rate as a weekday series and a monthly one monthly
+                # -- not every acquired row against an undeclared one-week fallback.
+                "cadence": publication_cadence(int(s.notna().sum()), s.index.min(),
+                                               s.index.max()),
                 "acquired_at": datetime.now(UTC).isoformat(timespec="seconds"),
                 "schema_hash": schema_hash,
                 "pit_certificate": cert_id,
