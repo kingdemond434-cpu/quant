@@ -650,6 +650,10 @@ $relPaths = @(
     # meter says whether the box's state is actually reaching origin (STALLED when it is not).
     "desks/mt5/reports/GATE_VERDICT_DIGEST.json",
     "desks/mt5/reports/BOX_STATE_FLOW.json",
+    # THE COMBINER'S COVERAGE (2026-11-03), written by the hourly `weak_signal_book` leg:
+    # eligible vs ingested signals with reasons, breadth and decay retirements, in one bounded
+    # file so the hourly pass reads it off the branch.
+    "desks/mt5/reports/COMBINER_COVERAGE.json",
     # THE FRESHNESS VERDICT AND THE DESK'S HEALTH, ON THE SAME WIRE (2026-09-30). Both written
     # by core-plan hourly legs (`box_state_freshness`, `desk_health`) just before `publish_state`:
     # CRO D17 reads box_state_age_hours from the first, and the second is check_desk_health.py's

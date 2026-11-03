@@ -282,6 +282,55 @@ def size_lambda(r: np.ndarray, cfg: BookConfig) -> dict[str, Any]:
             "oos_max_drawdown": max_dd(lam) if lam > 0 else 0.0}
 
 
+def breadth(pool: Pool, unit: np.ndarray, book_oos: np.ndarray | None = None,
+            max_members: int = 200) -> dict:
+    """How many independent bets the book really holds, net of cost, and how it behaves in crisis.
+
+    eff_n_weights        1 / sum(d^2): how evenly the weight is spread
+    eff_n_independent    diversification ratio squared, (sum d_i s_i)^2 / d' Sigma d, on the
+                         3x-cost series (net of stressed cost): the number of uncorrelated bets the
+                         book is equivalent to. This is the breadth that compounds.
+    crisis               mean pairwise correlation of the active members on the book's worst 5%
+                         of days (by the full-history unit book) against all days. A ratio well
+                         above 1 means diversification evaporates exactly when it is needed.
+    """
+    act = np.flatnonzero(unit > 0)
+    if len(act) == 0:
+        return {"n_active": 0, "eff_n_weights": 0.0, "eff_n_independent": 0.0, "crisis": None}
+    act = act[np.argsort(-unit[act])][:max_members]
+    d = unit[act] / unit[act].sum()
+    x = np.where(pool.avail[:, act], pool.r3[:, act], 0.0).astype(np.float64)
+    out = {"n_active": int((unit > 0).sum()), "eff_n_weights": round(float(1 / np.sum(d ** 2)), 2)}
+    if len(act) < 2:
+        out.update(eff_n_independent=1.0, crisis=None)
+        return out
+    cov = np.cov(x, rowvar=False)
+    sd = np.sqrt(np.maximum(np.diag(cov), 0))
+    var_b = float(d @ cov @ d)
+    out["eff_n_independent"] = round(float((d @ sd) ** 2 / var_b), 2) if var_b > 0 else None
+    book = x @ d if book_oos is None else book_oos
+    k = max(int(len(book) * 0.05), 5)
+    worst = np.argsort(book)[:k]
+
+    def mean_corr(rows: np.ndarray) -> float | None:
+        sub = x[rows]
+        s = sub.std(0)
+        ok = s > 0
+        if ok.sum() < 2:
+            return None
+        c = np.corrcoef(sub[:, ok], rowvar=False)
+        n = c.shape[0]
+        return float((c.sum() - n) / (n * (n - 1)))
+
+    allc, crc = mean_corr(np.arange(len(x))), mean_corr(worst)
+    out["crisis"] = {"mean_corr_all_days": None if allc is None else round(allc, 4),
+                     "mean_corr_worst_5pct_days": None if crc is None else round(crc, 4),
+                     "worst_days": int(k),
+                     "sizing_state": "lambda capped by OOS worst day and drawdown, which include "
+                                     "these days; no separate crisis haircut"}
+    return out
+
+
 def judge(pool: Pool, cfg: BookConfig, *, n_trials: int | None,
           variance_of_sharpes: float | None = None,
           recipe_sharpes: Sequence[float] = ()) -> dict[str, Any]:
@@ -368,6 +417,7 @@ def judge(pool: Pool, cfg: BookConfig, *, n_trials: int | None,
                    "note": "lambda is equity at risk per unit-book day; member risk = "
                            "lambda * weight. Zero unless every gate passed."},
         "final_fit": rec,
+        "breadth": breadth(pool, unit),
         "members": [{"cell": c, "weight": round(wt, 6),
                      "risk_per_trade_frac": round(lam * wt, 7)} for c, wt in members],
     }
@@ -381,8 +431,10 @@ class Coverage:
     gaps: dict[str, int] = field(default_factory=dict)
     refused: dict[str, int] = field(default_factory=dict)
     examples: dict[str, list[str]] = field(default_factory=dict)
+    missing: list[tuple[str, str]] = field(default_factory=list)
 
     def gap(self, cause: str, cid: str) -> None:
+        self.missing.append((cid, cause))
         self.gaps[cause] = self.gaps.get(cause, 0) + 1
         ex = self.examples.setdefault(cause, [])
         if len(ex) < 5:

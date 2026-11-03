@@ -470,6 +470,10 @@ desks/mt5/data/import_stems_cache.json
 # committed summary of the gitignored gate_verdict_ledger.jsonl and universal_gates_external.json.
 !desks/mt5/reports/GATE_VERDICT_DIGEST.json
 !desks/mt5/reports/BOX_STATE_FLOW.json
+# THE COMBINER'S COVERAGE (2026-11-03): the one file the hourly pass reads -- eligible vs
+# ingested, every gap with its reason, breadth, crisis correlation, decay retirements and new
+# producers. Written by the hourly `weak_signal_book` leg, published by the same $relPaths.
+!desks/mt5/reports/COMBINER_COVERAGE.json
 # THE FRESHNESS FENCE'S REPORT AND THE DESK HEALTH REPORT (2026-09-30), published by the same
 # $relPaths: CRO D17 reads box_state_age_hours off the branch, and the plain-English desk health
 # check had no reader off the box at all.

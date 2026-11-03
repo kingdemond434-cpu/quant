@@ -69,6 +69,21 @@ EXTRA_PARAM_SOURCES = tuple(DATA / "hypotheses" / n for n in (
 #: sha256("{}")[:16]: a cell whose digest is this was minted with EMPTY params.
 EMPTY_PARAMS_DIGEST = "44136fa355b3678a"
 EXPERIMENT_LEDGER = REPORTS / "EXPERIMENT_LEDGER.json"
+#: ONE FILE FOR THE HOURLY PASS, published to the branch by sync_shadow_to_git.ps1.
+COVERAGE_OUT = REPORTS / "COMBINER_COVERAGE.json"
+GAPS_OUT = STORE / "COMBINER_GAPS.jsonl"          # the full per-signal list (box only)
+FIRST_SEEN = STORE / "first_seen.json"
+PRODUCERS_SEEN = STORE / "producers_seen.json"
+#: AUTO-ENROLMENT DOOR for anything that is not a gauntlet cell (class books, external sleeves):
+#: drop one JSON per signal here and it is eligible on the next pass, no code change.
+#:   {"id": str, "source": str, "validity": "passed"|"failed", "evidence": str,
+#:    "daily_r": {"YYYY-MM-DD": R}, "daily_r_3x": {"YYYY-MM-DD": R}}
+COMBINER_INPUTS = DATA / "combiner_inputs"
+DECAY_LIVE = DATA / "decay_live.json"
+DECAY_ZERO = DATA / "DECAY_ZERO.json"
+FEATURE_DRIFT = REPORTS / "FEATURE_DRIFT.json"
+RETIRE_VERDICTS = frozenset({"RETIRE", "RETIRED", "DECAYED", "ZERO", "KILL", "KILLED"})
+RED_AFTER_HOURS = 24.0
 MAX_AGE_DAYS = 7           # a stored series older than this is rebuilt (rotation, not a gap)
 CACHE_LOOKBACK_DAYS = 21   # how far back to look for a gauntlet-cached series of the same cell
 #: A cell the judge itself could not give a series is refused BY RULE (counted, not missing).
@@ -337,6 +352,86 @@ def build_series(eg, spec: dict, meta: dict) -> tuple[tuple[pd.Series, pd.Series
 
 # ---------------------------------------------------------------- live sleeves
 
+def external_inputs(cov) -> dict[str, tuple[pd.Series, pd.Series]]:
+    """Every file in combiner_inputs/ is eligible. Admitted only with attested validity and a
+    real 3x arm, so an external input can neither smuggle in a corrupt series nor make the cost
+    gate vacuous."""
+    out: dict[str, tuple[pd.Series, pd.Series]] = {}
+    for f in sorted(COMBINER_INPUTS.glob("*.json")) if COMBINER_INPUTS.is_dir() else []:
+        doc = _read_json(f, None)
+        cid = f"EXT:{(doc or {}).get('id') or f.stem}" if isinstance(doc, dict) else f"EXT:{f.stem}"
+        cov.eligible += 1
+        if not isinstance(doc, dict):
+            cov.gap("external_unreadable", cid)
+            continue
+        val = str(doc.get("validity") or "").lower()
+        if val == "failed":
+            cov.refuse("validity_failed")
+            continue
+        if val != "passed" or not doc.get("evidence"):
+            cov.gap("external_validity_unattested", cid)
+            continue
+        try:
+            s1 = pd.Series(doc["daily_r"], dtype=float)
+            s1.index = pd.to_datetime(s1.index)
+            s3 = pd.Series(doc.get("daily_r_3x") or {}, dtype=float)
+            s3.index = pd.to_datetime(s3.index)
+        except (KeyError, TypeError, ValueError):
+            cov.gap("external_series_malformed", cid)
+            continue
+        if not len(s1):
+            cov.refuse("series_has_no_trades")
+            continue
+        if not len(s3):
+            cov.gap("external_no_3x_arm", cid)
+            continue
+        out[cid] = (s1.sort_index(), s3.sort_index())
+        cov.ingested += 1
+    return out
+
+
+def decay_retired() -> tuple[set[str], str]:
+    """Live sleeve names the decay organs have retired (decay_live verdicts + DECAY_ZERO)."""
+    names: set[str] = set()
+    doc = _read_json(DECAY_LIVE, None)
+    basis = "decay_live.json unreadable" if doc is None else "decay_live.json"
+    for k, v in ((doc or {}).get("verdicts") or {}).items():
+        verdict = v.get("verdict") if isinstance(v, dict) else v
+        if str(verdict or "").upper() in RETIRE_VERDICTS:
+            names.add(str(k))
+    z = _read_json(DECAY_ZERO, None)
+    if z is not None:
+        basis += " + DECAY_ZERO.json"
+        items = z.get("zeroed") or z.get("sleeves") or z if isinstance(z, dict) else z
+        names.update(str(k) for k in (items if isinstance(items, list | dict) else []))
+    return names, basis
+
+
+def drift_flags() -> list[str]:
+    """Early warning only (Tier-1 gap): reported, never used to zero a member."""
+    doc = _read_json(FEATURE_DRIFT, None)
+    out: list[str] = []
+
+    def walk(o, key=""):
+        if isinstance(o, dict):
+            if str(o.get("verdict") or "") == "EDGE_DECAY_CANDIDATE":
+                out.append(str(o.get("sleeve") or o.get("name") or o.get("cell") or key))
+            for k, v in o.items():
+                if isinstance(v, dict | list):
+                    walk(v, str(k))
+        elif isinstance(o, list):
+            for v in o:
+                walk(v, key)
+    walk(doc)
+    return sorted(set(out))
+
+
+def _retired(live_name: str, retired: set[str]) -> bool:
+    # Ledger names are MT5 comments, truncated at 31 characters: match on prefix either way.
+    n = live_name.removeprefix("LIVE:")
+    return any(r == n or r.startswith(n) or n.startswith(r) for r in retired if r)
+
+
 def live_sleeve_series() -> dict[str, pd.Series] | None:
     """Realised daily R per live sleeve, from fills. Real fills already carry real costs."""
     per: dict[str, dict] = defaultdict(lambda: defaultdict(float))
@@ -491,10 +586,18 @@ def run(budget_s: float = 1200.0, cfg: wsb.BookConfig | None = None) -> dict:
     # different measurement from backtest R; the armable book is the cells-only book, and the
     # with-live book is reported beside it, never armed.
     live_series: dict[str, tuple[pd.Series, None]] = {}
+    retired, decay_basis = decay_retired()
+    retired_members: list[str] = []
     for name, s in live.items():
         cov.eligible += 1
+        if _retired(name, retired):
+            cov.refuse("retired_for_decay")
+            retired_members.append(name)
+            continue
         cov.ingested += 1
         live_series[name] = (s, None)
+    ext = external_inputs(cov)
+    series.update(ext)
 
     lt, lt_basis = lifetime_trials()
     rows = trial_rows()
@@ -518,6 +621,7 @@ def run(budget_s: float = 1200.0, cfg: wsb.BookConfig | None = None) -> dict:
                                               if m["cell"].startswith("LIVE:")), 6),
                      "note": "never armed: realised and backtest R on one calendar"}
     by_source = Counter(pm[c]["source"].split(":")[0] for c in series if c in pm)
+    coverage_doc = publish_coverage(cov, cells, pm, ext, book, retired_members, decay_basis, now)
     doc = {
         "generated_utc": _now(), "elapsed_s": round(time.time() - t0, 1),
         "coverage": {**cov.as_dict(), "stale_over_max_age": stale,
@@ -534,6 +638,7 @@ def run(budget_s: float = 1200.0, cfg: wsb.BookConfig | None = None) -> dict:
                  "first": str(pool.dates[0].date()) if len(pool.dates) else None,
                  "last": str(pool.dates[-1].date()) if len(pool.dates) else None},
         "book": book,
+        "combiner_coverage": str(COVERAGE_OUT.name),
         "book_with_live_sleeves": with_live,
         "status": ("PROPOSE" if book.get("passed") else "NO_BOOK"),
         "authority": "proposes only; nothing here arms or sizes a live order",
@@ -543,7 +648,71 @@ def run(budget_s: float = 1200.0, cfg: wsb.BookConfig | None = None) -> dict:
         fh.write(json.dumps({"at": doc["generated_utc"], "recipe": recipe,
                              "members": len(pool.ids), "passed": bool(book.get("passed")),
                              "oos_sr_daily": (book.get("oos") or {}).get("sr_daily")}) + "\n")
+    doc["coverage"]["red_over_24h"] = coverage_doc["red_over_24h"]
     return doc
+
+
+def publish_coverage(cov, cells: dict, pm: dict, ext: dict, book: dict,
+                     retired_members: list[str], decay_basis: str, now: datetime) -> dict:
+    """COMBINER_COVERAGE.json: the ONE file the hourly pass reads (item 37).
+
+    Any eligible signal not ingested within RED_AFTER_HOURS of first being seen is RED. New
+    producers are found from the eligible cells' own source stamps, so a new producer, cert
+    family or idea enrols with no code change the hour its first cell is judged.
+    """
+    first = _read_json(FIRST_SEEN, {}) or {}
+    stamp = now.isoformat(timespec="seconds")
+    for c in list(cells) + list(ext):
+        first.setdefault(c, stamp)
+    for cid, _ in cov.missing:
+        first.setdefault(cid, stamp)
+    _atomic_write(FIRST_SEEN, json.dumps(first, sort_keys=True))
+    red = []
+    rows = []
+    for cid, cause in cov.missing:
+        try:
+            age_h = (now - datetime.fromisoformat(first[cid])).total_seconds() / 3600
+        except (KeyError, ValueError):
+            age_h = 0.0
+        row = {"signal": cid, "reason": cause, "first_seen_utc": first.get(cid),
+               "age_hours": round(age_h, 1)}
+        rows.append(row)
+        if age_h > RED_AFTER_HOURS:
+            red.append(row)
+    _atomic_write(GAPS_OUT, "".join(json.dumps(r) + "\n" for r in rows))
+    seen_prod = set(_read_json(PRODUCERS_SEEN, []) or [])
+    prod_now = Counter(str(v.get("source") or "?").split(":")[0] for v in pm.values())
+    prod_now.update(str(c).split(":")[0] + ":external" for c in ext)
+    new_prod = {p: n for p, n in prod_now.items() if p not in seen_prod}
+    _atomic_write(PRODUCERS_SEEN, json.dumps(sorted(seen_prod | set(prod_now))))
+    cd = cov.as_dict()
+    b = book.get("breadth") or {}
+    out = {
+        "generated_utc": stamp,
+        "status": cd["status"],
+        "red_over_24h": len(red),
+        "rule": f"every eligible signal is ingested, refused by a named rule, or listed here with "
+                f"its reason; one not ingested {RED_AFTER_HOURS:.0f}h after first seen is RED",
+        "eligible": cd["eligible"], "ingested": cd["ingested"], "missing": cd["missing"],
+        "missing_by_cause": cd["missing_by_cause"], "refused_by_rule": cd["refused_by_rule"],
+        "red_sample": red[:500],
+        "not_ingested_sample": rows[:200],
+        "not_ingested_full_list": (GAPS_OUT.relative_to(_DESK).as_posix()
+                                   if GAPS_OUT.is_relative_to(_DESK) else str(GAPS_OUT)),
+        "breadth_net_of_cost": {k: b.get(k) for k in ("n_active", "eff_n_weights",
+                                                       "eff_n_independent")},
+        "crisis_correlation": b.get("crisis"),
+        "retired_for_decay": {"members": sorted(retired_members), "basis": decay_basis},
+        "drift_early_warning": drift_flags(),
+        "auto_enrolled_new_producers": new_prod,
+        "external_inputs_ingested": sorted(ext),
+        "book": {"passed": bool(book.get("passed")),
+                 "gates": {k: v.get("passed") for k, v in (book.get("gates") or {}).items()},
+                 "oos_sr_annual": (book.get("oos") or {}).get("sr_annual"),
+                 "lambda_armed": (book.get("sizing") or {}).get("lambda_armed")},
+    }
+    _atomic_write(COVERAGE_OUT, json.dumps(out, indent=1, default=str))
+    return out
 
 
 def main() -> int:

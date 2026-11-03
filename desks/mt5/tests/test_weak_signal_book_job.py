@@ -70,6 +70,14 @@ def _setup(tmp: Path, monkeypatch, cells: list[dict], index_extra: dict | None =
                       "STORE_INDEX": tmp / "store" / "index.json",
                       "TRIALS": tmp / "store" / "trials.jsonl",
                       "FAILED_GATES": tmp / "store" / "failed_gates.json",
+                      "COVERAGE_OUT": tmp / "COMBINER_COVERAGE.json",
+                      "GAPS_OUT": tmp / "store" / "COMBINER_GAPS.jsonl",
+                      "FIRST_SEEN": tmp / "store" / "first_seen.json",
+                      "PRODUCERS_SEEN": tmp / "store" / "producers_seen.json",
+                      "COMBINER_INPUTS": tmp / "combiner_inputs",
+                      "DECAY_LIVE": tmp / "decay_live.json",
+                      "DECAY_ZERO": tmp / "DECAY_ZERO.json",
+                      "FEATURE_DRIFT": tmp / "FEATURE_DRIFT.json",
                       "EXTRA_PARAM_SOURCES": ()}.items():
         monkeypatch.setattr(job, name, val)
     eg = _fake_gauntlet(tmp)
@@ -145,3 +153,54 @@ def test_unclassified_gate_fails_closed():
     assert job.admission("x", {}, ["lockbox"], v, p)[0] == "refuse"
     assert job.admission("x", {}, None, frozenset(), frozenset()) == \
         ("gap", "gate_registry_unreadable")
+
+
+def _ext(tmp: Path, name: str, **kw):
+    d = tmp / "combiner_inputs"
+    d.mkdir(exist_ok=True)
+    days = [str(x.date()) for x in DAYS[:300]]
+    doc = {"id": name, "source": "fx_carry_book", "validity": "passed", "evidence": "cert-1",
+           "daily_r": dict.fromkeys(days, 0.01), "daily_r_3x": dict.fromkeys(days, 0.005)}
+    doc.update(kw)
+    (d / f"{name}.json").write_text(json.dumps(doc))
+
+
+def test_combiner_coverage_is_one_file_with_reasons_breadth_and_auto_enrolment(
+        tmp_path, monkeypatch):
+    cells = [{"sym": f"S{i}", "family": "fam", "params": {"k": i}} for i in range(4)]
+    _setup(tmp_path, monkeypatch, cells)
+    _ext(tmp_path, "g10_carry")
+    _ext(tmp_path, "no_cert", evidence="")
+    _ext(tmp_path, "no_3x", daily_r_3x={})
+    (tmp_path / "decay_live.json").write_text(json.dumps({"verdicts": {"gold_asia": "RETIRE"}}))
+    (tmp_path / "FEATURE_DRIFT.json").write_text(json.dumps(
+        {"sleeves": [{"sleeve": "x", "verdict": "EDGE_DECAY_CANDIDATE"}]}))
+    job.run(budget_s=60)
+    c = json.loads((tmp_path / "COMBINER_COVERAGE.json").read_text())
+    assert "EXT:g10_carry" in c["external_inputs_ingested"]
+    assert c["missing_by_cause"] == {"external_validity_unattested": 1, "external_no_3x_arm": 1}
+    assert {r["signal"] for r in c["not_ingested_sample"]} == {"EXT:no_cert", "EXT:no_3x"}
+    assert all(r["reason"] for r in c["not_ingested_sample"])
+    assert c["retired_for_decay"]["members"] == ["LIVE:gold_asia"]
+    assert c["refused_by_rule"].get("retired_for_decay") == 1
+    assert c["drift_early_warning"] == ["x"]
+    assert "fx_carry_book:external" not in c["auto_enrolled_new_producers"]
+    assert any(k.startswith("EXT") for k in c["auto_enrolled_new_producers"])
+    assert c["red_over_24h"] == 0
+    assert {"n_active", "eff_n_independent"} <= set(c["breadth_net_of_cost"])
+    # Second pass: nothing new to enrol.
+    job.run(budget_s=60)
+    c2 = json.loads((tmp_path / "COMBINER_COVERAGE.json").read_text())
+    assert c2["auto_enrolled_new_producers"] == {}
+
+
+def test_a_gap_older_than_24h_is_red(tmp_path, monkeypatch):
+    cells = [{"sym": "S0", "family": "fam", "params": {"k": 0}}]
+    _setup(tmp_path, monkeypatch, cells)
+    _ext(tmp_path, "no_cert", evidence="")
+    store = tmp_path / "store"
+    store.mkdir(exist_ok=True)
+    (store / "first_seen.json").write_text(json.dumps({"EXT:no_cert": "2020-01-01T00:00:00+00:00"}))
+    job.run(budget_s=60)
+    c = json.loads((tmp_path / "COMBINER_COVERAGE.json").read_text())
+    assert c["red_over_24h"] == 1 and c["red_sample"][0]["signal"] == "EXT:no_cert"
