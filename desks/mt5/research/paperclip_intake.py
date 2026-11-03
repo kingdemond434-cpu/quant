@@ -32,10 +32,12 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -47,6 +49,7 @@ for _p in (ROOT, BASE, BASE / "research"):
         sys.path.insert(0, str(_p))
 
 from libs.research.paperclip_lab import contract, lab  # noqa: E402
+from libs.research.paperclip_lab.roles import BY_NAME  # noqa: E402
 
 PC = BASE / "data" / "paperclip"
 INBOX = PC / "inbox.json"
@@ -61,6 +64,14 @@ HYP = BASE / "data" / "hypotheses"
 REPO = os.environ.get("PAPERCLIP_REPO", "kingdemond434-cpu/quant")
 WORKFLOW = "paperclip-lab.yml"
 ARTIFACT = "paperclip-bundle"
+#: Scheduled workflows run from the DEFAULT branch, so a genuine lab run's headBranch is it.
+DEFAULT_BRANCH = os.environ.get("PAPERCLIP_DEFAULT_BRANCH", "master")
+EVENTS = frozenset({"schedule", "workflow_dispatch"})
+GH_MIN = (2, 63, 1)          # artifact path traversal fixed in gh 2.63.1
+MAX_DOWNLOADS = 6            # per pass: 6 x 120 s worst case stays inside the leg budget
+FETCH_DEADLINE_S = 300.0
+MAX_BUNDLE_BYTES = 5_000_000
+_MODEL_RE = re.compile(r"[^A-Za-z0-9._/-]")
 STALE_H = 3.0
 #: The seats the company competes with, as `source` on compiled candidates.
 RIVALS = ("deepseek", "kimi_k3_deep_forest")
@@ -152,7 +163,7 @@ def export_inbox(limit: int = 400) -> dict[str, Any]:
                           "mechanism": str(spec.get("mechanism") or "")[:300]})
     except Exception as exc:
         queue = []
-        queue_err = f"{type(exc).__name__}: {exc}"[:200]
+        queue_err = type(exc).__name__  # the type only: the message can carry box paths
     else:
         queue_err = None
     graveyard = []
@@ -188,34 +199,76 @@ def _gh() -> str | None:
     return shutil.which("gh")
 
 
+def _gh_version_ok(gh: str) -> bool:
+    try:
+        out = subprocess.run([gh, "--version"], capture_output=True, text=True, timeout=20,
+                             check=False).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    m = re.search(r"(\d+)\.(\d+)\.(\d+)", out or "")
+    return bool(m) and tuple(int(x) for x in m.groups()) >= GH_MIN
+
+
+def genuine(run: dict[str, Any]) -> bool:
+    """Only the lab's own runs: default branch, scheduled or dispatched, this repository. A run of
+    the same workflow file on any other branch (or a fork's) could carry a hand-built bundle."""
+    return (str(run.get("headBranch")) == DEFAULT_BRANCH and str(run.get("event")) in EVENTS
+            and str(run.get("url") or "").startswith(f"https://github.com/{REPO}/actions/runs/"))
+
+
 def fetch_bundles(done: set[str]) -> tuple[list[tuple[str, dict[str, Any]]], str | None]:
     gh = _gh()
     if not gh:
         return [], "gh not found"
+    if not _gh_version_ok(gh):
+        return [], f"gh older than {'.'.join(map(str, GH_MIN))}: refusing artifact downloads"
+    t0 = time.monotonic()
     try:
         out = subprocess.run([gh, "run", "list", "-R", REPO, "--workflow", WORKFLOW,
-                              "--status", "success", "--limit", "24", "--json",
-                              "databaseId,createdAt"], capture_output=True, text=True,
-                             timeout=90, check=False)
+                              "--branch", DEFAULT_BRANCH, "--status", "success", "--limit",
+                              "24", "--json", "databaseId,createdAt,headBranch,event,url"],
+                             capture_output=True, text=True, timeout=90, check=False)
         runs = json.loads(out.stdout or "[]") if out.returncode == 0 else None
     except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
         return [], f"gh run list: {type(exc).__name__}"
-    if runs is None:
-        return [], f"gh run list rc={out.returncode}: {out.stderr.strip()[:160]}"
+    if not isinstance(runs, list):
+        return [], f"gh run list rc={out.returncode}"
     bundles: list[tuple[str, dict[str, Any]]] = []
-    for run in sorted(runs, key=lambda r: str(r.get("createdAt"))):
+    n = 0
+    for run in sorted((r for r in runs if isinstance(r, dict)),
+                      key=lambda r: str(r.get("createdAt"))):
         rid = str(run.get("databaseId"))
-        if rid in done:
+        if rid in done or not rid.isdigit():
             continue
+        if not genuine(run):
+            done.add(rid)
+            continue
+        if n >= MAX_DOWNLOADS or time.monotonic() - t0 > FETCH_DEADLINE_S:
+            break  # the rest are the first work of the next pass
+        n += 1
+        doc = None
         with tempfile.TemporaryDirectory() as td:
-            r = subprocess.run([gh, "run", "download", rid, "-R", REPO, "-n", ARTIFACT,
-                                "-D", td], capture_output=True, text=True, timeout=120,
-                               check=False)
-            doc = _read_json(Path(td) / "paperclip_bundle.json") if r.returncode == 0 else None
+            try:
+                r = subprocess.run([gh, "run", "download", rid, "-R", REPO, "-n", ARTIFACT,
+                                    "-D", td], capture_output=True, text=True, timeout=120,
+                                   check=False)
+            except (OSError, subprocess.TimeoutExpired):
+                continue  # transient: retried next pass
+            f = Path(td) / "paperclip_bundle.json"
+            if r.returncode != 0:
+                err = (r.stderr or "").lower()
+                if "no valid artifacts" in err or "not found" in err or "expired" in err:
+                    done.add(rid)  # gone for good
+                continue
+            total = sum(p.stat().st_size for p in Path(td).rglob("*") if p.is_file())
+            if total > MAX_BUNDLE_BYTES or not f.is_file():
+                done.add(rid)
+                continue
+            doc = _read_json(f)
         if isinstance(doc, dict) and doc.get("schema") == "paperclip_bundle/1":
             bundles.append((rid, doc))
         else:
-            done.add(rid)  # an expired or malformed artifact is skipped once, not forever
+            done.add(rid)  # malformed: refused once, not retried forever
     return bundles, None
 
 
@@ -258,7 +311,10 @@ def _seat_row(r: dict[str, Any], generated: str) -> dict[str, Any]:
     return row
 
 
-def ingest(bundles: list[tuple[str, dict[str, Any]]]) -> dict[str, Any]:
+def ingest(bundles: list[tuple[str, dict[str, Any]]],
+           done: set[str] | None = None) -> dict[str, Any]:
+    """Re-screen and donate. The dedup set and the ingested-run ledger are written in the same
+    step as the seat file, so a crash between them can neither re-donate nor lose a bundle."""
     fams, syms, prods = _box_catalogues()
     try:
         seen = set(SEEN.read_text("utf-8").split())
@@ -269,13 +325,25 @@ def ingest(bundles: list[tuple[str, dict[str, Any]]]) -> dict[str, Any]:
     stats: dict[str, dict[str, int]] = {}
     refused: dict[str, int] = {}
     for rid, b in bundles:
-        for role, c in ((b.get("spend") or {}).get("calls_by_role") or {}).items():
-            st = stats.setdefault(role, {})
-            st["calls"] = st.get("calls", 0) + int(c)
-        for row in b.get("rows") or []:
+        try:
+            spend = b.get("spend") if isinstance(b.get("spend"), dict) else {}
+            calls = spend.get("calls_by_role") if isinstance(spend.get("calls_by_role"),
+                                                             dict) else {}
+            for role, c in calls.items():
+                if role in BY_NAME and isinstance(c, int) and 0 <= c <= 10_000:
+                    st = stats.setdefault(role, {})
+                    st["calls"] = st.get("calls", 0) + c
+            rows_in = b.get("rows") if isinstance(b.get("rows"), list) else []
+        except Exception:  # a malformed bundle is refused whole and never crashes the leg
+            refused["malformed_bundle"] = refused.get("malformed_bundle", 0) + 1
+            continue
+        for row in rows_in:
             if not isinstance(row, dict):
                 continue
-            role = str(row.get("role") or "?")
+            role = str(row.get("role") or "")
+            if role not in BY_NAME:
+                refused["role"] = refused.get("role", 0) + 1
+                continue
             payload = {k: v for k, v in row.items() if k in contract.ALLOWED_KEYS}
             v = contract.screen(payload, families=fams, universe=syms, producers=prods,
                                 seen=seen)
@@ -283,7 +351,8 @@ def ingest(bundles: list[tuple[str, dict[str, Any]]]) -> dict[str, Any]:
                 cls = (v.reasons[0].split(":")[0].split(" ")[0] if v.reasons else "?").lower()
                 refused[cls] = refused.get(cls, 0) + 1
                 continue
-            r = dict(v.row, dedup_key=v.key, role=role, model=row.get("model"), run_id=rid)
+            model = _MODEL_RE.sub("", str(row.get("model") or ""))[:60]
+            r = dict(v.row, dedup_key=v.key, role=role, model=model, run_id=rid)
             keys.append(v.key)
             st = stats.setdefault(role, {})
             st["accepted"] = st.get("accepted", 0) + 1
@@ -304,9 +373,8 @@ def ingest(bundles: list[tuple[str, dict[str, Any]]]) -> dict[str, Any]:
         if stamped:
             SEAT_DIR.mkdir(parents=True, exist_ok=True)
             path = SEAT_DIR / f"discoveries_{generated.replace(':', '').replace('-', '')[:15]}.json"
-            path.write_text(json.dumps({"source": "paperclip", "generated_at": generated,
-                                        "discoveries": stamped}, indent=1, default=str),
-                            encoding="utf-8")
+            _write_json(path, {"source": "paperclip", "generated_at": generated,
+                               "discoveries": stamped})
             _append_jsonl(DONATED, [{"at": generated, "role": s["paperclip_role"],
                                      "dedup_key": s["dedup_key"], "family": s["family"],
                                      "symbols": s["symbols"], "params": s.get("params"),
@@ -316,6 +384,10 @@ def ingest(bundles: list[tuple[str, dict[str, Any]]]) -> dict[str, Any]:
     if keys:
         with SEEN.open("a", encoding="utf-8") as fh:
             fh.write("\n".join(keys) + "\n")
+    ids = {r for r in (done or set()) | {rid for rid, _ in bundles} if r.isdigit()}
+    if ids or INGESTED.exists():
+        prior = {str(r) for r in (_read_json(INGESTED) or []) if str(r).isdigit()}
+        _write_json(INGESTED, sorted(ids | prior, key=int)[-2000:])
     return {"bundles": len(bundles), "seat_rows": len(seat), "revivals": len(revivals),
             "triage": len(triage), "refused": refused, "calls": stats,
             "donated_to": str(path) if path else None}
@@ -423,7 +495,9 @@ def score(last: dict[str, Any], fetch_err: str | None) -> dict[str, Any]:
     if newest:
         age_h = round((now() - datetime.fromisoformat(newest)).total_seconds() / 3600, 2)
     if not newest:
-        health, why = "RED", f"no bundle ever ingested ({fetch_err or 'no successful run'})"
+        # UNMEASURED, not RED, until the first bundle ever lands: the workflow merges on its own
+        # (principal-tapped) PR, and a leg red for a reason nobody on the box can fix is noise.
+        health, why = "UNMEASURED", f"no bundle yet ({fetch_err or 'no genuine run'})"
     elif age_h is not None and age_h > STALE_H:
         health, why = "RED", f"newest bundle {age_h}h old (> {STALE_H}h): the loop stopped" + (
             f"; {fetch_err}" if fetch_err else "")
@@ -450,14 +524,12 @@ def main(argv: list[str] | None = None) -> int:
     inbox = export_inbox()
     done = set(map(str, _read_json(INGESTED) or []))
     bundles, err = ([], "fetch disabled") if a.no_fetch else fetch_bundles(done)
-    last = ingest(bundles)
-    ids = {r for r in done | {rid for rid, _ in bundles} if r.isdigit()}
-    _write_json(INGESTED, sorted(ids, key=int)[-2000:])
+    last = ingest(bundles, done)
     doc = score(last, err)
     print(json.dumps({"inbox": inbox, "ingest": {k: v for k, v in last.items() if k != "calls"},
                       "health": doc["health"], "why": doc["why"], "totals": doc["totals"]},
                      default=str))
-    return 0 if doc["health"] == "GREEN" else 1
+    return 1 if doc["health"] == "RED" else 0
 
 
 if __name__ == "__main__":

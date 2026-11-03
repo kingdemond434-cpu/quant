@@ -26,7 +26,8 @@ def _recipe(**kw: Any) -> dict[str, Any]:
          "params": {"session": "asia", "rr": 1.5}, "timeframe": "h1",
          "mechanism": "Asia range liquidity is absorbed at the London open.",
          "testable_claim": "Breaks of the Asia range at London open continue for 3 hours.",
-         "falsifier": "No continuation beyond costs.", "origin": "paper", "role": "x"}
+         "falsifier": "No continuation beyond costs.", "origin": "paper",
+         "role": "cross_asset_proxy"}
     r.update(kw)
     return r
 
@@ -135,23 +136,45 @@ def test_intake_reschreens_donates_dedups_and_reports_health(tmp_path: Path,
     monkeypatch.setattr(pi, "SEAT_DIR", tmp_path / "seat")
     monkeypatch.setattr(pi, "HYP", tmp_path / "hyp")
     monkeypatch.setattr(pi, "_box_catalogues", lambda: (FAMS, UNI, {"dead_one"}))
-    good = dict(_recipe(), dedup_key="x", model="fake")
-    bundle = {"schema": "paperclip_bundle/1", "spend": {"calls_by_role": {"x": 2}},
-              "rows": [good, dict(_recipe(symbols=["NVDA"])),
+    good = dict(_recipe(), dedup_key="x", model="fake`$(rm)")
+    bundle = {"schema": "paperclip_bundle/1",
+              "spend": {"calls_by_role": {"cross_asset_proxy": 2, "intruder": 9}},
+              "rows": [good, dict(_recipe(symbols=["NVDA"])), dict(_recipe(role="intruder")),
                        {"kind": "revival", "producer": "dead_one", "diagnosis": "d",
                         "tweak": "t", "role": "dead_producer_reviver"},
                        {"kind": "triage", "cell": "XAUUSD.carry.p=1", "prior": 0.7,
                         "role": "triage_prior"}]}
-    assert pi.score({}, "no runs")["health"] == "RED"
+    assert pi.score({}, "no runs")["health"] == "UNMEASURED"  # no bundle yet is not RED
     last = pi.ingest([("101", bundle)])
     assert last["seat_rows"] == 1 and last["revivals"] == 1 and last["triage"] == 1
-    assert last["refused"].get("symbols") == 1
+    assert last["refused"].get("symbols") == 1 and last["refused"].get("role") == 1
+    assert pi.ingest([("103", {"schema": "paperclip_bundle/1", "spend": "x",
+                              "rows": "y"})])["seat_rows"] == 0  # malformed: refused, no crash
     seat = json.loads(next((tmp_path / "seat").glob("discoveries_*.json")).read_text())
     row = seat["discoveries"][0]
     assert row["source"] == "paperclip" and row["params"]["timeframe"] == "H1"
-    assert row["available_time"] and row["url"].startswith("paperclip://x/")
+    assert row["paperclip_model"] == "fakerm"
+    assert row["available_time"] and row["url"].startswith("paperclip://cross_asset_proxy/")
     again = pi.ingest([("102", bundle)])
     assert again["seat_rows"] == 0 and again["refused"].get("duplicate") == 3
+    assert (pc / "ingested_runs.json").exists()
     doc = pi.score(last, None)
-    assert doc["health"] == "GREEN" and doc["roles"]["x"]["calls"] == 2
+    assert doc["health"] == "GREEN" and doc["roles"]["cross_asset_proxy"]["calls"] == 2
+    assert "intruder" not in doc["roles"]
     assert doc["triage"]["weight_earned"] is False
+
+
+def test_only_genuine_lab_runs_are_ingested() -> None:
+    import paperclip_intake as pi
+    url = f"https://github.com/{pi.REPO}/actions/runs/1"
+    ok = {"headBranch": pi.DEFAULT_BRANCH, "event": "schedule", "url": url}
+    assert pi.genuine(ok)
+    assert not pi.genuine(dict(ok, headBranch="attacker-branch"))
+    assert not pi.genuine(dict(ok, event="pull_request"))
+    assert not pi.genuine(dict(ok, url="https://github.com/fork/quant/actions/runs/1"))
+
+
+def test_recipe_on_a_family_with_unresolved_params_is_refused() -> None:
+    v = contract.screen(_recipe(family="carry", params={"anything": 1}), families=FAMS,
+                        universe=UNI)
+    assert not v.ok and any("unresolved" in r for r in v.reasons)

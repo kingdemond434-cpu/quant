@@ -37,7 +37,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"material": {k: len(v) for k, v in m.items()},
                           "plan": lab.plan(a.calls, w, m)}, indent=1))
         return 0
-    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_MODELS_TOKEN") or ""
+    token = os.environ.get("GITHUB_TOKEN") or ""
     if not token:
         print("paperclip_lab: no GITHUB_TOKEN (the runner's own models:read token)", file=sys.stderr)
         return 2

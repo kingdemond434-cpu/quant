@@ -201,6 +201,8 @@ def screen(row: Any, *, families: Mapping[str, Iterable[str]] | None = None,
             if badp:
                 reasons.append(f"non-scalar or malformed params {badp[:3]}")
             names = set((families or {}).get(out.get("family", ""), ()) or ())
+            if families is not None and not names:
+                reasons.append("family parameters unresolved (send it as a hypothesis)")
             unknown = sorted(set(map(str, params)) - names) if names else []
             if unknown:
                 reasons.append(f"params the family does not take {unknown[:4]}")
