@@ -68,36 +68,53 @@ COT_HISTORY_YEARS = 4
 #: week cannot make the series knowable before it was published. Late costs edge; early invents it.
 KNOWABLE_LAG_DAYS = 4
 
-#: CFTC market name (prefix match, upper-cased) -> the MT5 instrument it conditions.
-#: Prefix match rather than exact because the CFTC appends the exchange and renames it over the
-#: years; the commodity half is stable and the exchange half is not.
-COT_MARKETS: dict[str, str] = {
-    "GOLD": "XAUUSD",
-    "SILVER": "XAGUSD",
-    "COPPER": "XCUUSD",
-    "PLATINUM": "XPTUSD",
-    "PALLADIUM": "XPDUSD",
-    "CRUDE OIL, LIGHT SWEET": "XTIUSD",
-    "WTI-PHYSICAL": "XTIUSD",
-    "NATURAL GAS": "XNGUSD",
-    "EURO FX": "EURUSD",
-    "BRITISH POUND": "GBPUSD",
-    "JAPANESE YEN": "USDJPY",
-    "SWISS FRANC": "USDCHF",
-    "CANADIAN DOLLAR": "USDCAD",
-    "AUSTRALIAN DOLLAR": "AUDUSD",
-    "NEW ZEALAND DOLLAR": "NZDUSD",
-    "MEXICAN PESO": "USDMXN",
-    "SOUTH AFRICAN RAND": "USDZAR",
-    "E-MINI S&P 500": "US500",
-    "NASDAQ MINI": "NAS100",
-    "DJIA": "US30",
-    "WHEAT-SRW": "WHEAT",
-    "CORN": "CORN",
-    "SOYBEANS": "SOYBEAN",
-    "SUGAR NO. 11": "SUGAR",
-    "COTTON NO. 2": "COTTON",
+#: CFTC CONTRACT MARKET CODE (legacy column 3, `CFTC_Contract_Market_Code`) -> (MT5 instrument,
+#: the market names the CFTC has filed that code under). THE CODE DECIDES; the name is only a
+#: cross-check.
+#:
+#: THIS WAS A NAME-PREFIX MATCH UNTIL 2026-10-14, and a prefix is not an identity. "EURO FX"
+#: is also the prefix of "EURO FX/BRITISH POUND XRATE" (299741) and "EURO FX/JAPANESE YEN XRATE"
+#: (399741), so all three contracts mapped to EURUSD and the `(symbol, as_of)` dedupe kept
+#: WHICHEVER ROW THE CFTC FILE HAPPENED TO LIST FIRST -- the committed axis was right only because
+#: the outright sorted ahead of its crosses that week. "GOLD" likewise caught Coinbase's
+#: "GOLD -1 TROY OUNCE" (088LM1), "CRUDE OIL, LIGHT SWEET" caught ICE Europe's WTI look-alike
+#: (067411), and "NATURAL GAS" caught an ICE basis index while missing the NYMEX contract itself
+#: (filed today as "NAT GAS NYME"). Codes survive the CFTC's renames; names do not.
+#:
+#: Every code verified 2026-10-14 against publicreporting.cftc.gov dataset 6dca-aqww (the legacy
+#: futures-only report this file's deafut.txt/deacot<year>.zip carry), weeks after 2026-09-01.
+#: The aliases are the names a code has been filed under (current name first); a row whose name
+#: matches none is still mapped -- the code is authoritative -- and is COUNTED in
+#: `name_mismatches` so a CFTC renumbering is seen rather than silently adopted.
+COT_CODES: dict[str, tuple[str, tuple[str, ...]]] = {
+    "088691": ("XAUUSD", ("GOLD",)),
+    "084691": ("XAGUSD", ("SILVER",)),
+    "085692": ("XCUUSD", ("COPPER- #1", "COPPER-GRADE #1", "COPPER")),
+    "076651": ("XPTUSD", ("PLATINUM",)),
+    "075651": ("XPDUSD", ("PALLADIUM",)),
+    "067651": ("XTIUSD", ("WTI-PHYSICAL", "CRUDE OIL, LIGHT SWEET")),
+    "023651": ("XNGUSD", ("NAT GAS NYME", "NATURAL GAS", "NATURAL GAS (NYME)")),
+    "099741": ("EURUSD", ("EURO FX",)),
+    "096742": ("GBPUSD", ("BRITISH POUND", "BRITISH POUND STERLING", "POUND STERLING")),
+    "097741": ("USDJPY", ("JAPANESE YEN",)),
+    "092741": ("USDCHF", ("SWISS FRANC",)),
+    "090741": ("USDCAD", ("CANADIAN DOLLAR",)),
+    "232741": ("AUDUSD", ("AUSTRALIAN DOLLAR",)),
+    "112741": ("NZDUSD", ("NZ DOLLAR", "NEW ZEALAND DOLLAR")),
+    "095741": ("USDMXN", ("MEXICAN PESO",)),
+    "122741": ("USDZAR", ("SO AFRICAN RAND", "SOUTH AFRICAN RAND")),
+    "13874A": ("US500", ("E-MINI S&P 500", "E-MINI S&P 500 STOCK INDEX")),
+    "209742": ("NAS100", ("NASDAQ MINI", "NASDAQ-100 STOCK INDEX (MINI)")),
+    "124603": ("US30", ("DJIA X $5", "DOW JONES INDUSTRIAL AVG- X $5", "DJIA")),
+    "001602": ("WHEAT", ("WHEAT-SRW", "WHEAT")),
+    "002602": ("CORN", ("CORN",)),
+    "005602": ("SOYBEAN", ("SOYBEANS",)),
+    "080732": ("SUGAR", ("SUGAR NO. 11",)),
+    "033661": ("COTTON", ("COTTON NO. 2",)),
 }
+
+#: Kept for readers that list the axis's markets by name; DERIVED from `COT_CODES`, never matched.
+COT_MARKETS: dict[str, str] = {names[0]: sym for sym, names in COT_CODES.values()}
 
 #: Markets whose CFTC contract runs OPPOSITE to the desk's symbol. CME quotes currency futures as
 #: FOREIGN/USD, so long JPY futures is short USDJPY. An inverted positioning series is not a weak
@@ -105,7 +122,8 @@ COT_MARKETS: dict[str, str] = {
 INVERT = {"USDJPY", "USDCHF", "USDCAD", "USDMXN", "USDZAR"}
 
 #: Legacy `deafut.txt` column offsets, 0-based, from the CFTC's own published layout.
-C_NAME, C_DATE, C_OI = 0, 2, 7
+#: Column 3 is `CFTC_Contract_Market_Code`, the identity `COT_CODES` is keyed on.
+C_NAME, C_DATE, C_CODE, C_OI = 0, 2, 3, 7
 C_NC_LONG, C_NC_SHORT, C_NC_SPREAD = 8, 9, 10
 C_COMM_LONG, C_COMM_SHORT = 11, 12
 
@@ -116,12 +134,27 @@ def _fetch(url: str) -> str:
         return r.read().decode("utf-8", "replace")
 
 
-def _symbol_for(name: str) -> str | None:
-    up = name.upper().strip().strip('"')
-    for prefix, sym in COT_MARKETS.items():
-        if up.startswith(prefix):
-            return sym
-    return None
+def _market_name(name: str) -> str:
+    """The commodity half of a CFTC market name ("EURO FX - CHICAGO MERCANTILE EXCHANGE" ->
+    "EURO FX"), upper-cased, quotes stripped, whitespace collapsed."""
+    up = " ".join(name.upper().replace('"', "").replace("'", "").split())
+    return up.split(" - ")[0].strip()
+
+
+def _symbol_for(code: str, name: str = "") -> tuple[str | None, bool]:
+    """(MT5 symbol, name agrees) for one CFTC row, decided by its CONTRACT MARKET CODE.
+
+    The name never decides: an unknown code is unmapped whatever it is called, and a known code
+    maps whatever it is called. `name agrees` is False only when a name was given and is none of
+    the names that code has been filed under -- the caller counts it, never drops the row.
+    """
+    entry = COT_CODES.get(str(code or "").strip().strip('"').upper())
+    if entry is None:
+        return None, True
+    sym, aliases = entry
+    if not name:
+        return sym, True
+    return sym, _market_name(name) in {a.upper() for a in aliases}
 
 
 def _cot_history_text(years: int) -> list[tuple[int, str]]:
@@ -159,6 +192,7 @@ def ingest_cot() -> dict:
     blocks += [(str(y), txt) for y, txt in _cot_history_text(COT_HISTORY_YEARS)]
     rows: list[dict] = []
     unmapped: set[str] = set()
+    mismatched: dict[str, str] = {}
     seen_keys: set[tuple[str, str]] = set()
     for _src, raw in blocks:
       for rec in csv.reader(io.StringIO(raw)):
@@ -167,10 +201,12 @@ def ingest_cot() -> dict:
         # The annual archives carry a header row; the weekly file does not.
         if rec[C_NAME].strip().strip('"').upper().startswith("MARKET AND EXCHANGE"):
             continue
-        sym = _symbol_for(rec[C_NAME])
+        sym, name_ok = _symbol_for(rec[C_CODE], rec[C_NAME])
         if not sym:
             unmapped.add(rec[C_NAME].strip().strip('"')[:60])
             continue
+        if not name_ok:
+            mismatched[rec[C_CODE].strip()] = _market_name(rec[C_NAME])[:60]
         try:
             as_of = datetime.strptime(rec[C_DATE].strip(), "%Y-%m-%d").replace(tzinfo=UTC)
             oi = float(rec[C_OI])
@@ -209,6 +245,8 @@ def ingest_cot() -> dict:
         "shape": "rows indexed by (symbol, knowable_at); family_cot_positioning reads net_pct_oi",
         "unmapped_markets_sample": sorted(unmapped)[:12],
         "n_unmapped": len(unmapped),
+        "mapped_by": "cftc_contract_market_code (column 3); the market name is a cross-check",
+        "name_mismatches": dict(sorted(mismatched.items())),
         "rows": rows,
     }
 

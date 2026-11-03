@@ -99,8 +99,12 @@ sys.path.insert(0, str(ROOT))
 
 from miner_candidate_compiler import (  # noqa: E402
     DEEPEN,
+    _atomic_json,
     compile_row,
+    is_final_lane_hold,
     known_symbols,
+    lane_measured,
+    lane_split,
 )
 
 #: Append-only: one line per task ever decided, so a decision is paid for once. Deliberately not
@@ -399,6 +403,8 @@ def worked_ids(*, retry_seat_blocks: bool = False) -> set[str]:
                             or disposition.startswith("REJECTED: seat error:"))
             if retry_seat_blocks and seat_blocked:
                 continue
+            if is_lane_wait(disposition):      # waiting on the registry, never decided
+                continue
             out.add(str(row["id"]))
         except (ValueError, KeyError):
             continue
@@ -429,8 +435,12 @@ def ledger_ids() -> tuple[set[str], set[str]]:
                     tid = str(row["id"])
                 except (ValueError, KeyError):
                     continue
-                (outage if is_outage(str(row.get("disposition") or ""))
-                 else terminal).add(tid)
+                disposition = str(row.get("disposition") or "")
+                if is_lane_wait(disposition):
+                    # WAITING ON THE REGISTRY, NOT ON A SEAT: neither decided nor an outage. The
+                    # task stays open and `split_off_lane` re-asks the registry every pass.
+                    continue
+                (outage if is_outage(disposition) else terminal).add(tid)
     except OSError:
         return terminal, outage
     return terminal, outage - terminal
@@ -440,6 +450,195 @@ def record(entry: dict) -> None:
     WORKED.parent.mkdir(parents=True, exist_ok=True)
     with WORKED.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(entry, separators=(",", ":"), default=str) + "\n")
+
+
+#: The worked-ledger prefix of a task held because every symbol it names is UNCLASSIFIED in the
+#: broker registry. NON-TERMINAL (`NON_TERMINAL_DISPOSITIONS`), like a seat outage.
+LANE_WAIT = "WAITING_LANE_UNCLASSIFIED:"
+
+
+def is_lane_wait(disposition: str) -> bool:
+    """Is this row a task waiting for the registry to classify its symbol, not a decision?"""
+    return disposition.startswith(LANE_WAIT)
+
+
+def _task_symbols(task: dict) -> list[str]:
+    raw = task.get("symbols") or ([task["symbol"]] if task.get("symbol") else [])
+    return [str(s) for s in raw if str(s).strip()]
+
+
+def split_off_lane(tasks: list[dict]) -> tuple[list[dict], list[dict], list[dict]]:
+    """(tasks to work, tasks REFUSED finally, tasks WAITING) -- `lane_split` per task.
+
+    A task's held symbols are struck and named in `lane_held`; a task that keeps any admitted
+    symbol is worked on those. A task left with none is:
+
+      REFUSED   when every held symbol is a share CFD -- the registry's own class, a decision;
+      WAITING   when any held symbol is UNCLASSIFIED -- absence from the registry is not
+                permission to deepen it, and it is not evidence against it either (L1.28a), so
+                the task is held and re-asked every pass, and worked once it is classified.
+
+    A task that names no symbol yet is kept: the instrument is what deepening extracts, and
+    whatever it extracts meets the compiler's lane door again. With NO REGISTRY AT ALL
+    (`lane_measured()` False) nothing is refused and every symbol-bearing task WAITS this pass:
+    the order cannot be applied, so neither a refusal nor a share-CFD deepening is written.
+    """
+    measured = lane_measured()
+    kept: list[dict] = []
+    refused: list[dict] = []
+    waiting: list[dict] = []
+    for task in tasks:
+        syms = _task_symbols(task)
+        if not syms:
+            kept.append(task)
+            continue
+        if not measured:
+            waiting.append({**task, "lane_held": [
+                {"symbol": s, "lane": "unmeasured",
+                 "reason": "broker registry missing, unreadable or mid-write"} for s in syms]})
+            continue
+        allowed, held = lane_split(syms, task.get("family"))
+        if not held:
+            kept.append(task)
+        elif allowed:
+            kept.append({**task, "symbols": allowed, "lane_held": held})
+        elif all(is_final_lane_hold(h) for h in held):
+            refused.append({**task, "lane_held": held})
+        else:
+            waiting.append({**task, "lane_held": held})
+    return kept, refused, waiting
+
+
+def _lane_waiting_ids() -> set[str]:
+    """Task ids that already carry a WAITING_LANE line, so a wait is written once, not hourly."""
+    out: set[str] = set()
+    try:
+        with WORKED.open("r", encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                if LANE_WAIT not in line:
+                    continue
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                if is_lane_wait(str(row.get("disposition") or "")):
+                    out.add(str(row.get("id")))
+    except OSError:
+        pass
+    return out
+
+
+@contextlib.contextmanager
+def _queue_writer_lock():
+    """THE QUEUE WRITER'S OWN LOCK: `job_lock.exclusive_job("miner_candidate_compiler")`, the lock
+    `hourly_cycle.catch_up_intake` holds around the compiler that rewrites this queue. Taken
+    without admission accounting, because the purge is not the compiler and must not write its
+    memory declaration or peak. Yields False when the compiler owns it."""
+    try:
+        from job_lock import exclusive_job
+    except ImportError:                                    # pragma: no cover - path dependent
+        from research.job_lock import exclusive_job
+    with exclusive_job("miner_candidate_compiler", account=False) as acquired:
+        yield acquired
+
+
+def purge_off_lane(*, dry_run: bool = False) -> dict:
+    """ONE-SHOT PURGE of queued tasks the two-lane order forbids, run by this organ at start.
+
+    WHY IT EXISTS (audit 2026-10-14, INTEL_SHIP_SUSPECT_CONSUMERS 1d): the compiler queued
+    seasonality rows on the share CFDs Airbnb and Pfizer for statistical deepening, and the only
+    thing between them and a share-CFD cell was that no model key was configured. The compiler
+    now refuses such a task at enqueue (`miner_candidate_compiler.lane_split`); this clears what
+    was queued before that door existed. After one pass it finds nothing, which is the point.
+
+    ONLY A SHARE CFD IS REFUSED FINALLY (audit COT_AXIS_DEEPENING_31eb89f3d MF1). A share-CFD
+    task gets a `REFUSED_LANE` line in the worked ledger (terminal for this worker and the
+    compiler's index) and an entry in the queue's `lane_refused` report. A task whose symbols
+    are UNCLASSIFIED gets ONE non-terminal `WAITING_LANE_UNCLASSIFIED` line naming its remedy and
+    stays queued; it is worked on the first pass the registry classifies it. And when the
+    registry is MISSING, unreadable or mid-write, nothing is purged and nothing is written: the
+    answer is UNMEASURED, because every symbol reading UNCLASSIFIED then is the file's absence,
+    not the broker's verdict (L1.28a).
+
+    The check-then-replace runs under the queue writer's lock (`_queue_writer_lock`), and the
+    file is rewritten only if it is byte-identical to what was read.
+    """
+    if not lane_measured():
+        return {"purged": 0, "struck": 0, "waiting": 0,
+                "status": "UNMEASURED: broker registry missing, unreadable or mid-write -- "
+                          "no lane decision written"}
+    try:
+        raw = DEEPEN.read_bytes()
+        queue = json.loads(raw.decode("utf-8"))
+    except (OSError, ValueError):
+        return {"purged": 0, "struck": 0, "waiting": 0, "status": "UNREADABLE"}
+    if not isinstance(queue, dict):
+        return {"purged": 0, "struck": 0, "waiting": 0, "status": "UNREADABLE"}
+    tasks = [t for t in (queue.get("tasks") or []) if isinstance(t, dict)]
+    _kept, refused, waiting = split_off_lane(tasks)
+    already = _lane_waiting_ids()
+    new_waits = [t for t in waiting if task_id(t) not in already]
+    # On disk only a SHARE CFD is struck: an UNCLASSIFIED symbol stays on its task, so the task
+    # still names it when the registry classifies it.
+    on_disk: list[dict] = []
+    struck = 0
+    refused_ids = {task_id(t) for t in refused}
+    for task in tasks:
+        if task_id(task) in refused_ids:
+            continue
+        syms = _task_symbols(task)
+        final = [h for h in lane_split(syms, task.get("family"))[1] if is_final_lane_hold(h)]
+        if final:
+            gone = {h["symbol"] for h in final}
+            task = {**task, "symbols": [s for s in syms if s not in gone], "lane_held": final}
+            struck += 1
+        on_disk.append(task)
+    note = {"purged": len(refused), "struck": struck, "waiting": len(waiting), "status": "CLEAN"}
+    if not refused and not struck and not new_waits:
+        return note
+    note["status"] = "DRY_RUN" if dry_run else "PURGED"
+    if dry_run:
+        return note
+    with _queue_writer_lock() as acquired:
+        if not acquired:
+            note.update(purged=0, struck=0,
+                        status="DEFERRED: the compiler holds the queue writer's lock -- nothing "
+                               "written; the next pass purges")
+            return note
+        at = datetime.now(tz=UTC).isoformat(timespec="seconds")
+        for task in refused:
+            reasons = "; ".join(h["reason"] for h in task["lane_held"])
+            record({"id": task_id(task), "at": at, "source": task.get("source"),
+                    "url": task.get("url"), "n_candidates": 0, "run": task_class(task),
+                    "kind": task.get("kind"), "lane": "purge",
+                    "disposition": f"REFUSED_LANE: {reasons}; remedy: none -- the two-lane "
+                                   "order keeps share CFDs out of statistical discovery"})
+        for task in new_waits:
+            names = sorted({h["symbol"] for h in task["lane_held"] if not is_final_lane_hold(h)})
+            record({"id": task_id(task), "at": at, "source": task.get("source"),
+                    "url": task.get("url"), "n_candidates": 0, "run": task_class(task),
+                    "kind": task.get("kind"), "lane": "purge",
+                    "disposition": f"{LANE_WAIT} {', '.join(names)} not classified in the broker "
+                                   "registry (desks/mt5/data/universe/universe.json)",
+                    "retry_action": ("retried automatically on the first pass the registry "
+                                     "classifies the symbol (MT5 universe sync); a share CFD is "
+                                     "then refused, any other class is worked")})
+        if not refused and not struck:
+            return note
+        report = list(queue.get("lane_refused") or [])
+        report += [{"source": t.get("source"), "title": str(t.get("title") or "")[:200],
+                    "url": t.get("url"), "disposition": t.get("disposition"),
+                    "held": t["lane_held"], "purged_by": "deepening_worker", "at": at}
+                   for t in refused]
+        try:
+            if DEEPEN.read_bytes() == raw:
+                _atomic_json(DEEPEN, {**queue, "tasks": on_disk, "lane_refused": report,
+                                      "n_lane_refused": len(report), "lane_purged_at": at})
+            else:
+                note["status"] = "PURGED_LEDGER_ONLY: the compiler rewrote the queue meanwhile"
+        except OSError as exc:
+            note["status"] = f"PURGED_LEDGER_ONLY: {type(exc).__name__}"
+    return note
 
 
 def task_text(task: dict) -> str:
@@ -1409,8 +1608,18 @@ def _work(argv: list[str] | None = None) -> int:
     # most rule-lane rows, which is not a throughput.
     pass_started = time.monotonic()
 
+    # THE TWO-LANE PURGE RUNS FIRST, so nothing it refuses is ordered, counted or worked.
+    purge = purge_off_lane(dry_run=args.dry_run)
+    if purge["purged"] or purge["struck"] or purge.get("waiting") \
+            or purge["status"].startswith(("UNMEASURED", "DEFERRED")):
+        dlog(f"two-lane purge: {purge['purged']} task(s) refused, {purge['struck']} task(s) had "
+             f"share-CFD symbols struck, {purge.get('waiting', 0)} task(s) waiting on the "
+             f"registry -- {purge['status']}")
     queue = json.loads(DEEPEN.read_text("utf-8")) if DEEPEN.exists() else {}
     tasks = [t for t in (queue.get("tasks") or []) if isinstance(t, dict)]
+    # Whatever the file says, a task the order forbids is never worked (a dry run, or a compiler
+    # rewrite that raced the purge, leaves it on disk).
+    tasks, _off_lane, _waiting = split_off_lane(tasks)
     if not tasks:
         dlog("queue empty or unreadable -- nothing to work")
         return 0

@@ -30,20 +30,25 @@ API = "https://publicreporting.cftc.gov/resource/6dca-aqww.json"
 UA = {"User-Agent": "Mozilla/5.0 (quant-desk cot refresh)"}
 ZWIN = 52
 
-#: MT5 symbol -> CFTC market-name needles. Explicit, because a substring guess would splice a
-#: different contract's positioning under a familiar symbol.
-NEEDLES: dict[str, tuple[str, ...]] = {
-    "XAUUSD": ("GOLD -",),
-    "XAGUSD": ("SILVER -",),
-    "XPTUSD": ("PLATINUM -",),
-    "XPDUSD": ("PALLADIUM -",),
-    "EURUSD": ("EURO FX -",),
-    "GBPUSD": ("BRITISH POUND -", "BRITISH POUND STERLING -", "POUND STERLING -"),
-    "AUDUSD": ("AUSTRALIAN DOLLAR -",),
-    "USDJPY": ("JAPANESE YEN -",),
-    "USDCHF": ("SWISS FRANC -",),
-    "USDCAD": ("CANADIAN DOLLAR -",),
-    "XTIUSD": ("CRUDE OIL, LIGHT SWEET -",),
+#: MT5 symbol -> CFTC CONTRACT MARKET CODE (legacy futures-only, 6dca-aqww). THE CODE, NOT THE
+#: NAME (2026-10-14). These were market-name SUBSTRING needles, summed per date: "GOLD -" is a
+#: substring of "MICRO GOLD - COMMODITY EXCHANGE INC." (088695) and of Coinbase's
+#: "GOLD -1 TROY OUNCE" (088LM1), so three contracts of different sizes were added together under
+#: XAUUSD; and "CRUDE OIL, LIGHT SWEET -" stopped matching the NYMEX contract when the CFTC renamed
+#: it "WTI-PHYSICAL", so XTIUSD silently stopped refreshing. Codes verified 2026-10-14 against
+#: publicreporting.cftc.gov 6dca-aqww (weeks after 2026-09-01).
+CODES: dict[str, str] = {
+    "XAUUSD": "088691",
+    "XAGUSD": "084691",
+    "XPTUSD": "076651",
+    "XPDUSD": "075651",
+    "EURUSD": "099741",
+    "GBPUSD": "096742",
+    "AUDUSD": "232741",
+    "USDJPY": "097741",
+    "USDCHF": "092741",
+    "USDCAD": "090741",
+    "XTIUSD": "067651",
 }
 #: symbols quoted USD-per-foreign invert: a long JPY future is a SHORT USDJPY position.
 INVERT = {"USDJPY", "USDCHF", "USDCAD"}
@@ -56,7 +61,8 @@ def _fetch(since: str) -> list[dict]:
         q = urllib.parse.urlencode({
             "$where": f"report_date_as_yyyy_mm_dd > '{since}'",
             "$limit": 5000, "$offset": offset,
-            "$select": ("market_and_exchange_names,report_date_as_yyyy_mm_dd,"
+            "$select": ("market_and_exchange_names,cftc_contract_market_code,"
+                        "report_date_as_yyyy_mm_dd,"
                         "noncomm_positions_long_all,noncomm_positions_short_all"),
         })
         req = urllib.request.Request(f"{API}?{q}", headers=UA)
@@ -91,13 +97,13 @@ def main() -> int:
     frame["date"] = pd.to_datetime(frame["report_date_as_yyyy_mm_dd"], utc=True, errors="coerce")
     for col in ("noncomm_positions_long_all", "noncomm_positions_short_all"):
         frame[col] = pd.to_numeric(frame[col], errors="coerce")
-    frame["market"] = frame["market_and_exchange_names"].astype(str).str.upper()
+    frame["code"] = (frame.get("cftc_contract_market_code", pd.Series("", index=frame.index))
+                     .astype(str).str.strip().str.upper())
     frame = frame.dropna(subset=["date"])
 
     new_cols: dict[str, pd.Series] = {}
-    for sym, needles in NEEDLES.items():
-        mask = frame["market"].apply(lambda m, nd=needles: any(n in m for n in nd))
-        sub = frame.loc[mask]
+    for sym, code in CODES.items():
+        sub = frame.loc[frame["code"] == code]
         if sub.empty:
             continue
         net = (sub["noncomm_positions_long_all"] - sub["noncomm_positions_short_all"])
@@ -107,8 +113,8 @@ def main() -> int:
         new_cols[sym] = series
 
     if not new_cols:
-        print("CFTC answered but no mapped market matched -- appending NOTHING (a needle map "
-              "that stops matching is a defect, not an empty week)")
+        print("CFTC answered but no mapped contract code matched -- appending NOTHING (a code "
+              "map that stops matching is a defect, not an empty week)")
         return 1
 
     fresh = pd.DataFrame(new_cols)
