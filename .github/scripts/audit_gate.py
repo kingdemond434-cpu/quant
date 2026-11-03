@@ -493,7 +493,20 @@ def _gh(*args: str, data: Mapping[str, Any] | None = None) -> Any:
     cmd = ["gh", "api", *args]
     if data is not None:
         cmd += ["--input", "-"]
-    p = subprocess.run(
+    try:
+        p = _gh_run(cmd, data)
+    except subprocess.TimeoutExpired as exc:
+        # A TIMEOUT IS A FAILED CALL, NOT A CRASH (2026-11-03): raised raw, one slow check-runs
+        # read aborted the whole box sweep -- 378 times from 10-30 to 11-03, no merge in between.
+        # As a RuntimeError every caller's per-PR handling logs it and the sweep goes on.
+        raise RuntimeError(f"gh api {' '.join(args)}: timed out after {exc.timeout}s") from exc
+    if p.returncode != 0:
+        raise RuntimeError(f"gh api {' '.join(args)}: {p.stderr.strip()[:300]}")
+    return json.loads(p.stdout) if p.stdout.strip() else None
+
+
+def _gh_run(cmd: list[str], data: Mapping[str, Any] | None) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
         cmd,
         input=json.dumps(data) if data is not None else None,
         capture_output=True,
@@ -507,9 +520,6 @@ def _gh(*args: str, data: Mapping[str, Any] | None = None) -> Any:
         # every call ends, and a timeout is an error the sweep logs (it never merges on one).
         timeout=GH_TIMEOUT_S,
     )
-    if p.returncode != 0:
-        raise RuntimeError(f"gh api {' '.join(args)}: {p.stderr.strip()[:300]}")
-    return json.loads(p.stdout) if p.stdout.strip() else None
 
 
 def _git(*args: str) -> str:
