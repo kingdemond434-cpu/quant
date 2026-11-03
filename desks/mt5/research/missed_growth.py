@@ -845,6 +845,44 @@ def published_ftmo_follower_lines() -> dict[str, Any]:
     return {"source": f"data/{FTMO_INTENTS.name} RAIL_BLOCKED", "rails": lines}
 
 
+FTMO_EXEC_INTENTS = BASE / "data" / "ftmo_exec_intents.jsonl"
+
+
+#: The executor's statuses that are not a refusal (the order went, or the pass was unarmed).
+FTMO_EXEC_SENT = frozenset({"SENT", "WOULD_SEND", "CLOSE"})
+
+
+def published_ftmo_executor_lines() -> dict[str, Any]:
+    """The FTMO sleeve executor's rails (prop/ftmo_executor.py, 2026-10-29), one bill per rail
+    it journalled: every row a rail stopped from sending (RAIL_BLOCKED, and the rails journalled
+    under their own status -- STALE_BARS, UNSIZEABLE at the venue minimum, TIER_S_BLOCKED, ...;
+    audit S2) carries the risk it held back. The same reading as the follower's: an absent
+    journal binds nothing yet, an unreadable one is UNMEASURED, a row without a dollar figure is
+    counted unpriced, never zero. Published, not priced."""
+    rows = _jsonl(FTMO_EXEC_INTENTS) if FTMO_EXEC_INTENTS.exists() else []
+    if rows is None:
+        return {"source": f"data/{FTMO_EXEC_INTENTS.name}",
+                "unreadable": [FTMO_EXEC_INTENTS.name], "rails": {}}
+    # a refusal, or an order SENT trimmed by a rail (the trimmed part is the bill; audit SF2)
+    billed = [r for r in rows if r.get("rail")
+              and (r.get("status") not in FTMO_EXEC_SENT or r.get("trimmed"))]
+    lines: dict[str, Any] = {}
+    for rail in sorted({str(r.get("rail")) for r in billed}):
+        mine = [r for r in billed if r.get("rail") == rail]
+        usd = [float(r["missed_growth_risk_usd"]) for r in mine
+               if isinstance(r.get("missed_growth_risk_usd"), (int, float))
+               and not isinstance(r.get("missed_growth_risk_usd"), bool)]
+        lines[rail] = {"verdict": UNMEASURED, "n": len(mine),
+                       "undeployed_risk_usd": round(sum(usd), 2),
+                       "n_unpriced": len(mine) - len(usd), "last_at": mine[-1].get("at"),
+                       "sleeves": sorted({str(r.get("sleeve")) for r in mine}),
+                       "statuses": sorted({str(r.get("status")) for r in mine}),
+                       "why": ("the risk the executor held back, not what the trade would have "
+                               "earned; published, not priced")}
+    return {"source": f"data/{FTMO_EXEC_INTENTS.name} rows a rail kept from sending",
+            "rails": lines}
+
+
 #: THE JUDGE'S WATCHDOG AND THE DEEPENING MEMORY GUARD (audit of 2832cebd1, 2026-10-20). Neither
 #: registers a rail (the register is sealed), so each publishes its missed-growth lines on its
 #: own artifact: a sweep the watchdog killed (or found dead) discards its whole wall, and a
@@ -859,6 +897,9 @@ JUDGE_PRIORITY_UNRECORDED = BASE / "reports" / "JUDGE_PRIORITY_RAISES_UNRECORDED
 JUDGE_PRIORITY_RECORDS = (BASE / "reports" / "JUDGE_PRIORITY_SWEEP.json",
                           BASE / "reports" / "JUDGE_PRIORITY.json")
 DEEPENING_GUARD = BASE / "reports" / "DEEPENING_MEMORY_GUARD.json"
+#: canon_publication's record: the lockbox v4 re-judge parking publishes its two-sided line here
+#: (the rail register is sealed), cost and gain both UNMEASURED until priced.
+CANON_PUBLICATION = BASE / "reports" / "CANON_PUBLICATION.json"
 
 
 def _spill_lines(spill: Path | None) -> tuple[list[dict[str, Any]], int]:
@@ -1147,6 +1188,7 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
                                     "fusion_book_rails": published_fusion_book_lines(),
                                     "ftmo_follower_rails": published_ftmo_follower_lines(),
+                                    "ftmo_executor_rails": published_ftmo_executor_lines(),
                                     "gauntlet_watchdog": organ_published_lines(GAUNTLET_STALL),
                                     "judge_priority_raise": organ_published_lines(
                                         JUDGE_PRIORITY_RAISES,
@@ -1154,6 +1196,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         unspilled=JUDGE_PRIORITY_RECORDS),
                                     "deepening_memory_guard": organ_published_lines(
                                         DEEPENING_GUARD),
+                                    "canon_rejudge_parking": organ_published_lines(
+                                        CANON_PUBLICATION),
                                     "admission_scan_cadence": admission_cadence_line(alloc)},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
