@@ -178,7 +178,7 @@ def attribute(row: dict[str, Any], dec: dict[str, Any] | None, meta: dict[str, A
     if t0 is None and dec and "pending" not in str(dec.get("execution") or ""):
         t0 = _ts(dec.get("decided_at"))
     sleeve = str(row.get("sleeve") or "")
-    layers: dict[str, Any] = {k: UNMEASURED for k in LAYERS}
+    layers: dict[str, Any] = dict.fromkeys(LAYERS, UNMEASURED)
     ce = _cert_exp(sleeve, sleeves_doc)
     if ce is not None:
         layers["signal_edge"] = round(ce, 4)
