@@ -863,10 +863,15 @@ def act(report: dict[str, Any] | None = None, sleeves_path: Path | None = None,
         res = {"status": (f"STALE_REPORT: {REPORT.name} generated_at "
                           f"{report.get('generated_at')!r} is older than {REPORT_MAX_AGE_H}h "
                           "or unreadable; no verdict acted on"), "done": []}
-        ACTIONS.parent.mkdir(parents=True, exist_ok=True)
-        with ACTIONS.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps({"at": now.isoformat(timespec="seconds"),
-                                 "action": "STALE_REPORT", "why": res["status"]}) + "\n")
+        # ONE ROW PER STALE EPISODE, not one per pass: a dead leg would otherwise append a row
+        # every hour. A new row is written only when the last one is not this same staleness.
+        prev = _jsonl(ACTIONS)[-1:] if ACTIONS.exists() else []
+        if not (prev and prev[0].get("action") == "STALE_REPORT"
+                and prev[0].get("why") == res["status"]):
+            ACTIONS.parent.mkdir(parents=True, exist_ok=True)
+            with ACTIONS.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps({"at": now.isoformat(timespec="seconds"),
+                                     "action": "STALE_REPORT", "why": res["status"]}) + "\n")
         return res
     done: list[dict[str, Any]] = []
     window_requests: list[dict[str, Any]] = []

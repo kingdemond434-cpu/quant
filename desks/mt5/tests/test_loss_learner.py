@@ -294,6 +294,9 @@ def test_a_stale_report_retires_nothing(_out: Path, monkeypatch) -> None:
     res = LL.act(_report(at=old), sleeves_path=sp)
     assert res["status"].startswith("STALE_REPORT") and res["done"] == []
     assert json.loads(sp.read_text())["sleeves"][0]["status"] == "LIVE"
+    LL.act(_report(at=old), sleeves_path=sp)              # the next dead pass
+    rows = [ln for ln in (_out / "replacements.jsonl").read_text().splitlines() if ln.strip()]
+    assert len(rows) == 1
 
 
 def test_a_variant_that_lost_capital_before_the_write_retires_nothing(_out: Path,
