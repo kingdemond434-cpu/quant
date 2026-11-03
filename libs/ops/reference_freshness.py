@@ -680,9 +680,9 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "lineage trials, the variant's own forward verdict promoting -- AND only when the "
              "variant's row is LIVE with risk_frac > 0 both in the roster act() decides on and "
              "in the re-read just before the write, and only from a report under 26h old "
-             "(STALE_REPORT otherwise). An absent report, verdict, clock ledger or variant row retires nothing "
-             "(IMMATURE / WAITING / PENDING_VARIANT_LIVE). The pop() the scan sees removes an "
-             "in-memory door note, not evidence.",
+             "(STALE_REPORT otherwise). An absent report, verdict, clock ledger or variant row "
+             "retires nothing (IMMATURE / WAITING / PENDING_VARIANT_LIVE). The pop() the scan "
+             "sees removes an in-memory door note, not evidence.",
     ),
     DestructivePath(
         path_id="run_sharded_gauntlet.drop_merge_snapshot",
