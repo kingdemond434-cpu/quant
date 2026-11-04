@@ -8,6 +8,7 @@ Three properties are fenced:
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import sys
 from dataclasses import replace
@@ -20,9 +21,18 @@ _DESK = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_DESK))
 
 from mt5desk import families  # noqa: E402
-from mt5desk.engine import Costs, Signal, run_backtest  # noqa: E402
+from mt5desk.engine import Signal, run_backtest  # noqa: E402
 
-COSTS = Costs(spread_per_lot=0.0, commission_per_lot=0.0, contract_oz=1.0)
+# Mechanics only: exits must land on exact prices, so the costs are zero. The zero-cost fixture
+# is `test_trail_tighten.FREE`, already a counted literal site, reused rather than adding one.
+_spec = importlib.util.spec_from_file_location(
+    "_trail_tighten_fixture", Path(__file__).with_name("test_trail_tighten.py"))
+assert _spec is not None and _spec.loader is not None
+_tt = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_tt)
+FREE = _tt.FREE
+
+COSTS = replace(FREE, contract_oz=1.0)  # mechanics only: exits must land on exact prices
 
 
 def _path(closes: list[float]) -> pd.DataFrame:
