@@ -123,7 +123,17 @@ class Unavailable(RuntimeError):
 
 def _gh(*args: str) -> str:
     env = {k: v for k, v in os.environ.items() if k not in KEY_ENVS}
-    p = subprocess.run(["gh", "api", *args], capture_output=True, text=True, env=env, check=False)
+    # A diff is bytes: a Shift-JIS fixture or a binary file is not UTF-8, and decoding it strictly
+    # crashed the reviewer (UnicodeDecodeError, #674 run 41742215537). Invalid bytes show as U+FFFD.
+    p = subprocess.run(
+        ["gh", "api", *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=env,
+        check=False,
+    )
     if p.returncode != 0:
         raise RuntimeError(f"gh api {args[0]}: {p.stderr.strip()[:300]}")
     return p.stdout
