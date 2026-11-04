@@ -5012,7 +5012,7 @@
   {
    "id": "yc_xmkt_spreads",
    "plane": "rates",
-   "country": null,
+   "country": "us",
    "name": "Cross-market 10y spreads: US minus euro-area AAA, US minus JGB, and their weekly changes",
    "url": "https://fred.stlouisfed.org/series/DGS10",
    "expect": "csv",
