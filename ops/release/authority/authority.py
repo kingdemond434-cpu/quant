@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 from collections.abc import Callable
@@ -38,6 +39,8 @@ from typing import Any
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 VERSION = "authority/v1"
+#: the authority's own GitHub App: the only identity whose release-authority status counts
+AUTHORITY_APP_ID = 5601819
 
 
 def _load(name: str, path: Path) -> Any:
@@ -90,8 +93,63 @@ def pinned(pin_path: str, digest: str) -> tuple[bool, str]:
     return True, "root pin matches"
 
 
-def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any]) -> dict[str, Any]:
-    """Everything decide() needs, read by the authority itself. Any read error raises."""
+#: Apps that may never bypass the LIVE ruleset: a PR's own workflow token, and the signer itself
+NEVER_BYPASS_APPS = frozenset({15368, AUTHORITY_APP_ID})
+
+
+def bypass_problem(rs: Any) -> str | None:
+    """Why this ruleset does NOT make GitHub refuse every merge the authority did not pass, or
+    None. Only Apps may bypass (the state App, bounded by the ROOT publisher's path filter): a
+    role, team, user or org-admin bypass is a person -- in practice the owner's login, which the
+    box gate once ran under -- able to merge around the status (#650 audit MF1). An unreadable or
+    absent bypass list is a problem, never an empty one."""
+    if not isinstance(rs, dict) or rs.get("enforcement") != "active":
+        return "the ruleset is not active"
+    bys = rs.get("bypass_actors")
+    if not isinstance(bys, list):
+        return "its bypass list is not visible to the authority (Administration: read)"
+    for b in bys:
+        kind = b.get("actor_type") if isinstance(b, dict) else None
+        if kind != "Integration":
+            return f"a {kind} may bypass it"
+        if b.get("actor_id") in NEVER_BYPASS_APPS or not b.get("actor_id"):
+            return f"App {b.get('actor_id')} may bypass it"
+    return None
+
+
+def level2_enforced(ag: Any, repo: str, base: str) -> tuple[bool, str]:
+    """Whether GitHub ITSELF refuses a LIVE merge the authority did not pass: an active rule on
+    `base` requires the release-authority status from the authority App, AND the ruleset that
+    carries it lets no person bypass it (bypass_problem). Read every pass; any error, any doubt:
+    False (fail closed), which keeps the release machinery ROOT."""
+    try:
+        rules = ag._gh(f"repos/{repo}/rules/branches/{base}?per_page=100")
+    except (RuntimeError, ValueError, OSError, subprocess.SubprocessError) as exc:
+        return False, f"rules unreadable ({type(exc).__name__}): enforcement not assumed"
+    want = {"context": STATUS_CONTEXT, "integration_id": AUTHORITY_APP_ID}
+    why = f"no active rule on {base} requires {STATUS_CONTEXT} from the authority App"
+    for r in rules if isinstance(rules, list) else []:
+        if not isinstance(r, dict) or r.get("type") != "required_status_checks":
+            continue
+        checks = (r.get("parameters") or {}).get("required_status_checks") or []
+        if not any(isinstance(c, dict) and {k: c.get(k) for k in want} == want for c in checks):
+            continue
+        rid = r.get("ruleset_id")
+        try:
+            rs = ag._gh(f"repos/{repo}/rulesets/{int(str(rid))}")
+        except (RuntimeError, ValueError, TypeError, OSError, subprocess.SubprocessError) as exc:
+            return False, f"ruleset {rid} unreadable ({type(exc).__name__}): not assumed enforced"
+        bad = bypass_problem(rs)
+        if bad is None:
+            return True, f"ruleset {rid} requires {STATUS_CONTEXT} on {base}; only Apps bypass it"
+        why = f"ruleset {rid} requires {STATUS_CONTEXT} but {bad}"
+    return False, why
+
+
+def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any],
+          enforced: bool = False) -> dict[str, Any]:  # fmt: skip
+    """Everything decide() needs, read by the authority itself. Any read error raises.
+    `enforced`: level2_enforced() this pass."""
     p = ag._gh(f"repos/{repo}/pulls/{pr}")
     head = str(p["head"]["sha"])
     f: dict[str, Any] = {
@@ -121,7 +179,8 @@ def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any]) -> dic
 
         return read
 
-    cls, why = pol.classify(names, level, policy, reader(f"origin/{base}"), reader(head))
+    cls, why = pol.classify(names, level, policy, reader(f"origin/{base}"), reader(head),
+                            enforced=enforced)  # fmt: skip
     f.update(tier=level, tier_why=twhy, cls=cls, cls_reasons=why, files=names)
     found = ag.verdicts(ag._flat(ag._gh(f"repos/{repo}/issues/{pr}/comments?per_page=100",
                                         "--paginate", "--slurp")))  # fmt: skip
@@ -206,6 +265,209 @@ def fresh_exists(
     return False
 
 
+STATUS_CONTEXT = "release-authority"
+STATUS_FLAG = "POST_STATUS"  # in the registry folder (Administrators-write): Level 2 is on
+
+
+def first_signed(
+    out: Path, pr: int, head: str, digest: str, now: datetime | None = None
+) -> datetime | None:
+    """The start of the veto the ruleset enforces: the FIRST CLEAR signed on this (pr, head) under
+    this policy AFTER its latest signed HOLD (a HOLD raised and lifted restarts the window), read
+    from the signed statements themselves, never file times. A statement dated in the future is
+    ignored. FAIL and WAIT are never signed, so they do not restart it (LEVEL2.md)."""
+    now = now or datetime.now(UTC)
+    seen: dict[str, list[datetime]] = {"CLEAR": [], "HOLD": []}
+    for verdict, got in seen.items():
+        for f in out.glob(f"pr{pr}-{head[:12]}-{verdict}-{digest[:8]}-*.json"):
+            try:
+                st = json.loads(f.read_text(encoding="utf-8"))["statement"]
+                t = datetime.fromisoformat(str(st["issued_at"]))
+            except (OSError, ValueError, KeyError, TypeError):
+                continue
+            if st.get("head_sha") == head and st.get("verdict", verdict) == verdict and t <= now:
+                got.append(t)
+    last_hold = max(seen["HOLD"], default=None)
+    clears = [t for t in seen["CLEAR"] if last_hold is None or t > last_hold]
+    return min(clears, default=None)
+
+
+def status_for(
+    f: dict[str, Any],
+    verdict: str,
+    reasons: list[str],
+    *,
+    since: datetime | None,
+    veto_h: float,
+    now: datetime | None = None,
+) -> tuple[str, str]:
+    """The commit status the LIVE ruleset requires (Level 2). success only on a CLEAR; for a
+    CONTROLLER PR only once the veto has run from its FIRST signed CLEAR, so GitHub itself refuses
+    a merge inside the 24 h window even from a rewritten gate. ROOT never gets success: it goes
+    through the owner's admin pull-request bypass."""
+    now = now or datetime.now(UTC)
+    if f.get("cls") not in ("AUTO", "LOW", "CONTROLLER"):
+        return "failure", f"{f.get('cls')}: the owner's path, never this status"[:140]
+    if verdict == "CLEAR":
+        if f.get("cls") in ("AUTO", "LOW"):
+            return "success", "CLEAR"
+        if since is None:
+            return "pending", "CLEAR, veto window not started"
+        left = timedelta(hours=veto_h) - (now - since)
+        if left > timedelta(0):
+            return "pending", f"CLEAR, veto window: {left.total_seconds() / 3600:.1f} h left"
+        return "success", f"CLEAR, veto window of {veto_h:g} h elapsed"
+    state = "pending" if verdict == "WAIT" else "failure"
+    return state, f"{verdict}: {'; '.join(reasons)}"[:140]
+
+
+def post_status(ag: Any, repo: str, head: str, state: str, desc: str) -> None:
+    ag._gh(f"repos/{repo}/statuses/{head}", "-X", "POST",
+           data={"state": state, "context": STATUS_CONTEXT, "description": desc[:140]})  # fmt: skip
+
+
+STATE_APP_FILE = "STATE_APP.json"  # in the registry folder: {"login": "<slug>[bot]"} (Level 2)
+
+
+CURSOR_FILE = "state_app_cursor.json"  # in the attestations folder, authority-written
+
+
+def state_app_violations(
+    activities: list[dict[str, Any]], login: str,
+    files_between: Callable[[str, str], list[str] | None], publishable: Callable[[str], bool],
+) -> list[str]:  # fmt: skip
+    """Judge LIVE by its PUSHES, never commit metadata (#650 audit: a key holder can write any
+    author email). A force-push or a branch deletion by anyone is a violation; a push by the state
+    App is one when before..after touches any non-publishable path, or when its file list can't
+    be read in full (None)."""
+    bad: list[str] = []
+    for ev in activities:
+        kind = str(ev.get("activity_type") or "")
+        who = str((ev.get("actor") or {}).get("login") or "")
+        tag = f"activity {ev.get('id')} {kind} by {who or '?'}"
+        if kind in ("force_push", "branch_deletion"):
+            bad.append(tag)
+            continue
+        if who != login:
+            continue
+        files = files_between(str(ev.get("before")), str(ev.get("after")))
+        if files is None:
+            bad.append(f"{tag}: file list unreadable or truncated")
+            continue
+        wrong = [f for f in files if not publishable(f)]
+        if wrong:
+            bad.append(f"{tag}: {', '.join(wrong[:5])}")
+    return bad
+
+
+def check_state_app(ag: Any, repo: str, base: str, out: Path) -> str | None:
+    """Level 2 detector, on while STATE_APP.json exists (create it once the state App exists, so
+    the baseline is taken before Level 2). Reads LIVE's push log from a stored cursor, so no burst
+    of pushes can slide a violation out of view; on a violation it writes the DEACTIVATE kill file
+    beside the attestations, which stops every authority merge until a person looks."""
+    cfg = out.parent / STATE_APP_FILE
+    if not cfg.exists():
+        return None
+    login = str(json.loads(cfg.read_text(encoding="utf-8-sig")).get("login") or "")
+    if not login:
+        return "STATE_APP.json has no login: detector not run"
+    pub = _load("state_publisher", ROOT / "ops" / "release" / "publisher" / "publish.py")
+    cur_path = out / CURSOR_FILE
+    if cur_path.exists():
+        try:  # present but unreadable never re-baselines (that would skip judging): freeze
+            last = int(json.loads(cur_path.read_text(encoding="utf-8"))["last_id"])
+        except (OSError, ValueError, KeyError, TypeError):
+            return _freeze(out, [f"{CURSOR_FILE} is unreadable"])
+    else:
+        last = 0
+    if not last:  # first run: baseline at the newest push, never judge history before Level 2
+        got, _ = activity_page(repo, f"repos/{repo}/activity?ref=refs/heads/{base}&per_page=1")
+        top = max((int(e.get("id") or 0) for e in got), default=0)
+        if top:
+            _write_cursor(cur_path, top)
+        return f"LIVE push log: baseline set at activity {top}"
+    new: dict[int, dict[str, Any]] = {}
+    url: str | None = f"repos/{repo}/activity?ref=refs/heads/{base}&per_page=100"
+    for _ in range(10):  # newest first, following the Link `next` cursor; stop at the cursor
+        got, url = activity_page(repo, str(url))
+        fresh = [e for e in got if int(e.get("id") or 0) > last]
+        new.update({int(e["id"]): e for e in fresh})
+        if len(fresh) < len(got) or not url:
+            break
+    else:
+        return _freeze(out, ["more than 1,000 LIVE pushes since the last check"])
+
+    def files_between(before: str, after: str) -> list[str] | None:
+        doc = ag._gh(f"repos/{repo}/compare/{before}...{after}")
+        files = doc.get("files") or []
+        if len(files) >= 300 or doc.get("status") not in ("ahead", "identical"):
+            return None
+        return [str(f.get("filename")) for f in files]
+
+    bad = state_app_violations(list(new.values()), login, files_between, pub.publishable)
+    if bad:
+        return _freeze(out, bad)
+    if new:
+        _write_cursor(cur_path, max(new))
+    return f"LIVE push log: {len(new)} new push(es) since {last}, clean"
+
+
+def activity_page(repo: str, url: str) -> tuple[list[dict[str, Any]], str | None]:
+    """One page of the activity log and the Link header's `next` URL (cursor-paged, not page=)."""
+    import re
+
+    p = subprocess.run(["gh", "api", "-i", url], capture_output=True, text=True,
+                       encoding="utf-8", errors="replace", timeout=120, check=False)  # fmt: skip
+    if p.returncode != 0:
+        raise RuntimeError(f"gh api {url}: {p.stderr.strip()[:200]}")
+    head, _, body = p.stdout.replace("\r\n", "\n").partition("\n\n")
+    nxt = None
+    for line in head.splitlines():
+        if line.lower().startswith("link:"):
+            m = re.search(r'<https://api\.github\.com/([^>]+)>;\s*rel="next"', line)
+            nxt = m.group(1) if m else None
+    got = json.loads(body or "[]")
+    return (got if isinstance(got, list) else []), nxt
+
+
+def _write_cursor(path: Path, top: int) -> None:
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps({"last_id": top}), encoding="utf-8")
+    os.replace(tmp, path)
+
+
+FAILS_FILE = "state_app_failures.json"
+MAX_DETECTOR_FAILS = 3
+
+
+def detector_pass(ag: Any, repo: str, base: str, out: Path) -> str | None:
+    """check_state_app, failing CLOSED: three passes in a row that can't read the push log
+    freeze, so a lasting API or auth break can't leave the detector blind (#650 audit SF)."""
+    fails = out / FAILS_FILE
+    try:
+        seen = check_state_app(ag, repo, base, out)
+    except (RuntimeError, ValueError, OSError, subprocess.SubprocessError) as exc:
+        try:
+            n = int(json.loads(fails.read_text(encoding="utf-8"))["n"]) + 1
+        except (OSError, ValueError, KeyError, TypeError):
+            n = 1
+        tmp = fails.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"n": n}), encoding="utf-8")
+        os.replace(tmp, fails)
+        if n >= MAX_DETECTOR_FAILS:
+            return _freeze(out, [f"push-log detector failed {n} passes in a row: {exc}"])
+        return f"state App detector failed ({n}/{MAX_DETECTOR_FAILS}): {exc}"
+    if fails.exists():
+        fails.unlink()
+    return seen
+
+
+def _freeze(out: Path, bad: list[str]) -> str:
+    (out / "DEACTIVATE").write_text("LIVE push log violation: " + "; ".join(bad) + "\n",
+                                    encoding="utf-8")  # fmt: skip
+    return f"RED: LIVE push log violation, DEACTIVATE raised: {'; '.join(bad)}"
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--repo", required=True)
@@ -215,6 +477,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--root-pin", required=True)
     ap.add_argument("--pr", type=int)
     ap.add_argument("--dry-run", action="store_true", help="decide and print; sign nothing")
+    ap.add_argument("--post-status", action="store_true",
+                    help=f"also post the {STATUS_CONTEXT!r} commit status (on by itself when "
+                         f"{STATUS_FLAG} exists beside the attestations folder)")  # fmt: skip
     a = ap.parse_args(argv)
     policy = pol.load_policy()
     digest = tree_digest("HEAD", policy)
@@ -238,10 +503,19 @@ def main(argv: list[str] | None = None) -> int:
         pages = ag._gh(f"repos/{a.repo}/pulls?state=open&base={base}&per_page=100", "--paginate",
                        "--slurp")  # fmt: skip
         prs = [int(p["number"]) for p in ag._flat(pages)]
+    seen = detector_pass(ag, a.repo, base, Path(a.out))
+    if seen:
+        print(seen, flush=True)
+        if seen.startswith("RED"):
+            return 2
+    post = a.post_status or (Path(a.out).parent / STATUS_FLAG).exists()
+    enforced, ewhy = level2_enforced(ag, a.repo, base)
+    print(f"level 2: {'ENFORCED' if enforced else 'not enforced'} -- {ewhy}", flush=True)
+    veto_h = float(policy.get("veto_hours", 24))
     rc = 0
     for n in prs:
         try:
-            f = facts(ag, a.repo, n, base, policy)
+            f = facts(ag, a.repo, n, base, policy, enforced=enforced)
             verdict, reasons = pol.decide(f)
         except (RuntimeError, subprocess.SubprocessError, KeyError, TypeError, ValueError) as exc:
             print(f"#{n}: not judged: {exc}")
@@ -256,6 +530,15 @@ def main(argv: list[str] | None = None) -> int:
             env = issue(f, verdict, reasons, repo=a.repo, digest=digest, key=key, kid=kid,
                         ttl_h=float(policy.get("attestation_ttl_hours", 48)))  # fmt: skip
             line += f" -> {write(Path(a.out), env, n, f['head'], verdict, digest).name}"
+        if post and not a.dry_run and f.get("open") and f.get("same_repo") and f.get("base_ok"):
+            since = first_signed(Path(a.out), n, f["head"], digest)
+            state, desc = status_for(f, verdict, reasons, since=since, veto_h=veto_h)
+            try:
+                post_status(ag, a.repo, f["head"], state, desc)
+                line += f" [status {state}]"
+            except RuntimeError as exc:
+                line += f" [status not posted: {exc}]"
+                rc = 1
         print(line, flush=True)
     return rc
 

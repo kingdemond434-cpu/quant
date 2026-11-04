@@ -138,3 +138,36 @@ def test_decide_refuses_an_evidence_pointer_that_cannot_resolve(tmp_path):
     assert not j.exists()
     a.evidence = ["pr:999999"]
     assert CTX["decide"](a, j)["evidence"] == ["pr:999999"]
+
+
+def test_an_evidence_amendment_counts_for_its_target_and_edits_nothing(tmp_path):
+    j = tmp_path / "j.jsonl"
+    orig = {"id": "D-20260101-001", "at": "x", "title": "t", "decision": "d", "why": "w",
+            "by": "b", "evidence": []}
+    j.write_text(json.dumps(orig) + "\n", encoding="utf-8")
+    ok, problems = CTX["verify"](j)
+    assert not ok and any("missing ['evidence']" in p for p in problems)
+    fix = {"id": "D-20260101-002", "at": "y", "title": "Evidence for D-20260101-001",
+           "decision": "add evidence", "why": "named late", "by": "b",
+           "evidence": ["scripts/context.py"], "amends": "D-20260101-001", "amend": "evidence"}
+    before = j.read_text(encoding="utf-8")
+    with j.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(fix) + "\n")
+    assert j.read_text(encoding="utf-8").startswith(before)  # the original bytes are untouched
+    assert CTX["verify"](j) == (True, [])
+
+
+def test_verify_refuses_an_amendment_of_a_later_or_unknown_row_or_of_another_kind(tmp_path):
+    base = {"at": "x", "title": "t", "decision": "d", "why": "w", "by": "b",
+            "evidence": ["scripts/context.py"]}
+    for rows, want in (
+        ([{**base, "id": "D-2", "amends": "D-9", "amend": "evidence"}], "amends unknown or later"),
+        ([{**base, "id": "D-2", "amends": "D-3", "amend": "evidence"}, {**base, "id": "D-3"}],
+         "amends unknown or later"),
+        ([{**base, "id": "D-1"}, {**base, "id": "D-2", "amends": "D-1", "amend": "decision"}],
+         "unknown amend kind"),
+    ):
+        j = tmp_path / "j.jsonl"
+        j.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+        ok, problems = CTX["verify"](j)
+        assert not ok and any(want in p for p in problems), (rows, problems)

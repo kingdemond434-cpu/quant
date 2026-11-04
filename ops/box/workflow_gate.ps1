@@ -106,10 +106,17 @@ try {
     if (-not $Python) { throw "no Python 3.14 found" }
 
     $ErrorActionPreference = 'Continue'  # native stderr is data; exit codes are the verdict
+    # LEVEL 2 (ops/release/authority/LEVEL2.md step 3): the quant-merger App when it is installed
+    $asApp = $false
+    $mergerEnv = Join-Path $Clone "ops\release\merger\merger_env.ps1"
+    if (Test-Path -LiteralPath $mergerEnv) {
+        . $mergerEnv
+        try { $asApp = Use-MergerIdentity $Clone } catch { Say "$($_.Exception.Message)"; Beat 3 "merger App token failed" $false; Watch; exit 3 }
+    }
     $status = (& $Gh auth status -h github.com 2>&1 | Out-String)
     $scopeLine = ($status -split "`n" | Where-Object { $_ -match 'Token scopes' } | Select-Object -First 1)
     if ($LASTEXITCODE -ne 0) { Say "gh is not logged in: $($status.Trim())"; Beat 3 "gh not logged in" $false; Watch; exit 3 }
-    $scope = $scopeLine -match "'workflow'"
+    $scope = $asApp -or ($scopeLine -match "'workflow'")  # an App's Workflows permission is not a scope
     if (-not $scope) {
         Say "gh login lacks the workflow scope ($scopeLine); workflow-file PRs will fail to merge"
     }
