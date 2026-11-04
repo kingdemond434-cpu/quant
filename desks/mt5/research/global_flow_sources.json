@@ -36,7 +36,8 @@
     "XAUEUR",
     "XAUAUD"
    ],
-   "why": "GLD creations and redemptions are Western investment demand for physical gold; tonnes change against price separates investor flow from central-bank and Asian physical buying."
+   "why": "GLD creations and redemptions are Western investment demand for physical gold; tonnes change against price separates investor flow from central-bank and Asian physical buying.",
+   "pit_source": "spdr_gld_holdings"
   },
   {
    "id": "nse_part_oi",

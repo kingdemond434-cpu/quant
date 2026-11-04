@@ -487,6 +487,7 @@ def collect(*, get: Callable[..., str] | None, state: dict[str, Any], notes: lis
         at = (idx.dt.tz_localize("UTC") if idx.dt.tz is None else idx).dt.normalize() + \
             pd.Timedelta(days=float(src.get("avail_lag_days", 1)),
                          hours=float(src.get("avail_hour_utc", 23)))
+        at = declared_floor(src, idx, at)
         at = first_seen_floor(sid, idx, at, state, now)
         fid = f"flow_{sid}"
         frames[fid] = stamped(feat.reset_index(drop=True), at, fid, idx)
@@ -495,6 +496,22 @@ def collect(*, get: Callable[..., str] | None, state: dict[str, Any], notes: lis
                       "access_label": access.get(sid, "UNREAD_THIS_PASS"),
                       "last_event": str(idx.max()), "why": src.get("why", "")}
     return built, frames
+
+
+def declared_floor(src: Mapping[str, Any], idx: pd.Series, at: pd.Series) -> pd.Series:
+    """A source the desk's PIT registry already declares (`pit_source` on the row, e.g. GLD as
+    spdr_gld_holdings) is never stamped earlier than valid time + its data_os.declared_lag: one
+    registry owns each source's publication lag, and this module can only be later than it."""
+    name = src.get("pit_source")
+    if not name:
+        return at
+    from libs.tiers import data_os
+    lag = data_os.declared_lag(str(name))
+    if lag is None:
+        return at
+    valid = idx.dt.tz_localize("UTC") if idx.dt.tz is None else idx
+    floor = valid + pd.Timedelta(seconds=float(lag["lag_s"]))
+    return pd.Series(np.maximum(at.to_numpy(), floor.to_numpy()), index=at.index)
 
 
 FIRST_SEEN_DAYS = 14
