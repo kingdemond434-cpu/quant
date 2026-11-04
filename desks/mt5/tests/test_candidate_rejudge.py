@@ -153,4 +153,15 @@ def test_missed_growth_carries_the_rejudge_lines():
     import missed_growth as mg
     assert mg.CANDIDATE_REJUDGE.name == "candidate_rejudge_shadow_state.json"
     src = (DESK / "research" / "missed_growth.py").read_text(encoding="utf-8")
-    assert '"shadow_candidate_rejudge": organ_published_lines(' in src
+    assert "**rejudge_lane_lines()," in src
+
+
+def test_every_lanes_rejudge_file_is_carried(tmp_path, monkeypatch):
+    import missed_growth as mg
+    main = tmp_path / "candidate_rejudge_shadow_state.json"
+    (tmp_path / "candidate_rejudge_qquant_shadow_state.json").write_text(
+        '{"missed_growth": []}', encoding="utf-8")
+    monkeypatch.setattr(mg, "CANDIDATE_REJUDGE", main)
+    out = mg.rejudge_lane_lines()
+    assert out["shadow_candidate_rejudge"]["verdict"] == "UNMEASURED"     # absent main lane
+    assert out["shadow_candidate_rejudge_qquant_shadow_state"]["verdict"] == "NOT_BINDING"

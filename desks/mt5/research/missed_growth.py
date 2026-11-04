@@ -901,6 +901,19 @@ DEEPENING_GUARD = BASE / "reports" / "DEEPENING_MEMORY_GUARD.json"
 #: demoted to KILL and restored when it clears the bar again. Its lines compare what the demoted
 #: rows did AFTER the demotion with the candidates it kept (shadow_forward.rejudge_report).
 CANDIDATE_REJUDGE = BASE / "reports" / "shadow" / "candidate_rejudge_shadow_state.json"
+#: Every lane writes its own (candidate_rejudge_<ledger stem>.json); the main lane is always
+#: carried, even absent (UNMEASURED), and every other lane's file is carried when it exists.
+CANDIDATE_REJUDGE_GLOB = "candidate_rejudge_*.json"
+
+
+def rejudge_lane_lines() -> dict[str, Any]:
+    """One published-lines block per lane's candidate re-judge artifact."""
+    out = {"shadow_candidate_rejudge": organ_published_lines(CANDIDATE_REJUDGE)}
+    for p in sorted(CANDIDATE_REJUDGE.parent.glob(CANDIDATE_REJUDGE_GLOB)):
+        if p != CANDIDATE_REJUDGE:
+            lane = p.stem.removeprefix("candidate_rejudge_")
+            out[f"shadow_candidate_rejudge_{lane}"] = organ_published_lines(p)
+    return out
 #: canon_publication's record: the lockbox v4 re-judge parking publishes its two-sided line here
 #: (the rail register is sealed), cost and gain both UNMEASURED until priced.
 CANON_PUBLICATION = BASE / "reports" / "CANON_PUBLICATION.json"
@@ -1205,8 +1218,7 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         CANON_PUBLICATION),
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
-                                    "shadow_candidate_rejudge": organ_published_lines(
-                                        CANDIDATE_REJUDGE),
+                                    **rejudge_lane_lines(),
                                     "admission_scan_cadence": admission_cadence_line(alloc)},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),

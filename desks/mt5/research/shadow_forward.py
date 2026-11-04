@@ -109,176 +109,6 @@ def _is_terminal(status: object) -> bool:
     return any(text == name or text.startswith(name + "_") for name in _TERMINAL_STATUSES)
 
 
-def lapsed_candidate(st: dict) -> str | None:
-    """Why a PROMOTION CANDIDATE's CURRENT ledger no longer clears the bar that promoted it.
-
-    The same two thresholds the maturity verdict uses, applied to the evidence as it stands now.
-    None means the candidate still clears it, or the row carries no numeric reading to judge.
-    """
-    try:
-        exp_r, dd = float(st["exp_r"]), float(st["max_dd_r"])
-    except (KeyError, TypeError, ValueError):
-        return None
-    if exp_r > PROMOTE_MIN_EXP and dd > PROMOTE_MIN_DD:
-        return None
-    return (f"current ledger n={st.get('n')} exp={exp_r:.3f}R maxDD={dd:.1f}R no longer clears "
-            f"exp>{PROMOTE_MIN_EXP} and maxDD>{PROMOTE_MIN_DD}")
-
-
-def _registry_live(key: str) -> bool | None:
-    try:
-        import sleeve_registry as _reg
-        return key in _reg.live_keys()
-    except Exception:  # unreadable registry: the caller leaves the verdict and says so
-        return None
-
-
-def rejudge_candidate(key: str, st: dict, days_active: float, *,
-                      live: Callable[[str], bool | None] = _registry_live) -> str | None:
-    """Re-take a PROMOTION CANDIDATE verdict on the row's CURRENT ledger. Returns what it did.
-
-    It used to be taken once, at maturity, and never revisited while the clock kept accruing:
-    US30 car asia matured +0.117R on 2026-10-13, was retired 2 s later, and read n=130 at -0.135R
-    three weeks on -- still PROMOTION CANDIDATE, and five readers (forward_slot_ranker,
-    cell_culture_index, posterior_alpha, culture_orthogonality, forward_enrolment) counted it as
-    positive evidence. 11 of 131 candidates were in that state on 2026-11-04.
-
-    DOWN: a candidate whose ledger fails the maturity bar and that holds no live order authority
-    becomes KILL with demoted_from/at/why. A LIVE row is the allocator's and the e-process's.
-    UP (GROWTH_GOVERNANCE Rule 2, two-sided): a row THIS rule demoted that clears the same bar
-    again is restored to PROMOTION CANDIDATE on that pass. A maturity KILL is never touched.
-    Either way the clock keeps accruing and forward_start is unchanged -- nothing is withdrawn.
-    """
-    status = str(st.get("status") or "").upper()
-    now = datetime.now(UTC).isoformat(timespec="seconds")
-    if status == "PROMOTION CANDIDATE":
-        why = lapsed_candidate(st)
-        if not why:
-            return None
-        is_live = live(key)
-        if is_live is None:
-            st["rejudge"] = "UNMEASURED: registry unreadable; the verdict stands this pass"
-            return None
-        if is_live:
-            return None
-        st["status"] = "KILL"
-        st["demoted_from"] = "PROMOTION CANDIDATE"
-        st["demoted_at"] = now
-        st["demoted_why"] = why
-        st["demoted_n"] = st.get("n")
-        st["demoted_cum_r"] = st.get("cum_r")
-        st["demoted_exp_r"] = st.get("exp_r")
-        st["rejudge_missed_growth"] = rejudge_missed_growth(st, days_active)
-        return f"VERDICT LAPSED -> KILL ({why})"
-    if (status == "KILL" and st.get("demoted_from") == "PROMOTION CANDIDATE"
-            and _numeric_reading(st) and lapsed_candidate(st) is None):
-        restored_why = (f"current ledger n={st.get('n')} exp={float(st['exp_r']):.3f}R "
-                        f"maxDD={float(st['max_dd_r']):.1f}R clears the maturity bar again")
-        st.setdefault("demotions_before", []).append(
-            {"demoted_at": st.get("demoted_at"), "why": st.get("demoted_why"),
-             "n_at_demotion": st.get("demoted_n"), "exp_at_demotion": st.get("demoted_exp_r"),
-             "since": post_demotion(st), "restored_at": now, "restored_why": restored_why})
-        for k in ("demoted_from", "demoted_at", "demoted_why", "demoted_n", "demoted_cum_r",
-                  "demoted_exp_r"):
-            st.pop(k, None)
-        st["status"] = "PROMOTION CANDIDATE"
-        st["restored_at"] = now
-        st["restored_why"] = restored_why
-        st["rejudge_missed_growth"] = rejudge_missed_growth(st, days_active)
-        return (f"VERDICT RESTORED -> PROMOTION CANDIDATE n={st.get('n')} "
-                f"exp={float(st['exp_r']):.3f}R maxDD={float(st['max_dd_r']):.1f}R")
-    return None
-
-
-def post_demotion(st: dict) -> dict:
-    """The row's forward evidence SINCE its demotion: trades and mean R after the gate fired."""
-    try:
-        n0, c0 = int(st["demoted_n"]), float(st["demoted_cum_r"])
-        n1, c1 = int(st["n"]), float(st["cum_r"])
-    except (KeyError, TypeError, ValueError):
-        return {"n": None, "exp_r": None}
-    dn = n1 - n0
-    return {"n": dn, "exp_r": (c1 - c0) / dn if dn > 0 else None}
-
-
-#: Fewest post-demotion trades before a demotion's cost is called measured (missed_growth.MIN_N).
-REJUDGE_MIN_N = 10
-
-
-def rejudge_report(state: dict, *, at: str) -> dict:
-    """The candidate re-judge's missed-growth lines, published on its own artifact.
-
-    One line per row the rule currently holds demoted, and one per restoration it made: the
-    forward mean R AFTER the demotion beside the mean of the candidates it kept, so the gate is
-    judged by what the rows it demoted went on to do. A demotion whose post-demotion mean
-    clears the promotion bar is COSTS_GROWTH; below the bar with REJUDGE_MIN_N trades it
-    EARNS_ITS_PLACE; fewer trades is UNMEASURED. `research/missed_growth` carries these lines
-    into MISSED_GROWTH.json beside the registered rails.
-    """
-    lines: list[dict] = []
-    kept: list[float] = []
-    for key, st in state.items():
-        if not isinstance(st, dict):
-            continue
-        status = str(st.get("status") or "").upper()
-        if status == "PROMOTION CANDIDATE" and _numeric_reading(st):
-            kept.append(float(st["exp_r"]))
-        if status == "KILL" and st.get("demoted_from") == "PROMOTION CANDIDATE":
-            since = post_demotion(st)
-            lines.append({"at": st.get("demoted_at"), "key": key, "event": "demoted",
-                          "n_at_demotion": st.get("demoted_n"),
-                          "exp_at_demotion": st.get("demoted_exp_r"),
-                          "n_since": since["n"], "exp_since": since["exp_r"]})
-        for d in st.get("demotions_before") or []:
-            if isinstance(d, dict) and d.get("restored_at"):
-                since = d.get("since") or {}
-                lines.append({"at": d.get("restored_at"), "key": key, "event": "restored",
-                              "n_at_demotion": d.get("n_at_demotion"),
-                              "exp_at_demotion": d.get("exp_at_demotion"),
-                              "n_since": since.get("n"), "exp_since": since.get("exp_r")})
-    for ln in lines:
-        n, e = ln["n_since"], ln["exp_since"]
-        ln["verdict"] = ("UNMEASURED" if not isinstance(n, int) or n < REJUDGE_MIN_N
-                         or e is None else
-                         "COSTS_GROWTH" if e > PROMOTE_MIN_EXP else "EARNS_ITS_PLACE")
-    measured = [ln["exp_since"] for ln in lines
-                if ln["event"] == "demoted" and ln["verdict"] != "UNMEASURED"]
-    return {"generated_at": at, "organ": "shadow_forward.rejudge_candidate",
-            "bar": {"exp_r_gt": PROMOTE_MIN_EXP, "max_dd_r_gt": PROMOTE_MIN_DD},
-            "n_demoted_now": sum(1 for ln in lines if ln["event"] == "demoted"),
-            "n_restored": sum(1 for ln in lines if ln["event"] == "restored"),
-            "kept_candidates": len(kept),
-            "kept_exp_mean": sum(kept) / len(kept) if kept else None,
-            "demoted_exp_since_mean": sum(measured) / len(measured) if measured else None,
-            "missed_growth": lines}
-
-
-def _numeric_reading(st: dict) -> bool:
-    try:
-        float(st["exp_r"]), float(st["max_dd_r"])
-    except (KeyError, TypeError, ValueError):
-        return False
-    return True
-
-
-def rejudge_missed_growth(st: dict, days_active: float) -> dict:
-    """The missed-growth line for a demotion (or a restoration), in forward R per day.
-
-    `r_per_day_forgone` is what promoting the row at its CURRENT forward mean would add per day
-    (max(exp_r, 0) x trades/day): zero or near zero for a lapsed candidate, which is the claim the
-    demotion rests on, and published on the row so the claim can be checked rather than trusted.
-    The demoted row holds no order authority, so no live capital moves either way.
-    """
-    try:
-        exp_r, n = float(st["exp_r"]), int(st["n"])
-    except (KeyError, TypeError, ValueError):
-        return {"status": "UNMEASURED", "why": "no numeric exp_r/n on the row"}
-    tpd = n / days_active if days_active and days_active > 0 else None
-    return {"status": "MEASURED", "exp_r": exp_r, "n": n, "trades_per_day": tpd,
-            "r_per_day_forgone": (max(exp_r, 0.0) * tpd) if tpd is not None else None,
-            "order_authority": False}
-
-
 def _unmeasured(st: dict, why: str) -> None:
     """A pass that skips a row says so ON the row (audit 2026-10-06): without this, a skipped
     row kept the MEASURED stamp of the last pass that evaluated it, so a stale clock read fresh."""
@@ -1783,6 +1613,179 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     slog(f"shadow state saved ({len(enrolled)} sleeves, "
          f"{len(enrolled) - len(SLEEVES)} certificate-enrolled)")
     _enrolment_watermark(len(enrolled), ledger)
+
+
+#: THE CANDIDATE RE-JUDGE (2026-11-04) sits AFTER `main` on purpose: it runs only on rows past
+#: the evidence gate (a PROMOTION CANDIDATE, or a KILL this rule demoted), and test_state_chain
+#: reads everything above the gate as the place nothing may kill a sleeve.
+def lapsed_candidate(st: dict) -> str | None:
+    """Why a PROMOTION CANDIDATE's CURRENT ledger no longer clears the bar that promoted it.
+
+    The same two thresholds the maturity verdict uses, applied to the evidence as it stands now.
+    None means the candidate still clears it, or the row carries no numeric reading to judge.
+    """
+    try:
+        exp_r, dd = float(st["exp_r"]), float(st["max_dd_r"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if exp_r > PROMOTE_MIN_EXP and dd > PROMOTE_MIN_DD:
+        return None
+    return (f"current ledger n={st.get('n')} exp={exp_r:.3f}R maxDD={dd:.1f}R no longer clears "
+            f"exp>{PROMOTE_MIN_EXP} and maxDD>{PROMOTE_MIN_DD}")
+
+
+def _registry_live(key: str) -> bool | None:
+    try:
+        import sleeve_registry as _reg
+        return key in _reg.live_keys()
+    except Exception:  # unreadable registry: the caller leaves the verdict and says so
+        return None
+
+
+def rejudge_candidate(key: str, st: dict, days_active: float, *,
+                      live: Callable[[str], bool | None] = _registry_live) -> str | None:
+    """Re-take a PROMOTION CANDIDATE verdict on the row's CURRENT ledger. Returns what it did.
+
+    It used to be taken once, at maturity, and never revisited while the clock kept accruing:
+    US30 car asia matured +0.117R on 2026-10-13, was retired 2 s later, and read n=130 at -0.135R
+    three weeks on -- still PROMOTION CANDIDATE, and five readers (forward_slot_ranker,
+    cell_culture_index, posterior_alpha, culture_orthogonality, forward_enrolment) counted it as
+    positive evidence. 11 of 131 candidates were in that state on 2026-11-04.
+
+    DOWN: a candidate whose ledger fails the maturity bar and that holds no live order authority
+    becomes KILL with demoted_from/at/why. A LIVE row is the allocator's and the e-process's.
+    UP (GROWTH_GOVERNANCE Rule 2, two-sided): a row THIS rule demoted that clears the same bar
+    again is restored to PROMOTION CANDIDATE on that pass. A maturity KILL is never touched.
+    Either way the clock keeps accruing and forward_start is unchanged -- nothing is withdrawn.
+    """
+    status = str(st.get("status") or "").upper()
+    now = datetime.now(UTC).isoformat(timespec="seconds")
+    if status == "PROMOTION CANDIDATE":
+        why = lapsed_candidate(st)
+        if not why:
+            return None
+        is_live = live(key)
+        if is_live is None:
+            st["rejudge"] = "UNMEASURED: registry unreadable; the verdict stands this pass"
+            return None
+        if is_live:
+            return None
+        st["status"] = "KILL"
+        st["demoted_from"] = "PROMOTION CANDIDATE"
+        st["demoted_at"] = now
+        st["demoted_why"] = why
+        st["demoted_n"] = st.get("n")
+        st["demoted_cum_r"] = st.get("cum_r")
+        st["demoted_exp_r"] = st.get("exp_r")
+        st["rejudge_missed_growth"] = rejudge_missed_growth(st, days_active)
+        return f"VERDICT LAPSED -> KILL ({why})"
+    if (status == "KILL" and st.get("demoted_from") == "PROMOTION CANDIDATE"
+            and _numeric_reading(st) and lapsed_candidate(st) is None):
+        restored_why = (f"current ledger n={st.get('n')} exp={float(st['exp_r']):.3f}R "
+                        f"maxDD={float(st['max_dd_r']):.1f}R clears the maturity bar again")
+        st.setdefault("demotions_before", []).append(
+            {"demoted_at": st.get("demoted_at"), "why": st.get("demoted_why"),
+             "n_at_demotion": st.get("demoted_n"), "exp_at_demotion": st.get("demoted_exp_r"),
+             "since": post_demotion(st), "restored_at": now, "restored_why": restored_why})
+        for k in ("demoted_from", "demoted_at", "demoted_why", "demoted_n", "demoted_cum_r",
+                  "demoted_exp_r"):
+            st.pop(k, None)
+        st["status"] = "PROMOTION CANDIDATE"
+        st["restored_at"] = now
+        st["restored_why"] = restored_why
+        st["rejudge_missed_growth"] = rejudge_missed_growth(st, days_active)
+        return (f"VERDICT RESTORED -> PROMOTION CANDIDATE n={st.get('n')} "
+                f"exp={float(st['exp_r']):.3f}R maxDD={float(st['max_dd_r']):.1f}R")
+    return None
+
+
+def post_demotion(st: dict) -> dict:
+    """The row's forward evidence SINCE its demotion: trades and mean R after the gate fired."""
+    try:
+        n0, c0 = int(st["demoted_n"]), float(st["demoted_cum_r"])
+        n1, c1 = int(st["n"]), float(st["cum_r"])
+    except (KeyError, TypeError, ValueError):
+        return {"n": None, "exp_r": None}
+    dn = n1 - n0
+    return {"n": dn, "exp_r": (c1 - c0) / dn if dn > 0 else None}
+
+
+#: Fewest post-demotion trades before a demotion's cost is called measured (missed_growth.MIN_N).
+REJUDGE_MIN_N = 10
+
+
+def rejudge_report(state: dict, *, at: str) -> dict:
+    """The candidate re-judge's missed-growth lines, published on its own artifact.
+
+    One line per row the rule currently holds demoted, and one per restoration it made: the
+    forward mean R AFTER the demotion beside the mean of the candidates it kept, so the gate is
+    judged by what the rows it demoted went on to do. A demotion whose post-demotion mean
+    clears the promotion bar is COSTS_GROWTH; below the bar with REJUDGE_MIN_N trades it
+    EARNS_ITS_PLACE; fewer trades is UNMEASURED. `research/missed_growth` carries these lines
+    into MISSED_GROWTH.json beside the registered rails.
+    """
+    lines: list[dict] = []
+    kept: list[float] = []
+    for key, st in state.items():
+        if not isinstance(st, dict):
+            continue
+        status = str(st.get("status") or "").upper()
+        if status == "PROMOTION CANDIDATE" and _numeric_reading(st):
+            kept.append(float(st["exp_r"]))
+        if status == "KILL" and st.get("demoted_from") == "PROMOTION CANDIDATE":
+            since = post_demotion(st)
+            lines.append({"at": st.get("demoted_at"), "key": key, "event": "demoted",
+                          "n_at_demotion": st.get("demoted_n"),
+                          "exp_at_demotion": st.get("demoted_exp_r"),
+                          "n_since": since["n"], "exp_since": since["exp_r"]})
+        for d in st.get("demotions_before") or []:
+            if isinstance(d, dict) and d.get("restored_at"):
+                since = d.get("since") or {}
+                lines.append({"at": d.get("restored_at"), "key": key, "event": "restored",
+                              "n_at_demotion": d.get("n_at_demotion"),
+                              "exp_at_demotion": d.get("exp_at_demotion"),
+                              "n_since": since.get("n"), "exp_since": since.get("exp_r")})
+    for ln in lines:
+        n, e = ln["n_since"], ln["exp_since"]
+        ln["verdict"] = ("UNMEASURED" if not isinstance(n, int) or n < REJUDGE_MIN_N
+                         or e is None else
+                         "COSTS_GROWTH" if e > PROMOTE_MIN_EXP else "EARNS_ITS_PLACE")
+    measured = [ln["exp_since"] for ln in lines
+                if ln["event"] == "demoted" and ln["verdict"] != "UNMEASURED"]
+    return {"generated_at": at, "organ": "shadow_forward.rejudge_candidate",
+            "bar": {"exp_r_gt": PROMOTE_MIN_EXP, "max_dd_r_gt": PROMOTE_MIN_DD},
+            "n_demoted_now": sum(1 for ln in lines if ln["event"] == "demoted"),
+            "n_restored": sum(1 for ln in lines if ln["event"] == "restored"),
+            "kept_candidates": len(kept),
+            "kept_exp_mean": sum(kept) / len(kept) if kept else None,
+            "demoted_exp_since_mean": sum(measured) / len(measured) if measured else None,
+            "missed_growth": lines}
+
+
+def _numeric_reading(st: dict) -> bool:
+    try:
+        float(st["exp_r"]), float(st["max_dd_r"])
+    except (KeyError, TypeError, ValueError):
+        return False
+    return True
+
+
+def rejudge_missed_growth(st: dict, days_active: float) -> dict:
+    """The missed-growth line for a demotion (or a restoration), in forward R per day.
+
+    `r_per_day_forgone` is what promoting the row at its CURRENT forward mean would add per day
+    (max(exp_r, 0) x trades/day): zero or near zero for a lapsed candidate, which is the claim the
+    demotion rests on, and published on the row so the claim can be checked rather than trusted.
+    The demoted row holds no order authority, so no live capital moves either way.
+    """
+    try:
+        exp_r, n = float(st["exp_r"]), int(st["n"])
+    except (KeyError, TypeError, ValueError):
+        return {"status": "UNMEASURED", "why": "no numeric exp_r/n on the row"}
+    tpd = n / days_active if days_active and days_active > 0 else None
+    return {"status": "MEASURED", "exp_r": exp_r, "n": n, "trades_per_day": tpd,
+            "r_per_day_forgone": (max(exp_r, 0.0) * tpd) if tpd is not None else None,
+            "order_authority": False}
 
 
 def _enrolment_watermark(enrolled: int, ledger: str) -> None:
