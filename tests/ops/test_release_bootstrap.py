@@ -342,15 +342,42 @@ class _Hub:
             assert data == {"sha": "a" * 40, "merge_method": "merge"}
             if self.merge_fails:
                 raise RuntimeError("405 not mergeable")
-            return {"merged": True}
+            return {"merged": True, "sha": "m" * 40}
         raise AssertionError(path)
 
 
 def test_root_merge_opens_the_admin_bypass_for_one_merge_only() -> None:
     hub = _Hub()
-    bg.root_merge(hub, "o/r", 650, "a" * 40)
+    assert bg.root_merge(hub, "o/r", 650, "a" * 40) == "m" * 40  # the commit to pin
     assert bg.ADMIN_PR_BYPASS in hub.during
     assert hub.bys == [APP]
+
+
+def test_a_failed_restore_says_the_bypass_may_still_be_on() -> None:
+    hub = _Hub()
+    real = hub.__call__
+
+    def call(path: str, *a: str, data: Any = None) -> Any:
+        if path == "repos/o/r/rulesets/9" and a and data["bypass_actors"] == [APP]:
+            raise RuntimeError("502")
+        return real(path, *a, data=data)
+
+    with pytest.raises(RuntimeError, match="ADMIN BYPASS MAY STILL BE ON"):
+        bg.root_merge(call, "o/r", 650, "a" * 40)
+
+
+def test_a_reordered_read_back_is_not_a_false_alarm() -> None:
+    other = {"actor_type": "Integration", "actor_id": 7, "bypass_mode": "always"}
+    hub = _Hub(extra=[other])
+    real = hub.__call__
+
+    def call(path: str, *a: str, data: Any = None) -> Any:
+        got = real(path, *a, data=data)
+        if path == "repos/o/r/rulesets/9" and not a:
+            got["bypass_actors"].reverse()
+        return got
+
+    assert bg.root_merge(call, "o/r", 650, "a" * 40) == "m" * 40
 
 
 def test_root_merge_closes_the_bypass_when_the_merge_fails() -> None:

@@ -59,11 +59,16 @@ if ("$merged".Trim() -ne "true") {
     Refresh-Clone
     $head = (Py (Join-Path $Clone "ops\release\authority\bootstrap_github.py") --repo $Repo ready --pr $Pr | Select-Object -Last 1)
     if ($LASTEXITCODE -ne 0) { throw "#$Pr is not ready to merge (see NOT READY above). Nothing was changed." }
-    & gh api -X PUT "repos/$Repo/pulls/$Pr/merge" -f sha="$head".Trim() -f merge_method=merge | Out-Null
+    $merge = (& gh api -X PUT "repos/$Repo/pulls/$Pr/merge" -f sha="$head".Trim() -f merge_method=merge --jq .sha)
     if ($LASTEXITCODE -ne 0) { throw "GitHub refused the merge of #$Pr at $head." }
-    Write-Host "   merged #$Pr at $head"
+    Write-Host "   merged #$Pr at $head as $merge"
 }
 Refresh-Clone
+# pin THE MERGE COMMIT of #$Pr, never whatever LIVE's tip is by now (#650 audit SF3)
+$merge = (& gh api "repos/$Repo/pulls/$Pr" --jq .merge_commit_sha)
+if ("$merge".Trim() -notmatch '^[0-9a-f]{40}$') { throw "could not read #$Pr's merge commit; nothing pinned" }
+& git -c safe.directory=* -C $Clone checkout -q -f --detach "$merge".Trim()
+if ($LASTEXITCODE -ne 0) { throw "could not check out #$Pr's merge commit; nothing pinned" }
 if (-not (Test-Path (Join-Path $Clone "ops\release\authority\bootstrap_github.py"))) { throw "LIVE does not carry #$Pr yet." }
 $Here = Join-Path $Clone "ops\release\authority"
 

@@ -31,10 +31,16 @@ try {
     & git -c safe.directory=* -C $Clone fetch -q --no-tags origin "+refs/heads/${Live}:refs/remotes/origin/${Live}"
     & git -c safe.directory=* -C $Clone checkout -q -f --detach "origin/$Live"
     $Here = Join-Path $Clone "ops\release\authority"
-    & $Python -I (Join-Path $Here "bootstrap_github.py") --repo $Repo root-merge --pr $Pr
-    if ($LASTEXITCODE -ne 0) { throw "#$Pr was not merged (see above)." }
+    $lines = @(& $Python -I (Join-Path $Here "bootstrap_github.py") --repo $Repo root-merge --pr $Pr)
+    $rc = $LASTEXITCODE
+    $lines | Select-Object -SkipLast 1 | Out-Host
+    if ($rc -ne 0) { $lines | Select-Object -Last 1 | Out-Host; throw "#$Pr was not merged (see above)." }
+    # pin THE MERGE COMMIT, never whatever LIVE's tip is by now (#650 audit SF3)
+    $sha = "$($lines[-1])".Trim()
+    if ($sha -notmatch '^[0-9a-f]{40}$') { throw "no merge sha came back; nothing pinned" }
     & git -c safe.directory=* -C $Clone fetch -q --no-tags origin "+refs/heads/${Live}:refs/remotes/origin/${Live}"
-    & git -c safe.directory=* -C $Clone checkout -q -f --detach "origin/$Live"
+    & git -c safe.directory=* -C $Clone checkout -q -f --detach $sha
+    if ($LASTEXITCODE -ne 0) { throw "could not check out the merge commit $sha; nothing pinned" }
     & $Python -I (Join-Path $Here "pin_root.py") --write (Join-Path $Registry "ROOT_PIN.json")
     if ($LASTEXITCODE -ne 0) { throw "merged, but the re-pin failed: the authority stays off until pin_root.py --write succeeds" }
     & icacls (Join-Path $Registry "ROOT_PIN.json") /inheritance:r /grant:r "Administrators:F" "SYSTEM:F" "Users:R" | Out-Null

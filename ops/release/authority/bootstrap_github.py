@@ -128,18 +128,28 @@ def root_merge(call: Any, repo: str, pr: int, head: str) -> str:
     original = list(rs.get("bypass_actors") or [])
     if any(b.get("actor_type") != "Integration" for b in original):
         raise RuntimeError("the LIVE ruleset already lets a person bypass it: refusing to touch it")
+    loud = "THE ADMIN BYPASS MAY STILL BE ON the LIVE ruleset: remove it by hand"
+
+    def ids_of(bys: list[Any]) -> list[tuple[str, str, str]]:
+        return sorted((str(b.get("actor_type")), str(b.get("actor_id")), str(b.get("bypass_mode")))
+                      for b in bys)  # fmt: skip
+
     _put_ruleset(call, repo, ids[0], rs, [*original, ADMIN_PR_BYPASS])
     try:
-        call(f"repos/{repo}/pulls/{pr}/merge", "-X", "PUT",
-             data={"sha": head, "merge_method": "merge"})  # fmt: skip
+        got = call(f"repos/{repo}/pulls/{pr}/merge", "-X", "PUT",
+                   data={"sha": head, "merge_method": "merge"})  # fmt: skip
     finally:
-        _put_ruleset(call, repo, ids[0], rs, original)
-        back = call(f"repos/{repo}/rulesets/{ids[0]}").get("bypass_actors") or []
-        if [(b.get("actor_type"), b.get("actor_id")) for b in back] != [
-            (b.get("actor_type"), b.get("actor_id")) for b in original
-        ]:
-            raise RuntimeError("THE ADMIN BYPASS IS STILL ON the LIVE ruleset: remove it by hand")
-    return f"merged #{pr} at {head[:9]}; the LIVE ruleset's bypass list is back to Apps only"
+        try:
+            _put_ruleset(call, repo, ids[0], rs, original)
+            back = call(f"repos/{repo}/rulesets/{ids[0]}").get("bypass_actors") or []
+        except Exception as exc:  # the restore itself failed: say THAT, loudly
+            raise RuntimeError(f"{loud} ({type(exc).__name__}: {exc})") from exc
+        if ids_of(back) != ids_of(original):
+            raise RuntimeError(loud)
+    sha = str((got or {}).get("sha") or "")
+    if len(sha) != 40:
+        raise RuntimeError(f"merged #{pr}, but GitHub returned no merge sha to pin")
+    return sha
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -160,7 +170,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"NOT READY: {b}")
         if not head:
             return 1
-        print(root_merge(gh, a.repo, a.pr, head))
+        sha = root_merge(gh, a.repo, a.pr, head)
+        print(f"merged #{a.pr} at {head[:9]} as {sha}; the LIVE bypass list is back to Apps only")
+        print(sha)  # last line: the merge commit the caller pins, never a later tip
         return 0
     if a.cmd == "ready":
         head, bad = ready(gate(), a.repo, a.pr)
