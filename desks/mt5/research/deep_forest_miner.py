@@ -334,8 +334,10 @@ def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "",
     if referer:
         hdr["Referer"] = referer
     if held is not None:
+        # robots.txt is a LABEL on every hop (pf.get reads it), never a cut (LAWS 5e): the
+        # default `allows` admits every hop; a caller's own `allows` is its holds check.
         r, at, stop, line = fetch_hops(url, headers=hdr, held=held,
-                                       allows=allows or (lambda u: robots_allows(u)),
+                                       allows=allows or (lambda _u: True),
                                        timeout=timeout, max_bytes=2_000_000)
         if stop:
             raise RedirectStopped(url, at, stop, line)
@@ -510,8 +512,9 @@ def engine_search(query: str, site: str = "", lang: str = "zh", market: str = ""
 # agent, no header games, no CAPTCHA work. A different METHOD is used instead, reading only what
 # the ground or a public index publishes for machines: the ground's own sitemap (named in its own
 # robots.txt) first, else the Common Crawl URL index (the CDX server, metadata only). Every page
-# then read from the site must be allowed by that site's robots.txt for every agent ("*"); a
-# disallowed page is counted, never fetched.
+# then read from the site is LABELLED by that site's robots.txt (LAWS 5e: a Disallow is
+# PUBLIC_WITH_TERMS, an unread file ACCESS_UNCLEAR) and fetched; the label is counted and rides on
+# the claims the page yields. Only a 401/403/429 (an access control) holds the site.
 #: Common Crawl's licence to the Service (index included): "CC grants you a limited,
 #: non-assignable, non-transferable, non-sublicensable, non-exclusive, limited license to access
 #: and use the Service subject to the terms and conditions of these ToU" (commoncrawl.org/
@@ -783,10 +786,11 @@ def robots_origin(url: str) -> str:
 
 def robots_allows(url: str, *, get: Any = None,
                   cache: dict[str, Any] | None = None) -> bool:
-    """True only when the robots.txt of `url`'s OWN origin allows the desk's agent (its
-    product-token group, else "*") under `read_robots`: a file read and allowing, or a 404/410
-    (no file: allow). An UNREAD robots.txt (5xx, unreachable) is not a permission, and a
-    401/403/429 holds the site."""
+    """ROBOTS' OWN OPINION, for the label (`robots_label`): True when the robots.txt of `url`'s
+    OWN origin allows the desk's agent (its product-token group, else "*") under `read_robots`
+    -- a file read and allowing, or a 404/410 (no file). False for a Disallow or an UNREAD file.
+    NEVER A GATE (LAWS 5e: "robots.txt Disallow treated as a refusal" is a deleted brake): no
+    fetch path in this module refuses on it."""
     get = get or _index_get
     cache = cache if cache is not None else {}
     origin = robots_origin(url)
@@ -796,10 +800,34 @@ def robots_allows(url: str, *, get: Any = None,
     return bool(rp is not None and rp.can_fetch(INDEX_ROBOTS_TOKEN, url))
 
 
+def robots_label(url: str, *, get: Any = None,
+                 cache: dict[str, Any] | None = None) -> dict[str, Any]:
+    """robots.txt AS A LABEL for `url` (LAWS 5e): {access_label, terms_note,
+    redistribute_allowed} -- PUBLIC when allowed or absent, PUBLIC_WITH_TERMS for a Disallow,
+    ACCESS_UNCLEAR when the file was not read."""
+    get = get or _index_get
+    cache = cache if cache is not None else {}
+    origin = robots_origin(url)
+    if origin not in cache:
+        cache[origin] = read_robots(origin, get)
+    return _label_of(cache[origin], url, origin)
+
+
+def _label_of(rp: Any, url: str, origin: str) -> dict[str, Any]:
+    if rp is None:
+        return pf.access_row(pf.ACCESS_UNCLEAR, f"{origin}/robots.txt unread: fetched and mined "
+                                                "with the label (LAWS 5e)")
+    if not rp.can_fetch(INDEX_ROBOTS_TOKEN, url):
+        return pf.access_row(pf.PUBLIC_WITH_TERMS,
+                             f"{origin}/robots.txt Disallow for {INDEX_ROBOTS_TOKEN}: fetched "
+                             "and mined in full, redistribution withheld (LAWS 5e)")
+    return pf.access_row(pf.PUBLIC, "")
+
+
 class IndexRedirectHandler(_tf.FencedRedirectHandler):
-    """The fence's redirect handler (held sources and login walls still refused), plus: a redirect
-    to ANOTHER robots origin is followed only when that origin's robots.txt was read and allows
-    the target; otherwise the fetch STOPS at the 30x (raised as that HTTPError, never followed)."""
+    """The fence's redirect handler (held sources and login walls still refused), plus the
+    caller's `allows` on a redirect to ANOTHER origin (a holds check: robots.txt is a label,
+    never a refusal -- LAWS 5e); a hop it refuses STOPS the fetch at the 30x."""
 
     def __init__(self, allows: Any) -> None:
         super().__init__()
@@ -813,8 +841,7 @@ class IndexRedirectHandler(_tf.FencedRedirectHandler):
                 fp.read()
                 fp.close()
             raise urllib.error.HTTPError(newurl, int(code), f"cross-origin redirect stopped: "
-                                         f"robots.txt of {robots_origin(newurl)} unread or "
-                                         "disallowing", headers, None)
+                                         f"{robots_origin(newurl)} is held", headers, None)
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
@@ -865,9 +892,9 @@ def fetch_hops(url: str, *, headers: dict[str, str], held: Any, allows: Any,
                ) -> tuple[Any, str, str, dict[str, Any] | None]:
     """GET `url`, following redirects BY HAND: every hop after the first is checked before it is
     requested -- the method fence and login walls, the run's holds (`held(u)` truthy: never
-    requested), and that hop's own robots.txt (`allows(u)`; same origin or not -- an unread one
-    is not a permission). A non-http(s) target and a chain longer than MAX_HOPS are cut too.
-    retries=0 on every hop.
+    requested), and the caller's `allows(u)` (a holds check; robots.txt is read by `pf.get` on
+    every hop AS A LABEL and never cuts one -- LAWS 5e). A non-http(s) target and a chain longer
+    than MAX_HOPS are cut too. retries=0 on every hop.
 
     Returns (response, the URL that answered, stop, missed_growth): `stop` names why the chain
     was cut ('' when it was not), and EVERY cut carries its missed-growth line, written through
@@ -893,8 +920,7 @@ def fetch_hops(url: str, *, headers: dict[str, str], held: Any, allows: Any,
             if held(cur):
                 return cut("site_held", "redirect into a held site", cur)
             if not allows(cur):
-                return cut("robots", f"redirect stopped: robots.txt of {robots_origin(cur)} "
-                           "unread or disallowing", cur)
+                return cut("site_held", f"redirect stopped: {robots_origin(cur)} is held", cur)
         sink: dict[str, Any] = {}
         r = pf.get(cur, headers=headers, timeout=timeout, retries=0, leg=LEG,
                    max_bytes=max_bytes, opener=hop_opener(sink), follow_redirects=False)
@@ -931,10 +957,12 @@ def index_opener(allows: Any) -> Any:
 
 def site_index_urls(site: str, *, get: Any = None, holds: Any = None) -> dict[str, Any]:
     """The ground's own sitemap(s), else the Common Crawl CDX listing for `site/*`; each URL
-    filtered to article-like pages on that site and to what ITS OWN HOST's robots.txt allows for
-    "*". A page on another host (a subdomain, the bare or www. twin) is judged by that exact
-    host's robots.txt, read here; an unread one fetches nothing (audit 2026-10-14 MF2).
-    Returns {"route", "urls", "robots_disallowed", "robots_unread", "errors"}; never raises.
+    filtered to article-like pages on that site and LABELLED by ITS OWN HOST's robots.txt (a
+    subdomain, the bare or www. twin each read for itself). robots.txt is a LABEL, never a filter
+    (LAWS 5e): a Disallow (PUBLIC_WITH_TERMS) or an unread file (ACCESS_UNCLEAR) is listed and
+    fetched, counted in `robots_disallowed` / `robots_unread`, and named in `labels`.
+    Returns {"route", "urls", "labels", "robots_disallowed", "robots_unread", "errors"}; never
+    raises.
 
     `holds` (a `SiteHolds`, the run's) is the hard stop: a held site is never requested, the
     first 401/403/429 from any site holds it, and once the ground's own site is held the listing
@@ -1008,21 +1036,24 @@ def site_index_urls(site: str, *, get: Any = None, holds: Any = None) -> dict[st
         except Exception as exc:
             errors.append(f"cdx: {str(exc)[:80]}")
     keep = [u for u in dict.fromkeys(urls) if article_like(u, site)]
-    # EACH PAGE BY ITS OWN HOST'S robots.txt. An unread robots.txt is not a permission, so a
-    # page whose exact host's file was not read is never fetched (counted as robots_unread).
-    allowed: list[str] = []
+    # EACH PAGE LABELLED BY ITS OWN HOST'S robots.txt, and every one listed (LAWS 5e).
+    labels: dict[str, dict[str, Any]] = {}
     disallowed = unread = 0
     for u in keep:
-        hrp = host_rp(robots_origin(u))
+        origin = robots_origin(u)
+        hrp = host_rp(origin)
+        lab = _label_of(hrp, u, origin)
         if hrp is None:
             unread += 1
-        elif hrp.can_fetch(INDEX_ROBOTS_TOKEN, u):
-            allowed.append(u)
-        else:
+        elif lab["access_label"] != pf.PUBLIC:
             disallowed += 1
+        if lab["access_label"] != pf.PUBLIC:
+            labels[u] = lab
     if unread:
-        errors.append(f"robots.txt unread for {unread} listed page(s): none of them fetched")
-    return {"route": route or "none", "urls": allowed[:INDEX_URLS_PER_GROUND],
+        errors.append(f"robots.txt unread for {unread} listed page(s): fetched as ACCESS_UNCLEAR")
+    urls = keep[:INDEX_URLS_PER_GROUND]
+    return {"route": route or "none", "urls": urls,
+            "labels": {u: labels[u] for u in urls if u in labels},
             "listed": len(keep), "robots_disallowed": disallowed, "robots_unread": unread,
             "errors": errors[:4]}
 
@@ -1760,10 +1791,9 @@ class _Run:
             return ""
 
     def _robots_allows(self, u: str) -> bool:
-        """A redirect hop to another robots origin: never into a held site (whose robots.txt
-        is not requested either), else on that origin's own robots.txt."""
-        cache = self.__dict__.setdefault("_index_robots", {})
-        return not self.held_url(u) and robots_allows(u, cache=cache, get=self._index_get)
+        """A redirect hop: never into a held site (or a mirror of one). robots.txt is NOT asked
+        here -- it is a label `pf.get` reads on the hop, never a cut (LAWS 5e)."""
+        return not self.held_url(u)
 
     def _fetched(self, url: str, r: Any, at: str, stop: str,
                  line: dict[str, Any] | None = None) -> str:
@@ -1898,6 +1928,10 @@ class _Run:
         meta = page_meta(page) if page else {"published_time": None, "revision": None}
         now = datetime.now(tz=UTC).isoformat(timespec="seconds")
         src_hash = hashlib.sha256((text or "").encode("utf-8")).hexdigest()
+        # THE ROBOTS LABEL of the page the claims came from (LAWS 5e), from what the fetch
+        # already read (no extra request): the index route's own reading first.
+        robots = (dict(self.__dict__.get("_index_labels", {}).get(url) or {})
+                  or (pf.access_label(url, read=False) if url else {}))
         n = 0
         for c in r["claims"]:
             with self._lock:                 # the seen-set is shared by every worker thread
@@ -1922,7 +1956,11 @@ class _Run:
                    "ingested_time": now, "revision": meta["revision"], "source_hash": src_hash,
                    # THE LABEL, NOT A BRAKE: robots/terms/paywall provenance rides with the
                    # claim so redistribution can be routed later. It never gates the claim.
-                   "terms_note": terms_label(ground),
+                   "terms_note": "; ".join(x for x in (terms_label(ground),
+                                                       str(robots.get("terms_note") or ""))
+                                           if x),
+                   "access_label": str(robots.get("access_label") or ""),
+                   "redistribute_allowed": bool(robots.get("redistribute_allowed")),
                    "fetched_utc": now, "score": mc.claim_score(c), **(extra or {})}
             if dup_key:
                 self.counts["duplicate_mechanisms"] += 1
@@ -2123,6 +2161,7 @@ class _Run:
                     "robots_unread": 0, "fetched": 0, "claims": 0,
                     "errors": [f"site held: HTTP {h.get('status')}; not listed, not fetched"]}
         idx = site_index_urls(site, get=self._index_get, holds=self.holds)
+        self.__dict__.setdefault("_index_labels", {}).update(idx.get("labels") or {})
         queries = [str(q) for q in g.get("queries") or []]
         claims = fetched = 0
         cap = PAGE_FETCH_PER_QUERY * max(1, len(queries))

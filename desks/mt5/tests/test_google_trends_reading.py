@@ -237,39 +237,45 @@ def _robots_site(calls: list[str], robots_status: int, robots_text: str):
     return get
 
 
-def test_a_robots_disallow_is_not_fetched_and_robots_is_reread_daily(
+def test_a_robots_disallow_is_fetched_labelled_and_robots_is_reread_daily(
         monkeypatch: pytest.MonkeyPatch) -> None:
-    """ROBOTS (principal's scope rule 2026-10-13): a path the group naming the desk's product
-    disallows is never requested. It is not a person hold: robots.txt is kept a day, then
-    re-read, which is how a site's change of mind is picked up."""
+    """LAWS 5e (live): robots.txt is a LABEL, never a refusal. A path the group naming the
+    desk's product disallows is FETCHED and counted; it is not a person hold. robots.txt is kept
+    a day, then re-read, which is how a site's change of mind is picked up."""
     text = ("User-agent: *\nAllow: /\n\nUser-agent: " + gtm.hard_stop.DESK_UA_PRODUCT
             + "\nDisallow: /trends/explore\n")
     calls: list[str] = []
     monkeypatch.setattr(gtm, "polite_requests_get", _robots_site(calls, 200, text))
-    assert gtm.mine_google_trends(now=NOW) == []
-    assert calls == ["https://trends.google.com/robots.txt"]
-    assert gtm.LAST_PASS["status"] == "ROBOTS_DISALLOWED"
+    gtm.mine_google_trends(now=NOW)
+    assert calls[0] == "https://trends.google.com/robots.txt"
+    assert [u for u in calls if "/trends/explore" in u], "the disallowed page was not fetched"
+    assert gtm.LAST_PASS["status"] not in ("ROBOTS_DISALLOWED", "ROBOTS_UNAVAILABLE")
+    assert gtm.LAST_PASS["robots_disallowed"] > 0
     assert gtm.LAST_PASS["robots"]["state"] == "DISALLOWED"
+    assert gtm.LAST_PASS["robots"]["access_label"] == "PUBLIC_WITH_TERMS"
     assert not json.loads(gtm.BLOCKED_REGISTER.read_text()).get("holds")   # not a hold
     calls.clear()
     gtm.mine_google_trends(now=NOW + timedelta(hours=23))
-    assert calls == []                                            # robots kept a day
+    assert calls and "https://trends.google.com/robots.txt" not in calls   # robots kept a day
+    calls.clear()
     monkeypatch.setattr(gtm, "polite_requests_get",
                         _robots_site(calls, 200, "User-agent: *\nAllow: /\n"))
     gtm.mine_google_trends(now=NOW + timedelta(hours=25))
     assert calls[0] == "https://trends.google.com/robots.txt" and len(calls) > 1
 
 
-def test_a_5xx_robots_means_no_fetch_this_pass_and_a_reread_next_pass(
+def test_a_5xx_robots_is_access_unclear_fetched_and_reread_next_pass(
         monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[str] = []
     monkeypatch.setattr(gtm, "polite_requests_get", _robots_site(calls, 503, ""))
     gtm.mine_google_trends(now=NOW)
-    assert calls == ["https://trends.google.com/robots.txt"]
-    assert gtm.LAST_PASS["status"] == "ROBOTS_UNAVAILABLE" and not gtm.BLOCK_STATE.exists()
+    assert calls[0] == "https://trends.google.com/robots.txt" and len(calls) > 1
+    assert gtm.LAST_PASS["status"] != "ROBOTS_UNAVAILABLE" and not gtm.BLOCK_STATE.exists()
+    assert gtm.LAST_PASS["robots_unavailable"] > 0
+    assert gtm.LAST_PASS["robots"]["access_label"] == "ACCESS_UNCLEAR"
     calls.clear()
     gtm.mine_google_trends(now=NOW + timedelta(minutes=5))
-    assert calls == ["https://trends.google.com/robots.txt"]       # re-read, no hold
+    assert calls[0] == "https://trends.google.com/robots.txt"       # re-read, no hold
 
 
 @pytest.mark.parametrize("status", [401, 403, 429])

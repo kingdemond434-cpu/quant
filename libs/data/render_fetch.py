@@ -181,8 +181,9 @@ def _headers_of(response: Any) -> dict[str, str]:
 def judge_navigation(response: Any, url: str, access: Any) -> str:
     """'' when the navigation may be read, else the refusal (and a hold where one is due).
 
-    1. Every hop of the redirect chain must pass `access.permits` (site holds, then that origin's
-       robots.txt). A refused hop means the content is discarded.
+    1. Every hop of the redirect chain must pass `access.permits` (site holds; that origin's
+       robots.txt is a LABEL, never a refusal -- LAWS 5e). A refused hop means the content is
+       discarded.
     2. The final status: 401/403/429 record the site hold, exactly as a plain fetch does, and the
        error page is never returned as content. A challenge on any status (a Cloudflare 503,
        `cf-mitigated: challenge`) is held as WAF."""
