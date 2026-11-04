@@ -115,3 +115,26 @@ def test_the_rule_fingerprint_moves_with_the_rule() -> None:
     assert a and a == rc.rule_fingerprint("dow_effect")
     assert rc.rule_fingerprint("cross_asset_residual") != rc.rule_fingerprint("formula")
     assert rc.rule_fingerprint("no_such_family") is None
+
+
+@pytest.mark.parametrize("family", ["dow_effect", "monday_gap", "mean_reversion_rsi",
+                                    "overnight_drift"])
+def test_a_session_cell_whose_window_holds_the_signals_fires(family) -> None:
+    """The cell above can pass with both sides empty; asia [0, 8) holds every family's planted
+    signals (three fire at hour 0), so here both must fire and agree (audit should-fix)."""
+    from mt5desk import families
+    from mt5desk.family_call import signals
+    df = _frame()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        theirs = signals(getattr(families, f"family_{family}"), df, side=1,
+                         params={"session": "asia"})
+    bars = rc.bars_from_arrays(df.index.as_unit("ns").asi8, df["open"].to_numpy(),
+                               df["high"].to_numpy(), df["low"].to_numpy(),
+                               df["close"].to_numpy())
+    p, _ = rc.resolve_spec(family, {"session": "asia"}, "london", None)
+    assert p is not None
+    ours, _ = rc.rebuild(family, bars, p, 0.0)
+    assert theirs and ours
+    assert [(int(pd.Timestamp(s.time).value), s.side) for s in theirs] == \
+        [(o.t_ns, o.side) for o in ours]
