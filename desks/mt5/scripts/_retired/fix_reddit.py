@@ -6,7 +6,9 @@ import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-import requests
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from libs.data.polite_fetch import DESK_UA, polite_requests_get  # honest UA, never a browser string
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "reddit"
@@ -14,7 +16,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 
 SUBREDDITS = ["Forex", "algotrading", "wallstreetbets", "Gold",
               "silverbugs", "ForexTrading", "Daytrading"]
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"}
+HEADERS = {"User-Agent": DESK_UA}
 SYMBOLS = [
     "XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "USDCHF",
     "NZDUSD", "EURJPY", "GBPJPY", "AUDJPY", "CADJPY", "NZDJPY", "CHFJPY",
@@ -76,7 +78,7 @@ def _parse_rss(xml_text, sub):
 def mine_subreddit(sub):
     url = f"https://www.reddit.com/r/{sub}/.rss?limit=50"
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=15)
+        resp = polite_requests_get(url, headers=HEADERS, timeout=15)
         if resp.status_code == 429:
             print(f"  reddit r/{sub}: 429 rate limited, backing off")
             return []

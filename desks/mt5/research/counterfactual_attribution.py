@@ -434,6 +434,18 @@ def _points(doc: Any) -> list[tuple[str, float]]:
     return out
 
 
+def _third_party_fred(series_id: str) -> bool:
+    """True for a FRED series a third party owns (libs/data/terms_fence `fred_copyrighted`:
+    VIXCLS, BAMLH0A0HYM2, ...): never live input, so a component on it is UNMEASURED by name --
+    even when a stale MACRO_VIEW or macro_state still carries a value for it."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[3])
+    if _root not in _sys.path:
+        _sys.path.insert(0, _root)
+    from libs.data.terms_fence import fred_series_source
+    return bool(fred_series_source(str(series_id)))
+
+
 def read_source(spec: dict[str, Any], cache: dict[str, Any]) -> tuple[dict[str, Any],
                                                                      list[tuple[str, float]]]:
     """One source -> (its probability row, its dated history). The history is the only thing
@@ -491,6 +503,13 @@ def read_source(spec: dict[str, Any], cache: dict[str, Any]) -> tuple[dict[str, 
                             + (f" for {sorted(wanted)}" if wanted else "")), []
         hist = sorted((d, _mean(vs)) for d, vs in by_day.items())
         return _from_history(spec, name, hist, None), hist
+
+    if kind in ("macro_series", "rank") and _third_party_fred(str(spec.get("id"))):
+        sid = str(spec.get("id"))
+        return _src(spec, f"{'macro_view' if kind == 'rank' else 'macro_state'}:{sid}",
+                    status="UNMEASURED",
+                    why=(f"UNMEASURED_NO_LICENSED_SOURCE: {sid} is a third-party FRED series "
+                         "(terms_fence fred_copyrighted), never live input")), []
 
     if kind in ("macro_series", "macro_states"):
         if "macro" not in cache:

@@ -645,6 +645,31 @@ def futures_opinion(root: Path) -> dict[str, Any]:
     return {"status": MEASURED, "at": doc.get("at"), "per_season": clock.get("per_season") or {}}
 
 
+def futures_missed_growth(futures: dict[str, Any]) -> list[dict[str, Any]]:
+    """The missed-growth line for an UNMEASURED cross-venue (futures) block, or []. Since the
+    Yahoo cut, `futures_lead_lag` has no licensed intraday COMEX/NYMEX bars, so no season-wide
+    offset can be published from the multi-year cross-venue reading: only dated spans convert.
+    delta E[log W] is UNMEASURED, never zero; the named restore (re-measure from the desk's own
+    tick tape, futures_lead_lag `tape_remeasure`) is NOT wired into this block."""
+    if futures.get("status") == MEASURED:
+        return []
+    line: dict[str, Any] = {"source": "bar_clock_probe:cross_venue", "kind": "unmeasured_input",
+                            "policy_row": "yahoo", "delta_elogw": UNMEASURED}
+    with contextlib.suppress(Exception):
+        from libs.data import terms_fence as _tf
+        line = {**_tf.held_missed_growth("yahoo", None, source="bar_clock_probe:cross_venue",
+                                         live_input_refusal=True), **line}
+    line.update({"series_status": "UNMEASURED_NO_LICENSED_SOURCE", "verdict": UNMEASURED,
+                 "block": "second_opinions.cross_venue / per_season.cross_venue_h",
+                 "why_unmeasured": str(futures.get("why") or "no cross-venue clock block"),
+                 "effect": ("no season-wide broker offset is published; a bar converts only "
+                            "inside a dated, measured span"),
+                 "restores_when": ("the cross-venue clock is re-measured from the desk's own "
+                                   "tick tape (futures_lead_lag tape_remeasure), not wired here"),
+                 "substitute_wired": False})
+    return [line]
+
+
 def per_season(kept: list[dict[str, Any]], release: dict[str, Any],
                futures: dict[str, Any]) -> dict[str, Any]:
     """A season-wide offset is published ONLY from the multi-year cross-venue reading, and only
@@ -728,6 +753,7 @@ def build(root: Path, *, tape_clock: Path | None = None, now: datetime | None = 
                                               ("status", "n_releases", "why") if k in release},
                             "cross_venue": {k: futures.get(k) for k in ("status", "at", "why")
                                             if k in futures}},
+        "missed_growth": futures_missed_growth(futures),
         "rules": {"fresh_tol_ms": FRESH_TOL_MS, "min_span_probes": MIN_SPAN_PROBES,
                   "max_probe_gap_h": MAX_PROBE_GAP_H, "min_votes": MIN_VOTES},
         "why": ("no offset is ever written that was not read: with no fresh probe and no "

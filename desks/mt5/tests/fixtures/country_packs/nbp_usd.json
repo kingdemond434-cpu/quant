@@ -1,0 +1,1552 @@
+{
+"table": "A",
+"currency": "dolar amerykański",
+"code": "USD",
+"rates": [
+{
+"no": "000/A/NBP/2025",
+"effectiveDate": "2025-08-26",
+"mid": 3.9
+},
+{
+"no": "001/A/NBP/2025",
+"effectiveDate": "2025-08-27",
+"mid": 3.9081
+},
+{
+"no": "002/A/NBP/2025",
+"effectiveDate": "2025-08-28",
+"mid": 3.9161
+},
+{
+"no": "003/A/NBP/2025",
+"effectiveDate": "2025-08-29",
+"mid": 3.9238
+},
+{
+"no": "004/A/NBP/2025",
+"effectiveDate": "2025-09-01",
+"mid": 3.931
+},
+{
+"no": "005/A/NBP/2025",
+"effectiveDate": "2025-09-02",
+"mid": 3.9378
+},
+{
+"no": "006/A/NBP/2025",
+"effectiveDate": "2025-09-03",
+"mid": 3.9438
+},
+{
+"no": "007/A/NBP/2025",
+"effectiveDate": "2025-09-04",
+"mid": 3.9491
+},
+{
+"no": "008/A/NBP/2025",
+"effectiveDate": "2025-09-05",
+"mid": 3.9535
+},
+{
+"no": "009/A/NBP/2025",
+"effectiveDate": "2025-09-08",
+"mid": 3.957
+},
+{
+"no": "010/A/NBP/2025",
+"effectiveDate": "2025-09-09",
+"mid": 3.9595
+},
+{
+"no": "011/A/NBP/2025",
+"effectiveDate": "2025-09-10",
+"mid": 3.961
+},
+{
+"no": "012/A/NBP/2025",
+"effectiveDate": "2025-09-11",
+"mid": 3.9615
+},
+{
+"no": "013/A/NBP/2025",
+"effectiveDate": "2025-09-12",
+"mid": 3.961
+},
+{
+"no": "014/A/NBP/2025",
+"effectiveDate": "2025-09-15",
+"mid": 3.9595
+},
+{
+"no": "015/A/NBP/2025",
+"effectiveDate": "2025-09-16",
+"mid": 3.957
+},
+{
+"no": "016/A/NBP/2025",
+"effectiveDate": "2025-09-17",
+"mid": 3.9538
+},
+{
+"no": "017/A/NBP/2025",
+"effectiveDate": "2025-09-18",
+"mid": 3.9497
+},
+{
+"no": "018/A/NBP/2025",
+"effectiveDate": "2025-09-19",
+"mid": 3.945
+},
+{
+"no": "019/A/NBP/2025",
+"effectiveDate": "2025-09-22",
+"mid": 3.9397
+},
+{
+"no": "020/A/NBP/2025",
+"effectiveDate": "2025-09-23",
+"mid": 3.934
+},
+{
+"no": "021/A/NBP/2025",
+"effectiveDate": "2025-09-24",
+"mid": 3.9281
+},
+{
+"no": "022/A/NBP/2025",
+"effectiveDate": "2025-09-25",
+"mid": 3.9219
+},
+{
+"no": "023/A/NBP/2025",
+"effectiveDate": "2025-09-26",
+"mid": 3.9158
+},
+{
+"no": "024/A/NBP/2025",
+"effectiveDate": "2025-09-29",
+"mid": 3.9098
+},
+{
+"no": "025/A/NBP/2025",
+"effectiveDate": "2025-09-30",
+"mid": 3.9042
+},
+{
+"no": "026/A/NBP/2025",
+"effectiveDate": "2025-10-01",
+"mid": 3.8989
+},
+{
+"no": "027/A/NBP/2025",
+"effectiveDate": "2025-10-02",
+"mid": 3.8942
+},
+{
+"no": "028/A/NBP/2025",
+"effectiveDate": "2025-10-03",
+"mid": 3.8902
+},
+{
+"no": "029/A/NBP/2025",
+"effectiveDate": "2025-10-06",
+"mid": 3.8869
+},
+{
+"no": "030/A/NBP/2025",
+"effectiveDate": "2025-10-07",
+"mid": 3.8845
+},
+{
+"no": "031/A/NBP/2025",
+"effectiveDate": "2025-10-08",
+"mid": 3.883
+},
+{
+"no": "032/A/NBP/2025",
+"effectiveDate": "2025-10-09",
+"mid": 3.8825
+},
+{
+"no": "033/A/NBP/2025",
+"effectiveDate": "2025-10-10",
+"mid": 3.883
+},
+{
+"no": "034/A/NBP/2025",
+"effectiveDate": "2025-10-13",
+"mid": 3.8845
+},
+{
+"no": "035/A/NBP/2025",
+"effectiveDate": "2025-10-14",
+"mid": 3.8871
+},
+{
+"no": "036/A/NBP/2025",
+"effectiveDate": "2025-10-15",
+"mid": 3.8906
+},
+{
+"no": "037/A/NBP/2025",
+"effectiveDate": "2025-10-16",
+"mid": 3.895
+},
+{
+"no": "038/A/NBP/2025",
+"effectiveDate": "2025-10-17",
+"mid": 3.9003
+},
+{
+"no": "039/A/NBP/2025",
+"effectiveDate": "2025-10-20",
+"mid": 3.9063
+},
+{
+"no": "040/A/NBP/2025",
+"effectiveDate": "2025-10-21",
+"mid": 3.9131
+},
+{
+"no": "041/A/NBP/2025",
+"effectiveDate": "2025-10-22",
+"mid": 3.9203
+},
+{
+"no": "042/A/NBP/2025",
+"effectiveDate": "2025-10-23",
+"mid": 3.928
+},
+{
+"no": "043/A/NBP/2025",
+"effectiveDate": "2025-10-24",
+"mid": 3.936
+},
+{
+"no": "044/A/NBP/2025",
+"effectiveDate": "2025-10-27",
+"mid": 3.9441
+},
+{
+"no": "045/A/NBP/2025",
+"effectiveDate": "2025-10-28",
+"mid": 3.9522
+},
+{
+"no": "046/A/NBP/2025",
+"effectiveDate": "2025-10-29",
+"mid": 3.9602
+},
+{
+"no": "047/A/NBP/2025",
+"effectiveDate": "2025-10-30",
+"mid": 3.9679
+},
+{
+"no": "048/A/NBP/2025",
+"effectiveDate": "2025-10-31",
+"mid": 3.9751
+},
+{
+"no": "049/A/NBP/2025",
+"effectiveDate": "2025-11-03",
+"mid": 3.9818
+},
+{
+"no": "050/A/NBP/2025",
+"effectiveDate": "2025-11-04",
+"mid": 3.9879
+},
+{
+"no": "051/A/NBP/2025",
+"effectiveDate": "2025-11-05",
+"mid": 3.9931
+},
+{
+"no": "052/A/NBP/2025",
+"effectiveDate": "2025-11-06",
+"mid": 3.9975
+},
+{
+"no": "053/A/NBP/2025",
+"effectiveDate": "2025-11-07",
+"mid": 4.001
+},
+{
+"no": "054/A/NBP/2025",
+"effectiveDate": "2025-11-10",
+"mid": 4.0035
+},
+{
+"no": "055/A/NBP/2025",
+"effectiveDate": "2025-11-11",
+"mid": 4.005
+},
+{
+"no": "056/A/NBP/2025",
+"effectiveDate": "2025-11-12",
+"mid": 4.0055
+},
+{
+"no": "057/A/NBP/2025",
+"effectiveDate": "2025-11-13",
+"mid": 4.0049
+},
+{
+"no": "058/A/NBP/2025",
+"effectiveDate": "2025-11-14",
+"mid": 4.0034
+},
+{
+"no": "059/A/NBP/2025",
+"effectiveDate": "2025-11-17",
+"mid": 4.001
+},
+{
+"no": "060/A/NBP/2025",
+"effectiveDate": "2025-11-18",
+"mid": 3.9977
+},
+{
+"no": "061/A/NBP/2025",
+"effectiveDate": "2025-11-19",
+"mid": 3.9936
+},
+{
+"no": "062/A/NBP/2025",
+"effectiveDate": "2025-11-20",
+"mid": 3.9889
+},
+{
+"no": "063/A/NBP/2025",
+"effectiveDate": "2025-11-21",
+"mid": 3.9836
+},
+{
+"no": "064/A/NBP/2025",
+"effectiveDate": "2025-11-24",
+"mid": 3.9779
+},
+{
+"no": "065/A/NBP/2025",
+"effectiveDate": "2025-11-25",
+"mid": 3.9719
+},
+{
+"no": "066/A/NBP/2025",
+"effectiveDate": "2025-11-26",
+"mid": 3.9658
+},
+{
+"no": "067/A/NBP/2025",
+"effectiveDate": "2025-11-27",
+"mid": 3.9597
+},
+{
+"no": "068/A/NBP/2025",
+"effectiveDate": "2025-11-28",
+"mid": 3.9537
+},
+{
+"no": "069/A/NBP/2025",
+"effectiveDate": "2025-12-01",
+"mid": 3.948
+},
+{
+"no": "070/A/NBP/2025",
+"effectiveDate": "2025-12-02",
+"mid": 3.9428
+},
+{
+"no": "071/A/NBP/2025",
+"effectiveDate": "2025-12-03",
+"mid": 3.9381
+},
+{
+"no": "072/A/NBP/2025",
+"effectiveDate": "2025-12-04",
+"mid": 3.9341
+},
+{
+"no": "073/A/NBP/2025",
+"effectiveDate": "2025-12-05",
+"mid": 3.9308
+},
+{
+"no": "074/A/NBP/2025",
+"effectiveDate": "2025-12-08",
+"mid": 3.9284
+},
+{
+"no": "075/A/NBP/2025",
+"effectiveDate": "2025-12-09",
+"mid": 3.927
+},
+{
+"no": "076/A/NBP/2025",
+"effectiveDate": "2025-12-10",
+"mid": 3.9265
+},
+{
+"no": "077/A/NBP/2025",
+"effectiveDate": "2025-12-11",
+"mid": 3.927
+},
+{
+"no": "078/A/NBP/2025",
+"effectiveDate": "2025-12-12",
+"mid": 3.9285
+},
+{
+"no": "079/A/NBP/2025",
+"effectiveDate": "2025-12-15",
+"mid": 3.9311
+},
+{
+"no": "080/A/NBP/2025",
+"effectiveDate": "2025-12-16",
+"mid": 3.9346
+},
+{
+"no": "081/A/NBP/2025",
+"effectiveDate": "2025-12-17",
+"mid": 3.9391
+},
+{
+"no": "082/A/NBP/2025",
+"effectiveDate": "2025-12-18",
+"mid": 3.9444
+},
+{
+"no": "083/A/NBP/2025",
+"effectiveDate": "2025-12-19",
+"mid": 3.9504
+},
+{
+"no": "084/A/NBP/2025",
+"effectiveDate": "2025-12-22",
+"mid": 3.9572
+},
+{
+"no": "085/A/NBP/2025",
+"effectiveDate": "2025-12-23",
+"mid": 3.9645
+},
+{
+"no": "086/A/NBP/2025",
+"effectiveDate": "2025-12-24",
+"mid": 3.9722
+},
+{
+"no": "087/A/NBP/2025",
+"effectiveDate": "2025-12-25",
+"mid": 3.9801
+},
+{
+"no": "088/A/NBP/2025",
+"effectiveDate": "2025-12-26",
+"mid": 3.9883
+},
+{
+"no": "089/A/NBP/2025",
+"effectiveDate": "2025-12-29",
+"mid": 3.9964
+},
+{
+"no": "090/A/NBP/2025",
+"effectiveDate": "2025-12-30",
+"mid": 4.0043
+},
+{
+"no": "091/A/NBP/2025",
+"effectiveDate": "2025-12-31",
+"mid": 4.012
+},
+{
+"no": "092/A/NBP/2026",
+"effectiveDate": "2026-01-01",
+"mid": 4.0193
+},
+{
+"no": "093/A/NBP/2026",
+"effectiveDate": "2026-01-02",
+"mid": 4.0259
+},
+{
+"no": "094/A/NBP/2026",
+"effectiveDate": "2026-01-05",
+"mid": 4.032
+},
+{
+"no": "095/A/NBP/2026",
+"effectiveDate": "2026-01-06",
+"mid": 4.0372
+},
+{
+"no": "096/A/NBP/2026",
+"effectiveDate": "2026-01-07",
+"mid": 4.0416
+},
+{
+"no": "097/A/NBP/2026",
+"effectiveDate": "2026-01-08",
+"mid": 4.0451
+},
+{
+"no": "098/A/NBP/2026",
+"effectiveDate": "2026-01-09",
+"mid": 4.0475
+},
+{
+"no": "099/A/NBP/2026",
+"effectiveDate": "2026-01-12",
+"mid": 4.049
+},
+{
+"no": "100/A/NBP/2026",
+"effectiveDate": "2026-01-13",
+"mid": 4.0494
+},
+{
+"no": "101/A/NBP/2026",
+"effectiveDate": "2026-01-14",
+"mid": 4.0489
+},
+{
+"no": "102/A/NBP/2026",
+"effectiveDate": "2026-01-15",
+"mid": 4.0474
+},
+{
+"no": "103/A/NBP/2026",
+"effectiveDate": "2026-01-16",
+"mid": 4.0449
+},
+{
+"no": "104/A/NBP/2026",
+"effectiveDate": "2026-01-19",
+"mid": 4.0416
+},
+{
+"no": "105/A/NBP/2026",
+"effectiveDate": "2026-01-20",
+"mid": 4.0375
+},
+{
+"no": "106/A/NBP/2026",
+"effectiveDate": "2026-01-21",
+"mid": 4.0328
+},
+{
+"no": "107/A/NBP/2026",
+"effectiveDate": "2026-01-22",
+"mid": 4.0275
+},
+{
+"no": "108/A/NBP/2026",
+"effectiveDate": "2026-01-23",
+"mid": 4.0218
+},
+{
+"no": "109/A/NBP/2026",
+"effectiveDate": "2026-01-26",
+"mid": 4.0158
+},
+{
+"no": "110/A/NBP/2026",
+"effectiveDate": "2026-01-27",
+"mid": 4.0097
+},
+{
+"no": "111/A/NBP/2026",
+"effectiveDate": "2026-01-28",
+"mid": 4.0036
+},
+{
+"no": "112/A/NBP/2026",
+"effectiveDate": "2026-01-29",
+"mid": 3.9976
+},
+{
+"no": "113/A/NBP/2026",
+"effectiveDate": "2026-01-30",
+"mid": 3.9919
+},
+{
+"no": "114/A/NBP/2026",
+"effectiveDate": "2026-02-02",
+"mid": 3.9867
+},
+{
+"no": "115/A/NBP/2026",
+"effectiveDate": "2026-02-03",
+"mid": 3.982
+},
+{
+"no": "116/A/NBP/2026",
+"effectiveDate": "2026-02-04",
+"mid": 3.978
+},
+{
+"no": "117/A/NBP/2026",
+"effectiveDate": "2026-02-05",
+"mid": 3.9748
+},
+{
+"no": "118/A/NBP/2026",
+"effectiveDate": "2026-02-06",
+"mid": 3.9724
+},
+{
+"no": "119/A/NBP/2026",
+"effectiveDate": "2026-02-09",
+"mid": 3.9709
+},
+{
+"no": "120/A/NBP/2026",
+"effectiveDate": "2026-02-10",
+"mid": 3.9705
+},
+{
+"no": "121/A/NBP/2026",
+"effectiveDate": "2026-02-11",
+"mid": 3.971
+},
+{
+"no": "122/A/NBP/2026",
+"effectiveDate": "2026-02-12",
+"mid": 3.9726
+},
+{
+"no": "123/A/NBP/2026",
+"effectiveDate": "2026-02-13",
+"mid": 3.9751
+},
+{
+"no": "124/A/NBP/2026",
+"effectiveDate": "2026-02-16",
+"mid": 3.9787
+},
+{
+"no": "125/A/NBP/2026",
+"effectiveDate": "2026-02-17",
+"mid": 3.9831
+},
+{
+"no": "126/A/NBP/2026",
+"effectiveDate": "2026-02-18",
+"mid": 3.9885
+},
+{
+"no": "127/A/NBP/2026",
+"effectiveDate": "2026-02-19",
+"mid": 3.9945
+},
+{
+"no": "128/A/NBP/2026",
+"effectiveDate": "2026-02-20",
+"mid": 4.0013
+},
+{
+"no": "129/A/NBP/2026",
+"effectiveDate": "2026-02-23",
+"mid": 4.0086
+},
+{
+"no": "130/A/NBP/2026",
+"effectiveDate": "2026-02-24",
+"mid": 4.0163
+},
+{
+"no": "131/A/NBP/2026",
+"effectiveDate": "2026-02-25",
+"mid": 4.0243
+},
+{
+"no": "132/A/NBP/2026",
+"effectiveDate": "2026-02-26",
+"mid": 4.0324
+},
+{
+"no": "133/A/NBP/2026",
+"effectiveDate": "2026-02-27",
+"mid": 4.0405
+},
+{
+"no": "134/A/NBP/2026",
+"effectiveDate": "2026-03-02",
+"mid": 4.0485
+},
+{
+"no": "135/A/NBP/2026",
+"effectiveDate": "2026-03-03",
+"mid": 4.0561
+},
+{
+"no": "136/A/NBP/2026",
+"effectiveDate": "2026-03-04",
+"mid": 4.0634
+},
+{
+"no": "137/A/NBP/2026",
+"effectiveDate": "2026-03-05",
+"mid": 4.07
+},
+{
+"no": "138/A/NBP/2026",
+"effectiveDate": "2026-03-06",
+"mid": 4.076
+},
+{
+"no": "139/A/NBP/2026",
+"effectiveDate": "2026-03-09",
+"mid": 4.0813
+},
+{
+"no": "140/A/NBP/2026",
+"effectiveDate": "2026-03-10",
+"mid": 4.0856
+},
+{
+"no": "141/A/NBP/2026",
+"effectiveDate": "2026-03-11",
+"mid": 4.0891
+},
+{
+"no": "142/A/NBP/2026",
+"effectiveDate": "2026-03-12",
+"mid": 4.0915
+},
+{
+"no": "143/A/NBP/2026",
+"effectiveDate": "2026-03-13",
+"mid": 4.093
+},
+{
+"no": "144/A/NBP/2026",
+"effectiveDate": "2026-03-16",
+"mid": 4.0934
+},
+{
+"no": "145/A/NBP/2026",
+"effectiveDate": "2026-03-17",
+"mid": 4.0929
+},
+{
+"no": "146/A/NBP/2026",
+"effectiveDate": "2026-03-18",
+"mid": 4.0913
+},
+{
+"no": "147/A/NBP/2026",
+"effectiveDate": "2026-03-19",
+"mid": 4.0888
+},
+{
+"no": "148/A/NBP/2026",
+"effectiveDate": "2026-03-20",
+"mid": 4.0855
+},
+{
+"no": "149/A/NBP/2026",
+"effectiveDate": "2026-03-23",
+"mid": 4.0814
+},
+{
+"no": "150/A/NBP/2026",
+"effectiveDate": "2026-03-24",
+"mid": 4.0767
+},
+{
+"no": "151/A/NBP/2026",
+"effectiveDate": "2026-03-25",
+"mid": 4.0714
+},
+{
+"no": "152/A/NBP/2026",
+"effectiveDate": "2026-03-26",
+"mid": 4.0657
+},
+{
+"no": "153/A/NBP/2026",
+"effectiveDate": "2026-03-27",
+"mid": 4.0597
+},
+{
+"no": "154/A/NBP/2026",
+"effectiveDate": "2026-03-30",
+"mid": 4.0536
+},
+{
+"no": "155/A/NBP/2026",
+"effectiveDate": "2026-03-31",
+"mid": 4.0474
+},
+{
+"no": "156/A/NBP/2026",
+"effectiveDate": "2026-04-01",
+"mid": 4.0415
+},
+{
+"no": "157/A/NBP/2026",
+"effectiveDate": "2026-04-02",
+"mid": 4.0358
+},
+{
+"no": "158/A/NBP/2026",
+"effectiveDate": "2026-04-03",
+"mid": 4.0306
+},
+{
+"no": "159/A/NBP/2026",
+"effectiveDate": "2026-04-06",
+"mid": 4.0259
+},
+{
+"no": "160/A/NBP/2026",
+"effectiveDate": "2026-04-07",
+"mid": 4.0219
+},
+{
+"no": "161/A/NBP/2026",
+"effectiveDate": "2026-04-08",
+"mid": 4.0187
+},
+{
+"no": "162/A/NBP/2026",
+"effectiveDate": "2026-04-09",
+"mid": 4.0163
+},
+{
+"no": "163/A/NBP/2026",
+"effectiveDate": "2026-04-10",
+"mid": 4.0149
+},
+{
+"no": "164/A/NBP/2026",
+"effectiveDate": "2026-04-13",
+"mid": 4.0144
+},
+{
+"no": "165/A/NBP/2026",
+"effectiveDate": "2026-04-14",
+"mid": 4.015
+},
+{
+"no": "166/A/NBP/2026",
+"effectiveDate": "2026-04-15",
+"mid": 4.0166
+},
+{
+"no": "167/A/NBP/2026",
+"effectiveDate": "2026-04-16",
+"mid": 4.0192
+},
+{
+"no": "168/A/NBP/2026",
+"effectiveDate": "2026-04-17",
+"mid": 4.0227
+},
+{
+"no": "169/A/NBP/2026",
+"effectiveDate": "2026-04-20",
+"mid": 4.0272
+},
+{
+"no": "170/A/NBP/2026",
+"effectiveDate": "2026-04-21",
+"mid": 4.0325
+},
+{
+"no": "171/A/NBP/2026",
+"effectiveDate": "2026-04-22",
+"mid": 4.0386
+},
+{
+"no": "172/A/NBP/2026",
+"effectiveDate": "2026-04-23",
+"mid": 4.0454
+},
+{
+"no": "173/A/NBP/2026",
+"effectiveDate": "2026-04-24",
+"mid": 4.0527
+},
+{
+"no": "174/A/NBP/2026",
+"effectiveDate": "2026-04-27",
+"mid": 4.0604
+},
+{
+"no": "175/A/NBP/2026",
+"effectiveDate": "2026-04-28",
+"mid": 4.0684
+},
+{
+"no": "176/A/NBP/2026",
+"effectiveDate": "2026-04-29",
+"mid": 4.0765
+},
+{
+"no": "177/A/NBP/2026",
+"effectiveDate": "2026-04-30",
+"mid": 4.0846
+},
+{
+"no": "178/A/NBP/2026",
+"effectiveDate": "2026-05-01",
+"mid": 4.0926
+},
+{
+"no": "179/A/NBP/2026",
+"effectiveDate": "2026-05-04",
+"mid": 4.1002
+},
+{
+"no": "180/A/NBP/2026",
+"effectiveDate": "2026-05-05",
+"mid": 4.1075
+},
+{
+"no": "181/A/NBP/2026",
+"effectiveDate": "2026-05-06",
+"mid": 4.1141
+},
+{
+"no": "182/A/NBP/2026",
+"effectiveDate": "2026-05-07",
+"mid": 4.1201
+},
+{
+"no": "183/A/NBP/2026",
+"effectiveDate": "2026-05-08",
+"mid": 4.1253
+},
+{
+"no": "184/A/NBP/2026",
+"effectiveDate": "2026-05-11",
+"mid": 4.1297
+},
+{
+"no": "185/A/NBP/2026",
+"effectiveDate": "2026-05-12",
+"mid": 4.1331
+},
+{
+"no": "186/A/NBP/2026",
+"effectiveDate": "2026-05-13",
+"mid": 4.1356
+},
+{
+"no": "187/A/NBP/2026",
+"effectiveDate": "2026-05-14",
+"mid": 4.137
+},
+{
+"no": "188/A/NBP/2026",
+"effectiveDate": "2026-05-15",
+"mid": 4.1374
+},
+{
+"no": "189/A/NBP/2026",
+"effectiveDate": "2026-05-18",
+"mid": 4.1368
+},
+{
+"no": "190/A/NBP/2026",
+"effectiveDate": "2026-05-19",
+"mid": 4.1353
+},
+{
+"no": "191/A/NBP/2026",
+"effectiveDate": "2026-05-20",
+"mid": 4.1328
+},
+{
+"no": "192/A/NBP/2026",
+"effectiveDate": "2026-05-21",
+"mid": 4.1294
+},
+{
+"no": "193/A/NBP/2026",
+"effectiveDate": "2026-05-22",
+"mid": 4.1253
+},
+{
+"no": "194/A/NBP/2026",
+"effectiveDate": "2026-05-25",
+"mid": 4.1206
+},
+{
+"no": "195/A/NBP/2026",
+"effectiveDate": "2026-05-26",
+"mid": 4.1153
+},
+{
+"no": "196/A/NBP/2026",
+"effectiveDate": "2026-05-27",
+"mid": 4.1095
+},
+{
+"no": "197/A/NBP/2026",
+"effectiveDate": "2026-05-28",
+"mid": 4.1036
+},
+{
+"no": "198/A/NBP/2026",
+"effectiveDate": "2026-05-29",
+"mid": 4.0974
+},
+{
+"no": "199/A/NBP/2026",
+"effectiveDate": "2026-06-01",
+"mid": 4.0913
+},
+{
+"no": "200/A/NBP/2026",
+"effectiveDate": "2026-06-02",
+"mid": 4.0854
+},
+{
+"no": "201/A/NBP/2026",
+"effectiveDate": "2026-06-03",
+"mid": 4.0797
+},
+{
+"no": "202/A/NBP/2026",
+"effectiveDate": "2026-06-04",
+"mid": 4.0745
+},
+{
+"no": "203/A/NBP/2026",
+"effectiveDate": "2026-06-05",
+"mid": 4.0698
+},
+{
+"no": "204/A/NBP/2026",
+"effectiveDate": "2026-06-08",
+"mid": 4.0658
+},
+{
+"no": "205/A/NBP/2026",
+"effectiveDate": "2026-06-09",
+"mid": 4.0626
+},
+{
+"no": "206/A/NBP/2026",
+"effectiveDate": "2026-06-10",
+"mid": 4.0603
+},
+{
+"no": "207/A/NBP/2026",
+"effectiveDate": "2026-06-11",
+"mid": 4.0589
+},
+{
+"no": "208/A/NBP/2026",
+"effectiveDate": "2026-06-12",
+"mid": 4.0584
+},
+{
+"no": "209/A/NBP/2026",
+"effectiveDate": "2026-06-15",
+"mid": 4.059
+},
+{
+"no": "210/A/NBP/2026",
+"effectiveDate": "2026-06-16",
+"mid": 4.0606
+},
+{
+"no": "211/A/NBP/2026",
+"effectiveDate": "2026-06-17",
+"mid": 4.0632
+},
+{
+"no": "212/A/NBP/2026",
+"effectiveDate": "2026-06-18",
+"mid": 4.0668
+},
+{
+"no": "213/A/NBP/2026",
+"effectiveDate": "2026-06-19",
+"mid": 4.0713
+},
+{
+"no": "214/A/NBP/2026",
+"effectiveDate": "2026-06-22",
+"mid": 4.0766
+},
+{
+"no": "215/A/NBP/2026",
+"effectiveDate": "2026-06-23",
+"mid": 4.0827
+},
+{
+"no": "216/A/NBP/2026",
+"effectiveDate": "2026-06-24",
+"mid": 4.0895
+},
+{
+"no": "217/A/NBP/2026",
+"effectiveDate": "2026-06-25",
+"mid": 4.0968
+},
+{
+"no": "218/A/NBP/2026",
+"effectiveDate": "2026-06-26",
+"mid": 4.1045
+},
+{
+"no": "219/A/NBP/2026",
+"effectiveDate": "2026-06-29",
+"mid": 4.1125
+},
+{
+"no": "220/A/NBP/2026",
+"effectiveDate": "2026-06-30",
+"mid": 4.1206
+},
+{
+"no": "221/A/NBP/2026",
+"effectiveDate": "2026-07-01",
+"mid": 4.1287
+},
+{
+"no": "222/A/NBP/2026",
+"effectiveDate": "2026-07-02",
+"mid": 4.1367
+},
+{
+"no": "223/A/NBP/2026",
+"effectiveDate": "2026-07-03",
+"mid": 4.1444
+},
+{
+"no": "224/A/NBP/2026",
+"effectiveDate": "2026-07-06",
+"mid": 4.1516
+},
+{
+"no": "225/A/NBP/2026",
+"effectiveDate": "2026-07-07",
+"mid": 4.1582
+},
+{
+"no": "226/A/NBP/2026",
+"effectiveDate": "2026-07-08",
+"mid": 4.1642
+},
+{
+"no": "227/A/NBP/2026",
+"effectiveDate": "2026-07-09",
+"mid": 4.1694
+},
+{
+"no": "228/A/NBP/2026",
+"effectiveDate": "2026-07-10",
+"mid": 4.1737
+},
+{
+"no": "229/A/NBP/2026",
+"effectiveDate": "2026-07-13",
+"mid": 4.1772
+},
+{
+"no": "230/A/NBP/2026",
+"effectiveDate": "2026-07-14",
+"mid": 4.1796
+},
+{
+"no": "231/A/NBP/2026",
+"effectiveDate": "2026-07-15",
+"mid": 4.181
+},
+{
+"no": "232/A/NBP/2026",
+"effectiveDate": "2026-07-16",
+"mid": 4.1814
+},
+{
+"no": "233/A/NBP/2026",
+"effectiveDate": "2026-07-17",
+"mid": 4.1808
+},
+{
+"no": "234/A/NBP/2026",
+"effectiveDate": "2026-07-20",
+"mid": 4.1792
+},
+{
+"no": "235/A/NBP/2026",
+"effectiveDate": "2026-07-21",
+"mid": 4.1767
+},
+{
+"no": "236/A/NBP/2026",
+"effectiveDate": "2026-07-22",
+"mid": 4.1733
+},
+{
+"no": "237/A/NBP/2026",
+"effectiveDate": "2026-07-23",
+"mid": 4.1692
+},
+{
+"no": "238/A/NBP/2026",
+"effectiveDate": "2026-07-24",
+"mid": 4.1645
+},
+{
+"no": "239/A/NBP/2026",
+"effectiveDate": "2026-07-27",
+"mid": 4.1591
+},
+{
+"no": "240/A/NBP/2026",
+"effectiveDate": "2026-07-28",
+"mid": 4.1534
+},
+{
+"no": "241/A/NBP/2026",
+"effectiveDate": "2026-07-29",
+"mid": 4.1474
+},
+{
+"no": "242/A/NBP/2026",
+"effectiveDate": "2026-07-30",
+"mid": 4.1413
+},
+{
+"no": "243/A/NBP/2026",
+"effectiveDate": "2026-07-31",
+"mid": 4.1352
+},
+{
+"no": "244/A/NBP/2026",
+"effectiveDate": "2026-08-03",
+"mid": 4.1292
+},
+{
+"no": "245/A/NBP/2026",
+"effectiveDate": "2026-08-04",
+"mid": 4.1236
+},
+{
+"no": "246/A/NBP/2026",
+"effectiveDate": "2026-08-05",
+"mid": 4.1184
+},
+{
+"no": "247/A/NBP/2026",
+"effectiveDate": "2026-08-06",
+"mid": 4.1137
+},
+{
+"no": "248/A/NBP/2026",
+"effectiveDate": "2026-08-07",
+"mid": 4.1097
+},
+{
+"no": "249/A/NBP/2026",
+"effectiveDate": "2026-08-10",
+"mid": 4.1066
+},
+{
+"no": "250/A/NBP/2026",
+"effectiveDate": "2026-08-11",
+"mid": 4.1042
+},
+{
+"no": "251/A/NBP/2026",
+"effectiveDate": "2026-08-12",
+"mid": 4.1028
+},
+{
+"no": "252/A/NBP/2026",
+"effectiveDate": "2026-08-13",
+"mid": 4.1024
+},
+{
+"no": "253/A/NBP/2026",
+"effectiveDate": "2026-08-14",
+"mid": 4.103
+},
+{
+"no": "254/A/NBP/2026",
+"effectiveDate": "2026-08-17",
+"mid": 4.1046
+},
+{
+"no": "255/A/NBP/2026",
+"effectiveDate": "2026-08-18",
+"mid": 4.1072
+},
+{
+"no": "256/A/NBP/2026",
+"effectiveDate": "2026-08-19",
+"mid": 4.1108
+},
+{
+"no": "257/A/NBP/2026",
+"effectiveDate": "2026-08-20",
+"mid": 4.1153
+},
+{
+"no": "258/A/NBP/2026",
+"effectiveDate": "2026-08-21",
+"mid": 4.1207
+},
+{
+"no": "259/A/NBP/2026",
+"effectiveDate": "2026-08-24",
+"mid": 4.1268
+},
+{
+"no": "260/A/NBP/2026",
+"effectiveDate": "2026-08-25",
+"mid": 4.1336
+},
+{
+"no": "261/A/NBP/2026",
+"effectiveDate": "2026-08-26",
+"mid": 4.1409
+},
+{
+"no": "262/A/NBP/2026",
+"effectiveDate": "2026-08-27",
+"mid": 4.1486
+},
+{
+"no": "263/A/NBP/2026",
+"effectiveDate": "2026-08-28",
+"mid": 4.1566
+},
+{
+"no": "264/A/NBP/2026",
+"effectiveDate": "2026-08-31",
+"mid": 4.1648
+},
+{
+"no": "265/A/NBP/2026",
+"effectiveDate": "2026-09-01",
+"mid": 4.1729
+},
+{
+"no": "266/A/NBP/2026",
+"effectiveDate": "2026-09-02",
+"mid": 4.1808
+},
+{
+"no": "267/A/NBP/2026",
+"effectiveDate": "2026-09-03",
+"mid": 4.1885
+},
+{
+"no": "268/A/NBP/2026",
+"effectiveDate": "2026-09-04",
+"mid": 4.1957
+},
+{
+"no": "269/A/NBP/2026",
+"effectiveDate": "2026-09-07",
+"mid": 4.2023
+},
+{
+"no": "270/A/NBP/2026",
+"effectiveDate": "2026-09-08",
+"mid": 4.2083
+},
+{
+"no": "271/A/NBP/2026",
+"effectiveDate": "2026-09-09",
+"mid": 4.2135
+},
+{
+"no": "272/A/NBP/2026",
+"effectiveDate": "2026-09-10",
+"mid": 4.2178
+},
+{
+"no": "273/A/NBP/2026",
+"effectiveDate": "2026-09-11",
+"mid": 4.2212
+},
+{
+"no": "274/A/NBP/2026",
+"effectiveDate": "2026-09-14",
+"mid": 4.2236
+},
+{
+"no": "275/A/NBP/2026",
+"effectiveDate": "2026-09-15",
+"mid": 4.225
+},
+{
+"no": "276/A/NBP/2026",
+"effectiveDate": "2026-09-16",
+"mid": 4.2254
+},
+{
+"no": "277/A/NBP/2026",
+"effectiveDate": "2026-09-17",
+"mid": 4.2247
+},
+{
+"no": "278/A/NBP/2026",
+"effectiveDate": "2026-09-18",
+"mid": 4.2231
+},
+{
+"no": "279/A/NBP/2026",
+"effectiveDate": "2026-09-21",
+"mid": 4.2206
+},
+{
+"no": "280/A/NBP/2026",
+"effectiveDate": "2026-09-22",
+"mid": 4.2173
+},
+{
+"no": "281/A/NBP/2026",
+"effectiveDate": "2026-09-23",
+"mid": 4.2131
+},
+{
+"no": "282/A/NBP/2026",
+"effectiveDate": "2026-09-24",
+"mid": 4.2083
+},
+{
+"no": "283/A/NBP/2026",
+"effectiveDate": "2026-09-25",
+"mid": 4.203
+},
+{
+"no": "284/A/NBP/2026",
+"effectiveDate": "2026-09-28",
+"mid": 4.1973
+},
+{
+"no": "285/A/NBP/2026",
+"effectiveDate": "2026-09-29",
+"mid": 4.1913
+},
+{
+"no": "286/A/NBP/2026",
+"effectiveDate": "2026-09-30",
+"mid": 4.1852
+},
+{
+"no": "287/A/NBP/2026",
+"effectiveDate": "2026-10-01",
+"mid": 4.1791
+},
+{
+"no": "288/A/NBP/2026",
+"effectiveDate": "2026-10-02",
+"mid": 4.1731
+},
+{
+"no": "289/A/NBP/2026",
+"effectiveDate": "2026-10-05",
+"mid": 4.1675
+},
+{
+"no": "290/A/NBP/2026",
+"effectiveDate": "2026-10-06",
+"mid": 4.1623
+},
+{
+"no": "291/A/NBP/2026",
+"effectiveDate": "2026-10-07",
+"mid": 4.1576
+},
+{
+"no": "292/A/NBP/2026",
+"effectiveDate": "2026-10-08",
+"mid": 4.1537
+},
+{
+"no": "293/A/NBP/2026",
+"effectiveDate": "2026-10-09",
+"mid": 4.1505
+},
+{
+"no": "294/A/NBP/2026",
+"effectiveDate": "2026-10-12",
+"mid": 4.1482
+},
+{
+"no": "295/A/NBP/2026",
+"effectiveDate": "2026-10-13",
+"mid": 4.1468
+},
+{
+"no": "296/A/NBP/2026",
+"effectiveDate": "2026-10-14",
+"mid": 4.1464
+},
+{
+"no": "297/A/NBP/2026",
+"effectiveDate": "2026-10-15",
+"mid": 4.147
+},
+{
+"no": "298/A/NBP/2026",
+"effectiveDate": "2026-10-16",
+"mid": 4.1486
+},
+{
+"no": "299/A/NBP/2026",
+"effectiveDate": "2026-10-19",
+"mid": 4.1513
+},
+{
+"no": "300/A/NBP/2026",
+"effectiveDate": "2026-10-20",
+"mid": 4.1549
+},
+{
+"no": "301/A/NBP/2026",
+"effectiveDate": "2026-10-21",
+"mid": 4.1594
+},
+{
+"no": "302/A/NBP/2026",
+"effectiveDate": "2026-10-22",
+"mid": 4.1648
+},
+{
+"no": "303/A/NBP/2026",
+"effectiveDate": "2026-10-23",
+"mid": 4.1709
+},
+{
+"no": "304/A/NBP/2026",
+"effectiveDate": "2026-10-26",
+"mid": 4.1777
+},
+{
+"no": "305/A/NBP/2026",
+"effectiveDate": "2026-10-27",
+"mid": 4.185
+},
+{
+"no": "306/A/NBP/2026",
+"effectiveDate": "2026-10-28",
+"mid": 4.1928
+},
+{
+"no": "307/A/NBP/2026",
+"effectiveDate": "2026-10-29",
+"mid": 4.2008
+},
+{
+"no": "308/A/NBP/2026",
+"effectiveDate": "2026-10-30",
+"mid": 4.2089
+}
+]
+}

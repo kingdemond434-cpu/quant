@@ -9,14 +9,19 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-import requests
+try:
+    from libs.data.polite_fetch import DESK_UA, polite_requests_get
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA, polite_requests_get
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "academic"
 OUT.mkdir(parents=True, exist_ok=True)
 
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}
+HEADERS = {"User-Agent": DESK_UA}
 
 # arXiv API for quantitative finance
 ARXIV_URL = "http://export.arxiv.org/api/query"
@@ -45,7 +50,7 @@ def mine_arxiv() -> list[dict]:
                 "sortBy": "submittedDate",
                 "sortOrder": "descending",
             }
-            resp = requests.get(ARXIV_URL, params=params, headers=HEADERS, timeout=15)
+            resp = polite_requests_get(ARXIV_URL, params=params, headers=HEADERS, timeout=15)
             resp.raise_for_status()
 
             # Parse XML
@@ -95,7 +100,7 @@ def mine_ssrn() -> list[dict]:
     discoveries = []
     try:
         params = {"q": "forex trading strategy", "npage": 1}
-        resp = requests.get(SSRN_URL, params=params, headers=HEADERS, timeout=15)
+        resp = polite_requests_get(SSRN_URL, params=params, headers=HEADERS, timeout=15)
         if resp.status_code == 200:
             text = resp.text
             # Extract paper titles

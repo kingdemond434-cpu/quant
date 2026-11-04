@@ -49,6 +49,13 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
+try:
+    from libs.data.polite_fetch import polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[5]))
+    from libs.data.polite_fetch import polite_urlopen
 
 DESK = Path(__file__).resolve().parents[3]
 LANE = "br"
@@ -159,11 +166,12 @@ def decode(body: bytes) -> Any:
 
 
 def http_get(url: str, headers: Mapping[str, str], timeout: float) -> Any:
-    """The ONE network call in the three lanes, through `urllib.request.urlopen` by attribute so
-    a test that replaces it catches every lane."""
+    """The ONE network call in the three lanes, through `polite_fetch.polite_urlopen` (the site's
+    holds and the origin's robots.txt before any request) by module attribute, so a test that
+    replaces it catches every lane."""
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT,
                                                "Accept": "application/json", **headers})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
+    with polite_urlopen(req, timeout=timeout) as resp:
         return decode(resp.read())
 
 

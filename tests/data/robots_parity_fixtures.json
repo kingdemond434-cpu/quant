@@ -1,0 +1,244 @@
+{
+ "note": "Shared RFC 9309 fixture table (LAWS 5e amended 2026-10-14). Both robots readers -- libs/data/polite_fetch.RobotsRules via HostAccess.permits and desks/mt5/research/hard_stop.robots_verdict -- must return `allowed` for every row. robots_status 0 = unreachable. Product token: quant-mt5-research-desk.",
+ "product": "quant-mt5-research-desk",
+ "fixtures": [
+  {
+   "name": "no_groups_allows_all",
+   "robots_status": 200,
+   "robots_body": "# nothing\n",
+   "url": "https://ex.test/a",
+   "allowed": true
+  },
+  {
+   "name": "empty_file_allows_all",
+   "robots_status": 200,
+   "robots_body": "",
+   "url": "https://ex.test/a",
+   "allowed": true
+  },
+  {
+   "name": "star_disallow_all",
+   "robots_status": 200,
+   "robots_body": "User-agent: *\nDisallow: /\n",
+   "url": "https://ex.test/a",
+   "allowed": false
+  },
+  {
+   "name": "robots_txt_itself_always_allowed",
+   "robots_status": 200,
+   "robots_body": "User-agent: *\nDisallow: /\n",
+   "url": "https://ex.test/robots.txt",
+   "allowed": true
+  },
+  {
+   "name": "longest_match_beats_file_order",
+   "robots_status": 200,
+   "robots_body": "User-agent: *\nAllow: /\nDisallow: /private\n",
+   "url": "https://ex.test/private/x",
+   "allowed": false
+  },
+  {
+   "name": "longest_allow_beats_shorter_disallow",
+   "robots_status": 200,
+   "robots_body": "User-agent: *\nDisallow: /\nAllow: /public\n",
+   "url": "https://ex.test/public/x",
+   "allowed": true
+  },
+  {
+   "name": "tie_goes_to_allow",
+   "robots_status": 200,
+   "robots_body": "User-agent: *\nDisallow: /a\nAllow: /a\n",
+   "url": "https://ex.test/a",
+   "allowed": true
+  },
+  {
+   "name": "tie_goes_to_allow_order_reversed",
+   "robots_status": 200,
+   "robots_body": "User-agent: *\nAllow: /a\nDisallow: /a\n",
+   "url": "https://ex.test/a",
+   "allowed": true
+  },
+  {
+   "name": "wildcard_suffix",
+   "robots_status": 200,
+   "robots_body": "User-agent: *\nDisallow: /*.pdf\n",
+   "url": "https://ex.test/docs/x.pdf",
+   "allowed": false
+  },
+  {
+   "name": "dollar_anchor_matches_end",
+   "robots_status": 200,
+   "robots_body": "User-agent: *\nDisallow: /*.pdf$\n",
+   "url": "https://ex.test/docs/x.pdf",
+   "allowed": false
+  },
+  {
+   "name": "dollar_anchor_rejects_query",
+   "robots_status": 200,
+   "robots_body": "User-agent: *\nDisallow: /*.pdf$\n",
+   "url": "https://ex.test/docs/x.pdf?y=1",
+   "allowed": true
+  },
+  {
+   "name": "query_is_part_of_the_path",
+   "robots_status": 200,
+   "robots_body": "User-agent: *\nDisallow: /search?q=\n",
+   "url": "https://ex.test/search?q=gold",
+   "allowed": false
+  },
+  {
+   "name": "prefix_match_only",
+   "robots_status": 200,
+   "robots_body": "User-agent: *\nDisallow: /fish\n",
+   "url": "https://ex.test/a/fish",
+   "allowed": true
+  },
+  {
+   "name": "prefix_match_is_case_sensitive",
+   "robots_status": 200,
+   "robots_body": "User-agent: *\nDisallow: /Fish\n",
+   "url": "https://ex.test/fish",
+   "allowed": true
+  },
+  {
+   "name": "empty_disallow_is_no_rule",
+   "robots_status": 200,
+   "robots_body": "User-agent: *\nDisallow:\n",
+   "url": "https://ex.test/a",
+   "allowed": true
+  },
+  {
+   "name": "own_group_preferred_over_star",
+   "robots_status": 200,
+   "robots_body": "User-agent: *\nDisallow: /\n\nUser-agent: quant-mt5-research-desk\nAllow: /\n",
+   "url": "https://ex.test/a",
+   "allowed": true
+  },
+  {
+   "name": "own_group_disallow",
+   "robots_status": 200,
+   "robots_body": "User-agent: *\nAllow: /\n\nUser-agent: quant-mt5-research-desk\nDisallow: /desk\n",
+   "url": "https://ex.test/desk/x",
+   "allowed": false
+  },
+  {
+   "name": "own_group_case_insensitive",
+   "robots_status": 200,
+   "robots_body": "User-agent: QUANT-MT5-RESEARCH-DESK\nDisallow: /\n",
+   "url": "https://ex.test/a",
+   "allowed": false
+  },
+  {
+   "name": "own_group_excludes_star_rules",
+   "robots_status": 200,
+   "robots_body": "User-agent: *\nDisallow: /x\n\nUser-agent: quant-mt5-research-desk\nDisallow: /y\n",
+   "url": "https://ex.test/x",
+   "allowed": true
+  },
+  {
+   "name": "other_agent_group_does_not_bind",
+   "robots_status": 200,
+   "robots_body": "User-agent: GPTBot\nDisallow: /\n",
+   "url": "https://ex.test/a",
+   "allowed": true
+  },
+  {
+   "name": "stacked_user_agents_share_rules",
+   "robots_status": 200,
+   "robots_body": "User-agent: other\nUser-agent: quant-mt5-research-desk\nDisallow: /a\n",
+   "url": "https://ex.test/a/b",
+   "allowed": false
+  },
+  {
+   "name": "own_groups_merge",
+   "robots_status": 200,
+   "robots_body": "User-agent: quant-mt5-research-desk\nDisallow: /a\n\nUser-agent: zz\nDisallow: /\n\nUser-agent: quant-mt5-research-desk\nDisallow: /b\n",
+   "url": "https://ex.test/b/1",
+   "allowed": false
+  },
+  {
+   "name": "crawl_delay_does_not_end_a_group",
+   "robots_status": 200,
+   "robots_body": "User-agent: other\nCrawl-delay: 5\nUser-agent: quant-mt5-research-desk\nDisallow: /a\n",
+   "url": "https://ex.test/a",
+   "allowed": false
+  },
+  {
+   "name": "rule_before_any_user_agent_is_void",
+   "robots_status": 200,
+   "robots_body": "Disallow: /\nUser-agent: *\nAllow: /x\n",
+   "url": "https://ex.test/a",
+   "allowed": true
+  },
+  {
+   "name": "comments_ignored",
+   "robots_status": 200,
+   "robots_body": "User-agent: * # all\nDisallow: /a # private\n",
+   "url": "https://ex.test/a/1",
+   "allowed": false
+  },
+  {
+   "name": "star_in_middle",
+   "robots_status": 200,
+   "robots_body": "User-agent: *\nDisallow: /a*/c\n",
+   "url": "https://ex.test/abc/c/d",
+   "allowed": false
+  },
+  {
+   "name": "status_404_allows",
+   "robots_status": 404,
+   "robots_body": "User-agent: *\nDisallow: /\n",
+   "url": "https://ex.test/a",
+   "allowed": true
+  },
+  {
+   "name": "status_410_allows",
+   "robots_status": 410,
+   "robots_body": "",
+   "url": "https://ex.test/a",
+   "allowed": true
+  },
+  {
+   "name": "status_500_disallows",
+   "robots_status": 500,
+   "robots_body": "",
+   "url": "https://ex.test/a",
+   "allowed": false
+  },
+  {
+   "name": "status_503_disallows",
+   "robots_status": 503,
+   "robots_body": "",
+   "url": "https://ex.test/a",
+   "allowed": false
+  },
+  {
+   "name": "unreachable_disallows",
+   "robots_status": 0,
+   "robots_body": "",
+   "url": "https://ex.test/a",
+   "allowed": false
+  },
+  {
+   "name": "status_401_refuses_and_holds",
+   "robots_status": 401,
+   "robots_body": "",
+   "url": "https://ex.test/a",
+   "allowed": false
+  },
+  {
+   "name": "status_403_refuses_and_holds",
+   "robots_status": 403,
+   "robots_body": "",
+   "url": "https://ex.test/a",
+   "allowed": false
+  },
+  {
+   "name": "status_429_refuses_and_holds",
+   "robots_status": 429,
+   "robots_body": "",
+   "url": "https://ex.test/a",
+   "allowed": false
+  }
+ ]
+}

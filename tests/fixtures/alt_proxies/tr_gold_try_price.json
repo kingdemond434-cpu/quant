@@ -1,0 +1,103 @@
+{
+ "totalCount": 14,
+ "items": [
+  {
+   "Tarih": "15-10-2026",
+   "TP_MK_KUL_YTL": "5406.5",
+   "UNIXTIME": {
+    "$numberLong": "1792022400"
+   }
+  },
+  {
+   "Tarih": "16-10-2026",
+   "TP_MK_KUL_YTL": "5413.0",
+   "UNIXTIME": {
+    "$numberLong": "1792108800"
+   }
+  },
+  {
+   "Tarih": "17-10-2026",
+   "TP_MK_KUL_YTL": null,
+   "UNIXTIME": {
+    "$numberLong": "1792195200"
+   }
+  },
+  {
+   "Tarih": "18-10-2026",
+   "TP_MK_KUL_YTL": null,
+   "UNIXTIME": {
+    "$numberLong": "1792281600"
+   }
+  },
+  {
+   "Tarih": "19-10-2026",
+   "TP_MK_KUL_YTL": "5432.5",
+   "UNIXTIME": {
+    "$numberLong": "1792368000"
+   }
+  },
+  {
+   "Tarih": "20-10-2026",
+   "TP_MK_KUL_YTL": "",
+   "UNIXTIME": {
+    "$numberLong": "1792454400"
+   }
+  },
+  {
+   "Tarih": "21-10-2026",
+   "TP_MK_KUL_YTL": "5400.0",
+   "UNIXTIME": {
+    "$numberLong": "1792540800"
+   }
+  },
+  {
+   "Tarih": "22-10-2026",
+   "TP_MK_KUL_YTL": "5406.5",
+   "UNIXTIME": {
+    "$numberLong": "1792627200"
+   }
+  },
+  {
+   "Tarih": "23-10-2026",
+   "TP_MK_KUL_YTL": "5413.0",
+   "UNIXTIME": {
+    "$numberLong": "1792713600"
+   }
+  },
+  {
+   "Tarih": "24-10-2026",
+   "TP_MK_KUL_YTL": null,
+   "UNIXTIME": {
+    "$numberLong": "1792800000"
+   }
+  },
+  {
+   "Tarih": "25-10-2026",
+   "TP_MK_KUL_YTL": null,
+   "UNIXTIME": {
+    "$numberLong": "1792886400"
+   }
+  },
+  {
+   "Tarih": "26-10-2026",
+   "TP_MK_KUL_YTL": "5432.5",
+   "UNIXTIME": {
+    "$numberLong": "1792972800"
+   }
+  },
+  {
+   "Tarih": "27-10-2026",
+   "TP_MK_KUL_YTL": "5452.1",
+   "UNIXTIME": {
+    "$numberLong": "1793059200"
+   }
+  },
+  {
+   "Tarih": "28-10-2026",
+   "TP_MK_KUL_YTL": "5478.4",
+   "UNIXTIME": {
+    "$numberLong": "1793145600"
+   }
+  }
+ ]
+}

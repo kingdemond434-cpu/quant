@@ -25,6 +25,14 @@ import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
+try:
+    from libs.data.polite_fetch import polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+    from libs.data.polite_fetch import polite_urlopen
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from fetch_video_transcript import TranscriptUnavailable as _TranscriptUnavailable
 from fetch_video_transcript import youtube as _yt_transcript
@@ -54,7 +62,7 @@ def api(endpoint: str, spent: list[int], cost: int, **params) -> dict:
         raise RuntimeError(f"unit budget {UNIT_BUDGET} would be exceeded; standing down")
     params["key"] = KEYFILE.read_text("utf-8").strip()
     url = f"{API}/{endpoint}?{urllib.parse.urlencode(params)}"
-    with urllib.request.urlopen(url, timeout=30) as r:
+    with polite_urlopen(url, timeout=30) as r:
         spent[0] += cost
         return json.load(r)
 

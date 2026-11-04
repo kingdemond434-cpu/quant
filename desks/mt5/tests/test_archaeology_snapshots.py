@@ -38,6 +38,14 @@ for _p in (str(_ROOT), str(_DESK), str(_DESK / "research"), str(_DESK / "side_ch
 import moat_collectors as mc  # noqa: E402
 from archaeology import snapshots as snap  # noqa: E402
 
+
+@pytest.fixture(autouse=True)
+def _robots_allow(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The LIVE robots/holds check (`polite_fetch.admit`, LAWS 5e amended 2026-10-14) is stubbed
+    to allow, so no test here reaches a host; tests/data/test_robots_coverage.py proves the live
+    check refuses a Disallow, an unreadable robots.txt and a held site."""
+    monkeypatch.setattr(mc, "admit", lambda url, **kw: (True, ""))
+
 #: MQL5-signals shape: linked cards whose text carries the platform's own published statistics.
 SIGNALS_PAGE = """<html><body>
 <a href="/en/signals/100001" class="signal-card">Gold Asia Scalper Growth: 120% Drawdown: 15%
@@ -313,6 +321,19 @@ def test_a_wall_may_tighten_access_but_never_loosen_it(archive):
     assert snap.machine_use(_platform("myfxbook"))[0] == snap.FORBIDDEN
     assert snap._STRICTNESS[snap.FORBIDDEN] > snap._STRICTNESS[snap.UNKNOWN]
     assert snap._STRICTNESS[snap.UNKNOWN] > snap._STRICTNESS[snap.ALLOWED]
+
+
+def test_a_robots_wall_is_a_label_never_a_forbidden_verdict(archive, monkeypatch):
+    """LAWS 5e REMOVED_BRAKES: "robots.txt Disallow treated as a refusal". A desk-measured
+    ROBOTS_DISALLOW wall on a host may only label the ground UNKNOWN; it never makes an ALLOWED
+    platform FORBIDDEN, and the ground still reaches the fetch door."""
+    allowed = _platform("mql5_signals")
+    monkeypatch.setattr(snap, "_walls", lambda: {allowed.host: {
+        "host": allowed.host, "verdict": "ROBOTS_DISALLOW", "evidence": "Disallow: /"}})
+    verdict, why = snap.machine_use(allowed)
+    assert verdict == snap.UNKNOWN and "ROBOTS_DISALLOW" in why
+    ok, _why = snap.may_fetch(allowed)
+    assert ok is True
 
 
 def test_the_label_census_is_reported(archive):

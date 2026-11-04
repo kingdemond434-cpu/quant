@@ -1,0 +1,9 @@
+"Series Description","Rest of the world; U.S. corporate equities; asset, Transactions","Money market funds; total financial assets, Level","Households; checkable deposits, Transactions"
+"Unit:","Currency","Currency","Currency"
+"Multiplier:","Millions","Millions","Millions"
+"Currency:","USD","USD","USD"
+"Unique Identifier:","Z1/Z1/FU263064105.Q","Z1/Z1/FL634090005.Q","Z1/Z1/FU153020005.Q"
+"Time Period","FU263064105.Q","FL634090005.Q","FU153020005.Q"
+2025Q2,12345,7000000,1
+2025Q3,-2345,7100000,2
+2025Q4,ND,7200000,3

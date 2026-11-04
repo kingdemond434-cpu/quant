@@ -1,0 +1,1440 @@
+{
+"header": {
+"note": "FIXTURE shaped by the desk from the Trade-IDDS API Enquiry parameters; the real response field names are UNREAD (spec PDF robots-refused)",
+"unit": "HK$ thousand"
+},
+"dataSet": [
+{
+"period": "202310",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 20000000.0
+},
+{
+"period": "202310",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 19400000.0
+},
+{
+"period": "202310",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 600000.0
+},
+{
+"period": "202310",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1700000.0
+},
+{
+"period": "202311",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 21231584.1
+},
+{
+"period": "202311",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 20594636.6
+},
+{
+"period": "202311",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 636947.5
+},
+{
+"period": "202311",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1675516.5
+},
+{
+"period": "202312",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 22355109.4
+},
+{
+"period": "202312",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 21684456.1
+},
+{
+"period": "202312",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 670653.3
+},
+{
+"period": "202312",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1608060.5
+},
+{
+"period": "202401",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 23274413.0
+},
+{
+"period": "202401",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 22576180.6
+},
+{
+"period": "202401",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 698232.4
+},
+{
+"period": "202401",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1514147.4
+},
+{
+"period": "202402",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 23915813.7
+},
+{
+"period": "202402",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 23198339.3
+},
+{
+"period": "202402",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 717474.4
+},
+{
+"period": "202402",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1416770.6
+},
+{
+"period": "202403",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 24236223.9
+},
+{
+"period": "202403",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 23509137.2
+},
+{
+"period": "202403",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 727086.7
+},
+{
+"period": "202403",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1339771.3
+},
+{
+"period": "202404",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 24227892.3
+},
+{
+"period": "202404",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 23501055.5
+},
+{
+"period": "202404",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 726836.8
+},
+{
+"period": "202404",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1302001.5
+},
+{
+"period": "202405",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 23919257.6
+},
+{
+"period": "202405",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 23201679.9
+},
+{
+"period": "202405",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 717577.7
+},
+{
+"period": "202405",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1312708.7
+},
+{
+"period": "202406",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 23371817.9
+},
+{
+"period": "202406",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 22670663.3
+},
+{
+"period": "202406",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 701154.5
+},
+{
+"period": "202406",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1369271.3
+},
+{
+"period": "202407",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 22673360.0
+},
+{
+"period": "202407",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 21993159.2
+},
+{
+"period": "202407",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 680200.8
+},
+{
+"period": "202407",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1457840.8
+},
+{
+"period": "202408",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 21928296.1
+},
+{
+"period": "202408",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 21270447.2
+},
+{
+"period": "202408",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 657848.9
+},
+{
+"period": "202408",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1556732.4
+},
+{
+"period": "202409",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 21246168.9
+},
+{
+"period": "202409",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 20608783.8
+},
+{
+"period": "202409",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 637385.1
+},
+{
+"period": "202409",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1641734.0
+},
+{
+"period": "202410",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 20729592.5
+},
+{
+"period": "202410",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 20107704.7
+},
+{
+"period": "202410",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 621887.8
+},
+{
+"period": "202410",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1692034.1
+},
+{
+"period": "202411",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 20462956.5
+},
+{
+"period": "202411",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 19849067.8
+},
+{
+"period": "202411",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 613888.7
+},
+{
+"period": "202411",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1695317.5
+},
+{
+"period": "202412",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 20503135.2
+},
+{
+"period": "202412",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 19888041.2
+},
+{
+"period": "202412",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 615094.1
+},
+{
+"period": "202412",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1650780.5
+},
+{
+"period": "202501",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 20873227.2
+},
+{
+"period": "202501",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 20247030.4
+},
+{
+"period": "202501",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 626196.8
+},
+{
+"period": "202501",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1569327.1
+},
+{
+"period": "202502",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 21560011.8
+},
+{
+"period": "202502",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 20913211.5
+},
+{
+"period": "202502",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 646800.4
+},
+{
+"period": "202502",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1470900.0
+},
+{
+"period": "202503",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 22515405.3
+},
+{
+"period": "202503",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 21839943.1
+},
+{
+"period": "202503",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 675462.2
+},
+{
+"period": "202503",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1379597.6
+},
+{
+"period": "202504",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 23661753.5
+},
+{
+"period": "202504",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 22951900.9
+},
+{
+"period": "202504",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 709852.6
+},
+{
+"period": "202504",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1317773.9
+},
+{
+"period": "202505",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 24900381.0
+},
+{
+"period": "202505",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 24153369.6
+},
+{
+"period": "202505",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 747011.4
+},
+{
+"period": "202505",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1300565.6
+},
+{
+"period": "202506",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 26122453.7
+},
+{
+"period": "202506",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 25338780.1
+},
+{
+"period": "202506",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 783673.6
+},
+{
+"period": "202506",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1332185.7
+},
+{
+"period": "202507",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 27220959.8
+},
+{
+"period": "202507",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 26404331.0
+},
+{
+"period": "202507",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 816628.8
+},
+{
+"period": "202507",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1404892.6
+},
+{
+"period": "202508",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 28102490.6
+},
+{
+"period": "202508",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 27259415.9
+},
+{
+"period": "202508",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 843074.7
+},
+{
+"period": "202508",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1500885.1
+},
+{
+"period": "202509",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 28697523.4
+},
+{
+"period": "202509",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 27836597.7
+},
+{
+"period": "202509",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 860925.7
+},
+{
+"period": "202509",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1596661.0
+},
+{
+"period": "202510",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 28968074.7
+},
+{
+"period": "202510",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 28099032.5
+},
+{
+"period": "202510",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 869042.2
+},
+{
+"period": "202510",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1668770.8
+},
+{
+"period": "202511",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 28911882.3
+},
+{
+"period": "202511",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 28044525.9
+},
+{
+"period": "202511",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 867356.5
+},
+{
+"period": "202511",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1699559.7
+},
+{
+"period": "202512",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 28562653.6
+},
+{
+"period": "202512",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 27705774.0
+},
+{
+"period": "202512",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 856879.6
+},
+{
+"period": "202512",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1681489.4
+},
+{
+"period": "202601",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 27986355.5,
+"releaseDate": "2026-02-27"
+},
+{
+"period": "202601",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 27146764.8,
+"releaseDate": "2026-02-27"
+},
+{
+"period": "202601",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 839590.7,
+"releaseDate": "2026-02-27"
+},
+{
+"period": "202601",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1618984.1,
+"releaseDate": "2026-02-27"
+},
+{
+"period": "202602",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 27273951.7,
+"releaseDate": "2026-03-27"
+},
+{
+"period": "202602",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 26455733.2,
+"releaseDate": "2026-03-27"
+},
+{
+"period": "202602",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 818218.6,
+"releaseDate": "2026-03-27"
+},
+{
+"period": "202602",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1527347.4,
+"releaseDate": "2026-03-27"
+},
+{
+"period": "202603",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 26531389.7,
+"releaseDate": "2026-04-27"
+},
+{
+"period": "202603",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 25735448.0,
+"releaseDate": "2026-04-27"
+},
+{
+"period": "202603",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 795941.7,
+"releaseDate": "2026-04-27"
+},
+{
+"period": "202603",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1429015.1,
+"releaseDate": "2026-04-27"
+},
+{
+"period": "202604",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 25867936.7,
+"releaseDate": "2026-05-27"
+},
+{
+"period": "202604",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 25091898.6,
+"releaseDate": "2026-05-27"
+},
+{
+"period": "202604",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 776038.1,
+"releaseDate": "2026-05-27"
+},
+{
+"period": "202604",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1348062.4,
+"releaseDate": "2026-05-27"
+},
+{
+"period": "202605",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 25384151.2,
+"releaseDate": "2026-06-27"
+},
+{
+"period": "202605",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 24622626.6,
+"releaseDate": "2026-06-27"
+},
+{
+"period": "202605",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 761524.5,
+"releaseDate": "2026-06-27"
+},
+{
+"period": "202605",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1304309.3,
+"releaseDate": "2026-06-27"
+},
+{
+"period": "202606",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 25160812.7,
+"releaseDate": "2026-07-27"
+},
+{
+"period": "202606",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 24405988.3,
+"releaseDate": "2026-07-27"
+},
+{
+"period": "202606",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 754824.4,
+"releaseDate": "2026-07-27"
+},
+{
+"period": "202606",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1308468.1,
+"releaseDate": "2026-07-27"
+},
+{
+"period": "202607",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 25250029.4,
+"releaseDate": "2026-08-27"
+},
+{
+"period": "202607",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 24492528.5,
+"releaseDate": "2026-08-27"
+},
+{
+"period": "202607",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 757500.9,
+"releaseDate": "2026-08-27"
+},
+{
+"period": "202607",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1359520.6,
+"releaseDate": "2026-08-27"
+},
+{
+"period": "202608",
+"ttype": "4",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 25669501.1,
+"releaseDate": "2026-09-27"
+},
+{
+"period": "202608",
+"ttype": "3",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 24899416.1,
+"releaseDate": "2026-09-27"
+},
+{
+"period": "202608",
+"ttype": "2",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 770085.0,
+"releaseDate": "2026-09-27"
+},
+{
+"period": "202608",
+"ttype": "1",
+"codeclass": "HKHS4",
+"code": "7108",
+"ccclass": "C",
+"cc": "CN",
+"sv": "VCm",
+"figure": 1444967.3,
+"releaseDate": "2026-09-27"
+}
+]
+}

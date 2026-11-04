@@ -521,7 +521,21 @@ def engine_p1(ctx: Context, sym: str, h: str, df: pd.DataFrame, close_t: np.ndar
                        "reports' own `at` only")
 
 
+def _third_party_fred(series_id: str) -> bool:
+    """True for a FRED series a third party owns (libs/data/terms_fence `fred_copyrighted`:
+    VIXCLS, BAMLH0A0HYM2, ...). Such a series is never live input -- read from no file, however
+    fresh or stale -- so the reader sees it ABSENT and its dependent output is UNMEASURED."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[3])
+    if _root not in _sys.path:
+        _sys.path.insert(0, _root)
+    from libs.data.terms_fence import fred_series_source
+    return bool(fred_series_source(str(series_id)))
+
+
 def _vix_points(ctx: Context) -> list[tuple[datetime, float]]:
+    if _third_party_fred("VIXCLS"):
+        return []                       # Cboe's series: never live input, even from a stale file
     fred = ctx.fred
     series = fred.get("series") if isinstance(fred, dict) else None
     raw = series.get("VIXCLS") if isinstance(series, dict) else None
@@ -562,8 +576,11 @@ def engine_p2(ctx: Context, sym: str, h: str, df: pd.DataFrame, close_t: np.ndar
     BY NAME, with the surfaces the shadow organ checked and why they hold nothing."""
     pts = _vix_points(ctx) if sym in ("US500", "NAS100") else []
     if not pts:
-        why = (f"no options surface for {sym}: VIXCLS in data/axes/fred.json holds "
-               f"{len(_vix_points(ctx))} point(s) and maps to US500/NAS100 only; "
+        vix_note = ("VIXCLS is UNMEASURED_NO_LICENSED_SOURCE (Cboe's copyright, terms_fence "
+                    "fred_copyrighted; a realised-vol proxy is not an implied surface)"
+                    if _third_party_fred("VIXCLS") else
+                    f"VIXCLS in data/axes/fred.json holds {len(_vix_points(ctx))} point(s)")
+        why = (f"no options surface for {sym}: {vix_note} and maps to US500/NAS100 only; "
                f"deribit_atm_iv {_sensor_state(ctx, 'deribit_atm_iv')}; "
                f"cboe_delayed_surface {_sensor_state(ctx, 'cboe_delayed_surface')}")
         return _unmeasured(P2, why, source="fred.json VIXCLS; SHADOW_INSTITUTIONAL sensors")
@@ -750,15 +767,20 @@ def _cot_series(ctx: Context, sym: str) -> tuple[list[tuple[datetime, float]], s
 def engine_p6(ctx: Context, sym: str, h: str, df: pd.DataFrame, close_t: np.ndarray) -> Reading:
     pts, src = _cot_series(ctx, sym)
     sge_n = 0
+    sge_note = ""
     if sym == "XAUUSD" and isinstance(ctx.sge, dict):
         sge_n = int(_num(ctx.sge.get("rows")) or 0)
+        if ctx.sge.get("status") == "UNMEASURED":
+            # a refused SGE fetch (terms_fence row `sge`) is UNMEASURED, never zero rows
+            sge_note = f"; sge_premium UNMEASURED ({str(ctx.sge.get('refusal') or '')[:80]})"
     if len(pts) < 30:
         syms = sorted({str(r.get("symbol")) for r in ((ctx.cot or {}).get("rows") or [])
                        if isinstance(r, dict)}) if isinstance(ctx.cot, dict) else []
         why = (f"{sym}: no positioning series with >= 30 knowable_at-stamped rows "
                f"(cot.json covers {len(syms)} symbols; cot_gold.parquet "
                f"{'present' if ctx.cot_gold is not None else 'absent'}"
-               + (f"; sge_premium {sge_n} rows < {PE.MIN_N_TABLE}" if sym == "XAUUSD" else "")
+               + (sge_note or (f"; sge_premium {sge_n} rows < {PE.MIN_N_TABLE}")
+                  if sym == "XAUUSD" else "")
                + "; weather: no data plane in the tree)")
         return _unmeasured(P6, why, source="cot.json; cot_gold.parquet; sge_premium.json")
     stamps = np.array([np.datetime64(t.replace(tzinfo=None), "ns") for t, _ in pts])
@@ -782,8 +804,8 @@ def engine_p6(ctx: Context, sym: str, h: str, df: pd.DataFrame, close_t: np.ndar
     return Reading(engine=P6, status=MEASURED, p=p, available=avail, source=src, n_basis=n,
                    why="fade of a positioning extreme (z of net spec % of OI vs 156 weeks), "
                        "usable only from each row's knowable_at"
-                       + (f"; sge_premium {sge_n} rows < {PE.MIN_N_TABLE}: UNMEASURED"
-                          if sym == "XAUUSD" else ""))
+                       + ((sge_note or f"; sge_premium {sge_n} rows < {PE.MIN_N_TABLE}: "
+                           "UNMEASURED") if sym == "XAUUSD" else ""))
 
 
 ENGINE_FNS = {P1: engine_p1, P2: engine_p2, P3: engine_p3, P4: engine_p4, P5: engine_p5,

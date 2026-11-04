@@ -1,0 +1,5 @@
+{"_fixture": "SHAPE DECLARED, values SYNTHETIC: BPS WebAPI strategic indicators; IDEAS_ONLY and NEEDS_KEY (BPS_API_KEY)",
+ "status": "OK", "data-availability": "available",
+ "data": [{"page": 1, "pages": 1, "total": 2},
+          [{"indicator_id": 1, "title": "Inflation (y-on-y)", "value": "2.31", "unit": "%", "periode": "September 2026"},
+           {"indicator_id": 2, "title": "Inflation (y-on-y)", "value": "2.12", "unit": "%", "periode": "October 2026"}]]}

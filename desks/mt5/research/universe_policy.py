@@ -217,6 +217,9 @@ CROSS_SECTIONAL_FAMILIES = frozenset({
 #: alt_proxies equity hand-off names as bearing on the share -- a public datum about the name's
 #: demand, first seen at its recorded `available_time` -- so it is the event lane, not a hunt.
 NEWS_LANE_FAMILIES = frozenset({"analyst_revision_drift", "analyst_cross_market_lead",
+                                # Form 4 insider purchase clusters on the name (form4_lane.py):
+                                # a dated SEC filing about the issuer, first public at acceptance.
+                                "insider_cluster_drift",
                                 "alt_release_drift"})
 
 

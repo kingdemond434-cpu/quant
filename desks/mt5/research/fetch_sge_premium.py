@@ -45,9 +45,18 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
-import requests
+try:
+    from libs.data.polite_fetch import polite_requests_get
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import polite_requests_get
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+_ROOT = str(Path(__file__).resolve().parents[3])
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "lake"
@@ -66,13 +75,20 @@ GRAMS_PER_TROY_OZ = 31.1034768
 #: spread vs the desk's actually-tradeable price IS the signal, and the file is on disk with no
 #: network dependency.
 XAU_H1 = BASE / "data" / "universe" / "XAUUSD_H1.parquet"
+#: The fix this leg replaced is a third-party series (terms_fence `fred_copyrighted`: LBMA/IBA,
+#: deleted from FRED 2022) and is REFUSED as live input, never a fallback. The USD gold leg is
+#: carried under its OWN name and label, never under the fix's id.
+REFUSED_INTL_SERIES = "GOLDPMGBD228NLBM"
+INTL_LEG = {"series": "XAUUSD", "source": "fusion_xauusd_h1_0700Z",
+            "label": ("the desk's own MT5 XAUUSD spot, 07:00 UTC H1 close -- NOT the LBMA PM "
+                      "fix, which is refused (terms_fence fred_copyrighted)")}
 
 #: USDCNY primary: ECB reference rates, USD and CNY from the SAME 16:00 CET snapshot, crossed.
 #: Keyless, daily, ~0-1 day lag. Fallback: FRED DEXCHUS (H.10 noon-NY), keyless but published
 #: with weeks of lag. One source per run for the WHOLE join — never mixed day-by-day — and the
 #: report records which.
 ECB_90D = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml"
-USDCNY_FRED = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DEXCHUS"
+USDCNY_FRED_SERIES = "DEXCHUS"
 
 #: SGE official graph endpoint (R0649, verified live 2026-08-26). Serves ONE contract's
 #: current-session minute curve:
@@ -90,22 +106,25 @@ SGE_CONTRACTS = {"au9999_cny_g": "Au99.99", "au_td_cny_g": "Au(T+D)"}
 _DELAY_RE = re.compile(r"(\d{4})年(\d{2})月(\d{2})日")
 
 
-def _fred_csv(url: str, col: str, timeout: int = 45) -> pd.Series | None:
+def _free_data():
+    import free_data as fd
+    return fd
+
+
+def _fred_series(series_id: str, col: str) -> pd.Series | None:
+    """A FRED series through free_data.fred_series: the method fence, the desk UA, and the
+    third-party refusal (terms_fence `fred_copyrighted`) before any request -- never a bare GET.
+    None when refused or unavailable; the caller fails closed."""
     try:
-        r = requests.get(url, timeout=timeout)
-        r.raise_for_status()
+        obs = _free_data().fred_series(series_id, start="2015-01-01", alternate=False)
     except Exception as exc:                                        # noqa: BLE001
         print(f"  {col}: {type(exc).__name__}: {exc}", flush=True)
         return None
-    from io import StringIO
-    df = pd.read_csv(StringIO(r.text))
-    date_col = df.columns[0]
-    val_col = df.columns[1]
-    df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
-    df[val_col] = pd.to_numeric(df[val_col], errors="coerce")
-    s = df.dropna(subset=[date_col]).set_index(date_col)[val_col].dropna()
+    if not obs:
+        return None
+    s = pd.Series({pd.Timestamp(k): float(v) for k, v in obs.items()}, dtype=float).sort_index()
     s.name = col
-    return s if len(s) else None
+    return s
 
 
 def _parse_graph(payload: object, instid: str) -> tuple[pd.Timestamp, float] | None:
@@ -132,27 +151,107 @@ def _parse_graph(payload: object, instid: str) -> tuple[pd.Timestamp, float] | N
     return pd.Timestamp(f"{m.group(1)}-{m.group(2)}-{m.group(3)}"), last
 
 
-def fetch_sge() -> tuple[dict[str, tuple[pd.Timestamp, float]], str]:
+#: SGE daily quotation page (每日交易行情, /sjzx/quotation_daily_new). Its table carries, per
+#: contract and date, the 交收方向 (deferral-fee payment direction) and 交收量 (delivery lots) the
+#: Au(T+D) deferral state reads (IDEA_QUEUE row 215; `asia_gold_physical.sge_deferral_state`).
+#: NOT FETCHED: the SGE site prints no terms beyond "All Right Reserved", so its policy row
+#: (terms_fence.SOURCE_POLICY["cn_sge_deferral"]) is IDEAS_ONLY; the parser is ready on fixtures.
+SGE_DAILY_QUOTATION = "https://www.sge.com.cn/sjzx/quotation_daily_new"
+_TR = re.compile(r"<tr[^>]*>(.*?)</tr>", re.S | re.I)
+_TD = re.compile(r"<t[dh][^>]*>(.*?)</t[dh]>", re.S | re.I)
+_TAG = re.compile(r"<[^>]+>")
+
+
+def parse_daily_quotation(html: str) -> list[dict[str, object]]:
+    """Rows of the daily quotation table -> [{date, contract, close, open_interest, direction,
+    delivery_lots}]. Columns are located by their HEADER text (日期, 合约, 收盘价, 市场持仓,
+    交收方向, 交收量), so a reordered table still parses; a table without 合约 and 交收方向
+    headers parses to nothing, never to a guess."""
+    rows = [[_TAG.sub("", c).replace("&nbsp;", " ").strip() for c in _TD.findall(tr)]
+            for tr in _TR.findall(html)]
+    head: dict[str, int] = {}
+    out: list[dict[str, object]] = []
+    for cells in rows:
+        if not head:
+            if any(c.startswith("合约") for c in cells) and any("交收方向" in c for c in cells):
+                for i, c in enumerate(cells):
+                    for key in ("日期", "合约", "收盘价", "市场持仓", "交收方向", "交收量"):
+                        if c.startswith(key) and key not in head:
+                            head[key] = i
+            continue
+        if len(cells) <= max(head.values()) or not re.match(r"\d{4}-\d{2}-\d{2}$",
+                                                             cells[head.get("日期", 0)]):
+            continue
+
+        def _f(key: str, cells: list[str] = cells) -> float | None:
+            try:
+                return float(cells[head[key]].replace(",", ""))
+            except (KeyError, ValueError):
+                return None
+        out.append({"date": cells[head.get("日期", 0)], "contract": cells[head["合约"]],
+                    "close": _f("收盘价"), "open_interest": _f("市场持仓"),
+                    "direction": cells[head["交收方向"]], "delivery_lots": _f("交收量")})
+    return out
+
+
+#: THE SGE POLICY ROW (terms_fence.SOURCE_POLICY["sge"]). Every sge.com.cn request goes through
+#: `polite_fetch.get(live_input=True)`: robots.txt and the site's person-held access holds decide,
+#: the agent is DESK_UA, 401/403/429/WAF is a hard stop, and an IDEAS_ONLY or held route is refused
+#: BEFORE anything is sent. SGE's terms are UNREAD (fail closed, auditor ruling 2026-10-14), so
+#: the row is IDEAS_ONLY and this fetch is refused until a person quotes a permitting clause into
+#: it; the refusal is written as UNMEASURED, never as a zero or an empty series.
+SGE_POLICY_ROW = "sge"
+_REFUSALS = ("IDEAS_ONLY", "METHOD_BLOCKED", "NEEDS_KEY")
+
+
+def fetch_sge(get: object | None = None) -> tuple[dict[str, tuple[pd.Timestamp, float]], str]:
     """Latest SGE print per contract. Returns ({col: (date, cny_per_gram)}, provenance).
 
     An empty dict (or one missing au9999_cny_g) means the REQUIRED leg failed; Au(T+D) is
-    enrichment and its absence is logged, not fatal.
+    enrichment and its absence is logged, not fatal. A REFUSED fetch (terms, robots, a hold)
+    returns provenance `REFUSED:<reason>` so the caller writes UNMEASURED with the reason.
+    `get` replaces `polite_fetch.get` in tests.
     """
+    from urllib.parse import urlencode
+
+    from libs.data import polite_fetch
+    getter = get if callable(get) else polite_fetch.get
     prints: dict[str, tuple[pd.Timestamp, float]] = {}
     for col, instid in SGE_CONTRACTS.items():
-        try:
-            r = requests.get(SGE_GRAPH, params={"instid": instid}, timeout=45,
-                             headers={"User-Agent": "quant-research-desk/1.0"})
-            r.raise_for_status()
-            parsed = _parse_graph(r.json(), instid)
-        except Exception as exc:                                    # noqa: BLE001
-            print(f"  {instid}: {type(exc).__name__}: {exc}", flush=True)
-            parsed = None
+        url = f"{SGE_GRAPH}?{urlencode({'instid': instid})}"
+        r = getter(url, timeout=45, leg="sge_premium", live_input=True)
+        # A refusal sends nothing: robots / an access hold set `verdict`; the terms fence (an
+        # IDEAS_ONLY or held route asked for as live input) names its status in `error`.
+        if r.verdict or (r.status is None and str(r.error).split(":")[0] in _REFUSALS):
+            return {}, f"REFUSED:{(r.error or r.verdict)[:200]}"
+        parsed = None
+        if r.ok:
+            try:
+                parsed = _parse_graph(json.loads(r.text), instid)
+            except ValueError as exc:
+                print(f"  {instid}: {type(exc).__name__}: {exc}", flush=True)
+        else:
+            print(f"  {instid}: {r.status} {r.error}", flush=True)
         if parsed is None:
             print(f"  {instid}: no usable print", flush=True)
             continue
         prints[col] = parsed
     return prints, "sge_official_graph"
+
+
+def refused_report(at: str, prov: str) -> dict[str, object]:
+    """The report a refused SGE fetch writes: UNMEASURED with the named reason and the policy
+    row's missed-growth line. Nothing is recorded and no existing history is extended."""
+    from libs.data import terms_fence as tf
+    line = tf.held_missed_growth(SGE_POLICY_ROW, None, source="sge_premium",
+                                 live_input_refusal=True)
+    return {"at": at, "status": "UNMEASURED", "refusal": prov[len("REFUSED:"):],
+            "policy_row": SGE_POLICY_ROW, "policy_status": tf.status(SGE_POLICY_ROW),
+            "missed_growth": line,
+            "consumers": list(tf.SOURCE_POLICY[SGE_POLICY_ROW].get("consumers") or ()),
+            "reason": ("the SGE fetch was refused before any request was sent (terms UNREAD: "
+                       "IDEAS_ONLY, never live input); nothing recorded, no carry-forward -- the "
+                       "premium is UNMEASURED, never zero")}
 
 
 def record_history(prints: dict[str, tuple[pd.Timestamp, float]], prov: str,
@@ -201,7 +300,7 @@ def _ecb_usdcny() -> pd.Series | None:
     """USDCNY crossed from ECB reference EUR rates (same 16:00 CET snapshot both legs)."""
     import xml.etree.ElementTree as ET
     try:
-        r = requests.get(ECB_90D, timeout=45)
+        r = polite_requests_get(ECB_90D, timeout=45)
         r.raise_for_status()
         root = ET.fromstring(r.content)
     except Exception as exc:                                        # noqa: BLE001
@@ -242,8 +341,20 @@ def build_premium(sge_cny_g: pd.Series, intl_usd_oz: pd.Series,
 
 def main() -> int:
     report: dict[str, object] = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+    refused = _free_data().fred_refusal(REFUSED_INTL_SERIES, "fetch_sge_premium",
+                                        substituted=True)
+    report["intl_leg"] = {**INTL_LEG, "refused_fred_series": REFUSED_INTL_SERIES}
+    if refused is not None:
+        report["unmeasured_no_licensed_source"] = {
+            REFUSED_INTL_SERIES: {k: v for k, v in refused.items() if k != "missed_growth"}}
+        report["missed_growth"] = [refused["missed_growth"]]
     print("SGE Au99.99 + Au(T+D)...", flush=True)
     prints, prov = fetch_sge()
+    if prov.startswith("REFUSED:"):
+        report = refused_report(str(report["at"]), prov)
+        (REPORTS / "sge_premium.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+        print(f"\nSGE PREMIUM UNMEASURED -- fetch refused: {report['refusal']}")
+        return 0
     if "au9999_cny_g" not in prints:
         # FAILS CLOSED. No interpolation, no proxy, no carry-forward: the value of this series
         # is that it DISAGREES with the Western price, so a fabricated version would disagree
@@ -271,7 +382,7 @@ def main() -> int:
     cny = _ecb_usdcny()
     cny_source = "ecb_cross"
     if cny is None:
-        cny = _fred_csv(USDCNY_FRED, "usdcny")
+        cny = _fred_series(USDCNY_FRED_SERIES, "usdcny")
         cny_source = "fred_dexchus"
     missing = [n for n, s in (("XAUUSD_H1", intl), ("USDCNY", cny)) if s is None]
     if missing:
@@ -299,7 +410,7 @@ def main() -> int:
         return 0
 
     df["source_sge"] = prov
-    df["intl_source"] = "fusion_xauusd_h1_0700Z"
+    df["intl_source"] = INTL_LEG["source"]
     df["usdcny_source"] = cny_source
     df["fetched_at"] = report["at"]
     df.to_parquet(OUT / "sge_premium.parquet")

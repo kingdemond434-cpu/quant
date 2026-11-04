@@ -51,6 +51,8 @@ def _no_network(monkeypatch: pytest.MonkeyPatch) -> None:
                             "and the network branch must be asked for explicitly")
 
     monkeypatch.setattr(urllib.request, "urlopen", _forbidden)
+    # the lanes' ONE network call is polite_fetch's seam (robots.txt + holds first)
+    monkeypatch.setattr(BR, "polite_urlopen", _forbidden)
 
 
 @pytest.fixture

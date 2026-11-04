@@ -815,6 +815,10 @@ $reportPaths = @(
     # the resident judge's heartbeat (2026-10-13): sweeps, last exit code, backoff, uptime --
     # the only off-box evidence of whether the judge is running between its verdicts
     "desks/mt5/reports/JUDGE_RESIDENT.json",
+    # the alt seats' conversion (convertible vs converted per seat, refusals by name) and the
+    # Form 4 lane's fetch/cluster/cell summary (2026-10-14)
+    "desks/mt5/reports/ALT_SEAT_CELLS.json",
+    "desks/mt5/reports/FORM4_LANE.json",
     # the judge stall pager's last reading (2026-10-21): open incidents, page outcome, and by its
     # age whether the pager itself is still running on MT5-BoxHeartbeat
     "desks/mt5/reports/JUDGE_STALL.json",
@@ -830,6 +834,11 @@ $reportPaths = @(
     # missed_growth line and last intake -- the off-box evidence any canon flip is judged on
     "desks/mt5/reports/JUDGE_PRESCREEN.json",
     "desks/mt5/reports/JUDGE_PRESCREEN_INTAKE.json",
+    # the tier-1 data-class gap list and the terms-basis census (2026-10-29): both report-only
+    "desks/mt5/reports/DATA_CLASS_GAP.json",
+    "desks/mt5/reports/TERMS_BASIS_CENSUS.json",
+    # the dated central-bank document stream's per-feed report (data-class gap #6, 2026-10-29)
+    "desks/mt5/reports/CENTRAL_BANK_MINER.json",
     "desks/mt5/reports/EFFECTIVE_BREADTH.json",
     "desks/mt5/reports/BREADTH_MANDATE.json",
     "desks/mt5/reports/TIER1_SCORECARD.json",

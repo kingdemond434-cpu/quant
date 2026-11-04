@@ -50,6 +50,8 @@ TIER1 = {
     "instruments": (20_000, "tens of thousands of instruments across equities, futures, options, "
                             "FX and credit (DE Shaw / Two Sigma / RenTec, public estimate)"),
     "datasets_in_use": (5_000, "thousands of datasets (Two Sigma cites >10k sources)"),
+    "data_classes_wired": (25, "every data class a tier-1 macro/FX shop reads has a scheduled "
+                               "producer (the 25 classes of research/data_class_gap.py)"),
     "cells_created_per_day": (1_000_000, "millions of hypotheses a day at the largest shops"),
     "verdicts_per_day": (1_000_000, "10k-100k+ cores of research compute"),
     "effective_breadth": (500, "hundreds to thousands of independent bets in stat-arb books"),
@@ -155,6 +157,17 @@ def ingestion(now: datetime) -> dict[str, Any]:
     alt = _read(REPORTS / "ALT_DATA_YIELD.json")
     if isinstance(alt, dict):
         out["alt_data_yield"] = {k: v for k, v in alt.items() if not isinstance(v, (dict, list))}
+    # WHICH KIND of data is missing, not only how many datasets: the data-class gap list.
+    dcg = _read(REPORTS / "DATA_CLASS_GAP.json")
+    summ = dcg.get("summary") if isinstance(dcg, dict) else None
+    if isinstance(summ, dict) and isinstance(summ.get("classes_wired"), int):
+        out["data_classes"] = summ.get("classes")
+        out["data_classes_wired"] = summ["classes_wired"]
+        out["data_classes_fresh"] = summ.get("classes_fresh")
+        out["data_class_top_gaps"] = [r.get("id") for r in (dcg.get("classes") or [])[:5]
+                                      if isinstance(r, dict)]
+    else:
+        out["data_classes_wired"] = UNMEASURED
     return out
 
 
@@ -348,7 +361,8 @@ def build(now: datetime | None = None) -> dict[str, Any]:
             REPORTS / "universal_gates_external.json", DATA / "UNIVERSAL_SURVIVORS.canon.json",
             DATA / "effective_breadth.jsonl", DATA / "sleeves.json", _audited_ledger_path(DATA / "live_ledger.jsonl"),
             REPORTS / "DATASET_HUNT.json", REPORTS / "MASS_SCREEN.json",
-            REPORTS / "ALT_DATA_YIELD.json", REPORTS / "CROSS_SECTIONAL_BREADTH.json")},
+            REPORTS / "ALT_DATA_YIELD.json", REPORTS / "CROSS_SECTIONAL_BREADTH.json",
+            REPORTS / "DATA_CLASS_GAP.json")},
     }
 
 

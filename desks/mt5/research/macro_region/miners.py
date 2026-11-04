@@ -587,12 +587,26 @@ def default_bars(symbol: str, chart: str = "H1") -> pd.DataFrame | None:
     return frame if len(frame) > 10 else None
 
 
+def _third_party_fred(series_id: str) -> bool:
+    """True for a FRED series a third party owns (libs/data/terms_fence `fred_copyrighted`:
+    VIXCLS, BAMLH0A0HYM2, ...). Such a series is never live input -- read from no file, however
+    fresh or stale -- so the reader sees it ABSENT and its dependent output is UNMEASURED."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[4])
+    if _root not in _sys.path:
+        _sys.path.insert(0, _root)
+    from libs.data.terms_fence import fred_series_source
+    return bool(fred_series_source(str(series_id)))
+
+
 def default_series(name: str) -> list[tuple[str, float]]:
     """A dated macro observation series from the desk's axes. Empty is a MEASUREMENT."""
     axis, _, key = str(name).partition(":")
     doc = _read_json(AXES_DIR / f"{axis}.json")
     if not isinstance(doc, dict):
         return []
+    if axis == "fred" and _third_party_fred(key):
+        return []                       # third-party series: absent, never live input
     if axis in ("fred", "ecb"):
         series = doc.get("series")
         row = series.get(key) if isinstance(series, dict) else None
@@ -1626,14 +1640,19 @@ def mine_risk_regime(ctx: Ctx) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     credit = ctx.series("fred:BAMLH0A0HYM2")
     vix = ctx.series("fred:VIXCLS")
+    licence = {sid: ("UNMEASURED_NO_LICENSED_SOURCE: a third-party FRED series (terms_fence "
+                     "fred_copyrighted), never live input; ") if _third_party_fred(sid) else ""
+               for sid in ("BAMLH0A0HYM2", "VIXCLS")}
     if not credit:
         ctx.unmeasured("risk_regime:credit",
-                       "no HY OAS series on this box; the credit state is derived from the "
-                       "desk's own bars and the substitution is stamped on the row")
+                       licence["BAMLH0A0HYM2"] + "no HY OAS series on this box; the credit "
+                       "state is derived from the desk's own bars and the substitution is "
+                       "stamped on the row")
     if not vix:
         ctx.unmeasured("risk_regime:vix",
-                       "no VIX series on this box; vol-of-vol is derived from realised "
-                       "volatility instead and the substitution is stamped on the row")
+                       licence["VIXCLS"] + "no VIX series on this box; vol-of-vol is derived "
+                       "from realised volatility instead and the substitution is stamped on "
+                       "the row")
     symbols = ctx.symbols(("class:Indices", "prefix:XAU", "class:Forex"))
     if not symbols:
         ctx.unmeasured("risk_regime:instruments", "no executable instrument resolved")

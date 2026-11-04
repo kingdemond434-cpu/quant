@@ -32,6 +32,7 @@ if str(BASE) not in sys.path:
     sys.path.insert(0, str(BASE))
 if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))
+from libs.data import terms_fence as _tf  # noqa: E402
 from libs.research import source_provenance as _sp  # noqa: E402
 
 UNIVERSE = BASE / "data" / "universe"
@@ -305,6 +306,34 @@ def _prefix_sha256(path: Path, size: int) -> str:
     return digest.hexdigest()
 
 
+#: The file kinds the intake reads (`.jsonl.gz` archives are not among them).
+INTAKE_SUFFIXES = frozenset({".json", ".jsonl"})
+
+
+def intake_paths() -> list[Path]:
+    """Every file the intake reads, per root newest first -- the one listing `recent_rows` and
+    `intake_cutoff` share."""
+    out: list[Path] = []
+    for root in INTEL_ROOTS:
+        if not root.exists():
+            continue
+        out.extend(sorted((p for p in root.rglob("*")
+                           if p.is_file() and p.suffix.lower() in INTAKE_SUFFIXES
+                           and not _is_operational_state(p.relative_to(root))),
+                          key=lambda p: p.stat().st_mtime, reverse=True))
+    return out
+
+
+def intake_cutoff(now: datetime, paths: list[Path] | None = None) -> datetime:
+    """The oldest file mtime this compiler's intake reads on a pass at `now`: the cycle cutoff a
+    saved cursor carries when its resume file is still there (a pass resuming mid-cycle keeps its
+    cycle's window), else `now - WINDOW_DAYS`. THE function `recent_rows` itself calls, so a fence
+    measuring "rows the compiler should have turned into cells" (`alt_seat_cells.measure`) judges
+    exactly the rows the compiler can see -- never a copy that drifts."""
+    _start, _row, saved = _cursor_start(intake_paths() if paths is None else paths)
+    return saved or now - timedelta(days=WINDOW_DAYS)
+
+
 def _cursor_start(paths: list[Path]) -> tuple[int, int, datetime | None]:
     """Resume at a content-bound row inside the last partially consumed file."""
     try:
@@ -497,16 +526,9 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
                          "cursor_start": None, "cursor_next": None,
                          "cursor_row_offset": 0, "cursor_file_size": 0,
                          "cursor_prefix_sha256": None, "cycle_cutoff_utc": None})
-    all_paths: list[Path] = []
-    for root in INTEL_ROOTS:
-        if not root.exists():
-            continue
-        all_paths.extend(sorted((p for p in root.rglob("*")
-                                 if p.is_file() and p.suffix.lower() in {".json", ".jsonl"}
-                                 and not _is_operational_state(p.relative_to(root))),
-                                key=lambda p: p.stat().st_mtime, reverse=True))
-    start, start_row, saved_cutoff = _cursor_start(all_paths)
-    cutoff = saved_cutoff or current_cutoff
+    all_paths = intake_paths()
+    start, start_row, _saved = _cursor_start(all_paths)
+    cutoff = intake_cutoff(now, all_paths)
     _LAST_INTAKE["cycle_cutoff_utc"] = cutoff.isoformat(timespec="seconds")
     _POSITIONS.clear()
     _DIGESTS.clear()
@@ -1253,6 +1275,21 @@ def _metric_fence(row: dict) -> list[str]:
     return fence_row(row)
 
 
+def _alt_seat_module():
+    """`research.alt_seat_cells`, imported the way this file's other siblings are (the box runs
+    this file by path, the tests import it as a package member)."""
+    try:
+        from research import alt_seat_cells as mod
+    except ImportError:                                    # pragma: no cover - layout
+        import alt_seat_cells as mod  # type: ignore[no-redef,import-not-found]
+    return mod
+
+
+def _alt_seat(source: str, row: dict) -> str | None:
+    """The alt seat this row belongs to (`alt_seat_cells.SOURCE_SEAT`), or None."""
+    return _alt_seat_module().seat_of(source, row)
+
+
 def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict], str]:
     """Return executable candidates and the exact disposition for one evidence row."""
     symbols = resolve_symbols(row, universe)
@@ -1459,6 +1496,30 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
                                 + " -- a hypothesis for the ten gates, not a claim")
                      for s in declared], "STRUCTURED_HYPOTHESIS")
 
+    # AN ALT SEAT'S ROW IS A READING, AND ITS SEAT'S SERIES IS THE INPUT (2026-10-14). The six
+    # alt seats -- youtube, sec_edgar, shipping, fear_greed, aaii, google_trends -- wrote 18,535
+    # rows in three days and emitted ZERO cells: a Fear & Greed print, a BDI value, a search-
+    # attention reading or a video naming XAUUSD carries no family and no rule, so every one of
+    # them fell to the prose path below and was filed NEEDS_EXACT_RULE_EXTRACTION, a deepening
+    # call that cannot succeed because there is no rule to extract. `alt_seat_cells` builds the
+    # seat's PIT series (hourly leg, before the intake catch-up) and maps the row to an
+    # `exogenous_conditioner` state on the instrument it names; a row whose column has too short a
+    # history is SERIES_ACCRUING (no cell yet, no deepening), and a row that carries nothing (a
+    # constant 13F notice, an impossible survey reading, a share CFD the mandate keeps out of the
+    # statistical lane) is refused BY NAME. A row naming no registry instrument keeps the old path.
+    seat = _alt_seat(source, row)
+    if seat:
+        _asc = _alt_seat_module()
+        made, why = _asc.row_cells(seat, row, universe)
+        if made:
+            text_cands, _text_disp = compile_from_text(source, row, universe)
+            return ([_candidate(s, _asc.FAMILY, dict(p), seat, row, mech)
+                     for s, p, mech in made] + text_cands), "STRUCTURED_ALT_STATE"
+        if why == _asc.ACCRUING:
+            return [], "SERIES_ACCRUING"
+        if why in _asc.REFUSALS:
+            return [], ("OPERATIONAL_ROW" if why == "OPERATIONAL_ROW" else f"ALT_SEAT_{why}")
+
     # PROSE, LAST. Every structured shape above is exact and wins; only a row none of them
     # claims is read as text. Before this line the prose miners converted at zero.
     text_cands, text_disp = compile_from_text(source, row, universe)
@@ -1599,6 +1660,13 @@ def _lineage(out: Path) -> None:
         print(f"compiler lineage not recorded (non-fatal): {type(exc).__name__}: {exc}")
 
 
+def _new_stats() -> dict[str, object]:
+    return {"rows": 0, "candidates": 0, "deepening": 0, "convertible_rows": 0,
+            "converted_rows": 0, "valid_refusals": 0, "invalid_cells": 0,
+            "unresolved_rows": 0, "deepening_recovered": 0,
+            "deepening_terminal_refusals": 0, "terms_fenced": 0}
+
+
 def _graph_snapshot(path: Path | None = None):
     """Use one coherent history for this batch's annotations.
 
@@ -1623,6 +1691,7 @@ def _graph_snapshot(path: Path | None = None):
 
 def main() -> int:
     now = datetime.now(tz=UTC)
+    terms_fenced: dict[str, int] = {}
     universe = known_symbols()
     candidates: dict[str, dict] = {}
     deepening: dict[str, dict] = {}
@@ -1671,6 +1740,20 @@ def main() -> int:
             print(f"compiler: compile stopped at {COMPILE_SHARE:.0%} of the budget after "
                   f"{_row_k:,} of {len(rows):,} row(s); the rest resume next pass")
             break
+        # THE LIVE-INPUT CHECK (libs/data/terms_fence.py; rule 4 of the 2026-10-13 ruling: idea
+        # provenance never blocks a cell). A row whose IDEA came from Reddit, X, StockTwits or a
+        # forum compiles like any other -- its cell trades on MT5 data. Only a row whose DECLARED
+        # LIVE INPUT DATA comes from an IDEAS_ONLY or held source mints no cell; that is a VALID
+        # REFUSAL with a named, counted reason (`per_source[...].terms_fenced`, top-level
+        # `terms_fence`), never a silent skip.
+        fenced = _tf.fenced_row(row, source)
+        if fenced:
+            stats = per_source.setdefault(source, _new_stats())
+            stats["rows"] = int(stats["rows"]) + 1
+            stats["valid_refusals"] = int(stats["valid_refusals"]) + 1
+            stats["terms_fenced"] = int(stats.get("terms_fenced") or 0) + 1
+            terms_fenced[fenced] = terms_fenced.get(fenced, 0) + 1
+            continue
         task_identity = _deepening_task_id(source, row)
         produced, disposition = compile_row(source, row, universe)
         recovered_for_row = recovered_deepening.get(task_identity, [])
@@ -1683,11 +1766,7 @@ def main() -> int:
         row_prov = _row_provenance(_row_k, row)
         for _c in produced:
             _sp.stamp_candidate(_c, row_prov)
-        stats = per_source.setdefault(source, {
-            "rows": 0, "candidates": 0, "deepening": 0, "convertible_rows": 0,
-            "converted_rows": 0, "valid_refusals": 0, "invalid_cells": 0,
-            "unresolved_rows": 0, "deepening_recovered": 0,
-            "deepening_terminal_refusals": 0})
+        stats = per_source.setdefault(source, _new_stats())
         stats["rows"] = int(stats["rows"]) + 1
         deepening_disposition = terminal_deepening.get(task_identity, "")
         terminal_refusal = (not produced and bool(deepening_disposition)
@@ -1697,7 +1776,12 @@ def main() -> int:
                         str(row.get("url") or row.get("title") or ""))
         refusal = (disposition in {"OPERATIONAL_ROW", "EMPTY_CAPTURE", "BANNED_FAMILY",
                                    "IMPOSSIBLE_METRIC"}
+                   or disposition.startswith("ALT_SEAT_")
                    or terminal_refusal)
+        # A SEAT READING WAITING ON ITS SERIES' HISTORY is pending, not unresolved: the reading
+        # is already in `data/lake/series/seat_<seat>.csv`, and the cell is minted the pass its
+        # column is long enough. Deepening it would spend an LLM call on a row with no rule.
+        accruing = disposition == "SERIES_ACCRUING"
         if refusal:
             stats["valid_refusals"] = int(stats["valid_refusals"]) + 1
             if terminal_refusal:
@@ -1709,7 +1793,7 @@ def main() -> int:
             # not a strategy. This keeps the 100% cell conversion invariant meaningful without
             # forging rules from titles to make a denominator green.
             stats["convertible_rows"] = int(stats["convertible_rows"]) + 1
-        else:
+        elif not accruing:
             stats["unresolved_rows"] = int(stats["unresolved_rows"]) + 1
         if recovered_for_row:
             stats["deepening_recovered"] = int(stats["deepening_recovered"]) + 1
@@ -1757,7 +1841,9 @@ def main() -> int:
             stats["converted_rows"] = int(stats["converted_rows"]) + 1
         # An impossible-metric row is REFUSED, not deepened: deepening would re-extract a cell
         # from the very row the fence refused. It is counted in `impossible_metrics`.
-        if not produced and not terminal_refusal and not impossible:
+        if accruing:
+            stats["series_accruing"] = int(stats.get("series_accruing") or 0) + 1
+        if not produced and not terminal_refusal and not impossible and not accruing:
             compact = {
                 "source": source,
                 "disposition": disposition,
@@ -2053,6 +2139,12 @@ def main() -> int:
         "coverage_steer": steer_note,
         "impossible_metrics": fence_tally.to_dict(),
         "rows_accounted": rows_total,
+        # Rows refused by the live-input check, per source (libs/data/terms_fence.py).
+        "terms_fence": {"refused_rows": terms_fenced,
+                        "refused_total": sum(terms_fenced.values()),
+                        "rule": ("only a row declaring LIVE INPUT DATA from an IDEAS_ONLY or "
+                                 "held source is refused (counted); idea provenance never is"),
+                        "reasons": {p: _tf.PLATFORMS[p]["reason"] for p in terms_fenced}},
         "executable_candidates": len(candidates),
         "deepening_tasks": len(deepening),
         "conversion_contract": {
