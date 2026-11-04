@@ -249,6 +249,31 @@ def test_rails_that_cannot_install_mean_the_seed_fleet_does_not_run(monkeypatch,
     assert "nothing fetched" in capsys.readouterr().out
 
 
+def test_the_box_seed_run_never_runs_a_source_that_retries_around_a_403(
+        monkeypatch, capsys) -> None:
+    """regional_survivors retries a 403 on sibling hosts with a borrowed Referer: off the box."""
+    import box_rails
+
+    monkeypatch.setattr(box_rails, "install", lambda *a, **k: None)
+    fake = type(sys)("seed_miners")
+    fake.MINERS = {"regional_survivors": lambda: pytest.fail("ran on the box"),
+                   "arxiv_qfin": lambda: []}
+    seen: list[list[str]] = []
+    fake.run_and_save = lambda: seen.append(sorted(fake.MINERS)) or {"arxiv_qfin": {"count": 1}}
+    monkeypatch.setitem(sys.modules, "seed_miners", fake)
+    assert feed.main(["--child", "seed"]) == 0
+    assert seen == [["arxiv_qfin"]]
+    out = json.loads(capsys.readouterr().out.split(feed.RESULT_PREFIX, 1)[1])
+    assert out["excluded_on_box"] == ["regional_survivors"]
+
+
+def test_the_box_exclusion_names_a_real_seed_source() -> None:
+    """A renamed source would silently slip past the exclusion; pin the name to the roster."""
+    src = (feed.HERE / "seed_miners.py").read_text(encoding="utf-8")
+    for name in feed.BOX_EXCLUDED_SEEDS:
+        assert re.search(rf'"{name}":\s*mine_', src), name
+
+
 # ---------------------------------------------------------------- hourly_discovery's organ child
 def test_an_organ_child_installs_the_rails_when_the_feed_asks(monkeypatch) -> None:
     import box_rails
