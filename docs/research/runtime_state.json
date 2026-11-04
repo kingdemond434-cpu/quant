@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 821,
+  "NEVER": 822,
   "UNMEASURED": 43
  },
  "scope": {
-  "attested": 1045,
+  "attested": 1046,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -663,6 +663,16 @@
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
      "leg:loss_learner"
+    ]
+   },
+   {
+    "at": "2026-11-04T01:33:58+00:00",
+    "host": "vm",
+    "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:realised_cost"
     ]
    }
   ]
@@ -27480,6 +27490,34 @@
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
    "measured_at": "2026-11-03T16:57:12+00:00"
+  },
+  {
+   "organ": "leg:realised_cost",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/realised_cost.py"
+   ],
+   "clock": "hourly_cycle:realised_cost",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/REALISED_COST.json",
+   "artifact_declared": "desks/mt5/reports/REALISED_COST.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-11-04T01:33:58+00:00"
   }
  ],
  "ratchet": {
