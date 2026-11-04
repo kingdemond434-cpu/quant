@@ -60,7 +60,6 @@ def _paths(desk: Path, root: Path) -> dict[str, Path]:
         "ftmo_published": d / "account_state.json",
         "ftmo_src": desk / "prop" / "ftmo_follower.py",
         "cert_book": d / "CERT_BOOK_LIVE.json",
-        "minlot": d / "MINLOT_OVERRIDE.json",
         "sleeves": d / "sleeves.json",
         "event_ledger": d / "macro" / "event_ledger.jsonl",
         "calendar": root / "data" / "event_calendar.json",
@@ -178,6 +177,24 @@ def _open_risk(n_open: Any, risk_quote: float | None, equity: float | None,
     return out
 
 
+def _minlot_active() -> tuple[frozenset[str], str]:
+    """The Fusion min-lot book's active sleeves and why, from `decision_core`'s own reader.
+
+    The switch has ONE reader (`decision_core.minlot_override_active`, fenced by
+    test_fusion_minlot_book). This leg has no terminal, so it asks the reader as the declared
+    Fusion live account would (the box's declared login, `FUSION_LIVE_SERVER`, kind "live"):
+    what the gateway would trade there. The reader fails closed; an import failure is empty too.
+    """
+    if str(DESK) not in sys.path:  # run as a script, sys.path[0] is research/, not the desk
+        sys.path.insert(0, str(DESK))
+    try:
+        from mt5desk import decision_core as dc
+        login, _ = dc.fusion_live_login()
+        return dc.minlot_override_active(login, server=dc.FUSION_LIVE_SERVER, kind="live")
+    except Exception as exc:  # noqa: BLE001 -- report-only; never crash the snapshot
+        return frozenset(), f"min-lot reader unavailable ({type(exc).__name__})"
+
+
 # --------------------------------------------------------------------------- accounts
 
 def fusion(p: dict[str, Path], cert: Any, now: datetime) -> dict[str, Any]:
@@ -246,10 +263,9 @@ def fusion(p: dict[str, Path], cert: Any, now: datetime) -> dict[str, Any]:
         risk_q = _num(position.get("risk_quote"))
     doc["open_risk"] = _open_risk(n_open, risk_q, equity, alloc,
                                   "open positions stamped without a per-position risk")
-    minlot = _read_json(p["minlot"])
-    if isinstance(minlot, dict) and minlot.get("enabled"):
-        doc["minlot_override"] = {"lot": minlot.get("lot"), "target_risk":
-                                  minlot.get("target_risk"), "sleeves": minlot.get("sleeves")}
+    ml_names, ml_why = _minlot_active()
+    if ml_names:
+        doc["minlot_override"] = {"sleeves": sorted(ml_names), "why": ml_why}
     return doc
 
 
@@ -345,9 +361,7 @@ def live_symbols(p: dict[str, Path], cert: Any) -> dict[str, list[str]]:
         live += [(acct, n) for n, v in (block or {}).items()
                  if isinstance(block, dict) and (_num(v) or 0) > 0]
     # The Fusion MINLOT override trades its named sleeves whatever the CERT_BOOK says.
-    ml = _read_json(p["minlot"])
-    if isinstance(ml, dict) and ml.get("enabled"):
-        live += [("fusion", str(n)) for n in ml.get("sleeves") or []]
+    live += [("fusion", n) for n in sorted(_minlot_active()[0])]
     out: dict[str, list[str]] = {}
     for acct, name in dict.fromkeys(live):
         sym = by_name.get(name) or ("XAUUSD" if name.startswith("gold_") else None)

@@ -6,6 +6,8 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
+
 DESK = Path(__file__).resolve().parents[1]
 for _p in (str(DESK), str(DESK / "research")):
     if _p not in sys.path:
@@ -103,9 +105,10 @@ def test_e8_and_ftmo_floors_from_owner_constants(tmp_path: Path) -> None:
     assert acc["ftmo"]["open_risk"]["open_risk_frac"] == 0.0
 
 
-def test_events_next_24h_touch_live_symbols_and_list_unclassified(tmp_path: Path) -> None:
+def test_events_next_24h_touch_live_symbols_and_list_unclassified(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     desk, root = _tree(tmp_path)
-    _w(desk / "data" / "MINLOT_OVERRIDE.json", {"enabled": True, "sleeves": ["gold_asia"]})
+    monkeypatch.setattr(rs, "_minlot_active", lambda: (frozenset({"gold_asia"}), "on"))
     _w(root / "data" / "event_calendar.json", {
         "valid_through": "2027-12-08", "source": "fed",
         "events": [{"utc": "2026-11-04T19:00:00Z", "name": "FOMC decision", "impact": "high"},
