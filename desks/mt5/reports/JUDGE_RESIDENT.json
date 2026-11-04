@@ -17,7 +17,7 @@
  "uptime_s": 677319.8,
  "last_sweep_ended_utc": "2026-11-04T12:49:51+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-04T14:50:09+00:00",
+ "heartbeat_utc": "2026-11-04T15:05:12+00:00",
  "sweep_phase": {
   "pid": 17020,
   "sweep_started_utc": "2026-11-04T12:50:39+00:00",
@@ -82,22 +82,22 @@
      }
     },
     "prewarm": {
-     "samples": 521,
+     "samples": 617,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 514,
-       "share": 0.987
+       "n": 608,
+       "share": 0.985
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 4,
-       "share": 0.008
+       "share": 0.006
       },
       {
        "stack": "external_gauntlet.py:_submit_next:2072 < external_gauntlet.py:_prewarm_cache:2119 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
-       "n": 2,
-       "share": 0.004
+       "n": 4,
+       "share": 0.006
       },
       {
        "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
@@ -106,13 +106,13 @@
       }
      ],
      "process": {
-      "cpu_s": 301.7,
-      "page_faults": 7126602.0,
-      "read_bytes": 3261762.0,
-      "write_bytes": 8206585342.0,
-      "sampled_s": 5200.0,
+      "cpu_s": 342.1,
+      "page_faults": 8147054.0,
+      "read_bytes": 3730281.0,
+      "write_bytes": 9365890381.0,
+      "sampled_s": 6160.0,
       "rss_mb_max": 3263.6,
-      "cpu_share_of_wall": 0.058
+      "cpu_share_of_wall": 0.056
      }
     }
    }
