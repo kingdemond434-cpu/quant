@@ -23,11 +23,13 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 }
 $Python = (Get-Content -Raw (Join-Path $AuthHome "config.json") | ConvertFrom-Json).python
 $Clone = Join-Path $AuthHome "repo"
+# git as Administrator in quant-authority's clone: refused as "dubious ownership" without this
+$env:GIT_CONFIG_COUNT = '1'; $env:GIT_CONFIG_KEY_0 = 'safe.directory'; $env:GIT_CONFIG_VALUE_0 = '*'
 $signedIn = $false
 $me = (& gh api user --jq .login 2>$null)
 if ($LASTEXITCODE -ne 0) { & gh auth login --hostname github.com --web --git-protocol https; $signedIn = $true; $me = (& gh api user --jq .login) }
 try {
-    if ("$me".Trim() -ne $Owner) { throw "gh is signed in as '$me', not $Owner: a ROOT merge is the owner's own act." }
+    if ("$me".Trim() -ne $Owner) { throw "gh is signed in as '$me', not ${Owner}: a ROOT merge is the owner's own act." }
     & git -c safe.directory=* -C $Clone fetch -q --no-tags origin "+refs/heads/${Live}:refs/remotes/origin/${Live}"
     & git -c safe.directory=* -C $Clone checkout -q -f --detach "origin/$Live"
     $Here = Join-Path $Clone "ops\release\authority"

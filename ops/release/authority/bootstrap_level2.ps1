@@ -42,6 +42,12 @@ $cfg = Get-Content -Raw (Join-Path $AuthHome "config.json") | ConvertFrom-Json
 $Python = $cfg.python
 $Clone = Join-Path $AuthHome "repo"
 $env:GH_REPO = $Repo
+# Every git this run starts (python's included) runs as Administrator in clones that belong to
+# quant-authority; without this, git refuses them as "dubious ownership" and pin_root fails.
+$env:GIT_CONFIG_COUNT = '1'; $env:GIT_CONFIG_KEY_0 = 'safe.directory'; $env:GIT_CONFIG_VALUE_0 = '*'
+# Before #$Pr is merged, LIVE has none of these helpers: they run from THIS script's own checkout,
+# which must be the exact head the Auditor cleared (checked against GitHub below).
+$Src = (Resolve-Path (Join-Path $PSScriptRoot "..\..\..")).Path
 $me = (& gh api user --jq .login 2>$null)
 if ($LASTEXITCODE -ne 0 -or "$me".Trim() -ne $Owner) { throw "gh is not signed in as $Owner here (got '$me'). This script is the owner's own act." }
 New-Item -ItemType Directory -Force -Path $Work | Out-Null
@@ -56,9 +62,13 @@ function Refresh-Clone {
 Step "1/8  #$Pr on LIVE (ROOT: merged by the owner, at the exact head the audit cleared)"
 $merged = (& gh api "repos/$Repo/pulls/$Pr" --jq .merged)
 if ("$merged".Trim() -ne "true") {
-    Refresh-Clone
-    $head = (Py (Join-Path $Clone "ops\release\authority\bootstrap_github.py") --repo $Repo ready --pr $Pr | Select-Object -Last 1)
-    if ($LASTEXITCODE -ne 0) { throw "#$Pr is not ready to merge (see NOT READY above). Nothing was changed." }
+    $out = @(Py (Join-Path $Src "ops\release\authority\bootstrap_github.py") --repo $Repo ready --pr $Pr)
+    $rc = $LASTEXITCODE
+    $out | Out-Host
+    if ($rc -ne 0) { throw "#$Pr is not ready to merge (see NOT READY above). Nothing was changed." }
+    $head = "$($out[-1])".Trim()
+    $self = (& git -C $Src rev-parse HEAD).Trim()
+    if ($self -ne $head) { throw "this script is from $self, but #${Pr}'s head is ${head}: check out that head and run it from there. Nothing was changed." }
     $merge = (& gh api -X PUT "repos/$Repo/pulls/$Pr/merge" -f sha="$head".Trim() -f merge_method=merge --jq .sha)
     if ($LASTEXITCODE -ne 0) { throw "GitHub refused the merge of #$Pr at $head." }
     Write-Host "   merged #$Pr at $head as $merge"
