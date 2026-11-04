@@ -102,11 +102,13 @@ def _comps(slug: str) -> dict[str, list[tuple[datetime, float]]]:
 # ---------------------------------------------------------------- parse and fold
 def test_fixture_weeks_fold_to_complete_berlin_days_only() -> None:
     rows = S.fold_days("de_lu", _comps("de_lu"), [*COMPLETE, date(2026, 10, 3)], A.cet_offset_h)
-    assert {d for _s, d, _v in rows} == set(COMPLETE)            # 10-03 is partial: absent
+    # the day-ahead price is keyed on its AUCTION day (delivery - 1), so it is left out here
+    assert {d for s, d, _v in rows if not s.endswith("_da_price")} == set(COMPLETE)
     names = {s for s, _d, _v in rows}
     assert {"de_lu_load_mean", "de_lu_residual_load", "de_lu_gen_gas", "de_lu_gen_lignite",
             "de_lu_gen_hard_coal", "de_lu_gen_wind_on", "de_lu_gen_wind_off", "de_lu_gen_pv",
-            "de_lu_ren_share"} == names
+            "de_lu_ren_share", "de_lu_load_surprise", "de_lu_wind_surprise",
+            "de_lu_solar_surprise", "de_lu_da_price"} == names
     assert "de_lu_gen_nuclear" not in names                     # all-null is absent, never zero
     share = [v for s, _d, v in rows if s == "de_lu_ren_share"]
     assert all(0 < v < 100 for v in share)
@@ -301,7 +303,7 @@ def test_a_budget_cut_is_partial_and_keeps_the_cursor(tmp_path: Path, monkeypatc
     monkeypatch.setattr(S, "time", FakeTime)
     sst: dict[str, Any] = {"cursor": {"DE-LU": WEEK, "DE": WEEK - 1}}
     rec = S.collect(A, A.Paths(tmp_path / "desk"), S.make_source(A), sst, {}, NOW, fetch=True,
-                    fixtures=None, deadline=S.MIN_INTERVAL_S * 15.5, getter=Getter(),
+                    fixtures=None, deadline=S.MIN_INTERVAL_S * 20.5, getter=Getter(),
                     robots_getter=_robots(), sleep=sleep, clock=lambda: NOW)
     assert rec["outcome"] == "PARTIAL:BUDGET"                   # DE-LU read, DE owed
     assert rec["caught_up"] == {"DE-LU": True, "DE": False}
