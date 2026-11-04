@@ -27,20 +27,6 @@ def _beats(tmp: Path, monkeypatch: pytest.MonkeyPatch, age_min: float, now: floa
     monkeypatch.setattr(hb, "GATEWAY_BEAT", g)
     monkeypatch.setattr(hb, "WATCHDOG_BEAT", w)
     monkeypatch.setattr(hb, "SILENT_ORGANS", s)
-    _feed(tmp, monkeypatch, 20, now)
-
-
-def _feed(tmp: Path, monkeypatch: pytest.MonkeyPatch, age_min: float, now: float,
-          absent: tuple[str, ...] = ()) -> tuple[Path, ...]:
-    """The two intel-feed artifacts, `age_min` old; names in `absent` are not written."""
-    paths = (tmp / "HOURLY_DISCOVERY.json", tmp / "seed_miners_state.json")
-    for p in paths:
-        if p.name in absent:
-            continue
-        p.write_text("{}")
-        os.utime(p, (now - age_min * 60, now - age_min * 60))
-    monkeypatch.setattr(hb, "INTEL_FEED", paths)
-    return paths
 
 
 def test_fx_week() -> None:
@@ -66,10 +52,9 @@ def test_absence_fails_and_closed_market_excuses_only_gateway(
     monkeypatch.setattr(hb, "GATEWAY_BEAT", tmp_path / "none.json")
     monkeypatch.setattr(hb, "WATCHDOG_BEAT", tmp_path / "none2.json")
     monkeypatch.setattr(hb, "SILENT_ORGANS", tmp_path / "none3.json")
-    monkeypatch.setattr(hb, "INTEL_FEED", (tmp_path / "none4.json", tmp_path / "none5.json"))
     sat = datetime(2026, 10, 3, 12, tzinfo=UTC).timestamp()
     r = hb.measure(sat, research={"age_days": None}, disk_free_gb=50)
-    assert r["failing"] == ["intel_feed", "research", "silent", "watchdog"]
+    assert r["failing"] == ["research", "silent", "watchdog"]
 
 
 def test_unarmed_is_recorded_and_page_fires_once(tmp_path: Path,
@@ -140,54 +125,3 @@ def test_red_fence_pages_even_when_the_box_was_already_failing(
     assert len(sent) == 2
     hb.run(out=out, secrets=sec, reading=reading(["disk", "silent"], ["leg:y"]))
     assert len(sent) == 3
-
-
-# ---------------------------------- 2026-11-03: hel8 stopped shipping the intel feed; nobody paged
-def test_a_fresh_intel_feed_passes_and_a_stale_one_fails_naming_the_artifact(
-        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    now = datetime(2026, 11, 3, 12, tzinfo=UTC).timestamp()
-    _beats(tmp_path, monkeypatch, 2, now)
-    ok = hb.measure(now, research={"age_days": 0.05}, disk_free_gb=50)
-    assert ok["failing"] == [] and ok["checks"]["intel_feed"]["stale"] == []
-    _feed(tmp_path, monkeypatch, hb.INTEL_FEED_MAX_MIN + 5, now)
-    bad = hb.measure(now, research={"age_days": 0.05}, disk_free_gb=50)
-    assert bad["failing"] == ["intel_feed"]
-    assert bad["checks"]["intel_feed"]["stale"] == ["HOURLY_DISCOVERY.json",
-                                                    "seed_miners_state.json"]
-
-
-def test_one_absent_intel_artifact_fails_the_check(tmp_path: Path,
-                                                   monkeypatch: pytest.MonkeyPatch) -> None:
-    """Absence is not health: a seed fleet that never ran on the box fails even with a fresh
-    discovery report beside it."""
-    now = datetime(2026, 11, 3, 12, tzinfo=UTC).timestamp()
-    _beats(tmp_path, monkeypatch, 2, now)
-    (tmp_path / "seed_miners_state.json").unlink()
-    _feed(tmp_path, monkeypatch, 10, now, absent=("seed_miners_state.json",))
-    r = hb.measure(now, research={"age_days": 0.05}, disk_free_gb=50)
-    assert r["failing"] == ["intel_feed"]
-    assert r["checks"]["intel_feed"]["age_min"]["seed_miners_state.json"] is None
-
-
-def test_a_stale_intel_feed_pages_once_on_the_transition(
-        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """The existing dedupe: the feed going stale pages once, staying stale pages nothing more, and
-    a box already failing `disk` still pages when the feed joins the failing set."""
-    out = tmp_path / "BOX_HEARTBEAT.json"
-    sent: list[str] = []
-    import libs.ops.alert_channels as ac
-    monkeypatch.setattr(ac, "send_all", lambda t, b, **k: sent.append(b) or {"status": "ok"})
-    now = datetime(2026, 11, 3, 12, tzinfo=UTC).timestamp()
-    sec = (tmp_path / "absent.json",)
-    _beats(tmp_path, monkeypatch, 2, now)
-    disk_only = hb.measure(now, research={"age_days": 0.05}, disk_free_gb=1)
-    hb.run(out=out, secrets=sec, reading=disk_only)
-    assert len(sent) == 1
-    _feed(tmp_path, monkeypatch, hb.INTEL_FEED_MAX_MIN + 30, now)
-    both = hb.measure(now, research={"age_days": 0.05}, disk_free_gb=1)
-    assert both["failing"] == ["disk", "intel_feed"]
-    hb.run(out=out, secrets=sec, reading=both)
-    assert len(sent) == 2 and "intel_feed" in sent[-1]
-    hb.run(out=out, secrets=sec, reading=hb.measure(now, research={"age_days": 0.05},
-                                                     disk_free_gb=1))
-    assert len(sent) == 2
