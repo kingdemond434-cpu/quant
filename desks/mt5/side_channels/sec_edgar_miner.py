@@ -10,7 +10,13 @@ import re
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-import requests
+try:
+    from libs.data.polite_fetch import polite_requests_get
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import polite_requests_get
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "sec_edgar"
@@ -44,7 +50,7 @@ def mine_13f() -> list[dict]:
     for fund, cik in FUND_CIKS.items():
         try:
             url = f"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={cik}&type=13F&dateb=&owner=include&count=5&search_text=&action=getcompany"
-            resp = requests.get(url, headers=HEADERS, timeout=15)
+            resp = polite_requests_get(url, headers=HEADERS, timeout=15)
             if resp.status_code == 200:
                 text = resp.text
                 # Check for recent filing

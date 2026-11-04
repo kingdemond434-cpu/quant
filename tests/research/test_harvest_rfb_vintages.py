@@ -166,7 +166,8 @@ def test_live_fetch_downloads_only_missing_releases(tmp_path: Path, monkeypatch)
             return _Resp(listing.encode())
         return _Resp(b"xls-bytes")
 
-    monkeypatch.setattr(mod.urllib.request, "urlopen", fake_urlopen)
+    # the polite door (robots + holds) stood in for: this test is about which releases download
+    monkeypatch.setattr(mod, "polite_urlopen", fake_urlopen)
     out = mod.fetch_new_releases(raw)
     assert out["status"] == "OK"
     assert out["n_new"] == 1 and out["new"] == ["20210604"]
@@ -181,7 +182,7 @@ def test_unreachable_live_index_degrades_loudly(tmp_path: Path, monkeypatch) -> 
     def dead(req, timeout=0.0):  # type: ignore[no-untyped-def]
         raise OSError("no route to host")
 
-    monkeypatch.setattr(mod.urllib.request, "urlopen", dead)
+    monkeypatch.setattr(mod, "polite_urlopen", dead)
     out = mod.fetch_new_releases(tmp_path)
     assert out["status"] == "UNREACHABLE"
     assert out["n_new"] == 0 and "no route" in str(out["detail"])

@@ -577,6 +577,18 @@ READER_ROUTES: dict[str, dict[str, Any]] = {
         "route": "live_read", "sources": ("macro_state",),
         "basis": "reads the macro_state snapshot's current z per series with its own "
                  "last_date/updated stamp carried as `last_at` on the row"},
+    "desks/mt5/research/missed_growth.py": {
+        "route": "live_read", "sources": ("cross_asset_anchors", "fred_macro", "macro_state"),
+        "basis": "names the anchor provenance, macro_state and fred_macro artifacts only to read "
+                 "the refusal lines their writers publish (missed_growth / "
+                 "unmeasured_no_licensed_source) into the fred_copyrighted_cut carrier; reads "
+                 "no series value and joins nothing to a bar"},
+    "desks/mt5/research/run_hunt23.py": {
+        "route": "live_read", "sources": ("cross_asset_anchors",), "assumed": True,
+        "basis": "assumed, flagged: reads the anchors pickle macro_desk builds and applies no "
+                 "publication lag in this module. It was counted lag-routed until 2026-10-20 "
+                 "only because its docstring said 'ALFRED vintages'; that word was a docstring, "
+                 "never a lag, so it is declared here honestly instead"},
     "desks/mt5/research/tier1_scorecard.py": {
         "route": "live_read", "sources": ("macro_state",),
         "basis": "counts series in the current snapshot for a coverage score; no bar join"},

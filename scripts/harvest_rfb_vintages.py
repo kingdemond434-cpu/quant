@@ -34,6 +34,14 @@ import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
+try:
+    from libs.data.polite_fetch import polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+    from libs.data.polite_fetch import polite_urlopen
+
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
@@ -70,7 +78,7 @@ def fetch_new_releases(raw_dir: Path, *, timeout: float = 25.0) -> dict[str, obj
     """
     try:
         req = urllib.request.Request(_LIVE_INDEX, headers={"User-Agent": "quant-rfb/1.0"})
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with polite_urlopen(req, timeout=timeout) as resp:
             page = resp.read().decode("utf-8", errors="replace")
     except Exception as exc:  # any transport failure: degrade to backfill-only, loudly
         return {"status": "UNREACHABLE", "detail": repr(exc)[:200], "n_new": 0}
@@ -85,7 +93,7 @@ def fetch_new_releases(raw_dir: Path, *, timeout: float = 25.0) -> dict[str, obj
         url = f"{_LIVE_INDEX}/criptoativos_dados_abertos_{token}.xls"
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "quant-rfb/1.0"})
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
+            with polite_urlopen(req, timeout=timeout) as resp:
                 blob = resp.read()
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_bytes(blob)

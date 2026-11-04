@@ -48,10 +48,10 @@ sources:
   cadence_minutes: 1440
   kind: mechanics
 - id: wiki_asia_attention
-  name: Asian-language Wikipedia attention (ja/zh/ko pageviews)
+  name: Local-language Wikipedia attention (ja/zh/ko/tr/es/pt pageviews)
   url: https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/{project}/all-access/user/{title}/daily/{start}/{end}
   region: ASIA
-  language: ja/zh/ko
+  language: ja/zh/ko/tr/es/pt
   cadence: daily
   auth: none
   licence: Wikimedia pageviews API (CC0 data); no key
@@ -65,12 +65,13 @@ sources:
   consumer: desks/mt5/research/alt_proxies.py
   status: UNMEASURED_LIVE_YIELD
   terms: confirmed
-  mechanism: a Japanese, Chinese or Korean reader looks up the central bank, the currency or the index
-    in their own language before acting; an attention spike in the local language is local retail attention
-    the English Wikipedia list misses
+  mechanism: a Japanese, Chinese, Korean, Turkish, Mexican or Brazilian reader looks up the central bank,
+    the currency or the index in their own language before acting; an attention spike in the local language
+    is local retail attention the English Wikipedia list misses, and a spike in lookups of one's own currency
+    is the domestic saver's crisis attention
   payer: local retail positioning that chases the move after the attention spike
   constraint: retail acts on attention with a lag; institutions ignore pageviews
-  source_culture: JP/ja,CN/zh,KR/ko
+  source_culture: JP/ja,CN/zh,KR/ko,TR/tr,MX/es,BR/pt
   participant_structure:
   - retail_heavy
   failure_mode_hypothesis: fails when bots or a main-page feature inflate views, and zh.wikipedia is blocked

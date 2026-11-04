@@ -112,9 +112,17 @@ def test_a_terms_note_is_a_label_and_no_sensor_is_refused_for_terms() -> None:
 
 def test_a_labelled_endpoint_is_fetched_and_only_the_hard_boundary_refuses(
         tree: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> None:
-    """The guard's door is five acts wide. A sensor whose licence restricts redistribution goes
-    to the wire; a sensor that declares a hard-boundary refusal never does, and says so."""
+    """The guard's door is five acts wide, and ROBOTS DECIDES every fetch (LAWS 5e amended
+    2026-10-14). A sensor whose licence restricts redistribution goes to the wire when the
+    origin's robots.txt allows it -- the terms note never stops it; the same sensor is not sent
+    when robots disallows it; a sensor that declares a hard-boundary refusal never is, and says
+    so."""
     opened: list[str] = []
+    robots_allows = {"https://example.invalid/x": True}
+
+    def _admit(url: str) -> tuple[bool, str]:
+        # the polite door's robots/holds answer for this origin, stood in for the network
+        return (True, "") if robots_allows.get(url) else (False, "ROBOTS_DISALLOW")
 
     def _spy(req: Any, **_k: Any) -> Any:
         # Record that the door OPENED, then fail the way an offline box fails, so the guard's
@@ -122,7 +130,8 @@ def test_a_labelled_endpoint_is_fetched_and_only_the_hard_boundary_refuses(
         opened.append(str(getattr(req, "full_url", req)))
         raise si.urllib.error.URLError("no network in this test")
 
-    monkeypatch.setattr(si.urllib.request, "urlopen", _spy)
+    monkeypatch.setattr(si, "admit", _admit)
+    monkeypatch.setattr(si, "polite_urlopen", _spy)
     guard = si.Guard(budget_s=5.0, no_fetch=False, fixtures=tree["fixtures"])
     labelled = si.Sensor(sensor_id="labelled", latent="global_risk_appetite", what="x",
                          fetch_class="public_endpoint", source="x", cadence="daily",
@@ -132,6 +141,12 @@ def test_a_labelled_endpoint_is_fetched_and_only_the_hard_boundary_refuses(
     guard.get(labelled)
     assert opened == ["https://example.invalid/x"], "a terms note must not stop the wire"
     assert guard.refused == []
+
+    robots_allows["https://example.invalid/x"] = False
+    payload0, why0 = guard.get(labelled)
+    assert payload0 is None and why0.startswith("ROBOTS_DISALLOW")
+    assert opened == ["https://example.invalid/x"], "robots disallows: nothing is sent"
+    assert guard.refused == [], "a robots refusal is not the hard boundary"
 
     walled = si.Sensor(sensor_id="walled", latent="global_risk_appetite", what="x",
                        fetch_class=si.UNMEASURED, source="x", cadence="daily", pit_lag_days=0.0,
@@ -414,9 +429,14 @@ def test_whole_pass_on_a_planted_tree_writes_axes_and_a_report(tree: dict[str, P
     assert doc["sensor_problems"] == []
     assert tree["report"].exists()
     risk = next(r for r in doc["ensembles"] if r["latent"] == "global_risk_appetite")
-    assert risk["status"] == "MEASURED"
-    assert risk["n_sensors_used"] == 3
-    assert (tree["axes"] / "shadow_global_risk_appetite.json").exists()
+    # VIXCLS and BAMLH0A0HYM2 are third-party FRED series (terms_fence fred_copyrighted): a
+    # planted value is never read, so T10Y2Y stands alone and the latent is UNMEASURED, not zero.
+    assert risk["status"] == si.UNMEASURED
+    assert risk["n_sensors_used"] == 1
+    whys = {u["sensor"]: u["why"] for u in risk["unmeasured"]}
+    assert whys["vix_level"].startswith("UNMEASURED_NO_LICENSED_SOURCE: VIXCLS")
+    assert whys["credit_spread"].startswith("UNMEASURED_NO_LICENSED_SOURCE: BAMLH0A0HYM2")
+    assert risk["latest_estimate"] is None
     # every other latent is UNMEASURED BY NAME on a tree with nothing planted for it
     china = next(r for r in doc["ensembles"] if r["latent"] == "china_activity")
     assert china["status"] == si.UNMEASURED

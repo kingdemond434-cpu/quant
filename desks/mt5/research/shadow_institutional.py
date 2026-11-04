@@ -70,7 +70,6 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-import urllib.robotparser
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field, fields
 from datetime import UTC, date, datetime, timedelta
@@ -78,6 +77,13 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+try:
+    from libs.data.polite_fetch import access_label, admit, polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import access_label, admit, polite_urlopen
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
@@ -507,30 +513,18 @@ class Guard:
         return max(0.0, self.budget_s - (time.monotonic() - self.started))
 
     def robots_ok(self, url: str) -> tuple[bool, str]:
-        """Group-scoped robots verdict, READ AND RECORDED, never obeyed as a veto (LAWS 5e).
-
-        The bool is kept so callers can label the row; `get()` no longer turns a False into a
-        skip. An unreadable robots.txt is UNMEASURED, which is also not a refusal.
-        """
-        parts = urllib.parse.urlsplit(url)
-        root = f"{parts.scheme}://{parts.netloc}"
-        if root not in self._robots:
-            rp = urllib.robotparser.RobotFileParser()
-            rp.set_url(f"{root}/robots.txt")
-            self.calls += 1
-            try:
-                rp.read()
-            except (OSError, urllib.error.URLError, ValueError) as exc:
-                self._robots[root] = f"unreadable: {type(exc).__name__}"
-            else:
-                self._robots[root] = rp
-        got = self._robots[root]
-        if isinstance(got, str):
-            return True, f"robots.txt {got} -- UNMEASURED, recorded as a label, not a refusal"
-        ok = bool(got.can_fetch(UA, url))
-        return ok, ("robots allows this path for our agent" if ok
-                    else "robots disallows this path for our agent: RECORDED AS A LABEL and "
-                         "fetched anyway (LAWS 5e); it routes redistribution, not reading")
+        """The site's holds, read by THE ONE implementation (`polite_fetch.HostAccess`, via
+        `admit`): only a person-held 401/403/429/challenge hold means no request. robots.txt is
+        a LABEL (LAWS 5e, live): a Disallow (PUBLIC_WITH_TERMS) or an unreadable robots.txt
+        (ACCESS_UNCLEAR) is fetched, and the label is the returned note."""
+        ok, why = admit(url)
+        if not ok:
+            return False, f"{why}: held for a person (an access control answered); not fetched"
+        label = access_label(url)
+        lab = str(label.get("access_label") or "")
+        if lab and lab != "PUBLIC":
+            return True, f"{lab}: {label.get('terms_note') or ''}"
+        return True, "robots allows this path for our agent"
 
     def fixture(self, sensor_id: str) -> tuple[Any, str]:
         p = self.fixtures / f"{sensor_id}.json"
@@ -558,16 +552,20 @@ class Guard:
             return None, "refused: only http(s) grounds are fetched"
         if params:
             url = f"{url}?{urllib.parse.urlencode(dict(params))}"
-        if sensor.robots == "checked":
-            # READ AND RECORDED, NEVER A SKIP (LAWS 5e, 2026-09-23). This used to `return None`
-            # on a Disallow, which is how the desk lost ground nobody ever re-argued.
-            ok, why = self.robots_ok(url)
-            if not ok:
-                self.notes.append({"sensor": sensor.sensor_id, "terms_note": why})
+        # ONLY A SITE HOLD STOPS THE WIRE, for every sensor whatever its row says. robots.txt is
+        # a LABEL (LAWS 5e): a Disallow or an unreadable robots.txt is fetched and its label is
+        # recorded as the sensor's terms_note.
+        ok, why = self.robots_ok(url)
+        if not ok:
+            self.notes.append({"sensor": sensor.sensor_id, "terms_note": why})
+            return None, why
+        if why.startswith(("PUBLIC_WITH_TERMS", "ACCESS_UNCLEAR")):
+            self.notes.append({"sensor": sensor.sensor_id, "terms_note": why,
+                               "access_label": why.split(":", 1)[0]})
         req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
         try:
             self.calls += 1
-            with urllib.request.urlopen(req, timeout=min(self.timeout_s,
+            with polite_urlopen(req, timeout=min(self.timeout_s,
                                                          max(1.0, self.left()))) as r:
                 ctype = str(r.headers.get("Content-Type") or "").lower()
                 raw = r.read(8_000_000)
@@ -645,6 +643,18 @@ def _write_atomic(path: Path, payload: Any) -> None:
     tmp.unlink(missing_ok=True)
 
 
+def _third_party_fred(series_id: str) -> bool:
+    """True for a FRED series a third party owns (libs/data/terms_fence `fred_copyrighted`:
+    VIXCLS, BAMLH0A0HYM2, ...). Such a series is never live input -- read from no file, however
+    fresh or stale -- so the reader sees it ABSENT and its dependent output is UNMEASURED."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[3])
+    if _root not in _sys.path:
+        _sys.path.insert(0, _root)
+    from libs.data.terms_fence import fred_series_source
+    return bool(fred_series_source(str(series_id)))
+
+
 def read_axis_points(axes: Path, name: str, series: str = "*") -> list[tuple[str, float]]:
     """(day, value) from ANY of the three axis shapes this tree actually writes.
 
@@ -666,7 +676,8 @@ def read_axis_points(axes: Path, name: str, series: str = "*") -> list[tuple[str
     got = doc.get("series")
     if isinstance(got, Mapping):
         blocks = [v.get("points") for k, v in got.items()
-                  if isinstance(v, Mapping) and (series in ("*", k))]
+                  if isinstance(v, Mapping) and (series in ("*", k))
+                  and not (name == "fred" and _third_party_fred(str(k)))]
     if not blocks and isinstance(doc.get("points"), list):
         blocks = [doc["points"]]
     tally: dict[str, list[float]] = {}
@@ -1187,6 +1198,9 @@ def _gather(latent: str, sensors: Sequence[Sensor], *, axes: Path, universe: Pat
             pts = read_axis_points(axes, s.axis_file, s.axis_series or "*")
             why = "" if pts else (f"data/axes/{s.axis_file}.json holds no readable point for"
                                   f" series {s.axis_series or '*'!r} -- UNMEASURED, not barren")
+            if s.axis_file == "fred" and _third_party_fred(s.axis_series):
+                why = (f"UNMEASURED_NO_LICENSED_SOURCE: {s.axis_series} is a third-party FRED "
+                       "series (terms_fence fred_copyrighted), never live input")
         elif s.fetch_class == "desk_axis":
             sym = next((t for t in MT5_TARGETS if t in (s.verb or "")), "")
             pts = read_bars(sym, "D1", universe) if sym else []

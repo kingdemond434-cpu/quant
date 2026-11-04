@@ -34,7 +34,13 @@ from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 
-import requests
+try:
+    from libs.data.polite_fetch import DESK_UA, polite_requests_get
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA, polite_requests_get
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "central_banks"
@@ -56,14 +62,12 @@ FEEDS: dict[str, dict[str, str]] = {
     # replacement route (§38) is owed. Absence must never read as a clean verdict (WS-005).
     "RBA": {"url": "https://www.rba.gov.au/rss/rss-cb-media-releases.xml", "currency": "AUD"},
     "BoC": {"url": "https://www.bankofcanada.ca/content_type/press-releases/feed/", "currency": "CAD"},
-    # BIS REMOVED 2026-08-28 (§13). https://www.bis.org/doclist/cbspeeches.rss lives under
-    # `Disallow: /doclist/` in bis.org/robots.txt -- the access boundary is a hard limit, not a
-    # preference, and this miner had been reading it. BIS's own RSS path now redirects to the
-    # allowed listing page whose only content link is the free full-text research download at
-    # /speeches/speeches.zip (no robots bar, terms allow noncommercial use). That corpus is
-    # strictly better ground anyway -- 20,728 DATED speeches with BODIES back to 1996, against
-    # this feed's headline-only stream -- and it is mined by side_channels/bis_speech_tone.py.
-    # Its currency was "XXX", so no MT5 leg loses coverage by the removal.
+    # BIS RESTORED (LAWS 5e, live). It was removed 2026-08-28 because the feed sits under
+    # `Disallow: /doclist/` in bis.org/robots.txt -- "robots.txt Disallow treated as a refusal",
+    # a deleted brake. It is read again, and every row carries PUBLIC_WITH_TERMS with the
+    # Disallow as its terms_note (redistribution withheld). The full-text corpus is still mined
+    # by side_channels/bis_speech_tone.py; this feed is the dated headline stream beside it.
+    "BIS": {"url": "https://www.bis.org/doclist/cbspeeches.rss", "currency": "XXX"},
 }
 
 #: Currency -> the MT5/Fusion instruments whose price a statement by that bank moves. Derived
@@ -177,19 +181,23 @@ def mine_central_banks() -> list[dict[str, Any]]:
     seen = _seen_keys()
     for bank, info in FEEDS.items():
         try:
-            resp = requests.get(info["url"], headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}, timeout=20)
+            resp = polite_requests_get(info["url"], headers={"User-Agent": DESK_UA}, timeout=20)
             resp.raise_for_status()
-        except requests.RequestException as exc:
+        except RuntimeError as exc:
             # A dead feed is a REPORTED fact, never a silent empty result (the heartbeat lesson).
             print(f"central_bank: {bank} feed unreachable -- {type(exc).__name__}: {exc}")
             continue
+        # THE ROBOTS LABEL ON EVERY ROW (LAWS 5e): PUBLIC, PUBLIC_WITH_TERMS (a Disallow, as
+        # the BIS feed carries) or ACCESS_UNCLEAR -- all fetched; the label routes redistribution.
+        label = {"access_label": str(getattr(resp, "access_label", "") or ""),
+                 "terms_note": str(getattr(resp, "terms_note", "") or ""),
+                 "redistribute_allowed": bool(getattr(resp, "redistribute_allowed", False))}
         for row in parse_feed(resp.text, bank, info["currency"], info["url"]):
             key = f"{row['bank']}|{row['link']}"
             if key in seen:
                 continue
             seen.add(key)
-            fresh.append(row)
+            fresh.append({**row, **label} if label["access_label"] else row)
     return fresh
 
 

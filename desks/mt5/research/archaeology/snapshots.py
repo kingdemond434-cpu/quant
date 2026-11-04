@@ -539,7 +539,9 @@ def machine_use(p: Platform) -> tuple[str, str]:
     wall = _walls().get(p.host)
     if wall is not None:
         verdict = str(wall.get("verdict") or "")
-        reasons.append((FORBIDDEN if verdict == "ROBOTS_DISALLOW" else UNKNOWN,
+        # A robots wall is a LABEL (LAWS 5e REMOVED_BRAKES: "robots.txt Disallow treated as a
+        # refusal"): UNKNOWN, never FORBIDDEN. Only a person-held hold (`robots_barred`) forbids.
+        reasons.append((UNKNOWN,
                         f"desk-measured wall {verdict} on {p.host}: "
                         f"{str(wall.get('evidence') or '')[:200]}"))
     barred = mc.robots_barred(p.root)
@@ -582,9 +584,19 @@ def may_fetch(p: Platform, *, probe: bool = False) -> tuple[bool, str]:
         return False, (f"REFUSED on the hard boundary ({hit}): reading this would mean defeating "
                        f"an access control -- {why}")
     label = f"{verdict}: {why}" if verdict != ALLOWED else why
+    # ROBOTS IS A LABEL, NEVER A DOOR (LAWS 5e, live; "robots.txt Disallow treated as a refusal"
+    # is a deleted brake). Only a PERSON-HELD site hold (401/403/429 or a challenge -- hard
+    # boundary act 2), read live by `polite_fetch.HostAccess` via `moat_collectors.robots_barred`,
+    # refuses the platform. A Disallow or an unreadable robots.txt is fetched with its label.
+    barred = mc.robots_barred(p.root)
+    if barred:
+        return False, f"HELD: {barred} -- an access control answered; held for a person"
     if probe and mc.robots_still_disallows(p.host):
-        label = (f"{label}; live robots probe: {p.host}/robots.txt names this agent -- RECORDED "
-                 f"AS A LABEL and fetched anyway (LAWS 5e)")
+        return False, f"HELD: live probe -- {p.host} is held for a person at its root"
+    robots = mc.robots_label(p.root, read=probe)
+    if robots.get("access_label") not in (None, "", "PUBLIC"):
+        label = "; ".join(x for x in (label, f"{robots['access_label']}: "
+                                             f"{robots.get('terms_note') or ''}") if x)
     return True, label
 
 

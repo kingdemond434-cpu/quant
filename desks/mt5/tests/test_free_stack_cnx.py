@@ -25,10 +25,23 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
 
 from libs.data import free_stack as fs  # noqa: E402
 from libs.data import free_stack_cnx as cnx  # noqa: E402
+from libs.data import terms_fence as tf  # noqa: E402
 
 FIX = _DESK / "tests" / "fixtures" / "free_stack" / "cnx"
 D = date(2026, 10, 5)
 NOW = datetime(2026, 10, 6, 13, 0, tzinfo=UTC)
+
+
+def _lift(monkeypatch: pytest.MonkeyPatch, *sids: str) -> None:
+    """The box's unblock, simulated: the exchange's row in the ONE terms register flips to a
+    permitting status with a quoted grant (synthetic, for the test). Nothing else unblocks it."""
+    for sid in sids:
+        row = tf.SOURCE_POLICY[sid]
+        monkeypatch.setitem(tf.SOURCE_POLICY, sid, {
+            **row, "held_route": False, "status": tf.PUBLIC_PAGE,
+            "terms": {"url": row["terms"]["url"], "checked_at": "2026-10-14",
+                      "clauses": {"grant": "SYNTHETIC TEST GRANT: automated internal research "
+                                           "use permitted"}}})
 
 
 def _fx(name: str) -> bytes:
@@ -145,24 +158,30 @@ def test_terms_gate_fails_closed_without_a_request() -> None:
     def fetch(url: str, headers=None, body=None) -> bytes:
         calls.append(url)
         return b""
-    row = {"id": "cnx_shfe", "exchange": "shfe", "terms": "to_confirm",
-           "terms_evidence": {"terms_url": "https://www.shfe.com.cn/disclaimer/"}}
+    row = {"id": "cnx_shfe", "exchange": "shfe"}
     h = cnx.fetch_cn_exchange(fetch, row, {}, NOW)
     assert h.status == "BLOCKED_ON_TERMS" and not calls and not h.obs
-    assert "disclaimer" in h.detail
+    assert "disclaimer" in h.detail and "terms_fence cnx_shfe" in h.detail
+    # an exchange with NO fence row is to_confirm (fail closed), never fetched
+    h = cnx.fetch_cn_exchange(fetch, {"id": "cnx_unlisted", "exchange": "dce"}, {}, NOW)
+    assert h.status == "BLOCKED_ON_TERMS" and not calls and "terms=to_confirm" in h.detail
 
 
-def test_every_roster_exchange_row_holds_terms_evidence_and_fails_closed() -> None:
+def test_every_roster_exchange_row_is_held_by_its_fence_row_and_fails_closed() -> None:
+    """ONE register: the roster rows carry no terms field, only a pointer; the evidence (the
+    verbatim clause or the named unread reason) is the fence row's."""
     doc = json.loads((_DESK / "data" / "free_stack_sources.json").read_text("utf-8"))
     rows = [r for r in doc["sources"] if r["kind"] == "cn_exchange"]
     assert {r["exchange"] for r in rows} == {"shfe", "ine", "dce", "czce", "gfex", "cffex"}
     for r in rows:
-        assert r["terms"] in ("confirmed", "to_confirm", "refused"), r["id"]
-        ev = r["terms_evidence"]
-        assert ev["terms_url"].startswith("http") and ev["terms_quote"] and ev["checked_at"]
+        assert not {"terms", "terms_url", "terms_quote", "terms_evidence"} & set(r), r["id"]
+        assert f"SOURCE_POLICY[{r['id']}]" in r["terms_policy"], r["id"]
+        assert cnx.terms_of(r) in ("to_confirm", "refused") and tf.held_on_terms(r["id"]), r["id"]
+        t = tf.SOURCE_POLICY[r["id"]]["terms"]
+        assert t["url"].startswith("http") and t["checked_at"] == "2026-10-06", r["id"]
+        assert t.get("clauses") or t.get("unread"), r["id"]
         assert set(r["uses"]) == {"direct", "indirect", "allocation"}
-    assert "非商业目的" in next(r for r in rows if r["id"] == "cnx_shfe"
-                           )["terms_evidence"]["terms_quote"]
+    assert "非商业目的" in tf.SOURCE_POLICY["cnx_shfe"]["terms"]["clauses"]["grant"]
 
 
 def test_plan_days_forward_gap_first_then_backfill_and_release_hour() -> None:
@@ -180,8 +199,9 @@ def test_plan_days_forward_gap_first_then_backfill_and_release_hour() -> None:
     assert all(d.weekday() < 5 for d in caught_up)
 
 
-def test_an_outage_is_retried_and_a_holiday_is_not() -> None:
-    row = {"id": "cnx_cffex", "exchange": "cffex", "terms": "confirmed", "days_per_pass": 3}
+def test_an_outage_is_retried_and_a_holiday_is_not(monkeypatch: pytest.MonkeyPatch) -> None:
+    _lift(monkeypatch, "cnx_cffex")
+    row = {"id": "cnx_cffex", "exchange": "cffex", "days_per_pass": 3}
 
     def proxy(url: str, headers=None, body=None) -> bytes:
         raise fs.FetchError("proxy", url)
@@ -245,8 +265,9 @@ def _shfe_fetch(revised: dict[str, float] | None = None):
 
 
 @pytest.fixture()
-def store(tmp_path: Path):
+def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     from free_stack_hunter import Store
+    _lift(monkeypatch, "cnx_shfe")          # the end-to-end hunter runs on a lifted fence row
     st = Store(tmp_path)
     (tmp_path / "data" / "universe").mkdir(parents=True)
     real = json.loads((_DESK / "data" / "universe" / "universe.json").read_text("utf-8"))
@@ -257,7 +278,7 @@ def store(tmp_path: Path):
 def _roster(tmp_path: Path, n_days: int) -> Path:
     doc = json.loads((_DESK / "data" / "free_stack_sources.json").read_text("utf-8"))
     row = next(r for r in doc["sources"] if r["id"] == "cnx_shfe")
-    row.update({"terms": "confirmed", "days_per_pass": n_days, "backfill_days": n_days,
+    row.update({"days_per_pass": n_days, "backfill_days": n_days,
                 "max_seconds": 600})
     p = tmp_path / "roster.json"
     p.write_text(json.dumps({"sources": [row]}, ensure_ascii=False), "utf-8")
@@ -393,7 +414,7 @@ def test_proposer_mints_exchange_cells_by_axis_from_the_published_series(store, 
     columns = json.loads(store.columns.read_text("utf-8"))
     roster = {"cnx_shfe": json.loads((tmp_path / "roster.json").read_text("utf-8")
                                      )["sources"][0],
-              "cnx_dce": {"id": "cnx_dce", "terms": "to_confirm"}}
+              "cnx_dce": {"id": "cnx_dce"}}
     grid, skipped = fsp.build_grid(columns, roster)
     assert grid and not skipped
     axes = {c["evidence"]["axis"] for c in grid}
@@ -410,11 +431,11 @@ def test_proposer_mints_exchange_cells_by_axis_from_the_published_series(store, 
 @pytest.mark.parametrize("sid", ["cnx_shfe", "cnx_ine"])
 def test_shfe_and_ine_are_refused_and_make_no_request(sid: str) -> None:
     """SHFE's statement grants non-commercial browse/download only, so the desk's use is not
-    granted: the roster row says `refused` and the fetcher makes no request, even with a `urls`
+    granted: the fence row reads `refused` and the fetcher makes no request, even with a `urls`
     override and a cursor in hand."""
     doc = json.loads((_DESK / "data" / "free_stack_sources.json").read_text("utf-8"))
     row = next(r for r in doc["sources"] if r["id"] == sid)
-    assert row["terms"] == "refused"
+    assert cnx.terms_of(row) == "refused" == tf.terms_verdict(sid)
     calls: list[str] = []
 
     def fetch(url: str, headers=None, body=None) -> bytes:

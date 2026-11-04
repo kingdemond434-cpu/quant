@@ -38,6 +38,7 @@ import sys
 import urllib.request
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
@@ -110,9 +111,19 @@ C_NC_LONG, C_NC_SHORT, C_NC_SPREAD = 8, 9, 10
 C_COMM_LONG, C_COMM_SHORT = 11, 12
 
 
+def _live_urlopen(req: urllib.request.Request, timeout: float) -> Any:
+    """THE ONE FETCH DOOR, LIVE INPUT (`terms_fence.guarded_urlopen(live_input=True)`): the
+    first URL and every redirect hop must be a live-input route; a 30x into a held or
+    IDEAS_ONLY route raises TermsFenced (pass-6 audit cf305e3d2 SHOULD-FIX 1)."""
+    # polite_fetch's seam opens through that door AND checks the site's holds and the origin's
+    # robots.txt on every hop first (LAWS 5e amended 2026-10-14); 401/403/429 hold the site.
+    from libs.data import polite_fetch as _pf
+    return _pf.polite_urlopen(req, timeout=timeout, live_input=True, leg="axis_ingest")
+
+
 def _fetch(url: str) -> str:
     req = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+    with _live_urlopen(req, timeout=TIMEOUT) as r:
         return r.read().decode("utf-8", "replace")
 
 
@@ -138,7 +149,7 @@ def _cot_history_text(years: int) -> list[tuple[int, str]]:
         try:
             req = urllib.request.Request(COT_HISTORY_URL.format(year=y),
                                          headers={"User-Agent": UA})
-            with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+            with _live_urlopen(req, timeout=TIMEOUT) as r:
                 blob = r.read()
             z = zipfile.ZipFile(io.BytesIO(blob))
             out.append((y, z.read(z.namelist()[0]).decode("utf-8", "replace")))
@@ -309,7 +320,7 @@ def ingest_bis():
     """Policy rates -> a dated carry differential for every MT5 pair we can form both legs of."""
     import zipfile
     req = urllib.request.Request(BIS_URL, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=TIMEOUT * 2) as r:
+    with _live_urlopen(req, timeout=TIMEOUT * 2) as r:
         blob = r.read()
     z = zipfile.ZipFile(io.BytesIO(blob))
     text = z.read(z.namelist()[0]).decode("utf-8", "replace")
@@ -375,12 +386,22 @@ def ingest_fred():
     index, VIX, OAS -- there is nothing to revise and the risk is negligible. It would NOT be
     negligible for GDP or payrolls, and no survey or national-accounts series is in this list.
     """
+    import free_data as fd
     series, failed = {}, {}
+    # THIRD-PARTY FRED SERIES (terms_fence fred_copyrighted: VIXCLS, BAMLH0A0HYM2, ...) are
+    # IDEAS_ONLY: refused BEFORE any request and carried by name as UNMEASURED_NO_LICENSED_SOURCE
+    # with their missed-growth line -- never a point, never zero, and (the axis file is rewritten
+    # whole by `publish`) never a stale point kept as current.
+    cut: dict[str, dict] = {}
     for sid, what in FRED_SERIES.items():
+        row = fd.fred_refusal(sid, "axis_ingest.fred")
+        if row is not None:
+            cut[sid] = {"what": what, **row}
+            continue
         try:
             req = urllib.request.Request(FRED_URL.format(sid=sid),
                                          headers={"User-Agent": FRED_UA})
-            with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+            with _live_urlopen(req, timeout=TIMEOUT) as r:
                 text = r.read().decode("utf-8", "replace")
             hdr = text.splitlines()[0].split(",")
             pts = _csv_series(text, hdr[0], hdr[1] if len(hdr) > 1 else sid)
@@ -396,7 +417,10 @@ def ingest_fred():
             "vintage_note": ("CURRENT vintage only. Daily market series barely revise; no survey "
                              "or national-accounts series is in this list on purpose."),
             "shape": "series[sid].points -- one dated state variable each",
-            "series": series}
+            "series": series,
+            "unmeasured_no_licensed_source": cut,
+            "missed_growth": [v["missed_growth"] for v in cut.values()
+                              if isinstance(v.get("missed_growth"), dict)]}
 
 
 def ingest_ecb():
@@ -406,7 +430,7 @@ def ingest_ecb():
         try:
             url = ECB_URL.format(flow=flow, key=key, n=4000)
             req = urllib.request.Request(url, headers={"User-Agent": UA})
-            with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+            with _live_urlopen(req, timeout=TIMEOUT) as r:
                 text = r.read().decode("utf-8", "replace")
             pts = _csv_series(text, "TIME_PERIOD", "OBS_VALUE")
             if pts:

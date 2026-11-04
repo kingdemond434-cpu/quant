@@ -13,7 +13,13 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import requests
+try:
+    from libs.data.polite_fetch import polite_requests_get
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[4]))
+    from libs.data.polite_fetch import polite_requests_get
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "github"
@@ -94,7 +100,7 @@ def run() -> dict:
     for query in QUERIES:
         params = {"q": query, "sort": "updated", "order": "desc", "per_page": 30}
         try:
-            r = requests.get(SEARCH_URL, headers=HEADERS, params=params, timeout=10)
+            r = polite_requests_get(SEARCH_URL, headers=HEADERS, params=params, timeout=10)
             r.raise_for_status()
             items = r.json().get("items", [])
         except Exception as e:

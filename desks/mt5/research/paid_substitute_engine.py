@@ -14,7 +14,7 @@ WHAT ONE PASS DOES (leg `paid_substitute_engine`, hourly):
 
   1. CATALOGUE. `data/paid_dataset_catalogue/<class>.json` is the seeded, public-listing-only map of
      paid products (vendor, dataset, class, region, measure, frequency) with an honest
-     `seed_source` on every row. A bounded, robots-respecting crawl of public listing pages
+     `seed_source` on every row. A bounded, robots-labelled crawl of public listing pages
      (`_listings.json`) adds rows to `data/paid_substitutes/catalogue_crawled.json` -- only names a
      listing page itself shows, never an invented vendor. The Asia thread's table is read (never
      written) and its nine classes are tagged `owner: asia`.
@@ -58,8 +58,8 @@ WHAT ONE PASS DOES (leg `paid_substitute_engine`, hourly):
 
 FREE AND LAWFUL ONLY: key-less sources, or free keys whose environment variable NAME is present on
 the box (the value is never read). No login-walled page, no paid tier, nothing against a
-publisher's terms; the catalogue crawler honours robots.txt. No crypto-exchange ground is ever
-emitted (MT5 universe mandate): `BANNED_HOSTS` is checked on every emitted URL.
+publisher's terms; the catalogue crawler reads robots.txt as a LABEL (LAWS 5e). No crypto-exchange
+ground is ever emitted (MT5 universe mandate): `BANNED_HOSTS` is checked on every emitted URL.
 
 Nothing here sizes, vetoes or trades. UNMEASURED is never zero.
 
@@ -83,7 +83,6 @@ import sqlite3
 import sys
 import time
 import urllib.parse
-import urllib.robotparser
 from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime
@@ -633,28 +632,38 @@ def union_asia_tables(parsed: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
 
 
 # ----------------------------------------------------------------- catalogue crawler
-def _robots_ok(
+def _robots_label(
     url: str,
     fetch: Callable[[str], tuple[int | None, str]],
-    cache: dict[str, urllib.robotparser.RobotFileParser | None],
-) -> bool:
+    cache: dict[str, Any],
+) -> dict[str, Any]:
+    """robots.txt AS A LABEL for `url` (LAWS 5e, live: "robots.txt Disallow treated as a refusal"
+    is a deleted brake), read with THE ONE parser (`polite_fetch.parse_robots`) under this
+    crawler's product token: PUBLIC when allowed or absent (4xx), PUBLIC_WITH_TERMS for a
+    Disallow (the Disallow as terms_note), ACCESS_UNCLEAR when unreachable or 5xx. The page is
+    crawled in every case; the label rides on every entry it yields."""
+    from libs.data import polite_fetch as pf
     p = urllib.parse.urlparse(url)
     base = f"{p.scheme}://{p.netloc}"
     if base not in cache:
         status, body = fetch(base + "/robots.txt")
         if status is None or status >= 500:
-            cache[base] = None  # unreachable robots: do not fetch (conservative)
+            cache[base] = None  # unreachable robots: unread, so ACCESS_UNCLEAR (never a stop)
         else:
-            parser = urllib.robotparser.RobotFileParser()
-            parser.parse(body.splitlines() if status < 400 else [])
-            cache[base] = parser
+            cache[base] = pf.parse_robots(body if status < 400 else "")
     rp = cache[base]
-    return bool(rp is not None and rp.can_fetch(USER_AGENT, url))
+    if rp is None:
+        return pf.access_row(pf.ACCESS_UNCLEAR, f"{base}/robots.txt unreachable: crawled with "
+                                                "the label (LAWS 5e)")
+    if not rp.can_fetch(_ROBOTS_TOKEN, url):
+        return pf.access_row(pf.PUBLIC_WITH_TERMS,
+                             f"{base}/robots.txt Disallow for {_ROBOTS_TOKEN}: crawled, "
+                             "redistribution withheld (LAWS 5e)")
+    return pf.access_row(pf.PUBLIC, "")
 
 
-def _robots_unreachable(url: str, cache: Mapping[str, Any]) -> bool:
-    p = urllib.parse.urlparse(url)
-    return f"{p.scheme}://{p.netloc}" in cache and cache[f"{p.scheme}://{p.netloc}"] is None
+#: The product token robots.txt groups are matched against (RFC 9309 s2.2.1).
+_ROBOTS_TOKEN = USER_AGENT.split("/", 1)[0]
 
 
 #: Link shapes on public catalogue pages that NAME a vendor or product, and how to read the name.
@@ -771,8 +780,9 @@ def crawl_catalogue(
     stats: dict[str, Any] = {
         "pages_tried": 0,
         "pages_ok": 0,
-        "robots_refused": 0,
-        "host_unreachable": 0,
+        # LABELS, never refusals (LAWS 5e): pages crawled under a Disallow / an unread robots.txt
+        "robots_disallowed": 0,
+        "robots_unread": 0,
         "new_entries": 0,
         "errors": [],
         "listings": len(listings),
@@ -786,7 +796,7 @@ def crawl_catalogue(
     except Exception as exc:
         stats["status"] = f"{UNMEASURED}: fetch unavailable ({type(exc).__name__})"
         return stats
-    robots: dict[str, urllib.robotparser.RobotFileParser | None] = {}
+    robots: dict[str, Any] = {}
     n = len(listings)
     for i in range(min(n, CRAWL_PAGES_PER_PASS)):
         if time.monotonic() >= deadline:
@@ -797,12 +807,11 @@ def crawl_catalogue(
             continue
         stats["pages_tried"] += 1
         try:
-            if not _robots_ok(url, get, robots):
-                # an unreachable robots.txt is not fetched either -- counted apart, because it is a
-                # network verdict about this host, not the site's refusal
-                key = "host_unreachable" if _robots_unreachable(url, robots) else "robots_refused"
-                stats[key] += 1
-                continue
+            label = _robots_label(url, get, robots)
+            if label["access_label"] == "PUBLIC_WITH_TERMS":
+                stats["robots_disallowed"] += 1
+            elif label["access_label"] == "ACCESS_UNCLEAR":
+                stats["robots_unread"] += 1
             status, body = get(url)
         except Exception as exc:
             stats["errors"].append(f"{url[:60]}: {type(exc).__name__}")
@@ -821,6 +830,7 @@ def crawl_catalogue(
             if e["id"] in have:
                 continue
             e["first_seen_utc"] = _iso(now)
+            e.update(label)                       # the robots LABEL on the row (LAWS 5e)
             entries.append(e)
             have.add(e["id"])
             stats["new_entries"] += 1

@@ -579,18 +579,27 @@ def fetch_text(url: str, timeout: float = 40.0) -> str:
     return _polite(url, "text/html,text/csv,*/*;q=0.8", timeout)
 
 
-def robots_allow(url: str, get_text: Callable[[str], str]) -> bool:
-    """robots.txt for the URL's host, read with our own UA. A missing file (404) allows, as the
-    standard says; any other failure to read it does NOT allow, so an unread policy is never
-    treated as a yes."""
-    import urllib.robotparser
+def robots_label(url: str, get_text: Callable[[str], str]) -> dict[str, Any]:
+    """robots.txt for the URL's host, read with our own UA through THE ONE parser
+    (`polite_fetch.parse_robots`), AS A LABEL (LAWS 5e, live: "robots.txt Disallow treated as a
+    refusal" is a deleted brake): PUBLIC when allowed or absent (404), PUBLIC_WITH_TERMS for a
+    Disallow, ACCESS_UNCLEAR when it could not be read. The source is fetched in every case; a
+    HardStop (401/403/429) on robots.txt itself still propagates to the caller's hold."""
+    from libs.data import polite_fetch as pf
     p = urllib.parse.urlsplit(url)
-    rp = urllib.robotparser.RobotFileParser()
     try:
-        rp.parse(get_text(f"{p.scheme}://{p.netloc}/robots.txt").splitlines())
+        text = get_text(f"{p.scheme}://{p.netloc}/robots.txt")
     except (urllib.error.HTTPError, FetchError) as exc:
-        return getattr(exc, "code", None) == 404
-    return rp.can_fetch(UA, url)
+        if getattr(exc, "code", None) == 404:
+            return pf.access_row(pf.PUBLIC, "")
+        return pf.access_row(pf.ACCESS_UNCLEAR, f"{p.netloc}/robots.txt unread "
+                                                f"({type(exc).__name__}): fetched with the label")
+    product = UA.split("/", 1)[0]
+    if not pf.parse_robots(text).can_fetch(product, url):
+        return pf.access_row(pf.PUBLIC_WITH_TERMS,
+                             f"{p.netloc}/robots.txt Disallow for {product}: fetched, "
+                             "redistribution withheld (LAWS 5e)")
+    return pf.access_row(pf.PUBLIC, "")
 
 
 def mof_sign(pair: str) -> float:
@@ -709,27 +718,30 @@ def mof_collect(src: Mapping[str, Any], get_text: Callable[[str], str] | None,
     if get_text is not None and src.get("terms") == "OPEN" and \
             sid not in state.get("hard_stops", {}):
         try:
-            if not robots_allow(str(src["csv_url"]), get_text):
-                notes.append({"source": sid, "status": "UNMEASURED", "why": "robots disallows"})
-            else:
-                text = get_text(str(src["csv_url"]))
-                if mof_days(text)[1]:
-                    csv_path.parent.mkdir(parents=True, exist_ok=True)
-                    tmp = csv_path.with_suffix(".csv.tmp")
-                    tmp.write_text(text, encoding="utf-8")
-                    _replace(tmp, csv_path)
-                index = get_text(str(src["monthly_index_url"]))
-                base = str(src["monthly_index_url"]).rsplit("/", 1)[0]
-                links = sorted(set(re.findall(r"monthly/(\d{8}e?)\.html", index)) |
-                               set(re.findall(r'href="(\d{8}e?)\.html"', index)))
-                todo = [ln for ln in links if ln[:8] not in pages][-MOF_PAGES_PER_PASS:]
-                for ln in todo:
-                    got = mof_monthly_page(get_text(f"{base}/{ln}.html"))
-                    if got is None:
-                        notes.append({"source": sid, "page": ln, "status": "UNPARSED"})
-                        continue
-                    pages[ln[:8]] = {"period_end": str(got[0].date()), "total": got[1]}
-                _write(pages_path, pages)
+            label = robots_label(str(src["csv_url"]), get_text)
+            if label["access_label"] != "PUBLIC":
+                # A LABEL, never a skip (LAWS 5e): the source is fetched below, and the label
+                # is recorded on the pass's notes and in the lane state's `access_labels`.
+                notes.append({"source": sid, "status": "LABELLED", **label})
+            state.setdefault("access_labels", {})[sid] = label
+            text = get_text(str(src["csv_url"]))
+            if mof_days(text)[1]:
+                csv_path.parent.mkdir(parents=True, exist_ok=True)
+                tmp = csv_path.with_suffix(".csv.tmp")
+                tmp.write_text(text, encoding="utf-8")
+                _replace(tmp, csv_path)
+            index = get_text(str(src["monthly_index_url"]))
+            base = str(src["monthly_index_url"]).rsplit("/", 1)[0]
+            links = sorted(set(re.findall(r"monthly/(\d{8}e?)\.html", index)) |
+                           set(re.findall(r'href="(\d{8}e?)\.html"', index)))
+            todo = [ln for ln in links if ln[:8] not in pages][-MOF_PAGES_PER_PASS:]
+            for ln in todo:
+                got = mof_monthly_page(get_text(f"{base}/{ln}.html"))
+                if got is None:
+                    notes.append({"source": sid, "page": ln, "status": "UNPARSED"})
+                    continue
+                pages[ln[:8]] = {"period_end": str(got[0].date()), "total": got[1]}
+            _write(pages_path, pages)
         except HardStop as hs:
             state.setdefault("hard_stops", {})[sid] = {"code": hs.code, "at": _now()}
         except Exception as exc:

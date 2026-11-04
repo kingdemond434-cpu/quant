@@ -11,12 +11,11 @@ absent = allow-all, RFC 9309, as recorded in s52/s53). 2s spacing.
 import json
 import pathlib
 import re
-import zlib
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
-
+import zlib
 
 # R0768: libs/research/pdf_text._SHOW_RE's TJ-array branch has AMBIGUOUS ALTERNATION
 # ((?:\\.|[^\]])* -- [^\]] also matches the backslash \\. matches), so any '[' not closed
@@ -26,6 +25,14 @@ import urllib.request
 # Applied HERE and not in libs/ because this seat runs under the research-only freeze; the
 # one-character fix is ledgered as R0768 for the owning seat.
 import libs.research.pdf_text as _pdf_text
+
+try:
+    from libs.data.polite_fetch import polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import polite_urlopen
 
 _pdf_text._SHOW_RE = re.compile(
     rb"\((?P<lit>(?:\\.|[^\\()])*)\)\s*(?:Tj|')"
@@ -118,7 +125,7 @@ def main() -> None:
         if not pdf_path.exists():
             req = urllib.request.Request(url, headers={"User-Agent": UA})
             try:
-                with urllib.request.urlopen(req, timeout=60) as resp:
+                with polite_urlopen(req, timeout=60) as resp:
                     data = resp.read()
                     code = resp.status
                 pdf_path.write_bytes(data)

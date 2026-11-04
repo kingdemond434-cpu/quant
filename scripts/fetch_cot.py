@@ -28,6 +28,14 @@ from pathlib import Path
 
 import pandas as pd
 
+try:
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
+
 CFTC_URL = "https://publicreporting.cftc.gov/resource/6dca-aqww.json"
 OUT = Path("data/cot")
 
@@ -50,8 +58,8 @@ def fetch_all(market_filter: str) -> list[dict]:
             "noncomm_positions_long_all,noncomm_positions_short_all,"
             "comm_positions_long_all,comm_positions_short_all,open_interest_all"
         )
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=60) as resp:
+        req = urllib.request.Request(url, headers={"User-Agent": DESK_UA})
+        with polite_urlopen(req, timeout=60) as resp:
             batch = json.loads(resp.read())
         if not batch:
             break

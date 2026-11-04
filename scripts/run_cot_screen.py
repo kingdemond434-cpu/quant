@@ -16,7 +16,10 @@ a DSR-counted trial and is logged as one.
 
 DATA. Reader-first: uses `data/cot_zcache.parquet` when present (the VPS path), else fetches the
 CFTC annual archives (public domain) to the scratchpad. Price legs come from FRED's keyless CSV
-endpoint (public domain). Metals/grains/softs are DROPPED with a stated reason, never silently:
+endpoint (public domain) through `free_data.fred_series` -- the method fence, the desk UA, and the
+third-party refusal (terms_fence `fred_copyrighted`) before any request: S&P owns SP500, so the
+sp500 leg is UNMEASURED_NO_LICENSED_SOURCE (substitute named in metadata: MT5 US500) with a
+missed_growth line, never read from FRED or a stale cached CSV. Metals/grains/softs are DROPPED with a stated reason, never silently:
 Stooq is behind a JS proof-of-work bot gate and register #80 is an OPEN principal ruling on
 defeating anti-bot gates, so it was not defeated; Yahoo's chart endpoint returned 429.
 
@@ -30,6 +33,8 @@ import csv
 import io
 import json
 import subprocess
+import sys
+import urllib.error
 import urllib.request
 import zipfile
 from datetime import UTC, datetime
@@ -38,14 +43,25 @@ from typing import Any
 
 import numpy as np
 
+try:
+    from libs.data.polite_fetch import PoliteRefused, polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+    from libs.data.polite_fetch import PoliteRefused, polite_urlopen
+
 _ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT / "desks" / "mt5" / "research") not in sys.path:
+    sys.path.insert(0, str(_ROOT / "desks" / "mt5" / "research"))
+import free_data as fd  # noqa: E402
+
 _CACHE = Path("/tmp/claude-0/-home-user-quant/1c87bc3b-ab99-5043-86ff-5b38ad12af2a/scratchpad/cot")  # noqa: S108 -- session scratchpad path, not a shared world-writable location
 _PARQUET = _ROOT / "data/cot_zcache.parquet"
 _OUT = _ROOT / "data/cot_screen_summary.json"
 _DOC = _ROOT / "docs/research/COT_SCREEN_RESULT.md"
 
 _COT_URL = "https://www.cftc.gov/files/dea/history/deacot{year}.zip"
-_FRED_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
 
 # COT market-name substring -> FRED price series. Only pairs with a licence-clean price leg are
 # included; see the module docstring for what was dropped and why.
@@ -84,6 +100,21 @@ _ZWIN = 52          # weeks
 _BORROWED_HAIRCUT = 0.58
 
 
+def transport_only(exc: BaseException) -> bool:
+    """True only for a pure transport failure (timeout, reset, DNS, TLS) the polite path raised
+    AFTER admitting the URL. A PoliteRefused that carries a verdict (robots, a hold, a challenge),
+    the method fence's TermsFenced, any error naming a verdict, a size cap, or anything that is
+    not a network error is a refusal or a bug -- never a reason to try curl."""
+    if isinstance(exc, urllib.error.HTTPError) or getattr(exc, "verdict", ""):
+        return False
+    if type(exc).__name__ == "TermsFenced" or isinstance(exc, RuntimeError):
+        return False
+    if isinstance(exc, PoliteRefused):
+        err = str(getattr(exc, "error", "") or "")
+        return not err.startswith("body longer than")
+    return isinstance(exc, (urllib.error.URLError, TimeoutError, ConnectionError))
+
+
 def _fetch(url: str, dest: Path) -> bytes:
     """Cache-first fetch, with a curl fallback.
 
@@ -97,9 +128,16 @@ def _fetch(url: str, dest: Path) -> bytes:
         return dest.read_bytes()
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "quant-research/1.0"})
-        with urllib.request.urlopen(req, timeout=45) as r:
+        with polite_urlopen(req, timeout=45) as r:
             blob: bytes = r.read()
-    except Exception:
+    except urllib.error.HTTPError:
+        raise                       # an HTTP answer (401/403/429 already held): no other route
+    except Exception as exc:
+        # ROBOTS DECIDES (LAWS 5e amended 2026-10-14): a refusal -- robots.txt, a site hold, the
+        # method fence -- is final, never routed around through curl. Only a PURE TRANSPORT
+        # failure on a URL the polite path already admitted falls back (no redirects followed).
+        if not transport_only(exc):
+            raise
         subprocess.run(["curl", "-sSf", "-o", str(dest), url, "--max-time", "90"],
                        check=True, capture_output=True)
         return dest.read_bytes()
@@ -115,17 +153,24 @@ def _cot_year(year: int) -> list[dict[str, str]]:
     return list(csv.DictReader(io.StringIO(text)))
 
 
+class FredRefused(Exception):
+    """A third-party FRED series (terms_fence `fred_copyrighted`): refused before any request."""
+
+    def __init__(self, row: dict[str, Any]) -> None:
+        super().__init__(row.get("fred_series"))
+        self.row = row
+
+
 def _fred(sid: str) -> dict[str, float]:
-    blob = _fetch(_FRED_URL.format(sid=sid), _CACHE / f"fred_{sid}.csv")
-    out: dict[str, float] = {}
-    for row in csv.DictReader(io.StringIO(blob.decode("utf-8"))):
-        vals = list(row.values())
-        if len(vals) < 2 or vals[1] in ("", ".", None):
-            continue
-        try:
-            out[str(vals[0])[:10]] = float(str(vals[1]))
-        except ValueError:
-            continue
+    """FRED's keyless CSV through free_data (method fence, desk UA, third-party refusal FIRST:
+    no URL, no cache, no mirror for a refused id). Uncached: the deep history from 1900 must not
+    be cut to free_data's 2010 cache window."""
+    row = fd.fred_refusal(sid, "run_cot_screen")
+    if row is not None:
+        raise FredRefused(row)
+    out = fd.fred_series(sid, start="1900-01-01", alternate=False, use_cache=False)
+    if not out:
+        raise OSError(f"FRED {sid}: no rows")
     return out
 
 
@@ -266,6 +311,7 @@ def main() -> int:
     pooled_z: list[np.ndarray] = []
     pooled_r: list[np.ndarray] = []
     dropped: list[str] = []
+    refused: dict[str, dict[str, Any]] = {}
 
     for asset, (_needles, sid) in _ASSETS.items():
         rows = panel.get(asset, [])
@@ -274,6 +320,11 @@ def main() -> int:
             continue
         try:
             prices = _fred(sid)
+        except FredRefused as e:
+            refused[sid] = {**e.row, "asset": asset}
+            dropped.append(f"{asset}: FRED {sid} {e.row['status']} (terms_fence fred_copyrighted;"
+                           f" substitute {e.row.get('substitute')} named, not read here)")
+            continue
         except (OSError, ValueError) as e:
             dropped.append(f"{asset}: FRED {sid} unavailable ({type(e).__name__})")
             continue
@@ -333,7 +384,10 @@ def main() -> int:
         "stage": "A (SCREEN -- zero promotion authority)",
         "assets_used": sorted({r["asset"] for r in decay_rows}),
         "assets_dropped": dropped,
-        "price_source": "FRED keyless CSV (public domain); Stooq NOT used -- JS proof-of-work bot "
+        "unmeasured_no_licensed_source": {
+            sid: {k: v for k, v in r.items() if k != "missed_growth"} for sid, r in refused.items()},
+        "missed_growth": [r["missed_growth"] for r in refused.values()],
+        "price_source": "FRED keyless CSV (public-domain series only, via free_data); Stooq NOT used -- JS proof-of-work bot "
                         "gate, and register #80 is an OPEN principal ruling on defeating anti-bot "
                         "gates; Yahoo chart endpoint returned HTTP 429",
         "trials_charged": trials,

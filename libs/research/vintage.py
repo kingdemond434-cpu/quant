@@ -46,6 +46,25 @@ EXTRACTOR_INVARIANT = (
 )
 
 
+def _refused(series: str) -> bool:
+    """True for a FRED series a third party owns (terms_fence `fred_copyrighted`, IDEAS_ONLY).
+
+    Its revision log may still sit on disk from before the 2026-10-14 ruling; the file is kept,
+    never deleted, but no reader is handed its values and no writer appends to it. Fails closed:
+    if the register cannot be imported, the series named in the ruling are refused anyway."""
+    try:
+        from libs.data.terms_fence import fred_series_source
+        return bool(fred_series_source(series))
+    except Exception:                                        # fail closed
+        return series.upper() in {"VIXCLS", "BAMLH0A0HYM2", "UMCSENT", "GOLDAMGBD228NLBM",
+                                   "GOLDPMGBD228NLBM", "SP500", "NASDAQCOM", "NIKKEI225",
+                                   "PCOPPUSDM"}
+
+
+#: The status a refused series' summary carries: absent for want of a licence, never zero.
+UNMEASURED_NO_LICENSED_SOURCE: Final = "UNMEASURED_NO_LICENSED_SOURCE"
+
+
 def _path(root: Path, series: str) -> Path:
     safe = "".join(ch if ch.isalnum() or ch in "-_." else "_" for ch in series)
     return root / STORE_DIR / f"{safe}.jsonl"
@@ -58,6 +77,8 @@ def read_log(root: Path, series: str) -> list[dict[str, Any]]:
     dropped here -- and it can only ever be a trailing partial write, because the file is
     append-only and each row is written whole.
     """
+    if _refused(series):
+        return []                    # a third-party series' old log is kept but never read
     path = _path(root, series)
     if not path.exists():
         return []
@@ -124,6 +145,10 @@ def record(
     the caller is about to report a healthy collection over nothing; zero on a later run is the
     normal, expected state. The two are told apart by the log's own length, never by this number.
     """
+    if _refused(series):
+        # A third-party series is never written either -- and this guard is load-bearing:
+        # read_log hands back [] for it, so without it every observation would re-append.
+        return 0
     # Dedup against what the log said AT THIS VINTAGE, not against the globally-latest value.
     # Comparing to the latest would drop a backfilled vintage whose value happens to match today's,
     # recording the period as NOT KNOWABLE then when it demonstrably was -- absence manufactured
@@ -205,6 +230,11 @@ def revisions(root: Path, series: str) -> list[dict[str, Any]]:
 
 def summarise(root: Path, series: str) -> dict[str, Any]:
     """Coverage of one series' vintage history, with the refusal states kept distinct."""
+    if _refused(series):
+        return {"series": series, "status": UNMEASURED_NO_LICENSED_SOURCE, "n_rows": 0,
+                "n_periods": 0, "n_vintages": 0,
+                "why": ("a third-party FRED series (terms_fence fred_copyrighted): its revision "
+                        "log is kept on disk but never read as live input")}
     rows = read_log(root, series)
     if not rows:
         return {

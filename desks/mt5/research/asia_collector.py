@@ -21,11 +21,19 @@ WHAT IT REFUSES TO DO, because a collector that invents data is worse than none:
     UNCONFIGURED    the source declares `access: key` or `paid` and no key is present. NOT a
                     failure and NOT a silent skip: a named state, so a missing subscription can
                     never be mistaken for a dead endpoint.
-    (BLOCKED_BY_ROBOTS is RETIRED, 2026-09-23.) A robots.txt Disallow was a refusal here and is
-                    now a LABEL: the reading is recorded on the row as `robots_disallows` and
-                    `terms_note`, it routes what the desk may REDISTRIBUTE, and the page is
-                    fetched like any other open page (LAWS 5e). The status name stays in the
-                    census tuple below so an OLD row already carrying it still prints.
+    IDEAS_ONLY / METHOD_BLOCKED / NEEDS_KEY  the per-source policy (libs/data/terms_fence.py,
+                    ruling of 2026-10-13: no source is banned). This collector builds LIVE INPUT
+                    series, so a source that is IDEAS_ONLY (StockTwits' pages, whose Terms s.5
+                    bar automated extraction -- `stocktwits_macro`) or held is not requested; the
+                    row carries the status, the why and the permitted route.
+    ROBOTS IS A LABEL, NEVER A STATUS (LAWS 5e, live; "robots.txt Disallow treated as a
+                    refusal" is a deleted brake). The url's own origin robots.txt, read by
+                    `polite_fetch.HostAccess` (the desk's one robots reader), puts
+                    `access_label` / `terms_note` / `redistribute_allowed` on the row: a
+                    Disallow is PUBLIC_WITH_TERMS and an unreadable robots.txt ACCESS_UNCLEAR,
+                    and the source IS requested. Only a 401/403/429 or challenge (an access
+                    control) holds the site, and later passes send nothing to it (HTTP_ERROR
+                    with the hold's verdict). BLOCKED_BY_ROBOTS is no longer produced.
 
 EVERYTHING IS VAULTED POINT-IN-TIME. The raw bytes are written under their own content hash and
 never overwritten, so a claim made today can be re-read against exactly what the page said when
@@ -66,6 +74,14 @@ ROOT = BASE.parent.parent
 for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+
+from libs.data.polite_fetch import (  # noqa: E402
+    DESK_UA,
+    PoliteRefused,
+    access_label,
+    admit,
+    polite_urlopen,
+)
 
 REGISTRY = BASE / "data" / "asia_sources.json"
 VAULT = BASE / "data" / "lake" / "vault"
@@ -151,31 +167,27 @@ def _key_present(src: dict[str, Any]) -> bool:
     return bool(env and os.environ.get(env))
 
 
-def _robots_allows(url: str, agent: str = "quant-desk-collector") -> tuple[bool, str]:
-    """Ask the host's robots.txt and RECORD what it said. The answer is a LABEL, not a gate.
+def _robots_allows(url: str, agent: str = "") -> tuple[bool, str]:
+    """The site's holds and the url's own origin robots.txt, read by THE ONE implementation
+    (`polite_fetch.HostAccess`, via `admit`: the desk's product token, then `*`, longest match).
 
-    LAWS 5e (rewritten 2026-09-23): licence, robots, source class and credibility route
-    REDISTRIBUTION and WEIGHT and never stop discovery, ingestion, representation or testing.
-    This helper used to return False on a served DISALLOW and `_fetch` turned that into
-    BLOCKED_BY_ROBOTS -- a discovery brake, and the last one left in the shared fetch path that
-    `event_surprise` and `data_acquisition_scientist` both call.
-
-    The reading is still MADE and still travels with the row, because provenance is the half of
-    the old behaviour worth keeping. What is gone is the refusal. The five refused ACTS are
-    untouched and none of them is robots.txt: a login, a paywall, a credential or an access
-    control is still never crossed (see the auth/subscription branch above this call).
+    LAWS 5e (live): robots.txt is a LABEL, never a refusal. (False, why) ONLY for a person-held
+    401/403/429/challenge hold on the site; a Disallow or an unreadable robots.txt answers True
+    with the label named in `why` (the row carries it via `access_label`). `agent` is kept for
+    callers; the desk is matched as itself only (`DESK_UA_PRODUCT`), never as another agent.
     """
+    del agent
     try:
-        from urllib.robotparser import RobotFileParser
-        parts = urllib.parse.urlsplit(url)
-        rp = RobotFileParser()
-        robots = f"{parts.scheme}://{parts.netloc}/robots.txt"
-        req = urllib.request.Request(robots, headers={"User-Agent": agent})
-        with urllib.request.urlopen(req, timeout=12, context=_TLS) as r:
-            rp.parse(r.read(200_000).decode("utf-8", errors="replace").splitlines())
-        return (bool(rp.can_fetch(agent, url)), "robots.txt consulted")
+        ok, why = admit(url)
     except Exception as exc:
-        return True, f"robots.txt unreadable ({type(exc).__name__}); treated as allowing"
+        return True, f"ACCESS_UNCLEAR: robots/holds check failed ({type(exc).__name__})"
+    if not ok:
+        return False, why
+    label = access_label(url)
+    lab = str(label.get("access_label") or "")
+    if lab and lab != "PUBLIC":
+        return True, f"{lab}: {label.get('terms_note') or ''}"
+    return True, "robots.txt consulted: allowed"
 
 
 def _vault(source_id: str, body: bytes, url: str, ctype: str) -> dict[str, Any]:
@@ -365,15 +377,32 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
                             f"skip: a missing subscription must not read as a dead endpoint")})
         return rec
 
-    # ROBOTS IS READ AND RECORDED, NEVER OBEYED AS A REFUSAL (LAWS 5e, 2026-09-23). The reading
-    # rides on the row as provenance -- it routes what the desk may REDISTRIBUTE -- and the fetch
-    # proceeds either way. The `BLOCKED_BY_ROBOTS` status it used to set is deleted.
+    # THE LIVE-INPUT CHECK (libs/data/terms_fence.py) -- NOT a robots or licence label (those
+    # stay labels, LAWS 5e). A collected series is live input, so a source that is IDEAS_ONLY or
+    # held is never requested, not even for robots.txt. The row names the policy row.
+    try:
+        from libs.data import terms_fence as _tf
+        fenced = _tf.input_source(url, sid)   # live input: IDEAS_ONLY or held
+    except Exception as exc:                 # fail CLOSED: a fence that cannot load fetches nothing
+        rec.update({"status": "BLOCKED_TERMS", "why": f"terms fence unavailable: {exc!r}"})
+        return rec
+    if fenced:
+        rec.update({**_tf.refusal(fenced)})
+        return rec
+
+    # ONLY A SITE HOLD STOPS THE REQUEST (an access control answered: hard-boundary act 2). A
+    # robots Disallow or an unreadable robots.txt is a LABEL on the row and the source IS
+    # requested (LAWS 5e: "robots.txt Disallow treated as a refusal" is a deleted brake).
     allowed, why_robots = _robots_allows(url)
     rec["robots"] = why_robots
-    rec["robots_disallows"] = not allowed
     if not allowed:
-        rec["terms_note"] = ("robots.txt disallows this path: recorded as a REDISTRIBUTION "
-                             "label, mined and tested like any other open page")
+        rec.update({"status": "HTTP_ERROR", "verdict": why_robots.split(" ")[0].split(":")[0],
+                    "why": (f"{why_robots}: the site is held for a person (an access control "
+                            "answered); nothing was requested")})
+        return rec
+    label = access_label(url, read=False) or access_label(url)
+    rec.update(label)
+    rec["robots_disallows"] = label.get("access_label") == "PUBLIC_WITH_TERMS"
 
     # CONDITIONAL GET. A 304 costs a round trip and no body, and most of these sources publish
     # daily or monthly against a pass that may run hourly -- so the default behaviour is to
@@ -384,8 +413,7 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     # exactly what a point-in-time store wants to hear. It is recorded as UNCHANGED so a reader
     # can tell "nothing new" from "nothing fetched", which is the same distinction this file
     # draws everywhere else.
-    headers = {"User-Agent": "quant-desk-collector/1.0 (+public data collection)",
-               "Accept": "*/*"}
+    headers = {"User-Agent": DESK_UA, "Accept": "*/*"}
     if isinstance(validators, dict):
         if validators.get("etag"):
             headers["If-None-Match"] = str(validators["etag"])
@@ -394,13 +422,29 @@ def collect_one(src: dict[str, Any], timeout: float = 25.0,
     headers.update(_declared_headers(src))
     body_out = _declared_form(src)
     req = urllib.request.Request(url, data=body_out, headers=headers)
+    from libs.data import terms_fence as _tfg
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_TLS) as r:
+        # polite_fetch's seam: THE ONE FETCH DOOR behind the site's holds and the origin's
+        # robots.txt on every hop; a login / CAPTCHA wall is refused, not followed; 401/403/429
+        # hold the site (no re-request on the next cadence -- the hold stands).
+        with polite_urlopen(req, timeout=timeout, live_input=True, max_bytes=MAX_BYTES,
+                            retries=0, leg="asia_collector") as r:
             status = int(getattr(r, "status", 0) or 0)
             ctype = str(r.headers.get("Content-Type") or "").lower()
             etag = r.headers.get("ETag")
             last_mod = r.headers.get("Last-Modified")
             body = r.read(MAX_BYTES)
+    except _tfg.TermsFenced as e:
+        rec.update(_tfg.refusal(e.platform, redirected=True))
+        return rec
+    except PoliteRefused as e:
+        if e.verdict:
+            rec.update({"status": ("BLOCKED_TERMS" if e.verdict == "terms_fenced"
+                                   else "HTTP_ERROR"),
+                        "verdict": e.verdict, "why": f"{e.verdict}: {e.error[:120]}"})
+        else:
+            rec.update({"status": "UNREACHABLE", "why": f"{e.error[:120]}"})
+        return rec
     except urllib.error.HTTPError as e:
         code = int(getattr(e, "code", 0) or 0)
         if code == 304:
@@ -502,6 +546,45 @@ def _derived_sources(sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
+def last_status_before_hold(prev: Any, rec: dict[str, Any]) -> str:
+    """The status of the last pass that REACHED a source now held on terms, kept across passes:
+    the persisted `last_status_before_hold` when collector_state carries one, else the previous
+    pass's status when that pass was not itself the hold (pass-6 audit SHOULD-FIX: the record
+    used to vanish after the first held pass). Empty when the source was never reached."""
+    if not isinstance(prev, dict):
+        return ""
+    kept = str(prev.get("last_status_before_hold") or "")
+    if kept:
+        return kept
+    last = str(prev.get("last_status") or "")
+    return last if last and last != str(rec.get("status") or "") else ""
+
+
+def held_missed_growth_lines(rows: list[dict[str, Any]],
+                             prior: dict[str, Any]) -> list[dict[str, Any]]:
+    """GROWTH GOVERNANCE: one missed-growth line per registry row this pass held on terms (a
+    `held_route` row of libs/data/terms_fence.SOURCE_POLICY; nothing was requested for it). Its
+    past conversion is this organ's own record from before the hold: the status of the last pass
+    that reached the source (`prior`, collector_state read before this pass). delta E[log W] is
+    UNMEASURED, never zero (terms_fence.held_missed_growth)."""
+    from libs.data import terms_fence as _tf
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for r in rows:
+        key = str(r.get("source") or "")
+        if not key or key in seen or not _tf.held_on_terms(key):
+            continue
+        seen.add(key)
+        prev = prior.get(str(r.get("id"))) if isinstance(prior, dict) else None
+        before = last_status_before_hold(prev, r)
+        past: dict[str, Any] = ({"registry_id": str(r.get("id")),
+                                 "last_status_before_hold": before} if before else {})
+        line = _tf.held_missed_growth(key, past or None)
+        line["registry_id"] = str(r.get("id"))
+        out.append(line)
+    return out
+
+
 def due(src: dict[str, Any], state: dict[str, Any], now: float) -> bool:
     last = (state.get(str(src.get("id"))) or {}).get("last_attempt_epoch")
     if not isinstance(last, (int, float)):
@@ -531,6 +614,7 @@ def main(argv: list[str] | None = None) -> int:
         want = set(args.id)
         sources = [s for s in sources if str(s.get("id")) in want]
     state = _read(STATE, {})
+    prior = {k: dict(v) for k, v in state.items() if isinstance(v, dict)}
     now = time.time()
     # A TRANSPORT CARRIES OTHER SOURCES AND HAS NO ENDPOINT OF ITS OWN TO COLLECT.
     todo = [s for s in sources
@@ -597,6 +681,16 @@ def main(argv: list[str] | None = None) -> int:
                               validators=prev.get("validators") if isinstance(prev, dict) else None)
         rows[i] = rec
         keep = {"last_attempt_epoch": time.time(), "last_status": rec.get("status")}
+        try:
+            from libs.data import terms_fence as _tfh
+            held = _tfh.held_on_terms(str(rec.get("source") or ""))
+        except Exception:                      # the fence is read again by the report below
+            held = False
+        if held:
+            # persist the pre-hold record so every held pass's missed-growth line carries it
+            before = last_status_before_hold(prev, rec)
+            if before:
+                keep["last_status_before_hold"] = before
         # A 304 keeps the OLD validators: they are what proved the page unchanged, and replacing
         # them with nothing would make the next pass unconditional for no reason.
         keep["validators"] = (rec.get("validators")
@@ -620,12 +714,13 @@ def main(argv: list[str] | None = None) -> int:
         "series_written": [r["parse"]["path"] for r in rows
                            if isinstance(r.get("parse"), dict) and r["parse"].get("path")],
         "rows": rows,
+        "missed_growth_lines": held_missed_growth_lines(rows, prior),
     }
     _write_atomic(OUT, json.dumps(doc, indent=1))
 
     print(f"asia collector: {len(rows)} attempted of {len(sources)} -> {dict(census)}")
     for st in ("COLLECTED", "NEEDS_PARSER", "ROUTE_CHANGED", "HTTP_ERROR", "UNREACHABLE",
-               "UNCONFIGURED", "BLOCKED_BY_ROBOTS"):
+               "UNCONFIGURED", "BLOCKED_WITH_SUBSTITUTE", "BLOCKED_TERMS"):
         rs = [r for r in rows if r.get("status") == st]
         if not rs:
             continue

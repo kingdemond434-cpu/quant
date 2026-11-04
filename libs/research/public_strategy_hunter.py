@@ -26,8 +26,9 @@ from pathlib import Path
 from typing import Any
 
 from libs.core.coerce import integer
+from libs.data.polite_fetch import DESK_UA
 
-_UA = "Mozilla/5.0 (compatible; QuantResearchPublicSourceMonitor/1.0)"
+_UA = DESK_UA
 _CTX = ssl.create_default_context()
 _EXTREME = re.compile(
     r"(?:\b(?:100|200|300|500|1000)%|triple[- ]digit|world cup|champion|record return|10x|100x)",
@@ -68,8 +69,10 @@ class Source:
 
 
 def fetch(url: str, *, timeout: float = 30.0) -> bytes:
+    from libs.data.polite_fetch import polite_urlopen
     req = urllib.request.Request(url, headers={"User-Agent": _UA, "Accept": "*/*"})
-    with urllib.request.urlopen(req, timeout=timeout, context=_CTX) as response:
+    # holds + robots.txt first (LAWS 5e amended 2026-10-14); a 401/403/429 holds the site
+    with polite_urlopen(req, timeout=timeout, leg="public_strategy_hunter") as response:
         payload: object = response.read()
     if not isinstance(payload, bytes):
         raise TypeError("public-source response must be bytes")

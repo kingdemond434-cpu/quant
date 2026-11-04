@@ -27,6 +27,13 @@ import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+try:
+    from libs.data.polite_fetch import polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import polite_urlopen
 
 _DESK = Path(__file__).resolve().parents[1]
 _ROOT = _DESK.parent.parent
@@ -65,7 +72,7 @@ def _get(url: str, timeout: float = 20.0) -> Any:
     tok = os.environ.get("GITHUB_TOKEN")
     if tok:
         req.add_header("Authorization", f"Bearer {tok}")
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with polite_urlopen(req, timeout=timeout) as r:
         return json.loads(r.read().decode("utf-8"))
 
 

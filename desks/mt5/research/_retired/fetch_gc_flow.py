@@ -51,6 +51,13 @@ import urllib.request
 from pathlib import Path
 
 import pandas as pd
+try:
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[4]))
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 
 _DESK = Path(__file__).resolve().parents[1]
 OUT_DIR = _DESK / "data" / "gcflow"
@@ -61,7 +68,7 @@ SYMBOL = "GC=F"
 # which would look like a gap in the market rather than a limit of the source.
 MAX_RANGE = {"15m": "60d", "30m": "60d", "1h": "730d", "1d": "10y"}
 DEFAULT_INTERVALS = ("1h", "15m")
-UA = "Mozilla/5.0 (X11; Linux x86_64) research-bar-fetch/1.0"
+UA = DESK_UA
 
 
 def fetch(interval: str, rng: str, retries: int = 4) -> pd.DataFrame:
@@ -78,7 +85,7 @@ def fetch(interval: str, rng: str, retries: int = 4) -> pd.DataFrame:
     for attempt in range(retries):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": UA})
-            with urllib.request.urlopen(req, timeout=60) as r:
+            with polite_urlopen(req, timeout=60) as r:
                 payload = json.load(r)
             break
         except urllib.error.HTTPError as e:                     # noqa: PERF203

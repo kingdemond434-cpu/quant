@@ -7,7 +7,13 @@ import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
-import requests
+try:
+    from libs.data.polite_fetch import DESK_UA, polite_requests_get
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA, polite_requests_get
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "quantconnect"
@@ -30,8 +36,7 @@ def _extract_patterns(text: str) -> list[str]:
 def mine_quantconnect() -> list[dict]:
     discoveries = []
     try:
-        resp = requests.get(QC_URL, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}, timeout=15)
+        resp = polite_requests_get(QC_URL, headers={"User-Agent": DESK_UA}, timeout=15)
         resp.raise_for_status()
         text = resp.text
         strategies = re.findall(r'<h3[^>]*><a[^>]*href="([^"]+)"[^>]*>([^<]+)</a></h3>', text)

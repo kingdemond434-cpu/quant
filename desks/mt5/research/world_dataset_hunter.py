@@ -336,30 +336,40 @@ Fetcher = Callable[[str, float], bytes]
 
 
 def urllib_fetch(url: str, timeout: float) -> bytes:
-    """Default transport: urllib, a named UA, one polite retry on 429."""
-    for attempt in (0, 1):
-        req = urllib.request.Request(url, headers={"User-Agent": UA,
-                                                   "Accept": "application/json, text/csv, */*"})
-        try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                raw = resp.read(MAX_DIRECT_BYTES + 1)
-            if len(raw) > MAX_DIRECT_BYTES:
-                raise FetchError("too_large", url)
-            return raw
-        except urllib.error.HTTPError as exc:
-            if exc.code == 429 and attempt == 0:
-                try:
-                    wait = min(30.0, float(exc.headers.get("Retry-After") or 10))
-                except (TypeError, ValueError):
-                    wait = 10.0
-                time.sleep(wait)
-                continue
-            raise FetchError(_classify(exc), str(exc)[:160]) from exc
-        except FetchError:
-            raise
-        except Exception as exc:
-            raise FetchError(_classify(exc), f"{type(exc).__name__}: {str(exc)[:160]}") from exc
-    raise FetchError("rate_limited_429", url)
+    """Default transport: polite_fetch's urlopen seam, the named UA. LIVE-INPUT CHECK
+    (libs/data/terms_fence.py): a URL on an IDEAS_ONLY or held source is refused before any
+    request, and a 30x into a held source or a login wall is never followed. ROBOTS DECIDES
+    (LAWS 5e amended 2026-10-14): the site's holds and the origin's robots.txt are checked on
+    every hop before a request; a 401/403/429 holds the site and is never retried."""
+    from libs.data import polite_fetch as _pf
+    from libs.data import terms_fence as _tf
+    if _tf.input_source(url):
+        raise FetchError("terms_fenced", url)
+    req = urllib.request.Request(url, headers={"User-Agent": UA,
+                                               "Accept": "application/json, text/csv, */*"})
+    try:
+        with _pf.polite_urlopen(req, timeout=timeout, live_input=True,
+                                max_bytes=MAX_DIRECT_BYTES + 1, retries=0,
+                                leg="world_dataset_hunter") as resp:
+            raw = resp.read(MAX_DIRECT_BYTES + 1)
+        if len(raw) > MAX_DIRECT_BYTES:
+            raise FetchError("too_large", url)
+        return raw
+    except urllib.error.HTTPError as exc:
+        raise FetchError(_classify(exc), str(exc)[:160]) from exc
+    except FetchError:
+        raise
+    except _pf.PoliteRefused as exc:
+        if exc.verdict:
+            raise FetchError("terms_fenced" if exc.verdict == "terms_fenced"
+                             else "robots_or_held", f"{exc.verdict}: {url}") from exc
+        if "body longer" in exc.error:
+            raise FetchError("too_large", url) from exc
+        raise FetchError(_classify(exc), f"{type(exc).__name__}: {str(exc)[:160]}") from exc
+    except _tf.TermsFenced as exc:
+        raise FetchError("terms_fenced", f"redirected into {exc.platform}: {url}") from exc
+    except Exception as exc:
+        raise FetchError(_classify(exc), f"{type(exc).__name__}: {str(exc)[:160]}") from exc
 
 
 class Client:
