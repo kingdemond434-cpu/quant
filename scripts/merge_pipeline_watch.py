@@ -276,6 +276,7 @@ def assess(
             "method": box.get("method"),
             "sealed_at": box.get("sealed_at"),
             "unadopted_code_commits": len(pending),
+            "lower_bound": bool(box.get("lower_bound")),
             "oldest_unadopted": None if not pending else str(pending[0]["sha"])[:9],
             "lag_h": None if lag is None else round(lag / 60.0, 2),
             "last_adoption_latency_h": (
@@ -428,7 +429,9 @@ def _box(repo: str, base: str) -> dict[str, Any]:
         try:
             out["code_at"] = _gh(f"repos/{repo}/commits/{cand}")["commit"]["committer"]["date"]
             cmp = _gh(f"repos/{repo}/compare/{cand}...{base}?per_page=100")
-            out.update(behind=list(cmp.get("commits") or []), method=f"compare {cand[:9]}")
+            behind = list(cmp.get("commits") or [])
+            total = int(cmp.get("total_commits") or len(behind))
+            out.update(behind=behind, method=f"compare {cand[:9]}", lower_bound=len(behind) < total)
             return out
         except (RuntimeError, KeyError, TypeError):
             continue
@@ -442,7 +445,10 @@ def _box(repo: str, base: str) -> dict[str, Any]:
                 break
     except RuntimeError:
         return {"code_sha": ""}
-    out.update(behind=list(reversed(got)), method="since the seal (box-local release)")
+    # committer-date filter: commits a merge carries in were committed before the seal and are
+    # missed, so the count and the oldest age are lower bounds and a quiet reading proves nothing
+    out.update(behind=list(reversed(got)), method="since the seal (box-local release)",
+               lower_bound=True)  # fmt: skip
     return out
 
 

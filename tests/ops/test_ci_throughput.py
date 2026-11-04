@@ -346,6 +346,10 @@ def test_the_box_running_old_code_is_red_and_its_adoption_latency_is_reported() 
     assert [r.split()[0] for r in rep["red"]] == ["BOX_BEHIND:"]
     assert rep["adoption"]["unadopted_code_commits"] == 1 and rep["adoption"]["lag_h"] == 3.0
     assert rep["adoption"]["last_adoption_latency_h"] == 1.0
+    assert rep["adoption"]["lower_bound"] is False
+    # since-the-seal and a capped compare can only under-count: say so, never imply adoption
+    under = mp.assess(NOW, [], {}, {}, [], 0, live, box=dict(box, lower_bound=True))
+    assert under["adoption"]["lower_bound"] is True
     fresh = dict(box, behind=[_commit("fix", 30)])
     assert mp.assess(NOW, [], {}, {}, [], 0, live, box=fresh)["status"] == "GREEN"
     current = dict(box, behind=[_commit("mt5 box state 2026-11-04_0137 (published", 9 * 60)])
