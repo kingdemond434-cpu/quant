@@ -33,6 +33,10 @@ def test_round_step_is_the_big_figure_of_each_market() -> None:
     assert SC.round_step(151.3) == pytest.approx(1.0)
     assert SC.round_step(2650.0) == pytest.approx(10.0)
     assert SC.round_step(42150.0) == pytest.approx(100.0)
+    # Below 1.0 the big figure is still 0.01 (AUDUSD, USDCHF, EURGBP), never a 10-pip grid.
+    assert SC.round_step(0.65) == pytest.approx(0.01)
+    assert SC.round_step(0.88) == pytest.approx(0.01)
+    assert SC.round_step(0.0065) == pytest.approx(0.0001)
     assert np.isnan(SC.round_step(0.0))
 
 

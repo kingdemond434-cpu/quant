@@ -57,10 +57,17 @@ _SOURCES = ("round", "half", "prior_day", "asia", "swing")
 
 
 def round_step(price: float) -> float:
-    """The big-figure step for `price`: 0.01 at 1.08, 1.0 at 150, 10 at 2600, 100 at 42000."""
+    """The big-figure step for `price`: 0.01 at 1.08, 1.0 at 150, 10 at 2600, 100 at 42000.
+
+    BELOW 1.0 THE EXPONENT ROUNDS UP. The big figure on AUDUSD 0.65, USDCHF 0.88 or EURGBP 0.85
+    is 0.01, the same as on EURUSD 1.08. A floor there gives 0.001, a ten-pip grid nobody
+    watches, and every sub-1.0 pair would be charged trials for a claim it does not make.
+    """
     if not (math.isfinite(price) and price > 0):
         return float("nan")
-    return float(10.0 ** math.floor(math.log10(price)) / 100.0)
+    lg = math.log10(price)
+    exp = math.floor(lg) if price >= 1.0 else math.ceil(lg)
+    return float(10.0 ** exp / 100.0)
 
 
 def _last_n_confirmed(flags: np.ndarray, values: np.ndarray, k: int, n_keep: int

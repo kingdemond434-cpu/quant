@@ -2615,6 +2615,7 @@ from mt5desk.family_stop_cluster import STOP_CLUSTER_FAMILIES  # noqa: E402
 for _sc_name, _sc_fn in STOP_CLUSTER_FAMILIES.items():
     ORTHOGONAL_FAMILIES[_sc_name] = _sc_fn
     FAMILY_INPUTS[_sc_name] = ("price only", "data/universe/*_H1.parquet")
-    # ALL SEVEN CHARTS. On D1 the Asian source is absent by construction (a daily bar has no
-    # hour inside the session) and the prior day is the previous bar, so the map there is round
-    # figures, prior-day extremes and swings only: thinner, still the same claim, still judged.
+    # ALL SEVEN CHARTS: no FAMILY_TIMEFRAMES entry means every chart, so do not add one. On D1
+    # the Asian source is absent by construction (a daily bar has no hour inside the session)
+    # and the prior day is the previous bar, so the map there is round figures, prior-day
+    # extremes and swings only: thinner, still the same claim, still judged.
