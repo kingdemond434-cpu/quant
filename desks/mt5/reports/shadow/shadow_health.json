@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-04T03:08:50+00:00",
+  "updated_at": "2026-11-04T05:23:27+00:00",
   "configured_sleeves": 702,
   "represented_sleeves": 702,
   "certified_sleeves_total": 1755,
@@ -9,19 +9,19 @@
   "n_mechanisms": 11,
   "retired_shadow_sleeves": 287,
   "quarantined_uncertified_candidates": 0,
-  "sleeves_with_forward_trades": 607,
+  "sleeves_with_forward_trades": 608,
   "zero_trade_clocks": {
-    "count": 95,
+    "count": 94,
     "by_status": {
-      "ACTIVE": 83,
+      "ACTIVE": 82,
       "BLOCKED_NO_BARS": 3,
       "IDENTITY_BROKEN": 9
     },
-    "age_measured": 95,
-    "median_age_days": 5.911,
+    "age_measured": 94,
+    "median_age_days": 6.005,
     "mature_14d_without_trade": 38,
-    "fresh_attempts": 86,
-    "naturally_inactive": 83,
+    "fresh_attempts": 85,
+    "naturally_inactive": 82,
     "suppressed_or_unproven": 12,
     "suppressed_examples": [
       "UNKNOWN",
@@ -44,7 +44,7 @@
     "766 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 8309.399,
+  "seconds": 5582.904,
   "gateway_armed": true,
   "promoted_live_sleeves": [],
   "promoted_live_certificate_rows": [],
