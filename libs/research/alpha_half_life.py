@@ -60,16 +60,23 @@ def member_half_life(r: pd.Series) -> dict[str, Any]:
     resid = means - (a + b * t)
     dof = n_blocks - 2
     se = math.sqrt(float((resid ** 2).sum()) / dof / sxx) if dof > 0 and sxx > 0 else float("nan")
-    tb = b / se if se and math.isfinite(se) and se > 0 else (0.0 if b == 0 else math.copysign(
-        math.inf, b))
+    # A zero residual (a perfectly linear series) has no finite t: keep it null, never Infinity,
+    # so strict JSON readers can parse the report; the sign of the slope still decides below.
+    # Rounding leaves a residual of ~1e-18 on an exact line, so "zero" is relative to the slope.
+    exact_fit = not math.isfinite(se) or se <= 1e-9 * abs(b) or se == 0
+    tb: float | None = None if exact_fit else b / se
     out = {**base, "start_edge_daily": a, "slope_per_year": b, "slope_t": tb,
            "now_edge_daily": a + b * float(t[-1]), "span_years": float(t[-1])}
     if a <= 0:
         return {**out, "verdict": "UNMEASURED", "why": "fitted start edge <= 0"}
     out["retained"] = (a + b * float(t[-1])) / a
     out["half_life_years"] = (a / 2.0) / -b if b < 0 else None
-    out["verdict"] = ("DECAYING" if b < 0 and tb <= -T_STAT else
-                      "GROWING" if b > 0 and tb >= T_STAT else "STABLE")
+    exact = tb is None and b != 0
+    out["verdict"] = ("DECAYING" if b < 0 and (exact or (tb is not None and tb <= -T_STAT)) else
+                      "GROWING" if b > 0 and (exact or (tb is not None and tb >= T_STAT)) else
+                      "STABLE")
+    if tb is None:
+        out["slope_t_why"] = "zero residual: the fit is exact, no finite t"
     return out
 
 
@@ -87,6 +94,10 @@ def pool_half_lives(series: dict[str, pd.Series]) -> dict[str, Any]:
         "median_half_life_years": (float(np.median(hl)) if hl else None),
         "median_retained": (float(np.median(ret)) if ret else None),
         "method": {"block_days": BLOCK_DAYS, "min_blocks": MIN_BLOCKS, "t_stat": T_STAT,
-                   "fit": "OLS of block-mean daily R on block time (years)"},
+                   "fit": "OLS of block-mean daily R on block time (years)",
+                   "basis": ("each member's full stored series: the in-sample window that "
+                             "selected it plus everything after. A fitted decline is partly "
+                             "winner's curse, so DECAYING reads biased high; no per-member "
+                             "out-of-sample start is stored to fit from")},
         "rows": rows,
     }

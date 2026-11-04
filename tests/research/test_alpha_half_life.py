@@ -47,3 +47,11 @@ def test_pool_summary_counts_every_member():
     assert sum(doc["verdicts"].values()) == 3
     assert doc["verdicts"]["UNMEASURED"] == 1
     assert doc["median_half_life_years"] is not None
+
+
+def test_an_exact_linear_fit_writes_no_infinity():
+    import json
+    n = 252 * 4
+    r = ahl.member_half_life(_series(0.002 * (1 - np.arange(n) / 252.0 / 8.0)))
+    assert r["slope_t"] is None and r["verdict"] == "DECAYING"
+    json.dumps(r, allow_nan=False)
