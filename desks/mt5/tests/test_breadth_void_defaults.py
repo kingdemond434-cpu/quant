@@ -80,3 +80,22 @@ def test_no_not_sourced_here_family_is_swept_at_defaults_without_a_reason() -> N
         assert blocked[fam].startswith("void at defaults"), fam
     # a family outside the named sets is untouched: the sweep still mines its defaults
     assert "trend_ma_cross" in ok
+
+
+def test_month_end_rebalance_default_cell_is_in_the_specialist_grid() -> None:
+    """month_end_rebalance is PREREGISTERED_ELSEWHERE, not void: its default cell is a cell of
+    research/specialist_cell's indices grid, which charges it once."""
+    import inspect
+
+    import specialist_cell as sc
+    from mt5desk.families_specialist import family_month_end_rebalance
+
+    ok, blocked = bs.default_families()
+    assert "month_end_rebalance" not in ok
+    assert blocked["month_end_rebalance"].startswith("preregistered elsewhere")
+    defaults = {k: p.default for k, p in
+                inspect.signature(family_month_end_rebalance).parameters.items()
+                if p.default is not inspect.Parameter.empty}
+    cells = [params for mech, fam, grid in sc._indices("US500") if fam == "month_end_rebalance"
+             for params in grid]
+    assert any(all(defaults[k] == v for k, v in params.items()) for params in cells)
