@@ -1,0 +1,301 @@
+{
+ "system_id": "gh_shinnytech_tqsdk_python",
+ "run_id": "queued_repo_cards_2026-10-06_gh_shinnytech_tqsdk_python",
+ "commit": "card_translation",
+ "candidates": [
+  {
+   "symbol": "XAUUSD",
+   "family": "level_breakout",
+   "params": {
+    "level": "pdh"
+   },
+   "mechanism": "Fairy four-price (\u83f2\u963f\u91cc\u56db\u4ef7): buy a break above yesterday's high, sell a break below yesterday's low; stop when price, after the break, returns through today's open; flat every position at 14:50 before the session close.",
+   "title": "XAUUSD level_breakout (QR-A-TQ-001)",
+   "card_id": "QR-A-TQ-001",
+   "licence": "Apache-2.0",
+   "falsifier": "the open-return stop variant does not beat the ATR-stop variant, or net expectancy <= 0",
+   "translation_note": "card params adapted to the registered family: stop, flat_at"
+  },
+  {
+   "symbol": "XAGUSD",
+   "family": "level_breakout",
+   "params": {
+    "level": "pdh"
+   },
+   "mechanism": "Fairy four-price (\u83f2\u963f\u91cc\u56db\u4ef7): buy a break above yesterday's high, sell a break below yesterday's low; stop when price, after the break, returns through today's open; flat every position at 14:50 before the session close.",
+   "title": "XAGUSD level_breakout (QR-A-TQ-001)",
+   "card_id": "QR-A-TQ-001",
+   "licence": "Apache-2.0",
+   "falsifier": "the open-return stop variant does not beat the ATR-stop variant, or net expectancy <= 0",
+   "translation_note": "card params adapted to the registered family: stop, flat_at"
+  },
+  {
+   "symbol": "XCUUSD",
+   "family": "level_breakout",
+   "params": {
+    "level": "pdh"
+   },
+   "mechanism": "Fairy four-price (\u83f2\u963f\u91cc\u56db\u4ef7): buy a break above yesterday's high, sell a break below yesterday's low; stop when price, after the break, returns through today's open; flat every position at 14:50 before the session close.",
+   "title": "XCUUSD level_breakout (QR-A-TQ-001)",
+   "card_id": "QR-A-TQ-001",
+   "licence": "Apache-2.0",
+   "falsifier": "the open-return stop variant does not beat the ATR-stop variant, or net expectancy <= 0",
+   "translation_note": "card params adapted to the registered family: stop, flat_at"
+  },
+  {
+   "symbol": "HK50",
+   "family": "level_breakout",
+   "params": {
+    "level": "pdh"
+   },
+   "mechanism": "Fairy four-price (\u83f2\u963f\u91cc\u56db\u4ef7): buy a break above yesterday's high, sell a break below yesterday's low; stop when price, after the break, returns through today's open; flat every position at 14:50 before the session close.",
+   "title": "HK50 level_breakout (QR-A-TQ-001)",
+   "card_id": "QR-A-TQ-001",
+   "licence": "Apache-2.0",
+   "falsifier": "the open-return stop variant does not beat the ATR-stop variant, or net expectancy <= 0",
+   "translation_note": "card params adapted to the registered family: stop, flat_at"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "king_keltner",
+   "params": {
+    "n": 20,
+    "k": 2.0
+   },
+   "mechanism": "Aberration: BOLL(26, 2) on daily bars; enter long on a break above the upper band, short below the lower; exit at the middle band.",
+   "title": "XAUUSD king_keltner (QR-A-TQ-004)",
+   "card_id": "QR-A-TQ-004",
+   "licence": "Apache-2.0",
+   "falsifier": "std-band variant beats king_keltner at deflated threshold"
+  },
+  {
+   "symbol": "XTIUSD",
+   "family": "king_keltner",
+   "params": {
+    "n": 20,
+    "k": 2.0
+   },
+   "mechanism": "Aberration: BOLL(26, 2) on daily bars; enter long on a break above the upper band, short below the lower; exit at the middle band.",
+   "title": "XTIUSD king_keltner (QR-A-TQ-004)",
+   "card_id": "QR-A-TQ-004",
+   "licence": "Apache-2.0",
+   "falsifier": "std-band variant beats king_keltner at deflated threshold"
+  },
+  {
+   "symbol": "CORN",
+   "family": "king_keltner",
+   "params": {
+    "n": 20,
+    "k": 2.0
+   },
+   "mechanism": "Aberration: BOLL(26, 2) on daily bars; enter long on a break above the upper band, short below the lower; exit at the middle band.",
+   "title": "CORN king_keltner (QR-A-TQ-004)",
+   "card_id": "QR-A-TQ-004",
+   "licence": "Apache-2.0",
+   "falsifier": "std-band variant beats king_keltner at deflated threshold"
+  },
+  {
+   "symbol": "SOYBEAN",
+   "family": "king_keltner",
+   "params": {
+    "n": 20,
+    "k": 2.0
+   },
+   "mechanism": "Aberration: BOLL(26, 2) on daily bars; enter long on a break above the upper band, short below the lower; exit at the middle band.",
+   "title": "SOYBEAN king_keltner (QR-A-TQ-004)",
+   "card_id": "QR-A-TQ-004",
+   "licence": "Apache-2.0",
+   "falsifier": "std-band variant beats king_keltner at deflated threshold"
+  },
+  {
+   "symbol": "XBRUSD",
+   "family": "relative_value",
+   "params": {
+    "lookback": 720,
+    "entry_z": 2.0,
+    "exit_z": 0.5,
+    "ttl_bars": 240,
+    "peer_symbol": "XTIUSD"
+   },
+   "mechanism": "Distance pairs and ratio pairs: (a) z-normalise each leg's last 30 daily closes, spread = n1 - n2, enter when the spread is beyond 2 std of its window, exit within 0.5 std, 10-day time stop, 5% stop; (b) cu-al-spread: z of the contract-value ratio over 30 days, threshold 2, exit |z|<0.5 -- but the source goes LONG the rich leg (z>2 -> long Cu, short Al), i.e. ratio MOMENTUM, the opposite of (a).",
+   "title": "XBRUSD relative_value (QR-A-TQ-006)",
+   "card_id": "QR-A-TQ-006",
+   "licence": "Apache-2.0",
+   "falsifier": "neither sign positive on any pair"
+  },
+  {
+   "symbol": "XAGUSD",
+   "family": "relative_value",
+   "params": {
+    "lookback": 720,
+    "entry_z": 2.0,
+    "exit_z": 0.5,
+    "ttl_bars": 240,
+    "peer_symbol": "XAUUSD"
+   },
+   "mechanism": "Distance pairs and ratio pairs: (a) z-normalise each leg's last 30 daily closes, spread = n1 - n2, enter when the spread is beyond 2 std of its window, exit within 0.5 std, 10-day time stop, 5% stop; (b) cu-al-spread: z of the contract-value ratio over 30 days, threshold 2, exit |z|<0.5 -- but the source goes LONG the rich leg (z>2 -> long Cu, short Al), i.e. ratio MOMENTUM, the opposite of (a).",
+   "title": "XAGUSD relative_value (QR-A-TQ-006)",
+   "card_id": "QR-A-TQ-006",
+   "licence": "Apache-2.0",
+   "falsifier": "neither sign positive on any pair"
+  },
+  {
+   "symbol": "XALUSD",
+   "family": "relative_value",
+   "params": {
+    "lookback": 720,
+    "entry_z": 2.0,
+    "exit_z": 0.5,
+    "ttl_bars": 240,
+    "peer_symbol": "XCUUSD"
+   },
+   "mechanism": "Distance pairs and ratio pairs: (a) z-normalise each leg's last 30 daily closes, spread = n1 - n2, enter when the spread is beyond 2 std of its window, exit within 0.5 std, 10-day time stop, 5% stop; (b) cu-al-spread: z of the contract-value ratio over 30 days, threshold 2, exit |z|<0.5 -- but the source goes LONG the rich leg (z>2 -> long Cu, short Al), i.e. ratio MOMENTUM, the opposite of (a).",
+   "title": "XALUSD relative_value (QR-A-TQ-006)",
+   "card_id": "QR-A-TQ-006",
+   "licence": "Apache-2.0",
+   "falsifier": "neither sign positive on any pair"
+  },
+  {
+   "symbol": "XPDUSD",
+   "family": "relative_value",
+   "params": {
+    "lookback": 720,
+    "entry_z": 2.0,
+    "exit_z": 0.5,
+    "ttl_bars": 240,
+    "peer_symbol": "XPTUSD"
+   },
+   "mechanism": "Distance pairs and ratio pairs: (a) z-normalise each leg's last 30 daily closes, spread = n1 - n2, enter when the spread is beyond 2 std of its window, exit within 0.5 std, 10-day time stop, 5% stop; (b) cu-al-spread: z of the contract-value ratio over 30 days, threshold 2, exit |z|<0.5 -- but the source goes LONG the rich leg (z>2 -> long Cu, short Al), i.e. ratio MOMENTUM, the opposite of (a).",
+   "title": "XPDUSD relative_value (QR-A-TQ-006)",
+   "card_id": "QR-A-TQ-006",
+   "licence": "Apache-2.0",
+   "falsifier": "neither sign positive on any pair"
+  },
+  {
+   "symbol": "NZDUSD",
+   "family": "relative_value",
+   "params": {
+    "lookback": 720,
+    "entry_z": 2.0,
+    "exit_z": 0.5,
+    "ttl_bars": 240,
+    "peer_symbol": "AUDUSD"
+   },
+   "mechanism": "Distance pairs and ratio pairs: (a) z-normalise each leg's last 30 daily closes, spread = n1 - n2, enter when the spread is beyond 2 std of its window, exit within 0.5 std, 10-day time stop, 5% stop; (b) cu-al-spread: z of the contract-value ratio over 30 days, threshold 2, exit |z|<0.5 -- but the source goes LONG the rich leg (z>2 -> long Cu, short Al), i.e. ratio MOMENTUM, the opposite of (a).",
+   "title": "NZDUSD relative_value (QR-A-TQ-006)",
+   "card_id": "QR-A-TQ-006",
+   "licence": "Apache-2.0",
+   "falsifier": "neither sign positive on any pair"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "multi_speed_trend",
+   "params": {
+    "hold_days": 5,
+    "min_agreement": 0.6
+   },
+   "mechanism": "Indicator-crossover zoo in tqsdk demos: Vortex (VI+ / VI- cross with VI>1), Hull MA 5/30 cross with ATR trailing, TRIX(12)/signal(9) cross with MA60 filter, CMO(6) bands with 0.8%/1.5% stops, Qstick(10) zero-cross with SMA8 filter and 5-day max hold, Aroon(10) 75/25, Keltner EMA8 +/-1.5*ATR7 with EMA5 trend; fractal-trend (2-bar fractal break with MA6/12 confirm, stop fractal -1.2 ATR, TP 1.8R).",
+   "title": "XAUUSD multi_speed_trend (QR-A-TQ-008)",
+   "card_id": "QR-A-TQ-008",
+   "licence": "Apache-2.0",
+   "falsifier": "an indicator beats multi_speed_trend at the deflated threshold"
+  },
+  {
+   "symbol": "CORN",
+   "family": "multi_speed_trend",
+   "params": {
+    "hold_days": 5,
+    "min_agreement": 0.6
+   },
+   "mechanism": "Indicator-crossover zoo in tqsdk demos: Vortex (VI+ / VI- cross with VI>1), Hull MA 5/30 cross with ATR trailing, TRIX(12)/signal(9) cross with MA60 filter, CMO(6) bands with 0.8%/1.5% stops, Qstick(10) zero-cross with SMA8 filter and 5-day max hold, Aroon(10) 75/25, Keltner EMA8 +/-1.5*ATR7 with EMA5 trend; fractal-trend (2-bar fractal break with MA6/12 confirm, stop fractal -1.2 ATR, TP 1.8R).",
+   "title": "CORN multi_speed_trend (QR-A-TQ-008)",
+   "card_id": "QR-A-TQ-008",
+   "licence": "Apache-2.0",
+   "falsifier": "an indicator beats multi_speed_trend at the deflated threshold"
+  },
+  {
+   "symbol": "US500",
+   "family": "multi_speed_trend",
+   "params": {
+    "hold_days": 5,
+    "min_agreement": 0.6
+   },
+   "mechanism": "Indicator-crossover zoo in tqsdk demos: Vortex (VI+ / VI- cross with VI>1), Hull MA 5/30 cross with ATR trailing, TRIX(12)/signal(9) cross with MA60 filter, CMO(6) bands with 0.8%/1.5% stops, Qstick(10) zero-cross with SMA8 filter and 5-day max hold, Aroon(10) 75/25, Keltner EMA8 +/-1.5*ATR7 with EMA5 trend; fractal-trend (2-bar fractal break with MA6/12 confirm, stop fractal -1.2 ATR, TP 1.8R).",
+   "title": "US500 multi_speed_trend (QR-A-TQ-008)",
+   "card_id": "QR-A-TQ-008",
+   "licence": "Apache-2.0",
+   "falsifier": "an indicator beats multi_speed_trend at the deflated threshold"
+  },
+  {
+   "symbol": "CHINAH",
+   "family": "multi_speed_trend",
+   "params": {
+    "hold_days": 5,
+    "min_agreement": 0.6
+   },
+   "mechanism": "Indicator-crossover zoo in tqsdk demos: Vortex (VI+ / VI- cross with VI>1), Hull MA 5/30 cross with ATR trailing, TRIX(12)/signal(9) cross with MA60 filter, CMO(6) bands with 0.8%/1.5% stops, Qstick(10) zero-cross with SMA8 filter and 5-day max hold, Aroon(10) 75/25, Keltner EMA8 +/-1.5*ATR7 with EMA5 trend; fractal-trend (2-bar fractal break with MA6/12 confirm, stop fractal -1.2 ATR, TP 1.8R).",
+   "title": "CHINAH multi_speed_trend (QR-A-TQ-008)",
+   "card_id": "QR-A-TQ-008",
+   "licence": "Apache-2.0",
+   "falsifier": "an indicator beats multi_speed_trend at the deflated threshold"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "r_breaker",
+   "params": {
+    "mode": "reversal",
+    "break_k": 0.25
+   },
+   "mechanism": "CN CTA canon already on the desk: Dual Thrust (dualthrust.py), R-Breaker (rbreaker.py, rbreaker2.py), classic pivots (pivot_point.py: long below S1, exit at pivot, 100-point stop), Turtle (turtle.py).",
+   "title": "XAUUSD r_breaker (QR-A-TQ-009)",
+   "card_id": "QR-A-TQ-009",
+   "licence": "Apache-2.0",
+   "falsifier": "N/A"
+  },
+  {
+   "symbol": "HK50",
+   "family": "r_breaker",
+   "params": {
+    "mode": "reversal",
+    "break_k": 0.25
+   },
+   "mechanism": "CN CTA canon already on the desk: Dual Thrust (dualthrust.py), R-Breaker (rbreaker.py, rbreaker2.py), classic pivots (pivot_point.py: long below S1, exit at pivot, 100-point stop), Turtle (turtle.py).",
+   "title": "HK50 r_breaker (QR-A-TQ-009)",
+   "card_id": "QR-A-TQ-009",
+   "licence": "Apache-2.0",
+   "falsifier": "N/A"
+  },
+  {
+   "symbol": "CHINAH",
+   "family": "r_breaker",
+   "params": {
+    "mode": "reversal",
+    "break_k": 0.25
+   },
+   "mechanism": "CN CTA canon already on the desk: Dual Thrust (dualthrust.py), R-Breaker (rbreaker.py, rbreaker2.py), classic pivots (pivot_point.py: long below S1, exit at pivot, 100-point stop), Turtle (turtle.py).",
+   "title": "CHINAH r_breaker (QR-A-TQ-009)",
+   "card_id": "QR-A-TQ-009",
+   "licence": "Apache-2.0",
+   "falsifier": "N/A"
+  },
+  {
+   "symbol": "USDCNH",
+   "family": "r_breaker",
+   "params": {
+    "mode": "reversal",
+    "break_k": 0.25
+   },
+   "mechanism": "CN CTA canon already on the desk: Dual Thrust (dualthrust.py), R-Breaker (rbreaker.py, rbreaker2.py), classic pivots (pivot_point.py: long below S1, exit at pivot, 100-point stop), Turtle (turtle.py).",
+   "title": "USDCNH r_breaker (QR-A-TQ-009)",
+   "card_id": "QR-A-TQ-009",
+   "licence": "Apache-2.0",
+   "falsifier": "N/A"
+  }
+ ],
+ "trials_charged": 21,
+ "provenance": {
+  "cards": "/mnt/project-files/mining/queued_repos/",
+  "translated_by": "thread Mine the EliteQuant list",
+  "licence_note": "ideas only where upstream has no licence or is copyleft; no code copied"
+ }
+}

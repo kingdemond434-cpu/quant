@@ -252,13 +252,17 @@ _PROVENANCE_PARAMS = frozenset({
 #: kwargs a family accepts and discards, so excluding them from the key collapses nothing real
 _DISCARDED_KWARGS = frozenset({"population"})
 _PROVENANCE_SUFFIXES = ("_id", "_url", "_hash", "_note")
+#: EXECUTABLE DESPITE THE SUFFIX: a family kwarg named like provenance that the family READS to
+#: pick its rule. `zoo_alpha_class` takes `alpha_id` to choose which published alpha it ranks
+#: (mt5desk/family_zoo_alpha.py), so two cells on different alphas are two rules, never one.
+_STRUCTURAL_KWARGS = frozenset({"alpha_id"})
 
 #: A numeric literal that is not part of an identifier (`ma20`, `range_v2` keep their digits).
 _NUM_LITERAL = re.compile(r"(?<![A-Za-z0-9_.])[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?(?![A-Za-z0-9_])")
 
 #: Bumped whenever the L1 key changes. `daily` is recomputed from the whole bank on every pass, so
 #: a change RESTATES the series rather than stepping it; the version says which key a file used.
-L1_KEY_VERSION = "structural+categorical-v1.2 (2026-10-28)"
+L1_KEY_VERSION = "structural+categorical-v1.3 (2026-11-03)"
 
 
 def _categorical(v: Any) -> Any:
@@ -292,6 +296,8 @@ def _categorical(v: Any) -> Any:
 
 def _structural_param(key: str) -> bool:
     k = key.lower()
+    if k in _STRUCTURAL_KWARGS:
+        return True
     return (k not in _AXIS_PARAMS and k not in _PROVENANCE_PARAMS
             and not k.endswith(_PROVENANCE_SUFFIXES))
 

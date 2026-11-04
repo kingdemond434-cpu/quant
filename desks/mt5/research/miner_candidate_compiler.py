@@ -775,12 +775,24 @@ def _candidate_core(symbol: str, family: str, params: dict, source: str, row: di
         # top-level `parent` of an arbitrary crawler row is NOT lineage and is not read here.
         **{k: row[k] for k in ("lineage", "operator", "mutated_from", "parent_ids")
            if row.get(k)},
+        # A MODEL-PROPOSED ROW KEEPS ITS HINDSIGHT STAMP (2026-10-01, analyst panel audit). A seat
+        # that has read the history proposes on it, so only evidence after `proposed_at` is clean:
+        # `clean_from` is where a judge must cut, and the bear's `red_team` attacks are the
+        # preregistered falsifiers. Dropping them here made a contaminated cell look machine-drawn.
+        **_hindsight(row),
         # AND THE DONOR'S STANDING (2026-09-30). A moat-exchange donation carries the registry
         # row's campaign id and source id, and for a paid-substitute cell the validation lane:
         # a series whose correlation to its paid set is UNMEASURED is `research_unverified`, and
         # it must reach certification and sizing marked as such, never as an anonymous cell.
         **{k: row[k] for k in ("campaign_id", "source_id", "validation_lane") if row.get(k)},
     }
+
+
+def _hindsight(row: dict) -> dict:
+    ev = row.get("evidence") if isinstance(row.get("evidence"), dict) else {}
+    out = {k: (row.get(k) if row.get(k) is not None else ev.get(k))
+           for k in ("proposed_at", "clean_from", "hindsight_prior", "red_team")}
+    return {k: v for k, v in out.items() if v not in (None, "", [], False)}
 
 
 #: EVERY MINED MECHANISM IS HUNTED INTRADAY, IN EVERY SESSION (principal 2026-09-16: "the miners

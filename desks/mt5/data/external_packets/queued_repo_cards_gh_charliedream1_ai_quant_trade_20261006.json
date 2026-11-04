@@ -1,0 +1,161 @@
+{
+ "system_id": "gh_charliedream1_ai_quant_trade",
+ "run_id": "queued_repo_cards_2026-10-06_gh_charliedream1_ai_quant_trade",
+ "commit": "card_translation",
+ "candidates": [
+  {
+   "symbol": "US500",
+   "family": "cross_sectional_class_momentum",
+   "params": {
+    "lookback_d": 60,
+    "hold_d": 20,
+    "quantile": 0.3333,
+    "dispersion": "any"
+   },
+   "mechanism": "Blended momentum rotation with three guards: score = 0.5*r20 + 0.3*r60 + 0.2*r120 - 0.5*std20(daily returns); a name is eligible only if its close is above both its 20- and 60-day means and its 20-day average turnover >= 50m; whole book goes to cash when the benchmark (CSI300) is below its 60-day mean; hold top_n (5/10/20), rebalance monthly, 10-20% trailing stop from the high-water mark; executes at the next open with 5bp slippage and CN fees; train 2016-2022, test 2023-2026.",
+   "title": "US500 cross_sectional_class_momentum (QR-A-AQT-001)",
+   "card_id": "QR-A-AQT-001",
+   "licence": "Apache-2.0",
+   "falsifier": "blend+filter adds nothing over the plain class momentum"
+  },
+  {
+   "symbol": "NAS100",
+   "family": "cross_sectional_class_momentum",
+   "params": {
+    "lookback_d": 60,
+    "hold_d": 20,
+    "quantile": 0.3333,
+    "dispersion": "any"
+   },
+   "mechanism": "Blended momentum rotation with three guards: score = 0.5*r20 + 0.3*r60 + 0.2*r120 - 0.5*std20(daily returns); a name is eligible only if its close is above both its 20- and 60-day means and its 20-day average turnover >= 50m; whole book goes to cash when the benchmark (CSI300) is below its 60-day mean; hold top_n (5/10/20), rebalance monthly, 10-20% trailing stop from the high-water mark; executes at the next open with 5bp slippage and CN fees; train 2016-2022, test 2023-2026.",
+   "title": "NAS100 cross_sectional_class_momentum (QR-A-AQT-001)",
+   "card_id": "QR-A-AQT-001",
+   "licence": "Apache-2.0",
+   "falsifier": "blend+filter adds nothing over the plain class momentum"
+  },
+  {
+   "symbol": "GER40",
+   "family": "cross_sectional_class_momentum",
+   "params": {
+    "lookback_d": 60,
+    "hold_d": 20,
+    "quantile": 0.3333,
+    "dispersion": "any"
+   },
+   "mechanism": "Blended momentum rotation with three guards: score = 0.5*r20 + 0.3*r60 + 0.2*r120 - 0.5*std20(daily returns); a name is eligible only if its close is above both its 20- and 60-day means and its 20-day average turnover >= 50m; whole book goes to cash when the benchmark (CSI300) is below its 60-day mean; hold top_n (5/10/20), rebalance monthly, 10-20% trailing stop from the high-water mark; executes at the next open with 5bp slippage and CN fees; train 2016-2022, test 2023-2026.",
+   "title": "GER40 cross_sectional_class_momentum (QR-A-AQT-001)",
+   "card_id": "QR-A-AQT-001",
+   "licence": "Apache-2.0",
+   "falsifier": "blend+filter adds nothing over the plain class momentum"
+  },
+  {
+   "symbol": "UK100",
+   "family": "cross_sectional_class_momentum",
+   "params": {
+    "lookback_d": 60,
+    "hold_d": 20,
+    "quantile": 0.3333,
+    "dispersion": "any"
+   },
+   "mechanism": "Blended momentum rotation with three guards: score = 0.5*r20 + 0.3*r60 + 0.2*r120 - 0.5*std20(daily returns); a name is eligible only if its close is above both its 20- and 60-day means and its 20-day average turnover >= 50m; whole book goes to cash when the benchmark (CSI300) is below its 60-day mean; hold top_n (5/10/20), rebalance monthly, 10-20% trailing stop from the high-water mark; executes at the next open with 5bp slippage and CN fees; train 2016-2022, test 2023-2026.",
+   "title": "UK100 cross_sectional_class_momentum (QR-A-AQT-001)",
+   "card_id": "QR-A-AQT-001",
+   "licence": "Apache-2.0",
+   "falsifier": "blend+filter adds nothing over the plain class momentum"
+  },
+  {
+   "symbol": "JPN225",
+   "family": "cross_sectional_class_momentum",
+   "params": {
+    "lookback_d": 60,
+    "hold_d": 20,
+    "quantile": 0.3333,
+    "dispersion": "any"
+   },
+   "mechanism": "Blended momentum rotation with three guards: score = 0.5*r20 + 0.3*r60 + 0.2*r120 - 0.5*std20(daily returns); a name is eligible only if its close is above both its 20- and 60-day means and its 20-day average turnover >= 50m; whole book goes to cash when the benchmark (CSI300) is below its 60-day mean; hold top_n (5/10/20), rebalance monthly, 10-20% trailing stop from the high-water mark; executes at the next open with 5bp slippage and CN fees; train 2016-2022, test 2023-2026.",
+   "title": "JPN225 cross_sectional_class_momentum (QR-A-AQT-001)",
+   "card_id": "QR-A-AQT-001",
+   "licence": "Apache-2.0",
+   "falsifier": "blend+filter adds nothing over the plain class momentum"
+  },
+  {
+   "symbol": "HK50",
+   "family": "cross_sectional_class_momentum",
+   "params": {
+    "lookback_d": 60,
+    "hold_d": 20,
+    "quantile": 0.3333,
+    "dispersion": "any"
+   },
+   "mechanism": "Blended momentum rotation with three guards: score = 0.5*r20 + 0.3*r60 + 0.2*r120 - 0.5*std20(daily returns); a name is eligible only if its close is above both its 20- and 60-day means and its 20-day average turnover >= 50m; whole book goes to cash when the benchmark (CSI300) is below its 60-day mean; hold top_n (5/10/20), rebalance monthly, 10-20% trailing stop from the high-water mark; executes at the next open with 5bp slippage and CN fees; train 2016-2022, test 2023-2026.",
+   "title": "HK50 cross_sectional_class_momentum (QR-A-AQT-001)",
+   "card_id": "QR-A-AQT-001",
+   "licence": "Apache-2.0",
+   "falsifier": "blend+filter adds nothing over the plain class momentum"
+  },
+  {
+   "symbol": "CHINAH",
+   "family": "cross_sectional_class_momentum",
+   "params": {
+    "lookback_d": 60,
+    "hold_d": 20,
+    "quantile": 0.3333,
+    "dispersion": "any"
+   },
+   "mechanism": "Blended momentum rotation with three guards: score = 0.5*r20 + 0.3*r60 + 0.2*r120 - 0.5*std20(daily returns); a name is eligible only if its close is above both its 20- and 60-day means and its 20-day average turnover >= 50m; whole book goes to cash when the benchmark (CSI300) is below its 60-day mean; hold top_n (5/10/20), rebalance monthly, 10-20% trailing stop from the high-water mark; executes at the next open with 5bp slippage and CN fees; train 2016-2022, test 2023-2026.",
+   "title": "CHINAH cross_sectional_class_momentum (QR-A-AQT-001)",
+   "card_id": "QR-A-AQT-001",
+   "licence": "Apache-2.0",
+   "falsifier": "blend+filter adds nothing over the plain class momentum"
+  },
+  {
+   "symbol": "AUS200",
+   "family": "cross_sectional_class_momentum",
+   "params": {
+    "lookback_d": 60,
+    "hold_d": 20,
+    "quantile": 0.3333,
+    "dispersion": "any"
+   },
+   "mechanism": "Blended momentum rotation with three guards: score = 0.5*r20 + 0.3*r60 + 0.2*r120 - 0.5*std20(daily returns); a name is eligible only if its close is above both its 20- and 60-day means and its 20-day average turnover >= 50m; whole book goes to cash when the benchmark (CSI300) is below its 60-day mean; hold top_n (5/10/20), rebalance monthly, 10-20% trailing stop from the high-water mark; executes at the next open with 5bp slippage and CN fees; train 2016-2022, test 2023-2026.",
+   "title": "AUS200 cross_sectional_class_momentum (QR-A-AQT-001)",
+   "card_id": "QR-A-AQT-001",
+   "licence": "Apache-2.0",
+   "falsifier": "blend+filter adds nothing over the plain class momentum"
+  },
+  {
+   "symbol": "HK50",
+   "family": "analyst_revision_drift",
+   "params": {
+    "source": "eastmoney_reports",
+    "side": 1,
+    "hold_days": 5
+   },
+   "mechanism": "Eastmoney broker research feed: reportapi.eastmoney.com/report/list returns stock, industry and strategy reports with publish date, broker, rating and rating-change code; PDFs at pdf.dfcfw.com/pdf/H3_{infoCode}_1.pdf.",
+   "title": "HK50 analyst_revision_drift (QR-A-AQT-002)",
+   "card_id": "QR-A-AQT-002",
+   "licence": "Apache-2.0",
+   "falsifier": "no quintile spread"
+  },
+  {
+   "symbol": "CHINAH",
+   "family": "analyst_revision_drift",
+   "params": {
+    "source": "eastmoney_reports",
+    "side": 1,
+    "hold_days": 5
+   },
+   "mechanism": "Eastmoney broker research feed: reportapi.eastmoney.com/report/list returns stock, industry and strategy reports with publish date, broker, rating and rating-change code; PDFs at pdf.dfcfw.com/pdf/H3_{infoCode}_1.pdf.",
+   "title": "CHINAH analyst_revision_drift (QR-A-AQT-002)",
+   "card_id": "QR-A-AQT-002",
+   "licence": "Apache-2.0",
+   "falsifier": "no quintile spread"
+  }
+ ],
+ "trials_charged": 10,
+ "provenance": {
+  "cards": "/mnt/project-files/mining/queued_repos/",
+  "translated_by": "thread Mine the EliteQuant list",
+  "licence_note": "ideas only where upstream has no licence or is copyleft; no code copied"
+ }
+}

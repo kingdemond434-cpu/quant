@@ -1,0 +1,77 @@
+{
+ "system_id": "gh_longonly_quantitative_notebooks",
+ "run_id": "queued_repo_cards_2026-10-06_gh_longonly_quantitative_notebooks",
+ "commit": "card_translation",
+ "candidates": [
+  {
+   "symbol": "NZDUSD",
+   "family": "relative_value",
+   "params": {
+    "lookback": 480,
+    "entry_z": 1.0,
+    "exit_z": 0.0,
+    "ttl_bars": 24,
+    "peer_symbol": "AUDUSD"
+   },
+   "mechanism": "Long-only 'buy yesterday's loser' of a correlated pair, gated on correlation stress: each day hold whichever of KO/PEP had the lower previous-day return, but only when the 9-day rolling correlation of their 19-day returns is below 0.9; a losing day is held one more day.",
+   "title": "NZDUSD relative_value (QR-A-QN-001)",
+   "card_id": "QR-A-QN-001",
+   "licence": "Apache-2.0",
+   "falsifier": "no expectancy difference between low- and high-correlation states"
+  },
+  {
+   "symbol": "XAGUSD",
+   "family": "relative_value",
+   "params": {
+    "lookback": 480,
+    "entry_z": 1.0,
+    "exit_z": 0.0,
+    "ttl_bars": 24,
+    "peer_symbol": "XAUUSD"
+   },
+   "mechanism": "Long-only 'buy yesterday's loser' of a correlated pair, gated on correlation stress: each day hold whichever of KO/PEP had the lower previous-day return, but only when the 9-day rolling correlation of their 19-day returns is below 0.9; a losing day is held one more day.",
+   "title": "XAGUSD relative_value (QR-A-QN-001)",
+   "card_id": "QR-A-QN-001",
+   "licence": "Apache-2.0",
+   "falsifier": "no expectancy difference between low- and high-correlation states"
+  },
+  {
+   "symbol": "NAS100",
+   "family": "relative_value",
+   "params": {
+    "lookback": 480,
+    "entry_z": 1.0,
+    "exit_z": 0.0,
+    "ttl_bars": 24,
+    "peer_symbol": "US500"
+   },
+   "mechanism": "Long-only 'buy yesterday's loser' of a correlated pair, gated on correlation stress: each day hold whichever of KO/PEP had the lower previous-day return, but only when the 9-day rolling correlation of their 19-day returns is below 0.9; a losing day is held one more day.",
+   "title": "NAS100 relative_value (QR-A-QN-001)",
+   "card_id": "QR-A-QN-001",
+   "licence": "Apache-2.0",
+   "falsifier": "no expectancy difference between low- and high-correlation states"
+  },
+  {
+   "symbol": "EUSTX50",
+   "family": "relative_value",
+   "params": {
+    "lookback": 480,
+    "entry_z": 1.0,
+    "exit_z": 0.0,
+    "ttl_bars": 24,
+    "peer_symbol": "GER40"
+   },
+   "mechanism": "Long-only 'buy yesterday's loser' of a correlated pair, gated on correlation stress: each day hold whichever of KO/PEP had the lower previous-day return, but only when the 9-day rolling correlation of their 19-day returns is below 0.9; a losing day is held one more day.",
+   "title": "EUSTX50 relative_value (QR-A-QN-001)",
+   "card_id": "QR-A-QN-001",
+   "licence": "Apache-2.0",
+   "falsifier": "no expectancy difference between low- and high-correlation states"
+  }
+ ],
+ "trials_charged": 4,
+ "provenance": {
+  "cards": "/mnt/project-files/mining/queued_repos/",
+  "translated_by": "thread Mine the EliteQuant list",
+  "licence_note": "ideas only where upstream has no licence or is copyleft; no code copied"
+ }
+}

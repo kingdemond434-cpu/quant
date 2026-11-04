@@ -59,6 +59,10 @@ REPORT = DESK / "reports" / "EXTERNAL_FEDERATION.json"
 PACKETS = DESK / "data" / "external_packets"
 PROCESSED = PACKETS / "processed"
 DONATIONS = DESK / "data" / "intelligence" / "external_federation"
+#: THE SEEDS AS DATA (2026-10-06). The mining registry reads `data/source_rosters/*.json`, never
+#: Python, so the federation's systems were invisible to it and no judged cell could be credited
+#: to one. Regenerated from `fed.SEEDS` by `--write-roster`; a test fails when the two drift.
+SEED_ROSTER = DESK / "data" / "source_rosters" / "external_federation_seeds.json"
 #: A delta scan older than this is stale (LAWS 5h: unchanged sources cost near nothing, but a
 #: source nobody has looked at for a fortnight is not "unchanged", it is unwatched).
 DELTA_STALE_DAYS = 14
@@ -269,6 +273,51 @@ def roi_from_registry(rows: dict[str, dict]) -> dict[str, float | None]:
 
 # ------------------------------------------------------------------------------- packets
 
+def source_id_of(system: fed.ExternalSystem | None, system_id: str) -> str:
+    """The registry id of a federation system: its `github:owner/repo` upstream, else `ext:<id>`."""
+    up = str(getattr(system, "upstream", "") or "")
+    if up.startswith("github:") and up.count("/") >= 1:
+        return up
+    return f"ext:{system_id}"
+
+
+#: Seeds whose cells another organ also donates: the Quant Guild families are seeded by
+#: elitequant_breadth, so that organ is named as a fetcher of the same registry row.
+ALSO_FETCHED_BY = {"quant_guild_library": ["elitequant_breadth"],
+                   "gh_elitequant_elitequant": ["elitequant_breadth"],
+                   "gh_thuquant_awesome_quant": ["elitequant_breadth"],
+                   "gh_je_suis_tm_quant_trading": ["elitequant_breadth"],
+                   "gh_waditu_czsc": ["elitequant_breadth"],
+                   "gh_paperswithbacktest_awesome_systematic_trading": ["elitequant_breadth"],
+                   "gh_shinnytech_tqsdk_python": ["elitequant_breadth"],
+                   "gh_llmquant_quant_wiki": ["elitequant_breadth"],
+                   "gh_quant_science_sunday_quant_scientist": ["elitequant_breadth"],
+                   "gh_hkuds_vibe_trading": ["zoo_breadth"],
+                   "gh_asavinov_intelligent_trading_bot": ["model_search"],
+                   "gh_stefan_jansen_machine_learning_for_trading": ["model_search"]}
+
+
+def seed_roster() -> dict[str, Any]:
+    """Every seed as a roster row the mining registry joins: consumer is this organ, so a cell
+    a drained packet donated is credited to its system by the `origin_source_id` it carries."""
+    rows = []
+    for s in fed.SEEDS:
+        sid = source_id_of(s, s.system_id)
+        url = (f"https://github.com/{sid.removeprefix('github:')}" if sid.startswith("github:")
+               else (str(s.upstream) if "://" in str(s.upstream) else ""))
+        rows.append({"id": sid, "name": s.name, "url": url, "fetcher": "owned",
+                     "owner": "external_federation", "kind": "code",
+                     "consumer": "desks/mt5/research/external_federation.py",
+                     "uses": ["direct_cells", "indirect_cells"],
+                     "region": s.region or "global", "licence": s.licence,
+                     "cadence": "hourly", "system_id": s.system_id,
+                     **({"config": {"fetched_by": ALSO_FETCHED_BY[s.system_id]}}
+                        if s.system_id in ALSO_FETCHED_BY else {})})
+    return {"what": "federation seeds, generated from libs/research/external_federation.SEEDS "
+                    "by `research/external_federation.py --write-roster`; do not hand-edit",
+            "sources": rows}
+
+
 def drain_packets(state: dict[str, Any], apply: bool) -> dict[str, Any]:
     """Validate, deduplicate and donate whatever the sandboxed workers left behind.
 
@@ -283,6 +332,8 @@ def drain_packets(state: dict[str, Any], apply: bool) -> dict[str, Any]:
         out["unmeasured"].append(f"{PACKETS} does not exist: no sandbox has produced a packet yet")
         return out
     rows: list[dict[str, Any]] = []
+    charged = 0
+    cells_seen = set(state.get("cells_seen") or [])
     for p in sorted(PACKETS.glob("*.json")):
         doc = _read(p, None)
         if not isinstance(doc, dict):
@@ -308,12 +359,35 @@ def drain_packets(state: dict[str, Any], apply: bool) -> dict[str, Any]:
             continue
         out["files"] += 1
         seen.add(key)
+        # THE SEARCH BURDEN IS CHARGED, at least one trial per candidate it proposes: a packet that
+        # declares fewer trials than candidates has still put that many cells in front of a judge.
+        # ONE CELL, ONE TRIAL (audit PR166_v2 fix 5): a candidate whose (symbol, family, params)
+        # another packet or an earlier candidate already put up is not a new trial, and is not
+        # donated twice. Identity is held across passes in `cells_seen`.
+        fresh = []
+        dupes = 0
         for cand in packet.candidates:
+            ident = hashlib.sha256(json.dumps(
+                [cand.get("symbol"), cand.get("family"), cand.get("params")],
+                sort_keys=True, default=str).encode()).hexdigest()[:16]
+            if ident in cells_seen:
+                out["duplicates"] += 1
+                dupes += 1
+                continue
+            cells_seen.add(ident)
+            fresh.append(cand)
+        charged += max(packet.trials_charged - dupes, len(fresh))
+        for cand in fresh:
             row = dict(cand)
             row.setdefault("kind", "hypothesis")
             row["origin"] = "EXTERNAL"
             row["generator"] = f"ext:{packet.system_id}"
+            # WHICH SYSTEM'S CELL THIS IS, by registry id, so the mining registry credits the
+            # judged cell to that system rather than to the shared `external_federation` seat.
+            source_id = source_id_of(fed.SEED_BY_ID.get(packet.system_id), packet.system_id)
+            row.setdefault("origin_source_id", source_id)
             row["provenance"] = {"system": packet.system_id, "run": packet.run_id,
+                                 "source_id": source_id,
                                  "commit": packet.commit,
                                  "trials_charged": packet.trials_charged,
                                  "authority": "researcher only; the gauntlet judges"}
@@ -324,9 +398,16 @@ def drain_packets(state: dict[str, Any], apply: bool) -> dict[str, Any]:
                 os.replace(p, PROCESSED / p.name)
     if rows and apply:
         DONATIONS.mkdir(parents=True, exist_ok=True)
-        _write(DONATIONS / f"discoveries_{int(time.time())}.json", rows)
+        # THE DISCOVERY CONTRACT, with `tests_run` on it (2026-10-06). This file was a bare list,
+        # which the compiler reads but `experiment_ledger` cannot charge (it reads `tests_run` off
+        # a contract object), so every external packet's trials stayed out of the lifetime union.
+        _write(DONATIONS / f"discoveries_{int(time.time())}.json",
+               {"source": "external_federation", "generated_at": now(),
+                "tests_run": charged, "discoveries": rows})
     out["donated"] = len(rows)
+    out["trials_charged"] = charged
     state["packets_seen"] = sorted(seen)[-500:]
+    state["cells_seen"] = sorted(cells_seen)
     return out
 
 
@@ -390,7 +471,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--budget-s", type=float, default=600.0)
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--discover-limit", type=int, default=40)
+    ap.add_argument("--write-roster", action="store_true",
+                    help="regenerate data/source_rosters/external_federation_seeds.json and exit")
     a = ap.parse_args(argv)
+    if a.write_roster:
+        SEED_ROSTER.write_text(json.dumps(seed_roster(), indent=1, ensure_ascii=False) + "\n",
+                               encoding="utf-8")
+        return 0
     apply = not a.dry_run
     t0 = time.monotonic()
 

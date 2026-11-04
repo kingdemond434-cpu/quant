@@ -1352,6 +1352,12 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
                      "cross_sectional_breadth",
+                     # the five EliteQuant-map families, screened on cost and seeded
+                     "elitequant_breadth",
+                     # TradingAgents' four analysts + bull/bear debate, proposing cells on the seat
+                     "analyst_panel",
+                     # the vendored alpha zoo (GTJA191/Qlib158/Alpha101), judged book-first
+                     "zoo_breadth",
                      # the alt_proxies equity hand-off minted into the event lane and the
                      # class books (share CFDs never mint anywhere else)
                      "alt_equity_handoff",
@@ -2219,6 +2225,14 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The class-book seeder stops itself at --budget-s 900 and resumes from its state file (each
     # cell is measured at most once a day), so the cap only has to sit above its own budget.
     "cross_sectional_breadth": 1_000,
+    # elitequant_breadth carves --budget-s 780 into the seeder (600) and its two add-on reports
+    # (120 + 60), checks the budget per cell, and writes its report before the add-ons run.
+    "elitequant_breadth": 900,
+    # analyst_panel stops itself at --budget-s 420 and at 10 seat calls; the cap sits above.
+    "analyst_panel": 540,
+    # zoo_breadth stops measuring books at --budget-s 600 and screens survivor legs for at most
+    # 120s more; the cap sits above both.
+    "zoo_breadth": 900,
     # stops itself at its own 900 s `--budget-s` and writes; resumes next pass from its state
     "specialist_cell": 1_000,
     # ledger reads in seconds; the conditioned-cell builds stop at their own 300 s budget
@@ -4405,6 +4419,23 @@ def main() -> None:
     xsb = _costed("cross_sectional_breadth", lambda: _producer(
         "cross_sectional_breadth", "research/cross_sectional_breadth.py", "--once",
         "--budget-s", "900"))
+    # FIVE MECHANISMS ABSORBED FROM THE ELITEQUANT MAP (2026-09-30): FFD level reversion, the
+    # Corwin-Schultz spread shock, backward sup-ADF bubbles, Carver's accel and skew. Screens
+    # every hypothesis-lane cell on cost and donates the payers through the one proposer door;
+    # writes reports/ELITEQUANT_BREADTH.json. Additive: no other miner is touched.
+    eqb = _costed("elitequant_breadth", lambda: _producer(
+        "elitequant_breadth", "research/elitequant_breadth.py", "--once", "--budget-s", "780"))
+    # THE ANALYST PANEL (TradingAgents, 2026-09-30): four analyst lenses propose cells in the
+    # registered price-only grammar on the proposer seat, the bear attacks each one, the payers
+    # are screened and donated through the one proposer door; writes reports/ANALYST_PANEL.json.
+    # Never a trade decision and never a size. UNMEASURED and inert when no seat resolves.
+    anp = _costed("analyst_panel", lambda: _producer(
+        "analyst_panel", "research/analyst_panel.py", "--once", "--budget-s", "420"))
+    # THE ALPHA ZOO (Vibe-Trading, 2026-09-30): 317 published alphas ranked within every peer
+    # class; a book whose daily rank IC survives deflation over every book measured has its legs
+    # screened on cost and donated; writes reports/ZOO_BREADTH.json. Additive.
+    zoob = _costed("zoo_breadth", lambda: _producer(
+        "zoo_breadth", "research/zoo_breadth.py", "--once", "--budget-s", "600"))
     # THE ALT-PROXIES EQUITY HAND-OFF'S CONSUMER (2026-09-30). alt_proxies writes the share CFDs
     # each free alt-data series bears on (data/digests/alt_proxies_equity_handoff.json) and mints
     # nothing on them (two-lane order). This mints them in the two lanes a share may use: the
@@ -6383,6 +6414,8 @@ def main() -> None:
                     "engine_registry": engr,
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
+                    "elitequant_breadth": eqb, "analyst_panel": anp,
+                    "zoo_breadth": zoob,
                     "alt_equity_handoff": aeh,
                     "specialist_cell": spcl,
                     "event_surprise": esur, "alpha_capture": acap,

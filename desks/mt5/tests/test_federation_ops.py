@@ -36,7 +36,7 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(R, "BACKUP", tmp_path / "no_backup")
     R.set_path(tmp_path / "alpha_registry.sqlite")
     for name in ("REGISTRY_PATH", "REPORT", "ROI_REPORT", "MINER_CANDIDATES", "SLEEVES",
-                 "FORWARD", "CLAIMS_JSONL"):
+                 "FORWARD", "CLAIMS_JSONL", "RESIDENT_REPORT"):
         monkeypatch.setattr(fo, name, tmp_path / f"{name.lower()}.json")
     monkeypatch.setattr(fo, "DONATIONS", tmp_path / "intelligence" / "federation_ops")
     monkeypatch.setattr(fo, "DESK", tmp_path)
@@ -258,3 +258,128 @@ def test_seat_consumption_reads_the_path_the_compiler_actually_writes() -> None:
     assert FO.MINER_CANDIDATES == COMPILER_OUT, (
         "the reader and the compiler must name ONE path; a second spelling is a second truth")
     assert FO.MINER_CANDIDATES.parts[-2:] == ("hypotheses", "miner_candidates.json")
+
+
+def test_a_roster_id_upstream_is_delta_scannable() -> None:
+    """`github:owner/repo` is how 36+ seeds name their upstream; it used to resolve to no surface,
+    so no seed repository was ever delta-watched."""
+    got = fo.surfaces_for("github:romanmichaelpaolucci/Quant-Guild-Library")
+    assert got["repos"] == "https://api.github.com/repos/romanmichaelpaolucci/Quant-Guild-Library"
+    assert got["commits"].endswith("/commits.atom")
+    assert fo.surfaces_for("gitee:owner/repo") == {"repos": "https://gitee.com/owner/repo"}
+    assert fo.surfaces_for("public:agonalpha") == {}
+    seeded = {s.upstream for s in fed.SEEDS if s.upstream.startswith("github:")}
+    assert seeded and all(fo.surfaces_for(u) for u in seeded)
+
+
+def test_the_quant_guild_civilization_is_seeded() -> None:
+    ids = {s.system_id for s in fed.SEEDS}
+    assert {"quant_guild_library", "paolucci_qfin", "openterminal"} <= ids
+    assert fed.SEED_BY_ID["quant_guild_library"].licence == "UNVERIFIED"
+
+
+def test_a_drained_packet_charges_its_trials_on_the_contract(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(xfo, "PACKETS", tmp_path / "packets")
+    monkeypatch.setattr(xfo, "PROCESSED", tmp_path / "packets" / "processed")
+    monkeypatch.setattr(xfo, "DONATIONS", tmp_path / "intel")
+    xfo.PACKETS.mkdir()
+    (xfo.PACKETS / "a.json").write_text(json.dumps({
+        "system_id": "quant_guild_library", "run_id": "r1", "commit": "abc",
+        "trials_charged": 1,
+        "candidates": [{"family": "dual_thrust", "symbols": ["EURUSD"]},
+                       {"family": "king_keltner", "symbols": ["XAUUSD"]}]}))
+    out = xfo.drain_packets({}, apply=True)
+    assert out["donated"] == 2 and out["trials_charged"] == 2     # at least one per candidate
+    doc = json.loads(next(xfo.DONATIONS.glob("discoveries_*.json")).read_text())
+    assert doc["tests_run"] == 2 and len(doc["discoveries"]) == 2
+    assert doc["discoveries"][0]["generator"] == "ext:quant_guild_library"
+
+
+def test_the_resident_github_miner_publishes_cursors_and_daily_yield(desk) -> None:
+    """CRO D35: the delta scan IS the resident miner; its file carries cursors and per-day
+    counts, accumulates the day's distinct repos across passes, and reads UNMEASURED when a
+    pass hashed nothing."""
+    reg = FR.Registry()
+    reg.upsert({"system_id": "gh_a", "upstream_repo": "github:o/a",
+                "last_upstream_delta_scan": "2026-10-06T01:00:00+00:00"})
+    reg.upsert({"system_id": "web_b", "upstream_repo": "https://example.org/b"})
+    reg.delta.observe("gh_a", "repos", "{}", at="2026-10-06T01:00:00+00:00")
+    recs = [{"system_id": "gh_a", "candidates": 5, "at": "2026-10-06T00:30:00+00:00"},
+            {"system_id": "web_b", "candidates": 9, "at": "2026-10-06T00:30:00+00:00"}]
+    at = "2026-10-06T02:00:00+00:00"
+    doc = fo.resident_miner_doc(reg, {"scanned": ["gh_a", "web_b"]}, recs, None, at=at)
+    assert doc["status"] == "RAN" and doc["forge_upstreams"] == 1
+    assert doc["repos_mined_per_day"] == {"2026-10-06": 1}
+    assert doc["cells_extracted_per_day"] == {"2026-10-06": 5}
+    assert doc["delta_cursors"]["gh_a"]["surfaces_hashed"] == ["repos"]
+    reg.upsert({"system_id": "gh_c", "upstream_repo": "https://github.com/o/c"})
+    again = fo.resident_miner_doc(reg, {"scanned": ["gh_c"]}, [], doc, at=at)
+    assert again["repos_mined_per_day"] == {"2026-10-06": 2}
+    assert again["never_hashed"] == ["gh_c"]
+    assert again["cells_extracted_per_day"] == fo.UNMEASURED
+    idle = fo.resident_miner_doc(reg, {"scanned": []}, [], again, at=at)
+    assert idle["status"] == fo.UNMEASURED and idle["unmeasured"]
+    assert idle["repos_mined_per_day"] == {"2026-10-06": 2}
+
+
+def test_a_pass_writes_the_resident_miner_file(desk) -> None:
+    fo.run_pass(budget_s=30, dry_run=False, no_fetch=True)
+    doc = json.loads(fo.RESIDENT_REPORT.read_text(encoding="utf-8"))
+    assert doc["duty"] == "CRO D35" and doc["forge_upstreams"] >= 7
+
+
+def test_the_seed_roster_on_disk_is_the_seeds() -> None:
+    """The mining registry reads the seeds from data, never Python: the committed roster must be
+    exactly what `--write-roster` generates from fed.SEEDS, one row per seed, unique ids."""
+    doc = json.loads(xfo.SEED_ROSTER.read_text(encoding="utf-8"))
+    assert doc == json.loads(json.dumps(xfo.seed_roster()))
+    ids = [r["id"] for r in doc["sources"]]
+    assert len(ids) == len(fed.SEEDS) == len(set(ids))
+    row = next(r for r in doc["sources"] if r["system_id"] == "quant_guild_library")
+    assert row["id"] == "github:romanmichaelpaolucci/Quant-Guild-Library"
+    assert row["config"]["fetched_by"] == ["elitequant_breadth"]
+
+
+def test_a_drained_row_names_its_system_by_registry_id(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(xfo, "PACKETS", tmp_path / "packets")
+    monkeypatch.setattr(xfo, "PROCESSED", tmp_path / "packets" / "processed")
+    monkeypatch.setattr(xfo, "DONATIONS", tmp_path / "don")
+    (tmp_path / "packets").mkdir()
+    (tmp_path / "packets" / "p.json").write_text(json.dumps({
+        "system_id": "openterminal", "run_id": "r1", "candidates": [
+            {"symbol": "EURUSD", "family": "jump", "params": {}}]}), encoding="utf-8")
+    xfo.drain_packets({}, apply=True)
+    doc = json.loads(next((tmp_path / "don").glob("*.json")).read_text(encoding="utf-8"))
+    row = doc["discoveries"][0]
+    assert row["origin_source_id"] == "github:ErTasselli/OpenTerminal"
+    assert row["provenance"]["source_id"] == row["origin_source_id"]
+
+
+def test_an_account_upstream_watches_the_authors_activity_feed() -> None:
+    assert fo.surfaces_for("github:romanmichaelpaolucci") == {
+        "commits": "https://github.com/romanmichaelpaolucci.atom"}
+    assert fed.SEED_BY_ID["paolucci_github_account"].upstream == "github:romanmichaelpaolucci"
+    # an account outside the exception register is never watched
+    assert fo.surfaces_for("github:someoneelse") == {}
+
+
+def test_a_cell_two_packets_share_is_one_trial_and_one_row(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(xfo, "PACKETS", tmp_path / "packets")
+    monkeypatch.setattr(xfo, "PROCESSED", tmp_path / "packets" / "processed")
+    monkeypatch.setattr(xfo, "DONATIONS", tmp_path / "don")
+    (tmp_path / "packets").mkdir()
+    cell = {"symbol": "EURUSD", "family": "pca_residual", "params": {"entry_z": 2.0}}
+    for i, extra in enumerate(([], [{"symbol": "USDCAD", "family": "pca_residual",
+                                     "params": {"entry_z": 2.0}}])):
+        (tmp_path / "packets" / f"p{i}.json").write_text(json.dumps({
+            "system_id": "quant_guild_library", "run_id": f"r{i}",
+            "candidates": [cell, *extra], "trials_charged": 1 + len(extra)}), encoding="utf-8")
+    state: dict = {}
+    out = xfo.drain_packets(state, apply=True)
+    assert out["donated"] == 2 and out["trials_charged"] == 2 and out["duplicates"] == 1
+    # and a later packet re-proposing it is still not a new trial
+    (tmp_path / "packets" / "p9.json").write_text(json.dumps({
+        "system_id": "quant_guild_library", "run_id": "r9", "candidates": [cell],
+        "trials_charged": 1}), encoding="utf-8")
+    again = xfo.drain_packets(state, apply=True)
+    assert again["donated"] == 0 and again["trials_charged"] == 0

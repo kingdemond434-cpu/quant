@@ -135,6 +135,15 @@ def test_no_family_kwarg_is_ever_treated_as_provenance() -> None:
         hf.categorical_suffix(_row("EURUSD", "clock_transition", label="comex_settle"))
 
 
+def test_an_executable_id_kwarg_stays_l1_structure() -> None:
+    """`zoo_alpha_class` READS `alpha_id` to pick its alpha: two alphas are two rules, though the
+    name ends in the provenance suffix `_id`. A real provenance id still collapses."""
+    assert hf._structural_param("alpha_id")
+    assert hf.categorical_suffix(_row("EURUSD", "zoo_alpha_class", alpha_id="gtja191_001")) != \
+        hf.categorical_suffix(_row("EURUSD", "zoo_alpha_class", alpha_id="alpha101_042"))
+    assert not hf._structural_param("claim_id")
+
+
 def test_an_unmeasured_symbol_is_its_own_cluster() -> None:
     rows = [_row("EURUSD"), _row("AUDNZD")]
     assert hf.census(rows, {}, detail=10)["l2_families"] == 2

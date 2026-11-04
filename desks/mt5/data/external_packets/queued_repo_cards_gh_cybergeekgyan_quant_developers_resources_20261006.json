@@ -1,0 +1,55 @@
+{
+ "system_id": "gh_cybergeekgyan_quant_developers_resources",
+ "run_id": "queued_repo_cards_2026-10-06_gh_cybergeekgyan_quant_developers_resources",
+ "commit": "card_translation",
+ "candidates": [
+  {
+   "symbol": "EURGBP",
+   "family": "regime_split",
+   "params": {
+    "base_family": "mean_reversion_bollinger",
+    "vol": "high",
+    "trend": "range"
+   },
+   "mechanism": "Bollinger %B reversion: long when %B <= 0.1, short when %B >= 0.9 on BB(20,2), skip low-volatility regimes, 2% stop / 4% target, Kelly-inspired vol sizing.",
+   "title": "EURGBP regime_split (QR-A-QDR-001)",
+   "card_id": "QR-A-QDR-001",
+   "licence": "NONE",
+   "falsifier": "N/A"
+  },
+  {
+   "symbol": "AUDNZD",
+   "family": "regime_split",
+   "params": {
+    "base_family": "mean_reversion_bollinger",
+    "vol": "high",
+    "trend": "range"
+   },
+   "mechanism": "Bollinger %B reversion: long when %B <= 0.1, short when %B >= 0.9 on BB(20,2), skip low-volatility regimes, 2% stop / 4% target, Kelly-inspired vol sizing.",
+   "title": "AUDNZD regime_split (QR-A-QDR-001)",
+   "card_id": "QR-A-QDR-001",
+   "licence": "NONE",
+   "falsifier": "N/A"
+  },
+  {
+   "symbol": "EURCHF",
+   "family": "regime_split",
+   "params": {
+    "base_family": "mean_reversion_bollinger",
+    "vol": "high",
+    "trend": "range"
+   },
+   "mechanism": "Bollinger %B reversion: long when %B <= 0.1, short when %B >= 0.9 on BB(20,2), skip low-volatility regimes, 2% stop / 4% target, Kelly-inspired vol sizing.",
+   "title": "EURCHF regime_split (QR-A-QDR-001)",
+   "card_id": "QR-A-QDR-001",
+   "licence": "NONE",
+   "falsifier": "N/A"
+  }
+ ],
+ "trials_charged": 3,
+ "provenance": {
+  "cards": "/mnt/project-files/mining/queued_repos/",
+  "translated_by": "thread Mine the EliteQuant list",
+  "licence_note": "ideas only where upstream has no licence or is copyleft; no code copied"
+ }
+}

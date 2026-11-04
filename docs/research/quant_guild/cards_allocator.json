@@ -1,0 +1,1060 @@
+[
+ {
+  "id": "QG25-09",
+  "title": "Correlation instability and crisis correlation spikes in diversification",
+  "lectures": [
+   14,
+   17,
+   20,
+   24
+  ],
+  "source": {
+   "repo": "romanmichaelpaolucci/Quant-Guild-Library",
+   "commit": "d6f43bae4b1afb021c0d2386df79984b65214e76",
+   "files": [
+    {
+     "path": "2025 Video Lectures/14. Quant Investing for Beginners/Quant Investing Strategies for Beginners.ipynb",
+     "sha256": "77fbb459bece1aa1971716bd90cf6db2ffc9ec6d8b018e7c23deb5b956543c76"
+    },
+    {
+     "path": "2025 Video Lectures/17. Analyzing Stock Returns with Principal Component Analysis in Python/PCA-Stock-Returns-main/PCA-Stock-Returns-main/pca_stock_returns_analysis.ipynb",
+     "sha256": "7d1fcf5d258f43d0743706514f6c56176c51b891ceb87fceb051027ff68f24f5"
+    }
+   ]
+  },
+  "mechanism": "Diversification relies on correlation, which is time-varying (AR(1)/random correlation simulations) and rises in crises; rolling PCA loadings drift.",
+  "causal_rationale": "Common shocks and forced deleveraging synchronise assets, so the covariance used to size a book is least reliable when it matters.",
+  "original_universe": "simulated pairs; US stocks",
+  "original_horizon": "daily",
+  "original_data": "simulated / small panel",
+  "original_implementation": "simulation notebooks",
+  "weaknesses": "Pedagogical simulations only.",
+  "mt5_translation": "Allocator/risk method: covariance used for sizing should be stress-aware; desk already measures topology drift and crisis tail dependence.",
+  "candidate_symbols": [],
+  "pit_requirements": "trailing windows",
+  "feature_representation": "structure z of 30-day correlation vs long-run",
+  "hypothesis": "(desk-owned) n/a",
+  "entry_exit": "n/a",
+  "execution": "n/a",
+  "costs": "n/a",
+  "leakage_risks": "n/a",
+  "selection_risks": "n/a",
+  "baseline": "EW long-run correlation",
+  "falsifier": "n/a",
+  "expected_orthogonality": "n/a",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "DRAFT_DIFF_FIRST_DONE",
+  "control_matrix": {
+   "A": "static covariance",
+   "B": "rolling covariance",
+   "C": "drift-aware covariance",
+   "D": "n/a",
+   "E": "n/a",
+   "F": "n/a",
+   "G": "EW",
+   "H": "drift_monitor structure z",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "verdict": "ALREADY_COMPLETE_LIVE",
+   "evidence": "desks/mt5/research/drift_monitor.py:1-25 (book correlation topology drift, tail dependence, STRUCTURE_SHIFTED verdict); family correlation_regime registered (families_orthogonal.py:867); crisis_only_class_defensive registered."
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "Growth allocator overhaul"
+  },
+  "priority": "none",
+  "licence": "NONE (no licence file; ideas only, no code copied)"
+ },
+ {
+  "id": "QG25-17",
+  "title": "Mean-variance optimisation overfits; expected returns are not stable estimands",
+  "lectures": [
+   20,
+   21,
+   40
+  ],
+  "source": {
+   "repo": "romanmichaelpaolucci/Quant-Guild-Library",
+   "commit": "d6f43bae4b1afb021c0d2386df79984b65214e76",
+   "files": [
+    {
+     "path": "2025 Video Lectures/20. Why Portfolio Optimization Doesn't Work/portfolio_optimization.ipynb",
+     "sha256": "1af53f60051bcc48529f29ba16e75a25e940bb7f48f4310ed53eb2b5eae35add"
+    },
+    {
+     "path": "2025 Video Lectures/21. Expected Stock Returns Don't Exist/ExpectedReturnsDontExist-main/expected_returns_dont_exist.ipynb",
+     "sha256": "fe175a5ba1abf6602ec74e0c43fca7222884af28619669ecdc0f2536508f45fb"
+    }
+   ]
+  },
+  "mechanism": "Max-Sharpe weights fit on one sample of 30 assets fail on a fresh sample from the same distribution and on a zero-mean regime; only stationary, correlated 'games' preserve the optimum; St Petersburg and ergodicity arguments against relying on mu.",
+  "causal_rationale": "Estimation error in mu dominates; regime change breaks the covariance.",
+  "original_universe": "simulated games and 30 random assets",
+  "original_horizon": "daily",
+  "original_data": "simulated",
+  "original_implementation": "random-weight frontier search",
+  "weaknesses": "Pedagogical.",
+  "mt5_translation": "Allocator method: posterior shrinkage of mu and robust scoring already on the desk.",
+  "candidate_symbols": [],
+  "pit_requirements": "n/a",
+  "feature_representation": "n/a",
+  "hypothesis": "(allocator-owned)",
+  "entry_exit": "n/a",
+  "execution": "n/a",
+  "costs": "n/a",
+  "leakage_risks": "n/a",
+  "selection_risks": "n/a",
+  "baseline": "equal weight",
+  "falsifier": "n/a",
+  "expected_orthogonality": "n/a",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "DRAFT_DIFF_FIRST_DONE",
+  "control_matrix": {
+   "A": "equal weight",
+   "B": "sample MVO",
+   "C": "shrunk posterior mu + robust score",
+   "D": "n/a",
+   "E": "n/a",
+   "F": "random weights",
+   "G": "equal weight",
+   "H": "pf_allocator _posterior_mu",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "verdict": "ALREADY_COMPLETE_LIVE",
+   "evidence": "desks/mt5/research/pf_allocator.py:504,831,891-894 (_posterior_mu shrinkage at k=40, live>forward>backtest precedence)."
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "Growth allocator overhaul"
+  },
+  "priority": "none",
+  "licence": "NONE (no licence file; ideas only, no code copied)"
+ },
+ {
+  "id": "QG25-18",
+  "title": "Kelly sizing, ergodicity and the cost of estimation error",
+  "lectures": [
+   36,
+   56,
+   18,
+   3
+  ],
+  "source": {
+   "repo": "romanmichaelpaolucci/Quant-Guild-Library",
+   "commit": "d6f43bae4b1afb021c0d2386df79984b65214e76",
+   "files": [
+    {
+     "path": "2025 Video Lectures/36. How to Trade with the Kelly Criterion/how_to_trade_with_the_kelly_criterion.ipynb",
+     "sha256": "29c4a7924f6d53a005a937f732924c930d35454c3e1f62775ffe9b50c010f707"
+    },
+    {
+     "path": "2025 Video Lectures/56. Quant Busts 3 Trading Myths with Math/myth_buster.ipynb",
+     "sha256": "2f104ad19cddedf1bc598150e48df3799f2c4fe8e2b7a07ee5d9709e78ccb494"
+    }
+   ]
+  },
+  "mechanism": "Maximise E[log W]; Kelly f* = p - q/b; additive vs multiplicative wealth (ergodicity); with OU-drifting p and payoff, and with small estimation errors, full Kelly over-bets badly.",
+  "causal_rationale": "Time-average growth, not ensemble EV, is what a single account experiences.",
+  "original_universe": "simulated",
+  "original_horizon": "per trade",
+  "original_data": "simulated",
+  "original_implementation": "simulation",
+  "weaknesses": "Pedagogical.",
+  "mt5_translation": "Desk doctrine already sizes by E[log W] with survival constraints.",
+  "candidate_symbols": [],
+  "pit_requirements": "n/a",
+  "feature_representation": "n/a",
+  "hypothesis": "(allocator-owned)",
+  "entry_exit": "n/a",
+  "execution": "n/a",
+  "costs": "n/a",
+  "leakage_risks": "n/a",
+  "selection_risks": "n/a",
+  "baseline": "fixed fraction",
+  "falsifier": "n/a",
+  "expected_orthogonality": "n/a",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "DRAFT_DIFF_FIRST_DONE",
+  "control_matrix": {
+   "A": "fixed fraction",
+   "B": "full Kelly",
+   "C": "posterior Kelly with survival envelope",
+   "D": "n/a",
+   "E": "n/a",
+   "F": "n/a",
+   "G": "fixed fraction",
+   "H": "kelly_sizing / kelly_survival",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "verdict": "ALREADY_COMPLETE_LIVE",
+   "evidence": "desks/mt5/mt5desk/kelly_sizing.py; desks/mt5/research/kelly_survival.py; CLAUDE.md GROWTH GOVERNANCE / ALLOCATOR SOVEREIGNTY."
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "Growth allocator overhaul"
+  },
+  "priority": "none",
+  "licence": "NONE (no licence file; ideas only, no code copied)"
+ },
+ {
+  "id": "QG25-20",
+  "title": "GARCH(1,1) conditional volatility forecast for risk units and VaR",
+  "lectures": [
+   47,
+   24
+  ],
+  "source": {
+   "repo": "romanmichaelpaolucci/Quant-Guild-Library",
+   "commit": "d6f43bae4b1afb021c0d2386df79984b65214e76",
+   "files": [
+    {
+     "path": "2025 Video Lectures/47. Master Volatility with ARCH & GARCH Models/arch_garch.ipynb",
+     "sha256": "984e24d392a53a57c756284b30aec0ee4e35898b0b5704c3850a682a6d243762"
+    },
+    {
+     "path": "2025 Video Lectures/47. Master Volatility with ARCH & GARCH Models/ib_vol.py",
+     "sha256": "a6511b46723d922242be451e2a79c752cc0434b5f31e3848ce96c3f2a7882484"
+    }
+   ]
+  },
+  "mechanism": "ARCH/GARCH conditional variance captures clustering and mean reversion; out-of-sample comparison with EWMA; GARCH-scaled VaR breaches closer to nominal than constant-vol VaR; daily squared returns have low R^2, intraday measures much higher.",
+  "causal_rationale": "Volatility clusters and mean-reverts; a conditional forecast sizes risk better than a trailing window.",
+  "original_universe": "AAPL 2023-2025",
+  "original_horizon": "1 day",
+  "original_data": "IBKR daily price, IV, RV",
+  "original_implementation": "arch-style fits, grid-searched EWMA window (author notes the global-knowledge bias)",
+  "weaknesses": "Window grid search on the full path; single name.",
+  "mt5_translation": "Allocator/risk-unit input: compare GARCH(1,1) on H1/D1 broker returns against the desk's EWMA baseline for stop distance and risk-per-trade normalisation; adopt only if it lowers realised-vs-target risk error.",
+  "candidate_symbols": [
+   "EURUSD",
+   "XAUUSD",
+   "US500",
+   "XTIUSD",
+   "USDJPY"
+  ],
+  "pit_requirements": "refit on trailing data only.",
+  "feature_representation": "sigma_garch_t+1 vs sigma_ewma_t+1",
+  "hypothesis": "On the desk's top-10 symbols, GARCH(1,1) one-day-ahead vol has lower QLIKE loss than EWMA(0.94) out of sample, and risk units scaled by it produce realised R-dispersion closer to 1 than ATR-scaled units.",
+  "entry_exit": "n/a",
+  "execution": "n/a",
+  "costs": "n/a",
+  "leakage_risks": "fitting parameters on the full sample.",
+  "selection_risks": "model choice across p,q.",
+  "baseline": "EWMA (RiskMetrics) and ATR20.",
+  "falsifier": "QLIKE not better than EWMA out of sample.",
+  "expected_orthogonality": "n/a (risk input)",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "DRAFT_DIFF_FIRST_DONE",
+  "control_matrix": {
+   "A": "ATR20 risk units",
+   "B": "GARCH(1,1) daily",
+   "C": "GARCH on H1 with intraday RV",
+   "D": "shuffled returns",
+   "E": "lagged forecast",
+   "F": "n/a",
+   "G": "EWMA 0.94",
+   "H": "volatility_signals EWMA baseline",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "verdict": "EXISTS_UNWIRED",
+   "evidence": "libs/research/stationarity.py:44 def garch_conditional_vol exists but grep 'garch_conditional_vol' finds no caller under desks/; libs/research/volatility_signals.py:43-46 states EWMA is the baseline GARCH must beat and that the upgrade is pending."
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "Growth allocator overhaul"
+  },
+  "priority": "P2",
+  "licence": "NONE (no licence file; ideas only, no code copied)"
+ },
+ {
+  "id": "QG26-10-black-litterman-equilibrium-posterior",
+  "expected_incremental_elogw": "UNMEASURED",
+  "licence": "NONE (no LICENSE file at clone d6f43bae; ideas only, no code copied)",
+  "card_status": "DRAFT_DIFF_FIRST_DONE",
+  "source": [
+   {
+    "repo": "github:romanmichaelpaolucci/Quant-Guild-Library@d6f43bae4b1afb021c0d2386df79984b65214e76",
+    "path": "2026 Video Lectures/100. Black-Litterman vs. Mean-Variance Portfolio Optimization in Python/blmpfm.ipynb",
+    "lecture": "100. Black-Litterman vs. Mean-Variance Portfolio Optimization in Python",
+    "sha256": "17f3c102f97ca1552cf2e7cb732fe3c684cd4538e4b06a717e67a958be4cd368"
+   }
+  ],
+  "mechanism": "Replace noisy historical mean returns with equilibrium implied returns Pi = delta * Sigma * w_mkt (reverse optimisation from a benchmark book), then tilt toward views Q on portfolios P with confidence Omega (diag of P tau Sigma P'), via the BL posterior mean. With no views the optimiser holds the benchmark; weak views shrink back to it.",
+  "causal_rationale": "Mean estimates are the dominant error source in MVO; anchoring to an equilibrium prior and admitting forecasts in proportion to their confidence stabilises weights.",
+  "original_universe": "US large-cap equities (AVGO, GOOGL, WELL...)",
+  "original_horizon": "annualised daily",
+  "original_data": "daily returns csv",
+  "original_implementation": "Notebook: MVO frontier, perturbation demo, BL with equal-weight 'market' and two absolute views, SLSQP long-only.",
+  "weaknesses": "Equal-weight w_mkt (not a real market portfolio); tau and delta arbitrary; views hand-typed.",
+  "mt5_translation": "For the desk's allocator: prior = the current certified book's weights (or heat-parity) reversed into implied returns; views = each sleeve's posterior forward edge with Omega from its forward-clock standard error. Gives a stable starting point that new sleeves tilt.",
+  "candidate_symbols": [
+   "XAUUSD",
+   "EURUSD",
+   "US500",
+   "USDJPY",
+   "XTIUSD"
+  ],
+  "pit_requirements": "Sigma and view uncertainties from data before the solve.",
+  "feature_representation": "posterior mean vector per sleeve.",
+  "hypothesis": "Allocator solved on BL posterior means (prior = previous book) has lower weight turnover and equal or higher forward E[log W] than the same solve on raw posterior means.",
+  "entry_exit": "N/A (allocation).",
+  "execution": "Allocator output.",
+  "costs": "Lower turnover lowers rebalancing cost.",
+  "leakage_risks": "Prior built from a future book.",
+  "selection_risks": "tau choice.",
+  "baseline": "current pf_allocator solve.",
+  "falsifier": "No turnover reduction or lower forward E[log W].",
+  "expected_orthogonality": "N/A",
+  "control_matrix": {
+   "A": "current allocator",
+   "B": "BL posterior with previous-book prior",
+   "C": "views Omega from forward-clock SE",
+   "D": "views shuffled across sleeves",
+   "E": "prior from the book 2 cycles back",
+   "F": "random views",
+   "G": "simple shrinkage of means toward zero",
+   "H": "pf_allocator posterior draws",
+   "I": "N/A"
+  },
+  "diff_first": "MISSING",
+  "evidence": "grep -rniE 'black.litterman' desks libs scripts: only libs/research/external_federation.py:759 (donor registration text). pf_allocator uses posterior draws (desks/mt5/research/pf_allocator.py:19) but no equilibrium-prior/view blending.",
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "Growth allocator overhaul (desktop session)"
+  },
+  "priority": "P1"
+ },
+ {
+  "id": "QG26-11-optimiser-weight-perturbation-stability",
+  "expected_incremental_elogw": "UNMEASURED",
+  "licence": "NONE (no LICENSE file at clone d6f43bae; ideas only, no code copied)",
+  "card_status": "DRAFT_DIFF_FIRST_DONE",
+  "source": [
+   {
+    "repo": "github:romanmichaelpaolucci/Quant-Guild-Library@d6f43bae4b1afb021c0d2386df79984b65214e76",
+    "path": "2026 Video Lectures/100. Black-Litterman vs. Mean-Variance Portfolio Optimization in Python/blmpfm.ipynb",
+    "lecture": "100. Black-Litterman vs. Mean-Variance Portfolio Optimization in Python",
+    "sha256": "17f3c102f97ca1552cf2e7cb732fe3c684cd4538e4b06a717e67a958be4cd368"
+   }
+  ],
+  "mechanism": "Jitter the return panel with small noise, re-estimate inputs and re-optimise; if weights jump (MVO as 'error maximiser') the solution is fitting noise. A robust solve degrades smoothly under perturbation.",
+  "causal_rationale": "Real structure survives small perturbations; noise-fit weights do not, and that is why in-sample optimal books fall off a cliff out of sample.",
+  "original_universe": "US equities",
+  "original_horizon": "daily",
+  "original_data": "daily returns",
+  "original_implementation": "Adds N(0, 0.2-0.5%) noise to daily returns, re-solves, compares frontier and weights; 6-month in-sample / 6-month out-of-sample split.",
+  "weaknesses": "Single perturbation draw; noise scale arbitrary.",
+  "mt5_translation": "Report organ on the allocator: K perturbed re-solves (bootstrap blocks of sleeve returns or jittered posterior moments), publish per-sleeve weight dispersion and the L1 turnover between perturbed solves; flag sleeves whose weight sign or size is unstable.",
+  "candidate_symbols": [],
+  "pit_requirements": "Perturb only the inputs the solve already used.",
+  "feature_representation": "weight_dispersion per sleeve; book L1 instability.",
+  "hypothesis": "Sleeves whose allocator weight has high perturbation dispersion realise lower forward E[log W] contribution than their solved weight implies.",
+  "entry_exit": "N/A",
+  "execution": "N/A",
+  "costs": "N/A",
+  "leakage_risks": "None if inputs are the solve's own.",
+  "selection_risks": "Noise scale.",
+  "baseline": "current allocator report (no stability measure).",
+  "falsifier": "No relation between dispersion and forward contribution shortfall.",
+  "expected_orthogonality": "N/A",
+  "control_matrix": {
+   "A": "no stability report",
+   "B": "jitter-and-resolve dispersion",
+   "C": "block bootstrap of sleeve returns",
+   "D": "N/A",
+   "E": "N/A",
+   "F": "random weights",
+   "G": "equal-weight book",
+   "H": "pf_allocator posterior draws",
+   "I": "N/A"
+  },
+  "diff_first": "EXISTS_INCOMPLETE",
+  "evidence": "desks/mt5/research/pf_allocator.py:19 solves over posterior draws x regimes (estimation uncertainty enters the objective) but no organ publishes weight dispersion under input perturbation (grep 'resampled|michaud|weight.{0,15}stability' = 0 relevant hits).",
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "Growth allocator overhaul (desktop session)"
+  },
+  "priority": "P1"
+ },
+ {
+  "id": "QG26-18-crash-first-pc-concentration-state",
+  "expected_incremental_elogw": "UNMEASURED",
+  "licence": "NONE (no LICENSE file at clone d6f43bae; ideas only, no code copied)",
+  "card_status": "DRAFT_DIFF_FIRST_DONE",
+  "source": [
+   {
+    "repo": "github:romanmichaelpaolucci/Quant-Guild-Library@d6f43bae4b1afb021c0d2386df79984b65214e76",
+    "path": "2026 Video Lectures/138. How to Protect your Stock Portfolio Against a Market Crash/crash.ipynb",
+    "lecture": "138. How to Protect your Stock Portfolio Against a Market Crash",
+    "sha256": "b1245db927565dd4ab573657902b917c61746f09c36425f07eb8964c7df2378e"
+   },
+   {
+    "repo": "github:romanmichaelpaolucci/Quant-Guild-Library@d6f43bae4b1afb021c0d2386df79984b65214e76",
+    "path": "2026 Video Lectures/88. How a Quant Manages a Portfolio/ff.ipynb",
+    "lecture": "88. How a Quant Manages a Portfolio",
+    "sha256": "6b04b10a43df725dc8443e25b29eb8b60b61d599f10d5293bd1750b8fe1ab730"
+   },
+   {
+    "repo": "github:romanmichaelpaolucci/Quant-Guild-Library@d6f43bae4b1afb021c0d2386df79984b65214e76",
+    "path": "2026 Video Lectures/127. The Ultimate Guide to Quant Portfolio Management/tooi.ipynb",
+    "lecture": "127. The Ultimate Guide to Quant Portfolio Management",
+    "sha256": "ee4e8669f9916b64a3764d46498a5b9bb6a6e88d00b11f8c2e6d1abbb85c34eb"
+   }
+  ],
+  "mechanism": "The share of cross-asset return variance explained by the first principal component (an absorption ratio) rises in crises as correlations go to one; diversification fails along that direction. Its level and its short-vs-long change are a fragility state.",
+  "causal_rationale": "Common deleveraging forces every risky position to move together; when PC1 absorbs most variance the book's effective breadth collapses.",
+  "original_universe": "US single stocks (CAT, NVDA, sectors)",
+  "original_horizon": "daily",
+  "original_data": "daily returns",
+  "original_implementation": "PCA on calm vs crash windows; loadings interpretation.",
+  "weaknesses": "Descriptive; no rule.",
+  "mt5_translation": "Daily: PC1 variance share over a trailing 60-day window across a fixed MT5 basket (US500, NAS100, GER40, UK100, JPN225, XAUUSD, XTIUSD, AUDUSD, USDJPY, EURUSD, UST10Y), z-scored against its own trailing year. Publish as a regime state for the allocator (breadth and stress-world weighting) and as a conditioner for risk-on families.",
+  "candidate_symbols": [
+   "US500",
+   "NAS100",
+   "GER40",
+   "XAUUSD",
+   "AUDUSD",
+   "USDJPY"
+  ],
+  "pit_requirements": "Window ends at the last closed daily bar; eigen-decomposition on that window only.",
+  "feature_representation": "pc1_share, pc1_share_z, delta_pc1_share_15d.",
+  "hypothesis": "Days with pc1_share_z >= 1.5 are followed by lower 20-day US500 returns and higher realised cross-sleeve correlation than days with pc1_share_z <= 0.",
+  "entry_exit": "State only.",
+  "execution": "N/A",
+  "costs": "N/A",
+  "leakage_risks": "Basket chosen by hindsight; standardising with full-sample moments.",
+  "selection_risks": "Window and basket choice.",
+  "baseline": "average pairwise correlation; realised vol of US500.",
+  "falsifier": "No forward difference beyond what US500 realised vol already explains.",
+  "expected_orthogonality": "Partly overlaps vol state; adds cross-asset breadth information.",
+  "control_matrix": {
+   "A": "no state",
+   "B": "pc1 share level",
+   "C": "pc1 share z + 15d change",
+   "D": "returns shuffled across assets per day",
+   "E": "state lagged 5 days",
+   "F": "random state",
+   "G": "average pairwise correlation",
+   "H": "pf_allocator stress-regime correlation calibration",
+   "I": "N/A"
+  },
+  "diff_first": "MISSING",
+  "evidence": "grep -rniE 'absorption.ratio' = 0; 'explained_variance' hits are ML-layer bookkeeping (desks/mt5/research/ml_layer.py:251, representation_forge.py). pf_allocator.py:3411-3415 calibrates stress-regime correlation for its scenario worlds, not a live state; side_channels/portfolio_gap.py:517 averages pairwise correlation of the BOOK, not the market.",
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "Growth allocator overhaul (desktop session)"
+  },
+  "priority": "P1"
+ },
+ {
+  "id": "QG26-26-multi-strategy-signal-blend-netting",
+  "expected_incremental_elogw": "UNMEASURED",
+  "licence": "NONE (no LICENSE file at clone d6f43bae; ideas only, no code copied)",
+  "card_status": "DRAFT_DIFF_FIRST_DONE",
+  "source": [
+   {
+    "repo": "github:romanmichaelpaolucci/Quant-Guild-Library@d6f43bae4b1afb021c0d2386df79984b65214e76",
+    "path": "2026 Video Lectures/137. Projects to Help you Become a Quant (Advanced)/01 - Quantitative Trader/strategies.py",
+    "lecture": "137. Projects to Help you Become a Quant (Advanced)",
+    "sha256": "a45daaf37c24cd7a2808967c5ef3948170c9e43231d478135862debcd346222b"
+   },
+   {
+    "repo": "github:romanmichaelpaolucci/Quant-Guild-Library@d6f43bae4b1afb021c0d2386df79984b65214e76",
+    "path": "2026 Video Lectures/137. Projects to Help you Become a Quant (Advanced)/01 - Quantitative Trader/README.md",
+    "lecture": "137. Projects to Help you Become a Quant (Advanced)",
+    "sha256": "c9b73076a35374af3544bcb688edd0a5032577bb8a6d2201b40fff416177b6c0"
+   }
+  ],
+  "mechanism": "Each strategy emits a dimensionless conviction in [-1,1] (tanh of normalised MA spread, clipped -z/entry_z, tanh of trailing return); contribution = signal x allocation; contributions summed per symbol, clamped to [-1,1], converted to target units, and only the delta to the held position is ordered.",
+  "causal_rationale": "Separating alpha (direction/conviction) from sizing and netting opposing sleeves saves spread.",
+  "original_universe": "IBKR equities (demo random walk)",
+  "original_horizon": "bar",
+  "original_data": "live/simulated",
+  "original_implementation": "Desktop cockpit with strategy table and rebalance preview.",
+  "weaknesses": "Fixed allocations; clamp is a fiat cap.",
+  "mt5_translation": "Exists: theoretical sleeve positions netted per instrument with per-sleeve virtual P&L; sizing is the allocator's.",
+  "candidate_symbols": [],
+  "pit_requirements": "N/A",
+  "feature_representation": "N/A",
+  "hypothesis": "Covered.",
+  "entry_exit": "N/A",
+  "execution": "Net target per symbol.",
+  "costs": "N/A",
+  "leakage_risks": "N/A",
+  "selection_risks": "N/A",
+  "baseline": "N/A",
+  "falsifier": "N/A",
+  "expected_orthogonality": "N/A",
+  "control_matrix": {
+   "A": "N/A",
+   "B": "N/A",
+   "C": "N/A",
+   "D": "N/A",
+   "E": "N/A",
+   "F": "N/A",
+   "G": "N/A",
+   "H": "desks/mt5/mt5desk/netting.py",
+   "I": "N/A"
+  },
+  "diff_first": "ALREADY_COMPLETE_LIVE",
+  "evidence": "desks/mt5/mt5desk/netting.py:1-14 (theoretical sleeve positions netted into one target per instrument, attribution preserved); families trend_ma_cross (families.py:1220), mean_reversion_bollinger (:1173), multi_speed_trend cover the three signal shapes.",
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "Growth allocator overhaul (desktop session)"
+  },
+  "priority": "none"
+ },
+ {
+  "id": "QG26-28-working-order-dedup-invariant",
+  "expected_incremental_elogw": "UNMEASURED",
+  "licence": "NONE (no LICENSE file at clone d6f43bae; ideas only, no code copied)",
+  "card_status": "DRAFT_DIFF_FIRST_DONE",
+  "source": [
+   {
+    "repo": "github:romanmichaelpaolucci/Quant-Guild-Library@d6f43bae4b1afb021c0d2386df79984b65214e76",
+    "path": "2026 Video Lectures/134. How to Build an AI Stock Trading Bot with Interactive Brokers/brain/policy.py",
+    "lecture": "134. How to Build an AI Stock Trading Bot with Interactive Brokers",
+    "sha256": "5e57701b2cff4d82eeeb15374ecba3e5726074011cda07b5f04c0dd8d24d743a"
+   }
+  ],
+  "mechanism": "Never place a same-side order for a symbol while one is working or partially filled; do not cancel/replace merely to retry; treat it as 'awaiting fill'.",
+  "causal_rationale": "Duplicate orders on retries create unintended exposure.",
+  "original_universe": "IBKR",
+  "original_horizon": "N/A",
+  "original_data": "open orders",
+  "original_implementation": "Prompt rule + open-order status check.",
+  "weaknesses": "Enforced by prompt, not code.",
+  "mt5_translation": "Order-state invariant already enforced in the gateway's order door.",
+  "candidate_symbols": [],
+  "pit_requirements": "N/A",
+  "feature_representation": "N/A",
+  "hypothesis": "Invariant, no cell.",
+  "entry_exit": "N/A",
+  "execution": "N/A",
+  "costs": "N/A",
+  "leakage_risks": "N/A",
+  "selection_risks": "N/A",
+  "baseline": "N/A",
+  "falsifier": "N/A",
+  "expected_orthogonality": "N/A",
+  "control_matrix": {
+   "A": "N/A",
+   "B": "N/A",
+   "C": "N/A",
+   "D": "N/A",
+   "E": "N/A",
+   "F": "N/A",
+   "G": "N/A",
+   "H": "gateway order door",
+   "I": "N/A"
+  },
+  "diff_first": "ALREADY_COMPLETE_LIVE",
+  "evidence": "desks/mt5/mt5desk/gateway.py:768 (duplicate of an in-doubt order refused), :1345 (door's own refusals: duplicate / unsettled in-doubt), :1443-1475 (idempotent verified cancellation via orders_get).",
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "Growth allocator overhaul (desktop session): order-state invariants"
+  },
+  "priority": "none"
+ },
+ {
+  "id": "QG-AIST-003",
+  "repo": "romanmichaelpaolucci/AI_Stock_Trading",
+  "licence": "NONE",
+  "source": "github:romanmichaelpaolucci/AI_Stock_Trading@c4b17aab10f13d3ccfca1956b78048eb430f52b3:AI_Stock_Trading.py:TradingSystem/PortfolioManagementSystem (sha256 fbc00d7b351aae1a...)",
+  "mechanism": "Abstract TradingSystem base starts the trading thread inside __init__, before the subclass has assigned self.AI; loop sleeps 1440 s ('a day') and waits for day_count==7, but day_count is never incremented, so the system never trades; the model module also runs at import time.",
+  "causal_rationale": "A live loop that is constructed half-initialised races its own state; a counter that never advances is an organ that is wired but idle.",
+  "original_universe": "n/a",
+  "original_horizon": "n/a",
+  "original_data": "n/a",
+  "original_implementation": "AI_Stock_Trading.py:TradingSystem/PortfolioManagementSystem",
+  "weaknesses": "Race on self.AI; silent idleness with no artifact; 1440 s is 24 minutes, not a day; deprecated get_barset API.",
+  "mt5_translation": "Order-state / liveness invariant for the gateway: a sleeve object is fully built before its loop is scheduled, and every pass leaves a heartbeat artifact so idleness is visible (LAWS III.16).",
+  "candidate_symbols": [],
+  "pit_requirements": "n/a",
+  "feature_representation": "N/A (method / invariant card, no cell)",
+  "hypothesis": "A trading loop is never started from a constructor; each pass writes a timestamped heartbeat and a monitor flags a sleeve whose decision counter has not advanced within its clock period.",
+  "entry_exit": "n/a",
+  "execution": "n/a",
+  "costs": "n/a",
+  "leakage_risks": "n/a",
+  "selection_risks": "n/a",
+  "baseline": "current desk behaviour",
+  "falsifier": "a regression test that seeds the defect and is not caught",
+  "expected_orthogonality": "n/a (no return stream)",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "FAILURE_TO_AVOID",
+  "control_matrix": {
+   "A": "N/A: method_only card, no tradable arm",
+   "B": "N/A: method_only card, no tradable arm",
+   "C": "N/A: method_only card, no tradable arm",
+   "D": "N/A: method_only card, no tradable arm",
+   "E": "N/A: method_only card, no tradable arm",
+   "F": "N/A: method_only card, no tradable arm",
+   "G": "N/A: method_only card, no tradable arm",
+   "H": "N/A: method_only card, no tradable arm",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "status": "ALREADY_COMPLETE_LIVE",
+   "evidence": "desks/mt5/mt5desk/gateway.py:2321 desired position asserted every pass; desks/mt5/data/stall_watch.json publishes per-host liveness; CLAUDE.md law III.16 'UNWIRED OR IDLE IS A DEFECT'"
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "Growth allocator overhaul (desktop session)"
+  },
+  "priority": "none",
+  "licence_note": "no LICENSE file at clone: ideas only, no code copied"
+ },
+ {
+  "id": "QG-AIST-004",
+  "repo": "romanmichaelpaolucci/AI_Stock_Trading",
+  "licence": "NONE",
+  "source": "github:romanmichaelpaolucci/AI_Stock_Trading@c4b17aab10f13d3ccfca1956b78048eb430f52b3:AI_Stock_Trading.py:place_buy_order/place_sell_order (sha256 fbc00d7b351aae1a...)",
+  "mechanism": "Signal mapped straight to a fixed qty=1 market order with no read of the current position: two consecutive buy signals buy twice; there is no target-position state.",
+  "causal_rationale": "Orders as deltas without a persistent target let the book drift from intent on every repeat or retry.",
+  "original_universe": "n/a",
+  "original_horizon": "n/a",
+  "original_data": "n/a",
+  "original_implementation": "AI_Stock_Trading.py:place_buy_order/place_sell_order",
+  "weaknesses": "Pyramiding by accident; no reconciliation; no stop.",
+  "mt5_translation": "Order-state invariant: each sleeve asserts a signed TARGET position and the netting layer sends only the difference; restating the same target sends nothing.",
+  "candidate_symbols": [],
+  "pit_requirements": "n/a",
+  "feature_representation": "N/A (method / invariant card, no cell)",
+  "hypothesis": "send(target) twice == send(target) once (idempotence); the book equals the sum of sleeve targets after every pass.",
+  "entry_exit": "n/a",
+  "execution": "n/a",
+  "costs": "n/a",
+  "leakage_risks": "n/a",
+  "selection_risks": "n/a",
+  "baseline": "current desk behaviour",
+  "falsifier": "a regression test that seeds the defect and is not caught",
+  "expected_orthogonality": "n/a (no return stream)",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "FAILURE_TO_AVOID",
+  "control_matrix": {
+   "A": "N/A: method_only card, no tradable arm",
+   "B": "N/A: method_only card, no tradable arm",
+   "C": "N/A: method_only card, no tradable arm",
+   "D": "N/A: method_only card, no tradable arm",
+   "E": "N/A: method_only card, no tradable arm",
+   "F": "N/A: method_only card, no tradable arm",
+   "G": "N/A: method_only card, no tradable arm",
+   "H": "N/A: method_only card, no tradable arm",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "status": "ALREADY_COMPLETE_LIVE",
+   "evidence": "desks/mt5/mt5desk/netting.py:214 'Idempotent by construction: re-stating the target a sleeve already holds appends nothing'; desks/mt5/mt5desk/gateway.py:2321"
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "Growth allocator overhaul (desktop session)"
+  },
+  "priority": "none",
+  "licence_note": "no LICENSE file at clone: ideas only, no code copied"
+ },
+ {
+  "id": "QG-QDEV-002",
+  "repo": "romanmichaelpaolucci/Quant_Dev",
+  "licence": "NONE",
+  "source": "github:romanmichaelpaolucci/Quant_Dev@4a0f860da2aa3d38bc4b66e3919c4715a7ed66d8:demo/EntrySignalA.java (sha256 3341a3d169067c6c...)",
+  "mechanism": "Signal-to-side mapping bug: the down-move branch also sends Types.Action.BUY.",
+  "causal_rationale": "A side inversion is silent: the system trades, fills and reports P&L, all of the wrong sign.",
+  "original_universe": "n/a",
+  "original_horizon": "n/a",
+  "original_data": "n/a",
+  "original_implementation": "demo/EntrySignalA.java",
+  "weaknesses": "No test pairs a falling-price fixture with an expected SELL.",
+  "mt5_translation": "Order-state invariant: a family's side map is tested on a mirrored fixture -- negate returns, the signal side must flip (for symmetric families) and the order side must equal the signal side.",
+  "candidate_symbols": [],
+  "pit_requirements": "n/a",
+  "feature_representation": "N/A (method / invariant card, no cell)",
+  "hypothesis": "For every symmetric family f: side(f(mirror(bars))) == -side(f(bars)); for every order: order.side == signal.side.",
+  "entry_exit": "n/a",
+  "execution": "n/a",
+  "costs": "n/a",
+  "leakage_risks": "n/a",
+  "selection_risks": "n/a",
+  "baseline": "current desk behaviour",
+  "falsifier": "a regression test that seeds the defect and is not caught",
+  "expected_orthogonality": "n/a (no return stream)",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "FAILURE_TO_AVOID",
+  "control_matrix": {
+   "A": "N/A: method_only card, no tradable arm",
+   "B": "N/A: method_only card, no tradable arm",
+   "C": "N/A: method_only card, no tradable arm",
+   "D": "N/A: method_only card, no tradable arm",
+   "E": "N/A: method_only card, no tradable arm",
+   "F": "N/A: method_only card, no tradable arm",
+   "G": "N/A: method_only card, no tradable arm",
+   "H": "N/A: method_only card, no tradable arm",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "status": "EXISTS_INCOMPLETE",
+   "evidence": "grep 'mirror(ed) price|sign symmetr|flip test' finds only desks/mt5/research/mathlab/physics_ext.py and its test, not a family-wide side-map test"
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "Growth allocator overhaul (desktop session)"
+  },
+  "priority": "P2",
+  "licence_note": "no LICENSE file at clone: ideas only, no code copied"
+ },
+ {
+  "id": "QG-QDEV-003",
+  "repo": "romanmichaelpaolucci/Quant_Dev",
+  "licence": "NONE",
+  "source": "github:romanmichaelpaolucci/Quant_Dev@4a0f860da2aa3d38bc4b66e3919c4715a7ed66d8:demo/EntrySignalA.java + OrderHandler.java (sha256 aff94b80c13192c4...)",
+  "mechanism": "Every bracket is sent with parentOrderId=1000 and children 1001/1002; TWS treats a reused order id as a MODIFY of the live order, so 'dedup' happens only by accident and a second signal silently rewrites the first bracket.",
+  "causal_rationale": "Order identity must be minted per intent; reuse turns a new decision into an edit of an old one.",
+  "original_universe": "n/a",
+  "original_horizon": "n/a",
+  "original_data": "n/a",
+  "original_implementation": "demo/EntrySignalA.java + OrderHandler.java",
+  "weaknesses": "Accidental modify semantics; no in-doubt handling if a send raises.",
+  "mt5_translation": "Order-state invariant: an open request has an identity (symbol, magic, comment, side, volume) used by a duplicate guard that refuses a resend while a previous identical attempt is in doubt.",
+  "candidate_symbols": [],
+  "pit_requirements": "n/a",
+  "feature_representation": "N/A (method / invariant card, no cell)",
+  "hypothesis": "Two identical opens within the in-doubt window produce one venue order.",
+  "entry_exit": "n/a",
+  "execution": "n/a",
+  "costs": "n/a",
+  "leakage_risks": "n/a",
+  "selection_risks": "n/a",
+  "baseline": "current desk behaviour",
+  "falsifier": "a regression test that seeds the defect and is not caught",
+  "expected_orthogonality": "n/a (no return stream)",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "ALREADY_COVERED",
+  "control_matrix": {
+   "A": "N/A: method_only card, no tradable arm",
+   "B": "N/A: method_only card, no tradable arm",
+   "C": "N/A: method_only card, no tradable arm",
+   "D": "N/A: method_only card, no tradable arm",
+   "E": "N/A: method_only card, no tradable arm",
+   "F": "N/A: method_only card, no tradable arm",
+   "G": "N/A: method_only card, no tradable arm",
+   "H": "N/A: method_only card, no tradable arm",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "status": "ALREADY_COMPLETE_LIVE",
+   "evidence": "desks/mt5/mt5desk/order_door.py:15 'DUPLICATE GUARD', :245 dedupe_key(), :478 'duplicate_of_in_doubt' refusal"
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "Growth allocator overhaul (desktop session)"
+  },
+  "priority": "none",
+  "licence_note": "no LICENSE file at clone: ideas only, no code copied"
+ },
+ {
+  "id": "QG-QDEV-004",
+  "repo": "romanmichaelpaolucci/Quant_Dev",
+  "licence": "NONE",
+  "source": "github:romanmichaelpaolucci/Quant_Dev@4a0f860da2aa3d38bc4b66e3919c4715a7ed66d8:demo/OrderHandler.java:BracketOrder (sha256 aff94b80c13192c4...)",
+  "mechanism": "Atomic bracket: parent LMT and TP child are sent with transmit=false and the SL child with transmit=true, so the venue activates all three together and a parent never rests naked.",
+  "causal_rationale": "An entry whose protective legs arrive later is exposed during the gap and stranded if the session dies in between.",
+  "original_universe": "n/a",
+  "original_horizon": "n/a",
+  "original_data": "n/a",
+  "original_implementation": "demo/OrderHandler.java:BracketOrder",
+  "weaknesses": "Absolute price params; no OCA group naming; no fill-status handling.",
+  "mt5_translation": "MT5 equivalent: sl and tp ride in the same order_send request as the entry; invariant is 'no open request without sl'.",
+  "candidate_symbols": [],
+  "pit_requirements": "n/a",
+  "feature_representation": "N/A (method / invariant card, no cell)",
+  "hypothesis": "Every OPEN request carries sl>0 (tp optional by family); a request without one is recorded loudly.",
+  "entry_exit": "n/a",
+  "execution": "n/a",
+  "costs": "n/a",
+  "leakage_risks": "n/a",
+  "selection_risks": "n/a",
+  "baseline": "current desk behaviour",
+  "falsifier": "a regression test that seeds the defect and is not caught",
+  "expected_orthogonality": "n/a (no return stream)",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "ALREADY_COVERED",
+  "control_matrix": {
+   "A": "N/A: method_only card, no tradable arm",
+   "B": "N/A: method_only card, no tradable arm",
+   "C": "N/A: method_only card, no tradable arm",
+   "D": "N/A: method_only card, no tradable arm",
+   "E": "N/A: method_only card, no tradable arm",
+   "F": "N/A: method_only card, no tradable arm",
+   "G": "N/A: method_only card, no tradable arm",
+   "H": "N/A: method_only card, no tradable arm",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "status": "ALREADY_COMPLETE_LIVE",
+   "evidence": "desks/mt5/mt5desk/order_door.py:465-469 records no_stop and warns (deliberately not a veto, growth governance); :778 position stop modifications carry sl/tp/magic"
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "Growth allocator overhaul (desktop session)"
+  },
+  "priority": "none",
+  "licence_note": "no LICENSE file at clone: ideas only, no code copied"
+ },
+ {
+  "id": "QG-QDEV-005",
+  "repo": "romanmichaelpaolucci/Quant_Dev",
+  "licence": "NONE",
+  "source": "github:romanmichaelpaolucci/Quant_Dev@4a0f860da2aa3d38bc4b66e3919c4715a7ed66d8:demo/EntrySignalA.java (sha256 3341a3d169067c6c...)",
+  "mechanism": "Bracket limit/take-profit/stop are hard-coded absolute prices (1, 1, 0.5) for an index trading near 7,000 -- unit-blind parameters.",
+  "causal_rationale": "Exit levels must be expressed relative to the entry and the instrument's tick size, stops level and volatility, or the venue rejects them (or worse, accepts them).",
+  "original_universe": "n/a",
+  "original_horizon": "n/a",
+  "original_data": "n/a",
+  "original_implementation": "demo/EntrySignalA.java",
+  "weaknesses": "Instant rejection or immediate stop-out depending on venue.",
+  "mt5_translation": "Invariant: family exits are emitted in ATR/points relative to entry and checked against the symbol's trade_stops_level and tick size before send.",
+  "candidate_symbols": [],
+  "pit_requirements": "n/a",
+  "feature_representation": "N/A (method / invariant card, no cell)",
+  "hypothesis": "Every request passes order_check; exits are relative quantities resolved at send time.",
+  "entry_exit": "n/a",
+  "execution": "n/a",
+  "costs": "n/a",
+  "leakage_risks": "n/a",
+  "selection_risks": "n/a",
+  "baseline": "current desk behaviour",
+  "falsifier": "a regression test that seeds the defect and is not caught",
+  "expected_orthogonality": "n/a (no return stream)",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "ALREADY_COVERED",
+  "control_matrix": {
+   "A": "N/A: method_only card, no tradable arm",
+   "B": "N/A: method_only card, no tradable arm",
+   "C": "N/A: method_only card, no tradable arm",
+   "D": "N/A: method_only card, no tradable arm",
+   "E": "N/A: method_only card, no tradable arm",
+   "F": "N/A: method_only card, no tradable arm",
+   "G": "N/A: method_only card, no tradable arm",
+   "H": "N/A: method_only card, no tradable arm",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "status": "ALREADY_COMPLETE_LIVE",
+   "evidence": "families emit stop_atr/rr (e.g. desks/mt5/mt5desk/families_orthogonal.py:301 family_vol_transition); desks/mt5/mt5desk/order_door.py:506 order_check refusal path; desks/mt5/data/universe/broker_info.json"
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "Growth allocator overhaul (desktop session)"
+  },
+  "priority": "none",
+  "licence_note": "no LICENSE file at clone: ideas only, no code copied"
+ },
+ {
+  "id": "QG-QDEV-006",
+  "repo": "romanmichaelpaolucci/Quant_Dev",
+  "licence": "NONE",
+  "source": "github:romanmichaelpaolucci/Quant_Dev@4a0f860da2aa3d38bc4b66e3919c4715a7ed66d8:demo/OrderHandler.java + Demo.java (sha256 aff94b80c13192c4...)",
+  "mechanism": "Every order-status / open-order callback is an empty stub, and the contract is a hard-coded dated future (NQU8): fills are never reconciled and the contract identity goes stale at roll.",
+  "causal_rationale": "A system that never reads its own fills cannot know its position; a hard-coded expiry trades a dead contract after the roll date.",
+  "original_universe": "n/a",
+  "original_horizon": "n/a",
+  "original_data": "n/a",
+  "original_implementation": "demo/OrderHandler.java + Demo.java",
+  "weaknesses": "No reconciliation; no roll; a new OrderHandler per tick; unbounded price list.",
+  "mt5_translation": "Invariants: (1) every pass reconciles venue positions/deals against intended targets; (2) symbol identity is resolved from the broker registry each session, never from a literal.",
+  "candidate_symbols": [],
+  "pit_requirements": "n/a",
+  "feature_representation": "N/A (method / invariant card, no cell)",
+  "hypothesis": "Venue position == sum of sleeve targets after reconciliation; a symbol absent from the registry is refused, not guessed.",
+  "entry_exit": "n/a",
+  "execution": "n/a",
+  "costs": "n/a",
+  "leakage_risks": "n/a",
+  "selection_risks": "n/a",
+  "baseline": "current desk behaviour",
+  "falsifier": "a regression test that seeds the defect and is not caught",
+  "expected_orthogonality": "n/a (no return stream)",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "ALREADY_COVERED",
+  "control_matrix": {
+   "A": "N/A: method_only card, no tradable arm",
+   "B": "N/A: method_only card, no tradable arm",
+   "C": "N/A: method_only card, no tradable arm",
+   "D": "N/A: method_only card, no tradable arm",
+   "E": "N/A: method_only card, no tradable arm",
+   "F": "N/A: method_only card, no tradable arm",
+   "G": "N/A: method_only card, no tradable arm",
+   "H": "N/A: method_only card, no tradable arm",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "status": "ALREADY_COMPLETE_LIVE",
+   "evidence": "desks/mt5/mt5desk/tape.py and desks/mt5/mt5desk/markout.py read deals; desks/mt5/mt5desk/order_door.py:701 clears in-doubt keys only when the venue shows nothing; desks/mt5/data/universe/universe.json registry"
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "Growth allocator overhaul (desktop session)"
+  },
+  "priority": "none",
+  "licence_note": "no LICENSE file at clone: ideas only, no code copied"
+ },
+ {
+  "id": "QG-QDEV-007",
+  "repo": "romanmichaelpaolucci/Quant_Dev",
+  "licence": "NONE",
+  "source": "github:romanmichaelpaolucci/Quant_Dev@4a0f860da2aa3d38bc4b66e3919c4715a7ed66d8:(directive description; not present in the cloned code) (sha256 n/a...)",
+  "mechanism": "Ladder / level bot with persistent policy state (per directive): resting orders at price levels whose policy (armed, filled, cancelled) survives restarts.",
+  "causal_rationale": "A level strategy whose memory is in RAM re-arms filled levels after a restart and double-fills.",
+  "original_universe": "n/a",
+  "original_horizon": "n/a",
+  "original_data": "n/a",
+  "original_implementation": "(directive description; not present in the cloned code)",
+  "weaknesses": "Not in the clone: the repo is a six-file IB TWS demo with no ladder and no persistence.",
+  "mt5_translation": "Invariant for any level/grid sleeve: per-level state is journalled to disk before the order is sent and re-read on start; a level is re-armed only by an explicit transition.",
+  "candidate_symbols": [],
+  "pit_requirements": "n/a",
+  "feature_representation": "N/A (method / invariant card, no cell)",
+  "hypothesis": "Restart in the middle of a ladder produces zero duplicate level fills.",
+  "entry_exit": "n/a",
+  "execution": "n/a",
+  "costs": "n/a",
+  "leakage_risks": "n/a",
+  "selection_risks": "n/a",
+  "baseline": "current desk behaviour",
+  "falsifier": "a regression test that seeds the defect and is not caught",
+  "expected_orthogonality": "n/a (no return stream)",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "DIRECTIVE_ONLY_NOT_IN_CLONE",
+  "control_matrix": {
+   "A": "N/A: method_only card, no tradable arm",
+   "B": "N/A: method_only card, no tradable arm",
+   "C": "N/A: method_only card, no tradable arm",
+   "D": "N/A: method_only card, no tradable arm",
+   "E": "N/A: method_only card, no tradable arm",
+   "F": "N/A: method_only card, no tradable arm",
+   "G": "N/A: method_only card, no tradable arm",
+   "H": "N/A: method_only card, no tradable arm",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "status": "ALREADY_COMPLETE_LIVE",
+   "evidence": "desks/mt5/mt5desk/gateway.py:2115 order state 'moved to a persistent journal'; netting.py target journal (append on change only, :214); order_door in-doubt file (:275)"
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "Growth allocator overhaul (desktop session)"
+  },
+  "priority": "none",
+  "licence_note": "no LICENSE file at clone: ideas only, no code copied"
+ },
+ {
+  "id": "QG-QFIN-001",
+  "repo": "romanmichaelpaolucci/Q-Fin",
+  "licence": "MIT",
+  "source": "github:romanmichaelpaolucci/Q-Fin@1014d0ae1084a42664d1739b85f32d97b53838cf:QFin/stochastics.py:StochasticModel (sha256 3554ac43dc7eed45...)",
+  "mechanism": "One abstract stochastic-model interface: params + vanilla_pricing(F0,X,T) + calibrate(ivol) + simulate(F0,n,dt,T); ABM implemented, GBM and Heston in the legacy simulations module.",
+  "causal_rationale": "A shared generator interface lets every validation arm draw 'same-distribution random' paths from a model calibrated to the instrument, so a sleeve can be re-run in a world with the instrument's vol, vol-of-vol, leverage correlation and jumps but no edge.",
+  "original_universe": "generic underlying",
+  "original_horizon": "any dt",
+  "original_data": "parameters only",
+  "original_implementation": "pure-Python loops; calibrate is a stub",
+  "weaknesses": "Calibration never implemented; no seeding; slow loops; no jump model despite the directive's description.",
+  "mt5_translation": "Add parametric worlds (GBM, Heston-SV with leverage rho, Merton/Kou jumps) calibrated per symbol from H1 bars to the synthetic-regimes organ as the F arm (same-distribution random) and as a stress world for every sleeve.",
+  "candidate_symbols": [
+   "XAUUSD",
+   "EURUSD",
+   "US500",
+   "NAS100",
+   "XTIUSD",
+   "USDJPY",
+   "BTCUSD"
+  ],
+  "pit_requirements": "calibration window ends before the test window; seed recorded per world",
+  "feature_representation": "n/a (world generator)",
+  "hypothesis": "A sleeve certified on history retains < 20% of its expectancy in 1,000 seeded Heston+jump worlds calibrated to its own symbol (i.e. its edge is not a property of the marginal distribution).",
+  "entry_exit": "sleeve's own rules re-run in each world",
+  "execution": "desk fill model",
+  "costs": "desk cost model",
+  "leakage_risks": "calibrating on the test window",
+  "selection_risks": "model misspecification makes the null too easy or too hard",
+  "baseline": "block_bootstrap world",
+  "falsifier": "sleeve earns as much in calibrated null worlds as on history (edge is distributional, not structural)",
+  "expected_orthogonality": "n/a (validation organ)",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "ROUTED",
+  "control_matrix": {
+   "A": "existing 11+ synthetic worlds",
+   "B": "donor GBM/Heston unseeded",
+   "C": "seeded per-symbol calibrated SV+jump worlds",
+   "D": "returns shuffled (iid)",
+   "E": "calibration lagged one year",
+   "F": "this card IS the F arm generator",
+   "G": "block bootstrap",
+   "H": "synthetic_regimes block_bootstrap / vol_doubling / ABM worlds",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "status": "EXISTS_INCOMPLETE",
+   "evidence": "desks/mt5/research/synthetic_regimes.py transforms bars (vol_doubling, variance_break, block_bootstrap, crisis_ladder) and libs/tiers/agent_worlds.py (ABM); grep 'heston' finds only libs/research/external_federation.py:785 (this donor's registry line); no parametric SV/jump generator"
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "Growth allocator overhaul (desktop session)"
+  },
+  "priority": "P1"
+ },
+ {
+  "id": "QG-QFIN-007",
+  "repo": "romanmichaelpaolucci/Q-Fin",
+  "licence": "MIT",
+  "source": "github:romanmichaelpaolucci/Q-Fin@1014d0ae1084a42664d1739b85f32d97b53838cf:(directive description: 'jump models'; not present in the cloned code) (sha256 n/a...)",
+  "mechanism": "Jump models (Merton/Kou) named in the directive's description of Q-Fin; the clone contains ABM, GBM and an Euler Heston only.",
+  "causal_rationale": "Jumps are what stops and gaps price; a jump world is the missing piece of QG-QFIN-001.",
+  "original_universe": "n/a",
+  "original_horizon": "n/a",
+  "original_data": "n/a",
+  "original_implementation": "(directive description: 'jump models'; not present in the cloned code)",
+  "weaknesses": "Absent from code.",
+  "mt5_translation": "Folded into QG-QFIN-001 (parametric worlds include a compound-Poisson jump component).",
+  "candidate_symbols": [],
+  "pit_requirements": "n/a",
+  "feature_representation": "N/A (method / invariant card, no cell)",
+  "hypothesis": "n/a",
+  "entry_exit": "n/a",
+  "execution": "n/a",
+  "costs": "n/a",
+  "leakage_risks": "n/a",
+  "selection_risks": "n/a",
+  "baseline": "current desk behaviour",
+  "falsifier": "a regression test that seeds the defect and is not caught",
+  "expected_orthogonality": "n/a (no return stream)",
+  "expected_incremental_elogw": "UNMEASURED",
+  "card_status": "DIRECTIVE_ONLY_NOT_IN_CLONE",
+  "control_matrix": {
+   "A": "N/A: method_only card, no tradable arm",
+   "B": "N/A: method_only card, no tradable arm",
+   "C": "N/A: method_only card, no tradable arm",
+   "D": "N/A: method_only card, no tradable arm",
+   "E": "N/A: method_only card, no tradable arm",
+   "F": "N/A: method_only card, no tradable arm",
+   "G": "N/A: method_only card, no tradable arm",
+   "H": "N/A: method_only card, no tradable arm",
+   "I": "N/A"
+  },
+  "diff_first": {
+   "status": "EXISTS_INCOMPLETE",
+   "evidence": "registered price-only 'jump' family trades jumps; synthetic_regimes central_bank_surprise inserts a +/-2.5 sigma jump at calendar hours; no calibrated jump-intensity world"
+  },
+  "route": {
+   "kind": "organ_owned_elsewhere",
+   "owner": "Growth allocator overhaul (desktop session)"
+  },
+  "priority": "none"
+ }
+]

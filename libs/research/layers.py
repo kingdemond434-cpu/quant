@@ -285,6 +285,10 @@ LEG_LAYER: dict[str, str] = {
     "trend_core": "prediction",
     # the within-class rank legs are claims about relative returns: prediction, like trend_core
     "cross_sectional_breadth": "prediction",
+    "elitequant_breadth": "prediction",
+    # model-proposed cells, screened and donated to the gauntlet: prediction, like the seeders
+    "analyst_panel": "prediction",
+    "zoo_breadth": "prediction",
     # share-CFD cells from the alt hand-off (event lane + conditioned class books): prediction
     "alt_equity_handoff": "prediction",
     "specialist_cell": "prediction",
