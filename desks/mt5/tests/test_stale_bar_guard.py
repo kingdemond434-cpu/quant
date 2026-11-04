@@ -124,9 +124,10 @@ def test_a_row_whose_only_cell_reads_a_frozen_factor_is_refused_never_deepened(
 ):
     import json
 
+    import research.miner_candidate_compiler as mcc
+
     import libs.ops.repair_invoke as ri
     import libs.research.hypothesis_graph as hg
-    import research.miner_candidate_compiler as mcc
 
     root = tmp_path / "intel"
     (root / "seat").mkdir(parents=True)
