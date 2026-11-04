@@ -332,6 +332,24 @@ DOCKET = DESK / "data" / "hypotheses" / "external_survivors.json"
 #: inside MT5-LocalConvert's 50-minute limit.
 FEED_RETRY_WAITS_S: tuple[float, ...] = (60.0, 180.0)
 _sleep = time.sleep
+#: The feed's own outcome, MEASURED rather than inferred from the exit code or OUT's age (a
+#: stand-down exits 0 and OUT is rewritten fresh either way). FED or STOOD_DOWN, every run, so a
+#: box where admission is refused for good reads as a starving docket, not as a healthy organ.
+FEED_STATUS = DESK / "data" / "hypotheses" / "local_feed_status.json"
+
+
+def _record_feed(status: str, *, added: int, candidates: int, attempts: int,
+                 docket_rows: int) -> None:
+    doc = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "status": status,
+           "added": int(added), "candidates": int(candidates), "attempts": int(attempts),
+           "docket_rows": int(docket_rows), "producer": "desks/mt5/research/local_converter.py"}
+    try:
+        FEED_STATUS.parent.mkdir(parents=True, exist_ok=True)
+        tmp = FEED_STATUS.with_name(FEED_STATUS.name + ".tmp")
+        tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+        os.replace(tmp, FEED_STATUS)
+    except OSError as exc:      # the record must never cost the feed; say so loudly instead
+        print(f"docket feed: could not write {FEED_STATUS.name}: {exc}")
 
 
 def feed_docket(cands: list[dict]) -> tuple[int, int]:
@@ -361,10 +379,14 @@ def feed_docket(cands: list[dict]) -> tuple[int, int]:
     # output from 11-03 11:12Z for 33h. Now: a few spaced retries inside the run, then a loud
     # stand-down with (0, -1). The candidates are already written to OUT and the feed is
     # idempotent, so the next run delivers them.
+    attempt = 0
     for attempt, wait_s in enumerate((*FEED_RETRY_WAITS_S, None), start=1):
         with exclusive_job("merge_hypotheses", need_mb=14000) as owned:
             if owned:
-                return _feed_docket_locked(cands)
+                added, total = _feed_docket_locked(cands)
+                _record_feed("FED", added=added, candidates=len(cands), attempts=attempt,
+                             docket_rows=total)
+                return added, total
         if wait_s is None:
             break
         print(f"docket feed: writer lane or memory admission refused (attempt {attempt}); "
@@ -372,6 +394,7 @@ def feed_docket(cands: list[dict]) -> tuple[int, int]:
         _sleep(wait_s)
     print("docket feed: STOOD DOWN -- writer lane or memory admission refused on every attempt; "
           f"{len(cands)} candidate(s) stay in {OUT.name} and the next run feeds them")
+    _record_feed("STOOD_DOWN", added=0, candidates=len(cands), attempts=attempt, docket_rows=-1)
     return 0, -1
 
 

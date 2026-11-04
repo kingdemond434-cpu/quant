@@ -35,6 +35,7 @@ def _publish(kind, monkeypatch, tmp_path):
     bank = tmp_path/'bank.json'
     if kind == 'converter':
         monkeypatch.setattr(lc, 'DOCKET', bank)
+        monkeypatch.setattr(lc, 'FEED_STATUS', tmp_path / 'feed_status.json')
         return bank, lambda: lc.feed_docket([
             {'symbols': ['EURUSD'], 'family': 'carry', 'source': 'owned fixture'}])
     monkeypatch.setattr(sce, 'DOCKET', bank)
@@ -63,8 +64,12 @@ def test_refused_shared_writer_lane_preserves_bank(kind, monkeypatch, tmp_path):
         # refused admission is "not now", and the next hourly run feeds the same candidates.
         waits: list[float] = []
         monkeypatch.setattr(lc, '_sleep', waits.append)
+        monkeypatch.setattr(lc, 'FEED_STATUS', tmp_path / 'feed_status.json')
         assert publish() == (0, -1)
         assert waits == list(lc.FEED_RETRY_WAITS_S)
+        status = json.loads((tmp_path / 'feed_status.json').read_text())
+        assert status['status'] == 'STOOD_DOWN' and status['added'] == 0
+        assert status['attempts'] == len(lc.FEED_RETRY_WAITS_S) + 1 and status['candidates'] == 1
     else:
         with pytest.raises(RuntimeError, match='writer lane'):
             publish()
@@ -84,8 +89,11 @@ def test_converter_feeds_once_admission_clears_on_a_retry(monkeypatch, tmp_path)
 
     monkeypatch.setattr(job_lock, 'exclusive_job', flaky)
     monkeypatch.setattr(lc, '_sleep', lambda s: None)
+    monkeypatch.setattr(lc, 'FEED_STATUS', tmp_path / 'feed_status.json')
     added, total = publish()
     assert added == 1 and total == 1
+    status = json.loads((tmp_path / 'feed_status.json').read_text())
+    assert status['status'] == 'FED' and status['attempts'] == 2 and status['added'] == 1
     assert json.loads(bank.read_text())[0]['symbol'] == 'EURUSD'
 
 
