@@ -36,8 +36,15 @@ FIX = DESK / "tests" / "fixtures" / "data_class_gap"
 NOW = datetime(2026, 10, 29, 12, 0, tzinfo=UTC)
 
 
+#: Fixtures the publisher serves as Shift-JIS. They are COMMITTED AS UTF-8 TEXT (a raw cp932 file
+#: in the diff crashes the release chain's UTF-8 diff reader) and encoded back to cp932 here, so
+#: the parser under test still reads the publisher's real bytes.
+CP932_FIXTURES = frozenset({"mof_week.csv"})
+
+
 def _fx(name: str) -> bytes:
-    return (FIX / name).read_bytes()
+    raw = (FIX / name).read_bytes()
+    return raw.decode("utf-8").encode("cp932") if name in CP932_FIXTURES else raw
 
 
 def _z1_zip() -> bytes:
@@ -246,6 +253,11 @@ def test_the_miner_fetches_only_through_the_polite_door_and_reports_every_feed(m
         if "boj.or.jp" in url:
             return SimpleNamespace(ok=False, verdict="", status=None, text="",
                                    error="connection")
+        if "bis.org" in url:      # BIS's /doclist/ is robots-Disallowed: a LABEL (LAWS 5e)
+            return SimpleNamespace(ok=True, verdict="", status=200, text=_RSS, error="",
+                                   access_label="PUBLIC_WITH_TERMS",
+                                   terms_note="robots.txt Disallow: /doclist/",
+                                   redistribute_allowed=False)
         return SimpleNamespace(ok=True, verdict="", status=200, text=_RSS, error="")
     rows = miner.run_and_save(fetch=fetch)
     assert len(calls) == len(miner.FEEDS) and all(leg == "central_bank_miner" for _, leg in calls)
@@ -255,7 +267,12 @@ def test_the_miner_fetches_only_through_the_polite_door_and_reports_every_feed(m
     assert by["RBA"]["state"] == "REFUSED" and by["RBA"]["verdict"] == "METHOD_BLOCKED"
     assert by["BoJ"]["state"] == "FAILED"
     assert by["Fed"]["state"] == "OK" and by["Fed"]["new_items"] == 1
-    assert doc["new_documents"] == len(rows) == 4                 # Fed, ECB, BoE, BoC
+    # Fed, ECB, BoE, BoC and BIS -- BIS restored: its robots Disallow is a label, not a refusal
+    assert doc["new_documents"] == len(rows) == 5
+    assert by["BIS"]["state"] == "OK" and by["BIS"]["access_label"] == "PUBLIC_WITH_TERMS"
+    bis = [r for r in rows if r.get("bank") == "BIS"]
+    assert bis and all(r["access_label"] == "PUBLIC_WITH_TERMS"
+                       and r["redistribute_allowed"] is False for r in bis)
     assert "requests" not in miner.__dict__                        # no side door left
     # a second pass with nothing new writes no empty snapshot and says so
     miner.run_and_save(fetch=fetch)
@@ -364,3 +381,12 @@ def test_the_broker_row_carries_the_auditors_scope():
                                       "Markets", "use": "trading_with_fusion"}
     assert set(row["other_venues"]) == {"e8", "ftmo"}
     assert row["entity_match"].startswith("UNMEASURED")
+
+
+def test_the_shift_jis_fixtures_are_committed_as_utf8_text():
+    """The release chain reads the PR diff as UTF-8; a raw cp932 fixture crashed it (#596).
+    Both MoF fixtures are UTF-8 on disk and still round-trip to the publisher's cp932 bytes."""
+    for path in (FIX / "mof_week.csv", DESK / "tests" / "fixtures" / "country_packs" /
+                 "mof_feio.csv"):
+        text = path.read_bytes().decode("utf-8")
+        assert text.encode("cp932").decode("cp932") == text, path.name

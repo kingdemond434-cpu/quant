@@ -1,5 +1,5 @@
-"""ONE robots.txt matcher (LAWS 5e amended 2026-10-14): `polite_fetch.RobotsRules` (read through
-`HostAccess.permits`) and `research/hard_stop.robots_verdict` must agree on every row of the
+"""ONE robots.txt matcher: `polite_fetch.RobotsRules` (read through `HostAccess.permits_labelled`)
+and `research/hard_stop.robots_verdict` must agree -- as a LABEL (LAWS 5e) -- on every row of the
 shared table `tests/data/robots_parity_fixtures.json`. Where hard_stop has no `robots_verdict`
 yet (it lands with alt-seat-cells), its half skips and the table still binds polite_fetch."""
 from __future__ import annotations
@@ -53,13 +53,26 @@ def test_the_table_uses_the_desk_token() -> None:
     assert TABLE["product"] == pf.DESK_UA_PRODUCT
 
 
+def _expected_label(row: dict[str, Any]) -> str:
+    """The LAWS 5e label for a row: robots' own opinion (`allowed`) read as a label."""
+    code = int(row["robots_status"])
+    if code == 0 or code >= 500:
+        return "ACCESS_UNCLEAR"
+    return "PUBLIC" if row["allowed"] else "PUBLIC_WITH_TERMS"
+
+
 @pytest.mark.parametrize("row", ROWS, ids=[r["name"] for r in ROWS])
 def test_polite_fetch_reads_every_row(row: dict[str, Any]) -> None:
+    """The matcher's verdict reaches the fetch as a LABEL, never a refusal (LAWS 5e): every row
+    proceeds except an access control on robots.txt itself (401/403/429), which holds."""
     acc = pf.HostAccess(None)
-    ok, why = acc.permits(row["url"], send=_send_for(row))
-    assert ok is row["allowed"], (row["name"], why)
+    ok, why, label = acc.permits_labelled(row["url"], send=_send_for(row))
     if int(row["robots_status"]) in (401, 403, 429):
-        assert acc.hold(row["url"]), "a 401/403/429 on robots.txt holds the site"
+        assert not ok and acc.hold(row["url"]), "a 401/403/429 on robots.txt holds the site"
+        return
+    assert ok is True and why == "", (row["name"], why)
+    assert label["access_label"] == _expected_label(row), (row["name"], label)
+    assert label["redistribute_allowed"] is False, "no robots label grants redistribution"
 
 
 @pytest.mark.parametrize("row", ROWS, ids=[r["name"] for r in ROWS])
@@ -69,3 +82,9 @@ def test_hard_stop_reads_every_row_the_same(row: dict[str, Any]) -> None:
         pytest.skip("hard_stop.robots_verdict lands with alt-seat-cells; table binds it then")
     got = hs.robots_verdict(row["url"], int(row["robots_status"]), row["robots_body"])
     assert got["allowed"] is row["allowed"], (row["name"], got)
+    # ...and the same LABEL, with the fetch proceeding (LAWS 5e) unless robots.txt itself was
+    # an access control
+    refused = int(row["robots_status"]) in (401, 403, 429)
+    assert got["proceed"] is (not refused), (row["name"], got)
+    if not refused:
+        assert got["access_label"] == _expected_label(row), (row["name"], got)

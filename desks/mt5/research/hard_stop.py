@@ -26,11 +26,13 @@ copy is released by the register's release record for the same key, never by tim
 ROBOTS (RFC 9309). `robots_verdict` reads robots.txt at the exact host, under the group naming
 DESK_UA_PRODUCT (stacked User-agent lines are one group; '*' only when no group names us),
 longest-match path rules with `*` and `$`, Allow winning a tie, matched against the exact path
-and query about to be requested. A Disallow means THAT URL is not fetched; it is not a person
-hold, because robots.txt is re-read at most once per 24h per host (`ROBOTS_TTL_S`), which is how a
-site's change of mind is picked up. A 404/410 (or another 4xx) is ABSENT and allows. A 5xx or an
-unreachable robots.txt means no fetch from that host this pass, and it is re-read next pass. A
-401/403/429 or a challenge on robots.txt itself is a person-held ROBOTS_HOLD.
+and query about to be requested. THE VERDICT IS A LABEL, NEVER A REFUSAL (LAWS 5e, live;
+"robots.txt Disallow treated as a refusal" is a deleted brake): `proceed` is True for every state
+but REFUSED, and `access_label` says what the fetched row carries -- ALLOWED/ABSENT -> PUBLIC, a
+Disallow -> PUBLIC_WITH_TERMS (the Disallow as `terms_note`), a 5xx or unreachable robots.txt ->
+ACCESS_UNCLEAR. `allowed` stays robots' own opinion (the parity table pins it). robots.txt is
+re-read at most once per 24h per host (`ROBOTS_TTL_S`). A 401/403/429 or a challenge on
+robots.txt itself is an access control and a person-held ROBOTS_HOLD: REFUSED, `proceed` False.
 
 Used by `research/form4_lane.py`, `side_channels/google_trends_miner.py` and the gtrends path of
 `libs/data/free_stack.py`.
@@ -205,16 +207,38 @@ def place_hold(record: dict[str, Any], register: Path, *, source_key: str | None
 
 def note_robots(verdict: Mapping[str, Any], register: Path, *, source_key: str,
                 region: str = "global") -> None:
-    """Record a robots Disallow on the work-queue entry. NOT a hold: robots is re-read daily."""
+    """Record a robots Disallow on the work-queue entry AS A LABEL (LAWS 5e): the path WAS
+    fetched; the entry carries PUBLIC_WITH_TERMS and the Disallow as its terms_note. NOT a hold,
+    and not a refusal: nothing here stops a fetch."""
     reg = _register(register)
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     e = reg.setdefault("sources", {}).setdefault(source_key, {"first_seen": now,
                                                               "region": region})
+    label = str(verdict.get("access_label") or "PUBLIC_WITH_TERMS")
+    note = str(verdict.get("terms_note") or "robots.txt Disallow for the desk's agent")
     e.update({"last_seen": now, "url": str(verdict.get("robots_url")),
-              "diagnosis": "ROBOTS_DISALLOW", "robots": dict(verdict),
-              "fix_hint": "robots.txt disallows this path for our agent: not fetched; "
-                          "robots.txt is re-read at most once a day"})
+              "diagnosis": "ROBOTS_LABELLED", "robots": dict(verdict),
+              "access_label": label, "terms_note": note,
+              "redistribute_allowed": _redistribute_allowed(label),
+              "fix_hint": "robots.txt disallows this path for our agent: FETCHED and mined with "
+                          "the label (LAWS 5e); redistribution withheld"})
     _write_json(register, reg)
+
+
+def _redistribute_allowed(label: str) -> bool:
+    """`redistribute` among the label's allowed uses (access_classifier.ROUTING); fail closed."""
+    try:
+        from libs.research.access_classifier import ROUTING
+    except ImportError:
+        return False
+    row = ROUTING.get(label)  # type: ignore[call-overload]
+    return bool(row) and "redistribute" in tuple(row.get("allowed_uses") or ())
+
+
+def _robots_label(out: dict[str, Any], label: str, note: str) -> dict[str, Any]:
+    """The verdict with its LAWS 5e label: every state but REFUSED proceeds."""
+    return {**out, "proceed": out.get("state") != "REFUSED", "access_label": label,
+            "terms_note": note, "redistribute_allowed": _redistribute_allowed(label)}
 
 
 def _named(released_by: Any) -> bool:
@@ -347,26 +371,33 @@ def robots_verdict(url: str, status: int, body: bytes | str | None,
                    product: str = DESK_UA_PRODUCT) -> dict[str, Any]:
     """RFC 9309 verdict for fetching `url` as `product`, from the robots.txt response
     (`status`, `body`) read at `robots_url(url)`. States: ALLOWED, DISALLOWED, ABSENT (4xx, allows),
-    UNAVAILABLE (5xx / unreachable: no fetch this pass), REFUSED (401/403/429: the caller holds)."""
+    UNAVAILABLE (5xx / unreachable), REFUSED (401/403/429: the caller holds). A LABEL, never a
+    refusal (LAWS 5e): `proceed` is False only for REFUSED; `access_label`, `terms_note` and
+    `redistribute_allowed` ride on the row the fetch writes."""
     parts = urllib.parse.urlsplit(url)
     path = (parts.path or "/") + (f"?{parts.query}" if parts.query else "")
     out: dict[str, Any] = {"robots_url": robots_url(url), "http_status": int(status),
                            "path": path[:300]}
     if status in HARD_STOP:
-        return {**out, "state": "REFUSED", "allowed": False,
-                "detail": f"robots.txt answered HTTP {status}: a refusal, held for a person"}
+        return _robots_label({**out, "state": "REFUSED", "allowed": False,
+                              "detail": f"robots.txt answered HTTP {status}: an access control, "
+                                        "held for a person"}, "", "")
     if status == 0 or status >= 500:
-        return {**out, "state": "UNAVAILABLE", "allowed": False,
-                "detail": f"robots.txt {'unreachable' if status == 0 else f'HTTP {status}'}: "
-                          "RFC 9309 reads it as a full disallow; no fetch this pass, re-read next"}
+        detail = (f"robots.txt {'unreachable' if status == 0 else f'HTTP {status}'}: "
+                  "unreadable, fetched as ACCESS_UNCLEAR (LAWS 5e); re-read next pass")
+        return _robots_label({**out, "state": "UNAVAILABLE", "allowed": False, "detail": detail},
+                             "ACCESS_UNCLEAR", detail)
     if 400 <= status < 500:
-        return {**out, "state": "ABSENT", "allowed": True,
-                "detail": f"robots.txt HTTP {status}: no robots file, unrestricted (RFC 9309)"}
+        return _robots_label({**out, "state": "ABSENT", "allowed": True,
+                              "detail": f"robots.txt HTTP {status}: no robots file, "
+                                        "unrestricted (RFC 9309)"}, "PUBLIC", "")
     if not 200 <= status < 300:
-        return {**out, "state": "UNAVAILABLE", "allowed": False,
-                "detail": f"robots.txt HTTP {status}: not a readable answer, no fetch"}
+        detail = f"robots.txt HTTP {status}: not a readable answer, fetched as ACCESS_UNCLEAR"
+        return _robots_label({**out, "state": "UNAVAILABLE", "allowed": False, "detail": detail},
+                             "ACCESS_UNCLEAR", detail)
     if path == "/robots.txt":
-        return {**out, "state": "ALLOWED", "allowed": True, "detail": "robots.txt itself"}
+        return _robots_label({**out, "state": "ALLOWED", "allowed": True,
+                              "detail": "robots.txt itself"}, "PUBLIC", "")
     text = body.decode("utf-8", "replace") if isinstance(body, bytes) else str(body or "")
     token = str(product or "").lower()
     groups = _groups(text)
@@ -383,10 +414,13 @@ def robots_verdict(url: str, status: int, body: bytes | str | None,
         if best is None or cand[0] > best[0] or (cand[0] == best[0] and allow):
             best = cand
     allowed = best is None or best[1]
-    return {**out, "state": "ALLOWED" if allowed else "DISALLOWED", "allowed": allowed,
-            "group": scope,
-            "detail": (f"robots.txt {'allows' if allowed else 'disallows'} {path[:80]} for the "
-                       f"{scope} group")}
+    detail = (f"robots.txt {'allows' if allowed else 'disallows'} {path[:80]} for the "
+              f"{scope} group")
+    return _robots_label({**out, "state": "ALLOWED" if allowed else "DISALLOWED",
+                          "allowed": allowed, "group": scope, "detail": detail},
+                         "PUBLIC" if allowed else "PUBLIC_WITH_TERMS",
+                         "" if allowed else f"{detail}: fetched and mined in full, "
+                                            "redistribution withheld (LAWS 5e)")
 
 
 # ------------------------------------------------------------------------------------ the CLI
