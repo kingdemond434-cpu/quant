@@ -79,7 +79,8 @@ $flag = Join-Path $Registry "POST_STATUS"
 $log = Join-Path $AuthHome "authority.log"
 if (-not (Select-String -LiteralPath $log -Pattern '\[status (success|failure|pending)\]' -Quiet -ErrorAction SilentlyContinue)) {
     Write-Host "   On the page that opens: your release-authority App -> Permissions & events ->" -ForegroundColor Yellow
-    Write-Host "   Repository permissions -> Commit statuses: Read and write -> Save changes." -ForegroundColor Yellow
+    Write-Host "   Repository permissions -> Commit statuses: Read and write, AND Administration: Read-only" -ForegroundColor Yellow
+    Write-Host "   (it lets the authority see who may bypass the ruleset) -> Save changes." -ForegroundColor Yellow
     Write-Host "   Then on the installations page: Configure / Review request -> Accept new permissions." -ForegroundColor Yellow
     Start-Process "https://github.com/settings/apps"
     Read-Host "   Press Enter once both are saved"
@@ -157,6 +158,19 @@ Write-Host "   publisher pass clean; merger token mints; gate and sign train use
 Step "7/8  The two rulesets: checked, applied, read back from GitHub"
 Py (Join-Path $Here "bootstrap_github.py") --repo $Repo rulesets --state-app-id $stateId --apply
 if ($LASTEXITCODE -ne 0) { throw "the rulesets were not confirmed active (see above)." }
+# The authority must see it too, with its OWN token (it needs Administration: read for the bypass
+# list). Until it does, the gate and merger simply stay ROOT: safe, and said so here.
+$mark = (Get-Item -LiteralPath $log).Length
+try {
+    Wait-Until -Minutes 25 -What "the authority reading 'level 2: ENFORCED'" -Test {
+        Start-ScheduledTask -TaskName "Quant-ReleaseAuthority" -ErrorAction SilentlyContinue
+        $t = Get-Content -LiteralPath $log -Raw
+        return $t.Substring([Math]::Min([int]$mark, $t.Length)) -match 'level 2: ENFORCED'
+    }
+    Write-Host "   the authority reads the rule as enforced: gate and merger changes are CONTROLLER now"
+} catch {
+    Write-Host "   GitHub enforces the rule, but the authority cannot confirm it yet (Administration: Read-only not accepted?). Gate and merger changes stay ROOT until it can; nothing is unsafe." -ForegroundColor Yellow
+}
 
 Step "8/8  The owner's credential leaves the box"
 if ($KeepOwnerLogin) {

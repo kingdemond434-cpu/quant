@@ -93,23 +93,57 @@ def pinned(pin_path: str, digest: str) -> tuple[bool, str]:
     return True, "root pin matches"
 
 
+#: Apps that may never bypass the LIVE ruleset: a PR's own workflow token, and the signer itself
+NEVER_BYPASS_APPS = frozenset({15368, AUTHORITY_APP_ID})
+
+
+def bypass_problem(rs: Any) -> str | None:
+    """Why this ruleset does NOT make GitHub refuse every merge the authority did not pass, or
+    None. Only Apps may bypass (the state App, bounded by the ROOT publisher's path filter): a
+    role, team, user or org-admin bypass is a person -- in practice the owner's login, which the
+    box gate once ran under -- able to merge around the status (#650 audit MF1). An unreadable or
+    absent bypass list is a problem, never an empty one."""
+    if not isinstance(rs, dict) or rs.get("enforcement") != "active":
+        return "the ruleset is not active"
+    bys = rs.get("bypass_actors")
+    if not isinstance(bys, list):
+        return "its bypass list is not visible to the authority (Administration: read)"
+    for b in bys:
+        kind = b.get("actor_type") if isinstance(b, dict) else None
+        if kind != "Integration":
+            return f"a {kind} may bypass it"
+        if b.get("actor_id") in NEVER_BYPASS_APPS or not b.get("actor_id"):
+            return f"App {b.get('actor_id')} may bypass it"
+    return None
+
+
 def level2_enforced(ag: Any, repo: str, base: str) -> tuple[bool, str]:
     """Whether GitHub ITSELF refuses a LIVE merge the authority did not pass: an active rule on
-    `base` requires the release-authority status from the authority App and nothing looser.
-    Read every pass from the public rules endpoint; any error, any doubt: False (fail closed),
-    which keeps the release machinery ROOT."""
+    `base` requires the release-authority status from the authority App, AND the ruleset that
+    carries it lets no person bypass it (bypass_problem). Read every pass; any error, any doubt:
+    False (fail closed), which keeps the release machinery ROOT."""
     try:
         rules = ag._gh(f"repos/{repo}/rules/branches/{base}?per_page=100")
     except (RuntimeError, ValueError, OSError, subprocess.SubprocessError) as exc:
         return False, f"rules unreadable ({type(exc).__name__}): enforcement not assumed"
     want = {"context": STATUS_CONTEXT, "integration_id": AUTHORITY_APP_ID}
+    why = f"no active rule on {base} requires {STATUS_CONTEXT} from the authority App"
     for r in rules if isinstance(rules, list) else []:
         if not isinstance(r, dict) or r.get("type") != "required_status_checks":
             continue
         checks = (r.get("parameters") or {}).get("required_status_checks") or []
-        if any(isinstance(c, dict) and {k: c.get(k) for k in want} == want for c in checks):
-            return True, f"ruleset {r.get('ruleset_id')} requires {STATUS_CONTEXT} on {base}"
-    return False, f"no active rule on {base} requires {STATUS_CONTEXT} from the authority App"
+        if not any(isinstance(c, dict) and {k: c.get(k) for k in want} == want for c in checks):
+            continue
+        rid = r.get("ruleset_id")
+        try:
+            rs = ag._gh(f"repos/{repo}/rulesets/{int(str(rid))}")
+        except (RuntimeError, ValueError, TypeError, OSError, subprocess.SubprocessError) as exc:
+            return False, f"ruleset {rid} unreadable ({type(exc).__name__}): not assumed enforced"
+        bad = bypass_problem(rs)
+        if bad is None:
+            return True, f"ruleset {rid} requires {STATUS_CONTEXT} on {base}; only Apps bypass it"
+        why = f"ruleset {rid} requires {STATUS_CONTEXT} but {bad}"
+    return False, why
 
 
 def facts(ag: Any, repo: str, pr: int, base: str, policy: dict[str, Any],

@@ -4,6 +4,7 @@ bootstrap_level2.ps1, run by the owner with his own gh login, because each act h
 
     python bootstrap_github.py --repo OWNER/NAME ready --pr N
     python bootstrap_github.py --repo OWNER/NAME rulesets --state-app-id N [--apply]
+    python bootstrap_github.py --repo OWNER/NAME root-merge --pr N   # root_merge.ps1 only
 
 `ready`: exit 0 only when the PR's exact head has every gating and AUTO check passed with the
 gate's own provenance rules AND the latest trusted audit verdict is a CLEAR naming that head --
@@ -105,6 +106,41 @@ def ready(ag: Any, repo: str, pr: int) -> tuple[str | None, list[str]]:
     return (head if not out else None), out
 
 
+LIVE_RULESET = "live-requires-release-authority"
+ADMIN_PR_BYPASS = {"actor_type": "RepositoryRole", "actor_id": 5, "bypass_mode": "pull_request"}
+
+
+def _put_ruleset(call: Any, repo: str, rid: int, rs: dict[str, Any], bys: list[Any]) -> None:
+    body: dict[str, Any] = {k: rs[k] for k in ("name", "target", "enforcement", "conditions", "rules") if k in rs}
+    call(f"repos/{repo}/rulesets/{rid}", "-X", "PUT", data={**body, "bypass_actors": bys})
+
+
+def root_merge(call: Any, repo: str, pr: int, head: str) -> str:
+    """Land ONE ROOT PR at `head`: the LIVE ruleset lets no person bypass it, so the owner's
+    admin pull_request bypass is added for this merge and the original bypass list is put back
+    in a finally, whatever happened, then read back. `call` is gh(); tested with a fake."""
+    have = call(f"repos/{repo}/rulesets?includes_parents=false&per_page=100") or []
+    ids = [r["id"] for r in have if r.get("name") == LIVE_RULESET]
+    if len(ids) != 1:
+        raise RuntimeError(f"expected one ruleset named {LIVE_RULESET}, found {len(ids)}")
+    rs = call(f"repos/{repo}/rulesets/{ids[0]}")
+    original = list(rs.get("bypass_actors") or [])
+    if any(b.get("actor_type") != "Integration" for b in original):
+        raise RuntimeError("the LIVE ruleset already lets a person bypass it: refusing to touch it")
+    _put_ruleset(call, repo, ids[0], rs, [*original, ADMIN_PR_BYPASS])
+    try:
+        call(f"repos/{repo}/pulls/{pr}/merge", "-X", "PUT",
+             data={"sha": head, "merge_method": "merge"})  # fmt: skip
+    finally:
+        _put_ruleset(call, repo, ids[0], rs, original)
+        back = call(f"repos/{repo}/rulesets/{ids[0]}").get("bypass_actors") or []
+        if [(b.get("actor_type"), b.get("actor_id")) for b in back] != [
+            (b.get("actor_type"), b.get("actor_id")) for b in original
+        ]:
+            raise RuntimeError("THE ADMIN BYPASS IS STILL ON the LIVE ruleset: remove it by hand")
+    return f"merged #{pr} at {head[:9]}; the LIVE ruleset's bypass list is back to Apps only"
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--repo", required=True)
@@ -114,7 +150,17 @@ def main(argv: list[str] | None = None) -> int:
     rs = sub.add_parser("rulesets")
     rs.add_argument("--state-app-id", type=int, required=True)
     rs.add_argument("--apply", action="store_true")
+    m = sub.add_parser("root-merge")
+    m.add_argument("--pr", type=int, required=True)
     a = ap.parse_args(argv)
+    if a.cmd == "root-merge":
+        head, bad = ready(gate(), a.repo, a.pr)
+        for b in bad:
+            print(f"NOT READY: {b}")
+        if not head:
+            return 1
+        print(root_merge(gh, a.repo, a.pr, head))
+        return 0
     if a.cmd == "ready":
         head, bad = ready(gate(), a.repo, a.pr)
         for b in bad:

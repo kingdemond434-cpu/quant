@@ -19,7 +19,9 @@ Why each piece is needed:
   own account behind a paths-only check, the same way the authority key does.
 
 `ruleset_live.json` has two bypass actors, and `check_ruleset.py` refuses any other set:
-- repository admin, in **pull_request** mode only (zuck's ROOT merges, never a direct push);
+- none for a person: not even the repository admin in pull_request mode (#650 audit MF1). A ROOT
+  change lands through `root_merge.ps1`, which adds an admin pull_request bypass for that one
+  merge and removes it again;
 - the state App.
 
 GitHub Actions is never a bypass actor (#650 audit MF). A same-repo `pull_request` run executes
@@ -45,7 +47,7 @@ makes five decisions in his browser and the script does the rest:
 |---|---|---|---|
 | 1 | Checks #650's exact head against the gate's ROOT bar (`bootstrap_github.py ready`: every gating and AUTO check genuine and green, the latest trusted audit verdict a CLEAR of that head), then merges pinned to that head | starting the script | #650 changes the authority itself. No authority may approve its own change, and every other identity on the box is an agent's |
 | 2 | Re-pins the root digest from a clean LIVE checkout | none (the run is elevated) | `ROOT_PIN.json` is admin-write on purpose: the pin is what an agent must never move |
-| 3 | Creates `POST_STATUS`, runs the authority, and waits until it has posted a status | ticks Commit statuses: Read and write on the authority App, Saves, and Accepts on the installation | GitHub has no API that changes an App's permissions; only the App's owner can grant them |
+| 3 | Creates `POST_STATUS`, runs the authority, and waits until it has posted a status | on the authority App, sets Commit statuses: Read and write, and Administration: Read-only (so that the authority can see a ruleset's bypass list), Saves, and Accepts on the installation | GitHub has no API that changes an App's permissions; only the App's owner can grant them |
 | 4 | Serves the manifest for `quant-merger`, converts the code itself, writes the key into the App's own folder (no download), opens the install page, runs `install_merger.ps1` | clicks Create GitHub App, then Install on quant only | Creating an identity with write access to the repository is an account owner's act on github.com |
 | 5 | The same for `quant-state-publisher`; configures `live-seal` (LIVE alone), `STATE_APP_KEY` and `STATE_APP_ID`; runs `install_publisher.ps1`; writes `STATE_APP.json` | the same two clicks | as 4, and environments and secrets are admin settings |
 | 6 | Waits for a clean publisher pass and a merger token | none | |
@@ -67,8 +69,9 @@ After that run:
   - `.github/scripts/audit_gate.py` (the authority loads it);
   - `.github/workflows/trusted-eval.yml` (the authority's base-run evidence).
 
-  A change to one of them is merged by the owner through the admin bypass, which works in
-  pull_request mode only, and is then re-pinned. There is no other way, by design.
+  The owner lands a change to one of them by running `root_merge.ps1 -Pr N`. That one run checks
+  the head against the gate's ROOT bar, adds an admin pull_request bypass to the LIVE ruleset,
+  merges pinned to that head, removes the bypass, and re-pins. There is no other way, by design.
 - `master` and `production` take updates only from the state App (`ruleset_master.json`). master's
   `trusted-eval.yml` is the file pull_request_target runs, and production is what the box adopts.
   Before this, any write-capable login could move either: it could fake the base-run evaluation or

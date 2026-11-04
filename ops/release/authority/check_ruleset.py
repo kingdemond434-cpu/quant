@@ -5,7 +5,8 @@
 
 Safe means:
 - the required check is pinned to the authority App;
-- the admin bypass is pull-request-only;
+- no person may bypass, not even the admin in pull_request mode (#650 audit MF1): only the state
+  App, bounded by the ROOT publisher's path filter;
 - no bypass actor is a placeholder (actor_id 0);
 - no bypass actor is GitHub Actions or any other identity whose credential a PR's own workflow
   can use (#650 audit MF: a same-repo pull_request run gets a write-scoped GITHUB_TOKEN, so an
@@ -34,15 +35,15 @@ def problems(rs: dict[str, Any]) -> list[str]:
     if rs.get("enforcement") != "active":
         out.append("enforcement must be active")
     for b in rs.get("bypass_actors") or []:
-        kind, ident, mode = b.get("actor_type"), b.get("actor_id"), b.get("bypass_mode")
+        kind, ident = b.get("actor_type"), b.get("actor_id")
         if not ident:
             out.append(f"bypass actor {kind} has a placeholder id: fill in the state App's id")
         if kind == "Integration" and ident in (GITHUB_ACTIONS_APP_ID, AUTHORITY_APP_ID):
             out.append(f"Integration {ident} may not bypass (a PR's workflow or the signer)")
-        if kind == "RepositoryRole" and mode != "pull_request":
-            out.append("the admin bypass must be pull_request mode only (never direct pushes)")
-        if kind not in ("Integration", "RepositoryRole"):
-            out.append(f"bypass actor type {kind} is not allowed")
+        if kind != "Integration":
+            # #650 audit MF1: no person bypasses LIVE, not even the admin in pull_request mode.
+            # A ROOT change lands through root_merge.ps1, which opens that bypass for one merge.
+            out.append(f"bypass actor type {kind} is not allowed (Apps only)")
     integ = [b for b in rs.get("bypass_actors") or [] if b.get("actor_type") == "Integration"]
     if len(integ) != 1:
         out.append("exactly one App (the state publisher) may bypass")

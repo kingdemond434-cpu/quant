@@ -71,15 +71,21 @@ def test_a_controller_merge_of_the_machinery_does_not_move_the_root_pin() -> Non
     assert a == b and a != c
 
 
+APPS_ONLY = {"enforcement": "active",
+             "bypass_actors": [{"actor_type": "Integration", "actor_id": 4242,
+                                "bypass_mode": "always"}]}  # fmt: skip
+
+
 class _Ag:
-    def __init__(self, rules: Any) -> None:
-        self.rules = rules
+    def __init__(self, rules: Any, ruleset: Any = None) -> None:
+        self.rules, self.ruleset = rules, APPS_ONLY if ruleset is None else ruleset
 
     def _gh(self, path: str) -> Any:
-        assert path.startswith(f"repos/o/r/rules/branches/{LIVE}")
-        if isinstance(self.rules, Exception):
-            raise self.rules
-        return self.rules
+        got = self.ruleset if path == "repos/o/r/rulesets/9" else self.rules
+        assert path == "repos/o/r/rulesets/9" or path.startswith(f"repos/o/r/rules/branches/{LIVE}")
+        if isinstance(got, Exception):
+            raise got
+        return got
 
 
 def _rule(ctx: str = "release-authority", app: int = 5601819) -> dict[str, Any]:
@@ -108,6 +114,31 @@ def test_enforcement_is_read_from_github_and_fails_closed(
     assert auth.level2_enforced(_Ag(rules), "o/r", LIVE)[0] is want
 
 
+def _actors(*bys: dict[str, Any]) -> dict[str, Any]:
+    return {"enforcement": "active", "bypass_actors": list(bys)}
+
+
+APP = {"actor_type": "Integration", "actor_id": 4242, "bypass_mode": "always"}
+
+
+@pytest.mark.parametrize("ruleset", [
+    # #650 audit MF1: the admin's pull_request bypass lets the owner's login merge around the
+    # status, so a gate rewritten on the CONTROLLER path could use it
+    _actors(APP, {"actor_type": "RepositoryRole", "actor_id": 5, "bypass_mode": "pull_request"}),
+    _actors(APP, {"actor_type": "OrganizationAdmin", "actor_id": 1, "bypass_mode": "always"}),
+    _actors(APP, {"actor_type": "Team", "actor_id": 3, "bypass_mode": "always"}),
+    _actors(APP, {"actor_type": "User", "actor_id": 3, "bypass_mode": "always"}),
+    _actors(APP, {"actor_type": "Integration", "actor_id": 15368, "bypass_mode": "always"}),
+    _actors(APP, {"actor_type": "Integration", "actor_id": 5601819, "bypass_mode": "always"}),
+    {"enforcement": "active"},  # bypass list not visible: never read as empty
+    {**APPS_ONLY, "enforcement": "evaluate"},
+    RuntimeError("gh api: 403"),
+])  # fmt: skip
+def test_a_rule_a_person_can_bypass_is_not_enforcement(auth: Any, ruleset: Any) -> None:
+    ok, why = auth.level2_enforced(_Ag([_rule()], ruleset), "o/r", LIVE)
+    assert ok is False and why
+
+
 # ---- master and production move only by promotion ----------------------------------------------
 
 
@@ -133,6 +164,14 @@ def test_master_ruleset_refuses_any_other_writer(mutate: Any) -> None:
     rs = _filled("ruleset_master.json")
     mutate(rs)
     assert cr.master_problems(rs, 4242)
+
+
+def test_the_live_template_lets_no_person_bypass() -> None:
+    rs = _filled("ruleset_live.json")
+    assert [b["actor_type"] for b in rs["bypass_actors"]] == ["Integration"]
+    with_admin = {**rs, "bypass_actors": [*rs["bypass_actors"], {
+        "actor_type": "RepositoryRole", "actor_id": 5, "bypass_mode": "pull_request"}]}
+    assert cr.problems(with_admin)
 
 
 def test_fill_needs_exactly_one_placeholder() -> None:
@@ -213,6 +252,25 @@ def test_the_form_escapes_the_manifest_and_carries_the_state() -> None:
     assert "state=st%26ate" in page and '"' not in page.split("value=")[1].split(">")[0][1:-1]
 
 
+def test_a_refused_app_leaves_no_key(tmp_path: Path, monkeypatch: Any) -> None:
+    """#650 audit SF1: the permission check runs before anything is written."""
+
+    class Flow:
+        def __init__(self, kind: str, port: int, suffix: str) -> None:
+            self.man = {"name": "quant-merger"}
+            self.result = {"id": 7, "slug": "quant-merger", "pem": "KEY",
+                           "permissions": {"contents": "write", "administration": "write"}}
+            self.error = None
+            self.done = type("E", (), {"wait": lambda self, t: True})()
+
+    monkeypatch.setattr(man, "_Flow", Flow)
+    monkeypatch.setattr(man, "_handler", lambda flow: man.BaseHTTPRequestHandler)
+    pem, out = tmp_path / "app.pem", tmp_path / "merger.json"
+    rc = man.main(["--kind", "merger", "--pem", str(pem), "--out", str(out), "--no-browser",
+                   "--timeout", "1"])  # fmt: skip
+    assert rc == 2 and not pem.exists() and not out.exists()
+
+
 def test_the_key_file_is_written_whole(tmp_path: Path) -> None:
     p = tmp_path / "k" / "app.pem"
     man.write_pem(p, "PEM")
@@ -259,3 +317,51 @@ class _Gate:
 def test_root_pr_merges_only_at_a_cleared_green_head(state: str, verdicts: Any, ok: bool) -> None:
     head, bad = bg.ready(_Gate(state, verdicts), "o/r", 650)
     assert (head == "a" * 40) is ok and (bad == []) is ok
+
+
+class _Hub:
+    """A fake gh() for root_merge: one LIVE ruleset whose bypass list we can watch."""
+
+    def __init__(self, merge_fails: bool = False, extra: Any = None) -> None:
+        self.bys: list[Any] = [dict(APP), *(extra or [])]
+        self.during: list[Any] = []
+        self.merge_fails = merge_fails
+
+    def __call__(self, path: str, *a: str, data: Any = None) -> Any:
+        if path.startswith("repos/o/r/rulesets?"):
+            return [{"id": 9, "name": "live-requires-release-authority"}, {"id": 8, "name": "x"}]
+        if path == "repos/o/r/rulesets/9" and not a:
+            return {"name": "live-requires-release-authority", "target": "branch",
+                    "enforcement": "active", "conditions": {}, "rules": [],
+                    "bypass_actors": [dict(b) for b in self.bys]}  # fmt: skip
+        if path == "repos/o/r/rulesets/9":
+            self.bys = data["bypass_actors"]
+            return {}
+        if path.endswith("/merge"):
+            self.during = list(self.bys)
+            assert data == {"sha": "a" * 40, "merge_method": "merge"}
+            if self.merge_fails:
+                raise RuntimeError("405 not mergeable")
+            return {"merged": True}
+        raise AssertionError(path)
+
+
+def test_root_merge_opens_the_admin_bypass_for_one_merge_only() -> None:
+    hub = _Hub()
+    bg.root_merge(hub, "o/r", 650, "a" * 40)
+    assert bg.ADMIN_PR_BYPASS in hub.during
+    assert hub.bys == [APP]
+
+
+def test_root_merge_closes_the_bypass_when_the_merge_fails() -> None:
+    hub = _Hub(merge_fails=True)
+    with pytest.raises(RuntimeError, match="not mergeable"):
+        bg.root_merge(hub, "o/r", 650, "a" * 40)
+    assert hub.bys == [APP]
+
+
+def test_root_merge_refuses_a_ruleset_a_person_already_bypasses() -> None:
+    hub = _Hub(extra=[{"actor_type": "User", "actor_id": 1, "bypass_mode": "always"}])
+    with pytest.raises(RuntimeError, match="already lets a person"):
+        bg.root_merge(hub, "o/r", 650, "a" * 40)
+    assert hub.during == []

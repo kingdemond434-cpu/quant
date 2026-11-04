@@ -199,14 +199,15 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     got = flow.result.get("permissions") or {}
     bad = check_permissions(a.kind, got)
+    if bad:  # checked BEFORE anything is written: no key of a refused App is ever left on disk
+        print(f"REFUSED: {flow.result['slug']} was created with other permissions: {bad}. "
+              f"Delete it (https://github.com/settings/apps/{flow.result['slug']}/advanced), "
+              "then run the bootstrap again. Its key was not kept.")
+        return 2
     write_pem(Path(a.pem), flow.result["pem"])
     Path(a.out).write_text(json.dumps({"id": flow.result["id"], "slug": flow.result["slug"],
-                                       "permissions": got, "problems": bad}),
+                                       "permissions": got}),
                            encoding="utf-8")  # fmt: skip
-    if bad:
-        print(f"REFUSED: {flow.result['slug']} was created with other permissions: {bad}. "
-              "Fix them on the App's page, then run the bootstrap again.")
-        return 2
     print(f"created {flow.result['slug']} (App id {flow.result['id']})")
     return 0
 
