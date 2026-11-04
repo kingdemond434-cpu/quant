@@ -280,9 +280,9 @@ function Lift-IfClean([string] $stage) {
 # Log both writes the file and EMITS the line; inside a function an emitted line would join the
 # return value, so every Log here goes to the host instead.
 #
-# A TIME LIMIT FOR THE READ-ONLY CHECK, NEVER FOR THE WAY BACK (2026-11-04). Measured on the box:
+# A TIME LIMIT FOR THE CHECK, NEVER FOR THE WAY BACK (2026-11-04). Measured on the box:
 # one `pre` ran 58 minutes with no output while this run held the git-writer mutex, so
-# MT5-ShadowSync waited 75 minutes behind a check that changes nothing. A call given -TimeoutS
+# MT5-ShadowSync waited 75 minutes behind a check whose only write is its diagnostic report. A call given -TimeoutS
 # runs as its own process, logs a heartbeat every minute, and past the limit has its whole tree
 # killed and returns decision TIMEOUT with a non-zero code -- which every caller already reads as
 # "keep the running release". Only `pre` passes a limit. rollback, lift, health and the rest run
@@ -483,8 +483,10 @@ if (Test-Path $gateScript) {
 # and on ANY failure after the first byte is written, puts the code back to the commit this run
 # started from (an accepted seal a minute ago) by itself, under a new-risk hold that every lane
 # obeys and only a passing health check lifts. A guard that cannot run keeps the running release.
-# 30 minutes unless the box says otherwise; a value that is not a positive whole number is ignored.
-$script:PreTimeoutS = 1800
+# 2 hours unless the box says otherwise; a value that is not a positive whole number is ignored.
+# A backstop, never a pace: a normal `pre` measured on the box 2026-11-04 had not finished at
+# 1503 s, so a limit near that would end every pass in a timeout and never adopt again.
+$script:PreTimeoutS = 7200
 $envPre = 0
 if ([int]::TryParse("$env:QUANT_ADOPT_GUARD_PRE_TIMEOUT_S", [ref] $envPre) -and $envPre -gt 0) { $script:PreTimeoutS = $envPre }
 $pre = Invoke-AdoptGuard @("pre", "--target", $gateTarget) -TimeoutS $script:PreTimeoutS
