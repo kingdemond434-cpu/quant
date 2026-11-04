@@ -243,6 +243,37 @@
       "prior_hold_since(path=)": "None",
       "write_report(held_since=)": "None",
       "write_report(lost=)": "None"
+    },
+    "desks/mt5/research/forced_flow_calendar.py": {
+      "KINDS": {
+        "any_of": [
+          "('month_end', 'quarter_end', 'index_rebalance', 'futures_roll', 'option_expiry', 'bond_auction', 'central_bank', 'fixing', 'inventory', 'usda', 'holiday_liquidity')",
+          "('month_end', 'quarter_end', 'index_rebalance', 'futures_roll', 'option_expiry', 'bond_auction', 'central_bank', 'fixing', 'inventory', 'usda', 'holiday_liquidity', 'em_fixing', 'dividend_reinvestment', 'fiscal_year_end', 'post_holiday')"
+        ],
+        "until_pr": 679
+      }
+    },
+    "desks/mt5/mt5desk/family_forced_flow.py": {
+      "MODES": {
+        "any_of": [
+          "('pre_flow', 'post_flow_fade')",
+          "('pre_flow', 'post_flow_fade', 'hedge_into_fix', 'hedge_post_fix_fade')"
+        ],
+        "until_pr": 679
+      },
+      "HEDGE_MODES": "('hedge_into_fix', 'hedge_post_fix_fade')",
+      "HEDGE_EQUITY": "{'EUR': 'GER40', 'GBP': 'UK100', 'JPY': 'JPN225', 'AUD': 'AUS200', 'CAD': 'CA60'}",
+      "FORCED_FLOW_DEFAULTS": {
+        "any_of": [
+          "{'event_kind': 'month_end', 'window_before_min': 60, 'window_after_min': 90, 'mode': 'pre_flow', 'stop_atr': 1.0, 'target_atr': 1.5, 'atr_n': 14, 'ttl_bars': 12, 'symbol': '', 'clock': 'bars'}",
+          "{'event_kind': 'month_end', 'window_before_min': 60, 'window_after_min': 90, 'mode': 'pre_flow', 'stop_atr': 1.0, 'target_atr': 1.5, 'atr_n': 14, 'ttl_bars': 12, 'symbol': '', 'clock': 'bars', 'us_equity': 'US500', 'foreign_equity': '', 'min_rel': 0.0}"
+        ],
+        "until_pr": 679
+      },
+      "family_forced_flow(us_equity=)": "'US500'",
+      "family_forced_flow(foreign_equity=)": "''",
+      "family_forced_flow(min_rel=)": "0.0",
+      "home_equity(foreign_equity=)": "''"
     }
   }
 }
