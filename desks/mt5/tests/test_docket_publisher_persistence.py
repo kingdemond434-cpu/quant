@@ -58,9 +58,35 @@ def test_refused_shared_writer_lane_preserves_bank(kind, monkeypatch, tmp_path):
         yield False
 
     monkeypatch.setattr(job_lock, 'exclusive_job', refused)
-    with pytest.raises(RuntimeError, match='writer lane'):
-        publish()
+    if kind == 'converter':
+        # The converter STANDS DOWN after its retries instead of raising (2026-11-04): a
+        # refused admission is "not now", and the next hourly run feeds the same candidates.
+        waits: list[float] = []
+        monkeypatch.setattr(lc, '_sleep', waits.append)
+        assert publish() == (0, -1)
+        assert waits == list(lc.FEED_RETRY_WAITS_S)
+    else:
+        with pytest.raises(RuntimeError, match='writer lane'):
+            publish()
     assert bank.read_bytes() == b'[]'
+
+
+def test_converter_feeds_once_admission_clears_on_a_retry(monkeypatch, tmp_path):
+    from research import job_lock
+
+    bank, publish = _publish('converter', monkeypatch, tmp_path)
+    bank.write_bytes(b'[]')
+    answers = iter([False, True])
+
+    @contextmanager
+    def flaky(*args, **kwargs):
+        yield next(answers)
+
+    monkeypatch.setattr(job_lock, 'exclusive_job', flaky)
+    monkeypatch.setattr(lc, '_sleep', lambda s: None)
+    added, total = publish()
+    assert added == 1 and total == 1
+    assert json.loads(bank.read_text())[0]['symbol'] == 'EURUSD'
 
 
 def test_chart_rechecks_identity_under_the_shared_writer_lane(monkeypatch, tmp_path):

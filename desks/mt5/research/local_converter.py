@@ -32,6 +32,7 @@ import json
 import os
 import re
 import sys
+import time
 from collections import Counter
 from collections.abc import Iterator
 from datetime import UTC, datetime
@@ -327,6 +328,12 @@ def convert(limit: int) -> tuple[list[dict], Counter]:
 DOCKET = DESK / "data" / "hypotheses" / "external_survivors.json"
 
 
+#: Waits between docket-feed admission attempts (seconds). Three attempts over ~4 minutes, well
+#: inside MT5-LocalConvert's 50-minute limit.
+FEED_RETRY_WAITS_S: tuple[float, ...] = (60.0, 180.0)
+_sleep = time.sleep
+
+
 def feed_docket(cands: list[dict]) -> tuple[int, int]:
     """Merge converted candidates into the gauntlet's docket. Returns (added, docket size).
 
@@ -347,10 +354,25 @@ def feed_docket(cands: list[dict]) -> tuple[int, int]:
     """
     from research.job_lock import exclusive_job
 
-    with exclusive_job("merge_hypotheses", need_mb=14000) as owned:
-        if not owned:
-            raise RuntimeError("Canonical docket writer lane or memory admission refused")
-        return _feed_docket_locked(cands)
+    # A REFUSED ADMISSION WAITS, THEN STANDS DOWN; IT NEVER RAISES (2026-11-04). The docket
+    # writer lane is shared (merge_hypotheses) and admission needs measured free memory, so a
+    # refusal is the box saying "not now", which job_lock documents as the cheap outcome. Raising
+    # here killed every MT5-LocalConvert run after the conversion work was already done: no
+    # output from 11-03 11:12Z for 33h. Now: a few spaced retries inside the run, then a loud
+    # stand-down with (0, -1). The candidates are already written to OUT and the feed is
+    # idempotent, so the next run delivers them.
+    for attempt, wait_s in enumerate((*FEED_RETRY_WAITS_S, None), start=1):
+        with exclusive_job("merge_hypotheses", need_mb=14000) as owned:
+            if owned:
+                return _feed_docket_locked(cands)
+        if wait_s is None:
+            break
+        print(f"docket feed: writer lane or memory admission refused (attempt {attempt}); "
+              f"retrying in {wait_s:.0f}s")
+        _sleep(wait_s)
+    print("docket feed: STOOD DOWN -- writer lane or memory admission refused on every attempt; "
+          f"{len(cands)} candidate(s) stay in {OUT.name} and the next run feeds them")
+    return 0, -1
 
 
 def _feed_docket_locked(cands: list[dict]) -> tuple[int, int]:
@@ -434,6 +456,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"wrote {OUT}")
     if not a.no_feed:
         added, total = feed_docket(cands)
+        if total < 0:
+            return 0
         print(f"docket: +{added} new cell(s), now {total} row(s) -> {DOCKET.name}")
         if not added:
             print("  (every candidate already in the docket -- the feed is idempotent)")
