@@ -242,6 +242,14 @@ def _banned(family: str) -> bool:
 #: 0b66b08de, MF3). An explicit, named set. A family joins by name when its own preregistered
 #: grid is shown to contain this sweep's default cell.
 PREREGISTERED_ELSEWHERE: dict[str, str] = {
+    # NOT void: it fires at defaults wherever the UST10Y bars are in the store (0 here only because
+    # this checkout lacks them), so it is not VOID_AT_DEFAULTS. research/specialist_cell's indices
+    # grid holds this exact default cell -- bond_symbol UST10Y (BOND_OF's fallback), days_before
+    # 3, min_gap_sd 1.0, every other parameter at its default -- and charges it there (2026-11-04).
+    "month_end_rebalance": "research/specialist_cell's indices grid contains the default cell "
+                           "(UST10Y, days_before 3, min_gap_sd 1.0) on every index but UK100 "
+                           "and charges it once; off the indices the balanced-fund equity/bond "
+                           "rebalancing mechanism does not apply and no cell is minted",
     "idio_volume_reversal": "F1's 21 cells are preregistered and charged once by "
                             "market_ecology.donate_f1 (docs/research/"
                             "F1_IDIO_VOLUME_PREREGISTRATION.md)",
@@ -282,6 +290,18 @@ VOID_AT_DEFAULTS: dict[str, str] = {
     "regime_split": _VOID.format(why="the base family and regime come from regime_split_miner"),
     "triangle": _VOID.format(why="the legs come from triangle_miner.closed_triangles"),
     "world_macro_state": _VOID.format(why="the world series comes from world_macro_proposer"),
+    # Three NOT_SOURCED_HERE families that joined after this set was written (specialist
+    # families f11507f997, G10 FX class carry e1f68188b0) and were left sweepable at defaults.
+    # Each returns [] by construction when its naming input is blank, which it is at defaults
+    # (symbol="", symbol="", base_family=""); MEASURED 2026-11-04 on the committed XAUUSD H1 bars
+    # too: 0 signals each. test_void_families_fire_nothing_at_their_defaults re-measures.
+    "carry_risk_off": _VOID.format(why="the carry symbol (blank at defaults) is named by "
+                                        "specialist_cell"),
+    "cross_sectional_class_carry": _VOID.format(why="the class member (blank at defaults) is "
+                                                     "named by the cross-sectional class-book "
+                                                     "runner"),
+    "entry_conditioned": _VOID.format(why="the base cell (blank at defaults) and its filter are "
+                                           "named by residual_search"),
     "lead_lag": ("UNRUNNABLE at defaults (audit 0b66b08de p2): no driver series -- the driver "
                  "and lag are measured by cross_asset_graph, which mints its own cells"),
 }

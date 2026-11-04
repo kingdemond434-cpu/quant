@@ -2992,7 +2992,8 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
                                  "(2011-12 to 2022-23) that breaks the YoY comparison"),
         crowding_prior="low", substitutes_for=_CARD,
         vintage="current",
-        note=("CANDIDATE for in_npci_upi (NPCI robots-refused; RBI 'All Rights Reserved'), "
+        note=("CANDIDATE for in_npci_upi (NPCI terms unread, robots-labelled; RBI 'All Rights "
+              "Reserved'), "
               "UNVERIFIED until its correlation with NPCI UPI is measured >= 0.5 with n. "
               "Production, not payments: it measures the goods households buy, not the payment "
               "flow. NO DEFAULT CODE: the use-based monthly IIP resource id comes only from "
@@ -3067,8 +3068,12 @@ TERMS: dict[str, tuple[str, str]] = {
                       "no robots.txt"),
     "cn_holiday_spend": ("refused", "MCT disclaimer: no reprint, link or other copying without "
                          "written authorisation from the MCT Information Centre"),
-    "in_npci_upi": ("refused", "npci.org.in robots.txt disallows automated agents on the "
-                    "statistics path and the disclaimer page"),
+    # ROBOTS IS A LABEL, NEVER THE REFUSAL (LAWS 5e REMOVED_BRAKES: "robots.txt Disallow treated
+    # as a refusal"). This row was `refused` on robots alone; the Disallow is now its label
+    # (PUBLIC_WITH_TERMS) and it waits, like every other row, only on its TERMS being read.
+    "in_npci_upi": ("to_confirm", "terms unread: the disclaimer page was never read because "
+                    "robots.txt was treated as a refusal; robots (Disallow on the statistics path "
+                    "and the disclaimer) is a LABEL, PUBLIC_WITH_TERMS, not the block"),
     "tr_bkm_card": ("refused", "BKM legal notice: no copying or reproduction without prior "
                     "written permission; no commercial use"),
     "br_cielo_icva": ("refused", "Cielo terms: copying, reproduction or any other use of content "
@@ -3080,8 +3085,10 @@ TERMS: dict[str, tuple[str, str]] = {
     "us_oi_google_mobility": ("confirmed", "OI README: 'Anyone is welcome to use this data'"),
     "kr_kobis_box_office": ("confirmed", "KOBIS documented Open API (Korean Film Council)"),
     "kr_seoul_subway": ("confirmed", "Seoul Open Data Plaza, KOGL type 1"),
-    "cn_maoyan_box_office": ("refused", "piaofang.maoyan.com robots.txt disallows automated agents "
-                             "on the dashboard-ajax endpoint"),
+    "cn_maoyan_box_office": ("to_confirm", "terms unread: the rules page was never read because "
+                             "robots.txt was treated as a refusal; robots (Disallow on "
+                             "dashboard-ajax) is a LABEL, PUBLIC_WITH_TERMS, not the block "
+                             "(LAWS 5e)"),
     "cn_baidu_migration": ("to_confirm", "Baidu terms (baidu.com/duty) blocked by robots.txt, so "
                            "unread; huiyan has no robots.txt"),
     "kr_busan_port": ("to_confirm", "BPA copyright policy / KOGL mark not found; robots.txt "
@@ -4093,7 +4100,7 @@ SUBSTITUTE_VS_ORIGINAL: dict[str, dict[str, dict[str, Any]]] = {}
 NO_SUBSTITUTE: dict[str, str] = {
     "in_npci_upi": ("candidate in_dgi_iip_consumer is UNVERIFIED: use-based IIP consumer goods "
                     "is factory OUTPUT, not the UPI payments flow, and no correlation against "
-                    "NPCI's monthly UPI volume/value has been measured (NPCI is robots-refused, "
+                    "NPCI's monthly UPI volume/value has been measured (NPCI terms unread, "
                     "RBI tables are 'All Rights Reserved'); COVERED only at corr >= 0.5 with n "
                     "reported"),
     "za_beti": ("candidate za_statssa_retail is UNVERIFIED: its own terms are to_confirm (only a "

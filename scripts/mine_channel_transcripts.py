@@ -228,7 +228,7 @@ def main() -> int:
         for tab in ch.get("tabs", ["videos", "shorts", "streams"]):
             try:
                 vids = enumerate_tab(ch["handle"], tab)
-            except Exception as exc:
+            except Exception as exc:  # recorded in the enumeration report, never swallowed
                 enum_report[f"{ch['handle']}/{tab}"] = f"ERROR {exc}"
                 print(f"[enum] {ch['handle']}/{tab}: ERROR {exc}", flush=True)
                 continue
@@ -252,17 +252,15 @@ def main() -> int:
     todo.sort(key=lambda v: order.get(v.get("tab"), 3))
 
     # 2. fetch captions, politely; stop the whole run at the first access wall (no bypass)
-    fetched = 0
     stopped = None
-    for v in todo:
-        if args.limit and fetched >= args.limit:
+    for fetched, v in enumerate(todo, start=1):
+        if args.limit and fetched > args.limit:
             break
         prev = ledger.get(v["video_id"]) or {}
         if prev.get("status") in ("FULL", "NO_TRANSCRIPT", "UNAVAILABLE"):
             status, text, meta = prev["status"], None, {}
         else:
             status, text, meta = fetch_transcript(api, v["video_id"])
-        fetched += 1  # noqa: SIM113 -- counted after the limit check, read before it
         row = {**prev, **v, "status": status, "ts": now(), **meta}
         if status != "ACCESS_LIMIT" and v.get("tab") != "shorts":
             desc, links, dmeta = fetch_description(v["video_id"])
@@ -290,7 +288,7 @@ def main() -> int:
             with wall.open("a", encoding="utf-8") as wf:
                 wf.write(f"{now()} {stopped}\n")
             break
-        time.sleep(args.sleep + random.uniform(0, args.sleep / 2))  # noqa: S311 -- polite jitter
+        time.sleep(args.sleep + random.uniform(0, args.sleep / 2))  # noqa: S311 - pacing jitter
     lf.close()
 
     # 3. coverage summary: every enumerated video has exactly one status

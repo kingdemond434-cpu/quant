@@ -284,7 +284,7 @@ sources:
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
   status: BLOCKED_NO_SUBSTITUTE:UNVERIFIED=in_dgi_iip_consumer
-  terms: refused
+  terms: to_confirm
   mechanism: UPI carries most Indian retail payments; its monthly value is a card-panel substitute for
     the whole economy, out on day one of the next month
   payer: INR and India-exposed holders waiting for MOSPI and RBI data
@@ -587,7 +587,7 @@ sources:
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
   status: BLOCKED_NO_SUBSTITUTE:UNVERIFIED=hk_immd_passenger
-  terms: refused
+  terms: to_confirm
   mechanism: China's national box office by day is discretionary spending read from the ticketing platform,
     weeks before NBS retail
   payer: China-consumer and HK equity holders waiting for NBS

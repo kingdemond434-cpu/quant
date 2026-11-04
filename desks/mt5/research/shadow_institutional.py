@@ -78,12 +78,12 @@ from typing import Any
 
 import numpy as np
 try:
-    from libs.data.polite_fetch import admit, polite_urlopen
+    from libs.data.polite_fetch import access_label, admit, polite_urlopen
 except ImportError:  # run as a script: the repo root is not on the path
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
-    from libs.data.polite_fetch import admit, polite_urlopen
+    from libs.data.polite_fetch import access_label, admit, polite_urlopen
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
@@ -513,13 +513,18 @@ class Guard:
         return max(0.0, self.budget_s - (time.monotonic() - self.started))
 
     def robots_ok(self, url: str) -> tuple[bool, str]:
-        """The site's holds and the origin's robots.txt for the desk's token, read by THE ONE
-        implementation (`polite_fetch.HostAccess`, via `admit`). LAWS 5e as amended 2026-10-14:
-        robots.txt is RESPECTED desk-wide -- a Disallow, an unreadable (5xx/unreachable) robots
-        or a 401/403/429 hold means no request; `polite_urlopen` in `get()` enforces the same."""
+        """The site's holds, read by THE ONE implementation (`polite_fetch.HostAccess`, via
+        `admit`): only a person-held 401/403/429/challenge hold means no request. robots.txt is
+        a LABEL (LAWS 5e, live): a Disallow (PUBLIC_WITH_TERMS) or an unreadable robots.txt
+        (ACCESS_UNCLEAR) is fetched, and the label is the returned note."""
         ok, why = admit(url)
-        return ok, ("robots allows this path for our agent" if ok
-                    else f"{why}: not fetched (robots.txt respected, LAWS 5e amended 2026-10-14)")
+        if not ok:
+            return False, f"{why}: held for a person (an access control answered); not fetched"
+        label = access_label(url)
+        lab = str(label.get("access_label") or "")
+        if lab and lab != "PUBLIC":
+            return True, f"{lab}: {label.get('terms_note') or ''}"
+        return True, "robots allows this path for our agent"
 
     def fixture(self, sensor_id: str) -> tuple[Any, str]:
         p = self.fixtures / f"{sensor_id}.json"
@@ -547,12 +552,16 @@ class Guard:
             return None, "refused: only http(s) grounds are fetched"
         if params:
             url = f"{url}?{urllib.parse.urlencode(dict(params))}"
-        # ROBOTS DECIDES (LAWS 5e amended 2026-10-14), for every sensor whatever its row says:
-        # a Disallow, an unreadable robots.txt or a site hold means nothing is sent.
+        # ONLY A SITE HOLD STOPS THE WIRE, for every sensor whatever its row says. robots.txt is
+        # a LABEL (LAWS 5e): a Disallow or an unreadable robots.txt is fetched and its label is
+        # recorded as the sensor's terms_note.
         ok, why = self.robots_ok(url)
         if not ok:
             self.notes.append({"sensor": sensor.sensor_id, "terms_note": why})
             return None, why
+        if why.startswith(("PUBLIC_WITH_TERMS", "ACCESS_UNCLEAR")):
+            self.notes.append({"sensor": sensor.sensor_id, "terms_note": why,
+                               "access_label": why.split(":", 1)[0]})
         req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
         try:
             self.calls += 1

@@ -32,8 +32,8 @@ the RESOLUTION CHAIN `mine_source` walks before it gives up on a page:
 * `error:HTTPError` 403 (hfm_pamm, followme_cn): a REFUSAL, not a moved page. 401/403/429 are a
   hard stop for the whole site (auditor ruling 2026-10-14): no sibling host, no alternate, no
   site-root walk -- the verdict (NEEDS_KEY / METHOD_BLOCKED) is recorded and the source rests
-  until a person clears it. robots.txt decides every fetch (`polite_fetch.HostAccess`). A 5xx
-  is retried with backoff.
+  until a person clears it. robots.txt LABELS every fetch (`polite_fetch.HostAccess`; LAWS 5e:
+  never a refusal). A 5xx is retried with backoff.
 * `error:SSLError` (readitrades_africa): certifi-backed trust (`polite_fetch.ssl_context`), then
   the bare-host variant. Verification is never turned off.
 
@@ -114,7 +114,8 @@ def fetch(url: str, timeout: float = REQUEST_TIMEOUT_S, *, referer: str = "",
           accept_json: bool = False) -> str:
     """One polite GET: the desk's honest UA, robots.txt per origin, per-host spacing, bounded
     retries on 5xx/transport, certifi-backed TLS, charset-aware decoding. Raises FetchError on
-    failure; a refusal (401/403/429, robots) carries its `verdict`."""
+    failure; a refusal (401/403/429, a challenge) carries its `verdict`. robots.txt is a LABEL,
+    never a refusal (LAWS 5e): the page is returned and `_label(url)` names its label."""
     hdr = dict(HEADERS)
     if referer:
         hdr["Referer"] = referer
@@ -125,6 +126,12 @@ def fetch(url: str, timeout: float = REQUEST_TIMEOUT_S, *, referer: str = "",
     if not r.ok:
         raise FetchError(url, r.status, r.error or f"HTTP {r.status}", r.verdict)
     return r.text
+
+
+def _label(url: str) -> dict[str, Any]:
+    """The robots LABEL of a page `fetch` just read (LAWS 5e), from what that fetch already read
+    -- no extra request. {} when the origin's robots.txt was never read in this process."""
+    return pf.access_label(url, read=False)
 
 
 _WRITE_LOCK = threading.Lock()
@@ -671,11 +678,10 @@ SOURCES = {
                            "https://www.ready-trade.com", 1),
 }
 
-#: ALTERNATES a source is resolved through when its primary listing 404s, fails TLS or is
-#: disallowed for THAT PATH by robots.txt. Never after a refusal: a 401/403/429 or a challenge
-#: (`HARD_STOP`, a hold on the whole site) ends the source's run. A robots Disallow is a rule about
-#: one path, not a refusal of the site, so the source's ALLOWED paths are still read -- each of
-#: them passes its own robots check first, and an unreadable robots.txt refuses only its origin.
+#: ALTERNATES a source is resolved through when its primary listing 404s or fails TLS. Never
+#: after a refusal: a 401/403/429 or a challenge (`HARD_STOP`, a hold on the whole site) ends the
+#: source's run. A robots Disallow or an unreadable robots.txt is no refusal at all (LAWS 5e): the
+#: path is read and its rows carry the label (PUBLIC_WITH_TERMS / ACCESS_UNCLEAR).
 #: Sibling hosts and moved paths of the SAME venue only -- never a new venue (new grounds are
 #: registered, not hard-coded here). Tried in order after the primary; the one that yields is
 #: remembered in the state file and tried FIRST next run. Unverified from the build sandbox
@@ -698,8 +704,8 @@ ALTERNATES: dict[str, tuple[str, ...]] = {
     "mylivefx_br": ("https://mylivefx.com/ranking/", "https://mylivefx.com/traders/"),
 }
 #: Verdicts that end a source's run: no alternate, no site-root walk, nothing else sent. Only a
-#: site hold (401 NEEDS_KEY; 403/429/challenge METHOD_BLOCKED). ROBOTS_DISALLOW and
-#: ROBOTS_UNREADABLE refuse one URL / one origin and are recorded in `tried`, never routed around.
+#: site hold (401 NEEDS_KEY; 403/429/challenge METHOD_BLOCKED). robots.txt never refuses (LAWS
+#: 5e): its label is recorded in `tried` and on the rows.
 HARD_STOP = frozenset({"NEEDS_KEY", "METHOD_BLOCKED"})
 _LISTING_LINK = re.compile(
     r'href="([^"#]{2,200})"[^>]*>\s*([^<]{0,80}(?:rank|rating|leader|trader|strateg|master|'
@@ -744,6 +750,15 @@ def extract_rows(name: str, html: str, url: str, region: str, lang: str, grade: 
     return [], ""
 
 
+def _stamp(rows_: list[Any], lab: dict[str, Any]) -> None:
+    """The page's robots label on every row it yielded (LAWS 5e); a labelled row is kept."""
+    if not lab:
+        return
+    for r_ in rows_:
+        if isinstance(r_, dict) and "access_label" not in r_:
+            r_.update(lab)
+
+
 def mine_source(name: str, spec: tuple, page: int, resolved: str = "",
                 explore: bool = True) -> dict[str, Any]:
     """Work one source for one page through the whole resolution chain. Never raises.
@@ -768,10 +783,12 @@ def mine_source(name: str, spec: tuple, page: int, resolved: str = "",
                                      "alternate host or path was tried")}
             continue
         rows_, how = extract_rows(name, html, u, region, lang, grade, link_pat, base_url)
-        tried.append({"url": u, "status": 200, "rows": len(rows_), "via": how})
+        lab = _label(u)
+        _stamp(rows_, lab)
+        tried.append({"url": u, "status": 200, "rows": len(rows_), "via": how, **lab})
         if rows_:
             return {"rows": rows_, "url": u, "via": how, "tried": tried, "state": "ok",
-                    "error": ""}
+                    "error": "", **lab}
         last_html, last_status, last_err = html, 200, ""
     # Nothing on the declared URLs: the listing may have moved. The site root's own links say
     # where it went.
@@ -791,11 +808,13 @@ def mine_source(name: str, spec: tuple, page: int, resolved: str = "",
                     break
                 continue
             rows_, how = extract_rows(name, html, u, region, lang, grade, link_pat, base_url)
+            lab = _label(u)
+            _stamp(rows_, lab)
             tried.append({"url": u, "status": 200, "rows": len(rows_), "via": how,
-                          "found_on": "site_root"})
+                          "found_on": "site_root", **lab})
             if rows_:
                 return {"rows": rows_, "url": u, "via": how, "tried": tried, "state": "ok",
-                        "error": ""}
+                        "error": "", **lab}
     if last_status == 200:
         code, todo = diagnose_page(last_html)
         state = code.lower()

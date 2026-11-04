@@ -202,7 +202,7 @@ SOURCE_POLICY: dict[str, dict[str, Any]] = {
                     "use": "LIVE",
                     "why": ("Tor Project's per-country relay and bridge user estimates; its data "
                             "is CC0 (clause quoted), so the CSVs are LIVE input, fetched politely "
-                            "(robots decides, honest DESK_UA)"),
+                            "(robots a label, honest DESK_UA)"),
                     "terms": {"url": "https://metrics.torproject.org/",
                               "checked_at": "2026-10-29",
                               "clauses": {
@@ -1890,13 +1890,16 @@ METHOD_ROWS: dict[str, dict[str, Any]] = {
     "discord_user": {"status": METHOD_BLOCKED, "reason": "login",
                      "why": "a user token driving Discord's API is a self-bot; bot token only"},
     # THE POLITE CHECKS ON THE FETCH DOOR (audit GD_LANDING_TRAIN_6eb7a91b4 SHOULD-FIX): the
-    # site's person-held access hold and its robots.txt, the same two `polite_fetch.get` applies.
+    # site's person-held access hold, the same check `polite_fetch.get` applies. robots.txt is a
+    # LABEL on the response there, never a refusal (LAWS 5e REMOVED_BRAKES); the `robots_txt` key
+    # survives only for a non-HTTP scheme, which the door cannot read robots.txt for at all.
     "access_hold": {"status": METHOD_BLOCKED, "reason": "access",
                     "why": ("the site refused the desk (401/403/429 or a WAF/challenge page); "
                             "held until a person releases it, never by a clock")},
-    "robots_txt": {"status": METHOD_BLOCKED, "reason": "robots",
-                   "why": ("robots.txt disallows this path to the desk's agent, or could not be "
-                           "read this run (unreadable robots means no fetch)")},
+    "robots_txt": {"status": METHOD_BLOCKED, "reason": "scheme",
+                   "why": ("a non-HTTP(S) scheme: there is no robots.txt to label it with and "
+                           "no polite door for it. A robots Disallow or an unreadable robots.txt "
+                           "is never a refusal (LAWS 5e): the fetch proceeds with its label")},
 }
 
 
@@ -2464,8 +2467,9 @@ class TermsGuardProcessor(urllib.request.BaseHandler):
 
 class AccessRefused(TermsFenced):
     """The fetch door refused a URL on the polite checks: a person-held access hold on its site
-    (`platform == "access_hold"`) or its origin's robots.txt (`"robots_txt"`). `verdict` is the
-    access record's own word (METHOD_BLOCKED, NEEDS_KEY, ROBOTS_DISALLOW, ROBOTS_UNREADABLE ...)."""
+    (`platform == "access_hold"`) or a non-HTTP scheme (`"robots_txt"`). `verdict` is the access
+    record's own word (METHOD_BLOCKED, NEEDS_KEY, SCHEME_REFUSED). robots.txt never refuses: a
+    Disallow or an unreadable file is a label on the response (LAWS 5e)."""
 
     def __init__(self, verdict: str, url: str) -> None:
         self.verdict = str(verdict or "")
@@ -2476,11 +2480,13 @@ class AccessRefused(TermsFenced):
 
 class AccessGuardProcessor(urllib.request.BaseHandler):
     """THE POLITE CHECKS ON EVERY REQUEST THE DOOR SENDS, the first and each redirect hop: the
-    site's person-held hold and the hop's own origin robots.txt (`polite_fetch.HostAccess.permits`,
-    the same record `polite_fetch.get` uses) are asked BEFORE the request goes out; a refusal
-    raises `AccessRefused` and nothing is sent. A 401/403/429 -- or a challenge recognised by
-    header or status -- records a person-held hold on the site that REFUSED (the hop's own URL,
-    not the first one), so nothing else is sent to it by any route until a person releases it.
+    site's person-held hold is asked and the hop's own origin robots.txt is read AS A LABEL
+    (`polite_fetch.HostAccess.permits_labelled`, the same record `polite_fetch.get` uses) BEFORE
+    the request goes out; a hold raises `AccessRefused` and nothing is sent, and the label is set
+    on the response (`access_label`, `terms_note`, `redistribute_allowed`; LAWS 5e). A
+    401/403/429 -- or a challenge recognised by header or status -- records a person-held hold
+    on the site that REFUSED (the hop's own URL, not the first one), so nothing else is sent to
+    it by any route until a person releases it.
 
     robots.txt itself is read through `polite_fetch.open_no_redirect` (the door's opener WITHOUT
     this processor), so the check never recurses into itself."""
@@ -2489,6 +2495,8 @@ class AccessGuardProcessor(urllib.request.BaseHandler):
 
     def __init__(self, access: Any = None) -> None:
         self.access = access
+        #: url -> the robots label read for the request now in flight (set on its response)
+        self._labels: dict[str, dict[str, Any]] = {}
 
     def _acc(self) -> Any:
         if self.access is None:
@@ -2497,15 +2505,28 @@ class AccessGuardProcessor(urllib.request.BaseHandler):
         return self.access
 
     def http_request(self, req: urllib.request.Request) -> urllib.request.Request:
-        ok, why = self._acc().permits(req.full_url)
+        acc = self._acc()
+        labelled = getattr(acc, "permits_labelled", None)
+        if callable(labelled):
+            ok, why, label = labelled(req.full_url)
+        else:                                  # a caller's own access stub (tests)
+            (ok, why), label = acc.permits(req.full_url), {}
         if not ok:
             raise AccessRefused(why, req.full_url)
+        with contextlib.suppress(Exception):
+            self._labels[req.full_url] = dict(label or {})
         return req
 
     https_request = http_request
 
     def http_response(self, req: urllib.request.Request, resp: Any) -> Any:
         from libs.data import polite_fetch as _pf
+        label = self._labels.pop(req.full_url, None)
+        if label:
+            # THE LABEL ON WHAT THE DOOR RETURNS (LAWS 5e), so the caller's row can carry it
+            for k in ("access_label", "terms_note", "redistribute_allowed"):
+                with contextlib.suppress(Exception):
+                    setattr(resp, k, label.get(k))
         code = int(getattr(resp, "code", None) or getattr(resp, "status", None) or 0)
         if code in _pf.BLOCK_STATUS:
             self._acc().block(req.full_url, code)

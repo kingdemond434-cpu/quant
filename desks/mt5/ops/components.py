@@ -875,6 +875,55 @@ def explicit_specs() -> list[ComponentSpec]:
             schedule="invoked:clock_liveness", artifact_class="fifteen_minute",
             notes=("not an independent timer: clock_liveness invokes it only for identities "
                    "proved frozen, and proves repair by the clock watermark advancing")),
+        # THE CHANNEL MINER'S CLOCK IS ON THE OPERATOR'S PC, NOT ON A DESK MACHINE (2026-11-04).
+        # scripts/install_video_miner_task.ps1 registers Quant-VideoMiner (every 30 minutes and at
+        # logon, per-user, no admin) on the machine it is run from, and the miner was armed there
+        # (e3a771e445: "matches the armed PC task"). It is not a box task: the captions it writes
+        # are PUBLIC_WITH_TERMS, so they reach the box only SEALED (scripts/video_transcript_vault
+        # seal -> the data branch -> Quant-VideoCells opens them). The installer runs the miner by
+        # bare filename, so no clock text names its path; without this spec the reach walk
+        # credited it to extract_video_cells.py's DOCSTRING, a citation rather than a caller.
+        # host "any": HOSTS has no operator machine, and this control plane can neither observe
+        # nor restart it there (restart UNMEASURED, criticality optional).
+        ComponentSpec(
+            component_id="exe:scripts/mine_channel_transcripts.py",
+            kind="executable", host="any",
+            code_paths=("scripts/mine_channel_transcripts.py",
+                        "scripts/install_video_miner_task.ps1"),
+            inputs=("config/video_mining_channels.json",),
+            outputs=("video_mining_out/ledger.jsonl", "video_mining_out/coverage_summary.json"),
+            consumers=("scripts/video_transcript_vault.py", "scripts/extract_video_cells.py"),
+            cadence_s=1800, timeout_s=6 * 3600, progress_metric="videos_with_status",
+            production_args=("--discover", "--sleep", "45", "--limit", "60"),
+            expected_artifact_schema="video_mining_out/coverage_summary.json",
+            owner="lane:research", restart_action=UNMEASURED,
+            criticality="optional", resource_budget={"budget_s": 6 * 3600},
+            schedule="Quant-VideoMiner", artifact_class=UNMEASURED,
+            notes=("operator-PC task Quant-VideoMiner (every 30 min + at logon), registered by "
+                   "scripts/install_video_miner_task.ps1; off the box and the VPS, so its "
+                   "liveness is UNMEASURED here and its output reaches the desk only sealed")),
+        # THE GATE'S VETO-NOTICE SENDER (2026-11-04). libs/ops/send_alert.py moved out of scripts/
+        # in dabcfaf9b0 as "a gate helper, not a clocked executable": that took it out of the
+        # birth fence's EXEC_AREAS, but this registry walks libs/ops too and it has a main(), so
+        # it read as an executable with no clock. It is not a library (nothing imports it) and
+        # not dead: its ONE caller is the box gate (.github/scripts/audit_gate.py --sweep --box,
+        # run by Quant-WorkflowGate every 10 minutes), which runs the command configured in
+        # QUANT_REGISTRY_NOTIFY to send the registry path's veto notice. That command is set on
+        # the box, never in this repo; unset, no notice goes out and nothing merges by the
+        # registry -- the gate's own fail-closed rule, which this spec does not change.
+        ComponentSpec(
+            component_id="exe:libs/ops/send_alert.py",
+            kind="executable", host="box",
+            code_paths=("libs/ops/send_alert.py",),
+            inputs=("data/secrets/alert_channels.json",),
+            consumers=(".github/scripts/audit_gate.py",),
+            cadence_s=None, timeout_s=None, progress_metric="delivered",
+            owner="lane:ops", restart_action=UNMEASURED,
+            criticality="optional", resource_budget={},
+            schedule="invoked:.github/scripts/audit_gate.py", artifact_class=UNMEASURED,
+            notes=("invoked once per veto notice by the box gate through QUANT_REGISTRY_NOTIFY "
+                   "(Quant-WorkflowGate); event-driven, so no cadence; whether the variable is "
+                   "set on the box is UNMEASURED from this repo")),
         # THE BREADTH LEDGER'S CLOCK, DECLARED BECAUSE THE REACH WALK NAMED THE WRONG ONE
         # (2026-09-30). The walk credits a script to whichever file that names it pops first, and
         # for this one that was a docstring citation in docket_keff (alpha_breadth cites it too),

@@ -116,11 +116,16 @@ def test_mf1_a_refusal_at_the_redirect_target_holds_the_refusing_site(
     assert r.ground_holds == ["localhost"]
 
 
-def test_mf1_a_cross_origin_hop_obeys_the_target_robots(srv: Any) -> None:
+def test_mf1_a_cross_origin_hop_is_labelled_by_the_target_robots(srv: Any) -> None:
+    """LAWS 5e: the target origin's robots.txt is READ for the hop and its Disallow is a LABEL
+    (PUBLIC_WITH_TERMS) on the page, never a cut."""
+    from libs.data import polite_fetch as pf
     port, hits = srv
     r = _run()
-    assert r.page(f"http://127.0.0.1:{port}/priv") == ""
-    assert ("localhost", "/robots.txt") in hits and ("localhost", "/private") not in hits
+    assert "gold breakout" in r.page(f"http://127.0.0.1:{port}/priv")
+    assert ("localhost", "/robots.txt") in hits and ("localhost", "/private") in hits
+    lab = pf.access_label(f"http://localhost:{port}/private", read=False)
+    assert lab["access_label"] == "PUBLIC_WITH_TERMS"
 
 
 def test_mf1_an_unheld_redirect_still_reads_the_page(srv: Any) -> None:
@@ -364,8 +369,10 @@ def cutsrv(monkeypatch: pytest.MonkeyPatch) -> Iterator[int]:
 
 CUT_KINDS = [("/held", "site_held"), ("/mirror", "site_held"), ("/alias", "site_held"),
              ("/upper", "site_held"), ("/fenced", "nitter"), ("/wall", "login_wall"),
-             ("/xpriv", "robots"), ("/spriv", "robots"), ("/unread", "robots"),
              ("/loop", "too_many_redirects"), ("/ftp", "non_http_redirect")]
+#: Hops a robots.txt Disallow or an unread robots.txt used to cut. LAWS 5e: none of them is a
+#: cut any more -- the hop is followed and labelled (PUBLIC_WITH_TERMS / ACCESS_UNCLEAR).
+ROBOTS_HOPS = ["/xpriv", "/spriv", "/unread"]
 
 
 @pytest.mark.parametrize(("path", "kind"), CUT_KINDS)
@@ -387,10 +394,27 @@ def test_delta_every_cut_hop_writes_exactly_one_missed_growth_line(
     assert st["missed_growth"]["kind"] == "redirect_cut" and st["missed_growth"]["source"] == kind
 
 
-def test_delta_a_same_origin_hop_into_a_disallowed_path_is_not_requested(cutsrv: int) -> None:
+@pytest.mark.parametrize("path", ROBOTS_HOPS)
+@pytest.mark.parametrize("route", ["page", "index_page"])
+def test_delta_a_robots_hop_is_never_cut_and_writes_no_cut_line(
+        cutsrv: int, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, path: str,
+        route: str) -> None:
+    ledger = tmp_path / "cuts.jsonl"
+    monkeypatch.setenv("QUANT_REDIRECT_CUTS", str(ledger))
     r = _run()
-    assert r.page(f"http://127.0.0.1:{cutsrv}/spriv") == ""
-    assert [x for x in r.status if x.get("redirect_stopped", "").endswith("/private")]
+    getattr(r, route)(f"http://127.0.0.1:{cutsrv}{path}")
+    assert tf.redirect_cut_lines(str(ledger)) == []
+    assert not [x for x in r.status if x.get("redirect_stopped")]
+
+
+def test_delta_a_same_origin_hop_into_a_disallowed_path_is_fetched_and_labelled(
+        cutsrv: int) -> None:
+    from libs.data import polite_fetch as pf
+    r = _run()
+    assert "gold breakout" in r.page(f"http://127.0.0.1:{cutsrv}/spriv")
+    assert not [x for x in r.status if x.get("redirect_stopped")]
+    lab = pf.access_label(f"http://127.0.0.1:{cutsrv}/private", read=False)
+    assert lab["access_label"] == "PUBLIC_WITH_TERMS" and lab["redistribute_allowed"] is False
 
 
 def test_delta_an_ipv4_mapped_address_shares_the_ipv4_hold() -> None:
@@ -460,47 +484,56 @@ def robots_srv(monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[int, dict[str,
 @pytest.mark.parametrize("code", [404, 410])
 @pytest.mark.parametrize("route", ["page", "index_page"])
 def test_robots_404_allows_a_same_origin_hop(robots_srv: Any, code: int, route: str) -> None:
-    """ROBOTS DECIDES EVERY FETCH (LAWS 5e amended 2026-10-14): the polite door reads robots.txt
-    before the first request, and the hop check reads it again before the hop; a 404/410 (no
-    file) allows both."""
+    """The polite door reads robots.txt once per origin (cached) and LABELS every hop with it;
+    a 404/410 (no file) is PUBLIC. The hop check asks the holds, never robots (LAWS 5e)."""
     port, state, hits = robots_srv
     state["robots"] = code
     r = _run()
     assert "gold breakout" in getattr(r, route)(f"http://127.0.0.1:{port}/hop")
-    assert hits == ["/robots.txt", "/hop", "/robots.txt", "/page"] and not r.holds.sites
+    assert hits == ["/robots.txt", "/hop", "/page"] and not r.holds.sites
 
 
 @pytest.mark.parametrize("code", [500, 503])
 @pytest.mark.parametrize("route", ["page", "index_page"])
-def test_robots_5xx_disallows_a_same_origin_hop(robots_srv: Any, code: int, route: str) -> None:
+def test_robots_5xx_never_cuts_a_same_origin_hop(robots_srv: Any, code: int,
+                                                 route: str) -> None:
     port, state, hits = robots_srv
-    state["robots"] = [404, code]          # the first URL is allowed; the hop's read is a 5xx
+    state["robots"] = [404, code]          # the first read allows; no second read cuts the hop
     r = _run()
-    assert getattr(r, route)(f"http://127.0.0.1:{port}/hop") == ""
-    assert "/page" not in hits and not r.holds.sites
-    (st,) = [x for x in r.status if x.get("redirect_stopped")]
-    assert st["missed_growth"]["source"] == "robots"
+    assert "gold breakout" in getattr(r, route)(f"http://127.0.0.1:{port}/hop")
+    assert "/page" in hits and not r.holds.sites
+    assert not [x for x in r.status if x.get("redirect_stopped")]
 
 
 @pytest.mark.parametrize("code", [500, 503])
 @pytest.mark.parametrize("route", ["page", "index_page"])
-def test_robots_5xx_sends_nothing_at_all(robots_srv: Any, code: int, route: str) -> None:
-    """An unreadable robots.txt before the FIRST request: nothing is sent, no hold placed."""
+def test_robots_5xx_is_fetched_as_access_unclear(robots_srv: Any, code: int, route: str) -> None:
+    """An unreadable robots.txt before the FIRST request: the page IS fetched, labelled
+    ACCESS_UNCLEAR, and no hold is placed (LAWS 5e: ACCESS_UNCLEAR is mined with its label)."""
+    from libs.data import polite_fetch as pf
     port, state, hits = robots_srv
     state["robots"] = code
     r = _run()
-    assert getattr(r, route)(f"http://127.0.0.1:{port}/hop") == ""
-    assert hits == ["/robots.txt"] and not r.holds.sites
-    assert "ROBOTS_UNREADABLE" in json.dumps(r.status[-1])
+    assert "gold breakout" in getattr(r, route)(f"http://127.0.0.1:{port}/hop")
+    assert hits == ["/robots.txt", "/hop", "/page"] and not r.holds.sites
+    assert "ROBOTS_UNREADABLE" not in json.dumps(r.status)
+    lab = pf.access_label(f"http://127.0.0.1:{port}/page", read=False)
+    assert lab["access_label"] == "ACCESS_UNCLEAR"
 
 
 @pytest.mark.parametrize("code", [401, 403, 429])
-def test_robots_refusal_on_a_hop_holds_the_site_and_stops(robots_srv: Any, code: int) -> None:
-    port, state, hits = robots_srv
-    state["robots"] = [404, code]          # the first URL is allowed; the hop's read refuses
+def test_a_page_refusal_on_a_hop_holds_the_site_and_stops(robots_srv: Any, code: int) -> None:
+    """The access control is still a hard stop: robots.txt (cached for the origin) no longer
+    re-reads per hop, so the refusal comes from the hop itself."""
+    port, state, _hits = robots_srv
+    state["robots"] = 404
     r = _run()
-    assert r.page(f"http://127.0.0.1:{port}/hop") == ""
-    assert "/page" not in hits and r.holds.sites["127.0.0.1"]["status"] == code
+    r.page(f"http://127.0.0.1:{port}/hop")
+    state["robots"] = code
+    from libs.data import polite_fetch as pf
+    acc = pf.HostAccess(None)                    # a fresh process reads robots.txt again
+    ok, why = acc.permits(f"http://127.0.0.1:{port}/page")
+    assert not ok and why in ("NEEDS_KEY", "METHOD_BLOCKED")
 
 
 @pytest.mark.parametrize("code", [401, 403, 429])
@@ -526,3 +559,8 @@ def test_robots_unreachable_disallows() -> None:
     assert D.robots_allows("https://ex.example/a",
                            get=lambda u: (_ for _ in ()).throw(D.FetchStatus(u, 503))) is False
     assert D.robots_allows("https://ex.example/a", get=lambda u: "") is True   # empty file
+    # ...and as the LABEL the fetch carries (LAWS 5e): robots' opinion never gates a fetch
+    assert D.robots_label("https://ex.example/a", get=down)["access_label"] == "ACCESS_UNCLEAR"
+    assert D.robots_label("https://ex.example/p/x", get=lambda u: "User-agent: *\nDisallow: /p\n"
+                          )["access_label"] == "PUBLIC_WITH_TERMS"
+    assert D.robots_label("https://ex.example/a", get=lambda u: "")["access_label"] == "PUBLIC"

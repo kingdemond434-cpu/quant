@@ -8,6 +8,7 @@ that records what was actually sent -- no socket is opened.
 from __future__ import annotations
 
 import io
+import json
 import sys
 import urllib.error
 from email.message import Message
@@ -111,37 +112,77 @@ def test_the_importers_declare_the_desk_ua() -> None:
 
 
 # ------------------------------------------------------------------------------------ robots
-def test_robots_disallow_blocks_the_fetch() -> None:
+# LAWS 5e (live): robots.txt is an ACCESS LABEL, never a refusal. "robots.txt Disallow treated as
+# a refusal" is in access_classifier.REMOVED_BRAKES, and ACCESS_UNCLEAR is mined with its label.
+def test_robots_disallow_is_fetched_and_labelled_public_with_terms() -> None:
     web = _Web({"https://a.test/robots.txt": (200, b"User-agent: *\nDisallow: /private\n", ""),
                 "https://a.test/private/x": (200, _HTML, "")})
     r = _get(web, "https://a.test/private/x")
-    assert not r.ok and r.verdict == "ROBOTS_DISALLOW" and r.status is None
-    assert "https://a.test/private/x" not in web.urls()
+    assert r.ok and r.verdict == "" and r.status == 200
+    assert "https://a.test/private/x" in web.urls()
+    assert r.access_label == "PUBLIC_WITH_TERMS"
+    assert "Disallow" in r.terms_note and r.redistribute_allowed is False
 
 
-def test_a_group_naming_the_desk_token_binds_it() -> None:
+def test_a_group_naming_the_desk_token_labels_it() -> None:
     web = _Web({"https://a.test/robots.txt": (
         200, f"User-agent: {pf.DESK_UA_PRODUCT}\nDisallow: /\n\nUser-agent: *\nAllow: /\n".encode(),
         ""), "https://a.test/p": (200, _HTML, "")})
-    assert _get(web, "https://a.test/p").verdict == "ROBOTS_DISALLOW"
-    assert "https://a.test/p" not in web.urls()
+    r = _get(web, "https://a.test/p")
+    assert r.ok and r.access_label == "PUBLIC_WITH_TERMS"
+    assert "https://a.test/p" in web.urls()
 
 
 @pytest.mark.parametrize("robots", [None, (500, b"", ""), (503, b"", "")])
-def test_unreadable_robots_blocks_the_fetch(robots: tuple[int, bytes, str] | None) -> None:
+def test_unreadable_robots_is_fetched_as_access_unclear(
+        robots: tuple[int, bytes, str] | None) -> None:
     routes = {"https://a.test/p": (200, _HTML, "")}
     if robots is not None:
         routes["https://a.test/robots.txt"] = robots
     web = _Web(routes)
     r = _get(web, "https://a.test/p")
-    assert not r.ok and r.verdict == "ROBOTS_UNREADABLE"
-    assert "https://a.test/p" not in web.urls()
+    assert r.ok and r.verdict == ""
+    assert r.access_label == "ACCESS_UNCLEAR" and r.redistribute_allowed is False
+    assert "https://a.test/p" in web.urls()
 
 
 @pytest.mark.parametrize("code", [404, 410])
 def test_a_missing_robots_allows(code: int) -> None:
     web = _Web({"https://a.test/robots.txt": (code, b"", ""), "https://a.test/p": (200, _HTML, "")})
-    assert _get(web, "https://a.test/p").ok
+    r = _get(web, "https://a.test/p")
+    assert r.ok and r.access_label == "PUBLIC" and r.terms_note == ""
+
+
+def test_the_label_reaches_the_leg_stats_and_the_ledger(tmp_path: Path) -> None:
+    """The label is carried on what the fetch records: the leg's stats row and the shared
+    access ledger's `labelled` rows (saved, so another process reads it)."""
+    web = _Web({"https://a.test/robots.txt": (200, b"User-agent: *\nDisallow: /private\n", ""),
+                "https://a.test/private/x": (200, _HTML, ""),
+                "https://a.test/open": (200, _HTML, "")})
+    acc = pf.HostAccess(path=tmp_path / "access.json")
+    pf.reset_stats("label_leg")
+    _get(web, "https://a.test/private/x", acc, leg="label_leg")
+    _get(web, "https://a.test/open", acc, leg="label_leg")
+    row = pf.stats("label_leg")
+    assert row["access_labels"] == {"PUBLIC": 1, "PUBLIC_WITH_TERMS": 1}
+    assert row["labelled"][0]["origin"] == "https://a.test"
+    assert row["labelled"][0]["access_label"] == "PUBLIC_WITH_TERMS"
+    disk = json.loads((tmp_path / "access.json").read_text("utf-8"))
+    lab = disk["labelled"]["https://a.test"]
+    assert lab["access_label"] == "PUBLIC_WITH_TERMS" and lab["fetched"] is True
+    assert acc.summary()["access_labels"] == {"PUBLIC": 1, "PUBLIC_WITH_TERMS": 1}
+    assert pf.HostAccess.load(tmp_path / "access.json").labelled["https://a.test"][
+        "access_label"] == "PUBLIC_WITH_TERMS"
+
+
+def test_the_seams_carry_the_label() -> None:
+    web = _Web({"https://a.test/robots.txt": (200, b"User-agent: *\nDisallow: /\n", ""),
+                "https://a.test/p": (200, _HTML, "")})
+    acc = pf.HostAccess(path=None)
+    with pf.polite_urlopen("https://a.test/p", access=acc, opener=web) as fh:
+        assert fh.access_label == "PUBLIC_WITH_TERMS" and fh.redistribute_allowed is False
+    r = pf.polite_requests_get("https://a.test/p", access=acc, opener=web)
+    assert r.ok and r.access_label == "PUBLIC_WITH_TERMS" and "Disallow" in r.terms_note
 
 
 def test_robots_is_cached_per_origin_for_24h() -> None:
@@ -154,15 +195,15 @@ def test_robots_is_cached_per_origin_for_24h() -> None:
     assert pf.ROBOTS_TTL_S == 24 * 3600
 
 
-def test_a_redirect_to_another_origin_checks_that_origins_robots() -> None:
+def test_a_redirect_to_another_origin_is_labelled_by_that_origins_robots() -> None:
     web = _Web({"https://a.test/robots.txt": _ALLOW,
                 "https://a.test/go": (302, b"", "https://b.test/landing"),
                 "https://b.test/robots.txt": (200, b"User-agent: *\nDisallow: /\n", ""),
                 "https://b.test/landing": (200, _HTML, "")})
     r = _get(web, "https://a.test/go")
-    assert not r.ok and r.verdict == "ROBOTS_DISALLOW"
+    assert r.ok and r.verdict == "" and r.access_label == "PUBLIC_WITH_TERMS"
     assert "https://b.test/robots.txt" in web.urls()
-    assert "https://b.test/landing" not in web.urls()
+    assert "https://b.test/landing" in web.urls()
 
 
 def test_a_permitted_redirect_is_followed_after_its_robots_check() -> None:

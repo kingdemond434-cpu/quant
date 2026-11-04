@@ -28,11 +28,11 @@
   "LIVE": 71,
   "STALE": 2,
   "MISSING": 0,
-  "NEVER": 938,
+  "NEVER": 942,
   "UNMEASURED": 30
  },
  "scope": {
-  "attested": 1041,
+  "attested": 1045,
   "excluded": 417,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1458,
@@ -40,7 +40,22 @@
   "declaration_defects_reason": "the component declares an artifact path the organ does not write, while the same basename is present elsewhere in the desk's state -- repair the declaration",
   "hash_skipped_over_budget": 0,
   "wall_s": 2.02,
-  "summaries_trimmed": 0
+  "summaries_trimmed": 0,
+  "only_missing_appended": [
+   {
+    "at": "2026-11-04T00:27:54+00:00",
+    "host": "vm",
+    "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+    "on_attesting_host": false,
+    "identity": "off-host: vm is not a declared desk host ['vmi3571445'], so it cannot attest the desk's runtime",
+    "organs": [
+     "exe:scripts/mine_channel_transcripts.py",
+     "executable:desks/mt5/research/scalp_shadow.py",
+     "executable:scripts/extract_video_cells.py",
+     "executable:scripts/video_transcript_vault.py"
+    ]
+   }
+  ]
  },
  "states": {
   "LIVE": "artifact present and newer than the organ's derived max silence",
@@ -26134,6 +26149,119 @@
    "summary": {},
    "progress_metric": "timer_runs",
    "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "exe:scripts/mine_channel_transcripts.py",
+   "kind": "executable",
+   "code": [
+    "scripts/mine_channel_transcripts.py",
+    "scripts/install_video_miner_task.ps1"
+   ],
+   "clock": "Quant-VideoMiner",
+   "cadence_s": 1800,
+   "max_silence_s": 23400,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (off-host: vm is not a declared desk host ['vmi3571445'], so it cannot attest the desk's runtime): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "video_mining_out/ledger.jsonl",
+   "artifact_declared": "video_mining_out/ledger.jsonl",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 2,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "videos_with_status",
+   "consumer": "scripts/video_transcript_vault.py",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-11-04T00:27:54+00:00"
+  },
+  {
+   "organ": "executable:desks/mt5/research/scalp_shadow.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/scalp_shadow.py"
+   ],
+   "clock": "invoked:libs/ops/release.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (off-host: vm is not a declared desk host ['vmi3571445'], so it cannot attest the desk's runtime): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/SCALP_GAUNTLET.json",
+   "artifact_declared": "desks/mt5/reports/SCALP_GAUNTLET.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-11-04T00:27:54+00:00"
+  },
+  {
+   "organ": "executable:scripts/extract_video_cells.py",
+   "kind": "executable",
+   "code": [
+    "scripts/extract_video_cells.py"
+   ],
+   "clock": "invoked:scripts/run_video_cells_box.ps1",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (off-host: vm is not a declared desk host ['vmi3571445'], so it cannot attest the desk's runtime): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/data/LIVE_SYSTEM_STATE.json",
+   "artifact_declared": "desks/mt5/data/LIVE_SYSTEM_STATE.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-11-04T00:27:54+00:00"
+  },
+  {
+   "organ": "executable:scripts/video_transcript_vault.py",
+   "kind": "executable",
+   "code": [
+    "scripts/video_transcript_vault.py"
+   ],
+   "clock": "invoked:scripts/run_video_cells_box.ps1",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (off-host: vm is not a declared desk host ['vmi3571445'], so it cannot attest the desk's runtime): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/data/LIVE_SYSTEM_STATE.json",
+   "artifact_declared": "desks/mt5/data/LIVE_SYSTEM_STATE.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-11-04T00:27:54+00:00"
   }
  ],
  "ratchet": {
