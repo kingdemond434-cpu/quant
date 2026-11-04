@@ -216,7 +216,7 @@ def test_the_url_is_percent_encoded_so_the_ORDER_clause_survives(monkeypatch) ->
         seen.append(req.full_url)
         return _Resp()
 
-    monkeypatch.setattr(CS.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(CS, "_open", fake_urlopen)
     CS._get(f"{CS._BASE}?$order=report_date_as_yyyy_mm_dd ASC")
     assert " " not in seen[0] and "%20" in seen[0]
 
@@ -234,12 +234,14 @@ def test_the_fetcher_returns_plain_dicts(monkeypatch) -> None:
         def read(self):
             return StringIO('[{"a": 1}]').read().encode()
 
-    monkeypatch.setattr(CS.urllib.request, "urlopen", lambda *a, **k: _Resp())
+    monkeypatch.setattr(CS, "_open", lambda *a, **k: _Resp())
     rows = CS._get(CS._BASE)
     assert rows and isinstance(rows[0], dict)
 
 
 def test_no_test_in_this_file_reaches_the_network(monkeypatch) -> None:
+    monkeypatch.setattr(CS, "_open", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("a test reached the CFTC")))
     monkeypatch.setattr(CS.urllib.request, "urlopen",
                         lambda *a, **k: (_ for _ in ()).throw(
                             AssertionError("a test reached the CFTC")))

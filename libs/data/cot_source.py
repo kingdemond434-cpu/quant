@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import urllib.request
 from io import StringIO
+from typing import Any
 
 import pandas as pd
 
@@ -36,9 +37,19 @@ COT_MAP: dict[str, tuple[str, float]] = {
 }
 
 
+def _open(req: urllib.request.Request, timeout: float) -> Any:
+    """THE ONE NETWORK CALL (tests replace it): THE ONE FETCH DOOR, LIVE INPUT -- the first URL
+    and every redirect hop must be a live-input route; a 30x into a held or IDEAS_ONLY route
+    raises TermsFenced (pass-6 audit cf305e3d2 SHOULD-FIX 1)."""
+    # polite_fetch's seam opens through that door AND checks the site's holds and the origin's
+    # robots.txt on every hop first (LAWS 5e amended 2026-10-14); 401/403/429 hold the site.
+    from libs.data import polite_fetch as _pf
+    return _pf.polite_urlopen(req, timeout=timeout, live_input=True, leg="cot_source")
+
+
 def _get(url: str) -> list[dict[str, str]]:
     req = urllib.request.Request(url.replace(" ", "%20"), headers={"User-Agent": "quant-research"})
-    with urllib.request.urlopen(req, timeout=40) as r:
+    with _open(req, timeout=40) as r:
         records = pd.read_json(StringIO(r.read().decode("utf-8"))).to_dict("records")
     return [dict(rec) for rec in records]
 

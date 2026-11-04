@@ -50,6 +50,7 @@ LEG_LAYER: dict[str, str] = {
     # That is information, not prediction: neither one scores anything.
     "proposer_seat": "information", "kimi_hunt": "information",
     "deep_forest": "information", "market_intel": "information", "record_tape": "information",
+    "attention_substitutes": "information",
     # Published strategy CODE read into family cells: what the desk knows (a rule someone
     # wrote), not a prediction -- the gauntlet does the predicting.
     "cell_emitter": "information",
@@ -293,6 +294,10 @@ LEG_LAYER: dict[str, str] = {
     "alpha_capture": "information",
     # free public alt-data proxies turned into PIT series: what the desk knows before it predicts
     "alt_proxies": "information",
+    # the alt seats' readings as PIT series, and Form 4 filings as clusters + a breadth series:
+    # both turn a public source into a dated input the families condition on (2026-10-14)
+    "alt_seat_cells": "information",
+    "form4_lane": "information",
     "counterexample_agent": "meta",
     "search_paradigm_census": "meta",
     "source_registry": "information", "synthetic_regimes": "meta",

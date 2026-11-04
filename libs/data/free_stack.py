@@ -64,11 +64,18 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from itertools import pairwise
+from pathlib import Path
 from typing import Any
 
+#: The hard stop, robots and the desk's declared identity: one implementation for every lane.
+from desks.mt5.research import hard_stop as _hs
+
+from libs.data import polite_fetch as _pf
+from libs.data.polite_fetch import DESK_UA
+
 UNMEASURED = "UNMEASURED"
-UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
-      "Chrome/124.0.0.0 Safari/537.36 quant-desk-free-stack/1.0 (research)")
+#: The desk's honest User-Agent (auditor ruling 2026-10-14: browser impersonation is forbidden).
+UA = DESK_UA
 HTTP_TIMEOUT_S = 25.0
 MAX_BYTES = 40 * 1024 * 1024
 
@@ -106,9 +113,19 @@ def http_fetch(url: str, headers: Mapping[str, str] | None = None,
     hdr.update(dict(headers or {}))
     req = urllib.request.Request(url, headers=hdr, data=body,
                                  method="POST" if body is not None else "GET")
+    from libs.data import polite_fetch as _pf
+    from libs.data import terms_fence as _tf
     try:
-        with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT_S) as resp:
+        # polite_fetch's seam: THE REDIRECT GUARD (a 30x into a held source or a login wall
+        # raises, never followed) behind the site's holds and each hop's own robots.txt
+        # (LAWS 5e amended 2026-10-14); a 401/403/429 holds the site.
+        with _pf.polite_urlopen(req, timeout=HTTP_TIMEOUT_S, live_input=True,
+                                max_bytes=MAX_BYTES + 1, leg="free_stack") as resp:
             raw: bytes = resp.read(MAX_BYTES + 1)
+    except _pf.PoliteRefused as exc:
+        raise FetchError(exc.verdict or classify(exc), f"{exc.error[:120]}: {url}") from exc
+    except _tf.TermsFenced as exc:
+        raise FetchError(str(exc.status), f"terms fence ({exc.platform}): {url}") from exc
     except urllib.error.HTTPError as exc:
         raise FetchError(f"http_{exc.code}", url) from exc
     except Exception as exc:
@@ -141,6 +158,14 @@ class Harvest:
 
 def _get(fetch: Fetch, h: Harvest, url: str, headers: Mapping[str, str] | None = None,
          body: bytes | None = None) -> bytes | None:
+    # THE METHOD FENCE, BEFORE ANY REQUEST (libs/data/terms_fence.py; no source is banned): a
+    # HELD URL (METHOD_BLOCKED, or NEEDS_KEY until its key exists) is refused and counted.
+    from libs.data import terms_fence as _tf
+    platform = _tf.platform_of_url(url)
+    if platform:
+        h.failures[_tf.PLATFORMS[platform]["status"]] += 1
+        h.notes.append(f"terms fence ({platform}): {url[:120]}")
+        return None
     h.requests += 1
     try:
         return fetch(url, headers, body)
@@ -1040,32 +1065,164 @@ def parse_trends_multiline(raw: bytes | None) -> list[tuple[str, float]]:
     return out
 
 
+#: THE GTRENDS ROUTE SENDS THE DESK'S ONE DECLARED IDENTITY (audit 0b66b08de MF2):
+#: `research/hard_stop.DESK_UA` (byte-identical to `polite_fetch.DESK_UA`), with its contact
+#: path -- the same string the module-wide `UA` above now carries for every source.
+GTRENDS_UA: str = _hs.DESK_UA
+GTRENDS_HEADERS: dict[str, str] = {"User-Agent": GTRENDS_UA}
+GTRENDS_HOST = "trends.google.com"
+#: Where a gtrends hold is registered; None = `research/hard_stop.BLOCKED_REGISTER`.
+GTRENDS_REGISTER: Any = None
+
+
+def _http_code(exc: BaseException) -> int:
+    """The HTTP status a failed fetch carried, 0 when it carried none (transport failure)."""
+    m = re.fullmatch(r"http_(\d{3})", classify(exc))
+    return int(m.group(1)) if m else 0
+#: Set on every Trends observation: the merge stamps it no earlier than the fetch that returned
+#: it, never at its own period (`free_stack_hunter.merge_obs`). Each response rescales its whole
+#: window, so a point older than the first fetch was never knowable in this form at its date.
+STAMP_AT_FETCH = "stamp_at_fetch"
+
+
 def fetch_gtrends(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
-                  now: datetime) -> Harvest:
+                  now: datetime, *, block_state: Path | None = None,
+                  register: Path | None = None) -> Harvest:
     """Interest over time for each term. THE PUBLISHED COLUMN IS THE LOG CHANGE, computed inside
     one response: Trends rescales every response to its own window maximum, so a LEVEL carries the
-    future through its normaliser, while a within-response ratio does not."""
+    future through its normaliser, while a within-response ratio does not.
+
+    UNDER THE HARD STOP AND ROBOTS (audit 0b66b08de MF2/MF5; principal's scope rule 2026-10-13).
+    The first 401/403/429 or WAF challenge ends the pass on the spot -- no further request -- and
+    places a hold on trends.google.com (`research/hard_stop.py`) that only a PERSON releases; until
+    then a pass sends 0 requests, whatever time has passed. robots.txt is read at the host at most
+    once a day under GTRENDS_UA and every URL is judged by its exact path: a Disallow skips that
+    URL, an unavailable robots.txt stops this pass, a refusal on robots.txt itself is a hold."""
+    hs = _hs
     h = Harvest(str(row["id"]))
+    register = GTRENDS_REGISTER or hs.BLOCKED_REGISTER
+    prior = cursor.get("hold") if isinstance(cursor.get("hold"), dict) else None
+    held = hs.active_hold(register, [hs.host_key(GTRENDS_HOST)], prior)
+    # THE SHARED PERSON-HELD ACCESS RECORD (polite_fetch; audit GD_LANDING_TRAIN_6eb7a91b4): a
+    # site any polite fetcher was refused by is held for this route too, until a person releases
+    # it (`python -m libs.data.polite_fetch --release site:<site> --by <name>`).
+    # One person's release reaches both records: a hard_stop release of this host (named, at
+    # or after the access hold was placed) releases the polite_fetch hold it covers too.
+    rel = (hs._register(register).get("holds") or {}).get(hs.host_key(GTRENDS_HOST)) or {}
+    if hs._named(rel.get("released_by")):
+        _pf.adopt_release(f"https://{GTRENDS_HOST}/", rel.get("released_by"),
+                          rel.get("released_at"), key=hs.host_key(GTRENDS_HOST))
+    pf_held = _pf.person_hold(f"https://{GTRENDS_HOST}/")
+    if held is None and pf_held:
+        held = {"key": f"site:{_pf.site_of(GTRENDS_HOST)}", "verdict": pf_held, "status": None,
+                "host": GTRENDS_HOST, "released_by": None}
+    if held is not None:
+        h.status = hs.pass_status(held)
+        h.detail = (f"{held.get('verdict')} HTTP {held.get('status')} on {held.get('host')}: "
+                    f"held until a person releases {held.get('key')}; nothing requested")
+        return h
+    if prior is not None:
+        h.cursor["hold"] = None               # a person released it: this copy is spent
+
+    def hold(verdict: str, status: int | None, url: str) -> None:
+        record = hs.hold_record(verdict, status, url, now)
+        h.cursor["hold"] = record
+        h.status = hs.pass_status(record)
+        h.detail = f"{verdict} HTTP {status} on {record['host']}: held for a person"
+        try:
+            hs.place_hold(record, register, source_key="free_stack_gtrends")
+        except Exception as exc:              # the record can fail; the stop already happened
+            h.notes.append(f"hold not registered: {type(exc).__name__}")
+        try:                                  # ... and in the shared polite_fetch access record
+            _pf.hold_site(url, status if status in hs.HARD_STOP else "WAF",
+                          f"{verdict} on Google Trends (free_stack gtrends)", mirror=record)
+        except Exception as exc:
+            h.notes.append(f"access hold not recorded: {type(exc).__name__}")
+
     base = "https://trends.google.com/trends/api"
-    for term, targets in row.get("terms") or TRENDS_TERMS:
+    cache = dict(cursor.get("robots") or {})
+    robots = hs.robots_cached(cache, base, now)
+    if robots is None:
+        h.requests += 1
+        try:
+            robots = (200, fetch(hs.robots_url(base), GTRENDS_HEADERS, None).decode(
+                "utf-8", "replace"))
+        except Exception as exc:
+            robots = (_http_code(exc), "")
+        if robots[0] in hs.HARD_STOP or hs.is_challenge(robots[0], {}, robots[1]):
+            hold(hs.VERDICT_ROBOTS_HOLD if robots[0] in hs.HARD_STOP else hs.VERDICT_WAF,
+                 robots[0], hs.robots_url(base))
+            return h
+        hs.robots_remember(cache, base, robots[0], robots[1], now)
+        h.cursor["robots"] = cache
+    disallowed = 0
+    labels: dict[str, str] = {}
+
+    def get(url: str) -> tuple[bytes | None, bool]:
+        """(body, stop). robots is READ AS A LABEL (LAWS 5e): a Disallow or an unavailable
+        robots.txt is fetched and noted; only an access control places the hold and stops."""
+        nonlocal disallowed
+        verdict = hs.robots_verdict(url, robots[0], robots[1])
+        if not verdict.get("proceed", True):
+            return None, True
+        lab = str(verdict.get("access_label") or "PUBLIC")
+        if lab != "PUBLIC":
+            labels.setdefault(lab, str(verdict.get("terms_note") or verdict.get("detail")))
+        if not verdict["allowed"]:
+            disallowed += 1
+            h.notes.append(f"{lab}: robots disallows {verdict['path'][:80]}; fetched with the "
+                           "label (LAWS 5e)")
+        h.requests += 1
+        try:
+            body = fetch(url, GTRENDS_HEADERS, None)
+        except Exception as exc:
+            h.failures[classify(exc)] += 1
+            h.notes.append(f"{classify(exc)}: {url[:120]}")
+            code = _http_code(exc)
+            if code in hs.HARD_STOP:
+                hold(hs.VERDICT_HARD_STOP, code, url)
+                return None, True
+            return None, False
+        if hs.is_challenge(200, {}, body):
+            hold(hs.VERDICT_WAF, 200, url)
+            return None, True
+        return body, False
+
+    terms = list(row.get("terms") or TRENDS_TERMS)
+    for term, targets in terms:
         req = {"comparisonItem": [{"keyword": term, "geo": "", "time": "today 3-m"}],
                "category": 0, "property": ""}
         url = (f"{base}/explore?hl=en-US&tz=0&req="
                f"{urllib.parse.quote(json.dumps(req, separators=(',', ':')))}")
-        widget = parse_trends_explore(_get(fetch, h, url))
+        raw, stop = get(url)
+        if stop:
+            return h
+        widget = parse_trends_explore(raw)
         if not widget or not widget.get("token"):
             continue
         url2 = (f"{base}/widgetdata/multiline?hl=en-US&tz=0&req="
                 f"{urllib.parse.quote(json.dumps(widget['req'], separators=(',', ':')))}"
                 f"&token={urllib.parse.quote(str(widget['token']))}")
-        pts = parse_trends_multiline(_get(fetch, h, url2))
+        raw2, stop = get(url2)
+        if stop:
+            return h
+        pts = parse_trends_multiline(raw2)
         col = trends_col(term)
         h.columns[col] = {"hypothesis": list(targets), "event": [],
                           "why": f"search attention log-change, '{term}'"}
         for (_d0, v0), (d1, v1) in pairwise(pts):
-            h.obs.append({"key": col, "period_end": d1,
+            h.obs.append({"key": col, "period_end": d1, STAMP_AT_FETCH: True,
                           "value": round(math.log((1.0 + v1) / (1.0 + v0)), 5)})
         h.raw += [{"term": term, "day": d, "value": v} for d, v in pts[-7:]]
+    if labels:
+        # THE ROBOTS LABEL ON THE HARVEST (LAWS 5e): the URLs were fetched; the label routes
+        # redistribution. The most restrictive label wins the column's provenance.
+        lab = "PUBLIC_WITH_TERMS" if "PUBLIC_WITH_TERMS" in labels else next(iter(labels))
+        note = "; ".join(f"{k}: {v}" for k, v in sorted(labels.items()))[:600]
+        for col_meta in h.columns.values():
+            col_meta.update({"access_label": lab, "terms_note": note})
+        for raw_row in h.raw:
+            raw_row.update({"access_label": lab, "terms_note": note})
     if not h.obs:
         h.status = "BLOCKED" if h.failures else "EMPTY"
         h.detail = ", ".join(f"{k}x{v}" for k, v in h.failures.items()) or "no points"
@@ -1127,6 +1284,80 @@ def parse_stockwatcher(raw: bytes | None) -> list[dict[str, Any]]:
     return out
 
 
+_BAND = re.compile(r"\$?\s*([\d,]+)\s*(?:-|to|\u2013)\s*\$?\s*([\d,]+)")
+_BAND_OVER = re.compile(r"over\s*\$?\s*([\d,]+)", re.I)
+
+
+def amount_band(s: str) -> tuple[float, float | None] | None:
+    """A disclosure's printed amount band ("$1,001 - $15,000", "Over $50,000,000") as (low,
+    high); an open top band has high None. Anything else is unreadable (None), never a zero."""
+    m = _BAND.search(s or "")
+    if m:
+        lo, hi = float(m.group(1).replace(",", "")), float(m.group(2).replace(",", ""))
+        return (lo, hi) if hi >= lo else None
+    m = _BAND_OVER.search(s or "")
+    return (float(m.group(1).replace(",", "")), None) if m else None
+
+
+def band_mid(band: tuple[float, float | None]) -> float:
+    """The band's midpoint; an open top band counts at its floor (the only printed number)."""
+    lo, hi = band
+    return lo if hi is None else (lo + hi) / 2.0
+
+
+def parse_ptr_trades(raw: bytes | None) -> list[dict[str, Any]]:
+    """Periodic-transaction-report TRADES, one row per disclosed transaction: ticker, side
+    (+1 purchase, -1 sale_full / sale_partial; exchanges and unknown types dropped), the amount
+    band (band_lo, band_hi), the transaction date and the FILING (disclosure) date, plus the
+    filing lag in days. The filer's name, owner and district are NOT kept: only the trade.
+    A row without a ticker, a readable band or both dates is dropped and counted by the caller
+    as unparsed, never zero-filled."""
+    doc = _json(raw)
+    out: list[dict[str, Any]] = []
+    for r in doc if isinstance(doc, list) else []:
+        if not isinstance(r, dict):
+            continue
+        typ = str(r.get("type") or "").lower()
+        side = 1 if "purchase" in typ else -1 if "sale" in typ else 0
+        filed = _us_date(str(r.get("disclosure_date") or ""))
+        traded = _us_date(str(r.get("transaction_date") or ""))
+        ticker = str(r.get("ticker") or "").upper().strip()
+        band = amount_band(str(r.get("amount") or ""))
+        if not side or not filed or not traded or band is None or not ticker or ticker == "--":
+            continue
+        out.append({"ticker": ticker, "side": side, "band_lo": band[0], "band_hi": band[1],
+                    "transaction_date": traded, "filing_date": filed,
+                    "filing_lag_d": (date.fromisoformat(filed)
+                                     - date.fromisoformat(traded)).days})
+    return out
+
+
+def ptr_trade_obs(trades: Sequence[Mapping[str, Any]]) -> tuple[list[dict[str, Any]],
+                                                                 dict[str, dict[str, Any]]]:
+    """Per FILING date: `ptr_net_usd_mid` = sum(side x band midpoint) over every disclosed trade,
+    `ptr_trades` the count and, per mapped share CFD, `ptrusd_<TICKER>` -- an EVENT-lane column
+    only (universe_policy: a single name is never a statistical hypothesis)."""
+    agg: dict[tuple[str, str], float] = defaultdict(float)
+    cols: dict[str, dict[str, Any]] = {}
+    for t in trades:
+        mid = band_mid((float(t["band_lo"]), t["band_hi"]))
+        agg[("ptr_net_usd_mid", t["filing_date"])] += t["side"] * mid
+        agg[("ptr_trades", t["filing_date"])] += 1
+        cfd = TICKER_CFD.get(str(t["ticker"]))
+        if cfd:
+            k = f"ptrusd_{t['ticker']}"
+            agg[(k, t["filing_date"])] += t["side"] * mid
+            cols.setdefault(k, {"hypothesis": [], "event": [cfd],
+                                "why": f"disclosed congressional net $ (band midpoints), "
+                                       f"{t['ticker']}, dated by filing"})
+    if trades:
+        cols["ptr_net_usd_mid"] = {"hypothesis": ["US500", "NAS100", "US30"], "event": [],
+                                   "why": "disclosed congressional net $ (band midpoints), all "
+                                          "tickers, dated by filing"}
+    return ([{"key": k, "period_end": d, "value": v} for (k, d), v in sorted(agg.items())],
+            cols)
+
+
 def fetch_congress(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                    now: datetime) -> Harvest:
     """Disclosure-dated, never trade-dated: a congressional trade becomes public on its
@@ -1144,7 +1375,13 @@ def fetch_congress(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, An
     per_day = Counter(r["day"] for r in h.raw if r.get("kind") == "ptr")
     h.obs += [{"key": "ptr_filings", "period_end": d, "value": n}
               for d, n in sorted(per_day.items())]
-    tx = parse_stockwatcher(_get(fetch, h, str(row.get("mirror_url") or STOCKWATCHER)))
+    mirror = _get(fetch, h, str(row.get("mirror_url") or STOCKWATCHER))
+    tx = parse_stockwatcher(mirror)
+    trades = parse_ptr_trades(mirror)
+    h.raw += [{"kind": "ptr_trade", **t} for t in trades]
+    t_obs, t_cols = ptr_trade_obs(trades)
+    h.obs += t_obs
+    h.columns.update(t_cols)
     net: dict[tuple[str, str], int] = defaultdict(int)
     for t in tx:
         net[("net_all", t["disclosed"])] += t["side"]
@@ -1296,13 +1533,48 @@ def _social(h: Harvest, posts: list[dict[str, Any]], now: datetime, sid: str) ->
                           "score": round(float(tone), 4), "method": method})
 
 
+#: Reddit's Data API (libs/data/terms_fence.py `reddit_api`): "Reddit requires OAuth for
+#: authentication" and "Traffic not using OAuth or login credentials will be blocked" (Data API
+#: wiki, read 2026-10-13), so LIVE INPUT from Reddit is the application-only OAuth route, within
+#: its 100 queries per minute per client id. The public .json pages are IDEAS_ONLY.
+REDDIT_TOKEN_URL = "https://www.reddit.com/api/v1/access_token"  # noqa: S105 (a URL)
+REDDIT_API = "https://oauth.reddit.com"
+REDDIT_UA = "python:quant-research-desk.free-stack:v1 (internal research; aggregates only)"
+
+
+def reddit_token(fetch: Fetch, h: Harvest) -> str | None:
+    """An application-only OAuth bearer token, or None (NEEDS_KEY when the keys are absent). The
+    keys are read from the environment and sent only to Reddit's token endpoint; never logged."""
+    import base64
+    cid = os.environ.get("REDDIT_CLIENT_ID") or ""
+    secret = os.environ.get("REDDIT_CLIENT_SECRET") or ""
+    if not (cid and secret):
+        h.failures["NEEDS_KEY"] += 1
+        h.notes.append("reddit_api: REDDIT_CLIENT_ID / REDDIT_CLIENT_SECRET absent (NEEDS_KEY)")
+        return None
+    basic = base64.b64encode(f"{cid}:{secret}".encode()).decode("ascii")
+    raw = _get(fetch, h, REDDIT_TOKEN_URL,
+               headers={"Authorization": f"Basic {basic}", "User-Agent": REDDIT_UA,
+                        "Content-Type": "application/x-www-form-urlencoded"},
+               body=b"grant_type=client_credentials")
+    doc = _json(raw)
+    tok = doc.get("access_token") if isinstance(doc, dict) else None
+    if not tok:
+        h.failures["reddit_token"] += 1
+        return None
+    return str(tok)
+
+
 def fetch_reddit(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                  now: datetime) -> Harvest:
     h = Harvest(str(row["id"]))
     seen = set(cursor.get("seen_ids") or [])
     posts: list[dict[str, Any]] = []
-    for sub in row.get("subreddits") or ():
-        raw = _get(fetch, h, f"https://www.reddit.com/r/{sub}/new.json?limit=100&raw_json=1")
+    subs = list(row.get("subreddits") or ())
+    token = reddit_token(fetch, h) if subs else None
+    for sub in subs if token else ():
+        raw = _get(fetch, h, f"{REDDIT_API}/r/{sub}/new?limit=100&raw_json=1",
+                   headers={"Authorization": f"bearer {token}", "User-Agent": REDDIT_UA})
         for p in parse_reddit(raw):
             if p["id"] not in seen:
                 seen.add(p["id"])

@@ -29,14 +29,15 @@ from __future__ import annotations
 import html
 import json
 import re
-import urllib.request
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import quote
 
+from libs.data import polite_fetch as _pf
+
 _UA = {
-    "User-Agent": ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"),
+    # The desk's honest UA (auditor ruling 2026-10-14), never a browser string.
+    "User-Agent": _pf.DESK_UA,
     "Accept": "application/json, text/plain, */*",
     "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
 }
@@ -59,10 +60,11 @@ class Article:
 
 
 def _get(url: str, *, referer: str, timeout: float = 25.0) -> str:
-    req = urllib.request.Request(url, headers={**_UA, "Referer": referer})
-    with urllib.request.urlopen(req, timeout=timeout) as fh:
-        body: str = fh.read().decode("utf8", errors="ignore")
-    return body
+    """One polite GET through `polite_fetch`: honest UA, the site's holds and the origin's
+    robots.txt checked before the request and every redirect hop, and 401/403/429 or a challenge
+    recorded as a site hold. Raises `polite_fetch.FetchRefused` -- never retried in disguise."""
+    return _pf.get_text(url, headers={**_UA, "Referer": referer}, timeout=timeout,
+                        leg="cn_sources")
 
 
 def juejin(keyword: str, *, limit: int = 20) -> tuple[list[Article], str | None]:

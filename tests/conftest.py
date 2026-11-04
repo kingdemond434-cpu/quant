@@ -274,6 +274,28 @@ def _openrouter_key_info_offline(tmp_path_factory: pytest.TempPathFactory,
     monkeypatch.setattr(openrouter_guard, "NETWORK", False)
 
 
+@pytest.fixture(autouse=True)
+def _polite_access_state_in_tmp(tmp_path_factory, monkeypatch):
+    """THE POLITE CLIENT'S ACCESS RECORD NEVER LANDS IN THE REPO FROM A TEST, AND NEVER CROSSES
+    TESTS. `libs.data.polite_fetch.default_access()` (and the world crawler's own HostAccess)
+    keep robots.txt reads and 401/403/429 site holds in desks/mt5/data/world_crawler_access.json
+    -- the box's real hold record -- and cache it process-wide. A test that drives `pf.get`
+    against a local server or a fake web would otherwise file a hold (127.0.0.1, an
+    example.test host) that the NEXT test inherits and is refused by. Each test gets a fresh,
+    empty record in tmp; a test that passes its own `access=` still wins."""
+    import sys
+
+    from libs.data import polite_fetch as _pf
+    state = tmp_path_factory.mktemp("polite_access") / "world_crawler_access.json"
+    monkeypatch.setattr(_pf, "ACCESS_STATE", state)
+    monkeypatch.setattr(_pf, "_ACCESS", None)
+    wc = sys.modules.get("world_crawler")
+    if wc is not None and hasattr(wc, "_DEFAULT_ACCESS"):
+        monkeypatch.setattr(wc, "ACCESS_STATE", state)
+        monkeypatch.setattr(wc, "_DEFAULT_ACCESS", None)
+    yield
+
+
 @pytest.fixture(scope="session")
 def _account_key_file(tmp_path_factory: pytest.TempPathFactory) -> Path:
     """A throwaway HMAC key for the suite (fixed bytes, so keys are reproducible run to run)."""

@@ -35,14 +35,15 @@ import hashlib
 import html
 import json
 import time
-import urllib.request
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlencode
 
+from libs.data import polite_fetch as _pf
+
 _UA = {
-    "User-Agent": ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"),
+    # The desk's honest UA (auditor ruling 2026-10-14), never a browser string.
+    "User-Agent": _pf.DESK_UA,
     # The Referer is REQUIRED. Without it the API returns 412 even with a valid signature --
     # which is the failure most likely to be misread as "the signing is wrong".
     "Referer": "https://www.bilibili.com/",
@@ -66,10 +67,10 @@ _KEY_TTL = 1800.0
 
 
 def _get(url: str, *, timeout: float = 25.0) -> str:
-    req = urllib.request.Request(url, headers=_UA)
-    with urllib.request.urlopen(req, timeout=timeout) as fh:
-        body: str = fh.read().decode("utf8", errors="ignore")
-    return body
+    """One polite GET through `polite_fetch`: honest UA, the site's holds and the origin's
+    robots.txt checked before the request and every redirect hop, and 401/403/429 or a challenge
+    recorded as a site hold. Raises `polite_fetch.FetchRefused` -- never retried in disguise."""
+    return _pf.get_text(url, headers=_UA, timeout=timeout, leg="bilibili")
 
 
 def _get_json(url: str, *, timeout: float = 25.0) -> dict[str, Any]:

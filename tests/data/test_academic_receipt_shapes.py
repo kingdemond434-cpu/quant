@@ -1,5 +1,4 @@
 """Academic feeds retain measurement text and name unusable receipts."""
-import io
 import json
 
 import pytest
@@ -79,8 +78,7 @@ def test_github_auth_boundary_and_original_code_receipts(tmp_path, monkeypatch):
         p.github("MT5", kind="invalid")
     payload = {"items": [None, {}, {"full_name": "owned/mt5", "description": "permutation",
                   "html_url": "https://github.com/owned/mt5", "pushed_at": "2026-01-03"}]}
-    monkeypatch.setattr(p.urllib.request, "urlopen", lambda *_a, **_k:
-                        io.BytesIO(json.dumps(payload).encode()))
+    monkeypatch.setattr(p._pf, "get_text", lambda *_a, **_k: json.dumps(payload))
     rows, error = p.github("MT5")
     assert error is None and rows[0].ident == "owned/mt5"
     payload["items"] = [None, {}, {"path": "strategy.py", "repository": {"full_name": "owned/mt5"},
@@ -92,7 +90,7 @@ def test_github_auth_boundary_and_original_code_receipts(tmp_path, monkeypatch):
 
 
 def test_transport_read_and_probe_deliver_errors(monkeypatch):
-    monkeypatch.setattr(p.urllib.request, "urlopen", lambda *_a, **_k: io.BytesIO(b"receipt"))
+    monkeypatch.setattr(p._pf, "get_text", lambda *_a, **_k: "receipt")
     assert p._get("https://fixture.invalid") == "receipt"
     for name in ("arxiv", "ssrn", "openreview", "hackernews", "github"):
         monkeypatch.setattr(p, name, lambda *_a, **_k: ([], "unavailable"))

@@ -49,11 +49,14 @@ first vintage; a later changed value is a revision stamped at its first sight. E
 carries the names of the universal sensor contract (MANDATE 2026-10-06 s2.5) so a later adapter
 is a pure mapping.
 
-TERMS, FAIL CLOSED. A row whose `terms` is not `confirmed` returns BLOCKED_ON_TERMS and makes no
-request; `terms_evidence` on the roster row holds the URL and the verbatim clause read. `refused`
-(the alt_proxies.TERMS_VALUES word: the licence read does not grant the desk's use) blocks before
-anything else is read and names the row's `substitute_candidates`; cnx_shfe and cnx_ine are
-refused (SHFE grants non-commercial use only) and name CFTC COT as the substitute.
+TERMS, FAIL CLOSED, ONE REGISTER (pass 6 delta, 2026-10-14). The gate is the exchange's row in
+libs/data/terms_fence.SOURCE_POLICY (keyed by the roster id), read through `terms_verdict`: a row
+that is not `confirmed` returns BLOCKED_ON_TERMS and makes no request; the fence row holds the URL
+and the verbatim clause (or the named unread reason). `refused` (the alt_proxies.TERMS_VALUES
+word: the licence read does not grant the desk's use) blocks before anything else is read and
+names the roster row's `substitute_candidates`; cnx_shfe and cnx_ine are refused (SHFE grants
+non-commercial use only) and name CFTC COT as the substitute. The roster carries no terms field;
+the unblock flips the fence row.
 """
 # ruff: noqa: RUF001, RUF002 -- the exchanges' own files use full-width Chinese
 # punctuation (colons and parentheses in their headers); the parsers must match them exactly.
@@ -995,11 +998,23 @@ def contract_fields(row: Mapping[str, Any], exch: str, prod: str, metric: str, d
             **licence_fields(row), "provenance_hash": h, "raw_pointer": raw_pointer}
 
 
+def terms_of(row: Mapping[str, Any]) -> str:
+    """The row's terms word, read from the ONE register (terms_fence.terms_verdict on its id):
+    confirmed | refused | to_confirm. A roster field is never read (there is none)."""
+    from libs.data import terms_fence as _tf
+    return _tf.terms_verdict(str(row.get("id") or ""))
+
+
+def _terms_url(row: Mapping[str, Any]) -> str:
+    from libs.data import terms_fence as _tf
+    pol = _tf.SOURCE_POLICY.get(str(row.get("id") or "")) or {}
+    return str((pol.get("terms") or {}).get("url") or "")
+
+
 def licence_fields(row: Mapping[str, Any]) -> dict[str, str]:
-    """Per-observation licence names, kept SHORT (a pointer to the roster row, which holds the
-    full licence text and the verbatim terms evidence): they are written on every vintage."""
-    terms = str(row.get("terms") or "to_confirm")
-    return {"licence": f"free_stack_sources:{row['id']}", "commercial_rights": terms}
+    """Per-observation licence names, kept SHORT (a pointer to the terms-register row, which
+    holds the verbatim terms evidence): they are written on every vintage."""
+    return {"licence": f"terms_fence:{row['id']}", "commercial_rights": terms_of(row)}
 
 
 def fetch_cn_exchange(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
@@ -1012,22 +1027,21 @@ def fetch_cn_exchange(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str,
     if exch not in URLS:
         h.status, h.detail = "NO_ROUTE", f"unknown exchange {exch!r}"
         return h
-    terms = str(row.get("terms") or "")
+    terms = terms_of(row)
     if terms == "refused":
         # REFUSED is harder than to_confirm: the licence read does not grant this use, so no
         # override (a row `urls` map, a cursor, a retry list) reaches the network; only written
-        # permission recorded in terms_evidence and a `terms` flip can
-        ev = row.get("terms_evidence") or {}
+        # permission quoted into the fence row, and that row flipped, can
         subs = ", ".join(str(c.get("substitute")) for c in row.get("substitute_candidates") or [])
         h.status = "BLOCKED_ON_TERMS"
-        h.detail = (f"terms=refused; evidence {ev.get('terms_url') or 'none recorded'} -- no "
-                    f"request made; named substitute(s): {subs or 'none'}")
+        h.detail = (f"terms=refused (terms_fence {row['id']}); evidence "
+                    f"{_terms_url(row) or 'none recorded'} -- no request made; named "
+                    f"substitute(s): {subs or 'none'}")
         return h
     if terms != "confirmed":
-        ev = row.get("terms_evidence") or {}
         h.status = "BLOCKED_ON_TERMS"
-        h.detail = (f"terms={row.get('terms') or 'to_confirm'}; evidence "
-                    f"{ev.get('terms_url') or 'none recorded'} -- no request made")
+        h.detail = (f"terms={terms} (terms_fence {row['id']}); evidence "
+                    f"{_terms_url(row) or 'none recorded'} -- no request made")
         return h
     urls = {**URLS[exch], **(row.get("urls") or {})}
     varieties = tuple(row.get("varieties") or DEFAULT_VARIETIES.get(exch, ()))

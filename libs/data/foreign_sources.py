@@ -47,10 +47,12 @@ import html
 import json
 import re
 import time
-import urllib.request
+import urllib.error
 from dataclasses import dataclass
 from typing import Any, Final
 from urllib.parse import quote
+
+from libs.data import polite_fetch as _pf
 
 #: The three postures `probe_all` publishes, NAMED HERE because the reader must not re-type them.
 #: libs/research/source_health imports these rather than matching string literals, so renaming a
@@ -84,9 +86,11 @@ _MIN_INTERVAL_S: Final[dict[str, float]] = {
 #: temporary rate-limit becomes a durable block, which would cost the lane rather than the query.
 _BACKED_OFF: set[str] = set()
 
+#: The desk's honest User-Agent (auditor ruling 2026-10-14), never a browser string. A source
+#: that refuses it (zenn.dev's CDN 403, R0466) is HELD for the site by `polite_fetch`, never
+#: re-asked in disguise.
 _UA: Final[dict[str, str]] = {
-    "User-Agent": ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"),
+    "User-Agent": _pf.DESK_UA,
     "Accept": "application/json, text/html, application/rss+xml, */*",
 }
 
@@ -440,32 +444,32 @@ def _backed_off(source: str) -> tuple[list[Article], str] | None:
 
 
 def _note_429(source: str, exc: Exception) -> None:
-    if getattr(exc, "code", None) == 429:
+    """A 429, or any site hold (401/403/challenge), stops the source for the rest of the run."""
+    if getattr(exc, "code", None) == 429 or getattr(exc, "verdict", "") in (
+            "NEEDS_KEY", "METHOD_BLOCKED"):
         _BACKED_OFF.add(source)
 
 
 def _get(url: str, *, referer: str = "", timeout: float = 25.0) -> str:
+    """One polite GET through `polite_fetch`: honest UA, the site's holds and the origin's
+    robots.txt checked before the request and every redirect hop, and 401/403/429 or a challenge
+    recorded as a site hold. Raises `polite_fetch.FetchRefused` (its `.code` carries the HTTP
+    status, so `_note_429` still reads a 429) -- never retried with another identity."""
     hdr = dict(_UA)
     if referer:
         hdr["Referer"] = referer
-    req = urllib.request.Request(url, headers=hdr)
-    with urllib.request.urlopen(req, timeout=timeout) as fh:
-        body: str = fh.read().decode("utf8", errors="ignore")
-    return body
+    return _pf.get_text(url, headers=hdr, timeout=timeout, leg="foreign_sources")
 
 
 def _post(url: str, payload: bytes, *, timeout: float = 20.0) -> str:
-    """POST for the GraphQL-only sources. Same UA and timeout discipline as _get.
+    """POST for the GraphQL-only sources, under the same rules as _get (`polite_fetch.post`).
 
     Velog exposes search ONLY over GraphQL, and refusing to speak POST would have meant recording
     Korea's largest engineering-writeup platform as unreachable when it answers fine -- a routing
     problem misfiled as an absent forest (L1.54).
     """
-    req = urllib.request.Request(
-        url, data=payload, headers={**_UA, "Content-Type": "application/json"}, method="POST")
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return str(resp.read().decode("utf-8", errors="replace"))
-
+    return _pf.post(url, payload, headers={**_UA, "Content-Type": "application/json"},
+                    timeout=timeout, leg="foreign_sources")
 
 
 def _text(raw: str) -> str:
@@ -556,7 +560,8 @@ def zenn(keyword: str) -> tuple[list[Article], str | None]:
     # opposite facts and only one of them is a reason to stop digging a ground (WS-005/L1.28a).
     # zenn.dev is one of the two hosts R0466 measured 403ing our named agent at the CDN edge
     # while its robots.txt stayed clean, so this is the exact path where a BLOCKED ground would
-    # have recorded as a THIN one.
+    # have recorded as a THIN one. That 403 now HOLDS the site (polite_fetch, METHOD_BLOCKED):
+    # the desk's answer to a refusal of its honest name is to record it, never to switch UA.
     rows = doc.get("articles") if isinstance(doc, dict) else None
     if not isinstance(rows, list):
         return [], "zenn returned no `articles` list -- API shape changed or the reply is not JSON"

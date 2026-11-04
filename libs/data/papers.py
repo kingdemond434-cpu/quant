@@ -30,14 +30,15 @@ from __future__ import annotations
 
 import json
 import re
-import urllib.request
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import quote
 
+from libs.data import polite_fetch as _pf
+
 _UA = {
-    "User-Agent": ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"),
+    # The desk's honest UA (auditor ruling 2026-10-14), never a browser string.
+    "User-Agent": _pf.DESK_UA,
     "Accept": "application/json, text/xml, */*",
 }
 
@@ -66,10 +67,10 @@ class Paper:
 
 
 def _get(url: str, *, timeout: float = 30.0) -> str:
-    req = urllib.request.Request(url, headers=_UA)
-    with urllib.request.urlopen(req, timeout=timeout) as fh:
-        body: str = fh.read().decode("utf8", errors="ignore")
-    return body
+    """One polite GET through `polite_fetch`: honest UA, the site's holds and the origin's
+    robots.txt checked before the request and every redirect hop, and 401/403/429 or a challenge
+    recorded as a site hold. Raises `polite_fetch.FetchRefused` -- never retried in disguise."""
+    return _pf.get_text(url, headers=_UA, timeout=timeout, leg="papers")
 
 
 def arxiv(query: str, *, category: str = "q-fin.TR", limit: int = 25
@@ -272,12 +273,10 @@ def github(query: str, *, kind: str = "repositories", limit: int = 20
         raise ValueError(f"kind must be 'repositories' or 'code', got {kind!r}")
     url = (f"https://api.github.com/search/{kind}?q={quote(query)}"
            f"&per_page={int(limit)}" + ("&sort=updated" if kind == "repositories" else ""))
-    req = urllib.request.Request(url, headers={
-        **_UA, "Authorization": f"Bearer {tok}",
-        "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"})
+    hdr = {**_UA, "Authorization": f"Bearer {tok}",
+           "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
     try:
-        with urllib.request.urlopen(req, timeout=30) as fh:
-            body = json.loads(fh.read().decode("utf8", errors="ignore"))
+        body = json.loads(_pf.get_text(url, headers=hdr, timeout=30, leg="papers"))
     except Exception as exc:
         return [], f"{type(exc).__name__}: {str(exc)[:140]}"
     out: list[Paper] = []
