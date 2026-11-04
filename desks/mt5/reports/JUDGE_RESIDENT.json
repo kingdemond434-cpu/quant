@@ -2,112 +2,107 @@
  "pid": 21384,
  "started_utc": "2026-10-27T16:41:15+00:00",
  "task_limit_s": 0.0,
- "sweeps": 42,
+ "sweeps": 92,
  "failures": 0,
- "lane_held": 13,
+ "lane_held": 60,
  "hung_kills": 1,
- "busy_seconds": 635221.9,
+ "busy_seconds": 699972.2,
  "status": "SWEEPING",
  "longest_sweep_s": 110509.5,
  "consecutive_hangs": 0,
- "sweep_started_utc": "2026-11-04T01:11:35+00:00",
+ "sweep_started_utc": "2026-11-04T19:22:32+00:00",
  "hang_limit_s": 172800.0,
  "last_rc": 0,
- "last_sweep_s": 18257.0,
- "uptime_s": 635423.3,
- "last_sweep_ended_utc": "2026-11-04T01:11:35+00:00",
+ "last_sweep_s": 23545.8,
+ "uptime_s": 700880.6,
+ "last_sweep_ended_utc": "2026-11-04T19:22:32+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-04T02:35:21+00:00",
+ "heartbeat_utc": "2026-11-04T21:05:25+00:00",
  "sweep_phase": {
-  "pid": 15612,
-  "sweep_started_utc": "2026-11-04T01:12:00+00:00",
+  "pid": 25904,
+  "sweep_started_utc": "2026-11-04T19:23:02+00:00",
   "phases": {
-   "plan": 1882.5
+   "plan": 2504.7
   },
   "phase": "prewarm",
-  "phase_started_utc": "2026-11-04T01:43:23+00:00",
+  "phase_started_utc": "2026-11-04T20:04:47+00:00",
   "plan_steps": {
-   "lane_and_docket": 103.4,
-   "docket_grouping": 147.7,
-   "gate0": 195.6,
-   "preflight": 345.8,
-   "cache_prune": 675.9,
-   "order": 327.9,
-   "yield_allocation": 86.1
+   "lane_and_docket": 197.4,
+   "docket_grouping": 135.8,
+   "gate0": 249.3,
+   "preflight": 301.0,
+   "cache_prune": 1316.7,
+   "order": 225.9,
+   "yield_allocation": 78.6
   },
   "plan_step": "prewarm",
-  "plan_step_started_utc": "2026-11-04T01:43:23+00:00",
+  "plan_step_started_utc": "2026-11-04T20:04:47+00:00",
   "wall_profile": {
    "every_s": 10.0,
    "depth": 6,
    "authority": "report_only",
    "phases": {
     "plan": {
-     "samples": 182,
+     "samples": 242,
      "top": [
       {
        "stack": "__init__.py:stat:659 < external_gauntlet.py:main:3613 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622 < run_sharded_gauntlet.py:main:3601",
-       "n": 20,
-       "share": 0.11
-      },
-      {
-       "stack": "novelty_gate.py:_jsonl:214 < novelty_gate.py:load:517 < novelty_gate.py:screen:707 < external_gauntlet.py:main:3797 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
-       "n": 15,
-       "share": 0.082
+       "n": 68,
+       "share": 0.281
       },
       {
        "stack": "__init__.py:exists:676 < external_gauntlet.py:symbol_is_tradeable:933 < external_gauntlet.py:partition_at_economic_prior:979 < external_gauntlet.py:main:3569 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
-       "n": 14,
-       "share": 0.077
+       "n": 17,
+       "share": 0.07
+      },
+      {
+       "stack": "__init__.py:unlink:1047 < external_gauntlet.py:main:3614 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622 < run_sharded_gauntlet.py:main:3601",
+       "n": 17,
+       "share": 0.07
       },
       {
        "stack": "__init__.py:open:776 < __init__.py:read_text:792 < family_policy.py:banned_families:86 < family_policy.py:family_banned:102 < external_gauntlet.py:main:3685 < external_gauntlet.py:run_sharded:4844",
-       "n": 10,
-       "share": 0.055
+       "n": 15,
+       "share": 0.062
       },
       {
-       "stack": "__init__.py:read_text:793 < family_policy.py:banned_families:86 < family_policy.py:family_banned:102 < external_gauntlet.py:main:3685 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
-       "n": 8,
-       "share": 0.044
+       "stack": "__init__.py:read_text:792 < family_policy.py:banned_families:86 < family_policy.py:family_banned:102 < external_gauntlet.py:main:3685 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
+       "n": 7,
+       "share": 0.029
       }
      ],
      "process": {
-      "cpu_s": 1485.0,
-      "page_faults": 12899092.0,
-      "read_bytes": 8970802866.0,
-      "write_bytes": 212349.0,
-      "sampled_s": 1810.0,
-      "rss_mb_max": 5419.7,
-      "cpu_share_of_wall": 0.82
+      "cpu_s": 1519.9,
+      "page_faults": 13129572.0,
+      "read_bytes": 8946677136.0,
+      "write_bytes": 236965.0,
+      "sampled_s": 2410.0,
+      "rss_mb_max": 5398.4,
+      "cpu_share_of_wall": 0.631
      }
     },
     "prewarm": {
-     "samples": 306,
+     "samples": 363,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 299,
-       "share": 0.977
+       "n": 361,
+       "share": 0.994
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
-       "n": 4,
-       "share": 0.013
-      },
-      {
-       "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
-       "n": 3,
-       "share": 0.01
+       "n": 2,
+       "share": 0.006
       }
      ],
      "process": {
-      "cpu_s": 245.5,
-      "page_faults": 6437105.0,
-      "read_bytes": 2929658.0,
-      "write_bytes": 7519380109.0,
-      "sampled_s": 3050.0,
-      "rss_mb_max": 3316.8,
-      "cpu_share_of_wall": 0.08
+      "cpu_s": 199.1,
+      "page_faults": 5146026.0,
+      "read_bytes": 2410199.0,
+      "write_bytes": 5961926906.0,
+      "sampled_s": 3620.0,
+      "rss_mb_max": 3137.3,
+      "cpu_share_of_wall": 0.055
      }
     }
    }
@@ -117,6 +112,6 @@
    "unique_cells": 1622830,
    "gate0_advance": 1622830
   },
-  "plan_last_marker": "  docket order: 56735 never-judged cell(s) first, then 284787 in symbol-rotation order"
+  "plan_last_marker": "  docket order: 44094 never-judged cell(s) first, then 267865 in symbol-rotation order"
  }
 }
