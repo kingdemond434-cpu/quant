@@ -68,6 +68,9 @@ if ("$merged".Trim() -ne "true") {
     if ($rc -ne 0) { throw "#$Pr is not ready to merge (see NOT READY above). Nothing was changed." }
     $head = "$($out[-1])".Trim()
     $self = (& git -C $Src rev-parse HEAD).Trim()
+    # the binding covers the CONTENT, not only the sha: a modified tracked file is not the head
+    $dirty = (& git -C $Src status --porcelain --untracked-files=no | Out-String).Trim()
+    if ($dirty) { throw "this script's checkout has local changes, so it is not the cleared head: run from a clean checkout. Nothing was changed.`n$dirty" }
     if ($self -ne $head) { throw "this script is from $self, but #${Pr}'s head is ${head}: check out that head and run it from there. Nothing was changed." }
     $merge = (& gh api -X PUT "repos/$Repo/pulls/$Pr/merge" -f sha="$head".Trim() -f merge_method=merge --jq .sha)
     if ($LASTEXITCODE -ne 0) { throw "GitHub refused the merge of #$Pr at $head." }
