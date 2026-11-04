@@ -72,3 +72,6 @@ def test_the_worker_exits_once_its_parent_is_terminated(tmp_path: Path) -> None:
         assert not alive
     finally:
         par.kill()
+        par.wait(10)
+        if par.stdout is not None:
+            par.stdout.close()
