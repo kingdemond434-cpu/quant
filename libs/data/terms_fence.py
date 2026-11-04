@@ -1869,6 +1869,114 @@ SOURCE_POLICY.update({
                       "Incapsula challenge to fetchers (alt_proxies za_statssa_retail evidence); "
                       "no terms page readable, 2026-11-03")}}},
 })
+
+#: THE WORLD GOLD COUNCIL (Goldhub, 2026-11-03): monthly central-bank gold purchases and sales by
+#: country, and gold ETF holdings and flows by region -- XAUUSD research and the central-bank and
+#: ETF rows of the actor atlas. Two rows, because the site offers two routes:
+#:
+#:   wgc_goldhub           the public Goldhub data PAGES (no login). LAWS 5e: terms and robots are
+#:                         labels, so the pages are MINED AND TESTED (status PUBLIC_PAGE, the
+#:                         desk's default for a public page). The terms page could NOT be read from
+#:                         the build host (its egress proxy refused gold.org with a CONNECT 403),
+#:                         so no clause is quoted: the row is PUBLIC_WITH_TERMS with redistribution
+#:                         withheld, and it is NEVER A LIVE SIZING INPUT until a permitting clause
+#:                         is quoted here with its URL and date (`live_sizing_input`).
+#:   wgc_goldhub_download  the Goldhub data FILES (xlsx). Their download sits behind a Goldhub
+#:                         account login; the desk never logs in, creates an account or routes
+#:                         around a login (HARD_BOUNDARY acts 1 and 2), so the route is
+#:                         METHOD_BLOCKED (reason login) and its doors are HELD before any request.
+_WGC_TERMS_URL = "https://www.gold.org/terms-and-conditions"
+_WGC_UNREAD = ("egress proxy of the build host refused gold.org (CONNECT 403) on 2026-11-03: "
+               "UNREAD. Read it from the box (polite_fetch, DESK_UA) and quote the clause here")
+SOURCE_POLICY.update({
+    "wgc_goldhub": {
+        "hosts": ("gold.org",), "status": PUBLIC_PAGE,
+        "sources": ("wgc_cb_monthly", "wgc_etf_flows"),
+        "access_label": "PUBLIC_WITH_TERMS", "redistribute": False,
+        "live_sizing_input": False,
+        # what the access router reads to DERIVE the label (libs.research.access_classifier)
+        "access_meta": {"url": "https://www.gold.org/goldhub/data", "obtained": "public_page",
+                        "source_class": "institutional", "has_terms": True},
+        "terms_note": ("gold.org publishes terms of use; they were UNREAD from the build host, "
+                       "so redistribution is withheld and the series are research inputs only"),
+        "why": ("World Gold Council Goldhub public data pages, fetched politely with the desk's "
+                "own agent for research (LAWS 5e: terms are a label, never a brake); terms "
+                "UNREAD, so never a live sizing input and never redistributed"),
+        "unblock": ("gold.org's terms of use read with a clause permitting automated use of "
+                    "Goldhub data, quoted verbatim into this row with its URL and date, and "
+                    "live_sizing_input flipped"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": ("delta E[log W] UNMEASURED: WGC central-bank and ETF flow "
+                                    "series are researched and tested but cannot size a live "
+                                    "XAUUSD position until gold.org's terms are read with a "
+                                    "permitting clause; no conversion of them is on record")},
+        "robots": ("UNMEASURED from the build host (proxy refused gold.org); polite_fetch reads "
+                   "gold.org/robots.txt before every request on the box"),
+        "terms": {"url": _WGC_TERMS_URL, "checked_at": "2026-11-03",
+                  "unread": {_WGC_TERMS_URL: _WGC_UNREAD}}},
+    "wgc_goldhub_download": {
+        "hosts": (), "url_level": False, "status": METHOD_BLOCKED, "reason": "login",
+        "sources": ("wgc_cb_xlsx", "wgc_etf_xlsx"), "permitted_route": "wgc_goldhub",
+        "access_label": "PRIVATE",
+        "why": ("Goldhub's data-file downloads require an account login; the desk never logs "
+                "in, creates an account or bypasses one, so the files are held and the public "
+                "pages (wgc_goldhub) are read instead"),
+        "login": ("the publisher's documented Goldhub behaviour (download prompts for a login); "
+                  "UNMEASURED from the build host, whose proxy refused gold.org on 2026-11-03"),
+        "unblock": "a person's decision; never a session's, never a clock",
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": ("delta E[log W] UNMEASURED: the login-held Goldhub files carry "
+                                    "the full country and fund history the public pages may not "
+                                    "show; the gap cannot be sized without reading them, and no "
+                                    "conversion of them is on record")},
+        "terms": {"url": _WGC_TERMS_URL, "checked_at": "2026-11-03",
+                  "unread": {_WGC_TERMS_URL: _WGC_UNREAD}}},
+})
+
+
+def _issuer_row(host: str, door_ids: tuple[str, ...], who: str, what: str, terms_url: str,
+                entry: str) -> dict[str, Any]:
+    """A metal-ETF issuer's public holdings pages (2026-11-03). LAWS 5e: mined and tested
+    (PUBLIC_PAGE); terms UNREAD from the build host (its proxy refused the host), so the row is
+    PUBLIC_WITH_TERMS, redistribution withheld and never a live sizing input until a permitting
+    clause is quoted here with its URL and date."""
+    unread = (f"egress proxy of the build host refused {host} on 2026-11-03: UNREAD. Read it "
+              "from the box (polite_fetch, DESK_UA) and quote the clause here")
+    return {
+        "hosts": (host,), "status": PUBLIC_PAGE, "sources": door_ids,
+        "access_label": "PUBLIC_WITH_TERMS", "redistribute": False, "live_sizing_input": False,
+        "access_meta": {"url": entry, "obtained": "public_page", "source_class": "institutional",
+                        "has_terms": True},
+        "terms_note": (f"{who} publishes terms of use; UNREAD from the build host, so "
+                       "redistribution is withheld and the holdings are research inputs only"),
+        "why": (f"{who}'s own public {what}, fetched politely with the desk's agent for research "
+                "(LAWS 5e: terms are a label, never a brake); terms UNREAD, so never a live "
+                "sizing input and never redistributed"),
+        "unblock": (f"{who}'s terms read with a clause permitting automated use of the holdings "
+                    "data, quoted verbatim into this row with its URL and date, and "
+                    "live_sizing_input flipped"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": (f"delta E[log W] UNMEASURED: {what} are researched and "
+                                    "tested but cannot size a live XAUUSD/XAGUSD position until "
+                                    "the issuer's terms are read with a permitting clause; no "
+                                    "conversion of them is on record")},
+        "robots": (f"UNMEASURED from the build host (proxy refused {host}); polite_fetch reads "
+                   "robots.txt before every request on the box"),
+        "terms": {"url": terms_url, "checked_at": "2026-11-03", "unread": {terms_url: unread}}}
+
+
+SOURCE_POLICY.update({
+    "spdr_gold_shares": _issuer_row(
+        "spdrgoldshares.com", ("etf_gld_holdings",), "SPDR Gold Shares (World Gold Trust "
+        "Services)", "GLD daily holdings archive (ounces, tonnes, ounces per share)",
+        "https://www.spdrgoldshares.com/usa/terms-and-conditions/",
+        "https://www.spdrgoldshares.com/assets/dynamic/GLD/GLD_US_archive_EN.csv"),
+    "ishares_trusts": _issuer_row(
+        "ishares.com", ("etf_slv_holdings", "etf_iau_holdings"), "iShares (BlackRock)",
+        "SLV and IAU trust holdings (shares outstanding, ounces and tonnes in trust)",
+        "https://www.ishares.com/us/terms-and-conditions",
+        "https://www.ishares.com/us/products/239855/ishares-silver-trust-fund"),
+})
 #: The held-route rows, by key (read by `alt_proxies.HELD_ROUTES`).
 HELD_ROUTE_KEYS: frozenset[str] = frozenset(
     k for k, r in SOURCE_POLICY.items() if r.get("held_route"))
@@ -1924,6 +2032,25 @@ def live_input_status(key: str) -> str:
     own effective status."""
     route = _row(key).get("live_route")
     return status(str(route)) if route else status(key)
+
+
+def live_sizing_input(key: str) -> dict[str, Any]:
+    """May this row's data SIZE a live position? A row is mined and tested whatever its label
+    (LAWS 5e: `research` is always True off the hard boundary); live sizing additionally needs a
+    verbatim permitting clause (`terms_verdict == "confirmed"`) and a row that does not withhold
+    it (`live_sizing_input: False`). A refusal carries the row's missed-growth line."""
+    row = _row(key)
+    ok = terms_verdict(key) == "confirmed" and row.get("live_sizing_input") is not False
+    out: dict[str, Any] = {"policy_row": key, "permitted": ok, "research": True,
+                           "terms": terms_state(key),
+                           "access_label": row.get("access_label") or UNREAD,
+                           "redistribute": bool(row.get("redistribute", False))}
+    if not ok:
+        out["why"] = ("no verbatim permitting clause quoted (terms "
+                      f"{terms_state(key)}); research input only")
+        out["missed_growth"] = dict(row.get("missed_growth") or {
+            "delta_elogw": "UNMEASURED", "cause": f"{key}: live sizing withheld, UNMEASURED"})
+    return out
 
 
 def _view(key: str) -> dict[str, Any]:

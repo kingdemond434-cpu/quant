@@ -64,6 +64,30 @@ RIKSBANK_SWESTR = "https://api.riksbank.se/swestr/v1/all/SWESTR"
 SCB_API = "https://api.scb.se/OV0104/v1/doris/en/ssd/"
 SCB_CPI_TABLE = os.environ.get("ALT_SCB_CPI_TABLE", "PR/PR0101/PR0101A/KPItotM")
 SARB_RATES = "https://custom.resbank.co.za/SarbWebApi/WebIndicators/HomePageRates"
+#: World Gold Council Goldhub PUBLIC data pages (no login). The data FILES behind them need a
+#: Goldhub account login and are held (terms_fence `wgc_goldhub_download`): never requested.
+WGC_GOLDHUB = "https://www.gold.org/goldhub/data/"
+WGC_CB_PAGE = os.environ.get("ALT_WGC_CB_URL", WGC_GOLDHUB + "monthly-central-bank-statistics")
+WGC_ETF_PAGE = os.environ.get("ALT_WGC_ETF_URL", WGC_GOLDHUB + "gold-etfs-holdings-and-flows")
+#: Publication lags, as BOUNDS LATER than the publisher's usual release (late only costs edge;
+#: early is look-ahead). Central-bank monthly statistics follow the IMF IFS reporting, out about
+#: five to six weeks after the month; the regional ETF flow tables early in the next month.
+WGC_CB_LAG_D = 45
+WGC_ETF_LAG_D = 10
+#: The metal ETFs' OWN issuers (2026-11-03; replaces research/fetch_gld.py's laptop-path script).
+#: SPDR's GLD archive is the full daily history; an iShares trust page prints one "as of" day,
+#: so SLV and IAU accumulate their history one PIT reading per day from the first fetch.
+SPDR_GLD_ARCHIVE = os.environ.get(
+    "ALT_SPDR_GLD_URL", "https://www.spdrgoldshares.com/assets/dynamic/GLD/GLD_US_archive_EN.csv")
+ISHARES_SLV = os.environ.get("ALT_ISHARES_SLV_URL",
+                             "https://www.ishares.com/us/products/239855/ishares-silver-trust-fund")
+ISHARES_IAU = os.environ.get("ALT_ISHARES_IAU_URL",
+                             "https://www.ishares.com/us/products/239561/ishares-gold-trust-fund")
+
+
+class LoginRequired(Exception):
+    """A door's page answered with a login wall. The desk never logs in: the door is HELD for a
+    person (`login_hold`), never retried by a clock and never counted as an empty run."""
 
 
 @dataclass(frozen=True)
@@ -88,6 +112,7 @@ class Door:
     code_env: str = ""
     release: str = ""
     what: str = ""
+    url: str = ""
 
 
 @dataclass(frozen=True)
@@ -119,6 +144,21 @@ PACKS: dict[str, Pack] = {
                  "IDEAS_ONLY)"),
                 ("policy rate (live)", "SARB IDEAS_ONLY (za_sarb); BIS WS_CBPOL carries ZA policy "
                  "rate through the existing BIS direct door"))),
+    # Not a country: the World Gold Council's global tables, for XAUUSD (and the actor atlas's
+    # central-bank and ETF rows). `WLD` is the reference area of a cross-country table.
+    "wgc": Pack("World Gold Council (global)", "WLD", "XAU", ("World Gold Council Goldhub",), (),
+                (("Goldhub data files (xlsx: full country and fund history)",
+                  "held: the download needs a Goldhub account login, which the desk never uses "
+                  "(terms_fence wgc_goldhub_download, METHOD_BLOCKED reason login)"),
+                 ("gold demand trends (quarterly supply/demand by sector)",
+                  "not built: quarterly, and its public form is a report, not a table"))),
+    # The metal ETFs' issuers: GLD (SPDR), SLV and IAU (iShares), from their own public pages.
+    "etf_issuers": Pack("Metal ETF issuers (US-listed trusts)", "US", "USD",
+                        ("SPDR Gold Shares", "iShares (BlackRock)"), (),
+                        (("SLV / IAU history before the first fetch",
+                          "an iShares trust page prints one as-of day; the history files sit "
+                          "behind a site-entry flow not read here, so the daily series "
+                          "accumulates from the first PIT reading"),)),
 }
 
 #: Default EVDS codes. Each was taken from the EVDS catalogue's published naming, NOT read on the
@@ -174,6 +214,36 @@ DOORS: tuple[Door, ...] = (
     Door("za_sarb_rates", "za", "SARB", "SARB home-page rates (repo, prime, JIBAR, ZAR)",
          "za_sarb", "daily", "sarb", ("ZAR",), release="se_fix",
          what="held (IDEAS_ONLY); stamped 16:00 UTC on its date if ever unblocked"),
+    Door("wgc_cb_monthly", "wgc", "WGC", "WGC monthly central-bank gold purchases and sales by "
+         "country (tonnes)", "wgc_goldhub", "monthly", "wgc_html", stems=("XAU",),
+         release="wgc_cb", url=WGC_CB_PAGE,
+         what="month end + 45 days 12:00 UTC (a weekday); the newest month at the page's own "
+              "publication date when later (next day 00:00 UTC)"),
+    Door("wgc_etf_flows", "wgc", "WGC", "WGC gold ETF holdings and flows by region (tonnes, "
+         "US$mn)", "wgc_goldhub", "monthly", "wgc_html", stems=("XAU",), release="wgc_etf",
+         url=WGC_ETF_PAGE,
+         what="month end + 10 days 12:00 UTC (a weekday); the newest month at the page's own "
+              "publication date when later (next day 00:00 UTC)"),
+    Door("etf_gld_holdings", "etf_issuers", "ETF_ISSUER", "SPDR GLD holdings: ounces and "
+         "tonnes in the trust, shares outstanding", "spdr_gold_shares", "daily", "spdr_archive",
+         stems=("XAU",), code="gld", release="spdr_eod", url=SPDR_GLD_ARCHIVE,
+         what="struck 4.15 p.m. New York, the file posted that evening: stamped the next day "
+              "01:00 UTC"),
+    Door("etf_slv_holdings", "etf_issuers", "ETF_ISSUER", "iShares SLV: shares outstanding, "
+         "ounces and tonnes in trust", "ishares_trusts", "daily", "ishares_page",
+         stems=("XAG",), code="slv", release="ishares_asof", url=ISHARES_SLV,
+         what="the page's 'as of' day + 1 day 14:00 UTC (a weekday), or the fetch instant when "
+              "earlier"),
+    Door("etf_iau_holdings", "etf_issuers", "ETF_ISSUER", "iShares IAU: shares outstanding, "
+         "ounces and tonnes in trust", "ishares_trusts", "daily", "ishares_page",
+         stems=("XAU",), code="iau", release="ishares_asof", url=ISHARES_IAU,
+         what="as etf_slv_holdings"),
+    Door("wgc_cb_xlsx", "wgc", "WGC", "WGC central-bank statistics data file (login)",
+         "wgc_goldhub_download", "monthly", "wgc_xlsx", stems=("XAU",), release="wgc_cb",
+         what="held: the Goldhub download needs an account login; never requested"),
+    Door("wgc_etf_xlsx", "wgc", "WGC", "WGC gold ETF holdings and flows data file (login)",
+         "wgc_goldhub_download", "monthly", "wgc_xlsx", stems=("XAU",), release="wgc_etf",
+         what="held: the Goldhub download needs an account login; never requested"),
 )
 BY_ID = {d.id: d for d in DOORS}
 
@@ -211,6 +281,14 @@ def release_at(rule: str, period: date) -> datetime:
         return _weekday_on_or_after(d + timedelta(days=16, hours=7))
     if rule == "given":
         return _weekday_on_or_after(d + timedelta(days=1, hours=9))
+    if rule == "wgc_cb":
+        return _weekday_on_or_after(d + timedelta(days=WGC_CB_LAG_D, hours=12))
+    if rule == "wgc_etf":
+        return _weekday_on_or_after(d + timedelta(days=WGC_ETF_LAG_D, hours=12))
+    if rule == "spdr_eod":
+        return d + timedelta(days=1, hours=1)
+    if rule == "ishares_asof":
+        return _weekday_on_or_after(d + timedelta(days=1, hours=14))
     return d                                                         # "effective"
 
 
@@ -399,6 +477,241 @@ def diff(points: list[tuple[str, float]]) -> list[tuple[str, float]]:
             for i in range(1, len(points))]
 
 
+# ------------------------------------------------------------------ World Gold Council ----
+@dataclass(frozen=True)
+class WgcDoc:
+    """One Goldhub page: its own publication date (None when it prints none) and its series."""
+    published: date | None
+    series: dict[str, list[tuple[str, float]]]
+
+
+_TABLE = re.compile(r"<table\b[^>]*>(.*?)</table>", re.I | re.S)
+_CAPTION = re.compile(r"<caption\b[^>]*>(.*?)</caption>", re.I | re.S)
+_ROW = re.compile(r"<tr\b[^>]*>(.*?)</tr>", re.I | re.S)
+_CELL = re.compile(r"<t[dh]\b[^>]*>(.*?)</t[dh]>", re.I | re.S)
+_TAG = re.compile(r"<[^>]+>")
+_MON3 = {m: i for i, m in enumerate(("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug",
+                                     "sep", "oct", "nov", "dec"), start=1)}
+_PUB = re.compile(r"(?:last\s+updated|published|updated\s+on|updated)\s*:?\s*"
+                  r"(\d{4}-\d{2}-\d{2}|\d{1,2}\s+[A-Za-z]+\s+\d{4}|[A-Za-z]+\s+\d{1,2},?\s+\d{4})",
+                  re.I)
+#: A login wall, by its markup: a password field, or a login/register prompt for the download.
+_LOGIN = re.compile(r"type\s*=\s*[\"']?password|log\s*-?\s*in\s+to\s+download|"
+                    r"sign\s*-?\s*in\s+to\s+download|register\s+to\s+download", re.I)
+
+
+def _cell_text(html: str) -> str:
+    t = _TAG.sub(" ", html).replace("&nbsp;", " ").replace("&amp;", "&")
+    return " ".join(t.split())
+
+
+def _month_label(text: str) -> str | None:
+    """'Aug-2026', 'Aug 26', 'August 2026', '2026-08', '2026M08' -> '2026-08'."""
+    t = text.strip()
+    if m := re.fullmatch(r"(\d{4})[-/M](\d{1,2})", t):
+        return f"{m[1]}-{int(m[2]):02d}" if 1 <= int(m[2]) <= 12 else None
+    if m := re.fullmatch(r"([A-Za-z]{3,9})[\s\-'/]*(\d{2}|\d{4})", t):
+        mon = _MON3.get(m[1][:3].lower())
+        if mon:
+            y = int(m[2]) + (2000 if len(m[2]) == 2 else 0)
+            return f"{y}-{mon:02d}"
+    return None
+
+
+def _tonnes(text: str) -> float | None:
+    """'1,685.0' -> 1685.0, '(0.6)' and '-0.6' -> -0.6; '-', '', 'n/a' -> None (absent)."""
+    t = text.strip().replace(",", "").replace("\u2212", "-")
+    neg = t.startswith("(") and t.endswith(")")
+    t = t.strip("()").strip()
+    try:
+        x = float(t)
+    except ValueError:
+        return None
+    if not math.isfinite(x):
+        return None
+    return -x if neg else x
+
+
+def _pub_date(text: str) -> date | None:
+    m = _PUB.search(text)
+    if not m:
+        return None
+    raw = m[1].replace(",", " ")
+    for fmt in ("%Y-%m-%d", "%d %B %Y", "%d %b %Y", "%B %d %Y", "%b %d %Y"):
+        try:
+            return datetime.strptime(" ".join(raw.split()), fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def _measure(caption: str, head: str) -> str | None:
+    """A table's quantity from its caption (or its first header cell)."""
+    c = f"{caption} {head}".lower()
+    if "etf" in c or "holding" in c or "flow" in c:
+        if "holding" in c:
+            return "etf_holdings_t"
+        if "us$" in c or "usd" in c or "mn" in c:
+            return "etf_flows_usd_mn"
+        return "etf_flows_t"
+    if "central bank" in c or "reserve" in c or "purchase" in c:
+        return "cb_net_t"
+    return None
+
+
+def parse_wgc_tables(body: bytes) -> WgcDoc:
+    """A Goldhub public data page -> its publication date and one series per (measure, entity).
+
+    The layout is one row per country (central banks) or region (ETFs) and one column per month,
+    in tonnes or US$mn, a parenthesised value negative and '-' absent (never zero). A page that
+    renders its table only in script parses to no series: EMPTY, and the liveness streak says
+    so. The central-bank table also yields `cb_net_t_total_reporting`, the sum over the reporting
+    countries per month, unless the table prints a total row of its own."""
+    text = body.decode("utf-8", "replace")
+    series: dict[str, list[tuple[str, float]]] = {}
+    for tm in _TABLE.finditer(text):
+        inner = tm.group(1)
+        cap = _cell_text(m.group(1)) if (m := _CAPTION.search(inner)) else ""
+        rows = [[_cell_text(c) for c in _CELL.findall(r)] for r in _ROW.findall(inner)]
+        rows = [r for r in rows if r]
+        if len(rows) < 2:
+            continue
+        head = rows[0]
+        months = [_month_label(h) for h in head[1:]]
+        measure = _measure(cap, head[0])
+        if measure is None or not any(months):
+            continue
+        for r in rows[1:]:
+            name = re.sub(r"[^a-z0-9]+", "_", r[0].lower()).strip("_")
+            if not name:
+                continue
+            if name in ("total", "global", "world", "global_total"):
+                name = "total_reporting" if measure == "cb_net_t" else "global"
+            pts = [(per, v) for per, cell in zip(months, r[1:], strict=False)
+                   if per and (v := _tonnes(cell)) is not None]
+            if pts:
+                series.setdefault(f"{measure}_{name}", []).extend(pts)
+    cb = {k: v for k, v in series.items() if k.startswith("cb_net_t_")}
+    if cb and "cb_net_t_total_reporting" not in cb:
+        tot: dict[str, float] = {}
+        for pts in cb.values():
+            for per, v in pts:
+                tot[per] = round(tot.get(per, 0.0) + v, 6)
+        series["cb_net_t_total_reporting"] = sorted(tot.items())
+    return WgcDoc(_pub_date(_cell_text(text)), {k: sorted(dict(v).items())
+                                                for k, v in series.items()})
+
+
+# ------------------------------------------------------------------- metal ETF issuers ----
+@dataclass(frozen=True)
+class IsharesPage:
+    """One iShares trust page's Key Facts: its 'as of' day and the values printed for it."""
+    as_of: date | None
+    values: dict[str, float]
+
+
+_IS_FACTS = (("Shares Outstanding", "shares_outstanding"), ("Ounces in Trust", "ounces"),
+             ("Tonnes in Trust", "tonnes"))
+_ASOF = r"as\s+of\s+([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4})"
+
+
+def parse_ishares_page(body: bytes, ticker: str) -> IsharesPage:
+    """'<label> as of <Mon DD, YYYY> <number>' for each Key Fact; a page that prints none
+    (a site-entry interstitial, a script-only shell) is empty, never zero."""
+    text = _cell_text(body.decode("utf-8", "replace"))
+    vals: dict[str, float] = {}
+    asof: date | None = None
+    for label, key in _IS_FACTS:
+        m = re.search(re.escape(label) + r"\s*" + _ASOF + r"\s*([\d,]+(?:\.\d+)?)", text,
+                      re.I)
+        if not m or (v := _tonnes(m[2])) is None:
+            continue
+        d = _pub_date(f"published {m[1]}")
+        if d is None:
+            continue
+        if asof is not None and d != asof:
+            continue                         # one reading per page: the facts' common day
+        asof = d
+        vals[f"{ticker}_{key}"] = v
+    return IsharesPage(asof, vals)
+
+
+def parse_spdr_archive(body: bytes, ticker: str) -> dict[str, list[tuple[str, float]]]:
+    """SPDR's GLD_US_archive_EN.csv: one row per trading day ('03-Nov-2026'), HOLIDAY rows
+    carry no numbers. Ounces and tonnes in the trust are read by their column names; shares
+    outstanding is the trust's ounces over its 'Ounces of Gold per Share' (or a shares column
+    when the file prints one)."""
+    import csv
+    import io
+
+    rows = [r for r in csv.reader(io.StringIO(body.decode("utf-8-sig", "replace")))
+            if r and not r[0].lstrip().startswith("#")]
+    hi = next((i for i, r in enumerate(rows[:40]) if r[0].strip().lower() == "date"), None)
+    if hi is None:
+        return {}
+    head = [h.strip().lower() for h in rows[hi]]
+
+    def col(*need: str, avoid: str = "") -> int | None:
+        return next((i for i, h in enumerate(head)
+                     if all(n in h for n in need) and not (avoid and avoid in h)), None)
+
+    c_oz = col("ounces", "trust", avoid="per share")
+    c_t = col("tonnes")
+    c_ops = col("ounces", "per share")
+    c_sh = col("shares outstanding")
+    out: dict[str, list[tuple[str, float]]] = {}
+    for r in rows[hi + 1:]:
+        try:
+            d = datetime.strptime(r[0].strip(), "%d-%b-%Y").date().isoformat()
+        except ValueError:
+            continue
+
+        def num(i: int | None, r: list[str] = r) -> float | None:
+            return _tonnes(r[i].replace("$", "")) if i is not None and i < len(r) else None
+
+        oz, t, ops, sh = num(c_oz), num(c_t), num(c_ops), num(c_sh)
+        if sh is None and oz is not None and ops:
+            sh = oz / ops
+        for key, v in (("ounces", oz), ("tonnes", t), ("shares_outstanding", sh)):
+            if v is not None:
+                out.setdefault(f"{ticker}_{key}", []).append((d, v))
+    return out
+
+
+def looks_like_login(body: bytes) -> bool:
+    """A login wall: login markup and no data table."""
+    text = body[:200_000].decode("utf-8", "replace")
+    return bool(_LOGIN.search(text)) and not _TABLE.search(text)
+
+
+def login_hold(row: dict[str, Any]) -> tuple[str, str] | None:
+    """(HELD, why) while a door's login hold stands. A PERSON releases it by writing
+    `login_released_by` (their name) on the door's catalog row; no clock ever does."""
+    if row.get("login_held_at") and not row.get("login_released_by"):
+        return "HELD", f"login_required since {row['login_held_at']}: held for a person"
+    return None
+
+
+def access_of(door: Door) -> dict[str, Any] | None:
+    """The door's LAWS 5e labels, for a register row that carries them: the access label the
+    router derives from the row's own metadata, whether the row is mined, whether it may be
+    redistributed, and whether it may size a live position (`terms_fence.live_sizing_input`)."""
+    from libs.data import terms_fence as tf
+    row = tf.SOURCE_POLICY.get(door.policy) or {}
+    if "access_label" not in row:
+        return None
+    meta = row.get("access_meta")
+    label = row["access_label"]
+    mined = label not in ("PRIVATE", "CONFIDENTIAL_MNPI", "STOLEN_UNAUTHORIZED")
+    if isinstance(meta, dict):
+        from libs.research import access_classifier as ac
+        v = ac.classify(dict(meta))
+        label, mined = v.access_label, v.mined
+    sz = tf.live_sizing_input(door.policy)
+    return {"access_label": label, "mined": mined, "redistribute": sz["redistribute"],
+            "terms": sz["terms"], "live_sizing": "PERMITTED" if sz["permitted"] else "WITHHELD"}
+
+
 # -------------------------------------------------------------------------- the doors ----
 def door_code(door: Door) -> str:
     v = os.environ.get(door.code_env, "").strip() if door.code_env else ""
@@ -412,10 +725,14 @@ def gate(door: Door) -> tuple[str, str] | None:
     if st == tf.NEEDS_KEY:
         keys = ",".join(tf.SOURCE_POLICY[door.policy].get("key_env") or ())
         return "NEEDS_KEY", f"{keys} absent on this host"
+    if st == tf.METHOD_BLOCKED:
+        why = tf.SOURCE_POLICY[door.policy].get("reason") or "method"
+        return "HELD", f"terms_fence {door.policy} is {st} ({why}): never requested"
     held = tf.input_source(door.id)
     if held:
         return "HELD", f"terms_fence {held} is {tf.status(held)}: never live input"
-    if st != tf.API_PERMITTED:
+    if st not in (tf.API_PERMITTED, tf.PUBLIC_PAGE):
+        # LAWS 5e: a PUBLIC_PAGE row is mined and tested (its labels route use, never fetch)
         return "HELD", f"terms_fence {door.policy} is {st}"
     if door.parse.startswith("evds") and not _agp.evds_code_ok(door_code(door)):
         return "NEEDS_CONFIG", f"{door.code_env} unset (no default EVDS code was readable)"
@@ -453,6 +770,12 @@ def requests_for(door: Door, now: datetime, *, first: bool) -> list[Req]:
         return [Req(f"{SCB_API}{code}", {"Content-Type": "application/json"}, body)]
     if door.parse == "sarb":
         return [Req(SARB_RATES)]
+    if door.parse in ("wgc_html", "ishares_page", "spdr_archive"):
+        from libs.data.polite_fetch import DESK_UA
+        accept = "text/csv" if door.parse == "spdr_archive" else "text/html"
+        return [Req(door.url, {"User-Agent": DESK_UA, "Accept": accept})]
+    if door.parse == "wgc_xlsx":
+        raise ValueError(f"{door.id} is held (login): never requested")
     raise ValueError(door.parse)
 
 
@@ -495,6 +818,42 @@ def series_from_bodies(door: Door, bodies: list[bytes], now: datetime
         for b in bodies:
             for k, v in parse_sarb(b, door).items():
                 named.setdefault(k, []).extend(v)
+    elif door.parse == "wgc_html":
+        for b in bodies:
+            if looks_like_login(b):
+                raise LoginRequired(door.url or door.id)
+            doc = parse_wgc_tables(b)
+            for k, v in doc.series.items():
+                named.setdefault(k, []).extend(v)
+            if doc.published and v_newest(doc.series):
+                # THE PAGE FIRST PUBLISHES ITS NEWEST MONTH: that month is knowable from the
+                # page's own date (next day 00:00 UTC, the hour unknown) when that is later
+                # than the lag rule; every earlier month keeps the rule.
+                pub = datetime(doc.published.year, doc.published.month, doc.published.day,
+                               tzinfo=UTC) + timedelta(days=1)
+                newest = v_newest(doc.series)
+                rule = release_at(door.release, _month_end(int(newest[:4]), int(newest[5:7])))
+                given[newest] = max(rule, pub).isoformat()
+    elif door.parse == "spdr_archive":
+        for b in bodies:
+            for k, v in parse_spdr_archive(b, door.code).items():
+                named.setdefault(k, []).extend(v)
+    elif door.parse == "ishares_page":
+        for b in bodies:
+            if looks_like_login(b):
+                raise LoginRequired(door.url or door.id)
+            page = parse_ishares_page(b, door.code)
+            if page.as_of is None:
+                continue
+            day = page.as_of.isoformat()
+            for k, v in page.values.items():
+                named.setdefault(k, []).append((day, v))
+            # the page proves the reading existed when the desk saw it: the stamp is the
+            # release rule or the fetch instant, whichever is EARLIER (never before the day)
+            rule = release_at(door.release, page.as_of)
+            given[day] = min(rule, max(now, datetime(page.as_of.year, page.as_of.month,
+                                                     page.as_of.day, tzinfo=UTC)
+                                       + timedelta(days=1))).isoformat()
     out = []
     for name, raw in named.items():
         pts = sorted(dict(raw).items())
@@ -508,10 +867,19 @@ def series_from_bodies(door: Door, bodies: list[bytes], now: datetime
             d = (_month_end(int(p[:4]), int(p[5:7])) if len(p) == 7
                  else date.fromisoformat(p[:10]))
             stamps[p] = release_at(door.release, d).isoformat()
-        out.append({"code": name, "name": f"{door.name} {name}".strip(),
-                    "freq": door.freq, "dims": {"REF_AREA": PACKS[door.pack].iso2},
-                    "points": pts, "release_at": stamps})
+        row: dict[str, Any] = {"code": name, "name": f"{door.name} {name}".strip(),
+                               "freq": door.freq, "dims": {"REF_AREA": PACKS[door.pack].iso2},
+                               "points": pts, "release_at": stamps}
+        if door.stems and door.parse in ("wgc_html", "spdr_archive", "ishares_page"):
+            # the door names its instrument: a country's name in a series never maps an FX pair
+            row["stems"] = list(door.stems)
+        out.append(row)
     return out
+
+
+def v_newest(series: dict[str, list[tuple[str, float]]]) -> str | None:
+    """The latest period any series of a page carries."""
+    return max((p for pts in series.values() for p, _ in pts), default=None)
 
 
 Fetch = Callable[[Req], bytes]
@@ -565,6 +933,9 @@ def liveness(rows: dict[str, dict[str, Any]], now: datetime) -> dict[str, Any]:
                       "last_ok_at": r.get("fetched_at"),
                       "last_reason": r.get("fail_reason"),
                       "release_rule": d.what}
+        acc = access_of(d)
+        if acc:
+            deps[d.id]["access"] = acc
     red = sorted(k for k, v in deps.items() if v["verdict"] == "RED")
     delivered = any(v["verdict"] in ("GREEN", "AMBER") and v["last_ok_at"]
                     for v in deps.values())

@@ -1,52 +1,60 @@
-"""SPDR GLD physical holdings fetcher (free XLSX) + GraniteShares BAR fallback.
+"""GLD / SLV / IAU holdings -- a manual probe of the issuer doors. NOT a lane and NOT a store.
 
-GLD: daily ounces + NAV, trade-date accounting. The physical bar list is
-settlement-date based (different timestamps) - keep separate if mined later.
+This script used to fetch a GLD workbook to a retired laptop path (`C:\\Users\\...\\data\\lake`)
+and ran on no clock. It is replaced by three doors of the `etf_issuers` pack in
+`research/country_packs.py` (`etf_gld_holdings`, `etf_slv_holdings`, `etf_iau_holdings`), which
+the world dataset hunter fetches every hour (leg `world_dataset_hunt`), stamps at publication,
+lands in its PIT store (`data/world_datasets/obs/ETF_ISSUER/`) and reports in
+`reports/COUNTRY_PACK_LIVENESS.json`.
+
+Run by hand, it makes ONE attempt per door through the hunter's own polite client (robots,
+holds, terms fence, the desk's honest agent) and prints what each door parsed. It writes
+nothing: the store belongs to the hunter.
+
+    python desks/mt5/research/fetch_gld.py [etf_gld_holdings ...]
 """
+from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+import sys
+import time
+from datetime import UTC, datetime
 from pathlib import Path
 
-import pandas as pd
-try:
-    from libs.data.polite_fetch import polite_requests_get
-except ImportError:  # run as a script: the repo root is not on the path
-    import sys as _sys
-    from pathlib import Path as _Path
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
-    from libs.data.polite_fetch import polite_requests_get
+_DESK = Path(__file__).resolve().parents[1]
+for _p in (str(_DESK.parents[1]), str(_DESK), str(_DESK / "research")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
-OUT = Path(r"C:\Users\dell\mt5-research\data\lake")
-OUT.mkdir(parents=True, exist_ok=True)
-
-GLD_XLSX = "https://www.spdrgoldshares.com/usa/assets/uploads/GLD_US_holdings.xlsx"
+DOORS = ("etf_gld_holdings", "etf_slv_holdings", "etf_iau_holdings")
 
 
-def main() -> None:
-    r = polite_requests_get(GLD_XLSX, timeout=60)
-    r.raise_for_status()
-    xl = pd.ExcelFile(io := r.content)
-    # sheet 1: holdings history (Date | Shares | Holdings in oz | Value | NAV)
-    df = xl.parse(xl.sheet_names[0])
-    date_col = [c for c in df.columns if "date" in str(c).lower()][0]
-    oz_col = [c for c in df.columns if "oz" in str(c).lower() or "holdings" in str(c).lower()][0]
-    df = df[[date_col, oz_col]].rename(columns={date_col: "date", oz_col: "ounces"})
-    df["date"] = pd.to_datetime(df["date"], utc=True)
-    df = df.dropna().sort_values("date").set_index("date")
-    df.to_parquet(OUT / "gld_holdings.parquet")
-    state = {
-        "fetched_at": datetime.now(timezone.utc).isoformat(),
-        "source": GLD_XLSX,
-        "rows": len(df),
-        "first": str(df.index.min()),
-        "last": str(df.index.max()),
-        "latest_ounces": float(df["ounces"].iloc[-1]),
-        "note": "trade-date accounting; bar list (settlement-date) is a separate mine target",
-    }
-    (OUT / "gld_fetch_state.json").write_text(json.dumps(state, indent=2), encoding="utf-8")
-    print(json.dumps(state, indent=2))
+def main(argv: list[str] | None = None) -> int:
+    from research import country_packs as cp
+    from research import world_dataset_hunter as W
+
+    now = datetime.now(UTC)
+    client = W.Client(None, time.monotonic() + 120.0)
+    out: dict[str, object] = {}
+    for did in (argv if argv else list(DOORS)):
+        door = cp.BY_ID[did]
+        held = cp.gate(door)
+        if held:
+            out[did] = {"state": held[0], "why": held[1]}
+            continue
+        try:
+            series = cp.fetch_door(door, lambda r: client.get(r.url, headers=r.headers or None),
+                                   now, first=True)
+        except (W.FetchError, cp.LoginRequired) as exc:
+            out[did] = {"state": "FAILED", "why": str(exc)[:200]}
+            continue
+        out[did] = {"state": "PARSED" if series else "EMPTY",
+                    "series": {s["code"]: {"points": len(s["points"]),
+                                           "last": s["points"][-1] if s["points"] else None}
+                               for s in series}}
+    print(json.dumps(out, indent=1, default=str))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main(sys.argv[1:]))
