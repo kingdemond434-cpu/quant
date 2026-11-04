@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-04T02:45:05.901220+00:00",
+  "swept_at": "2026-11-04T03:00:09.101458+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -360,8 +360,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.118,
+      "shadow_n": 61,
+      "shadow_exp_r": -0.4156,
       "woke_on_shadow": false
     },
     "BTCUSD|cross_asset_residual_continuous": {
@@ -976,8 +976,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 49,
-      "shadow_exp_r": -0.2847,
+      "shadow_n": 90,
+      "shadow_exp_r": 0.0456,
       "woke_on_shadow": false
     },
     "CHFSGD|cross_asset_residual_continuous": {
@@ -1912,7 +1912,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0266,
+      "shadow_exp_r": 0.019,
       "woke_on_shadow": false
     },
     "GBPAUD|relative_value_continuous": {
@@ -2143,7 +2143,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0286,
+      "shadow_exp_r": 0.0605,
       "woke_on_shadow": false
     },
     "GBPJPY|macro_conditional_continuous": {
