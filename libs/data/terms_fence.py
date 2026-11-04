@@ -1869,6 +1869,72 @@ SOURCE_POLICY.update({
                       "Incapsula challenge to fetchers (alt_proxies za_statssa_retail evidence); "
                       "no terms page readable, 2026-11-03")}}},
 })
+# EU POWER (2026-11-03, claude/gd-power): the two power producers registered in alt_proxies.
+# Their modules (desks/mt5/research/entsoe_power.py, smard_power.py) read STATUS from here and
+# carry the full clause sets; these rows are the register's copy of the deciding clauses.
+_SMARD_CREDIT = ("Bundesnetzagentur | SMARD.de, licensed under CC BY 4.0 "
+                 "(https://creativecommons.org/licenses/by/4.0/); hourly Stromverbrauch and "
+                 "Stromerzeugung folded to daily aggregates by the desk (changed).")
+SOURCE_POLICY.update({
+    "entsoe_transparency": {
+        "hosts": ("web-api.tp.entsoe.eu",), "status": IDEAS_ONLY,
+        "key_env": ("ENTSOE_API_TOKEN",), "sources": ("entsoe_power",),
+        "routes": ("entsoe_power",),
+        "why": ("ENTSO-E Transparency Platform RESTful API, keyed (the held ENTSOE key in the "
+                "documented securityToken query parameter, redacted on every error path). The "
+                "Terms of Use permit use 'for any purpose whatsoever' under conditions, but the "
+                "items read (6.1.A/B, 16.1.B&C, 14.1.D, 12.1.D, 12.1.G) are not confirmed on the "
+                "List of Data available for free re-use, and off-list re-use needs the holder's "
+                "prior agreement where it risks prejudice. No verbatim clause permits LIVE use, "
+                "so RESEARCH-ONLY: fetched, measured and gain-tested, never live sizing input"),
+        "unblock": ("a verbatim ENTSO-E clause (or the free re-use list) covering these items "
+                    "for automated internal research, quoted here, and the row flipped to "
+                    "API_PERMITTED"),
+        "credit": ("Source: ENTSO-E Transparency Platform (transparency.entsoe.eu); daily "
+                   "aggregates computed by the desk."),
+        "robots": "a label, never a stop (LAWS 5e): PUBLIC_WITH_TERMS / ACCESS_UNCLEAR per pass",
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": ("entsoe_power research-only: DE-LU/FR load, mix, surprise, "
+                                    "day-ahead price and DE-FR flow cells on XNGUSD, GER40, "
+                                    "EURUSD are gain-tested and charged but never donated as "
+                                    "live input")},
+        "terms": {"url": ("https://transparencyplatform.zendesk.com/hc/en-us/articles/"
+                          "40921911218961-Legal-Terms-and-Conditions"),
+                  "checked_at": "2026-10-20",
+                  "clauses": {
+                      "use_3_1": ("In accordance with the applicable legislation, the Data User "
+                                  "shall, when using of the Transparency Platform Data for any "
+                                  "purpose whatsoever:"),
+                      "attribution_3_1": ("mention the ENTSO-E Transparency Platform as the "
+                                          "source of publication of the data"),
+                      "prejudice_3_1": ("In case of a risk to cause prejudice to said right, the "
+                                        "Data User shall seek the prior agreement of the holder "
+                                        "of the copyright or related right.")}}},
+    "smard": {
+        "hosts": ("www.smard.de",), "status": API_PERMITTED, "key_env": (),
+        "sources": ("smard_power",), "routes": ("smard_power",),
+        "why": ("SMARD (Bundesnetzagentur) Market data visuals: CC BY 4.0 on SMARD's own Data "
+                "use page (clause quoted), freely available for public use under s.111d EnWG; "
+                "LIVE input with the attribution on every payload"),
+        "credit": _SMARD_CREDIT, "attribution": "Bundesnetzagentur | SMARD.de",
+        "licence": "CC BY 4.0", "access_label": "OPEN_DATA",
+        "robots": "a label, never a stop (LAWS 5e): PUBLIC_WITH_TERMS / ACCESS_UNCLEAR per pass",
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": ("smard_power held or IDEAS_ONLY: DE-LU load, mix, surprise "
+                                    "and day-ahead price cells on XNGUSD, GER40, EURUSD never "
+                                    "donated")},
+        "terms": {"url": "https://www.smard.de/en/datennutzung", "checked_at": "2026-10-20",
+                  "clauses": {
+                      "data_use_cc_by": ("Data from the section Market data visuals, which can "
+                                         "be downloaded showing longer periods of time from the "
+                                         "Download section, is licensed under a Creative "
+                                         "Commons Attribution 4.0 International Licence."),
+                      "data_use_attribution": ("Data from the website www.smard.de should be "
+                                               "attributed to 'Bundesnetzagentur | SMARD.de'."),
+                      "data_use_share": ("Data under a CC BY 4.0 licence may be shared, "
+                                         "redistributed and adapted as long as appropriate "
+                                         "credit is given.")}}},
+})
 #: The held-route rows, by key (read by `alt_proxies.HELD_ROUTES`).
 HELD_ROUTE_KEYS: frozenset[str] = frozenset(
     k for k, r in SOURCE_POLICY.items() if r.get("held_route"))

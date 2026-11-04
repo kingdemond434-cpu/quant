@@ -6653,6 +6653,14 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
     report["smard_power"] = _smard_pass(paths, state, now, fetch=fetch, fixtures=fixtures,
                                         deadline=deadline + budget_s * 0.35,
                                         dry_run=dry_run, donate=donate)
+    # LIVENESS of the registered power producers: more than 2 consecutive passes that landed
+    # nothing is RED, and a RED producer is named in the report's top-level `status`, which
+    # health_board reads as this organ's own last reading (the desk's existing RED path).
+    report["power_liveness"] = {k: (report[k].get("liveness") or {"state": UNMEASURED})
+                                for k in ("entsoe_power", "smard_power")}
+    red = sorted(k for k, v in report["power_liveness"].items() if v.get("state") == "RED")
+    if red:
+        report["status"] = "RED:" + ",".join(red)
     state["last_run"] = report["at"]
     if not dry_run:
         _agp.write(paths.desk / "reports" / _agp.STATE_FILE, gold)

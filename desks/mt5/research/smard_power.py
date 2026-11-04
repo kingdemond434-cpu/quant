@@ -20,6 +20,11 @@ Stromerzeugung 1223 Braunkohle, 4069 Steinkohle, 4071 Erdgas, 1224 Kernenergie, 
 Onshore, 1225 Wind Offshore, 4068 Photovoltaik, 4066 Biomasse, 1226 Wasserkraft, 4070
 Pumpspeicher, 1227 Sonstige Konventionelle, 1228 Sonstige Erneuerbare. Regions DE-LU (the market
 area since 2018-10-01; all filters, the cells' zone) and DE (load and residual load only).
+Since 2026-11-03 also (same third-party id list): Prognostizierter Stromverbrauch 411 Gesamt,
+Prognostizierte Erzeugung 123 Onshore, 3791 Offshore, 125 Photovoltaik, and Marktpreis 4169
+Deutschland/Luxemburg (day-ahead, EUR/MWh), DE-LU only. They give the load / wind / solar
+SURPRISE (actual minus forecast, MWh per hour) and the day-ahead price, the latter KEYED ON THE
+AUCTION DAY D-1 (known before delivery; stamped late of the publication by the period rule).
 Hourly points are folded per Berlin local day into daily series exactly as entsoe_power folds
 them (a day is published only when every UTC hour of it is present; absent is never zero).
 
@@ -33,8 +38,9 @@ made freely available for public use". CC BY 4.0 s.2(a)(4) licenses the rights "
 formats". Attribution "Bundesnetzagentur | SMARD.de", the licence, and that the desk changed the
 data (daily aggregates) ride every payload (`CREDIT`). SMARD's pages say nothing about automated
 access either way, and the chart_data URLs are not documented by SMARD itself: both are recorded
-in the row (`open_points`) for the auditor, and robots.txt still decides every fetch. One row
-edit (`status` -> IDEAS_ONLY) turns live input off.
+in the row (`open_points`) for the auditor. One row edit (`status` -> IDEAS_ONLY) turns live
+input off. The row lives in `libs/data/terms_fence.SOURCE_POLICY["smard"]` (status, the CC BY
+clause and the attribution); this module's copy carries the full clause set.
 
 POINT IN TIME. SMARD's manual states for both items: "Die Daten werden spätestens eine Stunde
 nach der Betriebsperiode ... an die ENTSO-E Transparenzplattform übermittelt" (Regulation
@@ -45,8 +51,11 @@ it, its hour end + 1h); a daily value no earlier than max(the fetch, the local d
 stamp is at or before the decision and whose day is strictly before the decision's day. The
 fetch floor is what binds in practice: it is always at or after SMARD's own publication.
 
-FETCH. robots.txt of www.smard.de decides every pass (fail closed: unreadable is not permission;
-it could not be read from the authoring container on 2026-10-20). DESK UA, retries=0, requests
+FETCH. robots.txt of www.smard.de is read every pass and is a LABEL, NEVER A STOP (LAWS 5e): a
+Disallow labels the pass PUBLIC_WITH_TERMS (terms_note carries it), unreadable labels it
+ACCESS_UNCLEAR, a permitting read keeps OPEN_DATA (CC BY 4.0); `redistribute_allowed` comes from
+access_classifier.ROUTING. Only a 401/403/429 on robots.txt is a hard stop.
+DESK UA, retries=0, requests
 spaced MIN_INTERVAL_S (or the robots crawl-delay) apart. 401/403/429, an HTML/WAF body or a
 non-JSON body is a hard stop held for a PERSON in the shared hold shape. A per-region cursor
 walks the index's weekly files forward; a caught-up region re-reads the weeks covering its last
@@ -101,8 +110,15 @@ WIND_SOLAR = ("wind_on", "wind_off", "pv")
 #: Generation types published as their own daily series (the rest only enter the total).
 GEN_SERIES = ("gas", "lignite", "hard_coal", "nuclear", "wind_on", "wind_off", "pv")
 #: Region -> (series slug, filters read). DE-LU is the market area the cells use.
+#: Forecasts and the day-ahead price (DE-LU only): filter -> component.
+EXTRA: dict[int, str] = {411: "load_fc", 123: "fc_wind_on", 3791: "fc_wind_off", 125: "fc_pv",
+                         4169: "price"}
+FILTER_LABEL_EXTRA: dict[int, str] = {
+    411: "Prognostizierter Stromverbrauch: Gesamt",
+    123: "Prognostizierte Erzeugung: Onshore", 3791: "Prognostizierte Erzeugung: Offshore",
+    125: "Prognostizierte Erzeugung: Photovoltaik", 4169: "Marktpreis: Deutschland/Luxemburg"}
 REGIONS: dict[str, tuple[str, tuple[int, ...]]] = {
-    "DE-LU": ("de_lu", (LOAD, RESIDUAL, *GEN)),
+    "DE-LU": ("de_lu", (LOAD, RESIDUAL, *GEN, *EXTRA)),
     "DE": ("de", (LOAD, RESIDUAL)),
 }
 #: SMARD manual 04/2026, p.47 (Stromverbrauch Gesamt) and p.38 (Realisierte Erzeugung): "spätestens
@@ -211,6 +227,14 @@ SOURCE_POLICY_ROW: dict[str, dict[str, Any]] = {
     },
 }
 POLICY_KEY = "smard"
+# STATUS IS THE REGISTER'S (libs/data/terms_fence.SOURCE_POLICY["smard"]): one row edit there
+# flips this source; this module's copy only adds the full clause set.
+with contextlib.suppress(ImportError, KeyError):
+    from libs.data import terms_fence as _tf
+    SOURCE_POLICY_ROW[POLICY_KEY]["status"] = _tf.SOURCE_POLICY[POLICY_KEY]["status"]
+#: CC BY 4.0 is an open licence: OPEN_DATA when robots.txt was read and permits.
+ACCESS_LABEL = "OPEN_DATA"
+ACCESS_NOTE = "CC BY 4.0, attribution 'Bundesnetzagentur | SMARD.de'"
 
 
 def policy() -> dict[str, Any]:
@@ -330,10 +354,22 @@ def fold_days(slug: str, comps: dict[str, list[tuple[datetime, float]]], days: I
             ws = sum(mean(g) for g in WIND_SOLAR if g in present)
             if total > 0:
                 out.append((f"{slug}_ren_share", d, round(100.0 * ws / total, 4)))
+        if full("load") and full("load_fc"):
+            out.append((f"{slug}_load_surprise", d, round(mean("load") - mean("load_fc"), 3)))
+        for name, acts, fcs in (("wind", ("wind_on", "wind_off"), ("fc_wind_on", "fc_wind_off")),
+                                ("solar", ("pv",), ("fc_pv",))):
+            if all(full(c) for c in (*acts, *fcs)):
+                out.append((f"{slug}_{name}_surprise", d, round(
+                    sum(mean(c) for c in acts) - sum(mean(c) for c in fcs), 3)))
+        if full("price"):
+            # keyed on the AUCTION day: the price for delivery day d is known on d-1
+            out.append((f"{slug}_da_price", d - timedelta(days=1), round(mean("price"), 4)))
     return out
 
 
 def _component(filt: int) -> str:
+    if filt in EXTRA:
+        return EXTRA[filt]
     return "load" if filt == LOAD else "residual" if filt == RESIDUAL else GEN[filt]
 
 
@@ -345,6 +381,11 @@ SERIES_INSTRUMENTS: dict[str, dict[str, int]] = {
     "de_lu_residual_load": {"XNGUSD": 1},
     "de_lu_gen_gas": {"XNGUSD": 1},
     "de_lu_ren_share": {"XNGUSD": -1},
+    # 2026-11-03: the surprise and day-ahead price features (declared priors, untested)
+    "de_lu_load_surprise": {"XNGUSD": 1, "GER40": 1, "EURUSD": 1},
+    "de_lu_wind_surprise": {"XNGUSD": -1},
+    "de_lu_solar_surprise": {"XNGUSD": -1},
+    "de_lu_da_price": {"XNGUSD": 1, "GER40": -1, "EURUSD": -1},
 }
 SIGNAL_SERIES = tuple(SERIES_INSTRUMENTS)
 
@@ -470,8 +511,8 @@ def collect(ap: Any, paths: Any, src: Any, sst: dict[str, Any], store: dict[str,
         rcode = re.search(r"(\d{3})", str(rb.get("note")))
         return fail(f"HARD_STOP: {rb['note']}", hold=int(rcode.group(1)) if rcode else "ROBOTS",
                     url=str(rb.get("robots") or BASE_URL))
-    if rb["verdict"] != "allow":
-        return fail(f"ROBOTS_{rb['verdict'].upper()}: {rb['note']}")
+    # robots.txt is a LABEL, never a stop (LAWS 5e): the pass fetches either way.
+    out["access"] = _E.robots_access(rb, ACCESS_LABEL, ACCESS_NOTE)
     delay = max(MIN_INTERVAL_S, float(rb.get("crawl_delay") or 0.0))
     cursors: dict[str, int] = sst.setdefault("cursor", {})
     done: dict[str, bool] = dict.fromkeys(REGIONS, False)
@@ -626,6 +667,8 @@ def run_pass(ap: Any, paths: Any, state: dict[str, Any], now: datetime, *, fetch
     rec = collect(ap, paths, src, sst, store, now, fetch=fetch, fixtures=fixtures,
                   deadline=deadline, getter=getter, robots_getter=robots_getter, sleep=sleep,
                   clock=clock)
+    if fixtures is None:
+        rec["liveness"] = _E.liveness(sst, rec, now)
     if not dry_run:
         ap._atomic(store_p, store)
     rec["store_rows"] = len(store)
@@ -648,7 +691,8 @@ def run_pass(ap: Any, paths: Any, state: dict[str, Any], now: datetime, *, fetch
         **rec, "id": SOURCE_ID, "credit": CREDIT,
         "terms": {"row": POLICY_KEY, "status": policy()["status"], "live_input": live,
                   "missed_growth": None if live else policy()["missed_growth"]},
-        "filters": {str(f): FILTER_LABEL[f] for f in REGIONS["DE-LU"][1]},
+        "filters": {str(f): {**FILTER_LABEL, **FILTER_LABEL_EXTRA}[f]
+                    for f in REGIONS["DE-LU"][1]},
         "pit_rule": ("point available = max(response fetch instant, hour end + 1h); daily "
                      "value = max(fetch, Berlin local day end + 1h); lag source: " + LAG_SOURCE),
         "gain_tests": gains, "n_cells_tested": n_tested,

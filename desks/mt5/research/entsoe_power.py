@@ -7,29 +7,28 @@ API at https://web-api.tp.entsoe.eu/api:
     Actual Total Load [6.1.A]                     documentType=A65, processType=A16
     Actual Generation per Production Type [16.1.B&C] documentType=A75, processType=A16
 
+Since 2026-11-03 also, per zone: Day-ahead Total Load Forecast [6.1.B] (A65/A01), Generation
+Forecasts for Wind and Solar [14.1.D] (A69/A01), Day-ahead Prices [12.1.D] (A44), and for DE-LU
+the Cross-Border Physical Flows [12.1.G] (A11) with FR in both directions.
+
 DE-LU is 10Y1001A1001A82H, FR is 10YFR-RTE------C. Hourly (or quarter-hourly) points are folded
 per Brussels local day into daily series per zone: mean load, residual load (load minus wind
-and solar), gas and nuclear generation, and the wind+solar share. They feed `exogenous_
-conditioner` cells on XNGUSD, GER40, FRA40 and EURUSD (declared priors, untested; the gain test
-decides).
+and solar), gas and nuclear generation, the wind+solar share, the load / wind / solar SURPRISE
+(actual minus day-ahead forecast, MW), the day-ahead price (EUR/MWh, keyed on the AUCTION day
+D-1 so its stamp never precedes its period), and the DE-LU net export to FR (MW). They feed
+`exogenous_conditioner` cells on XNGUSD, GER40, FRA40 and EURUSD (declared priors, untested;
+the gain test decides).
 
-KEY PLACEMENT: A HEADER, NEVER THE URL. The API user guide (Transparency Platform RESTful API
-user guide, section 2.2 "Post Method", read 2026-10-20 at transparency.entsoe.eu/content/
-static_content/Static%20content/web%20api/Guide_prod_backup_06_11_2024.html) documents a header
-form: "Token has be present in http header. Key is SECURITY_TOKEN." (the GET form puts it in the
-query as `securityToken`, which this module never uses). So every request is a POST of the
-guide's `StatusRequest_MarketDocument` with the token in the `SECURITY_TOKEN` header, to a URL
-that carries no credential. Redirects are REFUSED, never followed: urllib's default redirect
-handler copies request headers to the next hop, which would hand the token to whatever host a
-3xx names. Every error text, vaulted body and report line is scrubbed of the token (raw,
-quote and quote_plus forms) before it is written. The token is read once per pass by
-`read_token` (`libs.ops.env_keys.read_key("ENTSOE_API_TOKEN")` when that module is on the
-branch, else the process environment), never printed, logged or stored. Absent, the pass reads
-NEEDS_KEY, never zero. The guide page is the archived copy ENTSO-E links from its knowledge
-base ("will not be updated"); the knowledge-base article "Request Methods" names GET and POST
-and shows only GET in text. If the box ever sees POST refused, the GET/query form would need
-`libs/data/keyed_sources.keyed_urlopen(secrets=(token,))` and an auditor's ruling; this module
-does not fall back to it on its own.
+KEY PLACEMENT: THE DOCUMENTED QUERY PARAMETER `securityToken` (2026-11-03). The API's GET form
+(knowledge-base article "Request Methods", the form it shows in text) carries the held ENTSOE key
+as `securityToken=<key>` on https://web-api.tp.entsoe.eu/api. The key is read by `read_token`
+(process env ENTSOE_API_TOKEN / ENTSOE_API_KEY / ENTSOE, else `data/secrets/entsoe.json`, the
+box secrets file the FRED door reads the same way), registered with
+`polite_fetch.register_secret`, and REDACTED ON EVERY ERROR PATH: every error text, hold row,
+vaulted body, vaulted URL (`redacted_url`) and report line is scrubbed of it (raw, quote and
+quote_plus forms) before it is written; an unexpected exception carries its type only.
+Redirects are REFUSED, never followed: a 3xx would hand the query (and the key in it) to
+whatever host it names. Absent, the pass reads NEEDS_KEY, never zero.
 
 TERMS: IDEAS_ONLY, FAIL CLOSED, AUDITOR RULING REQUESTED. `SOURCE_POLICY_ROW` quotes ENTSO-E's
 own Terms of Use (29/03/2023, applicable from 01/11/2023) and its List of Data available for free
@@ -53,8 +52,11 @@ daily value is available no earlier than max(the fetch instant, the local day's 
 the response's own fetch time as the floor, and `series_asof` shows a cell only a value whose
 stamp is at or before its decision time (and whose day is strictly before it).
 
-FETCH. robots.txt of web-api.tp.entsoe.eu decides every pass (fail closed: unreadable is not
-permission). DESK UA, retries=0. 401/403/429, an HTML/WAF body or a challenge is a hard stop held
+FETCH. robots.txt of web-api.tp.entsoe.eu is read every pass and is a LABEL, NEVER A STOP (LAWS
+5e): a Disallow labels the pass PUBLIC_WITH_TERMS with the Disallow in `terms_note`, unreadable
+robots labels it ACCESS_UNCLEAR, and `redistribute_allowed` comes from access_classifier.ROUTING
+(fail closed). Only a 401/403/429 on robots.txt itself is a hard stop (a refusal).
+DESK UA, retries=0. 401/403/429, an HTML/WAF body or a challenge is a hard stop held
 for a PERSON in the shared hold shape (`hold_row`: key site:<host>, verdict, status, host, url
 scrubbed, held_at, released_by null, released_at null, missed_growth). The guide's limit is
 "Maximum of 400 requests are accepted per user per minute" (a 429 earns a 10-minute ban); this
@@ -74,7 +76,7 @@ was written against fixtures in a container that cannot reach the host and holds
 from __future__ import annotations
 
 import contextlib
-import importlib
+import json
 import math
 import os
 import re
@@ -93,20 +95,40 @@ SOURCE_ID = "entsoe_power"
 API_URL = "https://web-api.tp.entsoe.eu/api"
 HOST = "web-api.tp.entsoe.eu"
 KEY_NAME = "ENTSOE_API_TOKEN"
-TOKEN_HEADER = "SECURITY_TOKEN"  # noqa: S105 - the header NAME the guide gives, not a value
+#: Every env name the held ENTSOE key may sit under on a box, first wins.
+KEY_NAMES = (KEY_NAME, "ENTSOE_API_KEY", "ENTSOE")
+#: The box secrets file (`data/secrets/**` never leaves the box): {"key": ...} or {"token": ...}.
+KEY_FILE = Path(__file__).resolve().parents[3] / "data" / "secrets" / "entsoe.json"
+TOKEN_PARAM = "securityToken"  # noqa: S105 - the documented query parameter NAME, not a value
 UNMEASURED = "UNMEASURED"
 #: Bidding zone -> (EIC, series slug).
 ZONES: dict[str, tuple[str, str]] = {"DE-LU": ("10Y1001A1001A82H", "de_lu"),
                                      "FR": ("10YFR-RTE------C", "fr")}
-#: Data item -> (documentType, processType, the POST attribute naming the zone). Attribute
-#: names follow the guide's POST example (OutBiddingZone_Domain for 6.1.A) and the GET
-#: parameter names capitalised (in_Domain -> In_Domain for 16.1.B&C); a wrong name comes back as
-#: the API's own acknowledgement, recorded (scrubbed), never as a zero.
-DOCS: dict[str, tuple[str, str, str]] = {"load": ("A65", "A16", "OutBiddingZone_Domain"),
-                                         "gen": ("A75", "A16", "In_Domain")}
-#: Regulation 543/2013 publication deadlines: Art. 6.1(a) actual total load and Art. 16.1(b)
-#: actual generation per type, both "no later than one hour after the operational period".
-PUBLICATION_LAG: dict[str, timedelta] = {"load": timedelta(hours=1), "gen": timedelta(hours=1)}
+#: Data item -> (documentType, processType or "", the GET parameter(s) naming the zone). "@" is
+#: the zone's EIC, "~" the flow neighbour's. A wrong parameter comes back as the API's own
+#: acknowledgement, recorded (scrubbed), never as a zero.
+DOCS: dict[str, tuple[str, str, tuple[tuple[str, str], ...]]] = {
+    "load": ("A65", "A16", (("outBiddingZone_Domain", "@"),)),
+    "gen": ("A75", "A16", (("in_Domain", "@"),)),
+    "load_fc": ("A65", "A01", (("outBiddingZone_Domain", "@"),)),
+    "ws_fc": ("A69", "A01", (("in_Domain", "@"),)),
+    "price": ("A44", "", (("in_Domain", "@"), ("out_Domain", "@"),
+                          ("contract_MarketAgreement.type", "A01"))),
+    "flow_out": ("A11", "", (("out_Domain", "@"), ("in_Domain", "~"))),
+    "flow_in": ("A11", "", (("out_Domain", "~"), ("in_Domain", "@"))),
+}
+#: The flow neighbour per zone (DE-LU <-> FR, the interconnector both zones' cells share).
+FLOW_NEIGHBOUR: dict[str, tuple[str, str]] = {"DE-LU": ("fr", "10YFR-RTE------C")}
+#: The items read per zone, in request order.
+ZONE_KINDS: dict[str, tuple[str, ...]] = {
+    "DE-LU": ("load", "gen", "load_fc", "ws_fc", "price", "flow_out", "flow_in"),
+    "FR": ("load", "gen", "load_fc", "ws_fc", "price"),
+}
+#: Regulation 543/2013 publication deadlines: Art. 6.1(a) actual total load, Art. 16.1(b)
+#: actual generation per type and Art. 12.1(g) physical flows "no later than one hour after the
+#: operational period"; day-ahead prices (12.1.D) and the day-ahead forecasts (6.1.B, 14.1.D)
+#: are published BEFORE the day, so the hour-after bound is late-biased for them.
+PUBLICATION_LAG: dict[str, timedelta] = dict.fromkeys(DOCS, timedelta(hours=1))
 DEPTH_D = 365                   # a zone's first pass reaches this far back
 CHUNK_D = 31                    # local days per request window (the API allows one year)
 RECENT_D = 3                    # a caught-up zone re-reads its last days for late points
@@ -159,8 +181,8 @@ SOURCE_POLICY_ROW: dict[str, dict[str, Any]] = {
             "6.1.A and 16.1.B&C without the TSOs' prior agreement? Yes -> status API_PERMITTED "
             "(LIVE). No -> stays IDEAS_ONLY; DE-LU load/generation also exist under CC BY 4.0 "
             "via SMARD (Bundesnetzagentur), a candidate LIVE substitute."),
-        "key_placement": ("header SECURITY_TOKEN (guide s2.2 POST method, documented); never the "
-                          "securityToken query parameter"),
+        "key_placement": ("query parameter securityToken (the documented GET form; knowledge-base "
+                          "'Request Methods'), redacted on every error path"),
         "attribution": CREDIT,
         "terms": {
             "url": TERMS_URL, "checked_at": READ_AT,
@@ -200,6 +222,15 @@ SOURCE_POLICY_ROW: dict[str, dict[str, Any]] = {
     },
 }
 POLICY_KEY = "entsoe_transparency"
+# STATUS IS THE REGISTER'S (terms_fence.SOURCE_POLICY["entsoe_transparency"]): one row edit there
+# flips this source; this module's copy only adds the full clause set.
+with contextlib.suppress(ImportError, KeyError):
+    from libs.data import terms_fence as _tf
+    SOURCE_POLICY_ROW[POLICY_KEY]["status"] = _tf.SOURCE_POLICY[POLICY_KEY]["status"]
+#: The access label a pass carries when robots.txt was read and permits (LAWS 5e labels).
+ACCESS_LABEL = "PUBLIC_WITH_TERMS"
+ACCESS_NOTE = ("ENTSO-E Terms of Use (declared terms present); research-only (IDEAS_ONLY) until "
+               "a verbatim clause permits live use of these items")
 
 
 def policy() -> dict[str, Any]:
@@ -212,17 +243,33 @@ def live_input() -> bool:
 
 
 # ============================================================================ the secret
-def read_token(environ: Mapping[str, str] | None = None) -> str:
-    """The token, or ''. Through `libs.ops.env_keys.read_key` (registry, then process env) when
-    that module is on the branch; the process environment otherwise. `environ` replaces both
-    (tests). The value is returned to the caller and goes nowhere else."""
-    if environ is not None:
-        return str(environ.get(KEY_NAME) or "").strip()
+def read_token(environ: Mapping[str, str] | None = None, key_file: Path | None = None) -> str:
+    """The held ENTSOE key, or ''. The process environment (KEY_NAMES, first wins), else the box
+    secrets file `data/secrets/entsoe.json` ({"key"} or {"token"}), the way axis_ingest reads
+    FRED's. `environ` replaces the environment and, unless `key_file` is given, the file
+    (tests). The value is returned to the caller, registered with polite_fetch's redactor, and
+    goes nowhere else."""
+    env = os.environ if environ is None else environ
+    for name in KEY_NAMES:
+        v = str(env.get(name) or "").strip()
+        if v:
+            return _registered(v)
+    fp = key_file if key_file is not None else (KEY_FILE if environ is None else None)
+    if fp is None:
+        return ""
     try:
-        env_keys = importlib.import_module("libs.ops.env_keys")
-    except ImportError:
-        return str(os.environ.get(KEY_NAME) or "").strip()
-    return str(env_keys.read_key(KEY_NAME) or "").strip()
+        doc = json.loads(fp.read_text("utf-8"))
+        v = str(doc.get("key") or doc.get("token") or "").strip()
+    except (OSError, ValueError, AttributeError):
+        return ""
+    return _registered(v)
+
+
+def _registered(v: str) -> str:
+    with contextlib.suppress(Exception):
+        from libs.data import polite_fetch
+        polite_fetch.register_secret(v)
+    return v
 
 
 def _forms(secrets: Iterable[str]) -> list[str]:
@@ -249,36 +296,36 @@ def scrub_bytes(body: bytes, secrets: Iterable[str]) -> bytes:
 
 
 # ============================================================================ the request
-def request_xml(kind: str, eic: str, start: datetime, end: datetime, created: datetime) -> bytes:
-    """The guide's StatusRequest_MarketDocument for one data item, zone and UTC interval."""
-    doc, proc, dom = DOCS[kind]
+def _t(x: datetime) -> str:
+    return x.astimezone(UTC).strftime("%Y%m%d%H%M")
 
-    def t(x: datetime) -> str:
-        return x.astimezone(UTC).strftime("%Y-%m-%dT%H:%MZ")
 
-    attrs = (("DocumentType", doc), ("ProcessType", proc), (dom, eic),
-             ("TimeInterval", f"{t(start)}/{t(end)}"))
-    comps = "".join(f"<AttributeInstanceComponent><attribute>{a}</attribute>"
-                    f"<attributeValue>{v}</attributeValue></AttributeInstanceComponent>"
-                    for a, v in attrs)
-    return ('<?xml version="1.0" encoding="UTF-8"?>'
-            '<StatusRequest_MarketDocument xmlns="urn:iec62325.351:tc57wg16:451-5:'
-            'statusrequestdocument:4:0">'
-            f"<mRID>desk-{doc}-{eic}-{t(start)}</mRID><type>A59</type>"
-            '<sender_MarketParticipant.mRID codingScheme="A01">10X1001A1001A450'
-            "</sender_MarketParticipant.mRID>"
-            "<sender_MarketParticipant.marketRole.type>A07</sender_MarketParticipant.marketRole"
-            ".type>"
-            '<receiver_MarketParticipant.mRID codingScheme="A01">10X1001A1001A450'
-            "</receiver_MarketParticipant.mRID>"
-            "<receiver_MarketParticipant.marketRole.type>A32</receiver_MarketParticipant."
-            "marketRole.type>"
-            f"<createdDateTime>{created.astimezone(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')}"
-            f"</createdDateTime>{comps}</StatusRequest_MarketDocument>").encode()
+def request_params(kind: str, zone: str, start: datetime, end: datetime) -> list[tuple[str, str]]:
+    """The documented GET parameters for one data item, zone and UTC interval, WITHOUT the key."""
+    doc, proc, doms = DOCS[kind]
+    eic = ZONES[zone][0]
+    nb = FLOW_NEIGHBOUR.get(zone, ("", ""))[1]
+    q: list[tuple[str, str]] = [("documentType", doc)]
+    if proc:
+        q.append(("processType", proc))
+    q += [(k, eic if v == "@" else nb if v == "~" else v) for k, v in doms]
+    q += [("periodStart", _t(start)), ("periodEnd", _t(end))]
+    return q
+
+
+def request_url(kind: str, zone: str, start: datetime, end: datetime, token: str) -> str:
+    """The GET URL with the key in the documented `securityToken` query parameter."""
+    q = [*request_params(kind, zone, start, end), (TOKEN_PARAM, token)]
+    return f"{API_URL}?{urllib.parse.urlencode(q)}"
+
+
+def redacted_url(url: str, secrets: Iterable[str]) -> str:
+    """`url` safe to write anywhere: every form of the key scrubbed."""
+    return scrub(url, secrets)
 
 
 class RedirectRefused(urllib.error.HTTPError):
-    """A 3xx answer. Never followed: the next hop would receive the token header."""
+    """A 3xx answer. Never followed: the next hop would receive the key-bearing query."""
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -296,17 +343,18 @@ def _ua(ap: Any) -> str:
     return str(ap.UA)
 
 
-Poster = Callable[[str, bytes, dict[str, str]], tuple[bytes, str]]
+Poster = Callable[[str, dict[str, str]], tuple[bytes, str]]
 
 
-def http_post(url: str, body: bytes, headers: dict[str, str]) -> tuple[bytes, str]:
-    """One POST, no retry, redirects refused. Raises HTTPError / URLError on failure."""
+def http_fetch(url: str, headers: dict[str, str]) -> tuple[bytes, str]:
+    """One GET, no retry, redirects refused. Raises HTTPError / URLError on failure (the caller
+    scrubs every text it keeps)."""
     ctx = None
     with contextlib.suppress(Exception):
         from libs.data.polite_fetch import ssl_context
         ctx = ssl_context()
     opener = urllib.request.build_opener(_NoRedirect(), urllib.request.HTTPSHandler(context=ctx))
-    req = urllib.request.Request(url, data=body, headers=headers, method="POST")
+    req = urllib.request.Request(url, headers=headers, method="GET")
     with opener.open(req, timeout=TIMEOUT_S) as fh:
         return fh.read(MAX_BYTES), str(fh.headers.get("Content-Type") or "")
 
@@ -390,7 +438,7 @@ def parse_answer(body: bytes) -> Answer:
             for p in [c for c in per if _local(c.tag) == "Point"]:
                 try:
                     pos = int(_text(_child(p, "position")))
-                    q = float(_text(_child(p, "quantity")))
+                    q = float(_text(_child(p, "quantity")) or _text(_child(p, "price.amount")))
                 except ValueError:
                     continue
                 if pos < 1 or not math.isfinite(q):
@@ -428,7 +476,8 @@ def _hourly(points: Iterable[tuple[datetime, datetime, float]]) -> dict[int, flo
 
 
 def fold_days(slug: str, load: Answer | None, gen: Answer | None, days: Iterable[date],
-              cet_offset_h: Callable[[datetime], int]) -> list[tuple[str, date, float]]:
+              cet_offset_h: Callable[[datetime], int],
+              extra: Mapping[str, Answer | None] | None = None) -> list[tuple[str, date, float]]:
     """(series, local day, value) for every COMPLETE local day: a component is published for a
     day only when every UTC hour of that day (23, 24 or 25) carries it. A production type that
     covers part of a day makes the day's generation incomplete; one absent all day is absent
@@ -467,6 +516,72 @@ def fold_days(slug: str, load: Answer | None, gen: Answer | None, days: Iterable
             resid = [load_h[h] - sum(gen_h.get(p, {}).get(h, 0.0) for p in WIND_SOLAR)
                      for h in hours]
             out.append((f"{slug}_residual_load", d, round(sum(resid) / len(resid), 3)))
+    if extra:
+        out += fold_extra(slug, load_h, gen_h, extra, days, cet_offset_h)
+    return out
+
+
+def _by_psr(a: Answer | None) -> dict[str, dict[int, float]]:
+    out: dict[str, dict[int, float]] = {}
+    for s in (a.series if a else ()):
+        if s.consumption:
+            continue
+        cur = out.setdefault(s.psr, {})
+        for h, v in _hourly(s.points).items():
+            cur[h] = cur.get(h, 0.0) + v
+    return out
+
+
+def _flat(a: Answer | None) -> dict[int, float]:
+    return _hourly(p for s in (a.series if a else ()) for p in s.points)
+
+
+def fold_extra(slug: str, load_h: dict[int, float], gen_h: dict[str, dict[int, float]],
+               extra: Mapping[str, Answer | None], days: Iterable[date],
+               cet_offset_h: Callable[[datetime], int]) -> list[tuple[str, date, float]]:
+    """The surprise, price and flow series for every COMPLETE local day (every UTC hour of the
+    day present in every input used; absent is never zero):
+
+      {slug}_load_surprise   mean(actual load - day-ahead load forecast), MW
+      {slug}_wind_surprise   mean(actual wind - day-ahead wind forecast), MW, over the wind
+                             types the forecast carries (B18 offshore, B19 onshore)
+      {slug}_solar_surprise  mean(actual solar - day-ahead solar forecast), MW (B16)
+      {slug}_da_price        mean day-ahead price for delivery day d, EUR/MWh, KEYED ON THE
+                             AUCTION DAY d-1 (it is known before d; the period-keyed rule then
+                             stamps it at d-1's end + 1h, late of the ~13:00 CET publication)
+      {slug}_net_export_<nb> mean(flow zone->nb - flow nb->zone), MW
+    """
+    load_fc = _flat(extra.get("load_fc"))
+    ws_fc = _by_psr(extra.get("ws_fc"))
+    price = _flat(extra.get("price"))
+    f_out, f_in = _flat(extra.get("flow_out")), _flat(extra.get("flow_in"))
+    nb = next((n for z, (n, _e) in FLOW_NEIGHBOUR.items() if ZONES[z][1] == slug), "")
+    out: list[tuple[str, date, float]] = []
+
+    def full(m: Mapping[int, float], hours: list[int]) -> bool:
+        return bool(hours) and all(h in m for h in hours)
+
+    for d in days:
+        a, b = day_bounds(d, cet_offset_h)
+        hours = list(range(int(a.timestamp() // 3600), int(b.timestamp() // 3600)))
+        if not hours:
+            continue
+        if full(load_h, hours) and full(load_fc, hours):
+            out.append((f"{slug}_load_surprise", d, round(
+                sum(load_h[h] - load_fc[h] for h in hours) / len(hours), 3)))
+        for name, psrs in (("wind", (PSR_WIND_OFF, PSR_WIND_ON)), ("solar", (PSR_SOLAR,))):
+            have = [p for p in psrs if p in ws_fc and any(h in ws_fc[p] for h in hours)]
+            if have and all(full(ws_fc[p], hours) and full(gen_h.get(p, {}), hours)
+                            for p in have):
+                out.append((f"{slug}_{name}_surprise", d, round(
+                    sum(gen_h[p][h] - ws_fc[p][h] for p in have for h in hours) / len(hours),
+                    3)))
+        if full(price, hours):
+            out.append((f"{slug}_da_price", d - timedelta(days=1),
+                        round(sum(price[h] for h in hours) / len(hours), 4)))
+        if nb and full(f_out, hours) and full(f_in, hours):
+            out.append((f"{slug}_net_export_{nb}", d, round(
+                sum(f_out[h] - f_in[h] for h in hours) / len(hours), 3)))
     return out
 
 
@@ -483,6 +598,18 @@ SERIES_INSTRUMENTS: dict[str, dict[str, int]] = {
     "de_lu_gen_gas": {"XNGUSD": 1},
     "fr_gen_nuclear": {"XNGUSD": -1},
     "de_lu_ren_share": {"XNGUSD": -1},
+    # 2026-11-03: surprise, price and flow features for XNGUSD, GER40 and EURUSD. Load above its
+    # forecast is unplanned demand (gas burn, activity); wind or solar above forecast displaces
+    # gas; a dearer day-ahead clears more gas and taxes German industry; DE-LU exporting to FR
+    # is a German renewable surplus.
+    "de_lu_load_surprise": {"XNGUSD": 1, "GER40": 1, "EURUSD": 1},
+    "fr_load_surprise": {"XNGUSD": 1, "EURUSD": 1},
+    "de_lu_wind_surprise": {"XNGUSD": -1},
+    "de_lu_solar_surprise": {"XNGUSD": -1},
+    "fr_wind_surprise": {"XNGUSD": -1},
+    "de_lu_da_price": {"XNGUSD": 1, "GER40": -1, "EURUSD": -1},
+    "fr_da_price": {"XNGUSD": 1},
+    "de_lu_net_export_fr": {"XNGUSD": -1},
 }
 SIGNAL_SERIES = tuple(SERIES_INSTRUMENTS)
 
@@ -514,7 +641,8 @@ def make_source(ap: Any) -> Any:
                                  "forecast, or when LNG supply rather than burn sets the gas "
                                  "price"),
         crowding_prior="medium",
-        note="keyed (ENTSOE_API_TOKEN, SECURITY_TOKEN header); hourly items folded to days")
+        note="keyed (held ENTSOE key, securityToken query parameter, redacted); hourly items "
+             "folded to days")
 
 
 # ============================================================================ holds
@@ -540,6 +668,59 @@ def hold_row(status: int | str, url: str, cause: str, now: datetime,
             "missed_growth": mg}
 
 
+# ============================================================================ access labels
+#: More than this many consecutive passes that landed nothing is RED (world_dataset_hunter's
+#: PACK_EMPTY_RED_RUNS rule: red after more than 2 consecutive empty runs).
+EMPTY_RED_RUNS = 2
+
+
+def robots_access(rb: Mapping[str, Any], base_label: str, base_note: str = "") -> dict[str, Any]:
+    """robots.txt as a LABEL, never a stop (LAWS 5e). A Disallow -> PUBLIC_WITH_TERMS with the
+    Disallow in `terms_note`; unreadable -> ACCESS_UNCLEAR; read and permitting -> the source's
+    own `base_label`. `redistribute_allowed` is read from access_classifier.ROUTING for the
+    label, failing closed (False) when the table cannot be read."""
+    verdict = str(rb.get("verdict") or "unreadable")
+    notes = [base_note] if base_note else []
+    if verdict == "disallow":
+        label = "PUBLIC_WITH_TERMS"
+        notes.append(f"robots.txt Disallow for this path ({rb.get('robots')}): {rb.get('note')}")
+    elif verdict == "allow":
+        label = base_label
+    else:
+        label = "ACCESS_UNCLEAR"
+        notes.append(f"robots.txt unreadable: {rb.get('note')}")
+    redistribute = False
+    with contextlib.suppress(Exception):
+        from libs.research.access_classifier import ROUTING
+        redistribute = "redistribute" in tuple(ROUTING[label]["allowed_uses"])  # type: ignore[index]
+    return {"access_label": label, "terms_note": "; ".join(notes),
+            "redistribute_allowed": bool(redistribute), "robots_verdict": verdict,
+            "stops_fetch": False}
+
+
+def liveness(sst: dict[str, Any], rec: Mapping[str, Any], now: datetime) -> dict[str, Any]:
+    """Count consecutive passes that ATTEMPTED and landed nothing (`empty_streak`, reset by a
+    pass that folded rows). NEEDS_KEY, a person's hold and a no-fetch pass are their own states,
+    not empty runs. More than EMPTY_RED_RUNS in a row is RED."""
+    outcome = str(rec.get("outcome") or "")
+    attempted = not outcome.startswith(("NEEDS_KEY", "HELD", UNMEASURED))
+    if attempted:
+        if int(rec.get("parsed") or 0) > 0:
+            sst["empty_streak"] = 0
+            sst["last_landed_at"] = now.isoformat(timespec="seconds")
+        else:
+            sst["empty_streak"] = int(sst.get("empty_streak") or 0) + 1
+    streak = int(sst.get("empty_streak") or 0)
+    state = ("RED" if streak > EMPTY_RED_RUNS else "AMBER" if streak
+             else "GREEN" if sst.get("last_landed_at") else UNMEASURED)
+    out = {"state": state, "empty_streak": streak, "red_above": EMPTY_RED_RUNS,
+           "last_landed_at": sst.get("last_landed_at") or UNMEASURED, "last_outcome": outcome}
+    if state == "RED":
+        out["why"] = (f"{streak} consecutive passes landed nothing (last: {outcome}); RED above "
+                      f"{EMPTY_RED_RUNS}")
+    return out
+
+
 # ============================================================================ the pass
 @dataclass
 class Window:
@@ -560,7 +741,7 @@ def _windows(cursor: str | None, now: datetime, zone: str) -> Window:
 
 def collect(ap: Any, paths: Any, src: Any, sst: dict[str, Any], store: dict[str, Any],
             now: datetime, *, fetch: bool, fixtures: Path | None, deadline: float,
-            poster: Poster = http_post,
+            poster: Poster = http_fetch,
             getter: Callable[[str], tuple[bytes, str]] | None = None,
             environ: Mapping[str, str] | None = None,
             sleep: Callable[[float], None] = time.sleep,
@@ -581,8 +762,8 @@ def collect(ap: Any, paths: Any, src: Any, sst: dict[str, Any], store: dict[str,
         return out
 
     def take(slug: str, load: Answer | None, gen: Answer | None, days: list[date],
-             seen: datetime) -> None:
-        rows = fold_days(slug, load, gen, days, ap.cet_offset_h)
+             seen: datetime, extra: Mapping[str, Answer | None] | None = None) -> None:
+        rows = fold_days(slug, load, gen, days, ap.cet_offset_h, extra)
         obs = [ap.Obs(s, d, v) for s, d, v in rows]
         out["parsed"] += len(obs)
         m = ap.merge_vintages(store, src, obs, seen)
@@ -592,7 +773,7 @@ def collect(ap: Any, paths: Any, src: Any, sst: dict[str, Any], store: dict[str,
     if fixtures is not None:
         for zone, (_eic, slug) in ZONES.items():
             fx: dict[str, Answer] = {}
-            for kind in DOCS:
+            for kind in ZONE_KINDS[zone]:
                 fp = fixtures / f"{SOURCE_ID}.{slug}.{kind}.xml"
                 if fp.exists():
                     fx[kind] = parse_answer(fp.read_bytes())
@@ -603,7 +784,8 @@ def collect(ap: Any, paths: Any, src: Any, sst: dict[str, Any], store: dict[str,
             first = min(p[0] for p in series)
             last = max(p[0] for p in series)
             days = list(_days(ap.cet_local(first).date(), ap.cet_local(last).date()))
-            take(slug, _doc(fx.get("load")), _doc(fx.get("gen")), days, now)
+            take(slug, _doc(fx.get("load")), _doc(fx.get("gen")), days, now,
+                 {k: _doc(v) for k, v in fx.items()})
             out["fetched"] += 1
             out.setdefault("zones", []).append(zone)
         if not out["parsed"]:
@@ -625,28 +807,30 @@ def collect(ap: Any, paths: Any, src: Any, sst: dict[str, Any], store: dict[str,
         return out
     secrets = (token,)
     rb = ap.robots_verdict(API_URL, getter or ap.http_get)
-    out["robots"] = rb
+    out["robots"] = {k: scrub(str(v), secrets) if isinstance(v, str) else v
+                     for k, v in rb.items()}
     if rb["verdict"] == "hard_stop":
+        # a 401/403/429 ON robots.txt is the host refusing this desk: held for a person
         rcode = re.search(r"(\d{3})", str(rb.get("note")))
         return fail(f"HARD_STOP: {rb['note']}", hold=int(rcode.group(1)) if rcode else "ROBOTS")
-    if rb["verdict"] != "allow":
-        return fail(f"ROBOTS_{rb['verdict'].upper()}: {rb['note']}")
+    # robots.txt is a LABEL, never a stop (LAWS 5e): Disallow / unreadable are recorded, and
+    # the pass fetches either way.
+    out["access"] = robots_access(out["robots"], ACCESS_LABEL, ACCESS_NOTE)
     delay = max(MIN_INTERVAL_S, float(rb.get("crawl_delay") or 0.0))
-    headers = {"User-Agent": _ua(ap), "Content-Type": "application/xml",
-               "Accept": "application/xml, text/xml", TOKEN_HEADER: token}
+    headers = {"User-Agent": _ua(ap), "Accept": "application/xml, text/xml"}
     cursors: dict[str, str] = sst.setdefault("cursor", {})
     yesterday = (now - timedelta(days=1)).date()
     done: dict[str, bool] = dict.fromkeys(ZONES, False)
     first_req = True
     cut = False
-    for zone, (eic, slug) in ZONES.items():
+    for zone, (_eic, slug) in ZONES.items():
         while not done[zone] and not cut:
             w = _windows(cursors.get(zone), now, zone)
             a = day_bounds(w.first, ap.cet_offset_h)[0]
             b = day_bounds(w.last, ap.cet_offset_h)[1]
             got: dict[str, Answer] = {}
             seen: datetime | None = None
-            for kind in DOCS:
+            for kind in ZONE_KINDS[zone]:
                 if not first_req:
                     if time.monotonic() + delay > deadline:
                         out["errors"].append(f"budget reached at {zone} {kind} {w.first}: the "
@@ -656,11 +840,12 @@ def collect(ap: Any, paths: Any, src: Any, sst: dict[str, Any], store: dict[str,
                     sleep(delay)
                 first_req = False
                 out["requests"] += 1
+                url = request_url(kind, zone, a, b, token)
                 try:
-                    body, _ctype = poster(API_URL, request_xml(kind, eic, a, b, now), headers)
+                    body, _ctype = poster(url, headers)
                 except RedirectRefused as exc:
                     return fail(f"REDIRECT_REFUSED: HTTP {exc.code} on {zone} {kind} (the "
-                                "token header is never sent to another hop)")
+                                "key-bearing query is never sent to another hop)")
                 except urllib.error.HTTPError as exc:
                     code = int(exc.code)
                     with contextlib.suppress(Exception):
@@ -685,14 +870,14 @@ def collect(ap: Any, paths: Any, src: Any, sst: dict[str, Any], store: dict[str,
                            "at": now.isoformat(timespec="seconds")}
                     out["unmeasured_windows"].append(win)
                 with contextlib.suppress(Exception):
-                    ap.vault(paths, src, scrub_bytes(body, secrets), API_URL,
-                             "application/xml", at)
+                    ap.vault(paths, src, scrub_bytes(body, secrets),
+                             redacted_url(url, secrets), "application/xml", at)
                 got[kind] = ans
             if cut:
                 break
             assert seen is not None
             take(slug, _doc(got.get("load")), _doc(got.get("gen")),
-                 list(_days(w.first, w.last)), seen)
+                 list(_days(w.first, w.last)), seen, {k: _doc(v) for k, v in got.items()})
             if w.last >= yesterday:
                 done[zone] = True
                 cursors[zone] = (yesterday - timedelta(days=RECENT_D - 1)).isoformat()
@@ -803,7 +988,7 @@ def cells(ap: Any, src: Any, gains: dict[str, dict[str, Any]], now: datetime
 # ============================================================================ the producer
 def run_pass(ap: Any, paths: Any, state: dict[str, Any], now: datetime, *, fetch: bool,
              fixtures: Path | None, deadline: float, dry_run: bool = False,
-             donate: bool = True, poster: Poster = http_post,
+             donate: bool = True, poster: Poster = http_fetch,
              getter: Callable[[str], tuple[bytes, str]] | None = None,
              environ: Mapping[str, str] | None = None,
              sleep: Callable[[float], None] = time.sleep,
@@ -818,6 +1003,8 @@ def run_pass(ap: Any, paths: Any, state: dict[str, Any], now: datetime, *, fetch
     rec = collect(ap, paths, src, sst, store, now, fetch=fetch, fixtures=fixtures,
                   deadline=deadline, poster=poster, getter=getter, environ=environ,
                   sleep=sleep, clock=clock)
+    if fixtures is None:
+        rec["liveness"] = liveness(sst, rec, now)
     if not dry_run:
         ap._atomic(store_p, store)
     rec["store_rows"] = len(store)
@@ -840,7 +1027,7 @@ def run_pass(ap: Any, paths: Any, state: dict[str, Any], now: datetime, *, fetch
         **rec, "id": SOURCE_ID, "credit": CREDIT,
         "terms": {"row": POLICY_KEY, "status": policy()["status"], "live_input": live,
                   "missed_growth": None if live else policy()["missed_growth"]},
-        "key": {"name": KEY_NAME, "placement": f"header {TOKEN_HEADER}",
+        "key": {"name": KEY_NAME, "placement": f"query parameter {TOKEN_PARAM} (redacted)",
                 "present": bool(read_token(environ)) if fixtures is None and fetch else None},
         "pit_rule": ("point available = max(response fetch instant, point end + 1h "
                      "(Reg. 543/2013 Art. 6.1(a), 16.1(b))); daily value = max(fetch, local day "
