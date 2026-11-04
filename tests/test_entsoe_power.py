@@ -1,6 +1,6 @@
 """ENTSO-E load and generation per type (research/entsoe_power.py, registered in alt_proxies).
 
-No network: every POST goes through an injected poster and robots.txt through an injected
+No network: every GET goes through an injected poster and robots.txt through an injected
 getter. The token is a FAKE, and every test that could leak it scans what was written."""
 from __future__ import annotations
 
@@ -43,23 +43,36 @@ def _http(code: int, text: str = "") -> urllib.error.HTTPError:
                                   code, f"refused {text}", {}, io.BytesIO(b""))  # type: ignore[arg-type]
 
 
+def _kind(url: str) -> tuple[str, str]:
+    """(zone slug, data item) read back from the GET query."""
+    import urllib.parse
+    q = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(url).query))
+    doc, proc = q.get("documentType"), q.get("processType", "")
+    if doc == "A11":
+        return "de_lu", ("flow_out" if q["out_Domain"] == "10Y1001A1001A82H" else "flow_in")
+    zone = q.get("outBiddingZone_Domain") or q.get("in_Domain")
+    slug = "de_lu" if zone == "10Y1001A1001A82H" else "fr"
+    kind = {("A65", "A16"): "load", ("A75", "A16"): "gen", ("A65", "A01"): "load_fc",
+            ("A69", "A01"): "ws_fc", ("A44", ""): "price"}[(str(doc), proc)]
+    return slug, kind
+
+
 class Poster:
-    """Answers by data item and zone read from the POSTed document; `script` overrides."""
+    """Answers by data item and zone read from the GET query; `script` overrides call by call
+    while it lasts, then the fixtures answer."""
 
     def __init__(self, script: list[Any] | None = None) -> None:
-        self.calls: list[tuple[str, bytes, dict[str, str]]] = []
+        self.calls: list[tuple[str, dict[str, str]]] = []
         self.script = list(script) if script is not None else None
 
-    def __call__(self, url: str, body: bytes, headers: dict[str, str]) -> tuple[bytes, str]:
-        self.calls.append((url, body, dict(headers)))
-        if self.script is not None:
+    def __call__(self, url: str, headers: dict[str, str]) -> tuple[bytes, str]:
+        self.calls.append((url, dict(headers)))
+        if self.script:
             item = self.script.pop(0)
             if isinstance(item, BaseException):
                 raise item
             return item, "text/xml"
-        slug = "de_lu" if b"10Y1001A1001A82H" in body else "fr"
-        kind = "load" if b"A65" in body else "gen"
-        return _fx(slug, kind), "text/xml"
+        return _fx(*_kind(url)), "text/xml"
 
 
 def _robots(body: bytes = b"User-agent: *\nAllow: /\n") -> Any:
@@ -130,19 +143,19 @@ def test_ack_html_and_dtd_bodies_are_classified_and_never_parsed() -> None:
 
 
 # ---------------------------------------------------------------- the key
-def test_the_token_travels_only_in_the_security_token_header(tmp_path: Path) -> None:
+def test_the_key_travels_in_the_documented_security_token_query_param(tmp_path: Path) -> None:
+    import urllib.parse
     p = Poster()
     rec, _sst, _store = _collect(tmp_path, p)
     assert rec["outcome"] == "OK", rec
-    assert len(p.calls) == 4                                    # 2 zones x (load, gen)
-    for url, body, headers in p.calls:
-        assert url == E.API_URL and "?" not in url
-        assert headers[E.TOKEN_HEADER] == FAKE
-        for form in E._forms((FAKE,)):
-            assert form.encode() not in body and form not in url
-        assert "securityToken" not in url
+    assert len(p.calls) == 7 + 5                                # DE-LU 7 items, FR 5
+    for url, headers in p.calls:
+        assert url.startswith(E.API_URL + "?")
+        q = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(url).query))
+        assert q["securityToken"] == FAKE
+        assert FAKE not in json.dumps(headers)                  # never a header
         assert "quant-mt5-research-desk" in headers["User-Agent"]
-        assert b"<type>A59</type>" in body and b"StatusRequest_MarketDocument" in body
+    assert FAKE not in json.dumps(rec, default=str)
 
 
 def test_a_missing_token_is_needs_key_and_sends_nothing(tmp_path: Path) -> None:
@@ -156,7 +169,7 @@ def test_a_missing_token_is_needs_key_and_sends_nothing(tmp_path: Path) -> None:
 def test_a_redirect_is_refused_never_followed() -> None:
     import urllib.request
     h = E._NoRedirect()
-    req = urllib.request.Request(E.API_URL, data=b"x", headers={E.TOKEN_HEADER: FAKE})
+    req = urllib.request.Request(f"{E.API_URL}?securityToken={FAKE}")
     with pytest.raises(E.RedirectRefused):
         h.redirect_request(req, io.BytesIO(b""), 302, "Found", {}, "https://elsewhere.example/")
 
@@ -198,16 +211,21 @@ def test_a_waf_page_is_a_hard_stop(tmp_path: Path) -> None:
     assert sst["hard_stop"]["verdict"] == "METHOD_BLOCKED"
 
 
-def test_robots_decides_every_pass(tmp_path: Path) -> None:
+def test_robots_is_a_label_never_a_stop(tmp_path: Path) -> None:
     p = Poster()
     rec, _s, _st = _collect(tmp_path, p, getter=_robots(b"User-agent: *\nDisallow: /api\n"))
-    assert rec["outcome"] == "FAILED:ROBOTS_DISALLOW" and p.calls == []
+    assert rec["outcome"] == "OK" and p.calls                   # fetched anyway
+    acc = rec["access"]
+    assert acc["access_label"] == "PUBLIC_WITH_TERMS" and "Disallow" in acc["terms_note"]
+    assert acc["redistribute_allowed"] is False and acc["stops_fetch"] is False
 
     def unreadable(url: str) -> tuple[bytes, str]:
         raise OSError("down")
     p2 = Poster()
-    rec2, _s, _st = _collect(tmp_path, p2, getter=unreadable)
-    assert rec2["outcome"] == "FAILED:ROBOTS_UNREADABLE" and p2.calls == []
+    rec2, _s, _st = _collect(tmp_path / "b", p2, getter=unreadable)
+    assert rec2["outcome"] == "OK" and p2.calls
+    assert rec2["access"]["access_label"] == "ACCESS_UNCLEAR"
+    assert rec2["access"]["redistribute_allowed"] is False
 
     def forbidden(url: str) -> tuple[bytes, str]:
         raise _http(403)
@@ -254,7 +272,7 @@ def test_a_cell_cannot_see_a_value_before_its_stamp(tmp_path: Path) -> None:
 
 # ---------------------------------------------------------------- outcomes
 def test_an_all_empty_pass_is_failed_never_zero(tmp_path: Path) -> None:
-    rec, _s, store = _collect(tmp_path, Poster([ACK_999] * 4))
+    rec, _s, store = _collect(tmp_path, Poster([ACK_999] * 12))
     assert rec["outcome"] == "FAILED:ALL_WINDOWS_EMPTY" and store == {}
     assert all(w["status"] == "UNMEASURED" for w in rec["unmeasured_windows"])
 
@@ -286,7 +304,7 @@ def test_a_budget_cut_is_partial_and_keeps_the_cursor(tmp_path: Path, monkeypatc
     monkeypatch.setattr(E, "time", FakeTime)
     sst: dict[str, Any] = {"cursor": {"DE-LU": "2026-10-01", "FR": "2026-10-01"}}
     rec = E.collect(A, A.Paths(tmp_path / "desk"), E.make_source(A), sst, {}, NOW, fetch=True,
-                    fixtures=None, deadline=E.MIN_INTERVAL_S * 2.5, poster=Poster(),
+                    fixtures=None, deadline=E.MIN_INTERVAL_S * 6.5, poster=Poster(),
                     getter=_robots(), environ=ENV, sleep=sleep, clock=lambda: NOW)
     assert rec["outcome"] == "PARTIAL:BUDGET"                   # DE-LU read, FR owed
     assert rec["caught_up"] == {"DE-LU": True, "FR": False}
@@ -303,12 +321,12 @@ def test_a_pass_cut_before_any_window_completes_is_failed_budget(tmp_path: Path)
 def test_the_cursor_walks_whole_local_day_windows_from_depth(tmp_path: Path) -> None:
     p = Poster([ACK_999] * 400)
     rec, sst, _st = _collect(tmp_path, p, sst={})
-    first = p.calls[0][1].decode()
+    first = p.calls[0][0]
     start = (NOW - timedelta(days=E.DEPTH_D)).date()
-    a = E.day_bounds(start, A.cet_offset_h)[0].strftime("%Y-%m-%dT%H:%MZ")
-    assert f"<attributeValue>{a}/" in first
+    a = E.day_bounds(start, A.cet_offset_h)[0].strftime("%Y%m%d%H%M")
+    assert f"periodStart={a}" in first
     n_windows = -(-((NOW - timedelta(days=1)).date() - start).days // E.CHUNK_D)
-    assert len(p.calls) == 2 * 2 * (n_windows + (1 if ((NOW - timedelta(days=1)).date()
+    assert len(p.calls) == (7 + 5) * (n_windows + (1 if ((NOW - timedelta(days=1)).date()
                                                       - start).days % E.CHUNK_D == 0 else 0))
     assert rec["caught_up"] == {"DE-LU": True, "FR": True}
     y = (NOW - timedelta(days=1)).date()
@@ -319,7 +337,7 @@ def test_the_cursor_walks_whole_local_day_windows_from_depth(tmp_path: Path) -> 
 def test_no_written_artifact_log_or_exception_carries_the_token(tmp_path: Path) -> None:
     echo = _fx("de_lu", "load").replace(b"<mRID>fixture</mRID>",
                                         f"<mRID>{FAKE}</mRID>".encode())
-    p = Poster([echo, _fx("de_lu", "gen"), _fx("fr", "load"), _fx("fr", "gen")])
+    p = Poster([echo])
     paths = A.Paths(tmp_path / "desk")
     state: dict[str, Any] = {"sources": {E.SOURCE_ID: {"cursor": {"DE-LU": "2026-10-01",
                                                                  "FR": "2026-10-01"}}}}
@@ -437,4 +455,67 @@ def test_alt_proxies_fixture_run_carries_the_entsoe_section(tmp_path: Path) -> N
     sec = rep["entsoe_power"]
     assert sec["outcome"] == "OK" and sec["series"]["de_lu_residual_load"] == 2
     assert sec["terms"]["status"] == E.IDEAS_ONLY
-    assert sec["key"]["placement"] == "header SECURITY_TOKEN"
+    assert sec["key"]["placement"] == "query parameter securityToken (redacted)"
+
+
+# ---------------------------------------------------------------- gd-power (2026-11-03)
+def test_surprise_price_and_flow_features_fold_from_fixtures() -> None:
+    ans = {k: E.parse_answer(_fx("de_lu", k)) for k in E.ZONE_KINDS["DE-LU"]}
+    days = [date(2026, 10, 1), date(2026, 10, 2)]
+    rows = {(s, d): v for s, d, v in E.fold_days("de_lu", ans["load"], ans["gen"], days,
+                                                  A.cet_offset_h, ans)}
+    for name in ("load_surprise", "wind_surprise", "solar_surprise", "net_export_fr"):
+        assert (f"de_lu_{name}", date(2026, 10, 1)) in rows, name
+    assert rows[("de_lu_net_export_fr", date(2026, 10, 1))] == 1000.0
+    # the day-ahead price for delivery day d is keyed on the auction day d-1
+    assert ("de_lu_da_price", date(2026, 9, 30)) in rows
+    assert ("de_lu_da_price", date(2026, 10, 2)) not in rows
+
+
+def test_the_key_is_redacted_on_every_error_path(tmp_path: Path) -> None:
+    errs: list[Any] = [_http(500, FAKE), urllib.error.URLError(f"reset {FAKE}"),
+                       E.RedirectRefused(f"{E.API_URL}?securityToken={FAKE}", 302, FAKE, {},  # type: ignore[arg-type]
+                                         io.BytesIO(b"")),
+                       ACK_999.replace(b"<code>999</code>", b"<code>A04</code>").replace(
+                           b"No matching", FAKE.encode())]
+    for exc in errs:
+        rec, sst, _s = _collect(tmp_path, Poster([exc]))
+        assert rec["outcome"].startswith("FAILED"), rec
+        blob = json.dumps([rec, sst], default=str)
+        for form in E._forms((FAKE,)):
+            assert form not in blob, (exc, form)
+    url = E.request_url("load", "DE-LU", NOW, NOW, FAKE)
+    assert FAKE not in E.redacted_url(url, (FAKE,))
+
+
+def test_the_key_is_read_from_env_or_the_box_secrets_file(tmp_path: Path) -> None:
+    assert E.read_token({"ENTSOE_API_KEY": "abcdefgh12"}) == "abcdefgh12"
+    fp = tmp_path / "entsoe.json"
+    fp.write_text(json.dumps({"key": "fromfile123"}), "utf-8")
+    assert E.read_token({}, key_file=fp) == "fromfile123"
+    assert E.read_token({}) == ""
+
+
+def test_the_register_row_is_research_only_with_a_missed_growth_line() -> None:
+    from libs.data import terms_fence as tf
+    row = tf.SOURCE_POLICY["entsoe_transparency"]
+    assert row["status"] == tf.IDEAS_ONLY == E.policy()["status"]
+    assert "for any purpose whatsoever" in row["terms"]["clauses"]["use_3_1"]
+    assert row["missed_growth"]["delta_elogw"] == "UNMEASURED"
+    assert "securityToken" in E.policy()["key_placement"]
+
+
+def test_liveness_is_red_after_more_than_two_empty_runs_and_reaches_the_report(
+        tmp_path: Path, monkeypatch: Any) -> None:
+    sst: dict[str, Any] = {}
+    seen = [E.liveness(sst, {"outcome": "FAILED:EMPTY", "parsed": 0}, NOW)["state"]
+            for _ in range(3)]
+    assert seen == ["AMBER", "AMBER", "RED"]
+    assert E.liveness(sst, {"outcome": "NEEDS_KEY:X"}, NOW)["state"] == "RED"   # not reset
+    assert E.liveness(sst, {"outcome": "OK", "parsed": 4}, NOW)["state"] == "GREEN"
+    red = {"id": E.SOURCE_ID, "outcome": "FAILED:EMPTY",
+           "liveness": {"state": "RED", "empty_streak": 3}}
+    monkeypatch.setattr(A, "_entsoe_pass", lambda *a, **k: red)
+    rep = A.run(A.Paths(tmp_path / "desk"), fixtures=FIX, donate=False, now=NOW, dry_run=True)
+    assert rep["status"] == "RED:entsoe_power"
+    assert rep["power_liveness"]["entsoe_power"]["state"] == "RED"

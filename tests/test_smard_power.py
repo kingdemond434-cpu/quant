@@ -151,7 +151,7 @@ def test_requests_are_the_chart_data_urls_spaced_once_each_with_the_desk_ua(
     assert rec["outcome"] == "OK", rec
     assert g.calls[0] == "https://www.smard.de/app/chart_data/410/DE-LU/index_hour.json"
     assert f"https://www.smard.de/app/chart_data/4071/DE-LU/4071_DE-LU_hour_{WEEK}.json" in g.calls
-    assert len(g.calls) == len(set(g.calls)) == 1 + 14 + 1 + 2  # retries=0, nothing twice
+    assert len(g.calls) == len(set(g.calls)) == 1 + 19 + 1 + 2  # retries=0, nothing twice
     assert len(sleeps) == len(g.calls) - 1 and min(sleeps) >= S.MIN_INTERVAL_S
     assert rec["unmeasured_windows"] == []
 
@@ -187,16 +187,24 @@ def test_a_waf_page_is_a_hard_stop(tmp_path: Path) -> None:
     assert sst["hard_stop"]["verdict"] == "METHOD_BLOCKED"
 
 
-def test_robots_decides_every_pass(tmp_path: Path) -> None:
+def test_robots_is_a_label_never_a_stop(tmp_path: Path) -> None:
     g = Getter()
     rec, _s, _st = _collect(tmp_path, g, robots=_robots(b"User-agent: *\nDisallow: /app/\n"))
-    assert rec["outcome"] == "FAILED:ROBOTS_DISALLOW" and g.calls == []
+    assert rec["outcome"] == "OK" and g.calls                   # fetched anyway
+    assert rec["access"]["access_label"] == "PUBLIC_WITH_TERMS"
+    assert "Disallow" in rec["access"]["terms_note"]
+    assert rec["access"]["redistribute_allowed"] is False
 
     def unreadable(url: str) -> tuple[bytes, str]:
         raise OSError("down")
     g2 = Getter()
-    rec2, _s, _st = _collect(tmp_path, g2, robots=unreadable)
-    assert rec2["outcome"] == "FAILED:ROBOTS_UNREADABLE" and g2.calls == []
+    rec2, _s, _st = _collect(tmp_path / "b", g2, robots=unreadable)
+    assert rec2["outcome"] == "OK" and g2.calls
+    assert rec2["access"]["access_label"] == "ACCESS_UNCLEAR"
+    # read and permitting: CC BY 4.0 is OPEN_DATA, whose ROUTING row grants redistribution
+    rec4, _s, _st = _collect(tmp_path / "c", Getter())
+    assert rec4["access"]["access_label"] == "OPEN_DATA"
+    assert rec4["access"]["redistribute_allowed"] is True
 
     def forbidden(url: str) -> tuple[bytes, str]:
         raise _http(403)
@@ -414,3 +422,65 @@ def test_alt_proxies_run_carries_the_smard_section(tmp_path: Path, monkeypatch: 
     rep2 = A._smard_pass(paths, {}, NOW, fetch=True, fixtures=None, deadline=float("inf"),
                          dry_run=True, donate=False)
     assert rep2["outcome"] == "FAILED:EXCEPTION" and "secret detail" not in json.dumps(rep2)
+
+
+# ---------------------------------------------------------------- gd-power (2026-11-03)
+def test_forecasts_and_price_fold_to_surprise_and_auction_day_price() -> None:
+    rows = {(s, d): v for s, d, v in S.fold_days("de_lu", _comps("de_lu"), COMPLETE,
+                                                  A.cet_offset_h)}
+    names = {s for s, _d in rows}
+    assert {"de_lu_load_surprise", "de_lu_wind_surprise", "de_lu_solar_surprise",
+            "de_lu_da_price"} <= names
+    # the price for delivery day d is keyed on the auction day d-1
+    assert ("de_lu_da_price", COMPLETE[0] - timedelta(days=1)) in rows
+    assert ("de_lu_da_price", COMPLETE[-1]) not in rows
+    assert rows[("de_lu_da_price", COMPLETE[0])] == 88.25
+    assert rows[("de_lu_load_surprise", COMPLETE[0])] > 0      # forecast fixture is 98% of load
+
+
+def test_every_stored_row_carries_its_publication_time(tmp_path: Path) -> None:
+    _rec, _s, store = _collect(tmp_path, Getter())
+    assert store
+    for k, row in store.items():
+        _series, period = k.split("|")
+        pub = datetime.fromisoformat(row["published_time"])
+        end = E.day_bounds(date.fromisoformat(period), A.cet_offset_h)[1]
+        assert pub >= end + S.PUBLICATION_LAG, k               # never before its period closes
+        assert row["published_basis"] in ("release_rule", "first_read")
+
+
+def test_the_cc_by_clause_and_attribution_sit_in_the_register() -> None:
+    from libs.data import terms_fence as tf
+    row = tf.SOURCE_POLICY["smard"]
+    assert row["status"] == tf.API_PERMITTED == S.policy()["status"]
+    assert "Creative Commons Attribution 4.0" in row["terms"]["clauses"]["data_use_cc_by"]
+    assert row["attribution"] == "Bundesnetzagentur | SMARD.de"
+    assert row["terms"]["url"] == S.TERMS_URL and row["credit"] == S.CREDIT
+
+
+def test_liveness_is_red_after_more_than_two_empty_runs(tmp_path: Path) -> None:
+    paths = A.Paths(tmp_path / "desk")
+    state: dict[str, Any] = {}
+    states = []
+    for _ in range(4):
+        rep = S.run_pass(A, paths, state, NOW, fetch=True, fixtures=None, deadline=float("inf"),
+                         dry_run=True, donate=False, getter=Getter(missing={"chart_data"}),
+                         robots_getter=_robots(), sleep=lambda s: None, clock=lambda: NOW)
+        states.append(rep["liveness"]["state"])
+    assert states == ["AMBER", "AMBER", "RED", "RED"]
+    rep = S.run_pass(A, paths, state, NOW, fetch=True, fixtures=None, deadline=float("inf"),
+                     dry_run=True, donate=False, getter=Getter(), robots_getter=_robots(),
+                     sleep=lambda s: None, clock=lambda: NOW)
+    assert rep["liveness"]["state"] == "GREEN" and rep["liveness"]["empty_streak"] == 0
+
+
+def test_new_features_reach_the_cell_path_for_the_named_instruments() -> None:
+    src = S.make_source(A)
+    assert src.instruments_for("de_lu_load_surprise") == {"XNGUSD": 1, "GER40": 1, "EURUSD": 1}
+    assert src.instruments_for("de_lu_da_price") == {"XNGUSD": 1, "GER40": -1, "EURUSD": -1}
+    fake = {f"{S.SOURCE_ID}|de_lu_wind_surprise|XNGUSD": {"verdict": "PASS", "ic": -0.2,
+                                                        "n": 90}}
+    out = S.cells(A, src, fake, NOW)
+    assert len(out) == 1 and out[0]["symbol"] == "XNGUSD"
+    assert out[0]["family"] == A.DIRECT_FAMILY and out[0]["params"]["side_when_high"] == -1
+    assert out[0]["credit"] == S.CREDIT
