@@ -202,6 +202,11 @@ def book_daily() -> tuple[pd.Series | None, str]:
                     v = float(val)
                 except (TypeError, ValueError):
                     continue
+                # pd.Timestamp(None) / pd.Timestamp("") is NaT, not an exception: a ledger row
+                # with no entry_time killed the whole daily leg on the box (NaTType has no
+                # normalize, 2026-11-04). A NaN r would poison the day's mean the same way.
+                if pd.isna(ts) or not np.isfinite(v):
+                    continue
                 ts = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
                 rows.setdefault(ts.normalize(), []).append(v)
     if len(rows) >= 40:

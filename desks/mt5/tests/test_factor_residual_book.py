@@ -71,6 +71,24 @@ def test_the_shadow_ledgers_are_the_fallback_and_absence_is_named(tmp_path, monk
     assert str(book.index.tz) == "UTC"
 
 
+def test_a_ledger_row_without_a_time_or_a_finite_r_is_skipped_not_fatal(tmp_path,
+                                                                        monkeypatch) -> None:
+    """pd.Timestamp(None) is NaT, not an error: one row with no entry_time used to raise
+    AttributeError ('NaTType' object has no attribute 'normalize') and fail the daily leg."""
+    _isolate(tmp_path, monkeypatch)
+    led = tmp_path / "shadow"
+    led.mkdir()
+    rows = [{"entry_time": str(pd.Timestamp("2024-01-01", tz="UTC") + pd.Timedelta(days=i)),
+             "r_multiple": 0.1 * (i % 5 - 2)} for i in range(60)]
+    rows += [{"entry_time": None, "r_multiple": 1.0}, {"r_multiple": 1.0},
+             {"entry_time": "", "r_multiple": 1.0}, {"time": "NaT", "r": 1.0},
+             {"entry_time": "2024-01-02T00:00:00Z", "r_multiple": float("nan")}]
+    (led / "ledger_X.json").write_text(json.dumps(rows), "utf-8")
+    book, _why = eng.book_daily()
+    assert book is not None and book.size == 60
+    assert np.isfinite(book.to_numpy()).all()
+
+
 # --------------------------------------------------------------------------- the causal join
 def test_a_bar_never_sees_its_own_days_book_return() -> None:
     daily = _daily(30)
