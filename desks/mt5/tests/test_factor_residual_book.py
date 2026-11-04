@@ -84,9 +84,10 @@ def test_a_ledger_row_without_a_time_or_a_finite_r_is_skipped_not_fatal(tmp_path
              {"entry_time": "", "r_multiple": 1.0}, {"time": "NaT", "r": 1.0},
              {"entry_time": "2024-01-02T00:00:00Z", "r_multiple": float("nan")}]
     (led / "ledger_X.json").write_text(json.dumps(rows), "utf-8")
-    book, _why = eng.book_daily()
+    book, why = eng.book_daily()
     assert book is not None and book.size == 60
     assert np.isfinite(book.to_numpy()).all()
+    assert "5 row(s) skipped" in why  # the dropped rows are counted, never silent
 
 
 # --------------------------------------------------------------------------- the causal join
