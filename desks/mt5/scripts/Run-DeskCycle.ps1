@@ -291,21 +291,6 @@ if ($agentName -eq "claude") {
     }
     $agentArgs = @("exec", "--full-auto", "--cd", $LaneClone, "-")
 }
-# LEVEL 2 (ops/release/authority/LEVEL2.md step 4): once the quant-merger App is installed, LIVE
-# refuses direct pushes, so the lane's code goes up as a branch plus a PR and lands only through
-# the release authority. The agent gets the App token for this process only (gh and git).
-$level2 = Test-Path -LiteralPath "C:\opt\merger\config.json"
-if ($level2) {
-    . (Join-Path $RepoRoot "ops\release\merger\merger_env.ps1")
-    try { $null = Use-MergerIdentity $RepoRoot } catch { Write-Cycle ("FATAL: {0}" -f $_.Exception.Message); exit 3 }
-    $i = if ($agentName -eq "claude") { [array]::IndexOf($agentArgs, "--allowedTools") } else { -1 }
-    if ($i -ge 0) { $agentArgs = $agentArgs[0..$i] + @("Bash(gh pr create:*)", "Bash(gh pr view:*)") + $agentArgs[($i + 1)..($agentArgs.Count - 1)] }
-}
-$landing = if ($level2) {
-    "push to your branch cro/$Lane-$Today (never to the box branch: the LIVE ruleset refuses it) and open a PR into <box branch> with gh pr create --body-file. The release authority clears it and the box gate merges it"
-} else {
-    "push to that branch"
-}
 $streamJson = ($agentName -eq "claude")
 $isolationWhere = if ($agentName -eq "codex") {
     "Your workspace is the lane's own clone $LaneClone (the live tree and its .git are read-only to you): git fetch origin, git checkout -B cro/$Lane-$Today origin/<box branch>, make code changes there"
@@ -400,7 +385,7 @@ The shared history of every pass is $Ledger (one JSON row per start and end).
 
 ISOLATION. Other sessions may be editing the live checkout at $RepoRoot. Never edit code there
 directly and never git stash / commit -a. $isolationWhere, test there, rebase
-on origin/<box branch> and $landing. MT5-AdoptRelease adopts origin into the live tree
+on origin/<box branch> and push to that branch. MT5-AdoptRelease adopts origin into the live tree
 hourly and records the release in desks/mt5/data/RELEASE.json: that is the canonical release path.
 Remove the worktree when done.
 
