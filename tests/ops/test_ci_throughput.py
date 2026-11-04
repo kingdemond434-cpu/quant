@@ -327,6 +327,34 @@ def test_no_merge_for_24h_while_gating_green_is_red() -> None:
     assert mp.assess(NOW, prs, green, {}, [], 0, [_commit("fix", 1)])["status"] == "GREEN"  # unread
 
 
+def test_the_box_running_old_code_is_red_and_its_adoption_latency_is_reported() -> None:
+    """zuck 2026-11-04 02:05Z: new code must be adopted on the box asap. The box ran 10-29 code
+    into 11-04 and no rule fired. A code commit on LIVE the box does not run, past ADOPT_RED_H,
+    is BOX_BEHIND; box state and seal commits never count; an unread identity is BOX_BLIND."""
+    live = [_commit("fix", 1)]
+    box = {
+        "code_sha": "a" * 40,
+        "sealed_at": _iso(30 * 60),
+        "code_at": _iso(31 * 60),
+        "behind": [
+            _commit("mt5 box state 2026-11-04_0137 (published onto origin", 5 * 60),
+            _commit("fix the sizing ratchet", 3 * 60),
+            _commit("seal release x", 60),
+        ],
+    }
+    rep = mp.assess(NOW, [], {}, {}, [], 0, live, box=box)
+    assert [r.split()[0] for r in rep["red"]] == ["BOX_BEHIND:"]
+    assert rep["adoption"]["unadopted_code_commits"] == 1 and rep["adoption"]["lag_h"] == 3.0
+    assert rep["adoption"]["last_adoption_latency_h"] == 1.0
+    fresh = dict(box, behind=[_commit("fix", 30)])
+    assert mp.assess(NOW, [], {}, {}, [], 0, live, box=fresh)["status"] == "GREEN"
+    current = dict(box, behind=[_commit("mt5 box state 2026-11-04_0137 (published", 9 * 60)])
+    assert mp.assess(NOW, [], {}, {}, [], 0, live, box=current)["status"] == "GREEN"
+    blind = mp.assess(NOW, [], {}, {}, [], 0, live, box={"code_sha": ""})
+    assert [r.split()[0] for r in blind["red"]] == ["BOX_BLIND:"]
+    assert mp.assess(NOW, [], {}, {}, [], 0, live)["adoption"] is None  # not read: not judged
+
+
 def test_live_stalls_on_green_work_too() -> None:
     prs = [_pr(516, "1" * 40, "ftmo")]
     rep = mp.assess(NOW, prs, {}, {}, [], 0, [_commit("fix", 7 * 60)], ready={516: _iso(10)})

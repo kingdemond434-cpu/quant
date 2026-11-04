@@ -31,6 +31,12 @@ RED when any of these holds:
                     mt5-money-path, coverage-floor) are green on its head (10-30 to 11-03: four
                     days with nothing merged, and every rule above stayed quiet, because no CLEAR
                     sat on a PR comment and the AUTO path never went fully green)
+    BOX_BEHIND      the box runs code older than LIVE: a code commit on LIVE (box state and seal
+                    commits excluded) has waited over ADOPT_RED_H for the box to run it (zuck
+                    2026-11-04 02:05Z: "New code etc must always be adopted asap on box not like
+                    since few days" -- the box ran 10-29 code into 11-04 and nothing went RED).
+                    The report also carries the last adoption's latency (sealed_at minus the
+                    sealed commit's time) and the lag now, for the autonomy proof.
     SIGN_TRAIN_*    the sign train's heartbeat (logs/sign_train.json) is unread, over 30 min old,
                     failed past two runs in a row, found its mutex held past two (#541 MF3), or
                     has waited on one open sign PR over 2 h
@@ -59,6 +65,10 @@ QUEUED_RED_MIN = 30.0
 CLEAR_RED_H = 2.0
 LIVE_RED_H = 6.0
 NO_MERGE_RED_H = 24.0
+#: BOX_BEHIND: the oldest code commit on LIVE the box does not run yet, in hours.
+ADOPT_RED_H = 2.0
+#: The box's sealed release identity, as its state commits publish it onto LIVE.
+RELEASE_REL = "desks/mt5/data/RELEASE.json"
 GATING = ("quality", "mt5-money-path", "coverage-floor")
 #: REVIEWER_FP: of the open heads the independent reviewer FAILed, the share an Auditor CLEARed
 #: (the human-grade audit read the same head and found nothing): a proxy false-positive rate.
@@ -131,11 +141,14 @@ def assess(
     sign_expected: bool = False,
     base: str = LIVE,
     merged: list[Mapping[str, Any]] | None = None,
+    box: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """The report, from already-fetched data (pure: the tests drive this). `ready`: PR -> when
     its last required check went green, for heads the gate has marked mergeable (audit/clear
     success). `beat`: the box sweep's heartbeat (logs/workflow_gate.json), when it is read.
-    `merged`: recently closed PRs into the base (None: not read, so NO_MERGE_24H is not judged)."""
+    `merged`: recently closed PRs into the base (None: not read, so NO_MERGE_24H is not judged).
+    `box`: what the box runs -- {"code_sha", "sealed_at", "code_at", "behind": LIVE's commits
+    after code_sha, oldest first} (None: not read, so BOX_BEHIND is not judged)."""
     ready = ready or {}
     heads = {str(p["head"]["ref"]): str(p["head"]["sha"]) for p in prs}
     stale = [
@@ -251,6 +264,32 @@ def assess(
             if wage is not None and wage / 60.0 > CLEAR_RED_H:  # a sign PR open, never merged
                 red.append(f"SIGN_TRAIN_WAITING: {sign_beat.get('waiting_on')} open "
                            f"{wage / 60.0:.1f} h")  # fmt: skip
+    adopt: dict[str, Any] | None = None
+    if box is not None:
+        pending = [c for c in box.get("behind") or []
+                   if not NOT_CODE_RE.match(str(c["commit"]["message"]))]  # fmt: skip
+        first_at = pending[0]["commit"]["committer"]["date"] if pending else None
+        lag = _age_min(now, first_at)
+        sealed, made = _ts(str(box.get("sealed_at") or "")), _ts(str(box.get("code_at") or ""))
+        adopt = {
+            "box_code_sha": str(box.get("code_sha") or "")[:9],
+            "method": box.get("method"),
+            "sealed_at": box.get("sealed_at"),
+            "unadopted_code_commits": len(pending),
+            "oldest_unadopted": None if not pending else str(pending[0]["sha"])[:9],
+            "lag_h": None if lag is None else round(lag / 60.0, 2),
+            "last_adoption_latency_h": (
+                None if sealed is None or made is None
+                else round((sealed - made).total_seconds() / 3600.0, 2)
+            ),
+        }  # fmt: skip
+        if not box.get("code_sha"):
+            red.append("BOX_BLIND: the box's sealed release identity could not be read")
+        elif lag is not None and lag / 60.0 > ADOPT_RED_H:
+            red.append(
+                f"BOX_BEHIND: the box runs {adopt['box_code_sha']}; {len(pending)} code "
+                f"commit(s) on LIVE wait, the oldest {lag / 60.0:.1f} h"
+            )
     sweep: dict[str, Any] | None = None
     if beat_expected:
         if not beat:
@@ -278,6 +317,7 @@ def assess(
         "reviewer": {"fails": len(fails), "cleared_fails": fp, "fp_rate": fp_rate},
         "sweep": sweep,
         "sign_train": sign,
+        "adoption": adopt,
         "live": {
             "last_code_commit": None if code is None else str(code["sha"])[:9],
             "last_code_at": code_at,
@@ -291,6 +331,7 @@ def assess(
             "clear_red_h": CLEAR_RED_H,
             "live_red_h": LIVE_RED_H,
             "no_merge_red_h": NO_MERGE_RED_H,
+            "adopt_red_h": ADOPT_RED_H,
         },
     }
 
@@ -367,7 +408,53 @@ def collect(
     return assess(
         now, prs, checks, clears, queued, running, live, ready, _beat(heartbeat),
         heartbeat is not None, _beat(sign_beat), sign_beat is not None, base, merged,
+        _box(repo, base),
     )  # fmt: skip
+
+
+def _box(repo: str, base: str) -> dict[str, Any]:
+    """What the box runs, from the release identity its state commits publish onto LIVE, and
+    LIVE's commits after it (oldest first). The box seals a box-local commit ("Adopt X in place")
+    that origin never sees, so when neither code_sha nor parent_sha is on origin, the commits on
+    LIVE since the seal stand in (a lower bound: it can only under-count). A read that fails reads
+    as BOX_BLIND, never green."""
+    try:
+        rel = json.loads(_raw(f"repos/{repo}/contents/{RELEASE_REL}?ref={base}"))
+    except (RuntimeError, ValueError):
+        return {"code_sha": ""}
+    sha, sealed = str(rel.get("code_sha") or ""), str(rel.get("sealed_at") or "")
+    out: dict[str, Any] = {"code_sha": sha, "sealed_at": sealed or rel.get("generated_utc")}
+    for cand in (sha, str(rel.get("parent_sha") or "")):
+        try:
+            out["code_at"] = _gh(f"repos/{repo}/commits/{cand}")["commit"]["committer"]["date"]
+            cmp = _gh(f"repos/{repo}/compare/{cand}...{base}?per_page=100")
+            out.update(behind=list(cmp.get("commits") or []), method=f"compare {cand[:9]}")
+            return out
+        except (RuntimeError, KeyError, TypeError):
+            continue
+    try:
+        got: list[dict[str, Any]] = []
+        for page in range(1, 6):
+            batch = _gh(f"repos/{repo}/commits?sha={base}&since={out['sealed_at']}"
+                        f"&per_page=100&page={page}")  # fmt: skip
+            got += batch
+            if len(batch) < 100:
+                break
+    except RuntimeError:
+        return {"code_sha": ""}
+    out.update(behind=list(reversed(got)), method="since the seal (box-local release)")
+    return out
+
+
+def _raw(path: str) -> str:
+    gh = os.environ.get("GH_BIN") or "gh"
+    p = subprocess.run(
+        [gh, "api", path, "-H", "Accept: application/vnd.github.raw"], capture_output=True,
+        text=True, encoding="utf-8", errors="replace", check=False, timeout=60,
+    )  # fmt: skip
+    if p.returncode != 0:
+        raise RuntimeError(f"gh api {path}: {p.stderr.strip()[:200]}")
+    return p.stdout
 
 
 def main(argv: list[str] | None = None) -> int:
