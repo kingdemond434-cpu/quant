@@ -94,7 +94,7 @@ def open_all(src: Path, dst: Path) -> None:
                             fh.write(z.read(name))
                     else:
                         target.write_bytes(z.read(name))
-        except Exception as exc:  # noqa: BLE001 - one bad bundle never stalls the rest
+        except Exception as exc:
             failed[f.name] = f"{type(exc).__name__}: {str(exc)[:200]}"
             fail_path.write_text(json.dumps(failed, indent=1))
             print(f"FAILED {f.name}: {failed[f.name]}")
