@@ -61,14 +61,14 @@ OWN_LEG: frozenset[str] = frozenset({"youtube"})
 
 #: SEATS WHOSE SOURCE REFUSES THE BOX, measured by one GET each from Contabo at 2026-11-04 ~03:45Z
 #: (/mnt/project-files/desk_health/PRODUCER_YIELD_DIAG_2026-11-04.md section 4). A 401/403/418/
-#: 429, a WAF or a disallow is a hard stop under the rails: these seats are NOT run, with no retry,
-#: no alternate host and no header games, and each is reported with its evidence every pass so the
-#: replacement (named here) stays visible as missed growth rather than silently absent.
+#: 429/451 or a WAF is a hard stop under the rails: these seats are NOT run, with no retry, no
+#: alternate host and no header games, and each is reported with its evidence every pass so the
+#: replacement (named here) stays visible as missed growth rather than silently absent. A robots
+#: Disallow is NOT a block (LAWS 5e): such a seat runs under the PUBLIC_WITH_TERMS label.
 SOURCE_BLOCKED: dict[str, str] = {
     "aaii": "aaii.com: robots 403 behind an Incapsula WAF; replace with FRED UMCSENT",
     "fear_greed": "CNN dataviz: HTTP 418 bot block; rebuild from FRED VIXCLS plus breadth",
     "investing": "investing.com sentiment: 403; no free replacement for retail positioning yet",
-    "google_trends": "trends.google.com: robots disallow on the endpoint; off-limits",
 }
 
 Runner = Callable[[list[str], float, dict[str, str]], tuple[int | None, str]]
