@@ -257,6 +257,8 @@ def e8(p: dict[str, Path], cert: Any, now: datetime) -> dict[str, Any]:
     # E8_EXEC.json (prop/e8_executor.py) carries the guard's decision under "guard"
     # (e8_guard.Decision.as_dict: equity, day_start, verdict, room_to_daily_floor, ...);
     # its stamp is the top-level "at". e8_guard_state.json is the box-local day anchor.
+    c = _consts(p["e8_guard_src"], ("START_BALANCE", "STATIC_DRAWDOWN", "DAILY_DRAWDOWN"))
+    doc: dict[str, Any] = {"account": "e8", "rails_source": p["e8_guard_src"].name}
     ex = _read_json(p["e8_exec"])
     g = ex.get("guard") if isinstance(ex, dict) else None
     g = g if isinstance(g, dict) else {}

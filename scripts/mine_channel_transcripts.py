@@ -254,7 +254,7 @@ def main() -> int:
     # 2. fetch captions, politely; stop the whole run at the first access wall (no bypass)
     fetched = 0
     stopped = None
-    for v in todo:  # noqa: SIM113 - fetched counts only loop passes that reach the fetch
+    for v in todo:
         if args.limit and fetched >= args.limit:
             break
         prev = ledger.get(v["video_id"]) or {}
@@ -262,7 +262,7 @@ def main() -> int:
             status, text, meta = prev["status"], None, {}
         else:
             status, text, meta = fetch_transcript(api, v["video_id"])
-        fetched += 1
+        fetched += 1  # noqa: SIM113 - counts only passes that reach the fetch
         row = {**prev, **v, "status": status, "ts": now(), **meta}
         if status != "ACCESS_LIMIT" and v.get("tab") != "shorts":
             desc, links, dmeta = fetch_description(v["video_id"])
