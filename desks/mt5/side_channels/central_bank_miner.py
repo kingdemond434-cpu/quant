@@ -67,14 +67,12 @@ FEEDS: dict[str, dict[str, str]] = {
     # replacement route (§38) is owed. Absence must never read as a clean verdict (WS-005).
     "RBA": {"url": "https://www.rba.gov.au/rss/rss-cb-media-releases.xml", "currency": "AUD"},
     "BoC": {"url": "https://www.bankofcanada.ca/content_type/press-releases/feed/", "currency": "CAD"},
-    # BIS REMOVED 2026-08-28 (§13). https://www.bis.org/doclist/cbspeeches.rss lives under
-    # `Disallow: /doclist/` in bis.org/robots.txt -- the access boundary is a hard limit, not a
-    # preference, and this miner had been reading it. BIS's own RSS path now redirects to the
-    # allowed listing page whose only content link is the free full-text research download at
-    # /speeches/speeches.zip (no robots bar, terms allow noncommercial use). That corpus is
-    # strictly better ground anyway -- 20,728 DATED speeches with BODIES back to 1996, against
-    # this feed's headline-only stream -- and it is mined by side_channels/bis_speech_tone.py.
-    # Its currency was "XXX", so no MT5 leg loses coverage by the removal.
+    # BIS RESTORED (LAWS 5e, live). It was removed 2026-08-28 because the feed sits under
+    # `Disallow: /doclist/` in bis.org/robots.txt -- "robots.txt Disallow treated as a refusal",
+    # a deleted brake. It is read again, and every row carries PUBLIC_WITH_TERMS with the
+    # Disallow as its terms_note (redistribution withheld). The full-text corpus is still mined
+    # by side_channels/bis_speech_tone.py; this feed is the dated headline stream beside it.
+    "BIS": {"url": "https://www.bis.org/doclist/cbspeeches.rss", "currency": "XXX"},
 }
 
 #: Currency -> the MT5/Fusion instruments whose price a statement by that bank moves. Derived
@@ -199,9 +197,9 @@ def mine_central_banks(fetch: Any = None,
     """Fetch every seeded feed and return the DATED rows not already archived.
 
     EVERY FETCH GOES THROUGH THE POLITE DOOR (`polite_fetch.get`): the desk's honest UA, the
-    feed origin's robots.txt asked first, and a 401/403/429 or challenge a HARD STOP that holds
-    the site for a person (the RBA's edge 403 becomes that recorded hold, never a retry under
-    another UA). `fetch` is the test seam (same signature as `polite_fetch.get`)."""
+    feed origin's robots.txt read first AS A LABEL (LAWS 5e; it rides on each row), and a
+    401/403/429 or challenge a HARD STOP that holds the site for a person (the RBA's edge 403
+    becomes that recorded hold, never a retry under another UA). `fetch` is the test seam (same signature as `polite_fetch.get`)."""
     get = fetch or _pf.get
     fresh: list[dict[str, Any]] = []
     seen = _seen_keys()
@@ -219,6 +217,11 @@ def mine_central_banks(fetch: Any = None,
             if feed_log is not None:
                 feed_log.append(entry)
             continue
+        # THE ROBOTS LABEL ON EVERY ROW (LAWS 5e): PUBLIC, PUBLIC_WITH_TERMS (a Disallow, as
+        # the BIS feed carries) or ACCESS_UNCLEAR -- all fetched; the label routes redistribution.
+        label = {"access_label": str(getattr(resp, "access_label", "") or ""),
+                 "terms_note": str(getattr(resp, "terms_note", "") or ""),
+                 "redistribute_allowed": bool(getattr(resp, "redistribute_allowed", False))}
         rows = parse_feed(resp.text, bank, info["currency"], info["url"])
         new = 0
         for row in rows:
@@ -226,10 +229,12 @@ def mine_central_banks(fetch: Any = None,
             if key in seen:
                 continue
             seen.add(key)
-            fresh.append(row)
+            fresh.append({**row, **label} if label["access_label"] else row)
             new += 1
         entry.update({"state": "OK", "http_status": resp.status, "dated_items": len(rows),
                       "new_items": new})
+        if label["access_label"]:
+            entry.update(label)
         if feed_log is not None:
             feed_log.append(entry)
     return fresh
@@ -268,7 +273,7 @@ def run_and_save(fetch: Any = None, report: Path | None = None) -> list[dict[str
         "consumer": ("data/intelligence/central_banks/discoveries_*.json -> the compiler "
                      "(data/intelligence/**); the archive feeds nlp_event_factors"),
         "rule": ("attention only (dated pointers read for ideas), never a live data series; "
-                 "every fetch through polite_fetch.get (robots first, 401/403/429 a held site)"),
+                 "every fetch through polite_fetch.get (robots a label, 401/403/429 a held site)"),
     }
     out = report or REPORT
     out.parent.mkdir(parents=True, exist_ok=True)

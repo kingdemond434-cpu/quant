@@ -2,8 +2,8 @@
 
 * `page.goto`'s status is read: 401/403/429 record the site hold and NO content is returned.
 * `page.route` never sees redirect hops, so the navigation's request chain
-  (`request.redirected_from`) is re-checked: a hop that robots.txt disallows, or a held site,
-  discards the content.
+  (`request.redirected_from`) is re-checked: a held site discards the content; a hop robots.txt
+  disallows is fetched and LABELLED PUBLIC_WITH_TERMS (LAWS 5e: a label, never a refusal).
 * A challenge (markup, `cf-mitigated`, a Cloudflare 503) is held; prose is not a challenge.
 Fake page/response objects only: no browser, no socket.
 """
@@ -100,11 +100,14 @@ def test_a_403_on_the_render_is_held_and_returns_nothing() -> None:
         assert not page.waited                       # nothing read after the refusal
 
 
-def test_a_redirect_hop_robots_disallows_discards_the_content() -> None:
+def test_a_redirect_hop_robots_disallows_keeps_the_content_and_is_labelled() -> None:
+    """LAWS 5e: robots.txt is a LABEL, never a refusal."""
     acc = _Access({"https://b.test": "User-agent: *\nDisallow: /secret\n"})
     page = _Page(_Response(["https://a.test/p", "https://b.test/secret"]))
     html, err = _drive(page, acc)
-    assert html == "" and "ROBOTS_DISALLOW" in err and "redirect hop" in err
+    assert err == "" and "ok" in html
+    assert acc.labelled["https://b.test"]["access_label"] == "PUBLIC_WITH_TERMS"
+    assert acc.label_counts.get("PUBLIC_WITH_TERMS", 0) >= 1
 
 
 def test_a_redirect_through_a_held_site_discards_the_content() -> None:
@@ -137,12 +140,13 @@ def test_challenge_markup_on_a_200_is_held_but_prose_is_content() -> None:
     assert err2 == "" and html2 == prose and not acc2.blocked
 
 
-def test_a_script_navigation_to_a_disallowed_page_is_refused() -> None:
+def test_a_script_navigation_to_a_disallowed_page_is_kept_and_labelled() -> None:
     acc = _Access({"https://a.test": "User-agent: *\nDisallow: /private\n"})
     page = _Page(_Response(["https://a.test/p"]))
     page.url = "https://a.test/private/after-js"
     html, err = _drive(page, acc)
-    assert html == "" and "ROBOTS_DISALLOW" in err
+    assert err == "" and "ok" in html
+    assert acc.labelled["https://a.test"]["access_label"] == "PUBLIC_WITH_TERMS"
 
 
 def test_judge_navigation_with_no_response_is_permitted() -> None:
@@ -231,12 +235,13 @@ class _RoutedPage(_Page):
         return r
 
 
-def test_a_redirect_hop_robots_disallows_is_never_requested() -> None:
+def test_a_redirect_hop_robots_disallows_is_requested_and_labelled() -> None:
     acc = _Access({"https://b.test": "User-agent: *\nDisallow: /secret\n"})
     net = _Net({"https://a.test/p": (302, "https://b.test/secret")})
     html, err = _drive(_RoutedPage(net), acc)
-    assert html == "" and "ROBOTS_DISALLOW" in err and "redirect hop" in err
-    assert net.sent == ["https://a.test/p"], "the disallowed hop went out"
+    assert err == "" and "ok" in html
+    assert net.sent == ["https://a.test/p", "https://b.test/secret"], "the hop was not followed"
+    assert acc.labelled["https://b.test"]["access_label"] == "PUBLIC_WITH_TERMS"
 
 
 def test_a_redirect_hop_into_a_held_site_is_never_requested() -> None:
@@ -271,15 +276,36 @@ def test_a_429_at_a_hop_holds_the_site_that_refused_not_the_first_one() -> None:
     assert acc.hold("https://a.test/other") == ""
 
 
-def test_the_first_request_is_refused_before_it_goes_out() -> None:
+def test_the_first_request_under_a_disallow_goes_out_labelled() -> None:
     acc = _Access({"https://a.test": "User-agent: *\nDisallow: /p\n"})
     net = _Net({})
     html, err = _drive(_RoutedPage(net), acc)
-    assert html == "" and "ROBOTS_DISALLOW" in err and net.sent == []
+    assert err == "" and "ok" in html and net.sent == ["https://a.test/p"]
+    assert acc.labelled["https://a.test"]["access_label"] == "PUBLIC_WITH_TERMS"
+
+
+def test_the_first_request_to_a_held_site_is_refused_before_it_goes_out() -> None:
+    acc = _Access()
+    acc.block("https://a.test/x", 403)
+    net = _Net({})
+    html, err = _drive(_RoutedPage(net), acc)
+    assert html == "" and "METHOD_BLOCKED" in err and net.sent == []
+
+
+def test_a_robots_disallowed_subresource_is_fetched_and_labelled() -> None:
+    acc = _Access({"https://cdn.test": "User-agent: *\nDisallow: /\n"})
+    net = _Net({})
+    page = _RoutedPage(net)
+    _html, err = _drive(page, acc)
+    assert err == ""
+    r = page.load_subresource("https://cdn.test/x.js")
+    assert not r.aborted and "https://cdn.test/x.js" in net.sent
+    assert acc.labelled["https://cdn.test"]["access_label"] == "PUBLIC_WITH_TERMS"
 
 
 def test_a_refused_subresource_is_aborted_without_failing_the_page() -> None:
-    acc = _Access({"https://cdn.test": "User-agent: *\nDisallow: /\n"})
+    acc = _Access()
+    acc.block("https://cdn.test/y", 403)
     net = _Net({})
     page = _RoutedPage(net)
     _html, err = _drive(page, acc)

@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-03T20:41:50.295595+00:00",
+ "generated_utc": "2026-11-03T22:38:34.096054+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -14741,10 +14741,8 @@
    "review_failed": [],
    "family": "turn_of_month",
    "theory": {
-    "n_oos": 1,
-    "confidence": 0.2857,
-    "sd": 0.213,
-    "status": "UNMEASURED"
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   },
   "external.USDSGD@M15.turn_of_month.p=dd57d3a4a1855f7a": {
@@ -14752,10 +14750,8 @@
    "review_failed": [],
    "family": "turn_of_month",
    "theory": {
-    "n_oos": 1,
-    "confidence": 0.2857,
-    "sd": 0.213,
-    "status": "UNMEASURED"
+    "status": "UNMEASURED",
+    "n_oos": 0
    }
   },
   "external.NZDCHF@M30.jump.p=2da06abf3c103f63": {

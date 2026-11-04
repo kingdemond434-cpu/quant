@@ -56,10 +56,10 @@ MAX_BYTES = 2_000_000
 
 
 def _get_text(url: str, timeout: float) -> str:
-    """One GET through polite_fetch's seam (THE ONE FETCH DOOR behind the site's holds and the
-    origin's robots.txt, every hop -- LAWS 5e amended 2026-10-14): a redirect into a login or
-    CAPTCHA wall, a Disallow or a hold raises (PoliteRefused, a URLError) instead of being
-    followed; an HTTP error raises HTTPError."""
+    """One GET through polite_fetch's seam (THE ONE FETCH DOOR behind the site's holds, every
+    hop): a redirect into a login or CAPTCHA wall or a hold raises (PoliteRefused, a URLError)
+    instead of being followed; an HTTP error raises HTTPError. robots.txt is a LABEL, never a
+    refusal (LAWS 5e): a Disallow is fetched and its label rides on the response."""
     req = urllib.request.Request(url, headers=HEADERS)
     with polite_urlopen(req, timeout=timeout, max_bytes=MAX_BYTES,
                         leg="global_survivor_frontier") as fh:

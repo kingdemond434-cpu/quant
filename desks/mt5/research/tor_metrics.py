@@ -14,7 +14,7 @@ lower,upper,frac) and `userstats-bridge-country.csv` (date,country,users,frac --
 carries NO detector bounds). The data is CC0; the clause is quoted verbatim in
 `libs/data/terms_fence.SOURCE_POLICY["tor_metrics"]`, and this organ fetches nothing unless that
 row reads `confirmed` (fail closed). Every request goes through `libs.data.polite_fetch.get`:
-honest DESK_UA, robots.txt decides, 401/403/429/WAF is a person-held hard stop.
+honest DESK_UA, robots.txt a LABEL (LAWS 5e), 401/403/429/WAF is a person-held hard stop.
 
 POINT IN TIME. The publication lag is MEASURED, never assumed: each time a new latest date first
 appears in a fetch, `first_seen - (date + 1 day)` is one lag observation (an upper bound, accurate

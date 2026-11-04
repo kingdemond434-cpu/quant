@@ -133,8 +133,8 @@ def _fetch(url: str, dest: Path) -> bytes:
     except urllib.error.HTTPError:
         raise                       # an HTTP answer (401/403/429 already held): no other route
     except Exception as exc:
-        # ROBOTS DECIDES (LAWS 5e amended 2026-10-14): a refusal -- robots.txt, a site hold, the
-        # method fence -- is final, never routed around through curl. Only a PURE TRANSPORT
+        # A REFUSAL IS FINAL: a site hold (401/403/429/WAF) or the method fence -- robots.txt is a
+        # label, never a refusal (LAWS 5e) -- is final, never routed around through curl. Only a PURE TRANSPORT
         # failure on a URL the polite path already admitted falls back (no redirects followed).
         if not transport_only(exc):
             raise

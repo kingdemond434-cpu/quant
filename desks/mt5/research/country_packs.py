@@ -5,7 +5,7 @@ Sweden 10; every one 0 YIELDED).
 NOT A LANE. This module declares doors, parsers and release clocks and nothing else: it fetches
 nothing on its own, has no schedule and writes no artifact. `world_dataset_hunter` (leg
 `world_dataset_hunt`, hourly) reads `doors()` as part of its direct doors, fetches each through
-its own budgeted, terms-fenced, robots-checked client, PIT-merges the series into the world store
+its own budgeted, terms-fenced, robots-labelled client, PIT-merges the series into the world store
 and exposes them per MT5 symbol; `world_macro_proposer` mints `world_macro_state` cells from that
 exposure and the family reloads each series by `series_key`. So a pack series reaches the
 gauntlet by exactly the path every DBnomics series already takes.

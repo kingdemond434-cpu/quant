@@ -394,18 +394,26 @@ def test_mof_rows_are_stamped_at_disclosure_never_at_intervention(tmp_desk: Path
     assert "mof_q_net" in fs._feature_cols(q)
 
 
-def test_mof_is_not_fetched_when_robots_disallows(tmp_desk: Path) -> None:
+def test_mof_is_fetched_and_labelled_when_robots_disallows(tmp_desk: Path) -> None:
+    """LAWS 5e: robots.txt is a LABEL, never a refusal. The Disallow is fetched anyway, noted
+    LABELLED/PUBLIC_WITH_TERMS and written to the lane state's `access_labels`."""
     calls: list[str] = []
 
     def get_text(url: str) -> str:
         calls.append(url)
-        return "User-agent: *\nDisallow: /\n"
+        if url.endswith("/robots.txt"):
+            return "User-agent: *\nDisallow: /\n"
+        return ""
 
     notes: list = []
+    state: dict = {}
     fs.mof_collect({"id": "mof_japan_intervention", "terms": "OPEN", "csv_url": "https://h/a.csv",
-                    "monthly_index_url": "https://h/m/index.html"}, get_text, {}, notes)
-    assert calls == ["https://h/robots.txt"]
-    assert notes[0]["why"] == "robots disallows"
+                    "monthly_index_url": "https://h/m/index.html"}, get_text, state, notes)
+    assert calls[0] == "https://h/robots.txt" and len(calls) > 1, "the source was not fetched"
+    assert notes[0]["status"] == "LABELLED"
+    assert notes[0]["access_label"] == "PUBLIC_WITH_TERMS"
+    assert notes[0]["redistribute_allowed"] is False
+    assert state["access_labels"]["mof_japan_intervention"]["access_label"] == "PUBLIC_WITH_TERMS"
 
 
 def _registry_calendar() -> dict:

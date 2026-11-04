@@ -287,22 +287,28 @@ def test_v_s_names_every_factor_and_every_cost(desk):
     assert paid["v_s"] > got["v_s"] and "measured" in paid["p_useful_basis"]
 
 
-def test_an_unread_policy_is_unknown_and_robots_decides_the_fetch(desk, monkeypatch):
-    """LAWS 5e as amended by the principal 2026-10-14: robots.txt DECIDES (the 2026-09-23 "an
-    unread policy is mined anyway" reading this test used to pin is withdrawn). --no-fetch reads
-    nothing and says UNKNOWN with nothing fetched; with fetch, the polite door's answer for the
-    candidate url is the verdict: allowed -> ALLOWED, a Disallow -> FORBIDDEN, and a check that
-    cannot run -> FORBIDDEN (fail closed)."""
+def test_an_unread_policy_is_unknown_and_robots_is_a_label_never_a_refusal(desk, monkeypatch):
+    """LAWS 5e (live): robots.txt is an access LABEL, never a refusal -- "robots.txt Disallow
+    treated as a refusal" is a deleted brake. --no-fetch reads nothing and says UNKNOWN with
+    nothing fetched; with fetch: allowed -> ALLOWED; a Disallow -> UNKNOWN labelled
+    PUBLIC_WITH_TERMS (never FORBIDDEN); a check that cannot run -> UNKNOWN, ACCESS_UNCLEAR; only
+    a person-held site hold (401/403/429/WAF) is FORBIDDEN."""
     asked: list[str] = []
-    answer: dict[str, object] = {"ok": True}
+    answer: dict[str, object] = {"label": "PUBLIC", "held": False}
 
     def _admit(url: str) -> tuple[bool, str]:
         asked.append(url)
         if answer.get("raise"):
             raise OSError("robots read failed")
-        return (True, "") if answer["ok"] else (False, "ROBOTS_DISALLOW: /x")
+        return (False, "METHOD_BLOCKED: held") if answer["held"] else (True, "")
+
+    def _label(url: str, **_kw: object) -> dict[str, object]:
+        lab = str(answer["label"])
+        return {"access_label": lab, "redistribute_allowed": False,
+                "terms_note": "robots.txt Disallow: /x" if lab != "PUBLIC" else ""}
 
     monkeypatch.setattr(civ, "admit", _admit)
+    monkeypatch.setattr(civ, "access_label", _label)
     verdict, why = civ._machine_use_from_robots("https://example.org/x", fetch=False)
     assert verdict == snap.UNKNOWN
     assert "nothing is fetched" in why
@@ -310,12 +316,17 @@ def test_an_unread_policy_is_unknown_and_robots_decides_the_fetch(desk, monkeypa
     ok, _why = civ._machine_use_from_robots("https://example.org/x", fetch=True)
     assert ok == snap.ALLOWED
     assert asked == ["https://example.org/x"]
-    answer["ok"] = False
-    no, why_no = civ._machine_use_from_robots("https://example.org/x", fetch=True)
-    assert no == snap.FORBIDDEN and "ROBOTS_DISALLOW" in why_no and "not fetched" in why_no
+    answer["label"] = "PUBLIC_WITH_TERMS"
+    lab, why_lab = civ._machine_use_from_robots("https://example.org/x", fetch=True)
+    assert lab == snap.UNKNOWN and lab != snap.FORBIDDEN
+    assert "PUBLIC_WITH_TERMS" in why_lab and "Disallow" in why_lab
     answer["raise"] = True
     broken, why_broken = civ._machine_use_from_robots("https://example.org/x", fetch=True)
-    assert broken == snap.FORBIDDEN and "not fetched" in why_broken
+    assert broken == snap.UNKNOWN and "ACCESS_UNCLEAR" in why_broken
+    answer["raise"] = False
+    answer["held"] = True
+    held, why_held = civ._machine_use_from_robots("https://example.org/x", fetch=True)
+    assert held == snap.FORBIDDEN and "not fetched" in why_held
 
 
 # --------------------------------------------------------------------------- expansion

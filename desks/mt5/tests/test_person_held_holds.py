@@ -267,25 +267,27 @@ def _paths(host: str = "127.0.0.1") -> list[str]:
 
 
 @pytest.mark.parametrize("door", ["fenced", "guarded"])
-def test_the_door_reads_robots_and_refuses_a_disallowed_path_before_sending(
+def test_the_door_reads_robots_and_labels_a_disallowed_path_then_fetches_it(
         site: int, door: str) -> None:
+    """LAWS 5e: robots.txt is a LABEL, never a refusal. The door reads it, fetches the
+    disallowed path anyway, and the response carries PUBLIC_WITH_TERMS with the Disallow in
+    its terms note; redistribution stays fail-closed."""
     url = f"http://127.0.0.1:{site}/private"
-    with pytest.raises(pf.AccessRefused) as exc:
-        if door == "fenced":
-            pf.fenced_urlopen(url, timeout=5)
-        else:
-            tf.guarded_urlopen(url, timeout=5)
-    assert exc.value.platform == "robots_txt" and exc.value.verdict == "ROBOTS_DISALLOW"
-    assert ("127.0.0.1", "/robots.txt") in _Site.seen and _paths() == []
+    opener = pf.fenced_urlopen if door == "fenced" else tf.guarded_urlopen
+    with opener(url, timeout=5) as fh:
+        assert fh.read() == b"ok"
+        assert getattr(fh, "access_label", "") == "PUBLIC_WITH_TERMS"
+        assert getattr(fh, "redistribute_allowed", True) is False
+    assert ("127.0.0.1", "/robots.txt") in _Site.seen and _paths() == ["/private"]
     with pf.fenced_urlopen(f"http://127.0.0.1:{site}/ok", timeout=5) as fh:
         assert fh.read() == b"ok"
 
 
-def test_a_redirect_hop_into_a_disallowed_path_is_refused_before_it_is_requested(
-        site: int) -> None:
-    with pytest.raises(pf.AccessRefused):
-        pf.fenced_urlopen(f"http://127.0.0.1:{site}/r", timeout=5)
-    assert _paths() == ["/r"], "the disallowed hop was requested"
+def test_a_redirect_hop_into_a_disallowed_path_is_followed_and_labelled(site: int) -> None:
+    with pf.fenced_urlopen(f"http://127.0.0.1:{site}/r", timeout=5) as fh:
+        assert fh.read() == b"ok"
+        assert getattr(fh, "access_label", "") == "PUBLIC_WITH_TERMS"
+    assert _paths() == ["/r", "/private"], "the disallowed hop was not followed"
 
 
 def test_a_redirect_hop_into_a_held_site_is_refused_before_it_is_requested(site: int) -> None:
