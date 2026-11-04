@@ -409,9 +409,15 @@ def test_the_watchdog_never_stops_itself(tmp_path: Path, monkeypatch: pytest.Mon
 
 
 # ------------------------------------------------------------------------------- wiring
-def test_desk_health_and_the_organ_contract_read_the_report() -> None:
+def test_desk_health_reads_the_report_and_the_contract_lands_with_the_manifest_task() -> None:
+    """The organ contract names only tasks box_tasks.manifest declares (the scheduler-join fence),
+    so the Quant-BoxSelfHeal contract lands in the same change as its protected manifest row.
+    Until then desk health is what turns a silent watchdog RED."""
+    import re
+    manifest = (ROOT / "desks" / "mt5" / "ops" / "box_tasks.manifest").read_text("utf-8")
     contract = (ROOT / "ops" / "organ_contract.py").read_text("utf-8")
-    assert '"Quant-BoxSelfHeal"' in contract and "BOX_SELF_HEAL.json" in contract
+    if re.search(r'^TASK\s+name="Quant-BoxSelfHeal"', manifest, re.M):
+        assert '"Quant-BoxSelfHeal"' in contract and "BOX_SELF_HEAL.json" in contract
     health = (ROOT / "desks" / "mt5" / "scripts" / "check_desk_health.py").read_text("utf-8")
     assert "def check_box_self_heal" in health and "check_box_self_heal()" in health
 

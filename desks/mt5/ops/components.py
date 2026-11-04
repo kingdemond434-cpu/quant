@@ -956,7 +956,8 @@ def explicit_specs() -> list[ComponentSpec]:
         # C:\ProgramData\QuantBox\bin. Declared here because ops/ is outside the executable
         # areas the birth fence walks, so nothing else gives it a row in the attestation. When its
         # TASK line lands in box_tasks.manifest (protected; proposed with the patch), this becomes
-        # kind="task" with a TASK_CANONICAL entry, so the manifest task dedupes onto it.
+        # kind="task" with a TASK_CANONICAL entry, so the manifest task dedupes onto it, and its
+        # ops/organ_contract.py row lands with it (the contract names only manifest tasks).
         ComponentSpec(
             component_id="executable:ops/box_self_heal.py",
             kind="executable", host="box",
@@ -966,7 +967,7 @@ def explicit_specs() -> list[ComponentSpec]:
                     "C:/ProgramData/QuantBox/state/box_self_heal_state.json",
                     "C:/ProgramData/QuantBox/state/box_self_heal.jsonl"),
             outputs=("desks/mt5/reports/BOX_SELF_HEAL.json",),
-            consumers=("desks/mt5/scripts/check_desk_health.py", "ops/organ_contract.py"),
+            consumers=("desks/mt5/scripts/check_desk_health.py",),
             cadence_s=300, timeout_s=900, progress_metric="passes",
             expected_artifact_schema="box_self_heal/1",
             owner="lane:ops", restart_action="restart:task:Quant-BoxSelfHeal",
