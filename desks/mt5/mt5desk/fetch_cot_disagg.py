@@ -24,6 +24,13 @@ BASE = "https://publicreporting.cftc.gov/resource/72hh-3qpy.json"
 # because the mkdir SUCCEEDS, it failed by filling a directory nobody reads rather than
 # by raising. `config.desk_root()` is the single source of truth for every path here.
 from mt5desk.config import DATA
+try:
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 
 OUT = DATA / "cot_disagg"
 OUT.mkdir(parents=True, exist_ok=True)
@@ -65,8 +72,8 @@ def fetch_contract(commodity: str) -> pd.DataFrame | None:
             "$offset": str(offset),
         }
         url = f"{BASE}?{urllib.parse.urlencode(params)}"
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=90) as resp:
+        req = urllib.request.Request(url, headers={"User-Agent": DESK_UA})
+        with polite_urlopen(req, timeout=90) as resp:
             batch = json.load(resp)
         rows.extend(batch)
         if len(batch) < 5000:

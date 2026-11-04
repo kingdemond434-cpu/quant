@@ -44,14 +44,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from libs.data.polite_fetch import DESK_UA, polite_urlopen
 from libs.research import source_alternatives as alt
 from libs.research import source_health as health
 
 _ROOT = Path(__file__).resolve().parent.parent
 _OUT = _ROOT / "data" / "source_alternatives_report.json"
 
-_UA = {"User-Agent": ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                      "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"),
+_UA = {"User-Agent": DESK_UA,
        "Accept": "text/html,application/json,application/xhtml+xml,*/*;q=0.8",
        "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7"}
 
@@ -107,7 +107,7 @@ def probe(url: str, *, timeout: float = 25.0) -> tuple[str, str]:
     # All registry URLs are https literals declared in libs/research/source_alternatives.
     req = urllib.request.Request(url, headers=_UA)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as fh:
+        with polite_urlopen(req, timeout=timeout) as fh:
             raw = fh.read()
             ctype = str(fh.headers.get("Content-Type", ""))
     except urllib.error.HTTPError as exc:

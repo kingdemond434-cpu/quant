@@ -40,11 +40,19 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+try:
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
+
 ROOT = Path(__file__).resolve().parent.parent
 OBS = ROOT / "desks" / "mt5" / "data" / "observables"
 OUT = ROOT / "data" / "free_observables.json"
 
-_UA = {"User-Agent": "Mozilla/5.0 (quant-desk research fetcher)"}
+_UA = {"User-Agent": DESK_UA}
 
 #: Sources, each with where it lands and what it unblocks. Adding one here is the whole
 #: onboarding: the adapters read from `OBS` and do not know about HTTP.
@@ -82,7 +90,7 @@ SOURCES: dict[str, dict[str, str]] = {
 def _get(url: str, timeout: int = 90) -> bytes | None:
     try:
         req = urllib.request.Request(url, headers=_UA)
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with polite_urlopen(req, timeout=timeout) as r:
             return bytes(r.read())
     except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, OSError):
         return None

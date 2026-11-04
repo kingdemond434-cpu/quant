@@ -40,6 +40,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+from libs.data.polite_fetch import DESK_UA  # noqa: E402
 from libs.doctrine.constitution import (  # noqa: E402
     DATA_AXIS_MANDATE,
     OBJECTIVE_PREAMBLE,
@@ -173,7 +174,7 @@ def probe(url: str) -> str:
     """An unprobed LLM suggestion is a dead link until proven otherwise."""
     u = url if url.startswith("http") else "https://" + url.strip().strip("<>()[]")
     try:
-        req = urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0"})
+        req = urllib.request.Request(u, headers={"User-Agent": DESK_UA})
         with urllib.request.urlopen(req, timeout=15, context=CTX) as r:
             return f"OK-{r.status}"
     except urllib.error.HTTPError as e:

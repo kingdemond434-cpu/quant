@@ -24,6 +24,14 @@ from pathlib import Path
 
 import certifi
 
+try:
+    from libs.data.polite_fetch import polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+    from libs.data.polite_fetch import polite_urlopen
+
 _ARCHIVE = Path("data/research_feed.json")
 _INBOX = Path("docs/research/feed_inbox.md")
 _AGENDA = Path("research_agenda.json")
@@ -81,7 +89,7 @@ def _fetch() -> list[dict[str, str]]:
     # certifi context: this machine's system store lacks the arXiv CA chain (urllib default fails)
     ctx = ssl.create_default_context(cafile=certifi.where())
     req = urllib.request.Request(_API, headers={"User-Agent": "quant-research-feed/1.0"})
-    with urllib.request.urlopen(req, timeout=30, context=ctx) as r:
+    with polite_urlopen(req, timeout=30, context=ctx) as r:
         root = ET.fromstring(r.read())
     out = []
     for e in root.findall("a:entry", _NS):

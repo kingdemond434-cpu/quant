@@ -66,8 +66,11 @@ ROUTES: tuple[dict[str, Any], ...] = (
     {"name": "gld_holdings",
      "url": "https://www.spdrgoldshares.com/usa/assets/uploads/GLD_US_holdings.xlsx",
      "expect": "binary"},
+    # Yahoo is an IDEAS_ONLY row (terms_fence): a reachability probe only, never live input, and
+    # it goes through THE POLITE DOOR (honest DESK_UA, robots.txt, site holds, no retry)
     {"name": "yahoo_chart",
-     "url": "https://query1.finance.yahoo.com/v8/finance/chart/GC=F", "expect": "json"},
+     "url": "https://query1.finance.yahoo.com/v8/finance/chart/GC=F", "expect": "json",
+     "polite": True, "terms_status": "IDEAS_ONLY"},
 )
 
 #: Content types that satisfy each declared shape. Deliberately generous -- the check is for a
@@ -84,11 +87,53 @@ _ACCEPT = {
 MIN_BODY_BYTES = 64
 
 
-def probe(route: dict[str, Any], timeout: float = 15.0) -> dict[str, Any]:
+def _polite_probe(route: dict[str, Any], out: dict[str, Any], timeout: float,
+                  get: Any = None) -> tuple[int, str, bytes] | dict[str, Any]:
+    """A route flagged `polite` is probed through `libs.data.polite_fetch.get` (honest DESK_UA,
+    robots.txt, site holds; 401/403/429/WAF is a hard stop; retries=0). Returns (status, ctype,
+    body) to shape-check, or the finished verdict row (REFUSED / HTTP_ERROR / UNREACHABLE)."""
+    if get is None:
+        import sys
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.data import polite_fetch
+        get = polite_fetch.get
+    out["via"] = "polite_fetch"
+    if route.get("terms_status"):
+        out["terms_status"] = route["terms_status"]
+    r = get(str(route.get("url")), timeout=timeout, retries=0, max_bytes=4096,
+            leg="check_source_routes")
+    if r.verdict or (r.status is None and str(r.error).startswith(
+            ("METHOD_BLOCKED", "NEEDS_KEY", "terms"))):
+        # robots, a site hold or the terms fence refused it: a recorded answer, never a pass,
+        # never MOVED, and never routed around
+        out.update({"status": "REFUSED", "verdict": r.verdict or "TERMS_FENCED",
+                    "why": str(r.error or r.verdict)[:120]})
+        return out
+    if r.status is not None and r.status != 200:
+        out.update({"status": "HTTP_ERROR", "http": int(r.status), "why": f"HTTP {r.status}"})
+        return out
+    if r.status is None:
+        out.update({"status": "UNREACHABLE", "why": str(r.error)[:120]})
+        return out
+    return int(r.status), str(r.content_type or "").lower(), bytes(r.body or b"")[:4096]
+
+
+def probe(route: dict[str, Any], timeout: float = 15.0, *, get: Any = None) -> dict[str, Any]:
     """One route, one verdict. Never raises: an unprobed route is UNMEASURED, not a pass."""
     name, url = str(route.get("name")), str(route.get("url"))
     expect = str(route.get("expect") or "any")
     out: dict[str, Any] = {"name": name, "url": url, "expect": expect}
+    if route.get("polite"):
+        try:
+            got = _polite_probe(route, out, timeout, get)
+        except Exception as e:
+            out.update({"status": "UNMEASURED", "why": f"{type(e).__name__}: {str(e)[:90]}"})
+            return out
+        if isinstance(got, dict):
+            return got
+        status, ctype, body = got
+        return _shape(out, expect, status, ctype, body)
     req = urllib.request.Request(url, headers={"User-Agent": "quant-desk-route-probe/1.0"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
@@ -110,6 +155,12 @@ def probe(route: dict[str, Any], timeout: float = 15.0) -> dict[str, Any]:
         out.update({"status": "UNMEASURED", "why": f"{type(e).__name__}: {str(e)[:90]}"})
         return out
 
+    return _shape(out, expect, status, ctype, body)
+
+
+def _shape(out: dict[str, Any], expect: str, status: int, ctype: str,
+           body: bytes) -> dict[str, Any]:
+    """The shape verdict (OK / MOVED) of a 200 body against the declared expectation."""
     out["http"] = status
     out["content_type"] = ctype
     out["bytes_read"] = len(body)
@@ -164,7 +215,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"source routes: {len(results)} probed -> {census}")
     for r in results:
         mark = {"OK": "  ok    ", "MOVED": "  MOVED ", "HTTP_ERROR": "  http  ",
-                "UNREACHABLE": "  unrch ", "UNMEASURED": "  unmsr "}.get(str(r["status"]), "  ?    ")
+                "UNREACHABLE": "  unrch ", "UNMEASURED": "  unmsr ",
+                "REFUSED": "  refsd "}.get(str(r["status"]), "  ?    ")
         print(f"{mark}{r['name']!s:22} {str(r.get('why') or r.get('content_type') or '')[:70]}")
     print(f"  -> {OUT}")
     # MOVED is the only fatal verdict. An honest HTTP error or an unreachable host is loud and
