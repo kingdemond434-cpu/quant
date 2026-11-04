@@ -82,3 +82,21 @@ def test_compiler_universe_withholds_the_frozen_series(tmp_path, monkeypatch):
     universe, note = mcc.live_known_symbols()
     assert universe == {"EURUSD", "USDJPY", "XAUUSD"}
     assert note["withheld_from_minting"] == ["UST05Y"]
+
+
+def test_a_cell_reading_a_frozen_factor_is_withheld_by_name():
+    import research.miner_candidate_compiler as mcc
+
+    cands = [
+        {
+            "symbol": "EURUSD",
+            "family": "cross_asset_residual",
+            "params": {"factor_symbols": ["USDX", "UST10Y"]},
+        },
+        {"symbol": "XAUUSD", "family": "lead_lag", "params": {"peer_symbol": "UST05Y"}},
+        {"symbol": "USDJPY", "family": "pairs", "params": {"leg_b_symbol": "EURUSD"}},
+        {"symbol": "UST10Y", "family": "turn_of_month", "params": {}},
+    ]
+    kept, withheld = mcc.withhold_frozen_inputs(cands, {"UST10Y", "UST05Y"})
+    assert [c["symbol"] for c in kept] == ["USDJPY"]
+    assert withheld == ["UST10Y", "UST05Y", "UST10Y"]

@@ -1639,9 +1639,43 @@ def live_known_symbols() -> tuple[set[str], dict]:
         return universe, {"verdict": "UNMEASURED", "reason": type(exc).__name__}
 
 
+#: Params that name an INPUT series rather than the traded symbol. A cell whose factor or peer
+#: froze still builds (the frozen bars exist) and is judged on a flat input, so it is withheld.
+_INPUT_SYMBOL_KEYS = ("factor_symbols", "peer_symbol", "peer", "leader", "input_symbol",
+                      "leg_a_symbol", "leg_b_symbol", "leg_symbols", "symbols")
+
+
+def _named_inputs(params: dict) -> set[str]:
+    out: set[str] = set()
+    for key, value in (params or {}).items():
+        if key not in _INPUT_SYMBOL_KEYS and not (key.startswith("leg_")
+                                                  and key.endswith("_symbol")):
+            continue
+        if isinstance(value, str):
+            out.add(value)
+        elif isinstance(value, (list, tuple)):
+            out.update(v for v in value if isinstance(v, str))
+    return out
+
+
+def withhold_frozen_inputs(cands: list[dict], frozen: set[str]) -> tuple[list[dict], list[str]]:
+    """Drop candidates that trade, or read an input from, a frozen series; name each one."""
+    kept: list[dict] = []
+    withheld: list[str] = []
+    for c in cands:
+        hit = ({str(c.get("symbol") or "")} | _named_inputs(c.get("params") or {})) & frozen
+        if hit:
+            withheld.extend(sorted(hit))
+        else:
+            kept.append(c)
+    return kept, withheld
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
     universe, stale_note = live_known_symbols()
+    frozen_set = set(stale_note.get("frozen") or {})
+    withheld_inputs: dict[str, int] = {}
     if stale_note.get("withheld_from_minting"):
         print(f"stale bars: {len(stale_note['withheld_from_minting'])} frozen symbol(s) withheld "
               f"from minting: {', '.join(stale_note['withheld_from_minting'][:12])}")
@@ -1699,6 +1733,10 @@ def main() -> int:
             produced = [dict(candidate) for candidate in recovered_for_row]
             disposition = "RECOVERED_BY_DEEPENING"
         produced = expand_axes(produced)
+        if frozen_set:
+            produced, _withheld = withhold_frozen_inputs(produced, frozen_set)
+            for _sym in _withheld:
+                withheld_inputs[_sym] = withheld_inputs.get(_sym, 0) + 1
         # PROVENANCE RIDES ONTO EVERY CANDIDATE (six-event trace 2026-09-30: 0 of 53,174 carried
         # a source_url). The row's own URL/time/hash when it states them, else its coordinate.
         row_prov = _row_provenance(_row_k, row)
@@ -2066,7 +2104,8 @@ def main() -> int:
         "agreement": {"candidates_with_2plus_sources": agreement},
         "disagreement": disagreement,
         "intake": {"max_rows_per_pass": MAX_ROWS_PER_PASS, **_LAST_INTAKE},
-        "stale_bars": {k: v for k, v in stale_note.items() if k != "frozen_last_bar"},
+        "stale_bars": {k: v for k, v in stale_note.items() if k != "frozen_last_bar"}
+        | {"withheld_inputs": dict(sorted(withheld_inputs.items()))},
         "blinding": {k: v for k, v in blinding_note.items() if k != "seats"}
         | {"seats_with_outcomes": {s: d for s, d in (blinding_note.get("seats") or {}).items()
                                    if d.get("rows_with_outcomes")}},
