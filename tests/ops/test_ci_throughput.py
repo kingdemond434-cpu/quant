@@ -327,6 +327,38 @@ def test_no_merge_for_24h_while_gating_green_is_red() -> None:
     assert mp.assess(NOW, prs, green, {}, [], 0, [_commit("fix", 1)])["status"] == "GREEN"  # unread
 
 
+def test_the_box_running_old_code_is_red_and_its_adoption_latency_is_reported() -> None:
+    """zuck 2026-11-04 02:05Z: new code must be adopted on the box asap. The box ran 10-29 code
+    into 11-04 and no rule fired. A code commit on LIVE the box does not run, past ADOPT_RED_H,
+    is BOX_BEHIND; box state and seal commits never count; an unread identity is BOX_BLIND."""
+    live = [_commit("fix", 1)]
+    box = {
+        "code_sha": "a" * 40,
+        "sealed_at": _iso(30 * 60),
+        "code_at": _iso(31 * 60),
+        "behind": [
+            _commit("mt5 box state 2026-11-04_0137 (published onto origin", 5 * 60),
+            _commit("fix the sizing ratchet", 3 * 60),
+            _commit("seal release x", 60),
+        ],
+    }
+    rep = mp.assess(NOW, [], {}, {}, [], 0, live, box=box)
+    assert [r.split()[0] for r in rep["red"]] == ["BOX_BEHIND:"]
+    assert rep["adoption"]["unadopted_code_commits"] == 1 and rep["adoption"]["lag_h"] == 3.0
+    assert rep["adoption"]["last_adoption_latency_h"] == 1.0
+    assert rep["adoption"]["lower_bound"] is False
+    # since-the-seal and a capped compare can only under-count: say so, never imply adoption
+    under = mp.assess(NOW, [], {}, {}, [], 0, live, box=dict(box, lower_bound=True))
+    assert under["adoption"]["lower_bound"] is True
+    fresh = dict(box, behind=[_commit("fix", 30)])
+    assert mp.assess(NOW, [], {}, {}, [], 0, live, box=fresh)["status"] == "GREEN"
+    current = dict(box, behind=[_commit("mt5 box state 2026-11-04_0137 (published", 9 * 60)])
+    assert mp.assess(NOW, [], {}, {}, [], 0, live, box=current)["status"] == "GREEN"
+    blind = mp.assess(NOW, [], {}, {}, [], 0, live, box={"code_sha": ""})
+    assert [r.split()[0] for r in blind["red"]] == ["BOX_BLIND:"]
+    assert mp.assess(NOW, [], {}, {}, [], 0, live)["adoption"] is None  # not read: not judged
+
+
 def test_live_stalls_on_green_work_too() -> None:
     prs = [_pr(516, "1" * 40, "ftmo")]
     rep = mp.assess(NOW, prs, {}, {}, [], 0, [_commit("fix", 7 * 60)], ready={516: _iso(10)})
@@ -743,3 +775,67 @@ def test_the_sign_train_leg_never_stacks_a_sign_and_is_watched() -> None:
     assert 'TASK name="Quant-SignTrain"' in rows
     inst = (ROOT / "ops/box/install_unattended.ps1").read_text(encoding="utf-8")
     assert "Add-QuantTask 'Quant-SignTrain' 'sign_train_leg.ps1'" in inst
+
+
+def test_live_first_stops_at_its_budget_and_loses_nothing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """2026-11-03 23:31Z: unbounded under 100% CPU, live-first outran Quant-WorkflowGate's 30-min
+    limit, the task was killed and the gate sweep behind it never ran. Past the budget nothing
+    more is cancelled, and an owed re-run it never reached is carried with its count unchanged."""
+    lf = _lf()
+    live = {"id": 1, "event": "push", "head_branch": lf.LIVE, "created_at": "2000-01-01T00:00:00Z"}
+    pr = {"id": 2, "event": "pull_request", "head_branch": "b1", "head_sha": "h1",
+          "created_at": "1999-12-31T00:00:00Z"}  # fmt: skip
+    state = tmp_path / "lf.json"
+    state.write_text(json.dumps({"owed": [{"id": 9, "attempt": 1, "calls": 2}]}))
+    calls: list[tuple[str, str]] = []
+
+    def gh(path: str, method: str = "GET") -> Any:
+        calls.append((method, path))
+        if "status=queued" in path:
+            return {"workflow_runs": [live, pr]}
+        if "/pulls?" in path:
+            return [{"head": {"ref": "b1", "sha": "h1"}}]
+        if "/comments" in path:
+            return []
+        return {"status": "queued", "run_attempt": 1}
+
+    monkeypatch.setattr(lf, "_gh", gh)
+    t = iter(range(0, 10_000, 100))  # every clock read is 100 s later
+    assert lf.run("o/r", lf.LIVE, state, settle_s=0, sleep=lambda s: None,
+                  clock=lambda: float(next(t)), budget_s=150) == 0  # fmt: skip
+    assert not any(p.endswith(("/cancel", "/rerun")) for _, p in calls)
+    assert json.loads(state.read_text())["owed"] == [{"id": 9, "attempt": 1, "calls": 2}]
+    assert lf.BUDGET_S <= 600  # well inside the gate task's 30-minute limit
+
+
+def test_live_first_budget_is_a_ceiling_no_caller_can_raise(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """independent-review @ aca6be9e6: an arbitrary --budget-s could run longer than intended.
+    The flag only shortens the call, and run() clamps any larger value to BUDGET_S."""
+    lf = _lf()
+    for bad in ("0", "-5", str(lf.BUDGET_S + 1), "86400"):
+        with pytest.raises(SystemExit):
+            lf.main(["--repo", "o/r", "--budget-s", bad])
+    live = {"id": 1, "event": "push", "head_branch": lf.LIVE, "created_at": "2000-01-01T00:00:00Z"}
+    pr = {"id": 2, "event": "pull_request", "head_branch": "b1", "head_sha": "h1",
+          "created_at": "1999-12-31T00:00:00Z"}  # fmt: skip
+    calls: list[str] = []
+
+    def gh(path: str, method: str = "GET") -> Any:
+        calls.append(path)
+        if "status=queued" in path:
+            return {"workflow_runs": [live, pr]}
+        if "/pulls?" in path:
+            return [{"head": {"ref": "b1", "sha": "h1"}}]
+        if "/comments" in path:
+            return []
+        return {"status": "queued", "run_attempt": 1}
+
+    monkeypatch.setattr(lf, "_gh", gh)
+    t = iter([0.0] + [lf.BUDGET_S] * 1000)  # the second clock read is exactly BUDGET_S later
+    lf.run("o/r", lf.LIVE, tmp_path / "s.json", settle_s=0, sleep=lambda s: None,
+           clock=lambda: next(t), budget_s=10 * lf.BUDGET_S)  # fmt: skip
+    assert not any(p.endswith(("/cancel", "/rerun")) for p in calls)  # stopped at the ceiling
