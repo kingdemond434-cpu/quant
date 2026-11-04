@@ -3007,3 +3007,96 @@ def test_send_alert_succeeds_only_when_a_channel_delivered(monkeypatch: Any) -> 
     assert mod.main(["t", "b"]) == 1
     monkeypatch.setattr(mod, "send_all", lambda t, b: {"armed": 1, "delivered": 1})
     assert mod.main(["t", "b"]) == 0 and mod.main(["t"]) == 2
+
+
+# ----------------------------------------------------- shadow reviewer candidates (2026-11-04)
+_SHADOW_CFG = {
+    "url": "http://127.0.0.1:11434",
+    "num_ctx": 32768,
+    "shadow": [{"family": "openai", "name": "cand:20b"}],
+}
+_FAIL_JSON = (
+    '{"verdict": "FAIL", "risk_increasing": true, "touches_control": false,'
+    ' "findings": ["x"], "summary": "s"}'
+)
+
+
+def test_a_shadow_model_is_asked_and_reported_never_counted() -> None:
+    seen: list[int] = []
+
+    def ask(url: str, name: str, ctx: int, rubric: str, user: str) -> str:
+        seen.append(ir.CALL_TIMEOUT_S)
+        return _FAIL_JSON
+
+    before = ir.CALL_TIMEOUT_S
+    lines = ir.shadow_review(
+        "diff --git a/x b/x\n+x\n",
+        ["x"],
+        _SHADOW_CFG,
+        left_s=600,
+        ask=ask,
+        sha=lambda n: "ab" * 32,
+        clock=lambda: 0.0,
+    )
+    assert len(lines) == 1 and lines[0].startswith("SHADOW cand:20b manifest " + "ab" * 32)
+    assert "FAIL (the reviewer flagged a risk increase)" in lines[0]
+    assert seen == [600] and before == ir.CALL_TIMEOUT_S  # bounded by job time, then restored
+
+
+@pytest.mark.parametrize(
+    ("ask_raises", "sha", "left", "want"),
+    [
+        (None, None, 600, "not pulled"),
+        (None, "ab" * 32, 60, "no job time left"),
+        ("unavail", "ab" * 32, 600, "no answer (Unavailable)"),
+        ("toolarge", "ab" * 32, 600, "does not fit whole"),
+        ("garbled", "ab" * 32, 600, "UNREADABLE"),
+    ],
+)
+def test_every_shadow_outcome_is_one_line_and_never_raises(
+    ask_raises: str | None, sha: str | None, left: float, want: str
+) -> None:
+    def ask(url: str, name: str, ctx: int, rubric: str, user: str) -> str:
+        if ask_raises == "unavail":
+            raise ir.Unavailable("down")
+        if ask_raises == "toolarge":
+            raise ir.TooLarge("big")
+        return "not json" if ask_raises == "garbled" else _FAIL_JSON
+
+    before = ir.CALL_TIMEOUT_S
+    lines = ir.shadow_review("d", [], _SHADOW_CFG, left_s=left, ask=ask, sha=lambda n: sha)
+    assert len(lines) == 1 and want in lines[0], lines
+    assert before == ir.CALL_TIMEOUT_S
+
+
+def test_a_shadow_fail_never_reaches_the_exit_code(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import json as _json
+
+    for k in ir.KEY_ENVS:
+        monkeypatch.delenv(k, raising=False)
+    pr = {"head": {"sha": A}, "changed_files": 1}
+    diff = "diff --git a/x.py b/x.py\n+x = 1\n"
+    monkeypatch.setattr(
+        ir, "_gh", lambda *a: _json.dumps(pr) if a[0].endswith("/pulls/7") else diff
+    )
+
+    def down(url: str, body: Any, h: Any) -> Any:
+        raise ir.Unavailable("URLError")
+
+    monkeypatch.setattr(ir, "_http", down)
+    monkeypatch.setattr(ir, "shadow_review", lambda *a, **k: ["SHADOW cand: FAIL (x)"])
+    assert ir.main(["--repo", "o/r", "--pr", "7", "--head", A, "--base-sha", B]) == ir.UNAVAILABLE
+    out = capsys.readouterr().out
+    assert out.index("independent review @") < out.index("SHADOW cand: FAIL")
+
+
+def test_shadow_candidates_are_never_also_voters() -> None:
+    cfg = json.loads((ROOT / "ops/release/local_models.json").read_text(encoding="utf-8"))
+    voters = {m["name"] for m in cfg["models"]}
+    for m in cfg.get("shadow") or []:
+        assert m["name"] not in voters and m["family"] in ir.FAMILIES
+        assert "digest" not in m  # a shadow is measured, never pinned: pinning makes it a voter
+    wf = (ROOT / ".github/workflows/release-gates.yml").read_text(encoding="utf-8")
+    assert wf.index('json.load(open(sys.argv[1]))["models"]') < wf.index('.get("shadow")')

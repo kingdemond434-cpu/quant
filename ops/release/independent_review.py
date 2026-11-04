@@ -895,6 +895,81 @@ def review(
     return verdict, log
 
 
+#: SHADOW CANDIDATES (Governance 2026-11-04, journal D-20261104-shadow). local_models.json
+#: `shadow` lists models that are ASKED BUT NEVER COUNTED: after the real verdict is final, each
+#: pulled shadow model reads the same whole diff once and its answer, time and manifest sha256 are
+#: printed as a `SHADOW` line. Nothing here reaches the return code, the annotation or the vote,
+#: so a shadow model can never pass or fail a PR. It exists to measure a stronger reviewer on the
+#: real PR stream (speed on this runner, answer format, agreement with the Auditor) before anyone
+#: pins it as a voter; promotion is a separate protected change that cites those SHADOW lines.
+#: The job is killed at 200 min (release-gates.yml) and serving can take 30: a shadow call must
+#: end by this many seconds of this process's life, or a measured-only model would turn a PASS job
+#: red by timing it out.
+SHADOW_END_S = 165 * 60
+_STARTED = time.monotonic()
+
+
+def shadow_review(
+    diff: str,
+    files: list[str],
+    cfg: dict[str, Any],
+    left_s: float | None = None,
+    ask: Callable[[str, str, int, str, str], str] | None = None,
+    sha: Callable[[str], str | None] | None = None,
+    clock: Callable[[], float] = time.monotonic,
+) -> list[str]:
+    """One SHADOW line per configured shadow model. Never raises."""
+    out: list[str] = []
+    try:
+        entries = [m for m in cfg.get("shadow") or [] if isinstance(m, dict) and m.get("name")]
+        if not entries:
+            return out
+        url, ctx = str(cfg["url"]), int(cfg["num_ctx"])
+        rubric = (HERE / "review_rubric.md").read_text(encoding="utf-8")
+        models_dir = Path(os.environ.get("OLLAMA_MODELS") or Path.home() / ".ollama" / "models")
+        ask = ask or ask_local
+        sha = sha or (lambda n: manifest_sha(models_dir, n))
+    except Exception as exc:  # a shadow can only ever cost its own line
+        return [f"SHADOW: not run ({type(exc).__name__})"]
+    global CALL_TIMEOUT_S
+    end = clock() + (left_s if left_s is not None else SHADOW_END_S - (clock() - _STARTED))
+    for m in entries:
+        name = str(m["name"])
+        saved = CALL_TIMEOUT_S
+        try:
+            got = sha(name)
+            if got is None:
+                out.append(f"SHADOW {name}: not pulled")
+                continue
+            left = end - clock()
+            if left < 120:
+                out.append(f"SHADOW {name} manifest {got}: skipped, no job time left")
+                continue
+            CALL_TIMEOUT_S = int(min(saved, left))
+            t0 = clock()
+            try:
+                text = ask(url, name, ctx, rubric, prompt(diff, files, secrets.token_hex(8)))
+            except TooLarge:
+                out.append(f"SHADOW {name} manifest {got}: skipped, the diff does not fit whole")
+                continue
+            secs = clock() - t0
+            answer = parse(text)
+            if answer is None:
+                out.append(f"SHADOW {name} manifest {got}: UNREADABLE in {secs:.0f}s")
+                continue
+            ok, why = decide(answer)
+            verdict = "PASS" if ok else f"FAIL ({why})"
+            out.append(
+                f"SHADOW {name} manifest {got}: {verdict} in {secs:.0f}s "
+                + json.dumps(answer, sort_keys=True)[:TOLD_CAP]
+            )
+        except Exception as exc:  # Unavailable, a timeout, anything: no vote, one line
+            out.append(f"SHADOW {name}: no answer ({type(exc).__name__})")
+        finally:
+            CALL_TIMEOUT_S = saved
+    return out
+
+
 TOLD_CAP = 600
 
 
@@ -1013,6 +1088,9 @@ def main(argv: list[str] | None = None) -> int:
     for line in log:
         print(line)
     print(f"independent review @ {a.head[:9]}: {verdict}")
+    # after the verdict is fixed and printed: a shadow model is measured, never counted
+    for line in shadow_review(diff, files, cfg):
+        print(line)
     if verdict == "UNAVAILABLE":
         # the controller reads this annotation: queued for a re-run, never a pass
         print("::error title=REVIEW_UNAVAILABLE::no free reviewer answered; queued for retry")
