@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-04T10:48:53.485560+00:00",
+ "generated_utc": "2026-11-04T11:46:28.497742+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -127,9 +127,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 18,
-    "confidence": 0.4865,
-    "sd": 0.0811,
+    "n_oos": 21,
+    "confidence": 0.5581,
+    "sd": 0.0749,
     "status": "CONTESTED"
    }
   },
@@ -138,9 +138,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 18,
-    "confidence": 0.4865,
-    "sd": 0.0811,
+    "n_oos": 21,
+    "confidence": 0.5581,
+    "sd": 0.0749,
     "status": "CONTESTED"
    }
   },
@@ -149,9 +149,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 18,
-    "confidence": 0.4865,
-    "sd": 0.0811,
+    "n_oos": 21,
+    "confidence": 0.5581,
+    "sd": 0.0749,
     "status": "CONTESTED"
    }
   },
@@ -182,9 +182,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 18,
-    "confidence": 0.4865,
-    "sd": 0.0811,
+    "n_oos": 21,
+    "confidence": 0.5581,
+    "sd": 0.0749,
     "status": "CONTESTED"
    }
   },
@@ -193,9 +193,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 18,
-    "confidence": 0.4865,
-    "sd": 0.0811,
+    "n_oos": 21,
+    "confidence": 0.5581,
+    "sd": 0.0749,
     "status": "CONTESTED"
    }
   },
@@ -204,9 +204,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 18,
-    "confidence": 0.4865,
-    "sd": 0.0811,
+    "n_oos": 21,
+    "confidence": 0.5581,
+    "sd": 0.0749,
     "status": "CONTESTED"
    }
   },
@@ -215,9 +215,9 @@
    "review_failed": [],
    "family": "session_range_breakout",
    "theory": {
-    "n_oos": 18,
-    "confidence": 0.4865,
-    "sd": 0.0811,
+    "n_oos": 21,
+    "confidence": 0.5581,
+    "sd": 0.0749,
     "status": "CONTESTED"
    }
   },
@@ -19802,6 +19802,61 @@
     "confidence": 0.1053,
     "sd": 0.0491,
     "status": "REFUTED"
+   }
+  },
+  "external.GBPAUD.session_range_breakout.p=e4fcc6ebf1dcd423": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "session_range_breakout",
+   "theory": {
+    "n_oos": 21,
+    "confidence": 0.5581,
+    "sd": 0.0749,
+    "status": "CONTESTED"
+   }
+  },
+  "external.XAUAUD.session_range_breakout.p=5f70c5aef97b074e": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "session_range_breakout",
+   "theory": {
+    "n_oos": 21,
+    "confidence": 0.5581,
+    "sd": 0.0749,
+    "status": "CONTESTED"
+   }
+  },
+  "external.XAUUSD.session_range_breakout.p=dc21bb20d07c626c": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "session_range_breakout",
+   "theory": {
+    "n_oos": 21,
+    "confidence": 0.5581,
+    "sd": 0.0749,
+    "status": "CONTESTED"
+   }
+  },
+  "external.XAUUSD.session_range_breakout.p=da4f0d84a1acf8d1": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "session_range_breakout",
+   "theory": {
+    "n_oos": 21,
+    "confidence": 0.5581,
+    "sd": 0.0749,
+    "status": "CONTESTED"
+   }
+  },
+  "external.XAUUSD.session_range_breakout.p=f048e1c2a57e6cc0": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "session_range_breakout",
+   "theory": {
+    "n_oos": 21,
+    "confidence": 0.5581,
+    "sd": 0.0749,
+    "status": "CONTESTED"
    }
   }
  },
