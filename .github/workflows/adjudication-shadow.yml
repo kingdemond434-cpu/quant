@@ -58,7 +58,6 @@ jobs:
       - name: Shadow trial (logs only)
         env:
           GH_TOKEN: ${{ github.token }}
-          ADJUDICATOR_DIGEST: ${{ steps.serve.outputs.digest }}
         run: |
           python -I ops/release/adjudicate.py shadow --repo "${{ github.repository }}" \
             --report "$RUNNER_TEMP/adjudication_shadow.json"

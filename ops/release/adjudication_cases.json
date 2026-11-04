@@ -1,5 +1,5 @@
 {
- "_doc": "Shadow-trial cases for ops/release/adjudicate.py. false_fail: a qwen2.5-coder:7b FAIL on an Auditor-CLEAR head whose findings the diff contradicts (HUMAN_DEPENDENCIES.md, 2026-11-04). true_fail: a FAIL the Auditor agreed with (HOLD or the same defect). Findings are copied verbatim from each review's job log. The trial passes only if true_fails_cleared is 0.",
+ "_doc": "Shadow-trial cases for ops/release/adjudicate.py. false_fail: a qwen2.5-coder:7b FAIL on an Auditor-CLEAR head whose findings the diff contradicts (HUMAN_DEPENDENCIES.md, 2026-11-04); findings copied verbatim from each review's job log. true_fail (real): a head the Auditor HELD; only #642 carries a real qwen FAIL finding, the others carry the Auditor's HOLD reason as the finding (#607 dropped: head sha not found; #655 left out on the Auditor's word). true_fail (synthetic: true): an accurate finding written against a real diff. Enforcement is proposable only with >= 20 true cases ruled (>= 10 real) and true_fails_cleared == 0; false_fails_cleared is reported beside it.",
  "cases": [
   {
    "pr": 694,
@@ -106,6 +106,258 @@
     "The script copies files into `C:\\"
    ],
    "source": "independent-review job 126759618640"
+  },
+  {
+   "pr": 642,
+   "head": "0bdb84e4c76049e050a779a274c61d0a24398eb4",
+   "base": "6727fc33e5ffafe5cfb1886b2dd38df2f47666b5",
+   "truth": "true_fail",
+   "touches_control": false,
+   "findings": [
+    "The diff contains a new evidence field in the decision journal entry for D-20261103-004, which is not described in its title or comments. This could indicate that the change adds new functionality without proper documentation."
+   ],
+   "source": "independent-review job 126380096512; Auditor HOLD: Auditor HOLD 11-03 23:14Z",
+   "synthetic": false
+  },
+  {
+   "pr": 690,
+   "head": "ac76f392906cde42d177b6512f6667629eb43fa5",
+   "base": "4b01259acbcb1a3bfa2270a5808ab89d2a26ad19",
+   "truth": "true_fail",
+   "touches_control": false,
+   "findings": [
+    "clears_ref let origin-only plain rows vouch"
+   ],
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed this head); a correct adjudicator must keep it supported",
+   "synthetic": false
+  },
+  {
+   "pr": 699,
+   "head": "7723899e4554222c569cf96c0affcf7fac90a723",
+   "base": "15027ca3ae38c991ec046444c5cae61411e265e2",
+   "truth": "true_fail",
+   "touches_control": false,
+   "findings": [
+    "docket stand-down exited 0 with no record (L1.28a)"
+   ],
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed this head); a correct adjudicator must keep it supported",
+   "synthetic": false
+  },
+  {
+   "pr": 636,
+   "head": "10c1d9742f0bd4cd37a394a15ec780720060e529",
+   "base": "3ed1d710b4fb7ec1f04503cb3f3e7a9370fb2a3b",
+   "truth": "true_fail",
+   "touches_control": false,
+   "findings": [
+    "power_deficient latest-sweep rejections not in seen; store re-adds PBO-failed cells"
+   ],
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
+   "synthetic": false
+  },
+  {
+   "pr": 650,
+   "head": "cfd500b7a7a2bb4f528871495708d6eb98c23619",
+   "base": "cfd500b7a7a2bb4f528871495708d6eb98c23619",
+   "truth": "true_fail",
+   "touches_control": false,
+   "findings": [
+    "Actions always-bypass left on the protected branch"
+   ],
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
+   "synthetic": false
+  },
+  {
+   "pr": 650,
+   "head": "d93e5dea38c7e9d55ec5d508a8306f634da70fe8",
+   "base": "d93e5dea38c7e9d55ec5d508a8306f634da70fe8",
+   "truth": "true_fail",
+   "touches_control": false,
+   "findings": [
+    "level2_enforced ignored the admin PR bypass"
+   ],
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
+   "synthetic": false
+  },
+  {
+   "pr": 658,
+   "head": "2981961fa8657e5d3921c409f70a59b16ace614a",
+   "base": "2981961fa8657e5d3921c409f70a59b16ace614a",
+   "truth": "true_fail",
+   "touches_control": false,
+   "findings": [
+    "fence gaps (trigger words, native signer, deps)"
+   ],
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
+   "synthetic": false
+  },
+  {
+   "pr": 671,
+   "head": "7a800f3ebd6d2fde3202b6279aca0ec768cc0e3f",
+   "base": "dd5091910f236f4b987375dfb8c331eabea883b6",
+   "truth": "true_fail",
+   "touches_control": false,
+   "findings": [
+    "robots Disallow treated as hard stop (LAWS 5e: a label)"
+   ],
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
+   "synthetic": false
+  },
+  {
+   "pr": 678,
+   "head": "d89cba424d630a23eec3faabb38780fc1fb5901a",
+   "base": "bb08306e274d6fba9419a65baf5892f5957d15a6",
+   "truth": "true_fail",
+   "touches_control": false,
+   "findings": [
+    "IDLE throttle starved miners and judge"
+   ],
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
+   "synthetic": false
+  },
+  {
+   "pr": 678,
+   "head": "306ec2cce6afa1b9aa2dc8dba686a467e6eff7ba",
+   "base": "bb08306e274d6fba9419a65baf5892f5957d15a6",
+   "truth": "true_fail",
+   "touches_control": false,
+   "findings": [
+    "miners still IDLE under THROTTLE/fan-out"
+   ],
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
+   "synthetic": false
+  },
+  {
+   "pr": 681,
+   "head": "751b020914786f0ae8659f68f8339b24e9494a51",
+   "base": "ab7b70d3051228e24f599a77d604e59287edc8c6",
+   "truth": "true_fail",
+   "touches_control": false,
+   "findings": [
+    "errors=replace hid non-UTF8 code from the reviewer"
+   ],
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
+   "synthetic": false
+  },
+  {
+   "pr": 662,
+   "head": "ee029bb8f32774ad819a0c9c91b6a9f78e4fcb32",
+   "base": "442dfd6a8070c8f306bd42ad19dd857c97c3ae89",
+   "truth": "true_fail",
+   "touches_control": false,
+   "findings": [
+    "google_trends blocked on robots Disallow"
+   ],
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
+   "synthetic": false
+  },
+  {
+   "pr": 694,
+   "head": "af10b3bd3f81c74a38907a15715f15ac26b0a175",
+   "base": "c9255ec6d77af42002d41f20bfea8d4b36d6affe",
+   "truth": "true_fail",
+   "synthetic": true,
+   "touches_control": false,
+   "findings": [
+    "It changes `release_identity.verdict(ROOT, write=False)` to `write=True` in release_authority.py, so a live re-measure now writes the published identity file, which the docstring used to say must never happen."
+   ],
+   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported"
+  },
+  {
+   "pr": 699,
+   "head": "c6cada4c51c0c18be43f12ffe6126e309f02052c",
+   "base": "15027ca3ae38c991ec046444c5cae61411e265e2",
+   "truth": "true_fail",
+   "synthetic": true,
+   "touches_control": false,
+   "findings": [
+    "In local_converter.py `_iter_rows` no longer suppresses ValueError with contextlib.suppress; a bad JSON line is now skipped with try/except and `continue`, and the function becomes a generator instead of returning a list."
+   ],
+   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported"
+  },
+  {
+   "pr": 700,
+   "head": "594f9737fc755a6ee4d35a101abe85e03f5b33db",
+   "base": "15027ca3ae38c991ec046444c5cae61411e265e2",
+   "truth": "true_fail",
+   "synthetic": true,
+   "touches_control": false,
+   "findings": [
+    "shadow_cycle.py now prints a timestamped line to stdout at the start and end of every stage, and adds `stage_seconds`, `stage_started_at` and `slowest_stage` to the health document."
+   ],
+   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported"
+  },
+  {
+   "pr": 666,
+   "head": "c9157231789c07de0cac7b793f1cdfbdec9a13c2",
+   "base": "55fb6ea085817f3f359a6a65cbdc8141ac78eaf0",
+   "truth": "true_fail",
+   "synthetic": true,
+   "touches_control": false,
+   "findings": [
+    "live_first_ci.py adds a 300 second BUDGET_S, and any run not reached before the budget is spent is carried to the next call with its count unchanged instead of being processed."
+   ],
+   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported"
+  },
+  {
+   "pr": 646,
+   "head": "63693d729efb4867f5862cb4e59a343ae9767b9a",
+   "base": "d3be14a15aff269c5f54fd6699f5fa4ad98ddc30",
+   "truth": "true_fail",
+   "synthetic": true,
+   "touches_control": false,
+   "findings": [
+    "alpha_capture.py stops withholding cells that miss the Bonferroni bar or the placebo ADMIT: every measured cell is now donated to the judge, so the pre-screen no longer filters what reaches the docket."
+   ],
+   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported"
+  },
+  {
+   "pr": 668,
+   "head": "ec83d8f6afcb6e23e430ae226b1c0e9930e10fa1",
+   "base": "90880d366d85daafb8e256886cf34a59c0234d9e",
+   "truth": "true_fail",
+   "synthetic": true,
+   "touches_control": false,
+   "findings": [
+    "tier1_scorecard.py adds a `footprints` function that reads ten report files plus forced_flow_calendar.json and copies their contents inline up to 48,000 bytes each and 600,000 bytes in total."
+   ],
+   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported"
+  },
+  {
+   "pr": 684,
+   "head": "92552cdf0504f1132e376e79b30834a25712b65e",
+   "base": "90880d366d85daafb8e256886cf34a59c0234d9e",
+   "truth": "true_fail",
+   "synthetic": true,
+   "touches_control": false,
+   "findings": [
+    "state_vector_build.py now passes over a candidate whose last H1 bar is older than 7 days and, when every candidate is stale, keeps the freshest stale one instead of dropping the role."
+   ],
+   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported"
+  },
+  {
+   "pr": 657,
+   "head": "71fc2c54b0f2aef06815cf6e1f8dbe5391c79fa3",
+   "base": "90880d366d85daafb8e256886cf34a59c0234d9e",
+   "truth": "true_fail",
+   "synthetic": true,
+   "touches_control": false,
+   "findings": [
+    "youtube_miner.py now reads the YouTube API key from a file under data/secrets when the YOUTUBE_API_KEY environment variable is empty."
+   ],
+   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported"
+  },
+  {
+   "pr": 657,
+   "head": "71fc2c54b0f2aef06815cf6e1f8dbe5391c79fa3",
+   "base": "90880d366d85daafb8e256886cf34a59c0234d9e",
+   "truth": "true_fail",
+   "synthetic": true,
+   "touches_control": false,
+   "findings": [
+    "youtube_miner.py now raises QuotaRefused on HTTP 403 or 429 and re-raises it past the generic exception handler, so one quota refusal stops the rest of the run."
+   ],
+   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported"
   }
  ]
 }
