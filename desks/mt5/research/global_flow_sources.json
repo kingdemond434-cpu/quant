@@ -2,6 +2,184 @@
  "_doc": "Global flow registry (global_flow.py, run inside futures_state's hourly pass). Rows, never code: add a source here. adapter=none is a NAMED GAP with blocked_by. class: retail | institutional | dealer | central_bank | sovereign | etf | cross_border | forced. Every series is an exogenous_conditioner QUESTION for the judge, never a sized edge. avail_lag_days + avail_hour_utc stamp publication conservatively after the observation date.",
  "sources": [
   {
+   "id": "cb_hazard_usdjpy",
+   "class": "central_bank",
+   "region": "JP",
+   "adapter": "cb_hazard",
+   "pairs": [
+    {
+     "symbol": "USDJPY",
+     "weak_side": 1
+    }
+   ],
+   "avail_lag_days": 1,
+   "avail_hour_utc": 0,
+   "window": 252,
+   "targets": [
+    "USDJPY",
+    "EURJPY",
+    "GBPJPY",
+    "AUDJPY"
+   ],
+   "why": "Intervention hazard from the pair's own speed and range extreme in the defended currency's weak direction. MoF/BoJ sold dollars at 145.9 (2022-09), 151.9 (2022-10), 160-162 (2024-04/07). Question for the gauntlet: does high hazard predict reversal, vol spikes or capped drift?"
+  },
+  {
+   "id": "cb_hazard_usdcnh",
+   "class": "central_bank",
+   "region": "CN/HK",
+   "adapter": "cb_hazard",
+   "pairs": [
+    {
+     "symbol": "USDCNH",
+     "weak_side": 1
+    }
+   ],
+   "avail_lag_days": 1,
+   "avail_hour_utc": 0,
+   "window": 252,
+   "targets": [
+    "USDCNH",
+    "AUDUSD"
+   ],
+   "why": "Intervention hazard from the pair's own speed and range extreme in the defended currency's weak direction. PBoC fixing pushback, state-bank dollar selling and CNH liquidity squeezes. Question for the gauntlet: does high hazard predict reversal, vol spikes or capped drift?"
+  },
+  {
+   "id": "cb_hazard_usdtry",
+   "class": "central_bank",
+   "region": "TR",
+   "adapter": "cb_hazard",
+   "pairs": [
+    {
+     "symbol": "USDTRY",
+     "weak_side": 1
+    }
+   ],
+   "avail_lag_days": 1,
+   "avail_hour_utc": 0,
+   "window": 252,
+   "targets": [
+    "USDTRY",
+    "EURTRY"
+   ],
+   "why": "Intervention hazard from the pair's own speed and range extreme in the defended currency's weak direction. CBRT reserve sales and backdoor state-bank dollar selling. Question for the gauntlet: does high hazard predict reversal, vol spikes or capped drift?"
+  },
+  {
+   "id": "cb_hazard_usdinr",
+   "class": "central_bank",
+   "region": "IN",
+   "adapter": "cb_hazard",
+   "pairs": [
+    {
+     "symbol": "USDINR",
+     "weak_side": 1
+    }
+   ],
+   "avail_lag_days": 1,
+   "avail_hour_utc": 0,
+   "window": 252,
+   "targets": [
+    "USDINR"
+   ],
+   "why": "Intervention hazard from the pair's own speed and range extreme in the defended currency's weak direction. RBI smooths rupee weakness with spot and NDF sales. Question for the gauntlet: does high hazard predict reversal, vol spikes or capped drift?"
+  },
+  {
+   "id": "cb_hazard_usdkrw",
+   "class": "central_bank",
+   "region": "KR",
+   "adapter": "cb_hazard",
+   "pairs": [
+    {
+     "symbol": "USDKRW",
+     "weak_side": 1
+    }
+   ],
+   "avail_lag_days": 1,
+   "avail_hour_utc": 0,
+   "window": 252,
+   "targets": [
+    "USDKRW"
+   ],
+   "why": "Intervention hazard from the pair's own speed and range extreme in the defended currency's weak direction. BoK and NPS dollar supply (smoothing operations, swap line) near 1,400-1,450. Question for the gauntlet: does high hazard predict reversal, vol spikes or capped drift?"
+  },
+  {
+   "id": "cb_hazard_usdidr",
+   "class": "central_bank",
+   "region": "global",
+   "adapter": "cb_hazard",
+   "pairs": [
+    {
+     "symbol": "USDIDR",
+     "weak_side": 1
+    }
+   ],
+   "avail_lag_days": 1,
+   "avail_hour_utc": 0,
+   "window": 252,
+   "targets": [
+    "USDIDR"
+   ],
+   "why": "Intervention hazard from the pair's own speed and range extreme in the defended currency's weak direction. Bank Indonesia triple intervention (spot, DNDF, bonds). Question for the gauntlet: does high hazard predict reversal, vol spikes or capped drift?"
+  },
+  {
+   "id": "cb_hazard_usdbrl",
+   "class": "central_bank",
+   "region": "BR",
+   "adapter": "cb_hazard",
+   "pairs": [
+    {
+     "symbol": "USDBRL",
+     "weak_side": 1
+    }
+   ],
+   "avail_lag_days": 1,
+   "avail_hour_utc": 0,
+   "window": 252,
+   "targets": [
+    "USDBRL"
+   ],
+   "why": "Intervention hazard from the pair's own speed and range extreme in the defended currency's weak direction. BCB spot auctions and FX swaps on fast real weakness. Question for the gauntlet: does high hazard predict reversal, vol spikes or capped drift?"
+  },
+  {
+   "id": "cb_hazard_usdmxn",
+   "class": "central_bank",
+   "region": "MX",
+   "adapter": "cb_hazard",
+   "pairs": [
+    {
+     "symbol": "USDMXN",
+     "weak_side": 1
+    }
+   ],
+   "avail_lag_days": 1,
+   "avail_hour_utc": 0,
+   "window": 252,
+   "targets": [
+    "USDMXN"
+   ],
+   "why": "Intervention hazard from the pair's own speed and range extreme in the defended currency's weak direction. Banxico FX hedge programme expansions on peso stress. Question for the gauntlet: does high hazard predict reversal, vol spikes or capped drift?"
+  },
+  {
+   "id": "cb_hazard_eurchf",
+   "class": "central_bank",
+   "region": "CH",
+   "adapter": "cb_hazard",
+   "pairs": [
+    {
+     "symbol": "EURCHF",
+     "weak_side": -1
+    }
+   ],
+   "avail_lag_days": 1,
+   "avail_hour_utc": 0,
+   "window": 252,
+   "targets": [
+    "EURCHF",
+    "USDCHF",
+    "CHFJPY"
+   ],
+   "why": "Intervention hazard from the pair's own speed and range extreme in the defended currency's weak direction. SNB sells francs (buys euros) on fast franc strength. Question for the gauntlet: does high hazard predict reversal, vol spikes or capped drift?"
+  },
+  {
    "id": "snb_sight",
    "class": "central_bank",
    "region": "CH",
@@ -373,6 +551,14 @@
    "region": "global",
    "adapter": "none",
    "blocked_by": "LME commitments of traders and warehouse data: futures_state lme is HELD (F2)."
+  },
+  {
+   "id": "cb_reaction_functions",
+   "class": "central_bank",
+   "region": "global",
+   "adapter": "none",
+   "blocked_by": "next: Taylor-style reaction residuals (policy rate minus fitted f(inflation gap, output gap)) per CB from FRED, Banxico and EVDS (keys held by name); intervention-record adapters for Banxico and CBRT.",
+   "why": "A CB behind or ahead of its own rule is a predictable rate and FX path."
   }
  ],
  "already_live": [

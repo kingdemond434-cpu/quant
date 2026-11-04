@@ -1142,7 +1142,7 @@ def build(*, dry_run: bool = False, offline: bool = False) -> dict[str, Any]:
         gb, gf = global_flow.collect(
             get=None if offline else global_flow.http_get, state=state, notes=notes,
             get_text=None if offline else fetch_text, now=now,
-            budget=time.monotonic() + global_flow.FETCH_BUDGET_S)
+            budget=time.monotonic() + global_flow.FETCH_BUDGET_S, bars=bars)
         built.update(gb)
         frames.update(gf)
     except Exception as exc:

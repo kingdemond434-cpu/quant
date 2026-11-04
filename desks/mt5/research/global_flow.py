@@ -331,6 +331,35 @@ def parse_mof_weekly(text: str) -> pd.DataFrame:
     return df
 
 
+def intervention_hazard(close: pd.Series, weak_side: float) -> pd.DataFrame:
+    """Central-bank intervention hazard state for one pair, from its own daily closes.
+
+    Interventions arrive after FAST, LARGE moves to EXTREME levels in the defended currency's
+    weak direction (MoF 2022/2024 at USDJPY 145-162, SNB, CBRT, RBI, BoK). `weak_side` is +1
+    when the pair RISING weakens the defended currency (USDJPY, USDKRW), -1 when falling does
+    (EURCHF for the SNB's floor era). Every column is causal (trailing windows only):
+
+        speed5 / speed20   signed 5- and 20-day log move over its trailing 1y daily vol * sqrt(n)
+        ext252             signed position in the trailing 252-day range (+1 = weakest extreme)
+        dd_from_ext        signed distance from the weak-side 252-day extreme, in vol units
+        hazard             logistic(speed20 + 2 * ext252 - 1): one smooth score, a QUESTION for
+                           the gauntlet (does price mean-revert / vol spike when it is high?)
+    """
+    c = pd.to_numeric(close, errors="coerce").dropna()
+    r = np.log(c).diff()
+    vol = r.rolling(252, min_periods=60).std()
+    out = pd.DataFrame(index=c.index)
+    for n in (5, 20):
+        out[f"speed{n}"] = weak_side * np.log(c).diff(n) / (vol * np.sqrt(n))
+    hi, lo = c.rolling(252, min_periods=60).max(), c.rolling(252, min_periods=60).min()
+    pos = (2 * (c - lo) / (hi - lo).replace(0, np.nan)) - 1
+    out["ext252"] = weak_side * pos
+    edge = hi if weak_side > 0 else lo
+    out["dd_from_ext"] = weak_side * np.log(c / edge) / vol
+    out["hazard"] = 1 / (1 + np.exp(-(out["speed20"] + 2 * out["ext252"] - 1)))
+    return out
+
+
 # ------------------------------------------------------------------------------ collectors
 
 def _raw(name: str) -> Path:
@@ -425,9 +454,29 @@ PARSERS: dict[str, Callable[[str], pd.DataFrame]] = {
     "snb_cube": parse_snb_cube, "gld_archive": parse_gld_archive, "mof_weekly": parse_mof_weekly}
 
 
+def _hazard(src: Mapping[str, Any], bars: Callable[[str], Any] | None,
+            notes: list[dict[str, Any]]) -> pd.DataFrame:
+    """Desk-bar derived: no network, so it runs offline too. One column block per pair."""
+    if bars is None:
+        return pd.DataFrame()
+    cols = []
+    for pr in src.get("pairs") or []:
+        b = bars(str(pr["symbol"]))
+        if b is None or len(b) == 0:
+            notes.append({"source": src["id"], "symbol": pr["symbol"], "status": "NO_BARS"})
+            continue
+        idx = pd.DatetimeIndex(pd.to_datetime(b.index, utc=True)).tz_convert(None)
+        daily = pd.Series(pd.to_numeric(b["close"], errors="coerce").to_numpy(),
+                          index=idx).resample("1D").last().dropna()
+        h = intervention_hazard(daily, float(pr.get("weak_side", 1)))
+        cols.append(h.add_prefix(f"{str(pr['symbol']).lower()}_"))
+    return pd.concat(cols, axis=1).sort_index() if cols else pd.DataFrame()
+
+
 def collect(*, get: Callable[..., str] | None, state: dict[str, Any], notes: list[dict[str, Any]],
             get_text: Callable[[str], str] | None = None, now: datetime | None = None,
-            budget: float | None = None, registry: Mapping[str, Any] | None = None
+            budget: float | None = None, registry: Mapping[str, Any] | None = None,
+            bars: Callable[[str], Any] | None = None
             ) -> tuple[dict[str, dict[str, Any]], dict[str, pd.DataFrame]]:
     """Every live row -> (built, frames) in futures_state's shape. `get=None` reads only what
     is already held (offline / dry passes)."""
@@ -445,7 +494,7 @@ def collect(*, get: Callable[..., str] | None, state: dict[str, Any], notes: lis
             continue
         df = pd.DataFrame()
         live = get is not None and f"gf_{sid}" not in stops and time.monotonic() < deadline
-        if live and get_text is not None:
+        if live and get_text is not None and src.get("url"):
             probe = src.get("robots_url") or src["url"].format(
                 ddmmyyyy="01012024", symbol=(src.get("symbols") or ["_SPX"])[0])
             # LAWS 5e: robots is a ROUTING LABEL, never a refusal (the #651 access_label
@@ -466,6 +515,8 @@ def collect(*, get: Callable[..., str] | None, state: dict[str, Any], notes: lis
                 df = _nse_days(src, get, state, notes, now.date(), deadline)
             elif live and adapter == "cboe_snapshot":
                 df = _snapshot(src, get, notes, now.date())
+            elif adapter == "cb_hazard":
+                df = _hazard(src, bars, notes)
         except HardStop as hs:
             stops[f"gf_{sid}"] = {"code": hs.code, "at": now.isoformat(timespec="seconds")}
         except Exception as exc:

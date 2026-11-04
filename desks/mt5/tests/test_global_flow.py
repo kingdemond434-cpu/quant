@@ -204,7 +204,7 @@ def test_shipped_registry_is_valid_and_gaps_are_named():
         if s["adapter"] == "none":
             assert s.get("blocked_by"), s["id"]
         else:
-            assert s["adapter"] in {*gf.PARSERS, "nse_daily", "cboe_snapshot"}, s["id"]
+            assert s["adapter"] in {*gf.PARSERS, "nse_daily", "cboe_snapshot", "cb_hazard"}, s["id"]
             assert s["targets"] and s.get("why")
     cov = gf.coverage(reg)
     assert cov["n_gaps"] == sum(1 for s in reg["sources"] if s["adapter"] == "none")
@@ -241,3 +241,34 @@ def test_robots_disallow_is_a_label_not_a_stop(tmp_raw):
                           get_text=lambda url: "User-agent: *\nDisallow: /", registry=_reg())
     assert built["flow_gld_holdings"]["access_label"] == "PUBLIC_WITH_TERMS"
     assert any(n.get("access_label") == "PUBLIC_WITH_TERMS" for n in notes)
+
+
+def test_intervention_hazard_is_causal_and_signed():
+    idx = pd.date_range("2024-01-01", periods=400, freq="D")
+    rng = np.random.default_rng(3)
+    px = pd.Series(150 * np.exp(np.cumsum(rng.normal(0, 0.004, 400))), index=idx)
+    px.iloc[-10:] = px.iloc[-11] * np.exp(np.linspace(0.01, 0.06, 10))   # a fast weak-side run
+    h = gf.intervention_hazard(px, +1.0)
+    assert h["ext252"].iloc[-1] == pytest.approx(1.0)
+    assert h["speed5"].iloc[-1] > 2 and h["hazard"].iloc[-1] > 0.9
+    cut = gf.intervention_hazard(px.iloc[:300], +1.0)
+    pd.testing.assert_frame_equal(cut, h.iloc[:300])                   # no future leaks back
+    mirrored = gf.intervention_hazard(px, -1.0)
+    assert mirrored["ext252"].iloc[-1] == pytest.approx(-1.0)
+
+
+def test_cb_hazard_runs_offline_from_desk_bars(tmp_raw):
+    idx = pd.date_range("2024-01-01", periods=24 * 300, freq="h", tz="UTC")
+    rng = np.random.default_rng(5)
+    h1 = pd.DataFrame({"close": 150 * np.exp(np.cumsum(rng.normal(0, 0.001, len(idx))))},
+                      index=idx)
+    src = {"id": "cb_hazard_usdjpy", "class": "central_bank", "adapter": "cb_hazard",
+           "pairs": [{"symbol": "USDJPY", "weak_side": 1}], "targets": ["USDJPY"],
+           "avail_lag_days": 1, "avail_hour_utc": 0}
+    _, frames = gf.collect(get=None, state={}, notes=[], registry={"sources": [src]},
+                               bars=lambda s: h1 if s == "USDJPY" else None,
+                               now=datetime(2024, 11, 1, tzinfo=UTC))
+    f = frames["flow_cb_hazard_usdjpy"]
+    assert "usdjpy_hazard" in f.columns
+    assert (pd.to_datetime(f["available_time"], utc=True)
+            > pd.to_datetime(f["event_time"], utc=True)).all()
