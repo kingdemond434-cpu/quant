@@ -71,6 +71,8 @@ EMPTY_PARAMS_DIGEST = "44136fa355b3678a"
 EXPERIMENT_LEDGER = REPORTS / "EXPERIMENT_LEDGER.json"
 #: ONE FILE FOR THE HOURLY PASS, published to the branch by sync_shadow_to_git.ps1.
 COVERAGE_OUT = REPORTS / "COMBINER_COVERAGE.json"
+#: Per-member alpha half-life (idea 279): report only, read by no sizing code.
+HALF_LIFE_OUT = REPORTS / "ALPHA_HALF_LIFE.json"
 GAPS_OUT = STORE / "COMBINER_GAPS.jsonl"          # the full per-signal list (box only)
 FIRST_SEEN = STORE / "first_seen.json"
 PRODUCERS_SEEN = STORE / "producers_seen.json"
@@ -627,6 +629,18 @@ def run(budget_s: float = 1200.0, cfg: wsb.BookConfig | None = None) -> dict:
     except Exception as exc:  # noqa: BLE001 - the book must not die with its side report
         carry_status = f"ERROR {type(exc).__name__}: {str(exc)[:80]}"
 
+    # Per-member alpha half-life over the same members (report only; never sizes or retires).
+    try:
+        from libs.research import alpha_half_life as ahl
+        hl_doc = ahl.pool_half_lives({c: v[0] for c, v in series.items()})
+        _atomic_write(HALF_LIFE_OUT, json.dumps({"generated_utc": _now(), **hl_doc,
+                                                 "authority": "report only"},
+                                                indent=1, default=str))
+        half_life = {k: hl_doc[k] for k in ("members", "verdicts", "median_half_life_years",
+                                             "median_retained")}
+    except Exception as exc:  # noqa: BLE001 - the book must not die with its side report
+        half_life = {"status": f"ERROR {type(exc).__name__}: {str(exc)[:80]}"}
+
     lt, lt_basis = lifetime_trials()
     rows = trial_rows()
     recipe = cfg.digest()
@@ -669,6 +683,7 @@ def run(budget_s: float = 1200.0, cfg: wsb.BookConfig | None = None) -> dict:
         "book": book,
         "combiner_coverage": str(COVERAGE_OUT.name),
         "carry_crash": carry_status,
+        "alpha_half_life": half_life,
         "book_with_live_sleeves": with_live,
         "status": ("PROPOSE" if book.get("passed") else "NO_BOOK"),
         "authority": "proposes only; nothing here arms or sizes a live order",

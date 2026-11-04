@@ -71,6 +71,7 @@ def _setup(tmp: Path, monkeypatch, cells: list[dict], index_extra: dict | None =
                       "TRIALS": tmp / "store" / "trials.jsonl",
                       "FAILED_GATES": tmp / "store" / "failed_gates.json",
                       "COVERAGE_OUT": tmp / "COMBINER_COVERAGE.json",
+                      "HALF_LIFE_OUT": tmp / "ALPHA_HALF_LIFE.json",
                       "GAPS_OUT": tmp / "store" / "COMBINER_GAPS.jsonl",
                       "FIRST_SEEN": tmp / "store" / "first_seen.json",
                       "PRODUCERS_SEEN": tmp / "store" / "producers_seen.json",
@@ -109,6 +110,9 @@ def test_every_eligible_cell_is_ingested_refused_or_a_named_gap(tmp_path, monkey
     assert c["eligible"] == c["ingested"] + c["missing"] + sum(c["refused_by_rule"].values())
     assert d["trials"]["charged"] == 5000 + 1
     assert Path(job.REPORT).exists()
+    hl = json.loads(Path(job.HALF_LIFE_OUT).read_text())
+    assert hl["members"] == d["alpha_half_life"]["members"] == 4
+    assert hl["authority"] == "report only"
 
 
 def test_new_cells_join_on_the_next_pass_and_coverage_goes_green(tmp_path, monkeypatch):
