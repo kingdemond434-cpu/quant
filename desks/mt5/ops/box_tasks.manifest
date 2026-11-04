@@ -323,3 +323,7 @@ TASK name="Quant-BootRecord"   trigger="every 10 minutes"            runs="ops/b
 TASK name="Quant-WorkflowGate" trigger="at logon + every 10 minutes" runs="ops/box/workflow_gate.ps1"   installer="ops/box/install_unattended.ps1" lane="ops" also_runs="scripts/merge_pipeline_watch.py,scripts/live_first_ci.py"
 # The sign train's clock (#541): the audit signs a moved sealed file from its committed CLEAR row.
 TASK name="Quant-SignTrain"    trigger="at logon + every 10 minutes" runs="ops/box/sign_train_leg.ps1" installer="ops/box/install_unattended.ps1" lane="ops" also_runs="scripts/sign_train.py"
+# YouTube channel mining (#655): captions are fetched on zuck's PC (box IP is caption-blocked), shipped
+# sealed on branch claude/video-transcripts; this task opens them, extracts discovery rows for the
+# compiler, and publishes desks/mt5/reports/VIDEO_MINING_COVERAGE.json (consumer: discovery_compiler).
+TASK name="Quant-VideoCells"   trigger="hourly"                      runs="scripts/run_video_cells_box.ps1" installer="scripts/run_video_cells_box.ps1" lane="research" also_runs="scripts/video_transcript_vault.py,scripts/extract_video_cells.py,scripts/mine_channel_transcripts.py"
