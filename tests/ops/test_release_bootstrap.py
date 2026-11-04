@@ -325,7 +325,7 @@ class _Merged(_Gate):
     GATING_JOBS = ("quality",)
 
     def __init__(self, state: str, verdicts: list[dict[str, str]], merged: bool = True,
-                 merge: str = "m" * 40) -> None:  # fmt: skip
+                 merge: str = "c" * 40) -> None:  # fmt: skip
         super().__init__(state, verdicts)
         self.merged, self.merge = merged, merge
 
@@ -353,7 +353,7 @@ class _Merged(_Gate):
 ])  # fmt: skip
 def test_merge_first_pins_only_a_cleared_green_merged_head(gate_: Any, ok: bool) -> None:
     sha, bad = bg.merged_at_clear(gate_, "o/r", 650)
-    assert (sha == "m" * 40) is ok and (bad == []) is ok
+    assert (sha == "c" * 40) is ok and (bad == []) is ok
 
 
 def test_bootstrap_pins_through_the_cleared_merge_check() -> None:
