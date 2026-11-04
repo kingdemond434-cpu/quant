@@ -594,12 +594,13 @@ def test_robots_is_read_per_host_before_the_first_request_to_it(
     assert rep["fetch"]["robots"] == {"www.sec.gov": "ABSENT", "data.sec.gov": "ABSENT"}
 
 
-def test_a_robots_disallow_for_our_agent_is_not_fetched_and_robots_is_reread_daily(
+def test_a_robots_disallow_for_our_agent_is_fetched_labelled_and_robots_is_reread_daily(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """ROBOTS (principal's scope rule 2026-10-13): the group naming the desk's product bars the
-    submissions path -- the '*' group allows it -- so it is never requested. A Disallow is not a
-    person hold: robots.txt is kept a day (no re-read inside 24h) and re-read after, which is how
-    a change of mind is picked up. The SEC UA is never written."""
+    """LAWS 5e (live): robots.txt is a LABEL, never a refusal. The group naming the desk's
+    product disallows the submissions path -- it is requested anyway, counted, labelled
+    PUBLIC_WITH_TERMS and noted on the work queue (ROBOTS_LABELLED); it is not a person hold.
+    robots.txt is kept a day (no re-read inside 24h) and re-read after. The SEC UA is never
+    written."""
     monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
     monkeypatch.setenv(fl.UA_ENV, "TestDesk research test@example.org")
     reg = tmp_path / "blocked.json"
@@ -611,58 +612,57 @@ def test_a_robots_disallow_for_our_agent_is_not_fetched_and_robots_is_reread_dai
     sd = tmp_path / "f4"
     rep = fl.run(get=_edgar_with_robots(calls, robots), now=NOW, state_dir=sd,
                  series_root=tmp_path / "s", dry_run=True, register=reg)
-    assert not any("submissions/CIK" in u for u in calls)
-    assert rep["fetch"]["status"] == "ROBOTS_DISALLOWED"
+    assert any("submissions/CIK" in u for u in calls), "the disallowed path was not fetched"
+    assert rep["fetch"]["status"] not in ("ROBOTS_DISALLOWED", "ROBOTS_UNAVAILABLE")
     assert rep["fetch"]["robots"]["data.sec.gov"] == "DISALLOWED"
+    assert rep["fetch"]["robots_disallowed"] >= 1
+    assert rep["fetch"]["access_labels"].get("PUBLIC_WITH_TERMS", 0) >= 1
     doc = json.loads(reg.read_text())
-    assert doc["sources"][fl.REGISTER_KEY]["diagnosis"] == "ROBOTS_DISALLOW"
+    assert doc["sources"][fl.REGISTER_KEY]["diagnosis"] == "ROBOTS_LABELLED"
     assert not doc.get("holds")                                  # not a person hold
     state_text = (sd / "state.json").read_text("utf-8")
     assert "test@example.org" not in json.dumps(rep, default=str) + state_text
     calls.clear()
     fl.run(get=_edgar_with_robots(calls, robots), now=NOW + timedelta(hours=23),
            state_dir=sd, series_root=tmp_path / "s", dry_run=True, register=reg)
-    assert calls == []                                           # robots kept a day
+    assert not any(u.endswith("/robots.txt") for u in calls)     # robots kept a day
+    calls.clear()
     robots["data.sec.gov"] = (200, b"User-agent: *\nAllow: /\n")   # the site changes its mind
     fl.run(get=_edgar_with_robots(calls, robots), now=NOW + timedelta(hours=25),
            state_dir=sd, series_root=tmp_path / "s", dry_run=True, register=reg)
-    assert calls[0] == "https://data.sec.gov/robots.txt"
-    assert any("submissions/CIK" in u for u in calls)
+    assert "https://data.sec.gov/robots.txt" in calls
 
 
-def test_the_sent_uas_own_group_is_honoured_too(tmp_path: Path,
-                                                monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_sent_uas_own_group_is_read_as_a_label_too(tmp_path: Path,
+                                                      monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
     monkeypatch.setenv(fl.UA_ENV, "TestDesk research test@example.org")
     robots = {"data.sec.gov": (200, b"User-agent: testdesk\nDisallow: /submissions/\n")}
     calls: list[str] = []
-    fl.run(get=_edgar_with_robots(calls, robots), now=NOW, state_dir=tmp_path / "f4",
-           series_root=tmp_path / "s", dry_run=True, register=tmp_path / "r.json")
-    assert not any("submissions/CIK" in u for u in calls)
+    rep = fl.run(get=_edgar_with_robots(calls, robots), now=NOW, state_dir=tmp_path / "f4",
+                 series_root=tmp_path / "s", dry_run=True, register=tmp_path / "r.json")
+    assert any("submissions/CIK" in u for u in calls)
+    assert rep["fetch"]["robots"]["data.sec.gov"] == "DISALLOWED"
+    assert rep["fetch"]["access_labels"].get("PUBLIC_WITH_TERMS", 0) >= 1
 
 
-@pytest.mark.parametrize(("status", "state", "fetched"), [
-    (503, "UNAVAILABLE", False), (404, "ABSENT", True)])
-def test_a_5xx_robots_stops_the_pass_and_a_404_robots_allows(
+@pytest.mark.parametrize(("status", "state", "label"), [
+    (503, "UNAVAILABLE", "ACCESS_UNCLEAR"), (404, "ABSENT", "PUBLIC")])
+def test_a_5xx_robots_is_access_unclear_and_a_404_robots_is_public_both_fetch(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch, status: int, state: str,
-        fetched: bool) -> None:
+        label: str) -> None:
     monkeypatch.setattr(fl, "us_issuers", lambda: {"Apple": "AAPL"})
     calls: list[str] = []
     sd = tmp_path / "f4"
     rep = fl.run(get=_edgar_with_robots(calls, {"www.sec.gov": (status, b"")}), now=NOW,
                  state_dir=sd, series_root=tmp_path / "s", dry_run=True,
                  register=tmp_path / "r.json")
-    assert (fl.TICKER_MAP_URL in calls) is fetched
+    assert fl.TICKER_MAP_URL in calls
     assert rep["fetch"]["robots"]["www.sec.gov"] == state
-    if not fetched:
-        assert rep["fetch"]["status"] == "ROBOTS_UNAVAILABLE"
-        assert not (tmp_path / "r.json").exists()                # no hold for a 5xx
-        calls.clear()
-        fl.run(get=_edgar_with_robots(calls, {}), now=NOW + timedelta(minutes=5),
-               state_dir=sd, series_root=tmp_path / "s", dry_run=True,
-               register=tmp_path / "r.json")
-        assert calls[0] == "https://www.sec.gov/robots.txt"      # re-read on the next pass
-        assert fl.TICKER_MAP_URL in calls
+    assert rep["fetch"]["status"] != "ROBOTS_UNAVAILABLE"
+    assert rep["fetch"]["access_labels"].get(label, 0) >= 1
+    assert not (tmp_path / "r.json").exists() or not json.loads(
+        (tmp_path / "r.json").read_text()).get("holds")         # no hold for a 5xx
 
 
 def test_a_403_on_robots_itself_is_a_person_hold(tmp_path: Path,

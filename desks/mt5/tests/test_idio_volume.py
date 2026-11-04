@@ -163,7 +163,10 @@ def test_the_breadth_sweep_does_not_charge_f1_a_second_time() -> None:
     from research import breadth_sweep as bs
 
     ok, blocked = bs.default_families()
-    assert set(bs.PREREGISTERED_ELSEWHERE) == {"idio_volume_reversal", "style_premia"}
+    # An exact roster: a family joins only by name, with its producer's grid shown to hold the
+    # default cell (month_end_rebalance, 2026-11-04: specialist_cell's indices grid).
+    assert set(bs.PREREGISTERED_ELSEWHERE) == {"idio_volume_reversal", "style_premia",
+                                               "month_end_rebalance"}
     assert "idio_volume_reversal" not in ok
     assert blocked["idio_volume_reversal"].startswith("preregistered elsewhere")
     # The other NOT_SOURCED_HERE families are set aside only by NAME and only as void at their

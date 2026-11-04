@@ -93,27 +93,48 @@ def test_the_user_agent_sent_never_impersonates_a_browser(monkeypatch: pytest.Mo
 
 
 # ------------------------------------------------------------------------------------- robots
-def test_a_disallowed_path_is_not_fetched(monkeypatch: pytest.MonkeyPatch) -> None:
+# LAWS 5e (live): robots.txt is an ACCESS LABEL, never a refusal ("robots.txt Disallow treated as
+# a refusal" is in access_classifier.REMOVED_BRAKES). The crawler reads it, fetches, and the
+# label lands on the access record and on the discovery row.
+def test_a_disallowed_path_is_fetched_and_labelled(monkeypatch: pytest.MonkeyPatch) -> None:
     web = _install(monkeypatch, {
         "https://a.test/robots.txt": (200, b"User-agent: *\nDisallow: /private\n", ""),
         "https://a.test/private/x": (200, _HTML, ""),
         "https://a.test/open": (200, _HTML, "")})
     acc = _access()
     raw, why = wc.fetch("https://a.test/private/x", acc)
-    assert raw is None and why == "ROBOTS_DISALLOW"
-    assert "https://a.test/private/x" not in web.urls()
+    assert raw == _HTML and why == ""
+    assert "https://a.test/private/x" in web.urls()
+    assert acc.access_label("https://a.test/private/x")["access_label"] == "PUBLIC_WITH_TERMS"
+    assert acc.labelled["https://a.test"]["access_label"] == "PUBLIC_WITH_TERMS"
     assert wc.fetch("https://a.test/open", acc)[0] == _HTML
+    assert acc.access_label("https://a.test/open")["access_label"] == "PUBLIC"
     assert web.urls().count("https://a.test/robots.txt") == 1, "robots is cached per origin"
+    assert acc.summary()["robots_disallowed"] == 1
 
 
-def test_a_group_naming_this_crawler_binds_it(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_discovery_row_carries_the_robots_label() -> None:
+    page = {"title": "t", "symbols": ["XAUUSD"], "timeframes": [], "patterns": ["breakout"],
+            "lang": "en", "links": [], "claims": []}
+    lab = {"access_label": "PUBLIC_WITH_TERMS", "terms_note": "robots.txt Disallow",
+           "redistribute_allowed": False}
+    row = wc.to_discovery("https://a.test/private/x", page, "abc", terms_note="registry note",
+                          access=lab)
+    assert row is not None
+    assert row["access_label"] == "PUBLIC_WITH_TERMS" and row["redistribute_allowed"] is False
+    assert row["terms_note"] == "registry note; robots.txt Disallow"
+
+
+def test_a_group_naming_this_crawler_labels_it(monkeypatch: pytest.MonkeyPatch) -> None:
     web = _install(monkeypatch, {
         "https://a.test/robots.txt": (
             200, b"User-agent: quant-mt5-research-desk\nDisallow: /\n\nUser-agent: *\nAllow: /\n",
             ""),
         "https://a.test/page": (200, _HTML, "")})
-    assert wc.fetch("https://a.test/page", _access()) == (None, "ROBOTS_DISALLOW")
-    assert "https://a.test/page" not in web.urls()
+    acc = _access()
+    assert wc.fetch("https://a.test/page", acc) == (_HTML, "")
+    assert acc.access_label("https://a.test/page")["access_label"] == "PUBLIC_WITH_TERMS"
+    assert "https://a.test/page" in web.urls()
 
 
 def test_a_subdomain_needs_its_own_robots(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -125,9 +146,10 @@ def test_a_subdomain_needs_its_own_robots(monkeypatch: pytest.MonkeyPatch) -> No
     acc = _access()
     assert wc.fetch("https://a.test/page", acc)[0] == _HTML
     raw, why = wc.fetch("https://sub.a.test/page", acc)
-    assert raw is None and why == "ROBOTS_DISALLOW"
+    assert raw == _HTML and why == ""
     assert "https://sub.a.test/robots.txt" in web.urls(), "the parent's robots was reused"
-    assert "https://sub.a.test/page" not in web.urls()
+    assert acc.access_label("https://sub.a.test/page")["access_label"] == "PUBLIC_WITH_TERMS"
+    assert acc.access_label("https://a.test/page")["access_label"] == "PUBLIC"
 
 
 def test_a_port_is_its_own_origin(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -140,16 +162,19 @@ def test_a_port_is_its_own_origin(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.parametrize("robots", [None, (500, b"", ""), (503, b"", "")])
-def test_unreadable_robots_means_no_fetch(monkeypatch: pytest.MonkeyPatch,
-                                          robots: tuple[int, bytes, str] | None) -> None:
-    routes = {"https://a.test/page": (200, _HTML, "")}
+def test_unreadable_robots_is_fetched_as_access_unclear(monkeypatch: pytest.MonkeyPatch,
+                                                        robots: tuple[int, bytes, str] | None
+                                                        ) -> None:
+    routes = {"https://a.test/page": (200, _HTML, ""), "https://a.test/other": (200, _HTML, "")}
     if robots is not None:
         routes["https://a.test/robots.txt"] = robots
     web = _install(monkeypatch, routes)
     acc = _access()
     raw, why = wc.fetch("https://a.test/page", acc)
-    assert raw is None and why.startswith("ROBOTS_UNREADABLE")
-    assert "https://a.test/page" not in web.urls()
+    assert raw == _HTML and why == ""
+    assert "https://a.test/page" in web.urls()
+    assert acc.access_label("https://a.test/page")["access_label"] == "ACCESS_UNCLEAR"
+    assert acc.labelled["https://a.test"]["access_label"] == "ACCESS_UNCLEAR"
     # and it is not re-asked within the run
     wc.fetch("https://a.test/other", acc)
     assert web.urls().count("https://a.test/robots.txt") == 1
@@ -239,16 +264,19 @@ def test_a_refused_robots_read_holds_the_site(monkeypatch: pytest.MonkeyPatch) -
 
 
 # ------------------------------------------------------------------------------- redirects
-def test_a_cross_host_redirect_checks_the_new_hosts_robots(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_cross_host_redirect_reads_the_new_hosts_robots_as_a_label(
+        monkeypatch: pytest.MonkeyPatch) -> None:
     web = _install(monkeypatch, {
         "https://a.test/robots.txt": _ALLOW,
         "https://a.test/go": (302, b"", "https://c.test/landing"),
         "https://c.test/robots.txt": (200, b"User-agent: *\nDisallow: /landing\n", ""),
         "https://c.test/landing": (200, _HTML, "")})
-    raw, why = wc.fetch("https://a.test/go", _access())
-    assert raw is None and why == "ROBOTS_DISALLOW"
+    acc = _access()
+    raw, why = wc.fetch("https://a.test/go", acc)
+    assert raw == _HTML and why == ""
     assert "https://c.test/robots.txt" in web.urls()
-    assert "https://c.test/landing" not in web.urls()
+    assert "https://c.test/landing" in web.urls()
+    assert acc.labelled["https://c.test"]["access_label"] == "PUBLIC_WITH_TERMS"
 
 
 def test_a_permitted_cross_host_redirect_is_followed(monkeypatch: pytest.MonkeyPatch) -> None:

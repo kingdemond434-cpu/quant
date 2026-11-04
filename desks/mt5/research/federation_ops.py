@@ -149,8 +149,9 @@ _ROBOTS_CACHE: dict[str, bool] = {}
 
 def desk_fetch(url: str) -> tuple[str, int, str]:
     """The desk's EXISTING client (`moat_collectors.fetch_text` -> `deep_forest_miner._http`)
-    behind its measured robots hard stops and the live robots re-probe, on allowlisted hosts
-    only. Refusals come back as (body "", status 0, why) -- a measurement, never a raise."""
+    behind the person-held site holds, on allowlisted hosts only. robots.txt is a LABEL, never a
+    refusal (LAWS 5e): a Disallow or an unreadable robots.txt is fetched. Refusals come back as
+    (body "", status 0, why) -- a measurement, never a raise."""
     host = _host(url)
     if host not in allowed_hosts():
         return "", 0, f"host {host!r} is not allowlisted for delta scans"
@@ -164,7 +165,7 @@ def desk_fetch(url: str) -> tuple[str, int, str]:
     if host not in _ROBOTS_CACHE:
         _ROBOTS_CACHE[host] = bool(mc.robots_still_disallows(host))
     if _ROBOTS_CACHE[host]:
-        return "", 0, f"{host}/robots.txt disallows this agent (or could not be read: refused)"
+        return "", 0, f"{host} is held for a person (an access control answered at its root)"
     return mc.fetch_text(url)
 
 

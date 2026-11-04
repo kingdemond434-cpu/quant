@@ -361,14 +361,16 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
     a host (www.sec.gov, data.sec.gov) its robots.txt is read through the same getter, so under
     the same declared User-Agent, at most once a day (`state["robots"]`), and every URL is judged
     by its exact path against the group naming the desk's product AND the group naming the token
-    of the UA actually sent; either disallowing it means it is not fetched (`skip`). An
-    unavailable robots.txt means no fetch from the lane this pass (`stop`, re-read next pass); a
-    401/403/429 or challenge on robots.txt itself is a person-held hold. The UA is used only for
+    of the UA actually sent. THE VERDICT IS A LABEL, NEVER A REFUSAL (LAWS 5e, live): a Disallow
+    is fetched as PUBLIC_WITH_TERMS and an unavailable robots.txt as ACCESS_UNCLEAR, and the
+    label rides on every transaction row read from that URL; only a 401/403/429 or challenge on
+    robots.txt itself (an access control) is a person-held hold (`stop`). The UA is used only for
     its product token and never recorded."""
     rep: dict[str, Any] = {"requests": 0, "errors": Counter(), "issuers_visited": 0,
                            "filings_read": 0, "transactions": 0, "block": None,
                            "ok_responses": 0, "data_responses": 0, "robots": {},
-                           "robots_disallowed": 0, "robots_unavailable": False}
+                           "robots_disallowed": 0, "robots_unavailable": 0,
+                           "access_labels": {}}
     cache: dict[str, Any] = state.setdefault("robots", {})
     sent_token = re.split(r"[/\s]", (ua or "").strip(), maxsplit=1)[0].lower()
 
@@ -383,9 +385,11 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
         rep["block"] = _hs.hold_record(verdict, status, url, now)
         return True
 
+    label: dict[str, Any] = {}
+
     def robots_gate(url: str) -> str:
-        """"ok", "skip" (robots disallows this URL) or "stop" (hold placed, or robots.txt
-        unavailable: nothing more from the lane this pass)."""
+        """"ok" (robots read AS A LABEL, set in `label` for the rows this URL yields) or "stop"
+        (an access control on robots.txt placed a hold: nothing more from the lane this pass)."""
         hit = _hs.robots_cached(cache, url, now)
         if hit is None:
             ru = _hs.robots_url(url)
@@ -400,12 +404,17 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
             verdicts.append(_hs.robots_verdict(url, hit[0], hit[1], product=sent_token))
         worst = next((v for v in verdicts if not v["allowed"]), verdicts[0])
         rep["robots"][urllib.parse.urlsplit(url).netloc] = worst["state"]
-        if worst["state"] == "UNAVAILABLE":
-            rep["robots_unavailable"] = True
+        if not worst.get("proceed", True):
             return "stop"
-        if not worst["allowed"]:
+        if worst["state"] == "UNAVAILABLE":
+            rep["robots_unavailable"] += 1
+        elif not worst["allowed"]:
             rep["robots_disallowed"] += 1
-            return "skip"
+        lab = str(worst.get("access_label") or "PUBLIC")
+        rep["access_labels"][lab] = rep["access_labels"].get(lab, 0) + 1
+        label.clear()
+        label.update({"access_label": lab, "terms_note": str(worst.get("terms_note") or ""),
+                      "redistribute_allowed": bool(worst.get("redistribute_allowed"))})
         return "ok"
 
     ciks: dict[str, int] = {k: int(v) for k, v in (state.get("ciks") or {}).items()}
@@ -447,8 +456,6 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
         if gate == "stop":
             visited -= 1                 # the held issuer is first in line after the hold
             break
-        if gate == "skip":
-            continue                     # robots disallows this issuer's index: not fetched
         status, raw, hdr = _call(get, SUBMISSIONS_URL.format(cik=cik))
         rep["requests"] += 1
         rep["ok_responses"] += int(status == 200)
@@ -491,7 +498,8 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
             for txn in parse_form4(body):
                 txn.update({"symbol": sym, "cik": cik, "accession": acc,
                             "filed_at": f["filed_at"], "form": f["form"],
-                            "first_seen_at": now.isoformat(timespec="seconds")})
+                            "first_seen_at": now.isoformat(timespec="seconds"),
+                            **label})               # the robots LABEL on the row (LAWS 5e)
                 fresh.append(txn)
         # THE UNREAD FLOOR (audit 0b66b08de, MF4). EDGAR is read newest first, DOCS_PER_ISSUER a
         # pass, so a post-backfill burst larger than that leaves its OLDER filings unread while
@@ -504,7 +512,7 @@ def fetch_pass(get: Getter, state: dict[str, Any], deadline: float, *, now: date
             floors[sym] = min(unread).isoformat(timespec="seconds")
         else:
             floors.pop(sym, None)
-        if rep["block"] is not None or rep["robots_unavailable"]:
+        if rep["block"] is not None:
             visited -= 1                 # the hard stop: no further SEC request this pass
             break
         if done_all and len(index) <= DOCS_PER_ISSUER:
@@ -840,12 +848,14 @@ def run(*, get: Getter | None = None, budget_s: float = 300.0, now: datetime | N
                 record_block(rep["block"], reg_path)
             except OSError as exc:
                 fetch["persist_error"] = f"{type(exc).__name__}: {exc}"[:200]
-        elif rep["robots_unavailable"] and not rep["data_responses"]:
-            fetch["status"] = "ROBOTS_UNAVAILABLE"
-        elif rep["robots_disallowed"] and not rep["data_responses"]:
-            fetch["status"] = "ROBOTS_DISALLOWED"     # not a hold: robots is re-read daily
+        elif rep["robots_disallowed"]:
+            # A LABEL, not a refusal (LAWS 5e): the URLs were fetched; the work queue records
+            # the label so redistribution stays withheld.
             with contextlib.suppress(OSError):
-                _hs.note_robots({"robots_url": "sec.gov robots.txt", "states": rep["robots"]},
+                _hs.note_robots({"robots_url": "sec.gov robots.txt", "states": rep["robots"],
+                                 "access_label": "PUBLIC_WITH_TERMS",
+                                 "terms_note": "sec.gov robots.txt disallows a path the lane "
+                                               "read; fetched, redistribution withheld"},
                                 reg_path, source_key=REGISTER_KEY, region="US")
         if fresh:
             sd.mkdir(parents=True, exist_ok=True)

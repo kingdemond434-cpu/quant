@@ -360,9 +360,10 @@ def urllib_fetch(url: str, timeout: float, headers: dict[str, str] | None = None
     """Default transport: polite_fetch's urlopen seam, the named UA (plus a country pack's
     credential header or POST body when one is set). LIVE-INPUT CHECK
     (libs/data/terms_fence.py): a URL on an IDEAS_ONLY or held source is refused before any
-    request, and a 30x into a held source or a login wall is never followed. ROBOTS DECIDES
-    (LAWS 5e amended 2026-10-14): the site's holds and the origin's robots.txt are checked on
-    every hop before a request; a 401/403/429 holds the site and is never retried."""
+    request, and a 30x into a held source or a login wall is never followed. The site's holds
+    are checked on every hop before a request (a 401/403/429 holds the site and is never
+    retried); the origin's robots.txt is read as a LABEL on the fetch, never a refusal (LAWS 5e
+    REMOVED_BRAKES)."""
     from libs.data import polite_fetch as _pf
     from libs.data import terms_fence as _tf
     if _tf.input_source(url):
@@ -386,7 +387,7 @@ def urllib_fetch(url: str, timeout: float, headers: dict[str, str] | None = None
     except _pf.PoliteRefused as exc:
         if exc.verdict:
             raise FetchError("terms_fenced" if exc.verdict == "terms_fenced"
-                             else "robots_or_held", f"{exc.verdict}: {url}") from exc
+                             else "held", f"{exc.verdict}: {url}") from exc
         if "body longer" in exc.error:
             raise FetchError("too_large", url) from exc
         raise FetchError(_classify(exc), f"{type(exc).__name__}: {str(exc)[:160]}") from exc
@@ -2995,7 +2996,7 @@ def fetch_country_packs(client: Client, cat: dict[str, Any], *, now: datetime, u
 
     Each door is gated on its terms_fence row BEFORE any request (HELD / NEEDS_KEY /
     NEEDS_CONFIG are recorded with their cause and never counted as a failure), fetched through
-    this client (budgeted, terms-fenced, robots-checked by guarded_urlopen), PIT-stamped by its
+    this client (budgeted, terms-fenced, robots-labelled by guarded_urlopen), PIT-stamped by its
     publisher's release instant and ingested like every other direct door. `empty_streak`
     counts consecutive attempts that delivered nothing; the pack liveness reads it."""
     cp = _packs()

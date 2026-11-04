@@ -237,7 +237,7 @@ def _probe(url: str) -> tuple[int | None, str, bytes]:
     b"").
 
     POLITE CHECKS (audit SOURCE_FIXER_HARD_STOP_31618ff54): the site's person-held access hold
-    and the origin's robots.txt are asked BEFORE the request (`access_held:` / `robots_refused:`,
+    is asked BEFORE the request (`access_held:`; robots.txt is a label, never a refusal, LAWS 5e),
     nothing sent); the request goes through the polite no-redirect opener
     (`polite_fetch.open_no_redirect`), so a 30x is reported as (code, "redirect:<target>", b"")
     and its target is never requested; a 401/403/429 or challenge holds the site that refused --
