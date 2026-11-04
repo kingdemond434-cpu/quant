@@ -53,6 +53,8 @@ def corpus(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(yc, "OUTDIR", tmp_path / "out")
     monkeypatch.setattr(yc, "COVERAGE", tmp_path / "cov.json")
     monkeypatch.setattr(yc, "SEED_QUERIES", [])
+    # the live channel config adds its own seeds; this test drives discovery from none
+    monkeypatch.setattr(yc, "CHANNEL_CONFIG", tmp_path / "no_config.json")
     monkeypatch.setenv("YOUTUBE_API_KEY", "test")
     (tmp_path / "reg.json").write_text(json.dumps(
         {"channels": {}, "discovered": {"seed": {"UCseed0000000000000000000": "seed"}}}), "utf-8")
