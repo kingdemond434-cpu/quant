@@ -136,9 +136,9 @@
    "truth": "true_fail",
    "touches_control": false,
    "findings": [
-    "clears_ref let origin-only plain rows vouch"
+    "libs/ops/adopt_guard.py clears_ref counts plain rows that exist only on origin as vouching for a path, so an unreviewed origin row can clear adoption."
    ],
-   "source": "Auditor HOLD reason used as the finding (qwen PASSed this head); a correct adjudicator must keep it supported",
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed this head); a correct adjudicator must keep it supported | original finding: clears_ref let origin-only plain rows vouch | finding rewritten as one concrete sentence by the Auditor 2026-11-04 21:20Z",
    "synthetic": false,
    "reviewer_failed": false
   },
@@ -149,9 +149,9 @@
    "truth": "true_fail",
    "touches_control": false,
    "findings": [
-    "docket stand-down exited 0 with no record (L1.28a)"
+    "desks/mt5/research/local_converter.py main() returns 0 after the docket feed stands down. It has already rewritten local_candidates.json fresh and leaves no record, so a permanently refused admission looks like a healthy run while the docket gets nothing."
    ],
-   "source": "Auditor HOLD reason used as the finding (qwen PASSed this head); a correct adjudicator must keep it supported",
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed this head); a correct adjudicator must keep it supported | original finding: docket stand-down exited 0 with no record (L1.28a) | finding rewritten as one concrete sentence by the Auditor 2026-11-04 21:20Z",
    "synthetic": false,
    "reviewer_failed": false
   },
@@ -162,9 +162,9 @@
    "truth": "true_fail",
    "touches_control": false,
    "findings": [
-    "power_deficient latest-sweep rejections not in seen; store re-adds PBO-failed cells"
+    "desks/mt5/research/weak_signal_compiler.py does not add cells rejected as power_deficient in the latest sweep to its `seen` set, so the store re-adds cells that already failed or passed PBO on the next pass."
    ],
-   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported | original finding: power_deficient latest-sweep rejections not in seen; store re-adds PBO-failed cells | finding rewritten as one concrete sentence by the Auditor 2026-11-04 21:20Z",
    "synthetic": false,
    "reviewer_failed": false
   },
@@ -175,9 +175,9 @@
    "truth": "true_fail",
    "touches_control": false,
    "findings": [
-    "Actions always-bypass left on the protected branch"
+    "ops/release/authority/ruleset_live.json keeps an Actions \"always\" bypass actor on the protected branch, so a workflow can push past the ruleset that authority.py reports as enforced."
    ],
-   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported | original finding: Actions always-bypass left on the protected branch | finding rewritten as one concrete sentence by the Auditor 2026-11-04 21:20Z",
    "synthetic": false,
    "reviewer_failed": false
   },
@@ -188,9 +188,9 @@
    "truth": "true_fail",
    "touches_control": false,
    "findings": [
-    "level2_enforced ignored the admin PR bypass"
+    "the level2_enforced check in ops/release/authority/authority.py reports Level 2 as enforced while the ruleset still allows an admin pull-request bypass, so a single admin can merge without the required review."
    ],
-   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported | original finding: level2_enforced ignored the admin PR bypass | finding rewritten as one concrete sentence by the Auditor 2026-11-04 21:20Z",
    "synthetic": false,
    "reviewer_failed": false
   },
@@ -201,9 +201,9 @@
    "truth": "true_fail",
    "touches_control": false,
    "findings": [
-    "fence gaps (trigger words, native signer, deps)"
+    ".github/scripts/memecoin_gate.py and ops/box/workflow_gate.ps1 fence only part of the surface. Trigger words outside the listed set, a native signer binary and new dependency files pass the fence unchecked."
    ],
-   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported | original finding: fence gaps (trigger words, native signer, deps) | finding rewritten as one concrete sentence by the Auditor 2026-11-04 21:20Z",
    "synthetic": false,
    "reviewer_failed": false
   },
@@ -214,9 +214,9 @@
    "truth": "true_fail",
    "touches_control": false,
    "findings": [
-    "robots Disallow treated as hard stop (LAWS 5e: a label)"
+    "desks/mt5/research/copytrade_crowd.py treats a robots.txt Disallow, or an unreadable robots.txt, as a route that is barred and never fetched. LAWS §5e makes robots a label (PUBLIC_WITH_TERMS, with redistribution withheld), never a stop."
    ],
-   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported | original finding: robots Disallow treated as hard stop (LAWS 5e: a label) | finding rewritten as one concrete sentence by the Auditor 2026-11-04 21:20Z",
    "synthetic": false,
    "reviewer_failed": false
   },
@@ -227,9 +227,9 @@
    "truth": "true_fail",
    "touches_control": false,
    "findings": [
-    "IDLE throttle starved miners and judge"
+    "ops/resource_governor.py puts miner and judge processes into IDLE priority under load, which starves the 24/7 miners and the judge's reserved cores, against the never-throttle-mining rule."
    ],
-   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported | original finding: IDLE throttle starved miners and judge | finding rewritten as one concrete sentence by the Auditor 2026-11-04 21:20Z",
    "synthetic": false,
    "reviewer_failed": false
   },
@@ -240,9 +240,9 @@
    "truth": "true_fail",
    "touches_control": false,
    "findings": [
-    "miners still IDLE under THROTTLE/fan-out"
+    "ops/resource_governor.py still sets miners to IDLE on the THROTTLE and fan-out path (lines ~194-200), so the starvation in the previous head remains."
    ],
-   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported | original finding: miners still IDLE under THROTTLE/fan-out | finding rewritten as one concrete sentence by the Auditor 2026-11-04 21:20Z",
    "synthetic": false,
    "reviewer_failed": false
   },
@@ -253,9 +253,9 @@
    "truth": "true_fail",
    "touches_control": false,
    "findings": [
-    "errors=replace hid non-UTF8 code from the reviewer"
+    "ops/release/independent_review.py decodes the diff with errors=\"replace\", so non-UTF-8 bytes in a changed file reach the reviewer as replacement characters and the reviewer approves code it never saw, where the old read failed closed."
    ],
-   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported | original finding: errors=replace hid non-UTF8 code from the reviewer | finding rewritten as one concrete sentence by the Auditor 2026-11-04 21:20Z",
    "synthetic": false,
    "reviewer_failed": false
   },
@@ -266,9 +266,9 @@
    "truth": "true_fail",
    "touches_control": false,
    "findings": [
-    "google_trends blocked on robots Disallow"
+    "desks/mt5/side_channels/box_rails.py makes the miners skip any source whose robots.txt disallows them, google_trends included, so a public source is dropped where LAWS §5e calls for fetching it with redistribution withheld."
    ],
-   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
+   "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported | original finding: google_trends blocked on robots Disallow | finding rewritten as one concrete sentence by the Auditor 2026-11-04 21:20Z",
    "synthetic": false,
    "reviewer_failed": false
   },
