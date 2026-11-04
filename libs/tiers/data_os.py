@@ -588,6 +588,11 @@ READER_ROUTES: dict[str, dict[str, Any]] = {
         "route": "via_provider", "sources": ("cot_fx",),
         "basis": "asks whether cot_positioning can fire by calling orthogonal_sweep._cot_frame, "
                  "which applies COT_RELEASE_LAG_DAYS; it joins nothing to a bar itself"},
+    "desks/mt5/research/cot_fx_refresh.py": {
+        "route": "mention", "sources": ("cot_fx",),
+        "basis": "the weekly cot_fx refresh leg reads only the newest report_date in "
+                 "data/cot/*.parquet to decide whether the fetch is due; it writes the dataset "
+                 "through fetch_cot and joins nothing to a bar"},
     "desks/mt5/research/asia_collector.py": {
         "route": "mention", "sources": ("sge_benchmark",),
         "basis": "names the source id in its CLI usage; the collector writes, never joins"},
