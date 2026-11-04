@@ -130,3 +130,10 @@ def test_unknown_leg_is_refused(tmp_path):
     else:  # pragma: no cover
         raise AssertionError("an unknown leg must be refused")
     assert rol.main([]) == 2
+
+
+def test_index_rolls_up_receipts_and_names_the_missing(tmp_path):
+    rol.run_leg("record_tape", cycle=FakeCycle(own=set()), out_dir=tmp_path)
+    idx = json.loads((tmp_path / "OFFLOAD_LEGS.json").read_text("utf-8"))
+    assert idx["legs"]["record_tape"]["status"] == "STANDBY"
+    assert idx["legs"]["pf_allocator_heavy"]["status"] == "UNMEASURED"

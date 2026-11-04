@@ -62,6 +62,9 @@ for _p in (str(BASE), str(BASE / "research"), str(REPO)):
         sys.path.insert(0, _p)
 
 RECEIPTS = BASE / "reports" / "offload"
+#: The index of the three receipts, rebuilt from them after every run. The per-leg files are the
+#: truth; this is their one readable roll-up (and the artifact the component registry reads).
+REPORT = BASE / "reports" / "OFFLOAD_LEGS.json"
 
 #: leg -> (the producer script and its arguments, exactly as hourly_cycle passes them, and the
 #: child's timeout in seconds). `record_tape` is in-process, as in the cycle, so it has no script.
@@ -87,6 +90,26 @@ def write_receipt(leg: str, doc: dict[str, Any], out_dir: Path | None = None) ->
     tmp.write_text(json.dumps(doc, indent=1, sort_keys=True), encoding="utf-8")
     tmp.replace(path)
     return path
+
+
+def write_index(out_dir: Path | None = None, report: Path | None = None) -> Path:
+    """Rebuild the roll-up from whatever receipts exist. A leg with no receipt is UNMEASURED."""
+    out_dir = out_dir or RECEIPTS
+    report = report or REPORT
+    legs: dict[str, Any] = {}
+    for leg in LEGS:
+        try:
+            legs[leg] = json.loads((out_dir / f"{leg}.json").read_text("utf-8"))
+        except (OSError, ValueError):
+            legs[leg] = {"status": "UNMEASURED", "why": "no receipt: this task has not run here"}
+    doc = {"generated_utc": _now(), "legs": legs,
+           "receipts": str(out_dir.relative_to(BASE)) if out_dir.is_relative_to(BASE)
+           else str(out_dir)}
+    report.parent.mkdir(parents=True, exist_ok=True)
+    tmp = report.with_suffix(f".json.{os.getpid()}.tmp")
+    tmp.write_text(json.dumps(doc, indent=1, sort_keys=True), encoding="utf-8")
+    tmp.replace(report)
+    return report
 
 
 def _cycle() -> Any:
@@ -150,6 +173,10 @@ def run_leg(leg: str, cycle: Any = None, runner: Callable[..., Any] | None = Non
     doc["seconds"] = round(time.monotonic() - t0, 1)
     doc["finished_utc"] = _now()
     write_receipt(leg, doc, out_dir)
+    try:
+        write_index(out_dir, (out_dir / "OFFLOAD_LEGS.json") if out_dir is not None else None)
+    except OSError as exc:
+        print(f"offload {leg}: index not rebuilt ({exc}); the receipt stands", flush=True)
     print(f"offload {leg}: {doc['status']} exit={doc.get('exit_code')} "
           f"in {doc['seconds']}s", flush=True)
     return doc
