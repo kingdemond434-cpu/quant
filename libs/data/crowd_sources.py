@@ -92,11 +92,11 @@ def reset() -> None:
 
 def _decode(raw: bytes, content_type: str, default: str = "utf-8") -> str:
     m = re.search(r"charset=([\w-]+)", content_type or "", re.I)
-    if not m:
-        m = re.search(rb'<meta[^>]+charset=["\']?([\w-]+)', raw[:4096], re.I)  # type: ignore[assignment]
-        enc = m.group(1).decode("ascii", "ignore") if m else default  # type: ignore[union-attr]
-    else:
+    if m:
         enc = m.group(1)
+    else:
+        mb = re.search(rb'<meta[^>]+charset=["\']?([\w-]+)', raw[:4096], re.I)
+        enc = mb.group(1).decode("ascii", "ignore") if mb else default
     enc = {"x-sjis": "shift_jis", "sjis": "shift_jis", "ms932": "cp932",
            "euc-kr": "cp949", "gb2312": "gb18030", "gbk": "gb18030"}.get(enc.lower(), enc)
     try:
