@@ -1535,6 +1535,25 @@ def test_ask_local_sends_the_scaled_timeout(monkeypatch: pytest.MonkeyPatch) -> 
     assert seen["timeout"] > ir.CALL_TIMEOUT_S
 
 
+def test_no_local_call_outlives_the_vote_budget(monkeypatch: pytest.MonkeyPatch) -> None:
+    """#698 audit SF: a call started late in the budget gets only the time left, so it ends as
+    UNAVAILABLE inside the job's limit, never as a cancelled job."""
+    seen: list[float] = []
+
+    def http(u: str, b: Any, h: Any, timeout: float = 0) -> Any:
+        seen.append(timeout)
+        raise ir.TimedOut(f"TimeoutError after {timeout:.0f} s")
+
+    monkeypatch.setattr(ir, "_http", http)
+    ask = lambda r, u: ir.ask_local("http://x", "q:7b", 32768, r, u)  # noqa: E731
+    ticks = iter([0.0, 0.0, 9_000 - 600.0, *[9_000.0] * 20])  # start, loop test, the ask
+    v, _ = ir.vote(
+        "+x\n" * 20_000, ["a.py"], [("qwen", "q:7b", ask)], budget_s=9_000,
+        sleep=lambda s: None, clock=lambda: next(ticks),
+    )  # fmt: skip
+    assert v == "UNAVAILABLE" and seen == [600.0]  # not the 130-minute cap
+
+
 def test_a_timed_out_model_is_not_asked_the_same_prompt_again() -> None:
     """Five 30-minute timeouts on one prompt spent the whole budget on a call that could not
     finish. A timeout drops that model for this prompt: UNAVAILABLE at once, never a vote."""

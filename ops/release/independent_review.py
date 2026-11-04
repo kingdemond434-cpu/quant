@@ -107,9 +107,13 @@ CALL_TIMEOUT_S = 1800
 #: answered in about 11 minutes. `prompt_tokens_per_s` in local_models.json overrides it, and
 #: every local answer logs the server's own read rate, so the figure is re-measured each run.
 LOCAL_TOKENS_PER_S = 4.0
-#: The longest one local call may take: inside BUDGET_S and the job's 200-minute limit, so a call
-#: that runs out of time ends the job as UNAVAILABLE (exit 75), never as a cancelled job.
+#: The longest one local call may take. vote() also bounds every call by the budget left when it
+#: starts (_TIME_LEFT_S), so no call runs past BUDGET_S and a call that runs out of time ends the
+#: job as UNAVAILABLE (exit 75) inside the job's 200-minute limit, never as a cancelled job.
 LOCAL_CALL_MAX_S = 130 * 60
+#: Seconds of the vote's budget left when the current ask started; vote() sets it before every
+#: ask, and ask_local never waits longer (#698 audit SF).
+_TIME_LEFT_S = float("inf")
 LOCAL = HERE / "local_models.json"
 #: Characters per token assumed when sizing a local prompt: low on purpose (code runs 3.2-4), so
 #: a prompt counted as fitting nearly always does; the server's own count is checked after (MF4),
@@ -582,7 +586,7 @@ def ask_local(
             "messages": [{"role": "system", "content": rubric}, {"role": "user", "content": user}],
         },
         {},
-        timeout=local_timeout(tokens, rate),
+        timeout=max(1.0, min(local_timeout(tokens, rate), _TIME_LEFT_S)),
     )
     if doc.get("error"):
         raise Unavailable(str(doc["error"])[:200])
@@ -660,6 +664,14 @@ def rungs(diff_len: int) -> tuple[list[tuple[str, str, Asker]], list[str]]:
     return out, notes
 
 
+def _left(deadline: float, clock: Callable[[], float]) -> bool:
+    """Record the budget left for the ask about to start (ask_local waits no longer); False when
+    none is left."""
+    global _TIME_LEFT_S
+    _TIME_LEFT_S = deadline - clock()
+    return _TIME_LEFT_S > 0
+
+
 def vote(
     diff: str,
     files: list[str],
@@ -690,12 +702,15 @@ def vote(
     while clock() < deadline:
         progress = False
         for fam, mid, ask in ladder:
-            if fam in passed or fam in abstained or mid in dropped or clock() >= deadline:
+            if fam in passed or fam in abstained or mid in dropped:
+                continue
+            if not _left(deadline, clock):
                 continue
             try:
                 answer = parse(ask(rubric, prompt(diff, files, secrets.token_hex(8), part)))
                 if answer is None:  # one format-only retry, at once, before anyone else votes
                     log.append(f"{mid}: no readable answer; asked once more")
+                    _left(deadline, clock)
                     answer = parse(ask(rubric, prompt(diff, files, secrets.token_hex(8), part)))
             except TooLarge as exc:  # never reviewed in part (#457 audit MF2)
                 log.append(str(exc))
@@ -728,6 +743,7 @@ def vote(
                 log.append(f"{mid}: REASKED (the FAIL named no defect)")
                 note = VAGUE_NOTE + "\n\n"
                 try:  # the re-ask fails the way the first ask does (#538 audit SF1)
+                    _left(deadline, clock)
                     again = parse(
                         ask(rubric, note + prompt(diff, files, secrets.token_hex(8), part))
                     )
