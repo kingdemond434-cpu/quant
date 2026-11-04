@@ -25,6 +25,7 @@ authority), Auditor (AD), YouTube miner (YT).
 
 | Time | Observation | Source |
 |---|---|---|
+| 11-04 01:20 | #661 independent-review FAIL again on its one re-run (qwen2.5-coder:7b): 'amend could alter history', 'tests miss later/unknown row'. Neither matches the diff, which is append-only and tested at lines 151/167/176. Traced on the PR. One small-model FAIL is final by design, so the D-004 fix that LIVE CI needs has no automatic path. Also observed: #681 AD CLEAR at a3b4ee67c. | job 126289701173, AD |
 | 11-04 00:36 | The Judge's shard core cap was WITHDRAWN after an AD HOLD. zuck's 8 judge cores are a floor, not a ceiling, and a cap would cut build throughput by about 47%. The env-var interim was withdrawn too. The CPU lever for gate and adoption stays #678 (raise CRITICAL to NORMAL above the BELOW_NORMAL judge). | Judge, AD |
 | 11-04 00:27 | On #665's head bb08306e2, tests/test_dependency_caps.py still fails locally: cryptography and youtube_transcript_api (from #655) are undeclared in pyproject. So LIVE will not be green from #665 + #661 alone, and the R2b exit release also needs this. Asked the YouTube miner thread for a capped optional extra. #663's quality failure is all LIVE-base (commented on the PR). | local pytest, CI log |
 | 11-04 00:22 | DH: the 22:54Z fan-out is the judge. The run_sharded_gauntlet sweep (pid 33012, since 20:07Z, 306,202 cells, 15 shards) builds at concurrency 15, about 15 of 18 cores, against the 8-core reservation (zuck 10-29). The biggest single CPU lever. Passed to the Judge thread: default 8, never below 8. | DH |
