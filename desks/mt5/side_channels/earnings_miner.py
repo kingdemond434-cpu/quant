@@ -2,26 +2,44 @@
 
 Scrapes earnings calendars and pre-earnings sentiment data.
 Pre-earnings drift is a well-documented anomaly.
+
+IDEAS LANE ONLY. Yahoo is an IDEAS_ONLY row of libs/data/terms_fence.SOURCE_POLICY, so every
+page is read through THE POLITE DOOR (`polite_fetch.get`: honest DESK_UA, robots.txt per hop,
+401/403/429/WAF is a site hold and a hard stop) -- never `requests` directly -- and nothing read
+here is ever live input: the rows are ideas for the event lane, labelled IDEAS_ONLY.
 """
 
 import json
 import re
 from datetime import datetime, timezone, timedelta
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
-import requests
+try:
+    from libs.data import polite_fetch
+    from libs.data.polite_fetch import DESK_UA
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data import polite_fetch
+    from libs.data.polite_fetch import DESK_UA
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "earnings"
 OUT.mkdir(parents=True, exist_ok=True)
 
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}
+HEADERS = {"User-Agent": DESK_UA}
+LEG = "earnings_miner"
 
 
-def mine_earnings_calendar() -> list[dict]:
-    """Fetch upcoming earnings dates for major companies that impact FX/indices."""
-    discoveries = []
+def mine_earnings_calendar(get: Callable[..., Any] | None = None) -> list[dict]:
+    """Fetch upcoming earnings dates for major companies that impact FX/indices (ideas only).
+    `get` is the polite door (injectable for tests); a refusal stops the sweep and is recorded."""
+    fetch = get or polite_fetch.get
+    discoveries: list[dict] = []
+    refused: dict[str, Any] | None = None
     # Use Yahoo Finance earnings calendar
     symbols_to_track = {
         "AAPL": "US500", "MSFT": "US500", "GOOGL": "US500",
@@ -33,8 +51,19 @@ def mine_earnings_calendar() -> list[dict]:
     for ticker, index in symbols_to_track.items():
         try:
             url = f"https://finance.yahoo.com/quote/{ticker}/"
-            resp = requests.get(url, headers=HEADERS, timeout=10)
-            if resp.status_code == 200:
+            # live_input=False: an IDEAS_ONLY page read for ideas; robots and holds still decide
+            resp = fetch(url, headers=HEADERS, timeout=10, retries=0, leg=LEG,
+                         live_input=False)
+            if resp.verdict or (resp.status is None and resp.error.startswith(
+                    ("METHOD_BLOCKED", "NEEDS_KEY", "IDEAS_ONLY", "terms"))):
+                # a robots refusal, a site hold (401/403/429/WAF) or a terms fence: HARD STOP,
+                # no further page of this site this sweep, no other route
+                refused = {"source": "earnings", "kind": "walled", "url": url,
+                           "verdict": resp.verdict or "TERMS_FENCED",
+                           "why": (resp.error or resp.verdict)[:240],
+                           "terms_status": "IDEAS_ONLY"}
+                break
+            if resp.ok and resp.status == 200:
                 text = resp.text
                 # Look for earnings date
                 earn_match = re.search(r'Earnings(?:Date|s).*?(\w+ \d+,?\s*\d{4})', text)
@@ -49,6 +78,7 @@ def mine_earnings_calendar() -> list[dict]:
                         "symbols": [index],
                         "confidence": 0.3,
                         "description": f"{ticker} earnings on {date_str} - may impact {index}",
+                        "url": url, "terms_status": "IDEAS_ONLY",
                     })
         except Exception:
             continue
@@ -67,7 +97,9 @@ def mine_earnings_calendar() -> list[dict]:
 
     # rendering fetch, not another regex.
 
-    if not discoveries:
+    if refused is not None:
+        discoveries.append(refused)
+    elif not discoveries:
 
         discoveries.append({"source": "earnings", "kind": "stub",
 

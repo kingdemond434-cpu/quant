@@ -48,7 +48,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
-import requests
+try:
+    from libs.data.polite_fetch import polite_requests_get
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import polite_requests_get
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -81,6 +87,15 @@ SERIES = {
 }
 
 
+def _free_data():
+    """research/free_data, importable whether this runs as a script or as research.fetch_alfred."""
+    _here = str(Path(__file__).resolve().parent)
+    if _here not in sys.path:
+        sys.path.insert(0, _here)
+    import free_data as fd
+    return fd
+
+
 def api_key() -> str | None:
     """Key from the environment or secrets/. Never logged, never written to a report."""
     env = os.environ.get("FRED_API_KEY", "").strip()
@@ -111,7 +126,7 @@ def fetch_vintages(series_id: str, key: str, timeout: int = 60) -> pd.DataFrame 
     # The tell was the release lag: 14,575 days for CPI. That is not a publication delay, it is
     # 1947 to today -- the distance from the oldest observation to the only vintage present.
     # A number that absurd is the file saying it has one vintage without knowing how to say so.
-    r = requests.get(API, params={"series_id": series_id, "api_key": key,
+    r = polite_requests_get(API, params={"series_id": series_id, "api_key": key,
                                   "file_type": "json", "output_type": 2,
                                   "realtime_start": "1776-07-04",   # FRED's minimum
                                   "realtime_end": "9999-12-31"},    # FRED's maximum
@@ -242,7 +257,15 @@ def main(argv: list[str] | None = None) -> int:
 
     force = "--force" in argv
     written, lags, failed, skipped = 0, {}, [], []
+    refused: dict[str, dict] = {}
     for sid in sorted(wanted):
+        # A THIRD-PARTY SERIES (terms_fence `fred_copyrighted`, e.g. VIXCLS) is refused before
+        # any request, and an old parquet of it is neither refetched nor counted as present.
+        row = _free_data().fred_refusal(sid, "fetch_alfred")
+        if row is not None:
+            refused[sid] = row
+            print(f"{sid}: {row['status']} (terms_fence fred_copyrighted) -- refused", flush=True)
+            continue
         # RESUMABLE. A full vintage history is a large download and the box has 4GB; if the OOM
         # killer takes the process mid-run, restarting must not re-fetch what already landed.
         # Each series is written before the next is requested, so completed work survives.
@@ -295,6 +318,10 @@ def main(argv: list[str] | None = None) -> int:
         del df
         import gc; gc.collect()
 
+    if refused:
+        report["unmeasured_no_licensed_source"] = {
+            sid: {k: v for k, v in r.items() if k != "missed_growth"} for sid, r in refused.items()}
+        report["missed_growth"] = [r["missed_growth"] for r in refused.values()]
     report.update({"status": "OK" if (written or skipped) else "EMPTY", "written": written,
                    "skipped_already_present": skipped,
                    "failed": failed, "release_lag_days": lags,

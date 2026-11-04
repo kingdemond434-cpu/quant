@@ -43,6 +43,15 @@ from archaeology import snapshots as snap  # noqa: E402
 
 from libs.moat import registry as R  # noqa: E402
 
+
+@pytest.fixture(autouse=True)
+def _robots_allow(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The LIVE robots/holds check (`polite_fetch.admit`, LAWS 5e amended 2026-10-14) is stubbed
+    to allow, so no test here reaches a host; tests/data/test_robots_coverage.py proves the live
+    check refuses a Disallow, an unreadable robots.txt and a held site."""
+    monkeypatch.setattr(mc, "admit", lambda url, **kw: (True, ""))
+    monkeypatch.setattr(civ, "admit", lambda url, **kw: (True, ""))
+
 SIGNALS_PAGE = """<html><body>
 <a href="/en/signals/100001" class="signal-card">Gold Asia Scalper Growth: 120% Drawdown: 15%
  Win rate: 65% Profit factor: 1.4 Trades: 300</a>
@@ -278,17 +287,46 @@ def test_v_s_names_every_factor_and_every_cost(desk):
     assert paid["v_s"] > got["v_s"] and "measured" in paid["p_useful_basis"]
 
 
-def test_an_unread_policy_is_unknown_and_the_ground_is_mined_anyway(desk):
-    """LAWS 5e (2026-09-23): the verdict still says UNKNOWN -- that is honest -- but the reason
-    no longer says "not fetched". An unread policy is UNMEASURED, and UNMEASURED is not a
-    prohibition."""
+def test_an_unread_policy_is_unknown_and_robots_is_a_label_never_a_refusal(desk, monkeypatch):
+    """LAWS 5e (live): robots.txt is an access LABEL, never a refusal -- "robots.txt Disallow
+    treated as a refusal" is a deleted brake. --no-fetch reads nothing and says UNKNOWN with
+    nothing fetched; with fetch: allowed -> ALLOWED; a Disallow -> UNKNOWN labelled
+    PUBLIC_WITH_TERMS (never FORBIDDEN); a check that cannot run -> UNKNOWN, ACCESS_UNCLEAR; only
+    a person-held site hold (401/403/429/WAF) is FORBIDDEN."""
+    asked: list[str] = []
+    answer: dict[str, object] = {"label": "PUBLIC", "held": False}
+
+    def _admit(url: str) -> tuple[bool, str]:
+        asked.append(url)
+        if answer.get("raise"):
+            raise OSError("robots read failed")
+        return (False, "METHOD_BLOCKED: held") if answer["held"] else (True, "")
+
+    def _label(url: str, **_kw: object) -> dict[str, object]:
+        lab = str(answer["label"])
+        return {"access_label": lab, "redistribute_allowed": False,
+                "terms_note": "robots.txt Disallow: /x" if lab != "PUBLIC" else ""}
+
+    monkeypatch.setattr(civ, "admit", _admit)
+    monkeypatch.setattr(civ, "access_label", _label)
     verdict, why = civ._machine_use_from_robots("https://example.org/x", fetch=False)
     assert verdict == snap.UNKNOWN
-    assert "mined all the same" in why and "not fetched" not in why
-    assert desk["calls"] == [], "--no-fetch must not read even a robots.txt"
+    assert "nothing is fetched" in why
+    assert asked == [] and desk["calls"] == [], "--no-fetch must not read even a robots.txt"
     ok, _why = civ._machine_use_from_robots("https://example.org/x", fetch=True)
     assert ok == snap.ALLOWED
-    assert desk["calls"] == ["https://example.org/robots.txt"]
+    assert asked == ["https://example.org/x"]
+    answer["label"] = "PUBLIC_WITH_TERMS"
+    lab, why_lab = civ._machine_use_from_robots("https://example.org/x", fetch=True)
+    assert lab == snap.UNKNOWN and lab != snap.FORBIDDEN
+    assert "PUBLIC_WITH_TERMS" in why_lab and "Disallow" in why_lab
+    answer["raise"] = True
+    broken, why_broken = civ._machine_use_from_robots("https://example.org/x", fetch=True)
+    assert broken == snap.UNKNOWN and "ACCESS_UNCLEAR" in why_broken
+    answer["raise"] = False
+    answer["held"] = True
+    held, why_held = civ._machine_use_from_robots("https://example.org/x", fetch=True)
+    assert held == snap.FORBIDDEN and "not fetched" in why_held
 
 
 # --------------------------------------------------------------------------- expansion

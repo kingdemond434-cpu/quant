@@ -60,9 +60,15 @@ from archaeology import decompiler as dc  # noqa: E402
 from archaeology import phenotype as ph  # noqa: E402
 from archaeology import snapshots as snap  # noqa: E402
 
+from libs.data.polite_fetch import access_label, admit  # noqa: E402
 from libs.moat import registry as reg  # noqa: E402
 
 UNMEASURED = "UNMEASURED"
+#: The prefix of an access reason that is a PERSON-HELD SITE HOLD (a 401/403/429 or a challenge:
+#: hard-boundary act 2): such a candidate is registered but not fetchable until a person releases
+#: it. robots.txt never produces it -- a Disallow or an unreadable robots.txt is a LABEL on the
+#: candidate (LAWS 5e REMOVED_BRAKES). The name is kept for its readers.
+ROBOTS_REFUSAL = "HELD:"
 REPORT: Path = _DESK / "reports" / "TRADING_ARCHAEOLOGY.json"
 BUDGET_S = 600.0
 #: Never spend less than this on a platform the pass chose: below it a fetch cannot finish and
@@ -207,32 +213,40 @@ def platform_budgets(platforms: Sequence[snap.Platform], budget_s: float, conn: 
 
 # --------------------------------------------------------------------------- the source scout
 def _machine_use_from_robots(url: str, *, fetch: bool) -> tuple[str, str]:
-    """READ THE OPERATOR'S POLICY AS A LABEL (LAWS 5e, 2026-09-23), never as a door.
+    """THE OPERATOR'S robots.txt, read by THE ONE implementation (`polite_fetch.HostAccess`, via
+    `admit` and `access_label`: the desk's product token, then `*`, longest match; no second
+    parser), AS A LABEL (LAWS 5e, live: "robots.txt Disallow treated as a refusal" is a deleted
+    brake).
 
-    Reading robots.txt is always permitted and is what it is for, so the desk still reads it and
-    still records exactly what it said. What changed is the consequence: `forbidden` and `unknown`
-    used to mean NOT FETCHED, which is how the desk talked itself out of most of the deep forest.
-    They are provenance now -- `scout` registers and mines every candidate either way.
+        allowed / absent (404)        -> ALLOWED, PUBLIC
+        a Disallow for the url        -> UNKNOWN, PUBLIC_WITH_TERMS (the Disallow as the note)
+        unreadable / a check raised   -> UNKNOWN, ACCESS_UNCLEAR
+        a person-held site hold       -> FORBIDDEN, "HELD:" -- the only not-fetchable answer
+
+    A Disallow is never FORBIDDEN: that would charge it the full legal cost in `v_s`, and robots
+    has nothing to say about legality (LAWS 5e: legality, credibility and predictive value are
+    independent). It rides as the candidate's terms_note and withholds redistribution only.
     """
     host = urlparse(url).netloc
     if not host:
         return snap.UNKNOWN, "no host in the candidate url"
     if not fetch:
-        return snap.UNKNOWN, ("--no-fetch: the operator's policy was not read, so the label is "
-                              "unknown; the ground is mined all the same")
-    body, status, err = mc.fetch_text(f"https://{host}/robots.txt")
-    if not body:
-        return snap.UNKNOWN, (f"robots.txt unreadable (status {status}{', ' + err if err else ''})"
-                              ": UNMEASURED policy, recorded as a label and mined")
-    low = body.lower()
-    for agent in ("claudebot", "anthropic", "gptbot", "ccbot"):
-        if agent in low:
-            return snap.FORBIDDEN, (f"robots.txt names the agent family ({agent}) on {host}: "
-                                    f"recorded as a routing label, redistribution withheld")
-    if "user-agent: *" in low and "disallow: /\n" in low.replace("\r", ""):
-        return snap.FORBIDDEN, (f"robots.txt carries a wildcard Disallow: / on {host}: recorded "
-                                f"as a routing label, redistribution withheld")
-    return snap.ALLOWED, f"robots.txt on {host} is readable and refuses neither this agent nor all"
+        return snap.UNKNOWN, ("--no-fetch: the operator's robots.txt was not read, so the label "
+                              "is unknown; nothing is fetched on this pass")
+    try:
+        ok, why = admit(url)
+    except Exception as exc:
+        return snap.UNKNOWN, (f"ACCESS_UNCLEAR: robots/holds check failed "
+                              f"({type(exc).__name__}) on {host}; fetched with the label "
+                              "(LAWS 5e)")
+    if not ok:
+        return snap.FORBIDDEN, (f"{ROBOTS_REFUSAL} {why} on {host}: an access control answered "
+                                "and the site is held for a person; not fetched")
+    label = access_label(url)
+    lab = str(label.get("access_label") or "")
+    if lab and lab != "PUBLIC":
+        return snap.UNKNOWN, f"{lab}: {label.get('terms_note') or ''} ({host})"
+    return snap.ALLOWED, f"robots.txt on {host} allows this url for the desk's agent"
 
 
 def v_s(candidate: Mapping[str, Any], *, known_on_host: int = 0,
@@ -311,11 +325,15 @@ def scout(conn: Any, *, discovered: Sequence[Mapping[str, Any]] = (), fetch: boo
         # `forbidden` or `unknown` robots reading is provenance; only an access control, a login,
         # a paywall or an antibot challenge -- which reading would mean DEFEATING -- refuses.
         boundary = snap.boundary_hit(f"{why} {cand.get('note') or ''}")
+        # ...and a PERSON-HELD site hold read by HostAccess (an access control answered). robots.txt
+        # never lands here: a Disallow is PUBLIC_WITH_TERMS on the row (LAWS 5e).
+        robots_refused = why.startswith(ROBOTS_REFUSAL)
         candidates.append({**dict(cand), "source_id": sid, "host": host,
                            "machine_use_allowed": access, "access_why": why[:240],
                            "terms_note": "" if access == snap.ALLOWED else why[:240],
-                           "hard_boundary": boundary,
-                           "registered": False, "fetchable": not boundary, **score})
+                           "hard_boundary": boundary, "robots_refused": robots_refused,
+                           "registered": False,
+                           "fetchable": not boundary and not robots_refused, **score})
     candidates.sort(key=lambda c: -float(c["v_s"]))
     registered = 0
     for cand in candidates[:limit]:

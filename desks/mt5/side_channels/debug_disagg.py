@@ -2,6 +2,13 @@ import json
 import sys
 import urllib.parse
 import urllib.request
+try:
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 
 sys.path.insert(0, r"C:\Users\dell\mt5-research\mt5desk")
 
@@ -19,10 +26,9 @@ params = {
 }
 url = "https://publicreporting.cftc.gov/resource/72hh-3qpy.json?" + urllib.parse.urlencode(params)
 print(url[:300])
-req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"})
+req = urllib.request.Request(url, headers={"User-Agent": DESK_UA})
 try:
-    body = urllib.request.urlopen(req, timeout=90).read().decode()
+    body = polite_urlopen(req, timeout=90).read().decode()
     print("OK len:", len(body))
     print(body[:400])
 except Exception as e:

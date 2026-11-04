@@ -12,7 +12,13 @@ import re
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-import requests
+try:
+    from libs.data.polite_fetch import DESK_UA, polite_requests_get
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA, polite_requests_get
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "forexfactory"
@@ -21,8 +27,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 CALENDAR_URL = "https://nfs.faireconomy.media/ff_calendar_thisweek.json"
 CALENDAR_NEXT_URL = "https://nfs.faireconomy.media/ff_calendar_nextweek.json"
 
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}
+HEADERS = {"User-Agent": DESK_UA}
 
 # Impact levels that move markets
 HIGH_IMPACT = {"High", "Red"}
@@ -47,7 +52,7 @@ def mine_calendar() -> list[dict]:
 
     for url in [CALENDAR_URL, CALENDAR_NEXT_URL]:
         try:
-            resp = requests.get(url, headers=HEADERS, timeout=15)
+            resp = polite_requests_get(url, headers=HEADERS, timeout=15)
             resp.raise_for_status()
             events = resp.json()
 

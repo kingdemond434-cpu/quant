@@ -2,8 +2,15 @@ import json
 import re
 import urllib.parse
 import urllib.request
+try:
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 
-UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"}
+UA = {"User-Agent": DESK_UA}
 
 
 def get(url, headers=None, timeout=40):
@@ -12,7 +19,7 @@ def get(url, headers=None, timeout=40):
         h.update(headers)
     req = urllib.request.Request(url, headers=h)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with polite_urlopen(req, timeout=timeout) as r:
             return r.status, r.read().decode("utf-8", errors="replace")
     except Exception as e:
         return "ERR", repr(e)
