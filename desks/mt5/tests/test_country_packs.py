@@ -2,7 +2,8 @@
 China). No network: every request goes through an injected fetcher.
 
 Fixtures (desks/mt5/tests/fixtures/country_packs/):
-  mof_feio.csv   the MoF intervention file's layout as read 2026-11-03 (nine columns, cp932,
+  mof_feio.csv   the MoF intervention file's layout as read 2026-11-03 (nine columns, cp932 --
+                 committed as UTF-8 text and encoded back to cp932 by `_mof`,
                  blank year/month on continuation rows, quarterly 期計 rows); the 2022 and 2024
                  operations are the published figures, the zero quarters of 2025-2026 SYNTHETIC
   others         shapes declared from each publisher's documentation, values SYNTHETIC; their
@@ -88,7 +89,10 @@ def _fetcher(routes: dict[str, bytes]):
 
 
 def _mof() -> bytes:
-    return (FIX / "mof_feio.csv").read_bytes()
+    """The MoF file as the publisher serves it: Shift-JIS bytes. Committed as UTF-8 text (a raw
+    cp932 file in the diff crashes the release chain's UTF-8 diff reader) and encoded back here,
+    so the parser under test reads the real cp932 bytes."""
+    return (FIX / "mof_feio.csv").read_bytes().decode("utf-8").encode("cp932")
 
 
 def _pack(rep: dict, name: str) -> dict:
