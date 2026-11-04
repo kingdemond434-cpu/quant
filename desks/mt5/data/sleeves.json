@@ -198,13 +198,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 1,
+        "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.005932,
-        "joined": "joined on 'xauusd|asia' (funded book)",
-        "why": "same admission scan (2026-11-03T09:10:50.100354+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.59% heat"
+        "heat_earned": 0.0,
+        "joined": "joined on 'gold_asia_v2' (zeroed by this solve)",
+        "why": "standby on the current reading -- same signal as gold_asia (a second copy of one bet, not a variant): the allocator prices and funds gold_asia; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
-      "admit_streak": 1,
+      "admit_streak": 0,
       "admit_scan": "2026-11-03T09:10:50.100354+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-28T20:13:16+00:00",
@@ -238,13 +238,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 1,
+        "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.005932,
-        "joined": "joined on 'xauusd|asia' (funded book)",
-        "why": "same admission scan (2026-11-03T09:10:50.100354+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.59% heat"
+        "heat_earned": 0.0,
+        "joined": "joined on 'gold_asia_v3' (zeroed by this solve)",
+        "why": "standby on the current reading -- same signal as gold_asia (a second copy of one bet, not a variant): the allocator prices and funds gold_asia; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
-      "admit_streak": 1,
+      "admit_streak": 0,
       "admit_scan": "2026-11-03T09:10:50.100354+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-28T20:13:16+00:00",
@@ -278,13 +278,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 1,
+        "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.005932,
-        "joined": "joined on 'xauusd|asia' (funded book)",
-        "why": "same admission scan (2026-11-03T09:10:50.100354+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.59% heat"
+        "heat_earned": 0.0,
+        "joined": "joined on 'gold_asia_v4' (zeroed by this solve)",
+        "why": "standby on the current reading -- same signal as gold_asia (a second copy of one bet, not a variant): the allocator prices and funds gold_asia; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
-      "admit_streak": 1,
+      "admit_streak": 0,
       "admit_scan": "2026-11-03T09:10:50.100354+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-28T20:13:16+00:00",
@@ -2166,13 +2166,13 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
+        "status": "UNMEASURED",
         "risk_frac": 0.0,
         "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'macro_conditional', not 'session_range_breakout'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['xauusd_session_range_breakout_asia_5_wb_12', 'xauusd|session_range_breakout|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['xauusd_session_range_breakout_asia_5_wb_12', 'xauusd|session_range_breakout|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
       "admit_scan": "2026-11-03T09:10:50.100354+00:00",
@@ -26079,13 +26079,13 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
+        "status": "UNMEASURED",
         "risk_frac": 0.0,
         "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'macro_conditional', not 'cross_asset_residual'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['xauusd_cross_asset_residual_asia_p_2479d0d883199a4b', 'xauusd|cross_asset_residual|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['xauusd_cross_asset_residual_asia_p_2479d0d883199a4b', 'xauusd|cross_asset_residual|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
       "admit_scan": "2026-11-03T09:10:50.100354+00:00",
@@ -26146,13 +26146,13 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
+        "status": "UNMEASURED",
         "risk_frac": 0.0,
         "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'macro_conditional', not 'cross_asset_residual'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['xauusd_cross_asset_residual_asia_p_cec9a82bd34685dc', 'xauusd|cross_asset_residual|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['xauusd_cross_asset_residual_asia_p_cec9a82bd34685dc', 'xauusd|cross_asset_residual|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
       "admit_scan": "2026-11-03T09:10:50.100354+00:00",
@@ -31841,13 +31841,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 1,
+        "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.005932,
-        "joined": "joined on 'xauusd|macro_conditional|asia' (funded book)",
-        "why": "same admission scan (2026-11-03T09:10:50.100354+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.59% heat"
+        "heat_earned": 0.0,
+        "joined": "joined on 'xauusd_macro_conditional_asia_p_5fa26e224170b851' (zeroed by this solve)",
+        "why": "standby on the current reading -- its forward clock reached KILL (XAUUSD.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=-1_ttl_bars=96): the forward evidence refuses this certificate, so the allocator records zero"
       },
-      "admit_streak": 1,
+      "admit_streak": 0,
       "admit_scan": "2026-11-03T09:10:50.100354+00:00",
       "artifact": {
         "version_hash": "73ce8910712839f7",
@@ -31908,13 +31908,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 1,
+        "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.005932,
-        "joined": "joined on 'xauusd|macro_conditional|asia' (funded book)",
-        "why": "same admission scan (2026-11-03T09:10:50.100354+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.59% heat"
+        "heat_earned": 0.0,
+        "joined": "joined on 'xauusd_macro_conditional_asia_p_c4d0f0303a0c9cb4' (zeroed by this solve)",
+        "why": "standby on the current reading -- its forward clock reached KILL (XAUUSD.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=-1_ttl_bars=96): the forward evidence refuses this certificate, so the allocator records zero"
       },
-      "admit_streak": 1,
+      "admit_streak": 0,
       "admit_scan": "2026-11-03T09:10:50.100354+00:00",
       "artifact": {
         "version_hash": "5afa2c20b82eca04",
@@ -31975,13 +31975,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 1,
+        "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.005932,
-        "joined": "joined on 'xauusd|macro_conditional|asia' (funded book)",
-        "why": "same admission scan (2026-11-03T09:10:50.100354+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.59% heat"
+        "heat_earned": 0.0,
+        "joined": "joined on 'xauusd_macro_conditional_asia_p_fe355d4759ed4898' (zeroed by this solve)",
+        "why": "standby on the current reading -- its forward clock reached KILL (XAUUSD.macro_conditional.asia@M5#side_in_high=-1): the forward evidence refuses this certificate, so the allocator records zero"
       },
-      "admit_streak": 1,
+      "admit_streak": 0,
       "admit_scan": "2026-11-03T09:10:50.100354+00:00",
       "artifact": {
         "version_hash": "edd2a2e1f5d0df1b",
@@ -32040,13 +32040,13 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
+        "status": "UNMEASURED",
         "risk_frac": 0.0,
         "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'macro_conditional', not 'range_reversion'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['xauusd_range_reversion_asia_p_ff35bb7c8427d66f', 'xauusd|range_reversion|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['xauusd_range_reversion_asia_p_ff35bb7c8427d66f', 'xauusd|range_reversion|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
       "admit_scan": "2026-11-03T09:10:50.100354+00:00",
@@ -34213,13 +34213,13 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
+        "status": "UNMEASURED",
         "risk_frac": 0.0,
         "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'macro_conditional', not 'range_reversion'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['xauusd_range_reversion_asia_p_f83412948ea922b5', 'xauusd|range_reversion|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['xauusd_range_reversion_asia_p_f83412948ea922b5', 'xauusd|range_reversion|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
       "admit_scan": "2026-11-03T09:10:50.100354+00:00",
@@ -55285,7 +55285,9 @@
       "exec": "family_market",
       "retired_at": "2026-11-03T12:03:06+00:00",
       "retire_reason": "CHFDKK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
-      "retired_by": "live_policy"
+      "retired_by": "live_policy",
+      "canonical_identity": "chfdkk|formula|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
     },
     {
       "name": "CHFDKK.formula.asia#atr_n=20_entry_z=1.5_expr=['zscore', ['ts_backfill', ['trade_when', 'range', 'spread'], 240], 24]_hold_bars=8_norm=240_rr=1.5_side_mode=follow_stop_atr=2.0",
@@ -55337,7 +55339,9 @@
       "exec": "family_market",
       "retired_at": "2026-11-03T12:03:06+00:00",
       "retire_reason": "CHFDKK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
-      "retired_by": "live_policy"
+      "retired_by": "live_policy",
+      "canonical_identity": "chfdkk|formula|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
     },
     {
       "name": "CHFDKK.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', 'spread']_hold_bars=8_norm=240_rr=1.5_side_mode=fade_stop_atr=2.0",
@@ -55380,7 +55384,9 @@
       "exec": "family_market",
       "retired_at": "2026-11-03T12:03:06+00:00",
       "retire_reason": "CHFDKK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
-      "retired_by": "live_policy"
+      "retired_by": "live_policy",
+      "canonical_identity": "chfdkk|formula|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
     },
     {
       "name": "CHFSGD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=16",
@@ -55423,7 +55429,9 @@
       "exec": "family_market",
       "retired_at": "2026-11-03T14:48:06+00:00",
       "retire_reason": "CHFSGD is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
-      "retired_by": "live_policy"
+      "retired_by": "live_policy",
+      "canonical_identity": "chfsgd|cross_asset_residual|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
     },
     {
       "name": "EURZAR.carry.asia@M15#input_symbol=EURZAR_require_quiet=False_session=ny",
@@ -55459,7 +55467,9 @@
       "exec": "family_market",
       "retired_at": "2026-11-03T14:48:06+00:00",
       "retire_reason": "EURZAR admits only ['eurzar_carry_asia_p_8339edce23032d21'] for live capital; 'EURZAR.carry.asia@M15#input_symbol=EURZAR_require_quiet=False_session=ny' is a different parameter set on the same instrument -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
-      "retired_by": "live_policy"
+      "retired_by": "live_policy",
+      "canonical_identity": "eurzar|carry|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
     },
     {
       "name": "NZDJPY.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=72",
@@ -55500,6 +55510,277 @@
       "exec": "family_market",
       "retired_at": "2026-11-03T14:49:55+00:00",
       "retire_reason": "NZDJPY is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy",
+      "canonical_identity": "nzdjpy|cross_asset_residual|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+    },
+    {
+      "name": "GBPJPY.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=72",
+      "symbol": "GBPJPY",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of [\"gbpjpy.cross_asset_residual.asia@m15#beta_win=240_entry_z=2.0_factor_symbols=['usdx']_lookback=240_side_mode=revert_ttl_bars=72\", 'gbpjpy|cross_asset_residual|asia', 'gbpjpy|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of [\"gbpjpy.cross_asset_residual.asia@m15#beta_win=240_entry_z=2.0_factor_symbols=['usdx']_lookback=240_side_mode=revert_ttl_bars=72\", 'gbpjpy|cross_asset_residual|asia', 'gbpjpy|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-03T21:55:19+00:00",
+      "shadow_exp": 0.6705015880922366,
+      "family": "cross_asset_residual",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "GBPJPY.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=72",
+      "sleeve_id": "9481cbc02172b408ee5d",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "beta_win": 240,
+        "entry_z": 2.0,
+        "factor_symbols": [
+          "USDX"
+        ],
+        "lookback": 240,
+        "side_mode": "revert",
+        "timeframe": "M15",
+        "ttl_bars": 72
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-03T21:55:21+00:00",
+      "retire_reason": "GBPJPY is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "GBPJPY.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=144",
+      "symbol": "GBPJPY",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of [\"gbpjpy.cross_asset_residual.asia@m15#beta_win=240_entry_z=2.0_factor_symbols=['usdx']_lookback=240_side_mode=revert_ttl_bars=144\", 'gbpjpy|cross_asset_residual|asia', 'gbpjpy|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of [\"gbpjpy.cross_asset_residual.asia@m15#beta_win=240_entry_z=2.0_factor_symbols=['usdx']_lookback=240_side_mode=revert_ttl_bars=144\", 'gbpjpy|cross_asset_residual|asia', 'gbpjpy|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-03T21:55:20+00:00",
+      "shadow_exp": 0.6309248685155161,
+      "family": "cross_asset_residual",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "GBPJPY.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=144",
+      "sleeve_id": "8b1bbb35afe7289ed769",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "beta_win": 240,
+        "entry_z": 2.0,
+        "factor_symbols": [
+          "USDX"
+        ],
+        "lookback": 240,
+        "side_mode": "revert",
+        "timeframe": "M15",
+        "ttl_bars": 144
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-03T21:55:21+00:00",
+      "retire_reason": "GBPJPY is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "CHFNOK.carry.asia@M15#input_symbol=CHFNOK_session=ny",
+      "symbol": "CHFNOK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['chfnok.carry.asia@m15#input_symbol=chfnok_session=ny', 'chfnok|carry|asia', 'chfnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['chfnok.carry.asia@m15#input_symbol=chfnok_session=ny', 'chfnok|carry|asia', 'chfnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-04T00:54:59+00:00",
+      "shadow_exp": 0.5394841061129725,
+      "family": "carry",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "CHFNOK.carry.asia@M15#input_symbol=CHFNOK_session=ny",
+      "sleeve_id": "f335bd6c15a324e9013a",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "input_symbol": "CHFNOK",
+        "session": "ny",
+        "timeframe": "M15"
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-04T00:55:09+00:00",
+      "retire_reason": "CHFNOK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "CHFNOK.carry.asia@M15#session=ny_symbol=CHFNOK",
+      "symbol": "CHFNOK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['chfnok.carry.asia@m15#session=ny_symbol=chfnok', 'chfnok|carry|asia', 'chfnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['chfnok.carry.asia@m15#session=ny_symbol=chfnok', 'chfnok|carry|asia', 'chfnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-04T00:55:01+00:00",
+      "shadow_exp": 0.5394841061129725,
+      "family": "carry",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "CHFNOK.carry.asia@M15#session=ny_symbol=CHFNOK",
+      "sleeve_id": "388b77629e0d5b09fe3d",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "session": "ny",
+        "symbol": "CHFNOK",
+        "timeframe": "M15"
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-04T00:55:09+00:00",
+      "retire_reason": "CHFNOK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "CHFNOK.carry.asia@M15#session=ny",
+      "symbol": "CHFNOK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['chfnok.carry.asia@m15#session=ny', 'chfnok|carry|asia', 'chfnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['chfnok.carry.asia@m15#session=ny', 'chfnok|carry|asia', 'chfnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-04T00:55:04+00:00",
+      "shadow_exp": 0.5394841061129725,
+      "family": "carry",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "CHFNOK.carry.asia@M15#session=ny",
+      "sleeve_id": "356a463ca7916052ece0",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "session": "ny",
+        "timeframe": "M15"
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-04T00:55:09+00:00",
+      "retire_reason": "CHFNOK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "CHFNOK.carry.asia@M15#input_symbol=eBay_session=ny",
+      "symbol": "CHFNOK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['chfnok.carry.asia@m15#input_symbol=ebay_session=ny', 'chfnok|carry|asia', 'chfnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['chfnok.carry.asia@m15#input_symbol=ebay_session=ny', 'chfnok|carry|asia', 'chfnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-04T00:55:07+00:00",
+      "shadow_exp": 0.5394841061129725,
+      "family": "carry",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "CHFNOK.carry.asia@M15#input_symbol=eBay_session=ny",
+      "sleeve_id": "b9c518d1f299f230d1af",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "input_symbol": "eBay",
+        "session": "ny",
+        "timeframe": "M15"
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-04T00:55:09+00:00",
+      "retire_reason": "CHFNOK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "EURZAR.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
+      "symbol": "EURZAR",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of [\"eurzar.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0\", 'eurzar|formula|asia', 'eurzar|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of [\"eurzar.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0\", 'eurzar|formula|asia', 'eurzar|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-04T02:58:50+00:00",
+      "shadow_exp": 0.9421042100813887,
+      "family": "formula",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "EURZAR.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
+      "sleeve_id": "5814ca1cdb5732dab228",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "atr_n": 20,
+        "entry_z": 1.5,
+        "expr": [
+          "neg",
+          [
+            "delta",
+            "spread",
+            8
+          ]
+        ],
+        "hold_bars": 8,
+        "norm": 240,
+        "rr": 1.5,
+        "session": "asia",
+        "side_mode": "fade",
+        "stop_atr": 2.0
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-04T02:58:55+00:00",
+      "retire_reason": "EURZAR admits only ['eurzar_carry_asia_p_8339edce23032d21'] for live capital; \"EURZAR.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0\" is a different parameter set on the same instrument -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
       "retired_by": "live_policy"
     }
   ]
