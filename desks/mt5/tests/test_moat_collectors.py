@@ -282,12 +282,29 @@ def test_a_podcast_feed_gives_enclosure_metadata_and_the_feed_s_own_stamp(conn, 
     assert "Why gold rallies into the fix" in cap.text
 
 
-def test_youtube_caption_endpoints_are_refused_by_robots_not_attempted(conn, monkeypatch):
+def test_youtube_caption_endpoints_are_labelled_by_robots_never_refused(conn, monkeypatch):
+    """LAWS 5e: robots.txt is a LABEL, never a refusal. youtube.com's /api/ Disallow makes the
+    capture PUBLIC_WITH_TERMS (redistribution withheld); it is not a reason to skip it."""
     _explode(monkeypatch)
+    monkeypatch.setattr(mc, "admit", lambda _u: (True, ""))
+    monkeypatch.setattr(mc.dfm, "youtube_transcript",
+                        lambda vid, lang="en": ("gold rallies into the London fix", None))
+    url = "https://www.youtube.com/api/timedtext?v=abc123"
+    assert mc.robots_barred(url) == ""
+    label = mc.robots_label(url)
+    assert label["access_label"] == "PUBLIC_WITH_TERMS" and label["redistribute_allowed"] is False
+    cap = mc.collect_transcript({"source_id": "yt", "url": url}, 30.0)[0]
+    assert cap.content_length > 0 and "London fix" in cap.text
+    assert cap.extra["access_label"] == "PUBLIC_WITH_TERMS"
+
+
+def test_a_person_held_site_is_refused_and_not_attempted(conn, monkeypatch):
+    _explode(monkeypatch)
+    monkeypatch.setattr(mc, "admit", lambda _u: (False, "METHOD_BLOCKED"))
     url = "https://www.youtube.com/api/timedtext?v=abc123"
     assert mc.robots_barred(url)
     cap = mc.collect_transcript({"source_id": "yt", "url": url}, 30.0)[0]
-    assert "robots.txt" in cap.unmeasured and cap.content_length == 0
+    assert "held for a person" in cap.unmeasured and cap.content_length == 0
 
 
 def test_a_youtube_watch_url_goes_through_the_desk_s_mirror_rotation(conn, monkeypatch):
@@ -439,10 +456,11 @@ def test_a_source_with_no_url_is_refused_by_name(conn, monkeypatch):
 
 def test_a_refused_ground_is_still_stamped_so_it_cannot_starve_the_rotation(conn, monkeypatch):
     _explode(monkeypatch)
+    monkeypatch.setattr(mc, "admit", lambda _u: (False, "METHOD_BLOCKED"))
     _source(conn, "barred", "https://www.youtube.com/api/timedtext?v=q", kind="transcript")
     report = mc.run(budget_s=30, max_sources=5, conn=conn)
     assert report["refused"][0]["source"] == "barred"
-    assert "robots.txt" in report["refused"][0]["why"]
+    assert "held for a person" in report["refused"][0]["why"]
     stamped = conn.execute("SELECT last_crawled FROM sources").fetchone()[0]
     assert stamped, "a ground refused every pass would otherwise sort first for ever"
 

@@ -392,7 +392,9 @@ _SITEMAP = ("<urlset><url><loc>https://ex.example/forum/thread-1.html</loc></url
             "<url><loc>https://other.example/a.html</loc></url></urlset>")
 
 
-def test_site_index_prefers_the_sitemap_and_honours_robots() -> None:
+def test_site_index_prefers_the_sitemap_and_labels_robots() -> None:
+    """LAWS 5e: robots.txt is a LABEL, never a refusal -- the Disallowed page is LISTED and
+    carries PUBLIC_WITH_TERMS; only the non-article and off-site URLs are dropped."""
     calls: list[str] = []
 
     def get(url: str) -> str:
@@ -401,8 +403,11 @@ def test_site_index_prefers_the_sitemap_and_honours_robots() -> None:
                 "https://ex.example/sitemap.xml": _SITEMAP}[url]
     out = D.site_index_urls("ex.example", get=get)
     assert out["route"] == "sitemap"
-    assert out["urls"] == ["https://ex.example/forum/thread-1.html"]
+    assert out["urls"] == ["https://ex.example/forum/thread-1.html",
+                           "https://ex.example/private/x.html"]
     assert out["robots_disallowed"] == 1 and out["listed"] == 2
+    assert out["labels"]["https://ex.example/private/x.html"]["access_label"] == "PUBLIC_WITH_TERMS"
+    assert "https://ex.example/forum/thread-1.html" not in out["labels"]          # PUBLIC
     assert not any("commoncrawl" in c for c in calls)
 
 
@@ -416,16 +421,22 @@ def test_site_index_falls_back_to_the_common_crawl_cdx() -> None:
         assert url.startswith("https://index.commoncrawl.org/") and "ex.example%2F%2A" in url
         return cdx
     out = D.site_index_urls("ex.example", get=get)
-    assert out["route"] == "cdx" and out["urls"] == ["https://ex.example/a/strategy-notes.html"]
+    assert out["route"] == "cdx" and out["urls"] == ["https://ex.example/a/strategy-notes.html",
+                                                     "https://ex.example/private/b.html"]
+    assert out["labels"]["https://ex.example/private/b.html"]["access_label"] == "PUBLIC_WITH_TERMS"
 
 
-def test_unread_robots_fetches_nothing() -> None:
+def test_unread_robots_is_access_unclear_and_still_listed() -> None:
+    """An unreadable robots.txt (here a transport error, not an access control) is
+    ACCESS_UNCLEAR and mined with its label (LAWS 5e)."""
     def get(url: str) -> str:
         if url.endswith("robots.txt"):
-            raise OSError("HTTP 403")
+            raise OSError("connection reset")
         return json.dumps({"url": "https://ex.example/a.html"})
     out = D.site_index_urls("ex.example", get=get)
-    assert out["urls"] == [] and out["listed"] == 1
+    assert out["urls"] == ["https://ex.example/a.html"] and out["listed"] == 1
+    assert out["labels"]["https://ex.example/a.html"]["access_label"] == "ACCESS_UNCLEAR"
+    assert out["robots_unread"] == 1
     assert any("robots.txt unread" in e for e in out["errors"])
 
 
@@ -532,7 +543,7 @@ def test_rerouted_pages_are_fetched_with_the_index_agent(monkeypatch: pytest.Mon
         assert h["User-Agent"] == D._UA["User-Agent"] and "Mozilla" not in h["User-Agent"]
 
 
-def test_a_subdomain_page_needs_its_own_hosts_robots() -> None:
+def test_a_subdomain_page_is_labelled_by_its_own_hosts_robots() -> None:
     sm = ("<urlset><url><loc>https://m.ex.com/ok/y</loc></url>"
           "<url><loc>https://ex.com/ok/x</loc></url></urlset>")
     parent = "User-agent: *\nAllow: /\nSitemap: https://ex.com/sitemap.xml\n"
@@ -547,15 +558,18 @@ def test_a_subdomain_page_needs_its_own_hosts_robots() -> None:
                 return sub
             raise OSError("HTTP 404")
         return get
-    # m.ex.com's own robots.txt unread: the parent's Allow is NOT a permission for it
+    # m.ex.com's own robots.txt unread: the parent's Allow is NOT its label -> ACCESS_UNCLEAR
     out = D.site_index_urls("ex.com", get=make(None))
-    assert out["urls"] == ["https://ex.com/ok/x"] and out["robots_unread"] == 1
-    # read and allowing: fetched
+    assert set(out["urls"]) == {"https://ex.com/ok/x", "https://m.ex.com/ok/y"}
+    assert out["robots_unread"] == 1
+    assert out["labels"]["https://m.ex.com/ok/y"]["access_label"] == "ACCESS_UNCLEAR"
+    # read and allowing: PUBLIC
     out = D.site_index_urls("ex.com", get=make("User-agent: *\nAllow: /\n"))
-    assert "https://m.ex.com/ok/y" in out["urls"]
-    # read and disallowing, though the parent allows: never fetched
+    assert "https://m.ex.com/ok/y" in out["urls"] and "https://m.ex.com/ok/y" not in out["labels"]
+    # read and disallowing, though the parent allows: listed, PUBLIC_WITH_TERMS
     out = D.site_index_urls("ex.com", get=make("User-agent: *\nDisallow: /ok/\n"))
-    assert "https://m.ex.com/ok/y" not in out["urls"] and out["robots_disallowed"] == 1
+    assert "https://m.ex.com/ok/y" in out["urls"] and out["robots_disallowed"] == 1
+    assert out["labels"]["https://m.ex.com/ok/y"]["access_label"] == "PUBLIC_WITH_TERMS"
 
 
 def test_tga_stamp_rolls_past_one_off_federal_closures() -> None:
@@ -638,7 +652,8 @@ def test_robots_origin_includes_a_non_default_port() -> None:
                 "User-agent: *\nAllow: /\nSitemap: https://ex.com/sitemap.xml\n",
                 "https://ex.com/sitemap.xml": sm}[url]     # port 8443's robots.txt: unreadable
     out = D.site_index_urls("ex.com", get=get)
-    assert out["urls"] == [] and out["robots_unread"] == 1
+    assert out["urls"] == ["https://ex.com:8443/ok/p"] and out["robots_unread"] == 1
+    assert out["labels"]["https://ex.com:8443/ok/p"]["access_label"] == "ACCESS_UNCLEAR"
     reads: list[str] = []
 
     def get2(url: str) -> str:
@@ -647,11 +662,11 @@ def test_robots_origin_includes_a_non_default_port() -> None:
             return "User-agent: *\nAllow: /\n"
         return get(url)
     out = D.site_index_urls("ex.com", get=get2)
-    assert out["urls"] == ["https://ex.com:8443/ok/p"]
+    assert out["urls"] == ["https://ex.com:8443/ok/p"] and out["labels"] == {}
     assert "https://ex.com:8443/robots.txt" in reads
 
 
-def test_a_cross_origin_redirect_needs_the_new_origins_robots() -> None:
+def test_a_cross_origin_redirect_into_a_held_origin_is_stopped() -> None:
     import io
     import urllib.error
     import urllib.request
@@ -661,7 +676,8 @@ def test_a_cross_origin_redirect_needs_the_new_origins_robots() -> None:
         h.parent = urllib.request.build_opener()
         return h
     req = urllib.request.Request("https://ex.com/a", headers={"User-Agent": D.INDEX_UA})
-    # another origin, its robots.txt unread or disallowing: stopped at the 30x
+    # another origin the caller's holds check refuses (robots.txt is a label, never this
+    # refusal -- LAWS 5e): stopped at the 30x
     with pytest.raises(urllib.error.HTTPError) as e:
         handler(False).redirect_request(req, io.BytesIO(b""), 301, "Moved", {},
                                         "https://other.example/b")
@@ -669,15 +685,15 @@ def test_a_cross_origin_redirect_needs_the_new_origins_robots() -> None:
     with pytest.raises(urllib.error.HTTPError):                 # another port is another origin
         handler(False).redirect_request(req, io.BytesIO(b""), 302, "Found", {},
                                         "https://ex.com:8443/b")
-    # allowed by the new origin's own robots.txt, or the same origin: followed
+    # not held, or the same origin: followed
     new = handler(True).redirect_request(req, io.BytesIO(b""), 301, "Moved", {},
                                          "https://other.example/b")
     assert new is not None and new.full_url == "https://other.example/b"
     same = handler(False).redirect_request(req, io.BytesIO(b""), 301, "Moved", {},
                                            "https://ex.com/c")
     assert same is not None and same.full_url == "https://ex.com/c"
-    # robots_allows reads the target ORIGIN's own file, and an unread one (unreachable) is not
-    # a permission; a 404 is no file at all and allows (test_pass6_lanes_holds)
+    # robots_allows (robots' own OPINION, used only to label) reads the target ORIGIN's own
+    # file; an unread one is not an Allow; a 404 is no file at all (test_pass6_lanes_holds)
     asked: list[str] = []
 
     def get(url: str) -> str:

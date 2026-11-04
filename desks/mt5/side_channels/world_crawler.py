@@ -41,6 +41,7 @@ import time
 import urllib.error
 import urllib.request
 from collections import Counter
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from html.parser import HTMLParser
 from pathlib import Path
@@ -257,8 +258,9 @@ _DEFAULT_ACCESS: HostAccess | None = None
 def fetch(url: str, access: HostAccess | None = None) -> tuple[bytes | None, str]:
     """Bytes, or None with the reason. NEVER raises -- one bad page must not end the hour.
 
-    Every hop -- the URL and each redirect target -- passes `access.permits` (site holds, then the
-    target origin's own robots.txt) BEFORE a request is sent. 401/403/429 record a hold for the
+    Every hop -- the URL and each redirect target -- passes `access.permits` (site holds; the
+    target origin's own robots.txt is read as a LABEL, never a refusal: LAWS 5e) BEFORE a request
+    is sent. 401/403/429 record a hold for the
     site and stop; nothing is retried, and no other host, UA or mirror is tried in its place.
     """
     global _DEFAULT_ACCESS
@@ -666,8 +668,8 @@ def read_page(raw: bytes, url: str) -> dict[str, Any]:
     }
 
 
-def to_discovery(url: str, page: dict[str, Any], digest: str, terms_note: str = ""
-                 ) -> dict[str, Any] | None:
+def to_discovery(url: str, page: dict[str, Any], digest: str, terms_note: str = "",
+                 access: Mapping[str, Any] | None = None) -> dict[str, Any] | None:
     """A page as a miner-contract row, or None when it claims nothing worth carrying.
 
     NOTHING IS INVENTED HERE. `symbols` are tokens the page actually contains and the compiler
@@ -730,12 +732,15 @@ def to_discovery(url: str, page: dict[str, Any], digest: str, terms_note: str = 
                                           "instruments", "claimed_performance", "claim_hash")}
                    for c in claims[:8]],
         "n_claims": len(claims),
-        # THE ROUTING LABEL, NOT A BRAKE (LAWS 5e, 2026-09-23). A terms note or a registry
-        # `machine_use_allowed=false` lands HERE, on the crawled row, and the page is crawled
-        # exactly as any other (a live robots.txt Disallow is different: `fetch` never sends that
-        # request, auditor ruling 2026-10-14). What the label withholds is REDISTRIBUTION; it has
+        # THE ROUTING LABEL, NOT A BRAKE (LAWS 5e, 2026-09-23). A terms note, a registry
+        # `machine_use_allowed=false` and a live robots.txt Disallow all land HERE, on the
+        # crawled row, and the page is crawled exactly as any other ("robots.txt Disallow read as
+        # a refusal" is a deleted brake). What the label withholds is REDISTRIBUTION; it has
         # never had anything to say about whether the desk may read and test the page.
-        "terms_note": str(terms_note or ""),
+        "terms_note": "; ".join(n for n in (str(terms_note or ""),
+                                            str((access or {}).get("terms_note") or "")) if n),
+        "access_label": str((access or {}).get("access_label") or ""),
+        "redistribute_allowed": bool((access or {}).get("redistribute_allowed")),
     }
 
 
@@ -1062,7 +1067,8 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
     # any of those notes is CRAWLED, with the note recorded as `terms_note` on every row it
     # produces. The only removal left is one of the five refused acts of the hard boundary.
     # ROBOTS.TXT IS NOT A REGISTRY NOTE ANY MORE (auditor ruling 2026-10-14): it is read live,
-    # per origin, by `fetch` before every request, and a Disallow there means no request.
+    # per origin, by `fetch` before every request, and a Disallow there is a LABEL on the row
+    # (PUBLIC_WITH_TERMS; unreadable robots ACCESS_UNCLEAR), never a refusal (LAWS 5e).
     share_meta: dict[str, Any] = {"status": "unavailable", "why": "source_shares not importable"}
     share_state: dict[str, Any] | None = None
     terms_labels: dict[str, str] = {}
@@ -1158,7 +1164,8 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
             src.lang = page["lang"]
         langs[src.lang or "??"] += 1
 
-        row = to_discovery(src.url, page, digest, terms_note=terms_labels.get(src.url, ""))
+        row = to_discovery(src.url, page, digest, terms_note=terms_labels.get(src.url, ""),
+                           access=access.access_label(src.url))
         if row:
             rows.append(row)
             src.leads += 1
@@ -1203,8 +1210,9 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
         "dropped_at_frontier_cap": dropped,
         "languages": dict(langs.most_common()),
         "failures": dict(failures.most_common()),
-        # POLITE ACCESS, MEASURED: the honest UA sent, robots.txt reads, disallowed and
-        # unreadable origins, and every site holding a 401 (NEEDS_KEY) or 403/429
+        # POLITE ACCESS, MEASURED: the honest UA sent, robots.txt reads, the access labels the
+        # fetches carried (a Disallow is PUBLIC_WITH_TERMS, unreadable ACCESS_UNCLEAR -- both
+        # FETCHED), and every site holding a 401 (NEEDS_KEY) or 403/429
         # (METHOD_BLOCKED) refusal. A held site is a recorded answer, never routed around.
         "access": access.summary(),
         # WHOSE BUDGET THIS WAS. `source_shares` says whether the registry's published shares

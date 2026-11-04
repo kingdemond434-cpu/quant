@@ -36,12 +36,18 @@ MAX_BYTES = 5_000_000
 LINK_RE = re.compile(r"https?://[^\s)\"'<>]+")
 
 
+#: The robots LABELS of the fetches the current miner made (LAWS 5e), stamped on its rows by
+#: `run_and_save`. Reset per miner; the seed miners run one at a time.
+_FETCH_LABELS: list[dict] = []
+
+
 def fetch(url: str, as_json: bool = False, timeout: int = 20):
-    """One polite GET through polite_fetch's seam (THE ONE FETCH DOOR behind the site's holds and
-    the origin's robots.txt, every hop -- LAWS 5e amended 2026-10-14): a held source, a Disallow,
-    or a redirect into a login / sign-in / CAPTCHA wall raises (PoliteRefused, a URLError)
-    instead of being followed or read; an HTTP error raises HTTPError, as `raise_for_status` did,
-    and a 401/403/429 holds the site for every later pass."""
+    """One polite GET through polite_fetch's seam (THE ONE FETCH DOOR behind the site's holds,
+    every hop): a held source or a redirect into a login / sign-in / CAPTCHA wall raises
+    (PoliteRefused, a URLError) instead of being followed or read; an HTTP error raises
+    HTTPError, as `raise_for_status` did, and a 401/403/429 holds the site for every later pass.
+    robots.txt is a LABEL, never a refusal (LAWS 5e): a Disallow (PUBLIC_WITH_TERMS) or an
+    unreadable robots.txt (ACCESS_UNCLEAR) is fetched, and its label is kept for the rows."""
     import urllib.request
 
     from libs.data.polite_fetch import decode_body, polite_urlopen
@@ -51,7 +57,28 @@ def fetch(url: str, as_json: bool = False, timeout: int = 20):
                         leg="seed_miners") as fh:
         text = decode_body(fh.read(MAX_BYTES), str(fh.headers.get("Content-Type") or ""),
                            str(fh.headers.get("Content-Encoding") or ""))
+        lab = str(getattr(fh, "access_label", "") or "")
+        if lab:
+            _FETCH_LABELS.append({"access_label": lab,
+                                  "terms_note": str(getattr(fh, "terms_note", "") or ""),
+                                  "redistribute_allowed":
+                                      bool(getattr(fh, "redistribute_allowed", False))})
     return json.loads(text) if as_json else text
+
+
+def _label_rows(rows_: list[dict]) -> None:
+    """Stamp the miner's rows with the robots label of the pages they came from (LAWS 5e): the
+    most restrictive label any of its fetches carried, notes joined. A row already labelled is
+    left alone."""
+    if not _FETCH_LABELS:
+        return
+    order = {"PUBLIC_WITH_TERMS": 0, "ACCESS_UNCLEAR": 1, "PUBLIC": 2}
+    worst = min(_FETCH_LABELS, key=lambda d: order.get(d["access_label"], 3))
+    notes = "; ".join(dict.fromkeys(d["terms_note"] for d in _FETCH_LABELS if d["terms_note"]))
+    for r_ in rows_:
+        if isinstance(r_, dict) and "access_label" not in r_:
+            r_.update({"access_label": worst["access_label"], "terms_note": notes[:600],
+                       "redistribute_allowed": worst["redistribute_allowed"]})
 
 
 def row(source: str, kind: str, title: str, url: str = "", text: str = "",
@@ -80,12 +107,10 @@ def _state() -> dict:
 # the access boundary is a hard limit, not a preference -- no gray-area "it's public enough").
 #
 # REDISCOVERY IS PERMANENT, never deletion (RESEARCH §3 free-frontier: a residual gap "stays on
-# the rediscovery cadence forever"). But HOW a wall is re-probed depends on WHY it is walled:
-#   ROBOTS_DISALLOW -- the operator has refused this agent in writing. The content is NEVER
-#                      fetched again, not even weekly. Rediscovery re-reads robots.txt ONLY
-#                      (always permitted -- that is what robots.txt is for) and the source
-#                      resumes only if the directive is gone. Re-probing the CONTENT of a site
-#                      that disallows us would be the violation, just spaced further apart.
+# the rediscovery cadence forever"). A robots.txt Disallow is NOT a wall (LAWS 5e, live:
+# "robots.txt Disallow treated as a refusal" is a deleted brake): such a source is mined every
+# pass and its rows carry PUBLIC_WITH_TERMS (`ROBOTS_LABELS`, and the live label `fetch` keeps).
+# The walls are server refusals only:
 #   ANTIBOT_CHALLENGE / HTTP_403 -- the server refused the request. Solving or evading a
 #                      challenge is circumventing an access control and is out of bounds, so
 #                      the only legitimate move is to ask again, rarely, in case it lifts.
@@ -129,17 +154,6 @@ SOURCE_WALLS: dict[str, dict] = {
         "url": "https://trends.google.com/robots.txt",
         "since": "2026-09-01",
     },
-    "forexpeacearmy": {
-        "verdict": "ROBOTS_DISALLOW",
-        "host": "www.forexpeacearmy.com",
-        "evidence": "robots.txt names this agent explicitly: 'User-agent: ClaudeBot / "
-                    "Disallow: /', alongside Content-Signal 'ai-train=no, use=reference'. "
-                    "The miner was sending a spoofed Chrome UA hourly to a site that had "
-                    "refused it in writing, and getting 403 for it.",
-        "probe": "robots",
-        "ua_token": "ClaudeBot",
-        "since": "2026-08-26",
-    },
     "myfxbook_outlook": {
         "verdict": "ANTIBOT_CHALLENGE",
         "host": "www.myfxbook.com",
@@ -163,6 +177,21 @@ SOURCE_WALLS: dict[str, dict] = {
     },
 }
 REPROBE_DAYS = 7
+#: Sources whose robots.txt carries a Disallow the desk MEASURED (LAWS 5e: a LABEL, never a wall).
+#: They are mined every pass; every row they yield carries this label. forexpeacearmy was walled
+#: 2026-08-26 as ROBOTS_DISALLOW ('User-agent: ClaudeBot / Disallow: /' -- a group that does not
+#: even name the desk's own token -- with Content-Signal 'ai-train=no, use=reference'); that wall
+#: was a deleted brake and is gone. A 403 to the desk's honest UA is a person-held hold in
+#: polite_fetch, recorded per site, never a standing wall here.
+ROBOTS_LABELS: dict[str, dict] = {
+    "forexpeacearmy": {
+        "access_label": "PUBLIC_WITH_TERMS",
+        "terms_note": ("www.forexpeacearmy.com/robots.txt: 'User-agent: ClaudeBot / Disallow: /' "
+                       "and Content-Signal 'ai-train=no, use=reference' (measured 2026-08-26): "
+                       "mined, redistribution withheld (LAWS 5e)"),
+        "redistribute_allowed": False,
+    },
+}
 
 
 def _wall_due(name: str, st: dict) -> bool:
@@ -178,19 +207,16 @@ def _wall_due(name: str, st: dict) -> bool:
 
 
 def _robots_still_disallows(host: str, ua_token: str) -> bool:
-    """Whether the desk is still refused at `host`'s root: its holds and its robots.txt, read by
-    THE ONE implementation (`polite_fetch.HostAccess`, product-token group then `*`, longest
-    match). `ua_token` is kept for the wall rows' shape; the desk is matched as itself only.
-
-    Fails CLOSED: an unreadable robots.txt (5xx, unreachable) or a hold keeps the wall standing.
-    An unreachable robots.txt is not consent.
-    """
+    """Whether the desk is still refused at `host`'s root -- by a PERSON-HELD SITE HOLD only
+    (`polite_fetch.admit`). robots.txt never keeps a wall standing (LAWS 5e): a Disallow or an
+    unreadable file is a label on the rows. The name is kept for its readers; `ua_token` for the
+    wall rows' shape. A check that raised proves nothing and invents no refusal."""
     del ua_token
     try:
         from libs.data.polite_fetch import admit
         ok, _why = admit(f"https://{host}/")
     except Exception:
-        return True
+        return False
     return not ok
 
 
@@ -198,8 +224,8 @@ def _probe_wall(name: str, wall: dict) -> tuple[bool, str]:
     """Ask once whether a wall has lifted. Returns (lifted, note)."""
     if wall.get("probe") == "robots":
         if _robots_still_disallows(wall["host"], wall.get("ua_token", "*")):
-            return False, f"robots.txt still disallows {wall.get('ua_token')}"
-        return True, f"robots.txt no longer disallows {wall.get('ua_token')} -- source resumable"
+            return False, f"{wall['host']} is still held for a person"
+        return True, f"{wall['host']} is not held -- source resumable (robots is a label)"
     try:
         fetch(wall["url"])
     except Exception as exc:
@@ -679,6 +705,19 @@ def _write_rows(name: str, rows_: list[dict], ts: str, results: dict, summary: d
         summary["raw_only"] += 0 if real else 1
 
 
+def _run_miner(name: str, fn) -> list[dict]:
+    """Run one miner and stamp its rows with the robots LABEL of what it fetched (LAWS 5e): the
+    measured `ROBOTS_LABELS` row first, else the live label its fetches carried."""
+    _FETCH_LABELS.clear()
+    rows_ = fn()
+    if name in ROBOTS_LABELS:
+        for r_ in rows_ or []:
+            if isinstance(r_, dict) and "access_label" not in r_:
+                r_.update(ROBOTS_LABELS[name])
+    _label_rows(rows_ or [])
+    return rows_
+
+
 def run_and_save() -> dict:
     ts = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M")
     results, summary = {}, {"total": 0, "ok": 0, "raw_only": 0, "failed": 0, "walled": 0}
@@ -695,7 +734,7 @@ def run_and_save() -> dict:
                 probes[name] = datetime.now(tz=UTC).isoformat(timespec="seconds")
                 if lifted:
                     try:
-                        rows_ = fn()
+                        rows_ = _run_miner(name, fn)
                     except Exception as exc:
                         rows_ = [row(name, "fetch_error", str(exc)[:200],
                                      needs_selector_work=True)]
@@ -720,7 +759,7 @@ def run_and_save() -> dict:
             print(f"  {name}: WALLED ({wall['verdict']})")
             continue
         try:
-            rows_ = fn()
+            rows_ = _run_miner(name, fn)
         except Exception as exc:
             # A refusal by METHOD (a held source, or a redirect into a login / CAPTCHA wall) is
             # named METHOD_BLOCKED, not a selector failure: no selector work can or may fix it.
