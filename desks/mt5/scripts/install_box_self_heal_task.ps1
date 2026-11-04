@@ -67,15 +67,16 @@ $BinDir = Join-Path $Root 'bin'
 $StateDir = Join-Path $Root 'state'
 # EACH COPIED FILE IS PINNED TO THE sha256 OF ITS COMMITTED BLOB (audit HOLD of 5b3504f50), AND
 # IS WRITTEN FROM THAT BLOB, NOT FROM THE WORKING TREE (v4 must-fix 2). The box checks out with
-# core.autocrlf, and these three files are outside desks/mt5/.gitattributes (eol=lf), so their
+# core.autocrlf, and these four files are outside desks/mt5/.gitattributes (eol=lf), so their
 # working-tree bytes are CRLF and never match a pin of the LF blob. `git cat-file blob HEAD:<path>`
 # is the raw committed bytes, with no eol or filter conversion; a session that swaps the working
 # tree changes nothing it reads. The destination is then hashed against the pin, which
 # `tests/ops/test_box_self_heal.py` asserts equals the blob at HEAD so it cannot drift. Regenerate
 # after any change to a copied file:
-#   git show HEAD:ops/box_self_heal.py | sha256sum   (and the other two)
+#   git show HEAD:ops/box_self_heal.py | sha256sum   (and the other three)
 $Pins = [ordered]@{
-    'box_self_heal.py' = @{ src = 'ops/box_self_heal.py';       sha256 = '56049732679abeb947e6baccc801733c40e26f5a83a4c81ab93ffa8d251a0392' }
+    'box_self_heal.py' = @{ src = 'ops/box_self_heal.py';       sha256 = 'b84084df440966f76b6b6b6fc9c4a68736e42c59a34307ef5a7b91baf4573c74' }
+    'box_self_heal_lib.py' = @{ src = 'ops/box_self_heal_lib.py'; sha256 = '414039072617d6e7acc48f7d722b4df929076ccbd89e3b5e7ba2737b9aa7ce50' }
     'process_health.py' = @{ src = 'ops/process_health.py';      sha256 = '1e989e2e942f69d21f0827d2702d579e2d152c4b600b608d49f7ca7681647f8e' }
     'alert_channels.py' = @{ src = 'libs/ops/alert_channels.py'; sha256 = '4448f782dfa7dc4ec0aecd1dc71145403d3de1d1dcbb9c64e81cf95be3e5f4b5' }
 }

@@ -960,8 +960,8 @@ def explicit_specs() -> list[ComponentSpec]:
         ComponentSpec(
             component_id="executable:ops/box_self_heal.py",
             kind="executable", host="box",
-            code_paths=("ops/box_self_heal.py", "ops/process_health.py",
-                        "libs/ops/alert_channels.py"),
+            code_paths=("ops/box_self_heal.py", "ops/box_self_heal_lib.py",
+                        "ops/process_health.py", "libs/ops/alert_channels.py"),
             inputs=("C:/ProgramData/QuantBox/logs/workflow_gate.json",
                     "C:/ProgramData/QuantBox/state/box_self_heal_state.json",
                     "C:/ProgramData/QuantBox/state/box_self_heal.jsonl"),
