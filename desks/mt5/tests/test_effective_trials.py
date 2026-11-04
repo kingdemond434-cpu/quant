@@ -315,7 +315,8 @@ def test_the_alias_correction_is_published_beside_the_raw_census(tmp_path: Path)
     ac = doc["alias_correction"]
     assert ac["rows_respelled"] == 12
     assert ac["nominal_before"] == ac["nominal_after"] == 24     # rows are never dropped
-    assert ac["effective_after"] <= ac["effective_before"]
-    assert ac["charged_after"] <= ac["charged_before"]
+    # No direction is asserted: the within-cell charge is a similarity participation ratio, and
+    # removing a key two rows SHARED can lower their similarity. Both numbers are published.
+    assert ac["effective_after"] > 0 and ac["charged_after"] >= 1
     assert doc["applied"]["status"] == "REFUSED_UNAUTHORISED"   # measuring never moves the wall
     assert et.spec_fixed_trial_count(spec) == 597
