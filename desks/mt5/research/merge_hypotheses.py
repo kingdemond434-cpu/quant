@@ -1073,7 +1073,11 @@ def main() -> int:
             _sys.path.insert(0, str(BASE))
         from research.judge_coverage import order_docket
         rows_out, coverage = order_docket(rows_out)
+        if not coverage.get("families"):
+            print(f"   judge coverage NOT published ({coverage.get('verdict')}: "
+                  f"{coverage.get('why')}) -- JUDGE_COVERAGE.json keeps its last `at`")
     except Exception as exc:
+        coverage = {"verdict": "UNAVAILABLE", "why": f"{type(exc).__name__}: {exc}"}
         print(f"   judge coverage unavailable ({type(exc).__name__}: {exc}) -- falling back to "
               f"least-judged-family order")
         if judged:
@@ -1248,6 +1252,13 @@ def main() -> int:
                                   "every prefix of the docket is family-balanced"),
                         "families_ordered": len({str(r.get("family")) for r in rows_out}),
                         "applied": bool(coverage.get("families")),
+                        # WHY NOT, when not (2026-10-29): an order_docket fault used to reach
+                        # this report as `applied: false` and nothing else, and the coverage
+                        # table stayed frozen at its last `at` with no reason anywhere durable.
+                        "coverage_verdict": (None if coverage.get("families")
+                                             else (coverage.get("verdict") or "UNAVAILABLE")),
+                        "coverage_why": (None if coverage.get("families")
+                                         else coverage.get("why")),
                         "fallback_basis": "judgements already spent per docket row, least first",
                         "coverage": {k: (coverage.get("totals") or {}).get(k) for k in
                                      ("families_with_backlog", "families_queued",

@@ -318,6 +318,65 @@ def judge(report: Path | None = None, *, require_state: bool = False,
     return out
 
 
+#: The cadence of the report's writer of record (`merge_hypotheses` -> `order_docket`, inside the
+#: hourly cycle), in hours. A report whose file was last written more than RESTAMP_CADENCES of
+#: these after its own `at` was rewritten by something that did not recompute it.
+WRITER_CADENCE_H = 1.0
+RESTAMP_CADENCES = 2.0
+#: The intake's own record of a pass that did not publish the table (judge_coverage.FAULT_NAME).
+FAULT_NAME = "JUDGE_COVERAGE_FAULT.json"
+
+
+def _republish_checks(path: Path, doc: Mapping[str, Any], checks: list[dict[str, Any]],
+                      now: datetime) -> list[str]:
+    """THE FILE WAS WRITTEN, THE TABLE WAS NOT (2026-10-29, box measurement).
+
+    On the box JUDGE_COVERAGE.json carried mtime 2026-10-29T14:26:44Z and `at`
+    2026-10-27T17:33:15Z: the bytes on disk were being re-laid (the state publisher's park-and-
+    restore around a merge, an adoption checkout) while the writer of record had not published a
+    table for two days. A fresh mtime over an old `at` is the exact shape a reader mistakes for
+    a live organ, so it is named and FAILS here, on the box only (`--require-state`): in a clone
+    the mtime is checkout time and says nothing. Two checks:
+
+      restamped   the file's mtime sits more than RESTAMP_CADENCES writer cadences past its `at`
+      fault       the intake recorded (JUDGE_COVERAGE_FAULT.json) a pass that did not publish,
+                  at or after the report's `at` -- the reason the table is old, by name
+    """
+    failures: list[str] = []
+    at = _signed_age_h(doc.get("at"), now)
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        mtime = None
+    if mtime is not None and mtime > now.timestamp() + FUTURE_SKEW_S:
+        # A file written after this reading's own clock is not something this reading saw.
+        checks.append({"metric": "restamped", "state": "UNMEASURED",
+                       "why": f"{path.name} mtime is after this reading's clock"})
+    elif at is not None and mtime is not None:
+        at_ts = now.timestamp() - at * 3600.0
+        lag_h = (mtime - at_ts) / 3600.0
+        limit = RESTAMP_CADENCES * WRITER_CADENCE_H
+        if lag_h > limit:
+            checks.append({"metric": "restamped", "state": "FAIL", "lag_h": round(lag_h, 2),
+                           "why": (f"{path.name} was written {lag_h:.1f}h after its own `at` "
+                                   f"({str(doc.get('at'))[:25]}), past {limit:g}h "
+                                   f"({RESTAMP_CADENCES:g} writer cadences): the file was "
+                                   "re-laid without the table being recomputed")})
+            failures.append("report_restamped")
+        else:
+            checks.append({"metric": "restamped", "state": "OK", "lag_h": round(lag_h, 2)})
+    fault = _read(path.with_name(FAULT_NAME))
+    if isinstance(fault, dict):
+        f_age = _signed_age_h(fault.get("at"), now)
+        if f_age is not None and (at is None or f_age <= at):
+            checks.append({"metric": "intake_fault", "state": "FAIL",
+                           "why": (f"the intake did not publish the table at "
+                                   f"{str(fault.get('at'))[:25]} ({fault.get('verdict')}: "
+                                   f"{str(fault.get('why'))[:200]})")})
+            failures.append("intake_fault")
+    return failures
+
+
 def _coverage(report: Path | None = None, *, require_state: bool = False,
               now: datetime | None = None) -> dict[str, Any]:
     at = now or datetime.now(tz=UTC)
@@ -376,6 +435,9 @@ def _coverage(report: Path | None = None, *, require_state: bool = False,
                                      + f": its age against the {STALE_H:.0f}h lease cannot be "
                                        "shown"})
         failures.append("report_undated")
+
+    if require_state:
+        failures += _republish_checks(path, doc, out["checks"], at)
 
     fams: dict[str, Any] = {f: r for f, r in (doc.get("families") or {}).items()
                             if isinstance(r, dict)}
@@ -657,10 +719,13 @@ def _coverage(report: Path | None = None, *, require_state: bool = False,
     out["worst_backlog"] = (doc.get("worst_backlog") or [])[:5]
     out["verdict"] = "FAIL" if failures else "PASS"
     lease = [f for f in ("report_stale", "report_undated") if f in failures]
-    rules = sorted(set(failures) - set(lease))
+    republish = [f for f in ("report_restamped", "intake_fault") if f in failures]
+    rules = sorted(set(failures) - set(lease) - set(republish))
     out["why"] = "; ".join(
         ([f"the report is {'stale past its lease' if 'report_stale' in lease else 'undated'} "
           f"(--require-state)"] if lease else [])
+        + ([f"the table was not recomputed ({', '.join(republish)}; --require-state)"]
+           if republish else [])
         + ([f"{len(rules)} family(ies) failed a coverage rule: " + ", ".join(rules[:6])]
            if rules else [])) if failures else (
         "every family holding unjudged cells is queued, its carried backlog fell, and none sits "
