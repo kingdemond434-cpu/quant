@@ -103,7 +103,8 @@ FORBIDDEN_IMPORTS: tuple[str, ...] = (
     "mt5desk.families", "mt5desk.families_orthogonal", "mt5desk.families_edge_queue",
     "mt5desk.engine", "mt5desk.family_call", "proposer_common", "external_gauntlet",
     "lead_replication", "shadow_forward", "external_shadow", "mt5desk.family_formula",
-    "mt5desk.families_vector", "libs.research.alpha_grammar", "alpha_grammar")
+    "mt5desk.families_vector", "libs.research.alpha_grammar", "alpha_grammar",
+    "mt5desk.families_orthogonal", "mt5desk.causal_residual", "mt5desk.cell_modifiers")
 
 RULE = ("a second implementation from the written specification and the raw bars only; a "
         "material disagreement on fills, P&L, position state or costs is quarantined by name")
@@ -303,6 +304,14 @@ class RuleSpec:
     defaults: dict[str, Any]
     build: Callable[[Bars, dict[str, Any]], list[Order]]
     selector_params: bool = False
+    #: The session comes from the cell's own `session` PARAMETER (the generic session axis the
+    #: gauntlet's shared call applies), never from the certificate's selector: the sweep stamps
+    #: "asia" on every certificate whose params name no window, which is a lie for a family with
+    #: no session semantics -- such a cell was judged on EVERY hour.
+    session_from_params: bool = False
+    #: The rule applies the session itself (at the signal bar, before any entry delay), so the
+    #: rebuild must not filter the orders' (possibly delayed) bar hours a second time.
+    session_in_build: bool = False
 
 
 def _build_overnight_gap_decay(b: Bars, p: dict[str, Any]) -> list[Order]:
@@ -1178,11 +1187,160 @@ SPEC_BOOK["formula"] = RuleSpec(
     "sample std; stand aside on fewer than max(2 x norm, 300) bars or under 5% defined z. From "
     "bar norm on, at least hold_bars after the last signal: when |z| >= entry_z and ATR(atr_n) "
     "> 0, a signal at the bar close on side sign(z) (follow) or against it (fade); stop "
-    "stop_atr x ATR, target rr x that, entry next open, time exit after hold_bars. Anything "
-    "the expression names outside this list stands aside.",
+    "stop_atr x ATR, target rr x that, entry next open, time exit after hold_bars. The session "
+    "is the cell's own session parameter (none: every hour), never the certificate's selector. "
+    "Anything the expression names outside this list stands aside.",
     {"expr": None, "norm": 240, "entry_z": 1.5, "side_mode": "follow", "hold_bars": 8,
      "atr_n": 20, "stop_atr": 2.0, "rr": 1.5},
-    _build_formula)
+    _build_formula, session_from_params=True)
+
+
+# ------------------------------------------------- the cross_asset_residual rule (2026-11-04)
+# WHY. 28 cross_asset_residual certificates (the desk's one non-directional, multi-factor
+# mechanism) sat out of forward clocks for want of a written rule (FORWARD_ENROLMENT 16:21Z
+# 2026-11-04). Written from the family's stated behaviour and the transformation miners' declared
+# modifiers, rebuilt here; nothing imported from the family, its residual helper or the modifier
+# module (FORBIDDEN_IMPORTS).
+
+#: Ridge added to the window's normal equations, as a share of their mean diagonal: numerical
+#: insurance only (a collinear window still solves), far below any economic effect.
+CAR_RIDGE_FRAC = 1e-10
+CAR_VOL_REGIMES = {"high_vol": 1, "high_volatility": 1, "low_vol": -1}
+CAR_NO_OP_REGIMES = frozenset({"", "unconditional", "all", "any"})
+
+
+def _car_causal_residual(y: np.ndarray, X: np.ndarray, win: int) -> np.ndarray:
+    """eps[t] = y[t] - [1, X[t]] . beta[t], beta[t] the least-squares fit WITH a constant over
+    rows [t-win, t-1] only (ridge CAR_RIDGE_FRAC x mean diagonal); undefined before row win or
+    with fewer than k+2 rows in the window."""
+    n, k = y.size, X.shape[1]
+    k1 = k + 1
+    eps = np.full(n, np.nan)
+    if win < k1 + 1 or n <= win:
+        return eps
+    Z = np.column_stack([np.ones(n), X])
+    for t in range(win, n):
+        Zw, yw = Z[t - win:t], y[t - win:t]
+        A = Zw.T @ Zw
+        A = A + CAR_RIDGE_FRAC * max(float(np.trace(A)) / k1, 1e-300) * np.eye(k1)
+        try:
+            beta = np.linalg.solve(A, Zw.T @ yw)
+        except np.linalg.LinAlgError:
+            beta = np.linalg.pinv(A) @ (Zw.T @ yw)
+        eps[t] = y[t] - float(Z[t] @ beta)
+    return eps
+
+
+def _car_roll(x: np.ndarray, w: int) -> tuple[np.ndarray, np.ndarray]:
+    """Trailing mean and sample std (n - 1) over exactly w defined values; NaN otherwise."""
+    mu = np.full(x.size, np.nan)
+    sd = np.full(x.size, np.nan)
+    for i in range(w - 1, x.size):
+        win = x[i - w + 1:i + 1]
+        if np.all(np.isfinite(win)):
+            mu[i] = float(np.mean(win))
+            sd[i] = float(np.std(win, ddof=1)) if w > 1 else np.nan
+    return mu, sd
+
+
+def _car_vol_mask(b: Bars, sign: int) -> np.ndarray:
+    """high_vol: the 20-bar sample std of simple returns above its own 100-bar median (low_vol:
+    below), both strict; undefined reads False."""
+    with np.errstate(all="ignore"):
+        ret = np.concatenate([[np.nan], b.c[1:] / b.c[:-1] - 1.0])
+    _, rv = _car_roll(ret, 20)
+    med = _roll_strict(rv, 100, lambda w: float(np.median(w)))
+    with np.errstate(invalid="ignore"):
+        return (rv > med) if sign > 0 else (rv < med)
+
+
+def _build_cross_asset_residual(b: Bars, p: dict[str, Any]) -> list[Order]:
+    names = [str(s) for s in (p.get("factor_symbols") or [])]
+    mode = str(p.get("side_mode") or "revert").lower()
+    regime = str(p.get("regime") or "").strip().lower()
+    timing = str(p.get("entry_timing") or "").strip().lower()
+    style = str(p.get("execution_style") or p.get("entry_style") or "").strip().lower()
+    if (not names or mode not in ("revert", "continue")
+            or (regime not in CAR_NO_OP_REGIMES and regime not in CAR_VOL_REGIMES)
+            or timing not in ("", "instant", "delayed") or style not in ("", "market")):
+        return []
+    tf = str(p.get("timeframe") or "H1")
+    facs = [load_bars(s, tf) for s in names]
+    if any(f is None for f in facs):
+        return []                          # every named factor is part of the certified model
+    look = int(p["lookback"])
+    bwin = int(p.get("beta_win") or look)
+    # The target's and every factor's closes on the timestamps ALL of them carry.
+    common = b.t
+    for f in facs:
+        common = np.intersect1d(common, f.t)  # type: ignore[union-attr]
+    if common.size < bwin + 2 * look:
+        return []
+    cols = [b.c[np.searchsorted(b.t, common)]]
+    cols += [f.c[np.searchsorted(f.t, common)] for f in facs]  # type: ignore[union-attr]
+    M = np.column_stack(cols)
+    keep = np.all(np.isfinite(M) & (M > 0), axis=1)
+    common, M = common[keep], M[keep]
+    with np.errstate(all="ignore"):
+        R = np.diff(np.log(M), axis=0)
+    ok = np.all(np.isfinite(R), axis=1)
+    rt = common[1:][ok]
+    R = R[ok]
+    if rt.size < bwin + 2 * look:
+        return []
+    eps = _car_causal_residual(R[:, 0], R[:, 1:], bwin)
+    cum = np.where(np.isfinite(eps), np.cumsum(np.where(np.isfinite(eps), eps, 0.0)), np.nan)
+    mu, sd = _car_roll(cum, look)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        z = (cum - mu) / sd
+    a = atr(b, int(p["atr_n"]))
+    loc = np.searchsorted(b.t, rt)          # every residual bar is a target bar
+    vol = _car_vol_mask(b, CAR_VOL_REGIMES[regime]) if regime in CAR_VOL_REGIMES else None
+    win = p.get("_session")
+    ez, sa, rr, ttl = (float(p["entry_z"]), float(p["stop_atr"]), float(p["rr"]),
+                       int(p["ttl_bars"]))
+    out: list[Order] = []
+    for i in range(bwin + look, rt.size - 1):
+        zi = z[i]
+        if not np.isfinite(zi) or abs(zi) < ez:
+            continue
+        j = int(loc[i])
+        ai = float(a[j])
+        if not np.isfinite(ai) or ai <= 0:
+            continue
+        if win is not None and not (win[0] <= int(b.hour[j]) < win[1]):
+            continue                           # the session is judged at the SIGNAL bar
+        if vol is not None and not bool(vol[j]):
+            continue
+        side = (-1 if zi > 0 else 1) if mode == "revert" else (1 if zi > 0 else -1)
+        px = float(b.c[j])
+        at = j + 1 if timing == "delayed" else j
+        if at >= len(b):
+            continue
+        out.append(Order(int(b.t[at]), side, px - side * sa * ai, px + side * sa * ai * rr, ttl))
+    return out
+
+
+SPEC_BOOK["cross_asset_residual"] = RuleSpec(
+    "cross_asset_residual",
+    "Join the target's closes with every named factor's closes (same chart) on the timestamps all "
+    "of them carry; every factor is required. Log returns; eps[t] = r[t] - [1, f[t]] . beta[t], "
+    "beta[t] least squares with a constant over the previous beta_win rows only (beta_win "
+    "defaults to lookback). cum = running sum of eps (undefined where eps is); z = (cum - its "
+    "strict lookback mean) / its strict lookback sample std. Stand aside under beta_win + 2 x "
+    "lookback joined rows. From row beta_win + lookback on, every bar with |z| >= entry_z and "
+    "ATR(atr_n) > 0 is a signal at that bar's close: revert takes the side against z, continue "
+    "with it; stop stop_atr x ATR, target rr x that, entry next open, time exit after "
+    "ttl_bars. The session (the cell's own session parameter; none: every hour) is judged at "
+    "the signal bar. Modifiers: regime high_vol (high_volatility) / low_vol keeps a signal "
+    "only where the 20-bar std of simple returns is above / below its "
+    "own 100-bar median; entry_timing delayed moves the signal one target bar later with the "
+    "same stop and target; execution_style market changes nothing; any other regime, timing or "
+    "style stands aside.",
+    {"factor_symbols": [], "lookback": 240, "beta_win": None, "entry_z": 2.0, "atr_n": 20,
+     "stop_atr": 2.0, "rr": 1.5, "ttl_bars": 72, "side_mode": "revert", "regime": "",
+     "entry_timing": "", "execution_style": "", "timeframe": "H1"},
+    _build_cross_asset_residual, session_from_params=True, session_in_build=True)
 
 
 #: Session selector -> [start, end) broker hours a non-breakout signal must fall in.
@@ -1340,6 +1498,8 @@ def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | 
     s = str(side or "").upper()
     p["_side"] = 1 if s in ("LONG", "1") else -1 if s in ("SHORT", "-1") else 0
     p["_session"] = SESSIONS.get(sel) if not spec.selector_params else None
+    if spec.session_from_params:
+        p["_session"] = SESSIONS.get(str(dict(params or {}).get("session") or "").lower())
     # The rules that need them read these; every other rule ignores them (hunt16 selectors name
     # a signal hour, a hunt16 condition a prior-session day label, carry a symbol's swap terms).
     p["_selector"], p["_symbol"], p["_condition"] = sel, str(symbol or ""), condition
@@ -1358,7 +1518,7 @@ def rebuild(family: str, bars: Bars, p: Mapping[str, Any], cost_units: float
     side = int(p.get("_side") or 0)
     if side:
         orders = [o for o in orders if o.side == side]
-    win = p.get("_session")
+    win = None if SPEC_BOOK[family].session_in_build else p.get("_session")
     if win is not None:
         lo, hi = win
         hours = ((np.asarray([o.t_ns for o in orders], dtype="int64") // 3_600_000_000_000)
