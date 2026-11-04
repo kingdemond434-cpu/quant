@@ -85,16 +85,27 @@ URL_HOST = re.compile(r"\bhttps?://([A-Za-z0-9.-]+)")
 NET_CALL = re.compile(
     r"\brequests\.|\bhttpx\b|urllib\.request|\burlopen\(|\bsocket\.|\baiohttp\b|websocket"
     r"|http\.client|\bsmtplib\b|\bftplib\b|\bparamiko\b|Invoke-WebRequest|Invoke-RestMethod"
-    r"|\bcurl\s|\bwget\s|Net\.WebClient|\bgh api\b"
+    r"|\bcurl\s|\bwget\s|Net\.WebClient|\bgh (api|pr|release|repo|workflow|run)\b|\bgit push\b"
+    r"|\bscp\s|\bssh\s|\birm\s|\biwr\s|Start-BitsTransfer"
 )
 HIDDEN = re.compile(
     r"\beval\(|\bexec\(|base64|b64decode|\bmarshal\b|pickle\.loads|__import__\(|\bcompile\("
-    r"|-EncodedCommand|FromBase64String|codecs\.decode"
+    r"|-EncodedCommand|FromBase64String|codecs\.decode|Invoke-Expression|\biex\b|importlib"
+    r"|getattr\(__builtins__|\b(zlib|bz2|lzma|gzip)\.decompress|\[Convert\]::|\s-enc\s"
 )
+#: A process launch, whatever it runs: the deny-lists cannot see into its arguments (AD #689 #2).
+SUBPROC = re.compile(r"\bsubprocess\b|\bos\.(system|popen|exec\w*|spawn\w*)\b|Start-Process|&\s*\$")
+#: Verbs of the release machinery: control and risk are never refuted by path alone when added
+#: code names one (AD #689 #3).
+CONTROL_VERB = re.compile(r"\b(merg\w*|approv\w*|adopt\w*|seal\w*|promot\w*|attest\w*)\b", re.I)
 SECRET_READ = re.compile(
     r"data[/\\]+secrets|(environ|getenv)\W[^\n]{0,40}(KEY|TOKEN|SECRET|PASSWORD)", re.IGNORECASE
 )
 CODE = re.compile(r"\.(py|pyi|ps1|psm1|psd1|bat|cmd|sh|js|ts|rs|mq5|mqh|yml|yaml)$")
+#: Code and config: an undecodable byte here can hide code, so the report is UNKNOWN (AD #681).
+CONFIG = re.compile(r"\.(toml|json|jsonl|cfg|ini|manifest|txt)$|(^|/)\.github/")
+CODE_GLOBS = ("*.py", "*.pyi", "*.ps1", "*.psm1", "*.psd1", "*.bat", "*.cmd", "*.sh", "*.js",
+              "*.ts", "*.rs", "*.mq5", "*.mqh", "*.yml", "*.yaml")  # fmt: skip
 
 
 def added(diff: str) -> list[tuple[str, str]]:
@@ -133,6 +144,18 @@ def check(
 ) -> tuple[str, list[str]]:
     """(REFUTED | UPHELD | UNKNOWN, evidence lines) for one rubric rule on this diff."""
     hits: list[str]
+    code = [(p, t) for p, t in plus if CODE.search(p)]
+    launch = [f"{p}: {t.strip()[:120]}" for p, t in code if SUBPROC.search(t)]
+    if kind in ("risk", "control", "network") and launch:
+        return "UNKNOWN", ["a process launch the deny-lists cannot see into", *launch[:10]]
+    if kind in ("risk", "control"):
+        busy = [f"{p}: {t.strip()[:120]}" for p, t in code
+                if NET_CALL.search(t) or HIDDEN.search(t) or CONTROL_VERB.search(t)]  # fmt: skip
+        if busy:
+            return "UNKNOWN", [
+                "added code calls out, hides code or names a release verb",
+                *busy[:10],
+            ]
     if kind == "risk":
         hits = [f"money file {f}" for f in files if _ir.is_money_file(f, closure)]
     elif kind == "control":
@@ -164,6 +187,10 @@ def refute(diff: str, findings: list[str], known_hosts: frozenset[str],
     if _ir.addressed_to_reviewer(diff):
         return {"verdict": "UPHELD", "why": ["the diff addresses the reviewer"], "findings": []}
     plus = added(diff)
+    bad = sorted({p for p, t in plus if "\ufffd" in t and (CODE.search(p) or CONFIG.search(p))})
+    if bad:
+        return {"verdict": "UNKNOWN", "why": [f"undecodable bytes in {p}" for p in bad],
+                "findings": []}  # fmt: skip
     rows: list[dict[str, Any]] = []
     for text in findings:
         ks = kinds(text)
@@ -192,9 +219,11 @@ def _git(*args: str) -> str:
 
 
 def base_hosts(base: str) -> frozenset[str]:
-    """Every http(s) host literal anywhere in the base tree."""
+    """Every http(s) host literal in the base tree's CODE files: a host only a doc mentions is
+    not one the system already talks to (AD #689 #4)."""
     try:
-        out = _git("grep", "-h", "-o", "-I", "-E", r"https?://[A-Za-z0-9.-]+", base)
+        out = _git("grep", "-h", "-o", "-I", "-E", r"https?://[A-Za-z0-9.-]+", base, "--",
+                   *CODE_GLOBS)  # fmt: skip
     except subprocess.CalledProcessError as exc:  # grep exits 1 on no match
         out = exc.stdout or ""
     return frozenset(m.casefold() for m in URL_HOST.findall(out))

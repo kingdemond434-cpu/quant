@@ -143,3 +143,62 @@ def test_its_only_git_calls_are_reads() -> None:
     src = (ROOT / "ops/release/finding_refuter.py").read_text(encoding="utf-8")
     calls = [c.split(",")[0].strip('"') for c in src.split("_git(")[2:]]
     assert sorted(set(calls)) == ["grep", "show"]
+
+
+# ---- AD #689 preconditions (3c7bba154 CLEAR as report-only) ------------------------------------
+
+
+@pytest.mark.parametrize("path", ["scripts/x.py", "config/x.toml", "scripts/x.yml"])
+def test_undecodable_bytes_in_code_or_config_are_unknown(path: str) -> None:
+    rep = run(diff(path, "x = '�'"), [NET])
+    assert rep["verdict"] == "UNKNOWN" and rep["findings"] == []
+
+
+def test_undecodable_bytes_in_a_data_file_do_not_block() -> None:
+    assert run(diff("research/notes/x.csv", "a,�"), [NET])["verdict"] == "REFUTED"
+
+
+@pytest.mark.parametrize("line", [
+    "gh pr merge 12 --merge", "git push origin HEAD", "scp f box:", "ssh box ls", "irm $u",
+    "iwr $u", "Start-BitsTransfer -Source $u",
+])  # fmt: skip
+def test_the_wider_network_list_upholds(line: str) -> None:
+    assert run(diff("scripts/x.ps1", line), [NET])["verdict"] == "UPHELD"
+
+
+@pytest.mark.parametrize("line", [
+    "Invoke-Expression $s", "iex $s", "importlib.import_module(n)", "getattr(__builtins__, n)",
+    "zlib.decompress(b)", "[Convert]::FromBase64String($s)", "powershell -enc AAAA",
+])  # fmt: skip
+def test_the_wider_hidden_list_upholds(line: str) -> None:
+    rep = run(diff("scripts/x.ps1", line), ["The change contains obfuscated code."])
+    assert rep["verdict"] == "UPHELD"
+
+
+@pytest.mark.parametrize("line", ["subprocess.run(cmd)", "Start-Process $exe", "os.system(c)"])
+def test_a_process_launch_makes_network_control_and_risk_unknown(line: str) -> None:
+    d = diff("scripts/x.py", line)
+    for claim in (NET, "It reads credentials.", "This increases position size risk."):
+        assert run(d, [claim])["verdict"] == "UNKNOWN", claim
+
+
+@pytest.mark.parametrize("line", ["gh pr merge 12", "def approve_all(pr):", "adopt(release)"])
+def test_control_and_risk_are_never_refuted_by_path_alone(line: str) -> None:
+    d = diff("scripts/x.py", line)
+    for claim in ("It merges without approval, touching control.", "This raises risk."):
+        assert run(d, [claim])["verdict"] in ("UNKNOWN", "UPHELD"), (line, claim)
+
+
+def test_known_hosts_come_from_code_files_only(monkeypatch: Any) -> None:
+    seen: list[tuple[str, ...]] = []
+
+    def git(*args: str) -> str:
+        seen.append(args)
+        return "https://api.example.org/x\n"
+
+    monkeypatch.setattr(fr, "_git", git)
+    assert fr.base_hosts("B") == frozenset({"api.example.org"})
+    args = seen[0]
+    assert args[:2] == ("grep", "-h") and "--" in args
+    globs = args[args.index("--") + 1 :]
+    assert "*.py" in globs and "*.md" not in globs and "*" not in globs
