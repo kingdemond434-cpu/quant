@@ -1479,7 +1479,7 @@ def test_the_runner_models_are_asked_only_at_their_pinned_manifest(
     )
     asked: list[Any] = []
 
-    def http(url: str, body: Any, h: Any) -> Any:
+    def http(url: str, body: Any, h: Any, **k: Any) -> Any:
         if url.endswith("/api/version"):
             return {"version": "x"}
         asked.append(body)
@@ -1502,10 +1502,79 @@ def test_a_truncated_local_prompt_is_never_a_vote(
 ) -> None:
     """#457 audit MF4: the server's own token count shows whether it read the whole prompt."""
     monkeypatch.setattr(
-        ir, "_http", lambda u, b, h: {"message": {"content": _PASS}, "prompt_eval_count": count}
+        ir,
+        "_http",
+        lambda u, b, h, **k: {"message": {"content": _PASS}, "prompt_eval_count": count},
     )
     got = ir.ask_local("http://x", "q:7b", 32768, "r" * 2000, "u" * 20_000)
     assert (got == _PASS) is readable
+
+
+def test_a_local_call_gets_time_in_proportion_to_its_prompt() -> None:
+    """#620: a ~23k-token prompt timed out at a flat 1800 s five times running, then UNAVAILABLE
+    for ever. A local call's timeout grows with what it must read, inside the job's limit."""
+    assert ir.local_timeout(1_000) == ir.CALL_TIMEOUT_S  # a small prompt keeps the floor
+    assert ir.local_timeout(23_000) > ir.local_timeout(12_000) > ir.CALL_TIMEOUT_S
+    assert ir.local_timeout(10**7) == ir.LOCAL_CALL_MAX_S  # never past the job's limit
+    assert ir.LOCAL_CALL_MAX_S < ir.BUDGET_S
+    assert ir.local_timeout(12_000, rate=50.0) == ir.CALL_TIMEOUT_S  # a fast runner, the floor
+
+
+def test_ask_local_sends_the_scaled_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: dict[str, Any] = {}
+
+    def http(u: str, b: Any, h: Any, timeout: float = 0) -> Any:
+        seen["timeout"] = timeout
+        return {"message": {"content": _PASS}, "prompt_eval_count": 20_000,
+                "prompt_eval_duration": 4_000 * 10**9}  # fmt: skip
+
+    monkeypatch.setattr(ir, "_http", http)
+    user = "u" * 60_000
+    assert ir.ask_local("http://x", "q:7b", 32768, "r" * 2000, user, rate=4.0) == _PASS
+    assert seen["timeout"] == ir.local_timeout((2000 + 60_000) // ir.CHARS_PER_TOKEN, 4.0)
+    assert seen["timeout"] > ir.CALL_TIMEOUT_S
+
+
+def test_a_timed_out_model_is_not_asked_the_same_prompt_again() -> None:
+    """Five 30-minute timeouts on one prompt spent the whole budget on a call that could not
+    finish. A timeout drops that model for this prompt: UNAVAILABLE at once, never a vote."""
+    calls: list[int] = []
+
+    def slow(r: str, u: str) -> str:
+        calls.append(1)
+        raise ir.TimedOut("TimeoutError after 1800 s")
+
+    v, log = _vote([("qwen", "q1", slow)])
+    assert v == "UNAVAILABLE" and len(calls) == 1
+    assert any("not asked this prompt again" in x for x in log)
+    # a busy model (429) is still asked again: only a timeout drops it
+    v, _ = _vote(
+        [("qwen", "q1", _model(ir.Unavailable("HTTP 429"), _PASS)), ("google", "g1", _model(_PASS))]
+    )
+    assert v == "PASS"
+
+
+def test_a_timeout_reads_as_timed_out(monkeypatch: pytest.MonkeyPatch) -> None:
+    import urllib.error
+    import urllib.request
+
+    def wrapped(*a: Any, **k: Any) -> Any:
+        raise urllib.error.URLError(TimeoutError("timed out"))
+
+    def bare(*a: Any, **k: Any) -> Any:
+        raise TimeoutError("timed out")
+
+    def refused(*a: Any, **k: Any) -> Any:
+        raise urllib.error.URLError(ConnectionRefusedError())
+
+    for f in (wrapped, bare):
+        monkeypatch.setattr(urllib.request, "urlopen", f)
+        with pytest.raises(ir.TimedOut):
+            ir._http("http://x", {}, {}, timeout=5)
+    monkeypatch.setattr(urllib.request, "urlopen", refused)
+    with pytest.raises(ir.Unavailable) as got:
+        ir._http("http://x", {}, {})
+    assert not isinstance(got.value, ir.TimedOut)
 
 
 def test_a_diff_too_large_to_read_whole_takes_the_manual_path(
