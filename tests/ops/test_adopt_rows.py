@@ -29,6 +29,11 @@ def _load(name: str, rel: str) -> Any:
 
 
 ar = _load("_t_adopt_rows", "ops/release/adopt_rows.py")
+#: the authority path needs `cryptography`, as tests/ops/test_release_authority.py does; the
+#: registry tests below run everywhere
+needs_crypto = pytest.mark.skipif(
+    importlib.util.find_spec("cryptography") is None, reason="cryptography not installed"
+)
 att = _load("_t_attestation", "ops/release/authority/attestation.py")
 
 
@@ -237,6 +242,7 @@ def test_a_path_the_merge_changed_beyond_the_cleared_head_is_left_out(box: Box) 
     assert paths == {"libs/x.py": _g(w, "rev-parse", f"{head}:libs/x.py")}
 
 
+@needs_crypto
 def test_an_authority_clear_writes_a_row_carrying_its_signed_envelope(box: Box) -> None:
     key, kid = box.authority()
     merge, head = box.pr(9, {"libs/x.py": "X = 9\n"}, title="Merge #9 (AUTO tier, no comment: x)")
@@ -246,6 +252,7 @@ def test_an_authority_clear_writes_a_row_carrying_its_signed_envelope(box: Box) 
     assert row["commit"] == merge
 
 
+@needs_crypto
 def test_any_verified_authority_hold_blocks_the_row(box: Box) -> None:
     key, kid = box.authority()
     _merge, head = box.pr(9, {"libs/x.py": "X = 9\n"})
@@ -254,6 +261,7 @@ def test_any_verified_authority_hold_blocks_the_row(box: Box) -> None:
     assert box.rows() == []
 
 
+@needs_crypto
 def test_an_attestation_under_another_root_policy_writes_nothing(box: Box) -> None:
     key, kid = box.authority()
     _merge, head = box.pr(9, {"libs/x.py": "X = 9\n"})
@@ -261,6 +269,7 @@ def test_an_attestation_under_another_root_policy_writes_nothing(box: Box) -> No
     assert box.rows() == []
 
 
+@needs_crypto
 def test_the_kill_file_turns_the_authority_source_off(box: Box) -> None:
     key, kid = box.authority()
     _merge, head = box.pr(9, {"libs/x.py": "X = 9\n"})
@@ -299,6 +308,7 @@ def test_a_row_pointing_at_another_head_does_not_verify(box: Box) -> None:
     assert _verify(box, row)[0] is False
 
 
+@needs_crypto
 def test_a_tampered_attestation_does_not_verify(box: Box) -> None:
     key, kid = box.authority()
     _merge, head = box.pr(9, {"libs/x.py": "X = 9\n"})
@@ -487,6 +497,7 @@ def test_an_auditor_hold_on_the_cleared_head_drops_the_merge_row(
     assert any("HOLD names its cleared head" in d for d in doc["unverified_rows"])
 
 
+@needs_crypto
 def test_a_registry_hold_drops_an_authority_row_too(box: Box) -> None:
     key, kid = box.authority()
     _merge, head = box.pr(9, {"libs/x.py": "X = 9\n"})
