@@ -3,6 +3,8 @@
 
     python scripts/context.py decide --title T --decision D --why W --by WHO [--owner LANE]
                                      [--evidence PATH|sha:SHA|pr:N|url:URL ...] [--supersedes ID]
+    python scripts/context.py amend --of ID --why W --by WHO --evidence POINTER [...]
+                                                # append a correction row; never rewrite one
     python scripts/context.py show [--n 20] [--grep WORD]
     python scripts/context.py verify            # exit 1 on a malformed row or a missing path
     python scripts/context.py rationale --sync  # one file per LIVE/STANDBY sleeve, human text kept
@@ -114,7 +116,11 @@ def committed_rows(path: Path) -> list[dict[str, Any]]:
 
 
 def decide(a: argparse.Namespace, path: Path = JOURNAL) -> dict[str, Any]:
-    # The journal is append-only, so a bad pointer can never be fixed in place.
+    # The journal is append-only, so a bad pointer can never be fixed in place -- and a row with
+    # no pointer at all fails verify (D-20261103-004), so refuse it here rather than on LIVE.
+    if not a.evidence:
+        raise SystemExit("decide needs at least one --evidence pointer (repo path, pr:N, sha:X, "
+                         "url: or thread:)")
     bad = [p for p in (a.evidence or []) if _check_pointer(str(p)) == "MISSING"]
     if bad:
         raise SystemExit(f"evidence pointer does not resolve: {bad} (use a repo path, pr:N, sha:X, url: or thread:)")
@@ -124,6 +130,37 @@ def decide(a: argparse.Namespace, path: Path = JOURNAL) -> dict[str, Any]:
            "title": a.title, "decision": a.decision, "why": a.why, "by": a.by,
            "owner": a.owner or "", "evidence": list(a.evidence or []),
            "supersedes": a.supersedes or ""}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+    return row
+
+
+def amend(a: argparse.Namespace, path: Path = JOURNAL) -> dict[str, Any]:
+    """APPEND an evidence correction for an earlier decision; the original row is never touched.
+
+    WHY (2026-11-03): D-20261103-004 was written with `evidence: []`, so verify -- and LIVE's
+    quality job -- failed. The journal is a protected ledger: check_protected_records refuses the
+    in-place fix as RECORDS_REWRITTEN, and its rewrite override is not the loss loop's to use. A
+    ledger is corrected the way a ledger is: a new row that names the row it amends. verify folds
+    every amendment's evidence into its target, so the target counts as evidenced from then on.
+    """
+    evidence = [str(p) for p in (a.evidence or [])]
+    if not evidence:
+        raise SystemExit("amend needs at least one --evidence pointer")
+    bad = [p for p in evidence if _check_pointer(p) == "MISSING"]
+    if bad:
+        raise SystemExit(f"evidence pointer does not resolve: {bad}")
+    rows = read_journal(path) + committed_rows(path)
+    target = next((r for r in read_journal(path) if r.get("id") == a.of), None)
+    if target is None:
+        raise SystemExit(f"amend: no decision {a.of!r} in {path}")
+    now = datetime.now(UTC)
+    row = {"id": next_id(rows, now.strftime("%Y%m%d")), "at": now.isoformat(timespec="seconds"),
+           "title": f"Evidence for {a.of}: {target.get('title', '')}"[:200],
+           "decision": f"Amend {a.of}: add evidence {evidence}. The decision itself is unchanged.",
+           "why": a.why, "by": a.by, "owner": target.get("owner", ""), "evidence": evidence,
+           "supersedes": "", "amends": a.of, "amend": "evidence"}
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(row, ensure_ascii=False) + "\n")
@@ -164,11 +201,23 @@ def _check_pointer(p: str) -> str:
 def verify(path: Path = JOURNAL) -> tuple[bool, list[str]]:
     problems: list[str] = []
     ids: set[str] = set()
-    for r in read_journal(path):
+    rows = read_journal(path)
+    # An amendment row adds evidence to an EARLIER decision; the target is judged with it.
+    amended: dict[str, list[str]] = {}
+    for r in rows:
+        if r.get("amends") and r.get("amend") == "evidence":
+            amended.setdefault(str(r["amends"]), []).extend(r.get("evidence") or [])
+    for r in rows:
         if "_bad" in r:
             problems.append(r["_bad"])
             continue
         rid = str(r.get("id"))
+        if r.get("amends"):
+            if r.get("amend") != "evidence":
+                problems.append(f"{rid}: unknown amend kind {r.get('amend')!r}")
+            if r["amends"] not in ids:
+                problems.append(f"{rid}: amends unknown or later id {r['amends']}")
+        r = {**r, "evidence": [*(r.get("evidence") or []), *amended.get(rid, [])]}
         miss = [k for k in REQUIRED if not r.get(k)]
         if miss:
             problems.append(f"{rid}: missing {miss}")
@@ -349,6 +398,11 @@ def main(argv: list[str] | None = None) -> int:
     d.add_argument("--owner", default="")
     d.add_argument("--evidence", nargs="*", default=[])
     d.add_argument("--supersedes", default="")
+    m = sub.add_parser("amend")
+    m.add_argument("--of", required=True)
+    m.add_argument("--why", required=True)
+    m.add_argument("--by", required=True)
+    m.add_argument("--evidence", nargs="+", required=True)
     s = sub.add_parser("show")
     s.add_argument("--n", type=int, default=20)
     s.add_argument("--grep", default="")
@@ -362,6 +416,8 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     if a.cmd == "decide":
         print(json.dumps(decide(a), indent=1))
+    elif a.cmd == "amend":
+        print(json.dumps(amend(a), indent=1))
     elif a.cmd == "show":
         rows = [x for x in read_journal() if not a.grep or a.grep.lower() in json.dumps(x).lower()]
         for x in rows[-a.n:]:
