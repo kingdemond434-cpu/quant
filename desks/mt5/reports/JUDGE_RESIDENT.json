@@ -2,20 +2,58 @@
  "pid": 21384,
  "started_utc": "2026-10-27T16:41:15+00:00",
  "task_limit_s": 0.0,
- "sweeps": 57,
+ "sweeps": 91,
  "failures": 0,
- "lane_held": 26,
+ "lane_held": 60,
  "hung_kills": 1,
- "busy_seconds": 674266.7,
- "status": "BACKOFF",
+ "busy_seconds": 676426.4,
+ "status": "SWEEPING",
  "longest_sweep_s": 110509.5,
  "consecutive_hangs": 0,
- "sweep_started_utc": "2026-11-04T12:04:17+00:00",
+ "sweep_started_utc": "2026-11-04T12:50:06+00:00",
  "hang_limit_s": 172800.0,
  "last_rc": 75,
- "last_sweep_s": 63.0,
- "uptime_s": 674648.7,
- "last_sweep_ended_utc": "2026-11-04T12:05:20+00:00",
+ "last_sweep_s": 51.2,
+ "uptime_s": 677319.8,
+ "last_sweep_ended_utc": "2026-11-04T12:49:51+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-04T12:05:22+00:00"
+ "heartbeat_utc": "2026-11-04T12:50:26+00:00",
+ "sweep_phase": {
+  "pid": 9376,
+  "sweep_started_utc": "2026-11-04T12:49:24+00:00",
+  "phases": {
+   "plan": 25.2
+  },
+  "phase": "done",
+  "phase_started_utc": "2026-11-04T12:49:49+00:00",
+  "plan_steps": {},
+  "plan_step": "lane_and_docket",
+  "plan_step_started_utc": "2026-11-04T12:49:24+00:00",
+  "wall_profile": {
+   "every_s": 10.0,
+   "depth": 6,
+   "authority": "report_only",
+   "phases": {
+    "plan": {
+     "samples": 2,
+     "top": [
+      {
+       "stack": "job_lock.py:_median_free:409 < job_lock.py:exclusive_job:430 < contextlib.py:__enter__:141 < external_gauntlet.py:run_sharded:4833 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
+       "n": 2,
+       "share": 1.0
+      }
+     ],
+     "process": {
+      "cpu_s": 0.0,
+      "page_faults": 1.0,
+      "read_bytes": 0.0,
+      "write_bytes": 0.0,
+      "sampled_s": 10.0,
+      "rss_mb_max": 189.2,
+      "cpu_share_of_wall": 0.0
+     }
+    }
+   }
+  }
+ }
 }

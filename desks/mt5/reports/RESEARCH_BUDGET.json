@@ -1,5 +1,5 @@
 {
- "at": "2026-11-04T12:03:13+00:00",
+ "at": "2026-11-04T12:44:27+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,7 +9,7 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-11-04T12:01:48+00:00",
+   "at": "2026-11-04T12:43:58+00:00",
    "bandit_at": "2026-11-03T05:29:32.986928+00:00",
    "hour": "2026-11-04T12",
    "arm": "treated",
@@ -18,8 +18,8 @@
    "extra_wanted_s": 240,
    "extra_due_s": 240,
    "extra_s": 240,
-   "surplus_s": 1457.6,
-   "surplus_why": "department 'discovery' measured spare 1458s/hour",
+   "surplus_s": 1366.2,
+   "surplus_why": "department 'discovery' measured spare 1366s/hour",
    "contract": {
     "n_treated": 25,
     "n_control": 13,
@@ -33,7 +33,7 @@
    },
    "trial": true,
    "authoritative": false,
-   "governed_why": "+240s of measured surplus granted above the floor (department 'discovery' measured spare 1458s/hour); contract UNDECIDED: this hour is the trial that measures it",
+   "governed_why": "+240s of measured surplus granted above the floor (department 'discovery' measured spare 1366s/hour); contract UNDECIDED: this hour is the trial that measures it",
    "share": 0.2815,
    "baseline": 0.2727,
    "ladder_factor": 1.0,
@@ -55,7 +55,7 @@
    "applied_s": 480,
    "applied": true,
    "granted": true,
-   "why": "share 0.281 of arms ['mutate_survivor', 'combine_survivors', 'new_mechanism'] vs equal-share baseline 0.273 -> x2.00, clipped to [1.0, 2.0]; department factor x1.50 (reported only); +240s of measured surplus granted above the floor (department 'discovery' measured spare 1458s/hour); contract UNDECIDED: this hour is the trial that measures it"
+   "why": "share 0.281 of arms ['mutate_survivor', 'combine_survivors', 'new_mechanism'] vs equal-share baseline 0.273 -> x2.00, clipped to [1.0, 2.0]; department factor x1.50 (reported only); +240s of measured surplus granted above the floor (department 'discovery' measured spare 1366s/hour); contract UNDECIDED: this hour is the trial that measures it"
   },
   "deepen": {
    "leg": "deepen",
@@ -66,9 +66,9 @@
     "alt_data_hypothesis",
     "failure_derived"
    ],
-   "at": "2026-11-04T00:33:33+00:00",
+   "at": "2026-11-04T12:25:34+00:00",
    "bandit_at": "2026-11-03T05:29:32.986928+00:00",
-   "hour": "2026-11-04T00",
+   "hour": "2026-11-04T12",
    "arm": "none",
    "wanted_s": 0,
    "floor_s": 0,
@@ -99,7 +99,7 @@
    "engine_factor": 1.0,
    "engine_why": "engine registry: leg share 0.0000 vs equal share 0.1250 = x0.00 -> x1.00 (one-sided: this factor may fund a leg above par and may never take one below it)",
    "meta_factor": 1.0,
-   "meta_why": "meta controller: leg 'deepen' serves kind(s) ['deepen_existing'] priced 0.002556 on the info_per_cell board vs median 0.04956 = x0.05 -> x1.00 (one-sided: it may fund above par and never below it)",
+   "meta_why": "meta controller: leg 'deepen' serves kind(s) ['deepen_existing'] priced 0.002848 on the info_per_cell board vs median 0.04971 = x0.06 -> x1.00 (one-sided: it may fund above par and never below it)",
    "graveyard_factor": 1.0,
    "graveyard_why": "graveyard: no survival row for source 'deepen'; par",
    "paradigm_factor": 1.0,
