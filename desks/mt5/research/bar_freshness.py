@@ -18,6 +18,9 @@ symbol is frozen only on POSITIVE evidence (a readable last bar more than STALE_
 the median); an unreadable or unstamped file is UNMEASURED and stays in.
 
 Revert without a push: create desks/mt5/data/STALE_BAR_GUARD_OFF.
+
+A LIBRARY, NOT AN ORGAN: it runs on the clock of the compiler leg that imports it
+(`miner_candidate_compiler.live_known_symbols`) and of the deepening worker.
 """
 
 from __future__ import annotations
@@ -155,10 +158,3 @@ def live_symbols(
         except OSError:  # pragma: no cover - read-only host
             pass
     return kept, doc
-
-
-if __name__ == "__main__":  # pragma: no cover - manual probe
-    kept, d = live_symbols(
-        {p.stem.removesuffix("_H1") for p in UNIVERSE.glob("*_H1.parquet")}, publish=False
-    )
-    print(json.dumps({k: v for k, v in d.items() if k != "frozen_last_bar"}, indent=1)[:3000])
