@@ -7,7 +7,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 DESK = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(DESK / "research"))
+for _p in (str(DESK), str(DESK / "research")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 import risk_snapshot as rs  # noqa: E402
 
