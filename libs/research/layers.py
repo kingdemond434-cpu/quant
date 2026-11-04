@@ -612,6 +612,8 @@ LEG_LAYER: dict[str, str] = {
     "pack_cells": "information", "timeframe_fanout": "prediction",
     # Futures positioning, curves and FX state turned into stamped series and cells.
     "futures_state": "information",
+    # The copy-trade crowd book: public retail accounts as a per-symbol crowd net (sweep #10).
+    "copytrade_crowd": "information",
     # the culture-gap producers turn a culture's participant structure into cells: information.
     "culture_gap_cells": "information",
     # Walking inside a registered ground's own front door is COLLECTION: it fetches documents and
