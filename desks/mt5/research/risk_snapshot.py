@@ -53,7 +53,8 @@ def _paths(desk: Path, root: Path) -> dict[str, Path]:
         "deadman_src": desk / "proposals" / "fusion_deadman.py",
         "equity_reference_src": desk / "mt5desk" / "fusion_equity_reference.py",
         "equity_reference": d / "FUSION_EQUITY_REFERENCE.json",
-        "e8_guard_report": desk / "reports" / "E8_GUARD.json",
+        "e8_exec": desk / "reports" / "E8_EXEC.json",
+        "e8_guard_state": d / "e8_guard_state.json",
         "e8_guard_src": desk / "prop" / "e8_guard.py",
         "ftmo_state": desk / "reports" / "FTMO_ACCOUNT_STATE.json",
         "ftmo_published": d / "account_state.json",
@@ -253,28 +254,38 @@ def fusion(p: dict[str, Path], cert: Any, now: datetime) -> dict[str, Any]:
 
 
 def e8(p: dict[str, Path], cert: Any, now: datetime) -> dict[str, Any]:
-    rep = _read_json(p["e8_guard_report"])
-    c = _consts(p["e8_guard_src"], ("START_BALANCE", "STATIC_DRAWDOWN", "DAILY_DRAWDOWN"))
-    doc: dict[str, Any] = {"account": "e8", "rails_source": p["e8_guard_src"].name}
-    equity = _num(rep.get("equity")) if isinstance(rep, dict) else None
-    stamp = (rep or {}).get("generated_at") or (rep or {}).get("at") \
-        if isinstance(rep, dict) else None
+    # E8_EXEC.json (prop/e8_executor.py) carries the guard's decision under "guard"
+    # (e8_guard.Decision.as_dict: equity, day_start, verdict, room_to_daily_floor, ...);
+    # its stamp is the top-level "at". e8_guard_state.json is the box-local day anchor.
+    ex = _read_json(p["e8_exec"])
+    g = ex.get("guard") if isinstance(ex, dict) else None
+    g = g if isinstance(g, dict) else {}
+    st = _read_json(p["e8_guard_state"])
+    st = st if isinstance(st, dict) else {}
+    equity = _num(g.get("equity"))
+    stamp = ex.get("at") if isinstance(ex, dict) else None
     doc["equity"], equity = _equity(equity, stamp, now,
-                                    "reports/E8_GUARD.json absent or carries no equity",
-                                    verdict=(rep or {}).get("verdict")
-                                    if isinstance(rep, dict) else None)
-    day_start = _num((rep or {}).get("day_start")) if isinstance(rep, dict) else None
+                                    "reports/E8_EXEC.json absent or its guard carries no equity",
+                                    verdict=g.get("verdict"))
+    day_start = _num(g.get("day_start"))
+    if day_start is None:
+        day_start = _num(st.get("day_start"))
+    doc["day_start_source"] = ("E8_EXEC.json:guard.day_start" if _num(g.get("day_start"))
+                               is not None else "e8_guard_state.json:day_start"
+                               if day_start is not None else None)
+    if g.get("room_to_daily_floor") is not None:
+        doc["guard_room_to_daily_floor"] = _num(g.get("room_to_daily_floor"))
     static = (c["START_BALANCE"] * (1 - c["STATIC_DRAWDOWN"])
               if {"START_BALANCE", "STATIC_DRAWDOWN"} <= c.keys() else None)
     daily = (day_start * (1 - c["DAILY_DRAWDOWN"])
              if day_start is not None and "DAILY_DRAWDOWN" in c else None)
     doc["floors"] = {
-        "daily_loss": _floor(equity, daily, "no day_start in E8_GUARD.json or rail unreadable"),
+        "daily_loss": _floor(equity, daily, "no day_start in E8_EXEC.json guard or e8_guard_state.json, or rail unreadable"),
         "max_loss_static": _floor(equity, static, "no equity or static rail unreadable"),
         "weekly": {"status": "NO_RULE", "why": "E8 One has no weekly loss rule"},
     }
     doc["open_risk"] = _open_risk(None, None, equity, _alloc_risk_frac(cert, "e8"),
-                                  "E8_GUARD.json stamps no open positions or their stops")
+                                  "E8_EXEC.json stamps no open positions or their stops")
     return doc
 
 

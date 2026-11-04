@@ -89,9 +89,8 @@ def test_stale_stamps_are_unmeasured(tmp_path: Path) -> None:
 
 def test_e8_and_ftmo_floors_from_owner_constants(tmp_path: Path) -> None:
     desk, root = _tree(tmp_path)
-    _w(desk / "reports" / "E8_GUARD.json", {"equity": 99_000.0, "day_start": 100_000.0,
-                                            "generated_at": "2026-11-04T11:00:00+00:00",
-                                            "verdict": "OK"})
+    _w(desk / "reports" / "E8_EXEC.json", {"at": "2026-11-04T11:00:00+00:00", "guard": {
+        "equity": 99_000.0, "day_start": 100_000.0, "verdict": "OK"}})
     _w(desk / "reports" / "FTMO_ACCOUNT_STATE.json", {
         "status": "OK", "generated_at": "2026-11-04T11:00:00+00:00", "equity": 99_666.72,
         "initial_balance": 100_000.0, "day_start_balance": 99_700.0, "open_positions": []})
@@ -131,3 +130,16 @@ def test_main_writes_the_report(tmp_path: Path) -> None:
     assert rs.main(["--once", "--out", str(out)]) == 0
     doc = json.loads(out.read_text(encoding="utf-8"))
     assert doc["report_only"] is True and set(doc["accounts"]) == {"fusion", "e8", "ftmo"}
+
+
+def test_e8_day_start_from_box_state_and_absent_is_unmeasured(tmp_path: Path) -> None:
+    desk, root = _tree(tmp_path)
+    e8 = rs.build(NOW, desk=desk, root=root)["accounts"]["e8"]
+    assert e8["equity"]["status"] == "UNMEASURED"
+    assert e8["floors"]["daily_loss"]["status"] == "UNMEASURED"
+    _w(desk / "reports" / "E8_EXEC.json", {"at": "2026-11-04T11:00:00+00:00",
+                                           "guard": {"equity": 99_000.0, "verdict": "OK"}})
+    _w(desk / "data" / "e8_guard_state.json", {"day": "2026-11-04", "day_start": 100_000.0})
+    e8 = rs.build(NOW, desk=desk, root=root)["accounts"]["e8"]
+    assert e8["floors"]["daily_loss"]["distance"] == 99_000.0 - 97_500.0
+    assert e8["day_start_source"] == "e8_guard_state.json:day_start"
