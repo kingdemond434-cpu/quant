@@ -391,5 +391,9 @@ def test_an_unreadable_universe_proves_no_superset() -> None:
 
 def test_the_gate_checks_out_the_universe_in_both_trees() -> None:
     wf = (ROOT / ".github" / "workflows" / "release-gates.yml").read_text("utf-8")
-    assert wf.count("/desks/mt5/data/universe/universe.json") == 2
-    assert wf.count("/desks/mt5/research/") == 2
+    lines = [ln.strip() for ln in wf.splitlines()]
+    # the base and head checkouts of replay-shadow, each listing both as a sparse pattern line
+    trees = lines.count("/desks/mt5/mt5desk/")
+    assert trees >= 2
+    assert lines.count("/desks/mt5/data/universe/universe.json") == trees
+    assert lines.count("/desks/mt5/research/") == trees
