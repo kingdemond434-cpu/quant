@@ -107,7 +107,8 @@ def test_the_model_sees_only_the_diff_and_findings():
 
 def _rows(true_real: int, true_syn: int, cleared_true: int = 0) -> list[dict]:
     rows = [{"truth": "false_fail", "result": "WOULD_CLEAR"}]
-    rows += [{"truth": "true_fail", "result": "FAIL_STANDS"} for _ in range(true_real)]
+    rows += [{"truth": "true_fail", "result": "FAIL_STANDS", "reviewer_failed": True}
+             for _ in range(true_real)]
     rows += [{"truth": "true_fail", "result": "FAIL_STANDS", "synthetic": True}
              for _ in range(true_syn)]
     for r in rows[1:1 + cleared_true]:
@@ -116,26 +117,33 @@ def _rows(true_real: int, true_syn: int, cleared_true: int = 0) -> list[dict]:
 
 
 def test_summary_is_not_enforceable_if_a_true_fail_would_clear():
-    s = adj.summarise(_rows(12, 9, cleared_true=1))
+    s = adj.summarise(_rows(12, 18, cleared_true=1))
     assert s["enforceable"] is False and s["verdict"].startswith("NOT_ENFORCEABLE")
-    s = adj.summarise(_rows(12, 9))
+    s = adj.summarise(_rows(12, 18))
     assert s["enforceable"] is True and s["true_fails_cleared"] == 0
     assert s["false_fails_cleared"] == 1 and s["true_fails_real"] == 12
 
 
 def test_under_twenty_true_cases_is_not_enough_evidence():
-    s = adj.summarise(_rows(12, 7))
+    s = adj.summarise(_rows(12, 17))
     assert s["enforceable"] is False and s["verdict"].startswith("NOT_ENOUGH_EVIDENCE")
-    s = adj.summarise(_rows(9, 15))  # enough cases, too few real ones
+    s = adj.summarise(_rows(9, 25))  # enough cases, too few real ones
     assert s["enforceable"] is False and s["verdict"].startswith("NOT_ENOUGH_EVIDENCE")
 
 
 def test_excluded_cases_do_not_count_as_evidence():
-    rows = _rows(12, 9)
+    rows = _rows(12, 18)
     for r in rows[1:3]:
         r["result"] = "EXCLUDED"
     s = adj.summarise(rows)
-    assert s["excluded"] == 2 and s["true_fails_ruled"] == 19 and s["enforceable"] is False
+    assert s["excluded"] == 2 and s["true_fails_ruled"] == 28 and s["enforceable"] is False
+
+
+def test_a_hold_without_a_reviewer_fail_is_not_real_evidence():
+    rows = _rows(0, 20) + [{"truth": "true_fail", "result": "FAIL_STANDS"} for _ in range(12)]
+    s = adj.summarise(rows)
+    assert s["true_fails_real"] == 0 and s["true_fails_hold_only"] == 12
+    assert s["true_fails_synthetic"] == 20 and s["enforceable"] is False
 
 
 TWO = DIFF + """diff --git a/desks/mt5/research/other.py b/desks/mt5/research/other.py
@@ -202,6 +210,5 @@ def test_cases_file_is_well_formed():
     for c in doc["cases"]:
         assert c["truth"] in ("false_fail", "true_fail")
         assert len(c["head"]) == 40 and len(c["base"]) == 40 and c["findings"]
-    true = [c for c in doc["cases"] if c["truth"] == "true_fail"]
-    assert len(true) >= adj.MIN_TRUE_CASES
-    assert sum(not c.get("synthetic") for c in true) >= adj.MIN_REAL_TRUE_CASES
+        assert isinstance(c["reviewer_failed"], bool)
+        assert not (c.get("synthetic") and c["reviewer_failed"])

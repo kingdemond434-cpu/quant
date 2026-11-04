@@ -1,5 +1,5 @@
 {
- "_doc": "Shadow-trial cases for ops/release/adjudicate.py. false_fail: a qwen2.5-coder:7b FAIL on an Auditor-CLEAR head whose findings the diff contradicts (HUMAN_DEPENDENCIES.md, 2026-11-04); findings copied verbatim from each review's job log. true_fail (real): a head the Auditor HELD; only #642 carries a real qwen FAIL finding, the others carry the Auditor's HOLD reason as the finding (#607 dropped: head sha not found; #655 left out on the Auditor's word). true_fail (synthetic: true): an accurate finding written against a real diff. Enforcement is proposable only with >= 20 true cases ruled (>= 10 real) and true_fails_cleared == 0; false_fails_cleared is reported beside it.",
+ "_doc": "Shadow-trial cases for ops/release/adjudicate.py. false_fail: a qwen2.5-coder:7b FAIL on an Auditor-CLEAR head whose findings the diff contradicts (HUMAN_DEPENDENCIES.md, 2026-11-04); findings copied verbatim from each review's job log. true_fail (real): a head the Auditor HELD; only #642 carries a real qwen FAIL finding, the others carry the Auditor's HOLD reason as the finding (#607 dropped: head sha not found; #655 left out on the Auditor's word). true_fail (synthetic: true): an accurate finding written against a real diff. Enforcement is proposable only with >= 20 true cases ruled (>= 10 real) and true_fails_cleared == 0; false_fails_cleared is reported beside it. reviewer_failed: the independent reviewer itself voted FAIL on that head (Auditor 21:12Z: only those count as real evidence of qwen's error mix; today that is #642 alone).",
  "cases": [
   {
    "pr": 694,
@@ -10,7 +10,8 @@
    "findings": [
     "The change increases risk by modifying the behavior of `_current_identity` to always write to `release_identity.json`, which could lead to unintended consequences if not properly managed."
    ],
-   "source": "independent-review job 126794660769"
+   "source": "independent-review job 126794660769",
+   "reviewer_failed": true
   },
   {
    "pr": 699,
@@ -22,7 +23,8 @@
     "The change introduces a new feature that streams mined corpus rows instead of listing them, which could increase risk by potentially consuming more memory and processing power.",
     "The change adds new files and modifies existing ones without clear justification for the changes made."
    ],
-   "source": "independent-review job 126838937864"
+   "source": "independent-review job 126838937864",
+   "reviewer_failed": true
   },
   {
    "pr": 700,
@@ -34,7 +36,8 @@
     "The change introduces new logging and timing mechanisms that could be misused to infer the system's state or performance characteristics, potentially leading to information leakage.",
     "The addition of new tests for specific error conditions does not align with the overall purpose of the code changes and may indicate a lack of understanding of the underlying logic."
    ],
-   "source": "independent-review job 126854360567"
+   "source": "independent-review job 126854360567",
+   "reviewer_failed": true
   },
   {
    "pr": 666,
@@ -46,7 +49,8 @@
     "The change introduces a new parameter `budget_s` that can be set to any value, potentially exceeding the intended limit of 300 seconds. This could lead to the task running longer than intended and potentially failing the audit gate.",
     "The change adds a new test `test_live_first_stops_at_its_budget_and_loses_nothing` that does not accurately reflect the behavior described in its docstring. The test sets up a scenario where the budget is exceeded, but it does not verify that nothing more is cancelled and an owed re-run is carried with its count unchanged."
    ],
-   "source": "independent-review job 126545050201"
+   "source": "independent-review job 126545050201",
+   "reviewer_failed": true
   },
   {
    "pr": 646,
@@ -58,7 +62,8 @@
     "The change introduces a rotation mechanism for cell donations that could lead to an uneven distribution of risk across different passes, potentially increasing the overall risk.",
     "The change alters the behavior of the `cell_rows` function by introducing a new parameter `rotation`, which could affect how cells are selected and donated. This could introduce unexpected behavior or unintended consequences."
    ],
-   "source": "independent-review job 126581765851"
+   "source": "independent-review job 126581765851",
+   "reviewer_failed": true
   },
   {
    "pr": 668,
@@ -69,7 +74,8 @@
    "findings": [
     "It introduces new control mechanisms by defining `FOOTPRINT_ARTIFACTS` and related functions, which could affect the system's behavior in ways that are not yet clear."
    ],
-   "source": "independent-review job 126706273427"
+   "source": "independent-review job 126706273427",
+   "reviewer_failed": true
   },
   {
    "pr": 684,
@@ -80,7 +86,8 @@
    "findings": [
     "The change introduces a new function `role_symbol` that selects the first live candidate symbol based on H1 bars, which could introduce risk if not thoroughly tested and understood."
    ],
-   "source": "independent-review job 126716526081"
+   "source": "independent-review job 126716526081",
+   "reviewer_failed": true
   },
   {
    "pr": 657,
@@ -92,7 +99,8 @@
     "The change introduces new network destinations and data sources without proper justification or risk assessment.",
     "It adds new control paths that could be exploited, such as the `youtube_corpus` and `youtube_miner` legs in `hourly_cycle.py`."
    ],
-   "source": "independent-review job 126731572314"
+   "source": "independent-review job 126731572314",
+   "reviewer_failed": true
   },
   {
    "pr": 555,
@@ -105,7 +113,8 @@
     "It registers a scheduled task (`Quant-BoxSelfHeal`) as SYSTEM, which could have significant implications for the system's integrity and control flow.",
     "The script copies files into `C:\\"
    ],
-   "source": "independent-review job 126759618640"
+   "source": "independent-review job 126759618640",
+   "reviewer_failed": true
   },
   {
    "pr": 642,
@@ -117,7 +126,8 @@
     "The diff contains a new evidence field in the decision journal entry for D-20261103-004, which is not described in its title or comments. This could indicate that the change adds new functionality without proper documentation."
    ],
    "source": "independent-review job 126380096512; Auditor HOLD: Auditor HOLD 11-03 23:14Z",
-   "synthetic": false
+   "synthetic": false,
+   "reviewer_failed": true
   },
   {
    "pr": 690,
@@ -129,7 +139,8 @@
     "clears_ref let origin-only plain rows vouch"
    ],
    "source": "Auditor HOLD reason used as the finding (qwen PASSed this head); a correct adjudicator must keep it supported",
-   "synthetic": false
+   "synthetic": false,
+   "reviewer_failed": false
   },
   {
    "pr": 699,
@@ -141,7 +152,8 @@
     "docket stand-down exited 0 with no record (L1.28a)"
    ],
    "source": "Auditor HOLD reason used as the finding (qwen PASSed this head); a correct adjudicator must keep it supported",
-   "synthetic": false
+   "synthetic": false,
+   "reviewer_failed": false
   },
   {
    "pr": 636,
@@ -153,7 +165,8 @@
     "power_deficient latest-sweep rejections not in seen; store re-adds PBO-failed cells"
    ],
    "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
-   "synthetic": false
+   "synthetic": false,
+   "reviewer_failed": false
   },
   {
    "pr": 650,
@@ -165,7 +178,8 @@
     "Actions always-bypass left on the protected branch"
    ],
    "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
-   "synthetic": false
+   "synthetic": false,
+   "reviewer_failed": false
   },
   {
    "pr": 650,
@@ -177,7 +191,8 @@
     "level2_enforced ignored the admin PR bypass"
    ],
    "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
-   "synthetic": false
+   "synthetic": false,
+   "reviewer_failed": false
   },
   {
    "pr": 658,
@@ -189,7 +204,8 @@
     "fence gaps (trigger words, native signer, deps)"
    ],
    "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
-   "synthetic": false
+   "synthetic": false,
+   "reviewer_failed": false
   },
   {
    "pr": 671,
@@ -201,7 +217,8 @@
     "robots Disallow treated as hard stop (LAWS 5e: a label)"
    ],
    "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
-   "synthetic": false
+   "synthetic": false,
+   "reviewer_failed": false
   },
   {
    "pr": 678,
@@ -213,7 +230,8 @@
     "IDLE throttle starved miners and judge"
    ],
    "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
-   "synthetic": false
+   "synthetic": false,
+   "reviewer_failed": false
   },
   {
    "pr": 678,
@@ -225,7 +243,8 @@
     "miners still IDLE under THROTTLE/fan-out"
    ],
    "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
-   "synthetic": false
+   "synthetic": false,
+   "reviewer_failed": false
   },
   {
    "pr": 681,
@@ -237,7 +256,8 @@
     "errors=replace hid non-UTF8 code from the reviewer"
    ],
    "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
-   "synthetic": false
+   "synthetic": false,
+   "reviewer_failed": false
   },
   {
    "pr": 662,
@@ -249,7 +269,8 @@
     "google_trends blocked on robots Disallow"
    ],
    "source": "Auditor HOLD reason used as the finding (qwen PASSed or never reviewed this head); a correct adjudicator must keep it supported",
-   "synthetic": false
+   "synthetic": false,
+   "reviewer_failed": false
   },
   {
    "pr": 694,
@@ -261,7 +282,8 @@
    "findings": [
     "It changes `release_identity.verdict(ROOT, write=False)` to `write=True` in release_authority.py, so a live re-measure now writes the published identity file, which the docstring used to say must never happen."
    ],
-   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported"
+   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported",
+   "reviewer_failed": false
   },
   {
    "pr": 699,
@@ -273,7 +295,8 @@
    "findings": [
     "In local_converter.py `_iter_rows` no longer suppresses ValueError with contextlib.suppress; a bad JSON line is now skipped with try/except and `continue`, and the function becomes a generator instead of returning a list."
    ],
-   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported"
+   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported",
+   "reviewer_failed": false
   },
   {
    "pr": 700,
@@ -285,7 +308,8 @@
    "findings": [
     "shadow_cycle.py now prints a timestamped line to stdout at the start and end of every stage, and adds `stage_seconds`, `stage_started_at` and `slowest_stage` to the health document."
    ],
-   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported"
+   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported",
+   "reviewer_failed": false
   },
   {
    "pr": 666,
@@ -297,7 +321,8 @@
    "findings": [
     "live_first_ci.py adds a 300 second BUDGET_S, and any run not reached before the budget is spent is carried to the next call with its count unchanged instead of being processed."
    ],
-   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported"
+   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported",
+   "reviewer_failed": false
   },
   {
    "pr": 646,
@@ -309,7 +334,8 @@
    "findings": [
     "alpha_capture.py stops withholding cells that miss the Bonferroni bar or the placebo ADMIT: every measured cell is now donated to the judge, so the pre-screen no longer filters what reaches the docket."
    ],
-   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported"
+   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported",
+   "reviewer_failed": false
   },
   {
    "pr": 668,
@@ -321,7 +347,8 @@
    "findings": [
     "tier1_scorecard.py adds a `footprints` function that reads ten report files plus forced_flow_calendar.json and copies their contents inline up to 48,000 bytes each and 600,000 bytes in total."
    ],
-   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported"
+   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported",
+   "reviewer_failed": false
   },
   {
    "pr": 684,
@@ -333,7 +360,8 @@
    "findings": [
     "state_vector_build.py now passes over a candidate whose last H1 bar is older than 7 days and, when every candidate is stale, keeps the freshest stale one instead of dropping the role."
    ],
-   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported"
+   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported",
+   "reviewer_failed": false
   },
   {
    "pr": 657,
@@ -345,7 +373,8 @@
    "findings": [
     "youtube_miner.py now reads the YouTube API key from a file under data/secrets when the YOUTUBE_API_KEY environment variable is empty."
    ],
-   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported"
+   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported",
+   "reviewer_failed": false
   },
   {
    "pr": 657,
@@ -357,7 +386,8 @@
    "findings": [
     "youtube_miner.py now raises QuotaRefused on HTTP 403 or 429 and re-raises it past the generic exception handler, so one quota refusal stops the rest of the run."
    ],
-   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported"
+   "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported",
+   "reviewer_failed": false
   }
  ]
 }

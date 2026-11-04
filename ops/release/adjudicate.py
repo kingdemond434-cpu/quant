@@ -49,7 +49,7 @@ CASES = HERE / "adjudication_cases.json"
 MIN_QUOTE = 12
 MIN_BECAUSE = 10
 MAX_FINDINGS = 8
-MIN_TRUE_CASES = 20
+MIN_TRUE_CASES = 30
 MIN_REAL_TRUE_CASES = 10
 
 RUBRIC = (
@@ -238,7 +238,7 @@ def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Scored only on cases the adjudicator actually ruled on (an EXCLUDED case proves nothing)."""
     ruled = [r for r in rows if r["result"] != "EXCLUDED"]
     tp = [r for r in ruled if r.get("truth") == "true_fail"]
-    real = [r for r in tp if not r.get("synthetic")]
+    real = [r for r in tp if not r.get("synthetic") and r.get("reviewer_failed")]
     fp = [r for r in ruled if r.get("truth") == "false_fail"]
     tp_cleared = [r for r in tp if r["result"] == "WOULD_CLEAR"]
     if tp_cleared:
@@ -255,6 +255,9 @@ def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "false_fails_cleared": sum(r["result"] == "WOULD_CLEAR" for r in fp),
         "true_fails_ruled": len(tp),
         "true_fails_real": len(real),
+        "true_fails_hold_only": sum(not r.get("synthetic") and not r.get("reviewer_failed")
+                                    for r in tp),
+        "true_fails_synthetic": sum(bool(r.get("synthetic")) for r in tp),
         "true_fails_cleared": len(tp_cleared),
         "verdict": verdict,
         "enforceable": verdict.startswith("CANDIDATE"),
@@ -294,6 +297,7 @@ def main(argv: list[str] | None = None) -> int:
             row = {"pr": case.get("pr"), "head": case.get("head"), "truth": case.get("truth"),
                    "result": "FAIL_STANDS", "why": f"model not asked: {digest_why}"}
         row["synthetic"] = bool(case.get("synthetic"))
+        row["reviewer_failed"] = bool(case.get("reviewer_failed"))
         rows.append(row)
         print(json.dumps(rows[-1])[:400], flush=True)
     doc = {"mode": "SHADOW (logs only, gates nothing)", "model": model,
