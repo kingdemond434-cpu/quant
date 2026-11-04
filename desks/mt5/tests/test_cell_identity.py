@@ -123,3 +123,40 @@ def test_the_compiler_refuses_an_alias_by_name_and_mints_carry_bare() -> None:
                                 {"CHFNOK"})
     assert kind == "STRUCTURED_CARRY" and cells
     assert all(c["params"] == {} for c in cells)
+
+
+def _row(sym, win, params, fam, side="LONG"):
+    return (sym, win, dict(params), fam, side, "ORIGINAL_UNIVERSAL_10_PASS", (), True)
+
+
+def test_alias_clocks_merge_onto_the_earliest_start_which_is_never_moved() -> None:
+    import shadow_forward as SF
+    a = _row("EURZAR", "asia", {}, "overnight_gap_decay")
+    c = _row("EURZAR", "continuous", {}, "overnight_gap_decay")
+    ka, kc = (SF.sleeve_key(*r[:5]) for r in (a, c))
+    starts = {ka: ("2026-09-20T00:00:00+00:00", "ACTIVE"),
+              kc: ("2026-09-10T00:00:00+00:00", "ACTIVE")}
+    out = SF._one_clock_per_cell([a, c], starts=starts)
+    assert out == [c] and SF.ALIAS_MERGED == {ka: kc}
+    assert starts[kc][0] == "2026-09-10T00:00:00+00:00"          # read, never written
+    # a promoted clock outranks an earlier unpromoted one
+    out = SF._one_clock_per_cell([a, c], starts={**starts, ka: (starts[ka][0], "PROMOTED")})
+    assert out == [a] and SF.ALIAS_MERGED == {kc: ka}
+
+
+def test_only_true_aliases_merge() -> None:
+    import shadow_forward as SF
+    carry = [_row("CHFNOK", "asia", {"input_symbol": "CHFNOK"}, "carry"),
+             _row("CHFNOK", "continuous", {}, "carry"),
+             _row("CHFNOK", "asia", {"input_symbol": "GBPJPY"}, "carry")]
+    assert len(SF._one_clock_per_cell(carry, starts={})) == 1
+    distinct = [_row("EURZAR", "asia", {"session": "asia"}, "overnight_gap_decay"),
+                _row("EURZAR", "asia", {}, "overnight_gap_decay"),
+                _row("EURZAR", "asia", {"timeframe": "M15"}, "overnight_gap_decay"),
+                _row("EURZAR", "asia", {}, "overnight_gap_decay", "SHORT"),
+                _row("EURZAR", "asia", {"gap_atr": 1.0}, "overnight_gap_decay")]
+    assert len(SF._one_clock_per_cell(distinct, starts={})) == 5
+    windows = [_row("EURUSD", "asia", {}, "session_range_breakout"),
+               _row("EURUSD", "london_am", {}, "session_range_breakout")]
+    assert len(SF._one_clock_per_cell(windows, starts={})) == 2
+    assert SF.ALIAS_MERGED == {}
