@@ -27,7 +27,8 @@ WHAT NOTHING DID, and this organ now does on the hourly clock:
   3. TERMINAL HEALTH -- connected / trade-allowed / ping / last-tick age from the terminal on the
      box, the gateway lock's owner, the last placement pass, and the reboot drill's verdict;
   4. INDEPENDENT MARKET-DATA CROSS-CHECK -- the venue's own daily closes on FX majors against an
-     independent source (Yahoo daily), at most once per 20 hours, median relative gap per pair;
+     independent source (FRED H.10; Yahoo cut 2026-10-14), at most once per 20 hours,
+     median relative gap per pair;
   5. DUPLICATE-POSITION GUARD, MEASURED -- accepted intents from one sleeve, same side, within
      the same minute at the same intended price, are counted from the journal: the failover
      pair's promise is that this stays zero.
@@ -364,33 +365,23 @@ def _venue_closes(symbol: str) -> dict[str, float]:
     return {str(ix)[:10]: float(v) for ix, v in ser.tail(30).items()}
 
 
-#: The second independent source, used when the first is unreachable: the Federal Reserve's
-#: H.10 noon buying rates (FRED), same orientation as the venue symbol.
-FRED_PAIRS: dict[str, str] = {"EURUSD": "DEXUSEU", "GBPUSD": "DEXUSUK", "USDJPY": "DEXJPUS",
-                              "AUDUSD": "DEXUSAL", "USDCAD": "DEXCAUS", "USDCHF": "DEXSZUS"}
-
-
 def _independent_closes(symbol: str) -> tuple[dict[str, float], str]:
-    """(closes, source): Yahoo daily first, the Fed's H.10 rates when Yahoo is unreachable."""
+    """(closes, source): the Fed's H.10 noon rates (FRED, public domain). Yahoo was the first
+    source until 2026-10-14; it is IDEAS_ONLY, so it is never asked (`free_data.licensed_daily`
+    reads the licensed substitute only, and says UNMEASURED when it cannot)."""
     try:
-        from free_data import fred_series, yahoo_daily
+        from free_data import licensed_daily
     except Exception:
         return {}, "none"
     tk = XCHECK_PAIRS.get(symbol)
+    if not tk:
+        return {}, "none"
     try:
-        d = (yahoo_daily(tk) or {}) if tk else {}
+        f, prov = licensed_daily(tk, "ops_redundancy.crosscheck")
     except Exception:
-        d = {}
-    if d:
-        return {str(k)[:10]: float(v) for k, v in d.items()
-                if isinstance(v, (int, float))}, "yahoo"
-    sid = FRED_PAIRS.get(symbol)
-    try:
-        f = (fred_series(sid, start="2026-01-01") or {}) if sid else {}
-    except Exception:
-        f = {}
-    return ({str(k)[:10]: float(v) for k, v in f.items() if isinstance(v, (int, float))},
-            f"fred:{sid}" if f else "none")
+        return {}, "none"
+    return ({str(k)[:10]: float(v) for k, v in (f or {}).items() if isinstance(v, (int, float))},
+            str(prov.get("substitute") or "none") if f else "none")
 
 
 def market_data_crosscheck(network: bool = True, venue: Any = None,
@@ -424,7 +415,8 @@ def market_data_crosscheck(network: bool = True, venue: Any = None,
            "status": ("UNMEASURED" if not measured else
                       "FAIL" if any(v["status"] == "FAIL" for v in measured) else "PASS"),
            "tolerance": XCHECK_TOL,
-           "independent_source": "Yahoo Finance daily close, else FRED H.10 noon rates",
+           "independent_source": ("FRED H.10 noon buying rates (public domain); Yahoo is "
+                                  "IDEAS_ONLY and never asked (2026-10-14)"),
            "pairs": pairs}
     if measured:
         try:

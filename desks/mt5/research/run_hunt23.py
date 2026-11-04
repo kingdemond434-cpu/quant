@@ -1,9 +1,10 @@
 """Hunt #23: CROSS-ASSET ANCHOR + REACTION-FAILURE DESK (SALEH_017 unblocked).
 
 Anchors come from data/cross_asset_anchors.pkl (built by macro_desk from
-KEYLESS free sources: FRED fredgraph.csv + ALFRED vintages + Yahoo Finance):
-DXY/DTWEXBGS, 10y (DGS10/TNX), breakeven (T10YIE), gold (GOLDAMGBD228NLBM/GC),
-WTI (DCOILWTICO/CL), VIX (VIXCLS/^VIX), SPX.
+licensed sources only: FRED public-domain series + MT5 own bars; Yahoo and the third-party
+FRED series are refused as live input): DXY/DTWEXBGS, 10y (DGS10/TNX), breakeven (T10YIE),
+gold (GC = MT5 XAUUSD), WTI (DCOILWTICO/CL), VIX (UNMEASURED_NO_LICENSED_SOURCE: no VIXCLS
+fallback), SPX.
 
 Direction cells (standard FAMILIES, rebuilt by universal_gate):
   anc_gold_dxy_resid   XAU daily return vs (DXY, 10y) rolling regression
@@ -96,8 +97,18 @@ def _anchors() -> pd.DataFrame | None:
     return _anchor_cache
 
 
+#: Anchor columns a third party owns (terms_fence `fred_copyrighted`): never read as live input,
+#: even when a stale pickle still carries them. VIX has no licensed source, so the VIX family
+#: reads `VIX` alone -- no VIXCLS fallback -- and is UNMEASURED_NO_LICENSED_SOURCE without it.
+REFUSED_COLUMNS: frozenset[str] = frozenset({"VIXCLS", "GOLDAMGBD228NLBM", "BAMLH0A0HYM2"})
+#: Families that went UNMEASURED this process for want of a licensed anchor -> provenance row.
+UNMEASURED: dict[str, dict] = {}
+
+
 def _pick(anch: pd.DataFrame, *names: str) -> pd.Series:
     for n in names:
+        if n in REFUSED_COLUMNS:
+            continue
         if n in anch.columns:
             s = anch[n].dropna()
             if len(s) > W + 20:
@@ -180,7 +191,7 @@ def fam_anc_gold_dxy_resid(h4: pd.DataFrame, d1: pd.DataFrame, side: int,
     anch = _anchors()
     if anch is None:
         return []
-    xau = _pick(anch, "GC", "GOLDAMGBD228NLBM")
+    xau = _pick(anch, "GC")
     dxy = _pick(anch, "DXY", "DTWEXBGS")
     y10 = _pick(anch, "DGS10", "TNX")
     if not len(xau) or not len(dxy) or not len(y10):
@@ -232,7 +243,7 @@ def fam_anc_gold_yield_lag(h4: pd.DataFrame, d1: pd.DataFrame, side: int,
     if anch is None:
         return []
     y10 = _pick(anch, "DGS10", "TNX")
-    xau = _pick(anch, "GC", "GOLDAMGBD228NLBM")
+    xau = _pick(anch, "GC")
     if not len(y10) or not len(xau):
         return []
     yz = _z_of(y10, w)
@@ -286,8 +297,9 @@ def fam_anc_jpy_risk_lag(h4: pd.DataFrame, d1: pd.DataFrame, side: int,
     anch = _anchors()
     if anch is None:
         return []
-    vix = _pick(anch, "VIX", "VIXCLS")
+    vix = _pick(anch, "VIX")
     if not len(vix):
+        UNMEASURED["anc_jpy_risk_lag"] = _vix_unmeasured()
         return []
     vz = _z_of(vix, w)
     xr = _daily_ret_of(h4)
@@ -295,6 +307,16 @@ def fam_anc_jpy_risk_lag(h4: pd.DataFrame, d1: pd.DataFrame, side: int,
     if not conds:
         return []
     return _lag_signals(h4, side, "anc_jpy_risk_lag", conds)
+
+
+def _vix_unmeasured() -> dict:
+    """The VIX family's provenance when no licensed VIX is in the anchors: Yahoo's ^VIX and
+    FRED's VIXCLS (Cboe's copyright) are both refused as live input; delta E[log W] UNMEASURED."""
+    import free_data as fd
+    row = fd.fred_refusal("VIXCLS", "run_hunt23.anc_jpy_risk_lag") or {}
+    return {"status": fd.UNMEASURED_NO_LICENSED_SOURCE, "anchor": "VIX",
+            "refused": ["yahoo:^VIX", "fred_copyrighted:VIXCLS"],
+            "missed_growth": row.get("missed_growth")}
 
 
 FAMILIES = {
@@ -375,6 +397,9 @@ def main() -> None:
     (BASE / "reports" / "hunt23.json").write_text(
         json.dumps({"survivors": [], "all": results,
                     "note": "SURVIVOR CLAIMS ONLY via universal_gate.py 10-gate pass",
+                    "unmeasured_families": UNMEASURED,
+                    "missed_growth": [v["missed_growth"] for v in UNMEASURED.values()
+                                      if isinstance(v.get("missed_growth"), dict)],
                     "swept_at": datetime.now(timezone.utc).isoformat()},
                    indent=2, default=str), encoding="utf-8")
     tprint(f"\n{len(results)} cells swept. Survivor claims pending universal 10-gate pass.")

@@ -2572,6 +2572,41 @@ for _av_name in ("analyst_revision_drift", "analyst_cross_market_lead"):
         "in H1 bars per trading day, and the tracker that set the measured side read H1 closes")
 del _av_name
 
+# INSIDER CLUSTER DRIFT (2026-10-14, the Form 4 lane). Open-market insider purchase clusters,
+# scored point-in-time by `libs.research.form4` and stored by `research/form4_lane.py` at their
+# SEC ACCEPTANCE time; the family replays that store for its `symbol` (a REQUIRED keyword, so the
+# sweep never calls it blind). A news-lane family: share CFDs are admitted
+# (`universe_policy.NEWS_LANE_FAMILIES`), because it fires only on a dated filing about the name.
+from mt5desk.family_insider_cluster import family_insider_cluster_drift  # noqa: E402
+
+ORTHOGONAL_FAMILIES["insider_cluster_drift"] = family_insider_cluster_drift
+FAMILY_INPUTS["insider_cluster_drift"] = (
+    "Form 4 open-market purchase clusters dated at SEC acceptance (research/form4_lane.py)",
+    "desks/mt5/data/form4/clusters.jsonl")
+# NO TIMEFRAME RESTRICTION (2026-11-04). This carried ("H1",) on the reading that the hold is
+# counted in H1 bars and the stamps are placed on the H1 clock. Neither is what the code does:
+# `event_times` converts each acceptance stamp onto the broker clock (`bar_clock.to_bar_time`), and
+# `family_analyst_revision._signals` enters on the first bar OPENING at/after it on whatever chart
+# the cell carries (`_h1` keeps the caller's clock) and holds `hold_days` times that chart's own
+# MEASURED bars per day -- the exact rule `alt_release_drift` states below for running unrestricted.
+# So it is the same market rule on every rung of the ladder, and the restriction had no reason.
+
+# F1 -- THE IDIOSYNCRATIC TICK-VOLUME SPIKE (2026-10-14, GAP_MAP row 42: flow pressure from public
+# volume). The family loads its own peer panel on the cell's chart through
+# `family_inputs.bars_named` (the gauntlet's own reader), regresses the instrument's log tick
+# volume on the peers' common factor, normalises the residual by hour of week and fades a spike.
+from mt5desk.family_idio_volume import family_idio_volume_reversal  # noqa: E402
+
+ORTHOGONAL_FAMILIES["idio_volume_reversal"] = family_idio_volume_reversal
+FAMILY_INPUTS["idio_volume_reversal"] = (
+    "the peer panel's tick_volume on the cell's own chart (the cross-sectional activity factor) "
+    "and data/cost_surface.json for the fill-hour spread",
+    "data/universe/*_H1.parquet")
+FAMILY_TIMEFRAMES["idio_volume_reversal"] = (
+    ("H1",),
+    "the hour-of-week normalisation is defined on hourly buckets and the cost surface is per "
+    "broker hour; below the hour the bucket is no longer one hour of the week, and the 1-4h hold "
+    "is counted in H1 bars")
 # ALT-DATA RELEASE DRIFT (2026-09-30): the event lane's executor for the alt_proxies equity
 # hand-off. A free alt-data release (Korean 20-day exports, TSA throughput, GDELT country tone)
 # bearing on a share with a declared prior sign; the family loads the lake series itself and

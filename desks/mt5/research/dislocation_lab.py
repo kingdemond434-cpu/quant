@@ -521,7 +521,21 @@ def engine_p1(ctx: Context, sym: str, h: str, df: pd.DataFrame, close_t: np.ndar
                        "reports' own `at` only")
 
 
+def _third_party_fred(series_id: str) -> bool:
+    """True for a FRED series a third party owns (libs/data/terms_fence `fred_copyrighted`:
+    VIXCLS, BAMLH0A0HYM2, ...). Such a series is never live input -- read from no file, however
+    fresh or stale -- so the reader sees it ABSENT and its dependent output is UNMEASURED."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[3])
+    if _root not in _sys.path:
+        _sys.path.insert(0, _root)
+    from libs.data.terms_fence import fred_series_source
+    return bool(fred_series_source(str(series_id)))
+
+
 def _vix_points(ctx: Context) -> list[tuple[datetime, float]]:
+    if _third_party_fred("VIXCLS"):
+        return []                       # Cboe's series: never live input, even from a stale file
     fred = ctx.fred
     series = fred.get("series") if isinstance(fred, dict) else None
     raw = series.get("VIXCLS") if isinstance(series, dict) else None
@@ -562,8 +576,11 @@ def engine_p2(ctx: Context, sym: str, h: str, df: pd.DataFrame, close_t: np.ndar
     BY NAME, with the surfaces the shadow organ checked and why they hold nothing."""
     pts = _vix_points(ctx) if sym in ("US500", "NAS100") else []
     if not pts:
-        why = (f"no options surface for {sym}: VIXCLS in data/axes/fred.json holds "
-               f"{len(_vix_points(ctx))} point(s) and maps to US500/NAS100 only; "
+        vix_note = ("VIXCLS is UNMEASURED_NO_LICENSED_SOURCE (Cboe's copyright, terms_fence "
+                    "fred_copyrighted; a realised-vol proxy is not an implied surface)"
+                    if _third_party_fred("VIXCLS") else
+                    f"VIXCLS in data/axes/fred.json holds {len(_vix_points(ctx))} point(s)")
+        why = (f"no options surface for {sym}: {vix_note} and maps to US500/NAS100 only; "
                f"deribit_atm_iv {_sensor_state(ctx, 'deribit_atm_iv')}; "
                f"cboe_delayed_surface {_sensor_state(ctx, 'cboe_delayed_surface')}")
         return _unmeasured(P2, why, source="fred.json VIXCLS; SHADOW_INSTITUTIONAL sensors")

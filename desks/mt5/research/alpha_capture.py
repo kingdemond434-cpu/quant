@@ -36,6 +36,12 @@ ONE PASS, FIVE STEPS, EVERY ONE WRITING SOMETHING.
      (Not `ALPHA_CAPTURE.json`: that name belongs to `execution_intelligence.py`'s fill-capture
      report, which `libs/ops/module_rent.py` reads. Two writers on one path clobber each other.)
 
+THE YAHOO CUT (coordinator + auditor ruling 2026-10-14). A source whose roster URL the register
+refuses as LIVE INPUT (`terms_fence.input_source`: today only `yahoo_upgrades`, Yahoo being
+IDEAS_ONLY) is not fetched, and its stored views are kept but never measured, never written to
+the axis or the allocation intel and never donated: it reports UNMEASURED_NO_LICENSED_SOURCE with
+a missed_growth line. No licensed source of US broker upgrade/downgrade history is in the key set.
+
 LIVE YIELD IS UNMEASURED UNTIL THE TRADING BOX RUNS IT. It was built in a container whose network
 policy refuses all five hosts; the parsers are proven on recorded payload shapes (tests), and every
 source reports `UNMEASURED_LIVE_YIELD` until a pass on the box actually fetches it.
@@ -66,6 +72,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.data import terms_fence as _tf  # noqa: E402
 from libs.research import analyst_views as av  # noqa: E402
 from libs.research import asia_alt_digest  # noqa: E402
 from libs.research.analyst_views import UNMEASURED, AnalystView  # noqa: E402
@@ -83,6 +90,8 @@ UNIVERSE = DESK / "data" / "universe" / "universe.json"
 DIGEST = asia_alt_digest.DIGEST
 
 UNMEASURED_LIVE_YIELD = "UNMEASURED_LIVE_YIELD"
+#: A source the register refuses as live input, with no licensed substitute (never zero).
+UNMEASURED_NO_LICENSED_SOURCE = "UNMEASURED_NO_LICENSED_SOURCE"
 MAX_DONATIONS = 20
 ALPHA = 0.05
 PROPOSE_T = 2.0
@@ -568,7 +577,9 @@ def _cookie_opener() -> Callable[..., Any]:
     from http.cookiejar import CookieJar
 
     from libs.data import polite_fetch
-    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(CookieJar()),
+    # NoRedirect: polite_fetch follows each hop itself, after checking that hop's robots.txt.
+    opener = urllib.request.build_opener(polite_fetch.NoRedirect,
+                                         urllib.request.HTTPCookieProcessor(CookieJar()),
                                          urllib.request.HTTPSHandler(
                                              context=polite_fetch.ssl_context()))
 
@@ -587,12 +598,16 @@ def _err(resp: Any) -> str:
 
 def fetch_yahoo(get: Getter, state: dict[str, Any], deadline: float, *,
                 per_pass: int = 35, opener: Any = None) -> tuple[list[AnalystView], dict[str, Any]]:
+    """Kept for the record and refused by the register: every request carries live_input=True, so
+    `polite_fetch.get` names the IDEAS_ONLY refusal and sends nothing while Yahoo is IDEAS_ONLY
+    (`collect` does not call this for a live-refused source at all)."""
     rep: dict[str, Any] = {"attempted": 0, "ok": 0, "errors": Counter()}
     opener = opener if opener is not None else _cookie_opener()
     get(("https://fc.yahoo.com"), opener=opener, retries=0, leg="alpha_capture:yahoo",
-        deadline=deadline)                                   # sets the session cookie; 404 is fine
+        deadline=deadline, live_input=True)          # sets the session cookie; 404 is fine
     crumb_resp = get("https://query2.finance.yahoo.com/v1/test/getcrumb", opener=opener,
-                     leg="alpha_capture:yahoo", deadline=deadline)
+                     leg="alpha_capture:yahoo", deadline=deadline,
+                     live_input=True)
     crumb = str(getattr(crumb_resp, "text", "") or "").strip()
     if not _ok(crumb_resp) or not crumb or "<" in crumb or len(crumb) > 64:
         rep["status"] = "NO_CRUMB"
@@ -608,7 +623,8 @@ def fetch_yahoo(get: Getter, state: dict[str, Any], deadline: float, *,
             break
         url = (SOURCES["yahoo_upgrades"]["url"].format(ticker=quote(TICKERS[sym]))
                + f"&crumb={quote(crumb)}")
-        resp = get(url, opener=opener, leg="alpha_capture:yahoo", deadline=deadline)
+        resp = get(url, opener=opener, leg="alpha_capture:yahoo", deadline=deadline,
+                     live_input=True)
         rep["attempted"] += 1
         done += 1
         if not _ok(resp):
@@ -774,6 +790,24 @@ def _due(state: Mapping[str, Any], sid: str, now: datetime) -> bool:
     return last is None or (now - last).total_seconds() >= float(SOURCES[sid]["cadence_s"])
 
 
+def live_refused(sid: str) -> str | None:
+    """The register row that refuses `sid`'s roster URL as LIVE INPUT, or None."""
+    return _tf.input_source(str(SOURCES[sid]["url"]))
+
+
+def cut_report(sid: str) -> dict[str, Any]:
+    """What a live-refused source reports instead of a fetch, with its missed-growth line."""
+    row = live_refused(sid) or ""
+    line = _tf.held_missed_growth(row, None, source=f"alpha_capture:{sid}",
+                                  live_input_refusal=True)
+    line.update({"series_status": UNMEASURED_NO_LICENSED_SOURCE, "substitute": None,
+                 "why_unsubstituted": "no licensed source of this analyst-revision history is "
+                                      "in the key set"})
+    return {"status": UNMEASURED_NO_LICENSED_SOURCE, "policy_row": row,
+            "why": f"{row} is IDEAS_ONLY in terms_fence.SOURCE_POLICY: never live input",
+            "missed_growth": line}
+
+
 def collect(*, now: datetime, budget_s: float, get: Getter | None = None,
             only: Sequence[str] | None = None, state: dict[str, Any] | None = None,
             yahoo_opener: Any = None) -> tuple[list[AnalystView], dict[str, Any],
@@ -786,6 +820,9 @@ def collect(*, now: datetime, budget_s: float, get: Getter | None = None,
     report: dict[str, Any] = {}
     todo = [s for s in SOURCES if (not only or s in only)]
     for i, sid in enumerate(todo):
+        if live_refused(sid):
+            report[sid] = cut_report(sid)          # nothing fetched, nothing stamped as tried
+            continue
         if not _due(state, sid, now):
             report[sid] = {"status": "NOT_DUE", "cadence_s": SOURCES[sid]["cadence_s"]}
             continue
@@ -1092,6 +1129,10 @@ def run(*, budget_s: float = 300.0, apply: bool = True, collect_enabled: bool = 
         {**asdict(v), "first_seen_at": now.isoformat(timespec="seconds")} for v in views]]
     udoc = universe_doc if universe_doc is not None else _read_json(UNIVERSE, {})
     universe = set(udoc) if udoc else None
+    # THE CUT BINDS THE STORE TOO: views a refused source left in the store are kept (append-only)
+    # but never measured, never on the axis or the intel, never donated.
+    cut = {sid for sid in SOURCES if live_refused(sid)}
+    all_rows, rows = rows, [r for r in rows if str(r.get("source")) not in cut]
     measured = measure(rows, loader=loader or _bars_loader(), universe_doc=udoc, clock=clock,
                        n_placebo=n_placebo)
     cands, trials, refused = cell_rows(measured["by_group"], measured["contract"],
@@ -1100,7 +1141,7 @@ def run(*, budget_s: float = 300.0, apply: bool = True, collect_enabled: bool = 
     axis = axis_doc(rows, universe, now)
     intel = intel_doc(rows, measured, universe, now)
     per_source: dict[str, Any] = {}
-    counts = Counter(str(r.get("source")) for r in rows)
+    counts = Counter(str(r.get("source")) for r in all_rows)
     for sid in SOURCES:
         rep = col.get(sid) or {}
         live = (rep.get("status") == "FETCHED")
@@ -1118,8 +1159,11 @@ def run(*, budget_s: float = 300.0, apply: bool = True, collect_enabled: bool = 
         "rule": ("every view is stamped at first_seen_at; every return starts after it; a "
                  "backfilled view is stored and never an observation; absence is UNMEASURED"),
         "sources": per_source,
-        "store": {**stored, "rows_total": len(rows), "prior_filled": filled,
-                  "path": str(STORE)},
+        "store": {**stored, "rows_total": len(all_rows), "prior_filled": filled,
+                  "rows_cut_not_measured": len(all_rows) - len(rows), "path": str(STORE)},
+        "cut_sources": sorted(cut),
+        "missed_growth": [(col.get(sid) or {}).get("missed_growth")
+                          or cut_report(sid)["missed_growth"] for sid in sorted(cut)],
         "observations": measured["observations"],
         "by_source": measured["by_source"], "by_relation": measured["by_relation"],
         "by_broker": sorted(measured["by_broker"],

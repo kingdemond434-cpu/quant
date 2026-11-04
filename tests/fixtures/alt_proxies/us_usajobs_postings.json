@@ -1,0 +1,20 @@
+{
+ "LanguageCode": "EN",
+ "SearchParameters": {},
+ "SearchResult": {
+  "SearchResultCount": 1,
+  "SearchResultCountAll": 4321,
+  "SearchResultItems": [
+   {
+    "MatchedObjectId": "000000000",
+    "MatchedObjectDescriptor": {
+     "PositionTitle": "SYNTHETIC FIXTURE"
+    }
+   }
+  ],
+  "UserArea": {
+   "NumberOfPages": "4321",
+   "IsRadialSearch": false
+  }
+ }
+}

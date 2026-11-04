@@ -236,26 +236,44 @@ def mine() -> dict:
             items = json.loads(inbox.read_text(encoding="utf-8"))
         except Exception:
             items = []
+    # IDEA SEEDS: the weekly top posts of r/algotrading and r/quant (a public page, IDEAS_ONLY in
+    # the per-source policy -- libs/data/terms_fence.py, ruling of 2026-10-13: read for ideas,
+    # never live input) and GDELT's DOC API (keyless, open for any use with citation) for recent
+    # news articles on systematic trading.
     urls = [
         "https://www.reddit.com/r/algotrading/top.json?t=week&limit=15",
         "https://www.reddit.com/r/quant/top.json?t=week&limit=15",
+        "https://api.gdeltproject.org/api/v2/doc/doc?query=%22algorithmic%20trading%22"
+        "&mode=artlist&format=json&maxrecords=25&timespan=7d&sort=hybridrel",
+        "https://api.gdeltproject.org/api/v2/doc/doc?query=%22quant%20fund%22"
+        "&mode=artlist&format=json&maxrecords=25&timespan=7d&sort=hybridrel",
     ]
     hits = []
     for u in urls:
         try:
-            import urllib.request
-            req = urllib.request.Request(u, headers={"User-Agent": "quant-research-desk/1.0"})
-            with urllib.request.urlopen(req, timeout=20) as r:
-                data = json.loads(r.read().decode("utf-8", "ignore"))
-            for child in data.get("data", {}).get("children", [])[:15]:
+            from libs.data import polite_fetch as _pf
+            from libs.data import terms_fence as _tf
+            # polite_fetch: the method fence, the site's holds and the origin's robots.txt before
+            # any request (LAWS 5e amended 2026-10-14); 401/403/429 hold the site.
+            data = json.loads(_pf.get_text(u, timeout=20, leg="idea_seeds") or "{}")
+            for child in (data.get("data") or {}).get("children", [])[:15]:
                 d = child.get("data", {})
                 hits.append({"src": u.split("/")[2], "title": d.get("title", "")[:200],
                              "url": "https://www.reddit.com" + (d.get("permalink") or ""),
-                             "score": d.get("score", 0), "ts": d.get("created_utc")})
+                             "score": d.get("score", 0), "ts": d.get("created_utc"),
+                             "source_policy": "IDEAS_ONLY"})
+            for a in (data.get("articles") or [])[:25]:
+                if _tf.platform_of_url(str(a.get("url") or "")):
+                    continue
+                hits.append({"src": "gdelt", "title": str(a.get("title") or "")[:200],
+                             "url": a.get("url") or "", "ts": a.get("seendate"),
+                             "domain": a.get("domain"), "language": a.get("language")})
         except Exception as e:
-            hits.append({"src": u, "error": str(e)[:120], "bypass_tried": True})
+            hits.append({"src": u, "error": str(e)[:120]})
     seen = {x.get("url") for x in items}
-    fresh = [h for h in hits if h.get("url") and h["url"] not in seen and h.get("score", 0) >= 20]
+    # A reddit post needs 20 upvotes to seed; a GDELT article carries no score and seeds as-is.
+    fresh = [h for h in hits if h.get("url") and h["url"] not in seen
+             and (h.get("src") == "gdelt" or h.get("score", 0) >= 20)]
     items.extend(fresh)
     inbox.write_text(json.dumps(items[-500:], indent=1), encoding="utf-8")
     return {"sources_tried": len(urls), "new_seeds": len(fresh), "inbox": len(items)}
@@ -1301,6 +1319,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
                      # free public POS/card/location/satellite proxies as PIT series
                      "alt_proxies",
+                     # the alt seats' readings as PIT series the compiler mints cells from
+                     "alt_seat_cells",
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
@@ -1314,7 +1334,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "effective_trials",
                      "occupancy_map", "dsr_inputs"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
-    **dict.fromkeys(("world_crawler", "deep_forest", "cell_emitter", "moat_miner",
+    **dict.fromkeys(("world_crawler", "deep_forest", "attention_substitutes", "cell_emitter",
+                     "moat_miner",
                      "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
@@ -1400,7 +1421,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # the macro-conditioned dip sweep, read point-in-time through the store
                      "macro_conditioned_sweep",
                      # the Alpha Capture substitute: public analyst views -> PIT events
-                     "alpha_capture"), "macro"),
+                     "alpha_capture",
+                     # Form 4 insider purchase clusters -> index breadth state + share-CFD
+                     # event lane (research/form4_lane.py)
+                     "form4_lane"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "why_not_report", "state_replay_audit",
                      "excursions", "exit_accounts",
@@ -2040,6 +2064,9 @@ def _producer(name: str, script: str,
 #: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
+    # Stops itself at --budget-s 240 (70% of it fetching, ~70 keyless series); the cap sits above
+    # so the lake, the donation and the report are written.
+    "attention_substitutes": 360,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -2226,6 +2253,12 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "event_surprise": 400,
     # Stops itself at --budget-s 300 (60% of it collecting); the cap sits above it.
     "alpha_capture": 420,
+    # form4_lane stops its fetch at 80% of --budget-s 300 (round-robin issuers, 8 req/s) and then
+    # scores and writes; the cap sits above its own budget.
+    "form4_lane": 420,
+    # alt_seat_cells reads every seat file once, writes six small CSVs and one report, and reads
+    # the compiler's last output for the identities it minted: seconds, not minutes.
+    "alt_seat_cells": 300,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
     # The hand-off consumer stops itself at --budget-s 240 and writes; the cap sits above it.
@@ -4118,6 +4151,14 @@ def main() -> None:
     # E8 reads this fail-closed input every five minutes. The full Tier S research pass
     # runs much later and can hit its budget before reaching the review/door organs.
     tdoor = _costed("tier_s_door", tier_s_door)
+    # THE ALT SEATS' SERIES BEFORE THE CATCH-UP COMPILE (2026-10-14). youtube, sec_edgar,
+    # shipping, fear_greed, aaii and google_trends wrote rows every hour and emitted zero cells:
+    # a reading is not a rule. `alt_seat_cells` writes each seat's PIT series to the lake and the
+    # compiler (next line) mints exogenous_conditioner cells from it, so a row that arrived this
+    # hour is a cell this hour. Fenced by check_conversion_debt (a seat holding convertible rows
+    # past one cycle is RED); the report is reports/ALT_SEAT_CELLS.json.
+    asc = _costed("alt_seat_cells", lambda: _producer(
+        "alt_seat_cells", "research/alt_seat_cells.py", "--once"))
     # Drain existing intake before the long research legs. The later pipeline still
     # compiles and merges discoveries generated during this pass.
     _costed("intake_catchup", catch_up_intake)
@@ -4433,6 +4474,13 @@ def main() -> None:
     # inside the organ, so an hourly leg fetches only what is due.
     acap = _costed("alpha_capture", lambda: _producer(
         "alpha_capture", "research/alpha_capture.py", "--once", "--budget-s", "300"))
+    # THE FORM 4 LANE (2026-10-14): `libs/research/form4.py` was imported by its test and nothing
+    # else. Form 4 filings for the Fusion US share CFDs (QUANT_EDGAR_UA, never printed), scored
+    # into P-code insider clusters dated at SEC acceptance, published as the index breadth series
+    # `form4_breadth` (exogenous_conditioner on US500/NAS100/US2000) and the share-CFD event lane
+    # (insider_cluster_drift), each cell donated once. Report: reports/FORM4_LANE.json.
+    f4l = _costed("form4_lane", lambda: _producer(
+        "form4_lane", "research/form4_lane.py", "--once", "--budget-s", "300"))
     # THE ADVERSARY THAT ATTACKS A HYPOTHESIS BEFORE A TRIAL IS SPENT ON IT (W6): placebo
     # symbol, placebo date, sign flip, neighbouring parameter, excluded window. It records
     # evidence on the registry row and changes no status: the sealed gauntlet and the
@@ -5856,6 +5904,13 @@ def main() -> None:
         "placebo_audit", "research/placebo_audit.py"))
     fr = _costed("frontier", frontier)
     df = _costed("deep_forest", deep_forest)
+    # RETAIL ATTENTION FROM KEYLESS OPEN DOORS (2026-09-30). Wikipedia pageviews and GDELT news
+    # volume carry the class as PIT lake series and charged exogenous_conditioner cells; Reddit
+    # is IDEAS_ONLY (libs/data/terms_fence.py), so its counts are never a cell's live input
+    # (reports/ATTENTION_SUBSTITUTES.json).
+    ats = _costed("attention_substitutes", lambda: _producer(
+        "attention_substitutes", "research/attention_substitutes.py", "--once",
+        "--budget-s", "240"))
     # OPEN-SOURCE CODE -> CELLS: donates to data/intelligence/cell_emitter/, which the next
     # pass's `compile_candidates` reads. Network leg; self-stops inside its budget.
     cem = _costed("cell_emitter", cell_emitter)
@@ -6385,7 +6440,8 @@ def main() -> None:
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
                     "alt_equity_handoff": aeh,
                     "specialist_cell": spcl,
-                    "event_surprise": esur, "alpha_capture": acap,
+                    "event_surprise": esur, "alpha_capture": acap, "form4_lane": f4l,
+                    "alt_seat_cells": asc,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
@@ -6497,6 +6553,7 @@ def main() -> None:
                     "forward_reconcile": fwr,
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
+                    "attention_substitutes": ats,
                     "cell_emitter": cem,
                     "session_structure": ssm_leg,
                     "maintain_miners": mm, "publish_survivors": ps,

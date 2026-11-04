@@ -1,0 +1,79 @@
+{
+ "repo": {
+  "operations": [
+   {
+    "operationId": "RP 090424 1",
+    "operationDate": "2024-09-04",
+    "operationType": "Reverse Repo",
+    "note": "",
+    "totalAmtAccepted": 363398000000,
+    "propositions": [
+     {
+      "counterpartyType": "mmf",
+      "amtAccepted": 358012000000
+     }
+    ]
+   },
+   {
+    "operationId": "RP 091124 1",
+    "operationDate": "2024-09-11",
+    "operationType": "Reverse Repo",
+    "note": "",
+    "totalAmtAccepted": 368398000000,
+    "propositions": [
+     {
+      "counterpartyType": "mmf",
+      "amtAccepted": 358012000000
+     }
+    ]
+   },
+   {
+    "operationId": "RP 091824 1",
+    "operationDate": "2024-09-18",
+    "operationType": "Reverse Repo",
+    "note": "",
+    "totalAmtAccepted": 373398000000,
+    "propositions": [
+     {
+      "counterpartyType": "mmf",
+      "amtAccepted": 358012000000
+     }
+    ]
+   },
+   {
+    "operationId": "RP 092524 1",
+    "operationDate": "2024-09-25",
+    "operationType": "Reverse Repo",
+    "note": "",
+    "totalAmtAccepted": 378398000000,
+    "propositions": [
+     {
+      "counterpartyType": "mmf",
+      "amtAccepted": 358012000000
+     }
+    ]
+   },
+   {
+    "operationId": "RP 100224 1",
+    "operationDate": "2024-10-02",
+    "operationType": "Reverse Repo",
+    "note": "",
+    "totalAmtAccepted": 383398000000,
+    "propositions": [
+     {
+      "counterpartyType": "mmf",
+      "amtAccepted": 358012000000
+     }
+    ]
+   },
+   {
+    "operationId": "RP 100224 2",
+    "operationDate": "2024-10-02",
+    "operationType": "Repo",
+    "note": "",
+    "totalAmtAccepted": 5000000000,
+    "propositions": []
+   }
+  ]
+ }
+}
