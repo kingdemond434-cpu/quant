@@ -1,6 +1,7 @@
 """`tail_lines` returns what `readlines()[-n:]` returned, reading only the file's end."""
 from __future__ import annotations
 
+import io
 import random
 from pathlib import Path
 
@@ -23,30 +24,20 @@ def test_tail_lines_matches_readlines_on_every_shape(tmp_path: Path) -> None:
                 assert tail_lines(f, n, block=block) == want
 
 
-def test_tail_lines_reads_only_the_end(tmp_path: Path) -> None:
+def test_tail_lines_reads_only_the_end(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     f = tmp_path / "big.jsonl"
     f.write_bytes(b'{"family":"a"}\n' * 200_000)
     reads: list[int] = []
-    import builtins
-    real = builtins.open
 
-    class Spy:
-        def __init__(self, fh): self.fh = fh
-        def __enter__(self): return self
-        def __exit__(self, *a): self.fh.close()
-        def seek(self, *a): return self.fh.seek(*a)
-        def read(self, k): reads.append(k); return self.fh.read(k)
-
-    def spy_open(p, mode="r", *a, **kw):
-        return Spy(real(p, mode, *a, **kw))
+    class Spy(io.BufferedReader):
+        def read(self, size: int | None = -1) -> bytes:
+            data = super().read(size)
+            reads.append(len(data))
+            return data
 
     import libs.ops.tail_read as tr
-    monkey = pytest.MonkeyPatch()
-    monkey.setattr(tr, "open", spy_open, raising=False)
-    try:
-        assert len(tail_lines(f, 10, block=4096)) == 10
-    finally:
-        monkey.undo()
+    monkeypatch.setattr(tr, "open", lambda p, mode="rb": Spy(io.FileIO(p, "r")), raising=False)
+    assert len(tail_lines(f, 10, block=4096)) == 10
     assert sum(reads) <= 4096 < f.stat().st_size
 
 
