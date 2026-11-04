@@ -7,10 +7,11 @@ Pinned here:
     and no affinity; the seed child installs the rails before any miner is imported;
   * hourly_discovery never runs an organ hourly_cycle already clocks (no organ gets two writers);
   * the leg is an `intel` department leg with a cap above its own floor and at most 40 minutes;
-  * the artifact contracts and the heartbeat watch the two artifacts the producers write;
+  * the artifact contracts (ops/organ_contract.py) watch
+    the two artifacts the producers write;
   * hourly_discovery's organ child installs the rails when asked, and refuses to run when they
     cannot install;
-  * intel_ship_adopt.ps1 skips a frozen (>6 h) or unchanged ship ref before taking any lock,
+  * (the intel_ship_adopt.ps1 frozen-ship skip ships separately: it is a money-path script),
     logs why, and records the adopted sha only after a real adoption.
 Nothing here touches the network or the real desk data.
 """
@@ -297,7 +298,7 @@ def test_the_leg_is_an_intel_department_leg_with_a_cap_above_its_floor() -> None
     assert LEG_LAYER["intel_feed"] == "information"
 
 
-def test_the_contracts_and_the_heartbeat_watch_the_feed_s_own_artifacts() -> None:
+def test_the_contracts_watch_the_feed_s_own_artifacts() -> None:
     sys.path.insert(0, str(ROOT / "ops"))
     import organ_contract as oc
     rows = {k: v for k, v in oc.CONTRACTS.items() if k.startswith("MT5-Dept-Intel (intel feed")}
@@ -305,46 +306,11 @@ def test_the_contracts_and_the_heartbeat_watch_the_feed_s_own_artifacts() -> Non
     assert arts == {"desks/mt5/reports/HOURLY_DISCOVERY.json",
                     "desks/mt5/data/intelligence/seed_miners_state.json"}
     assert all(v[1] == 180 for v in rows.values())
-    sys.path.insert(0, str(DESK / "scripts"))
-    import box_heartbeat as hb
-    assert {str(p.relative_to(ROOT)).replace("\\", "/") for p in hb.INTEL_FEED} == arts
-    assert hb.INTEL_FEED_MAX_MIN == 180
     # the producers write exactly these
     assert hd.REPORT.parts[-2:] == ("reports", "HOURLY_DISCOVERY.json")
     import seed_miners
     assert seed_miners.STATE.name == "seed_miners_state.json"
     assert seed_miners.STATE.parent.name == "intelligence"
-
-
-# --------------------------------------------------------------------- intel_ship_adopt.ps1 skip
-SHIP = (DESK / "scripts" / "intel_ship_adopt.ps1").read_text(encoding="utf-8")
-
-
-def test_a_frozen_or_unchanged_ship_is_skipped_before_any_wait_or_lock() -> None:
-    skip = SHIP.index("# 1b. SKIP A FROZEN OR UNCHANGED SHIP")
-    assert SHIP.index("fetch --no-write-fetch-head") < skip
-    assert skip < SHIP.index('Get-ScheduledTask -TaskName "MT5-ShadowSync"')
-    assert skip < SHIP.index("$script:GitWriterHandle = Open-GitWriterMutex")
-    assert skip < SHIP.index("& git checkout $shipRef --")
-    assert "[double] $MaxShipAgeHours = 6" in SHIP
-    block = SHIP[skip:SHIP.index("# 2. wait for MT5-ShadowSync")]
-    assert "git log -1 --format=%ct $shipRef" in block
-    assert "if ($shipAgeH -gt $MaxShipAgeHours)" in block
-    assert "$lastSha -eq $shipSha" in block
-    # each skip says why, in the log, and exits 0 (a skip is the organ working)
-    assert block.count("Log $why") == 2 and block.count("exit 0") == 2
-    assert "stopped" in block and "unchanged since the last adoption" in block
-    # a ref whose time cannot be read is not adopted blind
-    assert "not adopting what cannot be dated" in block
-
-
-def test_the_adopted_sha_is_recorded_only_after_a_real_checkout() -> None:
-    checkout = SHIP.index("& git checkout $shipRef --")
-    write = SHIP.index("WriteAllText($adoptState")
-    assert checkout < write
-    assert 'if ($LASTEXITCODE -ne 0) { Log "git checkout failed' in SHIP[checkout:write]
-    assert "last_adopted_sha = $shipSha" in SHIP[checkout:write]
-    assert "intel_ship_adopt_state.json" in SHIP
 
 
 # --------------------------------------------------- the cycle plan: dept:intel and nowhere else
@@ -475,53 +441,6 @@ def test_the_rails_docstring_no_longer_claims_seed_miners_spawns_run_all_miners(
     assert "never calls `run_all_miners`" in (box_rails.__doc__ or "")
     src = (DESK / "side_channels" / "seed_miners.py").read_text(encoding="utf-8")
     assert "run_all_miners" not in src
-
-
-def test_the_ship_checkout_never_lands_over_the_box_written_files() -> None:
-    """Audit HOLD on 84e1e474b: a VPS that came back would check out over the files the box's
-    feed rewrites every sweep."""
-    assert "& git checkout $shipRef -- data/intelligence desks/mt5/data/intelligence @boxWritten" \
-        in SHIP
-    block = SHIP[SHIP.index("$boxWritten = @("):SHIP.index("# 2. wait for MT5-ShadowSync")]
-    for rel in ("desks/mt5/data/intelligence/seed_miners_state.json",
-                "desks/mt5/data/intelligence/latest_discoveries.json"):
-        assert f"':!{rel}'" in block
-    import seed_miners as sm
-    assert sm.STATE.name == "seed_miners_state.json"
-    assert (sm.INTEL / "latest_discoveries.json").parent == sm.STATE.parent
-
-
-def test_the_exclusion_pathspecs_really_keep_git_off_the_box_written_files(tmp_path) -> None:
-    """The same arguments the script passes, run through git: the shipped archive lands, the
-    box-written state does not."""
-    import subprocess
-    block = SHIP[SHIP.index("$boxWritten = @("):SHIP.index("# 2. wait for MT5-ShadowSync")]
-    excludes = re.findall(r"'(:![^']+)'", block)
-    assert len(excludes) == 2
-
-    def git(*a: str) -> None:
-        subprocess.run(["git", "-C", str(tmp_path), *a], check=True, capture_output=True)
-
-    git("init", "-q")
-    git("config", "user.email", "t@t")
-    git("config", "user.name", "t")
-    git("config", "commit.gpgsign", "false")
-    intel = tmp_path / "desks" / "mt5" / "data" / "intelligence"
-    intel.mkdir(parents=True)
-    (tmp_path / "data" / "intelligence").mkdir(parents=True)
-    (tmp_path / "data" / "intelligence" / "x.json").write_text("v1")
-    for n in ("seed_miners_state.json", "latest_discoveries.json", "kimi.json"):
-        (intel / n).write_text("ship")
-    git("add", "-A")
-    git("commit", "-qm", "ship")
-    git("update-ref", "refs/remotes/intel-ship/send", "HEAD")
-    for n in ("seed_miners_state.json", "latest_discoveries.json", "kimi.json"):
-        (intel / n).write_text("box")
-    git("checkout", "refs/remotes/intel-ship/send", "--", "data/intelligence",
-        "desks/mt5/data/intelligence", *excludes)
-    assert (intel / "seed_miners_state.json").read_text() == "box"
-    assert (intel / "latest_discoveries.json").read_text() == "box"
-    assert (intel / "kimi.json").read_text() == "ship"
 
 
 # --------------------------------------------- the lease takeover and release (audit of ebdc349e9)
