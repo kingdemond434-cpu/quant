@@ -715,19 +715,6 @@ Start-ScheduledTask -TaskName "MT5-GateAttest" -ErrorAction SilentlyContinue
 # into a veto is the principal's call, not this script's.
 & $py @pyArgs (Join-Path $desk "research\release_authority.py") --once 2>&1 | ForEach-Object { Log "  $_" }
 
-# ----------------------------------------- 5b. THE PUBLISHED IDENTITY, REFRESHED BY THE SAME ACT
-# data/release_identity.json is the mirror every lag reader trusts (dashboard, hourly adoption
-# telemetry, blueprint coverage). Its only regular writer is the Fusion gateway pass, so while
-# that gateway is paused (ruin rail) the file kept naming the OLD release after a real adoption:
-# 11-04 18:17Z the box adopted c5ddf5f11 and the 18:22Z/18:37Z publishes still said 6fe812a00
-# at 147 h -- false lag on every reader. Measuring it here, right after the seal, ties the file
-# to the event that changes its answer. It is read-only apart from that mirror, and its exit
-# code (1 = new risk refused) is logged, not obeyed: the health check below is the gate.
-$identOut = @(& $py @pyArgs (Join-Path $desk "mt5desk\release_identity.py") 2>&1 | ForEach-Object { "$_" })
-$identRc = $LASTEXITCODE
-$identLine = ($identOut | Where-Object { $_ -match '"(running_sha|release_sha|at)"' }) -join ' '
-Log "identity refreshed after the seal (rc=$identRc): $identLine"
-
 # ------------------------------------------------ 6. THE NEW RELEASE MUST BE THE ONE RUNNING
 # The identity must run under the seal of $head, the code just sealed (not HEAD, which the box's
 # own state commits move); an expected gateway must restart after the recycle, stamp that seal
