@@ -150,6 +150,8 @@ MODULES = [
     # Every step the daily chain imports, as tests/ops/test_desk_module_drift_covers_the_daily_chain
     # enforces: a step added to STEPS without a line here decays on the box unwatched.
     "desks/mt5/research/conservation_ledger.py",
+    # The prop-firm showcase proposer, statically imported by daily_cycle._proposers (#582).
+    "desks/mt5/research/prop_showcase_miner.py",
     "desks/mt5/research/research_bandit.py",
     "desks/mt5/research/state_admission_run.py",
     "desks/mt5/research/decay_monitor.py",
