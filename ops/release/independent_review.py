@@ -114,6 +114,10 @@ LOCAL_CALL_MAX_S = 130 * 60
 #: Seconds of the vote's budget left when the current ask started; vote() sets it before every
 #: ask, and ask_local never waits longer (#698 audit SF).
 _TIME_LEFT_S = float("inf")
+#: The timeout the next _http call uses when none is passed: ask_local sets it around its one
+#: call. A module value rather than an argument so _http keeps its three-argument shape, which the
+#: base's own tests (trusted-eval runs them against this code) stub.
+_NEXT_TIMEOUT_S: float = CALL_TIMEOUT_S
 LOCAL = HERE / "local_models.json"
 #: Characters per token assumed when sizing a local prompt: low on purpose (code runs 3.2-4), so
 #: a prompt counted as fitting nearly always does; the server's own count is checked after (MF4),
@@ -149,8 +153,9 @@ def _gh(*args: str) -> str:
 
 
 def _http(
-    url: str, body: dict[str, Any] | None, headers: dict[str, str], timeout: float = CALL_TIMEOUT_S
+    url: str, body: dict[str, Any] | None, headers: dict[str, str], timeout: float | None = None
 ) -> Any:
+    timeout = _NEXT_TIMEOUT_S if timeout is None else timeout
     data = None if body is None else json.dumps(body).encode()
     req = urllib.request.Request(
         url, data=data, headers={"Content-Type": "application/json", **headers}
@@ -576,18 +581,25 @@ def ask_local(
     tokens = (len(rubric) + len(user)) // CHARS_PER_TOKEN
     if tokens + ANSWER_TOKENS > num_ctx:
         raise TooLarge(f"{model}: the prompt does not fit {num_ctx} tokens")
-    doc = _http(
-        f"{url}/api/chat",
-        {
-            "model": model,
-            "stream": False,
-            "format": "json",
-            "options": {"temperature": 0, "seed": 0, "num_ctx": num_ctx},
-            "messages": [{"role": "system", "content": rubric}, {"role": "user", "content": user}],
-        },
-        {},
-        timeout=max(1.0, min(local_timeout(tokens, rate), _TIME_LEFT_S)),
-    )
+    global _NEXT_TIMEOUT_S
+    _NEXT_TIMEOUT_S = max(1.0, min(local_timeout(tokens, rate), _TIME_LEFT_S))
+    try:
+        doc = _http(
+            f"{url}/api/chat",
+            {
+                "model": model,
+                "stream": False,
+                "format": "json",
+                "options": {"temperature": 0, "seed": 0, "num_ctx": num_ctx},
+                "messages": [
+                    {"role": "system", "content": rubric},
+                    {"role": "user", "content": user},
+                ],
+            },
+            {},
+        )
+    finally:
+        _NEXT_TIMEOUT_S = CALL_TIMEOUT_S
     if doc.get("error"):
         raise Unavailable(str(doc["error"])[:200])
     seen = int(doc.get("prompt_eval_count") or 0)
