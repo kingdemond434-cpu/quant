@@ -159,31 +159,6 @@
         "publication_lag_days": 0,
         "valid": "the hand-off is a static series-to-share mapping known when written; every value it points at is read from its PIT lake series, which carries its own pit_stamp available_at"
       }
-    },
-    "cn_retail_tone": {
-      "lifecycle": "DISCOVERED",
-      "source": "research/cn_retail_tone.py (called by nlp_social_cells.ingest): Eastmoney Guba public board list pages -- waihui (USDCNH), zssh000001 (CHINAH), hk (HK50), gjgold (XAUUSD) -- plus the world crawler's vaulted Guba pages; Xueqiu BLOCKED (WAF challenge + token cookie, never bypassed)",
-      "format": "parquet",
-      "path": "data/lake/series/cn_retail_tone_<SYMBOL>.parquet",
-      "ingested": "2026-11-03",
-      "series": [
-        "volume_z",
-        "tone_mean",
-        "tone_delta",
-        "tone_delta_z",
-        "tone_shock_signed",
-        "tone_llm_mean",
-        "n_posts",
-        "n_scored",
-        "n_late",
-        "n_observations"
-      ],
-      "consumer": "research/nlp_social_cells.py (placebo gain grid `cnrt:<SYMBOL>.<signal>`, cn_board_tone_reversal cells via exogenous_conditioner)",
-      "provenance": "libs/research/guba_tone.py daily_series (Chinese lexicon tone, PIT)",
-      "pit": {
-        "publication_lag_days": 1,
-        "valid": "the UTC day a post was PUBLISHED; it counts only if first observed before that day closed, the row is available at next 00:00 UTC and carries known_at (first emission)"
-      }
     }
   }
 }
