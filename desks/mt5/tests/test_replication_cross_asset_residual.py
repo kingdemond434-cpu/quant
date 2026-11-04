@@ -81,6 +81,29 @@ def test_the_rule_signals_where_the_family_and_its_modifiers_do(world, case) -> 
     orders = rc._build_cross_asset_residual(bars, p)
     assert sig, "the planted residual must fire"
     assert [(int(s.time.value), s.side) for s in sig] == [(o.t_ns, o.side) for o in orders]
+    # Stop and target too: the certified family measures them from the previous joined row's
+    # close (Auditor/CRO ruling 2026-11-04), and the default reference reproduces it.
+    assert [(s.stop, s.target, s.ttl_bars) for s in sig] == pytest.approx(
+        [(o.stop, o.target, o.ttl_bars) for o in orders], rel=1e-12, abs=1e-12)
+
+
+def test_signal_close_is_the_corrected_reference_and_any_other_stands_aside(world) -> None:
+    _dfs, bars = world
+    base = {"lookback": 240, "entry_z": 2.0, "ttl_bars": 8, "side_mode": "revert",
+            "factor_symbols": ["FA", "FB"]}
+    p, _ = rc.resolve_spec("cross_asset_residual", base, "asia", None)
+    q, _ = rc.resolve_spec("cross_asset_residual", {**base, "reference": "signal_close"},
+                           "asia", None)
+    assert p is not None and q is not None and p["reference"] == "prev_row"
+    prev, close = rc._build_cross_asset_residual(bars, p), rc._build_cross_asset_residual(bars, q)
+    assert prev and [(o.t_ns, o.side) for o in prev] == [(o.t_ns, o.side) for o in close]
+    pos = np.searchsorted(bars.t, [o.t_ns for o in close])
+    for o, j in zip(close, pos, strict=True):
+        mid = o.stop + (o.target - o.stop) * (1.0 / 2.5)       # stop 2 ATR, target 3 ATR away
+        assert mid == pytest.approx(float(bars.c[j]), rel=1e-12)
+    assert any(a.stop != b.stop for a, b in zip(prev, close, strict=True))
+    r, _ = rc.resolve_spec("cross_asset_residual", {**base, "reference": "open"}, "asia", None)
+    assert r is not None and rc._build_cross_asset_residual(bars, r) == []
 
 
 def test_a_missing_factor_or_an_undefined_modifier_stands_aside(world) -> None:

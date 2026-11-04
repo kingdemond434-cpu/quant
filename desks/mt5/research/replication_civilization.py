@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import hashlib
 import json
 import os
 import sys
@@ -313,6 +314,28 @@ class RuleSpec:
     #: rebuild must not filter the orders' (possibly delayed) bar hours a second time.
     session_in_build: bool = False
 
+    def __post_init__(self) -> None:
+        if self.session_from_params and "own session parameter" not in self.text:
+            self.text = f"{self.text} {SESSION_FROM_PARAMS_TEXT}"
+
+
+#: Stated in every rule whose session is the cell's own parameter (RuleSpec.__post_init__).
+SESSION_FROM_PARAMS_TEXT = (
+    "Signals are kept only in the cell's own session parameter (asia [0,8), london [8,16), ny "
+    "[14,22) broker hours; none or any other name: every hour) and in a selector parameter's "
+    "session when the cell carries one; the certificate's stamped selector is never a session.")
+
+
+def rule_fingerprint(family: str) -> str | None:
+    """What the written rule IS: its text and the flags that change how it is read. A verdict
+    taken under another rule fingerprint is a verdict on a different rule."""
+    spec = SPEC_BOOK.get(str(family or ""))
+    if spec is None:
+        return None
+    blob = json.dumps([spec.text, spec.selector_params, spec.session_from_params,
+                       spec.session_in_build, sorted(spec.defaults)], default=str)
+    return hashlib.sha256(blob.encode()).hexdigest()[:16]
+
 
 def _build_overnight_gap_decay(b: Bars, p: dict[str, Any]) -> list[Order]:
     a = atr(b, int(p["atr_n"]))
@@ -447,7 +470,7 @@ SPEC_BOOK: dict[str, RuleSpec] = {
         "signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, "
         "time exit after ttl_bars.",
         {"gap_atr": 0.75, "atr_n": 20, "stop_atr": 1.5, "rr": 1.0, "ttl_bars": 8},
-        _build_overnight_gap_decay),
+        _build_overnight_gap_decay, session_from_params=True),
     "session_range_breakout": RuleSpec(
         "session_range_breakout",
         "At the signal hour, take the day's range over the session window (hours before "
@@ -464,27 +487,27 @@ SPEC_BOOK: dict[str, RuleSpec] = {
         "At hour 0, long on weekday dow_long and short on weekday dow_short (Monday = 0); entry "
         "next open, stop 1.2 x ATR(atr_n), target rr x that distance, time exit after ttl_bars.",
         {"dow_long": 0, "dow_short": 3, "atr_n": 20, "ttl_bars": 12, "rr": 1.8},
-        _build_dow_effect),
+        _build_dow_effect, session_from_params=True),
     "monday_gap": RuleSpec(
         "monday_gap",
         "At Monday hour 0, gap = open - the last Friday bar's close; if |gap| >= min_gap_atr x "
         "ATR(atr_n) trade with the gap (mode momentum) or against it (mode fade): entry next "
         "open, stop 1.2 x ATR, target rr x that, time exit after ttl_bars.",
         {"atr_n": 20, "ttl_bars": 12, "rr": 1.8, "mode": "momentum", "min_gap_atr": 0.2},
-        _build_monday_gap),
+        _build_monday_gap, session_from_params=True),
     "mean_reversion_rsi": RuleSpec(
         "mean_reversion_rsi",
         "RSI(rsi_n) crossing up through oversold is a long, crossing down through overbought a "
         "short; entry next open, stop 1.2 x ATR(atr_n), target rr x that, time exit after "
         "ttl_bars.",
         {"rsi_n": 14, "oversold": 30, "overbought": 70, "atr_n": 20, "ttl_bars": 12, "rr": 1.8},
-        _build_mean_reversion_rsi),
+        _build_mean_reversion_rsi, session_from_params=True),
     "overnight_drift": RuleSpec(
         "overnight_drift",
         "At anchor_hour, drift = (close - close hold_bars ago) / ATR(atr_n); if |drift| >= 0.3 "
         "fade it: entry next open, stop 1.2 x ATR, target rr x that, time exit after ttl_bars.",
         {"anchor_hour": 0, "hold_bars": 8, "atr_n": 20, "ttl_bars": 12, "rr": 1.8},
-        _build_overnight_drift),
+        _build_overnight_drift, session_from_params=True),
 }
 
 #: Breakout selector -> window parameters, written into the spec text above.
@@ -757,7 +780,7 @@ SPEC_BOOK.update({
         "above) on the side `direction`, kept only at hour signal_at and only on days whose "
         "most recent completed New York session carries day_state (same labelling as above).",
         {"base_family": "", "direction": None, "signal_at": None, "day_state": None},
-        _build_hunt16_cell),
+        _build_hunt16_cell, session_from_params=True),
     "carry": RuleSpec(
         "carry",
         "Side = the side with the larger nightly swap in money per lot (swap x point x "
@@ -768,7 +791,7 @@ SPEC_BOOK.update({
         "target rr x that, entry next open, time exit after hold_bars.",
         {"symbol": "", "min_edge_bp_per_day": 0.5, "atr_n": 20, "hold_bars": 120,
          "stop_atr": 2.0, "rr": 1.5, "require_quiet": True},
-        _build_carry),
+        _build_carry, session_from_params=True),
 })
 
 
@@ -1207,6 +1230,10 @@ SPEC_BOOK["formula"] = RuleSpec(
 CAR_RIDGE_FRAC = 1e-10
 CAR_VOL_REGIMES = {"high_vol": 1, "high_volatility": 1, "low_vol": -1}
 CAR_NO_OP_REGIMES = frozenset({"", "unconditional", "all", "any"})
+#: Where stop and target are measured from. prev_row is what the certified family does (Auditor
+#: and CRO ruling 2026-11-04: the family stays as certified and is judged against what it does);
+#: signal_close is the corrected reading, a separate spec with its own certificates.
+CAR_REFERENCES = ("prev_row", "signal_close")
 
 
 def _car_causal_residual(y: np.ndarray, X: np.ndarray, win: int) -> np.ndarray:
@@ -1260,7 +1287,8 @@ def _build_cross_asset_residual(b: Bars, p: dict[str, Any]) -> list[Order]:
     regime = str(p.get("regime") or "").strip().lower()
     timing = str(p.get("entry_timing") or "").strip().lower()
     style = str(p.get("execution_style") or p.get("entry_style") or "").strip().lower()
-    if (not names or mode not in ("revert", "continue")
+    ref = str(p.get("reference") or "prev_row").strip().lower()
+    if (not names or mode not in ("revert", "continue") or ref not in CAR_REFERENCES
             or (regime not in CAR_NO_OP_REGIMES and regime not in CAR_VOL_REGIMES)
             or timing not in ("", "instant", "delayed") or style not in ("", "market")):
         return []
@@ -1279,7 +1307,9 @@ def _build_cross_asset_residual(b: Bars, p: dict[str, Any]) -> list[Order]:
     cols = [b.c[np.searchsorted(b.t, common)]]
     cols += [f.c[np.searchsorted(f.t, common)] for f in facs]  # type: ignore[union-attr]
     M = np.column_stack(cols)
-    keep = np.all(np.isfinite(M) & (M > 0), axis=1)
+    # Rows where every close is a number (the family's dropna); a non-positive close stays in the
+    # frame and its log return is dropped by `ok` below, exactly as the family does.
+    keep = np.all(np.isfinite(M), axis=1)
     common, M = common[keep], M[keep]
     with np.errstate(all="ignore"):
         R = np.diff(np.log(M), axis=0)
@@ -1313,7 +1343,11 @@ def _build_cross_asset_residual(b: Bars, p: dict[str, Any]) -> list[Order]:
         if vol is not None and not bool(vol[j]):
             continue
         side = (-1 if zi > 0 else 1) if mode == "revert" else (1 if zi > 0 else -1)
-        px = float(b.c[j])
+        # The certified family prices stop and target off the joined frame's close at the SAME
+        # position index as the residual row, which is at least one joined row before the signal
+        # (the residual series starts after the first return): reference=prev_row, the default,
+        # reproduces it. signal_close is the corrected variant, certified as its own spec.
+        px = float(M[i, 0]) if ref == "prev_row" else float(b.c[j])
         at = j + 1 if timing == "delayed" else j
         if at >= len(b):
             continue
@@ -1331,7 +1365,12 @@ SPEC_BOOK["cross_asset_residual"] = RuleSpec(
     "lookback joined rows. From row beta_win + lookback on, every bar with |z| >= entry_z and "
     "ATR(atr_n) > 0 is a signal at that bar's close: revert takes the side against z, continue "
     "with it; stop stop_atr x ATR, target rr x that, entry next open, time exit after "
-    "ttl_bars. The session (the cell's own session parameter; none: every hour) is judged at "
+    "ttl_bars. Stop and target are measured from the reference: prev_row (the default, what the "
+    "certified family does) is the joined frame's close at the residual row's own position "
+    "index, at least one joined row before the signal; signal_close is the signal bar's close; "
+    "any other reference stands aside. A non-positive close stays in the joined frame and only "
+    "its log return is dropped. "
+    "The session (the cell's own session parameter; none: every hour) is judged at "
     "the signal bar. Modifiers: regime high_vol (high_volatility) / low_vol keeps a signal "
     "only where the 20-bar std of simple returns is above / below its "
     "own 100-bar median; entry_timing delayed moves the signal one target bar later with the "
@@ -1339,13 +1378,17 @@ SPEC_BOOK["cross_asset_residual"] = RuleSpec(
     "style stands aside.",
     {"factor_symbols": [], "lookback": 240, "beta_win": None, "entry_z": 2.0, "atr_n": 20,
      "stop_atr": 2.0, "rr": 1.5, "ttl_bars": 72, "side_mode": "revert", "regime": "",
-     "entry_timing": "", "execution_style": "", "timeframe": "H1"},
+     "entry_timing": "", "execution_style": "", "timeframe": "H1", "reference": "prev_row"},
     _build_cross_asset_residual, session_from_params=True, session_in_build=True)
 
 
 #: Session selector -> [start, end) broker hours a non-breakout signal must fall in.
 SESSIONS: dict[str, tuple[int, int] | None] = {
     "asia": (0, 8), "london": (8, 16), "ny": (14, 22), "all": None, "continuous": None,
+}
+#: The session names the shared call and the miners' selector modifier know (`family_call`).
+MODIFIER_SESSIONS: dict[str, tuple[int, int] | None] = {
+    "asia": (0, 8), "london": (8, 16), "ny": (14, 22), "all": None,
 }
 
 
@@ -1499,13 +1542,32 @@ def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | 
     p["_side"] = 1 if s in ("LONG", "1") else -1 if s in ("SHORT", "-1") else 0
     p["_session"] = SESSIONS.get(sel) if not spec.selector_params else None
     if spec.session_from_params:
-        p["_session"] = SESSIONS.get(str(dict(params or {}).get("session") or "").lower())
+        raw = dict(params or {})
+        p["_session"] = SESSIONS.get(str(raw.get("session") or "").lower())
+        # A `selector` PARAMETER is the miners' session modifier (`cell_modifiers`), applied on
+        # top of the session: the hours both allow. One naming no session is refused there, so
+        # it is refused here.
+        if "selector" in raw and "selector" not in spec.defaults:
+            mod = str(raw.get("selector") or "").strip().lower()
+            if mod not in MODIFIER_SESSIONS:
+                return None, (f"selector modifier {raw.get('selector')!r} names no session "
+                              "window; the gauntlet refuses the cell, so no rule applies")
+            p["_session"] = _window_and(p["_session"], MODIFIER_SESSIONS[mod])
     # The rules that need them read these; every other rule ignores them (hunt16 selectors name
     # a signal hour, a hunt16 condition a prior-session day label, carry a symbol's swap terms).
     p["_selector"], p["_symbol"], p["_condition"] = sel, str(symbol or ""), condition
-    if family in HUNT16_FAMILIES:
+    if family in HUNT16_FAMILIES and not spec.session_from_params:
         p["_session"] = None
     return p, "ok"
+
+
+def _window_and(a: tuple[int, int] | None, b: tuple[int, int] | None
+                ) -> tuple[int, int] | None:
+    """The hours two [start, end) windows both allow; None is every hour, (0, 0) is none."""
+    if a is None or b is None:
+        return b if a is None else a
+    lo, hi = max(a[0], b[0]), min(a[1], b[1])
+    return (lo, hi) if lo < hi else (0, 0)
 
 
 #: Families whose selector names a hunt16 signal hour, not a session window to filter on.
@@ -1854,6 +1916,18 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
                if str(((book.get(certificate_id(r)) or {}).get("why") or [""])[0]).startswith(
                    "no written specification")
                and str((r.get("shadow_spec") or {}).get("family") or "") in SPEC_BOOK]
+    # A VERDICT AGAINST A RULE THAT HAS SINCE CHANGED IS NOT A VERDICT ON THE RULE EITHER
+    # (2026-11-04). The session fix moved what seven old rules mean (the stamped selector was read
+    # as a session), so a hold those rules raised is suspect until the corrected rule re-judges
+    # it. Every verdict that is not REPLICATED and was taken under another rule fingerprint (none
+    # recorded counts as another) joins the backlog's extra slots once; a REPLICATED verdict is
+    # re-judged by the rotation as usual, since it holds nothing back.
+    for i, r in enumerate(certs):
+        entry = book.get(certificate_id(r)) or {}
+        fam = str((r.get("shadow_spec") or {}).get("family") or "")
+        if (entry and entry.get("verdict") != REPLICATED and fam in SPEC_BOOK
+                and entry.get("rule_fp") != rule_fingerprint(fam) and i not in set(no_rule)):
+            no_rule.append(i)
     pending = old_metric + [i for i, r in enumerate(certs)
                             if i not in set(old_metric) and
                             (book.get(certificate_id(r)) or {}).get("fp")
@@ -1921,6 +1995,7 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         for r in rows:
             if r.get("lane") == "certificate" and r.get("certificate"):
                 book[str(r["certificate"])] = {"verdict": r["verdict"], "fp": r.get("fp"),
+                                               "rule_fp": rule_fingerprint(r.get("family")),
                                                "sharpe_metric_version": SHARPE_METRIC_VERSION,
                                                "why": list(r.get("why") or [])[:4],
                                                "key": r.get("key"), "at": _now()}
