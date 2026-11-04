@@ -706,6 +706,47 @@ def published_gate_lines() -> dict[str, Any]:
             "adopted": doc.get("adopted")}
 
 
+#: The polite fetchers' shared access state (`libs/data/polite_fetch.ACCESS_STATE`): robots.txt per
+#: origin and every site that refused the desk. Each hold row carries its own missed_growth line.
+ACCESS_STATE = BASE / "data" / "world_crawler_access.json"
+
+
+def access_hold_lines(path: Path | None = None, now: float | None = None) -> dict[str, Any]:
+    """The access holds' missed-growth lines, read from the polite fetchers' own state file.
+
+    A site held for 401/403/429 or a challenge is a source the desk is not reading; the gain
+    forgone is UNMEASURED (no conversion of its pages is on record) and says why. Counted here so
+    the holds sit beside the rails' bill instead of only in the access file. A hold a person
+    released is not counted; a hold never lapses on a clock (a legacy recheck_after_ts is
+    ignored, and `now` is accepted only for the old signature). A missing file is UNMEASURED,
+    never zero."""
+    src = path or ACCESS_STATE
+    doc = _json(src)
+    if not doc:
+        return {"verdict": UNMEASURED, "lines": [], "n_held": None,
+                "why": f"no {src.name} on this host: no polite fetcher has run here"}
+    del now
+    lines: list[dict[str, Any]] = []
+    for site, row in sorted((doc.get("blocked") or {}).items()):
+        if not isinstance(row, dict):
+            continue
+        if row.get("released_by"):
+            continue          # released by a person; no clock ever releases a hold
+        mg = row.get("missed_growth") if isinstance(row.get("missed_growth"), dict) else {}
+        lines.append({"source": str(mg.get("source") or site), "kind": "access_hold",
+                      "status": row.get("verdict") or mg.get("status") or "METHOD_BLOCKED",
+                      "http_status": row.get("status"), "since_utc": row.get("since_utc"),
+                      "waits_for": "a person", "key": row.get("key") or f"site:{site}",
+                      "delta_elogw": mg.get("delta_elogw") or UNMEASURED,
+                      "verdict": UNMEASURED,
+                      "cause": mg.get("cause") or (f"HTTP {row.get('status')} hold on {site}; "
+                                                   "the growth forgone is UNMEASURED")})
+    return {"verdict": UNMEASURED if lines else NOT_BINDING,
+            "source": f"data/{src.name}", "lines": lines, "n_held": len(lines),
+            "by_status": {v: sum(1 for x in lines if x["status"] == v)
+                          for v in sorted({x["status"] for x in lines})}}
+
+
 #: THE FUSION BOOK'S RAILS (audit HOLD on fusion_book_go_live 50ef074f9, 2026-10-20): the
 #: one-gold-at-risk veto, the cross-account opposite-side fence, the Fusion daily-loss rail, and
 #: the book's 0.01 floor lift and lot ceiling. Like the stop-geometry gate they register no rail
@@ -1069,6 +1110,103 @@ def admission_cadence_line(alloc: dict[str, Any]) -> dict[str, Any]:
             "unpriced": "longer reuse of the heavy growth curve on normal/fast passes"}
 
 
+#: THE YAHOO CUT (2026-10-14): each organ that read Yahoo as live input now publishes the
+#: missed-growth line of every cut input on its own artifact. Read here so the bill sits beside
+#: the rails' (never appended to the ledger).
+YAHOO_CUT_ARTIFACTS: tuple[tuple[str, Path], ...] = (
+    ("macro_desk.anchors", BASE / "data" / "cross_asset_anchors.provenance.json"),
+    ("vol_archive", BASE / "reports" / "VOL_ARCHIVE.json"),
+    ("fetch_futures_curves", BASE / "reports" / "futures_curve_coverage.json"),
+    ("futures_lead_lag", BASE / "reports" / "FUTURES_LEAD_LAG.json"),
+    ("alpha_capture", BASE / "reports" / "ANALYST_VIEWS.json"),
+    ("bar_clock_probe", BASE / "reports" / "BAR_CLOCK.json"),
+)
+
+
+#: THE THIRD-PARTY FRED CUT (follow-up, 2026-10-14): the FRED series whose notes carry a copyright
+#: notice (terms_fence `fred_copyrighted`) are refused as live input; the organs that read them
+#: publish the lines on their own artifacts, gathered here beside the Yahoo cut's.
+FRED_COPYRIGHTED_CUT_ARTIFACTS: tuple[tuple[str, Path], ...] = (
+    ("macro_desk.anchors", BASE / "data" / "cross_asset_anchors.provenance.json"),
+    ("macro_desk.state", BASE / "data" / "macro_state.json"),
+    ("run_hunt23", BASE / "reports" / "hunt23.json"),
+    ("axis_ingest.fred", BASE / "data" / "axes" / "fred.json"),
+    ("collect_fred_macro", BASE.parent.parent / "data" / "fred_macro.json"),
+    ("screen_fred_macro_axis", BASE.parent.parent / "data" / "fred_macro_screen.json"),
+    ("run_cot_screen", BASE.parent.parent / "data" / "cot_screen_summary.json"),
+    ("fetch_sge_premium", BASE / "reports" / "sge_premium.json"),
+    # macro_view's VIX lean line is NOT gathered here: it is billed ONCE, under
+    # `vix_risk_lean_cut` (vix_risk_lean_cut_line), never twice
+)
+
+
+def vix_risk_lean_cut_line() -> dict[str, Any]:
+    """THE LOST VIX RISK LEAN (audit HOLD on 06cab1824, 2026-11-03). The third-party FRED cut
+    removed VIXCLS from three capital readers: `mt5desk.macro_view` (the 0.6-1.4 two-sided
+    `macro_view` modifier the gateway applies in resolve_family_order), `macro_state`'s `risk`
+    dimension and `leg_factors`' `d_vix`. Dropping one side of a two-sided capital modifier is a
+    Rule 1 change, so it is billed here from the modifier's own definition -- never from an
+    artifact that may not exist on this host -- with delta E[log W] UNMEASURED and the licensed
+    substitute (US500_RV21 from own bars) that would restore it, which is NOT wired."""
+    try:
+        from mt5desk.macro_view import risk_leg_missed_growth
+        line = risk_leg_missed_growth()
+    except Exception as exc:                       # unreadable is UNMEASURED
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": f"mt5desk.macro_view unreadable ({type(exc).__name__}): the cut's line "
+                       "could not be built"}
+    if line is None:
+        return {"verdict": NOT_BINDING, "lines": [],
+                "why": "VIXCLS is readable as live input: the risk lean is intact"}
+    return {"verdict": UNMEASURED, "lines": [line], "n_cut": 1,
+            "source": "mt5desk.macro_view.risk_leg_missed_growth",
+            "why": "the VIX risk lean is removed; its delta E[log W] is UNMEASURED"}
+
+
+def _cut_lines(policy_row: str, artifacts: tuple[tuple[str, Path], ...]
+               ) -> tuple[list[dict[str, Any]], list[str]]:
+    """(lines whose `policy_row` is `policy_row`, organs with none) from each organ's artifact.
+    A line without a policy_row is counted under every carrier that reads it (fail closed)."""
+    lines: list[dict[str, Any]] = []
+    unread: list[str] = []
+    for organ, path in artifacts:
+        doc = _json(path)
+        got = [x for x in (doc.get("missed_growth") or []) if isinstance(x, dict)
+               and x.get("policy_row", policy_row) == policy_row] if doc else []
+        if not got:
+            unread.append(organ)
+        lines.extend({**x, "organ": organ} for x in got)
+    return lines, unread
+
+
+def fred_copyrighted_cut_lines(artifacts: tuple[tuple[str, Path], ...] | None = None
+                               ) -> dict[str, Any]:
+    """The refused third-party FRED series' missed-growth lines. An organ without its artifact
+    on this host is listed as UNMEASURED, never as zero."""
+    lines, unread = _cut_lines("fred_copyrighted", artifacts or FRED_COPYRIGHTED_CUT_ARTIFACTS)
+    return {"verdict": UNMEASURED, "lines": lines, "n_cut": len(lines),
+            "unmeasured_no_licensed_source": sorted({
+                str(x.get("source")) for x in lines
+                if x.get("series_status") == "UNMEASURED_NO_LICENSED_SOURCE"}),
+            "organs_without_artifact": unread,
+            "why": ("FRED series owned by third parties (terms_fence fred_copyrighted) are "
+                    "refused as live input: delta E[log W] is UNMEASURED until the owner's "
+                    "permission or a licensed feed arrives")}
+
+
+def yahoo_cut_lines(artifacts: tuple[tuple[str, Path], ...] | None = None) -> dict[str, Any]:
+    """The cut Yahoo inputs' missed-growth lines, read from each organ's own artifact. An organ
+    that has not written its artifact on this host is listed as UNMEASURED, never as zero."""
+    lines, unread = _cut_lines("yahoo", artifacts or YAHOO_CUT_ARTIFACTS)
+    return {"verdict": UNMEASURED, "lines": lines, "n_cut": len(lines),
+            "unmeasured_no_licensed_source": sorted(
+                str(x.get("source")) for x in lines
+                if x.get("series_status") == "UNMEASURED_NO_LICENSED_SOURCE"),
+            "organs_without_artifact": unread,
+            "why": ("Yahoo is IDEAS_ONLY (terms_fence.SOURCE_POLICY): every cut input's delta "
+                    "E[log W] is UNMEASURED until a licensed source or the unblock arrives")}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -1187,6 +1325,7 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            # Gates that register no rail publish their lines on their own artifact; carried
            # here so the bill sits beside the rails' (never appended to the ledger).
            "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
+                                    "access_holds": access_hold_lines(),
                                     "fusion_book_rails": published_fusion_book_lines(),
                                     "ftmo_follower_rails": published_ftmo_follower_lines(),
                                     "ftmo_executor_rails": published_ftmo_executor_lines(),
@@ -1201,7 +1340,10 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         CANON_PUBLICATION),
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
-                                    "admission_scan_cadence": admission_cadence_line(alloc)},
+                                    "admission_scan_cadence": admission_cadence_line(alloc),
+                                    "yahoo_live_input_cut": yahoo_cut_lines(),
+                                    "fred_copyrighted_cut": fred_copyrighted_cut_lines(),
+                                    "vix_risk_lean_cut": vix_risk_lean_cut_line()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

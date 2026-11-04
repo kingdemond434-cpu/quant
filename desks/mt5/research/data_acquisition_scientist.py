@@ -14,12 +14,15 @@ priced off the scout's catalogue where a route is declared, and gated by a Datas
 traded against value. Since LAWS 5e (2026-09-23) that gate is FIVE ACTS WIDE and nothing else --
 a page whose terms restrict machine extraction is REGISTERED, MINED AND SAMPLED with the terms
 carried as a `terms_note` that routes REDISTRIBUTION; the old "registered and never fetched"
-reading, and the robots Disallow that returned BLOCKED_BY_ROBOTS, were discovery brakes and are
-deleted.
+reading was a discovery brake and is deleted. ROBOTS.TXT IS A LABEL (LAWS 5e, live; "robots.txt
+Disallow treated as a refusal" is a deleted brake): a Disallow (PUBLIC_WITH_TERMS) or an
+unreadable robots.txt (ACCESS_UNCLEAR) is SAMPLED with the label on the sample; only a
+person-held site hold (HELD_FOR_PERSON) means nothing is requested.
 
 WHAT IT BUILDS. For the top admissible candidates with a URL route it takes a SMALL
 SAMPLE through the desk's existing fetch path (`acquire_datasets._fetch`; the robots verdict from
-`asia_collector._robots_allows` is READ and recorded, never a skip; never a new scraper),
+`polite_fetch.HostAccess` labels it first -- only a site hold is a skip, named; never a new
+scraper),
 content-hashes it into a Vintage and a
 LineageRecord, and records a `dataset_request` discovery in `data/intelligence/<seat>/` carrying
 the contract and the expected value. Report: `reports/DATA_ACQUISITION.json`. Runs as the hourly
@@ -512,11 +515,30 @@ def contract_for(cand: dict[str, Any], route: dict[str, Any], at: str
 
 # --------------------------------------------------------------------------- the sample
 def _robots_allows(url: str) -> tuple[bool, str]:
+    """The site's holds, and the url's own origin robots.txt AS A LABEL, read by THE ONE
+    implementation (`polite_fetch.HostAccess`, via `admit` / `access_label`; no second parser).
+    (False, why) ONLY for a person-held 401/403/429/challenge hold; a Disallow or an unreadable
+    robots.txt answers True with the label named in `why` (LAWS 5e)."""
+    from libs.data import polite_fetch as _pf
     try:
-        from research import asia_collector as ACOL
-    except ImportError:                                                      # pragma: no cover
-        import asia_collector as ACOL  # type: ignore[no-redef]
-    return ACOL._robots_allows(url)
+        ok, why = _pf.admit(url)
+    except Exception as exc:
+        return True, f"ACCESS_UNCLEAR: robots/holds check failed ({type(exc).__name__})"
+    if not ok:
+        return False, why
+    label = _pf.access_label(url)
+    lab = str(label.get("access_label") or "")
+    if lab and lab != "PUBLIC":
+        return True, f"{lab}: {label.get('terms_note') or ''}"
+    return True, "robots.txt consulted: allowed"
+
+
+def _robots_fields(robots_note: str) -> dict[str, Any]:
+    """The sample's robots LABEL fields (LAWS 5e), read off `_robots_allows`'s note."""
+    head = robots_note.split(":", 1)[0].strip()
+    lab = head if head in ("PUBLIC_WITH_TERMS", "ACCESS_UNCLEAR") else "PUBLIC"
+    from libs.data import polite_fetch as _pf
+    return {"access_label": lab, "redistribute_allowed": _pf.redistribute_allowed(lab)}
 
 
 def _fetch(url: str) -> tuple[bytes | None, str]:
@@ -566,13 +588,22 @@ def sample(cand: dict[str, Any], contract: DC.DatasetContract, verdict: AC.Acces
                 "why": (f"route is {cand.get('how_to_fetch') or 'undeclared'}: no URL to sample "
                         f"through the existing fetch path; the request is donated unsampled")}
     allowed, robots_note = _robots_allows(url)
-    terms_note = (verdict.terms_note or "") + ("" if allowed else
-                                               f" | robots: {robots_note} -- recorded as a "
-                                               f"routing label, never a skip (LAWS 5e)")
+    terms_note = verdict.terms_note or ""
+    if not allowed:
+        # ONLY A PERSON-HELD SITE HOLD stops the request (an access control answered): the
+        # request row is still donated, unsampled, with the hold named.
+        return {"dataset": cand["dataset"], "status": "HELD_FOR_PERSON", "url": url,
+                "robots": robots_note, "terms_note": terms_note,
+                "why": f"{robots_note}: the site is held for a person; nothing was requested"}
+    # A robots Disallow / unreadable robots.txt is a LABEL on the sample (LAWS 5e), joined to
+    # the terms note it routes alongside.
+    robots_fields = _robots_fields(robots_note)
+    if robots_fields["access_label"] != "PUBLIC":
+        terms_note = " | ".join(x for x in (terms_note, robots_note) if x)
     raw, ctype = _fetch(url)
     if raw is None:
         return {"dataset": cand["dataset"], "status": "UNREACHABLE", "url": url,
-                "robots": robots_note, "terms_note": terms_note.strip(" |"),
+                "robots": robots_note, "terms_note": terms_note.strip(" |"), **robots_fields,
                 "why": f"fetch returned nothing ({ctype})"}
     raw = raw[:MAX_SAMPLE_BYTES]
     rows, columns = _rows_of(raw, url)
@@ -580,7 +611,7 @@ def sample(cand: dict[str, Any], contract: DC.DatasetContract, verdict: AC.Acces
     held_cols = [c for c in columns if _slug(c) in marks]
     return {"dataset": cand["dataset"], "status": "SAMPLED", "url": url, "bytes": len(raw),
             "content_type": ctype, "rows": len(rows), "columns": columns[:24],
-            "robots": robots_note, "terms_note": terms_note.strip(" |"),
+            "robots": robots_note, "terms_note": terms_note.strip(" |"), **robots_fields,
             "vintage": snap.vintage.to_json(),
             "lineage": snap.lineage.to_json(),
             "redundancy_against_held": {"columns_held": held_cols,

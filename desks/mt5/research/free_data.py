@@ -3,9 +3,15 @@
 Sources (all lawful, public, first-party):
   - FRED / ALFRED fredgraph.csv (rates, policy, macro, gold, oil, DXY, VIX)
     vintage_date param => point-in-time history (no API key needed)
-  - Yahoo Finance via yfinance (DXY, VIX, TNX, GC=F, CL=F, indices; no key)
+  - Yahoo Finance: CUT AS LIVE INPUT (2026-10-14). Yahoo is an IDEAS_ONLY row of
+    libs/data/terms_fence.SOURCE_POLICY (its Terms 2.d.9 bar automated collection), so
+    `yahoo_daily` asks THE ONE FETCH DOOR with live_input=True and is refused before any request.
+    Each series it served is re-sourced by `licensed_daily` (FRED public-domain series, EIA, the
+    desk's own MT5 bars) or reported UNMEASURED_NO_LICENSED_SOURCE with a missed_growth line.
   - Official government RSS feeds (Fed, BLS, ...; parsed with stdlib)
-  - GitHub search + Reddit JSON (crowding/adoption proxies; no key)
+  - GitHub search + Reddit public JSON + Wikipedia pageviews (crowding/adoption proxies; no
+    key). Reddit is IDEAS_ONLY in the per-source policy (libs/data/terms_fence.py, ruling of
+    2026-10-13): read politely as a research proxy, never as a cell's live input data.
 
 Every collector is isolated: one failing source never blocks the others.
 Network timeouts are short; results are cached to data/free_data_cache/.
@@ -22,17 +28,46 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
+try:
+    from libs.data.polite_fetch import DESK_UA
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA
 
 BASE = Path(__file__).resolve().parent.parent
 CACHE = BASE / "data" / "free_data_cache"
 CACHE.mkdir(parents=True, exist_ok=True)
 
-UA = "Mozilla/5.0 (research desk; point-in-time collector; contact: local)"
+UA = DESK_UA
 
 
-def _get(url: str, timeout: int = 25, headers: dict | None = None) -> bytes:
+def _terms_fence():
+    """libs.data.terms_fence, importable from a desk-rooted process too."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[3])
+    if _root not in _sys.path:
+        _sys.path.insert(0, _root)
+    from libs.data import terms_fence
+    return terms_fence
+
+
+def _get(url: str, timeout: int = 25, headers: dict | None = None, *,
+         live_input: bool = True) -> bytes:
+    # THE METHOD FENCE (libs/data/terms_fence.py): raises TermsFenced for a HELD source
+    # (METHOD_BLOCKED, or NEEDS_KEY until its key exists) before any request is built.
+    tf = _terms_fence()
+    tf.check_url(url)
     req = urllib.request.Request(url, headers={"User-Agent": UA, **(headers or {})})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    # A 30x into a held source or a login wall raises TermsFenced instead of being followed.
+    # LIVE INPUT (macro_desk, news_desk): every redirect hop is re-checked against the live-input
+    # rule too (`input_source`), so a 30x into an IDEAS_ONLY or held route is refused (pass-6
+    # audit cf305e3d2 SHOULD-FIX 1). A caller whose FIRST URL is an IDEAS_ONLY row passes
+    # live_input=False: its hops are still re-checked (`live_hops`), its first URL is unchanged.
+    with tf.guarded_urlopen(req, timeout=timeout, live_input=live_input,
+                            live_hops=True) as r:
         return r.read()
 
 
@@ -69,9 +104,19 @@ FRED_FIELDS = {"DGS2", "DGS10", "T10Y2Y", "DFEDTARU", "DFF", "SOFR", "RRPONTSYD"
 
 
 def fred_series(series_id: str, start: str = "2010-01-01",
-                vintage: str | None = None) -> dict[str, float] | None:
+                vintage: str | None = None, *, alternate: bool = True,
+                use_cache: bool = True) -> dict[str, float] | None:
     """Fetch a FRED series as {iso_date: value}. Keyless via fredgraph.csv.
-    vintage_date => ALFRED point-in-time view of that series."""
+    vintage_date => ALFRED point-in-time view of that series. `alternate=False` refuses the
+    DBnomics mirror: a licensed substitute is read from the row whose terms were read, never a
+    mirror whose own terms were not. `use_cache=False` neither reads nor writes the 6h cache: its
+    key carries no `start`, so a deep-history caller (start 1900) must not be handed a 2010 cut.
+
+    A series owned by a third party (terms_fence `fred_copyrighted`: its FRED notes carry a
+    copyright notice) is REFUSED AS LIVE INPUT before any URL is built: no request, no cache
+    read, no mirror. The caller sees None and records `fred_cut_line` (UNMEASURED, never zero)."""
+    if _terms_fence().fred_series_source(series_id):
+        return None
     base = "https://alfred.stlouisfed.org/graph/fredgraph.csv" if vintage \
         else "https://fred.stlouisfed.org/graph/fredgraph.csv"
     q = {"id": series_id, "cosd": start}
@@ -79,7 +124,7 @@ def fred_series(series_id: str, start: str = "2010-01-01",
         q["vintage_date"] = vintage
     url = base + "?" + urllib.parse.urlencode(q)
     key = f"fred_{series_id}_{vintage or 'cur'}"
-    hit = _cache_get(key)
+    hit = _cache_get(key) if use_cache else None
     if hit:
         return hit
     try:
@@ -96,16 +141,17 @@ def fred_series(series_id: str, start: str = "2010-01-01",
                 except ValueError:
                     pass
         if len(out) > 30:
-            _cache_put(key, out)
+            if use_cache:
+                _cache_put(key, out)
             return out
-        return _fred_alternate(series_id, vintage, key)
+        return _fred_alternate(series_id, vintage, key) if alternate else None
     except Exception:
         # A BLOCKED PRIMARY MUST NOT STARVE THE FAMILY (2026-08-27: FRED timed out for days,
         # macro_state went 5 days stale, and macro_conditional produced zero signals on 297
         # straight sweep passes while the staleness read as quiet ground). The alternate route
         # registry (scripts/data_alternates) serves the same series from the DBnomics mirror,
         # with provenance recorded -- a switched source is a fact, never a silent substitution.
-        return _fred_alternate(series_id, vintage, key)
+        return _fred_alternate(series_id, vintage, key) if alternate else None
 
 
 def _fred_alternate(series_id: str, vintage: str | None, cache_key: str):
@@ -144,36 +190,244 @@ YAHOO_TICKERS = {"DX-Y.NYB": "DXY", "^VIX": "VIX", "^TNX": "TNX", "^GSPC": "SPX"
                  "USDJPY=X": "USDJPY", "GBPUSD=X": "GBPUSD", "AUDUSD=X": "AUDUSD",
                  "USDCAD=X": "USDCAD", "NZDUSD=X": "NZDUSD", "USDCHF=X": "USDCHF"}
 
+#: The status a series carries when Yahoo was its only reader and no licensed source exists. It
+#: is never filled, never forward-filled and never zero: the column is absent and the line says so.
+UNMEASURED_NO_LICENSED_SOURCE = "UNMEASURED_NO_LICENSED_SOURCE"
+
 
 def yahoo_daily(ticker: str) -> dict[str, float] | None:
-    """Daily close history {iso_date: close}. Keyless via the public chart API
-    (direct urllib - no yfinance dependency, honors our timeouts)."""
-    key = f"yahoo_{ticker}"
-    hit = _cache_get(key)
-    if hit:
-        return hit
+    """REFUSED AS LIVE INPUT (2026-10-14). Yahoo is an IDEAS_ONLY row, so this asks THE ONE FETCH
+    DOOR with `live_input=True`, which refuses the URL before any request is built, and returns
+    None. The cache is NOT read: a cached Yahoo series is the same Yahoo series. Live organs call
+    `licensed_daily` instead; this stays so a stale caller fails closed rather than crashing."""
+    url = ("https://query1.finance.yahoo.com/v8/finance/chart/" +
+           urllib.parse.quote(ticker) + "?range=10y&interval=1d")
     try:
-        url = ("https://query1.finance.yahoo.com/v8/finance/chart/" +
-               urllib.parse.quote(ticker) +
-               "?range=10y&interval=1d&events=div%2Csplit")
-        data = json.loads(_get(url, timeout=20))
-        res = data.get("chart", {}).get("result")
-        if not res:
-            return None
-        ts = res[0].get("timestamp", [])
-        closes = res[0].get("indicators", {}).get("quote", [{}])[0].get("close", [])
-        out: dict[str, float] = {}
-        for t, c in zip(ts, closes):
-            if c is None:
-                continue
-            d = datetime.fromtimestamp(int(t), tz=UTC).date().isoformat()
-            out[d] = float(c)
-        if len(out) > 60:
-            _cache_put(key, out)
-            return out
-        return None
+        _get(url, timeout=20, live_input=True)
     except Exception:
         return None
+    return None                                   # unreachable while the row is IDEAS_ONLY
+
+
+#: EVERY SERIES A LIVE ORGAN READ FROM YAHOO, AND WHAT STANDS IN FOR IT. `route` is the licensed
+#: row (terms_fence.SOURCE_POLICY) the substitute is read from; None means no licensed source
+#: exists and the series is UNMEASURED_NO_LICENSED_SOURCE. `pit_source` names the data_os lag the
+#: substitute is admissible under (late-biased: a daily MT5 close is read under the anchors' own
+#: 27h `cross_asset_anchors` lag, not the H1 bar's 1h); `pit_lag_h` overrides it where the
+#: publisher's calendar is slower than any declared lag (H.10 is weekly).
+YAHOO_SUBSTITUTES: dict[str, dict[str, Any]] = {
+    "DX-Y.NYB": {"name": "DXY", "route": "mt5_own_bars", "series": "USDX",
+                 "pit_source": "cross_asset_anchors",
+                 "note": "Fusion's own dollar-index CFD (ICE basket); level tracks DXY"},
+    "^VIX": {"name": "VIX", "route": None, "series": None,
+             "why": ("Cboe index values are a held route (cboe_delayed_index_values: s.2 bars "
+                     "storage and derived use) and FRED's VIXCLS carries Cboe's copyright, "
+                     "which FRED cannot license; no MT5 VIX CFD is on this account")},
+    "^TNX": {"name": "TNX", "route": "fred_public_domain", "series": "DGS10",
+             "pit_source": "fred_macro",
+             "note": "H.15 10y constant-maturity yield in percent (^TNX quotes the same yield)"},
+    "^IRX": {"name": "IRX", "route": "fred_public_domain", "series": "DTB3",
+             "pit_source": "fred_macro",
+             "note": "H.15 3-month T-bill secondary-market rate (scripts/hurdle_rate.py)"},
+    "^GSPC": {"name": "SPX", "route": "mt5_own_bars", "series": "US500",
+              "pit_source": "cross_asset_anchors", "note": "Fusion US500 CFD daily close"},
+    "GC=F": {"name": "GC", "route": "mt5_own_bars", "series": "XAUUSD",
+             "pit_source": "cross_asset_anchors",
+             "note": "spot XAUUSD, not the COMEX front month: the futures basis is not carried"},
+    "CL=F": {"name": "CL", "route": "mt5_own_bars", "series": "XTIUSD",
+             "pit_source": "cross_asset_anchors",
+             "note": "Fusion WTI CFD; EIA/FRED DCOILWTICO (Cushing spot) stays its own column"},
+    "^N225": {"name": "NKY", "route": "mt5_own_bars", "series": "JPN225",
+              "pit_source": "cross_asset_anchors", "note": "Fusion JPN225 CFD daily close"},
+    **{f"{p}=X": {"name": p, "route": "fred_public_domain", "series": sid,
+                  "pit_source": None, "pit_lag_h": 8 * 24.0,
+                  "pit_basis": ("assumed, conservative: H.10 daily rates are released weekly "
+                                "(Monday, for the prior week), so a day's rate can be ~8 days old "
+                                "when first public; fred_macro's 27h does not hold for H.10"),
+                  "note": "Federal Reserve H.10 noon buying rate (New York), same orientation"}
+       for p, sid in (("EURUSD", "DEXUSEU"), ("USDJPY", "DEXJPUS"), ("GBPUSD", "DEXUSUK"),
+                      ("AUDUSD", "DEXUSAL"), ("USDCAD", "DEXCAUS"), ("NZDUSD", "DEXUSNZ"),
+                      ("USDCHF", "DEXSZUS"))},
+}
+
+#: The desk's own bar lake, in preference order of resolution (the same order
+#: exposure_decomposition.load_bars reads).
+UNIVERSE_DIR = BASE / "data" / "universe"
+_BAR_TFS = ("H1", "D1", "H4", "M15")
+
+
+def mt5_daily(symbol: str, universe_dir: Path | None = None) -> dict[str, float] | None:
+    """Daily last close {broker_date: close} from the desk's own MT5 parquets, or None when this
+    host holds no bars for `symbol`. The index is broker time under a UTC tzinfo, so a date is the
+    broker's trading day; its close is known at the day's end (data_os `mt5_h1_universe`)."""
+    root = universe_dir or UNIVERSE_DIR
+    for tf in _BAR_TFS:
+        path = root / f"{symbol}_{tf}.parquet"
+        if not path.exists():
+            continue
+        try:
+            import pandas as pd
+            frame = pd.read_parquet(path)
+        except Exception:
+            continue
+        if "close" not in frame.columns:
+            continue
+        idx = frame.index
+        if not isinstance(idx, pd.DatetimeIndex):
+            col = next((c for c in ("time", "date", "timestamp") if c in frame.columns), None)
+            if col is None:
+                continue
+            idx = pd.DatetimeIndex(pd.to_datetime(frame[col], utc=True, errors="coerce"))
+        close = pd.Series(pd.to_numeric(frame["close"], errors="coerce").to_numpy(), index=idx)
+        close = close[close > 0].dropna()
+        if close.empty:
+            continue
+        daily = close.groupby(close.index.date).last()
+        out = {str(d): float(v) for d, v in daily.items()}
+        if len(out) > 3:
+            return out
+    return None
+
+
+def _pit_lag_h(source: str | None) -> float | None:
+    """The declared publication lag (hours) of a substitute's data_os source, or None."""
+    if not source:
+        return None
+    try:
+        import sys as _sys
+        _root = str(Path(__file__).resolve().parents[3])
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        from libs.tiers import data_os
+        return round(data_os.lag_of(source).total_seconds() / 3600.0, 2)
+    except Exception:
+        return None
+
+
+def yahoo_cut_line(ticker: str, consumer: str, *, status: str,
+                   past: dict | None = None) -> dict[str, Any]:
+    """The missed-growth line a cut Yahoo input carries (terms_fence.held_missed_growth, kind
+    ideas_only_refusal): delta E[log W] UNMEASURED, never zero, with the substitute or the
+    UNMEASURED_NO_LICENSED_SOURCE status beside it."""
+    sub = YAHOO_SUBSTITUTES.get(ticker) or {}
+    line = _terms_fence().held_missed_growth(
+        "yahoo", past, source=f"{consumer}:{sub.get('name') or ticker}", live_input_refusal=True)
+    line.update({"yahoo_symbol": ticker, "series_status": status,
+                 "substitute": (f"{sub['route']}:{sub['series']}" if sub.get("route") else None)})
+    if status == UNMEASURED_NO_LICENSED_SOURCE:
+        line["why_unsubstituted"] = str(sub.get("why") or "no licensed source is registered")
+    return line
+
+
+def licensed_daily(ticker: str, consumer: str = "free_data", *,
+                   universe_dir: Path | None = None,
+                   fred: Any = None, mt5: Any = None) -> tuple[dict[str, float] | None,
+                                                               dict[str, Any]]:
+    """(series, provenance) for a series a live organ used to read from Yahoo.
+
+    The substitute comes from its licensed row only (no mirror, no Yahoo cache, no fill). An
+    unknown ticker, a series with no licensed source, or a substitute this host cannot read is
+    (None, provenance) with its status and its missed-growth line: UNMEASURED is never zero.
+    `fred` / `mt5` are injectable readers for tests."""
+    sub = YAHOO_SUBSTITUTES.get(ticker)
+    if not sub or not sub.get("route"):
+        prov = {"yahoo_symbol": ticker, "status": UNMEASURED_NO_LICENSED_SOURCE,
+                "substitute": None, "pit_lag_h": None}
+        prov["missed_growth"] = yahoo_cut_line(ticker, consumer,
+                                               status=UNMEASURED_NO_LICENSED_SOURCE)
+        return None, prov
+    route, sid = str(sub["route"]), str(sub["series"])
+    prov = {"yahoo_symbol": ticker, "substitute": f"{route}:{sid}", "route": route,
+            "terms_url": str((_terms_fence().SOURCE_POLICY[route].get("terms") or {})
+                             .get("url") or ""),
+            "pit_source": sub.get("pit_source"),
+            "pit_lag_h": (sub["pit_lag_h"] if sub.get("pit_lag_h") is not None
+                          else _pit_lag_h(sub.get("pit_source"))),
+            "note": sub.get("note", "")}
+    if sub.get("pit_basis"):
+        prov["pit_basis"] = sub["pit_basis"]
+    try:
+        if route == "mt5_own_bars":
+            got = mt5_daily(sid, universe_dir) if mt5 is None else mt5(sid)
+        else:
+            got = (fred or (lambda x: fred_series(x, alternate=False)))(sid)
+    except Exception:
+        got = None
+    if got:
+        prov["status"] = "SUBSTITUTED"
+        prov["n_obs"] = len(got)
+        prov["first"], prov["last"] = min(got), max(got)
+        # the cut itself still carries its line: Yahoo's own series is no longer read
+        prov["missed_growth"] = yahoo_cut_line(ticker, consumer, status="SUBSTITUTED")
+        return dict(got), prov
+    prov["status"] = ("UNMEASURED_NO_BARS_ON_HOST" if route == "mt5_own_bars"
+                      else "UNMEASURED_SUBSTITUTE_UNREACHABLE")
+    prov["missed_growth"] = yahoo_cut_line(ticker, consumer, status=prov["status"])
+    return None, prov
+
+
+#: THE FRED SERIES THIRD PARTIES OWN (terms_fence `fred_copyrighted`) and what stands in for each
+#: as live input. `route` None: no licensed source exists -> UNMEASURED_NO_LICENSED_SOURCE. The
+#: gold fix's stand-in is the desk's own XAUUSD, carried under its OWN name (the anchors' `GC`
+#: column, `GOLD_USD` + `GOLD_USD_SOURCE` in macro_state) -- never stored under the fix's id.
+FRED_COPYRIGHTED_SUBSTITUTES: dict[str, dict[str, Any]] = {
+    "VIXCLS": {"route": None, "series": None,
+               "why": ("Cboe owns VIX (FRED notes: 'Copyright, 2016, Chicago Board Options "
+                       "Exchange'); Cboe's own index-value route is held; no MT5 volatility-index "
+                       "CFD is in the universe registry. A realised-vol proxy from own bars is "
+                       "published under its OWN name (anchors `US500_RV21`), never as VIX")},
+    "BAMLH0A0HYM2": {"route": None, "series": None,
+                     "why": ("ICE Data Indices owns the ICE BofA HY OAS ('Reproduction of this "
+                             "data in any form is prohibited except with the prior written "
+                             "permission of ICE Data Indices'); no licensed credit-spread series "
+                             "is registered")},
+    "UMCSENT": {"route": None, "series": None,
+                "why": ("University of Michigan owns the sentiment index (FRED notes: 'Copyright, "
+                        "2016, Surveys of Consumers'); no licensed substitute is registered")},
+    "GOLDAMGBD228NLBM": {"route": "mt5_own_bars", "series": "XAUUSD",
+                         "note": ("spot XAUUSD daily close from the desk's own bars, not the LBMA "
+                                  "AM fix: carried as anchors `GC` / macro_state `GOLD_USD`")},
+    "GOLDPMGBD228NLBM": {"route": "mt5_own_bars", "series": "XAUUSD",
+                         "note": "spot XAUUSD from own bars, not the LBMA PM fix"},
+    "SP500": {"route": "mt5_own_bars", "series": "US500",
+              "note": "the Fusion US500 CFD level from own bars, not the S&P index"},
+    "NASDAQCOM": {"route": "mt5_own_bars", "series": "NAS100",
+                  "note": ("the Fusion NAS100 CFD (Nasdaq-100) from own bars -- a different "
+                           "index from the Composite, never stored under its id")},
+    "NIKKEI225": {"route": "mt5_own_bars", "series": "JPN225",
+                  "note": "the Fusion JPN225 CFD level from own bars, not the Nikkei index"},
+    "PCOPPUSDM": {"route": "mt5_own_bars", "series": "XCUUSD",
+                  "note": "the Fusion XCUUSD copper CFD from own bars, not the IMF monthly price"},
+}
+
+
+def fred_cut_line(series_id: str, consumer: str, *, status: str,
+                  past: dict | None = None) -> dict[str, Any]:
+    """The missed-growth line a refused third-party FRED series carries (kind
+    ideas_only_refusal, policy row `fred_copyrighted`): delta E[log W] UNMEASURED, never zero."""
+    sub = FRED_COPYRIGHTED_SUBSTITUTES.get(series_id) or {}
+    line = _terms_fence().held_missed_growth(
+        "fred_copyrighted", past, source=f"{consumer}:{series_id}", live_input_refusal=True)
+    line.update({"fred_series": series_id, "series_status": status,
+                 "substitute": (f"{sub['route']}:{sub['series']}" if sub.get("route") else None),
+                 "fred_notes": _terms_fence().FRED_COPYRIGHTED_NOTES.get(series_id, "")})
+    if status == UNMEASURED_NO_LICENSED_SOURCE:
+        line["why_unsubstituted"] = str(sub.get("why") or "no licensed source is registered")
+    return line
+
+
+def fred_refusal(series_id: str, consumer: str, *, substituted: bool = False
+                 ) -> dict[str, Any] | None:
+    """None for a series FRED may serve as live input; else its provenance row: status
+    (SUBSTITUTED when the caller carries the licensed stand-in, else
+    UNMEASURED_NO_LICENSED_SOURCE), the policy row, and its missed-growth line."""
+    if not _terms_fence().fred_series_source(series_id):
+        return None
+    sub = FRED_COPYRIGHTED_SUBSTITUTES.get(series_id) or {}
+    st = "SUBSTITUTED" if (substituted and sub.get("route")) else UNMEASURED_NO_LICENSED_SOURCE
+    return {"fred_series": series_id, "status": st, "policy_row": "fred_copyrighted",
+            "substitute": (f"{sub['route']}:{sub['series']}" if sub.get("route") else None),
+            "missed_growth": fred_cut_line(series_id, consumer, status=st)}
 
 
 # ------------------------------------------------------------------ RSS ----
@@ -230,9 +484,15 @@ def github_search(query: str) -> dict:
 
 
 def reddit_hot(subreddit: str = "algotrading", limit: int = 25) -> list[dict]:
+    """The public hot listing of one subreddit (crowding_miner's retail-adoption proxy).
+
+    Reddit is IDEAS_ONLY in the per-source policy (libs/data/terms_fence.py; the 2026-10-13
+    ruling retired the 2026-09-30 category fence): a public page read politely, one request per
+    cycle, never a cell's live input data. [] on any failure."""
     url = f"https://www.reddit.com/r/{subreddit}/hot.json?limit={limit}"
     try:
-        data = json.loads(_get(url, headers={"User-Agent": "research-crowding/1.0"}))
+        data = json.loads(_get(url, headers={"User-Agent": DESK_UA},
+                               live_input=False))     # IDEAS_ONLY (see above): hops re-checked
         posts = []
         for c in data.get("data", {}).get("children", []):
             p = c.get("data", {})
@@ -242,6 +502,61 @@ def reddit_hot(subreddit: str = "algotrading", limit: int = 25) -> list[dict]:
         return posts
     except Exception:
         return []
+
+
+#: Wikipedia articles that stand for "retail attention to systematic trading" -- the information
+#: class r/algotrading hot proxies for crowding_miner, from a second source. English edition, user agents only.
+ATTENTION_ARTICLES = ("Algorithmic_trading", "Day_trading", "Foreign_exchange_market",
+                      "Technical_analysis", "Retail_forex")
+
+
+def wiki_pageviews(article: str, project: str = "en.wikipedia", days: int = 60,
+                   end: datetime | None = None) -> list[tuple[str, int]]:
+    """Daily user pageviews for one article from the Wikimedia REST API (keyless; the Wikimedia
+    pageview data is CC0). Returns [(YYYYMMDD, views)] oldest first, or [] on any failure."""
+    from datetime import timedelta
+    e = (end or datetime.now(UTC)) - timedelta(days=1)
+    b = e - timedelta(days=max(1, days) - 1)
+    url = ("https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/"
+           f"{project}/all-access/user/{urllib.parse.quote(article, safe='')}/daily/"
+           f"{b:%Y%m%d}/{e:%Y%m%d}")
+    try:
+        data = json.loads(_get(url, headers={
+            "User-Agent": "quant-research-desk/1.0 (attention research; keyless REST client)"}))
+    except Exception:
+        return []
+    out = []
+    for it in data.get("items", []) or []:
+        ts = str(it.get("timestamp") or "")[:8]
+        if ts:
+            out.append((ts, int(it.get("views") or 0)))
+    return sorted(out)
+
+
+def attention_proxy(articles: tuple[str, ...] = ATTENTION_ARTICLES) -> dict:
+    """Retail attention to systematic trading, from Wikipedia pageviews: the lawful substitute for
+    and complement to the r/algotrading hot listing. `latest_views` is the sum of the last full day, `z_7d` the
+    last seven days against the prior fifty-three. UNMEASURED (never 0) when nothing answered."""
+    per: dict[str, list[tuple[str, int]]] = {a: wiki_pageviews(a) for a in articles}
+    got = {a: v for a, v in per.items() if v}
+    if not got:
+        return {"status": "UNMEASURED", "why": "no Wikimedia pageview series answered",
+                "source": "wikipedia_pageviews", "articles": list(articles)}
+    days: dict[str, int] = {}
+    for rows in got.values():
+        for d, v in rows:
+            days[d] = days.get(d, 0) + v
+    series = [days[d] for d in sorted(days)]
+    recent, base = series[-7:], series[:-7]
+    z = None
+    if len(base) >= 14:
+        mu = sum(base) / len(base)
+        sd = (sum((x - mu) ** 2 for x in base) / len(base)) ** 0.5
+        z = round(((sum(recent) / len(recent)) - mu) / sd, 3) if sd > 0 else None
+    return {"status": "MEASURED", "source": "wikipedia_pageviews",
+            "articles": sorted(got), "articles_missing": sorted(set(articles) - set(got)),
+            "latest_day": sorted(days)[-1], "latest_views": series[-1],
+            "mean_7d": round(sum(recent) / len(recent), 1), "z_7d": z, "n_days": len(series)}
 
 
 def now_iso() -> str:

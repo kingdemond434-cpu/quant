@@ -16,8 +16,14 @@ source stays HTTP-dead for live collection: an archive is history, not a feed. A
 `DEAD_AFTER_PASSES` consecutive failed repairs the source is marked `dead_since`, which is a
 verdict a reader can act on, never a row that quietly stopped appearing.
 
-WHAT IT NEVER DOES. It does not touch a source that answered 401/403 (that is access control,
-not a route), one blocked by robots.txt, or one declared `key`/`paid` without a key; it never
+WHAT IT NEVER DOES. A source that answered 401/403/429 or a WAF/challenge page -- to the
+collector or to any variant probe here -- is a HARD STOP: no further variant, no scheme or
+`www` swap, no Wayback lookup. That is the site saying no, and trying its other doors or an
+archive of it is a route-around. The stop is recorded as a PERSON-RELEASED hold in this organ's
+own state (`_holds["site:<host>"]`, the record shape hard_stop and polite_fetch share, with
+`released_by` null and a missed_growth line). It never lapses on a timer; it stands until a
+person runs `source_fixer.py --release site:<host> --by <name>`. It does not touch a source
+blocked by robots.txt, or one declared `key`/`paid` without a key; it never
 hammers a host (one variant per second, the collector's own politeness), and it never invents a
 URL that does not derive from the registered one.
 """
@@ -35,6 +41,11 @@ from pathlib import Path
 from typing import Any
 
 BASE = Path(__file__).resolve().parents[1]
+if str(BASE.parent.parent) not in sys.path:
+    sys.path.insert(0, str(BASE.parent.parent))
+from libs.data import polite_fetch as _pf  # noqa: E402
+from libs.data.polite_fetch import fenced_urlopen  # noqa: E402
+
 REGISTRY = BASE / "data" / "asia_sources.json"
 COLLECTOR_REPORT = BASE / "reports" / "ASIA_COLLECTOR.json"
 COLLECTOR_STATE = BASE / "data" / "lake" / "collector_state.json"
@@ -42,7 +53,16 @@ OUT = BASE / "reports" / "SOURCE_FIXER.json"
 STATE = BASE / "data" / "lake" / "source_fixer_state.json"
 
 FIX_STATUSES = frozenset({"HTTP_ERROR", "UNREACHABLE", "ROUTE_CHANGED"})
-SKIP_HTTP = frozenset({401, 403})
+# Access control and rate refusal: a hard stop on the source, held until a person releases it.
+HARD_STOP_HTTP = frozenset({401, 403, 429})
+SKIP_HTTP = HARD_STOP_HTTP
+# Bytes a WAF/bot-challenge interstitial carries in its first 4 KB (Cloudflare, Akamai,
+# Imperva, generic captcha walls). Matched lower-case.
+WAF_MARKERS: tuple[bytes, ...] = (
+    b"cf-chl", b"challenge-platform", b"just a moment...", b"attention required! | cloudflare",
+    b"cf-browser-verification", b"captcha", b"_incapsula_resource", b"akamai bot manager",
+    b"access denied</title>", b"request unsuccessful. incapsula",
+)
 DEAD_AFTER_PASSES = 3
 VARIANT_GAP_S = 1.0
 TIMEOUT_S = 15.0
@@ -96,16 +116,171 @@ def candidate_urls(url: str) -> list[str]:
     return out
 
 
+def _tf() -> Any:
+    """libs.data.terms_fence, importable from a desk-rooted process too."""
+    root = str(BASE.parents[1])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.data import terms_fence
+    return terms_fence
+
+
+#: The status `_probe` returns for a URL on a HELD source (libs/data/terms_fence.py:
+#: METHOD_BLOCKED or NEEDS_KEY) or a redirect into a login wall: never requested, never a repair.
+TERMS_FENCED = "terms_fenced"
+
+
+def looks_like_waf(head: bytes, headers: Any = None) -> bool:
+    """A bot-challenge / WAF interstitial rather than the publisher's content."""
+    try:
+        if headers is not None and str(headers.get("cf-mitigated") or "").lower() == "challenge":
+            return True
+    except AttributeError:
+        pass
+    low = head[:4096].lower()
+    return any(m in low for m in WAF_MARKERS)
+
+
+def _verdict_hard_stop(verdict: dict[str, Any]) -> str | None:
+    """Why the collector's own verdict is already a hard stop (None when it is not)."""
+    http = verdict.get("http")
+    if isinstance(http, int) and http in HARD_STOP_HTTP:
+        return f"HTTP {http}"
+    if verdict.get("waf") or "challenge" in str(verdict.get("why") or "").lower() \
+            or str(verdict.get("status") or "") == "WAF":
+        return "WAF/challenge page"
+    return None
+
+
+HOLDS_KEY = "_holds"
+
+
+def _host(url: str) -> str:
+    try:
+        return (urllib.parse.urlsplit(url).hostname or "").lower()
+    except ValueError:
+        return ""
+
+
+def _site_keys(host: str) -> tuple[str, ...]:
+    """The hold keys that cover `host`: itself and its www/bare twin (one site, two doors)."""
+    if not host:
+        return ()
+    twin = host[4:] if host.startswith("www.") else "www." + host
+    return (f"site:{host}", f"site:{twin}")
+
+
+def hold_row(url: str, verdict: str, status: int | None) -> dict[str, Any]:
+    """The shared person-held record (same shape as hard_stop / polite_fetch).
+
+    Active while released_by is null. There is no recheck_after_ts: no timer releases it."""
+    host = _host(url)
+    return {"key": f"site:{host}", "verdict": verdict, "status": status, "host": host,
+            "url": url[:300], "held_at": time.time(), "released_by": None,
+            "released_at": None,
+            "missed_growth": {"delta_elogw": "UNMEASURED",
+                              "cause": (f"{verdict} from {host}: the site refused; no variant, "
+                                        f"scheme/www swap or archive lookup is tried until a "
+                                        f"person releases {f'site:{host}'}")}}
+
+
+def _active(row: Any) -> bool:
+    # A row carrying a legacy recheck_after_ts is still active: time never releases a hold.
+    return isinstance(row, dict) and not row.get("released_by")
+
+
+def held_by(holds: dict[str, Any], url: str) -> dict[str, Any] | None:
+    for k in _site_keys(_host(url)):
+        if _active(holds.get(k)):
+            return dict(holds[k])
+    return None
+
+
+def release(key: str, by: str) -> dict[str, Any]:
+    """A person releases one hold. The only path that ever clears it.
+
+    `site:x` and its www/bare twin are ONE site (`_site_keys`), so releasing either releases
+    every stored key of the pair; a twin left active would keep holding the released site."""
+    if not by.strip():
+        raise ValueError("a release names the person releasing it")
+    fstate = _read(STATE, {})
+    holds = fstate.get(HOLDS_KEY) if isinstance(fstate, dict) else None
+    if not isinstance(holds, dict) or key not in holds:
+        raise KeyError(key)
+    at = time.time()
+    host = key[5:] if key.startswith("site:") else key
+    for k in _site_keys(host):
+        if isinstance(holds.get(k), dict) and not holds[k].get("released_by"):
+            holds[k]["released_by"] = by.strip()
+            holds[k]["released_at"] = at
+    _write_atomic(STATE, json.dumps(fstate, indent=1))
+    return dict(holds[key])
+
+
+#: `_probe`'s content-type prefix for a URL whose SITE is under a person-held access hold in the
+#: polite fetchers' shared record (`polite_fetch.person_hold`): a refusal, never requested.
+ACCESS_HELD = "access_held"
+#: ... and for a URL its origin's robots.txt refuses (disallowed or unreadable): not requested.
+ROBOTS_REFUSED = "robots_refused"
+#: ... and for a redirect: NEVER FOLLOWED here (`polite_fetch.open_no_redirect`), so a variant
+#: that answers 30x to another host never makes the fixer request that host unchecked.
+REDIRECTED = "redirect"
+
+
 def _probe(url: str) -> tuple[int | None, str, bytes]:
-    """(status, content-type, first bytes) for a GET; status None when unreachable."""
+    """(status, content-type, first bytes) for a GET; status None when unreachable.
+
+    A WAF/challenge page is reported as status 403 so the caller treats it as a hard stop.
+
+    METHOD FENCE (libs/data/terms_fence.py): a HELD URL -- or a redirect into one or into a
+    login wall -- is never requested or followed; it answers (None, "terms_fenced:<source>",
+    b"").
+
+    POLITE CHECKS (audit SOURCE_FIXER_HARD_STOP_31618ff54): the site's person-held access hold
+    is asked BEFORE the request (`access_held:`; robots.txt is a label, never a refusal, LAWS 5e),
+    nothing sent); the request goes through the polite no-redirect opener
+    (`polite_fetch.open_no_redirect`), so a 30x is reported as (code, "redirect:<target>", b"")
+    and its target is never requested; a 401/403/429 or challenge holds the site that refused --
+    the probed URL's own -- in the shared access record as well as in this organ's holds."""
+    tf = _tf()
+    p = tf.platform_of_url(url)
+    if p:
+        return None, f"{TERMS_FENCED}:{p}", b""
+    held = _pf.person_hold(url)
+    if held:
+        return None, f"{ACCESS_HELD}:{held}", b""
+    ok, why = _pf.default_access().permits(url)
+    if not ok:
+        held = _pf.person_hold(url)        # robots.txt itself may have refused (401/403/429)
+        return None, (f"{ACCESS_HELD}:{held}" if held else f"{ROBOTS_REFUSED}:{why}"), b""
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "*/*"})
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT_S) as r:
+        with _pf.open_no_redirect(req, TIMEOUT_S) as r:
             status = int(getattr(r, "status", 0) or 0)
             ctype = str(r.headers.get("Content-Type") or "").lower()
-            return status, ctype, r.read(4096)
+            head = r.read(4096)
+            if looks_like_waf(head, r.headers):
+                _pf.hold_site(url, "WAF", "challenge page answered a source_fixer variant")
+                return 403, ctype, b""
+            return status, ctype, head
+    except tf.TermsFenced as exc:
+        return None, f"{TERMS_FENCED}:{exc.platform}", b""
     except urllib.error.HTTPError as e:
-        return int(getattr(e, "code", 0) or 0), "", b""
+        code = int(getattr(e, "code", 0) or 0)
+        if code in _pf.REDIRECT_STATUS:
+            loc = str((e.headers.get("Location") if e.headers is not None else "") or "")
+            e.close()
+            return code, f"{REDIRECTED}:{urllib.parse.urljoin(url, loc)[:300]}", b""
+        if code in HARD_STOP_HTTP:
+            _pf.hold_site(url, code, f"HTTP {code} on a source_fixer variant")
+            return code, "", b""
+        try:
+            if looks_like_waf(e.read(4096), e.headers):
+                _pf.hold_site(url, "WAF", f"challenge on HTTP {code} (source_fixer variant)")
+                return 403, "", b""
+        except (OSError, ValueError, AttributeError):
+            pass
+        return code, "", b""
     except (urllib.error.URLError, TimeoutError, OSError, ValueError):
         return None, "", b""
 
@@ -128,14 +303,22 @@ def _acceptable(expect: str, ctype: str, head: bytes) -> tuple[bool, str]:
 
 
 def _wayback(url: str) -> str | None:
+    """The newest archived copy of `url`, or None. An archived copy of a HELD page is the held
+    page, so a held URL is never looked up and a held snapshot never returned."""
+    tf = _tf()
+    if tf.platform_of_url(url):
+        return None
     try:
-        with urllib.request.urlopen(WAYBACK + urllib.parse.quote(url, safe=""),
-                                    timeout=TIMEOUT_S) as r:
+        with fenced_urlopen(WAYBACK + urllib.parse.quote(url, safe=""),
+                            timeout=TIMEOUT_S) as r:
             doc = json.loads(r.read().decode("utf-8", errors="replace"))
+    except tf.TermsFenced:
+        return None
     except (OSError, ValueError, urllib.error.URLError):
         return None
     snap = ((doc.get("archived_snapshots") or {}).get("closest") or {})
-    return str(snap.get("url")) if snap.get("available") and snap.get("url") else None
+    out = str(snap.get("url")) if snap.get("available") and snap.get("url") else None
+    return None if out and tf.platform_of_url(out) else out
 
 
 def _failed_sources(registry_rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
@@ -164,35 +347,85 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False) -> dict[str, Any]:
     fstate = _read(STATE, {})
     if not isinstance(fstate, dict):
         fstate = {}
+    holds = fstate.setdefault(HOLDS_KEY, {})
+    if not isinstance(holds, dict):
+        holds = fstate[HOLDS_KEY] = {}
     started = time.monotonic()
     results: list[dict[str, Any]] = []
+    terms_fenced: dict[str, int] = {}
     repaired = 0
     for sid, verdict in sorted(failed.items()):
+        if sid == HOLDS_KEY:
+            continue
         if time.monotonic() - started > budget_s:
             results.append({"id": sid, "outcome": "DEFERRED", "why": "fixer budget exhausted"})
             continue
         src = next(r for r in rows if str(r.get("id")) == sid)
-        http = verdict.get("http")
-        if isinstance(http, int) and http in SKIP_HTTP:
-            results.append({"id": sid, "outcome": "NOT_A_ROUTE_PROBLEM",
-                            "why": f"HTTP {http} is access control; no variant can fix it"})
+        src_url = str(src.get("url_override") or src.get("url") or "")
+        standing = held_by(holds, src_url)
+        if standing:
+            results.append({"id": sid, "outcome": "HELD", "hold": standing,
+                            "why": "person-released hold stands; no request is made"})
+            continue
+        stop = _verdict_hard_stop(verdict)
+        if stop:
+            row = hold_row(src_url, stop, verdict.get("http") if isinstance(
+                verdict.get("http"), int) else None)
+            holds[row["key"]] = row
+            results.append({"id": sid, "outcome": "HELD", "hold": row,
+                            "why": f"{stop} is a hard stop; no variant, no Wayback"})
             continue
         if str(src.get("access") or "public") in ("key", "paid"):
             results.append({"id": sid, "outcome": "NOT_A_ROUTE_PROBLEM",
                             "why": "declares key/paid access; a missing key is not a dead route"})
             continue
         base_url = str(src.get("url_override") or src.get("url") or "")
+        fenced = _tf().platform_of_url(base_url) or _tf().fenced_source(sid)
+        if fenced:
+            # NEVER REPAIRED, NEVER PROBED: a HELD source is not a dead route.
+            terms_fenced[fenced] = terms_fenced.get(fenced, 0) + 1
+            results.append({"id": sid, "outcome": "TERMS_FENCED", "platform": fenced,
+                            "why": _tf().refusal(fenced)["why"]})
+            continue
         expect = str(src.get("expect") or "any")
         tried: list[dict[str, Any]] = []
         fix: str | None = None
+        refused: dict[str, Any] | None = None
         for cand in candidate_urls(base_url):
+            refused = held_by(holds, cand)
+            if refused:  # another source's refusal already holds this door
+                break
             status, ctype, head = _probe(cand)
+            if ctype.startswith(ACCESS_HELD):
+                # The shared record already holds this site: a hard stop, exactly like a 403.
+                tried.append({"url": cand, "status": None, "ok": False, "why": ctype})
+                refused = hold_row(cand, ctype, None)
+                holds[refused["key"]] = refused
+                break
+            if ctype.startswith((ROBOTS_REFUSED, REDIRECTED)):
+                tried.append({"url": cand, "status": status, "ok": False, "why": ctype})
+                time.sleep(VARIANT_GAP_S)
+                continue
+            if ctype.startswith(TERMS_FENCED):
+                tried.append({"url": cand, "status": None, "ok": False, "why": ctype})
+                continue
+            if status in HARD_STOP_HTTP:
+                tried.append({"url": cand, "status": status, "ok": False})
+                refused = hold_row(cand, f"HTTP {status} (a WAF/challenge page reads as 403)",
+                                   status)
+                holds[refused["key"]] = refused
+                break
             ok, _shape = (_acceptable(expect, ctype, head) if status == 200 else (False, ""))
             tried.append({"url": cand, "status": status, "ok": ok})
             if ok:
                 fix = cand
                 break
             time.sleep(VARIANT_GAP_S)
+        if refused:
+            results.append({"id": sid, "outcome": "HELD", "hold": refused,
+                            "tried": tried,
+                            "why": "a variant was refused; hard stop, no Wayback"})
+            continue
         entry = fstate.setdefault(sid, {"failed_passes": 0})
         if fix:
             entry.update({"failed_passes": 0, "fixed_at": datetime.now(UTC).isoformat(
@@ -222,6 +455,15 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False) -> dict[str, Any]:
         _write_atomic(REGISTRY, json.dumps(registry, indent=1, ensure_ascii=False))
     if not dry_run:
         _write_atomic(STATE, json.dumps(fstate, indent=1))
+    # Every standing hold, including one on a source the collector no longer lists as failed:
+    # a hold leaves this list only when a person releases it.
+    # A dry run persists nothing, so every hold it lists is labelled: it was seen, not recorded.
+    standing_holds = [({**v, "dry_run": True} if dry_run else dict(v))
+                      for _k, v in sorted(holds.items()) if _active(v)]
+    if dry_run:
+        for r in results:
+            if isinstance(r.get("hold"), dict):
+                r["hold"] = {**r["hold"], "dry_run": True}
     doc = {
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "rule": ("every source the collector could not read gets the webmaster's variants tried "
@@ -229,6 +471,9 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False) -> dict[str, Any]:
                  "becomes url_override in the registry; three failed passes mark dead_since"),
         "n_failed_sources": len(failed), "n_repaired": repaired,
         "n_dead": sum(1 for r in results if r.get("outcome") == "DEAD"),
+        "n_terms_fenced": sum(terms_fenced.values()), "terms_fenced": terms_fenced,
+        "n_held": len(standing_holds), "holds": standing_holds,
+        "holds_persisted": not dry_run,
         "dry_run": dry_run, "results": results,
     }
     _write_atomic(OUT, json.dumps(doc, indent=1, ensure_ascii=False))
@@ -239,7 +484,15 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--budget", type=float, default=240.0)
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--release", metavar="KEY", help="release one person-held hold (site:<host>)")
+    ap.add_argument("--by", metavar="NAME", help="the person releasing it")
     args = ap.parse_args(argv)
+    if args.release:
+        if not args.by:
+            ap.error("--release needs --by <name>")
+        row = release(args.release, args.by)
+        print(f"released {row['key']} by {row['released_by']}")
+        return 0
     doc = run(budget_s=args.budget, dry_run=args.dry_run)
     print(f"source fixer: {doc['n_failed_sources']} failed source(s), {doc['n_repaired']} "
           f"repaired, {doc['n_dead']} dead -> {OUT}")

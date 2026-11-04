@@ -31,9 +31,7 @@ import io
 import json
 import re
 import sys
-import urllib.error
 import urllib.parse
-import urllib.request
 from collections import defaultdict, deque
 from datetime import UTC, datetime
 from pathlib import Path
@@ -46,6 +44,8 @@ _ROOT = DESK.parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from libs.data import polite_fetch as pf  # noqa: E402
+from libs.data import terms_fence as _tf  # noqa: E402
 from libs.data.pit_certificate import certify  # noqa: E402
 from libs.data.pit_certificate import write as write_certificate  # noqa: E402
 from libs.research import country_lab as country_lab  # noqa: E402
@@ -55,10 +55,10 @@ STORE = DESK / "data" / "acquired"
 REGISTRY = STORE / "registry.json"
 REPORT = DESK / "reports" / "dataset_acquisition.json"
 
-#: A real browser UA. Measured on this box: the default urllib agent draws 403s from several
-#: statistics sites, which read downstream as dead sources rather than as a rejected header.
-_UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
-       "Chrome/124.0 Safari/537.36")
+#: THE DESK'S HONEST AGENT (auditor ruling 2026-10-14: no browser impersonation). A site that
+#: refuses this desk's own name has answered: the refusal is recorded and held by polite_fetch's
+#: HostAccess (401/403/429 hard stop, robots.txt per origin), never routed around.
+_UA = pf.DESK_UA
 
 FETCH_TIMEOUT_S = 25
 MAX_BYTES = 60 * 1024 * 1024          #: real statistical archives are tens of MB
@@ -133,15 +133,40 @@ def _fetch(url: str) -> tuple[bytes | None, str]:
     landing pages. Reading the header costs nothing and turns a confusing parse failure into an
     accurate one -- "this was a web page" rather than "this data was malformed".
     """
-    req = urllib.request.Request(url, headers={"User-Agent": _UA, "Accept": "*/*"})
-    try:
-        with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_S) as r:
-            ctype = str(r.headers.get("Content-Type") or "").lower()
-            if "html" in ctype:
-                return None, "html"
-            return r.read(MAX_BYTES + 1), ctype
-    except (urllib.error.URLError, urllib.error.HTTPError, OSError, ValueError):
-        return None, "unreachable"
+    # THE LIVE-INPUT CHECK, BEFORE ANY REQUEST (libs/data/terms_fence.py, ruling of 2026-10-13):
+    # an acquired dataset is live input, so a URL on an IDEAS_ONLY or held source is never
+    # requested here, and a 30x into a held host or a login wall is never followed
+    # (`guarded_urlopen`); either comes back as `terms_fenced:<source>`, which `acquire` counts.
+    platform = _tf.input_source(url)   # live input: IDEAS_ONLY or held
+    if platform:
+        return None, f"terms_fenced:{platform}"
+    # THE POLITE DOOR (libs/data/polite_fetch.get): the desk's honest agent, robots.txt per
+    # origin and per redirect hop, the terms fence + the live-input rule on every hop, and a
+    # 401/403/429 hard stop that holds the whole site (no retry, no other route; persisted in
+    # HostAccess, so the next run does not ask again). retries=0: nothing is re-asked.
+    r = pf.get(url, headers={"User-Agent": _UA, "Accept": "*/*"}, timeout=FETCH_TIMEOUT_S,
+               retries=0, max_bytes=MAX_BYTES + 1, leg="acquire_datasets", live_input=True)
+    if r.ok:
+        if "html" in r.content_type.lower():
+            return None, "html"
+        return r.body, r.content_type.lower()
+    err = str(r.error or "")
+    if r.verdict:
+        # a refusal (401 NEEDS_KEY, 403/429/challenge METHOD_BLOCKED, robots): recorded by name
+        code = f"http_{r.status}" if r.status else r.verdict.lower()
+        return None, f"{r.verdict}:{code}"
+    if r.status is None and ":" in err:
+        # THE FENCE, first URL or a hop: "STATUS:platform: url -- why"
+        status, _, rest = err.partition(":")
+        plat = rest.split(":", 1)[0].strip()
+        if plat == "login_wall":
+            # A redirect INTO a login / sign-in / CAPTCHA wall is METHOD_BLOCKED: the wall is
+            # never requested, and the endpoint is recorded as blocked by method, not as
+            # unreachable (a wall is an access control, not an outage).
+            return None, f"{_tf.METHOD_BLOCKED}:login_wall"
+        if status in (_tf.IDEAS_ONLY, _tf.METHOD_BLOCKED, _tf.NEEDS_KEY):
+            return None, f"terms_fenced:{plat}"
+    return None, "unreachable"
 
 
 def _parse(raw: bytes, url: str) -> pd.DataFrame | None:
@@ -257,6 +282,22 @@ def _numeric_series(df: pd.DataFrame, stem: str) -> dict[str, pd.Series]:
     return out
 
 
+#: Endpoints the last `_endpoints` pass left unselected because they sit on an IDEAS_ONLY or held
+#: source (never live input), by source. Such a URL never takes an hourly seat; the count says so.
+_ENDPOINT_FENCED: dict[str, int] = {}
+#: The `_ENDPOINT_FENCED` key for endpoints skipped because their discovery came from the
+#: deep-forest index route (its owner decides when this acquirer, now DESK_UA + robots, takes them).
+INDEX_ROUTE_SKIP = "index_route_needs_index_ua_and_robots"
+
+
+def _fenced_pick(url: str) -> bool:
+    """True (and counted) when `url` is on an IDEAS_ONLY or held source: never selected."""
+    p = _tf.input_source(url)
+    if p:
+        _ENDPOINT_FENCED[p] = _ENDPOINT_FENCED.get(p, 0) + 1
+    return bool(p)
+
+
 #: Extra seats per pass for regional-parity discoveries (rows marked `lane: regional_parity`).
 PARITY_LANE = "regional_parity"
 PARITY_LANE_MAX = 6
@@ -284,7 +325,7 @@ def _parity_lane(fresh: set[str], cap: int = PARITY_LANE_MAX) -> list[tuple[str,
             for u in r.get("endpoints") or []:
                 u = str(u)
                 if (u in taken or u in fresh or _KEYED.search(u)
-                        or terms_verdict(u) != PERMITTED):
+                        or terms_verdict(u) != PERMITTED or _fenced_pick(u)):
                     continue
                 taken.add(u)
                 out.append((u, str(r.get("host") or urllib.parse.urlparse(u).netloc)))
@@ -301,6 +342,7 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
     initializer.  Durable identity prevents duplicate series; recency must decide refetching.
     """
     fresh: set[str] = set()
+    _ENDPOINT_FENCED.clear()
     now = now or datetime.now(UTC)
     if REGISTRY.exists():
         try:
@@ -330,6 +372,8 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
         if u in fresh or u in seen:
             continue
         seen.add(u)
+        if _fenced_pick(u):
+            continue
         out.append((u, urllib.parse.urlparse(u).netloc or "seed"))
         if len(out) >= limit:
             return out + lane
@@ -359,6 +403,8 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
             if url in seen or url in fresh or _KEYED.search(url):
                 continue
             seen.add(url)
+            if _fenced_pick(url):
+                continue
             buckets[region].append((url, urllib.parse.urlparse(url).netloc or code))
     active = deque(sorted(region for region, rows in buckets.items() if rows))
     while active and len(out) < limit:
@@ -374,10 +420,24 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
         except (OSError, ValueError):
             continue
         for r in rows:
+            # AN INDEX-ROUTE DISCOVERY (deep_forest_miner, `route: "index"`) is never fetched
+            # here (audit 2026-10-14 MF-B). Skipped and counted, never selected. The original
+            # reason -- a browser string and no robots.txt -- is gone on this branch: `_fetch`
+            # sends `polite_fetch.DESK_UA` and `polite_fetch.get` reads each hop's robots.txt
+            # through `HostAccess` before any request. Lifting the skip is the index route
+            # owner's call under each row's fetch_policy, not this acquirer's.
+            if isinstance(r, dict) and str(r.get("route") or "").startswith("index"):
+                n = len(r.get("endpoints") or [])
+                if n:
+                    _ENDPOINT_FENCED[INDEX_ROUTE_SKIP] = (
+                        _ENDPOINT_FENCED.get(INDEX_ROUTE_SKIP, 0) + n)
+                continue
             for u in (r.get("endpoints") or []):
                 if u in seen or u in fresh or _KEYED.search(u):
                     continue
                 seen.add(u)
+                if _fenced_pick(u):
+                    continue
                 out.append((u, str(r.get("host") or "")))
                 if len(out) >= limit:
                     return out + lane
@@ -397,6 +457,8 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
 
     tried = kept = 0
     refusals: dict[str, int] = {}
+    terms_fenced: dict[str, int] = {}
+    method_blocked: dict[str, int] = {}
     new_series: list[str] = []
 
     def _refuse(why: str) -> None:
@@ -413,6 +475,22 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
 
         raw, ctype = _fetch(url)
         if raw is None:
+            if ctype.startswith("terms_fenced:"):
+                terms_fenced[ctype.split(":", 1)[1]] = \
+                    terms_fenced.get(ctype.split(":", 1)[1], 0) + 1
+                _refuse_url(f"terms fence ({ctype.split(':', 1)[1]}): never requested")
+                continue
+            if ctype.startswith(("NEEDS_KEY:", "ROBOTS_")):
+                # refused by the site or its robots.txt: a hard stop, held, never re-asked
+                _refuse_url(f"refused ({ctype}): hard stop, not retried")
+                reg["by_url"][url]["status"] = ctype.split(":", 1)[0]
+                continue
+            if ctype.startswith(f"{_tf.METHOD_BLOCKED}:"):
+                why = ctype.split(":", 1)[1]
+                method_blocked[why] = method_blocked.get(why, 0) + 1
+                _refuse_url(f"{_tf.METHOD_BLOCKED} ({why}): redirect not followed")
+                reg["by_url"][url]["status"] = _tf.METHOD_BLOCKED
+                continue
             _refuse_url("served HTML, not data" if ctype == "html" else "unreachable")
             continue
         if len(raw) > MAX_BYTES:
@@ -493,6 +571,11 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
         "endpoints_tried": tried, "datasets_kept": kept,
         "new_series": new_series, "total_series": len(reg["series"]),
         "refusals": refusals,
+        # ENDPOINTS FAILING THE LIVE-INPUT CHECK, COUNTED (libs/data/terms_fence.py).
+        "terms_fenced": {"by_platform": terms_fenced, "total": sum(terms_fenced.values()),
+                         "endpoints_skipped_at_selection": dict(_ENDPOINT_FENCED)},
+        # A redirect into a login / CAPTCHA wall: refused by METHOD, never followed or read.
+        "method_blocked": {"by_reason": method_blocked, "total": sum(method_blocked.values())},
         "rule": ("point-in-time or nothing: a frame with no usable date column is refused rather "
                  "than stamped with now, because backfilling today's value across history "
                  "manufactures an edge that never existed"),
