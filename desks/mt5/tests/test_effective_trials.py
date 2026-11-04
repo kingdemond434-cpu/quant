@@ -318,5 +318,6 @@ def test_the_alias_correction_is_published_beside_the_raw_census(tmp_path: Path)
     # No direction is asserted: the within-cell charge is a similarity participation ratio, and
     # removing a key two rows SHARED can lower their similarity. Both numbers are published.
     assert ac["effective_after"] > 0 and ac["charged_after"] >= 1
+    assert ac["sr0_after"] is not None or ac["sr0_basis"].startswith(et.UNMEASURED)
     assert doc["applied"]["status"] == "REFUSED_UNAUTHORISED"   # measuring never moves the wall
     assert et.spec_fixed_trial_count(spec) == 597

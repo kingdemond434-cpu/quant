@@ -463,6 +463,9 @@ def build(*, docket: Path | None = None, spec: Path | None = None,
             "charged_before": charged_raw, "charged_after": charged,
             "sr0_before": _round_or_none(sr0(charged_raw, variance)),
             "sr0_after": _round_or_none(sr0(charged, variance)),
+            # null sr0 means UNMEASURED, never missing: this names why (audit nit).
+            "sr0_basis": (variance_basis if variance is not None
+                          else f"{UNMEASURED}: {variance_basis}"),
         },
         "applied": applied,
         "judge_input_proof": proof,
