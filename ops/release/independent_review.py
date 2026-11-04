@@ -123,7 +123,18 @@ class Unavailable(RuntimeError):
 
 def _gh(*args: str) -> str:
     env = {k: v for k, v in os.environ.items() if k not in KEY_ENVS}
-    p = subprocess.run(["gh", "api", *args], capture_output=True, text=True, env=env, check=False)
+    # A diff is bytes: a Shift-JIS fixture or a binary file is not UTF-8, and decoding it strictly
+    # crashed the reviewer (UnicodeDecodeError, #674 run 41742215537). Invalid bytes show as U+FFFD,
+    # and `undecodable` then fails any code or config path that carries one (#681 audit MF1).
+    p = subprocess.run(
+        ["gh", "api", *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=env,
+        check=False,
+    )
     if p.returncode != 0:
         raise RuntimeError(f"gh api {args[0]}: {p.stderr.strip()[:300]}")
     return p.stdout
@@ -143,6 +154,54 @@ def _http(url: str, body: dict[str, Any] | None, headers: dict[str, str]) -> Any
         raise RuntimeError(f"HTTP {exc.code}") from None
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         raise Unavailable(type(exc).__name__) from None
+
+
+#: Paths whose undecodable bytes are only data. Everything else -- code, scripts, config, and
+#: anything under ops/ or .github/ -- FAILS on a single U+FFFD: a `# -*- coding: shift_jis -*-`
+#: .py or a .ps1 in a legacy code page RUNS as text the model only saw as replacement characters
+#: (#681 audit MF1). Unsure is code.
+DATA_SUFFIXES = (".csv", ".tsv", ".txt", ".parquet", ".dat", ".bin")
+NEVER_DATA = ("ops/", ".github/")
+
+
+#: Never data, even inside a fixtures directory: these run, or configure what runs.
+CODE_SUFFIXES = (
+    ".py", ".pyi", ".ps1", ".psm1", ".psd1", ".bat", ".cmd", ".sh", ".yml", ".yaml", ".toml",
+    ".json", ".jsonl", ".cfg", ".ini", ".js", ".ts", ".rs", ".mq5", ".mqh", ".md",
+)  # fmt: skip
+
+
+def _is_data(path: str) -> bool:
+    low = path.lower()
+    if low.startswith(NEVER_DATA) or low.endswith(CODE_SUFFIXES):
+        return False
+    return (low.startswith("tests/") and "/fixtures/" in low) or low.endswith(DATA_SUFFIXES)
+
+
+def undecodable(diff: str) -> tuple[dict[str, int], dict[str, int]]:
+    """(code paths, data paths) -> how many U+FFFD each file's section of the diff carries."""
+    code: dict[str, int] = {}
+    data: dict[str, int] = {}
+    path = ""
+    head = False  # inside a file's header lines, before its first hunk
+    for line in diff.split("\n"):
+        if line.startswith("diff --git a/") and " b/" in line:
+            # "a/X b/X": the halves, never the first " b/" (a path may hold " b/" itself; #681
+            # audit SF). A rename's halves differ: its `+++ b/` header line names it below.
+            h = line[len("diff --git a/") :]
+            k = (len(h) - 3) // 2
+            path = h[:k] if h[k : k + 3] == " b/" and h[:k] == h[k + 3 :] else ""
+            head = True
+            continue
+        if head and line.startswith("@@"):
+            head = False
+        elif head and line.startswith("+++ b/"):
+            path = line[len("+++ b/") :]  # a header line, never an added "++ b/..." in a hunk
+        n = line.count("\ufffd")
+        if n:
+            out = data if path and _is_data(path) else code
+            out[path or "?"] = out.get(path or "?", 0) + n
+    return code, data
 
 
 def changed_files(diff: str) -> list[str]:
@@ -975,6 +1034,13 @@ def main(argv: list[str] | None = None) -> int:
         print("FAIL: the diff carries a line break other than \\n (a lone CR, U+2028 ...)")
         _annotate("FAIL: the diff carries a line break other than \\n (a lone CR, U+2028 ...)")
         return 1
+    bad, fixtures = undecodable(diff)
+    if bad:  # code the model would read as U+FFFD but the box would run as text: never passed
+        msg = (f"FAIL: undecodable bytes in {len(bad)} code or config path(s): "
+               + ", ".join(sorted(bad)[:5]) + "; the manual path reads them")  # fmt: skip
+        print(msg)
+        _annotate(msg)
+        return 1
     spoken = addressed_to_reviewer(diff)
     if spoken:  # never put in front of a model: one that obeys it is one PASS short of a merge
         print("FAIL: the diff addresses the reviewer; the manual path reads it")
@@ -983,7 +1049,8 @@ def main(argv: list[str] | None = None) -> int:
         for line in spoken[:20]:
             print(f"  + {line}")
         return 1
-    files = changed_files(diff)
+    files = [f"{f} ({fixtures[f]} undecodable bytes, shown as U+FFFD)" if f in fixtures else f
+             for f in changed_files(diff)]  # fmt: skip
     want = int(pr.get("changed_files") or 0)
     named = {line for line in diff.split("\n") if line.startswith("diff --git a/")}
     if len(named) != want:  # a truncated diff is never reviewed as if it were whole
