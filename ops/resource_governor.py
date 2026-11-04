@@ -1,44 +1,43 @@
 #!/usr/bin/env python3
-"""THE BOX RESOURCE GOVERNOR -- release, risk and deploy always get CPU; research takes the rest.
+"""THE BOX RESOURCE GOVERNOR -- release, risk and deploy always get CPU ahead of research.
 
 WHY (measured on the Contabo box, 2026-11-03 23:31Z). CPU sat at 100%. Every Quant-WorkflowGate
 sweep since 22:46Z was killed by its 30-minute limit before it logged (0x41306), so no PR could
 merge automatically. The 22:50Z adoption stalled for more than 40 minutes holding the git
-writer lock. About 50 research pythons fanned out from one SYSTEM tree in the hour, and five
-had been running for days. Scheduled tasks start BELOW_NORMAL by default, so the gate and the
-adoption competed at the SAME priority as about 60 research threads on 18 cores.
+writer lock. Scheduled tasks start BELOW_NORMAL by default, so the gate and the adoption
+competed at the SAME priority as about 60 research threads on 18 cores.
 
 zuck 2026-11-03 23:43Z: guarantee resources for risk controls, the release authority, the merge
-gate and deployment; keep research running wherever capacity safely permits; bounded research
-concurrency, overload-triggered throttling, no uncontrolled fan-outs, no simple timeout or
-priority bump.
+gate and deployment; keep research running wherever capacity safely permits; no simple timeout
+or priority bump. zuck 2026-09-29 (never-throttle-mining): no scheduler may leave any miner's
+throughput below today's. Both hold here: release ops are put AHEAD of research, and research
+is never put BEHIND anything it runs level with today.
 
 THE RULES (each tick, every 60 s):
 
   1. CLASSES, from the command line (the governor runs as SYSTEM, so it sees every one):
-       LIVE      -- terminals and executors that move money. NEVER touched, at any load.
-       CRITICAL  -- the gate, live-first, the release authority, adoption, promotion, seal,
-                    and risk/kill-switch monitors.
-       RESEARCH  -- the desk's research, mining, judging and data-derivation pythons. The judge
-                    is research too, so it stays level with the miners (judge_priority.py rule).
-       OTHER     -- everything else. Never touched.
-  2. RESERVE. A CRITICAL process (its whole tree) runs at NORMAL: above every research process,
-     and never above NORMAL, so it never outranks LIVE. Raising a process that is already
-     NORMAL or higher does nothing.
-  3. OVERLOAD THROTTLE. When CPU stays >= OVERLOAD_PCT for OVERLOAD_TICKS ticks, or free RAM
-     falls below MIN_FREE_RAM_GB, every RESEARCH process goes to IDLE. It keeps running and
-     uses every cycle no higher-priority work wants; nothing is suspended or killed. It is
-     restored to its own previous class once CPU stays below RECOVER_PCT for RECOVER_TICKS
-     ticks with RAM recovered.
-  4. FAN-OUT BOUND. More than MAX_RESEARCH_PROCS research pythons at once: the newest beyond
-     the bound go to IDLE (oldest first keep their class, so long jobs finish). They are
-     restored when the count falls back under the bound.
-  5. NEVER: a kill, a suspend, a LIVE process, a priority above NORMAL, or a change to a
-     process this governor cannot classify.
+       LIVE       -- terminals and executors that move money. NEVER touched, at any load.
+       JUDGE      -- the judge and its workers. judge_priority.py owns its class (zuck 10-29
+                     reserved it 8 cores); never touched here.
+       CRITICAL   -- the gate, live-first, the release authority, adoption, promotion, seal,
+                     and risk/kill-switch monitors.
+       RESEARCH   -- the desk's research and mining pythons. NEVER lowered.
+       UNREADABLE -- a command line this token cannot read (an Administrator token reads no
+                     SYSTEM process). Counted, never guessed from the image name, never touched.
+                     An unreadable non-OS ancestor shields its whole tree: it could be the gate.
+       OTHER      -- everything else. Never touched.
+  2. RESERVE. A CRITICAL process (its whole tree) runs at NORMAL. Research and scheduled tasks
+     start at BELOW_NORMAL, so this alone puts the gate, adoption and risk ahead of research.
+     It never goes above NORMAL, so it never outranks LIVE. A process already at NORMAL or
+     higher, or whose class cannot be read, is left alone.
+  3. OVERLOAD AND FAN-OUT ARE REPORTED, NOT ACTED ON (Auditor HOLD on d89cba424). Sustained CPU
+     >= OVERLOAD_PCT, free RAM below MIN_FREE_RAM_GB, or more than MAX_RESEARCH_PROCS research
+     processes are written to REPORT, with how many research processes a throttle would have
+     lowered, until a throttle is proven not to cut mining. Nothing is lowered.
+  4. NEVER: a kill, a suspend, a lowered priority, a LIVE or JUDGE process, a priority above
+     NORMAL, or a change to a process it cannot classify or whose class it cannot read.
 
-It remembers every class it changed (STATE) and restores exactly that class. A process it
-lowered that has since exited is forgotten. Every tick writes REPORT with the measurements
-and every action, so a bad tick is visible, not silent.
+Every tick writes REPORT with the measurements and every action, so a bad tick is visible.
 
     python ops/resource_governor.py --once            # one tick (what the task runs)
     python ops/resource_governor.py --once --dry-run  # say what it would do, touch nothing
@@ -63,6 +62,7 @@ STATE = ROOT / "desks" / "mt5" / "data" / "resource_governor_state.json"
 #: Windows priority classes as psutil and kernel32 number them, ranked (judge_priority.py).
 IDLE, BELOW_NORMAL, NORMAL, ABOVE_NORMAL, HIGH, REALTIME = 0x40, 0x4000, 0x20, 0x8000, 0x80, 0x100
 RANK = {IDLE: 0, BELOW_NORMAL: 1, NORMAL: 2, ABOVE_NORMAL: 3, HIGH: 4, REALTIME: 5}
+UNKNOWN = -1  # a class the token could not read
 
 OVERLOAD_PCT = 95.0
 OVERLOAD_TICKS = 3
@@ -77,7 +77,7 @@ LIVE_MARKERS = (
     "ftmo_follower", "fusion_executor", "mt5desk\\engine", "mt5desk/engine", "executor.py",
     "deadman", "kill_switch",
 )  # fmt: skip
-#: The judge (judge_priority.py owns its class; zuck 10-29 reserved it 8 cores). Never touched here.
+#: The judge (judge_priority.py's own_class names the same scripts).
 JUDGE_MARKERS = (
     "external_gauntlet", "run_sharded_gauntlet", "rungauntlet.cmd", "warm_gauntlet_cache",
     "run_frontier_audit",
@@ -97,6 +97,13 @@ RESEARCH_MARKERS = (
     "libs\\alpha_factory", "libs/alpha_factory", "miner",
     "multiprocessing.spawn", "spawn_main", "joblib", "loky",
 )  # fmt: skip
+#: Unreadable ancestors that are only the OS or the scheduler starting things: they shield
+#: nothing. Any OTHER unreadable ancestor (a SYSTEM python or powershell) could be the gate or
+#: adoption, so nothing under it is counted as research.
+OS_ROOTS = frozenset({
+    "system", "system idle process", "smss.exe", "csrss.exe", "wininit.exe", "services.exe",
+    "svchost.exe", "taskhostw.exe", "taskeng.exe", "explorer.exe", "winlogon.exe",
+})  # fmt: skip
 
 
 @dataclass
@@ -112,20 +119,10 @@ class Proc:
 @dataclass
 class Plan:
     mode: str
-    set_to: dict[int, int] = field(default_factory=dict)  # pid -> new class
-    restore: dict[int, int] = field(default_factory=dict)  # pid -> class to restore
+    set_to: dict[int, int] = field(default_factory=dict)  # pid -> NORMAL (the only write)
     why: dict[int, str] = field(default_factory=dict)
     classes: dict[str, int] = field(default_factory=dict)
-
-
-UNKNOWN = -1
-#: Unreadable ancestors that are only the OS or the scheduler starting things, so they shield
-#: nothing. Any OTHER unreadable ancestor (a SYSTEM python or powershell) could be the gate or
-#: adoption, so nothing under it is ever lowered.
-OS_ROOTS = frozenset({
-    "system", "system idle process", "smss.exe", "csrss.exe", "wininit.exe", "services.exe",
-    "svchost.exe", "taskhostw.exe", "taskeng.exe", "explorer.exe", "winlogon.exe",
-})  # fmt: skip
+    would_yield: int = 0  # research a throttle would have lowered: REPORTED, never applied
 
 
 def classify(cmd: str) -> str:
@@ -170,8 +167,9 @@ def next_mode(mode: str, hot: int, cool: int) -> str:
     return mode
 
 
-def plan(procs: list[Proc], mode: str, lowered: Mapping[int, int]) -> Plan:
-    """What to set, from the processes, the load mode and what was lowered before. Pure."""
+def plan(procs: list[Proc], mode: str) -> Plan:
+    """What to raise, from the processes and the load mode. Pure. The only change it ever plans
+    is CRITICAL up to NORMAL; research is counted for the report and never lowered."""
     by = {p.pid: p for p in procs}
     cls = {p.pid: classify(p.cmd) for p in procs}
     live = _trees(procs, {pid for pid, c in cls.items() if c == "LIVE"})
@@ -191,20 +189,9 @@ def plan(procs: list[Proc], mode: str, lowered: Mapping[int, int]) -> Plan:
         if by[pid].prio != UNKNOWN and RANK.get(by[pid].prio, 0) < RANK[NORMAL]:
             out.set_to[pid] = NORMAL
             out.why[pid] = "critical: reserved above research"
-    if mode == "THROTTLE":
-        idle = set(research)
-        reason = "overload: research yields to release and risk"
-    else:
-        ranked = sorted(research, key=lambda pid: (by[pid].started, pid))
-        idle = set(ranked[MAX_RESEARCH_PROCS:])
-        reason = f"fan-out: beyond {MAX_RESEARCH_PROCS} research processes"
-    for pid in idle:
-        if by[pid].prio != UNKNOWN and RANK.get(by[pid].prio, 0) > RANK[IDLE]:
-            out.set_to[pid] = IDLE
-            out.why[pid] = reason
-    for pid, was in lowered.items():
-        if pid in by and pid in research and pid not in idle and by[pid].prio == IDLE:
-            out.restore[pid] = was
+    out.would_yield = (
+        len(research) if mode == "THROTTLE" else max(0, len(research) - MAX_RESEARCH_PROCS)
+    )
     return out
 
 
@@ -214,8 +201,8 @@ def _snapshot() -> tuple[list[Proc], float, float]:
 
     procs = []
     for p in psutil.process_iter(["pid", "ppid", "cmdline", "name", "create_time"]):
-        # process_iter leaves a field it was refused as None: an unreadable command line stays
-        # "" (UNREADABLE, never guessed from the image name) and an unreadable class UNKNOWN.
+        # process_iter leaves a refused field as None: an unreadable command line stays ""
+        # (UNREADABLE, never guessed from the image name) and an unreadable class UNKNOWN.
         try:
             info = p.info
             try:
@@ -280,38 +267,35 @@ def tick(
     hot = hot + 1 if overloaded else 0
     cool = cool + 1 if (cpu < RECOVER_PCT and free_gb >= MIN_FREE_RAM_GB) else 0
     mode = next_mode(str(st.get("mode") or "NORMAL"), hot, cool)
-    live_pids = {p.pid for p in procs}
-    lowered = {int(k): int(v) for k, v in (st.get("lowered") or {}).items() if int(k) in live_pids}
     by = {p.pid: p for p in procs}
-    p = plan(procs, mode, lowered)
+    p = plan(procs, mode)
     errors: dict[int, str] = {}
     actions = []
     for pid, prio in sorted(p.set_to.items()):
+        if prio != NORMAL:  # the one write this governor may make
+            raise RuntimeError(f"resource_governor planned class {prio:#x} for {pid}")
         err = None if dry else setter(pid, prio)
         if err:
             errors[pid] = err
             continue
-        if prio == IDLE and pid not in lowered:
-            lowered[pid] = by[pid].prio
         actions.append({"pid": pid, "to": prio, "from": by[pid].prio, "why": p.why[pid]})
-    for pid, prio in sorted(p.restore.items()):
-        err = None if dry else setter(pid, prio)
-        if err:
-            errors[pid] = err
-            continue
-        lowered.pop(pid, None)
-        actions.append({"pid": pid, "to": prio, "from": IDLE, "why": "restored"})
     doc = {
         "at": now().isoformat(timespec="seconds"), "dry_run": dry, "mode": mode,
         "cpu_pct": round(cpu, 1), "free_ram_gb": round(free_gb, 1), "hot": hot, "cool": cool,
-        "classes": p.classes, "lowered": len(lowered), "actions": actions,
+        "classes": p.classes, "actions": actions,
         "errors": {str(k): v for k, v in errors.items()},
+        "report_only": {
+            "overload": mode == "THROTTLE",
+            "research_over_bound": max(0, p.classes["RESEARCH"] - MAX_RESEARCH_PROCS),
+            "would_yield": p.would_yield,
+            "missed_growth": f"{p.would_yield} research process(es) a throttle would lower; "
+            "NOT applied (never-throttle-mining)",
+        },
         "limits": {"overload_pct": OVERLOAD_PCT, "recover_pct": RECOVER_PCT,
                    "min_free_ram_gb": MIN_FREE_RAM_GB, "max_research_procs": MAX_RESEARCH_PROCS},
     }  # fmt: skip
     if not dry:
-        _save(state_path, {"mode": mode, "hot": hot, "cool": cool,
-                           "lowered": {str(k): v for k, v in lowered.items()}})  # fmt: skip
+        _save(state_path, {"mode": mode, "hot": hot, "cool": cool})
     _save(report_path, doc)
     return doc
 
