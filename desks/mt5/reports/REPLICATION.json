@@ -1,5 +1,5 @@
 {
- "at": "2026-11-04T12:41:48+00:00",
+ "at": "2026-11-04T13:42:46+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -24,51 +24,9 @@
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "GBPNOK.formula.p=5f13d684f7dd61a0",
-   "certificate": "external.GBPNOK.formula.p=5f13d684f7dd61a0",
-   "fp": "94445fbff51e00d9",
-   "symbol": "GBPNOK",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "GBPNOK.formula.p=50099b67e5275669",
-   "certificate": "external.GBPNOK.formula.p=50099b67e5275669",
-   "fp": "2e93a7e704d97363",
-   "symbol": "GBPNOK",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "GBPNOK.formula.p=5f84a1eb52b3deb7",
-   "certificate": "external.GBPNOK.formula.p=5f84a1eb52b3deb7",
-   "fp": "096f7eb77591ee0b",
-   "symbol": "GBPNOK",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "GBPSEK.formula.p=41c51957c9291316",
-   "certificate": "external.GBPSEK.formula.p=41c51957c9291316",
-   "fp": "ff7783912f0e4cf8",
+   "key": "GBPSEK.formula.p=be06e2a53488be8e",
+   "certificate": "external.GBPSEK.formula.p=be06e2a53488be8e",
+   "fp": "d09242fa3b6d78b6",
    "symbol": "GBPSEK",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -80,9 +38,9 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSEK.formula.p=494964b273059ae1",
-   "certificate": "external.GBPSEK.formula.p=494964b273059ae1",
-   "fp": "db6c7a201f22753f",
+   "key": "GBPSEK.formula.p=f331db1015a529e9",
+   "certificate": "external.GBPSEK.formula.p=f331db1015a529e9",
+   "fp": "86de4f8e85de0e44",
    "symbol": "GBPSEK",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -94,9 +52,9 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSEK.formula.p=754d7ad8a4888951",
-   "certificate": "external.GBPSEK.formula.p=754d7ad8a4888951",
-   "fp": "8fc09d31f0998d52",
+   "key": "GBPSEK.formula.p=dbcafc7068fe3abb",
+   "certificate": "external.GBPSEK.formula.p=dbcafc7068fe3abb",
+   "fp": "85bd50b6a63f2a09",
    "symbol": "GBPSEK",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -108,9 +66,9 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSEK.formula.p=01be470d1fa00195",
-   "certificate": "external.GBPSEK.formula.p=01be470d1fa00195",
-   "fp": "6e946ac5a69d8471",
+   "key": "GBPSEK.formula.p=d3643ffb6862f4c0",
+   "certificate": "external.GBPSEK.formula.p=d3643ffb6862f4c0",
+   "fp": "a89ca5f1212c47dd",
    "symbol": "GBPSEK",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -122,9 +80,51 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSEK.formula.p=5ce49aa1e4fe3447",
-   "certificate": "external.GBPSEK.formula.p=5ce49aa1e4fe3447",
-   "fp": "2f574c145bd0ba5b",
+   "key": "GBPSEK.formula.p=22852e1fe1fe12a3",
+   "certificate": "external.GBPSEK.formula.p=22852e1fe1fe12a3",
+   "fp": "3ff516f2a7ef9c73",
+   "symbol": "GBPSEK",
+   "family": "formula",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'formula'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPSEK.formula.p=d6d30ff9808fb230",
+   "certificate": "external.GBPSEK.formula.p=d6d30ff9808fb230",
+   "fp": "aabc8dbb5e5d65c6",
+   "symbol": "GBPSEK",
+   "family": "formula",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'formula'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPSEK.formula.p=50099b67e5275669",
+   "certificate": "external.GBPSEK.formula.p=50099b67e5275669",
+   "fp": "8db0086f33237c3f",
+   "symbol": "GBPSEK",
+   "family": "formula",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'formula'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPSEK.formula.p=d958ae4f491c1cd5",
+   "certificate": "external.GBPSEK.formula.p=d958ae4f491c1cd5",
+   "fp": "a1df38ebcdbeb348",
    "symbol": "GBPSEK",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -136,8 +136,8 @@
   },
   {
    "lane": "forward",
-   "key": "GBPJPY.joint_genome.continuous",
-   "symbol": "GBPJPY",
+   "key": "GBPUSD.range_reversion.continuous",
+   "symbol": "GBPUSD",
    "family": "session_range_breakout",
    "verdict": "UNMEASURED",
    "why": [
@@ -149,111 +149,111 @@
   },
   {
    "lane": "forward",
-   "key": "GBPJPY.level_breakout.continuous",
-   "symbol": "GBPJPY",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPJPY.turn_of_month.continuous",
-   "symbol": "GBPJPY",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPJPY.vol_mean_reversion.continuous",
-   "symbol": "GBPJPY",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPJPY.vol_transition.continuous",
-   "symbol": "GBPJPY",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPMXN.spread_state.continuous",
-   "symbol": "GBPMXN",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPNOK.carry.continuous",
-   "symbol": "GBPNOK",
+   "key": "NZDHUF.carry.continuous",
+   "symbol": "NZDHUF",
    "family": "session_range_breakout",
    "verdict": "MISMATCH",
    "why": [
-    "only 0/36 ledger trades have a rebuilt fill on the same bar and side",
-    "summed P&L disagrees in SIGN: ledger +16.88R, rebuilt -3.58R"
+    "FILLS disagree: 29 rebuilt vs 19 in the ledger",
+    "only 0/19 ledger trades have a rebuilt fill on the same bar and side"
    ],
    "ours": {
-    "n_fills": 25,
-    "pnl_R": -3.575,
+    "n_fills": 29,
+    "pnl_R": -4.281,
     "cost": {
-     "spread_per_lot": 306.0,
+     "spread_per_lot": 11800.0,
      "commission_per_lot": 2.0,
-     "quote_per_account": 10.45456,
+     "quote_per_account": 366.911,
      "basis": "universe_registry"
     },
     "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
    },
    "theirs": {
-    "n_trades": 36,
+    "n_trades": 19,
     "cost_fields": null,
-    "forward_start": "2026-09-21T21:50:42.287664+00:00"
+    "forward_start": "2026-09-21T22:20:42.831182+00:00"
    },
    "divergence": {
-    "n_ledger": 36,
-    "n_rebuilt": 25,
+    "n_ledger": 19,
+    "n_rebuilt": 29,
     "matched": 0,
     "match_share": 0.0,
-    "fill_ratio": 0.694,
-    "pnl_ledger_R": 16.884,
-    "pnl_rebuilt_R": -3.575,
+    "fill_ratio": 1.526,
+    "pnl_ledger_R": -1.927,
+    "pnl_rebuilt_R": -4.281,
     "open_ledger": false,
     "open_rebuilt": false
    }
   },
   {
    "lane": "forward",
-   "key": "GBPNZD.carry.continuous",
-   "symbol": "GBPNZD",
+   "key": "NZDJPY.joint_genome.continuous",
+   "symbol": "NZDJPY",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NZDJPY.turn_of_month.continuous",
+   "symbol": "NZDJPY",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NZDSGD.vol_transition.continuous",
+   "symbol": "NZDSGD",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "SGDJPY.vol_transition.continuous",
+   "symbol": "SGDJPY",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "USDCHF.range_reversion.continuous",
+   "symbol": "USDCHF",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "USDMXN.carry.continuous",
+   "symbol": "USDMXN",
    "family": "session_range_breakout",
    "verdict": "UNMEASURED",
    "why": [
@@ -265,78 +265,78 @@
   }
  ],
  "quarantined": [
-  "GBPNOK.carry.continuous"
+  "NZDHUF.carry.continuous"
  ],
  "unmeasured": [
   {
-   "what": "GBPNOK.formula.p=5f13d684f7dd61a0",
+   "what": "GBPSEK.formula.p=be06e2a53488be8e",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPNOK.formula.p=50099b67e5275669",
+   "what": "GBPSEK.formula.p=f331db1015a529e9",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPNOK.formula.p=5f84a1eb52b3deb7",
+   "what": "GBPSEK.formula.p=dbcafc7068fe3abb",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSEK.formula.p=41c51957c9291316",
+   "what": "GBPSEK.formula.p=d3643ffb6862f4c0",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSEK.formula.p=494964b273059ae1",
+   "what": "GBPSEK.formula.p=22852e1fe1fe12a3",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSEK.formula.p=754d7ad8a4888951",
+   "what": "GBPSEK.formula.p=d6d30ff9808fb230",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSEK.formula.p=01be470d1fa00195",
+   "what": "GBPSEK.formula.p=50099b67e5275669",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSEK.formula.p=5ce49aa1e4fe3447",
+   "what": "GBPSEK.formula.p=d958ae4f491c1cd5",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPJPY.joint_genome.continuous",
+   "what": "GBPUSD.range_reversion.continuous",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "GBPJPY.level_breakout.continuous",
+   "what": "NZDJPY.joint_genome.continuous",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "GBPJPY.turn_of_month.continuous",
+   "what": "NZDJPY.turn_of_month.continuous",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "GBPJPY.vol_mean_reversion.continuous",
+   "what": "NZDSGD.vol_transition.continuous",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "GBPJPY.vol_transition.continuous",
+   "what": "SGDJPY.vol_transition.continuous",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "GBPMXN.spread_state.continuous",
+   "what": "USDCHF.range_reversion.continuous",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "GBPNZD.carry.continuous",
+   "what": "USDMXN.carry.continuous",
    "why": "no forward ledger on this box for this row"
   }
  ],
  "recorded": {
   "quarantined": 1,
   "memory": 1,
-  "candidates": 309
+  "candidates": 291
  },
  "cursor": {
-  "forward": 789,
-  "at": "2026-11-04T11:44:39+00:00",
+  "forward": 797,
+  "at": "2026-11-04T12:41:48+00:00",
   "certificates": 1336
  },
  "notes": [],
@@ -354,24 +354,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPNOK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPNOK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPNOK_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPNOK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPNZD_H1.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDHUF_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\SGDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDCHF_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDMXN_H1.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 137.49
+ "seconds": 145.97
 }
