@@ -83,7 +83,11 @@ LIVENESS = DESK / "reports" / "DEPENDENCY_LIVENESS.json"
 RED_AFTER_RUNS = 2
 #: The axes that are a publisher on the far end of a network. The learned-forecast axes are the
 #: desk's own outputs; an empty one is a model question, not a dependency outage.
-EXTERNAL_AXES = ("bis", "cot", "ecb", "fred")
+EXTERNAL_AXES = ("bis", "cot", "ecb", "fred", "jgb", "yield_packs")
+#: The axes the yield-curve lake packs are built from (axis_ingest.publish_yield_packs). A pass
+#: that fetched nothing for one of them builds from the populated file on disk instead, so an
+#: outage never blanks a pack and never shifts a stamp.
+YIELD_PACK_AXES = ("ecb", "fred", "jgb")
 
 
 def _count(doc: dict[str, Any]) -> int:
@@ -216,6 +220,7 @@ def run_all(apply: bool) -> dict[str, Any]:
 
     now = datetime.now(tz=UTC)
     axes: dict[str, Any] = {}
+    fresh: dict[str, dict[str, Any]] = {}
     for name in sorted(ai.INGESTERS):
         try:
             doc = ai.INGESTERS[name]()
@@ -227,6 +232,7 @@ def run_all(apply: bool) -> dict[str, Any]:
                                   "previous per-axis file on disk still stands")}
             continue
         n = _count(doc)
+        fresh[name] = doc
         axes[name] = {
             "axis": name,
             "state": "OK" if n else "EMPTY",
@@ -248,6 +254,21 @@ def run_all(apply: bool) -> dict[str, Any]:
                 # AN EMPTY PASS NEVER OVERWRITES DATA (L1.28a); `kept_previous` is the older
                 # name for the same refusal, kept for the readers that join on it.
                 axes[name]["kept_previous"] = True
+
+    # THE YIELD-CURVE LAKE PACKS (2026-11-03): US/EA/JP curves, 2s10s, the US-EA and US-JP 10y
+    # spreads and their weekly changes, PIT-stamped per publisher, landed where pack_cells reads.
+    docs = {n: (fresh.get(n) if _count(fresh.get(n) or {}) else _read(OUT_DIR / f"{n}.json"))
+            for n in YIELD_PACK_AXES}
+    try:
+        yp = ai.publish_yield_packs(docs, apply=apply)
+        axes["yield_packs"] = {"axis": "yield_packs", "state": "OK" if yp["n_series"] else "EMPTY",
+                               "n": yp["n_series"], "n_failed": yp["n_failed"],
+                               "failed": yp["failed"], "series_state": yp["series_state"],
+                               "rows": yp["rows"], "held": yp["held"],
+                               "missed_growth": yp["missed_growth"]}
+    except Exception as exc:
+        axes["yield_packs"] = {"axis": "yield_packs", "state": "UNMEASURED",
+                               "error": f"{type(exc).__name__}: {exc}"[:240]}
 
     ok = [k for k, v in axes.items() if v.get("state") == "OK"]
     refused = [k for k, v in axes.items()
@@ -292,7 +313,8 @@ def main(argv: list[str] | None = None) -> int:
                 extra += f"  WRITE REFUSED -- preserved {v.get('preserved_n')} on disk"
             elif v.get("write_state") == "WRITE_FAILED":
                 extra += f"  WRITE FAILED -- {str(v.get('why'))[:60]}"
-            print(f"  {name:<10} {v['state']:<10} n={v['n']:<8} symbols={v['n_symbols']}{extra}")
+            print(f"  {name:<10} {v['state']:<10} n={v['n']:<8} "
+                  f"symbols={v.get('n_symbols', 0)}{extra}")
     if not a.apply:
         print("  --apply not given; nothing written")
         return 0

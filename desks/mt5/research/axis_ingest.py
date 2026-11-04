@@ -34,6 +34,7 @@ import argparse
 import csv
 import io
 import json
+import os
 import sys
 import urllib.request
 from datetime import UTC, datetime, timedelta
@@ -293,7 +294,9 @@ ECB_URL = ("https://data-api.ecb.europa.eu/service/data/{flow}/{key}"
 ECB_SERIES = {
     "eur_usd_ref": ("EXR", "D.USD.EUR.SP00.A", "ECB euro reference rate vs USD"),
     "eur_aaa_1y": ("YC", "B.U2.EUR.4F.G_N_A.SV_C_YM.SR_1Y", "euro-area AAA 1y spot yield"),
+    "eur_aaa_2y": ("YC", "B.U2.EUR.4F.G_N_A.SV_C_YM.SR_2Y", "euro-area AAA 2y spot yield"),
     "eur_aaa_10y": ("YC", "B.U2.EUR.4F.G_N_A.SV_C_YM.SR_10Y", "euro-area AAA 10y spot yield"),
+    "eur_aaa_30y": ("YC", "B.U2.EUR.4F.G_N_A.SV_C_YM.SR_30Y", "euro-area AAA 30y spot yield"),
 }
 
 
@@ -375,6 +378,11 @@ def _csv_series(text, date_col, val_col):
 FRED_SERIES = {
     "DGS10": "US 10y constant-maturity yield",
     "DGS2": "US 2y constant-maturity yield",
+    # 2026-11-03, read off the series pages: DGS30 "Public Domain: Citation Requested", source
+    # the Board of Governors, release "H.15 Selected Interest Rates". DGS5 is the same release
+    # and source; its page's tag line was not read that day, so it carries the H.15 basis only.
+    "DGS30": "US 30y constant-maturity yield",
+    "DGS5": "US 5y constant-maturity yield",
     "DFII10": "US 10y TIPS real yield (the breakeven's second leg)",
     "DTWEXBGS": "broad trade-weighted USD index",
 }
@@ -662,6 +670,298 @@ def ingest_ecb():
             "series": series}
 
 
+# ------------------------------------------------------------ JGB benchmark yields (MoF) ----
+#: JAPAN MoF JGB CONSTANT-MATURITY YIELDS, the English pair of the daily `jgbcm.csv`: the current
+#: month and the history since 1974, both listed on the MoF interest-rate page (read 2026-11-03).
+#: Terms are the `jp_mof` row of terms_fence (PDL 1.0: "Commercial use of 'This Content' is also
+#: permitted"; cite the source). Fetched with the honest `UA`, never another client's token.
+JGB_URLS = ("https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/jgbcme.csv",
+            "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/historical/"
+            "jgbcme_all.csv")
+JGB_TENORS = {"jgb_2y": 2, "jgb_10y": 10, "jgb_30y": 30}
+#: Japanese-era prefixes the Japanese-language `jgbcm.csv` dates its rows in (R6.1.4).
+_ERA = {"M": 1867, "T": 1911, "S": 1925, "H": 1988, "R": 2018}
+
+
+def _jgb_date(cell: str) -> str | None:
+    import re
+    c = cell.strip()
+    m = re.match(r"^(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})$", c)
+    if m:
+        y, mo, d = (int(x) for x in m.groups())
+    else:
+        m = re.match(r"^([MTSHR])(\d{1,2})[/.-](\d{1,2})[/.-](\d{1,2})$", c, re.I)
+        if not m:
+            return None
+        y = _ERA[m.group(1).upper()] + int(m.group(2))
+        mo, d = int(m.group(3)), int(m.group(4))
+    try:
+        return datetime(y, mo, d, tzinfo=UTC).date().isoformat()
+    except ValueError:
+        return None
+
+
+def parse_jgb_csv(text: str) -> dict[str, list[tuple[str, float]]]:
+    """MoF's JGB CSV -> {name: [(date, yield %)]} for the tenors in `JGB_TENORS`.
+
+    The file opens with a title line, then a header whose first cell is `Date` (English) or
+    `基準日` (Japanese) and whose tenor cells read `10Y` or `10年`. A missing print is `-`."""
+    import re
+    rows = list(csv.reader(io.StringIO(text)))
+    hdr_at = next((i for i, r in enumerate(rows)
+                   if r and r[0].strip().lstrip("﻿") in ("Date", "基準日")), None)
+    if hdr_at is None:
+        raise ValueError("NOT_JGB_CSV: no header row starting Date/基準日")
+    col: dict[str, int] = {}
+    for j, h in enumerate(rows[hdr_at]):
+        m = re.match(r"^\s*(\d+)\s*(Y|年)\s*$", h)
+        if m:
+            for name, tenor in JGB_TENORS.items():
+                if int(m.group(1)) == tenor:
+                    col[name] = j
+    out: dict[str, list[tuple[str, float]]] = {n: [] for n in JGB_TENORS}
+    for r in rows[hdr_at + 1:]:
+        d = _jgb_date(r[0]) if r else None
+        if not d:
+            continue
+        for name, j in col.items():
+            try:
+                out[name].append((d, float(r[j])))
+            except (IndexError, ValueError):
+                continue                       # "-" is a missing print, never zero
+    return {n: sorted(dict(v).items()) for n, v in out.items()}
+
+
+def _decode_mof(raw: bytes) -> str:
+    for enc in ("utf-8-sig", "cp932"):
+        try:
+            return raw.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    return raw.decode("utf-8", "replace")
+
+
+def _fetch_bytes(url: str) -> bytes:
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    with _live_urlopen(req, timeout=TIMEOUT) as r:
+        return r.read()
+
+
+def ingest_jgb(fetch=None) -> dict:
+    """JGB 2y/10y/30y constant-maturity yields from MoF, current month merged over the history.
+
+    `fetch(url) -> bytes` exists for the fixture tests. A 401/403/429 is a hard stop for the pass
+    (recorded, never retried around); every series ends in `series` or `failed`."""
+    merged: dict[str, dict[str, float]] = {n: {} for n in JGB_TENORS}
+    reasons: list[str] = []
+    for url in JGB_URLS[::-1]:                      # history first, current month overwrites
+        try:
+            got = parse_jgb_csv(_decode_mof((fetch or _fetch_bytes)(url)))
+        except Exception as exc:
+            kind = _classify(exc)
+            reasons.append(f"{url.rsplit('/', 1)[-1]}: {kind}: {type(exc).__name__}: "
+                           f"{str(exc)[:60]}")
+            if kind in ("RATE_LIMITED", "HTTP_401", "HTTP_403"):
+                break                              # a person decides; no further request
+            continue
+        for n, pts in got.items():
+            merged[n].update(dict(pts))
+    series, failed = {}, {}
+    for n, tenor in JGB_TENORS.items():
+        pts = sorted(merged[n].items())
+        if pts:
+            series[n] = _series_doc(f"JGB {tenor}y constant-maturity yield (MoF)", pts)
+        else:
+            failed[n] = ("; ".join(reasons)
+                         or "EMPTY: the response parsed to 0 observations")[:400]
+    state = {n: ("OK" if n in series else "EMPTY" if not reasons else "ERROR") for n in JGB_TENORS}
+    return {"axis": "macro_state", "id": "jp_mof_jgb", "source": "www.mof.go.jp (jgbcme.csv)",
+            "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            "n_series": len(series), "n_failed": len(failed), "failed": failed,
+            "series_state": state,
+            "terms": "terms_fence jp_mof (PDL 1.0, commercial use permitted)",
+            "shape": "series[name].points -- one dated state variable each",
+            "series": series}
+
+
+# ------------------------------------------------------- yield-curve lake-series packs ----
+#: THE CURVES AS LAKE PACKS, so `pack_cells` mints `exogenous_conditioner` cells on them. The bond
+#: CFD bars stop at 2025-12-31 (UST10Y), so FX, index and bond cells need a free point-in-time
+#: yield conditioner that does not depend on them. Each pack is a registry row in
+#: `data/asia_sources.json` (targets declared there) and a frame at `data/lake/series/<id>.csv`.
+#:
+#: POINT IN TIME, PER PUBLISHER, read off each publisher's own page on 2026-11-03. Every row is
+#: stamped at its AVAILABILITY, never its period date; a late stamp costs edge, an early one
+#: invents it, so each rule rounds late:
+#:   FRED H.15  value for day D posted the NEXT business day        -> D+1bd 22:00 UTC
+#:   ECB YC     "updated every TARGET business day at noon (12:00 CET)" for the previous day, and
+#:              "may ... be postponed to the following TARGET business day" -> D+1bd 12:00 UTC
+#:              (later than noon CET in either season; the conditioner's own 24h lag covers a slip)
+#:   MoF JGB    "released at 9:30 a.m. on the next business day" (qa.htm)  -> D+1bd 01:00 UTC
+#:              (09:30 JST is 00:30 UTC). NOT same-day close: the brief's same-day reading would
+#:              have stamped every JGB row up to fifteen hours early.
+#: Business days are Mon-Fri; a publisher holiday makes the true time later still, and
+#: `family_exogenous_conditioner` holds every series back a further 24h before it may condition.
+PIT_RULES = {"fred": (22, 0), "ecb": (12, 0), "jgb": (1, 0)}
+
+YIELD_PACKS: dict[str, dict[str, Any]] = {
+    "yc_us_treasury": {"axis": "fred", "legs": {"us_2y": "DGS2", "us_5y": "DGS5",
+                                                "us_10y": "DGS10", "us_30y": "DGS30"},
+                       "slope": ("us_2s10s", "us_10y", "us_2y")},
+    "yc_ea_aaa": {"axis": "ecb", "legs": {"ea_2y": "eur_aaa_2y", "ea_10y": "eur_aaa_10y",
+                                          "ea_30y": "eur_aaa_30y"},
+                  "slope": ("ea_2s10s", "ea_10y", "ea_2y")},
+    "yc_jp_jgb": {"axis": "jgb", "legs": {"jp_2y": "jgb_2y", "jp_10y": "jgb_10y",
+                                          "jp_30y": "jgb_30y"},
+                  "slope": ("jp_2s10s", "jp_10y", "jp_2y")},
+}
+#: Cross-market 10y spreads. The euro leg is the ECB euro-area AAA curve, which is the free,
+#: reusable stand-in for the Bund (Germany is the curve's largest AAA issuer); the column is named
+#: for what it is, never `us_de`.
+SPREAD_PACK = "yc_xmkt_spreads"
+SPREADS = {"us_ea_aaa_10y": (("fred", "DGS10"), ("ecb", "eur_aaa_10y")),
+           "us_jp_10y": (("fred", "DGS10"), ("jgb", "jgb_10y"))}
+#: The MT5 instruments each pack conditions (registry `targets`, mirrored here for the tests).
+PACK_TARGETS = {
+    "yc_us_treasury": ["UST10Y", "UST05Y", "US500", "EURUSD", "USDJPY", "UKGILT"],
+    "yc_ea_aaa": ["EURUSD", "GER40", "UKGILT", "UST10Y"],
+    "yc_jp_jgb": ["USDJPY", "JPN225", "UST10Y"],
+    SPREAD_PACK: ["EURUSD", "USDJPY", "GER40", "JPN225", "US500", "UST10Y", "UST05Y", "UKGILT"],
+}
+LAKE_SERIES = DESK / "data" / "lake" / "series"
+LAKE_VAULT = DESK / "data" / "lake" / "vault"
+
+#: THE CNY CENTRAL PARITY (CFETS fix, 09:15 Beijing) -- UNMEASURED_NO_LICENSED_SOURCE. Tried in the
+#: coordinator's order on 2026-11-03: (1) chinamoney.com.cn's legal statement (/chinese/flsm/)
+#: returned a client error to the reader and the PBoC host is robots-disallowed to it (terms_fence
+#: cn_credit_contagion, 2026-10-14) -- no reuse clause was read, and UNREAD terms never permit
+#: automated input; (2) FRED carries no CFETS fix: DEXCHUS is the H.10 noon New York buying rate,
+#: a different print at a different hour, and using it as "the fix" would be a mislabelled series.
+CNY_FIX_HOLD = {
+    "series": "cny_central_parity",
+    "status": "UNMEASURED_NO_LICENSED_SOURCE",
+    "tried": {"chinamoney.com.cn/chinese/flsm/": "client_error 2026-11-03: terms UNREAD",
+              "pbc.gov.cn": "ROBOTS_DISALLOWED to the reader (terms_fence, 2026-10-14)",
+              "FRED DEXCHUS": "H.10 noon NY buying rate, not the 09:15 CST CFETS fix"},
+    "unblock": "a CFETS or PBoC terms page read on the publisher's domain with a reuse clause",
+    "missed_growth": {"delta_elogw": "UNMEASURED",
+                      "cause": ("the forward farm's fix-vs-model residual has no PIT fix series; "
+                                "no family has been judged with and without it")},
+}
+
+
+def _next_bday(d: str):
+    from datetime import date
+    day = date.fromisoformat(d[:10]) + timedelta(days=1)
+    while day.weekday() >= 5:
+        day += timedelta(days=1)
+    return day
+
+
+def available_time(axis: str, d: str) -> str:
+    """When a value for period date `d` from `axis` could first be known, UTC ISO."""
+    h, m = PIT_RULES[axis]
+    nb = _next_bday(d)
+    return datetime(nb.year, nb.month, nb.day, h, m, tzinfo=UTC).isoformat()
+
+
+def _points(doc: dict | None, name: str) -> dict[str, float]:
+    s = ((doc or {}).get("series") or {}).get(name) or {}
+    return {str(p["d"])[:10]: float(p["v"]) for p in s.get("points") or []}
+
+
+def _weekly_change(vals: dict[str, float]) -> dict[str, float]:
+    """value(d) - the last value at or before d-7 calendar days, on the series' own dates."""
+    import bisect
+    days = sorted(vals)
+    out: dict[str, float] = {}
+    for d in days:
+        back = (datetime.fromisoformat(d) - timedelta(days=7)).date().isoformat()
+        i = bisect.bisect_right(days, back) - 1
+        if i >= 0:
+            out[d] = round(vals[d] - vals[days[i]], 6)
+    return out
+
+
+def build_yield_packs(docs: dict[str, dict | None]) -> dict[str, list[dict[str, Any]]]:
+    """{pack id: rows}. Every row carries `event_time` (the period date), `available_time` (the
+    PIT stamp above) and `source_id`; level, 2s10s slope and its weekly change are the signals."""
+    packs: dict[str, list[dict[str, Any]]] = {}
+    for pid, spec in YIELD_PACKS.items():
+        doc = docs.get(spec["axis"])
+        legs = {col: _points(doc, sid) for col, sid in spec["legs"].items()}
+        name, hi, lo = spec["slope"]
+        slope = {d: round(legs[hi][d] - legs[lo][d], 6) for d in legs[hi] if d in legs[lo]}
+        wchg = _weekly_change(slope)
+        rows = []
+        for d in sorted(set().union(*legs.values())):
+            row: dict[str, Any] = {"event_time": d, "source_id": pid,
+                                   "available_time": available_time(spec["axis"], d)}
+            row.update({c: legs[c].get(d) for c in legs})
+            row[name] = slope.get(d)
+            row[f"{name}_wchg"] = wchg.get(d)
+            rows.append(row)
+        packs[pid] = rows
+    spread: dict[str, dict[str, float]] = {}
+    stamp: dict[str, str] = {}
+    for c, ((ax_a, sid_a), (ax_b, sid_b)) in SPREADS.items():
+        la, lb = _points(docs.get(ax_a), sid_a), _points(docs.get(ax_b), sid_b)
+        spread[c] = {d: round(la[d] - lb[d], 6) for d in la if d in lb}
+        for d in spread[c]:
+            # A spread is knowable only once BOTH legs are: the later of the two stamps.
+            stamp[d] = max(stamp.get(d, ""), available_time(ax_a, d), available_time(ax_b, d))
+    rows = []
+    wch = {c: _weekly_change(v) for c, v in spread.items()}
+    for d in sorted(stamp):
+        row = {"event_time": d, "available_time": stamp[d], "source_id": SPREAD_PACK}
+        for c in SPREADS:
+            row[c] = spread[c].get(d)
+            row[f"{c}_wchg"] = wch[c].get(d)
+        rows.append(row)
+    packs[SPREAD_PACK] = rows
+    return packs
+
+
+def publish_yield_packs(docs: dict[str, dict | None], *, series_dir: Path | None = None,
+                        vault_dir: Path | None = None, apply: bool = True) -> dict[str, Any]:
+    """Write each pack's frame, its PIT record and its collection marker; never replace a frame
+    on disk with an empty one. Returns an axis-shaped summary `axis_ingest_all` judges liveness
+    on (`series_state` per pack)."""
+    import pandas as pd
+    sdir, vdir = series_dir or LAKE_SERIES, vault_dir or LAKE_VAULT
+    now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    state, failed, written = {}, {}, {}
+    for pid, rows in build_yield_packs(docs).items():
+        if not rows:
+            state[pid] = "EMPTY"
+            failed[pid] = "EMPTY: no leg delivered a dated value this pass; frame on disk kept"
+            continue
+        state[pid] = "OK"
+        written[pid] = len(rows)
+        if not apply:
+            continue
+        sdir.mkdir(parents=True, exist_ok=True)
+        df = pd.DataFrame(rows)
+        tmp = sdir / f"{pid}.csv.tmp"
+        df.to_csv(tmp, index=False)
+        os.replace(tmp, sdir / f"{pid}.csv")
+        (sdir / f"{pid}.pit.json").write_text(json.dumps({
+            "n_rows": len(rows), "at": now, "writer": "axis_ingest.publish_yield_packs",
+            "frames": [{"status": "STAMPED", "n_rows": len(rows),
+                        "available_time": "per-row; see axis_ingest.PIT_RULES",
+                        "rule": PIT_RULES}]}, indent=1), encoding="utf-8")
+        (vdir / pid).mkdir(parents=True, exist_ok=True)
+        (vdir / pid / "door.json").write_text(json.dumps({
+            "collected_by": "axis_ingest (MT5-AxisIngest)", "at": now,
+            "legs": YIELD_PACKS.get(pid, {}).get("legs") or SPREADS}, default=str, indent=1),
+            encoding="utf-8")
+    return {"axis": "yield_packs", "id": "yield_curve_packs", "at": now,
+            "n_series": len(written), "n_failed": len(failed), "failed": failed,
+            "series_state": state, "rows": written, "pit_rules": PIT_RULES,
+            "held": {CNY_FIX_HOLD["series"]: CNY_FIX_HOLD},
+            "missed_growth": [CNY_FIX_HOLD["missed_growth"]]}
+
+
 def ingest_gnn_forecast():
     """The graph-propagation miner's walk-forward next-day forecast, per instrument, as a dated
     conditioning series (`research/learned_miners.forecast_axis`). Every row is a prediction the
@@ -680,6 +980,7 @@ def ingest_attention_forecast():
 
 INGESTERS = {"cot": ingest_cot, "bis": ingest_bis,
               "fred": ingest_fred, "ecb": ingest_ecb,
+              "jgb": ingest_jgb,
               "gnn_forecast": ingest_gnn_forecast,
               "attention_forecast": ingest_attention_forecast}
 

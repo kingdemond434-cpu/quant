@@ -4938,6 +4938,102 @@
     "XAUUSD"
    ],
    "mechanism": "East African artisanal and mine gold exports are a supply leg outside South Africa, and the central bank's own purchase programme is an official bid on it"
+  },
+  {
+   "id": "yc_us_treasury",
+   "plane": "rates",
+   "country": "us",
+   "name": "US Treasury constant-maturity curve (H.15 via FRED): 2y/5y/10y/30y, 2s10s and its weekly change",
+   "url": "https://fred.stlouisfed.org/series/DGS10",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 1,
+    "available_time": "next business day 22:00 UTC"
+   },
+   "targets": [
+    "UST10Y",
+    "UST05Y",
+    "US500",
+    "EURUSD",
+    "USDJPY",
+    "UKGILT"
+   ],
+   "mechanism": "the US curve level and slope are the discount-rate state US index, Treasury and dollar-cross returns condition on; the bond CFD bars stop at 2025-12-31, the H.15 print does not",
+   "collector": "axis_ingest.publish_yield_packs (MT5-AxisIngest)"
+  },
+  {
+   "id": "yc_ea_aaa",
+   "plane": "rates",
+   "country": "ea",
+   "name": "ECB euro-area AAA government spot curve (YC): 2y/10y/30y, 2s10s and its weekly change",
+   "url": "https://data-api.ecb.europa.eu/service/data/YC/B.U2.EUR.4F.G_N_A.SV_C_YM.SR_10Y",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "publication_lag_days": 1,
+    "available_time": "next TARGET business day 12:00 UTC"
+   },
+   "targets": [
+    "EURUSD",
+    "GER40",
+    "UKGILT",
+    "UST10Y"
+   ],
+   "mechanism": "the euro sovereign curve is the rate leg of EURUSD and the discount rate of GER40",
+   "collector": "axis_ingest.publish_yield_packs (MT5-AxisIngest)"
+  },
+  {
+   "id": "yc_jp_jgb",
+   "plane": "rates",
+   "country": "jp",
+   "name": "Japan MoF JGB constant-maturity yields: 2y/10y/30y, 2s10s and its weekly change",
+   "url": "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/jgbcme.csv",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date 15:00 JST close",
+    "publication_lag_days": 1,
+    "available_time": "next business day 01:00 UTC (MoF releases 09:30 JST)"
+   },
+   "targets": [
+    "USDJPY",
+    "JPN225",
+    "UST10Y"
+   ],
+   "mechanism": "the JGB curve anchors the yen carry trade and the JPN225 discount rate",
+   "collector": "axis_ingest.publish_yield_packs (MT5-AxisIngest)"
+  },
+  {
+   "id": "yc_xmkt_spreads",
+   "plane": "rates",
+   "country": null,
+   "name": "Cross-market 10y spreads: US minus euro-area AAA, US minus JGB, and their weekly changes",
+   "url": "https://fred.stlouisfed.org/series/DGS10",
+   "expect": "csv",
+   "access": "public",
+   "cadence": "daily",
+   "pit": {
+    "event_time": "trade date",
+    "available_time": "the later of the two legs' stamps"
+   },
+   "targets": [
+    "EURUSD",
+    "USDJPY",
+    "GER40",
+    "JPN225",
+    "US500",
+    "UST10Y",
+    "UST05Y",
+    "UKGILT"
+   ],
+   "mechanism": "the rate differential is the carry that prices EURUSD and USDJPY and the relative discount rate between US, German and Japanese equity indices",
+   "collector": "axis_ingest.publish_yield_packs (MT5-AxisIngest)"
   }
  ],
  "miners": {

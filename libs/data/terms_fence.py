@@ -922,6 +922,10 @@ SOURCE_POLICY.update({
                              "program or system or machine learning")},
                   "series_labels": {
                       "DGS10": "Public Domain: Citation Requested (Board of Governors, H.15)",
+                      "DGS30": ("Public Domain: Citation Requested (Board of Governors, H.15; "
+                                "series page read 2026-11-03)"),
+                      "DGS5": ("Board of Governors, release 'H.15 Selected Interest Rates' "
+                               "(series page read 2026-11-03; tag line not shown to the reader)"),
                       "DTWEXBGS": "Public Domain: Citation Requested (Board of Governors, H.10)",
                       "DEXUSEU": "Public Domain: Citation Requested (Board of Governors, H.10)",
                       "DCOILWTICO": "Public Domain: Citation Requested (EIA, Spot Prices)",
