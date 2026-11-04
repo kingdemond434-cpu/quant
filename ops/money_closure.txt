@@ -364,3 +364,4 @@ libs/research/event_factors.py
 libs/research/event_ontology.py
 libs/research/polyglot.py
 libs/research/release_gain.py
+desks/mt5/research/jobs_nowcast.py
