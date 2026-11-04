@@ -2389,3 +2389,23 @@ def family_joint_genome(df: pd.DataFrame, *, base_family: str = "momentum_volgat
     for s in wrapped:
         s.tag = f"joint.{base_family}"
     return wrapped
+
+
+@register_family(param_grid={
+    "mode": ["drift", "reversal"],
+    "surprise_sign": [1, -1],
+    "size_q": [0.5, 0.8],
+    "hold_bars": [6, 24],
+}, tags=["news_reaction", "event", "exogenous"])
+def family_news_reaction(df: pd.DataFrame, *, symbol: str, mode: str = "drift",
+                         surprise_sign: int = 1, size_q: float = 0.5, hold_bars: int = 12,
+                         stop_atr: float = 2.0, rr: float = 2.0, atr_n: int = 20,
+                         max_lag_bars: int = 4) -> list[Signal]:
+    """Post-headline drift or reversal on UNSCHEDULED news, conditioned on the first reaction's
+    sign and size; reads `news_event_stream`'s point-in-time log itself. 16 pre-declared grid
+    cells (2 modes x 2 signs x 2 size quantiles x 2 holds). See `mt5desk/family_news_reaction`.
+    `symbol` is required: the headlines are per instrument and a cell must say which."""
+    from mt5desk.family_news_reaction import news_reaction_signals
+    return list(news_reaction_signals(
+        df, symbol=symbol, mode=mode, surprise_sign=surprise_sign, size_q=size_q,
+        hold_bars=hold_bars, stop_atr=stop_atr, rr=rr, atr_n=atr_n, max_lag_bars=max_lag_bars))
