@@ -869,25 +869,7 @@ $reportPaths = @(
     # so REAL_YIELD_10Y is empty for every reader off the box and on CI. FRED is reachable
     # only from the box, so the box is the only machine that can refresh it. ~1.5 MB, a daily
     # frame that changes once a day; the cap above still applies.
-    "desks/mt5/data/cross_asset_anchors.pkl",
-    # THE FOOTPRINT PRODUCERS (2026-11-03, Tier-1 footprint sweep build item 0). Every one is on
-    # an hourly clock and every one was UNMEASURED off the box (L1.28a): FUTURES_STATE (CFTC,
-    # EIA, FRED curves, MoF intervention), SHADOW_INSTITUTIONAL (liquidity and crypto-CFD
-    # sensors), the forced-flow calendar, the latent-actor trio, scheduled-event surprise, the
-    # macro state engine, prediction markets, the SGE premium and the Asia plane. Summaries
-    # only: their writers record exception TYPE names, never a URL carrying a key, and the
-    # login fence and the cap above still apply to each.
-    "desks/mt5/reports/FUTURES_STATE.json",
-    "desks/mt5/reports/SHADOW_INSTITUTIONAL.json",
-    "desks/mt5/data/forced_flow_calendar.json",
-    "desks/mt5/reports/ACTOR_ATLAS.json",
-    "desks/mt5/reports/ACTOR_PRESSURE.json",
-    "desks/mt5/reports/MARKET_ECOLOGY.json",
-    "desks/mt5/reports/EVENT_SURPRISE.json",
-    "desks/mt5/reports/MACRO_STATE_ENGINE.json",
-    "desks/mt5/reports/PREDICTION_MARKETS.json",
-    "desks/mt5/reports/sge_premium.json",
-    "desks/mt5/reports/ASIA_PLANE.json"
+    "desks/mt5/data/cross_asset_anchors.pkl"
 )
 $existing = @()
 foreach ($rel in $relPaths) {
