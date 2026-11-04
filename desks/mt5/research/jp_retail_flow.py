@@ -26,8 +26,8 @@ ACCESS (LAWS 5e). Licence, robots and terms are LABELS on the row, never a stop:
 `redistribute_allowed` is read from `access_classifier.ROUTING` and fails closed. What DOES stop
 a door is an access control: 401, 403, 429 or a WAF / CAPTCHA page is a HARD STOP, recorded on the
 door and (on the desk transport, `polite_fetch.get`) in its shared ledger as a person-held
-hold. Nothing retries it and no clock releases it. The desk's honest DESK_UA is the only User-Agent sent; there
-is no IP or agent rotation, no login, no key.
+hold. Nothing retries it and no clock releases it. The desk's honest DESK_UA is the only
+User-Agent sent; there is no IP or agent rotation, no login, no key.
 
 LIVE SIZING. A series may size a live position only when its register row quotes a clause that
 PERMITS the use (`terms_fence.terms_verdict(row) == "confirmed"`). Neither publisher has one (TFX:

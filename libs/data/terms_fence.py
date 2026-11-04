@@ -1976,6 +1976,112 @@ SOURCE_POLICY.update({
                       "https://www.ffaj.or.jp/en/performance/explanation/":
                           "deposit amounts disclosed every month; no release day stated"}}},
 })
+#: ASIAN RETAIL GOLD-DEMAND RESEARCH DOORS (2026-11-04; desks/mt5/research/asia_gold_physical.py
+#: research lane, fetched by alt_proxies.research_collect). Each publisher's page was read on
+#: 2026-11-04 with WebFetch (the cloud container's proxy refuses every one of these hosts to curl,
+#: so robots.txt is UNMEASURED from here and is read on the box at run time AS A LABEL). NONE
+#: CARRIES A CLAUSE PERMITTING THE DESK'S USE -- IBJA reserves all rights and routes valuation and
+#: pricing use to its paid API; RBI reserves all rights and prohibits caching; Vietcombank's terms
+#: were not read -- so every row is IDEAS_ONLY for LIVE INPUT and research_only: mined, stored,
+#: featured and judged in full (LAWS 5e), never sized live and never redistributed.
+_ASIA_RETAIL_MISSED = ("delta E[log W] UNMEASURED: the {state} state is mined and judged on the "
+                       "research lane, but it cannot size a live gold_asia position until this "
+                       "row quotes a clause permitting that use; no live conversion is on record")
+SOURCE_POLICY.update({
+    "in_ibja_premium": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("in_ibja_premium", "ibja_rates"),
+        "url_patterns": (r"^(?:[^/]*\.)?ibjarates\.com/",),
+        "research_only": True,
+        "why": ("India Bullion and Jewellers Association daily AM/PM 999 gold rates "
+                "(ibjarates.com): the site reserves all rights, permits use beyond fair use only "
+                "with the owner's permission, and advises anyone using the rates for valuation "
+                "or pricing to subscribe through its official API; no clause grants the desk's "
+                "use, so the series is RESEARCH-ONLY (mined and tested, never sized live, never "
+                "redistributed)"),
+        "unblock": ("an IBJA API subscription (indiagoldratesapi.com) or IBJA's written "
+                    "permission covering internal use of the daily rates, quoted here"),
+        "robots": ("read at run time as a LABEL (polite_fetch.get on the research lane), "
+                   "never a stop"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _ASIA_RETAIL_MISSED.format(state="India IBJA gold premium")},
+        "terms": {"url": "https://ibjarates.com/", "checked_at": "2026-11-04",
+                  "clauses": {
+                      "copyright": ("India Bullion and Jewellers Association Ltd.(IBJA). All "
+                                    "Rights Reserved"),
+                      "api": "are advised to subscribe IBJA rates only through OFFICIAL IBJA API",
+                      "fair_use": "You must obtain permission from the copyright owner.",
+                      "schedule": ("Opening and Closing Rates will not be published on Central "
+                                   "Government Holiday."),
+                      "units": "Gold rates per 10gm & Silver rate per 1kg"},
+                  "also_read": {
+                      "https://ibjarates.com/": ("previous-dates tables Date | 999 | 995 | 916 | "
+                                                 "750 | 585 | Silver 999 | Platinum 999 under "
+                                                 "the AM and PM tabs; the 30-day PDF of "
+                                                 "2026-11-02 is stamped 12:40:55 IST")},
+                  "unread": {
+                      "https://www.ibja.co/": ("the Terms and Disclaimer popups point to "
+                                               "www.ibja.co (last updated 2025-05-19): UNREAD")}}},
+    "in_rbi_reference_rate": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("in_rbi_reference_rate", "rbi_reference_rate"),
+        "url_patterns": (r"^(?:www\.)?rbi\.org\.in/?(?:index\.aspx)?(?:[?#].*)?$",),
+        "research_only": True,
+        "why": ("the FBIL USD/INR reference rate as RBI's home page republishes it ('INR / 1 "
+                "USD', 'Source : FBIL'): RBI reserves all rights and its disclaimer prohibits "
+                "caching and framing; no clause grants the desk's use, so the rate is "
+                "RESEARCH-ONLY (the IBJA premium's FX leg: mined and tested, never sized live)"),
+        "unblock": ("RBI's or FBIL's written permission covering internal use of the reference "
+                    "rate, quoted here, or a licensed FBIL feed"),
+        "robots": ("read at run time as a LABEL (polite_fetch.get on the research lane), "
+                   "never a stop"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _ASIA_RETAIL_MISSED.format(state="RBI USD/INR (IBJA FX leg)")},
+        "terms": {"url": "https://www.rbi.org.in/Scripts/Disclaimer.aspx",
+                  "checked_at": "2026-11-04",
+                  "clauses": {
+                      "copyright": "© Reserve Bank of India. All Rights Reserved.",
+                      "caching": ("caching and links to, and the framing of this Web Site or any "
+                                  "of the contents are prohibited"),
+                      "accuracy": ("the RBI accepts no responsibility for the accuracy or "
+                                   "completeness of any material contained on this site")},
+                  "also_read": {
+                      "https://www.rbi.org.in/": ("Current Rates block: 'INR / 1 USD : "
+                                                  "94.8606', '(As at 1.00pm of November 03, "
+                                                  "2026)', '(Source : FBIL)'"),
+                      "https://www.rbi.org.in/scripts/ReferenceRateArchive.aspx": (
+                          "a postback form (From Date / To Date, Excel download): not fetched")}}},
+    "vn_vcb_fx": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("vn_vcb_fx", "vietcombank_fx"),
+        "url_patterns": (r"^(?:[^/]*\.)?portal\.vietcombank\.com\.vn/Usercontrols/"
+                         r"TVPortal\.TyGia/pXML\.aspx",),
+        "research_only": True,
+        "why": ("Vietcombank's public exchange-rate XML (USD Buy / Transfer / Sell, stamped in "
+                "Vietnam time; the SJC premium's FX leg): the file names its source "
+                "('Joint Stock Commercial Bank for Foreign Trade of Vietnam - Vietcombank') and "
+                "no terms page was read, so UNREAD terms never permit live input: "
+                "RESEARCH-ONLY (mined and tested, never sized live, never redistributed)"),
+        "unblock": ("Vietcombank's terms read with a clause permitting automated access for "
+                    "internal research, quoted here"),
+        "robots": ("read at run time as a LABEL (polite_fetch.get on the research lane), "
+                   "never a stop"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _ASIA_RETAIL_MISSED.format(state="VND rate (SJC FX leg)")},
+        "terms": {"url": "https://portal.vietcombank.com.vn/", "checked_at": "2026-11-04",
+                  "also_read": {
+                      "https://portal.vietcombank.com.vn/Usercontrols/TVPortal.TyGia/pXML.aspx":
+                          ("<ExrateList><DateTime>11/3/2026 8:30:31 AM</DateTime> ... "
+                           "<Source>Joint Stock Commercial Bank for Foreign Trade of Vietnam - "
+                           "Vietcombank</Source>")},
+                  "unread": {
+                      "https://portal.vietcombank.com.vn/robots.txt": (
+                          "served a SharePoint error page to the reader on 2026-11-04: robots "
+                          "UNREAD from here (the box's polite_fetch labels it)")}}},
+})
+#: The SJC row (2026-10-29) is a RESEARCH door too since 2026-11-04: mined on the research lane
+#: (LAWS 5e), still IDEAS_ONLY for live input.
+SOURCE_POLICY["vn_sjc_premium"]["research_only"] = True
 #: The held-route rows, by key (read by `alt_proxies.HELD_ROUTES`).
 HELD_ROUTE_KEYS: frozenset[str] = frozenset(
     k for k, r in SOURCE_POLICY.items() if r.get("held_route"))

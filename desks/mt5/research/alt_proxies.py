@@ -3711,6 +3711,13 @@ SBV_HOME_URL = "https://www.sbv.gov.vn/"
 GTA_HISTORY_URL = "https://www.goldtraders.or.th/UpdatePriceList.aspx"
 BOT_REF_RATE_URL = ("https://apigw1.bot.or.th/bot/public/Stat-ReferenceRate/v2/DAILY_REF_RATE/"
                     "?start_period={start}&end_period={end}")
+#: THE RESEARCH DOORS' ROUTES (2026-11-04): fetched only on the RESEARCH lane
+#: (`research_collect`), never as live input. Each page was read with WebFetch on 2026-11-04
+#: (terms_fence rows in_ibja_premium, in_rbi_reference_rate, vn_vcb_fx); curl from the authoring
+#: container is refused by its proxy, so live yield is the box's.
+VCB_XML_URL = "https://portal.vietcombank.com.vn/Usercontrols/TVPortal.TyGia/pXML.aspx"
+IBJA_URL = "https://ibjarates.com/"
+RBI_HOME_URL = "https://www.rbi.org.in/"
 #: Months of C&SD history requested per pass (the vintage store dedupes; a revision is recorded).
 HK_MONTHS_BACK = 36
 
@@ -3736,17 +3743,38 @@ def parse_hk_csd(body: bytes, ctx: Ctx) -> list[Obs]:
 
 
 def parse_vn_sjc(body: bytes, ctx: Ctx) -> list[Obs]:
-    """SJC board (part `sjc`) or the SBV central-rate page (part `sbv`); a part this source did
-    not name reads whichever shape the bytes are."""
+    """SJC board (part `sjc`), the SBV central-rate page (part `sbv`) or Vietcombank's rate XML
+    (part `vcb`, the research lane's FX leg); a part this source did not name reads whichever
+    shape the bytes are. The board and the XML are stamped by their OWN print instants."""
     out: list[Obs] = []
+    if ctx.part == "vcb":
+        return [Obs("vcb_vnd_per_usd", date.fromisoformat(r["date"]), float(r["vnd_per_usd"]),
+                    r["published_utc"]) for r in _agp.parse_vcb_rates(body)]
     if ctx.part != "sjc":
         out += [Obs("sbv_vnd_per_usd", date.fromisoformat(r["date"]), float(r["vnd_per_usd"]))
                 for r in _agp.parse_sbv_central_rate(body)]
         if ctx.part == "sbv" or out:
             return out
+    at = _agp.sjc_print_instant(body)
     for r in _agp.parse_sjc_prices(body):
         d = date.fromisoformat(r["date"])
-        out += [Obs("sjc_buy_vnd", d, float(r["buy"])), Obs("sjc_sell_vnd", d, float(r["sell"]))]
+        out += [Obs("sjc_buy_vnd", d, float(r["buy"]), at),
+                Obs("sjc_sell_vnd", d, float(r["sell"]), at)]
+    return out
+
+
+def parse_in_ibja(body: bytes, ctx: Ctx) -> list[Obs]:
+    """IBJA's rate page (part `ibja`: AM and PM 999 / 995, INR per 10 g) or RBI's home page
+    (part `rbi`: the FBIL USD/INR reference rate). Neither prints a publication instant, so the
+    source's rule stamps every leg (18:00 IST the same day: late, never early)."""
+    if ctx.part == "rbi":
+        return [Obs("rbi_inr_per_usd", date.fromisoformat(r["date"]), float(r["inr_per_usd"]))
+                for r in _agp.parse_rbi_reference_rate(body)]
+    out: list[Obs] = []
+    for r in _agp.parse_ibja_rates(body):
+        d = date.fromisoformat(r["date"])
+        out += [Obs(f"ibja_{r['session']}_999_inr", d, float(r["gold_999"])),
+                Obs(f"ibja_{r['session']}_995_inr", d, float(r["gold_995"]))]
     return out
 
 
@@ -3823,6 +3851,23 @@ ASIA_GOLD_SOURCES: tuple[Source, ...] = (
         participant_structure=("physical_flow", "retail_heavy"),
         failure_mode_hypothesis="fails when baht moves, not gold, drive the shop price",
         **{**_GOLD_META, "source_culture": "TH/th"}),
+    Source(
+        id=_agp.IN_ID, name="India IBJA 999 gold premium over London (RBI USD/INR reference rate)",
+        url=IBJA_URL, region="IN", language="en", cadence="daily", parse=parse_in_ibja,
+        rule=_agp.in_publication, transform="level_dev", signal_series=("premium_pct",),
+        mechanism=("India's jewellers and households are the second retail gold buyer; IBJA's "
+                   "polled price over London at the reference rate is their premium or discount "
+                   "-- a discount is retail selling into strength, a premium is the local bid"),
+        constraint=("the import duty sets the premium's level; a duty change is a break, so the "
+                    "conditioner reads the premium against its own recent history"),
+        licence="IBJA: All Rights Reserved (terms_fence row in_ibja_premium: IDEAS_ONLY, research)",
+        participant_structure=("physical_flow", "retail_heavy"),
+        failure_mode_hypothesis=("fails around budget days that move the import duty, and in the "
+                                 "wedding / Diwali calendar the polls already price"),
+        polite=True,
+        note=("RESEARCH lane only (research_collect): never live input; PIT 18:00 IST the same "
+              "day for both polls and the FX leg"),
+        **{**_GOLD_META, "source_culture": "IN/en"}),
     Source(
         id=_agp.SGE_ID, name="SGE Au(T+D) deferral-fee payment direction (交收方向)",
         url="https://www.sge.com.cn/sjzx/quotation_daily_new", region="CN", language="zh",
@@ -4054,6 +4099,221 @@ def asia_gold_derived(paths: Paths, src: Source, store: dict[str, Any]
         return {}
     return build_points(replace(src, transform="level_dev" if src.id in (
         *GOLD_XAU_HOUR, _agp.TR_PRICE_ID, _agp.TR_BIST_ID) else "given"), synth)
+
+
+# ============================================================================ the research lane
+#: THE RESEARCH LANE (LAWS 5e; 2026-11-04). The Asian retail gold-demand doors
+#: (`asia_gold_physical.RESEARCH_IDS`: the SJC bar at Vietcombank's dollar, IBJA's 999 at the
+#: RBI reference rate) carry no clause permitting LIVE use, so `collect` never fetches them as
+#: live input -- and a licence is a LABEL, never a stop on mining. This lane fetches them through
+#: `polite_fetch.get` WITHOUT `live_input` (robots.txt read as an access label: PUBLIC,
+#: PUBLIC_WITH_TERMS with the Disallow in terms_note, or ACCESS_UNCLEAR; 401/403/429/WAF a
+#: person-held hard stop), keeps them in their own vintage store, writes their lake series and
+#: judges their exogenous_conditioner cells (XAUUSD, the gold_asia selector) through the same gain
+#: test and donation every other cell takes. They never reach allocation_intel, the conditioned
+#: LIVE children, the asia_gold live state or any sizing; every cell says research_only.
+RESEARCH_LEG = "alt_proxies_research"
+#: Wall-clock seconds the lane may take beyond the live lane's fetch deadline (four requests).
+RESEARCH_BUDGET_S = 45.0
+#: The fixture file each research request reads in a fixture pass, by (source, part).
+RESEARCH_FIXTURES: dict[tuple[str, str], str] = {
+    (_agp.VN_ID, "sjc"): f"{_agp.VN_ID}.json", (_agp.VN_ID, "vcb"): f"{_agp.VN_ID}.vcb.xml",
+    (_agp.IN_ID, "ibja"): f"{_agp.IN_ID}.ibja.html", (_agp.IN_ID, "rbi"): f"{_agp.IN_ID}.rbi.html"}
+
+
+def research_requests(src: Source, now: datetime) -> list[Request]:
+    if src.id == _agp.VN_ID:
+        return [Request(SJC_PRICE_URL, Ctx(part="sjc", fetched_at=now)),
+                Request(VCB_XML_URL, Ctx(part="vcb", fetched_at=now))]
+    if src.id == _agp.IN_ID:
+        return [Request(IBJA_URL, Ctx(part="ibja", fetched_at=now)),
+                Request(RBI_HOME_URL, Ctx(part="rbi", fetched_at=now))]
+    return []
+
+
+def research_store_path(paths: Paths, sid: str) -> Path:
+    return paths.obs_dir / f"research_{sid}.json"
+
+
+def _research_label(resp: Any, policy: str) -> dict[str, Any]:
+    """The fetch's robots label (polite_fetch), with the register row's terms folded in: robots
+    allowing a page never erases a publisher's reserved rights, so PUBLIC with a terms row reads
+    PUBLIC_WITH_TERMS. redistribute_allowed comes from ROUTING (fail closed)."""
+    from libs.data import polite_fetch as _pf
+    lab = str(getattr(resp, "access_label", "") or _pf.ACCESS_UNCLEAR)
+    note = str(getattr(resp, "terms_note", "") or "")
+    row = _tf.SOURCE_POLICY.get(policy) or {}
+    t = row.get("terms") or {}
+    terms = (f"terms {t.get('url', 'UNREAD')} read {t.get('checked_at', 'never')}: "
+             f"{row.get('why', '')}")
+    if lab == _pf.PUBLIC and row.get("terms"):
+        lab = _pf.PUBLIC_WITH_TERMS
+    return _pf.access_row(lab, (f"{note}; {terms}" if note else terms)[:600])
+
+
+def research_collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
+                     fetch: bool, fixtures: Path | None, deadline: float,
+                     get: Callable[..., Any] | None = None) -> dict[str, Any]:
+    """One research door, once: fetch (or read fixtures), label, vault, parse, merge into its own
+    vintage store, and keep its liveness (`empty_streak`; RED above RESEARCH_EMPTY_RED_RUNS)."""
+    from libs.data import polite_fetch as _pf
+    getter = get or _pf.get
+    row = state.setdefault("research_lane", {}).setdefault(src.id, {})
+    pols = _agp.RESEARCH_POLICY[src.id]
+    rec: dict[str, Any] = {"id": src.id, "lane": "research", "policy_rows": list(pols),
+                           "live_sizing_allowed": False, "requests": 0, "fetched": 0,
+                           "parsed": 0, "errors": [], "access": {}}
+    store_p = research_store_path(paths, src.id)
+    store = _read_json(store_p, {})
+    live_pass = fixtures is None and fetch
+    if live_pass and row.get("hard_stop") and not (row["hard_stop"] or {}).get("released_by"):
+        rec.update({"state": "HARD_STOP", "hard_stop": row["hard_stop"],
+                    "why": "held for a person: nothing is retried and no clock releases it",
+                    "store_rows": len(store)})
+        return rec
+    for req in research_requests(src, now):
+        body: bytes | None = None
+        if fixtures is not None:
+            fp = fixtures / RESEARCH_FIXTURES.get((src.id, req.ctx.part), "")
+            body = fp.read_bytes() if fp.is_file() else None
+        elif fetch:
+            if time.monotonic() > deadline:
+                rec["errors"].append("budget reached: the remaining requests are owed to the "
+                                     "next pass")
+                break
+            rec["requests"] += 1
+            r = getter(req.url, timeout=TIMEOUT, retries=1, leg=RESEARCH_LEG)
+            if r.fenced or r.verdict:
+                row["hard_stop"] = {"status": r.status if r.status is not None else r.verdict,
+                                    "url": _pf.redact_url(req.url),
+                                    "why": str(r.error or r.verdict)[:200],
+                                    "at": now.isoformat(timespec="seconds"),
+                                    "waits_for": "a person", "released_by": None}
+                rec["errors"].append(f"HARD_STOP {req.ctx.part}: {str(r.error)[:120]}")
+                break
+            if not r.ok:
+                rec["errors"].append(f"{req.ctx.part}: {str(r.error or r.status)[:120]}")
+                continue
+            body = bytes(r.body)
+            rec["fetched"] += 1
+            pol = pols[0] if req.ctx.part in ("sjc", "ibja") else pols[1]
+            rec["access"][req.ctx.part] = _research_label(r, pol)
+            vault(paths, src, body, req.url, r.content_type, now)
+        if body is None:
+            continue
+        obs = src.parse(body, req.ctx) if src.parse else []
+        rec["parsed"] += len(obs)
+        m = merge_vintages(store, src, obs, now)
+        rec.setdefault("merge", {"added": 0, "revised": 0})
+        rec["merge"]["added"] += m["added"]
+        rec["merge"]["revised"] += m["revised"]
+    if live_pass:
+        row["last_attempt_at"] = now.isoformat(timespec="seconds")
+        if rec["parsed"]:
+            row.update({"empty_streak": 0, "last_landed_at": row["last_attempt_at"],
+                        "fail_reason": None})
+        else:
+            row["empty_streak"] = int(row.get("empty_streak") or 0) + 1
+            row["fail_reason"] = "; ".join(rec["errors"])[:240] or "nothing parsed"
+        row["access"] = rec["access"] or row.get("access")
+    rec.update({"state": _agp.research_door_state(row) if live_pass else (
+                    "FIXTURE" if fixtures is not None else _agp.research_door_state(row)),
+                "empty_streak": int(row.get("empty_streak") or 0),
+                "last_landed_at": row.get("last_landed_at") or UNMEASURED,
+                "store_rows": len(store)})
+    if row.get("hard_stop") and not (row["hard_stop"] or {}).get("released_by"):
+        rec["hard_stop"] = row["hard_stop"]
+    _atomic(store_p, store)
+    return rec
+
+
+def research_gold_derived(paths: Paths, src: Source, store: dict[str, Any]
+                          ) -> dict[str, list[dict[str, Any]]]:
+    """The research doors' FEATURES in the PIT point envelope: the local premium over XAUUSD in
+    % and USD per fine oz (and the SJC buy-sell gap, the IBJA AM premium). A point is knowable
+    only when its LAST leg is: max(every leg's published_time, the close of the XAUUSD bar it
+    was compared with). SJC compares with the last H1 bar closed before its own print."""
+    def _rows(name: str) -> dict[str, dict[str, Any]]:
+        return {str(r["period"]): r for r in store.values()
+                if isinstance(r, dict) and r.get("series") == name}
+
+    synth: dict[str, Any] = {}
+
+    def _add(series: str, d: str, v: float, legs: list[dict[str, Any]], bar_close: datetime
+             ) -> None:
+        bar = bar_close.isoformat(timespec="seconds")
+        synth[f"{series}|{d}"] = {
+            "series": series, "period": d, "value_first": v, "value_last": v,
+            "first_seen_at": max(str(x.get("first_seen_at")) for x in legs),
+            "published_time": max([*(str(x.get("published_time")) for x in legs), bar]),
+            "published_basis": "derived", "revision_time": None, "n_revisions": 0}
+
+    xau_h = _agp.xau_hourly_close(paths.universe)
+    if src.id == _agp.VN_ID:
+        buy, sell = _rows("sjc_buy_vnd"), _rows("sjc_sell_vnd")
+        fx = {**_rows("sbv_vnd_per_usd"), **_rows("vcb_vnd_per_usd")}   # Vietcombank first
+        for d in sorted(set(buy) & set(sell) & set(fx)):
+            at = _t(str(buy[d].get("published_time")))
+            got = _agp.bar_before(xau_h, at) if at is not None else None
+            if got is None:
+                continue
+            x, bar_close = got
+            rate = float(fx[d]["value_first"])
+            ub = _agp.usd_per_oz(float(buy[d]["value_first"]), _agp.TAEL_G, _agp.SJC_PURITY,
+                                 rate)
+            us = _agp.usd_per_oz(float(sell[d]["value_first"]), _agp.TAEL_G, _agp.SJC_PURITY,
+                                 rate)
+            legs = [buy[d], sell[d], fx[d]]
+            mid = (ub + us) / 2.0
+            _add("premium_pct", d, _agp.premium_pct(mid, x), legs, bar_close)
+            _add("premium_usd_oz", d, _agp.premium_usd_oz(mid, x), legs, bar_close)
+            _add("buy_sell_gap_pct", d, (us - ub) / x * 100.0, legs, bar_close)
+    elif src.id == _agp.IN_ID:
+        fx = _rows("rbi_inr_per_usd")
+        for sess, series in (("pm", "premium_pct"), ("am", "premium_am_pct")):
+            px = _rows(f"ibja_{sess}_999_inr")
+            hh = _agp.IN_XAU_HOUR[sess]
+            for d in sorted(set(px) & set(fx)):
+                x = xau_h.get(f"{d}T{hh:02d}")
+                if x is None:
+                    continue
+                bar_close = datetime.fromisoformat(d).replace(hour=hh, tzinfo=UTC) + timedelta(
+                    hours=1)
+                u = _agp.usd_per_oz(float(px[d]["value_first"]), _agp.IBJA_GRAMS,
+                                    _agp.IBJA_999_PURITY, float(fx[d]["value_first"]))
+                _add(series, d, _agp.premium_pct(u, x), [px[d], fx[d]], bar_close)
+                if sess == "pm":
+                    _add("premium_usd_oz", d, _agp.premium_usd_oz(u, x), [px[d], fx[d]],
+                         bar_close)
+    if not synth:
+        return {}
+    return build_points(replace(src, transform="level_dev"), synth)
+
+
+def research_points(paths: Paths, src: Source, store: dict[str, Any]
+                    ) -> dict[str, list[dict[str, Any]]]:
+    """The raw legs and the derived features of one research door, every one PIT-stamped."""
+    pts = build_points(replace(src, transform="given"), store) if store else {}
+    pts.update(research_gold_derived(paths, src, store))
+    return pts
+
+
+def research_report(records: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """The lane's report block: per door its liveness, labels, terms rows and live-sizing
+    verdict, and the doors that are RED or held (they name themselves in the report status)."""
+    red = sorted(sid for sid, r in records.items() if r.get("state") in ("RED", "HARD_STOP"))
+    return {"doors": records, "red_doors": red,
+            "red_rule": (f"RED after more than {_agp.RESEARCH_EMPTY_RED_RUNS} consecutive fetch "
+                         "passes that land nothing; HARD_STOP on a 401/403/429/WAF until a person "
+                         "releases it"),
+            "terms": {k: {"verdict": _tf.terms_verdict(k), "state": _tf.terms_state(k),
+                          "url": str((_tf.SOURCE_POLICY[k].get("terms") or {}).get("url")),
+                          "research_only": bool(_tf.SOURCE_POLICY[k].get("research_only"))}
+                      for sid in _agp.RESEARCH_IDS for k in _agp.RESEARCH_POLICY[sid]},
+            "missed_growth_lines": _agp.research_missed_growth(),
+            "footprint": _agp.FOOTPRINT_ROWS,
+            "rule": ("mined and tested in full (LAWS 5e); never live input, never sized, never "
+                     "redistributed: no register row quotes a permitting clause")}
 
 
 SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
@@ -4936,6 +5196,9 @@ def direct_cells(gains: dict[str, dict[str, Any]], now: datetime) -> list[dict[s
         params = {"source": lake_file(src, series), "signal": "surprise_z",
                   "transform": "level_z", "threshold": 1.0, "side_when_high": side,
                   "lag_hours": 24, "ttl_bars": HORIZON_BARS}
+        research = sid in _agp.RESEARCH_IDS
+        if research:
+            params["selector"] = "asia"           # the gold_asia window (XAUUSD.asia)
         out.append({
             "source": SOURCE, "kind": "hypothesis", "symbol": sym, "symbols": [sym],
             "family": "exogenous_conditioner", "params": params, "url": "",
@@ -4951,7 +5214,9 @@ def direct_cells(gains: dict[str, dict[str, Any]], now: datetime) -> list[dict[s
                                                "placebo_abs_ic_p95", "backfill_share",
                                                "horizon_bars", "min_detectable_ic", "why")},
             "provenance": {"organ": "alt_proxies", "use": "direct_cells", "source_id": sid,
-                           "series": series, **_meta(src)}})
+                           "series": series, **_meta(src),
+                           **({"lane": "research", "research_only": True,
+                               "live_sizing_allowed": False} if research else {})}})
     return out
 
 
@@ -5548,7 +5813,24 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
                 rec["lake_series"] = write_lake_series(paths, src, pts)
         rec["series"] = {k: len(v) for k, v in sorted(pts.items())}
         records[src.id] = rec
-    gains = gain_tests(paths, points_by_source) if points_by_source else {}
+    research: dict[str, dict[str, Any]] = {}
+    research_pts: dict[str, dict[str, list[dict[str, Any]]]] = {}
+    r_deadline = max(deadline, time.monotonic() + RESEARCH_BUDGET_S)
+    for sid in _agp.RESEARCH_IDS:
+        src = BY_ID[sid]
+        rrec = research_collect(paths, src, state, now, fetch=fetch, fixtures=fixtures,
+                                deadline=r_deadline)
+        rstore = _read_json(research_store_path(paths, sid), {})
+        rpts = research_points(paths, src, rstore) if rstore else {}
+        if rpts:
+            research_pts[sid] = rpts
+            if not dry_run:
+                rrec["lake_series"] = write_lake_series(paths, src, rpts)
+        rrec["series"] = {k: len(v) for k, v in sorted(rpts.items())}
+        research[sid] = rrec
+    # the research doors are judged with everything else (one charge), never read as live
+    judged = {**points_by_source, **research_pts}
+    gains = gain_tests(paths, judged) if judged else {}
     live = dict(points_by_source) if fixtures is None else {}
     direct = direct_cells(gains, now) if fixtures is None else []
     indirect, owed, child_gates = indirect_cells(paths, live, state, now)
@@ -5610,7 +5892,15 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
         "live_yield": ("UNMEASURED until the trading box runs this leg: the fetchers were built "
                        "against fixtures because the authoring container cannot reach the hosts"),
     }
+    report["research_lane"] = research_report(research)
+    if report["research_lane"]["red_doors"]:
+        report["status"] = ("RED: research doors empty > "
+                            f"{_agp.RESEARCH_EMPTY_RED_RUNS} runs or held for a person: "
+                            + ", ".join(report["research_lane"]["red_doors"]))
     gold = _agp.state_from_alt(paths, records, now)
+    gold["research_lane"] = {sid: {k: r.get(k) for k in ("state", "empty_streak", "series",
+                                                         "access", "live_sizing_allowed")}
+                             for sid, r in research.items()}
     report["asia_gold_physical"] = {
         "path": str(paths.desk / "reports" / _agp.STATE_FILE),
         "verdicts": {sid: b["verdict"] for sid, b in gold["states"].items()},

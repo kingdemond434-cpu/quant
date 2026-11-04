@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ExrateList>
+<DateTime>10/28/2026 8:30:31 AM</DateTime>
+<Exrate CurrencyCode="AUD" CurrencyName="AUSTRALIAN DOLLAR" Buy="16,401.12" Transfer="16,566.79" Sell="17,098.83" />
+<Exrate CurrencyCode="JPY" CurrencyName="JAPANESE YEN" Buy="161.52" Transfer="163.15" Sell="171.84" />
+<Exrate CurrencyCode="KWD" CurrencyName="KUWAITI DINAR" Buy="-" Transfer="83,322.13" Sell="86,651.70" />
+<Exrate CurrencyCode="USD" CurrencyName="US DOLLAR           " Buy="25,560.00" Transfer="25,590.00" Sell="25,970.00" />
+<Source>Joint Stock Commercial Bank for Foreign Trade of Vietnam - Vietcombank</Source>
+</ExrateList>

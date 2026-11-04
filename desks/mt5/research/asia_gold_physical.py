@@ -47,7 +47,7 @@ import math
 import re
 import sys
 from collections.abc import Iterable, Mapping, Sequence
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -271,6 +271,192 @@ def parse_sbv_central_rate(body: bytes) -> list[dict[str, Any]]:
     return [{"date": d.isoformat(), "vnd_per_usd": rate}]
 
 
+# ============================================================================ the research lane
+#: THE ASIAN RETAIL GOLD-DEMAND RESEARCH DOORS (2026-11-04). Two local-premium states for the
+#: gold_asia XAUUSD window, MINED AND TESTED IN FULL under LAWS 5e although neither publisher's
+#: terms carry a clause permitting live use: their register rows are IDEAS_ONLY + research_only,
+#: so `alt_proxies` fetches them on its RESEARCH lane (`research_collect`: polite_fetch.get with
+#: robots read as an access LABEL, never `live_input`), keeps them in their own vintage store,
+#: and never lets them reach allocation_intel, the conditioned live children or any sizing.
+#:
+#:   vn_sjc_premium   SJC 1-tael bar (VND per tael, 37.5 g, 99.99%) at Vietcombank's public
+#:                    USD transfer rate (portal XML) -> USD per fine oz, premium over XAUUSD in
+#:                    USD/oz and %, and the buy-sell gap. SJC reprices INTRADAY: each print is
+#:                    stamped at the board's own "HH:MM dd/mm/yyyy" (Vietnam time, UTC+7), and the
+#:                    XAUUSD bar it is compared with is the last H1 bar CLOSED before that print.
+#:   in_ibja_premium  IBJA 999 gold (INR per 10 g, ex-GST) at the RBI-published FBIL USD/INR
+#:                    reference rate -> premium/discount over London in USD/oz and %, for the
+#:                    PM (closing) and AM (opening) polls. IBJA polls ~12:00 and ~17:00 IST; the
+#:                    reference rate prints ~13:30 IST. NOTE: IBJA's price carries India's import
+#:                    duty, so the level sits a duty above London and a duty change is a break;
+#:                    the conditioner reads it as a z against its own history.
+IN_ID = "in_ibja_premium"
+RESEARCH_IDS = (VN_ID, IN_ID)
+#: The register rows each research door reads (the price board's row, then its FX leg's row).
+RESEARCH_POLICY = {VN_ID: (VN_ID, "vn_vcb_fx"), IN_ID: (IN_ID, "in_rbi_reference_rate")}
+ICT = timezone(timedelta(hours=7))
+IST = timezone(timedelta(hours=5, minutes=30))
+IBJA_GRAMS = 10.0
+IBJA_999_PURITY = 0.999
+#: IBJA publication, pushed LATE so a stamp is never early: the PM poll (~17:00 IST) and the
+#: reference rate (~13:30 IST) are both public by 18:00 IST = 12:30 UTC, the stamp every IBJA
+#: and RBI leg of a date carries (the AM poll, public ~12:40 IST, is stamped at it too: late).
+IN_PUBLISH_UTC = (12, 30)
+#: XAUUSD H1 bar (UTC hour label) the IBJA polls are compared with: the bar closed before each
+#: poll (AM ~06:30-07:10 UTC; PM ~11:30 UTC). A broker-time index labels an EARLIER UTC hour, so
+#: either reading of the bar clock stays before the poll.
+IN_XAU_HOUR = {"am": 6, "pm": 10}
+#: Liveness: more than this many consecutive fetch passes that land nothing is RED (the same
+#: rule as world_dataset_hunter.PACK_EMPTY_RED_RUNS).
+RESEARCH_EMPTY_RED_RUNS = 2
+
+_SJC_STAMP = re.compile(r"(\d{1,2}):(\d{2})\s+(\d{1,2})/(\d{1,2})/(\d{4})")
+_VCB_TIME = re.compile(r"<DateTime>\s*(\d{1,2})/(\d{1,2})/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?"
+                       r"\s*([AP]M)?\s*</DateTime>", re.I)
+_VCB_USD = re.compile(r"<Exrate\b[^>]*\bCurrencyCode=\"USD\"[^>]*/?>", re.I)
+_ATTR = re.compile(r"(\w+)=\"([^\"]*)\"")
+
+
+def sjc_print_instant(body: bytes) -> datetime | None:
+    """The SJC board's own print stamp ("latestDate": "HH:MM dd/mm/yyyy", Vietnam time) in UTC."""
+    try:
+        doc = json.loads(body.decode("utf-8-sig"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    m = _SJC_STAMP.search(str(doc.get("latestDate") or "")) if isinstance(doc, Mapping) else None
+    if m is None:
+        return None
+    hh, mm, d, mo, y = (int(g) for g in m.groups())
+    return datetime(y, mo, d, hh, mm, tzinfo=ICT).astimezone(UTC)
+
+
+def parse_vcb_rates(body: bytes) -> list[dict[str, Any]]:
+    """Vietcombank's public exchange-rate XML -> [{date, vnd_per_usd, vnd_per_usd_sell,
+    published_utc}]. <ExrateList><DateTime>M/D/YYYY h:mm:ss AM</DateTime> (Vietnam time) and
+    <Exrate CurrencyCode="USD" Buy="25,560.00" Transfer="25,590.00" Sell="25,970.00"/>; the
+    TRANSFER rate is the conversion (the bank's own wire rate), Sell is kept beside it."""
+    text = body.decode("utf-8-sig", "replace")
+    t, u = _VCB_TIME.search(text), _VCB_USD.search(text)
+    if t is None or u is None:
+        return []
+    mo, d, y, hh, mi = (int(t.group(i)) for i in range(1, 6))
+    ss = int(t.group(6) or 0)
+    ap = (t.group(7) or "").upper()
+    if ap == "PM" and hh < 12:
+        hh += 12
+    elif ap == "AM" and hh == 12:
+        hh = 0
+    at = datetime(y, mo, d, hh, mi, ss, tzinfo=ICT).astimezone(UTC)
+    attrs = dict(_ATTR.findall(u.group(0)))
+    mid, sell = _num(attrs.get("Transfer")), _num(attrs.get("Sell"))
+    if mid is None or not 10_000 < mid < 50_000:
+        return []
+    return [{"date": date(y, mo, d).isoformat(), "vnd_per_usd": mid,
+             "vnd_per_usd_sell": sell, "published_utc": at}]
+
+
+_IBJA_TAB = re.compile(r"id=[\"']tab-(am|pm)[\"']", re.I)
+_IBJA_ROW = re.compile(r"<tr[^>]*>\s*<td[^>]*>\s*(\d{1,2})/(\d{1,2})/(\d{4})\s*</td>(.*?)</tr>",
+                       re.I | re.S)
+_TD_NUM = re.compile(r"<td[^>]*>\s*([\d,]+(?:\.\d+)?)\s*</td>", re.I)
+
+
+def parse_ibja_rates(body: bytes) -> list[dict[str, Any]]:
+    """IBJA's rate page (ibjarates.com) -> [{date, session, gold_999, gold_995}] in INR per 10 g.
+
+    The page's "Previous Dates Rate" tables run Date | 999 | 995 | 916 | 750 | 585 | Silver 999 |
+    Platinum 999 (dd/mm/yyyy), one table under the `tab-am` panel and one under `tab-pm`. A row
+    is read inside the panel it sits in; without panel ids the first table is AM and the second
+    PM (the page's own tab order). A 999 value outside a gold-shaped band, or below the 995, is
+    refused, never guessed."""
+    text = body.decode("utf-8", "replace")
+    marks = [(m.start(), m.group(1).lower()) for m in _IBJA_TAB.finditer(text)]
+    tables = [m.start() for m in re.finditer(r"<table\b", text, re.I)]
+    rows = list(_IBJA_ROW.finditer(text))
+    # without panel ids: the dated tables in page order (today's Purity table has no date row)
+    dated = sorted({max((t for t in tables if t <= m.start()), default=0) for m in rows})
+    out: dict[tuple[str, str], dict[str, Any]] = {}
+    for m in rows:
+        sess = None
+        for pos, name in marks:
+            if pos <= m.start():
+                sess = name
+        if sess is None:
+            own = max((t for t in tables if t <= m.start()), default=0)
+            sess = "am" if dated.index(own) == 0 else "pm"
+        nums = [_num(x) for x in _TD_NUM.findall(m.group(4))]
+        if len(nums) < 2 or nums[0] is None or nums[1] is None:
+            continue
+        g999, g995 = float(nums[0]), float(nums[1])
+        if not (20_000 < g999 < 1_000_000) or g995 > g999:
+            continue
+        d = date(int(m.group(3)), int(m.group(2)), int(m.group(1))).isoformat()
+        out.setdefault((d, sess), {"date": d, "session": sess, "gold_999": g999,
+                                   "gold_995": g995})
+    return [out[k] for k in sorted(out)]
+
+
+_RBI_USD = re.compile(r"INR\s*/\s*1\s*USD\W{0,40}?(\d{2,3}\.\d{2,4})", re.I | re.S)
+_RBI_ASAT = re.compile(r"As\s+at\s+[\d.:]+\s*[ap]\.?m\.?\s+of\s+([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})",
+                       re.I)
+_MONTHS = {m: i for i, m in enumerate(
+    ("january", "february", "march", "april", "may", "june", "july", "august", "september",
+     "october", "november", "december"), start=1)}
+
+
+def parse_rbi_reference_rate(body: bytes) -> list[dict[str, Any]]:
+    """RBI home page 'Current Rates' block -> [{date, inr_per_usd}]: the FBIL USD/INR reference
+    rate RBI republishes ("INR / 1 USD : 94.8606", "(As at 1.00pm of November 03, 2026)",
+    "(Source : FBIL)"). The date is the block's own; a rate outside 40..200 is refused."""
+    text = re.sub(r"<[^>]+>", " ", body.decode("utf-8", "replace"))
+    r, a = _RBI_USD.search(text), _RBI_ASAT.search(text)
+    if r is None or a is None or a.group(1).lower() not in _MONTHS:
+        return []
+    rate = float(r.group(1))
+    if not 40.0 < rate < 200.0:
+        return []
+    d = date(int(a.group(3)), _MONTHS[a.group(1).lower()], int(a.group(2)))
+    return [{"date": d.isoformat(), "inr_per_usd": rate}]
+
+
+def in_publication(period: date) -> datetime:
+    """When an IBJA poll or the RBI reference rate dated `period` is first knowable (UTC): 18:00
+    IST the same day, after the PM poll and the reference rate, so no leg is stamped early."""
+    return datetime(period.year, period.month, period.day, *IN_PUBLISH_UTC, tzinfo=UTC)
+
+
+def xau_hourly_close(paths_universe: Path, symbol: str = "XAUUSD") -> dict[str, float]:
+    """{'YYYY-MM-DDTHH': close} of every H1 bar on this box (hour label as the index carries it);
+    absent file -> {} (a premium is then UNMEASURED, never 0)."""
+    p = paths_universe / f"{symbol}_H1.parquet"
+    if not p.exists():
+        return {}
+    try:
+        import pandas as pd
+        df = pd.read_parquet(p)
+        return {pd.Timestamp(i).strftime("%Y-%m-%dT%H"): float(v)
+                for i, v in df["close"].items()}
+    except Exception:
+        return {}
+
+
+def bar_before(xau_h: Mapping[str, float], at: datetime) -> tuple[float, datetime] | None:
+    """The close of the last H1 bar that CLOSED at or before `at`, and that close instant (the
+    bar labelled h closes at h+1). Up to six hours back; older is no comparison, never a carry."""
+    end = at.astimezone(UTC).replace(minute=0, second=0, microsecond=0)
+    for k in range(1, 7):
+        lab = end - timedelta(hours=k)
+        v = xau_h.get(lab.strftime("%Y-%m-%dT%H"))
+        if v is not None:
+            return v, lab + timedelta(hours=1)
+    return None
+
+
+def premium_usd_oz(local_usd_oz: float, xau_usd_oz: float) -> float:
+    """The local bar's premium over the international price, USD per fine troy ounce."""
+    return local_usd_oz - xau_usd_oz
+
+
 # ============================================================================ row 228: GTA + BoT
 _GTA_ROW = re.compile(
     r"<tr[^>]*>\s*<td[^>]*>\s*(\d{1,2})/(\d{1,2})/(\d{4})\s*</td>\s*"      # date (Gregorian)
@@ -408,7 +594,6 @@ TR_SERIES = {TR_PRICE_ID: "try_per_gram", TR_IMPORT_ID: "gold_imports",
 
 def tr_release_at(sid: str, period: date) -> datetime:
     """The instant a Turkish reading for `period` is first knowable (UTC), per the rules above."""
-    from datetime import timedelta
     if sid == TR_IMPORT_ID:
         t = datetime(period.year, period.month, period.day, 8, tzinfo=UTC) + timedelta(days=31)
     elif sid == TR_RESERVE_ID:
@@ -824,6 +1009,90 @@ def tr_from_stores(_store: Any, _series: Any, uni: Path
                                        {d: t for d, (_, t) in res_raw.items()}) or None,
             TR_BIST_ID: tr_premium_series(bist, usdtry, xau) or None}
 
+
+# ============================================================================ player footprint
+#: The retail rows of the player-footprint matrix (PR #659's registry schema: `class`, `region`,
+#: `targets`, `why`), in the same shape as jp_retail_flow.FOOTPRINT_ROWS: `adapter` names this
+#: module's frame reader and `columns` the exact columns `footprint_frame` returns.
+RESEARCH_SERIES: dict[str, tuple[str, ...]] = {
+    VN_ID: ("premium_pct", "premium_usd_oz", "buy_sell_gap_pct"),
+    IN_ID: ("premium_pct", "premium_usd_oz", "premium_am_pct"),
+}
+FOOTPRINT_ROWS: list[dict[str, Any]] = [
+    {"id": VN_ID, "class": "retail", "region": "VN", "adapter": "asia_gold_physical",
+     "store": f"lake/series/alt_{VN_ID}__<column>.csv (alt_proxies research lane)",
+     "columns": list(RESEARCH_SERIES[VN_ID]), "units": "% and USD per fine oz over XAUUSD",
+     "freq": "intraday prints, one per date (the first print seen)",
+     "targets": ["XAUUSD"], "session": "asia", "policy_row": VN_ID,
+     "live_sizing_allowed": False,
+     "why": ("Vietnamese households buy the SJC bar as savings and capital flight; its premium "
+             "over London at Vietcombank's dollar is the local retail bid the Western tape "
+             "prices only later (SBV bar auctions cap it: a policy clock beside the demand).")},
+    {"id": IN_ID, "class": "retail", "region": "IN", "adapter": "asia_gold_physical",
+     "store": f"lake/series/alt_{IN_ID}__<column>.csv (alt_proxies research lane)",
+     "columns": list(RESEARCH_SERIES[IN_ID]), "units": "% and USD per fine oz over XAUUSD",
+     "freq": "daily (IBJA AM and PM polls, business days)",
+     "targets": ["XAUUSD"], "session": "asia", "policy_row": IN_ID,
+     "live_sizing_allowed": False,
+     "why": ("India's jewellers and households are the world's second retail gold buyer; IBJA's "
+             "polled 999 price over London at the RBI reference rate is their premium or "
+             "discount -- a discount is retail selling into the rally, a premium is the bid.")},
+]
+
+
+def footprint_frame(sid: str, series_dir: Path | None = None) -> Any:
+    """One footprint row's series as #659's `collect` consumes them: indexed by the observation
+    date (DatetimeIndex, ascending), one column per feature, plus `available_utc` (the instant the
+    row was first knowable: the latest of its legs, tz-aware UTC). Empty when nothing is held."""
+    import pandas as pd
+    if sid not in RESEARCH_SERIES:
+        raise KeyError(sid)
+    base = series_dir or (DESK / "data" / "lake" / "series")
+    cols, stamps = [], []
+    for name in RESEARCH_SERIES[sid]:
+        p = base / f"alt_{sid}__{name}.csv"
+        if not p.exists():
+            continue
+        try:
+            df = pd.read_csv(p)
+        except Exception:
+            continue
+        if df.empty or "value" not in df.columns:
+            continue
+        idx = pd.DatetimeIndex(pd.to_datetime(df["event_time"]))
+        cols.append(pd.Series(df["value"].to_numpy(dtype=float), index=idx, name=name))
+        stamps.append(pd.Series(pd.to_datetime(df["available_time"], utc=True).to_numpy(),
+                                index=idx, name=name))
+    if not cols:
+        return pd.DataFrame()
+    out = pd.concat(cols, axis=1)
+    out["available_utc"] = pd.to_datetime(pd.concat(stamps, axis=1).max(axis=1), utc=True)
+    return out.sort_index()
+
+
+def research_door_state(row: Mapping[str, Any] | None) -> str:
+    """HARD_STOP > RED (more than RESEARCH_EMPTY_RED_RUNS empty fetch passes in a row) > GREEN
+    (the last fetch pass landed rows) > AMBER (an empty pass, not yet RED) > UNMEASURED."""
+    r = row or {}
+    if r.get("hard_stop") and not (r["hard_stop"] or {}).get("released_by"):
+        return "HARD_STOP"
+    streak = int(r.get("empty_streak") or 0)
+    if streak > RESEARCH_EMPTY_RED_RUNS:
+        return "RED"
+    if r.get("last_landed_at") and not streak:
+        return "GREEN"
+    if streak:
+        return "AMBER"
+    return UNMEASURED
+
+
+def research_missed_growth() -> list[dict[str, Any]]:
+    """GROWTH GOVERNANCE: each research door's register rows are refused as LIVE input (no quoted
+    permitting clause), so each carries its missed-growth line (delta E[log W] UNMEASURED)."""
+    from libs.data import terms_fence as tf
+    keys = [k for sid in RESEARCH_IDS for k in RESEARCH_POLICY[sid] if tf.input_source(k)]
+    return [tf.held_missed_growth(k, None, live_input_refusal=True)
+            for k in dict.fromkeys(keys)]
 
 if __name__ == "__main__":
     raise SystemExit(main())
