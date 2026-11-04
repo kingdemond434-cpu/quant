@@ -2,8 +2,8 @@
 
 Split out of tests/ops/test_box_self_heal.py (2026-11-04) so each file fits the independent
 reviewer whole. Every fake here stands in for the machine: no process is started, stopped or
-queried and no task is touched. The two fixtures (the autouse pager stub and `ps`) are imported
-by name into each test module, which is how pytest finds them.
+queried and no task is touched. `stub_pager` and `fake_psutil` are plain functions; each test
+module wraps them in its own autouse pager fixture and `ps` fixture.
 """
 from __future__ import annotations
 

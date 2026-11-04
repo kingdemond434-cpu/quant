@@ -141,11 +141,16 @@ MISSED_GROWTH_HISTORY = 50
 def _sibling(modname: str, filename: str) -> Any:
     """A module that lives beside this file, loaded from exactly that path: repo ops/ in the repo,
     the admin-only bin in the installed copy. Never sys.path, never the working directory: a SYSTEM
-    task must not execute a file a non-admin can write (see `_dep`)."""
+    task must not execute a file a non-admin can write (see `_dep`). A module of the same name
+    already loaded from anywhere else is refused, not reused (audit SF on 451e1b8ed)."""
+    want = (_HERE / filename).resolve()
     mod = sys.modules.get(modname)
     if mod is not None:
+        got = getattr(mod, "__file__", None)
+        if got is None or Path(got).resolve() != want:
+            raise ImportError(f"{modname} is already loaded from {got!r}, not {want}")
         return mod
-    spec = importlib.util.spec_from_file_location(modname, _HERE / filename)
+    spec = importlib.util.spec_from_file_location(modname, want)
     if spec is None or spec.loader is None:
         raise ImportError(modname)
     mod = importlib.util.module_from_spec(spec)

@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from box_self_heal_kit import (  # noqa: F401 -- the shared fakes; unused ones are harmless
+from tests.ops.box_self_heal_kit import (  # noqa: F401 -- the shared fakes; unused ones are harmless
     _REAL_SEND_ALERT,
     FAST,
     FP,

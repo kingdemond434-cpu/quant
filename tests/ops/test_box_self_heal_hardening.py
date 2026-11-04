@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, ClassVar
 
 import pytest
-from box_self_heal_kit import (  # noqa: F401 -- the shared fakes; unused ones are harmless
+from tests.ops.box_self_heal_kit import (  # noqa: F401 -- the shared fakes; unused ones are harmless
     _REAL_SEND_ALERT,
     FAST,
     FP,
@@ -806,3 +806,19 @@ def test_spot_task_is_runnable_not_endable_and_the_dev_lane_is_denied() -> None:
     assert any(n == "memecoinautonomousdevelopment" for n, _ in bsh.DENY)
     with pytest.raises(ValueError):
         bsh._schtasks("/End", bsh.MEMECOIN_SPOT_TASK)
+
+
+# --- audit SF on 451e1b8ed: the table is loaded from beside the file or not at all ---------------
+def test_a_same_named_module_loaded_from_elsewhere_is_refused(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    impostor = type(sys)("box_self_heal_lib")
+    impostor.__file__ = str(tmp_path / "box_self_heal_lib.py")
+    monkeypatch.setitem(sys.modules, "box_self_heal_lib", impostor)
+    with pytest.raises(ImportError, match="already loaded from"):
+        bsh._sibling("box_self_heal_lib", "box_self_heal_lib.py")
+
+
+def test_the_table_module_in_use_is_the_one_beside_the_script() -> None:
+    assert Path(bsh._table.__file__).resolve() == (ROOT / "ops" / "box_self_heal_lib.py").resolve()
+    assert bsh._sibling("box_self_heal_lib", "box_self_heal_lib.py") is bsh._table
+
