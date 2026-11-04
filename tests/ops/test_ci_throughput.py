@@ -807,3 +807,56 @@ def test_live_first_budget_is_a_ceiling_no_caller_can_raise(
     lf.run("o/r", lf.LIVE, tmp_path / "s.json", settle_s=0, sleep=lambda s: None,
            clock=lambda: next(t), budget_s=10 * lf.BUDGET_S)  # fmt: skip
     assert not any(p.endswith(("/cancel", "/rerun")) for p in calls)  # stopped at the ceiling
+
+
+def test_never_started_cancelled_pr_runs_are_rerun_once_and_only_those(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Desk health 2026-11-04 00:12Z: PR runs cancelled while queued (a reorder, a burst) were
+    quarantined by the audit gate as "CI failed (cancelled)" and only hands re-ran them. Rule 4
+    re-runs such a run once (first attempt only), on a current head, when no job ever started
+    and the head has no newer run of that workflow. Everything else is left alone."""
+    lf = _lf()
+    now = datetime.now(UTC)
+    ts = (now - timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    older = (now - timedelta(minutes=40)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    stale = (now - timedelta(hours=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    def run_(i: int, sha: str = "h1", attempt: int = 1, wf: int = 7, at: str = ts) -> dict:
+        return {"id": i, "event": "pull_request", "status": "completed",
+                "conclusion": "cancelled", "run_attempt": attempt, "head_branch": "b1",
+                "head_sha": sha, "workflow_id": wf, "created_at": at}  # fmt: skip
+
+    cancelled = [
+        run_(10),  # never started: re-run
+        run_(11, wf=8),  # a job started: left alone
+        run_(12, attempt=2, wf=9),  # already re-run once: left alone
+        run_(13, sha="old", wf=10),  # head moved: left alone
+        run_(14, wf=11, at=stale),  # too old: left alone
+        run_(15, wf=12),  # its head has a newer run of that workflow: left alone
+        run_(16, at=older),  # an older duplicate of 10's (head, workflow): left alone
+    ]
+    jobs = {i: [{"steps": [], "runner_name": None, "runner_id": 0}] for i in (10, 15, 16)}
+    jobs[11] = [{"steps": [{"name": "checkout"}], "runner_name": "GitHub Actions 3"}]
+    calls: list[tuple[str, str]] = []
+
+    def gh(path: str, method: str = "GET") -> Any:
+        calls.append((method, path))
+        if "status=queued" in path:
+            return {"workflow_runs": []}
+        if "/pulls?" in path:
+            return [{"number": 1, "head": {"ref": "b1", "sha": "h1"}}]
+        if "status=cancelled" in path:
+            return {"workflow_runs": cancelled}
+        if path.endswith("/jobs?per_page=100"):
+            return {"jobs": jobs[int(path.split("/")[-2])]}
+        if "head_sha=" in path:
+            return {"workflow_runs": [*cancelled, {"workflow_id": 12, "created_at": "9999"}]}
+        return None
+
+    monkeypatch.setattr(lf, "_gh", gh)
+    assert lf.run("o/r", lf.LIVE, tmp_path / "s.json", settle_s=0, sleep=lambda s: None) == 0
+    reruns = [p for m, p in calls if p.endswith("/rerun")]
+    assert reruns == ["repos/o/r/actions/runs/10/rerun"]
+    assert json.loads((tmp_path / "s.json").read_text())["rerun_never_started"] == 1
+    assert not lf.never_started([]) and lf.never_started(jobs[10])
