@@ -276,6 +276,16 @@ class TestCostDenominator:
         monkeypatch.setattr(dw, "known_symbols", lambda: set())
         monkeypatch.setattr(dw, "work_task", lambda task, universe: ([], "REJECTED: test"))
 
+    def test_an_idle_pass_still_publishes_so_silence_means_stopped(self, tmp_path,
+                                                                     monkeypatch) -> None:
+        """MT5-Deepening's contract is DEEPENING_THROUGHPUT.json's age: an empty queue must
+        refresh it as WORK_LIMITED, or a quiet desk reads as a dead worker."""
+        self._isolate(tmp_path, monkeypatch, [], variant=None)
+        monkeypatch.setattr(dw, "THROUGHPUT", tmp_path / "T.json")
+        assert dw.main([]) == 0
+        doc = json.loads(dw.THROUGHPUT.read_text("utf-8"))
+        assert doc["decisions"] == 0 and doc["work_limited"] is True
+
     def test_the_worked_row_carries_class_seconds_basis_and_variant(self, tmp_path,
                                                                     monkeypatch) -> None:
         self._isolate(tmp_path, monkeypatch,

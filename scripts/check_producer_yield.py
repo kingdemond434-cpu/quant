@@ -160,6 +160,48 @@ REPLACEMENTS: dict[str, str] = {
 }
 
 
+#: Producers that write OUTSIDE `data/intelligence`, read from their own append-only ledger. A
+#: replacement is only a remedy if it is itself held to the law: the brain seat was declared DEAD
+#: with `deepening_worker` as its inheritor, and nothing measured whether the inheritor produced,
+#: so "replaced" could have meant "both silent" (Hourly pass 21, 2026-10-29).
+LEDGER_PRODUCERS: dict[str, Path] = {
+    "deepening_worker": DESK / "data" / "hypotheses" / "deepening_worked.jsonl",
+}
+
+
+def _ledger_output(path: Path, window_days: float) -> int | None:
+    """Decisions the ledger recorded inside the window, by each row's own `at` stamp; None when
+    the ledger does not exist (UNMEASURED, never DEAD). An outage row -- the seat refusing, not a
+    decision about the source -- is not output (the worker's own `is_outage` rule)."""
+    if not path.exists():
+        return None
+    cutoff = datetime.now(UTC) - timedelta(days=window_days)
+    n = 0
+    try:
+        with path.open(encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                try:
+                    row = json.loads(line)
+                    at = datetime.fromisoformat(str(row.get("at") or "").replace("Z", "+00:00"))
+                except (ValueError, AttributeError):
+                    continue
+                if at.tzinfo is None:
+                    at = at.replace(tzinfo=UTC)
+                disp = str(row.get("disposition") or "")
+                if at >= cutoff and not disp.startswith(("BLOCKED_SEAT_UNAVAILABLE:",
+                                                         "REJECTED: seat error:")):
+                    n += 1
+    except OSError:
+        return None
+    return n
+
+
+def _replacement_head(text: str) -> str:
+    """The producer a declared replacement names first (`deepening_worker -- the same ...`)."""
+    head = text.split(" -- ", 1)[0].strip().split()
+    return head[0] if head else ""
+
+
 def _rel(p: Path) -> str:
     """A repo-relative path for a message, never an exception. A fence that crashes while
     explaining a breach reports nothing at all, which is worse than the breach."""
@@ -226,6 +268,11 @@ def audit(window_days: float = 3.0) -> dict[str, Any]:
         if producer not in seats and seat in seats:
             seats[producer] = seats[seat]
 
+    for producer, ledger in LEDGER_PRODUCERS.items():
+        got = _ledger_output(ledger, window_days)
+        if got is not None:
+            seats[producer] = got
+
     universe = list(seats.values())
     median = sorted(universe)[len(universe) // 2] if universe else 0
 
@@ -256,6 +303,15 @@ def audit(window_days: float = 3.0) -> dict[str, Any]:
     census = Counter(str(r["verdict"]) for r in rows)
     dead = [r for r in rows if r["verdict"] == "DEAD"]
     undeclared = [r for r in dead if "NONE DECLARED" in str(r.get("replacement"))]
+    # A DEAD producer whose named inheritor is ALSO dead has no remedy at all: that is RED, the
+    # same as naming none. An inheritor this file cannot measure is reported, not failed.
+    verdicts = {str(r["producer"]): str(r["verdict"]) for r in rows}
+    dead_replacements = []
+    for r in dead:
+        head = _replacement_head(str(r.get("replacement") or ""))
+        r["replacement_verdict"] = verdicts.get(head, "UNMEASURED")
+        if r["replacement_verdict"] == "DEAD":
+            dead_replacements.append(r)
     return {
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "law": ("EVERY PRODUCER PRODUCES, OR IT IS REPLACED BY A NAMED ALTERNATIVE. Zero output "
@@ -266,6 +322,7 @@ def audit(window_days: float = 3.0) -> dict[str, Any]:
         "n_producers": len(rows),
         "census": dict(census),
         "dead_without_a_declared_replacement": undeclared,
+        "dead_with_a_dead_replacement": dead_replacements,
         "producers": sorted(rows, key=lambda r: (r["verdict"], -(r["rows_in_window"] or 0))),
     }
 
@@ -701,10 +758,15 @@ def main(argv: list[str] | None = None) -> int:
               f"0 unique cells, no declaration")
     for f in yld["failures"]:
         print(f"  FAIL  {f}")
+    for r in doc["dead_with_a_dead_replacement"]:
+        print(f"  FAIL  {r['producer']} is DEAD and its replacement "
+              f"{_replacement_head(str(r.get('replacement')))} is DEAD too")
     print(f"  -> {OUT}")
-    # A dead producer with NO declared alternative is the fatal state: the law says replace, and
-    # there is nothing to replace it with. The second half is fatal on its own ratchets.
-    seat_half = [] if args.cells_only else doc["dead_without_a_declared_replacement"]
+    # A dead producer with NO declared alternative, or with a DEAD one, is the fatal state: the
+    # law says replace, and there is nothing producing in its place. The second half is fatal on
+    # its own ratchets.
+    seat_half = [] if args.cells_only else (doc["dead_without_a_declared_replacement"]
+                                            + doc["dead_with_a_dead_replacement"])
     return 1 if (seat_half or yld["failures"]) else 0
 
 

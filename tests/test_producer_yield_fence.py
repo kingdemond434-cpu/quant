@@ -178,3 +178,47 @@ def test_a_declaration_cannot_hide_convertible_rows_that_produced_no_cell(desk: 
     assert any("convertible source rows" in failure for failure in doc["failures"])
     row = next(r for r in doc["producers"] if r["producer"] == "barren")
     assert row["convertible_rows_owed"] == 7
+
+
+def _worked(path: Path, ages_h: list[float], disposition: str = "ACCEPTED") -> None:
+    from datetime import UTC, datetime, timedelta
+    now = datetime.now(UTC)
+    path.write_text("".join(json.dumps({"id": f"t{i}", "disposition": disposition,
+                                        "at": (now - timedelta(hours=h)).isoformat()}) + "\n"
+                            for i, h in enumerate(ages_h)), encoding="utf-8")
+
+
+def test_a_dead_producer_whose_replacement_is_dead_too_is_red(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The brain seat died with deepening_worker named as its inheritor; the inheritor must be
+    held to the same law, or "replaced" can mean "both silent" (Hourly pass 21, 2026-10-29)."""
+    ledger = tmp_path / "deepening_worked.jsonl"
+    monkeypatch.setattr(fence, "_seat_output", lambda _w: {"brain": 0})
+    monkeypatch.setattr(fence, "LEDGER_PRODUCERS", {"deepening_worker": ledger})
+
+    _worked(ledger, [200.0, 300.0])                       # only rows older than the 3-day window
+    doc = fence.audit(window_days=3.0)
+    assert [r["producer"] for r in doc["dead_with_a_dead_replacement"]] == ["brain"]
+
+    _worked(ledger, [1.0, 2.0, 250.0])                    # the inheritor decided rows today
+    doc = fence.audit(window_days=3.0)
+    assert doc["dead_with_a_dead_replacement"] == []
+    brain = next(r for r in doc["producers"] if r["producer"] == "brain")
+    assert brain["replacement_verdict"] == "PRODUCING"
+
+
+def test_seat_outages_are_not_output_and_a_missing_ledger_is_unmeasured(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    ledger = tmp_path / "deepening_worked.jsonl"
+    monkeypatch.setattr(fence, "_seat_output", lambda _w: {"brain": 0})
+    monkeypatch.setattr(fence, "LEDGER_PRODUCERS", {"deepening_worker": ledger})
+    assert fence._ledger_output(ledger, 3.0) is None
+    doc = fence.audit(window_days=3.0)
+    brain = next(r for r in doc["producers"] if r["producer"] == "brain")
+    assert brain["replacement_verdict"] == "UNMEASURED"
+    assert doc["dead_with_a_dead_replacement"] == []      # unmeasured is reported, not failed
+
+    _worked(ledger, [1.0, 2.0], disposition="BLOCKED_SEAT_UNAVAILABLE: 429")
+    assert fence._ledger_output(ledger, 3.0) == 0
+    assert [r["producer"] for r in fence.audit(window_days=3.0)
+            ["dead_with_a_dead_replacement"]] == ["brain"]
