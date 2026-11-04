@@ -422,6 +422,10 @@ class Clear:
     report: str
     paths: dict[str, str | None] = field(default_factory=dict)
     lifts_rollback: tuple[str, ...] = ()
+    #: "" for an Auditor-landed row; GATE_BY for a merge-time row, which counts only once
+    #: `authenticated` re-verifies its source on this box (ops/release/adopt_rows.py, R2f)
+    by: str = ""
+    source: dict[str, Any] | None = None
 
 
 def parse_clears(text: str) -> list[Clear]:
@@ -459,7 +463,10 @@ def parse_clears(text: str) -> list[Clear]:
             isinstance(x, str) and HEX40.match(x) for x in lifts
         ):
             raise GuardError(f"{CLEARS_REL}:{n} lifts_rollback must be a list of 40-hex commits")
-        rows.append(Clear(commit, verdict, rep, dict(paths), tuple(lifts)))
+        by, source = d.get("by", ""), d.get("source")
+        if not isinstance(by, str) or (source is not None and not isinstance(source, dict)):
+            raise GuardError(f"{CLEARS_REL}:{n} by must be text and source an object")
+        rows.append(Clear(commit, verdict, rep, dict(paths), tuple(lifts), by, source))
     return rows
 
 
@@ -506,6 +513,66 @@ def committed_clears(root: Path, target: str) -> list[Clear]:
                     "copy: a row was edited or dropped"
                 )
     return parse_clears(final.decode("utf-8"))
+
+
+# MERGE-TIME ROWS (R2f; Governance 2026-11-04 12:51Z). A `by: audit-gate` CLEAR is written by
+# ops/release/adopt_rows.py from an authority attestation or an Auditor registry row. Where it
+# sits proves nothing -- anyone holding the repo token can push to LIVE -- so it counts only after
+# this box re-verifies it: the signed attestation against the pinned key, or the box registry's
+# own latest row, and every (path, blob) against the merged head. One that fails is absent.
+GATE_BY = "audit-gate"
+LIVE_REF = "refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3"
+
+
+def _adopt_rows(root: Path) -> Any:
+    import importlib.util
+
+    f = root / "ops" / "release" / "adopt_rows.py"
+    spec = importlib.util.spec_from_file_location("_guard_adopt_rows", f)
+    if spec is None or spec.loader is None:
+        raise ImportError(str(f))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def authenticated(
+    root: Path, rows: list[Clear], env: dict[str, str] | None = None
+) -> tuple[list[Clear], list[str]]:
+    """(the rows that count, why each merge-time CLEAR that did not was dropped)."""
+    if not any(r.by == GATE_BY and r.verdict == "CLEAR" for r in rows):
+        return rows, []
+    try:
+        ar = _adopt_rows(root)
+        authority = ar.Authority.load(root, env)
+        git = ar.git_in(root)
+    except Exception as exc:  # no verifier in this tree: every merge-time row is absent
+        return [r for r in rows if not (r.by == GATE_BY and r.verdict == "CLEAR")], [
+            f"merge-time rows not verifiable ({type(exc).__name__})"
+        ]
+    reg = (env if env is not None else os.environ).get(ar.REGISTRY_ENV)
+    keep: list[Clear] = []
+    dropped: list[str] = []
+    for r in rows:
+        if r.by == GATE_BY and r.verdict == "CLEAR":
+            row = {"commit": r.commit, "verdict": r.verdict, "paths": r.paths, "source": r.source}
+            ok, why = ar.verify_row(git, row, authority=authority, registry_path=reg)
+            if not ok:
+                dropped.append(f"{r.commit[:12]}: {why}")
+                continue
+        keep.append(r)
+    return keep, dropped
+
+
+def clears_ref(root: Path, target: str) -> str:
+    """Where the CLEAR record is read: origin LIVE's copy when the target is in its history (a
+    row written just after a merge then reaches that merge's release), else the target's own.
+    Either way `committed_clears` proves every earlier version is a byte prefix."""
+    p = _run(root, "rev-parse", "--verify", f"{LIVE_REF}^{{commit}}")
+    tip = p.stdout.decode().strip() if p.returncode == 0 else ""
+    if HEX40.match(tip) and _run(root, "merge-base", "--is-ancestor", target, tip).returncode == 0:
+        return tip
+    return target
 
 
 def uncovered(root: Path, paths: list[str], target: str, clears: list[Clear]) -> list[str]:
@@ -623,7 +690,7 @@ def pre(
         return HOLD, {"decision": "HOLD_BLACKOUT", "reason": why}
     target = _rev(root, target)
     sealed = sealed_code_sha(root)
-    clears = committed_clears(root, target)
+    clears, unverified = authenticated(root, committed_clears(root, clears_ref(root, target)))
     delta = governed_delta(root, sealed, target)
     miss = uncovered(root, delta, target, clears)
     if miss:
@@ -634,6 +701,7 @@ def pre(
             "reason": f"{len(miss)} of {len(delta)} governed path(s) carry content no "
             f"effective auditor CLEAR vouches for",
             "uncovered": miss[:50],
+            "unverified_rows": unverified[:20],
         }
     hits = rolled_back_hits(root, delta, target, clears, load_rollbacks(root))
     if hits:
