@@ -1702,12 +1702,16 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
     rotation = [(ci + k) % len(certs) for k in range(len(certs))] if certs else []
     wanted = set(priority_certificates)
     priority = [i for i, r in enumerate(certs) if certificate_id(r) in wanted]
-    first = list(dict.fromkeys(priority + pending + no_rule))
-    order = first + [i for i in rotation if i not in set(first)]
     # THE NO-RULE BACKLOG IS NOT HELD TO THE ROTATION'S SHARE: a held certificate cannot start a
-    # forward clock until it is judged, so up to PENDING_PER_PASS of those run each pass on top of
-    # the lane's share, inside the same budget. Everything else keeps the normal share.
-    lane_n = per_lane + min(len(no_rule), PENDING_PER_PASS)
+    # forward clock until it is judged, so up to PENDING_PER_PASS of those run each pass ON TOP of
+    # the lane's share, inside the same budget. The extra slots are theirs alone (audit should-fix
+    # of c59ce8879): the lane's share is taken first in the usual order, then the backlog's own
+    # extra, so moved fingerprints queued ahead can never absorb them.
+    head = list(dict.fromkeys(priority + pending + no_rule))[:per_lane]
+    extra = [i for i in no_rule if i not in set(head)][:PENDING_PER_PASS]
+    first = list(dict.fromkeys(head + extra + priority + pending + no_rule))
+    order = first + [i for i in rotation if i not in set(first)]
+    lane_n = per_lane + len(extra)
     for n, idx in enumerate(order[:lane_n]):
         if time.monotonic() > deadline:
             notes.append("budget: certificates left for the next pass")

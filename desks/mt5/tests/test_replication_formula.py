@@ -161,3 +161,28 @@ def test_a_certificate_judged_before_its_rule_existed_is_rejudged_ahead(tmp_path
                    dry_run=True, max_per_pass=2)
     assert seen[:2] == ["B", "C"] and "D" not in seen[:2]
     assert doc["verdict_book"]["no_rule_backlog"] == 2
+
+
+def test_the_backlogs_extra_slots_are_never_taken_by_moved_fingerprints(tmp_path: Path,
+                                                                         monkeypatch) -> None:
+    seen: list[str] = []
+
+    def fake(row, *, meta, bars):
+        seen.append(row["certificate"])
+        return {"lane": "certificate", "key": row["certificate"],
+                "certificate": row["certificate"], "verdict": rc.UNMEASURED, "why": []}
+
+    monkeypatch.setattr(rc, "replicate_certificate", fake)
+    monkeypatch.setattr(rc, "certificate_fp", lambda r: "fp")
+    moved = [f"M{i}" for i in range(10)]           # no book entry: pending, ahead of the backlog
+    backlog = ["B0", "B1", "B2"]
+    certs = [{"certificate": k, "shadow_spec": {"symbol": "TESTFX", "family": "formula"}}
+             for k in moved + backlog]
+    book = {k: {"verdict": rc.UNMEASURED, "fp": "fp",
+                "sharpe_metric_version": rc.SHARPE_METRIC_VERSION,
+                "why": ["no written specification in the spec book for family 'formula'"]}
+            for k in backlog}
+    (tmp_path / rc.VERDICTS_NAME).write_text(json.dumps({"certificates": book}), "utf-8")
+    rc.build(certificates=certs, forward=[], universe_meta={}, bars_loader=lambda *_: None,
+             cursor_path=tmp_path / "cursor.json", dry_run=True, max_per_pass=4)
+    assert seen == ["M0", "M1", *backlog]         # the lane's share, then the backlog's extra
