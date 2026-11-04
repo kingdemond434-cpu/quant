@@ -13,8 +13,12 @@ cloud proxy refuses tfx.co.jp, jpx.co.jp and ffaj.or.jp to curl; live shape UNME
   ffaj_trading_vol_and_position.xls  months down, 売建玉 / 買建玉 in 億円; 2026-09 is the
                              published figure (43,358 / 73,799), the rest SYNTHETIC
   *.html                     index / archive / fx_flash pages with the published href shapes
+Every committed fixture is UTF-8 text: each workbook is stored as `<name>.b64` and `_fx` decodes
+it back to the publisher's bytes.
 """
 from __future__ import annotations
+
+import base64
 
 import json
 import sys
@@ -45,6 +49,11 @@ ALLOW = b"User-agent: *\nAllow: /\n"
 
 
 def _fx(name: str) -> bytes:
+    """A fixture's bytes. Every committed fixture is UTF-8 text: a workbook is stored as its
+    base64 (`<name>.b64`) and decoded back to the publisher's bytes here."""
+    b64 = FIX / f"{name}.b64"
+    if b64.exists():
+        return base64.b64decode(b64.read_text("utf-8"))
     return (FIX / name).read_bytes()
 
 
@@ -242,6 +251,43 @@ def test_robots_is_a_label_and_never_stops_the_fetch():
         J.access_label(J.TFX_FILE, _transport(robots=J.HardStop(403, "r")), J.TFX_POLICY)
     assert J.redistribute_allowed("OPEN_DATA") is True
     assert J.redistribute_allowed("NOT_A_LABEL") is False           # fails closed
+
+
+def test_the_desk_transport_is_polite_fetch_and_maps_its_answers(monkeypatch):
+    """No raw send: the production transport IS polite_fetch.get (robots read there as a label),
+    and a hold, a 404 or a transport failure becomes HardStop / Missing / Transient."""
+    from libs.data import polite_fetch as pf
+    seen: list[dict] = []
+
+    def fake_get(url, **kw):
+        seen.append({"url": url, **kw})
+        if url.endswith("/held"):
+            return pf.Response(url=url, status=403, verdict="METHOD_BLOCKED",
+                               error="METHOD_BLOCKED: HTTP 403")
+        if url.endswith("/gone"):
+            return pf.Response(url=url, status=404, error="HTTP 404")
+        if url.endswith("/flaky"):
+            return pf.Response(url=url, error="URLError: timeout")
+        return pf.Response(url=url, status=200, body=b"xls", access_label="PUBLIC_WITH_TERMS",
+                           terms_note="robots.txt Disallow")
+
+    monkeypatch.setattr(pf, "get", fake_get)
+    monkeypatch.setattr(pf.GATE, "wait", lambda *a, **k: 0.0)
+    assert J.desk_transport("https://www.click365.jp/ok", 5.0) == b"xls"
+    assert seen[0]["retries"] == 0 and "live_input" not in seen[0]
+    with pytest.raises(J.HardStop):
+        J.desk_transport("https://www.click365.jp/held", 5.0)
+    with pytest.raises(J.Missing):
+        J.desk_transport("https://www.click365.jp/gone", 5.0)
+    with pytest.raises(J.Transient):
+        J.desk_transport("https://www.click365.jp/flaky", 5.0)
+    monkeypatch.setattr(pf, "access_label", lambda url, **k: pf.access_row(
+        pf.PUBLIC_WITH_TERMS, "robots.txt Disallow for quant-mt5-research-desk"))
+    lab = J.desk_access_label(J.TFX_FILE, J.TFX_POLICY)
+    assert lab["access_label"] == "PUBLIC_WITH_TERMS" and "Disallow" in lab["terms_note"]
+    assert lab["redistribute_allowed"] is False
+    monkeypatch.setattr(pf, "access_label", lambda url, **k: pf.access_row(pf.PUBLIC, ""))
+    assert J.desk_access_label(J.TFX_FILE, J.TFX_POLICY)["access_label"] == "PUBLIC_WITH_TERMS"
 
 
 def test_a_disallowed_or_unreadable_robots_still_lands_the_data(box):
