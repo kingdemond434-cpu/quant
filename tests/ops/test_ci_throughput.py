@@ -776,3 +776,34 @@ def test_live_first_stops_at_its_budget_and_loses_nothing(
     assert not any(p.endswith(("/cancel", "/rerun")) for _, p in calls)
     assert json.loads(state.read_text())["owed"] == [{"id": 9, "attempt": 1, "calls": 2}]
     assert lf.BUDGET_S <= 600  # well inside the gate task's 30-minute limit
+
+
+def test_live_first_budget_is_a_ceiling_no_caller_can_raise(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """independent-review @ aca6be9e6: an arbitrary --budget-s could run longer than intended.
+    The flag only shortens the call, and run() clamps any larger value to BUDGET_S."""
+    lf = _lf()
+    for bad in ("0", "-5", str(lf.BUDGET_S + 1), "86400"):
+        with pytest.raises(SystemExit):
+            lf.main(["--repo", "o/r", "--budget-s", bad])
+    live = {"id": 1, "event": "push", "head_branch": lf.LIVE, "created_at": "2000-01-01T00:00:00Z"}
+    pr = {"id": 2, "event": "pull_request", "head_branch": "b1", "head_sha": "h1",
+          "created_at": "1999-12-31T00:00:00Z"}  # fmt: skip
+    calls: list[str] = []
+
+    def gh(path: str, method: str = "GET") -> Any:
+        calls.append(path)
+        if "status=queued" in path:
+            return {"workflow_runs": [live, pr]}
+        if "/pulls?" in path:
+            return [{"head": {"ref": "b1", "sha": "h1"}}]
+        if "/comments" in path:
+            return []
+        return {"status": "queued", "run_attempt": 1}
+
+    monkeypatch.setattr(lf, "_gh", gh)
+    t = iter([0.0] + [lf.BUDGET_S] * 1000)  # the second clock read is exactly BUDGET_S later
+    lf.run("o/r", lf.LIVE, tmp_path / "s.json", settle_s=0, sleep=lambda s: None,
+           clock=lambda: next(t), budget_s=10 * lf.BUDGET_S)  # fmt: skip
+    assert not any(p.endswith(("/cancel", "/rerun")) for p in calls)  # stopped at the ceiling

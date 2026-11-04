@@ -220,7 +220,8 @@ def run(
     clock: Callable[[], float] = time.monotonic,
     budget_s: float = BUDGET_S,
 ) -> int:
-    stop = clock() + budget_s
+    # BUDGET_S is a ceiling, never a default to raise: a caller can only shorten the call
+    stop = clock() + min(max(budget_s, 0.0), BUDGET_S)
 
     def over() -> bool:
         return clock() >= stop
@@ -306,6 +307,14 @@ def run(
     return 2 if given_up else 0
 
 
+def _budget(text: str) -> float:
+    """--budget-s may only shorten the call: anything above BUDGET_S, or not positive, is refused."""
+    v = float(text)
+    if not 0 < v <= BUDGET_S:
+        raise argparse.ArgumentTypeError(f"budget must be in (0, {BUDGET_S:.0f}] s, got {text}")
+    return v
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--repo", required=True)
@@ -313,7 +322,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--state", type=Path, default=REPORT, help="the ledger of owed re-runs")
     ap.add_argument("--dry-run", action="store_true", help="say what it would do, touch nothing")
     ap.add_argument("--settle-s", type=float, default=60.0, help="wait for cancels to finish")
-    ap.add_argument("--budget-s", type=float, default=BUDGET_S, help="the whole call's budget")
+    ap.add_argument("--budget-s", type=_budget, default=BUDGET_S,
+                    help=f"the whole call's budget, at most {BUDGET_S:.0f} s")  # fmt: skip
     a = ap.parse_args(argv)
     try:
         return run(a.repo, a.base, a.state, a.settle_s, a.dry_run, budget_s=a.budget_s)
