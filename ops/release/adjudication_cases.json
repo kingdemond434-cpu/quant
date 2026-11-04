@@ -142,6 +142,19 @@
    "source": "independent-review job 126896262972; Auditor CLEAR 4576d436e 22:05Z (journal-only diff)"
   },
   {
+   "pr": 707,
+   "head": "3cb87c3cf4626fb84e5ef81b69ff38299944ad6e",
+   "base": "4dee8ab211e2c9ef3f82d8611d1d125c147b0056",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "The change introduces new tasks that run at specific times and use the same script (`run_offload_leg.py`) as existing tasks. This could lead to increased risk if there are bugs or misconfigurations in the script, affecting multiple tasks simultaneously.",
+    "The new tasks (`MT5-OffloadForwardEnrolment`, `MT5-OffloadRecordTape`, `MT5-OffloadAllocatorHeavy`) are scheduled to run at specific times, which could interfere with existing workflows if not managed carefully."
+   ],
+   "source": "independent-review job 126888497827; Auditor CLEAR 3cb87c3cf; rebuttal PR comment 6643767303 (Desk health 22:29Z)"
+  },
+  {
    "pr": 642,
    "head": "0bdb84e4c76049e050a779a274c61d0a24398eb4",
    "base": "6727fc33e5ffafe5cfb1886b2dd38df2f47666b5",
