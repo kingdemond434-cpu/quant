@@ -1,0 +1,22 @@
+#
+# The Tor Project
+#
+# URL: https://metrics.torproject.org/userstats-bridge-country.csv (FIXTURE: RU 2026-10-12..26 as
+# the site printed them on 2026-10-29, CC0). The bridge file carries no detector bounds.
+#
+date,country,users,frac
+2026-10-12,ru,94262,85
+2026-10-13,ru,95245,85
+2026-10-14,ru,94293,82
+2026-10-15,ru,89303,84
+2026-10-16,ru,89140,86
+2026-10-17,ru,87602,84
+2026-10-18,ru,90058,84
+2026-10-19,ru,95990,74
+2026-10-20,ru,92466,85
+2026-10-21,ru,93294,83
+2026-10-22,ru,97026,79
+2026-10-23,ru,108133,72
+2026-10-24,ru,106512,72
+2026-10-25,ru,111757,72
+2026-10-26,ru,113500,72

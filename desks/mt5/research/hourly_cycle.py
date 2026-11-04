@@ -1232,6 +1232,12 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE 2026-09-16 BLUEPRINT ORGANS (phases C/D of the Tier-1 ledger), all cheap readers.
     "axis_registry", "tier1_scorecard", "tier1_gap", "novelty_gate", "forced_flow_calendar",
     "breadth_ladder",
+    # THE DATA-CLASS GAP LIST AND THE TERMS-BASIS CENSUS (2026-10-29): two report-only readers of
+    # the repo, the register and the certificate canon; seconds each, so every hour.
+    "data_class_gap", "terms_basis_census",
+    # THE DATED CENTRAL-BANK DOCUMENT STREAM (data-class gap #6, 2026-10-29): six RSS feeds
+    # through the polite door, seconds a pass; its archive is the text the NLP legs read.
+    "central_bank_miner",
     "wiring_ceo", "live_system_state", "hazard_engine", "posterior_alpha", "semantic_memory",
     "model_role_benchmark", "research_departments", "qd_frontier", "value_of_data",
     "research_api_status", "artifact_chain", "residual_queue", "unseen_frontier",
@@ -1319,6 +1325,13 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
                      # free public POS/card/location/satellite proxies as PIT series
                      "alt_proxies",
+                     # the tier-1 data-class gap list: which classes of data the desk lacks
+                     "data_class_gap",
+                     # gap #5: ALFRED real-time vintages, renewed a few series a pass; gap #2:
+                     # the implied-vol register and the realized-vol PROXY family (2026-10-29)
+                     "fetch_alfred", "options_implied",
+                     # Tor Metrics per-country usage / censorship events as PIT series
+                     "tor_metrics",
                      # the alt seats' readings as PIT series the compiler mints cells from
                      "alt_seat_cells",
                      # walking inside a registered ground's own door is collection, like the
@@ -1353,6 +1366,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # Derives each instrument's own session from its own bars and mints the
                      # breakout aimed at it, instead of porting gold's hours everywhere.
                      "session_structure",
+                     # dated central-bank press documents (attention for the text legs)
+                     "central_bank_miner",
                      # The culture-gap producers: each zero-coverage culture gap's participant
                      # structure (fixing, settlement window, tax month, local session) turned
                      # into registered-family cells on the gap's own clock.
@@ -1491,6 +1506,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "runtime_attestation", "self_repair", "desk_self_heal",
                      "tier5_acceptance", "mission_control", "tier_s", "tier_s_door",
                      "research_live_identity", "cro_noon_freshness",
+                     # every certificate's input datasets joined to the one terms register
+                     "terms_basis_census",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
                      "unknown_census"), "meta"),
@@ -2078,6 +2095,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # rows and DATASET_HUNT.json; the cap sits above so the write is never the part cut off.
     # Its per-dataset cursor means a short pass still advances the frontier.
     "world_dataset_hunt": 1_020,
+    # data_class_gap #2: the realized-vol PROXY stops starting symbols at --budget-s 240 and
+    # writes; the cap sits above. #5: ALFRED renews at most four series a pass (one full vintage
+    # history each, ~10-60 s measured per series in the module's own notes); the cap bounds it.
+    "options_implied": 300,
+    "fetch_alfred": 300,
     # ITS CONSUMER mints world_macro_state cells from the hunter's exposure and stops itself at
     # --budget-s 900; a symbol cursor carries the sweep across hours.
     "world_macro_proposer": 1_020,
@@ -2261,6 +2283,15 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "alt_seat_cells": 300,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
+    # Two report-only readers (code walk + register + canon), measured ~1-2 s each on the build
+    # box; the cap is generous so a cold disk never truncates the artifact.
+    "data_class_gap": 180,
+    "terms_basis_census": 180,
+    # Six feeds, each one robots read (12 s cap) plus one GET (20 s, one retry), sequential:
+    # ~200 s worst case; the cap sits above it so a slow feed never truncates the report.
+    "central_bank_miner": 300,
+    # tor_metrics stops fetching at 70% of --budget-s 240 and writes; cap above it.
+    "tor_metrics": 330,
     # The hand-off consumer stops itself at --budget-s 240 and writes; the cap sits above it.
     "alt_equity_handoff": 300,
     "counterexample_agent": 700,
@@ -4349,7 +4380,26 @@ def main() -> None:
                                                         "research/tier1_scorecard.py"))
     # THE TIER-1 GAP (2026-09-30): the desk's breadth, mining, judging and conversion beside
     # tier-1 references, ranked by orders of magnitude short. The CRO noon pass reads it first.
+    # THE TIER-1 DATA-CLASS GAP LIST (hourly pass item 14, 2026-10-29): per data class a tier-1
+    # shop reads (vol surfaces, flows, auctions, weather, inventories, ...), the producers this tree
+    # has, their clocks and artifact ages, and the lawful free sources not yet read, scored. Before
+    # tier1_gap, which reads its summary. Report: reports/DATA_CLASS_GAP.json.
+    dcg = _costed("data_class_gap", lambda: _producer("data_class_gap",
+                                                      "research/data_class_gap.py", "--once"))
     t1g = _costed("tier1_gap", lambda: _producer("tier1_gap", "research/tier1_gap.py", "--once"))
+    # THE TERMS-BASIS CENSUS (IDEA_QUEUE row 233): every certificate's input datasets joined to
+    # libs/data/terms_fence.SOURCE_POLICY; an input with no quoted clause is TERMS_UNMEASURED,
+    # never OK. Report-only: reports/TERMS_BASIS_CENSUS.json (the auditor routes it later).
+    tbc = _costed("terms_basis_census", lambda: _producer("terms_basis_census",
+                                                          "research/terms_basis_census.py",
+                                                          "--once"))
+    # THE DATED CENTRAL-BANK DOCUMENT STREAM (data-class gap #6, text sentiment by language):
+    # the Fed/ECB/BoJ/BoE/RBA/BoC press feeds, fetched through polite_fetch (robots first; a
+    # 403 holds the site for a person), appended to central_banks/cb_documents.jsonl, which
+    # nlp_event_factors and the compiler read. Report: reports/CENTRAL_BANK_MINER.json.
+    cbm = _costed("central_bank_miner", lambda: _producer("central_bank_miner",
+                                                          "side_channels/central_bank_miner.py",
+                                                          "--once"))
     # NOTHING IS PARKED (principal 2026-09-23): every queue in the desk, its depth, its oldest
     # row's age and its measured drain rate, in one artifact. scripts/check_no_queues.py fences it.
     qcn = _costed("queue_census", lambda: _producer("queue_census", "research/queue_census.py",
@@ -5130,6 +5180,18 @@ def main() -> None:
     # thousands of public datasets (DBnomics backbone + BIS bulk, CFTC, Treasury, FRED, and the
     # registry's own DISCOVERED rows), then publishes the per-symbol exposure that
     # `edge_search.resolve_inputs` reads. Writes reports/DATASET_HUNT.json.
+    # DATA-CLASS GAP #2 (options_implied_vol, 2026-10-29): the implied-vol sources on the one
+    # terms register (none permits live input: IDEAS_ONLY, missed-growth lines) and the PROXY
+    # family -- realized-vol term structure and realized skew per hypothesis-lane symbol from its
+    # own MT5 bars, labelled PROXY, landed in the hunter's store BEFORE the hunter runs, so its
+    # exposure maps them this pass. Writes reports/OPTIONS_IMPLIED.json.
+    opi = _costed("options_implied", lambda: _producer(
+        "options_implied", "research/options_implied.py", "--once", "--budget-s", "240"))
+    # DATA-CLASS GAP #5 (macro_nowcasts_vintages, WIRED_STALE): ALFRED real-time vintages,
+    # renewed once a day a few series a pass; NEEDS_KEY by name when FRED_API_KEY is absent.
+    # Writes reports/alfred_vintages.json and data/lake/alfred/<id>.parquet.
+    alf = _costed("fetch_alfred", lambda: _producer(
+        "fetch_alfred", "research/fetch_alfred.py", "--once"))
     wdh = _costed("world_dataset_hunt", lambda: _producer(
         "world_dataset_hunt", "research/world_dataset_hunter.py", "--once", "--budget-s", "900"))
     # ITS CONSUMER: mints `world_macro_state` cells (a z band on one named world series x
@@ -5854,6 +5916,13 @@ def main() -> None:
     # reports/ALT_PROXIES_ALLOCATION_INTEL.json. After the collector, before the forge.
     alp = _costed("alt_proxies", lambda: _producer(
         "alt_proxies", "research/alt_proxies.py", "--once", "--budget-s", "300"))
+    # TOR METRICS (2026-10-29): CC0 per-country Tor relay/bridge users -> users z, censorship
+    # events (users outside the detector's range) and a 28-day stress state, PIT-stamped by the
+    # measured publication lag, through the lake / axis door / registry cells. Clearnet only:
+    # onion / Tor egress is permanently refused (auditor 2026-11-03) and this leg never calls
+    # research/onion_mirrors.py.
+    tmx = _costed("tor_metrics", lambda: _producer(
+        "tor_metrics", "research/tor_metrics.py", "--once", "--budget-s", "240"))
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
     # webmaster's variants tried and the Wayback copy located (`research/source_fixer.py`).
     sfx = _costed("source_fixer", lambda: _producer("source_fixer", "research/source_fixer.py"))
@@ -6425,6 +6494,8 @@ def main() -> None:
                     "novelty_gate": ngt, "hazard_engine": hze, "posterior_alpha": pal,
                     "semantic_memory": smm, "model_role_benchmark": mrb,
                     "live_system_state": lss, "tier1_scorecard": t1s, "tier1_gap": t1g,
+                    "data_class_gap": dcg, "terms_basis_census": tbc,
+                    "central_bank_miner": cbm,
                     "wiring_ceo": wce,
                     "queue_census": qcn,
                     "research_departments": rdp, "qd_frontier": qdf, "blind_reviewer": bvr,
@@ -6438,10 +6509,10 @@ def main() -> None:
                     "engine_registry": engr,
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
-                    "alt_equity_handoff": aeh,
-                    "specialist_cell": spcl,
                     "event_surprise": esur, "alpha_capture": acap, "form4_lane": f4l,
                     "alt_seat_cells": asc,
+                    "alt_equity_handoff": aeh,
+                    "specialist_cell": spcl,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
@@ -6489,7 +6560,8 @@ def main() -> None:
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
                     "acquire_datasets": acq, "paid_substitute_engine": pse, "free_stack_hunt": fsh,
                     "free_stack_proposer": fsp, "factory_throughput": fxt,
-                    "world_dataset_hunt": wdh,
+                    "world_dataset_hunt": wdh, "options_implied": opi,
+                    "fetch_alfred": alf,
                     "world_macro_proposer": wmp,
                     "source_experiment_census": sxc,
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,
@@ -6539,6 +6611,7 @@ def main() -> None:
                     "sge_premium": sge,
                     "asia_collector": aco,
                     "alt_proxies": alp,
+                    "tor_metrics": tmx,
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,

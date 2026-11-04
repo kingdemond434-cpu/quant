@@ -342,7 +342,20 @@ def test_every_source_has_an_explicit_terms_entry() -> None:
         assert s.terms in A.TERMS_VALUES and s.terms == A.TERMS[s.id][0], s.id
     for sid in ("cn_maoyan_box_office", "cn_baidu_migration"):
         assert A.BY_ID[sid].terms != "confirmed"
-    assert A.BY_ID["cn_maoyan_box_office"].terms == "refused"
+    # robots.txt is a LABEL, never the refusal (LAWS 5e): maoyan waits on its TERMS being read.
+    assert A.BY_ID["cn_maoyan_box_office"].terms == "to_confirm"
+
+
+def test_no_terms_refusal_rests_on_robots_txt() -> None:
+    """LAWS 5e REMOVED_BRAKES: "robots.txt Disallow treated as a refusal". A `refused` row must
+    name a terms clause; a row whose only reason was robots.txt reads `to_confirm` and carries
+    the Disallow as its PUBLIC_WITH_TERMS label."""
+    for sid, (verdict, why) in A.TERMS.items():
+        if verdict == "refused":
+            assert "robots" not in why.lower(), sid
+    for sid in ("in_npci_upi", "cn_maoyan_box_office"):
+        verdict, why = A.TERMS[sid]
+        assert verdict == "to_confirm" and "PUBLIC_WITH_TERMS" in why, sid
 
 
 def test_reviewed_terms_carry_evidence() -> None:
@@ -576,7 +589,12 @@ def test_every_blocked_source_has_candidates_or_says_why_not() -> None:
     # a mirror-only candidate fails closed; the pass-5 rows HELD on their publishers' own terms
     # are sources in their own right, never stand-ins for a paid panel
     held = {s for s in A.PASS5_TERMS if A.PASS5_TERMS[s][0] != "confirmed"}
-    assert blocked == {*BLOCKED, "za_statssa_retail", *held}
+    # the Asian physical-gold rows whose terms are UNREAD (IDEAS_ONLY in terms_fence): sources in
+    # their own right, never stand-ins for a paid panel (IDEA_QUEUE 237, 228, 215)
+    gold = {"vn_sjc_premium", "th_gold_premium", "cn_sge_deferral",
+            # Turkey (IDEA_QUEUE 257): Borsa Istanbul's precious-metals table, IDEAS_ONLY
+            "tr_bist_gold"}
+    assert blocked == {*BLOCKED, "za_statssa_retail", *held, *gold}
     assert set(A.SUBSTITUTED_BY) | set(A.NO_SUBSTITUTE) == set(BLOCKED)
     assert set(A.NO_SUBSTITUTE) == {"in_npci_upi", "za_beti"}
     for sid, subs in A.SUBSTITUTED_BY.items():
