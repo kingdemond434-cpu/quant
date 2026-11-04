@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-04T02:43:25.311411+00:00",
+ "generated_utc": "2026-11-04T03:45:07.590756+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -14741,9 +14741,9 @@
    "review_failed": [],
    "family": "turn_of_month",
    "theory": {
-    "n_oos": 2,
-    "confidence": 0.2,
-    "sd": 0.1633,
+    "n_oos": 1,
+    "confidence": 0.2857,
+    "sd": 0.213,
     "status": "UNMEASURED"
    }
   },
@@ -14752,9 +14752,9 @@
    "review_failed": [],
    "family": "turn_of_month",
    "theory": {
-    "n_oos": 2,
-    "confidence": 0.2,
-    "sd": 0.1633,
+    "n_oos": 1,
+    "confidence": 0.2857,
+    "sd": 0.213,
     "status": "UNMEASURED"
    }
   },
