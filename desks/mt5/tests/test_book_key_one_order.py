@@ -35,7 +35,8 @@ adapter = _load("_one_order_adapter", _DESK / "tests" / "test_gateway_adapter.py
 def test_three_live_rows_on_one_book_key_send_exactly_one_order() -> None:
     book_key = adapter._exec(("_book_key",), {})["_book_key"]
     book = {"CHFNOK_carry_asia": 0.02}
-    rows = [{"name": f"chfnok_carry_asia_p_{h}", "status": "LIVE", "symbol": "CHFNOK"}
+    rows = [{"name": f"chfnok_carry_asia_p_{h}", "status": "LIVE", "symbol": "CHFNOK",
+             "family": "carry", "selector": "asia"}
             for h in ("c3", "a1", "b2")]
     keys = {r["name"]: book_key(r, book) for r in rows}
     assert set(keys.values()) == {"CHFNOK_carry_asia"}, keys
