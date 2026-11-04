@@ -1621,9 +1621,30 @@ def _graph_snapshot(path: Path | None = None):
     return PassGraph(path) if path is not None else PassGraph()
 
 
+def live_known_symbols() -> tuple[set[str], dict]:
+    """`known_symbols()` minus the series whose bars FROZE while the file stayed fresh.
+
+    UST10Y/UST05Y stopped quoting around 2025-12-31 and kept minting cells from five generators,
+    because every check read the file's mtime. `research.bar_freshness` reads the last bar
+    itself; it never raises, and an unmeasurable universe keeps every symbol.
+    """
+    universe = known_symbols()
+    try:
+        try:
+            from research.bar_freshness import live_symbols
+        except ImportError:                            # imported as a top-level module
+            from bar_freshness import live_symbols  # type: ignore[no-redef]
+        return live_symbols(universe, UNIVERSE)
+    except Exception as exc:                           # pragma: no cover - host-dependent
+        return universe, {"verdict": "UNMEASURED", "reason": type(exc).__name__}
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
-    universe = known_symbols()
+    universe, stale_note = live_known_symbols()
+    if stale_note.get("withheld_from_minting"):
+        print(f"stale bars: {len(stale_note['withheld_from_minting'])} frozen symbol(s) withheld "
+              f"from minting: {', '.join(stale_note['withheld_from_minting'][:12])}")
     candidates: dict[str, dict] = {}
     deepening: dict[str, dict] = {}
     per_source: dict[str, dict[str, object]] = {}
@@ -2045,6 +2066,7 @@ def main() -> int:
         "agreement": {"candidates_with_2plus_sources": agreement},
         "disagreement": disagreement,
         "intake": {"max_rows_per_pass": MAX_ROWS_PER_PASS, **_LAST_INTAKE},
+        "stale_bars": {k: v for k, v in stale_note.items() if k != "frozen_last_bar"},
         "blinding": {k: v for k, v in blinding_note.items() if k != "seats"}
         | {"seats_with_outcomes": {s: d for s, d in (blinding_note.get("seats") or {}).items()
                                    if d.get("rows_with_outcomes")}},
