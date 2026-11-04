@@ -24,12 +24,21 @@ admits as EXACT_RECIPE -- so the sealed gauntlet judges them like any other cell
 
   2. GOLD ETF HOLDINGS (`pf_gold_etf`). SPDR Gold Shares' public historical archive (GLD:
      tonnes and ounces in trust per day), turned into daily, five- and twenty-day flows in
-     tonnes and a z-scored flow. Extends `GOLD_ETF_creation_redemption_flow`
+     tonnes and a z-scored flow, plus two cells that read the flow against the market:
+     `flow_px_resid`, the five-day GLD flow's residual on XAUUSD's five-day log return over the
+     same window (a rolling 250-row OLS, past and current rows only: creations the price has
+     NOT yet answered), and `flow_streak`, the signed count of consecutive creation (+) or
+     redemption (-) days, reset by a no-change day. The XAUUSD close each GLD row sees is the
+     newest broker-day close whose own `available_time` is at or before the row's, so the
+     return never reaches past the flow's 09:00 New York stamp. Extends `GOLD_ETF_creation_redemption_flow`
      (data/hypotheses/compiled_proposals.json, a HEURISTIC_PROXY that measured distance from a
      20-bar mean) and `GLD_IAU_Gold_ETF_Rebalance` (side_channels/operational_calendar_miner.py)
      with the issuer's own measured flow. IAU is NOT fetched: iShares publishes a current
      holdings snapshot, not a public history, and a snapshot accumulated from today cannot be
      backtested; it is named in the report as a gap.
+     SUPERSEDES `research/fetch_gld.py`, the legacy GLD fetcher: it writes to a hard-coded Dell
+     path and reads the old `GLD_US_holdings.xlsx` URL, which 404s. It is left in place on
+     purpose -- removing it is the owner's call -- and nothing here reads what it writes.
 
   3. ASSET MANAGERS / REAL MONEY (`pf_realmoney_<SYMBOL>`). CFTC TFF asset-manager net/OI
      against leveraged-funds net/OI (`am_vs_lev`: real money leaning one way while fast money
@@ -518,8 +527,74 @@ def parse_gld_archive(text: str) -> pd.DataFrame:
             .reset_index(drop=True))
 
 
-def gold_etf_features(h: pd.DataFrame) -> pd.DataFrame:
-    """Holdings -> flows in tonnes, stamped at their next-business-day availability."""
+FLOW_PX_WINDOW = 5
+FLOW_PX_BETA_ROWS = 250
+
+
+def signed_streak(flow: pd.Series) -> pd.Series:
+    """Consecutive same-sign days, signed: +3 is a third creation day running, -2 a second
+    redemption day. A no-change day is 0 and resets the run; an unknown (NaN) day is NaN and
+    resets it too, so a gap never extends a streak it cannot see."""
+    out = np.full(len(flow), np.nan)
+    run = 0
+    for i, v in enumerate(pd.to_numeric(flow, errors="coerce").to_numpy(dtype=float)):
+        if not math.isfinite(v):
+            run = 0
+            continue
+        sgn = 1 if v > 0 else -1 if v < 0 else 0
+        run = 0 if sgn == 0 else (run + sgn if run * sgn > 0 else sgn)
+        out[i] = float(run)
+    return pd.Series(out, index=flow.index)
+
+
+def known_close(available: pd.Series, xau: pd.DataFrame | None,
+                day: pd.Series | None = None) -> pd.Series:
+    """For each GLD row, the XAUUSD daily close of its own day -- or the newest before it --
+    that was PUBLIC by the row's stamp: the newest close whose broker day is at or before
+    `day` (when given) AND whose own `available_time` is at or before `available`. Both
+    constraints bind: without the day one, a Friday row stamped on the Tuesday after a holiday
+    Monday would compare Friday's flow with Monday's price. NaN where no close qualifies."""
+    if xau is None or xau.empty or "close" not in xau.columns:
+        return pd.Series(np.nan, index=available.index)
+    r = pd.DataFrame({
+        "_a": pd.to_datetime(xau["available_time"], utc=True).astype(
+            "datetime64[ns, UTC]").to_numpy(),
+        "_d": pd.to_datetime(xau.index, utc=True).normalize().astype(
+            "datetime64[ns, UTC]").to_numpy(),
+        "close": pd.to_numeric(xau["close"], errors="coerce").to_numpy()}
+    ).dropna().sort_values("_d").reset_index(drop=True)
+    if r.empty:
+        return pd.Series(np.nan, index=available.index)
+    a = pd.to_datetime(available, utc=True).astype("datetime64[ns, UTC]").to_numpy()
+    # publication is monotone in the broker day, so "newest satisfying both" is the smaller of
+    # the two backward positions
+    pos = np.searchsorted(np.maximum.accumulate(r["_a"].to_numpy()), a, side="right") - 1
+    if day is not None:
+        d = pd.to_datetime(day, utc=True).dt.normalize().astype(
+            "datetime64[ns, UTC]").to_numpy()
+        pos = np.minimum(pos, np.searchsorted(r["_d"].to_numpy(), d, side="right") - 1)
+    vals = r["close"].to_numpy(dtype=float)
+    return pd.Series(np.where(pos >= 0, vals[np.clip(pos, 0, None)], np.nan),
+                     index=available.index)
+
+
+def flow_price_residual(flow: pd.Series, ret: pd.Series,
+                        rows: int = FLOW_PX_BETA_ROWS) -> pd.Series:
+    """`flow` minus its rolling OLS fit on `ret` (past and current rows only)."""
+    mp = max(30, rows // 4)
+    both = pd.concat([flow, ret], axis=1, keys=["f", "r"]).dropna()
+    mf = both["f"].rolling(rows, min_periods=mp).mean()
+    mr = both["r"].rolling(rows, min_periods=mp).mean()
+    cov = both["f"].rolling(rows, min_periods=mp).cov(both["r"], ddof=0)
+    var = both["r"].rolling(rows, min_periods=mp).var(ddof=0)
+    beta = (cov / var.replace(0.0, np.nan)).fillna(0.0).where(mf.notna())
+    resid = both["f"] - (mf - beta * mr) - beta * both["r"]
+    return resid.replace([np.inf, -np.inf], np.nan).reindex(flow.index)
+
+
+def gold_etf_features(h: pd.DataFrame, xau: pd.DataFrame | None = None) -> pd.DataFrame:
+    """Holdings -> flows in tonnes, stamped at their next-business-day availability; with
+    XAUUSD daily closes (`daily_closes`), the flow's residual on the same-window return."""
     if h.empty:
         return pd.DataFrame()
     t = h["tonnes"].astype(float).reset_index(drop=True)
@@ -530,6 +605,16 @@ def gold_etf_features(h: pd.DataFrame) -> pd.DataFrame:
     out["flow_20d_t"] = t.diff(20).to_numpy()
     out["flow_z"] = zscore(t.diff(), 250).to_numpy()
     out["available_time"] = [gld_available(x) for x in h["date"]]
+    out["flow_streak"] = signed_streak(t.diff()).to_numpy()
+    if xau is not None and not xau.empty:
+        px = known_close(out["available_time"], xau, out["event_time"])
+        ret = pd.Series(np.log(px.to_numpy()), index=out.index).diff(FLOW_PX_WINDOW)
+        out["xau_ret_5d"] = ret.to_numpy()
+        f5 = out["flow_5d_t"].astype(float)
+        out["flow_px_resid"] = flow_price_residual(f5, ret).to_numpy()
+        sf, sr = np.sign(f5), np.sign(ret)
+        out["flow_px_disagree"] = np.where(sf.notna() & sr.notna(),
+                                           np.where(sf * sr < 0, sf, 0.0), np.nan)
     return out
 
 
@@ -705,14 +790,15 @@ def cta_producer(bars: Callable[[str], pd.DataFrame | None], calendar: Mapping[s
     return frames, hyps, report
 
 
-def gold_etf_producer(text: str | None) -> tuple[dict[str, pd.DataFrame], list[dict[str, Any]],
-                                                 dict[str, Any]]:
+def gold_etf_producer(text: str | None, xau_h1: pd.DataFrame | None = None
+                      ) -> tuple[dict[str, pd.DataFrame], list[dict[str, Any]], dict[str, Any]]:
     if not text:
         return {}, [], {"status": "UNMEASURED", "why": "no GLD archive held on this box yet"}
     h = parse_gld_archive(text)
     if len(h) < MIN_SERIES_ROWS:
         return {}, [], {"status": "UNMEASURED", "why": f"{len(h)} parsable GLD rows"}
-    feat = gold_etf_features(h)
+    xau = daily_closes(xau_h1)
+    feat = gold_etf_features(h, xau)
     sid = "pf_gold_etf"
     ext = ("GOLD_ETF_creation_redemption_flow", "GLD_IAU_Gold_ETF_Rebalance")
     mech = ("authorised participants create GLD shares by delivering physical gold: a "
@@ -721,10 +807,27 @@ def gold_etf_producer(text: str | None) -> tuple[dict[str, pd.DataFrame], list[d
                  falsifier=f"XAUUSD shows no continuation after an extreme GLD {col} out of "
                            "sample")
             for col, thr in (("flow_z", 2.0), ("flow_5d_t", 1.5), ("flow_20d_t", 1.5))]
+    # Two more cells, defined whether or not their inputs are here yet: one whose column is
+    # absent or short (no XAUUSD bars on this box) is HELD by plan_donation, never charged.
+    hyps.append(_hyp("XAUUSD", sid, "flow_px_resid", 1.5, +1, producer="gold_etf", mechanism=(
+        "GLD creations the gold price has not yet answered over the same five days are "
+        "physical demand still to be priced: the residual of the flow on the return leads "
+        "the return"), extends=ext,
+        falsifier="XAUUSD shows no continuation after an extreme GLD flow residual on its own "
+                  "same-window return out of sample"))
+    hyps.append(_hyp("XAUUSD", sid, "flow_streak", 1.5, +1, producer="gold_etf", mechanism=(
+        "an unbroken run of creation (redemption) days is a persistent allocator buying "
+        "(selling) through authorised participants, not one block: persistence continues"),
+        extends=ext,
+        falsifier="XAUUSD shows no continuation after an extreme signed GLD creation/"
+                  "redemption streak out of sample"))
     return {sid: feat}, hyps, {"status": "OK", "rows": len(feat),
                                "first": str(h["date"].min().date()),
                                "last": str(h["date"].max().date()),
                                "latest_tonnes": round(float(h["tonnes"].iloc[-1]), 2),
+                               "xauusd_closes": len(xau),
+                               "divergence": ("OK" if "flow_px_resid" in feat.columns else
+                                              "UNMEASURED: no XAUUSD daily closes on this box"),
                                "iau": ("NOT_FETCHED: iShares publishes a current holdings "
                                        "snapshot, not a public history")}
 
@@ -924,7 +1027,7 @@ def build(*, dry_run: bool = False, offline: bool = False,
     hyps.extend(h)
     producers["cta"] = {"symbols": r, "hypotheses": len(h)}
     text, how = fetch_gld(state, now, offline=offline or dry_run)
-    f, h, r = gold_etf_producer(text)
+    f, h, r = gold_etf_producer(text, bars("XAUUSD"))
     frames.update(f)
     hyps.extend(h)
     producers["gold_etf"] = {**r, "fetch": how, "source": GLD_URL, "hypotheses": len(h)}

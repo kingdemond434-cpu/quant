@@ -244,8 +244,12 @@ class TestGoldEtf:
             f"{d:%d-%b-%Y},{800 + (i % 7)}" for i, d in enumerate(days))
         frames, hyps, rep = P.gold_etf_producer(body)
         assert rep["status"] == "OK" and set(frames) == {"pf_gold_etf"}
-        assert {h["symbol"] for h in hyps} == {"XAUUSD"} and len(hyps) == 3
+        assert {h["symbol"] for h in hyps} == {"XAUUSD"} and len(hyps) == 5
         assert all("GOLD_ETF_creation_redemption_flow" in h["extends"] for h in hyps)
+        assert all("GLD_IAU_Gold_ETF_Rebalance" in h["extends"] for h in hyps)
+        # no XAUUSD bars: the divergence column is absent and its cell will be held
+        assert "flow_px_resid" not in frames["pf_gold_etf"].columns
+        assert rep["divergence"].startswith("UNMEASURED")
 
     def test_a_hard_stop_is_recorded_and_never_retried(self) -> None:
         class R:
@@ -261,6 +265,122 @@ class TestGoldEtf:
         assert how == "HARD_STOP 403" and st["hard_stops"]["gld"]["code"] == 403
         _, how = P.fetch_gld(st, now, offline=False, get=get)
         assert how.startswith("HARD_STOP") and len(calls) == 1
+
+
+def _gld_and_xau(n: int = 300, spike_at: int | None = None, spike_t: float = 5.0
+                 ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """GLD tonnes that track XAUUSD's log price exactly (800 + 50 log p), with an optional
+    permanent unexplained creation of `spike_t` tonnes from row `spike_at`; each XAUUSD close
+    is known at 21:00 UTC on its own day, before the next morning's GLD stamp."""
+    days = pd.bdate_range("2023-01-02", periods=n)
+    rng = np.random.default_rng(11)
+    logp = np.log(1900.0) + np.cumsum(0.01 * rng.standard_normal(n))
+    tonnes = 800.0 + 50.0 * logp
+    if spike_at is not None:
+        tonnes[spike_at:] += spike_t
+    h = pd.DataFrame({"date": days, "tonnes": tonnes, "ounces": 0.0})
+    xau = pd.DataFrame({"close": np.exp(logp),
+                        "available_time": days.tz_localize("UTC") + pd.Timedelta(hours=21)},
+                       index=days.tz_localize("UTC"))
+    return h, xau
+
+
+class TestGoldEtfFlowVsPrice:
+    def test_a_flow_the_price_explains_has_no_residual_and_an_unpriced_one_does(self) -> None:
+        h, xau = _gld_and_xau(spike_at=280)
+        f = P.gold_etf_features(h, xau)
+        r = f["flow_px_resid"]
+        assert r.iloc[100:280].abs().max() < 1e-6, "flow is 50 x return: nothing unexplained"
+        assert r.iloc[280] > 4.0, "the unpriced creation is the residual"
+        assert f["flow_px_disagree"].iloc[280:285].isin([0.0, 1.0]).all()
+        # the return each row sees is the same five-day window as its flow
+        lp = np.log(xau["close"].to_numpy())
+        assert f["xau_ret_5d"].iloc[200] == pytest.approx(lp[200] - lp[195])
+
+    def test_only_a_close_known_by_the_flows_stamp_is_used(self) -> None:
+        h, xau = _gld_and_xau(n=60)
+        f = P.gold_etf_features(h, xau)
+        # publish every close only at 15:00 UTC the next day: after the 13:00/14:00 UTC GLD
+        # stamp, so row D can only see close D-1
+        late = xau.copy()
+        late["available_time"] = late["available_time"] + pd.Timedelta(hours=18)
+        g = P.gold_etf_features(h, late)
+        lp = np.log(xau["close"].to_numpy())
+        assert f["xau_ret_5d"].iloc[30] == pytest.approx(lp[30] - lp[25])
+        assert g["xau_ret_5d"].iloc[30] == pytest.approx(lp[29] - lp[24])
+        px = P.known_close(f["available_time"], late)
+        for i in range(1, 60):
+            stamp = pd.Timestamp(f["available_time"].iloc[i])
+            seen = late.loc[late["close"] == px.iloc[i], "available_time"]
+            assert (seen <= stamp).all()
+
+    def test_the_producer_wires_bars_through_daily_closes(self) -> None:
+        days = pd.bdate_range("2024-01-02", periods=160)
+        idx = pd.date_range(days[0], days[-1] + pd.Timedelta(hours=23), freq="1h", tz="UTC")
+        rng = np.random.default_rng(5)
+        h1 = pd.DataFrame({"close": 2000 * np.exp(np.cumsum(1e-3 * rng.standard_normal(
+            len(idx))))}, index=idx)
+        body = "Date,Tonnes of Gold\n" + "\n".join(
+            f"{d:%d-%b-%Y},{800 + (i % 7) + 0.1 * i}" for i, d in enumerate(days))
+        frames, hyps, rep = P.gold_etf_producer(body, h1)
+        f = frames["pf_gold_etf"]
+        assert rep["divergence"] == "OK" and rep["xauusd_closes"] > 100
+        assert f["flow_px_resid"].notna().sum() >= P.MIN_SERIES_ROWS
+
+
+class TestGoldEtfStreak:
+    def test_a_streak_counts_runs_and_a_flat_or_unknown_day_resets_it(self) -> None:
+        flow = pd.Series([np.nan, 1.0, 2.0, 0.0, -1.0, -3.0, 1.0, np.nan, -1.0, -0.5])
+        got = P.signed_streak(flow)
+        want = [np.nan, 1, 2, 0, -1, -2, 1, np.nan, -1, -2]
+        np.testing.assert_array_equal(got.to_numpy(), np.array(want, dtype=float))
+
+    def test_the_streak_column_rides_the_flows(self) -> None:
+        days = pd.bdate_range("2024-01-02", periods=8)
+        h = pd.DataFrame({"date": days, "tonnes": [800, 801, 802, 803, 803, 802, 801, 802.5],
+                          "ounces": 0.0})
+        f = P.gold_etf_features(h)
+        assert list(f["flow_streak"].iloc[1:]) == [1, 2, 3, 0, -1, -2, 1]
+        assert np.isnan(f["flow_streak"].iloc[0])
+
+
+class TestGoldEtfChargeOnce:
+    def _body(self, n: int = 320) -> str:
+        days = pd.bdate_range("2023-01-02", periods=n)
+        return "Date,Tonnes of Gold\n" + "\n".join(
+            f"{d:%d-%b-%Y},{800 + (i % 7) + 0.1 * i}" for i, d in enumerate(days))
+
+    def test_only_the_new_cells_are_charged_and_the_old_ones_never_again(self) -> None:
+        from research.proposer_common import identity
+        h, xau = _gld_and_xau(n=320, spike_at=290)
+        idx = pd.date_range("2023-01-02", periods=320 * 24, freq="1h", tz="UTC")
+        h1 = pd.DataFrame({"close": np.interp(np.arange(len(idx)) / 24.0, np.arange(320),
+                                              xau["close"].to_numpy())}, index=idx)
+        frames, hyps, _ = P.gold_etf_producer(self._body(), h1)
+        old = {identity(x["symbol"], x["family"], x["params"]) for x in hyps
+               if x["params"]["signal"] in ("flow_z", "flow_5d_t", "flow_20d_t")}
+        assert len(old) == 3
+        now = pd.Timestamp("2026-11-04", tz="UTC").to_pydatetime()
+        state: dict[str, Any] = {"charged": {i: "2026-11-01T00:00:00+00:00" for i in old}}
+        calls: list[int] = []
+
+        def fake(seat: str, rows: list[dict[str, Any]], tests_run: int) -> Path:
+            calls.append(tests_run)
+            return Path("donated.json")
+        new, held = P.plan_donation(hyps, frames, state["charged"])
+        assert sorted(x["params"]["signal"] for x in new) == ["flow_px_resid", "flow_streak"]
+        assert held == []
+        assert P.donate(new, state, now, donate_fn=fake)["tests_run"] == 2
+        assert all(state["charged"][i] == "2026-11-01T00:00:00+00:00" for i in old)
+        new, _ = P.plan_donation(hyps, frames, state["charged"])
+        assert new == [] and calls == [2] and len(state["charged"]) == 5
+
+    def test_without_bars_the_divergence_is_held_and_not_charged(self) -> None:
+        frames, hyps, _ = P.gold_etf_producer(self._body())
+        new, held = P.plan_donation(hyps, frames, {})
+        sigs = {x["params"]["signal"] for x in new}
+        assert "flow_streak" in sigs and "flow_px_resid" not in sigs
+        assert held == [{"symbol": "XAUUSD", "signal": "flow_px_resid", "rows": 0}]
 
 
 # ------------------------------------------------------------------------------ rebalance
