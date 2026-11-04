@@ -702,7 +702,7 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
     DestructivePath(
         path_id="shadow_forward.candidate_rejudge",
         module="desks/mt5/research/shadow_forward.py",
-        function="main",
+        function="rejudge_candidate",
         removes="a PROMOTION CANDIDATE verdict on a shadow_state row that holds no live order "
                 "authority (status -> KILL, demoted_from/at/why recorded on the row)",
         reference="the row's own forward ledger, replayed in the same pass, read against "
@@ -713,8 +713,9 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "ledger and its numeric exp_r/max_dd_r fail the bar that promoted it; a row with "
              "no numeric reading is never demoted, an unreadable registry leaves the verdict "
              "(rejudge UNMEASURED), and a LIVE row is never touched. The clock keeps accruing "
-             "and forward_start is unchanged. The function's pre-existing pop() calls are "
-             "state-key housekeeping, not removals.",
+             "and forward_start is unchanged. TWO-SIDED: a row this rule demoted that clears the "
+             "same bar again is restored to PROMOTION CANDIDATE on that pass; its pop() calls "
+             "clear the demotion fields into demotions_before, never evidence.",
     ),
     DestructivePath(
         path_id="forward_cure_route.accumulate",

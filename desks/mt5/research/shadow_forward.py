@@ -21,6 +21,7 @@ import stat
 import sys
 import time
 import traceback
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -122,6 +123,88 @@ def lapsed_candidate(st: dict) -> str | None:
         return None
     return (f"current ledger n={st.get('n')} exp={exp_r:.3f}R maxDD={dd:.1f}R no longer clears "
             f"exp>{PROMOTE_MIN_EXP} and maxDD>{PROMOTE_MIN_DD}")
+
+
+def _registry_live(key: str) -> bool | None:
+    try:
+        import sleeve_registry as _reg
+        return key in _reg.live_keys()
+    except Exception:  # unreadable registry: the caller leaves the verdict and says so
+        return None
+
+
+def rejudge_candidate(key: str, st: dict, days_active: float, *,
+                      live: Callable[[str], bool | None] = _registry_live) -> str | None:
+    """Re-take a PROMOTION CANDIDATE verdict on the row's CURRENT ledger. Returns what it did.
+
+    It used to be taken once, at maturity, and never revisited while the clock kept accruing:
+    US30 car asia matured +0.117R on 2026-10-13, was retired 2 s later, and read n=130 at -0.135R
+    three weeks on -- still PROMOTION CANDIDATE, and five readers (forward_slot_ranker,
+    cell_culture_index, posterior_alpha, culture_orthogonality, forward_enrolment) counted it as
+    positive evidence. 11 of 131 candidates were in that state on 2026-11-04.
+
+    DOWN: a candidate whose ledger fails the maturity bar and that holds no live order authority
+    becomes KILL with demoted_from/at/why. A LIVE row is the allocator's and the e-process's.
+    UP (GROWTH_GOVERNANCE Rule 2, two-sided): a row THIS rule demoted that clears the same bar
+    again is restored to PROMOTION CANDIDATE on that pass. A maturity KILL is never touched.
+    Either way the clock keeps accruing and forward_start is unchanged -- nothing is withdrawn.
+    """
+    status = str(st.get("status") or "").upper()
+    now = datetime.now(UTC).isoformat(timespec="seconds")
+    if status == "PROMOTION CANDIDATE":
+        why = lapsed_candidate(st)
+        if not why:
+            return None
+        is_live = live(key)
+        if is_live is None:
+            st["rejudge"] = "UNMEASURED: registry unreadable; the verdict stands this pass"
+            return None
+        if is_live:
+            return None
+        st["status"] = "KILL"
+        st["demoted_from"] = "PROMOTION CANDIDATE"
+        st["demoted_at"] = now
+        st["demoted_why"] = why
+        st["rejudge_missed_growth"] = rejudge_missed_growth(st, days_active)
+        return f"VERDICT LAPSED -> KILL ({why})"
+    if (status == "KILL" and st.get("demoted_from") == "PROMOTION CANDIDATE"
+            and _numeric_reading(st) and lapsed_candidate(st) is None):
+        st.setdefault("demotions_before", []).append(
+            {"demoted_at": st.get("demoted_at"), "why": st.get("demoted_why"),
+             "restored_at": now})
+        for k in ("demoted_from", "demoted_at", "demoted_why"):
+            st.pop(k, None)
+        st["status"] = "PROMOTION CANDIDATE"
+        st["rejudge_missed_growth"] = rejudge_missed_growth(st, days_active)
+        return (f"VERDICT RESTORED -> PROMOTION CANDIDATE n={st.get('n')} "
+                f"exp={float(st['exp_r']):.3f}R maxDD={float(st['max_dd_r']):.1f}R")
+    return None
+
+
+def _numeric_reading(st: dict) -> bool:
+    try:
+        float(st["exp_r"]), float(st["max_dd_r"])
+    except (KeyError, TypeError, ValueError):
+        return False
+    return True
+
+
+def rejudge_missed_growth(st: dict, days_active: float) -> dict:
+    """The missed-growth line for a demotion (or a restoration), in forward R per day.
+
+    `r_per_day_forgone` is what promoting the row at its CURRENT forward mean would add per day
+    (max(exp_r, 0) x trades/day): zero or near zero for a lapsed candidate, which is the claim the
+    demotion rests on, and published on the row so the claim can be checked rather than trusted.
+    The demoted row holds no order authority, so no live capital moves either way.
+    """
+    try:
+        exp_r, n = float(st["exp_r"]), int(st["n"])
+    except (KeyError, TypeError, ValueError):
+        return {"status": "UNMEASURED", "why": "no numeric exp_r/n on the row"}
+    tpd = n / days_active if days_active and days_active > 0 else None
+    return {"status": "MEASURED", "exp_r": exp_r, "n": n, "trades_per_day": tpd,
+            "r_per_day_forgone": (max(exp_r, 0.0) * tpd) if tpd is not None else None,
+            "order_authority": False}
 
 
 def _unmeasured(st: dict, why: str) -> None:
@@ -1566,30 +1649,11 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                     st["status"] = "KILL"
                     slog(f"{key}: VERDICT KILL n={st['n']} exp={st['exp_r']:.3f}R "
                          f"maxDD={st['max_dd_r']:.1f}R")
-            elif str(st.get("status") or "").upper() == "PROMOTION CANDIDATE":
-                # A POSITIVE VERDICT IS RE-TAKEN EVERY PASS. It used to be taken once, at maturity,
-                # and never revisited, while the clock kept accruing: US30 car asia matured +0.117R
-                # on 2026-10-13, was retired 2 s later, and read n=130 at -0.135R three weeks on --
-                # still PROMOTION CANDIDATE, and five readers (forward_slot_ranker, cell_culture,
-                # posterior_alpha, culture_orthogonality, forward_enrolment) counted it as positive
-                # evidence. 9 of 131 candidates were in that state on 2026-11-04.
-                _why = lapsed_candidate(st)
-                if _why:
-                    try:
-                        import sleeve_registry as _reg
-                        _live = key in _reg.live_keys()
-                    except Exception as exc:  # unreadable registry: leave the verdict, say why
-                        _live = None
-                        st["rejudge"] = f"UNMEASURED: registry unreadable ({type(exc).__name__})"
-                    if _live is False:
-                        # A LIVE row is the allocator's and the e-process's to size and kill;
-                        # only a candidate that holds no live order authority is demoted here.
-                        # The clock keeps accruing either way -- nothing is withdrawn.
-                        st["status"] = "KILL"
-                        st["demoted_from"] = "PROMOTION CANDIDATE"
-                        st["demoted_at"] = datetime.now(UTC).isoformat(timespec="seconds")
-                        st["demoted_why"] = _why
-                        slog(f"{key}: VERDICT LAPSED -> KILL ({_why})")
+            else:
+                # A POSITIVE VERDICT IS RE-TAKEN EVERY PASS, both ways. See `rejudge_candidate`.
+                _act = rejudge_candidate(key, st, days_active)
+                if _act:
+                    slog(f"{key}: {_act}")
             st["forward_evidence"] = {"status": "MEASURED",
                                       "at": datetime.now(UTC).isoformat(timespec="seconds")}
             state[key] = st
