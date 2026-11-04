@@ -140,3 +140,67 @@ def test_every_axis_names_the_fence_that_already_owns_it() -> None:
         assert (ROOT / "scripts" / ax.fence[0]).is_file(), ax.fence[0]
     gate = (ROOT / "scripts" / "run_law_gate.py").read_text(encoding="utf-8")
     assert "check_birth_obligations.py" in gate, "the fence must run on the law gate"
+
+
+def _copied_box_report(root: Path, at: str) -> None:
+    """A JUDGE_COVERAGE.json as a clone holds it: the box's own stamp, a checkout-fresh mtime."""
+    _write(root / "desks" / "mt5" / "reports" / "JUDGE_COVERAGE.json",
+           json.dumps({"at": at, "families": {"old_family": {"judged": 12},
+                                              "new_family": {"judged_total": 0}}}))
+
+
+def test_a_copied_box_report_is_aged_by_its_own_stamp_not_the_checkout(
+        tmp_path: Path, monkeypatch) -> None:
+    """2026-10-29: a clone's mtime is checkout time, so a two-day-old box report read as fresh
+    and a standalone run named 59 'arrived' families on a host that measures nothing about the
+    judge. Off the box the report's own `at` decides, and that verdict is UNMEASURED."""
+    _baseline_tree(tmp_path)
+    assert birth.main(["--root", str(tmp_path), "--update"]) == 0
+    _copied_box_report(tmp_path, "2026-01-01T00:00:00+00:00")       # mtime: now
+    monkeypatch.setattr(birth, "_is_trading_host", lambda root: False)
+    monkeypatch.delenv("QUANT_LAWGATE_SOURCE_VIEW", raising=False)
+    ax = birth.measure(tmp_path)["axes"]["family"]
+    assert ax["verdict"] == birth.UNMEASURED and "h old" in ax["why"]
+    assert not [f for f in birth.measure(tmp_path)["failures"] if f.startswith("family")]
+
+
+def test_the_box_still_judges_a_stale_family_report(tmp_path: Path, monkeypatch) -> None:
+    """The teeth are untouched where they bite: on the trading host, and under --require-state,
+    the same report is judged and the unreached family fails."""
+    _baseline_tree(tmp_path)
+    birth.main(["--root", str(tmp_path), "--update"])
+    _copied_box_report(tmp_path, "2026-01-01T00:00:00+00:00")
+    monkeypatch.delenv("QUANT_LAWGATE_SOURCE_VIEW", raising=False)
+    monkeypatch.setattr(birth, "_is_trading_host", lambda root: True)
+    assert birth.measure(tmp_path)["axes"]["family"]["arrived_without_obligation"] == [
+        "new_family"]
+    monkeypatch.setattr(birth, "_is_trading_host", lambda root: False)
+    doc = birth.measure(tmp_path, require_state=True)
+    assert doc["axes"]["family"]["arrived_without_obligation"] == ["new_family"]
+    assert any(f.startswith("family") for f in doc["failures"])
+
+
+def test_a_fresh_stamp_off_the_box_is_still_judged(tmp_path: Path, monkeypatch) -> None:
+    """The stamp narrows nothing beyond the mtime it replaces: a report the box wrote inside the
+    window is judged off the box exactly as before."""
+    from datetime import UTC, datetime
+    _baseline_tree(tmp_path)
+    birth.main(["--root", str(tmp_path), "--update"])
+    _copied_box_report(tmp_path, datetime.now(tz=UTC).isoformat(timespec="seconds"))
+    monkeypatch.delenv("QUANT_LAWGATE_SOURCE_VIEW", raising=False)
+    monkeypatch.setattr(birth, "_is_trading_host", lambda root: False)
+    assert birth.measure(tmp_path)["axes"]["family"]["arrived_without_obligation"] == [
+        "new_family"]
+
+
+def test_a_committed_declaration_is_not_aged_by_its_stamp(tmp_path: Path, monkeypatch) -> None:
+    """The runtime attestation is an in-repo declaration ('has a row'), which a clone CAN judge
+    whatever its age: an old `generated_at` must not turn the executable axis UNMEASURED."""
+    _baseline_tree(tmp_path)
+    _write(tmp_path / "docs" / "research" / "runtime_state.json",
+           json.dumps({"generated_at": "2026-01-01T00:00:00+00:00",
+                       "organs": [{"organ": "leg:old_tool", "artifact": "scripts/old_tool.py"}]}))
+    monkeypatch.setattr(birth, "_is_trading_host", lambda root: False)
+    assert birth.measure(tmp_path)["axes"]["executable"]["verdict"] == "measured"
+    assert {ax.name for ax in birth.AXES if ax.box_report} == {
+        "source", "family", "region", "attribution"}

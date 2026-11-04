@@ -408,6 +408,40 @@ def _certificate_birth(root: Path) -> tuple[set[str], set[str], str]:
                          f"{len(ok) - named} record why none could be reached)")
 
 
+#: The keys a box report stamps its own measurement time under, in the order they are trusted.
+_STAMP_KEYS: tuple[str, ...] = ("at", "generated_at", "generated", "measured_at")
+
+
+def _stamped_at(path: Path) -> float | None:
+    """The report's OWN measurement time (epoch seconds), or None when it carries none.
+
+    WHY THE STAMP AND NOT THE MTIME (2026-10-29). A checkout writes every file at checkout time,
+    so `st_mtime` on a fresh clone says when git last wrote the file, not when the box measured
+    it -- the same flaw check_birth_properties records for §33. The box publishes
+    `JUDGE_COVERAGE.json` to origin, so every cloud clone holds a copy whose mtime is minutes old
+    and whose `at` was 2026-10-27T17:33Z: the staleness clause below never fired, the family axis
+    was JUDGED off the box against a floor recorded UNMEASURED, and a standalone run of this fence
+    read "family: 59 arrived" on a host that measures nothing about the judge. The stamp is
+    written by the producer and survives the clone, so the verdict no longer depends on which
+    machine ran the checkout.
+    """
+    doc = _json(path)
+    if not isinstance(doc, dict):
+        return None
+    for key in _STAMP_KEYS:
+        raw = doc.get(key)
+        if not isinstance(raw, str) or len(raw) < 10:
+            continue
+        try:
+            dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=UTC)
+        return dt.timestamp()
+    return None
+
+
 #: "Is this the host that runs the legs?" is answered by `libs/ops/host_identity`, the one helper
 #: every fence shares (PR #130 audit): the machine id recorded in config/trading_host.json, never
 #: a hostname prefix and never `gateway_state.json`'s mtime -- that file is TRACKED, so its age on
@@ -426,13 +460,18 @@ def _is_trading_host(base: Path) -> bool:
     return host_identity.identify().may_be_trading
 
 
-def _source_age_h(base: Path, rel: str | None) -> float | None:
+def _source_age_h(base: Path, rel: str | None, *, stamped: bool = False) -> float | None:
+    """Hours since `rel` was measured. `stamped` prefers the report's own stamp to its mtime;
+    a report with no readable stamp falls back to the mtime, exactly as before."""
     if not rel:
         return None
+    path = base / rel
     try:
-        return (time.time() - (base / rel).stat().st_mtime) / 3600.0
+        mtime = path.stat().st_mtime
     except OSError:
         return None
+    at = _stamped_at(path) if stamped else None
+    return (time.time() - (at if at is not None else mtime)) / 3600.0
 
 
 @dataclass(frozen=True)
@@ -444,6 +483,11 @@ class Axis:
     #: The report this axis READS. An axis is only as current as the artifact it is derived from,
     #: and on a host that regenerates none of them the age of that file is the whole verdict.
     source: str | None = None
+    #: True when `source` is a report the BOX writes and publishes to origin: its age off the box
+    #: is read from its own stamp, because a clone's mtime is checkout time. False for committed
+    #: in-repo declarations (the runtime attestation, the certificate birth record), whose
+    #: obligation is "has a row", which a clone CAN judge whatever the file's age.
+    box_report: bool = False
 
 
 AXES: tuple[Axis, ...] = (
@@ -452,12 +496,14 @@ AXES: tuple[Axis, ...] = (
          "docs/research/runtime_state.json"),
     Axis("source", "a collection obligation and a position in the chain from collected through "
                    "ingested, represented, cells emitted, cells judged", _sources,
-         ("check_source_drain.py", ()), "desks/mt5/reports/SOURCE_DRAIN.json"),
+         ("check_source_drain.py", ()), "desks/mt5/reports/SOURCE_DRAIN.json",
+         box_report=True),
     Axis("family", "membership of the judge's coverage, derived from the registry rather than "
                    "typed", _families, ("check_judge_coverage.py", ()),
-         "desks/mt5/reports/JUDGE_COVERAGE.json"),
+         "desks/mt5/reports/JUDGE_COVERAGE.json", box_report=True),
     Axis("region", "arrival at the CURRENT depth, breadth and ingestion floors, never at zero",
-         _regions, ("check_regional_parity.py", ()), "desks/mt5/reports/regional_parity.json"),
+         _regions, ("check_regional_parity.py", ()), "desks/mt5/reports/regional_parity.json",
+         box_report=True),
     Axis("destructive", "a guard against acting on an absence", _destructive,
          ("check_no_retirement_on_absence.py", ())),
     # SIXTH AXIS (2026-09-23): attribution. Measured that day, 3,663 of 3,862 unique cells and 33
@@ -468,7 +514,7 @@ AXES: tuple[Axis, ...] = (
                         "region -- stamped at birth by libs/research/attribution.attribute() "
                         "through the two registry doors, never by a later sweep",
          _attribution, ("check_producer_yield.py", ()),
-         "desks/mt5/reports/ATTRIBUTION_COVERAGE.json"),
+         "desks/mt5/reports/ATTRIBUTION_COVERAGE.json", box_report=True),
     # SEVENTH AXIS (2026-09-24): the certificate's own birth record. The sixth axis stamps the
     # CELL; a certificate is minted from one by a sealed writer that knows nothing about
     # producers, so the stamp does not ride across that boundary on its own. Measured that day:
@@ -517,7 +563,7 @@ def measure(root: Path | None = None, *, floors: Path | None = None,
         # BITE: on the trading host `trading` is True and every axis is judged exactly as before,
         # and the same axes on that box still fail today (executable 125, source 6) -- which is
         # the point. This clause narrows WHERE a verdict may be given, never WHAT it is.
-        age_h = _source_age_h(base, ax.source)
+        age_h = _source_age_h(base, ax.source, stamped=ax.box_report)
         # AN ABSENT REPORT IS NOT THIS CLAUSE'S BUSINESS: each `derive` already returns
         # UNMEASURED with its own reason when its input is missing, and a fresh tree that simply
         # has not written a report yet must keep reading exactly as it did. Only a report that
