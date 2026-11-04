@@ -183,10 +183,20 @@ def undecodable(diff: str) -> tuple[dict[str, int], dict[str, int]]:
     code: dict[str, int] = {}
     data: dict[str, int] = {}
     path = ""
+    head = False  # inside a file's header lines, before its first hunk
     for line in diff.split("\n"):
         if line.startswith("diff --git a/") and " b/" in line:
-            path = line.split(" b/", 1)[1]
+            # "a/X b/X": the halves, never the first " b/" (a path may hold " b/" itself; #681
+            # audit SF). A rename's halves differ: its `+++ b/` header line names it below.
+            h = line[len("diff --git a/") :]
+            k = (len(h) - 3) // 2
+            path = h[:k] if h[k : k + 3] == " b/" and h[:k] == h[k + 3 :] else ""
+            head = True
             continue
+        if head and line.startswith("@@"):
+            head = False
+        elif head and line.startswith("+++ b/"):
+            path = line[len("+++ b/") :]  # a header line, never an added "++ b/..." in a hunk
         n = line.count("\ufffd")
         if n:
             out = data if path and _is_data(path) else code

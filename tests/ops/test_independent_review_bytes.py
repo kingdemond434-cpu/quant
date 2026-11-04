@@ -86,3 +86,14 @@ def test_main_fails_a_shift_jis_code_hunk_before_any_model_and_reviews_a_fixture
     assert not asked and "undecodable bytes" in notes[-1]  # no model ever saw it
     run(_diff("tests/research/fixtures/jp.csv", "価格".encode("shift_jis")))
     assert asked  # a data fixture still goes to review
+
+
+def test_a_path_holding_b_slash_is_read_whole_and_a_hunk_cannot_rename_it() -> None:
+    """#681 audit SF: `ops/x b/tests/fixtures/a.dat` split at its FIRST " b/" read as a fixture."""
+    p = "ops/x b/tests/fixtures/a.dat"
+    code, data = IR["undecodable"](_diff(p, b"\xff"))
+    assert set(code) == {p} and not data
+    # an ADDED line "++ b/tests/fixtures/z.csv" shows as "+++ b/..." inside the hunk: not a header
+    d = _diff("scripts/run.py", b"++ b/tests/fixtures/z.csv\n+\xff")
+    code, data = IR["undecodable"](d)
+    assert set(code) == {"scripts/run.py"} and not data
