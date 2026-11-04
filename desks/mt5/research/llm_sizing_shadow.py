@@ -1,5 +1,8 @@
-"""LLM SIZING SHADOW: does a committee of free models, allowed to resize a live gold trade, grow
-the account faster than today's fixed sizing? Measured FORWARD, in shadow, never on orders.
+"""LLM SIZING SHADOW: a READ-ONLY, SHADOW-ONLY measurement. It changes NO live trade, NO lot, NO
+risk fraction and NO sizing file, and nothing in the money path imports it. It asks: had a
+committee of free models been allowed to resize the live gold trades, would the account have grown
+faster than today's fixed sizing? Each would-be multiplier is written to a transcript and scored
+against the trade's realised R after it closes; the live order is placed exactly as before.
 
 PRINCIPAL 2026-11-03 (zuck), after the "AI investment committee" video: a red-team veto that may
 only SHRINK size "can make it timid tho". So three versions run side by side on every live gold
