@@ -32,7 +32,8 @@ what moves the work. `pf_allocator` needs no such wait: every one of its clocks 
 a pass anywhere else serialise. A held lock makes the allocator stand down by name.
 
 A RECEIPT PER LEG, NEVER A SHARED FILE. Three tasks write at different minutes but can overlap,
-so each writes `reports/offload/<leg>.json` alone: status RAN / STANDBY / FAILED / TIMEOUT,
+so each writes `reports/offload/<leg>.json` alone: status RAN / STANDBY / STOOD_DOWN / FAILED /
+TIMEOUT,
 exit code, seconds, and why. Absence of the file means the task never ran, which is UNMEASURED,
 not healthy (L1.28a).
 
@@ -137,6 +138,13 @@ def run_leg(leg: str, cycle: Any = None, runner: Callable[..., Any] | None = Non
                 stamped = hc._stamp_heavy_pass({"exit_code": doc.get("exit_code")},
                                                started=started)
                 doc["heavy_pass_stamped"] = bool(stamped)
+                # A lock or memory stand-down exits 0 with no fresh scan. Calling that RAN would
+                # be the same silence that let the scan go 124 h stale, so it is named.
+                if doc.get("status") == "RAN" and not stamped:
+                    doc.update(status="STOOD_DOWN",
+                               why=("pf_allocator exited 0 but no fresh MEASURED admission scan "
+                                    "was stamped: it stood down (lock or memory; see "
+                                    "reports/ALLOCATOR_STANDDOWN.json) or the scan was carried"))
     except Exception as exc:
         doc.update(status="FAILED", exit_code=1, why=f"{type(exc).__name__}: {exc}")
     doc["seconds"] = round(time.monotonic() - t0, 1)

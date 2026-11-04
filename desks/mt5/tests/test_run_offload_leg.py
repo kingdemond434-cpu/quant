@@ -81,6 +81,13 @@ def test_allocator_heavy_runs_at_once_and_stamps_the_pass(tmp_path):
     assert leg == {"exit_code": 0} and started.tzinfo is UTC
 
 
+def test_allocator_stand_down_is_named_not_ran(tmp_path):
+    cyc = FakeCycle(own=set(), stamp=False)
+    doc = rol.run_leg("pf_allocator_heavy", cycle=cyc, runner=_runner(0, []), out_dir=tmp_path)
+    assert doc["status"] == "STOOD_DOWN" and doc["exit_code"] == 0
+    assert doc["heavy_pass_stamped"] is False
+
+
 def test_allocator_failure_is_not_stamped(tmp_path):
     cyc = FakeCycle(own=set())
     doc = rol.run_leg("pf_allocator_heavy", cycle=cyc, runner=_runner(3, []), out_dir=tmp_path)
