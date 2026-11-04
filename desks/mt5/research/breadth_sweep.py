@@ -247,7 +247,9 @@ PREREGISTERED_ELSEWHERE: dict[str, str] = {
     # grid holds this exact default cell -- bond_symbol UST10Y (BOND_OF's fallback), days_before
     # 3, min_gap_sd 1.0, every other parameter at its default -- and charges it there (2026-11-04).
     "month_end_rebalance": "research/specialist_cell's indices grid contains the default cell "
-                           "(UST10Y, days_before 3, min_gap_sd 1.0) and charges it once",
+                           "(UST10Y, days_before 3, min_gap_sd 1.0) on every index but UK100 "
+                           "and charges it once; off the indices the balanced-fund equity/bond "
+                           "rebalancing mechanism does not apply and no cell is minted",
     "idio_volume_reversal": "F1's 21 cells are preregistered and charged once by "
                             "market_ecology.donate_f1 (docs/research/"
                             "F1_IDIO_VOLUME_PREREGISTRATION.md)",
