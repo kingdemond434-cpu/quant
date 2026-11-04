@@ -284,3 +284,33 @@ def test_the_ratchet_in_the_reversion_fence_only_falls() -> None:
         assert fourth["ratchet_ok"] is None
     finally:
         out.unlink(missing_ok=True)
+
+
+class _FakeParentProc(_FakeProc):
+    """A writer with its own child processes (a pre-push hook running the law gate under it)."""
+
+    def __init__(self, *a: Any, kids: list[_FakeProc], **k: Any) -> None:
+        super().__init__(*a, **k)
+        self._kids = kids
+
+    def children(self, recursive: bool = False) -> list[_FakeProc]:
+        return list(self._kids)
+
+
+def test_a_push_waiting_on_its_own_working_hook_is_spared(monkeypatch: pytest.MonkeyPatch,
+                                                          _no_sleep: Any) -> None:
+    """2026-11-04: three `git push` runs were killed at 0.34h, each mid law gate. The git frame
+    sits at zero CPU while its hook works; the hook's CPU is the writer's own work."""
+    gate = _FakeProc(902, "python.exe", 1200, [(40.0, 0), (55.0, 0)], cmd="python run_law_gate.py")
+    push = _FakeParentProc(901, "git.exe", 1230, [(0.15, 100), (0.15, 100)],
+                           cmd="git push -u origin b", kids=[gate])
+    _install(monkeypatch, [push])
+    rep = gwl.hung_writers(sleep=_no_sleep)
+    assert rep["hung"] == []
+    assert any(r["pid"] == 901 and "child processes moved" in r["why"] for r in rep["spared"])
+    # ... and an idle hook does not protect it: zero CPU in the tree too is stopped
+    idle = _FakeProc(904, "python.exe", 1200, [(40.0, 0), (40.0, 0)], cmd="python idle.py")
+    push2 = _FakeParentProc(903, "git.exe", 1230, [(0.15, 100), (0.15, 100)],
+                            cmd="git push -u origin b", kids=[idle])
+    _install(monkeypatch, [push2])
+    assert [r["pid"] for r in gwl.hung_writers(sleep=_no_sleep)["hung"]] == [903]
