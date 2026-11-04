@@ -159,6 +159,16 @@ try {
         $rc = $LASTEXITCODE
         $out = $lines -join "`n"
     } finally { Pop-Location }
+    # MERGE-TIME ADOPT_CLEARS ROWS (R2f): a recent LIVE merge whose exact head carries a verified
+    # authority attestation or Auditor registry CLEAR gets its adoption row, pushed fast-forward as
+    # a data-only commit; the adopt guard re-verifies each one. A failure here is logged and never
+    # stops the sweep's heartbeat; no row means the guard stays closed, as before.
+    try {
+        & $Python -I -u (Join-Path $Clone "ops\release\adopt_rows.py") --root $Clone --apply --report (Join-Path $QuantRoot "desks\mt5\reports\ADOPT_ROWS.json") 2>&1 | ForEach-Object { Say "adopt-rows@$at $_" }
+        Say "adopt-rows rc=$LASTEXITCODE"
+    } catch {
+        Say "adopt-rows failed: $($_.Exception.Message)"
+    }
     # THE MEMECOIN REPO (zuck 2026-11-03, "zero taps everywhere"): the same box, login and veto
     # window merge a CLEARed, green memecoin PR that does not touch its live switch
     # (.github/scripts/memecoin_gate.py). It runs only when MEMECOIN_AUDIT_REGISTRY is set on the
