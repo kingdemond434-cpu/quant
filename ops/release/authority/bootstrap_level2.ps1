@@ -42,6 +42,12 @@ $cfg = Get-Content -Raw (Join-Path $AuthHome "config.json") | ConvertFrom-Json
 $Python = $cfg.python
 $Clone = Join-Path $AuthHome "repo"
 $env:GH_REPO = $Repo
+# gh is not on an elevated shell's PATH on the box (owner run 2026-11-04 11:32Z): use the box's own copy
+if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+    $ghBin = "C:\Users\Administrator\tools\gh\bin"
+    if (Test-Path (Join-Path $ghBin "gh.exe")) { $env:Path = "$ghBin;$env:Path" }
+    else { throw "gh is not installed here (looked on PATH and in $ghBin). Nothing was changed." }
+}
 # Every git this run starts (python's included) runs as Administrator in clones that belong to
 # quant-authority; without this, git refuses them as "dubious ownership" and pin_root fails.
 $env:GIT_CONFIG_COUNT = '1'; $env:GIT_CONFIG_KEY_0 = 'safe.directory'; $env:GIT_CONFIG_VALUE_0 = '*'
@@ -80,7 +86,7 @@ Refresh-Clone
 # pin THE MERGE COMMIT of #$Pr, never whatever LIVE's tip is by now (#650 audit SF3), and only
 # when the head GitHub merged is green and the audit's standing CLEAR -- whoever pressed Merge
 # (#650 audit 2026-11-04: the owner may merge first, and the pin must not trust any merge)
-$out = @(Py (Join-Path $Src "ops\release\authority\bootstrap_github.py") --repo $Repo merged-cleared --pr $Pr)
+$out = @(Py (Join-Path $Src "ops\release\authority\bootstrap_github.py") --repo $Repo merged-cleared --pr $Pr --registry (Join-Path $Registry "registry.jsonl"))
 $rc = $LASTEXITCODE
 $out | Out-Host
 if ($rc -ne 0) { throw "#$Pr's merged head is not a cleared, green head (see NOT PINNABLE above); nothing pinned" }
