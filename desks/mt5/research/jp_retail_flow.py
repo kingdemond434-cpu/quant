@@ -25,8 +25,8 @@ ACCESS (LAWS 5e). Licence, robots and terms are LABELS on the row, never a stop:
     robots.txt unreadable                -> ACCESS_UNCLEAR, mined with the label attached
 `redistribute_allowed` is read from `access_classifier.ROUTING` and fails closed. What DOES stop
 a door is an access control: 401, 403, 429 or a WAF / CAPTCHA page is a HARD STOP, recorded on the
-door and (on the desk transport) in polite_fetch's shared ledger as a person-held hold. Nothing
-retries it and no clock releases it. The desk's honest DESK_UA is the only User-Agent sent; there
+door and (on the desk transport, `polite_fetch.get`) in its shared ledger as a person-held
+hold. Nothing retries it and no clock releases it. The desk's honest DESK_UA is the only User-Agent sent; there
 is no IP or agent rotation, no login, no key.
 
 LIVE SIZING. A series may size a live position only when its register row quotes a clause that
@@ -64,9 +64,7 @@ from __future__ import annotations
 import math
 import re
 import unicodedata
-import urllib.error
 import urllib.parse
-import urllib.request
 from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
@@ -117,9 +115,6 @@ JPX_PUBLISH_UTC = (6, 30)
 FFAJ_PUBLISH_DAY = 20
 FFAJ_PUBLISH_HOUR_UTC = 15
 
-HARD_STOP_STATUS: frozenset[int] = frozenset({401, 403, 429})
-
-
 class HardStop(Exception):
     """An access control answered (401/403/429, a WAF / CAPTCHA page, or a redirect into a login
     wall). The door holds until a person clears it; nothing retries it."""
@@ -142,66 +137,31 @@ Transport = Callable[[str, float], bytes]
 
 
 # ---------------------------------------------------------------------------- the transport --
-class _Redirects(urllib.request.HTTPRedirectHandler):
-    """Follow a redirect only when the target is neither a held source nor a login wall."""
-
-    def redirect_request(self, req: Any, fp: Any, code: int, msg: str, headers: Any,
-                         newurl: str) -> Any:
-        from libs.data import terms_fence as _tf
-        if _tf.login_wall(newurl):
-            raise HardStop(code, newurl, "redirect into a login wall")
-        if _tf.platform_of_url(newurl):
-            raise HardStop(code, newurl, f"redirect into held source {_tf.platform_of_url(newurl)}")
-        return super().redirect_request(req, fp, code, msg, headers, newurl)
-
-
 def desk_transport(url: str, timeout: float) -> bytes:
-    """THE PRODUCTION TRANSPORT. One GET with the desk's honest headers (`DESK_UA`) and verified
-    TLS. robots.txt is NOT asked here: it is read separately as a LABEL (`access_label`). A held
-    register source or a login wall is never requested; a site a person holds is never asked; a
-    401/403/429 or a challenge page records a person-held hold in the shared access ledger."""
+    """THE PRODUCTION TRANSPORT: `polite_fetch.get`, the desk's one fetch door. It reads the
+    origin's robots.txt on the URL and on every redirect hop AS AN ACCESS LABEL (PUBLIC,
+    PUBLIC_WITH_TERMS with the Disallow in terms_note, or ACCESS_UNCLEAR), never as a refusal
+    (LAWS 5e), sends only the honest DESK_UA, spaces the host through its shared gate, refuses a
+    held register source or a login wall before anything is sent, and records a 401/403/429 or
+    a challenge page as a PERSON-HELD hold in the shared access ledger. This door maps its answer
+    onto the door's own errors: a hold or a fence -> HardStop, 404/410 -> Missing, anything else
+    that is not content -> Transient. No retry here: the next due pass is the retry."""
     from libs.data import polite_fetch as _pf
-    from libs.data import terms_fence as _tf
-    if _tf.platform_of_url(url) or _tf.login_wall(url):
-        raise HardStop("held", url, "held register source or login wall: never requested")
-    held = _pf.person_hold(url)
-    if held:
-        raise HardStop("held", url, f"site held for a person ({held})")
-    _pf.GATE.wait(_pf.hostname_of(url), at_least=POLITE_GAP_S)     # per-host spacing, shared
-    req = urllib.request.Request(url, headers=_pf.honest_headers({"Accept": "*/*"}))
-    # A RAW SEND, audited on tests/data/test_no_raw_fetchers.ALLOWED: polite_fetch's seams read
-    # robots as a refusal, which LAWS 5e lists among the deleted brakes; robots is read here as a
-    # label instead (`access_label`), and the seam's holds, honest UA and host gate are kept above.
-    try:
-        with urllib.request.build_opener(
-                urllib.request.HTTPSHandler(context=_pf.ssl_context()),
-                _Redirects()).open(req, timeout=timeout) as resp:
-            body = resp.read(MAX_BYTES + 1)
-            headers, status = resp.headers, int(getattr(resp, "status", 200) or 200)
-    except HardStop:
-        raise
-    except urllib.error.HTTPError as exc:
-        code = int(exc.code)
-        try:
-            err_body = exc.read(16000)
-        except Exception:
-            err_body = b""
-        marker = _pf.looks_challenged(err_body, exc.headers, code)
-        if code in HARD_STOP_STATUS or marker:
-            _pf.hold_site(url, code, cause=marker or f"HTTP {code}")
-            raise HardStop(code, url, marker or f"HTTP {code}") from exc
-        if code in (404, 410):
-            raise Missing(url) from exc
-        raise Transient(f"HTTP {code}") from exc
-    except (OSError, ValueError) as exc:
-        raise Transient(f"{type(exc).__name__}: {str(exc)[:120]}") from exc
-    marker = _pf.looks_challenged(body, headers, status)
-    if marker:
-        _pf.hold_site(url, "WAF", cause=marker)
-        raise HardStop("WAF", url, marker)
-    if len(body) > MAX_BYTES:
+    _pf.GATE.wait(_pf.hostname_of(url), at_least=POLITE_GAP_S)     # JPX/TFX: wider than default
+    r = _pf.get(url, headers={"Accept": "*/*"}, timeout=timeout, retries=0,
+                max_bytes=MAX_BYTES + 1, leg=f"world_dataset_hunt:{PACK}")
+    if r.fenced:
+        raise HardStop("held", url, f"fenced ({r.fenced[0]}): never requested")
+    if r.verdict:
+        raise HardStop(r.status if r.status is not None else r.verdict, url,
+                       r.error or r.verdict)
+    if r.status in (404, 410):
+        raise Missing(url)
+    if not r.ok:
+        raise Transient(r.error or f"HTTP {r.status}")
+    if len(r.body) > MAX_BYTES:
         raise Transient(f"body longer than {MAX_BYTES} bytes")
-    return bytes(body)
+    return bytes(r.body)
 
 
 def hunter_transport(fetch: Callable[..., bytes]) -> Transport:
@@ -272,6 +232,20 @@ def access_label(url: str, transport: Transport, policy_key: str) -> dict[str, A
     return _label("PUBLIC_WITH_TERMS",
                   f"robots.txt Disallow for {_pf.DESK_UA_PRODUCT} on {parts.path}: mined in full, "
                   "redistribution withheld (LAWS 5e); " + _terms_note(policy_key))
+
+
+def desk_access_label(url: str, policy_key: str) -> dict[str, Any]:
+    """The desk transport's label: polite_fetch's own robots reading for `url` (LAWS 5e: PUBLIC,
+    PUBLIC_WITH_TERMS with the Disallow, or ACCESS_UNCLEAR; never a refusal), with the register
+    row's terms folded in -- robots allowing a page never erases the publisher's reserved rights,
+    so PUBLIC becomes the terms row's label. `redistribute_allowed` comes from ROUTING."""
+    from libs.data import polite_fetch as _pf
+    lab = _pf.access_label(url)
+    got = str(lab.get("access_label") or "ACCESS_UNCLEAR")
+    note = str(lab.get("terms_note") or "")
+    if got == _pf.PUBLIC:
+        return _label(terms_label(policy_key), "robots.txt allows; " + _terms_note(policy_key))
+    return _label(got, f"{note}; {_terms_note(policy_key)}" if note else _terms_note(policy_key))
 
 
 def _terms_note(policy_key: str) -> str:
@@ -1085,7 +1059,8 @@ def fetch_doors(cat: dict[str, Any], *, now: datetime, transport: Transport | No
             continue
         row["last_attempt_at"] = W._iso(now)
         try:
-            access = access_label(spec["url"], t, spec["policy"])
+            access = (access_label(spec["url"], t, spec["policy"]) if transport is not None
+                      else desk_access_label(spec["url"], spec["policy"]))
             row["access"] = access
             n = _PASSES[door](row, t, now, qstats, access)
         except HardStop as hs:
