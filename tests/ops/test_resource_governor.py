@@ -18,8 +18,9 @@ E8 = r"python.exe C:\opt\quant\desks\mt5\prop\e8_executor.py"
 TERM = r"C:\MT5\terminal64.exe /portable"
 
 
-def _p(pid: int, cmd: str, prio: int = BELOW, ppid: int = 0, started: float = 0.0) -> object:
-    return Proc(pid, ppid, cmd, prio, started)
+def _p(pid: int, cmd: str, prio: int = BELOW, ppid: int = 0, started: float = 0.0,
+       name: str = "") -> object:  # fmt: skip
+    return Proc(pid, ppid, cmd, prio, started, name)
 
 
 def test_money_is_never_touched_at_any_load() -> None:
@@ -113,3 +114,33 @@ def test_a_recycled_pid_is_not_a_parent() -> None:
     lends that miner its reserved class."""
     procs = [_p(1, GATE, started=100.0), _p(6, MINER, ppid=1, started=50.0)]
     assert 6 not in plan(procs, "NORMAL", {}).set_to
+
+
+JUDGE = r"python.exe C:\opt\quant\scripts\run_sharded_gauntlet.py --shards 8"
+
+
+def test_the_judge_and_its_workers_are_never_touched() -> None:
+    """zuck 10-29 reserved the judge 8 cores; judge_priority.py owns its class, not this."""
+    procs = [_p(20, JUDGE), _p(21, "python.exe -c from multiprocessing.spawn import spawn_main",
+                               ppid=20, started=1.0), _p(6, MINER)]  # fmt: skip
+    out = plan(procs, "THROTTLE", {})
+    assert 20 not in out.set_to and 21 not in out.set_to and out.set_to[6] == IDLE
+    assert out.classes["JUDGE"] == 2
+
+
+def test_an_unreadable_parent_shields_its_tree_and_is_counted() -> None:
+    """An Administrator token cannot read SYSTEM command lines: an unreadable SYSTEM python could
+    be the gate, so nothing under it is lowered. svchost (the scheduler) shields nothing."""
+    procs = [_p(30, "", prio=RG["UNKNOWN"], name="python.exe"),
+             _p(31, MINER, ppid=30, started=1.0),
+             _p(40, "", prio=RG["UNKNOWN"], name="svchost.exe"),
+             _p(41, MINER, ppid=40, started=1.0)]  # fmt: skip
+    out = plan(procs, "THROTTLE", {})
+    assert set(out.set_to) == {41}
+    assert out.classes["UNREADABLE"] == 2 and out.classes["SHIELDED"] == 1
+    assert classify("") == "UNREADABLE"
+
+
+def test_an_unknown_class_is_never_written() -> None:
+    procs = [_p(1, GATE, prio=RG["UNKNOWN"]), _p(6, MINER, prio=RG["UNKNOWN"])]
+    assert not plan(procs, "THROTTLE", {}).set_to

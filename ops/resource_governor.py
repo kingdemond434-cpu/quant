@@ -77,6 +77,11 @@ LIVE_MARKERS = (
     "ftmo_follower", "fusion_executor", "mt5desk\\engine", "mt5desk/engine", "executor.py",
     "deadman", "kill_switch",
 )  # fmt: skip
+#: The judge (judge_priority.py owns its class; zuck 10-29 reserved it 8 cores). Never touched here.
+JUDGE_MARKERS = (
+    "external_gauntlet", "run_sharded_gauntlet", "rungauntlet.cmd", "warm_gauntlet_cache",
+    "run_frontier_audit",
+)  # fmt: skip
 #: Release, authority, deployment and risk controls.
 CRITICAL_MARKERS = (
     "workflow_gate.ps1", "audit_gate.py", "memecoin_gate.py", "live_first_ci.py",
@@ -88,8 +93,8 @@ CRITICAL_MARKERS = (
 #: The desk's research tree; a python whose command line names one of these is RESEARCH.
 RESEARCH_MARKERS = (
     "desks\\mt5\\research", "desks/mt5/research", "desks\\mt5\\moat", "desks/mt5/moat",
-    "department_resident", "deepening_worker", "run_sharded_gauntlet", "warm_gauntlet_cache",
-    "scout_swarm", "moat_swarm", "libs\\alpha_factory", "libs/alpha_factory", "miner",
+    "department_resident", "deepening_worker", "scout_swarm", "moat_swarm",
+    "libs\\alpha_factory", "libs/alpha_factory", "miner",
     "multiprocessing.spawn", "spawn_main", "joblib", "loky",
 )  # fmt: skip
 
@@ -99,8 +104,9 @@ class Proc:
     pid: int
     ppid: int
     cmd: str
-    prio: int
+    prio: int  # UNKNOWN when the token cannot read it
     started: float  # epoch seconds
+    name: str = ""  # image name; readable even when the command line is not
 
 
 @dataclass
@@ -112,10 +118,24 @@ class Plan:
     classes: dict[str, int] = field(default_factory=dict)
 
 
+UNKNOWN = -1
+#: Unreadable ancestors that are only the OS or the scheduler starting things, so they shield
+#: nothing. Any OTHER unreadable ancestor (a SYSTEM python or powershell) could be the gate or
+#: adoption, so nothing under it is ever lowered.
+OS_ROOTS = frozenset({
+    "system", "system idle process", "smss.exe", "csrss.exe", "wininit.exe", "services.exe",
+    "svchost.exe", "taskhostw.exe", "taskeng.exe", "explorer.exe", "winlogon.exe",
+})  # fmt: skip
+
+
 def classify(cmd: str) -> str:
     low = cmd.lower()
+    if not low.strip():
+        return "UNREADABLE"
     if any(m in low for m in LIVE_MARKERS):
         return "LIVE"
+    if any(m in low for m in JUDGE_MARKERS):
+        return "JUDGE"
     if any(m in low for m in CRITICAL_MARKERS):
         return "CRITICAL"
     if "python" in low and any(m in low for m in RESEARCH_MARKERS):
@@ -155,14 +175,20 @@ def plan(procs: list[Proc], mode: str, lowered: Mapping[int, int]) -> Plan:
     by = {p.pid: p for p in procs}
     cls = {p.pid: classify(p.cmd) for p in procs}
     live = _trees(procs, {pid for pid, c in cls.items() if c == "LIVE"})
-    crit = _trees(procs, {pid for pid, c in cls.items() if c == "CRITICAL"}) - live
+    judge = _trees(procs, {pid for pid, c in cls.items() if c == "JUDGE"}) - live
+    crit = _trees(procs, {pid for pid, c in cls.items() if c == "CRITICAL"}) - live - judge
+    unreadable = {pid for pid, c in cls.items() if c == "UNREADABLE"}
+    shield = _trees(procs, {p for p in unreadable if by[p].name.lower() not in OS_ROOTS})
     research_roots = {pid for pid, c in cls.items() if c == "RESEARCH"}
-    research = _trees(procs, research_roots) - live - crit
+    research = _trees(procs, research_roots) - live - judge - crit - shield - unreadable
     out = Plan(mode=mode, classes={
-        "LIVE": len(live), "CRITICAL": len(crit), "RESEARCH": len(research),
-        "OTHER": len(procs) - len(live) - len(crit) - len(research)})  # fmt: skip
+        "LIVE": len(live), "JUDGE": len(judge), "CRITICAL": len(crit),
+        "RESEARCH": len(research), "UNREADABLE": len(unreadable),
+        "SHIELDED": len(shield - unreadable - live - judge - crit),
+        "OTHER": len(procs) - len(live | judge | crit | research | unreadable | shield),
+    })  # fmt: skip
     for pid in crit:
-        if RANK.get(by[pid].prio, 0) < RANK[NORMAL]:
+        if by[pid].prio != UNKNOWN and RANK.get(by[pid].prio, 0) < RANK[NORMAL]:
             out.set_to[pid] = NORMAL
             out.why[pid] = "critical: reserved above research"
     if mode == "THROTTLE":
@@ -173,7 +199,7 @@ def plan(procs: list[Proc], mode: str, lowered: Mapping[int, int]) -> Plan:
         idle = set(ranked[MAX_RESEARCH_PROCS:])
         reason = f"fan-out: beyond {MAX_RESEARCH_PROCS} research processes"
     for pid in idle:
-        if RANK.get(by[pid].prio, 0) > RANK[IDLE]:
+        if by[pid].prio != UNKNOWN and RANK.get(by[pid].prio, 0) > RANK[IDLE]:
             out.set_to[pid] = IDLE
             out.why[pid] = reason
     for pid, was in lowered.items():
@@ -188,19 +214,25 @@ def _snapshot() -> tuple[list[Proc], float, float]:
 
     procs = []
     for p in psutil.process_iter(["pid", "ppid", "cmdline", "name", "create_time"]):
+        # process_iter leaves a field it was refused as None: an unreadable command line stays
+        # "" (UNREADABLE, never guessed from the image name) and an unreadable class UNKNOWN.
         try:
             info = p.info
-            cmd = " ".join(info.get("cmdline") or []) or str(info.get("name") or "")
+            try:
+                prio = int(p.nice())
+            except (psutil.AccessDenied, OSError):
+                prio = UNKNOWN
             procs.append(
                 Proc(
                     int(info["pid"]),
                     int(info.get("ppid") or 0),
-                    cmd,
-                    int(p.nice()),
+                    " ".join(info.get("cmdline") or []),
+                    prio,
                     float(info.get("create_time") or 0.0),
+                    str(info.get("name") or ""),
                 )
             )
-        except (psutil.NoSuchProcess, psutil.AccessDenied, ValueError, TypeError):
+        except (psutil.NoSuchProcess, ValueError, TypeError):
             continue
     cpu = float(psutil.cpu_percent(interval=5.0))
     free_gb = float(psutil.virtual_memory().available) / 2**30
