@@ -22,10 +22,15 @@ merely imprecise. Every source here is therefore a headline-level reader; struct
 after the ledger says which domains actually move the book.
 
 LAWFULNESS IS RECORDED PER SOURCE, NOT ASSUMED. Each source declares its licence, its terms URL
-and whether robots.txt was honoured, and those travel onto every row it produces. A source that
-cannot declare a licence is declared UNDECLARED and its rows say so -- which is a flag for review,
-not a blocker on recording. Public and licensed information only; nothing in this module has a
-path to anything else.
+and whether robots.txt was honoured, and those travel onto every row it produces. Public and
+licensed information only; nothing in this module has a path to anything else.
+
+EACH FEED'S POLICY IS A ROW OF THE ONE TABLE, `libs/data/terms_fence.SOURCE_POLICY` (ruling of
+2026-10-13: no source is banned; METHOD is audited). A feed whose publisher restricts reuse to
+non-commercial use is IDEAS_ONLY -- still fetched, its headlines read as events and ideas, never
+redistributed; an unread or clause-less one is a PUBLIC_PAGE. Only a METHOD_BLOCKED or NEEDS_KEY
+row stops a fetch, and such a feed is named in `coverage()` and in the pass's `terms_held`.
+`data/macro_feed_terms.json` keeps the quoted permitting clauses as EVIDENCE; it gates nothing.
 
 NETWORK IS BEHIND THE INTERFACE. `RssSource` is the only thing here that touches the network, it
 delegates to the desk's existing keyless `free_data.rss_fetch`, and it degrades to an empty list
@@ -37,6 +42,7 @@ cannot be verified offline.
 from __future__ import annotations
 
 import importlib
+import json
 import sys
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -47,6 +53,14 @@ from typing import Any, Protocol, runtime_checkable
 from .schema import content_id, now_iso
 
 DESK = Path(__file__).resolve().parents[1]
+
+#: THE FEED TERMS EVIDENCE (PR #262): the publisher's own terms URL and verbatim permitting clause
+#: per CLEARED feed. Evidence only -- the POLICY is `terms_fence.SOURCE_POLICY` (`feed_policy`).
+TERMS_FILE = DESK / "data" / "macro_feed_terms.json"
+CLEARED = "CLEARED"
+HOLD = "HOLD"
+#: The only statuses that stop a fetch (terms_fence.HOLDING).
+HOLDING = frozenset({"METHOD_BLOCKED", "NEEDS_KEY"})
 
 #: THE COVERAGE CHECKLIST. What this layer is meant to be able to see, so that what it cannot see
 #: is a named gap rather than a silence. Adding a domain here does not change what the desk can
@@ -71,6 +85,8 @@ __all__ = [
     "Source",
     "coverage",
     "default_sources",
+    "feed_terms",
+    "terms_verdict",
 ]
 
 
@@ -131,8 +147,9 @@ class RssSource:
 
     First-party government and central-bank feeds are the strongest sources available without a
     licence: they are the primary document rather than a report about one, they are published for
-    exactly this purpose, and their terms permit it. They are also SLOW relative to a wire -- the
-    feed is generated after the release -- and `credibility.py` measures that lateness separately
+    exactly this purpose; each one carries its policy row from `terms_fence.SOURCE_POLICY`
+    (`feed_policy`), and only a METHOD_BLOCKED / NEEDS_KEY row stops the fetch. They are also
+    SLOW relative to a wire -- the feed is generated after the release -- and `credibility.py` measures that lateness separately
     rather than letting reliability stand in for speed.
     """
 
@@ -144,8 +161,29 @@ class RssSource:
     robots_ok: bool | None = None
     domains: tuple[str, ...] = ()
     retrieval: str = "rss"
+    #: The feed's effective policy status (`terms_fence.feed_policy`); "" reads it on demand.
+    terms_status: str = ""
+    terms_quote: str = ""
+    terms_reason: str = ""
+
+    def __post_init__(self) -> None:
+        if not self.terms_status:
+            st, why = feed_status(self.source_id, self.url)
+            self.terms_status = st
+            self.terms_reason = self.terms_reason or why
+
+    @property
+    def held(self) -> bool:
+        return self.terms_status in HOLDING
+
+    @property
+    def cleared(self) -> bool:
+        return not self.held
 
     def fetch(self) -> Sequence[RawItem]:
+        if self.held:
+            # A METHOD_BLOCKED / NEEDS_KEY row: never requested, no fetcher is even imported.
+            return []
         fetcher = _rss_fetcher()
         if fetcher is None:
             return []
@@ -264,7 +302,7 @@ _OFFICIAL_FEEDS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
      ("regulatory_exchange", "corporate_credit")),
     ("ESMA", "https://www.esma.europa.eu/rss.xml",
      ("regulatory_exchange",)),
-    ("STATCAN", "https://www150.statcan.gc.ca/n1/dai-quo/rss/'daily-quotidien-eng.xml",
+    ("STATCAN", "https://www150.statcan.gc.ca/n1/dai-quo/rss/daily-quotidien-eng.xml",
      ("statistics_other",)),
     ("ABS_RBA", "https://www.rba.gov.au/rss/rss-cb-media-releases.xml",
      ("statistics_asia", "central_bank_decisions")),
@@ -301,8 +339,58 @@ def default_sources() -> list[RssSource]:
     Six first-party central-bank and statistics feeds. That is a narrow slice of `DOMAINS`, and
     `coverage()` says exactly how narrow rather than letting the ledger imply the world is quiet.
     """
-    return [RssSource(source_id=sid, url=url, domains=doms)
-            for sid, url, doms in _OFFICIAL_FEEDS]
+    terms = feed_terms()
+    out: list[RssSource] = []
+    for sid, url, doms in _OFFICIAL_FEEDS:
+        ev, row, _ = terms_verdict(sid, url, terms)
+        st, why = feed_status(sid, url)
+        out.append(RssSource(source_id=sid, url=url, domains=doms,
+                             terms_url=str(row.get("terms_url") or "") if ev == CLEARED else "",
+                             terms_quote=str(row.get("terms_quote") or "") if ev == CLEARED
+                             else "",
+                             terms_status=st, terms_reason=why))
+    return out
+
+
+def feed_status(source_id: str, url: str) -> tuple[str, str]:
+    """(status, why) for one feed from THE ONE TABLE (`terms_fence.feed_policy`). The fence is
+    imported lazily so this package still imports on a box without the repo root on sys.path; it
+    then reads UNMEASURED with the reason -- not held (no macro feed row holds), never CLEARED."""
+    root = str(DESK.parent.parent)
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    try:
+        from libs.data import terms_fence as tf
+    except Exception as exc:  # pragma: no cover - import guard
+        return "UNMEASURED", f"terms_fence unimportable: {type(exc).__name__}"
+    p = tf.feed_policy(source_id, url)
+    return str(p["status"]), str(p.get("why") or p.get("reason") or "")
+
+
+def feed_terms(path: Path | None = None) -> dict[str, Any]:
+    """The terms record, read at collection time. Absent or unreadable is {} -- every feed HOLD."""
+    try:
+        doc = json.loads(Path(path or TERMS_FILE).read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def terms_verdict(source_id: str, url: str,
+                  terms: dict[str, Any] | None = None) -> tuple[str, dict[str, Any], str]:
+    """(CLEARED|HOLD, the row, why): whether the EVIDENCE record quotes a permitting clause for
+    this exact feed. Evidence only; the fetch policy is `feed_status`."""
+    doc = feed_terms() if terms is None else terms
+    row = doc.get(source_id)
+    if not isinstance(row, dict):
+        return HOLD, {}, "no terms row for this feed"
+    if str(row.get("status")) != CLEARED:
+        return HOLD, row, str(row.get("reason") or f"status {row.get('status')!r}")
+    if not str(row.get("terms_url") or "").strip() or not str(row.get("terms_quote") or "").strip():
+        return HOLD, row, "CLEARED without a terms_url and a verbatim terms_quote admits nothing"
+    if str(row.get("feed_url") or "") != url:
+        return HOLD, row, "the clearance was read for a different feed URL"
+    return CLEARED, row, ""
 
 
 def coverage(sources: Sequence[Any] | None = None) -> dict[str, Any]:
@@ -317,6 +405,8 @@ def coverage(sources: Sequence[Any] | None = None) -> dict[str, Any]:
     srcs = list(default_sources() if sources is None else sources)
     covered: dict[str, list[str]] = {}
     for s in srcs:
+        if getattr(s, "terms_status", "") in HOLDING:
+            continue  # a held feed is never read, so it covers nothing
         for d in getattr(s, "domains", ()):
             covered.setdefault(d, []).append(getattr(s, "source_id", "?"))
     blind = [d for d in DOMAINS if d not in covered]
@@ -326,7 +416,11 @@ def coverage(sources: Sequence[Any] | None = None) -> dict[str, Any]:
         "sources": [{"id": getattr(s, "source_id", "?"), "tier": getattr(s, "tier", "UNKNOWN"),
                      "licence": getattr(s, "licence", "UNDECLARED"),
                      "retrieval": getattr(s, "retrieval", "unknown"),
+                     "terms": getattr(s, "terms_status", ""),
                      "domains": list(getattr(s, "domains", ()))} for s in srcs],
+        "terms_held": [{"id": getattr(s, "source_id", "?"), "url": getattr(s, "url", ""),
+                        "why": getattr(s, "terms_reason", "")}
+                       for s in srcs if getattr(s, "terms_status", "") in HOLDING],
         "domains_total": len(DOMAINS),
         "domains_covered": sorted(covered),
         "domains_blind": blind,

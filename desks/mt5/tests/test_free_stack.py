@@ -55,6 +55,8 @@ ROUTES: list[tuple[str, object]] = [
     ("example-ir.jp/ir/library/2026q1", "ir_doc_q1.synthetic.html"),
     ("example-ir.jp/ir/2025q4", "ir_doc_q4.synthetic.html"),
     ("example-ir.jp/ir/", "ir_page.synthetic.html"),
+    # robots read before the gtrends route (audit 0b66b08de MF5): an open file allows it
+    ("trends.google.com/robots.txt", lambda: b"User-agent: *\nDisallow: /search\n"),
     ("trends.google.com/trends/api/explore", "trends_explore.synthetic.txt"),
     ("trends.google.com/trends/api/widgetdata", "trends_multiline.synthetic.txt"),
     ("disclosures-clerk.house.gov", _house_zip),
@@ -242,7 +244,9 @@ def test_hunter_pass_on_fixtures_writes_yield_series_catalogue_and_state(store, 
         assert per[sid]["status"] == "REFUSED_HARD_BOUNDARY", sid
         assert per[sid]["attempts"] == 0 and per[sid]["last_error"], sid
     assert per["akshare"]["status"] == "OK"
-    assert per["congress_trades"]["status"] == "OK"
+    # the congress row records its publisher's terms as refused (the disclosure statute bars a
+    # commercial purpose): HELD, never fetched -- a terms verdict, not a transport failure
+    assert per["congress_trades"]["status"] == "HELD_ON_TERMS"
     assert per["coinpaprika"]["status"] == "OK"
     assert per["dataset_catalogues"]["status"] == "OK"
     # a live yield is never claimed from a fixture run
@@ -355,16 +359,20 @@ def test_families_are_registered_where_the_gauntlet_looks() -> None:
 def test_proposer_grid_has_direct_and_indirect_arms_with_culture(monkeypatch, tmp_path) -> None:
     import free_stack_proposer as P
     monkeypatch.setattr(P, "series_exists", lambda sid: True)
-    cols = {"reddit": {"GOLD_tone": {"hypothesis": ["XAUUSD"], "event": [], "why": "t"}}}
+    for k in ("REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET"):
+        monkeypatch.delenv(k, raising=False)
+    cols = {"gtrends": {"GOLD_tone": {"hypothesis": ["XAUUSD"], "event": [], "why": "t"}},
+            "reddit": {"GOLD_tone": {"hypothesis": ["XAUUSD"], "event": [], "why": "t"}}}
     grid, skipped = P.build_grid(cols, P.roster_rows())
-    assert not skipped
+    # The free stack builds LIVE INPUT; Reddit's live route is its Data API (NEEDS_KEY here).
+    assert skipped == {"reddit": "not live input (NEEDS_KEY): reddit_api"}
     fams = {c["family"] for c in grid}
     assert fams == {"exogenous_conditioner", "alt_series_momentum", "alt_conditioned"}
     assert len(grid) == len(P.CHARTS) * (8 + 8 + len(P.BASES) * len(P.REGIMES))
     for c in grid:
         assert c["source_culture"] == "US" and c["participant_structure"] == "retail_heavy"
         assert c["failure_mode_hypothesis"]
-        assert c["params"]["source"] == "fs_reddit" and c["symbol"] == "XAUUSD"
+        assert c["params"]["source"] == "fs_gtrends" and c["symbol"] == "XAUUSD"
 
 
 # --------------------------------------------------------------------------- benchmark ----
