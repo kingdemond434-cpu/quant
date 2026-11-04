@@ -443,10 +443,55 @@ def _lower_priority() -> str:
     return "idle" if out == "IDLE" or out.startswith("nice 19") else out
 
 
+#: A WORKER LEAVES WHEN ITS PARENT DOES (2026-11-04). The parent hard-stops itself at budget plus
+#: grace and kills its children first, but a parent that is TERMINATED from outside (the task
+#: scheduler's time limit, an operator, a crash) never runs that code, and on Windows a
+#: ProcessPoolExecutor worker whose parent is gone does not see the pipe close: it waits on its
+#: call queue for ever, holding its frame and feature caches. Measured by Desk health 20:12Z
+#: 2026-11-04: a warm_gauntlet_cache process resident at 4.1 GB private for ~57h. So every worker
+#: polls its parent and exits when the parent is gone. A parent whose pid now names a NEWER
+#: process (pid reuse) counts as gone; an unreadable process table counts as present -- the guard
+#: never kills a worker on a reading it cannot make.
+PARENT_POLL_SEC = float(os.environ.get("WARM_PARENT_POLL_SEC", "30"))
+
+
+def _parent_gone(ppid: int, own_created: float | None) -> bool:
+    try:
+        import psutil
+        if not psutil.pid_exists(ppid):
+            return True
+        created = psutil.Process(ppid).create_time()
+    except ImportError:
+        return False
+    except Exception as exc:
+        return type(exc).__name__ == "NoSuchProcess"
+    return own_created is not None and created > own_created + 1.0
+
+
+def _watch_parent(poll_s: float | None = None) -> None:
+    """Start the daemon thread that exits this worker once its parent is gone."""
+    ppid = os.getppid()
+    try:
+        import psutil
+        own: float | None = psutil.Process().create_time()
+    except Exception:
+        own = None
+    every = PARENT_POLL_SEC if poll_s is None else poll_s
+
+    def loop() -> None:
+        while True:
+            time.sleep(every)
+            if _parent_gone(ppid, own):
+                os._exit(0)
+
+    threading.Thread(target=loop, name="warm-parent-watch", daemon=True).start()
+
+
 def _init(meta: dict) -> None:
     global _META
     _META = meta
     _lower_priority()
+    _watch_parent()
 
 
 def _init_equal(meta: dict) -> None:
@@ -454,6 +499,7 @@ def _init_equal(meta: dict) -> None:
     global _META
     _META = meta
     _set_priority(EQUAL)
+    _watch_parent()
 
 
 def _warm_one(spec: dict) -> tuple[str, str]:
