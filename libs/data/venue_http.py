@@ -7,41 +7,36 @@ and the MT5 desk's side-channel and reference-data fetches hit public endpoints 
 way.
 
 WHY THIS EXISTS. On 2026-08-01 a study recorded a public data endpoint as BLOCKED with HTTP 403,
-with the agent proxy reporting no relay failures -- which reads unambiguously as "the source is
-refusing this box". It was not. `urllib.request.urlopen(url)` sends
-``User-Agent: Python-urllib/3.11``, and the endpoint's CDN bot-filter rejects it. The IDENTICAL
-request with a browser User-Agent returned data on the first try.
+with the agent proxy reporting no relay failures. The library default UA
+(``Python-urllib/3.11``) had drawn the 403, and the request was then re-sent with a browser
+User-Agent, which answered. That fix was impersonation and is REVERSED (auditor ruling
+2026-10-14): the desk identifies itself as itself, `polite_fetch.DESK_UA`, everywhere.
 
-That failure mode is the expensive kind: it does not throw anything that says "header", it throws
-a plausible-looking authorisation error, and the desk's convention of honestly recording blockers
-then preserves a WRONG diagnosis in an artifact forever. Every "this source is blocked" note in
-the tree deserves a re-test with a real header before it is trusted again.
-
-MEASURED 2026-08-01, same box, same proxy, across four unrelated public data hosts: the library
-default UA drew a 403 from one and the browser UA drew data from all four, at page sizes between
-300 and 1,000 rows per call.
+WHAT A 403 MEANS NOW. A 403 to the desk's honest, named User-Agent is the venue's answer to the
+desk, and it is recorded as METHOD_BLOCKED -- a site hold in the shared access state, with its
+missed-growth line -- never re-tried with a browser string. A venue that answers only browsers is
+a refused venue, not a reason to pretend to be one. 401 reads NEEDS_KEY, 429 is a hold rechecked
+after 24h, and robots.txt LABELS every request (never refuses: LAWS 5e), as for every polite
+fetch: this module is a JSON wrapper over `polite_fetch.get`, not a second HTTP client.
 
 FALLBACKS MATTER BECAUSE ONE SOURCE IS A SINGLE POINT OF FAILURE for the sample-size problem. The
 gauntlet cannot resolve a Sharpe-1 edge at 310 bars and needs roughly 1,460; that is a DATA
-requirement, so "the one host we ask is rate-limiting today" must not be able to stop it.
+requirement -- met by another source that accepts the desk, never by a disguise.
 """
 
 from __future__ import annotations
 
 import json
-import time
-import urllib.error
-import urllib.request
 from typing import Any
 
-#: A real browser User-Agent. NOT cosmetic and NOT an attempt to hide what the desk is: these are
-#: public, unauthenticated, documented market-data endpoints, and the header is what their CDN
-#: bot-filters check before answering. Sending the library default is what produced a 403 that was
-#: then recorded as a venue refusal.
-BROWSER_UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-              "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+from libs.data import polite_fetch as _pf
 
-DEFAULT_HEADERS = {"User-Agent": BROWSER_UA, "Accept": "application/json"}
+#: The desk's honest User-Agent. Kept under its own name so a reader of this module sees what is
+#: sent; it IS `polite_fetch.DESK_UA`, and `honest_headers` replaces any browser string a caller
+#: tries to pass.
+DESK_UA = _pf.DESK_UA
+
+DEFAULT_HEADERS = {"User-Agent": DESK_UA, "Accept": "application/json"}
 
 
 def get_json(
@@ -52,32 +47,22 @@ def get_json(
     backoff: float = 1.0,
     headers: dict[str, str] | None = None,
 ) -> Any:
-    """GET a public JSON endpoint and parse the reply, with the header that makes it answer.
+    """GET a public JSON endpoint politely and parse the reply.
 
-    RETRIES ON TRANSPORT AND 5xx, NOT ON 4xx. A 403 or 404 is a deterministic answer -- retrying
-    it four times just turns one wrong request into four and makes the log look like flakiness
-    rather than a bug. The exception message carries the status so the caller can record what
-    actually happened instead of "failed after 4 tries".
+    RETRIES ON TRANSPORT AND 5xx, NEVER ON A REFUSAL. 401/403/429 and a challenge record a site
+    hold and raise at once; a robots.txt Disallow is a label, never a refusal; a 404 is a
+    deterministic answer and is not retried. The exception message carries the verdict and status
+    so the caller records what actually happened instead of "failed after 4 tries".
     """
     hdr = dict(DEFAULT_HEADERS)
     if headers:
         hdr.update(headers)
-    last: Exception | None = None
-    for attempt in range(tries):
-        try:
-            req = urllib.request.Request(url, headers=hdr)
-            with urllib.request.urlopen(req, timeout=timeout) as fh:
-                return json.loads(fh.read().decode())
-        except urllib.error.HTTPError as exc:
-            if 400 <= exc.code < 500 and exc.code != 429:
-                raise RuntimeError(
-                    f"HTTP {exc.code} from {url} -- a deterministic refusal, not flakiness. If "
-                    f"this is 403, check the User-Agent before recording the venue as blocked "
-                    f"(libs/data/venue_http)."
-                ) from exc
-            last = exc
-        except Exception as exc:
-            last = exc
-        if attempt < tries - 1:
-            time.sleep(backoff * (2 ** attempt))
-    raise RuntimeError(f"GET failed after {tries} attempts: {url} :: {last}")
+    r = _pf.get(url, headers=hdr, timeout=timeout, retries=max(0, tries - 1),
+                backoff_s=backoff, leg="venue_http")
+    if r.verdict:
+        raise RuntimeError(
+            f"{r.verdict} from {url} ({r.error}) -- a refusal of the desk's honest User-Agent, "
+            "held for the site and never re-sent with a browser string (libs/data/venue_http)")
+    if not r.ok:
+        raise RuntimeError(f"GET failed after {r.attempts} attempt(s): {url} :: {r.error}")
+    return json.loads(r.text)

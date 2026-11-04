@@ -135,7 +135,7 @@ def test_the_principle_says_labels_never_stop_mining() -> None:
 def test_weight_caps_lower_evidence_and_never_block_research() -> None:
     """Fringe, retail and forum ground is a FIRST-CLASS INPUT: mined and tested exactly as hard
     as an official release, carrying less weight. Weight is about truth, permission is not."""
-    routed = ac.route({"source_id": "r/wallstreetbets", "url": "https://reddit.test/r/x",
+    routed = ac.route({"source_id": "forum/gold-board", "url": "https://forum.test/t/x",
                        "source_class": "retail_ecology"},
                       {"claim": "everyone is long gold", "credibility": "FRINGE"})
 
@@ -219,23 +219,58 @@ def test_the_boundary_is_read_before_any_permissive_label_can_rescue_it() -> Non
 
 # -------------------------------------------------- the shared fetch path carries no brake
 
-def test_no_collector_still_refuses_a_fetch_on_robots() -> None:
-    """A STRUCTURAL test, because the shared fetch helper has no unit test of its own and the
-    brake lived there longest.
+def test_every_collector_fetches_under_a_robots_label(monkeypatch: pytest.MonkeyPatch) -> None:
+    """LAWS 5e (live): robots.txt is an access LABEL, never a refusal -- "robots.txt Disallow
+    treated as a refusal" is a REMOVED_BRAKE.
 
-    `asia_collector._fetch` is called by `event_surprise` and `data_acquisition_scientist`, and
-    it used to set `status = "BLOCKED_BY_ROBOTS"` and return before fetching. Nothing pinned
-    that, so nothing would have caught it coming back. The reading is still taken and still
-    recorded (`robots`, `robots_disallows`, `terms_note`) -- what must never return is the
-    ASSIGNMENT of that status, so this asserts on the assignment and not on the name, which
-    still appears in prose and in the census tuple that prints old rows.
-    """
+    `asia_collector.collect_one` (called by `event_surprise` and `data_acquisition_scientist`)
+    asks the polite door's holds FIRST: only a person-held site hold (401/403/429/WAF) sends
+    nothing. A Disallow is recorded as PUBLIC_WITH_TERMS (`robots`, `robots_disallows`,
+    `access_label`, redistribution withheld) and the request IS sent through the polite seam.
+    Behaviour on stubs, then the same rule pinned in the scientist's own sampler."""
+    import sys
     from pathlib import Path
 
     repo = Path(__file__).resolve().parents[2]
-    for rel in ("desks/mt5/research/asia_collector.py",
-                "desks/mt5/research/data_acquisition_scientist.py"):
-        src = (repo / rel).read_text("utf-8")
-        assert '"status": "BLOCKED_BY_ROBOTS"' not in src, rel
-        assert 'status="BLOCKED_BY_ROBOTS"' not in src, rel
-        assert '= "BLOCKED_BY_ROBOTS"' not in src, rel
+    research = str(repo / "desks" / "mt5" / "research")
+    if research not in sys.path:
+        sys.path.insert(0, research)
+    import asia_collector as asc
+
+    sent: list[str] = []
+
+    def _door(req, *_a, **_k):
+        sent.append(req.full_url)
+        raise asc.PoliteRefused(req.full_url, "", "no network in this test")
+
+    def _label(lab: str):
+        def _f(url: str, **_k: object) -> dict[str, object]:
+            return {"access_label": lab, "redistribute_allowed": False,
+                    "terms_note": "robots.txt Disallow: /data" if lab != "PUBLIC" else ""}
+        return _f
+
+    monkeypatch.setattr(asc, "polite_urlopen", _door)
+    monkeypatch.setattr(asc, "admit", lambda url: (True, ""))
+    monkeypatch.setattr(asc, "access_label", _label("PUBLIC_WITH_TERMS"))
+    src = {"id": "robots_probe", "url": "https://example.invalid/data", "access": "public"}
+    rec = asc.collect_one(src)
+    assert rec["status"] != "BLOCKED_BY_ROBOTS" and rec["robots_disallows"] is True
+    assert rec["robots"].startswith("PUBLIC_WITH_TERMS")
+    assert rec["access_label"] == "PUBLIC_WITH_TERMS" and rec["redistribute_allowed"] is False
+    assert sent == ["https://example.invalid/data"], "a Disallow is a label: the door is opened"
+
+    sent.clear()
+    monkeypatch.setattr(asc, "access_label", _label("PUBLIC"))
+    rec = asc.collect_one(src)
+    assert rec["robots_disallows"] is False and rec["access_label"] == "PUBLIC"
+    assert sent == ["https://example.invalid/data"]
+
+    sent.clear()
+    monkeypatch.setattr(asc, "admit", lambda url: (False, "METHOD_BLOCKED: held"))
+    rec = asc.collect_one(src)
+    assert sent == [], "a person-held site: nothing is requested"
+    assert "held for a person" in rec["why"]
+
+    sci = (repo / "desks/mt5/research/data_acquisition_scientist.py").read_text("utf-8")
+    assert '"BLOCKED_BY_ROBOTS"' not in sci and '"status": "HELD_FOR_PERSON"' in sci
+    assert "allowed, robots_note = _robots_allows(url)" in sci

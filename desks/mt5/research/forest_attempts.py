@@ -69,8 +69,14 @@ RETIRE_MIN_SPAN_D = 7.0
 #: The re-probe: a retired ground re-enters the daily set this many days after its last attempt.
 REOPEN_AFTER_D = 30.0
 LOW_EV_RETIRED = "LOW_EV_RETIRED"
+#: A HELD ground (libs/data/terms_fence.py: METHOD_BLOCKED, or NEEDS_KEY until its key exists).
+#: Not a retirement on evidence and not a licence label: a named policy row. The miner never
+#: schedules it, so it is neither never-attempted nor overdue here. No source is banned
+#: (ruling of 2026-10-13); the state's older spelling is kept so the history stays readable.
+TERMS_FENCED = "BLOCKED_WITH_SUBSTITUTE"
 #: State per ground, one of these.
-STATES: tuple[str, ...] = ("NEVER_ATTEMPTED", "ATTEMPTED", "YIELDED", LOW_EV_RETIRED)
+STATES: tuple[str, ...] = ("NEVER_ATTEMPTED", "ATTEMPTED", "YIELDED", LOW_EV_RETIRED,
+                           TERMS_FENCED)
 REOPEN_CONDITION = (f"reopens into the daily set on ANY of: {REOPEN_AFTER_D:g} days since its "
                     "last attempt (the re-probe); a sibling ground with the same region and "
                     "language yields after its last attempt; any claim or dataset of its own")
@@ -185,6 +191,16 @@ def retired_names(grounds: list[dict[str, Any]], *, frontier: Path | None = None
     return out
 
 
+def _terms_fenced(g: dict[str, Any]) -> str | None:
+    """The HELD source a ground belongs to, or None (libs/data/terms_fence.py). If the policy
+    cannot be imported the ground is counted as any other -- the miner itself fails closed."""
+    try:
+        from libs.data import terms_fence as tf
+    except Exception:
+        return None
+    return tf.fenced_ground(g)
+
+
 def _vectors(doc: Any) -> dict[str, Any]:
     vec = doc.get("vectors") if isinstance(doc, dict) else None
     return vec if isinstance(vec, dict) else {}
@@ -245,7 +261,10 @@ def build(*, sources: Path | None = None, frontier: Path | None = None,
             v.get("last_attempt") if str(v.get("outcome") or "") == "YIELDED" else "")
         region, lang = str(g.get("region") or ""), str(g.get("language") or "")
         ret = retirement(s, v, sib.get((region, lang)), now)
-        if attempts == 0:
+        fenced = _terms_fenced(g)
+        if fenced:
+            state = TERMS_FENCED
+        elif attempts == 0:
             state = "NEVER_ATTEMPTED"
         elif ret is not None:
             state = LOW_EV_RETIRED
@@ -256,13 +275,15 @@ def build(*, sources: Path | None = None, frontier: Path | None = None,
         counts[state] += 1
         recent = la is not None and now - la <= day
         attempted_24h += int(recent)
-        exempt = ret is not None and not ret["reopen_due"]
+        exempt = bool(fenced) or (ret is not None and not ret["reopen_due"])
         is_overdue = not exempt and not recent
         overdue += int(is_overdue)
         reopen_due += int(bool(ret and ret["reopen_due"]))
         failure = ((s or {}).get("failure_reason") if (s or {}).get("failure_reason")
                    is not None else ((s or {}).get("last_error") or v.get("blocker") or ""))
-        if not failure and attempts == 0:
+        if fenced:
+            failure = f"held ({fenced}): never scheduled -- see libs/data/terms_fence.py"
+        elif not failure and attempts == 0:
             failure = "never attempted: no pass has reached this ground yet"
         b = by_region.setdefault(region or "?", dict.fromkeys((*STATES, "overdue_24h"), 0))
         b[state] += 1
@@ -280,6 +301,7 @@ def build(*, sources: Path | None = None, frontier: Path | None = None,
                              if s is not None else UNMEASURED),
             "overdue_24h": is_overdue,
             **({"retirement": ret} if ret is not None else {}),
+            **({"terms_fence": fenced} if fenced else {}),
         }
     registered = set(rows)
     orphans = sorted(set(fr) - registered)
@@ -287,11 +309,12 @@ def build(*, sources: Path | None = None, frontier: Path | None = None,
     summary = {
         "named": named,
         "never_attempted": counts["NEVER_ATTEMPTED"],
-        "attempted_ever": named - counts["NEVER_ATTEMPTED"],
+        "attempted_ever": named - counts["NEVER_ATTEMPTED"] - counts[TERMS_FENCED],
         "attempted_24h": attempted_24h,
         "overdue_24h": overdue,
         "yielded": counts["YIELDED"],
         "retired": counts[LOW_EV_RETIRED],
+        "terms_fenced": counts[TERMS_FENCED],
         "retired_reopen_due": reopen_due,
         "by_state": counts,
         "frontier_vectors_not_registered": len(orphans),

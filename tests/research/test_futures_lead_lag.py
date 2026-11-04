@@ -176,26 +176,62 @@ def test_a_failed_fetch_never_touches_the_cache(monkeypatch, tmp_path):
     assert not (tmp_path / "ref").exists()
 
 
-def test_epoch_seconds_are_parsed_as_utc(monkeypatch):
-    """This feed can measure a clock precisely because it carries no convention to be wrong
-    about: epoch seconds are UTC by definition."""
-    import io
-    import json as _json
+def test_epoch_seconds_are_parsed_as_utc():
+    """This feed could measure a clock precisely because it carries no convention to be wrong
+    about: epoch seconds are UTC by definition. The parser is kept for a licensed feed."""
     doc = {"chart": {"result": [{"timestamp": [0, 3600],
                                  "indicators": {"quote": [{"close": [1.0, 2.0]}]}}]}}
-
-    class _R(io.BytesIO):
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *a):
-            return False
-
-    monkeypatch.setattr(fll.urllib.request, "urlopen",
-                        lambda *a, **k: _R(_json.dumps(doc).encode()))
-    frame = fll.fetch_bars("GC=F")
+    frame = fll.parse_chart(doc)
     assert str(frame.index[0]) == "1970-01-01 00:00:00+00:00"
     assert str(frame.index.tz) == "UTC"
+
+
+def test_yahoo_is_refused_as_live_input_before_any_request(monkeypatch, tmp_path):
+    """THE YAHOO CUT (2026-10-14): the reference bars are live input, Yahoo is IDEAS_ONLY, so
+    the fetch door refuses the first URL and no socket is ever opened."""
+    from libs.data import terms_fence as tf
+    sent: list = []
+    monkeypatch.setattr(tf, "guarded_opener",
+                        lambda *a, **k: sent.append(a) or (_ for _ in ()).throw(AssertionError))
+    monkeypatch.setattr(fll, "CACHE", tmp_path / "ref")
+    assert fll.fetch_bars("GC=F") is None
+    assert not sent and not (tmp_path / "ref").exists()
+    assert fll.cached("GC=F") is None, "a cached Yahoo series is the same Yahoo series"
+
+
+def test_an_unlicensed_pair_is_unmeasured_with_a_missed_growth_line(monkeypatch, tmp_path):
+    monkeypatch.setattr(fll, "desk_bars", lambda s: None)
+    doc = fll.census(fetch=True)
+    assert doc["n_measured"] == 0
+    assert {p["status"] for p in doc["pairs"]} == {fll.UNMEASURED_NO_LICENSED_SOURCE}
+    assert sorted(doc["unmeasured_no_licensed_source"]) == sorted(f for f, _, _ in fll.PAIRS)
+    lines = doc["missed_growth"]
+    assert len(lines) == len(fll.PAIRS)
+    assert all(x["delta_elogw"] == "UNMEASURED" and x["kind"] == "ideas_only_refusal"
+               and x["policy_row"] == "yahoo" for x in lines)
+
+
+def test_an_unmeasured_pass_never_overwrites_the_bar_clock(monkeypatch, tmp_path):
+    """No reference feed and no tape: the clock on disk is KEPT byte for byte (the event lane
+    would drop every event without it). BAR_CLOCK.json has one writer, bar_clock_probe
+    (2026-10-21); this leg publishes the cut's missed-growth lines and the tape re-measure in its
+    OWN report only."""
+    import json as _json
+    monkeypatch.setattr(fll, "ROOT", tmp_path)
+    monkeypatch.setattr(fll, "desk_bars", lambda s: None)
+    clock = tmp_path / "desks" / "mt5" / "reports" / "BAR_CLOCK.json"
+    clock.parent.mkdir(parents=True)
+    before = '{"per_season": {"summer": {"offset_h": 3, "agrees_across_pairs": true}}}'
+    clock.write_text(before, "utf-8")
+    assert fll.main(["--no-fetch"]) == 0
+    assert clock.read_text("utf-8") == before
+    rep = _json.loads((tmp_path / "desks/mt5/reports/FUTURES_LEAD_LAG.json").read_text("utf-8"))
+    assert rep["n_measured"] == 0 and rep["missed_growth"]
+    assert all(x["delta_elogw"] == "UNMEASURED" for x in rep["missed_growth"])
+    assert rep["tape_remeasure"]["status"] == "UNMEASURED"
+    assert not any(v.get("offset_h") is not None
+                   for v in rep["clock"]["per_season"].values()), \
+        "an unmeasured pass hands the probe no season-wide offset"
 
 
 def test_the_clock_verdict_names_the_stored_scalar_it_contradicts():

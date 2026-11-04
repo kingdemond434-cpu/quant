@@ -120,9 +120,13 @@ Fence: scripts/check_carry_state.py
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
+import os
+import re
 import sys
-from datetime import UTC, datetime
+from collections.abc import Iterator
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -133,6 +137,10 @@ _PANEL = _DESK / "data" / "intelligence" / "broker_swaps"
 _TERMS = _DESK / "data" / "tape" / "contract_terms"
 _UNIVERSE = _DESK / "data" / "universe"
 _OUT = _DESK / "data" / "carry_state.json"
+#: The lake's series door (`family_exogenous_conditioner.SERIES_DIR`): the daily swap log lands
+#: here as `swap_<SYMBOL>.csv`, in the PIT envelope every `alt:` conditioner reads.
+_LAKE_SERIES = _DESK / "data" / "lake" / "series"
+SWAP_SERIES_PREFIX = "swap_"
 #: The box's swap capture age (`mt5desk.tape.publish_swap_panel`). A swap the desk cannot show is
 #: live is not a rate it holds: every reader ages it from `last_capture_at` on its OWN clock.
 _FRESHNESS = _DESK / "reports" / "BROKER_SWAPS_FRESHNESS.json"
@@ -230,6 +238,132 @@ def _load_panel(panel_dir: Path) -> dict[str, list[tuple[str, float, float]]]:
     for v in series.values():
         v.sort()
     return series
+
+
+# ------------------------------------------------------------------------ the daily swap log
+#: THE DAILY SWAP LOGGER (2026-10-14, GD queue row c). The broker's swap table is captured hourly
+#: on the box (`mt5desk.tape.publish_swap_panel`, MT5-ContractTerms) into panel files that are
+#: later compacted into `rollup_<YYYYMMDD>.jsonl.gz`. Carry reads only the LATEST terms, so the
+#: history of what the broker charged on each night was never a series anything could join on.
+#: This writes it as one: per symbol, per COMPLETE UTC day, the last swap observed that day,
+#: stamped `available_time` = the capture instant that showed it (`found_at`). Append-only: a
+#: day already in the file is never rewritten, and today (incomplete) is never written. The desk's
+#: own data, so no terms apply. A symbol with no capture is absent (UNMEASURED), never 0.
+SWAP_LOG_COLUMNS = ("event_time", "available_time", "published_time", "retrieval_time",
+                    "source_id", "swap_long", "swap_short", "swap_diff", "n_obs_day")
+
+
+def _panel_rows(panel_dir: Path) -> Iterator[dict[str, Any]]:
+    """Every swap_table row the panel holds: hourly `*.json` files and compacted rollups."""
+    if not panel_dir.exists():
+        return
+    for f in sorted(panel_dir.glob("*.json")):
+        try:
+            rows = json.loads(f.read_text("utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(rows, list):
+            yield from (r for r in rows if isinstance(r, dict))
+    for f in sorted(panel_dir.glob("rollup_*.jsonl.gz")):
+        try:
+            lines = gzip.decompress(f.read_bytes()).decode("utf-8").splitlines()
+        except (OSError, EOFError, ValueError):
+            continue
+        for ln in lines:
+            try:
+                r = json.loads(ln)
+            except ValueError:
+                continue
+            if isinstance(r, dict):
+                yield r
+
+
+def _stamp(v: Any) -> datetime | None:
+    try:
+        t = datetime.fromisoformat(str(v).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
+def daily_swap_rows(panel_dir: Path, now: datetime) -> dict[str, dict[str, dict[str, Any]]]:
+    """{symbol: {day: row}} -- the last capture of each complete UTC day before `now`."""
+    last: dict[tuple[str, date], tuple[datetime, float, float, int]] = {}
+    for r in _panel_rows(panel_dir):
+        if r.get("kind") != "swap_table" or not r.get("symbols"):
+            continue
+        t = _stamp(r.get("found_at"))
+        try:
+            lo, sh = float(r["swap_long"]), float(r["swap_short"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if t is None or t >= now or t.astimezone(UTC).date() >= now.astimezone(UTC).date():
+            continue                                       # today is not complete yet
+        key = (str(r["symbols"][0]), t.astimezone(UTC).date())
+        prev = last.get(key)
+        n = (prev[3] if prev else 0) + 1
+        if prev is None or t >= prev[0]:
+            last[key] = (t, lo, sh, n)
+        else:
+            last[key] = (*prev[:3], n)
+    out: dict[str, dict[str, dict[str, Any]]] = {}
+    for (sym, d), (t, lo, sh, n) in last.items():
+        at = t.astimezone(UTC).isoformat(timespec="seconds")
+        out.setdefault(sym, {})[d.isoformat()] = {
+            "event_time": d.isoformat(), "available_time": at, "published_time": at,
+            "retrieval_time": at, "source_id": "broker_swaps", "swap_long": lo,
+            "swap_short": sh, "swap_diff": round(lo - sh, 10), "n_obs_day": n}
+    return out
+
+
+def swap_series_name(symbol: str) -> str:
+    """`swap_<SYMBOL>`: the lake file stem, safe for the `alt:<file>:...` conditioner form."""
+    return SWAP_SERIES_PREFIX + re.sub(r"[^A-Za-z0-9._-]", "_", symbol).replace("..", "_")
+
+
+def log_daily_swaps(panel_dir: Path | None = None, out_dir: Path | None = None,
+                    now: datetime | None = None) -> dict[str, Any]:
+    """Append the complete days the panel holds to `<lake>/swap_<SYMBOL>.csv`; report counts."""
+    panel_dir = panel_dir or _PANEL
+    out_dir = out_dir or _LAKE_SERIES
+    now = now or datetime.now(UTC)
+    days = daily_swap_rows(panel_dir, now)
+    added = total = 0
+    unreadable: list[dict[str, str]] = []
+    for sym, rows in sorted(days.items()):
+        target = out_dir / f"{swap_series_name(sym)}.csv"
+        have: dict[str, dict[str, Any]] = {}
+        if target.exists():
+            try:
+                old = pd.read_csv(target, dtype={"event_time": str})
+                have = {str(r["event_time"]): r for r in old.to_dict("records")}
+            except (OSError, ValueError, KeyError) as exc:
+                # An unreadable log is NEVER replaced (GD queue-rows audit MF2): rewriting it from
+                # the panel would delete every logged day the panel has since pruned.
+                unreadable.append({"symbol": sym, "path": str(target),
+                                   "error": f"{type(exc).__name__}: {exc}"[:200]})
+                continue
+        new = {d: r for d, r in rows.items() if d not in have}
+        total += len(have) + len(new)
+        if not new:
+            continue
+        added += len(new)
+        merged = sorted([*have.values(), *new.values()], key=lambda r: str(r["event_time"]))
+        out_dir.mkdir(parents=True, exist_ok=True)
+        tmp = target.with_suffix(f".tmp{os.getpid()}")
+        pd.DataFrame(merged, columns=list(SWAP_LOG_COLUMNS)).to_csv(tmp, index=False)
+        os.replace(tmp, target)
+    all_days = sorted(d for rows in days.values() for d in rows)
+    return {"out_dir": str(out_dir), "panel": str(panel_dir),
+            "n_symbols": len(days), "n_rows_added": added, "n_rows_total": total,
+            "unreadable_logs": unreadable,
+            "first_day": all_days[0] if all_days else None,
+            "last_day": all_days[-1] if all_days else None,
+            # an unreadable log was skipped (never overwritten): the pass is not a clean LOGGED
+            "status": (("LOGGED_WITH_UNREADABLE" if unreadable else "LOGGED") if days else
+                       "UNMEASURED: no swap capture in the panel (no terminal evidence here)"),
+            "rule": ("one row per symbol per complete UTC day: the day's last capture, "
+                     "available_time = that capture's found_at; append-only, never rewritten")}
 
 
 def _last_close(symbol: str, universe_dir: Path) -> float | None:
@@ -500,9 +634,21 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--panel", type=Path, default=None)
     ap.add_argument("--terms", type=Path, default=None)
     ap.add_argument("--universe", type=Path, default=None)
+    ap.add_argument("--lake-dir", type=Path, default=None,
+                    help="where the daily swap log lands (default data/lake/series)")
     args = ap.parse_args(argv)
 
+    # the daily swap log runs first and on its own: a carry state that cannot resolve still
+    # leaves the nights the broker was seen charging
+    lake = log_daily_swaps(args.panel, args.lake_dir)
+    print(f"carry_state: swap log {lake['status']}: {lake['n_symbols']} symbols, "
+          f"+{lake['n_rows_added']} day rows ({lake['n_rows_total']} held) -> {lake['out_dir']}")
+    if lake.get("unreadable_logs"):
+        print(f"carry_state: {len(lake['unreadable_logs'])} unreadable swap log(s) skipped, "
+              "never overwritten: " + ", ".join(str(u.get("symbol")) for u in
+                                                 lake["unreadable_logs"]))
     rep = build(args.panel, args.terms, args.universe)
+    rep["swap_lake"] = lake
     if not rep["symbols"]:
         print("carry_state: NO SYMBOLS RESOLVED -- refusing to write an empty carry state "
               f"(panel {args.panel or _PANEL}, terms {args.terms or _TERMS}). "

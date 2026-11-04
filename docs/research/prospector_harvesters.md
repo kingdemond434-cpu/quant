@@ -12,19 +12,20 @@ signal_id already in the file. Single-threaded with a delay: the 4-thread
 version got this IP blocked at ~175 signals on 2026-08-27.
 """
 import json,os,re,sys,time,urllib.parse
-import urllib.request as U
-H={'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36',
-   'Accept-Language':'en-US,en;q=0.9'}
+# The desk's honest User-Agent, never a browser string (auditor ruling 2026-10-14). Import it,
+# never copy it; a 401/403/429 or challenge is a hard stop held for a person, never retried.
+from libs.data.polite_fetch import DESK_UA
+H={'User-Agent':DESK_UA,'Accept-Language':'en-US,en;q=0.9'}
 XH=dict(H,**{'X-Requested-With':'XMLHttpRequest'})
 DELAY=float(os.environ.get('MQL5_DELAY','2.5'))
 def get(url,hdr=H,tries=3):
-    for k in range(tries):
-        try:
-            with U.urlopen(U.Request(url,headers=hdr),timeout=30) as f:
-                time.sleep(DELAY); return f.read().decode('utf-8','replace')
-        except Exception as e:
-            last=e; time.sleep(5*(k+1)*DELAY)
-    print(f'FAIL {url}: {last}',file=sys.stderr); return ''
+    # Through polite_fetch.get: the terms fence, robots.txt and the person-held site holds
+    # decide; 5xx is retried, 401/403/429/WAF is a hard stop that ends the harvest.
+    from libs.data import polite_fetch as pf
+    r=pf.get(url,headers=hdr,retries=tries-1,leg='mql5_harvest'); time.sleep(DELAY)
+    if r.verdict: sys.exit(f'HARD STOP {url}: {r.verdict} -- held until a person releases it')
+    if not r.ok: print(f'FAIL {url}: {r.error}',file=sys.stderr); return ''
+    return r.text
 ROW=re.compile(r"LoadBrokerSlippage\(this,'((?:[^'\\]|\\.)*)',\d+\)\">.*?<span>([\d.]+)\s*<em>&times;\s*(\d+)</em>",re.S)
 SYM=re.compile(r'symbol-col__wrapper">([^<]+)</div>.*?<span>([\d.]+)\s*<em>&times;\s*(\d+)</em>',re.S)
 PROV=re.compile(r'quotes from &quot;([^&]+)&quot;')

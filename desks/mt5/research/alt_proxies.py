@@ -8,6 +8,15 @@ migration) and satellite/AIS (Busan, SingStat, China MOT ports). Each row names 
 `substitutes_for`; `substitute_agreement` measures each against an overlapping free series on the
 same keys (the paid originals are not held). They ride this organ's hourly clock unchanged.
 
+PASS 5 (PASS5_SOURCES, 2026-10-14). HKMA interbank liquidity -- the Convertibility Undertaking
+flow (the Aggregate Balance change from market activities: negative = weak-side trigger), the
+closing Aggregate Balance and HIBOR -- for USDHKD, HK50, CHINAH, USDCNH; USAJOBS federal posting
+counts (first-seen PIT; key and e-mail in headers only) for the USD crosses and US500; and the
+Wikipedia attention row extended to ja/tr/es/pt/ko currency and crisis articles (USDJPY, USDTRY,
+USDMXN, USDBRL, USDKRW) under the Wikimedia User-Agent policy. FINRA Reg SHO short volume and
+Adzuna vacancy counts are HELD on their publishers' own terms: held-route rows of the one register
+(libs/data/terms_fence.SOURCE_POLICY), reported through HELD_ROUTES, never fetched.
+
 BLOCKED+SUBSTITUTE. A source the terms gate blocks is never fetched. SUBSTITUTED_BY names the
 CANDIDATE lawful rows that may stand in for it (e-Stat immigration for JNTO, HK Immigration
 crossings for Baidu migration / Maoyan / the holiday tallies, TÜİK for BKM, BCB Open Data for
@@ -758,7 +767,27 @@ WIKI_ASIA_ARTICLES: tuple[tuple[str, str, str], ...] = (
     ("ja_boj", "ja.wikipedia", "日本銀行"), ("ja_nikkei", "ja.wikipedia", "日経平均株価"),
     ("zh_pboc", "zh.wikipedia", "中国人民银行"), ("zh_rmb", "zh.wikipedia", "人民币"),
     ("zh_hsi", "zh.wikipedia", "恒生指数"), ("ko_bok", "ko.wikipedia", "한국은행"),
-    ("ko_kospi", "ko.wikipedia", "코스피"))
+    ("ko_kospi", "ko.wikipedia", "코스피"),
+    # N6 (2026-10-14): local-language CURRENCY and CRISIS articles -- the attention shock of a
+    # domestic reader looking up their own currency (titles read off each wiki's own article,
+    # not translated: a redirect title would count only the redirect's views).
+    ("ja_yen", "ja.wikipedia", "円 (通貨)"), ("ja_yen_rate", "ja.wikipedia", "円相場"),
+    ("ja_fx_intervention", "ja.wikipedia", "外国為替平衡操作"),
+    ("tr_lira", "tr.wikipedia", "Türk lirası"),  # noqa: RUF001
+    ("tr_crisis", "tr.wikipedia", "Türkiye ekonomik krizi (2018-günümüz)"),
+    ("es_mxn", "es.wikipedia", "Peso mexicano"),
+    ("pt_brl", "pt.wikipedia", "Real (moeda brasileira)"),
+    ("ko_krw", "ko.wikipedia", "대한민국 원"), ("ko_jpy", "ko.wikipedia", "일본 엔"))
+#: The seven articles the first version read: a state that recorded `full_done` read their full
+#: history; every article added since gets its own full-history read once (`full_labels`).
+WIKI_LEGACY_LABELS: tuple[str, ...] = ("ja_boj", "ja_nikkei", "zh_pboc", "zh_rmb", "zh_hsi",
+                                       "ko_bok", "ko_kospi")
+#: The Wikimedia User-Agent policy and the Analytics API access policy require a descriptive
+#: User-Agent naming the client and a way to reach its operator ("<client>/<version> (<contact>)
+#: <library>/<version>"); a browser-looking or contact-less agent may be blocked without notice.
+#: The contact is the repository's public address unless the box overrides it.
+WIKI_CONTACT = os.environ.get("ALT_WIKI_CONTACT", "https://github.com/kingdemond434-cpu/quant")
+WIKI_UA = f"quant-desk-alt-proxies/1.1 ({WIKI_CONTACT}) python-urllib/3"
 WIKI_URL = ("https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/{project}/"
             "all-access/user/{title}/daily/{start}/{end}")
 
@@ -1691,6 +1720,375 @@ def rule_kr_mof_port(period: date) -> datetime:
     return _roll_weekday(_utc(t.year, t.month, t.day))
 
 
+# ============================================================================ pass-5 parsers
+# HKMA interbank liquidity (Convertibility Undertaking flows, Aggregate Balance, HIBOR) and
+# USAJOBS posting counts. Each parser keeps only what the publisher printed; every derived number
+# is named for what it is.
+
+def _hk_num(v: Any) -> float | None:
+    """HKMA prints some amounts as strings ("-1,234", "0", "") -- a blank is UNMEASURED, never 0."""
+    if v is None:
+        return None
+    s = str(v).strip().replace(",", "")
+    return None if s in ("", "-", "N/A", "null") else _num(s)
+
+
+def parse_hkma_liquidity(body: bytes, ctx: Ctx) -> list[Obs]:
+    """HKMA open API `daily-figures-interbank-liquidity` JSON (`result.records[]`, one row per
+    business day `end_of_date`).
+
+    `hkma_cu_flow_mn` = `market_activities` (HK$ mn): the change in the Aggregate Balance from
+    market activities, which under the Linked Exchange Rate System is the Convertibility
+    Undertaking at work -- NEGATIVE when the weak-side CU (7.85) triggered and the HKMA bought HKD
+    (banks' HKD liquidity drained), POSITIVE when the strong-side CU (7.75) triggered and it sold
+    HKD. `hkma_cu_trigger` is that flow's sign (-1 weak side, +1 strong side, 0 none) -- the CU
+    trigger as an event series. `hkma_ab_close_mn` is the closing Aggregate Balance, and
+    `hkma_hibor_on` / `hkma_hibor_1m` the overnight and 1-month HIBOR the drain pushes up. A blank
+    cell yields nothing for that series (UNMEASURED), never a zero."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    res = doc.get("result") if isinstance(doc, dict) else None
+    recs = res.get("records") if isinstance(res, dict) else None
+    if not isinstance(recs, list):
+        return []
+    out: list[Obs] = []
+    for r in recs:
+        if not isinstance(r, dict):
+            continue
+        try:
+            d = date.fromisoformat(str(r.get("end_of_date") or "")[:10])
+        except ValueError:
+            continue
+        flow = _hk_num(r.get("market_activities"))
+        if flow is not None:
+            out.append(Obs("hkma_cu_flow_mn", d, flow))
+            out.append(Obs("hkma_cu_trigger", d, float((flow > 0) - (flow < 0))))
+        for series, col in (("hkma_ab_close_mn", "closing_balance"),
+                            ("hkma_hibor_on", "hibor_overnight"),
+                            ("hkma_hibor_1m", "hibor_fixing_1m")):
+            x = _hk_num(r.get(col))
+            if x is not None:
+                out.append(Obs(series, d, x))
+    return out
+
+
+def parse_usajobs_count(body: bytes, ctx: Ctx) -> list[Obs]:
+    """USAJOBS Search API JSON: `SearchResult.SearchResultCountAll`, the number of announcements
+    matching the request's filters (`ctx.part` names the cut: open_total, new_1d, new_1d_<group>).
+    One observation per FETCH DAY, stamped published_at = the fetch instant: a posting count is
+    knowable only when it was read (first-seen PIT), so the first read of a day is its value."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    sr = doc.get("SearchResult") if isinstance(doc, dict) else None
+    n = sr.get("SearchResultCountAll") if isinstance(sr, dict) else None
+    if isinstance(n, bool) or not isinstance(n, int | float) or n < 0:
+        return []
+    at = ctx.fetched_at.astimezone(UTC)
+    return [Obs(f"usajobs_{ctx.part or 'open_total'}", at.date(), float(n), published_at=at)]
+
+
+# ---------------------------------------------------------------------------- HK business days
+#: The hour (UTC) the HKMA stamp is placed on the next Hong Kong business day. The HKMA's API
+#: documentation states no publication time (read 2026-10-14: the dataset page gives none), so
+#: the release hour is UNMEASURED and the stamp is LATE-BIASED: 12:00 UTC = 20:00 HKT, the end of
+#: the next HK business day, never a morning it may not have reached.
+HKMA_PUB_HOUR_UTC = 12
+
+
+def hk_general_holidays(year: int) -> frozenset[date] | None:
+    """Hong Kong general holidays for `year` from the desk's ONE HK calendar
+    (`countries.hk.pack.holidays`, the General Holidays Ordinance table), or None when that table
+    has no row for the year -- an absent year is never read as 'no holidays'."""
+    import importlib
+    try:
+        holidays = importlib.import_module("countries.hk.pack").holidays
+    except Exception:                                      # pragma: no cover - import guard
+        return None
+    got = holidays(year)
+    return frozenset(date.fromisoformat(d) for d in got) if got else None
+
+
+#: Weekdays added in a year the HK table does not cover: the longest run of consecutive WEEKDAY
+#: general holidays (Lunar New Year days 1-3, or Good Friday + Easter Monday + a Ching Ming moved
+#: off the Sunday) is three, so three extra weekdays is never early (audit 2026-10-14 MF-A).
+HK_UNTABLED_EXTRA_WEEKDAYS = 3
+#: Before this date a typhoon signal 8 or a black rainstorm warning shut Hong Kong for the day
+#: (since 2024-09-23 trading and settlement continue). Those closures are not tabulated here, so a
+#: stamp landing before it takes ONE extra business day (late bias; one closure is one day).
+HK_SEVERE_WEATHER_RULE_ENDS = date(2024, 9, 23)
+
+
+def _hk_closed(d: date) -> bool:
+    hol = hk_general_holidays(d.year)
+    return d.weekday() >= 5 or (hol is not None and d in hol)
+
+
+def _hk_next_open(d: date, n: int) -> date:
+    """`d` moved forward by `n` Hong Kong business days (weekends and tabled holidays skipped)."""
+    for _ in range(n):
+        d += timedelta(days=1)
+        while _hk_closed(d):
+            d += timedelta(days=1)
+    return d
+
+
+def _hk_roll(period: date) -> tuple[date, str]:
+    """The first Hong Kong business day after `period` and how it was reached.
+    - a covered year rolls past weekends and the tabled general holidays;
+    - a day in a year the table does not cover rolls HK_UNTABLED_EXTRA_WEEKDAYS more weekdays;
+    - a stamp before HK_SEVERE_WEATHER_RULE_ENDS (untabled typhoon / black-rainstorm closures)
+      rolls one more business day.
+    Every bias is late, never early, and the basis names each one applied."""
+    d = period + timedelta(days=1)
+    while _hk_closed(d):
+        d += timedelta(days=1)
+    basis = ["hk_business_day:countries.hk.pack.holidays"]
+    uncovered = sorted({y for y in range(period.year, d.year + 1)
+                        if hk_general_holidays(y) is None})
+    if uncovered:
+        d = _hk_next_open(d, HK_UNTABLED_EXTRA_WEEKDAYS)
+        basis.append(f"late_bias:+{HK_UNTABLED_EXTRA_WEEKDAYS} HK weekdays (no HK holiday table "
+                     "for " + ",".join(str(y) for y in uncovered) + ")")
+    if period < HK_SEVERE_WEATHER_RULE_ENDS:
+        d = _hk_next_open(d, 1)
+        basis.append("late_bias:+1 HK business day (typhoon/black-rainstorm closures before "
+                     "2024-09-23 not tabulated)")
+    return d, "; ".join(basis)
+
+
+def rule_hkma_liquidity(period: date) -> datetime:
+    """The next Hong Kong business day after `end_of_date` (weekends and HK general holidays
+    rolled), 12:00 UTC: late, never early."""
+    d, _ = _hk_roll(period)
+    return _utc(d.year, d.month, d.day, HKMA_PUB_HOUR_UTC)
+
+
+def basis_hkma_liquidity(period: date) -> str:
+    return _hk_roll(period)[1]
+
+
+# ============================================================================ US net liquidity
+#: NET LIQUIDITY = Fed total assets (H.4.1, Wednesday level) - Treasury General Account (Daily
+#: Treasury Statement closing balance) - overnight reverse repo take-up (NY Fed), all in USD bn,
+#: on the Wednesday the H.4.1 describes. Three official publishers, each read on its own terms
+#: (TERMS_EVIDENCE["us_net_liquidity"]); the combination is formed in `build_points` and is
+#: available only once ALL THREE components were (the latest of the three stamps).
+NET_LIQ_ID = "us_net_liquidity"
+H41_CURRENT_URL = "https://www.federalreserve.gov/releases/h41/current/"
+H41_DATED_URL = "https://www.federalreserve.gov/releases/h41/{yyyymmdd}/"
+DTS_TGA_URL = ("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/"
+               "dts/operating_cash_balance?filter=record_date:gte:{since}"
+               "&fields=record_date,account_type,close_today_bal,open_today_bal"
+               "&sort=record_date&page[size]=10000")
+NYFED_RRP_URL = ("https://markets.newyorkfed.org/api/rp/reverserepo/propositions/search.json"
+                 "?startDate={since}&endDate={until}")
+#: History requested on the first pass; later passes re-read the last NET_LIQ_RECENT_D days.
+NET_LIQ_DEPTH_D = 3 * 365
+NET_LIQ_RECENT_D = 45
+#: Dated H.4.1 release pages walked back per pass (a Thursday each). A page that does not
+#: exist (a holiday-shifted release) is a 404: recorded as not published, never an error.
+NET_LIQ_BACK_PER_PASS = 12
+#: The late-only publication stamps, UTC. H.4.1: Thursday 16:30 ET (21:30 UTC in winter, so
+#: 21:30 is never early); the DTS: next business day ~16:00 ET (stamped 22:00 UTC); the NY Fed
+#: RRP results: ~13:15 ET the same day (stamped 19:00 UTC).
+H41_PUB_HM = (21, 30)
+DTS_PUB_HM = (22, 0)
+RRP_PUB_HM = (19, 0)
+_H41_RELEASE = re.compile(r"Release Date:\s*([A-Z][a-z]+)\.?\s+(\d{1,2}),\s*(\d{4})")
+_H41_WED = re.compile(r"Wednesday\s+([A-Z][a-z]{2})[a-z]*\.?\s+(\d{1,2}),\s*(\d{4})")
+_H41_TOTAL = re.compile(r"Total assets\s*(?:\(\s*[\d,]+\s*\)\s*)?([\d,]{5,})")
+_MON3 = {m: i for i, m in enumerate(("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug",
+                                     "Sep", "Oct", "Nov", "Dec"), 1)}
+
+
+def _nth_weekday(year: int, month: int, weekday: int, n: int) -> date:
+    """The n-th `weekday` (Mon=0) of the month; n=-1 is the last."""
+    if n > 0:
+        first = date(year, month, 1)
+        return first + timedelta(days=(weekday - first.weekday()) % 7 + 7 * (n - 1))
+    last = (date(year + (month == 12), month % 12 + 1, 1) - timedelta(days=1))
+    return last - timedelta(days=(last.weekday() - weekday) % 7)
+
+
+def _observed(d: date) -> date:
+    return d - timedelta(days=1) if d.weekday() == 5 else (
+        d + timedelta(days=1) if d.weekday() == 6 else d)
+
+
+def us_federal_holidays(year: int) -> frozenset[date]:
+    """5 U.S.C. 6103 holidays as observed: the days the Treasury publishes no DTS and the Board no
+    release (GD queue-rows audit MF1). One-off closures by executive order are the dated set
+    US_FEDERAL_CLOSURES, unioned in by `_roll_business_day`; one not yet listed can only make a
+    real stamp LATER than this rule's, never earlier than the record itself."""
+    days = {_observed(date(year, 1, 1)), _nth_weekday(year, 1, 0, 3), _nth_weekday(year, 2, 0, 3),
+            _nth_weekday(year, 5, 0, -1), _observed(date(year, 7, 4)), _nth_weekday(year, 9, 0, 1),
+            _nth_weekday(year, 10, 0, 2), _observed(date(year, 11, 11)),
+            _nth_weekday(year, 11, 3, 4), _observed(date(year, 12, 25))}
+    if year >= 2021:
+        days.add(_observed(date(year, 6, 19)))
+    if date(year + 1, 1, 1).weekday() == 5:              # next New Year observed on 12-31
+        days.add(date(year, 12, 31))
+    return frozenset(days)
+
+
+#: ONE-OFF FEDERAL CLOSURES by executive order (federal offices shut, no DTS that day): the
+#: Christmas Eve closures of 2024-12-24 and 2025-12-24, 2025-12-26, and the 2025-01-09 national
+#: day of mourning. Unioned into the roll, so a stamp can only move LATER (late-biased).
+US_FEDERAL_CLOSURES: frozenset[date] = frozenset({
+    date(2024, 12, 24), date(2025, 1, 9), date(2025, 12, 24), date(2025, 12, 26)})
+
+
+def _roll_business_day(t: datetime) -> datetime:
+    while (t.weekday() >= 5 or t.date() in us_federal_holidays(t.year)
+           or t.date() in US_FEDERAL_CLOSURES):
+        t += timedelta(days=1)
+    return t
+
+
+def _at(d: date, hm: tuple[int, int], *, next_weekday: bool = False) -> datetime:
+    """`next_weekday` rolls to the next U.S. federal BUSINESS day (weekends and observed federal
+    holidays skipped): the DTS for Wednesday 2024-11-27 was published Friday 11-29, not on
+    Thanksgiving."""
+    t = _utc(d.year, d.month, d.day, *hm)
+    if next_weekday:
+        t = _roll_business_day(t + timedelta(days=1))
+    return t
+
+
+def parse_net_liquidity(body: bytes, ctx: Ctx) -> list[Obs]:
+    """One component per body, recognised by its own shape (never by the request label):
+    the NY Fed's `repo.operations` JSON -> `rrp_bn`; the Fiscal Data `data` rows -> `tga_bn`;
+    an H.4.1 release page -> `walcl_bn`. Anything else parses to nothing."""
+    with contextlib.suppress(ValueError, UnicodeDecodeError):
+        doc = json.loads(body.decode("utf-8"))
+        if isinstance(doc, dict) and isinstance(doc.get("repo"), dict):
+            per: dict[date, float] = {}
+            for op in doc["repo"].get("operations") or []:
+                if not isinstance(op, dict) or "reverse" not in str(
+                        op.get("operationType") or "").lower():
+                    continue
+                v = _num(str(op.get("totalAmtAccepted")))
+                try:
+                    d = date.fromisoformat(str(op.get("operationDate"))[:10])
+                except ValueError:
+                    continue
+                if v is not None:
+                    per[d] = per.get(d, 0.0) + v / 1e9
+            return [Obs("rrp_bn", d, round(v, 3), _at(d, RRP_PUB_HM))
+                    for d, v in sorted(per.items())]
+        if isinstance(doc, dict) and isinstance(doc.get("data"), list):
+            out: list[Obs] = []
+            for r in doc["data"]:
+                if not isinstance(r, dict):
+                    continue
+                kind = str(r.get("account_type") or "")
+                if not (("Closing Balance" in kind and ("TGA" in kind or "General Account"
+                                                        in kind))
+                        or kind == "Federal Reserve Account"):
+                    continue
+                v = _num(str(r.get("close_today_bal")))
+                if v is None:                    # since 2021-10 the closing row is in open_today
+                    v = _num(str(r.get("open_today_bal")))
+                try:
+                    d = date.fromisoformat(str(r.get("record_date"))[:10])
+                except ValueError:
+                    continue
+                if v is not None:
+                    out.append(Obs("tga_bn", d, round(v / 1e3, 3),
+                                   _at(d, DTS_PUB_HM, next_weekday=True)))
+            return out
+        return []
+    text = _text(body)
+    rel = _H41_RELEASE.search(text)
+    head = text.find("Consolidated Statement of Condition")
+    if not rel or head < 0:
+        return []
+    mon = _MON3.get(rel.group(1)[:3])
+    if mon is None:
+        return []
+    try:
+        released = date(int(rel.group(3)), mon, int(rel.group(2)))
+    except ValueError:
+        return []
+    wed = _H41_WED.search(text, head)
+    tot = _H41_TOTAL.search(text, head)
+    if not wed or not tot or wed.group(1) not in _MON3:
+        return []
+    asof = date(int(wed.group(3)), _MON3[wed.group(1)], int(wed.group(2)))
+    v = _num(tot.group(1))
+    if v is None or not 0 <= (released - asof).days <= 3:
+        return []
+    return [Obs("walcl_bn", asof, round(v / 1e3, 3), _at(released, H41_PUB_HM))]
+
+
+def rule_net_liquidity(period: date) -> datetime:
+    """The calendar fallback when a body carried no stamp: the next federal business day, 22:00 UTC
+    -- after
+    every one of the three releases it could describe, so it is late, never early."""
+    return _at(period, (22, 0), next_weekday=True)
+
+
+def _thursdays_back(start: date, n: int) -> list[date]:
+    d = start - timedelta(days=(start.weekday() - 3) % 7)
+    return [d - timedelta(days=7 * i) for i in range(n)]
+
+
+def _net_liquidity_requests(now: datetime, state: dict[str, Any]) -> list[Request]:
+    full = bool(state.get("full_done"))
+    since = (now - timedelta(days=NET_LIQ_RECENT_D if full else NET_LIQ_DEPTH_D)).date()
+    state["full_done_next"] = True
+    reqs = [Request(DTS_TGA_URL.replace("{since}", since.isoformat()),
+                    Ctx(part="tga", fetched_at=now)),
+            Request(NYFED_RRP_URL.replace("{since}", since.isoformat())
+                    .replace("{until}", now.date().isoformat()),
+                    Ctx(part="rrp", fetched_at=now)),
+            Request(H41_CURRENT_URL, Ctx(part="walcl:current", fetched_at=now))]
+    cur = state.get("backfill_to")
+    start = date.fromisoformat(cur) if cur else (now - timedelta(days=7)).date()
+    floor = (now - timedelta(days=NET_LIQ_DEPTH_D)).date()
+    days = [d for d in _thursdays_back(start, NET_LIQ_BACK_PER_PASS) if d > floor]
+    if days:
+        reqs += [Request(H41_DATED_URL.replace("{yyyymmdd}", d.strftime("%Y%m%d")),
+                         Ctx(part=f"walcl:back:{d.isoformat()}", start=d, end=d, fetched_at=now))
+                 for d in days]
+        state["backfill_to_next"] = (days[-1] - timedelta(days=7)).isoformat()
+    return reqs
+
+
+def _net_liquidity(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    """The combined weekly series: on each H.4.1 Wednesday that has all three components, the
+    first-seen values combined, available at the LATEST of the three stamps (and first seen at
+    the latest first-seen), so no point is visible before every input was."""
+    comp: dict[str, dict[str, dict[str, Any]]] = {}
+    for row in store.values():
+        if isinstance(row, dict) and row.get("series") in ("walcl_bn", "tga_bn", "rrp_bn"):
+            comp.setdefault(str(row["series"]), {})[str(row["period"])] = row
+    sub: dict[str, Any] = {}
+    for d, w in comp.get("walcl_bn", {}).items():
+        t, r = comp.get("tga_bn", {}).get(d), comp.get("rrp_bn", {}).get(d)
+        if t is None or r is None:
+            continue
+        parts = (w, t, r)
+        v = float(w["value_first"]) - float(t["value_first"]) - float(r["value_first"])
+        sub[f"net_liquidity|{d}"] = {
+            "series": "net_liquidity", "period": d, "value_first": round(v, 3),
+            "value_last": round(v, 3),
+            "first_seen_at": max(str(p.get("first_seen_at") or "") for p in parts),
+            "published_time": max((str(p.get("published_time") or "") for p in parts),
+                                  key=lambda s: _t(s) or datetime.min.replace(tzinfo=UTC)),
+            "published_basis": ("page" if all(p.get("published_basis") == "page"
+                                               for p in parts) else "release_rule"),
+            "revision_time": None}
+    if not sub:
+        return {}
+    got = build_points(replace(src, id=src.id + "_combined"), sub)
+    return {"net_liquidity": got.get("net_liquidity", [])}
+
+
 # ============================================================================ the sources
 @dataclass(frozen=True)
 class Source:
@@ -1731,6 +2129,15 @@ class Source:
     #: first (history) fetch is that vintage, not what was known at the time. Published with the
     #: series (axis file, roster) so no reader mistakes a backfill for a first release.
     vintage: str = ""
+    #: How `rule` reached a period's stamp when that is not plain arithmetic (a holiday table, or
+    #: a late bias where the table has no year): recorded as `rule_basis` on each store row.
+    rule_basis: Callable[[date], str] | None = None
+    #: Parent selectors the conditioned children are minted on ("asia" = the gold_asia window,
+    #: XAUUSD.asia). Empty = every certified parent on the mapped instrument, as before.
+    parent_selectors: tuple[str, ...] = ()
+    #: Fetch through `libs.data.polite_fetch.get` (robots.txt, the site's access holds, honest
+    #: DESK_UA, 401/403/429/WAF a hard stop) instead of the bare fenced urlopen.
+    polite: bool = False
 
     def instruments_for(self, series: str) -> dict[str, int]:
         for prefix, m in self.series_instruments.items():
@@ -1949,6 +2356,35 @@ SOURCES: tuple[Source, ...] = (
                                  "-- a policy clock unrelated to the Fed"),
         crowding_prior="low", note="no fetch: fetch_sge_premium already records it",
         reader=read_sge_premium),
+    Source(
+        id=NET_LIQ_ID, name="US net liquidity: Fed total assets - TGA - ON RRP (weekly)",
+        url=H41_CURRENT_URL, region="US", language="en", cadence="weekly",
+        parse=parse_net_liquidity, rule=rule_net_liquidity, transform="diff_weekly",
+        instruments={"US500": 1, "NAS100": 1, "XAUUSD": 1, "EURUSD": 1, "GBPUSD": 1,
+                     "AUDUSD": 1, "USDJPY": -1, "USDCHF": -1, "USDCAD": -1},
+        signal_series=("net_liquidity",),
+        mechanism=("reserves the Fed supplies, net of the cash the Treasury parks at the Fed "
+                   "and money funds park in the reverse repo, is the dollar liquidity actually "
+                   "left in the banking system; its weekly change is a funding regime that "
+                   "risk assets and the dollar reprice to"),
+        payer=("holders who price on the policy rate alone and miss balance-sheet plumbing "
+               "(TGA rebuilds after debt-ceiling deals, RRP drains, QT run-off)"),
+        constraint=("the TGA moves on Treasury cash management and tax dates, the RRP on "
+                    "money-fund allocation; neither is a policy decision the rates market "
+                    "prices in advance"),
+        licence=("H.4.1: Board public domain; Daily Treasury Statement: Fiscal Data open data, "
+                 "commercial reuse; NY Fed Markets API: licence to access by automated "
+                 "process (all quoted in TERMS_EVIDENCE)"),
+        source_culture="US/en", participant_structure=("institutional", "policy_driven"),
+        failure_mode_hypothesis=("fails when the policy-rate path, not the balance sheet, "
+                                 "dominates (a surprise hike or cut week) and around quarter-"
+                                 "ends, when RRP swings are window dressing that reverses"),
+        crowding_prior="high",
+        note=("three publishers, one combined series: walcl_bn (H.4.1 Wednesday level), tga_bn "
+              "(DTS closing balance), rrp_bn (NY Fed ON RRP take-up); net_liquidity on each H.4.1 "
+              "Wednesday, available at the latest of the three stamps. pace = the weekly change "
+              "in USD bn (the regime sign the indirect cells condition on); surprise_z = that "
+              "change against its own run-rate")),
 )
 
 # ---------------------------------------------------------------------------- paid substitutes
@@ -2005,30 +2441,47 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
               "per slot and published only for days whose 96 slots were all read (<= 8 gaps). "
               "GKG themes are not read (files are 10x larger); CAMEO roots stand in for themes")),
     Source(
-        id="wiki_asia_attention", name="Asian-language Wikipedia attention (ja/zh/ko pageviews)",
+        id="wiki_asia_attention",
+        name="Local-language Wikipedia attention (ja/zh/ko/tr/es/pt pageviews)",
         url=WIKI_URL, region="ASIA",
-        language="ja/zh/ko", cadence="daily", parse=parse_wikimedia,
+        language="ja/zh/ko/tr/es/pt", cadence="daily", parse=parse_wikimedia,
         rule=_lag_rule(1, 12), transform="anomaly_daily",
         instruments={"USDJPY": -1},
+        # Order matters: `instruments_for` takes the FIRST matching prefix, so the specific
+        # currency labels precede the bare language prefixes. The currency signs are the
+        # REVERSAL prior of an attention shock (a spike in the domestic reader's lookups of
+        # their own currency marks a capitulation the pair gives back); the gain test, not this
+        # sign, decides whether it holds.
         series_instruments={"ja_boj": {"USDJPY": -1, "EURJPY": -1},
                             "ja_nikkei": {"JPN225": -1},
+                            "ja_yen": {"USDJPY": -1}, "ja_fx_intervention": {"USDJPY": -1},
+                            "tr_": {"USDTRY": -1}, "es_mxn": {"USDMXN": -1},
+                            "pt_brl": {"USDBRL": -1}, "ko_jpy": {"USDJPY": -1},
                             "zh_": {"USDCNH": 1, "HK50": -1, "CHINAH": -1},
                             "ko_": {"USDKRW": 1}},
         signal_series=("ja_boj_views", "ja_nikkei_views", "zh_pboc_views", "zh_rmb_views",
-                       "zh_hsi_views", "ko_bok_views", "ko_kospi_views"),
-        mechanism=("a Japanese, Chinese or Korean reader looks up the central bank, the currency "
-                   "or the index in their own language before acting; an attention spike in the "
-                   "local language is local retail attention the English Wikipedia list misses"),
+                       "zh_hsi_views", "ko_bok_views", "ko_kospi_views", "ja_yen_views",
+                       "ja_yen_rate_views", "ja_fx_intervention_views", "tr_lira_views",
+                       "tr_crisis_views", "es_mxn_views", "pt_brl_views", "ko_krw_views",
+                       "ko_jpy_views"),
+        mechanism=("a Japanese, Chinese, Korean, Turkish, Mexican or Brazilian reader looks up "
+                   "the central bank, the currency or the index in their own language before "
+                   "acting; an attention spike in the local language is local retail attention "
+                   "the English Wikipedia list misses, and a spike in lookups of one's own "
+                   "currency is the domestic saver's crisis attention"),
         payer="local retail positioning that chases the move after the attention spike",
         constraint="retail acts on attention with a lag; institutions ignore pageviews",
         licence="Wikimedia pageviews API (CC0 data); no key",
-        source_culture="JP/ja,CN/zh,KR/ko", participant_structure=("retail_heavy",),
+        source_culture="JP/ja,CN/zh,KR/ko,TR/tr,MX/es,BR/pt",
+        participant_structure=("retail_heavy",),
         failure_mode_hypothesis=("fails when bots or a main-page feature inflate views, and "
                                  "zh.wikipedia is blocked in mainland China so its readers are "
                                  "TW/HK/diaspora, not the onshore retail base"),
         crowding_prior="low", substitutes_for=_NEWS,
-        note=("full history once, then the last 45 days each pass; the English macro list "
-              "stays in scripts/ingest_axes.py")),
+        note=("full history once per article, then the last 45 days each pass; the English "
+              "macro list stays in scripts/ingest_axes.py. Requests carry the policy User-Agent "
+              "(client, version, contact). es.wikipedia readers are not only Mexican and "
+              "pt.wikipedia not only Brazilian, so those two are diluted attention")),
     Source(
         id="us_oi_card_spend", name="Opportunity Insights / Affinity card spend (US, by sector)",
         url=("https://raw.githubusercontent.com/OpportunityInsights/EconomicTracker/main/data/"
@@ -2486,8 +2939,10 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
                                  "mechanically, and it prints later than BKM"),
         crowding_prior="low", substitutes_for=_CARD,
         note=("stands in for tr_bkm_card (BKM refuses reuse). CBRT EVDS card spending "
-              "(TP.KKHARTUT) is NOT used: the CBRT terms put commercial use under written "
-              "permission. The TÜİK data portal is a JS app, so the bulletin URL comes only from "
+              "(TP.KKHARTUT) is not used here: the tcmb.gov.tr SITE disclaimer puts commercial "
+              "use under written permission, but EVDS's own terms (terms_fence tr_evds_gold, "
+              "read 2026-10-29) permit use with the source credited, so it is a candidate. "
+              "The TÜİK data portal is a JS app, so the bulletin URL comes only from "
               "ALT_TUIK_RETAIL_URL; unset, the row is UNCONFIGURED and nothing is requested")),
     Source(
         id="kr_mof_container_teu",
@@ -2537,7 +2992,8 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
                                  "(2011-12 to 2022-23) that breaks the YoY comparison"),
         crowding_prior="low", substitutes_for=_CARD,
         vintage="current",
-        note=("CANDIDATE for in_npci_upi (NPCI robots-refused; RBI 'All Rights Reserved'), "
+        note=("CANDIDATE for in_npci_upi (NPCI terms unread, robots-labelled; RBI 'All Rights "
+              "Reserved'), "
               "UNVERIFIED until its correlation with NPCI UPI is measured >= 0.5 with n. "
               "Production, not payments: it measures the goods households buy, not the payment "
               "flow. NO DEFAULT CODE: the use-based monthly IIP resource id comes only from "
@@ -2612,8 +3068,12 @@ TERMS: dict[str, tuple[str, str]] = {
                       "no robots.txt"),
     "cn_holiday_spend": ("refused", "MCT disclaimer: no reprint, link or other copying without "
                          "written authorisation from the MCT Information Centre"),
-    "in_npci_upi": ("refused", "npci.org.in robots.txt disallows automated agents on the "
-                    "statistics path and the disclaimer page"),
+    # ROBOTS IS A LABEL, NEVER THE REFUSAL (LAWS 5e REMOVED_BRAKES: "robots.txt Disallow treated
+    # as a refusal"). This row was `refused` on robots alone; the Disallow is now its label
+    # (PUBLIC_WITH_TERMS) and it waits, like every other row, only on its TERMS being read.
+    "in_npci_upi": ("to_confirm", "terms unread: the disclaimer page was never read because "
+                    "robots.txt was treated as a refusal; robots (Disallow on the statistics path "
+                    "and the disclaimer) is a LABEL, PUBLIC_WITH_TERMS, not the block"),
     "tr_bkm_card": ("refused", "BKM legal notice: no copying or reproduction without prior "
                     "written permission; no commercial use"),
     "br_cielo_icva": ("refused", "Cielo terms: copying, reproduction or any other use of content "
@@ -2625,12 +3085,14 @@ TERMS: dict[str, tuple[str, str]] = {
     "us_oi_google_mobility": ("confirmed", "OI README: 'Anyone is welcome to use this data'"),
     "kr_kobis_box_office": ("confirmed", "KOBIS documented Open API (Korean Film Council)"),
     "kr_seoul_subway": ("confirmed", "Seoul Open Data Plaza, KOGL type 1"),
-    "cn_maoyan_box_office": ("refused", "piaofang.maoyan.com robots.txt disallows automated agents "
-                             "on the dashboard-ajax endpoint"),
+    "cn_maoyan_box_office": ("to_confirm", "terms unread: the rules page was never read because "
+                             "robots.txt was treated as a refusal; robots (Disallow on "
+                             "dashboard-ajax) is a LABEL, PUBLIC_WITH_TERMS, not the block "
+                             "(LAWS 5e)"),
     "cn_baidu_migration": ("to_confirm", "Baidu terms (baidu.com/duty) blocked by robots.txt, so "
                            "unread; huiyan has no robots.txt"),
     "kr_busan_port": ("to_confirm", "BPA copyright policy / KOGL mark not found; robots.txt "
-                      "only names Yeti and Googlebot"),
+                      "only names Naver's and Google's crawlers"),
     "sg_port_throughput": ("confirmed", "SingStat Table Builder API, Singapore Open Data Licence"),
     "cn_mot_port_weekly": ("to_confirm", "MOT disclaimer bars commercial verbatim reprint but "
                            "grants no reuse licence; no robots.txt"),
@@ -2646,6 +3108,9 @@ TERMS: dict[str, tuple[str, str]] = {
     "in_dgi_iip_consumer": ("confirmed", "GODL-India: worldwide, royalty-free licence for "
                             "commercial and non-commercial use, with attribution; data.gov.in "
                             "documented OGD API (free key)"),
+    NET_LIQ_ID: ("confirmed", "H.4.1 public domain (Board disclaimer); Fiscal Data open data "
+                 "for commercial and non-commercial use; NY Fed terms licence automated access "
+                 "(verbatim in TERMS_EVIDENCE, read 2026-10-14)"),
     "za_statssa_retail": ("to_confirm", "Stats SA publication notice read ONLY on a third-party "
                           "mirror (statssa.gov.za serves an Incapsula check); not confirmed until "
                           "read on a Stats SA page (audit 2026-10-06)"),
@@ -2779,7 +3244,8 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "terms_url": "https://www.busanpa.com/index.bpa?menuCd=DOM_000000105005001003",
         "terms_quote": ("(not found: no 저작권정책 or 공공누리 mark in the served HTML of the "
                         "home page or of the current statistics page; old board URL 404)"),
-        "robots": "rules only for Yeti and Googlebot (Disallow /iam/, /cms/, /board/download.*); "
+        "robots": "rules only for Naver's and Google's crawlers (Disallow /iam/, /cms/, "
+                  "/board/download.*); "
                   "none for other agents",
         "checked_at": _CHK},
     "cn_mot_port_weekly": {
@@ -2984,6 +3450,31 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                           "commercially or non-commercially."),
         "robots": "tablebuilder.singstat.gov.sg/api is the documented Table Builder API",
         "checked_at": _CHK},
+    NET_LIQ_ID: {
+        "terms_url": "https://www.federalreserve.gov/disclaimer.htm",
+        "terms_quote": ("Unless otherwise indicated, information on Board's website is in the "
+                        "public domain and may be copied and distributed without permission. "
+                        "Please cite to the Board as the source of the information."),
+        "tga_terms_url": "https://fiscaldata.treasury.gov/about-us/",
+        "tga_terms_quote": ("The data on this site is available to copy, adapt, redistribute, "
+                            "or otherwise use for non-commercial and commercial purposes."),
+        "rrp_terms_url": "https://www.newyorkfed.org/privacy/termsofuse",
+        "rrp_terms_quote": ("The New York Fed grants you a non-exclusive license, subject to the "
+                            "Terms, to use, copy, and distribute Content [...] Access the "
+                            "Content, manually or through an automated process or device, "
+                            "provided your access does not have the effect of disabling, "
+                            "damaging, or interfering with the function of the Website"),
+        "rrp_condition": ("When you copy or distribute any Content, you must include any "
+                          "copyright notice and other source identifiers"),
+        "judgement": ("all three permit automated reads for internal research; the Board asks "
+                      "for citation and the NY Fed for source identifiers, carried in `credit`"),
+        "robots": ("WebFetch (robots-respecting) read an H.4.1 dated release page, the Fiscal "
+                   "Data operating_cash_balance endpoint and the NY Fed reverserepo search.json "
+                   "on 2026-10-14"),
+        "credit": ("Sources: Board of Governors of the Federal Reserve System (H.4.1); U.S. "
+                   "Treasury, Bureau of the Fiscal Service (Daily Treasury Statement); Federal "
+                   "Reserve Bank of New York (reverse repo operations)."),
+        "checked_at": "2026-10-14"},
 }
 
 #: AXIS-ONLY TERMS. Sources this organ never fetches (no `Source` row, so never in BY_ID) whose
@@ -3009,8 +3500,565 @@ AXIS_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "checked_at": "2026-10-06"},
 }
 
+# ---------------------------------------------------------------------------- pass-5 sources
+#: PASS 5 (2026-10-14). HKMA interbank liquidity (F4: Convertibility Undertaking flows, the
+#: Aggregate Balance and HIBOR) and USAJOBS federal posting counts (GAP 1) ride this organ's
+#: hourly leg and its one exogenous_conditioner path unchanged. FINRA Reg SHO daily short volume
+#: (F2) and Adzuna job counts (GAP 1) are HELD on their publishers' own terms: they are rows of
+#: the one register (terms_fence.SOURCE_POLICY, held_route) and reach this organ only through
+#: HELD_ROUTES below -- a held route has no fetcher, so a Source row for it was a second register.
+HKMA_LIQUIDITY_URL = ("https://api.hkma.gov.hk/public/market-data-and-statistics/"
+                      "daily-monetary-statistics/daily-figures-interbank-liquidity")
+USAJOBS_SEARCH_URL = "https://data.usajobs.gov/api/search"
+#: (part, query) per USAJOBS request: every open announcement, those posted in the last day, and
+#: the last day's postings in four occupational series as sector cuts (2210 IT management, 0610
+#: nurse, 1102 contracting, 0801 general engineering) -- seven small requests a pass.
+USAJOBS_CUTS: tuple[tuple[str, str], ...] = (
+    ("open_total", "WhoMayApply=All"), ("new_1d", "DatePosted=1"),
+    ("new_1d_it", "DatePosted=1&JobCategoryCode=2210"),
+    ("new_1d_nurse", "DatePosted=1&JobCategoryCode=0610"),
+    ("new_1d_contracting", "DatePosted=1&JobCategoryCode=1102"),
+    ("new_1d_engineering", "DatePosted=1&JobCategoryCode=0801"))
+#: USDHKD +1: a falling balance (a weak-side drain) lifts HIBOR and narrows the USD-HKD carry,
+#: which pulls USDHKD back off the 7.85 side -- the pair FOLLOWS the balance down.
+_HKD_LIQ = {"USDHKD": 1, "HK50": 1, "CHINAH": 1, "USDCNH": -1}
+_HKD_RATE = {"USDHKD": -1, "HK50": -1, "CHINAH": -1}
+
+PASS5_SOURCES: tuple[Source, ...] = (
+    Source(
+        id="hk_hkma_liquidity",
+        name="HKMA interbank liquidity: Convertibility Undertaking flows, Aggregate Balance, "
+             "HIBOR (HKMA open API)",
+        url=os.environ.get("ALT_HKMA_LIQUIDITY_URL", HKMA_LIQUIDITY_URL),
+        region="HK", language="en", cadence="daily", parse=parse_hkma_liquidity,
+        rule=rule_hkma_liquidity, rule_basis=basis_hkma_liquidity, transform="given",
+        instruments=dict(_HKD_LIQ),
+        series_instruments={"hkma_cu_": dict(_HKD_LIQ), "hkma_ab_": dict(_HKD_LIQ),
+                            "hkma_hibor": dict(_HKD_RATE)},
+        signal_series=("hkma_cu_flow_mn", "hkma_ab_close_mn", "hkma_hibor_1m"),
+        mechanism=("under the Linked Exchange Rate System a weak-side Convertibility Undertaking "
+                   "trigger (USDHKD at 7.85) has the HKMA buy HKD, draining the Aggregate "
+                   "Balance one-for-one; a thinner balance lifts HIBOR, which tightens Hong Kong "
+                   "funding for the equity book (HK50, CHINAH) and narrows the USD-HKD carry; a "
+                   "strong-side trigger (7.75) does the reverse. The drain is printed daily, "
+                   "days before HIBOR has finished repricing"),
+        payer="HKD carry and Hong Kong equity positions funded at HIBOR",
+        constraint="the CU band is fixed; the HKMA must take every weak- or strong-side order",
+        licence=("HKMA Terms and Conditions of Use para 17: the APIs may be used to develop a "
+                 "system or service, for commercial or non-commercial purposes, that retrieves "
+                 "and analyses the information; attribution to the HKMA required"),
+        source_culture="HK/en", participant_structure=("policy_driven", "institutional"),
+        failure_mode_hypothesis=("fails when the drain is small against a large balance (the "
+                                 "2009-2021 regime, when HIBOR barely moved), and when EFBN "
+                                 "issuance, not the CU, moves the balance"),
+        crowding_prior="medium",
+        note=("PIT: the HKMA states no publication time for these daily figures (UNMEASURED; "
+              "its API page gives none), so availability is LATE-BIASED to 12:00 UTC (20:00 HKT) "
+              "of the next Hong Kong business day after end_of_date -- weekends and HK general "
+              "holidays (countries.hk.pack) rolled; a year that table lacks rolls one extra "
+              "weekday and each row's rule_basis says so. market_activities is the CU flow at "
+              "settlement. USDCNH is mapped as the "
+              "offshore-RMB funding channel (HKD liquidity is CNH liquidity's neighbour), the "
+              "weakest of the four. Credit line when published: 'Source: Hong Kong Monetary "
+              "Authority'")),
+    Source(
+        id="us_usajobs_postings",
+        name="USAJOBS federal job announcements: open and new-per-day counts, by occupational "
+             "series (OPM Search API)",
+        url=os.environ.get("ALT_USAJOBS_SEARCH_URL", USAJOBS_SEARCH_URL),
+        region="US", language="en", cadence="daily", parse=parse_usajobs_count,
+        rule=_lag_rule(1, 0), transform="level_dev",
+        instruments={"USDX": 1, "US500": 1, "EURUSD": -1, "USDJPY": 1},
+        signal_series=("usajobs_new_1d", "usajobs_open_total"),
+        key_env="USAJOBS_API_KEY", config_env=("USAJOBS_USER_AGENT",),
+        mechanism=("federal hiring is the one labour-demand series printed daily for free: new "
+                   "announcements per day against their own trailing run are a nowcast of the "
+                   "public payroll impulse (and, in a freeze or a surge, of fiscal stance) weeks "
+                   "before the payroll report"),
+        payer="positions marked to the monthly payroll consensus between releases",
+        constraint="the payroll report is monthly and federal postings move with budget law",
+        licence=("USAJOBS API Terms of Service s.2: Public Data may be copied, stored, analysed "
+                 "and used for lawful commercial or noncommercial purposes; prior OPM approval "
+                 "not required"),
+        source_culture="US/en", participant_structure=("policy_driven", "institutional"),
+        failure_mode_hypothesis=("fails because federal postings are a small, policy-driven "
+                                 "slice of US labour demand (a hiring freeze reads as weakness "
+                                 "the private economy does not share), and around fiscal-year "
+                                 "turns and shutdowns"),
+        crowding_prior="low",
+        note=("PIT = FIRST-SEEN: a count is stamped at the instant this box read it "
+              "(published_at = fetch time), so a day's value is the first read of that day; no "
+              "history exists before the first fetch. Key (Authorization-Key) and the "
+              "registered e-mail (User-Agent) travel only in headers. A missing key reads "
+              "BLOCKED_ON_KEY:USAJOBS_API_KEY (NEEDS_KEY), a missing e-mail "
+              "UNCONFIGURED:USAJOBS_USER_AGENT -- never a zero. Region cuts are not read: the "
+              "federal series is national. Credit line when published: 'Source: USAJOBS "
+              "(OPM); not endorsed by OPM'")),
+)
+
+PASS5_TERMS: dict[str, tuple[str, str]] = {
+    "hk_hkma_liquidity": ("confirmed", "HKMA Terms para 17: the APIs may be used for commercial "
+                          "or non-commercial systems that retrieve and analyse the data"),
+    "us_usajobs_postings": ("confirmed", "USAJOBS API ToS s.2: Public Data may be stored, "
+                            "analysed and used for lawful commercial purposes; no approval "
+                            "needed"),
+}
+_P5_CHK = "2026-10-14"
+PASS5_TERMS_EVIDENCE: dict[str, dict[str, str]] = {
+    "hk_hkma_liquidity": {
+        "terms_url": "https://www.hkma.gov.hk/eng/other-information/terms-and-conditions.shtml",
+        "terms_quote": ("You may use the APIs to develop, whether for commercial or "
+                        "non-commercial purposes, a software, application [para 17; the "
+                        "sentence continues: website, system or service that searches, "
+                        "displays, analyses, retrieves or views the information, subject to "
+                        "para 12] / you shall give proper attribution to the HKMA and the "
+                        "Website by identifying clearly the source of the Information "
+                        "[para 12(iii)] / at the request of the HKMA, you shall forthwith stop "
+                        "any use of the APIs. [para 17(iii)]"),
+        "robots": ("api.hkma.gov.hk is the documented open-API host (apidocs.hkma.gov.hk); "
+                   "robots.txt not readable from the authoring container"),
+        "credit": "Source: Hong Kong Monetary Authority",
+        "checked_at": _P5_CHK},
+    "us_usajobs_postings": {
+        "terms_url": "https://developer.usajobs.gov/guides/terms-of-service",
+        "terms_quote": ("Public Data may be copied, stored, reformatted, adapted, analyzed, "
+                        "published, redistributed, and used for lawful commercial or "
+                        "noncommercial purposes. Prior OPM approval is not required. / "
+                        "[prohibited:] Circumvent authentication requirements, rate limits, or "
+                        "other technical safeguards"),
+        "robots": "data.usajobs.gov/api is the documented, key-authenticated Search API",
+        "credit": "Source: USAJOBS (OPM); not operated, sponsored or endorsed by OPM",
+        "checked_at": _P5_CHK},
+}
+#: The Wikimedia pageviews row (N6) re-read on 2026-10-14 against the Analytics API's own access
+#: policy and the User-Agent policy it now complies with.
+WIKI_POLICY_EVIDENCE: dict[str, str] = {
+    "api_terms_url": ("https://doc.wikimedia.org/generated-data-platform/aqs/analytics-api/"
+                      "documentation/access-policy.html"),
+    "api_terms_quote": ("Data provided by the API is available under the CC0 1.0 license / The "
+                        "API requires an HTTP User-Agent header for all requests. / <client "
+                        "name>/<version> (<contact information>) <library/framework "
+                        "name>/<version> / wait for each request to finish before sending "
+                        "another request"),
+    "ua_policy_url": "https://meta.wikimedia.org/wiki/User-Agent_policy",
+    "ua_policy_quote": ("use an informative User-Agent string with contact information, or they "
+                        "may be IP-blocked without notice"),
+    "ua_sent": "WIKI_UA (client/version, repository contact, library); requests are sequential",
+    "policy_checked_at": _P5_CHK}
+
+TERMS.update(PASS5_TERMS)
+TERMS_EVIDENCE.update(PASS5_TERMS_EVIDENCE)
+TERMS_EVIDENCE["wiki_asia_attention"] = {**TERMS_EVIDENCE["wiki_asia_attention"],
+                                         **WIKI_POLICY_EVIDENCE}
+
+
+#: PASS 6 (2026-10-14): F2 (COMEX registered/eligible stocks, the LME cancelled-warrant share)
+#: and F4 (JPX short-selling ratio, JPX margin balances) were terms-gated first and all four are
+#: HELD on their publishers' own clauses, so none has a Source here; they join this view through
+#: their fence rows, with the OSE settlements route and the FINRA margin-statistics route.
+#: HELD ROUTES (2026-10-14, the GD queue rows) are rows of the ONE terms register,
+#: `libs/data/terms_fence.SOURCE_POLICY` (`held_route: True`): routes the queue asked for whose OWN
+#: terms were read and carry NO clause permitting automated access for internal research. None has
+#: a Source row here, so nothing is fetched (fail closed), and the run report lists each by name as
+#: HELD. This is a read-only VIEW of those rows; a route leaves it only when its fence row changes.
+from libs.data import terms_fence as _tf  # noqa: E402
+
+
+def _held_route_view(key: str) -> dict[str, str]:
+    row = _tf.SOURCE_POLICY[key]
+    terms = row.get("terms") or {}
+    quoted = " | ".join(str(v) for v in (terms.get("clauses") or {}).values())
+    unread = " | ".join(str(v) for v in (terms.get("unread") or {}).values())
+    return {"verdict": "HELD", "status": str(row["status"]), "wanted": str(row["wanted"]),
+            "terms_url": str(terms.get("url") or ""),
+            "terms_quote": quoted or f"(not readable: {unread})",
+            "reason": str(row["why"]), "robots": str(row.get("robots") or ""),
+            "unblock": str(row["unblock"]), "checked_at": str(terms.get("checked_at") or "")}
+
+
+HELD_ROUTES: dict[str, dict[str, str]] = {k: _held_route_view(k)
+                                          for k in sorted(_tf.HELD_ROUTE_KEYS)}
+
+
+def held_missed_growth_lines(paths: Any) -> list[dict[str, Any]]:
+    """One missed-growth line per held route (GROWTH GOVERNANCE: a hold carries its line). The
+    past conversion is this organ's own record of the route -- observations stored under its id
+    before the hold -- else the line says none is on record; delta E[log W] is UNMEASURED."""
+    out: list[dict[str, Any]] = []
+    for k in sorted(HELD_ROUTES):
+        store = _read_json(paths.obs_dir / f"{k}.json", {})
+        past = {"past_obs": len(store)} if isinstance(store, dict) and store else None
+        out.append(_tf.held_missed_growth(k, past))
+    return out
+
+
+# ============================================================================ Asian physical gold
+#: THE ASIAN PHYSICAL-GOLD STATES (IDEA_QUEUE 245, 237, 228, 215; 2026-10-29), each a slow state
+#: for the gold_asia XAUUSD window. Parsers and arithmetic live in `research/asia_gold_physical`
+#: (the SGE quotation parser in `research/fetch_sge_premium`, which owns SGE); this organ owns
+#: the fetch, the vintages, the PIT stamps, the axis files, the lake series and the conditioned
+#: children, exactly as for every other row. Terms come from the ONE register: TERMS below is a
+#: derived view of `terms_fence.SOURCE_POLICY` for these ids, never a second table.
+from research import asia_gold_physical as _agp  # noqa: E402
+
+#: The Trade-IDDS endpoint and its parameters are from the API Enquiry resource on DATA.GOV.HK
+#: (read 2026-10-29). The SJC, GTA and BoT paths below are the public board / history / API routes
+#: as documented by their users, UNVERIFIED from the authoring container (every host refused it);
+#: their rows are IDEAS_ONLY, so no request to them is ever built until a row flips.
+TRADE_IDDS_URL = "https://tradeidds.censtatd.gov.hk/api/get"
+SJC_PRICE_URL = "https://sjc.com.vn/GoldPrice/Services/PriceService.ashx"
+SBV_HOME_URL = "https://www.sbv.gov.vn/"
+GTA_HISTORY_URL = "https://www.goldtraders.or.th/UpdatePriceList.aspx"
+BOT_REF_RATE_URL = ("https://apigw1.bot.or.th/bot/public/Stat-ReferenceRate/v2/DAILY_REF_RATE/"
+                    "?start_period={start}&end_period={end}")
+#: Months of C&SD history requested per pass (the vintage store dedupes; a revision is recorded).
+HK_MONTHS_BACK = 36
+
+
+def _mend(ym: str) -> date:
+    y, m = int(ym[:4]), int(ym[5:7])
+    return _month_end(y, m)
+
+
+def parse_hk_csd(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Net HK -> Mainland gold flow per month (and the re-export leg), PIT by the API's own
+    release stamp when it prints one; otherwise the release rule stamps it (late)."""
+    rows = _agp.parse_csd_trade(body)
+    rel: dict[str, datetime] = {}
+    for r in rows:
+        if r.get("released") is not None:
+            rel[r["period"]] = max(rel.get(r["period"], r["released"]), r["released"])
+    out = [Obs("net_flow_hkd_k", _mend(p), v, rel.get(p))
+           for p, v in _agp.hk_net_flow(rows).items()]
+    out += [Obs("re_exports_hkd_k", _mend(r["period"]), float(r["value_hkd_k"]),
+                rel.get(r["period"])) for r in rows if r["ttype"] == "re_exports"]
+    return out
+
+
+def parse_vn_sjc(body: bytes, ctx: Ctx) -> list[Obs]:
+    """SJC board (part `sjc`) or the SBV central-rate page (part `sbv`); a part this source did
+    not name reads whichever shape the bytes are."""
+    out: list[Obs] = []
+    if ctx.part != "sjc":
+        out += [Obs("sbv_vnd_per_usd", date.fromisoformat(r["date"]), float(r["vnd_per_usd"]))
+                for r in _agp.parse_sbv_central_rate(body)]
+        if ctx.part == "sbv" or out:
+            return out
+    for r in _agp.parse_sjc_prices(body):
+        d = date.fromisoformat(r["date"])
+        out += [Obs("sjc_buy_vnd", d, float(r["buy"])), Obs("sjc_sell_vnd", d, float(r["sell"]))]
+    return out
+
+
+def parse_th_gta(body: bytes, ctx: Ctx) -> list[Obs]:
+    """The association's history table (part `gta`) or the BoT reference rate (part `bot`); a
+    part this source did not name reads whichever shape the bytes are."""
+    out: list[Obs] = []
+    if ctx.part != "gta":
+        out += [Obs("bot_thb_per_usd", date.fromisoformat(r["date"]), float(r["thb_per_usd"]))
+                for r in _agp.parse_bot_reference_rate(body)]
+        if ctx.part == "bot" or out:
+            return out
+    for d, v in _agp.gta_daily(_agp.parse_gta_history(body)).items():
+        p = date.fromisoformat(d)
+        out += [Obs("bar_buy_thb", p, v["bar_buy"]), Obs("bar_sell_thb", p, v["bar_sell"]),
+                Obs("revisions", p, v["revisions"])]
+    return out
+
+
+def parse_sge_deferral(body: bytes, ctx: Ctx) -> list[Obs]:
+    from research import fetch_sge_premium as _fsp
+    rows = _fsp.parse_daily_quotation(body.decode("utf-8", "replace"))
+    out: list[Obs] = []
+    for r in _agp.sge_deferral_state(rows):
+        d = date.fromisoformat(str(r["date"]))
+        out.append(Obs("pay_direction", d, float(r["direction"])))
+        if r.get("delivery_lots") is not None:
+            out.append(Obs("delivery_lots", d, float(r["delivery_lots"])))
+    return out
+
+
+_GOLD_META: dict[str, Any] = {
+    "instruments": {"XAUUSD": 1}, "parent_selectors": ("asia",),
+    "payer": "Western gold holders pricing on real yields and the dollar only",
+    "source_culture": "", "crowding_prior": "low"}
+
+ASIA_GOLD_SOURCES: tuple[Source, ...] = (
+    Source(
+        id=_agp.HK_ID, name="Hong Kong C&SD gold (HKHS 7108) trade with the Chinese Mainland",
+        url=TRADE_IDDS_URL, region="HK", language="en", cadence="monthly", parse=parse_hk_csd,
+        rule=_lag_rule(45, 1), transform="level_dev", signal_series=("net_flow_hkd_k",),
+        mechanism=("Hong Kong is the licensed conduit for Mainland gold imports; net flow to the "
+                   "Mainland above its own history is Chinese physical offtake the London and "
+                   "COMEX tape prices only later"),
+        constraint="PBoC import quotas set how much can cross; the flow is the quota being used",
+        licence="DATA.GOV.HK terms (commercial and non-commercial use with attribution)",
+        participant_structure=("physical_flow", "policy_driven"),
+        failure_mode_hypothesis=("fails when PBoC routes imports through Shanghai/Beijing "
+                                 "directly instead of Hong Kong -- a routing change, not demand"),
+        config_env=("ALT_CSD_MAINLAND_CODE",), polite=True,
+        note=("monthly, ~4-6 weeks after month end; PIT by the API's release stamp, else 45 "
+              "days after month end (late)"),
+        **{**_GOLD_META, "source_culture": "HK/en"}),
+    Source(
+        id=_agp.VN_ID, name="Vietnam SJC 1-tael bar premium (SJC board at the SBV central rate)",
+        url=SJC_PRICE_URL, region="VN", language="vi", cadence="daily", parse=parse_vn_sjc,
+        rule=_lag_rule(0, 12), transform="level_dev", signal_series=("premium_pct",),
+        mechanism=("a state-licensed bar whose premium to world gold is local physical demand "
+                   "and capital flight; SBV bar sales cap it, so a jump marks a supply shock"),
+        constraint="SBV licensing and direct bar sales bound how far the premium can run",
+        licence="UNREAD (terms_fence row vn_sjc_premium: IDEAS_ONLY)",
+        participant_structure=("physical_flow", "retail_heavy", "policy_driven"),
+        failure_mode_hypothesis="fails on SBV intervention days, a policy clock, not demand",
+        **{**_GOLD_META, "source_culture": "VN/vi"}),
+    Source(
+        id=_agp.TH_ID, name="Thai Gold Traders Association 96.5% bar premium (BoT reference rate)",
+        url=GTA_HISTORY_URL, region="TH", language="th", cadence="daily", parse=parse_th_gta,
+        rule=_lag_rule(0, 12), transform="level_dev", signal_series=("premium_pct", "revisions"),
+        mechanism=("Thai households buy dips and sell rallies through the shops; a premium that "
+                   "rises on a down day is physical absorption, and the day's announcement "
+                   "count is a local volatility tell"),
+        constraint="the shops quote off world gold and the baht; the premium is their inventory",
+        licence="UNREAD (terms_fence row th_gold_premium: IDEAS_ONLY)",
+        participant_structure=("physical_flow", "retail_heavy"),
+        failure_mode_hypothesis="fails when baht moves, not gold, drive the shop price",
+        **{**_GOLD_META, "source_culture": "TH/th"}),
+    Source(
+        id=_agp.SGE_ID, name="SGE Au(T+D) deferral-fee payment direction (交收方向)",
+        url="https://www.sge.com.cn/sjzx/quotation_daily_new", region="CN", language="zh",
+        cadence="daily", parse=parse_sge_deferral, rule=_lag_rule(1, 0), transform="given",
+        signal_series=("pay_direction",),
+        mechanism=("shorts pay the deferral fee when delivery demand exceeds supply; a run of "
+                   "shorts-pay days marks onshore physical tightness"),
+        constraint="the fee direction is set by the day's delivery applications, not by price",
+        licence="UNREAD (terms_fence row cn_sge_deferral: IDEAS_ONLY)",
+        participant_structure=("physical_flow", "settlement_constrained"),
+        failure_mode_hypothesis="fails around holiday delivery windows that distort applications",
+        note="the fee RATE is not in the daily table: UNMEASURED until a notice feed is read",
+        **{**_GOLD_META, "source_culture": "CN/zh"}),
+)
+
+
+#: THE TURKISH HOUSEHOLD GOLD DEMAND STATE (IDEA_QUEUE 257). Three CBRT EVDS series under the
+#: one terms row `tr_evds_gold` (EVDS's own terms permit use with the source credited; the key
+#: travels in the `key` header, never in a URL), and the Borsa Istanbul precious-metals table
+#: under `tr_bist_gold` (IDEAS_ONLY: never requested). Each conditions XAUUSD parents in the
+#: Europe AND the Asia windows. The EVDS series CODES have no default: none was readable on an
+#: official page from the authoring container, and a guessed code is never sent, so each row is
+#: UNCONFIGURED:<ENV> until the code is read from EVDS's own catalogue on the box and set.
+EVDS_BASE = os.environ.get("ALT_EVDS_BASE", "https://evds3.tcmb.gov.tr/igmevdsms-dis/")
+BIST_METAL_URL = ("https://www.borsaistanbul.com/en/data/precious-metals-and-diamond-markets/"
+                  "metal-prices")
+TR_SELECTORS = ("asia", "london", "london_am", "europe")
+#: How many days of EVDS history one pass asks for (the vintage store dedupes; the first pass on
+#: an empty store asks for the full z window and more).
+TR_EVDS_DAYS = {_agp.TR_PRICE_ID: 400, _agp.TR_IMPORT_ID: 365 * 6, _agp.TR_RESERVE_ID: 730}
+TR_EVDS_CODE_ENV = {_agp.TR_PRICE_ID: "ALT_EVDS_GOLD_PRICE_SERIES",
+                    _agp.TR_IMPORT_ID: "ALT_EVDS_GOLD_IMPORT_SERIES",
+                    _agp.TR_RESERVE_ID: "ALT_EVDS_GOLD_RESERVE_SERIES"}
+
+
+def _parse_tr_series(body: bytes, sid: str) -> list[Obs]:
+    """One EVDS series body -> Obs of row `sid`'s series. The stamp is the row's release rule
+    (EVDS prints none)."""
+    if sid not in _agp.TR_SERIES:
+        return []
+    code = config_value(TR_EVDS_CODE_ENV[sid])
+    return [Obs(_agp.TR_SERIES[sid], date.fromisoformat(r["date"]), float(r["value"]))
+            for r in _agp.parse_evds(body, code)]
+
+
+def parse_tr_evds(body: bytes, ctx: Ctx) -> list[Obs]:
+    """One EVDS series body -> Obs of the row the request part names."""
+    return _parse_tr_series(body, ctx.part)
+
+
+def _tr_parser(sid: str) -> Callable[[bytes, Ctx], list[Obs]]:
+    """The parser bound to ONE EVDS row. The three rows share one URL and one body shape, so the
+    row is the SOURCE's identity, never something read back off the request: keyed on
+    `ctx.part` alone, any caller whose Ctx did not carry the row id (a re-parse of a stored body,
+    a fixture check) got nothing at all from a body that held the series."""
+    def parse(body: bytes, ctx: Ctx) -> list[Obs]:
+        return _parse_tr_series(body, sid)
+    parse.__name__ = f"parse_tr_evds_{sid}"
+    return parse
+
+
+def parse_tr_bist(body: bytes, ctx: Ctx) -> list[Obs]:
+    out: list[Obs] = []
+    for r in _agp.parse_bist_metal_prices(body):
+        d = date.fromisoformat(r["date"])
+        out += [Obs("try_per_kg", d, r["try_per_kg"]), Obs("usd_per_oz", d, r["usd_per_oz"])]
+    return out
+
+
+def _tr_rule(sid: str) -> Callable[[date], datetime]:
+    return lambda period: _agp.tr_release_at(sid, period)
+
+
+_TR_META: dict[str, Any] = {
+    "instruments": {"XAUUSD": 1}, "parent_selectors": TR_SELECTORS, "region": "TR",
+    "language": "tr", "source_culture": "TR/tr", "crowding_prior": "low",
+    "payer": "Western gold holders pricing on real yields and the dollar only",
+    "constraint": ("CBRT-managed lira, capital-flow rules and gold import quotas slow the "
+                   "repricing; the premium is the local market clearing against them")}
+_TR_EVDS_META: dict[str, Any] = {**_TR_META, "key_env": "EVDS_API_KEY", "polite": True,
+                                 "url": EVDS_BASE, "parse": parse_tr_evds,
+                                 "licence": ("EVDS terms of use (Kullanim Sartlari): use and "
+                                             "publication with the source credited "
+                                             "(terms_fence tr_evds_gold)")}
+
+TR_GOLD_SOURCES: tuple[Source, ...] = (
+    Source(
+        id=_agp.TR_PRICE_ID, name="Turkish TRY gold price premium over XAUUSD x USDTRY (CBRT "
+        "EVDS)", cadence="daily", rule=_tr_rule(_agp.TR_PRICE_ID), transform="given",
+        signal_series=("premium_pct",), config_env=(TR_EVDS_CODE_ENV[_agp.TR_PRICE_ID],),
+        mechanism=("Turkish households hold gold as the lira's alternative; a domestic TRY gold "
+                   "price above XAUUSD x USDTRY is local demand and capital flight the London "
+                   "tape prices only later"),
+        participant_structure=("physical_flow", "retail_heavy", "policy_driven"),
+        failure_mode_hypothesis=("fails when the lira gaps (a CBRT rate shock) and the local "
+                                 "quote lags the cross, a timing artefact, not demand"),
+        note=("premium = TRY/gram / (XAUUSD x USDTRY / 31.1035 g at 995 fine) - 1, both MT5 legs "
+              "at the 12:00 UTC H1 bar; PIT: next weekday 06:00 UTC (late on purpose)"),
+        **{**_TR_EVDS_META, "parse": _tr_parser(_agp.TR_PRICE_ID)}),
+    Source(
+        id=_agp.TR_IMPORT_ID, name="Turkish monthly gold imports, surge vs prior months (CBRT "
+        "EVDS)", cadence="monthly", rule=_tr_rule(_agp.TR_IMPORT_ID),
+        transform="anomaly_monthly", signal_series=("gold_imports",),
+        config_env=(TR_EVDS_CODE_ENV[_agp.TR_IMPORT_ID],),
+        mechanism=("an import surge is household demand crossing the border; quotas and duties "
+                   "are set after the surge, so the surge leads the policy response"),
+        participant_structure=("physical_flow", "policy_driven"),
+        failure_mode_hypothesis=("fails when a quota change or a pre-duty rush moves imports "
+                                 "mechanically"),
+        note=("monthly; PIT: month end + 31 days 08:00 UTC, the TÜİK foreign-trade release "
+              "(late on purpose); the state artifact carries the import-surge z"),
+        **{**_TR_EVDS_META, "parse": _tr_parser(_agp.TR_IMPORT_ID)}),
+    Source(
+        id=_agp.TR_RESERVE_ID, name="CBRT gold reserves, weekly change (CBRT EVDS)",
+        cadence="weekly", rule=_tr_rule(_agp.TR_RESERVE_ID), transform="diff_weekly",
+        signal_series=("gold_reserves",), config_env=(TR_EVDS_CODE_ENV[_agp.TR_RESERVE_ID],),
+        mechanism=("the CBRT's gold holdings move with household gold deposited into banks "
+                   "(reserve-option and gold-deposit schemes) and official buying"),
+        participant_structure=("policy_driven",),
+        failure_mode_hypothesis="fails when valuation, not tonnage, moves the reported total",
+        note="weekly; PIT: the reading's date + 6 days 12:00 UTC (the Thursday release)",
+        **{**_TR_EVDS_META, "parse": _tr_parser(_agp.TR_RESERVE_ID)}),
+    Source(
+        id=_agp.TR_BIST_ID, name="Borsa Istanbul precious-metals gold price premium (TRY/kg)",
+        url=BIST_METAL_URL, cadence="daily", parse=parse_tr_bist,
+        rule=_tr_rule(_agp.TR_PRICE_ID), transform="given", signal_series=("premium_pct",),
+        mechanism="the exchange's own gold price is the domestic clearing level",
+        participant_structure=("physical_flow",),
+        failure_mode_hypothesis="as the CBRT price; the exchange's session clock is UNREAD",
+        licence="Borsa Istanbul notice: no copying or storing without prior written consent",
+        note="IDEAS_ONLY (terms_fence tr_bist_gold): parser on fixtures, never requested",
+        **_TR_META),
+)
+
+
+def _policy(sid: str) -> str:
+    return _agp.POLICY_OF.get(sid, sid)
+
+
+def _gold_terms(sid: str) -> tuple[str, str]:
+    return _tf.terms_verdict(_policy(sid)), str(_tf.SOURCE_POLICY[_policy(sid)]["why"])
+
+
+def _gold_evidence(sid: str) -> dict[str, str]:
+    sid = _policy(sid)
+    row = _tf.SOURCE_POLICY[sid]
+    t = row.get("terms") or {}
+    clauses = " / ".join(str(v) for v in (t.get("clauses") or {}).values())
+    unread = " | ".join(str(v) for v in (t.get("unread") or {}).values())
+    ev = {"terms_url": str(t["url"]), "terms_quote": clauses or f"(not readable: {unread})",
+          "robots": str(row.get("robots") or "not consulted: the terms are UNREAD"),
+          "checked_at": str(t["checked_at"]), "policy_row": sid}
+    if row.get("credit"):
+        ev["credit"] = str(row["credit"])
+    return ev
+
+
+TERMS.update({s.id: _gold_terms(s.id) for s in (*ASIA_GOLD_SOURCES, *TR_GOLD_SOURCES)})
+TERMS_EVIDENCE.update({s.id: _gold_evidence(s.id)
+                       for s in (*ASIA_GOLD_SOURCES, *TR_GOLD_SOURCES)})
+#: The SGE premium reader's verdict is the `sge` host row's (UNREAD terms: IDEAS_ONLY).
+TERMS["cn_sge_premium"] = (_tf.terms_verdict("sge"), str(_tf.SOURCE_POLICY["sge"]["why"]))
+
+
+def polite_get(url: str, headers: dict[str, str] | None = None) -> tuple[bytes, str]:
+    """The polite door for a `polite` source: robots.txt and the site's holds decide, the agent
+    is DESK_UA, live_input refuses an IDEAS_ONLY or held route on every hop, and a refusal or a
+    401/403/429/WAF raises (recorded by `collect`, never routed around)."""
+    from libs.data import polite_fetch
+    r = polite_fetch.get(url, headers=headers, timeout=TIMEOUT, leg=SOURCE, live_input=True)
+    if not r.ok:
+        raise urllib.error.URLError(f"{r.verdict or r.status or 'error'}: {r.error}"[:200])
+    return r.body, r.content_type
+
+
+GOLD_XAU_HOUR = _agp.XAU_HOUR
+
+
+def asia_gold_derived(paths: Paths, src: Source, store: dict[str, Any]
+                      ) -> dict[str, list[dict[str, Any]]]:
+    """The DERIVED series of the Asian gold rows, in the same PIT point envelope: the premium
+    (mid, and the buy-sell gap) for SJC and the association joined INNER with their FX leg and
+    the desk's XAUUSD, and the signed streak of the SGE payment direction. A derived point is
+    knowable only when its LAST leg is (max published_time), so no leg is read early."""
+    def _rows(name: str) -> dict[str, dict[str, Any]]:
+        return {str(r["period"]): r for r in store.values()
+                if isinstance(r, dict) and r.get("series") == name}
+
+    synth: dict[str, Any] = {}
+
+    def _add(series: str, d: str, v: float, legs: list[dict[str, Any]]) -> None:
+        synth[f"{series}|{d}"] = {
+            "series": series, "period": d, "value_first": v, "value_last": v,
+            "first_seen_at": max(str(x.get("first_seen_at")) for x in legs),
+            "published_time": max(str(x.get("published_time")) for x in legs),
+            "published_basis": "derived", "revision_time": None, "n_revisions": 0}
+
+    if src.id in GOLD_XAU_HOUR:
+        legs = (("sjc_buy_vnd", "sjc_sell_vnd", "sbv_vnd_per_usd") if src.id == _agp.VN_ID
+                else ("bar_buy_thb", "bar_sell_thb", "bot_thb_per_usd"))
+        buy, sell, fx = (_rows(n) for n in legs)
+        xau = _agp.xau_daily_close(paths.universe, GOLD_XAU_HOUR[src.id])
+        grams, purity = ((_agp.TAEL_G, _agp.SJC_PURITY) if src.id == _agp.VN_ID
+                         else (_agp.BAHT_WEIGHT_G, _agp.TH_BAR_PURITY))
+        for d in sorted(set(buy) & set(sell) & set(fx) & set(xau)):
+            rate = float(fx[d]["value_first"])
+            pb = _agp.premium_pct(_agp.usd_per_oz(float(buy[d]["value_first"]), grams, purity,
+                                                  rate), xau[d])
+            ps = _agp.premium_pct(_agp.usd_per_oz(float(sell[d]["value_first"]), grams, purity,
+                                                  rate), xau[d])
+            _add("premium_pct", d, (pb + ps) / 2.0, [buy[d], sell[d], fx[d]])
+            _add("buy_sell_gap_pct", d, ps - pb, [buy[d], sell[d], fx[d]])
+    elif src.id in (_agp.TR_PRICE_ID, _agp.TR_BIST_ID):
+        px = _rows("try_per_gram" if src.id == _agp.TR_PRICE_ID else "try_per_kg")
+        per_kg = src.id == _agp.TR_BIST_ID
+        xau = _agp.xau_daily_close(paths.universe, _agp.TR_XAU_HOUR)
+        usdtry = _agp.xau_daily_close(paths.universe, _agp.TR_XAU_HOUR, "USDTRY")
+        for d in sorted(set(px) & set(xau) & set(usdtry)):
+            g = float(px[d]["value_first"]) / (1000.0 if per_kg else 1.0)
+            _add("premium_pct", d, _agp.premium_pct(
+                _agp.usd_per_oz(g, 1.0, _agp.TR_BAR_PURITY, usdtry[d]), xau[d]), [px[d]])
+    elif src.id == _agp.SGE_ID:
+        dirs = _rows("pay_direction")
+        days = sorted(dirs)
+        for d, run_ in zip(days, _agp.streak([int(float(dirs[d]["value_first"])) for d in days]),
+                           strict=True):
+            _add("pay_streak", d, float(run_), [dirs[d]])
+    if not synth:
+        return {}
+    return build_points(replace(src, transform="level_dev" if src.id in (
+        *GOLD_XAU_HOUR, _agp.TR_PRICE_ID, _agp.TR_BIST_ID) else "given"), synth)
+
+
 SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
-                for s in (*SOURCES, *SUBSTITUTE_SOURCES))
+                for s in (*SOURCES, *SUBSTITUTE_SOURCES, *PASS5_SOURCES, *ASIA_GOLD_SOURCES,
+                          *TR_GOLD_SOURCES))
 SUBSTITUTE_SOURCES = tuple(s for s in SOURCES if s.substitutes_for)
 BY_ID = {s.id: s for s in SOURCES}
 
@@ -3052,7 +4100,7 @@ SUBSTITUTE_VS_ORIGINAL: dict[str, dict[str, dict[str, Any]]] = {}
 NO_SUBSTITUTE: dict[str, str] = {
     "in_npci_upi": ("candidate in_dgi_iip_consumer is UNVERIFIED: use-based IIP consumer goods "
                     "is factory OUTPUT, not the UPI payments flow, and no correlation against "
-                    "NPCI's monthly UPI volume/value has been measured (NPCI is robots-refused, "
+                    "NPCI's monthly UPI volume/value has been measured (NPCI terms unread, "
                     "RBI tables are 'All Rights Reserved'); COVERED only at corr >= 0.5 with n "
                     "reported"),
     "za_beti": ("candidate za_statssa_retail is UNVERIFIED: its own terms are to_confirm (only a "
@@ -3165,6 +4213,10 @@ CONFIG_DEFAULTS: dict[str, str] = {
     # and served by https://ecos.bok.or.kr/api/StatisticSearch/sample/json/kr/1/3/601Y003/M/
     # 202601/202601/201010 (three rows a month: ITEM_CODE2 00 합계, 10 은행계, 20 비은행계;
     # parse_ecos keeps 00). The older 601Y002 (by region) ENDS 202308, so it is not used.
+    # C&SD Trade-IDDS country/territory code for the Chinese Mainland (Annex 1 of the API spec,
+    # which is robots-refused to the authoring container; "CN" is the code C&SD's own API users
+    # pass). A wrong code returns no rows, which reads UNMEASURED, never a zero flow.
+    "ALT_CSD_MAINLAND_CODE": "CN",
     "ALT_ECOS_CARD_STAT": "601Y003",
     "ALT_ECOS_CARD_ITEM": "201010",
     # e-Stat statsDataId 0003449066, 出入国管理統計 "国籍・地域別 入国外国人の在留資格" (monthly,
@@ -3233,9 +4285,17 @@ def _redact(url: str, src: Source) -> str:
     return url.replace(key, f"<{src.key_env}>") if key else url
 
 
-def http_get(url: str) -> tuple[bytes, str]:
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
-    with urllib.request.urlopen(req, timeout=TIMEOUT, context=_tls()) as r:
+def http_get(url: str, headers: dict[str, str] | None = None) -> tuple[bytes, str]:
+    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*",
+                                               **(headers or {})})
+    # THE ONE FETCH DOOR, LIVE INPUT (it feeds the vintage store): the first URL and every
+    # redirect hop must be a live-input route -- a 30x into a held or IDEAS_ONLY route raises
+    # TermsFenced (pass-6 audit cf305e3d2 SHOULD-FIX 1).
+    # polite_fetch's seam opens through that door AND checks the site's holds and the origin's
+    # robots.txt on every hop first (LAWS 5e amended 2026-10-14); 401/403/429 hold the site.
+    from libs.data import polite_fetch as _pf_live
+    with _pf_live.polite_urlopen(req, timeout=TIMEOUT, live_input=True, max_bytes=MAX_BYTES,
+                                 leg="alt_proxies") as r:
         return r.read(MAX_BYTES), str(r.headers.get("Content-Type") or "")
 
 
@@ -3259,11 +4319,19 @@ def vault(paths: Paths, src: Source, body: bytes, url: str, ctype: str,
 class Request:
     url: str
     ctx: Ctx
+    #: Extra request headers (a key carried as a header, a policy-required User-Agent). Never
+    #: vaulted and never logged.
+    headers: dict[str, str] = field(default_factory=dict)
 
 
 def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
     """The requests one pass makes for a source. Paged and area sources expand here."""
     key = os.environ.get(src.key_env or "", "") if src.key_env else ""
+    if key:
+        # FIRMS, BOK ECOS, Seoul open data and INEGI carry the key as a PATH segment: registered
+        # with the access ledger's redactor so a 401/403 hold never stores it.
+        from libs.data import polite_fetch as _pf_keys
+        _pf_keys.register_secret(key)
     if src.id == "cn_firms_industrial":
         out: list[Request] = []
         end = (now - timedelta(days=1)).date()
@@ -3300,17 +4368,75 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
         return reqs
     if src.id == "gdelt_events_country":
         return _gdelt_requests(src, now, state)
+    if src.id == NET_LIQ_ID:
+        return _net_liquidity_requests(now, state)
     if src.id in DATED_SOURCES:
         recent, lag, back = DATED_SOURCES[src.id]
         return _dated_requests(src, key, now, state, recent=recent, lag=lag, back=back)
     if src.id == "wiki_asia_attention":
-        wstart = ((now - timedelta(days=45)).strftime("%Y%m%d") if state.get("full_done")
-                  else "20150701")
+        done = set(state.get("full_labels") or
+                   (WIKI_LEGACY_LABELS if state.get("full_done") else ()))
+        window = (now - timedelta(days=45)).strftime("%Y%m%d")
         state["full_done_next"] = True
-        return [Request(WIKI_URL.format(project=proj, title=urllib.parse.quote(title, safe=""),
-                                        start=wstart, end=now.strftime("%Y%m%d")),
-                        Ctx(part=label, fetched_at=now))
+        # The REST path takes the title with spaces as underscores, percent-encoded.
+        return [Request(WIKI_URL.format(project=proj,
+                                        title=urllib.parse.quote(title.replace(" ", "_"),
+                                                                 safe=""),
+                                        start=window if label in done else "20150701",
+                                        end=now.strftime("%Y%m%d")),
+                        Ctx(part=label, fetched_at=now), {"User-Agent": WIKI_UA})
                 for label, proj, title in WIKI_ASIA_ARTICLES]
+    if src.id == _agp.HK_ID:
+        # ONE request: HKHS4 7108, consignment country = the Mainland, every trade type, so the
+        # exports-to and imports-from legs of each month arrive in the same body.
+        first = (now.replace(day=1) - timedelta(days=31 * HK_MONTHS_BACK)).strftime("%Y%m")
+        last = (now.replace(day=1) - timedelta(days=1)).strftime("%Y%m")
+        q = urllib.parse.urlencode({"lang": "EN", "sv": "VCm", "freq": "M",
+                                    "period": f"{first},{last}", "ttype": "ALL",
+                                    "ccclass": "C", "cc": config_value("ALT_CSD_MAINLAND_CODE"),
+                                    "codeclass": "HKHS4", "code": "7108"})
+        return [Request(f"{src.url}?{q}", Ctx(part="csd", fetched_at=now))]
+    if src.id == _agp.VN_ID:
+        return [Request(src.url, Ctx(part="sjc", fetched_at=now)),
+                Request(SBV_HOME_URL, Ctx(part="sbv", fetched_at=now))]
+    if src.id == _agp.TH_ID:
+        d0 = (now - timedelta(days=10)).date().isoformat()
+        return [Request(src.url, Ctx(part="gta", fetched_at=now)),
+                Request(BOT_REF_RATE_URL.format(start=d0, end=now.date().isoformat()),
+                        Ctx(part="bot", fetched_at=now))]
+    if src.id in TR_EVDS_CODE_ENV:
+        # The key travels ONLY in the `key` header (EVDS moved it out of the URL), so the
+        # vaulted URL and every logged error are clean by construction. No key, no request.
+        code = config_value(TR_EVDS_CODE_ENV[src.id])
+        if not key or not _agp.evds_code_ok(code):
+            return []
+        start = (now - timedelta(days=TR_EVDS_DAYS[src.id])).date()
+        return [Request(_agp.evds_url(src.url, code, start, now.date()),
+                        Ctx(part=src.id, fetched_at=now), {_agp.EVDS_KEY_HEADER: key})]
+    if src.id == _agp.SGE_ID:
+        d0 = (now - timedelta(days=10)).date().isoformat()
+        return [Request(f"{src.url}?start_date={d0}&end_date={now.date().isoformat()}",
+                        Ctx(part="sge", fetched_at=now))]
+    if src.id == "hk_hkma_liquidity":
+        # Full history once (1,000 business days a page, newest first, until a page is empty),
+        # then the latest 60 rows each pass; the vintage store dedupes.
+        pages = range(0, 12_000, 1_000) if not state.get("full_done") else range(0, 1)
+        size = 1_000 if not state.get("full_done") else 60
+        state["full_done_next"] = True
+        return [Request(f"{src.url}?pagesize={size}&offset={o}&sortby=end_of_date"
+                        f"&sortorder=desc", Ctx(part=f"page{o}", fetched_at=now))
+                for o in pages]
+    if src.id == "us_usajobs_postings":
+        # The key and the registered e-mail travel ONLY in headers, never in the URL, so the
+        # vaulted URL and every logged error are clean by construction.
+        ua = os.environ.get("USAJOBS_USER_AGENT", "").strip()
+        if not key or not ua:
+            return []                  # never a request built without the registration pair
+        # Host is the request URL's own host (an overridden ALT_USAJOBS_SEARCH_URL included).
+        hdr = {"Host": urllib.parse.urlparse(src.url).netloc, "User-Agent": ua,
+               "Authorization-Key": key}
+        return [Request(f"{src.url}?{q}&ResultsPerPage=1", Ctx(part=part, fetched_at=now), hdr)
+                for part, q in USAJOBS_CUTS]
     if src.id == "cn_baidu_migration":
         return [Request(src.url.replace("{city}", cid), Ctx(part=city, fetched_at=now))
                 for city, cid in BAIDU_CITIES.items()]
@@ -3411,6 +4537,8 @@ def merge_vintages(store: dict[str, Any], src: Source, obs: Iterable[Obs],
                         "published_time": (pub or rule_at).isoformat(timespec="seconds"),
                         "published_basis": "page" if pub else "release_rule",
                         "revision_time": None, "n_revisions": 0}
+            if src.rule_basis is not None:
+                store[k]["rule_basis"] = src.rule_basis(o.period)
             added += 1
             continue
         row["last_seen_at"] = stamp
@@ -3492,6 +4620,11 @@ def build_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str,
                 base = vals[max(0, i - 6): i]
                 mb = _mean(base)
                 x = (v / mb - 1.0) * 100.0 if len(base) >= 3 and mb else None
+            elif src.transform == "diff_weekly":
+                # the change since the previous point, only when that point is exactly a week
+                # earlier: a missing week leaves a gap, never a two-week change called weekly
+                x = (v - vals[i - 1] if i >= 1 and (periods[i] - periods[i - 1]).days == 7
+                     else None)
             elif src.transform == "level_dev":
                 base = vals[max(0, i - 20): i]
                 mb = _mean(base)
@@ -3533,6 +4666,8 @@ def build_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str,
     # FIRMS: a total across the declared footprints, per day, from the per-cluster counts.
     if src.id == "cn_firms_industrial":
         out.update(_firms_total(src, out))
+    if src.id == NET_LIQ_ID:
+        out.update(_net_liquidity(src, store))
     return out
 
 
@@ -3885,6 +5020,16 @@ def _regime_mask(paths: Paths, src: Source, series: str, op: str, idx: Any) -> A
     return cm.ALT_OPS[op](known.astype(float), 0.0).to_numpy(dtype=bool)
 
 
+def _on_selectors(src: Source, par: dict[str, Any]) -> bool:
+    """A parent on one of the source's declared windows (`parent_selectors`), or any parent when
+    the source declares none. The gold_asia states condition only XAUUSD.asia parents."""
+    if not src.parent_selectors:
+        return True
+    tags = {str(par.get("selector") or ""), str((par.get("params") or {}).get("session") or "")}
+    name = str(par.get("name") or "")
+    return any(sel in tags or f".{sel}" in name for sel in src.parent_selectors)
+
+
 def indirect_cells(paths: Paths, points_by_source: dict[str, dict[str, list[dict[str, Any]]]],
                    state: dict[str, Any], now: datetime,
                    limit: int = INDIRECT_PER_PASS,
@@ -3915,7 +5060,8 @@ def indirect_cells(paths: Paths, points_by_source: dict[str, dict[str, list[dict
             if len(pts) < 24:
                 continue
             for sym in src.instruments_for(series):
-                for par in parents.get(sym, [])[:PARENTS_PER_SYMBOL]:
+                pool = [p for p in parents.get(sym, []) if _on_selectors(src, p)]
+                for par in pool[:PARENTS_PER_SYMBOL]:
                     if may_mint(sym, str(par.get("family") or "")):
                         pairs.append((sid, series, par))
     if not pairs:
@@ -4035,9 +5181,11 @@ def _load_fixture(fixtures: Path, src: Source, req: Request, i: int) -> bytes | 
 
 def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
             fetch: bool, fixtures: Path | None, deadline: float,
-            getter: Callable[[str], tuple[bytes, str]] = http_get) -> dict[str, Any]:
+            getter: Callable[..., tuple[bytes, str]] = http_get) -> dict[str, Any]:
     """Fetch (or read fixtures), parse, and merge into the source's vintage store."""
     rec: dict[str, Any] = {"id": src.id, "status": status_of(src)}
+    if src.polite and getter is http_get:
+        getter = polite_get
     store_p = paths.obs_dir / f"{src.id}.json"
     store = _read_json(store_p, {})
     if src.terms != "confirmed":
@@ -4073,6 +5221,7 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
     reqs = requests_for(src, now, sst)
     parsed = fetched = 0
     errors: list[str] = []
+    read_parts: list[str] = []
     for i, req in enumerate(reqs):
         if time.monotonic() > deadline:
             errors.append("budget reached: the remaining requests are owed to the next pass")
@@ -4084,10 +5233,18 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
                 continue
         elif fetch:
             try:
-                body, ctype = getter(req.url)
+                body, ctype = (getter(req.url, req.headers) if req.headers
+                               else getter(req.url))
                 fetched += 1
+                read_parts.append(req.ctx.part)
                 vault(paths, src, body, req.url, ctype, now)
             except Exception as exc:
+                if (isinstance(exc, urllib.error.HTTPError) and exc.code == 404
+                        and ":back:" in req.ctx.part):
+                    # a dated release page that does not exist (a holiday-shifted week): no
+                    # release that day, recorded by name, and the backfill cursor still moves
+                    rec.setdefault("not_published", []).append(req.ctx.part)
+                    continue
                 errors.append(f"{type(exc).__name__}: {_redact(str(exc), src)[:120]}")
                 continue
         if body is None:
@@ -4098,10 +5255,15 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec.setdefault("merge", {"added": 0, "revised": 0})
         rec["merge"]["added"] += m["added"]
         rec["merge"]["revised"] += m["revised"]
-        if src.id.startswith("imf_portwatch") and not obs:
+        if src.id.startswith(("imf_portwatch", "hk_hkma")) and not obs:
             break                                              # paging exhausted
     if src.id == "cn_firms_industrial" and "firms_backfill_to_next" in sst and not errors:
         sst["firms_backfill_to"] = sst.pop("firms_backfill_to_next")
+    if src.id == "wiki_asia_attention" and fetch and fixtures is None and read_parts:
+        # an article's full history is read once it ANSWERED; a 404 title is retried in full
+        sst["full_labels"] = sorted(
+            set(sst.get("full_labels") or (WIKI_LEGACY_LABELS if sst.get("full_done") else ()))
+            | set(read_parts))
     for k in ("backfill_to_next", "full_done_next"):
         if k in sst:
             nxt = sst.pop(k)
@@ -4377,6 +5539,8 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
             continue
         store = _read_json(paths.obs_dir / f"{src.id}.json", {})
         pts = build_points(src, store) if store else {}
+        if store and src.id in _agp.ALL_STATE_IDS:
+            pts.update(asia_gold_derived(paths, src, store))
         if pts:
             points_by_source[src.id] = pts
             if not dry_run:
@@ -4419,6 +5583,9 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
                            "rule": handoff["rule"]},
         "dead_sources": sorted(s.id for s in SOURCES if is_dead(s)),
         "blocked_on_terms": sorted(s.id for s in SOURCES if s.terms != "confirmed"),
+        "held_routes": {k: {"verdict": v["verdict"], "reason": v["reason"],
+                            "terms_url": v["terms_url"]} for k, v in sorted(HELD_ROUTES.items())},
+        "missed_growth_lines": held_missed_growth_lines(paths),
         "blocked_substituted": {sid: list(v) for sid in sorted(SUBSTITUTED_BY)
                                 if (v := verified_substitutes(sid))},
         "blocked_unsubstituted": unsubstituted(),
@@ -4443,8 +5610,14 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
         "live_yield": ("UNMEASURED until the trading box runs this leg: the fetchers were built "
                        "against fixtures because the authoring container cannot reach the hosts"),
     }
+    gold = _agp.state_from_alt(paths, records, now)
+    report["asia_gold_physical"] = {
+        "path": str(paths.desk / "reports" / _agp.STATE_FILE),
+        "verdicts": {sid: b["verdict"] for sid, b in gold["states"].items()},
+        "missed_growth_lines": gold["missed_growth_lines"]}
     state["last_run"] = report["at"]
     if not dry_run:
+        _agp.write(paths.desk / "reports" / _agp.STATE_FILE, gold)
         _atomic(paths.state, state)
         _atomic(paths.allocation_intel, intel)
         _atomic(paths.equity_handoff, handoff)

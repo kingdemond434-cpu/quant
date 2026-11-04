@@ -323,3 +323,12 @@ TASK name="Quant-BootRecord"   trigger="every 10 minutes"            runs="ops/b
 TASK name="Quant-WorkflowGate" trigger="at logon + every 10 minutes" runs="ops/box/workflow_gate.ps1"   installer="ops/box/install_unattended.ps1" lane="ops" also_runs="scripts/merge_pipeline_watch.py,scripts/live_first_ci.py"
 # The sign train's clock (#541): the audit signs a moved sealed file from its committed CLEAR row.
 TASK name="Quant-SignTrain"    trigger="at logon + every 10 minutes" runs="ops/box/sign_train_leg.ps1" installer="ops/box/install_unattended.ps1" lane="ops" also_runs="scripts/sign_train.py"
+# THE VIDEO-CELLS CLOCK (2026-11-04). scripts/run_video_cells_box.ps1 carried its own `-Install`
+# registration of Quant-VideoCells (hourly, 55-minute limit, IgnoreNew) since 7bc69de329, but no
+# manifest line, so the birth fence and the component registry counted the two organs it runs
+# as executables with no clock. It pulls the sealed transcript bundles off the data branch, opens
+# them with the box-only key (scripts/video_transcript_vault.py open), and turns them into
+# discovery rows through the free OpenRouter rotation (scripts/extract_video_cells.py), written
+# to desks/mt5/data/intelligence/youtube_transcripts/ for the discovery compiler.
+# Whether the task is REGISTERED on the box is UNMEASURED from this repo; the installer is here.
+TASK name="Quant-VideoCells"   trigger="every 1 hour"                runs="scripts/run_video_cells_box.ps1" installer="scripts/run_video_cells_box.ps1" lane="research" also_runs="scripts/video_transcript_vault.py,scripts/extract_video_cells.py"

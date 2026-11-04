@@ -558,7 +558,7 @@ LISTING_HTML = """<html><body>
 </body></html>"""
 
 
-def test_crawler_takes_only_names_the_page_links_and_honours_robots(tmp_path: Path) -> None:
+def test_crawler_takes_only_names_the_page_links_and_labels_robots(tmp_path: Path) -> None:
     listings = tmp_path / "listings.json"
     listings.write_text(json.dumps({"listings": [
         {"url": "https://datarade.ai/data-categories/x", "source": "datarade", "class": "card_consumer"},
@@ -573,11 +573,14 @@ def test_crawler_takes_only_names_the_page_links_and_honours_robots(tmp_path: Pa
 
     out = tmp_path / "crawled.json"
     stats = pse.crawl_catalogue(listings_path=listings, crawled_path=out, fetch=http, now=NOW)
-    assert stats["robots_refused"] == 1 and stats["new_entries"] == 2
+    # LAWS 5e: robots.txt is a LABEL, never a refusal -- the Disallowed listing IS fetched.
+    assert stats["robots_disallowed"] == 1 and stats["pages_tried"] == stats["pages_ok"] == 2
+    assert "robots_refused" not in stats and stats["new_entries"] == 2
     rows = json.loads(out.read_text("utf-8"))["entries"]
     assert {r["vendor"] for r in rows} == {"Acme Data", "UNSTATED"}
     assert {r["dataset"] for r in rows} == {"UNSTATED", "Acme Card Panel"}
     assert all(r["seed_source"] == "crawl:datarade" for r in rows)
+    assert all(r["access_label"] == "PUBLIC" and r["redistribute_allowed"] is False for r in rows)
     again = pse.crawl_catalogue(listings_path=listings, crawled_path=out, fetch=http, now=NOW)
     assert again["new_entries"] == 0
 

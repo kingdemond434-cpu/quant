@@ -22,6 +22,7 @@ gold_real_yield_z, gold_usd_z, gold_ratio_z, gold_risk_off_z,
 usd_liquidity_z, cc_physical_z, session_range_z, session_volume_z.
 """
 
+import json
 import sys
 from datetime import timedelta
 from pathlib import Path
@@ -45,7 +46,22 @@ LAKE = BASE / "data" / "lake"
 UNI = BASE / "data" / "universe"
 
 
+#: Third-party FRED series this pass refused (terms_fence `fred_copyrighted`) -> why. A refused
+#: series reads as an EMPTY frame -- never the lake parquet a pre-ruling run left behind -- and
+#: every state built on it is UNMEASURED (NaN), never a 0 standing in for it.
+REFUSED: dict[str, str] = {}
+
+
+def _third_party_fred(series_id: str) -> bool:
+    from libs.data.terms_fence import fred_series_source
+    return bool(fred_series_source(series_id))
+
+
 def load_fred(name: str) -> pd.DataFrame:
+    if _third_party_fred(name):
+        REFUSED[name] = ("UNMEASURED_NO_LICENSED_SOURCE: a third-party FRED series (terms_fence "
+                         "fred_copyrighted), never live input")
+        return pd.DataFrame(columns=["value"])
     p = LAKE / f"fred_{name}.parquet"
     if not p.exists():
         return pd.DataFrame(columns=["value"])
@@ -209,15 +225,38 @@ def main() -> None:
     s["gold_real_yield_z"] = z(real_y)
     s["gold_usd_z"] = z(usd)
     s["gold_ratio_z"] = z(ratio)
-    s["gold_risk_off_z"] = (z(vix) + z(credit)).fillna(0.0)
-    s["gold_macro_stress"] = (z(vix).fillna(0) * 0.4 + z(credit).fillna(0) * 0.25
-                              - z(real_y).fillna(0) * 0.2 + z(usd).fillna(0) * 0.15)
+    unmeasured: dict[str, str] = {}
+    if REFUSED.keys() & {"VIXCLS", "BAMLH0A0HYM2"}:
+        # BOTH STATES ARE DEFINED ON VIX AND HY OAS, which are Cboe's and ICE's. A missing input
+        # filled with 0 would publish "no stress" -- so the states are absent (NaN), named here.
+        why = ("UNMEASURED_NO_LICENSED_SOURCE: built on VIXCLS + BAMLH0A0HYM2, third-party FRED "
+               "series refused as live input")
+        s["gold_risk_off_z"] = pd.Series(np.nan, index=xidx, dtype=float)
+        s["gold_macro_stress"] = pd.Series(np.nan, index=xidx, dtype=float)
+        unmeasured.update({"gold_risk_off_z": why, "gold_macro_stress": why})
+    else:
+        s["gold_risk_off_z"] = (z(vix) + z(credit)).fillna(0.0)
+        s["gold_macro_stress"] = (z(vix).fillna(0) * 0.4 + z(credit).fillna(0) * 0.25
+                                  - z(real_y).fillna(0) * 0.2 + z(usd).fillna(0) * 0.15)
     s["usd_liquidity_z"] = z(ff_daily(fr["WALCL"]["value"], xidx, "WALCL"))
 
     aud = ff_daily(fr["DEXUSAL"]["value"], xidx, "DEXUSAL")
     cad = ff_daily(fr["DEXCAUS"]["value"], xidx, "DEXCAUS")
     nzd = ff_daily(fr["DEXUSNZ"]["value"], xidx, "DEXUSNZ")
-    copper = ff_daily(fr["PCOPPUSDM"]["value"], xidx, "PCOPPUSDM")
+    if "PCOPPUSDM" in REFUSED:
+        # The IMF copper price is a third-party benchmark: the desk's OWN XCUUSD CFD stands in,
+        # known at its own bar stamp; without its bars the state is absent, never 0.
+        xcu = UNI / "XCUUSD_H1.parquet"
+        copper = (ff_daily(pd.read_parquet(xcu).sort_index()["close"], xidx)
+                  if xcu.exists() else pd.Series(np.nan, index=xidx, dtype=float))
+        if not xcu.exists():
+            unmeasured["cc_physical_z"] = ("UNMEASURED: PCOPPUSDM refused (third-party) and no "
+                                           "XCUUSD bars on this host")
+        else:
+            unmeasured["cc_physical_z:copper"] = ("SUBSTITUTED: mt5_own_bars:XCUUSD for the "
+                                                  "refused third-party PCOPPUSDM")
+    else:
+        copper = ff_daily(fr["PCOPPUSDM"]["value"], xidx, "PCOPPUSDM")
     cc = (z(aud) + z(cad) + z(nzd) + z(copper)) / 4
     s["cc_physical_z"] = cc
 
@@ -238,6 +277,8 @@ def main() -> None:
     frame = pd.DataFrame(s).reindex(xau.index)
     frame.index.name = "ts"
     frame.to_parquet(OUT / "free_states.parquet")
+    (OUT / "free_states.unmeasured.json").write_text(json.dumps(
+        {"refused_fred": dict(REFUSED), "states": unmeasured}, indent=1), encoding="utf-8")
     n_syms = len(crosses) + 2
     print(f"states: {len(frame.columns)} series x {len(frame)} bars  "
           f"(inputs: cot legacy+disagg+tff, fred {len(fr)} series, "

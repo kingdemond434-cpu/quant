@@ -1,0 +1,15 @@
+Table 1: U.S. Long-Term Securities Held by Foreign Residents
+All Countries and International and Regional Organizations
+A positive number for net U.S. sales to foreigners denotes an increase in a foreign position
+Millions of dollars
+Link: https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/slt_table1.txt
+
+			Total U.S. Securities	Total U.S. Securities	Total U.S. Securities	U.S. Treasuries	U.S. Treasuries	U.S. Treasuries	U.S. Agency Bonds	U.S. Agency Bonds	U.S. Agency Bonds	U.S. Corp. & Other Bonds	U.S. Corp. & Other Bonds	U.S. Corp. & Other Bonds	U.S. Corp. Equity	U.S. Corp. Equity	U.S. Corp. Equity
+Country	Country Code	Date	Holdings	Net U.S. Sales	Valuation Change	Holdings	Net U.S. Sales	Valuation Change	Holdings	Net U.S. Sales	Valuation Change	Holdings	Net U.S. Sales	Valuation Change	Holdings	Net U.S. Sales	Valuation Change
+country	country_code	date	for_lt_total_pos	for_lt_total_net	for_lt_total_valchg	for_lt_treas_pos	for_lt_treas_net	for_lt_treas_valchg	for_lt_agcy_pos	for_lt_agcy_net	for_lt_agcy_valchg	for_lt_corp_pos	for_lt_corp_net	for_lt_corp_valchg	for_lt_eqty_pos	for_lt_eqty_net	for_lt_eqty_valchg
+Austria	10189	2026-08	53564	189	1694	3881	-22	6	4	0	0	2672	129	-2	47007	82	1690
+Austria	10189	2026-07	51567	469	-817	3958	335	-23	4	0	0	2542	-18	-27	45063	152	-767
+Japan	42609	2026-08	2500000	12000	5000	1200000	8000	-100	50000	-0	0	100000	500	10	1150000	3500	5090
+Japan	42609	2020-03	2000000	n.a.	n.a.	1100000	n.a.	n.a.	40000	n.a.	n.a.	90000	n.a.	n.a.	770000	n.a.	n.a.
+Narnia	99999	2026-08	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1
+Grand Total	99996	2026-08	35000000	150000	20000	9000000	70000	-5000	2000000	1000	0	5000000	20000	100	19000000	59000	24900

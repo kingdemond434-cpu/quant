@@ -1,0 +1,68 @@
+{
+ "totalCount": 9,
+ "items": [
+  {
+   "Tarih": "28-08-2026",
+   "TP_FIXTURE_GOLD_RESERVES": "78000.0",
+   "UNIXTIME": {
+    "$numberLong": "1787875200"
+   }
+  },
+  {
+   "Tarih": "04-09-2026",
+   "TP_FIXTURE_GOLD_RESERVES": "78350.5",
+   "UNIXTIME": {
+    "$numberLong": "1788480000"
+   }
+  },
+  {
+   "Tarih": "11-09-2026",
+   "TP_FIXTURE_GOLD_RESERVES": "78701.0",
+   "UNIXTIME": {
+    "$numberLong": "1789084800"
+   }
+  },
+  {
+   "Tarih": "18-09-2026",
+   "TP_FIXTURE_GOLD_RESERVES": "79051.5",
+   "UNIXTIME": {
+    "$numberLong": "1789689600"
+   }
+  },
+  {
+   "Tarih": "25-09-2026",
+   "TP_FIXTURE_GOLD_RESERVES": "79402.0",
+   "UNIXTIME": {
+    "$numberLong": "1790294400"
+   }
+  },
+  {
+   "Tarih": "02-10-2026",
+   "TP_FIXTURE_GOLD_RESERVES": "79752.5",
+   "UNIXTIME": {
+    "$numberLong": "1790899200"
+   }
+  },
+  {
+   "Tarih": "09-10-2026",
+   "TP_FIXTURE_GOLD_RESERVES": "80103.0",
+   "UNIXTIME": {
+    "$numberLong": "1791504000"
+   }
+  },
+  {
+   "Tarih": "16-10-2026",
+   "TP_FIXTURE_GOLD_RESERVES": "80453.5",
+   "UNIXTIME": {
+    "$numberLong": "1792108800"
+   }
+  },
+  {
+   "Tarih": "23-10-2026",
+   "TP_FIXTURE_GOLD_RESERVES": "80804.0",
+   "UNIXTIME": {
+    "$numberLong": "1792713600"
+   }
+  }
+ ]
+}

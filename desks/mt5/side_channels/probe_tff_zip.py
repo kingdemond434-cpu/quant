@@ -1,17 +1,19 @@
 import io
-import ssl
 import urllib.request
 import zipfile
+try:
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 
-ctx = ssl.create_default_context()
-ctx.check_hostname = False
-ctx.verify_mode = ssl.CERT_NONE
-UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}
+UA = {"User-Agent": DESK_UA}
 url = "https://www.cftc.gov/files/dea/history/fut_fin_txt_2024.zip"
 req = urllib.request.Request(url, headers=UA)
 try:
-    data = urllib.request.urlopen(req, timeout=120, context=ctx).read()
+    data = polite_urlopen(req, timeout=120).read()
     print("zip bytes:", len(data))
     z = zipfile.ZipFile(io.BytesIO(data))
     names = z.namelist()

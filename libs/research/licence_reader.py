@@ -31,7 +31,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
 from libs.research import external_federation as fed
 from libs.research import sandbox as sb
@@ -174,9 +174,12 @@ def _default_fetch(url: str) -> bytes:
     if host not in FETCH_HOSTS:
         raise PermissionError(f"host {host!r} is not in the licence-read allowlist "
                               f"{sorted(FETCH_HOSTS)}")
+    from libs.data.polite_fetch import polite_urlopen
     req = Request(url, headers={"User-Agent": "quant-licence-reader/1 (LAWS 5h)",
                                 "Accept": "application/json, text/plain, */*"})
-    with urlopen(req, timeout=FETCH_TIMEOUT_S) as resp:
+    # holds + robots.txt first (LAWS 5e amended 2026-10-14); a 401/403/429 holds the site
+    with polite_urlopen(req, timeout=FETCH_TIMEOUT_S, max_bytes=2_000_000,
+                        leg="licence_reader") as resp:
         return bytes(resp.read(2_000_000))
 
 

@@ -41,28 +41,37 @@ import time
 import urllib.error
 import urllib.request
 from collections import Counter
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote, urljoin, urlparse, urlsplit, urlunsplit
+from urllib.parse import urljoin, urlparse
 
 BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE.parent.parent))
 sys.path.insert(0, str(BASE / "side_channels"))
 sys.path.insert(0, str(BASE))
+if str(BASE.parent.parent) not in sys.path:      # the repo root, for libs.data.terms_fence
+    sys.path.append(str(BASE.parent.parent))
 
 import world_frontier as wf  # noqa: E402  # type: ignore[import-not-found]
+
+from libs.data import terms_fence as _tf  # noqa: E402
 
 WORLD = BASE / "data" / "intelligence" / "world"
 VAULT = WORLD / "vault"
 REPORT = BASE / "reports" / "world_crawl.json"
 
-#: Browser UA, because a bot string is refused or served a stub by a large share of the ground
-#: this desk needs -- the gotcha recorded in the free-data-plane findings, where a healthy source
-#: reads as dead purely from its User-Agent.
-UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-      "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
+from libs.data import polite_fetch as _pf  # noqa: E402
+
+#: THE HONEST USER-AGENT (auditor ruling 2026-10-14). This crawler used to send a desktop Chrome
+#: string so that ground which refuses bots would serve it anyway. That is browser impersonation
+#: and it is forbidden: a site that refuses this desk's own name has answered, and the answer is
+#: recorded (`HostAccess`), never routed around. One shared definition in `libs.data.polite_fetch`.
+UA = _pf.DESK_UA
+#: The product token robots.txt groups are matched against.
+UA_TOKEN = _pf.DESK_UA_PRODUCT
 
 #: Per-request and whole-run budgets. The run budget is what makes this safe to put on an hourly
 #: timer beside everything else on a 3.8 GB box: it stops on the clock, not when it runs out of
@@ -82,6 +91,9 @@ DEFAULT_FETCHES = 150
 MAX_BYTES = 1_500_000
 #: Politeness gap between two requests to the same host, seconds.
 HOST_GAP_S = 2.0
+#: A robots Crawl-delay is obeyed in full; a wait longer than this defers the source to a later
+#: hour (counted CRAWL_DELAY_DEFERRED) rather than spending the run asleep on one host.
+MAX_CRAWL_DELAY_WAIT_S = 120.0
 #: The frontier may not grow without bound on a box with no swap. New links past this are
 #: DROPPED AND COUNTED, never silently discarded.
 MAX_FRONTIER = 40_000
@@ -174,43 +186,128 @@ class _Extract(HTMLParser):
             self.links.append((self._href, chunk[:120]))
 
 
-def _ascii_url(url: str) -> str:
-    """Percent-encode a URL's non-ASCII parts. urllib raises UnicodeEncodeError without this.
+#: Percent-encode a URL's non-ASCII parts. MEASURED on the first live crawl: `note.com/hashtag/
+#: システムトレード` died with UnicodeEncodeError. One implementation, in `libs.data.polite_fetch`.
+_ascii_url = _pf.ascii_url
 
-    MEASURED on the first live crawl: `note.com/hashtag/システムトレード` -- a Japanese hub, exactly
-    the ground this crawler exists to reach -- died with UnicodeEncodeError and was charged to
-    that source as a failure. A crawler that cannot fetch a non-ASCII URL is not multilingual,
-    and the failure is indistinguishable from a dead host.
+
+# ------------------------------------------------------------------- polite access, per host
+
+#: Where the crawler keeps its per-host access record: robots.txt it has read and the hosts that
+#: refused it. Box-written state beside the frontier's directory, NOT under `intelligence/`
+#: (the compiler reads every JSON there as a donation).
+ACCESS_STATE = BASE / "data" / "world_crawler_access.json"
+#: The robots/refusal rules and their constants live in ONE place, `libs.data.polite_fetch`
+#: (`HostAccess`); every polite fetcher shares them and the crawler only names its own seam.
+ROBOTS_TTL_S = _pf.ROBOTS_TTL_S
+MAX_REDIRECTS = _pf.MAX_REDIRECTS
+MAX_ROBOTS_BYTES = _pf.MAX_ROBOTS_BYTES
+BLOCK_STATUS = _pf.BLOCK_STATUS
+_origin = _pf.origin_of
+_hostname = _pf.hostname_of
+site_of = _pf.site_of
+#: Redirects surface as HTTPError (handler_order 400, ahead of the fence's own redirect handler,
+#: and RAISING -- never returning None, which would let that handler follow the hop).
+_NoRedirect = _pf.NoRedirect
+
+
+def _open(req: urllib.request.Request, timeout: float) -> Any:
+    """THE ONE NETWORK CALL. Every byte the crawler reads -- pages and robots.txt -- goes through
+    here, with redirects NOT followed (tests replace this function; nothing else opens a socket).
+
+    It opens through THE ONE FETCH DOOR's opener (`terms_fence.guarded_opener`, the door
+    `polite_fetch.fenced_urlopen` opens), so robots.txt requests are terms-fenced as well as
+    pages: a held source or a discord user-token request raises `TermsFenced` before a
+    connection is made."""
+    return _tf.guarded_opener(None, _NoRedirect()).open(req, timeout=timeout)
+
+
+def _request(url: str, accept: str) -> urllib.request.Request:
+    return urllib.request.Request(_ascii_url(url), headers={
+        "User-Agent": UA,
+        "Accept": accept,
+        # No language preference: asking for English is how a crawler that is supposed to
+        # cover the world quietly stops covering most of it.
+        "Accept-Language": "*",
+    })
+
+
+class HostAccess(_pf.HostAccess):
+    """The shared `polite_fetch.HostAccess` (robots.txt per origin, 401/403/429 site holds),
+    reading through the crawler's own seam `_open` and keeping its state at ACCESS_STATE."""
+
+    @classmethod
+    def load(cls, path: Path | None = None) -> HostAccess:
+        acc = super().load(path or ACCESS_STATE)
+        assert isinstance(acc, HostAccess)
+        return acc
+
+    def send(self, req: urllib.request.Request, timeout: float) -> Any:
+        return _open(req, timeout)
+
+    def request(self, url: str, accept: str) -> urllib.request.Request:
+        return _request(url, accept)
+
+    def robots_timeout(self) -> float:
+        return float(FETCH_TIMEOUT_S)
+
+
+_DEFAULT_ACCESS: HostAccess | None = None
+
+
+def fetch(url: str, access: HostAccess | None = None) -> tuple[bytes | None, str]:
+    """Bytes, or None with the reason. NEVER raises -- one bad page must not end the hour.
+
+    Every hop -- the URL and each redirect target -- passes `access.permits` (site holds; the
+    target origin's own robots.txt is read as a LABEL, never a refusal: LAWS 5e) BEFORE a request
+    is sent. 401/403/429 record a hold for the
+    site and stop; nothing is retried, and no other host, UA or mirror is tried in its place.
     """
+    global _DEFAULT_ACCESS
+    if access is None:
+        if _DEFAULT_ACCESS is None:
+            _DEFAULT_ACCESS = HostAccess.load()
+        access = _DEFAULT_ACCESS
     try:
-        url.encode("ascii")
-    except UnicodeEncodeError:
-        parts = urlsplit(url)
-        netloc = parts.netloc
-        with contextlib.suppress(UnicodeError):
-            netloc = parts.netloc.encode("idna").decode("ascii")
-        return urlunsplit((parts.scheme, netloc, quote(parts.path, safe="/%"),
-                           quote(parts.query, safe="=&%?"), quote(parts.fragment, safe="%")))
-    return url
-
-
-def fetch(url: str) -> tuple[bytes | None, str]:
-    """Bytes, or None with the reason. NEVER raises -- one bad page must not end the hour."""
-    try:
-        req = urllib.request.Request(_ascii_url(url), headers={
-            "User-Agent": UA,
-            "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
-            # No language preference: asking for English is how a crawler that is supposed to
-            # cover the world quietly stops covering most of it.
-            "Accept-Language": "*",
-        })
-        with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_S) as resp:
-            ctype = str(resp.headers.get("Content-Type", ""))
-            if "html" not in ctype and "text" not in ctype and "json" not in ctype:
-                return None, f"content-type {ctype.split(';')[0] or 'unknown'}"
-            return resp.read(MAX_BYTES), ""
-    except urllib.error.HTTPError as exc:
-        return None, f"HTTP {exc.code}"
+        for _ in range(MAX_REDIRECTS + 1):
+            # THE METHOD FENCE (libs/data/terms_fence.py) on the URL and on every redirect hop,
+            # before holds and robots: a HELD source (METHOD_BLOCKED, or NEEDS_KEY until its key
+            # exists) or a login / CAPTCHA wall is refused and named, never requested. No source
+            # is banned; the frontier records the named blocker, not a transport error.
+            _tf.check_request(url)
+            if _tf.login_wall(url):
+                raise _tf.TermsFenced("login_wall", url)
+            ok, why = access.permits(url)
+            if not ok:
+                return None, why
+            try:
+                with _open(_request(url, "text/html,application/xhtml+xml,*/*;q=0.8"),
+                           FETCH_TIMEOUT_S) as resp:
+                    ctype = str(resp.headers.get("Content-Type", ""))
+                    if "html" not in ctype and "text" not in ctype and "json" not in ctype:
+                        return None, f"content-type {ctype.split(';')[0] or 'unknown'}"
+                    body = resp.read(MAX_BYTES)
+                marker = _pf.looks_challenged(body)
+                if marker:
+                    # A 200 challenge page is a block, not content: held, never ingested.
+                    verdict = access.block(url, "WAF", "METHOD_BLOCKED",
+                                           f"challenge page ({marker!r}) served as content")
+                    return None, f"{verdict}: challenge page"
+                return body, ""
+            except urllib.error.HTTPError as exc:
+                code = int(exc.code)
+                if code in BLOCK_STATUS:
+                    return None, f"{access.block(url, code)}: HTTP {code}"
+                if code in (301, 302, 303, 307, 308):
+                    loc = exc.headers.get("Location") if exc.headers else None
+                    if not loc:
+                        return None, f"HTTP {code} without Location"
+                    url = urljoin(url, str(loc))
+                    continue
+                return None, f"HTTP {code}"
+        return None, "too many redirects"
+    except _tf.TermsFenced as exc:
+        return None, f"{exc.status}:{exc.platform}"
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         return None, f"{type(exc).__name__}: {str(exc)[:60]}"
     except Exception as exc:
@@ -571,8 +668,8 @@ def read_page(raw: bytes, url: str) -> dict[str, Any]:
     }
 
 
-def to_discovery(url: str, page: dict[str, Any], digest: str, terms_note: str = ""
-                 ) -> dict[str, Any] | None:
+def to_discovery(url: str, page: dict[str, Any], digest: str, terms_note: str = "",
+                 access: Mapping[str, Any] | None = None) -> dict[str, Any] | None:
     """A page as a miner-contract row, or None when it claims nothing worth carrying.
 
     NOTHING IS INVENTED HERE. `symbols` are tokens the page actually contains and the compiler
@@ -635,11 +732,15 @@ def to_discovery(url: str, page: dict[str, Any], digest: str, terms_note: str = 
                                           "instruments", "claimed_performance", "claim_hash")}
                    for c in claims[:8]],
         "n_claims": len(claims),
-        # THE ROUTING LABEL, NOT A BRAKE (LAWS 5e, 2026-09-23). A robots Disallow, a terms note
-        # or a registry `machine_use_allowed=false` lands HERE, on the crawled row, and the page
-        # is crawled exactly as any other. What the label withholds is REDISTRIBUTION; it has
+        # THE ROUTING LABEL, NOT A BRAKE (LAWS 5e, 2026-09-23). A terms note, a registry
+        # `machine_use_allowed=false` and a live robots.txt Disallow all land HERE, on the
+        # crawled row, and the page is crawled exactly as any other ("robots.txt Disallow read as
+        # a refusal" is a deleted brake). What the label withholds is REDISTRIBUTION; it has
         # never had anything to say about whether the desk may read and test the page.
-        "terms_note": str(terms_note or ""),
+        "terms_note": "; ".join(n for n in (str(terms_note or ""),
+                                            str((access or {}).get("terms_note") or "")) if n),
+        "access_label": str((access or {}).get("access_label") or ""),
+        "redistribute_allowed": bool((access or {}).get("redistribute_allowed")),
     }
 
 
@@ -654,7 +755,7 @@ SEEDS = (
     "https://www.mql5.com/zh/code",
     "https://www.mql5.com/ja/code",
     "https://www.forexfactory.com/forums",
-    "https://www.reddit.com/r/algotrading/top/?t=week",
+    "https://www.reddit.com/r/algotrading/top/?t=week",   # IDEAS_ONLY (libs/data/terms_fence.py)
     "https://quantocracy.com/",
     "https://www.quantstart.com/articles/",
     "https://xueqiu.com/",
@@ -965,6 +1066,9 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
     # TERMS, ROBOTS OR `machine_use_allowed` ANY MORE (LAWS 5e, 2026-09-23): a source carrying
     # any of those notes is CRAWLED, with the note recorded as `terms_note` on every row it
     # produces. The only removal left is one of the five refused acts of the hard boundary.
+    # ROBOTS.TXT IS NOT A REGISTRY NOTE ANY MORE (auditor ruling 2026-10-14): it is read live,
+    # per origin, by `fetch` before every request, and a Disallow there is a LABEL on the row
+    # (PUBLIC_WITH_TERMS; unreadable robots ACCESS_UNCLEAR), never a refusal (LAWS 5e).
     share_meta: dict[str, Any] = {"status": "unavailable", "why": "source_shares not importable"}
     share_state: dict[str, Any] | None = None
     terms_labels: dict[str, str] = {}
@@ -1007,6 +1111,7 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
     failures: Counter[str] = Counter()
     langs: Counter[str] = Counter()
     last_host_hit: dict[str, float] = {}
+    access = HostAccess.load()
 
     for src in picked:
         if time.time() - started > run_budget_s:
@@ -1014,12 +1119,28 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
                 f"The frontier resumes next hour rather than restarting.")
             break
 
-        gap = seconds_per_host - (time.time() - last_host_hit.get(src.host, 0.0))
+        # A HELD SITE IS NOT ASKED AGAIN THIS RUN (401/403/429 hard stop). Charged to the source
+        # as a refusal so the scheduler stops spending slots on it; no request, no sleep.
+        held = access.hold(src.url)
+        if held:
+            src.failures += 1
+            src.consecutive_failures += 1
+            failures[f"HELD {held}"] += 1
+            continue
+
+        # PACE: max(the crawler's own gap, the origin's robots Crawl-delay for our token). A
+        # Crawl-delay is obeyed, never shortened; one longer than MAX_CRAWL_DELAY_WAIT_S defers
+        # the source to a later hour instead of stalling the whole run on one host.
+        pace = max(seconds_per_host, access.crawl_delay(src.url))
+        gap = pace - (time.time() - last_host_hit.get(src.host, 0.0))
+        if gap > MAX_CRAWL_DELAY_WAIT_S:
+            failures["CRAWL_DELAY_DEFERRED"] += 1
+            continue
         if gap > 0:
-            time.sleep(min(gap, seconds_per_host))
+            time.sleep(gap)
         last_host_hit[src.host] = time.time()
 
-        raw, why = fetch(src.url)
+        raw, why = fetch(src.url, access)
         src.fetches += 1
         src.last_fetched = datetime.now(tz=UTC).isoformat(timespec="seconds")
         if raw is None:
@@ -1043,7 +1164,8 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
             src.lang = page["lang"]
         langs[src.lang or "??"] += 1
 
-        row = to_discovery(src.url, page, digest, terms_note=terms_labels.get(src.url, ""))
+        row = to_discovery(src.url, page, digest, terms_note=terms_labels.get(src.url, ""),
+                           access=access.access_label(src.url))
         if row:
             rows.append(row)
             src.leads += 1
@@ -1064,6 +1186,7 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
                 discovered += 1
 
     wf.save(sources, note=f"crawl {datetime.now(tz=UTC):%Y-%m-%dT%H:%MZ}")
+    access.save()
 
     expansion: dict[str, Any] = {"status": "unavailable", "why": "source_shares not importable"}
     try:
@@ -1087,6 +1210,11 @@ def crawl(budget: int = DEFAULT_FETCHES, run_budget_s: int = RUN_BUDGET_S,
         "dropped_at_frontier_cap": dropped,
         "languages": dict(langs.most_common()),
         "failures": dict(failures.most_common()),
+        # POLITE ACCESS, MEASURED: the honest UA sent, robots.txt reads, the access labels the
+        # fetches carried (a Disallow is PUBLIC_WITH_TERMS, unreadable ACCESS_UNCLEAR -- both
+        # FETCHED), and every site holding a 401 (NEEDS_KEY) or 403/429
+        # (METHOD_BLOCKED) refusal. A held site is a recorded answer, never routed around.
+        "access": access.summary(),
         # WHOSE BUDGET THIS WAS. `source_shares` says whether the registry's published shares
         # ranked this pass or whether the old order stood, and why -- an absence is a verdict,
         # never a silent fallback (L1.28a).

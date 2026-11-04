@@ -72,6 +72,13 @@ HTTP 404 and is therefore not in GROUND at all rather than sitting in it as a pe
 Absences are recorded as absences with the reason -- an unavailable series is a fact about the
 world, and a module that quietly drops it teaches its reader the series was never wanted.
 
+THE YAHOO CUT (2026-10-14). The implied-vol series below were read from Yahoo's chart API, which
+is IDEAS_ONLY in libs/data/terms_fence.SOURCE_POLICY; Cboe's own values are a held route and
+FRED's *CLS mirrors carry Cboe's copyright. No licensed implied-vol source exists in the key set,
+so every ground's implied side is UNMEASURED_NO_LICENSED_SOURCE with a missed_growth line, and
+the archive keeps measuring the side the auditor named: realised vol on the desk's OWN MT5 bars.
+The measurements quoted above are history, kept as the record of what the join showed.
+
 NOTHING HERE IS A SIGNAL. Every row is an observation. The gauntlet decides, this measures, and
 the archive has no promotion authority in any lane.
 """
@@ -98,6 +105,13 @@ for _p in (str(_DESK), str(_DESK.parent.parent)):
         sys.path.insert(0, _p)
 
 from recorders.tape_store import _append_line  # noqa: E402
+try:
+    from libs.data.polite_fetch import DESK_UA
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import DESK_UA
 
 SCHEMA = "vol-archive-1"
 ARCHIVE = _DESK / "data" / "vol_archive" / "observations.jsonl"
@@ -117,7 +131,7 @@ MIN_VINTAGES = 60
 RV_WINDOW_D = 21
 ANNUALISE = math.sqrt(252.0)
 
-UA = "Mozilla/5.0 (MT5 research desk; point-in-time vol collector)"
+UA = DESK_UA
 
 
 @dataclass(frozen=True)
@@ -138,7 +152,7 @@ class Ground:
 
 GROUND: tuple[Ground, ...] = (
     Ground("^GVZ", ("XAUUSD", "GOLD", "XAUUSD.", "XAUUSDx"), "gold 30-day implied vol"),
-    Ground("^OVX", ("USOIL", "WTI", "UKOIL", "BRENT", "CRUDE", "OIL"),
+    Ground("^OVX", ("USOIL", "WTI", "UKOIL", "BRENT", "CRUDE", "OIL", "XTIUSD"),
            "crude oil 30-day implied vol"),
     Ground("^VIX", ("US500", "SPX500", "USA500", "SP500", "US500.cash"),
            "S&P 500 30-day implied vol",
@@ -163,99 +177,56 @@ class VolSource(Protocol):
         an unreachable endpoint and an index with no history are different facts."""
 
 
-class YahooVolSource:
-    """Keyless CBOE volatility indices through the public chart API.
+#: The status an implied-vol ground carries when no licensed source serves it (2026-10-14).
+UNMEASURED_NO_LICENSED_SOURCE = "UNMEASURED_NO_LICENSED_SOURCE"
 
-    TWO RANGES ARE FETCHED AND MERGED, AND THE REASON IS A MEASURED DEFECT IN THE SOURCE, not
-    caution. Measured 2026-09-05 against the live endpoint:
+#: Why no implied-vol series has a licensed route, verbatim from the register's own rows.
+NO_LICENSED_IV = ("every implied-vol ground here is a Cboe index: Yahoo (which served them) is "
+                  "IDEAS_ONLY (Terms 2.d.9), Cboe's own delayed values are a held route "
+                  "(cboe_delayed_index_values, s.2), and FRED's VIXCLS/GVZCLS/OVXCLS/VXNCLS/"
+                  "VXDCLS/EVZCLS carry Cboe's copyright, which FRED cannot license")
 
-        ^VIX     range=10y -> 2,515 points ending 2026-09-04   (current)
-        ^VIX9D   range=10y -> 2,479 points ending 2026-07-17   (SEVEN WEEKS STALE)
-        ^VIX9D   range=1mo ->     1 point  ending 2026-09-04   (current, no history)
-        ^VIX3M, ^VIX6M: identical split
 
-    The long-range endpoint carries the history and is stale for the term indices; the short-range
-    endpoint is current and carries nothing behind it. A collector using either one alone gets a
-    term curve that is either seven weeks out of date or one point long -- and the first failure
-    is the dangerous one, because a stale 9-day tenor beside a fresh 30-day one manufactures a
-    term slope out of a publication lag, and a term-structure signal would fire on exactly that.
+class LicensedVolSource:
+    """THE YAHOO CUT (coordinator + auditor ruling, 2026-10-14). This archive used to read the
+    Cboe volatility indices from Yahoo's chart API (and FRED's copyrighted *CLS mirrors as a
+    fallback). Neither is licensed live input, and no licensed source of implied vol exists in
+    the desk's key set, so every implied-vol series is UNMEASURED_NO_LICENSED_SOURCE: never
+    filled, never forward-filled, never zero. What the archive still measures is the half the
+    auditor named the preferred substitute for: realised vol on the desk's OWN MT5 bars.
 
-    This also sharpens the archive's own justification. A public endpoint that cannot reproduce
-    its own recent history means a desk that snapshots daily ends up holding a series the source
-    itself will not serve -- which is the accumulation argument in its strongest form.
+    `series` therefore returns None for every ticker, and `no_licensed_source` tells `observe` to
+    record that as a licensing fact rather than as an outage. The Yahoo URL is still asked of THE
+    ONE FETCH DOOR with live_input=True so the refusal is the register's, not this class's."""
 
-    Order of preference: the merged Yahoo pair, then `research/free_data.yahoo_daily` (the desk's
-    declared keyless collector, with its own cache), then FRED. FRED is last because it was
-    measured UNREACHABLE from this desk's research container on 2026-09-05 while Yahoo answered;
-    on the trading box the order may well be worth reversing, and the fallback chain is the point
-    rather than any one member of it.
-    """
+    no_licensed_source = True
 
-    def __init__(self, timeout: int = 20, range_: str = "10y", fresh_range: str = "1mo") -> None:
-        self.timeout = timeout
-        self.range = range_
-        self.fresh_range = fresh_range
-        self._fred_ok = True
+    def __init__(self) -> None:
+        self.refusals: dict[str, str] = {}
 
     def series(self, ticker: str) -> dict[str, float] | None:
-        history = self._chart(ticker, self.range)
-        if history is None:
-            try:
-                from research import free_data as fd
-                got = fd.yahoo_daily(ticker)
-                history = {str(k): float(v) for k, v in got.items()} if got else None
-            except Exception:
-                history = None
-        fresh = self._chart(ticker, self.fresh_range)
-        if history is None and fresh is None:
-            return self._fred(ticker)
-        merged: dict[str, float] = dict(history or {})
-        # THE FRESH TAIL WINS ON OVERLAP. It is the endpoint that is current, and where the two
-        # disagree on a shared date the disagreement is the source restating itself -- which is
-        # the very thing this archive's vintage claim is about.
-        merged.update(fresh or {})
-        return merged or None
-
-    def _chart(self, ticker: str, range_: str) -> dict[str, float] | None:
         url = ("https://query1.finance.yahoo.com/v8/finance/chart/"
-               + urllib.parse.quote(ticker) + f"?range={range_}&interval=1d")
+               + urllib.parse.quote(ticker) + "?range=1mo&interval=1d")
         try:
+            from libs.data import terms_fence as _tf
             req = urllib.request.Request(url, headers={"User-Agent": UA})
-            with urllib.request.urlopen(req, timeout=self.timeout) as r:
-                doc = json.loads(r.read())
-        except Exception:
-            return None
-        res = (doc.get("chart") or {}).get("result")
-        if not res:
-            return None
-        node = res[0]
-        stamps = node.get("timestamp") or []
-        try:
-            closes = node["indicators"]["quote"][0]["close"]
-        except (KeyError, IndexError, TypeError):
-            # A REAL AND MEANINGFUL ABSENCE. ^EVZ answers with a result block carrying no close
-            # series, which is not the same as a 404 and not the same as a zero. Returning None
-            # here makes the caller record it as an unavailable series rather than a flat one.
-            return None
-        out: dict[str, float] = {}
-        for t, c in zip(stamps, closes, strict=False):
-            if c is None:
-                continue
-            out[datetime.fromtimestamp(int(t), tz=UTC).date().isoformat()] = float(c)
-        return out or None
+            with _tf.guarded_urlopen(req, timeout=20, live_input=True):
+                pass                               # unreachable while Yahoo is IDEAS_ONLY
+        except Exception as exc:                   # TermsFenced: refused before any request
+            self.refusals[ticker] = str(exc)[:200]
+        return None
 
-    def _fred(self, ticker: str) -> dict[str, float] | None:
-        sid = {"^VIX": "VIXCLS", "^GVZ": "GVZCLS", "^OVX": "OVXCLS", "^VXN": "VXNCLS",
-               "^VXD": "VXDCLS", "^EVZ": "EVZCLS", "^VIX3M": "VXVCLS"}.get(ticker)
-        if not sid or not self._fred_ok:
-            return None
-        try:
-            from research import free_data as fd
-            got = fd.fred_series(sid, start="2015-01-01")
-        except Exception:
-            self._fred_ok = False
-            return None
-        return {str(k): float(v) for k, v in got.items()} if got else None
+
+def missed_growth_line(ticker: str, past: dict[str, Any] | None = None) -> dict[str, Any]:
+    """The missed-growth line of one cut implied-vol input (terms_fence.held_missed_growth, kind
+    ideas_only_refusal): delta E[log W] UNMEASURED, never zero."""
+    from libs.data import terms_fence as _tf
+    line = _tf.held_missed_growth("yahoo", past, source=f"vol_archive:{ticker}",
+                                  live_input_refusal=True)
+    line.update({"yahoo_symbol": ticker, "series_status": UNMEASURED_NO_LICENSED_SOURCE,
+                 "substitute": None, "why_unsubstituted": NO_LICENSED_IV,
+                 "measured_instead": "realised vol (close-to-close, Parkinson) on MT5 bars"})
+    return line
 
 
 class FakeVolSource:
@@ -308,6 +279,8 @@ class Observation:
     iv_over_rv: float | None = None
     status: str = "OBSERVED"
     reason: str = ""
+    #: The cut input's missed-growth line, when this ground has no licensed implied-vol source.
+    missed_growth: dict[str, Any] = field(default_factory=dict)
     #: BINDING AND ALWAYS TRUE HERE. The desk's own series starts the day this first ran; the
     #: reference history behind it is public and is not this desk's vintage.
     forward_only: bool = True
@@ -404,6 +377,20 @@ def observe(source: VolSource, registry: dict[str, Any], universe_dir: Path,
         base = {"schema": SCHEMA, "observed_at": at, "vol_ticker": g.vol_ticker,
                 "mt5_symbol": sym, "tradeable": sym is not None, "what": g.what}
         s = source.series(g.vol_ticker)
+        if not s and getattr(source, "no_licensed_source", False):
+            # THE LICENSING FACT, NOT AN OUTAGE. The implied side is UNMEASURED (never filled);
+            # the desk's own realised side is still measured on its own bars.
+            obs = Observation(**base, value_date="", status=UNMEASURED_NO_LICENSED_SOURCE,
+                              reason=NO_LICENSED_IV,
+                              term_reason="no licensed implied-vol source for any tenor",
+                              missed_growth=missed_growth_line(g.vol_ticker))
+            if sym:
+                cc, park, last = realised_vol(sym, universe_dir)
+                obs.realised_vol_cc = round(cc, 4) if cc is not None else None
+                obs.realised_vol_parkinson = round(park, 4) if park is not None else None
+                obs.realised_last_bar = last
+            out.append(obs)
+            continue
         if not s:
             out.append(Observation(**base, value_date="", status="UNAVAILABLE",
                                    reason=(f"{g.vol_ticker} returned no series -- recorded as an "
@@ -535,6 +522,11 @@ def report(rows: list[dict[str, Any]], cycle: list[Observation]) -> dict[str, An
         },
         "cycle": [asdict(o) for o in cycle],
         "unavailable": [o.vol_ticker for o in cycle if o.status == "UNAVAILABLE"],
+        "unmeasured_no_licensed_source": [o.vol_ticker for o in cycle
+                                          if o.status == UNMEASURED_NO_LICENSED_SOURCE],
+        "realised_measured_on_mt5": [o.mt5_symbol for o in cycle
+                                     if o.realised_vol_cc is not None],
+        "missed_growth": [o.missed_growth for o in cycle if o.missed_growth],
         "not_tradeable_here": [o.vol_ticker for o in cycle if o.status == "NOT_TRADEABLE_HERE"],
     }
 
@@ -556,7 +548,7 @@ def main(argv: list[str] | None = None) -> int:
               "instrument id this desk cannot confirm it trades (that is how a foreign alias "
               "becomes a node). Observing WITHOUT the join.")
 
-    cycle = observe(YahooVolSource(), registry, args.universe)
+    cycle = observe(LicensedVolSource(), registry, args.universe)
     rows = read_archive(args.archive)
     if not args.dry_run:
         append(cycle, args.archive)
@@ -572,7 +564,9 @@ def main(argv: list[str] | None = None) -> int:
           f"(backtestable at {MIN_VINTAGES}: {rep['backtestable']})")
     for o in cycle:
         if o.implied_vol is None:
-            print(f"  {o.vol_ticker:<7} {o.status}: {o.reason[:80]}")
+            rv = (f" rv_cc={o.realised_vol_cc} on {o.mt5_symbol}"
+                  if o.realised_vol_cc is not None else "")
+            print(f"  {o.vol_ticker:<7} {o.status}{rv}: {o.reason[:80]}")
             continue
         rv = (f"rv_cc={o.realised_vol_cc}" if o.realised_vol_cc is not None else "rv=UNMEASURED")
         print(f"  {o.vol_ticker:<7} -> {o.mt5_symbol!s:<8} iv={o.implied_vol:<7} {rv:<18} "

@@ -243,11 +243,19 @@ def test_the_history_request_names_the_token_and_the_fidelity(monkeypatch) -> No
 # ============================================================ the fetcher
 
 def test_the_fetcher_retries_then_raises_with_the_url(monkeypatch) -> None:
-    monkeypatch.setattr(PM.urllib.request, "urlopen",
-                        lambda *a, **k: (_ for _ in ()).throw(OSError("down")))
+    from libs.data import polite_fetch
+    calls: list[str] = []
+
+    def down(*a, **k):
+        calls.append("x")
+        raise OSError("down")
+
+    # the fetcher's one network call is polite_fetch's seam (robots.txt + holds first)
+    monkeypatch.setattr(polite_fetch, "polite_urlopen", down)
     monkeypatch.setattr(time, "sleep", lambda _s: None)
     with pytest.raises(RuntimeError, match="GET failed"):
         PM._get("https://example.test/x")
+    assert len(calls) == 4                        # a transport failure is retried, a refusal not
 
 
 def test_no_test_in_this_file_reaches_the_network(monkeypatch) -> None:
@@ -256,6 +264,8 @@ def test_no_test_in_this_file_reaches_the_network(monkeypatch) -> None:
     def forbidden(*a, **k):
         raise AssertionError("a test reached the network")
 
+    from libs.data import polite_fetch
     monkeypatch.setattr(PM.urllib.request, "urlopen", forbidden)
+    monkeypatch.setattr(polite_fetch, "polite_urlopen", forbidden)
     monkeypatch.setattr(PM, "_get", lambda url, tries=4: {"history": []})
     assert PM.fetch_price_history("tok").empty

@@ -1,0 +1,3082 @@
+[
+{
+"rate": 2.4,
+"date": "2025-08-26",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-08-27T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.406,
+"date": "2025-08-27",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-08-28T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.405,
+"date": "2025-08-28",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-08-29T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.395,
+"date": "2025-08-29",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-01T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.384,
+"date": "2025-09-01",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-02T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.38,
+"date": "2025-09-02",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-03T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.385,
+"date": "2025-09-03",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-04T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.393,
+"date": "2025-09-04",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-05T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.394,
+"date": "2025-09-05",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-08T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.386,
+"date": "2025-09-08",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-09T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.375,
+"date": "2025-09-09",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-10T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.368,
+"date": "2025-09-10",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-11T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.371,
+"date": "2025-09-11",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-12T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.378,
+"date": "2025-09-12",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-15T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.382,
+"date": "2025-09-15",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-16T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.377,
+"date": "2025-09-16",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-17T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.365,
+"date": "2025-09-17",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-18T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.356,
+"date": "2025-09-18",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-19T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.356,
+"date": "2025-09-19",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-22T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.363,
+"date": "2025-09-22",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-23T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.369,
+"date": "2025-09-23",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-24T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.366,
+"date": "2025-09-24",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-25T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.356,
+"date": "2025-09-25",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-26T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.346,
+"date": "2025-09-26",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-29T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.343,
+"date": "2025-09-29",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-09-30T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.349,
+"date": "2025-09-30",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-01T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.356,
+"date": "2025-10-01",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-02T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.356,
+"date": "2025-10-02",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-03T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.347,
+"date": "2025-10-03",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-06T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.335,
+"date": "2025-10-06",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-07T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.33,
+"date": "2025-10-07",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-08T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.334,
+"date": "2025-10-08",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-09T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.342,
+"date": "2025-10-09",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-10T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.344,
+"date": "2025-10-10",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-13T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.337,
+"date": "2025-10-13",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-14T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.326,
+"date": "2025-10-14",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-15T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.318,
+"date": "2025-10-15",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-16T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.32,
+"date": "2025-10-16",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-17T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.327,
+"date": "2025-10-17",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-20T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.332,
+"date": "2025-10-20",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-21T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.327,
+"date": "2025-10-21",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-22T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.316,
+"date": "2025-10-22",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-23T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.307,
+"date": "2025-10-23",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-24T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.306,
+"date": "2025-10-24",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-27T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.312,
+"date": "2025-10-27",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-28T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.319,
+"date": "2025-10-28",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-29T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.317,
+"date": "2025-10-29",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-30T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.307,
+"date": "2025-10-30",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-10-31T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.296,
+"date": "2025-10-31",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-11-03T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.292,
+"date": "2025-11-03",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-11-04T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.297,
+"date": "2025-11-04",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-11-05T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.305,
+"date": "2025-11-05",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-11-06T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.306,
+"date": "2025-11-06",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-11-07T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.298,
+"date": "2025-11-07",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-11-10T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.286,
+"date": "2025-11-10",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-11-11T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.28,
+"date": "2025-11-11",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-11-12T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.283,
+"date": "2025-11-12",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-11-13T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.29,
+"date": "2025-11-13",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-11-14T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.294,
+"date": "2025-11-14",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-11-17T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.288,
+"date": "2025-11-17",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-11-18T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.277,
+"date": "2025-11-18",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-11-19T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.268,
+"date": "2025-11-19",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-11-20T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.269,
+"date": "2025-11-20",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-11-21T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.276,
+"date": "2025-11-21",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-11-24T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.281,
+"date": "2025-11-24",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-11-25T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.278,
+"date": "2025-11-25",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-11-26T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.268,
+"date": "2025-11-26",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-11-27T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.257,
+"date": "2025-11-27",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-11-28T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.255,
+"date": "2025-11-28",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-01T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.261,
+"date": "2025-12-01",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-02T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.268,
+"date": "2025-12-02",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-03T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.268,
+"date": "2025-12-03",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-04T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.259,
+"date": "2025-12-04",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-05T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.247,
+"date": "2025-12-05",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-08T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.242,
+"date": "2025-12-08",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-09T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.246,
+"date": "2025-12-09",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-10T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.254,
+"date": "2025-12-10",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-11T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.256,
+"date": "2025-12-11",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-12T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.249,
+"date": "2025-12-12",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-15T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.238,
+"date": "2025-12-15",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-16T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.23,
+"date": "2025-12-16",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-17T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.232,
+"date": "2025-12-17",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-18T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.239,
+"date": "2025-12-18",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-19T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.244,
+"date": "2025-12-19",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-22T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.239,
+"date": "2025-12-22",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-23T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.228,
+"date": "2025-12-23",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-24T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.219,
+"date": "2025-12-24",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-25T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.218,
+"date": "2025-12-25",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-26T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.224,
+"date": "2025-12-26",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-29T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.231,
+"date": "2025-12-29",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-30T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.229,
+"date": "2025-12-30",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2025-12-31T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.219,
+"date": "2025-12-31",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-01T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.208,
+"date": "2026-01-01",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-02T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.205,
+"date": "2026-01-02",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-05T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.21,
+"date": "2026-01-05",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-06T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.217,
+"date": "2026-01-06",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-07T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.218,
+"date": "2026-01-07",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-08T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.21,
+"date": "2026-01-08",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-09T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.198,
+"date": "2026-01-09",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-12T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.192,
+"date": "2026-01-12",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-13T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.195,
+"date": "2026-01-13",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-14T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.203,
+"date": "2026-01-14",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-15T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.206,
+"date": "2026-01-15",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-16T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.2,
+"date": "2026-01-16",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-19T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.189,
+"date": "2026-01-19",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-20T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.18,
+"date": "2026-01-20",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-21T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.181,
+"date": "2026-01-21",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-22T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.188,
+"date": "2026-01-22",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-23T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.193,
+"date": "2026-01-23",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-26T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.19,
+"date": "2026-01-26",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-27T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.18,
+"date": "2026-01-27",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-28T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.169,
+"date": "2026-01-28",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-29T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.167,
+"date": "2026-01-29",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-01-30T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.173,
+"date": "2026-01-30",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-02-02T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.18,
+"date": "2026-02-02",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-02-03T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.179,
+"date": "2026-02-03",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-02-04T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.17,
+"date": "2026-02-04",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-02-05T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.159,
+"date": "2026-02-05",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-02-06T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.154,
+"date": "2026-02-06",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-02-09T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.158,
+"date": "2026-02-09",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-02-10T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.166,
+"date": "2026-02-10",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-02-11T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.168,
+"date": "2026-02-11",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-02-12T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.161,
+"date": "2026-02-12",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-02-13T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.149,
+"date": "2026-02-13",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-02-16T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.142,
+"date": "2026-02-16",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-02-17T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.144,
+"date": "2026-02-17",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-02-18T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.151,
+"date": "2026-02-18",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-02-19T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.156,
+"date": "2026-02-19",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-02-20T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.151,
+"date": "2026-02-20",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-02-23T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.14,
+"date": "2026-02-23",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-02-24T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.131,
+"date": "2026-02-24",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-02-25T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.13,
+"date": "2026-02-25",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-02-26T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.137,
+"date": "2026-02-26",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-02-27T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.143,
+"date": "2026-02-27",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-02T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.141,
+"date": "2026-03-02",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-03T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.131,
+"date": "2026-03-03",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-04T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.12,
+"date": "2026-03-04",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-05T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.117,
+"date": "2026-03-05",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-06T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.122,
+"date": "2026-03-06",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-09T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.129,
+"date": "2026-03-09",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-10T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.13,
+"date": "2026-03-10",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-11T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.122,
+"date": "2026-03-11",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-12T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.11,
+"date": "2026-03-12",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-13T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.104,
+"date": "2026-03-13",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-16T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.107,
+"date": "2026-03-16",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-17T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.115,
+"date": "2026-03-17",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-18T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.118,
+"date": "2026-03-18",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-19T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.112,
+"date": "2026-03-19",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-20T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.101,
+"date": "2026-03-20",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-23T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.092,
+"date": "2026-03-23",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-24T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.093,
+"date": "2026-03-24",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-25T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.1,
+"date": "2026-03-25",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-26T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.105,
+"date": "2026-03-26",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-27T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.102,
+"date": "2026-03-27",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-30T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.091,
+"date": "2026-03-30",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-03-31T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.081,
+"date": "2026-03-31",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-01T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.079,
+"date": "2026-04-01",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-02T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.085,
+"date": "2026-04-02",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-03T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.092,
+"date": "2026-04-03",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-06T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.091,
+"date": "2026-04-06",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-07T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.082,
+"date": "2026-04-07",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-08T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.071,
+"date": "2026-04-08",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-09T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.066,
+"date": "2026-04-09",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-10T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.07,
+"date": "2026-04-10",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-13T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.078,
+"date": "2026-04-13",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-14T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.08,
+"date": "2026-04-14",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-15T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.073,
+"date": "2026-04-15",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-16T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.061,
+"date": "2026-04-16",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-17T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.054,
+"date": "2026-04-17",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-20T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.056,
+"date": "2026-04-20",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-21T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.063,
+"date": "2026-04-21",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-22T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.068,
+"date": "2026-04-22",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-23T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.063,
+"date": "2026-04-23",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-24T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.052,
+"date": "2026-04-24",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-27T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.043,
+"date": "2026-04-27",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-28T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.042,
+"date": "2026-04-28",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-29T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.049,
+"date": "2026-04-29",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-04-30T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.055,
+"date": "2026-04-30",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-01T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.053,
+"date": "2026-05-01",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-04T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.043,
+"date": "2026-05-04",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-05T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.032,
+"date": "2026-05-05",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-06T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.029,
+"date": "2026-05-06",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-07T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.034,
+"date": "2026-05-07",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-08T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.041,
+"date": "2026-05-08",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-11T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.042,
+"date": "2026-05-11",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-12T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.033,
+"date": "2026-05-12",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-13T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.022,
+"date": "2026-05-13",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-14T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.016,
+"date": "2026-05-14",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-15T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.019,
+"date": "2026-05-15",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-18T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.027,
+"date": "2026-05-18",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-19T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.03,
+"date": "2026-05-19",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-20T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.024,
+"date": "2026-05-20",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-21T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.012,
+"date": "2026-05-21",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-22T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.004,
+"date": "2026-05-22",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-25T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.005,
+"date": "2026-05-25",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-26T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.012,
+"date": "2026-05-26",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-27T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.017,
+"date": "2026-05-27",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-28T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.014,
+"date": "2026-05-28",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-05-29T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.003,
+"date": "2026-05-29",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-01T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.993,
+"date": "2026-06-01",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-02T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.991,
+"date": "2026-06-02",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-03T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.997,
+"date": "2026-06-03",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-04T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.004,
+"date": "2026-06-04",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-05T09:00:00Z",
+"republication": false
+},
+{
+"rate": 2.003,
+"date": "2026-06-05",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-08T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.994,
+"date": "2026-06-08",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-09T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.983,
+"date": "2026-06-09",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-10T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.978,
+"date": "2026-06-10",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-11T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.983,
+"date": "2026-06-11",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-12T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.99,
+"date": "2026-06-12",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-15T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.992,
+"date": "2026-06-15",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-16T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.985,
+"date": "2026-06-16",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-17T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.973,
+"date": "2026-06-17",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-18T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.966,
+"date": "2026-06-18",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-19T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.968,
+"date": "2026-06-19",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-22T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.976,
+"date": "2026-06-22",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-23T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.98,
+"date": "2026-06-23",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-24T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.975,
+"date": "2026-06-24",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-25T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.964,
+"date": "2026-06-25",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-26T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.955,
+"date": "2026-06-26",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-29T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.954,
+"date": "2026-06-29",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-06-30T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.961,
+"date": "2026-06-30",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-01T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.967,
+"date": "2026-07-01",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-02T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.965,
+"date": "2026-07-02",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-03T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.955,
+"date": "2026-07-03",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-06T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.944,
+"date": "2026-07-06",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-07T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.941,
+"date": "2026-07-07",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-08T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.946,
+"date": "2026-07-08",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-09T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.953,
+"date": "2026-07-09",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-10T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.954,
+"date": "2026-07-10",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-13T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.945,
+"date": "2026-07-13",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-14T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.934,
+"date": "2026-07-14",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-15T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.928,
+"date": "2026-07-15",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-16T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.931,
+"date": "2026-07-16",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-17T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.939,
+"date": "2026-07-17",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-20T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.942,
+"date": "2026-07-20",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-21T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.936,
+"date": "2026-07-21",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-22T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.924,
+"date": "2026-07-22",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-23T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.916,
+"date": "2026-07-23",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-24T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.917,
+"date": "2026-07-24",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-27T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.924,
+"date": "2026-07-27",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-28T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.929,
+"date": "2026-07-28",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-29T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.926,
+"date": "2026-07-29",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-30T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.915,
+"date": "2026-07-30",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-07-31T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.905,
+"date": "2026-07-31",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-03T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.903,
+"date": "2026-08-03",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-04T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.91,
+"date": "2026-08-04",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-05T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.916,
+"date": "2026-08-05",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-06T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.915,
+"date": "2026-08-06",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-07T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.906,
+"date": "2026-08-07",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-10T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.895,
+"date": "2026-08-10",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-11T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.89,
+"date": "2026-08-11",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-12T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.895,
+"date": "2026-08-12",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-13T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.902,
+"date": "2026-08-13",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-14T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.904,
+"date": "2026-08-14",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-17T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.897,
+"date": "2026-08-17",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-18T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.885,
+"date": "2026-08-18",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-19T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.878,
+"date": "2026-08-19",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-20T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.88,
+"date": "2026-08-20",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-21T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.888,
+"date": "2026-08-21",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-24T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.892,
+"date": "2026-08-24",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-25T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.887,
+"date": "2026-08-25",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-26T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.876,
+"date": "2026-08-26",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-27T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.867,
+"date": "2026-08-27",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-28T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.866,
+"date": "2026-08-28",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-08-31T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.873,
+"date": "2026-08-31",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-01T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.879,
+"date": "2026-09-01",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-02T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.877,
+"date": "2026-09-02",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-03T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.866,
+"date": "2026-09-03",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-04T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.856,
+"date": "2026-09-04",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-07T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.853,
+"date": "2026-09-07",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-08T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.858,
+"date": "2026-09-08",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-09T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.865,
+"date": "2026-09-09",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-10T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.866,
+"date": "2026-09-10",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-11T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.857,
+"date": "2026-09-11",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-14T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.846,
+"date": "2026-09-14",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-15T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.84,
+"date": "2026-09-15",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-16T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.844,
+"date": "2026-09-16",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-17T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.851,
+"date": "2026-09-17",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-18T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.854,
+"date": "2026-09-18",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-21T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.848,
+"date": "2026-09-21",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-22T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.836,
+"date": "2026-09-22",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-23T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.828,
+"date": "2026-09-23",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-24T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.829,
+"date": "2026-09-24",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-25T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.837,
+"date": "2026-09-25",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-28T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.842,
+"date": "2026-09-28",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-29T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.838,
+"date": "2026-09-29",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-09-30T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.827,
+"date": "2026-09-30",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-01T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.817,
+"date": "2026-10-01",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-02T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.815,
+"date": "2026-10-02",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-05T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.822,
+"date": "2026-10-05",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-06T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.828,
+"date": "2026-10-06",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-07T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.827,
+"date": "2026-10-07",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-08T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.818,
+"date": "2026-10-08",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-09T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.807,
+"date": "2026-10-09",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-12T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.802,
+"date": "2026-10-12",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-13T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.807,
+"date": "2026-10-13",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-14T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.814,
+"date": "2026-10-14",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-15T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.816,
+"date": "2026-10-15",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-16T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.808,
+"date": "2026-10-16",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-19T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.797,
+"date": "2026-10-19",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-20T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.79,
+"date": "2026-10-20",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-21T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.792,
+"date": "2026-10-21",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-22T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.8,
+"date": "2026-10-22",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-23T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.804,
+"date": "2026-10-23",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-26T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.799,
+"date": "2026-10-26",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-27T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.787,
+"date": "2026-10-27",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-28T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.778,
+"date": "2026-10-28",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-29T09:00:00Z",
+"republication": false
+},
+{
+"rate": 1.778,
+"date": "2026-10-29",
+"pctl12_5": 2.3,
+"pctl87_5": 2.5,
+"volume": 50000,
+"alternativeCalculation": false,
+"publicationTime": "2026-10-30T09:00:00Z",
+"republication": false
+}
+]

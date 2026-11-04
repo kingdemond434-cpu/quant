@@ -62,6 +62,7 @@ def box(tmp_path, monkeypatch):
     monkeypatch.setattr(W, "REGISTRY", reg)
     monkeypatch.setattr(W, "UNIVERSE", uni)
     monkeypatch.setattr(W, "REPORT", tmp_path / "DATASET_HUNT.json")
+    monkeypatch.setattr(W, "PACK_LIVENESS", tmp_path / "COUNTRY_PACK_LIVENESS.json")
     monkeypatch.setattr(W, "DESK", tmp_path)
     monkeypatch.setattr(W, "MIN_REQUEST_GAP_S", 0.0)
     monkeypatch.setattr(up, "UNIVERSE", uni)

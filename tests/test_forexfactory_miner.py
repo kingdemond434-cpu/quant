@@ -29,7 +29,7 @@ def test_successful_calendar_fetch_does_not_reference_exception(miner, monkeypat
         def json(self) -> list[dict[str, str]]:
             return [{"impact": "High", "country": "USD", "title": "CPI", "date": "x"}]
 
-    monkeypatch.setattr(miner.requests, "get", lambda *args, **kwargs: Response())
+    monkeypatch.setattr(miner, "polite_requests_get", lambda *args, **kwargs: Response())
     rows = miner.mine_calendar()
     assert len(rows) == 2
     assert all(row.get("kind") != "fetch_error" for row in rows)
@@ -40,7 +40,7 @@ def test_failed_calendar_fetch_is_emitted_as_error_row(miner, monkeypatch) -> No
     def fail(*args, **kwargs):
         raise RuntimeError("network unavailable")
 
-    monkeypatch.setattr(miner.requests, "get", fail)
+    monkeypatch.setattr(miner, "polite_requests_get", fail)
     rows = miner.mine_calendar()
     assert len(rows) == 2
     assert all(row["kind"] == "fetch_error" for row in rows)

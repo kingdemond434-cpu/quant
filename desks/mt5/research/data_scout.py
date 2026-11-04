@@ -324,7 +324,8 @@ CATALOGUE: tuple[dict[str, Any], ...] = (
      "observables": ("etf_holdings", "gold_flow", "physical_demand"),
      "access": "free", "cadence": "daily",
      "pit_status": "holdings published the next business day; not revised",
-     "cost": 1.0, "integration_effort": 1.0, "how_to_fetch": "research/fetch_gld.py"},
+     "cost": 1.0, "integration_effort": 1.0,
+     "how_to_fetch": "research/country_packs.py (etf_issuers doors, hourly world_dataset_hunt)"},
     # ------------------------------------------------------------- national statistics offices
     {"source": "National statistics offices (BLS, ONS, Destatis, INSEE, ABS, StatCan, e-Stat)",
      "observable_class": "national_statistics",

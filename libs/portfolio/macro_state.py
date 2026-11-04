@@ -56,6 +56,13 @@ from typing import Any
 
 import numpy as np
 
+from libs.data.terms_fence import fred_series_source
+
+#: The status a dimension carries when its FRED series is owned by a third party (terms_fence
+#: `fred_copyrighted`, e.g. VIXCLS for `risk`): never read -- not from the archive, not from an
+#: ALFRED vintage a pre-ruling run left behind -- so the dimension is absent, never a guessed rank.
+UNMEASURED_NO_LICENSED_SOURCE = "UNMEASURED_NO_LICENSED_SOURCE"
+
 ROOT = Path(__file__).resolve().parents[2]
 #: The rolling ~3-year archive every older consumer reads, and the full fetch the collector
 #: writes beside it (2026-09-16). The regime kernel needs a state on every day of the backtest
@@ -103,6 +110,8 @@ def alfred_rows(sid: str, alfred_dir: Path | None = None) -> list[tuple[str, flo
     published on or before D, which is the whole requirement. When several observations are
     first published the same day (a benchmark release), the newest observation wins that day.
     """
+    if fred_series_source(sid):
+        return None                     # a third-party series: never live input, stale or not
     p = _alfred_file(sid, alfred_dir)
     if p is None:
         return None
@@ -168,8 +177,8 @@ def _load_archive(path: Path | None = None,
     out: dict[str, list[tuple[str, float]]] = {}
     newest: str | None = None
     for sid, pts in (doc.get("series") or {}).items():
-        if not isinstance(pts, list):
-            continue
+        if not isinstance(pts, list) or fred_series_source(str(sid)):
+            continue                    # third-party series: absent, even in a stale archive
         rows: list[tuple[str, float]] = []
         for p in pts:
             try:
@@ -325,8 +334,21 @@ def _freshness(newest: str | None, now: datetime | None = None) -> tuple[float, 
     return min(1.0, max(0.0, 1.0 - float(age) / STALE_DAYS)), float(age)
 
 
+def unmeasured_dims() -> dict[str, str]:
+    """{dimension: why} for every dimension whose series is a third-party FRED series."""
+    return {dim: (f"{UNMEASURED_NO_LICENSED_SOURCE}: {sid} is owned by a third party "
+                  "(terms_fence fred_copyrighted); the dimension is absent, never a guessed rank")
+            for dim, sid in SERIES.items() if fred_series_source(sid)}
+
+
 def now(path: Path | None = None, at: datetime | None = None) -> dict[str, Any]:
     """Today's state: rank and bucket per dimension, freshness, confidence, and why."""
+    out = _now(path, at)
+    out["unmeasured"] = unmeasured_dims()
+    return out
+
+
+def _now(path: Path | None = None, at: datetime | None = None) -> dict[str, Any]:
     path = resolve_archive(path)
     doc = daily_states(path)
     states, newest = doc["states"], doc["newest"]
