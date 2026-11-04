@@ -344,3 +344,8 @@ libs/research/source_provenance.py
 desks/mt5/mt5desk/local_clock.py
 desks/mt5/mt5desk/fusion_equity_reference.py
 desks/mt5/mt5desk/family_alt_release.py
+desks/mt5/mt5desk/family_idio_volume.py
+desks/mt5/mt5desk/family_insider_cluster.py
+libs/data/polite_fetch.py
+libs/data/terms_fence.py
+libs/research/access_classifier.py
