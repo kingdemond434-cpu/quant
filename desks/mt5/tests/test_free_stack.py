@@ -228,6 +228,7 @@ def test_hunter_pass_on_fixtures_writes_yield_series_catalogue_and_state(store, 
                                                                          monkeypatch) -> None:
     from free_stack_hunter import run
     monkeypatch.delenv("TUSHARE_TOKEN", raising=False)
+    monkeypatch.delenv("QUANT_CONGRESS_ATTEST", raising=False)
     ids = ["app_rank_apple", "cn_weibo", "cn_xueqiu", "cn_guba", "cn_zhihu",
            "jp_ir_transcripts", "jp_patents", "gtrends", "congress_trades", "coinpaprika",
            "reddit", "telegram", "akshare", "tushare", "baostock", "dataset_catalogues"]
@@ -242,7 +243,9 @@ def test_hunter_pass_on_fixtures_writes_yield_series_catalogue_and_state(store, 
         assert per[sid]["status"] == "REFUSED_HARD_BOUNDARY", sid
         assert per[sid]["attempts"] == 0 and per[sid]["last_error"], sid
     assert per["akshare"]["status"] == "OK"
-    assert per["congress_trades"]["status"] == "OK"
+    # OFF unless the principal attests (libs.data.congress_gate, 5 U.S.C. 13107(c))
+    assert per["congress_trades"]["status"] == "AWAITING_PRINCIPAL"
+    assert per["congress_trades"]["missed_growth"]["verdict"] == "UNMEASURED"
     assert per["coinpaprika"]["status"] == "OK"
     assert per["dataset_catalogues"]["status"] == "OK"
     # a live yield is never claimed from a fixture run

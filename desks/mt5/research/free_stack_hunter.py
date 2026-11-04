@@ -52,6 +52,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.data import congress_gate  # noqa: E402
 from libs.data import free_stack as fs  # noqa: E402
 
 ROSTER = DESK / "data" / "free_stack_sources.json"
@@ -429,7 +430,13 @@ def build_alt_state(store: Store, columns: dict[str, Any], now: datetime) -> dic
     artifact the allocator MAY read; nothing here sizes, vetoes or edits the allocator."""
     import numpy as np
     per_symbol: dict[str, list[dict[str, Any]]] = {}
+    held: list[str] = []
     for sid, cols in columns.items():
+        if congress_gate.refused(sid):
+            # 5 U.S.C. 13107(c): congressional data, INCLUDING what an earlier pass stored, is
+            # UNMEASURED here until the principal attests (libs.data.congress_gate)
+            held.append(sid)
+            continue
         df = first_vintage_frame(store.obs / f"{sid}.jsonl")
         if df is None or df.empty:
             continue
@@ -458,8 +465,12 @@ def build_alt_state(store: Store, columns: dict[str, Any], now: datetime) -> dic
            "symbols": {k: sorted(v, key=lambda r: -abs(r["z"])) for k, v in
                        sorted(per_symbol.items())},
            "n_symbols": len(per_symbol)}
+    if held:
+        doc["held_principal_switch"] = {sid: congress_gate.missed_growth_line(sid)
+                                        for sid in sorted(held)}
     write_json(store.alt_state, doc)
-    return {"symbols": len(per_symbol), "rows": sum(len(v) for v in per_symbol.values())}
+    return {"symbols": len(per_symbol), "rows": sum(len(v) for v in per_symbol.values()),
+            "held": sorted(held)}
 
 
 # ------------------------------------------------------------------------------ the pass ----
@@ -494,6 +505,10 @@ def run_source(row: dict[str, Any], store: Store, fetch: fs.Fetch, cstate: dict[
         return h, {}
     extra: dict[str, Any] = {}
     sid = str(row["id"])
+    if h.verdict:
+        # a HELD fetcher made no request and stores nothing; its verdict travels in the run row
+        extra["verdict"] = h.verdict
+        return h, extra
     lag_h = float(row.get("lag_hours", 24))
     if h.raw:
         append_raw(store, sid, h.raw, now)
@@ -584,6 +599,10 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, fetch: fs.Fetch | None = None,
         st["next_due"] = _iso(now + timedelta(hours=cad))
         st["last_status"] = h.status
         st["last_error"] = h.detail if h.status != "OK" else ""
+        if h.verdict:
+            st["verdict"] = h.verdict
+        else:
+            st.pop("verdict", None)
         st["requests"] = int(st.get("requests") or 0) + h.requests
         st["failures"] = dict(Counter(st.get("failures") or {}) + h.failures)
         if h.cursor:
@@ -663,6 +682,8 @@ def build_report(rows: list[dict[str, Any]], complaints: list[str], cursor: dict
             "yield_7d": _window(store, sid, now, 168.0),
             "uses": r["uses"], "blocker_prior": r.get("blocker_prior", ""),
         }
+        if st.get("verdict"):
+            per[sid]["missed_growth"] = (st["verdict"] or {}).get("missed_growth")
     statuses = Counter(str(v["status"]) for v in per.values())
     return {"generated_utc": _iso(now), "writer": "research/free_stack_hunter.py",
             "live": live, "seconds": round(seconds, 1), "sources": len(rows),

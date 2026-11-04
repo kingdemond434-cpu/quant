@@ -137,6 +137,8 @@ class Harvest:
     notes: list[str] = field(default_factory=list)
     #: catalogue fetchers: discovered dataset candidates
     datasets: list[dict[str, Any]] = field(default_factory=list)
+    #: a fetcher HELD by a principal switch says so here (status, switch, missed-growth line)
+    verdict: dict[str, Any] = field(default_factory=dict)
 
 
 def _get(fetch: Fetch, h: Harvest, url: str, headers: Mapping[str, str] | None = None,
@@ -1130,7 +1132,16 @@ def parse_stockwatcher(raw: bytes | None) -> list[dict[str, Any]]:
 def fetch_congress(fetch: Fetch, row: Mapping[str, Any], cursor: Mapping[str, Any],
                    now: datetime) -> Harvest:
     """Disclosure-dated, never trade-dated: a congressional trade becomes public on its
-    DISCLOSURE date (up to 45 days late), so that is the only date a series may carry."""
+    DISCLOSURE date (up to 45 days late), so that is the only date a series may carry.
+
+    OFF UNLESS THE PRINCIPAL ATTESTS (`libs.data.congress_gate`, 5 U.S.C. 13107(c)): with the
+    switch off this makes NO request and returns a HELD verdict carrying its missed-growth line."""
+    from libs.data import congress_gate
+    if not congress_gate.attested():
+        v = congress_gate.held_verdict(str(row["id"]))
+        return Harvest(str(row["id"]), status=congress_gate.HELD,
+                       detail=f"{congress_gate.ENV} not attested: {v['switch_read']['why']}",
+                       verdict=v)
     h = Harvest(str(row["id"]))
     h.columns["ptr_filings"] = {"hypothesis": ["US500", "NAS100"], "event": [],
                                 "why": "House periodic transaction reports filed per day"}

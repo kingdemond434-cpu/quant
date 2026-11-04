@@ -29,6 +29,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from libs.data import congress_gate
+
 #: Every key `libs.data.pit` accepts as "when the desk could have known it", in its own order.
 AVAILABLE_KEYS = ("available_time", "published_at", "captured_at", "found_at")
 
@@ -45,11 +47,14 @@ class SeriesView:
     withheld: dict[str, str] = field(default_factory=dict)
     unstamped: set[str] = field(default_factory=set)
     stamped: dict[str, str] = field(default_factory=dict)
+    #: source ids refused by a principal switch (congressional disclosures, 5 U.S.C. 13107(c))
+    held: set[str] = field(default_factory=set)
 
     def census(self) -> dict[str, Any]:
         return {"as_of": self.as_of.isoformat(timespec="seconds"),
                 "n_visible": len(self.visible), "n_withheld": len(self.withheld),
-                "n_unstamped": len(self.unstamped),
+                "n_unstamped": len(self.unstamped), "n_held": len(self.held),
+                "held": sorted(self.held),
                 "withheld": dict(sorted(self.withheld.items())[:20]),
                 "rule": ("a series is withheld only when its sidecar's available_time is later "
                          "than as_of; unstamped is visible and counted, never withheld")}
@@ -95,6 +100,9 @@ def usable_series(series_dir: Path, as_of: datetime | None = None) -> SeriesView
         # written against the source id, so the stem before the parser's `__t<n>` suffix is the
         # identity both sides share.
         sid = f.stem.split("__", 1)[0]
+        if congress_gate.refused(sid):
+            view.held.add(sid)
+            continue
         avail = available_time_of(f.with_suffix(f.suffix + SIDECAR))
         if avail is None:
             avail = available_time_of(series_dir / f"{sid}{SIDECAR}")
