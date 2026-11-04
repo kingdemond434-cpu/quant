@@ -355,6 +355,12 @@ def run() -> tuple[dict, int]:
 
     started = datetime.now(UTC)
     errors: dict[str, str] = {}
+    # WHERE THE HOUR GOES (2026-11-04). MT5-Shadow was measured at 4,201 s on a one-hour trigger,
+    # so every other start was refused, and its log stamped only the last lines of a run: nothing
+    # said which stage held the 70 minutes. Each stage's wall time and start instant now land in
+    # shadow_health.json and on one log line, so the next slow run names itself.
+    stage_seconds: dict[str, float] = {}
+    stage_started_at: dict[str, str] = {}
     for name, fn in (
         ("scalp_bar_refresh", _refresh_scalp_bars),
         # Compatibility migration only: retires the old private external ledger. External
@@ -366,6 +372,9 @@ def run() -> tuple[dict, int]:
         ("qquant_shadow", qquant_shadow.main),
         ("promoter", promoter.main),
     ):
+        _t0 = datetime.now(UTC)
+        stage_started_at[name] = _t0.isoformat(timespec="seconds")
+        print(f"[{stage_started_at[name]}] stage {name} start", flush=True)
         try:
             result = fn()
             if isinstance(result, int) and not isinstance(result, bool) and result != 0:
@@ -373,6 +382,11 @@ def run() -> tuple[dict, int]:
         except Exception as exc:
             errors[name] = f"{type(exc).__name__}: {exc}"
             traceback.print_exc()
+        finally:
+            stage_seconds[name] = round((datetime.now(UTC) - _t0).total_seconds(), 3)
+            print(f"[{datetime.now(UTC).isoformat(timespec='seconds')}] stage {name} "
+                  f"{stage_seconds[name]:.1f}s", flush=True)
+    _census_t0 = datetime.now(UTC)
 
     # PRE-REGISTRATION STAMP, CENTRALIZED (RESEARCH §6d). Every live forward row must carry
     # `forward_start` from the moment it exists; a clock counted from the first trade ever taken
@@ -532,6 +546,13 @@ def run() -> tuple[dict, int]:
         "missing_sleeves": missing,
         "errors": errors,
         "seconds": round((datetime.now(UTC) - started).total_seconds(), 3),
+        # Per-stage wall time, in run order, plus the census below them. The slowest stage is
+        # named so a reader does not have to sort.
+        "stage_seconds": {**stage_seconds, "census": round(
+            (datetime.now(UTC) - _census_t0).total_seconds(), 3)},
+        "stage_started_at": stage_started_at,
+        "slowest_stage": max(stage_seconds, key=lambda k: stage_seconds[k]) if stage_seconds
+        else None,
         "gateway_armed": bool(gw.get("armed", False)),
         # Executable exposures are the headline. Raw certificate rows remain alongside them for
         # lineage audit, so folding aliases can never erase evidence or hide which certificate
