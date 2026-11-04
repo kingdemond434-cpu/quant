@@ -2583,10 +2583,13 @@ ORTHOGONAL_FAMILIES["insider_cluster_drift"] = family_insider_cluster_drift
 FAMILY_INPUTS["insider_cluster_drift"] = (
     "Form 4 open-market purchase clusters dated at SEC acceptance (research/form4_lane.py)",
     "desks/mt5/data/form4/clusters.jsonl")
-FAMILY_TIMEFRAMES["insider_cluster_drift"] = (
-    ("H1",),
-    "a cluster is a daily-cadence filing event; its hold is counted in H1 bars per trading day "
-    "and the store's acceptance stamps are converted onto the H1 broker clock")
+# NO TIMEFRAME RESTRICTION (2026-11-04). This carried ("H1",) on the reading that the hold is
+# counted in H1 bars and the stamps are placed on the H1 clock. Neither is what the code does:
+# `event_times` converts each acceptance stamp onto the broker clock (`bar_clock.to_bar_time`), and
+# `family_analyst_revision._signals` enters on the first bar OPENING at/after it on whatever chart
+# the cell carries (`_h1` keeps the caller's clock) and holds `hold_days` times that chart's own
+# MEASURED bars per day -- the exact rule `alt_release_drift` states below for running unrestricted.
+# So it is the same market rule on every rung of the ladder, and the restriction had no reason.
 
 # F1 -- THE IDIOSYNCRATIC TICK-VOLUME SPIKE (2026-10-14, GAP_MAP row 42: flow pressure from public
 # volume). The family loads its own peer panel on the cell's chart through
