@@ -42,10 +42,11 @@ def _call_seen(family: str, params: dict, bars: pd.DataFrame, monkeypatch) -> di
     seen: list[dict] = []
 
     def rec(df, **kw):
-        seen.append({k: (id(v) if isinstance(v, (pd.Series, pd.DataFrame)) else v)
+        seen.append({k: (tuple(np.asarray(v, dtype=float)) if isinstance(v, pd.Series) else v)
                      for k, v in kw.items()})
         return []
 
+    monkeypatch.setattr(E, "_FN_CACHE", {})        # the recorder must not leak into identity
     monkeypatch.setattr(families, f"family_{family}", rec, raising=False)
     tape = pd.Series(1.0, index=bars.index)
     monkeypatch.setattr(osw, "_tape_series", lambda *a, **k: (tape, tape))
@@ -71,8 +72,13 @@ def test_an_ignored_input_hands_the_family_the_identical_call(family, bars, monk
     over = {"symbol": "CHFNOK"} if "symbol" in keys else {}
     assert {**runtime_call_params(family, alias), **over} == \
         {**runtime_call_params(family, {}), **over}
-    assert E.canonical_fingerprint(family, "CHFNOK", alias) == \
-        E.canonical_fingerprint(family, "CHFNOK", {})
+
+
+@pytest.mark.parametrize("family", sorted(E.IGNORED_INPUTS))
+def test_an_ignored_input_shares_the_canonical_fingerprint(family) -> None:
+    alias = {k: ALIASES[k] for k in E.IGNORED_INPUTS[family]}
+    fp = E.canonical_fingerprint(family, "CHFNOK", alias)
+    assert fp is not None and fp == E.canonical_fingerprint(family, "CHFNOK", {})
 
 
 def test_the_carry_alias_set_from_the_ruling_is_one_cell() -> None:
