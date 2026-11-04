@@ -197,9 +197,9 @@ def mine_central_banks(fetch: Any = None,
     """Fetch every seeded feed and return the DATED rows not already archived.
 
     EVERY FETCH GOES THROUGH THE POLITE DOOR (`polite_fetch.get`): the desk's honest UA, the
-    feed origin's robots.txt asked first, and a 401/403/429 or challenge a HARD STOP that holds
-    the site for a person (the RBA's edge 403 becomes that recorded hold, never a retry under
-    another UA). `fetch` is the test seam (same signature as `polite_fetch.get`)."""
+    feed origin's robots.txt read first AS A LABEL (LAWS 5e; it rides on each row), and a
+    401/403/429 or challenge a HARD STOP that holds the site for a person (the RBA's edge 403
+    becomes that recorded hold, never a retry under another UA). `fetch` is the test seam (same signature as `polite_fetch.get`)."""
     get = fetch or _pf.get
     fresh: list[dict[str, Any]] = []
     seen = _seen_keys()
@@ -273,7 +273,7 @@ def run_and_save(fetch: Any = None, report: Path | None = None) -> list[dict[str
         "consumer": ("data/intelligence/central_banks/discoveries_*.json -> the compiler "
                      "(data/intelligence/**); the archive feeds nlp_event_factors"),
         "rule": ("attention only (dated pointers read for ideas), never a live data series; "
-                 "every fetch through polite_fetch.get (robots first, 401/403/429 a held site)"),
+                 "every fetch through polite_fetch.get (robots a label, 401/403/429 a held site)"),
     }
     out = report or REPORT
     out.parent.mkdir(parents=True, exist_ok=True)

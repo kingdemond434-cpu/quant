@@ -342,7 +342,20 @@ def test_every_source_has_an_explicit_terms_entry() -> None:
         assert s.terms in A.TERMS_VALUES and s.terms == A.TERMS[s.id][0], s.id
     for sid in ("cn_maoyan_box_office", "cn_baidu_migration"):
         assert A.BY_ID[sid].terms != "confirmed"
-    assert A.BY_ID["cn_maoyan_box_office"].terms == "refused"
+    # robots.txt is a LABEL, never the refusal (LAWS 5e): maoyan waits on its TERMS being read.
+    assert A.BY_ID["cn_maoyan_box_office"].terms == "to_confirm"
+
+
+def test_no_terms_refusal_rests_on_robots_txt() -> None:
+    """LAWS 5e REMOVED_BRAKES: "robots.txt Disallow treated as a refusal". A `refused` row must
+    name a terms clause; a row whose only reason was robots.txt reads `to_confirm` and carries
+    the Disallow as its PUBLIC_WITH_TERMS label."""
+    for sid, (verdict, why) in A.TERMS.items():
+        if verdict == "refused":
+            assert "robots" not in why.lower(), sid
+    for sid in ("in_npci_upi", "cn_maoyan_box_office"):
+        verdict, why = A.TERMS[sid]
+        assert verdict == "to_confirm" and "PUBLIC_WITH_TERMS" in why, sid
 
 
 def test_reviewed_terms_carry_evidence() -> None:

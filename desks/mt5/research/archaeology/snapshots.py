@@ -539,7 +539,9 @@ def machine_use(p: Platform) -> tuple[str, str]:
     wall = _walls().get(p.host)
     if wall is not None:
         verdict = str(wall.get("verdict") or "")
-        reasons.append((FORBIDDEN if verdict == "ROBOTS_DISALLOW" else UNKNOWN,
+        # A robots wall is a LABEL (LAWS 5e REMOVED_BRAKES: "robots.txt Disallow treated as a
+        # refusal"): UNKNOWN, never FORBIDDEN. Only a person-held hold (`robots_barred`) forbids.
+        reasons.append((UNKNOWN,
                         f"desk-measured wall {verdict} on {p.host}: "
                         f"{str(wall.get('evidence') or '')[:200]}"))
     barred = mc.robots_barred(p.root)

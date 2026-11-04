@@ -202,7 +202,7 @@ SOURCE_POLICY: dict[str, dict[str, Any]] = {
                     "use": "LIVE",
                     "why": ("Tor Project's per-country relay and bridge user estimates; its data "
                             "is CC0 (clause quoted), so the CSVs are LIVE input, fetched politely "
-                            "(robots decides, honest DESK_UA)"),
+                            "(robots a label, honest DESK_UA)"),
                     "terms": {"url": "https://metrics.torproject.org/",
                               "checked_at": "2026-10-29",
                               "clauses": {
