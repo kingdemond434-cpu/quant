@@ -37,6 +37,7 @@ import argparse
 import json
 import sys
 from collections import Counter
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -64,6 +65,26 @@ CELLS_PER_CLUSTER = 6
 #: of the book's instruments is not being looked at, as energy (3 CFDs, read as FX exotics) and
 #: bonds (3, absent) were on 2026-11-02.
 THIN_CLASS_SHARE = 0.10
+
+#: A forced class cell is never minted on an instrument whose LAST BAR is older than this, whatever
+#: the parquet's mtime says. Fusion stopped quoting UST10Y and UST05Y around 2025-12-31 and the
+#: recorder still rewrites both files with zero new bars, so the file looks fresh and the data is
+#: ten months old; every cell on them is a trial spent on a frozen series (2026-11-04).
+STALE_BAR_DAYS = 14
+
+
+def _last_bar_age_days(sym: str, now: datetime | None = None) -> float | None:
+    """Days since `sym`'s last H1 bar, or None when its bars cannot be read here."""
+    try:
+        from mt5desk.mass_screen_rules import load_bars
+        bars = load_bars(sym)
+        if bars is None or not len(bars):
+            return None
+        last = bars.index[-1]
+        last = last.tz_localize("UTC") if last.tzinfo is None else last.tz_convert("UTC")
+        return ((now or datetime.now(UTC)) - last.to_pydatetime()).total_seconds() / 86400
+    except Exception:
+        return None
 
 #: Instruments a forced cell is minted on, in order. The book's own liquid ground first: a
 #: cross-sectional FX cell on an exotic nobody quotes tightly is a cell that cannot survive costs
@@ -201,7 +222,9 @@ def _class_counts(steering: dict[str, Any]) -> dict[str, int]:
 
 def class_slots(by_cluster: dict[str, list[str]], turn: int,
                 families_doc: dict[str, Any] | None = None,
-                lane: list[str] | None = None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+                lane: list[str] | None = None,
+                bar_age: Callable[[str], float | None] | None = None,
+                ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """(rows, cells): CELLS_PER_CLUSTER forced cells for every THIN hypothesis-lane asset class.
 
     THE ASSET-CLASS TWIN OF THE CLUSTER FORCER (2026-11-03). The docket steering is read per class
@@ -256,7 +279,18 @@ def class_slots(by_cluster: dict[str, list[str]], turn: int,
             rows.append({"axis": "asset_class", "value": k, "families_in_docket": n,
                          "verdict": "UNREACHABLE", "why": "no buildable donatable family"})
             continue
-        syms = orthogonal_ring(members[k])
+        age = bar_age or _last_bar_age_days
+        ages = {x: age(x) for x in members[k]}
+        stale = sorted(x for x, a in ages.items() if a is not None and a > STALE_BAR_DAYS)
+        live = [x for x in members[k] if x not in stale]
+        if not live:
+            rows.append({"axis": "asset_class", "value": k, "families_in_docket": n,
+                         "verdict": "STALE_BARS", "stale": stale,
+                         "why": (f"every instrument's last bar is over {STALE_BAR_DAYS} days old; "
+                                 f"the venue stopped quoting them, so cells would test a frozen "
+                                 f"series. The remedy is data, not cells.")})
+            continue
+        syms = orthogonal_ring(live)
         width = max(1, CELLS_PER_CLUSTER)
         picks = rotating_window(fams, width, turn=turn)
         where = rotating_window(syms, width, turn=turn)
@@ -275,7 +309,7 @@ def class_slots(by_cluster: dict[str, list[str]], turn: int,
         rows.append({"axis": "asset_class", "value": k, "families_in_docket": n,
                      "instruments": len(members[k]), "per_instrument": round(d, 2),
                      "median_per_instrument": round(median, 2), "verdict": "FORCED",
-                     "cells_minted": width})
+                     "cells_minted": width, "stale_skipped": stale})
     return rows, cells
 
 

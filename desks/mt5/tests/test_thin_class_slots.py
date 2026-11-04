@@ -41,7 +41,7 @@ def test_a_class_absent_from_the_steering_is_forced() -> None:
     by_cluster = {"session": ["session_range_breakout"]}
     doc = _doc({"forex": 100_000, "fx major": 100_000, "indices": 50_000, "index": 50_000})
     lane = ["EURUSD", "GBPUSD", "US500", "XTIUSD", "XBRUSD", "XNGUSD"]
-    rows, cells = forcer.class_slots(by_cluster, 7, doc, lane)
+    rows, cells = forcer.class_slots(by_cluster, 7, doc, lane, lambda s: 1.0)
     forced = {r["value"] for r in rows if r["verdict"] == "FORCED"}
     assert forced == {"energy"}
     assert len(cells) == forcer.CELLS_PER_CLUSTER
@@ -53,7 +53,8 @@ def test_the_pattern_name_counts_so_a_covered_class_is_not_forced() -> None:
     by_cluster = {"session": ["session_range_breakout"]}
     # a report written by the pattern classifier names gold "metal", not "commodities"
     doc = _doc({"fx major": 100_000, "metal": 90_000})
-    rows, cells = forcer.class_slots(by_cluster, 7, doc, ["EURUSD", "XAUUSD"])
+    rows, cells = forcer.class_slots(by_cluster, 7, doc, ["EURUSD", "XAUUSD"],
+                                     lambda s: 1.0)
     assert not cells
     assert not [r for r in rows if r["verdict"] == "FORCED"]
 
@@ -71,3 +72,18 @@ def test_declared_classes_include_energy_and_bonds() -> None:
         return
     assert "energy" in declared and "bonds" in declared
     assert "equities" not in declared
+
+
+def test_frozen_instruments_get_no_cells() -> None:
+    by_cluster = {"session": ["session_range_breakout"]}
+    doc = _doc({"forex": 100_000, "fx major": 100_000})
+    lane = ["EURUSD", "UST10Y", "UST05Y", "UKGILT"]
+    age = {"UST10Y": 300.0, "UST05Y": 300.0, "UKGILT": 1.0, "EURUSD": 0.1}
+    rows, cells = forcer.class_slots(by_cluster, 7, doc, lane, age.get)
+    assert {c["symbols"][0] for c in cells} == {"UKGILT"}
+    bonds = next(r for r in rows if r["value"] == "bonds")
+    assert bonds["stale_skipped"] == ["UST05Y", "UST10Y"]
+    rows, cells = forcer.class_slots(by_cluster, 7, doc, ["EURUSD", "UST10Y"],
+                                     lambda s: 300.0 if s == "UST10Y" else 0.1)
+    assert cells == []
+    assert next(r for r in rows if r["value"] == "bonds")["verdict"] == "STALE_BARS"
