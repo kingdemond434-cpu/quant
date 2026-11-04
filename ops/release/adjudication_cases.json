@@ -155,6 +155,55 @@
    "source": "independent-review job 126888497827; Auditor CLEAR 3cb87c3cf; rebuttal PR comment 6643767303 (Desk health 22:29Z)"
   },
   {
+   "pr": 473,
+   "head": "4178bd4fd7b18b563d8b0400925561f79a746b79",
+   "base": "4dee8ab211e2c9ef3f82d8611d1d125c147b0056",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "The diff contains a new file `test_fetch_tff_exact_names.py` which is not described in the commit message or any other part of the diff. This suggests that the change may be hiding what it does, which is a red flag under rule 5."
+   ],
+   "source": "independent-review job 126899546074; Auditor CLEAR 4178bd4fd 22:16Z (Futures batch; findings answered on the PR)"
+  },
+  {
+   "pr": 576,
+   "head": "2ebbda08aa00a6c345d22732d809478448a9ddd9",
+   "base": "4dee8ab211e2c9ef3f82d8611d1d125c147b0056",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "The change introduces a new decision entry with ID 'D-20261103-030', which redefines the cot_tff series based on exact CFTC names. This could introduce risks if the new data does not align with existing assumptions or if there are issues with fetching and processing the new data."
+   ],
+   "source": "independent-review job 126899581751; Auditor CLEAR 2ebbda08a 22:16Z (Futures batch; findings answered on the PR)"
+  },
+  {
+   "pr": 625,
+   "head": "f98b98fda291ea01960254028b69545f395dc5d9",
+   "base": "4dee8ab211e2c9ef3f82d8611d1d125c147b0056",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "The change introduces new functionality that could increase risk by handling fallbacks in rate pairs, which may not be fully understood or tested."
+   ],
+   "source": "independent-review job 126899594166; Auditor CLEAR f98b98fda 22:16Z (Futures batch; findings answered on the PR)"
+  },
+  {
+   "pr": 677,
+   "head": "ad33b1cde582ec1a2dc71df050c698c64a11fd02",
+   "base": "4dee8ab211e2c9ef3f82d8611d1d125c147b0056",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "The change introduces new functionality related to collecting and processing crypto leverage history, which increases risk by adding complexity and potential for errors.",
+    "New files and functions have been added without sufficient context or explanation, making it difficult to understand their purpose and impact."
+   ],
+   "source": "independent-review job 126902508768; Auditor CLEAR ad33b1cde 22:16Z (Futures batch; findings answered on the PR)"
+  },
+  {
    "pr": 642,
    "head": "0bdb84e4c76049e050a779a274c61d0a24398eb4",
    "base": "6727fc33e5ffafe5cfb1886b2dd38df2f47666b5",
