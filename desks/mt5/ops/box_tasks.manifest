@@ -327,3 +327,8 @@ TASK name="Quant-SignTrain"    trigger="at logon + every 10 minutes" runs="ops/b
 # sealed on branch claude/video-transcripts; this task opens them, extracts discovery rows for the
 # compiler, and publishes desks/mt5/reports/VIDEO_MINING_COVERAGE.json (consumer: discovery_compiler).
 TASK name="Quant-VideoCells"   trigger="hourly"                      runs="scripts/run_video_cells_box.ps1" installer="scripts/run_video_cells_box.ps1" lane="research" also_runs="scripts/video_transcript_vault.py,scripts/extract_video_cells.py,scripts/mine_channel_transcripts.py"
+# The moat backup's two clocks (#479): the installer registers both; until these rows existed the
+# tasks could not be installed without tripping the scheduler-join fence, so the replica only ran
+# by hand. Times are the installer's (install_moat_backup_tasks.ps1), outside the money window.
+TASK name="MT5-MoatBackup"     trigger="daily 06:40"                 runs="scripts/run_moat_backup.py"  installer="desks/mt5/scripts/install_moat_backup_tasks.ps1" lane="ops"
+TASK name="MT5-RestoreDrill"   trigger="weekly Sunday 07:20"         runs="scripts/run_restore_drill.py" installer="desks/mt5/scripts/install_moat_backup_tasks.ps1" lane="ops"
