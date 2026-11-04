@@ -323,6 +323,19 @@ def test_a_wall_may_tighten_access_but_never_loosen_it(archive):
     assert snap._STRICTNESS[snap.UNKNOWN] > snap._STRICTNESS[snap.ALLOWED]
 
 
+def test_a_robots_wall_is_a_label_never_a_forbidden_verdict(archive, monkeypatch):
+    """LAWS 5e REMOVED_BRAKES: "robots.txt Disallow treated as a refusal". A desk-measured
+    ROBOTS_DISALLOW wall on a host may only label the ground UNKNOWN; it never makes an ALLOWED
+    platform FORBIDDEN, and the ground still reaches the fetch door."""
+    allowed = _platform("mql5_signals")
+    monkeypatch.setattr(snap, "_walls", lambda: {allowed.host: {
+        "host": allowed.host, "verdict": "ROBOTS_DISALLOW", "evidence": "Disallow: /"}})
+    verdict, why = snap.machine_use(allowed)
+    assert verdict == snap.UNKNOWN and "ROBOTS_DISALLOW" in why
+    ok, _why = snap.may_fetch(allowed)
+    assert ok is True
+
+
 def test_the_label_census_is_reported(archive):
     snap.snapshot(_platform("mql5_signals"), 30.0, fetch=False, pages=[("u", SIGNALS_PAGE)],
                   at="2026-09-01")

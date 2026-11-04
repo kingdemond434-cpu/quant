@@ -12,10 +12,10 @@ It is offered explicitly "to assist researchers" and its terms allow noncommerci
 `/speeches/` carries no robots bar. This is the free-frontier answer to a body layer that looked
 like a 215-request crawl: one request, 30 years, every central bank at once.
 
-  §13 NOTE, and a real defect in the wired miner: `central_bank_miner.FEEDS["BIS"]` points at
+  ROBOTS NOTE: `central_bank_miner.FEEDS["BIS"]` points at
   https://www.bis.org/doclist/cbspeeches.rss, and bis.org/robots.txt carries `Disallow: /doclist/`.
-  That feed is barred and the miner has been reading it. BIS's own RSS path redirects to the
-  allowed listing page, whose only content link is this download. Repair is in the same change.
+  That is a LABEL, never a bar (LAWS 5e): the feed is read and its rows carry PUBLIC_WITH_TERMS.
+  This download is the body layer beside it, not its replacement.
 
 COVERAGE THIS OPENS. RBA (AUD) has been a dead leg since 2026-08-26 (edge-blocked 403 on both
 published feeds) and SNB (CHF) had no feed at all -- both currencies were UNCOVERED, and an

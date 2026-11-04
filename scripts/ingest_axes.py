@@ -59,9 +59,9 @@ def curl(url: str, timeout: int = 90) -> bytes:
     import subprocess
 
     from libs.data.polite_fetch import admit, refuse_status
-    # ROBOTS DECIDES (LAWS 5e amended 2026-10-14): the site's holds and the origin's robots.txt
-    # (polite_fetch.HostAccess) before curl sends anything. Redirects are NOT followed (no -L):
-    # a hop would skip its own robots check. A 401/403/429 holds the site like any polite fetch.
+    # THE SITE'S HOLDS (polite_fetch.HostAccess) before curl sends anything; robots.txt is read
+    # there as a LABEL, never a refusal (LAWS 5e). Redirects are NOT followed (no -L): a hop
+    # would skip its own hold check. A 401/403/429 holds the site like any polite fetch.
     ok, why = admit(url)
     if not ok:
         raise RuntimeError(f"refused before any request: {why}")

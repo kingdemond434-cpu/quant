@@ -219,15 +219,15 @@ def test_the_boundary_is_read_before_any_permissive_label_can_rescue_it() -> Non
 
 # -------------------------------------------------- the shared fetch path carries no brake
 
-def test_every_collector_refuses_a_fetch_on_robots(monkeypatch: pytest.MonkeyPatch) -> None:
-    """ROBOTS DECIDES (LAWS 5e as amended by the principal 2026-10-14; the 2026-09-23 "robots is
-    a label, never a gate" reading this test used to pin is withdrawn).
+def test_every_collector_fetches_under_a_robots_label(monkeypatch: pytest.MonkeyPatch) -> None:
+    """LAWS 5e (live): robots.txt is an access LABEL, never a refusal -- "robots.txt Disallow
+    treated as a refusal" is a REMOVED_BRAKE.
 
     `asia_collector.collect_one` (called by `event_surprise` and `data_acquisition_scientist`)
-    asks the polite door's robots/holds answer FIRST: a Disallow means status BLOCKED_BY_ROBOTS,
-    the reading recorded (`robots`, `robots_disallows`) and NOTHING sent; an allowing robots.txt
-    sends the request through the polite seam. Behaviour on stubs, then the same rule pinned in
-    the scientist's own sampler by its assignment."""
+    asks the polite door's holds FIRST: only a person-held site hold (401/403/429/WAF) sends
+    nothing. A Disallow is recorded as PUBLIC_WITH_TERMS (`robots`, `robots_disallows`,
+    `access_label`, redistribution withheld) and the request IS sent through the polite seam.
+    Behaviour on stubs, then the same rule pinned in the scientist's own sampler."""
     import sys
     from pathlib import Path
 
@@ -243,19 +243,34 @@ def test_every_collector_refuses_a_fetch_on_robots(monkeypatch: pytest.MonkeyPat
         sent.append(req.full_url)
         raise asc.PoliteRefused(req.full_url, "", "no network in this test")
 
+    def _label(lab: str):
+        def _f(url: str, **_k: object) -> dict[str, object]:
+            return {"access_label": lab, "redistribute_allowed": False,
+                    "terms_note": "robots.txt Disallow: /data" if lab != "PUBLIC" else ""}
+        return _f
+
     monkeypatch.setattr(asc, "polite_urlopen", _door)
-    monkeypatch.setattr(asc, "admit", lambda url: (False, "ROBOTS_DISALLOW: /data"))
+    monkeypatch.setattr(asc, "admit", lambda url: (True, ""))
+    monkeypatch.setattr(asc, "access_label", _label("PUBLIC_WITH_TERMS"))
     src = {"id": "robots_probe", "url": "https://example.invalid/data", "access": "public"}
     rec = asc.collect_one(src)
-    assert rec["status"] == "BLOCKED_BY_ROBOTS" and rec["robots_disallows"] is True
-    assert rec["robots"].startswith("ROBOTS_DISALLOW")
-    assert sent == [], "robots disallows: nothing is requested"
+    assert rec["status"] != "BLOCKED_BY_ROBOTS" and rec["robots_disallows"] is True
+    assert rec["robots"].startswith("PUBLIC_WITH_TERMS")
+    assert rec["access_label"] == "PUBLIC_WITH_TERMS" and rec["redistribute_allowed"] is False
+    assert sent == ["https://example.invalid/data"], "a Disallow is a label: the door is opened"
 
-    monkeypatch.setattr(asc, "admit", lambda url: (True, ""))
+    sent.clear()
+    monkeypatch.setattr(asc, "access_label", _label("PUBLIC"))
     rec = asc.collect_one(src)
-    assert rec["robots_disallows"] is False and rec["status"] != "BLOCKED_BY_ROBOTS"
-    assert sent == ["https://example.invalid/data"], "robots allows: the polite door is opened"
+    assert rec["robots_disallows"] is False and rec["access_label"] == "PUBLIC"
+    assert sent == ["https://example.invalid/data"]
+
+    sent.clear()
+    monkeypatch.setattr(asc, "admit", lambda url: (False, "METHOD_BLOCKED: held"))
+    rec = asc.collect_one(src)
+    assert sent == [], "a person-held site: nothing is requested"
+    assert "held for a person" in rec["why"]
 
     sci = (repo / "desks/mt5/research/data_acquisition_scientist.py").read_text("utf-8")
-    assert '"status": "BLOCKED_BY_ROBOTS"' in sci
+    assert '"BLOCKED_BY_ROBOTS"' not in sci and '"status": "HELD_FOR_PERSON"' in sci
     assert "allowed, robots_note = _robots_allows(url)" in sci

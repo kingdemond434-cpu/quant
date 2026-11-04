@@ -16,8 +16,8 @@ WHAT A 403 MEANS NOW. A 403 to the desk's honest, named User-Agent is the venue'
 desk, and it is recorded as METHOD_BLOCKED -- a site hold in the shared access state, with its
 missed-growth line -- never re-tried with a browser string. A venue that answers only browsers is
 a refused venue, not a reason to pretend to be one. 401 reads NEEDS_KEY, 429 is a hold rechecked
-after 24h, and robots.txt decides every request, exactly as for every other polite fetch: this
-module is a JSON wrapper over `polite_fetch.get`, not a second HTTP client.
+after 24h, and robots.txt LABELS every request (never refuses: LAWS 5e), as for every polite
+fetch: this module is a JSON wrapper over `polite_fetch.get`, not a second HTTP client.
 
 FALLBACKS MATTER BECAUSE ONE SOURCE IS A SINGLE POINT OF FAILURE for the sample-size problem. The
 gauntlet cannot resolve a Sharpe-1 edge at 310 bars and needs roughly 1,460; that is a DATA
@@ -50,7 +50,7 @@ def get_json(
     """GET a public JSON endpoint politely and parse the reply.
 
     RETRIES ON TRANSPORT AND 5xx, NEVER ON A REFUSAL. 401/403/429 and a challenge record a site
-    hold and raise at once; a robots.txt Disallow raises without sending anything; a 404 is a
+    hold and raise at once; a robots.txt Disallow is a label, never a refusal; a 404 is a
     deterministic answer and is not retried. The exception message carries the verdict and status
     so the caller records what actually happened instead of "failed after 4 tries".
     """
