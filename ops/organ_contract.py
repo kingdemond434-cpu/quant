@@ -47,8 +47,13 @@ OUT = DESK / "reports" / "organ_contract.json"
 #: is late at 40, not at 16, because a single slow pass is not a defect and an alarm that cries
 #: at every slow pass gets muted, which is how a real one goes unseen.
 CONTRACTS: dict[str, tuple[str, int, str]] = {
-    "MT5-Gateway":        ("desks/mt5/data/gateway_state.json", 10,
-                           "the pass state the executor writes every loop"),
+    # THE GATEWAY RUNS AS MT5-GatewayResident (box_tasks.manifest, 2026-09-23): MT5-Gateway has
+    # been Disabled since 2026-09-16 and is the superseded registration. Contracting the retired
+    # name made the one organ that moves money read DISABLED or NOT_SCHEDULED on every pass while
+    # the resident task wrote gateway_state.json every ten minutes -- a permanent false alarm on
+    # the row an operator must never learn to scroll past.
+    "MT5-GatewayResident": ("desks/mt5/data/gateway_state.json", 10,
+                            "the pass state the executor writes every loop"),
     "MT5-AccountState":   ("desks/mt5/data/account_state.json", 45,
                            "the live equity the dashboard's account panel reads"),
     "MT5-DeskState":      ("web/desk_state.json", 45,

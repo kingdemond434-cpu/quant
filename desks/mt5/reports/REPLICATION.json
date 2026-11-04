@@ -1,11 +1,11 @@
 {
- "at": "2026-10-30T10:53:28+00:00",
+ "at": "2026-11-04T10:47:52+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
  "population": {
-  "certificates": 1335,
-  "forward_rows": 1837,
+  "certificates": 1805,
+  "forward_rows": 1851,
   "spec_book": [
    "dow_effect",
    "mean_reversion_rsi",
@@ -18,460 +18,368 @@
  "n": 16,
  "counts": {
   "REPLICATED": 0,
-  "MISMATCH": 8,
-  "UNMEASURED": 8
+  "MISMATCH": 3,
+  "UNMEASURED": 13
  },
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "CHFSGD.clock_transition.p=b95e974aac459e97",
-   "certificate": "external.CHFSGD.clock_transition.p=b95e974aac459e97",
-   "fp": "6aeeeadf46d1dfba",
-   "symbol": "CHFSGD",
-   "family": "clock_transition",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'clock_transition'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "CHFSGD.clock_transition.p=c6388886873e74ed",
-   "certificate": "external.CHFSGD.clock_transition.p=c6388886873e74ed",
-   "fp": "82351095319360b4",
-   "symbol": "CHFSGD",
-   "family": "clock_transition",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'clock_transition'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "CHFSGD.clock_transition.p=fdd66336df4507c7",
-   "certificate": "external.CHFSGD.clock_transition.p=fdd66336df4507c7",
-   "fp": "be65dec47b8dabdd",
-   "symbol": "CHFSGD",
-   "family": "clock_transition",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'clock_transition'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "EURSEK.clock_transition.p=29081cc874e59063",
-   "certificate": "external.EURSEK.clock_transition.p=29081cc874e59063",
-   "fp": "9ad1c897486a1ed3",
-   "symbol": "EURSEK",
-   "family": "clock_transition",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'clock_transition'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "GBPJPY.clock_transition.p=99cdb0d39855b38f",
-   "certificate": "external.GBPJPY.clock_transition.p=99cdb0d39855b38f",
-   "fp": "2d6eec716fbfff9a",
+   "key": "GBPJPY.formula.p=01be470d1fa00195",
+   "certificate": "external.GBPJPY.formula.p=01be470d1fa00195",
+   "fp": "e705d1881c5f03fa",
    "symbol": "GBPJPY",
-   "family": "clock_transition",
+   "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'clock_transition'"
+    "no written specification in the spec book for family 'formula'"
    ],
    "ours": {},
    "theirs": {}
   },
   {
    "lane": "certificate",
-   "key": "GBPJPY.clock_transition.p=aaf7fdb4641151c9",
-   "certificate": "external.GBPJPY.clock_transition.p=aaf7fdb4641151c9",
-   "fp": "5f471ff80807cbca",
+   "key": "GBPJPY.formula.p=0e57e86c1aaebc61",
+   "certificate": "external.GBPJPY.formula.p=0e57e86c1aaebc61",
+   "fp": "27c750971486266e",
    "symbol": "GBPJPY",
-   "family": "clock_transition",
+   "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'clock_transition'"
+    "no written specification in the spec book for family 'formula'"
    ],
    "ours": {},
    "theirs": {}
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.clock_transition.p=b95e974aac459e97",
-   "certificate": "external.GBPSGD.clock_transition.p=b95e974aac459e97",
-   "fp": "8419098a80f3421e",
-   "symbol": "GBPSGD",
-   "family": "clock_transition",
+   "key": "GBPJPY.formula.p=d958ae4f491c1cd5",
+   "certificate": "external.GBPJPY.formula.p=d958ae4f491c1cd5",
+   "fp": "79e2ad0d522cd21a",
+   "symbol": "GBPJPY",
+   "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'clock_transition'"
+    "no written specification in the spec book for family 'formula'"
    ],
    "ours": {},
    "theirs": {}
   },
   {
    "lane": "certificate",
-   "key": "GBPSGD.clock_transition.p=c6388886873e74ed",
-   "certificate": "external.GBPSGD.clock_transition.p=c6388886873e74ed",
-   "fp": "722ab9842b7d2448",
-   "symbol": "GBPSGD",
-   "family": "clock_transition",
+   "key": "GBPJPY.formula.p=588a0b80c5099b65",
+   "certificate": "external.GBPJPY.formula.p=588a0b80c5099b65",
+   "fp": "0224d0d34e4a0757",
+   "symbol": "GBPJPY",
+   "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'clock_transition'"
+    "no written specification in the spec book for family 'formula'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPJPY.formula.p=5f84a1eb52b3deb7",
+   "certificate": "external.GBPJPY.formula.p=5f84a1eb52b3deb7",
+   "fp": "b290497901ed285f",
+   "symbol": "GBPJPY",
+   "family": "formula",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'formula'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPMXN.formula.p=00dc55ceb72348ce",
+   "certificate": "external.GBPMXN.formula.p=00dc55ceb72348ce",
+   "fp": "688648851a964c15",
+   "symbol": "GBPMXN",
+   "family": "formula",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'formula'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPMXN.formula.p=494964b273059ae1",
+   "certificate": "external.GBPMXN.formula.p=494964b273059ae1",
+   "fp": "13cb1524566c0731",
+   "symbol": "GBPMXN",
+   "family": "formula",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'formula'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPMXN.formula.p=754d7ad8a4888951",
+   "certificate": "external.GBPMXN.formula.p=754d7ad8a4888951",
+   "fp": "b3412f7adb8ceac9",
+   "symbol": "GBPMXN",
+   "family": "formula",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'formula'"
    ],
    "ours": {},
    "theirs": {}
   },
   {
    "lane": "forward",
-   "key": "AUDCHF.overnight_gap_decay.asia#selector=asia_session=asia",
-   "symbol": "AUDCHF",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
+   "key": "AUDSGD.vol_transition.continuous",
+   "symbol": "AUDSGD",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
    "why": [
-    "the rebuild produced NO fill against 31 ledger trade(s)"
+    "no forward ledger on this box for this row"
    ],
-   "ours": {
-    "n_fills": 0,
-    "pnl_R": 0,
-    "cost": {
-     "spread_per_lot": 1.0,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 0.92089,
-     "basis": "universe_registry"
-    },
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
-   },
-   "theirs": {
-    "n_trades": 31,
-    "cost_fields": {
-     "spread_per_lot": 1.0,
-     "commission_per_lot": 2.0,
-     "contract_oz": 100000.0,
-     "quote_per_account": 0.92089,
-     "swap_per_lot_per_night": 10.11
-    },
-    "forward_start": "2026-10-29T15:51:16+00:00"
-   },
-   "divergence": {
-    "n_ledger": 31,
-    "n_rebuilt": 0
-   }
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
   },
   {
    "lane": "forward",
-   "key": "AUDCHF.overnight_gap_decay.asia#selector=asia",
-   "symbol": "AUDCHF",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
+   "key": "AUDUSD.range_reversion.continuous",
+   "symbol": "AUDUSD",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
    "why": [
-    "the rebuild produced NO fill against 31 ledger trade(s)"
+    "no forward ledger on this box for this row"
    ],
-   "ours": {
-    "n_fills": 0,
-    "pnl_R": 0,
-    "cost": {
-     "spread_per_lot": 1.0,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 0.92089,
-     "basis": "universe_registry"
-    },
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
-   },
-   "theirs": {
-    "n_trades": 31,
-    "cost_fields": {
-     "spread_per_lot": 1.0,
-     "commission_per_lot": 2.0,
-     "contract_oz": 100000.0,
-     "quote_per_account": 0.92089,
-     "swap_per_lot_per_night": 10.11
-    },
-    "forward_start": "2026-10-29T15:51:20.211331+00:00"
-   },
-   "divergence": {
-    "n_ledger": 31,
-    "n_rebuilt": 0
-   }
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
   },
   {
    "lane": "forward",
-   "key": "AUDNZD.overnight_gap_decay.asia#regime=low_vol_session=asia",
-   "symbol": "AUDNZD",
-   "family": "overnight_gap_decay",
+   "key": "CHFNOK.carry.continuous",
+   "symbol": "CHFNOK",
+   "family": "session_range_breakout",
    "verdict": "MISMATCH",
    "why": [
-    "the rebuild produced NO fill against 24 ledger trade(s)"
+    "only 0/40 ledger trades have a rebuilt fill on the same bar and side",
+    "summed P&L disagrees in SIGN: ledger +32.70R, rebuilt -3.55R"
    ],
    "ours": {
-    "n_fills": 0,
-    "pnl_R": 0,
+    "n_fills": 24,
+    "pnl_R": -3.551,
     "cost": {
-     "spread_per_lot": 3.0000000000000004,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 1.96166,
-     "basis": "universe_registry"
-    },
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
-   },
-   "theirs": {
-    "n_trades": 24,
-    "cost_fields": {
-     "spread_per_lot": 3.0,
-     "commission_per_lot": 2.0,
-     "contract_oz": 100000.0,
-     "quote_per_account": 1.96166,
-     "swap_per_lot_per_night": 8.33
-    },
-    "forward_start": "2026-10-29T15:51:25+00:00"
-   },
-   "divergence": {
-    "n_ledger": 24,
-    "n_rebuilt": 0
-   }
-  },
-  {
-   "lane": "forward",
-   "key": "CHFDKK.overnight_gap_decay.asia#regime=high_vol_session=asia",
-   "symbol": "CHFDKK",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
-   "why": [
-    "the rebuild produced NO fill against 33 ledger trade(s)"
-   ],
-   "ours": {
-    "n_fills": 0,
-    "pnl_R": 0,
-    "cost": {
-     "spread_per_lot": 64.0,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 7.47508,
-     "basis": "universe_registry"
-    },
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
-   },
-   "theirs": {
-    "n_trades": 33,
-    "cost_fields": {
-     "spread_per_lot": 64.0,
-     "commission_per_lot": 2.0,
-     "contract_oz": 100000.0,
-     "quote_per_account": 7.47508,
-     "swap_per_lot_per_night": 71.6
-    },
-    "forward_start": "2026-10-29T15:56:45+00:00"
-   },
-   "divergence": {
-    "n_ledger": 33,
-    "n_rebuilt": 0
-   }
-  },
-  {
-   "lane": "forward",
-   "key": "CHFDKK.overnight_gap_decay.asia#regime=high_vol_representation=price_only_session=asia",
-   "symbol": "CHFDKK",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
-   "why": [
-    "the rebuild produced NO fill against 33 ledger trade(s)"
-   ],
-   "ours": {
-    "n_fills": 0,
-    "pnl_R": 0,
-    "cost": {
-     "spread_per_lot": 64.0,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 7.47508,
-     "basis": "universe_registry"
-    },
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
-   },
-   "theirs": {
-    "n_trades": 33,
-    "cost_fields": {
-     "spread_per_lot": 64.0,
-     "commission_per_lot": 2.0,
-     "contract_oz": 100000.0,
-     "quote_per_account": 7.47508
-    },
-    "forward_start": "2026-10-29T17:55:23+00:00"
-   },
-   "divergence": {
-    "n_ledger": 33,
-    "n_rebuilt": 0
-   }
-  },
-  {
-   "lane": "forward",
-   "key": "CHFDKK.overnight_gap_decay.asia#selector=asia_session=asia",
-   "symbol": "CHFDKK",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
-   "why": [
-    "the rebuild produced NO fill against 33 ledger trade(s)"
-   ],
-   "ours": {
-    "n_fills": 0,
-    "pnl_R": 0,
-    "cost": {
-     "spread_per_lot": 64.0,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 7.47508,
-     "basis": "universe_registry"
-    },
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
-   },
-   "theirs": {
-    "n_trades": 33,
-    "cost_fields": {
-     "spread_per_lot": 64.0,
-     "commission_per_lot": 2.0,
-     "contract_oz": 100000.0,
-     "quote_per_account": 7.47508
-    },
-    "forward_start": "2026-10-29T17:55:51+00:00"
-   },
-   "divergence": {
-    "n_ledger": 33,
-    "n_rebuilt": 0
-   }
-  },
-  {
-   "lane": "forward",
-   "key": "EURNOK.overnight_gap_decay.asia#selector=asia",
-   "symbol": "EURNOK",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
-   "why": [
-    "the rebuild produced NO fill against 40 ledger trade(s)"
-   ],
-   "ours": {
-    "n_fills": 0,
-    "pnl_R": 0,
-    "cost": {
-     "spread_per_lot": 160.0,
+     "spread_per_lot": 253.0,
      "commission_per_lot": 2.0,
      "quote_per_account": 10.45456,
      "basis": "universe_registry"
     },
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
+    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
    },
    "theirs": {
     "n_trades": 40,
-    "cost_fields": {
-     "spread_per_lot": 160.0,
-     "commission_per_lot": 2.0,
-     "contract_oz": 100000.0,
-     "quote_per_account": 10.45456
-    },
-    "forward_start": "2026-10-29T17:43:48.092477+00:00"
+    "cost_fields": null,
+    "forward_start": "2026-09-21T21:50:42.287621+00:00"
    },
    "divergence": {
     "n_ledger": 40,
-    "n_rebuilt": 0
+    "n_rebuilt": 24,
+    "matched": 0,
+    "match_share": 0.0,
+    "fill_ratio": 0.6,
+    "pnl_ledger_R": 32.704,
+    "pnl_rebuilt_R": -3.551,
+    "open_ledger": false,
+    "open_rebuilt": false
    }
   },
   {
    "lane": "forward",
-   "key": "EURNOK.overnight_gap_decay.asia#session=asia",
-   "symbol": "EURNOK",
-   "family": "overnight_gap_decay",
+   "key": "CHFNOK.range_reversion.continuous",
+   "symbol": "CHFNOK",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "CHFPLN.carry.continuous",
+   "symbol": "CHFPLN",
+   "family": "session_range_breakout",
    "verdict": "MISMATCH",
    "why": [
-    "the rebuild produced NO fill against 40 ledger trade(s)"
+    "only 0/27 ledger trades have a rebuilt fill on the same bar and side"
    ],
    "ours": {
-    "n_fills": 0,
-    "pnl_R": 0,
+    "n_fills": 31,
+    "pnl_R": 1.25,
     "cost": {
-     "spread_per_lot": 160.0,
+     "spread_per_lot": 254.00000000000003,
      "commission_per_lot": 2.0,
-     "quote_per_account": 10.45456,
+     "quote_per_account": 4.39612,
      "basis": "universe_registry"
     },
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
+    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
    },
    "theirs": {
-    "n_trades": 40,
-    "cost_fields": {
-     "spread_per_lot": 160.0,
-     "commission_per_lot": 2.0,
-     "contract_oz": 100000.0,
-     "quote_per_account": 10.45456
-    },
-    "forward_start": "2026-10-29T18:06:03+00:00"
+    "n_trades": 27,
+    "cost_fields": null,
+    "forward_start": "2026-09-21T21:50:42.287628+00:00"
    },
    "divergence": {
-    "n_ledger": 40,
-    "n_rebuilt": 0
+    "n_ledger": 27,
+    "n_rebuilt": 31,
+    "matched": 0,
+    "match_share": 0.0,
+    "fill_ratio": 1.148,
+    "pnl_ledger_R": 4.339,
+    "pnl_rebuilt_R": 1.25,
+    "open_ledger": false,
+    "open_rebuilt": false
    }
+  },
+  {
+   "lane": "forward",
+   "key": "CHFSEK.carry.continuous",
+   "symbol": "CHFSEK",
+   "family": "session_range_breakout",
+   "verdict": "MISMATCH",
+   "why": [
+    "only 0/23 ledger trades have a rebuilt fill on the same bar and side"
+   ],
+   "ours": {
+    "n_fills": 28,
+    "pnl_R": -9.395,
+    "cost": {
+     "spread_per_lot": 603.0000000000001,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 11.12683,
+     "basis": "universe_registry"
+    },
+    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
+   },
+   "theirs": {
+    "n_trades": 23,
+    "cost_fields": null,
+    "forward_start": "2026-09-21T21:50:42.287632+00:00"
+   },
+   "divergence": {
+    "n_ledger": 23,
+    "n_rebuilt": 28,
+    "matched": 0,
+    "match_share": 0.0,
+    "fill_ratio": 1.217,
+    "pnl_ledger_R": 0.227,
+    "pnl_rebuilt_R": -9.395,
+    "open_ledger": false,
+    "open_rebuilt": false
+   }
+  },
+  {
+   "lane": "forward",
+   "key": "EURCHF.range_reversion.continuous",
+   "symbol": "EURCHF",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "EURGBP.range_reversion.continuous",
+   "symbol": "EURGBP",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
   }
  ],
  "quarantined": [
-  "AUDCHF.overnight_gap_decay.asia#selector=asia_session=asia",
-  "AUDCHF.overnight_gap_decay.asia#selector=asia",
-  "AUDNZD.overnight_gap_decay.asia#regime=low_vol_session=asia",
-  "CHFDKK.overnight_gap_decay.asia#regime=high_vol_session=asia",
-  "CHFDKK.overnight_gap_decay.asia#regime=high_vol_representation=price_only_session=asia",
-  "CHFDKK.overnight_gap_decay.asia#selector=asia_session=asia",
-  "EURNOK.overnight_gap_decay.asia#selector=asia",
-  "EURNOK.overnight_gap_decay.asia#session=asia"
+  "CHFNOK.carry.continuous",
+  "CHFPLN.carry.continuous",
+  "CHFSEK.carry.continuous"
  ],
  "unmeasured": [
   {
-   "what": "CHFSGD.clock_transition.p=b95e974aac459e97",
-   "why": "no written specification in the spec book for family 'clock_transition'"
+   "what": "GBPJPY.formula.p=01be470d1fa00195",
+   "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "CHFSGD.clock_transition.p=c6388886873e74ed",
-   "why": "no written specification in the spec book for family 'clock_transition'"
+   "what": "GBPJPY.formula.p=0e57e86c1aaebc61",
+   "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "CHFSGD.clock_transition.p=fdd66336df4507c7",
-   "why": "no written specification in the spec book for family 'clock_transition'"
+   "what": "GBPJPY.formula.p=d958ae4f491c1cd5",
+   "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "EURSEK.clock_transition.p=29081cc874e59063",
-   "why": "no written specification in the spec book for family 'clock_transition'"
+   "what": "GBPJPY.formula.p=588a0b80c5099b65",
+   "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPJPY.clock_transition.p=99cdb0d39855b38f",
-   "why": "no written specification in the spec book for family 'clock_transition'"
+   "what": "GBPJPY.formula.p=5f84a1eb52b3deb7",
+   "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPJPY.clock_transition.p=aaf7fdb4641151c9",
-   "why": "no written specification in the spec book for family 'clock_transition'"
+   "what": "GBPMXN.formula.p=00dc55ceb72348ce",
+   "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.clock_transition.p=b95e974aac459e97",
-   "why": "no written specification in the spec book for family 'clock_transition'"
+   "what": "GBPMXN.formula.p=494964b273059ae1",
+   "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSGD.clock_transition.p=c6388886873e74ed",
-   "why": "no written specification in the spec book for family 'clock_transition'"
+   "what": "GBPMXN.formula.p=754d7ad8a4888951",
+   "why": "no written specification in the spec book for family 'formula'"
+  },
+  {
+   "what": "AUDSGD.vol_transition.continuous",
+   "why": "no forward ledger on this box for this row"
+  },
+  {
+   "what": "AUDUSD.range_reversion.continuous",
+   "why": "no forward ledger on this box for this row"
+  },
+  {
+   "what": "CHFNOK.range_reversion.continuous",
+   "why": "no forward ledger on this box for this row"
+  },
+  {
+   "what": "EURCHF.range_reversion.continuous",
+   "why": "no forward ledger on this box for this row"
+  },
+  {
+   "what": "EURGBP.range_reversion.continuous",
+   "why": "no forward ledger on this box for this row"
   }
  ],
  "recorded": {
-  "quarantined": 8,
-  "memory": 8,
-  "candidates": 1819
+  "quarantined": 3,
+  "memory": 3,
+  "candidates": 938
  },
  "cursor": {
-  "forward": 1794,
-  "at": "2026-10-30T09:48:48+00:00",
-  "certificates": 979
+  "forward": 773,
+  "at": "2026-11-04T08:41:09+00:00",
+  "certificates": 1336
  },
  "notes": [],
  "independence": {
@@ -488,24 +396,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURSEK_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDNZD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFDKK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFDKK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFDKK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURNOK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURNOK_H1.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFPLN_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFSEK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURGBP_H1.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 690.68
+ "seconds": 474.51
 }
