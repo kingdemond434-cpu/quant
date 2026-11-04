@@ -394,14 +394,41 @@ def advance_cursor(names: tuple[str, ...], current: str, cursor: Path) -> None:
     next proposer, so one slow or hanging proposer can never pin the rotation."""
     try:
         nxt = (names.index(current) + 1) % len(names)
-        cursor.parent.mkdir(parents=True, exist_ok=True)
-        tmp = cursor.with_suffix(".tmp")
-        tmp.write_text(json.dumps({"next": nxt, "after": current,
-                                   "at": datetime.now(UTC).isoformat(timespec="seconds")}),
-                       "utf-8")
-        os.replace(tmp, cursor)
+        _write_cursor(cursor, {"next": nxt, "after": current, "done": False,
+                               "at": datetime.now(UTC).isoformat(timespec="seconds")})
     except (OSError, ValueError):
         pass
+
+
+def finish_cursor(current: str, cursor: Path) -> None:
+    """Mark `current` as having RETURNED. A cursor still reading done=false at the next pass's
+    start names a proposer the pass was killed inside -- the one fact a cursor alone loses."""
+    try:
+        doc = json.loads(cursor.read_text("utf-8"))
+        if isinstance(doc, dict) and doc.get("after") == current:
+            _write_cursor(cursor, {**doc, "done": True})
+    except (OSError, ValueError, TypeError):
+        pass
+
+
+def killed_inside(cursor: Path) -> str | None:
+    """The proposer the previous pass was killed inside, or None (clean, absent or unreadable).
+    Cursors written before `done` existed carry no key and read as clean."""
+    try:
+        doc = json.loads(cursor.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    if isinstance(doc, dict) and doc.get("done") is False and isinstance(doc.get("after"), str):
+        return doc["after"]
+    return None
+
+
+def _write_cursor(cursor: Path, doc: dict) -> None:
+    """Atomic: a pass killed mid-write leaves the old cursor, never a torn one."""
+    cursor.parent.mkdir(parents=True, exist_ok=True)
+    tmp = cursor.with_suffix(".tmp")
+    tmp.write_text(json.dumps(doc), "utf-8")
+    os.replace(tmp, cursor)
 
 
 def _proposers() -> None:
@@ -454,6 +481,9 @@ def _proposers() -> None:
     # learned_miners, regime_split_miner, book_forensics and three more had NEVER run on the
     # box and the learned-models weekly contract froze on 10-07. Each pass now starts where
     # the last one stopped, so every proposer gets a turn within a few passes.
+    killed = killed_inside(PROPOSER_CURSOR)
+    if killed:
+        dlog(f"proposers: resumed past {killed} (killed)")
     for name in rotated(proposers, PROPOSER_CURSOR):
         advance_cursor(proposers, name, PROPOSER_CURSOR)
         try:
@@ -472,6 +502,7 @@ def _proposers() -> None:
             dlog(f"{name}: not present on this tree")
         except Exception as exc:
             dlog(f"{name} FAILED (non-fatal): {type(exc).__name__}: {exc}")
+        finish_cursor(name, PROPOSER_CURSOR)
 
 
 def _world_miners() -> None:

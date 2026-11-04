@@ -55,3 +55,32 @@ def test_the_real_roster_includes_learned_miners_and_the_loop_uses_the_cursor() 
     src = (DESK / "research" / "daily_cycle.py").read_text("utf-8")
     assert "for name in rotated(proposers, PROPOSER_CURSOR):" in src
     assert '"learned_miners"' in src and '"book_forensics")' in src
+
+
+def test_a_pass_killed_inside_a_proposer_is_named_on_the_next_start(tmp_path: Path) -> None:
+    cur = tmp_path / "cur.json"
+    dc.advance_cursor(NAMES, "b", cur)          # the pass started b ...
+    assert dc.killed_inside(cur) == "b"         # ... and never returned from it
+    assert dc.rotated(NAMES, cur) == ["c", "d", "a", "b"]
+
+
+def test_a_proposer_that_returned_leaves_a_clean_cursor(tmp_path: Path) -> None:
+    cur = tmp_path / "cur.json"
+    dc.advance_cursor(NAMES, "b", cur)
+    dc.finish_cursor("b", cur)
+    assert dc.killed_inside(cur) is None
+    assert json.loads(cur.read_text("utf-8"))["next"] == 2
+
+
+def test_finish_never_marks_a_different_proposer_done(tmp_path: Path) -> None:
+    cur = tmp_path / "cur.json"
+    dc.advance_cursor(NAMES, "c", cur)
+    dc.finish_cursor("b", cur)                  # a stale finish for an earlier proposer
+    assert dc.killed_inside(cur) == "c"
+
+
+def test_a_cursor_from_before_done_existed_reads_clean(tmp_path: Path) -> None:
+    cur = tmp_path / "cur.json"
+    cur.write_text(json.dumps({"next": 1, "after": "a"}), "utf-8")
+    assert dc.killed_inside(cur) is None
+    assert dc.rotated(NAMES, cur)[0] == "b"
