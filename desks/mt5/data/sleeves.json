@@ -55595,6 +55595,145 @@
       "retired_at": "2026-11-03T21:55:21+00:00",
       "retire_reason": "GBPJPY is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
       "retired_by": "live_policy"
+    },
+    {
+      "name": "CHFNOK.carry.asia@M15#input_symbol=CHFNOK_session=ny",
+      "symbol": "CHFNOK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['chfnok.carry.asia@m15#input_symbol=chfnok_session=ny', 'chfnok|carry|asia', 'chfnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['chfnok.carry.asia@m15#input_symbol=chfnok_session=ny', 'chfnok|carry|asia', 'chfnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-04T00:54:59+00:00",
+      "shadow_exp": 0.5394841061129725,
+      "family": "carry",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "CHFNOK.carry.asia@M15#input_symbol=CHFNOK_session=ny",
+      "sleeve_id": "f335bd6c15a324e9013a",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "input_symbol": "CHFNOK",
+        "session": "ny",
+        "timeframe": "M15"
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-04T00:55:09+00:00",
+      "retire_reason": "CHFNOK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "CHFNOK.carry.asia@M15#session=ny_symbol=CHFNOK",
+      "symbol": "CHFNOK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['chfnok.carry.asia@m15#session=ny_symbol=chfnok', 'chfnok|carry|asia', 'chfnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['chfnok.carry.asia@m15#session=ny_symbol=chfnok', 'chfnok|carry|asia', 'chfnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-04T00:55:01+00:00",
+      "shadow_exp": 0.5394841061129725,
+      "family": "carry",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "CHFNOK.carry.asia@M15#session=ny_symbol=CHFNOK",
+      "sleeve_id": "388b77629e0d5b09fe3d",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "session": "ny",
+        "symbol": "CHFNOK",
+        "timeframe": "M15"
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-04T00:55:09+00:00",
+      "retire_reason": "CHFNOK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "CHFNOK.carry.asia@M15#session=ny",
+      "symbol": "CHFNOK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['chfnok.carry.asia@m15#session=ny', 'chfnok|carry|asia', 'chfnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['chfnok.carry.asia@m15#session=ny', 'chfnok|carry|asia', 'chfnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-04T00:55:04+00:00",
+      "shadow_exp": 0.5394841061129725,
+      "family": "carry",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "CHFNOK.carry.asia@M15#session=ny",
+      "sleeve_id": "356a463ca7916052ece0",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "session": "ny",
+        "timeframe": "M15"
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-04T00:55:09+00:00",
+      "retire_reason": "CHFNOK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "CHFNOK.carry.asia@M15#input_symbol=eBay_session=ny",
+      "symbol": "CHFNOK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['chfnok.carry.asia@m15#input_symbol=ebay_session=ny', 'chfnok|carry|asia', 'chfnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['chfnok.carry.asia@m15#input_symbol=ebay_session=ny', 'chfnok|carry|asia', 'chfnok|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-04T00:55:07+00:00",
+      "shadow_exp": 0.5394841061129725,
+      "family": "carry",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "CHFNOK.carry.asia@M15#input_symbol=eBay_session=ny",
+      "sleeve_id": "b9c518d1f299f230d1af",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "input_symbol": "eBay",
+        "session": "ny",
+        "timeframe": "M15"
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-04T00:55:09+00:00",
+      "retire_reason": "CHFNOK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     }
   ]
 }
