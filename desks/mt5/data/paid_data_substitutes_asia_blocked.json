@@ -51,8 +51,8 @@
    "measure": "box_office_cny_10k",
    "frequency": "daily",
    "status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=hk_immd_passenger",
-   "terms": "refused",
-   "blocked_because": "piaofang.maoyan.com robots.txt disallows automated agents on the dashboard-ajax endpoint",
+   "terms": "to_confirm",
+   "blocked_because": "terms unread: the rules page was never read because robots.txt was treated as a refusal; robots (Disallow on dashboard-ajax) is a LABEL, PUBLIC_WITH_TERMS, not the block (LAWS 5e)",
    "unsubstituted_because": "candidate(s) hk_immd_passenger UNVERIFIED: no measured correlation >= 0.5 against the original with n >= 12",
    "substitute_check": "hk_immd_passenger: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
    "evidence": "hk_immd_passenger: https://data.gov.hk/en/terms-and-conditions"
@@ -80,7 +80,7 @@
    "frequency": "daily",
    "status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=in_gold_imports",
    "terms": "to_confirm",
-   "blocked_because": "SGE site shows only 'All Right Reserved'; no terms or licence page found, no robots.txt",
+   "blocked_because": "the SGE site prints only 'Copyright 2016 上海黄金交易所 All Right Reserved' and links no terms page (read 2026-10-29), so its terms are UNREAD and UNREAD terms never permit automated live input; its pages are read politely for ideas only",
    "unsubstituted_because": "candidate(s) in_gold_imports UNVERIFIED: no measured correlation >= 0.5 against the original with n >= 12",
    "substitute_check": "in_gold_imports: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
    "evidence": "in_gold_imports: https://www.pib.gov.in/content/102_2_Copyright-Policy.aspx?reg=3&lang=1"
@@ -93,9 +93,9 @@
    "measure": "upi_value_cr",
    "frequency": "monthly",
    "status": "BLOCKED_NO_SUBSTITUTE:UNVERIFIED=in_dgi_iip_consumer",
-   "terms": "refused",
-   "blocked_because": "npci.org.in robots.txt disallows automated agents on the statistics path and the disclaimer page",
-   "unsubstituted_because": "candidate in_dgi_iip_consumer is UNVERIFIED: use-based IIP consumer goods is factory OUTPUT, not the UPI payments flow, and no correlation against NPCI's monthly UPI volume/value has been measured (NPCI is robots-refused, RBI tables are 'All Rights Reserved'); COVERED only at corr >= 0.5 with n reported",
+   "terms": "to_confirm",
+   "blocked_because": "terms unread: the disclaimer page was never read because robots.txt was treated as a refusal; robots (Disallow on the statistics path and the disclaimer) is a LABEL, PUBLIC_WITH_TERMS, not the block",
+   "unsubstituted_because": "candidate in_dgi_iip_consumer is UNVERIFIED: use-based IIP consumer goods is factory OUTPUT, not the UPI payments flow, and no correlation against NPCI's monthly UPI volume/value has been measured (NPCI terms unread, RBI tables are 'All Rights Reserved'); COVERED only at corr >= 0.5 with n reported",
    "substitute_check": "in_dgi_iip_consumer: UNVERIFIED (corr=UNMEASURED, n=UNMEASURED)",
    "evidence": "in_dgi_iip_consumer: https://smartcities.data.gov.in/government-open-data-license-india"
   },

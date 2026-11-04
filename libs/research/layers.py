@@ -294,6 +294,17 @@ LEG_LAYER: dict[str, str] = {
     "alpha_capture": "information",
     # free public alt-data proxies turned into PIT series: what the desk knows before it predicts
     "alt_proxies": "information",
+    # which classes of data the desk lacks against tier-1 shops, and which sources would fill them
+    "data_class_gap": "information",
+    # ALFRED real-time vintages and the realized-vol PROXY family: dated inputs the cells read
+    "fetch_alfred": "information",
+    "options_implied": "information",
+    # every certificate's inputs joined to the one terms register: the machine auditing itself
+    "terms_basis_census": "meta",
+    # dated central-bank press documents: information the text legs read
+    "central_bank_miner": "information",
+    # Tor usage and censorship events per country: a dated political-stress input (2026-10-29)
+    "tor_metrics": "information",
     # the alt seats' readings as PIT series, and Form 4 filings as clusters + a breadth series:
     # both turn a public source into a dated input the families condition on (2026-10-14)
     "alt_seat_cells": "information",

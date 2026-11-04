@@ -193,7 +193,630 @@ SOURCE_POLICY: dict[str, dict[str, Any]] = {
                                       "purpose without our express, prior permission.")}}},
     "paywall_proxy": {"hosts": ("12ft.io",), "status": METHOD_BLOCKED, "reason": "paywall",
                       "why": "a proxy whose purpose is to get around paywalls"},
+    # THE TOR METRICS LANE (2026-10-29; principal 2026-10-13: lawful public onion sites and ugly
+    # public data are in). LIVE input: the clause below is the site's own data licence, read
+    # verbatim from its footer on 2026-10-29, and it waives every right in the data (CC0).
+    # Read by `research/tor_metrics.py` (`terms_verdict("tor_metrics") == "confirmed"`).
+    "tor_metrics": {"hosts": ("metrics.torproject.org",), "status": PUBLIC_PAGE,
+                    "sources": ("tor_metrics",), "source_prefixes": ("tor_metrics_",),
+                    "use": "LIVE",
+                    "why": ("Tor Project's per-country relay and bridge user estimates; its data "
+                            "is CC0 (clause quoted), so the CSVs are LIVE input, fetched politely "
+                            "(robots a label, honest DESK_UA)"),
+                    "terms": {"url": "https://metrics.torproject.org/",
+                              "checked_at": "2026-10-29",
+                              "clauses": {
+                                  "cc0": ("Data on this site is freely available under a CC0 no "
+                                          "copyright declaration:"),
+                                  "waiver": ("To the extent possible under law, the Tor Project "
+                                             "has waived all copyright and related or "
+                                             "neighboring rights in the data."),
+                                  "graphs": ("Graphs are licensed under a Creative Commons "
+                                             "Attribution 3.0 United States License")},
+                              "reading": ("the DATA (the CSVs) is CC0: no condition on automated "
+                                          "access or internal research use; only the rendered "
+                                          "graphs carry CC-BY, and the desk reads no graph")}},
+    # THE ONION LANE: PERMANENTLY REFUSED (auditor ruling 2026-11-03). No onion or Tor egress,
+    # ever. research/onion_mirrors.py refuses unconditionally (a hard-coded constant, no env-var
+    # or file override) and research/tor_metrics.py never imports it. Every .onion host still
+    # resolves HERE, so no onion page is ever input of any kind.
+    "onion_mirrors": {"hosts": ("onion",), "status": IDEAS_ONLY,
+                      "sources": ("onion_mirrors",), "source_prefixes": ("onion_",),
+                      "routes": ("onion_mirrors",),
+                      "ruling": {"verdict": "PERMANENTLY_REFUSED", "ruled_by": "auditor",
+                                 "ruled_at": "2026-11-03",
+                                 "text": "no onion or Tor egress, ever; the lane is "
+                                         "permanently off"},
+                      "why": ("permanently refused, auditor 2026-11-03 (ruling clause: no "
+                              "onion or Tor egress, ever); the onion lane is permanently off, "
+                              "nothing is fetched from any .onion host, and every mirror's own "
+                              "terms stay UNREAD"),
+                      "unblock": "none: the ruling is permanent",
+                      "missed_growth": {"delta_elogw": "UNMEASURED",
+                                        "cause": ("the onion lane is permanently refused "
+                                                  "(auditor 2026-11-03), so no onion mirror is "
+                                                  "ever fetched and the ideas forgone are "
+                                                  "UNMEASURED, never zero; the lawful public "
+                                                  "signal stays covered by Tor Metrics' "
+                                                  "clearnet CC0 statistics")},
+                      "terms": {"url": "https://onion.torproject.org/",
+                                "checked_at": "2026-10-29",
+                                "unread": {"per-mirror": ("each mirror's publisher terms are "
+                                                          "UNREAD here: IDEAS_ONLY, fail "
+                                                          "closed")}}},
 }
+
+
+#: THE DATA-CLASS GAP DOORS (2026-10-29, research/data_class_gap.py item 14). Three public
+#: statistical publishers the world dataset hunter now reads directly; each row quotes the
+#: publisher's OWN terms page, read 2026-10-29, so live input from them stands on a clause.
+SOURCE_POLICY.update({
+    "us_treasury_fiscaldata": {
+        "hosts": ("api.fiscaldata.treasury.gov", "fiscaldata.treasury.gov"),
+        "status": API_PERMITTED, "sources": ("us_treasury_fiscaldata", "treasury_fiscaldata"),
+        "why": ("US Treasury Fiscal Data's keyless API (auction results, average interest rates, "
+                "daily statement); its About page grants copy and use for commercial purposes"),
+        "terms": {"url": "https://fiscaldata.treasury.gov/about-us/", "checked_at": "2026-10-29",
+                  "clauses": {
+                      "reuse": ("The data on this site is available to copy, adapt, "
+                                "redistribute, or otherwise use for non-commercial and "
+                                "commercial purposes."),
+                      "api": ("You can find all the information you'll need to access our data "
+                              "via APIs on the API Documentation page.")}}},
+    "noaa_cpc": {
+        "hosts": ("cpc.ncep.noaa.gov",), "status": PUBLIC_PAGE, "sources": ("noaa_cpc",),
+        "why": ("NOAA Climate Prediction Center index tables (ONI, NAO, AO, PNA); the "
+                "Disclaimer linked from every CPC page footer is the NWS disclaimer, which puts "
+                "NWS pages in the public domain for any lawful purpose"),
+        "terms": {"url": "https://www.weather.gov/disclaimer", "checked_at": "2026-10-29",
+                  "clauses": {
+                      "public_domain": ("The information on National Weather Service (NWS) Web "
+                                        "pages are in the public domain, unless specifically "
+                                        "noted otherwise,"),
+                      "use": ("may be used without charge for any lawful purpose so long as you "
+                              "do not: 1) claim it is your own"),
+                      "automated": ("If a Web Service isn't available users should limit the "
+                                    "number of retries to 1 minute intervals.")},
+                  "also_read": {"https://www.cpc.ncep.noaa.gov/products/precip/CWlink/pna/"
+                                "nao.shtml": "footer: Disclaimer -> "
+                                             "http://www.weather.gov/disclaimer.php",
+                                "https://www.cpc.ncep.noaa.gov/information/disclaimer.shtml":
+                                    "client_error to the reader on 2026-10-29"}}},
+    "eia_api": {
+        "hosts": ("api.eia.gov",), "status": API_PERMITTED, "sources": ("eia_api",),
+        # The data routes need EIA_API_KEY, but the KEY is checked by the door that uses it
+        # (world_dataset_hunter raises the named `needs_key` and sends nothing), not here: a
+        # `key_env` would make this row NEEDS_KEY and hold the host's keyless discovery root
+        # (countries/atlantic_energy lists https://api.eia.gov/v2/), which no terms bar.
+        "key_checked_by": "desks/mt5/research/world_dataset_hunter.py (EIA_API_KEY)",
+        "why": ("EIA Open Data API v2 with the desk's registered key, within its throttle; EIA "
+                "content is US-government public domain and the API terms permit retrieval "
+                "and analysis"),
+        "terms": {"url": "https://www.eia.gov/opendata/register.php", "checked_at": "2026-10-29",
+                  "clauses": {
+                      "api_use": ("You may use the EIA API to develop a service to search, "
+                                  "display, analyze, retrieve, view and otherwise"),
+                      "attribution": ("You should use the \"EIA\" or the \"U.S. Energy "
+                                      "Information Administration\" names in order to identify "
+                                      "the source"),
+                      "public_domain": ("U.S. government publications are in the public domain "
+                                        "and are not subject to copyright protection."),
+                      "use": ("You may use and/or distribute any of our data, files, databases, "
+                              "reports, graphs, charts, and other information products")},
+                  "also_read": {"https://www.eia.gov/about/copyrights_reuse.php":
+                                "public_domain and use clauses above",
+                                "https://www.eia.gov/opendata/documentation.php":
+                                "programs must throttle requests per second and per hour"}}},
+})
+
+
+#: THE FUND-FLOW GAP DOORS AND THE BROKER FEED (2026-10-29, data-class gap #1 and the census's
+#: TERMS_UNMEASURED finding). Each row quotes the publisher's own terms page as read on that date
+#: with WebFetch; where no clause permits the use, the row is IDEAS_ONLY (fail closed) and the
+#: hunter publishes its missed-growth line (delta E[log W] UNMEASURED).
+_ECB_USAGE = ("https://www.ecb.europa.eu/stats/ecb_statistics/governance_and_quality_framework/"
+              "html/usage_policy.en.html")
+SOURCE_POLICY.update({
+    "jp_mof": {
+        "hosts": ("mof.go.jp",), "status": PUBLIC_PAGE, "sources": ("jp_mof",),
+        "why": ("Japan Ministry of Finance statistics (weekly international transactions in "
+                "securities): the site's content is under the Public Data License 1.0, which "
+                "permits free use including commercial use with the source cited"),
+        "terms": {"url": "https://www.mof.go.jp/english/about_mof/notice/index.html",
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "licence": ("belongs to the Ministry of Finance unless otherwise provided, "
+                                  "and Public Data License (Version 1.0; PDL 1.0) applies"),
+                      "pdl_use": ("may be freely used, copied, publicly transmitted, translated "
+                                  "or otherwise modified"),
+                      "pdl_commercial": "Commercial use of “This Content” is also permitted.",
+                      "pdl_citation": "The user must cite the source when using “This Content”."},
+                  "also_read": {
+                      "https://www.digital.go.jp/en/resources/open_data/public_data_license_v1.0":
+                          "PDL 1.0 text: the pdl_* clauses above; no clause on automated access",
+                      "https://www.mof.go.jp/robots.txt":
+                          "client_error to the reader on 2026-10-29: the fetch door asks it at "
+                          "run time (unreadable robots means no fetch)"}}},
+    "ecb_data_portal": {
+        "hosts": ("data-api.ecb.europa.eu", "data.ecb.europa.eu"), "status": API_PERMITTED,
+        "sources": ("ecb_data_portal", "ecb_sdw"),
+        "why": ("the ECB Data Portal's keyless SDMX API (investment fund statistics and other "
+                "ESCB series): the ECB's statistics usage policy grants free reuse, commercial or "
+                "not, with the source quoted and the statistics unmodified"),
+        "terms": {"url": _ECB_USAGE, "checked_at": "2026-10-29",
+                  "clauses": {
+                      "reuse": ("All publicly available ESCB statistics may be reused free of "
+                                "charge on the condition that the source is quoted"),
+                      "unmodified": ("and that the statistics (including metadata) are not "
+                                     "modified."),
+                      "commercial": ("irrespective of any subsequent commercial or "
+                                     "non-commercial use"),
+                      "third_party": ("The right of free reuse does not apply to third-party data "
+                                      "without a prior permission from the originator.")},
+                  "also_read": {
+                      "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html":
+                          ("site copyright: users may make free use of the information obtained "
+                           "directly from it, citing the ECB"),
+                      "https://data-api.ecb.europa.eu/robots.txt":
+                          ("ROBOTS_DISALLOWED to the reader on 2026-10-29 (content not shown): "
+                           "the fetch door asks robots.txt at run time for the desk's own agent "
+                           "and a disallow stops the door, recorded, never routed around")}}},
+    "fed_board": {
+        "hosts": ("federalreserve.gov",), "status": PUBLIC_PAGE, "sources": ("fed_board",),
+        "why": ("Federal Reserve Board releases (Z.1 Financial Accounts, press feeds): the "
+                "Board's own disclaimer puts its information in the public domain"),
+        "terms": {"url": "https://www.federalreserve.gov/disclaimer.htm",
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "public_domain": ("information on Board's website is in the public domain "
+                                        "and may be copied and distributed without permission"),
+                      "citation": "Please cite to the Board as the source of the information.",
+                      "third_party": ("Permission to use copyrighted materials must be obtained "
+                                      "from the original source and cannot be obtained from the "
+                                      "Board.")}}},
+    "us_tic": {
+        "hosts": ("ticdata.treasury.gov",), "status": IDEAS_ONLY, "sources": ("us_tic",),
+        "why": ("US Treasury TIC cross-border securities files: the Treasury site-policies page "
+                "as read carries no copyright, reuse or automated-access clause, so its terms "
+                "are UNREAD and UNREAD terms never permit live input; read for ideas only"),
+        "unblock": ("a Treasury (home.treasury.gov or ticdata.treasury.gov) page quoting a reuse "
+                    "or public-domain clause for TIC data, quoted into this row"),
+        "terms": {"url": "https://home.treasury.gov/subfooter/site-policies-and-notices",
+                  "checked_at": "2026-10-29",
+                  "unread": {
+                      "https://home.treasury.gov/subfooter/site-policies-and-notices":
+                          ("read 2026-10-29: only linking and privacy text, no copyright, reuse "
+                           "or automated-access clause: UNREAD"),
+                      "https://home.treasury.gov/subfooter/privacy-act/privacy-and-legal-notices":
+                          "client_error to the reader on 2026-10-29: UNREAD"}}},
+    "kr_fss": {
+        "hosts": ("fss.or.kr",), "status": IDEAS_ONLY, "sources": ("kr_fss",),
+        "why": ("Korea FSS foreign-investor net purchases are bulletin-board PDF/HWP releases, "
+                "not a machine-readable series; its OpenAPI serves pension products only and no "
+                "copyright or reuse clause was found, so its terms are UNREAD: ideas only"),
+        "unblock": ("an FSS (or KRX) page quoting a reuse clause for a machine-readable foreign "
+                    "net-purchase series, quoted into this row"),
+        "terms": {"url": "https://www.fss.or.kr/", "checked_at": "2026-10-29",
+                  "unread": {
+                      "https://www.fss.or.kr/":
+                          "home page read 2026-10-29: no copyright-policy link found: UNREAD",
+                      "https://www.fss.or.kr/fss/main/contents.do?menuNo=201042":
+                          ("OpenAPI overview read 2026-10-29: pension-portal APIs only, no "
+                           "terms clause shown: UNREAD")}}},
+    "bis_speeches": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("bis_speeches", "bis_cb_speeches"),
+        # the speech routes only: data.bis.org (the statistics) keeps its own reading
+        "url_patterns": (r"^(?:www\.)?bis\.org/(?:speeches|cbspeeches|review|doclist)/",),
+        "why": ("BIS central bankers' speeches (page, RSS and the speeches.zip corpus): the BIS "
+                "terms clause 2.1 permits download and redistribution for non-commercial purposes "
+                "only, so the speeches are read for ideas, never a live tone series"),
+        "unblock": "written permission from the BIS (clause 2.2(c)) for the desk's use",
+        "terms": {"url": "https://www.bis.org/terms_conditions.htm", "checked_at": "2026-10-29",
+                  "clauses": {
+                      "2.1": ("Users may download, display, print out, photocopy or redistribute "
+                              "any BIS Material for non-commercial purposes."),
+                      "2.2(c)": ("which does not meet the above conditions requires written "
+                                 "permission from the BIS.")}}},
+    # THE BROKER'S OWN FEED. Not a URL: the bars, ticks and swaps the desk's MT5 terminal receives
+    # on its own account. terms_basis_census names it `mt5_broker` for every certificate.
+    "mt5_broker": {
+        "hosts": (), "url_level": False, "status": API_PERMITTED, "sources": ("mt5_broker",),
+        "why": ("the desk's own Fusion Markets MT5 price feed, used to decide the desk's trading "
+                "with Fusion Markets, the purpose clause 5.6 names; not for other venues or "
+                "redistribution"),
+        # THE AUDITOR'S SCOPE (ruling 2026-10-29): the clause is valid for this use only. The
+        # census counts a certificate's broker input OK only when its use falls inside it: the
+        # venue it trades at, the use, and the ACCOUNT's contracting entity equal to `entity`
+        # (the issuer of the document quoted, exactly as printed on its cover).
+        "scope": {"venue": "fusion",
+                  "entity": "Gleneagle Asset Management Limited trading as Fusion Markets",
+                  "use": "trading_with_fusion"},
+        "use_scope": ("clause 5.6 confines platform information to the client's trading with "
+                      "Fusion Markets: research that decides trades on the Fusion account is "
+                      "inside it; using the feed to decide trades at another venue (E8, FTMO) "
+                      "or passing it on is not. Publishing raw Fusion quotes off the box "
+                      "(reports, dashboards, bundles) is a separate question the census reports "
+                      "as its own UNMEASURED line"),
+        "entity_match": ("UNMEASURED: the account's terminal names its company 'Fusion Markets "
+                         "Pty Ltd' (data/account_state.json); no Fusion document read on "
+                         "2026-10-29 is issued by that name. Fusion's Regulations page names it "
+                         "only as the website owner, beside three licensed issuers: Fusion "
+                         "Markets International Ltd (FSA Seychelles SD096), Gleneagle Securities "
+                         "Pty Limited (VFSC 40256) and FMGP Trading Group Pty Ltd (ASIC AFSL "
+                         "385620). Which of them contracts the account was not measured"),
+        # E8 and FTMO: each venue's OWN terms on the use of its platform price data, as read. No
+        # permitting clause was found for either, so their use reads UNMEASURED in the census
+        # (with its missed-growth line) until a row quoting one is added. Evidence, not status.
+        "other_venues": {
+            "e8": {"terms_url": "https://e8markets.com/e8-markets-terms-and-conditions",
+                   "checked_at": "2026-10-29",
+                   "unread": {
+                       "https://e8markets.com/e8-markets-terms-and-conditions":
+                           "client_error to the reader on 2026-10-29: UNREAD",
+                       "https://e8markets.com/terms-and-conditions":
+                           "client_error to the reader on 2026-10-29: UNREAD",
+                       "https://e8markets.com/": "no footer or legal links in the page as read"},
+                   "read": {
+                       "https://intercom.help/E8futures/en/articles/10209270-trading-policies":
+                           ("E8 futures trading policies: no clause on price or market data; "
+                            "prohibits 'Semi-Automated or Fully-Automated Trading, such as "
+                            "trading bots, AI tools, HFT trading (more than 300 trades per "
+                            "day), etc.' (the futures programme; whether the CFD account the "
+                            "desk's E8 lane uses carries the same rule is UNMEASURED)")}},
+            "ftmo": {"terms_url": ("https://cdn.ftmo.com/docs%2Fterms-and-conditions%2F"
+                                   "b1d80f4da76c4bd4bcd42a5807727e34"),
+                     "checked_at": "2026-10-29",
+                     "unread": {
+                         "https://cdn.ftmo.com/docs%2Fterms-and-conditions%2F"
+                         "b1d80f4da76c4bd4bcd42a5807727e34":
+                             "ROBOTS_DISALLOWED to the reader on 2026-10-29: UNREAD",
+                         "https://ftmo.com/en/terms-and-conditions/":
+                             ("read 2026-10-29: links the General Terms PDF (FTMO s.r.o.) and "
+                              "says nothing on the use of its price data")}}},
+        "terms": {"url": ("https://cdn.locomotive.works/sites/5e1f1e69d809e500a889fce4/assets/"
+                          "5e257357e52cff00a7fa3d67/Fusion_Markets_Financial_Product_Service_"
+                          "Terms_Version_1.0.pdf"),
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "5.6": ("The information provided on Fusion Markets' Online Platforms is to "
+                              "be used for the purpose of your trading with Fusion Markets only, "
+                              "and not for any other purposes."),
+                      "5.6_ip": ("Using Fusion Markets Online Platforms does not transfer "
+                                 "intellectual property rights to you."),
+                      "4.4(i)": ("the information on the Online Platforms will not be used for "
+                                 "unlawful or unauthorised purposes.")},
+                  "also_read": {
+                      "https://fusionmarkets.com/legal":
+                          "client_error to the reader on 2026-10-29: UNREAD",
+                      "https://fusionmarkets.com/static_images/V2_Financial_Product_Service_"
+                      "Terms_EN_VFSC_e35bd4a9e6.pdf":
+                          ("Gleneagle Securities Pty Limited trading as Fusion Markets, 28 "
+                           "February 2022: clause 5.5 carries the same words ('is to be used for "
+                           "the purpose of your trading with Fusion Markets only')"),
+                      "https://fusionmarkets.com/static_images/18_Dec_25_Client_Services_"
+                      "Agreement_35f44311be.pdf":
+                          ("Fusion Markets International Ltd, 18 December 2025: no clause on the "
+                           "use, redistribution or IP of platform prices"),
+                      "silence": ("the document has no clause naming research, back-testing, "
+                                  "automated access or Expert Advisors; the permitting basis is "
+                                  "the purpose clause 5.6 alone")}}},
+})
+#: THE AGRI-SUPPLY, NOWCAST-VINTAGE AND IMPLIED-VOL GAP ROWS (2026-10-29, data_class_gap #4, #5,
+#: #2). Each publisher's OWN page read with WebFetch on 2026-10-29 and quoted verbatim. A key the
+#: data route needs is checked by the door that uses it (`key_checked_by`), never by a `key_env`
+#: here, so the row never holds a keyless page on the same host. IDEAS_ONLY rows are still read
+#: for ideas; `held_missed_growth(key, live_input_refusal=True)` is their missed-growth line
+#: (delta E[log W] UNMEASURED until the `unblock` arrives).
+_USDA_POLICIES = "https://www.usda.gov/policies-and-links"
+_USDA_CLAUSES: dict[str, str] = {
+    "public_domain": ("Most information presented on the USDA Web site is considered public "
+                      "domain information."),
+    "copy": ("Public domain information may be freely distributed or copied, but use of "
+             "appropriate byline/photo/image credits is requested."),
+    "public": ("Information presented on the USDA website is considered public information and "
+               "may be distributed or copied."),
+}
+SOURCE_POLICY.update({
+    "usda_nass_quickstats": {
+        "hosts": ("quickstats.nass.usda.gov",), "status": API_PERMITTED,
+        "sources": ("usda_nass_quickstats", "nass_quickstats"),
+        "key_checked_by": "desks/mt5/research/world_dataset_hunter.py (NASS_API_KEY)",
+        "why": ("USDA NASS Quick Stats API (crop progress and condition) with the desk's key; "
+                "NASS offers the API for direct access to its database and USDA web "
+                "information is public domain"),
+        "terms": {"url": "https://www.nass.usda.gov/developer/index.php",
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "api": ("This API provides direct access to the statistical information "
+                              "contained in our on-line Quick Stats database."),
+                      **_USDA_CLAUSES},
+                  "also_read": {_USDA_POLICIES: "public_domain, copy and public clauses",
+                                "https://quickstats.nass.usda.gov/api/":
+                                    ("robots_disallowed to the reader on 2026-10-29 (its "
+                                     "robots.txt too): the API page itself is UNREAD; robots "
+                                     "for the API path is UNMEASURED")}}},
+    "usda_fas_esr": {
+        "hosts": ("apps.fas.usda.gov",), "status": API_PERMITTED,
+        "sources": ("usda_fas_esr", "fas_esr"),
+        "why": ("USDA FAS Export Sales Reporting: FAS's own query page states that no "
+                "registration or login is needed for its API; USDA web information is public "
+                "domain"),
+        "terms": {"url": "https://apps.fas.usda.gov/esrquery/esrq.aspx",
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "api": ("No registration or login is required in ESRQS to access "
+                              "reports, the query portal, and the API."),
+                      **_USDA_CLAUSES},
+                  "also_read": {_USDA_POLICIES: "public_domain, copy and public clauses",
+                                "https://catalog-beta.data.gov/dataset/export-sales-reporting":
+                                    ("FAS's data.gov listing: license "
+                                     "https://creativecommons.org/licenses/by/4.0, access level "
+                                     "public"),
+                                "https://apps.fas.usda.gov/OpenData/":
+                                    "client_error to the reader on 2026-10-29: UNREAD"}}},
+    "usda_wasde": {
+        "hosts": ("www.usda.gov",), "status": PUBLIC_PAGE, "sources": ("usda_wasde",),
+        "why": ("USDA OCE WASDE report data as published (the monthly as-reported CSVs on "
+                "usda.gov); USDA web information is public domain"),
+        "terms": {"url": _USDA_POLICIES, "checked_at": "2026-10-29",
+                  "clauses": dict(_USDA_CLAUSES),
+                  "also_read": {"https://www.usda.gov/node/60428":
+                                ("the WASDE historical data page: the files hold WASDE data as "
+                                 "it was reported at the time each report was published, "
+                                 "April 2010 to the present, without later revisions")}}},
+    "conab_brazil": {
+        "hosts": ("conab.gov.br",), "status": IDEAS_ONLY, "sources": ("conab_brazil",),
+        "url_patterns": (r"^(?:[^/]*\.)?gov\.br/conab/",),
+        "wanted": ("CONAB Brazilian crop survey (soy, corn, coffee, sugar cane): supply state for "
+                   "SOYBEAN, CORN, SUGAR and the BRL"),
+        "why": ("gov.br/conab content is CC BY-ND 3.0 (no derivatives) and no clause names "
+                "automated access, and no machine-readable file was found on the series pages: "
+                "no permitting clause, so ideas only"),
+        "unblock": ("a CONAB open-data file (dados abertos) whose own licence permits derived "
+                    "use, quoted into this row"),
+        "terms": {"url": ("https://www.gov.br/conab/pt-br/atuacao/informacoes-agropecuarias/"
+                          "safras/series-historicas/cana-de-acucar"),
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "licence": ("Todo o conteúdo deste site está publicado sob a licença "
+                                  "Creative Commons Atribuição-SemDerivações 3.0 Não "
+                                  "Adaptada")},
+                  "also_read": {"https://www.gov.br/conab/pt-br/acesso-a-informacao/"
+                                "dados-abertos": "not read: a page, no file confirmed"}}},
+    "nyfed_web": {
+        "hosts": ("newyorkfed.org",), "status": API_PERMITTED,
+        "sources": ("nyfed_web", "nyfed_nowcast"),
+        "why": ("the New York Fed's Terms of Use license content for personal or business "
+                "purposes and permit access manually or through an automated process"),
+        "terms": {"url": "https://www.newyorkfed.org/privacy/termsofuse",
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "license": ("to use, copy, and distribute Content for your personal or "
+                                  "business purposes."),
+                      "automated": ("Access the Content, manually or through an automated "
+                                    "process or device, provided your access does not have the "
+                                    "effect of disabling, damaging, or interfering with the "
+                                    "function of the Website,"),
+                      "store": "Download, store, and use Content in any format or media,",
+                      "derive": "Modify and create derivative works from the Content.",
+                      "api": ("These Terms generally apply to Content accessed through those "
+                              "other distribution channels as well.")}}},
+    "atlanta_fed": {
+        "hosts": ("atlantafed.org",), "status": IDEAS_ONLY, "sources": ("atlanta_gdpnow",),
+        "wanted": ("GDPNow nowcast history (each forecast with its own date): the surprise of a "
+                   "US release against the nowcast known then, for USD crosses, US500, XAUUSD"),
+        "why": ("the Atlanta Fed's terms permit reproduction only not for commercial gain and bar "
+                "derivative works except as expressly authorized; no clause permits automated "
+                "access, so ideas only"),
+        "unblock": "a written Atlanta Fed authorisation for the desk's internal research use",
+        "terms": {"url": "https://www.atlantafed.org/terms-of-use", "checked_at": "2026-10-29",
+                  "clauses": {
+                      "reproduce": ("provided that such reproductions are not for commercial "
+                                    "gain or monetary profit"),
+                      "derivative": ("create derivative works from or in any way exploit any of "
+                                     "the content, in whole or in part,"),
+                      "authorized": "except as expressly authorized by the Bank."}}},
+    "philly_fed": {
+        "hosts": ("philadelphiafed.org",), "status": IDEAS_ONLY,
+        "sources": ("philly_ads", "philly_rtdsm"),
+        "wanted": ("Aruoba-Diebold-Scotti business conditions index (daily, every vintage) and "
+                   "the Real-Time Data Set: real-time US activity state for USD crosses, US500"),
+        "why": ("the Philadelphia Fed's Online Terms of Use permit use for informational, "
+                "educational and research purposes and bar excessive access, but no clause "
+                "names automated access: fail closed, ideas only"),
+        "unblock": ("a Philadelphia Fed clause or written permission naming automated download "
+                    "of its data files for research"),
+        "terms": {"url": "https://www.philadelphiafed.org/about-us/privacy-notice",
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "use": ("The content provided on this website may be used for "
+                              "informational, educational, and research purposes only."),
+                      "access": ("you may not engage in excessive access to the website in a "
+                                 "way that could adversely affect the site for others.")}}},
+    "minneapolis_fed_mpd": {
+        "hosts": ("minneapolisfed.org",), "status": IDEAS_ONLY,
+        "sources": ("minneapolis_mpd",),
+        "wanted": ("Market-based probabilities (option-implied distributions: mean, sd, skew, "
+                   "tails) for corn, soybeans, wheat, gold, crude, the euro, the yen and the S&P "
+                   "500: the implied-vol and risk-reversal state the desk lacks"),
+        "why": ("the Minneapolis Fed's disclaimer permits research and informational use only, "
+                "names no automated access, and the option data it is built from may be "
+                "copyrighted by its owner: fail closed, ideas only"),
+        "unblock": ("a Minneapolis Fed clause or written permission naming automated download "
+                    "of mpd_stats.csv, with the underlying option data's owner cleared"),
+        "terms": {"url": "https://www.minneapolisfed.org/site-information/disclaimer",
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "use": ("The information provided on this site may be used for research "
+                              "and informational purposes only."),
+                      "third_party": ("Some information contained on this site may be "
+                                      "copyrighted by its owner,")}}},
+    "eurex_web": {
+        "hosts": ("eurex.com",), "status": IDEAS_ONLY, "sources": ("eurex_settlement",),
+        "wanted": "Eurex index-option settlement prices (implied vol for GER40, EU50)",
+        "why": ("Deutsche Boerse's disclaimer bars copying and reproduction without prior "
+                "written permission, allowing one personal non-commercial copy: ideas only"),
+        "unblock": "a Deutsche Boerse data licence or written permission",
+        "terms": {"url": "https://eurex.com/ex-en/disclaimer", "checked_at": "2026-10-29",
+                  "clauses": {
+                      "copy": ("may not be copied, linked, reproduced, published, transmitted, "
+                               "transferred or distributed and marketed in any manner"),
+                      "permission": "without the prior written permission of Deutsche Börse.",
+                      "personal": "for personal, non-commercial use only"}}},
+    "fred_api": {
+        "hosts": ("api.stlouisfed.org",), "status": API_PERMITTED,
+        "sources": ("fred_api", "alfred"),
+        # The FRED key is checked by the organs that use it (fetch_alfred, collect_fred_macro),
+        # as eia_api's is: a `key_env` here would hold the host for an organ that reads its key
+        # from data/secrets/ instead of the environment.
+        "key_checked_by": "desks/mt5/research/fetch_alfred.py (FRED_API_KEY)",
+        "why": ("the FRED/ALFRED API is offered for programs that retrieve FRED and ALFRED "
+                "data, within its terms; this row covers US-government-owned series only "
+                "(fetch_alfred.SERIES); a third-party copyrighted FRED series is never live "
+                "input through it"),
+        "terms": {"url": "https://fred.stlouisfed.org/docs/api/terms_of_use.html",
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "purpose": ("Use the FRED® API only for purposes (a) that are permitted "
+                                  "by the Terms of Use;"),
+                      "programs": ("retrieve economic data from the FRED® and ALFRED® "
+                                   "websites."),
+                      "third_party": ("Data series available through the FRED® API, may be "
+                                      "owned by third parties and subject to copyright "
+                                      "restrictions.")},
+                  "also_read": {"https://fred.stlouisfed.org/docs/api/fred/":
+                                "programs clause above (API v1 section)"}}},
+})
+
+
+#: THE COUNTRY OPEN-DATA PACKS (2026-11-03, REGION_GAP_RANK ranks 2/7/9 plus Japan and China).
+#: Doors of the world dataset hunter (`world_dataset_hunter.COUNTRY_PACKS`). Each row quotes the
+#: publisher's OWN terms page, read 2026-11-03. LIVE only where a clause permits commercial use
+#: (trading on the data is commercial); everything else is IDEAS_ONLY, its parser exercised on
+#: fixtures, and its hold carries a missed-growth line (`held_missed_growth`, delta UNMEASURED).
+SOURCE_POLICY.update({
+    "jp_mof_feio": {
+        # A ROUTE row: mof.go.jp's HOST row is `jp_mof` (the fund-flow doors, same PDL 1.0 basis);
+        # the intervention file's own route names this row, so one host never has two host rows.
+        "hosts": (), "status": PUBLIC_PAGE, "sources": ("jp_mof_feio",),
+        "url_patterns": (r"^(?:www\.)?mof\.go\.jp/english/policy/international_policy/"
+                         r"reference/feio/",),
+        "why": ("Japan Ministry of Finance site (foreign exchange intervention operations CSV); "
+                "its copyright notice applies Public Data License 1.0, which permits copying, "
+                "adaptation and commercial use with a source credit"),
+        "terms": {"url": "https://www.mof.go.jp/english/notice.htm", "checked_at": "2026-11-03",
+                  "clauses": {
+                      "licence": ("belongs to the Ministry of Finance unless otherwise provided, "
+                                  "and Public Data License (Version 1.0; PDL 1.0) applies"),
+                      "pdl:free_use": "複製、公衆送信、翻訳・変形等の翻案等、自由に利用できます",
+                      "pdl:commercial": "商用利用も可能です。",
+                      "pdl:credit": "本コンテンツを利用する際は出典を記載してください。"},
+                  "also_read": {"https://www.digital.go.jp/resources/open_data/"
+                                "public_data_license_v1.0": "pdl:* clauses above"}}},
+    "sg_mas_api": {
+        "hosts": (), "status": API_PERMITTED, "sources": ("sg_mas_api",),
+        "url_patterns": (r"^(?:[^/]*\.)?eservices\.mas\.gov\.sg/apimg-gw/",),
+        # The gateway issues credentials; the KEY is checked by the door that uses it
+        # (world_dataset_hunter raises the named `needs_key`), as for eia_api: a `key_env` here
+        # would hold the route for every caller, and no clause bars it.
+        "key_checked_by": "desks/mt5/research/world_dataset_hunter.py (MAS_API_KEY)",
+        "why": ("MAS API gateway (SORA and domestic interest rates, SGD exchange rates, official "
+                "foreign reserves); MAS's API terms grant use whether commercially or "
+                "non-commercially, within a reasonable load and with the issued credential"),
+        "terms": {"url": "https://www.mas.gov.sg/Terms-of-Use/API-Terms-of-Service.aspx",
+                  "checked_at": "2026-11-03",
+                  "clauses": {
+                      "api_use": ("You can use, access, call, command, query or request the "
+                                  "API, whether commercially or non-commercially"),
+                      "datasets": ("MAS grants you a worldwide, perpetual, royalty-free, "
+                                   "non-exclusive licence to Use the datasets"),
+                      "credentials": ("you must utilise the access control credentials issued "
+                                      "to you if applicable"),
+                      "load": ("places or may place an unreasonable or disproportionately large "
+                               "load on MAS' systems")}}},
+    "jp_boj_stat_search": {
+        "hosts": ("stat-search.boj.or.jp",), "status": IDEAS_ONLY,
+        "sources": ("jp_boj_stat_search",),
+        "why": ("BOJ Time-Series Data Search (keyless API and flat files): the site notice excepts "
+                "copying or reproduction for commercial purposes, so its series are ideas only "
+                "until the Bank grants permission"),
+        "unblock": "the Bank of Japan's written permission for commercial use, quoted here",
+        "terms": {"url": "https://www.stat-search.boj.or.jp/info/notice_en.html",
+                  "checked_at": "2026-11-03",
+                  "clauses": {
+                      "grant": ("The information included in this site may be copied or "
+                                "reproduced with the exceptions below."),
+                      "commercial_bar": ("The copying or reproduction of the content for "
+                                         "commercial purposes."),
+                      "permission": ("In such cases, please contact the Research and Statistics "
+                                     "Department of the Bank in advance to request permission.")},
+                  "also_read": {"https://www.stat-search.boj.or.jp/info/api_notice_en.pdf":
+                                "credit and load clauses only; no grant of commercial use",
+                                "https://www.boj.or.jp/en/copyright.htm":
+                                "the same commercial-purpose exception"}}},
+    "jp_jquants": {
+        "hosts": ("jpx-jquants.com", "api.jquants.com"), "status": IDEAS_ONLY,
+        "sources": ("jp_jquants", "jquants"),
+        "why": ("J-Quants API terms limit use to the registered user's private use and state that "
+                "commercial use is not private use; the box's JQUANTS key is never used for "
+                "live input"),
+        "unblock": "a J-Quants corporate (法人) plan whose terms grant the desk's use, quoted here",
+        "terms": {"url": "https://jpx-jquants.com/ja/termsofservice", "checked_at": "2026-11-03",
+                  "clauses": {
+                      # verbatim, full-width punctuation kept
+                      "art8_1": ("本サービス及び本データの利用目的"
+                                 "（以下「本利用目的」といいます。）は、"  # noqa: RUF001
+                                 "登録ユーザーのみによる私的使用の目的に限ります。"),
+                      "art8_2": ("第三者が使用できる状態にすること"
+                                 "（インターネット上での配信を含みます。）"  # noqa: RUF001
+                                 "または商用もしくは学術の目的で利用することは、私的使用の目的に該当し"
+                                 "ません。")}}},
+    "id_bank_indonesia": {
+        "hosts": ("bi.go.id",), "status": IDEAS_ONLY, "sources": ("id_bank_indonesia",),
+        "why": ("Bank Indonesia (BI-Rate, JISDOR, reserve assets): no terms-of-use or reuse "
+                "clause was found on its site (footer carries only a copyright line), so terms "
+                "are UNREAD and its series are ideas only (fail closed)"),
+        "unblock": "a Bank Indonesia page whose clause permits the desk's use, quoted here",
+        "terms": {"url": "https://www.bi.go.id/en/statistik/", "checked_at": "2026-11-03",
+                  "unread": {"https://www.bi.go.id/en/syarat-dan-ketentuan.aspx": "HTTP 404",
+                             "https://www.bi.go.id/en/statistik/": (
+                                 "footer lists no disclaimer, terms or privacy link; its only "
+                                 "rights text is the copyright line '©2026 Bank Indonesia'")}}},
+    "id_bps_webapi": {
+        "hosts": ("webapi.bps.go.id",), "status": IDEAS_ONLY, "sources": ("id_bps_webapi",),
+        "why": ("BPS-Statistics Indonesia WebAPI: registration and an API token are required "
+                "(BPS_API_KEY is not on the box) and its terms permit commercial use only where "
+                "BPS has authorised it, so it is ideas only and NEEDS_KEY"),
+        "needs_key": "BPS_API_KEY",
+        "unblock": ("BPS authorisation of the desk's use (a cooperation agreement) and a "
+                    "registered token in BPS_API_KEY"),
+        "terms": {"url": "https://webapi.bps.go.id/developer/", "checked_at": "2026-11-03",
+                  "clauses": {
+                      "registration": ("The BPS WebAPI may only be used by Users who have "
+                                       "completed the registration process"),
+                      "commercial": ("Use of the BPS WebAPI for commercial purposes is "
+                                     "permitted only where such use has been authorized"),
+                      "site_grant": ("The Contents made available on this website are granted "
+                                     "to you for free, worldwide, perpetual, and non-exclusive "
+                                     "use")},
+                  "also_read": {"https://www.bps.go.id/en/term-of-use":
+                                "site_grant (the website, not the WebAPI)"}}},
+    "sa_sama": {
+        "hosts": ("sama.gov.sa",), "status": IDEAS_ONLY, "sources": ("sa_sama", "sama"),
+        "why": ("Saudi Central Bank (reserves, money supply, SAIBOR): robots.txt disallows the "
+                "reader on SAMA's statistics pages and on opendata.sama.gov.sa, so no terms page "
+                "was read; ideas only (fail closed)"),
+        "unblock": ("SAMA's open-data terms read with a clause permitting the desk's use, and "
+                    "robots.txt allowing the data route"),
+        "terms": {"url": "https://www.sama.gov.sa/en-US/Statistics/Pages/Summary.aspx",
+                  "checked_at": "2026-11-03",
+                  "unread": {"https://www.sama.gov.sa/en-US/Statistics/Pages/Summary.aspx":
+                             "robots_disallowed",
+                             "https://opendata.sama.gov.sa/": "robots_disallowed",
+                             "https://mep.gov.sa/en/knowledge-base/open-data/policy": (
+                                 "national open-data policy; it does not name SAMA's portal")}}},
+})
 
 
 def _feed_row(feed_url: str, status_: str, why: str, terms_url: str, read: str,
@@ -857,11 +1480,17 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
     "cnx_dce": _cnx_row(
         "cnx_dce", "DCE", host="dce.com.cn", url="http://www.dce.com.cn/",
         unread={"dce.com.cn": ("not readable from the build sandbox: robots.txt fetch timed out "
-                               "from the sandbox")}),
+                               "from the sandbox"),
+                "dce.com.cn/2026-11-03": ("re-read for the China country pack: the home page "
+                                          "answered client_error and the trading-rules page "
+                                          "(dalianshangpin/fgfz/...) is robots_disallowed")}),
     "cnx_czce": _cnx_row(
         "cnx_czce", "CZCE", host="czce.com.cn", url="http://www.czce.com.cn/",
         unread={"czce.com.cn": ("not readable from the build sandbox: the legal-statement link "
-                                "returned HTTP 412 to the sandbox")}),
+                                "returned HTTP 412 to the sandbox"),
+                "czce.com.cn/2026-11-03": ("re-read for the China country pack: the footer's "
+                                           "法律声明 link carries no readable target and the "
+                                           "trading-rules page answered client_error")}),
     "cnx_gfex": _cnx_row(
         "cnx_gfex", "GFEX", host="gfex.com.cn", url="http://www.gfex.com.cn/",
         unread={"gfex.com.cn": ("not readable from the build sandbox: TLS hostname mismatch on "
@@ -872,6 +1501,374 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
                                  "fetched or parsed from the sandbox")}),
 }
 SOURCE_POLICY.update(_HELD_ROUTES)
+#: THE ASIAN PHYSICAL-GOLD STATES (IDEA_QUEUE 245, 237, 228, 215; 2026-10-29). One row per
+#: `alt_proxies` source id; `hosts` is empty so the row governs only that source NAME (the
+#: country packs' idea grounds on these hosts keep whatever row or default they had; sge.com.cn
+#: as a whole is the `sge` row below). A row is LIVE only on a quoted clause of its own terms
+#: page; the other three were not readable and are IDEAS_ONLY: never live input, ideas still
+#: mined, parsers built on fixtures, and each carries its missed-growth line here and in the
+#: state artifact (`asia_gold_physical.missed_growth_lines`). Flipping a row is the only unblock.
+_GOLD_MISSED = ("delta E[log W] UNMEASURED: the {state} state for the gold_asia window cannot be "
+                "judged until this row's terms are read with a clause permitting automated "
+                "access for internal research; no conversion of it is on record")
+SOURCE_POLICY.update({
+    "hk_gold_reexports": {
+        "hosts": (), "url_level": False, "status": API_PERMITTED,
+        "sources": ("hk_gold_reexports",),
+        "why": ("C&SD trade statistics through the Trade-IDDS API published as a DATA.GOV.HK "
+                "resource; the portal's terms (clauses quoted) permit downloading and "
+                "reproducing the Data for commercial purposes with attribution, and the API is "
+                "the portal's own machine route; robots.txt is read per request (a Disallow is "
+                "a hold). One-line revert: status -> IDEAS_ONLY if the auditor reads the "
+                "download grant as not covering automated access"),
+        "api": "https://tradeidds.censtatd.gov.hk/api/get",
+        "api_enquiry": ("https://data.gov.hk/en-data/dataset/hk-censtatd-trade-idds-trade/"
+                        "resource/173a8d40-24ff-4e8e-b9f2-456b20208fa4"),
+        "robots": ("tradeidds.censtatd.gov.hk refused the terms reader's agent by robots on the "
+                   "API spec PDF (2026-10-29); polite_fetch reads robots for DESK_UA on every "
+                   "request, and a Disallow is recorded as a hold, never routed around"),
+        # THE API PATH'S OWN ROBOTS READING (auditor should-fix 2026-11-03): the hold above is on
+        # the spec PDF; the path the leg actually requests is /api/get, read for DESK_UA.
+        "robots_check": {"url": "https://tradeidds.censtatd.gov.hk/robots.txt",
+                         "path": "/api/get", "agent": "DESK_UA",
+                         "checked_at": "2026-11-03",
+                         "verdict": "UNMEASURED",
+                         "reason": ("unreadable from the build container: its egress proxy "
+                                    "refused CONNECT to tradeidds.censtatd.gov.hk:443 (HTTP "
+                                    "403, connect_rejected) on 2026-11-03, so robots.txt was "
+                                    "never reached; the box's polite_fetch reads it for DESK_UA "
+                                    "on every request and a Disallow there is a hold")},
+        "credit": ("Source: Census and Statistics Department, HKSAR Government (via "
+                   "DATA.GOV.HK); figures modified by the desk (net flow, z-score)"),
+        "terms": {"url": "https://data.gov.hk/en/terms-and-conditions",
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "use": ("You are allowed to browse, download, distribute, reproduce, "
+                              "hyperlink to, and print the Data for both commercial and "
+                              "non-commercial purposes on a free-of-charge basis"),
+                      "data": ("“Data” mean the data and all contents provided by the "
+                               "Government and/or other organisations"),
+                      "attribution": "you shall identify clearly the source of the Data"},
+                  "unread": {"https://tradeidds.censtatd.gov.hk/MetadataLink/ApiSpec/"
+                             "API_eng.pdf": "ROBOTS_DISALLOWED to the reader on 2026-10-29: "
+                                            "the response field names are UNREAD"}}},
+    "vn_sjc_premium": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("vn_sjc_premium",),
+        "why": ("SJC's price board and the SBV central-rate page could not be read (client "
+                "error to the reader, 2026-10-29), so their terms are UNREAD and UNREAD terms "
+                "never permit automated live input; the parser is ready on fixtures"),
+        "unblock": ("sjc.com.vn and sbv.gov.vn terms read with a clause permitting automated "
+                    "access for internal research, quoted into this row, and the row flipped"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _GOLD_MISSED.format(state="Vietnam SJC premium")},
+        "terms": {"url": "https://sjc.com.vn/", "checked_at": "2026-10-29",
+                  "unread": {"https://sjc.com.vn/": "client_error to the reader on 2026-10-29",
+                             "https://www.sbv.gov.vn/": ("client_error to the reader on "
+                                                         "2026-10-29")}}},
+    "th_gold_premium": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("th_gold_premium",),
+        "why": ("the Gold Traders Association's terms page renders its body by script and the "
+                "reader saw navigation only (2026-10-29), so its terms are UNREAD and UNREAD "
+                "terms never permit automated live input; the parser is ready on fixtures"),
+        "unblock": ("goldtraders.or.th/terms-and-conditions read with a clause permitting "
+                    "automated access for internal research (and the BoT reference-rate API's "
+                    "terms), quoted into this row, and the row flipped"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _GOLD_MISSED.format(state="Thai 96.5% bar premium")},
+        "terms": {"url": "https://www.goldtraders.or.th/terms-and-conditions",
+                  "checked_at": "2026-10-29",
+                  "unread": {"https://www.goldtraders.or.th/terms-and-conditions": (
+                      "body rendered by script: the reader saw navigation and footer only "
+                      "(footer: 'สงวนสิทธิ์ 2567 สมาคมค้าทองคำ') on 2026-10-29")}}},
+    "cn_sge_deferral": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("cn_sge_deferral",),
+        "why": ("the SGE site prints only 'Copyright 2016 上海黄金交易所 All Right Reserved' and "
+                "links no terms page (read 2026-10-29), so its terms are UNREAD and UNREAD "
+                "terms never permit automated live input; the 交收方向 parser is ready on "
+                "fixtures"),
+        "unblock": ("an SGE statement permitting automated access to its daily quotation "
+                    "table for internal research, quoted into this row, and the row flipped"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _GOLD_MISSED.format(state="SGE Au(T+D) deferral direction")},
+        "terms": {"url": "https://www.sge.com.cn/", "checked_at": "2026-10-29",
+                  "unread": {"https://www.sge.com.cn/": (
+                      "no terms link; footer 'Copyright 2016 上海黄金交易所 All Right Reserved' "
+                      "(2026-10-29)")}}},
+})
+#: THE SGE HOST (2026-10-29, coordinator follow-up to the asia-gold build). `fetch_sge_premium`
+#: fetched sge.com.cn as LIVE INPUT with a bare `requests.get` while SGE's terms were UNREAD. Under
+#: the fail-closed ruling the whole host is IDEAS_ONLY: every request goes through polite_fetch
+#: (robots, DESK_UA, hard stops), live input from it is refused before anything is sent, and the
+#: deep-forest / world-crawler idea grounds on it keep reading for ideas. `consumers` is the grep
+#: of every organ, state, cell and proposal that reads the SGE premium or SGE data (2026-10-29);
+#: each reads a refused fetch as UNMEASURED. No certificate, sleeve or shadow clock consumes it.
+_SGE_CONSUMERS = (
+    "leg sge_premium -> research/fetch_sge_premium.py (writes data/lake/sge_daily.parquet, "
+    "data/lake/sge_premium.parquet, reports/sge_premium.json)",
+    "alt_proxies source cn_sge_premium (reader of sge_premium.parquet; terms to_confirm, never "
+    "read)",
+    "macro_state_engine latent cn_physical_gold input sge_premium (terms_source cn_sge_premium)",
+    "dislocation_lab engine P6 (reads reports/sge_premium.json row count for XAUUSD)",
+    "asia_plane in-hand census (counted sge_benchmark from sge_daily.parquet)",
+    "asia_collector registry rows sge_benchmark and sge_silver (asia_sources.json, sjzx/mrhq and "
+    "sjzx/yjstjb)",
+    "world_dataset_hunter sge_benchmark (en.sge.com.cn/data_BenchmarkPrice)",
+    "asia_transmission edge sge_premium_to_gold (declared proxy, not yet collected)",
+    "scripts/check_source_routes.py route sge_quotations (shape probe only)",
+    "alt_proxies source cn_sge_deferral (IDEA_QUEUE 215; its own IDEAS_ONLY row)",
+    "compiled proposal XAU_locbasis_split (data_source names SGE Au99.99 daily close)",
+    "36 external_survivors genomes with SGE idea provenance (miner:asia:sge_benchmark XAUUSD "
+    "range_reversion/spread_state, miner:asia:sge_silver XAGUSD): idea lineage only, they trade "
+    "on MT5 data and stay judged (rule 4)",
+)
+SOURCE_POLICY["sge"] = {
+    "hosts": ("sge.com.cn",), "status": IDEAS_ONLY,
+    "sources": ("sge_premium", "cn_sge_premium", "sge_benchmark", "sge_silver"),
+    "why": ("the SGE site prints only 'Copyright 2016 上海黄金交易所 All Right Reserved' and links "
+            "no terms page (read 2026-10-29), so its terms are UNREAD and UNREAD terms never "
+            "permit automated live input; its pages are read politely for ideas only"),
+    "unblock": ("an SGE statement permitting automated access to its quotation data for internal "
+                "research, quoted into this row, and the row flipped to PUBLIC_PAGE"),
+    "consumers": _SGE_CONSUMERS,
+    "missed_growth": {
+        "delta_elogw": "UNMEASURED",
+        "cause": ("the SGE premium (and the Au(T+D) basis) for the gold_asia window is cut as live "
+                  "input until SGE's terms are read; consumers cut: " + "; ".join(_SGE_CONSUMERS)
+                  + ". No certificate, sleeve or shadow clock reads it, so the forgone growth is "
+                  "UNMEASURED, never zero")},
+    "terms": {"url": "https://www.sge.com.cn/", "checked_at": "2026-10-29",
+              "unread": {"https://www.sge.com.cn/": (
+                  "no terms link; footer 'Copyright 2016 上海黄金交易所 All Right Reserved' "
+                  "(2026-10-29)")}}}
+#: THE TURKISH HOUSEHOLD GOLD DEMAND STATE (IDEA_QUEUE 257, 2026-10-29). Three rows, one per
+#: publisher. EVDS's OWN terms ("EVDS Kullanim Sartlari", served by evds3 as document 18) govern
+#: the EVDS web service and permit third-party use and publication with the source credited, for
+#: commercial or non-commercial purposes; that is narrower and later than the tcmb.gov.tr site
+#: disclaimer (also quoted), which put commercial use of SITE information under prior written
+#: permission and is why tr_tuik_retail once skipped EVDS. Borsa Istanbul's own notice refuses
+#: copying or storing without prior written consent; Istanbul Gold Refinery links no terms page.
+_TR_GOLD_MISSED = ("delta E[log W] UNMEASURED: the Turkish domestic gold {what} for the XAUUSD "
+                   "Europe and Asia windows cannot be read from this publisher until its terms "
+                   "permit automated access; the CBRT EVDS rows carry the state meanwhile, and no "
+                   "conversion of this route is on record")
+SOURCE_POLICY.update({
+    "tr_evds_gold": {
+        "hosts": (), "url_level": False, "status": API_PERMITTED, "key_env": ("EVDS_API_KEY",),
+        "sources": ("tr_gold_try_price", "tr_gold_imports", "tr_gold_reserves"),
+        "why": ("the CBRT EVDS web service (an API taking the user's key in a request header); "
+                "EVDS's own terms (clauses quoted) let third parties use and publish EVDS data "
+                "with the source credited, commercial use included, with no extra charge passed "
+                "to users, and let the CBRT cap query counts; robots.txt is read per request by "
+                "polite_fetch (a Disallow is a hold). One-line revert: status -> IDEAS_ONLY if "
+                "the auditor reads the tcmb.gov.tr site disclaimer as governing EVDS data"),
+        "api": "https://evds3.tcmb.gov.tr/igmevdsms-dis/",
+        "credit": "Kaynak: TCMB EVDS (Türkiye Cumhuriyet Merkez Bankası Elektronik Veri "  # noqa: RUF001
+                  "Dağıtım Sistemi); premium and z computed by the desk",  # noqa: RUF001
+        "robots": "read per request by polite_fetch for DESK_UA (not readable from the authoring "
+                  "container, whose proxy refuses the host)",
+        "terms": {"url": ("https://evds3.tcmb.gov.tr/igmevdsms-dis/documents/showDocument"
+                          "?docId=18"),
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "use": ("EVDS uygulaması, EVDS web servisi ve EVDS MCP'de sunulan veriler "  # noqa: RUF001
+                              "kaynak gösterilmek koşuluyla ... üçüncü kişiler tarafından "  # noqa: RUF001
+                              "kullanılabilir ve yayımlanabilir."),  # noqa: RUF001
+                      "commercial": ("ticari veya ticari olmayan amaçla dahi kullanıldığında, "  # noqa: RUF001
+                                     "ürünün kullanıcılarına ve abonelerine ..."),  # noqa: RUF001
+                      "web_service": ("EVDS web servisi: EVDS verilerine programatik erişim "
+                                      "sağlayan API."),
+                      "limits": ("TCMB gerekli gördüğü takdirde EVDS bileşenleri üzerinde sorgu "
+                                 "sayısı, eşzamanlı bağlantı sayısı ...")},  # noqa: RUF001
+                  "site_disclaimer": {
+                      "url": ("https://www.tcmb.gov.tr/wps/wcm/connect/EN/TCMB+EN/Bottom+Menu/"
+                              "Other/Disclaimer"),
+                      "quote": ("Information published in this site may be quoted by specific "
+                                "reference thereto, but the use of such information for "
+                                "commercial purposes shall be subject to prior written "
+                                "permission of the CBRT.")}}},
+    "tr_bist_gold": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("tr_bist_gold",),
+        "why": ("Borsa Istanbul's own notice (clause quoted) forbids copying, distributing or "
+                "storing its information for subsequent use without prior written consent, so "
+                "its precious-metals price table is never automated live input; the parser is "
+                "ready on fixtures"),
+        "unblock": ("a Borsa Istanbul data licence (or written consent) for the precious metals "
+                    "market price table, quoted into this row, and the row flipped"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _TR_GOLD_MISSED.format(
+                              what="market price (Borsa Istanbul precious metals market)")},
+        "terms": {"url": "https://borsaistanbul.com/sayfa/3642", "checked_at": "2026-10-29",
+                  "clauses": {
+                      "copying": ("The information contained herein may not otherwise be "
+                                  "copied, performed, distributed, rented, reproduced, "
+                                  "sublicensed, altered, stored for subsequent use, etc., in "
+                                  "whole or in part, in any manner without Borsa İstanbul's "
+                                  "prior written consent.")}}},
+    "tr_iar_gold": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("tr_iar_gold",),
+        "why": ("Istanbul Gold Refinery's site links no terms of use (only a KVKK personal-data "
+                "page) and its home page prints no price table (read 2026-10-29), so its terms "
+                "are UNREAD and UNREAD terms never permit automated live input; no parser is "
+                "built because no price page shape was readable"),
+        "unblock": ("an iar.com.tr statement permitting automated access to a published price "
+                    "page, quoted into this row, and a parser on a fixture of that page"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _TR_GOLD_MISSED.format(what="refinery price")},
+        "terms": {"url": "https://www.iar.com.tr/", "checked_at": "2026-10-29",
+                  "unread": {"https://www.iar.com.tr/": (
+                      "no terms link; footer links only 'Kişisel Verilerin Korunması' "  # noqa: RUF001
+                      "(https://www.iar.com.tr/Kurumsal/kvkk/148), 2026-10-29")}}},
+})
+#: THE COUNTRY OPEN-DATA PACKS (2026-11-03, REGION_GAP_RANK ranks 3/4/5/10: Turkey, Poland, South
+#: Africa, Sweden). One row per publisher; each row governs its pack's door NAMES (`sources`,
+#: `hosts` empty), so the world crawler's idea grounds on the same hosts keep their own rows. The
+#: doors are `research/country_packs.py`, fetched by `world_dataset_hunter`'s direct doors (no
+#: second lane). LIVE only on a clause quoted from the publisher's own page; the two IDEAS_ONLY
+#: rows carry their missed-growth line. Flipping a row is the only unblock or revert.
+_PACK_MISSED = ("delta E[log W] UNMEASURED: the {what} cannot reach world_macro_state cells for "
+                "{syms} until this row's terms are read with a clause permitting automated access "
+                "for internal research; no conversion of it is on record")
+SOURCE_POLICY.update({
+    "tr_evds_macro": {
+        "hosts": (), "url_level": False, "status": API_PERMITTED, "key_env": ("EVDS_API_KEY",),
+        "sources": ("tr_usdtry_cbrt", "tr_funding_cost", "tr_cpi", "tr_fx_reserves",
+                    "tr_current_account"),
+        "why": ("the CBRT EVDS web service, the same API and the same terms as tr_evds_gold "
+                "(clauses quoted there and here): use and publication by third parties with the "
+                "source credited, commercial use included; the key travels in the `key` header "
+                "only. One-line revert: status -> IDEAS_ONLY, as for tr_evds_gold"),
+        "api": "https://evds3.tcmb.gov.tr/igmevdsms-dis/",
+        "credit": SOURCE_POLICY["tr_evds_gold"]["credit"],
+        "robots": SOURCE_POLICY["tr_evds_gold"]["robots"],
+        "terms": SOURCE_POLICY["tr_evds_gold"]["terms"]},
+    "pl_nbp": {
+        # IDEAS_ONLY (2026-11-03, the row's own revert line applied): the only permitting clause
+        # quoted, s.1(6), grants copying "for personal use", which is not a permission for a
+        # desk's research; FAIL CLOSED FOR LIVE INPUT (auditor ruling 2026-10-14).
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("pl_fx_usd", "pl_fx_eur", "pl_gold", "pl_policy_rates"),
+        "why": ("the NBP Web API (api.nbp.pl, keyless JSON) and NBP's published interest-rate "
+                "file; NBP's Terms of Use of its website (clauses quoted) permit saving and "
+                "copying only 'for personal use' (s.1(6)), which does not cover a desk's "
+                "internal research, and no clause names automated access for that use: ideas "
+                "only, parsers exercised on fixtures. Applied as the row's own one-line revert "
+                "(status -> IDEAS_ONLY on s.1(6) 'personal use'). PLN policy rates still reach "
+                "the desk through the BIS WS_CBPOL direct door"),
+        "unblock": ("an NBP clause (or written permission) that permits automated use of the "
+                    "NBP Web API data for a firm's internal research, quoted into this row, and "
+                    "the row flipped back to API_PERMITTED"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _PACK_MISSED.format(
+                              what="NBP USD/PLN and EUR/PLN fixings, gold in PLN and NBP rates",
+                              syms="USDPLN, EURPLN")},
+        "api": "https://api.nbp.pl/en.html",
+        "credit": "Source: Narodowy Bank Polski (www.nbp.pl); z-scores computed by the desk",
+        "robots": "never requested as live input (held before any fetch)",
+        "terms": {"url": "https://static.nbp.pl/dokumenty/regulaminy/regulamin_nbppl_en.pdf",
+                  "checked_at": "2026-11-03",
+                  "clauses": {
+                      "1.6": ("makes no objections to saving files, copying pages in full or in "
+                              "part or making printouts for personal use"),
+                      "1.8": ("the user is required to state their source along with a link to "
+                              "the website www.nbp.pl"),
+                      "5.1": ("may in particular cases be regarded as a denial of service (DoS) "
+                              "attack")},
+                  "api_page": {"url": "https://api.nbp.pl/en.html",
+                               "quote": ("a single enquiry cannot cover a period longer than "
+                                         "93 days")}}},
+    "se_riksbank": {
+        "hosts": (), "url_level": False, "status": API_PERMITTED,
+        "sources": ("se_policy_rate", "se_usdsek", "se_eursek", "se_swestr"),
+        "why": ("the Riksbank's open REST APIs (SWEA interest and exchange rates; SWESTR), "
+                "keyless. The API page's own statement (quoted) is that the API exists so "
+                "quotations can be retrieved AUTOMATICALLY, and the SWESTR conditions (quoted) "
+                "provide SWESTR free of charge for use and re-publication with the Riksbank "
+                "named as source. The page bodies render by script (the reader saw the page "
+                "description only), so the quoted sentence is the page's own description. "
+                "One-line revert: status -> IDEAS_ONLY if the auditor wants a body clause"),
+        "api": "https://api.riksbank.se/",
+        "credit": "Source: Sveriges Riksbank; z-scores computed by the desk",
+        "robots": "read per request by guarded_urlopen for the hunter UA (a Disallow is a hold)",
+        "terms": {"url": ("https://www.riksbank.se/sv/statistik/rantor-och-valutakurser/"
+                          "hamta-rantor-och-valutakurser-via-api/"),
+                  "checked_at": "2026-11-03",
+                  "clauses": {
+                      "api": ("Riksbanken har ett öppet API (Application Programming Interface) "
+                              "som gör det möjligt att automatiserat hämta noteringar"),
+                      "swestr_free": ("is provided free of charge without any licensing "
+                                      "expenses being demanded for use or re-publication"),
+                      "swestr_source": ("It must be made clear that the Riksbank is the source "
+                                        "of re-published information about SWESTR.")},
+                  "swestr_conditions": (
+                      "https://www.riksbank.se/globalassets/media/statistik/swestr/"
+                      "publicering-210621/decision-annex-conditions-for-re-publication-and-use-"
+                      "of-the-reference-interest-rate-swestr-as-well-as-average-rates-and-index-"
+                      "based-on-swestr.pdf")}},
+    "se_scb": {
+        "hosts": (), "url_level": False, "status": API_PERMITTED,
+        "sources": ("se_cpi",),
+        "why": ("Statistics Sweden's PxWeb API; its open-data terms (clauses quoted) put the data "
+                "under CC0, free of charge, with a ten-calls-per-ten-seconds limit (one call per "
+                "pass here)"),
+        "api": "https://api.scb.se/OV0104/v1/doris/en/ssd/",
+        "credit": "Source: Statistics Sweden (processed by the desk)",
+        "robots": "read per request by guarded_urlopen for the hunter UA (a Disallow is a hold)",
+        "terms": {"url": ("https://www.scb.se/en/About-us/about-the-website-and-terms-of-use/"
+                          "open-data-api/"),
+                  "checked_at": "2026-11-03",
+                  "clauses": {
+                      "free": "You may use Statistics Sweden’s open data free of charge.",  # noqa: RUF001
+                      "licence": "We use the licence CC0 for this data",
+                      "limit": ("You may perform a maximum of ten call-ups in a 10-second period "
+                                "from an IP address.")}}},
+    "za_sarb": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("za_sarb_rates",),
+        "why": ("the SARB website disclaimer (clause quoted) forbids copying, reproducing or "
+                "distributing its material without prior written consent, and names no "
+                "exception for its web API, so SARB rates are never automated live input; the "
+                "parser is ready on fixtures. SA policy rates still reach the desk through the "
+                "BIS WS_CBPOL direct door"),
+        "unblock": ("SARB's written consent (or an open-data licence for the SarbWebApi) quoted "
+                    "into this row, and the row flipped"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _PACK_MISSED.format(
+                              what="SARB repo, prime and JIBAR rates and ZAR reserves",
+                              syms="USDZAR, EURZAR, GBPZAR, ZARJPY")},
+        "robots": "never requested (held before any fetch)",
+        "terms": {"url": "https://www.resbank.co.za/en/home/quick-links/disclaimer",
+                  "checked_at": "2026-11-03",
+                  "clauses": {
+                      "ip": ("All intellectual property rights, including but not limited to "
+                             "copyright and trademarks in the material contained on this "
+                             "website is held by the South African Reserve Bank"),
+                      "copying": ("may not be copied, reproduced, adapted, published or "
+                                  "distributed in any form whatsoever without the prior written "
+                                  "consent of the South African Reserve Bank.")}}},
+    "za_statssa_macro": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("za_statssa_cpi",),
+        "why": ("statssa.gov.za serves an Incapsula challenge to fetchers (a WAF is a hard "
+                "stop) and no Stats SA terms page was readable, so its terms are UNREAD and "
+                "UNREAD terms never permit automated live input; no machine-readable series "
+                "door is known, so no parser is built"),
+        "unblock": ("a Stats SA machine-readable series endpoint and its own terms read with a "
+                    "clause permitting automated access, quoted into this row"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _PACK_MISSED.format(what="South African CPI and current "
+                                                            "account",
+                                                       syms="USDZAR, EURZAR, GBPZAR, ZARJPY")},
+        "robots": "never requested (held before any fetch)",
+        "terms": {"url": "https://www.statssa.gov.za/", "checked_at": "2026-11-03",
+                  "unread": {"https://www.statssa.gov.za/": (
+                      "Incapsula challenge to fetchers (alt_proxies za_statssa_retail evidence); "
+                      "no terms page readable, 2026-11-03")}}},
+})
 #: The held-route rows, by key (read by `alt_proxies.HELD_ROUTES`).
 HELD_ROUTE_KEYS: frozenset[str] = frozenset(
     k for k, r in SOURCE_POLICY.items() if r.get("held_route"))

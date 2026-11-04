@@ -95,6 +95,10 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+#: robots.txt is read by THE ONE parser, `polite_fetch.RobotsRules` (RFC 9309); no second
+#: robots reader lives here (tests/data/test_robots_coverage.py).
+from libs.data import polite_fetch as _pf  # noqa: E402
+
 UNMEASURED = "UNMEASURED"
 GENERATOR = "paid_substitute_engine"
 LEG = "paid_substitute_engine"
@@ -635,14 +639,14 @@ def union_asia_tables(parsed: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
 def _robots_label(
     url: str,
     fetch: Callable[[str], tuple[int | None, str]],
-    cache: dict[str, Any],
+    cache: dict[str, _pf.RobotsRules | None],
 ) -> dict[str, Any]:
     """robots.txt AS A LABEL for `url` (LAWS 5e, live: "robots.txt Disallow treated as a refusal"
     is a deleted brake), read with THE ONE parser (`polite_fetch.parse_robots`) under this
     crawler's product token: PUBLIC when allowed or absent (4xx), PUBLIC_WITH_TERMS for a
     Disallow (the Disallow as terms_note), ACCESS_UNCLEAR when unreachable or 5xx. The page is
     crawled in every case; the label rides on every entry it yields."""
-    from libs.data import polite_fetch as pf
+    pf = _pf
     p = urllib.parse.urlparse(url)
     base = f"{p.scheme}://{p.netloc}"
     if base not in cache:
@@ -796,7 +800,7 @@ def crawl_catalogue(
     except Exception as exc:
         stats["status"] = f"{UNMEASURED}: fetch unavailable ({type(exc).__name__})"
         return stats
-    robots: dict[str, Any] = {}
+    robots: dict[str, _pf.RobotsRules | None] = {}
     n = len(listings)
     for i in range(min(n, CRAWL_PAGES_PER_PASS)):
         if time.monotonic() >= deadline:

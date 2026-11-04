@@ -2607,6 +2607,7 @@ FAMILY_TIMEFRAMES["idio_volume_reversal"] = (
     "the hour-of-week normalisation is defined on hourly buckets and the cost surface is per "
     "broker hour; below the hour the bucket is no longer one hour of the week, and the 1-4h hold "
     "is counted in H1 bars")
+
 # ALT-DATA RELEASE DRIFT (2026-09-30): the event lane's executor for the alt_proxies equity
 # hand-off. A free alt-data release (Korean 20-day exports, TSA throughput, GDELT country tone)
 # bearing on a share with a declared prior sign; the family loads the lake series itself and

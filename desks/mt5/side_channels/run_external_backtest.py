@@ -635,6 +635,8 @@ def quarantine_terms_fenced(rows: list[dict]) -> tuple[list[dict], dict]:
     return kept, {"skipped": sum(by_platform.values()), "by_platform": dict(by_platform),
                   "reason": ("live input data from an IDEAS_ONLY or held source "
                              "(libs/data/terms_fence.py)")}
+
+
 def _budget_s() -> float:
     """The cell loop's wall clock: BACKTEST_BUDGET_MIN, never past the cycle's cap.
 

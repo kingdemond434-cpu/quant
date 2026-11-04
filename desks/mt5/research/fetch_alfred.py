@@ -37,6 +37,16 @@ revision.
 
     python research/fetch_alfred.py                # all series
     python research/fetch_alfred.py DGS10 T10YIE   # a subset
+    python research/fetch_alfred.py --once         # the hourly leg: refresh what is stale
+
+ON A CLOCK (2026-10-29, data_class_gap #5 "WIRED_STALE": this module had no schedule). The hourly
+leg `hourly_cycle:fetch_alfred` runs `--once`: it re-fetches at most `ONCE_MAX_SERIES` series per
+pass whose file is older than `REFRESH_H`, oldest first, so the whole vintage lake is renewed
+within a day without holding more than one series in memory. A missing key is the named status
+NEEDS_KEY in reports/alfred_vintages.json (exit 0: the leg ran and said why nothing landed),
+never a zero and never a fallback to revised data. Terms: the `fred_api` row of
+libs/data/terms_fence.SOURCE_POLICY (quoted 2026-10-29); every id in SERIES is a US-government
+series, so no third-party copyrighted id is read through it.
 """
 
 from __future__ import annotations
@@ -49,12 +59,12 @@ from pathlib import Path
 
 import pandas as pd
 try:
-    from libs.data.polite_fetch import polite_requests_get
+    from libs.data.polite_fetch import polite_requests_get, redact_text
 except ImportError:  # run as a script: the repo root is not on the path
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
-    from libs.data.polite_fetch import polite_requests_get
+    from libs.data.polite_fetch import polite_requests_get, redact_text
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -62,9 +72,26 @@ from mt5desk.config import DATA, REPORTS  # noqa: E402
 
 OUT = DATA / "lake" / "alfred"
 OUT.mkdir(parents=True, exist_ok=True)
+#: The leg's own artifact, written on every exit path; bound by name so the component
+#: registry (desks/mt5/ops/components.own_artifact, which parses and never imports) can see it;
+#: it is mt5desk.config.REPORTS. Writes go through `REPORTS / REPORT.name` so a test that
+#: repoints REPORTS still captures the report.
+REPORT = Path(__file__).resolve().parents[1] / "reports" / "alfred_vintages.json"
 
 API = "https://api.stlouisfed.org/fred/series/observations"
 RELEASES = "https://api.stlouisfed.org/fred/release/dates"
+
+
+def _safe(text: object, key: str | None = None) -> str:
+    """Anything this hourly leg prints about a failure: a requests/urllib error quotes the URL,
+    and the URL carries `api_key`. `polite_fetch.redact_text` blanks every credential-looking
+    `name=value`; the key itself is blanked too, wherever else it appears."""
+    out = redact_text(text)
+    return out.replace(key, "REDACTED") if key else out
+#: The hourly leg renews a series once its file is this old ...
+REFRESH_H = 24.0
+#: ... and at most this many per pass (one full vintage history each; memory stays one series).
+ONCE_MAX_SERIES = 4
 
 #: The series where revision actually bites. Daily market series (DGS10, VIXCLS) are essentially
 #: never revised, so they are omitted -- pulling every vintage of a series that has one is a large
@@ -107,7 +134,33 @@ def api_key() -> str | None:
             k = p.read_text(encoding="utf-8").strip()
             if k:
                 return k
+    # the key file scripts/collect_fred_macro.py reads ({"key": "..."}), at either root
+    for p in (Path(__file__).resolve().parents[3] / "data" / "secrets" / "fred.json",
+              DATA / "secrets" / "fred.json"):
+        try:
+            k = str(json.loads(p.read_text(encoding="utf-8"))["key"]).strip()
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+        if k:
+            return k
     return None
+
+
+def stale_series(wanted: set[str], now: datetime, *, limit: int = ONCE_MAX_SERIES,
+                 out_dir: Path | None = None) -> list[str]:
+    """The series the hourly leg renews this pass: absent first, then oldest file, each older
+    than REFRESH_H, at most `limit`."""
+    base = out_dir or OUT
+    ages = []
+    for sid in sorted(wanted):
+        p = base / f"{sid}.parquet"
+        try:
+            age_h = (now.timestamp() - p.stat().st_mtime) / 3600.0
+        except OSError:
+            age_h = float("inf")
+        if age_h >= REFRESH_H:
+            ages.append((-age_h, sid))
+    return [sid for _, sid in sorted(ages)[:max(0, int(limit))]]
 
 
 def fetch_vintages(series_id: str, key: str, timeout: int = 60) -> pd.DataFrame | None:
@@ -132,7 +185,7 @@ def fetch_vintages(series_id: str, key: str, timeout: int = 60) -> pd.DataFrame 
                                   "realtime_end": "9999-12-31"},    # FRED's maximum
                      timeout=timeout)
     if r.status_code != 200:
-        print(f"  {series_id}: HTTP {r.status_code} {r.text[:120]}", flush=True)
+        print(f"  {series_id}: HTTP {r.status_code} {_safe(r.text[:120], key)}", flush=True)
         return None
     obs = r.json().get("observations", [])
     if not obs:
@@ -230,7 +283,8 @@ def release_lag(df: pd.DataFrame) -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
-    wanted = {s.upper() for s in argv} or set(SERIES)
+    once = "--once" in argv
+    wanted = {s.upper() for s in argv if not s.startswith("--")} or set(SERIES)
 
     key = api_key()
     report = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -240,7 +294,7 @@ def main(argv: list[str] | None = None) -> int:
         # FAILS CLOSED. The tempting fallback -- reuse fetch_fred's revised series and label it
         # point-in-time -- would put a silent lookahead into every backtest that touched it.
         report.update({
-            "status": "UNAVAILABLE",
+            "status": "NEEDS_KEY", "key_env": "FRED_API_KEY",
             "reason": ("no ALFRED/FRED API key. Point-in-time vintages REQUIRE one. This module "
                        "refuses to fall back to the revised series in data/lake, because a "
                        "revised series labelled point-in-time is a silent lookahead in every "
@@ -249,13 +303,19 @@ def main(argv: list[str] | None = None) -> int:
             "fix": ("free key at https://fredaccount.stlouisfed.org/apikeys, then write it to "
                     "secrets/fred_api_key (one line) or export FRED_API_KEY"),
             "written": 0})
-        (REPORTS / "alfred_vintages.json").write_text(json.dumps(report, indent=2),
+        (REPORTS / REPORT.name).write_text(json.dumps(report, indent=2),
                                                       encoding="utf-8")
-        print("ALFRED UNAVAILABLE -- no API key.")
+        print("ALFRED NEEDS_KEY -- no API key.")
         print(report["fix"])
-        return 2
+        return 0 if once else 2
 
     force = "--force" in argv
+    if once:
+        # THE HOURLY LEG: renew what is stale, a few series a pass; the rest wait their turn.
+        due = set(stale_series(wanted, datetime.now(timezone.utc)))
+        report["once"] = {"due": sorted(due), "refresh_h": REFRESH_H,
+                          "max_series": ONCE_MAX_SERIES}
+        wanted, force = due, True
     written, lags, failed, skipped = 0, {}, [], []
     refused: dict[str, dict] = {}
     for sid in sorted(wanted):
@@ -278,7 +338,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             df = fetch_vintages(sid, key)
         except Exception as exc:                                    # noqa: BLE001
-            print(f"  {sid}: {type(exc).__name__}: {exc}", flush=True)
+            print(f"  {sid}: {type(exc).__name__}: {_safe(exc, key)}", flush=True)
             failed.append(sid)
             continue
         if df is None or df.empty:
@@ -322,16 +382,23 @@ def main(argv: list[str] | None = None) -> int:
         report["unmeasured_no_licensed_source"] = {
             sid: {k: v for k, v in r.items() if k != "missed_growth"} for sid, r in refused.items()}
         report["missed_growth"] = [r["missed_growth"] for r in refused.values()]
+    if once and not wanted:
+        report.update({"status": "FRESH", "written": 0, "path": str(OUT),
+                       "why": f"every series renewed within {REFRESH_H:.0f} h"})
+        (REPORTS / REPORT.name).write_text(json.dumps(report, indent=2),
+                                                      encoding="utf-8")
+        print("ALFRED: every series fresh")
+        return 0
     report.update({"status": "OK" if (written or skipped) else "EMPTY", "written": written,
                    "skipped_already_present": skipped,
                    "failed": failed, "release_lag_days": lags,
                    "path": str(OUT),
                    "usage": "research: from research.fetch_alfred import vintage_as_of"})
-    (REPORTS / "alfred_vintages.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    (REPORTS / REPORT.name).write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(f"\n{written} written to {OUT}"
           + (f", {len(skipped)} already present" if skipped else "")
           + (f", {len(failed)} REJECTED/failed: {', '.join(failed)}" if failed else ""))
-    return 0 if (written or skipped) else 1
+    return 0 if (written or skipped or once) else 1
 
 
 if __name__ == "__main__":

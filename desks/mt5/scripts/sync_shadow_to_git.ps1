@@ -834,6 +834,11 @@ $reportPaths = @(
     # missed_growth line and last intake -- the off-box evidence any canon flip is judged on
     "desks/mt5/reports/JUDGE_PRESCREEN.json",
     "desks/mt5/reports/JUDGE_PRESCREEN_INTAKE.json",
+    # the tier-1 data-class gap list and the terms-basis census (2026-10-29): both report-only
+    "desks/mt5/reports/DATA_CLASS_GAP.json",
+    "desks/mt5/reports/TERMS_BASIS_CENSUS.json",
+    # the dated central-bank document stream's per-feed report (data-class gap #6, 2026-10-29)
+    "desks/mt5/reports/CENTRAL_BANK_MINER.json",
     "desks/mt5/reports/EFFECTIVE_BREADTH.json",
     "desks/mt5/reports/BREADTH_MANDATE.json",
     "desks/mt5/reports/TIER1_SCORECARD.json",
