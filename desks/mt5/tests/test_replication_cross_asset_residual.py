@@ -83,8 +83,9 @@ def test_the_rule_signals_where_the_family_and_its_modifiers_do(world, case) -> 
     assert [(int(s.time.value), s.side) for s in sig] == [(o.t_ns, o.side) for o in orders]
     # Stop and target too: the certified family measures them from the previous joined row's
     # close (Auditor/CRO ruling 2026-11-04), and the default reference reproduces it.
-    assert [(s.stop, s.target, s.ttl_bars) for s in sig] == pytest.approx(
-        [(o.stop, o.target, o.ttl_bars) for o in orders], rel=1e-12, abs=1e-12)
+    assert [s.ttl_bars for s in sig] == [o.ttl_bars for o in orders]
+    np.testing.assert_allclose([(s.stop, s.target) for s in sig],
+                               [(o.stop, o.target) for o in orders], rtol=1e-12, atol=0)
 
 
 def test_signal_close_is_the_corrected_reference_and_any_other_stands_aside(world) -> None:

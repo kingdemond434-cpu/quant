@@ -67,7 +67,7 @@ def test_the_rebuild_keeps_the_hours_the_shared_call_keeps(family, params) -> No
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         theirs = signals(getattr(families, f"family_{family}"), df, side=1, params=dict(params))
-    bars = rc.bars_from_arrays(df.index.asi8, df["open"].to_numpy(), df["high"].to_numpy(),
+    bars = rc.bars_from_arrays(df.index.as_unit("ns").asi8, df["open"].to_numpy(), df["high"].to_numpy(),
                                df["low"].to_numpy(), df["close"].to_numpy())
     p, why = rc.resolve_spec(family, params, "asia", None)
     assert why == "ok" and p is not None
