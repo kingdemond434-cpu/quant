@@ -280,3 +280,41 @@ def test_census_writes_survive_a_windows_sharing_violation(
     assert json.loads(state.read_text())["XAUUSD.asia"]["forward_start"]
     assert json.loads(health_path.read_text())["status"] == health["status"]
     assert not list(reports.glob(".*.tmp"))
+
+
+def test_health_names_the_time_each_stage_took(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """MT5-Shadow ran 4,201 s on a one-hour trigger and nothing said which stage held it."""
+    import external_shadow
+    import promoter
+    import qquant_shadow
+    import scalp_shadow
+    import shadow_forward
+
+    for module in (external_shadow, scalp_shadow, qquant_shadow, promoter):
+        monkeypatch.setattr(module, "main", lambda: None)
+
+    def _slow_then_raise() -> None:
+        import time
+        time.sleep(0.05)
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(shadow_forward, "main", _slow_then_raise)
+    monkeypatch.setattr(shadow_cycle, "_refresh_scalp_bars", lambda: None)
+    reports = tmp_path / "reports" / "shadow"
+    reports.mkdir(parents=True)
+    _canonical(reports, 0)
+    monkeypatch.setattr(shadow_cycle, "BASE", tmp_path)
+    monkeypatch.setattr(shadow_cycle, "OUT", reports / "health.json")
+    health, rc = shadow_cycle.run()
+    stages = health["stage_seconds"]
+    assert list(stages) == ["scalp_bar_refresh", "external_state_reconcile", "legacy_shadow",
+                            "scalp_shadow", "qquant_shadow", "promoter", "census"]
+    # A stage that raised is still timed: the slow failure is the one worth seeing.
+    assert stages["legacy_shadow"] >= 0.05
+    assert health["slowest_stage"] == "legacy_shadow"
+    assert set(health["stage_started_at"]) == set(stages) - {"census"}
+    assert rc == 1 and "legacy_shadow" in health["errors"]
+    written = json.loads((reports / "health.json").read_text())
+    assert written["stage_seconds"] == stages

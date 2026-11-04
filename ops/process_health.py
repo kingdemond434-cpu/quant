@@ -433,6 +433,38 @@ def _artifact_age(artifact: str) -> float | None:
     return _age_min(ROOT / artifact)
 
 
+#: 0x800710E0 (Win32 4320) on a task whose instance is STILL RUNNING. With MultipleInstances =
+#: IgnoreNew the scheduler records this code for every trigger that fires while the instance is
+#: up, so a resident recorder carries it all day. Labelled as a refusal it read like a fault
+#: (process_health 2026-11-04: MT5-TickRecorder, MT5-TickIntegrity), when the task is RUNNING
+#: and its artifact is what says whether it is healthy.
+REFUSED_WHILE_RUNNING = 2147946720
+REFUSED_WHILE_RUNNING_MEANING = ("RUNNING: a later trigger was declined because this instance "
+                                 "is still up (MultipleInstances=IgnoreNew), not a failure; "
+                                 "the artifact age is the health test")
+
+
+def _no_artifact_why(artifact: str) -> str:
+    """Why a contracted artifact has no age. "does not exist" only when the FILE is absent: a
+    file that exists but carries no usable internal stamp (organ_contract.INTERNAL_STAMPS) is a
+    different defect, and calling it absent sent the box looking for a file it was looking at
+    (TAPE_RECORDER.json, 2026-11-04, written every cycle without `last_tick_utc`)."""
+    if not (ROOT / artifact).exists():
+        return f"{artifact} does not exist"
+    key = ""
+    try:
+        if str(ROOT / "ops") not in sys.path:
+            sys.path.insert(0, str(ROOT / "ops"))
+        from organ_contract import INTERNAL_STAMPS  # type: ignore[import-not-found]
+        key = str(INTERNAL_STAMPS.get(artifact) or "")
+    except Exception:
+        key = ""
+    if key:
+        return (f"{artifact} exists, but its age stamp {key!r} is missing, unreadable or in "
+                "the future, so its age is UNMEASURED (the writer may be running old code)")
+    return f"{artifact} exists but its age could not be read"
+
+
 def _contracts() -> dict[str, tuple[str, int, str]]:
     """The curated organ -> (artifact, max_age_min, purpose) map, if it is importable."""
     try:
@@ -529,7 +561,7 @@ def build() -> dict[str, Any]:
                 f"task state {sorted(_states) or 'blank'} not recognised: whether the scheduler "
                 "will start this is UNMEASURED")
         elif artifact and age is None:
-            verdict, why = "NO_ARTIFACT", f"{artifact} does not exist"
+            verdict, why = "NO_ARTIFACT", _no_artifact_why(artifact)
         elif artifact and max_age and age is not None and age > max_age:
             verdict, why = "STALE", f"{age:.0f} min old against a {max_age} min contract"
         elif code_unreadable:
@@ -553,6 +585,8 @@ def build() -> dict[str, Any]:
             "next_run": (t.get("Next Run Time") or "").strip(),
             "last_result_code": code,
             "last_result": ("UNMEASURED: " + result_unmeasured if code is None
+                            else REFUSED_WHILE_RUNNING_MEANING
+                            if code == REFUSED_WHILE_RUNNING and _running
                             else RESULT_MEANING.get(code, f"code {code}")),
             "artifact": artifact or None,
             "artifact_age_min": None if age is None else round(age, 1),
@@ -580,7 +614,7 @@ def build() -> dict[str, Any]:
         if not inventory_ok:
             verdict, why = "SCHEDULER_UNMEASURED", scheduler_status
         elif is_component and age is None:
-            verdict, why = "NO_ARTIFACT", f"{artifact} does not exist"
+            verdict, why = "NO_ARTIFACT", _no_artifact_why(artifact)
         elif is_component and age is not None and max_age and age > max_age:
             verdict, why = "STALE", f"{age:.0f} min old against a {max_age} min contract"
         elif is_component:
