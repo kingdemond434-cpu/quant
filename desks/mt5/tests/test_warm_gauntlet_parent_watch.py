@@ -75,3 +75,37 @@ def test_the_worker_exits_once_its_parent_is_terminated(tmp_path: Path) -> None:
         par.wait(10)
         if par.stdout is not None:
             par.stdout.close()
+
+
+def test_the_hard_stop_terminates_rather_than_runs_dll_detach_on_windows(monkeypatch) -> None:
+    """pid 36780 (2026-11-02) printed its HARD_STOP END line and stayed resident 2.5 days:
+    `os._exit` ends in ExitProcess, whose DLL detach can wait on a lock the killed main thread
+    held. On Windows the exit is TerminateProcess; os._exit only if that call fails."""
+    import ctypes
+    calls: list[tuple[str, int]] = []
+
+    class K32:
+        def GetCurrentProcess(self) -> int:
+            return -1
+
+        def TerminateProcess(self, handle: int, rc: int) -> int:
+            calls.append(("terminate", rc))
+            return 1
+
+    monkeypatch.setattr(ctypes, "windll", type("W", (), {"kernel32": K32()})(), raising=False)
+    monkeypatch.setattr(W.sys, "platform", "win32")
+    monkeypatch.setattr(W.os, "_exit", lambda rc: calls.append(("_exit", rc)))
+    W._terminate_self(3)
+    assert calls[0] == ("terminate", 3)
+    calls.clear()
+    monkeypatch.setattr(W.sys, "platform", "linux")
+    W._terminate_self(3)
+    assert calls == [("_exit", 3)]
+
+
+def test_the_boot_line_is_flushed_before_anything_heavy_loads() -> None:
+    import inspect
+    src = inspect.getsource(W._cli_main)
+    assert src.index("CacheWarm BOOT") < src.index("_apply_blas_switch()")
+    assert src.index("CacheWarm BOOT") < src.index("job_lock")
+    assert "_terminate_self(rc)" in inspect.getsource(W._hard_stop)

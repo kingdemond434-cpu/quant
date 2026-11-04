@@ -482,7 +482,7 @@ def _watch_parent(poll_s: float | None = None) -> None:
         while True:
             time.sleep(every)
             if _parent_gone(ppid, own):
-                os._exit(0)
+                _terminate_self(0)
 
     threading.Thread(target=loop, name="warm-parent-watch", daemon=True).start()
 
@@ -1655,6 +1655,24 @@ def _hard_stop() -> None:
           f"trigger resumes from the cache", flush=True)
     with contextlib.suppress(Exception):
         sys.stdout.flush()
+    _terminate_self(rc)
+
+
+def _terminate_self(rc: int) -> None:
+    """Leave NOW, from any thread, whatever the main thread holds.
+
+    `os._exit` IS NOT ENOUGH ON WINDOWS (measured by Desk health 2026-11-04). pid 36780 logged
+    "CacheWarm END status=HARD_STOP rc=3 phase=docket_load" at 11-02 ~12:00Z, wrote its report,
+    and was still resident at 4.1 GB private 2.5 days later with no children. The CRT's `_exit`
+    ends in ExitProcess, which first kills every other thread -- here the main thread, mid
+    docket_load, possibly holding the heap or loader lock -- and then runs each DLL's detach
+    routine, which can wait on exactly that lock for ever. TerminateProcess runs no detach code
+    and cannot wait. Elsewhere, and if that call fails, `os._exit` as before."""
+    if sys.platform == "win32":
+        with contextlib.suppress(Exception):
+            import ctypes
+            k32 = ctypes.windll.kernel32  # type: ignore[attr-defined,unused-ignore]
+            k32.TerminateProcess(k32.GetCurrentProcess(), int(rc))
     os._exit(rc)
 
 
@@ -1766,10 +1784,17 @@ def _apply_blas_switch() -> dict:
 
 
 def _cli_main() -> int:
+    # THE FIRST LINE, BEFORE ANYTHING THAT CAN FAIL TO LOAD (2026-11-04): every MT5-CacheWarm run
+    # since 11-02 ended 0x1 with NOTHING in its log, because a run that dies loading numpy (the
+    # box's "paging file is too small") dies before START is printed and the buffered lines above
+    # it are lost with the process. This line is flushed before any heavy import, so the log always
+    # names the attempt.
+    print(f"CacheWarm BOOT pid={os.getpid()} at "
+          f"{time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}", flush=True)
     # BEFORE ANY IMPORT THAT LOADS NUMPY: BLAS reads its thread count once, at load.
     _BLAS.update(_apply_blas_switch())
     print(f"  blas threads: {'single (proof holds)' if _BLAS.get('active') else 'default'} -- "
-          f"{str(_BLAS.get('why'))[:160]}")
+          f"{str(_BLAS.get('why'))[:160]}", flush=True)
     try:
         from research.job_lock import exclusive_job
     except ModuleNotFoundError:
