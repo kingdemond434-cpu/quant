@@ -87,6 +87,9 @@ UNMEASURED_LIVE_YIELD = "UNMEASURED_LIVE_YIELD"
 #: cell goes to the judge, a cap that small would re-donate the same top 20 every pass (the
 #: compiler dedups them) and the rest would never arrive. Anything over it is counted in
 #: `refused` by name, never dropped silently.
+#: RESEARCH ONLY: a donation is a hypothesis row written to data/intelligence/ for the judge.
+#: No order, lot, sizing, allocator or risk path reads it; a donated cell reaches capital only
+#: after the gauntlet certifies it and the forward clock matures, exactly as before.
 MAX_DONATIONS = 2000
 ALPHA = 0.05
 PROPOSE_T = 2.0
