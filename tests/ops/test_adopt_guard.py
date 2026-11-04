@@ -1079,3 +1079,17 @@ def test_the_box_republishing_over_an_origin_edit_is_the_boxs(repo: Path) -> Non
     edit = _origin(repo, _head(repo), {rel: '{"gold": 0.5}\n'})
     target = _publish(repo, edit, {rel: '{"gold": 0.03}\n'})
     assert ag.pre(repo, target, now=QUIET, offset_h=summer)[0] == ag.GO
+
+
+def test_only_the_read_only_pre_check_has_a_time_limit() -> None:
+    """2026-11-04: one `pre` ran 58 min holding the git-writer mutex. It gets a limit; the way
+    back (rollback, lift, health) never does, and a timeout keeps the running release."""
+    calls = re.findall(r"Invoke-AdoptGuard @\(\"([a-z-]+)\"[^\n]*", PS)
+    timed = re.findall(r"Invoke-AdoptGuard @\(\"([a-z-]+)\"[^\n]*-TimeoutS", PS)
+    assert timed == ["pre"], timed
+    assert {"rollback", "lift", "health", "pre"} <= set(calls)
+    assert 'if ($pre.Decision -eq "TIMEOUT") { Done 8 "adopt-guard-timeout" }' in PS
+    assert PS.index('Done 8 "adopt-guard-timeout"') < PS.index("\n$script:Adopted = $true")
+    fn = PS[PS.index("function Invoke-AdoptGuard") : PS.index("function Undo-Adoption")]
+    assert "taskkill.exe /T /F /PID" in fn and "still running after" in fn
+    assert "QUANT_ADOPT_GUARD_PRE_TIMEOUT_S" in PS

@@ -279,9 +279,60 @@ function Lift-IfClean([string] $stage) {
 }
 # Log both writes the file and EMITS the line; inside a function an emitted line would join the
 # return value, so every Log here goes to the host instead.
-function Invoke-AdoptGuard([string[]] $guardArgs) {
-    $out = @(& $py @pyArgs $script:GuardScript @guardArgs 2>&1 | ForEach-Object { "$_" })
-    $rc = $LASTEXITCODE
+#
+# A TIME LIMIT FOR THE READ-ONLY CHECK, NEVER FOR THE WAY BACK (2026-11-04). Measured on the box:
+# one `pre` ran 58 minutes with no output while this run held the git-writer mutex, so
+# MT5-ShadowSync waited 75 minutes behind a check that changes nothing. A call given -TimeoutS
+# runs as its own process, logs a heartbeat every minute, and past the limit has its whole tree
+# killed and returns decision TIMEOUT with a non-zero code -- which every caller already reads as
+# "keep the running release". Only `pre` passes a limit. rollback, lift, health and the rest run
+# unbounded on purpose: cutting the way back short would leave half-restored code under a hold.
+# The mutex stays held across `pre`: HeadBefore and the rollback target are read under it, and
+# the check is only read-only while nothing moves HEAD beneath it.
+function Invoke-AdoptGuard([string[]] $guardArgs, [int] $TimeoutS = 0) {
+    if ($TimeoutS -gt 0) {
+        $tag = [guid]::NewGuid().ToString("N")
+        $oFile = Join-Path $env:TEMP "adopt_guard_$tag.out"
+        $eFile = Join-Path $env:TEMP "adopt_guard_$tag.err"
+        $argList = @($pyArgs) + @('"' + $script:GuardScript + '"') + @($guardArgs | ForEach-Object { '"' + $_ + '"' })
+        $timedOut = $false
+        $rc = 1
+        try {
+            $proc = Start-Process -FilePath $py -ArgumentList $argList -NoNewWindow -PassThru `
+                -RedirectStandardOutput $oFile -RedirectStandardError $eFile -ErrorAction Stop
+            $null = $proc.Handle   # keeps ExitCode readable after the process is gone (PS 5.1)
+            $t0 = Get-Date
+            $stepMs = [Math]::Min(60, $TimeoutS) * 1000
+            while (-not $proc.WaitForExit($stepMs)) {
+                $el = [int]((Get-Date) - $t0).TotalSeconds
+                if ($el -ge $TimeoutS) {
+                    $timedOut = $true
+                    & taskkill.exe /T /F /PID $proc.Id 2>&1 | Out-Null
+                    $null = $proc.WaitForExit(15000)
+                    break
+                }
+                Log ("adopt guard {0}: still running after {1}s (pid {2}, limit {3}s)" -f $guardArgs[0], $el, $proc.Id, $TimeoutS) | Out-Host
+            }
+            if (-not $timedOut) { $rc = $proc.ExitCode }
+        } catch {
+            Log ("adopt guard {0}: could not start under a time limit -- {1}" -f $guardArgs[0], $_.Exception.Message) | Out-Host
+        }
+        $out = @()
+        foreach ($f in @($oFile, $eFile)) {
+            if (Test-Path $f) {
+                $out += @(Get-Content -Path $f -ErrorAction SilentlyContinue | ForEach-Object { "$_" })
+                Remove-Item -Path $f -Force -ErrorAction SilentlyContinue
+            }
+        }
+        if ($timedOut) {
+            $why = "ran past its {0}s limit and was killed; the running release is kept" -f $TimeoutS
+            Log ("adopt guard {0}: exit 124 TIMEOUT -- {1}" -f $guardArgs[0], $why) | Out-Host
+            return @{ Code = 124; Doc = $null; Decision = "TIMEOUT"; Why = $why }
+        }
+    } else {
+        $out = @(& $py @pyArgs $script:GuardScript @guardArgs 2>&1 | ForEach-Object { "$_" })
+        $rc = $LASTEXITCODE
+    }
     $json = @($out | Where-Object { $_ -match '^\s*\{' }) | Select-Object -Last 1
     $doc = $null
     if ($json) { try { $doc = $json | ConvertFrom-Json } catch { $doc = $null } }
@@ -426,7 +477,11 @@ if (Test-Path $gateScript) {
 # and on ANY failure after the first byte is written, puts the code back to the commit this run
 # started from (an accepted seal a minute ago) by itself, under a new-risk hold that every lane
 # obeys and only a passing health check lifts. A guard that cannot run keeps the running release.
-$pre = Invoke-AdoptGuard @("pre", "--target", $gateTarget)
+# 30 minutes unless the box says otherwise; a value that is not a positive whole number is ignored.
+$script:PreTimeoutS = 1800
+$envPre = 0
+if ([int]::TryParse("$env:QUANT_ADOPT_GUARD_PRE_TIMEOUT_S", [ref] $envPre) -and $envPre -gt 0) { $script:PreTimeoutS = $envPre }
+$pre = Invoke-AdoptGuard @("pre", "--target", $gateTarget) -TimeoutS $script:PreTimeoutS
 if ($pre.Code -eq 10) {
     $held = switch ($pre.Decision) {
         "HOLD_BLACKOUT"    { "held-blackout" }
@@ -438,6 +493,7 @@ if ($pre.Code -eq 10) {
     }
     Done 0 $held
 }
+if ($pre.Decision -eq "TIMEOUT") { Done 8 "adopt-guard-timeout" }
 if ($pre.Code -ne 0) { Done 8 "adopt-guard-error" }
 
 # ---------------------------------------------------------------- 1. adopt the branch's tree
