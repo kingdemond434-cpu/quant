@@ -1199,6 +1199,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # contracts leg reads every leg's declared experiment against its own report, and the health
     # board rolls every organ into one verdict. It runs last so it reads this pass.
     "build_failure_bank", "trade_pathology", "experiment_contracts", "health_board",
+    # RISK SNAPSHOT (2026-11-04): report-only, a handful of JSON stamps -> RISK_SNAPSHOT.json.
+    "risk_snapshot",
     "actor_pressure", "destroyer_pool", "quantbench",
     "evidence_chain", "identity_chain",
     "clock_ledger", "shortfall_model", "counterfactual_timeframes", "meta_rnd",
@@ -2341,6 +2343,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # second on the build box); the caps only guard a damaged file.
     "build_failure_bank": 120,
     "trade_pathology": 120,
+    "risk_snapshot": 60,
     "experiment_contracts": 240,
     "health_board": 180,
     # The sandbox runner stops itself at --budget-s 900 (each system inside its ROI share) and
@@ -6185,6 +6188,10 @@ def main() -> None:
         "build_failure_bank", "research/build_failure_bank.py", "--once"))
     tpa = _costed("trade_pathology", lambda: _producer(
         "trade_pathology", "research/trade_pathology.py", "--once"))
+    # Per-account equity, distance to every floor, open risk vs risk_frac and the next 24 h of
+    # high-impact events on live symbols. Report-only; an absent stamp reads UNMEASURED.
+    rsn = _costed("risk_snapshot", lambda: _producer(
+        "risk_snapshot", "research/risk_snapshot.py", "--once"))
     exc_ = _costed("experiment_contracts", lambda: _producer(
         "experiment_contracts", "scripts/check_experiment_contracts.py", "--report"))
     hbd = _costed("health_board", lambda: _producer(
@@ -6517,7 +6524,7 @@ def main() -> None:
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
                     "cro_noon_freshness": cnf,
-                    "build_failure_bank": bfb, "trade_pathology": tpa,
+                    "build_failure_bank": bfb, "trade_pathology": tpa, "risk_snapshot": rsn,
                     "experiment_contracts": exc_, "health_board": hbd,
                     "preregistration": prg, "organ_census": ogc,
                     "cycle_pricing": cyp, "causal_invariance": civ,

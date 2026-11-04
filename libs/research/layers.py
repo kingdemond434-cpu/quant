@@ -622,6 +622,7 @@ LEG_LAYER: dict[str, str] = {
     # reading every leg's experiment contract and the health board are the machine measuring
     # itself: META.
     "trade_pathology": "execution",
+    "risk_snapshot": "meta",
     "build_failure_bank": "meta", "experiment_contracts": "meta", "health_board": "meta",
     "actor_pressure": "information",
     "destroyer_pool": "prediction", "counterfactual_timeframes": "prediction",
