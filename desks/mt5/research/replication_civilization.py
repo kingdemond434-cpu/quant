@@ -1995,7 +1995,7 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         for r in rows:
             if r.get("lane") == "certificate" and r.get("certificate"):
                 book[str(r["certificate"])] = {"verdict": r["verdict"], "fp": r.get("fp"),
-                                               "rule_fp": rule_fingerprint(r.get("family")),
+                                               "rule_fp": rule_fingerprint(str(r.get("family") or "")),
                                                "sharpe_metric_version": SHARPE_METRIC_VERSION,
                                                "why": list(r.get("why") or [])[:4],
                                                "key": r.get("key"), "at": _now()}
