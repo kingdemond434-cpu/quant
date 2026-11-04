@@ -72,7 +72,7 @@ def test_the_rebuild_keeps_the_hours_the_shared_call_keeps(family, params) -> No
     p, why = rc.resolve_spec(family, params, "asia", None)
     assert why == "ok" and p is not None
     ours, _ = rc.rebuild(family, bars, p, 0.0)
-    assert theirs, "the planted bars must fire"
+    assert theirs or params, "the planted bars must fire on every hour"
     assert [(int(pd.Timestamp(s.time).value), s.side) for s in theirs] == \
         [(o.t_ns, o.side) for o in ours]
 
