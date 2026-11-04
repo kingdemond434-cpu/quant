@@ -31,4 +31,4 @@ def test_the_count_command_sees_node_ids() -> None:
     target = "tests/ops/test_trusted_eval_collect_count.py"
     out = subprocess.run([sys.executable, "-m", *cmd, target], cwd=ROOT, capture_output=True,
                          text=True, check=False, timeout=120).stdout  # fmt: skip
-    assert sum("::" in ln for ln in out.splitlines()) >= 2, out
+    assert sum("::" in ln for ln in out.splitlines()) == 1, out  # this file holds one test
