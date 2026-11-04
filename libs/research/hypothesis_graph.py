@@ -51,6 +51,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import sys
 from collections.abc import Container, Iterable, Mapping
 from dataclasses import dataclass, field
@@ -306,6 +307,46 @@ def _bucket(name: str, value: Any) -> str:
 def region_key(symbol: str, family: str, params: dict[str, Any]) -> str:
     parts = ",".join(f"{k}={_bucket(k, v)}" for k, v in sorted((params or {}).items()))
     return f"{str(symbol).upper()}.{family}{{{parts}}}"
+
+
+_FATE_ID = re.compile(rb'^\{"id": "([^"\\]*)"')
+_FATE_FATE = re.compile(rb', "fate": "([A-Za-z_]*)"')
+
+
+def current_fates(path: Path = LEDGER) -> dict[str, str]:
+    """`node id -> its present fate` (last row wins), WITHOUT materialising the rows.
+
+    WHY THIS EXISTS (CRO noon 2026-09-30: `descendants` timed out every pass and moved nothing).
+    A caller that needs only fates used `Graph.current()`, which parses every row into a dict and
+    keeps them all: measured on the 108,189-line checkout it took 8.2 s and 392 MB peak, and the
+    box's graph is ~5.7M lines -- ~50x that, before the organ's own budget clock had started.
+
+    Rows are written by `Node.to_row` through `json.dumps`, so `id` is the first key and `fate` a
+    top-level string; both are read by pattern and any line the pattern does not fully explain
+    (a second "fate", an escaped id, a torn append) falls back to `json.loads`. Measured on the
+    same checkout: 0.22 s, and identical to `Graph.current()` on every id.
+    """
+    out: dict[str, str] = {}
+    try:
+        fh = path.open("rb")
+    except OSError:
+        return out
+    with fh:
+        for ln in fh:
+            m = _FATE_ID.match(ln)
+            f = _FATE_FATE.findall(ln) if m else None
+            if m and f is not None and len(f) == 1:
+                out[m.group(1).decode("utf-8", "replace")] = f[0].decode() or BORN
+                continue
+            if not ln.strip():
+                continue
+            try:
+                r = json.loads(ln)
+            except ValueError:
+                continue
+            if isinstance(r, dict):
+                out[str(r.get("id"))] = str(r.get("fate") or BORN)
+    return out
 
 
 class Graph:
@@ -601,7 +642,8 @@ def seed_key_of(c: Mapping[str, Any]) -> str:
     by `lead_schema.compiler_parent_key` -- the ONLY deterministic join from a mined row to the
     cells it became, which is why it is kept in its own field rather than overwritten.
     """
-    return hashlib.sha256(json.dumps({"u": c.get("source_url"), "t": c.get("source_title"),
+    from libs.research.source_provenance import seed_url_of
+    return hashlib.sha256(json.dumps({"u": seed_url_of(c), "t": c.get("source_title"),
                                       "s": c.get("source")}, sort_keys=True,
                                      default=str).encode()).hexdigest()[:16]
 
