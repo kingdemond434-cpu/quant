@@ -177,7 +177,7 @@ def _open_risk(n_open: Any, risk_quote: float | None, equity: float | None,
     return out
 
 
-def _minlot_active() -> tuple[frozenset[str], str]:
+def _minlot_active() -> tuple[frozenset[str], str, bool]:
     """The Fusion min-lot book's active sleeves and why, from `decision_core`'s own reader.
 
     The switch has ONE reader (`decision_core.minlot_override_active`, fenced by
@@ -189,10 +189,13 @@ def _minlot_active() -> tuple[frozenset[str], str]:
         sys.path.insert(0, str(DESK))
     try:
         from mt5desk import decision_core as dc
-        login, _ = dc.fusion_live_login()
-        return dc.minlot_override_active(login, server=dc.FUSION_LIVE_SERVER, kind="live")
+        login, lwhy = dc.fusion_live_login()
+        if login is None:  # L1.28a: an undeclared account is UNMEASURED, never "none active"
+            return frozenset(), lwhy, False
+        names, why = dc.minlot_override_active(login, server=dc.FUSION_LIVE_SERVER, kind="live")
+        return names, why, True
     except Exception as exc:  # noqa: BLE001 -- report-only; never crash the snapshot
-        return frozenset(), f"min-lot reader unavailable ({type(exc).__name__})"
+        return frozenset(), f"min-lot reader unavailable ({type(exc).__name__})", False
 
 
 # --------------------------------------------------------------------------- accounts
@@ -263,9 +266,13 @@ def fusion(p: dict[str, Path], cert: Any, now: datetime) -> dict[str, Any]:
         risk_q = _num(position.get("risk_quote"))
     doc["open_risk"] = _open_risk(n_open, risk_q, equity, alloc,
                                   "open positions stamped without a per-position risk")
-    ml_names, ml_why = _minlot_active()
+    ml_names, ml_why, ml_measured = _minlot_active()
     if ml_names:
         doc["minlot_override"] = {"sleeves": sorted(ml_names), "why": ml_why}
+    elif ml_measured:
+        doc["minlot_override"] = {"status": "OFF", "sleeves": [], "why": ml_why}
+    else:
+        doc["minlot_override"] = _unm(ml_why)
     return doc
 
 

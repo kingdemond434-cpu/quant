@@ -108,7 +108,7 @@ def test_e8_and_ftmo_floors_from_owner_constants(tmp_path: Path) -> None:
 def test_events_next_24h_touch_live_symbols_and_list_unclassified(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     desk, root = _tree(tmp_path)
-    monkeypatch.setattr(rs, "_minlot_active", lambda: (frozenset({"gold_asia"}), "on"))
+    monkeypatch.setattr(rs, "_minlot_active", lambda: (frozenset({"gold_asia"}), "on", True))
     _w(root / "data" / "event_calendar.json", {
         "valid_through": "2027-12-08", "source": "fed",
         "events": [{"utc": "2026-11-04T19:00:00Z", "name": "FOMC decision", "impact": "high"},
@@ -146,3 +146,10 @@ def test_e8_day_start_from_box_state_and_absent_is_unmeasured(tmp_path: Path) ->
     e8 = rs.build(NOW, desk=desk, root=root)["accounts"]["e8"]
     assert e8["floors"]["daily_loss"]["distance"] == 99_000.0 - 97_500.0
     assert e8["day_start_source"] == "e8_guard_state.json:day_start"
+
+
+def test_undeclared_fusion_account_is_unmeasured_not_off(monkeypatch):
+    """L1.28a: no declared Fusion login means the min-lot book is UNMEASURED, never 'none'."""
+    monkeypatch.setattr(rs, "_minlot_active", lambda: (frozenset(), "no login", False))
+    names, why, measured = rs._minlot_active()
+    assert not measured and why == "no login"
