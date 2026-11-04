@@ -101,11 +101,15 @@ CONTROL_VERB = re.compile(r"\b(merg\w*|approv\w*|adopt\w*|seal\w*|promot\w*|atte
 SECRET_READ = re.compile(
     r"data[/\\]+secrets|(environ|getenv)\W[^\n]{0,40}(KEY|TOKEN|SECRET|PASSWORD)", re.IGNORECASE
 )
-CODE = re.compile(r"\.(py|pyi|ps1|psm1|psd1|bat|cmd|sh|js|ts|rs|mq5|mqh|yml|yaml)$")
+CODE = re.compile(
+    r"\.(py|pyi|ps1|psm1|psd1|psc1|bat|cmd|sh|js|ts|rs|mq4|mq5|mqh|yml|yaml|vbs|cs|go|rb)$"
+    r"|^(ops|scripts)/(.*/)?[^/.]+$"  # an extensionless script under ops/ or scripts/
+)
 #: Code and config: an undecodable byte here can hide code, so the report is UNKNOWN (AD #681).
 CONFIG = re.compile(r"\.(toml|json|jsonl|cfg|ini|manifest|txt)$|(^|/)\.github/")
-CODE_GLOBS = ("*.py", "*.pyi", "*.ps1", "*.psm1", "*.psd1", "*.bat", "*.cmd", "*.sh", "*.js",
-              "*.ts", "*.rs", "*.mq5", "*.mqh", "*.yml", "*.yaml")  # fmt: skip
+CODE_GLOBS = ("*.py", "*.pyi", "*.ps1", "*.psm1", "*.psd1", "*.psc1", "*.bat", "*.cmd", "*.sh",
+              "*.js", "*.ts", "*.rs", "*.mq4", "*.mq5", "*.mqh", "*.yml", "*.yaml", "*.vbs", "*.cs",
+              "*.go", "*.rb")  # fmt: skip
 
 
 def added(diff: str) -> list[tuple[str, str]]:
@@ -146,7 +150,7 @@ def check(
     hits: list[str]
     code = [(p, t) for p, t in plus if CODE.search(p)]
     launch = [f"{p}: {t.strip()[:120]}" for p, t in code if SUBPROC.search(t)]
-    if kind in ("risk", "control", "network") and launch:
+    if kind in ("risk", "control", "network", "hidden") and launch:
         return "UNKNOWN", ["a process launch the deny-lists cannot see into", *launch[:10]]
     if kind in ("risk", "control"):
         busy = [f"{p}: {t.strip()[:120]}" for p, t in code

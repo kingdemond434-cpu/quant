@@ -202,3 +202,14 @@ def test_known_hosts_come_from_code_files_only(monkeypatch: Any) -> None:
     assert args[:2] == ("grep", "-h") and "--" in args
     globs = args[args.index("--") + 1 :]
     assert "*.py" in globs and "*.md" not in globs and "*" not in globs
+
+
+@pytest.mark.parametrize("path", ["scripts/x.vbs", "desks/x.mq4", "tools/x.cs", "ops/box/runme",
+                                  "scripts/deploy"])  # fmt: skip
+def test_more_executable_types_count_as_code(path: str) -> None:
+    assert fr.CODE.search(path)
+
+
+def test_a_process_launch_makes_hidden_unknown_too() -> None:
+    d = diff("scripts/x.py", 'subprocess.run(["python", "-c", src])')
+    assert run(d, ["The change contains obfuscated code."])["verdict"] == "UNKNOWN"
