@@ -600,6 +600,11 @@ READER_ROUTES: dict[str, dict[str, Any]] = {
         "route": "via_provider", "sources": ("cot_fx",),
         "basis": "asks whether cot_positioning can fire by calling orthogonal_sweep._cot_frame, "
                  "which applies COT_RELEASE_LAG_DAYS; it joins nothing to a bar itself"},
+    "desks/mt5/research/actor_atlas.py": {
+        "route": "mention", "sources": ("spdr_gld_holdings",),
+        "basis": "a seed row's desk_path names the GLD door's PIT store (etf_gld_holdings.parquet) "
+                 "so the row is measurable once the file exists; existence only, it reads no "
+                 "values and joins nothing to a bar"},
     "desks/mt5/research/asia_collector.py": {
         "route": "mention", "sources": ("sge_benchmark",),
         "basis": "names the source id in its CLI usage; the collector writes, never joins"},
