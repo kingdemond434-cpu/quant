@@ -377,4 +377,118 @@ def test_every_root_file_is_protected_so_no_no_comment_path_can_merge_it(
     """A root file on the AUTO path would merge with no authority at all once AUTO is active."""
     files = [{"filename": path, "status": "modified", "additions": 1, "deletions": 0}]
     assert sb.ag.tier(files, 1, lambda n: False)[0] == "PROTECTED"
-    assert sb.auth.pol._match(path, sb.policy["root_files"])
+    assert sb.auth.pol._match(path, [*sb.policy["root_files"], *sb.policy["enforced_root_files"]])
+
+
+# ---- Level 2: the commit status the LIVE ruleset requires -------------------------------------
+
+
+def _auth() -> Any:
+    return sb_mod._load("authority_service_l2", ROOT / "ops/release/authority/authority.py")
+
+
+def test_status_auto_clear_is_success() -> None:
+    a = _auth()
+    assert a.status_for({"cls": "AUTO"}, "CLEAR", [], since=None, veto_h=24)[0] == "success"
+
+
+def test_status_controller_waits_out_the_veto() -> None:
+    from datetime import UTC, datetime, timedelta
+
+    a = _auth()
+    now = datetime(2026, 11, 4, tzinfo=UTC)
+    f = {"cls": "CONTROLLER"}
+    assert a.status_for(f, "CLEAR", [], since=None, veto_h=24, now=now)[0] == "pending"
+    early = a.status_for(f, "CLEAR", [], since=now - timedelta(hours=23), veto_h=24, now=now)
+    assert early[0] == "pending" and "1.0 h left" in early[1]
+    late = a.status_for(f, "CLEAR", [], since=now - timedelta(hours=24), veto_h=24, now=now)
+    assert late[0] == "success"
+
+
+@pytest.mark.parametrize("verdict,state", [("HOLD", "failure"), ("FAIL", "failure"),
+                                           ("WAIT", "pending")])  # fmt: skip
+def test_status_never_success_without_clear(verdict: str, state: str) -> None:
+    a = _auth()
+    got = a.status_for({"cls": "CONTROLLER"}, verdict, ["why"], since=None, veto_h=24)
+    assert got[0] == state
+
+
+def test_first_signed_reads_the_earliest_statement(tmp_path: Path) -> None:
+    a = _auth()
+    head = "a" * 40
+    for i, t in enumerate(["2026-11-03T10:00:00+00:00", "2026-11-03T08:00:00+00:00"]):
+        (tmp_path / f"pr7-{head[:12]}-CLEAR-deadbeef-{i}.json").write_text(
+            json.dumps({"statement": {"head_sha": head, "issued_at": t}}), encoding="utf-8"
+        )
+    (tmp_path / f"pr7-{head[:12]}-CLEAR-deadbeef-x.json").write_text(
+        json.dumps({"statement": {"head_sha": "b" * 40, "issued_at": "2026-11-01T00:00:00+00:00"}}),
+        encoding="utf-8",
+    )
+    from datetime import UTC, datetime
+
+    now = datetime(2026, 11, 4, tzinfo=UTC)
+    got = a.first_signed(tmp_path, 7, head, "deadbeef" + "0" * 56, now=now)
+    assert got is not None and got.hour == 8 and got.day == 3
+    # a HOLD at 09:00 restarts the window: only the 10:00 CLEAR counts
+    (tmp_path / f"pr7-{head[:12]}-HOLD-deadbeef-h.json").write_text(
+        json.dumps({"statement": {"head_sha": head, "issued_at": "2026-11-03T09:00:00+00:00",
+                                  "verdict": "HOLD"}}), encoding="utf-8")  # fmt: skip
+    got = a.first_signed(tmp_path, 7, head, "deadbeef" + "0" * 56, now=now)
+    assert got is not None and got.hour == 10
+    # a future-dated CLEAR is ignored
+    (tmp_path / f"pr7-{head[:12]}-CLEAR-deadbeef-f.json").write_text(
+        json.dumps({"statement": {"head_sha": head, "issued_at": "2026-11-09T00:00:00+00:00"}}),
+        encoding="utf-8",
+    )
+    got = a.first_signed(tmp_path, 7, head, "deadbeef" + "0" * 56, now=now)
+    assert got is not None and got.hour == 10
+
+
+def test_status_is_failure_outside_the_delegated_classes_even_on_clear() -> None:
+    a = _auth()
+    for cls in ("ROOT", "REFUSED", None):
+        assert a.status_for({"cls": cls}, "CLEAR", [], since=None, veto_h=24)[0] == "failure"
+
+
+def _check_ruleset() -> Any:
+    return sb_mod._load("check_ruleset", ROOT / "ops/release/authority/check_ruleset.py")
+
+
+def test_prepared_ruleset_is_refused_until_the_state_app_is_named() -> None:
+    cr = _check_ruleset()
+    rs = json.loads((ROOT / "ops/release/authority/ruleset_live.json").read_text(encoding="utf-8"))
+    assert cr.problems(rs) == [
+        "bypass actor Integration has a placeholder id: fill in the state App's id"
+    ]
+    for b in rs["bypass_actors"]:
+        if b["actor_id"] == 0:
+            b["actor_id"] = 7777777
+    assert cr.problems(rs) == []
+
+
+@pytest.mark.parametrize("bad", [
+    {"actor_type": "Integration", "actor_id": 15368, "bypass_mode": "always"},
+    {"actor_type": "RepositoryRole", "actor_id": 5, "bypass_mode": "always"},
+    {"actor_type": "DeployKey", "actor_id": 1, "bypass_mode": "always"},
+])  # fmt: skip
+def test_ruleset_check_refuses_unsafe_bypass(bad: dict[str, Any]) -> None:
+    cr = _check_ruleset()
+    rs = json.loads((ROOT / "ops/release/authority/ruleset_live.json").read_text(encoding="utf-8"))
+    rs["bypass_actors"] = [b for b in rs["bypass_actors"] if b["actor_id"] != 0]
+    rs["bypass_actors"] += [{"actor_type": "Integration", "actor_id": 7777777,
+                             "bypass_mode": "always"}, bad]  # fmt: skip
+    assert cr.problems(rs)
+
+
+def test_seal_environment_must_admit_live_alone() -> None:
+    """desk-sync-clean is pushed by the VPS with no review: a ci.yml edited there must never run
+    in the environment that holds the state App's key (that App bypasses the LIVE ruleset)."""
+    cr = _check_ruleset()
+    ok = {"deployment_branch_policy": {"protected_branches": False, "custom_branch_policies": True}}
+    live = [{"name": "claude/llm-auto-upgrade-verify-gcjac3", "type": "branch"}]
+    assert cr.env_problems(ok, live) == []
+    assert cr.env_problems({"deployment_branch_policy": None}, live)
+    assert cr.env_problems(ok, [*live, {"name": "desk-sync-clean", "type": "branch"}])
+    assert cr.env_problems(ok, [*live, {"name": "claude/*", "type": "branch"}])
+    assert cr.env_problems(ok, [])
+    assert cr.env_problems(ok, [*live, {"name": "v*", "type": "tag"}])

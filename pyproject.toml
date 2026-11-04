@@ -97,6 +97,14 @@ freestack = [
     "akshare>=1.16,<2",
     "snownlp>=0.12.3,<1",
 ]
+# YouTube channel transcript mining (#655). Captions are fetched on the PC (scripts/
+# mine_channel_transcripts.py) and travel to the box sealed (scripts/video_transcript_vault.py);
+# neither is imported by any library path. Caps match what runs: youtube-transcript-api 1.2.4 on
+# the PC, cryptography 50.0.1 on the box.
+video = [
+    "youtube-transcript-api>=1.2,<2",
+    "cryptography>=42,<51",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["libs", "app"]
