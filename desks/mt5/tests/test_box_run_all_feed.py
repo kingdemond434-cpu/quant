@@ -41,15 +41,16 @@ class _Runner:
 
 def test_every_miner_but_youtube_runs_in_its_own_rails_child(iso) -> None:
     names = raf.roster()
-    assert len(names) == 24 and "youtube" not in names and {"reddit", "github"} <= set(names)
+    assert len(names) == 20 and "youtube" not in names and {"reddit", "github"} <= set(names)
+    assert not set(names) & set(raf.SOURCE_BLOCKED)
     r = _Runner()
     rep = raf.run_pass(10_000, runner=r)
-    assert rep["status"] == "OK" and rep["ran"] == 24 and rep["rows"] == 48
+    assert rep["status"] == "OK" and rep["ran"] == 20 and rep["rows"] == 40
     assert [c[0][-1] for c in r.calls] == names
     assert all(c[0][-2] == "--child" and c[2]["QUANT_BOX_RAILS"] == "1"
                and c[2]["QUANT_PROPOSER_SEAT"] == "0" and c[1] <= raf.MINER_TIMEOUT_S
                for c in r.calls)
-    assert json.loads((iso / "report.json").read_text("utf-8"))["ran"] == 24
+    assert json.loads((iso / "report.json").read_text("utf-8"))["ran"] == 20
 
 
 def test_a_budget_cut_resumes_where_it_stopped(iso) -> None:
@@ -62,8 +63,8 @@ def test_a_budget_cut_resumes_where_it_stopped(iso) -> None:
         t[0] += 1
         return r(cmd, timeout_s, env)
     rep = raf.run_pass(budget, runner=fake_runner)
-    assert rep["ran"] >= 1 and rep["not_reached_this_pass"] == 24 - rep["ran"]
-    assert json.loads((iso / "state.json").read_text("utf-8"))["cursor"] == rep["ran"] % 24
+    assert rep["ran"] >= 1 and rep["not_reached_this_pass"] == 20 - rep["ran"]
+    assert json.loads((iso / "state.json").read_text("utf-8"))["cursor"] == rep["ran"] % 20
     del time
 
 
@@ -128,3 +129,9 @@ def test_no_file_the_children_run_imports_an_http_client_the_rails_do_not_patch(
         if hit:
             bad[m] = hit
     assert not bad
+
+
+def test_source_blocked_seats_are_never_run_and_are_reported(iso) -> None:
+    assert set(raf.SOURCE_BLOCKED) == {"aaii", "fear_greed", "investing", "google_trends"}
+    rep = raf.run_pass(10_000, runner=_Runner())
+    assert rep["source_blocked"] == raf.SOURCE_BLOCKED

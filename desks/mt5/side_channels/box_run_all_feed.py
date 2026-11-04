@@ -59,6 +59,18 @@ RESULT_PREFIX = feed.RESULT_PREFIX     # one result-line format for every rails 
 #: spent twice.
 OWN_LEG: frozenset[str] = frozenset({"youtube"})
 
+#: SEATS WHOSE SOURCE REFUSES THE BOX, measured by one GET each from Contabo at 2026-11-04 ~03:45Z
+#: (/mnt/project-files/desk_health/PRODUCER_YIELD_DIAG_2026-11-04.md section 4). A 401/403/418/
+#: 429, a WAF or a disallow is a hard stop under the rails: these seats are NOT run, with no retry,
+#: no alternate host and no header games, and each is reported with its evidence every pass so the
+#: replacement (named here) stays visible as missed growth rather than silently absent.
+SOURCE_BLOCKED: dict[str, str] = {
+    "aaii": "aaii.com: robots 403 behind an Incapsula WAF; replace with FRED UMCSENT",
+    "fear_greed": "CNN dataviz: HTTP 418 bot block; rebuild from FRED VIXCLS plus breadth",
+    "investing": "investing.com sentiment: 403; no free replacement for retail positioning yet",
+    "google_trends": "trends.google.com: robots disallow on the endpoint; off-limits",
+}
+
 Runner = Callable[[list[str], float, dict[str, str]], tuple[int | None, str]]
 
 
@@ -73,7 +85,7 @@ def roster() -> list[str]:
                 isinstance(t, ast.Name) and t.id == "ALL_MINERS" for t in node.targets):
             names = [e.elts[0].value for e in getattr(node.value, "elts", [])
                      if isinstance(e, ast.Tuple) and isinstance(e.elts[0], ast.Constant)]
-            return [str(n) for n in names if n not in OWN_LEG]
+            return [str(n) for n in names if n not in OWN_LEG and n not in SOURCE_BLOCKED]
     return []
 
 
@@ -128,6 +140,7 @@ def _pass(state: dict[str, Any], why: str, budget_s: float, runner: Runner, writ
         "status": ("FAILED" if statuses and all(s != "OK" for s in statuses) else
                    "OK" if statuses else "NO_TIME"),
         "roster": names, "own_leg_elsewhere": sorted(OWN_LEG),
+        "source_blocked": dict(SOURCE_BLOCKED),
         "ran": done, "not_reached_this_pass": len(names) - done, "next_cursor": state["cursor"],
         "miners": miners, "rows": sum(int(m.get("rows") or 0) for m in miners.values()),
         "rails": {"refused_n": sum(h["n"] for h in hosts.values()), "by_host": hosts,
@@ -161,7 +174,7 @@ def _child(name: str) -> int:
         return 1
     import run_all_miners as ram
     fn = dict(ram.ALL_MINERS).get(name)
-    if fn is None or name in OWN_LEG:
+    if fn is None or name in OWN_LEG or name in SOURCE_BLOCKED:
         print(RESULT_PREFIX + json.dumps({"status": "FAILED", "error": f"no miner {name!r}"}),
               flush=True)
         return 2
