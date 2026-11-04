@@ -525,7 +525,7 @@ def test_robots_5xx_is_fetched_as_access_unclear(robots_srv: Any, code: int, rou
 def test_a_page_refusal_on_a_hop_holds_the_site_and_stops(robots_srv: Any, code: int) -> None:
     """The access control is still a hard stop: robots.txt (cached for the origin) no longer
     re-reads per hop, so the refusal comes from the hop itself."""
-    port, state, hits = robots_srv
+    port, state, _hits = robots_srv
     state["robots"] = 404
     r = _run()
     r.page(f"http://127.0.0.1:{port}/hop")
