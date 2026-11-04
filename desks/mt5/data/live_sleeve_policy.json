@@ -7,6 +7,7 @@
   "EURZAR",
   "USDNOK",
   "EURILS",
+  "CHFNOK",
   "EURNOK",
   "GBPJPY"
  ],
@@ -43,5 +44,5 @@
  "cert_book_admission": "2026-10-07, principal: EURZAR, USDZAR and AUDCHF admitted to live_symbols for the max-growth certified book (context/CERT_BOOK_PROMOTION_DESKTOP_SPEC.md; sizes in desks/mt5/data/CERT_BOOK_LIVE.json). The discovered-family ban and the M15 bans stand.",
  "minlot_override_admission": "2026-10-13/20, principal zuck (BOOKS_PATCH v5; widened 2026-10-20 16:58Z): the live Fusion book is exactly gold_asia (gold_london_am and gold_afternoon at 0, zuck 2026-10-20 21:52Z), usdnok_carry_asia_p_ff35bb7c8427d66f, eurils_formula_asia_p_673857a649d3c271 and eurzar_carry_asia_p_8339edce23032d21, each at max(0.01 lot, the lot at 0.75% risk at its own stop) (decision_core.MINLOT_OVERRIDE_SLEEVES, data/MINLOT_OVERRIDE.json). live_sleeves pins each FX symbol to its one funded name. NZDJPY, XAU m5 and USDJPY are not admitted.",
  "gap_decay_stop": "2026-10-13, principal zuck: the three overnight_gap_decay principal rows (audchf/eurzar/usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007) send no new order on Fusion. AUDCHF and USDZAR are removed from live_symbols (no other live Fusion sleeve trades them) and EURZAR admits only the carry name, so the gateway refuses all three at its door whatever their status or CERT_BOOK size, and the promoter retires them (retired_by live_policy). This supersedes cert_book_admission for AUDCHF and USDZAR on Fusion; E8 is not filtered by this file.",
- "scandi_yen_admission": "2026-11-04, principal standing rule 2026-10-29 19:11Z (do what Claude recommends; docket /mnt/project-files/sizing/promotion_docket_2026-11-04.md): EURNOK and GBPJPY admitted to live_symbols so their certified promotion candidates are no longer retired as outside the live sleeve universe. CHFNOK is HELD, pending a current-ledger re-check. Every gate still binds: the discovered and M15 bans, banned_execs, and live_sleeves. Scope is Fusion only; E8 lists no Scandi crosses and bars NOK at its own venue catalogue (prop/e8_book.py rule 1, e8_executor NOT_LISTED), untouched by this file."
+ "scandi_yen_admission": "2026-11-04, principal standing rule 2026-10-29 19:11Z (do what Claude recommends; docket /mnt/project-files/sizing/promotion_docket_2026-11-04.md): CHFNOK, EURNOK and GBPJPY admitted to live_symbols so their certified promotion candidates are no longer retired as outside the live sleeve universe. Every gate still binds: the discovered and M15 bans, banned_execs, and live_sleeves -- CHFNOK's EMPTY list (carry_lookahead_quarantine) still refuses every CHFNOK row until the re-judge. Scope is Fusion only; E8 lists no Scandi crosses and bars NOK at its own venue catalogue (prop/e8_book.py rule 1, e8_executor NOT_LISTED), untouched by this file."
 }
