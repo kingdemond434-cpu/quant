@@ -323,8 +323,11 @@ def test_the_leg_is_an_intel_department_leg_with_a_cap_above_its_floor() -> None
     assert LEG_LAYER["intel_feed"] == "information"
 
 
-def test_the_contracts_watch_the_feed_s_own_artifacts() -> None:
-    sys.path.insert(0, str(ROOT / "ops"))
+def test_the_contracts_watch_the_feed_s_own_artifacts(monkeypatch) -> None:
+    # ops/ goes on the path for this test only: left there, a later bare
+    # `import release_authority` resolves to ops/release_authority.py instead of
+    # desks/mt5/research/release_authority.py (test_blueprint_b_rows broke on it).
+    monkeypatch.syspath_prepend(str(ROOT / "ops"))
     import organ_contract as oc
     rows = {k: v for k, v in oc.CONTRACTS.items() if k.startswith("MT5-Dept-Intel (intel feed")}
     arts = {v[0] for v in rows.values()}
