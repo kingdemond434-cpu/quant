@@ -385,6 +385,12 @@ def _proposers() -> None:
     contract. None admits anything. Daily, because cadence is multiplicity. A failure in one
     must not cost the others their run, so each is fenced.
     """
+    # THE REACH EDGE THE REGISTRY CAN SEE (2026-11-03). The loop below imports by name
+    # (`__import__`), which no static walk follows, so the showcase producer is also imported
+    # here; the component registry then puts it on this step's clock (invoked:daily_cycle.py).
+    import contextlib
+    with contextlib.suppress(ImportError):
+        import prop_showcase_miner  # noqa: F401
     # THE BANDIT SETS THE BUDGETS. Each proposer belongs to a research direction; its time budget
     # is the base budget scaled by that direction's share (uniform = 1.0), clipped so no arm is
     # ever starved to zero -- the exploration floor is what keeps a cold arm alive.
