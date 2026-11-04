@@ -1,5 +1,5 @@
 {
- "at": "2026-11-04T04:38:20+00:00",
+ "at": "2026-11-04T05:39:05+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -24,9 +24,9 @@
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "CHFDKK.formula.p=d3643ffb6862f4c0",
-   "certificate": "external.CHFDKK.formula.p=d3643ffb6862f4c0",
-   "fp": "90fadb9f8390fffb",
+   "key": "CHFDKK.formula.p=4137460a5c5b7dd2",
+   "certificate": "external.CHFDKK.formula.p=4137460a5c5b7dd2",
+   "fp": "d64c1619519c4599",
    "symbol": "CHFDKK",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -38,9 +38,9 @@
   },
   {
    "lane": "certificate",
-   "key": "CHFDKK.formula.p=1bf3cc386e24d002",
-   "certificate": "external.CHFDKK.formula.p=1bf3cc386e24d002",
-   "fp": "2eb2ca92a2469411",
+   "key": "CHFDKK.formula.p=63316e763c0f4097",
+   "certificate": "external.CHFDKK.formula.p=63316e763c0f4097",
+   "fp": "d6a316b5f98aa5e5",
    "symbol": "CHFDKK",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -52,9 +52,9 @@
   },
   {
    "lane": "certificate",
-   "key": "CHFDKK.formula.p=d6d30ff9808fb230",
-   "certificate": "external.CHFDKK.formula.p=d6d30ff9808fb230",
-   "fp": "ea1ad7ab10129b0e",
+   "key": "CHFDKK.formula.p=a1a13a70075da323",
+   "certificate": "external.CHFDKK.formula.p=a1a13a70075da323",
+   "fp": "c6372afcc4fd1182",
    "symbol": "CHFDKK",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -66,10 +66,10 @@
   },
   {
    "lane": "certificate",
-   "key": "CHFDKK.formula.p=cde77829782fd6cd",
-   "certificate": "external.CHFDKK.formula.p=cde77829782fd6cd",
-   "fp": "b6bcb86669ca1680",
-   "symbol": "CHFDKK",
+   "key": "CHFSGD.formula.p=44d59ad505995f9a",
+   "certificate": "external.CHFSGD.formula.p=44d59ad505995f9a",
+   "fp": "fc5f59158d0bcfac",
+   "symbol": "CHFSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -80,10 +80,10 @@
   },
   {
    "lane": "certificate",
-   "key": "CHFDKK.formula.p=447a0fd9490d209a",
-   "certificate": "external.CHFDKK.formula.p=447a0fd9490d209a",
-   "fp": "985f8de1aac6b98b",
-   "symbol": "CHFDKK",
+   "key": "CHFSGD.formula.p=cfec2af253685279",
+   "certificate": "external.CHFSGD.formula.p=cfec2af253685279",
+   "fp": "2734a5a53cf800e3",
+   "symbol": "CHFSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -94,10 +94,10 @@
   },
   {
    "lane": "certificate",
-   "key": "CHFDKK.formula.p=420fbc59846657d4",
-   "certificate": "external.CHFDKK.formula.p=420fbc59846657d4",
-   "fp": "f5e33c67e4f42f59",
-   "symbol": "CHFDKK",
+   "key": "EURCHF.formula.p=00dc55ceb72348ce",
+   "certificate": "external.EURCHF.formula.p=00dc55ceb72348ce",
+   "fp": "2ea48255c9198235",
+   "symbol": "EURCHF",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -108,10 +108,10 @@
   },
   {
    "lane": "certificate",
-   "key": "CHFDKK.formula.p=7a3bb38d5439e032",
-   "certificate": "external.CHFDKK.formula.p=7a3bb38d5439e032",
-   "fp": "6225524da48f0d67",
-   "symbol": "CHFDKK",
+   "key": "EURCHF.formula.p=01be470d1fa00195",
+   "certificate": "external.EURCHF.formula.p=01be470d1fa00195",
+   "fp": "809d154f8adcb979",
+   "symbol": "EURCHF",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -122,10 +122,10 @@
   },
   {
    "lane": "certificate",
-   "key": "CHFDKK.formula.p=6aad22e6d25cfe18",
-   "certificate": "external.CHFDKK.formula.p=6aad22e6d25cfe18",
-   "fp": "97847102b8da5df3",
-   "symbol": "CHFDKK",
+   "key": "EURCHF.formula.p=baefa3f6a5e55c2a",
+   "certificate": "external.EURCHF.formula.p=baefa3f6a5e55c2a",
+   "fp": "f6b9875cfafbc5f3",
+   "symbol": "EURCHF",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -136,85 +136,7 @@
   },
   {
    "lane": "forward",
-   "key": "XAUAUD.turn_of_month.continuous@M30#session=asia",
-   "symbol": "XAUAUD",
-   "family": "turn_of_month",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'turn_of_month'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XAUAUD.turn_of_month.continuous@M30#session=ny",
-   "symbol": "XAUAUD",
-   "family": "turn_of_month",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'turn_of_month'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XAUAUD.turn_of_month.continuous@M30",
-   "symbol": "XAUAUD",
-   "family": "turn_of_month",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'turn_of_month'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XAUAUD.failed_breakout.continuous@M5#session=ny",
-   "symbol": "XAUAUD",
-   "family": "failed_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'failed_breakout'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XAUAUD.range_reversion.continuous@M5#session=ny",
-   "symbol": "XAUAUD",
-   "family": "range_reversion",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'range_reversion'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XAUAUD.range_reversion.continuous@M5",
-   "symbol": "XAUAUD",
-   "family": "range_reversion",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'range_reversion'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XAUAUD.trend_ma_cross.continuous@M5#session=asia",
+   "key": "XAUAUD.trend_ma_cross.continuous@M5#session=ny",
    "symbol": "XAUAUD",
    "family": "trend_ma_cross",
    "verdict": "UNMEASURED",
@@ -227,12 +149,90 @@
   },
   {
    "lane": "forward",
-   "key": "XAUAUD.trend_ma_cross.continuous@M5#session=london",
+   "key": "XAUAUD.trend_ma_cross.continuous@M5",
    "symbol": "XAUAUD",
    "family": "trend_ma_cross",
    "verdict": "UNMEASURED",
    "why": [
     "no written specification in the spec book for family 'trend_ma_cross'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "XAUAUD.vol_mean_reversion.continuous@M5#session=asia",
+   "symbol": "XAUAUD",
+   "family": "vol_mean_reversion",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'vol_mean_reversion'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "XAUEUR.range_reversion.continuous#session=london",
+   "symbol": "XAUEUR",
+   "family": "range_reversion",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'range_reversion'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "XAUEUR.turn_of_month.continuous#session=london",
+   "symbol": "XAUEUR",
+   "family": "turn_of_month",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'turn_of_month'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "XAUEUR.turn_of_month.continuous#session=ny",
+   "symbol": "XAUEUR",
+   "family": "turn_of_month",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'turn_of_month'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "XAUEUR.adx_channel_hybrid.continuous@H4#session=asia",
+   "symbol": "XAUEUR",
+   "family": "adx_channel_hybrid",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'adx_channel_hybrid'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "XAUEUR.engulfing_reversal.continuous@H4#session=london",
+   "symbol": "XAUEUR",
+   "family": "engulfing_reversal",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'engulfing_reversal'"
    ],
    "ours": {},
    "theirs": {},
@@ -242,68 +242,68 @@
  "quarantined": [],
  "unmeasured": [
   {
-   "what": "CHFDKK.formula.p=d3643ffb6862f4c0",
+   "what": "CHFDKK.formula.p=4137460a5c5b7dd2",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "CHFDKK.formula.p=1bf3cc386e24d002",
+   "what": "CHFDKK.formula.p=63316e763c0f4097",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "CHFDKK.formula.p=d6d30ff9808fb230",
+   "what": "CHFDKK.formula.p=a1a13a70075da323",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "CHFDKK.formula.p=cde77829782fd6cd",
+   "what": "CHFSGD.formula.p=44d59ad505995f9a",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "CHFDKK.formula.p=447a0fd9490d209a",
+   "what": "CHFSGD.formula.p=cfec2af253685279",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "CHFDKK.formula.p=420fbc59846657d4",
+   "what": "EURCHF.formula.p=00dc55ceb72348ce",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "CHFDKK.formula.p=7a3bb38d5439e032",
+   "what": "EURCHF.formula.p=01be470d1fa00195",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "CHFDKK.formula.p=6aad22e6d25cfe18",
+   "what": "EURCHF.formula.p=baefa3f6a5e55c2a",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "XAUAUD.turn_of_month.continuous@M30#session=asia",
-   "why": "no written specification in the spec book for family 'turn_of_month'"
-  },
-  {
-   "what": "XAUAUD.turn_of_month.continuous@M30#session=ny",
-   "why": "no written specification in the spec book for family 'turn_of_month'"
-  },
-  {
-   "what": "XAUAUD.turn_of_month.continuous@M30",
-   "why": "no written specification in the spec book for family 'turn_of_month'"
-  },
-  {
-   "what": "XAUAUD.failed_breakout.continuous@M5#session=ny",
-   "why": "no written specification in the spec book for family 'failed_breakout'"
-  },
-  {
-   "what": "XAUAUD.range_reversion.continuous@M5#session=ny",
-   "why": "no written specification in the spec book for family 'range_reversion'"
-  },
-  {
-   "what": "XAUAUD.range_reversion.continuous@M5",
-   "why": "no written specification in the spec book for family 'range_reversion'"
-  },
-  {
-   "what": "XAUAUD.trend_ma_cross.continuous@M5#session=asia",
+   "what": "XAUAUD.trend_ma_cross.continuous@M5#session=ny",
    "why": "no written specification in the spec book for family 'trend_ma_cross'"
   },
   {
-   "what": "XAUAUD.trend_ma_cross.continuous@M5#session=london",
+   "what": "XAUAUD.trend_ma_cross.continuous@M5",
    "why": "no written specification in the spec book for family 'trend_ma_cross'"
+  },
+  {
+   "what": "XAUAUD.vol_mean_reversion.continuous@M5#session=asia",
+   "why": "no written specification in the spec book for family 'vol_mean_reversion'"
+  },
+  {
+   "what": "XAUEUR.range_reversion.continuous#session=london",
+   "why": "no written specification in the spec book for family 'range_reversion'"
+  },
+  {
+   "what": "XAUEUR.turn_of_month.continuous#session=london",
+   "why": "no written specification in the spec book for family 'turn_of_month'"
+  },
+  {
+   "what": "XAUEUR.turn_of_month.continuous#session=ny",
+   "why": "no written specification in the spec book for family 'turn_of_month'"
+  },
+  {
+   "what": "XAUEUR.adx_channel_hybrid.continuous@H4#session=asia",
+   "why": "no written specification in the spec book for family 'adx_channel_hybrid'"
+  },
+  {
+   "what": "XAUEUR.engulfing_reversal.continuous@H4#session=london",
+   "why": "no written specification in the spec book for family 'engulfing_reversal'"
   }
  ],
  "recorded": {
@@ -312,8 +312,8 @@
   "candidates": 0
  },
  "cursor": {
-  "forward": 733,
-  "at": "2026-11-04T03:42:33+00:00",
+  "forward": 741,
+  "at": "2026-11-04T04:38:20+00:00",
   "certificates": 1336
  },
  "notes": [],
@@ -334,21 +334,21 @@
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFDKK_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFDKK_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFDKK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFDKK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFDKK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFDKK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFDKK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFDKK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_M5.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_M5.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_M5.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUEUR_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUEUR_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUEUR_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUEUR_H4.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUEUR_H4.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 3.2
+ "seconds": 8.69
 }

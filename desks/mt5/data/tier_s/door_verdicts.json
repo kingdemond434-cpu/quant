@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-04T04:38:26.418382+00:00",
+ "generated_utc": "2026-11-04T05:39:36.313563+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -4666,9 +4666,9 @@
    "review_failed": [],
    "family": "range_reversion",
    "theory": {
-    "n_oos": 6,
-    "confidence": 0.5333,
-    "sd": 0.1247,
+    "n_oos": 5,
+    "confidence": 0.5926,
+    "sd": 0.129,
     "status": "UNMEASURED"
    }
   },
@@ -4677,9 +4677,9 @@
    "review_failed": [],
    "family": "range_reversion",
    "theory": {
-    "n_oos": 6,
-    "confidence": 0.5333,
-    "sd": 0.1247,
+    "n_oos": 5,
+    "confidence": 0.5926,
+    "sd": 0.129,
     "status": "UNMEASURED"
    }
   },
@@ -5661,9 +5661,9 @@
    "review_failed": [],
    "family": "range_reversion",
    "theory": {
-    "n_oos": 6,
-    "confidence": 0.5333,
-    "sd": 0.1247,
+    "n_oos": 5,
+    "confidence": 0.5926,
+    "sd": 0.129,
     "status": "UNMEASURED"
    }
   },
@@ -5672,9 +5672,9 @@
    "review_failed": [],
    "family": "range_reversion",
    "theory": {
-    "n_oos": 6,
-    "confidence": 0.5333,
-    "sd": 0.1247,
+    "n_oos": 5,
+    "confidence": 0.5926,
+    "sd": 0.129,
     "status": "UNMEASURED"
    }
   },
@@ -5683,9 +5683,9 @@
    "review_failed": [],
    "family": "range_reversion",
    "theory": {
-    "n_oos": 6,
-    "confidence": 0.5333,
-    "sd": 0.1247,
+    "n_oos": 5,
+    "confidence": 0.5926,
+    "sd": 0.129,
     "status": "UNMEASURED"
    }
   },
@@ -14741,9 +14741,9 @@
    "review_failed": [],
    "family": "turn_of_month",
    "theory": {
-    "n_oos": 3,
-    "confidence": 0.1538,
-    "sd": 0.1317,
+    "n_oos": 2,
+    "confidence": 0.2,
+    "sd": 0.1633,
     "status": "UNMEASURED"
    }
   },
@@ -14752,9 +14752,9 @@
    "review_failed": [],
    "family": "turn_of_month",
    "theory": {
-    "n_oos": 3,
-    "confidence": 0.1538,
-    "sd": 0.1317,
+    "n_oos": 2,
+    "confidence": 0.2,
+    "sd": 0.1633,
     "status": "UNMEASURED"
    }
   },
