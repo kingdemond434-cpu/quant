@@ -119,6 +119,18 @@ REGISTRY: tuple[Modifier, ...] = (
              "(research/financing_lab.py) and data/roi_capital_evidence.json "
              "(research/research_roi.py), applied to SleeveEvidence.daily_r before the solve",
              "desks/mt5/reports/FINANCING_LAB.json"),
+    # THE VENUE'S OWN FILLS AS THE COST INPUT (2026-11-03). Each sleeve's per-trade execution
+    # cost is the empirical-Bayes blend (w = n/(n+20)) of what its account actually paid on that
+    # symbol and the modelled cost; a venue that fills CHEAPER than modelled lowers the cost and
+    # raises the sleeve's mean, one that fills dearer lowers it. lo/hi DECLARE the band of the
+    # realised/modelled cost multiple (0..5x, the modelled path's own MAX_RATIO) for the fence;
+    # the blend itself is NOT clipped -- a clip would be a one-sided rail owing its own ledger
+    # line. The share the shrinkage withholds is published both ways as missed-growth lines in
+    # REALISED_COST.json. Stale (>48h) or absent -> the modelled cost, unchanged.
+    Modifier("realised_execution_cost", 0.0, 5.0, "two_sided",
+             "libs/portfolio/execution_cost.apply_realised via pf_allocator._execution_costs "
+             "<- reports/REALISED_COST.json (research/realised_cost.py, hourly)",
+             "desks/mt5/reports/REALISED_COST.json"),
     Modifier("fade", 0.5, 1.0, "reduce_only",
              "mt5desk.sizing.decay_factor (L1.59 fade flag from decay_monitor)",
              "desks/mt5/reports/MISSED_GROWTH.json"),
