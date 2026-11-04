@@ -1,0 +1,111 @@
+{
+ "_doc": "Shadow-trial cases for ops/release/adjudicate.py. false_fail: a qwen2.5-coder:7b FAIL on an Auditor-CLEAR head whose findings the diff contradicts (HUMAN_DEPENDENCIES.md, 2026-11-04). true_fail: a FAIL the Auditor agreed with (HOLD or the same defect). Findings are copied verbatim from each review's job log. The trial passes only if true_fails_cleared is 0.",
+ "cases": [
+  {
+   "pr": 694,
+   "head": "af10b3bd3f81c74a38907a15715f15ac26b0a175",
+   "base": "c9255ec6d77af42002d41f20bfea8d4b36d6affe",
+   "truth": "false_fail",
+   "touches_control": false,
+   "findings": [
+    "The change increases risk by modifying the behavior of `_current_identity` to always write to `release_identity.json`, which could lead to unintended consequences if not properly managed."
+   ],
+   "source": "independent-review job 126794660769"
+  },
+  {
+   "pr": 699,
+   "head": "c6cada4c51c0c18be43f12ffe6126e309f02052c",
+   "base": "15027ca3ae38c991ec046444c5cae61411e265e2",
+   "truth": "false_fail",
+   "touches_control": false,
+   "findings": [
+    "The change introduces a new feature that streams mined corpus rows instead of listing them, which could increase risk by potentially consuming more memory and processing power.",
+    "The change adds new files and modifies existing ones without clear justification for the changes made."
+   ],
+   "source": "independent-review job 126838937864"
+  },
+  {
+   "pr": 700,
+   "head": "594f9737fc755a6ee4d35a101abe85e03f5b33db",
+   "base": "15027ca3ae38c991ec046444c5cae61411e265e2",
+   "truth": "false_fail",
+   "touches_control": false,
+   "findings": [
+    "The change introduces new logging and timing mechanisms that could be misused to infer the system's state or performance characteristics, potentially leading to information leakage.",
+    "The addition of new tests for specific error conditions does not align with the overall purpose of the code changes and may indicate a lack of understanding of the underlying logic."
+   ],
+   "source": "independent-review job 126854360567"
+  },
+  {
+   "pr": 666,
+   "head": "c9157231789c07de0cac7b793f1cdfbdec9a13c2",
+   "base": "55fb6ea085817f3f359a6a65cbdc8141ac78eaf0",
+   "truth": "false_fail",
+   "touches_control": false,
+   "findings": [
+    "The change introduces a new parameter `budget_s` that can be set to any value, potentially exceeding the intended limit of 300 seconds. This could lead to the task running longer than intended and potentially failing the audit gate.",
+    "The change adds a new test `test_live_first_stops_at_its_budget_and_loses_nothing` that does not accurately reflect the behavior described in its docstring. The test sets up a scenario where the budget is exceeded, but it does not verify that nothing more is cancelled and an owed re-run is carried with its count unchanged."
+   ],
+   "source": "independent-review job 126545050201"
+  },
+  {
+   "pr": 646,
+   "head": "63693d729efb4867f5862cb4e59a343ae9767b9a",
+   "base": "d3be14a15aff269c5f54fd6699f5fa4ad98ddc30",
+   "truth": "false_fail",
+   "touches_control": false,
+   "findings": [
+    "The change introduces a rotation mechanism for cell donations that could lead to an uneven distribution of risk across different passes, potentially increasing the overall risk.",
+    "The change alters the behavior of the `cell_rows` function by introducing a new parameter `rotation`, which could affect how cells are selected and donated. This could introduce unexpected behavior or unintended consequences."
+   ],
+   "source": "independent-review job 126581765851"
+  },
+  {
+   "pr": 668,
+   "head": "ec83d8f6afcb6e23e430ae226b1c0e9930e10fa1",
+   "base": "90880d366d85daafb8e256886cf34a59c0234d9e",
+   "truth": "false_fail",
+   "touches_control": false,
+   "findings": [
+    "It introduces new control mechanisms by defining `FOOTPRINT_ARTIFACTS` and related functions, which could affect the system's behavior in ways that are not yet clear."
+   ],
+   "source": "independent-review job 126706273427"
+  },
+  {
+   "pr": 684,
+   "head": "92552cdf0504f1132e376e79b30834a25712b65e",
+   "base": "90880d366d85daafb8e256886cf34a59c0234d9e",
+   "truth": "false_fail",
+   "touches_control": false,
+   "findings": [
+    "The change introduces a new function `role_symbol` that selects the first live candidate symbol based on H1 bars, which could introduce risk if not thoroughly tested and understood."
+   ],
+   "source": "independent-review job 126716526081"
+  },
+  {
+   "pr": 657,
+   "head": "71fc2c54b0f2aef06815cf6e1f8dbe5391c79fa3",
+   "base": "90880d366d85daafb8e256886cf34a59c0234d9e",
+   "truth": "false_fail",
+   "touches_control": false,
+   "findings": [
+    "The change introduces new network destinations and data sources without proper justification or risk assessment.",
+    "It adds new control paths that could be exploited, such as the `youtube_corpus` and `youtube_miner` legs in `hourly_cycle.py`."
+   ],
+   "source": "independent-review job 126731572314"
+  },
+  {
+   "pr": 555,
+   "head": "b4953fcc8300044cf6180f0512bec7978b300501",
+   "base": "c5ddf5f11c3953a5604b9199f3e812ac6bc7b7ca",
+   "truth": "false_fail",
+   "touches_control": true,
+   "findings": [
+    "The change introduces a new file `ops/box_self_heal.py` that appears to be a critical system-level script, potentially affecting the trading system's stability and security.",
+    "It registers a scheduled task (`Quant-BoxSelfHeal`) as SYSTEM, which could have significant implications for the system's integrity and control flow.",
+    "The script copies files into `C:\\"
+   ],
+   "source": "independent-review job 126759618640"
+  }
+ ]
+}
