@@ -191,6 +191,7 @@ def main(argv: list[str] | None = None) -> int:
         webbrowser.open(start)
     ok = flow.done.wait(a.timeout)
     srv.shutdown()
+    srv.server_close()
     if not ok:
         print("TIMED OUT: no App was created. Run this again.")
         return 3

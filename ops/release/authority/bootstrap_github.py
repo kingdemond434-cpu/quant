@@ -111,7 +111,8 @@ ADMIN_PR_BYPASS = {"actor_type": "RepositoryRole", "actor_id": 5, "bypass_mode":
 
 
 def _put_ruleset(call: Any, repo: str, rid: int, rs: dict[str, Any], bys: list[Any]) -> None:
-    body: dict[str, Any] = {k: rs[k] for k in ("name", "target", "enforcement", "conditions", "rules") if k in rs}
+    keep = ("name", "target", "enforcement", "conditions", "rules")
+    body: dict[str, Any] = {k: rs[k] for k in keep if k in rs}
     call(f"repos/{repo}/rulesets/{rid}", "-X", "PUT", data={**body, "bypass_actors": bys})
 
 
