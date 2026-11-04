@@ -318,6 +318,34 @@ def _capacity_watch() -> None:
             dlog(f"capacity_watch: {script} failed to run ({type(exc).__name__}: {exc})")
 
 
+def _llm_seats() -> None:
+    """The two seats that died with the VPS ship (frozen 2026-11-03 02:50Z), run here daily.
+
+    `scripts/max_audit.py` (the brain's daily maximization sweep, VPS cron `0 7 * * *`) and
+    `scripts/gpt_hunter.py` (the `scheduled_chatgpt` seat, scout_roster) had no Contabo task, so
+    both wrote 0 rows from the freeze on. Riding this chain gives them the box's clock with no
+    new task registration. Both are research-only: max_audit is pure filesystem reads with no LLM
+    call; gpt_hunter is L0_PUBLIC_READ (data/agent_authority.json), writes only
+    data/intelligence/ ledgers, and calls :free OpenRouter ids that openrouter_guard admits. Each
+    runs in its own interpreter under its own ceiling; a failure is logged and never stops the
+    chain. A missing script is logged as such, never invented.
+    """
+    import subprocess
+    repo = BASE.parent.parent
+    for script, ceiling in (("scripts/max_audit.py", 1800), ("scripts/gpt_hunter.py", 1800)):
+        path = repo / script
+        if not path.exists():
+            dlog(f"llm_seats: {script} not present on this tree")
+            continue
+        try:
+            r = subprocess.run([sys.executable, str(path)], cwd=str(repo), capture_output=True,
+                               text=True, timeout=ceiling, check=False)
+            dlog(f"llm_seats: {script} rc={r.returncode} "
+                 f"{(r.stdout or r.stderr).strip().splitlines()[-1:] or ''}")
+        except (OSError, subprocess.SubprocessError) as exc:
+            dlog(f"llm_seats: {script} failed to run ({type(exc).__name__}: {exc})")
+
+
 def _cost_fields() -> None:
     """Fill `tick_value` for any registry symbol that lacks one, from the live terminal.
 
@@ -908,6 +936,7 @@ STEPS = (("weekly_hunt_refresh", _weekly_hunt_refresh),
          ("wiring_ceo", _wiring_ceo), ("probation", _probation),
          ("module_rent_research", _module_rent_research), ("build_allocator", _build_allocator),
          ("simplifier", _simplifier), ("capacity_watch", _capacity_watch),
+         ("llm_seats", _llm_seats),
          ("six_event_trace", _six_event_trace),
          ("vector_families_check", _vector_families_check),
          ("export_aurum", _export_aurum), ("daily_research_os", _daily_research_os))
