@@ -102,6 +102,11 @@ from libs.research import mechanism_claims as mc  # noqa: E402
 SOURCE = "deep_forest"
 KIND = "story_mechanism"
 SOURCES = _DESK / "data" / "deep_forest_sources.json"
+#: Committed GROUND PACKS beside the code (research config, not box state): every `*.json` in
+#: desks/mt5/research/grounds/ with a `grounds` list is merged into the registry; a same-named
+#: ground in SOURCES wins. None = derived from SOURCES, so a run pointed at another grounds file
+#: (a test, a forest slice) sees no packs unless it names a directory here.
+GROUND_PACKS: Path | None = None
 #: Grounds OTHER organs queue for the forest to mine, one JSON file per producer
 #: (`{"grounds": [...]}`), merged after the registered grounds. First, so far, is
 #: research/paid_substitute_engine.py (free substitutes for paid datasets); its grounds carry
@@ -619,8 +624,12 @@ def _load_sources() -> dict[str, Any]:
         cfg = json.loads(SOURCES.read_text("utf-8"))
     except (OSError, ValueError):
         cfg = {"grounds": []}
-    queued = queued_grounds({str(g.get("name")) for g in cfg.get("grounds") or []
-                             if isinstance(g, dict)})
+    names = {str(g.get("name")) for g in cfg.get("grounds") or [] if isinstance(g, dict)}
+    packs = queued_grounds(names, GROUND_PACKS or SOURCES.parent.parent / "research" / "grounds")
+    if packs:
+        cfg = {**cfg, "grounds": [*(cfg.get("grounds") or []), *packs]}
+        names |= {str(g.get("name")) for g in packs}
+    queued = queued_grounds(names)
     if queued:
         cfg = {**cfg, "grounds": [*(cfg.get("grounds") or []), *queued]}
     return cfg
