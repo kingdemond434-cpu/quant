@@ -319,6 +319,50 @@ def test_root_pr_merges_only_at_a_cleared_green_head(state: str, verdicts: Any, 
     assert (head == "a" * 40) is ok and (bad == []) is ok
 
 
+class _Merged(_Gate):
+    """#650 already merged by someone: the pin needs the merged head green and CLEARed."""
+
+    GATING_JOBS = ("quality",)
+
+    def __init__(self, state: str, verdicts: list[dict[str, str]], merged: bool = True,
+                 merge: str = "m" * 40) -> None:  # fmt: skip
+        super().__init__(state, verdicts)
+        self.merged, self.merge = merged, merge
+
+    def _gh(self, path: str, *a: str) -> Any:
+        if path.endswith("/pulls/650"):
+            return {"state": "closed", "merged": self.merged, "merge_commit_sha": self.merge,
+                    "head": {"sha": self.head, "repo": {"full_name": "o/r"}},
+                    "base": {"ref": LIVE}}  # fmt: skip
+        return super()._gh(path, *a)
+
+    def checks(self, runs: Any, jobs: Any, genuine: Any) -> tuple[str, str]:
+        assert jobs == ("quality",)
+        return self.state, "w"
+
+
+@pytest.mark.parametrize("gate_,ok", [
+    (_Merged("pass", [{"verdict": "CLEAR", "sha": "a" * 9}]), True),
+    (_Merged("pass", [{"verdict": "CLEAR", "sha": "b" * 9}]), False),  # merged another head
+    (_Merged("pass", []), False),
+    (_Merged("pass", [{"verdict": "CLEAR", "sha": "a" * 9}, {"verdict": "HOLD", "sha": "a" * 9}]),
+     False),
+    (_Merged("failure", [{"verdict": "CLEAR", "sha": "a" * 9}]), False),
+    (_Merged("pass", [{"verdict": "CLEAR", "sha": "a" * 9}], merged=False), False),
+    (_Merged("pass", [{"verdict": "CLEAR", "sha": "a" * 9}], merge=""), False),
+])  # fmt: skip
+def test_merge_first_pins_only_a_cleared_green_merged_head(gate_: Any, ok: bool) -> None:
+    sha, bad = bg.merged_at_clear(gate_, "o/r", 650)
+    assert (sha == "m" * 40) is ok and (bad == []) is ok
+
+
+def test_bootstrap_pins_through_the_cleared_merge_check() -> None:
+    ps1 = (bg.HERE / "bootstrap_level2.ps1").read_text(encoding="utf-8")
+    pin = ps1.index("pin_root.py")
+    assert -1 < ps1.index("merged-cleared") < pin
+    assert "--jq .merge_commit_sha" not in ps1  # the pin never reads the merge sha unchecked
+
+
 class _Hub:
     """A fake gh() for root_merge: one LIVE ruleset whose bypass list we can watch."""
 

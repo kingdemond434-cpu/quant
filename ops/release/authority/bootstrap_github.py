@@ -106,6 +106,35 @@ def ready(ag: Any, repo: str, pr: int) -> tuple[str | None, list[str]]:
     return (head if not out else None), out
 
 
+def merged_at_clear(ag: Any, repo: str, pr: int) -> tuple[str | None, list[str]]:
+    """(merge commit to pin, problems) for a ROOT PR that is ALREADY merged, whoever pressed
+    Merge: the head GitHub merged must carry green gating jobs and be the head of the latest
+    trusted audit CLEAR, or nothing is pinned (#650 audit, 2026-11-04: in merge-first order the
+    pin would otherwise trust whatever was merged). Pure over `ag`'s reads; tested with a fake."""
+    p = ag._gh(f"repos/{repo}/pulls/{pr}")
+    head = str(p["head"]["sha"])
+    merge = str(p.get("merge_commit_sha") or "")
+    out: list[str] = []
+    if not p.get("merged"):
+        out.append(f"#{pr} is not merged")
+    if p["base"]["ref"] != LIVE or (p["head"].get("repo") or {}).get("full_name") != repo:
+        out.append(f"#{pr} is not a same-repo PR into LIVE")
+    if len(merge) != 40 or any(c not in "0123456789abcdef" for c in merge):
+        out.append(f"#{pr} has no readable merge commit")
+    runs = (ag._gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100") or {}).get(
+        "check_runs") or []  # fmt: skip
+    state, why = ag.checks(runs, tuple(ag.GATING_JOBS), ag.provenance(repo, pr, head))
+    if state != "pass":
+        out.append(f"gating checks on merged head {head[:9]}: {state} ({why})")
+    comments = ag._flat(ag._gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate",
+                               "--slurp"))  # fmt: skip
+    found = ag.verdicts(comments)
+    if not found or found[-1]["verdict"] != "CLEAR" or not head.startswith(found[-1]["sha"]):
+        last = f"{found[-1]['verdict']} {found[-1]['sha'][:9]}" if found else "none"
+        out.append(f"the merged head {head[:9]} is not the audit's standing CLEAR (latest: {last})")
+    return (merge if not out else None), out
+
+
 LIVE_RULESET = "live-requires-release-authority"
 ADMIN_PR_BYPASS = {"actor_type": "RepositoryRole", "actor_id": 5, "bypass_mode": "pull_request"}
 
@@ -163,7 +192,17 @@ def main(argv: list[str] | None = None) -> int:
     rs.add_argument("--apply", action="store_true")
     m = sub.add_parser("root-merge")
     m.add_argument("--pr", type=int, required=True)
+    mc = sub.add_parser("merged-cleared")
+    mc.add_argument("--pr", type=int, required=True)
     a = ap.parse_args(argv)
+    if a.cmd == "merged-cleared":
+        sha, bad = merged_at_clear(gate(), a.repo, a.pr)
+        for b in bad:
+            print(f"NOT PINNABLE: {b}")
+        if not sha:
+            return 1
+        print(sha)  # last line: the merge commit the caller pins
+        return 0
     if a.cmd == "root-merge":
         head, bad = ready(gate(), a.repo, a.pr)
         for b in bad:

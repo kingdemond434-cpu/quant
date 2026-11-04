@@ -77,9 +77,15 @@ if ("$merged".Trim() -ne "true") {
     Write-Host "   merged #$Pr at $head as $merge"
 }
 Refresh-Clone
-# pin THE MERGE COMMIT of #$Pr, never whatever LIVE's tip is by now (#650 audit SF3)
-$merge = (& gh api "repos/$Repo/pulls/$Pr" --jq .merge_commit_sha)
-if ("$merge".Trim() -notmatch '^[0-9a-f]{40}$') { throw "could not read #$Pr's merge commit; nothing pinned" }
+# pin THE MERGE COMMIT of #$Pr, never whatever LIVE's tip is by now (#650 audit SF3), and only
+# when the head GitHub merged is green and the audit's standing CLEAR -- whoever pressed Merge
+# (#650 audit 2026-11-04: the owner may merge first, and the pin must not trust any merge)
+$out = @(Py (Join-Path $Src "ops\release\authority\bootstrap_github.py") --repo $Repo merged-cleared --pr $Pr)
+$rc = $LASTEXITCODE
+$out | Out-Host
+if ($rc -ne 0) { throw "#$Pr's merged head is not a cleared, green head (see NOT PINNABLE above); nothing pinned" }
+$merge = "$($out[-1])".Trim()
+if ($merge -notmatch '^[0-9a-f]{40}$') { throw "could not read #$Pr's merge commit; nothing pinned" }
 & git -c safe.directory=* -C $Clone checkout -q -f --detach "$merge".Trim()
 if ($LASTEXITCODE -ne 0) { throw "could not check out #$Pr's merge commit; nothing pinned" }
 if (-not (Test-Path (Join-Path $Clone "ops\release\authority\bootstrap_github.py"))) { throw "LIVE does not carry #$Pr yet." }
