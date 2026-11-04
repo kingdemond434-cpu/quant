@@ -111,9 +111,11 @@ def live_banned_families() -> frozenset[str]:
 def judged_by_family(path: Path | None = None, tail: int = GATE_LEDGER_TAIL) -> dict[str, int]:
     """How many judgements each family has already consumed, from the gate ledger's tail."""
     out: dict[str, int] = {}
+    from libs.ops.tail_read import tail_lines
     try:
-        with (path or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
-            lines = fh.readlines()[-tail:]
+        # READ FROM THE END (2026-11-04): `readlines()[-tail:]` held the whole ~1.4M-row ledger,
+        # 13.7 GB of commit on the box, to keep 200,000 rows. Same lines, memory of the tail.
+        lines = tail_lines(path or GATE_LEDGER, tail)
     except OSError:
         return out
     for line in lines:
