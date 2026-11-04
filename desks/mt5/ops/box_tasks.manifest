@@ -326,4 +326,7 @@ TASK name="Quant-SignTrain"    trigger="at logon + every 10 minutes" runs="ops/b
 # YouTube channel mining (#655): captions are fetched on zuck's PC (box IP is caption-blocked), shipped
 # sealed on branch claude/video-transcripts; this task opens them, extracts discovery rows for the
 # compiler, and publishes desks/mt5/reports/VIDEO_MINING_COVERAGE.json (consumer: discovery_compiler).
+# Network: no new host. The task reads origin over the existing git remote and calls OpenRouter :free
+# models through libs/ops/openrouter_free (already used by other organs). The box never contacts
+# YouTube: mine_channel_transcripts.py runs here only with --report-only, which does no network I/O.
 TASK name="Quant-VideoCells"   trigger="hourly"                      runs="scripts/run_video_cells_box.ps1" installer="scripts/run_video_cells_box.ps1" lane="research" also_runs="scripts/video_transcript_vault.py,scripts/extract_video_cells.py,scripts/mine_channel_transcripts.py"
