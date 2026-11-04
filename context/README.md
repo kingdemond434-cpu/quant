@@ -16,6 +16,11 @@ Read order for a fresh session: `DELEGATION_PROTOCOL.md`, then `python scripts/c
 Rules:
 
 - Append, never rewrite. A wrong journal row is superseded by a new row with `--supersedes`.
+- A row that is right but was written without its evidence gets an amendment row, never an edit:
+  `"amends": "<earlier id>", "amend": "evidence"` plus that row's `evidence`. `verify` counts the
+  amendment's evidence toward the earlier row and fails on any other `amend` kind, or on an
+  amendment that names an unknown or later id. It cannot change a decision, a title or a why:
+  a changed decision is still a new row with `--supersedes`.
 - Evidence is a pointer (repo path, `path:line`, `sha:`, `pr:`, `url:`, `/mnt/project-files/...`).
   `python scripts/context.py verify` fails on a malformed row or a repo path that does not exist,
   and CI runs it (`tests/research/test_context_memory.py`).
