@@ -124,7 +124,7 @@ def test_resolve_spec_carries_every_formula_parameter() -> None:
     assert why == "ok" and p is not None
     assert {k: p[k] for k in params if k != "timeframe"} == {k: v for k, v in params.items()
                                                             if k != "timeframe"}
-    assert p["_side"] == 1 and p["_session"] == rc.SESSIONS["asia"]
+    assert p["_side"] == 1 and p["_session"] is None     # no session param: every hour
 
 
 def test_load_bars_carries_spread_and_tick_volume(tmp_path: Path) -> None:
