@@ -83,6 +83,11 @@ UNIVERSE = DESK / "data" / "universe" / "universe.json"
 DIGEST = asia_alt_digest.DIGEST
 
 UNMEASURED_LIVE_YIELD = "UNMEASURED_LIVE_YIELD"
+#: Cells one pass may donate. Unchanged at 20. Screen-passing cells always lead; the rest of the
+#: queue ROTATES by pass (`cell_rows(rotation=)`), so every measured cell reaches the judge over
+#: successive hourly passes instead of the same top 20 every time. Anything not donated this pass
+#: is counted in `refused` by name, never dropped silently. A donation is a hypothesis row for
+#: the judge only; no order, sizing, allocator or risk path reads it.
 MAX_DONATIONS = 20
 ALPHA = 0.05
 PROPOSE_T = 2.0
@@ -901,12 +906,20 @@ def measure(rows: Sequence[Mapping[str, Any]], *, loader: Callable[[str], Any],
 # ------------------------------------------------------------------------------ direct cells
 def cell_rows(by_group: Sequence[Mapping[str, Any]], contract: Mapping[str, Any], *,
               cell_placebo: Mapping[str, Mapping[str, Any]] | None = None,
-              limit: int = MAX_DONATIONS) -> tuple[list[dict[str, Any]], int, list[dict[str, Any]]]:
+              limit: int = MAX_DONATIONS,
+              rotation: int = 0) -> tuple[list[dict[str, Any]], int, list[dict[str, Any]]]:
     """(candidates, trials charged, refusals). One cell per (target, source, relation, lead): its
-    strongest horizon, when |t| clears Bonferroni over every measured (group, horizon) and 2.0
-    AND that (cell, horizon) was ADMITTED by its own shifted-date placebo (`cell_placebo`,
-    keyed "<h>d" -> "target|source|relation|lead"). A t without a placebo verdict is not a pass:
-    no `cell_placebo` means nothing is donated."""
+    strongest MEASURED horizon, donated whatever its screen says (2026-11-03).
+
+    The screen is |t| over Bonferroni across every measured (group, horizon) and 2.0, AND the
+    (cell, horizon)'s own shifted-date placebo ADMIT (`cell_placebo`, keyed "<h>d" ->
+    "target|source|relation|lead"). It used to WITHHOLD every cell that missed it, so both
+    analyst families reached the docket from nothing at all (JUDGE_COVERAGE
+    `unmined_live_families`): a pre-screen standing in front of the judge. Now every measured
+    cell goes to the judge, ranked screen-passers first, and carries the screen's verdict --
+    `evidence.proposer_screen`, the Bonferroni bar and the placebo status -- so nothing reads a
+    miss as a pass. The judge's own gates are unchanged. `refused` now lists only the cells over
+    the per-pass donation limit, which lead the next pass."""
     measured: list[tuple[Mapping[str, Any], int, Mapping[str, Any]]] = []
     for g in by_group:
         for h in av.HORIZONS_D:
@@ -917,24 +930,33 @@ def cell_rows(by_group: Sequence[Mapping[str, Any]], contract: Mapping[str, Any]
     bar = max(PROPOSE_T, _bonferroni_t(trials))
     best: dict[tuple[str, ...], tuple[Mapping[str, Any], int, Mapping[str, Any]]] = {}
     refused: list[dict[str, Any]] = []
-    for g, h, s in measured:
-        if abs(float(s["t"])) < bar:
-            continue
-        key = (str(g["target"]), str(g["source"]), str(g["relation"]), str(g["lead"]))
+
+    def _passed(key: tuple[str, ...], h: int, s: Mapping[str, Any]) -> bool:
         gate = ((cell_placebo or {}).get(f"{h}d") or {}).get("|".join(key)) or {}
-        if gate.get("status") != "ADMIT":
-            refused.append({"cell": "|".join(key), "horizon_d": h,
-                            "why": f"placebo gate {gate.get('status', UNMEASURED)}: the drift "
-                                   "is not shown to be tied to the publication date"})
+        return abs(float(s["t"])) >= bar and gate.get("status") == "ADMIT"
+
+    for g, h, s in measured:
+        key = (str(g["target"]), str(g["source"]), str(g["relation"]), str(g["lead"]))
+        if key not in best:
+            best[key] = (g, h, s)
             continue
-        if key not in best or abs(float(s["t"])) > abs(float(best[key][2]["t"])):
+        _g0, h0, s0 = best[key]
+        # a screen-passing horizon beats a failing one; inside either, the stronger |t|
+        if (_passed(key, h, s), abs(float(s["t"]))) > (_passed(key, h0, s0),
+                                                         abs(float(s0["t"]))):
             best[key] = (g, h, s)
     out: list[dict[str, Any]] = []
-    for (target, src, relation, lead), (_g, h, s) in sorted(
-            best.items(), key=lambda kv: -abs(float(kv[1][2]["t"]))):
+    ranked = sorted(best.items(), key=lambda kv: (not _passed(kv[0], kv[1][1], kv[1][2]),
+                                                   -abs(float(kv[1][2]["t"]))))
+    passers = [kv for kv in ranked if _passed(kv[0], kv[1][1], kv[1][2])]
+    rest = ranked[len(passers):]
+    if rest:
+        k = (rotation * max(limit - len(passers), 1)) % len(rest)
+        rest = rest[k:] + rest[:k]
+    for (target, src, relation, lead), (_g, h, s) in passers + rest:
         if len(out) >= limit:
             refused.append({"cell": f"{target}|{src}|{relation}|{lead}",
-                            "why": f"over the {limit}-donation pass limit; it leads next pass"})
+                            "why": f"over the {limit}-donation pass limit; rotates in on a later pass"})
             continue
         side = 1 if float(s["mean_bp"]) > 0 else -1
         family = "analyst_revision_drift" if relation == "direct" else "analyst_cross_market_lead"
@@ -974,6 +996,8 @@ def cell_rows(by_group: Sequence[Mapping[str, Any]], contract: Mapping[str, Any]
             "declared_width": trials,
             "evidence": {"n": s["n"], "t": s["t"], "mean_bp": s["mean_bp"], "sd_bp": s["sd_bp"],
                          "hit": s["hit"], "horizon_d": h, "bonferroni_t": round(bar, 3),
+                         "proposer_screen": ("PROPOSED" if _passed((target, src, relation, lead),
+                                                                   h, s) else "NOT_PROPOSED"),
                          "trials": trials, "contract_status": verdict,
                          "cell_placebo": dict((cell_placebo or {}).get(f"{h}d", {}).get(
                              f"{target}|{src}|{relation}|{lead}") or {}),
@@ -1095,7 +1119,8 @@ def run(*, budget_s: float = 300.0, apply: bool = True, collect_enabled: bool = 
     measured = measure(rows, loader=loader or _bars_loader(), universe_doc=udoc, clock=clock,
                        n_placebo=n_placebo)
     cands, trials, refused = cell_rows(measured["by_group"], measured["contract"],
-                                       cell_placebo=measured["cell_placebo"])
+                                       cell_placebo=measured["cell_placebo"],
+                                       rotation=int(now.timestamp() // 3600))
     path = _donate(cands, max(trials, len(cands))) if (apply and cands) else None
     axis = axis_doc(rows, universe, now)
     intel = intel_doc(rows, measured, universe, now)
