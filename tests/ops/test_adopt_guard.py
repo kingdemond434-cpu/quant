@@ -1093,3 +1093,4 @@ def test_only_the_read_only_pre_check_has_a_time_limit() -> None:
     fn = PS[PS.index("function Invoke-AdoptGuard") : PS.index("function Undo-Adoption")]
     assert "taskkill.exe /T /F /PID" in fn and "still running after" in fn
     assert "QUANT_ADOPT_GUARD_PRE_TIMEOUT_S" in PS
+    assert "-Encoding UTF8" in fn and '$env:PYTHONIOENCODING = "utf-8"' in fn

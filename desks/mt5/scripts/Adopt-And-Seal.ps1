@@ -297,6 +297,10 @@ function Invoke-AdoptGuard([string[]] $guardArgs, [int] $TimeoutS = 0) {
         $argList = @($pyArgs) + @('"' + $script:GuardScript + '"') + @($guardArgs | ForEach-Object { '"' + $_ + '"' })
         $timedOut = $false
         $rc = 1
+        # The child writes UTF-8 and the files are read back as UTF-8: PS 5.1 reads ANSI by default,
+        # and a non-ASCII reason would otherwise garble the JSON decision line.
+        $ioWas = $env:PYTHONIOENCODING
+        $env:PYTHONIOENCODING = "utf-8"
         try {
             $proc = Start-Process -FilePath $py -ArgumentList $argList -NoNewWindow -PassThru `
                 -RedirectStandardOutput $oFile -RedirectStandardError $eFile -ErrorAction Stop
@@ -316,11 +320,13 @@ function Invoke-AdoptGuard([string[]] $guardArgs, [int] $TimeoutS = 0) {
             if (-not $timedOut) { $rc = $proc.ExitCode }
         } catch {
             Log ("adopt guard {0}: could not start under a time limit -- {1}" -f $guardArgs[0], $_.Exception.Message) | Out-Host
+        } finally {
+            $env:PYTHONIOENCODING = $ioWas
         }
         $out = @()
         foreach ($f in @($oFile, $eFile)) {
             if (Test-Path $f) {
-                $out += @(Get-Content -Path $f -ErrorAction SilentlyContinue | ForEach-Object { "$_" })
+                $out += @(Get-Content -Path $f -Encoding UTF8 -ErrorAction SilentlyContinue | ForEach-Object { "$_" })
                 Remove-Item -Path $f -Force -ErrorAction SilentlyContinue
             }
         }
