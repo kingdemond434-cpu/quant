@@ -72,6 +72,9 @@ BUDGET_S = 900.0
 #: Breadth-per-run bound so a pass finishes; the cursor rotates through both lanes so every row
 #: is reached across passes (LAWS 2: a count is never a ceiling).
 MAX_PER_PASS = 16
+#: Certificates judged UNMEASURED before their family had a rule, re-judged per pass on top of the
+#: lane's share; each is one bar file and one rebuild, about a second.
+PENDING_PER_PASS = 64
 MIN_BARS = 300
 # MEASURED over 433 deals (reports/COST_TRUTH.json 2026-09-23): 2.00 in ACCOUNT CURRENCY
 # per lot per side. Mirrors libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE.
@@ -99,7 +102,8 @@ UNMEASURED = "UNMEASURED"
 FORBIDDEN_IMPORTS: tuple[str, ...] = (
     "mt5desk.families", "mt5desk.families_orthogonal", "mt5desk.families_edge_queue",
     "mt5desk.engine", "mt5desk.family_call", "proposer_common", "external_gauntlet",
-    "lead_replication", "shadow_forward", "external_shadow")
+    "lead_replication", "shadow_forward", "external_shadow", "mt5desk.family_formula",
+    "mt5desk.families_vector", "libs.research.alpha_grammar", "alpha_grammar")
 
 RULE = ("a second implementation from the written specification and the raw bars only; a "
         "material disagreement on fills, P&L, position state or costs is quarantined by name")
@@ -146,6 +150,11 @@ class Bars:
     low: np.ndarray
     c: np.ndarray
     minutes: int
+    #: The broker's per-bar spread and tick count, when the file carries them (the formula rule's
+    #: `spread`, `activity` and `flow` terminals); None when absent, and a rule reading None stands
+    #: aside rather than inventing a series.
+    spread: np.ndarray | None = None
+    volume: np.ndarray | None = None
 
     def __len__(self) -> int:
         return int(self.t.size)
@@ -164,16 +173,21 @@ class Bars:
 
 
 def bars_from_arrays(t_ns: np.ndarray, o: np.ndarray, h: np.ndarray, low: np.ndarray,
-                     c: np.ndarray) -> Bars:
+                     c: np.ndarray, spread: np.ndarray | None = None,
+                     volume: np.ndarray | None = None) -> Bars:
     t = np.asarray(t_ns, dtype="int64")
     order = np.argsort(t, kind="stable")
     t = t[order]
     gaps = np.diff(t) if len(t) > 1 else np.asarray([3_600_000_000_000])
     gaps = gaps[gaps > 0]
     step = int(np.median(gaps)) if len(gaps) else 3_600_000_000_000
+
+    def _opt(x: np.ndarray | None) -> np.ndarray | None:
+        return None if x is None else np.asarray(x, dtype="float64")[order]
+
     return Bars(t, np.asarray(o, dtype="float64")[order], np.asarray(h, dtype="float64")[order],
                 np.asarray(low, dtype="float64")[order], np.asarray(c, dtype="float64")[order],
-                max(1, step // 60_000_000_000))
+                max(1, step // 60_000_000_000), _opt(spread), _opt(volume))
 
 
 def load_bars(symbol: str, timeframe: str = "H1", universe: Path | None = None) -> Bars | None:
@@ -221,11 +235,14 @@ def load_bars(symbol: str, timeframe: str = "H1", universe: Path | None = None) 
         if t_ns is None:
             return None
         arrs = [frame[cols[k]].to_numpy(dtype="float64")[keep] for k in need]
+        extra = [frame[cols[k]].to_numpy(dtype="float64")[keep]
+                 if k in cols and cols[k] in frame.columns else None
+                 for k in ("spread", "tick_volume")]
     except Exception:
         return None
     if len(t_ns) < 2:
         return None
-    return bars_from_arrays(np.asarray(t_ns, dtype="int64"), *arrs)
+    return bars_from_arrays(np.asarray(t_ns, dtype="int64"), *arrs, *extra)
 
 
 # ------------------------------------------------------------------------------ indicators
@@ -746,6 +763,428 @@ SPEC_BOOK.update({
 })
 
 
+# ------------------------------------------------------------- the formula rule (2026-11-04)
+# WHY. 582 `formula` certificates (plus 104 others with no rule) sat out of forward clocks with
+# "no written specification in the spec book for family 'formula'" (FORWARD_ENROLMENT 16:21Z
+# 2026-11-04): the admission door holds a certificate until this lane says REPLICATED, and a
+# family with no rule here can only ever be UNMEASURED. The rule below is the family's stated
+# behaviour (the expression grammar's operator definitions and the family's entry/exit text)
+# rebuilt in THIS module's own numpy; nothing is imported from the grammar or the family. An
+# expression naming a terminal or operator this rule does not define stands aside (no orders, so
+# UNMEASURED), never a guess.
+
+#: Bars of log return the `vol` terminal is measured over (the grammar's stated one trading day).
+FX_VOL_N = 24
+#: Rows per block for the windowed reductions that need the whole window (ts_rank, bars_since):
+#: bounds their temporary arrays to ~FX_CHUNK x window floats on any chart.
+FX_CHUNK = 4096
+FX_BAR_TERMINALS = frozenset({"close", "open", "high", "low", "ret", "range", "body", "atr",
+                              "vol", "spread", "activity", "flow"})
+FX_UNARY = frozenset({"neg", "abs", "sign"})
+FX_WINDOWED = frozenset({"delay", "delta", "mean", "std", "min", "max", "sum", "ts_rank",
+                         "zscore", "decay", "bars_since_max", "bars_since_min", "atr_norm",
+                         "ts_backfill", "scale"})
+FX_BINARY = frozenset({"add", "sub", "mul", "div", "max2", "min2", "trade_when"})
+FX_BINARY_WINDOWED = frozenset({"corr", "cov", "residual", "group_rank", "group_zscore"})
+
+
+class FormulaUndefined(ValueError):
+    """The expression names something this rule does not define: the rule stands aside."""
+
+
+def _fx_parse(text: str) -> Any:
+    """A rendered call, `op(arg, arg, 5)`, back to the prefix list; a bare name stays a name."""
+    toks: list[str] = []
+    cur = ""
+    for ch in str(text):
+        if ch in "(),":
+            if cur.strip():
+                toks.append(cur.strip())
+            toks.append(ch)
+            cur = ""
+        else:
+            cur += ch
+    if cur.strip():
+        toks.append(cur.strip())
+    pos = 0
+
+    def node() -> Any:
+        nonlocal pos
+        if pos >= len(toks) or toks[pos] in "(),":
+            raise FormulaUndefined(f"unparseable expression {text!r}")
+        name = toks[pos]
+        pos += 1
+        if pos < len(toks) and toks[pos] == "(":
+            pos += 1
+            args: list[Any] = [name]
+            while True:
+                args.append(node())
+                if pos >= len(toks):
+                    raise FormulaUndefined(f"unclosed call in {text!r}")
+                if toks[pos] == ",":
+                    pos += 1
+                    continue
+                if toks[pos] == ")":
+                    pos += 1
+                    return args
+                raise FormulaUndefined(f"unexpected {toks[pos]!r} in {text!r}")
+        try:
+            return int(name)
+        except ValueError:
+            return name
+
+    out = node()
+    if pos != len(toks):
+        raise FormulaUndefined(f"trailing tokens in {text!r}")
+    return out
+
+
+def _fx_shift(x: np.ndarray, k: int) -> np.ndarray:
+    out = np.full(x.size, np.nan)
+    if 0 <= k < x.size:
+        out[k:] = x[:x.size - k]
+    return out
+
+
+def _fx_origin(x: np.ndarray) -> float:
+    """The series' first defined value: the window sums are taken about it, which keeps the
+    squares free of the price level and keeps an integer series (spread points, ticks) exact."""
+    ok = np.flatnonzero(np.isfinite(x))
+    return float(x[ok[0]]) if ok.size else 0.0
+
+
+def _fx_flat(x: np.ndarray, w: int) -> np.ndarray:
+    """True where the trailing w values are all the SAME defined value. Such a window's mean is
+    that value and its deviation exactly 0, so z there is 0/0, undefined -- never the ratio of
+    two rounding residues."""
+    same = np.concatenate([[False], x[1:] == x[:-1]]) if x.size else np.zeros(0, dtype=bool)
+    run = np.zeros(x.size, dtype="int64")
+    if x.size:
+        idx = np.arange(x.size)
+        start = np.where(same, 0, idx)
+        start = np.maximum.accumulate(start)
+        run = idx - start + 1
+    return (run >= w) & np.isfinite(x)
+
+
+def _fx_roll_sums(x: np.ndarray, w: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Per bar: whether the trailing w values are all defined, and their sum and sum of squares
+    about `_fx_origin` (window statistics are shift-invariant)."""
+    ok = np.isfinite(x)
+    mu = _fx_origin(x)
+    xs = np.where(ok, x - mu, 0.0)
+    c1 = np.concatenate([[0.0], np.cumsum(xs)])
+    c2 = np.concatenate([[0.0], np.cumsum(xs * xs)])
+    cn = np.concatenate([[0], np.cumsum(ok.astype("int64"))])
+    full = np.zeros(x.size, dtype=bool)
+    s1 = np.full(x.size, np.nan)
+    s2 = np.full(x.size, np.nan)
+    if w <= x.size:
+        i = np.arange(w - 1, x.size)
+        full[i] = (cn[i + 1] - cn[i + 1 - w]) == w
+        s1[i] = c1[i + 1] - c1[i + 1 - w]
+        s2[i] = c2[i + 1] - c2[i + 1 - w]
+    return full, s1, s2
+
+
+def _fx_mean(x: np.ndarray, w: int) -> np.ndarray:
+    """Trailing mean of exactly w defined values; undefined otherwise."""
+    full, s1, _ = _fx_roll_sums(x, w)
+    out = np.where(full, s1 / w + _fx_origin(x), np.nan)
+    return np.where(_fx_flat(x, w), x, out)
+
+
+def _fx_sum(x: np.ndarray, w: int) -> np.ndarray:
+    return _fx_mean(x, w) * w
+
+
+def _fx_std(x: np.ndarray, w: int) -> np.ndarray:
+    """Trailing sample standard deviation (n - 1) of exactly w defined values."""
+    if w < 2:
+        return np.full(x.size, np.nan)
+    full, s1, s2 = _fx_roll_sums(x, w)
+    with np.errstate(invalid="ignore"):
+        var = (s2 - s1 * s1 / w) / (w - 1)
+    out = np.where(full, np.sqrt(np.maximum(var, 0.0)), np.nan)
+    return np.where(_fx_flat(x, w), 0.0, out)
+
+
+def _fx_z(x: np.ndarray, w: int) -> np.ndarray:
+    """(x - strict w-bar mean) / strict w-bar sample std; a window with no deviation reads 0 --
+    the value IS its mean -- never 0/0 and never the ratio of two rounding residues."""
+    mu, sd = _fx_mean(x, w), _fx_std(x, w)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        z = (x - mu) / sd
+    return np.where(np.isfinite(mu) & (sd == 0) & np.isfinite(x), 0.0, z)
+
+
+def _fx_extreme(x: np.ndarray, w: int, fn: Callable[..., np.ndarray]) -> np.ndarray:
+    out = np.full(x.size, np.nan)
+    if w > x.size:
+        return out
+    from numpy.lib.stride_tricks import sliding_window_view
+    out[w - 1:] = fn(sliding_window_view(x, w), axis=1)   # a NaN in the window stays NaN
+    return out
+
+
+def _fx_ts_rank(x: np.ndarray, w: int) -> np.ndarray:
+    """Share of the previous w values at or below the current one (an undefined previous value
+    counts as not below; the current one undefined compares as nothing)."""
+    out = np.full(x.size, np.nan)
+    if x.size <= w:
+        return out
+    for a in range(w, x.size, FX_CHUNK):
+        b = min(x.size, a + FX_CHUNK)
+        prev = np.stack([x[a - w + j:b - w + j] for j in range(w)], axis=1)
+        with np.errstate(invalid="ignore"):
+            out[a:b] = (prev <= x[a:b, None]).mean(axis=1)
+    return out
+
+
+def _fx_bars_since(x: np.ndarray, w: int, high: bool) -> np.ndarray:
+    """Bars since the window's extreme (the most recent w values, first occurrence wins);
+    undefined values never win."""
+    out = np.full(x.size, np.nan)
+    if x.size < w:
+        return out
+    fill = -np.inf if high else np.inf
+    for a in range(w - 1, x.size, FX_CHUNK):
+        b = min(x.size, a + FX_CHUNK)
+        win = np.stack([x[a - w + 1 + j:b - w + 1 + j] for j in range(w)], axis=1)
+        win = np.where(np.isfinite(win), win, fill)
+        pos = np.argmax(win, axis=1) if high else np.argmin(win, axis=1)
+        out[a:b] = (w - 1) - pos
+    return out
+
+
+def _fx_ffill(x: np.ndarray, limit: int | None = None) -> np.ndarray:
+    """Carry the last defined value forward, at most `limit` bars (None: without bound)."""
+    ok = np.isfinite(x)
+    last = np.where(ok, np.arange(x.size), -1)
+    last = np.maximum.accumulate(last) if x.size else last
+    out = np.where(last >= 0, x[np.maximum(last, 0)], np.nan)
+    if limit is not None:
+        out = np.where((np.arange(x.size) - last) <= limit, out, np.nan)
+    return out
+
+
+def _fx_roll_cov(a: np.ndarray, b: np.ndarray, w: int) -> tuple[np.ndarray, np.ndarray,
+                                                                 np.ndarray]:
+    """Trailing sample covariance and both variances over the w bars where BOTH are defined
+    (exactly w of them, else undefined)."""
+    both = np.isfinite(a) & np.isfinite(b)
+    aa, bb = np.where(both, a, np.nan), np.where(both, b, np.nan)
+    ma, mb = _fx_mean(aa, w), _fx_mean(bb, w)
+    mab = _fx_mean(aa * bb, w)
+    cov = (mab - ma * mb) * w / (w - 1)
+    va, vb = _fx_std(aa, w) ** 2, _fx_std(bb, w) ** 2
+    return cov, va, vb
+
+
+def _fx_group(x: np.ndarray, g: np.ndarray, w: int, rank: bool) -> np.ndarray:
+    """Against the current bar's PEERS: the past w bars (this one included) whose g sits on the
+    same side of g's own window mean as the current bar's, both defined. rank = share of peers
+    at or below the current value (needs 2+ peers); else its z-score against the peers'
+    population mean and deviation (needs 3+ peers and a deviation above 1e-12)."""
+    out = np.full(x.size, np.nan)
+    if x.size < w or w < 2:
+        return out
+    for i in range(w - 1, x.size):
+        xw, gw = x[i - w + 1:i + 1], g[i - w + 1:i + 1]
+        fin = np.isfinite(gw)
+        if not fin.any():
+            continue
+        side = np.sign(gw - np.mean(gw[fin]))
+        peers = (side == side[-1]) & np.isfinite(xw) & fin
+        n = int(peers.sum())
+        cur = xw[-1]
+        if rank:
+            if n > 1:
+                out[i] = float(np.sum(peers & (xw <= cur))) / n
+        else:
+            ps = xw[peers]
+            sd = float(np.std(ps)) if n else 0.0
+            if n > 2 and sd > 1e-12:
+                out[i] = (cur - float(np.mean(ps))) / sd
+    return out
+
+
+def _fx_terminals(b: Bars, atr_n: int) -> dict[str, np.ndarray]:
+    c, o, h, lo = b.c, b.o, b.h, b.low
+    with np.errstate(all="ignore"):
+        ret = np.concatenate([[np.nan], np.diff(np.log(c))])
+        prev = np.concatenate([[np.nan], c[:-1]])
+        tr = np.fmax(h - lo, np.fmax(np.abs(h - prev), np.abs(lo - prev)))
+        body = (c - o) / c
+        out = {"close": c, "open": o, "high": h, "low": lo, "ret": ret, "range": (h - lo) / c,
+               "body": body, "atr": _fx_mean(tr, int(atr_n)), "vol": _fx_std(ret, FX_VOL_N)}
+    if b.spread is not None:
+        out["spread"] = b.spread
+    if b.volume is not None:
+        out["activity"] = b.volume
+        out["flow"] = np.where(np.isfinite(body), np.sign(body), 0.0) * b.volume
+    return out
+
+
+def _fx_eval(expr: Any, T: dict[str, np.ndarray], n: int) -> np.ndarray:
+    """The expression as a float per bar; NaN where undefined; infinities read as undefined."""
+    with np.errstate(all="ignore"):
+        v = _fx_node(expr, T, n)
+    return np.where(np.isfinite(v), v, np.nan)
+
+
+def _fx_node(e: Any, T: dict[str, np.ndarray], n: int) -> np.ndarray:
+    if isinstance(e, str):
+        if e not in FX_BAR_TERMINALS:
+            raise FormulaUndefined(f"terminal {e!r} is not a bar terminal")
+        if e not in T:
+            raise FormulaUndefined(f"terminal {e!r} is not in this file")
+        return np.asarray(T[e], dtype="float64")
+    if not isinstance(e, (list, tuple)) or not e:
+        raise FormulaUndefined(f"not an expression: {e!r}")
+    op = str(e[0])
+    if op in FX_UNARY:
+        a = _fx_eval(e[1], T, n)
+        return -a if op == "neg" else np.abs(a) if op == "abs" else np.sign(a)
+    if op in FX_WINDOWED:
+        a, w = _fx_eval(e[1], T, n), int(e[2])
+        if w < 1 or w > n:
+            return np.full(n, np.nan)
+        if op == "delay":
+            return _fx_shift(a, w)
+        if op == "delta":
+            return a - _fx_shift(a, w)
+        if op == "mean":
+            return _fx_mean(a, w)
+        if op == "sum":
+            return _fx_sum(a, w)
+        if op == "std":
+            return _fx_std(a, w)
+        if op in ("min", "max"):
+            return _fx_extreme(a, w, np.min if op == "min" else np.max)
+        if op == "ts_rank":
+            return _fx_ts_rank(a, w)
+        if op == "zscore":
+            return _fx_z(a, w)
+        if op == "decay":
+            wt = np.arange(w, 0, -1, dtype=float)
+            acc = np.zeros(n)
+            for k in range(w):
+                acc = acc + _fx_shift(a, k) * wt[k]
+            return acc / wt.sum()
+        if op in ("bars_since_max", "bars_since_min"):
+            return _fx_bars_since(a, w, op == "bars_since_max")
+        if op == "atr_norm":
+            if "atr" not in T:
+                raise FormulaUndefined("atr_norm needs the atr terminal")
+            at = T["atr"]
+            den = np.full(n, np.nan)
+            okv = np.isfinite(at)
+            cs = np.concatenate([[0.0], np.cumsum(np.where(okv, at, 0.0))])
+            cn = np.concatenate([[0], np.cumsum(okv.astype("int64"))])
+            i = np.arange(n)
+            lo = np.maximum(0, i - w + 1)
+            cnt = cn[i + 1] - cn[lo]
+            den = np.where(cnt > 0, (cs[i + 1] - cs[lo]) / np.maximum(cnt, 1), np.nan)
+            return a / den
+        if op == "ts_backfill":
+            return _fx_ffill(a, w)
+        if op == "scale":
+            den = _fx_sum(np.abs(a), w)
+            return a / np.where(den > 1e-12, den, np.nan)
+    if op in FX_BINARY:
+        a, b2 = _fx_eval(e[1], T, n), _fx_eval(e[2], T, n)
+        if op == "trade_when":
+            return _fx_ffill(np.where(a > 0, b2, np.nan))
+        if op == "add":
+            return a + b2
+        if op == "sub":
+            return a - b2
+        if op == "mul":
+            return a * b2
+        if op == "div":
+            return a / np.where(np.abs(b2) > 1e-12, b2, np.nan)
+        return np.fmax(a, b2) if op == "max2" else np.fmin(a, b2)
+    if op in FX_BINARY_WINDOWED:
+        a, b2, w = _fx_eval(e[1], T, n), _fx_eval(e[2], T, n), int(e[3])
+        if w < 3 or w > n:
+            return np.full(n, np.nan)
+        if op in ("group_rank", "group_zscore"):
+            return _fx_group(a, b2, w, op == "group_rank")
+        cov, va, vb = _fx_roll_cov(a, b2, w)
+        if op == "cov":
+            return cov
+        if op == "corr":
+            return cov / np.sqrt(va * vb)
+        beta = cov / np.where(vb > 1e-18, vb, np.nan)
+        both = np.isfinite(a) & np.isfinite(b2)
+        return np.where(both, a - beta * b2, np.nan)
+    raise FormulaUndefined(f"operator {op!r} is not defined by this rule")
+
+
+def _build_formula(b: Bars, p: dict[str, Any]) -> list[Order]:
+    expr = p.get("expr")
+    if isinstance(expr, str) and "(" in expr:
+        try:
+            expr = _fx_parse(expr)
+        except FormulaUndefined:
+            return []
+    mode = str(p.get("side_mode") or "")
+    norm, hold = int(p["norm"]), int(p["hold_bars"])
+    if expr is None or mode not in ("follow", "fade") or len(b) < max(2 * norm, 300):
+        return []
+    try:
+        v = _fx_eval(expr, _fx_terminals(b, int(p["atr_n"])), len(b))
+    except (FormulaUndefined, TypeError, ValueError, IndexError):
+        return []
+    z = _fx_z(v, norm)
+    z = np.where(np.isfinite(z), z, np.nan)
+    if np.isfinite(z).sum() < 0.05 * z.size:
+        return []
+    a = atr(b, int(p["atr_n"]))
+    flip = 1 if mode == "follow" else -1
+    ez, sa, rr = float(p["entry_z"]), float(p["stop_atr"]), float(p["rr"])
+    out: list[Order] = []
+    last = -10 ** 9
+    for i in range(norm, len(b) - 1):
+        if i - last < hold:
+            continue
+        zi, ai = z[i], float(a[i])
+        if not np.isfinite(zi) or abs(zi) < ez or not np.isfinite(ai) or ai <= 0 or zi == 0:
+            continue
+        side = int(np.sign(zi)) * flip
+        px = float(b.c[i])
+        out.append(Order(int(b.t[i]), side, px - side * sa * ai, px + side * sa * ai * rr, hold))
+        last = i
+    return out
+
+
+SPEC_BOOK["formula"] = RuleSpec(
+    "formula",
+    "Evaluate the stored expression over the bars: terminals close, open, high, low, ret (log "
+    "return), range ((h-l)/c), body ((c-o)/c), atr (strict atr_n mean of true range), vol "
+    "(strict 24-bar sample std of ret), spread and activity (the broker's per-bar spread and "
+    "tick count) and flow (sign(body) x activity); unary neg/abs/sign; windowed delay, delta, "
+    "mean/std/sum/min/max (exactly w defined values, std n-1), ts_rank (share of the previous w "
+    "at or below the current), zscore, decay (linear weights w..1), bars_since_max/min, "
+    "atr_norm (over the mean of atr's last w defined values), ts_backfill (forward fill at most "
+    "w bars), scale (over the sum of |x| over w); binary add/sub/mul/div (|den| > 1e-12), "
+    "max2/min2 (an undefined side yields the other), trade_when (the second where the first "
+    "is > 0, else the last such value); zscore and the normalisation read 0 on a window "
+    "with no deviation (the value is its mean); corr/cov/residual over w bars where both "
+    "are defined; "
+    "group_rank/group_zscore against the window's bars on the same side of g's window mean. "
+    "Infinities are undefined. z = (value - its strict norm-bar mean) / its strict norm-bar "
+    "sample std; stand aside on fewer than max(2 x norm, 300) bars or under 5% defined z. From "
+    "bar norm on, at least hold_bars after the last signal: when |z| >= entry_z and ATR(atr_n) "
+    "> 0, a signal at the bar close on side sign(z) (follow) or against it (fade); stop "
+    "stop_atr x ATR, target rr x that, entry next open, time exit after hold_bars. Anything "
+    "the expression names outside this list stands aside.",
+    {"expr": None, "norm": 240, "entry_z": 1.5, "side_mode": "follow", "hold_bars": 8,
+     "atr_n": 20, "stop_atr": 2.0, "rr": 1.5},
+    _build_formula)
+
+
 #: Session selector -> [start, end) broker hours a non-breakout signal must fall in.
 SESSIONS: dict[str, tuple[int, int] | None] = {
     "asia": (0, 8), "london": (8, 16), "ny": (14, 22), "all": None, "continuous": None,
@@ -1246,16 +1685,30 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
                   if book.get(certificate_id(r)) and
                   (book[certificate_id(r)].get("sharpe_metric_version")
                    != SHARPE_METRIC_VERSION)]
+    # A VERDICT TAKEN WITH NO RULE IS NOT A VERDICT ON THE RULE (2026-11-04). "no written
+    # specification" is recorded UNMEASURED under the certificate's own fingerprint, so when the
+    # family's rule is written the fingerprint has not moved and the certificate would wait a
+    # whole rotation of the canon (8 a pass, ~1,800 certificates) to be judged by it. It is
+    # re-judged ahead of the rotation instead, once.
+    no_rule = [i for i, r in enumerate(certs)
+               if str(((book.get(certificate_id(r)) or {}).get("why") or [""])[0]).startswith(
+                   "no written specification")
+               and str((r.get("shadow_spec") or {}).get("family") or "") in SPEC_BOOK]
     pending = old_metric + [i for i, r in enumerate(certs)
                             if i not in set(old_metric) and
                             (book.get(certificate_id(r)) or {}).get("fp")
                             != certificate_fp(r)]
+    no_rule = [i for i in no_rule if i not in set(pending)]
     rotation = [(ci + k) % len(certs) for k in range(len(certs))] if certs else []
     wanted = set(priority_certificates)
     priority = [i for i, r in enumerate(certs) if certificate_id(r) in wanted]
-    first = list(dict.fromkeys(priority + pending))
+    first = list(dict.fromkeys(priority + pending + no_rule))
     order = first + [i for i in rotation if i not in set(first)]
-    for n, idx in enumerate(order[:per_lane]):
+    # THE NO-RULE BACKLOG IS NOT HELD TO THE ROTATION'S SHARE: a held certificate cannot start a
+    # forward clock until it is judged, so up to PENDING_PER_PASS of those run each pass on top of
+    # the lane's share, inside the same budget. Everything else keeps the normal share.
+    lane_n = per_lane + min(len(no_rule), PENDING_PER_PASS)
+    for n, idx in enumerate(order[:lane_n]):
         if time.monotonic() > deadline:
             notes.append("budget: certificates left for the next pass")
             break
@@ -1309,7 +1762,8 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
                                                "key": r.get("key"), "at": _now()}
         _write_atomic(verdicts_path, {"at": _now(), "rule": RULE, "certificates": book})
     doc["verdict_book"] = {"path": str(verdicts_path.name), "n": len(book),
-                           "judged_first_this_pass": min(len(pending), per_lane)}
+                           "judged_first_this_pass": min(len(first), lane_n),
+                           "pending": len(pending), "no_rule_backlog": len(no_rule)}
     return doc
 
 
