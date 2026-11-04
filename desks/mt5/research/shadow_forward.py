@@ -108,6 +108,22 @@ def _is_terminal(status: object) -> bool:
     return any(text == name or text.startswith(name + "_") for name in _TERMINAL_STATUSES)
 
 
+def lapsed_candidate(st: dict) -> str | None:
+    """Why a PROMOTION CANDIDATE's CURRENT ledger no longer clears the bar that promoted it.
+
+    The same two thresholds the maturity verdict uses, applied to the evidence as it stands now.
+    None means the candidate still clears it, or the row carries no numeric reading to judge.
+    """
+    try:
+        exp_r, dd = float(st["exp_r"]), float(st["max_dd_r"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if exp_r > PROMOTE_MIN_EXP and dd > PROMOTE_MIN_DD:
+        return None
+    return (f"current ledger n={st.get('n')} exp={exp_r:.3f}R maxDD={dd:.1f}R no longer clears "
+            f"exp>{PROMOTE_MIN_EXP} and maxDD>{PROMOTE_MIN_DD}")
+
+
 def _unmeasured(st: dict, why: str) -> None:
     """A pass that skips a row says so ON the row (audit 2026-10-06): without this, a skipped
     row kept the MEASURED stamp of the last pass that evaluated it, so a stale clock read fresh."""
@@ -1550,6 +1566,30 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                     st["status"] = "KILL"
                     slog(f"{key}: VERDICT KILL n={st['n']} exp={st['exp_r']:.3f}R "
                          f"maxDD={st['max_dd_r']:.1f}R")
+            elif str(st.get("status") or "").upper() == "PROMOTION CANDIDATE":
+                # A POSITIVE VERDICT IS RE-TAKEN EVERY PASS. It used to be taken once, at maturity,
+                # and never revisited, while the clock kept accruing: US30 car asia matured +0.117R
+                # on 2026-10-13, was retired 2 s later, and read n=130 at -0.135R three weeks on --
+                # still PROMOTION CANDIDATE, and five readers (forward_slot_ranker, cell_culture,
+                # posterior_alpha, culture_orthogonality, forward_enrolment) counted it as positive
+                # evidence. 9 of 131 candidates were in that state on 2026-11-04.
+                _why = lapsed_candidate(st)
+                if _why:
+                    try:
+                        import sleeve_registry as _reg
+                        _live = key in _reg.live_keys()
+                    except Exception as exc:  # unreadable registry: leave the verdict, say why
+                        _live = None
+                        st["rejudge"] = f"UNMEASURED: registry unreadable ({type(exc).__name__})"
+                    if _live is False:
+                        # A LIVE row is the allocator's and the e-process's to size and kill;
+                        # only a candidate that holds no live order authority is demoted here.
+                        # The clock keeps accruing either way -- nothing is withdrawn.
+                        st["status"] = "KILL"
+                        st["demoted_from"] = "PROMOTION CANDIDATE"
+                        st["demoted_at"] = datetime.now(UTC).isoformat(timespec="seconds")
+                        st["demoted_why"] = _why
+                        slog(f"{key}: VERDICT LAPSED -> KILL ({_why})")
             st["forward_evidence"] = {"status": "MEASURED",
                                       "at": datetime.now(UTC).isoformat(timespec="seconds")}
             state[key] = st
