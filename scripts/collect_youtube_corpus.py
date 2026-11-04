@@ -18,6 +18,7 @@ it (a starved key tomorrow costs more than a thinner sweep today).
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 import urllib.parse
@@ -45,18 +46,60 @@ MAX_VIDEOS_PER_CHANNEL = 50    # per run; cursoring covers the backlog across da
 SEED_QUERIES = [
     "DaviddTech", "ResponsibleForexTrading", "Lewis Jackson trading", "Goshawk Trades",
     "Unbiased Trading", "AI Pathways trading", "IQ Capital trading",
+    # zuck's 2026-11-03 channels (config/video_mining_channels.json, PR #655), by exact handle
+    "@QuantGuild", "@Algovibes", "@saleh.m",
 ]
+#: The video-mining channel config, when present, adds its handles to the seeds (a REGISTRY,
+#: never a boundary): a channel added there is followed here without a code change.
+CHANNEL_CONFIG = ROOT / "config" / "video_mining_channels.json"
+
+
+def seed_queries() -> list[str]:
+    seeds = list(SEED_QUERIES)
+    try:
+        rows = json.loads(CHANNEL_CONFIG.read_text("utf-8")).get("channels", [])
+    except (OSError, ValueError, AttributeError):
+        rows = []
+    for row in rows if isinstance(rows, list) else []:
+        h = str((row or {}).get("handle") or "").strip() if isinstance(row, dict) else ""
+        if h.startswith("@") and h not in seeds:
+            seeds.append(h)
+    return seeds
 LINK_RE = re.compile(r"https?://[^\s)\"']+")
 
 
 def api(endpoint: str, spent: list[int], cost: int, **params) -> dict:
     if spent[0] + cost > UNIT_BUDGET:
         raise RuntimeError(f"unit budget {UNIT_BUDGET} would be exceeded; standing down")
-    params["key"] = KEYFILE.read_text("utf-8").strip()
+    params["key"] = _key()
     url = f"{API}/{endpoint}?{urllib.parse.urlencode(params)}"
     with urllib.request.urlopen(url, timeout=30) as r:
         spent[0] += cost
         return json.load(r)
+
+
+def _key() -> str:
+    """The key file first, else YOUTUBE_API_KEY. Measured 2026-11-03: the box carries the key as a
+    User-scope environment variable and has NO key file, so a file-only read left the collector
+    "exiting quietly" there forever. The value is never printed or written."""
+    try:
+        k = KEYFILE.read_text("utf-8").strip()
+    except OSError:
+        k = ""
+    return k or os.environ.get("YOUTUBE_API_KEY", "").strip()
+
+
+def _redact(text: str) -> str:
+    """Scrub the key out of an error string before it can reach the report.
+
+    The report lands under data/intelligence/, which is published, and some urllib/http.client
+    exceptions echo the request URL -- which carries `key=`. Every appended error passes here.
+    """
+    k = _key()
+    text = str(text)
+    if k:
+        text = text.replace(k, "***")
+    return re.sub(r"([?&]key=)[^&\s'\"]+", r"\1***", text)
 
 
 def read_json(p: Path, default):
@@ -97,9 +140,32 @@ def fetch_transcript(video_id: str) -> tuple[str | None, str | None]:
     return (text[:20000], None) if text else (None, "TRANSCRIPT_UNAVAILABLE")
 
 
+#: THE BOX CLOCK (2026-11-03). The VPS timer `ops/quant-youtube-corpus.timer` (hourly, :37) was
+#: this collector's only clock; the box held a mirror, so the corpus froze when the VPS did (last
+#: real file videos_20261022.json). hourly_cycle now runs it as the `youtube_corpus` leg of the
+#: intel department, whose passes can come faster than hourly, so a pass inside MIN_INTERVAL_S of
+#: the last recorded sweep returns NOT_DUE without spending a unit.
+MIN_INTERVAL_S = 3_000
+
+
+def _not_due(now: datetime) -> float | None:
+    """Seconds since the last sweep when it is under MIN_INTERVAL_S, else None (due)."""
+    last = read_json(COVERAGE, {}).get("last_sweep")
+    try:
+        age = (now - datetime.fromisoformat(str(last))).total_seconds()
+    except (TypeError, ValueError):
+        return None
+    return age if 0 <= age < MIN_INTERVAL_S else None
+
+
 def main() -> int:
-    if not KEYFILE.exists():
-        print("youtube key absent (data/secrets/youtube_api_key) -- nothing collected, "
+    if "--force" not in sys.argv[1:]:
+        age = _not_due(datetime.now(tz=UTC))
+        if age is not None:
+            print(f"youtube corpus: NOT_DUE (last sweep {int(age)}s ago)")
+            return 0
+    if not _key():
+        print("youtube key absent (data/secrets/youtube_api_key, YOUTUBE_API_KEY) -- nothing collected, "
               "exiting quietly; the dig falls back to text/code routes")
         return 0
     now = datetime.now(tz=UTC)
@@ -115,10 +181,11 @@ def main() -> int:
         # guessed from the seed name with spaces stripped; a miss falls back to ONE budgeted
         # search only when the search quota works at all this run.
         search_dead = False
-        unresolved = [q for q in SEED_QUERIES if q not in reg["channels"]
+        unresolved = [q for q in seed_queries() if q not in reg["channels"]
                       and q not in reg["discovered"]][:6]
         for q in unresolved:
-            handle = "@" + re.sub(r"[^A-Za-z0-9]", "", q)
+            # An exact "@handle" seed is used as given; a name seed has its handle guessed.
+            handle = q if q.startswith("@") else "@" + re.sub(r"[^A-Za-z0-9]", "", q)
             try:
                 d = api("channels", spent, LIST_COST, part="snippet", forHandle=handle)
                 items = d.get("items", [])
@@ -129,7 +196,7 @@ def main() -> int:
                     report["discovered_channels"] += 1
                     continue
             except Exception as exc:
-                report["errors"].append(f"forHandle {handle}: {exc}")
+                report["errors"].append(_redact(f"forHandle {handle}: {exc}"))
             if search_dead:
                 continue
             try:
@@ -142,7 +209,7 @@ def main() -> int:
                 reg["channels"].setdefault(q, {})
             except Exception as exc:
                 search_dead = True
-                report["errors"].append(f"search {q}: {exc}")
+                report["errors"].append(_redact(f"search {q}: {exc}"))
 
         # 2. ENUMERATION: for every followed channel id, incremental uploads sweep.
         follow: dict[str, str] = {}
@@ -189,9 +256,9 @@ def main() -> int:
                     reg["cursors"][cid] = newest_seen
                 report["channels_swept"] += 1
             except Exception as exc:
-                report["errors"].append(f"channel {title}: {exc}")
+                report["errors"].append(_redact(f"channel {title}: {exc}"))
     except RuntimeError as exc:
-        report["errors"].append(str(exc))
+        report["errors"].append(_redact(str(exc)))
 
     # 3. TRANSCRIPTS, best-effort, newest videos first, hard-capped per run.
     got_t, attempted = 0, 0
