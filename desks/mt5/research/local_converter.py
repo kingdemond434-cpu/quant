@@ -28,12 +28,12 @@ is deduplicated by economic exposure (family, symbol, session) and never by titl
 from __future__ import annotations
 
 import argparse
-import contextlib
 import json
 import os
 import re
 import sys
 from collections import Counter
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -138,14 +138,22 @@ def _known_families() -> set[str]:
     return out
 
 
-def _iter_rows(limit: int) -> list[tuple[str, dict]]:
-    rows: list[tuple[str, dict]] = []
+def _iter_rows(limit: int) -> Iterator[tuple[str, dict]]:
+    """Yield (miner, row) for up to `limit` mined rows, one at a time.
+
+    STREAMED, NEVER LISTED (2026-11-04). This used to build a list of every row in the corpus
+    (limit 10,000,000) before `convert` read the first one, and held them all as Python dicts
+    for the whole pass: 18.5 GB of commit on the trading box at 18:21Z, the largest single
+    holder while ~1 in 4 Fusion gateway passes died at numpy import. `convert` only ever looks
+    at one row at a time, so a generator yields the same rows in the same order with the same
+    limit and keeps at most one file's document resident."""
+    n = 0
     for root in SOURCES:
         if not root.exists():
             continue
         for p in sorted(root.rglob("*.json")) + sorted(root.rglob("*.jsonl")):
-            if len(rows) >= limit:
-                return rows
+            if n >= limit:
+                return
             miner = p.parent.name
             try:
                 if p.suffix == ".jsonl":
@@ -154,24 +162,29 @@ def _iter_rows(limit: int) -> list[tuple[str, dict]]:
                             ln = ln.strip()
                             if not ln:
                                 continue
-                            with contextlib.suppress(ValueError):
-                                rows.append((miner, json.loads(ln)))
-                            if len(rows) >= limit:
-                                return rows
+                            try:
+                                row = json.loads(ln)
+                            except ValueError:
+                                continue
+                            n += 1
+                            yield miner, row
+                            if n >= limit:
+                                return
                 else:
                     doc = json.loads(p.read_text(encoding="utf-8", errors="replace"))
                     got = doc if isinstance(doc, list) else (
                         doc.get("rows") or doc.get("discoveries") or doc.get("items") or [])
                     if isinstance(got, dict):
                         got = list(got.values())
+                    del doc
                     for r in got:
                         if isinstance(r, dict):
-                            rows.append((miner, r))
-                        if len(rows) >= limit:
-                            return rows
+                            n += 1
+                            yield miner, r
+                        if n >= limit:
+                            return
             except (OSError, ValueError):
                 continue
-    return rows
 
 
 def _text_of(row: dict) -> str:
