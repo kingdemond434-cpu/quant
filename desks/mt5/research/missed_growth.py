@@ -897,6 +897,10 @@ JUDGE_PRIORITY_UNRECORDED = BASE / "reports" / "JUDGE_PRIORITY_RAISES_UNRECORDED
 JUDGE_PRIORITY_RECORDS = (BASE / "reports" / "JUDGE_PRIORITY_SWEEP.json",
                           BASE / "reports" / "JUDGE_PRIORITY.json")
 DEEPENING_GUARD = BASE / "reports" / "DEEPENING_MEMORY_GUARD.json"
+#: The shadow pass's candidate re-judge (2026-11-04): a lapsed non-live PROMOTION CANDIDATE is
+#: demoted to KILL and restored when it clears the bar again. Its lines compare what the demoted
+#: rows did AFTER the demotion with the candidates it kept (shadow_forward.rejudge_report).
+CANDIDATE_REJUDGE = BASE / "reports" / "shadow" / "candidate_rejudge_shadow_state.json"
 #: canon_publication's record: the lockbox v4 re-judge parking publishes its two-sided line here
 #: (the rail register is sealed), cost and gain both UNMEASURED until priced.
 CANON_PUBLICATION = BASE / "reports" / "CANON_PUBLICATION.json"
@@ -1201,6 +1205,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         CANON_PUBLICATION),
                                     "global_coverage_mission_throttle": organ_published_lines(
                                         GLOBAL_COVERAGE),
+                                    "shadow_candidate_rejudge": organ_published_lines(
+                                        CANDIDATE_REJUDGE),
                                     "admission_scan_cadence": admission_cadence_line(alloc)},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),

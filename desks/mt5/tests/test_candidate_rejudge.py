@@ -104,3 +104,53 @@ def test_a_demoted_row_still_below_the_bar_stays_demoted():
 def test_the_pass_calls_the_rejudge_for_every_row_past_the_maturity_branch():
     src = (DESK / "research" / "shadow_forward.py").read_text(encoding="utf-8")
     assert "_act = rejudge_candidate(key, st, days_active)" in src
+
+
+def test_lapse_kill_recover_restores_with_forward_start_unchanged_throughout():
+    start = "2026-09-26T00:00:00+00:00"
+    st = _row(n=130, cum_r=-17.5, exp_r=-0.1346, forward_start=start)
+    sf.rejudge_candidate("K", st, 40.0, live=lambda _k: False)
+    assert st["status"] == "KILL" and st["forward_start"] == start
+    assert st["demoted_n"] == 130 and st["demoted_cum_r"] == -17.5
+    # 70 more trades at +0.5R each: the ledger recovers past the bar.
+    st.update({"n": 200, "cum_r": 17.5, "exp_r": 0.0875, "max_dd_r": -20.0})
+    act = sf.rejudge_candidate("K", st, 60.0, live=lambda _k: False)
+    assert act and "RESTORED" in act
+    assert st["status"] == "PROMOTION CANDIDATE" and st["forward_start"] == start
+    assert st["restored_at"] and "clears the maturity bar" in st["restored_why"]
+    hist = st["demotions_before"][0]
+    assert hist["n_at_demotion"] == 130 and hist["since"] == {"n": 70, "exp_r": 0.5}
+    assert "n" in st and st["n"] == 200                   # no counter reset, no new clock
+
+
+def test_the_report_bills_each_demotion_against_the_candidates_it_kept():
+    kept = _row(status="PROMOTION CANDIDATE", n=60, cum_r=12.0, exp_r=0.2, max_dd_r=-3.0)
+    gone = _row(n=130, cum_r=-17.5)
+    sf.rejudge_candidate("G", gone, 40.0, live=lambda _k: False)
+    gone.update({"n": 145, "cum_r": -19.0, "exp_r": -0.131})      # 15 trades at -0.1R since
+    back = _row(n=100, cum_r=-1.0, exp_r=-0.01)
+    sf.rejudge_candidate("B", back, 40.0, live=lambda _k: False)
+    back.update({"n": 120, "cum_r": 9.0, "exp_r": 0.075, "max_dd_r": -5.0})
+    sf.rejudge_candidate("B", back, 50.0, live=lambda _k: False)
+    rep = sf.rejudge_report({"K": kept, "G": gone, "B": back, "updated_at": "x"}, at="now")
+    by = {(ln["key"], ln["event"]): ln for ln in rep["missed_growth"]}
+    assert by[("G", "demoted")]["n_since"] == 15
+    assert abs(by[("G", "demoted")]["exp_since"] + 0.1) < 1e-12
+    assert by[("G", "demoted")]["verdict"] == "EARNS_ITS_PLACE"
+    assert by[("B", "restored")]["exp_since"] == 0.5
+    assert by[("B", "restored")]["verdict"] == "COSTS_GROWTH"
+    assert rep["kept_candidates"] == 2 and rep["n_demoted_now"] == 1 and rep["n_restored"] == 1
+
+
+def test_a_fresh_demotion_is_unmeasured_not_a_clean_verdict():
+    gone = _row(n=130, cum_r=-17.5)
+    sf.rejudge_candidate("G", gone, 40.0, live=lambda _k: False)
+    rep = sf.rejudge_report({"G": gone}, at="now")
+    assert rep["missed_growth"][0]["verdict"] == "UNMEASURED"
+
+
+def test_missed_growth_carries_the_rejudge_lines():
+    import missed_growth as mg
+    assert mg.CANDIDATE_REJUDGE.name == "candidate_rejudge_shadow_state.json"
+    src = (DESK / "research" / "missed_growth.py").read_text(encoding="utf-8")
+    assert '"shadow_candidate_rejudge": organ_published_lines(' in src
