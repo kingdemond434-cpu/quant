@@ -296,6 +296,7 @@ function Invoke-AdoptGuard([string[]] $guardArgs, [int] $TimeoutS = 0) {
         $eFile = Join-Path $env:TEMP "adopt_guard_$tag.err"
         $argList = @($pyArgs) + @('"' + $script:GuardScript + '"') + @($guardArgs | ForEach-Object { '"' + $_ + '"' })
         $timedOut = $false
+        $started = $false
         $rc = 1
         # The child writes UTF-8 and the files are read back as UTF-8: PS 5.1 reads ANSI by default,
         # and a non-ASCII reason would otherwise garble the JSON decision line.
@@ -304,6 +305,7 @@ function Invoke-AdoptGuard([string[]] $guardArgs, [int] $TimeoutS = 0) {
         try {
             $proc = Start-Process -FilePath $py -ArgumentList $argList -NoNewWindow -PassThru `
                 -RedirectStandardOutput $oFile -RedirectStandardError $eFile -ErrorAction Stop
+            $started = $true
             $null = $proc.Handle   # keeps ExitCode readable after the process is gone (PS 5.1)
             $t0 = Get-Date
             $stepMs = [Math]::Min(60, $TimeoutS) * 1000
@@ -319,7 +321,7 @@ function Invoke-AdoptGuard([string[]] $guardArgs, [int] $TimeoutS = 0) {
             }
             if (-not $timedOut) { $rc = $proc.ExitCode }
         } catch {
-            Log ("adopt guard {0}: could not start under a time limit -- {1}" -f $guardArgs[0], $_.Exception.Message) | Out-Host
+            Log ("adopt guard {0}: could not start under a time limit, running it unbounded as before -- {1}" -f $guardArgs[0], $_.Exception.Message) | Out-Host
         } finally {
             $env:PYTHONIOENCODING = $ioWas
         }
@@ -329,6 +331,12 @@ function Invoke-AdoptGuard([string[]] $guardArgs, [int] $TimeoutS = 0) {
                 $out += @(Get-Content -Path $f -Encoding UTF8 -ErrorAction SilentlyContinue | ForEach-Object { "$_" })
                 Remove-Item -Path $f -Force -ErrorAction SilentlyContinue
             }
+        }
+        # A time limit that cannot be applied (Start-Process refused under the task's principal) must
+        # cost the limit, never the adoption: fall back to the inline call every pass made before.
+        if (-not $started) {
+            $out = @(& $py @pyArgs $script:GuardScript @guardArgs 2>&1 | ForEach-Object { "$_" })
+            $rc = $LASTEXITCODE
         }
         if ($timedOut) {
             $why = "ran past its {0}s limit and was killed; the running release is kept" -f $TimeoutS

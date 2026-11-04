@@ -1094,3 +1094,10 @@ def test_only_the_read_only_pre_check_has_a_time_limit() -> None:
     assert "taskkill.exe /T /F /PID" in fn and "still running after" in fn
     assert "QUANT_ADOPT_GUARD_PRE_TIMEOUT_S" in PS
     assert "-Encoding UTF8" in fn and '$env:PYTHONIOENCODING = "utf-8"' in fn
+    # Auditor HOLD on #711: a Start-Process that throws under the S4U principal must fall back to
+    # the unbounded inline call, so the worst case is "no limit", never "no adoption".
+    timed = fn[fn.index("if ($TimeoutS -gt 0)") : fn.index("    } else {\n        $out = @(& $py")]
+    fallback = timed[timed.index("if (-not $started)") :]
+    assert "$started = $true" in timed and "$started = $false" in timed
+    assert "$out = @(& $py @pyArgs $script:GuardScript @guardArgs 2>&1" in fallback
+    assert fallback.index("if (-not $started)") < fallback.index("if ($timedOut)")
