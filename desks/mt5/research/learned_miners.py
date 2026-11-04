@@ -341,6 +341,14 @@ def _trial_id(panel_name: str, panel_syms: Sequence[str], sym: str, ck: str, z: 
     return f"{head}:{ck}:z{z}"
 
 
+def _strongest_per_cell(rows: list[dict]) -> list[dict]:
+    """One row per cell at its strongest screened deflated t, proposed or not."""
+    best: dict[str, dict] = {}
+    for r in sorted(rows, key=lambda x: -x["t_deflated_sweep"]):
+        best.setdefault(str(r["cell"]), r)
+    return sorted(best.values(), key=lambda x: -x["t_deflated_sweep"])
+
+
 def mine(model: str, bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any], *,
          deadline: float, grid: Sequence[Mapping[str, Any]] | None = None,
          entry_z: Sequence[float] = ENTRY_Z, panel_name: str = "core") -> dict[str, Any]:
@@ -414,7 +422,9 @@ def mine(model: str, bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any], 
     # `unmined_live_families`): the miner's own deflated screen was a second judge in front of
     # the real one. Each cell still ships once, at its strongest screened row, carrying its
     # `proposed` verdict and the full sweep width; the gauntlet's own gates decide it.
-    cells = pc.best_per_cell(rows, proposed_only=False)
+    # Kept here, not as a knob on `proposer_common.best_per_cell`: that module is in the money-path
+    # closure and replay-shadow sends any new knob on it to the manual path.
+    cells = _strongest_per_cell(rows)
     return {"model": model, "source": spec["source"], "family": spec["family"],
             "panel": panel_syms, "panel_name": panel_name, "configs": configs,
             "tests_attempted": attempted,

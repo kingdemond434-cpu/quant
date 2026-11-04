@@ -284,14 +284,10 @@ def deflate(rows: list[dict]) -> list[dict]:
     return rows
 
 
-def best_per_cell(rows: list[dict], *, proposed_only: bool = True) -> list[dict]:
-    """One proposal per cell: shipping every variant of one winner smuggles the search back in.
-
-    `proposed_only=False` keeps the strongest SCREENED row of every cell whether or not it
-    cleared the proposer's own bar: the judge's gates decide it instead of a pre-screen. Still
-    one row per cell, so the search stays charged once and is never re-shipped as variants."""
+def best_per_cell(rows: list[dict]) -> list[dict]:
+    """One proposal per cell: shipping every variant of one winner smuggles the search back in."""
     best: dict[str, dict] = {}
-    for r in sorted((x for x in rows if x.get("proposed") or not proposed_only),
+    for r in sorted((x for x in rows if x.get("proposed")),
                     key=lambda x: -x["t_deflated_sweep"]):
         best.setdefault(str(r["cell"]), r)
     return sorted(best.values(), key=lambda x: -x["t_deflated_sweep"])
