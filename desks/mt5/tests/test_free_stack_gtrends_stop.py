@@ -105,32 +105,36 @@ def test_the_header_sent_is_the_desks_one_string_never_a_browser() -> None:
     assert not any(m in fs.GTRENDS_UA.lower() for m in BROWSER_MARKERS)
 
 
-def test_a_robots_disallow_is_not_fetched_and_robots_is_kept_a_day() -> None:
+def test_a_robots_disallow_is_fetched_labelled_and_robots_is_kept_a_day() -> None:
+    """LAWS 5e: robots.txt is a LABEL, never a refusal. The Disallow for the desk's own agent is
+    fetched anyway, noted PUBLIC_WITH_TERMS, and places no hold; robots is still cached a day."""
     calls: list[tuple[str, str]] = []
     robots = (b"User-agent: *\nAllow: /\n\nUser-agent: " + _hs.DESK_UA_PRODUCT.encode()
               + b"\nDisallow: /trends/api/\n")
-    h = fs.fetch_gtrends(_fake(calls, robots=robots), ROW, {}, NOW)
-    assert [u for u, _ in calls] == ["https://trends.google.com/robots.txt"]
-    assert h.status == "ROBOTS_DISALLOWED" and "hold" not in h.cursor
+    h = fs.fetch_gtrends(_fake(calls, robots=robots, api=500), ROW, {}, NOW)
+    assert calls[0][0] == "https://trends.google.com/robots.txt"
+    assert [u for u, _ in calls[1:] if "/trends/api/" in u], "the disallowed API was not fetched"
+    assert h.status not in ("ROBOTS_DISALLOWED", "ROBOTS_UNAVAILABLE") and "hold" not in h.cursor
+    assert any(n.startswith("PUBLIC_WITH_TERMS") for n in h.notes)
     cursor = _merge({}, h)
     calls2: list[tuple[str, str]] = []
-    fs.fetch_gtrends(_fake(calls2, robots=robots), ROW, cursor, NOW + timedelta(hours=23))
-    assert calls2 == []                                   # kept a day: not re-read
+    fs.fetch_gtrends(_fake(calls2, robots=robots, api=500), ROW, cursor,
+                     NOW + timedelta(hours=23))
+    assert calls2 and not [u for u, _ in calls2 if u.endswith("/robots.txt")]   # kept a day
     calls3: list[tuple[str, str]] = []
     fs.fetch_gtrends(_fake(calls3, robots=b"User-agent: *\nAllow: /\n", api=500), ROW, cursor,
                      NOW + timedelta(hours=25))
     assert calls3[0][0] == "https://trends.google.com/robots.txt" and len(calls3) > 1
 
 
-@pytest.mark.parametrize("code,fetched", [(503, False), (404, True)])
-def test_a_5xx_robots_stops_the_pass_and_a_404_robots_allows(code: int, fetched: bool) -> None:
+@pytest.mark.parametrize("code", [503, 404])
+def test_a_5xx_or_404_robots_still_fetches(code: int) -> None:
+    """An unreadable robots.txt (5xx) is ACCESS_UNCLEAR and mined with its label; a 404 is
+    PUBLIC. Neither stops the pass nor places a hold."""
     calls: list[tuple[str, str]] = []
     h = fs.fetch_gtrends(_fake(calls, robots=code, api=500), ROW, {}, NOW)
     api = [u for u, _ in calls if not u.endswith("/robots.txt")]
-    assert bool(api) is fetched
-    if not fetched:
-        assert h.status == "ROBOTS_UNAVAILABLE" and "hold" not in h.cursor
-        assert "robots" not in h.cursor or not h.cursor["robots"]    # re-read next pass
+    assert api and h.status != "ROBOTS_UNAVAILABLE" and "hold" not in h.cursor
 
 
 def test_a_403_on_robots_itself_is_a_person_hold() -> None:
