@@ -108,6 +108,7 @@ MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY = 0, 1, 2, 3, 4
 KINDS = (
     "month_end", "quarter_end", "index_rebalance", "futures_roll", "option_expiry",
     "bond_auction", "central_bank", "fixing", "inventory", "usda", "holiday_liquidity",
+    "em_fixing", "dividend_reinvestment", "fiscal_year_end", "post_holiday",
 )
 
 
@@ -613,6 +614,42 @@ def _index_rebalance_events(year: int, month: int) -> list[Event]:
             _around(friday, 17, 30, "Europe/Berlin", 20, 10), _venue("stoxx"), actor, mech,
             "STOXX quarterly review: effective at the close of the third Friday of "
             "Mar/Jun/Sep/Dec; 17:30 Europe/Berlin closing auction -20/+10 min"))
+    if month in (4, 10):
+        # Nikkei 225 periodic review: effective the first business day of April and October,
+        # so the trackers (BoJ-era ETFs and every Nikkei-linked fund) buy and sell at the close
+        # of the business day before it. The Tokyo close moved from 15:00 to 15:30 on
+        # 2024-11-05; the window follows the close that was in force on the day.
+        eff = date(year, month, 1)
+        while not is_business_day(eff):
+            eff += timedelta(days=1)
+        day = add_business_days(eff, -1)
+        close = (15, 30) if day >= date(2024, 11, 5) else (15, 0)
+        rows.append(_event(
+            day, "index_rebalance", f"nikkei225_review_{year:04d}{month:02d}",
+            _around(day, close[0], close[1], "Asia/Tokyo", 30, 10), _keep(("JPN225",)), actor,
+            mech, "Nikkei 225 periodic review: effective the first business day of Apr/Oct, "
+            "traded at the TSE close the business day before (15:00 Asia/Tokyo until "
+            "2024-11-04, 15:30 from 2024-11-05), window -30/+10 min"))
+    if month in (3, 6, 9, 12):
+        # Hang Seng quarterly review: effective the first Monday of Mar/Jun/Sep/Dec, so the
+        # trackers trade the HKEX closing auction of the Friday before (16:00-16:10 local).
+        monday = nth_weekday(year, month, 0, 1)
+        friday_before = monday - timedelta(days=3)
+        rows.append(_event(
+            friday_before, "index_rebalance", f"hsi_quarterly_{year:04d}{month:02d}",
+            _around(friday_before, 16, 10, "Asia/Hong_Kong", 20, 10),
+            _keep(("HK50", "CHINAH")), actor, mech,
+            "Hang Seng quarterly review: effective the first Monday of Mar/Jun/Sep/Dec, "
+            "traded at the HKEX closing auction (16:00-16:10 Asia/Hong_Kong) of the Friday "
+            f"before, window -20/+10 min: {VERIFY_SCHEDULE}"))
+        # S&P/ASX 200 quarterly rebalance: effective after the close of the third Friday.
+        friday = nth_weekday(year, month, FRIDAY, 3)
+        rows.append(_event(
+            friday, "index_rebalance", f"asx200_quarterly_{year:04d}{month:02d}",
+            _around(friday, 16, 10, "Australia/Sydney", 20, 10), _keep(("AUS200",)), actor,
+            mech, "S&P/ASX 200 quarterly rebalance: effective after the close of the third "
+            "Friday of Mar/Jun/Sep/Dec, ASX closing single price auction ~16:10 "
+            "Australia/Sydney, window -20/+10 min"))
     if month == 6:
         friday = last_weekday(year, 6, FRIDAY)
         rows.append(_event(
@@ -878,6 +915,130 @@ def _holiday_events(year: int) -> list[Event]:
     return rows
 
 
+# ------------------------------------------------------------------- emerging-market fixings
+
+def _em_fixing_events(day: date) -> list[Event]:
+    """CNY central parity, BRL PTAX and the Banxico FIX: dated rates contracts settle against.
+
+    The windows are computed by rule; LOCAL HOLIDAYS ARE NOT SUBTRACTED (the module's one
+    encoding of a business day is weekday-only), so a window on a Chinese, Brazilian or Mexican
+    holiday stays in the list and simply finds no fixing flow in the bars.
+    """
+    if not is_business_day(day):
+        return []
+    return [
+        _event(day, "em_fixing", f"cny_parity_0915_{day.isoformat()}",
+               _around(day, 9, 15, "Asia/Shanghai", 15, 45), _keep(("USDCNH",)),
+               "onshore banks and corporates whose CNY trades are bounded by the daily band "
+               "around the PBoC central parity, and the offshore books that hedge them in CNH",
+               "The central parity is published once, at 09:15 Beijing, and onshore spot can "
+               "trade only inside a +/-2% band around it. Every onshore hedge is re-struck "
+               "against the new level, and the CNH book that mirrors it has to follow, whatever "
+               "the price.",
+               "PBoC/CFETS CNY central parity, 09:15 Asia/Shanghai each business day, window "
+               "-15/+45 min (= 01:00-02:00 UTC all year; China keeps no summer time)"),
+        _event(day, "em_fixing", f"brl_ptax_{day.isoformat()}",
+               _span(day, (10, 0), day, (13, 10), "America/Sao_Paulo"), _keep(("USDBRL",)),
+               "holders of NDFs, futures and import/export contracts that settle at the BCB "
+               "PTAX rate",
+               "PTAX is the average of four dealer polls at 10:00, 11:00, 12:00 and 13:00 "
+               "Brasilia. A contract settling at PTAX is hedged by trading inside those polling "
+               "windows, so the flow is forced into the same three hours every day.",
+               "BCB PTAX, four 10-minute polls 10:00-13:10 America/Sao_Paulo, window = the "
+               "polls (= 13:00-16:10 UTC since Brazil dropped summer time in 2019)"),
+        _event(day, "em_fixing", f"banxico_fix_{day.isoformat()}",
+               _around(day, 12, 0, "America/Mexico_City", 30, 30),
+               _keep(("USDMXN", "EURMXN", "GBPMXN", "MXNJPY")),
+               "importers, exporters and dollar-denominated obligations settled in pesos at the "
+               "Banxico FIX",
+               "The FIX is the rate Mexican law uses to settle dollar obligations in pesos, "
+               "struck from wholesale quotes around noon Mexico City. A payer settling at the "
+               "FIX hedges into its determination window, not at a price of its choosing.",
+               "Banxico FIX, determined from wholesale quotes around 12:00 America/Mexico_City, "
+               f"window -30/+30 min: {VERIFY_SCHEDULE}"),
+    ]
+
+
+# -------------------------------------------------------------------- calendar niches (B9-B11)
+
+def _dividend_reinvestment_events(year: int) -> list[Event]:
+    """Nikkei passive funds reinvesting March and September dividends through futures.
+
+    Japanese companies pay on two record dates, the last business days of March and September.
+    Index trackers accrue the dividend on the ex-date but receive the cash weeks later, so they
+    buy index futures at the close of the LAST CUM-DIVIDEND day to stay fully invested. With
+    T+2 settlement (from 2019-07-16) the ex-date is the business day before the record date, so
+    the last cum day is two business days before it; under T+3 it was three.
+    """
+    rows: list[Event] = []
+    for month in (3, 9):
+        record = last_business_day(year, month)
+        settle = 2 if record >= date(2019, 7, 16) else 3
+        day = add_business_days(record, -settle)
+        close = (15, 30) if day >= date(2024, 11, 5) else (15, 0)
+        rows.append(_event(
+            day, "dividend_reinvestment", f"nikkei_dividend_reinvest_{year:04d}{month:02d}",
+            _around(day, close[0], close[1], "Asia/Tokyo", 30, 10), _keep(("JPN225",)),
+            "Nikkei and TOPIX index funds that must stay fully invested through the ex-date "
+            "while the dividend cash is still weeks away",
+            "The fund's benchmark drops by the dividend on the ex-date, but the cash arrives "
+            "about two months later. To avoid tracking error it buys index futures for the "
+            "accrued dividend at the close of the last cum-dividend day. The size is the "
+            "dividend yield on tracked assets and the date is fixed by the settlement cycle.",
+            f"last business day of {'March' if month == 3 else 'September'} is the record "
+            f"date; T+{settle} puts the last cum-dividend day {settle} business days before "
+            "it; TSE close (15:00 until 2024-11-04, 15:30 from 2024-11-05) -30/+10 min"))
+    return rows
+
+
+def _fiscal_year_end_events(year: int) -> list[Event]:
+    """Japanese fiscal year-end (31 March) and half-year end (30 September) repatriation."""
+    rows: list[Event] = []
+    jpy = _keep(_fx_with("JPY"))
+    for month, label in ((3, "fiscal year-end"), (9, "fiscal half-year end")):
+        day = last_business_day(year, month)
+        rows.append(_event(
+            day, "fiscal_year_end", f"japan_fy_end_{year:04d}{month:02d}",
+            _around(day, 9, 55, "Asia/Tokyo", 10, 5), jpy,
+            "Japanese exporters, life insurers and corporates closing their books on the "
+            f"{label}",
+            "Foreign-currency earnings and dividends are converted to yen before the books "
+            "close so the period's results carry them at a known rate, and that conversion "
+            "is booked at the last TTM fix of the period. The date is statutory, so the yen "
+            "buying is forced into the last fix whatever the level.",
+            f"last business day of {'March' if month == 3 else 'September'} ({label}), "
+            "Tokyo 09:55 TTM fix, window -10/+5 min (= 00:45-01:00 UTC all year)"))
+    return rows
+
+
+def _post_holiday_events(year: int) -> list[Event]:
+    """The first session back after a closure: flow deferred over the holiday clears at once."""
+    rows: list[Event] = []
+    regions = (
+        ("us", us_market_holidays(year), (9, 30), (13, 30), "America/New_York",
+         _keep(_venue("sp", "rates") + _fx_with("USD") + _gold())),
+        ("uk", uk_bank_holidays(year), (8, 0), (12, 0), "Europe/London",
+         _keep(_venue("ftse", "gilt") + _fx_with("GBP"))),
+        ("jp", japan_golden_week(year), (9, 0), (11, 30), "Asia/Tokyo",
+         _keep(_venue("nikkei") + _fx_with("JPY"))),
+    )
+    for tag, table, open_hm, until_hm, tz, instruments in regions:
+        for holiday in sorted(table):
+            back = holiday + timedelta(days=1)
+            while not is_business_day(back) or back in table:
+                back += timedelta(days=1)
+            rows.append(_event(
+                back, "post_holiday", f"{tag}_post_holiday_{back.isoformat()}",
+                _span(back, open_hm, back, until_hm, tz), instruments,
+                "the hedgers and rebalancers who could not trade while the venue was shut",
+                "Orders that had nowhere to go during the closure are not cancelled, they are "
+                "deferred, and they arrive in the first hours of the reopened session. The "
+                "closure is known a year ahead, so the reopening is too.",
+                f"first business day after {table[holiday]}, the reopened venue's first hours "
+                f"({open_hm[0]:02d}:{open_hm[1]:02d}-{until_hm[0]:02d}:{until_hm[1]:02d} {tz})"))
+    return rows
+
+
 # =============================================================================================
 # The public surface
 # =============================================================================================
@@ -912,9 +1073,13 @@ def _events(start: date, end: date) -> list[Event]:
             out.extend(_usda_events(year, month))
         out.extend(_central_bank_events(year))
         out.extend(_holiday_events(year))
+        out.extend(_dividend_reinvestment_events(year))
+        out.extend(_fiscal_year_end_events(year))
+        out.extend(_post_holiday_events(year))
     day = start
     while day <= end:
         out.extend(_fixing_events(day))
+        out.extend(_em_fixing_events(day))
         out.extend(_inventory_events(day))
         day += timedelta(days=1)
     inside = [e for e in out if start <= e.date <= end]

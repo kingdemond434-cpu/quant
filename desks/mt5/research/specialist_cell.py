@@ -152,8 +152,50 @@ WEATHER_WINDOWS: dict[str, list[tuple[int, int, int, str]]] = {
 GOLD = ("XAUUSD", "XAUEUR", "XAUAUD")
 
 
+_NAMED: dict[str, frozenset[str]] = {}
+
+
+def _named(kind: str, sym: str) -> bool:
+    """Whether the forced-flow calendar's `kind` events ever name `sym` (2023-2025, by rule).
+
+    A cell on a symbol the calendar never names cannot fire, and every MEASURED cell is charged
+    to the trial census, so such cells are not minted at all rather than measured and dropped.
+    """
+    if kind not in _NAMED:
+        from datetime import date
+
+        from research import forced_flow_calendar as cal
+        _NAMED[kind] = frozenset(s.upper() for e in cal.events(date(2023, 1, 1),
+                                                               date(2025, 12, 31))
+                                 if e.kind == kind for s in e.instruments)
+    return sym.upper() in _NAMED[kind]
+
+
+def _flow_cells(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
+    """The footprint-sweep calendar niches (rows 15, 17, 18), on the symbols each one names."""
+    out: list[tuple[str, str, list[dict[str, Any]]]] = []
+    for mechanism, kind, extra in (
+            ("em_fixing_flow", "em_fixing", {}),
+            ("japan_fiscal_year_end", "fiscal_year_end", {"window_before_min": [1440, 4320]}),
+            ("dividend_reinvestment", "dividend_reinvestment", {}),
+            ("post_holiday_drift", "post_holiday", {}),
+            ("index_review_flow", "index_rebalance", {})):
+        if _named(kind, sym):
+            out.append((mechanism, "forced_flow",
+                        _grid({"event_kind": [kind], "clock": ["utc"], "symbol": [sym],
+                               "mode": ["pre_flow", "post_flow_fade"], **extra})))
+    return out
+
+
 def _fx(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
-    return [
+    from mt5desk.family_forced_flow import home_equity, usd_selling_side
+    hedge: list[tuple[str, str, list[dict[str, Any]]]] = []
+    if usd_selling_side(sym) and home_equity(sym):
+        hedge.append(("fx_hedge_rebalance", "forced_flow",
+                      _grid({"event_kind": ["month_end", "quarter_end"], "clock": ["utc"],
+                             "symbol": [sym], "mode": ["hedge_into_fix", "hedge_post_fix_fade"],
+                             "min_rel": [0.0, 0.01]})))
+    return hedge + _flow_cells(sym) + [
         ("wmr_fix_reversal", "fx_fixing_reversal",
          _grid({"fix_hour": [18, 19], "pre_window_bars": [2, 3],
                 "min_displacement_atr": [0.6, 1.0], "hold_bars": [3, 6]})),
@@ -205,6 +247,7 @@ def _indices(sym: str) -> list[tuple[str, str, list[dict[str, Any]]]]:
          _grid({"event_kind": ["month_end"], "clock": ["utc"], "symbol": [sym],
                 "mode": ["pre_flow", "post_flow_fade"]})),
     ]
+    out += _flow_cells(sym)
     hours = OPEN_HOURS.get(sym.upper())
     if hours:
         out.append(("open_drive", "opening_range",
@@ -239,6 +282,16 @@ SPECIALISTS: dict[str, tuple[Callable[[str], list[tuple[str, str, list[dict[str,
                           "(Brunnermeier, Nagel & Pedersen 2008)",
         "cb_meeting_drift": "rates desks re-hedge the front end into and out of a scheduled "
                             "central-bank decision (Lucca & Moench 2015 pre-announcement drift)",
+        "fx_hedge_rebalance": "foreign holders of US equities hedged to a fixed ratio are "
+                              "under-hedged after US equities out-run their home index "
+                              "period-to-date and sell USD into the month- or quarter-end WMR "
+                              "fix; the impact reverses after the fix",
+        "em_fixing_flow": "contracts settled at the CNY central parity, BRL PTAX or Banxico "
+                          "FIX are hedged inside the fixing window, whatever the price",
+        "japan_fiscal_year_end": "Japanese corporates convert foreign earnings to yen at the "
+                                 "last TTM fix before the fiscal year or half-year closes",
+        "post_holiday_drift": "orders deferred over a venue closure clear in the first hours "
+                              "of the reopened session",
     }),
     "metals": (_metals, {
         "gold_real_yield": "gold is priced off the real rate and the dollar; a gap between gold "
@@ -261,6 +314,12 @@ SPECIALISTS: dict[str, tuple[Callable[[str], list[tuple[str, str, list[dict[str,
                                "month-to-date in the month's last days",
         "month_end_forced_flow": "month-end benchmark and index rebalancing flow on a dated "
                                  "calendar",
+        "dividend_reinvestment": "Nikkei and TOPIX trackers buy index futures for the accrued "
+                                 "March and September dividends at the last cum-dividend close",
+        "post_holiday_drift": "orders deferred over a venue closure clear in the first hours "
+                              "of the reopened session",
+        "index_review_flow": "index trackers must trade the review's closing auction on the "
+                             "effective date (S&P, FTSE, STOXX, Russell, Nikkei, Hang Seng, ASX)",
     }),
     "softs": (_softs, {
         "weather_window": "a crop-cycle weather premium is bought by hedgers at any price and "
@@ -300,6 +359,12 @@ _MECH_CULTURE: dict[str, tuple[str, str]] = {
     "eia_inventory": ("US", "physical_flow"),
     "month_end_forced_flow": ("GLOBAL", "institutional"),
     "wasde": ("US", "policy_driven"),
+    "fx_hedge_rebalance": ("GLOBAL", "institutional"),
+    "em_fixing_flow": ("GLOBAL", "settlement_constrained"),
+    "japan_fiscal_year_end": ("JP", "settlement_constrained"),
+    "dividend_reinvestment": ("JP", "institutional"),
+    "post_holiday_drift": ("GLOBAL", "mixed"),
+    "index_review_flow": ("GLOBAL", "institutional"),
 }
 
 
@@ -336,6 +401,10 @@ def culture(mechanism: str, symbol: str) -> dict[str, str]:
                "culture's failure timing is claimed")
     elif tag == "UNMEASURED":
         why = "UNMEASURED"
+    elif tag not in _WESTERN:
+        why = (f"the forced participant is {tag}'s own: its statutory calendar and settlement "
+               "rules set the date, so the flow should fail when that jurisdiction's rules or "
+               "corporate behaviour change, not with Western benchmark reform")
     else:
         why = WESTERN_STANDARD
     return {"source_culture": tag, "participant_structure": part,

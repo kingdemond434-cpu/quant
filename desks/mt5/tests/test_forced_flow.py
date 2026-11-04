@@ -39,6 +39,7 @@ from mt5desk.family_call import signals as call_signals  # noqa: E402
 from mt5desk.family_forced_flow import (  # noqa: E402
     CLOCKS,
     FORCED_FLOW_DEFAULTS,
+    HEDGE_MODES,
     MODES,
     calendar_windows,
     describe,
@@ -48,6 +49,9 @@ from mt5desk.family_forced_flow import (  # noqa: E402
 from research import forced_flow_calendar as C  # noqa: E402
 
 FRIDAY = 4
+#: The price-only claims. The hedge modes also read two equity indices' bars and are pinned,
+#: causality included, in test_footprint_flow_calendar.py.
+PRICE_MODES = tuple(m for m in MODES if m not in HEDGE_MODES)
 
 
 # =============================================================================================
@@ -367,7 +371,7 @@ def test_side_minus_one_is_the_mirror_hypothesis() -> None:
 
 
 def test_stops_and_targets_sit_on_the_right_sides_of_the_entry() -> None:
-    for mode in MODES:
+    for mode in PRICE_MODES:
         for s in family_forced_flow(_bars(), 1, mode=mode, stop_atr=1.0, target_atr=1.5):
             assert s.side in (1, -1)
             assert (s.target - s.stop) * s.side > 0
@@ -381,8 +385,10 @@ def test_entry_is_at_the_next_open_like_every_other_family() -> None:
 
 
 def test_a_kind_with_no_event_in_the_sample_produces_nothing() -> None:
-    """March 2026 holds no Russell reconstitution and no quad witching."""
-    assert family_forced_flow(_bars(), 1, event_kind="index_rebalance") == []
+    """Mid-May 2026 holds no index review: no Russell, no quad witching, and none of the
+    Nikkei (Apr/Oct), Hang Seng or ASX (Mar/Jun/Sep/Dec) closes. Late March no longer works as
+    the sample since the Nikkei review trades on 31 March."""
+    assert family_forced_flow(_bars(start="2026-05-05"), 1, event_kind="index_rebalance") == []
 
 
 def test_bad_parameters_refuse_rather_than_guess() -> None:
@@ -420,7 +426,7 @@ def test_a_signal_never_reads_a_bar_after_itself() -> None:
     because it was computable years ahead -- using anything the window's bars did, before they
     exist, is not.
     """
-    for mode in MODES:
+    for mode in PRICE_MODES:
         bars = _bars()
         sigs = family_forced_flow(bars, 1, mode=mode)
         assert sigs, mode
@@ -438,7 +444,7 @@ def test_a_signal_never_reads_a_bar_after_itself() -> None:
 def test_truncating_the_sample_at_the_signal_keeps_the_signal() -> None:
     """The live counterpart of the test above: at decision time no later bar exists at all."""
     bars = _bars()
-    for mode in MODES:
+    for mode in PRICE_MODES:
         sigs = family_forced_flow(bars, 1, mode=mode)
         assert sigs, mode
         first = sigs[0]
@@ -491,7 +497,8 @@ def test_describe_states_all_three_parts_of_the_claim() -> None:
     for part in ("FORCED PARTICIPANT", "TIME WINDOW", "OBSERVABLE CONSTRAINT"):
         assert part in text
     assert "pre_flow" in text and "post_flow_fade" in text
-    assert set(MODES) == {"pre_flow", "post_flow_fade"}
+    assert set(MODES) == {"pre_flow", "post_flow_fade", "hedge_into_fix", "hedge_post_fix_fade"}
+    assert "hedge_into_fix" in text and "hedge_post_fix_fade" in text
     assert set(CLOCKS) == {"bars", "utc"}
 
 
