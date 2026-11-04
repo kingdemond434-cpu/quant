@@ -123,6 +123,13 @@ BOX_OWNED_FALLBACK: frozenset[str] = frozenset({
 #: A kill of the leg at its cycle cap (2,400 s) leaves its lease behind; past this it is stale.
 LEASE_STALE_S = 3000.0
 
+#: Seed sources the box never runs, whatever the rails allow. `regional_survivors` answers a
+#: 403 by retrying the listing on sibling hosts with a Referer borrowed from the site root
+#: (regional_survivor_hunters.py, its "403" recovery). That is a way around a server's refusal,
+#: and the rails can't see it: each retry is a fresh, allowed host. It stays off the box until
+#: that recovery becomes a hard stop (queue row 305); removing a name here is the only switch.
+BOX_EXCLUDED_SEEDS: frozenset[str] = frozenset({"regional_survivors"})
+
 Runner = Callable[[list[str], float, dict[str, str]], tuple[int | None, str]]
 
 
@@ -477,10 +484,17 @@ def _child_seed() -> int:
               flush=True)
         return 1
     import seed_miners
+    miners = getattr(seed_miners, "MINERS", None)
+    excluded = []
+    if isinstance(miners, dict):
+        for name in sorted(BOX_EXCLUDED_SEEDS & set(miners)):
+            del miners[name]
+            excluded.append(name)
     res = seed_miners.run_and_save()
     rows = sum(int((v or {}).get("count") or 0) for v in res.values() if isinstance(v, dict))
     print(RESULT_PREFIX + json.dumps({"status": "OK", "sources": len(res), "rows": rows,
-                                      "rails_refused_here": len(box_rails.refused())}),
+                                      "rails_refused_here": len(box_rails.refused()),
+                                      "excluded_on_box": excluded}),
           flush=True)
     return 0
 
