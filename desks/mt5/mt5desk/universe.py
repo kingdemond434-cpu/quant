@@ -43,20 +43,10 @@ _FX_MAJORS = ("EUR", "GBP", "USD", "JPY", "CHF", "CAD", "AUD", "NZD")
 #: Non-major but liquid FX legs. A cross of two of these (NOKSEK) is still FX -- it read
 #: "unknown" when the whole broker offering landed, because the old rules demanded a MAJOR leg.
 _FX_MINORS = ("SEK", "NOK", "DKK", "SGD", "HKD", "MXN", "ZAR", "TRY", "PLN", "HUF", "CZK", "CNH")
-#: FUSION'S X-PREFIXED COMMODITY TICKERS (2026-11-03). XCUUSD, XALUSD, XNIUSD, XZNUSD and XPBUSD
-#: are the industrial metals, and XTIUSD, XBRUSD and XNGUSD are WTI, Brent and natural gas. None of
-#: these roots was listed, so every one of them fell through to the FX rule (the quote leg is USD)
-#: and read `fx_exotic`. Measured on the 11-02 docket: the breadth steering listed eight classes
-#: with no energy among them, because all three energy CFDs were being counted as FX exotics, the
-#: class that already held the most families. The broker registry was right all along; this is
-#: the fallback catching up with it.
-_METALS = ("XAU", "XAG", "XPT", "XPD", "GOLD", "SILVER", "XCU", "XAL", "XNI", "XZN", "XPB",
-           "COPPER")
+_METALS = ("XAU", "XAG", "XPT", "XPD", "GOLD", "SILVER")
 _ENERGY = ("WTI", "BRENT", "OIL", "NGAS", "NATGAS", "CRUDE", "UKOIL", "USOIL")
-#: Rooted, not tokened: `XNG` or `XTI` inside a company name must not make it a commodity.
-_ENERGY_ROOTED = ("XTI", "XBR", "XNG")
 _CRYPTO = ("BTC", "ETH", "LTC", "XRP", "BCH", "ADA", "SOL", "DOGE", "DOT", "LINK",
-           "AVAX", "MATIC", "XLM", "TRX", "UNI", "ATOM", "AAVE", "SHIB", "BNB", "EOS", "LNK")
+           "AVAX", "MATIC", "XLM", "TRX", "UNI", "ATOM", "AAVE", "SHIB")
 #: SOFT COMMODITIES and BONDS -- whole asset classes the broker lists that had no pattern here,
 #: so they read "unknown" and sat outside every breadth count (2026-08-27, the 251-symbol
 #: collection). They matter for the same reason equities do: cocoa responds to West African
@@ -195,7 +185,7 @@ def asset_class(symbol: str) -> str:
         return "metal"
     if _rooted(raw, s, where, _CRYPTO):
         return "crypto"
-    if _rooted(raw, s, where, _ENERGY_ROOTED) or _tokened(raw, s, where, _ENERGY):
+    if _tokened(raw, s, where, _ENERGY):
         return "energy"
     if _tokened(raw, s, where, _SOFT):
         return "soft"

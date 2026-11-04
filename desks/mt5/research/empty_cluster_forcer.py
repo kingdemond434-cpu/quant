@@ -243,9 +243,8 @@ def class_slots(by_cluster: dict[str, list[str]], turn: int,
                   "why": f"{FAMILIES.name} carries no asset_class steering; nothing minted"}], [])
     counts = _class_counts(steer)
     try:
-        from mt5desk.universe import asset_class as pattern_class
-
         from research.breadth_rotation import hypothesis_symbols, orthogonal_ring, rotating_window
+        from research.class_overrides import asset_class as pattern_class
         from research.universe_policy import _norm, asset_class_of
     except Exception as exc:                                          # pragma: no cover
         return ([{"axis": "asset_class", "verdict": "UNMEASURED",

@@ -15,7 +15,7 @@ for _p in (str(BASE), str(BASE / "research"), str(BASE.parent.parent)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from mt5desk.universe import asset_class  # noqa: E402
+from research.class_overrides import asset_class  # noqa: E402
 
 from research import empty_cluster_forcer as forcer  # noqa: E402
 
@@ -27,9 +27,11 @@ def test_fusion_x_tickers_are_commodities_not_fx() -> None:
         assert asset_class(sym) == "metal", sym
     for sym in ("BNBUSD", "EOSUSD", "LNKUSD"):
         assert asset_class(sym) == "crypto", sym
-    # the FX rule is unchanged for real currencies
+    # the FX rule is unchanged for real currencies, and names are never matched mid-word
     assert asset_class("USDTRY") == "fx_exotic"
     assert asset_class("EURUSD") == "fx_major"
+    assert asset_class("XTIUSDX") != "energy"
+
 
 
 def _doc(counts: dict[str, int]) -> dict:
