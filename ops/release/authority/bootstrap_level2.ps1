@@ -72,7 +72,7 @@ if ("$merged".Trim() -ne "true") {
     $dirty = (& git -C $Src status --porcelain --untracked-files=no | Out-String).Trim()
     if ($dirty) { throw "this script's checkout has local changes, so it is not the cleared head: run from a clean checkout. Nothing was changed.`n$dirty" }
     if ($self -ne $head) { throw "this script is from $self, but #${Pr}'s head is ${head}: check out that head and run it from there. Nothing was changed." }
-    $merge = (& gh api -X PUT "repos/$Repo/pulls/$Pr/merge" -f sha="$head".Trim() -f merge_method=merge --jq .sha)
+    $merge = (& gh api -X PUT "repos/$Repo/pulls/$Pr/merge" -f "sha=$head" -f merge_method=merge --jq .sha)
     if ($LASTEXITCODE -ne 0) { throw "GitHub refused the merge of #$Pr at $head." }
     Write-Host "   merged #$Pr at $head as $merge"
 }
@@ -86,7 +86,7 @@ $out | Out-Host
 if ($rc -ne 0) { throw "#$Pr's merged head is not a cleared, green head (see NOT PINNABLE above); nothing pinned" }
 $merge = "$($out[-1])".Trim()
 if ($merge -notmatch '^[0-9a-f]{40}$') { throw "could not read #$Pr's merge commit; nothing pinned" }
-& git -c safe.directory=* -C $Clone checkout -q -f --detach "$merge".Trim()
+& git -c safe.directory=* -C $Clone checkout -q -f --detach $merge
 if ($LASTEXITCODE -ne 0) { throw "could not check out #$Pr's merge commit; nothing pinned" }
 if (-not (Test-Path (Join-Path $Clone "ops\release\authority\bootstrap_github.py"))) { throw "LIVE does not carry #$Pr yet." }
 $Here = Join-Path $Clone "ops\release\authority"
