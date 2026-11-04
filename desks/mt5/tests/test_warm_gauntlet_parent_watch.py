@@ -44,8 +44,11 @@ def test_the_worker_exits_once_its_parent_is_terminated(tmp_path: Path) -> None:
         sys.path[:0] = {[str(DESK / "scripts"), str(DESK / "research"), str(DESK),
                          str(DESK.parents[1])]!r}
         import warm_gauntlet_cache as W
-        W._watch_parent(0.2)
-        time.sleep(60)
+        _real = time.sleep
+        time.sleep = lambda s: _real(min(s, 0.2))   # the watch's fixed 30 s poll, made fast
+        W._watch_parent()
+        for _ in range(300):
+            _real(0.2)
     """)
     parent = textwrap.dedent(f"""
         import subprocess, sys, time

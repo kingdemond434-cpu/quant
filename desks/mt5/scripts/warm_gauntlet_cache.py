@@ -451,8 +451,8 @@ def _lower_priority() -> str:
 #: 2026-11-04: a warm_gauntlet_cache process resident at 4.1 GB private for ~57h. So every worker
 #: polls its parent and exits when the parent is gone. A parent whose pid now names a NEWER
 #: process (pid reuse) counts as gone; an unreadable process table counts as present -- the guard
-#: never kills a worker on a reading it cannot make.
-PARENT_POLL_SEC = float(os.environ.get("WARM_PARENT_POLL_SEC", "30"))
+#: never kills a worker on a reading it cannot make. The poll is a fixed 30 s: it bounds how long
+#: an orphan lingers, decides nothing about orders or capital, and nothing needs to tune it.
 
 
 def _parent_gone(ppid: int, own_created: float | None) -> bool:
@@ -468,7 +468,7 @@ def _parent_gone(ppid: int, own_created: float | None) -> bool:
     return own_created is not None and created > own_created + 1.0
 
 
-def _watch_parent(poll_s: float | None = None) -> None:
+def _watch_parent() -> None:
     """Start the daemon thread that exits this worker once its parent is gone."""
     ppid = os.getppid()
     try:
@@ -476,11 +476,9 @@ def _watch_parent(poll_s: float | None = None) -> None:
         own: float | None = psutil.Process().create_time()
     except Exception:
         own = None
-    every = PARENT_POLL_SEC if poll_s is None else poll_s
-
     def loop() -> None:
         while True:
-            time.sleep(every)
+            time.sleep(30.0)
             if _parent_gone(ppid, own):
                 _terminate_self(0)
 
