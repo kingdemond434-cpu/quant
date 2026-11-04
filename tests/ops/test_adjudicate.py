@@ -109,7 +109,7 @@ def _rows(true_real: int, true_syn: int, cleared_true: int = 0) -> list[dict]:
     rows = [{"truth": "false_fail", "result": "WOULD_CLEAR"}]
     rows += [{"truth": "true_fail", "result": "FAIL_STANDS", "reviewer_failed": True}
              for _ in range(true_real)]
-    rows += [{"truth": "true_fail", "result": "FAIL_STANDS", "synthetic": True}
+    rows += [{"truth": "true_finding", "result": "FAIL_STANDS", "synthetic": True}
              for _ in range(true_syn)]
     for r in rows[1:1 + cleared_true]:
         r["result"] = "WOULD_CLEAR"
@@ -143,7 +143,7 @@ def test_a_hold_without_a_reviewer_fail_is_not_real_evidence():
     rows = _rows(0, 20) + [{"truth": "true_fail", "result": "FAIL_STANDS"} for _ in range(12)]
     s = adj.summarise(rows)
     assert s["true_fails_real"] == 0 and s["true_fails_hold_only"] == 12
-    assert s["true_fails_synthetic"] == 20 and s["enforceable"] is False
+    assert s["true_findings_synthetic"] == 20 and s["enforceable"] is False
 
 
 TWO = DIFF + """diff --git a/desks/mt5/research/other.py b/desks/mt5/research/other.py
@@ -208,7 +208,8 @@ def test_digest_check():
 def test_cases_file_is_well_formed():
     doc = json.loads((ROOT / "ops" / "release" / "adjudication_cases.json").read_text("utf-8"))
     for c in doc["cases"]:
-        assert c["truth"] in ("false_fail", "true_fail")
+        assert c["truth"] in ("false_fail", "true_fail", "true_finding")
+        assert (c["truth"] == "true_finding") == bool(c.get("synthetic"))
         assert len(c["head"]) == 40 and len(c["base"]) == 40 and c["findings"]
         assert isinstance(c["reviewer_failed"], bool)
         assert not (c.get("synthetic") and c["reviewer_failed"])

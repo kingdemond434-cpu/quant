@@ -237,12 +237,12 @@ def adjudicate(case: dict[str, Any], diff: str, model: str, closure: set[str] | 
 def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Scored only on cases the adjudicator actually ruled on (an EXCLUDED case proves nothing)."""
     ruled = [r for r in rows if r["result"] != "EXCLUDED"]
-    tp = [r for r in ruled if r.get("truth") == "true_fail"]
+    tp = [r for r in ruled if r.get("truth") in ("true_fail", "true_finding")]
     real = [r for r in tp if not r.get("synthetic") and r.get("reviewer_failed")]
     fp = [r for r in ruled if r.get("truth") == "false_fail"]
     tp_cleared = [r for r in tp if r["result"] == "WOULD_CLEAR"]
     if tp_cleared:
-        verdict = "NOT_ENFORCEABLE: it would clear a true FAIL"
+        verdict = "NOT_ENFORCEABLE: it would clear a true FAIL or refute a true finding"
     elif len(tp) < MIN_TRUE_CASES or len(real) < MIN_REAL_TRUE_CASES:
         verdict = (f"NOT_ENOUGH_EVIDENCE: {len(tp)} true cases ({len(real)} real) ruled; "
                    f"need {MIN_TRUE_CASES} ({MIN_REAL_TRUE_CASES} real)")
@@ -257,7 +257,7 @@ def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "true_fails_real": len(real),
         "true_fails_hold_only": sum(not r.get("synthetic") and not r.get("reviewer_failed")
                                     for r in tp),
-        "true_fails_synthetic": sum(bool(r.get("synthetic")) for r in tp),
+        "true_findings_synthetic": sum(r.get("truth") == "true_finding" for r in tp),
         "true_fails_cleared": len(tp_cleared),
         "verdict": verdict,
         "enforceable": verdict.startswith("CANDIDATE"),

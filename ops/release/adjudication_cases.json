@@ -1,5 +1,5 @@
 {
- "_doc": "Shadow-trial cases for ops/release/adjudicate.py. false_fail: a qwen2.5-coder:7b FAIL on an Auditor-CLEAR head whose findings the diff contradicts (HUMAN_DEPENDENCIES.md, 2026-11-04); findings copied verbatim from each review's job log. true_fail (real): a head the Auditor HELD; only #642 carries a real qwen FAIL finding, the others carry the Auditor's HOLD reason as the finding (#607 dropped: head sha not found; #655 left out on the Auditor's word). true_fail (synthetic: true): an accurate finding written against a real diff. Enforcement is proposable only with >= 20 true cases ruled (>= 10 real) and true_fails_cleared == 0; false_fails_cleared is reported beside it. reviewer_failed: the independent reviewer itself voted FAIL on that head (Auditor 21:12Z: only those count as real evidence of qwen's error mix; today that is #642 alone).",
+ "_doc": "Shadow-trial cases for ops/release/adjudicate.py. false_fail: a qwen2.5-coder:7b FAIL on an Auditor-CLEAR head whose findings the diff contradicts (HUMAN_DEPENDENCIES.md, 2026-11-04); findings copied verbatim from each review's job log. true_fail (real): a head the Auditor HELD; only #642 carries a real qwen FAIL finding, the others carry the Auditor's HOLD reason as the finding (#607 dropped: head sha not found; #655 left out on the Auditor's word). true_finding (synthetic: true): an accurate description of a real CLEAR diff, NOT a defect; it tests that the rule never refutes a true statement and never counts as a real catch. Enforcement is proposable only with >= 20 true cases ruled (>= 10 real) and true_fails_cleared == 0; false_fails_cleared is reported beside it. reviewer_failed: the independent reviewer itself voted FAIL on that head (Auditor 21:12Z: only those count as real evidence of qwen's error mix; today that is #642 alone).",
  "cases": [
   {
    "pr": 694,
@@ -276,7 +276,7 @@
    "pr": 694,
    "head": "af10b3bd3f81c74a38907a15715f15ac26b0a175",
    "base": "c9255ec6d77af42002d41f20bfea8d4b36d6affe",
-   "truth": "true_fail",
+   "truth": "true_finding",
    "synthetic": true,
    "touches_control": false,
    "findings": [
@@ -289,7 +289,7 @@
    "pr": 699,
    "head": "c6cada4c51c0c18be43f12ffe6126e309f02052c",
    "base": "15027ca3ae38c991ec046444c5cae61411e265e2",
-   "truth": "true_fail",
+   "truth": "true_finding",
    "synthetic": true,
    "touches_control": false,
    "findings": [
@@ -302,7 +302,7 @@
    "pr": 700,
    "head": "594f9737fc755a6ee4d35a101abe85e03f5b33db",
    "base": "15027ca3ae38c991ec046444c5cae61411e265e2",
-   "truth": "true_fail",
+   "truth": "true_finding",
    "synthetic": true,
    "touches_control": false,
    "findings": [
@@ -315,7 +315,7 @@
    "pr": 666,
    "head": "c9157231789c07de0cac7b793f1cdfbdec9a13c2",
    "base": "55fb6ea085817f3f359a6a65cbdc8141ac78eaf0",
-   "truth": "true_fail",
+   "truth": "true_finding",
    "synthetic": true,
    "touches_control": false,
    "findings": [
@@ -328,7 +328,7 @@
    "pr": 646,
    "head": "63693d729efb4867f5862cb4e59a343ae9767b9a",
    "base": "d3be14a15aff269c5f54fd6699f5fa4ad98ddc30",
-   "truth": "true_fail",
+   "truth": "true_finding",
    "synthetic": true,
    "touches_control": false,
    "findings": [
@@ -341,7 +341,7 @@
    "pr": 668,
    "head": "ec83d8f6afcb6e23e430ae226b1c0e9930e10fa1",
    "base": "90880d366d85daafb8e256886cf34a59c0234d9e",
-   "truth": "true_fail",
+   "truth": "true_finding",
    "synthetic": true,
    "touches_control": false,
    "findings": [
@@ -354,7 +354,7 @@
    "pr": 684,
    "head": "92552cdf0504f1132e376e79b30834a25712b65e",
    "base": "90880d366d85daafb8e256886cf34a59c0234d9e",
-   "truth": "true_fail",
+   "truth": "true_finding",
    "synthetic": true,
    "touches_control": false,
    "findings": [
@@ -367,7 +367,7 @@
    "pr": 657,
    "head": "71fc2c54b0f2aef06815cf6e1f8dbe5391c79fa3",
    "base": "90880d366d85daafb8e256886cf34a59c0234d9e",
-   "truth": "true_fail",
+   "truth": "true_finding",
    "synthetic": true,
    "touches_control": false,
    "findings": [
@@ -380,7 +380,7 @@
    "pr": 657,
    "head": "71fc2c54b0f2aef06815cf6e1f8dbe5391c79fa3",
    "base": "90880d366d85daafb8e256886cf34a59c0234d9e",
-   "truth": "true_fail",
+   "truth": "true_finding",
    "synthetic": true,
    "touches_control": false,
    "findings": [
