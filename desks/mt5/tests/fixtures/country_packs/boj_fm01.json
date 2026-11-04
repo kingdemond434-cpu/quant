@@ -1,0 +1,6 @@
+{"_fixture": "SHAPE from the BOJ API manual tags (STATUS, RESULTSET, SERIES_CODE, SURVEY_DATES, VALUES); values SYNTHETIC",
+ "STATUS": 200, "MESSAGEID": "M181000I", "MESSAGE": "ok", "DATE": "2026-11-03T09:00:00.000+09:00",
+ "PARAMETER": {"FORMAT": "JSON", "LANG": "EN", "DB": "FM01"}, "NEXTPOSITION": null,
+ "RESULTSET": [{"SERIES_CODE": "STRDCLUCON", "NAME_OF_TIME_SERIES": "Call Rate, Uncollateralized Overnight/Average",
+   "UNIT": "percent per annum", "FREQUENCY": "DAILY", "CATEGORY": "Call Rate", "LAST_UPDATE": 20261102,
+   "VALUES": {"SURVEY_DATES": [20261028, 20261029, 20261030], "VALUES": [0.477, null, 0.478]}}]}

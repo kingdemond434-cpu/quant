@@ -1,0 +1,5 @@
+{"_fixture": "SHAPE DECLARED, values SYNTHETIC: MAS API gateway domestic_interest_rates_daily; the live shape is UNMEASURED (no MAS_API_KEY on the box)",
+ "elements": [
+  {"end_of_day": "2026-10-28", "sora": 1.4321, "sora_index": 1.1023, "comp_sora_3m": 1.5012, "preliminary": "N"},
+  {"end_of_day": "2026-10-29", "sora": 1.4410, "sora_index": 1.1024, "comp_sora_3m": 1.4987, "preliminary": "N"},
+  {"end_of_day": "2026-10-30", "sora": null, "sora_index": 1.1025, "comp_sora_3m": 1.4950, "preliminary": "Y"}]}
