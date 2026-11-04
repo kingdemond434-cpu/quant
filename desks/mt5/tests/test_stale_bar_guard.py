@@ -100,3 +100,75 @@ def test_a_cell_reading_a_frozen_factor_is_withheld_by_name():
     kept, withheld = mcc.withhold_frozen_inputs(cands, {"UST10Y", "UST05Y"})
     assert [c["symbol"] for c in kept] == ["USDJPY"]
     assert withheld == ["UST10Y", "UST05Y", "UST10Y"]
+
+
+def test_ust10y_spelled_in_lower_case_is_still_withheld():
+    import research.miner_candidate_compiler as mcc
+
+    kept, withheld = mcc.withhold_frozen_inputs(
+        [{"symbol": "EURUSD", "params": {"factor_symbols": ["ust10y"]}}], {"UST10Y"}
+    )
+    assert kept == [] and withheld == ["UST10Y"]
+
+
+class _GraphStub:
+    def prior_failures(self, *_a, **_k):
+        return {"n_failed": 0, "region": ""}
+
+    def rows(self):
+        return []
+
+
+def test_a_row_whose_only_cell_reads_a_frozen_factor_is_refused_never_deepened(
+    tmp_path, monkeypatch
+):
+    import json
+
+    import libs.ops.repair_invoke as ri
+    import libs.research.hypothesis_graph as hg
+    import research.miner_candidate_compiler as mcc
+
+    root = tmp_path / "intel"
+    (root / "seat").mkdir(parents=True)
+    row = {
+        "kind": "hypothesis",
+        "family": "cross_asset_residual",
+        "symbols": ["EURUSD"],
+        "title": "dollar residual",
+        "url": "u1",
+    }
+    (root / "seat" / "discoveries_1.json").write_text(json.dumps([row]), "utf-8")
+    for name, val in (
+        ("INTEL_ROOTS", (root,)),
+        ("OUT", tmp_path / "out.json"),
+        ("DEEPEN", tmp_path / "deepen.json"),
+        ("DEEPEN_WORKED", tmp_path / "worked.jsonl"),
+        ("DEEPENED", tmp_path / "deepened.json"),
+        ("CURSOR", tmp_path / "cursor.json"),
+    ):
+        monkeypatch.setattr(mcc, name, val)
+    cell = {
+        "symbol": "EURUSD",
+        "family": "cross_asset_residual",
+        "params": {"factor_symbols": ["UST10Y"]},
+        "mechanism_status": "NAMED",
+        "mechanism_note": "the dollar residual against the ten-year yield",
+    }
+    monkeypatch.setattr(
+        mcc, "live_known_symbols", lambda: ({"EURUSD"}, {"frozen": {"UST10Y": 308.0}})
+    )
+    monkeypatch.setattr(mcc, "compile_row", lambda *_a, **_k: ([dict(cell)], "EXACT_RECIPE"))
+    monkeypatch.setattr(mcc, "structurally_untestable_families", dict)
+    monkeypatch.setattr(mcc, "expand_axes", lambda rows: rows)
+    monkeypatch.setattr(hg, "Graph", _GraphStub)
+    monkeypatch.setattr(hg, "record_candidates", lambda *a, **k: 0)
+    monkeypatch.setattr(ri, "request_repair", lambda reason, **kw: False)
+    assert mcc.main() == 0
+    out = json.loads((tmp_path / "out.json").read_text("utf-8"))
+    stats = out["per_source"]["seat"]
+    assert stats["valid_refusals"] == 1
+    assert stats["convertible_rows"] == 0 and stats["candidates"] == 0
+    assert out["stale_bars"]["withheld_inputs"] == {"UST10Y": 1}
+    deepen = tmp_path / "deepen.json"
+    tasks = json.loads(deepen.read_text("utf-8"))["tasks"] if deepen.exists() else []
+    assert tasks == []

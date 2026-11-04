@@ -1663,7 +1663,9 @@ def withhold_frozen_inputs(cands: list[dict], frozen: set[str]) -> tuple[list[di
     kept: list[dict] = []
     withheld: list[str] = []
     for c in cands:
-        hit = ({str(c.get("symbol") or "")} | _named_inputs(c.get("params") or {})) & frozen
+        folded = {f.upper(): f for f in frozen}
+        named = {str(c.get("symbol") or "")} | _named_inputs(c.get("params") or {})
+        hit = {folded[n.upper()] for n in named if n.upper() in folded}
         if hit:
             withheld.extend(sorted(hit))
         else:
@@ -1733,10 +1735,15 @@ def main() -> int:
             produced = [dict(candidate) for candidate in recovered_for_row]
             disposition = "RECOVERED_BY_DEEPENING"
         produced = expand_axes(produced)
-        if frozen_set:
+        _withheld: list[str] = []
+        had_cells = bool(produced)
+        if frozen_set and produced:
             produced, _withheld = withhold_frozen_inputs(produced, frozen_set)
             for _sym in _withheld:
                 withheld_inputs[_sym] = withheld_inputs.get(_sym, 0) + 1
+        # Every cell the row carried trades or reads a frozen series: a NAMED terminal refusal.
+        # Never a deepening task, or the worker re-extracts the same cell every pass.
+        stale_refused = had_cells and not produced and bool(_withheld)
         # PROVENANCE RIDES ONTO EVERY CANDIDATE (six-event trace 2026-09-30: 0 of 53,174 carried
         # a source_url). The row's own URL/time/hash when it states them, else its coordinate.
         row_prov = _row_provenance(_row_k, row)
@@ -1756,7 +1763,11 @@ def main() -> int:
                         str(row.get("url") or row.get("title") or ""))
         refusal = (disposition in {"OPERATIONAL_ROW", "EMPTY_CAPTURE", "BANNED_FAMILY",
                                    "IMPOSSIBLE_METRIC"}
-                   or terminal_refusal)
+                   or terminal_refusal or stale_refused)
+        if stale_refused and bank is not None:
+            bank.record("STALE_INPUT_SERIES",
+                        "frozen series: " + ", ".join(sorted(set(_withheld))),
+                        source=source, symbol=row.get("symbol"), family=row.get("family"))
         if refusal:
             stats["valid_refusals"] = int(stats["valid_refusals"]) + 1
             if terminal_refusal:
@@ -1816,7 +1827,7 @@ def main() -> int:
             stats["converted_rows"] = int(stats["converted_rows"]) + 1
         # An impossible-metric row is REFUSED, not deepened: deepening would re-extract a cell
         # from the very row the fence refused. It is counted in `impossible_metrics`.
-        if not produced and not terminal_refusal and not impossible:
+        if not produced and not terminal_refusal and not impossible and not stale_refused:
             compact = {
                 "source": source,
                 "disposition": disposition,
