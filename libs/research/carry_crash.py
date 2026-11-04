@@ -45,7 +45,6 @@ import pandas as pd
 #: modifier" and is always a candidate. Each pair is one trial and is charged in the proof.
 GRID: tuple[tuple[float, float], ...] = (
     (1.0, 1.0), (0.5, 1.0), (1.0, 1.5), (0.5, 1.5), (0.0, 1.5), (0.5, 2.0))
-COT_PUBLICATION_LAG_DAYS = 4
 COT_Z_WEEKS = 156
 VIX_CHANGE_DAYS = 5
 VIX_Z_DAYS = 252
@@ -77,7 +76,10 @@ def cot_crowding(cot: pd.DataFrame, days: pd.DatetimeIndex) -> pd.Series:
     lm_l = pd.to_numeric(c["lm_l"], errors="coerce")
     net = (lm_l - pd.to_numeric(c["lm_s"], errors="coerce")) / oi
     z = -_z(pd.Series(net.to_numpy(), index=c["report_date"].to_numpy()), COT_Z_WEEKS, 52)
-    z.index = pd.DatetimeIndex(z.index) + pd.Timedelta(days=COT_PUBLICATION_LAG_DAYS)
+    # Moved onto KNOWLEDGE time by the desk's declared publication lag for CFTC data
+    # (`data_os.known_series(..., "cot_fx")`, 4 days), never by a constant of this module's own.
+    from libs.tiers import data_os
+    z = data_os.known_series(z, "cot_fx")
     return z.reindex(days.union(z.index)).sort_index().ffill().reindex(days)
 
 

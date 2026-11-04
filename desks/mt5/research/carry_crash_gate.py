@@ -56,6 +56,8 @@ def carry_book(series: dict[str, tuple[pd.Series, pd.Series | None]],
 
 
 def load_cot() -> pd.DataFrame | None:
+    """The JPY TFF rows, valid-dated by report_date. `carry_crash.cot_crowding` moves them onto
+    knowledge time with `data_os.known_series(..., "cot_fx")` before any join."""
     try:
         d = pd.read_parquet(COT_JPY)
     except Exception:  # noqa: BLE001 - absent or unreadable is UNMEASURED, said in the report
