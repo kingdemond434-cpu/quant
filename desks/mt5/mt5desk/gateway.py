@@ -5264,7 +5264,11 @@ def main() -> None:
     _pending_legs: dict[str, float] = {}
     # ONE ORDER PER BOOK KEY: the rows `_book_key` folds onto one allocator cell share its one
     # fraction; the first by name carries it and the rest are ALIAS_FOLDED (decision_core).
-    _aliases = fold_book_aliases({str(_s["name"]): _book_key(_s, _book) for _s in sleeves})
+    # A row the principal zeroed BY ITS OWN NAME carries nothing (#708 audit SF), so it is never
+    # chosen as a key's carrier: another LIVE variant of the cell carries the key instead.
+    _aliases = fold_book_aliases({str(_s["name"]): (None if cert_book_zero(_s.get("name"))
+                                                    else _book_key(_s, _book))
+                                  for _s in sleeves})
     for _s in sleeves:
         _spec = (st.get("brackets", {}).get(_s["name"]) or {}).get("spec")
         _d = stop_distance(_spec) if _spec else None

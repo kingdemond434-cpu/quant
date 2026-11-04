@@ -51,6 +51,17 @@ def test_three_live_rows_on_one_book_key_send_exactly_one_order() -> None:
     assert sum(1 for x in lots if x > 0) == 1
 
 
+def test_a_name_zeroed_row_is_never_the_carrier(monkeypatch) -> None:
+    """#708 audit SF: the carrier is the first row by name, and a principal zero by name sends
+    nothing; such a row passes None, so the next variant carries the cell."""
+    names = ["chfnok_carry_asia_p_a1", "chfnok_carry_asia_p_b2"]
+    zeroed = {"chfnok_carry_asia_p_a1"}
+    keys = {n: (None if n in zeroed else "CHFNOK_carry_asia") for n in names}
+    assert dc.fold_book_aliases(keys) == {}            # b2 carries; a1 is zeroed on its own
+    src = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
+    assert 'None if cert_book_zero(_s.get("name"))' in src
+
+
 def test_rows_on_different_keys_or_off_the_book_are_never_folded() -> None:
     assert dc.fold_book_aliases({"a": "K1", "b": "K2", "c": None, "d": None}) == {}
     assert dc.fold_book_aliases({}) == {}

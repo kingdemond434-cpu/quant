@@ -314,3 +314,9 @@ def test_a_push_waiting_on_its_own_working_hook_is_spared(monkeypatch: pytest.Mo
                             cmd="git push -u origin b", kids=[idle])
     _install(monkeypatch, [push2])
     assert [r["pid"] for r in gwl.hung_writers(sleep=_no_sleep)["hung"]] == [903]
+    # ... and a spinning child past the ceiling no longer protects its writer (#708 audit SF)
+    spin = _FakeProc(906, "python.exe", 9000, [(40.0, 0), (55.0, 0)], cmd="python spin.py")
+    old = _FakeParentProc(905, "git.exe", gwl.TREE_SPARE_MAX_AGE_S + 60,
+                          [(0.15, 100), (0.15, 100)], cmd="git push -u origin b", kids=[spin])
+    _install(monkeypatch, [old])
+    assert [r["pid"] for r in gwl.hung_writers(sleep=_no_sleep)["hung"]] == [905]
