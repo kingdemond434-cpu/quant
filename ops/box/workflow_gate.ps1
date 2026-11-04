@@ -164,7 +164,7 @@ try {
     # a data-only commit; the adopt guard re-verifies each one. A failure here is logged and never
     # stops the sweep's heartbeat; no row means the guard stays closed, as before.
     try {
-        & $Python -I -u (Join-Path $Clone "ops\release\adopt_rows.py") --root $Clone --apply 2>&1 | ForEach-Object { Say "adopt-rows@$at $_" }
+        & $Python -I -u (Join-Path $Clone "ops\release\adopt_rows.py") --root $Clone --apply --report (Join-Path $QuantRoot "desks\mt5\reports\ADOPT_ROWS.json") 2>&1 | ForEach-Object { Say "adopt-rows@$at $_" }
         Say "adopt-rows rc=$LASTEXITCODE"
     } catch {
         Say "adopt-rows failed: $($_.Exception.Message)"

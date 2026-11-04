@@ -6,7 +6,6 @@ from __future__ import annotations
 import base64
 import importlib.util
 import json
-import os
 import subprocess
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -392,9 +391,134 @@ def test_an_auditor_row_is_untouched_by_authentication(box: Box) -> None:
     assert ag.authenticated(box.box, [row], env={}) == ([row], [])
 
 
-def test_a_target_outside_origin_live_reads_its_own_record(box: Box) -> None:
-    side = _g(box.box, "commit-tree", _g(box.box, "rev-parse", "HEAD^{tree}"), "-m", "side")
-    assert ag.clears_ref(box.box, side) == side
-    tip = _g(box.box, "rev-parse", f"origin/{LIVE}")
-    assert ag.clears_ref(box.box, _g(box.box, "rev-parse", "HEAD")) == tip
-    assert os.environ is not None
+def _plain_origin_row(box: Box, row: dict[str, Any]) -> None:
+    """Append `row` to origin LIVE's record from the work clone (anyone with push access)."""
+    w = box.work
+    _g(w, "pull", "-q", "origin", LIVE)
+    with (w / ar.CLEARS_REL).open("a") as f:
+        f.write(json.dumps(row, sort_keys=True) + "\n")
+    _commit(w, "rows")
+    _g(w, "push", "-q", "origin", LIVE)
+    _g(box.box, "fetch", "-q", "origin")
+
+
+def _pre(box: Box, target: str) -> tuple[int, dict[str, Any]]:
+    return ag.pre(box.box, target, now=QUIET, offset_h=lambda _t: 3)
+
+
+def test_a_plain_clear_that_exists_only_on_origin_does_not_vouch(
+    box: Box, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    for k, v in box.env.items():
+        monkeypatch.setenv(k, v)
+    merge, _head = box.pr(7, {"libs/x.py": "X = 2\n"})
+    blob = _g(box.box, "rev-parse", f"{merge}:libs/x.py")
+    _plain_origin_row(
+        box,
+        {
+            "commit": merge,
+            "verdict": "CLEAR",
+            "report": "reports/audit/f.md",
+            "paths": {"libs/x.py": blob},
+        },
+    )
+    code, doc = _pre(box, merge)
+    assert code == ag.HOLD and doc["uncovered"] == ["libs/x.py"]
+
+
+@pytest.mark.parametrize("ancestor", [True, False])
+def test_an_origin_only_hold_revokes_for_any_target(
+    box: Box, monkeypatch: pytest.MonkeyPatch, ancestor: bool
+) -> None:
+    for k, v in box.env.items():
+        monkeypatch.setenv(k, v)
+    merge, head = box.pr(7, {"libs/x.py": "X = 2\n"})
+    blob = _g(box.box, "rev-parse", f"{merge}:libs/x.py")
+    clear = {
+        "commit": merge,
+        "verdict": "CLEAR",
+        "report": "reports/audit/a.md",
+        "paths": {"libs/x.py": blob},
+    }
+    # the target carries the Auditor's CLEAR in its own record
+    _plain_origin_row(box, clear)
+    target = _g(box.box, "rev-parse", f"origin/{LIVE}")
+    assert _pre(box, target)[0] == ag.GO
+    if not ancestor:  # origin moves on without the target: a diverged LIVE
+        w = box.work
+        _g(w, "reset", "-q", "--hard", f"{merge}")
+        with (w / ar.CLEARS_REL).open("a") as f:
+            f.write(json.dumps(clear, sort_keys=True) + "\n")
+        _commit(w, "diverged rows")
+        _g(w, "push", "-q", "-f", "origin", LIVE)
+        _g(box.box, "fetch", "-q", "origin")
+    hold = {
+        "commit": head,
+        "verdict": "HOLD",
+        "report": "reports/audit/h.md",
+        "paths": {"libs/x.py": blob},
+    }
+    _plain_origin_row(box, hold)
+    code, doc = _pre(box, target)
+    assert code == ag.HOLD and doc["uncovered"] == ["libs/x.py"]
+
+
+def test_an_auditor_hold_on_the_cleared_head_drops_the_merge_row(
+    box: Box, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    for k, v in box.env.items():
+        monkeypatch.setenv(k, v)
+    merge, head = box.pr(7, {"libs/x.py": "X = 2\n"})
+    box.registry_row(7, head)
+    assert ar.sweep(box.box, apply=True, env=box.env) == 0
+    _g(box.box, "fetch", "-q", "origin")
+    assert _pre(box, merge)[0] == ag.GO
+    _plain_origin_row(
+        box,
+        {
+            "commit": head,
+            "verdict": "HOLD",
+            "report": "reports/audit/h.md",
+            "paths": {"libs/y.py": None},
+        },
+    )
+    code, doc = _pre(box, merge)
+    assert code == ag.HOLD
+    assert any("HOLD names its cleared head" in d for d in doc["unverified_rows"])
+
+
+def test_a_registry_hold_drops_an_authority_row_too(box: Box) -> None:
+    key, kid = box.authority()
+    _merge, head = box.pr(9, {"libs/x.py": "X = 9\n"})
+    box.attest(key, kid, 9, head)
+    (row,) = box.rows()
+    assert _verify(box, row)[0] is True
+    box.registry_row(9, head, "HOLD")
+    assert _verify(box, row)[0] is False
+
+
+def test_an_audit_comment_title_alone_writes_no_row(box: Box) -> None:
+    box.pr(7, {"libs/x.py": "X = 2\n"}, title="Merge #7 (merge): audit CLEAR abcdef123")
+    assert box.rows() == []
+
+
+def test_the_sweep_records_what_it_wrote_and_a_give_up(box: Box, tmp_path: Path) -> None:
+    _merge, head = box.pr(7, {"libs/x.py": "X = 2\n"})
+    box.registry_row(7, head)
+    rep = tmp_path / "ADOPT_ROWS.json"
+    calls: list[tuple[str, ...]] = []
+    real = ar.git_in(box.box)
+
+    def refusing(*args: str, **kw: Any) -> str:
+        calls.append(args)
+        if args[0] == "push":
+            raise RuntimeError("non-fast-forward")
+        return real(*args, **kw)
+
+    assert ar.sweep(box.box, apply=True, env=box.env, git=refusing, report=rep) == 1
+    doc = json.loads(rep.read_text())
+    assert doc["state"] == "gave-up" and "NO ROW WRITTEN" in doc["why"]
+    assert doc["merges"][0]["pr"] == 7
+    assert sum(1 for c in calls if c[0] == "push") == ar.PUSH_TRIES
+    assert ar.sweep(box.box, apply=True, env=box.env, report=rep) == 0
+    assert json.loads(rep.read_text())["state"] == "written"

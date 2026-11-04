@@ -551,10 +551,14 @@ def authenticated(
             f"merge-time rows not verifiable ({type(exc).__name__})"
         ]
     reg = (env if env is not None else os.environ).get(ar.REGISTRY_ENV)
+    held = {r.commit for r in rows if r.verdict == "HOLD"}
     keep: list[Clear] = []
     dropped: list[str] = []
     for r in rows:
         if r.by == GATE_BY and r.verdict == "CLEAR":
+            if (r.source or {}).get("head") in held:
+                dropped.append(f"{r.commit[:12]}: an Auditor HOLD names its cleared head")
+                continue
             row = {"commit": r.commit, "verdict": r.verdict, "paths": r.paths, "source": r.source}
             ok, why = ar.verify_row(git, row, authority=authority, registry_path=reg)
             if not ok:
@@ -564,15 +568,39 @@ def authenticated(
     return keep, dropped
 
 
-def clears_ref(root: Path, target: str) -> str:
-    """Where the CLEAR record is read: origin LIVE's copy when the target is in its history (a
-    row written just after a merge then reaches that merge's release), else the target's own.
-    Either way `committed_clears` proves every earlier version is a byte prefix."""
+def _origin_tip(root: Path) -> str | None:
     p = _run(root, "rev-parse", "--verify", f"{LIVE_REF}^{{commit}}")
     tip = p.stdout.decode().strip() if p.returncode == 0 else ""
-    if HEX40.match(tip) and _run(root, "merge-base", "--is-ancestor", target, tip).returncode == 0:
-        return tip
-    return target
+    return tip if HEX40.match(tip) else None
+
+
+def _key(r: Clear) -> str:
+    return json.dumps(
+        [r.commit, r.verdict, r.report, r.paths, list(r.lifts_rollback), r.by, r.source],
+        sort_keys=True,
+    )
+
+
+def effective_clears(root: Path, target: str) -> list[Clear]:
+    """The record the guard judges `target` by (Auditor 2026-11-04 13:03Z, condition 4). The
+    TARGET's own copy is the base set. From origin LIVE's copy (proved append-only like the
+    target's) only two kinds of row are added: every HOLD, from any author and whatever the
+    target's ancestry (fail closed is the safe direction); and, when the target is in origin's
+    history, `by: audit-gate` CLEARs, which `authenticated` must then re-verify. A plain CLEAR that
+    exists only on origin never counts: it has not ridden a tagged release and nothing can
+    authenticate it."""
+    base = committed_clears(root, target)
+    tip = _origin_tip(root)
+    if tip is None or tip == target:
+        return base
+    have = {_key(r) for r in base}
+    extra = [r for r in committed_clears(root, tip) if _key(r) not in have]
+    ancestor = _run(root, "merge-base", "--is-ancestor", target, tip).returncode == 0
+    return base + [
+        r
+        for r in extra
+        if r.verdict == "HOLD" or (ancestor and r.verdict == "CLEAR" and r.by == GATE_BY)
+    ]
 
 
 def uncovered(root: Path, paths: list[str], target: str, clears: list[Clear]) -> list[str]:
@@ -690,7 +718,7 @@ def pre(
         return HOLD, {"decision": "HOLD_BLACKOUT", "reason": why}
     target = _rev(root, target)
     sealed = sealed_code_sha(root)
-    clears, unverified = authenticated(root, committed_clears(root, clears_ref(root, target)))
+    clears, unverified = authenticated(root, effective_clears(root, target))
     delta = governed_delta(root, sealed, target)
     miss = uncovered(root, delta, target, clears)
     if miss:

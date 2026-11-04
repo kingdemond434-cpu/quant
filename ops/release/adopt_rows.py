@@ -24,7 +24,18 @@ head's own content that the merge kept byte for byte. A row that fails counts as
 
 The sweep (`--apply` from ops/box/workflow_gate.ps1) appends rows for recent merges as one
 data-only commit on LIVE (a desks/mt5/data push starts no CI) and pushes it fast-forward only; a
-lost race re-reads the tip and tries again, then gives up and leaves the guard closed.
+lost race re-reads the tip and tries again, then gives up, says so in its --report record, and
+leaves the guard closed.
+
+READ BY THE GUARD (libs/ops/adopt_guard.effective_clears / authenticated): the target's own record
+is the base; from origin LIVE's record only HOLDs (always) and, for a target in its history,
+`by: audit-gate` CLEARs (re-verified) are added. A plain CLEAR that exists only on origin never
+counts.
+
+BOOTSTRAP (Auditor condition 7). The box guard that honours, re-verifies or refuses these rows is
+the one in this tree. Until one adoption lands it, the box runs its 10-29 guard, which reads only
+the target's own record and does none of the re-verification: a written `audit-gate` row is NOT
+proof it was honoured until the box runs this code.
 """
 
 from __future__ import annotations
@@ -171,8 +182,13 @@ class Authority:
         return {"kind": "authority", "pr": pr, "head": head, "attestation": clears[-1]}
 
 
-def registry_source(path: str | None, pr: int, head: str) -> dict[str, Any] | None:
-    """The Auditor's latest registry row for `pr`, if it is a CLEAR of exactly `head`."""
+#: registry_latest's answer for a registry that cannot be read as a whole
+GARBLED: dict[str, Any] = {"verdict": "GARBLED"}
+
+
+def registry_latest(path: str | None, pr: int) -> dict[str, Any] | None:
+    """The Auditor's latest registry row for `pr` -- the same "latest word wins" rule as the
+    gate's registry_clear -- None when there is none, GARBLED when any line is not JSON."""
     if not path:
         return None
     try:
@@ -181,12 +197,20 @@ def registry_source(path: str | None, pr: int, head: str) -> dict[str, Any] | No
         return None
     last: dict[str, Any] | None = None
     for line in lines:
+        if not line.strip():
+            continue
         try:
             r = json.loads(line)
         except ValueError:
-            return None  # a garbled registry vouches for nothing
+            return GARBLED  # a garbled registry vouches for nothing
         if isinstance(r, dict) and r.get("pr") == pr:
             last = r
+    return last
+
+
+def registry_source(path: str | None, pr: int, head: str) -> dict[str, Any] | None:
+    """The Auditor's latest registry row for `pr`, if it is a CLEAR of exactly `head`."""
+    last = registry_latest(path, pr)
     if not last or last.get("verdict") != "CLEAR" or last.get("sha") != head:
         return None
     return {"kind": "registry", "pr": pr, "head": head, "at": str(last.get("at") or "")}
@@ -237,6 +261,9 @@ def verify_row(
     for p, b in paths.items():
         if p not in kept or kept[p] != b:
             return False, f"{p} is not the cleared head's content as merged"
+    latest = registry_latest(registry_path, pr)
+    if latest is not None and latest.get("verdict") != "CLEAR":
+        return False, "the Auditor's latest registry word for the PR is not a CLEAR"
     if src["kind"] == "authority":
         if authority is None:
             return False, "no pinned authority on this box"
@@ -324,7 +351,28 @@ def sweep(
     remote: str = "origin",
     env: Mapping[str, str] | None = None,
     git: Git | None = None,
+    report: Path | None = None,
 ) -> int:
+    def note(state: str, tip: str, rows: list[dict[str, Any]], why: str = "") -> None:
+        """The sweep's own record (Auditor condition 6): a miss is measurable, never silent."""
+        if report is None:
+            return
+        doc = {
+            "at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "state": state,
+            "tip": tip,
+            "merges": [
+                {"pr": r["source"]["pr"], "merge": r["commit"], "kind": r["source"]["kind"]}
+                for r in rows
+            ],
+            "why": why,
+        }
+        try:
+            report.parent.mkdir(parents=True, exist_ok=True)
+            report.write_text(json.dumps(doc, indent=1) + "\n", encoding="utf-8")
+        except OSError as exc:
+            print(f"adopt-rows: report not written ({exc})")
+
     env = os.environ if env is None else env
     git = git or git_in(root)
     authority = Authority.load(root, env)
@@ -344,16 +392,24 @@ def sweep(
                 f"{len(r['paths'])} path(s)"
             )
         if not rows or not apply:
+            note("listed" if rows else "nothing-to-write", tip, rows)
             return 0
         new = append_commit(git, root, tip, rows)
+        touched = git("diff", "--name-only", tip, new).splitlines()
+        if touched != [CLEARS_REL]:  # Auditor condition 5: the record and nothing else
+            note("refused", tip, rows, f"the commit would touch {touched}")
+            print(f"adopt-rows: refused, the commit would touch {touched}")
+            return 1
         try:
             git("push", remote, f"{new}:refs/heads/{LIVE}")
         except RuntimeError as exc:
             print(f"adopt-rows: push {attempt}/{PUSH_TRIES} refused ({exc}); re-reading the tip")
             continue
         print(f"adopt-rows: pushed {new[:12]}")
+        note("written", new, rows)
         return 0
     print("adopt-rows: gave up; the guard stays closed for these merges until the next sweep")
+    note("gave-up", tip, rows, f"{PUSH_TRIES} fast-forward pushes refused: NO ROW WRITTEN")
     return 1
 
 
@@ -362,9 +418,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--root", default=str(Path(__file__).resolve().parents[2]))
     ap.add_argument("--remote", default="origin")
     ap.add_argument("--apply", action="store_true", help="push the rows (default: list only)")
+    ap.add_argument("--report", default="", help="write this sweep's record here (JSON)")
     a = ap.parse_args(argv)
     try:
-        return sweep(Path(a.root), apply=a.apply, remote=a.remote)
+        return sweep(
+            Path(a.root),
+            apply=a.apply,
+            remote=a.remote,
+            report=Path(a.report) if a.report else None,
+        )
     except RuntimeError as exc:
         print(f"adopt-rows: {exc}")
         return 2
