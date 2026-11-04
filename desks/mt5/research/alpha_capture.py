@@ -83,14 +83,12 @@ UNIVERSE = DESK / "data" / "universe" / "universe.json"
 DIGEST = asia_alt_digest.DIGEST
 
 UNMEASURED_LIVE_YIELD = "UNMEASURED_LIVE_YIELD"
-#: Cells one pass may donate. 20 was sized for screen survivors only; now that every measured
-#: cell goes to the judge, a cap that small would re-donate the same top 20 every pass (the
-#: compiler dedups them) and the rest would never arrive. Anything over it is counted in
-#: `refused` by name, never dropped silently.
-#: RESEARCH ONLY: a donation is a hypothesis row written to data/intelligence/ for the judge.
-#: No order, lot, sizing, allocator or risk path reads it; a donated cell reaches capital only
-#: after the gauntlet certifies it and the forward clock matures, exactly as before.
-MAX_DONATIONS = 2000
+#: Cells one pass may donate. Unchanged at 20. Screen-passing cells always lead; the rest of the
+#: queue ROTATES by pass (`cell_rows(rotation=)`), so every measured cell reaches the judge over
+#: successive hourly passes instead of the same top 20 every time. Anything not donated this pass
+#: is counted in `refused` by name, never dropped silently. A donation is a hypothesis row for
+#: the judge only; no order, sizing, allocator or risk path reads it.
+MAX_DONATIONS = 20
 ALPHA = 0.05
 PROPOSE_T = 2.0
 CONTRACT_HORIZON_D = 5
@@ -908,7 +906,8 @@ def measure(rows: Sequence[Mapping[str, Any]], *, loader: Callable[[str], Any],
 # ------------------------------------------------------------------------------ direct cells
 def cell_rows(by_group: Sequence[Mapping[str, Any]], contract: Mapping[str, Any], *,
               cell_placebo: Mapping[str, Mapping[str, Any]] | None = None,
-              limit: int = MAX_DONATIONS) -> tuple[list[dict[str, Any]], int, list[dict[str, Any]]]:
+              limit: int = MAX_DONATIONS,
+              rotation: int = 0) -> tuple[list[dict[str, Any]], int, list[dict[str, Any]]]:
     """(candidates, trials charged, refusals). One cell per (target, source, relation, lead): its
     strongest MEASURED horizon, donated whatever its screen says (2026-11-03).
 
@@ -947,12 +946,17 @@ def cell_rows(by_group: Sequence[Mapping[str, Any]], contract: Mapping[str, Any]
                                                          abs(float(s0["t"]))):
             best[key] = (g, h, s)
     out: list[dict[str, Any]] = []
-    for (target, src, relation, lead), (_g, h, s) in sorted(
-            best.items(), key=lambda kv: (not _passed(kv[0], kv[1][1], kv[1][2]),
-                                          -abs(float(kv[1][2]["t"])))):
+    ranked = sorted(best.items(), key=lambda kv: (not _passed(kv[0], kv[1][1], kv[1][2]),
+                                                   -abs(float(kv[1][2]["t"]))))
+    passers = [kv for kv in ranked if _passed(kv[0], kv[1][1], kv[1][2])]
+    rest = ranked[len(passers):]
+    if rest:
+        k = (rotation * max(limit - len(passers), 1)) % len(rest)
+        rest = rest[k:] + rest[:k]
+    for (target, src, relation, lead), (_g, h, s) in passers + rest:
         if len(out) >= limit:
             refused.append({"cell": f"{target}|{src}|{relation}|{lead}",
-                            "why": f"over the {limit}-donation pass limit"})
+                            "why": f"over the {limit}-donation pass limit; rotates in on a later pass"})
             continue
         side = 1 if float(s["mean_bp"]) > 0 else -1
         family = "analyst_revision_drift" if relation == "direct" else "analyst_cross_market_lead"
@@ -1115,7 +1119,8 @@ def run(*, budget_s: float = 300.0, apply: bool = True, collect_enabled: bool = 
     measured = measure(rows, loader=loader or _bars_loader(), universe_doc=udoc, clock=clock,
                        n_placebo=n_placebo)
     cands, trials, refused = cell_rows(measured["by_group"], measured["contract"],
-                                       cell_placebo=measured["cell_placebo"])
+                                       cell_placebo=measured["cell_placebo"],
+                                       rotation=int(now.timestamp() // 3600))
     path = _donate(cands, max(trials, len(cands))) if (apply and cands) else None
     axis = axis_doc(rows, universe, now)
     intel = intel_doc(rows, measured, universe, now)

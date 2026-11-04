@@ -224,6 +224,17 @@ def test_cells_over_the_pass_limit_are_counted_by_name() -> None:
     assert len(cands) == 2 and len(refused) == 1 and "pass limit" in refused[0]["why"]
 
 
+
+def test_cells_beyond_the_pass_limit_rotate_in_so_every_cell_reaches_the_judge() -> None:
+    groups = [_group(f"S{i}", "yahoo_upgrades", "direct", "", 1.0 + i, 10.0) for i in range(5)]
+    seen: set[str] = set()
+    for rotation in range(3):                    # ceil(5 / 2) passes cover all five cells
+        cands, _t, refused = ac.cell_rows(groups, {}, cell_placebo=None, limit=2,
+                                          rotation=rotation)
+        assert len(cands) == 2 and len(refused) == 3
+        seen |= {c["symbol"] for c in cands}
+    assert seen == {f"S{i}" for i in range(5)}
+
 def test_the_report_never_collides_with_execution_intelligence() -> None:
     import re
     ei = (DESK / "research" / "execution_intelligence.py").read_text("utf-8")
