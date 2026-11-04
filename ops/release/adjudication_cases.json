@@ -130,6 +130,18 @@
    "source": "independent-review job 126879625385; Auditor CLEAR b849cc947 (Desk health 21:51Z)"
   },
   {
+   "pr": 709,
+   "head": "4576d436ec5c44772611fa5a1b7b0347b4da2b04",
+   "base": "4dee8ab211e2c9ef3f82d8611d1d125c147b0056",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "The change introduces a new decision entry with an id of 'D-20261104-031', which appears to be related to the cross_asset_residual's previous-close stop/target. This addition could potentially increase risk by introducing new logic that affects trade execution and loss calculation."
+   ],
+   "source": "independent-review job 126896262972; Auditor CLEAR 4576d436e 22:05Z (journal-only diff)"
+  },
+  {
    "pr": 642,
    "head": "0bdb84e4c76049e050a779a274c61d0a24398eb4",
    "base": "6727fc33e5ffafe5cfb1886b2dd38df2f47666b5",
