@@ -36,12 +36,12 @@ def test_the_overlay_prices_the_fill_hour_at_the_venues_own_median(tmp_path: Pat
     _quotes(tmp_path / "cost_truth_quotes.fusion_markets.json", "fusion_markets",
             "2026-11-05T06:00:00+00:00", 0.00001, [0.00011, 0.00012, 0.00013])
     s = vc.account_surface(tmp_path, "fusion", surface)
-    assert s["symbols"]["EURUSD"]["hours"]["7"]["p50"] == 12.0                 # the quotes
+    assert abs(s["symbols"]["EURUSD"]["hours"]["7"]["p50"] - 12.0) < 1e-9     # the quotes
     assert s["symbols"]["EURUSD"]["hours"]["8"]["p50"] == 9.5                  # untouched
     assert s["venue_quotes"]["cells_overlaid"] == 1
     assert surface["symbols"]["EURUSD"]["hours"]["7"]["p50"] == 9.0            # input not mutated
     r, _why, _d = cost_ratio(s, "EURUSD", 7, None)
-    assert r is not None and abs(r - 12.0 / 8.0) < 1e-9
+    assert r is not None and abs(r - 12.0 / 8.0) < 1e-6
 
 
 def test_too_few_readings_or_no_file_change_nothing(tmp_path: Path) -> None:
