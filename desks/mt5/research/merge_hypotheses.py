@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -30,6 +31,54 @@ HYP = BASE / "data" / "hypotheses"
 TARGET = HYP / "external_survivors.json"
 
 
+#: THE RENAME WAITS OUT A READER (2026-11-05). On Windows `os.replace` onto a file another process
+#: holds open raises PermissionError [WinError 5]. Measured on the box: MT5-MergeDocket.log carried
+#: 28 such failures at this rename, external_survivors.json stayed frozen at 11-02 22:43Z for 54 h
+#: while the run that produced it kept going, and each failed run's 1-2 GB staging file was left
+#: beside it. The judge reads the 2 GB docket for minutes at a time, so the rename now retries with
+#: backoff for up to DOCKET_REPLACE_BUDGET_S before it gives up exactly as it did before.
+DOCKET_REPLACE_BUDGET_S = float(os.environ.get("DOCKET_REPLACE_BUDGET_S", "900"))
+DOCKET_REPLACE_FIRST_WAIT_S = 0.5
+DOCKET_REPLACE_MAX_WAIT_S = 30.0
+#: A staging file this old belongs to a writer that died (a write takes minutes, and its mtime
+#: moves while it streams); it is removed at the next write so dead runs stop holding disk.
+DOCKET_ORPHAN_AGE_S = 6 * 3600.0
+
+
+def _replace_waiting_for_readers(src: str | Path, dst: Path,
+                                 budget_s: float | None = None) -> int:
+    """`os.replace(src, dst)`, retrying PermissionError with backoff inside `budget_s`. Returns the
+    retries it needed; re-raises the last PermissionError once the budget is spent."""
+    budget = DOCKET_REPLACE_BUDGET_S if budget_s is None else float(budget_s)
+    deadline = time.monotonic() + max(0.0, budget)
+    wait, tries = DOCKET_REPLACE_FIRST_WAIT_S, 0
+    while True:
+        try:
+            os.replace(src, dst)
+            return tries
+        except PermissionError:
+            left = deadline - time.monotonic()
+            if left <= 0:
+                raise
+            tries += 1
+            time.sleep(min(wait, left))
+            wait = min(wait * 2, DOCKET_REPLACE_MAX_WAIT_S)
+
+
+def _sweep_dead_staging(path: Path, now: float | None = None) -> int:
+    """Remove `.<name>.*.tmp` staging files a dead writer left beside `path`. Never raises."""
+    cutoff = (time.time() if now is None else now) - DOCKET_ORPHAN_AGE_S
+    removed = 0
+    for p in path.parent.glob(f".{path.name}.*.tmp"):
+        try:
+            if p.stat().st_mtime < cutoff:
+                p.unlink()
+                removed += 1
+        except OSError:
+            continue
+    return removed
+
+
 def _write_docket_atomically(path: Path, rows: list[dict[str, Any]] | dict[str, Any]) -> None:
     """Stream the large docket without a second, multi-gigabyte JSON string.
 
@@ -37,6 +86,7 @@ def _write_docket_atomically(path: Path, rows: list[dict[str, Any]] | dict[str, 
     docket.  A failed write must also leave the previous judge input intact.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
+    _sweep_dead_staging(path)
     fd, pending = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as stream:
@@ -56,7 +106,17 @@ def _write_docket_atomically(path: Path, rows: list[dict[str, Any]] | dict[str, 
                 stream.write("\n]\n")
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(pending, path)
+        started = time.monotonic()
+        try:
+            tries = _replace_waiting_for_readers(pending, path)
+        except PermissionError:
+            print(f"   docket replace FAILED: {path.name} still locked by a reader after "
+                  f"{time.monotonic() - started:.0f}s of retries (budget "
+                  f"{DOCKET_REPLACE_BUDGET_S:.0f}s); previous docket kept")
+            raise
+        if tries:
+            print(f"   docket replace: {path.name} waited out a reader, {tries} retr"
+                  f"{'y' if tries == 1 else 'ies'} over {time.monotonic() - started:.0f}s")
     finally:
         if os.path.exists(pending):
             os.unlink(pending)
@@ -111,9 +171,11 @@ def live_banned_families() -> frozenset[str]:
 def judged_by_family(path: Path | None = None, tail: int = GATE_LEDGER_TAIL) -> dict[str, int]:
     """How many judgements each family has already consumed, from the gate ledger's tail."""
     out: dict[str, int] = {}
+    from libs.ops.tail_read import tail_lines
     try:
-        with (path or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
-            lines = fh.readlines()[-tail:]
+        # READ FROM THE END (2026-11-04): `readlines()[-tail:]` held the whole ~1.4M-row ledger,
+        # 13.7 GB of commit on the box, to keep 200,000 rows. Same lines, memory of the tail.
+        lines = tail_lines(path or GATE_LEDGER, tail)
     except OSError:
         return out
     for line in lines:
