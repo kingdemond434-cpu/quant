@@ -10,16 +10,7 @@ series through its own once-in-a-lifetime cell door, so this module adds no hour
 registry path and no second minting clock. Rows live in `global_flow_sources.json` beside the
 code: add a source there; a row whose adapter is `none` is a NAMED GAP with its reason.
 
-WHAT IS NEW HERE (everything else in the coverage map was already live elsewhere):
-
-    snb_sight      SNB weekly sight deposits: the Swiss franc intervention footprint
-    gld_holdings   SPDR Gold Trust tonnes: the largest gold ETF's creations and redemptions
-    nse_part_oi    NSE participant-wise derivatives OI: Indian RETAIL (Client) against FII,
-                   DII and proprietary desks, every trading day
-    cboe_gamma     Cboe delayed SPX / NDX option chains -> dealer gamma exposure, put/call OI
-                   (a daily SNAPSHOT: history accrues from the first pass, nothing back-filled)
-    mof_weekly     Japan MoF weekly portfolio flows: Japanese buying of foreign bonds and
-                   stocks, foreign buying of Japanese ones (the institutional yen flow)
+SOURCES: snb_sight, gld_holdings, nse_part_oi, cboe_* option chains, mof_weekly (see the rows).
 
 HONEST ACCESS. Robots is read as a routing label (LAWS 5e: PUBLIC / PUBLIC_WITH_TERMS /
 ACCESS_UNCLEAR, carried on each series); 401/403/429/451 is a hard stop recorded in state and

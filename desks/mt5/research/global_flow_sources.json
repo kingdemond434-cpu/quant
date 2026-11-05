@@ -194,7 +194,7 @@
     "CHFJPY",
     "GBPCHF"
    ],
-   "why": "SNB buys foreign currency by crediting banks' sight deposits: a weekly jump is the intervention footprint the franc price has not finished absorbing (SNB publishes Monday for the prior week)."
+   "why": "SNB buys foreign currency by crediting banks' sight deposits:"
   },
   {
    "id": "gld_holdings",
@@ -232,7 +232,7 @@
     "CHINAH",
     "US500"
    ],
-   "why": "NSE splits every derivatives contract by owner: Indian retail (Client) is the largest options crowd on earth and trades against FII and prop desks. FII index-futures net leads INR flows; retail extremes are the contrarian leg."
+   "why": "NSE splits every derivatives contract by owner:"
   },
   {
    "id": "cboe_gamma",
@@ -256,7 +256,7 @@
     "US2000",
     "US30"
    ],
-   "why": "Index options: dealer gamma/vanna sign decides whether hedging damps or amplifies moves (pin vs trend days); OI walls and max pain pull price into expiry; skew and put/call are the hedging crowd.",
+   "why": "Index options:",
    "robots_url": "https://cdn.cboe.com/api/global/delayed_quotes/options/_SPX.json"
   },
   {
@@ -278,7 +278,7 @@
     "XAUUSD",
     "USDJPY"
    ],
-   "why": "VIX options: the vol-of-vol crowd; call-heavy VIX OI is crash-hedging demand.",
+   "why": "VIX options:",
    "robots_url": "https://cdn.cboe.com/api/global/delayed_quotes/options/_SPX.json"
   },
   {
@@ -301,7 +301,7 @@
     "XAUEUR",
     "XAUAUD"
    ],
-   "why": "Gold and silver ETF options: dealer gamma, walls and skew in the metals' largest listed options market.",
+   "why": "Gold and silver ETF options:",
    "robots_url": "https://cdn.cboe.com/api/global/delayed_quotes/options/_SPX.json"
   },
   {
@@ -323,7 +323,7 @@
     "XBRUSD",
     "XNGUSD"
    ],
-   "why": "Oil and gas ETF options: retail-heavy energy options crowd and dealer hedging.",
+   "why": "Oil and gas ETF options:",
    "robots_url": "https://cdn.cboe.com/api/global/delayed_quotes/options/_SPX.json"
   },
   {
@@ -345,7 +345,7 @@
     "UST05Y",
     "USDJPY"
    ],
-   "why": "Treasury ETF options: duration hedging flow and the bond-crowd skew.",
+   "why": "Treasury ETF options:",
    "robots_url": "https://cdn.cboe.com/api/global/delayed_quotes/options/_SPX.json"
   },
   {
@@ -374,7 +374,7 @@
     "USDCAD",
     "USDX"
    ],
-   "why": "Currency ETF options: the only free listed FX skew and put/call (fills fx_options_risk_reversals, which has no free vendor source).",
+   "why": "Currency ETF options:",
    "robots_url": "https://cdn.cboe.com/api/global/delayed_quotes/options/_SPX.json"
   },
   {
@@ -403,7 +403,7 @@
     "USDKRW",
     "USDINR"
    ],
-   "why": "Country ETF options: US-listed hedging and speculation on China, EM, Japan, Brazil, Korea, India.",
+   "why": "Country ETF options:",
    "robots_url": "https://cdn.cboe.com/api/global/delayed_quotes/options/_SPX.json"
   },
   {
@@ -421,7 +421,7 @@
     "AUDJPY",
     "JPN225"
    ],
-   "why": "Japanese lifers, pensions and toshin buying foreign bonds sell yen; foreign buying of Japanese stocks buys it. MoF publishes the week on the following Thursday 08:50 JST (stamped later, conservatively)."
+   "why": "Japanese lifers, pensions and toshin buying foreign bonds sell yen; foreign buying of Japanese stocks buys it."
   },
   {
    "id": "cn_dce_czce_gfex_cffex",
