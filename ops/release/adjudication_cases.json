@@ -204,6 +204,18 @@
    "source": "independent-review job 126902508768; Auditor CLEAR ad33b1cde 22:16Z (Futures batch; findings answered on the PR)"
   },
   {
+   "pr": 717,
+   "head": "6d3373613cc7c289a026bf4aad5a13b110347e56",
+   "base": "67abd51ce1524cb32e2219320e12aa64d1e2fe5b",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "The change introduces a new feature that could increase risk by withholding symbols based on stale bar data, which may affect the trading strategy and performance."
+   ],
+   "source": "independent-review job 126932454852; Auditor CLEAR 6d3373613 00:15Z (research-only mint gate)"
+  },
+  {
    "pr": 642,
    "head": "0bdb84e4c76049e050a779a274c61d0a24398eb4",
    "base": "6727fc33e5ffafe5cfb1886b2dd38df2f47666b5",
