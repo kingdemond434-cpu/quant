@@ -65,3 +65,55 @@ def test_a_silent_no_op_on_a_twin_rooted_path_says_so(tmp_path, monkeypatch) -> 
     rec = woe.judge("leg", snap, snap, {"exit_code": 0})
     assert rec["verdict"] == woe.SILENT_NO_OP
     assert rec["both_roots"] == ["data/x.jsonl"] and "BOTH" in rec["detail"]
+
+
+def _shared_world(tmp_path, monkeypatch, *, age_h: float):
+    import os
+    import time
+    art = tmp_path / "FOREST_KOREA.json"
+    art.write_text("{}", "utf-8")
+    stamp = time.time() - age_h * 3600
+    os.utime(art, (stamp, stamp))
+    table = {"forest_korea": ["k"], "forest_china": ["k"], "solo": ["s"]}
+    monkeypatch.setattr(woe, "leg_table", lambda refresh=False: table)
+    monkeypatch.setattr(woe, "declared_artifacts",
+                        lambda leg: [art] if leg.startswith("forest") else [tmp_path / "s.json"])
+    monkeypatch.setattr(woe, "_OWNERS", None)
+    return woe.snapshot([art])
+
+
+def test_a_leg_judged_on_a_fresh_file_another_leg_shares_is_unattributed(tmp_path,
+                                                                         monkeypatch) -> None:
+    """The box, 2026-11-05: ten forest legs were judged on FOREST_KOREA.json."""
+    snap = _shared_world(tmp_path, monkeypatch, age_h=1.0)
+    rec = woe.judge("forest_china", snap, snap, {"exit_code": 0})
+    assert rec["verdict"] == woe.SHARED_UNATTRIBUTED
+    assert rec["verdict"] not in woe.DEFECTS and rec["verdict"] not in woe.PASSING
+    assert list(rec["shared_with"].values()) == [["forest_korea"]]
+
+
+def test_a_shared_file_nobody_wrote_inside_the_window_is_silent_again(tmp_path,
+                                                                     monkeypatch) -> None:
+    snap = _shared_world(tmp_path, monkeypatch, age_h=woe.WINDOW_H + 1)
+    assert woe.judge("forest_china", snap, snap, {"exit_code": 0})["verdict"] == woe.SILENT_NO_OP
+
+
+def test_a_named_reason_still_wins_and_a_private_file_is_still_judged_alone(tmp_path,
+                                                                            monkeypatch) -> None:
+    snap = _shared_world(tmp_path, monkeypatch, age_h=1.0)
+    rec = woe.judge("forest_china", snap, snap,
+                    {"exit_code": 0, "tail": "WRITE_OR_EXPLAIN: NO_OP nothing new"})
+    assert rec["verdict"] == woe.DECLARED_NO_OP
+    private = woe.snapshot([tmp_path / "s.json"])
+    assert woe.judge("solo", private, private, {"exit_code": 0})["verdict"] == woe.SILENT_NO_OP
+
+
+def test_the_report_files_unattributed_legs_apart_and_not_as_a_breach(tmp_path,
+                                                                      monkeypatch) -> None:
+    row = {"leg": "forest_china", "verdict": woe.SHARED_UNATTRIBUTED,
+           "at": woe._now(), "declared": ["k"]}
+    monkeypatch.setattr(woe, "read_ledger", lambda: [row])
+    monkeypatch.setattr(woe, "leg_table", lambda refresh=False: {"forest_china": ["k"]})
+    rep = woe.build_report()
+    assert [e["leg"] for e in rep["shared_unattributed"]] == ["forest_china"]
+    assert rep["status"] == "CONTRACT_KEPT" and not rep["silent_no_ops"]

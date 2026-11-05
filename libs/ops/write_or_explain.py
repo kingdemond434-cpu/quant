@@ -107,6 +107,14 @@ LEG_TIMEOUT = "LEG_TIMEOUT"
 UNDECLARED = "UNDECLARED"
 SKIPPED = "SKIPPED"
 NEVER_OBSERVED = "NEVER_OBSERVED"
+#: THE LEG SHARES ITS ONLY DECLARATIONS WITH OTHER LEGS AND ANOTHER OF THEM WROTE (2026-11-05).
+#: The registry declares artifacts per ITEM and `leg_table` hands every leg in an item's
+#: `scheduled_by` all of that item's files, so ten forest legs were judged on FOREST_KOREA.json
+#: and fred_macro on five files other legs write: 13 of the box's 21 SILENT_NO_OPs were that
+#: attribution, not silence. It is neither a defect nor a pass -- the contract cannot tell
+#: whether THIS leg had work (L1.28a: UNMEASURED) -- and it lasts only while the shared file is
+#: fresh: a shared artifact nobody has written inside WINDOW_H is SILENT_NO_OP again.
+SHARED_UNATTRIBUTED = "SHARED_UNATTRIBUTED"
 
 #: The verdicts that are DEFECTS -- each one a thing that was silent before today.
 DEFECTS: frozenset[str] = frozenset({SILENT_NO_OP, LEG_FAILED, LEG_TIMEOUT, NEVER_OBSERVED})
@@ -393,6 +401,16 @@ def judge(leg: str, before: Mapping[str, dict[str, Any]],
         rec["reason"] = reason
         rec["detail"] = f"{leg} wrote nothing and said why: {reason}"
         return rec
+    shared = _shared_and_fresh(leg, still, after)
+    if shared:
+        rec["verdict"] = SHARED_UNATTRIBUTED
+        rec["shared_with"] = shared
+        rec["detail"] = (
+            f"{leg} moved none of its {len(declared)} declared artifact(s), but every one is "
+            f"shared with other legs and was written inside {WINDOW_H:g} h by one of them, so "
+            f"this leg's own output is UNMEASURED, not silent: "
+            + "; ".join(f"{_rel(p)} <- {', '.join(o[:4])}" for p, o in list(shared.items())[:3]))
+        return rec
     rec["verdict"] = SILENT_NO_OP
     rec["detail"] = (
         f"{leg} exited {0 if code is None else code} and NOT ONE of its {len(declared)} declared "
@@ -406,6 +424,47 @@ def judge(leg: str, before: Mapping[str, dict[str, Any]],
                           f"desks/mt5, so check this watched the copy the leg writes: "
                           f"{', '.join(twins[:3])}")
     return rec
+
+
+_OWNERS: tuple[int, dict[str, list[str]]] | None = None
+
+
+def owners() -> dict[str, list[str]]:
+    """Declared artifact (resolved path string) -> every leg whose table entry declares it.
+    Cached against the leg table it was built from, so a refreshed table rebuilds it."""
+    global _OWNERS
+    table = leg_table()
+    if _OWNERS is not None and _OWNERS[0] == id(table):
+        return _OWNERS[1]
+    out: dict[str, list[str]] = {}
+    for name in table:
+        for p in declared_artifacts(name):
+            out.setdefault(str(p), []).append(name)
+    _OWNERS = (id(table), out)
+    return out
+
+
+def _shared_and_fresh(leg: str, still: Sequence[str],
+                      after: Mapping[str, dict[str, Any]],
+                      now_ns: int | None = None) -> dict[str, list[str]]:
+    """{path: co-declaring legs} when EVERY unmoved declaration is shared AND fresh, else {}.
+
+    Fresh = exists and its mtime is inside WINDOW_H. One private or stale declaration and the
+    leg is judged on its own again. Never raises."""
+    try:
+        table = owners()
+        now_ns = now_ns if now_ns is not None else int(datetime.now(UTC).timestamp() * 1e9)
+        out: dict[str, list[str]] = {}
+        for p in still:
+            others = [o for o in table.get(str(p), []) if o != leg]
+            snap = after.get(p) or {}
+            age_h = (now_ns - int(snap.get("mtime_ns") or 0)) / 3.6e12
+            if not others or not snap.get("exists") or age_h > WINDOW_H:
+                return {}
+            out[str(p)] = others
+        return out
+    except Exception:
+        return {}
 
 
 def both_roots(paths: Iterable[str | Path]) -> list[str]:
@@ -520,6 +579,7 @@ def build_report(*, window_h: float = WINDOW_H) -> dict[str, Any]:
         "window_h": window_h, "ledger": str(LEDGER), "ledger_rows": len(rows),
         "legs_declaring_artifact": len(declared),
         "silent_no_ops": [], "failed": [], "never_observed": [], "declared_no_ops": [],
+        "shared_unattributed": [],
         "undeclared": [], "ok": [], "scanned": 0, "status": "UNMEASURED", "detail": "",
     }
     if not declared:
@@ -548,6 +608,8 @@ def build_report(*, window_h: float = WINDOW_H) -> dict[str, Any]:
             rep["failed"].append(entry)
         elif verdict == DECLARED_NO_OP:
             rep["declared_no_ops"].append(entry)
+        elif verdict == SHARED_UNATTRIBUTED:
+            rep["shared_unattributed"].append(entry)
         elif verdict == UNDECLARED:
             rep["undeclared"].append(entry)
         elif verdict == OK:
@@ -583,6 +645,10 @@ def build_report(*, window_h: float = WINDOW_H) -> dict[str, Any]:
         rep["status"] = "CONTRACT_KEPT"
         rep["detail"] = (f"{len(rep['ok'])} leg(s) wrote, {len(rep['declared_no_ops'])} declared a "
                          f"named no-op, {len(rep['undeclared'])} declare no artifact at all")
+    if rep["shared_unattributed"]:
+        rep["detail"] += (f"; {len(rep['shared_unattributed'])} share every declaration with "
+                          f"other legs and are UNMEASURED on their own output until the "
+                          f"registry declares per leg")
     return rep
 
 
