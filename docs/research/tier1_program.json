@@ -9189,7 +9189,7 @@
    "status": "PARTIAL",
    "gate": "none",
    "scheduled_by": "hourly_cycle:free_stack_hunt, hourly_cycle:free_stack_proposer",
-   "artifact": "desks/mt5/data/lake/series/fs_cnx_shfe.parquet",
+   "artifact": "desks/mt5/reports/FREE_STACK_YIELD.json",
    "consumer": "desks/mt5/research/free_stack_proposer.py build_grid reads data/free_stack/columns.json + the fs_cnx_<exchange> series and donates exogenous_conditioner / alt_series_momentum / alt_conditioned cells through proposer_common.donate (tests_run = cells minted -> libs/research/experiment_ledger.py); free_stack_hunter.build_alt_state publishes the columns' PIT z into reports/ALT_REGIME_STATE.json",
    "evidence": [
     "libs/data/free_stack_cnx.py:375 -- SHFE/INE pm<date>.dat member rankings (top-20 volume / long / short per contract, RANK 999 total refused); :410 DCE, :430 CZCE, :455 GFEX, :476 CFFEX ranking parsers; :496 warehouse receipts and weekly inventory",
