@@ -1841,7 +1841,7 @@ def _tape_for(sym: str) -> dict:
                 files.setdefault(d, []).append(f)
         except Exception:
             _TAPE["errors"] += 1
-        _TAPE.update(sym=sym, files=files, days={})
+        _TAPE.update(sym=sym, files=files, days={}, error_days=set())
     return _TAPE
 
 

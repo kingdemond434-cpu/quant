@@ -247,3 +247,15 @@ def test_an_unreadable_tape_day_is_named_not_silent(monkeypatch, tmp_path):
     monkeypatch.setattr(sf, "_tick_surfaces", lambda: _surface_with({1: 6.0}))
     pts, src = sf.measured_spread_at("GBPCHF", pd.Timestamp("2026-11-04 01:00", tz="UTC"), TICK)
     assert (pts, src) == (6.0, "tick_hour_tape_error")
+
+
+def test_a_bad_tape_day_is_not_blamed_on_the_next_symbol(monkeypatch, tmp_path):
+    import mt5desk.tape as tape
+    (tmp_path / "bad.parquet").write_text("not parquet")
+    monkeypatch.setattr(tape, "day_files", lambda sym, root=None: (
+        [("2026-11-04", tmp_path / "bad.parquet")] if sym == "GBPCHF" else []))
+    monkeypatch.setattr(sf, "_tick_surfaces", lambda: _surface_with({1: 6.0}, sym="EURCHF"))
+    sf._reset_spread_caches()
+    at = pd.Timestamp("2026-11-04 01:00", tz="UTC")
+    sf.measured_spread_at("GBPCHF", at, TICK)
+    assert sf.measured_spread_at("EURCHF", at, TICK) == (6.0, "tick_hour")
