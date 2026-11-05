@@ -37,6 +37,25 @@ def test_a_working_tree_resets_within_its_first_interval() -> None:
     assert tr.idle_s(31 * 60.0) == 0.0
 
 
+def test_a_real_burst_after_a_long_quiet_stretch_is_progress() -> None:
+    # 39 jitter minutes, then 20 cpu-s in one minute: diluted over the stretch it is 0.0085 cores
+    tr = _run([0.3, 0.35, 1.3] * 13 + [20.0])
+    assert tr.idle_s(40 * 60.0) == 0.0
+
+
+def test_a_late_io_burst_is_progress() -> None:
+    tr = rsg._TreeProgress(0.0, max_gap_s=180.0)
+    for i in range(1, 36):
+        tr.update({"cpu": {1: 0.0}, "io": {1: 4096.0 * i}}, 60.0 * i)
+    assert tr.idle_s(35 * 60.0) >= 30 * 60.0
+    tr.update({"cpu": {1: 0.0}, "io": {1: 50e6}}, 36 * 60.0)      # 50 MB in one minute
+    assert tr.idle_s(36 * 60.0) == 0.0
+
+
+def test_the_burst_bar_sits_above_the_measured_jitter() -> None:
+    assert rsg.BURST_CORES > 1.3 / 60.0
+
+
 def test_steady_light_work_above_the_floor_is_never_idle() -> None:
     tr = _run([1.5] * 60)                                 # 0.025 cores, just over the floor
     assert tr.idle_s(3600.0) == 0.0

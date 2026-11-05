@@ -350,6 +350,17 @@ NO_PROGRESS_CORES = 0.02
 #: ...AND moved under this many bytes of real I/O per second (psutil io_counters, read + write,
 #: where the platform exposes them). Heartbeat-sized writes are a few KB a beat, far under it.
 NO_PROGRESS_IO_BPS = 65536.0
+#: A SINGLE interval at or above these rates is progress on its own, whatever the quiet stretch
+#: before it averaged (2026-11-05, audit HOLD of 3b5d8e948). The stretch average alone would
+#: dilute a real burst late in a long quiet run -- 20 cpu-s in one minute after 39 quiet ones
+#: scores 0.0085 cores over the stretch -- and kill a tree that just did work. The bar sits well
+#: above the measured jitter of a wedged sweep (31752: at most 1.3 cpu-s a minute = 0.022 cores).
+#: MISSED-GROWTH, BOTH DIRECTIONS (Rule 1): set too LOW, jitter resets the idle clock and a wedged
+#: sweep holds the judge lane until the 48 h hang limit (31752 cost 6+ h of verdicts, 0 landed);
+#: set too HIGH, a tree working in short bursts under it is killed and its sweep's work is lost
+#: (the cache keeps built cells; the plan restarts). 5x the floor and 4x the I/O floor.
+BURST_CORES = 5.0 * NO_PROGRESS_CORES
+BURST_IO_BPS = 4.0 * NO_PROGRESS_IO_BPS
 NO_PROGRESS_CAP_S = 4 * 3600.0
 #: A RUNNING heartbeat older than this is a wedged watchdog: the resident and the next run act.
 HEARTBEAT_STALE_S = 600.0
@@ -472,8 +483,12 @@ class _TreeProgress:
         # working tree still resets it within its first interval, a jittering wedged one no
         # longer can.
         span = now - self.last_progress
+        # ...AND A REAL BURST IS PROGRESS ON ITS OWN (BURST_CORES / BURST_IO_BPS), so the average
+        # can never dilute work that arrives late in a quiet stretch.
         progressing = (dt <= 0 or span <= 0 or self._acc_cpu / span >= self.cores
-                       or (bool(io) and self._acc_io / span >= NO_PROGRESS_IO_BPS))
+                       or delta / dt >= max(self.cores, BURST_CORES)
+                       or (bool(io) and (self._acc_io / span >= NO_PROGRESS_IO_BPS
+                                         or io_delta / dt >= BURST_IO_BPS)))
         if progressing:
             self.last_progress = now
             self._acc_cpu = self._acc_io = 0.0
