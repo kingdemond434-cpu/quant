@@ -447,3 +447,25 @@ def test_shfe_and_ine_name_cftc_cot_as_an_unmeasured_substitute(sid: str) -> Non
 def test_refused_is_in_the_established_terms_vocabulary() -> None:
     import alt_proxies
     assert "refused" in alt_proxies.TERMS_VALUES
+
+
+def test_the_yield_report_names_every_source_it_withheld(store, tmp_path) -> None:
+    """A withheld source is a verdict with a cause and a substitute, never a silent leg."""
+    from free_stack_hunter import run
+    doc = json.loads((_DESK / "data" / "free_stack_sources.json").read_text("utf-8"))
+    rows = [r for r in doc["sources"] if r["id"] in ("cnx_shfe", "cnx_dce")]
+    p = tmp_path / "roster.json"
+    p.write_text(json.dumps({"sources": rows}, ensure_ascii=False), "utf-8")
+    calls: list[str] = []
+
+    def fetch(url: str, headers=None, body=None) -> bytes:
+        calls.append(url)
+        return b""
+    rep = run(budget_s=60, fetch=fetch, store=store, roster=p, now=NOW,
+              only=["cnx_shfe", "cnx_dce"], live=False)
+    w = rep["withheld"]
+    assert not calls
+    assert w["blocked_on_terms"] == 2
+    assert w["terms_refused"] == ["cnx_shfe"] and w["terms_to_confirm"] == ["cnx_dce"]
+    shfe = next(s for s in w["sources"] if s["id"] == "cnx_shfe")
+    assert "cftc_cot" in shfe["substitute_candidates"]
