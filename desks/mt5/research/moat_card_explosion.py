@@ -97,10 +97,19 @@ HORIZON_MULTIPLES: tuple[float, ...] = (0.5, 2.0)
 
 CARD_RANK: dict[str, int] = {"live": 3, "standby": 2, "forward": 1, "certified": 1}
 MAX_PER_CARD = 40
+#: NEW children one axis may contribute to one card in one pass -- the round-robin spread, applied
+#: in `pick` to children the registry does not already hold. It is NOT the depth of an axis.
 MAX_PER_AXIS = 4
+#: How deep each axis is ENUMERATED. Until 2026-11-05 every builder truncated at `MAX_PER_AXIS`,
+#: so a pass could only ever propose the SAME first four siblings, rungs or partners per axis:
+#: measured on PRODUCER_YIELD 2026-11-05 01:43Z, card_explosion emitted 31,866 rows/h and 15.8
+#: of them were new registry rows (the rest deduped onto children judged weeks ago), and the MOAT
+#: queue the compiler claims from sat at 0. The frontier is the axis's tail; enumerate it, and let
+#: `pick` spend the cap on what the registry has never seen.
+AXIS_DEPTH = 64
 BUDGET_S = 240.0
-#: Cards read in one pass. Each costs a registry read and a signature walk; the box holding the
-#: live terminal has 8 GB and a dozen resident python processes.
+#: Cards EXPLODED in one pass (a card whose children are all registered costs a walk and counts
+#: nothing). Each costs a registry read and a signature walk; `BUDGET_S` bounds the walk.
 MAX_CARDS = 200
 
 # ------------------------------------------------------------------ THE COMPATIBILITY TABLE
@@ -366,7 +375,10 @@ def collect_cards(conn: Any = None) -> tuple[list[dict[str, Any]], list[dict[str
                            "why": "a card whose family this tree cannot call spawns nothing; "
                                   "UNMEASURED, not zero"})
     out.sort(key=lambda c: (-int(c["rank"]), str(c["card"])))
-    return out[:MAX_CARDS], unmeasured
+    # Every card, in rank order. `MAX_CARDS` bounds the cards a pass EXPLODES (cards that yield a
+    # new child), not the cards it reads: a fixed head of 200 whose trees are already walked would
+    # otherwise hold every card behind it out forever.
+    return out, unmeasured
 
 
 # ------------------------------------------------------------------ the axes
@@ -399,7 +411,7 @@ def axis_asset(card: dict[str, Any], note: list[dict[str, Any]]) -> list[dict[st
     s = card["spec"]
     pool = ar.instruments_by_class().get(card["asset_class"], [])
     sibs = [x for x in pool if x != s["symbol"] and ar.may_hypothesise(x)
-            and has_bars(x, s["chart"])][:MAX_PER_AXIS]
+            and has_bars(x, s["chart"])][:AXIS_DEPTH]
     if not sibs:
         note.append({"what": f"no asset sibling for {card['card']}", "n": 0,
                      "why": f"class {card['asset_class']!r} has no other hypothesis-lane "
@@ -427,7 +439,7 @@ def axis_chart(card: dict[str, Any], note: list[dict[str, Any]]) -> list[dict[st
                      "why": f"{card['mechanism']} is an intraday-window mechanism; one bar a day "
                             f"cannot resolve the window, so a D1 child would delete the rule "
                             f"rather than transfer it"})
-    return out[:MAX_PER_AXIS]
+    return out[:AXIS_DEPTH]
 
 
 def _live_slots(s: dict[str, Any], ks: list[str]) -> list[tuple[str, dict[str, Any] | None]]:
@@ -449,7 +461,7 @@ def _live_slots(s: dict[str, Any], ks: list[str]) -> list[tuple[str, dict[str, A
 
 def axis_session(card: dict[str, Any], _note: list[dict[str, Any]]) -> list[dict[str, Any]]:
     s = card["spec"]
-    ks = [k for k in sessions() if k != s["session"]][:MAX_PER_AXIS]
+    ks = [k for k in sessions() if k != s["session"]][:AXIS_DEPTH]
     out = []
     for k, (landed, remap) in zip(ks, _live_slots(s, ks), strict=True):
         why = (f"the same rule fired only in the {k} window: the participants differ by "
@@ -492,7 +504,7 @@ def axis_knob(card: dict[str, Any], axis: str, note: list[dict[str, Any]]
                             f"cell's params to the family signature (normalize_grid), so a "
                             f"{axis} param here would be stripped and the child would execute "
                             f"identically to its parent -- UNMEASURED, not covered"})
-    return out[:MAX_PER_AXIS]
+    return out[:AXIS_DEPTH]
 
 
 def axis_horizon(card: dict[str, Any], note: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -538,14 +550,18 @@ def axis_residual(card: dict[str, Any], note: list[dict[str, Any]]) -> list[dict
                             f"{s['symbol']} against"})
         return []
     held = _hold(s["params"])
-    params: dict[str, Any] = {"factor_symbols": [pool[0]]}
-    if held is not None:
-        params["ttl_bars"] = int(held[1])
-    return [_child(card, "residual",
-                   spec(s["symbol"], s["family"] and RESIDUAL_FAMILY, params, s["chart"],
-                        s["session"]),
-                   f"the card trades {s['symbol']}'s level; the residual to {pool[0]} strips the "
-                   f"class move and asks whether the edge was idiosyncratic all along")]
+    out = []
+    for factor in pool[:AXIS_DEPTH]:
+        params: dict[str, Any] = {"factor_symbols": [factor]}
+        if held is not None:
+            params["ttl_bars"] = int(held[1])
+        out.append(_child(card, "residual",
+                          spec(s["symbol"], s["family"] and RESIDUAL_FAMILY, params, s["chart"],
+                               s["session"]),
+                          f"the card trades {s['symbol']}'s level; the residual to {factor} "
+                          f"strips the class move and asks whether the edge was idiosyncratic "
+                          f"all along"))
+    return out
 
 
 def axis_inverse(card: dict[str, Any], note: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -572,7 +588,7 @@ def axis_inverse(card: dict[str, Any], note: list[dict[str, Any]]) -> list[dict[
         note.append({"what": f"no direction knob set on {card['card']}", "n": 0,
                      "why": f"neither {sorted(DIRECTION_FLIPS)} nor {list(NEGATED_KNOBS)} is on "
                             f"the card's params with a flippable value"})
-    return out[:MAX_PER_AXIS]
+    return out[:AXIS_DEPTH]
 
 
 def axis_cross_asset(card: dict[str, Any], note: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -594,7 +610,7 @@ def axis_cross_asset(card: dict[str, Any], note: list[dict[str, Any]]) -> list[d
                                s["session"]),
                           f"the card fires unconditionally; conditioning it on {state} state "
                           f"({peer}) asks whether the edge is a regime of the macro driver"))
-    return out[:MAX_PER_AXIS]
+    return out[:AXIS_DEPTH]
 
 
 def axis_mechanism(card: dict[str, Any], others: list[dict[str, Any]],
@@ -628,7 +644,7 @@ def axis_mechanism(card: dict[str, Any], others: list[dict[str, Any]],
         note.append({"what": f"no interacting partner for {card['card']}", "n": 0,
                      "why": f"no other card carries a mechanism the ontology pairs with "
                             f"{card['mechanism']!r}"})
-    return out[:MAX_PER_AXIS]
+    return out[:AXIS_DEPTH]
 
 
 def children_of(card: dict[str, Any], others: list[dict[str, Any]]
@@ -653,27 +669,53 @@ def children_of(card: dict[str, Any], others: list[dict[str, Any]]
     return by_axis, note, pruned
 
 
-def pick(by_axis: dict[str, list[dict[str, Any]]], seen: set[str], cap: int
-         ) -> tuple[list[dict[str, Any]], int]:
+def pick(by_axis: dict[str, list[dict[str, Any]]], seen: set[str], cap: int,
+         per_axis: int = MAX_PER_AXIS) -> tuple[list[dict[str, Any]], int]:
     """Round-robin across axes so one rich axis cannot eat the card's whole cap; content-hash
-    dedupe against everything already generated. Returns (kept, collisions)."""
+    dedupe against everything already generated (and, from `build`, everything the registry
+    already holds). A collision spends the axis's TURN but never the cap or the axis's share of
+    it, so a deep axis walks PAST what earlier passes explored to its frontier. Returns
+    (kept, collisions)."""
     queues = {a: list(rows) for a, rows in by_axis.items() if rows}
+    took: dict[str, int] = {}
     kept: list[dict[str, Any]] = []
     collisions = 0
     while queues and len(kept) < cap:
         for axis in [a for a in AXES if a in queues]:
             if len(kept) >= cap:
                 break
-            row = queues[axis].pop(0)
-            if not queues[axis]:
-                del queues[axis]
+            q = queues[axis]
+            row = q.pop(0)
             if row["hash"] in seen:
                 collisions += 1
-                continue
-            seen.add(row["hash"])
-            kept.append(row)
-    collisions += sum(len(q) for q in queues.values())
+            else:
+                seen.add(row["hash"])
+                kept.append(row)
+                took[axis] = took.get(axis, 0) + 1
+            if not q or took.get(axis, 0) >= per_axis:
+                del queues[axis]
+    collisions += sum(1 for q in queues.values() for r in q if r["hash"] in seen)
     return kept, collisions
+
+
+def registered_hashes(rows: list[dict[str, Any]], conn: Any) -> set[str]:
+    """The content hashes among `rows` the registry ALREADY holds -- children an earlier pass
+    queued (and the judge has usually long since judged). Re-enqueuing one only bumps its
+    `search_count`, so counting it as queued reported a full pass while the MOAT queue starved.
+    Read-only; an unreadable registry returns the empty set (the old behaviour), never a raise."""
+    hashes = sorted({str(r["hash"]) for r in rows})
+    out: set[str] = set()
+    if conn is None or not hashes:
+        return out
+    try:
+        for i in range(0, len(hashes), 500):
+            chunk = hashes[i:i + 500]
+            out.update(str(r[0]) for r in conn.execute(
+                "SELECT content_hash FROM research_candidates WHERE content_hash IN ("  # noqa: S608
+                + ",".join("?" * len(chunk)) + ")", chunk))
+    except Exception:
+        return set()
+    return out
 
 
 # ------------------------------------------------------------------ the registry write
@@ -753,11 +795,15 @@ def build(*, max_per_card: int = MAX_PER_CARD, budget_s: float = BUDGET_S, dry_r
     by_card: list[dict[str, Any]] = []
     seen: set[str] = set()
     kept_all: list[dict[str, Any]] = []
-    possible_tot = deduped = queued_tot = stopped = 0
+    possible_tot = deduped = queued_tot = stopped = registered_tot = exploded = 0
+    walked = 0
     for i, card in enumerate(cards):
+        if exploded >= MAX_CARDS:
+            break
         if time.monotonic() - t0 > budget_s:
             stopped = len(cards) - i
             break
+        walked += 1
         seen.add(reg.content_hash(card["spec"]["family"], card["spec"]["symbol"],
                                   card["spec"]["params"], card["spec"]["chart"],
                                   card["spec"]["session"],
@@ -771,6 +817,9 @@ def build(*, max_per_card: int = MAX_PER_CARD, budget_s: float = BUDGET_S, dry_r
         possible = sum(len(v) for v in axes.values())
         for a, rows in axes.items():
             by_axis_tot[a]["possible"] += len(rows)
+        known = registered_hashes([r for rows in axes.values() for r in rows], conn) - seen
+        registered_tot += len(known)
+        seen |= known
         kept, collisions = pick(axes, seen, max_per_card)
         deduped += collisions
         possible_tot += possible
@@ -787,6 +836,7 @@ def build(*, max_per_card: int = MAX_PER_CARD, budget_s: float = BUDGET_S, dry_r
                                    "why": f"{type(exc).__name__}: {exc}"})
         queued_tot += queued
         kept_all.extend(kept)
+        exploded += bool(kept)
         by_card.append({"card": card["card"], "status": card["status"],
                         "mechanism": card["mechanism"], "possible": possible,
                         "generated": len(kept), "queued": queued,
@@ -811,6 +861,8 @@ def build(*, max_per_card: int = MAX_PER_CARD, budget_s: float = BUDGET_S, dry_r
     report = {
         "at": at, "n_cards": len(cards), "n_children_possible": possible_tot,
         "n_generated": len(kept_all), "n_deduped": deduped, "n_queued": queued_tot,
+        "n_already_registered": registered_tot, "n_cards_walked": walked,
+        "n_cards_exploded": exploded,
         "by_axis": by_axis_tot,
         "by_card": [{"card": r["card"], "generated": r["generated"], "queued": r["queued"],
                      "status": r["status"], "mechanism": r["mechanism"],

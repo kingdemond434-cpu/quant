@@ -426,3 +426,54 @@ def test_the_compatibility_table_is_declared_for_every_desk_mechanism() -> None:
     assert "residual" in mce.COMPATIBILITY["trend_persistence"]
     assert "residual" not in mce.COMPATIBILITY["macro_release"]
     assert "cross_asset" not in mce.COMPATIBILITY["cross_market_lead"]
+
+
+# ------------------------------------------------------------------ the frontier (2026-11-05)
+def test_a_second_pass_queues_the_next_children_not_the_same_ones(
+        desk: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The judge-intake collapse of 2026-11-05: every builder truncated at `MAX_PER_AXIS`, so each
+    hourly pass re-proposed the same head of every axis, `enqueue_candidate` deduped it onto the
+    old row, and the MOAT queue sat at zero while the report claimed a full pass. One new child
+    per axis per pass here: the second pass must walk PAST the first pass's chart rung."""
+    monkeypatch.setattr(mce, "MAX_PER_AXIS", 1)
+    card("sleeve:trend", "XAUUSD", "trend_ma_cross", params={"ttl_bars": 12})
+    rep1, kept1 = mce.build(max_per_card=40, budget_s=60.0, dry_run=False)
+    rep2, kept2 = mce.build(max_per_card=40, budget_s=60.0, dry_run=False)
+    first = {r["hash"] for r in kept1}
+    second = {r["hash"] for r in kept2}
+    assert first and second and not first & second
+    charts = [r["spec"]["chart"] for r in kept1 + kept2 if r["axis"] == "chart"]
+    assert charts[:2] == ["M5", "M15"]
+    assert rep2["n_already_registered"] >= len(first)
+    assert rep2["n_queued"] == len(kept2)
+    import sqlite3
+    con = sqlite3.connect(str(desk / "alpha_registry.sqlite"))
+    try:
+        queued = con.execute("SELECT count(*) FROM research_candidates "
+                             "WHERE status='queued'").fetchone()[0]
+    finally:
+        con.close()
+    assert queued == len(first) + len(second)
+
+
+def test_an_exhausted_tree_queues_nothing_and_says_so(desk: Any) -> None:
+    card("sleeve:trend", "XAUUSD", "trend_ma_cross", params={"ttl_bars": 12})
+    for _ in range(30):
+        rep, kept = mce.build(max_per_card=40, budget_s=60.0, dry_run=False)
+        if not kept:
+            break
+    assert kept == [] and rep["n_queued"] == 0 and rep["n_cards_exploded"] == 0
+    assert rep["n_already_registered"] == rep["n_children_possible"]
+
+
+def test_pick_caps_new_children_per_axis_and_walks_past_known_ones() -> None:
+    rows = {"chart": [{"axis": "chart", "hash": f"c{i}"} for i in range(6)]}
+    kept, collisions = mce.pick(rows, {"c0", "c1"}, 40, per_axis=2)
+    assert [r["hash"] for r in kept] == ["c2", "c3"] and collisions == 2
+
+
+def test_the_residual_axis_offers_every_priced_factor(desk: Any) -> None:
+    card("sleeve:level", "XAUUSD", "level_breakout", params={"ttl_bars": 12})
+    by_axis, _note, _pruned = mce.children_of(mce.collect_cards()[0][0], [])
+    factors = {r["spec"]["params"]["factor_symbols"][0] for r in by_axis.get("residual", [])}
+    assert factors == {"XAGUSD", "XPTUSD"}
