@@ -271,3 +271,31 @@ def test_a_research_pin_inside_the_judge_cores_is_moved_and_named(tmp_path: Path
     doc = tick(lambda: (procs, 10.0, 40.0), lambda *_: None, tmp_path / "s.json",
                tmp_path / "r.json", dry=True, pinner=lambda *_: None, ncpu=18)  # fmt: skip
     assert doc["affinity"][0]["why"] == "moved off a judge-core pin"
+
+
+def test_console_hosts_and_shells_are_never_written() -> None:
+    """Desk health dry-run 2026-11-05: conhost and cmd joined the trees and were most of the
+    would-pin list. They do no compute: counted, never raised or pinned. The python they
+    started is still pinned."""
+    procs = [_a(20, JUDGE), _a(1, GATE),
+             _a(2, "conhost.exe 0xffffffff", ppid=1, name="conhost.exe"),
+             _a(5, MINER), _a(6, r"C:\Windows\system32\cmd.exe /c x", ppid=5, name="cmd.exe"),
+             _a(7, "conhost.exe", ppid=5, name="conhost.exe")]  # fmt: skip
+    out = plan(procs, "NORMAL")
+    assert set(out.set_to) == {1} and set(out.pin) == {5}
+    assert out.classes["CRITICAL"] == 2 and out.classes["RESEARCH"] == 3
+
+
+def test_the_governor_task_runs_as_system_and_adoption_ensures_it() -> None:
+    """Desk health dry-run 2026-11-05: from an unelevated token 274 research processes were
+    unreadable, so the hold bound to nothing. The task must run as SYSTEM."""
+    root = Path(__file__).resolve().parents[2] / "desks" / "mt5" / "scripts"
+    inst = (root / "install_resource_governor_task.ps1").read_text("utf-8")
+    assert "-UserId 'SYSTEM'" in inst and "-RunLevel Highest" in inst
+    assert "ops\\resource_governor.py --once" in inst
+    assert inst.index("if ($IfMissing -and") < inst.index("Register-ScheduledTask")
+    adopt = (root / "Adopt-And-Seal.ps1").read_text("utf-8")
+    assert (
+        '@{ Task = "Quant-ResourceGovernor"; Installer = "install_resource_governor_task.ps1" }'
+        in adopt
+    )

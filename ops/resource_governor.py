@@ -125,6 +125,10 @@ OS_ROOTS = frozenset({
     "system", "system idle process", "smss.exe", "csrss.exe", "wininit.exe", "services.exe",
     "svchost.exe", "taskhostw.exe", "taskeng.exe", "explorer.exe", "winlogon.exe",
 })  # fmt: skip
+#: Console hosts and cmd shells join a tree only as the window or launcher of the real work
+#: (Desk health dry-run 2026-11-05: 4 of 5 would-pin targets and 1 of 4 would-raise targets were
+#: these). They do no compute, so they are counted in their tree's class and never written.
+SHELL_IMAGES = frozenset({"conhost.exe", "cmd.exe"})
 
 
 @dataclass
@@ -230,6 +234,8 @@ def plan(
         "OTHER": len(procs) - len(live | judge | crit | research | unreadable | shield),
     })  # fmt: skip
     for pid in crit:
+        if by[pid].name.lower() in SHELL_IMAGES:
+            continue
         if by[pid].prio != UNKNOWN and RANK.get(by[pid].prio, 0) < RANK[NORMAL]:
             out.set_to[pid] = NORMAL
             out.why[pid] = "critical: reserved above research"
@@ -282,7 +288,7 @@ def _reserve_judge_cores(
     # Oldest first, so a parent is recorded before the children it spawned while narrowed.
     for pid in sorted(research, key=lambda i: (by[i].started, i)):
         p = by[pid]
-        if p.affinity is None or _key(p) in out.narrowed:
+        if p.affinity is None or _key(p) in out.narrowed or p.name.lower() in SHELL_IMAGES:
             continue
         keep = tuple(sorted(set(p.affinity) & allowed)) or RESEARCH_CORES
         if keep != tuple(sorted(p.affinity)):

@@ -183,6 +183,10 @@ TASK name="MT5-OffsiteBackup"      trigger="every 6 hours"    runs="desks/mt5/sc
 # (EXPOSED / PRIVATE) and changes nothing. -Enforce is an operator act with a 15-minute dead-man
 # rollback and is never scheduled. Register: the same script with no switch, daily.
 TASK name="MT5-PrivateNetAudit"    trigger="daily at 06:40"   runs="desks/mt5/scripts/install_private_net.ps1" installer="NONE" lane="ops"
+# Quant-ResourceGovernor (2026-11-05): SYSTEM, so it can read every command line. Raises the
+# gate/authority/adoption trees to NORMAL and holds research off the judge's 8 cores while the
+# judge runs (zuck 10-29); never lowers, kills or suspends anything.
+TASK name="Quant-ResourceGovernor" trigger="every 1 minute"   runs="ops/resource_governor.py" installer="desks/mt5/scripts/install_resource_governor_task.ps1" lane="ops"
 TASK name="MT5-ReapGitWriters"     trigger="every 15 minutes" runs="scripts/reap_hung_git_writers.py" installer="desks/mt5/scripts/install_reap_git_writers_task.ps1" lane="ops"
 # The post-reboot drill (2026-09-08): read-only apart from re-enabling a Disabled task; records
 # PASS/FAIL to desks/mt5/reports/REBOOT_DRILL.json and raises data/REBOOT_DRILL_ALARM.txt on FAIL.
