@@ -12,8 +12,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import check_cro_duties as duties  # noqa: E402
 import check_pass_question_evidence as pqe  # noqa: E402
 
-NOW = "2026-11-05T12:00:00+00:00"
-FRESH = "2026-11-05T11:00:00+00:00"
+NOW = "2026-11-04T12:00:00+00:00"
+FRESH = "2026-11-04T11:00:00+00:00"
 OLD = "2026-11-01T11:00:00+00:00"
 
 
@@ -88,11 +88,11 @@ def test_a_fresh_artifact_missing_its_key_is_not_evidence(tmp_path: Path) -> Non
 def test_q2_credits_breadth_per_producer_in_gating_order(tmp_path: Path) -> None:
     survivors = {
         # first into the empty `trend` cluster: credited at the cross rho, opens the cluster
-        "a": _survivor("asia_momentum", "hunt_new.json", "2026-11-05T09:00:00+00:00"),
+        "a": _survivor("asia_momentum", "hunt_new.json", "2026-11-04T09:00:00+00:00"),
         # second into trend, from another producer: the cluster is now occupied, book rho
-        "b": _survivor("multi_speed_trend", "hunt_dup.json", "2026-11-05T10:00:00+00:00"),
+        "b": _survivor("multi_speed_trend", "hunt_dup.json", "2026-11-04T10:00:00+00:00"),
         # a payer the desk cannot name is counted, never credited
-        "c": _survivor("no_such_family", "hunt_dup.json", "2026-11-05T10:30:00+00:00"),
+        "c": _survivor("no_such_family", "hunt_dup.json", "2026-11-04T10:30:00+00:00"),
         # outside the window: not this pass's information
         "d": _survivor("carry", "hunt_old.json", "2026-10-01T10:00:00+00:00"),
     }
