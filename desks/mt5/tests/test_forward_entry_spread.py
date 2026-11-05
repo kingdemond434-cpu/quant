@@ -47,8 +47,10 @@ def _surface_with(hour_pts: dict[int, float], sym: str = "GBPCHF"):
 
 def _measured(monkeypatch, tape: dict | None = None, hours: dict | None = None):
     sf._reset_spread_caches()
+    sf._VENUE_MAX_DOC[:] = [{}]
     monkeypatch.setattr(sf, "_tape_minute_spreads", lambda sym, day, point: tape)
     monkeypatch.setattr(sf, "_tick_surfaces", lambda: _surface_with(hours or {}))
+    sf._VENUE_MAX_DOC[:] = [{}]              # never the box's real file inside a test
 
 
 def _minute(ts: pd.Timestamp) -> int:
@@ -106,6 +108,7 @@ def test_no_tick_size_is_unmeasured_and_changes_nothing(monkeypatch):
 
 def test_the_bar_surface_tick_hours_block_is_read_when_the_tape_surface_is_absent(monkeypatch):
     sf._reset_spread_caches()
+    sf._VENUE_MAX_DOC[:] = [{}]
     monkeypatch.setattr(sf, "_tick_surfaces", lambda: [{"source": "desks\\mt5\\data\\universe",
         "symbols": {"GBPCHF": {"hours": {"1": {"status": "MEASURED", "p50": 6.0}},
                                "tick_hours": {"hours": {"1": {"status": "MEASURED",
@@ -125,6 +128,7 @@ def test_the_tape_minute_reader_drops_unstamped_ticks(monkeypatch, tmp_path):
     df.to_parquet(d / "2026-11-04.parquet")
     monkeypatch.setattr(tape, "TICKS", tmp_path)
     sf._reset_spread_caches()
+    sf._VENUE_MAX_DOC[:] = [{}]
     mins = sf._tape_minute_spreads("GBPCHF", "2026-11-04", TICK)
     assert mins == {base // 60_000: pytest.approx(80.0)}
 
@@ -232,6 +236,7 @@ def test_the_tape_is_listed_once_per_symbol_and_each_day_read_once(monkeypatch, 
     monkeypatch.setattr(tape, "day_files", counting_list)
     monkeypatch.setattr(pd, "read_parquet", counting_read)
     sf._reset_spread_caches()
+    sf._VENUE_MAX_DOC[:] = [{}]
     for _ in range(50):                                   # 50 keys on one symbol
         sf._tape_minute_spreads("GBPCHF", "2026-11-04", TICK)
         sf._tape_minute_spreads("GBPCHF", "2026-11-03", TICK)
@@ -244,6 +249,7 @@ def test_an_unreadable_tape_day_is_named_not_silent(monkeypatch, tmp_path):
     monkeypatch.setattr(tape, "day_files", lambda sym, root=None: [("2026-11-04",
                                                                     tmp_path / "bad.parquet")])
     sf._reset_spread_caches()
+    sf._VENUE_MAX_DOC[:] = [{}]
     monkeypatch.setattr(sf, "_tick_surfaces", lambda: _surface_with({1: 6.0}))
     pts, src = sf.measured_spread_at("GBPCHF", pd.Timestamp("2026-11-04 01:00", tz="UTC"), TICK)
     assert (pts, src) == (6.0, "tick_hour_tape_error")
@@ -256,6 +262,38 @@ def test_a_bad_tape_day_is_not_blamed_on_the_next_symbol(monkeypatch, tmp_path):
         [("2026-11-04", tmp_path / "bad.parquet")] if sym == "GBPCHF" else []))
     monkeypatch.setattr(sf, "_tick_surfaces", lambda: _surface_with({1: 6.0}, sym="EURCHF"))
     sf._reset_spread_caches()
+    sf._VENUE_MAX_DOC[:] = [{}]
     at = pd.Timestamp("2026-11-04 01:00", tz="UTC")
     sf.measured_spread_at("GBPCHF", at, TICK)
     assert sf.measured_spread_at("EURCHF", at, TICK) == (6.0, "tick_hour")
+
+
+def test_the_widest_venue_hour_outranks_a_narrower_tape_minute(monkeypatch):
+    t = _trade(1, 1, 3)                                     # 01:00 venue clock
+    utc_h = int(__import__("libs.regime.session_clock", fromlist=["x"]).server_to_utc(
+        pd.DatetimeIndex([t.entry_time]))[0].hour)
+    _measured(monkeypatch, tape={_minute(t.entry_time): 80.0})
+    sf._VENUE_MAX_DOC[:] = [{"symbols": {"GBPCHF": {
+        f"{utc_h:02d}": {"spread_price": 120 * TICK, "stale": False}}}}]
+    assert sf.measured_spread_at("GBPCHF", t.entry_time, TICK) == (
+        pytest.approx(120.0), "venue_max_hour")
+    sf._VENUE_MAX_DOC[0]["symbols"]["GBPCHF"][f"{utc_h:02d}"]["spread_price"] = 10 * TICK
+    assert sf.measured_spread_at("GBPCHF", t.entry_time, TICK) == (80.0, "tape_minute")
+
+
+def test_the_widest_venue_hour_stands_in_when_the_tape_has_nothing(monkeypatch):
+    t = _trade(1, 12, 13)
+    utc_h = int(__import__("libs.regime.session_clock", fromlist=["x"]).server_to_utc(
+        pd.DatetimeIndex([t.entry_time]))[0].hour)
+    _measured(monkeypatch, hours={12: 0.5})
+    sf._VENUE_MAX_DOC[:] = [{"symbols": {"GBPCHF": {
+        f"{utc_h:02d}": {"spread_price": 3 * TICK, "stale": True}}}}]
+    assert sf.measured_spread_at("GBPCHF", t.entry_time, TICK) == (
+        pytest.approx(3.0), "venue_max_hour_stale")
+
+
+def test_an_absent_venue_hour_is_unmeasured_not_zero(monkeypatch):
+    t = _trade(1, 12, 13)
+    _measured(monkeypatch, hours={12: 0.5})
+    sf._VENUE_MAX_DOC[:] = [{"symbols": {"GBPCHF": {"05": {"spread_price": 0.0}}}}]
+    assert sf.measured_spread_at("GBPCHF", t.entry_time, TICK) == (0.5, "tick_hour")

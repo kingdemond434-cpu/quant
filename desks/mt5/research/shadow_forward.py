@@ -1871,6 +1871,7 @@ def _reset_spread_caches() -> None:
     global _TICK_SURFACES
     _TAPE.update(sym=None, files={}, days={}, errors=0)
     _TICK_SURFACES = None
+    _VENUE_MAX_DOC.clear()
 
 
 def _tape_for(sym: str) -> dict:
@@ -1949,11 +1950,50 @@ def _tick_hour_spread(sym: str, hour: int) -> float | None:
     return None
 
 
+#: The widest spread across the live venues, per symbol and true-UTC hour (Desk health, #739).
+VENUE_MAX = BASE / "data" / "cost_truth_quotes.max.json"
+_VENUE_MAX_DOC: list = []
+
+
+def _venue_max_spread(sym: str, at: pd.Timestamp, point: float) -> tuple[float, str] | None:
+    """(points in THIS symbol's tick, source) from the widest-venue file, or None.
+
+    Bars and the tape are stamped on the venue clock; the file is keyed by TRUE UTC hour, so the
+    stamp is converted with `session_clock.server_to_utc` first. `spread_price` is compared, not
+    `spread_pts`, because venues quote different digits. An absent hour is UNMEASURED (None),
+    never zero; a stale row is still the widest value last known and says so in its source.
+    """
+    if not _VENUE_MAX_DOC:
+        try:
+            _VENUE_MAX_DOC.append(json.loads(VENUE_MAX.read_text(encoding="utf-8")))
+        except (OSError, ValueError):
+            _VENUE_MAX_DOC.append({})
+    row_sym = ((_VENUE_MAX_DOC[0] or {}).get("symbols") or {}).get(sym) or {}
+    if not row_sym or point <= 0:
+        return None
+    try:
+        from libs.regime.session_clock import server_to_utc
+        utc_hour = int(server_to_utc(pd.DatetimeIndex([pd.Timestamp(at)]))[0].hour)
+    except Exception:
+        return None
+    cell = row_sym.get(f"{utc_hour:02d}") or {}
+    try:
+        price = float(cell["spread_price"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if not price > 0:
+        return None
+    return price / point, ("venue_max_hour_stale" if cell.get("stale") else "venue_max_hour")
+
+
 def measured_spread_at(sym: str, at: pd.Timestamp, point: float) -> tuple[float | None, str]:
     """The spread a market order crossed at `at`, in points, and where the number came from.
 
-    `tape_minute`: the median quote in that venue minute on the tick tape. `tick_hour`: the
-    tick-measured median for that venue hour. Neither: (None, "frozen") and the caller keeps the
+    `tape_minute`: the median quote in that venue minute on the tick tape. `venue_max_hour`: the
+    WIDEST spread across the live venues for that true-UTC hour (`cost_truth_quotes.max.json`,
+    the Judge's ruling 2026-11-05: every account copies every sleeve, so a clock is charged the
+    dearest venue it will trade on); it outranks a narrower tape minute and stands in when the tape
+    has none. `tick_hour`: the tick-measured median for that venue hour. Neither: (None, "frozen") and the caller keeps the
     basis it already charged. The bars' own `spread` column is DELIBERATELY not a source: on
     this feed it is bimodal (GBPCHF hours 10-16 read 0 on 69% of bars and 150 on the rest, a p50
     of 150 against a raw-account spread of a few points), so it would overcharge quiet hours by
@@ -1968,13 +2008,18 @@ def measured_spread_at(sym: str, at: pd.Timestamp, point: float) -> tuple[float 
         ts = ts.tz_localize("UTC")
     minute = int(ts.value // 60_000_000_000)
     tape_broken = False
+    widest = _venue_max_spread(sym, ts, point)
     for day in (ts.strftime("%Y-%m-%d"), (ts - pd.Timedelta(days=1)).strftime("%Y-%m-%d"),
                 (ts + pd.Timedelta(days=1)).strftime("%Y-%m-%d")):
         mins = _tape_minute_spreads(sym, day, point)
         if mins and minute in mins:
+            if widest is not None and widest[0] > mins[minute]:
+                return widest
             return mins[minute], "tape_minute"
         if day in (_TAPE.get("error_days") or ()):
             tape_broken = True
+    if widest is not None:
+        return widest
     hour_pts = _tick_hour_spread(sym, int(ts.hour))
     if hour_pts is not None:
         return hour_pts, ("tick_hour_tape_error" if tape_broken else "tick_hour")
