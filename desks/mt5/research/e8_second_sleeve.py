@@ -604,7 +604,11 @@ def build(*, n_paths: int = N_PATHS, seed: int = 0, now: datetime | None = None
     near, near_src = near_certified()
     catalogue, cat_src = e8_catalogue()
     others = other_account_symbols(book)
-    doc["inputs"] = {"worlds": str(ks.WORLDS.relative_to(BASE)), "forward_lanes": lanes,
+    try:
+        worlds_name = str(Path(ks.WORLDS).relative_to(BASE))
+    except ValueError:
+        worlds_name = str(ks.WORLDS)
+    doc["inputs"] = {"worlds": worlds_name, "forward_lanes": lanes,
                      "certificates": enrol_src, "survivors": f"{len(certs)} costed cells",
                      "near_certified": near_src, "e8_catalogue": cat_src,
                      "other_accounts": others}
