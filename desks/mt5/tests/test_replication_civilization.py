@@ -112,7 +112,7 @@ def test_an_honest_certificate_is_replicated_and_a_misspecified_one_is_quarantin
     inflated = rc.replicate_certificate(_certificate(ours * 5.0), meta=META, bars=bars)
     assert inflated["verdict"] == rc.MISMATCH and "MAGNITUDE" in inflated["why"][0]
     unknown = rc.replicate_certificate({"shadow_spec": {"symbol": "TESTFX",
-                                                        "family": "relative_value"},
+                                                        "family": "no_written_rule"},
                                         "gates": {}}, meta=META, bars=bars)
     assert unknown["verdict"] == rc.UNMEASURED and "spec book" in unknown["why"][0]
 
@@ -177,7 +177,10 @@ def test_a_forward_row_whose_ledger_disagrees_is_quarantined_by_name() -> None:
 
 
 def test_the_lane_never_imports_the_original_implementation() -> None:
-    src = (DESK / "research" / "replication_civilization.py").read_text("utf-8")
+    # BOTH FILES OF THE LANE: the written rules in `replication_families` are bound by the
+    # same rule as the lane that registers them
+    src = "\n".join((DESK / "research" / name).read_text("utf-8")
+                    for name in ("replication_civilization.py", "replication_families.py"))
     imports = re.findall(r"^\s*(?:from|import)\s+([\w.]+)", src, re.M)
     for name in imports:
         for banned in rc.FORBIDDEN_IMPORTS:
@@ -190,7 +193,10 @@ def test_the_lane_never_imports_the_original_implementation() -> None:
     poisoned = {}
     for name in ("mt5desk.families", "mt5desk.families_orthogonal", "mt5desk.engine",
                  "mt5desk.family_call", "research.proposer_common", "proposer_common",
-                 "external_gauntlet", "lead_replication", "shadow_forward"):
+                 "external_gauntlet", "lead_replication", "shadow_forward",
+                 "libs.research.alpha_grammar", "mt5desk.cell_modifiers",
+                 "mt5desk.causal_residual", "mt5desk.families_vector",
+                 "mt5desk.family_formula"):
         mod = types.ModuleType(name)
         mod.__getattr__ = lambda attr, _n=name: (_ for _ in ()).throw(  # type: ignore[assignment]
             AssertionError(f"{_n}.{attr} was reached by the replication lane"))
@@ -204,6 +210,18 @@ def test_the_lane_never_imports_the_original_implementation() -> None:
                        forward=[], universe_meta={"TESTFX": META},
                        bars_loader=lambda s, t: bars)
         assert doc["counts"][rc.REPLICATED] == 1
+        # and the three families of `replication_families`, wrappers included
+        fp, why = rc.resolve_spec("formula", {"expr": ["neg", ["mean", "range", 5]],
+                                              "session": "asia", "entry_timing": "delayed",
+                                              "regime": "low_vol"}, "asia", "LONG")
+        assert fp is not None, why
+        rc.rebuild("formula", bars, fp, 0.0)
+        for fam, extra in (("cross_asset_residual", {"factor_symbols": ["A", "B"]}),
+                           ("relative_value", {"peer_symbol": "A"})):
+            q, why = rc.resolve_spec(fam, {**extra, "lookback": 48}, "asia", "LONG")
+            assert q is not None, why
+            assert rc.attach_inputs(fam, extra, q, lambda s, t: bars) is None
+            rc.rebuild(fam, bars, q, 0.0)
     finally:
         for name, old in poisoned.items():
             if old is None:
@@ -268,3 +286,71 @@ def test_load_bars_reads_a_parquet_whose_time_is_a_plain_column(tmp_path: Path) 
     frame.to_parquet(path, index=False)
     bars = rc.load_bars("TESTFY", "H1", universe=tmp_path)
     assert bars is not None and len(bars) == n and bars.minutes == 60
+
+
+def test_the_count_is_a_floor_and_rule_bearing_unjudged_certificates_go_first(
+        tmp_path: Path, monkeypatch) -> None:
+    """295 certificates sat clockless because the lane judged 8 a pass and stopped with two
+    thirds of its budget unspent. Past the floor it keeps judging certificates that HAVE a
+    written rule; a family with no rule is neither judged ahead of them nor opens its bars."""
+    seen: list[str] = []
+    loaded: list[str] = []
+
+    def fake_replicate(row, *, meta, bars):
+        seen.append(row["certificate"])
+        return {"lane": "certificate", "key": row["certificate"],
+                "certificate": row["certificate"], "verdict": rc.UNMEASURED, "why": []}
+
+    monkeypatch.setattr(rc, "replicate_certificate", fake_replicate)
+    monkeypatch.setattr(rc, "certificate_fp", lambda row: "fp")
+    ruled = [{"certificate": f"G{i}", "shadow_spec": {"symbol": f"S{i}",
+                                                      "family": "overnight_gap_decay"}}
+             for i in range(6)]
+    unruled = [{"certificate": f"U{i}", "shadow_spec": {"symbol": f"U{i}",
+                                                        "family": "no_such_family"}}
+               for i in range(4)]
+    doc = rc.build(certificates=unruled + ruled, forward=[], universe_meta={},
+                   bars_loader=lambda sym, _tf: loaded.append(sym),
+                   cursor_path=tmp_path / "cursor.json", dry_run=True, max_per_pass=4,
+                   budget_s=600)
+    assert seen[:6] == [f"G{i}" for i in range(6)]       # all six, past the floor of two
+    assert not any(s.startswith("U") for s in loaded)     # no rule, no parquet opened
+    assert doc["n"] == len(seen)
+
+
+def test_a_row_that_raises_is_unmeasured_and_the_pass_still_writes(tmp_path: Path,
+                                                                    monkeypatch) -> None:
+    """One malformed certificate used to abort build() with no artifact at all."""
+    def boom(row, *, meta, bars):
+        if row["certificate"] == "BAD":
+            raise TypeError("float() argument must be a string or a real number, not 'NoneType'")
+        return {"lane": "certificate", "key": row["certificate"],
+                "certificate": row["certificate"], "verdict": rc.UNMEASURED, "why": []}
+
+    monkeypatch.setattr(rc, "replicate_certificate", boom)
+    certs = [{"certificate": k, "shadow_spec": {"symbol": "TESTFX",
+                                                "family": "overnight_gap_decay"}}
+             for k in ("BAD", "OK")]
+    doc = rc.build(certificates=certs, forward=[], universe_meta={},
+                   bars_loader=lambda *_: None, cursor_path=tmp_path / "cursor.json",
+                   dry_run=True, max_per_pass=4)
+    rows = {r["key"]: r for r in doc["verdicts"]}
+    assert doc["counts"][rc.UNMEASURED] == 2 and doc["rows_raised"] == 1
+    assert "TypeError" in rows["BAD"]["why"][0] and rows["BAD"]["raised"] == "TypeError"
+
+
+def test_a_ledger_read_that_raises_is_one_unmeasured_row(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(rc, "replicate_forward", lambda row, *, meta, bars, ledger: {
+        "lane": "forward", "key": row["key"], "verdict": rc.UNMEASURED, "why": []})
+
+    def ledger(key, ident):
+        if key == "BAD":
+            raise OSError("ledger torn")
+        return []
+
+    fwd = [{"key": k, "identity": {"symbol": "TESTFX", "family": "overnight_gap_decay"}}
+           for k in ("BAD", "OK")]
+    doc = rc.build(certificates=[], forward=fwd, universe_meta={}, bars_loader=lambda *_: None,
+                   ledger_loader=ledger, cursor_path=tmp_path / "cursor.json", dry_run=True,
+                   max_per_pass=4)
+    assert doc["rows_raised"] == 1 and doc["counts"][rc.UNMEASURED] == 2
