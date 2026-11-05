@@ -235,6 +235,14 @@ TASK name="MT5-RiskUnitsFence" trigger="every 1 hour, at :02" runs="scripts/chec
 TASK name="MT5-SealIfClean" trigger="legacy compatibility only" runs="retired; MT5-AdoptRelease owns sealing" installer="NONE" lane="ops"
 TASK name="MT5-AccountState" trigger="every 15 minutes" runs="ops/run_account_state.cmd" installer="NONE" lane="ops"
 TASK name="MT5-AllocatorFast" trigger="every 15 minutes" runs="desks/mt5/research/pf_allocator.py" installer="NONE" lane="research"
+# THE HOURLY PASS'S STARVED LEGS GET CLOCKS OF THEIR OWN (2026-11-04). The serial pass's eleven
+# ALWAYS_RUN legs cost 2,947 s of a 2,640 s rotation budget, so the admission scan went 124 h stale
+# and forward_enrolment rarely ran. One runner, the same calls the cycle makes; record_tape and
+# forward_enrolment STAND BY until hourly_cycle.OWN_CLOCK_LEGS names them (no lock of their own),
+# the heavy allocator runs at once under its shared exclusive_job lock. Receipts: reports/offload/.
+TASK name="MT5-OffloadForwardEnrolment" trigger="every 1 hour, at :35" runs="desks/mt5/scripts/run_offload_leg.py" installer="desks/mt5/scripts/install_hourly_offload_tasks.ps1" lane="research"
+TASK name="MT5-OffloadRecordTape" trigger="every 1 hour, at :45" runs="desks/mt5/scripts/run_offload_leg.py" installer="desks/mt5/scripts/install_hourly_offload_tasks.ps1" lane="data"
+TASK name="MT5-OffloadAllocatorHeavy" trigger="every 4 hours from 00:40" runs="desks/mt5/scripts/run_offload_leg.py" installer="desks/mt5/scripts/install_hourly_offload_tasks.ps1" lane="research"
 TASK name="MT5-AxisIngest" trigger="daily 04:40" runs="ops/run_axis_ingest.cmd" installer="NONE" lane="data"
 TASK name="MT5-ConvertSwarm" trigger="every 1 hour, at :38" runs="ops/run_convert_swarm.cmd" installer="NONE" lane="research"
 TASK name="MT5-DataAxis" trigger="every 1 hour" runs="ops/run_data_axis_miner.cmd" installer="NONE" lane="data"
