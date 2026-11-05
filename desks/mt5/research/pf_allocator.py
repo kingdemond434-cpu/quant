@@ -275,13 +275,31 @@ REGIME_FORECAST_H = 1
 REGIME_TERM_STRUCTURE = (1, 2, 5, 21)
 
 
-#: The allocator lock's heartbeat bound (job_lock.orphan_stale). DERIVATION: one hourly cycle
-#: (allocator_liveness.CYCLE_S, 3600 s) = 12 passes of MT5-AllocatorFast (every 5 min). A holder
-#: beats at every logged stage (`_log`) and per admission candidate, so a working pass is never
-#: silent that long; an orphan silent past it is reclaimed.
+#: The allocator lock's heartbeat bound (job_lock.orphan_stale), derived from the clocks:
+#: one hourly cycle (allocator_liveness.CYCLE_S, 3600 s) = 12 passes of MT5-AllocatorFast
+#: (every 5 min). A holder beats at every logged stage (`_log`) and per admission candidate, so
+#: a working pass is never silent that long; an orphan silent past it is reclaimed.
 LOCK_HEARTBEAT_STALE_S = 3600.0
-#: pf_allocator's exit code when it stands down behind a lock it may not reclaim.
+#: pf_allocator's exit code when it stands down behind a lock it may not reclaim: per the exit-code
+#: protocol hourly_cycle.NAMED_FAILURE_EXITS reads (3 = LOCK_REFUSED, the first free non-zero code).
 LOCK_REFUSED_EXIT = 3
+#: A holder that beat within this is BUSY -- the ordinary overlap with a running hourly or heavy
+#: pass -- and the refused pass exits 0 with a named BUSY stand-down. Derived from the clock: three
+#: MT5-AllocatorFast passes (5 min each); a working holder beats at every logged stage, so one
+#: silent this long is not merely overlapping (#752 audit MF).
+LOCK_BUSY_HEARTBEAT_S = 15 * 60.0
+
+
+def lock_refusal(holder: Mapping[str, Any]) -> tuple[str, int]:
+    """(stand-down reason, exit code) for a refused pass. NO_ROOM (memory, exit 0); BUSY (the
+    holder beat within LOCK_BUSY_HEARTBEAT_S, exit 0); LOCK_REFUSED (silent past it and not
+    reclaimable, or the lock unreadable, exit 3 so the unit reads red)."""
+    if holder.get("reason") == "NO_ROOM":
+        return "NO_ROOM", 0
+    age = holder.get("heartbeat_age_s")
+    if isinstance(age, (int, float)) and float(age) <= LOCK_BUSY_HEARTBEAT_S:
+        return "BUSY", 0
+    return "LOCK_REFUSED", LOCK_REFUSED_EXIT
 
 
 def _beat() -> None:
@@ -5079,15 +5097,18 @@ def main() -> int:
             except ModuleNotFoundError:
                 from job_lock import LAST_REFUSAL  # type: ignore[no-redef,import-not-found]
             holder = dict(LAST_REFUSAL.get("pf_allocator") or {})
-            _log(f"REFUSED: another allocator pass holds the lock ({holder}), or the box cannot "
-                 f"fit {_NEED_MB[args.mode]}MB. The previous book stands.")
-            _record_stand_down(
-                args.mode, "LOCK_REFUSED",
-                f"another allocator pass holds the lock, or the box cannot fit "
-                f"{_NEED_MB[args.mode]}MB", need_mb=_NEED_MB[args.mode], holder=holder)
-            # NON-ZERO, so the unit reads red (2026-11-05: an orphan held the lock 4.5 h while
-            # every refused pass exited 0 and the task read green).
-            return LOCK_REFUSED_EXIT
+            reason, rc = lock_refusal(holder)
+            why = {"NO_ROOM": f"the box cannot fit {_NEED_MB[args.mode]}MB",
+                   "BUSY": "another allocator pass holds the lock and is heartbeating",
+                   "LOCK_REFUSED": ("the lock's holder is silent and cannot be reclaimed, or "
+                                    "the lock is unreadable")}[reason]
+            _log(f"stood down ({reason}): {why} ({holder}). The previous book stands.")
+            _record_stand_down(args.mode, reason, why, need_mb=_NEED_MB[args.mode],
+                               holder=holder)
+            # NON-ZERO ONLY WHEN SOMETHING IS WRONG (2026-11-05: an orphan held the lock 4.5 h
+            # while every refused pass exited 0 and the task read green; an ordinary overlap
+            # with a heartbeating pass is not that, and stays 0).
+            return rc
         try:
             run(args.mode, seed=args.seed)
         except Exception as exc:

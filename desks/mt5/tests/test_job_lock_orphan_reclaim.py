@@ -122,7 +122,33 @@ def test_the_holder_beats_and_a_refused_allocator_pass_reads_red(locks, monkeypa
     assert JL.heartbeat("beater") is False                       # released: nothing to stamp
     src = (_DESK / "research" / "pf_allocator.py").read_text(encoding="utf-8")
     assert "heartbeat_stale_s=LOCK_HEARTBEAT_STALE_S" in src
-    assert "return LOCK_REFUSED_EXIT" in src and "LOCK_REFUSED_EXIT = 3" in src
-    assert '"LOCK_REFUSED"' in src
+    assert "reason, rc = lock_refusal(holder)" in src and "return rc" in src
+    assert "LOCK_REFUSED_EXIT = 3" in src
     hc = (_DESK / "research" / "hourly_cycle.py").read_text(encoding="utf-8")
     assert '"pf_allocator": {3: "LOCK_REFUSED"}' in hc
+
+
+def test_a_refused_pass_is_red_only_when_the_holder_is_silent_or_unreadable() -> None:
+    """#752 audit MF: the ordinary overlap with a heartbeating pass is BUSY and exits 0; a holder
+    silent past LOCK_BUSY_HEARTBEAT_S that cannot be reclaimed, or an unreadable lock, exits 3;
+    a memory stand-down is NO_ROOM, never a lock refusal."""
+    from research import pf_allocator as pa
+    assert pa.lock_refusal({"pid": 7, "heartbeat_age_s": 40.0, "owner": "ALIVE"}) == ("BUSY", 0)
+    assert pa.lock_refusal({"pid": 7, "heartbeat_age_s": pa.LOCK_BUSY_HEARTBEAT_S + 1,
+                            "owner": "ALIVE"}) == ("LOCK_REFUSED", 3)
+    assert pa.lock_refusal({"owner": "ALIVE", "lock": "unreadable"}) == ("LOCK_REFUSED", 3)
+    assert pa.lock_refusal({"reason": "NO_ROOM", "need_mb": 900, "free_mb": 100}) == (
+        "NO_ROOM", 0)
+
+
+def test_the_memory_refusal_is_named_no_room(locks, monkeypatch) -> None:
+    monkeypatch.setattr(JL, "measured_need_mb", lambda name, mb: (mb, "declared"))
+    monkeypatch.setattr(JL, "free_mb", lambda: 10)
+    monkeypatch.setattr(JL, "admit_patience_s", lambda: 0.0)
+    monkeypatch.setattr(JL.time, "sleep", lambda s: None)
+    with JL.exclusive_job("pf_allocator", need_mb=5000) as go:
+        assert go is False
+    assert JL.LAST_REFUSAL["pf_allocator"]["reason"] == "NO_ROOM"
+    with JL.exclusive_job("pf_allocator") as go:              # a later admitted pass clears it
+        assert go is True
+    assert "pf_allocator" not in JL.LAST_REFUSAL

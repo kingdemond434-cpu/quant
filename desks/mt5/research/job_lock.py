@@ -515,6 +515,7 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
     The refusal is LOUD and names the number, because a silent stand-down is indistinguishable
     from the crash it prevents, and this desk has been burned by exactly that ambiguity.
     """
+    LAST_REFUSAL.pop(name, None)
     # THE DECLARATION IS RECORDED BEFORE THE DECISION, not after it. I3: a spec that is only
     # written on success describes the jobs that got in, which is the population a ranker must
     # not be fitted on. Recording it here means a job that STANDS DOWN still leaves its four
@@ -572,6 +573,8 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
             else:
                 avail = _median_free()
         if avail is not None and avail < need_mb:
+            LAST_REFUSAL[name] = {"reason": "NO_ROOM", "need_mb": int(need_mb),
+                                  "free_mb": avail}
             print(f"{name}: STOOD DOWN -- needs ~{need_mb}MB, box has {avail}MB available "
                   f"after waiting {admit_patience_s() / 60:.1f}min. "
                   f"Not started (a job that does not fit thrashes the box and the live "
