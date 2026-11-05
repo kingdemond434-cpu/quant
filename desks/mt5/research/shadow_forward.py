@@ -1223,6 +1223,10 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                 slog(f"{key}: session filter corrected; prior state archived and a "
                      f"NEW forward window begins at {st['forward_start']}")
             res = run_backtest(h1, sigs, costs)
+            # THE SPREAD IS THE ONE THE TRADE CROSSED, NOT AN ALL-HOURS MEDIAN (2026-11-05 HOLD).
+            # See `reprice_at_measured_spread`: one-sided, it can only lower a trade's R.
+            _priced, st["entry_spread"] = reprice_at_measured_spread(
+                res.trades, h1, costs, meta.get(sym) or {})
             # HISTORY IS KEPT, BUT IT IS NOT FORWARD EVIDENCE. `res.trades` runs from SHADOW_START
             # (2026-08-16); this parameterization's clock was frozen at `forward_start`.
             # Trades before that boundary were available while the cell was being SELECTED,
@@ -1234,7 +1238,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # n/exp_r/max_dd/verdicts -- starts at the boundary. The boundary is CONVERTED,
             # not assumed: bar stamps are on the
             # broker clock (+3h at Fusion) while forward_start is true UTC.
-            all_trades = [t for t in res.trades if t.entry_time >= SHADOW_START]
+            all_trades = [t for t in _priced if t.entry_time >= SHADOW_START]
             _fs = st.get("forward_start")
             _boundary = None
             if _fs:
@@ -1263,9 +1267,18 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                   "r_multiple": t.r_multiple, "reason": t.reason,
                   "phase": ("forward" if (_boundary is not None and t.entry_time >= _boundary)
                             else "historical"),
+                  "key": key,
                   **_stamp}
                  for t in all_trades],
                 indent=2), encoding="utf-8")
+            # THE CELL FILE ABOVE IS SHARED BY EVERY KEY ON (symbol, family, window) AND HOLDS
+            # WHICHEVER KEY RAN LAST; its readers name a sleeve by its stem, so it stays as it is
+            # and each row now says which key wrote it. Each key's own evidence is kept beside it
+            # in `keys/`, a directory no `ledger_*.json` glob reaches, so nothing double counts.
+            _write_key_ledger(key, all_trades, _boundary, _stamp)
+            st["entry_stream"] = entry_stream_id(
+                sym, [t for t in all_trades
+                      if _boundary is not None and t.entry_time >= _boundary])
             try:
                 import MetaTrader5 as _mt5
                 from h1_source import broker_utc_offset_hours
@@ -1600,7 +1613,155 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     _persist_state(state_path, state, final=True)
     slog(f"shadow state saved ({len(enrolled)} sleeves, "
          f"{len(enrolled) - len(SLEEVES)} certificate-enrolled)")
+    try:  # ONE CLOCK PER ENTRY STREAM: the collapse the promoter and the trial count must read.
+        (SHADOW_DIR / f"entry_streams_{Path(ledger).stem}.json").write_text(
+            json.dumps({"at": state["updated_at"], **entry_stream_report(state)}, indent=2),
+            encoding="utf-8")
+    except (OSError, TypeError, ValueError) as exc:
+        slog(f"entry stream report write failed ({type(exc).__name__}: {exc})")
     _enrolment_watermark(len(enrolled), ledger)
+
+
+#: Each key's own forward ledger. A subdirectory on purpose: every `ledger_*.json` reader names a
+#: sleeve by the file's stem, so a per-key file beside the cell file would read as a new sleeve.
+KEY_LEDGER_DIR = SHADOW_DIR / "keys"
+
+
+def _key_ledger_path(key: str) -> Path:
+    import hashlib
+    safe = "".join(c if (c.isalnum() or c in "._-@") else "_" for c in str(key))[:120]
+    return KEY_LEDGER_DIR / f"{safe}__{hashlib.sha1(str(key).encode()).hexdigest()[:10]}.json"
+
+
+def _write_key_ledger(key: str, trades: list, boundary: object, stamp: dict) -> None:
+    """Write `key`'s own trades, every row carrying the key. Best effort: a failed write here
+    must never stop the clock, and the cell file above still holds the rows."""
+    try:
+        KEY_LEDGER_DIR.mkdir(parents=True, exist_ok=True)
+        rows = [{"key": key, "entry_time": str(t.entry_time), "exit_time": str(t.exit_time),
+                 "side": t.side, "entry": t.entry, "exit": t.exit,
+                 "r_multiple": t.r_multiple, "reason": t.reason,
+                 "phase": ("forward" if (boundary is not None and t.entry_time >= boundary)
+                           else "historical"),
+                 **stamp} for t in trades]
+        _key_ledger_path(key).write_text(json.dumps(rows, indent=2), encoding="utf-8")
+    except OSError as exc:
+        slog(f"{key}: per-key ledger write failed ({type(exc).__name__}: {exc})")
+
+
+def entry_stream_id(sym: str, forward_trades: list) -> dict:
+    """Fingerprint the forward entries a key actually took.
+
+    Keys that differ only in fields the family never reads take the SAME trades, and 20 of the 25
+    GBPCHF formula keys sat on one 29-entry stream on 2026-11-05. Counting each as its own
+    evidence counts one bet twenty times. Keys that share this id are ONE effective trial and ONE
+    forward clock; `entry_stream_report` publishes the collapse and the promoter must read it.
+    """
+    import hashlib
+    sig = "|".join(f"{t.side}@{t.entry_time}" for t in forward_trades)
+    return {"id": hashlib.sha1(f"{sym}|{sig}".encode()).hexdigest()[:16] if forward_trades
+            else None, "n": len(forward_trades)}
+
+
+def entry_stream_report(state: dict) -> dict:
+    """Group keys by forward entry stream: how many effective trials the forward book holds."""
+    groups: dict[str, list[str]] = {}
+    for key, st in state.items():
+        es = st.get("entry_stream") if isinstance(st, dict) else None
+        if isinstance(es, dict) and es.get("id"):
+            groups.setdefault(str(es["id"]), []).append(key)
+    shared = {g: sorted(ks) for g, ks in groups.items() if len(ks) > 1}
+    return {"keys_with_stream": sum(len(v) for v in groups.values()),
+            "effective_streams": len(groups),
+            "shared_streams": len(shared),
+            "keys_on_shared_streams": sum(len(v) for v in shared.values()),
+            "shared": shared,
+            "reads": ("keys listed under one stream took identical forward entries; they are ONE "
+                      "effective trial and ONE clock, never independent evidence")}
+
+
+def _hour_spread_medians(bars: pd.DataFrame) -> dict[int, float]:
+    if "spread" not in bars.columns:
+        return {}
+    try:
+        sp = pd.Series(pd.to_numeric(bars["spread"], errors="coerce").to_numpy(dtype=float),
+                       index=pd.DatetimeIndex(bars.index).hour)
+        med = sp.groupby(level=0).median()
+    except (TypeError, ValueError):
+        return {}
+    return {int(h): float(v) for h, v in med.items() if v == v}
+
+
+def reprice_at_measured_spread(trades: list, bars: pd.DataFrame, costs: object,
+                               meta: dict) -> tuple[list, dict]:
+    """Charge each trade the spread measured where it crossed it, never less than it was charged.
+
+    THE REPLAY PRICED EVERY TRADE AT AN ALL-HOURS MEDIAN SPREAD (`Costs.from_symbol` reads
+    `median_spread_pts`). Spread is not a constant of a symbol: on 2026-11-05 every GBPCHF formula
+    entry sat in the first minute after rollover, where the tape's median spread was 82 pts
+    against the ~2-3 the replay charged, and the two promotion candidates went from +6.22R to
+    about -5.46R at the real spread (Auditor HOLD_gbpchf_formula_promotion).
+
+    The bars are bid-quoted, so a LONG crosses the spread at its entry bar and a SHORT at its exit
+    bar. The spread there is the larger of that bar's own `spread` and the median `spread` of
+    that hour of day across the frame (MT5 bars record a per-bar figure that reads 0 in quiet
+    hours, so one bar alone can under-read; the hourly median cannot be gamed by one bar). The
+    charge is ONE-SIDED: only the excess over the spread already charged is deducted, so this
+    never raises a trade's R. With no `spread` column, or no tick size, nothing changes and the
+    reason is published (UNMEASURED, never a silent clean).
+    """
+    import dataclasses as _dc
+    report: dict = {"status": "UNMEASURED", "trades": len(trades), "repriced": 0,
+                    "r_charged_extra": 0.0}
+    try:
+        tick = float(meta.get("tick_size") or meta.get("point") or 0.0)
+        contract = float(getattr(costs, "contract_oz", 0.0) or 0.0)
+        charged_px = float(getattr(costs, "spread_per_lot", 0.0)) / contract if contract else None
+    except (TypeError, ValueError):
+        tick, charged_px = 0.0, None
+    if not trades:
+        report["status"] = "NO_TRADES"
+        return list(trades), report
+    if tick <= 0 or charged_px is None:
+        report["why"] = "no tick size or contract size: the spread cannot be put in price units"
+        return list(trades), report
+    if "spread" not in bars.columns:
+        report["why"] = "the bar feed carries no spread column"
+        return list(trades), report
+    by_hour = _hour_spread_medians(bars)
+    try:
+        bar_sp = pd.Series(pd.to_numeric(bars["spread"], errors="coerce").to_numpy(dtype=float),
+                           index=pd.DatetimeIndex(bars.index))
+    except (TypeError, ValueError):
+        report["why"] = "the spread column is not numeric"
+        return list(trades), report
+    out, extra_total, worst = [], 0.0, 0.0
+    for t in trades:
+        at = pd.Timestamp(t.entry_time if t.side > 0 else t.exit_time)
+        try:
+            own = float(bar_sp.get(at, float("nan")))
+        except (TypeError, ValueError):
+            own = float("nan")
+        hour_med = by_hour.get(int(at.hour), float("nan"))
+        pts = max((v for v in (own, hour_med) if v == v), default=float("nan"))
+        stop_dist = abs(float(t.entry) - float(t.stop))
+        if pts != pts or stop_dist <= 0:
+            out.append(t)
+            continue
+        excess = pts * tick - charged_px
+        if excess <= 0:
+            out.append(t)
+            continue
+        d_r = excess * float(getattr(t, "units", 1.0) or 1.0) / stop_dist
+        extra_total += d_r
+        worst = max(worst, d_r)
+        report["repriced"] += 1
+        out.append(_dc.replace(t, r_multiple=float(t.r_multiple) - d_r))
+    report.update(status="MEASURED", r_charged_extra=round(extra_total, 6),
+                  worst_trade_extra_r=round(worst, 6),
+                  charged_spread_pts=round(charged_px / tick, 4),
+                  hour_median_pts={str(h): v for h, v in sorted(by_hour.items())})
+    return out, report
 
 
 def _enrolment_watermark(enrolled: int, ledger: str) -> None:
