@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-05T02:02:53+00:00",
+ "generated_utc": "2026-11-05T02:11:42+00:00",
  "summary": {
   "platforms": 14,
   "platforms_yielding": 4,
@@ -497,13 +497,13 @@
    },
    "ArabicTrader forum": {
     "outcome": "BLOCKED",
-    "attempts": 424,
+    "attempts": 425,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-04T18:58:44.392198+00:00",
+    "last_attempt": "2026-11-05T02:03:06.897544+00:00",
     "language": "ar",
     "region": "sa"
    },
@@ -905,13 +905,13 @@
    },
    "Bank Al-Maghrib statistiques": {
     "outcome": "BLOCKED",
-    "attempts": 421,
+    "attempts": 422,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-04T18:58:49.887588+00:00",
+    "last_attempt": "2026-11-05T02:03:22.103757+00:00",
     "language": "fr",
     "region": "ma"
    },
@@ -1313,13 +1313,13 @@
    },
    "Borsa Istanbul verileri": {
     "outcome": "BLOCKED",
-    "attempts": 424,
+    "attempts": 425,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-04T18:58:57.890082+00:00",
+    "last_attempt": "2026-11-05T02:03:48.699203+00:00",
     "language": "tr",
     "region": "tr"
    },
@@ -1469,13 +1469,13 @@
    },
    "CBUAE statistics": {
     "outcome": "BLOCKED",
-    "attempts": 423,
+    "attempts": 424,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-04T18:58:52.999554+00:00",
+    "last_attempt": "2026-11-05T02:02:59.099469+00:00",
     "language": "en",
     "region": "ae"
    },
@@ -4745,13 +4745,13 @@
    },
    "SAMA statistics": {
     "outcome": "BLOCKED",
-    "attempts": 425,
+    "attempts": 426,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-04T18:57:56.902570+00:00",
+    "last_attempt": "2026-11-05T02:03:44.708990+00:00",
     "language": "en",
     "region": "sa"
    },
@@ -7282,18 +7282,18 @@
    "cpu_s_24h": 155.2
   },
   "forest_africa": {
-   "runs": 22,
-   "fetches": 1990,
-   "ok": 1516,
-   "http_errors": 187,
-   "transport_errors": 287,
-   "seconds": 9249.6,
-   "rows": 580,
-   "last_run": "2026-11-04T18:51:05+00:00",
-   "fetches_per_s": 0.2151,
-   "success_rate": 0.7618,
-   "wall_s_24h": 2711.2,
-   "cpu_s_24h": 594.3
+   "runs": 23,
+   "fetches": 2071,
+   "ok": 1585,
+   "http_errors": 195,
+   "transport_errors": 291,
+   "seconds": 10341.2,
+   "rows": 607,
+   "last_run": "2026-11-05T02:06:11+00:00",
+   "fetches_per_s": 0.2003,
+   "success_rate": 0.7653,
+   "wall_s_24h": 2511.7,
+   "cpu_s_24h": 595.1
   },
   "forest_asean": {
    "runs": 21,
@@ -7334,8 +7334,8 @@
    "last_run": "2026-11-05T02:02:53+00:00",
    "fetches_per_s": 0.3526,
    "success_rate": 0.8575,
-   "wall_s_24h": 1817.4,
-   "cpu_s_24h": 777.3
+   "wall_s_24h": 3871.2,
+   "cpu_s_24h": 1287.2
   },
   "forest_global_academic_code": {
    "runs": 11,
@@ -7436,16 +7436,16 @@
    "cpu_s_24h": 626.5
   },
   "forest_mena": {
-   "runs": 23,
-   "fetches": 2654,
-   "ok": 1727,
-   "http_errors": 174,
-   "transport_errors": 753,
-   "seconds": 8597.9,
-   "rows": 72,
-   "last_run": "2026-11-04T19:01:34+00:00",
-   "fetches_per_s": 0.3087,
-   "success_rate": 0.6507,
+   "runs": 24,
+   "fetches": 2759,
+   "ok": 1796,
+   "http_errors": 197,
+   "transport_errors": 766,
+   "seconds": 9779.8,
+   "rows": 76,
+   "last_run": "2026-11-05T02:11:41+00:00",
+   "fetches_per_s": 0.2821,
+   "success_rate": 0.651,
    "wall_s_24h": 1596.7,
    "cpu_s_24h": 574.5
   },
