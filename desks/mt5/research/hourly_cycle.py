@@ -1132,8 +1132,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     "forward_reconcile", "clock_liveness", "certificate_clock_law", "clock_accrual",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
-    # The noon CRO pass must land a ledger row every day; one file read, so it is core.
-    "cro_noon_freshness",
+    # `cro_noon_freshness` is NOT core (2026-11-05): on the box the core plan admitted only its
+    # always-run legs every pass (11 of 162, ~3.6-4.1k s planned against a 2.6k s budget), so it
+    # sat in NEVER RUN for a week and its report never existed. It runs on the meta department,
+    # where a never-run leg is admitted ahead of every stale one; a 26 h check needs no hour.
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
     # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
     # ledger append; it must run every hour, so it is core.
