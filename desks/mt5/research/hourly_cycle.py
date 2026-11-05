@@ -1247,6 +1247,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # The FTMO book's solve on the same cadence (2026-10-28): it re-solves from the account's live
     # phase every hour, so a phase change or a new certificate moves the book within the hour.
     "prop_challenge_allocator",
+    # THE E8 SECOND SLEEVE (BACKLOG 26, 2026-11-05): every candidate ranked against the live E8
+    # book (gold_asia) by marginal E[log W], correlation, mechanism, E8 rules and net evidence, on
+    # the allocator's worlds. A report only; ~30 s of arithmetic over files the legs above wrote.
+    "e8_second_sleeve",
     # The two stop-geometry constants on the same solve (2026-09-30): a report the sizing fence's
     # citations point at, re-derived hourly so a stale number is visible as stale.
     "stop_geometry_derivation",
@@ -2121,6 +2125,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # THE SWEEP THE BASKET JUDGE READS stops building legs at --budget-s 480 and carries the rest
     # from its previous pass; on the 23 hours a day its artifact is fresh it exits in a second.
     "srb_uncorrelated_sweep": 600,
+    # Two-column path draws per world column (27 today) on the E8 risk grid, both worlds plus a
+    # prior-only re-read: ~30 s measured on the build box; the cap leaves room for a wider tensor.
+    "e8_second_sleeve": 300,
     # Reads canon, five lane state files and its own history, then writes two files. No market
     # data, no venue, no terminal call -- it is arithmetic over rows the enrolment leg just wrote.
     "certificate_clock_law": 180,
@@ -6249,6 +6256,11 @@ def main() -> None:
     # data/FTMO_ALLOCATOR_ARMED exists. Re-runs every pass, so a certificate change is picked up.
     fta = _costed("prop_challenge_allocator", lambda: _producer(
         "prop_challenge_allocator", "research/prop_challenge_allocator.py"))
+    # THE E8 SECOND SLEEVE (BACKLOG 26): which candidate beside gold_asia adds the most independent
+    # edge to E8, or NONE_ELIGIBLE with the exact gate each one misses. Writes
+    # reports/E8_SECOND_SLEEVE.json and nothing else: it sizes nothing and arms nothing.
+    e8s = _costed("e8_second_sleeve", lambda: _producer(
+        "e8_second_sleeve", "research/e8_second_sleeve.py"))
     # THE STOP GEOMETRY ON THE SAME SOLVE (2026-09-30): MIN_STOP_SPREAD_MULT and
     # ENTRY_DRIFT_TOL_FRAC re-derived from the bars' spreads, the entry drift and the live edge.
     # A report only -- the money path carries the cited values. Each value passes a two-sided
@@ -6532,6 +6544,7 @@ def main() -> None:
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls, "prop_challenge_allocator": fta,
+                    "e8_second_sleeve": e8s,
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,

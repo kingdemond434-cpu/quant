@@ -252,6 +252,9 @@ LEG_LAYER: dict[str, str] = {
     "live_calibration_posterior": "prediction", "constrained_book": "sizing",
     "kelly_survival": "sizing", "stop_geometry_derivation": "sizing",
     "prop_challenge_allocator": "sizing",
+    # Which sleeve beside gold_asia adds the most independent edge to the E8 book: the portfolio
+    # question, ranked; it sizes nothing.
+    "e8_second_sleeve": "portfolio",
     "decay_monitor": "portfolio", "fill_markout": "execution",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
     "recovery_drills": "meta",
