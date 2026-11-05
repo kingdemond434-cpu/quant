@@ -540,8 +540,23 @@ def _month_end(y: int, m: int) -> date:
     return (date(y + (m == 12), m % 12 + 1, 1) - timedelta(days=1))
 
 
+#: Plausible observation years. A provider sentinel ("2999", seen live on DBnomics 2026-11) is
+#: not an observation, and its end date plus a lag overflows pandas' ns range (max 2262-04-11),
+#: which killed the WHOLE hunt from 10-19 on. Out-of-range periods are dropped as unparseable.
+MIN_YEAR = 1700
+MAX_YEARS_AHEAD = 30
+
+
 def period_end(period: str, freq: str = "") -> tuple[date | None, str]:
-    """(last day the period describes, inferred frequency). None when unparseable."""
+    """(last day the period describes, inferred frequency). None when unparseable or when the
+    year is a sentinel rather than an observation (outside MIN_YEAR .. now + MAX_YEARS_AHEAD)."""
+    end, f = _period_end(period, freq)
+    if end is not None and not MIN_YEAR <= end.year <= datetime.now(UTC).year + MAX_YEARS_AHEAD:
+        return None, f
+    return end, f
+
+
+def _period_end(period: str, freq: str = "") -> tuple[date | None, str]:
     p = str(period or "").strip()
     f = norm_freq(freq)
     try:
@@ -643,8 +658,11 @@ def merge_observations(existing: Any, series: list[dict[str, Any]], *, now: date
             if end is None:
                 continue
             lag = lag_days(f or freq, declared_lag)
-            rows.append((s["code"], per, pd.Timestamp(end, tz="UTC"), float(val),
-                         pd.Timestamp(end, tz="UTC") + pd.Timedelta(days=lag)))
+            try:
+                rows.append((s["code"], per, pd.Timestamp(end, tz="UTC"), float(val),
+                             pd.Timestamp(end, tz="UTC") + pd.Timedelta(days=lag)))
+            except (OverflowError, ValueError):  # OutOfBoundsDatetime is a ValueError
+                continue                         # one bad point never costs the hunt
     if not rows:
         return existing, 0
     new = pd.DataFrame(rows, columns=["series_code", "period", "period_end", "value",
