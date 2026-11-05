@@ -617,6 +617,19 @@
     "job_lock.py: Adds complex heartbeat and orphan detection logic, which could introduce new risks if not thoroughly tested."
    ],
    "source": "independent-review job 127224872063; Auditor CLEAR e4c2e96b2 and false-FAIL log 12:08Z; rebuttal PR comment 6657581491 (Autonomy 12:07Z)"
+  },
+  {
+   "pr": 757,
+   "head": "f61855c60f12a5bfc42e9f09548d9aa55f37797e",
+   "base": "896f53bea53090d4b83fcb2986a0ad2e0f52a8d0",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "The change introduces new risk by changing the rotation logic for 'tier_s' and adding a new configuration for 'DUE_BY_AGE_H'. This could potentially lead to unintended behavior or increased exposure.",
+    "The change adds new code that is not well-documented, making it difficult to understand its purpose and potential impact."
+   ],
+   "source": "independent-review job 127243152175; Auditor CLEAR tree 3a04535c5 and false-FAIL log 12:55Z; rebuttal PR comment 6658480399 (Autonomy 12:57Z)"
   }
  ]
 }
