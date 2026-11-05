@@ -72,6 +72,13 @@ BUDGET_S = 900.0
 #: Breadth-per-run bound so a pass finishes; the cursor rotates through both lanes so every row
 #: is reached across passes (LAWS 2: a count is never a ceiling).
 MAX_PER_PASS = 16
+#: THE COUNT IS A FLOOR, THE BUDGET IS THE CEILING (2026-10-29). `max_per_pass // 2` certificates a
+#: pass was ALSO the most a pass ever judged, while a pass used ~300 s of its 900 s budget: 8
+#: certificates an hour against 1,204, so 80 never-judged gap_decay certificates waited since
+#: 2026-09-25 and 295 certificates sat clockless at the admission door (FORWARD_ENROLMENT.json
+#: 2026-10-29, n_held 295). Past the floor the certificate lane keeps judging certificates that HAVE
+#: a written rule until it has spent this share of the budget; the forward lane keeps the rest.
+CERT_BUDGET_SHARE = 0.5
 MIN_BARS = 300
 # MEASURED over 433 deals (reports/COST_TRUTH.json 2026-09-23): 2.00 in ACCOUNT CURRENCY
 # per lot per side. Mirrors libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE.
@@ -1246,25 +1253,49 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
                   if book.get(certificate_id(r)) and
                   (book[certificate_id(r)].get("sharpe_metric_version")
                    != SHARPE_METRIC_VERSION)]
-    pending = old_metric + [i for i, r in enumerate(certs)
-                            if i not in set(old_metric) and
-                            (book.get(certificate_id(r)) or {}).get("fp")
-                            != certificate_fp(r)]
+    old_set = set(old_metric)
+    unjudged = [i for i, r in enumerate(certs)
+                if i not in old_set and
+                (book.get(certificate_id(r)) or {}).get("fp") != certificate_fp(r)]
+
+    def _has_rule(i: int) -> bool:
+        return SPEC_BOOK.get(str((certs[i].get("shadow_spec") or {}).get("family") or "")) \
+            is not None
+
+    # A NEVER-JUDGED CERTIFICATE WITH A WRITTEN RULE GOES FIRST: it is the one a REPLICATED
+    # verdict lets start a forward clock. Old-metric rechecks follow it, and a certificate whose
+    # family the book has no rule for comes last -- its verdict is UNMEASURED whatever the bars
+    # say, so judging it first only delays the certificates that can actually clear.
+    pending = ([i for i in unjudged if _has_rule(i)] + [i for i in old_metric if _has_rule(i)]
+               + [i for i in unjudged if not _has_rule(i)]
+               + [i for i in old_metric if not _has_rule(i)])
     rotation = [(ci + k) % len(certs) for k in range(len(certs))] if certs else []
     wanted = set(priority_certificates)
     priority = [i for i, r in enumerate(certs) if certificate_id(r) in wanted]
     first = list(dict.fromkeys(priority + pending))
     order = first + [i for i in rotation if i not in set(first)]
-    for n, idx in enumerate(order[:per_lane]):
+    cert_deadline = t0 + max(1.0, float(budget_s)) * CERT_BUDGET_SHARE
+    taken = 0
+    for n, idx in enumerate(order):
         if time.monotonic() > deadline:
             notes.append("budget: certificates left for the next pass")
             break
+        if taken >= per_lane:
+            if time.monotonic() > cert_deadline:
+                notes.append("budget: certificate share spent; the rest wait for the next pass")
+                break
+            if not _has_rule(idx):
+                continue
         row = certs[idx]
         spec = row.get("shadow_spec") or {}
         sym = str(spec.get("symbol") or row.get("sym") or "")
         tf = str((spec.get("params") or {}).get("timeframe") or "H1")
+        # bars only for a rule that can read them: a family with no written rule resolves to
+        # UNMEASURED before the bars are touched, so opening its parquet was pure cost
         rows.append(replicate_certificate(row, meta=dict(meta_all.get(sym) or {}),
-                                          bars=bars_loader(sym, tf)))
+                                          bars=bars_loader(sym, tf) if _has_rule(idx)
+                                          else None))
+        taken += 1
         if n >= len(first):
             cursor["certificates"] = (idx + 1) % len(certs)
     for k in range(min(per_lane, len(fwd))):
@@ -1309,7 +1340,7 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
                                                "key": r.get("key"), "at": _now()}
         _write_atomic(verdicts_path, {"at": _now(), "rule": RULE, "certificates": book})
     doc["verdict_book"] = {"path": str(verdicts_path.name), "n": len(book),
-                           "judged_first_this_pass": min(len(pending), per_lane)}
+                           "judged_first_this_pass": min(len(pending), taken)}
     return doc
 
 
