@@ -591,6 +591,19 @@
     "libs/portfolio/venue_cost.py: Introduces new functionality for overlaying venue quotes on execution surfaces, which could increase complexity and risk if not thoroughly tested."
    ],
    "source": "independent-review job 127106485179; Auditor CLEAR 3dae5b3c9; rebuttal PR comment 6652465979 (Autonomy 07:36Z)"
+  },
+  {
+   "pr": 748,
+   "head": "949bf047934e2a5f927b4da715df4816b668ee16",
+   "base": "42693ee8d7deca7cc47ed367423c770c94dc5085",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "The change introduces new functions and logic that modify the behavior of the trading system, including `live_policy_zero`, `ceiling_guard_book`, and `fallback_on_admissible`. These changes increase risk by introducing new paths for failure and potential unintended consequences.",
+    "The change adds new tests to validate the new functionality, which is a positive step. However, the introduction of new logic without thorough review increases the risk profile."
+   ],
+   "source": "independent-review job 127200340409; Auditor CLEAR 949bf0479; rebuttal PR comment 6656550021 (Autonomy 11:13Z)"
   }
  ]
 }
