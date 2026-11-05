@@ -459,3 +459,30 @@ def test_row07_existence_only_scheduler_is_unmeasured(sandbox: Path) -> None:
         "counts": {"FAILING": 0, "NOT_SCHEDULED": 0}, "processes": []})
     row = sc._r07_silent_failures()
     assert row["current"] is None and row["basis"].startswith("UNMEASURED")
+
+
+def test_footprints_carry_box_local_artifacts_bounded(tmp_path: Path,
+                                                       monkeypatch: pytest.MonkeyPatch) -> None:
+    small = tmp_path / "FUTURES_STATE.json"
+    small.write_text(json.dumps({"generated_at": "2026-11-04T00:00:00+00:00", "rows": [1, 2]}))
+    big = tmp_path / "ACTOR_ATLAS.json"
+    big.write_text(json.dumps({"generated_utc": "x", "cells": list(range(40_000))}))
+    bad = tmp_path / "MARKET_ECOLOGY.json"
+    bad.write_text("{not json")
+    absent = tmp_path / "ASIA_PLANE.json"
+    monkeypatch.setattr(sc, "FOOTPRINT_ARTIFACTS", (small, big, bad, absent))
+    doc = sc.footprints()
+    rows = {Path(k).name: v for k, v in doc["artifacts"].items()}
+    assert rows["FUTURES_STATE.json"]["copy_kind"] == "whole"
+    assert rows["FUTURES_STATE.json"]["copy"]["rows"] == [1, 2]
+    assert rows["ACTOR_ATLAS.json"]["copy_kind"] == "outline"
+    assert rows["ACTOR_ATLAS.json"]["copy"]["cells"] == {"type": "list", "len": 40_000}
+    assert rows["MARKET_ECOLOGY.json"]["status"] == "UNREADABLE"
+    assert rows["ASIA_PLANE.json"]["status"] == "ABSENT"
+    assert doc["present"] == 2
+    assert len(json.dumps(doc)) < sc.FOOTPRINT_TOTAL_BYTES + 50_000
+
+
+def test_the_scorecard_carries_the_footprints_block() -> None:
+    assert "footprints" in sc.build()
+    assert len(sc.FOOTPRINT_ARTIFACTS) == 11
