@@ -360,6 +360,9 @@ def intrabar_path(df: pd.DataFrame, freq: str = "1h") -> pd.DataFrame:
     """
     if df.empty:
         return pd.DataFrame()
+    fast = _intrabar_path_fast(df, freq)
+    if fast is not None:
+        return fast
     ts = pd.to_datetime(np.asarray(df["time_msc"], dtype=np.int64), unit="ms", utc=True)
     mid = pd.Series(np.asarray(df["mid"], dtype=np.float64), index=ts)
     ms = pd.Series(np.asarray(df["time_msc"], dtype=np.int64), index=ts)
@@ -377,6 +380,55 @@ def intrabar_path(df: pd.DataFrame, freq: str = "1h") -> pd.DataFrame:
             "low": float(chunk.min()), "close": float(chunk.iloc[-1]),
             "t_high_ms": int(t.iloc[i_hi]) - t0, "t_low_ms": int(t.iloc[i_lo]) - t0,
             "high_first": bool(i_hi < i_lo), "path_ticks": int(chunk.size),
+        })
+    out = pd.DataFrame(rows)
+    if out.empty:
+        return out
+    return out.set_index("bar")
+
+
+def _bar_segments(stamps: pd.DatetimeIndex, freq: str) -> tuple[np.ndarray, np.ndarray,
+                                                                  pd.DatetimeIndex]:
+    """(stable order, segment starts, sorted bar labels) grouping `stamps` into `freq` bars.
+
+    `floor(freq)` on a UTC index is the same left-closed, left-labelled bin `pd.Grouper(freq=)`
+    builds for every frequency on the bar clock (M1..D1 all divide a UTC day from midnight), and
+    the STABLE sort keeps each bar's ticks in their original order, so first/last/argmax mean
+    exactly what they meant under the groupby."""
+    floored = stamps.floor(freq)
+    key = np.asarray(floored.asi8, dtype=np.int64)
+    order = np.argsort(key, kind="stable")
+    k = key[order]
+    starts = np.flatnonzero(np.r_[True, k[1:] != k[:-1]]) if k.size else np.empty(0, np.int64)
+    # Labels keep the index's own resolution (ms or ns, by pandas version), as the groupby did.
+    return order, starts, floored[order]
+
+
+def _intrabar_path_fast(df: pd.DataFrame, freq: str) -> pd.DataFrame | None:
+    """`intrabar_path` on numpy segments: the same rows, ~10x faster (2026-11-05).
+
+    MT5-TapeFeatures was killed at its 45-minute limit 12 runs in a row; profiled on a 192k-tick
+    day, 54% of `build_day` was this function's per-bar pandas `.loc` lookups. Returns None (the
+    caller then takes the original groupby path) when a mid is NaN, where pandas' skip-NaN max
+    and numpy's would differ."""
+    mid_all = np.asarray(df["mid"], dtype=np.float64)
+    if np.isnan(mid_all).any():
+        return None
+    tms_all = np.asarray(df["time_msc"], dtype=np.int64)
+    stamps = pd.to_datetime(tms_all, unit="ms", utc=True)
+    order, starts, k = _bar_segments(pd.DatetimeIndex(stamps), freq)
+    mid, tms = mid_all[order], tms_all[order]
+    ends = np.r_[starts[1:], mid.size]
+    rows: list[dict[str, Any]] = []
+    for a, b in zip(starts.tolist(), ends.tolist(), strict=True):
+        chunk, t = mid[a:b], tms[a:b]
+        i_hi, i_lo = int(np.argmax(chunk)), int(np.argmin(chunk))
+        t0 = int(t[0])
+        rows.append({
+            "bar": k[a], "open": float(chunk[0]),
+            "high": float(chunk.max()), "low": float(chunk.min()), "close": float(chunk[-1]),
+            "t_high_ms": int(t[i_hi]) - t0, "t_low_ms": int(t[i_lo]) - t0,
+            "high_first": bool(i_hi < i_lo), "path_ticks": int(b - a),
         })
     out = pd.DataFrame(rows)
     if out.empty:
@@ -451,9 +503,13 @@ def realized_variation(df: pd.DataFrame, freq: str = "1h",
     logp = np.full(px.shape, np.nan)
     logp[ok] = np.log(px[ok])
     rows: list[dict[str, Any]] = []
-    bars = pd.Series(np.arange(grid.size), index=grid.index).groupby(pd.Grouper(freq=freq))
-    for stamp, idx in bars:
-        i = idx.to_numpy()
+    # THE SAME BARS AS `groupby(pd.Grouper(freq=freq))`, as numpy index ranges: the grid is
+    # sorted by construction (a resample), so each bar is one contiguous slice (2026-11-05 speed).
+    _order, seg_starts, seg_keys = _bar_segments(pd.DatetimeIndex(grid.index), freq)
+    seg_ends = np.r_[seg_starts[1:], grid.size]
+    for a, b in zip(seg_starts.tolist(), seg_ends.tolist(), strict=True):
+        stamp = seg_keys[a]
+        i = _order[a:b]
         if i.size < min_returns + 1:
             if i.size:
                 rows.append({"bar": stamp, "n_returns": max(0, int(i.size) - 1),
