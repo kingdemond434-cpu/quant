@@ -13,7 +13,7 @@ import pytest
 
 _DESK = Path(__file__).resolve().parents[1]
 _ROOT = _DESK.parent.parent
-for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
+for _p in (str(_DESK), str(_DESK / "research"), str(_DESK / "tests"), str(_ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
