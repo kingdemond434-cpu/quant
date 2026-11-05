@@ -1,5 +1,5 @@
 {
- "at": "2026-11-05T09:16:21+00:00",
+ "at": "2026-11-05T09:38:14+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,7 +9,7 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-11-05T09:14:41+00:00",
+   "at": "2026-11-05T09:34:26+00:00",
    "bandit_at": "2026-11-03T05:29:32.986928+00:00",
    "hour": "2026-11-05T09",
    "arm": "treated",
@@ -22,13 +22,13 @@
    "surplus_why": "department 'discovery' measured spare 1350s/hour",
    "contract": {
     "n_treated": 25,
-    "n_control": 12,
+    "n_control": 11,
     "mean_treated": 0.48,
-    "mean_control": 0.25,
-    "delta": 0.23,
-    "t": 0.973,
+    "mean_control": 0.181818,
+    "delta": 0.298182,
+    "t": 1.251,
     "verdict": "UNDECIDED",
-    "why": "Welch t=0.973 over 25 treated vs 12 held-out leg-runs in the last 14 days",
+    "why": "Welch t=1.251 over 25 treated vs 11 held-out leg-runs in the last 14 days",
     "window_d": 14.0
    },
    "trial": true,
@@ -112,7 +112,7 @@
   }
  },
  "authoritative": false,
- "authority_why": "not authoritative -- alpha_evolution: uplift ran as the trial, contract UNDECIDED (Welch t=0.973 over 25 treated vs 12 held-out leg-runs in the last 14 days); deepen: the base is the leg's unlimited sentinel; nothing to govern",
+ "authority_why": "not authoritative -- alpha_evolution: uplift ran as the trial, contract UNDECIDED (Welch t=1.251 over 25 treated vs 11 held-out leg-runs in the last 14 days); deepen: the base is the leg's unlimited sentinel; nothing to govern",
  "contract": {
   "gain": "INFO_PER_COMPUTE",
   "metric": "control_arm.admitted",
@@ -125,13 +125,13 @@
   "legs": {
    "alpha_evolution": {
     "n_treated": 25,
-    "n_control": 12,
+    "n_control": 11,
     "mean_treated": 0.48,
-    "mean_control": 0.25,
-    "delta": 0.23,
-    "t": 0.973,
+    "mean_control": 0.181818,
+    "delta": 0.298182,
+    "t": 1.251,
     "verdict": "UNDECIDED",
-    "why": "Welch t=0.973 over 25 treated vs 12 held-out leg-runs in the last 14 days",
+    "why": "Welch t=1.251 over 25 treated vs 11 held-out leg-runs in the last 14 days",
     "window_d": 14.0
    },
    "deepen": {
