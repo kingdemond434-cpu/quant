@@ -895,7 +895,7 @@ def review(
     return verdict, log
 
 
-#: SHADOW CANDIDATES (Governance 2026-11-04, journal D-20261104-shadow). local_models.json
+#: SHADOW CANDIDATES (Governance 2026-11-04, journal D-20261105-001). local_models.json
 #: `shadow` lists models that are ASKED BUT NEVER COUNTED: after the real verdict is final, each
 #: pulled shadow model reads the same whole diff once and its answer, time and manifest sha256 are
 #: printed as a `SHADOW` line. Nothing here reaches the return code, the annotation or the vote,
