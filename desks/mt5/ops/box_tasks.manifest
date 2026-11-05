@@ -330,3 +330,6 @@ TASK name="Quant-SignTrain"    trigger="at logon + every 10 minutes" runs="ops/b
 # models through libs/ops/openrouter_free (already used by other organs). The box never contacts
 # YouTube: mine_channel_transcripts.py runs here only with --report-only, which does no network I/O.
 TASK name="Quant-VideoCells"   trigger="hourly"                      runs="scripts/run_video_cells_box.ps1" installer="scripts/run_video_cells_box.ps1" lane="research" also_runs="scripts/video_transcript_vault.py,scripts/extract_video_cells.py,scripts/mine_channel_transcripts.py"
+# THE SIDE-CHANNEL MINER SUITE (2026-11-05). run_all_miners ran only on the Linux VPS chain, whose
+# intel-ship stopped 2026-11-03; nineteen seats went DEAD together in PRODUCER_YIELD. Research only.
+TASK name="Quant-SideChannelMiners" trigger="every 2 hours at :45" runs="ops/run_side_channel_miners.cmd" installer="desks/mt5/scripts/install_side_channel_miners_task.ps1" lane="research" also_runs="desks/mt5/side_channels/run_all_miners.py"
