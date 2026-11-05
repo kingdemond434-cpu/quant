@@ -44,8 +44,13 @@ THE ARENA IS THE FIRM'S OWN RULE TEXT (`RULES`), CHECKED DAY BY DAY:
 THE UNIVERSE, every gate fail-closed and every refusal NAMED in `screen`:
   1. certificates in the canonical store (`kelly_survival.certified_roster`: banned families, M15,
      the Reddit/StockTwits terms fence already out), priced by the allocator's worlds or replayed;
-  2. TIER S: the certificate's deflated-Sharpe gate passed at dsr >= 0.95 AND its Tier S door
-     verdict is CLEAR (data/tier_s/door_verdicts.json). The bar is read, never set here;
+  2. THE SAME CERTIFIED ROSTER FUSION AND E8 TRADE (principal, 2026-11-03 19:58Z: "ftmo fusion
+     etc must always have same mechanisms ... all must be just as same as each other"; standing
+     rule: FTMO copies ALL sleeves). Until 2026-11-05 FTMO alone also required Tier S (dsr >= 0.95
+     AND a CLEAR Tier S door), which left it trading the gold copy only while E8
+     (`prop/e8_book._load_survivors`) and Fusion (`kelly_survival.certified_roster`) traded every
+     certificate. Tier S is still read and published per column (`tier_s`) as an annotation; the
+     survival solve below (P(fail) <= BOOK_MARGIN in BOTH worlds) is what sizes every sleeve;
   3. LISTED on the venue's terminal (`data/ftmo_registry.json` from prop/ftmo_venue_reader.py, else
      the FTMO-terminal registry snapshot `data/cost_truth_quotes.json`);
   4. PRICED AT THE VENUE'S COST at the sleeve's own fill hour: FTMO's spread at that hour (its own
@@ -153,7 +158,7 @@ EXECUTOR_SKIP_SYMBOLS = frozenset({"XAUUSD"})
 #: inside [0, that ceiling]. The traded key in CERT_BOOK_LIVE is the solve's; the ceiling is never
 #: read back from it, so an allocator write (a zero included) can neither ratchet the ceiling down
 #: nor pause the copy. A zero or an absent file IS the principal's pause.
-#: Every other column must be the FTMO account's own Tier S sleeve, off every E8 symbol.
+#: Every other column is a certified sleeve of the same roster Fusion and E8 trade (2026-11-05).
 COPY_COLUMNS = {"gold_asia": "principal override 2026-10-28 14:31Z: FTMO copies E8 gold_asia"}
 COPY_PRINCIPAL = BASE / "data" / "FTMO_COPY_PRINCIPAL.json"
 #: Fusion's measured commission per lot per side (cost_truth.py: 2.00 EUR on every symbol),
@@ -394,9 +399,9 @@ def tier_s_columns(screen: list[dict[str, Any]], doors: dict[str, Any]) -> dict[
         door = (rows.get(key) or {}).get("verdict")
         row["tier_s"] = {"dsr": dsr, "dsr_passed": gate.get("passed"), "door": door}
         if not (gate.get("passed") is True and isinstance(dsr, (int, float)) and dsr >= DSR_BAR):
-            row.setdefault("ftmo_excluded", f"not Tier S: dsr {dsr!r} (bar {DSR_BAR})")
+            row.setdefault("tier_s_miss", f"not Tier S: dsr {dsr!r} (bar {DSR_BAR})")
         elif door != "CLEAR":
-            row.setdefault("ftmo_excluded", f"not Tier S: door verdict {door!r}")
+            row.setdefault("tier_s_miss", f"not Tier S: door verdict {door!r}")
         elif col and not row.get("excluded"):
             out.setdefault(col, key)
     return out
@@ -645,13 +650,18 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         elif col in names:
             admit(col, r_all[:n_w, :n_t, names.index(col)], f"{COPY_COLUMNS[col]} ({swhy})")
             caps[col] = cur
+    cert_of: dict[str, str] = {}
+    for row in screen:
+        if row.get("column") and not row.get("excluded"):
+            cert_of.setdefault(str(row["column"]), str(row["certificate"]))
     for k, col in enumerate(cert_cols):
         sym = _symbol_of(col)
         reason = None
         if col in columns:
             continue
-        if col not in tier_s:
-            reason = "not Tier S (dsr bar or door verdict; see screen)"
+        cert_key = tier_s.get(col) or cert_of.get(col)
+        if not cert_key:
+            reason = "no certificate in the store's screen for this column"
         elif sym not in listing:
             reason = f"NOT_LISTED on the FTMO terminal ({listing_src})"
         elif sym in quarantine:
@@ -661,9 +671,11 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         if reason:
             columns[col] = {"admitted": False, "why": reason, "rail": "ftmo_universe"}
             continue
-        admit(col, r_c[:, :, k], f"Tier S via {tier_s[col]}")
+        admit(col, r_c[:, :, k], (f"Tier S via {cert_key}" if col in tier_s else
+                                  f"certified via {cert_key} (the roster Fusion and E8 trade)"))
         if columns[col].get("admitted"):
-            spec, swhy = sleeve_spec(tier_s[col])
+            columns[col]["tier_s"] = col in tier_s
+            spec, swhy = sleeve_spec(cert_key)
             if spec is not None:
                 specs[col] = spec
             else:
