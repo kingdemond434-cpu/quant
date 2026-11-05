@@ -73,3 +73,26 @@ def test_a_nan_mid_takes_the_original_path() -> None:
     df = _quotes(1, 50, shuffle=False, drop_hour=None)
     df.loc[df.index[3], "mid"] = np.nan
     assert ms._intrabar_path_fast(df, "1h") is None
+
+
+def test_ticks_in_the_same_millisecond_keep_their_own_times_on_both_paths() -> None:
+    """Auditor on #750: the original groupby path read times by LABEL (`ms.loc[chunk.index]`),
+    so ticks sharing a millisecond duplicated rows and the extremes were timed off the wrong
+    tick -- ticks at 0, 0, 1000, 2000 ms with the low at 2000 reported t_low_ms=0."""
+    d0 = int(np.datetime64("2026-10-01T10:00", "ms").astype("int64"))
+    raw = pd.DataFrame({"time_msc": d0 + np.array([0, 0, 1000, 2000]),
+                        "bid": [1.10010, 1.10030, 1.10020, 1.10000]})
+    raw["ask"] = raw["bid"] + 12 * POINT
+    df = ms.quote_frame(raw, POINT)
+    for path in (ms.intrabar_path(df, "1h"), _groupby_path(df, "1h")):
+        row = path.iloc[0]
+        assert int(row["t_high_ms"]) == 0 and int(row["t_low_ms"]) == 2000
+        assert bool(row["high_first"]) is True and int(row["path_ticks"]) == 4
+
+
+def test_duplicate_milliseconds_everywhere_still_agree() -> None:
+    df = _quotes(11, 800, shuffle=False, drop_hour=None)
+    df["time_msc"] = (np.asarray(df["time_msc"]) // 50) * 50      # force many same-ms ticks
+    for freq in FREQS:
+        pd.testing.assert_frame_equal(ms.intrabar_path(df, freq), _groupby_path(df, freq),
+                                      check_freq=False)

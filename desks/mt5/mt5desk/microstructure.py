@@ -364,14 +364,19 @@ def intrabar_path(df: pd.DataFrame, freq: str = "1h") -> pd.DataFrame:
     if fast is not None:
         return fast
     ts = pd.to_datetime(np.asarray(df["time_msc"], dtype=np.int64), unit="ms", utc=True)
-    mid = pd.Series(np.asarray(df["mid"], dtype=np.float64), index=ts)
-    ms = pd.Series(np.asarray(df["time_msc"], dtype=np.int64), index=ts)
-    g = mid.groupby(pd.Grouper(freq=freq))
+    # MID AND TIME GROUPED TOGETHER, POSITIONALLY (2026-11-05, Auditor on #750). This read
+    # `t = ms.loc[chunk.index]`, a LABEL lookup: two ticks in the same millisecond -- routine on
+    # a tick tape -- share a label, so .loc returned every match for each, `t` grew longer than
+    # the chunk, and t.iloc[i_hi] / t.iloc[i_lo] read the wrong tick's time (ticks at 0,0,1000,
+    # 2000 ms with the low at 2000 reported t_low_ms=0). OHLC and high_first were unaffected.
+    frame = pd.DataFrame({"mid": np.asarray(df["mid"], dtype=np.float64),
+                          "t": np.asarray(df["time_msc"], dtype=np.int64)}, index=ts)
+    g = frame.groupby(pd.Grouper(freq=freq))
     rows: list[dict[str, Any]] = []
-    for stamp, chunk in g:
-        if chunk.empty:
+    for stamp, both in g:
+        if both.empty:
             continue
-        t = ms.loc[chunk.index]
+        chunk, t = both["mid"], both["t"]
         i_hi = int(np.argmax(chunk.to_numpy()))
         i_lo = int(np.argmin(chunk.to_numpy()))
         t0 = int(t.iloc[0])
