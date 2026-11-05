@@ -51,6 +51,8 @@ RATCHET = ROOT / "desks" / "mt5" / "data" / "clock_liveness_ratchet.json"
 MAX_REPORT_AGE_S = 2 * 3600
 #: One leg cap plus slack: a provisional report younger than this is a pass still running.
 PROVISIONAL_GRACE_S = 15 * 60.0
+#: Consecutive budget-starved passes for one cause's repair before it is a failure.
+STARVED_PASSES_MAX = 3
 
 OK, FAIL, UNMEASURED = "OK", "FAIL", "UNMEASURED"
 
@@ -161,6 +163,13 @@ def judge(report: Any, ratchet: Any, *, require_state: bool,
             findings.append(f"{n_breach} breached clock(s) and NOTHING was queued for judgement: "
                             f"{queue.get('why')} -- a breach that reaches no queue is a report, "
                             f"not a remedy")
+
+    # 3b. A REPAIR STARVED OF BUDGET PASS AFTER PASS IS A REPAIR THAT NEVER RUNS (III.16).
+    starved = report.get("consecutive_budget_exhausted")
+    for cause, n in (starved.items() if isinstance(starved, dict) else ()):
+        if isinstance(n, int) and n >= STARVED_PASSES_MAX:
+            findings.append(f"the `{cause}` repair has been starved of budget {n} passes running: "
+                            f"its frozen clocks are named every hour and repaired never")
 
     # 4. A repair that did not prove itself is not a repair (LAWS 7: A REPORT IS NOT A REMEDY).
     for rep in report.get("repairs") or []:

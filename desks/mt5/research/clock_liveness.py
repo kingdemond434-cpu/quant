@@ -1151,6 +1151,7 @@ def build(budget_s: float = 300.0, *, apply: bool = True) -> dict[str, Any]:
     if apply and host == "trading_box" and any(r["acted"] for r in schedule):
         tasks = scheduled_tasks()
     wall = hard_wall_s(budget_s)
+    previous = read_json(REPORT)
     c0 = time.monotonic()
     before = census(cal, roster, now, tasks, host=host, host_why=host_why)
     census_s = time.monotonic() - c0
@@ -1159,11 +1160,15 @@ def build(budget_s: float = 300.0, *, apply: bool = True) -> dict[str, Any]:
     publish_provisional(provisional_doc(before, now=now, host=host, host_why=host_why,
                                         budget_s=budget_s, wall_s=wall, census_s=census_s,
                                         elapsed_s=time.monotonic() - t0,
-                                        previous=read_json(REPORT)))
-    # The repairs get what is left after the census that may follow a retirement and the write.
-    reserve = census_s + POST_RESERVE_S
-    repairs = repair(frozen, max(0.0, min(budget_s, wall) - (time.monotonic() - t0) - reserve),
+                                        previous=previous))
+    # THE REPAIRS COME BEFORE ANY SECOND CENSUS (Auditor HOLD on bdf0f1dee). Reserving a census
+    # here meant a slow census left every repair `budget_exhausted` on every pass -- frozen clocks
+    # named forever and repaired never. Only the final write is reserved; the post-repair census
+    # runs from whatever is left, and each repair's own postcondition is its proof.
+    repairs = repair(frozen,
+                     max(0.0, min(budget_s, wall) - (time.monotonic() - t0) - POST_RESERVE_S),
                      apply=apply)
+    starved = starvation(repairs, previous)
     after_census = "not needed: no repair was raised" if not (repairs and apply) else "measured"
     if repairs and apply and wall - (time.monotonic() - t0) >= 2 * census_s + POST_RESERVE_S:
         after = census(cal, engine_roster()[0], now_utc(), tasks, host=host, host_why=host_why)
@@ -1209,7 +1214,8 @@ def build(budget_s: float = 300.0, *, apply: bool = True) -> dict[str, Any]:
         "at": now.isoformat(), "hostname": hostname(),
         "host": host, "host_why": host_why,
         "budget_s": budget_s, "wall_s": round(wall, 1), "census_s": round(census_s, 2),
-        "after_census": after_census, "provisional": False, "applied": bool(apply),
+        "after_census": after_census, "provisional": False,
+        "consecutive_budget_exhausted": starved, "applied": bool(apply),
         "session_source": cal.source, "roster": roster_why,
         "clocks_total": len(after),
         "counts_before": counts_before, "counts": counts_after,
@@ -1252,6 +1258,32 @@ def build(budget_s: float = 300.0, *, apply: bool = True) -> dict[str, Any]:
                  "is repaired in the same pass and the postcondition is its own stamp moving, "
                  "never a zero exit code (LAWS 7: A REPORT IS NOT A REMEDY)"),
     }
+
+
+#: Passes in a row a cause's repair may be starved of budget before the fence names it.
+STARVED_PASSES_MAX = 3
+
+
+def starvation(repairs: Sequence[Mapping[str, Any]], previous: Any) -> dict[str, int]:
+    """Consecutive passes on which each cause's repair could not run for want of budget.
+
+    Carried from the last completed report: a cause whose repair ran this pass resets to 0, one
+    starved again counts up, and a cause with nothing frozen drops out. A lane that can NEVER be
+    repaired inside the cap is then a named failure at the fence, not a quiet one.
+    """
+    prev = previous if isinstance(previous, dict) else {}
+    was = prev.get("consecutive_budget_exhausted")
+    was = was if isinstance(was, dict) else {}
+    out: dict[str, int] = {}
+    for r in repairs:
+        cause = str(r.get("cause"))
+        if r.get("budget_exhausted"):
+            if out.get(cause, -1) != 0:  # any repair that ran for this cause keeps it at 0
+                n = was.get(cause)
+                out[cause] = (int(n) if isinstance(n, int) else 0) + 1
+        else:
+            out[cause] = 0
+    return out
 
 
 def provisional_doc(rows: Sequence[Mapping[str, Any]], *, now: datetime, host: str,

@@ -460,3 +460,42 @@ def test_the_fence_lets_a_pass_in_flight_finish_and_reds_one_that_died():
     out = fence.judge(died, {"lowest_frozen": 0}, require_state=True)
     assert out["verdict"] == fence.FAIL
     assert any("did not finish its write" in f for f in out["findings"])
+
+
+def test_a_starved_repair_counts_up_and_a_repair_that_ran_resets():
+    starved = {"cause": "off_roster", "budget_exhausted": True}
+    ran = {"cause": "no_bars", "result": "UNPROVEN"}
+    assert cl.starvation([starved, ran], None) == {"off_roster": 1, "no_bars": 0}
+    prev = {"consecutive_budget_exhausted": {"off_roster": 2, "no_bars": 4, "gone": 9}}
+    assert cl.starvation([starved, ran], prev) == {"off_roster": 3, "no_bars": 0}
+    # one step of a cause ran and a later one was starved: the cause was repaired this pass
+    assert cl.starvation([{"cause": "no_bars"}, {**ran, "budget_exhausted": True}],
+                         prev) == {"no_bars": 0}
+
+
+def test_the_fence_names_a_repair_starved_three_passes_running():
+    two = _report([], consecutive_budget_exhausted={"off_roster": 2})
+    assert fence.judge(two, {"lowest_frozen": 0}, require_state=True)["verdict"] == fence.OK
+    three = _report([], consecutive_budget_exhausted={"off_roster": 3})
+    out = fence.judge(three, {"lowest_frozen": 0}, require_state=True)
+    assert out["verdict"] == fence.FAIL
+    assert any("`off_roster` repair has been starved" in f for f in out["findings"])
+
+
+def test_a_slow_census_still_leaves_the_repairs_their_time(lane, monkeypatch, tmp_path):
+    """Auditor HOLD: a 150 s census under the 420 s cap must not starve every repair."""
+    _box(lane, monkeypatch, tmp_path)
+    monkeypatch.setenv("QUANT_LEG_BUDGET_S", "420")
+    _frozen_main(lane, _wednesday())
+    reads = iter((0.0, 0.0))  # pass start, census start; the census then costs 150 s
+    monkeypatch.setattr(cl.time, "monotonic", lambda: next(reads, 150.0))
+    got: dict = {}
+
+    def stop(frozen, budget_s, apply):
+        got["budget"] = budget_s
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(cl, "repair", stop)
+    with pytest.raises(KeyboardInterrupt):
+        cl.build(budget_s=300.0, apply=True)
+    assert got["budget"] >= cl.MIN_ACTUATOR_S
