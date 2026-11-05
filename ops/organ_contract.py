@@ -397,6 +397,12 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     "MT5-FrontierAudit (chart allocation)": (
         "desks/mt5/reports/CHART_ALLOCATION.json", 1560,
         "research effort per chart, inverse to the docket share each chart already holds"),
+    # #555/#755 (2026-11-05): the box self-heal watchdog, every 5 minutes as SYSTEM. 20 min = three
+    # missed passes plus slack; every act and refusal is a RED row in this report.
+    "Quant-BoxSelfHeal": (
+        "desks/mt5/reports/BOX_SELF_HEAL.json", 20,
+        "the closed self-heal table's pass: each act or refusal with its pid, create_time proof "
+        "and why; a silent watchdog goes stale here"),
 }
 
 

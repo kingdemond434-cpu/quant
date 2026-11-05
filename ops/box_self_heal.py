@@ -98,6 +98,30 @@ ROOT = _resolve_root(_HERE, _IN_REPO)
 DESK = ROOT / "desks" / "mt5"
 #: The ONLY thing this file writes into the repo: its report, which it never reads back to decide.
 REPORT = DESK / "reports" / "BOX_SELF_HEAL.json"
+
+# THE REPORT IS PUBLISHED (sync_shadow_to_git, #755) and the repository is public, so a command line
+# never carries a credential off the box: URL userinfo, GitHub tokens, --token/--password values and
+# Authorization headers are masked in EVERY field of every row (report and ledger alike) before it
+# is kept.
+_SECRET_PATTERNS = (
+    (re.compile(r"(?i)([a-z][a-z0-9+.-]*://)[^/\s@]+@"), r"\1***@"),
+    (re.compile(r"\b(?:ghp|gho|ghs|ghu|ghr)_[A-Za-z0-9]{8,}|\bgithub_pat_[A-Za-z0-9_]{8,}"), "***"),
+    (re.compile(r"(?i)(--?(?:token|password|passwd|pwd|secret|api[-_]?key)[=\s]+)\S+"), r"\1***"),
+    (re.compile(r"(?i)(authorization:\s*(?:basic|bearer|token)\s+)\S+"), r"\1***"),
+)
+
+
+def scrub(v: Any) -> Any:
+    """`v` with every credential-shaped substring masked; containers are scrubbed recursively."""
+    if isinstance(v, str):
+        for rx, rep in _SECRET_PATTERNS:
+            v = rx.sub(rep, v)
+        return v
+    if isinstance(v, dict):
+        return {k: scrub(x) for k, x in v.items()}
+    if isinstance(v, (list, tuple)):
+        return [scrub(x) for x in v]
+    return v
 #: WHAT IT DECIDES FROM LIVES WHERE ONLY ADMINS CAN WRITE (audit HOLD of 5b3504f50). The bridge
 #: and every agent session can write the repo, so a state there could plant an "orphan" for SYSTEM
 #: to stop, a CPU baseline that reads STALLED, a dead-owner clock, or an empty attempt count. The
@@ -785,7 +809,7 @@ class Pass:
 
     def row(self, rule: str, level: str, verdict: str, why: str, **extra: Any) -> None:
         self.rows.append({"at": _iso(self.now), "rule": rule, "level": level,
-                          "verdict": verdict, "why": why, **extra})
+                          "verdict": verdict, "why": scrub(why), **scrub(extra)})
 
     def red(self, rule: str, verdict: str, why: str, **extra: Any) -> None:
         self.row(rule, "RED", verdict, why, **extra)
@@ -827,7 +851,8 @@ class Pass:
         ledger takes it, the action is not taken: an uncounted attempt is an uncapped one."""
         self.attempts.setdefault(key, []).append(self.now)
         row = {"at": _iso(self.now), "ts": self.now, "rule": key, "level": "RED",
-               "verdict": "ATTEMPT", "why": f"about to {action}", "action": action, **facts}
+               "verdict": "ATTEMPT", "why": scrub(f"about to {action}"), "action": scrub(action),
+               **scrub(facts)}
         self.rows.append(row)
         durable = True if self.persist is None else self.persist(self, row)
         if durable:
@@ -885,8 +910,9 @@ class Pass:
                 gone = False
                 res = {**res, "verify": "the target is still in the live table (or the table "
                                         "is unreadable)"}
+        # the identity proof travels with the act, so a wrong stop is visible off the box
         self.red(key, "STOPPED" if gone else "STOP_FAILED", why, pid=p.pid,
-                 cmdline=p.cmdline[:300], result=res)
+                 create_time=p.create_time, cmdline=p.cmdline[:300], result=res)
         return gone
 
     def end(self, rule: Rule, task: str, why: str, *, key: str | None = None) -> bool:

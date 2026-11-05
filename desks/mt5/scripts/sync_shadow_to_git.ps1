@@ -682,6 +682,9 @@ $relPaths = @(
     "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
     "desks/mt5/reports/MERGE_PIPELINE.json",
     "desks/mt5/reports/DESK_HEALTH.json",
+    # EVERY SELF-HEAL ACT AND REFUSAL (#555/#755, Auditor condition 2026-11-05): what was ended, the
+    # pid with its create_time identity proof, and why, so a wrong stop is visible off the box.
+    "desks/mt5/reports/BOX_SELF_HEAL.json",
     # WHICH ORGANS ARE SILENTLY FAILING (2026-10-13). ops/process_health.py (MT5-ProcessHealth,
     # hourly) names every scheduled organ that is FAILING, NOT_SCHEDULED, STALE or has no
     # artifact. TIER1_SCORECARD counted them (silent_scheduled_failures = 11) while the file it

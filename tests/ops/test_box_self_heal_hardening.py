@@ -822,3 +822,35 @@ def test_the_table_module_in_use_is_the_one_beside_the_script() -> None:
     assert Path(bsh._table.__file__).resolve() == (ROOT / "ops" / "box_self_heal_lib.py").resolve()
     assert bsh._sibling("box_self_heal_lib", "box_self_heal_lib.py") is bsh._table
 
+
+
+# --- #755 Auditor HOLD 1d98c3272: the published report is not ignored, carries no credential ---
+def test_the_published_report_is_not_gitignored() -> None:
+    """sync_shadow_to_git refuses the WHOLE publish when any listed path is ignored."""
+    import subprocess
+    rel = "desks/mt5/reports/BOX_SELF_HEAL.json"
+    ignored = subprocess.run(["git", "check-ignore", "-q", rel], cwd=ROOT, check=False)
+    assert ignored.returncode == 1, f"{rel} is gitignored: the state publish refuses everything"
+    sync = (ROOT / "desks" / "mt5" / "scripts" / "sync_shadow_to_git.ps1").read_text("utf-8")
+    assert f'"{rel}"' in sync
+
+
+def test_rows_mask_credentials_in_command_lines() -> None:
+    line = ("git.exe fetch https://x-access-token:ghs_abcdefghijklmnop1234@github.com/o/r.git "
+            "--token=hunter2secret gh auth --password s3cret ghp_ABCDEFGHIJKLMNOPQRST")
+    out = bsh.scrub(line)
+    for secret in ("ghs_abcdefghijklmnop1234", "hunter2secret", "s3cret",
+                   "ghp_ABCDEFGHIJKLMNOPQRST", "x-access-token"):
+        assert secret not in out, out
+    assert "github.com/o/r.git" in out and "git.exe fetch" in out
+    assert bsh.scrub({"cmdline": [line], "n": 3})["n"] == 3
+
+
+def test_every_row_field_is_scrubbed_including_auth_headers() -> None:
+    hdr = ("git.exe -c http.extraheader=AUTHORIZATION: basic eC1hY2Nlc3MtdG9rZW46Z2hzX3NlY3JldA== "
+           "-c http.extraheader=Authorization: Bearer ghs_abcdefghijklmnop1234 fetch origin")
+    out = bsh.scrub(hdr)
+    assert "eC1hY2Nlc3MtdG9rZW46Z2hzX3NlY3JldA==" not in out
+    assert "ghs_abcdefghijklmnop1234" not in out
+    src = (ROOT / "ops" / "box_self_heal.py").read_text("utf-8")
+    assert "**scrub(extra)" in src and "**scrub(facts)" in src

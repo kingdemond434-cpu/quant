@@ -462,6 +462,8 @@ TASK_CANONICAL: dict[str, str] = {
     "MT5-Moat-Exploit": "resident:moat_exploit",
     "MT5-Moat-Explore": "resident:moat_explore",
     "MT5-Moat-Resurrect": "resident:moat_resurrect",
+    # the box self-heal watchdog (#555), declared in box_tasks.manifest by #755
+    "Quant-BoxSelfHeal": "executable:ops/box_self_heal.py",
 }
 
 
@@ -954,13 +956,12 @@ def explicit_specs() -> list[ComponentSpec]:
         # and a wedged or dead gate. SYSTEM task Quant-BoxSelfHeal every 5 minutes, registered by
         # desks/mt5/scripts/install_box_self_heal_task.ps1, which runs the admin-only copy in
         # C:\ProgramData\QuantBox\bin. Declared here because ops/ is outside the executable
-        # areas the birth fence walks, so nothing else gives it a row in the attestation. When its
-        # TASK line lands in box_tasks.manifest (protected; proposed with the patch), this becomes
-        # kind="task" with a TASK_CANONICAL entry, so the manifest task dedupes onto it, and its
-        # ops/organ_contract.py row lands with it (the contract names only manifest tasks).
+        # areas the birth fence walks, so nothing else gives it a row in the attestation. Its TASK
+        # line is in box_tasks.manifest (#755), so it is kind="task" with a TASK_CANONICAL entry:
+        # the manifest task dedupes onto it, and its ops/organ_contract.py row lands with it.
         ComponentSpec(
             component_id="executable:ops/box_self_heal.py",
-            kind="executable", host="box",
+            kind="task", host="box",
             code_paths=("ops/box_self_heal.py", "ops/box_self_heal_lib.py",
                         "ops/process_health.py", "libs/ops/alert_channels.py"),
             inputs=("C:/ProgramData/QuantBox/logs/workflow_gate.json",
@@ -973,8 +974,8 @@ def explicit_specs() -> list[ComponentSpec]:
             owner="lane:ops", restart_action="restart:task:Quant-BoxSelfHeal",
             criticality="required", resource_budget={"budget_s": 900},
             schedule="Quant-BoxSelfHeal", artifact_class="minute",
-            notes="SYSTEM, PT15M limit, IgnoreNew; installer "
-                  "desks/mt5/scripts/install_box_self_heal_task.ps1"),
+            notes="SYSTEM, PT15M limit, IgnoreNew; "
+                  "installer=desks/mt5/scripts/install_box_self_heal_task.ps1"),
     ]
 
 
