@@ -366,11 +366,59 @@ def _symbol_of(col: str) -> str:
     return "XAUUSD" if col.startswith("gold_") else col.split("_", 1)[0]
 
 
+def ftmo_venue_quotes(data: Path | None = None) -> dict[str, Any]:
+    """The FTMO terminal's OWN quotes file from cost_truth (`data/cost_truth_quotes.<venue>.json`,
+    one file per venue since 2026-11-05), the freshest one whose venue, terminal or company names
+    FTMO; {} when none. Never the cross-venue `.max` file and never another venue's: every account
+    is charged its own venue's spread (Judge, 2026-11-05)."""
+    best: dict[str, Any] = {}
+    for f in sorted((data or BASE / "data").glob("cost_truth_quotes.*.json")):
+        if f.name.endswith(".max.json"):
+            continue
+        doc = _read_json(f)
+        if not isinstance(doc, dict):
+            continue
+        names = " ".join(str(x) for x in (doc.get("venue"),
+                                          (doc.get("terminal") or {}).get("name"),
+                                          (doc.get("account") or {}).get("company"),
+                                          (doc.get("account") or {}).get("server")))
+        if "ftmo" in names.lower() and str(doc.get("at") or "") >= str(best.get("at") or ""):
+            best = {**doc, "_file": f.name}
+    return best
+
+
+def venue_hour_spread_px(quotes: dict[str, Any] | None, sym: str,
+                         broker_hour: int) -> tuple[float, int] | None:
+    """(median spread in PRICE units, n) for `sym` at the sleeve's BROKER fill hour, from a venue
+    quotes file's `spread_by_hour_utc` readings (keyed by UTC hour, so the file's own measured
+    `server_utc_offset_hours` converts). None when the offset is unmeasured or the hour has no
+    reading: an hour is never guessed."""
+    off = (quotes or {}).get("server_utc_offset_hours")
+    if not isinstance(off, (int, float)) or isinstance(off, bool):
+        return None
+    utc = round(int(broker_hour) - float(off)) % 24
+    seq = (((quotes or {}).get("spread_by_hour_utc") or {}).get(sym) or {}).get(f"{utc:02d}")
+    vals = sorted(float(x[1]) for x in (seq or [])
+                  if isinstance(x, list) and len(x) == 2 and isinstance(x[1], (int, float))
+                  and x[1] > 0)
+    if not vals:
+        return None
+    mid = len(vals) // 2
+    med = vals[mid] if len(vals) % 2 else 0.5 * (vals[mid - 1] + vals[mid])
+    return med, len(vals)
+
+
 def venue_listing() -> tuple[dict[str, dict[str, Any]], str]:
     """{symbol: registry row} on the FTMO terminal, and where it came from."""
     doc = _read_json(FTMO_REGISTRY)
     if isinstance(doc, dict) and isinstance(doc.get("symbols"), dict) and doc["symbols"]:
         return doc["symbols"], f"{FTMO_REGISTRY.name} ({doc.get('generated_at')})"
+    vq = ftmo_venue_quotes()
+    if vq.get("symbols"):
+        rows = {k: v for k, v in vq["symbols"].items()
+                if isinstance(v, dict) and v.get("status") != "UNMEASURED"}
+        if rows:
+            return rows, f"{vq['_file']} FTMO venue quotes ({vq.get('at')})"
     q = _read_json(FTMO_QUOTES)
     if isinstance(q, dict) and "FTMO" in str((q.get("terminal") or {}).get("name", "")):
         rows = {s: v for s, v in (q.get("symbols") or {}).items()
@@ -405,14 +453,16 @@ def tier_s_columns(screen: list[dict[str, Any]], doors: dict[str, Any]) -> dict[
 def venue_cost_bias(col: str, selector: str, listing: dict[str, Any],
                     ftmo_surface: dict[str, Any] | None, fusion_surface: dict[str, Any] | None,
                     registry: dict[str, Any] | None, *, risk_per_lot: float | None = None,
-                    ftmo_commission: float | None = None) -> dict[str, Any]:
+                    ftmo_commission: float | None = None,
+                    venue_quotes: dict[str, Any] | None = None) -> dict[str, Any]:
     """FTMO's spread at the sleeve's fill hour over the spread the replay charged, as an R bias.
 
     Both sides in PRICE units (each venue's own point), so a digits difference is not a cost.
     The charged side is the SMALLER of the replay's pooled spread and its own hour cell (whichever
     the replay used, the bias is then never under-stated). FTMO's hour cell comes from its own
-    cost surface; until the venue reader has built one, FTMO's live registry spread scaled by
-    Fusion's hour shape stands in, labelled PROXY_SHAPE.
+    cost surface; else the median of FTMO's own quoted spreads at that UTC hour from its per-venue
+    quotes file (`venue_quotes`, cost_truth); only when neither has the hour does FTMO's live
+    registry spread scaled by Fusion's hour shape stand in, labelled PROXY_SHAPE.
 
     WHERE THE STOP IS MEASURED (the gold windows: the live ledger's risk per lot), the extra
     spread and commission are charged EXACTLY: 2 x (FTMO spread - charged spread) x contract over
@@ -448,6 +498,8 @@ def venue_cost_bias(col: str, selector: str, listing: dict[str, Any],
     charged_px = min(charged) * u_point
     if fcell.get("status") == "MEASURED" and isinstance(fcell.get("p50"), (int, float)):
         f_px, basis = float(fcell["p50"]) * f_point, "FTMO cost surface"
+    elif (vh := venue_hour_spread_px(venue_quotes, sym, int(hour))) is not None:
+        f_px, basis = vh[0], f"FTMO venue quotes (n={vh[1]})"
     else:
         live = lrow.get("live_spread_pts", lrow.get("spread"))
         hours = [float(c["p50"]) for c in (fu.get("hours") or {}).values()
@@ -618,6 +670,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         deals = []
     ev = ks.live_evidence(deals) if deals else {}
     commission = ftmo_commissions()
+    venue_quotes = ftmo_venue_quotes()
 
     def admit(col: str, series: np.ndarray, why: str) -> None:
         rpl = (ev.get(col[len("gold_"):]) or {}).get("risk_per_lot") if col.startswith("gold_") \
@@ -625,7 +678,8 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         cost = venue_cost_bias(col, str(sel_of.get(col) or ""), listing, ftmo_surface,
                                fusion_surface, registry,
                                risk_per_lot=float(np.median(rpl)) if rpl else None,
-                               ftmo_commission=commission.get(_symbol_of(col)))
+                               ftmo_commission=commission.get(_symbol_of(col)),
+                               venue_quotes=venue_quotes)
         costs[col] = cost
         if cost["status"] != "PRICED":
             columns[col] = {"admitted": False, "why": f"UNPRICED_AT_FTMO_COST: {cost['why']}",

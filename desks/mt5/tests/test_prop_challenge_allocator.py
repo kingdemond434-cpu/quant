@@ -171,6 +171,56 @@ def test_a_measured_stop_prices_the_spread_exactly() -> None:
     assert out["bias_r_per_trade"] == pytest.approx(want, abs=1e-4)
 
 
+def _venue_quotes(tmp_path: Path, name: str, venue: str, at: str, readings: list[float],
+                  utc_hour: int = 22, offset: float | None = 3.0) -> None:
+    doc = {"at": at, "venue": venue, "server_utc_offset_hours": offset,
+           "symbols": {"AUDNZD": {"point": 1e-5, "live_spread_pts": 30}},
+           "spread_by_hour_utc": {"AUDNZD": {f"{utc_hour:02d}": [[at, v] for v in readings]}}}
+    (tmp_path / f"cost_truth_quotes.{name}.json").write_text(json.dumps(doc), "utf-8")
+
+
+def test_each_account_is_charged_its_own_venues_quoted_spread(tmp_path: Path) -> None:
+    """No FTMO cost surface for the hour: FTMO's own per-venue quotes price it (broker hour 1 at
+    UTC+3 is UTC 22), never Fusion's file and never the cross-venue max."""
+    _venue_quotes(tmp_path, "ftmo_s_r_o", "ftmo_s_r_o", "2026-11-05T06:00:00+00:00",
+                  [0.0006, 0.0005, 0.0009])
+    _venue_quotes(tmp_path, "fusion_markets", "fusion_markets", "2026-11-05T06:30:00+00:00",
+                  [0.0001])
+    _venue_quotes(tmp_path, "max", "max", "2026-11-05T06:30:00+00:00", [0.01])
+    vq = pca.ftmo_venue_quotes(tmp_path)
+    assert vq["_file"] == "cost_truth_quotes.ftmo_s_r_o.json"
+    listing = {"AUDNZD": {"point": 1e-5, "spread": 10}}
+    fusion = _surface({1: 20.0, 10: 10.0})
+    reg = {"AUDNZD": {"point": 1e-5, "median_spread_pts": 12.0}}
+    out = pca.venue_cost_bias("AUDNZD_overnight_gap_decay_asia", "asia", listing, None, fusion,
+                              reg, venue_quotes=vq)
+    assert out["basis"] == "FTMO venue quotes (n=3)"
+    assert out["ftmo_spread_px"] == pytest.approx(0.0006)
+    assert out["ratio_raw"] == pytest.approx(0.0006 / (12.0 * 1e-5))
+
+
+def test_venue_quotes_never_price_an_hour_they_cannot_place(tmp_path: Path) -> None:
+    _venue_quotes(tmp_path, "ftmo", "ftmo", "2026-11-05T06:00:00+00:00", [0.0006], offset=None)
+    vq = pca.ftmo_venue_quotes(tmp_path)
+    assert pca.venue_hour_spread_px(vq, "AUDNZD", 1) is None
+    listing = {"AUDNZD": {"point": 1e-5, "spread": 10}}
+    out = pca.venue_cost_bias("AUDNZD_overnight_gap_decay_asia", "asia", listing, None,
+                              _surface({1: 20.0, 10: 10.0}),
+                              {"AUDNZD": {"point": 1e-5, "median_spread_pts": 12.0}},
+                              venue_quotes=vq)
+    assert out["basis"] == "PROXY_SHAPE"
+
+
+def test_the_cost_surface_still_outranks_the_quotes(tmp_path: Path) -> None:
+    _venue_quotes(tmp_path, "ftmo", "ftmo", "2026-11-05T06:00:00+00:00", [0.0006])
+    out = pca.venue_cost_bias("AUDNZD_overnight_gap_decay_asia", "asia",
+                              {"AUDNZD": {"point": 1e-5, "spread": 10}}, _surface({1: 60.0}),
+                              _surface({1: 20.0, 10: 10.0}),
+                              {"AUDNZD": {"point": 1e-5, "median_spread_pts": 12.0}},
+                              venue_quotes=pca.ftmo_venue_quotes(tmp_path))
+    assert out["basis"] == "FTMO cost surface"
+
+
 # ------------------------------------------------------------------ the phase chain
 
 def test_the_phase_advances_only_after_a_pass() -> None:
