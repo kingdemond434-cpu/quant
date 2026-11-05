@@ -1,21 +1,21 @@
 {
  "schema": "bars_state/2",
- "generated_at": "2026-11-05T02:20:45+00:00",
+ "generated_at": "2026-11-05T03:20:45+00:00",
  "host": "vmi<redacted-numeric>",
  "time_clock": "broker",
  "utc_conversion": "prop.e8_guard: server = America/New_York + 7h (UTC+2 winter / UTC+3 summer)",
  "budget_s": 20.0,
- "elapsed_s": 20.178,
+ "elapsed_s": 31.712,
  "budget_exhausted": true,
  "summary": {
   "bar_files": 1722,
-  "bar_files_measured": 20,
-  "bars_measured_share": 0.012,
+  "bar_files_measured": 1,
+  "bars_measured_share": 0.001,
   "bars_verdict": "PARTIAL",
-  "newest_bar_time": "2026-11-05T03:29:00",
-  "newest_bar_time_utc": "2026-11-05T01:29:00+00:00",
-  "newest_bar_age_h": 0.86,
-  "newest_bar_file_mtime_age_h": 0.82,
+  "newest_bar_time": "2026-11-03T00:00:00",
+  "newest_bar_time_utc": "2026-11-02T22:00:00+00:00",
+  "newest_bar_age_h": 53.35,
+  "newest_bar_file_mtime_age_h": 0.85,
   "tape_symbols": 249,
   "tape_symbols_measured": 0,
   "tape_measured_share": 0.0,
@@ -35,279 +35,146 @@
    "file": "3M_D1.parquet",
    "time_clock": "broker",
    "row_count": 1437,
-   "file_mtime": "2026-11-05T01:30:30+00:00",
-   "mtime_age_h": 0.84,
+   "file_mtime": "2026-11-05T02:29:48+00:00",
+   "mtime_age_h": 0.85,
    "status": "MEASURED",
    "last_bar_time": "2026-11-03T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-11-02T22:00:00+00:00",
-   "age_h": 52.35
+   "age_h": 53.35
   },
   {
    "symbol": "3M",
    "timeframe": "H1",
    "file": "3M_H1.parquet",
-   "time_clock": "broker",
-   "row_count": 10088,
-   "file_mtime": "2026-11-05T01:30:30+00:00",
-   "mtime_age_h": 0.84,
-   "status": "MEASURED",
-   "last_bar_time": "2026-11-04T21:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-11-04T19:00:00+00:00",
-   "age_h": 7.35
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "3M",
    "timeframe": "H4",
    "file": "3M_H4.parquet",
-   "time_clock": "broker",
-   "row_count": 2845,
-   "file_mtime": "2026-11-05T01:30:30+00:00",
-   "mtime_age_h": 0.84,
-   "status": "MEASURED",
-   "last_bar_time": "2026-11-04T16:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-11-04T14:00:00+00:00",
-   "age_h": 12.35
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "3M",
    "timeframe": "M1",
    "file": "3M_M1.parquet",
-   "time_clock": "broker",
-   "row_count": 110137,
-   "file_mtime": "2026-11-05T01:30:31+00:00",
-   "mtime_age_h": 0.84,
-   "status": "MEASURED",
-   "last_bar_time": "2026-11-04T22:58:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-11-04T20:58:00+00:00",
-   "age_h": 5.38
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "3M",
    "timeframe": "M15",
    "file": "3M_M15.parquet",
-   "time_clock": "broker",
-   "row_count": 37328,
-   "file_mtime": "2026-11-05T01:30:31+00:00",
-   "mtime_age_h": 0.84,
-   "status": "MEASURED",
-   "last_bar_time": "2026-11-04T22:30:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-11-04T20:30:00+00:00",
-   "age_h": 5.85
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "3M",
    "timeframe": "M30",
    "file": "3M_M30.parquet",
-   "time_clock": "broker",
-   "row_count": 18692,
-   "file_mtime": "2026-11-05T01:30:32+00:00",
-   "mtime_age_h": 0.84,
-   "status": "MEASURED",
-   "last_bar_time": "2026-11-04T22:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-11-04T20:00:00+00:00",
-   "age_h": 6.35
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "3M",
    "timeframe": "M5",
    "file": "3M_M5.parquet",
-   "time_clock": "broker",
-   "row_count": 102027,
-   "file_mtime": "2026-11-05T01:30:32+00:00",
-   "mtime_age_h": 0.84,
-   "status": "MEASURED",
-   "last_bar_time": "2026-11-04T22:50:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-11-04T20:50:00+00:00",
-   "age_h": 5.51
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Accenture",
    "timeframe": "D1",
    "file": "Accenture_D1.parquet",
-   "time_clock": "broker",
-   "row_count": 6359,
-   "file_mtime": "2026-11-05T01:31:29+00:00",
-   "mtime_age_h": 0.82,
-   "status": "MEASURED",
-   "last_bar_time": "2026-11-03T00:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-11-02T22:00:00+00:00",
-   "age_h": 52.35
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Accenture",
    "timeframe": "H1",
    "file": "Accenture_H1.parquet",
-   "time_clock": "broker",
-   "row_count": 13379,
-   "file_mtime": "2026-11-05T01:31:30+00:00",
-   "mtime_age_h": 0.82,
-   "status": "MEASURED",
-   "last_bar_time": "2026-11-04T21:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-11-04T19:00:00+00:00",
-   "age_h": 7.35
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Accenture",
    "timeframe": "H4",
    "file": "Accenture_H4.parquet",
-   "time_clock": "broker",
-   "row_count": 7529,
-   "file_mtime": "2026-11-05T01:31:31+00:00",
-   "mtime_age_h": 0.82,
-   "status": "MEASURED",
-   "last_bar_time": "2026-11-04T16:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-11-04T14:00:00+00:00",
-   "age_h": 12.35
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Accenture",
    "timeframe": "M1",
    "file": "Accenture_M1.parquet",
-   "time_clock": "broker",
-   "row_count": 110139,
-   "file_mtime": "2026-11-05T01:31:31+00:00",
-   "mtime_age_h": 0.82,
-   "status": "MEASURED",
-   "last_bar_time": "2026-11-04T22:58:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-11-04T20:58:00+00:00",
-   "age_h": 5.38
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Accenture",
    "timeframe": "M15",
    "file": "Accenture_M15.parquet",
-   "time_clock": "broker",
-   "row_count": 35588,
-   "file_mtime": "2026-11-05T01:31:31+00:00",
-   "mtime_age_h": 0.82,
-   "status": "MEASURED",
-   "last_bar_time": "2026-11-04T22:30:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-11-04T20:30:00+00:00",
-   "age_h": 5.85
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Accenture",
    "timeframe": "M30",
    "file": "Accenture_M30.parquet",
-   "time_clock": "broker",
-   "row_count": 20393,
-   "file_mtime": "2026-11-05T01:31:32+00:00",
-   "mtime_age_h": 0.82,
-   "status": "MEASURED",
-   "last_bar_time": "2026-11-04T22:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-11-04T20:00:00+00:00",
-   "age_h": 6.35
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "Accenture",
    "timeframe": "M5",
    "file": "Accenture_M5.parquet",
-   "time_clock": "broker",
-   "row_count": 96371,
-   "file_mtime": "2026-11-05T01:31:32+00:00",
-   "mtime_age_h": 0.82,
-   "status": "MEASURED",
-   "last_bar_time": "2026-11-04T22:50:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-11-04T20:50:00+00:00",
-   "age_h": 5.51
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "ADAUSD",
    "timeframe": "D1",
    "file": "ADAUSD_D1.parquet",
-   "time_clock": "broker",
-   "row_count": 2973,
-   "file_mtime": "2026-11-05T01:30:33+00:00",
-   "mtime_age_h": 0.84,
-   "status": "MEASURED",
-   "last_bar_time": "2026-11-04T00:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-11-03T22:00:00+00:00",
-   "age_h": 28.35
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "ADAUSD",
    "timeframe": "H1",
    "file": "ADAUSD_H1.parquet",
-   "time_clock": "broker",
-   "row_count": 49449,
-   "file_mtime": "2026-11-05T01:30:33+00:00",
-   "mtime_age_h": 0.84,
-   "status": "MEASURED",
-   "last_bar_time": "2026-11-05T02:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-11-05T00:00:00+00:00",
-   "age_h": 2.35
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "ADAUSD",
    "timeframe": "H4",
    "file": "ADAUSD_H4.parquet",
-   "time_clock": "broker",
-   "row_count": 13095,
-   "file_mtime": "2026-11-05T01:30:34+00:00",
-   "mtime_age_h": 0.84,
-   "status": "MEASURED",
-   "last_bar_time": "2026-11-04T20:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-11-04T18:00:00+00:00",
-   "age_h": 8.35
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "ADAUSD",
    "timeframe": "M1",
    "file": "ADAUSD_M1.parquet",
-   "time_clock": "broker",
-   "row_count": 149736,
-   "file_mtime": "2026-11-05T01:30:35+00:00",
-   "mtime_age_h": 0.84,
-   "status": "MEASURED",
-   "last_bar_time": "2026-11-05T03:29:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-11-05T01:29:00+00:00",
-   "age_h": 0.86
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "ADAUSD",
    "timeframe": "M15",
    "file": "ADAUSD_M15.parquet",
-   "time_clock": "broker",
-   "row_count": 103283,
-   "file_mtime": "2026-11-05T01:30:36+00:00",
-   "mtime_age_h": 0.84,
-   "status": "MEASURED",
-   "last_bar_time": "2026-11-05T03:15:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-11-05T01:15:00+00:00",
-   "age_h": 1.1
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "ADAUSD",
    "timeframe": "M30",
    "file": "ADAUSD_M30.parquet",
-   "time_clock": "broker",
-   "row_count": 90288,
-   "file_mtime": "2026-11-05T01:30:36+00:00",
-   "mtime_age_h": 0.84,
-   "status": "MEASURED",
-   "last_bar_time": "2026-11-05T03:00:00",
-   "source": "footer_statistics",
-   "last_bar_time_utc": "2026-11-05T01:00:00+00:00",
-   "age_h": 1.35
+   "status": "UNMEASURED",
+   "reason": "time budget exhausted"
   },
   {
    "symbol": "ADAUSD",
@@ -13478,6 +13345,6 @@
   "ages": "every age is from a true UTC source: the server anchor, the file mtime, or tape_state.last_run; never a broker stamp read as UTC"
  },
  "resources": {
-  "peak_rss_mb": 94.6
+  "peak_rss_mb": 95.7
  }
 }
