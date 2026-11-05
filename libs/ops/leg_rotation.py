@@ -127,6 +127,12 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     # cross the wire, so a deferred pass leaves every reader off the box measuring a stale
     # BARS_STATE.json. It cannot cost the overrun much: it stops itself at 20 s (cap 60 s).
     "bars_state",
+    # THE ONLY WRITER OF CLOCK_LIVENESS.json, AND THE ONLY ORGAN THAT REPAIRS A FROZEN CLOCK
+    # (2026-11-05). Deferred by the core plan (11 of 162 legs admitted an hour), it last ran
+    # 2026-10-31 20:08Z; the law gate then read its report 103.7 h stale and every forward clock
+    # and the certificate law went unjudged for four days. It ran in 119 s that last time and now
+    # stops itself a write margin inside its 420 s cap.
+    "clock_liveness",
 })
 
 
