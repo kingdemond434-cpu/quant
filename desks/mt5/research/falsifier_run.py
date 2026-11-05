@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from collections.abc import Callable
@@ -434,6 +435,20 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--no-premortem", action="store_true",
                     help="catalogue order only; skip the graveyard model")
     args = ap.parse_args(argv)
+    t_proc = time.monotonic()
+
+    def _budget() -> float:
+        """--budget-sec, never past the hourly cycle's cap (QUANT_LEG_BUDGET_S) less a write
+        margin and whatever admission already waited. A priced cap below 600 s, or a memory wait,
+        otherwise killed this leg before its report was written (silent-organ census)."""
+        try:
+            cap = float(os.environ.get("QUANT_LEG_BUDGET_S") or 0)
+        except ValueError:
+            cap = 0.0
+        if cap <= 0:
+            return float(args.budget_sec)
+        left = cap - max(60.0, 0.15 * cap) - (time.monotonic() - t_proc)
+        return max(15.0, min(float(args.budget_sec), left))
     try:
         from job_lock import exclusive_job
     except Exception:
@@ -444,10 +459,10 @@ def main(argv: list[str] | None = None) -> int:
                 print("falsifier_run: stood down (duplicate writer or no room); the next hourly "
                       "pass resumes from the same rotation")
                 return 0
-            doc = run(certs_path=args.certs, report_path=args.report, budget_sec=args.budget_sec,
+            doc = run(certs_path=args.certs, report_path=args.report, budget_sec=_budget(),
                       limit=args.limit, premortem=not args.no_premortem, universe=args.universe)
     else:
-        doc = run(certs_path=args.certs, report_path=args.report, budget_sec=args.budget_sec,
+        doc = run(certs_path=args.certs, report_path=args.report, budget_sec=_budget(),
                   limit=args.limit, premortem=not args.no_premortem, universe=args.universe)
     s = doc.get("summary") or {}
     print(f"falsifier_run: {doc.get('status')} {doc.get('n_reached', 0)}/{doc['n_certificates']} "

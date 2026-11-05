@@ -284,6 +284,8 @@ def readmissions(now: datetime, path: Path | None = None) -> dict[str, Any]:
             for line in fh:
                 try:
                     row = json.loads(line)
+                    if row.get("state") in ("LOCKED", "WRITE_FAILED"):
+                        continue        # that pass did not hold or land the bank: no reading
                     at = datetime.fromisoformat(str(row["at"]).replace("Z", "+00:00"))
                     if at.tzinfo is None:
                         at = at.replace(tzinfo=UTC)

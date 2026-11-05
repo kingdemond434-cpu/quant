@@ -1,0 +1,19 @@
+{
+ "generated_utc": "2026-11-01T21:42:19+00:00",
+ "fence": "judge_alive",
+ "verdict": "PASS",
+ "state": "PASS",
+ "why": "heartbeat RUNNING (phase rule_shards, last beat 2026-11-01T21:41:56+00:00); stall record absent",
+ "checks": [
+  {
+   "metric": "judge_alive",
+   "state": "PASS",
+   "why": "heartbeat RUNNING (phase rule_shards, last beat 2026-11-01T21:41:56+00:00); stall record absent"
+  },
+  {
+   "metric": "judge_stop",
+   "state": "PASS",
+   "why": "resident SWEEPING: no operator hold"
+  }
+ ]
+}
