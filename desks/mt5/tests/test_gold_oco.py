@@ -278,6 +278,48 @@ def test_on_a_day_e8_set_its_own_twin_is_cancelled_and_never_re_placed() -> None
         {"id": 2, "side": "short"}]
 
 
+class _LiveE8Venue(_E8Venue):
+    """A TradeLocker book that drops an order once it is cancelled."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        t = int(datetime(2026, 10, 21, 5, 36, tzinfo=UTC).timestamp() * 1000)
+        self.pos = [{"id": 9, "tradableInstrumentId": 6102, "side": "buy", "openDate": t}]
+        self.ords = [{"id": 502, "tradableInstrumentId": 6102, "side": "sell"}]
+
+    def cancel(self, order_id: int) -> bool:
+        self.ords = [o for o in self.ords if int(o["id"]) != int(order_id)]
+        return super().cancel(order_id)
+
+    def positions(self) -> list:
+        return list(self.pos)
+
+    def orders(self) -> list:
+        return list(self.ords)
+
+    def instrument_id(self, symbol: str) -> int:
+        return 6102
+
+
+def test_the_twin_cancel_republishes_e8s_gold_state_in_the_same_pass() -> None:
+    """11-04 (Desk health, measured): the twin was cancelled at 05:36:25Z but E8's published
+    state still listed it, so the FTMO follower read "e8 rests a gold short entry" 10 s later
+    and waited a whole cadence. The cancel now republishes E8's lane before the pass ends."""
+    from prop import e8_gold as g
+    _world("oco")
+    _flat("e8", e8_key(), positions=[{"id": 9, "side": "long", "opened_date": DAY}],
+          orders=[{"id": 502, "side": "short"}])
+    assert oco.claim_fill("e8", e8_key(), "buy", date=DAY)["won"]
+    assert not oco.gate("fusion", "buy_stop", key=fu_key(), date=DAY).allowed   # stale twin
+    venue, state = _LiveE8Venue(), _e8_state()
+    doc: dict = {"gold_oco": {"date": DAY, "key": e8_key()}, "actions": []}
+    assert g.oco_cancel_opposite(venue, state, doc, {501, 502}, armed=True) == {502}
+    assert doc["gold_oco"]["republished_after_cancel"] is True
+    st, _ = oco.read_lane("e8")
+    assert st is not None and st["orders"] == []
+    assert oco.gate("fusion", "buy_stop", key=fu_key(), date=DAY).allowed
+
+
 # ======================================================================== both fill in one pass
 
 def test_two_claims_in_one_pass_exactly_one_wins() -> None:
