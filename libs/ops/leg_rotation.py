@@ -127,6 +127,11 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     # cross the wire, so a deferred pass leaves every reader off the box measuring a stale
     # BARS_STATE.json. It cannot cost the overrun much: it stops itself at 20 s (cap 60 s).
     "bars_state",
+    # THE LIVE SPREAD EVERY ACCOUNT IS CHARGED (2026-11-05). `cost_quotes` writes the per-venue
+    # quotes and the widest-venue file the gauntlet's cost check and the allocators read; a
+    # rotated-out pass left that spread 5+ h stale (the core plan admits ~11 of 162 legs an
+    # hour). Quotes only, no bars, no deals: it stops itself at 25 s (cap 35 s).
+    "cost_quotes",
 })
 
 

@@ -1204,7 +1204,7 @@ def quotes_only(symbols: list[str], budget_s: float,
         # No pathless fallback: a pathless initialize() on a box with no running terminal
         # LAUNCHES one. Nothing running is a NO_OP the caller prints, never a spawn.
         return out
-    each = max(15.0, budget_s / len(paths))
+    each = max(5.0, budget_s / len(paths))
     for path in paths:
         snap = terminal_snapshot(symbols, each, 0, path=path, deals=False)
         written = write_venue_quotes(snap)
@@ -1636,7 +1636,7 @@ def main(argv: list[str] | None = None) -> int:
     sleeves_doc = _json(SLEEVE_REGISTRY)
     symbols = symbol_universe(ranks_doc, cost_to_edge, ledger, prov, sleeves_doc)
     if args.quotes_only:
-        res = quotes_only(symbols, max(30.0, args.budget_s * 0.9))
+        res = quotes_only(symbols, max(5.0, args.budget_s * 0.9))
         for v in res["venues"]:
             print(f"cost_quotes: {v['venue'] or v['path'] or 'default terminal'} "
                   f"{v['status']} {v['n_symbols']} symbols ({v['n_unmapped']} not in its "
