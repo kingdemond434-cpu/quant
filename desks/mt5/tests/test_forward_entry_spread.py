@@ -157,7 +157,7 @@ def test_key_ledgers_live_where_no_cell_ledger_glob_reads_them(tmp_path, monkeyp
 def test_the_replay_reprices_writes_the_key_and_publishes_the_streams():
     src = (DESK / "research" / "shadow_forward.py").read_text(encoding="utf-8")
     assert ("reprice_at_measured_spread(\n"
-            "                res.trades, h1, costs, meta.get(sym) or {}, sym)") in src
+            "                    res.trades, h1, costs, meta.get(sym) or {}, sym)") in src
     assert "**spread_fields(_by_entry, t, _spread_rep)," in src
     assert "_write_key_ledger(key, all_trades, _boundary, _stamp, _by_entry, _spread_rep)" in src
     assert "_reset_spread_caches()" in src
