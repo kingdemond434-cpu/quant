@@ -1093,6 +1093,9 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
 #:                       under the current attestation without a re-judge (EXIT_BREACH)
 NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
     "attestation_remint": {3: "REMINT_BREACH"},
+    # pf_allocator exits 3 when it stands down behind a lock it may not reclaim (a live,
+    # heartbeating holder); the named stand-down is reports/ALLOCATOR_STANDDOWN.json.
+    "pf_allocator": {3: "LOCK_REFUSED"},
     "judge_coverage": {3: "TIMEOUT_UNCOMMITTED", 4: "REUSE_STALE", 5: "RECOVERY_REFUSED"},
     "daily": {DAILY_CYCLE_HOLDER_HUNG: "HOLDER_HUNG",
               DAILY_CYCLE_STAMP_UNREADABLE: "STAMP_UNREADABLE",

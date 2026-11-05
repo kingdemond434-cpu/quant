@@ -275,8 +275,27 @@ REGIME_FORECAST_H = 1
 REGIME_TERM_STRUCTURE = (1, 2, 5, 21)
 
 
+#: The allocator lock's heartbeat bound (job_lock.orphan_stale). DERIVATION: one hourly cycle
+#: (allocator_liveness.CYCLE_S, 3600 s) = 12 passes of MT5-AllocatorFast (every 5 min). A holder
+#: beats at every logged stage (`_log`) and per admission candidate, so a working pass is never
+#: silent that long; an orphan silent past it is reclaimed.
+LOCK_HEARTBEAT_STALE_S = 3600.0
+#: pf_allocator's exit code when it stands down behind a lock it may not reclaim.
+LOCK_REFUSED_EXIT = 3
+
+
+def _beat() -> None:
+    try:
+        from research.job_lock import heartbeat
+    except ModuleNotFoundError:
+        from job_lock import heartbeat  # type: ignore[no-redef,import-not-found]
+    with suppress(Exception):
+        heartbeat("pf_allocator")
+
+
 def _log(msg: str) -> None:
     print(f"[{datetime.now(UTC):%H:%M:%S}] {msg}", flush=True)
+    _beat()
 
 
 # ---------------------------------------------------------------------------------------
@@ -2931,6 +2950,7 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
     warm_in = {str(k): v for k, v in (warm or {}).items() if isinstance(v, dict) and v}
     solve_s: list[float] = []
     for name in cand_names:
+        _beat()                            # a long scan is a working holder, never an orphan
         e = by_name[name]
         sharpe = _annual_sharpe(e.daily_r)
         corr = _corr_to_book(e.daily_r, held, by_name)
@@ -5051,15 +5071,23 @@ def main() -> int:
             return 0
         need = 0                            # room confirmed above; do not wait a second time
 
-    with exclusive_job("pf_allocator", need_mb=need) as go:
+    with exclusive_job("pf_allocator", need_mb=need,
+                       heartbeat_stale_s=LOCK_HEARTBEAT_STALE_S) as go:
         if not go:
-            _log(f"stood down: another allocator pass holds the lock, or the box cannot fit "
-                 f"{_NEED_MB[args.mode]}MB. The previous book stands.")
+            try:
+                from research.job_lock import LAST_REFUSAL
+            except ModuleNotFoundError:
+                from job_lock import LAST_REFUSAL  # type: ignore[no-redef,import-not-found]
+            holder = dict(LAST_REFUSAL.get("pf_allocator") or {})
+            _log(f"REFUSED: another allocator pass holds the lock ({holder}), or the box cannot "
+                 f"fit {_NEED_MB[args.mode]}MB. The previous book stands.")
             _record_stand_down(
-                args.mode, "LOCK",
+                args.mode, "LOCK_REFUSED",
                 f"another allocator pass holds the lock, or the box cannot fit "
-                f"{_NEED_MB[args.mode]}MB", need_mb=_NEED_MB[args.mode])
-            return 0
+                f"{_NEED_MB[args.mode]}MB", need_mb=_NEED_MB[args.mode], holder=holder)
+            # NON-ZERO, so the unit reads red (2026-11-05: an orphan held the lock 4.5 h while
+            # every refused pass exited 0 and the task read green).
+            return LOCK_REFUSED_EXIT
         try:
             run(args.mode, seed=args.seed)
         except Exception as exc:
