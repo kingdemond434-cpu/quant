@@ -157,7 +157,9 @@ def test_key_ledgers_live_where_no_cell_ledger_glob_reads_them(tmp_path, monkeyp
 def test_the_replay_reprices_writes_the_key_and_publishes_the_streams():
     src = (DESK / "research" / "shadow_forward.py").read_text(encoding="utf-8")
     assert "reprice_at_measured_spread(\n                res.trades, h1, costs, meta.get(sym) or {}, sym)" in src
-    assert '"spread_src":' in src and "_reset_spread_caches()" in src
+    assert "**spread_fields(_by_entry, t, _spread_rep)," in src
+    assert "_write_key_ledger(key, all_trades, _boundary, _stamp, _by_entry, _spread_rep)" in src
+    assert "_reset_spread_caches()" in src
     assert "all_trades = [t for t in _priced if t.entry_time >= SHADOW_START]" in src
     assert '"key": key,' in src and "_write_key_ledger(key, all_trades" in src
     assert "entry_stream_report(state)" in src
@@ -196,3 +198,15 @@ def test_cost_surface_prefers_the_tick_hour_and_survives_unstamped_ticks(tmp_pat
     prof = cs.tick_profile("GBPCHF", TICK, root=tmp_path)
     assert prof is not None and prof["hours"]["1"]["status"] == "MEASURED"
     assert prof["hours"]["1"]["p50"] == pytest.approx(20.0)
+
+
+def test_every_row_says_what_spread_it_was_charged(monkeypatch):
+    t, quiet = _trade(1, 1, 3), _trade(1, 5, 6)
+    _measured(monkeypatch, tape={_minute(t.entry_time): 80.0})
+    _out, rep = sf.reprice_at_measured_spread([t, quiet], _bars(), _costs(2.0),
+                                              {"tick_size": TICK}, "GBPCHF")
+    by = rep.pop("by_entry")
+    assert sf.spread_fields(by, t, rep) == {"spread_source": "tape_minute",
+                                            "spread_pts_charged": 80.0, "d_r_spread": -0.78}
+    assert sf.spread_fields(by, quiet, rep) == {"spread_source": "frozen",
+                                                "spread_pts_charged": 2.0, "d_r_spread": 0.0}

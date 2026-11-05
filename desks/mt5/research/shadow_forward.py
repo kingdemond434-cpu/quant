@@ -1271,8 +1271,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                   "phase": ("forward" if (_boundary is not None and t.entry_time >= _boundary)
                             else "historical"),
                   "key": key,
-                  "spread_src": (_by_entry.get(str(t.entry_time)) or {}).get("src", "frozen"),
-                  "spread_pts": (_by_entry.get(str(t.entry_time)) or {}).get("pts"),
+                  **spread_fields(_by_entry, t, _spread_rep),
                   **_stamp}
                  for t in all_trades],
                 indent=2), encoding="utf-8")
@@ -1280,7 +1279,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # WHICHEVER KEY RAN LAST; its readers name a sleeve by its stem, so it stays as it is
             # and each row now says which key wrote it. Each key's own evidence is kept beside it
             # in `keys/`, a directory no `ledger_*.json` glob reaches, so nothing double counts.
-            _write_key_ledger(key, all_trades, _boundary, _stamp)
+            _write_key_ledger(key, all_trades, _boundary, _stamp, _by_entry, _spread_rep)
             st["entry_stream"] = entry_stream_id(
                 sym, [t for t in all_trades
                       if _boundary is not None and t.entry_time >= _boundary])
@@ -1639,7 +1638,18 @@ def _key_ledger_path(key: str) -> Path:
     return KEY_LEDGER_DIR / f"{safe}__{hashlib.sha1(str(key).encode()).hexdigest()[:10]}.json"
 
 
-def _write_key_ledger(key: str, trades: list, boundary: object, stamp: dict) -> None:
+def spread_fields(by_entry: dict, t: object, rep: dict) -> dict:
+    """What ONE trade was charged for the spread, so any single row can be re-checked."""
+    got = by_entry.get(str(getattr(t, "entry_time", ""))) or {}
+    if got:
+        return {"spread_source": got.get("src"), "spread_pts_charged": got.get("pts"),
+                "d_r_spread": got.get("d_r", 0.0)}
+    return {"spread_source": "frozen", "spread_pts_charged": rep.get("charged_spread_pts"),
+            "d_r_spread": 0.0}
+
+
+def _write_key_ledger(key: str, trades: list, boundary: object, stamp: dict,
+                      by_entry: dict | None = None, rep: dict | None = None) -> None:
     """Write `key`'s own trades, every row carrying the key. Best effort: a failed write here
     must never stop the clock, and the cell file above still holds the rows."""
     try:
@@ -1649,6 +1659,7 @@ def _write_key_ledger(key: str, trades: list, boundary: object, stamp: dict) -> 
                  "r_multiple": t.r_multiple, "reason": t.reason,
                  "phase": ("forward" if (boundary is not None and t.entry_time >= boundary)
                            else "historical"),
+                 **spread_fields(by_entry or {}, t, rep or {}),
                  **stamp} for t in trades]
         _key_ledger_path(key).write_text(json.dumps(rows, indent=2), encoding="utf-8")
     except OSError as exc:
@@ -1843,8 +1854,9 @@ def reprice_at_measured_spread(trades: list, bars: pd.DataFrame, costs: object,
         if pts is None or stop_dist <= 0:
             out.append(t)
             continue
-        report["by_entry"][str(t.entry_time)] = {"src": src, "pts": round(pts, 3)}
         d_r = (charged_px - pts * tick) * float(getattr(t, "units", 1.0) or 1.0) / stop_dist
+        report["by_entry"][str(t.entry_time)] = {"src": src, "pts": round(pts, 3),
+                                                 "d_r": round(d_r, 6)}
         if d_r == 0.0:
             out.append(t)
             continue
