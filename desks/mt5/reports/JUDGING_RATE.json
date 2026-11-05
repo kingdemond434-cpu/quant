@@ -1,56 +1,56 @@
 {
- "at": "2026-11-05T13:07:30+00:00",
+ "at": "2026-11-05T14:45:11+00:00",
  "status": "MEASURED",
  "verdicts": {
   "status": "MEASURED",
-  "rows_total": 1431101,
+  "rows_total": 1440041,
   "rows_unstamped": 0,
-  "last_verdict_at": "2026-11-05T06:19:18+00:00",
+  "last_verdict_at": "2026-11-05T13:21:08+00:00",
   "counts": {
    "1h": 0,
-   "24h": 17257,
-   "7d": 417077,
-   "build_step_lo": 17257,
+   "24h": 26197,
+   "7d": 426017,
+   "build_step_lo": 26197,
    "build_step_hi": 0
   },
   "count_basis": "changed verdict events; unchanged retests do not append",
   "first_terminal_counts": {
    "1h": 0,
-   "24h": 4807,
-   "7d": 259179,
-   "build_step_lo": 4807,
+   "24h": 6698,
+   "7d": 261070,
+   "build_step_lo": 6698,
    "build_step_hi": 0
   },
-  "first_terminal_cells": 649649,
+  "first_terminal_cells": 651540,
   "first_terminal_per_hour": {
    "1h": 0.0,
-   "24h": 200.292,
-   "7d": 1542.732
+   "24h": 279.083,
+   "7d": 1553.988
   },
   "per_hour": {
    "1h": 0.0,
-   "24h": 719.042,
-   "7d": 2482.601
+   "24h": 1091.542,
+   "7d": 2535.815
   }
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 9676,
-   "7d": 46740
+   "24h": 10723,
+   "7d": 47807
   },
   "per_hour": {
-   "24h": 403.167,
-   "7d": 278.214
+   "24h": 446.792,
+   "7d": 284.565
   }
  },
- "verdicts_per_hour": 719.042,
- "verdicts_per_day": 17257.0,
+ "verdicts_per_hour": 1091.542,
+ "verdicts_per_day": 26197.0,
  "verdict_rate_basis": "changed verdict events, not total completed tests",
- "first_judged_per_day": 4807.0,
+ "first_judged_per_day": 6698.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
- "created_per_day": 9676.0,
+ "created_per_day": 10723.0,
  "backlog": "UNMEASURED",
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
@@ -58,11 +58,11 @@
   "why": "backlog UNMEASURED (GAUNTLET_BACKPRESSURE.json absent)"
  },
  "workers_planned": 15,
- "workers_last_sweep": "UNMEASURED",
+ "workers_last_sweep": 15,
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-05T13:05:23+00:00",
-  "pid": 5368
+  "started_at": "2026-11-05T14:43:14+00:00",
+  "pid": 25104
  }
 }
