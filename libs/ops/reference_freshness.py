@@ -700,6 +700,24 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "needed. An absent or unparseable output keeps it. It retires no evidence row.",
     ),
     DestructivePath(
+        path_id="shadow_forward.candidate_rejudge",
+        module="desks/mt5/research/shadow_forward.py",
+        function="rejudge_candidate",
+        removes="a PROMOTION CANDIDATE verdict on a shadow_state row that holds no live order "
+                "authority (status -> KILL, demoted_from/at/why recorded on the row)",
+        reference="the row's own forward ledger, replayed in the same pass, read against "
+                  "forward_verdict's maturity bar (PROMOTE_MIN_EXP, PROMOTE_MIN_DD), plus "
+                  "sleeve_registry.live_keys()",
+        status="positive",
+        note="POSITIVE EVIDENCE ONLY (2026-11-04): demotes only when this pass MEASURED the "
+             "ledger and its numeric exp_r/max_dd_r fail the bar that promoted it; a row with "
+             "no numeric reading is never demoted, an unreadable registry leaves the verdict "
+             "(rejudge UNMEASURED), and a LIVE row is never touched. The clock keeps accruing "
+             "and forward_start is unchanged. TWO-SIDED: a row this rule demoted that clears the "
+             "same bar again is restored to PROMOTION CANDIDATE on that pass; its pop() calls "
+             "clear the demotion fields into demotions_before, never evidence.",
+    ),
+    DestructivePath(
         path_id="forward_cure_route.accumulate",
         module="desks/mt5/research/forward_cure_route.py",
         function="accumulate",
