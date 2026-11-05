@@ -87,3 +87,16 @@ def test_a_bom_first_row_counts_and_bad_bytes_are_red(tmp_path: Path) -> None:
     bad = tmp_path / "bad.jsonl"
     bad.write_bytes(b"\xff\xfe\x00garbage")
     assert chk.measure(bad, now)["status"] == "RED"
+
+
+def test_the_verdict_crosses_the_wire_off_the_box() -> None:
+    # The noon routine and the coordinator read this verdict from origin. For a week it was
+    # written on the box and never published: `**/reports/*` ignored it and the sync never
+    # listed it, so the RED this check exists to raise reached nobody off the box.
+    import subprocess
+
+    from libs.ops.state_publication import published_paths
+    rel = chk.ARTIFACT.relative_to(ROOT).as_posix()
+    assert rel in published_paths(ROOT)
+    ignored = subprocess.run(["git", "check-ignore", "-q", rel], cwd=ROOT)
+    assert ignored.returncode == 1, f"{rel} is gitignored, so the sync would publish nothing"
