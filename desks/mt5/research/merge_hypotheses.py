@@ -106,7 +106,17 @@ def _write_docket_atomically(path: Path, rows: list[dict[str, Any]] | dict[str, 
                 stream.write("\n]\n")
             stream.flush()
             os.fsync(stream.fileno())
-        _replace_waiting_for_readers(pending, path)
+        started = time.monotonic()
+        try:
+            tries = _replace_waiting_for_readers(pending, path)
+        except PermissionError:
+            print(f"   docket replace FAILED: {path.name} still locked by a reader after "
+                  f"{time.monotonic() - started:.0f}s of retries (budget "
+                  f"{DOCKET_REPLACE_BUDGET_S:.0f}s); previous docket kept")
+            raise
+        if tries:
+            print(f"   docket replace: {path.name} waited out a reader, {tries} retr"
+                  f"{'y' if tries == 1 else 'ies'} over {time.monotonic() - started:.0f}s")
     finally:
         if os.path.exists(pending):
             os.unlink(pending)

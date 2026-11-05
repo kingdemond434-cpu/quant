@@ -48,7 +48,8 @@ def test_failed_stream_keeps_prior_docket(tmp_path: Path, monkeypatch) -> None:
     assert list(tmp_path.glob("*.tmp")) == []
 
 
-def test_the_rename_waits_out_a_reader_holding_the_docket(tmp_path: Path, monkeypatch) -> None:
+def test_the_rename_waits_out_a_reader_holding_the_docket(tmp_path: Path, monkeypatch,
+                                                         capsys) -> None:
     """Windows refuses os.replace onto an open file (WinError 5): 28 failures on the box froze the
     docket for 54 h. A reader that lets go inside the budget no longer costs the write."""
     target = tmp_path / "external_survivors.json"
@@ -67,9 +68,10 @@ def test_the_rename_waits_out_a_reader_holding_the_docket(tmp_path: Path, monkey
     merge._write_docket_atomically(target, [{"symbol": "new"}])
     assert json.loads(target.read_text("utf-8")) == [{"symbol": "new"}]
     assert calls["n"] == 3 and list(tmp_path.glob("*.tmp")) == []
+    assert "waited out a reader, 2 retries" in capsys.readouterr().out
 
 
-def test_a_reader_that_never_lets_go_fails_as_before(tmp_path: Path, monkeypatch) -> None:
+def test_a_reader_that_never_lets_go_fails_as_before(tmp_path: Path, monkeypatch, capsys) -> None:
     target = tmp_path / "external_survivors.json"
     target.write_text('[{"symbol":"old"}]', encoding="utf-8")
 
@@ -83,6 +85,7 @@ def test_a_reader_that_never_lets_go_fails_as_before(tmp_path: Path, monkeypatch
         merge._write_docket_atomically(target, [{"symbol": "new"}])
     assert json.loads(target.read_text("utf-8")) == [{"symbol": "old"}]
     assert list(tmp_path.glob("*.tmp")) == []
+    assert "docket replace FAILED" in capsys.readouterr().out
 
 
 def test_dead_staging_files_are_swept_and_live_ones_kept(tmp_path: Path) -> None:
