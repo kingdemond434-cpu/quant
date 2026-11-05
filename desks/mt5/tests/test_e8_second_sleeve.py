@@ -204,3 +204,72 @@ def test_the_leg_is_on_the_hourly_clock_with_a_contract() -> None:
     assert problems(c) == []
     from libs.research.layers import LEG_LAYER
     assert LEG_LAYER.get("e8_second_sleeve") == "portfolio"
+
+
+# ------------------------------------------------------------------ audit #724 SF: dependence + decay
+
+def _negative_prior_world(seed: int = 11) -> tuple[np.ndarray, np.ndarray]:
+    """gold_asia as above, beside a candidate whose PRIOR loses (25% wins at 2R = -0.25R/trade)."""
+    r, crisis = _world(seed)
+    g = np.random.default_rng(seed + 1)
+    fire = g.random(r.shape[:2]) < 0.6
+    r[:, :, 1] = np.where(fire, np.where(g.random(r.shape[:2]) < 0.25, 2.0, -1.0), 0.0)
+    return r, crisis
+
+
+def _costed_survivor(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    surv = tmp_path / "survivors.json"
+    surv.write_text(json.dumps({"survivors": {"external.CADCHF.overnight_gap_decay.p=1": {
+        "sym": "CADCHF", "shadow_spec": {"symbol": "CADCHF", "family": "overnight_gap_decay",
+                                         "selector": "asia"},
+        "gates": {"stress_costs": {"exp_x3": 0.2}}}}}))
+    monkeypatch.setattr(e8s, "SURVIVORS", surv)
+
+
+def test_posterior_dependence_is_in_the_top_row_verdict_text(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    r, crisis = _negative_prior_world()
+    clocks = {"CADCHF.overnight_gap_decay.asia": {"n": 30, "exp_r": 1.0, "forward_t": 5.0,
+                                                  "status": "ACTIVE"}}
+    _tree(tmp_path, monkeypatch, ["gold_asia", "CADCHF_overnight_gap_decay_asia"], r, crisis,
+          clocks)
+    doc = e8s.build(n_paths=300)
+    assert doc["status"] == "OK", doc["verdict"]
+    top = doc["top"][0]
+    assert top["posterior_dependence"] == "POSTERIOR_DEPENDENT"
+    assert top["prior_only"]["d_elog_per_day"] <= 0 or top["prior_only"]["d_p_pass"] < 0
+    # the verdict TEXT itself carries it, so the E8 book owner cannot read past it
+    assert "POSTERIOR_DEPENDENT" in doc["verdict"] and "forward n=30" in doc["verdict"]
+
+
+def test_forward_n_decaying_under_the_floor_takes_eligibility_away_by_name(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    r, crisis = _negative_prior_world()
+    key = "CADCHF.overnight_gap_decay.asia"
+    _tree(tmp_path, monkeypatch, ["gold_asia", "CADCHF_overnight_gap_decay_asia"], r, crisis,
+          {key: {"n": 30, "exp_r": 1.0, "forward_t": 5.0, "status": "ACTIVE"}})
+    _costed_survivor(tmp_path, monkeypatch)
+    first = e8s.build(n_paths=300)
+    assert first["top"][0]["eligible"]
+    # decay: the clock re-froze and holds only 6 forward observations now
+    (e8s.SHADOW_DIR / "shadow_state.json").write_text(json.dumps(
+        {key: {"n": 6, "exp_r": 1.0, "forward_t": 2.0, "status": "ACTIVE"}}))
+    second = e8s.build(n_paths=300, previous=first)
+    row = next(c for c in second["candidates"]
+               if c["candidate"] == "CADCHF_overnight_gap_decay_asia")
+    assert not row["eligible"] and "forward_depth" in row["missing_gates"]
+    assert row["gates"]["evidence"]["verdict"] == e8s.PASS      # it is the depth, not the sign
+    lost = second["no_longer_eligible"]
+    assert [x["candidate"] for x in lost] == ["CADCHF_overnight_gap_decay_asia"]
+    assert "forward_depth" in lost[0]["missing_gates"] and lost[0]["forward_n"] == 6
+    assert "NO_LONGER_ELIGIBLE" in second["verdict"]
+
+
+def test_forward_depth_gate_passes_when_the_prior_alone_supports_it() -> None:
+    assert e8s.forward_depth_gate("PRIOR_SUPPORTS", {"n": 2})["verdict"] == e8s.PASS
+    assert e8s.forward_depth_gate("POSTERIOR_DEPENDENT", {"n": 2})["verdict"] == e8s.FAIL
+    assert e8s.forward_depth_gate("UNMEASURED", None)["verdict"] == e8s.FAIL
+    assert e8s.posterior_dependence({"d_elog_per_day": 0.001, "d_p_pass": 0.0}) == \
+        "PRIOR_SUPPORTS"
+    assert e8s.posterior_dependence({"d_elog_per_day": 0.001, "d_p_pass": -0.1}) == \
+        "POSTERIOR_DEPENDENT"

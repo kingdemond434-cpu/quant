@@ -604,15 +604,41 @@ HARD_GATES = ("mechanism", "e8_symbol", "session", "policy", "correlation", "hea
               "evidence")
 
 
+def posterior_dependence(prior_only: dict[str, Any] | None) -> str:
+    """POSTERIOR_DEPENDENT when the allocator's prior alone would NOT add growth without costing
+    P(pass) at the chosen size -- the reading then rests on the forward clock alone."""
+    if not prior_only:
+        return UNMEASURED
+    d_el, d_pp = prior_only.get("d_elog_per_day"), prior_only.get("d_p_pass")
+    if d_el is None or d_pp is None:
+        return UNMEASURED
+    return "PRIOR_SUPPORTS" if d_el > 0 and d_pp >= 0 else "POSTERIOR_DEPENDENT"
+
+
+def forward_depth_gate(dependence: str, fwd: dict[str, Any] | None) -> dict[str, Any]:
+    """A posterior-dependent candidate is eligible only while its forward clock holds at least
+    FORWARD_MIN_N observations: when decay or a re-freeze takes n below that, the evidence the
+    whole reading rests on is too thin, and the candidate drops out on that pass, by name."""
+    n = int((fwd or {}).get("n") or 0)
+    if dependence == "PRIOR_SUPPORTS":
+        return {"verdict": PASS, "why": "the allocator's prior alone supports it"}
+    if n >= FORWARD_MIN_N:
+        return {"verdict": PASS, "why": f"{dependence}: forward n={n} >= {FORWARD_MIN_N}"}
+    return {"verdict": FAIL, "why": f"{dependence}: the reading rests on the forward clock and "
+                                    f"its n={n} is below FORWARD_MIN_N={FORWARD_MIN_N}"}
+
+
 def _verdict_of(gates: dict[str, dict[str, Any]]) -> tuple[bool, list[str]]:
     missing = [g for g in HARD_GATES if (gates.get(g) or {}).get("verdict") != PASS]
+    if "forward_depth" in gates and gates["forward_depth"].get("verdict") != PASS:
+        missing.append("forward_depth")
     if (gates.get("no_opposite") or {}).get("verdict") not in (PASS, FENCE):
         missing.append("no_opposite")
     return not missing, missing
 
 
-def build(*, n_paths: int = N_PATHS, seed: int = 0, now: datetime | None = None
-          ) -> dict[str, Any]:
+def build(*, n_paths: int = N_PATHS, seed: int = 0, now: datetime | None = None,
+          previous: dict[str, Any] | None = None) -> dict[str, Any]:
     import kelly_survival as ks
     now = now or datetime.now(UTC)
     doc: dict[str, Any] = {"generated_at": now.isoformat(timespec="seconds"),
@@ -706,6 +732,8 @@ def build(*, n_paths: int = N_PATHS, seed: int = 0, now: datetime | None = None
                      "policy": policy_gate(col, sym, quarantine, excluded),
                      "correlation": correlation_gate(jm), "headroom": head, "growth": grow,
                      "evidence": evidence_gate(fwd and {**fwd, "key": fkey}, cert)}
+            dependence = posterior_dependence(jm["prior_only"])
+            gates["forward_depth"] = forward_depth_gate(dependence, fwd)
             eligible, missing = _verdict_of(gates)
             ch = jm.get("chosen") or {}
             candidates.append({
@@ -717,7 +745,9 @@ def build(*, n_paths: int = N_PATHS, seed: int = 0, now: datetime | None = None
                           "rho": jm["rho"], "rho_crisis": jm["rho_crisis"],
                           "tail_coloss": jm["tail_coloss"],
                           "evidence_depth": gates["evidence"].get("depth")},
-                "posterior": cpost, "prior_only": jm["prior_only"], "gates": gates,
+                "posterior": cpost, "prior_only": jm["prior_only"],
+                "posterior_dependence": dependence,
+                "forward_n": int((fwd or {}).get("n") or 0), "gates": gates,
                 "joint": {k: v for k, v in jm.items() if k not in ("table", "prior_only")},
                 "size_table": jm["table"]})
             if "base_gold_alone" not in doc:
@@ -791,14 +821,35 @@ def build(*, n_paths: int = N_PATHS, seed: int = 0, now: datetime | None = None
         for g in c["missing_gates"]:
             fail_counts[g] = fail_counts.get(g, 0) + 1
     doc["joint_gate_failures"] = fail_counts
+    # LOST ELIGIBILITY: a candidate the previous pass ranked eligible and this one does not is
+    # named with the gate that took it out (forward n decaying under FORWARD_MIN_N among them).
+    prev_ok = {str(t.get("candidate")) for t in ((previous or {}).get("top") or [])
+               if isinstance(t, dict) and t.get("eligible")}
+    by_name = {c["candidate"]: c for c in candidates}
+    doc["no_longer_eligible"] = [
+        {"candidate": n, "missing_gates": (by_name.get(n) or {}).get("missing_gates",
+                                                                       ["not ranked this pass"]),
+         "forward_n": (by_name.get(n) or {}).get("forward_n")}
+        for n in sorted(prev_ok) if not (by_name.get(n) or {}).get("eligible")]
 
     def brief(c: dict[str, Any]) -> dict[str, Any]:
         return {"candidate": c["candidate"], "family": c["family"], "symbol": c["symbol"],
                 "eligible": c["eligible"], "missing_gates": c["missing_gates"],
                 **c["score"], "prior_only": c.get("prior_only"),
+                "posterior_dependence": c.get("posterior_dependence"),
+                "forward_n": c.get("forward_n"),
                 "mechanism_novelty": c.get("mechanism_novelty"),
                 "rho_with_higher_ranked": c.get("rho_with_higher_ranked"),
-                "why": {g: c["gates"][g]["why"] for g in (*HARD_GATES, "no_opposite")}}
+                "why": {g: c["gates"][g]["why"] for g in (*HARD_GATES, "no_opposite",
+                                                         "forward_depth") if g in c["gates"]}}
+
+    def dep_note(c: dict[str, Any]) -> str:
+        po = c.get("prior_only") or {}
+        if c.get("posterior_dependence") == "POSTERIOR_DEPENDENT":
+            return (f" POSTERIOR_DEPENDENT: on the prior alone dE[log W]/day "
+                    f"{po.get('d_elog_per_day')}, dP(pass) {po.get('d_p_pass')} -- the case rests "
+                    f"on forward n={c.get('forward_n')}")
+        return f" {c.get('posterior_dependence')}"
 
     if not names or GOLD not in names:
         doc["status"] = "UNMEASURED"
@@ -808,7 +859,8 @@ def build(*, n_paths: int = N_PATHS, seed: int = 0, now: datetime | None = None
         doc["status"] = "OK"
         doc["verdict"] = (f"{len(eligible)} eligible; best {eligible[0]['candidate']} "
                           f"(dE[log W]/day {eligible[0]['score']['d_elog_per_day_mix']:+.6f}, "
-                          f"dP(pass) {eligible[0]['score']['d_p_pass_mix']:+.4f})")
+                          f"dP(pass) {eligible[0]['score']['d_p_pass_mix']:+.4f});"
+                          + dep_note(eligible[0]))
         rest = [c for c in candidates if not c["eligible"]]
         doc["top"] = [brief(c) for c in (eligible + rest)[:TOP_N]]
     else:
@@ -817,6 +869,10 @@ def build(*, n_paths: int = N_PATHS, seed: int = 0, now: datetime | None = None
         doc["verdict"] = "NONE_ELIGIBLE: " + "; ".join(
             f"{c['candidate']} misses {','.join(c['missing_gates'])}" for c in closest)
         doc["top"] = [brief(c) for c in closest]
+    if doc.get("no_longer_eligible"):
+        doc["verdict"] = (str(doc.get("verdict")) + "; NO_LONGER_ELIGIBLE: " + ", ".join(
+            f"{r['candidate']} ({','.join(r['missing_gates'])})"
+            for r in doc["no_longer_eligible"]))
     doc["measured"] = doc["status"] != "UNMEASURED"
     return doc
 
@@ -835,7 +891,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", type=Path, default=OUT)
     a = ap.parse_args(argv)
-    doc = build(n_paths=a.paths, seed=a.seed)
+    prev = _read_json(a.out)
+    doc = build(n_paths=a.paths, seed=a.seed, previous=prev if isinstance(prev, dict) else None)
     try:
         write(doc, a.out)
     except OSError as exc:
