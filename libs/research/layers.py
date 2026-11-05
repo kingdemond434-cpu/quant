@@ -533,6 +533,9 @@ LEG_LAYER: dict[str, str] = {
     # and what the account paid. It measures the price of reaching the venue -- spread, session
     # structure, commission, swap, slippage -- so its layer is the same as the spine it audits.
     "cost_truth": "execution",
+    # Its hourly quotes-only mode (spread and session quotes per running terminal) is the same
+    # measurement of the price of reaching the venue, on a faster clock.
+    "cost_quotes": "execution",
     # THE INGESTION-EXPLOITATION CONTRACT (LAWS 5c, 2026-09-17). The ledger inventories the
     # desk's information estate and gives every ingested datum a downstream state: information.
     # The fusion turns that estate into regime posteriors and nowcasts: prediction. The gate

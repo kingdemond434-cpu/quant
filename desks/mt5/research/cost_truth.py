@@ -816,8 +816,14 @@ def execution_surface(symbols: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
+                      path: str | None = None, deals: bool = True,
                       ) -> dict[str, Any]:  # pragma: no cover - needs a live terminal
     """Every measurable broker fact for `symbols`, from the terminal on THIS box.
+
+    `path` names the terminal64.exe to attach to. None is the historic call, which attaches to
+    whichever terminal the package resolves first -- measured 2026-11-05 01:14Z that was the FTMO
+    terminal, not Fusion, so a pathless snapshot is a snapshot of an unnamed venue. `deals=False`
+    skips the account's deal history (the quotes-only clock needs the venue's quotes, not its P&L).
 
     A box with no terminal is not an error: the block comes back UNMEASURED with the reason and
     the cached readings keep their age. The desk never fabricates a venue number.
@@ -826,8 +832,10 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
         import MetaTrader5 as mt5
     except Exception as exc:
         return {"status": UNMEASURED, "why": f"MetaTrader5 is not importable here: {exc}"}
-    if not mt5.initialize():
-        return {"status": UNMEASURED, "why": f"terminal did not initialise: {mt5.last_error()}"}
+    ok = mt5.initialize(path=path) if path else mt5.initialize()
+    if not ok:
+        return {"status": UNMEASURED, "path": path,
+                "why": f"terminal did not initialise: {mt5.last_error()}"}
     started = time.monotonic()
     out: dict[str, Any] = {"status": MEASURED, "symbols": {}, "bars": {}, "deals": []}
     try:
@@ -841,7 +849,8 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
         out["account"] = account_block(acct)
         out["terminal"] = {"name": getattr(term, "name", None),
                            "connected": getattr(term, "connected", None),
-                           "build": getattr(term, "build", None)}
+                           "build": getattr(term, "build", None),
+                           "path": path}
         probe = mt5.symbol_info_tick(symbols[0]) if symbols else None
         if probe is not None and getattr(probe, "time", None):
             offset = (datetime.fromtimestamp(probe.time, tz=UTC)
@@ -849,9 +858,10 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
             out["server_utc_offset_hours"] = round(offset)
             out["rollover_hour_utc"] = int((24 - round(offset)) % 24)
         # -- deal history: the account's whole realised record
-        deals = mt5.history_deals_get(datetime(2020, 1, 1, tzinfo=UTC),
-                                      datetime.now(tz=UTC) + timedelta(days=2))
-        for deal in deals or []:
+        history = (mt5.history_deals_get(datetime(2020, 1, 1, tzinfo=UTC),
+                                         datetime.now(tz=UTC) + timedelta(days=2))
+                   if deals else None)
+        for deal in history or []:
             out["deals"].append({"ticket": deal.ticket, "order": deal.order,
                                  "position": deal.position_id, "epoch": int(deal.time),
                                  "at": datetime.fromtimestamp(deal.time, tz=UTC).isoformat(),
@@ -887,6 +897,8 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
                 "bid": getattr(tick, "bid", None), "ask": getattr(tick, "ask", None),
                 "live_spread_pts": (round((tick.ask - tick.bid) / info.point, 2)
                                     if tick is not None and info.point else None)}
+            if int(bars_cap) <= 0:
+                continue
             rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M1, 0, int(bars_cap))
             if rates is None or len(rates) == 0:
                 continue
@@ -894,6 +906,99 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
     finally:
         mt5.shutdown()
     out["elapsed_s"] = round(time.monotonic() - started, 2)
+    return out
+
+
+# ----------------------------------------------------------------------------- one file per venue
+#
+# WHY (2026-11-05). `cost_truth_quotes.json` was written from whichever terminal a pathless
+# `mt5.initialize()` reached, and the box runs two (Fusion and FTMO). Every account trades the
+# same mechanisms, so each venue's cost check needs THAT venue's spreads: the per-venue file below
+# is named by the account's own company/server, never by a guess. The legacy file is untouched
+# (prop_challenge_allocator reads it as FTMO on purpose); readers move only on their owners' word.
+
+
+def venue_slug(snapshot: dict[str, Any]) -> str | None:
+    """A filesystem-safe venue name from the account block (company, then server), else the
+    terminal name. None when the snapshot names no venue at all -- never a guessed one."""
+    acct = snapshot.get("account") or {}
+    term = snapshot.get("terminal") or {}
+    for raw in (acct.get("company"), acct.get("server"), term.get("name")):
+        if raw:
+            slug = "".join(c if c.isalnum() else "_" for c in str(raw).lower()).strip("_")
+            while "__" in slug:
+                slug = slug.replace("__", "_")
+            if slug:
+                return slug[:48]
+    return None
+
+
+def venue_quotes_path(slug: str) -> Path:
+    return DATA / f"cost_truth_quotes.{slug}.json"
+
+
+def write_venue_quotes(snapshot: dict[str, Any]) -> Path | None:
+    """Merge this venue's fresh readings over ITS OWN cached file (never another venue's) and
+    write it. Returns the path written, or None when the snapshot names no venue."""
+    slug = venue_slug(snapshot)
+    if slug is None or snapshot.get("status") != MEASURED:
+        return None
+    path = venue_quotes_path(slug)
+    cached = _json(path) or {}
+    syms = dict(cached.get("symbols") or {}) if isinstance(cached, dict) else {}
+    syms.update(snapshot.get("symbols") or {})
+    doc = {"at": _now(), "venue": slug, "account": snapshot.get("account"),
+           "terminal": snapshot.get("terminal"),
+           "server_utc_offset_hours": snapshot.get("server_utc_offset_hours"),
+           "rollover_hour_utc": snapshot.get("rollover_hour_utc"),
+           "symbols": syms,
+           "source": "desks/mt5/research/cost_truth.py"}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n", "utf-8")
+    tmp.replace(path)
+    return path
+
+
+def running_terminals() -> list[str]:
+    """The terminal64.exe paths RUNNING on this box right now. Only a running terminal is
+    attached to: `mt5.initialize(path=...)` on a stopped one would LAUNCH it. Empty when psutil
+    is absent or nothing runs (the caller then falls back to the historic pathless attach)."""
+    try:
+        import psutil
+    except Exception:
+        return []
+    seen: list[str] = []
+    for proc in psutil.process_iter(["name", "exe"]):
+        try:
+            name = str(proc.info.get("name") or "").lower()
+            exe = proc.info.get("exe")
+        except Exception:
+            continue
+        if name == "terminal64.exe" and exe and exe not in seen:
+            seen.append(str(exe))
+    return sorted(seen)
+
+
+def quotes_only(symbols: list[str], budget_s: float,
+                terminals: list[str] | None = None) -> dict[str, Any]:  # pragma: no cover
+    """The light hourly clock: every running terminal's quotes, one file per venue, no deals,
+    no bars, no rebuild of COST_TRUTH.json. Budget is split evenly across terminals."""
+    paths: list[str | None] = list(terminals if terminals is not None else running_terminals())
+    if not paths:
+        paths = [None]
+    each = max(15.0, budget_s / len(paths))
+    out: dict[str, Any] = {"at": _now(), "venues": []}
+    for path in paths:
+        snap = terminal_snapshot(symbols, each, 0, path=path, deals=False)
+        written = write_venue_quotes(snap)
+        out["venues"].append({"path": path, "status": snap.get("status"),
+                              "venue": venue_slug(snap) if snap.get("status") == MEASURED
+                              else None,
+                              "n_symbols": len(snap.get("symbols") or {}),
+                              "budget_exhausted_at": snap.get("budget_exhausted_at"),
+                              "written": str(written) if written else None,
+                              "why": snap.get("why")})
     return out
 
 
@@ -1292,6 +1397,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--md", type=Path, default=MD)
     ap.add_argument("--no-terminal", action="store_true",
                     help="skip the terminal and publish from the cached readings")
+    ap.add_argument("--quotes-only", action="store_true",
+                    help="the light hourly clock: every running terminal's quotes, one file per "
+                         "venue (cost_truth_quotes.<venue>.json); no deals, bars or report")
     args = ap.parse_args(argv)
     started = time.monotonic()
 
@@ -1306,6 +1414,15 @@ def main(argv: list[str] | None = None) -> int:
     intents = _jsonl(INTENTS)
     sleeves_doc = _json(SLEEVE_REGISTRY)
     symbols = symbol_universe(ranks_doc, cost_to_edge, ledger, prov, sleeves_doc)
+    if args.quotes_only:
+        res = quotes_only(symbols, max(30.0, args.budget_s * 0.9))
+        for v in res["venues"]:
+            print(f"cost_quotes: {v['venue'] or v['path'] or 'default terminal'} "
+                  f"{v['status']} {v['n_symbols']} symbols -> {v['written'] or v['why']}")
+        if not any(v.get("written") for v in res["venues"]):
+            print("WRITE_OR_EXPLAIN: NO_OP cost_quotes: no running terminal answered "
+                  "(every venue file keeps its readings and their age)")
+        return 0
 
     cursor = _json(CURSOR) or {}
     cached = _json(QUOTES) or {}
@@ -1336,6 +1453,7 @@ def main(argv: list[str] | None = None) -> int:
                                       "symbols": snapshot.get("symbols"),
                                       "deals": snapshot.get("deals")},
                                      indent=1, sort_keys=True) + "\n", "utf-8")
+        write_venue_quotes(snapshot)
     else:
         snapshot = {**cached, "status": UNMEASURED if not cached else MODELLED,
                     "why": snapshot.get("why"), "bars": {},
