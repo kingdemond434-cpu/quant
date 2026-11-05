@@ -1047,7 +1047,6 @@ def main() -> int:
     # verbatim above, so the old rows would never have been reached. Filled HERE because this is
     # the docket's only writer: same rule as the compiler, in place, nothing deleted, each row
     # recording what was filled or why not. A fault costs the fill, never a row.
-    del banked
     phases.mark("bank_union", len(merged))
     triangle_legs: dict[str, Any] = {"status": "UNAVAILABLE"}
     try:
