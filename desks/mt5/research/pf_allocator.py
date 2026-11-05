@@ -3356,7 +3356,8 @@ def live_policy_zero(names: Sequence[str]) -> tuple[frozenset[str], dict[str, An
 
 
 def fallback_on_admissible(best: str, ev: Sequence[SleeveEvidence], zeroed: frozenset[str],
-                           total: float) -> dict[str, float] | None:
+                           total: float, why: dict[str, str] | None = None
+                           ) -> dict[str, float] | None:
     """The best baseline RE-SOLVED over the columns the account may trade (#748 audit (a)), or
     None when that baseline cannot be rebuilt without the worlds (multiperiod, posterior, the
     incumbent): its exchange-zero refill then stands. A pro-rata refill ignores correlation; the
@@ -3374,7 +3375,10 @@ def fallback_on_admissible(best: str, ev: Sequence[SleeveEvidence], zeroed: froz
     try:
         from libs.portfolio.challengers import all_books
         return all_books(sub, total).get(best)
-    except Exception:
+    except Exception as exc:
+        # A failed rebuild is NAMED (#748 audit SF), never read as "needs the worlds".
+        if why is not None:
+            why["fallback"] = f"all_books failed: {type(exc).__name__}: {exc}"
         return None
 
 
@@ -4602,11 +4606,14 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         best = str(proof.get("best_baseline") or "")
         fb_book = (proof.get("books") or {}).get(best) or {}
         if best and fb_book and lp_zero:
-            _fb = fallback_on_admissible(best, ev, ts_zero, sum(float(v) for v in fb_book.values()))
+            _fb_why: dict[str, str] = {}
+            _fb = fallback_on_admissible(best, ev, ts_zero,
+                                         sum(float(v) for v in fb_book.values()), _fb_why)
             if _fb:
                 fb_book = _fb
-            live_policy_meta["fallback"] = ("re-solved on the admissible columns" if _fb else
-                                            "exchange-zero refill (needs the worlds to rebuild)")
+            live_policy_meta["fallback"] = (
+                "re-solved on the admissible columns" if _fb else _fb_why.get(
+                    "fallback", "exchange-zero refill (needs the worlds to rebuild)"))
         if best and fb_book:
             fallback = {"name": best, "book": {k: round(float(v), 6) for k, v in fb_book.items()
                                                if float(v) > 1e-6}}

@@ -91,5 +91,15 @@ def test_the_fallback_is_re_solved_on_the_admissible_columns() -> None:
     iv = pa.fallback_on_admissible("inverse_vol", ev, frozenset({"c"}), 0.2)
     assert iv is not None and "c" not in iv
     assert pa.fallback_on_admissible("multiperiod", ev, frozenset({"c"}), 0.2) is None
+    # a challenger whose rebuild raises is named, never read as "needs the worlds"
+    import libs.portfolio.challengers as ch
+    why: dict[str, str] = {}
+    orig = ch.all_books
+    try:
+        ch.all_books = lambda *_a, **_k: (_ for _ in ()).throw(ValueError("bad cov"))
+        assert pa.fallback_on_admissible("hrp", ev, frozenset({"c"}), 0.2, why) is None
+    finally:
+        ch.all_books = orig
+    assert why["fallback"] == "all_books failed: ValueError: bad cov"
     src = (_DESK / "research" / "pf_allocator.py").read_text(encoding="utf-8")
     assert "fallback_on_admissible(best, ev, ts_zero" in src
