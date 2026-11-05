@@ -436,7 +436,17 @@ def _set_budget(budget_s: float | None) -> None:
     compile_by = t0 + COMPILE_SHARE * budget_s if budget_s and budget_s > 0 else float("inf")
     if cap:
         compile_by = min(compile_by, t0 + cap - KILL_MARGIN_S - reserve)
-        compile_by = max(compile_by, time.monotonic() + MIN_COMPILE_SHARE * cap)
+        floor = time.monotonic() + MIN_COMPILE_SHARE * cap
+        if compile_by < floor:
+            # NAMED, NOT SILENT: the measured write phase alone leaves no room inside the cap, so
+            # this pass compiles its minimum slice and is likely to be killed in the writes again.
+            # The fix is the write phase (or the cap), and the artifact says which number binds.
+            _PROGRESS["state"] = "WRITE_PHASE_EXCEEDS_CAP"
+            print(f"compiler: WRITE_PHASE_EXCEEDS_CAP -- the last pass's write phase "
+                  f"({measured or 0.0:.0f}s measured, {reserve:.0f}s reserved) leaves no room "
+                  f"inside the {cap:.0f}s cap; compiling the {MIN_COMPILE_SHARE:.0%} minimum slice",
+                  flush=True)
+        compile_by = max(compile_by, floor)
     intake_by = t0 + (compile_by - t0) * (INTAKE_SHARE / COMPILE_SHARE)
     _CLOCK.update({"intake_by": intake_by, "compile_by": compile_by,
                    "budget_s": budget_s or cap})

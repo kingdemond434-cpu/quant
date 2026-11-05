@@ -59,6 +59,7 @@ def test_a_reserve_larger_than_the_cap_still_compiles_a_slice(tmp_path: Path,
     before = time.monotonic()
     mcc._set_budget(600)
     assert mcc._CLOCK["compile_by"] >= before + mcc.MIN_COMPILE_SHARE * 720 - 0.5
+    assert json.loads(prog.read_text())["state"] == "WRITE_PHASE_EXCEEDS_CAP"
 
 
 def test_without_a_cap_the_budget_shares_are_unchanged(tmp_path: Path, monkeypatch) -> None:
