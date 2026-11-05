@@ -242,6 +242,18 @@
    "source": "independent-review job 126906775525; Auditor CLEAR 38453fd59 (FALSE_FAIL_CASES.jsonl)"
   },
   {
+   "pr": 726,
+   "head": "bfb57aa8131a948f95e144a513ee25a7a3cc9b06",
+   "base": "70501db69e8cf939eb0887a6ee8f491ab32867e3",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "The addition of new files and scripts introduces risk without clear justification."
+   ],
+   "source": "independent-review job 127006198614; Auditor CLEAR bfb57aa81 (report-only producer funnel + census budget; Finish-paused via coordinator 02:30Z)"
+  },
+  {
    "pr": 642,
    "head": "0bdb84e4c76049e050a779a274c61d0a24398eb4",
    "base": "6727fc33e5ffafe5cfb1886b2dd38df2f47666b5",
