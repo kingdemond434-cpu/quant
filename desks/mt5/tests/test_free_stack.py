@@ -355,6 +355,7 @@ def test_families_are_registered_where_the_gauntlet_looks() -> None:
 def test_proposer_grid_has_direct_and_indirect_arms_with_culture(monkeypatch, tmp_path) -> None:
     import free_stack_proposer as P
     monkeypatch.setattr(P, "series_exists", lambda sid: True)
+    monkeypatch.setattr(P, "column_observations", lambda sid, col: P.MIN_OBSERVATIONS)
     cols = {"reddit": {"GOLD_tone": {"hypothesis": ["XAUUSD"], "event": [], "why": "t"}}}
     grid, skipped = P.build_grid(cols, P.roster_rows())
     assert not skipped
@@ -365,6 +366,37 @@ def test_proposer_grid_has_direct_and_indirect_arms_with_culture(monkeypatch, tm
         assert c["source_culture"] == "US" and c["participant_structure"] == "retail_heavy"
         assert c["failure_mode_hypothesis"]
         assert c["params"]["source"] == "fs_reddit" and c["symbol"] == "XAUUSD"
+
+
+def _stamped_series(path: Path, n: int, cols: tuple[str, ...] = ("x",)) -> None:
+    t = pd.date_range("2026-01-01", periods=n, freq="D", tz="UTC")
+    pd.DataFrame({"available_time": t, **{c: np.arange(n, dtype=float) for c in cols}}
+                 ).to_parquet(path)
+
+
+def test_proposer_holds_a_column_the_families_cannot_read_and_names_it(monkeypatch,
+                                                                       tmp_path) -> None:
+    # MEASURED 2026-11-05: 88% of 20,000 UNKNOWN verdicts were these families on columns with
+    # 1-23 points (or none), each judged to zero trading days and charged to the trial ledger.
+    import free_stack_proposer as P
+    from mt5desk.family_alt_series import family_alt_series_momentum
+    monkeypatch.setattr(P, "SERIES", tmp_path)
+    floor = P.MIN_OBSERVATIONS
+    _stamped_series(tmp_path / "fs_reddit.parquet", floor - 1, ("short",))
+    _stamped_series(tmp_path / "fs_youtube.parquet", floor, ("ok",))
+    meta = {"hypothesis": ["XAUUSD"], "event": [], "why": "t"}
+    cols = {"reddit": {"short": meta, "absent": meta}, "youtube": {"ok": meta}}
+    roster = {"reddit": {"id": "reddit"}, "youtube": {"id": "youtube"}}
+    grid, skipped = P.build_grid(cols, roster)
+    assert {c["params"]["source"] for c in grid} == {"fs_youtube"}
+    assert skipped["reddit.short"].startswith(f"{floor - 1} point-in-time")
+    assert skipped["reddit.absent"].startswith("0 point-in-time")
+    assert P.column_observations("youtube", "ok") == floor
+    # The floor is the families' own: one point fewer and the family itself emits nothing.
+    bars = pd.DataFrame({"open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0},
+                        index=pd.date_range("2026-01-01", periods=2000, freq="h", tz="UTC"))
+    assert family_alt_series_momentum(bars, source="fs_reddit", signal="short",
+                                      series_root=tmp_path) == []
 
 
 # --------------------------------------------------------------------------- benchmark ----
