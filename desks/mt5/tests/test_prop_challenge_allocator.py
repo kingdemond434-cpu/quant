@@ -197,6 +197,13 @@ def test_each_account_is_charged_its_own_venues_quoted_spread(tmp_path: Path) ->
     assert out["basis"] == "FTMO venue quotes (n=3)"
     assert out["ftmo_spread_px"] == pytest.approx(0.0006)
     assert out["ratio_raw"] == pytest.approx(0.0006 / (12.0 * 1e-5))
+    # PROXY_SHAPE here is 10 pts x 1e-5 x (20/15) = 0.000133 < 0.0006: the quotes win. A dearer
+    # proxy (rollover spike the hourly quote misses) wins instead, never the cheaper figure.
+    spiky = pca.venue_cost_bias("AUDNZD_overnight_gap_decay_asia", "asia",
+                                {"AUDNZD": {"point": 1e-5, "spread": 60}}, None, fusion, reg,
+                                venue_quotes=vq)
+    assert spiky["basis"] == "PROXY_SHAPE"
+    assert spiky["ftmo_spread_px"] == pytest.approx(60 * 1e-5 * 20.0 / 15.0)
 
 
 def test_venue_quotes_never_price_an_hour_they_cannot_place(tmp_path: Path) -> None:
