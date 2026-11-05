@@ -297,7 +297,16 @@ def seed() -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
     doc = _read_json(GROUNDS, {}) or {}
     _reg, _gr = doc.get("regions"), doc.get("grounds")
     regions: dict[str, Any] = _reg if isinstance(_reg, dict) else {}
-    grounds: list[Any] = _gr if isinstance(_gr, list) else []
+    grounds: list[Any] = list(_gr) if isinstance(_gr, list) else []
+    # Committed ground packs beside the miner (deep_forest_miner.GROUND_PACKS); same-named
+    # grounds in the main file win, exactly as the miner merges them.
+    named = {str(g.get("name")) for g in grounds if isinstance(g, dict)}
+    for pack in sorted((GROUNDS.parent.parent / "research" / "grounds").glob("*.json")):
+        _pg = (_read_json(pack, {}) or {}).get("grounds")
+        for g in _pg if isinstance(_pg, list) else []:
+            if isinstance(g, dict) and str(g.get("name")) not in named:
+                named.add(str(g.get("name")))
+                grounds.append(g)
     clusters: set[str] = set()
     for g in grounds:
         if not isinstance(g, dict):

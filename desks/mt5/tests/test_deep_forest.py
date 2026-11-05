@@ -113,6 +113,7 @@ def test_html_text_drops_scripts_and_keeps_visible_text() -> None:
 def _isolate(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(dfm, "CLAIMS", tmp_path / "claims.jsonl")
     monkeypatch.setattr(dfm, "SEEN", tmp_path / "seen.json")
+    monkeypatch.setattr(dfm, "GROUND_PACKS", tmp_path / "no_packs")
     monkeypatch.setattr(dfm, "REPORT", tmp_path / "DEEP_FOREST.json")
     monkeypatch.setattr(dfm, "PROVENANCE", tmp_path / "mined_sources.jsonl")
     monkeypatch.setattr(dfm, "DATASETS", tmp_path / "datasets.jsonl")
@@ -340,6 +341,8 @@ def test_alpha_evolution_asks_the_seat_for_what_the_search_did_not_find(monkeypa
 
 # ================================================================== the world forest (2026-09-05)
 _SRC = json.loads((_DESK / "data" / "deep_forest_sources.json").read_text("utf-8"))
+for _pack in sorted((_DESK / "research" / "grounds").glob("*.json")):
+    _SRC["grounds"] += json.loads(_pack.read_text("utf-8")).get("grounds", [])
 _UNIVERSE = {str(k).upper() for k in
              json.loads((_DESK / "data" / "universe" / "universe.json").read_text("utf-8"))}
 _STORY_EN = ("Gold usually mean reverts after the London fix within two hours when the daily range "
@@ -435,6 +438,11 @@ def _offline(monkeypatch, tmp_path: Path) -> list:
     for name in dfm.FOREIGN_FNS:
         monkeypatch.setattr(foreign_sources, name, lambda q, **kw: (art, None))
     monkeypatch.setattr(cn_sources, "juejin", lambda q, **kw: (art, None))
+    from libs.data import crowd_sources
+    for name in dfm.CROWD_FNS:
+        monkeypatch.setattr(crowd_sources, name, lambda q, **kw: (art, None))
+        monkeypatch.setitem(crowd_sources.CROWD_FNS, name, lambda q, **kw: (art, None))
+    monkeypatch.setattr(dfm, "LEARNED", tmp_path / "learned.json")
     monkeypatch.setattr(cn_sources, "sogou_weixin", lambda q, **kw: (art, None))
     monkeypatch.setattr(bilibili, "search", lambda q, **kw: ([_Vid()], None))
     paper = _Art("Carry and the fix", "https://arxiv.org/abs/1", "The carry trade usually gains for a month "
@@ -464,6 +472,8 @@ def test_the_grounds_file_is_a_world_with_a_regions_index_and_every_ground_is_ro
             assert g.get("fn") in dfm.FOREIGN_FNS
         if g["route"] == "papers":
             assert g.get("fn") in dfm.PAPER_FNS
+        if g["route"] == "crowd":
+            assert g.get("fn") in dfm.CROWD_FNS
         if g.get("kind") == "dataset":
             assert g.get("dataset_class") in dfm.DATASET_CLASSES, f"{g['name']}: dataset class"
         if g["route"] != "unreachable":
@@ -689,3 +699,45 @@ def test_a_ground_that_yields_only_momentum_says_so(monkeypatch, tmp_path) -> No
          "url": "https://m.test/"}])
     assert doc["momentum_only_grounds"] == ["Momentum only"]
     assert doc["grounds"][0]["classes"] == {"momentum": doc["grounds"][0]["claims"]}
+
+
+def test_crowd_venue_registry_names_only_real_grounds_and_never_mines_a_blocked_venue() -> None:
+    """Every BUILT crowd venue points at a ground that exists; no ground mines a BLOCKED_AUTH
+    venue (a login wall is never worked around)."""
+    reg = json.loads((_DESK / "research" / "grounds" / "crowd_venues.json").read_text("utf-8"))
+    names = {g["name"] for g in _SRC["grounds"]}
+    for country, venues in reg["countries"].items():
+        for v in venues:
+            assert v["status"] in ("BUILT", "SEARCH", "BLOCKED_AUTH", "TODO"), v
+            g = v.get("ground", "")
+            if v["status"] == "BUILT" and g and not g.startswith("existing"):
+                assert g in names, f"{country}: {g} is not a ground"
+    blob = json.dumps([g for g in _SRC["grounds"] if g.get("route") == "crowd"],
+                      ensure_ascii=False).lower()
+    for host in ("xueqiu.com", "index.baidu.com", "weibo.com", "zhihu.com", "stockbit"):
+        assert host not in blob
+
+
+def test_learned_queries_expand_from_crowd_tags_and_retire_when_barren(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(dfm, "LEARNED", tmp_path / "learned.json")
+    monkeypatch.setattr(dfm, "SEEN", tmp_path / "seen.json")
+    assert dfm.tag_terms("金 #ゴールド #12345 #http://x #仲値トレード") == ["ゴールド", "仲値トレード"]
+    assert dfm.record_learned("g", {}, ["ゴールド", "ゴールド", "仲値トレード"], ["base"]) == 2
+    assert set(dfm.learned_for("g", 5)) == {"ゴールド", "仲値トレード"}
+    for _ in range(dfm.LEARN_RETIRE_AFTER):
+        dfm.record_learned("g", {"ゴールド": 0, "仲値トレード": 1}, [], ["base"])
+    assert dfm.learned_for("g", 5) == ["仲値トレード"]
+    assert dfm.record_learned("g", {}, ["ゴールド"], ["base"]) == 0   # retired stays retired
+
+
+def test_committed_ground_packs_merge_and_the_main_file_wins_a_name_clash(tmp_path) -> None:
+    packs = tmp_path / "packs"
+    packs.mkdir()
+    (packs / "p.json").write_text(json.dumps({"grounds": [
+        {"name": "dup", "route": "crowd", "fn": "guba", "queries": ["x"]},
+        {"name": "fresh", "route": "crowd", "fn": "guba", "queries": ["y"]}]}), "utf-8")
+    (packs / "registry_only.json").write_text(json.dumps({"countries": {}}), "utf-8")
+    got = dfm.queued_grounds({"dup"}, packs)
+    assert [g["name"] for g in got] == ["fresh"]
+    real = dfm.queued_grounds(set(), Path(dfm.__file__).resolve().parent / "grounds")
+    assert {g["fn"] for g in real if g["route"] == "crowd"} <= dfm.CROWD_FNS and len(real) >= 11
