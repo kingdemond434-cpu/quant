@@ -174,7 +174,7 @@ def test_repair_fires_at_the_frozen_clock_and_is_recorded(lane, monkeypatch):
 
     import libs.ops.control_plane.actuators as act
     monkeypatch.setattr(act, "_default_runner", fake_run)
-    out = cl.repair(frozen, budget_s=5.0, apply=True)
+    out = cl.repair(frozen, budget_s=300.0, apply=True)
     assert out and out[0]["actuator"] == "clock_reenrol"
     assert out[0]["result"] == "REPAIRED", out
     assert fired and "clock_reenrol.py" in " ".join(fired[0])
@@ -359,3 +359,162 @@ class TestAnUnreadableSchedulerIsUnmeasuredNeverDisabled:
             host="host_unmeasured", host_why="the scheduler could not be read")
         assert row["verdict"] == cl.UNMEASURED
         assert row["expected_bars"] is None and row["actual_bars"] is None
+
+
+# ------------------------------------------------------- the pass fits inside the leg's cap
+def _frozen_main(lane, now):
+    key = "EURUSD.carry.continuous"
+    _write(lane, {key: {"status": "ACTIVE",
+                        "last_attempt_at": (now - timedelta(days=3)).isoformat()}})
+    return [c for c in _census(set(), now) if c["verdict"] == cl.FROZEN]
+
+
+def test_an_exhausted_budget_names_the_repair_and_runs_nothing(lane, monkeypatch):
+    """The repair that would outlive the cap is not started: it is a named UNMEASURED row."""
+    frozen = _frozen_main(lane, _wednesday())
+    fired: list[object] = []
+    import libs.ops.control_plane.actuators as act
+    monkeypatch.setattr(act, "_default_runner",
+                        lambda argv, timeout_s, cwd: fired.append(argv) or {"rc": 0})
+    out = cl.repair(frozen, budget_s=0.0, apply=True)
+    assert not fired
+    assert out and out[0]["actuator"] == "clock_reenrol"
+    assert out[0]["result"] == "UNMEASURED" and out[0]["budget_exhausted"] is True
+
+
+def test_no_actuator_can_outlast_the_seconds_it_is_handed(tmp_path, monkeypatch):
+    """Measured 2026-11-05: floored windows and a fixed 120 s timeout outran the 420 s cap."""
+    monkeypatch.setattr(cl, "DESK", tmp_path)
+    t = cl.task_actuator("run_lane:x", "MT5-X", False, 45.0)
+    assert t.window_s <= 45 and t.timeout_s <= 45
+    r = cl.reenrol_actuator(["EURUSD.k"], 100.0)
+    assert r.window_s == 100 and r.timeout_s == 100
+    assert "--budget-s" in r.argv and int(r.argv[r.argv.index("--budget-s") + 1]) <= 40
+
+
+def test_the_wall_is_the_cap_the_cycle_tells_the_child(monkeypatch):
+    monkeypatch.setenv("QUANT_LEG_BUDGET_S", "420")
+    assert cl.hard_wall_s(300.0) == 420 - cl.WRITE_MARGIN_S
+    monkeypatch.delenv("QUANT_LEG_BUDGET_S")
+    assert cl.hard_wall_s(300.0) == 300.0 + 2 * cl.WRITE_MARGIN_S
+
+
+def _box(lane, monkeypatch, tmp_path):
+    report = tmp_path / "CLOCK_LIVENESS.json"
+    monkeypatch.setattr(cl, "REPORT", report)
+    monkeypatch.setattr(cl, "host_kind", lambda tasks, status: ("trading_box", "test"))
+    monkeypatch.setattr(cl, "engine_roster", lambda: (set(), "test roster"))
+    monkeypatch.setattr(cl, "ensure_24x7", lambda tasks, apply: [])
+    monkeypatch.setattr(cl, "now_utc", _wednesday)
+    return report
+
+
+def test_the_census_is_on_disk_before_any_repair_starts(lane, monkeypatch, tmp_path):
+    """A pass killed inside a repair still leaves a dated census, marked provisional, carrying
+    the last completed pass's certificate block with that pass's own stamp."""
+    report = _box(lane, monkeypatch, tmp_path)
+    report.write_text(json.dumps({"at": "2026-09-22T12:00:00+00:00", "provisional": False,
+                                  "certificate": {"breached": 0}}), encoding="utf-8")
+    _frozen_main(lane, _wednesday())
+    seen: dict = {}
+
+    def killed(frozen, budget_s, apply):
+        seen.update(json.loads(report.read_text(encoding="utf-8")))
+        raise KeyboardInterrupt  # the cycle's kill, as close as a test can get
+
+    monkeypatch.setattr(cl, "repair", killed)
+    with pytest.raises(KeyboardInterrupt):
+        cl.build(budget_s=300.0, apply=True)
+    assert seen["provisional"] is True and seen["frozen_after"] == 1
+    assert seen["frozen"][0]["key"] == "EURUSD.carry.continuous"
+    assert seen["certificate"] == {"breached": 0}
+    assert seen["certificate_at"] == "2026-09-22T12:00:00+00:00"
+
+
+def test_a_pass_that_raises_leaves_a_report_naming_why(lane, monkeypatch, tmp_path):
+    report = _box(lane, monkeypatch, tmp_path)
+    _frozen_main(lane, _wednesday())
+
+    def broken(frozen, budget_s, apply):
+        raise RuntimeError("actuator plane down")
+
+    monkeypatch.setattr(cl, "repair", broken)
+    with pytest.raises(RuntimeError):
+        cl.main(["--once"])
+    doc = json.loads(report.read_text(encoding="utf-8"))
+    assert doc["provisional"] is True and "actuator plane down" in doc["error"]
+    assert doc["frozen_after"] == 1
+    out = fence.judge({**doc, "at": datetime.now(UTC).isoformat()}, {"lowest_frozen": 1},
+                      require_state=True)
+    assert out["verdict"] == fence.FAIL
+    assert any("did not finish its write" in f and "actuator plane down" in f
+               for f in out["findings"])
+
+
+def test_the_fence_lets_a_pass_in_flight_finish_and_reds_one_that_died():
+    young = {**_report([]), "provisional": True, "provisional_why": "in flight"}
+    out = fence.judge(young, {"lowest_frozen": 0}, require_state=True)
+    assert out["verdict"] == fence.OK, out["findings"]
+    old = datetime.now(UTC) - timedelta(minutes=40)
+    died = {**_report([], at=old), "provisional": True, "provisional_why": "stopped"}
+    out = fence.judge(died, {"lowest_frozen": 0}, require_state=True)
+    assert out["verdict"] == fence.FAIL
+    assert any("did not finish its write" in f for f in out["findings"])
+
+
+def test_a_starved_repair_counts_up_and_a_repair_that_ran_resets():
+    starved = {"cause": "off_roster", "budget_exhausted": True}
+    ran = {"cause": "no_bars", "result": "UNPROVEN"}
+    assert cl.starvation([starved, ran], None) == {"off_roster": 1, "no_bars": 0}
+    prev = {"consecutive_budget_exhausted": {"off_roster": 2, "no_bars": 4, "gone": 9}}
+    assert cl.starvation([starved, ran], prev) == {"off_roster": 3, "no_bars": 0}
+    # one step of a cause ran and a later one was starved: the cause was repaired this pass
+    assert cl.starvation([{"cause": "no_bars"}, {**ran, "budget_exhausted": True}],
+                         prev) == {"no_bars": 0}
+
+
+def test_the_fence_names_a_repair_starved_three_passes_running():
+    two = _report([], consecutive_budget_exhausted={"off_roster": 2})
+    assert fence.judge(two, {"lowest_frozen": 0}, require_state=True)["verdict"] == fence.OK
+    three = _report([], consecutive_budget_exhausted={"off_roster": 3})
+    out = fence.judge(three, {"lowest_frozen": 0}, require_state=True)
+    assert out["verdict"] == fence.FAIL
+    assert any("`off_roster` repair has been starved" in f for f in out["findings"])
+
+
+def test_a_slow_census_still_leaves_the_repairs_their_time(lane, monkeypatch, tmp_path):
+    """Auditor HOLD: a 150 s census under the 420 s cap must not starve every repair."""
+    _box(lane, monkeypatch, tmp_path)
+    monkeypatch.setenv("QUANT_LEG_BUDGET_S", "420")
+    _frozen_main(lane, _wednesday())
+    reads = iter((0.0, 0.0))  # pass start, census start; the census then costs 150 s
+    monkeypatch.setattr(cl.time, "monotonic", lambda: next(reads, 150.0))
+    got: dict = {}
+
+    def stop(frozen, budget_s, apply):
+        got["budget"] = budget_s
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(cl, "repair", stop)
+    with pytest.raises(KeyboardInterrupt):
+        cl.build(budget_s=300.0, apply=True)
+    assert got["budget"] >= cl.MIN_ACTUATOR_S
+
+
+def test_a_killed_pass_does_not_reset_the_starvation_streak(lane, monkeypatch, tmp_path):
+    report = _box(lane, monkeypatch, tmp_path)
+    report.write_text(json.dumps({"at": "2026-09-22T12:00:00+00:00", "provisional": False,
+                                  "consecutive_budget_exhausted": {"off_roster": 2}}),
+                      encoding="utf-8")
+    _frozen_main(lane, _wednesday())
+
+    def killed(frozen, budget_s, apply):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(cl, "repair", killed)
+    with pytest.raises(KeyboardInterrupt):
+        cl.build(budget_s=300.0, apply=True)
+    left = json.loads(report.read_text(encoding="utf-8"))
+    assert left["provisional"] is True
+    starved = {"cause": "off_roster", "budget_exhausted": True}
+    assert cl.starvation([starved], left) == {"off_roster": 3}

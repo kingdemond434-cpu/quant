@@ -137,3 +137,9 @@ def test_the_sixteen_that_were_dark_are_on_the_roster() -> None:
             "counterfactual_timeframes", "producer_census"}
     assert dark <= roster, f"not rostered: {sorted(dark - roster)}"
     assert dark <= set(hourly_cycle.CORE_LEGS), "these are core legs and must stay core"
+
+
+def test_clock_liveness_cannot_be_rotated_out() -> None:
+    """Measured 2026-11-05: deferred since 10-31, its report 103.7 h stale at the law gate."""
+    assert "clock_liveness" in hourly_cycle.CORE_LEGS
+    assert "clock_liveness" in LR.ALWAYS_RUN
