@@ -146,6 +146,10 @@ def test_gateway_sizes_the_floor_with_the_best_baseline_when_the_proof_fails(tmp
     # floor proof is checked through the real path, with no cert book file in force here.
     from mt5desk import kelly_sizing
     monkeypatch.setattr(kelly_sizing, "load_cert_book", lambda path, venue: None)
+    # ...and with the principal's code zeros (decision_core.PRINCIPAL_ZERO, r6) lifted: this is
+    # the floor proof, not the pins (test_fusion_book_r6.py pins those over every book).
+    import mt5desk.decision_core as _dc
+    monkeypatch.setitem(_dc.PRINCIPAL_ZERO, "fusion", frozenset())
     ns = _exec(("_allocator_book", "allocator_book"),
                {"BASE": tmp_path, "allocator_heat": lambda: (0.2, "allocator book (ok)")})
     monkeypatch.setattr(ap, "read_certificate", lambda root: (None, "proof failed"))
