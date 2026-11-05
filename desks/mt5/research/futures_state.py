@@ -501,12 +501,40 @@ def eia_curve(curve: Mapping[str, Any], key: str, get: Callable[[str], Any]) -> 
     return pd.DataFrame(cols).sort_index()
 
 
+def rate_leg(yc: pd.DataFrame, ref: Any) -> pd.Series | None:
+    """One side of a rate pair. `ref` is a series id, or a list of ids in order of preference:
+    the first is the leg, and each later one only EXTENDS it past its last observation, as a
+    month-start mean (OECD stopped publishing the euro-area and UK 3M rows after January 2026;
+    ESTR and SONIA carry those legs on). Each fallback month is stamped like the set's own rows,
+    so a month's mean is never available before that month has ended."""
+    ids = [str(ref)] if isinstance(ref, str) else [str(r) for r in ref or []]
+    leg: pd.Series | None = None
+    for i, sid in enumerate(ids):
+        if sid not in yc.columns:
+            continue
+        s = pd.to_numeric(yc[sid], errors="coerce").dropna()
+        if s.empty:
+            continue
+        if i:
+            last = s.index.max()
+            s = s.resample("MS").mean().dropna()
+            # a month still in progress has a mean of a few days that changes every refetch
+            s = s[s.index + pd.offsets.MonthEnd(0) <= last.normalize()]
+        if leg is None:
+            leg = s
+        else:
+            leg = pd.concat([leg, s[s.index > leg.index.max()]])
+    return leg
+
+
 def fred_outputs(cv: Mapping[str, Any], yc: pd.DataFrame
                  ) -> list[tuple[str, pd.DataFrame, pd.DatetimeIndex, list[str], str]]:
     """One FRED set -> its feature frames, by mode.
 
     curve   the set is one term structure (level per tenor, slope, curvature).
-    pairs   each pair is base minus quote, e.g. euro-area minus US 3M rate for EURUSD: the
+    pairs   each pair is base minus quote (each optionally scaled by `base_mult`/`quote_mult`, so a
+            crack spread is 42 x a $/gal product minus $/bbl crude), e.g. euro-area minus US 3M
+            rate for EURUSD: the
             interest-rate differential a forward prices, compared against the swap the broker
             charges elsewhere (GAP_MAP row 64). One series per pair, with that pair's targets.
     levels  each series alone, level and log change (reserves: the change is the intervention
@@ -520,13 +548,17 @@ def fred_outputs(cv: Mapping[str, Any], yc: pd.DataFrame
                     pd.DatetimeIndex(yc.index), list(cv.get("targets") or []), "fred_yield_curve"))
     elif mode == "pairs":
         for pr in cv.get("pairs") or []:
-            b, q = str(pr["base"]), str(pr["quote"])
-            if b not in yc.columns or q not in yc.columns:
+            b, q = rate_leg(yc, pr["base"]), rate_leg(yc, pr["quote"])
+            if b is None or q is None:
                 continue
-            both = yc[[b, q]].ffill().dropna()
+            both = pd.concat({"b": b, "q": q}, axis=1).sort_index().ffill().dropna()
+            # a pair ends where its stalest leg ends: a forward-filled leg is not a fresh print
+            both = both[both.index <= min(b.index.max(), q.index.max())]
+            b, q = "b", "q"
             if len(both) < MIN_ROWS:
                 continue
-            diff = pd.DataFrame({"diff": both[b] - both[q]}, index=both.index)
+            bm, qm = float(pr.get("base_mult", 1.0)), float(pr.get("quote_mult", 1.0))
+            diff = pd.DataFrame({"diff": bm * both[b] - qm * both[q]}, index=both.index)
             out.append((f"fred_{cv['id']}_{str(pr['id']).lower()}",
                         dynamics(diff, ["diff"], window=int(cv.get("window", 252))),
                         pd.DatetimeIndex(both.index), list(pr.get("targets") or []),
@@ -851,7 +883,8 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
     fkey = next((os.environ.get(k) for k in fred.get("key_env") or [] if os.environ.get(k)), "")
     for cv in [*(registry.get("fred_curves") or []), *(registry.get("fred_sets") or [])]:
         cv = {**cv, "series": cv.get("series") or sorted(
-            {str(p[k]) for p in cv.get("pairs") or [] for k in ("base", "quote")})}
+            {str(r) for p in cv.get("pairs") or [] for k in ("base", "quote")
+             for r in ([p[k]] if isinstance(p[k], str) else p[k])})}
         sid = f"fred_{cv['id']}"
         raw_path = RAW / f"{sid}.parquet"
         yc = pd.DataFrame()
@@ -945,7 +978,8 @@ def cell_hash(sid: str, col: str, tf: str, sym: str, chart: str) -> str:
 #: flood minted at once would sit unjudged while charging the program for every one. The queue
 #: is ordered so the headline state goes first; nothing is dropped, the rest leads next pass.
 MAX_MINT_PER_PASS = 3000
-_HEADLINE = ("m_money", "lev_money", "noncomm", "_opt", "flow_price", "oi_price", "slope",
+_HEADLINE = ("m_money", "lev_money", "noncomm", "nonrept", "other_rept", "_opt", "flow_price",
+             "oi_price", "slope",
              "roll_yield", "curvature", "mof_q_net", "mof_net_4q", "mof_m_gross", "x")
 _DERIVED = ("_chg", "_acc", "_pct")
 
