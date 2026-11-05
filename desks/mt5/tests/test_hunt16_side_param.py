@@ -48,6 +48,7 @@ def test_the_gauntlet_fallback_call_trades_the_constructors_short_signals() -> N
     fn = families.family_dav_range_filter_adx
     orig = hunt16_families()["dav_range_filter_adx"]
     assert inspect.signature(fn) == inspect.signature(orig)
+    assert families.family_dav_range_filter_adx is fn           # one export per constructor
     with pytest.raises(TypeError):                       # the gauntlet's first call, as before
         fn(h1, side=1, **{"side": "SHORT"})
     got = fn(h1, **{"side": "SHORT"})                    # its fallback: was a TypeError

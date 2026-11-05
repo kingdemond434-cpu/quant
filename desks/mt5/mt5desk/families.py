@@ -144,10 +144,12 @@ def hunt16_side(side: Any) -> int:
     raise ValueError(f"hunt16 side {side!r} names no direction")
 
 
+@functools.cache
 def _hunt16_judge_export(fn: Callable[..., Any]) -> Callable[..., Any]:
     """The hunt16 constructor as the judge calls it: same signals, same signature (`wraps`), the
     cell's `side` read as a direction. Only this judge-facing export is wrapped; the forward
-    engine resolves the original through `executables.hunt16_families`."""
+    engine resolves the original through `executables.hunt16_families`. Cached per constructor,
+    so `families.family_x is families.family_x` holds for any memo keyed on the callable."""
     @functools.wraps(fn)
     def call(h1: Any, side: Any = 1) -> Any:
         return fn(h1, hunt16_side(side))
