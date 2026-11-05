@@ -297,3 +297,16 @@ def test_an_absent_venue_hour_is_unmeasured_not_zero(monkeypatch):
     _measured(monkeypatch, hours={12: 0.5})
     sf._VENUE_MAX_DOC[:] = [{"symbols": {"GBPCHF": {"05": {"spread_price": 0.0}}}}]
     assert sf.measured_spread_at("GBPCHF", t.entry_time, TICK) == (0.5, "tick_hour")
+
+
+def test_with_no_tape_minute_the_charge_is_the_larger_of_widest_venue_and_tick_hour(monkeypatch):
+    t = _trade(1, 12, 13)
+    utc_h = int(__import__("libs.regime.session_clock", fromlist=["x"]).server_to_utc(
+        pd.DatetimeIndex([t.entry_time]))[0].hour)
+    _measured(monkeypatch, hours={12: 4.0})
+    sf._VENUE_MAX_DOC[:] = [{"symbols": {"GBPCHF": {
+        f"{utc_h:02d}": {"spread_price": 2 * TICK, "stale": False}}}}]
+    assert sf.measured_spread_at("GBPCHF", t.entry_time, TICK) == (4.0, "tick_hour")
+    sf._VENUE_MAX_DOC[0]["symbols"]["GBPCHF"][f"{utc_h:02d}"]["spread_price"] = 9 * TICK
+    assert sf.measured_spread_at("GBPCHF", t.entry_time, TICK) == (
+        pytest.approx(9.0), "venue_max_hour")

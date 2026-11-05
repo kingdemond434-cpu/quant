@@ -2018,9 +2018,12 @@ def measured_spread_at(sym: str, at: pd.Timestamp, point: float) -> tuple[float 
             return mins[minute], "tape_minute"
         if day in (_TAPE.get("error_days") or ()):
             tape_broken = True
-    if widest is not None:
-        return widest
     hour_pts = _tick_hour_spread(sym, int(ts.hour))
+    # THE WIDEST VENUE IS AT LEAST AS WIDE AS THE HOME VENUE. The max file is a sparse sample (one
+    # quote per venue per hourly pass), the tick hour is every quote on the home tape, so neither
+    # may undercut the other: the charge is the larger, labelled by whichever won.
+    if widest is not None and (hour_pts is None or widest[0] >= hour_pts):
+        return widest
     if hour_pts is not None:
         return hour_pts, ("tick_hour_tape_error" if tape_broken else "tick_hour")
     return None, ("frozen_tape_error" if tape_broken else "frozen")
