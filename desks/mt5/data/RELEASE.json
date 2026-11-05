@@ -1,13 +1,13 @@
 {
- "generated_utc": "2026-10-29T14:28:39.300167+00:00",
- "live_sha": "318392111090b06aa0958054ff9e2f33c214712b",
- "code_sha": "318392111090b06aa0958054ff9e2f33c214712b",
- "parent_sha": "5de0361b51b63e41ecf16a788102e7e643708ee2",
- "tree_sha": "af1e6a1100e302e227fdd40d72c3da1d30ce383f",
+ "generated_utc": "2026-11-05T11:58:19.657116+00:00",
+ "live_sha": "51d7ede78484adfcd5243f507f967d8b7b8b0b55",
+ "code_sha": "51d7ede78484adfcd5243f507f967d8b7b8b0b55",
+ "parent_sha": "da5f48ab378433fa03e0dc50c8b4da5b33423a25",
+ "tree_sha": "97876e4288c6918c388bf77a817ed2ed1287f8ee",
  "config_hash": "e0d1bfe75cb0d2c3",
  "survivor_registry_hash": "d3f308039b71e195",
  "allocator_hash": "52c6533febaabaea",
- "money_path_hash": "3ed81ff0312ee753",
+ "money_path_hash": "a4834c429150e639",
  "data_schema_version": "pit-1;features-2026-09-04.1",
  "money_path": [
   "desks/mt5/mt5desk/gateway.py",
@@ -34,7 +34,7 @@
   "libs/portfolio/capital_modifiers.py"
  ],
  "money_path_files": {
-  "desks/mt5/mt5desk/gateway.py": "ca14236c82493dcd",
+  "desks/mt5/mt5desk/gateway.py": "646b96294a23c31e",
   "desks/mt5/mt5desk/decision_core.py": "57ab351459a4a9f4",
   "desks/mt5/mt5desk/sizing.py": "1b00a8466361c3d6",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "510a350593f45297",
@@ -48,8 +48,8 @@
   "desks/mt5/research/pf_allocator.py": "00730d8f5dde3ea8",
   "desks/mt5/research/heat_policy.py": "09ec45796cd4f34a",
   "desks/mt5/research/promoter.py": "0a412b6780057595",
-  "desks/mt5/research/shadow_forward.py": "643c6aaccf73578c",
-  "desks/mt5/research/scalp_shadow.py": "8c8e80e2d2386549",
+  "desks/mt5/research/shadow_forward.py": "d843726b563288cf",
+  "desks/mt5/research/scalp_shadow.py": "8a092b9ac20c30eb",
   "desks/mt5/research/forward_verdict.py": "49b538184ad3e94e",
   "desks/mt5/research/sleeve_registry.py": "0e07e18d988b8adf",
   "libs/portfolio/robust_elog.py": "a784b9ecf89f23d9",
@@ -57,6 +57,7 @@
   "libs/portfolio/rails.py": "cef11ebb9d4e4ffc",
   "libs/portfolio/capital_modifiers.py": "91794462504a3e96"
  },
+ "money_path_absent": [],
  "canon_sha256": "355aa79b27c15a1ef43273f5278fadf18fedea571f0704d4c32bf78a866c1e81",
  "immutable_manifest": {
   "sha256_16": "261b4b3c48653265",
@@ -65,7 +66,7 @@
   "n_files": 22
  },
  "allocator_certificate": null,
- "dependency_hash": "d7eff2232ad1e2d5",
+ "dependency_hash": "d8b26bd17b8fae5d",
  "seal_rule": "a running SHA is accepted iff it equals code_sha, or `git diff --name-only code_sha HEAD` touches only NON_CODE paths (the pure seal commit and the box's own state-sync commits); anything else is unreleased code and refuses new risk",
  "non_code": [
   "desks/mt5/data/RELEASE.json",
@@ -94,12 +95,14 @@
   "desks/mt5/reports/KNOWN_BY_DATE.json",
   "desks/mt5/reports/LEDGER_VIEW_ADOPTION.json",
   "desks/mt5/reports/LOCKBOX_RECERT.json",
+  "desks/mt5/reports/MERGE_PIPELINE.json",
   "desks/mt5/reports/NULL_LAB.json",
   "desks/mt5/reports/OCCUPANCY_MAP.json",
   "desks/mt5/reports/PIT_LAG_CENSUS.json",
   "desks/mt5/reports/REMINT_STATUS.json",
   "desks/mt5/reports/REPLICATION.json",
   "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json",
+  "desks/mt5/reports/TAPE_FRESHNESS.json",
   "desks/mt5/reports/UNKNOWN_SHARE_CENSUS.json",
   "desks/mt5/reports/attribution_chain.json",
   "desks/mt5/reports/markout.json",
@@ -112,16 +115,16 @@
   "desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json"
  ],
  "immutable_hash": "261b4b3c48653265",
- "release_id": "db941d1608a3",
+ "release_id": "3a98a08190dc",
  "sealed": true,
- "sealed_at": "2026-10-29T14:28:39.300167+00:00",
+ "sealed_at": "2026-11-05T11:58:19.657116+00:00",
  "sealed_by": "Adopt-And-Seal",
  "ci_run_id": null,
  "tested_sha": null,
  "worktree_dirty": [],
  "worktree_dirty_scope": "release_code_paths",
- "previous_code_sha": "c0a45e0b7ddb249944bb8a11b7bef7da390c8f4e",
- "previous_release_id": "86da4b1cae1a",
+ "previous_code_sha": "ea632383ccc255cf3fd885db2fb3c1a3fc1317d1",
+ "previous_release_id": "2709b0188790",
  "signature_algo": "hmac-sha256-v1",
- "signature": "f0220ac1a02753d79aa8cf4e94759621aae917389f21c45618fda5690b4a96c9"
+ "signature": "6e00a19f989788c49449668bd3348d8c811c4347bce3dfd1242eeadf62f22e3c"
 }
