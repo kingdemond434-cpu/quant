@@ -42,6 +42,16 @@ if (-not (Test-Path $py)) {
 $vault = Join-Path $Repo "data\video_vault"
 $sealed = Join-Path $vault "sealed"; $open = Join-Path $vault "unsealed"
 New-Item -ItemType Directory -Force -Path $sealed, $open | Out-Null
+# PREFLIGHT, LOUD NOT SILENT: under SYSTEM a package installed with `pip install --user` into an
+# Administrator profile is invisible. If the resolved interpreter cannot import what the run needs,
+# record it and exit 2 so the scheduler and desk health see the failure.
+& $py @pyArgs -c "import cryptography, requests" 2>$null
+if ($LASTEXITCODE -ne 0) {
+  $why = "the interpreter ($py) cannot import cryptography/requests; install them into it (not --user)"
+  @{ ts = (Get-Date).ToUniversalTime().ToString("s") + "Z"; state = "NO_DEPS"; why = $why } |
+    ConvertTo-Json | Set-Content -Path (Join-Path $vault "LAST_RUN.json")
+  Write-Host "VIDEO CELLS NO_DEPS: $why"; exit 2
+}
 git fetch --quiet origin $Branch
 $files = git ls-tree -r --name-only "origin/$Branch" -- sealed | Where-Object { $_ -match '^sealed/[A-Za-z0-9_.-]+\.vault$' }
 foreach ($f in $files) {
