@@ -8,11 +8,12 @@ from libs.portfolio import venue_cost as vc
 from libs.portfolio.execution_cost import cost_ratio
 
 
-def _quotes(path: Path, venue: str, at: str, point: float, readings: list[float]) -> None:
+def _quotes(path: Path, venue: str, at: str, point: float, readings: list[float],
+            offset: float | None = 0.0, utc_hour: str = "07") -> None:
     path.write_text(json.dumps({
-        "at": at, "venue": venue,
+        "at": at, "venue": venue, "server_utc_offset_hours": offset,
         "symbols": {"EURUSD": {"point": point, "live_spread_pts": 10}},
-        "spread_by_hour_utc": {"EURUSD": {"07": [[at, px] for px in readings]}}}), "utf-8")
+        "spread_by_hour_utc": {"EURUSD": {utc_hour: [[at, px] for px in readings]}}}), "utf-8")
 
 
 def test_each_account_reads_its_own_venue_file_never_the_max(tmp_path: Path) -> None:
@@ -80,3 +81,29 @@ def test_both_allocators_size_on_their_own_venue() -> None:
     pca = (root / "desks/mt5/research/prop_challenge_allocator.py").read_text(encoding="utf-8")
     assert 'account_surface(BASE / "data", "fusion", surface)' in pf
     assert 'account_surface(BASE / "data", "ftmo", _read_json(FTMO_SURFACE))' in pca
+
+
+def test_the_utc_reading_lands_on_the_broker_hour_it_was_quoted_in(tmp_path: Path) -> None:
+    """cost_truth keys by UTC; the surfaces and fill_hour key by broker hour (UTC+3 in summer)."""
+    _quotes(tmp_path / "cost_truth_quotes.ftmo_s_r_o.json", "ftmo_s_r_o",
+            "2026-11-05T06:00:00+00:00", 0.00001, [0.00020, 0.00022, 0.00024],
+            offset=3.0, utc_hour="22")
+    doc, _ = vc.venue_quotes(tmp_path, "ftmo")
+    assert set(vc.hour_spreads_pts(doc)["EURUSD"]) == {"1"}                   # 22 UTC + 3 = 01
+
+
+def test_a_file_without_a_measured_offset_prices_no_hour(tmp_path: Path) -> None:
+    _quotes(tmp_path / "cost_truth_quotes.ftmo_s_r_o.json", "ftmo_s_r_o",
+            "2026-11-05T06:00:00+00:00", 0.00001, [0.00020, 0.00022, 0.00024], offset=None)
+    doc, _ = vc.venue_quotes(tmp_path, "ftmo")
+    assert vc.hour_spreads_pts(doc) == {}
+    surface = {"symbols": {"EURUSD": {"hours": {"7": {"status": "MEASURED", "p50": 9.0}}}}}
+    assert vc.overlay_surface(surface, doc)["symbols"] == surface["symbols"]
+
+
+def test_a_cheaper_quote_never_lowers_a_dearer_measured_hour(tmp_path: Path) -> None:
+    surface = {"symbols": {"EURUSD": {"hours": {"7": {"status": "MEASURED", "p50": 30.0}}}}}
+    _quotes(tmp_path / "cost_truth_quotes.ftmo_s_r_o.json", "ftmo_s_r_o",
+            "2026-11-05T06:00:00+00:00", 0.00001, [0.00020, 0.00022, 0.00024])
+    cell = vc.account_surface(tmp_path, "ftmo", surface)["symbols"]["EURUSD"]["hours"]["7"]
+    assert cell["p50"] == 30.0 and abs(cell["p50_quotes"] - 22.0) < 1e-9

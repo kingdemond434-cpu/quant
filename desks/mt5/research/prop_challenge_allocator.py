@@ -446,17 +446,27 @@ def venue_cost_bias(col: str, selector: str, listing: dict[str, Any],
     if not charged:
         return {"status": "UNPRICED", "why": f"{sym}: the replay's charged spread is unknown"}
     charged_px = min(charged) * u_point
+    # A cell only the venue's quotes measured (no bar or tick median under it) is one reading per
+    # hourly pass and can miss the rollover-minute spike that PROXY_SHAPE (FTMO's live spread on
+    # Fusion's hour shape) carries: there the DEARER of the two prices the hour, labelled by the
+    # winner, so the bias is never under-stated (Auditor SF on #740, 2026-11-05).
+    cands: list[tuple[float, str]] = []
+    quotes_only = bool(fcell.get("n_quotes")) and fcell.get("p50_bars") is None
     if fcell.get("status") == "MEASURED" and isinstance(fcell.get("p50"), (int, float)):
-        f_px, basis = float(fcell["p50"]) * f_point, "FTMO cost surface"
-    else:
+        cands.append((float(fcell["p50"]) * f_point,
+                      f"FTMO venue quotes (n={fcell['n_quotes']})" if quotes_only
+                      else "FTMO cost surface"))
+    if not cands or quotes_only:
         live = lrow.get("live_spread_pts", lrow.get("spread"))
         hours = [float(c["p50"]) for c in (fu.get("hours") or {}).values()
                  if isinstance(c, dict) and c.get("status") == "MEASURED"
                  and isinstance(c.get("p50"), (int, float))]
-        if not isinstance(live, (int, float)) or u_hour is None or not hours:
-            return {"status": "UNPRICED", "why": f"{sym} h{hour:02d}: no FTMO spread at that hour"}
-        shape = float(u_hour) / float(np.median(hours))
-        f_px, basis = max(float(live), 1.0) * f_point * max(shape, 1.0), "PROXY_SHAPE"
+        if isinstance(live, (int, float)) and u_hour is not None and hours:
+            shape = float(u_hour) / float(np.median(hours))
+            cands.append((max(float(live), 1.0) * f_point * max(shape, 1.0), "PROXY_SHAPE"))
+    if not cands:
+        return {"status": "UNPRICED", "why": f"{sym} h{hour:02d}: no FTMO spread at that hour"}
+    f_px, basis = max(cands, key=lambda c: c[0])
     ratio_raw = f_px / charged_px
     ratio = min(ratio_raw, MAX_RATIO)
     contract = lrow.get("trade_contract_size") or reg.get("contract_size")

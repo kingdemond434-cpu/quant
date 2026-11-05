@@ -56,11 +56,20 @@ def venue_quotes(data_dir: Path, venue: str) -> tuple[dict[str, Any] | None, Pat
 
 def hour_spreads_pts(doc: Mapping[str, Any] | None,
                      min_n: int = MIN_HOUR_READINGS) -> dict[str, dict[str, dict[str, Any]]]:
-    """{symbol: {hour "H": {"p50": median spread in THIS venue's points, "n": readings}}} for every
-    hour with at least `min_n` readings. A symbol whose point size the file does not carry is
-    left out (its price units cannot be turned into the surface's points)."""
+    """{symbol: {BROKER hour "H": {"p50": median spread in THIS venue's points, "n": readings}}}
+    for every hour with at least `min_n` readings. A symbol whose point size the file does not
+    carry is left out (its price units cannot be turned into the surface's points).
+
+    THE HOUR IS THE BROKER'S. cost_truth keys its readings by UTC hour (`spread_by_hour_utc`); the
+    cost surfaces and `execution_cost.fill_hour` key by broker hour. The file's own measured
+    `server_utc_offset_hours` converts; a file that does not carry one prices NO hour, because a
+    reading laid on the wrong hour (2-3 h off) moves the rollover spike onto a fill it never
+    touches and off the one it does."""
     out: dict[str, dict[str, dict[str, Any]]] = {}
     if not isinstance(doc, Mapping):
+        return out
+    off = doc.get("server_utc_offset_hours")
+    if not isinstance(off, (int, float)) or isinstance(off, bool):
         return out
     syms = doc.get("symbols") or {}
     for sym, per in (doc.get("spread_by_hour_utc") or {}).items():
@@ -79,16 +88,21 @@ def hour_spreads_pts(doc: Mapping[str, Any] | None,
                     and isinstance(x[1], (int, float)) and float(x[1]) >= 0]
             if len(vals) < int(min_n):
                 continue
-            out.setdefault(str(sym), {})[str(int(hh))] = {
+            try:
+                broker = round(int(hh) + float(off)) % 24
+            except ValueError:
+                continue
+            out.setdefault(str(sym), {})[str(broker)] = {
                 "p50": statistics.median(vals) / point, "n": len(vals)}
     return out
 
 
 def overlay_surface(surface: Mapping[str, Any] | None, doc: Mapping[str, Any] | None, *,
                     source: str = "", min_n: int = MIN_HOUR_READINGS) -> dict[str, Any] | None:
-    """`surface` with every hour the venue's quotes measured replaced by the venue's own median,
-    in the venue's points. Returns the surface unchanged (a copy) when there is no quotes file,
-    and None only when there is neither. Each replaced cell is labelled with its source and n."""
+    """`surface` with every hour the venue's quotes measured priced at the DEARER of the venue's
+    own median and the surface's measured cell, in the venue's points. Returns the surface
+    unchanged (a copy) when there is no quotes file, and None only when there is neither. Each
+    replaced cell is labelled with its source and n."""
     hours = hour_spreads_pts(doc, min_n)
     if surface is None and not hours:
         return None
@@ -105,8 +119,12 @@ def overlay_surface(surface: Mapping[str, Any] | None, doc: Mapping[str, Any] | 
             # is the median of, and must not read a dearer venue as a registry defect.
             bars = (prev.get("p50_bars", prev.get("p50"))
                     if str(prev.get("status")) == MEASURED else None)
-            cells[h] = {**prev, "status": MEASURED, "p50": v["p50"], "p50_bars": bars,
-                        "n_quotes": v["n"], "source": source or "venue quotes"}
+            # NEVER UNDER-STATED: a measured bar cell dearer than the venue's quoted median keeps
+            # its figure (the hourly quote is one reading per pass and can miss the hour's spike).
+            p50 = max(v["p50"], float(bars)) if isinstance(bars, (int, float)) else v["p50"]
+            cells[h] = {**prev, "status": MEASURED, "p50": p50, "p50_bars": bars,
+                        "n_quotes": v["n"], "p50_quotes": v["p50"],
+                        "source": source or "venue quotes"}
             n_cells += 1
     out["venue_quotes"] = {"source": source, "at": (doc or {}).get("at") if doc else None,
                            "venue": (doc or {}).get("venue") if doc else None,
