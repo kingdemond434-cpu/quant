@@ -72,6 +72,9 @@ RATCHET = ROOT / "docs" / "research" / "productivity_census_ratchet.json"
 # The leg runs hourly. Six hours of slack absorbs a slow cycle, a reboot and a pass the pricer
 # deferred; beyond that the leg is not running and that is what the fence is for.
 STALE_HOURS = 6.0
+#: A PARTIAL census (the budget cut the registry scan) resumes on the next pass; a complete one
+#: must therefore exist within this window, or the resume is not working.
+PARTIAL_COMPLETE_HOURS = 26.0
 
 # How long a producer may burn compute with nothing to show before it must say why. Long on
 # purpose: a week of silence is a fact, an afternoon of it is a schedule.
@@ -455,7 +458,35 @@ def check(require_state: bool = False, tighten: bool = False) -> dict[str, Any]:
             "`productivity_census` is not running, so every productivity number the desk would "
             "quote is stale (L1.49 -- a gate that never ran is a claim the desk cannot cash)")
 
-    moved = _coverage_clause(census, out, failures)
+    # A PARTIAL CENSUS IS JUDGED AS PARTIAL (2026-11-05). The census now enforces its budget
+    # inside the pass and, when the deadline cuts the registry scan, writes what it measured
+    # stamped `partial: true` with the unscanned stages UNMEASURED. Its coverage and reach are
+    # therefore NOT comparable with a complete census's: judging them against the ratchet would
+    # fail on stages the census honestly declined to guess, and tightening on them would be
+    # wrong in the other direction. So both ratchets are skipped and say PARTIAL -- and the
+    # promise that a partial scan completes over a few passes is itself fenced: no complete
+    # census within PARTIAL_COMPLETE_HOURS is a failure, never a standing excuse.
+    partial = bool(census.get("partial"))
+    out["partial"] = partial
+    if partial:
+        scan = census.get("scan") if isinstance(census.get("scan"), dict) else {}
+        out["scan"] = {k: scan.get(k) for k in ("scanned", "total", "unscanned",
+                                                "cannot_finish_in_budget")}
+        last = census.get("last_complete_at")
+        last_age = _age_hours(last)
+        out["last_complete_at"] = last
+        if last_age is None or last_age > PARTIAL_COMPLETE_HOURS:
+            failures.append(
+                f"census is PARTIAL ({scan.get('scanned')}/{scan.get('total')} registry steps) "
+                f"and no complete census exists within {PARTIAL_COMPLETE_HOURS:g}h (last "
+                f"complete: {last or 'never'}): the resume cursor is not completing the scan. "
+                f"Steps the budget cannot finish: {scan.get('cannot_finish_in_budget') or 'none named'}")
+        out["coverage"] = {"verdict": "PARTIAL",
+                           "why": "the census is partial; coverage is judged on a complete one"}
+        out["reach"] = {"verdict": "PARTIAL",
+                        "why": "the census is partial; reach is judged on a complete one"}
+
+    moved = None if partial else _coverage_clause(census, out, failures)
     if moved is not None and tighten:
         try:
             RATCHET.parent.mkdir(parents=True, exist_ok=True)
@@ -488,7 +519,7 @@ def check(require_state: bool = False, tighten: bool = False) -> dict[str, Any]:
             f"docs/research/productivity_blockers.json (a `why` of 20+ chars and an `owner`) or "
             "fix it -- unproductive AND silent is indistinguishable from broken")
 
-    reach_moved = _reach_clause(census, out, failures)
+    reach_moved = None if partial else _reach_clause(census, out, failures)
     if reach_moved is not None and tighten:
         merged = _ratchet_doc()
         hosts = merged.get("hosts")

@@ -106,6 +106,13 @@ MAX_CELLS_PER_PRODUCER = 600
 
 #: A verdict, never a zero (L1.28a).
 UNMEASURED_STR = "UNMEASURED"
+#: THE CENSUS IS READ ONLY WHILE IT IS CURRENT (2026-11-05). This fence took every producer's
+#: compute hours from PRODUCTIVITY_CENSUS.json with no age check, and on the box that census was
+#: last written 2026-10-22T17:06Z -- so for 14 days "owing" was judged on a fortnight-old compute
+#: column while being published beside a fresh registry window. Past this age the census is
+#: STALE: its compute hours read UNMEASURED, no producer is judged owing on them, and the owing
+#: ratchet is neither failed nor tightened on them.
+CENSUS_MAX_AGE_HOURS = 26.0
 
 #: Output below this share of the median producer's output is STARVED rather than healthy. It is
 #: a RATIO and not a count on purpose: an absolute floor would condemn a deliberately narrow
@@ -438,9 +445,32 @@ def _set_aside_summary() -> dict[str, Any]:
                       for k, v in worst[:10]]}
 
 
+def census_freshness(census: Any, now: datetime | None = None) -> dict[str, Any]:
+    """MEASURED, STALE or UNMEASURED for the census this fence consumes, always with why."""
+    now = now or datetime.now(UTC)
+    if not isinstance(census, dict) or not census:
+        return {"status": UNMEASURED_STR, "at": None, "age_hours": None,
+                "why": f"no readable census at {_rel(CENSUS)}: compute hours are UNMEASURED"}
+    at = census.get("at")
+    try:
+        dt = datetime.fromisoformat(str(at).replace("Z", "+00:00"))
+        dt = dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+    except ValueError:
+        return {"status": UNMEASURED_STR, "at": at, "age_hours": None,
+                "why": "the census carries no readable `at`: it cannot be shown current"}
+    age = round((now - dt).total_seconds() / 3600.0, 2)
+    if age > CENSUS_MAX_AGE_HOURS:
+        return {"status": "STALE", "at": at, "age_hours": age,
+                "why": (f"the census is {age:.1f}h old against a {CENSUS_MAX_AGE_HOURS:g}h "
+                        "limit: its compute hours are UNMEASURED here, no producer is judged "
+                        "owing on them, and the owing ratchet does not move")}
+    return {"status": "MEASURED", "at": at, "age_hours": age, "why": ""}
+
+
 def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
     """EVERY PRODUCER OWES CELLS: who is paying for its compute, and how orthogonally."""
     census = _read(CENSUS, default={})
+    census_state = census_freshness(census)
     declared = _declarations()
     win = _window_cells(window_hours)
     per = win["per"]
@@ -467,6 +497,10 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
             continue
         seen.add(key)
         m = per.get(key) or {}
+        if census_state["status"] != "MEASURED":
+            # A stale or absent census's compute column describes another fortnight: UNMEASURED.
+            src = {"producer": src.get("producer"), "key": src.get("key"),
+                   "clock": src.get("clock")}
         hours = src.get("compute_hours")
         hours = float(hours) if isinstance(hours, (int, float)) else None
         led = src.get("compute_hours_ledger")
@@ -541,7 +575,8 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
             f"{len(row_debt)} producer(s) have convertible source rows that emitted no valid "
             "AlphaCell; declarations and prose volume do not excuse row loss. Owing: "
             + ", ".join(f"{r['producer']}={r['convertible_rows_owed']}" for r in row_debt[:12]))
-    if isinstance(owing_max, (int, float)) and len(owing) > owing_max:
+    if (isinstance(owing_max, (int, float)) and len(owing) > owing_max
+            and census_state["status"] == "MEASURED"):
         failures.append(
             f"{len(owing)} producer(s) owe cells against a ratchet of {owing_max:g}: the count "
             "of producers burning compute with no unique cell, no declared exemption and no "
@@ -581,6 +616,7 @@ def yield_audit(window_hours: float = YIELD_WINDOW_HOURS) -> dict[str, Any]:
                      "non-alpha refusal remains honest and is not manufactured into a strategy"),
         },
         "census_at": census.get("at"),
+        "census": census_state,
         "breadth": {k: v for k, v in br.items() if k != "marginal"},
         "n_producers": len(rows),
         "n_owing": len(owing),
@@ -626,7 +662,8 @@ def tighten_ratchet(doc: dict[str, Any]) -> dict[str, Any] | None:
     moved = False
     if doc.get("registry", {}).get("available"):
         cur = rat.get("owing_max")
-        if not isinstance(cur, (int, float)) or doc["n_owing"] < cur:
+        census_ok = (doc.get("census") or {}).get("status", "MEASURED") == "MEASURED"
+        if census_ok and (not isinstance(cur, (int, float)) or doc["n_owing"] < cur):
             rat["owing_max"] = doc["n_owing"]
             moved = True
         for field, key in (("cells_to_judge_per_hour_best", "cells_to_judge_per_hour"),
