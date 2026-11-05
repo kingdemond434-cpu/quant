@@ -555,12 +555,15 @@ if ($headNow -and $headNow -ne $script:HeadBefore) {
 # NONE, thirty organs scheduled only by one machine's memory. Each installer here is called with
 # -IfMissing, so a registered task is NEVER touched (re-registering live tasks has failed with
 # "Access is denied") and a missing one appears on the first adoption after it ships. Best-effort:
-# a failed registration is logged and never stops the seal.
+# a failed registration is logged and never stops the seal. Root = $true marks a repo-root
+# installer: Quant-VideoCells (the sealed-transcript miner) opens bundles with the box-only key,
+# so it needs a defined principal rather than an interactive-only registration.
 foreach ($ensure in @(
         @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" },
-        @{ Task = "Quant-BoxSelfHeal"; Installer = "install_box_self_heal_task.ps1" })) {
+        @{ Task = "Quant-BoxSelfHeal"; Installer = "install_box_self_heal_task.ps1" },
+        @{ Task = "Quant-VideoCells"; Installer = "scripts\run_video_cells_box.ps1"; Root = $true })) {
     if (Get-ScheduledTask -TaskName $ensure.Task -ErrorAction SilentlyContinue) { continue }
-    $installer = Join-Path $desk ("scripts\" + $ensure.Installer)
+    $installer = if ($ensure.Root) { Join-Path $RepoRoot $ensure.Installer } else { Join-Path $desk ("scripts\" + $ensure.Installer) }
     if (-not (Test-Path $installer)) { Log "ensure-task: $($ensure.Task) missing and $installer absent"; continue }
     try {
         $out = @(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $installer -IfMissing 2>&1 |
