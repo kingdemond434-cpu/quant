@@ -110,3 +110,15 @@ def test_the_replay_reprices_writes_the_key_and_publishes_the_streams():
     assert "all_trades = [t for t in _priced if t.entry_time >= SHADOW_START]" in src
     assert '"key": key,' in src and "_write_key_ledger(key, all_trades" in src
     assert "entry_stream_report(state)" in src
+
+
+def test_the_reprice_report_ranks_rows_by_the_r_they_were_not_charged():
+    state = {"a": {"status": "PROMOTION CANDIDATE",
+                   "entry_spread": {"status": "MEASURED", "repriced": 3, "trades": 5,
+                                    "r_charged_extra": 2.5}},
+             "b": {"status": "ACTIVE", "entry_spread": {"status": "MEASURED", "repriced": 1,
+                                                        "trades": 9, "r_charged_extra": 0.1}},
+             "c": {"entry_spread": {"status": "UNMEASURED"}}, "last_run": "x"}
+    rep = sf.spread_reprice_report(state)
+    assert [r["key"] for r in rep["top"]] == ["a", "b"]
+    assert rep["rows_by_status"] == {"MEASURED": 2, "UNMEASURED": 1}

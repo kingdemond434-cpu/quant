@@ -1615,7 +1615,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
          f"{len(enrolled) - len(SLEEVES)} certificate-enrolled)")
     try:  # ONE CLOCK PER ENTRY STREAM: the collapse the promoter and the trial count must read.
         (SHADOW_DIR / f"entry_streams_{Path(ledger).stem}.json").write_text(
-            json.dumps({"at": state["updated_at"], **entry_stream_report(state)}, indent=2),
+            json.dumps({"at": state["updated_at"], **entry_stream_report(state),
+                        "spread_reprice": spread_reprice_report(state)}, indent=2),
             encoding="utf-8")
     except (OSError, TypeError, ValueError) as exc:
         slog(f"entry stream report write failed ({type(exc).__name__}: {exc})")
@@ -1678,6 +1679,27 @@ def entry_stream_report(state: dict) -> dict:
             "shared": shared,
             "reads": ("keys listed under one stream took identical forward entries; they are ONE "
                       "effective trial and ONE clock, never independent evidence")}
+
+
+def spread_reprice_report(state: dict, top: int = 40) -> dict:
+    """Which rows the measured spread moved, and by how much R, across every trade replayed."""
+    rows = []
+    counts: dict[str, int] = {}
+    for key, st in state.items():
+        es = st.get("entry_spread") if isinstance(st, dict) else None
+        if not isinstance(es, dict):
+            continue
+        counts[str(es.get("status"))] = counts.get(str(es.get("status")), 0) + 1
+        if es.get("repriced"):
+            rows.append({"key": key, "status": st.get("status"),
+                         "repriced": es.get("repriced"), "trades": es.get("trades"),
+                         "r_charged_extra": es.get("r_charged_extra"),
+                         "charged_spread_pts": es.get("charged_spread_pts")})
+    rows.sort(key=lambda r: -float(r.get("r_charged_extra") or 0.0))
+    return {"rows_by_status": counts, "rows_repriced": len(rows), "top": rows[:top],
+            "reads": ("r_charged_extra is the R the replay had NOT charged across ALL trades it "
+                      "replayed (historical and forward); a promotion candidate near the top is "
+                      "the first to re-read")}
 
 
 def _hour_spread_medians(bars: pd.DataFrame) -> dict[int, float]:
