@@ -157,6 +157,9 @@ REPLACEMENTS: dict[str, str] = {
                  "reads a causal graph frozen since 2026-09-08 (causal_graph leg)",
     "literature": "academic -- academic_miner and seed_miners arxiv_qfin, the same "
                   "papers-with-a-mechanism ground; literature was a one-off 2026-09-16 hand seed",
+    "firm_mining": "fund_playbook -- the clocked organ mining the same systematic firms' "
+                   "mechanisms; firm_mining was a one-off 2026-09-27 cloud donation (168 rows, "
+                   "five files) with no producer code and no clock of its own",
 }
 
 
