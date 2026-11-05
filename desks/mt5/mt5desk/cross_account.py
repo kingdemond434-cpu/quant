@@ -79,6 +79,11 @@ ACCOUNTS = ("fusion", "e8")
 #: Fusion and E8 lanes read it through `ftmo_block`. It is not in ACCOUNTS, whose pairing
 #: (`other`) and gold direction lock stay as they were.
 PEERS = ("fusion", "e8", "ftmo")
+#: More prop accounts (2026-11-03, zuck: several challenge accounts across firms at once) are
+#: registered in data/prop_accounts.json (`mt5desk.prop_accounts`) and publish here as
+#: `prop_<id>`, read back the same way as the FTMO book (`prop_block`). The registry is read from
+#: XACCT_DIR.parent at call time, so a test's XACCT_DIR redirect reaches it too.
+PROP_PREFIX = "prop_"
 #: The FTMO account this box trades, declared by the principal (gitignored; login, server, ...),
 #: and the FTMO sleeve executor's arm file: while it exists the FTMO book is a fence that fails
 #: closed (absent or stale -> refused); without it, the last published book still fences. Both
@@ -415,19 +420,19 @@ def expected_key(account: str) -> str | None:
             return "invalid:unreadable E8 declaration"
         key = doc.get("account_key") if isinstance(doc, dict) else None
         return key if valid_key(key) else "invalid:E8 declaration carries no valid account_key"
-    if account == "ftmo":
+    if account == "ftmo" or account.startswith(PROP_PREFIX):
         try:
-            doc = json.loads((XACCT_DIR.parent / FTMO_ACCOUNT_NAME).read_text(
-                encoding="utf-8-sig"))
+            doc = json.loads(_prop_files(account)[0].read_text(encoding="utf-8-sig"))
         except FileNotFoundError:
             return None
         except (OSError, ValueError):
-            return "invalid:unreadable FTMO declaration"
+            return f"invalid:unreadable {account} declaration"
         if not isinstance(doc, dict) or doc.get("login") in (None, "") \
                 or doc.get("server") in (None, ""):
-            return "invalid:the FTMO declaration carries no login and server"
+            return f"invalid:the {account} declaration carries no login and server"
         return account_key(doc["login"], doc["server"]) or \
-            "invalid:the declared FTMO login's key is unresolvable (libs.ops.provenance or box key)"
+            (f"invalid:the declared {account} login's key is unresolvable (libs.ops.provenance "
+             f"or box key)")
     if account != "fusion":
         return None
     try:
@@ -443,8 +448,65 @@ def expected_key(account: str) -> str | None:
         "invalid:the declared Fusion login's key is unresolvable (libs.ops.provenance or box key)"
 
 
+def _prop_registry() -> tuple[list[Any], list[str]]:
+    from mt5desk import prop_accounts as _pa
+    return _pa.load(XACCT_DIR.parent)
+
+
+def _prop_accounts() -> list[Any]:
+    return _prop_registry()[0]
+
+
+def _disk_prop_names() -> set[str]:
+    """Every prop account that has LEFT A TRACE, whatever the registry says now (audit of 580b6f99
+    MF1): a published book (XACCT_DIR/prop_<id>_book.json) or an account directory under
+    data/prop/ holding a declaration or an arm file. A row the registry refused, or a registry
+    that is unreadable, must never hide an account that may hold positions."""
+    from mt5desk import prop_accounts as _pa
+    out: set[str] = set()
+    try:
+        for f in XACCT_DIR.glob(f"{PROP_PREFIX}*_book.json"):
+            aid = f.name[len(PROP_PREFIX):-len("_book.json")]
+            if _pa.ID_RE.match(aid):
+                out.add(PROP_PREFIX + aid)
+    except OSError:
+        pass
+    try:
+        for d in (XACCT_DIR.parent / "prop").iterdir():
+            if d.is_dir() and _pa.ID_RE.match(d.name) and not d.name.startswith("firm_") and \
+                    ((d / "ACCOUNT.json").exists() or (d / "EXECUTOR_ARMED").exists()):
+                out.add(PROP_PREFIX + d.name)
+    except OSError:
+        pass
+    return out
+
+
+def is_peer(account: str) -> bool:
+    """A name that publishes a book here: the three named peers, or a prop account (registered,
+    or with a trace on disk)."""
+    if account in PEERS:
+        return True
+    return account.startswith(PROP_PREFIX) and account in prop_names()
+
+
+def prop_names() -> tuple[str, ...]:
+    """Every prop account's book name, the FTMO account ("ftmo") first: the registry's, then any
+    account with a trace on disk the registry does not list."""
+    reg = [a.xacct for a in _prop_accounts()]
+    return tuple(reg + sorted(_disk_prop_names() - set(reg)))
+
+
+def _prop_files(account: str) -> tuple[Path, Path]:
+    """(the account's declaration, its executor's arm file), resolved from XACCT_DIR.parent."""
+    data = XACCT_DIR.parent
+    if account == "ftmo":
+        return data / FTMO_ACCOUNT_NAME, data / FTMO_EXECUTOR_ARMED_NAME
+    aid = account[len(PROP_PREFIX):]
+    return data / "prop" / aid / "ACCOUNT.json", data / "prop" / aid / "EXECUTOR_ARMED"
+
+
 def book_path(account: str) -> Path:
-    if account not in PEERS:
+    if not is_peer(account):
         raise ValueError(f"unknown account {account!r}")
     return XACCT_DIR / f"{account}_book.json"
 
@@ -573,7 +635,7 @@ def publish(account: str, exposure: Exposure, *, source: str, key: str,
     if threading.get_ident() in _ABANDONED:
         raise RuntimeError("this publish's bounded call timed out; its lock is released, so it "
                            "may not write")
-    want = expected_key(account) if account in PEERS else None
+    want = expected_key(account) if is_peer(account) else None
     if not key_joins(account, key, want, source="publish"):
         if not valid_key(key):
             raise ValueError("a book must carry a valid account key (an unresolvable key "
@@ -727,14 +789,108 @@ def ftmo_block(symbol: object, side: object, *, now: datetime | None = None) -> 
     book must be fresh, or this fails closed exactly as the E8 book does. Unarmed, it trades
     nothing new, so its LAST published book (whatever its age) still fences what it may hold;
     no book at all, or a book of another account, then blocks nothing: the lane never ran."""
+    return prop_block(symbol, side, now=now)
+
+
+def prop_block(symbol: object, side: object, *, now: datetime | None = None,
+               exclude: Iterable[str] = ()) -> str | None:
+    """`ftmo_block` over EVERY registered prop account's book (2026-11-03), minus `exclude` (a
+    prop executor's own name). Each account is read exactly as the FTMO book always was: armed ->
+    fresh or fail closed; unarmed -> its last book at any age; never published -> nothing."""
     sym = norm(symbol)
     if sym and any(same_instrument(sym, g) for g in FTMO_FENCE_SKIPS):
         return None
-    if (XACCT_DIR.parent / FTMO_EXECUTOR_ARMED_NAME).exists():
-        book, why = read_book("ftmo", now=now)
-        return opposite_block(book, symbol, side, account="ftmo", why_absent=why)
-    book, _ = read_book("ftmo", now=now, max_age_s=float("inf"))
-    return None if book is None else opposite_block(book, symbol, side, account="ftmo")
+    _, errors = _prop_registry()
+    if errors:
+        # A refused row or an unreadable registry may be an account holding positions that no
+        # trace on disk names yet: fail closed until the registry reads clean (audit MF1).
+        # This blocks every non-gold entry on every lane, so it is never silent: it pages RED
+        # and bills each blocked entry to the missed-growth ledger (audit of 08525399).
+        why = (f"cross-account fence: the prop account registry has errors ({errors[0]}"
+               f"{'' if len(errors) == 1 else f' +{len(errors) - 1} more'}); fail closed")
+        registry_block_seen(errors, symbol, side, now=now)
+        return why
+    registry_clean_seen()
+    skip = set(exclude)
+    for name in prop_names():
+        if name in skip:
+            continue
+        book, why, required = prop_peer_book(name, now=now)
+        if book is None and not required:
+            continue
+        hit = opposite_block(book, symbol, side, account=name, why_absent=why)
+        if hit is not None:
+            return hit
+    return None
+
+
+#: The registry-error block's RED alert, and the journal each blocked entry is billed to
+#: (research/missed_growth.published_prop_registry_block_lines). Paged at most once per
+#: REGISTRY_PAGE_S per process (the provenance outbox dedups and repages while it stands).
+REGISTRY_ALERT_ID = "xacct_prop_registry_error"
+REGISTRY_BLOCKS_NAME = "prop_registry_blocks.jsonl"
+REGISTRY_PAGE_S = 600.0
+_REG_ALERT: dict[str, float] = {}
+
+
+def registry_block_seen(errors: list[str], symbol: object, side: object, *,
+                        now: datetime | None = None) -> None:
+    """Bill one blocked entry and keep the RED page open. Never raises."""
+    at = now or datetime.now(tz=UTC)
+    try:
+        with (XACCT_DIR / REGISTRY_BLOCKS_NAME).open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"at": at.isoformat(timespec="seconds"), "symbol": str(symbol),
+                                 "side": str(side), "rail": "prop_registry_error",
+                                 "errors": errors[:3]}) + "\n")
+    except OSError:
+        pass
+    t = time.monotonic()
+    if t - _REG_ALERT.get("paged", -1e18) < REGISTRY_PAGE_S:
+        return
+    _REG_ALERT["paged"] = t
+    msg = (f"[cross_account] data/prop_accounts.json has errors ({'; '.join(errors[:3])}): the "
+           f"prop fence fails closed, so EVERY non-gold entry on Fusion, E8 and every prop "
+           f"account is refused until the registry reads clean. Fix the registry row.")
+    try:
+        from libs.ops.alert_ledger import AlertLedger
+        ledger = AlertLedger(_alert_ledger_path())
+        ledger.observe(REGISTRY_ALERT_ID, msg, scope="RUNTIME")
+        ledger.save()
+    except Exception:
+        pass
+    _send(REGISTRY_ALERT_ID, "OPEN", "REGISTRY_ERROR",
+          "RED PROP REGISTRY ERROR: all non-gold entries blocked", msg)
+
+
+def registry_clean_seen() -> None:
+    """Close the registry alert once, when this process paged it and the registry reads clean."""
+    if "paged" not in _REG_ALERT:
+        return
+    _REG_ALERT.clear()
+    try:
+        from libs.ops.alert_ledger import AlertLedger
+        ledger = AlertLedger(_alert_ledger_path())
+        alert = ledger.alerts.get(REGISTRY_ALERT_ID)
+        if alert is not None and alert.open:
+            ledger.verify(REGISTRY_ALERT_ID, still_firing=False)
+            ledger.save()
+    except Exception:
+        pass
+    _send(REGISTRY_ALERT_ID, "OK", "recovered", "PROP REGISTRY OK again",
+          "[cross_account] data/prop_accounts.json reads clean; the prop fence is open again")
+
+
+def prop_peer_book(name: str, *, now: datetime | None = None
+                   ) -> tuple[Exposure | None, str, bool]:
+    """(prop account `name`'s book, why, required). Required (absent or stale fails closed) while
+    its executor is armed; otherwise its last book at any age, and none at all is not a block."""
+    if _prop_files(name)[1].exists():
+        book, why = read_book(name, now=now)
+        return book, why, True
+    book, why = read_book(name, now=now, max_age_s=float("inf"))
+    # A book that EXISTS but does not read (malformed, unstamped, another account's key) is not
+    # "the lane never ran": its positions are unknown, so it fails closed (audit SF).
+    return book, why, book is None and book_path(name).exists()
 
 
 #: Tokens this process holds now (re-entry) and tokens it released but could not unlink.
@@ -890,7 +1046,7 @@ _ABANDONED: set[int] = set()
 
 
 def inflight_path(account: str) -> Path:
-    if account not in PEERS:
+    if not is_peer(account):
         raise ValueError(f"unknown account {account!r}")
     return XACCT_DIR / f"{account}_inflight.json"
 

@@ -117,7 +117,7 @@ def world(monkeypatch, tmp_path) -> SimpleNamespace:
                                         "status": "OK", "specs": {KEY: SPEC},
                                         "executable": {"gold_asia": 0.002, KEY: 0.003}}))
     fx.ARMED_MARKER.write_text("")
-    monkeypatch.setattr(fx._fw, "bound_account", lambda mt5: (
+    monkeypatch.setattr(fx._fw, "bound_account", lambda mt5, **k: (
         "sha256:" + "a" * 16, {"initial_balance": 100_000.0, "daily_loss_frac": 0.05}, "ok"))
     monkeypatch.setattr(fx._fw, "day_start_balance", lambda mt5, b, s, n, **k: 100_000.0)
     monkeypatch.setattr(fx._fw, "near_market_close", lambda now: False)
