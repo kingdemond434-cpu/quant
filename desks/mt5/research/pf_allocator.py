@@ -3263,17 +3263,39 @@ def zeroed_live(ev: list[SleeveEvidence], funded: dict[str, float],
 TIER_S_ZERO_EPS = 1e-6
 
 
+#: Session selectors a book key can end in; two-token ones first so `london_am` is one selector.
+_SELECTORS = ("london_am", "asia", "london", "ny", "afternoon", "continuous", "overlap")
+
+
 def _column_identity(name: str) -> tuple[str, str, str]:
-    """(SYMBOL, family, timeframe) of an allocator column, read off its name the way the book
-    keys are spelled: `SYMBOL_family_selector`, the gold windows (`gold_<window>`) and the xau
-    scalp names on XAUUSD, and an `m15`/`m5` token as the timeframe."""
+    """(SYMBOL, family, timeframe) of an allocator column read off its name, for a column no
+    roster row resolves: `SYMBOL_family[_selector]` (a multi-token selector such as `london_am`
+    kept whole, a name with no selector keeping its whole family), the gold windows and xau names
+    on XAUUSD, and an `m15`/`m5`/`h1` token as the timeframe."""
     low = str(name).lower()
-    toks = low.split("_")
-    tf = next((t.upper() for t in toks if re.fullmatch(r"m\d+|h\d+", t)), "")
+    toks = [t for t in low.split("_") if t]
+    tf = next((t.upper() for t in toks if re.fullmatch(r"[mh]\d+", t)), "")
     if low.startswith(("gold_", "xau_", "xauusd_")):
-        fam = "_".join(t for t in toks[1:] if t and not re.fullmatch(r"m\d+|h\d+", t))
-        return "XAUUSD", fam, tf
-    return toks[0].upper(), "_".join(toks[1:-1]), tf
+        sym, rest = "XAUUSD", toks[1:]
+    else:
+        sym, rest = (toks[0].upper() if toks else ""), toks[1:]
+    rest = [t for t in rest if not re.fullmatch(r"[mh]\d+", t)]
+    body = "_".join(rest)
+    for sel in _SELECTORS:
+        if body == sel:
+            body = ""
+            break
+        if body.endswith("_" + sel):
+            body = body[: -len(sel) - 1]
+            break
+    return sym, body, tf
+
+
+def _row_key(r: Mapping[str, Any]) -> str:
+    """The gateway's book key for a roster row (`SYMBOL_family_selector`), case-folded."""
+    sel = str(r.get("selector") or "")
+    return (f"{str(r.get('symbol') or '').upper()}_{r.get('family') or ''}"
+            f"{'_' + sel if sel else ''}").lower()
 
 
 def live_policy_zero(names: Sequence[str]) -> tuple[frozenset[str], dict[str, Any]]:
@@ -3282,10 +3304,13 @@ def live_policy_zero(names: Sequence[str]) -> tuple[frozenset[str], dict[str, An
     The policy is mt5desk/live_policy.py over data/live_sleeve_policy.json. The Fusion book binds
     these columns to fraction 0 and refills their heat across the columns that can trade.
     Hourly pass P63 (2026-11-05): the dynamic book put 30% heat on seven cells outside the
-    policy, the gateway could size none of them, and the join read BROKEN. The rules are the
-    same symbol, timeframe, family and per-symbol allowlist the gateway and the promoter apply;
-    an allowlisted roster certificate is matched to its column by the gateway's own key
-    (`SYMBOL_family_selector`, case-folded)."""
+    policy, the gateway could size none of them, and the join read BROKEN.
+
+    ONE RULE, THE POLICY'S OWN (#748 audit MF1). A column that resolves to roster rows (by name,
+    or by the gateway's `SYMBOL_family_selector` key) is judged by `live_policy.refuse` on those
+    rows -- symbol, timeframe, family, exec lane (`scalp_market`, principal 2026-09-29) and the
+    per-symbol allowlist -- and is admitted when any of its rows is. Only a column no row
+    resolves falls back to the name parser, with the same symbol, timeframe and family rules."""
     try:
         from mt5desk import live_policy as _lp
         pol = _lp.policy()
@@ -3295,35 +3320,62 @@ def live_policy_zero(names: Sequence[str]) -> tuple[frozenset[str], dict[str, An
         rows = json.loads((BASE / "data" / "sleeves.json").read_text("utf-8")).get("sleeves") or []
     except (OSError, ValueError, AttributeError):
         rows = []
-    by_name = {str(r.get("name")): r for r in rows if isinstance(r, dict)}
-    allowed: dict[str, set[str]] = {}
-    for sym, certs in pol.live_sleeves.items():
-        keys: set[str] = set()
-        for n in certs:
-            keys.add(str(n).lower())
-            r = by_name.get(str(n)) or {}
+    by_name: dict[str, list[dict[str, Any]]] = {}
+    by_key: dict[str, list[dict[str, Any]]] = {}
+    for r in rows:
+        if isinstance(r, dict):
+            by_name.setdefault(str(r.get("name")).lower(), []).append(r)
             if r.get("symbol") and r.get("family"):
-                sel = str(r.get("selector") or "")
-                keys.add(f"{str(r['symbol']).upper()}_{r['family']}{'_' + sel if sel else ''}"
-                         .lower())
-        allowed[str(sym).upper()] = keys
+                by_key.setdefault(_row_key(r), []).append(r)
     zero: dict[str, str] = {}
+    resolved = 0
     for n in names:
+        mine = by_name.get(str(n).lower()) or by_key.get(str(n).lower()) or []
+        if mine:
+            resolved += 1
+            whys = [_lp.refuse(r, pol) for r in mine]
+            if all(whys):
+                zero[str(n)] = str(whys[0])
+            continue
         sym, fam, tf = _column_identity(str(n))
         why = None
         if "*" not in pol.live_symbols and sym not in pol.live_symbols:
-            why = f"{sym} is outside the live sleeve universe"
+            why = f"{sym} is outside the live sleeve universe (no roster row; read off the name)"
         elif tf and tf in (pol.banned_timeframes.get(sym, frozenset())
                            | pol.banned_timeframes.get("*", frozenset())):
-            why = f"{sym} {tf} is disabled in the live account"
+            why = f"{sym} {tf} is disabled in the live account (read off the name)"
         elif fam and fam in pol.banned_families:
-            why = f"family {fam!r} is banned from live capital"
-        elif sym in allowed and str(n).lower() not in allowed[sym]:
-            why = f"{sym} admits only its allowlisted certificate(s)"
+            why = f"family {fam!r} is banned from live capital (read off the name)"
+        elif sym in pol.live_sleeves:
+            why = f"{sym} admits only its allowlisted certificate(s); no roster row is one"
         if why:
             zero[str(n)] = why
     return frozenset(zero), {"status": "MEASURED", "source": pol.source, "by": pol.by,
+                             "n_columns": len(names), "n_resolved_to_rows": resolved,
                              "n_zeroed": len(zero), "zeroed": dict(sorted(zero.items()))}
+
+
+def fallback_on_admissible(best: str, ev: Sequence[SleeveEvidence], zeroed: frozenset[str],
+                           total: float) -> dict[str, float] | None:
+    """The best baseline RE-SOLVED over the columns the account may trade (#748 audit (a)), or
+    None when that baseline cannot be rebuilt without the worlds (multiperiod, posterior, the
+    incumbent): its exchange-zero refill then stands. A pro-rata refill ignores correlation; the
+    baseline's own construction on the admissible evidence does not."""
+    sub = [e for e in ev if e.name not in zeroed]
+    if not sub or total <= 0:
+        return None
+    from libs.portfolio import allocator_proof as _ap
+    if best == "equal_weight":
+        return _ap._equal_weight([e.name for e in sub], total)
+    if best == "inverse_vol":
+        return _ap._inverse_vol(sub, total)
+    if best == "risk_parity":
+        return _ap._risk_parity(sub, total)
+    try:
+        from libs.portfolio.challengers import all_books
+        return all_books(sub, total).get(best)
+    except Exception:
+        return None
 
 
 def exchange_zero_bounds(bounds: Mapping[str, float],
@@ -4549,6 +4601,12 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # artifact so a failed or stale proof changes who allocates the floor, never whether.
         best = str(proof.get("best_baseline") or "")
         fb_book = (proof.get("books") or {}).get(best) or {}
+        if best and fb_book and lp_zero:
+            _fb = fallback_on_admissible(best, ev, ts_zero, sum(float(v) for v in fb_book.values()))
+            if _fb:
+                fb_book = _fb
+            live_policy_meta["fallback"] = ("re-solved on the admissible columns" if _fb else
+                                            "exchange-zero refill (needs the worlds to rebuild)")
         if best and fb_book:
             fallback = {"name": best, "book": {k: round(float(v), 6) for k, v in fb_book.items()
                                                if float(v) > 1e-6}}
