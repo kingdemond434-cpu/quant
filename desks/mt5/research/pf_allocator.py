@@ -3403,7 +3403,8 @@ def ceiling_guard_book(funded: Mapping[str, float], ceiling: float, *,
         return dict(funded), meta
     k = float(ceiling) / held
     meta["scaled"], meta["factor"] = True, round(k, 8)
-    return {n: round(float(v) * k, 6) for n, v in funded.items()}, meta
+    # Rounded DOWN to the artifact's 6 places, so rounding can never lift it back over the ceiling.
+    return {n: math.floor(float(v) * k * 1e6) / 1e6 for n, v in funded.items()}, meta
 
 
 def fallback_on_admissible(best: str, ev: Sequence[SleeveEvidence], zeroed: frozenset[str],
@@ -5164,6 +5165,14 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # EVERY SCALE-DOWN THE GATEWAY WILL APPLY, PRICED (Rule 1): the gateway deploys at most
     # min(heat.total, live_heat_ceiling(heat)) and scales the book down to it; what that costs in
     # E[log W] on these worlds is published for missed_growth.
+    # THE FALLBACK NEVER HOLDS MORE THAN THE PUBLISHED HEAT (#748/#751 audit SF, batch 6 dry run:
+    # 0.050008 against a 0.050003 ceiling, rounding). The gateway trades it when the proof fails.
+    _fb_doc = art.get("book_fallback")
+    if isinstance(_fb_doc, dict) and isinstance(_fb_doc.get("book"), dict):
+        _fb_doc["book"], _fb_clamp = ceiling_guard_book(_fb_doc["book"],
+                                                        float(art["heat"]["total"]), eps=0.0)
+        if _fb_clamp.get("scaled"):
+            _fb_doc["clamped_to_heat"] = _fb_clamp
     art["heat"]["gateway_scale_down"] = gateway_scale_down(
         funded, art["heat"], lambda b: float(score_book(ev, b, cfg=cfg, worlds=worlds)
                                              ["mean_log_growth"]))

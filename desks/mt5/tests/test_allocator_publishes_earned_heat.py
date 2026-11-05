@@ -45,3 +45,11 @@ def test_every_gateway_scale_down_is_priced(monkeypatch) -> None:
     assert MG.gateway_scale_down_line({})["verdict"] == MG.UNMEASURED
     src = (_DESK / "research" / "missed_growth.py").read_text(encoding="utf-8")
     assert '"gateway_scale_down": gateway_scale_down_line(alloc)' in src
+
+
+def test_the_fallback_is_clamped_to_the_published_heat() -> None:
+    """#748/#751 audit SF: the fallback deployed 0.050008 against a 0.050003 ceiling."""
+    fb, meta = pa.ceiling_guard_book({"a": 0.025004, "b": 0.025004}, 0.050003, eps=0.0)
+    assert sum(fb.values()) <= 0.050003 + 1e-12 and meta["scaled"] is True
+    src = (_DESK / "research" / "pf_allocator.py").read_text(encoding="utf-8")
+    assert 'ceiling_guard_book(_fb_doc["book"],' in src
