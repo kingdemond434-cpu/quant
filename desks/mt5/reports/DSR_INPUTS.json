@@ -2,31 +2,31 @@
  "schema": "dsr_inputs/v1",
  "status": "MEASURED",
  "unmeasured_reason": null,
- "measured_at": "2026-10-12T03:49:34+00:00",
+ "measured_at": "2026-11-01T21:44:29+00:00",
  "max_age_s": 14400,
  "variance": {
   "units": "per-period (daily) Sharpe, not annualised: the units of libs.validation.dsr.expected_max_sharpe",
   "method": "sample variance (ddof=1) of the latest per-period Sharpe (libs.validation.dsr.sharpe_ratio on the development-window daily series, the units expected_max_sharpe takes; not annualised) of every distinct cell judged in the window; no winsorising, floor or shrinkage",
   "window": {
    "days": 30,
-   "start": "2026-09-12T03:49:34+00:00",
-   "end": "2026-10-12T03:49:34+00:00"
+   "start": "2026-10-02T21:44:29+00:00",
+   "end": "2026-11-01T21:44:29+00:00"
   },
   "min_family_n": 30,
   "min_pooled_n": 100,
   "pooled": {
-   "n": 64150,
-   "variance": 0.238342665,
+   "n": 163648,
+   "variance": 0.2000296476,
    "status": "MEASURED"
   },
   "lifetime_pooled": {
-   "n": 64150,
-   "variance": 0.238342665
+   "n": 163648,
+   "variance": 0.2000296476
   },
   "by_family": {
    "adx_channel_hybrid": {
-    "n": 1198,
-    "variance": 0.0395316538,
+    "n": 2018,
+    "variance": 0.0623422947,
     "status": "MEASURED"
    },
    "asia_momentum": {
@@ -35,33 +35,54 @@
     "status": "MEASURED"
    },
    "carry": {
-    "n": 9983,
-    "variance": 0.1924965809,
+    "n": 11080,
+    "variance": 0.208049073,
     "status": "MEASURED"
    },
    "clock_transition": {
-    "n": 3318,
-    "variance": 0.2955543225,
+    "n": 7726,
+    "variance": 0.3157374404,
     "status": "MEASURED"
    },
    "comex_settlement": {
-    "n": 410,
-    "variance": 0.050002472,
+    "n": 1352,
+    "variance": 0.0545350858,
     "status": "MEASURED"
    },
    "correlation_regime": {
-    "n": 59,
-    "variance": 0.1150075917,
+    "n": 2798,
+    "variance": 0.1226346772,
     "status": "MEASURED"
    },
+   "cot_change_fade": {
+    "n": 33,
+    "variance": 0.009114303,
+    "status": "MEASURED"
+   },
+   "cot_change_momentum": {
+    "n": 109,
+    "variance": 0.0733692465,
+    "status": "MEASURED"
+   },
+   "cot_comm_follow": {
+    "n": 96,
+    "variance": 0.0689240309,
+    "status": "MEASURED"
+   },
+   "cot_net_fade": {
+    "n": 18,
+    "variance": 0.0162777344,
+    "status": "UNMEASURED",
+    "why": "18 distinct cells in the window, 30 required"
+   },
    "cot_positioning": {
-    "n": 102,
-    "variance": 0.0242388221,
+    "n": 295,
+    "variance": 0.0194194098,
     "status": "MEASURED"
    },
    "cross_asset_residual": {
-    "n": 9813,
-    "variance": 0.0327992017,
+    "n": 38680,
+    "variance": 0.0383259375,
     "status": "MEASURED"
    },
    "dow_effect": {
@@ -80,8 +101,8 @@
     "status": "MEASURED"
    },
    "execution_state": {
-    "n": 187,
-    "variance": 0.1608846839,
+    "n": 497,
+    "variance": 0.1152540424,
     "status": "MEASURED"
    },
    "exit_operated": {
@@ -90,18 +111,18 @@
     "status": "MEASURED"
    },
    "failed_breakout": {
-    "n": 519,
-    "variance": 0.0311924307,
+    "n": 1460,
+    "variance": 0.0386394718,
     "status": "MEASURED"
    },
    "formula": {
-    "n": 485,
-    "variance": 0.2115247724,
+    "n": 12898,
+    "variance": 0.2244773315,
     "status": "MEASURED"
    },
    "fx_fixing_reversal": {
-    "n": 888,
-    "variance": 0.3680543801,
+    "n": 1713,
+    "variance": 0.4224614119,
     "status": "MEASURED"
    },
    "generic": {
@@ -116,33 +137,38 @@
     "status": "MEASURED"
    },
    "htf_anchor_trend": {
-    "n": 1870,
-    "variance": 0.223940454,
+    "n": 1872,
+    "variance": 0.2240984806,
     "status": "MEASURED"
    },
    "ict_fvg": {
-    "n": 2986,
-    "variance": 0.5637413622,
+    "n": 3673,
+    "variance": 0.7021446908,
     "status": "MEASURED"
    },
    "joint_genome": {
-    "n": 349,
-    "variance": 0.029955201,
+    "n": 867,
+    "variance": 0.1790691471,
     "status": "MEASURED"
    },
    "jump": {
-    "n": 2514,
-    "variance": 0.2578968775,
+    "n": 4107,
+    "variance": 0.2869015451,
     "status": "MEASURED"
    },
    "lead_lag": {
-    "n": 6925,
-    "variance": 0.426232017,
+    "n": 10051,
+    "variance": 0.3882468886,
     "status": "MEASURED"
    },
    "level_breakout": {
     "n": 1539,
-    "variance": 0.0876063362,
+    "variance": 0.0875981391,
+    "status": "MEASURED"
+   },
+   "liquidity_gamma_reversal": {
+    "n": 977,
+    "variance": 0.3317570417,
     "status": "MEASURED"
    },
    "london_close_momentum": {
@@ -150,51 +176,59 @@
     "variance": 0.1150332655,
     "status": "MEASURED"
    },
+   "macro_conditional": {
+    "n": 3601,
+    "variance": 0.2977841391,
+    "status": "MEASURED"
+   },
    "mean_reversion_bollinger": {
-    "n": 790,
-    "variance": 0.0237698595,
+    "n": 2663,
+    "variance": 0.0639633263,
+    "status": "MEASURED"
+   },
+   "mean_reversion_rsi": {
+    "n": 798,
+    "variance": 0.1307377745,
     "status": "MEASURED"
    },
    "momentum_volgate": {
-    "n": 1277,
-    "variance": 0.0211587188,
+    "n": 1448,
+    "variance": 0.0227598752,
     "status": "MEASURED"
    },
    "multi_speed_trend": {
-    "n": 1295,
-    "variance": 0.0813837039,
+    "n": 1332,
+    "variance": 0.081406956,
     "status": "MEASURED"
    },
    "opening_range": {
-    "n": 14,
-    "variance": 0.2271136345,
-    "status": "UNMEASURED",
-    "why": "14 distinct cells in the window, 30 required"
+    "n": 1698,
+    "variance": 0.2894667209,
+    "status": "MEASURED"
    },
    "overnight_drift": {
-    "n": 7,
-    "variance": 0.0036640324,
-    "status": "UNMEASURED",
-    "why": "7 distinct cells in the window, 30 required"
+    "n": 1808,
+    "variance": 0.0233234603,
+    "status": "MEASURED"
    },
    "overnight_gap_decay": {
-    "n": 883,
-    "variance": 0.1084501749,
+    "n": 3452,
+    "variance": 0.0971400811,
     "status": "MEASURED"
    },
    "pca_residual": {
-    "n": 843,
-    "variance": 0.0621326821,
+    "n": 7869,
+    "variance": 0.1155699215,
     "status": "MEASURED"
    },
    "pin_bar_reversal": {
-    "n": 630,
-    "variance": 0.2306403227,
+    "n": 863,
+    "variance": 0.235696701,
     "status": "MEASURED"
    },
    "pullback_entry": {
-    "n": 475,
-    "variance": 0.0343925738,
+    "n": 2892,
+    "variance": 0.0462210203,
     "status": "MEASURED"
    },
    "range_reversion": {
@@ -209,8 +243,8 @@
     "why": "1 distinct cells in the window, 30 required"
    },
    "relative_value": {
-    "n": 2218,
-    "variance": 0.1851010123,
+    "n": 7315,
+    "variance": 0.1444014316,
     "status": "MEASURED"
    },
    "retail_overlap_reversal": {
@@ -224,8 +258,8 @@
     "status": "MEASURED"
    },
    "session_range_breakout": {
-    "n": 51,
-    "variance": 0.1487450535,
+    "n": 263,
+    "variance": 0.0902924508,
     "status": "MEASURED"
    },
    "spread_state": {
@@ -234,49 +268,58 @@
     "status": "MEASURED"
    },
    "style_premia": {
-    "n": 6,
-    "variance": 0.0676875,
-    "status": "UNMEASURED",
-    "why": "6 distinct cells in the window, 30 required"
+    "n": 1440,
+    "variance": 0.0640639716,
+    "status": "MEASURED"
    },
    "trend_ma_cross": {
-    "n": 597,
-    "variance": 0.0605330874,
+    "n": 2637,
+    "variance": 0.1015561915,
     "status": "MEASURED"
    },
    "turn_of_month": {
-    "n": 711,
-    "variance": 0.0592288011,
+    "n": 1561,
+    "variance": 0.0601756315,
+    "status": "MEASURED"
+   },
+   "vol_mean_reversion": {
+    "n": 2805,
+    "variance": 0.1685626569,
     "status": "MEASURED"
    },
    "vol_transition": {
-    "n": 1826,
-    "variance": 0.1498451762,
+    "n": 3891,
+    "variance": 0.2090643766,
     "status": "MEASURED"
    },
    "volatility_squeeze": {
-    "n": 545,
-    "variance": 0.0354438169,
+    "n": 1062,
+    "variance": 0.0404092589,
+    "status": "MEASURED"
+   },
+   "volume_spike": {
+    "n": 1554,
+    "variance": 0.1022935672,
     "status": "MEASURED"
    }
   },
   "by_campaign": {
    "external_discoveries": {
-    "n": 64150,
-    "variance": 0.238342665,
+    "n": 163648,
+    "variance": 0.2000296476,
     "status": "MEASURED"
    }
   }
  },
  "effective_trials": {
-  "nominal": 64150,
-  "effective": 63155,
+  "nominal": 163648,
+  "effective": 161854,
   "by_family": {
    "adx_channel_hybrid": {
-    "nominal": 1198,
-    "effective": 1181,
-    "distinct_symbols": 124,
-    "rho_sum": 1180.5813
+    "nominal": 2018,
+    "effective": 1995,
+    "distinct_symbols": 134,
+    "rho_sum": 1994.6969
    },
    "asia_momentum": {
     "nominal": 1516,
@@ -285,40 +328,64 @@
     "rho_sum": 1489.3308
    },
    "carry": {
-    "nominal": 9983,
-    "effective": 9785,
+    "nominal": 11080,
+    "effective": 10874,
     "distinct_symbols": 101,
-    "rho_sum": 9784.5199
+    "rho_sum": 10873.6479
    },
    "clock_transition": {
-    "nominal": 3318,
-    "effective": 3278,
-    "distinct_symbols": 122,
-    "rho_sum": 3277.3907
+    "nominal": 7726,
+    "effective": 7654,
+    "distinct_symbols": 133,
+    "rho_sum": 7653.0301
    },
    "comex_settlement": {
-    "nominal": 410,
-    "effective": 405,
-    "distinct_symbols": 93,
-    "rho_sum": 404.2555
+    "nominal": 1352,
+    "effective": 1340,
+    "distinct_symbols": 121,
+    "rho_sum": 1339.4957
    },
    "correlation_regime": {
-    "nominal": 59,
-    "effective": 59,
-    "distinct_symbols": 45,
-    "rho_sum": 58.0169
+    "nominal": 2798,
+    "effective": 2763,
+    "distinct_symbols": 133,
+    "rho_sum": 2762.8205
+   },
+   "cot_change_fade": {
+    "nominal": 33,
+    "effective": 33,
+    "distinct_symbols": 9,
+    "rho_sum": 32.7632
+   },
+   "cot_change_momentum": {
+    "nominal": 109,
+    "effective": 109,
+    "distinct_symbols": 14,
+    "rho_sum": 108.2178
+   },
+   "cot_comm_follow": {
+    "nominal": 96,
+    "effective": 96,
+    "distinct_symbols": 14,
+    "rho_sum": 95.3111
+   },
+   "cot_net_fade": {
+    "nominal": 18,
+    "effective": 18,
+    "distinct_symbols": 14,
+    "rho_sum": 17.8708
    },
    "cot_positioning": {
-    "nominal": 102,
-    "effective": 100,
-    "distinct_symbols": 10,
-    "rho_sum": 99.9554
+    "nominal": 295,
+    "effective": 292,
+    "distinct_symbols": 11,
+    "rho_sum": 291.5704
    },
    "cross_asset_residual": {
-    "nominal": 9813,
-    "effective": 9693,
-    "distinct_symbols": 124,
-    "rho_sum": 9692.6095
+    "nominal": 38680,
+    "effective": 38321,
+    "distinct_symbols": 134,
+    "rho_sum": 38320.0741
    },
    "dow_effect": {
     "nominal": 1272,
@@ -339,10 +406,10 @@
     "rho_sum": 532.2048
    },
    "execution_state": {
-    "nominal": 187,
-    "effective": 185,
-    "distinct_symbols": 18,
-    "rho_sum": 184.1703
+    "nominal": 497,
+    "effective": 492,
+    "distinct_symbols": 40,
+    "rho_sum": 491.8436
    },
    "exit_operated": {
     "nominal": 124,
@@ -351,22 +418,22 @@
     "rho_sum": 121.7013
    },
    "failed_breakout": {
-    "nominal": 519,
-    "effective": 512,
-    "distinct_symbols": 104,
-    "rho_sum": 511.7283
+    "nominal": 1460,
+    "effective": 1446,
+    "distinct_symbols": 124,
+    "rho_sum": 1445.9757
    },
    "formula": {
-    "nominal": 485,
-    "effective": 480,
-    "distinct_symbols": 10,
-    "rho_sum": 479.0537
+    "nominal": 12898,
+    "effective": 12793,
+    "distinct_symbols": 125,
+    "rho_sum": 12792.4394
    },
    "fx_fixing_reversal": {
-    "nominal": 888,
-    "effective": 871,
-    "distinct_symbols": 132,
-    "rho_sum": 870.2
+    "nominal": 1713,
+    "effective": 1690,
+    "distinct_symbols": 133,
+    "rho_sum": 1689.2798
    },
    "generic": {
     "nominal": 14,
@@ -381,34 +448,34 @@
     "rho_sum": 347.7573
    },
    "htf_anchor_trend": {
-    "nominal": 1870,
-    "effective": 1858,
+    "nominal": 1872,
+    "effective": 1860,
     "distinct_symbols": 133,
-    "rho_sum": 1857.0629
+    "rho_sum": 1859.0468
    },
    "ict_fvg": {
-    "nominal": 2986,
-    "effective": 2927,
+    "nominal": 3673,
+    "effective": 3609,
     "distinct_symbols": 133,
-    "rho_sum": 2926.1456
+    "rho_sum": 3608.2157
    },
    "joint_genome": {
-    "nominal": 349,
-    "effective": 343,
-    "distinct_symbols": 65,
-    "rho_sum": 342.0224
+    "nominal": 867,
+    "effective": 857,
+    "distinct_symbols": 131,
+    "rho_sum": 856.3052
    },
    "jump": {
-    "nominal": 2514,
-    "effective": 2464,
-    "distinct_symbols": 133,
-    "rho_sum": 2463.6069
+    "nominal": 4107,
+    "effective": 4046,
+    "distinct_symbols": 134,
+    "rho_sum": 4045.1755
    },
    "lead_lag": {
-    "nominal": 6925,
-    "effective": 6837,
+    "nominal": 10051,
+    "effective": 9932,
     "distinct_symbols": 133,
-    "rho_sum": 6836.4632
+    "rho_sum": 9931.4804
    },
    "level_breakout": {
     "nominal": 1539,
@@ -416,65 +483,83 @@
     "distinct_symbols": 125,
     "rho_sum": 1512.3952
    },
+   "liquidity_gamma_reversal": {
+    "nominal": 977,
+    "effective": 970,
+    "distinct_symbols": 103,
+    "rho_sum": 969.989
+   },
    "london_close_momentum": {
     "nominal": 1302,
     "effective": 1279,
     "distinct_symbols": 134,
     "rho_sum": 1278.969
    },
+   "macro_conditional": {
+    "nominal": 3601,
+    "effective": 3564,
+    "distinct_symbols": 133,
+    "rho_sum": 3563.06
+   },
    "mean_reversion_bollinger": {
-    "nominal": 790,
-    "effective": 779,
-    "distinct_symbols": 110,
-    "rho_sum": 778.9313
+    "nominal": 2663,
+    "effective": 2639,
+    "distinct_symbols": 129,
+    "rho_sum": 2638.4907
+   },
+   "mean_reversion_rsi": {
+    "nominal": 798,
+    "effective": 793,
+    "distinct_symbols": 129,
+    "rho_sum": 792.2736
    },
    "momentum_volgate": {
-    "nominal": 1277,
-    "effective": 1260,
+    "nominal": 1448,
+    "effective": 1429,
     "distinct_symbols": 120,
-    "rho_sum": 1259.108
+    "rho_sum": 1428.8809
    },
    "multi_speed_trend": {
-    "nominal": 1295,
-    "effective": 1274,
+    "nominal": 1332,
+    "effective": 1310,
     "distinct_symbols": 132,
-    "rho_sum": 1273.1106
+    "rho_sum": 1309.845
    },
    "opening_range": {
-    "nominal": 14,
-    "effective": 14,
-    "distinct_symbols": 8,
-    "rho_sum": 13.7194
+    "nominal": 1698,
+    "effective": 1686,
+    "distinct_symbols": 129,
+    "rho_sum": 1685.635
    },
    "overnight_drift": {
-    "nominal": 7,
-    "effective": 7,
-    "distinct_symbols": 3,
-    "rho_sum": 6.9019
+    "nominal": 1808,
+    "effective": 1795,
+    "distinct_symbols": 133,
+    "rho_sum": 1794.9779
    },
    "overnight_gap_decay": {
-    "nominal": 883,
-    "effective": 871,
-    "distinct_symbols": 99,
-    "rho_sum": 870.5776
+    "nominal": 3452,
+    "effective": 3420,
+    "distinct_symbols": 133,
+    "rho_sum": 3419.5786
    },
    "pca_residual": {
-    "nominal": 843,
-    "effective": 829,
+    "nominal": 7869,
+    "effective": 7801,
     "distinct_symbols": 133,
-    "rho_sum": 828.3137
+    "rho_sum": 7800.1469
    },
    "pin_bar_reversal": {
-    "nominal": 630,
-    "effective": 619,
+    "nominal": 863,
+    "effective": 851,
     "distinct_symbols": 98,
-    "rho_sum": 618.9647
+    "rho_sum": 850.2926
    },
    "pullback_entry": {
-    "nominal": 475,
-    "effective": 469,
-    "distinct_symbols": 109,
-    "rho_sum": 468.3448
+    "nominal": 2892,
+    "effective": 2869,
+    "distinct_symbols": 133,
+    "rho_sum": 2868.0004
    },
    "range_reversion": {
     "nominal": 726,
@@ -489,10 +574,10 @@
     "rho_sum": 0.98
    },
    "relative_value": {
-    "nominal": 2218,
-    "effective": 2177,
-    "distinct_symbols": 99,
-    "rho_sum": 2176.0682
+    "nominal": 7315,
+    "effective": 7236,
+    "distinct_symbols": 134,
+    "rho_sum": 7235.4528
    },
    "retail_overlap_reversal": {
     "nominal": 1615,
@@ -507,10 +592,10 @@
     "rho_sum": 412.1434
    },
    "session_range_breakout": {
-    "nominal": 51,
-    "effective": 51,
-    "distinct_symbols": 17,
-    "rho_sum": 50.0537
+    "nominal": 263,
+    "effective": 261,
+    "distinct_symbols": 56,
+    "rho_sum": 260.5324
    },
    "spread_state": {
     "nominal": 891,
@@ -519,77 +604,89 @@
     "rho_sum": 874.6665
    },
    "style_premia": {
-    "nominal": 6,
-    "effective": 6,
-    "distinct_symbols": 2,
-    "rho_sum": 5.9159
+    "nominal": 1440,
+    "effective": 1430,
+    "distinct_symbols": 124,
+    "rho_sum": 1429.6255
    },
    "trend_ma_cross": {
-    "nominal": 597,
-    "effective": 589,
-    "distinct_symbols": 110,
-    "rho_sum": 588.6354
+    "nominal": 2637,
+    "effective": 2614,
+    "distinct_symbols": 133,
+    "rho_sum": 2613.9964
    },
    "turn_of_month": {
-    "nominal": 711,
-    "effective": 702,
-    "distinct_symbols": 105,
-    "rho_sum": 701.0382
+    "nominal": 1561,
+    "effective": 1545,
+    "distinct_symbols": 122,
+    "rho_sum": 1544.9386
+   },
+   "vol_mean_reversion": {
+    "nominal": 2805,
+    "effective": 2785,
+    "distinct_symbols": 134,
+    "rho_sum": 2784.8713
    },
    "vol_transition": {
-    "nominal": 1826,
-    "effective": 1790,
+    "nominal": 3891,
+    "effective": 3840,
     "distinct_symbols": 134,
-    "rho_sum": 1789.4461
+    "rho_sum": 3839.6277
    },
    "volatility_squeeze": {
-    "nominal": 545,
-    "effective": 538,
-    "distinct_symbols": 104,
-    "rho_sum": 537.364
+    "nominal": 1062,
+    "effective": 1051,
+    "distinct_symbols": 119,
+    "rho_sum": 1050.654
+   },
+   "volume_spike": {
+    "nominal": 1554,
+    "effective": 1543,
+    "distinct_symbols": 132,
+    "rho_sum": 1542.8485
    }
   },
   "method": "lifetime per family: sum over distinct judged cells of rho = n_effective / n_raw of the judge's own correlation census (null-calibrated participation ratio of the eigenvalues of the sweep's daily-return correlation matrix) for the sweep that first judged the cell, 1.0 when that census was unmeasurable; ceil, floored at the family's distinct symbols, capped at its distinct cells"
  },
- "sr0_pooled_at_lifetime_effective": 2.094292,
+ "sr0_pooled_at_lifetime_effective": 2.010128,
  "provenance": {
   "sources": [
    {
     "path": "desks/mt5/data/dsr_trial_sharpes.jsonl",
     "role": "append-only ledger of judged trial Sharpes",
-    "sha256": "7cc9c8eba76698431cd108c5769a14cbd05269e3070844dd1757659ec5cd29a1",
-    "rows": 73905,
-    "distinct_cells": 64150
+    "sha256": "cece3fe757a05968d5701d391350ebcfc7c9c75c97a818b72d4019300ff4a80f",
+    "rows": 217128,
+    "distinct_cells": 163648
    },
    {
     "path": "desks/mt5/reports/universal_gates_external.json",
     "role": "latest sweep report harvested into the ledger",
-    "sha256": "429ebed9125257fb0ec42d08a71caaee5555cb686ba587920db26be04542cbf7"
+    "sha256": "27f4442ad216c85d0bf7323e0abefa1216f101c1e71dbd654a3ca169c5587152"
    }
   ],
   "harvest": {
    "status": "MEASURED",
-   "appended": 17038,
-   "sweep_id": "429ebed9125257fb",
-   "sha256": "429ebed9125257fb0ec42d08a71caaee5555cb686ba587920db26be04542cbf7",
-   "swept_at": "2026-10-10T00:33:33+00:00",
+   "appended": 92809,
+   "sweep_id": "27f4442ad216c85d",
+   "sha256": "27f4442ad216c85d0bf7323e0abefa1216f101c1e71dbd654a3ca169c5587152",
+   "swept_at": "2026-11-01T17:30:08+00:00",
    "campaign": "external_discoveries"
   },
   "code": {
    "path": "libs/research/dsr_inputs.py",
    "sha256": "ebb86b51c49c09c7c626bdefe735b5abee51fd077300c81c4faf19a6b66ea6f1"
   },
-  "n": 64150,
+  "n": 163648,
   "window": {
    "days": 30,
-   "start": "2026-09-12T03:49:34+00:00",
-   "end": "2026-10-12T03:49:34+00:00"
+   "start": "2026-10-02T21:44:29+00:00",
+   "end": "2026-11-01T21:44:29+00:00"
   },
   "method": {
    "variance": "sample variance (ddof=1) of the latest per-period Sharpe (libs.validation.dsr.sharpe_ratio on the development-window daily series, the units expected_max_sharpe takes; not annualised) of every distinct cell judged in the window; no winsorising, floor or shrinkage",
    "effective_trials": "lifetime per family: sum over distinct judged cells of rho = n_effective / n_raw of the judge's own correlation census (null-calibrated participation ratio of the eigenvalues of the sweep's daily-return correlation matrix) for the sweep that first judged the cell, 1.0 when that census was unmeasurable; ceil, floored at the family's distinct symbols, capped at its distinct cells"
   },
-  "timestamp": "2026-10-12T03:49:34+00:00"
+  "timestamp": "2026-11-01T21:44:29+00:00"
  },
- "content_sha256": "4d241a49fcf6906507e33038e5142f6c9c56008b68d06badc21f12663edb8103"
+ "content_sha256": "700dc28ebf2ba3326c7728001c9094411486f6ed7be17fc6db2406f1fcae7e9a"
 }

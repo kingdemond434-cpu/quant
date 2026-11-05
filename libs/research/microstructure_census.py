@@ -222,7 +222,9 @@ CONSTRUCTIONS: tuple[Construction, ...] = (
         "desks/mt5/reports/FUTURES_LEAD_LAG.json"),
     Construction(
         "bar_clock_offset", "what timezone the desk's own H1 bars are stamped in",
-        (FUTURES,), "desks/mt5/research/futures_lead_lag.py",
+        # Published by bar_clock_probe since 2026-10-21: dated spans from the terminal's server
+        # time; the season-wide offset still needs the futures cross-venue reading.
+        (FUTURES,), "desks/mt5/research/bar_clock_probe.py",
         "every join from a genuinely-UTC source: the event lane's filing acceptance times, the "
         "macro calendar, any reference feed. At H1 an hour is the whole bar, so a wrong clock "
         "attributes an observation to the wrong hour of the session",

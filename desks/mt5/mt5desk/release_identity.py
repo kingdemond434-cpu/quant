@@ -86,7 +86,13 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/reports/GATE_VERDICT_DIGEST.json",
     "desks/mt5/reports/BOX_STATE_FLOW.json",
     "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
+    "desks/mt5/reports/MERGE_PIPELINE.json",
     "desks/mt5/reports/DESK_HEALTH.json",
+    # Which scheduled organs are FAILING / NOT_SCHEDULED (ops/process_health.py, N14
+    # 2026-10-13): the scorecard counted them, nobody off the box could name them.
+    "desks/mt5/reports/process_health.json",
+    # Backup and restore-drill state, scheme only (ops/backup_state.py, v5f).
+    "desks/mt5/reports/BACKUP_STATE.json",
     "desks/mt5/data/tier_s/box_evidence.json",
     "desks/mt5/data/tier_s/live_door.json",
     "desks/mt5/reports/NULL_LAB.json",
@@ -106,6 +112,8 @@ NON_CODE: frozenset[str] = frozenset({
     # The lockbox v4 re-certification ledger and the re-mint status (2026-09-30).
     "desks/mt5/reports/LOCKBOX_RECERT.json",
     "desks/mt5/reports/REMINT_STATUS.json",
+    # The tick tape's freshness verdict (hourly `tape_fresh` leg, 2026-10-14).
+    "desks/mt5/reports/TAPE_FRESHNESS.json",
 })
 
 #: STATE DIRECTORIES, verbatim from libs/ops/release.STATE_PREFIXES (mirrored, not imported --

@@ -31,7 +31,10 @@ exception). Each value is risk per trade as a fraction of equity, keyed the allo
 | E8 | `gold_asia` | 0.010 |
 | E8 | `AUDCHF_overnight_gap_decay_asia` | 0.010 |
 
-No `USDJPY_session_range_breakout_*` key in either account (Reddit-only lineage, #162 quarantine).
+No `USDJPY_session_range_breakout_*` key in this table yet. Its Reddit-lineage quarantine is WITHDRAWN
+(principal 2026-10-13: an idea's origin never blocks a sleeve; the terms gate governs data access only).
+The lift itself is `/mnt/project-files/patches/terms_gate_input_not_idea/live.patch`, and the next
+re-solve sizes USDJPY from the book like any other certificate.
 Every key NOT in this table keeps whatever the allocator set, including 0 (no order).
 
 - `mt5desk/kelly_sizing.py`: add `load_kelly_book(path, venue)`, mirroring `load_kelly_survival`.
@@ -77,9 +80,8 @@ Every key NOT in this table keeps whatever the allocator set, including 0 (no or
 - Check: the gateway logs "kelly book sets N sleeve(s)", and the first fills land at the solved fractions.
 
 ## Git-snapshot answer (certs 09-16, worlds 09-28), provisional
-Re-solved 10-06 21:30Z after the terms fence dropped USDJPY SRB (Reddit-only lineage, PR #162;
-`--book` now excludes such cells itself). Do NOT admit or promote USDJPY session_range_breakout
-from this book.
+Solved 10-06 21:30Z without USDJPY SRB, under a Reddit-lineage quarantine since withdrawn (2026-10-13);
+the next re-solve includes it.
 Fusion: EURZAR, AUDCHF and USDZAR overnight gap decay at about 10% each, gold_asia 8.2% (0.01 lot).
 Total heat 38.4%. P(<=20% equity in 60d) is 3.3% as estimated and 4.25% with edges halved.
 Today's three gold windows at 0.02 lot read 13%.
@@ -89,6 +91,8 @@ risk per trade (2% total per day). P(pass within 30d) 28%, median 38 days, 92% e
 Fallback if the halved-edge breach is unacceptable: 0.75% each (52-day median, breach <=5% both ways).
 Frontier table: /mnt/project-files/sizing/CERT_BOOK_2026-10-06.md.
 Final sizes for the desktop pass. Fusion: EURZAR 9.8%, USDZAR 10%, AUDCHF 10%, gold_asia 8.2%.
-E8: gold_asia 1.0%, AUDCHF 1.0%. Do not include USDJPY SRB.
+E8: gold_asia 1.0%, AUDCHF 1.0%. USDJPY SRB is not in this table, but it is no longer quarantined:
+the principal lifted the Reddit-origin ban on 2026-10-13 ("no its not banned ... dont ban it"), so it
+enters through the promoter's admission streak at the allocator's size, like any certified sleeve.
 Not admitted: CHFNOK carry (live -3.67R/17), nine gap-decay crosses the worlds price at or below 0,
 XAUUSD SRB (correlation 0.94 with gold_asia).
