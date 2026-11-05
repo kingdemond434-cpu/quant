@@ -95,5 +95,7 @@ def test_run_binds_the_verdict_before_the_artifact_is_written() -> None:
     i_art = src.index('"proposed_book": proposed_book')
     assert i_nt < i_bind < i_art
     # the heat the gateway caps at is the PUBLISHED book's, not the solve's, when the verdict binds
-    assert 'book.total_heat if nt.get("binding") else verdict.total_heat' in src
+    # the held book's total, or the book's own total inside the band (published_heat_total)
+    assert "book.total_heat, verdict.total_heat, verdict.effective_ceiling," in src
+    assert 'held=bool(nt.get("binding"))' in src
     assert '"held": bool(nt.get("binding"))' in src
