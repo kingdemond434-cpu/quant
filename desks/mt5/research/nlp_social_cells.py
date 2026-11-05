@@ -5,8 +5,10 @@
     python desks/mt5/research/nlp_social_cells.py --dry-run    # measure, write nothing
 
 TWO CLOCKS, BOTH EXISTING. `--ingest` is rostered on the ORGANS battery (hourly rotation) and runs
-the two publishers -- `nlp_event_factors` (Part A: event/policy factors from collected text) and
-`blog_social_mining` (Part B: Asian retail attention and mood). `run()` is on `daily_cycle`'s
+the three publishers -- `nlp_event_factors` (Part A: event/policy factors from collected text),
+`blog_social_mining` (Part B: Asian retail attention and mood) and `cn_retail_tone` (Part C: Guba
+board volume and Chinese-lexicon tone for CHINAH, HK50, USDCNH, XAUUSD). `run()` is on
+`daily_cycle`'s
 proposer list: it refreshes both, runs the ADMISSION TEST, and donates the pre-declared direct
 cells through `proposer_common.donate` -- the door every proposer uses (PIT stamp, lane filter,
 pre-registration, blinding, canonical registry, and `tests_run` charged to the lifetime ledger).
@@ -25,6 +27,8 @@ before any data is seen, run by `family_exogenous_conditioner` on the lake frame
                             side is the currency-leg consequence of a tightening drift
   attention_shock_reversal  retail attention z times the sign of the mood change, z-scored; the
                             side FADES the crowd when attention spikes (side_when_high = -1)
+  cn_board_tone_reversal    the same fade on one Guba board's own post-volume z times the sign
+                            of its Chinese-lexicon tone change (`cn_retail_tone_<SYMBOL>`)
 
 A cell is donated only when its series holds MIN_HISTORY_DAYS observations AND its own
 (index, instrument) passed the shuffled-date placebo gate above (`gain` in the grid: BH q <= alpha
@@ -77,6 +81,9 @@ POLICY_CELLS: tuple[tuple[str, str, int], ...] = (
 )
 #: Instruments the attention-shock reversal is donated on (share CFDs excluded by mandate).
 ATTENTION_SYMBOLS: tuple[str, ...] = ("JPN225", "USDJPY", "USDKRW", "CHINAH", "HK50", "USDCNH")
+#: Instruments with a Guba board in `cn_retail_tone.BOARDS` (Part C), each read on its own board.
+CN_TONE_SYMBOLS: tuple[str, ...] = ("CHINAH", "HK50", "USDCNH", "XAUUSD")
+CN_TONE_SIGNALS: tuple[str, ...] = ("volume_z", "tone_mean", "tone_delta", "tone_shock_signed")
 
 #: Tier S orthogonality schema per culture: who trades there, and why its version of the
 #: mechanism should fail at different times than the English-language one.
@@ -115,7 +122,7 @@ CULTURE: dict[str, dict[str, Any]] = {
                                        "shows before the decision and fails on split votes")},
 }
 _SYMBOL_CULTURE = {"JPN225": "JP", "USDJPY": "JP", "USDKRW": "KR", "CHINAH": "CN", "HK50": "CN",
-                   "USDCNH": "CN"}
+                   "USDCNH": "CN", "XAUUSD": "CN"}
 
 
 # --------------------------------------------------------------------------------------- data
@@ -194,6 +201,18 @@ def build_grid(series_dir: Path = SERIES_DIR) -> tuple[dict[str, pd.Series],
             indices[name] = s
             history[name] = _recent(s)
             pairs.append((name, sym))
+    for sym in CN_TONE_SYMBOLS:
+        frame = load_lake(f"cn_retail_tone_{sym}", series_dir)
+        if frame is None:
+            continue
+        for sig in CN_TONE_SIGNALS:
+            s = _index(frame, sig)
+            if s is None:
+                continue
+            name = f"cnrt:{sym}.{sig}"
+            indices[name] = s
+            history[name] = _recent(s)
+            pairs.append((name, sym))
     return indices, pairs, history
 
 
@@ -268,6 +287,26 @@ def declared_cells(history: dict[str, int], grid: dict[str, Any]) -> tuple[list[
             **culture,
         }
         _sort(cell, name, sym, history, grid, ready, waiting)
+    for sym in CN_TONE_SYMBOLS:
+        name = f"cnrt:{sym}.tone_shock_signed"
+        culture = CULTURE[_SYMBOL_CULTURE[sym]]
+        cell = {
+            "cell_name": "cn_board_tone_reversal", "symbol": sym, "index": name,
+            "params": {"source": f"cn_retail_tone_{sym}", "signal": "tone_shock_signed",
+                       "transform": "level_z", "threshold": 1.5, "side_when_high": -1,
+                       "ttl_bars": 24, "lag_hours": 24},
+            "mechanism": (f"a spike in posts on {sym}'s Guba board with a one-sided change in "
+                          "their Chinese-language tone marks a crowd overreaction; liquidity "
+                          "providers absorb the crowd's flow and are paid on the reversal"),
+            "payer": "attention-driven mainland retail traders chasing the day's move",
+            "economic_actor": "overextended_liquidity_taker",
+            "constraint": ("A-share retail is T+1 under daily limits and CNH access is quota-"
+                           "bound, so the crowd's flow lands on one side and cannot unwind "
+                           "same-day"),
+            "information_source": "event",
+            **culture,
+        }
+        _sort(cell, name, sym, history, grid, ready, waiting)
     for c in ready + waiting:
         c["evidence"] = _evidence(grid, c["index"], c["symbol"])
         c["history_days"] = history.get(c["index"], 0)
@@ -313,7 +352,7 @@ def to_candidates(cells: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 # ---------------------------------------------------------------------------------------- run
 def ingest(*, fetch: bool = True, budget_s: float = 110.0) -> dict[str, Any]:
-    """Both publishers, each fenced so one failing never costs the other its pass."""
+    """All three publishers, each fenced so one failing never costs another its pass."""
     out: dict[str, Any] = {}
     try:
         import nlp_event_factors  # type: ignore[import-not-found]
@@ -330,6 +369,14 @@ def ingest(*, fetch: bool = True, budget_s: float = 110.0) -> dict[str, Any]:
                               "index_rows": rep["index_rows"], "live_yield": rep["live_yield"]}
     except Exception as exc:
         out["blog_social"] = {"state": "FAILED", "error": f"{type(exc).__name__}: {exc}"}
+    try:
+        import cn_retail_tone  # type: ignore[import-not-found]
+        rep = cn_retail_tone.run(fetch=fetch, budget_s=min(40.0, budget_s))
+        out["cn_retail_tone"] = {"index_rows": rep["index_rows"],
+                                 "sources": {k: v["state"] for k, v in rep["sources"].items()},
+                                 "vault_pages": (rep.get("vault") or {}).get("pages", 0)}
+    except Exception as exc:
+        out["cn_retail_tone"] = {"state": "FAILED", "error": f"{type(exc).__name__}: {exc}"}
     return out
 
 
