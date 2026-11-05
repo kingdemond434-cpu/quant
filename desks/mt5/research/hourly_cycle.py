@@ -1188,7 +1188,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
-    "source_evig", "source_drain", "pack_cells", "futures_state", "ground_depth",
+    "source_evig", "source_drain", "pack_cells", "futures_state", "crypto_leverage",
+    "ground_depth",
     "timeframe_fanout",
     # The culture-gap producers (2026-09-30): a data-driven recipe walk, well under a second
     # when nothing is new, so every gap's cells are minted on the core clock.
@@ -1304,7 +1305,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
-                     "asia_plane", "futures_state", "archive_tape", "reclaim_disk",
+                     "asia_plane", "futures_state", "crypto_leverage", "archive_tape",
+                     "reclaim_disk",
                      "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
@@ -6088,6 +6090,11 @@ def main() -> None:
     # 401/403/429/451 is a hard stop per source.
     fst = _costed("futures_state", lambda: _producer(
         "futures_state", "research/futures_state.py", "--once"))
+    # Crypto perpetual funding, OI and long/short history as PIT series that condition the MT5
+    # crypto CFDs only (a sensor, never a hunted venue); OI and the ratio accrue forward.
+    clv = _costed("crypto_leverage", lambda: _producer(
+        "crypto_leverage", "research/shadow_institutional.py", "--leverage-history",
+        "--budget-s", "120"))
     # THE FRONT DOOR IS NOT THE GROUND (2026-09-23). 15 of the 121 document-holding grounds named
     # no instrument for ONE reason `pack_cells.resolve_ground` had already written: the documents
     # held are the landing page. This walks inside those grounds' own doors -- ranked links and
@@ -6522,7 +6529,7 @@ def main() -> None:
                     "preregistration": prg, "organ_census": ogc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
-                    "culture_gap_cells": cgc, "futures_state": fst,
+                    "culture_gap_cells": cgc, "futures_state": fst, "crypto_leverage": clv,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
                     "actor_pressure": apr, "destroyer_pool": dpo,
