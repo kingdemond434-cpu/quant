@@ -202,6 +202,12 @@ def coverage(ledger: dict[str, dict], enum_report: dict, stopped: str | None) ->
 
 
 def main() -> int:
+    # A scheduled task redirects stdout to a file in the console code page (cp1252 on the PC), and
+    # one emoji in a discovered channel name raised UnicodeEncodeError and killed the run before
+    # any fetch (2026-11-04). Write the log as UTF-8 whatever the host code page is.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default="config/video_mining_channels.json")
     ap.add_argument("--out", default="video_mining_out")
