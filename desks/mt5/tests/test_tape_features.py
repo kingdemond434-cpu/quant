@@ -325,3 +325,14 @@ def test_the_surfaces_cover_every_day_not_only_the_ones_this_pass_built(rig) -> 
     n_full = sum(int(h.get("n_bars") or 0) for h in full["EURUSD"]["hours"].values())
     n_inc = sum(int(h.get("n_bars") or 0) for h in inc.values())
     assert n_inc > n_full, "every day's ticks are in the surface, plus the day that grew"
+
+
+def test_a_day_watermarked_before_cells_were_kept_is_rebuilt_once(rig) -> None:
+    """Days built by the code before 2026-11-05 carry a matching watermark and no kept cells
+    (Auditor SF1 on #745). They are rebuilt -- once -- so the surfaces cover them."""
+    import shutil
+    tf.run(rig, ["EURUSD"], days_back=0)
+    shutil.rmtree(tf.SILVER.parent / "cells")
+    again = tf.run(rig, ["EURUSD"], days_back=0)
+    assert again["symbol_days_built"] == len(DAYS)
+    assert tf.run(rig, ["EURUSD"], days_back=0)["symbol_days_built"] == 0

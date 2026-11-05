@@ -1816,19 +1816,34 @@ def publish_throughput(decided: int, elapsed_s: float, backlog_before: int,
 LOCK = BASE / "data" / "hypotheses" / ".deepening.lock"
 
 
-def _holder_alive(pid: int) -> bool:
+def _holder_alive(pid: int, create_time: float | None = None) -> bool:
     """Is the process that wrote the lock still running? A DEAD HOLDER FREES THE LOCK AT ONCE.
 
     2026-11-05: the check read `age <= stale_after OR pid alive`, so a run killed by the task
     limit left a lock that refused every caller for up to `stale_after` (80 min) although its
     process was gone -- MT5-Deepening killed at 50 min blocked the next two triggers. A recorded
     pid is now the whole answer: alive means held (however old the stamp, as before), gone
-    means free (however young)."""
+    means free (however young). A lock that also records its holder's `create_time` is held
+    only by THAT process: Windows reuses pids, and an unrelated process on the same pid is not
+    the holder. A lock written without it (older code) keeps the pid-only answer."""
     import psutil
     try:
-        return bool(psutil.pid_exists(pid))
-    except OSError:
+        proc = psutil.Process(pid)
+        if create_time is not None and abs(proc.create_time() - float(create_time)) > 2.0:
+            return False
+        return bool(proc.is_running())
+    except psutil.NoSuchProcess:
+        return False
+    except (psutil.AccessDenied, OSError, ValueError, TypeError):
         return True        # unmeasurable: never take a lock from a holder that may be alive
+
+
+def _own_create_time() -> float | None:
+    try:
+        import psutil
+        return float(psutil.Process().create_time())
+    except Exception:
+        return None
 
 
 def _single_flight():
@@ -1861,16 +1876,18 @@ def _single_flight():
                 held = json.loads(LOCK.read_text("utf-8"))
                 age = time.time() - float(held.get("at") or 0.0)
                 pid = int(held.get("pid") or 0)
+                ctime = held.get("create_time")
             except (OSError, ValueError, TypeError, AttributeError):
-                age, pid = stale_after + 1.0, 0
-            if _holder_alive(pid) if pid > 0 else age <= stale_after:
+                age, pid, ctime = stale_after + 1.0, 0, None
+            if _holder_alive(pid, ctime) if pid > 0 else age <= stale_after:
                 dlog(f"another deepening run holds the lock (pid={pid}, {age:.0f}s old): "
                      "exiting rather than racing it")
                 return None
             dlog(f"taking over a lock whose holder is gone (pid={pid}, {age:.0f}s old)")
         temporary = LOCK.with_name(LOCK.name + f".{os.getpid()}.tmp")
         try:
-            temporary.write_text(json.dumps({"pid": os.getpid(), "at": time.time()}), "utf-8")
+            temporary.write_text(json.dumps({"pid": os.getpid(), "at": time.time(),
+                                             "create_time": _own_create_time()}), "utf-8")
             os.replace(temporary, LOCK)
         finally:
             temporary.unlink(missing_ok=True)

@@ -384,3 +384,23 @@ def test_a_lock_held_by_a_live_run_is_respected_however_old(tmp_path, monkeypatc
     lock.write_text(json.dumps({"pid": os.getpid(),
                                 "at": time.time() - dw.RUN_BUDGET_SEC * 3}), "utf-8")
     assert dw._single_flight() is None
+
+
+def test_a_lock_whose_pid_was_reused_by_another_process_is_taken(tmp_path, monkeypatch) -> None:
+    """Windows reuses pids (Auditor SF2 on #745): the lock records its holder's create_time, and
+    a live process on that pid with a different start is not the holder."""
+    lock = tmp_path / ".lock"
+    monkeypatch.setattr(dw, "LOCK", lock)
+    lock.write_text(json.dumps({"pid": os.getpid(), "at": time.time() - 60,
+                                "create_time": 1_000_000.0}), "utf-8")
+    assert dw._single_flight() is not None
+
+
+def test_a_lock_records_its_holders_start_and_that_holder_is_respected(tmp_path,
+                                                                       monkeypatch) -> None:
+    lock = tmp_path / ".lock"
+    monkeypatch.setattr(dw, "LOCK", lock)
+    assert dw._single_flight() is not None
+    held = json.loads(lock.read_text("utf-8"))
+    assert held["pid"] == os.getpid() and isinstance(held["create_time"], float)
+    assert dw._single_flight() is None, "the live holder recorded with its start keeps the lock"
