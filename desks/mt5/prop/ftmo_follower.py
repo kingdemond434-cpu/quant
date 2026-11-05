@@ -1376,6 +1376,13 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
     except Exception as exc:
         res, row["why"] = None, f"{type(exc).__name__}: {exc}"[:200]
     code = getattr(res, "retcode", None)
+    if kind.endswith("_market") and code == 10010:
+        # DONE_PARTIAL (10010) IS A FILL, NEVER A REJECTION (Auditor HOLD on a506aaeda): a
+        # full-lot fallback beside a partly filled IOC deal would hold up to twice the intended
+        # risk, uncounted by the fallback's loss guard. The filled part stands alone.
+        row.update({"partial": True, "venue_retcode": 10010,
+                    "filled_volume": getattr(res, "volume", None)})
+        code = 10009
     if kind.endswith("_market") and code not in (10008, 10009):
         # A REJECTED MARKET FOLLOW NEVER LOSES THE TRADE THE OLD LIMIT WOULD HAVE KEPT (Auditor
         # HOLD on #746): a requote, a changed price or off-quotes (10004/10020/10021) or a

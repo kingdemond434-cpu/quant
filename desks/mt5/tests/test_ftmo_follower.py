@@ -216,6 +216,25 @@ def test_a_rejected_market_follow_falls_back_to_the_limit_the_old_path_placed(wo
     assert len(_entries(mt5)) == 1                     # still one order a day
 
 
+def test_a_partly_filled_market_follow_is_a_fill_and_places_no_limit(world) -> None:
+    """Auditor HOLD on a506aaeda: 10010 DONE_PARTIAL is a fill. A full-lot limit beside it would
+    hold up to twice the intended risk, so no fallback is placed."""
+
+    class _Partial(_MT5):
+        def order_send(self, req: dict) -> SimpleNamespace:
+            if req["action"] == self.TRADE_ACTION_DEAL:
+                self.sent.append(req)
+                return SimpleNamespace(retcode=10010, order=9100, volume=0.2)
+            return super().order_send(req)
+
+    mt5 = _Partial(bid=4340.8, ask=4341.0)
+    _pass(mt5)
+    assert not _entries(mt5)
+    (row,) = [r for r in _rows() if r.get("status") in ("SENT", "REJECTED")]
+    assert row["status"] == "SENT" and row["partial"] and row["filled_volume"] == 0.2
+    assert row["venue_retcode"] == 10010 and not row.get("fallback")
+
+
 def test_the_late_entry_bound_is_a_share_of_e8s_stop() -> None:
     assert ff.entry_plan("long", 4340.0, 4320.0, 4329.8, 4330.0) == ("buy_stop", 4340.0)
     assert ff.entry_plan("long", 4340.0, 4320.0, 4341.8, 4342.0) == ("buy_market", 4342.0)
