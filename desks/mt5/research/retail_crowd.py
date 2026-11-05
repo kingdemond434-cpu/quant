@@ -29,6 +29,19 @@ A source answering with a login wall, a paywall or a bot challenge is WALLED wit
 is not retried inside the pass: no logins beyond the API's own, no cookies, no proxies, no
 rate-limit bypass, one request per source per hour.
 
+ROBOTS.TXT. Before any public page is requested its host's robots.txt is read (once per host per
+pass, same User-Agent as the fetch) and honoured for that exact path: a disallowed path is
+ROBOTS_REFUSED and never requested; an unreadable robots.txt (network error, 5xx, a challenge)
+is UNMEASURED and the page is not requested either; a 404 means the host publishes no rules. The
+official Myfxbook API's verdict is read and recorded but does not gate it (`fetch_myfxbook_api`).
+
+ACCESS ON DONATIONS. Every donated hypothesis row carries `access_label` (the most restrictive
+label of the sources its series drew on), `terms` (`to_confirm` unless every source's terms are
+confirmed) and `access_sources`, exactly as each store row carries its source's label.
+
+NO SECRET ON DISK. Raw payloads, recorded URLs, `why` strings and printed lines are scrubbed of
+`session=` values and e-mail addresses (`scrub`), on top of redacting the credentials themselves.
+
 THE STORE (shared layout with the copy-trade crowd recorder):
   data/lake/series/retail_crowd.csv          LONG, append-only, one row per (pass, source, symbol):
                                              captured_at, available_time, source, cohort, symbol,
@@ -85,6 +98,7 @@ import tempfile
 import time
 import urllib.parse
 import urllib.request
+import urllib.robotparser
 from collections.abc import Callable, Iterable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -138,6 +152,7 @@ SOURCES: dict[str, dict[str, str]] = {
     "myfxbook_api": {
         "url": "https://www.myfxbook.com/api/get-community-outlook.json",
         "access_label": "LICENSED",
+        "terms": "to_confirm",
         "terms_note": ("official API under the desk's own Myfxbook account; free tier limit 100 "
                        "outlook requests/day, honoured at 24/day. API terms not re-read from the "
                        "build container (its proxy refuses myfxbook.com); redistribution withheld"),
@@ -145,18 +160,21 @@ SOURCES: dict[str, dict[str, str]] = {
     "myfxbook_html": {
         "url": "https://www.myfxbook.com/community/outlook",
         "access_label": "PUBLIC_WITH_TERMS",
+        "terms": "to_confirm",
         "terms_note": ("fallback only. The host is fronted by a Cloudflare managed challenge "
                        "(seed_miners.SOURCE_WALLS, 2026-08-26); a challenge is WALLED, never solved"),
     },
     "dukascopy": {
         "url": "https://www.dukascopy.com/swiss/english/marketwatch/sentiment/",
         "access_label": "ACCESS_UNCLEAR",
+        "terms": "to_confirm",
         "terms_note": ("public page, no login. Site terms not read: unreachable from the build "
                        "container (proxy policy). Mined with the label; redistribution withheld"),
     },
     "fxblue": {
         "url": "https://www.fxblue.com/market-data/tools/sentiment",
         "access_label": "PUBLIC_WITH_TERMS",
+        "terms": "to_confirm",
         "terms_note": ("public page, no login. book_forensics.TERMS: fxblue robots.txt refuses "
                        "/terms from this host (2026-10-06), terms unread -> to_confirm; mined with "
                        "the label, redistribution withheld"),
@@ -164,10 +182,41 @@ SOURCES: dict[str, dict[str, str]] = {
     "ig": {
         "url": "https://www.ig.com/uk/ig-client-sentiment",
         "access_label": "ACCESS_UNCLEAR",
+        "terms": "to_confirm",
         "terms_note": ("public page, no login. Site terms not read: unreachable from the build "
                        "container (proxy policy). Mined with the label; redistribution withheld"),
     },
 }
+
+#: Access labels from least to most restrictive (the archaeology vocabulary, LAWS 5e). A donation
+#: drawing on several sources carries the MOST restrictive of their labels, and an unknown or
+#: missing label reads as ACCESS_UNCLEAR, so a row never becomes less guarded by being merged.
+ACCESS_ORDER: tuple[str, ...] = (
+    "PUBLIC", "OPEN_DATA", "PUBLIC_ARCHIVE", "PUBLIC_SOCIAL", "USER_SUBMITTED",
+    "PUBLIC_WITH_TERMS", "LICENSED", "ACCESS_UNCLEAR", "PRIVATE", "CONFIDENTIAL_MNPI",
+    "STOLEN_UNAUTHORIZED")
+
+
+def most_restrictive(labels: Iterable[str]) -> str:
+    """The most restrictive access label among `labels`; none or unknown -> ACCESS_UNCLEAR."""
+    rank = {k: i for i, k in enumerate(ACCESS_ORDER)}
+    floor = rank["ACCESS_UNCLEAR"]
+    got = [str(x or "").upper() for x in labels]
+    if not got:
+        return "ACCESS_UNCLEAR"
+    return ACCESS_ORDER[max(rank.get(x, floor) for x in got)]
+
+
+def source_access(sources: Iterable[str]) -> dict[str, Any]:
+    """{'access_label', 'terms', 'access_sources'} for a row drawing on `sources`. FAIL CLOSED:
+    terms are `confirmed` only when every contributing source's terms are confirmed, and a row
+    whose sources are unknown is ACCESS_UNCLEAR / to_confirm."""
+    srcs = sorted({str(x) for x in sources if x})
+    labels = [SOURCES.get(x, {}).get("access_label", "ACCESS_UNCLEAR") for x in srcs]
+    confirmed = bool(srcs) and all(SOURCES.get(x, {}).get("terms") == "confirmed" for x in srcs)
+    return {"access_label": most_restrictive(labels),
+            "terms": "confirmed" if confirmed else "to_confirm", "access_sources": srcs}
+
 
 #: The three pre-registered hypotheses per symbol. Contrarian on every one: the mechanism is that
 #: a one-sided retail crowd is a supply of stops and of forced exits, so price tends to move
@@ -373,13 +422,25 @@ def _credentials(env: dict[str, str] | None = None) -> dict[str, str]:
     return {}
 
 
+_SESSION_PARAM = re.compile(r"(?i)\bsession=[^&\s\"'#<>]*")
+_EMAIL = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)+")
+
+
+def scrub(text: str) -> str:
+    """Remove every `session=<token>` query value and every e-mail address. Applied to anything
+    that is written to disk or printed (raw payloads, URLs, `why` strings), whatever its source,
+    so a session token or the account e-mail cannot reach a file or a log even when a server
+    echoes them back in a form `_redact` does not know."""
+    return _EMAIL.sub("<email-redacted>", _SESSION_PARAM.sub("<session-redacted>", str(text)))
+
+
 def _redact(text: str, secrets: Iterable[str]) -> str:
     s = str(text)
     for v in secrets:
         if v:
-            s = s.replace(v, "<redacted>")
-            s = s.replace(urllib.parse.quote(v, safe=""), "<redacted>")
-    return s
+            for form in (v, urllib.parse.quote(v, safe=""), urllib.parse.quote_plus(v)):
+                s = s.replace(form, "<redacted>")
+    return scrub(s)
 
 
 # ------------------------------------------------------------------ HTTP
@@ -397,6 +458,74 @@ def http_get(url: str) -> tuple[int, str]:
         except Exception:
             body = ""
         return int(exc.code), body
+
+
+# ------------------------------------------------------------------ robots.txt (per host, per pass)
+class Robots:
+    """robots.txt, read once per host per pass and honoured for the exact path with the same
+    User-Agent the fetch sends (`USER_AGENT`).
+
+    READING, per RFC 9309: a 2xx body is the rules; a 404 or 410 means the host publishes no
+    rules, so every path is allowed. Anything else -- a network error, a 5xx, a 401/403/429, or
+    a body that is itself a bot challenge -- is UNMEASURED: the rules could not be read, and an
+    unread rule is not a permission, so the page is NOT fetched (fail closed)."""
+
+    def __init__(self, fetch: Fetcher) -> None:
+        self._fetch = fetch
+        self._hosts: dict[str, dict[str, Any]] = {}
+
+    @staticmethod
+    def robots_url(url: str) -> str:
+        u = urllib.parse.urlsplit(url)
+        return f"{u.scheme}://{u.netloc}/robots.txt"
+
+    def _host(self, url: str) -> dict[str, Any]:
+        key = urllib.parse.urlsplit(url).netloc.lower()
+        if key in self._hosts:
+            return self._hosts[key]
+        rurl = self.robots_url(url)
+        entry: dict[str, Any] = {"robots_url": rurl, "parser": None}
+        try:
+            st, body = self._fetch(rurl)
+        except Exception as exc:
+            entry.update(state="UNMEASURED", why=f"robots.txt unreachable: "
+                                                 f"{type(exc).__name__}: {exc}"[:200])
+        else:
+            entry["http"] = st
+            if st in (404, 410):
+                entry.update(state="NO_RULES", why=f"robots.txt HTTP {st}: no rules published")
+            elif 200 <= st < 300 and not is_walled(st, body):
+                rp = urllib.robotparser.RobotFileParser(rurl)
+                rp.parse((body or "").splitlines())
+                entry.update(state="READ", parser=rp, why="robots.txt read")
+            elif 200 <= st < 300:
+                entry.update(state="UNMEASURED",
+                             why="robots.txt answered with an access control; rules unread")
+            else:
+                entry.update(state="UNMEASURED", why=f"robots.txt HTTP {st}; rules unread")
+        self._hosts[key] = entry
+        return entry
+
+    def check(self, url: str) -> dict[str, Any]:
+        """{'verdict': ALLOWED | ROBOTS_REFUSED | UNMEASURED, 'robots_url', 'path', 'why'}.
+        Only scheme, host and path are ever reported, so no query string reaches a record."""
+        e = self._host(url)
+        u = urllib.parse.urlsplit(url)
+        path = u.path or "/"
+        out = {"robots_url": e["robots_url"], "path": path, "user_agent": USER_AGENT,
+               "robots_state": e["state"], "robots_http": e.get("http")}
+        if e["state"] == "UNMEASURED":
+            return {**out, "verdict": "UNMEASURED", "why": e["why"]}
+        if e["state"] == "NO_RULES":
+            return {**out, "verdict": "ALLOWED", "why": e["why"]}
+        rp = e["parser"]
+        allowed = rp.can_fetch(USER_AGENT, urllib.parse.urlunsplit(
+            (u.scheme, u.netloc, path, u.query, "")))
+        if allowed:
+            return {**out, "verdict": "ALLOWED", "why": f"robots.txt allows {path}"}
+        return {**out, "verdict": "ROBOTS_REFUSED",
+                "why": (f"robots.txt at {e['robots_url']} disallows {path} for "
+                        f"{USER_AGENT.split('/')[0]}; not fetched, not bypassed")}
 
 
 _WALL_MARKERS = ("just a moment", "cf-challenge", "challenge-platform", "ctype: 'managed'",
@@ -615,17 +744,27 @@ def _raw_snapshot(source: str, at: datetime, url: str, status: int, body: str,
     d.mkdir(parents=True, exist_ok=True)
     p = d / f"{at.strftime('%Y%m%dT%H%M%SZ')}.json.gz"
     if not p.exists():                     # immutable: one file per fetch, never rewritten
-        payload = {"source": source, "fetched_at": _iso(at), "url": url, "status": status,
-                   "sha256": sha, "body": body}
+        # `sha256` is of the body AS FETCHED (the store's payload_sha); the stored body is
+        # scrubbed of session tokens and e-mail addresses, and says whether that changed it.
+        clean = scrub(body or "")
+        payload = {"source": source, "fetched_at": _iso(at), "url": scrub(url), "status": status,
+                   "sha256": sha, "body_scrubbed": clean != (body or ""), "body": clean}
         with gzip.open(p, "wt", encoding="utf-8") as fh:
             json.dump(payload, fh, ensure_ascii=False)
     return sha
 
 
-def fetch_myfxbook_api(fetch: Fetcher = http_get, creds: dict[str, str] | None = None
-                       ) -> dict[str, Any]:
-    """{'status', 'why', 'body', 'url', 'obs'}. Logs in only when no session is held, and logs
-    out of a session it opened. No credential reaches the returned dict."""
+def fetch_myfxbook_api(fetch: Fetcher = http_get, creds: dict[str, str] | None = None,
+                       robots: Robots | None = None) -> dict[str, Any]:
+    """{'status', 'why', 'body', 'url', 'obs', 'robots'}. Logs in only when no session is held,
+    and logs out of a session it opened. No credential reaches the returned dict.
+
+    ROBOTS IS RECORDED HERE, NOT GATED. This is the official API called under the desk's own
+    account, governed by the API's terms (the LICENSED label), not a crawl of public pages, and
+    the host's robots.txt sits behind the same Cloudflare challenge that walls its pages -- so a
+    gate would read UNMEASURED every hour and silently retire the one licensed source. The
+    verdict for the outlook path is still read and carried in `robots` on every configured pass,
+    so a Disallow there is on the record for a human to weigh."""
     c = _credentials() if creds is None else creds
     secrets = [v for v in c.values() if v]
     base = "https://www.myfxbook.com/api"
@@ -635,6 +774,15 @@ def fetch_myfxbook_api(fetch: Fetcher = http_get, creds: dict[str, str] | None =
                 "why": ("no Myfxbook credentials on this host (QP_SECRET_MYFXBOOK_*, "
                         "MYFXBOOK_SESSION / MYFXBOOK_EMAIL+MYFXBOOK_PASSWORD, or "
                         "data/secrets/myfxbook.json)")}
+    rb = (robots or Robots(fetch)).check(url_public)
+    robots_rec = {**rb, "gated": False}
+    res = _api_call(fetch, c, secrets, base, url_public)
+    res["robots"] = robots_rec
+    return res
+
+
+def _api_call(fetch: Fetcher, c: dict[str, str], secrets: list[str], base: str,
+              url_public: str) -> dict[str, Any]:
     opened = False
     session = c.get("session", "")
     try:
@@ -686,24 +834,31 @@ def fetch_myfxbook_api(fetch: Fetcher = http_get, creds: dict[str, str] | None =
                 fetch(f"{base}/logout.json?{urllib.parse.urlencode({'session': session})}")
 
 
-def fetch_page(source: str, fetch: Fetcher = http_get) -> dict[str, Any]:
+def fetch_page(source: str, fetch: Fetcher = http_get, robots: Robots | None = None
+               ) -> dict[str, Any]:
+    """One public page, only after its host's robots.txt allows that exact path for our UA.
+    ROBOTS_REFUSED and UNMEASURED (rules unreadable) both mean the page is never requested."""
     url = SOURCES[source]["url"]
+    rb = (robots or Robots(fetch)).check(url)
+    if rb["verdict"] != "ALLOWED":
+        return {"status": rb["verdict"], "url": url, "obs": [], "why": rb["why"], "robots": rb}
     try:
         st, body = fetch(url)
     except Exception as exc:
-        return {"status": "UNREACHABLE", "url": url, "obs": [],
+        return {"status": "UNREACHABLE", "url": url, "obs": [], "robots": rb,
                 "why": f"{type(exc).__name__}: {exc}"[:240]}
     wall = is_walled(st, body)
     if wall:
         return {"status": "WALLED", "url": url, "obs": [], "why": wall, "http": st,
-                "body": body}
+                "body": body, "robots": rb}
     if st >= 400:
         return {"status": "UNREACHABLE", "url": url, "obs": [], "why": f"HTTP {st}", "http": st,
-                "body": body}
+                "body": body, "robots": rb}
     obs = PARSERS[source](body)
     return {"status": "OK" if obs else "PARSE_EMPTY", "url": url, "obs": obs, "http": st,
-            "body": body, "why": "" if obs else ("fetched and matched no labelled long/short "
-                                                 "reading; needs a parser, not a retry")}
+            "body": body, "robots": rb,
+            "why": "" if obs else ("fetched and matched no labelled long/short "
+                                   "reading; needs a parser, not a retry")}
 
 
 # ------------------------------------------------------------------ the append-only store
@@ -755,8 +910,11 @@ def record_pass(results: dict[str, dict[str, Any]], at: datetime, universe: Iter
         if body is not None:
             sha = _raw_snapshot(source, at, str(res.get("url") or ""), int(res.get("http") or 0),
                                 str(body), raw_dir)
-        rec = {"status": res.get("status"), "why": res.get("why", ""), "n_parsed": 0,
+        rec = {"status": res.get("status"), "why": scrub(res.get("why", "")), "n_parsed": 0,
                "n_mapped": 0, "appended": 0}
+        if res.get("robots"):
+            rec["robots"] = {k: scrub(str(v)) if isinstance(v, str) else v
+                             for k, v in res["robots"].items()}
         if res.get("status") == "OK":
             rec["n_parsed"] = len(res.get("obs") or [])
             if last.get(source) == hour:
@@ -792,8 +950,9 @@ def build_series(store: Path = STORE, series_dir: Path = SERIES_DIR) -> dict[str
     if not store.exists():
         return {}
     try:
-        df = pd.read_csv(store, usecols=["captured_at", "symbol", "source", "net_frac",
-                                         "long_pct", "short_pct"])
+        df = pd.read_csv(store, usecols=lambda c: c in {
+            "captured_at", "symbol", "source", "net_frac", "long_pct", "short_pct",
+            "access_label"})
     except (ValueError, OSError):
         return {}
     df["captured_at"] = pd.to_datetime(df["captured_at"], utc=True, errors="coerce")
@@ -816,6 +975,11 @@ def build_series(store: Path = STORE, series_dir: Path = SERIES_DIR) -> dict[str
         tmp = p.with_suffix(".parquet.tmp")
         f.to_parquet(tmp, index=False)
         os.replace(tmp, p)
+        # Which sources (and the labels they were captured under) this symbol's series draws
+        # on; carried in memory to the donation, never into the parquet.
+        f.attrs["sources"] = sorted(g["source"].dropna().astype(str).unique().tolist())
+        f.attrs["access_labels"] = (sorted(g["access_label"].dropna().astype(str).unique()
+                                           .tolist()) if "access_label" in g else [])
         _write_atomic(series_dir / f"{sid}.pit.json", json.dumps(
             {"source_id": sid, "symbol": str(sym), "clock": "utc",
              "available_time": f["available_time"].iloc[-1].isoformat(),
@@ -857,6 +1021,8 @@ def features(series: dict[str, Any], now: datetime) -> dict[str, dict[str, Any]]
             "n_obs": len(s), "first": s.index[0].isoformat(), "last": last_t.isoformat(),
             "span_days": round(span_d, 2),
             "stale": bool((now - last_t.to_pydatetime()).total_seconds() > 3 * 3600),
+            "sources": list(getattr(frame, "attrs", {}).get("sources") or []),
+            "access_labels": list(getattr(frame, "attrs", {}).get("access_labels") or []),
         }
     return out
 
@@ -914,7 +1080,8 @@ def hypotheses(feats: dict[str, dict[str, Any]], now: datetime, *,
                                 "n_obs": f["n_obs"], "eligible_from": _iso(eta)})
     donated_file = None
     if new:
-        rows = [{"source": SEAT, "kind": "hypothesis", "family": sp["family"],
+        rows = [{**_access_for(feats[sp["symbol"]]),
+                 "source": SEAT, "kind": "hypothesis", "family": sp["family"],
                  "params": sp["params"], "symbols": [sp["symbol"]],
                  "title": f"{sp['symbol']} {sp['key']} (retail crowd, pre-registered)",
                  "text": sp["mechanism"], "mechanism": sp["mechanism"],
@@ -927,12 +1094,23 @@ def hypotheses(feats: dict[str, dict[str, Any]], now: datetime, *,
             for sp in new:
                 fh.write(json.dumps({"id": sp["id"], "symbol": sp["symbol"], "key": sp["key"],
                                      "family": sp["family"], "params": sp["params"],
+                                     **_access_for(feats[sp["symbol"]]),
                                      "emitted_at": _iso(now)}) + "\n")
     return {"donated": len(new), "donated_file": donated_file, "already_emitted": already,
             "pending": len(pending), "pending_rows": pending[:200],
             "set_aside_not_hypothesis_lane": set_aside,
             "charge_rule": ("one trial per hypothesis id, donated once; emitted.jsonl is the "
                             "ledger and no pass re-donates an id in it")}
+
+
+def _access_for(feat: dict[str, Any]) -> dict[str, Any]:
+    """The donation's access label: the most restrictive over every contributing source's
+    registered label AND every label its rows were captured under (fail closed: no sources ->
+    ACCESS_UNCLEAR, terms to_confirm)."""
+    acc = source_access(feat.get("sources") or [])
+    acc["access_label"] = most_restrictive(
+        [acc["access_label"], *(feat.get("access_labels") or [])])
+    return acc
 
 
 def _donate(rows: list[dict[str, Any]], now: datetime, intel_dir: Path) -> str:
@@ -949,12 +1127,13 @@ def _donate(rows: list[dict[str, Any]], now: datetime, intel_dir: Path) -> str:
 def fetch_all(fetch: Fetcher = http_get, creds: dict[str, str] | None = None
               ) -> dict[str, dict[str, Any]]:
     out: dict[str, dict[str, Any]] = {}
-    api = fetch_myfxbook_api(fetch, creds)
+    robots = Robots(fetch)                    # one robots.txt read per host per pass
+    api = fetch_myfxbook_api(fetch, creds, robots)
     out["myfxbook_api"] = api
     if api["status"] != "OK":
-        out["myfxbook_html"] = fetch_page("myfxbook_html", fetch)
+        out["myfxbook_html"] = fetch_page("myfxbook_html", fetch, robots)
     for source in ("dukascopy", "fxblue", "ig"):
-        out[source] = fetch_page(source, fetch)
+        out[source] = fetch_page(source, fetch, robots)
     return out
 
 
@@ -1001,7 +1180,7 @@ def main(argv: list[str] | None = None) -> int:
           f"donated={doc['hypotheses']['donated']} pending={doc['hypotheses']['pending']}")
     for s, r in (rec.get("sources") or {}).items():
         print(f"  {s:14s} {r.get('status')}: parsed={r.get('n_parsed')} "
-              f"appended={r.get('appended')} {str(r.get('why') or '')[:140]}")
+              f"appended={r.get('appended')} {scrub(str(r.get('why') or ''))[:140]}")
     return 0
 
 

@@ -98,11 +98,14 @@ def test_walls_are_recorded_never_bypassed() -> None:
 
     def fetch(url: str) -> tuple[int, str]:
         calls.append(url)
+        if url.endswith("/robots.txt"):
+            return 404, ""                                  # no rules published
         return 403, CHALLENGE
 
     res = rc.fetch_page("fxblue", fetch)
     assert res["status"] == "WALLED" and res["obs"] == []
-    assert len(calls) == 1                                  # one request, no retry
+    pages = [c for c in calls if not c.endswith("/robots.txt")]
+    assert len(pages) == 1                                  # one request, no retry
     api = rc.fetch_myfxbook_api(fetch, {"session": "S3CRET"})
     assert api["status"] == "WALLED"
     assert "S3CRET" not in json.dumps(api)
@@ -232,3 +235,202 @@ def test_donated_rows_compile_as_exact_recipes(tmp_path: Path) -> None:
                "params": sp["params"], "symbols": ["EURUSD"], "title": sp["key"]}
         cands, disp = mcc.compile_row(rc.SEAT, row, {"EURUSD"})
         assert disp == "EXACT_RECIPE" and cands[0]["family"] == sp["family"]
+
+
+# ------------------------------------------------------------------ robots.txt (MF1)
+def _robots_fetch(robots: dict[str, tuple[int, str] | Exception], page_body: str = IG_HTML
+                  ) -> tuple[list[str], rc.Fetcher]:
+    calls: list[str] = []
+
+    def fetch(url: str) -> tuple[int, str]:
+        calls.append(url)
+        if url.endswith("/robots.txt"):
+            host = url.split("/")[2]
+            ans = robots.get(host, (404, ""))
+            if isinstance(ans, Exception):
+                raise ans
+            return ans
+        return 200, page_body
+    return calls, fetch
+
+
+def test_robots_disallowed_path_is_refused_and_never_fetched() -> None:
+    calls, fetch = _robots_fetch({"www.ig.com": (200, "User-agent: *\nDisallow: /uk/\n")})
+    res = rc.fetch_page("ig", fetch)
+    assert res["status"] == "ROBOTS_REFUSED" and res["obs"] == []
+    assert "disallows /uk/ig-client-sentiment" in res["why"] and "not fetched" in res["why"]
+    assert calls == ["https://www.ig.com/robots.txt"]       # the page itself was never requested
+
+
+def test_robots_is_read_for_our_user_agent_and_the_exact_path() -> None:
+    # Rules aimed at our UA bind; a Disallow for another agent does not.
+    ua = rc.USER_AGENT.split("/")[0]
+    calls, fetch = _robots_fetch({"www.ig.com": (200, f"User-agent: {ua}\nDisallow: /\n")})
+    assert rc.fetch_page("ig", fetch)["status"] == "ROBOTS_REFUSED"
+    calls, fetch = _robots_fetch({"www.ig.com": (200, "User-agent: OtherBot\nDisallow: /\n")})
+    assert rc.fetch_page("ig", fetch)["status"] == "OK"
+    assert calls[-1] == rc.SOURCES["ig"]["url"]
+
+
+def test_fxblue_refusing_terms_still_checks_the_sentiment_path() -> None:
+    only_terms = "User-agent: *\nDisallow: /terms\n"
+    calls, fetch = _robots_fetch({"www.fxblue.com": (200, only_terms)})
+    res = rc.fetch_page("fxblue", fetch)
+    assert res["robots"]["verdict"] == "ALLOWED"
+    assert res["robots"]["path"] == "/market-data/tools/sentiment"
+    assert calls[-1] == rc.SOURCES["fxblue"]["url"]
+    refused = only_terms + "Disallow: /market-data/\n"
+    calls, fetch = _robots_fetch({"www.fxblue.com": (200, refused)})
+    assert rc.fetch_page("fxblue", fetch)["status"] == "ROBOTS_REFUSED"
+    assert calls == ["https://www.fxblue.com/robots.txt"]
+
+
+@pytest.mark.parametrize("answer", [(503, "down"), (403, CHALLENGE), (200, CHALLENGE),
+                                    OSError("connection reset")])
+def test_unreadable_robots_is_unmeasured_and_the_page_is_not_fetched(
+        answer: tuple[int, str] | Exception) -> None:
+    calls, fetch = _robots_fetch({"www.dukascopy.com": answer})
+    res = rc.fetch_page("dukascopy", fetch)
+    assert res["status"] == "UNMEASURED" and res["obs"] == []
+    assert calls == ["https://www.dukascopy.com/robots.txt"]
+
+
+def test_robots_404_means_no_rules() -> None:
+    calls, fetch = _robots_fetch({"www.ig.com": (404, "not found")})
+    res = rc.fetch_page("ig", fetch)
+    assert res["status"] == "OK" and res["robots"]["robots_state"] == "NO_RULES"
+    assert calls[-1] == rc.SOURCES["ig"]["url"]
+
+
+def test_robots_cached_per_host_per_pass_and_api_recorded_not_gated() -> None:
+    disallow_api = "User-agent: *\nDisallow: /api/\nDisallow: /community/\n"
+    calls, fetch = _robots_fetch({"www.myfxbook.com": (200, disallow_api)},
+                                 page_body=json.dumps(MYFXBOOK_API))
+    out = rc.fetch_all(fetch, {"session": "S3CRET"})
+    robots_calls = [c for c in calls if c.endswith("/robots.txt")]
+    assert len(robots_calls) == len(set(robots_calls)) == 4  # myfxbook, dukascopy, fxblue, ig
+    api = out["myfxbook_api"]
+    # recorded on the API's own record, but the official API is not gated on it (see docstring)
+    assert api["robots"]["verdict"] == "ROBOTS_REFUSED" and api["robots"]["gated"] is False
+    assert api["status"] == "OK"
+    assert "S3CRET" not in json.dumps(api["robots"])
+    assert "myfxbook_html" not in out                        # the API answered; no fallback
+
+
+def test_myfxbook_html_fallback_is_gated_on_robots() -> None:
+    rules = "User-agent: *\nDisallow: /community/\n"
+    calls, fetch = _robots_fetch({"www.myfxbook.com": (200, rules)}, page_body=MYFXBOOK_HTML)
+    out = rc.fetch_all(fetch, {})
+    assert out["myfxbook_api"]["status"] == "UNCONFIGURED"
+    assert out["myfxbook_html"]["status"] == "ROBOTS_REFUSED"
+    assert rc.SOURCES["myfxbook_html"]["url"] not in calls
+
+
+def test_record_pass_names_the_robots_wall(tmp_path: Path) -> None:
+    res = {"ig": {"status": "ROBOTS_REFUSED", "url": rc.SOURCES["ig"]["url"], "obs": [],
+                  "why": "robots.txt ... disallows", "robots": {"verdict": "ROBOTS_REFUSED"}}}
+    out = rc.record_pass(res, datetime(2026, 11, 5, tzinfo=UTC), UNI, **_paths(tmp_path))
+    assert out["sources"]["ig"]["status"] == "ROBOTS_REFUSED" and out["appended"] == 0
+    assert out["sources"]["ig"]["robots"]["verdict"] == "ROBOTS_REFUSED"
+
+
+# ------------------------------------------------------------- access labels on donations (MF2)
+def test_most_restrictive_label_and_fail_closed_terms() -> None:
+    assert rc.most_restrictive(["LICENSED", "ACCESS_UNCLEAR"]) == "ACCESS_UNCLEAR"
+    assert rc.most_restrictive(["PUBLIC_WITH_TERMS", "LICENSED"]) == "LICENSED"
+    assert rc.most_restrictive([]) == "ACCESS_UNCLEAR"
+    assert rc.most_restrictive(["SOMETHING_NEW"]) == "ACCESS_UNCLEAR"
+    acc = rc.source_access(["myfxbook_api", "fxblue"])
+    assert acc["access_label"] == "LICENSED" and acc["terms"] == "to_confirm"
+    assert rc.source_access([]) == {"access_label": "ACCESS_UNCLEAR", "terms": "to_confirm",
+                                    "access_sources": []}
+
+
+@pytest.mark.parametrize("sources", [["dukascopy"], ["ig"], ["myfxbook_api", "dukascopy"],
+                                     ["fxblue", "ig"]])
+def test_donation_from_unclear_sources_carries_access_unclear(tmp_path: Path,
+                                                              sources: list[str]) -> None:
+    start = datetime(2026, 8, 1, tzinfo=UTC)
+    rows = []
+    for h in range(rc.MIN_HISTORY_OBS + 24):
+        t = (start + timedelta(hours=h)).isoformat()
+        src = sources[h % len(sources)]
+        net = 0.1 + 0.05 * np.sin(h / 7.0)
+        rows.append({"captured_at": t, "available_time": t, "source": src, "cohort": "all",
+                     "symbol": "EURUSD", "net_frac": net, "long_pct": 50 + 50 * net,
+                     "short_pct": 50 - 50 * net,
+                     "access_label": rc.SOURCES[src]["access_label"]})
+    store = tmp_path / "retail_crowd.csv"
+    rc.append_rows(rows, store)
+    series = rc.build_series(store, tmp_path / "series")
+    now = start + timedelta(hours=rc.MIN_HISTORY_OBS + 24)
+    feats = rc.features(series, now)
+    assert sorted(feats["EURUSD"]["sources"]) == sorted(set(sources))
+    emitted, intel = tmp_path / "emitted.jsonl", tmp_path / "intel"
+    h = rc.hypotheses(feats, now, emitted_path=emitted, intel_dir=intel, lane=lambda s: True)
+    assert h["donated"] == 3
+    donated = json.loads(next(intel.glob("*.json")).read_text("utf-8"))
+    for r in donated:
+        assert r["access_label"] == "ACCESS_UNCLEAR"
+        assert r["terms"] == "to_confirm"
+        assert r["access_sources"] == sorted(set(sources))
+    for line in emitted.read_text("utf-8").splitlines():
+        assert json.loads(line)["access_label"] == "ACCESS_UNCLEAR"
+    # the rfx_ parquet layout is unchanged by the in-memory source list
+    cols = set(pd.read_parquet(tmp_path / "series" / "rfx_EURUSD.parquet").columns)
+    assert cols == {"available_time", "net_frac", "long_pct", "short_pct", "n_sources"}
+
+
+def test_donation_with_unknown_sources_fails_closed(tmp_path: Path) -> None:
+    now = datetime(2026, 11, 3, tzinfo=UTC)
+    ready = {"EURUSD": {"n_obs": rc.MIN_HISTORY_OBS, "span_days": rc.MIN_HISTORY_DAYS,
+                        "first": (now - timedelta(days=61)).isoformat()}}
+    rc.hypotheses(ready, now, emitted_path=tmp_path / "e.jsonl", intel_dir=tmp_path / "i",
+                  lane=lambda s: True)
+    rows = json.loads(next((tmp_path / "i").glob("*.json")).read_text("utf-8"))
+    assert {r["access_label"] for r in rows} == {"ACCESS_UNCLEAR"}
+    assert {r["terms"] for r in rows} == {"to_confirm"}
+
+
+# ------------------------------------------------------------------ no session / e-mail on disk
+_EMAIL_RE = r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)+"
+
+
+def test_written_payload_has_no_session_or_email(tmp_path: Path,
+                                                 capsys: pytest.CaptureFixture[str]) -> None:
+    import re
+
+    def fetch(url: str) -> tuple[int, str]:
+        if url.endswith("/robots.txt"):
+            return 404, ""
+        if "login.json" in url:
+            return 200, json.dumps({"error": False, "session": "SESS%2B1 x"})
+        if "get-community-outlook" in url:
+            # a server that echoes the request (session in a URL, the account e-mail) back
+            echo = {**MYFXBOOK_API, "request": f"{url}", "account": "me@x.y",
+                    "next": "https://www.myfxbook.com/api/x.json?session=OTHERTOKEN&a=1"}
+            return 200, json.dumps(echo)
+        return 200, json.dumps({"error": False})
+
+    res = rc.fetch_myfxbook_api(fetch, {"email": "me@x.y", "password": "pw-123"})
+    assert res["status"] == "OK"
+    p = _paths(tmp_path)
+    rc.record_pass({"myfxbook_api": res}, datetime(2026, 11, 5, 9, tzinfo=UTC), UNI, **p)
+    snaps = list((p["raw_dir"] / "myfxbook_api").glob("*.json.gz"))
+    assert len(snaps) == 1
+    with gzip.open(snaps[0], "rt", encoding="utf-8") as fh:
+        text = fh.read()
+    assert "session=" not in text.lower()
+    assert re.search(_EMAIL_RE, text) is None
+    for secret in ("pw-123", "SESS", "OTHERTOKEN", "me@x.y"):
+        assert secret not in text
+    assert json.loads(text)["body_scrubbed"] is True
+    # and nothing reaches stdout / the state file either
+    assert "session=" not in capsys.readouterr().out
+    assert "session=" not in p["state_path"].read_text("utf-8")
+
+
+def test_scrub_removes_session_params_and_emails() -> None:
+    s = rc.scrub("GET https://h/api/a.json?session=abc%2Bdef&x=1 failed for "
+                 "a.b+c@mail.example.org")
+    assert "session=" not in s and "abc" not in s and "@" not in s and "x=1" in s
