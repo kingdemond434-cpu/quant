@@ -212,9 +212,14 @@ def cost_ratio(surface: Mapping[str, Any] | None, symbol: str,
     #
     # Applying that would have shifted 28 sleeves' posterior means down on a producer bug. It is
     # refused and NAMED, which turns a dangerous correction into a diagnostic.
-    measured_hours = [float(r["p50"]) for r in (sym.get("hours") or {}).values()
+    # BAR-MEASURED HOURS ONLY. A cell a venue's own quotes priced (`venue_cost.overlay_surface`)
+    # carries its bar median as `p50_bars`; a venue dearer than the replay at every hour is a cost
+    # to charge, not a scale flip, so its quotes never enter this comparison.
+    measured_hours = [float(r.get("p50_bars", r.get("p50")))
+                      for r in (sym.get("hours") or {}).values()
                       if isinstance(r, Mapping) and str(r.get("status")) == MEASURED
-                      and isinstance(r.get("p50"), (int, float))]
+                      and isinstance(r.get("p50_bars", r.get("p50")), (int, float))
+                      and not ("n_quotes" in r and r.get("p50_bars") is None)]
     if measured_hours and float(pooled) < min(measured_hours) * (1.0 - 1e-9):
         return None, (f"{symbol}: the registry charges {float(pooled):.1f} pts, BELOW the "
                       f"cheapest hour this desk measured ({min(measured_hours):.1f} pts). A "

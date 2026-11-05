@@ -99,7 +99,13 @@ def overlay_surface(surface: Mapping[str, Any] | None, doc: Mapping[str, Any] | 
         row = out["symbols"].setdefault(sym, {})
         cells = row.setdefault("hours", {})
         for h, v in per.items():
-            cells[h] = {**(cells.get(h) or {}), "status": MEASURED, "p50": v["p50"],
+            prev = cells.get(h) or {}
+            # The bar-measured median is KEPT beside the quote (`p50_bars`): cost_ratio's
+            # scale-flip guard compares the replay's pooled spread with the bar-measured hours it
+            # is the median of, and must not read a dearer venue as a registry defect.
+            bars = (prev.get("p50_bars", prev.get("p50"))
+                    if str(prev.get("status")) == MEASURED else None)
+            cells[h] = {**prev, "status": MEASURED, "p50": v["p50"], "p50_bars": bars,
                         "n_quotes": v["n"], "source": source or "venue quotes"}
             n_cells += 1
     out["venue_quotes"] = {"source": source, "at": (doc or {}).get("at") if doc else None,

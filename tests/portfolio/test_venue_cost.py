@@ -44,6 +44,25 @@ def test_the_overlay_prices_the_fill_hour_at_the_venues_own_median(tmp_path: Pat
     assert r is not None and abs(r - 12.0 / 8.0) < 1e-6
 
 
+def test_a_venue_dearer_than_the_replay_at_every_hour_is_charged_not_refused(
+        tmp_path: Path) -> None:
+    """The scale-flip guard reads the bar-measured hours; a dear venue's quotes are a cost."""
+    surface = {"symbols": {"EURUSD": {"pooled_median_spread_pts": 8.0, "hours": {
+        "7": {"status": "MEASURED", "p50": 8.5}}}}}
+    _quotes(tmp_path / "cost_truth_quotes.ftmo_s_r_o.json", "ftmo_s_r_o",
+            "2026-11-05T06:00:00+00:00", 0.00001, [0.00020, 0.00022, 0.00024])
+    s = vc.account_surface(tmp_path, "ftmo", surface)
+    assert s["symbols"]["EURUSD"]["hours"]["7"]["p50_bars"] == 8.5
+    r, _why, _d = cost_ratio(s, "EURUSD", 7, None)
+    assert r is not None and abs(r - 22.0 / 8.0) < 1e-6
+    # an hour only the quotes priced (no bar cell) never feeds the guard either
+    s2 = vc.overlay_surface({"symbols": {"EURUSD": {"pooled_median_spread_pts": 8.0}}},
+                            json.loads((tmp_path / "cost_truth_quotes.ftmo_s_r_o.json")
+                                       .read_text("utf-8")))
+    r2, _w, _d2 = cost_ratio(s2, "EURUSD", 7, None)
+    assert r2 is not None and abs(r2 - 22.0 / 8.0) < 1e-6
+
+
 def test_too_few_readings_or_no_file_change_nothing(tmp_path: Path) -> None:
     surface = {"symbols": {"EURUSD": {"hours": {"7": {"status": "MEASURED", "p50": 9.0}}}}}
     _quotes(tmp_path / "cost_truth_quotes.fusion_x.json", "fusion_x",
