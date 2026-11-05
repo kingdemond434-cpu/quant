@@ -3277,13 +3277,15 @@ def _column_identity(name: str) -> tuple[str, str, str]:
 
 
 def live_policy_zero(names: Sequence[str]) -> tuple[frozenset[str], dict[str, Any]]:
-    """The columns the principal's live policy (mt5desk/live_policy.py and
-    data/live_sleeve_policy.json) forbids on the Fusion account, and why, so the Fusion book binds them to fraction 0 and refills
-    their heat across columns that can trade (hourly pass P63, 2026-11-05: the dynamic book put
-    30% heat on seven cells outside the policy, the gateway could size none of them, and the join
-    read BROKEN). The same symbol, timeframe, family and per-symbol allowlist the gateway and the
-    promoter apply; an allowlisted roster certificate is matched to its column by the gateway's
-    own key (`SYMBOL_family_selector`, case-folded)."""
+    """The columns the principal's live policy forbids on the Fusion account, and why.
+
+    The policy is mt5desk/live_policy.py over data/live_sleeve_policy.json. The Fusion book binds
+    these columns to fraction 0 and refills their heat across the columns that can trade.
+    Hourly pass P63 (2026-11-05): the dynamic book put 30% heat on seven cells outside the
+    policy, the gateway could size none of them, and the join read BROKEN. The rules are the
+    same symbol, timeframe, family and per-symbol allowlist the gateway and the promoter apply;
+    an allowlisted roster certificate is matched to its column by the gateway's own key
+    (`SYMBOL_family_selector`, case-folded)."""
     try:
         from mt5desk import live_policy as _lp
         pol = _lp.policy()
