@@ -1268,8 +1268,8 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
         # Outside a pass, or a ledger the scan could not read: the original read, whose OSError
         # names the cause in `why`.
         try:
-            with (ledger or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
-                lines = fh.readlines()[-limit:]
+            from libs.ops.tail_read import tail_lines   # from the end: memory of the tail only
+            lines = tail_lines(ledger or GATE_LEDGER, limit)
         except OSError as exc:
             out.update(status="UNMEASURED", why=f"{type(exc).__name__}: {exc}")
             return out
