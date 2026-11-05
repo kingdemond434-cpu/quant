@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-05T18:45:03.391259+00:00",
+  "swept_at": "2026-11-05T19:00:05.643814+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -54,6 +54,17 @@
       "flag": "ok",
       "shadow_n": 11,
       "shadow_exp_r": 2.3708,
+      "woke_on_shadow": false
+    },
+    "AUDCHF|carry_asia": {
+      "n": 0,
+      "exp_r": 0.0,
+      "avg_win_r": 0.0,
+      "avg_loss_r": 0.0,
+      "max_dd_r": 0.0,
+      "flag": "ok",
+      "shadow_n": 90,
+      "shadow_exp_r": 0.359,
       "woke_on_shadow": false
     },
     "AUDCHF|formula_asia": {
@@ -232,6 +243,17 @@
       "shadow_exp_r": 0.6242,
       "woke_on_shadow": false
     },
+    "AUDSGD|carry_asia": {
+      "n": 0,
+      "exp_r": 0.0,
+      "avg_win_r": 0.0,
+      "avg_loss_r": 0.0,
+      "max_dd_r": 0.0,
+      "flag": "ok",
+      "shadow_n": 90,
+      "shadow_exp_r": 0.1182,
+      "woke_on_shadow": false
+    },
     "AUDSGD|clock_transition_asia": {
       "n": 0,
       "exp_r": 0.0,
@@ -273,7 +295,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3736,
+      "shadow_exp_r": -0.3747,
       "woke_on_shadow": false
     },
     "AUDSGD|overnight_gap_decay_asia": {
@@ -801,7 +823,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3147,
+      "shadow_exp_r": -0.1832,
       "woke_on_shadow": false
     },
     "CHFNOK|carry_continuous": {
@@ -845,7 +867,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2398,
+      "shadow_exp_r": -0.2455,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_continuous": {
