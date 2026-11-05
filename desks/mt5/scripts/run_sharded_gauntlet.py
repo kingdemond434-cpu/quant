@@ -435,6 +435,9 @@ class _TreeProgress:
         self._cpu: dict[int, float] = {}
         self._io: dict[int, float] = {}
         self._last_t: float | None = None
+        #: CPU seconds and I/O bytes burned since `last_progress` (see `update`).
+        self._acc_cpu = 0.0
+        self._acc_io = 0.0
 
     def update(self, sample: dict[str, Any] | None, now: float) -> bool | None:
         """True / False = progressing or not over the interval; None = not judged (no sample,
@@ -448,18 +451,32 @@ class _TreeProgress:
             self.gaps += 1
             self.measured = True
             self.last_progress = now
+            self._acc_cpu = self._acc_io = 0.0
             self._cpu, self._io, self._last_t = dict(cpu), dict(io), now
             return None
         self.measured = True
         delta = sum(max(0.0, v - self._cpu.get(p, 0.0)) for p, v in cpu.items())
         io_delta = sum(max(0.0, v - self._io.get(p, 0.0)) for p, v in io.items())
+        self._acc_cpu += delta
+        self._acc_io += io_delta
         # PROGRESS IS CPU OR I/O (audit of 7cf2ece90): a process blocked on a disk it is
         # streaming through burns little CPU and is still working. Heartbeat-sized writes stay
         # under NO_PROGRESS_IO_BPS, so the watchdog's own beat never reads as work.
-        progressing = (dt <= 0 or delta / dt >= self.cores
-                       or (bool(io) and io_delta / dt >= NO_PROGRESS_IO_BPS))
+        #
+        # AVERAGED OVER THE WHOLE QUIET STRETCH, NOT ONE INTERVAL (2026-11-05). Sweep pid 31752
+        # sat wedged in collect_and_cut for hours at ~0.011 cores (64 threads' background
+        # chatter, 0.5-1.3 cpu-s a minute) against the 0.02 floor; one 60 s interval that
+        # happened to burn >= 1.2 s reset the idle clock, so the resident's idle kill (about
+        # 40 min) never accrued and the only backstop left was the 48 h hang limit. Progress is
+        # now the CPU (or I/O) burned since the last progress, over the time since then: a
+        # working tree still resets it within its first interval, a jittering wedged one no
+        # longer can.
+        span = now - self.last_progress
+        progressing = (dt <= 0 or span <= 0 or self._acc_cpu / span >= self.cores
+                       or (bool(io) and self._acc_io / span >= NO_PROGRESS_IO_BPS))
         if progressing:
             self.last_progress = now
+            self._acc_cpu = self._acc_io = 0.0
         self._cpu, self._io, self._last_t = dict(cpu), dict(io), now
         return progressing
 
