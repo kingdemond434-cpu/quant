@@ -31,6 +31,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -468,6 +469,11 @@ def _freeze(out: Path, bad: list[str]) -> str:
     return f"RED: LIVE push log violation, DEACTIVATE raised: {'; '.join(bad)}"
 
 
+# Judging stops after this many seconds so a pass always finishes inside the task's 30-minute
+# limit (install_authority.ps1), leaving room for the token mint, the detector and the last PR.
+BUDGET_S = 20 * 60.0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--repo", required=True)
@@ -477,6 +483,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--root-pin", required=True)
     ap.add_argument("--pr", type=int)
     ap.add_argument("--dry-run", action="store_true", help="decide and print; sign nothing")
+    ap.add_argument("--budget-s", type=float, default=BUDGET_S,
+                    help="stop judging new PRs after this many seconds")  # fmt: skip
     ap.add_argument("--post-status", action="store_true",
                     help=f"also post the {STATUS_CONTEXT!r} commit status (on by itself when "
                          f"{STATUS_FLAG} exists beside the attestations folder)")  # fmt: skip
@@ -502,7 +510,13 @@ def main(argv: list[str] | None = None) -> int:
     else:
         pages = ag._gh(f"repos/{a.repo}/pulls?state=open&base={base}&per_page=100", "--paginate",
                        "--slurp")  # fmt: skip
-        prs = [int(p["number"]) for p in ag._flat(pages)]
+        # NEWEST ACTIVITY FIRST, UNDER A BUDGET (2026-11-05). Every pass since 18:01Z ran into
+        # the task's 30-minute limit and was killed mid-sweep (event 329, 0x8007050B), so the
+        # PRs at the end of the list were never judged and no pass ever finished. A PR that
+        # changed recently is judged first; what the budget leaves waits for the next pass.
+        open_prs = sorted(ag._flat(pages), key=lambda p: str(p.get("updated_at") or ""),
+                          reverse=True)  # fmt: skip
+        prs = [int(p["number"]) for p in open_prs]
     seen = detector_pass(ag, a.repo, base, Path(a.out))
     if seen:
         print(seen, flush=True)
@@ -513,7 +527,12 @@ def main(argv: list[str] | None = None) -> int:
     print(f"level 2: {'ENFORCED' if enforced else 'not enforced'} -- {ewhy}", flush=True)
     veto_h = float(policy.get("veto_hours", 24))
     rc = 0
-    for n in prs:
+    started = time.monotonic()
+    for i, n in enumerate(prs):
+        if time.monotonic() - started > a.budget_s:
+            print(f"budget of {a.budget_s:.0f} s spent after {i} of {len(prs)} PRs; "
+                  f"the rest are judged on a later pass", flush=True)  # fmt: skip
+            break
         try:
             f = facts(ag, a.repo, n, base, policy, enforced=enforced)
             verdict, reasons = pol.decide(f)

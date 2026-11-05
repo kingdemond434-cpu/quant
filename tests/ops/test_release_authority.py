@@ -492,3 +492,15 @@ def test_seal_environment_must_admit_live_alone() -> None:
     assert cr.env_problems(ok, [*live, {"name": "claude/*", "type": "branch"}])
     assert cr.env_problems(ok, [])
     assert cr.env_problems(ok, [*live, {"name": "v*", "type": "tag"}])
+
+
+def test_a_pass_stops_judging_at_its_budget_and_still_finishes(
+    sb: Any, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Every authority pass from 18:01Z on 2026-11-05 hit the task's 30-minute limit and was
+    killed mid-sweep. A spent budget ends the pass cleanly instead of being killed."""
+    args = ["--repo", "o/r", "--out", str(sb.folder), "--key", str(sb.key_pem),
+            "--root-pin", str(sb.pin), "--pr", "41", "--dry-run", "--budget-s", "-1"]  # fmt: skip
+    assert sb.auth.main(args) == 0
+    assert "budget of -1 s spent after 0 of 1 PRs" in capsys.readouterr().out
+    assert sb.auth.BUDGET_S < 30 * 60  # inside install_authority.ps1's ExecutionTimeLimit
