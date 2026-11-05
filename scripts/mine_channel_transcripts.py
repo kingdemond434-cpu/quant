@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 import shutil
 import subprocess
@@ -100,7 +101,7 @@ def discover(cfg: dict, out: Path, per_query: int) -> list[dict]:
     yt-dlp, one request per query). Discovered channels are appended to discovered.json with
     status CANDIDATE; the yield ranker (cells passing the judge per video) promotes or prunes."""
     path = out / "discovered.json"
-    disc = json.loads(path.read_text("utf-8")) if path.exists() else {}
+    disc = load_json_or_empty(path)
     known = {c["handle"] for c in cfg["channels"]} | set(disc)
     for q in cfg.get("discovery_queries", []):
         cmd = [sys.executable, "-m", "yt_dlp", "--flat-playlist", "-J", "--no-warnings",
@@ -123,8 +124,25 @@ def discover(cfg: dict, out: Path, per_query: int) -> list[dict]:
                          "videos_mined": 0, "cells_passed": 0}
             print(f"[discover] + {cid} {disc[cid]['name']} (via {q!r})", flush=True)
         time.sleep(5)
-    path.write_text(json.dumps(disc, indent=1, ensure_ascii=False), encoding="utf-8")
+    atomic_write(path, json.dumps(disc, indent=1, ensure_ascii=False))
     return [d for d in disc.values() if d["status"] in ("CANDIDATE", "ACTIVE")]
+
+
+def atomic_write(path: Path, text: str) -> None:
+    """Write via a temp file + os.replace: a run killed mid-write (the task's time limit) leaves
+    the previous file whole instead of a truncated one that every later run would choke on."""
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def load_json_or_empty(path: Path) -> dict:
+    """A missing or unreadable cache is an empty cache (everything re-lists), never a dead miner."""
+    try:
+        data = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 def load_ledger(path: Path) -> dict[str, dict]:
@@ -266,7 +284,7 @@ def main() -> int:
     todo: list[dict] = []
     enum_report = {}
     cache_path = out / "enum_cache.json"
-    cache: dict = json.loads(cache_path.read_text("utf-8")) if cache_path.exists() else {}
+    cache: dict = load_json_or_empty(cache_path)
     fresh = args.refresh_hours * 3600
 
     def stale(key: str) -> bool:
@@ -275,12 +293,12 @@ def main() -> int:
     named = [c["handle"] for c in cfg["channels"]]
     channels = list(cfg["channels"])
     if args.discover:
-        if stale("_discovery"):
+        if stale("_discovery") or not (out / "discovered.json").exists():
             found = discover(cfg, out, args.per_query)
             cache["_discovery"] = {"t": time.time()}
         else:
             dpath = out / "discovered.json"
-            disc = json.loads(dpath.read_text("utf-8")) if dpath.exists() else {}
+            disc = load_json_or_empty(dpath)
             found = [d for d in disc.values() if d["status"] in ("CANDIDATE", "ACTIVE")]
         channels += [{"handle": d["handle"], "tabs": ["videos"]} for d in found]
     for ch in channels:
@@ -302,7 +320,7 @@ def main() -> int:
                     continue
                 enum_report[key] = len(vids)
                 cache[key] = {"t": time.time(), "n": len(vids)}
-                cache_path.write_text(json.dumps(cache), encoding="utf-8")
+                atomic_write(cache_path, json.dumps(cache))
                 print(f"[enum] {key}: {len(vids)} videos", flush=True)
             for v in vids:
                 if v["video_id"] in seen:
@@ -317,7 +335,7 @@ def main() -> int:
                     write({**v, "status": "PENDING", "ts": now()})
                 todo.append(v)
 
-    cache_path.write_text(json.dumps(cache), encoding="utf-8")
+    atomic_write(cache_path, json.dumps(cache))
     # Priority: the channels named in config first (in config order), then discovered channels
     # smallest-first, so one 28k-video news channel cannot starve every focused strategy channel.
     # Nothing is dropped: big channels are fetched last, not skipped. Within a channel,
@@ -368,8 +386,7 @@ def main() -> int:
         if fetched % 10 == 0:   # a run cut off by the task's time limit still leaves its proof
             part = coverage(ledger, enum_report, None)
             part.pop("_links")
-            (out / "coverage_summary.json").write_text(json.dumps(part, indent=1),
-                                                       encoding="utf-8")
+            atomic_write(out / "coverage_summary.json", json.dumps(part, indent=1))
         if status == "ACCESS_LIMIT":
             stopped = f"access wall at {v['video_id']} ({meta.get('error')}); stopping, no bypass"
             print(stopped, flush=True)
@@ -384,7 +401,7 @@ def main() -> int:
     summary = coverage(ledger, enum_report, stopped)
     links = summary.pop("_links")
     (out / "links.json").write_text(json.dumps(links, indent=1), encoding="utf-8")
-    (out / "coverage_summary.json").write_text(json.dumps(summary, indent=1), encoding="utf-8")
+    atomic_write(out / "coverage_summary.json", json.dumps(summary, indent=1))
     print(json.dumps(summary, indent=1))
 
     zip_base = out.parent / "video_mining_out"
