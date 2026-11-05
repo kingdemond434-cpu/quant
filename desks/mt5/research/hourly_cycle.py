@@ -2307,8 +2307,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # where the M1 pulls are) and resumes from its own cursor next hour, so a cut hour costs
     # coverage and never the artifact. The cap sits above its budget.
     "cost_truth": 700,
-    # Quotes-only: stops itself at --budget-s 120 (90% of it across the running terminals).
-    "cost_quotes": 150,
+    # Quotes-only: stops itself at --budget-s 50 (45 s across the running terminals). The core
+    # plan is already over its pinned budget (~2,950 s vs 2,640 s, Hourly pass overlay 27d), so
+    # this cap is tight on purpose: it must never push a pinned leg into deferral. `_costed`
+    # writes its measured seconds to the compute ledger every hour.
+    "cost_quotes": 60,
     # The conversion maximiser stops itself at --budget-s 900 and writes CONVERSION_MAXIMISER.json
     # plus its ratchet; the cap sits above its own budget for the reason `enrol_clocks` was
     # raised -- a cap below an organ's budget truncates it at the same prefix every hour.
@@ -5234,7 +5237,7 @@ def main() -> None:
     # running, never launches one, and leaves every venue file as it was when none answers.
     ctq = _costed("cost_quotes", lambda: _producer("cost_quotes",
                                                    "research/cost_truth.py",
-                                                   "--quotes-only", "--budget-s", "120"))
+                                                   "--quotes-only", "--budget-s", "50"))
     # THE OPEN-SOURCE RESEARCH FEDERATION (LAWS 5h): every public research system disposed,
     # ledgered, delta-watched and budgeted, and every sandbox packet drained into the one
     # canonical gauntlet. It never fetches or executes third-party code -- provisioning is
