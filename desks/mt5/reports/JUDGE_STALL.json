@@ -1,33 +1,33 @@
 {
- "at": "2026-11-05T08:46:03+00:00",
+ "at": "2026-11-05T09:16:07+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 2.45,
-   "why": "no new verdict for 2.4h (last 2026-11-05T06:19:18+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 2.95,
+   "why": "no new verdict for 2.9h (last 2026-11-05T06:19:18+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "cores_idle": {
    "open": false,
    "low": true,
    "floor": 4.0,
    "docket_depth": 1621315,
-   "busy_judge_cores": 2.23,
-   "busy_other_cores": 13.85,
-   "why": "judge tree at 2.23 cores (others 13.85) with a docket pending (resident SWEEPING, queue depth 1621315); floor 4; under the floor on every reading for 0.1h (limit 1h)",
-   "low_since": "2026-11-05T08:41:51+00:00",
-   "hours": 0.08
+   "busy_judge_cores": 1.14,
+   "busy_other_cores": 14.12,
+   "why": "judge tree at 1.14 cores (others 14.12) with a docket pending (resident SWEEPING, queue depth 1621315); floor 4; under the floor on every reading for 0.0h (limit 1h)",
+   "low_since": "2026-11-05T09:16:45+00:00",
+   "hours": 0.0
   },
   "resident_dead": {
    "open": false,
-   "heartbeat_age_min": 0.1,
+   "heartbeat_age_min": 0.5,
    "pid_alive": true,
-   "why": "resident SWEEPING pid 21384: heartbeat 0.1 min old (limit 10), pid alive"
+   "why": "resident SWEEPING pid 21384: heartbeat 0.5 min old (limit 10), pid alive"
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 2.37,
+   "hours": 2.87,
    "limit_h": 25.59,
-   "why": "2.4h since the last sweep ended (2026-11-05T06:23:44+00:00), status SWEEPING; limit 25.59h"
+   "why": "2.9h since the last sweep ended (2026-11-05T06:23:44+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
@@ -44,9 +44,9 @@
   "phase_overrun": {
    "open": false,
    "phase": "prewarm",
-   "hours": 1.44,
+   "hours": 1.94,
    "known_phase": true,
-   "why": "sweep phase prewarm has run 1.4h since 2026-11-05T07:19:56+00:00 (limit 5.86h)"
+   "why": "sweep phase prewarm has run 1.9h since 2026-11-05T07:19:56+00:00 (limit 5.86h)"
   },
   "host_unreadable": {
    "open": false,
@@ -91,16 +91,21 @@
  "resident": {
   "status": "SWEEPING",
   "pid": 21384,
-  "heartbeat_utc": "2026-11-05T08:45:59+00:00",
+  "heartbeat_utc": "2026-11-05T09:15:38+00:00",
   "last_sweep_ended_utc": "2026-11-05T06:23:44+00:00",
   "last_rc": 0
  },
  "host": "trading box",
  "page": {
-  "sent": false,
+  "sent": true,
   "open": [],
   "opened": [],
   "reminded": [],
-  "resolved": []
+  "resolved": [
+   "cores_idle"
+  ],
+  "title": "JUDGE STALL RESOLVED: cores_idle",
+  "armed": 1,
+  "delivered": 1
  }
 }
