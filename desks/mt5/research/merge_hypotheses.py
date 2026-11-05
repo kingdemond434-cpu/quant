@@ -45,6 +45,62 @@ DOCKET_REPLACE_MAX_WAIT_S = 30.0
 DOCKET_ORPHAN_AGE_S = 6 * 3600.0
 
 
+#: Where a running merge says which phase it is in and what each finished phase cost. MEASURED
+#: 2026-11-05: runs took ~27 h holding the canonical docket lock (pid 31872, 16.9 GB private) and
+#: nothing recorded where the hours went, so no fix could be sized. Written only for the desk's
+#: own docket (a test that points HYP elsewhere writes nothing here).
+PROGRESS = BASE / "logs" / "merge_hypotheses_progress.json"
+_LIVE_HYP = HYP
+
+
+class _Phases:
+    """Wall seconds and resident memory per phase of one merge, published as each phase ends."""
+
+    def __init__(self) -> None:
+        self.t0 = self.last = time.monotonic()
+        self.started_at = datetime.now(tz=UTC).isoformat(timespec="seconds")
+        self.seconds: dict[str, float] = {}
+        self.rss_mb: dict[str, float | None] = {}
+        self.rows: dict[str, int] = {}
+
+    @staticmethod
+    def _rss() -> float | None:
+        try:
+            import psutil
+            return round(psutil.Process().memory_info().rss / 2**20, 1)
+        except Exception:
+            return None
+
+    def mark(self, name: str, rows: int | None = None) -> None:
+        now = time.monotonic()
+        self.seconds[name] = round(now - self.last, 1)
+        self.rss_mb[name] = self._rss()
+        if rows is not None:
+            self.rows[name] = int(rows)
+        self.last = now
+        print(f"   phase {name}: {self.seconds[name]:.1f}s"
+              + (f", {rows} row(s)" if rows is not None else "")
+              + (f", rss {self.rss_mb[name]:.0f} MB" if self.rss_mb[name] else ""), flush=True)
+        self.publish(name)
+
+    def report(self) -> dict[str, Any]:
+        return {"started_at": self.started_at, "pid": os.getpid(),
+                "elapsed_s": round(time.monotonic() - self.t0, 1),
+                "phase_seconds": dict(self.seconds), "rss_mb": dict(self.rss_mb),
+                "rows": dict(self.rows)}
+
+    def publish(self, last: str) -> None:
+        if HYP != _LIVE_HYP:
+            return
+        try:
+            PROGRESS.parent.mkdir(parents=True, exist_ok=True)
+            tmp = PROGRESS.with_name(f"{PROGRESS.name}.{os.getpid()}.tmp")
+            tmp.write_text(json.dumps({**self.report(), "last_phase": last}), "utf-8")
+            os.replace(tmp, PROGRESS)
+        except OSError:
+            pass                      # bookkeeping: never a reason to fail a merge
+
+
 def _replace_waiting_for_readers(src: str | Path, dst: Path,
                                  budget_s: float | None = None) -> int:
     """`os.replace(src, dst)`, retrying PermissionError with backoff inside `budget_s`. Returns the
@@ -735,6 +791,7 @@ def _lease(path: Path) -> None:
 
 def main() -> int:
     now = datetime.now(tz=UTC)
+    phases = _Phases()
     # HUNT ONLY WHAT THE DESK CAN TRADE (principal, 2026-09-03: "limit all hunting to fusion
     # tradeable symbols only so all compute is used fr tradeable edges").
     #
@@ -852,6 +909,7 @@ def main() -> int:
         per_source[name] = kept
         source_state[name] = "FRESH"
 
+    phases.mark("sources", len(merged))
     # ------------------------------------------------------------------ THE CANONICAL REGISTRY
     # THE EIGHTH SOURCE, AND THE ONE THAT HAD NO DOOR (measured on the trading box 2026-09-24).
     # The seven above are JSON files. `data/alpha_registry.sqlite` -- the desk's one canonical
@@ -895,6 +953,7 @@ def main() -> int:
         print(f"   registry feed UNAVAILABLE ({type(exc).__name__}: {exc}); the seven JSON "
               f"sources above are unaffected")
 
+    phases.mark("registry_feed", len(merged))
     # NOTHING ABOUT SEARCH WIDTH TRAVELS WITH A ROW. An earlier revision copied the search's
     # trial count onto every hypothesis so `deflated_sharpe` would deflate against it -- making
     # the ten gates harsher than their sealed definition. That is an unsanctioned bar, merely
@@ -936,7 +995,9 @@ def main() -> int:
     # it -- so the docket now UNIONS this run's fresh rows with everything already banked,
     # deduped by executable identity. `first_seen` is preserved so no stale row can ever be
     # counted as a fresh discovery; freshness still governs provenance, never capacity.
+    phases.mark("mechanism_map")
     banked = _read(TARGET)
+    phases.mark("bank_read", len(banked) if isinstance(banked, list) else None)
     readmitted = 0
     # WHAT THIS PASS'S PRODUCERS EMITTED, before the bank is unioned in: an identity the bank
     # already holds is an EXACT re-proposal (collapsed below, and until 2026-10-28 counted by
@@ -986,6 +1047,8 @@ def main() -> int:
     # verbatim above, so the old rows would never have been reached. Filled HERE because this is
     # the docket's only writer: same rule as the compiler, in place, nothing deleted, each row
     # recording what was filled or why not. A fault costs the fill, never a row.
+    del banked
+    phases.mark("bank_union", len(merged))
     triangle_legs: dict[str, Any] = {"status": "UNAVAILABLE"}
     try:
         import sys as _sys
@@ -1009,6 +1072,7 @@ def main() -> int:
     # Historical peer/factor claims missing a second instrument are not executable. Keep each
     # original and its verdict, but mint a fresh, point-in-time descendant using the compiler's
     # existing deterministic input rule. Never rewrite a past claim after seeing its result.
+    phases.mark("triangle_legs")
     input_descendants: dict[str, Any] = {"status": "UNAVAILABLE"}
     try:
         from research import family_input_descendants as _fid
@@ -1045,6 +1109,7 @@ def main() -> int:
     # `mt5desk/live_policy.py`, so every one of those gate-seconds bought an outcome the desk has
     # already forbidden. The rows are NOT deleted and the miners are NOT restrained: they move to
     # the STUDY BANK with the ban as the recorded reason, and what stops is the spending.
+    phases.mark("input_descendants_and_lanes", len(merged))
     banned_families = live_banned_families()
     rows_out: list[dict[str, Any]] = []
     study: list[dict[str, Any]] = []
@@ -1092,6 +1157,7 @@ def main() -> int:
     # new-independent metric, mechanism coverage, steering) goes to reports/HYPOTHESIS_FAMILIES.
     # Runs AFTER the lane router, so a re-aim target is an instrument the same family already
     # runs on in the judging lane. A fault costs the census and the re-aim, never a row.
+    phases.mark("study_split", len(rows_out))
     families: dict[str, Any] = {"status": "UNAVAILABLE"}
     families_pending: Any = None
     try:
@@ -1123,6 +1189,7 @@ def main() -> int:
     # family-balanced. Whatever slice the judge's budget reaches, that slice holds every family
     # with backlog. Nothing is dropped; `breadth_order` remains the fallback, and a failure in
     # the allocator can only cost the ORDER, never a row.
+    phases.mark("families", len(rows_out))
     judged = judged_by_family()
     _rl_fam, _rl_why = alpha_rl_family_values()
     print(f"   alpha_rl family values: {_rl_why}")
@@ -1145,6 +1212,7 @@ def main() -> int:
     # clean rows of its OWN family, in that family's own slots. The family-balanced prefix the
     # allocator just built is unchanged, no row leaves the docket, and nothing is billed because
     # nothing is withheld. A screen fault costs the demotion, never a row.
+    phases.mark("order_docket", len(rows_out))
     prejudge: dict[str, Any] = {"status": "UNAVAILABLE"}
     try:
         import sys as _sys
@@ -1197,6 +1265,7 @@ def main() -> int:
     except Exception as exc:
         claim_selection = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
         print(f"   claim selection stamp unavailable ({type(exc).__name__}: {exc})")
+    phases.mark("prejudge_and_claims", len(rows_out))
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     # NEVER SHRINK THE DOCKET TO NOTHING. The freshness contract makes every source STALE_SKIPPED
     # on any run where producers have not written yet, and this merge then emitted an EMPTY file
@@ -1249,8 +1318,10 @@ def main() -> int:
     except Exception as exc:
         prereg = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
         print(f"   preregistration unavailable ({type(exc).__name__}: {exc}); docket unstamped")
+    phases.mark("preregistration", len(rows_out))
     _write_docket_atomically(TARGET, rows_out)
     _lease(TARGET)
+    phases.mark("docket_write", len(rows_out))
     # THE FAMILIES REPORT, THEN THE RE-AIM LEDGER -- ONLY NOW, after the docket is durable, and
     # only for children that survived into the rows just written (order_docket can filter some).
     # The ledger is the one memory of "re-aimed once, ever"; it must never claim a child that the
@@ -1264,6 +1335,7 @@ def main() -> int:
     # map every producer reads next pass describes exactly the docket that exists, and the steer
     # ledger never names a child the written docket does not hold.
     steer_block = publish_steering(steerer, rows_out)
+    phases.mark("families_commit_and_steer")
     (HYP / "merge_report.json").write_text(json.dumps({
         "merged_at": now.isoformat(timespec="seconds"),
         "pipeline_started_at": started_at.isoformat(timespec="seconds") if started_at else None,
@@ -1324,6 +1396,7 @@ def main() -> int:
         "claim_selection": claim_selection,
         "hypothesis_families": families,
         "coverage_steer": steer_block,
+        "phases": phases.report(),
         "note": ("no threshold applied here (L1.60) -- every candidate of a family that CAN "
                  "reach live capital reaches the ten-gate gauntlet, which is the only arbiter; "
                  "a live-banned family is routed to the study bank, never judged and never "
