@@ -1739,7 +1739,7 @@ Status vocabulary: EXISTS-LIT = code runs on a named clock and its artifact has 
   - desks/mt5/research/countries/kr/data_plane.py:71 the KR_DATA_PLANE.json report
   - desks/mt5/research/countries/kr/nowcast.py -- the trade nowcasting factory
   - desks/mt5/research/countries/kr/miners.py:70 the trade_nowcaster miner the country lab runs
-  - clock: hourly_cycle:global_research_os · artifact: desks/mt5/reports/KR_DATA_PLANE.json · consumer: the twelve KR agents (ctx.data_plane); the transmission seeds in countries/kr/pack.py
+  - clock: hourly_cycle:global_research_os · artifact: desks/mt5/reports/GLOBAL_RESEARCH_OS.json; desks/mt5/reports/KR_DATA_PLANE.json (the KR plane, MISSING: see gap) · consumer: the twelve KR agents (ctx.data_plane); the transmission seeds in countries/kr/pack.py
   - next: Commit the named files from the machine that built them, or rebuild them in this repository, then restore LANDED with checked citations.
   - landed: VERIFIED 2026-09-23: the row was STALE -- the builder was not cut off. data_plane.py is 1,223 lines carrying all four lanes and a vintage store, nowcast.py is 690, and KR_DATA_PLANE.json on this box was written today
 - **K2 The Korea research civilization agents (twelve), native query territories, the candidate lattice with EVIG, the five moat stores, the KR x JP x CN interaction miner, delayed source credit** — PARTIAL
