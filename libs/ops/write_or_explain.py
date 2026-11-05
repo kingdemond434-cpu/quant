@@ -399,7 +399,38 @@ def judge(leg: str, before: Mapping[str, dict[str, Any]],
         f"artifact(s) moved, with no named reason: {', '.join(rec['did_not_move'][:3])}"
         + (f" ({len(absent)} of them do not exist at all)" if absent else "")
         + f"{'' if wall_s is None else f'; the leg took {wall_s:.2f}s'}")
+    twins = both_roots(declared)
+    if twins:
+        rec["both_roots"] = twins
+        rec["detail"] += (f"; {len(twins)} declared path(s) exist under BOTH the repo root and "
+                          f"desks/mt5, so check this watched the copy the leg writes: "
+                          f"{', '.join(twins[:3])}")
     return rec
+
+
+def both_roots(paths: Iterable[str | Path]) -> list[str]:
+    """Declared paths whose twin exists under the OTHER root (repo root vs desks/mt5).
+
+    `declared_artifacts` prefers the repo-root copy whenever it exists, which is right for a
+    leg that writes there (the promoter's alpha-state files, `promoter.ROOT / "data"`) and wrong
+    for one that writes beside desks/mt5. A stale twin would make the detector watch a dead file
+    and read SILENT_NO_OP even on a pass that wrote. It is named, never resolved by guessing: the
+    newer copy is not necessarily the declared one. Never raises."""
+    out: list[str] = []
+    for raw in paths:
+        try:
+            p = Path(raw).resolve()
+            if p.is_relative_to(BASE.resolve()):
+                twin = REPO / p.relative_to(BASE.resolve())
+            elif p.is_relative_to(REPO.resolve()):
+                twin = BASE / p.relative_to(REPO.resolve())
+            else:
+                continue
+            if p.exists() and twin.exists():
+                out.append(_rel(p))
+        except (OSError, ValueError):
+            continue
+    return out
 
 
 def _rel(p: str | Path) -> str:
