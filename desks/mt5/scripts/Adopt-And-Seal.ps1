@@ -557,7 +557,12 @@ if ($headNow -and $headNow -ne $script:HeadBefore) {
 # "Access is denied") and a missing one appears on the first adoption after it ships. Best-effort:
 # a failed registration is logged and never stops the seal.
 foreach ($ensure in @(
-        @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" })) {
+        @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" },
+        # FTMO trades every certified sleeve (principal 2026-11-03 / 11-05; Governance ruling
+        # 2026-11-05): the book's solve on its own clock, and the sleeve executor, which stays
+        # STANDBY until data\FTMO_EXECUTOR_ARMED exists. Registering either arms nothing.
+        @{ Task = "MT5-FTMO-Allocator"; Installer = "install_ftmo_allocator_task.ps1" },
+        @{ Task = "MT5-FTMO-Executor"; Installer = "install_ftmo_executor_task.ps1" })) {
     if (Get-ScheduledTask -TaskName $ensure.Task -ErrorAction SilentlyContinue) { continue }
     $installer = Join-Path $desk ("scripts\" + $ensure.Installer)
     if (-not (Test-Path $installer)) { Log "ensure-task: $($ensure.Task) missing and $installer absent"; continue }

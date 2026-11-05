@@ -1538,6 +1538,10 @@ def department_of(name: str) -> str:
 OWN_CLOCK_LEGS: frozenset[str] = frozenset({
     "state_vector",       # MT5-StateVector
     "external_gauntlet",  # MT5-Gauntlet
+    # THE FTMO BOOK'S SOLVE (2026-11-05): ~722 s never fit the core rotation's room, so it was
+    # deferred every pass and never ran after 2026-10-29 -- seven days of FTMO trading only the gold
+    # fallback. Its own hourly task (scripts/install_ftmo_allocator_task.ps1) is the only clock.
+    "prop_challenge_allocator",  # MT5-FTMO-Allocator
 })
 
 
