@@ -40,6 +40,8 @@ THE GATES, each PASS / FAIL / UNMEASURED, every one published per candidate:
                  documented 2026-09-13 measurement (PROP_FIRM_E8.md: "E8 lists no Scandi or EM
                  crosses", ten blocked symbols named) fails a Scandi/EM cross, and the symbols the
                  desk has positive evidence the venue quotes pass; anything else is UNMEASURED.
+  policy         no quarantined lineage (live_sleeve_policy.json), no CERT_BOOK_LIVE `excluded`
+                 row and no principal zero on e8 (decision_core.principal_zero): read, never re-made.
   session        the E8 executor runs H1 bars (prop/e8_executor LOOKBACK_BARS, family_call's H1
                  sessions), so an M5/M15/M30 spec does not fit the lane that would trade it.
   no_opposite    E8 forbids opposite trades across accounts. A symbol another account's book also
@@ -387,6 +389,34 @@ def session_gate(timeframe: str, selector: str) -> dict[str, Any]:
     return {"verdict": PASS, "why": f"H1 {selector or 'all'} fits the E8 executor's H1 sessions"}
 
 
+def policy_context(book: dict[str, Any]) -> tuple[set[str], dict[str, Any]]:
+    """(quarantined symbols, CERT_BOOK `excluded`): the lineage and principal fences LIVE holds."""
+    try:
+        from prop_challenge_allocator import quarantined_symbols
+        quarantine = quarantined_symbols()
+    except Exception:                                     # pragma: no cover - import env
+        quarantine = set()
+    excluded = book.get("excluded") if isinstance(book.get("excluded"), dict) else {}
+    return quarantine, excluded
+
+
+def policy_gate(book_key: str, symbol: str, quarantine: set[str],
+                excluded: dict[str, Any]) -> dict[str, Any]:
+    """Quarantined lineage, a CERT_BOOK exclusion or a principal zero on E8: the principal's and
+    the lineage fence's calls, read here and never re-made."""
+    if book_key in excluded:
+        return {"verdict": FAIL, "why": f"CERT_BOOK_LIVE excluded: {excluded[book_key]}"}
+    if symbol.upper() in quarantine:
+        return {"verdict": FAIL, "why": f"{symbol} quarantined in live_sleeve_policy.json"}
+    try:
+        from mt5desk.decision_core import principal_zero
+        if principal_zero(book_key, "e8"):
+            return {"verdict": FAIL, "why": "principal zero on e8 (decision_core.PRINCIPAL_ZERO)"}
+    except Exception as exc:                              # pragma: no cover - import env
+        return {"verdict": UNMEASURED, "why": f"principal_zero unreadable ({type(exc).__name__})"}
+    return {"verdict": PASS, "why": "no quarantine, exclusion or principal zero"}
+
+
 def other_account_symbols(book: dict[str, Any]) -> dict[str, list[str]]:
     """Symbols each OTHER account's book trades (non-zero keys), for the no-opposite rule."""
     out: dict[str, list[str]] = {}
@@ -570,7 +600,8 @@ def growth_gates(j: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
 
 # ===================================================================== the build
 
-HARD_GATES = ("mechanism", "e8_symbol", "session", "correlation", "headroom", "growth", "evidence")
+HARD_GATES = ("mechanism", "e8_symbol", "session", "policy", "correlation", "headroom", "growth",
+              "evidence")
 
 
 def _verdict_of(gates: dict[str, dict[str, Any]]) -> tuple[bool, list[str]]:
@@ -609,6 +640,7 @@ def build(*, n_paths: int = N_PATHS, seed: int = 0, now: datetime | None = None
     near, near_src = near_certified()
     catalogue, cat_src = e8_catalogue()
     others = other_account_symbols(book)
+    quarantine, excluded = policy_context(book)
     try:
         worlds_name = str(Path(ks.WORLDS).relative_to(BASE))
     except ValueError:
@@ -671,6 +703,7 @@ def build(*, n_paths: int = N_PATHS, seed: int = 0, now: datetime | None = None
             head, grow = growth_gates(jm)
             gates = {"mechanism": mechanism_gate(fam), "e8_symbol": symbol_gate(sym, catalogue),
                      "session": session_gate(tf, sel), "no_opposite": opposite_gate(sym, others),
+                     "policy": policy_gate(col, sym, quarantine, excluded),
                      "correlation": correlation_gate(jm), "headroom": head, "growth": grow,
                      "evidence": evidence_gate(fwd and {**fwd, "key": fkey}, cert)}
             eligible, missing = _verdict_of(gates)
@@ -714,6 +747,7 @@ def build(*, n_paths: int = N_PATHS, seed: int = 0, now: datetime | None = None
         cert = certs.get(f"{sym}.{fam}.{sel}")
         gates = {"mechanism": mechanism_gate(fam), "e8_symbol": symbol_gate(sym, catalogue),
                  "session": session_gate(tf, sel), "no_opposite": opposite_gate(sym, others),
+                 "policy": policy_gate(f"{sym}_{fam}_{sel}", sym, quarantine, excluded),
                  "evidence": evidence_gate(fwd and {**fwd, "key": fkey}, cert)}
         for g in ("correlation", "headroom", "growth"):
             gates[g] = {"verdict": UNMEASURED,
@@ -724,7 +758,7 @@ def build(*, n_paths: int = N_PATHS, seed: int = 0, now: datetime | None = None
                           "family": fam, "selector": sel, "timeframe": tf, "eligible": False,
                           "missing_gates": ["joint_series"] + missing, "n_variants": 1,
                           "n_static_gates_pass": sum(1 for g in ("mechanism", "e8_symbol",
-                                                                 "session", "evidence")
+                                                                 "session", "policy", "evidence")
                                                      if gates[g]["verdict"] == PASS),
                           "forward_t": (fwd or {}).get("forward_t"), "gates": gates}
 
@@ -751,7 +785,7 @@ def build(*, n_paths: int = N_PATHS, seed: int = 0, now: datetime | None = None
     doc["n_independent_mechanisms_eligible"] = len({c["family"] for c in eligible})
     doc["candidates"] = candidates
     doc["unpriced_candidates"] = up[:MAX_UNPRICED_ROWS]
-    doc["unpriced_ready_but_for_joint"] = sum(1 for c in up if c["n_static_gates_pass"] == 4)
+    doc["unpriced_ready_but_for_joint"] = sum(1 for c in up if c["n_static_gates_pass"] == 5)
     fail_counts: dict[str, int] = {}
     for c in candidates:
         for g in c["missing_gates"]:

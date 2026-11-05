@@ -65,6 +65,15 @@ def test_mechanism_session_and_opposite_gates() -> None:
     assert e8s.opposite_gate("CADCHF", others)["verdict"] == e8s.PASS
 
 
+def test_policy_gate_reads_exclusions_quarantine_and_principal_zero() -> None:
+    excl = {"CHFNOK_carry_asia": "carry lookahead"}
+    assert e8s.policy_gate("CHFNOK_carry_asia", "CHFNOK", set(), excl)["verdict"] == e8s.FAIL
+    assert e8s.policy_gate("EURUSD_x_asia", "EURUSD", {"EURUSD"}, {})["verdict"] == e8s.FAIL
+    assert e8s.policy_gate("gold_london_am", "XAUUSD", set(), {})["verdict"] == e8s.FAIL
+    assert e8s.policy_gate("CADCHF_overnight_gap_decay_asia", "CADCHF", set(),
+                           {})["verdict"] == e8s.PASS
+
+
 def test_evidence_gate_forward_decides_then_costed_backtest_then_unmeasured() -> None:
     assert e8s.evidence_gate({"n": 20, "exp_r": -0.2, "forward_t": -1.0},
                              {"exp_x3_costs": 0.3})["verdict"] == e8s.FAIL
