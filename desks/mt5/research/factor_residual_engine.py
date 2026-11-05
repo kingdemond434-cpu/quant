@@ -202,6 +202,10 @@ def book_daily() -> tuple[pd.Series | None, str]:
                     v = float(val)
                 except (TypeError, ValueError):
                     continue
+                # A row with no time parses to NaT, which has no .normalize(): that one row
+                # failed the whole factor_residual leg every day 11-01..11-05. Skip it.
+                if pd.isna(ts):
+                    continue
                 ts = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
                 rows.setdefault(ts.normalize(), []).append(v)
     if len(rows) >= 40:

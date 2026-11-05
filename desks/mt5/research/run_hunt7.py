@@ -40,16 +40,26 @@ BREAKOUT_WINDOWS = [
     ("afternoon", dict(range_start=14, range_end=17, signal_at=17, wait_bars=8, rr=2.0, ttl_bars=12)),
 ]
 
-GLOBAL_FAMILIES = [
-    ("asia_momentum", families.family_asia_momentum, dict()),
-    ("momentum_volgate", families.family_momentum_volgate, dict()),
-    ("monday_gap", families.family_monday_gap, dict(mode="momentum")),
-    ("monday_gap_fade", families.family_monday_gap, dict(mode="fade")),
-    ("london_close_momentum", families.family_london_close_momentum, dict()),
-    ("spread_state_avoidance", families.family7_spread_state_avoidance, dict()),
-    ("dow_effect", families.family_dow_effect, dict()),  # negative control
-    ("comex_settlement", families.family4_comex_settlement_effect, dict()),
+#: label -> (family name in mt5desk.families, params). RESOLVED BY NAME (2026-11-05): two of
+#: these were renamed or retired in the library (`family4_comex_settlement_effect` ->
+#: `family_comex_settlement`; `family7_spread_state_avoidance` is gone, see
+#: run_edges_macro_fusion_sweep.EDGE_NAMES), and a bare attribute read at import crashed the whole
+#: weekly sweep on 11-01, 11-02 and 11-04 before one hunt ran. A missing family is now DROPPED AND
+#: NAMED in MISSING_FAMILIES, never replaced with a look-alike mechanism.
+_GLOBAL_FAMILY_NAMES = [
+    ("asia_momentum", "family_asia_momentum", dict()),
+    ("momentum_volgate", "family_momentum_volgate", dict()),
+    ("monday_gap", "family_monday_gap", dict(mode="momentum")),
+    ("monday_gap_fade", "family_monday_gap", dict(mode="fade")),
+    ("london_close_momentum", "family_london_close_momentum", dict()),
+    ("spread_state_avoidance", "family7_spread_state_avoidance", dict()),
+    ("dow_effect", "family_dow_effect", dict()),  # negative control
+    ("comex_settlement", "family_comex_settlement", dict()),
 ]
+GLOBAL_FAMILIES = [(label, getattr(families, fname), params)
+                   for label, fname, params in _GLOBAL_FAMILY_NAMES if hasattr(families, fname)]
+MISSING_FAMILIES = sorted({label for label, fname, _ in _GLOBAL_FAMILY_NAMES
+                           if not hasattr(families, fname)})
 
 
 def tprint(*a) -> None:
@@ -61,6 +71,8 @@ def tprint(*a) -> None:
 
 def main() -> None:
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
+    if MISSING_FAMILIES:
+        tprint(f"families not in the library, NOT tested: {', '.join(MISSING_FAMILIES)}")
 
     def per_symbol_costs(sym: str) -> Costs:
         m = meta[sym]

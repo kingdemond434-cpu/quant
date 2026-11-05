@@ -71,6 +71,21 @@ def test_the_shadow_ledgers_are_the_fallback_and_absence_is_named(tmp_path, monk
     assert str(book.index.tz) == "UTC"
 
 
+def test_a_ledger_row_with_no_time_is_skipped_not_fatal(tmp_path, monkeypatch) -> None:
+    """MEASURED 11-01..11-05: one row whose time parsed to NaT ('NaTType' object has no
+    attribute 'normalize') failed the whole daily factor_residual leg every day."""
+    _isolate(tmp_path, monkeypatch)
+    led = tmp_path / "shadow"
+    led.mkdir()
+    rows = [{"entry_time": str(pd.Timestamp("2024-01-01", tz="UTC") + pd.Timedelta(days=i)),
+             "r_multiple": 0.1} for i in range(60)]
+    rows += [{"entry_time": None, "time": None, "r_multiple": 1.0},
+             {"entry_time": "NaT", "r_multiple": 1.0}]
+    (led / "ledger_X.json").write_text(json.dumps(rows), "utf-8")
+    book, _why = eng.book_daily()
+    assert book is not None and book.size == 60
+
+
 # --------------------------------------------------------------------------- the causal join
 def test_a_bar_never_sees_its_own_days_book_return() -> None:
     daily = _daily(30)
