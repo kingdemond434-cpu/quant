@@ -199,7 +199,13 @@ def leg_table(*, refresh: bool = False) -> dict[str, list[str]]:
         for item in doc.get("items", []):
             art = str(item.get("artifact") or "").strip()
             sched = str(item.get("scheduled_by") or "")
-            if not art or "hourly_cycle:" not in sched:
+            # PER-LEG DECLARATIONS (2026-11-05). An item scheduled by several legs names ONE
+            # artifact, and every leg was judged on it: fifteen forests on FOREST_KOREA.json.
+            # `artifact_by_leg` names each leg's own file; a leg it names is judged on that
+            # alone, the rest of the item's legs keep the shared `artifact`.
+            by_leg = item.get("artifact_by_leg")
+            by_leg = {str(k): str(v) for k, v in by_leg.items()} if isinstance(by_leg, dict) else {}
+            if not (art or by_leg) or "hourly_cycle:" not in sched:
                 continue
             for tok in sched.split(","):
                 tok = tok.strip()
@@ -210,7 +216,7 @@ def leg_table(*, refresh: bool = False) -> dict[str, list[str]]:
                 if not leg:
                     continue
                 paths = table.setdefault(leg, [])
-                paths.extend(p for p in artifact_paths(art) if p not in paths)
+                paths.extend(p for p in artifact_paths(by_leg.get(leg, art)) if p not in paths)
         # A leg whose every declaration was prose or a glob declares NOTHING here. It reads
         # UNDECLARED (an honest UNMEASURED) rather than carrying an empty list into the report.
         table = {leg: paths for leg, paths in table.items() if paths}
@@ -407,7 +413,7 @@ def judge(leg: str, before: Mapping[str, dict[str, Any]],
         rec["shared_with"] = shared
         rec["detail"] = (
             f"{leg} moved none of its {len(declared)} declared artifact(s), but every one is "
-            f"shared with other legs and was written inside {WINDOW_H:g} h by one of them, so "
+            f"shared with other legs and is fresh (mtime inside {WINDOW_H:g} h), so "
             f"this leg's own output is UNMEASURED, not silent: "
             + "; ".join(f"{_rel(p)} <- {', '.join(o[:4])}" for p, o in list(shared.items())[:3]))
         return rec

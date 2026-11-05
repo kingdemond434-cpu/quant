@@ -117,3 +117,31 @@ def test_the_report_files_unattributed_legs_apart_and_not_as_a_breach(tmp_path,
     rep = woe.build_report()
     assert [e["leg"] for e in rep["shared_unattributed"]] == ["forest_china"]
     assert rep["status"] == "CONTRACT_KEPT" and not rep["silent_no_ops"]
+
+
+def test_a_per_leg_declaration_replaces_the_items_shared_artifact(tmp_path, monkeypatch) -> None:
+    """Fifteen forests were judged on FOREST_KOREA.json; each now owns FOREST_<ID>.json."""
+    import json
+    prog = tmp_path / "tier1_program.json"
+    prog.write_text(json.dumps({"items": [{
+        "id": "U10", "artifact": "desks/mt5/reports/FOREST_KOREA.json",
+        "scheduled_by": "hourly_cycle:forest_korea, hourly_cycle:forest_china, hourly_cycle:x",
+        "artifact_by_leg": {"forest_china": "desks/mt5/reports/FOREST_CHINA.json"}}]}), "utf-8")
+    monkeypatch.setattr(woe, "PROGRAM", prog)
+    table = woe.leg_table(refresh=True)
+    try:
+        assert table["forest_china"] == ["desks/mt5/reports/FOREST_CHINA.json"]
+        assert table["forest_korea"] == ["desks/mt5/reports/FOREST_KOREA.json"]
+        assert table["x"] == ["desks/mt5/reports/FOREST_KOREA.json"]
+    finally:
+        monkeypatch.undo()
+        woe.leg_table(refresh=True)
+
+
+def test_the_real_registry_gives_every_forest_its_own_report() -> None:
+    table = woe.leg_table(refresh=True)
+    forests = {leg: paths for leg, paths in table.items() if leg.startswith("forest_")}
+    assert len(forests) == 15
+    for leg, paths in forests.items():
+        assert paths == [f"desks/mt5/reports/FOREST_{leg[len('forest_'):].upper()}.json"], leg
+    assert table["fred_macro"] == ["desks/mt5/reports/MACRO_VIEW.json"]
