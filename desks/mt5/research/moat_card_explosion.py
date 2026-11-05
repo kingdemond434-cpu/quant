@@ -670,12 +670,13 @@ def children_of(card: dict[str, Any], others: list[dict[str, Any]]
 
 
 def pick(by_axis: dict[str, list[dict[str, Any]]], seen: set[str], cap: int,
-         per_axis: int = MAX_PER_AXIS) -> tuple[list[dict[str, Any]], int]:
+         per_axis: int | None = None) -> tuple[list[dict[str, Any]], int]:
     """Round-robin across axes so one rich axis cannot eat the card's whole cap; content-hash
     dedupe against everything already generated (and, from `build`, everything the registry
     already holds). A collision spends the axis's TURN but never the cap or the axis's share of
     it, so a deep axis walks PAST what earlier passes explored to its frontier. Returns
     (kept, collisions)."""
+    per_axis = MAX_PER_AXIS if per_axis is None else per_axis      # read at call time
     queues = {a: list(rows) for a, rows in by_axis.items() if rows}
     took: dict[str, int] = {}
     kept: list[dict[str, Any]] = []
