@@ -17,7 +17,7 @@
  "uptime_s": 740553.0,
  "last_sweep_ended_utc": "2026-11-05T06:23:44+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-05T11:34:59+00:00",
+ "heartbeat_utc": "2026-11-05T11:50:08+00:00",
  "sweep_phase": {
   "pid": 31752,
   "sweep_started_utc": "2026-11-05T06:24:12+00:00",
@@ -184,42 +184,42 @@
      }
     },
     "collect_and_cut": {
-     "samples": 73,
+     "samples": 145,
      "top": [
       {
        "stack": "external_gauntlet.py:shard_of:4551 < external_gauntlet.py:_shard_collect:4733 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
-       "n": 35,
-       "share": 0.479
+       "n": 76,
+       "share": 0.524
       },
       {
        "stack": "frontier_identity.py:cell_id:41 < external_gauntlet.py:shard_of:4551 < external_gauntlet.py:_shard_collect:4733 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844",
-       "n": 15,
-       "share": 0.205
+       "n": 29,
+       "share": 0.2
       },
       {
        "stack": "external_gauntlet.py:shard_of:4547 < external_gauntlet.py:_shard_collect:4733 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
-       "n": 9,
-       "share": 0.123
+       "n": 21,
+       "share": 0.145
       },
       {
        "stack": "external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
-       "n": 6,
-       "share": 0.082
+       "n": 8,
+       "share": 0.055
       },
       {
        "stack": "external_gauntlet.py:shard_of:4552 < external_gauntlet.py:_shard_collect:4733 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
-       "n": 4,
-       "share": 0.055
+       "n": 5,
+       "share": 0.034
       }
      ],
      "process": {
-      "cpu_s": 5.1,
-      "page_faults": 142702.0,
-      "read_bytes": 15422709.0,
-      "write_bytes": 111295.0,
-      "sampled_s": 720.0,
-      "rss_mb_max": 439.4,
-      "cpu_share_of_wall": 0.007
+      "cpu_s": 23.2,
+      "page_faults": 501891.0,
+      "read_bytes": 62011257.0,
+      "write_bytes": 211464.0,
+      "sampled_s": 1440.0,
+      "rss_mb_max": 872.1,
+      "cpu_share_of_wall": 0.016
      }
     }
    }
