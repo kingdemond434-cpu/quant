@@ -1,30 +1,56 @@
 {
- "at": "2026-11-05T11:55:51+00:00",
- "status": "UNMEASURED",
- "why": "verdicts: gate_verdict_ledger.jsonl stream overran its 150 s deadline after 360,448 rows (150 s): verdicts/hour is UNMEASURED this pass, never a partial count",
+ "at": "2026-11-05T19:43:39+00:00",
+ "status": "MEASURED",
  "verdicts": {
-  "status": "UNMEASURED",
-  "rows_read": 360448,
-  "why": "gate_verdict_ledger.jsonl stream overran its 150 s deadline after 360,448 rows (150 s): verdicts/hour is UNMEASURED this pass, never a partial count"
+  "status": "MEASURED",
+  "rows_total": 1440697,
+  "rows_unstamped": 0,
+  "last_verdict_at": "2026-11-05T17:43:23+00:00",
+  "counts": {
+   "1h": 0,
+   "24h": 23380,
+   "7d": 405215,
+   "build_step_lo": 0,
+   "build_step_hi": 0
+  },
+  "count_basis": "changed verdict events; unchanged retests do not append",
+  "first_terminal_counts": {
+   "1h": 0,
+   "24h": 4503,
+   "7d": 244843,
+   "build_step_lo": 0,
+   "build_step_hi": 0
+  },
+  "first_terminal_cells": 651553,
+  "first_terminal_per_hour": {
+   "1h": 0.0,
+   "24h": 187.625,
+   "7d": 1457.399
+  },
+  "per_hour": {
+   "1h": 0.0,
+   "24h": 974.167,
+   "7d": 2411.994
+  }
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 9694,
-   "7d": 46739
+   "24h": 12321,
+   "7d": 51177
   },
   "per_hour": {
-   "24h": 403.917,
-   "7d": 278.208
+   "24h": 513.375,
+   "7d": 304.625
   }
  },
- "verdicts_per_hour": "UNMEASURED",
- "verdicts_per_day": "UNMEASURED",
+ "verdicts_per_hour": 974.167,
+ "verdicts_per_day": 23380.0,
  "verdict_rate_basis": "changed verdict events, not total completed tests",
- "first_judged_per_day": "UNMEASURED",
+ "first_judged_per_day": 4503.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
- "created_per_day": 9694.0,
+ "created_per_day": 12321.0,
  "backlog": "UNMEASURED",
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
@@ -36,7 +62,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-05T11:55:30+00:00",
-  "pid": 12048
+  "started_at": "2026-11-05T19:40:54+00:00",
+  "pid": 12200
  }
 }
