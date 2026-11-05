@@ -499,3 +499,22 @@ def test_a_slow_census_still_leaves_the_repairs_their_time(lane, monkeypatch, tm
     with pytest.raises(KeyboardInterrupt):
         cl.build(budget_s=300.0, apply=True)
     assert got["budget"] >= cl.MIN_ACTUATOR_S
+
+
+def test_a_killed_pass_does_not_reset_the_starvation_streak(lane, monkeypatch, tmp_path):
+    report = _box(lane, monkeypatch, tmp_path)
+    report.write_text(json.dumps({"at": "2026-09-22T12:00:00+00:00", "provisional": False,
+                                  "consecutive_budget_exhausted": {"off_roster": 2}}),
+                      encoding="utf-8")
+    _frozen_main(lane, _wednesday())
+
+    def killed(frozen, budget_s, apply):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(cl, "repair", killed)
+    with pytest.raises(KeyboardInterrupt):
+        cl.build(budget_s=300.0, apply=True)
+    left = json.loads(report.read_text(encoding="utf-8"))
+    assert left["provisional"] is True
+    starved = {"cause": "off_roster", "budget_exhausted": True}
+    assert cl.starvation([starved], left) == {"off_roster": 3}

@@ -1301,6 +1301,10 @@ def provisional_doc(rows: Sequence[Mapping[str, Any]], *, now: datetime, host: s
     if isinstance(prev.get("certificate"), dict):
         carried = {"certificate": prev["certificate"],
                    "certificate_at": prev.get("certificate_at") or prev.get("at")}
+    # The starvation streak survives a killed pass (Auditor SF on 07ca43e8c): without it, the
+    # provisional file left by a kill would restart every cause's count at 1.
+    if isinstance(prev.get("consecutive_budget_exhausted"), dict):
+        carried["consecutive_budget_exhausted"] = prev["consecutive_budget_exhausted"]
     return {**carried,
         "at": now.isoformat(), "hostname": hostname(), "host": host, "host_why": host_why,
         "provisional": True,
