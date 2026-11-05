@@ -838,6 +838,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     from mt5desk.engine import run_backtest
 
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
+    _reset_spread_caches()
     state_path = SHADOW_DIR / ledger
     state = _TouchedState(_read_state(state_path) or {})
     today = datetime.now(UTC).date().isoformat()
@@ -1225,8 +1226,10 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             res = run_backtest(h1, sigs, costs)
             # THE SPREAD IS THE ONE THE TRADE CROSSED, NOT AN ALL-HOURS MEDIAN (2026-11-05 HOLD).
             # See `reprice_at_measured_spread`: one-sided, it can only lower a trade's R.
-            _priced, st["entry_spread"] = reprice_at_measured_spread(
-                res.trades, h1, costs, meta.get(sym) or {})
+            _priced, _spread_rep = reprice_at_measured_spread(
+                res.trades, h1, costs, meta.get(sym) or {}, sym)
+            _by_entry = _spread_rep.pop("by_entry", {})
+            st["entry_spread"] = _spread_rep
             # HISTORY IS KEPT, BUT IT IS NOT FORWARD EVIDENCE. `res.trades` runs from SHADOW_START
             # (2026-08-16); this parameterization's clock was frozen at `forward_start`.
             # Trades before that boundary were available while the cell was being SELECTED,
@@ -1268,6 +1271,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                   "phase": ("forward" if (_boundary is not None and t.entry_time >= _boundary)
                             else "historical"),
                   "key": key,
+                  "spread_src": (_by_entry.get(str(t.entry_time)) or {}).get("src", "frozen"),
+                  "spread_pts": (_by_entry.get(str(t.entry_time)) or {}).get("pts"),
                   **_stamp}
                  for t in all_trades],
                 indent=2), encoding="utf-8")
@@ -1693,30 +1698,114 @@ def spread_reprice_report(state: dict, top: int = 40) -> dict:
         if es.get("repriced"):
             rows.append({"key": key, "status": st.get("status"),
                          "repriced": es.get("repriced"), "trades": es.get("trades"),
-                         "r_charged_extra": es.get("r_charged_extra"),
+                         "r_delta": es.get("r_delta"), "sources": es.get("sources"),
                          "charged_spread_pts": es.get("charged_spread_pts")})
-    rows.sort(key=lambda r: -float(r.get("r_charged_extra") or 0.0))
+    rows.sort(key=lambda r: abs(float(r.get("r_delta") or 0.0)), reverse=True)
     return {"rows_by_status": counts, "rows_repriced": len(rows), "top": rows[:top],
-            "reads": ("r_charged_extra is the R the replay had NOT charged across ALL trades it "
-                      "replayed (historical and forward); a promotion candidate near the top is "
-                      "the first to re-read")}
+            "reads": ("r_delta is the R the measured spread moved across ALL trades replayed "
+                      "(historical and forward): negative where the old basis undercharged, "
+                      "positive where it overcharged. Ranked by size; a promotion candidate near "
+                      "the top is the first to re-read")}
 
 
-def _hour_spread_medians(bars: pd.DataFrame) -> dict[int, float]:
-    if "spread" not in bars.columns:
-        return {}
+#: A minute on the tape is a measurement only with at least this many quotes in it.
+TAPE_MIN_TICKS = 3
+_TAPE_MINUTES: dict[tuple[str, str], dict[int, float] | None] = {}
+_TICK_SURFACES: list[dict] | None = None
+
+
+def _reset_spread_caches() -> None:
+    """Every pass reads the tape and the surfaces as they are NOW."""
+    global _TICK_SURFACES
+    _TAPE_MINUTES.clear()
+    _TICK_SURFACES = None
+
+
+def _tape_minute_spreads(sym: str, day: str, point: float) -> dict[int, float] | None:
+    """Median quoted spread, in points, per venue minute of one tape day (cached per pass)."""
+    ck = (sym, day)
+    if ck in _TAPE_MINUTES:
+        return _TAPE_MINUTES[ck]
+    if len(_TAPE_MINUTES) > 16:              # one symbol's recent days at a time
+        _TAPE_MINUTES.clear()
+    out: dict[int, float] | None = None
     try:
-        sp = pd.Series(pd.to_numeric(bars["spread"], errors="coerce").to_numpy(dtype=float),
-                       index=pd.DatetimeIndex(bars.index).hour)
-        med = sp.groupby(level=0).median()
-    except (TypeError, ValueError):
-        return {}
-    return {int(h): float(v) for h, v in med.items() if v == v}
+        from mt5desk.tape import day_files
+        frames = [pd.read_parquet(f, columns=["time_msc", "bid", "ask"])
+                  for d, f in day_files(sym) if d == day]
+        if frames:
+            t = pd.concat(frames, ignore_index=True)
+            tm = pd.to_numeric(t["time_msc"], errors="coerce")
+            bid = pd.to_numeric(t["bid"], errors="coerce")
+            ask = pd.to_numeric(t["ask"], errors="coerce")
+            ok = tm.notna() & (bid > 0) & (ask > 0)
+            if ok.any():
+                minute = (tm[ok].astype("int64") // 60_000)
+                pts = (ask[ok] - bid[ok]) / point
+                g = pts.groupby(minute.to_numpy())
+                med, n = g.median(), g.size()
+                out = {int(m): float(v) for m, v in med[n >= TAPE_MIN_TICKS].items()}
+    except Exception:                         # a tape problem must never stop the clock
+        out = None
+    _TAPE_MINUTES[ck] = out
+    return out
+
+
+def _tick_surfaces() -> list[dict]:
+    """The tick-measured hour surfaces, best first: the tape's own, then the bar surface's
+    `tick_hours` block. Loaded once per pass; an absent file is simply not a source."""
+    global _TICK_SURFACES
+    if _TICK_SURFACES is None:
+        found: list[dict] = []
+        for name in ("cost_surface_tick.json", "cost_surface.json"):
+            try:
+                found.append(json.loads((BASE / "data" / name).read_text(encoding="utf-8")))
+            except (OSError, ValueError):
+                continue
+        _TICK_SURFACES = found
+    return _TICK_SURFACES
+
+
+def _tick_hour_spread(sym: str, hour: int) -> float | None:
+    for doc in _tick_surfaces():
+        entry = (doc.get("symbols") or {}).get(sym) or {}
+        if doc.get("source", "").startswith("mt5 tick tape"):
+            cell = (entry.get("hours") or {}).get(str(hour)) or {}
+        else:
+            cell = ((entry.get("tick_hours") or {}).get("hours") or {}).get(str(hour)) or {}
+        if cell.get("status") == "MEASURED" and cell.get("p50") is not None:
+            return float(cell["p50"])
+    return None
+
+
+def measured_spread_at(sym: str, at: pd.Timestamp, point: float) -> tuple[float | None, str]:
+    """The spread a market order crossed at `at`, in points, and where the number came from.
+
+    `tape_minute`: the median quote in that venue minute on the tick tape. `tick_hour`: the
+    tick-measured median for that venue hour. Neither: (None, "frozen") and the caller keeps the
+    basis it already charged. The bars' own `spread` column is DELIBERATELY not a source: on
+    this feed it is bimodal (GBPCHF hours 10-16 read 0 on 69% of bars and 150 on the rest, a p50
+    of 150 against a raw-account spread of a few points), so it would overcharge quiet hours by
+    two orders of magnitude and undercharge the rollover minute, both at once.
+    """
+    ts = pd.Timestamp(at)
+    if ts.tzinfo is None:
+        ts = ts.tz_localize("UTC")
+    minute = int(ts.value // 60_000_000_000)
+    for day in (ts.strftime("%Y-%m-%d"), (ts - pd.Timedelta(days=1)).strftime("%Y-%m-%d"),
+                (ts + pd.Timedelta(days=1)).strftime("%Y-%m-%d")):
+        mins = _tape_minute_spreads(sym, day, point)
+        if mins and minute in mins:
+            return mins[minute], "tape_minute"
+    hour_pts = _tick_hour_spread(sym, int(ts.hour))
+    if hour_pts is not None:
+        return hour_pts, "tick_hour"
+    return None, "frozen"
 
 
 def reprice_at_measured_spread(trades: list, bars: pd.DataFrame, costs: object,
-                               meta: dict) -> tuple[list, dict]:
-    """Charge each trade the spread measured where it crossed it, never less than it was charged.
+                               meta: dict, sym: str = "") -> tuple[list, dict]:
+    """Charge each trade the spread measured where it crossed it, in BOTH directions.
 
     THE REPLAY PRICED EVERY TRADE AT AN ALL-HOURS MEDIAN SPREAD (`Costs.from_symbol` reads
     `median_spread_pts`). Spread is not a constant of a symbol: on 2026-11-05 every GBPCHF formula
@@ -1724,65 +1813,48 @@ def reprice_at_measured_spread(trades: list, bars: pd.DataFrame, costs: object,
     against the ~2-3 the replay charged, and the two promotion candidates went from +6.22R to
     about -5.46R at the real spread (Auditor HOLD_gbpchf_formula_promotion).
 
-    The bars are bid-quoted, so a LONG crosses the spread at its entry bar and a SHORT at its exit
-    bar. The spread there is the larger of that bar's own `spread` and the median `spread` of
-    that hour of day across the frame (MT5 bars record a per-bar figure that reads 0 in quiet
-    hours, so one bar alone can under-read; the hourly median cannot be gamed by one bar). The
-    charge is ONE-SIDED: only the excess over the spread already charged is deducted, so this
-    never raises a trade's R. With no `spread` column, or no tick size, nothing changes and the
-    reason is published (UNMEASURED, never a silent clean).
+    TWO-SIDED (Auditor, same day): a trade that crossed a spread NARROWER than the basis gets the
+    difference back, because overcharging kills real edges as surely as undercharging
+    manufactures false ones (Rule 1). The bars are bid-quoted, so a LONG crosses the spread at its
+    entry bar and a SHORT at its exit bar. Sources, best first, per `measured_spread_at`; each
+    trade's source is recorded. With no tick size nothing changes and the row reads UNMEASURED.
     """
     import dataclasses as _dc
     report: dict = {"status": "UNMEASURED", "trades": len(trades), "repriced": 0,
-                    "r_charged_extra": 0.0}
+                    "r_delta": 0.0, "sources": {}, "by_entry": {}}
+    if not trades:
+        report["status"] = "NO_TRADES"
+        return list(trades), report
     try:
         tick = float(meta.get("tick_size") or meta.get("point") or 0.0)
         contract = float(getattr(costs, "contract_oz", 0.0) or 0.0)
         charged_px = float(getattr(costs, "spread_per_lot", 0.0)) / contract if contract else None
     except (TypeError, ValueError):
         tick, charged_px = 0.0, None
-    if not trades:
-        report["status"] = "NO_TRADES"
-        return list(trades), report
     if tick <= 0 or charged_px is None:
         report["why"] = "no tick size or contract size: the spread cannot be put in price units"
         return list(trades), report
-    if "spread" not in bars.columns:
-        report["why"] = "the bar feed carries no spread column"
-        return list(trades), report
-    by_hour = _hour_spread_medians(bars)
-    try:
-        bar_sp = pd.Series(pd.to_numeric(bars["spread"], errors="coerce").to_numpy(dtype=float),
-                           index=pd.DatetimeIndex(bars.index))
-    except (TypeError, ValueError):
-        report["why"] = "the spread column is not numeric"
-        return list(trades), report
-    out, extra_total, worst = [], 0.0, 0.0
+    out, delta_total, worst_cut = [], 0.0, 0.0
     for t in trades:
         at = pd.Timestamp(t.entry_time if t.side > 0 else t.exit_time)
-        try:
-            own = float(bar_sp.get(at, float("nan")))
-        except (TypeError, ValueError):
-            own = float("nan")
-        hour_med = by_hour.get(int(at.hour), float("nan"))
-        pts = max((v for v in (own, hour_med) if v == v), default=float("nan"))
+        pts, src = measured_spread_at(sym, at, tick)
+        report["sources"][src] = report["sources"].get(src, 0) + 1
         stop_dist = abs(float(t.entry) - float(t.stop))
-        if pts != pts or stop_dist <= 0:
+        if pts is None or stop_dist <= 0:
             out.append(t)
             continue
-        excess = pts * tick - charged_px
-        if excess <= 0:
+        report["by_entry"][str(t.entry_time)] = {"src": src, "pts": round(pts, 3)}
+        d_r = (charged_px - pts * tick) * float(getattr(t, "units", 1.0) or 1.0) / stop_dist
+        if d_r == 0.0:
             out.append(t)
             continue
-        d_r = excess * float(getattr(t, "units", 1.0) or 1.0) / stop_dist
-        extra_total += d_r
-        worst = max(worst, d_r)
+        delta_total += d_r
+        worst_cut = min(worst_cut, d_r)
         report["repriced"] += 1
-        out.append(_dc.replace(t, r_multiple=float(t.r_multiple) - d_r))
-    report.update(status="MEASURED", r_charged_extra=round(extra_total, 6),
-                  worst_trade_extra_r=round(worst, 6),
-                  charged_spread_pts=round(charged_px / tick, 4),
-                  hour_median_pts={str(h): v for h, v in sorted(by_hour.items())})
+        out.append(_dc.replace(t, r_multiple=float(t.r_multiple) + d_r))
+    report.update(status="MEASURED", r_delta=round(delta_total, 6),
+                  worst_trade_r_delta=round(worst_cut, 6),
+                  charged_spread_pts=round(charged_px / tick, 4))
     return out, report
 
 

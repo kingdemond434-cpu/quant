@@ -287,7 +287,13 @@ def tick_profile(symbol: str, point: float, days: int = TICK_DAYS,
     if not frames:
         return None
     t = pd.concat(frames, ignore_index=True).drop_duplicates()
-    t = t[(t["bid"] > 0) & (t["ask"] > 0)]
+    # A TICK WITH NO TIMESTAMP HAS NO HOUR. `astype("int64")` raised IntCastingNaNError on the
+    # first NA in `time_msc`, and the caller's guard turned that into `tick_hours: UNREADABLE`
+    # for every symbol on the box (measured 2026-11-05, GBPCHF among them), so the one surface
+    # that measures what an order crosses was never read by anything. Drop the unstamped ticks.
+    tm = pd.to_numeric(t["time_msc"], errors="coerce")
+    t = t.assign(time_msc=tm)
+    t = t[tm.notna() & (t["bid"] > 0) & (t["ask"] > 0)]
     if t.empty:
         return None
     pts = ((t["ask"].astype(float) - t["bid"].astype(float)) / point).round(1)
@@ -386,6 +392,14 @@ def spread_pts(surface: dict, symbol: str, hour: int | None) -> float | None:
     sym = (surface.get("symbols") or {}).get(symbol)
     if not sym:
         return None
+    # THE TICK MEASUREMENT WINS WHERE IT EXISTS (2026-11-05). The bar `spread` column on this
+    # feed is bimodal -- GBPCHF hours 10-16 read 0 on ~69% of bars and 150 on the rest, a p50 of
+    # 150 pts against a raw spread of a few -- and its hour-01 p50 of 6 pts sat under a rollover
+    # minute the tape measured at 82. `tick_hours` is every quote on the tape, zeros included.
+    # Two-sided: it lowers the charge where the bars overcharged and raises it where they did not.
+    tick = ((sym.get("tick_hours") or {}).get("hours") or {}).get(str(int(hour)))
+    if tick and tick.get("status") == "MEASURED" and tick.get("p50") is not None:
+        return float(tick["p50"])
     cell = (sym.get("hours") or {}).get(str(int(hour)))
     if not cell or cell.get("status") != "MEASURED":
         return None
