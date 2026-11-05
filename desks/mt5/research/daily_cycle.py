@@ -947,16 +947,21 @@ STEPS = (("weekly_hunt_refresh", _weekly_hunt_refresh),
 _ORIGINAL_STEPS: dict[str, object] = dict(STEPS)
 #: Legs whose body is a loop over research modules: the parent runs the loop, each module a child.
 FANOUT_STEPS = frozenset({"proposers", "world_miners", "state_research_feedback"})
-#: Default wall cap for one leg's child. Above the longest leg budget in the chain (deepen_bars
-#: 1500 s, module_rent 240 s, gap map 300 s ...) with room for the bars it has to read.
-LEG_WALL_S_DEFAULT = 3 * 3600.0
-#: Legs measured or budgeted longer than the default. weekly_hunt_refresh is the six-day hunt
+#: Wall caps catch HANGS, never slow days: every cap is at least twice the leg's longest
+#: measured run (Auditor SF1 on #737). Measured on the Contabo box, chain of 11-04 21:50Z:
+#: research_gap_map 1,773 s, refresh_bars 15,742 s (4.4 h), deepen_bars 1,698 s, cost_fields
+#: 228 s, factor_residual 1,465 s; research_bandit ~2-3 h on 11-03. A leg with no measurement
+#: gets the 6 h default, which is above twice every declared leg budget in the chain.
+LEG_WALL_S_DEFAULT = 6 * 3600.0
+#: Legs measured (or budgeted) past half the default. weekly_hunt_refresh is the six-day hunt
 #: sweep (seven hunts in a row) and stays under HOLDER_MAX_WAIT_S.
-LEG_WALL_S = {"weekly_hunt_refresh": 10 * 3600.0}
+LEG_WALL_S = {"refresh_bars": 9 * 3600.0, "research_bandit": 8 * 3600.0,
+              "weekly_hunt_refresh": 10 * 3600.0}
 #: Wall cap for one module of a fan-out leg. A proposer's own budget is clipped to <= 3600 s by
-#: `_proposers`; twice that is a hang, not a slow day.
-SUB_WALL_S = {"proposers": 2 * 3600.0, "world_miners": 3600.0,
-              "state_research_feedback": 3600.0}
+#: `_proposers`, but its own data reads can overrun that budget, so three times it is the cap.
+#: The other fan-out modules carry no budget above 900 s (deep_forest_miner); 2 h is a hang.
+SUB_WALL_S = {"proposers": 3 * 3600.0, "world_miners": 2 * 3600.0,
+              "state_research_feedback": 2 * 3600.0}
 #: A child whose peak commit (or RSS) passes this is named LEG_MEMORY_HIGH in the log.
 LEG_MEMORY_WARN_MB = 6144.0
 LEG_DIR = BASE / "logs" / "daily_cycle_legs"   # gitignored, like the log

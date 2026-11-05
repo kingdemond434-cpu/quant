@@ -182,3 +182,21 @@ def test_every_fanout_loop_dispatches_every_module():
         assert loops, leg
         first = ast.unparse(loops[0].body[0])
         assert f'_sub_elsewhere({leg!r}' in first.replace('"', "'"), (leg, first)
+
+
+#: Longest run of each leg measured on the Contabo box (seconds), chain of 2026-11-04 21:50Z
+#: plus research_bandit on 11-03. Add a row whenever a box read measures a longer one.
+MEASURED_MAX_S = {"research_gap_map": 1773.1, "refresh_bars": 15742.5, "deepen_bars": 1697.6,
+                  "cost_fields": 228.0, "factor_residual": 1464.6, "research_bandit": 3 * 3600.0}
+
+
+@pytest.mark.parametrize("leg,measured", sorted(MEASURED_MAX_S.items()))
+def test_every_wall_cap_is_at_least_twice_the_longest_measured_run(leg, measured):
+    """A cap only ever catches a hang, never a slow day (never-throttle; Auditor SF1 on #737)."""
+    assert leg in dict(daily_cycle.STEPS)
+    cap = daily_cycle.LEG_WALL_S.get(leg, daily_cycle.LEG_WALL_S_DEFAULT)
+    assert cap >= 2 * measured, (leg, cap, measured)
+
+
+def test_a_proposer_cap_is_well_above_its_own_clipped_budget():
+    assert daily_cycle.SUB_WALL_S["proposers"] >= 2 * 3600.0 * 1.5
