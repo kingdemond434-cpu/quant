@@ -52,20 +52,46 @@ if ($LASTEXITCODE -ne 0) {
     ConvertTo-Json | Set-Content -Path (Join-Path $vault "LAST_RUN.json")
   Write-Host "VIDEO CELLS NO_DEPS: $why"; exit 2
 }
+# SYSTEM RUNS GIT ON A TREE OWNED BY BUILTIN\Administrators: plain git refuses with "dubious
+# ownership" (rc 128), and a native exit code does not trip $ErrorActionPreference in PS 5.1, so a
+# failed fetch used to leave $files empty and still write a healthy-looking LAST_RUN.json.
+# GitBoxEnv sets safe.directory = THIS repo and prompts off for this process only (as
+# sync_shadow_to_git.ps1), and every git and python step's rc is measured and recorded.
+. (Join-Path $Repo "desks\mt5\scripts\GitBoxEnv.ps1")
+$gitEnv = Initialize-BoxGitEnv -RepoRoot $Repo
+function Write-LastRun([string]$State, [hashtable]$Extra) {
+  $doc = @{ ts = (Get-Date).ToUniversalTime().ToString("s") + "Z"; state = $State;
+            bundles = (Get-ChildItem $sealed -Filter *.vault -ErrorAction SilentlyContinue).Count;
+            safe_directory = $gitEnv.SafeDirectory }
+  foreach ($k in $Extra.Keys) { $doc[$k] = $Extra[$k] }
+  $doc | ConvertTo-Json | Set-Content -Path (Join-Path $vault "LAST_RUN.json")
+}
 git fetch --quiet origin $Branch
-$files = git ls-tree -r --name-only "origin/$Branch" -- sealed | Where-Object { $_ -match '^sealed/[A-Za-z0-9_.-]+\.vault$' }
+$fetchRc = $LASTEXITCODE
+if ($fetchRc -ne 0) { Write-LastRun "FETCH_FAILED" @{ fetch_rc = $fetchRc }; Write-Host "VIDEO CELLS FETCH_FAILED rc=$fetchRc"; exit 2 }
+$listed = @(git ls-tree -r --name-only "origin/$Branch" -- sealed)
+$lsRc = $LASTEXITCODE
+if ($lsRc -ne 0) { Write-LastRun "LIST_FAILED" @{ fetch_rc = $fetchRc; ls_tree_rc = $lsRc }; Write-Host "VIDEO CELLS LIST_FAILED rc=$lsRc"; exit 2 }
+$files = $listed | Where-Object { $_ -match '^sealed/[A-Za-z0-9_.-]+\.vault$' }
+$newBundles = 0; $catFailed = 0
 foreach ($f in $files) {
   $dest = Join-Path $sealed (Split-Path $f -Leaf)
   if (-not (Test-Path $dest)) {
     # Start-Process redirection writes the blob's raw bytes (no PowerShell re-encoding, no cmd parsing)
     $p = Start-Process -FilePath "git" -ArgumentList @("cat-file", "blob", "origin/${Branch}:$f") `
            -RedirectStandardOutput $dest -NoNewWindow -Wait -PassThru
-    if ($p.ExitCode -ne 0) { Remove-Item -Force $dest -ErrorAction SilentlyContinue }
+    if ($p.ExitCode -ne 0) { Remove-Item -Force $dest -ErrorAction SilentlyContinue; $catFailed++ } else { $newBundles++ }
   }
 }
 & $py @pyArgs scripts\video_transcript_vault.py open --src $sealed --dst $open
+$openRc = $LASTEXITCODE
 & $py @pyArgs scripts\extract_video_cells.py --mined $open --max-videos $MaxVideos
+$extractRc = $LASTEXITCODE
 # box-side coverage proof: every enumerated video id and its status, from the PC's own ledger
 & $py @pyArgs scripts\mine_channel_transcripts.py --out $open --report-only --report desks\mt5\reports\VIDEO_MINING_COVERAGE.json
-$stamp = @{ ts = (Get-Date).ToUniversalTime().ToString("s") + "Z"; bundles = (Get-ChildItem $sealed -Filter *.vault).Count } | ConvertTo-Json
-Set-Content -Path (Join-Path $vault "LAST_RUN.json") -Value $stamp
+$coverageRc = $LASTEXITCODE
+$state = if ($openRc -ne 0 -or $extractRc -ne 0 -or $coverageRc -ne 0 -or $catFailed -gt 0) { "STEP_FAILED" } else { "OK" }
+Write-LastRun $state @{ fetch_rc = $fetchRc; ls_tree_rc = $lsRc; listed_bundles = @($files).Count;
+                        new_bundles = $newBundles; cat_file_failed = $catFailed; open_rc = $openRc;
+                        extract_rc = $extractRc; coverage_rc = $coverageRc }
+if ($state -ne "OK") { exit 2 }
