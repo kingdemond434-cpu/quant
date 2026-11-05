@@ -589,7 +589,7 @@ class _FakePsutil:
     def __init__(self, procs):
         self._procs = procs
 
-    def Process(self, pid):  # noqa: N802 - psutil's own name
+    def Process(self, pid):
         if pid not in self._procs:
             raise RuntimeError("gone")
         return self._procs[pid]
