@@ -499,11 +499,15 @@ def main(argv: list[str] | None = None) -> int:
         print("--dry-run: nothing written")
         return 0
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(
+    # ATOMIC: merge_hypotheses now reads OUT concurrently, and a torn file reads as ABSENT for a
+    # whole MergeDocket run (~27h). Write beside it, then swap in one rename.
+    tmp = OUT.with_name(OUT.name + ".tmp")
+    tmp.write_text(json.dumps(
         {"built_at": datetime.now(UTC).isoformat(timespec="seconds"),
          "source": "desks/mt5/research/local_converter.py",
          "stats": dict(stats), "candidates": cands,
          "docket_rows": docket_rows(cands)}, indent=1), encoding="utf-8")
+    os.replace(tmp, OUT)
     print(f"wrote {OUT}")
     if not a.no_feed:
         added, total = feed_docket(cands)
