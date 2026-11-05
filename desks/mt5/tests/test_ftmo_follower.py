@@ -172,6 +172,29 @@ def test_a_price_already_through_the_level_rests_a_limit_at_it_never_a_chase(wor
     assert req["type"] == mt5.ORDER_TYPE_BUY_LIMIT and req["price"] == 4340.0
 
 
+def test_a_follow_just_through_the_level_enters_at_market_with_e8s_stop_and_target(
+        world) -> None:
+    """11-04: E8's breakout filled and ran; FTMO's late limit at the level never filled. Within
+    LATE_ENTRY_MAX_R of the stop distance it is a market order, sized on the real distance."""
+    mt5 = _MT5(bid=4340.8, ask=4341.0)                 # 1.0 through a 20-point stop = 0.05 R
+    _pass(mt5)
+    (req,) = [r for r in mt5.sent if r["action"] == mt5.TRADE_ACTION_DEAL]
+    assert req["type"] == mt5.ORDER_TYPE_BUY and req["price"] == 4341.0
+    assert (req["sl"], req["tp"]) == (4320.0, 4380.0)
+    assert req["volume"] == pytest.approx(0.42)        # 0.009 x 100k / (21 x 100), floored
+    assert not _entries(mt5)
+    sent = [r for r in _rows() if r.get("status") == "SENT"]
+    assert sent[0]["kind"] == "buy_market" and sent[0]["entry"] == 4341.0
+
+
+def test_the_late_entry_bound_is_a_share_of_e8s_stop() -> None:
+    assert ff.entry_plan("long", 4340.0, 4320.0, 4329.8, 4330.0) == ("buy_stop", 4340.0)
+    assert ff.entry_plan("long", 4340.0, 4320.0, 4341.8, 4342.0) == ("buy_market", 4342.0)
+    assert ff.entry_plan("long", 4340.0, 4320.0, 4342.8, 4343.0) == ("buy_limit", 4340.0)
+    assert ff.entry_plan("short", 4300.0, 4320.0, 4299.0, 4299.2) == ("sell_market", 4299.0)
+    assert ff.entry_plan("short", 4300.0, 4320.0, 4296.0, 4296.2) == ("sell_limit", 4300.0)
+
+
 def test_gold_is_selected_into_market_watch_before_the_tick_is_read(world) -> None:
     """2026-10-22: XAUUSD absent from the FTMO terminal's Market Watch read NO_TICK every pass."""
     mt5 = _MT5()
