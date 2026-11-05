@@ -1168,6 +1168,10 @@ def _child_main(argv: list[str]) -> int:
             else None
     leg, sub, result = arg("--leg"), arg("--sub"), arg("--result")
     _IN_CHILD, _CHILD_SUB = True, sub
+    # A CLEAN ARGV. Several legs' CLIs read sys.argv when called with no argument list
+    # (run_hunt7 takes argv[1] as a symbol limit); the child's own --leg/--result flags must never
+    # reach them, exactly as the parent's own flags never reached them through `main(argv)`.
+    sys.argv = [sys.argv[0]]
     doc: dict[str, object] = {"leg": leg, "sub": sub, "pid": os.getpid()}
     fn = _ORIGINAL_STEPS.get(leg or "")
     if fn is None:

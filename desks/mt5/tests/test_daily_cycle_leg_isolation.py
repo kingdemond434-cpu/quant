@@ -200,3 +200,16 @@ def test_every_wall_cap_is_at_least_twice_the_longest_measured_run(leg, measured
 
 def test_a_proposer_cap_is_well_above_its_own_clipped_budget():
     assert daily_cycle.SUB_WALL_S["proposers"] >= 2 * 3600.0 * 1.5
+
+
+def test_a_child_hands_its_legs_a_clean_argv(legs, monkeypatch):
+    """run_hunt7 reads sys.argv[1] as a symbol limit; '--leg' there would crash the hunt."""
+    seen: list[list[str]] = []
+    monkeypatch.setattr(daily_cycle, "_IN_CHILD", False)    # restored after the child flips it
+    monkeypatch.setattr(daily_cycle, "_CHILD_SUB", None)
+    monkeypatch.setattr(daily_cycle, "_ORIGINAL_STEPS",
+                        {"probe": lambda: seen.append(list(sys.argv))})
+    monkeypatch.setattr(sys, "argv", ["daily_cycle.py", "--leg", "probe", "--result",
+                                      str(legs / "r.json")])
+    assert daily_cycle._child_main(sys.argv[1:]) == 0
+    assert seen == [["daily_cycle.py"]]
