@@ -3355,6 +3355,20 @@ def live_policy_zero(names: Sequence[str]) -> tuple[frozenset[str], dict[str, An
                              "n_zeroed": len(zero), "zeroed": dict(sorted(zero.items()))}
 
 
+def ceiling_guard_book(funded: Mapping[str, float], ceiling: float, *,
+                       eps: float = 1e-6) -> tuple[dict[str, float], dict[str, Any]]:
+    """`funded` scaled so its total is at most `ceiling` (+eps), with what was found. A book at or
+    under the ceiling is returned unchanged."""
+    held = float(sum(max(0.0, float(v)) for v in funded.values()))
+    meta: dict[str, Any] = {"held": round(held, 8), "ceiling": round(float(ceiling), 8),
+                            "scaled": False}
+    if ceiling <= 0 or held <= float(ceiling) + eps:
+        return dict(funded), meta
+    k = float(ceiling) / held
+    meta["scaled"], meta["factor"] = True, round(k, 8)
+    return {n: round(float(v) * k, 6) for n, v in funded.items()}, meta
+
+
 def fallback_on_admissible(best: str, ev: Sequence[SleeveEvidence], zeroed: frozenset[str],
                            total: float, why: dict[str, str] | None = None
                            ) -> dict[str, float] | None:
@@ -4192,7 +4206,11 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             # what every other deploy path already respects. The growth curve keeps its full 1.00
             # sampling grid, so nothing about what the desk can MEASURE changes -- which is what
             # the comment above promised in the first place.
-            _post_ceiling = max(HEAT_HARD_CEILING, float(verdict.total_heat))
+            # The OPERATIVE ceiling the heat law resolved (effective, itself bounded by the survival
+            # envelope), never the 30% constant: bounded by HEAT_HARD_CEILING the posterior chose
+            # 0.30 against a resolved 0.20 on LIVE and 6.48% against a survival 5% on #748's dry
+            # run, past Fusion's 5% daily rail at rho=1 (#748 audit MF).
+            _post_ceiling = max(float(verdict.effective_ceiling or 0.0), float(verdict.total_heat))
             _pbook = _pg_solve(ev, h_prev=_pg_prev, paths=_pg_paths_,
                                floor=float(verdict.total_heat),
                                ceiling=_post_ceiling,
@@ -4368,7 +4386,11 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     nt["gain_per_day"] = round(gain, 10) if math.isfinite(gain) else None
     proposed_book = dict(funded)
     _solved_book = book
-    book, funded = bind_verdict(nt, prev_book, held, book, funded)
+    # The held book is judged against THIS pass's band, not the 30% constant: a book held at
+    # 0.30 is out of band when the law resolved 0.05 (#748 audit MF).
+    _band_hi = max(float(verdict.effective_ceiling or 0.0), float(verdict.total_heat))
+    book, funded = bind_verdict(nt, prev_book, held, book, funded,
+                                floor=min(float(HEAT_TARGET), _band_hi), ceiling=_band_hi)
     # A HOLD IS ONLY A HOLD IF THE HELD BOOK STILL HOLDS ITS CERTIFICATE (2026-09-16). When the
     # no-trade filter binds, the fresh solve is contested here FIRST. If the fresh solve beats the
     # bench and the held book does not, the hold is overridden and the solve is published: the
@@ -4570,6 +4592,18 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                     if _ez.get("spilled_past_bounds") else ""))
         elif _ez.get("status") == "UNREFILLABLE":
             _log(f"tier S exchange zero NOT applied: {_ez.get('why')}")
+    # THE BOOK NEVER HOLDS MORE THAN THE LAW RESOLVED (#748 audit MF). Every step above should
+    # keep the total at or under the operative ceiling; this measures it and, if one did not,
+    # scales the published book back to the ceiling with the step named on the artifact. It is
+    # the heat law's own ceiling, not a new cap.
+    funded, ceiling_guard = ceiling_guard_book(
+        funded, max(float(verdict.effective_ceiling or 0.0), float(verdict.total_heat)))
+    if ceiling_guard.get("scaled"):
+        from dataclasses import replace as _dc_replace
+        book = _dc_replace(book, heat={k: v for k, v in funded.items() if v > 0},
+                           total_heat=float(sum(funded.values())))
+        _log(f"CEILING GUARD: the book held {ceiling_guard['held']:.4%} against the resolved "
+             f"{ceiling_guard['ceiling']:.4%}; scaled to the ceiling")
     # SLEEVES THIS SOLVE ZEROED, NAMED so the answer can actually BE zero. Without this list the
     # gateway cannot see a zeroed sleeve at all and falls back to the 3% base fraction: see
     # `zeroed_live` for the trace. Not a retirement -- the row and the clock stand.
@@ -4611,6 +4645,17 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                                          sum(float(v) for v in fb_book.values()), _fb_why)
             if _fb:
                 fb_book = _fb
+                # The gateway trades THIS book whenever the proof fails (gateway._allocator_book,
+                # certified=False), so its growth is published beside the dynamic book's.
+                try:
+                    _fb_sc = score_book(ev, _fb, cfg=cfg, worlds=worlds)
+                    live_policy_meta["fallback_mean_log_growth"] = round(
+                        float(_fb_sc["mean_log_growth"]), 8)
+                    live_policy_meta["fallback_robust_score"] = round(
+                        float(_fb_sc["robust_score"]), 8)
+                except Exception as exc:
+                    live_policy_meta["fallback_mean_log_growth"] = (
+                        f"UNMEASURED: {type(exc).__name__}: {exc}")
             live_policy_meta["fallback"] = (
                 "re-solved on the admissible columns" if _fb else _fb_why.get(
                     "fallback", "exchange-zero refill (needs the worlds to rebuild)"))
@@ -4937,6 +4982,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # whenever the dynamic weights have no fresh passing proof.
         "book_fallback": fallback,
         "floor_fill": fill_note,
+        # Whether the published book had to be brought back to the resolved ceiling, and from what.
+        "ceiling_guard": ceiling_guard,
         "aggression": aggression,
         "posterior_growth": posterior,
         "constrained_book": constrained_feed,

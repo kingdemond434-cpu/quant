@@ -103,3 +103,22 @@ def test_the_fallback_is_re_solved_on_the_admissible_columns() -> None:
     assert why["fallback"] == "all_books failed: ValueError: bad cov"
     src = (_DESK / "research" / "pf_allocator.py").read_text(encoding="utf-8")
     assert "fallback_on_admissible(best, ev, ts_zero" in src
+
+
+def test_the_book_never_holds_more_than_the_resolved_ceiling() -> None:
+    """#748 audit MF: the branch book held 6.48% against a resolved (survival) 5%, past Fusion's
+    5% daily rail at rho=1; LIVE held 0.30 against 0.20. The posterior and the no-trade hold are
+    bounded by the operative ceiling, and the published book is guarded to it."""
+    book, meta = pa.ceiling_guard_book({"gold_asia": 0.04, "gold_london_am": 0.0248}, 0.05)
+    assert sum(book.values()) <= 0.05 + 1e-6 and meta["scaled"] is True
+    assert abs(book["gold_asia"] / book["gold_london_am"] - 0.04 / 0.0248) < 1e-3
+    same, meta2 = pa.ceiling_guard_book({"a": 0.03, "b": 0.02}, 0.05)
+    assert same == {"a": 0.03, "b": 0.02} and meta2["scaled"] is False
+    src = (_DESK / "research" / "pf_allocator.py").read_text(encoding="utf-8")
+    run_src = src[src.index("def run(mode"):]
+    assert "max(HEAT_HARD_CEILING, float(verdict.total_heat))" not in run_src
+    assert "_post_ceiling = max(float(verdict.effective_ceiling or 0.0)" in run_src
+    assert "floor=min(float(HEAT_TARGET), _band_hi), ceiling=_band_hi)" in run_src
+    i = run_src.index("funded, ceiling_guard = ceiling_guard_book(")
+    assert i < run_src.index("zeroed = zeroed_live(")
+    assert '"ceiling_guard": ceiling_guard,' in run_src
