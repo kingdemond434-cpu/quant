@@ -630,6 +630,18 @@
     "The change adds new code that is not well-documented, making it difficult to understand its purpose and potential impact."
    ],
    "source": "independent-review job 127243152175; Auditor CLEAR tree 3a04535c5 and false-FAIL log 12:55Z; rebuttal PR comment 6658480399 (Autonomy 12:57Z)"
+  },
+  {
+   "pr": 773,
+   "head": "f14305c89b21fb4e53ff47984cbd9d7db63de7e0",
+   "base": "a940c12bb90c1da10b5c1e2edb5ce0be1efcf307",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "The change introduces new tasks and scripts that run external discovery channels on the box, which could increase risk if not properly managed."
+   ],
+   "source": "independent-review job 127417721559; Auditor CLEAR f14305c89 after MF1/SF1/SF2 (clear-access channel allowlist), relayed by Mining v1 17:49Z"
   }
  ]
 }
