@@ -437,7 +437,7 @@ def test_a_second_pass_queues_the_next_children_not_the_same_ones(
     per axis per pass here: the second pass must walk PAST the first pass's chart rung."""
     monkeypatch.setattr(mce, "MAX_PER_AXIS", 1)
     card("sleeve:trend", "XAUUSD", "trend_ma_cross", params={"ttl_bars": 12})
-    rep1, kept1 = mce.build(max_per_card=40, budget_s=60.0, dry_run=False)
+    _rep1, kept1 = mce.build(max_per_card=40, budget_s=60.0, dry_run=False)
     rep2, kept2 = mce.build(max_per_card=40, budget_s=60.0, dry_run=False)
     first = {r["hash"] for r in kept1}
     second = {r["hash"] for r in kept2}
