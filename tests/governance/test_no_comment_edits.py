@@ -39,7 +39,11 @@ def _tracked() -> list[str]:
             if p and Path(p).suffix.lower() in SUFFIXES and p != SELF]
 
 
-def offenders(paths: list[str], read=lambda p: (ROOT / p).read_text("utf-8", "replace")) -> list[str]:
+def _read(p: str) -> str:
+    return (ROOT / p).read_text("utf-8", "replace")
+
+
+def offenders(paths: list[str], read=_read) -> list[str]:
     bad: list[str] = []
     for p in paths:
         try:
@@ -57,7 +61,8 @@ def offenders(paths: list[str], read=lambda p: (ROOT / p).read_text("utf-8", "re
 
 def test_no_tracked_code_edits_a_github_comment() -> None:
     bad = offenders(_tracked())
-    assert not bad, "post a new comment instead of editing one (an edit is an AUDIT HOLD):\n" + "\n".join(bad)
+    assert not bad, ("post a new comment instead of editing one (an edit is an AUDIT HOLD):\n"
+                     + "\n".join(bad))
 
 
 def test_the_fence_catches_each_edit_shape() -> None:
@@ -66,12 +71,14 @@ def test_the_fence_catches_each_edit_shape() -> None:
         "b.ps1": "& gh api -X PATCH repos/$Repo/issues/comments/$id -f body=$b",
         "c.py": "requests.request(method='PATCH', url=f'{api}/repos/{repo}/pulls/comments/{cid}')",
         "d.py": "client.update_issue_comment(owner, repo, comment_id, body)",
-        "e.ps1": "Invoke-RestMethod -Uri \"$api/repos/$r/issues/comments/$c\" -Method Patch -Body $j",
+        "e.ps1": ("Invoke-RestMethod -Uri \"$api/repos/$r/issues/comments/$c\""
+                  " -Method Patch -Body $j"),
         "f.sh": "gh api --method PATCH repos/$R/issues/comments/$id -f body=x",
         "g.py": 'requests.patch(f"{api}/repos/{r}/issues/comments/{cid}", json={"body": b})',
         "h.sh": "gh pr comment 12 --edit-last --body fixed",
         "i.sh": "gh issue comment 12 --edit-last -b fixed",
-        "j.py": 'q = "mutation { updateIssueComment(input: {id: $id, body: $b}) { clientMutationId } }"',
+        "j.py": ('q = "mutation { updateIssueComment(input: {id: $id, body: $b})'
+                 ' { clientMutationId } }"'),
         "k.py": 'q = "mutation { deleteIssueComment(input: {id: $id}) { clientMutationId } }"',
         "l.sh": "gh api -X DELETE repos/$R/issues/comments/$id",
         "m.py": 'httpx.delete(f"{api}/repos/{r}/pulls/comments/{cid}")',
