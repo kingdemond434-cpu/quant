@@ -127,6 +127,10 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     # cross the wire, so a deferred pass leaves every reader off the box measuring a stale
     # BARS_STATE.json. It cannot cost the overrun much: it stops itself at 20 s (cap 60 s).
     "bars_state",
+    # WHETHER THE NOON CRO PASS LANDED IN 26 H (2026-11-05). It sat in NEVER RUN on every plan
+    # for a week after #527, so its RED (no noon pass since 10-21) existed nowhere. One ledger
+    # read, capped at 60 s; it runs on the meta department plan, which is not the core budget.
+    "cro_noon_freshness",
 })
 
 

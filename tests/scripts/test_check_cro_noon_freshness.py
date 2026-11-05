@@ -115,3 +115,5 @@ def test_the_leg_runs_where_a_never_run_leg_is_admitted() -> None:
     assert "cro_noon_freshness" not in hc.CORE_LEGS
     assert hc.department_of("cro_noon_freshness") == "meta"
     assert hc.in_plan("cro_noon_freshness", "dept:meta")
+    from libs.ops.leg_rotation import ALWAYS_RUN
+    assert "cro_noon_freshness" in ALWAYS_RUN
