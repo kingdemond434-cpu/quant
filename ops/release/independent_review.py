@@ -866,6 +866,8 @@ def review(
     own = frozenset(p for x, m in pairs if m for p in _section_paths(x))
     mhead = manifest(diff, own)
     if money and len(prompt(mhead + money, files, "0" * 16, f"{10**6} of {10**6}")) > room:
+        if len(prompt(diff, files, "0" * 16)) <= room:  # fits whole: the cap never adds a FAIL
+            return vote(diff, files, ladder, budget_s, sleep, clock)
         return "FAIL", [f"FAIL: the money-path files ({len(money)} characters) do not fit one "
                         f"part: they are never read apart"]  # fmt: skip
     others = split_diff(rest, quick - frame) if rest and quick - frame > 0 else None
