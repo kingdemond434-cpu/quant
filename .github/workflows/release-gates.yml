@@ -236,7 +236,9 @@ jobs:
             free=$(df -BG --output=avail "$HOME" | tail -1 | tr -dc '0-9')
             echo "shadow $m: ${free}G free, needs ${need}G"
             if [ "${free:-0}" -lt "$need" ]; then echo "shadow $m: skipped (disk)"; continue; fi
-            "$dir/bin/ollama" pull "$m" || { echo "shadow $m: pull failed"; continue; }
+            # bounded: the voter is served already, and a slow registry must never eat the job
+            # time the voter's review needs (Auditor #719 should-fix)
+            timeout 900 "$dir/bin/ollama" pull "$m" || { echo "shadow $m: pull failed or timed out (900s)"; continue; }
             repo=${m%%:*}; tag=${m#*:}
             echo "manifest sha256 $m $(sha256sum ~/.ollama/models/manifests/registry.ollama.ai/library/$repo/$tag | cut -d' ' -f1)"
           done
