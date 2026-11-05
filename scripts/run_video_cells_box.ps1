@@ -34,6 +34,11 @@ if ($Install) {
   Write-Host "Registered Quant-VideoCells (hourly)"; exit 0
 }
 Set-Location $Repo
+# THE RUN MEASURES ITS OWN EXIT CODES (every git and python step below checks $LASTEXITCODE and
+# records it). Under PS 5.1, 'Stop' turns a native command's redirected stderr (the preflight's
+# 2>$null, a git warning) into a terminating NativeCommandError that would kill the run before it
+# writes its named state, so the run body uses 'Continue'.
+$ErrorActionPreference = "Continue"
 # SYSTEM has no per-user PATH: prefer the repo venv, then the py launcher, then python (as Adopt-And-Seal)
 $py = Join-Path $Repo ".venv\Scripts\python.exe"; $pyArgs = @()
 if (-not (Test-Path $py)) {
