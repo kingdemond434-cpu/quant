@@ -147,6 +147,7 @@ class Plan:
     would_yield: int = 0  # research a throttle would have lowered: REPORTED, never applied
     pin: dict[int, tuple[int, ...]] = field(default_factory=dict)  # research -> research cores
     unpin: dict[int, tuple[int, ...]] = field(default_factory=dict)  # pid -> its own affinity
+    moved: set[int] = field(default_factory=set)  # pinned only inside 8-15: moved to research's
     narrowed: dict[str, dict[str, list[int]]] = field(default_factory=dict)  # kept in STATE
     reserve: str = "off"
     research_by_class: dict[str, int] = field(default_factory=dict)
@@ -278,7 +279,8 @@ def _reserve_judge_cores(
     if not on:
         return
     by = {q.pid: q for q in procs}
-    for pid in sorted(research):
+    # Oldest first, so a parent is recorded before the children it spawned while narrowed.
+    for pid in sorted(research, key=lambda i: (by[i].started, i)):
         p = by[pid]
         if p.affinity is None or _key(p) in out.narrowed:
             continue
@@ -286,6 +288,31 @@ def _reserve_judge_cores(
         if keep != tuple(sorted(p.affinity)):
             out.pin[pid] = keep
             out.narrowed[_key(p)] = {"orig": list(p.affinity), "set": list(keep)}
+            if not set(p.affinity) & allowed:
+                out.moved.add(pid)
+        elif keep == RESEARCH_CORES and (anc := _narrowed_ancestor(p, by, out.narrowed)):
+            # Auditor SF1: Windows children inherit affinity, so a child spawned while its
+            # parent was narrowed already sits on the research cores. Record it with the
+            # parent's own affinity so it is widened back too.
+            out.narrowed[_key(p)] = {"orig": list(anc["orig"]), "set": list(keep)}
+
+
+def _narrowed_ancestor(
+    p: Proc, by: Mapping[int, Proc], narrowed: Mapping[str, Mapping[str, list[int]]]
+) -> Mapping[str, list[int]] | None:
+    """The record of the nearest ancestor this governor narrowed, or None. A "parent" that
+    started after its child is a recycled pid, never a parent (as in _trees)."""
+    seen: set[int] = set()
+    cur = p
+    while cur.ppid != cur.pid and cur.ppid not in seen:
+        seen.add(cur.pid)
+        parent = by.get(cur.ppid)
+        if parent is None or parent.started > cur.started:
+            return None
+        if (rec := narrowed.get(_key(parent))) is not None:
+            return rec
+        cur = parent
+    return None
 
 
 # ------------------------------------------------------------------ actuation (box only)
@@ -400,7 +427,8 @@ def tick(
             p.narrowed = {k: v for k, v in p.narrowed.items() if not k.startswith(f"{pid}:")}
             continue
         pins.append({"pid": pid, "cores": list(cores), "from": list(by[pid].affinity or ()),
-                     "why": "research off the judge's cores" if pid in p.pin
+                     "why": "moved off a judge-core pin" if pid in p.moved
+                     else "research off the judge's cores" if pid in p.pin
                      else "judge idle: own affinity back"})  # fmt: skip
     doc = {
         "at": now().isoformat(timespec="seconds"), "dry_run": dry, "mode": mode,

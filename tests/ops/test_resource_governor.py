@@ -236,3 +236,38 @@ def test_research_at_normal_is_named_with_its_parent() -> None:
     assert out.research_by_class == {"NORMAL": 1, "BELOW_NORMAL": 1}
     assert out.research_high == [{"pid": 6, "class": "NORMAL", "cmd": MINER,
                                   "parent": procs[0].cmd}]  # fmt: skip
+
+
+def test_a_child_spawned_while_narrowed_is_widened_back_too(tmp_path: Path) -> None:
+    """Auditor SF1 on 8a799d860: a child inherits its narrowed parent's affinity, so it starts
+    on the research cores already. It is recorded under the parent's own affinity and widened
+    back with it when the judge is idle."""
+    state, report = tmp_path / "s.json", tmp_path / "r.json"
+    pins: list[tuple[int, tuple[int, ...]]] = []
+    procs = [_a(20, JUDGE), _a(6, MINER, started=5.0)]
+
+    def pinner(pid: int, cores: tuple[int, ...]) -> None:
+        pins.append((pid, cores))
+        next(p for p in procs if p.pid == pid).affinity = cores
+
+    def run() -> dict:
+        return tick(lambda: (list(procs), 50.0, 40.0), lambda *_: None, state, report,
+                    pinner=pinner, ncpu=18)  # fmt: skip
+
+    run()
+    procs.append(_a(7, "python.exe -c spawn_main", aff=RESEARCH_CORES, ppid=6, started=9.0))
+    run()
+    assert pins == [(6, RESEARCH_CORES)]  # the child was not rewritten, only recorded
+    assert run()["judge_cores"]["narrowed"] == 2
+    procs.pop(0)
+    pins.clear()
+    run()
+    assert sorted(pins) == [(6, ALL), (7, ALL)]
+
+
+def test_a_research_pin_inside_the_judge_cores_is_moved_and_named(tmp_path: Path) -> None:
+    """Auditor SF2: a pin wholly inside 8-15 is moved to the research cores, and said so."""
+    procs = [_a(20, JUDGE), _a(6, MINER, aff=(9, 10))]
+    doc = tick(lambda: (procs, 10.0, 40.0), lambda *_: None, tmp_path / "s.json",
+               tmp_path / "r.json", dry=True, pinner=lambda *_: None, ncpu=18)  # fmt: skip
+    assert doc["affinity"][0]["why"] == "moved off a judge-core pin"
