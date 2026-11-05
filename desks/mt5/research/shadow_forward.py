@@ -1721,44 +1721,66 @@ def spread_reprice_report(state: dict, top: int = 40) -> dict:
 
 #: A minute on the tape is a measurement only with at least this many quotes in it.
 TAPE_MIN_TICKS = 3
-_TAPE_MINUTES: dict[tuple[str, str], dict[int, float] | None] = {}
+#: ONE SYMBOL'S TAPE, held for the whole pass. Rows are replayed grouped by symbol, so the cache
+#: is dropped only when the symbol changes: every key on a symbol shares the same day files, and a
+#: day is at most 1,440 minute medians, so a symbol's whole forward history is ~115k floats.
+_TAPE: dict = {"sym": None, "files": {}, "days": {}, "errors": 0}
 _TICK_SURFACES: list[dict] | None = None
 
 
 def _reset_spread_caches() -> None:
     """Every pass reads the tape and the surfaces as they are NOW."""
     global _TICK_SURFACES
-    _TAPE_MINUTES.clear()
+    _TAPE.update(sym=None, files={}, days={}, errors=0)
     _TICK_SURFACES = None
 
 
+def _tape_for(sym: str) -> dict:
+    """The per-symbol tape cache, listing the symbol's day files ONCE when the symbol changes."""
+    if _TAPE["sym"] != sym:
+        files: dict[str, list] = {}
+        try:
+            from mt5desk.tape import day_files
+            for d, f in day_files(sym):
+                files.setdefault(d, []).append(f)
+        except Exception:
+            _TAPE["errors"] += 1
+        _TAPE.update(sym=sym, files=files, days={})
+    return _TAPE
+
+
 def _tape_minute_spreads(sym: str, day: str, point: float) -> dict[int, float] | None:
-    """Median quoted spread, in points, per venue minute of one tape day (cached per pass)."""
-    ck = (sym, day)
-    if ck in _TAPE_MINUTES:
-        return _TAPE_MINUTES[ck]
-    if len(_TAPE_MINUTES) > 16:              # one symbol's recent days at a time
-        _TAPE_MINUTES.clear()
+    """Median quoted spread, in points, per venue minute of one tape day.
+
+    Read once per (symbol, day) per pass. Returns None for a day the tape does not hold or could
+    not read; an unreadable day is also counted and named in `_TAPE["error_days"]`, so a broken
+    tape shows in `entry_spread.sources` as `*_tape_error` instead of passing silently (L1.28a).
+    """
+    tape = _tape_for(sym)
+    if day in tape["days"]:
+        return tape["days"][day]
+    paths = tape["files"].get(day)
     out: dict[int, float] | None = None
-    try:
-        from mt5desk.tape import day_files
-        frames = [pd.read_parquet(f, columns=["time_msc", "bid", "ask"])
-                  for d, f in day_files(sym) if d == day]
-        if frames:
-            t = pd.concat(frames, ignore_index=True)
+    if paths:
+        try:
+            t = pd.concat([pd.read_parquet(f, columns=["time_msc", "bid", "ask"])
+                           for f in paths], ignore_index=True)
             tm = pd.to_numeric(t["time_msc"], errors="coerce")
             bid = pd.to_numeric(t["bid"], errors="coerce")
             ask = pd.to_numeric(t["ask"], errors="coerce")
             ok = tm.notna() & (bid > 0) & (ask > 0)
+            out = {}
             if ok.any():
                 minute = (tm[ok].astype("int64") // 60_000)
                 pts = (ask[ok] - bid[ok]) / point
                 g = pts.groupby(minute.to_numpy())
                 med, n = g.median(), g.size()
                 out = {int(m): float(v) for m, v in med[n >= TAPE_MIN_TICKS].items()}
-    except Exception:                         # a tape problem must never stop the clock
-        out = None
-    _TAPE_MINUTES[ck] = out
+        except Exception:                     # a tape problem must never stop the clock
+            tape["errors"] += 1
+            tape.setdefault("error_days", set()).add(day)
+            out = None
+    tape["days"][day] = out
     return out
 
 
@@ -1798,20 +1820,27 @@ def measured_spread_at(sym: str, at: pd.Timestamp, point: float) -> tuple[float 
     this feed it is bimodal (GBPCHF hours 10-16 read 0 on 69% of bars and 150 on the rest, a p50
     of 150 against a raw-account spread of a few points), so it would overcharge quiet hours by
     two orders of magnitude and undercharge the rollover minute, both at once.
+
+    `at` is a BAR's open: a long's entry bar, a short's exit bar. A short that left on a stop or
+    target hit inside that bar is priced at the bar-open minute, not the intrabar minute of the
+    hit. A day the tape holds but could not read is named in the source (`*_tape_error`).
     """
     ts = pd.Timestamp(at)
     if ts.tzinfo is None:
         ts = ts.tz_localize("UTC")
     minute = int(ts.value // 60_000_000_000)
+    tape_broken = False
     for day in (ts.strftime("%Y-%m-%d"), (ts - pd.Timedelta(days=1)).strftime("%Y-%m-%d"),
                 (ts + pd.Timedelta(days=1)).strftime("%Y-%m-%d")):
         mins = _tape_minute_spreads(sym, day, point)
         if mins and minute in mins:
             return mins[minute], "tape_minute"
+        if day in (_TAPE.get("error_days") or ()):
+            tape_broken = True
     hour_pts = _tick_hour_spread(sym, int(ts.hour))
     if hour_pts is not None:
-        return hour_pts, "tick_hour"
-    return None, "frozen"
+        return hour_pts, ("tick_hour_tape_error" if tape_broken else "tick_hour")
+    return None, ("frozen_tape_error" if tape_broken else "frozen")
 
 
 def reprice_at_measured_spread(trades: list, bars: pd.DataFrame, costs: object,

@@ -156,7 +156,8 @@ def test_key_ledgers_live_where_no_cell_ledger_glob_reads_them(tmp_path, monkeyp
 
 def test_the_replay_reprices_writes_the_key_and_publishes_the_streams():
     src = (DESK / "research" / "shadow_forward.py").read_text(encoding="utf-8")
-    assert "reprice_at_measured_spread(\n                res.trades, h1, costs, meta.get(sym) or {}, sym)" in src
+    assert ("reprice_at_measured_spread(\n"
+            "                res.trades, h1, costs, meta.get(sym) or {}, sym)") in src
     assert "**spread_fields(_by_entry, t, _spread_rep)," in src
     assert "_write_key_ledger(key, all_trades, _boundary, _stamp, _by_entry, _spread_rep)" in src
     assert "_reset_spread_caches()" in src
@@ -210,3 +211,39 @@ def test_every_row_says_what_spread_it_was_charged(monkeypatch):
                                             "spread_pts_charged": 80.0, "d_r_spread": -0.78}
     assert sf.spread_fields(by, quiet, rep) == {"spread_source": "frozen",
                                                 "spread_pts_charged": 2.0, "d_r_spread": 0.0}
+
+
+def test_the_tape_is_listed_once_per_symbol_and_each_day_read_once(monkeypatch, tmp_path):
+    import mt5desk.tape as tape
+    calls = {"list": 0, "read": 0}
+    real_read = pd.read_parquet
+
+    def counting_list(sym, root=None):
+        calls["list"] += 1
+        return [("2026-11-04", tmp_path / "x.parquet")]
+
+    def counting_read(*a, **k):
+        calls["read"] += 1
+        return real_read(*a, **k)
+
+    base = int(pd.Timestamp("2026-11-04 01:00", tz="UTC").value // 1_000_000)
+    pd.DataFrame({"time_msc": [base, base + 1, base + 2], "bid": [1.0] * 3,
+                  "ask": [1.0008] * 3}).to_parquet(tmp_path / "x.parquet")
+    monkeypatch.setattr(tape, "day_files", counting_list)
+    monkeypatch.setattr(pd, "read_parquet", counting_read)
+    sf._reset_spread_caches()
+    for _ in range(50):                                   # 50 keys on one symbol
+        sf._tape_minute_spreads("GBPCHF", "2026-11-04", TICK)
+        sf._tape_minute_spreads("GBPCHF", "2026-11-03", TICK)
+    assert calls == {"list": 1, "read": 1}
+
+
+def test_an_unreadable_tape_day_is_named_not_silent(monkeypatch, tmp_path):
+    import mt5desk.tape as tape
+    (tmp_path / "bad.parquet").write_text("not parquet")
+    monkeypatch.setattr(tape, "day_files", lambda sym, root=None: [("2026-11-04",
+                                                                    tmp_path / "bad.parquet")])
+    sf._reset_spread_caches()
+    monkeypatch.setattr(sf, "_tick_surfaces", lambda: _surface_with({1: 6.0}))
+    pts, src = sf.measured_spread_at("GBPCHF", pd.Timestamp("2026-11-04 01:00", tz="UTC"), TICK)
+    assert (pts, src) == (6.0, "tick_hour_tape_error")
