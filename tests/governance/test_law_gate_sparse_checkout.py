@@ -57,3 +57,48 @@ def test_sparse_caller_does_not_remove_committed_fence_inputs(tmp_path: Path,
         assert git("sparse-checkout", "list").strip() == "source"
     finally:
         git("worktree", "remove", "--force", str(where))
+
+
+def test_a_hook_environment_never_reaches_the_callers_sparse_settings(tmp_path: Path,
+                                                                    monkeypatch) -> None:
+    """Git runs pre-push with GIT_DIR naming the pushing worktree. Reproduced 2026-11-05: the
+    private checkout's `sparse-checkout disable` obeyed that GIT_DIR and wrote
+    core.sparseCheckout=false into the BUILDER'S config.worktree on every push."""
+    main, builder = tmp_path / "main", tmp_path / "builder"
+    main.mkdir()
+
+    def git(cwd: Path, *args: str) -> str:
+        return subprocess.run(["git", *args], cwd=cwd, capture_output=True,
+                              text=True, check=True).stdout
+
+    git(main, "init", "-q")
+    git(main, "config", "user.email", "test@example.invalid")
+    git(main, "config", "user.name", "test")
+    for name in ("source", "policy"):
+        (main / name).mkdir()
+    (main / "source" / "code.txt").write_text("committed", encoding="utf-8")
+    (main / "policy" / "seal.txt").write_text("sealed", encoding="utf-8")
+    git(main, "add", "-A")
+    git(main, "commit", "-qm", "fixture")
+    git(main, "worktree", "add", "-q", "--detach", str(builder), "HEAD")
+    git(builder, "sparse-checkout", "set", "--no-cone", "/source/")
+    (builder / "source" / "code.txt").write_text("dirty", encoding="utf-8")
+    gitdir = git(builder, "rev-parse", "--absolute-git-dir").strip()
+    # What git exports to a hook in a linked worktree.
+    monkeypatch.setenv("GIT_DIR", gitdir)
+    monkeypatch.setenv("GIT_COMMON_DIR", str(main / ".git"))
+    monkeypatch.setenv("GIT_INDEX_FILE", str(Path(gitdir) / "index"))
+    where, subject, errors = _at_head(builder)
+    monkeypatch.delenv("GIT_DIR")
+    monkeypatch.delenv("GIT_COMMON_DIR")
+    monkeypatch.delenv("GIT_INDEX_FILE")
+    try:
+        assert errors == [] and "HEAD" in subject and where != builder
+        assert (where / "policy" / "seal.txt").read_text("utf-8") == "sealed"
+        assert (where / "source" / "code.txt").read_text("utf-8") == "committed"
+        assert git(builder, "config", "--bool", "core.sparseCheckout").strip() == "true"
+        assert git(builder, "sparse-checkout", "list").strip() == "/source/"
+        assert not (builder / "policy" / "seal.txt").exists()
+        assert (builder / "source" / "code.txt").read_text("utf-8") == "dirty"
+    finally:
+        git(builder, "worktree", "remove", "--force", str(where))
