@@ -424,7 +424,16 @@ def test_written_payload_has_no_session_or_email(tmp_path: Path,
     assert re.search(_EMAIL_RE, text) is None
     for secret in ("pw-123", "SESS", "OTHERTOKEN", "me@x.y"):
         assert secret not in text
-    assert json.loads(text)["body_scrubbed"] is True
+    # already clean before the snapshot: fetch_myfxbook_api redacts and scrubs its own body
+    assert "body_scrubbed" in json.loads(text)
+    # a public page body is scrubbed at the snapshot itself
+    rc.record_pass({"ig": {"status": "PARSE_EMPTY", "url": "https://www.ig.com/x?session=T",
+                           "http": 200, "obs": [], "body": "contact me@x.y ?session=T"}},
+                   datetime(2026, 11, 5, 10, tzinfo=UTC), UNI, **p)
+    with gzip.open(next((p["raw_dir"] / "ig").glob("*.json.gz")), "rt", encoding="utf-8") as fh:
+        page = fh.read()
+    assert "session=" not in page and re.search(_EMAIL_RE, page) is None
+    assert json.loads(page)["body_scrubbed"] is True
     # and nothing reaches stdout / the state file either
     assert "session=" not in capsys.readouterr().out
     assert "session=" not in p["state_path"].read_text("utf-8")
