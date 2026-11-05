@@ -846,15 +846,24 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
         from research.mt5_session import attach_or_initialize
     before = _terminal_pids()
     ok = attach_or_initialize(mt5, path=path)
-    spawned = sorted(_terminal_pids() - before) if before is not None else []
-    if spawned:
+    new_pids = sorted(_terminal_pids() - before) if before is not None else []
+    if new_pids:
+        # KILL ONLY WHAT IS PROVABLY OURS (Auditor HOLD on 43f437a63): a terminal the gateway,
+        # an adoption or a reboot recovery starts inside this window is a LIVE terminal. Ours
+        # means a descendant of this process, at `path`, in this Windows session -- nothing else.
+        ours, foreign = split_spawned(new_pids, path)
         try:
             mt5.shutdown()
         finally:
-            _kill_pids(spawned)
-        return {"status": UNMEASURED, "path": path, "spawned_pids": spawned,
+            if ours:
+                _kill_pids(ours)
+        if foreign:
+            return {"status": UNMEASURED, "path": path, "spawned_pids": ours,
+                    "foreign_new_pids": foreign,
+                    "why": "terminal set changed during attach; nothing foreign killed"}
+        return {"status": UNMEASURED, "path": path, "spawned_pids": ours,
                 "why": "attach would launch: initialize started a new terminal64.exe "
-                       "(killed); the running one is out of this session's reach"}
+                       "(ours, killed); the running one is out of this session's reach"}
     if not ok:
         return {"status": UNMEASURED, "path": path,
                 "why": "terminal did not attach (refused from Session 0, or the terminal runs "
@@ -1022,6 +1031,44 @@ def _terminal_pids() -> set[int] | None:
         except Exception:
             continue
     return pids
+
+
+def split_spawned(new_pids: list[int], path: str | None,
+                  psutil_mod: Any = None, me: int | None = None,
+                  session_of: Any = None) -> tuple[list[int], list[int]]:
+    """Split terminal pids that appeared during an attach into (ours, foreign).
+
+    Ours is a descendant of THIS process, running `path` (when given) in THIS Windows session.
+    Anything unreadable is foreign: a pid we cannot prove is ours is never killed."""
+    import os
+    if psutil_mod is None:
+        try:
+            import psutil as psutil_mod
+        except Exception:
+            return [], list(new_pids)
+    if session_of is None:
+        try:
+            from mt5_session import windows_session_id as session_of
+        except ImportError:
+            from research.mt5_session import windows_session_id as session_of
+    me = os.getpid() if me is None else me
+    my_session = session_of(me)
+    ours: list[int] = []
+    foreign: list[int] = []
+    for pid in new_pids:
+        try:
+            proc = psutil_mod.Process(pid)
+            lineage = {int(p.pid) for p in proc.parents()}
+            exe = proc.exe()
+            same_exe = (not path) or (bool(exe) and os.path.normcase(str(exe))
+                                      == os.path.normcase(str(path)))
+            if me in lineage and same_exe and session_of(pid) == my_session:
+                ours.append(pid)
+            else:
+                foreign.append(pid)
+        except Exception:
+            foreign.append(pid)
+    return ours, foreign
 
 
 def _kill_pids(pids: list[int]) -> None:  # pragma: no cover - needs a spawned terminal

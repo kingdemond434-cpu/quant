@@ -572,3 +572,39 @@ def test_quotes_only_never_attaches_without_a_running_terminal(monkeypatch):
     monkeypatch.setattr(CT, "terminal_snapshot", lambda *a, **k: called.append(a) or {})
     out = CT.quotes_only(["EURUSD"], 30.0, terminals=[])
     assert out["venues"] == [] and called == []
+
+
+class _FakeProc:
+    def __init__(self, pid, parents, exe):
+        self.pid, self._parents, self._exe = pid, parents, exe
+
+    def parents(self):
+        return [type("P", (), {"pid": p})() for p in self._parents]
+
+    def exe(self):
+        return self._exe
+
+
+class _FakePsutil:
+    def __init__(self, procs):
+        self._procs = procs
+
+    def Process(self, pid):  # noqa: N802 - psutil's own name
+        if pid not in self._procs:
+            raise RuntimeError("gone")
+        return self._procs[pid]
+
+
+def test_split_spawned_never_marks_a_foreign_terminal_ours():
+    path = r"C:\T\terminal64.exe"
+    procs = {
+        10: _FakeProc(10, [1, 100], path),           # our child, our exe, our session: ours
+        11: _FakeProc(11, [1, 555], path),           # started by the gateway: foreign
+        12: _FakeProc(12, [1, 100], r"C:\X\terminal64.exe"),  # ours by lineage, wrong exe
+        13: _FakeProc(13, [1, 100], path),           # right lineage, another session
+    }
+    sessions = {100: 2, 10: 2, 11: 2, 12: 2, 13: 0}
+    ours, foreign = CT.split_spawned([10, 11, 12, 13, 14], path, psutil_mod=_FakePsutil(procs),
+                                     me=100, session_of=lambda pid: sessions.get(pid))
+    assert ours == [10]
+    assert foreign == [11, 12, 13, 14]  # 14 is unreadable, so it is never ours
