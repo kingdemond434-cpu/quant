@@ -230,6 +230,18 @@
    "source": "independent-review job 126969032233; Auditor CLEAR 6acf8db83; rebuttal PR comment 6647378446 (Desk health 01:49Z)"
   },
   {
+   "pr": 715,
+   "head": "38453fd5962c5c074f1bf6f73fef0825e9ec842d",
+   "base": "4dee8ab211e2c9ef3f82d8611d1d125c147b0056",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "The change introduces new logic for determining if a cross is executable based on the holding period, which could increase risk by introducing new conditions that may not be thoroughly tested or understood."
+   ],
+   "source": "independent-review job 126906775525; Auditor CLEAR 38453fd59 (FALSE_FAIL_CASES.jsonl)"
+  },
+  {
    "pr": 642,
    "head": "0bdb84e4c76049e050a779a274c61d0a24398eb4",
    "base": "6727fc33e5ffafe5cfb1886b2dd38df2f47666b5",
