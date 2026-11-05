@@ -114,7 +114,13 @@ def test_the_shipped_policy_file_admits_exactly_the_certified_book() -> None:
     if not f.exists():                      # the box writes its own; absent on a fresh clone
         pytest.skip("no live_sleeve_policy.json in this checkout")
     pol = lp.policy(f)
-    assert pol.live_symbols == frozenset({"XAUUSD", "USDJPY", "EURZAR", "USDNOK", "EURILS"})
+    # zuck 2026-11-05 11:49Z added the seven allocator-funded cells (D-20261105-041)
+    seven = ("CHFDKK", "NZDCHF", "EURPLN", "NOKSEK", "NZDHUF", "USDKRW", "GBPMXN")
+    assert pol.live_symbols == frozenset({"XAUUSD", "USDJPY", "EURZAR", "USDNOK", "EURILS",
+                                          *seven})
+    for sym in seven:                       # admitted unpinned; the family ban still binds
+        assert lp.refuse({"symbol": sym, "family": "clock_transition", "name": "x"}, pol) is None
+        assert lp.refuse({"symbol": sym, "family": "discovered", "name": "x"}, pol) is not None
     assert "discovered" in pol.banned_families
     for name in (CHOSEN_MT5, "USDJPY.asia#rr=2.5"):
         assert lp.refuse({"symbol": "USDJPY", "name": name}, pol) is not None
