@@ -330,3 +330,9 @@ TASK name="Quant-SignTrain"    trigger="at logon + every 10 minutes" runs="ops/b
 # models through libs/ops/openrouter_free (already used by other organs). The box never contacts
 # YouTube: mine_channel_transcripts.py runs here only with --report-only, which does no network I/O.
 TASK name="Quant-VideoCells"   trigger="hourly"                      runs="scripts/run_video_cells_box.ps1" installer="scripts/run_video_cells_box.ps1" lane="research" also_runs="scripts/video_transcript_vault.py,scripts/extract_video_cells.py,scripts/mine_channel_transcripts.py"
+# The box self-heal watchdog (#555): a closed table (a hung MT5-IndependenceIntake, a wedged or dead
+# Quant-WorkflowGate) acted on only after create_time proves identity; never the terminal, the money
+# path, the bridge or the miners. Registered as SYSTEM by the adoption run's ensure list (Adopt-And-Seal 1b).
+# The independence intake (named by the watchdog's closed table, so the DR floor must know it).
+TASK name="MT5-IndependenceIntake" trigger="hourly at :42"        runs="desks/mt5/research/independence_intake.py" installer="desks/mt5/scripts/install_independence_intake_task.ps1" lane="research"
+TASK name="Quant-BoxSelfHeal"  trigger="daily, every 5 minutes"       runs="ops/box_self_heal.py"         installer="desks/mt5/scripts/install_box_self_heal_task.ps1" lane="ops"

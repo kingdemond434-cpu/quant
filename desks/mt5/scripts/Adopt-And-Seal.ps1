@@ -557,7 +557,8 @@ if ($headNow -and $headNow -ne $script:HeadBefore) {
 # "Access is denied") and a missing one appears on the first adoption after it ships. Best-effort:
 # a failed registration is logged and never stops the seal.
 foreach ($ensure in @(
-        @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" })) {
+        @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" },
+        @{ Task = "Quant-BoxSelfHeal"; Installer = "install_box_self_heal_task.ps1" })) {
     if (Get-ScheduledTask -TaskName $ensure.Task -ErrorAction SilentlyContinue) { continue }
     $installer = Join-Path $desk ("scripts\" + $ensure.Installer)
     if (-not (Test-Path $installer)) { Log "ensure-task: $($ensure.Task) missing and $installer absent"; continue }
