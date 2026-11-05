@@ -60,3 +60,15 @@ def test_without_apply_nothing_is_written(tmp_path, monkeypatch):
     monkeypatch.setattr(rd, "OUT", out)
     monkeypatch.setattr(rd, "build", lambda: {"status": "UNMEASURED", "why": "x"})
     assert rd.main([]) == 0 and not out.exists()
+
+
+def test_an_empty_pass_carries_the_last_ok_report_forward(tmp_path, monkeypatch):
+    out = tmp_path / "REPRESENTATION_DISCOVERY.json"
+    out.write_text(json.dumps({"at": "t0", "status": "OK", "directional": ["x"]}))
+    monkeypatch.setattr(rd, "OUT", out)
+    monkeypatch.setattr(rd, "build", lambda: {"at": "t1", "status": "UNMEASURED", "why": "x"})
+    assert rd.main(["--once"]) == 0
+    assert rd.main(["--once"]) == 0  # a second empty hour still carries it
+    doc = json.loads(out.read_text("utf-8"))
+    assert doc["status"] == "UNMEASURED"
+    assert doc["last_ok"] == {"at": "t0", "status": "OK", "directional": ["x"]}

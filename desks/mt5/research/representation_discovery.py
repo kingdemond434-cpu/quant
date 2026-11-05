@@ -719,6 +719,16 @@ def main(argv: list[str] | None = None) -> int:
         # every pass and a reader sees WHY, never a file frozen at its last good run.
         print(f"representation discovery: UNMEASURED -- {doc.get('why')}")
         if a.apply:
+            # The last OK pass rides forward under `last_ok`, so a reader of the winners
+            # (axis_proposer) never loses them to one empty hour.
+            try:
+                prev = json.loads(OUT.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                prev = None
+            if isinstance(prev, dict):
+                last_ok = prev if prev.get("status") != "UNMEASURED" else prev.get("last_ok")
+                if isinstance(last_ok, dict):
+                    doc["last_ok"] = {k: v for k, v in last_ok.items() if k != "last_ok"}
             OUT.parent.mkdir(parents=True, exist_ok=True)
             OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
         return 0
