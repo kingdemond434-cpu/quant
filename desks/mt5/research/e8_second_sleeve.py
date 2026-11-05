@@ -60,7 +60,8 @@ THE GATES, each PASS / FAIL / UNMEASURED, every one published per candidate:
                  expectancy; else UNMEASURED.
 
 THE SIZE is the E8 risk grid (kelly_survival.E8_RISKS), and the chosen one is the size with the
-largest mixture marginal E[log W] whose headroom holds. Choosing the growth-optimal admissible size
+largest mixture marginal E[log W] whose headroom holds and which does not lower P(pass) (on an
+account that pays only on passing, growth bought with pass probability is not growth). Choosing the growth-optimal admissible size
 is a measurement for the ranking, not a sizing decision: the allocator sizes what trades.
 
 EVIDENCE MOVES THE PRIOR. A column's per-trade mean (its non-zero rows) is shifted toward its
@@ -487,7 +488,11 @@ def joint_metrics(gold: np.ndarray, cand: np.ndarray, crisis: np.ndarray, gold_r
         row["headroom_holds"] = row["p_daily_adversarial_max"] <= tolerance + 1e-12
         table.append(row)
     ok = [t for t in table if t["headroom_holds"]]
-    chosen = max(ok, key=lambda t: t["d_elog_mix"]) if ok else None
+    # The growth-optimal size that does not cost pass probability; when every admissible size
+    # costs some, the growth-optimal one is published and the growth gate names the cost.
+    keeps_pass = [t for t in ok if t["d_p_pass_mix"] >= 0]
+    pool = keeps_pass or ok
+    chosen = max(pool, key=lambda t: t["d_elog_mix"]) if pool else None
     return {"rho": _round(rho, 4), "rho_crisis": _round(rho_crisis, 4),
             "tail_coloss": _round(tail_coloss, 4), "loss_rate": _round(base_loss, 4),
             "base": {k: {a: _round(b) for a, b in v.items()} for k, v in base.items()},
