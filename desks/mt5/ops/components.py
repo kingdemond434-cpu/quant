@@ -462,6 +462,8 @@ TASK_CANONICAL: dict[str, str] = {
     "MT5-Moat-Exploit": "resident:moat_exploit",
     "MT5-Moat-Explore": "resident:moat_explore",
     "MT5-Moat-Resurrect": "resident:moat_resurrect",
+    # the box self-heal watchdog (#555), declared in box_tasks.manifest by #755
+    "Quant-BoxSelfHeal": "executable:ops/box_self_heal.py",
 }
 
 
