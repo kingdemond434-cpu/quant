@@ -576,6 +576,21 @@
     "The change adds new files and functions that handle terminal attachment, process management, and data writing, which could introduce new points of failure or security vulnerabilities."
    ],
    "source": "independent-review job 127097222167; Auditor CLEAR ff980a46c; rebuttal PR comment 6652199364 (Desk health 07:20Z)"
+  },
+  {
+   "pr": 742,
+   "head": "3dae5b3c9c2115e88ffff3ec8c46484d233e98e0",
+   "base": "699df42ac40ad6fdce6e616302ea7e6c2a383bb9",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "desks/mt5/research/pf_allocator.py: Introduces new dependencies and logic that could increase risk by changing how execution costs are calculated.",
+    "desks/mt5/research/prop_challenge_allocator.py: Adds complex logic to handle venue quotes, which could introduce bugs or unintended behavior.",
+    "libs/portfolio/execution_cost.py: Modifies existing logic to incorporate venue quotes, potentially altering cost calculations in a way that is not fully understood.",
+    "libs/portfolio/venue_cost.py: Introduces new functionality for overlaying venue quotes on execution surfaces, which could increase complexity and risk if not thoroughly tested."
+   ],
+   "source": "independent-review job 127106485179; Auditor CLEAR 3dae5b3c9; rebuttal PR comment 6652465979 (Autonomy 07:36Z)"
   }
  ]
 }
