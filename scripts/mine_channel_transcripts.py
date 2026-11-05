@@ -222,6 +222,10 @@ def main() -> int:
                     help="no network: publish the coverage report from an existing ledger "
                          "(the box's hourly Quant-VideoCells run uses this on unsealed bundles)")
     ap.add_argument("--report", default="", help="also write the coverage summary here")
+    ap.add_argument("--refresh-hours", type=float, default=24.0,
+                    help="re-run discovery and re-list a channel's tabs at most this often; "
+                         "between refreshes the ledger is the work list, so runs spend their "
+                         "time fetching captions instead of re-listing 100k videos")
     args = ap.parse_args()
 
     if args.report_only:
@@ -261,21 +265,45 @@ def main() -> int:
     # 1. enumerate every tab of every channel (a video is never silently dropped)
     todo: list[dict] = []
     enum_report = {}
+    cache_path = out / "enum_cache.json"
+    cache: dict = json.loads(cache_path.read_text("utf-8")) if cache_path.exists() else {}
+    fresh = args.refresh_hours * 3600
+
+    def stale(key: str) -> bool:
+        return time.time() - float(cache.get(key, {}).get("t", 0)) > fresh
+
+    named = [c["handle"] for c in cfg["channels"]]
     channels = list(cfg["channels"])
     if args.discover:
-        channels += [{"handle": d["handle"], "tabs": ["videos"]}
-                     for d in discover(cfg, out, args.per_query)]
+        if stale("_discovery"):
+            found = discover(cfg, out, args.per_query)
+            cache["_discovery"] = {"t": time.time()}
+        else:
+            dpath = out / "discovered.json"
+            disc = json.loads(dpath.read_text("utf-8")) if dpath.exists() else {}
+            found = [d for d in disc.values() if d["status"] in ("CANDIDATE", "ACTIVE")]
+        channels += [{"handle": d["handle"], "tabs": ["videos"]} for d in found]
     for ch in channels:
         seen = set()
         for tab in ch.get("tabs", ["videos", "shorts", "streams"]):
-            try:
-                vids = enumerate_tab(ch["handle"], tab)
-            except Exception as exc:
-                enum_report[f"{ch['handle']}/{tab}"] = f"ERROR {exc}"
-                print(f"[enum] {ch['handle']}/{tab}: ERROR {exc}", flush=True)
-                continue
-            enum_report[f"{ch['handle']}/{tab}"] = len(vids)
-            print(f"[enum] {ch['handle']}/{tab}: {len(vids)} videos", flush=True)
+            key = f"{ch['handle']}/{tab}"
+            if not stale(key):
+                # listed within the refresh window: its videos are already ledger rows
+                vids = [{k: r[k] for k in ("video_id", "title", "duration", "tab") if k in r}
+                        for r in ledger.values()
+                        if r.get("channel") == ch["handle"] and r.get("tab") == tab]
+                enum_report[key] = len(vids)
+            else:
+                try:
+                    vids = enumerate_tab(ch["handle"], tab)
+                except Exception as exc:
+                    enum_report[key] = f"ERROR {exc}"
+                    print(f"[enum] {key}: ERROR {exc}", flush=True)
+                    continue
+                enum_report[key] = len(vids)
+                cache[key] = {"t": time.time(), "n": len(vids)}
+                cache_path.write_text(json.dumps(cache), encoding="utf-8")
+                print(f"[enum] {key}: {len(vids)} videos", flush=True)
             for v in vids:
                 if v["video_id"] in seen:
                     continue
@@ -289,9 +317,22 @@ def main() -> int:
                     write({**v, "status": "PENDING", "ts": now()})
                 todo.append(v)
 
-    # long-form first (where mechanisms live), shorts last
+    cache_path.write_text(json.dumps(cache), encoding="utf-8")
+    # Priority: the channels named in config first (in config order), then discovered channels
+    # smallest-first, so one 28k-video news channel cannot starve every focused strategy channel.
+    # Nothing is dropped: big channels are fetched last, not skipped. Within a channel,
+    # long-form first (where mechanisms live), shorts last.
     order = {"videos": 0, "streams": 1, "shorts": 2}
-    todo.sort(key=lambda v: order.get(v.get("tab"), 3))
+    size: dict[str, int] = {}
+    for v in todo:
+        size[v["channel"]] = size.get(v["channel"], 0) + 1
+    rank = {h: i for i, h in enumerate(named)}
+
+    def prio(v: dict) -> tuple:
+        ch = v["channel"]
+        return (0, rank[ch], 0) if ch in rank else (1, size[ch], ch)
+
+    todo.sort(key=lambda v: (*prio(v), order.get(v.get("tab"), 3)))
 
     # 2. fetch captions, politely; stop the whole run at the first access wall (no bypass)
     stopped = None
@@ -324,6 +365,11 @@ def main() -> int:
             wall.unlink()   # a clean stretch resets the escalation
         print(f"[{fetched}/{len(todo)}] {v['channel']} {v['video_id']} {status} "
               f"{row.get('chars', '')} {v['title'][:60]}", flush=True)
+        if fetched % 10 == 0:   # a run cut off by the task's time limit still leaves its proof
+            part = coverage(ledger, enum_report, None)
+            part.pop("_links")
+            (out / "coverage_summary.json").write_text(json.dumps(part, indent=1),
+                                                       encoding="utf-8")
         if status == "ACCESS_LIMIT":
             stopped = f"access wall at {v['video_id']} ({meta.get('error')}); stopping, no bypass"
             print(stopped, flush=True)
