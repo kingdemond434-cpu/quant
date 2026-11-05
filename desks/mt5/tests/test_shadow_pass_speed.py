@@ -55,8 +55,9 @@ def test_entries_pin_their_frames_so_an_id_is_never_recycled():
     bars, factor = _frame(), _frame()
     k = memo.signal_key("x", "H1", False, {}, bars, {"f": factor})
     memo.put(k, "v", bars, {"f": factor})
-    _value, held_bars, held_extra = memo._store[k]
+    _value, held_bars, held_extra, held_refs = memo._store[k]
     assert held_bars is bars and held_extra["f"] is factor
+    assert any(r is factor for r in held_refs)
     memo.clear()
     assert memo.get(k) is None
 
@@ -86,3 +87,24 @@ def test_the_pass_shares_signals_and_simulation_and_publishes_its_profile():
     assert "memo.clear()" in src
     cyc = (DESK / "research" / "shadow_cycle.py").read_text(encoding="utf-8")
     assert '"engine_profile"' in cyc and '"stage_seconds": stage_seconds' in cyc
+
+
+def test_frames_nested_anywhere_in_the_inputs_are_keyed_by_identity():
+    memo, bars = sf.ReplayMemo(), _frame()
+    a, b = _frame(), _frame()                                 # equal values, different objects
+    for shape in (lambda f: {"drivers": {"x": f}}, lambda f: {"factors": [1, f]}):
+        k = memo.signal_key("formula", "M5", False, {}, bars, shape(a))
+        memo.put(k, "va", bars, shape(a))
+        assert memo.get(memo.signal_key("formula", "M5", False, {}, bars, shape(a))) == "va"
+        assert memo.get(memo.signal_key("formula", "M5", False, {}, bars, shape(b))) is None
+        assert any(r is a for r in memo._store[k][3])         # the nested frame is pinned
+
+
+def test_non_native_leaves_in_params_are_keyed_by_identity_not_by_repr():
+    memo, bars = sf.ReplayMemo(), _frame()
+    s1 = pd.Series([1.0, 2.0])
+    s2 = pd.Series([1.0, 2.0])
+    k = memo.signal_key("x", "H1", False, {"w": s1}, bars, None)
+    memo.put(k, "v", bars, None)
+    assert memo.get(memo.signal_key("x", "H1", False, {"w": s1}, bars, None)) == "v"
+    assert memo.get(memo.signal_key("x", "H1", False, {"w": s2}, bars, None)) is None

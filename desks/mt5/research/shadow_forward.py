@@ -1702,37 +1702,51 @@ class ReplayMemo:
     """Reuse a replay whose inputs are IDENTICAL to one already computed this pass.
 
     Measured 2026-11-05 on the box's shadow_state: 226 of 893 replayed rows produced results
-    identical to another row's (GBPCHF formula: 17 keys, one result), because several keys map
-    to the same runtime call -- identity-only keys are stripped before the family is called.
-    Recomputing them was pure waste. A hit requires the same family, chart, side and canonical
-    runtime parameters, the SAME bar frame object and the same resolved inputs (by identity for
-    frames, by value otherwise), and for the simulation also the same costs. Entries hold
-    references to the frames they key on, so an object id can never be recycled into a false
-    hit, and the memo is cleared with the bar cache whenever the symbol changes. Every row still
-    runs its own bookkeeping, ledger, identity checks and verdict; only the computation of an
-    identical answer is shared.
+    identical to another row's (GBPCHF formula: 17 keys, one result). Identical OUTPUTS do not
+    prove identical inputs, so the saving is whatever share of those were the same runtime call
+    (identity-only keys are stripped before the family is called); the pass profile measures it.
+    A hit requires the same family, chart, side and canonical runtime parameters, the SAME bar
+    frame object and the same resolved inputs, compared structurally: containers element by
+    element, JSON-native scalars by value, and every other leaf (frames included, however
+    deeply nested) by identity. The simulation also requires the same costs. Entries hold
+    references to every object they key on by identity, so an id can never be recycled into a
+    false hit, and the memo is cleared with the bar cache whenever the symbol changes. Every row
+    still runs its own bookkeeping, ledger, identity checks and verdict; only the computation
+    of an identical answer is shared.
     """
 
     def __init__(self) -> None:
         self._store: dict[tuple, tuple] = {}
+        self._refs: dict[tuple, list] = {}
 
     def clear(self) -> None:
         self._store.clear()
+        self._refs.clear()
 
-    @staticmethod
-    def _fingerprint(value: object) -> object:
-        if hasattr(value, "index") or hasattr(value, "shape"):
-            return ("obj", id(value))
-        try:
-            return ("val", json.dumps(value, sort_keys=True, default=repr))
-        except (TypeError, ValueError):
-            return ("obj", id(value))
+    @classmethod
+    def _fingerprint(cls, value: object, refs: list) -> object:
+        """A structural key: containers element by element, JSON-native scalars by value, and
+        EVERY other leaf -- a frame, a series, an array, any object -- by identity, with the
+        object appended to `refs` so the entry can pin it (audit 2026-11-05: a frame nested in
+        `extra["drivers"]` or `extra["factors"]` must never be compared by its truncated repr)."""
+        if value is None or isinstance(value, (bool, int, float, str)):
+            return ("val", type(value).__name__, value)
+        if isinstance(value, dict):
+            return ("dict", tuple(sorted((str(k), cls._fingerprint(v, refs))
+                                         for k, v in value.items())))
+        if isinstance(value, (list, tuple)):
+            return (type(value).__name__, tuple(cls._fingerprint(v, refs) for v in value))
+        refs.append(value)
+        return ("obj", id(value))
 
     def signal_key(self, family: str, chart: str, short: bool, call_params: dict,
                    bars: object, extra: dict | None) -> tuple:
-        return ("sig", str(family), str(chart), bool(short),
-                json.dumps(call_params, sort_keys=True, default=repr), id(bars),
-                tuple(sorted((str(k), self._fingerprint(v)) for k, v in (extra or {}).items())))
+        refs: list = []
+        key = ("sig", str(family), str(chart), bool(short),
+               self._fingerprint(call_params, refs), id(bars),
+               self._fingerprint(dict(extra or {}), refs))
+        self._refs[key] = refs
+        return key
 
     @staticmethod
     def backtest_key(signal_key: tuple, costs: object) -> tuple:
@@ -1743,7 +1757,10 @@ class ReplayMemo:
         return None if hit is None else hit[0]
 
     def put(self, key: tuple, value: object, bars: object, extra: dict | None) -> None:
-        self._store[key] = (value, bars, dict(extra or {}))
+        # The entry pins the bar frame and every object leaf its key was built on (from
+        # `signal_key`), so no id inside a stored key can be recycled while the entry lives.
+        sig = key[1] if key and key[0] == "bt" else key
+        self._store[key] = (value, bars, dict(extra or {}), tuple(self._refs.get(sig, ())))
 
 
 def _enrolment_watermark(enrolled: int, ledger: str) -> None:
