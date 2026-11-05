@@ -32,6 +32,7 @@ def test_each_account_reads_its_own_venue_file_never_the_max(tmp_path: Path) -> 
 
 def test_the_overlay_prices_the_fill_hour_at_the_venues_own_median(tmp_path: Path) -> None:
     surface = {"symbols": {"EURUSD": {"pooled_median_spread_pts": 8.0, "hours": {
+        "3": {"status": "MEASURED", "p50": 7.0},
         "7": {"status": "MEASURED", "p50": 9.0}, "8": {"status": "MEASURED", "p50": 9.5}}}}}
     _quotes(tmp_path / "cost_truth_quotes.fusion_markets.json", "fusion_markets",
             "2026-11-05T06:00:00+00:00", 0.00001, [0.00011, 0.00012, 0.00013])
@@ -48,7 +49,7 @@ def test_a_venue_dearer_than_the_replay_at_every_hour_is_charged_not_refused(
         tmp_path: Path) -> None:
     """The scale-flip guard reads the bar-measured hours; a dear venue's quotes are a cost."""
     surface = {"symbols": {"EURUSD": {"pooled_median_spread_pts": 8.0, "hours": {
-        "7": {"status": "MEASURED", "p50": 8.5}}}}}
+        "3": {"status": "MEASURED", "p50": 7.0}, "7": {"status": "MEASURED", "p50": 8.5}}}}}
     _quotes(tmp_path / "cost_truth_quotes.ftmo_s_r_o.json", "ftmo_s_r_o",
             "2026-11-05T06:00:00+00:00", 0.00001, [0.00020, 0.00022, 0.00024])
     s = vc.account_surface(tmp_path, "ftmo", surface)
