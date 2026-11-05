@@ -1399,7 +1399,6 @@ def main(argv: list[str] | None = None) -> int:
                     help="measure and repair nothing; writes the report only")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
-    _PROVISIONAL.clear()
     try:
         doc = build(budget_s=a.budget_s, apply=not a.dry_run)
     except Exception as exc:
