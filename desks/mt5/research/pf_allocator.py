@@ -3263,6 +3263,67 @@ def zeroed_live(ev: list[SleeveEvidence], funded: dict[str, float],
 TIER_S_ZERO_EPS = 1e-6
 
 
+def _column_identity(name: str) -> tuple[str, str, str]:
+    """(SYMBOL, family, timeframe) of an allocator column, read off its name the way the book
+    keys are spelled: `SYMBOL_family_selector`, the gold windows (`gold_<window>`) and the xau
+    scalp names on XAUUSD, and an `m15`/`m5` token as the timeframe."""
+    low = str(name).lower()
+    toks = low.split("_")
+    tf = next((t.upper() for t in toks if re.fullmatch(r"m\d+|h\d+", t)), "")
+    if low.startswith(("gold_", "xau_", "xauusd_")):
+        fam = "_".join(t for t in toks[1:] if t and not re.fullmatch(r"m\d+|h\d+", t))
+        return "XAUUSD", fam, tf
+    return toks[0].upper(), "_".join(toks[1:-1]), tf
+
+
+def live_policy_zero(names: Sequence[str]) -> tuple[frozenset[str], dict[str, Any]]:
+    """The columns the principal's live policy (mt5desk/live_policy.py and
+    data/live_sleeve_policy.json) forbids on the Fusion account, and why, so the Fusion book binds them to fraction 0 and refills
+    their heat across columns that can trade (hourly pass P63, 2026-11-05: the dynamic book put
+    30% heat on seven cells outside the policy, the gateway could size none of them, and the join
+    read BROKEN). The same symbol, timeframe, family and per-symbol allowlist the gateway and the
+    promoter apply; an allowlisted roster certificate is matched to its column by the gateway's
+    own key (`SYMBOL_family_selector`, case-folded)."""
+    try:
+        from mt5desk import live_policy as _lp
+        pol = _lp.policy()
+    except Exception as exc:                                   # pragma: no cover - import guard
+        return frozenset(), {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+    try:
+        rows = json.loads((BASE / "data" / "sleeves.json").read_text("utf-8")).get("sleeves") or []
+    except (OSError, ValueError, AttributeError):
+        rows = []
+    by_name = {str(r.get("name")): r for r in rows if isinstance(r, dict)}
+    allowed: dict[str, set[str]] = {}
+    for sym, certs in pol.live_sleeves.items():
+        keys: set[str] = set()
+        for n in certs:
+            keys.add(str(n).lower())
+            r = by_name.get(str(n)) or {}
+            if r.get("symbol") and r.get("family"):
+                sel = str(r.get("selector") or "")
+                keys.add(f"{str(r['symbol']).upper()}_{r['family']}{'_' + sel if sel else ''}"
+                         .lower())
+        allowed[str(sym).upper()] = keys
+    zero: dict[str, str] = {}
+    for n in names:
+        sym, fam, tf = _column_identity(str(n))
+        why = None
+        if "*" not in pol.live_symbols and sym not in pol.live_symbols:
+            why = f"{sym} is outside the live sleeve universe"
+        elif tf and tf in (pol.banned_timeframes.get(sym, frozenset())
+                           | pol.banned_timeframes.get("*", frozenset())):
+            why = f"{sym} {tf} is disabled in the live account"
+        elif fam and fam in pol.banned_families:
+            why = f"family {fam!r} is banned from live capital"
+        elif sym in allowed and str(n).lower() not in allowed[sym]:
+            why = f"{sym} admits only its allowlisted certificate(s)"
+        if why:
+            zero[str(n)] = why
+    return frozenset(zero), {"status": "MEASURED", "source": pol.source, "by": pol.by,
+                             "n_zeroed": len(zero), "zeroed": dict(sorted(zero.items()))}
+
+
 def exchange_zero_bounds(bounds: Mapping[str, float],
                          zeroed: frozenset[str]) -> dict[str, float]:
     """Per-sleeve heat bounds with every exchange-zeroed sleeve bound at 0.0, so no solve funds it.
@@ -3683,6 +3744,13 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # the fallback are passed through `exchange_zero` at the end, so no path funds them again;
     # their heat is refilled across the other sleeves and the total is the heat law's.
     ts_zero = frozenset(str(n) for n in evidence_meta.get("tier_s_zeroed") or ())
+    # THE PRINCIPAL'S LIVE POLICY IS A ZERO OF THE SAME KIND: a column the Fusion account may not
+    # trade earns nothing there, so its heat is refilled across the columns that can.
+    lp_zero, live_policy_meta = live_policy_zero([e.name for e in ev])
+    if lp_zero:
+        _log(f"live policy ZERO: {len(lp_zero)} column(s) the Fusion account may not trade, "
+             f"bound to fraction 0 ({', '.join(sorted(lp_zero)[:6])})")
+    ts_zero = ts_zero | lp_zero
     if ts_zero:
         _log(f"tier S exchange ZERO: {len(ts_zero)} sleeve(s) bound to fraction 0 in every path "
              f"({', '.join(sorted(ts_zero)[:6])})")
@@ -4774,6 +4842,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         "book_zeroed": zeroed,
         # THE EXCHANGE'S ZEROS, AND WHERE THEIR HEAT WENT (see `exchange_zero`).
         "exchange_zero": exchange_zero_meta,
+        # Which columns the principal's live policy bound to 0 on the Fusion book, and why.
+        "live_policy": live_policy_meta,
         # THE COMPOSITION SOLVED INSIDE THE CURRENT STATE, beside what the global book earns
         # there. `consumed` is False: the gateway sizes from `book` and reads `heat.state` only
         # to choose whose certificate applies. Published so the delta is a measurement.
