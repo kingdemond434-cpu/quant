@@ -17,7 +17,7 @@
  "uptime_s": 740553.0,
  "last_sweep_ended_utc": "2026-11-05T06:23:44+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-05T12:50:15+00:00",
+ "heartbeat_utc": "2026-11-05T13:05:17+00:00",
  "sweep_phase": {
   "pid": 31752,
   "sweep_started_utc": "2026-11-05T06:24:12+00:00",
@@ -184,27 +184,27 @@
      }
     },
     "collect_and_cut": {
-     "samples": 145,
+     "samples": 149,
      "top": [
       {
        "stack": "external_gauntlet.py:shard_of:4551 < external_gauntlet.py:_shard_collect:4733 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
        "n": 76,
-       "share": 0.524
+       "share": 0.51
       },
       {
        "stack": "frontier_identity.py:cell_id:41 < external_gauntlet.py:shard_of:4551 < external_gauntlet.py:_shard_collect:4733 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844",
-       "n": 29,
-       "share": 0.2
+       "n": 30,
+       "share": 0.201
       },
       {
        "stack": "external_gauntlet.py:shard_of:4547 < external_gauntlet.py:_shard_collect:4733 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
        "n": 21,
-       "share": 0.145
+       "share": 0.141
       },
       {
        "stack": "external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
-       "n": 8,
-       "share": 0.055
+       "n": 9,
+       "share": 0.06
       },
       {
        "stack": "external_gauntlet.py:shard_of:4552 < external_gauntlet.py:_shard_collect:4733 < external_gauntlet.py:_run_shards:4796 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
@@ -213,13 +213,13 @@
       }
      ],
      "process": {
-      "cpu_s": 23.2,
-      "page_faults": 501891.0,
-      "read_bytes": 62011257.0,
-      "write_bytes": 211464.0,
-      "sampled_s": 1440.0,
-      "rss_mb_max": 872.1,
-      "cpu_share_of_wall": 0.016
+      "cpu_s": 70.7,
+      "page_faults": 2020954.0,
+      "read_bytes": 65419129.0,
+      "write_bytes": 224382.0,
+      "sampled_s": 1480.0,
+      "rss_mb_max": 2478.8,
+      "cpu_share_of_wall": 0.048
      }
     }
    }
