@@ -61,6 +61,7 @@ desks/mt5/mt5desk/multiplicity.py
 desks/mt5/mt5desk/netting.py
 desks/mt5/mt5desk/order_door.py
 desks/mt5/mt5desk/position_manager.py
+desks/mt5/mt5desk/mt5_manage.py
 desks/mt5/mt5desk/provenance.py
 desks/mt5/mt5desk/release_identity.py
 desks/mt5/mt5desk/risk_units.py
@@ -343,3 +344,4 @@ libs/research/cell_culture.py
 libs/research/source_provenance.py
 desks/mt5/mt5desk/local_clock.py
 desks/mt5/mt5desk/fusion_equity_reference.py
+desks/mt5/mt5desk/family_alt_release.py
