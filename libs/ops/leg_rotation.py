@@ -342,6 +342,9 @@ class Decision:
     planned_s: float = 0.0
     why: dict[str, str] = field(default_factory=dict)
     forced: set[str] = field(default_factory=set)
+    #: legs whose cost exceeds what the budget can EVER give them after the always-run and forced
+    #: legs: "it leads the next pass" would be false for them, every pass (see plan_pass)
+    unschedulable: dict[str, float] = field(default_factory=dict)
 
     def runs(self, leg: str) -> bool:
         """Does `leg` run in this pass? An unknown leg always runs (rotation never invents a veto
@@ -437,6 +440,12 @@ def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float 
         return dec
     spent = 0.0
     soft_forced = False
+    # the seconds no rotation can reclaim: always-run legs plus every leg forced by age this pass
+    fixed_s = sum(att.cost_s(leg) for leg in roster if leg in ALWAYS_RUN)
+    for leg in roster:
+        due = _due_age_h(leg, att, t0)
+        if due is not None and due >= DUE_BY_AGE_H[leg][1]:
+            fixed_s += att.cost_s(leg)
     for leg in sorted(roster, key=lambda n: _rank(n, att, t0, order)):
         cost = att.cost_s(leg)
         if leg in ALWAYS_RUN:
@@ -466,8 +475,21 @@ def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float 
                             f"rotation: idle {att.age_s(leg, t0) / 3600.0:.1f}h")
         else:
             dec.deferred.add(leg)
-            dec.why[leg] = (f"deferred this pass: {cost:.0f}s would pass the "
-                            f"{bud:.0f}s budget ({spent:.0f}s planned); it leads the next pass")
+            room = bud - fixed_s
+            if cost > room:
+                # THE LEG THAT CAN NEVER FIT (2026-11-05): prop_challenge_allocator (722 s, the
+                # only writer of FTMO's live book) sat behind always-run legs leaving < 722 s of
+                # room, deferred every pass since 10-29 under a "leads the next pass" that could
+                # not come true. Leading the order does not help when the room itself is too
+                # small, so the defect is named instead: such a leg needs its own clock (a
+                # dedicated task) or a smaller cost -- never a silent wait.
+                dec.unschedulable[leg] = round(cost - room, 1)
+                dec.why[leg] = (f"UNSCHEDULABLE in this plan: {cost:.0f}s > the {room:.0f}s the "
+                                f"{bud:.0f}s budget leaves after always-run and forced legs; "
+                                "it needs its own clock or a smaller cost")
+            else:
+                dec.why[leg] = (f"deferred this pass: {cost:.0f}s would pass the "
+                                f"{bud:.0f}s budget ({spent:.0f}s planned); it leads the next pass")
     dec.planned_s = spent
     return dec
 
@@ -498,6 +520,7 @@ def record(dec: Decision, att: Attendance, ran: list[str], *, path: Path | None 
         "ran_this_pass": list(ran),
         "deferred_this_pass": sorted(dec.deferred),
         "forced_due_by_age": sorted(dec.forced),
+        "unschedulable_over_s": dict(sorted(dec.unschedulable.items())),
         "due_by_age_h": {k: {"soft_h": v[0], "hard_h": v[1]} for k, v in DUE_BY_AGE_H.items()},
         # THE TWO LINES THE FENCE READS. A leg that never ran is a claim the desk cannot cash
         # (L1.49), so it is published by name rather than inferred from an absent artifact.

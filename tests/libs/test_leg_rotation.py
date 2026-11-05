@@ -295,3 +295,26 @@ def test_due_artifacts_are_the_files_and_stamps_the_door_reads() -> None:
     ours = {(LR.DESK / rel, key) for arts in LR.DUE_ARTIFACTS.values() for rel, key in arts}
     assert ours == door
     assert set(LR.DUE_ARTIFACTS) == set(LR.DUE_BY_AGE_H)
+
+
+def test_a_leg_that_can_never_fit_is_named_unschedulable_not_told_it_leads() -> None:
+    """prop_challenge_allocator (722 s) behind always-run legs leaving 640 s: deferred forever."""
+    now = datetime(2026, 11, 5, 16, 0, tzinfo=UTC)
+    always = sorted(LR.ALWAYS_RUN)[0]
+    att = _att_aged({always: 5, "prop_challenge_allocator": 5, "small": 5},
+                    {always: 1.0, "prop_challenge_allocator": 30.0, "small": 2.0},
+                    {always: 2_000.0, "prop_challenge_allocator": 722.0, "small": 10.0}, now)
+    dec = LR.plan_pass([always, "prop_challenge_allocator", "small"], att, plan="core",
+                       budget_s=2_640.0, now=now)
+    assert "prop_challenge_allocator" in dec.deferred
+    assert dec.unschedulable["prop_challenge_allocator"] == 82.0
+    assert "UNSCHEDULABLE" in dec.why["prop_challenge_allocator"]
+    assert "small" in dec.admitted and "small" not in dec.unschedulable
+
+
+def test_a_leg_that_fits_the_room_is_only_deferred() -> None:
+    now = datetime(2026, 11, 5, 16, 0, tzinfo=UTC)
+    att = _att_aged({"a": 5, "b": 5}, {"a": 9.0, "b": 8.0}, {"a": 600.0, "b": 600.0}, now)
+    dec = LR.plan_pass(["a", "b"], att, plan="core", budget_s=1_000.0, now=now)
+    assert dec.deferred == {"b"} and not dec.unschedulable
+    assert "leads the next pass" in dec.why["b"]
