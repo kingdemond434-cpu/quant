@@ -563,6 +563,19 @@
    ],
    "source": "SYNTHETIC: an accurate finding written against this real diff (Autonomy 11-04); the adjudicator must keep it supported",
    "reviewer_failed": false
+  },
+  {
+   "pr": 739,
+   "head": "ff980a46cbedd88394fb5f55db9493071addf0e9",
+   "base": "24c7b2c0c973fd8a7ac1a23e3d500f9a6abfac5f",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "The change introduces new functionality that could increase risk by allowing the system to attach to and potentially control multiple MetaTrader5 terminals, which could lead to unintended consequences if not properly managed.",
+    "The change adds new files and functions that handle terminal attachment, process management, and data writing, which could introduce new points of failure or security vulnerabilities."
+   ],
+   "source": "independent-review job 127097222167; Auditor CLEAR ff980a46c; rebuttal PR comment 6652199364 (Desk health 07:20Z)"
   }
  ]
 }
