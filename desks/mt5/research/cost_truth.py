@@ -832,7 +832,21 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
         import MetaTrader5 as mt5
     except Exception as exc:
         return {"status": UNMEASURED, "why": f"MetaTrader5 is not importable here: {exc}"}
+    # ATTACH, NEVER LAUNCH (Auditor SF on #739, 2026-11-05): `initialize(path=)` STARTS a new
+    # instance when the running one belongs to another Windows session (the FTMO terminal lives
+    # in RDP session 2). Count the terminal pids around the call; a new one is shut down, killed
+    # and the venue read UNMEASURED -- a spawned terminal is never a reading and never left up.
+    before = _terminal_pids()
     ok = mt5.initialize(path=path) if path else mt5.initialize()
+    spawned = sorted(_terminal_pids() - before) if before is not None else []
+    if spawned:
+        try:
+            mt5.shutdown()
+        finally:
+            _kill_pids(spawned)
+        return {"status": UNMEASURED, "path": path, "spawned_pids": spawned,
+                "why": "attach would launch: initialize started a new terminal64.exe "
+                       "(killed); the running one is out of this session's reach"}
     if not ok:
         return {"status": UNMEASURED, "path": path,
                 "why": f"terminal did not initialise: {mt5.last_error()}"}
@@ -946,12 +960,16 @@ def write_venue_quotes(snapshot: dict[str, Any]) -> Path | None:
     path = venue_quotes_path(slug)
     cached = _json(path) or {}
     syms = dict(cached.get("symbols") or {}) if isinstance(cached, dict) else {}
-    syms.update(snapshot.get("symbols") or {})
+    fresh = {k: v for k, v in (snapshot.get("symbols") or {}).items()
+             if isinstance(v, dict) and v.get("status") != UNMEASURED}
+    syms.update(fresh)
+    hours = fold_hours(cached.get("spread_by_hour_utc") if isinstance(cached, dict) else None,
+                       fresh, datetime.now(UTC).hour)
     doc = {"at": _now(), "venue": slug, "account": snapshot.get("account"),
            "terminal": snapshot.get("terminal"),
            "server_utc_offset_hours": snapshot.get("server_utc_offset_hours"),
            "rollover_hour_utc": snapshot.get("rollover_hour_utc"),
-           "symbols": syms,
+           "symbols": syms, "spread_by_hour_utc": hours,
            "source": "desks/mt5/research/cost_truth.py"}
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
@@ -980,15 +998,153 @@ def running_terminals() -> list[str]:
     return sorted(seen)
 
 
+def _terminal_pids() -> set[int] | None:
+    """The pids of every terminal64.exe now, or None when psutil cannot say (the guard then
+    cannot tell a spawn from an attach, and says so by not claiming one)."""
+    try:
+        import psutil
+    except Exception:
+        return None
+    pids: set[int] = set()
+    for proc in psutil.process_iter(["name"]):
+        try:
+            if str(proc.info.get("name") or "").lower() == "terminal64.exe":
+                pids.add(int(proc.pid))
+        except Exception:
+            continue
+    return pids
+
+
+def _kill_pids(pids: list[int]) -> None:  # pragma: no cover - needs a spawned terminal
+    try:
+        import psutil
+    except Exception:
+        return
+    for pid in pids:
+        try:
+            proc = psutil.Process(pid)
+            proc.terminate()
+            proc.wait(timeout=10)
+        except Exception:
+            try:
+                psutil.Process(pid).kill()
+            except Exception:
+                pass
+
+
+#: Readings kept per (venue, symbol, UTC hour): two weeks of that hour. The venue's figure for an
+#: hour is their MEDIAN -- one rollover spike must not become the hour's price on its own.
+HOUR_KEEP = 14
+#: A venue file older than this is still used (widest last known, never dropped for the
+#: narrowest), but every row it contributes to carries `stale: true` and is counted.
+VENUE_STALE_H = 3.0
+QUOTES_MAX = DATA / "cost_truth_quotes.max.json"
+
+
+def spread_price(row: dict[str, Any]) -> float | None:
+    """A quoted spread in PRICE units. Venues quote different digits, so points are not
+    comparable across venues; price is."""
+    pts, point = _f(row.get("live_spread_pts")), _f(row.get("point"))
+    if pts is None or point is None or point <= 0 or pts < 0:
+        return None
+    return pts * point
+
+
+def fold_hours(cached_hours: Any, symbols: dict[str, Any], hour: int,
+               keep: int = HOUR_KEEP) -> dict[str, Any]:
+    """Append this pass's spread (price units) to each symbol's readings for UTC `hour`."""
+    hours: dict[str, Any] = {k: dict(v) for k, v in (cached_hours or {}).items()
+                             if isinstance(v, dict)}
+    key = f"{int(hour):02d}"
+    for sym, row in symbols.items():
+        if not isinstance(row, dict):
+            continue
+        px = spread_price(row)
+        if px is None:
+            continue
+        per = hours.setdefault(sym, {})
+        seq = [x for x in (per.get(key) or []) if isinstance(x, list) and len(x) == 2]
+        seq.append([row.get("at") or _now(), px])
+        per[key] = seq[-int(keep):]
+    return hours
+
+
+def build_max(venue_docs: dict[str, dict[str, Any]], now: datetime | None = None,
+              stale_h: float = VENUE_STALE_H) -> dict[str, Any]:
+    """The widest spread across venues, per symbol and per UTC hour (Judge, 2026-11-05: one
+    certificate trades on every account, so its gate must survive the dearest venue it lands on).
+    Each venue's hour figure is the median of its kept readings; the max over venues wins. A
+    stale venue still counts (its last known figure, never dropped in favour of a narrower one)
+    and marks the row stale. Rows carry the winning venue, the point it quotes in and n."""
+    now = now or datetime.now(UTC)
+    ages: dict[str, float | None] = {}
+    for venue, doc in venue_docs.items():
+        try:
+            at = datetime.fromisoformat(str(doc.get("at")))
+            ages[venue] = round((now - at).total_seconds() / 3600.0, 2)
+        except Exception:
+            ages[venue] = None
+    stale = {v for v, a in ages.items() if a is None or a > stale_h}
+    out: dict[str, Any] = {}
+    n_stale_rows = 0
+    for venue, doc in sorted(venue_docs.items()):
+        syms = doc.get("symbols") or {}
+        for sym, per in (doc.get("spread_by_hour_utc") or {}).items():
+            point = _f((syms.get(sym) or {}).get("point"))
+            for hour, seq in (per or {}).items():
+                vals = [float(x[1]) for x in seq if isinstance(x, list) and len(x) == 2
+                        and _f(x[1]) is not None]
+                if not vals:
+                    continue
+                px = statistics.median(vals)
+                cell = out.setdefault(sym, {}).get(hour)
+                if cell is None or px > cell["spread_price"]:
+                    out[sym][hour] = {
+                        "spread_price": px, "venue": venue, "point": point,
+                        "spread_pts": round(px / point, 2) if point else None,
+                        "n": len(vals), "venues_seen": (cell or {}).get("venues_seen", 0) + 1,
+                        "stale": venue in stale}
+                else:
+                    cell["venues_seen"] += 1
+                    cell["stale"] = bool(cell["stale"] or venue in stale)
+    for per in out.values():
+        n_stale_rows += sum(1 for c in per.values() if c["stale"])
+    return {"at": now.isoformat(timespec="seconds"),
+            "rule": "per symbol and UTC hour: max over venues of each venue's median spread "
+                    "(price units); spread_pts is in the winning venue's point",
+            "venues": {v: {"age_h": ages[v], "stale": v in stale} for v in sorted(venue_docs)},
+            "stale_rows": n_stale_rows, "symbols": out,
+            "source": "desks/mt5/research/cost_truth.py"}
+
+
+def write_max(data_dir: Path | None = None) -> Path:
+    """Rebuild cost_truth_quotes.max.json from every venue file on disk."""
+    root = data_dir or DATA
+    docs: dict[str, dict[str, Any]] = {}
+    for path in sorted(root.glob("cost_truth_quotes.*.json")):
+        if path.name == QUOTES_MAX.name:
+            continue
+        doc = _json(path)
+        if isinstance(doc, dict) and doc.get("venue"):
+            docs[str(doc["venue"])] = doc
+    target = root / QUOTES_MAX.name
+    tmp = target.with_suffix(target.suffix + ".tmp")
+    tmp.write_text(json.dumps(build_max(docs), indent=1, sort_keys=True) + "\n", "utf-8")
+    tmp.replace(target)
+    return target
+
+
 def quotes_only(symbols: list[str], budget_s: float,
                 terminals: list[str] | None = None) -> dict[str, Any]:  # pragma: no cover
     """The light hourly clock: every running terminal's quotes, one file per venue, no deals,
     no bars, no rebuild of COST_TRUTH.json. Budget is split evenly across terminals."""
-    paths: list[str | None] = list(terminals if terminals is not None else running_terminals())
-    if not paths:
-        paths = [None]
-    each = max(15.0, budget_s / len(paths))
+    paths: list[str] = list(terminals if terminals is not None else running_terminals())
     out: dict[str, Any] = {"at": _now(), "venues": []}
+    if not paths:
+        # No pathless fallback: a pathless initialize() on a box with no running terminal
+        # LAUNCHES one. Nothing running is a NO_OP the caller prints, never a spawn.
+        return out
+    each = max(15.0, budget_s / len(paths))
     for path in paths:
         snap = terminal_snapshot(symbols, each, 0, path=path, deals=False)
         written = write_venue_quotes(snap)
@@ -999,6 +1155,8 @@ def quotes_only(symbols: list[str], budget_s: float,
                               "budget_exhausted_at": snap.get("budget_exhausted_at"),
                               "written": str(written) if written else None,
                               "why": snap.get("why")})
+    if any(v.get("written") for v in out["venues"]):
+        out["max"] = str(write_max())
     return out
 
 
@@ -1422,6 +1580,8 @@ def main(argv: list[str] | None = None) -> int:
         if not any(v.get("written") for v in res["venues"]):
             print("WRITE_OR_EXPLAIN: NO_OP cost_quotes: no running terminal answered "
                   "(every venue file keeps its readings and their age)")
+        else:
+            print(f"cost_quotes: widest-venue file -> {res.get('max')}")
         return 0
 
     cursor = _json(CURSOR) or {}
@@ -1453,7 +1613,8 @@ def main(argv: list[str] | None = None) -> int:
                                       "symbols": snapshot.get("symbols"),
                                       "deals": snapshot.get("deals")},
                                      indent=1, sort_keys=True) + "\n", "utf-8")
-        write_venue_quotes(snapshot)
+        if write_venue_quotes(snapshot) is not None:
+            write_max()
     else:
         snapshot = {**cached, "status": UNMEASURED if not cached else MODELLED,
                     "why": snapshot.get("why"), "bars": {},
