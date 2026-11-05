@@ -1,26 +1,6 @@
 {
  "lock": "LOCKED",
  "unlocked_writes": 0,
- "status": "SLOW",
- "slow": {
-  "kind": "SLOW",
-  "reason": "phase_deadline:collect_and_cut",
-  "detail": "phase collect_and_cut ran 7382s, past its 5848s SLOW threshold (3x the longest measured wall); the tree is progressing (last 0s ago): left running",
-  "slow_utc": "2026-11-05T13:04:20+00:00",
-  "pid": 31752,
-  "phase": "collect_and_cut",
-  "shard": null,
-  "progress": {
-   "beat_utc": "2026-11-05T13:04:14+00:00",
-   "tree": {
-    "procs": 1,
-    "rss_mb": 2478.8,
-    "cpu_s": 2060.6
-   },
-   "last_progress_utc": "2026-11-05T13:04:14+00:00",
-   "idle_s": 0.0
-  }
- },
  "history": [
   {
    "kind": "SLOW",
@@ -42,5 +22,7 @@
    }
   }
  ],
- "consecutive": 0
+ "consecutive": 0,
+ "status": "CLEAR",
+ "last_clear_utc": "2026-11-05T13:24:25+00:00"
 }
