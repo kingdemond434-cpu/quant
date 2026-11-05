@@ -3100,3 +3100,4 @@ def test_shadow_candidates_are_never_also_voters() -> None:
         assert "digest" not in m  # a shadow is measured, never pinned: pinning makes it a voter
     wf = (ROOT / ".github/workflows/release-gates.yml").read_text(encoding="utf-8")
     assert wf.index('json.load(open(sys.argv[1]))["models"]') < wf.index('.get("shadow")')
+    assert 'timeout 900 "$dir/bin/ollama" pull "$m"' in wf  # a shadow pull cannot eat voter time
