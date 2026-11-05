@@ -28,7 +28,16 @@ STATE = ROOT / "data" / "intelligence" / "gpt_hunter_state.json"
 OUT = ROOT / "data" / "intelligence" / "public_strategy_items.json"
 CORPUS = ROOT / "data" / "intelligence" / "gpt_practitioner_corpus.jsonl"
 SECRETS = ROOT / "data" / "secrets" / "llm_panel.json"
-MODEL = "openai/gpt-5.6-terra"
+#: FREE CHAIN ONLY (2026-11-04). The seat named `openai/gpt-5.6-terra`, a paid id, so
+#: `libs.ops.openrouter_guard` refused every request and the seat wrote 0 rows. The desk runs
+#: :free models only; the chain walks down on any failure so one rate-limited id never zeroes a
+#: day. MODEL stays as the first id for callers that read it.
+MODEL_CHAIN: tuple[str, ...] = (
+    "deepseek/deepseek-r1:free",
+    "qwen/qwen3-235b-a22b:free",
+    "moonshotai/kimi-k2:free",
+)
+MODEL = MODEL_CHAIN[0]
 
 
 def _read(path: Path, default: object) -> object:
@@ -53,12 +62,22 @@ def _credentials() -> tuple[str, str]:
 
 def _ask(prompt: str) -> str:
     base, key = _credentials()
+    last: Exception | None = None
+    for model in MODEL_CHAIN:
+        try:
+            return _ask_one(base, key, model, prompt)
+        except Exception as exc:  # walk down the free chain on any failure
+            last = exc
+    raise RuntimeError(f"every free model failed; last: {type(last).__name__}: {last}")
+
+
+def _ask_one(base: str, key: str, model: str, prompt: str) -> str:
     body = json.dumps(
         {
-            "model": MODEL,
+            "model": model,
             "max_tokens": 8000,
             "temperature": 0.2,
-            "reasoning": reasoning_payload(MODEL),
+            "reasoning": reasoning_payload(model),
             "messages": [
                 {
                     "role": "system",
