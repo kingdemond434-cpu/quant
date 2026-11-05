@@ -1714,40 +1714,63 @@ def entry_stream_id(sym: str, forward_trades: list) -> dict:
 STREAM_PEER = "PROMOTION CANDIDATE_STREAM_PEER"
 
 
-def _live_keys() -> set | None:
+#: Shadow verdicts that retire a bet. A stream holding one of these is DECIDED: none of its twins
+#: may take the promotion verdict back, or a retired bet returns under another key's name.
+_RETIRING = ("KILL", "KILLED", "DEAD", "RETIRED", "REJECTED", "QUARANTINED")
+
+
+def _registry_view() -> tuple[set, dict] | None:
+    """(LIVE keys, {key: why} for keys the registry or the gateway has retired), or None."""
     try:
         import sleeve_registry
-        return set(sleeve_registry.live_keys())
+        live = set(sleeve_registry.live_keys())
+        gw = set(sleeve_registry.gateway_retired_keys())
+        rows = sleeve_registry._read(sleeve_registry.REGISTRY).get("sleeves", {})
     except Exception:
         return None
+    retired = {k: "GATEWAY_RETIRED" for k in gw}
+    for k, v in rows.items():
+        status = str((v or {}).get("status") or "").upper()
+        if any(status == r or status.startswith(r + "_") for r in _RETIRING):
+            retired.setdefault(k, f"registry {status}")
+    return live - set(retired), retired
 
 
-def apply_stream_peers(state: dict, *, live: Callable[[], set | None] = _live_keys) -> list[str]:
+def apply_stream_peers(state: dict, *,
+                       registry: Callable[[], tuple[set, dict] | None] = _registry_view
+                       ) -> list[str]:
     """ONE BET, ONE CLOCK: a stream of identical forward entries holds one promotion candidate.
 
     Auditor HOLD_gbpchf_formula_promotion (2026-11-05): 20 of 25 GBPCHF formula keys took the same
     29 entries. The promoter promotes every "PROMOTION CANDIDATE", so it would have written one
     bet LIVE twenty times and the allocator would have read twenty independent edges. Re-derived
-    every pass from the current `entry_stream` ids, among rows whose verdict is promote:
-      * a stream with a LIVE key keeps that key; every other candidate on it is a STREAM_PEER;
+    every pass over EVERY row carrying an `entry_stream` id, whatever its status:
+      * a stream with a LIVE key is anchored on it; every non-live candidate is a STREAM_PEER;
+      * a stream any key of which is RETIRED (registry, gateway, or a retiring shadow verdict) is
+        DECIDED: every candidate on it is a STREAM_PEER of that key and none gets the verdict
+        back, so a retired bet never returns under its twin's name (Auditor HOLD on #734);
       * otherwise the best forward expectancy keeps "PROMOTION CANDIDATE" (ties by key) and the
-        rest are STREAM_PEERs, each naming its representative in `stream_peer_of`;
-      * a peer whose stream is now its own (its entries diverged) or whose representative left
-        the verdict gets "PROMOTION CANDIDATE" back on the same pass.
-    The stream still promotes, once: only duplicate copies of one bet stay off the book.
-    An unreadable registry changes nothing this pass (UNMEASURED, never a guess).
+        other candidates are STREAM_PEERs, each naming its representative in `stream_peer_of`;
+      * a peer whose stream is now its own (its entries diverged) or whose live representative's
+        stream no longer anchors it gets "PROMOTION CANDIDATE" back on the same pass.
+    The stream still promotes, once: only duplicate copies of one bet stay off the book. LIVE
+    keys are never relabelled. An unreadable registry changes nothing (UNMEASURED, never a guess).
     """
-    live_now = live()
-    if live_now is None:
+    view = registry()
+    if view is None:
         return ["stream peers: UNMEASURED -- the sleeve registry is unreadable; no change"]
+    live_now, retired = view
     pcs = ("PROMOTION CANDIDATE", STREAM_PEER)
     by_stream: dict[str, list[str]] = {}
     for key, st in state.items():
-        if not isinstance(st, dict) or st.get("status") not in pcs:
+        if not isinstance(st, dict):
             continue
         es = st.get("entry_stream")
         sid = es.get("id") if isinstance(es, dict) else None
-        by_stream.setdefault(str(sid) if sid else f"__own__{key}", []).append(key)
+        if sid:
+            by_stream.setdefault(str(sid), []).append(key)
+        elif st.get("status") in pcs:
+            by_stream.setdefault(f"__own__{key}", []).append(key)
 
     def _exp(k: str) -> float:
         try:
@@ -1755,24 +1778,43 @@ def apply_stream_peers(state: dict, *, live: Callable[[], set | None] = _live_ke
         except (TypeError, ValueError):
             return 0.0
 
+    def _retired_why(k: str) -> str | None:
+        if k in retired:
+            return retired[k]
+        status = str(state[k].get("status") or "").upper()
+        if any(status == r or status.startswith(r + "_") for r in _RETIRING):
+            return f"shadow {status}"
+        return None
+
     lines: list[str] = []
     for keys in by_stream.values():
+        cands = [k for k in keys if state[k].get("status") in pcs and k not in live_now]
+        if not cands:
+            continue
         on_live = sorted(k for k in keys if k in live_now)
-        rep = on_live[0] if on_live else sorted(keys, key=lambda k: (-_exp(k), k))[0]
-        for k in keys:
+        dead = sorted(k for k in keys if _retired_why(k))
+        if on_live:
+            anchor, decided = on_live[0], False
+        elif dead:
+            anchor, decided = dead[0], True
+        else:
+            anchor = sorted(cands, key=lambda k: (-_exp(k), k))[0]
+            decided = False
+        for k in cands:
             st = state[k]
-            if k in live_now:                     # a LIVE key is never relabelled
-                continue
-            if k == rep or (len(keys) == 1):
+            if k == anchor and not decided:
                 if st.get("status") == STREAM_PEER:
                     st["status"] = "PROMOTION CANDIDATE"
                     st["stream_peer_of"] = None
-                    lines.append(f"{k}: stream peer -> PROMOTION CANDIDATE (its stream is its own)")
+                    lines.append(f"{k}: stream peer -> PROMOTION CANDIDATE (it represents its "
+                                 f"stream now)")
                 continue
-            if st.get("status") != STREAM_PEER or st.get("stream_peer_of") != rep:
-                lines.append(f"{k}: same forward entries as {rep} -> {STREAM_PEER}")
+            if st.get("status") != STREAM_PEER or st.get("stream_peer_of") != anchor:
+                why = (f"its stream is decided: {anchor} is {_retired_why(anchor)}" if decided
+                       else f"same forward entries as {anchor}")
+                lines.append(f"{k}: {why} -> {STREAM_PEER}")
             st["status"] = STREAM_PEER
-            st["stream_peer_of"] = rep
+            st["stream_peer_of"] = anchor
     return lines
 
 

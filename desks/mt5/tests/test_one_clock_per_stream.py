@@ -20,10 +20,14 @@ def _row(sid, status=PC, exp=0.1):
     return {"status": status, "exp_r": exp, "entry_stream": {"id": sid, "n": 29}}
 
 
+def _reg(live=(), retired=None):
+    return lambda: (set(live), dict(retired or {}))
+
+
 def test_one_stream_keeps_one_candidate_under_its_best_key():
     state = {"a": _row("s1", exp=0.1), "b": _row("s1", exp=0.3), "c": _row("s1", exp=0.3),
              "d": _row("s2"), "e": _row(None), "last_run": "x"}
-    sf.apply_stream_peers(state, live=set)
+    sf.apply_stream_peers(state, registry=_reg())
     assert state["b"]["status"] == PC
     assert state["a"]["status"] == state["c"]["status"] == sf.STREAM_PEER
     assert state["a"]["stream_peer_of"] == "b"
@@ -32,31 +36,45 @@ def test_one_stream_keeps_one_candidate_under_its_best_key():
 
 def test_a_stream_with_a_live_key_keeps_that_key_and_never_relabels_live():
     state = {"live": _row("s1", exp=0.0), "live2": _row("s1", exp=0.0), "x": _row("s1", exp=9.0)}
-    sf.apply_stream_peers(state, live=lambda: {"live", "live2"})
+    sf.apply_stream_peers(state, registry=_reg({"live", "live2"}))
     assert state["live"]["status"] == state["live2"]["status"] == PC
     assert state["x"]["status"] == sf.STREAM_PEER and state["x"]["stream_peer_of"] == "live"
 
 
 def test_a_peer_gets_its_verdict_back_when_its_stream_becomes_its_own():
     state = {"a": _row("s1", exp=0.1), "b": _row("s1", exp=0.3)}
-    sf.apply_stream_peers(state, live=set)
+    sf.apply_stream_peers(state, registry=_reg())
     assert state["a"]["status"] == sf.STREAM_PEER
     state["a"]["entry_stream"] = {"id": "s9", "n": 30}           # its entries diverged
-    sf.apply_stream_peers(state, live=set)
+    sf.apply_stream_peers(state, registry=_reg())
     assert state["a"]["status"] == PC and state["a"]["stream_peer_of"] is None
 
 
-def test_a_peer_takes_over_when_its_representative_leaves_the_verdict():
-    state = {"a": _row("s1", exp=0.1), "b": _row("s1", exp=0.3)}
-    sf.apply_stream_peers(state, live=set)
-    state["b"]["status"] = "KILL"
-    sf.apply_stream_peers(state, live=set)
-    assert state["a"]["status"] == PC
+def test_a_retired_representative_decides_its_stream_and_no_twin_comes_back():
+    state = {"a": _row("s1", exp=0.1), "b": _row("s1", exp=0.3), "c": _row("s1", exp=0.2)}
+    sf.apply_stream_peers(state, registry=_reg())
+    state["b"]["status"] = "KILL"                                 # the promoter retired it
+    sf.apply_stream_peers(state, registry=_reg())
+    assert state["a"]["status"] == state["c"]["status"] == sf.STREAM_PEER
+    assert state["a"]["stream_peer_of"] == "b"
+
+
+def test_a_registry_or_gateway_retirement_decides_the_stream_too():
+    for retired in ({"r": "registry RETIRED"}, {"r": "GATEWAY_RETIRED"}):
+        state = {"r": _row("s1", status="ACTIVE"), "x": _row("s1", exp=5.0)}
+        sf.apply_stream_peers(state, registry=_reg(retired=retired))
+        assert state["x"]["status"] == sf.STREAM_PEER and state["x"]["stream_peer_of"] == "r"
+
+
+def test_a_live_key_outside_the_verdict_still_anchors_its_stream():
+    state = {"live": _row("s1", status="ACTIVE"), "x": _row("s1", exp=9.0)}
+    sf.apply_stream_peers(state, registry=_reg({"live"}))
+    assert state["x"]["status"] == sf.STREAM_PEER and state["live"]["status"] == "ACTIVE"
 
 
 def test_an_unreadable_registry_changes_nothing():
     state = {"a": _row("s1"), "b": _row("s1")}
-    lines = sf.apply_stream_peers(state, live=lambda: None)
+    lines = sf.apply_stream_peers(state, registry=lambda: None)
     assert state["a"]["status"] == state["b"]["status"] == PC and "UNMEASURED" in lines[0]
 
 
