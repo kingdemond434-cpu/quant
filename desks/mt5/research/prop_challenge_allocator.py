@@ -587,6 +587,16 @@ def executable_columns(cols: list[str], uni: dict[str, Any]) -> set[str]:
     return {c for c in cols if executor_runs(c, specs)}
 
 
+def door_block(cert_key: str) -> str | None:
+    """`libs.tiers.promotion_authority.block` -- the same door ftmo_executor and e8_executor apply
+    per order -- or its error as a block (it fails closed there, so it fails closed here)."""
+    try:
+        from libs.tiers import promotion_authority
+        return promotion_authority.block(cert_key)
+    except Exception as exc:
+        return f"Tier S door error ({type(exc).__name__}: {exc})"[:200]
+
+
 def build_universe(seed: int = 0) -> dict[str, Any]:
     """Columns, world tensor and the screen, every gate fail-closed and named."""
     import kelly_survival as ks
@@ -650,6 +660,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         elif col in names:
             admit(col, r_all[:n_w, :n_t, names.index(col)], f"{COPY_COLUMNS[col]} ({swhy})")
             caps[col] = cur
+    door_blocked: list[str] = []
     cert_of: dict[str, str] = {}
     for row in screen:
         if row.get("column") and not row.get("excluded"):
@@ -668,6 +679,14 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
             reason = "quarantined in live_sleeve_policy.json"
         elif principal_zero(col, "ftmo"):
             reason = "principal zero"
+        else:
+            door = door_block(cert_key)
+            if door:
+                # THE EXECUTOR'S OWN DOOR, APPLIED BEFORE THE SOLVE (Auditor SF1, #769): a column
+                # the sleeve executor would refuse as TIER_S_BLOCKED must not take solve heat that
+                # never trades -- the deployed book would be quietly short (Rule 2).
+                reason = f"TIER_S_BLOCKED at the executor's door: {door}"
+                door_blocked.append(col)
         if reason:
             columns[col] = {"admitted": False, "why": reason, "rail": "ftmo_universe"}
             continue
@@ -687,7 +706,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
                 "(cross_account.opposite_block / the gold direction lock) before it is sent")
     if not cols:
         return {"status": "NO_ADMISSIBLE_SLEEVE", "columns": columns, "screen": screen,
-                "caps": caps,
+                "caps": caps, "door_blocked": door_blocked,
                 "costs": costs, "listing_source": listing_src, "unpriced": unpriced,
                 "listing": listing, "tier_s": tier_s}
     r = np.stack(slices, axis=2)
@@ -701,7 +720,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         post[c] = {"prior_r": round(prior, 4), "live_n": len(live_r),
                    "posterior_r": round(mean, 4), "live_weight": round(weight, 3)}
     return {"status": "OK", "cols": cols, "r": r, "columns": columns, "screen": screen,
-            "caps": caps, "specs": specs,
+            "caps": caps, "specs": specs, "door_blocked": door_blocked,
             "costs": costs, "posterior": post, "listing_source": listing_src,
             "unpriced": unpriced, "listing": listing, "tier_s": tier_s}
 
@@ -977,6 +996,8 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
                                                 "J_executable": round(j_exec, 5),
                                                 "J_missed": round(j_joint - j_exec, 5)}
     doc["rail_blocks"] = rail_blocks(uni)
+    doc["tier_s_door_blocked"] = {"n": len(uni.get("door_blocked") or []),
+                                  "columns": sorted(uni.get("door_blocked") or [])}
     doc["e8_overlap"] = sorted(c for c, row in (uni.get("columns") or {}).items()
                                if row.get("e8_overlap"))
     doc["status"] = now_block["status"]

@@ -457,7 +457,7 @@ def test_a_standing_defect_is_red_with_its_age(tmp_path: Path, monkeypatch) -> N
 
 
 def _roster_world(tmp_path: Path, monkeypatch, *, tier_s: dict[str, str],
-                  screen: list[dict]) -> dict:
+                  screen: list[dict], door: str | None = None) -> dict:
     """build_universe over one certified EURUSD column, every venue read stubbed."""
     import kelly_survival as ks
     col = "EURUSD_x_asia"
@@ -479,6 +479,7 @@ def _roster_world(tmp_path: Path, monkeypatch, *, tier_s: dict[str, str],
                         lambda key: ({"symbol": "EURUSD", "family": "x", "key": key}, "ok"))
     import mt5desk.decision_core as dc
     monkeypatch.setattr(dc, "principal_zero", lambda c, lane: False)
+    monkeypatch.setattr(pca, "door_block", lambda key: door)
     return pca.build_universe()
 
 
@@ -502,3 +503,16 @@ def test_a_column_no_certificate_vouches_for_is_still_refused(tmp_path, monkeypa
     uni = _roster_world(tmp_path, monkeypatch, tier_s={}, screen=screen)
     assert uni["status"] == "NO_ADMISSIBLE_SLEEVE"
     assert uni["columns"]["EURUSD_x_asia"]["admitted"] is False
+
+
+def test_a_column_the_executors_door_blocks_takes_no_solve_heat(tmp_path, monkeypatch) -> None:
+    """Auditor SF1 on #769: a column ftmo_executor would refuse as TIER_S_BLOCKED is refused
+    before the solve, named, and counted -- never sized heat that cannot trade."""
+    screen = [{"certificate": "external.EURUSD.x.p=1", "column": "EURUSD_x_asia",
+               "symbol": "EURUSD"}]
+    uni = _roster_world(tmp_path, monkeypatch, tier_s={}, screen=screen,
+                        door="replication MISMATCH")
+    assert uni["status"] == "NO_ADMISSIBLE_SLEEVE" and uni["door_blocked"] == ["EURUSD_x_asia"]
+    row = uni["columns"]["EURUSD_x_asia"]
+    assert row["admitted"] is False and "TIER_S_BLOCKED" in row["why"]
+    assert "replication MISMATCH" in row["why"]
