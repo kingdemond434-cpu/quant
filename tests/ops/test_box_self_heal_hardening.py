@@ -844,3 +844,12 @@ def test_rows_mask_credentials_in_command_lines() -> None:
         assert secret not in out, out
     assert "github.com/o/r.git" in out and "git.exe fetch" in out
     assert bsh.scrub({"cmdline": [line], "n": 3})["n"] == 3
+
+
+def test_every_row_field_is_scrubbed_including_auth_headers() -> None:
+    hdr = ("git.exe -c http.extraheader=AUTHORIZATION: basic eC1hY2Nlc3MtdG9rZW46Z2hzX3NlY3JldA== "
+           "-c http.extraheader=Authorization: Bearer ghs_abcdefghijklmnop1234 fetch origin")
+    out = bsh.scrub(hdr)
+    assert "eC1hY2Nlc3MtdG9rZW46Z2hzX3NlY3JldA==" not in out and "ghs_abcdefghijklmnop1234" not in out
+    src = (ROOT / "ops" / "box_self_heal.py").read_text("utf-8")
+    assert "**scrub(extra)" in src and "**scrub(facts)" in src

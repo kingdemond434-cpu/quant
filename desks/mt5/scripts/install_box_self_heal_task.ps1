@@ -75,7 +75,7 @@ $StateDir = Join-Path $Root 'state'
 # after any change to a copied file:
 #   git show HEAD:ops/box_self_heal.py | sha256sum   (and the other three)
 $Pins = [ordered]@{
-    'box_self_heal.py' = @{ src = 'ops/box_self_heal.py';       sha256 = 'cdd8852c8a95c3d85749074b98126fa21bb1f16cb8f0b62b82ff585bb3abb72b' }
+    'box_self_heal.py' = @{ src = 'ops/box_self_heal.py';       sha256 = 'ef830b6b715421b6da88ae51d6aea57afcff0ce95b1d7ad9cba31e17506c878c' }
     'box_self_heal_lib.py' = @{ src = 'ops/box_self_heal_lib.py'; sha256 = '414039072617d6e7acc48f7d722b4df929076ccbd89e3b5e7ba2737b9aa7ce50' }
     'process_health.py' = @{ src = 'ops/process_health.py';      sha256 = '1e989e2e942f69d21f0827d2702d579e2d152c4b600b608d49f7ca7681647f8e' }
     'alert_channels.py' = @{ src = 'libs/ops/alert_channels.py'; sha256 = '4448f782dfa7dc4ec0aecd1dc71145403d3de1d1dcbb9c64e81cf95be3e5f4b5' }

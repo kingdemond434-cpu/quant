@@ -100,12 +100,14 @@ DESK = ROOT / "desks" / "mt5"
 REPORT = DESK / "reports" / "BOX_SELF_HEAL.json"
 
 # THE REPORT IS PUBLISHED (sync_shadow_to_git, #755) and the repository is public, so a command line
-# never carries a credential off the box: URL userinfo, GitHub tokens and --token/--password values
-# are masked in every row (report and ledger alike) before it is kept.
+# never carries a credential off the box: URL userinfo, GitHub tokens, --token/--password values and
+# Authorization headers are masked in EVERY field of every row (report and ledger alike) before it
+# is kept.
 _SECRET_PATTERNS = (
     (re.compile(r"(?i)([a-z][a-z0-9+.-]*://)[^/\s@]+@"), r"\1***@"),
     (re.compile(r"\b(?:ghp|gho|ghs|ghu|ghr)_[A-Za-z0-9]{8,}|\bgithub_pat_[A-Za-z0-9_]{8,}"), "***"),
     (re.compile(r"(?i)(--?(?:token|password|passwd|pwd|secret|api[-_]?key)[=\s]+)\S+"), r"\1***"),
+    (re.compile(r"(?i)(authorization:\s*(?:basic|bearer|token)\s+)\S+"), r"\1***"),
 )
 
 
@@ -806,11 +808,8 @@ class Pass:
         return self.attempts.get("workflow_gate_restart", [])
 
     def row(self, rule: str, level: str, verdict: str, why: str, **extra: Any) -> None:
-        for k in ("cmdline", "result"):
-            if k in extra:
-                extra[k] = scrub(extra[k])
         self.rows.append({"at": _iso(self.now), "rule": rule, "level": level,
-                          "verdict": verdict, "why": scrub(why), **extra})
+                          "verdict": verdict, "why": scrub(why), **scrub(extra)})
 
     def red(self, rule: str, verdict: str, why: str, **extra: Any) -> None:
         self.row(rule, "RED", verdict, why, **extra)
@@ -852,7 +851,8 @@ class Pass:
         ledger takes it, the action is not taken: an uncounted attempt is an uncapped one."""
         self.attempts.setdefault(key, []).append(self.now)
         row = {"at": _iso(self.now), "ts": self.now, "rule": key, "level": "RED",
-               "verdict": "ATTEMPT", "why": f"about to {action}", "action": action, **facts}
+               "verdict": "ATTEMPT", "why": scrub(f"about to {action}"), "action": scrub(action),
+               **scrub(facts)}
         self.rows.append(row)
         durable = True if self.persist is None else self.persist(self, row)
         if durable:
