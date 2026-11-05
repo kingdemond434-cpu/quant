@@ -1,5 +1,5 @@
 {
- "at": "2026-11-05T14:43:12+00:00",
+ "at": "2026-11-05T15:33:16+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -66,9 +66,9 @@
     "alt_data_hypothesis",
     "failure_derived"
    ],
-   "at": "2026-11-05T06:41:37+00:00",
+   "at": "2026-11-05T15:33:16+00:00",
    "bandit_at": "2026-11-03T05:29:32.986928+00:00",
-   "hour": "2026-11-05T06",
+   "hour": "2026-11-05T15",
    "arm": "none",
    "wanted_s": 0,
    "floor_s": 0,
@@ -99,7 +99,7 @@
    "engine_factor": 1.0,
    "engine_why": "engine registry: leg share 0.0000 vs equal share 0.1250 = x0.00 -> x1.00 (one-sided: this factor may fund a leg above par and may never take one below it)",
    "meta_factor": 1.0,
-   "meta_why": "meta controller: leg 'deepen' serves kind(s) ['deepen_existing'] priced 0.002859 on the info_per_cell board vs median 0.04972 = x0.06 -> x1.00 (one-sided: it may fund above par and never below it)",
+   "meta_why": "meta controller: leg 'deepen' serves kind(s) ['deepen_existing'] priced 0.00288 on the info_per_cell board vs median 0.04973 = x0.06 -> x1.00 (one-sided: it may fund above par and never below it)",
    "graveyard_factor": 1.0,
    "graveyard_why": "graveyard: no survival row for source 'deepen'; par",
    "paradigm_factor": 1.0,
