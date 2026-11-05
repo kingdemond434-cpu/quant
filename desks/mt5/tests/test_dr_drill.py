@@ -182,3 +182,22 @@ def test_the_drill_reads_committed_stores_and_never_a_live_terminal(box, monkeyp
 def test_the_daily_frontier_audit_runs_the_drill():
     cmd = (ROOT / "ops" / "run_frontier_audit.cmd").read_text("utf-8", errors="replace")
     assert r"desks\mt5\scripts\dr_drill.py" in cmd
+
+
+def test_a_rejected_retry_under_an_accepted_intent_is_not_a_duplicate(box):
+    """Measured on the box 2026-11-05: one intent carries its 10009 fill and a 10016 refused try
+    (ticket 0). One order, so the replay passes and reports the shared id."""
+    retry = {**_intent(2, 1.1, "11:00", 0), "retcode": 10016}
+    with (box / REL / "order_intents.jsonl").open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(retry) + "\n")
+    j = _drill(box)["journal_replay"]
+    assert j["status"] == "PASS" and j["duplicate_intent_ids"] == 0
+    assert j["intent_ids_with_rejected_retries"] == 1 and j["retried_intent_ids"] == ["i2"]
+
+
+def test_two_accepted_orders_under_one_intent_still_fail(box):
+    again = _intent(2, 1.1, "11:00", 13)
+    with (box / REL / "order_intents.jsonl").open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(again) + "\n")
+    j = _drill(box)["journal_replay"]
+    assert j["status"] == "FAIL" and j["duplicate_intent_ids"] == 1
