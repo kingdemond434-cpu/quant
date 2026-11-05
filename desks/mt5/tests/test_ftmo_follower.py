@@ -187,6 +187,35 @@ def test_a_follow_just_through_the_level_enters_at_market_with_e8s_stop_and_targ
     assert sent[0]["kind"] == "buy_market" and sent[0]["entry"] == 4341.0
 
 
+class _RequotingMT5(_MT5):
+    """Refuses every market DEAL with a requote (10004); pending orders rest as usual."""
+
+    def order_send(self, req: dict) -> SimpleNamespace:
+        if req["action"] == self.TRADE_ACTION_DEAL:
+            self.sent.append(req)
+            return SimpleNamespace(retcode=10004, order=0)
+        return super().order_send(req)
+
+
+def test_a_rejected_market_follow_falls_back_to_the_limit_the_old_path_placed(world) -> None:
+    """Auditor HOLD on #746: a requoted market follow must never lose the trade the old limit
+    at E8's level would have kept -- same pass, same write-ahead, sized on E8's distance."""
+    mt5 = _RequotingMT5(bid=4340.8, ask=4341.0)
+    _pass(mt5)
+    deal, pend = (r for r in mt5.sent if r["action"] in (mt5.TRADE_ACTION_DEAL,
+                                                       mt5.TRADE_ACTION_PENDING))
+    assert deal["action"] == mt5.TRADE_ACTION_DEAL
+    assert pend["type"] == mt5.ORDER_TYPE_BUY_LIMIT and pend["price"] == 4340.0
+    assert (pend["sl"], pend["tp"]) == (4320.0, 4380.0)
+    assert pend["volume"] == pytest.approx(0.45)       # 0.009 x 100k / (20 x 100)
+    (row,) = [r for r in _rows() if r.get("status") in ("SENT", "REJECTED")]
+    assert row["status"] == "SENT" and row["fallback"] and row["kind"] == "buy_limit"
+    assert row["market_attempt"]["retcode"] == 10004
+    assert row["market_attempt"]["kind"] == "buy_market"
+    _pass(mt5, now=NOW + timedelta(minutes=1))
+    assert len(_entries(mt5)) == 1                     # still one order a day
+
+
 def test_the_late_entry_bound_is_a_share_of_e8s_stop() -> None:
     assert ff.entry_plan("long", 4340.0, 4320.0, 4329.8, 4330.0) == ("buy_stop", 4340.0)
     assert ff.entry_plan("long", 4340.0, 4320.0, 4341.8, 4342.0) == ("buy_market", 4342.0)

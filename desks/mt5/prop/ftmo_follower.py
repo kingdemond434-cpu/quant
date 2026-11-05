@@ -1374,13 +1374,34 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
     try:
         res = _send(mt5, st, req, cet=cet)
     except Exception as exc:
-        row.update({"status": "REJECTED", "why": f"{type(exc).__name__}: {exc}"[:200]})
-        _record(row)
-        log(f"[{WINDOW}] REJECTED: {row['why']}")
-        return
+        res, row["why"] = None, f"{type(exc).__name__}: {exc}"[:200]
     code = getattr(res, "retcode", None)
-    row.update({"status": "SENT" if code in (10008, 10009) else "REJECTED", "retcode": code,
-                "order_id": getattr(res, "order", None)})
+    if kind.endswith("_market") and code not in (10008, 10009):
+        # A REJECTED MARKET FOLLOW NEVER LOSES THE TRADE THE OLD LIMIT WOULD HAVE KEPT (Auditor
+        # HOLD on #746): a requote, a changed price or off-quotes (10004/10020/10021) or a
+        # filling refusal (10030) on a moving breakout falls back, in this same locked pass and
+        # under the same write-ahead, to the pending order the old path placed: entry_order_kind
+        # at E8's level, sized on E8's own distance and re-checked against the loss guard.
+        fb = _fallback_pending(mt5, side, sig, tick, frac=float(frac), equity=equity,
+                               contract=contract, vmin=vmin, vstep=vstep, vmax=vmax, cap=cap,
+                               decl=decl, start=start, types=types)
+        row["market_attempt"] = {"kind": kind, "entry": entry, "lot": lot, "retcode": code,
+                                 "why": row.pop("why", None)}
+        if fb.get("req") is None:
+            row.update({"status": "REJECTED", "retcode": code, "order_id": None,
+                        "why": f"market follow rejected ({code}); no fallback: {fb['why']}"})
+        else:
+            kind, lot, req = fb["kind"], fb["req"]["volume"], fb["req"]
+            row.update({"kind": kind, "entry": float(sig["price"]), "lot": lot,
+                        "risk_usd_with_slip": fb["risk"], "fallback": True})
+            try:
+                res = _send(mt5, st, req, cet=cet)
+            except Exception as exc:
+                res, row["why"] = None, f"{type(exc).__name__}: {exc}"[:200]
+            code = getattr(res, "retcode", None)
+    if row.get("status") != "REJECTED":
+        row.update({"status": "SENT" if code in (10008, 10009) else "REJECTED",
+                    "retcode": code, "order_id": getattr(res, "order", None)})
     _record(row)
     # ONE ORDER A DAY: the window is spent once a send was attempted, whatever the venue said.
     st["windows"][WINDOW] = {"placed_at": row["at"], "placed_hour": hour, "side": side,
@@ -1392,6 +1413,32 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
     after = _oco.sync_lane(LANE, key, lambda: _oco.mt5_gold_rows(mt5), date=today,
                            holder="ftmo_follower:sent")
     doc["gold_oco"]["republished_after_send"] = bool(after.get("published"))
+
+
+def _fallback_pending(mt5: Any, side: str, sig: dict[str, Any], tick: Any, *, frac: float,
+                      equity: float, contract: float, vmin: float, vstep: float, vmax: float,
+                      cap: float, decl: dict[str, Any], start: float,
+                      types: dict[str, Any]) -> dict[str, Any]:
+    """The old path's pending order at E8's level, for a market follow the venue refused:
+    {"req", "kind", "risk"} or {"req": None, "why"}. Same sizing, cap and loss guard."""
+    level, sl = float(sig["price"]), float(sig["sl"])
+    kind = entry_order_kind(side, level, float(tick.bid), float(tick.ask))
+    dist = abs(level - sl)
+    lot = lot_for(frac, equity, dist, contract, vmin=vmin, vstep=vstep, vmax=vmax)
+    if lot > cap:
+        lot = cap if cap >= vmin else 0.0
+    if not lot > 0:
+        return {"req": None, "why": "the level's lot is below the minimum or the cap"}
+    risk = trade_risk(lot, dist, contract)
+    ok, gwhy = loss_guard(float(decl["initial_balance"]), start, equity, risk,
+                          daily_frac=float(decl.get("daily_loss_frac") or DAILY_LOSS_FRAC))
+    if not ok:
+        return {"req": None, "why": gwhy}
+    return {"kind": kind, "risk": round(risk, 2),
+            "req": {"action": mt5.TRADE_ACTION_PENDING, "symbol": SYMBOL, "volume": lot,
+                    "type": types[kind], "price": level, "sl": sl, "tp": float(sig["tp"]),
+                    "deviation": 20, "magic": MAGIC, "comment": COMMENT,
+                    "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_RETURN}}
 
 
 def _atomic_write(path: Path, text: str) -> None:
