@@ -16,6 +16,16 @@ import pytest
 
 from libs.ops import leg_rotation as LR
 
+
+@pytest.fixture(autouse=True)
+def _fresh_door_inputs(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Unless a test says otherwise, the due-by-age legs' door inputs are fresh, so their clock
+    is the run age alone; the artifact clock has its own tests below."""
+    monkeypatch.setattr(LR, "_artifact_age_h", lambda leg, now, desk=None: 0.0)
+
+
+_REAL_ARTIFACT_AGE_H = LR._artifact_age_h
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -251,3 +261,37 @@ def test_never_run_due_leg_is_forced() -> None:
     att = _att({"tier_s": 0}, costs={"tier_s": 1_500.0})
     dec = LR.plan_pass(["tier_s"], att, plan="core", budget_s=10.0, now=now)
     assert "tier_s" in dec.forced
+
+
+def test_a_timed_out_run_with_a_stale_door_input_is_forced_again(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Auditor MF1: the run reset attendance, but REPLICATION.json kept aging; still forced."""
+    now = datetime(2026, 11, 5, 12, 0, tzinfo=UTC)
+    _soft, hard = LR.DUE_BY_AGE_H["replication_civilization"]
+    monkeypatch.setattr(LR, "_artifact_age_h", lambda leg, n, desk=None: hard + 0.5)
+    att = _att_aged({"replication_civilization": 5}, {"replication_civilization": 0.9},
+                    {"replication_civilization": 1_035.0}, now)
+    dec = LR.plan_pass(["replication_civilization"], att, plan="core", budget_s=1.0, now=now)
+    assert "replication_civilization" in dec.forced
+
+
+def test_artifact_age_reads_the_oldest_input_and_absent_is_infinite(tmp_path: Path) -> None:
+    now = datetime(2026, 11, 5, 12, 0, tzinfo=UTC)
+    assert _REAL_ARTIFACT_AGE_H("tier_s", now, tmp_path) == float("inf")
+    (tmp_path / "reports" / "tier_s").mkdir(parents=True)
+    (tmp_path / "data" / "tier_s").mkdir(parents=True)
+    (tmp_path / "reports/tier_s/ONLINE_FDR_ROWS.json").write_text(
+        json.dumps({"generated_utc": (now - timedelta(hours=1)).isoformat()}))
+    (tmp_path / "data/tier_s/PROMOTION_FREEZE.json").write_text(
+        json.dumps({"at": (now - timedelta(hours=3)).isoformat()}))
+    assert abs(_REAL_ARTIFACT_AGE_H("tier_s", now, tmp_path) - 3.0) < 1e-6
+    (tmp_path / "data/tier_s/PROMOTION_FREEZE.json").write_text("{}")
+    assert _REAL_ARTIFACT_AGE_H("tier_s", now, tmp_path) == float("inf")
+
+
+def test_due_artifacts_are_the_files_and_stamps_the_door_reads() -> None:
+    from libs.tiers import promotion_authority as PA
+    door = {(PA.REPLICATION, "at"), (PA.FDR_ROWS, "generated_utc"), (PA.FREEZE, "at")}
+    ours = {(LR.DESK / rel, key) for arts in LR.DUE_ARTIFACTS.values() for rel, key in arts}
+    assert ours == door
+    assert set(LR.DUE_ARTIFACTS) == set(LR.DUE_BY_AGE_H)

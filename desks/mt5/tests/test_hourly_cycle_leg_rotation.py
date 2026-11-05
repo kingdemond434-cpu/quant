@@ -138,6 +138,15 @@ def test_full_tier_s_is_due_by_age_inside_the_door_expiry() -> None:
     assert 0 < soft_h <= MAX_AGE_H / 2 and soft_h < hard_h < MAX_AGE_H
     roster = set(LR.legs_in_order(DESK / "research" / "hourly_cycle.py"))
     assert set(LR.DUE_BY_AGE_H) <= roster, "DUE_BY_AGE_H names a leg this cycle does not have"
+
+
+def test_a_due_leg_lands_inside_the_door_expiry_after_its_worst_start_and_runtime() -> None:
+    """Auditor MF2: forced at an age in [hard, hard + period), output one cap later."""
+    from libs.tiers.promotion_authority import MAX_AGE_H
+    for leg, (_soft, hard) in LR.DUE_BY_AGE_H.items():
+        assert hourly_cycle.in_plan(leg, "core"), f"{leg}: the bound assumes the hourly core"
+        cap_h = hourly_cycle.LEG_BUDGET_SEC[leg] / 3600.0
+        assert hard + LR.CORE_PERIOD_H + cap_h < MAX_AGE_H, leg
     assert not (set(LR.DUE_BY_AGE_H) & LR.ALWAYS_RUN)
 
 

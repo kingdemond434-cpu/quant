@@ -147,21 +147,57 @@ ALWAYS_RUN: frozenset[str] = frozenset({
 #: so two heavy legs do not land on the same hour; any leg at or past HARD hours is forced
 #: whatever else is forced. Below SOFT it competes in ordinary rotation and still runs whenever
 #: the budget has room -- this is a floor on freshness, never a ceiling on runs. SOFT = half the
-#: door's expiry and HARD < the expiry, so the door is never handed a stale verdict by rotation.
+#: door's expiry or less, and HARD + one core period + the leg's cap < the expiry.
 #:
 #: NOT A THROTTLE. The same seconds are spent; they stop being spent on the same two legs every
 #: hour while ~150 legs wait. The never-run tier still outranks everything but forced legs.
 DUE_BY_AGE_H: dict[str, tuple[float, float]] = {
-    "tier_s": (3.0, 5.0),
-    "replication_civilization": (3.0, 5.0),
+    "tier_s": (2.5, 4.0),
+    "replication_civilization": (2.5, 4.0),
 }
+
+#: THE CLOCK IS THE ARTIFACT, NOT THE RUN (Auditor MF1, 2026-11-05). Attendance stamps a leg when
+#: it RAN, whatever the outcome, so a forced run that timed out with nothing written would reset
+#: the clock while the door's input kept aging. Due age is therefore the OLDER of the run age and
+#: the age of each file the door reads from the leg (absent, unreadable or undated = infinite):
+#: a failed run stays forced on every pass, which is never worse than ALWAYS_RUN was.
+#: Paths and stamp keys mirror libs.tiers.promotion_authority (REPLICATION/FDR_ROWS/FREEZE);
+#: tests/libs/test_leg_rotation.py pins them equal.
+DUE_ARTIFACTS: dict[str, tuple[tuple[str, str], ...]] = {
+    "tier_s": (("reports/tier_s/ONLINE_FDR_ROWS.json", "generated_utc"),
+               ("data/tier_s/PROMOTION_FREEZE.json", "at")),
+    "replication_civilization": (("reports/REPLICATION.json", "at"),),
+}
+
+#: MF2: a due leg is checked at pass START, so it is forced at an age in [hard, hard + period) and
+#: its output lands one runtime later. hard + CORE_PERIOD_H + the leg's cap must stay under the
+#: door's 6 h expiry (pinned in desks/mt5/tests/test_hourly_cycle_leg_rotation.py). Both legs
+#: are on the hourly core plan.
+CORE_PERIOD_H = 1.0
+
+
+def _artifact_age_h(leg: str, now: datetime, desk: Path | None = None) -> float:
+    """Hours since the OLDEST door input this leg writes was stamped; inf when any is missing."""
+    base = DESK if desk is None else desk
+    worst = 0.0
+    for rel, key in DUE_ARTIFACTS.get(leg, ()):
+        try:
+            doc = json.loads((base / rel).read_text(encoding="utf-8-sig"))
+            at = datetime.fromisoformat(str(doc[key]).replace("Z", "+00:00"))
+            if at.tzinfo is None:
+                at = at.replace(tzinfo=UTC)
+            worst = max(worst, (now - at).total_seconds() / 3600.0)
+        except (OSError, ValueError, TypeError, KeyError):
+            return float("inf")
+    return worst
 
 
 def _due_age_h(leg: str, att: Attendance, now: datetime) -> float | None:
-    """Hours since a due-by-age leg last ran (inf when never), or None for any other leg."""
+    """Due age of a due-by-age leg (the older of run age and artifact age), else None."""
     if leg not in DUE_BY_AGE_H:
         return None
-    return att.age_s(leg, now) / 3600.0
+    return max(att.age_s(leg, now) / 3600.0, _artifact_age_h(leg, now))
+
 
 def legs_in_order(source: Path | None = None) -> list[str]:
     """Every leg name `main()` costs, in the order it costs them, read from the AST.
@@ -417,7 +453,8 @@ def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float 
                 spent += cost
                 if due < hard_h:
                     soft_forced = True
-                age_txt = "never run" if due == float("inf") else f"idle {due:.1f}h"
+                age_txt = ("never run or no door input" if due == float("inf")
+                           else f"door input {due:.1f}h old")
                 dec.why[leg] = (f"due by age: {age_txt} >= "
                                 f"{hard_h if due >= hard_h else soft_h:g}h; forced")
                 continue
