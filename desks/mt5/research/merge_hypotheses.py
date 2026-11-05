@@ -348,6 +348,13 @@ SOURCES = (
     # whether a recovered mechanism has ever earned a certificate -- a question that could not
     # previously be ASKED, because no certificate could descend from a row that never arrived.
     ("deepened_candidates.json", "candidates"),
+    # THE LOCAL-LANGUAGE CORPUS, READ HERE RATHER THAN PUSHED (2026-11-05). `local_converter`
+    # used to reach the docket only by taking this same writer lane itself, and this run holds
+    # the lane for its whole life -- ~27h measured on the box -- so every hourly push was
+    # refused and 18,211 converted rows waited a day. Its `docket_rows` are already in the
+    # docket's own shape and PIT-stamped; they face the identical routing, tradeable filter,
+    # family-less drop and identity dedupe as every row above.
+    ("local_candidates.json", "docket_rows"),
 )
 
 

@@ -398,6 +398,54 @@ def feed_docket(cands: list[dict]) -> tuple[int, int]:
     return 0, -1
 
 
+def docket_rows(cands: list[dict]) -> list[dict]:
+    """The candidates in the docket's own row shape, PIT-stamped, deduped on the executable spec.
+
+    ONE SHAPE, TWO DOORS (2026-11-05). The direct feed below needs the shared writer lane, and
+    MT5-MergeDocket holds that lane for its whole run -- measured on the box at ~27h for one run
+    and 5h54m into the next, so every hourly feed in between was refused. These same rows are
+    therefore also written into `local_candidates.json["docket_rows"]`, which merge_hypotheses
+    reads as one of its SOURCES under its own lock. Whichever door opens first lands them; the
+    docket dedupes on (symbol, family, params) so landing twice is a no-op.
+    """
+    def key(sym: str, fam: str, params: dict) -> str:
+        return json.dumps([sym, fam, params], sort_keys=True, default=str)
+
+    now = datetime.now(UTC).isoformat(timespec="seconds")
+    seen: set[str] = set()
+    rows = []
+    for c in cands:
+        sym = (c.get("symbols") or [None])[0]
+        fam = c.get("family")
+        if not sym or not fam:
+            continue
+        # The session rides as a PARAM, not as a name, so two sessions of one mechanism are two
+        # cells rather than one cell with a label the builder cannot read.
+        params = {"selector": c["selector"]} if c.get("selector") else {}
+        k = key(str(sym), str(fam), params)
+        if k in seen:
+            continue
+        seen.add(k)
+        rows.append({
+            "symbol": sym, "family": fam, "params": params,
+            "n": 0, "exp_r": None, "max_dd_r": None, "t_stat": None,
+            "profit_factor": None, "win_rate": None,
+            "source": str(c.get("source") or "local_converter"),
+            "url": None, "producer": "desks/mt5/research/local_converter.py",
+            "first_seen": now, "pit_stamp": now,
+            "evidence": c.get("evidence"),
+            "why": "converted deterministically from the mined corpus; no performance claimed",
+        })
+    if not rows:
+        return rows
+    from libs.data.pit import stamp_or_refuse
+
+    rows, refused = stamp_or_refuse(rows, "local_converter")
+    if refused:
+        raise ValueError(f"Local converter refused {len(refused)} unstamped candidates")
+    return rows
+
+
 def _feed_docket_locked(cands: list[dict]) -> tuple[int, int]:
     try:
         docket = json.loads(DOCKET.read_text(encoding="utf-8"))
@@ -412,35 +460,14 @@ def _feed_docket_locked(cands: list[dict]) -> tuple[int, int]:
     seen = {key(str(r.get("symbol") or r.get("sym") or ""),
                 str(r.get("family") or ""), r.get("params") or {})
             for r in docket if isinstance(r, dict)}
-    now = datetime.now(UTC).isoformat(timespec="seconds")
     added = []
-    for c in cands:
-        sym = (c.get("symbols") or [None])[0]
-        fam = c.get("family")
-        if not sym or not fam:
+    for row in docket_rows(cands):
+        k = key(str(row["symbol"]), str(row["family"]), row["params"])
+        if k in seen:
             continue
-        # The session rides as a PARAM, not as a name, so two sessions of one mechanism are two
-        # cells rather than one cell with a label the builder cannot read.
-        params = {"selector": c["selector"]} if c.get("selector") else {}
-        if key(str(sym), str(fam), params) in seen:
-            continue
-        seen.add(key(str(sym), str(fam), params))
-        added.append({
-            "symbol": sym, "family": fam, "params": params,
-            "n": 0, "exp_r": None, "max_dd_r": None, "t_stat": None,
-            "profit_factor": None, "win_rate": None,
-            "source": str(c.get("source") or "local_converter"),
-            "url": None, "producer": "desks/mt5/research/local_converter.py",
-            "first_seen": now, "pit_stamp": now,
-            "evidence": c.get("evidence"),
-            "why": "converted deterministically from the mined corpus; no performance claimed",
-        })
+        seen.add(k)
+        added.append(row)
     if added:
-        from libs.data.pit import stamp_or_refuse
-
-        added, refused = stamp_or_refuse(added, "local_converter")
-        if refused:
-            raise ValueError(f"Local converter refused {len(refused)} unstamped candidates")
         docket.extend(added)
         from research.merge_hypotheses import _write_docket_atomically
 
@@ -475,7 +502,8 @@ def main(argv: list[str] | None = None) -> int:
     OUT.write_text(json.dumps(
         {"built_at": datetime.now(UTC).isoformat(timespec="seconds"),
          "source": "desks/mt5/research/local_converter.py",
-         "stats": dict(stats), "candidates": cands}, indent=1), encoding="utf-8")
+         "stats": dict(stats), "candidates": cands,
+         "docket_rows": docket_rows(cands)}, indent=1), encoding="utf-8")
     print(f"wrote {OUT}")
     if not a.no_feed:
         added, total = feed_docket(cands)
