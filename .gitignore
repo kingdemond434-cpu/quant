@@ -604,3 +604,7 @@ desks/mt5/data/universe_ftmo/
 # bar_clock_probe's atomic-write temporaries; the ledger and summary themselves are tracked state.
 desks/mt5/data/bar_clock_probes.jsonl.tmp
 desks/mt5/data/bar_clock_probes.summary.json.tmp
+# The insider / politician / buyback event lane's box state (research/insider_event_lane.py,
+# research/form4_lane.py, research/buyback_blackout.py): cursor, filing facts, the Form 4
+# transaction and cluster stores, blackout windows. Its summary is reports/INSIDER_EVENT_LANE.json.
+desks/mt5/data/insider_events/
