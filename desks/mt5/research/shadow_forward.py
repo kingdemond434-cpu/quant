@@ -287,7 +287,8 @@ def _frozen_clock_params() -> dict[str, dict]:
 
 
 def _one_clock_per_identity(rows: list[tuple], *,
-                            frozen_params: dict[str, dict] | None = None) -> list[tuple]:
+                            frozen_params: dict[str, dict] | None = None,
+                            starts: dict[str, tuple[str, str]] | None = None) -> list[tuple]:
     """Collapse certified rows that the engine cannot tell apart into ONE sleeve.
 
     TWO ROWS THAT SHARE A `sleeve_key` ARE ONE STRATEGY, and keeping both does not give the desk
@@ -351,7 +352,114 @@ def _one_clock_per_identity(rows: list[tuple], *,
     if len(best) != len(rows):
         slog(f"ONE-CLOCK: {len(rows)} certified row(s) -> {len(best)} distinct clock "
              f"identit(ies); {len(rows) - len(best)} duplicate(s) collapsed")
-    return [best[k] for k in sorted(best)]
+    return _one_clock_per_cell([best[k] for k in sorted(best)], starts=starts)
+
+
+#: Families whose clock READS the selector (a breakout window; a hunt16 signal hour). For every
+#: other family the selector is a stamp the engine never reads -- `family_signals` applies only
+#: the params' session -- so `.asia` and `.continuous` of one cell are one trade.
+SELECTOR_FAMILIES = frozenset({"session_range_breakout", "dav_range_filter_adx"})
+#: dropped alias clock key -> the surviving clock key, from the LAST `certified_sleeves()` pass,
+#: published for `forward_reconcile` to name the survivor when it retires the alias.
+ALIAS_MERGED: dict[str, str] = {}
+CLOCK_ALIASES = SHADOW_DIR / "clock_aliases.json"
+
+
+def _cell_alias_key(row: tuple) -> str | None:
+    """The executable cell a certified row runs (`cell_equivalence.canonical_fingerprint`, plus
+    its side and, for a family that reads it, the selector); None when not canonicalisable."""
+    try:
+        from research.cell_equivalence import canonical_fingerprint
+    except ImportError:
+        try:
+            from cell_equivalence import canonical_fingerprint  # type: ignore[no-redef]
+        except ImportError:
+            return None
+    sym, params = row[0], dict(row[2] or {})
+    fam = row[3] if len(row) > 3 else "session_range_breakout"
+    side = row[4] if len(row) > 4 else "LONG"
+    if fam in SELECTOR_FAMILIES:
+        return None                 # the window is the identity; `sleeve_key` already owns it
+    try:
+        fp = canonical_fingerprint(fam, sym, params, timeframe_of(params))
+    except Exception:
+        return None
+    return None if fp is None else f"{fp}|{str(side).upper()}"
+
+
+def _clock_starts(path: Path | None = None) -> dict[str, tuple[str, str]]:
+    """{clock key: (forward_start, status)} from the engine's own state; {} when unreadable."""
+    try:
+        doc = json.loads((path or SHADOW_DIR / "shadow_state.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    out: dict[str, tuple[str, str]] = {}
+    for k, v in (doc.items() if isinstance(doc, dict) else []):
+        if isinstance(v, dict) and v.get("forward_start"):
+            out[str(k)] = (str(v["forward_start"]), str(v.get("status") or ""))
+    return out
+
+
+def _one_clock_per_cell(rows: list[tuple], *,
+                        starts: dict[str, tuple[str, str]] | None = None) -> list[tuple]:
+    """Collapse certified rows that run the SAME CELL under different keys into ONE clock.
+
+    THE ALIAS CLOCKS (Auditor ruling 2026-11-04). `_one_clock_per_identity` merges rows the
+    engine's own key cannot separate, but the key carries every param and the selector stamp, so
+    `CHFNOK.carry.asia#input_symbol=CHFNOK` and `CHFNOK.carry.continuous#input_symbol=CHFNOK` --
+    and nine such pairs on the registry -- were two clocks on one trade: each accruing the other's
+    observations as independent evidence, each able to promote, each charged as a trial. Rows
+    whose `cell_equivalence.canonical_fingerprint` (family, symbol, chart, effective session and
+    only the params the family reads) and side agree are one cell.
+
+    THE SURVIVOR NEVER LOSES ITS START. The clock with the EARLIEST `forward_start` already on
+    the engine's state keeps running, untouched, so no forward day is reset or re-credited; a
+    promoted clock is preferred over an unpromoted one. With no clock on either side the
+    existing deterministic rank decides. The dropped key is no longer enrolled, so
+    `forward_reconcile` retires it RETIRED_ORPHAN with its evidence preserved, naming the
+    survivor from `CLOCK_ALIASES` (written here; this engine never edits the dropped row, so it
+    cannot race the reconciler's own write of it).
+    """
+    write_aliases = starts is None
+    starts = _clock_starts() if starts is None else starts
+    ALIAS_MERGED.clear()
+    groups: dict[str, list[tuple]] = {}
+    out: list[tuple] = []
+    for row in rows:
+        ak = _cell_alias_key(row)
+        if ak is None:
+            out.append(row)
+        else:
+            groups.setdefault(ak, []).append(row)
+
+    def _key(row: tuple) -> str:
+        return sleeve_key(row[0], row[1], dict(row[2] or {}), row[3], row[4])
+
+    def _rank(row: tuple) -> tuple:
+        start, status = starts.get(_key(row), ("", ""))
+        promoted = any(t in status.upper() for t in ("PROMOT", "LIVE"))
+        return (not promoted, not start, start or "~", _key(row))
+
+    for members in groups.values():
+        members = sorted(members, key=_rank)
+        keep = members[0]
+        out.append(keep)
+        for drop in members[1:]:
+            ALIAS_MERGED[_key(drop)] = _key(keep)
+            slog(f"ONE-CELL: `{_key(drop)}` runs the same cell as `{_key(keep)}` (params the "
+                 f"family never reads, or a selector it never reads); enrolling the clock with "
+                 f"the earliest forward_start, `{_key(keep)}`, whose start is untouched")
+    if write_aliases:
+        try:
+            tmp = CLOCK_ALIASES.with_suffix(".tmp")
+            tmp.write_text(json.dumps({"at": datetime.now(UTC).isoformat(timespec="seconds"),
+                                       "aliases": dict(sorted(ALIAS_MERGED.items()))},
+                                      indent=1), "utf-8")
+            os.replace(tmp, CLOCK_ALIASES)
+        except OSError as exc:            # a label never stops a pass
+            slog(f"clock alias map not written ({type(exc).__name__}: {exc})")
+    return sorted(out, key=lambda r: (r[0], str(r[1]), str(r[3]),
+                                      json.dumps(dict(r[2] or {}), sort_keys=True, default=str)))
 
 
 

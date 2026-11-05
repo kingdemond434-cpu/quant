@@ -282,3 +282,42 @@ def test_charge_carries_each_family_s_selection_trials(monkeypatch: pytest.Monke
                "by_family": [{"family": "f", "n_nominal": 10, "n_effective": 4.0,
                               "selection_trials": 200}]})
     assert seen["census"].families["f"].selection_trials == 200
+
+
+# ------------------------------------------------- one cell, one trial (alias ruling 2026-11-04)
+def test_a_proven_alias_is_one_content_identity_and_nothing_else_merges() -> None:
+    rows = [_row("carry", "CHFNOK", "H1", input_symbol="eBay"),
+            _row("carry", "CHFNOK", "H1", input_symbol="GBPJPY"),
+            _row("carry", "CHFNOK", "H1"),
+            {"family": "carry", "symbol": "CHFNOK", "timeframe": "H1",
+             "params_json": json.dumps({"input_symbol": "X"})},
+            _row("carry", "CHFNOK", "H1", hold_bars=48),
+            _row("relative_value", "CHFNOK", "H1", peer_symbol="EURNOK"),
+            _row("relative_value", "CHFNOK", "H1", peer_symbol="GBPNOK")]
+    canon, changed = et.canonical_rows(rows)
+    assert changed == 3
+    keys = {content_key(trial_from_record(r)) for r in canon}
+    raw = {content_key(trial_from_record(r)) for r in rows}
+    assert len(raw) == 7 and len(keys) == 4          # 4 carry spellings -> 1; the rest kept
+    assert rows[0]["params"] == {"input_symbol": "eBay"}, "the docket rows are never edited"
+
+
+def test_the_alias_correction_is_published_beside_the_raw_census(tmp_path: Path) -> None:
+    spec = tmp_path / "gate_spec.yaml"
+    spec.write_text(_SPEC, encoding="utf-8")
+    docket = tmp_path / "external_survivors.json"
+    rows = ([_row("carry", f"S{i}", "H1", input_symbol=f"X{j}") for i in range(4)
+             for j in range(3)]
+            + [_row("trend_ma_cross", f"S{i}", "H1", fast=f) for i in range(4)
+               for f in (5, 8, 13)])
+    docket.write_text(json.dumps(rows), "utf-8")
+    doc = et.build(docket=docket, spec=spec, apply=True, budget_s=5.0)
+    ac = doc["alias_correction"]
+    assert ac["rows_respelled"] == 12
+    assert ac["nominal_before"] == ac["nominal_after"] == 24     # rows are never dropped
+    # No direction is asserted: the within-cell charge is a similarity participation ratio, and
+    # removing a key two rows SHARED can lower their similarity. Both numbers are published.
+    assert ac["effective_after"] > 0 and ac["charged_after"] >= 1
+    assert ac["sr0_after"] is not None or ac["sr0_basis"].startswith(et.UNMEASURED)
+    assert doc["applied"]["status"] == "REFUSED_UNAUTHORISED"   # measuring never moves the wall
+    assert et.spec_fixed_trial_count(spec) == 597

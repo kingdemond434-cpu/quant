@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import hashlib
 import json
 import os
 import sys
@@ -72,6 +73,9 @@ BUDGET_S = 900.0
 #: Breadth-per-run bound so a pass finishes; the cursor rotates through both lanes so every row
 #: is reached across passes (LAWS 2: a count is never a ceiling).
 MAX_PER_PASS = 16
+#: Certificates judged UNMEASURED before their family had a rule, re-judged per pass on top of the
+#: lane's share; each is one bar file and one rebuild, about a second.
+PENDING_PER_PASS = 64
 MIN_BARS = 300
 # MEASURED over 433 deals (reports/COST_TRUTH.json 2026-09-23): 2.00 in ACCOUNT CURRENCY
 # per lot per side. Mirrors libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE.
@@ -99,7 +103,9 @@ UNMEASURED = "UNMEASURED"
 FORBIDDEN_IMPORTS: tuple[str, ...] = (
     "mt5desk.families", "mt5desk.families_orthogonal", "mt5desk.families_edge_queue",
     "mt5desk.engine", "mt5desk.family_call", "proposer_common", "external_gauntlet",
-    "lead_replication", "shadow_forward", "external_shadow")
+    "lead_replication", "shadow_forward", "external_shadow", "mt5desk.family_formula",
+    "mt5desk.families_vector", "libs.research.alpha_grammar", "alpha_grammar",
+    "mt5desk.families_orthogonal", "mt5desk.causal_residual", "mt5desk.cell_modifiers")
 
 RULE = ("a second implementation from the written specification and the raw bars only; a "
         "material disagreement on fills, P&L, position state or costs is quarantined by name")
@@ -146,6 +152,11 @@ class Bars:
     low: np.ndarray
     c: np.ndarray
     minutes: int
+    #: The broker's per-bar spread and tick count, when the file carries them (the formula rule's
+    #: `spread`, `activity` and `flow` terminals); None when absent, and a rule reading None stands
+    #: aside rather than inventing a series.
+    spread: np.ndarray | None = None
+    volume: np.ndarray | None = None
 
     def __len__(self) -> int:
         return int(self.t.size)
@@ -164,16 +175,21 @@ class Bars:
 
 
 def bars_from_arrays(t_ns: np.ndarray, o: np.ndarray, h: np.ndarray, low: np.ndarray,
-                     c: np.ndarray) -> Bars:
+                     c: np.ndarray, spread: np.ndarray | None = None,
+                     volume: np.ndarray | None = None) -> Bars:
     t = np.asarray(t_ns, dtype="int64")
     order = np.argsort(t, kind="stable")
     t = t[order]
     gaps = np.diff(t) if len(t) > 1 else np.asarray([3_600_000_000_000])
     gaps = gaps[gaps > 0]
     step = int(np.median(gaps)) if len(gaps) else 3_600_000_000_000
+
+    def _opt(x: np.ndarray | None) -> np.ndarray | None:
+        return None if x is None else np.asarray(x, dtype="float64")[order]
+
     return Bars(t, np.asarray(o, dtype="float64")[order], np.asarray(h, dtype="float64")[order],
                 np.asarray(low, dtype="float64")[order], np.asarray(c, dtype="float64")[order],
-                max(1, step // 60_000_000_000))
+                max(1, step // 60_000_000_000), _opt(spread), _opt(volume))
 
 
 def load_bars(symbol: str, timeframe: str = "H1", universe: Path | None = None) -> Bars | None:
@@ -221,11 +237,14 @@ def load_bars(symbol: str, timeframe: str = "H1", universe: Path | None = None) 
         if t_ns is None:
             return None
         arrs = [frame[cols[k]].to_numpy(dtype="float64")[keep] for k in need]
+        extra = [frame[cols[k]].to_numpy(dtype="float64")[keep]
+                 if k in cols and cols[k] in frame.columns else None
+                 for k in ("spread", "tick_volume")]
     except Exception:
         return None
     if len(t_ns) < 2:
         return None
-    return bars_from_arrays(np.asarray(t_ns, dtype="int64"), *arrs)
+    return bars_from_arrays(np.asarray(t_ns, dtype="int64"), *arrs, *extra)
 
 
 # ------------------------------------------------------------------------------ indicators
@@ -286,6 +305,36 @@ class RuleSpec:
     defaults: dict[str, Any]
     build: Callable[[Bars, dict[str, Any]], list[Order]]
     selector_params: bool = False
+    #: The session comes from the cell's own `session` PARAMETER (the generic session axis the
+    #: gauntlet's shared call applies), never from the certificate's selector: the sweep stamps
+    #: "asia" on every certificate whose params name no window, which is a lie for a family with
+    #: no session semantics -- such a cell was judged on EVERY hour.
+    session_from_params: bool = False
+    #: The rule applies the session itself (at the signal bar, before any entry delay), so the
+    #: rebuild must not filter the orders' (possibly delayed) bar hours a second time.
+    session_in_build: bool = False
+
+    def __post_init__(self) -> None:
+        if self.session_from_params and "own session parameter" not in self.text:
+            self.text = f"{self.text} {SESSION_FROM_PARAMS_TEXT}"
+
+
+#: Stated in every rule whose session is the cell's own parameter (RuleSpec.__post_init__).
+SESSION_FROM_PARAMS_TEXT = (
+    "Signals are kept only in the cell's own session parameter (asia [0,8), london [8,16), ny "
+    "[14,22) broker hours; none or any other name: every hour) and in a selector parameter's "
+    "session when the cell carries one; the certificate's stamped selector is never a session.")
+
+
+def rule_fingerprint(family: str) -> str | None:
+    """What the written rule IS: its text and the flags that change how it is read. A verdict
+    taken under another rule fingerprint is a verdict on a different rule."""
+    spec = SPEC_BOOK.get(str(family or ""))
+    if spec is None:
+        return None
+    blob = json.dumps([spec.text, spec.selector_params, spec.session_from_params,
+                       spec.session_in_build, sorted(spec.defaults)], default=str)
+    return hashlib.sha256(blob.encode()).hexdigest()[:16]
 
 
 def _build_overnight_gap_decay(b: Bars, p: dict[str, Any]) -> list[Order]:
@@ -421,7 +470,7 @@ SPEC_BOOK: dict[str, RuleSpec] = {
         "signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, "
         "time exit after ttl_bars.",
         {"gap_atr": 0.75, "atr_n": 20, "stop_atr": 1.5, "rr": 1.0, "ttl_bars": 8},
-        _build_overnight_gap_decay),
+        _build_overnight_gap_decay, session_from_params=True),
     "session_range_breakout": RuleSpec(
         "session_range_breakout",
         "At the signal hour, take the day's range over the session window (hours before "
@@ -438,27 +487,27 @@ SPEC_BOOK: dict[str, RuleSpec] = {
         "At hour 0, long on weekday dow_long and short on weekday dow_short (Monday = 0); entry "
         "next open, stop 1.2 x ATR(atr_n), target rr x that distance, time exit after ttl_bars.",
         {"dow_long": 0, "dow_short": 3, "atr_n": 20, "ttl_bars": 12, "rr": 1.8},
-        _build_dow_effect),
+        _build_dow_effect, session_from_params=True),
     "monday_gap": RuleSpec(
         "monday_gap",
         "At Monday hour 0, gap = open - the last Friday bar's close; if |gap| >= min_gap_atr x "
         "ATR(atr_n) trade with the gap (mode momentum) or against it (mode fade): entry next "
         "open, stop 1.2 x ATR, target rr x that, time exit after ttl_bars.",
         {"atr_n": 20, "ttl_bars": 12, "rr": 1.8, "mode": "momentum", "min_gap_atr": 0.2},
-        _build_monday_gap),
+        _build_monday_gap, session_from_params=True),
     "mean_reversion_rsi": RuleSpec(
         "mean_reversion_rsi",
         "RSI(rsi_n) crossing up through oversold is a long, crossing down through overbought a "
         "short; entry next open, stop 1.2 x ATR(atr_n), target rr x that, time exit after "
         "ttl_bars.",
         {"rsi_n": 14, "oversold": 30, "overbought": 70, "atr_n": 20, "ttl_bars": 12, "rr": 1.8},
-        _build_mean_reversion_rsi),
+        _build_mean_reversion_rsi, session_from_params=True),
     "overnight_drift": RuleSpec(
         "overnight_drift",
         "At anchor_hour, drift = (close - close hold_bars ago) / ATR(atr_n); if |drift| >= 0.3 "
         "fade it: entry next open, stop 1.2 x ATR, target rr x that, time exit after ttl_bars.",
         {"anchor_hour": 0, "hold_bars": 8, "atr_n": 20, "ttl_bars": 12, "rr": 1.8},
-        _build_overnight_drift),
+        _build_overnight_drift, session_from_params=True),
 }
 
 #: Breakout selector -> window parameters, written into the spec text above.
@@ -731,7 +780,7 @@ SPEC_BOOK.update({
         "above) on the side `direction`, kept only at hour signal_at and only on days whose "
         "most recent completed New York session carries day_state (same labelling as above).",
         {"base_family": "", "direction": None, "signal_at": None, "day_state": None},
-        _build_hunt16_cell),
+        _build_hunt16_cell, session_from_params=True),
     "carry": RuleSpec(
         "carry",
         "Side = the side with the larger nightly swap in money per lot (swap x point x "
@@ -742,13 +791,604 @@ SPEC_BOOK.update({
         "target rr x that, entry next open, time exit after hold_bars.",
         {"symbol": "", "min_edge_bp_per_day": 0.5, "atr_n": 20, "hold_bars": 120,
          "stop_atr": 2.0, "rr": 1.5, "require_quiet": True},
-        _build_carry),
+        _build_carry, session_from_params=True),
 })
+
+
+# ------------------------------------------------------------- the formula rule (2026-11-04)
+# WHY. 582 `formula` certificates (plus 104 others with no rule) sat out of forward clocks with
+# "no written specification in the spec book for family 'formula'" (FORWARD_ENROLMENT 16:21Z
+# 2026-11-04): the admission door holds a certificate until this lane says REPLICATED, and a
+# family with no rule here can only ever be UNMEASURED. The rule below is the family's stated
+# behaviour (the expression grammar's operator definitions and the family's entry/exit text)
+# rebuilt in THIS module's own numpy; nothing is imported from the grammar or the family. An
+# expression naming a terminal or operator this rule does not define stands aside (no orders, so
+# UNMEASURED), never a guess.
+
+#: Bars of log return the `vol` terminal is measured over (the grammar's stated one trading day).
+FX_VOL_N = 24
+#: Rows per block for the windowed reductions that need the whole window (ts_rank, bars_since):
+#: bounds their temporary arrays to ~FX_CHUNK x window floats on any chart.
+FX_CHUNK = 4096
+FX_BAR_TERMINALS = frozenset({"close", "open", "high", "low", "ret", "range", "body", "atr",
+                              "vol", "spread", "activity", "flow"})
+FX_UNARY = frozenset({"neg", "abs", "sign"})
+FX_WINDOWED = frozenset({"delay", "delta", "mean", "std", "min", "max", "sum", "ts_rank",
+                         "zscore", "decay", "bars_since_max", "bars_since_min", "atr_norm",
+                         "ts_backfill", "scale"})
+FX_BINARY = frozenset({"add", "sub", "mul", "div", "max2", "min2", "trade_when"})
+FX_BINARY_WINDOWED = frozenset({"corr", "cov", "residual", "group_rank", "group_zscore"})
+
+
+class FormulaUndefined(ValueError):
+    """The expression names something this rule does not define: the rule stands aside."""
+
+
+def _fx_parse(text: str) -> Any:
+    """A rendered call, `op(arg, arg, 5)`, back to the prefix list; a bare name stays a name."""
+    toks: list[str] = []
+    cur = ""
+    for ch in str(text):
+        if ch in "(),":
+            if cur.strip():
+                toks.append(cur.strip())
+            toks.append(ch)
+            cur = ""
+        else:
+            cur += ch
+    if cur.strip():
+        toks.append(cur.strip())
+    pos = 0
+
+    def node() -> Any:
+        nonlocal pos
+        if pos >= len(toks) or toks[pos] in "(),":
+            raise FormulaUndefined(f"unparseable expression {text!r}")
+        name = toks[pos]
+        pos += 1
+        if pos < len(toks) and toks[pos] == "(":
+            pos += 1
+            args: list[Any] = [name]
+            while True:
+                args.append(node())
+                if pos >= len(toks):
+                    raise FormulaUndefined(f"unclosed call in {text!r}")
+                if toks[pos] == ",":
+                    pos += 1
+                    continue
+                if toks[pos] == ")":
+                    pos += 1
+                    return args
+                raise FormulaUndefined(f"unexpected {toks[pos]!r} in {text!r}")
+        try:
+            return int(name)
+        except ValueError:
+            return name
+
+    out = node()
+    if pos != len(toks):
+        raise FormulaUndefined(f"trailing tokens in {text!r}")
+    return out
+
+
+def _fx_shift(x: np.ndarray, k: int) -> np.ndarray:
+    out = np.full(x.size, np.nan)
+    if 0 <= k < x.size:
+        out[k:] = x[:x.size - k]
+    return out
+
+
+def _fx_origin(x: np.ndarray) -> float:
+    """The series' first defined value: the window sums are taken about it, which keeps the
+    squares free of the price level and keeps an integer series (spread points, ticks) exact."""
+    ok = np.flatnonzero(np.isfinite(x))
+    return float(x[ok[0]]) if ok.size else 0.0
+
+
+def _fx_flat(x: np.ndarray, w: int) -> np.ndarray:
+    """True where the trailing w values are all the SAME defined value. Such a window's mean is
+    that value and its deviation exactly 0, so z there is 0/0, undefined -- never the ratio of
+    two rounding residues."""
+    same = np.concatenate([[False], x[1:] == x[:-1]]) if x.size else np.zeros(0, dtype=bool)
+    run = np.zeros(x.size, dtype="int64")
+    if x.size:
+        idx = np.arange(x.size)
+        start = np.where(same, 0, idx)
+        start = np.maximum.accumulate(start)
+        run = idx - start + 1
+    return (run >= w) & np.isfinite(x)
+
+
+def _fx_roll_sums(x: np.ndarray, w: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Per bar: whether the trailing w values are all defined, and their sum and sum of squares
+    about `_fx_origin` (window statistics are shift-invariant)."""
+    ok = np.isfinite(x)
+    mu = _fx_origin(x)
+    xs = np.where(ok, x - mu, 0.0)
+    c1 = np.concatenate([[0.0], np.cumsum(xs)])
+    c2 = np.concatenate([[0.0], np.cumsum(xs * xs)])
+    cn = np.concatenate([[0], np.cumsum(ok.astype("int64"))])
+    full = np.zeros(x.size, dtype=bool)
+    s1 = np.full(x.size, np.nan)
+    s2 = np.full(x.size, np.nan)
+    if w <= x.size:
+        i = np.arange(w - 1, x.size)
+        full[i] = (cn[i + 1] - cn[i + 1 - w]) == w
+        s1[i] = c1[i + 1] - c1[i + 1 - w]
+        s2[i] = c2[i + 1] - c2[i + 1 - w]
+    return full, s1, s2
+
+
+def _fx_mean(x: np.ndarray, w: int) -> np.ndarray:
+    """Trailing mean of exactly w defined values; undefined otherwise."""
+    full, s1, _ = _fx_roll_sums(x, w)
+    out = np.where(full, s1 / w + _fx_origin(x), np.nan)
+    return np.where(_fx_flat(x, w), x, out)
+
+
+def _fx_sum(x: np.ndarray, w: int) -> np.ndarray:
+    return _fx_mean(x, w) * w
+
+
+def _fx_std(x: np.ndarray, w: int) -> np.ndarray:
+    """Trailing sample standard deviation (n - 1) of exactly w defined values."""
+    if w < 2:
+        return np.full(x.size, np.nan)
+    full, s1, s2 = _fx_roll_sums(x, w)
+    with np.errstate(invalid="ignore"):
+        var = (s2 - s1 * s1 / w) / (w - 1)
+    out = np.where(full, np.sqrt(np.maximum(var, 0.0)), np.nan)
+    return np.where(_fx_flat(x, w), 0.0, out)
+
+
+def _fx_z(x: np.ndarray, w: int) -> np.ndarray:
+    """(x - strict w-bar mean) / strict w-bar sample std; a window with no deviation reads 0 --
+    the value IS its mean -- never 0/0 and never the ratio of two rounding residues."""
+    mu, sd = _fx_mean(x, w), _fx_std(x, w)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        z = (x - mu) / sd
+    return np.where(np.isfinite(mu) & (sd == 0) & np.isfinite(x), 0.0, z)
+
+
+def _fx_extreme(x: np.ndarray, w: int, fn: Callable[..., np.ndarray]) -> np.ndarray:
+    out = np.full(x.size, np.nan)
+    if w > x.size:
+        return out
+    from numpy.lib.stride_tricks import sliding_window_view
+    out[w - 1:] = fn(sliding_window_view(x, w), axis=1)   # a NaN in the window stays NaN
+    return out
+
+
+def _fx_ts_rank(x: np.ndarray, w: int) -> np.ndarray:
+    """Share of the previous w values at or below the current one (an undefined previous value
+    counts as not below; the current one undefined compares as nothing)."""
+    out = np.full(x.size, np.nan)
+    if x.size <= w:
+        return out
+    for a in range(w, x.size, FX_CHUNK):
+        b = min(x.size, a + FX_CHUNK)
+        prev = np.stack([x[a - w + j:b - w + j] for j in range(w)], axis=1)
+        with np.errstate(invalid="ignore"):
+            out[a:b] = (prev <= x[a:b, None]).mean(axis=1)
+    return out
+
+
+def _fx_bars_since(x: np.ndarray, w: int, high: bool) -> np.ndarray:
+    """Bars since the window's extreme (the most recent w values, first occurrence wins);
+    undefined values never win."""
+    out = np.full(x.size, np.nan)
+    if x.size < w:
+        return out
+    fill = -np.inf if high else np.inf
+    for a in range(w - 1, x.size, FX_CHUNK):
+        b = min(x.size, a + FX_CHUNK)
+        win = np.stack([x[a - w + 1 + j:b - w + 1 + j] for j in range(w)], axis=1)
+        win = np.where(np.isfinite(win), win, fill)
+        pos = np.argmax(win, axis=1) if high else np.argmin(win, axis=1)
+        out[a:b] = (w - 1) - pos
+    return out
+
+
+def _fx_ffill(x: np.ndarray, limit: int | None = None) -> np.ndarray:
+    """Carry the last defined value forward, at most `limit` bars (None: without bound)."""
+    ok = np.isfinite(x)
+    last = np.where(ok, np.arange(x.size), -1)
+    last = np.maximum.accumulate(last) if x.size else last
+    out = np.where(last >= 0, x[np.maximum(last, 0)], np.nan)
+    if limit is not None:
+        out = np.where((np.arange(x.size) - last) <= limit, out, np.nan)
+    return out
+
+
+def _fx_roll_cov(a: np.ndarray, b: np.ndarray, w: int) -> tuple[np.ndarray, np.ndarray,
+                                                                 np.ndarray]:
+    """Trailing sample covariance and both variances over the w bars where BOTH are defined
+    (exactly w of them, else undefined)."""
+    both = np.isfinite(a) & np.isfinite(b)
+    aa, bb = np.where(both, a, np.nan), np.where(both, b, np.nan)
+    ma, mb = _fx_mean(aa, w), _fx_mean(bb, w)
+    mab = _fx_mean(aa * bb, w)
+    cov = (mab - ma * mb) * w / (w - 1)
+    va, vb = _fx_std(aa, w) ** 2, _fx_std(bb, w) ** 2
+    return cov, va, vb
+
+
+def _fx_group(x: np.ndarray, g: np.ndarray, w: int, rank: bool) -> np.ndarray:
+    """Against the current bar's PEERS: the past w bars (this one included) whose g sits on the
+    same side of g's own window mean as the current bar's, both defined. rank = share of peers
+    at or below the current value (needs 2+ peers); else its z-score against the peers'
+    population mean and deviation (needs 3+ peers and a deviation above 1e-12)."""
+    out = np.full(x.size, np.nan)
+    if x.size < w or w < 2:
+        return out
+    for i in range(w - 1, x.size):
+        xw, gw = x[i - w + 1:i + 1], g[i - w + 1:i + 1]
+        fin = np.isfinite(gw)
+        if not fin.any():
+            continue
+        side = np.sign(gw - np.mean(gw[fin]))
+        peers = (side == side[-1]) & np.isfinite(xw) & fin
+        n = int(peers.sum())
+        cur = xw[-1]
+        if rank:
+            if n > 1:
+                out[i] = float(np.sum(peers & (xw <= cur))) / n
+        else:
+            ps = xw[peers]
+            sd = float(np.std(ps)) if n else 0.0
+            if n > 2 and sd > 1e-12:
+                out[i] = (cur - float(np.mean(ps))) / sd
+    return out
+
+
+def _fx_terminals(b: Bars, atr_n: int) -> dict[str, np.ndarray]:
+    c, o, h, lo = b.c, b.o, b.h, b.low
+    with np.errstate(all="ignore"):
+        ret = np.concatenate([[np.nan], np.diff(np.log(c))])
+        prev = np.concatenate([[np.nan], c[:-1]])
+        tr = np.fmax(h - lo, np.fmax(np.abs(h - prev), np.abs(lo - prev)))
+        body = (c - o) / c
+        out = {"close": c, "open": o, "high": h, "low": lo, "ret": ret, "range": (h - lo) / c,
+               "body": body, "atr": _fx_mean(tr, int(atr_n)), "vol": _fx_std(ret, FX_VOL_N)}
+    if b.spread is not None:
+        out["spread"] = b.spread
+    if b.volume is not None:
+        out["activity"] = b.volume
+        out["flow"] = np.where(np.isfinite(body), np.sign(body), 0.0) * b.volume
+    return out
+
+
+def _fx_eval(expr: Any, T: dict[str, np.ndarray], n: int) -> np.ndarray:
+    """The expression as a float per bar; NaN where undefined; infinities read as undefined."""
+    with np.errstate(all="ignore"):
+        v = _fx_node(expr, T, n)
+    return np.where(np.isfinite(v), v, np.nan)
+
+
+def _fx_node(e: Any, T: dict[str, np.ndarray], n: int) -> np.ndarray:
+    if isinstance(e, str):
+        if e not in FX_BAR_TERMINALS:
+            raise FormulaUndefined(f"terminal {e!r} is not a bar terminal")
+        if e not in T:
+            raise FormulaUndefined(f"terminal {e!r} is not in this file")
+        return np.asarray(T[e], dtype="float64")
+    if not isinstance(e, (list, tuple)) or not e:
+        raise FormulaUndefined(f"not an expression: {e!r}")
+    op = str(e[0])
+    if op in FX_UNARY:
+        a = _fx_eval(e[1], T, n)
+        return -a if op == "neg" else np.abs(a) if op == "abs" else np.sign(a)
+    if op in FX_WINDOWED:
+        a, w = _fx_eval(e[1], T, n), int(e[2])
+        if w < 1 or w > n:
+            return np.full(n, np.nan)
+        if op == "delay":
+            return _fx_shift(a, w)
+        if op == "delta":
+            return a - _fx_shift(a, w)
+        if op == "mean":
+            return _fx_mean(a, w)
+        if op == "sum":
+            return _fx_sum(a, w)
+        if op == "std":
+            return _fx_std(a, w)
+        if op in ("min", "max"):
+            return _fx_extreme(a, w, np.min if op == "min" else np.max)
+        if op == "ts_rank":
+            return _fx_ts_rank(a, w)
+        if op == "zscore":
+            return _fx_z(a, w)
+        if op == "decay":
+            wt = np.arange(w, 0, -1, dtype=float)
+            acc = np.zeros(n)
+            for k in range(w):
+                acc = acc + _fx_shift(a, k) * wt[k]
+            return acc / wt.sum()
+        if op in ("bars_since_max", "bars_since_min"):
+            return _fx_bars_since(a, w, op == "bars_since_max")
+        if op == "atr_norm":
+            if "atr" not in T:
+                raise FormulaUndefined("atr_norm needs the atr terminal")
+            at = T["atr"]
+            den = np.full(n, np.nan)
+            okv = np.isfinite(at)
+            cs = np.concatenate([[0.0], np.cumsum(np.where(okv, at, 0.0))])
+            cn = np.concatenate([[0], np.cumsum(okv.astype("int64"))])
+            i = np.arange(n)
+            lo = np.maximum(0, i - w + 1)
+            cnt = cn[i + 1] - cn[lo]
+            den = np.where(cnt > 0, (cs[i + 1] - cs[lo]) / np.maximum(cnt, 1), np.nan)
+            return a / den
+        if op == "ts_backfill":
+            return _fx_ffill(a, w)
+        if op == "scale":
+            den = _fx_sum(np.abs(a), w)
+            return a / np.where(den > 1e-12, den, np.nan)
+    if op in FX_BINARY:
+        a, b2 = _fx_eval(e[1], T, n), _fx_eval(e[2], T, n)
+        if op == "trade_when":
+            return _fx_ffill(np.where(a > 0, b2, np.nan))
+        if op == "add":
+            return a + b2
+        if op == "sub":
+            return a - b2
+        if op == "mul":
+            return a * b2
+        if op == "div":
+            return a / np.where(np.abs(b2) > 1e-12, b2, np.nan)
+        return np.fmax(a, b2) if op == "max2" else np.fmin(a, b2)
+    if op in FX_BINARY_WINDOWED:
+        a, b2, w = _fx_eval(e[1], T, n), _fx_eval(e[2], T, n), int(e[3])
+        if w < 3 or w > n:
+            return np.full(n, np.nan)
+        if op in ("group_rank", "group_zscore"):
+            return _fx_group(a, b2, w, op == "group_rank")
+        cov, va, vb = _fx_roll_cov(a, b2, w)
+        if op == "cov":
+            return cov
+        if op == "corr":
+            return cov / np.sqrt(va * vb)
+        beta = cov / np.where(vb > 1e-18, vb, np.nan)
+        both = np.isfinite(a) & np.isfinite(b2)
+        return np.where(both, a - beta * b2, np.nan)
+    raise FormulaUndefined(f"operator {op!r} is not defined by this rule")
+
+
+def _build_formula(b: Bars, p: dict[str, Any]) -> list[Order]:
+    expr = p.get("expr")
+    if isinstance(expr, str) and "(" in expr:
+        try:
+            expr = _fx_parse(expr)
+        except FormulaUndefined:
+            return []
+    mode = str(p.get("side_mode") or "")
+    norm, hold = int(p["norm"]), int(p["hold_bars"])
+    if expr is None or mode not in ("follow", "fade") or len(b) < max(2 * norm, 300):
+        return []
+    try:
+        v = _fx_eval(expr, _fx_terminals(b, int(p["atr_n"])), len(b))
+    except (FormulaUndefined, TypeError, ValueError, IndexError):
+        return []
+    z = _fx_z(v, norm)
+    z = np.where(np.isfinite(z), z, np.nan)
+    if np.isfinite(z).sum() < 0.05 * z.size:
+        return []
+    a = atr(b, int(p["atr_n"]))
+    flip = 1 if mode == "follow" else -1
+    ez, sa, rr = float(p["entry_z"]), float(p["stop_atr"]), float(p["rr"])
+    out: list[Order] = []
+    last = -10 ** 9
+    for i in range(norm, len(b) - 1):
+        if i - last < hold:
+            continue
+        zi, ai = z[i], float(a[i])
+        if not np.isfinite(zi) or abs(zi) < ez or not np.isfinite(ai) or ai <= 0 or zi == 0:
+            continue
+        side = int(np.sign(zi)) * flip
+        px = float(b.c[i])
+        out.append(Order(int(b.t[i]), side, px - side * sa * ai, px + side * sa * ai * rr, hold))
+        last = i
+    return out
+
+
+SPEC_BOOK["formula"] = RuleSpec(
+    "formula",
+    "Evaluate the stored expression over the bars: terminals close, open, high, low, ret (log "
+    "return), range ((h-l)/c), body ((c-o)/c), atr (strict atr_n mean of true range), vol "
+    "(strict 24-bar sample std of ret), spread and activity (the broker's per-bar spread and "
+    "tick count) and flow (sign(body) x activity); unary neg/abs/sign; windowed delay, delta, "
+    "mean/std/sum/min/max (exactly w defined values, std n-1), ts_rank (share of the previous w "
+    "at or below the current), zscore, decay (linear weights w..1), bars_since_max/min, "
+    "atr_norm (over the mean of atr's last w defined values), ts_backfill (forward fill at most "
+    "w bars), scale (over the sum of |x| over w); binary add/sub/mul/div (|den| > 1e-12), "
+    "max2/min2 (an undefined side yields the other), trade_when (the second where the first "
+    "is > 0, else the last such value); zscore and the normalisation read 0 on a window "
+    "with no deviation (the value is its mean); corr/cov/residual over w bars where both "
+    "are defined; "
+    "group_rank/group_zscore against the window's bars on the same side of g's window mean. "
+    "Infinities are undefined. z = (value - its strict norm-bar mean) / its strict norm-bar "
+    "sample std; stand aside on fewer than max(2 x norm, 300) bars or under 5% defined z. From "
+    "bar norm on, at least hold_bars after the last signal: when |z| >= entry_z and ATR(atr_n) "
+    "> 0, a signal at the bar close on side sign(z) (follow) or against it (fade); stop "
+    "stop_atr x ATR, target rr x that, entry next open, time exit after hold_bars. The session "
+    "is the cell's own session parameter (none: every hour), never the certificate's selector. "
+    "Anything the expression names outside this list stands aside.",
+    {"expr": None, "norm": 240, "entry_z": 1.5, "side_mode": "follow", "hold_bars": 8,
+     "atr_n": 20, "stop_atr": 2.0, "rr": 1.5},
+    _build_formula, session_from_params=True)
+
+
+# ------------------------------------------------- the cross_asset_residual rule (2026-11-04)
+# WHY. 28 cross_asset_residual certificates (the desk's one non-directional, multi-factor
+# mechanism) sat out of forward clocks for want of a written rule (FORWARD_ENROLMENT 16:21Z
+# 2026-11-04). Written from the family's stated behaviour and the transformation miners' declared
+# modifiers, rebuilt here; nothing imported from the family, its residual helper or the modifier
+# module (FORBIDDEN_IMPORTS).
+
+#: Ridge added to the window's normal equations, as a share of their mean diagonal: numerical
+#: insurance only (a collinear window still solves), far below any economic effect.
+CAR_RIDGE_FRAC = 1e-10
+CAR_VOL_REGIMES = {"high_vol": 1, "high_volatility": 1, "low_vol": -1}
+CAR_NO_OP_REGIMES = frozenset({"", "unconditional", "all", "any"})
+#: Where stop and target are measured from. prev_row is what the certified family does (Auditor
+#: and CRO ruling 2026-11-04: the family stays as certified and is judged against what it does);
+#: signal_close is the corrected reading, a separate spec with its own certificates.
+CAR_REFERENCES = ("prev_row", "signal_close")
+
+
+def _car_causal_residual(y: np.ndarray, X: np.ndarray, win: int) -> np.ndarray:
+    """eps[t] = y[t] - [1, X[t]] . beta[t], beta[t] the least-squares fit WITH a constant over
+    rows [t-win, t-1] only (ridge CAR_RIDGE_FRAC x mean diagonal); undefined before row win or
+    with fewer than k+2 rows in the window."""
+    n, k = y.size, X.shape[1]
+    k1 = k + 1
+    eps = np.full(n, np.nan)
+    if win < k1 + 1 or n <= win:
+        return eps
+    Z = np.column_stack([np.ones(n), X])
+    for t in range(win, n):
+        Zw, yw = Z[t - win:t], y[t - win:t]
+        A = Zw.T @ Zw
+        A = A + CAR_RIDGE_FRAC * max(float(np.trace(A)) / k1, 1e-300) * np.eye(k1)
+        try:
+            beta = np.linalg.solve(A, Zw.T @ yw)
+        except np.linalg.LinAlgError:
+            beta = np.linalg.pinv(A) @ (Zw.T @ yw)
+        eps[t] = y[t] - float(Z[t] @ beta)
+    return eps
+
+
+def _car_roll(x: np.ndarray, w: int) -> tuple[np.ndarray, np.ndarray]:
+    """Trailing mean and sample std (n - 1) over exactly w defined values; NaN otherwise."""
+    mu = np.full(x.size, np.nan)
+    sd = np.full(x.size, np.nan)
+    for i in range(w - 1, x.size):
+        win = x[i - w + 1:i + 1]
+        if np.all(np.isfinite(win)):
+            mu[i] = float(np.mean(win))
+            sd[i] = float(np.std(win, ddof=1)) if w > 1 else np.nan
+    return mu, sd
+
+
+def _car_vol_mask(b: Bars, sign: int) -> np.ndarray:
+    """high_vol: the 20-bar sample std of simple returns above its own 100-bar median (low_vol:
+    below), both strict; undefined reads False."""
+    with np.errstate(all="ignore"):
+        ret = np.concatenate([[np.nan], b.c[1:] / b.c[:-1] - 1.0])
+    _, rv = _car_roll(ret, 20)
+    med = _roll_strict(rv, 100, lambda w: float(np.median(w)))
+    with np.errstate(invalid="ignore"):
+        return (rv > med) if sign > 0 else (rv < med)
+
+
+def _build_cross_asset_residual(b: Bars, p: dict[str, Any]) -> list[Order]:
+    names = [str(s) for s in (p.get("factor_symbols") or [])]
+    mode = str(p.get("side_mode") or "revert").lower()
+    regime = str(p.get("regime") or "").strip().lower()
+    timing = str(p.get("entry_timing") or "").strip().lower()
+    style = str(p.get("execution_style") or p.get("entry_style") or "").strip().lower()
+    ref = str(p.get("reference") or "prev_row").strip().lower()
+    if (not names or mode not in ("revert", "continue") or ref not in CAR_REFERENCES
+            or (regime not in CAR_NO_OP_REGIMES and regime not in CAR_VOL_REGIMES)
+            or timing not in ("", "instant", "delayed") or style not in ("", "market")):
+        return []
+    tf = str(p.get("timeframe") or "H1")
+    facs = [load_bars(s, tf) for s in names]
+    if any(f is None for f in facs):
+        return []                          # every named factor is part of the certified model
+    look = int(p["lookback"])
+    bwin = int(p.get("beta_win") or look)
+    # The target's and every factor's closes on the timestamps ALL of them carry.
+    common = b.t
+    for f in facs:
+        common = np.intersect1d(common, f.t)  # type: ignore[union-attr]
+    if common.size < bwin + 2 * look:
+        return []
+    cols = [b.c[np.searchsorted(b.t, common)]]
+    cols += [f.c[np.searchsorted(f.t, common)] for f in facs]  # type: ignore[union-attr]
+    M = np.column_stack(cols)
+    # Rows where every close is a number (the family's dropna); a non-positive close stays in the
+    # frame and its log return is dropped by `ok` below, exactly as the family does.
+    keep = np.all(np.isfinite(M), axis=1)
+    common, M = common[keep], M[keep]
+    with np.errstate(all="ignore"):
+        R = np.diff(np.log(M), axis=0)
+    ok = np.all(np.isfinite(R), axis=1)
+    rt = common[1:][ok]
+    R = R[ok]
+    if rt.size < bwin + 2 * look:
+        return []
+    eps = _car_causal_residual(R[:, 0], R[:, 1:], bwin)
+    cum = np.where(np.isfinite(eps), np.cumsum(np.where(np.isfinite(eps), eps, 0.0)), np.nan)
+    mu, sd = _car_roll(cum, look)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        z = (cum - mu) / sd
+    a = atr(b, int(p["atr_n"]))
+    loc = np.searchsorted(b.t, rt)          # every residual bar is a target bar
+    vol = _car_vol_mask(b, CAR_VOL_REGIMES[regime]) if regime in CAR_VOL_REGIMES else None
+    win = p.get("_session")
+    ez, sa, rr, ttl = (float(p["entry_z"]), float(p["stop_atr"]), float(p["rr"]),
+                       int(p["ttl_bars"]))
+    out: list[Order] = []
+    for i in range(bwin + look, rt.size - 1):
+        zi = z[i]
+        if not np.isfinite(zi) or abs(zi) < ez:
+            continue
+        j = int(loc[i])
+        ai = float(a[j])
+        if not np.isfinite(ai) or ai <= 0:
+            continue
+        if win is not None and not (win[0] <= int(b.hour[j]) < win[1]):
+            continue                           # the session is judged at the SIGNAL bar
+        if vol is not None and not bool(vol[j]):
+            continue
+        side = (-1 if zi > 0 else 1) if mode == "revert" else (1 if zi > 0 else -1)
+        # The certified family prices stop and target off the joined frame's close at the SAME
+        # position index as the residual row, which is at least one joined row before the signal
+        # (the residual series starts after the first return): reference=prev_row, the default,
+        # reproduces it. signal_close is the corrected variant, certified as its own spec.
+        px = float(M[i, 0]) if ref == "prev_row" else float(b.c[j])
+        at = j + 1 if timing == "delayed" else j
+        if at >= len(b):
+            continue
+        out.append(Order(int(b.t[at]), side, px - side * sa * ai, px + side * sa * ai * rr, ttl))
+    return out
+
+
+SPEC_BOOK["cross_asset_residual"] = RuleSpec(
+    "cross_asset_residual",
+    "Join the target's closes with every named factor's closes (same chart) on the timestamps all "
+    "of them carry; every factor is required. Log returns; eps[t] = r[t] - [1, f[t]] . beta[t], "
+    "beta[t] least squares with a constant over the previous beta_win rows only (beta_win "
+    "defaults to lookback). cum = running sum of eps (undefined where eps is); z = (cum - its "
+    "strict lookback mean) / its strict lookback sample std. Stand aside under beta_win + 2 x "
+    "lookback joined rows. From row beta_win + lookback on, every bar with |z| >= entry_z and "
+    "ATR(atr_n) > 0 is a signal at that bar's close: revert takes the side against z, continue "
+    "with it; stop stop_atr x ATR, target rr x that, entry next open, time exit after "
+    "ttl_bars. Stop and target are measured from the reference: prev_row (the default, what the "
+    "certified family does) is the joined frame's close at the residual row's own position "
+    "index, at least one joined row before the signal; signal_close is the signal bar's close; "
+    "any other reference stands aside. A non-positive close stays in the joined frame and only "
+    "its log return is dropped. "
+    "The session (the cell's own session parameter; none: every hour) is judged at "
+    "the signal bar. Modifiers: regime high_vol (high_volatility) / low_vol keeps a signal "
+    "only where the 20-bar std of simple returns is above / below its "
+    "own 100-bar median; entry_timing delayed moves the signal one target bar later with the "
+    "same stop and target; execution_style market changes nothing; any other regime, timing or "
+    "style stands aside.",
+    {"factor_symbols": [], "lookback": 240, "beta_win": None, "entry_z": 2.0, "atr_n": 20,
+     "stop_atr": 2.0, "rr": 1.5, "ttl_bars": 72, "side_mode": "revert", "regime": "",
+     "entry_timing": "", "execution_style": "", "timeframe": "H1", "reference": "prev_row"},
+    _build_cross_asset_residual, session_from_params=True, session_in_build=True)
 
 
 #: Session selector -> [start, end) broker hours a non-breakout signal must fall in.
 SESSIONS: dict[str, tuple[int, int] | None] = {
     "asia": (0, 8), "london": (8, 16), "ny": (14, 22), "all": None, "continuous": None,
+}
+#: The session names the shared call and the miners' selector modifier know (`family_call`).
+MODIFIER_SESSIONS: dict[str, tuple[int, int] | None] = {
+    "asia": (0, 8), "london": (8, 16), "ny": (14, 22), "all": None,
 }
 
 
@@ -901,12 +1541,33 @@ def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | 
     s = str(side or "").upper()
     p["_side"] = 1 if s in ("LONG", "1") else -1 if s in ("SHORT", "-1") else 0
     p["_session"] = SESSIONS.get(sel) if not spec.selector_params else None
+    if spec.session_from_params:
+        raw = dict(params or {})
+        p["_session"] = SESSIONS.get(str(raw.get("session") or "").lower())
+        # A `selector` PARAMETER is the miners' session modifier (`cell_modifiers`), applied on
+        # top of the session: the hours both allow. One naming no session is refused there, so
+        # it is refused here.
+        if "selector" in raw and "selector" not in spec.defaults:
+            mod = str(raw.get("selector") or "").strip().lower()
+            if mod not in MODIFIER_SESSIONS:
+                return None, (f"selector modifier {raw.get('selector')!r} names no session "
+                              "window; the gauntlet refuses the cell, so no rule applies")
+            p["_session"] = _window_and(p["_session"], MODIFIER_SESSIONS[mod])
     # The rules that need them read these; every other rule ignores them (hunt16 selectors name
     # a signal hour, a hunt16 condition a prior-session day label, carry a symbol's swap terms).
     p["_selector"], p["_symbol"], p["_condition"] = sel, str(symbol or ""), condition
-    if family in HUNT16_FAMILIES:
+    if family in HUNT16_FAMILIES and not spec.session_from_params:
         p["_session"] = None
     return p, "ok"
+
+
+def _window_and(a: tuple[int, int] | None, b: tuple[int, int] | None
+                ) -> tuple[int, int] | None:
+    """The hours two [start, end) windows both allow; None is every hour, (0, 0) is none."""
+    if a is None or b is None:
+        return b if a is None else a
+    lo, hi = max(a[0], b[0]), min(a[1], b[1])
+    return (lo, hi) if lo < hi else (0, 0)
 
 
 #: Families whose selector names a hunt16 signal hour, not a session window to filter on.
@@ -919,7 +1580,7 @@ def rebuild(family: str, bars: Bars, p: Mapping[str, Any], cost_units: float
     side = int(p.get("_side") or 0)
     if side:
         orders = [o for o in orders if o.side == side]
-    win = p.get("_session")
+    win = None if SPEC_BOOK[family].session_in_build else p.get("_session")
     if win is not None:
         lo, hi = win
         hours = ((np.asarray([o.t_ns for o in orders], dtype="int64") // 3_600_000_000_000)
@@ -1246,16 +1907,46 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
                   if book.get(certificate_id(r)) and
                   (book[certificate_id(r)].get("sharpe_metric_version")
                    != SHARPE_METRIC_VERSION)]
+    # A VERDICT TAKEN WITH NO RULE IS NOT A VERDICT ON THE RULE (2026-11-04). "no written
+    # specification" is recorded UNMEASURED under the certificate's own fingerprint, so when the
+    # family's rule is written the fingerprint has not moved and the certificate would wait a
+    # whole rotation of the canon (8 a pass, ~1,800 certificates) to be judged by it. It is
+    # re-judged ahead of the rotation instead, once.
+    no_rule = [i for i, r in enumerate(certs)
+               if str(((book.get(certificate_id(r)) or {}).get("why") or [""])[0]).startswith(
+                   "no written specification")
+               and str((r.get("shadow_spec") or {}).get("family") or "") in SPEC_BOOK]
+    # A VERDICT AGAINST A RULE THAT HAS SINCE CHANGED IS NOT A VERDICT ON THE RULE EITHER
+    # (2026-11-04). The session fix moved what seven old rules mean (the stamped selector was read
+    # as a session), so a hold those rules raised is suspect until the corrected rule re-judges
+    # it. Every verdict that is not REPLICATED and was taken under another rule fingerprint (none
+    # recorded counts as another) joins the backlog's extra slots once; a REPLICATED verdict is
+    # re-judged by the rotation as usual, since it holds nothing back.
+    for i, r in enumerate(certs):
+        entry = book.get(certificate_id(r)) or {}
+        fam = str((r.get("shadow_spec") or {}).get("family") or "")
+        if (entry and entry.get("verdict") != REPLICATED and fam in SPEC_BOOK
+                and entry.get("rule_fp") != rule_fingerprint(fam) and i not in set(no_rule)):
+            no_rule.append(i)
     pending = old_metric + [i for i, r in enumerate(certs)
                             if i not in set(old_metric) and
                             (book.get(certificate_id(r)) or {}).get("fp")
                             != certificate_fp(r)]
+    no_rule = [i for i in no_rule if i not in set(pending)]
     rotation = [(ci + k) % len(certs) for k in range(len(certs))] if certs else []
     wanted = set(priority_certificates)
     priority = [i for i, r in enumerate(certs) if certificate_id(r) in wanted]
-    first = list(dict.fromkeys(priority + pending))
+    # THE NO-RULE BACKLOG IS NOT HELD TO THE ROTATION'S SHARE: a held certificate cannot start a
+    # forward clock until it is judged, so up to PENDING_PER_PASS of those run each pass ON TOP of
+    # the lane's share, inside the same budget. The extra slots are theirs alone (audit should-fix
+    # of c59ce8879): the lane's share is taken first in the usual order, then the backlog's own
+    # extra, so moved fingerprints queued ahead can never absorb them.
+    head = list(dict.fromkeys(priority + pending + no_rule))[:per_lane]
+    extra = [i for i in no_rule if i not in set(head)][:PENDING_PER_PASS]
+    first = list(dict.fromkeys(head + extra + priority + pending + no_rule))
     order = first + [i for i in rotation if i not in set(first)]
-    for n, idx in enumerate(order[:per_lane]):
+    lane_n = per_lane + len(extra)
+    for n, idx in enumerate(order[:lane_n]):
         if time.monotonic() > deadline:
             notes.append("budget: certificates left for the next pass")
             break
@@ -1304,12 +1995,14 @@ def build(*, budget_s: float = BUDGET_S, dry_run: bool = False, conn: Any = None
         for r in rows:
             if r.get("lane") == "certificate" and r.get("certificate"):
                 book[str(r["certificate"])] = {"verdict": r["verdict"], "fp": r.get("fp"),
+                                               "rule_fp": rule_fingerprint(str(r.get("family") or "")),
                                                "sharpe_metric_version": SHARPE_METRIC_VERSION,
                                                "why": list(r.get("why") or [])[:4],
                                                "key": r.get("key"), "at": _now()}
         _write_atomic(verdicts_path, {"at": _now(), "rule": RULE, "certificates": book})
     doc["verdict_book"] = {"path": str(verdicts_path.name), "n": len(book),
-                           "judged_first_this_pass": min(len(pending), per_lane)}
+                           "judged_first_this_pass": min(len(first), lane_n),
+                           "pending": len(pending), "no_rule_backlog": len(no_rule)}
     return doc
 
 
