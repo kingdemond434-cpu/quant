@@ -125,7 +125,20 @@ def test_replication_writer_is_reached_by_core_before_its_live_consumer() -> Non
     assert roster.index("replication_civilization") < roster.index("intake_catchup")
     assert hourly_cycle.in_plan("replication_civilization", "core")
     assert not hourly_cycle.in_plan("replication_civilization", "dept:validate")
-    assert "replication_civilization" in LR.ALWAYS_RUN
+    soft_h, hard_h = LR.DUE_BY_AGE_H["replication_civilization"]
+    from libs.tiers.promotion_authority import MAX_AGE_H
+    assert hard_h < MAX_AGE_H, "rotation must never hand the door a stale replication verdict"
+
+
+def test_full_tier_s_is_due_by_age_inside_the_door_expiry() -> None:
+    """The full Tier S pass feeds the door's FDR and immune inputs (6h expiry), not an hourly one."""
+    from libs.tiers.promotion_authority import MAX_AGE_H
+    assert "tier_s" not in LR.ALWAYS_RUN
+    soft_h, hard_h = LR.DUE_BY_AGE_H["tier_s"]
+    assert 0 < soft_h <= MAX_AGE_H / 2 and soft_h < hard_h < MAX_AGE_H
+    roster = set(LR.legs_in_order(DESK / "research" / "hourly_cycle.py"))
+    assert set(LR.DUE_BY_AGE_H) <= roster, "DUE_BY_AGE_H names a leg this cycle does not have"
+    assert not (set(LR.DUE_BY_AGE_H) & LR.ALWAYS_RUN)
 
 
 def test_the_sixteen_that_were_dark_are_on_the_roster() -> None:

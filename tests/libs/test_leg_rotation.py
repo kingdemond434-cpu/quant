@@ -198,3 +198,56 @@ def test_fence_fails_on_a_never_run_leg_and_on_an_absent_record(tmp_path: Path) 
     rec.write_text(json.dumps({"generated": stale.isoformat(), "never_run": [],
                                "outside_window": [], "window_h": 24.0}), encoding="utf-8")
     assert not mod.check(rec)["ok"], "a stale record means the cycle is not running on its clock"
+
+
+def _att_aged(runs: dict[str, int], ages_h: dict[str, float], costs: dict[str, float],
+              now: datetime) -> LR.Attendance:
+    att = _att(runs, costs=costs)
+    for leg, h in ages_h.items():
+        att.last_at[leg] = (now - timedelta(hours=h)).isoformat()
+    return att
+
+
+def test_due_by_age_leg_is_forced_once_soft_age_is_reached() -> None:
+    """A heavy fresh-within-6h leg is forced when due and never yielded on overrun."""
+    now = datetime(2026, 11, 5, 12, tzinfo=UTC)
+    soft, _hard = LR.DUE_BY_AGE_H["tier_s"]
+    att = _att_aged({"tier_s": 5, "filler": 5}, {"tier_s": soft + 0.1, "filler": 9.0},
+                    {"tier_s": 9_000.0, "filler": 1.0}, now)
+    dec = LR.plan_pass(["tier_s", "filler"], att, plan="core", budget_s=1.0, now=now)
+    assert "tier_s" in dec.admitted and "tier_s" in dec.forced
+    ok, _ = dec.should_run("tier_s", att, elapsed_s=10_000.0)
+    assert ok
+
+
+def test_due_by_age_leg_below_soft_age_rotates_and_frees_the_pass() -> None:
+    """Below its soft age the heavy leg competes like any other: stale legs run first."""
+    now = datetime(2026, 11, 5, 12, tzinfo=UTC)
+    att = _att_aged({"tier_s": 5, "governance": 5}, {"tier_s": 1.0, "governance": 20.0},
+                    {"tier_s": 1_500.0, "governance": 100.0}, now)
+    dec = LR.plan_pass(["tier_s", "governance"], att, plan="core", budget_s=1_000.0, now=now)
+    assert "governance" in dec.admitted
+    assert "tier_s" in dec.deferred and "tier_s" not in dec.forced
+
+
+def test_only_one_due_leg_is_forced_on_the_soft_rule_per_pass() -> None:
+    """Two heavy due legs do not land on the same hour unless one reaches its hard age."""
+    now = datetime(2026, 11, 5, 12, tzinfo=UTC)
+    soft, hard = LR.DUE_BY_AGE_H["tier_s"]
+    att = _att_aged({"tier_s": 5, "replication_civilization": 5},
+                    {"tier_s": soft + 0.5, "replication_civilization": soft + 0.2},
+                    {"tier_s": 1_500.0, "replication_civilization": 1_000.0}, now)
+    dec = LR.plan_pass(["tier_s", "replication_civilization"], att, plan="core",
+                       budget_s=100.0, now=now)
+    assert dec.forced == {"tier_s"}, "the older due leg is forced; the other waits an hour"
+    att.last_at["replication_civilization"] = (now - timedelta(hours=hard)).isoformat()
+    dec = LR.plan_pass(["tier_s", "replication_civilization"], att, plan="core",
+                       budget_s=100.0, now=now)
+    assert dec.forced == {"tier_s", "replication_civilization"}, "hard age forces regardless"
+
+
+def test_never_run_due_leg_is_forced() -> None:
+    now = datetime(2026, 11, 5, 12, tzinfo=UTC)
+    att = _att({"tier_s": 0}, costs={"tier_s": 1_500.0})
+    dec = LR.plan_pass(["tier_s"], att, plan="core", budget_s=10.0, now=now)
+    assert "tier_s" in dec.forced
