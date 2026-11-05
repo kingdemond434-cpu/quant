@@ -266,6 +266,19 @@
    "source": "independent-review job 126973551257; Auditor CLEAR 4f46ed9d3"
   },
   {
+   "pr": 727,
+   "head": "d1581372944e1849f80e8d625776d211c3ec8700",
+   "base": "70501db69e8cf939eb0887a6ee8f491ab32867e3",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "The change introduces a new function `recorded_combinations` that reads from a database, which could introduce risks if not properly managed.",
+    "The change modifies the `combinations` function to include a new parameter `known`, which is used to skip combinations already recorded. This could lead to unexpected behavior if not handled correctly."
+   ],
+   "source": "independent-review job 127004539431; Auditor CLEAR d15813729; rebuttal PR comment 6648301463 (Desk health 02:47Z)"
+  },
+  {
    "pr": 642,
    "head": "0bdb84e4c76049e050a779a274c61d0a24398eb4",
    "base": "6727fc33e5ffafe5cfb1886b2dd38df2f47666b5",
