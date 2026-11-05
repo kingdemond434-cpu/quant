@@ -558,9 +558,12 @@ if ($headNow -and $headNow -ne $script:HeadBefore) {
 # a failed registration is logged and never stops the seal.
 foreach ($ensure in @(
         @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" },
-        @{ Task = "Quant-BoxSelfHeal"; Installer = "install_box_self_heal_task.ps1" })) {
+        @{ Task = "Quant-BoxSelfHeal"; Installer = "install_box_self_heal_task.ps1" },
+        # repo-root installer (Root = $true): the sealed-transcript miner, which opens bundles with the
+        # box-only key and so needs a defined principal rather than an interactive-only registration
+        @{ Task = "Quant-VideoCells"; Installer = "scripts\run_video_cells_box.ps1"; Root = $true })) {
     if (Get-ScheduledTask -TaskName $ensure.Task -ErrorAction SilentlyContinue) { continue }
-    $installer = Join-Path $desk ("scripts\" + $ensure.Installer)
+    $installer = if ($ensure.Root) { Join-Path $RepoRoot $ensure.Installer } else { Join-Path $desk ("scripts\" + $ensure.Installer) }
     if (-not (Test-Path $installer)) { Log "ensure-task: $($ensure.Task) missing and $installer absent"; continue }
     try {
         $out = @(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $installer -IfMissing 2>&1 |
