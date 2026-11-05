@@ -56236,6 +56236,206 @@
       "retired_at": "2026-11-05T02:52:58+00:00",
       "retire_reason": "EURZAR admits only ['eurzar_carry_asia_p_8339edce23032d21'] for live capital; \"EURZAR.formula.asia#atr_n=20_entry_z=1.5_expr=['std', 'spread', 3]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0\" is a different parameter set on the same instrument -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
       "retired_by": "live_policy"
+    },
+    {
+      "name": "CHFDKK.formula.asia#atr_n=20_entry_z=1.5_expr=['ts_backfill', ['decay', 'spread', 3], 3]_hold_bars=4_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0",
+      "symbol": "CHFDKK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "STANDBY",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.0,
+        "joined": "joined on 'chfdkk|asia' (different mechanism: not a reading for this sleeve)",
+        "why": "standby on the current reading -- the only allocator row on 'chfdkk|asia' prices 'cross_asset_residual', not 'formula'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-05T05:08:53+00:00",
+      "shadow_exp": 0.4320876898400134,
+      "family": "formula",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "CHFDKK.formula.asia#atr_n=20_entry_z=1.5_expr=['ts_backfill', ['decay', 'spread', 3], 3]_hold_bars=4_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0",
+      "sleeve_id": "a8aed050c6acff9eae79",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "atr_n": 20,
+        "entry_z": 1.5,
+        "expr": [
+          "ts_backfill",
+          [
+            "decay",
+            "spread",
+            3
+          ],
+          3
+        ],
+        "hold_bars": 4,
+        "norm": 240,
+        "rr": 1.5,
+        "session": "asia",
+        "side_mode": "follow",
+        "stop_atr": 2.0
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-05T05:08:55+00:00",
+      "retire_reason": "CHFDKK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "CHFDKK.formula.asia#atr_n=20_entry_z=1.5_expr=['zscore', ['ts_backfill', ['trade_when', 'range', 'spread'], 240], 24]_hold_bars=4_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0",
+      "symbol": "CHFDKK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "STANDBY",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.0,
+        "joined": "joined on 'chfdkk|asia' (different mechanism: not a reading for this sleeve)",
+        "why": "standby on the current reading -- the only allocator row on 'chfdkk|asia' prices 'cross_asset_residual', not 'formula'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-05T05:08:54+00:00",
+      "shadow_exp": 0.4320876898400134,
+      "family": "formula",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "CHFDKK.formula.asia#atr_n=20_entry_z=1.5_expr=['zscore', ['ts_backfill', ['trade_when', 'range', 'spread'], 240], 24]_hold_bars=4_norm=240_rr=1.5_session=asia_side_mode=follow_stop_atr=2.0",
+      "sleeve_id": "752a90035e3e2a9cd1ec",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "atr_n": 20,
+        "entry_z": 1.5,
+        "expr": [
+          "zscore",
+          [
+            "ts_backfill",
+            [
+              "trade_when",
+              "range",
+              "spread"
+            ],
+            240
+          ],
+          24
+        ],
+        "hold_bars": 4,
+        "norm": 240,
+        "rr": 1.5,
+        "session": "asia",
+        "side_mode": "follow",
+        "stop_atr": 2.0
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-05T05:08:55+00:00",
+      "retire_reason": "CHFDKK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "GBPMXN.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
+      "symbol": "GBPMXN",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "LIVE",
+        "risk_frac": 0.001657,
+        "streak": 1,
+        "delta_elogw_per_day": null,
+        "heat_earned": 0.001657,
+        "joined": "joined on 'gbpmxn|formula|asia' (funded book)",
+        "allocator_heat": 0.001657,
+        "written_at_promoter_ceiling": false,
+        "why": "already funded by the allocator at 0.17% heat; the allocator's current solve gives this sleeve 0.17% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'gbpmxn|formula|asia' (funded book))"
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-05T05:08:54+00:00",
+      "shadow_exp": 0.7698648105406625,
+      "family": "formula",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "GBPMXN.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
+      "sleeve_id": "03489db375fc8cc5e48c",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "atr_n": 20,
+        "entry_z": 1.5,
+        "expr": [
+          "neg",
+          [
+            "delta",
+            "spread",
+            8
+          ]
+        ],
+        "hold_bars": 8,
+        "norm": 240,
+        "rr": 1.5,
+        "session": "asia",
+        "side_mode": "fade",
+        "stop_atr": 2.0
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-05T05:08:55+00:00",
+      "retire_reason": "GBPMXN is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "USDMXN.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
+      "symbol": "USDMXN",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of [\"usdmxn.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0\", 'usdmxn|formula|asia', 'usdmxn|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of [\"usdmxn.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0\", 'usdmxn|formula|asia', 'usdmxn|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-11-05T05:08:55+00:00",
+      "shadow_exp": 0.3951192468315396,
+      "family": "formula",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "USDMXN.formula.asia#atr_n=20_entry_z=1.5_expr=['neg', ['delta', 'spread', 8]]_hold_bars=8_norm=240_rr=1.5_session=asia_side_mode=fade_stop_atr=2.0",
+      "sleeve_id": "3ad3827f3124bbd31d6e",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "atr_n": 20,
+        "entry_z": 1.5,
+        "expr": [
+          "neg",
+          [
+            "delta",
+            "spread",
+            8
+          ]
+        ],
+        "hold_bars": 8,
+        "norm": 240,
+        "rr": 1.5,
+        "session": "asia",
+        "side_mode": "fade",
+        "stop_atr": 2.0
+      },
+      "exec": "family_market",
+      "retired_at": "2026-11-05T05:08:55+00:00",
+      "retire_reason": "USDMXN is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     }
   ]
 }
