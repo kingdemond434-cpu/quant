@@ -100,6 +100,24 @@ MAX_DIFF_CHARS = 600_000
 #: How long the job keeps trying free models before it reports UNAVAILABLE.
 BUDGET_S = 150 * 60
 CALL_TIMEOUT_S = 1800
+#: A CPU runner reads a local prompt at roughly this many tokens a second, so a call is given
+#: time in proportion to what it must read, never less than CALL_TIMEOUT_S nor more than
+#: LOCAL_CALL_MAX_S. Measured 2026-11-04: #620's ~23k-token prompt timed out at 1800 s five times
+#: running (the whole 150-minute budget, then UNAVAILABLE for ever); #688's ~3.4k-token prompt
+#: answered in about 11 minutes. `prompt_tokens_per_s` in local_models.json overrides it, and
+#: every local answer logs the server's own read rate, so the figure is re-measured each run.
+LOCAL_TOKENS_PER_S = 4.0
+#: The longest one local call may take. vote() also bounds every call by the budget left when it
+#: starts (_TIME_LEFT_S), so no call runs past BUDGET_S and a call that runs out of time ends the
+#: job as UNAVAILABLE (exit 75) inside the job's 200-minute limit, never as a cancelled job.
+LOCAL_CALL_MAX_S = 130 * 60
+#: Seconds of the vote's budget left when the current ask started; vote() sets it before every
+#: ask, and ask_local never waits longer (#698 audit SF).
+_TIME_LEFT_S = float("inf")
+#: The timeout the next _http call uses when none is passed: ask_local sets it around its one
+#: call. A module value rather than an argument so _http keeps its three-argument shape, which the
+#: base's own tests (trusted-eval runs them against this code) stub.
+_NEXT_TIMEOUT_S: float = CALL_TIMEOUT_S
 LOCAL = HERE / "local_models.json"
 #: Characters per token assumed when sizing a local prompt: low on purpose (code runs 3.2-4), so
 #: a prompt counted as fitting nearly always does; the server's own count is checked after (MF4),
@@ -121,6 +139,11 @@ class Unavailable(RuntimeError):
     """The model could not be asked right now (rate limit, outage, timeout): no vote."""
 
 
+class TimedOut(Unavailable):
+    """The call ran out of time. Asking the same model the same prompt again cannot finish any
+    sooner, so the model is not asked this prompt again: no vote, and no budget burnt on it."""
+
+
 def _gh(*args: str) -> str:
     env = {k: v for k, v in os.environ.items() if k not in KEY_ENVS}
     p = subprocess.run(["gh", "api", *args], capture_output=True, text=True, env=env, check=False)
@@ -129,19 +152,24 @@ def _gh(*args: str) -> str:
     return p.stdout
 
 
-def _http(url: str, body: dict[str, Any] | None, headers: dict[str, str]) -> Any:
+def _http(
+    url: str, body: dict[str, Any] | None, headers: dict[str, str], timeout: float | None = None
+) -> Any:
+    timeout = _NEXT_TIMEOUT_S if timeout is None else timeout
     data = None if body is None else json.dumps(body).encode()
     req = urllib.request.Request(
         url, data=data, headers={"Content-Type": "application/json", **headers}
     )
     try:
-        with urllib.request.urlopen(req, timeout=CALL_TIMEOUT_S) as r:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read().decode("utf-8", errors="replace"))
     except urllib.error.HTTPError as exc:
         if exc.code in (408, 429) or exc.code >= 500:
             raise Unavailable(f"HTTP {exc.code}") from None
         raise RuntimeError(f"HTTP {exc.code}") from None
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        if isinstance(exc, TimeoutError) or isinstance(getattr(exc, "reason", None), TimeoutError):
+            raise TimedOut(f"TimeoutError after {timeout:.0f} s") from None
         raise Unavailable(type(exc).__name__) from None
 
 
@@ -538,25 +566,46 @@ class TooLarge(RuntimeError):
     """The prompt does not fit the model whole: never a vote, never retried as unavailable."""
 
 
-def ask_local(url: str, model: str, num_ctx: int, rubric: str, user: str) -> str:
+def local_timeout(tokens: int, rate: float = LOCAL_TOKENS_PER_S) -> float:
+    """Seconds one local call may take to read `tokens` and answer: in proportion to the prompt
+    at `rate`, with a quarter in hand, never under CALL_TIMEOUT_S nor over LOCAL_CALL_MAX_S."""
+    need = (tokens + ANSWER_TOKENS) / max(rate, 0.1) * 1.25
+    return float(min(LOCAL_CALL_MAX_S, max(CALL_TIMEOUT_S, need)))
+
+
+def ask_local(
+    url: str, model: str, num_ctx: int, rubric: str, user: str, rate: float = LOCAL_TOKENS_PER_S
+) -> str:
     """One local answer. "" (unreadable: retried once, then FAIL) when the server counted the
     prompt as filling the context or as implausibly short, either of which means it truncated."""
-    if (len(rubric) + len(user)) // CHARS_PER_TOKEN + ANSWER_TOKENS > num_ctx:
+    tokens = (len(rubric) + len(user)) // CHARS_PER_TOKEN
+    if tokens + ANSWER_TOKENS > num_ctx:
         raise TooLarge(f"{model}: the prompt does not fit {num_ctx} tokens")
-    doc = _http(
-        f"{url}/api/chat",
-        {
-            "model": model,
-            "stream": False,
-            "format": "json",
-            "options": {"temperature": 0, "seed": 0, "num_ctx": num_ctx},
-            "messages": [{"role": "system", "content": rubric}, {"role": "user", "content": user}],
-        },
-        {},
-    )
+    global _NEXT_TIMEOUT_S
+    _NEXT_TIMEOUT_S = max(1.0, min(local_timeout(tokens, rate), _TIME_LEFT_S))
+    try:
+        doc = _http(
+            f"{url}/api/chat",
+            {
+                "model": model,
+                "stream": False,
+                "format": "json",
+                "options": {"temperature": 0, "seed": 0, "num_ctx": num_ctx},
+                "messages": [
+                    {"role": "system", "content": rubric},
+                    {"role": "user", "content": user},
+                ],
+            },
+            {},
+        )
+    finally:
+        _NEXT_TIMEOUT_S = CALL_TIMEOUT_S
     if doc.get("error"):
         raise Unavailable(str(doc["error"])[:200])
     seen = int(doc.get("prompt_eval_count") or 0)
+    read_s = int(doc.get("prompt_eval_duration") or 0) / 1e9
+    if seen and read_s > 0:  # the measured rate, so LOCAL_TOKENS_PER_S is checked every run
+        print(f"{model}: read {seen} prompt tokens in {read_s:.0f} s ({seen / read_s:.1f}/s)")
     if seen >= num_ctx - ANSWER_TOKENS or seen < len(user) // 8:
         return ""  # truncated: the model did not read the whole diff (#457 audit MF4)
     return str((doc.get("message") or {}).get("content") or "")
@@ -577,6 +626,7 @@ def local_rungs() -> tuple[list[tuple[str, str, Callable[[str, str], str]]], lis
     """The runner's own models whose manifest on disk matches its pin, and the context size."""
     cfg = json.loads(LOCAL.read_text(encoding="utf-8"))
     url, ctx = str(cfg["url"]), int(cfg["num_ctx"])
+    rate = float(cfg.get("prompt_tokens_per_s") or LOCAL_TOKENS_PER_S)
     models_dir = Path(os.environ.get("OLLAMA_MODELS") or Path.home() / ".ollama" / "models")
     try:
         _http(f"{url}/api/version", None, {})
@@ -595,7 +645,7 @@ def local_rungs() -> tuple[list[tuple[str, str, Callable[[str, str], str]]], lis
             notes.append(f"{name}: family {fam!r} is not an allowed reviewer family")
         else:
             notes.append(f"{name}: pinned manifest {got[:12]}")
-            out.append((fam, name, lambda r, u, n=name: ask_local(url, n, ctx, r, u)))
+            out.append((fam, name, lambda r, u, n=name: ask_local(url, n, ctx, r, u, rate)))
     return out, notes, ctx
 
 
@@ -624,6 +674,14 @@ def rungs(diff_len: int) -> tuple[list[tuple[str, str, Asker]], list[str]]:
         for mid in GEMINI_MODELS:
             out.append(("google", mid, lambda r, u, m=mid: ask_gemini(gkey, m, r, u)))
     return out, notes
+
+
+def _left(deadline: float, clock: Callable[[], float]) -> bool:
+    """Record the budget left for the ask about to start (ask_local waits no longer); False when
+    none is left."""
+    global _TIME_LEFT_S
+    _TIME_LEFT_S = deadline - clock()
+    return _TIME_LEFT_S > 0
 
 
 def vote(
@@ -656,12 +714,15 @@ def vote(
     while clock() < deadline:
         progress = False
         for fam, mid, ask in ladder:
-            if fam in passed or fam in abstained or mid in dropped or clock() >= deadline:
+            if fam in passed or fam in abstained or mid in dropped:
+                continue
+            if not _left(deadline, clock):
                 continue
             try:
                 answer = parse(ask(rubric, prompt(diff, files, secrets.token_hex(8), part)))
                 if answer is None:  # one format-only retry, at once, before anyone else votes
                     log.append(f"{mid}: no readable answer; asked once more")
+                    _left(deadline, clock)
                     answer = parse(ask(rubric, prompt(diff, files, secrets.token_hex(8), part)))
             except TooLarge as exc:  # never reviewed in part (#457 audit MF2)
                 log.append(str(exc))
@@ -670,6 +731,10 @@ def vote(
                 if len(fits) < VOTES:  # not enough families can read it whole: the manual path
                     log.append("FAIL: too large for enough reviewer families to read whole")
                     return "FAIL", log
+                continue
+            except TimedOut as exc:  # the same prompt again cannot finish any sooner
+                log.append(f"{mid}: unavailable ({exc}); not asked this prompt again")
+                dropped.add(mid)
                 continue
             except Unavailable as exc:
                 log.append(f"{mid}: unavailable ({exc})")
@@ -690,6 +755,7 @@ def vote(
                 log.append(f"{mid}: REASKED (the FAIL named no defect)")
                 note = VAGUE_NOTE + "\n\n"
                 try:  # the re-ask fails the way the first ask does (#538 audit SF1)
+                    _left(deadline, clock)
                     again = parse(
                         ask(rubric, note + prompt(diff, files, secrets.token_hex(8), part))
                     )
@@ -699,6 +765,10 @@ def vote(
                     if len({f for f, m, _ in ladder if m not in dropped}) < VOTES:
                         log.append("FAIL: too large for enough reviewer families to read whole")
                         return "FAIL", log
+                    continue
+                except TimedOut as exc:
+                    log.append(f"{mid}: unavailable on the re-ask ({exc}); not asked again")
+                    dropped.add(mid)
                     continue
                 except Unavailable as exc:  # asked afresh on the next round
                     log.append(f"{mid}: unavailable on the re-ask ({exc})")
