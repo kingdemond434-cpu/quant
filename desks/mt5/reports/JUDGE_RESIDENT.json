@@ -17,15 +17,16 @@
  "uptime_s": 719797.6,
  "last_sweep_ended_utc": "2026-11-05T00:37:49+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-05T04:50:19+00:00",
+ "heartbeat_utc": "2026-11-05T05:05:23+00:00",
  "sweep_phase": {
   "pid": 25372,
   "sweep_started_utc": "2026-11-05T00:38:18+00:00",
   "phases": {
-   "plan": 1974.2
+   "plan": 1974.2,
+   "prewarm": 14047.5
   },
-  "phase": "prewarm",
-  "phase_started_utc": "2026-11-05T01:11:12+00:00",
+  "phase": "plan_handoff",
+  "phase_started_utc": "2026-11-05T05:05:20+00:00",
   "plan_steps": {
    "lane_and_docket": 93.5,
    "docket_grouping": 155.0,
@@ -33,10 +34,11 @@
    "preflight": 212.5,
    "cache_prune": 989.2,
    "order": 193.1,
-   "yield_allocation": 73.5
+   "yield_allocation": 73.5,
+   "prewarm": 14047.5
   },
-  "plan_step": "prewarm",
-  "plan_step_started_utc": "2026-11-05T01:11:12+00:00",
+  "plan_step": "plan_handoff",
+  "plan_step_started_utc": "2026-11-05T05:05:20+00:00",
   "wall_profile": {
    "every_s": 10.0,
    "depth": 6,
@@ -82,20 +84,30 @@
      }
     },
     "prewarm": {
-     "samples": 1304,
+     "samples": 1388,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 1304,
-       "share": 1.0
+       "n": 1308,
+       "share": 0.942
+      },
+      {
+       "stack": "external_gauntlet.py:<genexpr>:2120 < external_gauntlet.py:_prewarm_cache:2120 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
+       "n": 44,
+       "share": 0.032
+      },
+      {
+       "stack": "threading.py:join:1132 < process.py:shutdown:865 < _base.py:__exit__:667 < external_gauntlet.py:_prewarm_cache:2070 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
+       "n": 36,
+       "share": 0.026
       }
      ],
      "process": {
-      "cpu_s": 79.1,
-      "page_faults": 1675330.0,
-      "read_bytes": 546105.0,
-      "write_bytes": 1305519816.0,
-      "sampled_s": 13030.0,
+      "cpu_s": 85.9,
+      "page_faults": 1780691.0,
+      "read_bytes": 546846.0,
+      "write_bytes": 1305569279.0,
+      "sampled_s": 13870.0,
       "rss_mb_max": 3200.7,
       "cpu_share_of_wall": 0.006
      }
@@ -107,6 +119,6 @@
    "unique_cells": 1622830,
    "gate0_advance": 1622830
   },
-  "plan_last_marker": "  docket order: 51763 never-judged cell(s) first, then 287952 in symbol-rotation order"
+  "plan_last_marker": "PRE-WARM: 15 worker(s) warmed 1632 cell(s) in 14046s (369 already cached, 137 failed, 337577 not reached before the build budget); failures by kind {'NOT_RUN_BUILD_FAILED': 137}"
  }
 }
