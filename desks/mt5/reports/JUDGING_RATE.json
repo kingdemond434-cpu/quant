@@ -1,56 +1,56 @@
 {
- "at": "2026-11-04T23:54:26+00:00",
+ "at": "2026-11-05T06:01:49+00:00",
  "status": "MEASURED",
  "verdicts": {
   "status": "MEASURED",
-  "rows_total": 1417317,
+  "rows_total": 1430875,
   "rows_unstamped": 0,
-  "last_verdict_at": "2026-11-04T19:14:37+00:00",
+  "last_verdict_at": "2026-11-05T00:32:23+00:00",
   "counts": {
    "1h": 0,
-   "24h": 55085,
-   "7d": 412609,
-   "build_step_lo": 3473,
+   "24h": 32608,
+   "7d": 426167,
+   "build_step_lo": 17031,
    "build_step_hi": 0
   },
   "count_basis": "changed verdict events; unchanged retests do not append",
   "first_terminal_counts": {
    "1h": 0,
-   "24h": 39546,
-   "7d": 262342,
-   "build_step_lo": 2208,
+   "24h": 13935,
+   "7d": 264930,
+   "build_step_lo": 4796,
    "build_step_hi": 0
   },
-  "first_terminal_cells": 647050,
+  "first_terminal_cells": 649638,
   "first_terminal_per_hour": {
    "1h": 0.0,
-   "24h": 1647.75,
-   "7d": 1561.56
+   "24h": 580.625,
+   "7d": 1576.964
   },
   "per_hour": {
    "1h": 0.0,
-   "24h": 2295.208,
-   "7d": 2456.006
+   "24h": 1358.667,
+   "7d": 2536.708
   }
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 9431,
-   "7d": 45465
+   "24h": 9041,
+   "7d": 46081
   },
   "per_hour": {
-   "24h": 392.958,
-   "7d": 270.625
+   "24h": 376.708,
+   "7d": 274.292
   }
  },
- "verdicts_per_hour": 2295.208,
- "verdicts_per_day": 55085.0,
+ "verdicts_per_hour": 1358.667,
+ "verdicts_per_day": 32608.0,
  "verdict_rate_basis": "changed verdict events, not total completed tests",
- "first_judged_per_day": 39546.0,
+ "first_judged_per_day": 13935.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
- "created_per_day": 9431.0,
+ "created_per_day": 9041.0,
  "backlog": "UNMEASURED",
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
@@ -62,7 +62,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-04T23:50:52+00:00",
-  "pid": 33396
+  "started_at": "2026-11-05T06:00:44+00:00",
+  "pid": 22624
  }
 }
