@@ -99,19 +99,14 @@ BEAM = 6
 SEED = 20260912
 
 
+def _panel_symbols(limit: int = 12) -> tuple[list[str], dict[str, int]]:
+    """LIVE, then STANDBY sleeves, then the core panel (research.research_panel)."""
+    from research.research_panel import panel_symbols
+    return panel_symbols(limit, sleeves=SLEEVES, universe=UNI)
+
+
 def _live_symbols(limit: int = 12) -> list[str]:
-    try:
-        doc = json.loads(SLEEVES.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return []
-    rows = doc if isinstance(doc, list) else (doc.get("sleeves") or [])
-    out: list[str] = []
-    for r in rows:
-        if isinstance(r, dict) and str(r.get("status", "")).upper() == "LIVE":
-            s = str(r.get("symbol") or "").strip()
-            if s and s not in out:
-                out.append(s)
-    return out[:limit]
+    return _panel_symbols(limit)[0]
 
 
 def _bars(symbol: str) -> Any:
@@ -507,7 +502,7 @@ def build() -> dict[str, Any]:
         return {"at": now.isoformat(timespec="seconds"), "status": "UNMEASURED",
                 "why": f"numpy/pandas unavailable ({exc})"}
 
-    syms = _live_symbols()
+    syms, symbol_origin = _panel_symbols()
     panel = _panel(syms)
     per_symbol: dict[str, Any] = {}
     total_trials = 0
@@ -568,8 +563,10 @@ def build() -> dict[str, Any]:
 
     if not per_symbol:
         return {"at": now.isoformat(timespec="seconds"), "status": "UNMEASURED",
-                "why": ("no live symbol has enough history for a 70/30 split with a 240-bar "
-                        "embargo and a 600-bar test slice")}
+                "symbols_tried": syms, "symbol_origin": symbol_origin,
+                "why": ("no panel symbol has enough history for a 70/30 split with a 240-bar "
+                        "embargo and a 600-bar test slice" if syms else
+                        "no LIVE or STANDBY sleeve and no core-panel symbol has H1 bars")}
 
     wins = [s for s, r in per_symbol.items() if r["learned_wins"] is True]
     losses = [s for s, r in per_symbol.items() if r["learned_wins"] is False]
@@ -591,6 +588,7 @@ def build() -> dict[str, Any]:
     return {
         "at": now.isoformat(timespec="seconds"),
         "n_symbols": len(per_symbol),
+        "symbol_origin": symbol_origin,
         "protocol": {"bars": BARS, "train_frac": TRAIN_FRAC, "embargo_bars": EMBARGO,
                      "horizons": list(HORIZONS), "mi_bins": MI_BINS,
                      "null_draws": NULL_DRAWS, "null_block": NULL_BLOCK,
@@ -717,7 +715,12 @@ def main(argv: list[str] | None = None) -> int:
         a.apply = True
     doc = build()
     if doc.get("status") == "UNMEASURED":
+        # WRITE OR EXPLAIN: an UNMEASURED pass is a verdict and is written, so the artifact moves
+        # every pass and a reader sees WHY, never a file frozen at its last good run.
         print(f"representation discovery: UNMEASURED -- {doc.get('why')}")
+        if a.apply:
+            OUT.parent.mkdir(parents=True, exist_ok=True)
+            OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
         return 0
     print(f"representation discovery: {doc['status']}   {doc['n_symbols']} symbol(s), "
           f"{doc['composite_trials_total']} composite trial(s) charged")
