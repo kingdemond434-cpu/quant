@@ -40,8 +40,19 @@ def test_the_gateway_keeps_promoted_sleeves_above_the_ruin_line() -> None:
     assert "if equity < PROMOTED_MIN_EQUITY:" not in src
 
 
-def test_the_minlot_override_is_still_not_stamped_on_a_small_account() -> None:
+def test_a_small_account_keeps_the_same_risk_inside_the_per_trade_rail() -> None:
+    """zuck 2026-11-05 22:53Z: "Fusion should risk the same ... and not reduce its risk" until
+    equity recovers (D-20261105-043). At EUR 266 the book is still stamped, so gold_asia keeps
+    max(0.01 lot, 0.75%); the 10% per-trade rail still refuses a 0.01 lot that risks more."""
+    from types import SimpleNamespace
     rows = [{"name": n} for n in sorted(dc.MINLOT_OVERRIDE_SLEEVES)]
     notes = dc.stamp_minlot_override(rows, frozenset(dc.MINLOT_OVERRIDE_SLEEVES), 266.0)
-    assert not any(r.get("minlot_override") for r in rows)
-    assert all("sized by sovereignty" in n for n in notes)
+    assert all(r.get("minlot_override") for r in rows) and notes == []
+    gold = SimpleNamespace(volume_min=0.01, volume_step=0.01, volume_max=100.0,
+                           trade_tick_size=0.01, trade_tick_value=0.86)     # EUR 86 per $1 per lot
+    row = {"name": "gold_asia", "minlot_override": True}
+    tight = dc.minlot_override_size(row, "XAUUSD", gold, 266.0, 30.0)   # 0.01 lot = EUR 25.8, 9.7%
+    assert tight is not None and tight[0] == 0.01
+    wide = dc.minlot_override_size(row, "XAUUSD", gold, 266.0, 35.0)    # EUR 30.1, 11.3% > 10%
+    assert wide is not None and wide[0] == 0.0 and dc.FUSION_TRADE_RISK_REFUSAL in wide[2]
+    assert dc.stamp_minlot_override([{"name": "gold_asia"}], frozenset({"gold_asia"}), 9.0)

@@ -154,8 +154,11 @@ PROMOTED_MIN_EQUITY = 300.0
 #: and FUSION_MAX_TRADE_RISK_FRAC refuses any order risking more than 10%. Derived: the cheapest
 #: admitted sleeve's measured 0.01-lot stop risk (EUR 0.58, usdnok_carry, n=6) over the 10%
 #: per-trade rail = EUR 5.8, rounded up. proposals/fusion_deadman.EQUITY_FLOOR_EUR is the same
-#: number (pinned by test). PROMOTED_MIN_EQUITY stays the line below which the 0.01-lot override
-#: is not stamped, so nothing is ever forced up to the minimum lot on a small account.
+#: number (pinned by test). It is also the line below which the 0.01-lot book stops: SAME RISK ON
+#: A SMALL ACCOUNT (zuck 2026-11-05 22:53Z: "Fusion should risk the same btw and not reduce its
+#: risk", "Until equity rises to normal"; D-20261105-043) -- the book keeps its own sizing,
+#: max(0.01 lot, 0.75%), at any equity above the ruin line, every order still capped by the 10%
+#: per-trade rail (`minlot_override_size`) and the day by the daily-loss rail.
 FUSION_RUIN_FLOOR_EUR = 10.0
                              # (0.01 lot at 300 EUR ~= 5.9% risk/trade ~= validated 5.5%)
 
@@ -938,12 +941,15 @@ def stamp_minlot_override(sleeves: list[dict[str, Any]], active: frozenset[str],
     """Mark, in place, the roster entries the override sizes this pass; clear every other mark.
 
     The mark is set HERE and nowhere else: a `minlot_override` field arriving on a sleeves.json
-    row is popped, so no writer can opt a row in. Below `PROMOTED_MIN_EQUITY` (the ruin line the
-    principal's waiver was priced at) nothing is marked and sizing reverts to sovereignty.
+    row is popped, so no writer can opt a row in. Below `FUSION_RUIN_FLOOR_EUR` (the ruin line)
+    nothing is marked and sizing reverts to sovereignty. It was PROMOTED_MIN_EQUITY (EUR 300),
+    which on a EUR 266 account reverted gold_asia to a 0.75% target below the 0.01 lot -- no
+    order, i.e. its risk cut to zero for being small; the principal ruled that out (2026-11-05).
+    Every marked order is still capped by the 10% per-trade rail in `minlot_override_size`.
     """
     notes: list[str] = []
     ok_equity = isinstance(equity, (int, float)) and math.isfinite(float(equity)) \
-        and float(equity) >= PROMOTED_MIN_EQUITY
+        and float(equity) >= FUSION_RUIN_FLOOR_EUR
     for s in sleeves:
         s.pop("minlot_override", None)
         name = str(s.get("name") or "")
@@ -952,7 +958,7 @@ def stamp_minlot_override(sleeves: list[dict[str, Any]], active: frozenset[str],
                 s["minlot_override"] = True
             else:
                 notes.append(f"MINLOT_OVERRIDE {name}: equity {equity} below "
-                             f"{PROMOTED_MIN_EQUITY:.0f}; sized by sovereignty this pass")
+                             f"{FUSION_RUIN_FLOOR_EUR:.0f}; sized by sovereignty this pass")
     return notes
 
 
