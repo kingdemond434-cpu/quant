@@ -511,5 +511,26 @@ def test_a_pr_the_last_pass_did_not_reach_is_judged_first() -> None:
     prs = [{"number": 7, "updated_at": "2026-11-05T21:00:00Z"},
            {"number": 3, "updated_at": "2026-11-01T00:00:00Z"},
            {"number": 9, "updated_at": "2026-11-05T22:00:00Z"}]  # fmt: skip
-    assert a.order_prs(prs, set()) == [9, 7, 3]
-    assert a.order_prs(prs, {9, 7}) == [3, 9, 7]  # the one left over goes first next pass
+    assert a.order_prs(prs, {}) == [9, 7, 3]  # never judged: newest activity first
+    assert a.order_prs(prs, {"9": 100.0, "7": 100.0}) == [3, 9, 7]  # the one left over goes first
+
+
+def test_an_untouched_old_pr_is_judged_within_bounded_passes() -> None:
+    """#776 audit MF1: with a budget that covers fewer than all open PRs and newer PRs whose
+    activity keeps moving, the oldest untouched PR is still judged within ceil(open/per_pass)
+    passes, because the order is by when this authority last judged each PR."""
+    a = _auth()
+    n_open, per_pass = 10, 3
+    old = {"number": 1, "updated_at": "2026-10-01T00:00:00Z"}
+    judged_at: dict[str, float] = {}
+    reached_old_on = None
+    for t in range(1, 2 * n_open):
+        # every newer PR is bumped each pass, so ordering by activity alone would starve #1
+        prs = [old] + [{"number": k, "updated_at": f"2026-11-05T{t:02d}:{k:02d}:00Z"}
+                       for k in range(2, n_open + 1)]  # fmt: skip
+        this_pass = a.order_prs(prs, judged_at)[:per_pass]
+        judged_at.update({str(n): float(t) for n in this_pass})
+        if 1 in this_pass:
+            reached_old_on = t
+            break
+    assert reached_old_on is not None and reached_old_on <= -(-n_open // per_pass)
