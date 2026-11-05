@@ -80,7 +80,19 @@ CALENDAR_PATH = BASE / "data" / "forced_flow_calendar.json"
 
 #: The two claims. Kept as an explicit tuple so an unrecognised mode REFUSES rather than falling
 #: through to whichever branch happens to be written first.
-MODES = ("pre_flow", "post_flow_fade")
+MODES = ("pre_flow", "post_flow_fade", "hedge_into_fix", "hedge_post_fix_fade")
+
+#: THE FX HEDGE-REBALANCING CLAIM (footprint sweep B1/B2/A14, 2026-11-04). A foreign holder of
+#: US equities that hedges its dollar exposure to a fixed ratio is UNDER-hedged after US equities
+#: outperform its home market, and tops the hedge up by SELLING USD into the month- or
+#: quarter-end WMR fix, when the hedge is reset. Bank fixing desks publish this estimate before
+#: every month end; it is the sign of the period-to-date US-minus-home equity return times a
+#: hedge ratio and the holdings, and only the sign and the size of the return are read here (the
+#: ratio and the holdings scale the flow, they do not flip it). `HEDGE_EQUITY` names the home
+#: market's index per currency; a currency with no index in the universe produces no cells.
+HEDGE_MODES = ("hedge_into_fix", "hedge_post_fix_fade")
+HEDGE_EQUITY = {"EUR": "GER40", "GBP": "UK100", "JPY": "JPN225", "AUD": "AUS200",
+                "CAD": "CA60"}
 
 #: Which clock the calendar's stamps must be read on. Identical in meaning to
 #: `family_event_reaction.CLOCKS`, and deliberately the same word, so a reader who has met one
@@ -105,6 +117,9 @@ FORCED_FLOW_DEFAULTS: dict[str, Any] = {
     "ttl_bars": 12,
     "symbol": "",
     "clock": "bars",
+    "us_equity": "US500",
+    "foreign_equity": "",
+    "min_rel": 0.0,
 }
 
 
@@ -133,7 +148,11 @@ def describe() -> str:
         "someone else's published number. "
         "THE TRADE: `pre_flow` claims the flow is anticipated and positions along the drift into "
         "the window; `post_flow_fade` claims the flow is impact rather than information and "
-        "fades the move the window made, once the obligation has been discharged."
+        "fades the move the window made, once the obligation has been discharged. "
+        "`hedge_into_fix` (month and quarter end only) signs the trade by the FX hedge "
+        "rebalance: a foreign holder of US equities that hedges its dollars to a fixed ratio is "
+        "under-hedged after US equities out-run its home index period-to-date and sells USD "
+        "into the WMR fix; `hedge_post_fix_fade` fades that flow once the fix has struck."
     )
 
 
@@ -249,6 +268,9 @@ def family_forced_flow(
     ttl_bars: int = 12,
     symbol: str = "",
     clock: str = "bars",
+    us_equity: str = "US500",
+    foreign_equity: str = "",
+    min_rel: float = 0.0,
 ) -> list[Signal]:
     """Signals inside the window around a dated forced-flow event. Price-only, next-open entries.
 
@@ -274,6 +296,13 @@ def family_forced_flow(
     """
     if mode not in MODES or clock not in CLOCKS or int(side) not in (1, -1):
         return []
+    if mode in HEDGE_MODES:
+        return _hedge_signals(bars, int(side), event_kind=str(event_kind), mode=mode,
+                              window_after_min=int(window_after_min), stop_atr=float(stop_atr),
+                              target_atr=float(target_atr), atr_n=int(atr_n),
+                              ttl_bars=int(ttl_bars), symbol=str(symbol), clock=clock,
+                              us_equity=str(us_equity), foreign_equity=str(foreign_equity),
+                              min_rel=float(min_rel))
     if not isinstance(bars, pd.DataFrame) or bars.empty:
         return []
     d = _h1(bars)
@@ -347,4 +376,96 @@ def family_forced_flow(
                 target=px + direction * float(target_atr) * a,
                 ttl_bars=int(ttl_bars), tag=f"forced_flow.{event_kind}.{mode}",
                 trigger=None, wait_bars=1))
+    return signals
+
+
+# ------------------------------------------------------------------- FX hedge-rebalancing flow
+
+def usd_selling_side(symbol: str) -> int:
+    """The pair direction that SELLING USD produces: -1 for USDxxx, +1 for xxxUSD, 0 otherwise."""
+    sym = str(symbol).strip().upper()
+    if len(sym) != 6 or "USD" not in (sym[:3], sym[3:]) or sym[:3] == sym[3:]:
+        return 0
+    return -1 if sym[:3] == "USD" else 1
+
+
+def home_equity(symbol: str, foreign_equity: str = "") -> str:
+    """The home market's index for a USD pair's other currency, or "" when there is none."""
+    if foreign_equity:
+        return str(foreign_equity).strip().upper()
+    sym = str(symbol).strip().upper()
+    other = sym[3:] if sym[:3] == "USD" else sym[:3]
+    return HEDGE_EQUITY.get(other, "")
+
+
+def _hedge_signals(bars: pd.DataFrame, side: int, *, event_kind: str, mode: str,
+                   window_after_min: int, stop_atr: float, target_atr: float, atr_n: int,
+                   ttl_bars: int, symbol: str, clock: str, us_equity: str,
+                   foreign_equity: str, min_rel: float) -> list[Signal]:
+    """One signal per month- or quarter-end window, signed by the hedge-rebalancing flow.
+
+    POINT IN TIME. The flow is the period-to-date log return of `us_equity` minus the home
+    index, both read AS OF the decision bar from their own bars (`asof_close`), against the last
+    close before the period began. `hedge_into_fix` decides on the last bar that CLOSES before
+    the window opens and holds through the fix; `hedge_post_fix_fade` decides on the first bar
+    after the window closes and trades against the flow, the impact-reversal claim. Neither
+    reads a bar at or after its own decision bar.
+    """
+    from mt5desk.families_specialist import asof_close
+
+    usd_side = usd_selling_side(symbol)
+    home = home_equity(symbol, foreign_equity)
+    if event_kind not in ("month_end", "quarter_end") or usd_side == 0 or not home:
+        return []
+    if not isinstance(bars, pd.DataFrame) or bars.empty:
+        return []
+    d = _h1(bars)
+    if len(d) < int(atr_n) + 3:
+        return []
+    index = d.index
+    lo = index[0].date() - timedelta(days=1)
+    hi = index[-1].date() + timedelta(days=1)
+    windows = calendar_windows(event_kind, lo, hi)
+    if not windows:
+        return []
+    atr = _atr(d, int(atr_n)).to_numpy()
+    close = d["close"].astype(float).to_numpy()
+    want = str(symbol).strip().upper()
+    months = 3 if event_kind == "quarter_end" else 1
+    signals: list[Signal] = []
+    for start_utc, end_utc, instruments in windows:
+        if want and instruments and want not in instruments:
+            continue
+        start = _to_bar_clock(start_utc, clock)
+        end = _to_bar_clock(end_utc, clock)
+        if start is None or end is None:
+            continue
+        if mode == "hedge_into_fix":
+            i = int(index.searchsorted(start, side="left")) - 1
+        else:
+            i = int(index.searchsorted(end, side="right"))
+        if i < int(atr_n) or i >= len(d) - 1:
+            continue
+        # the period began on the first day of the window's month (or quarter); its base is the
+        # last close BEFORE that day, on each leg's own bars
+        m0 = ((start.month - 1) // months) * months + 1
+        period_start = pd.Timestamp(start.year, m0, 1, tz=index.tz)
+        stamps = np.array([period_start.value - 1, index[i].value], dtype="int64")
+        us = asof_close(stamps, us_equity, max_stale_h=96.0)
+        fx = asof_close(stamps, home, max_stale_h=96.0)
+        if not (np.isfinite(us).all() and np.isfinite(fx).all() and (us > 0).all()
+                and (fx > 0).all()):
+            continue                          # a leg with no bars: UNMEASURED, no trade
+        rel = float(np.log(us[1] / us[0]) - np.log(fx[1] / fx[0]))
+        if not np.isfinite(rel) or abs(rel) <= float(min_rel) or rel == 0.0:
+            continue
+        flow = usd_side * (1 if rel > 0 else -1)   # the pair move the USD selling makes
+        direction = side * (flow if mode == "hedge_into_fix" else -flow)
+        a, px = float(atr[i]), float(close[i])
+        if not (np.isfinite(a) and a > 0 and np.isfinite(px)):
+            continue
+        signals.append(Signal(
+            time=index[i], side=direction, stop=px - direction * float(stop_atr) * a,
+            target=px + direction * float(target_atr) * a, ttl_bars=int(ttl_bars),
+            tag=f"forced_flow.{event_kind}.{mode}", trigger=None, wait_bars=1))
     return signals
