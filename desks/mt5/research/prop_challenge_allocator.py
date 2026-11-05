@@ -597,7 +597,10 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
     doors = _read_json(DOORS) or {}
     tier_s = tier_s_columns(screen, doors)
     listing, listing_src = venue_listing()
-    ftmo_surface = _read_json(FTMO_SURFACE)
+    # FTMO's own quotes file over its cost surface: the same per-venue mechanism the Fusion book
+    # is sized on (libs.portfolio.venue_cost), so every account pays its own spread.
+    from libs.portfolio.venue_cost import account_surface
+    ftmo_surface = account_surface(BASE / "data", "ftmo", _read_json(FTMO_SURFACE))
     fusion_surface = _read_json(FUSION_SURFACE)
     registry = _read_json(UNIVERSE)
     e8_syms, quarantine = e8_symbols(), quarantined_symbols()
