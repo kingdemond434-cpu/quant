@@ -1,11 +1,11 @@
 {
- "at": "2026-11-05T18:47:09+00:00",
+ "at": "2026-11-05T19:38:39+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
  "population": {
   "certificates": 1814,
-  "forward_rows": 1856,
+  "forward_rows": 1862,
   "spec_book": [
    "carry",
    "dav_range_filter_adx",
@@ -20,252 +20,21 @@
  },
  "n": 16,
  "counts": {
-  "REPLICATED": 6,
-  "MISMATCH": 3,
-  "UNMEASURED": 7
+  "REPLICATED": 8,
+  "MISMATCH": 0,
+  "UNMEASURED": 8
  },
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "EURZAR@M15.carry.p=fe01fef7fb21fe47",
-   "certificate": "external.EURZAR@M15.carry.p=fe01fef7fb21fe47",
-   "fp": "82bf4812dc525dde",
-   "symbol": "EURZAR",
-   "family": "carry",
-   "verdict": "MISMATCH",
-   "why": [
-    "Sharpe SIGN disagrees: recorded +0.283, rebuilt -0.322"
-   ],
-   "ours": {
-    "sharpe": -0.3223,
-    "n_fills": 2501,
-    "n_days": 1060,
-    "cost_price_units": 0.0044225112000000006,
-    "cost_basis": "universe_registry",
-    "spec": "Side = the side with the larger nightly swap in money per lot (swap x point x contract_size, from the venue's latest recorded contract terms; any swap_mode but POINTS stands aside, as does a differential below min_edge_bp_per_day). On every bar from 5 x atr_n on where the mean bar range over atr_n bars is below its own median over 5 x atr_n bars (require_quiet), a signal at the bar close: stop stop_atr x ATR(atr_n), target rr x that, entry next open, time exit after hold_bars.",
-    "params": {
-     "symbol": "CHFNOK",
-     "min_edge_bp_per_day": 0.5,
-     "atr_n": 20,
-     "hold_bars": 120,
-     "stop_atr": 2.0,
-     "rr": 1.5,
-     "require_quiet": true
-    }
-   },
-   "theirs": {
-    "sharpe": 0.2832,
-    "days": 557
-   }
-  },
-  {
-   "lane": "certificate",
-   "key": "GBPNOK@M15.carry.p=fe01fef7fb21fe47",
-   "certificate": "external.GBPNOK@M15.carry.p=fe01fef7fb21fe47",
-   "fp": "53aeb8b5c89a26fc",
-   "symbol": "GBPNOK",
-   "family": "carry",
-   "verdict": "MISMATCH",
-   "why": [
-    "Sharpe SIGN disagrees: recorded +0.585, rebuilt -0.601"
-   ],
-   "ours": {
-    "sharpe": -0.6009,
-    "n_fills": 2507,
-    "n_days": 1059,
-    "cost_price_units": 0.0034781824,
-    "cost_basis": "universe_registry",
-    "spec": "Side = the side with the larger nightly swap in money per lot (swap x point x contract_size, from the venue's latest recorded contract terms; any swap_mode but POINTS stands aside, as does a differential below min_edge_bp_per_day). On every bar from 5 x atr_n on where the mean bar range over atr_n bars is below its own median over 5 x atr_n bars (require_quiet), a signal at the bar close: stop stop_atr x ATR(atr_n), target rr x that, entry next open, time exit after hold_bars.",
-    "params": {
-     "symbol": "CHFNOK",
-     "min_edge_bp_per_day": 0.5,
-     "atr_n": 20,
-     "hold_bars": 120,
-     "stop_atr": 2.0,
-     "rr": 1.5,
-     "require_quiet": true
-    }
-   },
-   "theirs": {
-    "sharpe": 0.5854,
-    "days": 586
-   }
-  },
-  {
-   "lane": "certificate",
-   "key": "AUDCHF@M15.carry.p=dd57d3a4a1855f7a",
-   "certificate": "external.AUDCHF@M15.carry.p=dd57d3a4a1855f7a",
-   "fp": "26781afc0ba40a9e",
-   "symbol": "AUDCHF",
-   "family": "carry",
-   "verdict": "REPLICATED",
-   "why": [
-    "in-sample Sharpe comes back: rebuilt +0.181 vs recorded +0.215 on 2881 fill(s)"
-   ],
-   "ours": {
-    "sharpe": 0.1814,
-    "n_fills": 2881,
-    "n_days": 1048,
-    "cost_price_units": 4.683559999999999e-05,
-    "cost_basis": "universe_registry",
-    "spec": "Side = the side with the larger nightly swap in money per lot (swap x point x contract_size, from the venue's latest recorded contract terms; any swap_mode but POINTS stands aside, as does a differential below min_edge_bp_per_day). On every bar from 5 x atr_n on where the mean bar range over atr_n bars is below its own median over 5 x atr_n bars (require_quiet), a signal at the bar close: stop stop_atr x ATR(atr_n), target rr x that, entry next open, time exit after hold_bars.",
-    "params": {
-     "symbol": "",
-     "min_edge_bp_per_day": 0.5,
-     "atr_n": 20,
-     "hold_bars": 120,
-     "stop_atr": 2.0,
-     "rr": 1.5,
-     "require_quiet": true
-    }
-   },
-   "theirs": {
-    "sharpe": 0.2151,
-    "days": 836
-   }
-  },
-  {
-   "lane": "certificate",
-   "key": "AUDCHF@M15.carry.p=f2ab241a88f5f388",
-   "certificate": "external.AUDCHF@M15.carry.p=f2ab241a88f5f388",
-   "fp": "f38d817845e63bef",
-   "symbol": "AUDCHF",
-   "family": "carry",
-   "verdict": "REPLICATED",
-   "why": [
-    "in-sample Sharpe comes back: rebuilt +0.181 vs recorded +0.215 on 2881 fill(s)"
-   ],
-   "ours": {
-    "sharpe": 0.1814,
-    "n_fills": 2881,
-    "n_days": 1048,
-    "cost_price_units": 4.683559999999999e-05,
-    "cost_basis": "universe_registry",
-    "spec": "Side = the side with the larger nightly swap in money per lot (swap x point x contract_size, from the venue's latest recorded contract terms; any swap_mode but POINTS stands aside, as does a differential below min_edge_bp_per_day). On every bar from 5 x atr_n on where the mean bar range over atr_n bars is below its own median over 5 x atr_n bars (require_quiet), a signal at the bar close: stop stop_atr x ATR(atr_n), target rr x that, entry next open, time exit after hold_bars.",
-    "params": {
-     "symbol": "",
-     "min_edge_bp_per_day": 0.5,
-     "atr_n": 20,
-     "hold_bars": 120,
-     "stop_atr": 2.0,
-     "rr": 1.5,
-     "require_quiet": true
-    }
-   },
-   "theirs": {
-    "sharpe": 0.2151,
-    "days": 836
-   }
-  },
-  {
-   "lane": "certificate",
-   "key": "AUDCHF@M15.carry.p=fd8f0b34d7a50ac2",
-   "certificate": "external.AUDCHF@M15.carry.p=fd8f0b34d7a50ac2",
-   "fp": "522fb37a3063707a",
-   "symbol": "AUDCHF",
-   "family": "carry",
-   "verdict": "REPLICATED",
-   "why": [
-    "in-sample Sharpe comes back: rebuilt +0.181 vs recorded +0.215 on 2881 fill(s)"
-   ],
-   "ours": {
-    "sharpe": 0.1814,
-    "n_fills": 2881,
-    "n_days": 1048,
-    "cost_price_units": 4.683559999999999e-05,
-    "cost_basis": "universe_registry",
-    "spec": "Side = the side with the larger nightly swap in money per lot (swap x point x contract_size, from the venue's latest recorded contract terms; any swap_mode but POINTS stands aside, as does a differential below min_edge_bp_per_day). On every bar from 5 x atr_n on where the mean bar range over atr_n bars is below its own median over 5 x atr_n bars (require_quiet), a signal at the bar close: stop stop_atr x ATR(atr_n), target rr x that, entry next open, time exit after hold_bars.",
-    "params": {
-     "symbol": "",
-     "min_edge_bp_per_day": 0.5,
-     "atr_n": 20,
-     "hold_bars": 120,
-     "stop_atr": 2.0,
-     "rr": 1.5,
-     "require_quiet": true
-    }
-   },
-   "theirs": {
-    "sharpe": 0.2151,
-    "days": 836
-   }
-  },
-  {
-   "lane": "certificate",
-   "key": "AUDCHF@M15.carry.p=ffed7790285f1b7d",
-   "certificate": "external.AUDCHF@M15.carry.p=ffed7790285f1b7d",
-   "fp": "300c002012dfdd24",
-   "symbol": "AUDCHF",
-   "family": "carry",
-   "verdict": "REPLICATED",
-   "why": [
-    "in-sample Sharpe comes back: rebuilt +0.181 vs recorded +0.215 on 2881 fill(s)"
-   ],
-   "ours": {
-    "sharpe": 0.1814,
-    "n_fills": 2881,
-    "n_days": 1048,
-    "cost_price_units": 4.683559999999999e-05,
-    "cost_basis": "universe_registry",
-    "spec": "Side = the side with the larger nightly swap in money per lot (swap x point x contract_size, from the venue's latest recorded contract terms; any swap_mode but POINTS stands aside, as does a differential below min_edge_bp_per_day). On every bar from 5 x atr_n on where the mean bar range over atr_n bars is below its own median over 5 x atr_n bars (require_quiet), a signal at the bar close: stop stop_atr x ATR(atr_n), target rr x that, entry next open, time exit after hold_bars.",
-    "params": {
-     "symbol": "",
-     "min_edge_bp_per_day": 0.5,
-     "atr_n": 20,
-     "hold_bars": 120,
-     "stop_atr": 2.0,
-     "rr": 1.5,
-     "require_quiet": true
-    }
-   },
-   "theirs": {
-    "sharpe": 0.2151,
-    "days": 836
-   }
-  },
-  {
-   "lane": "certificate",
-   "key": "AUDCHF@M15.carry.p=22193161be8e4f54",
-   "certificate": "external.AUDCHF@M15.carry.p=22193161be8e4f54",
-   "fp": "fb94b2e198b9ab36",
-   "symbol": "AUDCHF",
-   "family": "carry",
-   "verdict": "REPLICATED",
-   "why": [
-    "in-sample Sharpe comes back: rebuilt +0.181 vs recorded +0.215 on 2881 fill(s)"
-   ],
-   "ours": {
-    "sharpe": 0.1814,
-    "n_fills": 2881,
-    "n_days": 1048,
-    "cost_price_units": 4.683559999999999e-05,
-    "cost_basis": "universe_registry",
-    "spec": "Side = the side with the larger nightly swap in money per lot (swap x point x contract_size, from the venue's latest recorded contract terms; any swap_mode but POINTS stands aside, as does a differential below min_edge_bp_per_day). On every bar from 5 x atr_n on where the mean bar range over atr_n bars is below its own median over 5 x atr_n bars (require_quiet), a signal at the bar close: stop stop_atr x ATR(atr_n), target rr x that, entry next open, time exit after hold_bars.",
-    "params": {
-     "symbol": "",
-     "min_edge_bp_per_day": 0.5,
-     "atr_n": 20,
-     "hold_bars": 120,
-     "stop_atr": 2.0,
-     "rr": 1.5,
-     "require_quiet": true
-    }
-   },
-   "theirs": {
-    "sharpe": 0.2151,
-    "days": 836
-   }
-  },
-  {
-   "lane": "certificate",
-   "key": "AUDSGD@M15.carry.p=1b578483881f4734",
-   "certificate": "external.AUDSGD@M15.carry.p=1b578483881f4734",
-   "fp": "0139ef0a488c75f2",
+   "key": "AUDSGD@M15.carry.p=dd57d3a4a1855f7a",
+   "certificate": "external.AUDSGD@M15.carry.p=dd57d3a4a1855f7a",
+   "fp": "39ebe10d4c1a817c",
    "symbol": "AUDSGD",
    "family": "carry",
    "verdict": "REPLICATED",
    "why": [
-    "in-sample Sharpe comes back: rebuilt +0.187 vs recorded +0.165 on 2688 fill(s)"
+    "in-sample Sharpe comes back: rebuilt +0.187 vs recorded +0.166 on 2688 fill(s)"
    ],
    "ours": {
     "sharpe": 0.1874,
@@ -285,63 +54,245 @@
     }
    },
    "theirs": {
-    "sharpe": 0.1647,
-    "days": 760
+    "sharpe": 0.1662,
+    "days": 822
    }
   },
   {
-   "lane": "forward",
-   "key": "GBPCHF.overnight_gap_decay.asia#session=asia",
-   "symbol": "GBPCHF",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
+   "lane": "certificate",
+   "key": "AUDSGD@M15.carry.p=1a61a38f3cb2180d",
+   "certificate": "external.AUDSGD@M15.carry.p=1a61a38f3cb2180d",
+   "fp": "ebc22e83c26b47c0",
+   "symbol": "AUDSGD",
+   "family": "carry",
+   "verdict": "REPLICATED",
    "why": [
-    "per-trade R disagrees: median |dR| = 0.864 > 0.25",
-    "summed P&L disagrees in SIGN: ledger +7.27R, rebuilt -3.03R",
-    "COST term spread_per_lot disagrees: rebuilt 154 vs frozen 2"
+    "in-sample Sharpe comes back: rebuilt +0.187 vs recorded +0.166 on 2688 fill(s)"
    ],
    "ours": {
-    "n_fills": 7,
-    "pnl_R": -3.029,
-    "cost": {
-     "spread_per_lot": 154.0,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 0.92089,
-     "basis": "universe_registry"
-    },
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
+    "sharpe": 0.1874,
+    "n_fills": 2688,
+    "n_days": 1030,
+    "cost_price_units": 8.7254e-05,
+    "cost_basis": "universe_registry",
+    "spec": "Side = the side with the larger nightly swap in money per lot (swap x point x contract_size, from the venue's latest recorded contract terms; any swap_mode but POINTS stands aside, as does a differential below min_edge_bp_per_day). On every bar from 5 x atr_n on where the mean bar range over atr_n bars is below its own median over 5 x atr_n bars (require_quiet), a signal at the bar close: stop stop_atr x ATR(atr_n), target rr x that, entry next open, time exit after hold_bars.",
+    "params": {
+     "symbol": "",
+     "min_edge_bp_per_day": 0.5,
+     "atr_n": 20,
+     "hold_bars": 120,
+     "stop_atr": 2.0,
+     "rr": 1.5,
+     "require_quiet": true
+    }
    },
    "theirs": {
-    "n_trades": 14,
-    "cost_fields": {
-     "spread_per_lot": 2.0,
-     "commission_per_lot": 2.0,
-     "contract_oz": 100000.0,
-     "quote_per_account": 0.94126,
-     "swap_per_lot_per_night": 0.0
-    },
-    "forward_start": "2026-10-07T12:27:50+00:00"
+    "sharpe": 0.1662,
+    "days": 822
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "AUDSGD@M15.carry.p=ffed7790285f1b7d",
+   "certificate": "external.AUDSGD@M15.carry.p=ffed7790285f1b7d",
+   "fp": "2b2694a1e9dce4e0",
+   "symbol": "AUDSGD",
+   "family": "carry",
+   "verdict": "REPLICATED",
+   "why": [
+    "in-sample Sharpe comes back: rebuilt +0.187 vs recorded +0.166 on 2688 fill(s)"
+   ],
+   "ours": {
+    "sharpe": 0.1874,
+    "n_fills": 2688,
+    "n_days": 1030,
+    "cost_price_units": 8.7254e-05,
+    "cost_basis": "universe_registry",
+    "spec": "Side = the side with the larger nightly swap in money per lot (swap x point x contract_size, from the venue's latest recorded contract terms; any swap_mode but POINTS stands aside, as does a differential below min_edge_bp_per_day). On every bar from 5 x atr_n on where the mean bar range over atr_n bars is below its own median over 5 x atr_n bars (require_quiet), a signal at the bar close: stop stop_atr x ATR(atr_n), target rr x that, entry next open, time exit after hold_bars.",
+    "params": {
+     "symbol": "",
+     "min_edge_bp_per_day": 0.5,
+     "atr_n": 20,
+     "hold_bars": 120,
+     "stop_atr": 2.0,
+     "rr": 1.5,
+     "require_quiet": true
+    }
    },
-   "divergence": {
-    "n_ledger": 14,
-    "n_rebuilt": 7,
-    "matched": 7,
-    "match_share": 0.5,
-    "fill_ratio": 0.5,
-    "median_abs_dR": 0.8645,
-    "pnl_ledger_R": 7.266,
-    "pnl_rebuilt_R": -3.029,
-    "open_ledger": false,
-    "open_rebuilt": false,
-    "cost_ratio_spread_per_lot": 77.0,
-    "cost_ratio_commission_per_lot": 1.0,
-    "cost_ratio_quote_per_account": 0.978
+   "theirs": {
+    "sharpe": 0.1662,
+    "days": 822
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "AUDSGD@M15.carry.p=fd8f0b34d7a50ac2",
+   "certificate": "external.AUDSGD@M15.carry.p=fd8f0b34d7a50ac2",
+   "fp": "d527e35d63deb274",
+   "symbol": "AUDSGD",
+   "family": "carry",
+   "verdict": "REPLICATED",
+   "why": [
+    "in-sample Sharpe comes back: rebuilt +0.187 vs recorded +0.166 on 2688 fill(s)"
+   ],
+   "ours": {
+    "sharpe": 0.1874,
+    "n_fills": 2688,
+    "n_days": 1030,
+    "cost_price_units": 8.7254e-05,
+    "cost_basis": "universe_registry",
+    "spec": "Side = the side with the larger nightly swap in money per lot (swap x point x contract_size, from the venue's latest recorded contract terms; any swap_mode but POINTS stands aside, as does a differential below min_edge_bp_per_day). On every bar from 5 x atr_n on where the mean bar range over atr_n bars is below its own median over 5 x atr_n bars (require_quiet), a signal at the bar close: stop stop_atr x ATR(atr_n), target rr x that, entry next open, time exit after hold_bars.",
+    "params": {
+     "symbol": "",
+     "min_edge_bp_per_day": 0.5,
+     "atr_n": 20,
+     "hold_bars": 120,
+     "stop_atr": 2.0,
+     "rr": 1.5,
+     "require_quiet": true
+    }
+   },
+   "theirs": {
+    "sharpe": 0.1662,
+    "days": 822
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "AUDSGD@M15.carry.p=7fda30326394b406",
+   "certificate": "external.AUDSGD@M15.carry.p=7fda30326394b406",
+   "fp": "2c2aba7e803a9ccc",
+   "symbol": "AUDSGD",
+   "family": "carry",
+   "verdict": "REPLICATED",
+   "why": [
+    "in-sample Sharpe comes back: rebuilt +0.187 vs recorded +0.166 on 2688 fill(s)"
+   ],
+   "ours": {
+    "sharpe": 0.1874,
+    "n_fills": 2688,
+    "n_days": 1030,
+    "cost_price_units": 8.7254e-05,
+    "cost_basis": "universe_registry",
+    "spec": "Side = the side with the larger nightly swap in money per lot (swap x point x contract_size, from the venue's latest recorded contract terms; any swap_mode but POINTS stands aside, as does a differential below min_edge_bp_per_day). On every bar from 5 x atr_n on where the mean bar range over atr_n bars is below its own median over 5 x atr_n bars (require_quiet), a signal at the bar close: stop stop_atr x ATR(atr_n), target rr x that, entry next open, time exit after hold_bars.",
+    "params": {
+     "symbol": "",
+     "min_edge_bp_per_day": 0.5,
+     "atr_n": 20,
+     "hold_bars": 120,
+     "stop_atr": 2.0,
+     "rr": 1.5,
+     "require_quiet": true
+    }
+   },
+   "theirs": {
+    "sharpe": 0.1662,
+    "days": 822
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "AUDSGD@M15.carry.p=22193161be8e4f54",
+   "certificate": "external.AUDSGD@M15.carry.p=22193161be8e4f54",
+   "fp": "75bfd81dc76b61a2",
+   "symbol": "AUDSGD",
+   "family": "carry",
+   "verdict": "REPLICATED",
+   "why": [
+    "in-sample Sharpe comes back: rebuilt +0.187 vs recorded +0.166 on 2688 fill(s)"
+   ],
+   "ours": {
+    "sharpe": 0.1874,
+    "n_fills": 2688,
+    "n_days": 1030,
+    "cost_price_units": 8.7254e-05,
+    "cost_basis": "universe_registry",
+    "spec": "Side = the side with the larger nightly swap in money per lot (swap x point x contract_size, from the venue's latest recorded contract terms; any swap_mode but POINTS stands aside, as does a differential below min_edge_bp_per_day). On every bar from 5 x atr_n on where the mean bar range over atr_n bars is below its own median over 5 x atr_n bars (require_quiet), a signal at the bar close: stop stop_atr x ATR(atr_n), target rr x that, entry next open, time exit after hold_bars.",
+    "params": {
+     "symbol": "",
+     "min_edge_bp_per_day": 0.5,
+     "atr_n": 20,
+     "hold_bars": 120,
+     "stop_atr": 2.0,
+     "rr": 1.5,
+     "require_quiet": true
+    }
+   },
+   "theirs": {
+    "sharpe": 0.1662,
+    "days": 822
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "USDSGD@M15.carry.p=dd57d3a4a1855f7a",
+   "certificate": "external.USDSGD@M15.carry.p=dd57d3a4a1855f7a",
+   "fp": "ad03c65de750d1cf",
+   "symbol": "USDSGD",
+   "family": "carry",
+   "verdict": "REPLICATED",
+   "why": [
+    "in-sample Sharpe comes back: rebuilt +0.213 vs recorded +0.183 on 3022 fill(s)"
+   ],
+   "ours": {
+    "sharpe": 0.2131,
+    "n_fills": 3022,
+    "n_days": 1034,
+    "cost_price_units": 6.7254e-05,
+    "cost_basis": "universe_registry",
+    "spec": "Side = the side with the larger nightly swap in money per lot (swap x point x contract_size, from the venue's latest recorded contract terms; any swap_mode but POINTS stands aside, as does a differential below min_edge_bp_per_day). On every bar from 5 x atr_n on where the mean bar range over atr_n bars is below its own median over 5 x atr_n bars (require_quiet), a signal at the bar close: stop stop_atr x ATR(atr_n), target rr x that, entry next open, time exit after hold_bars.",
+    "params": {
+     "symbol": "",
+     "min_edge_bp_per_day": 0.5,
+     "atr_n": 20,
+     "hold_bars": 120,
+     "stop_atr": 2.0,
+     "rr": 1.5,
+     "require_quiet": true
+    }
+   },
+   "theirs": {
+    "sharpe": 0.183,
+    "days": 825
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "USDSGD@M15.carry.p=675c477c8b28888b",
+   "certificate": "external.USDSGD@M15.carry.p=675c477c8b28888b",
+   "fp": "dd9f74a1e836530a",
+   "symbol": "USDSGD",
+   "family": "carry",
+   "verdict": "REPLICATED",
+   "why": [
+    "in-sample Sharpe comes back: rebuilt +0.213 vs recorded +0.183 on 3022 fill(s)"
+   ],
+   "ours": {
+    "sharpe": 0.2131,
+    "n_fills": 3022,
+    "n_days": 1034,
+    "cost_price_units": 6.7254e-05,
+    "cost_basis": "universe_registry",
+    "spec": "Side = the side with the larger nightly swap in money per lot (swap x point x contract_size, from the venue's latest recorded contract terms; any swap_mode but POINTS stands aside, as does a differential below min_edge_bp_per_day). On every bar from 5 x atr_n on where the mean bar range over atr_n bars is below its own median over 5 x atr_n bars (require_quiet), a signal at the bar close: stop stop_atr x ATR(atr_n), target rr x that, entry next open, time exit after hold_bars.",
+    "params": {
+     "symbol": "",
+     "min_edge_bp_per_day": 0.5,
+     "atr_n": 20,
+     "hold_bars": 120,
+     "stop_atr": 2.0,
+     "rr": 1.5,
+     "require_quiet": true
+    }
+   },
+   "theirs": {
+    "sharpe": 0.183,
+    "days": 825
    }
   },
   {
    "lane": "forward",
-   "key": "GBPDKK.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
-   "symbol": "GBPDKK",
+   "key": "GBPSEK.cross_asset_residual.asia@M15#factor_symbols=['GER40']_ttl_bars=6",
+   "symbol": "GBPSEK",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
    "why": [
@@ -353,8 +304,8 @@
   },
   {
    "lane": "forward",
-   "key": "GBPDKK.macro_conditional.asia@M5",
-   "symbol": "GBPDKK",
+   "key": "GBPSEK.macro_conditional.asia@M5#session=ny",
+   "symbol": "GBPSEK",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
@@ -366,47 +317,8 @@
   },
   {
    "lane": "forward",
-   "key": "GBPJPY.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=72",
-   "symbol": "GBPJPY",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPJPY.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=8",
-   "symbol": "GBPJPY",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPJPY.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
-   "symbol": "GBPJPY",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPJPY.macro_conditional.asia@M5",
-   "symbol": "GBPJPY",
+   "key": "GBPSEK.macro_conditional.asia@M5",
+   "symbol": "GBPSEK",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
@@ -418,62 +330,114 @@
   },
   {
    "lane": "forward",
-   "key": "GBPNOK.macro_conditional.asia@M5",
-   "symbol": "GBPNOK",
+   "key": "GBPSGD.macro_conditional.asia@M5",
+   "symbol": "GBPSGD",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
     "no written specification in the spec book for family 'macro_conditional'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "GBPZAR.macro_conditional.asia@M5",
+   "symbol": "GBPZAR",
+   "family": "macro_conditional",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'macro_conditional'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NAS100.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=8",
+   "symbol": "NAS100",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NAS100.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+   "symbol": "NAS100",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NAS100.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=72",
+   "symbol": "NAS100",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
    ],
    "ours": {},
    "theirs": {},
    "divergence": {}
   }
  ],
- "quarantined": [
-  "EURZAR@M15.carry.p=fe01fef7fb21fe47",
-  "GBPNOK@M15.carry.p=fe01fef7fb21fe47",
-  "GBPCHF.overnight_gap_decay.asia#session=asia"
- ],
+ "quarantined": [],
  "unmeasured": [
   {
-   "what": "GBPDKK.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
+   "what": "GBPSEK.cross_asset_residual.asia@M15#factor_symbols=['GER40']_ttl_bars=6",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "GBPDKK.macro_conditional.asia@M5",
+   "what": "GBPSEK.macro_conditional.asia@M5#session=ny",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "GBPJPY.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=72",
-   "why": "no written specification in the spec book for family 'cross_asset_residual'"
-  },
-  {
-   "what": "GBPJPY.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=8",
-   "why": "no written specification in the spec book for family 'cross_asset_residual'"
-  },
-  {
-   "what": "GBPJPY.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
-   "why": "no written specification in the spec book for family 'cross_asset_residual'"
-  },
-  {
-   "what": "GBPJPY.macro_conditional.asia@M5",
+   "what": "GBPSEK.macro_conditional.asia@M5",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "GBPNOK.macro_conditional.asia@M5",
+   "what": "GBPSGD.macro_conditional.asia@M5",
    "why": "no written specification in the spec book for family 'macro_conditional'"
+  },
+  {
+   "what": "GBPZAR.macro_conditional.asia@M5",
+   "why": "no written specification in the spec book for family 'macro_conditional'"
+  },
+  {
+   "what": "NAS100.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=8",
+   "why": "no written specification in the spec book for family 'cross_asset_residual'"
+  },
+  {
+   "what": "NAS100.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+   "why": "no written specification in the spec book for family 'cross_asset_residual'"
+  },
+  {
+   "what": "NAS100.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=72",
+   "why": "no written specification in the spec book for family 'cross_asset_residual'"
   }
  ],
  "recorded": {
-  "quarantined": 3,
-  "memory": 9,
-  "candidates": 922
+  "quarantined": 0,
+  "memory": 8,
+  "candidates": 0
  },
  "cursor": {
-  "forward": 957,
-  "at": "2026-11-05T16:37:35+00:00",
-  "certificates": 1357
+  "forward": 965,
+  "at": "2026-11-05T18:47:09+00:00",
+  "certificates": 1365
  },
  "notes": [],
  "independence": {
@@ -490,24 +454,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURZAR_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPNOK_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCHF_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCHF_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCHF_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCHF_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCHF_M15.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPDKK_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPDKK_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPNOK_M5.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPZAR_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_M15.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 620.81
+ "seconds": 80.54
 }
