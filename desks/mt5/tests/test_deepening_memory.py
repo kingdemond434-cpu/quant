@@ -14,6 +14,7 @@ import json
 import os
 import sys
 import threading
+import time
 import tracemalloc
 from pathlib import Path
 
@@ -349,3 +350,37 @@ def test_outage_rows_never_satisfy_the_one_task_guarantee(tmp_path, monkeypatch)
     assert asked["n"] == 0, "no real decision yet, so the guard was never consulted"
     rep = json.loads(dw.MEMORY_GUARD_REPORT.read_text("utf-8"))
     assert rep["worked_this_pass"] == 0 and rep["tripped"] is False
+
+
+# --------------------------------------------------------------- the task time limit (11-05)
+# MT5-Deepening was killed at its 50-minute task limit: the 40-minute budget clock started only
+# after the setup (ledger read, VOI sort: minutes on the box), and the lock a killed run left
+# refused the next triggers although its process was gone.
+def test_the_budget_counts_the_setup_and_still_decides_one_row(tmp_path, monkeypatch) -> None:
+    _isolate(tmp_path, monkeypatch, _tasks(6))
+    monkeypatch.setattr(dw, "memory_guard", lambda: (False, "ok"))
+    real_costs = dw.task_costs
+
+    def slow_setup():
+        time.sleep(0.3)                        # setup that alone outruns the budget below
+        return real_costs()
+    monkeypatch.setattr(dw, "task_costs", slow_setup)
+    monkeypatch.setattr(dw, "RUN_BUDGET_SEC", 0.1)
+    assert dw.main([]) == 0
+    rows = [json.loads(ln) for ln in dw.WORKED.read_text("utf-8").splitlines() if ln]
+    assert len(rows) == 1, "the setup is inside the budget, and a pass always decides one row"
+
+
+def test_a_lock_left_by_a_dead_run_is_taken_at_once(tmp_path, monkeypatch) -> None:
+    lock = tmp_path / ".lock"
+    monkeypatch.setattr(dw, "LOCK", lock)
+    lock.write_text(json.dumps({"pid": 2_000_000_000, "at": time.time() - 60}), "utf-8")
+    assert dw._single_flight() is not None, "a young lock whose process is gone blocked the run"
+
+
+def test_a_lock_held_by_a_live_run_is_respected_however_old(tmp_path, monkeypatch) -> None:
+    lock = tmp_path / ".lock"
+    monkeypatch.setattr(dw, "LOCK", lock)
+    lock.write_text(json.dumps({"pid": os.getpid(),
+                                "at": time.time() - dw.RUN_BUDGET_SEC * 3}), "utf-8")
+    assert dw._single_flight() is None

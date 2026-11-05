@@ -1816,10 +1816,23 @@ def publish_throughput(decided: int, elapsed_s: float, backlog_before: int,
 LOCK = BASE / "data" / "hypotheses" / ".deepening.lock"
 
 
+def _holder_alive(pid: int) -> bool:
+    """Is the process that wrote the lock still running? A DEAD HOLDER FREES THE LOCK AT ONCE.
+
+    2026-11-05: the check read `age <= stale_after OR pid alive`, so a run killed by the task
+    limit left a lock that refused every caller for up to `stale_after` (80 min) although its
+    process was gone -- MT5-Deepening killed at 50 min blocked the next two triggers. A recorded
+    pid is now the whole answer: alive means held (however old the stamp, as before), gone
+    means free (however young)."""
+    import psutil
+    try:
+        return bool(psutil.pid_exists(pid))
+    except OSError:
+        return True        # unmeasurable: never take a lock from a holder that may be alive
+
+
 def _single_flight():
     """Serialize stale-lock inspection and publication; never run duplicate writers."""
-    import psutil
-
     stale_after = RUN_BUDGET_SEC * 2.0
     guard = LOCK.with_name(LOCK.name + ".claim")
     handle = None
@@ -1850,11 +1863,11 @@ def _single_flight():
                 pid = int(held.get("pid") or 0)
             except (OSError, ValueError, TypeError, AttributeError):
                 age, pid = stale_after + 1.0, 0
-            if age <= stale_after or (pid > 0 and psutil.pid_exists(pid)):
+            if _holder_alive(pid) if pid > 0 else age <= stale_after:
                 dlog(f"another deepening run holds the lock (pid={pid}, {age:.0f}s old): "
                      "exiting rather than racing it")
                 return None
-            dlog(f"taking over a dead stale lock (pid={pid}, {age:.0f}s old)")
+            dlog(f"taking over a lock whose holder is gone (pid={pid}, {age:.0f}s old)")
         temporary = LOCK.with_name(LOCK.name + f".{os.getpid()}.tmp")
         try:
             temporary.write_text(json.dumps({"pid": os.getpid(), "at": time.time()}), "utf-8")
@@ -2003,7 +2016,13 @@ def _work(argv: list[str] | None = None) -> int:
     universe = known_symbols()
     recovered: list[dict] = []
     counts: dict[str, int] = {}
-    started = time.monotonic()
+    # THE BUDGET CLOCK STARTS WITH THE PASS, not after the setup (2026-11-05). Compaction, the
+    # 1.2M-row ledger read, the cost table and the VOI sort (245 s measured) ran BEFORE this
+    # clock started, so a "40-minute" pass ran 50+ and MT5-Deepening was killed at its task
+    # limit mid-pass: the tail that publishes the backlog, the throughput ratchet and the
+    # memory-guard report never ran, and the lock it held blocked the next triggers. Measured
+    # from the pass start, the budget is the wall time the task limit actually sees.
+    started = pass_started
     backlog_before = len(pending)
     write_lock = threading.Lock()
     decided_ids: set[str] = set()
@@ -2059,6 +2078,10 @@ def _work(argv: list[str] | None = None) -> int:
             record(entry)
 
     def out_of_time() -> bool:
+        # AT LEAST ONE ROW EVERY PASS, as the memory guard does: a setup that alone outran the
+        # budget must not turn into a pass that decides nothing, hour after hour.
+        if not counts:
+            return False
         return time.monotonic() - started > RUN_BUDGET_SEC
 
     # ---- THE RULE LANE, FIRST AND UNBOUNDED BY ANY QUOTA -----------------------------------
