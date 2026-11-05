@@ -148,6 +148,15 @@ CLOSE_HOUR = 19.5       # force-close positions at 19:30 UTC
 #: the allocator's fractions stop meaning anything. Dormant is the honest state there; a
 #: smaller book that cannot represent its own weights is not.
 PROMOTED_MIN_EQUITY = 300.0
+#: EUR. THE FUSION RUIN LINE (principal zuck 2026-11-05 16:10:57Z: "lower the Fusion equity floor
+#: to EUR 10"; journal D-20261105-042). Below it no Fusion sleeve trades at all; above it every
+#: order is judged on its own size -- allocator sovereignty sends nothing below the venue minimum
+#: and FUSION_MAX_TRADE_RISK_FRAC refuses any order risking more than 10%. Derived: the cheapest
+#: admitted sleeve's measured 0.01-lot stop risk (EUR 0.58, usdnok_carry, n=6) over the 10%
+#: per-trade rail = EUR 5.8, rounded up. proposals/fusion_deadman.EQUITY_FLOOR_EUR is the same
+#: number (pinned by test). PROMOTED_MIN_EQUITY stays the line below which the 0.01-lot override
+#: is not stamped, so nothing is ever forced up to the minimum lot on a small account.
+FUSION_RUIN_FLOOR_EUR = 10.0
                              # (0.01 lot at 300 EUR ~= 5.9% risk/trade ~= validated 5.5%)
 
 # (label, signal_hour, range window)  range None => [0, signal_hour)
