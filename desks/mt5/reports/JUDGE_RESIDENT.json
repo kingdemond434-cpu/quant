@@ -17,7 +17,7 @@
  "uptime_s": 740553.0,
  "last_sweep_ended_utc": "2026-11-05T06:23:44+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-05T09:20:08+00:00",
+ "heartbeat_utc": "2026-11-05T09:35:12+00:00",
  "sweep_phase": {
   "pid": 31752,
   "sweep_started_utc": "2026-11-05T06:24:12+00:00",
@@ -82,22 +82,22 @@
      }
     },
     "prewarm": {
-     "samples": 701,
+     "samples": 785,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 682,
-       "share": 0.973
+       "n": 766,
+       "share": 0.976
       },
       {
        "stack": "external_gauntlet.py:_submit_next:2072 < external_gauntlet.py:_prewarm_cache:2119 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
        "n": 10,
-       "share": 0.014
+       "share": 0.013
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 4,
-       "share": 0.006
+       "share": 0.005
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:87 < process.py:submit:797 < external_gauntlet.py:_submit_next:2079 < external_gauntlet.py:_prewarm_cache:2119",
@@ -111,13 +111,13 @@
       }
      ],
      "process": {
-      "cpu_s": 265.2,
-      "page_faults": 5592007.0,
-      "read_bytes": 2534746.0,
-      "write_bytes": 6299580548.0,
-      "sampled_s": 7000.0,
+      "cpu_s": 274.5,
+      "page_faults": 5793724.0,
+      "read_bytes": 2612020.0,
+      "write_bytes": 6495098502.0,
+      "sampled_s": 7840.0,
       "rss_mb_max": 3208.7,
-      "cpu_share_of_wall": 0.038
+      "cpu_share_of_wall": 0.035
      }
     }
    }
