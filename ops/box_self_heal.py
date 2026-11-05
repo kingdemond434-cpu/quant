@@ -885,8 +885,9 @@ class Pass:
                 gone = False
                 res = {**res, "verify": "the target is still in the live table (or the table "
                                         "is unreadable)"}
+        # the identity proof travels with the act, so a wrong stop is visible off the box
         self.red(key, "STOPPED" if gone else "STOP_FAILED", why, pid=p.pid,
-                 cmdline=p.cmdline[:300], result=res)
+                 create_time=p.create_time, cmdline=p.cmdline[:300], result=res)
         return gone
 
     def end(self, rule: Rule, task: str, why: str, *, key: str | None = None) -> bool:
