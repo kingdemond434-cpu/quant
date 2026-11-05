@@ -1,4 +1,4 @@
-"""CENTRAL-BANK TONE -- a role of the LLM research lab (principal's idea 18, approved 2026-10-13).
+"""CENTRAL-BANK TONE -- a role of the LLM research lab (principal's idea 18, agreed by him 2026-10-13).
 
 WHAT IT DOES. Reads PBoC, BoJ, SARB, RBA and CBRT speeches, decisions and minutes IN THEIR
 ORIGINAL LANGUAGE (zh, ja, en, en, tr), scores each for hawkish/dovish stance twice -- once with a
