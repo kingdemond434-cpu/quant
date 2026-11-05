@@ -1172,6 +1172,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # organs to 100%, every day"). Reads two small JSON files; core so it runs every pass.
     "silent_organs",
     "producer_census", "productivity_census", "producer_breadth", "preregistration",
+    # Every producer's stage-to-stage yield, its named bottleneck and the RED fence (BACKLOG
+    # row 58). Reads two JSON artifacts, seconds; core so the fence never misses an hour.
+    "producer_funnel",
     # The north star over certified edges and the per-producer contracts it feeds (Tier-1
     # #9/#11): artifact readers, seconds each, on the core clock with the census they join.
     "alpha_rank", "factory_contracts",
@@ -1436,6 +1439,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # PRODUCER BREADTH: every producer's reach against what it minted -- the
                      # machine measuring its own breadth, beside the census it complements.
                      "producer_breadth",
+                     # Every producer's funnel, yield per stage and named bottleneck (row 58).
+                     "producer_funnel",
                      # Tier-1 B1/B7/B10/B11: the release bit, the scientists' league table, the
                      # failure prior and the unified EVIG acquisition are all the machine
                      # measuring and scheduling itself.
@@ -2327,6 +2332,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # PRODUCER BREADTH reads the registry with one grouped query and at most 384 MB of seat files
     # (its own MAX_SEAT_BYTES_TOTAL); measured 0.6 s on a tree without the registry. Generous.
     "producer_breadth": 300,
+    # The producer funnel reads PRODUCTIVITY_CENSUS.json and PRODUCER_YIELD.json and its own
+    # small state file; measured under 2 s here. Generous.
+    "producer_funnel": 180,
     # THE ANCHOR/EXIT PROPOSER measures its bind census under 240 s and then registers a
     # 1,200-row slice, which the first pass measured at roughly four rows a second; the cap sits
     # above census + registration so the slice lands rather than being cut at the same prefix.
@@ -6306,6 +6314,12 @@ def main() -> None:
     # reader of the registry, the seats and the producers' own reports -- seconds, core clock.
     pbr = _costed("producer_breadth", lambda: _producer(
         "producer_breadth", "research/producer_breadth.py"))
+    # EVERY PRODUCER'S FUNNEL (BACKLOG row 58): stage-to-stage yield per producer, the single
+    # worst actionable stage named, and RED for a producer stuck at one stage past 24h or whose
+    # throughput to the judge halved -- routed onto the issue board with that bottleneck. Runs
+    # after the census it reads; measures only, throttles nothing.
+    pfun = _costed("producer_funnel", lambda: _producer(
+        "producer_funnel", "research/producer_funnel.py", "--once"))
     # THE NORTH STAR AND THE CONTRACTS (Tier-1 #9/#11, 2026-09-29). `alpha_rank` builds the
     # eight-channel independence graph over every CERTIFIED edge and publishes the effective
     # independent alpha rank with each certificate's marginal contribution, credited to the
@@ -6540,6 +6554,7 @@ def main() -> None:
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "silent_organs": sil, "producer_census": prdc,
                     "productivity_census": prodc, "producer_breadth": pbr,
+                    "producer_funnel": pfun,
                     "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
                     "box_state_freshness": bsf, "desk_health": dhl,
