@@ -11,6 +11,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import textwrap
@@ -652,7 +653,8 @@ def test_no_raw_login_in_any_written_state() -> None:
                    if f.is_file() and f.name.startswith("gold_"))
     assert blob
     for login in (E8_LOGIN, FU_LOGIN, FT_LOGIN):
-        assert str(login) not in blob
+        # A whole number only: a timestamp's microseconds (".313377") once contained 31337.
+        assert not re.search(rf"(?<!\d){login}(?!\d)", blob)
 
 
 # ======================================================================== v2: blind cancels all
