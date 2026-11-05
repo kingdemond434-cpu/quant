@@ -404,3 +404,26 @@ def test_a_lock_records_its_holders_start_and_that_holder_is_respected(tmp_path,
     held = json.loads(lock.read_text("utf-8"))
     assert held["pid"] == os.getpid() and isinstance(held["create_time"], float)
     assert dw._single_flight() is None, "the live holder recorded with its start keeps the lock"
+
+
+def test_the_replay_scans_rows_even_when_its_setup_outruns_the_budget(tmp_path,
+                                                                      monkeypatch) -> None:
+    """MEASURED on the box 11-05: wanted 7,200, matched 0, rows_scanned 0, elapsed 1,459 s, the
+    cursor parked at row 0 of the same file every pass -- the story rebuild and the file listing
+    spent the whole budget before the first row. The scan now always makes progress."""
+    src = tmp_path / "intel" / "mql5_signals" / "discoveries.jsonl"
+    src.parent.mkdir(parents=True)
+    rows = [{"source": "mql5_signals", "title": f"row {i}", "url": f"https://x/{i}"}
+            for i in range(10)]
+    src.write_text("\n".join(json.dumps(r) for r in rows) + "\n", "utf-8")
+    want = dw._deepening_task_id("mql5_signals", rows[7])
+    monkeypatch.setattr(dw, "RULE_CURSOR", tmp_path / "cursor.json")
+
+    def slow_stories():
+        time.sleep(0.2)
+        return []
+    monkeypatch.setattr(dw, "_story_tasks", slow_stories)
+    monkeypatch.setattr(dw, "rule_work", lambda task, universe: ([], "NO_RULE", []))
+    _results, note = dw.replay_blocked({want}, {"EURUSD"}, 0.0, paths=[src])
+    assert note["rows_scanned"] >= 8 and note["matched"] == 1, note
+    assert note["story_s"] >= 0.2 and "scan_s" in note
