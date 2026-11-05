@@ -13,7 +13,15 @@ rem
 rem One miner is killed after QUANT_MINER_TIMEOUT_S (180 s) so a hung channel never stalls the
 rem rest; the suite exits 0 when it finished, whatever each channel returned, and the per-seat
 rem counts land in latest_discoveries.json and PRODUCER_YIELD.
+rem
+rem CLEAR-ACCESS CHANNELS ONLY (Auditor HOLD on #773). The box runs only channels that use an
+rem official API, open data or local computation: cot (CFTC), central_bank (central-bank RSS),
+rem weather (Open-Meteo, NOAA, Drought Monitor), github (GitHub API), seasonality and
+rem correlations (local), and sec_edgar when QUANT_EDGAR_UA is set. Every other channel, the web
+rem scrapers and youtube among them, is reported SET_ASIDE by name in latest_discoveries.json.
+rem The box never contacts YouTube.
 setlocal
+set "QUANT_MINERS_ALLOW=cot,central_bank,weather,github,seasonality,correlations,sec_edgar"
 set "PYTHONPATH=C:\opt\quant;C:\opt\quant\desks\mt5"
 set "LOG=C:\opt\quant\desks\mt5\logs\Quant-SideChannelMiners.log"
 set "PY=C:\Program Files\Python314\python.exe"
