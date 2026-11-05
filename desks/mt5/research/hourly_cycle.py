@@ -1190,6 +1190,11 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
     "source_evig", "source_drain", "pack_cells", "futures_state", "ground_depth",
     "timeframe_fanout",
+    # THE COPY-TRADE CROWD BOOK (Tier-1 footprint row #10, 2026-11-03): public MQL5 / FX Blue /
+    # Myfxbook accounts as a per-symbol crowd net, smart vs dumb. Hourly because its history
+    # cannot be bought later: a pass that does not run is a snapshot lost. Network-bound and
+    # capped at 300 s.
+    "copytrade_crowd",
     # The culture-gap producers (2026-09-30): a data-driven recipe walk, well under a second
     # when nothing is new, so every gap's cells are minted on the core clock.
     "culture_gap_cells",
@@ -1304,7 +1309,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
-                     "asia_plane", "futures_state", "archive_tape", "reclaim_disk",
+                     "asia_plane", "futures_state", "copytrade_crowd", "archive_tape",
+                     "reclaim_disk",
                      "maintain_miners",
                      "spread_provenance", "microstructure_census", "fusion_cost",
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
@@ -6088,6 +6094,11 @@ def main() -> None:
     # 401/403/429/451 is a hard stop per source.
     fst = _costed("futures_state", lambda: _producer(
         "futures_state", "research/futures_state.py", "--once"))
+    # THE COPY-TRADE CROWD BOOK (Tier-1 footprint row #10): public copy-trade accounts as a
+    # per-symbol crowd net, smart vs dumb, PIT series ctc_<SYMBOL>; its cells go through the same
+    # futures_state door, so it runs after that leg.
+    ctc = _costed("copytrade_crowd", lambda: _producer(
+        "copytrade_crowd", "research/copytrade_crowd.py", "--once", "--budget-s", "300"))
     # THE FRONT DOOR IS NOT THE GROUND (2026-09-23). 15 of the 121 document-holding grounds named
     # no instrument for ONE reason `pack_cells.resolve_ground` had already written: the documents
     # held are the landing page. This walks inside those grounds' own doors -- ranked links and
@@ -6523,6 +6534,7 @@ def main() -> None:
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
                     "culture_gap_cells": cgc, "futures_state": fst,
+                    "copytrade_crowd": ctc,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
                     "actor_pressure": apr, "destroyer_pool": dpo,
