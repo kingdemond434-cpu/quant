@@ -270,3 +270,69 @@ def test_every_artifact_names_who_reads_it(rig: ts.TapeStore) -> None:
     assert "desks/mt5/research/orthogonal_sweep.py::_tape_series" in consumers
     for target, why in consumers.items():
         assert why and len(why) > 40, target
+
+
+# ------------------------------------------------------------------- resumable --
+# MT5-TapeFeatures was killed at its 45-minute limit 12 runs in a row from 11-02 13:40Z: the
+# watermark was written only at the end of `run`, so every killed pass restarted from day one
+# and the window was never finished. These pin the cure: progress is saved as days are built,
+# a pass stops STARTING days at its budget and says it is incomplete, and the next pass resumes.
+def test_a_pass_killed_mid_build_keeps_the_days_it_built(rig, monkeypatch) -> None:
+    real = tf.build_day
+    calls = {"n": 0}
+
+    def dies_on_the_second(*a, **k):
+        calls["n"] += 1
+        if calls["n"] == 2:
+            raise KeyboardInterrupt("the task limit")
+        return real(*a, **k)
+    monkeypatch.setattr(tf, "CHECKPOINT_EVERY_S", 0.0)
+    monkeypatch.setattr(tf, "build_day", dies_on_the_second)
+    with pytest.raises(KeyboardInterrupt):
+        tf.run(rig, ["EURUSD"], days_back=0)
+    saved = json.loads(tf.STATE.read_text("utf-8"))
+    assert len(saved) == 1, "the day built before the kill must survive it"
+    monkeypatch.setattr(tf, "build_day", real)
+    rep = tf.run(rig, ["EURUSD"], days_back=0)
+    assert rep["symbol_days_built"] == len(DAYS) - 1 and rep["complete"] is True
+
+
+def test_a_pass_that_reaches_its_budget_stops_reports_and_the_next_one_finishes(rig) -> None:
+    first = tf.run(rig, ["EURUSD"], days_back=0, budget_s=0.0)
+    assert first["complete"] is False
+    assert first["symbol_days_built"] == 1, "the first day is always started"
+    assert first["symbol_days_remaining"] == len(DAYS) - 1
+    second = tf.run(rig, ["EURUSD"], days_back=0)
+    assert second["complete"] is True and second["symbol_days_built"] == len(DAYS) - 1
+
+
+def test_the_newest_day_is_built_first(rig) -> None:
+    rep = tf.run(rig, ["EURUSD"], days_back=0, budget_s=0.0)
+    assert list(json.loads(tf.STATE.read_text("utf-8"))) == [f"EURUSD/{max(DAYS)}"]
+    assert rep["symbol_days_built"] == 1
+
+
+def test_the_surfaces_cover_every_day_not_only_the_ones_this_pass_built(rig) -> None:
+    """A watermarked day contributes its KEPT cells, so an incremental pass that rebuilds one
+    day publishes the same surface a full pass would."""
+    tf.run(rig, ["EURUSD"], days_back=0)
+    full = json.loads(tf.COST_OUT.read_text("utf-8"))["symbols"]
+    rig.write_segment("EURUSD", DAYS[0], _synth(DAYS[0], seed="more"), POINT, 5)
+    rig.seal_day("EURUSD", DAYS[0])
+    rep = tf.run(rig, ["EURUSD"], days_back=0)
+    assert rep["symbol_days_built"] == 1
+    inc = json.loads(tf.COST_OUT.read_text("utf-8"))["symbols"]["EURUSD"]["hours"]
+    n_full = sum(int(h.get("n_bars") or 0) for h in full["EURUSD"]["hours"].values())
+    n_inc = sum(int(h.get("n_bars") or 0) for h in inc.values())
+    assert n_inc > n_full, "every day's ticks are in the surface, plus the day that grew"
+
+
+def test_a_day_watermarked_before_cells_were_kept_is_rebuilt_once(rig) -> None:
+    """Days built by the code before 2026-11-05 carry a matching watermark and no kept cells
+    (Auditor SF1 on #745). They are rebuilt -- once -- so the surfaces cover them."""
+    import shutil
+    tf.run(rig, ["EURUSD"], days_back=0)
+    shutil.rmtree(tf.SILVER.parent / "cells")
+    again = tf.run(rig, ["EURUSD"], days_back=0)
+    assert again["symbol_days_built"] == len(DAYS)
+    assert tf.run(rig, ["EURUSD"], days_back=0)["symbol_days_built"] == 0
