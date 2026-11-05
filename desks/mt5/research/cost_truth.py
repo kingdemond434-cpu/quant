@@ -988,6 +988,10 @@ def write_venue_quotes(snapshot: dict[str, Any]) -> Path | None:
            "server_utc_offset_hours": snapshot.get("server_utc_offset_hours"),
            "rollover_hour_utc": snapshot.get("rollover_hour_utc"),
            "symbols": syms, "spread_by_hour_utc": hours,
+           # Desk names this venue's registry does not carry (an alias such as a suffix or an
+           # index name): no reading under the desk's name, so no row meets the other venues.
+           "unmapped_symbols": sorted(k for k, v in (snapshot.get("symbols") or {}).items()
+                                      if isinstance(v, dict) and v.get("status") == UNMEASURED),
            "source": "desks/mt5/research/cost_truth.py"}
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
@@ -1208,6 +1212,9 @@ def quotes_only(symbols: list[str], budget_s: float,
                               "venue": venue_slug(snap) if snap.get("status") == MEASURED
                               else None,
                               "n_symbols": len(snap.get("symbols") or {}),
+                              "n_unmapped": sum(1 for v in (snap.get("symbols") or {}).values()
+                                                if isinstance(v, dict)
+                                                and v.get("status") == UNMEASURED),
                               "budget_exhausted_at": snap.get("budget_exhausted_at"),
                               "written": str(written) if written else None,
                               "why": snap.get("why")})
@@ -1632,7 +1639,8 @@ def main(argv: list[str] | None = None) -> int:
         res = quotes_only(symbols, max(30.0, args.budget_s * 0.9))
         for v in res["venues"]:
             print(f"cost_quotes: {v['venue'] or v['path'] or 'default terminal'} "
-                  f"{v['status']} {v['n_symbols']} symbols -> {v['written'] or v['why']}")
+                  f"{v['status']} {v['n_symbols']} symbols ({v['n_unmapped']} not in its "
+                  f"registry) -> {v['written'] or v['why']}")
         if not any(v.get("written") for v in res["venues"]):
             print("WRITE_OR_EXPLAIN: NO_OP cost_quotes: no running terminal answered "
                   "(every venue file keeps its readings and their age)")
