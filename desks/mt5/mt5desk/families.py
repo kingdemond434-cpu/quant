@@ -11,6 +11,7 @@ ZERO-HARDcoding ARCHITECTURE:
 """
 from __future__ import annotations
 
+import functools
 import inspect
 from collections.abc import Callable
 from typing import Any
@@ -121,6 +122,38 @@ def get_family_func(name: str) -> Callable[..., Any] | None:
     return ofn
 
 
+def hunt16_side(side: Any) -> int:
+    """A hunt16 cell's direction as the +1/-1 its constructor compares with `side > 0`.
+
+    The docket carries it as the cell's `side` PARAM ("SHORT", "LONG"). The sealed gauntlet calls
+    `fn(h1, side=1, **params)`; with `side` also in params that raises "multiple values", and its
+    fallback `fn(h1, **params)` hands the STRING to `side > 0`. Measured on the box 2026-11-05:
+    137 `dav_range_filter_adx` cells a sweep died as NOT_RUN_BUILD_FAILED with "'>' not supported
+    between instances of 'str' and 'int'", sweep after sweep. Anything unreadable raises."""
+    if isinstance(side, bool):
+        raise TypeError(f"hunt16 side must be a direction, not {side!r}")
+    if isinstance(side, (int, float)):
+        if side == 0:
+            raise ValueError("hunt16 side 0 names no direction")
+        return 1 if side > 0 else -1
+    s = str(side).strip().upper()
+    if s in ("LONG", "BUY", "1", "+1"):
+        return 1
+    if s in ("SHORT", "SELL", "-1"):
+        return -1
+    raise ValueError(f"hunt16 side {side!r} names no direction")
+
+
+def _hunt16_judge_export(fn: Callable[..., Any]) -> Callable[..., Any]:
+    """The hunt16 constructor as the judge calls it: same signals, same signature (`wraps`), the
+    cell's `side` read as a direction. Only this judge-facing export is wrapped; the forward
+    engine resolves the original through `executables.hunt16_families`."""
+    @functools.wraps(fn)
+    def call(h1: Any, side: Any = 1) -> Any:
+        return fn(h1, hunt16_side(side))
+    return call
+
+
 def __getattr__(name: str) -> Callable[..., Any]:
     """Expose existing hunt16 constructors to the canonical judge's named lookup.
 
@@ -134,7 +167,7 @@ def __getattr__(name: str) -> Callable[..., Any]:
 
         fn = hunt16_families().get(name.removeprefix("family_"))
         if fn is not None:
-            return fn
+            return _hunt16_judge_export(fn)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
