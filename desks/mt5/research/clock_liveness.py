@@ -88,6 +88,32 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
 import clock_certificate as cc  # type: ignore[import-not-found]  # noqa: E402
 
 REPORT = DESK / "reports" / "CLOCK_LIVENESS.json"
+
+# THE PASS FITS INSIDE THE CAP THAT KILLS IT, OR IT NEVER WRITES. Measured 2026-11-05: the law
+# gate read this report at 103.7 h old against a 2 h window, so the hourly leg had not completed a
+# write since 2026-11-01. The leg is capped by `hourly_cycle` (420 s, told to the child as
+# `QUANT_LEG_BUDGET_S`), and nothing in a pass respected it: every repair actuator FLOORED its
+# window (30 s / 60 s / a fixed 120 s per task), waited the whole window whenever the clock did
+# not move, and the census then ran a second and third time. So the moment clocks froze and stayed
+# frozen -- the very case the report exists for -- the repairs outlived the cap, the kill landed
+# before `publish`, and the organ hid the failure it was built to show. Now: the census is written
+# the instant it is measured (`provisional`), every repair is cut to what is left, and the pass
+# stops a write margin inside the cap.
+MIN_ACTUATOR_S = 30.0
+WRITE_MARGIN_S = 45.0
+POST_RESERVE_S = 60.0
+_PROVISIONAL: dict[str, Any] = {}
+
+
+def hard_wall_s(budget_s: float) -> float:
+    """Seconds this pass may spend before its final write, inside the cap that would kill it."""
+    try:
+        cap = float(os.environ.get("QUANT_LEG_BUDGET_S") or 0.0)
+    except ValueError:
+        cap = 0.0
+    if cap > 0:
+        return max(MIN_ACTUATOR_S, cap - WRITE_MARGIN_S)
+    return budget_s + 2 * WRITE_MARGIN_S
 DOC = ROOT / "docs" / "research" / "CLOCK_LIVENESS.md"
 RATCHET = DESK / "data" / "clock_liveness_ratchet.json"
 SHADOW_DIR = DESK / "reports" / "shadow"
@@ -875,12 +901,15 @@ def reenrol_actuator(keys: Sequence[str], budget_s: float) -> Any:
     payload = DESK / "data" / "clock_liveness_reenrol.json"
     payload.parent.mkdir(parents=True, exist_ok=True)
     payload.write_text(json.dumps(sorted(keys), indent=1), encoding="utf-8")
-    window = int(max(60.0, budget_s))
+    # THE WINDOW IS THE WHOLE COST, NOT A FLOOR UNDER IT. The child stops itself a minute inside
+    # the window and the timeout IS the window, so this actuator can never run past what the
+    # caller handed it (see `repair`: overruns here are what killed the leg before it wrote).
+    window = int(max(MIN_ACTUATOR_S, budget_s))
     return Actuator(
         name="clock_reenrol",
         argv=(sys.executable, "-W", "ignore", str(DESK / "research" / "clock_reenrol.py"),
-              "--keys-file", str(payload), "--budget-s", str(window)),
-        window_s=window, timeout_s=window + 60, cwd=str(DESK),
+              "--keys-file", str(payload), "--budget-s", str(max(30, window - 60))),
+        window_s=window, timeout_s=window, cwd=str(DESK),
         component_id="leg:clock_liveness",
         notes=("re-enrols the frozen identities into shadow_forward's own engine; the proof is "
                "their own stamps moving, never the exit code"))
@@ -890,7 +919,8 @@ def task_actuator(name: str, task: str, enable: bool, budget_s: float) -> Any:
     from libs.ops.control_plane.actuators import Actuator
     argv = (("schtasks", "/Change", "/TN", task, "/ENABLE") if enable
             else ("schtasks", "/Run", "/TN", task))
-    return Actuator(name=name, argv=argv, window_s=int(max(30.0, budget_s)), timeout_s=120,
+    window = int(max(MIN_ACTUATOR_S, budget_s))
+    return Actuator(name=name, argv=argv, window_s=window, timeout_s=min(120, window),
                     task=task,
                     notes=("a lane that only runs inside one session is not 24/7; enabling and "
                            "running the task is the repair, its clocks advancing is the proof"))
@@ -948,6 +978,17 @@ def repair(frozen: Sequence[Mapping[str, Any]], budget_s: float, *,
     if not frozen:
         return acts
     t0 = time.monotonic()
+
+    def left() -> float:
+        return budget_s - (time.monotonic() - t0)
+
+    def skipped(name: str, cause: str, n: int) -> dict[str, Any]:
+        return {"actuator": name, "result": "UNMEASURED", "repaired": False, "cause": cause,
+                "clocks": n, "budget_exhausted": True,
+                "why": (f"the pass's repair budget ({budget_s:.0f}s) was spent before this repair "
+                        f"could run; it is raised again next pass. The report is written first: "
+                        f"a repair that outlives the leg's cap takes the report down with it")}
+
     by_cause: dict[str, list[Mapping[str, Any]]] = {}
     for c in frozen:
         by_cause.setdefault(str(c.get("cause")), []).append(c)
@@ -970,7 +1011,11 @@ def repair(frozen: Sequence[Mapping[str, Any]], budget_s: float, *,
         tasks = sorted({str(c.get("disabled_task")) for c in engine if c.get("disabled_task")})
         for task in tasks:
             mine = [c for c in engine if str(c.get("disabled_task")) == task]
-            act = _with_postcondition(task_actuator(f"enable:{task}", task, True, 120.0),
+            if left() < MIN_ACTUATOR_S:
+                acts.append(skipped(f"enable:{task}", "engine_stopped", len(mine)))
+                continue
+            act = _with_postcondition(task_actuator(f"enable:{task}", task, True,
+                                                    min(120.0, left())),
                                       clock_advanced_postcondition(aim(mine)))
             acts.append({**run_actuator(act, {}, apply=apply), "cause": "engine_stopped",
                          "clocks": len(mine)})
@@ -992,8 +1037,10 @@ def repair(frozen: Sequence[Mapping[str, Any]], budget_s: float, *,
                              and LANE_BY_NAME[str(c["lane"])].task})
         for name, task in (("boot_bar_supply", "MT5-TerminalBoot"),
                            *[(f"run_lane:{x}", x) for x in lane_tasks]):
-            left = max(30.0, min(240.0, budget_s - (time.monotonic() - t0)))
-            act = _with_postcondition(task_actuator(name, task, False, left), pc)
+            if left() < MIN_ACTUATOR_S:
+                acts.append(skipped(name, "no_bars", len(bars)))
+                continue
+            act = _with_postcondition(task_actuator(name, task, False, min(240.0, left())), pc)
             out = {**run_actuator(act, {}, apply=apply), "cause": "no_bars",
                    "clocks": len(bars)}
             acts.append(out)
@@ -1009,9 +1056,10 @@ def repair(frozen: Sequence[Mapping[str, Any]], budget_s: float, *,
     seen_keys = {str(c.get("key")) for c in named}
     reenrol = [c for c in named if str(c.get("lane")) == "main"]
     reenrol += [c for c in off if str(c.get("key")) not in seen_keys]
-    if reenrol:
-        left = max(60.0, budget_s - (time.monotonic() - t0))
-        act = _with_postcondition(reenrol_actuator([str(c["key"]) for c in reenrol], left),
+    if reenrol and left() < 2 * MIN_ACTUATOR_S:
+        acts.append(skipped("clock_reenrol", "off_roster", len(reenrol)))
+    elif reenrol:
+        act = _with_postcondition(reenrol_actuator([str(c["key"]) for c in reenrol], left()),
                                   clock_advanced_postcondition(aim(reenrol)))
         acts.append({**run_actuator(act, {}, apply=apply), "cause": "off_roster",
                      "clocks": len(reenrol)})
@@ -1102,12 +1150,30 @@ def build(budget_s: float = 300.0, *, apply: bool = True) -> dict[str, Any]:
                        "why": f"measured on a `{host}`: {host_why}"} for n, w in CLOCK_TASKS])
     if apply and host == "trading_box" and any(r["acted"] for r in schedule):
         tasks = scheduled_tasks()
+    wall = hard_wall_s(budget_s)
+    c0 = time.monotonic()
     before = census(cal, roster, now, tasks, host=host, host_why=host_why)
+    census_s = time.monotonic() - c0
     counts_before = _counts(before)
     frozen = [c for c in before if c["verdict"] == FROZEN]
-    repairs = repair(frozen, max(30.0, budget_s - (time.monotonic() - t0)), apply=apply)
-    after = (census(cal, engine_roster()[0], now_utc(), tasks, host=host, host_why=host_why)
-             if (repairs and apply) else before)
+    publish_provisional(provisional_doc(before, now=now, host=host, host_why=host_why,
+                                        budget_s=budget_s, wall_s=wall, census_s=census_s,
+                                        elapsed_s=time.monotonic() - t0,
+                                        previous=read_json(REPORT)))
+    # The repairs get what is left after the census that may follow a retirement and the write.
+    reserve = census_s + POST_RESERVE_S
+    repairs = repair(frozen, max(0.0, min(budget_s, wall) - (time.monotonic() - t0) - reserve),
+                     apply=apply)
+    after_census = "not needed: no repair was raised" if not (repairs and apply) else "measured"
+    if repairs and apply and wall - (time.monotonic() - t0) >= 2 * census_s + POST_RESERVE_S:
+        after = census(cal, engine_roster()[0], now_utc(), tasks, host=host, host_why=host_why)
+    else:
+        after = before
+        if repairs and apply:
+            after_census = (f"SKIPPED: {wall - (time.monotonic() - t0):.0f}s left inside the "
+                            f"{wall:.0f}s wall and a census costs {census_s:.0f}s; the counts "
+                            f"after are the counts before, and each repair's own postcondition "
+                            f"is its proof")
     counts_after = _counts(after)
     rat = ratchet_write(counts_after[FROZEN]) if apply else ratchet_read()
     # CLOCK IMPLIES CERTIFICATE (principal 2026-09-23). Liveness and legality are two different
@@ -1142,7 +1208,8 @@ def build(budget_s: float = 300.0, *, apply: bool = True) -> dict[str, Any]:
     return {
         "at": now.isoformat(), "hostname": hostname(),
         "host": host, "host_why": host_why,
-        "budget_s": budget_s, "applied": bool(apply),
+        "budget_s": budget_s, "wall_s": round(wall, 1), "census_s": round(census_s, 2),
+        "after_census": after_census, "provisional": False, "applied": bool(apply),
         "session_source": cal.source, "roster": roster_why,
         "clocks_total": len(after),
         "counts_before": counts_before, "counts": counts_after,
@@ -1185,6 +1252,52 @@ def build(budget_s: float = 300.0, *, apply: bool = True) -> dict[str, Any]:
                  "is repaired in the same pass and the postcondition is its own stamp moving, "
                  "never a zero exit code (LAWS 7: A REPORT IS NOT A REMEDY)"),
     }
+
+
+def provisional_doc(rows: Sequence[Mapping[str, Any]], *, now: datetime, host: str,
+                    host_why: str, budget_s: float, wall_s: float, census_s: float,
+                    elapsed_s: float, previous: Any = None) -> dict[str, Any]:
+    """The census as measured, before any repair -- what survives if the pass is killed.
+
+    The certificate block is the LAST COMPLETED pass's, carried with its own stamp, so a fence
+    reading this file mid-pass still judges the certificate law rather than finding no block.
+    """
+    counts = _counts(rows)
+    frozen = [c for c in rows if c.get("verdict") == FROZEN]
+    prev = previous if isinstance(previous, dict) else {}
+    carried: dict[str, Any] = {}
+    if isinstance(prev.get("certificate"), dict):
+        carried = {"certificate": prev["certificate"],
+                   "certificate_at": prev.get("certificate_at") or prev.get("at")}
+    return {**carried,
+        "at": now.isoformat(), "hostname": hostname(), "host": host, "host_why": host_why,
+        "provisional": True,
+        "provisional_why": ("census measured, repairs and the certificate audit not yet "
+                            "finished: if this is still the report, the pass was stopped "
+                            "before its final write"),
+        "budget_s": budget_s, "wall_s": round(wall_s, 1), "census_s": round(census_s, 2),
+        "elapsed_s": round(elapsed_s, 2), "clocks_total": len(rows),
+        "counts_before": counts, "counts": counts,
+        "frozen_before": counts[FROZEN], "frozen_after": counts[FROZEN],
+        "frozen": [{k: c.get(k) for k in
+                    ("lane", "key", "symbol", "timeframe", "status", "organ", "last_advance",
+                     "expected_bars", "actual_bars", "lag_bars", "freeze_bars", "window_s",
+                     "cause", "cause_why", "why")} for c in frozen[:300]],
+    }
+
+
+def publish_provisional(doc: Mapping[str, Any], *, report: Path | None = None) -> None:
+    """Atomic JSON write of a provisional or failed pass. Never raises: it is the fallback."""
+    _PROVISIONAL.clear()
+    _PROVISIONAL.update(doc)
+    r = report or REPORT
+    try:
+        r.parent.mkdir(parents=True, exist_ok=True)
+        tmp = r.with_suffix(".provisional.tmp")
+        tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+        os.replace(tmp, r)
+    except OSError:
+        pass
 
 
 # ------------------------------------------------------------------------------------- render
@@ -1286,7 +1399,19 @@ def main(argv: list[str] | None = None) -> int:
                     help="measure and repair nothing; writes the report only")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
-    doc = build(budget_s=a.budget_s, apply=not a.dry_run)
+    _PROVISIONAL.clear()
+    try:
+        doc = build(budget_s=a.budget_s, apply=not a.dry_run)
+    except Exception as exc:
+        # A PASS THAT RAISES STILL LEAVES A DATED REPORT NAMING WHY, so the fence reads the cause
+        # instead of an age. It keeps the census if one was measured; it is never a clean verdict.
+        failed = dict(_PROVISIONAL) or {"at": now_utc().isoformat(), "hostname": hostname(),
+                                        "clocks_total": None, "frozen": []}
+        failed.update({"provisional": True,
+                       "provisional_why": f"the pass raised {type(exc).__name__}: {exc}",
+                       "error": f"{type(exc).__name__}: {exc}"})
+        publish_provisional(failed)
+        raise
     publish(doc)
     if a.json:
         print(json.dumps(doc, indent=1, default=str))

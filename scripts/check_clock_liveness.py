@@ -48,7 +48,9 @@ REPORT = ROOT / "desks" / "mt5" / "reports" / "CLOCK_LIVENESS.json"
 RATCHET = ROOT / "desks" / "mt5" / "data" / "clock_liveness_ratchet.json"
 
 #: The leg is hourly; two cadences is the desk's standing rule for "stopped rather than slow".
-MAX_REPORT_AGE_S = 2 * 3600.0
+MAX_REPORT_AGE_S = 2 * 3600
+#: One leg cap plus slack: a provisional report younger than this is a pass still running.
+PROVISIONAL_GRACE_S = 15 * 60.0
 
 OK, FAIL, UNMEASURED = "OK", "FAIL", "UNMEASURED"
 
@@ -96,6 +98,15 @@ def judge(report: Any, ratchet: Any, *, require_state: bool,
         findings.append(f"the report is {age / 3600.0:.1f} h old against a "
                         f"{MAX_REPORT_AGE_S / 3600.0:.0f} h window: the `clock_liveness` leg has "
                         f"stopped, so every clock verdict in it is stale")
+
+    # A PROVISIONAL REPORT IS A PASS IN FLIGHT, OR ONE THAT DIED. The organ writes its census the
+    # moment it is measured and overwrites it at the end; a provisional file older than one leg cap,
+    # or one that names an exception, is a pass that never finished -- red, with the cause named.
+    if report.get("provisional") and (report.get("error") or age is None
+                                      or age > PROVISIONAL_GRACE_S):
+        findings.append(f"the last `clock_liveness` pass did not finish its write: "
+                        f"{report.get('provisional_why') or 'no reason recorded'} (the census "
+                        f"in the file is real; repairs and the certificate audit did not land)")
 
     raw_frozen = report.get("frozen")
     frozen_rows: list[Any] = raw_frozen if isinstance(raw_frozen, list) else []
