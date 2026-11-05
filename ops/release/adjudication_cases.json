@@ -254,6 +254,18 @@
    "source": "independent-review job 127006198614; Auditor CLEAR bfb57aa81 (report-only producer funnel + census budget; Finish-paused via coordinator 02:30Z)"
   },
   {
+   "pr": 722,
+   "head": "4f46ed9d3f33d0a489919c536019e22d8f72b842",
+   "base": "298c068a323f7ae25025a1ba5894967931573e00",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "The change introduces a new file `research_panel.py` that alters the logic for selecting symbols to study, which could increase risk by changing the set of symbols being analyzed."
+   ],
+   "source": "independent-review job 126973551257; Auditor CLEAR 4f46ed9d3"
+  },
+  {
    "pr": 642,
    "head": "0bdb84e4c76049e050a779a274c61d0a24398eb4",
    "base": "6727fc33e5ffafe5cfb1886b2dd38df2f47666b5",
