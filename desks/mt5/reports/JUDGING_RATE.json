@@ -1,56 +1,56 @@
 {
- "at": "2026-11-05T21:03:19+00:00",
+ "at": "2026-11-05T23:01:09+00:00",
  "status": "MEASURED",
  "verdicts": {
   "status": "MEASURED",
-  "rows_total": 1440697,
+  "rows_total": 1453219,
   "rows_unstamped": 0,
-  "last_verdict_at": "2026-11-05T17:43:23+00:00",
+  "last_verdict_at": "2026-11-05T21:25:50+00:00",
   "counts": {
    "1h": 0,
-   "24h": 23380,
-   "7d": 405215,
-   "build_step_lo": 0,
+   "24h": 35902,
+   "7d": 397548,
+   "build_step_lo": 12522,
    "build_step_hi": 0
   },
   "count_basis": "changed verdict events; unchanged retests do not append",
   "first_terminal_counts": {
    "1h": 0,
-   "24h": 4503,
-   "7d": 244843,
-   "build_step_lo": 0,
+   "24h": 9848,
+   "7d": 234805,
+   "build_step_lo": 5345,
    "build_step_hi": 0
   },
-  "first_terminal_cells": 651553,
+  "first_terminal_cells": 656898,
   "first_terminal_per_hour": {
    "1h": 0.0,
-   "24h": 187.625,
-   "7d": 1457.399
+   "24h": 410.333,
+   "7d": 1397.649
   },
   "per_hour": {
    "1h": 0.0,
-   "24h": 974.167,
-   "7d": 2411.994
+   "24h": 1495.917,
+   "7d": 2366.357
   }
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 14543,
-   "7d": 55392
+   "24h": 20749,
+   "7d": 61907
   },
   "per_hour": {
-   "24h": 605.958,
-   "7d": 329.714
+   "24h": 864.542,
+   "7d": 368.494
   }
  },
- "verdicts_per_hour": 974.167,
- "verdicts_per_day": 23380.0,
+ "verdicts_per_hour": 1495.917,
+ "verdicts_per_day": 35902.0,
  "verdict_rate_basis": "changed verdict events, not total completed tests",
- "first_judged_per_day": 4503.0,
+ "first_judged_per_day": 9848.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
- "created_per_day": 14543.0,
+ "created_per_day": 20749.0,
  "backlog": "UNMEASURED",
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
@@ -62,7 +62,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-05T21:03:05+00:00",
-  "pid": 22052
+  "started_at": "2026-11-05T22:56:47+00:00",
+  "pid": 29220
  }
 }
