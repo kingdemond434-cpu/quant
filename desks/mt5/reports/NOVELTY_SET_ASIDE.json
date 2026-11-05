@@ -1,8 +1,14 @@
 {
- "at": "2026-11-03T20:35:18+00:00",
+ "at": "2026-11-05T07:18:53+00:00",
  "screened": 1500,
  "set_aside": 16,
  "rows": [
+  {
+   "sym": "USCOCOA",
+   "family": "cross_asset_residual",
+   "twin": "external.USCOCOA@M5.cross_asset_residual.p=b3a79f17d1268b3e",
+   "why": "every measurable dimension reads as a twin of external.USCOCOA@M5.cross_asset_residual.p=b3a79f17d1268b3e (feature 1.00, semantic 1.00); the twin is NAMED rathe"
+  },
   {
    "sym": "AUDCHF",
    "family": "formula",
@@ -20,12 +26,6 @@
    "family": "cross_asset_residual",
    "twin": "external.GBPJPY@M5.cross_asset_residual.p=428518b71bf7faed",
    "why": "every measurable dimension reads as a twin of external.GBPJPY@M5.cross_asset_residual.p=428518b71bf7faed (feature 0.92, semantic 0.94); the twin is NAMED rather"
-  },
-  {
-   "sym": "USCOCOA",
-   "family": "cross_asset_residual",
-   "twin": "external.USCOCOA@M5.cross_asset_residual.p=b3a79f17d1268b3e",
-   "why": "every measurable dimension reads as a twin of external.USCOCOA@M5.cross_asset_residual.p=b3a79f17d1268b3e (feature 1.00, semantic 1.00); the twin is NAMED rathe"
   },
   {
    "sym": "EURCAD",
