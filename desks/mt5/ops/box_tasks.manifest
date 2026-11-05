@@ -335,4 +335,4 @@ TASK name="Quant-VideoCells"   trigger="hourly"                      runs="scrip
 # path, the bridge or the miners. Registered as SYSTEM by the adoption run's ensure list (Adopt-And-Seal 1b).
 # The independence intake (named by the watchdog's closed table, so the DR floor must know it).
 TASK name="MT5-IndependenceIntake" trigger="hourly at :42"        runs="desks/mt5/research/independence_intake.py" installer="desks/mt5/scripts/install_independence_intake_task.ps1" lane="research"
-TASK name="Quant-BoxSelfHeal"  trigger="daily, every 5 minutes"       runs="ops/box_self_heal.py"         installer="desks/mt5/scripts/install_box_self_heal_task.ps1" lane="ops"
+TASK name="Quant-BoxSelfHeal"  trigger="every 5 minutes"              runs="ops/box_self_heal.py"         installer="desks/mt5/scripts/install_box_self_heal_task.ps1" lane="ops"
