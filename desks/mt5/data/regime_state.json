@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-05T03:00:04.506697+00:00",
+  "swept_at": "2026-11-05T03:15:04.109099+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -129,8 +129,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 59,
-      "shadow_exp_r": 0.075,
+      "shadow_n": 60,
+      "shadow_exp_r": 0.073,
       "woke_on_shadow": false
     },
     "AUDJPY|cross_asset_residual_continuous": {
@@ -976,8 +976,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": 0.0456,
+      "shadow_n": 49,
+      "shadow_exp_r": -0.2847,
       "woke_on_shadow": false
     },
     "CHFSGD|cross_asset_residual_continuous": {
@@ -1153,7 +1153,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0597,
+      "shadow_exp_r": -0.05,
       "woke_on_shadow": false
     },
     "EURCHF|discovered_asia": {
@@ -3660,8 +3660,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 58,
-      "shadow_exp_r": 0.0744,
+      "shadow_n": 59,
+      "shadow_exp_r": 0.0647,
       "woke_on_shadow": false
     },
     "USDCHF|discovered_asia": {
@@ -3782,7 +3782,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.6266,
+      "shadow_exp_r": -0.5995,
       "woke_on_shadow": false
     },
     "USDJPY|asia": {
@@ -4211,7 +4211,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4849,
+      "shadow_exp_r": -0.5082,
       "woke_on_shadow": false
     },
     "USDTHB|overnight_gap_decay_continuous": {
@@ -4233,7 +4233,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1454,
+      "shadow_exp_r": -0.1176,
       "woke_on_shadow": false
     },
     "USDZAR|carry_asia": {
@@ -4540,8 +4540,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 21,
-      "shadow_exp_r": -2.9366,
+      "shadow_n": 55,
+      "shadow_exp_r": -0.0684,
       "woke_on_shadow": false
     },
     "XAGUSD|cross_asset_residual_continuous": {
