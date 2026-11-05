@@ -392,6 +392,14 @@ def test_proposer_holds_a_column_the_families_cannot_read_and_names_it(monkeypat
     assert skipped["reddit.short"].startswith(f"{floor - 1} point-in-time")
     assert skipped["reddit.absent"].startswith("0 point-in-time")
     assert P.column_observations("youtube", "ok") == floor
+    # A reader that raises is named as raising, never as an empty column (audit SF2).
+    import mt5desk.family_exogenous_conditioner as C
+
+    def _boom(*a, **k):
+        raise OSError("disk gone")
+    monkeypatch.setattr(C, "conditioner", _boom)
+    grid, skipped = P.build_grid({"youtube": {"ok": meta}}, roster)
+    assert not grid and skipped["youtube.ok"] == "series reader raised OSError: disk gone"
     # The floor is the families' own: one point fewer and the family itself emits nothing.
     bars = pd.DataFrame({"open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0},
                         index=pd.date_range("2026-01-01", periods=2000, freq="h", tz="UTC"))

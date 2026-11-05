@@ -86,7 +86,7 @@ def series_exists(sid: str) -> bool:
     return any((SERIES / f"fs_{sid}{ext}").exists() for ext in (".parquet", ".csv"))
 
 
-def column_observations(sid: str, col: str) -> int:
+def column_observations(sid: str, col: str) -> int | str:
     """Point-in-time observations of `fs_<sid>.<col>` on this host: the series every one of the
     three families reads, through the SAME `conditioner` they call, untransformed.
 
@@ -99,12 +99,15 @@ def column_observations(sid: str, col: str) -> int:
     and 7,030 of one sweep's 10,570 judged cells were UNMEASURED. Each was also charged to the
     lifetime trial ledger through `tests_run`, raising the deflated-Sharpe bar every testable
     cell must clear for a test that could not run. The raw count is the LOOSEST bar any of the
-    three applies (the z-transforms only lose points), so nothing that could build is held."""
+    three applies (the z-transforms only lose points), so nothing that could build is held.
+
+    A reader that RAISES returns the exception's name, never 0: a broken reader must not read
+    as an empty column (audit SF2 of 81ac105d6)."""
     from mt5desk.family_exogenous_conditioner import conditioner
     try:
         s = conditioner(f"fs_{sid}", col, "raw", root=SERIES)
-    except Exception:
-        return 0
+    except Exception as exc:
+        return f"{type(exc).__name__}: {exc}"[:160]
     return 0 if s is None else len(s)
 
 
@@ -143,6 +146,9 @@ def build_grid(columns: dict[str, Any], roster: dict[str, dict[str, Any]]
             continue
         for col in sorted(columns[sid]):
             n_obs = column_observations(sid, col)
+            if isinstance(n_obs, str):
+                skipped[f"{sid}.{col}"] = f"series reader raised {n_obs}"
+                continue
             if n_obs < MIN_OBSERVATIONS:
                 # NOT MINTED YET, AND NAMED. The ring re-reads every column each pass, so the
                 # column is minted on the first pass after it reaches the floor.
