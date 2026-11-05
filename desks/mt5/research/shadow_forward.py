@@ -21,7 +21,7 @@ import stat
 import sys
 import time
 import traceback
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -1632,6 +1632,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     # A date is not a timestamp. `last_run` cannot distinguish a pass at 00:01 from one at 23:59,
     # which is why it could look maintained while carrying no usable freshness at all. Both are
     # written now, and `updated_at` carries the time.
+    for _line in apply_stream_peers(state):
+        slog(_line)
     state["last_run"] = today
     state["updated_at"] = datetime.now(UTC).isoformat(timespec="seconds")
     state["configured_sleeves"] = len(enrolled)
@@ -1704,6 +1706,74 @@ def entry_stream_id(sym: str, forward_trades: list) -> dict:
     sig = "|".join(f"{t.side}@{t.entry_time}" for t in forward_trades)
     return {"id": hashlib.sha1(f"{sym}|{sig}".encode()).hexdigest()[:16] if forward_trades
             else None, "n": len(forward_trades)}
+
+
+#: A promotion candidate whose forward entries are identical to another's. The suffix form keeps
+#: every prefix-aware reader right (it is DECIDED to the enrolment, terminal to `_is_terminal`)
+#: and the promoter, which promotes only the exact "PROMOTION CANDIDATE", leaves it alone.
+STREAM_PEER = "PROMOTION CANDIDATE_STREAM_PEER"
+
+
+def _live_keys() -> set | None:
+    try:
+        import sleeve_registry
+        return set(sleeve_registry.live_keys())
+    except Exception:
+        return None
+
+
+def apply_stream_peers(state: dict, *, live: Callable[[], set | None] = _live_keys) -> list[str]:
+    """ONE BET, ONE CLOCK: a stream of identical forward entries holds one promotion candidate.
+
+    Auditor HOLD_gbpchf_formula_promotion (2026-11-05): 20 of 25 GBPCHF formula keys took the same
+    29 entries. The promoter promotes every "PROMOTION CANDIDATE", so it would have written one
+    bet LIVE twenty times and the allocator would have read twenty independent edges. Re-derived
+    every pass from the current `entry_stream` ids, among rows whose verdict is promote:
+      * a stream with a LIVE key keeps that key; every other candidate on it is a STREAM_PEER;
+      * otherwise the best forward expectancy keeps "PROMOTION CANDIDATE" (ties by key) and the
+        rest are STREAM_PEERs, each naming its representative in `stream_peer_of`;
+      * a peer whose stream is now its own (its entries diverged) or whose representative left
+        the verdict gets "PROMOTION CANDIDATE" back on the same pass.
+    The stream still promotes, once: only duplicate copies of one bet stay off the book.
+    An unreadable registry changes nothing this pass (UNMEASURED, never a guess).
+    """
+    live_now = live()
+    if live_now is None:
+        return ["stream peers: UNMEASURED -- the sleeve registry is unreadable; no change"]
+    pcs = ("PROMOTION CANDIDATE", STREAM_PEER)
+    by_stream: dict[str, list[str]] = {}
+    for key, st in state.items():
+        if not isinstance(st, dict) or st.get("status") not in pcs:
+            continue
+        es = st.get("entry_stream")
+        sid = es.get("id") if isinstance(es, dict) else None
+        by_stream.setdefault(str(sid) if sid else f"__own__{key}", []).append(key)
+
+    def _exp(k: str) -> float:
+        try:
+            return float(state[k].get("exp_r") or 0.0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    lines: list[str] = []
+    for keys in by_stream.values():
+        on_live = sorted(k for k in keys if k in live_now)
+        rep = on_live[0] if on_live else sorted(keys, key=lambda k: (-_exp(k), k))[0]
+        for k in keys:
+            st = state[k]
+            if k in live_now:                     # a LIVE key is never relabelled
+                continue
+            if k == rep or (len(keys) == 1):
+                if st.get("status") == STREAM_PEER:
+                    st["status"] = "PROMOTION CANDIDATE"
+                    st["stream_peer_of"] = None
+                    lines.append(f"{k}: stream peer -> PROMOTION CANDIDATE (its stream is its own)")
+                continue
+            if st.get("status") != STREAM_PEER or st.get("stream_peer_of") != rep:
+                lines.append(f"{k}: same forward entries as {rep} -> {STREAM_PEER}")
+            st["status"] = STREAM_PEER
+            st["stream_peer_of"] = rep
+    return lines
 
 
 def entry_stream_report(state: dict) -> dict:
