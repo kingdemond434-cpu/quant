@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-05T17:33:44+00:00",
+ "generated_utc": "2026-11-05T17:50:57+00:00",
  "summary": {
   "platforms": 14,
   "platforms_yielding": 4,
@@ -7,8 +7,8 @@
   "vectors_attempted_this_week": 802,
   "vectors_never_attempted": 5780,
   "vectors_by_outcome": {
-   "BLOCKED": 330,
-   "EMPTY": 453,
+   "BLOCKED": 331,
+   "EMPTY": 452,
    "YIELDED": 19,
    "NAMED_ONLY": 5780
   }
@@ -258,8 +258,8 @@
  "vectors": {
   "named": 6582,
   "by_outcome": {
-   "BLOCKED": 330,
-   "EMPTY": 453,
+   "BLOCKED": 331,
+   "EMPTY": 452,
    "YIELDED": 19,
    "NAMED_ONLY": 5780
   },
@@ -305,13 +305,13 @@
    },
    "ABARES commodities": {
     "outcome": "BLOCKED",
-    "attempts": 416,
+    "attempts": 417,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-05T11:46:07.826185+00:00",
+    "last_attempt": "2026-11-05T17:49:31.658055+00:00",
     "language": "en",
     "region": "au"
    },
@@ -341,13 +341,13 @@
    },
    "ABS statistics": {
     "outcome": "EMPTY",
-    "attempts": 417,
-    "successes": 164,
+    "attempts": 418,
+    "successes": 165,
     "rows": 0,
     "findings_total": 0,
-    "datasets": 492,
+    "datasets": 495,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-05T11:45:50.795341+00:00",
+    "last_attempt": "2026-11-05T17:48:33.397739+00:00",
     "language": "en",
     "region": "au"
    },
@@ -389,13 +389,13 @@
    },
    "AOFM tender results": {
     "outcome": "BLOCKED",
-    "attempts": 416,
+    "attempts": 417,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-05T11:46:30.018615+00:00",
+    "last_attempt": "2026-11-05T17:49:34.950719+00:00",
     "language": "en",
     "region": "au"
    },
@@ -413,25 +413,25 @@
    },
    "ASX research": {
     "outcome": "BLOCKED",
-    "attempts": 416,
+    "attempts": 417,
     "successes": 5,
     "rows": 1,
     "findings_total": 1,
     "datasets": 5,
-    "last_error": "bing: bing returned no parseable results (95253 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-11-05T11:47:15.071247+00:00",
+    "last_error": "bing: bing returned no parseable results (95207 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
+    "last_attempt": "2026-11-05T17:49:59.854603+00:00",
     "language": "en",
     "region": "au"
    },
    "ASX trading hours (opening auction and close)": {
     "outcome": "EMPTY",
-    "attempts": 3,
+    "attempts": 4,
     "successes": 1,
     "rows": 3,
     "findings_total": 3,
     "datasets": 0,
     "last_error": "",
-    "last_attempt": "2026-11-05T11:45:58.174540+00:00",
+    "last_attempt": "2026-11-05T17:48:42.637760+00:00",
     "language": "en",
     "region": "au"
    },
@@ -521,13 +521,13 @@
    },
    "Aussie Stock Forums": {
     "outcome": "EMPTY",
-    "attempts": 416,
+    "attempts": 417,
     "successes": 33,
     "rows": 39,
     "findings_total": 40,
     "datasets": 9,
     "last_error": "",
-    "last_attempt": "2026-11-05T11:45:58.474285+00:00",
+    "last_attempt": "2026-11-05T17:48:44.137749+00:00",
     "language": "en",
     "region": "au"
    },
@@ -2608,14 +2608,14 @@
     "region": "cn"
    },
    "Global Dairy Trade results": {
-    "outcome": "EMPTY",
-    "attempts": 416,
+    "outcome": "BLOCKED",
+    "attempts": 417,
     "successes": 166,
     "rows": 0,
     "findings_total": 0,
     "datasets": 166,
-    "last_error": "",
-    "last_attempt": "2026-11-05T11:45:48.049538+00:00",
+    "last_error": "BLOCKED",
+    "last_attempt": "2026-11-05T17:49:09.421396+00:00",
     "language": "en",
     "region": "nz"
    },
@@ -2813,25 +2813,25 @@
    },
    "HotCopper": {
     "outcome": "BLOCKED",
-    "attempts": 417,
+    "attempts": 418,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-05T11:45:37.912633+00:00",
+    "last_attempt": "2026-11-05T17:48:18.645217+00:00",
     "language": "en",
     "region": "au"
    },
    "HotCopper forex/commodities": {
     "outcome": "BLOCKED",
-    "attempts": 417,
+    "attempts": 418,
     "successes": 2,
     "rows": 2,
     "findings_total": 2,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (96187 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-11-05T11:48:08.084170+00:00",
+    "last_error": "bing: bing returned no parseable results (95261 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
+    "last_attempt": "2026-11-05T17:50:46.507595+00:00",
     "language": "en",
     "region": "au"
    },
@@ -3521,13 +3521,13 @@
    },
    "Macrobusiness": {
     "outcome": "EMPTY",
-    "attempts": 417,
+    "attempts": 418,
     "successes": 42,
     "rows": 5,
     "findings_total": 6,
     "datasets": 38,
     "last_error": "",
-    "last_attempt": "2026-11-05T11:45:47.832202+00:00",
+    "last_attempt": "2026-11-05T17:48:28.016695+00:00",
     "language": "en",
     "region": "au"
    },
@@ -4241,13 +4241,13 @@
    },
    "Port Hedland / Pilbara Ports statistics": {
     "outcome": "EMPTY",
-    "attempts": 417,
-    "successes": 161,
+    "attempts": 418,
+    "successes": 162,
     "rows": 0,
     "findings_total": 0,
-    "datasets": 161,
+    "datasets": 162,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-05T11:45:48.146097+00:00",
+    "last_attempt": "2026-11-05T17:48:29.591954+00:00",
     "language": "en",
     "region": "au"
    },
@@ -4445,37 +4445,37 @@
    },
    "RBA Research Discussion Papers": {
     "outcome": "BLOCKED",
-    "attempts": 417,
+    "attempts": 418,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-05T11:45:41.538948+00:00",
+    "last_attempt": "2026-11-05T17:48:22.389150+00:00",
     "language": "en",
     "region": "au"
    },
    "RBA media releases": {
     "outcome": "BLOCKED",
-    "attempts": 416,
-    "successes": 0,
-    "rows": 0,
-    "findings_total": 0,
-    "datasets": 0,
-    "last_error": "BLOCKED",
-    "last_attempt": "2026-11-05T11:45:40.434174+00:00",
-    "language": "en",
-    "region": "au"
-   },
-   "RBA statistics": {
-    "outcome": "BLOCKED",
     "attempts": 417,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-05T11:45:43.641715+00:00",
+    "last_attempt": "2026-11-05T17:48:36.426487+00:00",
+    "language": "en",
+    "region": "au"
+   },
+   "RBA statistics": {
+    "outcome": "BLOCKED",
+    "attempts": 418,
+    "successes": 0,
+    "rows": 0,
+    "findings_total": 0,
+    "datasets": 0,
+    "last_error": "BLOCKED",
+    "last_attempt": "2026-11-05T17:48:55.694546+00:00",
     "language": "en",
     "region": "au"
    },
@@ -4517,25 +4517,25 @@
    },
    "RBNZ monetary policy": {
     "outcome": "BLOCKED",
-    "attempts": 416,
+    "attempts": 417,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-05T11:45:49.907450+00:00",
+    "last_attempt": "2026-11-05T17:49:01.046007+00:00",
     "language": "en",
     "region": "nz"
    },
    "RBNZ statistics": {
     "outcome": "BLOCKED",
-    "attempts": 416,
+    "attempts": 417,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-05T11:45:45.810227+00:00",
+    "last_attempt": "2026-11-05T17:48:28.519060+00:00",
     "language": "en",
     "region": "nz"
    },
@@ -4997,13 +4997,13 @@
    },
    "ShareTrader NZ": {
     "outcome": "BLOCKED",
-    "attempts": 415,
+    "attempts": 416,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-11-05T11:45:47.031244+00:00",
+    "last_attempt": "2026-11-05T17:48:25.335956+00:00",
     "language": "en",
     "region": "nz"
    },
@@ -78161,13 +78161,13 @@
    },
    "r/ASX_Bets and r/AusFinance": {
     "outcome": "EMPTY",
-    "attempts": 417,
+    "attempts": 418,
     "successes": 4,
     "rows": 4,
     "findings_total": 4,
     "datasets": 0,
     "last_error": "https://www.reddit.com/r/ASX_Bets/new/.rss: no items parsed (0 bytes); https://www.reddit.com/r/AusFinance/top/.rss?t=month: no items parsed (0 bytes)",
-    "last_attempt": "2026-11-05T11:45:41.712857+00:00",
+    "last_attempt": "2026-11-05T17:48:19.086345+00:00",
     "language": "en",
     "region": "au"
    },
@@ -79306,8 +79306,8 @@
    "last_run": "2026-11-05T15:58:53+00:00",
    "fetches_per_s": 0.2334,
    "success_rate": 0.7696,
-   "wall_s_24h": 3902.9,
-   "cpu_s_24h": 764.7
+   "wall_s_24h": 3052.4,
+   "cpu_s_24h": 485.4
   },
   "forest_china": {
    "runs": 23,
@@ -79320,8 +79320,8 @@
    "last_run": "2026-11-05T17:33:44+00:00",
    "fetches_per_s": 0.34,
    "success_rate": 0.7481,
-   "wall_s_24h": 3537.3,
-   "cpu_s_24h": 713.4
+   "wall_s_24h": 4519.3,
+   "cpu_s_24h": 953.4
   },
   "forest_europe": {
    "runs": 23,
@@ -79464,16 +79464,16 @@
    "cpu_s_24h": 665.6
   },
   "forest_oceania": {
-   "runs": 22,
-   "fetches": 1055,
-   "ok": 547,
-   "http_errors": 322,
-   "transport_errors": 186,
-   "seconds": 12470.4,
-   "rows": 122,
-   "last_run": "2026-11-05T11:48:18+00:00",
-   "fetches_per_s": 0.0846,
-   "success_rate": 0.5185,
+   "runs": 23,
+   "fetches": 1109,
+   "ok": 572,
+   "http_errors": 335,
+   "transport_errors": 202,
+   "seconds": 12678.1,
+   "rows": 126,
+   "last_run": "2026-11-05T17:50:57+00:00",
+   "fetches_per_s": 0.0875,
+   "success_rate": 0.5158,
    "wall_s_24h": 4165.8,
    "cpu_s_24h": 441.1
   },

@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-05T17:45:02.935694+00:00",
+  "swept_at": "2026-11-05T18:00:06.144005+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -273,7 +273,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3659,
+      "shadow_exp_r": -0.3708,
       "woke_on_shadow": false
     },
     "AUDSGD|overnight_gap_decay_asia": {
@@ -845,7 +845,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2433,
+      "shadow_exp_r": -0.24,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_continuous": {
@@ -1923,7 +1923,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.1457,
+      "shadow_exp_r": 0.1577,
       "woke_on_shadow": false
     },
     "GBPAUD|relative_value_continuous": {
@@ -2880,7 +2880,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3867,
+      "shadow_exp_r": -0.4018,
       "woke_on_shadow": false
     },
     "NAS100|cross_asset_residual_continuous": {
@@ -3155,7 +3155,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5239,
+      "shadow_exp_r": -0.5201,
       "woke_on_shadow": false
     },
     "NZDHUF|carry_continuous": {
@@ -3209,8 +3209,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 52,
-      "shadow_exp_r": -0.1929,
+      "shadow_n": 53,
+      "shadow_exp_r": -0.1956,
       "woke_on_shadow": false
     },
     "NZDJPY|cross_asset_residual_continuous": {
@@ -3232,7 +3232,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0923,
+      "shadow_exp_r": -0.0976,
       "woke_on_shadow": false
     },
     "NZDJPY|vol_transition_continuous": {
@@ -4761,7 +4761,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0391,
+      "shadow_exp_r": 0.0433,
       "woke_on_shadow": false
     },
     "XAUAUD|momentum_volgate_continuous": {
@@ -5201,7 +5201,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0352,
+      "shadow_exp_r": 0.0381,
       "woke_on_shadow": false
     },
     "XAUUSD|macro_conditional_continuous": {
