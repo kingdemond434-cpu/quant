@@ -160,6 +160,13 @@ def _wall_due(name: str, st: dict) -> bool:
     return age >= REPROBE_DAYS
 
 
+def _rail_refused(exc: BaseException) -> bool:
+    """A refusal by the box's data rails (`box_rails`, installed only on the box's intel feed),
+    never by the source itself. Off the box the module is not loaded and this is always False."""
+    rails = sys.modules.get("box_rails")
+    return rails is not None and isinstance(exc, getattr(rails, "RailRefusal", ()))
+
+
 def _robots_still_disallows(host: str, ua_token: str) -> bool:
     """Re-read robots.txt and report whether this agent is still refused.
 
@@ -168,7 +175,9 @@ def _robots_still_disallows(host: str, ua_token: str) -> bool:
     """
     try:
         txt = fetch(f"https://{host}/robots.txt")
-    except Exception:
+    except Exception as exc:
+        if _rail_refused(exc):
+            raise  # the box never asked: that is UNMEASURED, not "still disallows"
         return True
     group_ua, disallowed = None, False
     for raw in txt.splitlines():
@@ -193,6 +202,8 @@ def _probe_wall(name: str, wall: dict) -> tuple[bool, str]:
     try:
         fetch(wall["url"])
     except Exception as exc:
+        if _rail_refused(exc):
+            raise  # the box never asked: that is UNMEASURED, not "still blocked"
         return False, f"still blocked: {str(exc)[:120]}"
     return True, "target URL now answers -- source resumable"
 
@@ -260,6 +271,33 @@ def mine_myfxbook_outlook() -> list[dict]:
     return out[:60]
 
 
+def _cdx_page(st: dict, key: str, url_pattern: str) -> list:
+    """One page of a Wayback CDX walk that NEVER ENDS (2026-11-03, principal: every miner 24/7).
+
+    The offset used to only grow, so once the archive was walked every pass returned nothing and
+    the seat went quiet for good. Now an empty page ends a LAP: the offset wraps to 0 and the next
+    lap asks only for captures made since the previous lap began (`from=`), so the walk keeps
+    polling the archive for what is new instead of finishing.
+    """
+    offset = int(st.get(f"{key}_offset", 0))
+    since = str(st.get(f"{key}_from") or "")
+    q = (f"http://web.archive.org/cdx/search/cdx?url={url_pattern}&output=json&limit=300"
+         f"&offset={offset}&collapse=urlkey" + (f"&from={since}" if since else ""))
+    txt = fetch(q, timeout=40)
+    rows_ = json.loads(txt) if txt.strip() else []
+    got = max(len(rows_) - 1, 0)
+    if got:
+        st[f"{key}_offset"] = offset + got
+        st.setdefault(f"{key}_lap_started", datetime.now(UTC).strftime("%Y%m%d"))
+    else:                                   # lap complete: poll for new captures from here on
+        st[f"{key}_offset"] = 0
+        st[f"{key}_from"] = str(st.pop(f"{key}_lap_started", "") or
+                                datetime.now(UTC).strftime("%Y%m%d"))
+        st[f"{key}_laps"] = int(st.get(f"{key}_laps", 0)) + 1
+    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    return rows_
+
+
 # ---------------------------------------------------------------- S11 Darwinex
 def mine_darwinex() -> list[dict]:
     """DARWIN population via Wayback CDX -- the live listing was destroyed at source.
@@ -271,11 +309,7 @@ def mine_darwinex() -> list[dict]:
     a live enumerator of a dead index, and a 404 repeated 88 times is not evidence of absence
     until someone asks a second door.
     """
-    st = _state()
-    offset = int(st.get("darwinex_cdx_offset", 0))
-    txt = fetch("http://web.archive.org/cdx/search/cdx?url=darwinex.com/darwin/*"
-                f"&output=json&limit=300&offset={offset}&collapse=urlkey", timeout=40)
-    rows_ = json.loads(txt) if txt.strip() else []
+    rows_ = _cdx_page(_state(), "darwinex_cdx", "darwinex.com/darwin/*")
     out = []
     for r_ in rows_[1:]:
         try:
@@ -287,8 +321,6 @@ def mine_darwinex() -> list[dict]:
                        f"DARWIN {code.group(1)}" if code else orig[:120],
                        f"https://web.archive.org/web/{ts}/{orig}",
                        darwin=code.group(1) if code else ""))
-    st["darwinex_cdx_offset"] = offset + max(len(rows_) - 1, 0)
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
     return out[:120]
 
 # ---------------------------------------------------------------- S12 TradingView scripts
@@ -410,11 +442,7 @@ def mine_ff_calendar_vintage() -> list[dict]:
 
 # ---------------------------------------------------------------- S18 Forex-TSD CDX
 def mine_forextsd_cdx() -> list[dict]:
-    st = _state()
-    offset = int(st.get("forextsd_offset", 0))
-    txt = fetch("http://web.archive.org/cdx/search/cdx?url=forex-tsd.com*&output=json"
-                f"&limit=300&offset={offset}&collapse=urlkey", timeout=40)
-    rows_ = json.loads(txt)
+    rows_ = _cdx_page(_state(), "forextsd", "forex-tsd.com*")
     out = []
     for r_ in rows_[1:]:
         try:
@@ -423,8 +451,6 @@ def mine_forextsd_cdx() -> list[dict]:
             continue
         out.append(row("forextsd_cdx", "era_archive", orig[:120],
                        f"https://web.archive.org/web/{ts}/{orig}"))
-    st["forextsd_offset"] = offset + max(len(rows_) - 1, 0)
-    STATE.write_text(json.dumps(st, indent=0), "utf-8")
     return out[:120]
 
 
@@ -681,8 +707,20 @@ def run_and_save() -> dict:
             # `walled` row carrying its verdict and evidence -- so the corpus records WHY the
             # channel is dark -- and it is fetched only when its rediscovery probe comes due.
             if _wall_due(name, st):
-                lifted, note = _probe_wall(name, wall)
-                probes[name] = datetime.now(tz=UTC).isoformat(timespec="seconds")
+                # A PROBE THE BOX'S RAILS REFUSED NEVER HAPPENED (2026-11-03). The box never
+                # contacts a VPS-walled host, so its "probe" learned nothing: it is recorded as
+                # UNMEASURED and the probe clock is NOT advanced -- the wall's rediscovery stays
+                # owed to the clock that may ask, instead of reading as asked-and-still-walled.
+                try:
+                    lifted, note = _probe_wall(name, wall)
+                    measured = True
+                except Exception as exc:
+                    if not _rail_refused(exc):
+                        raise
+                    lifted, measured = False, False
+                    note = f"probe UNMEASURED, refused by the box rails: {str(exc)[:120]}"
+                if measured:
+                    probes[name] = datetime.now(tz=UTC).isoformat(timespec="seconds")
                 if lifted:
                     try:
                         rows_ = fn()
@@ -699,7 +737,8 @@ def run_and_save() -> dict:
                     rows_ = [row(name, "walled", f"{wall['verdict']}: {note}",
                                  wall.get("url", f"https://{wall['host']}/"),
                                  wall["evidence"], verdict=wall["verdict"],
-                                 walled_since=wall["since"], needs_selector_work=False)]
+                                 walled_since=wall["since"], needs_selector_work=False,
+                                 probe="MEASURED" if measured else "UNMEASURED")]
             else:
                 rows_ = [row(name, "walled", f"{wall['verdict']} (probe not due)",
                              wall.get("url", f"https://{wall['host']}/"), wall["evidence"],

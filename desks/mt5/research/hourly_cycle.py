@@ -1329,13 +1329,21 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "research_tree", "residual_map", "frontier_ceo",
                      "federation_ops", "sandbox_runner", "sandbox_provision",
                      "sandbox_roster", "proposer_seat", "kimi_hunt",
+                     # YouTube's two producers: their only clocks were VPS units (2026-11-03)
+                     "youtube_corpus", "youtube_miner",
                      # Derives each instrument's own session from its own bars and mints the
                      # breakout aimed at it, instead of porting gold's hours everywhere.
                      "session_structure",
                      # The culture-gap producers: each zero-coverage culture gap's participant
                      # structure (fixing, settlement window, tax month, local session) turned
                      # into registered-family cells on the gap's own clock.
-                     "culture_gap_cells"),
+                     "culture_gap_cells",
+                     # hel8's intel feed (seed_miners + hourly_discovery), produced on the box
+                     # since the VPS went silent (2026-11-03). See side_channels/box_intel_feed.py.
+                     "intel_feed",
+                     # the other 24 run_all_miners seats (YouTube has its own two legs), VPS-only
+                     # until 2026-11-03. See side_channels/box_run_all_feed.py.
+                     "run_all_feed"),
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "session_variant_remap",
@@ -1541,16 +1549,26 @@ OWN_CLOCK_LEGS: frozenset[str] = frozenset({
 })
 
 
+#: LEGS THAT RUN ONLY ON THEIR OWN DEPARTMENT'S RESIDENT (audit HOLD on 84e1e474b, 2026-11-03).
+#: `intel_feed` takes up to forty minutes. Under the default `all` plan (MT5Hourly.cmd sets none)
+#: it would sit inline AHEAD of release_identity, burn_in and fill_recorder; under `heavy` it
+#: would duplicate the intel resident. So it runs under HOURLY_PLAN=dept:intel and nowhere else.
+DEPT_ONLY_LEGS: frozenset[str] = frozenset({"intel_feed", "run_all_feed"})
+
+
 def in_plan(name: str, plan: str | None = None) -> bool:
     """Does leg `name` run under `plan`? core = CORE_LEGS only; heavy = every non-core leg;
     dept:<d> = the non-core legs of department d; all = everything.
     An `auto_*` leg is already filtered by its own plan in run_auto_legs and always passes.
-    A leg in `OWN_CLOCK_LEGS` runs on its own scheduled task and in no plan."""
+    A leg in `OWN_CLOCK_LEGS` runs on its own scheduled task and in no plan.
+    A leg in `DEPT_ONLY_LEGS` runs only under its own department's plan -- never all/heavy/core."""
     p = (plan if plan is not None else HOURLY_PLAN)
     if name.startswith("auto_"):
         return True
     if name in OWN_CLOCK_LEGS:
         return False
+    if name in DEPT_ONLY_LEGS:
+        return p == f"dept:{department_of(name)}"
     if p == "core":
         return name in CORE_LEGS
     if p == "heavy":
@@ -2040,6 +2058,13 @@ def _producer(name: str, script: str,
 #: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
+    # THE INTEL FEED stops itself at --budget-s 2040 (seed_miners, then hourly_discovery with what
+    # is left) and writes BOX_INTEL_FEED.json; 2,040 s plus the 15% write margin is 2,346 s, so
+    # this cap is never under the organ's own floor and the leg never passes forty minutes.
+    "intel_feed": 2_400,
+    # THE RUN_ALL FEED stops itself at --budget-s 2040 like the intel feed (each miner child
+    # killed at 180 s or at what is left) and writes BOX_RUN_ALL_FEED.json; same cap, same reason.
+    "run_all_feed": 2_400,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -2087,6 +2112,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # the default 720 s a slow Wave 3 was cut and (before it donated per wave) lost every finding.
     # PRODUCER_YIELD read the seat DEAD for 3 days on 2026-10-13. Three full waves fit here.
     "kimi_hunt": 1_020,
+    # The corpus sweep is list calls plus three transcript fetches; the miner self-stops at 75% of
+    # QUANT_MINER_TIMEOUT_S (180 s). Both return NOT_DUE in milliseconds between real passes.
+    "youtube_corpus": 600,
+    "youtube_miner": 300,
     "enrol_clocks": 2_700,
     # Both stop themselves at --budget-s 300 and write their artifact; the caps sit above their
     # own budgets for the reason `enrol_clocks` was raised -- a cap below an organ's budget
@@ -5955,6 +5984,18 @@ def main() -> None:
         "graveyard_model", "libs/research/graveyard_model.py"))
     wc = _costed("world_crawler", lambda: _producer(
         "world_crawler", "side_channels/world_crawler.py"))
+    # THE INTEL FEED, ON THE BOX (2026-11-03). hel8 produced it hourly (seed_miners at :22,
+    # hourly_discovery at :35) and shipped it on intel-ship/send; it went silent at 02:50Z. This
+    # leg produces it here, into desks/mt5/data/intelligence where local_converter reads it: the
+    # seed miners under box_rails (honest UA, robots.txt, no VPS-walled host), then the discovery
+    # organs no other box leg clocks. Self-gated to hourly; BELOW_NORMAL; no paid seat.
+    ifd = _costed("intel_feed", lambda: _producer(
+        "intel_feed", "side_channels/box_intel_feed.py", "--budget-s", "2040"))
+    # THE RUN_ALL MINERS, ON THE BOX (principal 2026-11-03: every miner 24/7). reddit, github,
+    # mql5, central banks, sec_edgar and nineteen more had only VPS clocks; each now runs here in
+    # its own rails child (honest UA, robots.txt, no VPS-walled host), every half hour.
+    raf = _costed("run_all_feed", lambda: _producer(
+        "run_all_feed", "side_channels/box_run_all_feed.py", "--budget-s", "2040"))
     # THE PROPOSER SEAT (2026-09-23). An OPTIONAL external-model prior over which expression
     # skeletons and which mechanism names are worth a trial. It proposes candidates and never a
     # verdict: every proposal enters the population with provenance, is charged effective trials,
@@ -5985,6 +6026,14 @@ def main() -> None:
     # only, so the cadence spends nothing; a run with no credential records its own BLOCKER and
     # exits, which is a measurement rather than a failing leg.
     kh = _costed("kimi_hunt", lambda: _producer("kimi_hunt", "scripts/kimi_hunter.py"))
+    # YOUTUBE HAD NO BOX CLOCK (measured 2026-11-03). Same shape as kimi above: the corpus
+    # collector's clock was `ops/quant-youtube-corpus.timer` and the miner's was `run_all_miners`,
+    # both on the VPS. The box held a mirror -- five 0-byte videos_*.json landed 11-01 -- and the
+    # judge saw no YouTube row for a week. Both gate themselves to a quota-safe cadence.
+    ytc = _costed("youtube_corpus", lambda: _producer(
+        "youtube_corpus", "scripts/collect_youtube_corpus.py"))
+    ytm = _costed("youtube_miner", lambda: _producer(
+        "youtube_miner", "side_channels/youtube_miner.py"))
     # P0.1, THE LAST UNSCHEDULED CAPABILITY OF THE NINETY-FOUR. `release_identity.py` has a
     # main() and nothing on either machine ever called it: the registry names its ARTIFACT as the
     # producer, so `scheduler_for` searched for a schedule matching a .json path and found none,
@@ -6509,9 +6558,11 @@ def main() -> None:
                     "execution_resolver": xr, "counterfactual_world": cw,
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
                     "frontier_ontology": fo, "exit_study": xs,
-                    "graveyard_model": gm, "world_crawler": wc,
+                    "graveyard_model": gm, "world_crawler": wc, "intel_feed": ifd,
+                    "run_all_feed": raf,
                     "proposer_seat": prs, "committees": cmt,
                     "committee_ensembles": cme, "kimi_hunt": kh,
+                    "youtube_corpus": ytc, "youtube_miner": ytm,
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
