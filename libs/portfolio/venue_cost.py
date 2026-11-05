@@ -119,12 +119,20 @@ def overlay_surface(surface: Mapping[str, Any] | None, doc: Mapping[str, Any] | 
             # is the median of, and must not read a dearer venue as a registry defect.
             bars = (prev.get("p50_bars", prev.get("p50"))
                     if str(prev.get("status")) == MEASURED else None)
-            # NEVER UNDER-STATED: a measured bar cell dearer than the venue's quoted median keeps
-            # its figure (the hourly quote is one reading per pass and can miss the hour's spike).
-            p50 = max(v["p50"], float(bars)) if isinstance(bars, (int, float)) else v["p50"]
+            # NEVER UNDER-STATED: a measured cell dearer than the venue's quoted median keeps its
+            # figure (the hourly quote is one reading per pass and can miss the hour's spike). The
+            # floor is the TICK-measured hour where the tape has one (every tick's quoted spread,
+            # as cost_surface.spread_pts prefers since #733); the bar `spread` column is bimodal on
+            # this feed (GBPCHF h10-16 p50 150 pts against a few points raw), so it is the floor
+            # only where no tick cell is measured, never an overcharge held over a true quote.
+            tick = ((row.get("tick_hours") or {}).get("hours") or {}).get(h) or {}
+            floor = (tick.get("p50") if str(tick.get("status")) == MEASURED
+                     and isinstance(tick.get("p50"), (int, float)) else bars)
+            p50 = max(v["p50"], float(floor)) if isinstance(floor, (int, float)) else v["p50"]
             cells[h] = {**prev, "status": MEASURED, "p50": p50, "p50_bars": bars,
                         "n_quotes": v["n"], "p50_quotes": v["p50"],
-                        "source": source or "venue quotes"}
+                        "floor": ("ticks" if floor is not bars else "bars") if floor is not None
+                        else None, "source": source or "venue quotes"}
             n_cells += 1
     out["venue_quotes"] = {"source": source, "at": (doc or {}).get("at") if doc else None,
                            "venue": (doc or {}).get("venue") if doc else None,

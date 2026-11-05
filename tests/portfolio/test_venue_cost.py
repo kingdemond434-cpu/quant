@@ -107,3 +107,16 @@ def test_a_cheaper_quote_never_lowers_a_dearer_measured_hour(tmp_path: Path) -> 
             "2026-11-05T06:00:00+00:00", 0.00001, [0.00020, 0.00022, 0.00024])
     cell = vc.account_surface(tmp_path, "ftmo", surface)["symbols"]["EURUSD"]["hours"]["7"]
     assert cell["p50"] == 30.0 and abs(cell["p50_quotes"] - 22.0) < 1e-9
+
+
+def test_the_tick_hour_is_the_floor_where_the_tape_measured_it(tmp_path: Path) -> None:
+    """An inflated bar cell (bimodal bar spread) never holds an overcharge over a true quote."""
+    surface = {"symbols": {"EURUSD": {
+        "hours": {"7": {"status": "MEASURED", "p50": 150.0}},
+        "tick_hours": {"hours": {"7": {"status": "MEASURED", "p50": 9.0}}}}}}
+    _quotes(tmp_path / "cost_truth_quotes.ftmo_s_r_o.json", "ftmo_s_r_o",
+            "2026-11-05T06:00:00+00:00", 0.00001, [0.00020, 0.00022, 0.00024])
+    cell = vc.account_surface(tmp_path, "ftmo", surface)["symbols"]["EURUSD"]["hours"]["7"]
+    assert abs(cell["p50"] - 22.0) < 1e-9 and cell["floor"] == "ticks"
+    assert cell["p50_bars"] == 150.0                     # kept for cost_ratio's scale guard
+
