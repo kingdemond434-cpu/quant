@@ -239,6 +239,25 @@ def positioning(df: pd.DataFrame) -> pd.DataFrame:
         out[f"{name}_net"] = net
         if oi is not None:
             out[f"{name}_net_oi"] = net / oi.replace(0, np.nan)
+    # Large-trader footprints: the CFTC's top-4 / top-8 trader concentration (share of OI the
+    # largest traders hold, long minus short) and the head-count of traders per class (how many
+    # distinct players are on each side: a crowd is many small traders, a squeeze is few big ones).
+    for n in ("4", "8"):
+        for kind in ("gross", "net"):
+            lc = next((c for c in df.columns if c.startswith(f"conc_{kind}_le_{n}_tdr_long")), None)
+            sc = next((c for c in df.columns if c.startswith(f"conc_{kind}_le_{n}_tdr_short")),
+                      None)
+            if lc and sc:
+                out[f"conc{n}_{kind}_tilt"] = (pd.to_numeric(df[lc], errors="coerce")
+                                               - pd.to_numeric(df[sc], errors="coerce"))
+    for lc in [c for c in df.columns if c.startswith("traders_") and "_long" in c]:
+        stem, _, tail = lc.partition("_long")
+        sc = f"{stem}_short{tail}"
+        if sc in df.columns:
+            lo = pd.to_numeric(df[lc], errors="coerce")
+            sh = pd.to_numeric(df[sc], errors="coerce")
+            out[f"{stem[len('traders_'):]}_traders_diff"] = lo - sh
+            out[f"{stem[len('traders_'):]}_traders_tilt"] = (lo - sh) / (lo + sh).replace(0, np.nan)
     if oi is not None:
         out["oi"] = oi
     return out

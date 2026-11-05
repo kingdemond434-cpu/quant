@@ -109,6 +109,21 @@ def test_positioning_reads_every_cftc_naming_shape() -> None:
     assert p["m_money_net_oi"].iloc[1] == pytest.approx(40.0 / 120.0)
 
 
+def test_positioning_reads_large_trader_concentration_and_headcounts() -> None:
+    df = pd.DataFrame({
+        "open_interest_all": [100.0, 120.0],
+        "conc_net_le_4_tdr_long_all": [30.0, 20.0],
+        "conc_net_le_4_tdr_short_all": [10.0, 25.0],
+        "traders_m_money_long_all": [40.0, 10.0],
+        "traders_m_money_short_all": [10.0, 30.0],
+    })
+    p = fs.positioning(df)
+    assert list(p["conc4_net_tilt"]) == [20.0, -5.0]
+    assert list(p["m_money_traders_diff"]) == [30.0, -20.0]
+    assert p["m_money_traders_tilt"].iloc[0] == pytest.approx(30.0 / 50.0)
+    assert not any(c.startswith("conc_") for c in p.columns)
+
+
 def test_cftc_rows_become_available_the_friday_after() -> None:
     at = fs.cftc_available(pd.Series(pd.to_datetime(["2026-08-11"], utc=True))).iloc[0]
     assert at == pd.Timestamp("2026-08-14 21:00", tz="UTC")
