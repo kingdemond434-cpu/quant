@@ -11,19 +11,17 @@
 # slots). 25 channels at a 180 s per-channel kill is at most 75 minutes; the 110-minute limit is a
 # watchdog, and IgnoreNew means a slow pass is never doubled.
 #
-# IDEMPOTENT. -IfMissing does nothing when the task exists; that is the form Adopt-And-Seal.ps1
-# calls on every adoption, so a box gains the task on the first adoption after this ships and a
-# registered task is never touched.
+# IDEMPOTENT. -IfMissing does nothing when the task exists, so it is safe to call from any
+# ensure step or by hand; a registered task is never touched.
 #
-#   powershell -NoProfile -ExecutionPolicy Bypass -File desks\mt5\scripts\install_side_channel_miners_task.ps1
-#   powershell -NoProfile -ExecutionPolicy Bypass -File desks\mt5\scripts\install_side_channel_miners_task.ps1 -IfMissing
+#   powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install_side_channel_miners_task.ps1
+#   powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install_side_channel_miners_task.ps1 -IfMissing
 param([switch]$IfMissing)
 
 $ErrorActionPreference = 'Stop'
 
 $TaskName = 'Quant-SideChannelMiners'
-$DeskRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$RepoRoot = (Resolve-Path (Join-Path $DeskRoot '..\..')).Path
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $Runner   = Join-Path $RepoRoot 'ops\run_side_channel_miners.cmd'
 if (-not (Test-Path $Runner)) { throw "run_side_channel_miners.cmd missing at $Runner" }
 

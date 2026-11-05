@@ -8,8 +8,7 @@ rem reads. Its only callers were scripts on the Linux VPS chain (ops/run_daily_b
 rem whose intel-ship stopped on 2026-11-03, so 19 seats went DEAD together in PRODUCER_YIELD on
 rem 2026-11-05. This gives the suite its own seat on the box, so it runs 24/7 where the compiler is.
 rem
-rem RESEARCH ONLY: miners write discovery rows for the compiler and the judge. Nothing here reads
-rem or writes an order, a lot, a sleeve, the allocator or a rail.
+rem RESEARCH ONLY: miners write discovery rows for the compiler and the judge, nothing else.
 rem
 rem One miner is killed after QUANT_MINER_TIMEOUT_S (180 s) so a hung channel never stalls the
 rem rest; the suite exits 0 when it finished, whatever each channel returned, and the per-seat
