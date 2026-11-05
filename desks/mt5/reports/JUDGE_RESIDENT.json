@@ -17,7 +17,7 @@
  "uptime_s": 740553.0,
  "last_sweep_ended_utc": "2026-11-05T06:23:44+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-05T08:50:30+00:00",
+ "heartbeat_utc": "2026-11-05T09:06:37+00:00",
  "sweep_phase": {
   "pid": 31752,
   "sweep_started_utc": "2026-11-05T06:24:12+00:00",
@@ -82,22 +82,22 @@
      }
     },
     "prewarm": {
-     "samples": 521,
+     "samples": 617,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 506,
-       "share": 0.971
+       "n": 598,
+       "share": 0.969
       },
       {
        "stack": "external_gauntlet.py:_submit_next:2072 < external_gauntlet.py:_prewarm_cache:2119 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
-       "n": 7,
-       "share": 0.013
+       "n": 10,
+       "share": 0.016
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 4,
-       "share": 0.008
+       "share": 0.006
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:87 < process.py:submit:797 < external_gauntlet.py:_submit_next:2079 < external_gauntlet.py:_prewarm_cache:2119",
@@ -111,13 +111,13 @@
       }
      ],
      "process": {
-      "cpu_s": 251.3,
-      "page_faults": 5318221.0,
-      "read_bytes": 2445328.0,
-      "write_bytes": 6073265870.0,
-      "sampled_s": 5200.0,
+      "cpu_s": 261.7,
+      "page_faults": 5508028.0,
+      "read_bytes": 2513362.0,
+      "write_bytes": 6245434661.0,
+      "sampled_s": 6160.0,
       "rss_mb_max": 3208.7,
-      "cpu_share_of_wall": 0.048
+      "cpu_share_of_wall": 0.042
      }
     }
    }
