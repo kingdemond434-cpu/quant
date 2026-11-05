@@ -486,8 +486,22 @@ def check(require_state: bool = False, tighten: bool = False) -> dict[str, Any]:
         out["reach"] = {"verdict": "PARTIAL",
                         "why": "the census is partial; reach is judged on a complete one"}
 
+    # THE RATCHET MOVES ONLY ON ONE DESK'S MEASUREMENT. A complete census assembled by the resume
+    # cursor publishes `scan.cycle_span_h`, the hours between its first and last registry step;
+    # a best is recorded only when that span is inside `cycle_max_age_h` (26h). A census written
+    # before the cursor existed has no span and was one pass by construction.
+    scan_doc = census.get("scan") if isinstance(census.get("scan"), dict) else {}
+    span_ok = (not partial) and ("cycle_span_h" not in scan_doc
+                                 or scan_doc.get("cycle_span_within_bound") is True)
+    out["ratchet_span_ok"] = span_ok
+    if not partial and not span_ok:
+        out["ratchet_not_tightened_why"] = (
+            f"the complete census spans {scan_doc.get('cycle_span_h')}h between its first and "
+            f"last registry step, outside {scan_doc.get('cycle_max_age_h')}h: judged, never "
+            "recorded as a best")
+    tighten_ok = tighten and span_ok
     moved = None if partial else _coverage_clause(census, out, failures)
-    if moved is not None and tighten:
+    if moved is not None and tighten_ok:
         try:
             RATCHET.parent.mkdir(parents=True, exist_ok=True)
             RATCHET.write_text(json.dumps(moved, indent=1) + "\n", encoding="utf-8")
@@ -520,7 +534,7 @@ def check(require_state: bool = False, tighten: bool = False) -> dict[str, Any]:
             "fix it -- unproductive AND silent is indistinguishable from broken")
 
     reach_moved = None if partial else _reach_clause(census, out, failures)
-    if reach_moved is not None and tighten:
+    if reach_moved is not None and tighten_ok:
         merged = _ratchet_doc()
         hosts = merged.get("hosts")
         if not isinstance(hosts, dict):

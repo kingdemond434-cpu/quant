@@ -192,3 +192,66 @@ def test_a_stale_census_never_moves_the_owing_ratchet(tmp_path: Path,
            "orthogonal_cells_to_judge_per_hour": None}
     moved = pyf.tighten_ratchet(doc)
     assert moved is None or moved.get("owing_max") == 56
+
+
+def test_a_cursor_older_than_the_cycle_bound_expires_and_restarts(
+        cursor_paths: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    armed = _cut_after(monkeypatch, "cells")
+    pc.build(budget_s=600.0)
+    doc = json.loads(pc.CURSOR.read_text(encoding="utf-8"))
+    doc["cycle_started"] = (datetime.now(UTC) - timedelta(hours=30)).isoformat()
+    pc.CURSOR.write_text(json.dumps(doc), encoding="utf-8")
+    armed["on"] = False
+    census = pc.build(budget_s=600.0)
+    scan = census["scan"]
+    assert scan["cursor_expired"] and scan["cursor_expired"]["age_hours"] > 26
+    assert "sources" in scan["ran_this_pass"]                  # restarted from step one
+    assert census["partial"] is False
+
+
+def test_a_complete_census_publishes_its_cycle_span(
+        cursor_paths: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    armed = _cut_after(monkeypatch, "cells")
+    pc.build(budget_s=600.0)
+    doc = json.loads(pc.CURSOR.read_text(encoding="utf-8"))
+    old = (datetime.now(UTC) - timedelta(hours=5)).isoformat()
+    for step in doc["steps"].values():
+        step["at"] = old
+    doc["cycle_started"] = old
+    pc.CURSOR.write_text(json.dumps(doc), encoding="utf-8")
+    armed["on"] = False
+    census = pc.build(budget_s=600.0)
+    scan = census["scan"]
+    assert 4.9 < scan["cycle_span_h"] < 5.1 and scan["cycle_span_within_bound"] is True
+    one = pc.build(budget_s=600.0)                              # a one-pass census
+    assert one["scan"]["cycle_span_h"] < 0.1
+    partial = pc.build(budget_s=0.0)
+    assert partial["partial"] is True and partial["scan"]["cycle_span_h"] is None
+
+
+def _complete(span: float | None) -> dict[str, Any]:
+    scan: dict[str, Any] = {"scanned": 14, "total": 14, "unscanned": []}
+    if span is not None:
+        scan.update({"cycle_span_h": span, "cycle_max_age_h": 26.0,
+                     "cycle_span_within_bound": span <= 26.0})
+    return {"at": datetime.now(UTC).isoformat(), "partial": False, "scan": scan,
+            "zero_cell_compute": [], "n_producers": 2,
+            "measurement_coverage": {"n_producers": 2,
+                                     "columns": {"cells": {"coverage": 1.0, "measured": 2}},
+                                     "region": {"coverage": 1.0, "regional": 1,
+                                                "not_regional": 1, "of": 2}}}
+
+
+@pytest.mark.parametrize(("span", "tightens"), [(0.0, True), (20.0, True), (30.0, False),
+                                                (None, True)])
+def test_the_ratchet_tightens_only_within_the_cycle_bound(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, span: float | None,
+        tightens: bool) -> None:
+    path = tmp_path / "census.json"
+    path.write_text(json.dumps(_complete(span)), encoding="utf-8")
+    monkeypatch.setattr(fence, "CENSUS", path)
+    monkeypatch.setattr(fence, "RATCHET", tmp_path / "ratchet.json")
+    monkeypatch.setattr(fence, "BLOCKERS", tmp_path / "blockers.json")
+    out = fence.check(require_state=True, tighten=True)
+    assert out["ratchet_span_ok"] is tightens
+    assert (tmp_path / "ratchet.json").exists() is tightens

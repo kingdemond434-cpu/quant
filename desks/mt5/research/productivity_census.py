@@ -435,6 +435,12 @@ STEP_FIELDS: dict[str, tuple[str, ...]] = {
     "totals": (),
 }
 STEPS: tuple[str, ...] = tuple(STEP_FIELDS)
+#: A RESUMED CYCLE MAY NOT SPAN MORE THAN THIS. Steps carried by the cursor are snapshots of the
+#: registry at different times; past ~a day apart they no longer describe one desk, so a cursor
+#: whose cycle began longer ago than this is EXPIRED and the cycle restarts from step one. A
+#: complete census publishes its own span (`scan.cycle_span_h`, first to last step), and the
+#: fence tightens its ratchets only on a census whose span is inside this bound.
+CYCLE_MAX_AGE_H = 26.0
 #: How often (in sqlite VM instructions) the progress handler looks at the clock.
 _PROGRESS_EVERY = 20_000
 
@@ -698,6 +704,16 @@ def _step(name: str, cur: sqlite3.Cursor, ctx: dict[str, Any],
         raise KeyError(name)
 
 
+def _parse_ts(stamp: Any) -> datetime | None:
+    if not isinstance(stamp, str) or not stamp:
+        return None
+    try:
+        dt = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+
+
 def _load_cursor(db: Path) -> dict[str, Any]:
     doc = _load_json(CURSOR)
     if not isinstance(doc, dict) or doc.get("db") != str(db):
@@ -746,6 +762,17 @@ def measure_registry(db: Path, deadline: float | None = None,
     if deadline is not None:
         con.set_progress_handler(_BUDGET.progress, _PROGRESS_EVERY)
     cursor = _load_cursor(db) if resume else {}
+    cursor_expired: dict[str, Any] | None = None
+    started_age = _age_hours(cursor.get("cycle_started")) if cursor else None
+    if cursor and (started_age is None or started_age > CYCLE_MAX_AGE_H):
+        cursor_expired = {"cycle_started": cursor.get("cycle_started"),
+                          "age_hours": None if started_age is None else round(started_age, 2),
+                          "why": f"the resumed cycle began more than {CYCLE_MAX_AGE_H:g}h ago "
+                                 "(or carries no readable start): its carried steps no longer "
+                                 "describe one registry, so the cycle restarts from step one"}
+        cursor = {}
+        with contextlib.suppress(OSError):
+            REACH_SIDECAR.unlink(missing_ok=True)
     done: dict[str, Any] = dict(cursor.get("steps") or {})
     cycle_started = cursor.get("cycle_started") or _now()
     interrupted = dict(cursor.get("interrupted") or {})
@@ -798,12 +825,21 @@ def measure_registry(db: Path, deadline: float | None = None,
         for f in STEP_FIELDS[s]:
             out["unmeasured"].setdefault(f, why)
     out["unscanned_fields"] = sorted({f for s in unscanned for f in STEP_FIELDS[s]})
+    stamps = [d for d in (_parse_ts((done.get(s) or {}).get("at")) for s in STEPS) if d]
+    span_h = (round((max(stamps) - min(stamps)).total_seconds() / 3600.0, 3)
+              if stamps and not unscanned else None)
     out["scan"] = {
         "partial": bool(unscanned), "scanned": len(STEPS) - len(unscanned),
         "total": len(STEPS), "ran_this_pass": ran, "unscanned": unscanned,
         "cut_at_step": cut, "cycle_started": cycle_started,
         "step_at": {s: (done.get(s) or {}).get("at") for s in STEPS},
         "interrupted_counts": interrupted,
+        # FIRST TO LAST step_at on a COMPLETE census (None while partial): how far apart in time
+        # the registry snapshots behind this census were taken. 0 for a one-pass census.
+        "cycle_span_h": span_h,
+        "cycle_max_age_h": CYCLE_MAX_AGE_H,
+        "cycle_span_within_bound": None if span_h is None else span_h <= CYCLE_MAX_AGE_H,
+        "cursor_expired": cursor_expired,
         # A step the deadline has cut on three passes running cannot finish inside the budget
         # at all; it is NAMED here so the stall is visible, never silent.
         "cannot_finish_in_budget": sorted(s for s, n in interrupted.items()
