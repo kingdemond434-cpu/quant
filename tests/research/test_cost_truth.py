@@ -494,3 +494,117 @@ def test_the_cost_wire_is_a_declared_edge_the_watchdog_checks() -> None:
     spine = (ROOT / "desks" / "mt5" / "research" / "net_edge_spine.py").read_text("utf-8")
     assert "EXECUTION_COST_SURFACE.json" in organ and "EXECUTION_COST_SURFACE.json" in spine
     assert "COST_SURFACE.json" in organ
+
+
+# ---- per-venue quotes and the widest-venue file (2026-11-05) ---------------------------------
+
+
+def _venue_doc(venue, at, point, hours):
+    return {"venue": venue, "at": at, "symbols": {"EURUSD": {"point": point}},
+            "spread_by_hour_utc": {"EURUSD": hours}}
+
+
+def test_fold_hours_keeps_price_units_and_caps_history():
+    hours = None
+    for i in range(20):
+        hours = CT.fold_hours(hours, {"EURUSD": {"live_spread_pts": 10 + i, "point": 0.00001,
+                                                  "at": f"t{i}"}}, 7, keep=14)
+    seq = hours["EURUSD"]["07"]
+    assert len(seq) == 14
+    assert seq[-1][0] == "t19"
+    assert abs(seq[-1][1] - 29 * 0.00001) < 1e-12
+
+
+def test_fold_hours_skips_unpriceable_rows():
+    hours = CT.fold_hours({}, {"X": {"live_spread_pts": None, "point": 0.01},
+                               "Y": {"live_spread_pts": 5, "point": 0}}, 3)
+    assert hours == {}
+
+
+def test_build_max_takes_widest_venue_in_price_not_points():
+    now = CT.datetime(2026, 11, 5, 7, 0, tzinfo=CT.UTC)
+    # venue a quotes 5 digits (12 pts = 1.2 pip); venue b quotes 4 digits (2 pts = 2 pips)
+    docs = {"a": _venue_doc("a", "2026-11-05T06:30:00+00:00", 0.00001,
+                            {"07": [["t", 12 * 0.00001]]}),
+            "b": _venue_doc("b", "2026-11-05T06:30:00+00:00", 0.0001,
+                            {"07": [["t", 2 * 0.0001]]})}
+    out = CT.build_max(docs, now=now)
+    cell = out["symbols"]["EURUSD"]["07"]
+    assert cell["venue"] == "b"
+    assert cell["spread_pts"] == 2.0
+    assert cell["venues_seen"] == 2
+    assert cell["stale"] is False
+    assert out["stale_rows"] == 0
+
+
+def test_build_max_uses_median_so_one_spike_does_not_set_the_hour():
+    now = CT.datetime(2026, 11, 5, 7, 0, tzinfo=CT.UTC)
+    seq = [["t", v] for v in (1.0, 1.0, 1.0, 50.0)]
+    out = CT.build_max({"a": _venue_doc("a", now.isoformat(), 1.0, {"22": seq})}, now=now)
+    assert out["symbols"]["EURUSD"]["22"]["spread_price"] == 1.0
+
+
+def test_build_max_keeps_a_stale_wider_venue_and_marks_it():
+    now = CT.datetime(2026, 11, 5, 12, 0, tzinfo=CT.UTC)
+    docs = {"fresh": _venue_doc("fresh", "2026-11-05T11:30:00+00:00", 1.0, {"10": [["t", 1.0]]}),
+            "old": _venue_doc("old", "2026-11-04T11:00:00+00:00", 1.0, {"10": [["t", 3.0]]})}
+    out = CT.build_max(docs, now=now)
+    cell = out["symbols"]["EURUSD"]["10"]
+    assert cell["venue"] == "old" and cell["stale"] is True
+    assert out["venues"]["old"]["stale"] is True
+    assert out["stale_rows"] == 1
+
+
+def test_write_max_reads_only_venue_files(tmp_path):
+    (tmp_path / "cost_truth_quotes.json").write_text('{"symbols": {}}', "utf-8")
+    doc = _venue_doc("v", "2026-11-05T06:00:00+00:00", 1.0, {"06": [["t", 2.0]]})
+    (tmp_path / "cost_truth_quotes.v.json").write_text(CT.json.dumps(doc), "utf-8")
+    target = CT.write_max(tmp_path)
+    out = CT.json.loads(target.read_text("utf-8"))
+    assert set(out["venues"]) == {"v"}
+    assert out["symbols"]["EURUSD"]["06"]["spread_price"] == 2.0
+    CT.write_max(tmp_path)  # the max file itself is never read back as a venue
+    assert set(CT.json.loads(target.read_text("utf-8"))["venues"]) == {"v"}
+
+
+def test_quotes_only_never_attaches_without_a_running_terminal(monkeypatch):
+    called = []
+    monkeypatch.setattr(CT, "terminal_snapshot", lambda *a, **k: called.append(a) or {})
+    out = CT.quotes_only(["EURUSD"], 30.0, terminals=[])
+    assert out["venues"] == [] and called == []
+
+
+class _FakeProc:
+    def __init__(self, pid, parents, exe):
+        self.pid, self._parents, self._exe = pid, parents, exe
+
+    def parents(self):
+        return [type("P", (), {"pid": p})() for p in self._parents]
+
+    def exe(self):
+        return self._exe
+
+
+class _FakePsutil:
+    def __init__(self, procs):
+        self._procs = procs
+
+    def Process(self, pid):
+        if pid not in self._procs:
+            raise RuntimeError("gone")
+        return self._procs[pid]
+
+
+def test_split_spawned_never_marks_a_foreign_terminal_ours():
+    path = r"C:\T\terminal64.exe"
+    procs = {
+        10: _FakeProc(10, [1, 100], path),           # our child, our exe, our session: ours
+        11: _FakeProc(11, [1, 555], path),           # started by the gateway: foreign
+        12: _FakeProc(12, [1, 100], r"C:\X\terminal64.exe"),  # ours by lineage, wrong exe
+        13: _FakeProc(13, [1, 100], path),           # right lineage, another session
+    }
+    sessions = {100: 2, 10: 2, 11: 2, 12: 2, 13: 0}
+    ours, foreign = CT.split_spawned([10, 11, 12, 13, 14], path, psutil_mod=_FakePsutil(procs),
+                                     me=100, session_of=lambda pid: sessions.get(pid))
+    assert ours == [10]
+    assert foreign == [11, 12, 13, 14]  # 14 is unreadable, so it is never ours

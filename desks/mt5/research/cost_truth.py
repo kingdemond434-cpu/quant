@@ -816,8 +816,14 @@ def execution_surface(symbols: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
+                      path: str | None = None, deals: bool = True,
                       ) -> dict[str, Any]:  # pragma: no cover - needs a live terminal
     """Every measurable broker fact for `symbols`, from the terminal on THIS box.
+
+    `path` names the terminal64.exe to attach to. None is the historic call, which attaches to
+    whichever terminal the package resolves first -- measured 2026-11-05 01:14Z that was the FTMO
+    terminal, not Fusion, so a pathless snapshot is a snapshot of an unnamed venue. `deals=False`
+    skips the account's deal history (the quotes-only clock needs the venue's quotes, not its P&L).
 
     A box with no terminal is not an error: the block comes back UNMEASURED with the reason and
     the cached readings keep their age. The desk never fabricates a venue number.
@@ -826,8 +832,42 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
         import MetaTrader5 as mt5
     except Exception as exc:
         return {"status": UNMEASURED, "why": f"MetaTrader5 is not importable here: {exc}"}
-    if not mt5.initialize():
-        return {"status": UNMEASURED, "why": f"terminal did not initialise: {mt5.last_error()}"}
+    # ATTACH, NEVER LAUNCH (Auditor SF on #739, 2026-11-05): `initialize(path=)` STARTS a new
+    # instance when the running one belongs to another Windows session (the FTMO terminal lives
+    # in RDP session 2). Count the terminal pids around the call; a new one is shut down, killed
+    # and the venue read UNMEASURED -- a spawned terminal is never a reading and never left up.
+    # The desk's one attach rule comes first (`research.mt5_session.attach_or_initialize`, used
+    # by the tick source, the tape and the gold desk): it refuses to initialise from Session 0 or
+    # when a terminal at this path runs in ANOTHER Windows session. The pid count below is the
+    # second net, for a spawn that rule could not foresee.
+    try:
+        from mt5_session import attach_or_initialize  # run as a script from research/
+    except ImportError:
+        from research.mt5_session import attach_or_initialize
+    before = _terminal_pids()
+    ok = attach_or_initialize(mt5, path=path)
+    new_pids = sorted(_terminal_pids() - before) if before is not None else []
+    if new_pids:
+        # KILL ONLY WHAT IS PROVABLY OURS (Auditor HOLD on 43f437a63): a terminal the gateway,
+        # an adoption or a reboot recovery starts inside this window is a LIVE terminal. Ours
+        # means a descendant of this process, at `path`, in this Windows session -- nothing else.
+        ours, foreign = split_spawned(new_pids, path)
+        try:
+            mt5.shutdown()
+        finally:
+            if ours:
+                _kill_pids(ours)
+        if foreign:
+            return {"status": UNMEASURED, "path": path, "spawned_pids": ours,
+                    "foreign_new_pids": foreign,
+                    "why": "terminal set changed during attach; nothing foreign killed"}
+        return {"status": UNMEASURED, "path": path, "spawned_pids": ours,
+                "why": "attach would launch: initialize started a new terminal64.exe "
+                       "(ours, killed); the running one is out of this session's reach"}
+    if not ok:
+        return {"status": UNMEASURED, "path": path,
+                "why": "terminal did not attach (refused from Session 0, or the terminal runs "
+                       f"in another Windows session): {mt5.last_error()}"}
     started = time.monotonic()
     out: dict[str, Any] = {"status": MEASURED, "symbols": {}, "bars": {}, "deals": []}
     try:
@@ -841,7 +881,8 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
         out["account"] = account_block(acct)
         out["terminal"] = {"name": getattr(term, "name", None),
                            "connected": getattr(term, "connected", None),
-                           "build": getattr(term, "build", None)}
+                           "build": getattr(term, "build", None),
+                           "path": path}
         probe = mt5.symbol_info_tick(symbols[0]) if symbols else None
         if probe is not None and getattr(probe, "time", None):
             offset = (datetime.fromtimestamp(probe.time, tz=UTC)
@@ -849,9 +890,10 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
             out["server_utc_offset_hours"] = round(offset)
             out["rollover_hour_utc"] = int((24 - round(offset)) % 24)
         # -- deal history: the account's whole realised record
-        deals = mt5.history_deals_get(datetime(2020, 1, 1, tzinfo=UTC),
-                                      datetime.now(tz=UTC) + timedelta(days=2))
-        for deal in deals or []:
+        history = (mt5.history_deals_get(datetime(2020, 1, 1, tzinfo=UTC),
+                                         datetime.now(tz=UTC) + timedelta(days=2))
+                   if deals else None)
+        for deal in history or []:
             out["deals"].append({"ticket": deal.ticket, "order": deal.order,
                                  "position": deal.position_id, "epoch": int(deal.time),
                                  "at": datetime.fromtimestamp(deal.time, tz=UTC).isoformat(),
@@ -887,6 +929,8 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
                 "bid": getattr(tick, "bid", None), "ask": getattr(tick, "ask", None),
                 "live_spread_pts": (round((tick.ask - tick.bid) / info.point, 2)
                                     if tick is not None and info.point else None)}
+            if int(bars_cap) <= 0:
+                continue
             rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M1, 0, int(bars_cap))
             if rates is None or len(rates) == 0:
                 continue
@@ -894,6 +938,288 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
     finally:
         mt5.shutdown()
     out["elapsed_s"] = round(time.monotonic() - started, 2)
+    return out
+
+
+# ----------------------------------------------------------------------------- one file per venue
+#
+# WHY (2026-11-05). `cost_truth_quotes.json` was written from whichever terminal a pathless
+# `mt5.initialize()` reached, and the box runs two (Fusion and FTMO). Every account trades the
+# same mechanisms, so each venue's cost check needs THAT venue's spreads: the per-venue file below
+# is named by the account's own company/server, never by a guess. The legacy file is untouched
+# (prop_challenge_allocator reads it as FTMO on purpose); readers move only on their owners' word.
+
+
+def venue_slug(snapshot: dict[str, Any]) -> str | None:
+    """A filesystem-safe venue name from the account block (company, then server), else the
+    terminal name. None when the snapshot names no venue at all -- never a guessed one."""
+    acct = snapshot.get("account") or {}
+    term = snapshot.get("terminal") or {}
+    for raw in (acct.get("company"), acct.get("server"), term.get("name")):
+        if raw:
+            slug = "".join(c if c.isalnum() else "_" for c in str(raw).lower()).strip("_")
+            while "__" in slug:
+                slug = slug.replace("__", "_")
+            if slug:
+                return slug[:48]
+    return None
+
+
+def venue_quotes_path(slug: str) -> Path:
+    return DATA / f"cost_truth_quotes.{slug}.json"
+
+
+def write_venue_quotes(snapshot: dict[str, Any]) -> Path | None:
+    """Merge this venue's fresh readings over ITS OWN cached file (never another venue's) and
+    write it. Returns the path written, or None when the snapshot names no venue."""
+    slug = venue_slug(snapshot)
+    if slug is None or snapshot.get("status") != MEASURED:
+        return None
+    path = venue_quotes_path(slug)
+    cached = _json(path) or {}
+    syms = dict(cached.get("symbols") or {}) if isinstance(cached, dict) else {}
+    fresh = {k: v for k, v in (snapshot.get("symbols") or {}).items()
+             if isinstance(v, dict) and v.get("status") != UNMEASURED}
+    syms.update(fresh)
+    hours = fold_hours(cached.get("spread_by_hour_utc") if isinstance(cached, dict) else None,
+                       fresh, datetime.now(UTC).hour)
+    doc = {"at": _now(), "venue": slug, "account": snapshot.get("account"),
+           "terminal": snapshot.get("terminal"),
+           "server_utc_offset_hours": snapshot.get("server_utc_offset_hours"),
+           "rollover_hour_utc": snapshot.get("rollover_hour_utc"),
+           "symbols": syms, "spread_by_hour_utc": hours,
+           # Desk names this venue's registry does not carry (an alias such as a suffix or an
+           # index name): no reading under the desk's name, so no row meets the other venues.
+           "unmapped_symbols": sorted(k for k, v in (snapshot.get("symbols") or {}).items()
+                                      if isinstance(v, dict) and v.get("status") == UNMEASURED),
+           "source": "desks/mt5/research/cost_truth.py"}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n", "utf-8")
+    tmp.replace(path)
+    return path
+
+
+def running_terminals() -> list[str]:
+    """The terminal64.exe paths RUNNING on this box right now. Only a running terminal is
+    attached to: `mt5.initialize(path=...)` on a stopped one would LAUNCH it. Empty when psutil
+    is absent or nothing runs (the caller then falls back to the historic pathless attach)."""
+    try:
+        import psutil
+    except Exception:
+        return []
+    seen: list[str] = []
+    for proc in psutil.process_iter(["name", "exe"]):
+        try:
+            name = str(proc.info.get("name") or "").lower()
+            exe = proc.info.get("exe")
+        except Exception:
+            continue
+        if name == "terminal64.exe" and exe and exe not in seen:
+            seen.append(str(exe))
+    return sorted(seen)
+
+
+def _terminal_pids() -> set[int] | None:
+    """The pids of every terminal64.exe now, or None when psutil cannot say (the guard then
+    cannot tell a spawn from an attach, and says so by not claiming one)."""
+    try:
+        import psutil
+    except Exception:
+        return None
+    pids: set[int] = set()
+    for proc in psutil.process_iter(["name"]):
+        try:
+            if str(proc.info.get("name") or "").lower() == "terminal64.exe":
+                pids.add(int(proc.pid))
+        except Exception:
+            continue
+    return pids
+
+
+def split_spawned(new_pids: list[int], path: str | None,
+                  psutil_mod: Any = None, me: int | None = None,
+                  session_of: Any = None) -> tuple[list[int], list[int]]:
+    """Split terminal pids that appeared during an attach into (ours, foreign).
+
+    Ours is a descendant of THIS process, running `path` (when given) in THIS Windows session.
+    Anything unreadable is foreign: a pid we cannot prove is ours is never killed."""
+    import os
+    if psutil_mod is None:
+        try:
+            import psutil as psutil_mod
+        except Exception:
+            return [], list(new_pids)
+    if session_of is None:
+        try:
+            from mt5_session import windows_session_id as session_of
+        except ImportError:
+            from research.mt5_session import windows_session_id as session_of
+    me = os.getpid() if me is None else me
+    my_session = session_of(me)
+    ours: list[int] = []
+    foreign: list[int] = []
+    for pid in new_pids:
+        try:
+            proc = psutil_mod.Process(pid)
+            lineage = {int(p.pid) for p in proc.parents()}
+            exe = proc.exe()
+            same_exe = (not path) or (bool(exe) and os.path.normcase(str(exe))
+                                      == os.path.normcase(str(path)))
+            if me in lineage and same_exe and session_of(pid) == my_session:
+                ours.append(pid)
+            else:
+                foreign.append(pid)
+        except Exception:
+            foreign.append(pid)
+    return ours, foreign
+
+
+def _kill_pids(pids: list[int]) -> None:  # pragma: no cover - needs a spawned terminal
+    try:
+        import psutil
+    except Exception:
+        return
+    for pid in pids:
+        try:
+            proc = psutil.Process(pid)
+            proc.terminate()
+            proc.wait(timeout=10)
+        except Exception:
+            try:
+                psutil.Process(pid).kill()
+            except Exception:
+                pass
+
+
+#: Readings kept per (venue, symbol, UTC hour): two weeks of that hour. The venue's figure for an
+#: hour is their MEDIAN -- one rollover spike must not become the hour's price on its own.
+HOUR_KEEP = 14
+#: A venue file older than this is still used (widest last known, never dropped for the
+#: narrowest), but every row it contributes to carries `stale: true` and is counted.
+VENUE_STALE_H = 3.0
+QUOTES_MAX = DATA / "cost_truth_quotes.max.json"
+
+
+def spread_price(row: dict[str, Any]) -> float | None:
+    """A quoted spread in PRICE units. Venues quote different digits, so points are not
+    comparable across venues; price is."""
+    pts, point = _f(row.get("live_spread_pts")), _f(row.get("point"))
+    if pts is None or point is None or point <= 0 or pts < 0:
+        return None
+    return pts * point
+
+
+def fold_hours(cached_hours: Any, symbols: dict[str, Any], hour: int,
+               keep: int = HOUR_KEEP) -> dict[str, Any]:
+    """Append this pass's spread (price units) to each symbol's readings for UTC `hour`."""
+    hours: dict[str, Any] = {k: dict(v) for k, v in (cached_hours or {}).items()
+                             if isinstance(v, dict)}
+    key = f"{int(hour):02d}"
+    for sym, row in symbols.items():
+        if not isinstance(row, dict):
+            continue
+        px = spread_price(row)
+        if px is None:
+            continue
+        per = hours.setdefault(sym, {})
+        seq = [x for x in (per.get(key) or []) if isinstance(x, list) and len(x) == 2]
+        seq.append([row.get("at") or _now(), px])
+        per[key] = seq[-int(keep):]
+    return hours
+
+
+def build_max(venue_docs: dict[str, dict[str, Any]], now: datetime | None = None,
+              stale_h: float = VENUE_STALE_H) -> dict[str, Any]:
+    """The widest spread across venues, per symbol and per UTC hour (Judge, 2026-11-05: one
+    certificate trades on every account, so its gate must survive the dearest venue it lands on).
+    Each venue's hour figure is the median of its kept readings; the max over venues wins. A
+    stale venue still counts (its last known figure, never dropped in favour of a narrower one)
+    and marks the row stale. Rows carry the winning venue, the point it quotes in and n."""
+    now = now or datetime.now(UTC)
+    ages: dict[str, float | None] = {}
+    for venue, doc in venue_docs.items():
+        try:
+            at = datetime.fromisoformat(str(doc.get("at")))
+            ages[venue] = round((now - at).total_seconds() / 3600.0, 2)
+        except Exception:
+            ages[venue] = None
+    stale = {v for v, a in ages.items() if a is None or a > stale_h}
+    out: dict[str, Any] = {}
+    n_stale_rows = 0
+    for venue, doc in sorted(venue_docs.items()):
+        syms = doc.get("symbols") or {}
+        for sym, per in (doc.get("spread_by_hour_utc") or {}).items():
+            point = _f((syms.get(sym) or {}).get("point"))
+            for hour, seq in (per or {}).items():
+                vals = [float(x[1]) for x in seq if isinstance(x, list) and len(x) == 2
+                        and _f(x[1]) is not None]
+                if not vals:
+                    continue
+                px = statistics.median(vals)
+                cell = out.setdefault(sym, {}).get(hour)
+                if cell is None or px > cell["spread_price"]:
+                    out[sym][hour] = {
+                        "spread_price": px, "venue": venue, "point": point,
+                        "spread_pts": round(px / point, 2) if point else None,
+                        "n": len(vals), "venues_seen": (cell or {}).get("venues_seen", 0) + 1,
+                        "stale": venue in stale}
+                else:
+                    cell["venues_seen"] += 1
+                    cell["stale"] = bool(cell["stale"] or venue in stale)
+    for per in out.values():
+        n_stale_rows += sum(1 for c in per.values() if c["stale"])
+    return {"at": now.isoformat(timespec="seconds"),
+            "rule": "per symbol and UTC hour: max over venues of each venue's median spread "
+                    "(price units); spread_pts is in the winning venue's point",
+            "venues": {v: {"age_h": ages[v], "stale": v in stale} for v in sorted(venue_docs)},
+            "stale_rows": n_stale_rows, "symbols": out,
+            "source": "desks/mt5/research/cost_truth.py"}
+
+
+def write_max(data_dir: Path | None = None) -> Path:
+    """Rebuild cost_truth_quotes.max.json from every venue file on disk."""
+    root = data_dir or DATA
+    docs: dict[str, dict[str, Any]] = {}
+    for path in sorted(root.glob("cost_truth_quotes.*.json")):
+        if path.name == QUOTES_MAX.name:
+            continue
+        doc = _json(path)
+        if isinstance(doc, dict) and doc.get("venue"):
+            docs[str(doc["venue"])] = doc
+    target = root / QUOTES_MAX.name
+    tmp = target.with_suffix(target.suffix + ".tmp")
+    tmp.write_text(json.dumps(build_max(docs), indent=1, sort_keys=True) + "\n", "utf-8")
+    tmp.replace(target)
+    return target
+
+
+def quotes_only(symbols: list[str], budget_s: float,
+                terminals: list[str] | None = None) -> dict[str, Any]:  # pragma: no cover
+    """The light hourly clock: every running terminal's quotes, one file per venue, no deals,
+    no bars, no rebuild of COST_TRUTH.json. Budget is split evenly across terminals."""
+    paths: list[str] = list(terminals if terminals is not None else running_terminals())
+    out: dict[str, Any] = {"at": _now(), "venues": []}
+    if not paths:
+        # No pathless fallback: a pathless initialize() on a box with no running terminal
+        # LAUNCHES one. Nothing running is a NO_OP the caller prints, never a spawn.
+        return out
+    each = max(5.0, budget_s / len(paths))
+    for path in paths:
+        snap = terminal_snapshot(symbols, each, 0, path=path, deals=False)
+        written = write_venue_quotes(snap)
+        out["venues"].append({"path": path, "status": snap.get("status"),
+                              "venue": venue_slug(snap) if snap.get("status") == MEASURED
+                              else None,
+                              "n_symbols": len(snap.get("symbols") or {}),
+                              "n_unmapped": sum(1 for v in (snap.get("symbols") or {}).values()
+                                                if isinstance(v, dict)
+                                                and v.get("status") == UNMEASURED),
+                              "budget_exhausted_at": snap.get("budget_exhausted_at"),
+                              "written": str(written) if written else None,
+                              "why": snap.get("why")})
+    if any(v.get("written") for v in out["venues"]):
+        out["max"] = str(write_max())
     return out
 
 
@@ -1292,6 +1618,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--md", type=Path, default=MD)
     ap.add_argument("--no-terminal", action="store_true",
                     help="skip the terminal and publish from the cached readings")
+    ap.add_argument("--quotes-only", action="store_true",
+                    help="the light hourly clock: every running terminal's quotes, one file per "
+                         "venue (cost_truth_quotes.<venue>.json); no deals, bars or report")
     args = ap.parse_args(argv)
     started = time.monotonic()
 
@@ -1306,6 +1635,18 @@ def main(argv: list[str] | None = None) -> int:
     intents = _jsonl(INTENTS)
     sleeves_doc = _json(SLEEVE_REGISTRY)
     symbols = symbol_universe(ranks_doc, cost_to_edge, ledger, prov, sleeves_doc)
+    if args.quotes_only:
+        res = quotes_only(symbols, max(5.0, args.budget_s * 0.9))
+        for v in res["venues"]:
+            print(f"cost_quotes: {v['venue'] or v['path'] or 'default terminal'} "
+                  f"{v['status']} {v['n_symbols']} symbols ({v['n_unmapped']} not in its "
+                  f"registry) -> {v['written'] or v['why']}")
+        if not any(v.get("written") for v in res["venues"]):
+            print("WRITE_OR_EXPLAIN: NO_OP cost_quotes: no running terminal answered "
+                  "(every venue file keeps its readings and their age)")
+        else:
+            print(f"cost_quotes: widest-venue file -> {res.get('max')}")
+        return 0
 
     cursor = _json(CURSOR) or {}
     cached = _json(QUOTES) or {}
@@ -1336,6 +1677,8 @@ def main(argv: list[str] | None = None) -> int:
                                       "symbols": snapshot.get("symbols"),
                                       "deals": snapshot.get("deals")},
                                      indent=1, sort_keys=True) + "\n", "utf-8")
+        if write_venue_quotes(snapshot) is not None:
+            write_max()
     else:
         snapshot = {**cached, "status": UNMEASURED if not cached else MODELLED,
                     "why": snapshot.get("why"), "bars": {},

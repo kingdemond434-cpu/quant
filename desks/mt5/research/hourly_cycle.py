@@ -1134,6 +1134,12 @@ CORE_LEGS: frozenset[str] = frozenset({
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     # The noon CRO pass must land a ledger row every day; one file read, so it is core.
     "cro_noon_freshness",
+    # THE QUOTED SPREAD, EVERY HOUR (Hourly pass, 2026-11-05): `cost_truth` belongs to the
+    # execution department, which the heavy rotation reaches every 7-9 h, so the live spread the
+    # gauntlet and the allocators read sat 5+ h stale. `cost_quotes` is the same organ's
+    # `--quotes-only` mode: symbol_info and ticks only, no bars, no deal history, one file per
+    # running terminal (cost_truth_quotes.<venue>.json). The legacy file is untouched.
+    "cost_quotes",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
     # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
     # ledger append; it must run every hour, so it is core.
@@ -1407,7 +1413,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
                      "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin",
-                     "net_edge", "cost_truth", "cost_surfaces", "trade_pathology"),
+                     "net_edge", "cost_truth", "cost_quotes", "cost_surfaces",
+                     "trade_pathology"),
                     "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
@@ -2300,6 +2307,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # where the M1 pulls are) and resumes from its own cursor next hour, so a cut hour costs
     # coverage and never the artifact. The cap sits above its budget.
     "cost_truth": 700,
+    # Quotes-only, ALWAYS-RUN (libs/ops/leg_rotation.ALWAYS_RUN): stops itself at --budget-s 25
+    # (about 22 s across the running terminals). The core plan is already over its pinned budget
+    # (~2,950 s vs 2,640 s, Hourly pass overlay 27d), so the pinned cost is kept to bars_state's
+    # order. `_costed` writes its measured seconds to the compute ledger every hour.
+    "cost_quotes": 35,
     # The conversion maximiser stops itself at --budget-s 900 and writes CONVERSION_MAXIMISER.json
     # plus its ratchet; the cap sits above its own budget for the reason `enrol_clocks` was
     # raised -- a cap below an organ's budget truncates it at the same prefix every hour.
@@ -5221,6 +5233,11 @@ def main() -> None:
     ctr = _costed("cost_truth", lambda: _producer("cost_truth",
                                                   "research/cost_truth.py",
                                                   "--once", "--budget-s", "600"))
+    # The hourly per-venue spread reading (see CORE_LEGS): attaches only to terminals already
+    # running, never launches one, and leaves every venue file as it was when none answers.
+    ctq = _costed("cost_quotes", lambda: _producer("cost_quotes",
+                                                   "research/cost_truth.py",
+                                                   "--quotes-only", "--budget-s", "25"))
     # THE OPEN-SOURCE RESEARCH FEDERATION (LAWS 5h): every public research system disposed,
     # ledgered, delta-watched and budgeted, and every sandbox packet drained into the one
     # canonical gauntlet. It never fetches or executes third-party code -- provisioning is
@@ -6457,7 +6474,7 @@ def main() -> None:
                     "cell_culture_index": ccx,
                     "shadow_institutional": shi, "latent_actors": lat, "latency_lab": lab,
                     "feed_clock_lab": fcl, "impact_lab": imp, "net_edge": nee,
-                    "cost_truth": ctr,
+                    "cost_truth": ctr, "cost_quotes": ctq,
                     "macro_department": mcd, **forests_out,
                     "probation": prb, "standing_questions": sqs, "exposure_decomposition": exd,
                     "auto_legs": auto,
