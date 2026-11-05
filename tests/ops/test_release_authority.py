@@ -534,3 +534,19 @@ def test_an_untouched_old_pr_is_judged_within_bounded_passes() -> None:
             reached_old_on = t
             break
     assert reached_old_on is not None and reached_old_on <= -(-n_open // per_pass)
+
+
+def test_one_pr_per_pass_reaches_every_pr_in_n_passes() -> None:
+    """The #776 audit's counterexample to a one-pass memory: 9 (22:00), 7 (21:00), 3 (11-01), one
+    PR per pass, went 9, 7, 9, 7... With the cumulative map every PR is judged in 3 passes."""
+    a = _auth()
+    prs = [{"number": 7, "updated_at": "2026-11-05T21:00:00Z"},
+           {"number": 3, "updated_at": "2026-11-01T00:00:00Z"},
+           {"number": 9, "updated_at": "2026-11-05T22:00:00Z"}]  # fmt: skip
+    judged_at: dict[str, float] = {}
+    order = []
+    for t in range(1, 7):
+        n = a.order_prs(prs, judged_at)[0]
+        judged_at[str(n)] = float(t)
+        order.append(n)
+    assert order == [9, 7, 3, 9, 7, 3]
