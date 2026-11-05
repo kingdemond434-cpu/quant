@@ -2688,6 +2688,25 @@ def test_a_large_diff_passes_only_when_every_part_and_the_final_vote_pass() -> N
     assert not any("This is part" in u for u in asked)  # a larger rung reads it whole
 
 
+def test_a_diff_that_fits_the_context_but_not_one_calls_time_is_read_in_parts() -> None:
+    """2026-11-05: #659's 58k diff fit num_ctx whole and timed out on all five asks (2 h 42 min).
+    Parts are capped at PART_CHARS; a hunk over the cap is still read whole, as before."""
+    mid = _diff(*((f"docs/m{i}.py", ["+" + "m" * 14_000]) for i in range(4)))  # ~56k chars
+    assert len(mid) < 88_000  # fits 32k tokens whole: before the cap this was ONE call
+    asked: list[str] = []
+    v, log = _review(mid, [("qwen", "q1", _counting(*[_PASS] * 9, asked=asked))])
+    assert v == "PASS" and "final vote" in log[0]
+    parts = [u for u in asked if "This is part" in u]
+    assert len(parts) >= 3 and all(len(u) <= ir.PART_CHARS for u in parts)
+    asked.clear()
+    v, _ = _review(mid, [("qwen", "q1", _counting(_PASS, asked=asked))], part_chars=None)
+    assert v == "PASS" and len(asked) == 1  # uncapped: read whole, the old behaviour
+    one = _diff(("docs/big.py", ["+" + "b" * 40_000]), ("docs/s.py", ["+s"]))
+    asked.clear()
+    v, _ = _review(one, [("qwen", "q1", _counting(*[_PASS] * 9, asked=asked))])
+    assert v == "PASS" and any("b" * 40_000 in u for u in asked)  # one big hunk: whole, not FAIL
+
+
 def test_money_files_are_read_together_in_one_part_or_the_review_fails() -> None:
     """#547 audit MF1 (a): max_lot raised in one money file, its min() dropped in another."""
     a = ("desks/mt5/prop/a.py", ["+MAX_LOT = 50" + " " * 30_000])
