@@ -3355,6 +3355,43 @@ def live_policy_zero(names: Sequence[str]) -> tuple[frozenset[str], dict[str, An
                              "n_zeroed": len(zero), "zeroed": dict(sorted(zero.items()))}
 
 
+def published_heat_total(book_total: float, resolved: float, effective_ceiling: float, *,
+                         held: bool, eps: float = 1e-6) -> float:
+    """heat.total for the artifact: the book's own total when the hold binds or when it sits in
+    the band [min(HEAT_TARGET, hi), hi], hi = max(effective ceiling, resolved); otherwise the
+    resolved heat (a book outside the band never licenses its own number)."""
+    hi = max(float(effective_ceiling or 0.0), float(resolved))
+    lo = min(float(HEAT_TARGET), hi)
+    if held or (lo - eps <= float(book_total) <= hi + eps):
+        return float(book_total)
+    return float(resolved)
+
+
+def gateway_scale_down(funded: Mapping[str, float], heat: Mapping[str, Any],
+                       score: Callable[[dict[str, float]], float]) -> dict[str, Any]:
+    """What the gateway will cut: it deploys min(heat.total, live_heat_ceiling(heat)) and scales a
+    larger book down to that. Returns the two totals and dE[log W]/day of the cut (scaled minus
+    published, <= 0), or NOT_BINDING when nothing is cut."""
+    held = float(sum(max(0.0, float(v)) for v in funded.values()))
+    try:
+        from mt5desk.decision_core import live_heat_ceiling
+        cap, cap_why = live_heat_ceiling(dict(heat))
+    except Exception as exc:                                   # pragma: no cover - import guard
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+    deploy = min(float(heat.get("total") or 0.0), float(cap))
+    out: dict[str, Any] = {"book_total": round(held, 8), "deployed": round(deploy, 8),
+                           "cap": round(float(cap), 8), "cap_why": cap_why}
+    if held <= 0 or deploy >= held - 0.005:                    # the gateway's own drift tolerance
+        return {**out, "status": "NOT_BINDING"}
+    k = deploy / held
+    try:
+        d = score({n: float(v) * k for n, v in funded.items()}) - score(dict(funded))
+    except Exception as exc:
+        return {**out, "status": "SCALED", "d_elogw_per_day": None,
+                "why": f"unpriced: {type(exc).__name__}: {exc}"}
+    return {**out, "status": "SCALED", "factor": round(k, 8), "d_elogw_per_day": round(d, 10)}
+
+
 def ceiling_guard_book(funded: Mapping[str, float], ceiling: float, *,
                        eps: float = 1e-6) -> tuple[dict[str, float], dict[str, Any]]:
     """`funded` scaled so its total is at most `ceiling` (+eps), with what was found. A book at or
@@ -4876,7 +4913,13 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             # `total` is the heat of the book PUBLISHED below -- the number the gateway caps at
             # and the fence checks the book sums to. When the no-trade verdict binds, that is
             # the held book; `resolved` keeps the target this pass solved for either way.
-            "total": round(book.total_heat if nt.get("binding") else verdict.total_heat, 6),
+            # THE HEAT THE BOOK EARNED, INSIDE THE BAND (Auditor, 2026-11-05, Rule 2): a book whose
+            # total sits in [floor, effective ceiling] -- the posterior earning more than the
+            # resolved heat -- publishes its own total, so the gateway deploys what the law allows
+            # instead of scaling it back to the resolved figure.
+            "total": round(published_heat_total(
+                book.total_heat, verdict.total_heat, verdict.effective_ceiling,
+                held=bool(nt.get("binding"))), 6),
             "resolved": round(verdict.total_heat, 6),
             "held": bool(nt.get("binding")),
             "free_optimum": round(verdict.free_optimum, 6),
@@ -5118,6 +5161,12 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # is still able to harvest. Read from CAPACITY.json; sizes nothing.
         "capacity_growth": _capacity_growth(),
     }
+    # EVERY SCALE-DOWN THE GATEWAY WILL APPLY, PRICED (Rule 1): the gateway deploys at most
+    # min(heat.total, live_heat_ceiling(heat)) and scales the book down to it; what that costs in
+    # E[log W] on these worlds is published for missed_growth.
+    art["heat"]["gateway_scale_down"] = gateway_scale_down(
+        funded, art["heat"], lambda b: float(score_book(ev, b, cfg=cfg, worlds=worlds)
+                                             ["mean_log_growth"]))
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(art, indent=2, default=str), encoding="utf-8")
     DONE.write_text(datetime.now(UTC).isoformat(), encoding="utf-8")
