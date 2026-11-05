@@ -382,8 +382,9 @@ def test_an_exhausted_budget_names_the_repair_and_runs_nothing(lane, monkeypatch
     assert out[0]["result"] == "UNMEASURED" and out[0]["budget_exhausted"] is True
 
 
-def test_no_actuator_can_outlast_the_seconds_it_is_handed():
+def test_no_actuator_can_outlast_the_seconds_it_is_handed(tmp_path, monkeypatch):
     """Measured 2026-11-05: floored windows and a fixed 120 s timeout outran the 420 s cap."""
+    monkeypatch.setattr(cl, "DESK", tmp_path)
     t = cl.task_actuator("run_lane:x", "MT5-X", False, 45.0)
     assert t.window_s <= 45 and t.timeout_s <= 45
     r = cl.reenrol_actuator(["EURUSD.k"], 100.0)
