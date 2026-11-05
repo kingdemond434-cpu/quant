@@ -504,3 +504,12 @@ def test_a_pass_stops_judging_at_its_budget_and_still_finishes(
     assert sb.auth.main(args) == 0
     assert "budget of -1 s spent after 0 of 1 PRs" in capsys.readouterr().out
     assert sb.auth.BUDGET_S < 30 * 60  # inside install_authority.ps1's ExecutionTimeLimit
+
+
+def test_a_pr_the_last_pass_did_not_reach_is_judged_first() -> None:
+    a = _auth()
+    prs = [{"number": 7, "updated_at": "2026-11-05T21:00:00Z"},
+           {"number": 3, "updated_at": "2026-11-01T00:00:00Z"},
+           {"number": 9, "updated_at": "2026-11-05T22:00:00Z"}]  # fmt: skip
+    assert a.order_prs(prs, set()) == [9, 7, 3]
+    assert a.order_prs(prs, {9, 7}) == [3, 9, 7]  # the one left over goes first next pass

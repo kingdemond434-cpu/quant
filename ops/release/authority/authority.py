@@ -474,6 +474,24 @@ def _freeze(out: Path, bad: list[str]) -> str:
 BUDGET_S = 20 * 60.0
 
 
+def order_prs(open_prs: list[dict[str, Any]], reached: set[int]) -> list[int]:
+    """NEWEST ACTIVITY FIRST, UNDER A BUDGET (2026-11-05). Every pass from 18:01Z ran into the
+    task's 30-minute limit and was killed mid-sweep (event 329, 0x8007050B), so the PRs at the
+    end of the list were never judged. A PR that changed recently is judged first; and a PR the
+    last pass did not reach goes ahead of all of them, so a busy day of pushes cannot starve an
+    old PR whose CI turned green quietly: no PR waits more than one extra pass."""
+    by_time = sorted(open_prs, key=lambda p: str(p.get("updated_at") or ""), reverse=True)
+    newest = [int(p["number"]) for p in by_time]
+    return [n for n in newest if n not in reached] + [n for n in newest if n in reached]
+
+
+def _last_judged(out: str) -> Path:
+    """The PR numbers the last full pass reached. Kept in the attestations folder, which this
+    account can write; every reader of that folder globs `pr<N>-*.json`, so it is never read as
+    an attestation."""
+    return Path(out) / "last_judged.state"
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--repo", required=True)
@@ -510,13 +528,11 @@ def main(argv: list[str] | None = None) -> int:
     else:
         pages = ag._gh(f"repos/{a.repo}/pulls?state=open&base={base}&per_page=100", "--paginate",
                        "--slurp")  # fmt: skip
-        # NEWEST ACTIVITY FIRST, UNDER A BUDGET (2026-11-05). Every pass since 18:01Z ran into
-        # the task's 30-minute limit and was killed mid-sweep (event 329, 0x8007050B), so the
-        # PRs at the end of the list were never judged and no pass ever finished. A PR that
-        # changed recently is judged first; what the budget leaves waits for the next pass.
-        open_prs = sorted(ag._flat(pages), key=lambda p: str(p.get("updated_at") or ""),
-                          reverse=True)  # fmt: skip
-        prs = [int(p["number"]) for p in open_prs]
+        try:
+            reached = set(json.loads(_last_judged(a.out).read_text(encoding="utf-8")))
+        except (OSError, ValueError, TypeError):
+            reached = set()
+        prs = order_prs(ag._flat(pages), reached)
     seen = detector_pass(ag, a.repo, base, Path(a.out))
     if seen:
         print(seen, flush=True)
@@ -528,11 +544,13 @@ def main(argv: list[str] | None = None) -> int:
     veto_h = float(policy.get("veto_hours", 24))
     rc = 0
     started = time.monotonic()
+    judged: list[int] = []
     for i, n in enumerate(prs):
         if time.monotonic() - started > a.budget_s:
             print(f"budget of {a.budget_s:.0f} s spent after {i} of {len(prs)} PRs; "
                   f"the rest are judged on a later pass", flush=True)  # fmt: skip
             break
+        judged.append(n)
         try:
             f = facts(ag, a.repo, n, base, policy, enforced=enforced)
             verdict, reasons = pol.decide(f)
@@ -559,6 +577,11 @@ def main(argv: list[str] | None = None) -> int:
                 line += f" [status not posted: {exc}]"
                 rc = 1
         print(line, flush=True)
+    if a.pr is None and not a.dry_run:
+        try:
+            _last_judged(a.out).write_text(json.dumps(judged), encoding="utf-8")
+        except OSError as exc:
+            print(f"last-judged list not written: {exc}")
     return rc
 
 
