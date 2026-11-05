@@ -135,3 +135,167 @@ def test_an_unreadable_parent_shields_its_tree_and_is_counted() -> None:
 
 def test_an_unknown_class_is_never_written() -> None:
     assert not plan([_p(1, GATE, prio=UNKNOWN)], "NORMAL").set_to
+
+
+# ------------------------------------------------------------------ judge cores (rule 4)
+ALL = tuple(range(18))
+JUDGE_CORES, RESEARCH_CORES = RG["JUDGE_CORES"], RG["RESEARCH_CORES"]
+
+
+def _a(pid: int, cmd: str, aff: tuple[int, ...] | None = ALL, **kw: object) -> object:
+    p = _p(pid, cmd, **kw)  # type: ignore[arg-type]
+    p.affinity = aff
+    return p
+
+
+def test_the_split_is_zucks_8_for_the_judge_and_10_for_research() -> None:
+    assert len(JUDGE_CORES) == 8 and len(RESEARCH_CORES) == 10
+    assert not set(JUDGE_CORES) & set(RESEARCH_CORES)
+    assert set(JUDGE_CORES) | set(RESEARCH_CORES) == set(ALL)
+    assert {16, 17} <= set(RESEARCH_CORES) and set(range(8)) <= set(RESEARCH_CORES)
+
+
+def test_while_the_judge_runs_research_is_held_off_its_cores_and_nothing_else_moves() -> None:
+    procs = [_a(20, JUDGE), _a(21, "python.exe -c spawn_main", ppid=20, started=1.0),
+             _a(6, MINER, prio=NORMAL), _a(7, MINER, aff=(16, 17)), _a(8, MINER, aff=(9, 10)),
+             _a(1, GATE), _a(11, E8), _a(12, "svchost.exe -k netsvcs"),
+             _a(13, MINER, aff=None)]  # fmt: skip
+    out = plan(procs, "NORMAL")
+    assert out.reserve.startswith("on")
+    assert out.pin == {6: RESEARCH_CORES, 8: RESEARCH_CORES}  # 7 already inside: left alone
+    assert not set(out.pin) & {20, 21, 1, 11, 12, 13}  # judge, gate, money, other, unreadable
+    assert all(set(c) <= set(RESEARCH_CORES) for c in out.pin.values())
+    assert 6 not in out.set_to  # research keeps its priority
+
+
+def test_no_judge_gives_each_narrowed_process_its_own_affinity_back(tmp_path: Path) -> None:
+    state, report = tmp_path / "s.json", tmp_path / "r.json"
+    pins: list[tuple[int, tuple[int, ...]]] = []
+    procs = [_a(20, JUDGE), _a(6, MINER, started=5.0), _a(7, MINER, started=6.0)]
+
+    def pinner(pid: int, cores: tuple[int, ...]) -> None:
+        pins.append((pid, cores))
+        next(p for p in procs if p.pid == pid).affinity = cores
+
+    def run() -> dict:
+        return tick(lambda: (list(procs), 50.0, 40.0), lambda *_: None, state, report,
+                    pinner=pinner, ncpu=18)  # fmt: skip
+
+    doc = run()
+    assert sorted(pins) == [(6, RESEARCH_CORES), (7, RESEARCH_CORES)]
+    assert doc["judge_cores"]["narrowed"] == 2
+    pins.clear()
+    assert run()["affinity"] == [] and not pins  # already held: nothing rewritten
+    procs.pop(0)  # the judge finished
+    procs[1].affinity = (0, 1)  # something else re-pinned 7 since: no longer ours
+    doc = run()
+    assert pins == [(6, ALL)] and doc["judge_cores"]["state"].startswith("off")
+    assert json.loads(state.read_text())["narrowed"] == {}
+
+
+def test_a_recycled_pid_never_gets_someone_elses_affinity_back(tmp_path: Path) -> None:
+    state = tmp_path / "s.json"
+    state.write_text(
+        json.dumps({"narrowed": {"6:5.000": {"orig": list(ALL), "set": list(RESEARCH_CORES)}}})
+    )
+    procs = [_a(6, MINER, aff=RESEARCH_CORES, started=99.0)]  # same pid, a new process
+    doc = tick(lambda: (procs, 10.0, 40.0), lambda *_: None, state, tmp_path / "r.json",
+               pinner=lambda *_: None, ncpu=18)  # fmt: skip
+    assert doc["affinity"] == []
+
+
+def test_another_core_count_pins_nothing() -> None:
+    procs = [_a(20, JUDGE, aff=tuple(range(36))), _a(6, MINER, aff=tuple(range(36)))]
+    out = plan(procs, "NORMAL", ncpu=36)
+    assert not out.pin and out.reserve.startswith("off: 36 cores")
+
+
+def test_dry_run_pins_nothing_and_a_refused_pin_is_reported(tmp_path: Path) -> None:
+    procs = [_a(20, JUDGE), _a(6, MINER)]
+
+    def boom(pid: int, cores: tuple[int, ...]) -> None:
+        raise AssertionError("dry run pinned a process")
+
+    doc = tick(lambda: (procs, 10.0, 40.0), lambda *_: None, tmp_path / "s.json",
+               tmp_path / "r.json", dry=True, pinner=boom, ncpu=18)  # fmt: skip
+    assert doc["affinity"] and doc["dry_run"]
+    doc = tick(lambda: (procs, 10.0, 40.0), lambda *_: None, tmp_path / "s.json",
+               tmp_path / "r.json", pinner=lambda *_: "AccessDenied: no", ncpu=18)  # fmt: skip
+    assert doc["errors"] == {"6": "AccessDenied: no"} and doc["judge_cores"]["narrowed"] == 0
+
+
+def test_research_at_normal_is_named_with_its_parent() -> None:
+    """Hourly pass P78: installers register miners at Priority 7 (BELOW_NORMAL), so research at
+    NORMAL came from somewhere else. The report names it and who started it."""
+    procs = [
+        _a(5, r"powershell.exe -File C:\opt\quant\run_research.ps1", prio=NORMAL),
+        _a(6, MINER, prio=NORMAL, ppid=5, started=1.0),
+        _a(7, MINER),
+    ]
+    out = plan(procs, "NORMAL")
+    assert out.research_by_class == {"NORMAL": 1, "BELOW_NORMAL": 1}
+    assert out.research_high == [{"pid": 6, "class": "NORMAL", "cmd": MINER,
+                                  "parent": procs[0].cmd}]  # fmt: skip
+
+
+def test_a_child_spawned_while_narrowed_is_widened_back_too(tmp_path: Path) -> None:
+    """Auditor SF1 on 8a799d860: a child inherits its narrowed parent's affinity, so it starts
+    on the research cores already. It is recorded under the parent's own affinity and widened
+    back with it when the judge is idle."""
+    state, report = tmp_path / "s.json", tmp_path / "r.json"
+    pins: list[tuple[int, tuple[int, ...]]] = []
+    procs = [_a(20, JUDGE), _a(6, MINER, started=5.0)]
+
+    def pinner(pid: int, cores: tuple[int, ...]) -> None:
+        pins.append((pid, cores))
+        next(p for p in procs if p.pid == pid).affinity = cores
+
+    def run() -> dict:
+        return tick(lambda: (list(procs), 50.0, 40.0), lambda *_: None, state, report,
+                    pinner=pinner, ncpu=18)  # fmt: skip
+
+    run()
+    procs.append(_a(7, "python.exe -c spawn_main", aff=RESEARCH_CORES, ppid=6, started=9.0))
+    run()
+    assert pins == [(6, RESEARCH_CORES)]  # the child was not rewritten, only recorded
+    assert run()["judge_cores"]["narrowed"] == 2
+    procs.pop(0)
+    pins.clear()
+    run()
+    assert sorted(pins) == [(6, ALL), (7, ALL)]
+
+
+def test_a_research_pin_inside_the_judge_cores_is_moved_and_named(tmp_path: Path) -> None:
+    """Auditor SF2: a pin wholly inside 8-15 is moved to the research cores, and said so."""
+    procs = [_a(20, JUDGE), _a(6, MINER, aff=(9, 10))]
+    doc = tick(lambda: (procs, 10.0, 40.0), lambda *_: None, tmp_path / "s.json",
+               tmp_path / "r.json", dry=True, pinner=lambda *_: None, ncpu=18)  # fmt: skip
+    assert doc["affinity"][0]["why"] == "moved off a judge-core pin"
+
+
+def test_console_hosts_and_shells_are_never_written() -> None:
+    """Desk health dry-run 2026-11-05: conhost and cmd joined the trees and were most of the
+    would-pin list. They do no compute: counted, never raised or pinned. The python they
+    started is still pinned."""
+    procs = [_a(20, JUDGE), _a(1, GATE),
+             _a(2, "conhost.exe 0xffffffff", ppid=1, name="conhost.exe"),
+             _a(5, MINER), _a(6, r"C:\Windows\system32\cmd.exe /c x", ppid=5, name="cmd.exe"),
+             _a(7, "conhost.exe", ppid=5, name="conhost.exe")]  # fmt: skip
+    out = plan(procs, "NORMAL")
+    assert set(out.set_to) == {1} and set(out.pin) == {5}
+    assert out.classes["CRITICAL"] == 2 and out.classes["RESEARCH"] == 3
+
+
+def test_the_governor_task_runs_as_system_and_adoption_ensures_it() -> None:
+    """Desk health dry-run 2026-11-05: from an unelevated token 274 research processes were
+    unreadable, so the hold bound to nothing. The task must run as SYSTEM."""
+    root = Path(__file__).resolve().parents[2] / "desks" / "mt5" / "scripts"
+    inst = (root / "install_resource_governor_task.ps1").read_text("utf-8")
+    assert "-UserId 'SYSTEM'" in inst and "-RunLevel Highest" in inst
+    assert "ops\\resource_governor.py --once" in inst
+    assert inst.index("if ($IfMissing -and") < inst.index("Register-ScheduledTask")
+    adopt = (root / "Adopt-And-Seal.ps1").read_text("utf-8")
+    assert (
+        '@{ Task = "Quant-ResourceGovernor"; Installer = "install_resource_governor_task.ps1" }'
+        in adopt
+    )

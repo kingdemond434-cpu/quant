@@ -34,8 +34,21 @@ THE RULES (each tick, every 60 s):
      >= OVERLOAD_PCT, free RAM below MIN_FREE_RAM_GB, or more than MAX_RESEARCH_PROCS research
      processes are written to REPORT, with how many research processes a throttle would have
      lowered, until a throttle is proven not to cut mining. Nothing is lowered.
-  4. NEVER: a kill, a suspend, a lowered priority, a LIVE or JUDGE process, a priority above
-     NORMAL, or a change to a process it cannot classify or whose class it cannot read.
+  4. JUDGE CORES (zuck 2026-10-29 14:37Z, judge-reserved-cores: "8 of 18 cores reserved for
+     the judge, 10 for research"). While any JUDGE process exists, every RESEARCH process is
+     kept on RESEARCH_CORES (0-7 and 16-17) by processor affinity, so the judge's 8 cores
+     (8-15) stay free for it. Priority cannot do this: the judge must stay below the live E8
+     clocks (zuck 10-08), and research at NORMAL out-ranks the judge's BELOW_NORMAL workers
+     (measured 11-05 22:40Z: 15 judge workers shared 1.64 cores). Research keeps all 10 of its
+     cores and its priority; only the judge's 8 are closed to it. A process the shaper already
+     pinned inside the research cores (memecoin 16-17, pf_allocator 0-7) is left as it is.
+     When no judge process is left, each process this governor narrowed gets its own affinity
+     back, unless something else changed it since. Only on the 18-core box: any other core
+     count is reported and nothing is pinned. The judge's own affinity is the judge's
+     (judge_priority.py); never set here.
+  5. NEVER: a kill, a suspend, a lowered priority, a LIVE, JUDGE or CRITICAL affinity, a
+     priority above NORMAL, or a change to a process it cannot classify or whose class or
+     affinity it cannot read.
 
 Every tick writes REPORT with the measurements and every action, so a bad tick is visible.
 
@@ -71,6 +84,14 @@ RECOVER_TICKS = 3
 MIN_FREE_RAM_GB = 8.0
 MAX_RESEARCH_PROCS = 48
 
+#: zuck 2026-10-29 14:37Z: of the box's 18 cores, 8 are the judge's and 10 are research's. The
+#: research side keeps the cores the box-local shaper already uses (pf_allocator heavy 0-7,
+#: memecoin 16-17), so no research process it pinned has to move.
+BOX_CORES = 18
+JUDGE_CORES: tuple[int, ...] = tuple(range(8, 16))
+RESEARCH_CORES: tuple[int, ...] = tuple(c for c in range(BOX_CORES) if c not in JUDGE_CORES)
+NAMED_HIGH = 10  # research processes at NORMAL or above, named in the report
+
 #: Money moves here. Checked FIRST: a command line matching LIVE is never anything else.
 LIVE_MARKERS = (
     "terminal64.exe", "metatrader", "e8_executor", "e8-executor", "gold_oco", "ftmo_executor",
@@ -104,6 +125,10 @@ OS_ROOTS = frozenset({
     "system", "system idle process", "smss.exe", "csrss.exe", "wininit.exe", "services.exe",
     "svchost.exe", "taskhostw.exe", "taskeng.exe", "explorer.exe", "winlogon.exe",
 })  # fmt: skip
+#: Console hosts and cmd shells join a tree only as the window or launcher of the real work
+#: (Desk health dry-run 2026-11-05: 4 of 5 would-pin targets and 1 of 4 would-raise targets were
+#: these). They do no compute, so they are counted in their tree's class and never written.
+SHELL_IMAGES = frozenset({"conhost.exe", "cmd.exe"})
 
 
 @dataclass
@@ -114,6 +139,7 @@ class Proc:
     prio: int  # UNKNOWN when the token cannot read it
     started: float  # epoch seconds
     name: str = ""  # image name; readable even when the command line is not
+    affinity: tuple[int, ...] | None = None  # None when the token cannot read it
 
 
 @dataclass
@@ -123,6 +149,13 @@ class Plan:
     why: dict[int, str] = field(default_factory=dict)
     classes: dict[str, int] = field(default_factory=dict)
     would_yield: int = 0  # research a throttle would have lowered: REPORTED, never applied
+    pin: dict[int, tuple[int, ...]] = field(default_factory=dict)  # research -> research cores
+    unpin: dict[int, tuple[int, ...]] = field(default_factory=dict)  # pid -> its own affinity
+    moved: set[int] = field(default_factory=set)  # pinned only inside 8-15: moved to research's
+    narrowed: dict[str, dict[str, list[int]]] = field(default_factory=dict)  # kept in STATE
+    reserve: str = "off"
+    research_by_class: dict[str, int] = field(default_factory=dict)
+    research_high: list[dict[str, Any]] = field(default_factory=list)
 
 
 def classify(cmd: str) -> str:
@@ -167,9 +200,24 @@ def next_mode(mode: str, hot: int, cool: int) -> str:
     return mode
 
 
-def plan(procs: list[Proc], mode: str) -> Plan:
-    """What to raise, from the processes and the load mode. Pure. The only change it ever plans
-    is CRITICAL up to NORMAL; research is counted for the report and never lowered."""
+def _key(p: Proc) -> str:
+    """A pid with its start time: Windows recycles pids, so a pid alone names nobody."""
+    return f"{p.pid}:{p.started:.3f}"
+
+
+CLASS_NAME = {IDLE: "IDLE", BELOW_NORMAL: "BELOW_NORMAL", NORMAL: "NORMAL",
+              ABOVE_NORMAL: "ABOVE_NORMAL", HIGH: "HIGH", REALTIME: "REALTIME"}  # fmt: skip
+
+
+def plan(
+    procs: list[Proc],
+    mode: str,
+    ncpu: int = BOX_CORES,
+    narrowed: Mapping[str, Mapping[str, list[int]]] | None = None,
+) -> Plan:
+    """What to change, from the processes and the load mode. Pure. It plans two kinds of
+    change: CRITICAL up to NORMAL, and, while the judge runs, research held to the research
+    cores (rule 4). `narrowed` is what earlier ticks narrowed, by _key, so it can be given back."""
     by = {p.pid: p for p in procs}
     cls = {p.pid: classify(p.cmd) for p in procs}
     live = _trees(procs, {pid for pid, c in cls.items() if c == "LIVE"})
@@ -186,13 +234,91 @@ def plan(procs: list[Proc], mode: str) -> Plan:
         "OTHER": len(procs) - len(live | judge | crit | research | unreadable | shield),
     })  # fmt: skip
     for pid in crit:
+        if by[pid].name.lower() in SHELL_IMAGES:
+            continue
         if by[pid].prio != UNKNOWN and RANK.get(by[pid].prio, 0) < RANK[NORMAL]:
             out.set_to[pid] = NORMAL
             out.why[pid] = "critical: reserved above research"
     out.would_yield = (
         len(research) if mode == "THROTTLE" else max(0, len(research) - MAX_RESEARCH_PROCS)
     )
+    _reserve_judge_cores(out, procs, research, judge, ncpu, dict(narrowed or {}))
+    for pid in sorted(research):
+        name = CLASS_NAME.get(by[pid].prio, "UNKNOWN")
+        out.research_by_class[name] = out.research_by_class.get(name, 0) + 1
+        if RANK.get(by[pid].prio, 0) >= RANK[NORMAL] and len(out.research_high) < NAMED_HIGH:
+            parent = by.get(by[pid].ppid)
+            out.research_high.append({
+                "pid": pid, "class": name, "cmd": by[pid].cmd[:200],
+                "parent": (parent.cmd or parent.name)[:200] if parent else "",
+            })  # fmt: skip
     return out
+
+
+def _reserve_judge_cores(
+    out: Plan,
+    procs: list[Proc],
+    research: set[int],
+    judge: set[int],
+    ncpu: int,
+    narrowed: dict[str, Mapping[str, list[int]]],
+) -> None:
+    """Rule 4. Narrow research to RESEARCH_CORES while a judge process exists; give each
+    narrowed process its own affinity back once none does. Never touches anything else."""
+    by_key = {_key(p): p for p in procs}
+    allowed = set(RESEARCH_CORES)
+    if ncpu != BOX_CORES:
+        out.reserve = f"off: {ncpu} cores, the split is for the {BOX_CORES}-core box"
+    elif judge:
+        out.reserve = f"on: {len(judge)} judge process(es); research held to {RESEARCH_CORES}"
+    else:
+        out.reserve = "off: no judge process"
+    on = out.reserve.startswith("on")
+    for key, rec in narrowed.items():
+        p = by_key.get(key)
+        if p is None or p.affinity is None or list(p.affinity) != list(rec["set"]):
+            continue  # gone, unreadable, or changed by something else since: not ours now
+        if on and p.pid in research:
+            out.narrowed[key] = {"orig": list(rec["orig"]), "set": list(rec["set"])}
+        else:
+            out.unpin[p.pid] = tuple(rec["orig"])
+    if not on:
+        return
+    by = {q.pid: q for q in procs}
+    # Oldest first, so a parent is recorded before the children it spawned while narrowed.
+    for pid in sorted(research, key=lambda i: (by[i].started, i)):
+        p = by[pid]
+        if p.affinity is None or _key(p) in out.narrowed or p.name.lower() in SHELL_IMAGES:
+            continue
+        keep = tuple(sorted(set(p.affinity) & allowed)) or RESEARCH_CORES
+        if keep != tuple(sorted(p.affinity)):
+            out.pin[pid] = keep
+            out.narrowed[_key(p)] = {"orig": list(p.affinity), "set": list(keep)}
+            if not set(p.affinity) & allowed:
+                out.moved.add(pid)
+        elif keep == RESEARCH_CORES and (anc := _narrowed_ancestor(p, by, out.narrowed)):
+            # Auditor SF1: Windows children inherit affinity, so a child spawned while its
+            # parent was narrowed already sits on the research cores. Record it with the
+            # parent's own affinity so it is widened back too.
+            out.narrowed[_key(p)] = {"orig": list(anc["orig"]), "set": list(keep)}
+
+
+def _narrowed_ancestor(
+    p: Proc, by: Mapping[int, Proc], narrowed: Mapping[str, Mapping[str, list[int]]]
+) -> Mapping[str, list[int]] | None:
+    """The record of the nearest ancestor this governor narrowed, or None. A "parent" that
+    started after its child is a recycled pid, never a parent (as in _trees)."""
+    seen: set[int] = set()
+    cur = p
+    while cur.ppid != cur.pid and cur.ppid not in seen:
+        seen.add(cur.pid)
+        parent = by.get(cur.ppid)
+        if parent is None or parent.started > cur.started:
+            return None
+        if (rec := narrowed.get(_key(parent))) is not None:
+            return rec
+        cur = parent
+    return None
 
 
 # ------------------------------------------------------------------ actuation (box only)
@@ -209,6 +335,10 @@ def _snapshot() -> tuple[list[Proc], float, float]:
                 prio = int(p.nice())
             except (psutil.AccessDenied, OSError):
                 prio = UNKNOWN
+            try:
+                aff: tuple[int, ...] | None = tuple(p.cpu_affinity())
+            except (psutil.AccessDenied, OSError, AttributeError):
+                aff = None
             procs.append(
                 Proc(
                     int(info["pid"]),
@@ -217,6 +347,7 @@ def _snapshot() -> tuple[list[Proc], float, float]:
                     prio,
                     float(info.get("create_time") or 0.0),
                     str(info.get("name") or ""),
+                    aff,
                 )
             )
         except (psutil.NoSuchProcess, ValueError, TypeError):
@@ -233,6 +364,16 @@ def _set(pid: int, prio: int) -> str | None:
         psutil.Process(pid).nice(prio)
         return None
     except (psutil.NoSuchProcess, psutil.AccessDenied, OSError) as exc:
+        return f"{type(exc).__name__}: {exc}"
+
+
+def _set_affinity(pid: int, cores: tuple[int, ...]) -> str | None:
+    import psutil  # type: ignore[import-untyped,unused-ignore]
+
+    try:
+        psutil.Process(pid).cpu_affinity(list(cores))
+        return None
+    except (psutil.NoSuchProcess, psutil.AccessDenied, OSError, ValueError) as exc:
         return f"{type(exc).__name__}: {exc}"
 
 
@@ -258,6 +399,8 @@ def tick(
     report_path: Path = REPORT,
     dry: bool = False,
     now: Callable[[], datetime] = lambda: datetime.now(UTC),
+    pinner: Callable[[int, tuple[int, ...]], str | None] = _set_affinity,
+    ncpu: int | None = None,
 ) -> dict[str, Any]:
     procs, cpu, free_gb = snapshot()
     st = _load(state_path)
@@ -268,7 +411,8 @@ def tick(
     cool = cool + 1 if (cpu < RECOVER_PCT and free_gb >= MIN_FREE_RAM_GB) else 0
     mode = next_mode(str(st.get("mode") or "NORMAL"), hot, cool)
     by = {p.pid: p for p in procs}
-    p = plan(procs, mode)
+    narrowed = st.get("narrowed") if isinstance(st.get("narrowed"), dict) else {}
+    p = plan(procs, mode, ncpu if ncpu is not None else (os.cpu_count() or 0), narrowed)
     errors: dict[int, str] = {}
     actions = []
     for pid, prio in sorted(p.set_to.items()):
@@ -279,10 +423,26 @@ def tick(
             errors[pid] = err
             continue
         actions.append({"pid": pid, "to": prio, "from": by[pid].prio, "why": p.why[pid]})
+    pins = []
+    for pid, cores in [*sorted(p.pin.items()), *sorted(p.unpin.items())]:
+        if pid in p.pin and not set(cores) <= set(RESEARCH_CORES):
+            raise RuntimeError(f"resource_governor planned judge cores {cores} for {pid}")
+        err = None if dry else pinner(pid, cores)
+        if err:
+            errors[pid] = err
+            p.narrowed = {k: v for k, v in p.narrowed.items() if not k.startswith(f"{pid}:")}
+            continue
+        pins.append({"pid": pid, "cores": list(cores), "from": list(by[pid].affinity or ()),
+                     "why": "moved off a judge-core pin" if pid in p.moved
+                     else "research off the judge's cores" if pid in p.pin
+                     else "judge idle: own affinity back"})  # fmt: skip
     doc = {
         "at": now().isoformat(timespec="seconds"), "dry_run": dry, "mode": mode,
         "cpu_pct": round(cpu, 1), "free_ram_gb": round(free_gb, 1), "hot": hot, "cool": cool,
-        "classes": p.classes, "actions": actions,
+        "classes": p.classes, "actions": actions, "affinity": pins,
+        "judge_cores": {"state": p.reserve, "judge": list(JUDGE_CORES),
+                        "research": list(RESEARCH_CORES), "narrowed": len(p.narrowed)},
+        "research_by_class": p.research_by_class, "research_at_normal_or_above": p.research_high,
         "errors": {str(k): v for k, v in errors.items()},
         "report_only": {
             "overload": mode == "THROTTLE",
@@ -295,7 +455,7 @@ def tick(
                    "min_free_ram_gb": MIN_FREE_RAM_GB, "max_research_procs": MAX_RESEARCH_PROCS},
     }  # fmt: skip
     if not dry:
-        _save(state_path, {"mode": mode, "hot": hot, "cool": cool})
+        _save(state_path, {"mode": mode, "hot": hot, "cool": cool, "narrowed": p.narrowed})
     _save(report_path, doc)
     return doc
 

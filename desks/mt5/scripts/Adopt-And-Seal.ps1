@@ -557,6 +557,7 @@ if ($headNow -and $headNow -ne $script:HeadBefore) {
 # "Access is denied") and a missing one appears on the first adoption after it ships. Best-effort:
 # a failed registration is logged and never stops the seal.
 foreach ($ensure in @(
+        @{ Task = "Quant-ResourceGovernor"; Installer = "install_resource_governor_task.ps1" },
         @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" })) {
     if (Get-ScheduledTask -TaskName $ensure.Task -ErrorAction SilentlyContinue) { continue }
     $installer = Join-Path $desk ("scripts\" + $ensure.Installer)
