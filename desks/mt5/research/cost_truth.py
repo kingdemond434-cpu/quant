@@ -836,8 +836,16 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
     # instance when the running one belongs to another Windows session (the FTMO terminal lives
     # in RDP session 2). Count the terminal pids around the call; a new one is shut down, killed
     # and the venue read UNMEASURED -- a spawned terminal is never a reading and never left up.
+    # The desk's one attach rule comes first (`research.mt5_session.attach_or_initialize`, used
+    # by the tick source, the tape and the gold desk): it refuses to initialise from Session 0 or
+    # when a terminal at this path runs in ANOTHER Windows session. The pid count below is the
+    # second net, for a spawn that rule could not foresee.
+    try:
+        from mt5_session import attach_or_initialize  # run as a script from research/
+    except ImportError:
+        from research.mt5_session import attach_or_initialize
     before = _terminal_pids()
-    ok = mt5.initialize(path=path) if path else mt5.initialize()
+    ok = attach_or_initialize(mt5, path=path)
     spawned = sorted(_terminal_pids() - before) if before is not None else []
     if spawned:
         try:
@@ -849,7 +857,8 @@ def terminal_snapshot(symbols: list[str], budget_s: float, bars_cap: int,
                        "(killed); the running one is out of this session's reach"}
     if not ok:
         return {"status": UNMEASURED, "path": path,
-                "why": f"terminal did not initialise: {mt5.last_error()}"}
+                "why": "terminal did not attach (refused from Session 0, or the terminal runs "
+                       f"in another Windows session): {mt5.last_error()}"}
     started = time.monotonic()
     out: dict[str, Any] = {"status": MEASURED, "symbols": {}, "bars": {}, "deals": []}
     try:
