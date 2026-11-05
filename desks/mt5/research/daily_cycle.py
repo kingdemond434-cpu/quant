@@ -422,6 +422,8 @@ def _proposers() -> None:
                  # own-book forensics plus the alive+dead genome, its base rates, failure memory,
                  # crowding prior and style-analogue cells through the donor door.
                  "book_forensics"):
+        if _sub_elsewhere("proposers", name):
+            continue
         try:
             mod = __import__(name)
             kwargs = {}
@@ -452,6 +454,8 @@ def _world_miners() -> None:
     records that and rebuilds its queue from its ledger.
     """
     for name, kwargs in (("repo_miner", {}), ("deep_forest_miner", {"budget_s": 900.0})):
+        if _sub_elsewhere("world_miners", name):
+            continue
         try:
             mod = __import__(name)
             rep = mod.run(**kwargs)
@@ -519,6 +523,8 @@ def _state_research_feedback() -> None:
                  # three are pure readers -- no network, no terminal -- and none conditions
                  # capital.
                  "hour_surface", "hour_prior", "alpha_periodic_table"):
+        if _sub_elsewhere("state_research_feedback", name):
+            continue
         try:
             mod = __import__(name)
             if hasattr(mod, "run"):
@@ -912,8 +918,273 @@ STEPS = (("weekly_hunt_refresh", _weekly_hunt_refresh),
          ("vector_families_check", _vector_families_check),
          ("export_aurum", _export_aurum), ("daily_research_os", _daily_research_os))
 
+
+# ============================================================================ ONE LEG, ONE PROCESS
+# THE 25 GB CHAIN (2026-11-05). Every leg above ran inside ONE Python process for the whole
+# chain: ~40 legs, three of them loops over 2-35 research modules each, every one importing its
+# own pandas/numpy world and module-level caches that nothing ever released. Measured on the
+# Contabo box 2026-11-05: MT5-Daily (pid 21040) at 25.2 GB commit and 12 GB RSS, 7.4 h after it
+# started at 11-04 21:50Z, holding the box at its commit limit until ~05:00Z and slowing the
+# judge's prewarm about 11x. Nothing was a leak in one leg; the chain was a heap that only grew.
+#
+# So the chain is now a thin PARENT that imports none of the research code: each leg of the real
+# chain runs in its own child process (`--leg NAME`), and the three fan-out legs (`proposers`,
+# `world_miners`, `state_research_feedback`) run each MODULE in its own child (`--leg NAME --sub
+# MOD`). When a child exits the OS takes back everything it held, so the chain's peak is the
+# largest single leg, never the sum. Every child also has a WALL CAP: a leg that hangs is killed
+# with its whole process tree, recorded as that leg's failure (TIMEOUT), and the chain moves on.
+# No research is cut: every leg and module still runs, with the same budgets, in the same order.
+#
+# Every child reports its own PEAK memory (working set and commit on Windows, max RSS elsewhere)
+# to `logs/daily_cycle_legs.jsonl`, one row per leg or module, and the stamp carries it, so the
+# next time the box is heavy the leg responsible is named by measurement, not by guess. A leg
+# whose peak passes LEG_MEMORY_WARN_MB is logged LEG_MEMORY_HIGH.
+#
+# Only the module's own step functions are isolated. A test (or any caller) that swaps STEPS for
+# its own callables runs them in-process exactly as before; QUANT_DAILY_ISOLATE=0 turns it off.
+
+#: The real chain's functions by name, frozen at import so a swapped STEPS is never isolated.
+_ORIGINAL_STEPS: dict[str, object] = dict(STEPS)
+#: Legs whose body is a loop over research modules: the parent runs the loop, each module a child.
+FANOUT_STEPS = frozenset({"proposers", "world_miners", "state_research_feedback"})
+#: Default wall cap for one leg's child. Above the longest leg budget in the chain (deepen_bars
+#: 1500 s, module_rent 240 s, gap map 300 s ...) with room for the bars it has to read.
+LEG_WALL_S_DEFAULT = 3 * 3600.0
+#: Legs measured or budgeted longer than the default. weekly_hunt_refresh is the six-day hunt
+#: sweep (seven hunts in a row) and stays under HOLDER_MAX_WAIT_S.
+LEG_WALL_S = {"weekly_hunt_refresh": 10 * 3600.0}
+#: Wall cap for one module of a fan-out leg. A proposer's own budget is clipped to <= 3600 s by
+#: `_proposers`; twice that is a hang, not a slow day.
+SUB_WALL_S = {"proposers": 2 * 3600.0, "world_miners": 3600.0,
+              "state_research_feedback": 3600.0}
+#: A child whose peak commit (or RSS) passes this is named LEG_MEMORY_HIGH in the log.
+LEG_MEMORY_WARN_MB = 6144.0
+LEG_DIR = BASE / "logs" / "daily_cycle_legs"   # gitignored, like the log
+#: The script a child runs: this file, re-entered with `--leg`.
+_CHILD_SCRIPT = Path(__file__).resolve()
+LEG_LEDGER = BASE / "logs" / "daily_cycle_legs.jsonl"
+
+#: Set in a child: the leg it runs, and (fan-out legs) the one module it runs.
+_IN_CHILD = False
+_CHILD_SUB: str | None = None
+#: Set in the parent while a fan-out leg's loop runs, so its modules go to children.
+_FANOUT_ACTIVE: str | None = None
+
+
+def _isolation_on() -> bool:
+    """QUANT_DAILY_ISOLATE=1/0 decides. Unset: on, except under pytest, where a test that
+    monkeypatches what a real step calls must see its patch -- a child would not."""
+    flag = os.environ.get("QUANT_DAILY_ISOLATE", "").strip()
+    if flag:
+        return flag != "0"
+    return "PYTEST_CURRENT_TEST" not in os.environ
+
+
+def _should_isolate(name: str, fn: object) -> bool:
+    return (_isolation_on() and not _IN_CHILD and name in _ORIGINAL_STEPS
+            and _ORIGINAL_STEPS[name] is fn)
+
+
+def _peak_memory_mb() -> dict:
+    """This process's own peak memory, in MB. Never raises; {} when it cannot be read."""
+    try:
+        if os.name == "nt":
+            import ctypes
+            from ctypes import wintypes
+
+            class _PMC(ctypes.Structure):
+                _fields_ = [("cb", wintypes.DWORD), ("PageFaultCount", wintypes.DWORD),
+                            ("PeakWorkingSetSize", ctypes.c_size_t),
+                            ("WorkingSetSize", ctypes.c_size_t),
+                            ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+                            ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                            ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+                            ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                            ("PagefileUsage", ctypes.c_size_t),
+                            ("PeakPagefileUsage", ctypes.c_size_t)]
+            pmc = _PMC()
+            pmc.cb = ctypes.sizeof(_PMC)
+            k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+            k32.GetCurrentProcess.restype = wintypes.HANDLE
+            psapi = ctypes.WinDLL("psapi", use_last_error=True)
+            psapi.GetProcessMemoryInfo.argtypes = [wintypes.HANDLE, ctypes.POINTER(_PMC),
+                                                   wintypes.DWORD]
+            if not psapi.GetProcessMemoryInfo(k32.GetCurrentProcess(), ctypes.byref(pmc),
+                                              pmc.cb):
+                return {}
+            return {"peak_rss_mb": round(pmc.PeakWorkingSetSize / 2**20, 1),
+                    "peak_commit_mb": round(pmc.PeakPagefileUsage / 2**20, 1)}
+        import resource
+        kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        mb = kb / 1024.0 if sys.platform != "darwin" else kb / 2**20
+        return {"peak_rss_mb": round(mb, 1)}
+    except Exception:
+        return {}
+
+
+def _leg_key(leg: str, sub: str | None) -> str:
+    return leg if sub is None else f"{leg}.{sub}"
+
+
+def _kill_tree(proc) -> None:
+    """Kill a child and everything it started. Never raises."""
+    import subprocess
+    try:
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)],
+                           capture_output=True, timeout=60, check=False)
+        else:
+            import signal
+            os.killpg(proc.pid, signal.SIGKILL)
+    except Exception:
+        pass
+    with contextlib.suppress(Exception):
+        proc.kill()
+    with contextlib.suppress(Exception):
+        proc.wait(timeout=60)
+
+
+def _run_child(leg: str, sub: str | None, wall_s: float) -> dict:
+    """Run one leg (or one module of a fan-out leg) in its own process, bounded by `wall_s`.
+
+    Returns {"ok", "error"?, "seconds", "rc", "timed_out", "peak_*_mb"?}. Never raises for
+    the child's own failure; the caller decides what a failure means."""
+    import subprocess
+    key = _leg_key(leg, sub)
+    LEG_DIR.mkdir(parents=True, exist_ok=True)
+    result_path = LEG_DIR / f"{key}.json"
+    with contextlib.suppress(OSError):
+        result_path.unlink()
+    argv = [sys.executable, str(_CHILD_SCRIPT), "--leg", leg,
+            "--result", str(result_path)]
+    if sub is not None:
+        argv += ["--sub", sub]
+    # THE SAME IMPORT WORLD AS THE IN-PROCESS LEG: the parent's cwd and its whole sys.path (the
+    # repo root, research/, scripts/ and whatever the launcher added), so a leg that imported
+    # `libs...` or read a relative path in-process does exactly the same in its child.
+    env = dict(os.environ)
+    env["PYTHONPATH"] = os.pathsep.join(p for p in sys.path if p)
+    kw: dict[str, object] = {"cwd": os.getcwd(), "env": env}
+    if os.name == "nt":
+        kw["creationflags"] = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+    else:
+        kw["start_new_session"] = True
+    started = time.monotonic()
+    timed_out = False
+    proc = subprocess.Popen(argv, **kw)  # stdout/stderr inherited: nothing buffered here
+    try:
+        rc = proc.wait(timeout=wall_s)
+    except subprocess.TimeoutExpired:
+        timed_out = True
+        _kill_tree(proc)
+        rc = proc.returncode
+    except BaseException:
+        _kill_tree(proc)            # a killed parent never leaves an orphan leg running
+        raise
+    seconds = round(time.monotonic() - started, 1)
+    try:
+        doc = json.loads(result_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        doc = {}
+    out: dict[str, object] = {"ok": bool(doc.get("ok")) and rc == 0 and not timed_out,
+                              "seconds": seconds, "rc": rc, "timed_out": timed_out}
+    for k in ("peak_rss_mb", "peak_commit_mb"):
+        if k in doc:
+            out[k] = doc[k]
+    if timed_out:
+        out["error"] = f"TIMEOUT: {key} killed after {wall_s:.0f}s wall cap"
+    elif not out["ok"]:
+        out["error"] = str(doc.get("error") or f"{key} child exited {rc} with no result")
+    peak = max(float(out.get("peak_commit_mb") or 0.0), float(out.get("peak_rss_mb") or 0.0))
+    dlog(f"  {key}: {seconds:.0f}s, peak "
+         + (f"rss {out.get('peak_rss_mb')} MB" if "peak_rss_mb" in out else "unmeasured")
+         + (f", commit {out['peak_commit_mb']} MB" if "peak_commit_mb" in out else "")
+         + (" TIMEOUT" if timed_out else ""))
+    if peak > LEG_MEMORY_WARN_MB:
+        dlog(f"  LEG_MEMORY_HIGH {key}: peak {peak:.0f} MB > {LEG_MEMORY_WARN_MB:.0f} MB")
+    with contextlib.suppress(OSError):
+        LEG_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+        with LEG_LEDGER.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"at": datetime.now(UTC).isoformat(timespec="seconds"),
+                                "leg": leg, "sub": sub, **out}) + "\n")
+    return out
+
+
+def _sub_elsewhere(leg: str, sub: str) -> bool:
+    """True when module `sub` of fan-out leg `leg` must NOT run in this process.
+
+    In a child for one module: every other module is elsewhere. In the parent while the leg is
+    fanned out: this module runs in its own child now, and a failure there is non-fatal and
+    logged exactly as the in-process loop logged it. Otherwise (isolation off, a direct call):
+    False, and the loop runs the module in-process as it always did."""
+    if _IN_CHILD:
+        return _CHILD_SUB is not None and sub != _CHILD_SUB
+    if leg != _FANOUT_ACTIVE:
+        return False
+    res = _run_child(leg, sub, SUB_WALL_S.get(leg, LEG_WALL_S_DEFAULT))
+    if not res["ok"]:
+        dlog(f"{sub} FAILED (non-fatal): {res.get('error')}")
+    return True
+
+
+def _run_isolated(name: str) -> dict:
+    """One leg of the real chain, through `run_step`, in its own process (or, for a fan-out
+    leg, in this process with each module in its own)."""
+    if name in FANOUT_STEPS:
+        def fanned() -> None:
+            global _FANOUT_ACTIVE
+            _FANOUT_ACTIVE = name
+            try:
+                _ORIGINAL_STEPS[name]()  # type: ignore[operator]
+            finally:
+                _FANOUT_ACTIVE = None
+        return run_step(name, fanned)
+    box: dict[str, object] = {}
+
+    def child() -> None:
+        res = _run_child(name, None, LEG_WALL_S.get(name, LEG_WALL_S_DEFAULT))
+        box.update(res)
+        if not res["ok"]:
+            raise RuntimeError(str(res.get("error")))
+    out = run_step(name, child)
+    for k in ("peak_rss_mb", "peak_commit_mb", "timed_out"):
+        if k in box:
+            out[k] = box[k]
+    return out
+
+
+def _child_main(argv: list[str]) -> int:
+    """`--leg NAME [--sub MOD] --result PATH`: run one leg (or one module) and report. Takes no
+    lock and writes no stamp: the parent that started it owns both."""
+    global _IN_CHILD, _CHILD_SUB
+
+    def arg(flag: str) -> str | None:
+        return argv[argv.index(flag) + 1] if flag in argv and argv.index(flag) + 1 < len(argv) \
+            else None
+    leg, sub, result = arg("--leg"), arg("--sub"), arg("--result")
+    _IN_CHILD, _CHILD_SUB = True, sub
+    doc: dict[str, object] = {"leg": leg, "sub": sub, "pid": os.getpid()}
+    fn = _ORIGINAL_STEPS.get(leg or "")
+    if fn is None:
+        doc.update(ok=False, error=f"no such leg {leg!r}")
+    else:
+        try:
+            fn()  # type: ignore[operator]
+            doc["ok"] = True
+        except (Exception, SystemExit) as exc:
+            doc.update(ok=False, error=f"{type(exc).__name__}: {exc}")
+            dlog(f"{_leg_key(leg or '', sub)}: FAILED -- {doc['error']}")
+            dlog(traceback.format_exc().rstrip())
+    doc.update(_peak_memory_mb())
+    if result:
+        with contextlib.suppress(OSError):
+            Path(result).write_text(json.dumps(doc), encoding="utf-8")
+    return 0 if doc.get("ok") else 1
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
+    if "--leg" in argv:
+        return _child_main(argv)
     # ONE STEP ON ITS OWN CLOCK (2026-09-30). `markout` sits behind research steps this box has
     # measured at 9,056 s, under a 900 s hourly budget, so `reports/markout.json` stood at
     # 2026-09-08 with n_matched=0 while the live book kept filling. `--step NAME` runs that one
@@ -1632,7 +1903,7 @@ def _run_chain(force: bool, lock: ChainLock | None = None) -> int:
                     continue
             if not lock.held:
                 lock.unlocked_steps.append(name)
-        results[name] = run_step(name, fn)
+        results[name] = _run_isolated(name) if _should_isolate(name, fn) else run_step(name, fn)
         _write_stamp(today, {**prior, **results}, lock)
 
     # THE STAMP RECORDS THE ATTEMPT, NOT A SUCCESS. Marking the day done only on a clean run would
