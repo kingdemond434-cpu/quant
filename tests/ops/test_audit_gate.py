@@ -3007,3 +3007,15 @@ def test_send_alert_succeeds_only_when_a_channel_delivered(monkeypatch: Any) -> 
     assert mod.main(["t", "b"]) == 1
     monkeypatch.setattr(mod, "send_all", lambda t, b: {"armed": 1, "delivered": 1})
     assert mod.main(["t", "b"]) == 0 and mod.main(["t"]) == 2
+
+
+def test_a_pure_base_merge_keeps_its_registry_clear_and_a_new_change_does_not() -> None:
+    # Desk health 2026-11-03 19:47Z: every registry PR was refused as behind LIVE, and merging
+    # LIVE in made each row stale. The cleared change carries by patch_id; any other diff does not.
+    new = "c" * 40
+    got, why = ag.registry_clear([_row()], 9, new, _win(), _NOW, same=lambda sha: sha == _H)
+    assert got is not None and got["sha"] == new and "carried from aaaaaaaaa" in why
+    assert ag.registry_clear([_row()], 9, new, _win(), _NOW, same=lambda sha: False)[0] is None
+    assert ag.registry_clear([_row()], 9, new, _win(), _NOW)[0] is None  # no carry by default
+    short = _row(sha="a" * 9)  # a short sha can never be carried
+    assert ag.registry_clear([short], 9, new, _win(), _NOW, same=lambda sha: True)[0] is None
