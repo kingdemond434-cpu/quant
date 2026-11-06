@@ -1016,6 +1016,26 @@ def _run_fence(root: Path, script: str, extra: tuple[str, ...],
             "detail": tail[-1][:200] if tail else ""}
 
 
+def _need_s(row: dict[str, Any]) -> float:
+    """Seconds a fence needs to reach a verdict, from its OWN last measured run.
+
+    A fence last seen timing out needs the whole per-fence bound; one measured finishing needs
+    half again its measured seconds (floored); one never measured gets the floor and is learned.
+    """
+    if row.get("need_s") is not None:
+        try:
+            return min(ROTATION_FENCE_TIMEOUT_S, max(_ROTATION_FLOOR_S, float(row["need_s"])))
+        except (TypeError, ValueError):
+            pass
+    if "timed out" in str(row.get("detail") or ""):
+        return ROTATION_FENCE_TIMEOUT_S
+    try:
+        el = float(row.get("elapsed_s"))  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return _ROTATION_FLOOR_S
+    return min(ROTATION_FENCE_TIMEOUT_S, max(_ROTATION_FLOOR_S, 1.5 * el))
+
+
 def _record_age_s(row: dict[str, Any], now: datetime) -> float:
     """Seconds since this fence last ran; infinite when the record cannot be read."""
     try:
@@ -1063,6 +1083,17 @@ def rotate_gate(root: Path | None = None, *, budget_s: float = 1800.0,
         prior = {}
     due = sorted(declared, key=lambda n: (-_record_age_s(prior.get(n, {}), t0), n))
     ran: list[str] = []
+    # A FENCE THAT CANNOT FINISH IN WHAT IS LEFT WAITS AT THE HEAD OF THE QUEUE; CHEAPER FENCES
+    # BEHIND IT RUN (2026-11-06, hourly pass P81). Measured on the box: MT5-LawGate ran 1800-2027 s
+    # against its 1800 s budget and recorded five fences "unrunnable ... timed out" -- each started
+    # late with the budget's remainder as its timeout, killed, and written as a FAILED verdict and
+    # a fresh `ran_at`, so it went to the BACK of the queue to be started late again. Now a fence
+    # is started only with at least its own measured need, a budget-truncated timeout is never a
+    # verdict (the prior row stands, still oldest, with its need recorded), and the pass ends
+    # inside its budget. The first fence of a pass always runs with the full per-fence bound, so
+    # the heaviest fence is never starved: it climbs to the head and gets the pass to itself.
+    deferred: list[str] = []
+    truncated: list[str] = []
     for name in due:
         left = budget_s - (datetime.now(tz=UTC) - t0).total_seconds()
         # A FENCE IS NEVER JUDGED ON A TRUNCATED CLOCK. Measured on the first rotation pass:
@@ -1072,10 +1103,29 @@ def rotate_gate(root: Path | None = None, *, budget_s: float = 1800.0,
         # queue for the next one.
         if ran and left < _ROTATION_FLOOR_S:
             break
+        need = _need_s(prior.get(name, {})) * len(declared[name])
+        if ran and left < need:
+            deferred.append(name)
+            continue
         started = datetime.now(tz=UTC)
-        rows = [_run_fence(root, name, extra,
-                           min(ROTATION_FENCE_TIMEOUT_S, max(_ROTATION_FLOOR_S, left)))
-                for extra in declared[name]]
+        rows = []
+        cut = False
+        for extra in declared[name]:
+            room = budget_s - (datetime.now(tz=UTC) - t0).total_seconds()
+            timeout = min(ROTATION_FENCE_TIMEOUT_S, max(_ROTATION_FLOOR_S, room))
+            r = _run_fence(root, name, extra, timeout)
+            if "timed out" in str(r.get("detail") or "") and timeout < ROTATION_FENCE_TIMEOUT_S:
+                cut = True
+            rows.append(r)
+        if cut:
+            # The budget ran out, not the fence: no verdict. The prior row (or none) stands with
+            # its age, so the fence leads the next pass, and it is started there with the bound.
+            keep = dict(prior.get(name, {}))
+            keep["need_s"] = ROTATION_FENCE_TIMEOUT_S
+            if keep.get("ran_at"):
+                prior[name] = keep
+            truncated.append(name)
+            continue
         bad = [r for r in rows if not r["ok"]]
         row = dict(bad[0] if bad else rows[0])
         row["ok"] = not bad
@@ -1100,7 +1150,9 @@ def rotate_gate(root: Path | None = None, *, budget_s: float = 1800.0,
             "n_failed": len(failures), "failures": failures, "results": results,
             "fences": fences,
             "rotation": {"window_h": ROTATION_WINDOW_H, "budget_s": budget_s,
-                         "ran_this_pass": ran, "n_recorded": len(fences),
+                         "ran_this_pass": ran,
+                         "deferred_needs_more_than_left": deferred,
+                         "budget_truncated_no_verdict": truncated, "n_recorded": len(fences),
                          "n_declared": len(declared), "never_recorded": missing,
                          "oldest_ran_at": min((str(r.get("ran_at")) for r in results),
                                               default=None)},
