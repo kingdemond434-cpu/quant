@@ -103,7 +103,8 @@ def main(argv: list[str] | None = None) -> int:
         _publish(report)
         print(json.dumps(report, indent=1) if args.json else
               f"DEEPSEEK HOLD: {budget['why']}")
-        return 0
+        holds = hold_streak("BUDGET_EXHAUSTED")
+        return red_exit({"status": "BUDGET_EXHAUSTED"}, holds)
 
     # ---- 2. SEAT. Dark is a state, not a failure.
     seat = ds.seat_state()
@@ -175,10 +176,41 @@ def main(argv: list[str] | None = None) -> int:
               f"{result.get('n_findings', 0)} finding(s), "
               f"{result.get('capability_walks_proposed', 0)} capability walk(s), "
               f"{result.get('why', '')}")
-    return red_exit(result)
+    holds = hold_streak(str(result.get("status") or ""))
+    if holds >= HOLD_ESCALATE:
+        print(f"DEEPSEEK RED: {holds} cycles in a row held ({result.get('status')}); "
+              f"a hold that lasts {HOLD_ESCALATE} cycles is a fault")
+    return red_exit(result, holds)
 
 
-def red_exit(result: dict[str, Any]) -> int:
+#: Statuses that are a HOLD (the seat is fine, the next cadence retries) -- until they last.
+HOLDS = frozenset({"RATE_LIMITED", "BUDGET_EXHAUSTED"})
+#: Consecutive held cycles after which a hold is RED (audit of db989af77, SF4): at the hourly
+#: cadence, a day of holds is an organ that produced nothing for a day, not a pause.
+HOLD_ESCALATE = 24
+_HOLD_STATE = _ROOT / "data" / "deepseek_hold_streak.json"
+
+
+def hold_streak(status: str, path: Path | None = None) -> int:
+    """Consecutive cycles ending in a hold, this one included; 0 once a cycle is not a hold.
+    Never raises: an unwritable state file reads as no streak, which keeps today's exit code."""
+    p = path or _HOLD_STATE
+    try:
+        prev = int(json.loads(p.read_text("utf-8")).get("streak", 0))
+    except (OSError, ValueError, TypeError, AttributeError):
+        prev = 0
+    streak = prev + 1 if status in HOLDS else 0
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps({"streak": streak, "last_status": status,
+                                 "updated_utc": datetime.now(tz=UTC).isoformat(
+                                     timespec="seconds")}), "utf-8")
+    except OSError:
+        return 0
+    return streak
+
+
+def red_exit(result: dict[str, Any], holds: int = 0) -> int:
     """1 when the cycle reached the model and came back with NOTHING, else 0.
 
     A CALL that fails, a vendor-locked seat whose pin is retired with nothing to move to, or an
@@ -194,6 +226,8 @@ def red_exit(result: dict[str, Any]) -> int:
     status = str(result.get("status") or "")
     if status in ("CALL_FAILED", "MODEL_RETIRED"):
         return 1
+    if status in HOLDS and holds >= HOLD_ESCALATE:
+        return 1                                  # a hold that has lasted a day is a fault
     if status == "OK" and int(result.get("n_findings") or 0) == 0:
         return 1
     return 0

@@ -292,6 +292,20 @@ def discover_model(seat: Seat, *, timeout: float = 20.0) -> tuple[str, str | Non
         return "", (f"{seat.model} cannot be served and no {_vendor(seat.model)!r} id is listed "
                     f"in its tier (best other: {model}); this seat is vendor-locked, so nothing "
                     "else is substituted")
+    if not err and model and seat.model and model != seat.model \
+            and seat.model in dead_models(seat.base_url):
+        # A DEAD PAID PIN NEVER ESCALATES TO ANOTHER VENDOR'S PAID MODEL (audit of db989af77,
+        # SF2). Whoever pinned a paid id chose that vendor and that price; with the free tier
+        # off and no guard on the URL, the flagship fallthrough would otherwise pick the most
+        # capable paid id any vendor lists. A free replacement, or the vendor's own, is fine.
+        if not _is_free(seat.model) and not _is_free(model) \
+                and _vendor(model) != _vendor(seat.model):
+            return "", (f"{seat.model} is no longer served and {_vendor(seat.model)!r} lists no "
+                        f"replacement; a paid pin is never replaced by another vendor's paid "
+                        f"model (best other: {model}) (MODEL_RETIRED)")
+        # EVERY SWAP AWAY FROM A DEAD PIN IS RECORDED (SF1), not only the same-vendor one:
+        # the free-tier and flagship fallthroughs returned without reaching the ledger.
+        _note_swap(seat, seat.model, model)
     return model, err
 
 
@@ -494,11 +508,16 @@ def dead_models(base_url: str, now: datetime | None = None, *,
     return out
 
 
-def _append(row: dict[str, Any]) -> None:
-    with contextlib.suppress(OSError):
+def _append(row: dict[str, Any]) -> bool:
+    """Append one ledger row. True only when it was written (audit SF3: a swallowed OSError
+    used to read as success, so `note_dead` reported an id written off that nothing recorded)."""
+    try:
         SWAP_LEDGER.parent.mkdir(parents=True, exist_ok=True)
         with SWAP_LEDGER.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(row, sort_keys=True) + "\n")
+    except OSError:
+        return False
+    return True
 
 
 def note_dead(seat: Seat, model: str, err: str, now: datetime | None = None) -> bool:
@@ -509,9 +528,8 @@ def note_dead(seat: Seat, model: str, err: str, now: datetime | None = None) -> 
     recent = dead_models(seat.base_url, now=now, within_h=1.0) - {model}
     if len(recent) >= MAX_DEAD_PER_HOUR:
         return False
-    _append({"kind": "dead", "ts": now.isoformat(), "seat": seat.name,
-             "base_url": seat.base_url, "model": model, "err": str(err)[:240]})
-    return True
+    return _append({"kind": "dead", "ts": now.isoformat(), "seat": seat.name,
+                    "base_url": seat.base_url, "model": model, "err": str(err)[:240]})
 
 
 #: (base_url, from, to) -> when that swap was last written, so a dead pin consulted on every

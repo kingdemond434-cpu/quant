@@ -328,3 +328,47 @@ def test_a_locked_seat_with_no_replacement_is_labelled_retired(monkeypatch):
     seat = llm_seat.Seat(name="deepseek", base_url=OR, key="k", model=DEAD, lock_vendor=True)
     _body, err, used = llm_seat._post_live(seat, DEAD, {"model": DEAD}, timeout=1.0)
     assert used == DEAD and err and call_status(err) == "MODEL_RETIRED"
+
+
+# ---- audit of db989af77 (SF1-SF4)
+def test_a_fallthrough_swap_reaches_the_ledger(monkeypatch):
+    """SF1: only the same-vendor swap was recorded; the free-tier fallthrough returned silently."""
+    _listing(monkeypatch, ["qwen/qwen3-235b-a22b:free", "openai/gpt-5"])
+    llm_seat.note_dead(_seat(), DEAD, _404)
+    assert llm_seat.discover_model(_seat())[0] == "qwen/qwen3-235b-a22b:free"
+    swaps = [r for r in _rows() if r["kind"] == "swap"]
+    assert [(r["from"], r["to"]) for r in swaps] == [(DEAD, "qwen/qwen3-235b-a22b:free")]
+
+
+def test_a_dead_paid_pin_never_escalates_to_another_vendors_paid_model(monkeypatch):
+    """SF2: free tier off, an unguarded URL, a retired paid pin -> no cross-vendor paid flagship."""
+    paid = "deepseek/deepseek-v3.1"
+    seat = llm_seat.Seat(name="x", base_url="https://direct.example/v1", key="k", model=paid)
+    monkeypatch.setattr(llm_seat, "free_tier_only", lambda: False)
+    _listing(monkeypatch, ["openai/gpt-5", "anthropic/claude-x-9"])
+    llm_seat.note_dead(seat, paid,
+                       f'HTTP 404: {{"error":{{"message":"No endpoints found for {paid}."}}}}')
+    model, err = llm_seat.discover_model(seat)
+    assert model == "" and err and "never replaced by another vendor's paid model" in err
+
+
+def test_a_ledger_write_that_fails_is_not_reported_as_written(monkeypatch, tmp_path):
+    """SF3: note_dead returned True while _append swallowed the OSError."""
+    blocker = tmp_path / "file"
+    blocker.write_text("")
+    monkeypatch.setattr(llm_seat, "SWAP_LEDGER", blocker / "under_a_file.jsonl")
+    assert llm_seat.note_dead(_seat(), DEAD, _404) is False
+
+
+def test_a_hold_that_lasts_a_day_is_red(tmp_path):
+    """SF4: RATE_LIMITED and BUDGET_EXHAUSTED never escalated, however long they lasted."""
+    from scripts import run_deepseek_cycle as rdc
+    state = tmp_path / "holds.json"
+    streak = 0
+    for _ in range(rdc.HOLD_ESCALATE - 1):
+        streak = rdc.hold_streak("RATE_LIMITED", state)
+    assert rdc.red_exit({"status": "RATE_LIMITED"}, streak) == 0
+    streak = rdc.hold_streak("BUDGET_EXHAUSTED", state)
+    assert streak == rdc.HOLD_ESCALATE
+    assert rdc.red_exit({"status": "BUDGET_EXHAUSTED"}, streak) == 1
+    assert rdc.hold_streak("OK", state) == 0               # one real cycle ends the streak
