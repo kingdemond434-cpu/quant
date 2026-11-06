@@ -23,27 +23,78 @@ STALE_LOCK_S = 120.0
 REPLACE_TRIES = 5
 
 
+class ReplaceFailed(OSError):
+    """The rename onto the target never succeeded. The new body is still in `tmp`, which is
+    KEPT (audit must-fix on 37bb136b4): an in-place write would be a torn file the next reader
+    parses as half a document, so the writer raises and the caller's leg reports it."""
+
+    def __init__(self, path: Path, tmp: Path, last: BaseException) -> None:
+        super().__init__(f"could not replace {path} after {REPLACE_TRIES} tries "
+                         f"({type(last).__name__}: {last}); the new body is kept at {tmp}")
+        self.path = path
+        self.tmp = tmp
+
+
 def write_text(path: Path, body: str) -> None:
-    """Write `body` to `path` through a temp file unique to this process and thread."""
+    """Write `body` to `path` through a temp file unique to this process and thread. The target
+    is only ever replaced whole; never written in place."""
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}."
                          f"{uuid.uuid4().hex[:8]}.tmp")
-    tmp.write_text(body, encoding="utf-8", newline="")
     try:
-        for i in range(REPLACE_TRIES):
-            try:
-                os.replace(tmp, path)
-                return
-            except PermissionError:                 # WinError 5: a reader holds the target
-                time.sleep(0.05 * (i + 1))
-        path.write_text(body, encoding="utf-8", newline="")   # last resort: in place, never lost
-    finally:
+        tmp.write_text(body, encoding="utf-8", newline="")
+    except BaseException:
         with contextlib.suppress(OSError):
             tmp.unlink(missing_ok=True)
+        raise
+    last: BaseException | None = None
+    for i in range(REPLACE_TRIES):
+        try:
+            os.replace(tmp, path)
+            return
+        except PermissionError as exc:              # WinError 5: a reader holds the target
+            last = exc
+            time.sleep(0.05 * (i + 1))
+    raise ReplaceFailed(path, tmp, last or PermissionError("replace refused"))
 
 
 def write_json(path: Path, doc: Any, *, indent: int = 1) -> None:
     write_text(path, json.dumps(doc, indent=indent, ensure_ascii=False, default=str) + "\n")
+
+
+def _break_stale(lock: Path) -> bool:
+    """Break a dead holder's lock so that exactly one waiter wins (audit SF3 on 37bb136b4).
+    Each waiter RENAMES the stale lock to a name unique to itself; the rename is atomic, so
+    only one succeeds, and only that one unlinks it and retries. A plain unlink let two
+    waiters each delete the lock -- the second deleting the first's fresh one -- and both
+    proceed."""
+    try:
+        st = lock.stat()
+    except OSError:
+        return True                                # gone already: retry the create
+    if time.time() - st.st_mtime <= STALE_LOCK_S:
+        return False
+    grave = lock.with_name(f"{lock.name}.{os.getpid()}.{uuid.uuid4().hex[:8]}.stale")
+    try:
+        os.rename(lock, grave)
+    except OSError:
+        return False                               # another waiter won; wait for its release
+    try:
+        moved = grave.stat()
+        same = (moved.st_ino, moved.st_mtime) == (st.st_ino, st.st_mtime)
+    except OSError:
+        same = False
+    if not same:
+        # Between our stat and our rename another waiter broke the stale lock and took a
+        # fresh one, and we moved THAT. Put it back (link fails if yet another lock exists).
+        with contextlib.suppress(OSError):
+            os.link(grave, lock)
+        with contextlib.suppress(OSError):
+            grave.unlink(missing_ok=True)
+        return False
+    with contextlib.suppress(OSError):
+        grave.unlink(missing_ok=True)
+    return True
 
 
 @contextlib.contextmanager
@@ -62,10 +113,8 @@ def locked(path: Path, *, timeout_s: float = 30.0) -> Iterator[None]:
             os.close(fd)
             break
         except FileExistsError:
-            with contextlib.suppress(OSError):
-                if time.time() - lock.stat().st_mtime > STALE_LOCK_S:
-                    lock.unlink(missing_ok=True)
-                    continue
+            if _break_stale(lock):
+                continue
             if time.monotonic() > deadline:
                 raise TimeoutError(f"{lock} held past {timeout_s}s") from None
             time.sleep(0.05)

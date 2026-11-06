@@ -33,18 +33,39 @@ def test_concurrent_writers_never_leave_a_torn_file(tmp_path: Path) -> None:
     assert list(tmp_path.glob("*.tmp")) == []
 
 
-def test_a_held_target_falls_back_to_an_in_place_write(tmp_path: Path,
-                                                       monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_held_target_is_never_written_in_place(tmp_path: Path,
+                                                 monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit must-fix on 37bb136b4: after the retries the writer RAISES and keeps the temp
+    file; the old target is untouched, never torn by an in-place write."""
     path = tmp_path / "state.json"
+    path.write_text('{"old": 1}\n', encoding="utf-8")
 
     def refuse(src: object, dst: object) -> None:
         raise PermissionError(5, "Access is denied")
 
     monkeypatch.setattr(aj.os, "replace", refuse)
     monkeypatch.setattr(aj.time, "sleep", lambda s: None)
-    aj.write_json(path, {"a": 1})
-    assert json.loads(path.read_text("utf-8")) == {"a": 1}
-    assert list(tmp_path.glob("*.tmp")) == []
+    with pytest.raises(aj.ReplaceFailed) as err:
+        aj.write_json(path, {"a": 1})
+    assert json.loads(path.read_text("utf-8")) == {"old": 1}
+    kept = list(tmp_path.glob("*.tmp"))
+    assert kept == [err.value.tmp] and json.loads(kept[0].read_text("utf-8")) == {"a": 1}
+    assert str(err.value.tmp) in str(err.value)
+
+
+def test_only_one_waiter_breaks_a_stale_lock(tmp_path: Path) -> None:
+    """Audit SF3 on 37bb136b4: the second waiter's rename fails, so it never proceeds; and a
+    waiter that moved a FRESH lock (it was replaced between its stat and its rename) puts it
+    back."""
+    lock = tmp_path / "m.json.lock"
+    lock.write_text("")
+    old = lock.stat().st_mtime - aj.STALE_LOCK_S - 5
+    os.utime(lock, (old, old))
+    assert aj._break_stale(lock) is True and not lock.exists()
+    assert aj._break_stale(lock) is True, "already gone: retry the create"
+    lock.write_text("")
+    assert aj._break_stale(lock) is False and lock.exists(), "a fresh lock is never broken"
+    assert list(tmp_path.glob("*.stale")) == []
 
 
 def test_the_lock_serialises_and_breaks_a_stale_holder(tmp_path: Path) -> None:

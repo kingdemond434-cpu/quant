@@ -413,3 +413,17 @@ def test_a_scouted_source_cannot_redirect_or_resolve_to_a_private_host() -> None
     with pytest.raises(urllib.error.URLError, match="redirect refused"):
         h.redirect_request(urllib.request.Request("https://example.org/"), None, 302, "Found",
                            {}, "http://10.0.0.5/admin")
+
+
+@pytest.mark.parametrize("body", ['{"c0": {"from": "2024-01-0', "[1, 2]", "�\x00"])
+def test_a_corrupt_evidence_map_survives_a_pass_unchanged(tmp_path: Path, body: str) -> None:
+    """Audit must-fix on 37bb136b4: a map that does not parse is never overwritten with this
+    pass's few dates (which would un-trim every older cell); the record refuses, loudly."""
+    p = tmp_path / "evidence_start.json"
+    p.write_text(body, encoding="utf-8")
+    before = p.read_bytes()
+    with pytest.raises(roles.EvidenceMapUnreadable):
+        roles.record_evidence_start([{"cell_id": "c1", "symbol": "EURUSD",
+                                      "lookahead_guard": {"evidence_from": "2024-03-01"}}], p)
+    assert p.read_bytes() == before
+    assert sorted(x.name for x in tmp_path.iterdir()) == ["evidence_start.json"]

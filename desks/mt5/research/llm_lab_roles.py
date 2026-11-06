@@ -189,8 +189,24 @@ def record_evidence_start(rows: Iterable[dict[str, Any]], path: Path | None = No
         return _record_evidence_start(rows, p)
 
 
+class EvidenceMapUnreadable(RuntimeError):
+    """evidence_start.json exists but is not a readable map. Writing over it would replace
+    every recorded evidence date with this pass's few, so the look-ahead trim would stop
+    applying to every older cell (audit must-fix on 37bb136b4): refuse, keep the file as it
+    is, and let the caller's pass report RED and donate nothing."""
+
+
 def _record_evidence_start(rows: Iterable[dict[str, Any]], p: Path) -> int:
-    doc: dict[str, Any] = _read_json(p, {}) or {}
+    doc: dict[str, Any] = {}
+    if p.exists():
+        try:
+            doc = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise EvidenceMapUnreadable(f"{p} does not parse ({type(exc).__name__}: "
+                                        f"{str(exc)[:120]}); left untouched") from exc
+        if not isinstance(doc, dict):
+            raise EvidenceMapUnreadable(f"{p} holds a {type(doc).__name__}, not a map; "
+                                        f"left untouched")
     n = 0
     for r in rows:
         cid = str(r.get("cell_id") or "")

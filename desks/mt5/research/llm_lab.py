@@ -1863,6 +1863,7 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
 
     # ---- persist
     donated = None
+    map_defect = ""
     if not dry_run:
         new_classes = {c["class"] for c in outputs["classes"]} - set(ontology)
         _save_ontology(new_classes, {c["class"]: c["lab"] for c in outputs["classes"]
@@ -1873,7 +1874,14 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         _append_jsonl(JEV_JOBS, [j for j in outputs["jev"] if j["series"] not in known_q])
         # THE EVIDENCE MAP FIRST (audit must-fix 4): the compiler may read a donation the moment
         # it lands, so the guard's start dates are on disk before any donation is.
-        roles.record_evidence_start(outputs["donate"], STATE_DIR / "evidence_start.json")
+        try:
+            roles.record_evidence_start(outputs["donate"], STATE_DIR / "evidence_start.json")
+        except roles.EvidenceMapUnreadable as exc:
+            # No evidence date on disk means no donation (audit must-fix on 37bb136b4): a cell
+            # the trim cannot find would be judged on its contaminated window.
+            map_defect = f"EVIDENCE MAP UNREADABLE: {exc}; {len(outputs['donate'])} cell(s) " \
+                         f"held, nothing donated"
+            outputs["donate"] = []
         if outputs["donate"]:
             target = donation_target(DONATE_DIR)
             target.mkdir(parents=True, exist_ok=True)
@@ -1980,6 +1988,9 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
     if isinstance(donations, dict) and donations.get("red"):
         doc["red"] = True
         doc["defects"] = [donations.get("defect")]
+    if map_defect:
+        doc["red"] = True
+        doc["defects"] = [*(doc.get("defects") or []), map_defect]
     if not dry_run:
         _write_json(REPORT, doc)
     return doc
