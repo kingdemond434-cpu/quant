@@ -666,6 +666,19 @@
     "The change introduces a new decision entry with the ID 'D-20261106-051', which discusses carry certificates and their replication status. This introduces new risk by potentially affecting the trading of certain instruments until they are resolved by the Judge."
    ],
    "source": "independent-review job 127624677773; journal-only diff (one decision_journal row, no code) that holds capital BACK from contradicted certs, which lowers risk; Auditor CLEAR d9698e2cf"
+  },
+  {
+   "pr": 792,
+   "head": "8c3acfcf9a60b46497c87afd6be4985ab28ece0e",
+   "base": "2d4aa4781d1412da70a79e4d2c976e83cb3b5725",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "The change introduces new regular expressions and functions that could potentially increase the risk of unintended side effects or security vulnerabilities.",
+    "New functions `_alias_lines`, `_write_sites`, and `_writes_through` are added, which may not be thoroughly tested for all edge cases."
+   ],
+   "source": "independent-review job 127648975914; read-only speedup of a CI fence (scripts/check_dead_architecture.py), no money path, and the named functions ARE covered by oracle tests in tests/scripts/test_check_dead_architecture.py; Auditor CLEAR 8c3acfcf9"
   }
  ]
 }
