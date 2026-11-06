@@ -53,6 +53,29 @@ def test_an_unmeasured_yield_is_never_written_to_generator_yield(
                                                "status": "TIMED_OUT"}]
 
 
+def test_a_timed_out_physics_tradition_is_skipped_not_written(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    from research import physics_lab as PL
+    writes: list[str] = []
+    fake = types.SimpleNamespace(
+        connect=lambda: types.SimpleNamespace(commit=lambda: None, close=lambda: None),
+        generator_yield_update=lambda gen, **kw: writes.append(gen))
+    import libs.moat
+    monkeypatch.setattr(libs.moat, "registry", fake, raising=False)
+    monkeypatch.setitem(sys.modules, "libs.moat.registry", fake)
+    monkeypatch.setattr(ML.B, "record_trials", lambda *a, **k: {}, raising=False)
+    # two civilizations ran `ising`; one of them timed out, so the sum is partial
+    ran = {"ising": {"proposed": 2, "evaluated": 2, "passed": 0, "compute_s": 9.0,
+                     "status": "TIMED_OUT", "yield_measured": False, "civilizations": ["a", "b"]},
+           "fourier": {"proposed": 1, "evaluated": 1, "passed": 0, "compute_s": 1.0,
+                       "status": "OK", "civilizations": ["a"]}}
+    rows = PL.registry_rows(ran, "EURUSD")
+    assert rows["ising"]["yield_measured"] is False and rows["fourier"]["yield_measured"]
+    out = ML.record_registry([], rows, {})
+    assert writes == ["math:fourier"]
+    assert out["generator_yield_skipped"] == [{"generator": "math:ising", "status": "TIMED_OUT"}]
+
+
 def test_a_panel_past_the_deadline_is_not_started(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[float] = []
 

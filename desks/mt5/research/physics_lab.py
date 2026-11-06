@@ -175,6 +175,17 @@ def _run_tradition(civ: str, tradition: str, panels: list[Panel], budget_s: floa
     return result
 
 
+def registry_rows(scientists_ran: dict[str, dict[str, Any]], target: str
+                  ) -> dict[str, dict[str, Any]]:
+    """Per-tradition rows for `math_lab.record_registry`, carrying `yield_measured` and the
+    status through, so a tradition a civilization never finished is skipped, not written 0."""
+    return {t: {"proposed": v["proposed"], "distinct": v.get("evaluated", 0),
+                "evaluated": v["evaluated"], "passed": v["passed"], "compute_s": v["compute_s"],
+                "target": target, "status": v.get("status", "OK"),
+                "yield_measured": v.get("yield_measured", True)}
+            for t, v in scientists_ran.items()}
+
+
 def department_roi() -> dict[str, float | None]:
     """Mean measured ROI per department from generator_yield, UNMEASURED (None) when no
     tradition of the department has compute on record."""
@@ -334,6 +345,11 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
             agg["passed"] += passed
             agg["compute_s"] += float(result.get("compute_s", 0.0))
             agg["civilizations"].append(civ)
+            # ONE UNFINISHED CIVILIZATION MAKES THE TRADITION'S YIELD UNMEASURED (audit of
+            # 9505672752cc, MF2): its sum over civilizations is then a partial count, and
+            # record_registry must not write it into generator_yield as the tradition's yield.
+            if result.get("yield_measured") is False:
+                agg["yield_measured"] = False
             if result.get("status") != "OK":
                 agg["status"] = str(result.get("status"))
             evaluated_by_method[tradition] = evaluated_by_method.get(tradition, 0) + distinct
@@ -519,11 +535,7 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
         int(donation["already_donated_in_a_previous_pass"]), len(refused)))
     donation["by_tradition"] = donated_by_tradition
     ML.checkpoint(OUT, started, "donated", donation, len(unique_forward), dry_run)
-    per_tradition_registry = {t: {"proposed": v["proposed"], "distinct": v.get("evaluated", 0),
-                                  "evaluated": v["evaluated"], "passed": v["passed"],
-                                  "compute_s": v["compute_s"],
-                                  "target": working[0].target}
-                              for t, v in scientists_ran.items()}
+    per_tradition_registry = registry_rows(scientists_ran, working[0].target)
     seen.clear()
     unique_admitted = [o for o in admitted_objects
                        if not (o.object_id in seen or seen.add(o.object_id))]  # type: ignore[func-returns-value]
