@@ -1,0 +1,267 @@
+{
+ "class": "esg",
+ "label": "ESG, emissions and controversy data",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:ambee:greenhouse_gas_data",
+   "vendor": "Ambee",
+   "dataset": "Greenhouse gas data",
+   "class": "esg",
+   "region": "global",
+   "measures": "Emissions tracking across 240 countries",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://datarade.ai/data-categories/esg-data/providers",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:arabesque_s_ray:esg_services",
+   "vendor": "Arabesque S-Ray",
+   "dataset": "ESG services",
+   "class": "esg",
+   "region": "global",
+   "measures": "Environmental, social, governance data",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://datarade.ai/data-categories/climate-data/providers",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:cdp:cdp_climate_responses",
+   "vendor": "CDP",
+   "dataset": "CDP climate responses",
+   "class": "esg",
+   "region": "global",
+   "measures": "Corporate emissions disclosures",
+   "frequency": "annual",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:clarity_ai:sustainability_platform",
+   "vendor": "Clarity AI",
+   "dataset": "Sustainability platform",
+   "class": "esg",
+   "region": "global",
+   "measures": "Sustainability and social impact data",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://datarade.ai/data-categories/climate-data/providers",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:factset_truvalue_labs:esg_scoring",
+   "vendor": "FactSet Truvalue Labs",
+   "dataset": "ESG Scoring",
+   "class": "esg",
+   "region": "global",
+   "measures": "Daily ESG momentum and alternative sentiment metrics",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:iss_esg:esg_solutions",
+   "vendor": "ISS ESG",
+   "dataset": "ESG solutions",
+   "class": "esg",
+   "region": "global",
+   "measures": "Environmental, social and governance solutions",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://datarade.ai/data-categories/climate-data/providers",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:kayrros:emissions_analytics",
+   "vendor": "Kayrros",
+   "dataset": "Emissions Analytics",
+   "class": "esg",
+   "region": "global",
+   "measures": "Greenhouse gas emissions from satellite data",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:msci_esg_research:esg_ratings",
+   "vendor": "MSCI ESG Research",
+   "dataset": "ESG Ratings",
+   "class": "esg",
+   "region": "global",
+   "measures": "ESG risk ratings and climate metrics",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://londonstrategicedge.com/directory/alternative-data/",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:owl_analytics:esg_data",
+   "vendor": "Owl Analytics",
+   "dataset": "ESG data",
+   "class": "esg",
+   "region": "global",
+   "measures": "ESG ratings",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://datarade.ai/data-categories/esg-data/providers",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:reprisk:esg_risk_index",
+   "vendor": "RepRisk",
+   "dataset": "ESG Risk Index",
+   "class": "esg",
+   "region": "global",
+   "measures": "Daily ESG controversy and risk scoring",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:sigwatch:esg_data",
+   "vendor": "SIGWATCH",
+   "dataset": "ESG data",
+   "class": "esg",
+   "region": "global",
+   "measures": "NGO campaign tracking",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://datarade.ai/data-categories/esg-data/providers",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:sustainalytics_morningstar:esg_ratings",
+   "vendor": "Sustainalytics (Morningstar)",
+   "dataset": "ESG Ratings",
+   "class": "esg",
+   "region": "global",
+   "measures": "Industry-specific ESG risk exposure scoring",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://londonstrategicedge.com/directory/alternative-data/",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  },
+  {
+   "id": "paid:trucost_s_p:environmental_data",
+   "vendor": "Trucost (S&P)",
+   "dataset": "Environmental data",
+   "class": "esg",
+   "region": "global",
+   "measures": "Company emissions footprints",
+   "frequency": "annual",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
+  }
+ ]
+}
