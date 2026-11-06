@@ -1,5 +1,5 @@
 {
- "at": "2026-11-06T19:58:07+00:00",
+ "at": "2026-11-06T20:40:37+00:00",
  "status": "MEASURED",
  "verdicts": {
   "status": "MEASURED",
@@ -9,7 +9,7 @@
   "counts": {
    "1h": 0,
    "24h": 29836,
-   "7d": 357041,
+   "7d": 331566,
    "build_step_lo": 29836,
    "build_step_hi": 0
   },
@@ -17,7 +17,7 @@
   "first_terminal_counts": {
    "1h": 0,
    "24h": 12167,
-   "7d": 203050,
+   "7d": 191849,
    "build_step_lo": 12167,
    "build_step_hi": 0
   },
@@ -25,23 +25,23 @@
   "first_terminal_per_hour": {
    "1h": 0.0,
    "24h": 506.958,
-   "7d": 1208.631
+   "7d": 1141.958
   },
   "per_hour": {
    "1h": 0.0,
    "24h": 1243.167,
-   "7d": 2125.244
+   "7d": 1973.607
   }
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 46971,
-   "7d": 91061
+   "24h": 49433,
+   "7d": 97688
   },
   "per_hour": {
-   "24h": 1957.125,
-   "7d": 542.03
+   "24h": 2059.708,
+   "7d": 581.476
   }
  },
  "verdicts_per_hour": 1243.167,
@@ -49,22 +49,20 @@
  "verdict_rate_basis": "changed verdict events, not total completed tests",
  "first_judged_per_day": 12167.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
- "coverage_backlog_fresh": true,
- "created_per_day": 46971.0,
- "backlog": 1087211,
- "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\JUDGE_COVERAGE.json totals.unjudged_total",
+ "coverage_backlog_fresh": false,
+ "created_per_day": 49433.0,
+ "backlog": "UNMEASURED",
+ "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
-  "status": "GROWING",
-  "hours": null,
-  "net_per_day": -34804.0,
-  "why": "the judge returns fewer verdicts an hour than the desk creates cells; the backlog cannot drain at this rate"
+  "status": "UNMEASURED",
+  "why": "backlog UNMEASURED (GAUNTLET_BACKPRESSURE.json absent)"
  },
  "workers_planned": 15,
  "workers_last_sweep": 15,
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-06T19:56:57+00:00",
-  "pid": 8280
+  "started_at": "2026-11-06T20:39:49+00:00",
+  "pid": 3048
  }
 }
