@@ -546,7 +546,10 @@ def build() -> dict[str, Any]:
         "expanded_this_pass": expanded,
         "pruned_this_pass": pruned_now,
         "mcts": mcts_doc,
+        # PUBLISHED slice, for a report a human reads. `_full_frontier` beside it is what the
+        # donation walks, because a readability cap must never decide what reaches the judge.
         "frontier": frontier[:30],
+        "_full_frontier": frontier,
         "_tree_state": tree,
         "allocation_rule": (
             "best-first by EXPECTED INFORMATION GAIN PER CELL-EQUIVALENT. The gain is the exact "
@@ -575,11 +578,34 @@ def build() -> dict[str, Any]:
     }
 
 
-def _donate(doc: dict[str, Any]) -> dict[str, Any]:
-    """Frontier nodes that ARE cells, into the gauntlet's intake through the stamped contract."""
-    rows = [r for r in doc.get("frontier") or []
-            if r.get("spec") and r["kind"] in ("state_variant", "cross_market_analogue",
-                                               "execution_variant")]
+#: Frontier kinds that carry a `spec` and are therefore expressible as a cell the gauntlet can
+#: judge. The kinds above them in `KINDS` are questions about a mechanism, not parameterisations
+#: of one, so they have nothing to donate -- that is a fact about the tree's shape, not a filter.
+DONATABLE_KINDS = ("state_variant", "cross_market_analogue", "execution_variant")
+
+
+def _donate(doc: dict[str, Any], frontier: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    """Frontier nodes that ARE cells, into the gauntlet's intake through the stamped contract.
+
+    IT READS THE WHOLE FRONTIER, NOT THE PUBLISHED SLICE -- and the difference cost this organ its
+    entire output. `doc["frontier"]` is `frontier[:30]`, a PUBLICATION cut sized so the report
+    stays readable, and this function used to read it. The frontier is sorted by information gain
+    per cell-equivalent, so which kinds occupy the top thirty is decided by the scoring, not by
+    what is donatable.
+
+    Measured on the trading box 2026-09-24: when the Tier-5 residual organs landed on 2026-09-23
+    they added 604 `portfolio_residual_variant` nodes, which carry `spec: null` and are not a
+    donatable kind. They scored well, filled the top thirty, and this function found nothing --
+    while 448 state_variants, 2,204 cross_market_analogues and 2,326 execution_variants sat OPEN
+    just below the cut. 138 donated artifacts, then silence, with the organ reporting `ok` every
+    hour and its own report reading "the tree is still at mechanism and experiment depth" beside a
+    `deepest_kind_reached` of `portfolio_residual_variant`, which says the opposite.
+
+    A DISPLAY TRUNCATION BECAME A PRODUCTION DECISION. The cap that remains (`[:20]` below) is a
+    BATCH BUDGET and says so; it bounds one pass's donation, never what the tree may propose.
+    """
+    rows = [r for r in (frontier if frontier is not None else doc.get("frontier") or [])
+            if r.get("spec") and r["kind"] in DONATABLE_KINDS]
     if not rows:
         return {"donated": 0, "why": ("no frontier node is yet expressible as a cell -- the tree "
                                       "is still at mechanism and experiment depth")}
@@ -648,7 +674,9 @@ def main(argv: list[str] | None = None) -> int:
     tree = doc.pop("_tree_state")
     TREE.parent.mkdir(parents=True, exist_ok=True)
     TREE.write_text(json.dumps(tree, indent=1, default=str), encoding="utf-8")
-    doc["donation"] = _donate(doc)
+    # Popped, never written: the whole frontier is 6,000+ nodes and belongs to the donation, not
+    # to a report. The published `frontier` slice stays exactly as it was.
+    doc["donation"] = _donate(doc, doc.pop("_full_frontier", None))
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
     print(f"  donated {doc['donation'].get('donated', 0)} frontier cell(s)"
