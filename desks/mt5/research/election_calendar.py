@@ -299,6 +299,11 @@ def merge_events(store: dict[str, Any], cc: str, found: Sequence[dict[str, str]]
         reads = row.setdefault("dates_read", {row.get("url", ""): row["date"]})
         reads.setdefault(url, e["date"])
         if e["date"] < row["date"]:
+            # A move is recorded with WHEN it happened (audit nit on d1d1e6e04): a confirmed
+            # row's earlier date was not knowable before this reading, so _stamp lights the
+            # moved window no earlier than the move.
+            row.setdefault("date_moves", []).append({"from": row["date"], "to": e["date"],
+                                                     "at": seen, "url": url})
             row["date"] = e["date"]
         if url not in srcs:
             srcs[url] = seen
@@ -341,6 +346,13 @@ def _stamp(d: date, ev: dict[str, Any] | None) -> tuple[datetime, str]:
         return statutory, "statutory_history"
     if seen.tzinfo is None:
         seen = seen.replace(tzinfo=UTC)
+    for mv in ev.get("date_moves") or ():
+        # The date this row carries was only read at the latest move onto it.
+        try:
+            at = datetime.fromisoformat(str(mv.get("at")))
+        except (TypeError, ValueError, AttributeError):
+            continue
+        seen = max(seen, at if at.tzinfo else at.replace(tzinfo=UTC))
     vote = date.fromisoformat(str(ev["date"]))
     if seen < datetime(vote.year, vote.month, vote.day, tzinfo=UTC):
         return max(statutory, seen), "first_sight"

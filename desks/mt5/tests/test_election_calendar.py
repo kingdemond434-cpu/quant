@@ -268,3 +268,20 @@ def test_no_bar_before_d_minus_5_broker_midnight_is_lit(tmp_ec: Path) -> None:
                                                                        hours=3)
         mine = [t for t in lit if abs((t - pd.Timestamp(d.isoformat(), tz="UTC")).days) <= 10]
         assert mine and min(mine) >= floor, d
+
+
+def test_a_date_moved_earlier_is_stamped_from_the_move() -> None:
+    """Audit nit on d1d1e6e04: a confirmed vote whose date a later page moves earlier lights
+    the moved window no earlier than the move itself."""
+    store: dict[str, Any] = {}
+    ec.merge_events(store, "jp", [{"date": "2026-10-21", "quote": "q"}], "a",
+                    "2026-10-10T00:00:00+00:00")
+    ec.merge_events(store, "jp", [{"date": "2026-10-21", "quote": "q"}], "b",
+                    "2026-10-11T00:00:00+00:00")
+    ec.merge_events(store, "jp", [{"date": "2026-10-20", "quote": "q"}], "c",
+                    "2026-10-17T06:00:00+00:00")
+    row = store["jp"][0]
+    assert row["date"] == "2026-10-20" and row["date_moves"][0]["at"].startswith("2026-10-17")
+    rows = ec.series_rows([row], "jp", today=date(2026, 10, 22))
+    pre = [r for r in rows if r["pre_event"] == 1]
+    assert pre and all(r["available_time"] >= "2026-10-17T06:00:00+00:00" for r in pre)
