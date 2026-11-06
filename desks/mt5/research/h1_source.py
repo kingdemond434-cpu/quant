@@ -152,13 +152,45 @@ class Bars:
         a = self.trading_age_hours
         return a is not None and a > STALE_AFTER_H
 
-    def covers(self, start: datetime, end: datetime | None = None) -> tuple:
+    def bar_span_hours(self) -> float:
+        """The chart's own bar length in hours, read from the index (median spacing).
+
+        Measured, never declared: a `Bars` does not carry its timeframe, and the median gap is
+        robust to weekends and session breaks (a D1 series is 24h on four of every five steps).
+        0.0 when fewer than two bars exist.
+        """
+        if self.df is None or len(self.df) < 2:
+            return 0.0
+        diffs = self.df.index.to_series().diff().dropna()
+        diffs = diffs[diffs > pd.Timedelta(0)]
+        if diffs.empty:
+            return 0.0
+        return float(diffs.median().total_seconds()) / 3600.0
+
+    def stale_allowance_h(self, per_chart: bool = False) -> float:
+        """Trading hours the freshest bar may lag before the tail is NO DATA.
+
+        `per_chart=False` is the historical constant, unchanged for every existing caller
+        (the sealed gauntlet among them). `per_chart=True` adds ONE BAR OF THE CHART'S OWN
+        LENGTH, because a bar is stamped at its OPEN: a D1 series's freshest bar is always
+        today 00:00, so against a flat six hours it reads stale from 06:00 UTC every weekday
+        and a forward clock on D1 was BLOCKED_NO_BARS for eighteen hours of every day
+        (measured on the committed shadow state of 2026-09-16: ten of ten D1 clocks). An H1 or
+        finer chart is within a rounding error of the old rule.
+        """
+        return STALE_AFTER_H + (self.bar_span_hours() if per_chart else 0.0)
+
+    def covers(self, start: datetime, end: datetime | None = None, *,
+               per_chart: bool = False) -> tuple:
         """Does this actually contain bars for the window? Returns (bool, why).
 
         THE CHECK THAT KEEPS A GAP FROM READING AS A QUIET MARKET. A caller that
         replays [start, end] without asking this records "no trades" for days it
         simply had no data for, and every rate the promoter computes is then
         divided by a denominator that includes them.
+
+        `per_chart` opts into the chart-aware staleness allowance (see
+        `stale_allowance_h`); the default is the historical rule, byte for byte.
         """
         end = end or datetime.now(UTC)
         if self.df is None or self.df.empty:
@@ -172,7 +204,7 @@ class Bars:
             return False, (f"{self.source} starts {lo.isoformat()}, after the "
                            f"window start {start.isoformat()}")
         gap_h = trading_lag_hours(hi, end)
-        if gap_h > STALE_AFTER_H:
+        if gap_h > self.stale_allowance_h(per_chart):
             return False, (f"{self.source} ends {hi.isoformat()}, {gap_h:.1f}h "
                            f"before the window end: the tail of this period is "
                            f"NO DATA, not an absence of signals")
@@ -517,7 +549,9 @@ def fetch_h1(sym: str, start: datetime,
              prefer: str | None = None,
              prefer_promotion_authority: bool = False,
              require_coverage: bool = False,
-             timeframe: str = "H1") -> Bars | None:
+             timeframe: str = "H1",
+             cover_from: datetime | None = None,
+             per_chart_staleness: bool = False) -> Bars | None:
     """First source that returns usable bars, in quality order.
 
     MT5 first because it is the venue actually traded; registered sources next
@@ -561,7 +595,13 @@ def fetch_h1(sym: str, start: datetime,
             # and a fresher Fusion cache was never tried. One terminal incident consequently
             # marked the entire 821-clock book BLOCKED_NO_BARS in the same second. Historical
             # callers keep the old first-nonempty behavior; forward/certification callers opt in.
-            if require_coverage and not b.covers(start)[0]:
+            # `cover_from` separates the WARMUP the caller asks for from the WINDOW it needs
+            # covered. A source that answers a range request starts at the venue's first bar at
+            # or after `start`; gold, indices and energy open an hour or more after 00:00, so
+            # demanding coverage of the warmup's own first instant rejected every broker-native
+            # reply for them and left the clock hostage to a cache file (see shadow_forward).
+            if require_coverage and not b.covers(
+                    cover_from or start, per_chart=per_chart_staleness)[0]:
                 continue
             if not prefer_promotion_authority or b.promotion_authority:
                 return b
