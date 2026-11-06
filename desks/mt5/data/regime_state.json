@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-06T11:30:03.591473+00:00",
+  "swept_at": "2026-11-06T12:00:03.014133+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -295,7 +295,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3527,
+      "shadow_exp_r": -0.3576,
       "woke_on_shadow": false
     },
     "AUDSGD|overnight_gap_decay_asia": {
@@ -691,7 +691,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2879,
+      "shadow_exp_r": -0.187,
       "woke_on_shadow": false
     },
     "CHFDKK|macro_conditional_continuous": {
@@ -878,7 +878,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.166,
+      "shadow_exp_r": -0.1552,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_continuous": {
@@ -4739,7 +4739,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 38,
-      "shadow_exp_r": 0.4886,
+      "shadow_exp_r": 0.4957,
       "woke_on_shadow": false
     },
     "XAUAUD|carry_continuous": {
@@ -4816,7 +4816,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0665,
+      "shadow_exp_r": 0.0606,
       "woke_on_shadow": false
     },
     "XAUAUD|momentum_volgate_continuous": {
