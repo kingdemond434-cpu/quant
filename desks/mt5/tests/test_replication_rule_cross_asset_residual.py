@@ -114,3 +114,16 @@ def test_it_stands_aside_where_the_family_does(market: tuple) -> None:
                    {"factor_symbols": ["FAC1", "FAC2"], "lookback": 600}):
         p, _ = rc.resolve_spec("cross_asset_residual", params, None, None, symbol="TGT")
         assert rc.SPEC_BOOK["cross_asset_residual"].build(_bars(target), p) == []
+
+
+def test_the_bracket_is_anchored_on_the_signal_bars_own_close(market: tuple) -> None:
+    target, _factors = market
+    p, _ = rc.resolve_spec("cross_asset_residual",
+                           {"factor_symbols": ["FAC1", "FAC2"], "lookback": 120, "rr": 2.0},
+                           None, None, symbol="TGT")
+    orders = rc.SPEC_BOOK["cross_asset_residual"].build(_bars(target), p)
+    close = dict(zip(target.index.as_unit("ns").asi8, target["close"].to_numpy(), strict=True))
+    assert orders
+    for o in orders:
+        c = close[o.t_ns]
+        assert abs((o.target - c) - 2.0 * (c - o.stop)) < 1e-12
