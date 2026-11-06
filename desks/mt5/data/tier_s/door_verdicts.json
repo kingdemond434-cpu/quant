@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-11-06T00:54:29.653809+00:00",
+ "generated_utc": "2026-11-06T01:57:45.887601+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -19932,6 +19932,127 @@
    "theory": {
     "status": "UNMEASURED",
     "n_oos": 0
+   }
+  },
+  "external.AUDSGD@M5.formula.p=85ecb4ed48dce9d9": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDSGD@M5.formula.p=86e4716402dcd066": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDSGD@M5.formula.p=1b37f40cb6f454a5": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDSGD@M5.formula.p=7e96ce298df5bae1": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDSGD@M5.formula.p=917f991f2831c334": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDSGD@M5.formula.p=e07c85a60d3fd030": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDSGD@M5.formula.p=f4a1eeb685481320": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDSGD@M5.formula.p=91ca8b6d952fa4d9": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDSGD@M5.formula.p=b77a0aa9908d5a3e": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDSGD@M5.formula.p=a79f6f9f180ee5c2": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.USDSGD@M5.formula.p=ec91848d8a5633d7": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
    }
   }
  },

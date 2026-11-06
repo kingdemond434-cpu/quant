@@ -1,5 +1,5 @@
 {
- "at": "2026-11-06T01:12:15+00:00",
+ "at": "2026-11-06T01:59:47+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,8 +9,8 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-11-06T01:12:07+00:00",
-   "bandit_at": "2026-11-03T05:29:32.986928+00:00",
+   "at": "2026-11-06T01:59:27+00:00",
+   "bandit_at": "2026-11-06T01:56:00.541037+00:00",
    "hour": "2026-11-06T01",
    "arm": "treated",
    "wanted_s": 480,
@@ -34,7 +34,7 @@
    "trial": true,
    "authoritative": false,
    "governed_why": "+240s of measured surplus granted above the floor (department 'discovery' measured spare 1431s/hour); contract UNDECIDED: this hour is the trial that measures it",
-   "share": 0.2815,
+   "share": 0.2813,
    "baseline": 0.2727,
    "ladder_factor": 1.0,
    "department_factor": 1.5,
