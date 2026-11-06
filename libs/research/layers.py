@@ -148,6 +148,9 @@ LEG_LAYER: dict[str, str] = {
     # Per-sleeve return paths are what a PORTFOLIO view is computed from -- n_eff, covariance,
     # joint drawdown. Not a signal and not an execution fact.
     "strategy_paths": "portfolio",
+    # The weak-signal combiner (2026-11-03) pools every judged cell into one book and sizes it by
+    # out-of-sample E[log W]: weighting many members against each other is PORTFOLIO work.
+    "weak_signal_book": "portfolio",
     # THE FOUR ACTIVATION LEGS (2026-09-14). All four organs existed and NOTHING ran them, which
     # is III.16 exactly: built is not a status. `weak_signals` and `residual_factors` mint claims
     # about returns, so they are prediction. `markout` asks what the desk's own fills cost it
