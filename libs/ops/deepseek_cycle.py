@@ -39,6 +39,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -673,6 +674,26 @@ def _append_jsonl(path: Path, row: dict[str, Any]) -> None:
         fh.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
 
 
+def call_status(err: str) -> str:
+    """What a failed seat call MEANS for the cycle's exit code.
+
+    BUDGET_EXHAUSTED and RATE_LIMITED are holds: the seat is fine and the next cadence retries.
+    MODEL_RETIRED is a vendor-locked seat whose pin is gone with no DeepSeek id to move to -- a
+    repin only a person can make, so it is red. Anything else is CALL_FAILED, also red.
+    """
+    low = err.lower()
+    if "budget exhausted" in low or "cap reached" in low:
+        return "BUDGET_EXHAUSTED"
+    if "vendor-locked" in low:
+        return "MODEL_RETIRED"
+    # The HTTP status, not the digits anywhere: a 500 carrying "req_id=ab4291" is a failure,
+    # and reading it as a rate limit would exit 0 while failing (audit S1, 2026-10-29).
+    if re.search(r"(?:\bhttp\s*|\bstatus[\s:=]*|\berror\s*)429\b|\btoo many requests\b|"
+                 r"\brate[- ]limit", low):
+        return "RATE_LIMITED"
+    return "CALL_FAILED"
+
+
 def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, Any] | None = None,
             run_id: str | None = None, root: Path | None = None,
             env: dict[str, str] | None = None) -> dict[str, Any]:
@@ -717,11 +738,14 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
 
     ls_seat = llm_seat.Seat(name=f"deepseek_{'deep' if deep else 'bulk'}",
                             base_url=e.get("DEEPSEEK_BASE_URL", "https://openrouter.ai/api/v1"),
-                            key=resolve_key(e)[0], model=model)
+                            key=resolve_key(e)[0], model=model, lock_vendor=True)
     text, err = llm_seat.chat(user, system=system, seat=ls_seat,
                               max_tokens=(16000 if deep else 4000))
     if err:
-        return {"status": "CALL_FAILED", "role": role_name, "model": model, "why": err}
+        return {"status": call_status(err), "role": role_name, "model": model, "why": err}
+    # A retired pin is swapped inside llm_seat for a listed DeepSeek id; every record below
+    # names the id that ANSWERED, never the pin.
+    model = llm_seat.last_resolved(ls_seat) or model
 
     rid = run_id or f"{role_name}_{_now()}"
     sealed = seal(rid, role=role_name, phase_a_output=text, policy_hash=str(gate["policy_hash"]),
