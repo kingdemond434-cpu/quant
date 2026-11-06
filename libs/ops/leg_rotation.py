@@ -133,7 +133,9 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     # for days: decay_live.json 55 h stale (last decay_monitor run 11-02, 3.87 s), and the
     # placement interlock -- "a silent halt costs a window an hour" -- unread. Each reads a few
     # small files and writes one report, so pinning them costs seconds, not the research legs.
-    "decay_monitor", "placement_interlock", "box_state_freshness", "desk_health",
+    # judge_alive (the judge's hourly pulse, two JSON reads) joins them: reports/
+    # judge_alive_fence.json was last written 11-01 21:42Z, starved the same way.
+    "decay_monitor", "placement_interlock", "box_state_freshness", "desk_health", "judge_alive",
 })
 
 
