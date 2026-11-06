@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-06T04:45:02.245851+00:00",
+  "swept_at": "2026-11-06T05:00:02.605528+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1186,7 +1186,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0575,
+      "shadow_exp_r": -0.0684,
       "woke_on_shadow": false
     },
     "EURCHF|discovered_asia": {
@@ -1406,7 +1406,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.4012,
+      "shadow_exp_r": -0.4157,
       "woke_on_shadow": false
     },
     "EURILS|macro_conditional_continuous": {
@@ -1780,7 +1780,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2694,
+      "shadow_exp_r": -0.2673,
       "woke_on_shadow": false
     },
     "EURZAR|formula_asia": {
@@ -2000,7 +2000,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.1194,
+      "shadow_exp_r": 0.1157,
       "woke_on_shadow": false
     },
     "GBPCHF|clock_transition_asia": {
@@ -2187,7 +2187,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0365,
+      "shadow_exp_r": 0.035,
       "woke_on_shadow": false
     },
     "GBPJPY|macro_conditional_continuous": {
@@ -2605,7 +2605,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0365,
+      "shadow_exp_r": 0.0337,
       "woke_on_shadow": false
     },
     "GBPSGD|overnight_gap_decay_continuous": {
@@ -3826,7 +3826,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4185,
+      "shadow_exp_r": -0.4195,
       "woke_on_shadow": false
     },
     "USDJPY|asia": {
@@ -3958,7 +3958,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1139,
+      "shadow_exp_r": -0.1266,
       "woke_on_shadow": false
     },
     "USDNOK|carry_continuous": {
@@ -4497,7 +4497,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2336,
+      "shadow_exp_r": -0.2221,
       "woke_on_shadow": false
     },
     "XAGEUR|range_reversion_continuous": {
