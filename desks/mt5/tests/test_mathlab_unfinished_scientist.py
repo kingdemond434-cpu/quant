@@ -57,10 +57,11 @@ def test_a_panel_past_the_deadline_is_not_started(monkeypatch: pytest.MonkeyPatc
     calls: list[float] = []
 
     class Sci:
-        evaluated = 0
-        distinct: set[str] = set()
-        unmeasured: list[str] = []
-        minted: list[str] = []
+        def __init__(self) -> None:
+            self.evaluated = 0
+            self.distinct: set[str] = set()
+            self.unmeasured: list[str] = []
+            self.minted: list[str] = []
 
         def propose(self, view: Any, budget: float, rng: Any) -> list[Any]:
             calls.append(budget)

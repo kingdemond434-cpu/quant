@@ -182,7 +182,6 @@ def test_producer_fence_flags_a_dead_replacement() -> None:
 def test_a_leg_that_times_out_every_pass_is_red(paths: Path, monkeypatch: pytest.MonkeyPatch,
                                                 ) -> None:
     from libs.ops import write_or_explain as woe
-    from datetime import UTC, datetime, timedelta
     at = [(datetime.now(UTC) - timedelta(hours=3 - i)).isoformat() for i in range(4)]
     rows = [{"leg": "math_lab", "verdict": woe.LEG_TIMEOUT, "wrote": [], "at": at[i]}
             for i in range(3)]
@@ -191,7 +190,7 @@ def test_a_leg_that_times_out_every_pass_is_red(paths: Path, monkeypatch: pytest
     assert [c["leg"] for c in chronic] == ["math_lab"]
     assert woe.chronic_timeouts(rows[:-1]) == []           # two in a row is not chronic yet
     assert woe.chronic_timeouts([*rows, {"leg": "math_lab", "verdict": woe.OK,
-                                         "wrote": ["r"]}]) == []
+                                         "wrote": ["r"], "at": at[3]}]) == []
     # SF1: a checkpointed (partial) write does not acquit a leg killed at its cap every pass.
     partial = [dict(r, wrote=["MATH_LAB.json"]) if r["leg"] == "math_lab" else r for r in rows]
     got = woe.chronic_timeouts(partial)
