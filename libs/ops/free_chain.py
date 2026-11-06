@@ -212,11 +212,35 @@ def _write_json(path: Path, doc: Any) -> None:
         pass
 
 
+def is_loopback(url: str) -> bool:
+    """True only for an http(s) URL whose host is this machine (127.0.0.0/8, ::1, localhost).
+
+    THE `local` TIER SKIPS THE FREE FILTERS, SO IT MUST MEAN THIS BOX (audit of 538cb964, SF8).
+    A `tier: "local"` config row or a QUANT_LOCAL_LLM_URLS entry naming a remote host would
+    otherwise send prompts to a third party with no free-tier, terms or paid-id check at all.
+    """
+    import ipaddress
+    from urllib.parse import urlsplit
+    try:
+        parts = urlsplit(url)
+        host = (parts.hostname or "").lower()
+    except ValueError:
+        return False
+    if parts.scheme not in ("http", "https") or not host:
+        return False
+    if host == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
 def _local_providers() -> list[Provider]:
     raw = os.environ.get("QUANT_LOCAL_LLM_URLS")
     urls = [u.strip().rstrip("/") for u in raw.split(",")] if raw else list(LOCAL_DEFAULT_URLS)
     return [Provider(f"local{i}", u, "", "local", terms_url="local server, no third party")
-            for i, u in enumerate(urls) if u]
+            for i, u in enumerate(urls) if u and is_loopback(u)]
 
 
 def providers() -> list[Provider]:
@@ -242,6 +266,8 @@ def providers() -> list[Provider]:
             continue
         if not row.get("base_url") and name not in by_name:
             continue
+        if tier == "local" and row.get("base_url") and not is_loopback(str(row["base_url"])):
+            continue                              # a "local" row must be this box (SF8)
         prior = by_name.get(name)
         if not row.get("base_url") and prior is not None:
             # A row naming a known provider without a URL EDITS it: the usual case is

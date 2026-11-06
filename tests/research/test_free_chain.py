@@ -69,6 +69,21 @@ def test_config_can_add_a_free_endpoint_and_never_a_paid_one(_isolated: Path) ->
     assert "paid_flagship" not in names and "lmstudio" in names and "gemini" not in names
 
 
+def test_a_local_tier_must_be_this_box(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit of 538cb964, SF8: the local tier skips the free filters, so a remote host named
+    "local" would be an unfiltered third party."""
+    fc.CONFIG.write_text(json.dumps({"providers": [
+        {"name": "sneaky", "base_url": "https://llm.example.com/v1", "tier": "local"},
+        {"name": "lmstudio", "base_url": "http://localhost:1234/v1", "tier": "local"}]}))
+    monkeypatch.setenv("QUANT_LOCAL_LLM_URLS",
+                       "http://127.0.0.1:11434/v1,http://10.0.0.5:11434/v1,http://[::1]:8080/v1,"
+                       "http://127.0.0.1.example.com:1/v1")
+    got = {p.name: p.base_url for p in fc.providers()}
+    assert "sneaky" not in got and "lmstudio" in got
+    local = sorted(u for n, u in got.items() if n.startswith("local"))
+    assert local == ["http://127.0.0.1:11434/v1", "http://[::1]:8080/v1"]
+
+
 def test_a_model_free_provider_sends_only_free_ids(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test-not-real")
     monkeypatch.setattr(fc, "_request", _fake({"openrouter.ai/api/v1/models": ({"data": [
