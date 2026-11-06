@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-06T22:15:02.816271+00:00",
+  "swept_at": "2026-11-06T22:30:05.917333+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1395,7 +1395,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.234,
+      "shadow_exp_r": 0.2347,
       "woke_on_shadow": false
     },
     "EURILS|formula_asia": {
