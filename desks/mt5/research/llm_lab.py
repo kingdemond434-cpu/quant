@@ -458,8 +458,15 @@ def _lane_ok(symbol: str, family: str) -> bool:
     try:
         import universe_policy as up
         return bool(up.may_hypothesise(symbol, family))
-    except Exception:
+    except Exception as exc:
+        # Closed is safe, but SILENT closed is an idle lab that looks like a quiet one (audit
+        # SF4 on 37bb136b4): the pass that read no policy reports it in RED.
+        LANE_POLICY_ERRORS.setdefault(type(exc).__name__, str(exc)[:160])
         return False
+
+
+#: Why the lane policy could not be read this process, by exception type. Non-empty is RED.
+LANE_POLICY_ERRORS: dict[str, str] = {}
 
 
 # ============================================================================ banal filter
@@ -1491,54 +1498,76 @@ import pandas as pd
 path, root = sys.argv[1], sys.argv[2]
 for p in (root, root + "/desks/mt5", root + "/desks/mt5/scripts"):
     sys.path.insert(0, p)
-spec = importlib.util.spec_from_file_location("gauntlet_under_probe", path)
-g = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(g)
+try:
+    spec = importlib.util.spec_from_file_location("gauntlet_under_probe", path)
+    g = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(g)
+except SyntaxError as exc:
+    print("TRIM_CONTRACT_FAIL", "gauntlet does not compile:", exc); sys.exit(2)
+except BaseException as exc:
+    print("PROBE_UNMEASURED", "gauntlet import:", type(exc).__name__, str(exc)[:160])
+    sys.exit(3)
 llm = {"cell_id": "probe-llm", "lookahead_guard": {"evidence_from": "2024-01-03"}}
 plain = {"cell_id": "probe-plain"}
 frame = pd.DataFrame({"close": [1.0, 2.0, 3.0, 4.0, 5.0]},
                      index=pd.date_range("2024-01-01", periods=5, freq="D", tz="UTC"))
-assert g.llm_born(llm) is True and g.llm_born(plain) is False
-cut = g.evidence_trim(llm, frame.copy())
-assert len(cut) == 3 and cut.index.min() == pd.Timestamp("2024-01-03", tz="UTC")
-assert len(g.evidence_trim(plain, frame.copy())) == 5
+try:
+    assert g.llm_born(llm) is True and g.llm_born(plain) is False
+    cut = g.evidence_trim(llm, frame.copy())
+    assert len(cut) == 3 and cut.index.min() == pd.Timestamp("2024-01-03", tz="UTC")
+    assert len(g.evidence_trim(plain, frame.copy())) == 5
+except (MemoryError, RecursionError, OSError) as exc:
+    print("PROBE_UNMEASURED", type(exc).__name__); sys.exit(3)
+except BaseException as exc:
+    print("TRIM_CONTRACT_FAIL", type(exc).__name__, str(exc)[:160]); sys.exit(2)
 print("TRIM_CONTRACT_OK")
 """
 PROBE_TIMEOUT_S = 180.0
+UNMEASURED_TAG = "UNMEASURED"
 PROBE_CACHE_NAME = "gauntlet_trim_probe.json"
 
 
-def _probe_gauntlet(path: Path) -> tuple[bool, str]:
-    """Run GAUNTLET_PROBE against `path` in a child process. Never raises; fails closed."""
+def _probe_gauntlet(path: Path) -> tuple[bool | None, str]:
+    """Run GAUNTLET_PROBE against `path` in a child process. Never raises; fails closed.
+
+    THREE ANSWERS, AND ONLY TWO ARE VERDICTS (audit SF2 on 37bb136b4): True (the contract is
+    met), False (the gauntlet was read and does not meet it), or None -- the probe could not
+    judge (timeout, no interpreter, out of memory, a dependency the gauntlet imports was
+    missing). None holds the cells this pass like False, but is never cached, so the next pass
+    probes again instead of holding the lab for the life of the gauntlet version."""
     import subprocess
     try:
         proc = subprocess.run([sys.executable, "-c", GAUNTLET_PROBE, str(path), str(ROOT)],
                               capture_output=True, text=True, timeout=PROBE_TIMEOUT_S)
-    except (OSError, subprocess.SubprocessError) as exc:
-        return False, f"probe did not run: {type(exc).__name__}"
-    if proc.returncode == 0 and "TRIM_CONTRACT_OK" in proc.stdout:
+    except (OSError, subprocess.SubprocessError, MemoryError) as exc:
+        return None, f"probe {UNMEASURED_TAG}: did not run ({type(exc).__name__})"
+    out = proc.stdout or ""
+    if proc.returncode == 0 and "TRIM_CONTRACT_OK" in out:
         return True, "trim contract met"
-    tail = (proc.stderr or proc.stdout or "").strip().splitlines()[-1:] or ["no output"]
-    return False, f"trim contract NOT met (exit {proc.returncode}): {tail[0][:200]}"
+    tail = (out or proc.stderr or "").strip().splitlines()[-1:] or ["no output"]
+    if proc.returncode == 2 and "TRIM_CONTRACT_FAIL" in out:
+        return False, f"trim contract NOT met: {tail[0][:200]}"
+    return None, f"probe {UNMEASURED_TAG} (exit {proc.returncode}): {tail[0][:200]}"
 
 
 def gauntlet_status() -> dict[str, Any]:
     """Whether the canonical gauntlet trims LLM-born cells, judged by behaviour, cached per
-    gauntlet file hash (the probe imports the gauntlet, so it runs once per version of it)."""
+    gauntlet file hash (the probe imports the gauntlet, so it runs once per version of it).
+
+    No substring precheck (audit SF2 on 37bb136b4): a gauntlet that RE-EXPORTS llm_born and
+    evidence_trim from a helper module meets the contract without ever spelling "def llm_born(",
+    so only the probe decides. Only a definite verdict is cached."""
     try:
         raw = GAUNTLET.read_bytes()
     except OSError as exc:
         return {"trims": False, "why": f"gauntlet unreadable: {type(exc).__name__}"}
-    text = raw.decode("utf-8", errors="replace")
-    if "def llm_born(" not in text or "def evidence_trim(" not in text:
-        return {"trims": False, "unwired": True,
-                "why": "external_gauntlet.py lacks the look-ahead trim (sealed patch "
-                       "llm_lookahead_gauntlet not landed): LLM-born cells are not donated"}
     sha = hashlib.sha256(raw).hexdigest()
     cache = _read_json(STATE_DIR / PROBE_CACHE_NAME, {}) or {}
     hit = cache.get(sha) if isinstance(cache, dict) else None
     if not (isinstance(hit, dict) and isinstance(hit.get("trims"), bool)):
         ok, why = _probe_gauntlet(GAUNTLET)
+        if ok is None:
+            return {"trims": False, "measured": False, "why": why, "gauntlet_sha256": sha}
         hit = {"trims": ok, "why": why, "probed_at": _now()}
         with contextlib.suppress(OSError):
             _write_json(STATE_DIR / PROBE_CACHE_NAME, {sha: hit})
@@ -1593,6 +1622,7 @@ def _collector_role(*, budget_s: float, max_llm: int) -> dict[str, Any]:
 def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool = False,
         seed: int | None = None, workers: int = 4) -> dict[str, Any]:
     started = time.time()
+    LANE_POLICY_ERRORS.clear()
     if os.environ.get("QUANT_LLM_LAB_PAID", "0") != "1":
         os.environ["QUANT_FREE_TIER"] = "1"
     donations = release_held() if not dry_run else {"state": "dry run"}
@@ -1988,6 +2018,11 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
     if isinstance(donations, dict) and donations.get("red"):
         doc["red"] = True
         doc["defects"] = [donations.get("defect")]
+    if LANE_POLICY_ERRORS:
+        doc["red"] = True
+        doc["defects"] = [*(doc.get("defects") or []),
+                          "LANE POLICY UNREADABLE: every lane check failed closed this pass "
+                          f"({'; '.join(f'{k}: {v}' for k, v in LANE_POLICY_ERRORS.items())})"]
     if map_defect:
         doc["red"] = True
         doc["defects"] = [*(doc.get("defects") or []), map_defect]

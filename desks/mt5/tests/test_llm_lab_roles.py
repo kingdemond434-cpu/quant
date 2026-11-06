@@ -253,10 +253,25 @@ def test_a_non_numeric_side_costs_one_row_not_the_lab(tmp_roles: Path) -> None:
     assert dons == [] and tally["bad_reply"] == 1
 
 
+def test_a_nan_side_is_a_bad_reply_never_a_short(tmp_roles: Path) -> None:
+    """Audit SF6 on 37bb136b4: float('nan') >= 0 is False, so NaN read as side -1."""
+    debt = _debt(tmp_roles)
+
+    def chat(system: str, user: str, **kw: Any) -> _Reply:
+        return _Reply('{"code": ' + json.dumps(CAUSAL) + ', "side_when_high": NaN}')
+
+    dons, tally = roles.code_lab(debt, {"EURUSD": "forex"}, max_items=3, deadline=1e12,
+                                 chat=chat)
+    assert dons == [] and tally["bad_reply"] == 1
+
+
 def test_the_lane_door_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
     """Audit of 538cb964, SF3: an unreadable lane policy used to admit everything."""
     monkeypatch.setitem(sys.modules, "universe_policy", None)     # import raises
+    lab.LANE_POLICY_ERRORS.clear()
     assert lab._lane_ok("EURUSD", "exogenous_conditioner") is False
+    assert lab.LANE_POLICY_ERRORS, "closed, but never silently: the pass reports it RED"
+    lab.LANE_POLICY_ERRORS.clear()
 
 
 def test_source_scout_rows_are_filtered_and_probed_politely() -> None:

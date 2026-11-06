@@ -176,6 +176,12 @@ def _robots_allows(url: str, agent: str = "quant-desk-collector") -> tuple[bool,
         with urllib.request.urlopen(req, timeout=12, context=_TLS) as r:
             rp.parse(r.read(200_000).decode("utf-8", errors="replace").splitlines())
         return (bool(rp.can_fetch(agent, url)), "robots.txt consulted")
+    except urllib.error.HTTPError as exc:
+        # RFC 9309 s2.3.1.3: a 4xx robots.txt is "unavailable" and the crawler MAY access
+        # anything; only a 5xx (or no answer) is "unreachable" (audit SF5 on 37bb136b4).
+        if 400 <= int(exc.code) < 500:
+            return True, f"robots.txt absent (HTTP {exc.code}): allows, RFC 9309"
+        return True, f"robots.txt unreadable (HTTP {exc.code}); treated as allowing"
     except Exception as exc:
         return True, f"robots.txt unreadable ({type(exc).__name__}); treated as allowing"
 
@@ -218,6 +224,21 @@ def scouted_admissible(rows: list[dict[str, Any]], public_url: Callable[[str], s
             else:
                 ok.append(s)
     return ok, held
+
+
+def scout_lane_idle(admitted: list[dict[str, Any]], held: dict[str, str]) -> str:
+    """A RED line when the scouted lane collected nothing because no row's terms are confirmed
+    (audit SF5 on 37bb136b4). Nothing in the desk confirms a scouted row's terms today, so a
+    lane that only admits confirmed rows is IDLE, and idle is a defect (III.16), never quiet."""
+    if admitted or not held:
+        return ""
+    terms = sum(1 for why in held.values() if why.startswith("terms "))
+    if terms < len(held):
+        return ""
+    return (f"SCOUTED LANE IDLE (III.16): {terms} scouted source(s) held, every one for "
+            f"unconfirmed terms, and no organ confirms a scouted row's terms -- a person (or "
+            f"a terms-confirmation step) must set `terms: confirmed` on the row for it to be "
+            f"collected")
 
 
 def _vault(source_id: str, body: bytes, url: str, ctype: str) -> dict[str, Any]:
@@ -605,6 +626,9 @@ def main(argv: list[str] | None = None) -> int:
     if held:
         print(f"asia collector: {len(held)} scouted source(s) held: "
               + "; ".join(f"{k} {v}" for k, v in sorted(held.items())[:8]))
+    scout_red = scout_lane_idle(admitted, held)
+    if scout_red:
+        print(f"ASIA COLLECTOR RED: {scout_red}")
     derived = _derived_sources(sources)
     if derived:
         print(f"asia collector: {len(derived)} endpoint(s) handed back by the parser "
@@ -700,6 +724,8 @@ def main(argv: list[str] | None = None) -> int:
                 "the 90th source is not blocked on the day it is added."),
         "n_sources": len(sources), "n_attempted": len(rows),
         "census": dict(census),
+        "scouted": {"admitted": len(admitted), "held": dict(sorted(held.items())[:50]),
+                    **({"red": scout_red} if scout_red else {})},
         "series_written": [r["parse"]["path"] for r in rows
                            if isinstance(r.get("parse"), dict) and r["parse"].get("path")],
         "rows": rows,

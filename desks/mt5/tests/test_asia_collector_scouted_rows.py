@@ -36,3 +36,34 @@ def test_only_confirmed_public_robots_allowed_rows_are_collected() -> None:
     assert [r["id"] for r in ok] == ["ok"]
     assert set(held) == {"unconfirmed", "port", "private", "robots", "norobots"}
     assert "unconfirmed terms stay closed" in held["unconfirmed"]
+
+
+def test_a_missing_robots_txt_allows_and_a_5xx_does_not(monkeypatch) -> None:
+    """Audit SF5 on 37bb136b4: RFC 9309 -- 4xx is 'unavailable' (allow), 5xx 'unreachable'."""
+    import io
+    import urllib.error
+
+    def serve(code: int):
+        def urlopen(req, timeout=0, context=None):
+            raise urllib.error.HTTPError(req.full_url, code, "x", {}, io.BytesIO(b""))
+        return urlopen
+
+    monkeypatch.setattr(ac.urllib.request, "urlopen", serve(404))
+    allowed, why = ac._robots_allows("https://stat.example.go.jp/a.csv")
+    assert allowed and "unreadable" not in why and "404" in why
+    ok, held = ac.scouted_admissible([_row("ok", "https://stat.example.go.jp/a.csv")],
+                                     lambda u: "")
+    assert [r["id"] for r in ok] == ["ok"] and held == {}
+    monkeypatch.setattr(ac.urllib.request, "urlopen", serve(503))
+    ok, held = ac.scouted_admissible([_row("ok", "https://stat.example.go.jp/a.csv")],
+                                     lambda u: "")
+    assert ok == [] and "unreadable" in held["ok"]
+
+
+def test_a_lane_held_only_for_unconfirmed_terms_is_red() -> None:
+    held = {"a": "terms to_confirm: unconfirmed terms stay closed",
+            "b": "terms unstated: unconfirmed terms stay closed"}
+    assert "SCOUTED LANE IDLE" in ac.scout_lane_idle([], held)
+    assert ac.scout_lane_idle([{"id": "x"}], held) == ""
+    assert ac.scout_lane_idle([], {}) == ""
+    assert ac.scout_lane_idle([], {**held, "c": "non-standard port 8443"}) == ""

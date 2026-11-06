@@ -662,7 +662,10 @@ def code_lab(debt_path: Path, uni: dict[str, str], *, max_items: int, deadline: 
         # A model's reply is untrusted text: a non-numeric side must cost this row only, never
         # the code lab and the roles after it (audit of 538cb964, SF4).
         try:
-            side = 1 if float(got.get("side_when_high") or 1) >= 0 else -1
+            raw_side = float(got.get("side_when_high") or 1)
+            if not math.isfinite(raw_side):     # NaN >= 0 is False: it would read as SHORT
+                raise ValueError("side_when_high is not finite")
+            side = 1 if raw_side >= 0 else -1
         except (TypeError, ValueError):
             tally["bad_reply"] += 1
             ledger.append({"debt_id": r.get("id"), "at": _now(), "model": model,

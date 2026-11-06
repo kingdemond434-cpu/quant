@@ -523,6 +523,31 @@ def test_donations_are_held_until_the_gauntlet_trims(tmp_path: Path,
     assert (lab.DONATE_DIR / "discoveries_1.json").exists()
 
 
+def test_only_a_definite_probe_verdict_is_cached(tmp_path: Path,
+                                                monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit SF2 on 37bb136b4: a probe that could not judge (a missing dependency, a timeout)
+    is UNMEASURED and retried next pass; a re-exported trim passes the contract."""
+    monkeypatch.setattr(lab, "STATE_DIR", tmp_path / "state")
+    gauntlet = tmp_path / "external_gauntlet.py"
+    monkeypatch.setattr(lab, "GAUNTLET", gauntlet)
+    gauntlet.write_text("import a_module_that_is_not_installed_anywhere\n")
+    st = lab.gauntlet_status()
+    assert st["trims"] is False and st["measured"] is False and "UNMEASURED" in st["why"]
+    assert not (tmp_path / "state" / lab.PROBE_CACHE_NAME).exists(), "never cached"
+    (tmp_path / "trim_helpers.py").write_text(
+        "import pandas as pd\n"
+        "def llm_born(c):\n    return isinstance(c.get('lookahead_guard'), dict)\n"
+        "def evidence_trim(c, ds):\n"
+        "    if not llm_born(c):\n        return ds\n"
+        "    return ds[ds.index >= pd.Timestamp(c['lookahead_guard']['evidence_from'], "
+        "tz='UTC')]\n")
+    gauntlet.write_text("import sys, pathlib\n"
+                        "sys.path.insert(0, str(pathlib.Path(__file__).parent))\n"
+                        "from trim_helpers import llm_born, evidence_trim  # noqa: F401\n")
+    assert lab.gauntlet_status()["trims"] is True
+    assert (tmp_path / "state" / lab.PROBE_CACHE_NAME).exists()
+
+
 def test_the_real_gauntlet_path_is_the_one_the_patch_edits() -> None:
     assert lab.GAUNTLET == lab.BASE / "scripts" / "external_gauntlet.py"
     assert lab.GAUNTLET.exists()
