@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-06T04:30:02.333754+00:00",
+  "swept_at": "2026-11-06T04:45:02.245851+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -229,7 +229,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2965,
+      "shadow_exp_r": -0.2959,
       "woke_on_shadow": false
     },
     "AUDNZD|overnight_gap_decay_asia": {
@@ -239,8 +239,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 12,
-      "shadow_exp_r": 0.1832,
+      "shadow_n": 25,
+      "shadow_exp_r": 0.6242,
       "woke_on_shadow": false
     },
     "AUDSGD|carry_asia": {
@@ -1406,7 +1406,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4157,
+      "shadow_exp_r": 0.4012,
       "woke_on_shadow": false
     },
     "EURILS|macro_conditional_continuous": {
@@ -1582,7 +1582,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0102,
+      "shadow_exp_r": -0.0094,
       "woke_on_shadow": false
     },
     "EURNOK|carry_continuous": {
@@ -1604,7 +1604,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3743,
+      "shadow_exp_r": -0.3729,
       "woke_on_shadow": false
     },
     "EURNOK|overnight_gap_decay_asia": {
@@ -1714,7 +1714,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4673,
+      "shadow_exp_r": -0.4662,
       "woke_on_shadow": false
     },
     "EURSEK|overnight_gap_decay_asia": {
@@ -2385,7 +2385,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4858,
+      "shadow_exp_r": -0.4847,
       "woke_on_shadow": false
     },
     "GBPNOK|overnight_gap_decay_asia": {
@@ -2528,7 +2528,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3426,
+      "shadow_exp_r": -0.3397,
       "woke_on_shadow": false
     },
     "GBPSEK|overnight_gap_decay_asia": {
