@@ -642,6 +642,18 @@
     "The change introduces new tasks and scripts that run external discovery channels on the box, which could increase risk if not properly managed."
    ],
    "source": "independent-review job 127417721559; Auditor CLEAR f14305c89 after MF1/SF1/SF2 (clear-access channel allowlist), relayed by Mining v1 17:49Z"
+  },
+  {
+   "pr": 773,
+   "head": "6d9ecb1b3d59407b8bd57347e4b239d83ee4b4ef",
+   "base": "00d2d07e53a54715a17dc115e8017221b835a84c",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "The change introduces new tasks and scripts that run external discovery channels on the box, which could increase risk if not properly managed."
+   ],
+   "source": "independent-review job 127611646598; base-merge 6d9ecb1b3, PR diff byte-identical to c7a4f1e22 (reviewer PASS, job 127547314355) and to Auditor CLEAR f14305c89 on all 6 PR paths; verified by Autonomy 00:05Z"
   }
  ]
 }
