@@ -331,3 +331,39 @@ def test_an_open_day_with_no_cache_is_built_not_deferred(
     rig.write_segment("EURUSD", OPEN, _synth(OPEN, n_per_hour=200, seed="more"), POINT, 5)
     out = tf.run(rig, ["EURUSD"], days_back=0)
     assert out["symbol_days_built"] == 1 and out["open_days_deferred"] == 0
+
+
+def test_a_kill_mid_write_never_tears_the_state(
+        rig: ts.TapeStore, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A torn state reads as {} and would rebuild everything: the rename must be all or nothing."""
+    tf.run(rig, ["EURUSD"], days_back=0)
+    before = json.loads(tf.STATE.read_text("utf-8"))
+    assert any(k.startswith("EURUSD/") for k in before)
+
+    def killed(tmp: Path, dst: Path) -> None:
+        raise KeyboardInterrupt("task limit")
+    monkeypatch.setattr(tf, "_replace", killed)
+    with pytest.raises(KeyboardInterrupt):
+        tf._write_json_atomic(tf.STATE, {"torn": True})
+    assert json.loads(tf.STATE.read_text("utf-8")) == before
+    assert not list(tf.STATE.parent.glob(f".{tf.STATE.name}.*.tmp"))
+
+
+def test_the_cell_cache_is_pruned_outside_the_look_back_window(rig: ts.TapeStore) -> None:
+    tf.run(rig, ["EURUSD"], days_back=0)
+    assert len(list((tf.CELL_CACHE / "EURUSD").glob("*.json"))) == len(DAYS)
+    out = tf.run(rig, ["EURUSD"], days_back=1)          # cutoff = yesterday: every DAY is older
+    assert out["cell_cache_pruned"] == len(DAYS)
+    assert not list((tf.CELL_CACHE / "EURUSD").glob("*.json"))
+
+
+def test_the_report_states_how_old_the_deferred_open_day_is(
+        rig: ts.TapeStore, monkeypatch: pytest.MonkeyPatch) -> None:
+    clock = {"t": 2_000_000.0}
+    monkeypatch.setattr(tf, "_now_s", lambda: clock["t"])
+    rig.write_segment("EURUSD", OPEN, _synth(OPEN, n_per_hour=200), POINT, 5)
+    tf.run(rig, ["EURUSD"], days_back=0)
+    rig.write_segment("EURUSD", OPEN, _synth(OPEN, n_per_hour=200, seed="more"), POINT, 5)
+    clock["t"] += 600.0
+    out = tf.run(rig, ["EURUSD"], days_back=0)
+    assert out["open_days_deferred_max_age_s"] == 600.0
