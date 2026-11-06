@@ -133,8 +133,10 @@ CUE_AFTER_JA = re.compile("^\\s*(?:\\([^)]{0,3}\\)|\uff08[^\uff09]{0,3}\uff09)?\
 NOT_THE_VOTE: dict[str, re.Pattern[str]] = {
     "en": re.compile(r"first sat|\bsat\b|declared|announced|registration|closes|close on|"
                      r"results|dissolved|proclaimed|sworn|took office|inaugurat|nomination|"
-                     r"\bcalled\b", re.I),
-    "es": re.compile(r"resultados|cómputo|registro|convocatoria|toma de protesta", re.I),
+                     r"\bcalled\b|originally|postpon|delayed|reschedul|moved from|"
+                     r"instead of", re.I),
+    "es": re.compile(r"resultados|cómputo|registro|convocatoria|toma de protesta|"
+                     r"originalmente|pospuest|aplazad|reprogramad", re.I),
     "ja": re.compile(r"公示|告示|解散|開票|当選|任期|召集"),
 }
 #: Two different pages must read the same vote (within MERGE_DAYS) before it enters a series
@@ -210,10 +212,26 @@ def _dates_spans(text: str) -> list[tuple[int, date, int]]:
 
 
 
+#: English exclusions that are ordinary words in another language ("mayor" is Spanish for
+#: "greater", as in "mayor participación"): on a page in that language they never exclude.
+FALSE_FRIENDS: dict[str, frozenset[str]] = {"es": frozenset({"mayor", "primary"})}
+
+
+def _excluded(low: str, lang: str) -> bool:
+    if any(x in low for x in EXCLUDE.get(lang, ())):
+        return True
+    if lang == "en":
+        return False
+    # English terms on a non-English page match as whole words only, minus false friends
+    # (audit should-fix 2 on #388), so a Spanish sentence is never dropped for a substring.
+    skip = FALSE_FRIENDS.get(lang, frozenset())
+    return any(re.search(rf"(?<![\w-]){re.escape(x)}(?![\w-])", low)
+               for x in EXCLUDE["en"] if x not in skip)
+
+
 def _national(seg: str, lang: str) -> bool:
     low = seg.lower().replace("national and provincial", "national")
-    langs = {lang, "en"}
-    if any(x in low for lg in langs for x in EXCLUDE.get(lg, ())):
+    if _excluded(low, lang):
         return False
     return not (lang == "ja" and any(k in seg for k in KEYWORDS["ja"])
                 and not any(h in seg for h in JA_HOUSES))
@@ -260,7 +278,11 @@ def merge_events(store: dict[str, Any], cc: str, found: Sequence[dict[str, str]]
                  seen: str) -> int:
     """Record which page read which vote. A date within MERGE_DAYS of a known one is the same
     vote, read again: this page joins its `sources`, and the vote is CONFIRMED (stamped
-    `confirmed_at`) the first time a second distinct page reads it. Returns new votes added."""
+    `confirmed_at`) the first time a second distinct page reads it. Returns new votes added.
+
+    When the pages disagree by a day or two the row carries the EARLIEST date read (audit
+    should-fix 4 on #388): an earlier pre window can only be lit sooner than the truth, never
+    after it, and every reading is kept in `dates_read` so a disagreement is visible."""
     rows = store.setdefault(cc, [])
     added = 0
     for e in found:
@@ -269,10 +291,15 @@ def merge_events(store: dict[str, Any], cc: str, found: Sequence[dict[str, str]]
                     if abs((d - date.fromisoformat(r["date"])).days) <= MERGE_DAYS), None)
         if row is None:
             rows.append({"date": e["date"], "first_seen": seen, "url": url, "quote": e["quote"],
-                         "sources": {url: seen}, "confirmed_at": None})
+                         "sources": {url: seen}, "dates_read": {url: e["date"]},
+                         "confirmed_at": None})
             added += 1
             continue
         srcs = row.setdefault("sources", {row.get("url", ""): row.get("first_seen", "")})
+        reads = row.setdefault("dates_read", {row.get("url", ""): row["date"]})
+        reads.setdefault(url, e["date"])
+        if e["date"] < row["date"]:
+            row["date"] = e["date"]
         if url not in srcs:
             srcs[url] = seen
             if len(srcs) >= MIN_SOURCES and not row.get("confirmed_at"):
@@ -347,6 +374,37 @@ def series_rows(events: Sequence[dict[str, Any]], cc: str, *, today: date | None
                      "pre_event": int(pre is not None), "post_event": int(post is not None)})
         d += timedelta(days=1)
     return rows
+
+
+def forward_coverage(events: Sequence[dict[str, Any]], *, today: date | None = None
+                     ) -> dict[str, Any]:
+    """How much of the backtest the forward clock can actually reproduce (audit should-fix 3 on
+    #388). History is stamped D-1 on the statutory notice, but live, a vote lights its pre
+    window only once a SECOND page has read it. So the votes confirmed after they were held
+    (`statutory_history`) are a backtest the forward clock never saw; the gap is recorded, never
+    hidden, and the next vote with no first-sight confirmation is named UNMEASURED."""
+    end = today or datetime.now(UTC).date()
+    sight = hist = 0
+    upcoming = []
+    for e in events:
+        d = date.fromisoformat(str(e["date"]))
+        basis = _stamp(d, e)[1]
+        if basis == "first_sight":
+            sight += 1
+        else:
+            hist += 1
+        if d >= end:
+            upcoming.append(e["date"])
+    out: dict[str, Any] = {"first_sight": sight, "statutory_history": hist}
+    if hist:
+        out["forward_gap"] = (f"{hist} of {sight + hist} confirmed votes were confirmed only "
+                              f"after they were held: the backtest lights their pre window on "
+                              f"the statutory notice, which the forward clock (two pages "
+                              f"before the vote) did not reproduce for them")
+    if not upcoming:
+        out["next_vote"] = (f"{UNMEASURED}: no coming vote is confirmed by {MIN_SOURCES} pages, "
+                            f"so the forward clock lights nothing until one is")
+    return out
 
 
 def write_series(cc: str, rows: Sequence[dict[str, Any]]) -> Path:
@@ -438,7 +496,8 @@ def run(*, budget_s: float = 60.0, get: Any = None, resolve: Any = None,
         if rows:
             write_series(cc, rows)
         counts[cc] = {"events": len(store.get(cc) or []), "confirmed": len(good),
-                      "voided": len(void.get(cc, ())), "rows": len(rows)}
+                      "voided": len(void.get(cc, ())), "rows": len(rows),
+                      **forward_coverage(good, today=today)}
     if lane_ok is None:
         try:
             import llm_lab
