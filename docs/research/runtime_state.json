@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 826,
+  "NEVER": 831,
   "UNMEASURED": 43
  },
  "scope": {
-  "attested": 1050,
+  "attested": 1055,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -686,6 +686,29 @@
      "executable:scripts/extract_video_cells.py",
      "executable:scripts/mine_channel_transcripts.py",
      "executable:scripts/video_transcript_vault.py"
+    ]
+   },
+   {
+    "at": "2026-11-05T23:50:57+00:00",
+    "host": "vm",
+    "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:llm_coverage",
+     "leg:llm_lab",
+     "library:desks/mt5/research/cb_tone_lab.py",
+     "library:desks/mt5/research/collector_lab.py"
+    ]
+   },
+   {
+    "at": "2026-11-06T00:00:02+00:00",
+    "host": "vm",
+    "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "library:desks/mt5/research/election_calendar.py"
     ]
    }
   ]
@@ -27643,6 +27666,146 @@
    "measured_on": "vm",
    "measured_on_machine_id": "d165c2d88d894a4787be219662b439ad",
    "measured_at": "2026-11-03T23:44:49+00:00"
+  },
+  {
+   "organ": "leg:llm_coverage",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/llm_coverage_fence.py"
+   ],
+   "clock": "hourly_cycle:llm_coverage",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/LLM_COVERAGE.json",
+   "artifact_declared": "desks/mt5/reports/LLM_COVERAGE.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-11-05T23:50:57+00:00"
+  },
+  {
+   "organ": "leg:llm_lab",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/llm_lab.py"
+   ],
+   "clock": "hourly_cycle:llm_lab",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/LLM_LAB.json",
+   "artifact_declared": "desks/mt5/reports/LLM_LAB.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-11-05T23:50:57+00:00"
+  },
+  {
+   "organ": "library:desks/mt5/research/cb_tone_lab.py",
+   "kind": "library",
+   "code": [
+    "desks/mt5/research/cb_tone_lab.py"
+   ],
+   "clock": "import:desks/mt5/research/llm_lab.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/LLM_LAB.json",
+   "artifact_declared": "desks/mt5/reports/LLM_LAB.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-11-05T23:50:57+00:00"
+  },
+  {
+   "organ": "library:desks/mt5/research/collector_lab.py",
+   "kind": "library",
+   "code": [
+    "desks/mt5/research/collector_lab.py"
+   ],
+   "clock": "import:desks/mt5/research/llm_lab.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/LLM_LAB.json",
+   "artifact_declared": "desks/mt5/reports/LLM_LAB.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-11-05T23:50:57+00:00"
+  },
+  {
+   "organ": "library:desks/mt5/research/election_calendar.py",
+   "kind": "library",
+   "code": [
+    "desks/mt5/research/election_calendar.py"
+   ],
+   "clock": "import:desks/mt5/research/llm_lab.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/ELECTION_CALENDAR.json",
+   "artifact_declared": "desks/mt5/reports/ELECTION_CALENDAR.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-11-06T00:00:02+00:00"
   }
  ],
  "ratchet": {
