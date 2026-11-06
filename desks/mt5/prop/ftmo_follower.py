@@ -83,6 +83,7 @@ for _p in (str(DESK), str(ROOT)):
 from mt5desk import cancel_pending as _cancel_req  # noqa: E402
 from mt5desk import cross_account as _xa  # noqa: E402
 from mt5desk import gold_oco as _oco  # noqa: E402
+from mt5desk import mt5_manage as _mm  # noqa: E402
 from mt5desk import position_manager as _pm  # noqa: E402
 from mt5desk.decision_core import (  # noqa: E402
     BRACKET_TTL_HOURS,
@@ -359,14 +360,84 @@ def cet_day(now: datetime) -> tuple[str, datetime]:
     return local.date().isoformat(), midnight.astimezone(UTC)
 
 
-def day_start_balance(mt5: Any, balance: float, since: datetime, now: datetime) -> float:
+#: How far a tick may sit from a whole-hour server offset to be read as the server clock: the
+#: box clock's skew plus the tick's age. A single tick cannot tell a stale tick from a skewed
+#: clock (a 70-minute-old tick on UTC+3 reads exactly like a 10-minute-old one on UTC+2), so only
+#: a FRESH tick is read at all; a quiet market or gold's daily break refuses, billed by the caller.
+TICK_SKEW_S = 300.0
+
+
+#: Liquid symbols whose freshest tick stands for the server clock: FX trades through gold's
+#: daily break, so one stale market never decides the offset alone.
+CLOCK_SYMBOLS = ("EURUSD", "GBPUSD", "USDJPY", "XAUUSD")
+
+
+def freshest_tick_epoch(mt5: Any, symbols: tuple[str, ...] = CLOCK_SYMBOLS) -> float:
+    """The latest tick time across `symbols` (server wall clock as an epoch), or 0.0."""
+    best = 0.0
+    for sym in symbols:
+        try:
+            t = mt5.symbol_info_tick(sym)
+        except Exception:
+            continue
+        v = getattr(t, "time", 0) if t is not None else 0
+        if isinstance(v, (int, float)) and not isinstance(v, bool) and v > best:
+            best = float(v)
+    return best
+
+
+def server_offset_from_tick(server_epoch: float, now: datetime) -> int:
+    """The server's UTC offset in hours, read off a tick's time (MT5 stamps server wall time as
+    if it were UTC). RAISES ValueError when the tick cannot be the server clock: none, more than
+    TICK_SKEW_S off a whole hour (stale, or the box clock off), or outside UTC+0..+4."""
+    if not server_epoch:
+        raise ValueError("no tick to read the server clock from")
+    lag = float(server_epoch) - now.timestamp()
+    off = round(lag / 3600.0)
+    if not 0 <= off <= 4 or abs(lag - off * 3600.0) > TICK_SKEW_S:
+        raise ValueError(f"a tick {lag / 3600.0:+.2f}h off the box clock is not the server "
+                         f"clock (not within {TICK_SKEW_S:.0f}s of a whole-hour offset)")
+    return off
+
+
+def day_start_balance(mt5: Any, balance: float, since: datetime, now: datetime, *,
+                      server_epoch: float | None = None) -> float:
     """The balance at FTMO's midnight: today's balance less every deal's result since then.
-    RAISES when the deal history cannot be read (the guard then refuses)."""
-    deals = mt5.history_deals_get(since, now + timedelta(minutes=5))
+    RAISES when it cannot be measured (the guard then refuses): an unreadable deal history, a
+    deal with no readable time, or a server clock that cannot be read off a live tick.
+
+    ON THE SERVER CLOCK (audit MF4, 2026-10-29). MT5 stamps a deal with the server's wall clock
+    as if it were UTC, and the API reads its datetime window the same way, so a window in real UTC
+    was shifted by the server offset: it counted the last two or three hours of the previous CET
+    day as today's and DROPPED the last two or three hours of today's deals (the most recent
+    losses, the ones the daily-loss rail most needs). The query is wide (a day each side) and
+    each deal is kept when its own server stamp is at or after CET midnight on the server clock.
+
+    THE OFFSET IS MEASURED, NEVER ASSUMED (audit 2026-10-29): read off the freshest of the
+    caller's `server_epoch` and the CLOCK_SYMBOLS ticks. FTMO's server is not
+    asserted to be NY+7: on an EET server the two differ for a week each spring and autumn, and a
+    loss in the first CET hour then fell out of today. A tick that cannot be the server clock
+    (`server_offset_from_tick`) RAISES. A deal with no readable time RAISES too: counted as
+    today's, a profit or a deposit among them would understate today's loss."""
+    # the freshest of several liquid symbols (and the caller's own tick): a single tick cannot
+    # tell stale from a different offset, so the clock is read where the market is trading
+    server_epoch = max(float(server_epoch or 0.0), freshest_tick_epoch(mt5))
+    try:
+        off = server_offset_from_tick(float(server_epoch or 0.0), now)
+    except ValueError as exc:
+        raise ValueError(f"the server clock is unreadable ({exc}); today's start is "
+                         f"unmeasurable") from exc
+    deals = mt5.history_deals_get(since - timedelta(days=1), now + timedelta(days=1))
     if deals is None:
         raise ValueError("the deal history is unreadable")
+    start = since.timestamp() + off * 3600.0
     moved = 0.0
     for d in deals:
+        ts = getattr(d, "time", None)
+        if not isinstance(ts, (int, float)) or isinstance(ts, bool) or ts <= 0:
+            raise ValueError(f"a deal ({getattr(d, 'ticket', '?')}) has no readable time")
+        if ts < start:
+            continue
         for k in ("profit", "commission", "swap", "fee"):
             v = getattr(d, k, 0.0)
             if isinstance(v, (int, float)) and not isinstance(v, bool):
@@ -392,6 +463,39 @@ def mirrored_stop(e8_doc: dict[str, Any], e8_position_id: str, side: str,
         if best is None or sign * (stop - best) > 0:
             best = stop
     return best if best is not None and best != current else None
+
+
+def native_stop(mt5: Any, st: dict[str, Any], p: Any) -> tuple[float | None, str, bool]:
+    """THE SAME STOP MANAGEMENT AS EVERY OTHER ACCOUNT (zuck 2026-11-03: "ftmo fusion etc must
+    always have same mechanisms"): `mt5_manage.stop_move`, the Fusion gateway's own decision -- the
+    costed break-even floor and the H1 chandelier -- on THIS account's position, bars, quote and
+    commission. Until this, FTMO only copied E8's acknowledged stop, so it was managed only while
+    E8 was alive, held the same position, and published the move.
+
+    (new stop or None, why, failed). `failed` is True only when the decision could not be MADE (no
+    open price, no symbol, a read raised); a decided "no move" is False, and then FTMO keeps its
+    own stop exactly as Fusion would -- never E8's tighter one (audit of 730b0952c MF)."""
+    opened = getattr(p, "price_open", None)
+    if not isinstance(opened, (int, float)) or not opened > 0:
+        return None, "the position carries no readable open price", True
+    opened_sl, comm = _mm.opening_facts(mt5, int(p.ticket))
+    dist, captured = _mm.original_stop_distance(st.setdefault("orig_stop_dist", {}),
+                                                int(p.ticket), float(opened),
+                                                float(getattr(p, "sl", 0.0) or 0.0), opened_sl)
+    if dist is None:
+        return None, "no stop on the position; none invented", True
+    if captured:
+        log(f"[{WINDOW}] manage capture: ticket {int(p.ticket)} initial stop distance {dist:.5f} "
+            f"({'opening order' if opened_sl else 'first sight'})")
+    info = mt5.symbol_info(SYMBOL)
+    if info is None:
+        return None, "no symbol_info this pass", True
+    try:
+        move = _mm.stop_move(mt5, p, info, original_dist=dist, floor_only=False,
+                             commission_per_lot_side=comm)
+    except Exception as exc:  # a read this pass could not make never takes the pass down
+        return None, f"own ratchet unavailable this pass ({type(exc).__name__}: {exc})"[:200], True
+    return move.new_stop, move.why, False
 
 
 def history_spent(mt5: Any, today: str, now: datetime) -> tuple[bool | None, str]:
@@ -712,7 +816,7 @@ def order_risk_usd(mt5: Any, order: Any) -> float | None:
     """The account-currency risk of a resting MAGIC entry to its stop: volume x |price - sl| x
     the contract size. None when any of them is unreadable (the bill is then UNPRICED, never 0)."""
     try:
-        vol = float(getattr(order, "volume_current", None) or getattr(order, "volume_initial"))
+        vol = float(getattr(order, "volume_current", None) or order.volume_initial)
         dist = abs(float(order.price_open) - float(order.sl))
         contract = float(mt5.symbol_info(SYMBOL).trade_contract_size)
     except (AttributeError, TypeError, ValueError):
@@ -954,6 +1058,9 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
              for p in own_pos]
     _flat = {r["id"] for r in _oco.positions_to_flatten(entry if entry_why is None else None,
                                                         _rows, date=today)}
+    _live = {str(int(p.ticket)) for p in own_pos}
+    st["orig_stop_dist"] = {k: v for k, v in (st.get("orig_stop_dist") or {}).items()
+                            if k in _live}
     for p in own_pos:
         side = "long" if int(getattr(p, "type", -1)) == 0 else "short"
         if int(p.ticket) in _flat or hour >= CLOSE_HOUR:
@@ -980,18 +1087,33 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
                 act["shadow"] = True
             doc["actions"].append(act)
             continue
-        e8_pid = (sig or {}).get("e8_position_id") or w.get("e8_position_id")
-        if not isinstance(e8_doc, dict) or not e8_pid:
-            continue
         cur = float(getattr(p, "sl", 0.0) or 0.0) or None
-        new = mirrored_stop(e8_doc, str(e8_pid), side, cur)
+        new, how, failed = native_stop(mt5, st, p)
+        if new is None and failed:
+            # E8's acknowledged stop is the fallback only: when this terminal cannot read the bars
+            # or the ATR its own ratchet needs, the position is still not left unmanaged.
+            e8_pid = (sig or {}).get("e8_position_id") or w.get("e8_position_id")
+            if isinstance(e8_doc, dict) and e8_pid:
+                new = mirrored_stop(e8_doc, str(e8_pid), side, cur)
+                how = f"E8's acknowledged stop (own ratchet: {how})"
         if new is None or cur is None:
+            if how:
+                doc.setdefault("manage_notes", []).append(f"#{int(p.ticket)}: {how}")
+            continue
+        # NO NO-OP MODIFIES (Desk health 2026-11-03: the terminal journal showed a "sl unchanged,
+        # skipped" request every minute after a mirror, each one spent from FTMO's daily request
+        # budget). Only a move the venue can represent -- one tick, else one point -- is sent.
+        _info = mt5.symbol_info(SYMBOL)
+        _step = (float(getattr(_info, "trade_tick_size", 0.0) or 0.0)
+                 or float(getattr(_info, "point", 0.0) or 0.0)) if _info is not None else 0.0
+        if not _pm.tightens_by_min_step(side=1 if side == "long" else -1, new_stop=float(new),
+                                        current_stop=float(cur), step=_step):
             continue
         sgn: Any = 1 if side == "long" else -1
         rests, rwhy = _pm.stop_rests_at_venue(stop=new, side=sgn, bid=float(tick.bid),
                                               ask=float(tick.ask))
         act = {"act": "ratchet_stop", "position": int(p.ticket), "before": cur, "after": new,
-               "ok": False}
+               "how": how, "ok": False}
         if not rests:
             act["why"] = rwhy
         elif armed:
@@ -1005,6 +1127,10 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
                 act["why"] = f"{type(exc).__name__}: {exc}"[:160]
         else:
             act["shadow"] = True
+        # EVERY STOP MOVE IS LOGGED, sent or not (Desk health 2026-11-03: only failures were, so
+        # an FTMO stop that ran an hour ahead of E8's could not be traced afterwards).
+        log(f"[{WINDOW}] stop {int(p.ticket)} {cur} -> {new} ({how}): "
+            f"{'shadow' if act.get('shadow') else ('ok' if act['ok'] else act.get('why'))}")
         doc["actions"].append(act)
 
     # ---------------------------------------------------------------- the fills ledger
@@ -1153,7 +1279,8 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
         lot = capped
     risk = trade_risk(lot, dist, contract)
     try:
-        start = day_start_balance(mt5, balance, cet_midnight, now)
+        start = day_start_balance(mt5, balance, cet_midnight, now,
+                                  server_epoch=float(tick.time))
     except Exception as exc:
         _skip(doc, st, "loss_guard", f"today's starting balance is unmeasurable ({exc})",
               today=today, now=now, missed_usd=want_usd)
