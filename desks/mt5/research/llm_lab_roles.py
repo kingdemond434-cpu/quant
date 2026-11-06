@@ -90,10 +90,8 @@ def _read_json(path: Path, default: Any) -> Any:
 
 
 def _write_json(path: Path, doc: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(doc, indent=1, ensure_ascii=False, default=str), encoding="utf-8")
-    os.replace(tmp, path)
+    from libs.ops import atomic_json
+    atomic_json.write_json(path, doc)
 
 
 def _jsonl(path: Path, limit: int = 0) -> list[dict[str, Any]]:
@@ -184,6 +182,14 @@ def record_evidence_start(rows: Iterable[dict[str, Any]], path: Path | None = No
     before any gate; sym/family/params let it match a cell whose params the compiler filled out.
     A later entry never loosens an earlier one: the stored date only ever moves LATER."""
     p = path or EVIDENCE_START
+    from libs.ops import atomic_json
+    # READ-MODIFY-WRITE UNDER A LOCK (audit SF11): two lab passes recording at once would
+    # otherwise each write their own view and one would drop the other's evidence dates.
+    with atomic_json.locked(p):
+        return _record_evidence_start(rows, p)
+
+
+def _record_evidence_start(rows: Iterable[dict[str, Any]], p: Path) -> int:
     doc: dict[str, Any] = _read_json(p, {}) or {}
     n = 0
     for r in rows:

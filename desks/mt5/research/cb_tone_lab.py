@@ -17,8 +17,8 @@ translation and lands in its own column (`tone_lex_en`) so it never mixes with n
 THE LOOK-AHEAD GUARD IS ENFORCED IN THE DATA, not only stamped on the cell. A model that scores a
 2019 statement may know what the bank did in 2020; its 2019 reading is contaminated. So the
 series carries `tone_llm` (every reading, for research) and `tone_llm_clean` (only documents
-published on or after the scoring model's `evidence_from` -- the earlier of its registered
-training cutoff and the day this organ first used it). Only `tone_lex` and `tone_llm_clean` are
+published on or after the scoring model's `evidence_from` -- the LATER of its registered
+training cutoff and the day this organ first used it, as `llm_lab.lookahead_guard` computes). Only `tone_lex` and `tone_llm_clean` are
 ever donated as cells, so the sealed gauntlet, which does not read `lookahead_guard`, still cannot
 count a contaminated window as evidence.
 
@@ -203,10 +203,8 @@ def _read_json(path: Path, default: Any) -> Any:
 
 
 def _write_json(path: Path, doc: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(doc, indent=1, ensure_ascii=False, default=str), encoding="utf-8")
-    os.replace(tmp, path)
+    from libs.ops import atomic_json
+    atomic_json.write_json(path, doc)
 
 
 def _jsonl(path: Path) -> list[dict[str, Any]]:
@@ -226,12 +224,9 @@ def _jsonl(path: Path) -> list[dict[str, Any]]:
 
 
 def _write_jsonl(path: Path, rows: Iterable[dict[str, Any]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    with tmp.open("w", encoding="utf-8") as fh:
-        for r in rows:
-            fh.write(json.dumps(r, ensure_ascii=False, default=str) + "\n")
-    os.replace(tmp, path)
+    from libs.ops import atomic_json
+    atomic_json.write_text(path, "".join(json.dumps(r, ensure_ascii=False, default=str) + "\n"
+                                         for r in rows))
 
 
 def html_to_text(raw: str) -> str:

@@ -43,7 +43,6 @@ import io
 import itertools
 import json
 import math
-import os
 import re
 import statistics
 import sys
@@ -112,10 +111,8 @@ def _read_json(path: Path, default: Any) -> Any:
 
 
 def _write_json(path: Path, doc: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(doc, indent=1, ensure_ascii=False, default=str) + "\n", "utf-8")
-    os.replace(tmp, path)
+    from libs.ops import atomic_json
+    atomic_json.write_json(path, doc)
 
 
 def _jsonl(path: Path) -> list[dict[str, Any]]:
@@ -542,12 +539,12 @@ SERIES_COLUMNS = ("available_time", "published_time", "retrieval_time", "source_
 def write_series(source_id: str, rows: Sequence[dict[str, Any]]) -> Path:
     SERIES_DIR.mkdir(parents=True, exist_ok=True)
     path = SERIES_DIR / f"{source_id}.csv"
-    tmp = path.with_suffix(".csv.tmp")
-    with tmp.open("w", encoding="utf-8", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(SERIES_COLUMNS))
-        w.writeheader()
-        w.writerows(rows)
-    os.replace(tmp, path)
+    buf = io.StringIO(newline="")
+    w = csv.DictWriter(buf, fieldnames=list(SERIES_COLUMNS))
+    w.writeheader()
+    w.writerows(rows)
+    from libs.ops import atomic_json
+    atomic_json.write_text(path, buf.getvalue())
     return path
 
 
