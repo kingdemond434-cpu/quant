@@ -142,5 +142,6 @@ def test_the_sixteen_that_were_dark_are_on_the_roster() -> None:
 def test_cheap_money_and_health_fences_are_pinned():
     """Cheap fences that gate money or health never wait behind the budget (overlay 27d)."""
     import libs.ops.leg_rotation as LR
-    for leg in ("decay_monitor", "placement_interlock", "box_state_freshness", "desk_health"):
+    for leg in ("decay_monitor", "placement_interlock", "box_state_freshness", "desk_health",
+                "judge_alive"):
         assert leg in LR.ALWAYS_RUN, leg
