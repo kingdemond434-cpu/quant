@@ -132,3 +132,42 @@ def test_the_pass_never_runs_past_its_budget_when_estimates_hold(
 def test_a_never_measured_fence_still_runs() -> None:
     assert lg._expected_s({}) == lg._ROTATION_FLOOR_S
     assert lg._expected_s({"elapsed_s": 10_000}) == lg.ROTATION_FENCE_TIMEOUT_S
+
+
+def test_the_first_fence_gets_the_full_clock_on_every_argument_set(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: Clock
+) -> None:
+    """Auditor SF1 on 6c98f5ff9: a multi-argument fence at the head of the queue is never cut
+    by the budget on a later argument set."""
+    monkeypatch.setattr(lg, "_LAW_FENCES", (("multi.py", ()), ("multi.py", ("--x",))))
+    monkeypatch.setattr(lg, "_STATE_FENCES", ())
+    calls: list[tuple[str, float]] = []
+    monkeypatch.setattr(lg, "_run_fence", _fake(clock, {"multi.py": 500}, calls))
+    rep = lg.rotate_gate(tmp_path, budget_s=700.0)
+    assert [c[1] for c in calls] == [lg.ROTATION_FENCE_TIMEOUT_S] * 2
+    assert rep["fences"]["multi.py"]["ok"] is True
+    assert rep["fences"]["multi.py"]["n_invocations"] == 2
+
+
+def test_repeated_budget_cuts_are_counted_and_then_fail(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: Clock
+) -> None:
+    """Auditor SF2 on 6c98f5ff9: a fence the budget keeps cutting is FAILED after
+    ROTATION_MAX_BUDGET_CUTS passes, so the deferral can never repeat silently."""
+    _battery(monkeypatch, ["head.py", "liar.py"])
+    calls: list[tuple[str, float]] = []
+    monkeypatch.setattr(lg, "_run_fence", _fake(clock, {"head.py": 10, "liar.py": 400}, calls))
+    for n in range(1, lg.ROTATION_MAX_BUDGET_CUTS + 1):
+        # liar.py claims 10 s, so it is started, then cut; head.py is always older.
+        _prior(tmp_path, {"head.py": (10, 10), "liar.py": (5, 10)})
+        doc = json.loads((tmp_path / "data/law_gate.json").read_text("utf-8"))
+        doc["fences"]["liar.py"]["budget_cuts"] = n - 1
+        (tmp_path / "data/law_gate.json").write_text(json.dumps(doc), "utf-8")
+        rep = lg.rotate_gate(tmp_path, budget_s=300.0)
+        row = rep["fences"]["liar.py"]
+        if n < lg.ROTATION_MAX_BUDGET_CUTS:
+            assert row["ok"] is True and row["budget_cuts"] == n
+            assert rep["rotation"]["deferred_this_pass"] == ["liar.py"]
+        else:
+            assert row["ok"] is False and "cut short by the rotation budget" in row["detail"]
+            assert not rep["ok"]

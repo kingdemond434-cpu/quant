@@ -998,6 +998,10 @@ ROTATION_FENCE_TIMEOUT_S: float = 600.0
 #: fence it cannot let finish.
 _ROTATION_FLOOR_S: float = 120.0
 
+#: A fence cut short by the budget this many passes running is recorded FAILED: a deferral that
+#: keeps repeating is a fence that no longer fits the battery, and that must be seen, not carried.
+ROTATION_MAX_BUDGET_CUTS: int = 3
+
 
 def _run_fence(root: Path, script: str, extra: tuple[str, ...],
                timeout: float) -> dict[str, Any]:
@@ -1105,16 +1109,28 @@ def rotate_gate(root: Path | None = None, *, budget_s: float = 1800.0,
         rows = []
         for extra in declared[name]:
             left = budget_s - (datetime.now(tz=UTC) - t0).total_seconds()
-            clock = min(ROTATION_FENCE_TIMEOUT_S, max(_ROTATION_FLOOR_S, left) if first else left)
+            # The first fence of a pass gets the full per-fence clock on EVERY argument set (Auditor
+            # SF1 on 6c98f5ff9), so the head of the queue is never cut by the budget.
+            clock = ROTATION_FENCE_TIMEOUT_S if first else min(ROTATION_FENCE_TIMEOUT_S, left)
             rows.append(_run_fence(root, name, extra, max(clock, 1.0)))
-        if any(r.get("timed_out") and r.get("timeout_s", 0) < ROTATION_FENCE_TIMEOUT_S
-               for r in rows):
-            deferred.append(name)  # cut short by the budget: no verdict, first in line next pass
+        cut = any(r.get("timed_out") and r.get("timeout_s", 0) < ROTATION_FENCE_TIMEOUT_S
+                  for r in rows)
+        cuts = int(prior.get(name, {}).get("budget_cuts") or 0) + 1 if cut else 0
+        if cut and cuts < ROTATION_MAX_BUDGET_CUTS:
+            # Cut short by the budget: no verdict, first in line next pass. The count is kept so
+            # the deferral cannot repeat silently (Auditor SF2 on 6c98f5ff9).
+            prior[name] = {**prior.get(name, {}), "budget_cuts": cuts}
+            deferred.append(name)
             continue
+        if cut:
+            rows = [{"fence": name, "ok": False, "timed_out": True,
+                     "detail": f"cut short by the rotation budget {cuts} passes running -- "
+                               "counts as FAILED, never carried"}]  # fmt: skip
         bad = [r for r in rows if not r["ok"]]
         row = dict(bad[0] if bad else rows[0])
         row["ok"] = not bad
-        row["n_invocations"] = len(rows)
+        row["n_invocations"] = len(declared[name])
+        row["budget_cuts"] = cuts
         row["ran_at"] = started.isoformat()
         row["elapsed_s"] = round((datetime.now(tz=UTC) - started).total_seconds(), 1)
         prior[name] = row
