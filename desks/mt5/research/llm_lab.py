@@ -1474,16 +1474,81 @@ def _cb_tone_role(*, budget_s: float, max_llm: int) -> dict[str, Any]:
         return {"state": "ERROR", "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
 
 
-def gauntlet_trims() -> bool:
-    """True only when the canonical gauntlet carries the look-ahead trim (the sealed patch
-    `llm_lookahead_gauntlet`). Until then the lab's cells would reach every gate untrimmed, so
-    they are HELD, never donated (audit blocker on #332, 2026-10-13). Read from the source each
-    call: the first pass after the laptop lands the patch releases them with no other step."""
+#: THE TRIM CONTRACT the sealed patch `llm_lookahead_gauntlet` must meet, checked by BEHAVIOUR
+#: (audit of 538cb964, SF1). The release used to be a substring match on two function names, so
+#: a stub defining `llm_born` and `evidence_trim` that did nothing would have freed every held
+#: cell UNTRIMMED, with the model's own training window counting as evidence. Now the gauntlet
+#: module is imported in a child process and its two functions are run on a fixture:
+#:   llm_born(cell) -> True for a cell carrying a `lookahead_guard`, False for one without;
+#:   evidence_trim(cell, frame) -> the frame (DatetimeIndex, UTC) with every row before the
+#:   cell's own `lookahead_guard.evidence_from` dropped, and unchanged for a non-LLM cell.
+#: Anything else -- an import error, a timeout, a wrong answer -- keeps every cell HELD.
+GAUNTLET_PROBE = """
+import importlib.util, sys
+import pandas as pd
+path, root = sys.argv[1], sys.argv[2]
+for p in (root, root + "/desks/mt5", root + "/desks/mt5/scripts"):
+    sys.path.insert(0, p)
+spec = importlib.util.spec_from_file_location("gauntlet_under_probe", path)
+g = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(g)
+llm = {"cell_id": "probe-llm", "lookahead_guard": {"evidence_from": "2024-01-03"}}
+plain = {"cell_id": "probe-plain"}
+frame = pd.DataFrame({"close": [1.0, 2.0, 3.0, 4.0, 5.0]},
+                     index=pd.date_range("2024-01-01", periods=5, freq="D", tz="UTC"))
+assert g.llm_born(llm) is True and g.llm_born(plain) is False
+cut = g.evidence_trim(llm, frame.copy())
+assert len(cut) == 3 and cut.index.min() == pd.Timestamp("2024-01-03", tz="UTC")
+assert len(g.evidence_trim(plain, frame.copy())) == 5
+print("TRIM_CONTRACT_OK")
+"""
+PROBE_TIMEOUT_S = 180.0
+PROBE_CACHE_NAME = "gauntlet_trim_probe.json"
+
+
+def _probe_gauntlet(path: Path) -> tuple[bool, str]:
+    """Run GAUNTLET_PROBE against `path` in a child process. Never raises; fails closed."""
+    import subprocess
     try:
-        text = GAUNTLET.read_text("utf-8", errors="replace")
-    except OSError:
-        return False
-    return "def llm_born(" in text and "def evidence_trim(" in text
+        proc = subprocess.run([sys.executable, "-c", GAUNTLET_PROBE, str(path), str(ROOT)],
+                              capture_output=True, text=True, timeout=PROBE_TIMEOUT_S)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return False, f"probe did not run: {type(exc).__name__}"
+    if proc.returncode == 0 and "TRIM_CONTRACT_OK" in proc.stdout:
+        return True, "trim contract met"
+    tail = (proc.stderr or proc.stdout or "").strip().splitlines()[-1:] or ["no output"]
+    return False, f"trim contract NOT met (exit {proc.returncode}): {tail[0][:200]}"
+
+
+def gauntlet_status() -> dict[str, Any]:
+    """Whether the canonical gauntlet trims LLM-born cells, judged by behaviour, cached per
+    gauntlet file hash (the probe imports the gauntlet, so it runs once per version of it)."""
+    try:
+        raw = GAUNTLET.read_bytes()
+    except OSError as exc:
+        return {"trims": False, "why": f"gauntlet unreadable: {type(exc).__name__}"}
+    text = raw.decode("utf-8", errors="replace")
+    if "def llm_born(" not in text or "def evidence_trim(" not in text:
+        return {"trims": False, "unwired": True,
+                "why": "external_gauntlet.py lacks the look-ahead trim (sealed patch "
+                       "llm_lookahead_gauntlet not landed): LLM-born cells are not donated"}
+    sha = hashlib.sha256(raw).hexdigest()
+    cache = _read_json(STATE_DIR / PROBE_CACHE_NAME, {}) or {}
+    hit = cache.get(sha) if isinstance(cache, dict) else None
+    if not (isinstance(hit, dict) and isinstance(hit.get("trims"), bool)):
+        ok, why = _probe_gauntlet(GAUNTLET)
+        hit = {"trims": ok, "why": why, "probed_at": _now()}
+        with contextlib.suppress(OSError):
+            _write_json(STATE_DIR / PROBE_CACHE_NAME, {sha: hit})
+    return {"trims": bool(hit["trims"]), "why": str(hit.get("why")), "gauntlet_sha256": sha}
+
+
+def gauntlet_trims() -> bool:
+    """True only when the canonical gauntlet MEETS the trim contract above (the sealed patch
+    `llm_lookahead_gauntlet`), never when it merely names the functions. Until then the lab's
+    cells would reach every gate untrimmed, so they are HELD, never donated (audit blocker on
+    #332, 2026-10-13). The first pass after a conforming patch lands releases them."""
+    return bool(gauntlet_status()["trims"])
 
 
 def donation_target(default: Path) -> Path:
@@ -1496,10 +1561,14 @@ def release_held(dest: Path | None = None) -> dict[str, Any]:
     held = STATE_DIR / "held_donations"
     # One held subdirectory per destination seat, so a release keeps each donor's attribution.
     files = sorted(held.glob("*/*.json")) if held.is_dir() else []
-    if not gauntlet_trims():
-        return {"state": "HELD", "files": len(files),
-                "why": "external_gauntlet.py lacks the look-ahead trim (sealed patch "
-                       "llm_lookahead_gauntlet not landed): LLM-born cells are not donated"}
+    status = gauntlet_status()
+    if not status["trims"]:
+        # HELD BECAUSE THE PATCH IS ABSENT IS AN UNWIRED ORGAN, NOT A QUIET STATE (III.16): every
+        # cell this lab mints is inert until the gauntlet trims, so the pass says so in RED.
+        return {"state": "HELD", "files": len(files), "why": status["why"], "red": True,
+                "defect": "UNWIRED (III.16): the lab's cells cannot reach the gauntlet until "
+                          "the sealed patch llm_lookahead_gauntlet lands and meets the trim "
+                          "contract (llm_lab.GAUNTLET_PROBE)"}
     root = (dest or DONATE_DIR).parent
     moved = 0
     for f in files:
@@ -1848,7 +1917,7 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
     for t in tallies.values():
         total_novelty.update(t.novelty)
     jev_jobs = _jsonl(JEV_JOBS)
-    doc = {
+    doc: dict[str, Any] = {
         "generated_utc": _now(), "organ": ORGAN, "law": RULE,
         "verdict": ("RAN" if calls_made else UNMEASURED),
         "why": ("" if calls_made else
@@ -1906,6 +1975,9 @@ def run(*, budget_s: float = 600.0, max_calls: int | None = None, dry_run: bool 
         "families_registered": len(reg), "universe_symbols": len(uni),
         "registry_fingerprint": fp,
     }
+    if isinstance(donations, dict) and donations.get("red"):
+        doc["red"] = True
+        doc["defects"] = [donations.get("defect")]
     if not dry_run:
         _write_json(REPORT, doc)
     return doc
@@ -1922,7 +1994,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     doc = run(budget_s=a.budget_s, max_calls=a.max_calls, dry_run=a.dry_run, workers=a.workers)
     print(json.dumps({k: doc[k] for k in ("verdict", "why", "emitted", "novelty", "coverage",
                                           "conversion_debt")}, default=str)[:3000])
-    return 0
+    for d in doc.get("defects") or []:
+        print(f"LLM_LAB RED: {d}")
+    return 1 if doc.get("red") and not a.dry_run else 0
 
 
 if __name__ == "__main__":

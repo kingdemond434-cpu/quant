@@ -501,7 +501,23 @@ def test_donations_are_held_until_the_gauntlet_trims(tmp_path: Path,
     assert target.name == lab.DONATE_DIR.name, "held per seat, so attribution survives"
     (target / "discoveries_1.json").write_text("{}")
     assert lab.release_held()["state"] == "HELD" and not lab.DONATE_DIR.exists()
+    held = lab.release_held()
+    assert held["red"] is True and "UNWIRED" in held["defect"]
+    # A STUB THAT ONLY NAMES THE FUNCTIONS RELEASES NOTHING (audit of 538cb964, SF1).
     gauntlet.write_text("def llm_born(c):\n    pass\ndef evidence_trim(c, ds):\n    pass\n")
+    assert lab.donation_target(lab.DONATE_DIR) != lab.DONATE_DIR
+    assert lab.release_held()["state"] == "HELD" and not lab.DONATE_DIR.exists()
+    # ... and one that trims everything to nothing fails the contract too.
+    gauntlet.write_text("def llm_born(c):\n    return True\n"
+                        "def evidence_trim(c, ds):\n    return ds.iloc[0:0]\n")
+    assert lab.gauntlet_trims() is False
+    gauntlet.write_text(
+        "import pandas as pd\n"
+        "def llm_born(c):\n    return isinstance(c.get('lookahead_guard'), dict)\n"
+        "def evidence_trim(c, ds):\n"
+        "    if not llm_born(c):\n        return ds\n"
+        "    return ds[ds.index >= pd.Timestamp(c['lookahead_guard']['evidence_from'], "
+        "tz='UTC')]\n")
     assert lab.donation_target(lab.DONATE_DIR) == lab.DONATE_DIR
     assert lab.release_held() == {"state": "DONATING", "released": 1}
     assert (lab.DONATE_DIR / "discoveries_1.json").exists()
