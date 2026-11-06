@@ -388,6 +388,15 @@ def test_the_local_model_installer_checks_what_it_runs() -> None:
     assert "/inheritance:r" in src and "S-1-5-19" in src
     assert "pinned ${pinned}" in src and "& $ollama rm $m" in src
     assert "6 GB floor" in src
+    # audit of 538cb964: the server stops BEFORE its binary is copied over (SF5) ...
+    assert src.index("Stop-Process -Force") < src.index("Copy-Item -Path")
+    # ... a present pinned build is never re-pulled (SF5) ...
+    assert src.index("already present and pinned: not pulled") < src.index("& $ollama pull $m")
+    # ... icacls failures stop the script and the signer is a pinned thumbprint (SF6) ...
+    assert "$LASTEXITCODE -ne 0" in src and "& icacls $" not in src.replace("& icacls @args", "")
+    assert "signer_thumbprint" in src and "-notmatch 'Ollama'" not in src
+    # ... and the server runs on a bounded set of cores (SF7).
+    assert "/affinity" in src and "QUANT_LOCAL_LLM_CORES" in src
 
 
 def test_a_scouted_source_cannot_redirect_or_resolve_to_a_private_host() -> None:

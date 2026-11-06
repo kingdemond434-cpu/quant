@@ -49,20 +49,40 @@ function Say($m) { Write-Host ("[local-llm] " + $m) }
 $Root = 'C:\opt\ollama'
 $Lock = Join-Path $Root 'install.lock.json'
 New-Item -ItemType Directory -Force -Path $Root | Out-Null
-$lockDoc = @{ ollama_version = ''; models = @{} }
+$lockDoc = @{ ollama_version = ''; signer_thumbprint = ''; models = @{} }
 if (Test-Path $Lock) {
     $raw = Get-Content $Lock -Raw | ConvertFrom-Json
     $lockDoc.ollama_version = [string]$raw.ollama_version
+    $lockDoc.signer_thumbprint = [string]$raw.signer_thumbprint
     if ($raw.models) { $raw.models.PSObject.Properties | ForEach-Object { $lockDoc.models[$_.Name] = [string]$_.Value } }
 }
 function Save-Lock { $lockDoc | ConvertTo-Json -Depth 4 | Set-Content -Path $Lock -Encoding UTF8 }
 function Assert-Signed($path) {
+    # The signer is PINNED BY THUMBPRINT (audit of 538cb964, SF6), not matched as a subject
+    # substring: any certificate whose subject merely contains "Ollama" used to pass. The first
+    # valid signature is recorded in the lock (trust on first use, printed so a human can check
+    # it); every later binary must carry exactly that certificate.
     $sig = Get-AuthenticodeSignature -FilePath $path
-    $who = if ($sig.SignerCertificate) { $sig.SignerCertificate.Subject } else { '' }
-    if ($sig.Status -ne 'Valid' -or $who -notmatch 'Ollama') {
-        throw "refusing ${path}: signature $($sig.Status), signer '$who' (must be Valid and Ollama)"
+    $cert = $sig.SignerCertificate
+    $who = if ($cert) { $cert.Subject } else { '' }
+    $thumb = if ($cert) { $cert.Thumbprint } else { '' }
+    if ($sig.Status -ne 'Valid' -or $who -notmatch '(^|,\s*)O=Ollama') {
+        throw "refusing ${path}: signature $($sig.Status), signer '$who' (must be Valid, O=Ollama)"
     }
-    Say "signature ok: $path ($who)"
+    if ($lockDoc.signer_thumbprint -and $lockDoc.signer_thumbprint -ne $thumb) {
+        throw "refusing ${path}: signer thumbprint $thumb, pinned $($lockDoc.signer_thumbprint). Delete signer_thumbprint from $Lock to accept a new certificate."
+    }
+    if (-not $lockDoc.signer_thumbprint) {
+        $lockDoc.signer_thumbprint = $thumb; Save-Lock
+        Say "signer pinned on first use: $thumb ($who, issuer $($cert.Issuer))"
+    }
+    Say "signature ok: $path ($who, $thumb)"
+}
+function Invoke-Icacls {
+    # icacls reports failure only in its exit code; an unchecked failure left the tree writable
+    # while the script said "ACL locked" (audit of 538cb964, SF6).
+    & icacls @args | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "icacls $($args -join ' ') failed with exit code $LASTEXITCODE" }
 }
 
 # 1. Measure, never assume (CLAUDE.md: the two boxes differ twelve-fold).
@@ -114,15 +134,23 @@ Say "ollama: $ollama"
 $bin = 'C:\opt\ollama\bin'
 New-Item -ItemType Directory -Force -Path $bin, $Models | Out-Null
 $srcDir = Split-Path $ollama
-Copy-Item -Path (Join-Path $srcDir '*') -Destination $bin -Recurse -Force
+# STOP THE SERVER BEFORE COPYING OVER ITS BINARY (audit of 538cb964, SF5): on a re-run the copy
+# hit "file in use" on the running ollama.exe and the script threw half way through.
+if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
+    Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+}
+Get-Process -Name 'ollama app', 'ollama' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Start-Sleep -Seconds 2
+if ((Resolve-Path $srcDir).Path -ne (Resolve-Path $bin).Path) {
+    Copy-Item -Path (Join-Path $srcDir '*') -Destination $bin -Recurse -Force
+}
 $ollama = Join-Path $bin 'ollama.exe'
 Assert-Signed $ollama
 # Lock the tree: only SYSTEM and Administrators may write; the server reads bin and writes models.
-& icacls $Root /inheritance:r /grant:r 'SYSTEM:(OI)(CI)F' 'Administrators:(OI)(CI)F' | Out-Null
-& icacls $bin /grant:r '*S-1-5-19:(OI)(CI)RX' | Out-Null
-& icacls $Models /grant:r '*S-1-5-19:(OI)(CI)M' | Out-Null
+Invoke-Icacls $Root /inheritance:r /grant:r 'SYSTEM:(OI)(CI)F' 'Administrators:(OI)(CI)F'
+Invoke-Icacls $bin /grant:r '*S-1-5-19:(OI)(CI)RX'
+Invoke-Icacls $Models /grant:r '*S-1-5-19:(OI)(CI)M'
 Say "ACL locked on $Root (LOCAL SERVICE: read on bin, modify on models)"
-Get-Process -Name 'ollama app', 'ollama' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 $startup = Join-Path ([Environment]::GetFolderPath('Startup')) 'Ollama.lnk'
 if (Test-Path $startup) { Remove-Item $startup -Force; Say "removed the tray app's startup link" }
 
@@ -138,7 +166,19 @@ foreach ($k in $vars.Keys) {
 }
 
 # 4. The server task: LOCAL SERVICE (no admin, no user profile), at startup, lowest priority.
-$action    = New-ScheduledTaskAction -Execute $ollama -Argument 'serve'
+# BOUNDED CORES (audit of 538cb964, SF7): inference would otherwise spread across every core next
+# to the live terminal. The server is pinned to the TOP quarter of the logical cores (at least 2;
+# QUANT_LOCAL_LLM_CORES overrides), through `start /affinity`, which `/wait` keeps attached so the
+# task's restart-on-failure still sees the server exit.
+$llmCores = [int]([Environment]::GetEnvironmentVariable('QUANT_LOCAL_LLM_CORES', 'Machine'))
+if ($llmCores -le 0) { $llmCores = [Math]::Max(2, [Math]::Floor($cores / 4)) }
+$llmCores = [Math]::Min($llmCores, $cores)
+$mask = ([int64]1 -shl $llmCores) - 1
+$mask = $mask -shl ($cores - $llmCores)
+$maskHex = '{0:X}' -f $mask
+Say "server pinned to $llmCores of $cores logical cores (affinity 0x$maskHex)"
+$action    = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\cmd.exe" `
+    -Argument ('/c start "" /wait /low /affinity {0} "{1}" serve' -f $maskHex, $ollama)
 $trigger   = New-ScheduledTaskTrigger -AtStartup
 $settings  = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
     -StartWhenAvailable -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) `
@@ -153,13 +193,23 @@ Get-Process -Name 'ollama' -ErrorAction SilentlyContinue | ForEach-Object {
 }
 
 # 5. Pull and prove one completion.
+function Get-Digest($m) {
+    $row = (& $ollama list | Select-String -SimpleMatch $m | Select-Object -First 1)
+    if ($row) { ($row.ToString() -split '\s+')[1] } else { '' }
+}
 foreach ($m in $pull) {
+    $pinned = $lockDoc.models[$m]
+    # A PINNED MODEL ALREADY HERE IS NEVER RE-PULLED (audit of 538cb964, SF5): the pull ran before
+    # the digest check, so a tag moved upstream replaced the pinned build and the check then
+    # removed the model altogether. Now a present pinned build is kept as it is.
+    if ($pinned -and (Get-Digest $m) -eq $pinned) {
+        Say "$m digest $pinned already present and pinned: not pulled"
+        continue
+    }
     Say "pulling $m (several GB; this is the slow step)"
     & $ollama pull $m | Out-Host
-    $row = (& $ollama list | Select-String -SimpleMatch $m | Select-Object -First 1)
-    $digest = if ($row) { ($row.ToString() -split '\s+')[1] } else { '' }
+    $digest = Get-Digest $m
     if (-not $digest) { throw "no digest listed for $m after the pull" }
-    $pinned = $lockDoc.models[$m]
     if ($pinned -and $pinned -ne $digest) {
         & $ollama rm $m | Out-Null
         throw "$m resolved to digest $digest, pinned ${pinned}: removed, not served. Delete its lock entry to accept a new build."
