@@ -25,8 +25,7 @@ from research import proposer_common as PC  # noqa: E402
 def test_only_rows_the_door_wrote_are_marked(tmp_path: Path,
                                              monkeypatch: pytest.MonkeyPatch) -> None:
     ledger = tmp_path / "donated.json"
-    monkeypatch.setattr(PC, "LAST_WRITTEN", [{"mathlab_object_id": "kept"}])
-    ML.mark_donated(ledger, {"old"})
+    ML.mark_donated(ledger, {"old"}, [{"mathlab_object_id": "kept"}])
     doc = json.loads(ledger.read_text("utf-8"))
     assert doc["version"] == ML.DONATED_LEDGER_VERSION
     assert doc["object_ids"] == ["kept", "old"]
@@ -38,8 +37,15 @@ def test_donate_that_refuses_everything_writes_nothing_to_mark(
         monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(PC, "_blinded", lambda s, c: (c, {}))
     monkeypatch.setattr(PC, "_lane_filtered", lambda c: ([], c))
-    assert PC.donate("mathlab", [{"mathlab_object_id": "x"}], tests_run=1) is None
-    assert PC.donated_rows() == []
+    path = PC.donate("mathlab", [{"mathlab_object_id": "x"}], tests_run=1)
+    assert path is None and ML.written_rows(path) == []
+
+
+def test_written_rows_are_read_back_from_the_file_donate_returned(tmp_path: Path) -> None:
+    f = tmp_path / "discoveries_x.json"
+    f.write_text(json.dumps({"discoveries": [{"mathlab_object_id": "a"}, "junk"]}), "utf-8")
+    assert ML.written_rows(f) == [{"mathlab_object_id": "a"}]
+    assert ML.written_rows(tmp_path / "absent.json") == []
 
 
 def test_a_v1_ledger_is_rebuilt_from_the_files_written(

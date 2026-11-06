@@ -420,12 +420,11 @@ def test_A_no_llm_end_to_end_pass_runs_on_synthetic_data(tmp_path: Path,
             donated.extend(candidates)
             path = tmp_path / "intel" / source / "d.json"
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(candidates, default=str), "utf-8")
+            path.write_text(json.dumps({"discoveries": candidates}, default=str), "utf-8")
             return path
 
         monkeypatch.setattr(PC, "donate", fake_donate)
         monkeypatch.setattr(PC, "donation_counts", lambda: {"donated": len(donated)})
-        monkeypatch.setattr(PC, "donated_rows", lambda: list(donated))
         report = PL.run(budget_s=30.0, permutations=20,
                         physics=["renormalisation", "turbulence", "symmetry_invariance"],
                         maths=["spectral"])

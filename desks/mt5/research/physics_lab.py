@@ -522,10 +522,11 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
             path = PC.donate(SOURCE, donation_rows,
                              tests_run=sum(evaluated_by_method.values()))
             donation.update({"path": str(path) if path else None, **PC.donation_counts()})
-            for row in PC.donated_rows():
+            written = ML.written_rows(path)
+            for row in written:
                 t = str(row.get("evidence", {}).get("tradition") or "")
                 donated_by_tradition[t] = donated_by_tradition.get(t, 0) + 1
-            ML.mark_donated(DONATED, already)
+            ML.mark_donated(DONATED, already, written)
         except Exception as exc:
             donation["status"] = f"{UNMEASURED}: donate raised {type(exc).__name__}: {exc}"
     elif donation_rows:

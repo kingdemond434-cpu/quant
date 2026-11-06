@@ -955,10 +955,26 @@ def load_donated(path: Path, source: str) -> tuple[set[str], dict[str, Any]]:
                      "reoffered": len(offered - written)}
 
 
-def mark_donated(path: Path, already: set[str]) -> None:
+def written_rows(donated_path: Path | str | None) -> list[dict[str, Any]]:
+    """The rows `proposer_common.donate` actually WROTE, read back from the file it returned.
+
+    Read from the intake file itself rather than from state inside proposer_common, which is on
+    the money path's import closure: what reached the intake is exactly what that file holds,
+    after every door (blinding, lane, PIT). None or an unreadable file is [] -- nothing marked.
+    """
+    if not donated_path:
+        return []
+    try:
+        doc = json.loads(Path(donated_path).read_text("utf-8", errors="replace"))
+    except (OSError, ValueError):
+        return []
+    rows = doc.get("discoveries") if isinstance(doc, dict) else None
+    return [r for r in rows or [] if isinstance(r, dict)]
+
+
+def mark_donated(path: Path, already: set[str], written: list[dict[str, Any]]) -> None:
     """Record the ids `donate` WROTE (never the ones it was offered) as a v2 ledger."""
-    from research import proposer_common as PC
-    ids = already | {str(r["mathlab_object_id"]) for r in PC.donated_rows()
+    ids = already | {str(r["mathlab_object_id"]) for r in written
                      if r.get("mathlab_object_id")}
     _atomic(path, {"at": now_iso(), "version": DONATED_LEDGER_VERSION,
                    "object_ids": sorted(ids),
@@ -1353,11 +1369,12 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
             path = PC.donate(SOURCE, rows, tests_run=sum(
                 int(v.get("evaluated", 0)) for v in per_tradition.values()))
             donation.update({"path": str(path) if path else None, **PC.donation_counts()})
-            for row in PC.donated_rows():
+            written = written_rows(path)
+            for row in written:
                 tradition = str(row.get("evidence", {}).get("tradition") or "")
                 donated_by_tradition[tradition] = donated_by_tradition.get(tradition, 0) + 1
             donation["by_tradition"] = dict(donated_by_tradition)
-            mark_donated(DONATED, already)
+            mark_donated(DONATED, already, written)
         except Exception as exc:
             donation["status"] = f"{UNMEASURED}: donate raised {type(exc).__name__}: {exc}"
     elif rows:
