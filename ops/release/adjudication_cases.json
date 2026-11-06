@@ -691,6 +691,19 @@
     "The change introduces a new caching mechanism for reading files and database connections, which could increase the risk of data inconsistencies or security vulnerabilities if not properly managed."
    ],
    "source": "independent-review job 127652537202; read-only speedup of two CI fences (check_birth_obligations, check_ingestion_exploitation), caches cleared at start and end of every pass and the registry opened mode=ro, no money path; covered by tests/ops/test_birth_obligations_counts_in_sql.py and tests/scripts/test_ingestion_exploitation_reads_once.py; Auditor CLEAR ed275393f"
+  },
+  {
+   "pr": 791,
+   "head": "221aaed193b53d1923e69a58faed39ffcddee3f3",
+   "base": "015ccf295208e65096091e401d4fd8dbf9863c9a",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "The change introduces a new configuration parameter `ROTATION_MAX_BUDGET_CUTS` without proper justification or risk assessment.",
+    "The change modifies the behavior of `_run_fence` to return a specific failure message when a fence times out, which could be misinterpreted as a valid verdict."
+   ],
+   "source": "independent-review job 127643128705; law-gate rotation scheduling only (no money path). The change STOPS budget timeouts being recorded as real FAIL verdicts (keeps prior verdict, and after 3 cuts records an explicit 'cut short by the rotation budget' FAIL), so the flagged behaviour is the fix; ROTATION_MAX_BUDGET_CUTS is documented and covered by tests/scripts/test_law_gate_rotation_fits_its_budget.py; Auditor CLEAR 221aaed19"
   }
  ]
 }
