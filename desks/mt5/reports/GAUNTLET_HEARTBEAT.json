@@ -1,53 +1,50 @@
 {
- "pid": 25372,
- "create_time": 1793839069.398926,
+ "pid": 33428,
+ "create_time": 1793938538.52217,
  "status": "RUNNING",
- "started_utc": "2026-11-05T00:37:50+00:00",
- "beat_utc": "2026-11-05T06:20:22+00:00",
- "beats": 652,
+ "started_utc": "2026-11-06T04:15:38+00:00",
+ "beat_utc": "2026-11-06T06:50:04+00:00",
+ "beats": 298,
  "beat_every_s": 30.0,
- "phase": "merge_and_publish",
- "phase_started_utc": "2026-11-05T05:54:18+00:00",
- "phase_elapsed_s": 1563.5,
+ "phase": "build_shards",
+ "phase_started_utc": "2026-11-06T06:46:37+00:00",
+ "phase_elapsed_s": 206.9,
  "phases_done": {
-  "plan": 1974.2,
-  "prewarm": 14047.5,
-  "plan_handoff": 667.2,
-  "build_shards": 2056.1,
-  "collect_and_cut": 166.5,
-  "rule_shards": 48.6
+  "plan": 712.6,
+  "prewarm": 8291.4,
+  "plan_handoff": 42.4
  },
  "deadlines": {
   "kind": "SLOW thresholds (amber, never a kill); only no_progress_s kills",
   "run_s": 129422.8,
-  "run_deadline_utc": "2026-11-06T12:34:53+00:00",
-  "phase_s": 153594.0,
-  "phase_deadline_utc": "2026-11-07T00:34:12+00:00",
+  "run_deadline_utc": "2026-11-07T16:12:41+00:00",
+  "phase_s": 128344.5,
+  "phase_deadline_utc": "2026-11-07T18:25:42+00:00",
   "no_progress_s": 1800.0,
   "consecutive_stalls": 0
  },
- "run_deadline_utc": "2026-11-06T12:34:53+00:00",
+ "run_deadline_utc": "2026-11-07T16:12:41+00:00",
  "slow": [],
  "shards": {
-  "phase": "rule",
+  "phase": "build",
   "total": 15,
-  "done": 15,
+  "done": 0,
   "failed": 0,
-  "running": 0,
+  "running": 15,
   "stalled": 0,
   "slow": 0,
   "retrying": 0,
-  "shard_slow_s": 1800.0,
+  "shard_slow_s": 42781.5,
   "shard_idle_kill_s": 1800.0,
-  "wave_started_utc": "2026-11-05T05:53:30+00:00"
+  "wave_started_utc": "2026-11-06T06:46:37+00:00"
  },
  "tree": {
-  "procs": 1,
-  "rss_mb": 5122.5,
-  "cpu_s": 2882.5
+  "procs": 31,
+  "rss_mb": 17167.6,
+  "cpu_s": 3087.3
  },
  "progress": "MEASURED",
- "last_progress_utc": "2026-11-05T06:20:22+00:00",
+ "last_progress_utc": "2026-11-06T06:50:04+00:00",
  "idle_s": 0.0,
- "progress_gaps": 1
+ "progress_gaps": 2
 }
