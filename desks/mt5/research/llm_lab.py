@@ -453,11 +453,13 @@ def universe() -> dict[str, str]:
 
 
 def _lane_ok(symbol: str, family: str) -> bool:
+    """May this lab mint `family` on `symbol`? FAILS CLOSED (audit of 538cb964, SF3): with the
+    lane policy unreadable the answer is no, never every symbol in every family."""
     try:
         import universe_policy as up
         return bool(up.may_hypothesise(symbol, family))
-    except Exception:                                  # pragma: no cover
-        return True
+    except Exception:
+        return False
 
 
 # ============================================================================ banal filter

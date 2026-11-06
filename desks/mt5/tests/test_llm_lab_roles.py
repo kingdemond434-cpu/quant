@@ -216,6 +216,49 @@ def test_code_lab_turns_rule_debt_into_an_exact_cell(tmp_roles: Path) -> None:
     assert disp == "EXACT_RECIPE" and cands[0]["lookahead_guard"] == d["lookahead_guard"]
 
 
+def _debt(tmp_roles: Path) -> Path:
+    _bars(roles.BARS_DIR, "EURUSD")
+    debt = tmp_roles / "debt.json"
+    debt.write_text(json.dumps({"rows": {"d1": {
+        "id": "d1", "state": "OPEN", "blockers": ["NEEDS_EXACT_RULE_EXTRACTION"],
+        "first_seen": "2026-10-01", "payload": {
+            "mechanism": "exhausted trend", "falsifier": "no reversal",
+            "symbols": ["EURUSD"], "needs": ["a rule"]}}}}))
+    return debt
+
+
+def test_code_lab_asks_the_lane_door_before_minting(tmp_roles: Path,
+                                                    monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit of 538cb964, SF2: the code lab minted on any symbol the universe held."""
+    debt = _debt(tmp_roles)
+    monkeypatch.setattr(lab, "_lane_ok", lambda s, f: False)
+
+    def chat(system: str, user: str, **kw: Any) -> _Reply:
+        return _Reply(json.dumps({"code": CAUSAL, "side_when_high": -1, "why": "24h z"}))
+
+    dons, tally = roles.code_lab(debt, {"EURUSD": "forex"}, max_items=3, deadline=1e12,
+                                 chat=chat)
+    assert dons == [] and tally["wrong_lane"] == 1
+
+
+def test_a_non_numeric_side_costs_one_row_not_the_lab(tmp_roles: Path) -> None:
+    """Audit of 538cb964, SF4: int("high") aborted the code lab and every role after it."""
+    debt = _debt(tmp_roles)
+
+    def chat(system: str, user: str, **kw: Any) -> _Reply:
+        return _Reply(json.dumps({"code": CAUSAL, "side_when_high": "high"}))
+
+    dons, tally = roles.code_lab(debt, {"EURUSD": "forex"}, max_items=3, deadline=1e12,
+                                 chat=chat)
+    assert dons == [] and tally["bad_reply"] == 1
+
+
+def test_the_lane_door_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit of 538cb964, SF3: an unreadable lane policy used to admit everything."""
+    monkeypatch.setitem(sys.modules, "universe_policy", None)     # import raises
+    assert lab._lane_ok("EURUSD", "exogenous_conditioner") is False
+
+
 def test_source_scout_rows_are_filtered_and_probed_politely() -> None:
     text = "\n".join(json.dumps(r) for r in [
         {"name": "ok", "url": "https://stat.example.go.jp/data.csv", "targets": ["USDJPY"],

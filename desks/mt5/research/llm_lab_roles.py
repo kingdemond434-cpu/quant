@@ -637,7 +637,16 @@ def code_lab(debt_path: Path, uni: dict[str, str], *, max_items: int, deadline: 
         tally["asked"] += 1
         got = (_json_lines(text) or [{}])[0]
         code = str(got.get("code") or "")
-        side = 1 if int(got.get("side_when_high") or 1) >= 0 else -1
+        # A model's reply is untrusted text: a non-numeric side must cost this row only, never
+        # the code lab and the roles after it (audit of 538cb964, SF4).
+        try:
+            side = 1 if float(got.get("side_when_high") or 1) >= 0 else -1
+        except (TypeError, ValueError):
+            tally["bad_reply"] += 1
+            ledger.append({"debt_id": r.get("id"), "at": _now(), "model": model,
+                           "symbol": syms[0], "test": {"ok": False,
+                                                       "why": "side_when_high not a number"}})
+            continue
         test = sandbox(code) if code else {"ok": False, "why": "no code in the reply"}
         row = {"debt_id": r.get("id"), "at": _now(), "model": model, "symbol": syms[0],
                "code_sha": _h(code), "test": test}
@@ -659,6 +668,17 @@ def code_lab(debt_path: Path, uni: dict[str, str], *, max_items: int, deadline: 
         cell = {"family": "exogenous_conditioner", "params": params, "symbol": syms[0]}
         try:
             import llm_lab
+            lane_ok = bool(llm_lab._lane_ok(syms[0], "exogenous_conditioner"))
+        except Exception:
+            lane_ok = False
+        if not lane_ok:
+            # THE LANE DOOR APPLIES TO THE CODE LAB TOO (audit of 538cb964, SF2): every other
+            # role asks it before minting; this one minted on any symbol the universe held.
+            tally["wrong_lane"] += 1
+            row["series"] = "refused: universe_policy does not let this family hunt here"
+            ledger.append(row)
+            continue
+        try:
             cid = llm_lab.cell_identity(cell)
             guard = llm_lab.lookahead_guard(model)
         except Exception:                              # pragma: no cover
