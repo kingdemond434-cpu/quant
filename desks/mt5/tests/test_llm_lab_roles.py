@@ -310,7 +310,9 @@ def test_collector_reads_only_reachable_scouted_rows() -> None:
     src = (_DESK / "research" / "asia_collector.py").read_text(encoding="utf-8")
     assert 'SCOUTED = BASE / "data" / "llm_lab" / "scouted_sources.json"' in src
     assert 's.get("probe") == "REACHABLE"' in src
-    assert "not public_url(" in src
+    # The public-host check moved into scouted_admissible (its behaviour is pinned in
+    # test_asia_collector_scouted_rows); the collector must still route every row through it.
+    assert "scouted_admissible(" in src and "elif public_url(url):" in src
 
 
 def test_sleeve_red_team_is_advisory_and_typed() -> None:
