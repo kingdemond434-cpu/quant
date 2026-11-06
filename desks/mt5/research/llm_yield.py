@@ -72,6 +72,8 @@ LAB_REPORTS = {"mathlab": BASE / "reports" / "MATH_LAB.json",
                "physics_lab": BASE / "reports" / "PHYSICS_LAB.json",
                "world_lab": BASE / "reports" / "WORLD_LAB.json"}
 LEG_CONTRACT = BASE / "reports" / "WRITE_OR_EXPLAIN.json"
+#: The hourly legs that run the labs above (the leg names, which differ from the report keys).
+LAB_LEGS = frozenset({"math_lab", "physics_lab", "world_lab", *LAB_REPORTS})
 #: A lab report older than this is a clock that stopped (the labs run hourly).
 LAB_STALE_H = 6.0
 PRIORITY = BASE / "data" / "llm_model_priority.json"
@@ -293,6 +295,9 @@ def labs(now: datetime) -> dict[str, Any]:
         age_h = round((now - at).total_seconds() / 3600, 2) if at else None
         out[name] = {"status": "MEASURED", "at": doc.get("at"), "age_h": age_h,
                      "dry_run": bool(doc.get("dry_run")),
+                     # A checkpoint written before a kill (math_lab.checkpoint): the donation is
+                     # real, the rest of the pass is UNMEASURED (audit SF4).
+                     "partial": bool(doc.get("partial")), "phase": doc.get("phase"),
                      "donated": int(don.get("donated") or doc.get("donated") or 0),
                      "donation_status": don.get("status", UNMEASURED),
                      "already_donated": don.get("already_donated_in_a_previous_pass"),
@@ -394,9 +399,15 @@ def run(*, window_days: float = WINDOW_DAYS, now: datetime | None = None) -> dic
                     f"donated_last_pass_{name}"] = n
     bad = violations(calls, gens, lab_runs)
     contract = _read_json(LEG_CONTRACT)
+    # ONLY A PRODUCER'S CHRONIC TIMEOUT IS THIS REPORT'S RED (audit SF3). Every other leg's
+    # streak is already WRITE_OR_EXPLAIN's own defect; repeating it here would make the
+    # generator league red for reasons no generator owns.
+    producers = {str(g.get("generator")) for g in gens.get("rows") or []} | LAB_LEGS
     for c in (contract or {}).get("chronic_timeouts") or [] if isinstance(contract, dict) else []:
+        if str(c.get("leg")) not in producers:
+            continue
         bad.append({"check": "chronic_timeout", "generator": c.get("leg"),
-                    "why": c.get("detail") or "timed out every pass with nothing moved"})
+                    "why": c.get("detail") or "timed out every pass"})
     prio = priority(calls, lab)
     return {"generated_utc": now.isoformat(timespec="seconds"), "window_days": window_days,
             "law": "every model and generator is measured to the certificate; silent success "

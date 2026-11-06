@@ -153,6 +153,18 @@ def test_a_lab_that_ran_and_gave_nothing_is_red_with_its_reason(
     assert got == {("lab_gave_nothing", "mathlab"), ("lab_clock_stale", "physics_lab")}
     assert "NOTHING_NEW" in next(v["why"] for v in doc["violations"]
                                  if v["generator"] == "mathlab")
+    assert doc["labs"]["world_lab"]["partial"] is False
+
+
+def test_a_checkpointed_lab_report_says_it_is_partial(
+        paths: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    report = paths / "mathlab.json"
+    monkeypatch.setattr(ly, "LAB_REPORTS", {"mathlab": report})
+    report.write_text(json.dumps({"at": (NOW - timedelta(hours=1)).isoformat(), "partial": True,
+                                  "phase": "donated", "dry_run": False,
+                                  "donation": {"donated": 4, "status": "DONATED"}}), "utf-8")
+    row = ly.labs(NOW)["mathlab"]
+    assert (row["partial"], row["phase"], row["donated"]) == (True, "donated", 4)
 
 
 def test_producer_fence_flags_a_dead_replacement() -> None:
@@ -170,16 +182,33 @@ def test_producer_fence_flags_a_dead_replacement() -> None:
 def test_a_leg_that_times_out_every_pass_is_red(paths: Path, monkeypatch: pytest.MonkeyPatch,
                                                 ) -> None:
     from libs.ops import write_or_explain as woe
-    rows = [{"leg": "math_lab", "verdict": woe.LEG_TIMEOUT, "wrote": [], "at": f"t{i}"}
+    from datetime import UTC, datetime, timedelta
+    at = [(datetime.now(UTC) - timedelta(hours=3 - i)).isoformat() for i in range(4)]
+    rows = [{"leg": "math_lab", "verdict": woe.LEG_TIMEOUT, "wrote": [], "at": at[i]}
             for i in range(3)]
-    rows.insert(1, {"leg": "other", "verdict": woe.OK, "wrote": ["x"]})
+    rows.insert(1, {"leg": "other", "verdict": woe.OK, "wrote": ["x"], "at": at[0]})
     chronic = woe.chronic_timeouts(rows)
     assert [c["leg"] for c in chronic] == ["math_lab"]
     assert woe.chronic_timeouts(rows[:-1]) == []           # two in a row is not chronic yet
     assert woe.chronic_timeouts([*rows, {"leg": "math_lab", "verdict": woe.OK,
                                          "wrote": ["r"]}]) == []
+    # SF1: a checkpointed (partial) write does not acquit a leg killed at its cap every pass.
+    partial = [dict(r, wrote=["MATH_LAB.json"]) if r["leg"] == "math_lab" else r for r in rows]
+    got = woe.chronic_timeouts(partial)
+    assert [c["leg"] for c in got] == ["math_lab"]
+    assert got[0]["passes_that_moved_a_partial_artifact"] == 3
+    # SF2: a crash between two kills neither extends nor breaks the streak ...
+    crash = {"leg": "math_lab", "verdict": woe.LEG_FAILED, "wrote": [], "at": at[3]}
+    assert [c["leg"] for c in woe.chronic_timeouts([*rows[:2], crash, *rows[2:]])] == [
+        "math_lab"]
+    # ... and a streak older than the window is history, not the leg's state now.
+    old = [dict(r, at=(datetime.now(UTC) - timedelta(hours=48)).isoformat()) for r in rows]
+    assert woe.chronic_timeouts(old) == []
+    assert woe.chronic_timeouts([dict(r, at="t") for r in rows]) == []
     contract = paths / "woe.json"
-    contract.write_text(json.dumps({"chronic_timeouts": chronic}), "utf-8")
+    stranger = {"leg": "bars_state", "detail": "not a producer"}
+    contract.write_text(json.dumps({"chronic_timeouts": [*chronic, stranger]}), "utf-8")
     monkeypatch.setattr(ly, "LEG_CONTRACT", contract)
-    assert ("chronic_timeout", "math_lab") in {(v["check"], v["generator"])
-                                               for v in ly.run(now=NOW)["violations"]}
+    found = {(v["check"], v["generator"]) for v in ly.run(now=NOW)["violations"]}
+    assert ("chronic_timeout", "math_lab") in found
+    assert ("chronic_timeout", "bars_state") not in found   # SF3: only producers are ours

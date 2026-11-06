@@ -127,8 +127,8 @@ def _copy(panel: Panel) -> Panel:
                  source=panel.source, residual_discovery_id=panel.residual_discovery_id)
 
 
-def _run_tradition(civ: str, tradition: str, panels: list[Panel], budget_s: float, seed: int
-                   ) -> dict[str, Any]:
+def _run_tradition(civ: str, tradition: str, panels: list[Panel], budget_s: float, seed: int,
+                   deadline: float = float("inf")) -> dict[str, Any]:
     """One tradition of one civilization over every working panel. Never raises."""
     started = time.monotonic()
     result: dict[str, Any] = {"civilization": civ, "tradition": tradition, "objects": [],
@@ -142,10 +142,19 @@ def _run_tradition(civ: str, tradition: str, panels: list[Panel], budget_s: floa
         return result
     per_panel = max(1.0, budget_s / max(1, len(panels)))
     for panel in panels:
+        # THE SCIENCE DEADLINE REACHES THE SCIENTIST (audit SF5): a panel it cannot start in time
+        # is named UNMEASURED, and one it starts gets no more than the time left, so a thread
+        # the pass stops waiting for is a thread that is already winding down.
+        left = deadline - time.monotonic()
+        if left <= 0:
+            result["unmeasured"].append(f"panel {panel.target}: not started before the science "
+                                        f"deadline")
+            continue
+        per_panel_now = min(per_panel, left)
         view = _copy(panel)
         rng = np.random.default_rng(seed + (abs(hash((tradition, panel.target))) % 100_000))
         try:
-            objects = scientist.propose(view, per_panel, rng)
+            objects = scientist.propose(view, per_panel_now, rng)
         except Exception as exc:
             result["status"] = "FAILED"
             result["why"] = f"{type(exc).__name__}: {exc}"
@@ -231,16 +240,15 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
                                 if (t in PHYSICS_REGISTRY) == (dept == "physics")))
             share = float(budgets.get(dept, budget_s / 3)) / (len(pops) * n_dept)
             futures[(civ, tradition)] = pool.submit(_run_tradition, civ, tradition, working,
-                                                    max(2.0, share), CIVILIZATIONS[civ])
+                                                    max(2.0, share), CIVILIZATIONS[civ],
+                                                    started + ML.SCIENCE_WALL_SHARE * budget_s)
     # The scientists stop being WAITED ON at the shared science deadline (math_lab.collect):
     # a scientist that ignores its budget under CPU contention held this pass past its 700 s cap
     # on every run from 10-10 to 10-29, so nothing was ever judged, carded or donated.
     collected, timed_out = ML.collect(
         futures, started + ML.SCIENCE_WALL_SHARE * budget_s,
-        lambda key, status, why: {"civilization": key[0], "tradition": key[1], "objects": [],
-                                  "evaluated": 0, "distinct": set(), "unmeasured": [],
-                                  "status": status, "why": why, "compute_s": 0.0,
-                                  "panels": []})
+        lambda key, status, why: ML.unfinished_row(started, status, why,
+                                                   civilization=key[0], tradition=key[1]))
     pool.shutdown(wait=not timed_out, cancel_futures=True)
     for (civ, tradition), row in collected.items():
         civ_results.setdefault(civ, {})[tradition] = row
@@ -630,17 +638,20 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     physics = [t.strip() for t in a.physics.split(",") if t.strip()] or None
     maths = [t.strip() for t in a.maths.split(",") if t.strip()] or None
-    report = run(budget_s=a.budget_s, dry_run=a.dry_run, max_targets=a.max_targets,
-                 physics=physics, maths=maths)
-    print(json.dumps({"at": report["at"], "elapsed_s": report["elapsed_s"],
-                      "cards": report["cards"]["total"],
-                      "by_status": report["cards"]["by_status"],
-                      "nulls_rejected": report["null_factory"].get("rejected"),
-                      "lockbox_untouched": report["lockbox"].get("untouched"),
-                      "wiring_complete": report["wiring_proof"].get("complete"),
-                      "donated": report["donation"].get("donated"),
-                      "unmeasured": len(report["unmeasured"])}, indent=1, default=str))
-    return ML.hard_exit_if_abandoned(0)
+
+    def body() -> None:
+        report = run(budget_s=a.budget_s, dry_run=a.dry_run, max_targets=a.max_targets,
+                     physics=physics, maths=maths)
+        print(json.dumps({"at": report["at"], "elapsed_s": report["elapsed_s"],
+                          "cards": report["cards"]["total"],
+                          "by_status": report["cards"]["by_status"],
+                          "nulls_rejected": report["null_factory"].get("rejected"),
+                          "lockbox_untouched": report["lockbox"].get("untouched"),
+                          "wiring_complete": report["wiring_proof"].get("complete"),
+                          "donated": report["donation"].get("donated"),
+                          "unmeasured": len(report["unmeasured"])}, indent=1, default=str))
+
+    return ML.run_then_exit(body)
 
 
 if __name__ == "__main__":                                                # pragma: no cover

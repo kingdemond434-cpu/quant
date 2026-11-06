@@ -43,6 +43,7 @@ import json
 import os
 import sys
 import time
+import traceback
 from concurrent.futures import Future, ThreadPoolExecutor, wait
 from datetime import UTC, datetime
 from pathlib import Path
@@ -745,7 +746,7 @@ def _copy_panel(panel: Panel) -> Panel:
 
 
 def _run_tradition(tradition: str, panels: list[Panel], budget_s: float, roi: dict[str, Any],
-                   census: dict[str, int]) -> dict[str, Any]:
+                   census: dict[str, int], deadline: float = float("inf")) -> dict[str, Any]:
     """One tradition over every panel. NEVER RAISES: a failing scientist costs its own leg only."""
     started = time.monotonic()
     result: dict[str, Any] = {"tradition": tradition, "objects": [], "panels": [],
@@ -761,9 +762,18 @@ def _run_tradition(tradition: str, panels: list[Panel], budget_s: float, roi: di
         return result
     per_panel = max(1.0, budget_s / max(1, len(panels)))
     for panel in panels:
+        # THE SCIENCE DEADLINE REACHES THE SCIENTIST (audit SF5): a panel it cannot start in time
+        # is named UNMEASURED, and one it starts gets no more than the time left, so a thread
+        # the pass stops waiting for is a thread that is already winding down.
+        left = deadline - time.monotonic()
+        if left <= 0:
+            result["unmeasured"].append(f"panel {panel.target}: not started before the science "
+                                        f"deadline")
+            continue
+        per_panel_now = min(per_panel, left)
         view = _copy_panel(panel)
         try:
-            objects = scientist.propose(view, per_panel, np.random.default_rng(
+            objects = scientist.propose(view, per_panel_now, np.random.default_rng(
                 SEED + abs(hash((tradition, panel.target))) % 10_000))
         except Exception as exc:
             result["status"] = "FAILED"
@@ -854,6 +864,24 @@ def collect(futures: dict[Any, Future[Any]], deadline: float,
     return out, late
 
 
+def unfinished_row(started: float, status: str, why: str, **ids: Any) -> dict[str, Any]:
+    """The row for a scientist that raised or was still running at the science deadline.
+
+    ITS YIELD IS UNMEASURED, NOT ZERO (audit of 1ce440654, MF2). The row used to say evaluated 0,
+    compute_s 0.0 and nothing unmeasured, so the report read a clean empty pass and
+    `record_registry` wrote generated=0 at no cost into `generator_yield` -- a measured-looking
+    zero that moves the tradition's ROI. The reason now lands in `unmeasured` (and from there in
+    the report's own list), `compute_s` is the wall clock the scientist held a thread since the
+    pass began (an upper bound, named as such), and `yield_measured` False tells
+    `record_registry` to leave the tradition's yield row untouched this pass.
+    """
+    return {**ids, "status": status, "why": why, "objects": [], "panels": [], "evaluated": 0,
+            "distinct": set(), "unmeasured": [f"{status}: {why}"],
+            "compute_s": round(time.monotonic() - started, 3),
+            "compute_basis": "wall clock since the pass began (upper bound)",
+            "yield_measured": False}
+
+
 def hard_exit_if_abandoned(code: int) -> int:
     """Exit now when scientist threads are still running, so they cannot hold the leg open."""
     if ABANDONED_THREADS:
@@ -861,6 +889,21 @@ def hard_exit_if_abandoned(code: int) -> int:
         sys.stderr.flush()
         os._exit(code)
     return code
+
+
+def run_then_exit(body: Any) -> int:
+    """Run `body`, then exit hard if scientist threads are still running -- ALSO when `body`
+    raised (audit SF6): an exception after the pool was abandoned would otherwise leave the
+    non-daemon threads holding the leg open to its cap, the very kill `collect` exists to stop.
+    The traceback is printed first, so the failure is still read as a failure (exit 1)."""
+    try:
+        body()
+    except BaseException:
+        if ABANDONED_THREADS:
+            traceback.print_exc()
+            hard_exit_if_abandoned(1)
+        raise
+    return hard_exit_if_abandoned(0)
 
 
 def checkpoint(path: Path, started: float, phase: str, donation: dict[str, Any],
@@ -884,7 +927,11 @@ def load_donated(path: Path, source: str) -> tuple[set[str], dict[str, Any]]:
     burned those objects for good, and a deterministic lab that rediscovers the same objects
     then donates nothing, every pass, with exit 0. A v1 ledger is therefore rebuilt ONCE from
     the discovery files the source actually wrote; an object found in none is offered again
-    (the compiler's intake is idempotent by object id, so a re-offer charges no new trial).
+    (audit SF8: what is VERIFIED is that the compiler's intake folds a row whose payload equals
+    one it already read in its window -- `libs.data.pit.payload_hash`, miner_candidate_compiler
+    `recent_rows` -- so a re-offer in the same window is one row, not two. Whether a re-offer
+    outside that window charges a trial downstream is the registry's identity rule and is
+    UNMEASURED here; the v1 rebuild happens once, so the exposure is one pass, bounded.)
     """
     if not path.exists():
         return set(), {"ledger": "new"}
@@ -1085,14 +1132,20 @@ def record_registry(objects: list[MathObject], per_tradition: dict[str, dict[str
                 except Exception:
                     pass
         for tradition, row in per_tradition.items():
-            try:
-                reg.generator_yield_update(
-                    f"math:{tradition}", generated=int(row.get("proposed", 0)),
-                    donated=int(donated.get(tradition, 0)),
-                    compute_s=float(row.get("compute_s", 0.0)), conn=conn)
-                out["generator_yield"] += 1
-            except Exception:
-                pass
+            if row.get("yield_measured") is False:
+                # A scientist that never returned has no measured yield: writing its 0 would
+                # read as a tried-and-empty tradition (MF2). The chronic-timeout RED owns it.
+                out.setdefault("generator_yield_skipped", []).append(
+                    {"generator": f"math:{tradition}", "status": row.get("status")})
+            else:
+                try:
+                    reg.generator_yield_update(
+                        f"math:{tradition}", generated=int(row.get("proposed", 0)),
+                        donated=int(donated.get(tradition, 0)),
+                        compute_s=float(row.get("compute_s", 0.0)), conn=conn)
+                    out["generator_yield"] += 1
+                except Exception:
+                    pass
             out["trials"].append({
                 "tradition": tradition,
                 **B.record_trials(tradition, distinct_forms=int(row.get("distinct", 0)),
@@ -1159,13 +1212,13 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     budgets = {t: max(5.0, budget_s * float(plan["traditions"][t].get(
         "budget_share", plan["traditions"][t]["share"]))) for t in chosen}
     pool = ThreadPoolExecutor(max_workers=max(1, min(workers, len(chosen))))
-    futures = {t: pool.submit(_run_tradition, t, panels, budgets[t], roi, census)
+    science_deadline = started + SCIENCE_WALL_SHARE * budget_s
+    futures = {t: pool.submit(_run_tradition, t, panels, budgets[t], roi, census,
+                              science_deadline)
                for t in chosen}
     results, timed_out = collect(
-        futures, started + SCIENCE_WALL_SHARE * budget_s,
-        lambda t, status, why: {"tradition": t, "status": status, "why": why, "objects": [],
-                                "panels": [], "evaluated": 0, "distinct": set(),
-                                "unmeasured": [], "minted": [], "compute_s": 0.0})
+        futures, science_deadline,
+        lambda t, status, why: unfinished_row(started, status, why, tradition=t, minted=[]))
     pool.shutdown(wait=not timed_out, cancel_futures=True)
 
     rng = np.random.default_rng(SEED)
@@ -1235,6 +1288,7 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
             "panels": result.get("panels") or [],
             "target": (result.get("panels") or [""])[0],
             "unmeasured": result.get("unmeasured") or [],
+            "yield_measured": result.get("yield_measured", True),
         }
 
     admitted, dedup_status = dedup(judged)
@@ -1412,15 +1466,18 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-targets", type=int, default=MAX_TARGETS)
     a = ap.parse_args(argv)
     chosen = [t.strip() for t in a.traditions.split(",") if t.strip()] or None
-    report = run(budget_s=a.budget_s, dry_run=a.dry_run, traditions=chosen,
-                 max_targets=a.max_targets)
-    print(json.dumps({"at": report["at"], "elapsed_s": report["elapsed_s"],
-                      "traditions": len(report["traditions_run"]),
-                      "objects": report["objects"]["admitted"],
-                      "passed": report["objects"]["passed_burden"],
-                      "donated": report["donation"].get("donated"),
-                      "unmeasured": len(report["unmeasured"])}, indent=1, default=str))
-    return hard_exit_if_abandoned(0)
+
+    def body() -> None:
+        report = run(budget_s=a.budget_s, dry_run=a.dry_run, traditions=chosen,
+                     max_targets=a.max_targets)
+        print(json.dumps({"at": report["at"], "elapsed_s": report["elapsed_s"],
+                          "traditions": len(report["traditions_run"]),
+                          "objects": report["objects"]["admitted"],
+                          "passed": report["objects"]["passed_burden"],
+                          "donated": report["donation"].get("donated"),
+                          "unmeasured": len(report["unmeasured"])}, indent=1, default=str))
+
+    return run_then_exit(body)
 
 
 if __name__ == "__main__":                                                # pragma: no cover
