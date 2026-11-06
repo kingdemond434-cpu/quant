@@ -71,13 +71,20 @@ def _models(body: Any) -> list[str]:
     return out
 
 
+#: The only OpenRouter calls allowed without a model check: bodiless reads of what is listed,
+#: what the key may do and what it has spent. Everything else is DEFAULT-DENY: any request with a
+#: body must name only `:free` models (an /images or /audio POST naming none is refused too).
+READ_PATHS = ("/models", "/key", "/credits", "/auth/key")
+
+
 def refusal(url: str, body: Any) -> str | None:
     """None when the request may go out; otherwise why it may not."""
     if not is_openrouter(url) or paid_allowed():
         return None
-    if not (urlparse(url).path or "").rstrip("/").endswith(("/completions", "/responses",
-                                                            "/embeddings")):
-        return None                       # /models, /key, /credits read nothing billable
+    path = (urlparse(url).path or "").rstrip("/")
+    billable = path.endswith(("completions", "responses", "embeddings"))
+    if body is None and not billable and (path.endswith(READ_PATHS) or "/models/" in path):
+        return None
     bad = [m for m in _models(body) if not m.lower().endswith(FREE_SUFFIX)]
     if not bad:
         return None
@@ -95,6 +102,36 @@ def check(url: str, body: Any) -> None:
 def check_request(req: Any) -> None:
     """`check` for a urllib.request.Request."""
     check(str(getattr(req, "full_url", "") or ""), getattr(req, "data", None))
+
+
+#: THE WIRE-LEVEL BACKSTOP. The fence test reads source, so a URL built in pieces or read from
+#: config slips past it; this wraps `urllib.request.urlopen` itself, once per process, the moment
+#: this module is imported (llm_seat and free_chain import it). A wrapper rather than an opener
+#: handler because `urlopen(..., context=ctx)` builds its own opener and would skip a handler.
+_ORIG_URLOPEN: Any = None
+
+
+def _guarded_urlopen(url: Any, data: Any = None, *args: Any, **kwargs: Any) -> Any:
+    if isinstance(url, str):
+        check(url, data)
+    else:
+        check(str(getattr(url, "full_url", "") or ""),
+              data if data is not None else getattr(url, "data", None))
+    return _ORIG_URLOPEN(url, data, *args, **kwargs)
+
+
+def install_wire_guard() -> None:
+    """Idempotent, and safe under importlib.reload: the true original is kept on urllib.request
+    itself, so a reloaded module never wraps the wrapper or loses the function it wraps."""
+    global _ORIG_URLOPEN
+    orig = getattr(urllib.request, "_openrouter_orig_urlopen", None)
+    if getattr(urllib.request.urlopen, "_openrouter_guard", False) and orig is not None:
+        _ORIG_URLOPEN = orig
+        return
+    _ORIG_URLOPEN = urllib.request.urlopen
+    setattr(urllib.request, "_openrouter_orig_urlopen", _ORIG_URLOPEN)  # noqa: B010
+    setattr(_guarded_urlopen, "_openrouter_guard", True)  # noqa: B010
+    urllib.request.urlopen = _guarded_urlopen
 
 
 #: THE ACCOUNT'S OWN DAILY FREE ALLOWANCE, ASKED FOR RATHER THAN ASSUMED. OpenRouter allows 50
@@ -189,3 +226,6 @@ def daily_limit(**kw: Any) -> int | None:
         return int(raw) if raw else None
     except (TypeError, ValueError):
         return None
+
+
+install_wire_guard()
