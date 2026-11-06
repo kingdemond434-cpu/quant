@@ -443,4 +443,7 @@ def test_a_corrupt_evidence_map_survives_a_pass_unchanged(tmp_path: Path, body: 
         roles.record_evidence_start([{"cell_id": "c1", "symbol": "EURUSD",
                                       "lookahead_guard": {"evidence_from": "2024-03-01"}}], p)
     assert p.read_bytes() == before
-    assert sorted(x.name for x in tmp_path.iterdir()) == ["evidence_start.json"]
+    # Nothing beside it but the lock file, which the OS lock leaves in place by design.
+    assert sorted(x.name for x in tmp_path.iterdir()) in (["evidence_start.json"],
+                                                          ["evidence_start.json",
+                                                           "evidence_start.json.lock"])

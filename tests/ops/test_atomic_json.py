@@ -82,6 +82,9 @@ def test_the_lock_serialises_and_a_dead_holder_never_blocks(tmp_path: Path) -> N
             pass                               # the holder died; the OS released its lock
     finally:
         holder.kill()
+        holder.wait(timeout=10)
+        if holder.stdout is not None:
+            holder.stdout.close()
 
 
 def test_a_kept_temp_is_swept_after_a_day(tmp_path: Path) -> None:
