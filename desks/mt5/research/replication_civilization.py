@@ -878,7 +878,7 @@ def _build_cross_asset_residual(b: Bars, p: dict[str, Any]) -> list[Order]:
     ok = np.isfinite(ry) & np.isfinite(rx).all(axis=1)
     if int(ok.sum()) < bwin + lookback * 2:
         return []
-    t_ok, y_ok = common[ok], yc[ok]
+    t_ok = common[ok]
     eps = _causal_ols_residual(ry[ok], rx[ok], bwin)
     cum = np.where(np.isfinite(eps), np.cumsum(np.where(np.isfinite(eps), eps, 0.0)), np.nan)
     z = _trailing_z(cum, lookback)
@@ -895,7 +895,10 @@ def _build_cross_asset_residual(b: Bars, p: dict[str, Any]) -> list[Order]:
         if not (np.isfinite(a[i]) and a[i] > 0):
             continue
         side = (-1 if zi > 0 else 1) if mode == "revert" else (1 if zi > 0 else -1)
-        px, sd = float(y_ok[i]), stop_atr * float(a[i])
+        # THE ANCHOR IS ROW i OF THE JOINED FRAME, NOT OF THE RETURN SERIES, as the family
+        # indexes it: the first joined row has no return, so this is the close one row BEFORE
+        # the signal row. Mirrored, not corrected: the certificates were minted on it.
+        px, sd = float(yc[i]), stop_atr * float(a[i])
         out.append(Order(int(t_ok[i]), side, px - side * sd, px + side * sd * rr, ttl))
     return out
 
@@ -909,8 +912,9 @@ SPEC_BOOK["cross_asset_residual"] = RuleSpec(
     "over the trailing lookback rows (sample sd). Stands aside on a missing factor, an unknown "
     "side_mode, or fewer than beta_win + 2 x lookback rows. From row beta_win + lookback on, "
     "|z| >= entry_z on a stamp hour in active_hours (every hour when none) signals: revert "
-    "fades the sign of z, continue follows it. Stop stop_atr x ATR(atr_n) and target rr x that "
-    "from the signal close, entry next open, time exit after ttl_bars. The session is the "
+    "fades the sign of z, continue follows it. Stop stop_atr x ATR(atr_n) (at the signal row) "
+    "and target rr x that from the close of joined row i -- the row before the signal row, as "
+    "the family indexes it -- entry next open, time exit after ttl_bars. The session is the "
     "certificate's `session` parameter, never its selector.",
     {"factor_symbols": [], "timeframe": "H1", "lookback": 240, "beta_win": None,
      "entry_z": 2.0, "atr_n": 20, "stop_atr": 2.0, "rr": 1.5, "ttl_bars": 72,
