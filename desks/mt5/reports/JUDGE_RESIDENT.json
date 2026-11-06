@@ -17,7 +17,7 @@
  "uptime_s": 863386.5,
  "last_sweep_ended_utc": "2026-11-06T16:30:57+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-06T18:19:50+00:00",
+ "heartbeat_utc": "2026-11-06T18:34:51+00:00",
  "sweep_phase": {
   "pid": 23212,
   "sweep_started_utc": "2026-11-06T16:31:09+00:00",
@@ -88,22 +88,22 @@
      }
     },
     "prewarm": {
-     "samples": 508,
+     "samples": 592,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 488,
-       "share": 0.961
+       "n": 570,
+       "share": 0.963
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
-       "n": 12,
+       "n": 14,
        "share": 0.024
       },
       {
        "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 6,
-       "share": 0.012
+       "share": 0.01
       },
       {
        "stack": "external_gauntlet.py:_submit_next:2072 < external_gauntlet.py:_prewarm_cache:2119 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731 < run_sharded_gauntlet.py:_sweep_once:3622",
@@ -117,13 +117,13 @@
       }
      ],
      "process": {
-      "cpu_s": 1616.7,
-      "page_faults": 99906422.0,
-      "read_bytes": 44283141.0,
-      "write_bytes": 113273298876.0,
-      "sampled_s": 5070.0,
-      "rss_mb_max": 3350.8,
-      "cpu_share_of_wall": 0.319
+      "cpu_s": 1875.0,
+      "page_faults": 115380830.0,
+      "read_bytes": 51172705.0,
+      "write_bytes": 130716925919.0,
+      "sampled_s": 5910.0,
+      "rss_mb_max": 3396.4,
+      "cpu_share_of_wall": 0.317
      }
     }
    }
