@@ -53,29 +53,47 @@ def test_a_held_target_is_never_written_in_place(tmp_path: Path,
     assert str(err.value.tmp) in str(err.value)
 
 
-def test_only_one_waiter_breaks_a_stale_lock(tmp_path: Path) -> None:
-    """Audit SF3 on 37bb136b4: the second waiter's rename fails, so it never proceeds; and a
-    waiter that moved a FRESH lock (it was replaced between its stat and its rename) puts it
-    back."""
-    lock = tmp_path / "m.json.lock"
-    lock.write_text("")
-    old = lock.stat().st_mtime - aj.STALE_LOCK_S - 5
-    os.utime(lock, (old, old))
-    assert aj._break_stale(lock) is True and not lock.exists()
-    assert aj._break_stale(lock) is True, "already gone: retry the create"
-    lock.write_text("")
-    assert aj._break_stale(lock) is False and lock.exists(), "a fresh lock is never broken"
-    assert list(tmp_path.glob("*.stale")) == []
-
-
-def test_the_lock_serialises_and_breaks_a_stale_holder(tmp_path: Path) -> None:
+def test_the_lock_serialises_and_a_dead_holder_never_blocks(tmp_path: Path) -> None:
+    """Audit should-fix 1 on 4e4cdc972: the OS holds the lock, so a holder that died leaves
+    nothing to break, and a live holder in another process blocks until it releases."""
+    import subprocess
+    import sys
     path = tmp_path / "evidence_start.json"
     with aj.locked(path), pytest.raises(TimeoutError), aj.locked(path, timeout_s=0.1):
         pass
     lock = path.with_name(path.name + ".lock")
-    lock.write_text("")
-    old = lock.stat().st_mtime - aj.STALE_LOCK_S - 5
-    os.utime(lock, (old, old))
+    assert lock.exists(), "the lock file stays; only the OS lock is released"
     with aj.locked(path, timeout_s=1.0):
-        assert lock.exists()
-    assert not lock.exists()
+        pass                                   # a leftover file is not a held lock
+    holder = subprocess.Popen(
+        [sys.executable, "-c",
+         "import sys, time; sys.path.insert(0, sys.argv[2]); from libs.ops import atomic_json "
+         "as aj; from pathlib import Path\n"
+         "with aj.locked(Path(sys.argv[1])):\n    print('held', flush=True); time.sleep(30)",
+         str(path), str(Path(aj.__file__).resolve().parents[2])],
+        stdout=subprocess.PIPE, text=True)
+    try:
+        assert holder.stdout is not None and holder.stdout.readline().strip() == "held"
+        with pytest.raises(TimeoutError), aj.locked(path, timeout_s=0.2):
+            pass
+        holder.kill()
+        holder.wait(timeout=10)
+        with aj.locked(path, timeout_s=2.0):
+            pass                               # the holder died; the OS released its lock
+    finally:
+        holder.kill()
+
+
+def test_a_kept_temp_is_swept_after_a_day(tmp_path: Path) -> None:
+    """Audit should-fix 2 on 4e4cdc972."""
+    path = tmp_path / "state.json"
+    old = tmp_path / "state.json.1.2.deadbeef.tmp"
+    new = tmp_path / "state.json.1.2.cafebabe.tmp"
+    other = tmp_path / "other.json.1.2.deadbeef.tmp"
+    for f in (old, new, other):
+        f.write_text("{}")
+    stale = old.stat().st_mtime - aj.TMP_SWEEP_S - 5
+    os.utime(old, (stale, stale))
+    os.utime(other, (stale, stale))
+    aj.write_json(path, {"a": 1})
+    assert not old.exists() and new.exists() and other.exists()

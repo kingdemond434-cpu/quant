@@ -18,8 +18,8 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-#: A lock older than this is a crashed holder's, and is broken.
-STALE_LOCK_S = 120.0
+#: A temp file a failed replace kept (ReplaceFailed) is swept after this long.
+TMP_SWEEP_S = 86400.0
 REPLACE_TRIES = 5
 
 
@@ -35,10 +35,22 @@ class ReplaceFailed(OSError):
         self.tmp = tmp
 
 
+def _sweep_kept(path: Path) -> None:
+    """Remove this target's temp files older than TMP_SWEEP_S (audit should-fix 2 on
+    4e4cdc972): a body ReplaceFailed kept is for the pass that raised it, and over many passes
+    they would pile up beside the target."""
+    cutoff = time.time() - TMP_SWEEP_S
+    for old in path.parent.glob(f"{path.name}.*.tmp"):
+        with contextlib.suppress(OSError):
+            if old.stat().st_mtime < cutoff:
+                old.unlink()
+
+
 def write_text(path: Path, body: str) -> None:
     """Write `body` to `path` through a temp file unique to this process and thread. The target
     is only ever replaced whole; never written in place."""
     path.parent.mkdir(parents=True, exist_ok=True)
+    _sweep_kept(path)
     tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}."
                          f"{uuid.uuid4().hex[:8]}.tmp")
     try:
@@ -62,64 +74,56 @@ def write_json(path: Path, doc: Any, *, indent: int = 1) -> None:
     write_text(path, json.dumps(doc, indent=indent, ensure_ascii=False, default=str) + "\n")
 
 
-def _break_stale(lock: Path) -> bool:
-    """Break a dead holder's lock so that exactly one waiter wins (audit SF3 on 37bb136b4).
-    Each waiter RENAMES the stale lock to a name unique to itself; the rename is atomic, so
-    only one succeeds, and only that one unlinks it and retries. A plain unlink let two
-    waiters each delete the lock -- the second deleting the first's fresh one -- and both
-    proceed."""
-    try:
-        st = lock.stat()
-    except OSError:
-        return True                                # gone already: retry the create
-    if time.time() - st.st_mtime <= STALE_LOCK_S:
-        return False
-    grave = lock.with_name(f"{lock.name}.{os.getpid()}.{uuid.uuid4().hex[:8]}.stale")
-    try:
-        os.rename(lock, grave)
-    except OSError:
-        return False                               # another waiter won; wait for its release
-    try:
-        moved = grave.stat()
-        same = (moved.st_ino, moved.st_mtime) == (st.st_ino, st.st_mtime)
-    except OSError:
-        same = False
-    if not same:
-        # Between our stat and our rename another waiter broke the stale lock and took a
-        # fresh one, and we moved THAT. Put it back (link fails if yet another lock exists).
-        with contextlib.suppress(OSError):
-            os.link(grave, lock)
-        with contextlib.suppress(OSError):
-            grave.unlink(missing_ok=True)
-        return False
-    with contextlib.suppress(OSError):
-        grave.unlink(missing_ok=True)
-    return True
-
-
 @contextlib.contextmanager
 def locked(path: Path, *, timeout_s: float = 30.0) -> Iterator[None]:
-    """Hold `<path>.lock` (created exclusively) for a read-modify-write of `path`.
+    """Hold an OS lock on `<path>.lock` for a read-modify-write of `path`.
 
-    Raises TimeoutError when another live holder keeps it past `timeout_s`; a lock older than
-    STALE_LOCK_S is a dead holder's and is broken.
+    THE KERNEL HOLDS IT, NOT A FILE'S EXISTENCE (audit should-fix 1 on 4e4cdc972). An O_EXCL
+    lockfile needs a stale-lock breaker, and every breaker leaves a window in which a third
+    waiter can take a lock while a live holder still writes. An fcntl/msvcrt lock is released
+    by the OS the moment its holder exits, however it dies, so nothing is ever "stale" and
+    nothing is ever broken. The lock FILE is left in place on release on purpose: unlinking it
+    would let a waiter lock an inode that a newcomer can no longer see.
+
+    Raises TimeoutError when another live holder keeps it past `timeout_s`.
     """
     lock = path.with_name(path.name + ".lock")
     lock.parent.mkdir(parents=True, exist_ok=True)
     deadline = time.monotonic() + timeout_s
-    while True:
-        try:
-            fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-            os.close(fd)
-            break
-        except FileExistsError:
-            if _break_stale(lock):
-                continue
-            if time.monotonic() > deadline:
-                raise TimeoutError(f"{lock} held past {timeout_s}s") from None
-            time.sleep(0.05)
+    fd = os.open(str(lock), os.O_CREAT | os.O_RDWR)
     try:
-        yield
+        while not _try_lock(fd):
+            if time.monotonic() > deadline:
+                raise TimeoutError(f"{lock} held past {timeout_s}s")
+            time.sleep(0.05)
+        try:
+            yield
+        finally:
+            _unlock(fd)
     finally:
-        with contextlib.suppress(OSError):
-            lock.unlink(missing_ok=True)
+        os.close(fd)
+
+
+def _try_lock(fd: int) -> bool:
+    try:
+        if os.name == "nt":
+            import msvcrt
+            os.lseek(fd, 0, os.SEEK_SET)
+            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)   # type: ignore[attr-defined]
+        else:
+            import fcntl
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return True
+    except OSError:
+        return False
+
+
+def _unlock(fd: int) -> None:
+    with contextlib.suppress(OSError):
+        if os.name == "nt":
+            import msvcrt
+            os.lseek(fd, 0, os.SEEK_SET)
+            msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)   # type: ignore[attr-defined]
+        else:
+            import fcntl
+            fcntl.flock(fd, fcntl.LOCK_UN)
