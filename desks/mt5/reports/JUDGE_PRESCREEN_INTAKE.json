@@ -1,16 +1,16 @@
 {
  "schema": "judge_prescreen/1.3",
- "generated_at": "2026-11-05T22:13:52+00:00",
+ "generated_at": "2026-11-06T06:14:07+00:00",
  "mode": "SHADOW",
- "rows": 1681571,
- "rows_already_ruled_not_screened": 799553,
+ "rows": 1611541,
+ "rows_already_ruled_not_screened": 784657,
  "would_kill": {
-  "needs_data": 975,
+  "needs_data": 976,
   "chart_short": 0,
-  "sibling_dead": 258414
+  "sibling_dead": 248143
  },
- "would_kill_total": 259389,
- "would_kill_share": 0.154254,
+ "would_kill_total": 249119,
+ "would_kill_share": 0.154584,
  "removed_from_docket": 0,
  "holdout_sent_to_judge": 0,
  "rule_acts": {
@@ -21,14 +21,14 @@
  "sibling_k": 5,
  "sibling_canon_k": null,
  "sibling_would_kill_by_k": {
-  "5": 258414,
-  "10": 203107,
-  "20": 122143,
-  "40": 55263,
-  "80": 24347
+  "5": 248143,
+  "10": 193905,
+  "20": 117741,
+  "40": 52770,
+  "80": 22669
  },
- "ms_per_row": 0.87406,
- "seconds": 1469.791,
+ "ms_per_row": 0.90477,
+ "seconds": 1458.07,
  "samples": {
   "needs_data": [
    {
@@ -183,35 +183,42 @@
    {
     "cell": "USDKRW.session_range_breakout.p=52950a3e3234a0dc",
     "bucket": "USDKRW|H1|session_range_breakout",
-    "named_cells": 18,
+    "named_cells": 35,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "ZARJPY.overnight_drift.p=44136fa355b3678a",
-    "bucket": "ZARJPY|H1|overnight_drift",
-    "named_cells": 7,
+    "cell": "GER40.overnight_gap_decay.p=b578915be807f5ae",
+    "bucket": "GER40|H1|overnight_gap_decay",
+    "named_cells": 6,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "USDHKD.overnight_drift.p=44136fa355b3678a",
-    "bucket": "USDHKD|H1|overnight_drift",
-    "named_cells": 9,
+    "cell": "CA60.mean_reversion_rsi.p=434877150e3bb838",
+    "bucket": "CA60|H1|mean_reversion_rsi",
+    "named_cells": 14,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "USDILS.overnight_drift.p=44136fa355b3678a",
-    "bucket": "USDILS|H1|overnight_drift",
-    "named_cells": 10,
+    "cell": "EURUSD.mean_reversion_rsi.p=434877150e3bb838",
+    "bucket": "EURUSD|H1|mean_reversion_rsi",
+    "named_cells": 49,
     "cleared_cells": 0,
     "k": 5
    },
    {
-    "cell": "USDSEK.overnight_drift.p=44136fa355b3678a",
-    "bucket": "USDSEK|H1|overnight_drift",
-    "named_cells": 7,
+    "cell": "US500.mean_reversion_rsi.p=434877150e3bb838",
+    "bucket": "US500|H1|mean_reversion_rsi",
+    "named_cells": 29,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "USDX.mean_reversion_rsi.p=434877150e3bb838",
+    "bucket": "USDX|H1|mean_reversion_rsi",
+    "named_cells": 27,
     "cleared_cells": 0,
     "k": 5
    },
@@ -326,20 +333,13 @@
     "named_cells": 6,
     "cleared_cells": 0,
     "k": 5
-   },
-   {
-    "cell": "WHEAT@M5.adx_channel_hybrid.p=28ff1d9ad687758b",
-    "bucket": "WHEAT|M5|adx_channel_hybrid",
-    "named_cells": 9,
-    "cleared_cells": 0,
-    "k": 5
    }
   ]
  },
  "missed_growth": [
   {
-   "day": "2026-11-05",
-   "at": "2026-11-05T22:13:52+00:00",
+   "day": "2026-11-06",
+   "at": "2026-11-06T06:14:07+00:00",
    "rail": "judge_prescreen",
    "side": "cost",
    "kind": "opportunity_cost",
@@ -354,13 +354,13 @@
    "would_act_sibling_dead": {
     "k": 5,
     "true_survivors_killed": 15,
-    "cleared_in_sample_killed": 1717,
+    "cleared_in_sample_killed": 1746,
     "basis": "MEASURED by the look-ahead-free ledger replay"
    }
   },
   {
-   "day": "2026-11-05",
-   "at": "2026-11-05T22:13:52+00:00",
+   "day": "2026-11-06",
+   "at": "2026-11-06T06:14:07+00:00",
    "rail": "judge_prescreen",
    "side": "gain",
    "kind": "compute_freed",
@@ -368,8 +368,8 @@
    "verdict": "MEASURED",
    "units": "judge build seconds freed (rows removed x measured judge seconds per cell)",
    "rows_removed": 0,
-   "seconds_per_cell": 0.12536128425671206,
-   "would_free_seconds_if_all_rules_acted": 32517.3
+   "seconds_per_cell": 0.12341023619347982,
+   "would_free_seconds_if_all_rules_acted": 30743.8
   }
  ],
  "note": "SHADOW records what each rule WOULD remove and removes nothing; every row still reaches the sealed judge. CANON (a code constant) removes only rules marked rule_acts, minus a 1-in-20 holdout, and only after a durable KILL."
