@@ -1,48 +1,48 @@
 {
  "schema": "hypothesis_families/1",
- "generated_at": "2026-11-06T12:09:52+00:00",
+ "generated_at": "2026-11-06T18:06:04+00:00",
  "producer": "desks/mt5/research/hypothesis_families.py (hourly, merge_docket leg)",
  "status": "MEASURED",
  "l1_key": "structural+categorical-v1.2 (2026-10-28)",
- "raw_cells": 1803909,
- "l1_rules": 1515653,
- "l2_families": 1162184,
- "l3_families": 1162158,
+ "raw_cells": 1795439,
+ "l1_rules": 1507910,
+ "l2_families": 1155930,
+ "l3_families": 1155904,
  "l3_status": "MEASURED",
  "families_on_unmeasured_instruments": 0,
- "duplicate_share_l1": 0.1598,
- "duplicate_share_l2": 0.3557,
- "cells_per_family": 1.552,
- "k_eff": 301493.099,
+ "duplicate_share_l1": 0.1601,
+ "duplicate_share_l2": 0.3562,
+ "cells_per_family": 1.553,
+ "k_eff": 299280.144,
  "k_eff_readings": {
-  "families_upper_bound": 1162184,
-  "k_eff_l2_cells": 301647.539,
-  "k_eff_l3_cells": 301493.099,
-  "k_eff_family_names": 18.539
+  "families_upper_bound": 1155930,
+  "k_eff_l2_cells": 299436.379,
+  "k_eff_l3_cells": 299280.144,
+  "k_eff_family_names": 18.556
  },
  "k_eff_rule": "headline = inverse Simpson of cells over L3 families (L2 where L3 is unmeasured): the number of equally-sized independent bets the docket's cells amount to if each family is one bet. families_upper_bound assumes every family independent; cross-rule correlation inside it is unmeasurable before judgement and is NOT guessed",
  "mechanism": {
-  "families_with_mechanism": 901633,
-  "missing_families": 260551,
-  "missing_cells": 308624,
-  "coverage": 0.7758,
-  "label_only_families": 236380,
+  "families_with_mechanism": 896444,
+  "missing_families": 259486,
+  "missing_cells": 307577,
+  "coverage": 0.7755,
+  "label_only_families": 236187,
   "label_only_labels": {
-   "trend_persistence": 39385,
-   "cross_market_lead": 37765,
-   "session_handover": 37104,
-   "regime_transition": 25059,
-   "range_reversion": 24027,
-   "volatility_shock": 19497,
-   "unknown": 14036,
-   "gamma_hedging_state": 10839,
+   "trend_persistence": 39386,
+   "cross_market_lead": 37774,
+   "session_handover": 37050,
+   "regime_transition": 25072,
+   "range_reversion": 24049,
+   "volatility_shock": 19482,
+   "unknown": 14035,
+   "gamma_hedging_state": 10766,
    "breakout_liquidity": 7529,
-   "forced_flow": 6141,
-   "inventory_shock": 5847,
-   "carry_rollover": 5331,
-   "macro_release": 2980,
-   "UNKNOWN": 390,
-   "fx_fixing_flow": 124
+   "forced_flow": 6155,
+   "inventory_shock": 5849,
+   "carry_rollover": 5205,
+   "macro_release": 2988,
+   "UNKNOWN": 389,
+   "forced_liquidation": 127
   },
   "missing_examples": [
    "session_range_breakout|@xageur|?|d1|?|?|?|?",
@@ -55,7 +55,6 @@
    "macro_conditional|@adausd|?|h4|asia|?|?|?",
    "macro_conditional|@adausd|?|h4|london|?|?|?",
    "clock_transition|@audjpy|?|m30|?|?|-1|?|{\"label\":\"broker_rollover\",\"mode\":\"into\"}",
-   "macro_conditional|@audjpy|?|m1|london|?|?|?",
    "macro_conditional|@audjpy|?|m1|ny|?|?|?",
    "macro_conditional|@xageur|?|m1|ny|?|?|?",
    "macro_conditional|@xageur|?|h4|london|?|?|?",
@@ -64,7 +63,8 @@
    "clock_transition|@eurgbp|?|h1|?|?|1|?|{\"label\":\"tokyo_open\"}",
    "session_range_breakout|@eurils|?|m5|ny|?|?|?",
    "session_range_breakout|@jpn225|?|m30|london|?|?|?",
-   "session_range_breakout|@xngusd|?|m5|ny|?|?|?"
+   "session_range_breakout|@xngusd|?|m5|ny|?|?|?",
+   "overnight_drift|@aus200|?|m5|?|low_vol|?|?"
   ],
   "rule": "one-line mechanism = most common first sentence of the members' own mechanism/why/hypothesis prose (>= 20 chars). A family with only a class label (e.g. 'volatility_shock') is LABEL_ONLY, one with nothing is MISSING; both are counted as missing and neither is ever discarded"
  },
@@ -5937,6 +5937,34 @@
    "l3_group": null
   },
   {
+   "family_id": "F8b9f466013dfc0c1",
+   "key": "overnight_drift|@eurhkd|?|h1|asia|?|?|?",
+   "cells": 73,
+   "rules": 9,
+   "symbols": [
+    "EURHKD",
+    "EURSGD",
+    "EURUSD",
+    "USDCZK",
+    "USDDKK",
+    "USDPLN",
+    "USDSEK",
+    "USDSGD",
+    "USDX"
+   ],
+   "n_symbols": 9,
+   "mechanism": "hedging_demand_close_flow",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "miner_candidates.json": 35,
+    "alpha_registry": 28,
+    "desks/mt5/research/local_converter.py": 7,
+    "desks/mt5/research/breadth_sweep.py": 3
+   },
+   "l3_group": null
+  },
+  {
    "family_id": "Fb91d3c675a7924eb",
    "key": "session_range_breakout|@chfhuf|?|m15|asia|?|?|?",
    "cells": 72,
@@ -6637,6 +6665,32 @@
    "l3_group": null
   },
   {
+   "family_id": "Fc694c866fa2b0c98",
+   "key": "macro_conditional|@aus200|?|m5|ny|?|?|?",
+   "cells": 69,
+   "rules": 9,
+   "symbols": [
+    "AUS200",
+    "CA60",
+    "EUSTX50",
+    "FRA40",
+    "GER40",
+    "NETH25",
+    "UK100",
+    "US30",
+    "US500"
+   ],
+   "n_symbols": 9,
+   "mechanism": "source supplied exact recipe",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 52,
+    "miner_candidates.json": 17
+   },
+   "l3_group": null
+  },
+  {
    "family_id": "Fac02d3b2f5799f06",
    "key": "session_range_breakout|@eurgbp|?|h1|asia|?|?|?",
    "cells": 69,
@@ -6745,6 +6799,29 @@
    "l3_group": null
   },
   {
+   "family_id": "Fc2771b281d807199",
+   "key": "overnight_drift|@eurzar|?|h1|asia|?|?|?",
+   "cells": 69,
+   "rules": 4,
+   "symbols": [
+    "EURZAR",
+    "GBPZAR",
+    "USDZAR",
+    "ZARJPY"
+   ],
+   "n_symbols": 4,
+   "mechanism": "hedging_demand_close_flow",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "miner_candidates.json": 34,
+    "alpha_registry": 33,
+    "desks/mt5/research/breadth_sweep.py": 1,
+    "desks/mt5/research/local_converter.py": 1
+   },
+   "l3_group": null
+  },
+  {
    "family_id": "F866143af7cc7d17e",
    "key": "vol_transition|@audjpy|?|h1|?|?|?|?",
    "cells": 69,
@@ -6785,32 +6862,6 @@
    "producers": {
     "alpha_registry": 44,
     "miner_candidates.json": 24
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "Fc694c866fa2b0c98",
-   "key": "macro_conditional|@aus200|?|m5|ny|?|?|?",
-   "cells": 68,
-   "rules": 9,
-   "symbols": [
-    "AUS200",
-    "CA60",
-    "EUSTX50",
-    "FRA40",
-    "GER40",
-    "NETH25",
-    "UK100",
-    "US30",
-    "US500"
-   ],
-   "n_symbols": 9,
-   "mechanism": "source supplied exact recipe",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 51,
-    "miner_candidates.json": 17
    },
    "l3_group": null
   },
@@ -6878,6 +6929,34 @@
     "alpha_registry": 65,
     "desks/mt5/research/breadth_sweep.py": 2,
     "desks/mt5/research/local_converter.py": 1
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "Fbc8bd712fdd246b5",
+   "key": "overnight_drift|@aus200|?|h1|asia|?|?|?",
+   "cells": 68,
+   "rules": 9,
+   "symbols": [
+    "AUS200",
+    "CA60",
+    "EUSTX50",
+    "FRA40",
+    "GER40",
+    "NETH25",
+    "UK100",
+    "US30",
+    "US500"
+   ],
+   "n_symbols": 9,
+   "mechanism": "source supplied exact recipe",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "miner_candidates.json": 43,
+    "alpha_registry": 21,
+    "desks/mt5/research/local_converter.py": 3,
+    "desks/mt5/research/breadth_sweep.py": 1
    },
    "l3_group": null
   },
@@ -7048,6 +7127,32 @@
    "l3_group": null
   },
   {
+   "family_id": "Ffcdf31fc740d90c0",
+   "key": "macro_conditional|@aus200|?|m5|asia|?|?|?",
+   "cells": 67,
+   "rules": 9,
+   "symbols": [
+    "AUS200",
+    "CA60",
+    "EUSTX50",
+    "FRA40",
+    "GER40",
+    "NETH25",
+    "UK100",
+    "US30",
+    "US500"
+   ],
+   "n_symbols": 9,
+   "mechanism": "macro_release: inherited unchanged from a CERTIFIED root;",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 55,
+    "miner_candidates.json": 12
+   },
+   "l3_group": null
+  },
+  {
    "family_id": "F832e66bd2d5ca4a8",
    "key": "macro_conditional|@aus200|?|h1|london|?|?|?",
    "cells": 67,
@@ -7159,29 +7264,6 @@
    "l3_group": null
   },
   {
-   "family_id": "Fc2771b281d807199",
-   "key": "overnight_drift|@eurzar|?|h1|asia|?|?|?",
-   "cells": 67,
-   "rules": 4,
-   "symbols": [
-    "EURZAR",
-    "GBPZAR",
-    "USDZAR",
-    "ZARJPY"
-   ],
-   "n_symbols": 4,
-   "mechanism": "hedging_demand_close_flow",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "miner_candidates.json": 34,
-    "alpha_registry": 31,
-    "desks/mt5/research/breadth_sweep.py": 1,
-    "desks/mt5/research/local_converter.py": 1
-   },
-   "l3_group": null
-  },
-  {
    "family_id": "F6abbc96ce5b94ed5",
    "key": "overnight_drift|@eurzar|?|h1|london|?|?|?",
    "cells": 67,
@@ -7200,62 +7282,6 @@
     "miner_candidates.json": 35,
     "alpha_registry": 31,
     "desks/mt5/research/local_converter.py": 1
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "Fbc8bd712fdd246b5",
-   "key": "overnight_drift|@aus200|?|h1|asia|?|?|?",
-   "cells": 67,
-   "rules": 9,
-   "symbols": [
-    "AUS200",
-    "CA60",
-    "EUSTX50",
-    "FRA40",
-    "GER40",
-    "NETH25",
-    "UK100",
-    "US30",
-    "US500"
-   ],
-   "n_symbols": 9,
-   "mechanism": "source supplied exact recipe",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "miner_candidates.json": 43,
-    "alpha_registry": 20,
-    "desks/mt5/research/local_converter.py": 3,
-    "desks/mt5/research/breadth_sweep.py": 1
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "F8b9f466013dfc0c1",
-   "key": "overnight_drift|@eurhkd|?|h1|asia|?|?|?",
-   "cells": 67,
-   "rules": 9,
-   "symbols": [
-    "EURHKD",
-    "EURSGD",
-    "EURUSD",
-    "USDCZK",
-    "USDDKK",
-    "USDPLN",
-    "USDSEK",
-    "USDSGD",
-    "USDX"
-   ],
-   "n_symbols": 9,
-   "mechanism": "hedging_demand_close_flow",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "miner_candidates.json": 35,
-    "alpha_registry": 22,
-    "desks/mt5/research/local_converter.py": 7,
-    "desks/mt5/research/breadth_sweep.py": 3
    },
    "l3_group": null
   },
@@ -7491,32 +7517,6 @@
     "alpha_registry": 54,
     "miner_candidates.json": 10,
     "desks/mt5/research/breadth_sweep.py": 1
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "Ffcdf31fc740d90c0",
-   "key": "macro_conditional|@aus200|?|m5|asia|?|?|?",
-   "cells": 65,
-   "rules": 9,
-   "symbols": [
-    "AUS200",
-    "CA60",
-    "EUSTX50",
-    "FRA40",
-    "GER40",
-    "NETH25",
-    "UK100",
-    "US30",
-    "US500"
-   ],
-   "n_symbols": 9,
-   "mechanism": "source supplied exact recipe",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 53,
-    "miner_candidates.json": 12
    },
    "l3_group": null
   },
@@ -7829,33 +7829,6 @@
    "l3_group": null
   },
   {
-   "family_id": "F432dd0f02efb2e61",
-   "key": "liquidity_regime|@eurhkd|?|h1|?|?|?|?",
-   "cells": 63,
-   "rules": 9,
-   "symbols": [
-    "EURHKD",
-    "EURSGD",
-    "EURUSD",
-    "USDCZK",
-    "USDDKK",
-    "USDPLN",
-    "USDSEK",
-    "USDSGD",
-    "USDX"
-   ],
-   "n_symbols": 9,
-   "mechanism": "closing a NAMED breadth gap: fade dislocations made into an abnormally wide book -- an execution-derived edge off the desk's OWN tape, structurally independent ",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "desks/mt5/research/breadth_sweep.py": 54,
-    "desks/mt5/research/local_converter.py": 7,
-    "alpha_registry": 2
-   },
-   "l3_group": null
-  },
-  {
    "family_id": "F61c72bc1b2286c1f",
    "key": "orderflow_imbalance|@adausd|?|h1|ny|?|?|?",
    "cells": 63,
@@ -7880,33 +7853,6 @@
     "alpha_registry": 1
    },
    "l3_group": null
-  },
-  {
-   "family_id": "F6f1a7ae7a6ada143",
-   "key": "macro_conditional|@aus200|?|h1|asia|?|?|?",
-   "cells": 62,
-   "rules": 9,
-   "symbols": [
-    "AUS200",
-    "CA60",
-    "EUSTX50",
-    "FRA40",
-    "GER40",
-    "NETH25",
-    "UK100",
-    "US30",
-    "US500"
-   ],
-   "n_symbols": 9,
-   "mechanism": "breakout_liquidity x macro_release: event-day breakout: a range break on a scheduled-release day is carrying macro information rather than stop liquidity, and p",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 54,
-    "miner_candidates.json": 6,
-    "desks/mt5/research/local_converter.py": 2
-   },
-   "l3_group": "macro_conditional|@aus200|?|h1|asia|?|?|?"
   },
   {
    "family_id": "F35f1b3b531cc1b23",
@@ -8402,33 +8348,6 @@
    "l3_group": null
   },
   {
-   "family_id": "F0938362974ebe7d7",
-   "key": "liquidity_regime|@aus200|?|h1|?|?|?|?",
-   "cells": 61,
-   "rules": 9,
-   "symbols": [
-    "AUS200",
-    "CA60",
-    "EUSTX50",
-    "FRA40",
-    "GER40",
-    "NETH25",
-    "UK100",
-    "US30",
-    "US500"
-   ],
-   "n_symbols": 9,
-   "mechanism": "closing a NAMED breadth gap: fade dislocations made into an abnormally wide book -- an execution-derived edge off the desk's OWN tape, structurally independent ",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "desks/mt5/research/breadth_sweep.py": 54,
-    "alpha_registry": 6,
-    "desks/mt5/research/local_converter.py": 1
-   },
-   "l3_group": null
-  },
-  {
    "family_id": "Ffbac3510efd88a68",
    "key": "orderflow_imbalance|@adausd|?|m15|london|?|?|?",
    "cells": 61,
@@ -8775,6 +8694,32 @@
     "desks/mt5/research/breadth_sweep.py": 1
    },
    "l3_group": null
+  },
+  {
+   "family_id": "F6f1a7ae7a6ada143",
+   "key": "macro_conditional|@aus200|?|h1|asia|?|?|?",
+   "cells": 60,
+   "rules": 9,
+   "symbols": [
+    "AUS200",
+    "CA60",
+    "EUSTX50",
+    "FRA40",
+    "GER40",
+    "NETH25",
+    "UK100",
+    "US30",
+    "US500"
+   ],
+   "n_symbols": 9,
+   "mechanism": "breakout_liquidity x macro_release: event-day breakout: a range break on a scheduled-release day is carrying macro information rather than stop liquidity, and p",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 54,
+    "miner_candidates.json": 6
+   },
+   "l3_group": "macro_conditional|@aus200|?|h1|asia|?|?|?"
   },
   {
    "family_id": "F991a070236ff06f6",
@@ -9200,6 +9145,32 @@
     "miner_candidates.json": 44,
     "alpha_registry": 13,
     "desks/mt5/research/breadth_sweep.py": 3
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "F0938362974ebe7d7",
+   "key": "liquidity_regime|@aus200|?|h1|?|?|?|?",
+   "cells": 60,
+   "rules": 9,
+   "symbols": [
+    "AUS200",
+    "CA60",
+    "EUSTX50",
+    "FRA40",
+    "GER40",
+    "NETH25",
+    "UK100",
+    "US30",
+    "US500"
+   ],
+   "n_symbols": 9,
+   "mechanism": "closing a NAMED breadth gap: fade dislocations made into an abnormally wide book -- an execution-derived edge off the desk's OWN tape, structurally independent ",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "desks/mt5/research/breadth_sweep.py": 54,
+    "alpha_registry": 6
    },
    "l3_group": null
   },
@@ -10346,6 +10317,32 @@
    "mechanism_label": null,
    "producers": {
     "alpha_registry": 56
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "F432dd0f02efb2e61",
+   "key": "liquidity_regime|@eurhkd|?|h1|?|?|?|?",
+   "cells": 56,
+   "rules": 9,
+   "symbols": [
+    "EURHKD",
+    "EURSGD",
+    "EURUSD",
+    "USDCZK",
+    "USDDKK",
+    "USDPLN",
+    "USDSEK",
+    "USDSGD",
+    "USDX"
+   ],
+   "n_symbols": 9,
+   "mechanism": "closing a NAMED breadth gap: fade dislocations made into an abnormally wide book -- an execution-derived edge off the desk's OWN tape, structurally independent ",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "desks/mt5/research/breadth_sweep.py": 54,
+    "alpha_registry": 2
    },
    "l3_group": null
   },
@@ -11506,6 +11503,32 @@
    "l3_group": null
   },
   {
+   "family_id": "Fb8dadb534f743927",
+   "key": "overnight_drift|@audjpy|?|h1|asia|?|?|?",
+   "cells": 53,
+   "rules": 7,
+   "symbols": [
+    "AUDJPY",
+    "AUDSGD",
+    "CADJPY",
+    "EURJPY",
+    "NOKJPY",
+    "NZDJPY",
+    "SGDJPY"
+   ],
+   "n_symbols": 7,
+   "mechanism": "source supplied exact recipe",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "miner_candidates.json": 25,
+    "alpha_registry": 23,
+    "desks/mt5/research/breadth_sweep.py": 3,
+    "desks/mt5/research/local_converter.py": 2
+   },
+   "l3_group": null
+  },
+  {
    "family_id": "F1c852c31e816fe6f",
    "key": "macro_conditional|@eurhkd|?|m5|ny|?|?|?",
    "cells": 53,
@@ -11858,6 +11881,30 @@
    "l3_group": null
   },
   {
+   "family_id": "F0a3d6c38ae4be605",
+   "key": "macro_conditional|@audjpy|?|m5|asia|?|?|?",
+   "cells": 50,
+   "rules": 7,
+   "symbols": [
+    "AUDJPY",
+    "AUDSGD",
+    "CADJPY",
+    "EURJPY",
+    "NOKJPY",
+    "NZDJPY",
+    "SGDJPY"
+   ],
+   "n_symbols": 7,
+   "mechanism": "macro_release: inherited unchanged from a CERTIFIED root;",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 40,
+    "miner_candidates.json": 10
+   },
+   "l3_group": "macro_conditional|@audjpy|?|m5|asia|?|?|?"
+  },
+  {
    "family_id": "F2de14eff365e7c0b",
    "key": "macro_conditional|@adausd|?|h1|ny|?|?|?",
    "cells": 50,
@@ -12027,32 +12074,6 @@
     "desks/mt5/research/local_converter.py": 1
    },
    "l3_group": "macro_conditional|@eurhkd|?|h1|ny|?|?|?"
-  },
-  {
-   "family_id": "Fb8dadb534f743927",
-   "key": "overnight_drift|@audjpy|?|h1|asia|?|?|?",
-   "cells": 50,
-   "rules": 7,
-   "symbols": [
-    "AUDJPY",
-    "AUDSGD",
-    "CADJPY",
-    "EURJPY",
-    "NOKJPY",
-    "NZDJPY",
-    "SGDJPY"
-   ],
-   "n_symbols": 7,
-   "mechanism": "source supplied exact recipe",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "miner_candidates.json": 25,
-    "alpha_registry": 20,
-    "desks/mt5/research/breadth_sweep.py": 3,
-    "desks/mt5/research/local_converter.py": 2
-   },
-   "l3_group": null
   },
   {
    "family_id": "F01f5c8b801107614",
@@ -12359,8 +12380,8 @@
    "l3_group": null
   },
   {
-   "family_id": "F449dede53aa1825e",
-   "key": "liquidity_regime|@audjpy|?|h1|?|?|?|?",
+   "family_id": "F19d207d40c24cf45",
+   "key": "formula|@audjpy|?|h1|?|?|?|?|{\"expr\":[\"ts_backfill\",[\"decay\",\"spread\"]],\"side_mode\":\"follow\"}",
    "cells": 49,
    "rules": 7,
    "symbols": [
@@ -12373,13 +12394,11 @@
     "SGDJPY"
    ],
    "n_symbols": 7,
-   "mechanism": "closing a NAMED breadth gap: fade dislocations made into an abnormally wide book -- an execution-derived edge off the desk's OWN tape, structurally independent ",
+   "mechanism": "UNKNOWN: inherited unchanged from a CERTIFIED root;",
    "mechanism_flag": null,
    "mechanism_label": null,
    "producers": {
-    "desks/mt5/research/breadth_sweep.py": 42,
-    "desks/mt5/research/local_converter.py": 4,
-    "alpha_registry": 3
+    "alpha_registry": 49
    },
    "l3_group": null
   },
@@ -12647,54 +12666,6 @@
    "producers": {
     "miner_candidates.json": 25,
     "alpha_registry": 23
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "F19d207d40c24cf45",
-   "key": "formula|@audjpy|?|h1|?|?|?|?|{\"expr\":[\"ts_backfill\",[\"decay\",\"spread\"]],\"side_mode\":\"follow\"}",
-   "cells": 48,
-   "rules": 7,
-   "symbols": [
-    "AUDJPY",
-    "AUDSGD",
-    "CADJPY",
-    "EURJPY",
-    "NOKJPY",
-    "NZDJPY",
-    "SGDJPY"
-   ],
-   "n_symbols": 7,
-   "mechanism": "ts_backfill(decay(spread, 3), 3): a momentum-type measure of spread, z-scored on its own history and followed in its own direction when it is extreme",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 48
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "F4532f57daa9c936f",
-   "key": "liquidity_regime|@adausd|?|h1|?|?|?|?",
-   "cells": 48,
-   "rules": 7,
-   "symbols": [
-    "ADAUSD",
-    "AVAXUSD",
-    "DOTUSD",
-    "ETHUSD",
-    "LNKUSD",
-    "MATICUSD",
-    "SOLUSD"
-   ],
-   "n_symbols": 7,
-   "mechanism": "closing a NAMED breadth gap: fade dislocations made into an abnormally wide book -- an execution-derived edge off the desk's OWN tape, structurally independent ",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "desks/mt5/research/breadth_sweep.py": 42,
-    "desks/mt5/research/local_converter.py": 5,
-    "alpha_registry": 1
    },
    "l3_group": null
   },
@@ -13127,6 +13098,30 @@
    "mechanism_label": null,
    "producers": {
     "alpha_registry": 47
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "Feff225da4d28af53",
+   "key": "cross_asset_residual|@audjpy|?|m5|asia|?|?|?|{\"factor_symbols\":[\"bchusd\",\"ethusd\",\"ltcusd\",\"btcusd\",\"eurusd\",\"eurgbp\",\"audusd\",\"usdsgd\"],\"side_mode\":\"revert\"}",
+   "cells": 47,
+   "rules": 7,
+   "symbols": [
+    "AUDJPY",
+    "AUDSGD",
+    "CADJPY",
+    "EURJPY",
+    "NOKJPY",
+    "NZDJPY",
+    "SGDJPY"
+   ],
+   "n_symbols": 7,
+   "mechanism": "relative_value_dislocation: inherited unchanged from a CERTIFIED root;",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 42,
+    "miner_candidates.json": 5
    },
    "l3_group": null
   },
@@ -14950,6 +14945,30 @@
    "l3_group": null
   },
   {
+   "family_id": "F449dede53aa1825e",
+   "key": "liquidity_regime|@audjpy|?|h1|?|?|?|?",
+   "cells": 45,
+   "rules": 7,
+   "symbols": [
+    "AUDJPY",
+    "AUDSGD",
+    "CADJPY",
+    "EURJPY",
+    "NOKJPY",
+    "NZDJPY",
+    "SGDJPY"
+   ],
+   "n_symbols": 7,
+   "mechanism": "closing a NAMED breadth gap: fade dislocations made into an abnormally wide book -- an execution-derived edge off the desk's OWN tape, structurally independent ",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "desks/mt5/research/breadth_sweep.py": 42,
+    "alpha_registry": 3
+   },
+   "l3_group": null
+  },
+  {
    "family_id": "F4d0d9f4e1542fd2c",
    "key": "formula|@audjpy|?|h1|asia|?|?|?|{\"expr\":[\"trade_when\",[\"sign\",[\"min\",[\"delta\",\"close\"]]],[\"delta\",\"close\"]],\"side_mode\":\"follow\"}",
    "cells": 45,
@@ -15160,30 +15179,6 @@
    "l3_group": null
   },
   {
-   "family_id": "Feff225da4d28af53",
-   "key": "cross_asset_residual|@audjpy|?|m5|asia|?|?|?|{\"factor_symbols\":[\"bchusd\",\"ethusd\",\"ltcusd\",\"btcusd\",\"eurusd\",\"eurgbp\",\"audusd\",\"usdsgd\"],\"side_mode\":\"revert\"}",
-   "cells": 45,
-   "rules": 7,
-   "symbols": [
-    "AUDJPY",
-    "AUDSGD",
-    "CADJPY",
-    "EURJPY",
-    "NOKJPY",
-    "NZDJPY",
-    "SGDJPY"
-   ],
-   "n_symbols": 7,
-   "mechanism": "relative_value_dislocation: inherited unchanged from a CERTIFIED root;",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 40,
-    "miner_candidates.json": 5
-   },
-   "l3_group": null
-  },
-  {
    "family_id": "F196e9bffaba47697",
    "key": "formula|@audjpy|?|m5|london|?|?|?|{\"expr\":[\"trade_when\",[\"sign\",[\"min\",[\"delta\",\"close\"]]],[\"delta\",\"close\"]],\"side_mode\":\"follow\"}",
    "cells": 45,
@@ -15242,30 +15237,6 @@
     "miner_candidates.json": 45
    },
    "l3_group": null
-  },
-  {
-   "family_id": "F0a3d6c38ae4be605",
-   "key": "macro_conditional|@audjpy|?|m5|asia|?|?|?",
-   "cells": 44,
-   "rules": 7,
-   "symbols": [
-    "AUDJPY",
-    "AUDSGD",
-    "CADJPY",
-    "EURJPY",
-    "NOKJPY",
-    "NZDJPY",
-    "SGDJPY"
-   ],
-   "n_symbols": 7,
-   "mechanism": "macro_release: inherited unchanged from a CERTIFIED root;",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 34,
-    "miner_candidates.json": 10
-   },
-   "l3_group": "macro_conditional|@audjpy|?|m5|asia|?|?|?"
   },
   {
    "family_id": "Ffbbcba4e9ca61386",
@@ -15865,6 +15836,30 @@
    "l3_group": null
   },
   {
+   "family_id": "F4532f57daa9c936f",
+   "key": "liquidity_regime|@adausd|?|h1|?|?|?|?",
+   "cells": 43,
+   "rules": 7,
+   "symbols": [
+    "ADAUSD",
+    "AVAXUSD",
+    "DOTUSD",
+    "ETHUSD",
+    "LNKUSD",
+    "MATICUSD",
+    "SOLUSD"
+   ],
+   "n_symbols": 7,
+   "mechanism": "closing a NAMED breadth gap: fade dislocations made into an abnormally wide book -- an execution-derived edge off the desk's OWN tape, structurally independent ",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "desks/mt5/research/breadth_sweep.py": 42,
+    "alpha_registry": 1
+   },
+   "l3_group": null
+  },
+  {
    "family_id": "F8a1d02469efc30e3",
    "key": "overnight_drift|@aus200|?|m5|?|?|?|?",
    "cells": 43,
@@ -15936,6 +15931,30 @@
     "miner_candidates.json": 37,
     "desks/mt5/research/breadth_sweep.py": 4,
     "alpha_registry": 2
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "F9c810c8378e67632",
+   "key": "cross_asset_residual|@audjpy|?|m30|asia|?|?|?|{\"factor_symbols\":[\"bchusd\",\"ethusd\",\"ltcusd\",\"btcusd\",\"eurusd\",\"eurgbp\",\"audusd\",\"usdsgd\"],\"side_mode\":\"revert\"}",
+   "cells": 43,
+   "rules": 7,
+   "symbols": [
+    "AUDJPY",
+    "AUDSGD",
+    "CADJPY",
+    "EURJPY",
+    "NOKJPY",
+    "NZDJPY",
+    "SGDJPY"
+   ],
+   "n_symbols": 7,
+   "mechanism": "relative_value_dislocation: inherited unchanged from a CERTIFIED root;",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 36,
+    "miner_candidates.json": 7
    },
    "l3_group": null
   },
@@ -17108,6 +17127,28 @@
    "l3_group": null
   },
   {
+   "family_id": "F4783d49c3d48c09a",
+   "key": "cross_asset_residual|@audjpy|?|m5|asia|?|?|?|{\"side_mode\":\"revert\"}",
+   "cells": 41,
+   "rules": 6,
+   "symbols": [
+    "AUDJPY",
+    "AUDSGD",
+    "CADJPY",
+    "EURJPY",
+    "NOKJPY",
+    "NZDJPY"
+   ],
+   "n_symbols": 6,
+   "mechanism": "relative_value_dislocation: inherited unchanged from a CERTIFIED root;",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 41
+   },
+   "l3_group": null
+  },
+  {
    "family_id": "Fea28a43520131364",
    "key": "orderflow_imbalance|@xageur|?|h1|london|?|?|?",
    "cells": 41,
@@ -17877,30 +17918,6 @@
    "l3_group": null
   },
   {
-   "family_id": "F9c810c8378e67632",
-   "key": "cross_asset_residual|@audjpy|?|m30|asia|?|?|?|{\"factor_symbols\":[\"bchusd\",\"ethusd\",\"ltcusd\",\"btcusd\",\"eurusd\",\"eurgbp\",\"audusd\",\"usdsgd\"],\"side_mode\":\"revert\"}",
-   "cells": 40,
-   "rules": 7,
-   "symbols": [
-    "AUDJPY",
-    "AUDSGD",
-    "CADJPY",
-    "EURJPY",
-    "NOKJPY",
-    "NZDJPY",
-    "SGDJPY"
-   ],
-   "n_symbols": 7,
-   "mechanism": "relative_value_dislocation: inherited unchanged from a CERTIFIED root;",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 33,
-    "miner_candidates.json": 7
-   },
-   "l3_group": null
-  },
-  {
    "family_id": "Fe226b283e114540a",
    "key": "session_range_breakout|@xageur|?|m1|?|?|?|?",
    "cells": 40,
@@ -18327,28 +18344,6 @@
    "l3_group": null
   },
   {
-   "family_id": "F4783d49c3d48c09a",
-   "key": "cross_asset_residual|@audjpy|?|m5|asia|?|?|?|{\"side_mode\":\"revert\"}",
-   "cells": 39,
-   "rules": 6,
-   "symbols": [
-    "AUDJPY",
-    "AUDSGD",
-    "CADJPY",
-    "EURJPY",
-    "NOKJPY",
-    "NZDJPY"
-   ],
-   "n_symbols": 6,
-   "mechanism": "relative_value_dislocation: inherited unchanged from a CERTIFIED root;",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 39
-   },
-   "l3_group": null
-  },
-  {
    "family_id": "F92745186c4a53d8d",
    "key": "formula|@audchf|?|h1|asia|?|?|?|{\"expr\":[\"neg\",[\"delta\",\"spread\"]],\"side_mode\":\"fade\"}",
    "cells": 39,
@@ -18453,32 +18448,6 @@
     "alpha_registry": 27,
     "miner_candidates.json": 10,
     "desks/mt5/research/breadth_sweep.py": 1
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "Fa9ed18136088c2d2",
-   "key": "macro_conditional|@aus200|?|h1|?|?|?|?",
-   "cells": 38,
-   "rules": 9,
-   "symbols": [
-    "AUS200",
-    "CA60",
-    "EUSTX50",
-    "FRA40",
-    "GER40",
-    "NETH25",
-    "UK100",
-    "US30",
-    "US500"
-   ],
-   "n_symbols": 9,
-   "mechanism": "macro_release: inherited unchanged from a FORWARD root;",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 36,
-    "desks/mt5/research/local_converter.py": 2
    },
    "l3_group": null
   },
@@ -18700,6 +18669,24 @@
    "producers": {
     "alpha_registry": 37,
     "desks/mt5/research/breadth_sweep.py": 1
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "Fd2267228aa842a51",
+   "key": "conditioning_model|@xageur|6|h1|?|?|?|raw|{\"backend\":\"fallback\",\"columns\":[\"r1\",\"r6\",\"r24\",\"range\"],\"model_family\":\"graph\"}",
+   "cells": 38,
+   "rules": 2,
+   "symbols": [
+    "XAGUSD",
+    "XAUUSD"
+   ],
+   "n_symbols": 2,
+   "mechanism": "graph on the raw representation of XAUUSD: net +0.009673 nats/prediction after the family's declared tax of 0.0015",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 38
    },
    "l3_group": null
   },
@@ -19357,24 +19344,6 @@
    "l3_group": null
   },
   {
-   "family_id": "Fd2267228aa842a51",
-   "key": "conditioning_model|@xageur|6|h1|?|?|?|raw|{\"backend\":\"fallback\",\"columns\":[\"r1\",\"r6\",\"r24\",\"range\"],\"model_family\":\"graph\"}",
-   "cells": 37,
-   "rules": 2,
-   "symbols": [
-    "XAGUSD",
-    "XAUUSD"
-   ],
-   "n_symbols": 2,
-   "mechanism": "graph on the raw representation of XAUUSD: net +0.009673 nats/prediction after the family's declared tax of 0.0015",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 37
-   },
-   "l3_group": null
-  },
-  {
    "family_id": "F4b317600abffc643",
    "key": "crisis_only_class_defensive|@eurhkd|?|h1|?|?|?|?|{\"kernel\":\"exponential\"}",
    "cells": 37,
@@ -19537,32 +19506,6 @@
     "miner_candidates.json": 26,
     "alpha_registry": 10,
     "desks/mt5/research/breadth_sweep.py": 1
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "F7eeabc59d1a00965",
-   "key": "liquidity_regime|@audjpy|?|h1|ny|?|?|?",
-   "cells": 37,
-   "rules": 7,
-   "symbols": [
-    "AUDJPY",
-    "AUDSGD",
-    "CADJPY",
-    "EURJPY",
-    "NOKJPY",
-    "NZDJPY",
-    "SGDJPY"
-   ],
-   "n_symbols": 7,
-   "mechanism": "closing a NAMED breadth gap: fade dislocations made into an abnormally wide book -- an execution-derived edge off the desk's OWN tape, structurally independent ",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "desks/mt5/research/breadth_sweep.py": 30,
-    "alpha_registry": 3,
-    "miner_candidates.json": 3,
-    "desks/mt5/research/local_converter.py": 1
    },
    "l3_group": null
   },
@@ -19811,6 +19754,31 @@
     "alpha_registry": 25,
     "miner_candidates.json": 10,
     "desks/mt5/research/breadth_sweep.py": 1
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "Fa9ed18136088c2d2",
+   "key": "macro_conditional|@aus200|?|h1|?|?|?|?",
+   "cells": 36,
+   "rules": 9,
+   "symbols": [
+    "AUS200",
+    "CA60",
+    "EUSTX50",
+    "FRA40",
+    "GER40",
+    "NETH25",
+    "UK100",
+    "US30",
+    "US500"
+   ],
+   "n_symbols": 9,
+   "mechanism": "macro_release: inherited unchanged from a FORWARD root;",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 36
    },
    "l3_group": null
   },
@@ -20351,6 +20319,28 @@
    "l3_group": null
   },
   {
+   "family_id": "F687a7c1edd09e27b",
+   "key": "cross_asset_residual|@audjpy|?|m30|asia|?|?|?|{\"side_mode\":\"revert\"}",
+   "cells": 36,
+   "rules": 6,
+   "symbols": [
+    "AUDJPY",
+    "AUDSGD",
+    "CADJPY",
+    "EURJPY",
+    "NOKJPY",
+    "NZDJPY"
+   ],
+   "n_symbols": 6,
+   "mechanism": "relative_value_dislocation: inherited unchanged from a CERTIFIED root;",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 36
+   },
+   "l3_group": null
+  },
+  {
    "family_id": "F7b0f393060e61538",
    "key": "retail_overlap_reversal|@audjpy|?|m15|london|?|?|?",
    "cells": 36,
@@ -20419,6 +20409,31 @@
     "desks/mt5/research/breadth_sweep.py": 30,
     "miner_candidates.json": 5,
     "alpha_registry": 1
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "F7eeabc59d1a00965",
+   "key": "liquidity_regime|@audjpy|?|h1|ny|?|?|?",
+   "cells": 36,
+   "rules": 7,
+   "symbols": [
+    "AUDJPY",
+    "AUDSGD",
+    "CADJPY",
+    "EURJPY",
+    "NOKJPY",
+    "NZDJPY",
+    "SGDJPY"
+   ],
+   "n_symbols": 7,
+   "mechanism": "closing a NAMED breadth gap: fade dislocations made into an abnormally wide book -- an execution-derived edge off the desk's OWN tape, structurally independent ",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "desks/mt5/research/breadth_sweep.py": 30,
+    "alpha_registry": 3,
+    "miner_candidates.json": 3
    },
    "l3_group": null
   },
@@ -20714,30 +20729,6 @@
    "producers": {
     "alpha_registry": 27,
     "miner_candidates.json": 8
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "F5d06a09f26491640",
-   "key": "macro_conditional|@adausd|?|h1|?|?|?|?",
-   "cells": 35,
-   "rules": 7,
-   "symbols": [
-    "ADAUSD",
-    "AVAXUSD",
-    "DOTUSD",
-    "ETHUSD",
-    "LNKUSD",
-    "MATICUSD",
-    "SOLUSD"
-   ],
-   "n_symbols": 7,
-   "mechanism": "converted deterministically from the mined corpus;",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 30,
-    "desks/mt5/research/local_converter.py": 5
    },
    "l3_group": null
   },
@@ -21356,6 +21347,32 @@
    "mechanism_label": null,
    "producers": {
     "alpha_registry": 35
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "Fcdbf9a189978dc13",
+   "key": "formula|@aus200|?|h1|asia|?|?|?|{\"expr\":[\"ts_backfill\",[\"decay\",\"spread\"]],\"side_mode\":\"follow\"}",
+   "cells": 35,
+   "rules": 9,
+   "symbols": [
+    "AUS200",
+    "CA60",
+    "EUSTX50",
+    "FRA40",
+    "GER40",
+    "NETH25",
+    "UK100",
+    "US30",
+    "US500"
+   ],
+   "n_symbols": 9,
+   "mechanism": "UNKNOWN: inherited unchanged from a CERTIFIED root;",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "miner_candidates.json": 20,
+    "alpha_registry": 15
    },
    "l3_group": null
   },
@@ -22042,32 +22059,6 @@
    "mechanism_label": null,
    "producers": {
     "alpha_registry": 34
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "Fcdbf9a189978dc13",
-   "key": "formula|@aus200|?|h1|asia|?|?|?|{\"expr\":[\"ts_backfill\",[\"decay\",\"spread\"]],\"side_mode\":\"follow\"}",
-   "cells": 34,
-   "rules": 9,
-   "symbols": [
-    "AUS200",
-    "CA60",
-    "EUSTX50",
-    "FRA40",
-    "GER40",
-    "NETH25",
-    "UK100",
-    "US30",
-    "US500"
-   ],
-   "n_symbols": 9,
-   "mechanism": "ts_backfill(decay(spread, 3), 3): a momentum-type measure of spread, z-scored on its own history and followed in its own direction when it is extreme",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "miner_candidates.json": 20,
-    "alpha_registry": 14
    },
    "l3_group": null
   },
@@ -22880,28 +22871,6 @@
    "producers": {
     "session_chart_equivalents.py": 26,
     "alpha_registry": 7
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "F687a7c1edd09e27b",
-   "key": "cross_asset_residual|@audjpy|?|m30|asia|?|?|?|{\"side_mode\":\"revert\"}",
-   "cells": 33,
-   "rules": 6,
-   "symbols": [
-    "AUDJPY",
-    "AUDSGD",
-    "CADJPY",
-    "EURJPY",
-    "NOKJPY",
-    "NZDJPY"
-   ],
-   "n_symbols": 6,
-   "mechanism": "relative_value_dislocation: inherited unchanged from a CERTIFIED root;",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 33
    },
    "l3_group": null
   },
@@ -24764,6 +24733,28 @@
    "l3_group": null
   },
   {
+   "family_id": "Fa7aaff16b43bdac7",
+   "key": "overnight_drift|@bchusd|?|h1|asia|?|?|?",
+   "cells": 31,
+   "rules": 3,
+   "symbols": [
+    "BCHUSD",
+    "BTCUSD",
+    "LTCUSD"
+   ],
+   "n_symbols": 3,
+   "mechanism": "hedging_demand_close_flow",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 14,
+    "miner_candidates.json": 14,
+    "desks/mt5/research/local_converter.py": 2,
+    "desks/mt5/research/breadth_sweep.py": 1
+   },
+   "l3_group": null
+  },
+  {
    "family_id": "Ff4dbe0296ebb0f5a",
    "key": "session_range_breakout|@chfnok|?|m5|asia|?|?|?",
    "cells": 31,
@@ -24919,6 +24910,28 @@
    "producers": {
     "alpha_registry": 27,
     "miner_candidates.json": 4
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "F1da95a65b25dea63",
+   "key": "overnight_drift|@eurmxn|?|h1|asia|?|?|?",
+   "cells": 31,
+   "rules": 4,
+   "symbols": [
+    "EURMXN",
+    "GBPMXN",
+    "MXNJPY",
+    "USDMXN"
+   ],
+   "n_symbols": 4,
+   "mechanism": "source supplied exact recipe",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "miner_candidates.json": 15,
+    "alpha_registry": 14,
+    "desks/mt5/research/local_converter.py": 2
    },
    "l3_group": null
   },
@@ -25155,6 +25168,25 @@
    ],
    "n_symbols": 9,
    "mechanism": "XAUEUR H1 momentum_volgate: coevolved pairing ret(h=24) & vol_ratio(w1=24, w2=240) with model bucket earns +0.0182 nats/prediction over the base rate walk-forwa",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 31
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "F67f5a716f1d94750",
+   "key": "conditioning_model|@xageur|6|h1|?|?|?|rank|{\"backend\":\"fallback\",\"columns\":[\"q_r6\",\"q_r24\",\"q_range\",\"q_vol\"],\"model_family\":\"graph\"}",
+   "cells": 31,
+   "rules": 3,
+   "symbols": [
+    "XAGEUR",
+    "XAGUSD",
+    "XAUUSD"
+   ],
+   "n_symbols": 3,
+   "mechanism": "graph on the rank representation of XAGUSD: net +0.012604 nats/prediction after the family's declared tax of 0.0015",
    "mechanism_flag": null,
    "mechanism_label": null,
    "producers": {
@@ -26046,6 +26078,29 @@
    "l3_group": null
   },
   {
+   "family_id": "F5d06a09f26491640",
+   "key": "macro_conditional|@adausd|?|h1|?|?|?|?",
+   "cells": 30,
+   "rules": 7,
+   "symbols": [
+    "ADAUSD",
+    "AVAXUSD",
+    "DOTUSD",
+    "ETHUSD",
+    "LNKUSD",
+    "MATICUSD",
+    "SOLUSD"
+   ],
+   "n_symbols": 7,
+   "mechanism": "macro_release carried to SOLUSD at multi_day (mutation: cross_producer)",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 30
+   },
+   "l3_group": null
+  },
+  {
    "family_id": "Fe0bc86a1dd7ba1be",
    "key": "vol_transition|@audcad|?|m5|?|?|?|?",
    "cells": 30,
@@ -26189,28 +26244,6 @@
    "producers": {
     "desks/mt5/research/breadth_sweep.py": 24,
     "alpha_registry": 6
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "Fa7aaff16b43bdac7",
-   "key": "overnight_drift|@bchusd|?|h1|asia|?|?|?",
-   "cells": 30,
-   "rules": 3,
-   "symbols": [
-    "BCHUSD",
-    "BTCUSD",
-    "LTCUSD"
-   ],
-   "n_symbols": 3,
-   "mechanism": "hedging_demand_close_flow",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "miner_candidates.json": 14,
-    "alpha_registry": 13,
-    "desks/mt5/research/local_converter.py": 2,
-    "desks/mt5/research/breadth_sweep.py": 1
    },
    "l3_group": null
   },
@@ -26593,25 +26626,6 @@
    ],
    "n_symbols": 4,
    "mechanism": "hedging_demand_close_flow",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 30
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "F67f5a716f1d94750",
-   "key": "conditioning_model|@xageur|6|h1|?|?|?|rank|{\"backend\":\"fallback\",\"columns\":[\"q_r6\",\"q_r24\",\"q_range\",\"q_vol\"],\"model_family\":\"graph\"}",
-   "cells": 30,
-   "rules": 3,
-   "symbols": [
-    "XAGEUR",
-    "XAGUSD",
-    "XAUUSD"
-   ],
-   "n_symbols": 3,
-   "mechanism": "graph on the rank representation of XAGUSD: net +0.012604 nats/prediction after the family's declared tax of 0.0015",
    "mechanism_flag": null,
    "mechanism_label": null,
    "producers": {
@@ -27928,6 +27942,27 @@
    "l3_group": null
   },
   {
+   "family_id": "F41b0c28ff3c0c6e4",
+   "key": "retail_overlap_reversal|@xageur|?|h1|asia|risk_off|?|?|{\"conditioner\":\"positioning\"}",
+   "cells": 30,
+   "rules": 4,
+   "symbols": [
+    "XAGEUR",
+    "XAGUSD",
+    "XAUEUR",
+    "XAUUSD"
+   ],
+   "n_symbols": 4,
+   "mechanism": "execution_microstructure",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "miner_candidates.json": 26,
+    "alpha_registry": 4
+   },
+   "l3_group": null
+  },
+  {
    "family_id": "F89133367dc1538fc",
    "key": "session_range_breakout|@gbpjpy|?|h4|?|?|?|?",
    "cells": 30,
@@ -27942,6 +27977,28 @@
    "producers": {
     "session_chart_equivalents.py": 21,
     "alpha_registry": 9
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "F0233694f9989da98",
+   "key": "cross_asset_residual|@eurhkd|?|m30|asia|?|?|?|{\"side_mode\":\"revert\"}",
+   "cells": 30,
+   "rules": 6,
+   "symbols": [
+    "EURHKD",
+    "EURUSD",
+    "USDCZK",
+    "USDPLN",
+    "USDSGD",
+    "USDX"
+   ],
+   "n_symbols": 6,
+   "mechanism": "relative_value_dislocation: inherited unchanged from a CERTIFIED root;",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 30
    },
    "l3_group": null
   },
@@ -28481,32 +28538,6 @@
    "l3_group": null
   },
   {
-   "family_id": "Fcfaeb060db800de7",
-   "key": "cross_asset_residual|@aus200|?|m15|london|?|?|?|{\"factor_symbols\":[\"bchusd\",\"ethusd\",\"ltcusd\",\"btcusd\",\"eurusd\",\"eurgbp\",\"audusd\",\"usdsgd\"]}",
-   "cells": 30,
-   "rules": 9,
-   "symbols": [
-    "AUS200",
-    "CA60",
-    "EUSTX50",
-    "FRA40",
-    "GER40",
-    "NETH25",
-    "UK100",
-    "US30",
-    "US500"
-   ],
-   "n_symbols": 9,
-   "mechanism": "source supplied exact recipe",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "miner_candidates.json": 27,
-    "alpha_registry": 3
-   },
-   "l3_group": null
-  },
-  {
    "family_id": "F3c6c3c6e984bafae",
    "key": "mean_reversion_bollinger|@eurmxn|?|m30|london|?|?|?",
    "cells": 30,
@@ -28635,6 +28666,32 @@
    "l3_group": null
   },
   {
+   "family_id": "F8bde84a87750574b",
+   "key": "macro_conditional|@aus200|?|m15|asia|?|?|?",
+   "cells": 29,
+   "rules": 9,
+   "symbols": [
+    "AUS200",
+    "CA60",
+    "EUSTX50",
+    "FRA40",
+    "GER40",
+    "NETH25",
+    "UK100",
+    "US30",
+    "US500"
+   ],
+   "n_symbols": 9,
+   "mechanism": "source supplied exact recipe",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 17,
+    "miner_candidates.json": 12
+   },
+   "l3_group": null
+  },
+  {
    "family_id": "F8adee39f7f24d2a6",
    "key": "session_range_breakout|@chfnok|?|m30|london|?|?|?",
    "cells": 29,
@@ -28700,33 +28757,6 @@
    "l3_group": null
   },
   {
-   "family_id": "Fcfc1f7f6105a9c83",
-   "key": "macro_conditional|@eurhkd|?|h1|?|?|?|?",
-   "cells": 29,
-   "rules": 9,
-   "symbols": [
-    "EURHKD",
-    "EURSGD",
-    "EURUSD",
-    "USDCZK",
-    "USDDKK",
-    "USDPLN",
-    "USDSEK",
-    "USDSGD",
-    "USDX"
-   ],
-   "n_symbols": 9,
-   "mechanism": "macro_release: inherited unchanged from a FORWARD root;",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 25,
-    "deepened_candidates.json": 2,
-    "desks/mt5/research/local_converter.py": 2
-   },
-   "l3_group": "macro_conditional|@eurhkd|?|h1|?|?|?|?"
-  },
-  {
    "family_id": "Fea82f9167f01c4fb",
    "key": "overnight_drift|@eurmxn|?|m15|ny|?|?|?",
    "cells": 29,
@@ -28744,28 +28774,6 @@
    "producers": {
     "miner_candidates.json": 20,
     "alpha_registry": 9
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "F1da95a65b25dea63",
-   "key": "overnight_drift|@eurmxn|?|h1|asia|?|?|?",
-   "cells": 29,
-   "rules": 4,
-   "symbols": [
-    "EURMXN",
-    "GBPMXN",
-    "MXNJPY",
-    "USDMXN"
-   ],
-   "n_symbols": 4,
-   "mechanism": "source supplied exact recipe",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "miner_candidates.json": 15,
-    "alpha_registry": 12,
-    "desks/mt5/research/local_converter.py": 2
    },
    "l3_group": null
   },
@@ -29204,27 +29212,6 @@
    "producers": {
     "miner_candidates.json": 22,
     "alpha_registry": 7
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "F41b0c28ff3c0c6e4",
-   "key": "retail_overlap_reversal|@xageur|?|h1|asia|risk_off|?|?|{\"conditioner\":\"positioning\"}",
-   "cells": 29,
-   "rules": 4,
-   "symbols": [
-    "XAGEUR",
-    "XAGUSD",
-    "XAUEUR",
-    "XAUUSD"
-   ],
-   "n_symbols": 4,
-   "mechanism": "execution_microstructure",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "miner_candidates.json": 26,
-    "alpha_registry": 3
    },
    "l3_group": null
   },
@@ -30337,28 +30324,6 @@
    "l3_group": null
   },
   {
-   "family_id": "F0233694f9989da98",
-   "key": "cross_asset_residual|@eurhkd|?|m30|asia|?|?|?|{\"side_mode\":\"revert\"}",
-   "cells": 28,
-   "rules": 6,
-   "symbols": [
-    "EURHKD",
-    "EURUSD",
-    "USDCZK",
-    "USDPLN",
-    "USDSGD",
-    "USDX"
-   ],
-   "n_symbols": 6,
-   "mechanism": "relative_value_dislocation: inherited unchanged from a CERTIFIED root;",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 28
-   },
-   "l3_group": null
-  },
-  {
    "family_id": "F6b42b44fa94bb45f",
    "key": "monday_gap|@eurhkd|?|m30|asia|?|?|?",
    "cells": 28,
@@ -30783,55 +30748,6 @@
    "l3_group": null
   },
   {
-   "family_id": "Fbe77ab4dc651709f",
-   "key": "liquidity_regime|@xageur|?|h1|?|?|?|?",
-   "cells": 28,
-   "rules": 4,
-   "symbols": [
-    "XAGEUR",
-    "XAGUSD",
-    "XAUEUR",
-    "XAUUSD"
-   ],
-   "n_symbols": 4,
-   "mechanism": "closing a NAMED breadth gap: fade dislocations made into an abnormally wide book -- an execution-derived edge off the desk's OWN tape, structurally independent ",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "desks/mt5/research/breadth_sweep.py": 24,
-    "alpha_registry": 3,
-    "desks/mt5/research/local_converter.py": 1
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "Fc12a293c7e5638c7",
-   "key": "volume_spike|@eurhkd|?|m15|asia|?|?|?",
-   "cells": 28,
-   "rules": 9,
-   "symbols": [
-    "EURHKD",
-    "EURSGD",
-    "EURUSD",
-    "USDCZK",
-    "USDDKK",
-    "USDPLN",
-    "USDSEK",
-    "USDSGD",
-    "USDX"
-   ],
-   "n_symbols": 9,
-   "mechanism": "US500 H1 volume_spike: coevolved pairing volume_z(w=24) & zscore(w=96) with model sign_vote earns +0.0319 nats/prediction over the base rate walk-forward (n=128",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "miner_candidates.json": 19,
-    "alpha_registry": 8,
-    "desks/mt5/research/breadth_sweep.py": 1
-   },
-   "l3_group": null
-  },
-  {
    "family_id": "Ffa54633418c1ffe1",
    "key": "monday_gap|@aus200|?|m30|asia|?|?|?",
    "cells": 28,
@@ -30981,48 +30897,6 @@
     "miner_candidates.json": 20,
     "desks/mt5/research/breadth_sweep.py": 7,
     "alpha_registry": 1
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "F7a856a695d04afb3",
-   "key": "liquidity_regime|@audchf|?|h1|?|?|?|?",
-   "cells": 28,
-   "rules": 4,
-   "symbols": [
-    "AUDCHF",
-    "CADCHF",
-    "EURAUD",
-    "NZDCHF"
-   ],
-   "n_symbols": 4,
-   "mechanism": "closing a NAMED breadth gap: fade dislocations made into an abnormally wide book -- an execution-derived edge off the desk's OWN tape, structurally independent ",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "desks/mt5/research/breadth_sweep.py": 24,
-    "desks/mt5/research/local_converter.py": 4
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "Ff19e16f9d59c71a9",
-   "key": "liquidity_regime|@eurmxn|?|h1|?|?|?|?",
-   "cells": 28,
-   "rules": 4,
-   "symbols": [
-    "EURMXN",
-    "GBPMXN",
-    "MXNJPY",
-    "USDMXN"
-   ],
-   "n_symbols": 4,
-   "mechanism": "closing a NAMED breadth gap: fade dislocations made into an abnormally wide book -- an execution-derived edge off the desk's OWN tape, structurally independent ",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "desks/mt5/research/breadth_sweep.py": 24,
-    "desks/mt5/research/local_converter.py": 4
    },
    "l3_group": null
   },
@@ -31243,6 +31117,32 @@
    "l3_group": null
   },
   {
+   "family_id": "Fcfc1f7f6105a9c83",
+   "key": "macro_conditional|@eurhkd|?|h1|?|?|?|?",
+   "cells": 27,
+   "rules": 9,
+   "symbols": [
+    "EURHKD",
+    "EURSGD",
+    "EURUSD",
+    "USDCZK",
+    "USDDKK",
+    "USDPLN",
+    "USDSEK",
+    "USDSGD",
+    "USDX"
+   ],
+   "n_symbols": 9,
+   "mechanism": "macro_release: inherited unchanged from a FORWARD root;",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 25,
+    "deepened_candidates.json": 2
+   },
+   "l3_group": "macro_conditional|@eurhkd|?|h1|?|?|?|?"
+  },
+  {
    "family_id": "F74632fe4c14b6b63",
    "key": "overnight_drift|@gbpsek|?|m15|?|?|?|?",
    "cells": 27,
@@ -31425,6 +31325,24 @@
    ],
    "n_symbols": 9,
    "mechanism": "XPDUSD H1 range_reversion: coevolved pairing range_pos(w=48) & zscore(w=48) with model sign_vote earns +0.0292 nats/prediction over the base rate walk-forward (",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 27
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "Fc3b07b354e571199",
+   "key": "conditioning_model|@xageur|6|h1|?|?|?|zscore|{\"backend\":\"fallback\",\"columns\":[\"z_r6\",\"z_r24\",\"z_range\",\"z_vol\"],\"model_family\":\"graph\"}",
+   "cells": 27,
+   "rules": 2,
+   "symbols": [
+    "XAGUSD",
+    "XAUUSD"
+   ],
+   "n_symbols": 2,
+   "mechanism": "graph on the zscore representation of XAGUSD: net +0.010800 nats/prediction after the family's declared tax of 0.0015",
    "mechanism_flag": null,
    "mechanism_label": null,
    "producers": {
@@ -32625,6 +32543,31 @@
    "l3_group": null
   },
   {
+   "family_id": "F2e9a025402085c13",
+   "key": "level_breakout|@eurhkd|?|h1|ny|?|?|?",
+   "cells": 27,
+   "rules": 9,
+   "symbols": [
+    "EURHKD",
+    "EURSGD",
+    "EURUSD",
+    "USDCZK",
+    "USDDKK",
+    "USDPLN",
+    "USDSEK",
+    "USDSGD",
+    "USDX"
+   ],
+   "n_symbols": 9,
+   "mechanism": "breakout_liquidity: inherited unchanged from a FORWARD root;",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 27
+   },
+   "l3_group": null
+  },
+  {
    "family_id": "Feb6746708462a926",
    "key": "fx_fixing_reversal|@chfhuf|?|h1|all|?|?|?|{\"fix_align\":\"contains\",\"fix_at\":\"#:#\",\"fix_tz\":\"europe/budapest\"}",
    "cells": 27,
@@ -32795,33 +32738,6 @@
     "miner_candidates.json": 24,
     "alpha_registry": 2,
     "desks/mt5/research/breadth_sweep.py": 1
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "F2c7605779825db8e",
-   "key": "volume_spike|@eurhkd|?|m30|london|?|?|?",
-   "cells": 27,
-   "rules": 9,
-   "symbols": [
-    "EURHKD",
-    "EURSGD",
-    "EURUSD",
-    "USDCZK",
-    "USDDKK",
-    "USDPLN",
-    "USDSEK",
-    "USDSGD",
-    "USDX"
-   ],
-   "n_symbols": 9,
-   "mechanism": "US500 H1 volume_spike: coevolved pairing volume_z(w=24) & zscore(w=96) with model sign_vote earns +0.0319 nats/prediction over the base rate walk-forward (n=128",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "miner_candidates.json": 20,
-    "desks/mt5/research/breadth_sweep.py": 5,
-    "alpha_registry": 2
    },
    "l3_group": null
   },
@@ -33045,6 +32961,27 @@
    "l3_group": null
   },
   {
+   "family_id": "Fbe77ab4dc651709f",
+   "key": "liquidity_regime|@xageur|?|h1|?|?|?|?",
+   "cells": 27,
+   "rules": 4,
+   "symbols": [
+    "XAGEUR",
+    "XAGUSD",
+    "XAUEUR",
+    "XAUUSD"
+   ],
+   "n_symbols": 4,
+   "mechanism": "closing a NAMED breadth gap: fade dislocations made into an abnormally wide book -- an execution-derived edge off the desk's OWN tape, structurally independent ",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "desks/mt5/research/breadth_sweep.py": 24,
+    "alpha_registry": 3
+   },
+   "l3_group": null
+  },
+  {
    "family_id": "F3805c09434b2d231",
    "key": "orderflow_imbalance|@eurgbp|?|h1|?|?|?|?",
    "cells": 27,
@@ -33173,6 +33110,33 @@
    "mechanism_label": null,
    "producers": {
     "alpha_registry": 27
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "Fc12a293c7e5638c7",
+   "key": "volume_spike|@eurhkd|?|m15|asia|?|?|?",
+   "cells": 27,
+   "rules": 9,
+   "symbols": [
+    "EURHKD",
+    "EURSGD",
+    "EURUSD",
+    "USDCZK",
+    "USDDKK",
+    "USDPLN",
+    "USDSEK",
+    "USDSGD",
+    "USDX"
+   ],
+   "n_symbols": 9,
+   "mechanism": "US500 H1 volume_spike: coevolved pairing volume_z(w=24) & zscore(w=96) with model sign_vote earns +0.0319 nats/prediction over the base rate walk-forward (n=128",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "miner_candidates.json": 18,
+    "alpha_registry": 8,
+    "desks/mt5/research/breadth_sweep.py": 1
    },
    "l3_group": null
   },
@@ -34051,32 +34015,6 @@
    "l3_group": null
   },
   {
-   "family_id": "F9c6fd7c1fcfd4bbe",
-   "key": "cross_asset_residual|@aus200|?|m5|london|?|?|?|{\"factor_symbols\":[\"bchusd\",\"ethusd\",\"ltcusd\",\"btcusd\",\"eurusd\",\"eurgbp\",\"audusd\",\"usdsgd\"]}",
-   "cells": 27,
-   "rules": 9,
-   "symbols": [
-    "AUS200",
-    "CA60",
-    "EUSTX50",
-    "FRA40",
-    "GER40",
-    "NETH25",
-    "UK100",
-    "US30",
-    "US500"
-   ],
-   "n_symbols": 9,
-   "mechanism": "source supplied exact recipe",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "miner_candidates.json": 24,
-    "alpha_registry": 3
-   },
-   "l3_group": null
-  },
-  {
    "family_id": "F31589c432fbec16f",
    "key": "orderflow_imbalance|@chfhuf|?|h1|?|?|?|?",
    "cells": 27,
@@ -34434,32 +34372,6 @@
    "l3_group": null
   },
   {
-   "family_id": "F8bde84a87750574b",
-   "key": "macro_conditional|@aus200|?|m15|asia|?|?|?",
-   "cells": 26,
-   "rules": 9,
-   "symbols": [
-    "AUS200",
-    "CA60",
-    "EUSTX50",
-    "FRA40",
-    "GER40",
-    "NETH25",
-    "UK100",
-    "US30",
-    "US500"
-   ],
-   "n_symbols": 9,
-   "mechanism": "source supplied exact recipe",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 14,
-    "miner_candidates.json": 12
-   },
-   "l3_group": null
-  },
-  {
    "family_id": "Fb73cb1286dee53a7",
    "key": "session_range_breakout|@chfnok|?|m5|ny|?|?|?",
    "cells": 26,
@@ -34757,24 +34669,6 @@
    "l3_group": null
   },
   {
-   "family_id": "Fc3b07b354e571199",
-   "key": "conditioning_model|@xageur|6|h1|?|?|?|zscore|{\"backend\":\"fallback\",\"columns\":[\"z_r6\",\"z_r24\",\"z_range\",\"z_vol\"],\"model_family\":\"graph\"}",
-   "cells": 26,
-   "rules": 2,
-   "symbols": [
-    "XAGUSD",
-    "XAUUSD"
-   ],
-   "n_symbols": 2,
-   "mechanism": "graph on the zscore representation of XAGUSD: net +0.010800 nats/prediction after the family's declared tax of 0.0015",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 26
-   },
-   "l3_group": null
-  },
-  {
    "family_id": "F0800f53722a8c7ee",
    "key": "mean_reversion_bollinger|@aus200|?|h1|?|?|?|external_engine",
    "cells": 26,
@@ -34792,6 +34686,31 @@
    ],
    "n_symbols": 9,
    "mechanism": "UST05Y H1 mean_reversion_bollinger descendant from nevergrad OnePlusOne (40 asks): window 55 k 2.72, cost-charged objective return +0.0100 in the bundle window ",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 26
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "F72a6b81fe03df89f",
+   "key": "mean_reversion_bollinger|@eurhkd|?|h1|?|?|?|external_engine",
+   "cells": 26,
+   "rules": 9,
+   "symbols": [
+    "EURHKD",
+    "EURSGD",
+    "EURUSD",
+    "USDCZK",
+    "USDDKK",
+    "USDPLN",
+    "USDSEK",
+    "USDSGD",
+    "USDX"
+   ],
+   "n_symbols": 9,
+   "mechanism": "EURGBP H1 mean_reversion_bollinger: coevolved pairing zscore(w=24) & zscore(w=96) with model bucket earns +0.0020 nats/prediction over the base rate walk-forwar",
    "mechanism_flag": null,
    "mechanism_label": null,
    "producers": {
@@ -35232,60 +35151,6 @@
    "producers": {
     "alpha_registry": 13,
     "miner_candidates.json": 13
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "F7d7be8c8bbf7d2ed",
-   "key": "comex_settlement|@aus200|?|h1|?|?|?|?",
-   "cells": 26,
-   "rules": 9,
-   "symbols": [
-    "AUS200",
-    "CA60",
-    "EUSTX50",
-    "FRA40",
-    "GER40",
-    "NETH25",
-    "UK100",
-    "US30",
-    "US500"
-   ],
-   "n_symbols": 9,
-   "mechanism": "hedging_demand_close_flow",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 17,
-    "desks/mt5/research/local_converter.py": 6,
-    "desks/mt5/research/breadth_sweep.py": 3
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "F50fd96e6e6952d6c",
-   "key": "volume_spike|@eurhkd|?|m30|asia|?|?|?",
-   "cells": 26,
-   "rules": 9,
-   "symbols": [
-    "EURHKD",
-    "EURSGD",
-    "EURUSD",
-    "USDCZK",
-    "USDDKK",
-    "USDPLN",
-    "USDSEK",
-    "USDSGD",
-    "USDX"
-   ],
-   "n_symbols": 9,
-   "mechanism": "US500 H1 volume_spike: coevolved pairing volume_z(w=24) & zscore(w=96) with model sign_vote earns +0.0319 nats/prediction over the base rate walk-forward (n=128",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "miner_candidates.json": 20,
-    "desks/mt5/research/breadth_sweep.py": 4,
-    "alpha_registry": 2
    },
    "l3_group": null
   },
@@ -36569,32 +36434,6 @@
    "l3_group": null
   },
   {
-   "family_id": "F64a0954f84c8061b",
-   "key": "volume_spike|@aus200|?|m30|london|?|?|?",
-   "cells": 25,
-   "rules": 9,
-   "symbols": [
-    "AUS200",
-    "CA60",
-    "EUSTX50",
-    "FRA40",
-    "GER40",
-    "NETH25",
-    "UK100",
-    "US30",
-    "US500"
-   ],
-   "n_symbols": 9,
-   "mechanism": "US500 H1 volume_spike: coevolved pairing volume_z(w=24) & zscore(w=96) with model sign_vote earns +0.0319 nats/prediction over the base rate walk-forward (n=128",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "miner_candidates.json": 23,
-    "alpha_registry": 2
-   },
-   "l3_group": null
-  },
-  {
    "family_id": "F433cbdb38bf37b9f",
    "key": "volume_spike|@aus200|?|h1|asia|?|?|?",
    "cells": 25,
@@ -37008,31 +36847,6 @@
    "l3_group": null
   },
   {
-   "family_id": "F72a6b81fe03df89f",
-   "key": "mean_reversion_bollinger|@eurhkd|?|h1|?|?|?|external_engine",
-   "cells": 25,
-   "rules": 9,
-   "symbols": [
-    "EURHKD",
-    "EURSGD",
-    "EURUSD",
-    "USDCZK",
-    "USDDKK",
-    "USDPLN",
-    "USDSEK",
-    "USDSGD",
-    "USDX"
-   ],
-   "n_symbols": 9,
-   "mechanism": "EURGBP H1 mean_reversion_bollinger: coevolved pairing zscore(w=24) & zscore(w=96) with model bucket earns +0.0020 nats/prediction over the base rate walk-forwar",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 25
-   },
-   "l3_group": null
-  },
-  {
    "family_id": "F76fc37ccc86eeb97",
    "key": "multi_speed_trend|@eurhkd|?|h1|?|?|?|?",
    "cells": 25,
@@ -37384,6 +37198,33 @@
    "l3_group": null
   },
   {
+   "family_id": "F2c7605779825db8e",
+   "key": "volume_spike|@eurhkd|?|m30|london|?|?|?",
+   "cells": 25,
+   "rules": 9,
+   "symbols": [
+    "EURHKD",
+    "EURSGD",
+    "EURUSD",
+    "USDCZK",
+    "USDDKK",
+    "USDPLN",
+    "USDSEK",
+    "USDSGD",
+    "USDX"
+   ],
+   "n_symbols": 9,
+   "mechanism": "US500 H1 volume_spike: coevolved pairing volume_z(w=24) & zscore(w=96) with model sign_vote earns +0.0319 nats/prediction over the base rate walk-forward (n=128",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "miner_candidates.json": 19,
+    "desks/mt5/research/breadth_sweep.py": 4,
+    "alpha_registry": 2
+   },
+   "l3_group": null
+  },
+  {
    "family_id": "F9ff01f748ac4fc75",
    "key": "overnight_drift|@eurgbp|?|m15|?|?|?|?",
    "cells": 25,
@@ -37572,6 +37413,32 @@
    "l3_group": null
   },
   {
+   "family_id": "F9b357750dd66fd6d",
+   "key": "macro_conditional|@eurhkd|?|d1|?|?|?|?",
+   "cells": 25,
+   "rules": 9,
+   "symbols": [
+    "EURHKD",
+    "EURSGD",
+    "EURUSD",
+    "USDCZK",
+    "USDDKK",
+    "USDPLN",
+    "USDSEK",
+    "USDSGD",
+    "USDX"
+   ],
+   "n_symbols": 9,
+   "mechanism": "macro_release carried to EURHKD at sub_4h (mutation: cross_producer)",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 24,
+    "deepened_candidates.json": 1
+   },
+   "l3_group": null
+  },
+  {
    "family_id": "Fd443f482efec18a6",
    "key": "cross_asset_residual|@xageur|?|m30|asia|?|?|?|{\"side_mode\":\"revert\"}",
    "cells": 25,
@@ -37608,6 +37475,25 @@
    "producers": {
     "session_chart_equivalents.py": 18,
     "alpha_registry": 7
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "F08ef174ac93eb6b7",
+   "key": "formula|@audchf|?|h1|asia|?|?|?|{\"expr\":[\"abs\",[\"std\",[\"decay\",\"spread\"]]],\"side_mode\":\"follow\"}",
+   "cells": 25,
+   "rules": 3,
+   "symbols": [
+    "AUDCHF",
+    "CADCHF",
+    "NZDCHF"
+   ],
+   "n_symbols": 3,
+   "mechanism": "UNKNOWN: inherited unchanged from a CERTIFIED root;",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 25
    },
    "l3_group": null
   },
@@ -38001,8 +37887,8 @@
    "l3_group": null
   },
   {
-   "family_id": "F0b6646ee3fe090f0",
-   "key": "cross_asset_residual|@aus200|?|m30|london|?|?|?|{\"factor_symbols\":[\"bchusd\",\"ethusd\",\"ltcusd\",\"btcusd\",\"eurusd\",\"eurgbp\",\"audusd\",\"usdsgd\"]}",
+   "family_id": "Fcfaeb060db800de7",
+   "key": "cross_asset_residual|@aus200|?|m15|london|?|?|?|{\"factor_symbols\":[\"bchusd\",\"ethusd\",\"ltcusd\",\"btcusd\",\"eurusd\",\"eurgbp\",\"audusd\",\"usdsgd\"]}",
    "cells": 25,
    "rules": 9,
    "symbols": [
@@ -38027,8 +37913,8 @@
    "l3_group": null
   },
   {
-   "family_id": "F8c953fbe1e1af13d",
-   "key": "cross_asset_residual|@aus200|?|m30|asia|?|?|?|{\"factor_symbols\":[\"bchusd\",\"ethusd\",\"ltcusd\",\"btcusd\",\"eurusd\",\"eurgbp\",\"audusd\",\"usdsgd\"]}",
+   "family_id": "F0b6646ee3fe090f0",
+   "key": "cross_asset_residual|@aus200|?|m30|london|?|?|?|{\"factor_symbols\":[\"bchusd\",\"ethusd\",\"ltcusd\",\"btcusd\",\"eurusd\",\"eurgbp\",\"audusd\",\"usdsgd\"]}",
    "cells": 25,
    "rules": 9,
    "symbols": [
@@ -38047,8 +37933,8 @@
    "mechanism_flag": null,
    "mechanism_label": null,
    "producers": {
-    "miner_candidates.json": 16,
-    "alpha_registry": 9
+    "miner_candidates.json": 22,
+    "alpha_registry": 3
    },
    "l3_group": null
   },
@@ -38161,6 +38047,30 @@
   {
    "family_id": "F642ce4513bea7645",
    "key": "cross_asset_residual|@eurhkd|?|m15|asia|?|?|?|{\"factor_symbols\":[\"bchusd\",\"ethusd\",\"ltcusd\",\"btcusd\",\"eurusd\",\"eurgbp\",\"audusd\",\"usdsgd\"],\"side_mode\":\"revert\"}",
+   "cells": 25,
+   "rules": 7,
+   "symbols": [
+    "EURHKD",
+    "EURSGD",
+    "USDCZK",
+    "USDDKK",
+    "USDPLN",
+    "USDSEK",
+    "USDX"
+   ],
+   "n_symbols": 7,
+   "mechanism": "relative_value_dislocation: inherited unchanged from a CERTIFIED root;",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 17,
+    "miner_candidates.json": 8
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "Fd83f2c569b727672",
+   "key": "cross_asset_residual|@eurhkd|?|m30|asia|?|?|?|{\"factor_symbols\":[\"bchusd\",\"ethusd\",\"ltcusd\",\"btcusd\",\"eurusd\",\"eurgbp\",\"audusd\",\"usdsgd\"],\"side_mode\":\"revert\"}",
    "cells": 25,
    "rules": 7,
    "symbols": [
@@ -38361,6 +38271,32 @@
     "miner_candidates.json": 21,
     "alpha_registry": 2,
     "desks/mt5/research/breadth_sweep.py": 1
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "F64a0954f84c8061b",
+   "key": "volume_spike|@aus200|?|m30|london|?|?|?",
+   "cells": 24,
+   "rules": 9,
+   "symbols": [
+    "AUS200",
+    "CA60",
+    "EUSTX50",
+    "FRA40",
+    "GER40",
+    "NETH25",
+    "UK100",
+    "US30",
+    "US500"
+   ],
+   "n_symbols": 9,
+   "mechanism": "US500 H1 volume_spike: coevolved pairing volume_z(w=24) & zscore(w=96) with model sign_vote earns +0.0319 nats/prediction over the base rate walk-forward (n=128",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "miner_candidates.json": 22,
+    "alpha_registry": 2
    },
    "l3_group": null
   },
@@ -40109,6 +40045,33 @@
    "l3_group": null
   },
   {
+   "family_id": "F50fd96e6e6952d6c",
+   "key": "volume_spike|@eurhkd|?|m30|asia|?|?|?",
+   "cells": 24,
+   "rules": 9,
+   "symbols": [
+    "EURHKD",
+    "EURSGD",
+    "EURUSD",
+    "USDCZK",
+    "USDDKK",
+    "USDPLN",
+    "USDSEK",
+    "USDSGD",
+    "USDX"
+   ],
+   "n_symbols": 9,
+   "mechanism": "US500 H1 volume_spike: coevolved pairing volume_z(w=24) & zscore(w=96) with model sign_vote earns +0.0319 nats/prediction over the base rate walk-forward (n=128",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "miner_candidates.json": 19,
+    "desks/mt5/research/breadth_sweep.py": 3,
+    "alpha_registry": 2
+   },
+   "l3_group": null
+  },
+  {
    "family_id": "F27550feec18d2724",
    "key": "vol_transition|@chfdkk|?|m30|?|?|?|?",
    "cells": 24,
@@ -40197,27 +40160,26 @@
    "l3_group": null
   },
   {
-   "family_id": "F9b357750dd66fd6d",
-   "key": "macro_conditional|@eurhkd|?|d1|?|?|?|?",
+   "family_id": "F06601d42cec9a202",
+   "key": "macro_conditional|@audjpy|?|d1|?|?|?|?",
    "cells": 24,
-   "rules": 9,
+   "rules": 7,
    "symbols": [
-    "EURHKD",
-    "EURSGD",
-    "EURUSD",
-    "USDCZK",
-    "USDDKK",
-    "USDPLN",
-    "USDSEK",
-    "USDSGD",
-    "USDX"
+    "AUDJPY",
+    "AUDSGD",
+    "CADJPY",
+    "EURJPY",
+    "NOKJPY",
+    "NZDJPY",
+    "SGDJPY"
    ],
-   "n_symbols": 9,
-   "mechanism": "macro_release carried to EURHKD at sub_4h (mutation: cross_producer)",
+   "n_symbols": 7,
+   "mechanism": "macro_release carried to NOKJPY at multi_day (mutation: cross_producer)",
    "mechanism_flag": null,
    "mechanism_label": null,
    "producers": {
-    "alpha_registry": 24
+    "alpha_registry": 23,
+    "miner_candidates.json": 1
    },
    "l3_group": null
   },
@@ -40396,25 +40358,6 @@
    "producers": {
     "desks/mt5/research/breadth_sweep.py": 23,
     "alpha_registry": 1
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "F08ef174ac93eb6b7",
-   "key": "formula|@audchf|?|h1|asia|?|?|?|{\"expr\":[\"abs\",[\"std\",[\"decay\",\"spread\"]]],\"side_mode\":\"follow\"}",
-   "cells": 24,
-   "rules": 3,
-   "symbols": [
-    "AUDCHF",
-    "CADCHF",
-    "NZDCHF"
-   ],
-   "n_symbols": 3,
-   "mechanism": "UNKNOWN: inherited unchanged from a CERTIFIED root;",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 24
    },
    "l3_group": null
   },
@@ -40877,6 +40820,26 @@
    "mechanism_label": null,
    "producers": {
     "miner_candidates.json": 24
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "F7a856a695d04afb3",
+   "key": "liquidity_regime|@audchf|?|h1|?|?|?|?",
+   "cells": 24,
+   "rules": 4,
+   "symbols": [
+    "AUDCHF",
+    "CADCHF",
+    "EURAUD",
+    "NZDCHF"
+   ],
+   "n_symbols": 4,
+   "mechanism": "closing a NAMED breadth gap: fade dislocations made into an abnormally wide book -- an execution-derived edge off the desk's OWN tape, structurally independent ",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "desks/mt5/research/breadth_sweep.py": 24
    },
    "l3_group": null
   },
@@ -41682,26 +41645,22 @@
    "l3_group": null
   },
   {
-   "family_id": "Fd83f2c569b727672",
-   "key": "cross_asset_residual|@eurhkd|?|m30|asia|?|?|?|{\"factor_symbols\":[\"bchusd\",\"ethusd\",\"ltcusd\",\"btcusd\",\"eurusd\",\"eurgbp\",\"audusd\",\"usdsgd\"],\"side_mode\":\"revert\"}",
+   "family_id": "Ff19e16f9d59c71a9",
+   "key": "liquidity_regime|@eurmxn|?|h1|?|?|?|?",
    "cells": 24,
-   "rules": 7,
+   "rules": 4,
    "symbols": [
-    "EURHKD",
-    "EURSGD",
-    "USDCZK",
-    "USDDKK",
-    "USDPLN",
-    "USDSEK",
-    "USDX"
+    "EURMXN",
+    "GBPMXN",
+    "MXNJPY",
+    "USDMXN"
    ],
-   "n_symbols": 7,
-   "mechanism": "relative_value_dislocation: inherited unchanged from a CERTIFIED root;",
+   "n_symbols": 4,
+   "mechanism": "closing a NAMED breadth gap: fade dislocations made into an abnormally wide book -- an execution-derived edge off the desk's OWN tape, structurally independent ",
    "mechanism_flag": null,
    "mechanism_label": null,
    "producers": {
-    "alpha_registry": 16,
-    "miner_candidates.json": 8
+    "desks/mt5/research/breadth_sweep.py": 24
    },
    "l3_group": null
   },
@@ -42740,6 +42699,31 @@
    "l3_group": null
   },
   {
+   "family_id": "F8a5bbb9db21101fa",
+   "key": "level_breakout|@aus200|?|h1|ny|?|?|?",
+   "cells": 23,
+   "rules": 9,
+   "symbols": [
+    "AUS200",
+    "CA60",
+    "EUSTX50",
+    "FRA40",
+    "GER40",
+    "NETH25",
+    "UK100",
+    "US30",
+    "US500"
+   ],
+   "n_symbols": 9,
+   "mechanism": "breakout_liquidity: inherited unchanged from a FORWARD root;",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 23
+   },
+   "l3_group": null
+  },
+  {
    "family_id": "F15f6a4d54aa1ef5e",
    "key": "asia_momentum|@audjpy|?|h1|london|?|?|?",
    "cells": 23,
@@ -42834,6 +42818,28 @@
    "producers": {
     "alpha_registry": 15,
     "session_chart_equivalents.py": 8
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "F325bb42819c0d7a3",
+   "key": "formula|@audjpy|?|m30|asia|?|?|?|{\"expr\":[\"neg\",[\"mean\",\"spread\"]],\"side_mode\":\"fade\"}",
+   "cells": 23,
+   "rules": 6,
+   "symbols": [
+    "AUDJPY",
+    "AUDSGD",
+    "CADJPY",
+    "EURJPY",
+    "NOKJPY",
+    "NZDJPY"
+   ],
+   "n_symbols": 6,
+   "mechanism": "UNKNOWN: inherited unchanged from a CERTIFIED root;",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 23
    },
    "l3_group": null
   },
@@ -43071,21 +43077,39 @@
    "l3_group": null
   },
   {
-   "family_id": "F06601d42cec9a202",
-   "key": "macro_conditional|@audjpy|?|d1|?|?|?|?",
+   "family_id": "F85fbadb4db3cc6e3",
+   "key": "formula|@audchf|?|h1|asia|?|?|?|{\"expr\":[\"ts_backfill\",[\"decay\",\"spread\"]],\"side_mode\":\"follow\"}",
    "cells": 23,
-   "rules": 7,
+   "rules": 4,
    "symbols": [
-    "AUDJPY",
-    "AUDSGD",
-    "CADJPY",
-    "EURJPY",
-    "NOKJPY",
-    "NZDJPY",
-    "SGDJPY"
+    "AUDCHF",
+    "CADCHF",
+    "EURAUD",
+    "NZDCHF"
    ],
-   "n_symbols": 7,
-   "mechanism": "macro_release carried to NOKJPY at multi_day (mutation: cross_producer)",
+   "n_symbols": 4,
+   "mechanism": "UNKNOWN: inherited unchanged from a CERTIFIED root;",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 20,
+    "miner_candidates.json": 3
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "Fd5d473c64ca5e41a",
+   "key": "formula|@eurmxn|?|h1|?|?|?|?|{\"expr\":[\"ts_backfill\",[\"decay\",\"spread\"]],\"side_mode\":\"follow\"}",
+   "cells": 23,
+   "rules": 4,
+   "symbols": [
+    "EURMXN",
+    "GBPMXN",
+    "MXNJPY",
+    "USDMXN"
+   ],
+   "n_symbols": 4,
+   "mechanism": "ts_backfill(decay(spread, 5), 3): a momentum-type measure of spread, z-scored on its own history and followed in its own direction when it is extreme",
    "mechanism_flag": null,
    "mechanism_label": null,
    "producers": {
@@ -43141,33 +43165,6 @@
     "miner_candidates.json": 16,
     "alpha_registry": 5,
     "desks/mt5/research/breadth_sweep.py": 2
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "F3279f823b319d382",
-   "key": "cot_positioning|@eurhkd|?|h1|?|?|?|?",
-   "cells": 23,
-   "rules": 9,
-   "symbols": [
-    "EURHKD",
-    "EURSGD",
-    "EURUSD",
-    "USDCZK",
-    "USDDKK",
-    "USDPLN",
-    "USDSEK",
-    "USDSGD",
-    "USDX"
-   ],
-   "n_symbols": 9,
-   "mechanism": "closing a NAMED breadth gap: weekly speculative positioning at multi-year extremes -- a clock no intraday family observes, so its errors have no reason to corre",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 14,
-    "desks/mt5/research/breadth_sweep.py": 5,
-    "desks/mt5/research/local_converter.py": 4
    },
    "l3_group": null
   },
@@ -43718,6 +43715,32 @@
    "producers": {
     "miner_candidates.json": 20,
     "alpha_registry": 3
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "F8c953fbe1e1af13d",
+   "key": "cross_asset_residual|@aus200|?|m30|asia|?|?|?|{\"factor_symbols\":[\"bchusd\",\"ethusd\",\"ltcusd\",\"btcusd\",\"eurusd\",\"eurgbp\",\"audusd\",\"usdsgd\"]}",
+   "cells": 23,
+   "rules": 9,
+   "symbols": [
+    "AUS200",
+    "CA60",
+    "EUSTX50",
+    "FRA40",
+    "GER40",
+    "NETH25",
+    "UK100",
+    "US30",
+    "US500"
+   ],
+   "n_symbols": 9,
+   "mechanism": "source supplied exact recipe",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "miner_candidates.json": 14,
+    "alpha_registry": 9
    },
    "l3_group": null
   },
@@ -44834,34 +44857,6 @@
    "l3_group": null
   },
   {
-   "family_id": "Fe1aace2c95b2ae8c",
-   "key": "forced_flow|@aus200|?|h1|london|?|?|?",
-   "cells": 22,
-   "rules": 9,
-   "symbols": [
-    "AUS200",
-    "CA60",
-    "EUSTX50",
-    "FRA40",
-    "GER40",
-    "NETH25",
-    "UK100",
-    "US30",
-    "US500"
-   ],
-   "n_symbols": 9,
-   "mechanism": "converted deterministically from the mined corpus;",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "alpha_registry": 8,
-    "desks/mt5/research/local_converter.py": 7,
-    "miner_candidates.json": 4,
-    "desks/mt5/research/breadth_sweep.py": 3
-   },
-   "l3_group": null
-  },
-  {
    "family_id": "Fe43483b87ec13381",
    "key": "comex_settlement|@eurhkd|?|h1|ny|?|?|?",
    "cells": 22,
@@ -45019,6 +45014,30 @@
    "producers": {
     "miner_candidates.json": 14,
     "alpha_registry": 7,
+    "desks/mt5/research/local_converter.py": 1
+   },
+   "l3_group": null
+  },
+  {
+   "family_id": "F32124189d89c5aa2",
+   "key": "level_breakout|@adausd|?|h1|ny|?|?|?",
+   "cells": 22,
+   "rules": 7,
+   "symbols": [
+    "ADAUSD",
+    "AVAXUSD",
+    "DOTUSD",
+    "ETHUSD",
+    "LNKUSD",
+    "MATICUSD",
+    "SOLUSD"
+   ],
+   "n_symbols": 7,
+   "mechanism": "breakout_liquidity: inherited unchanged from a FORWARD root;",
+   "mechanism_flag": null,
+   "mechanism_label": null,
+   "producers": {
+    "alpha_registry": 21,
     "desks/mt5/research/local_converter.py": 1
    },
    "l3_group": null
@@ -45206,77 +45225,30 @@
     "alpha_registry": 22
    },
    "l3_group": null
-  },
-  {
-   "family_id": "F5d4fcbfcc41c735f",
-   "key": "overnight_drift|@eurgbp|?|m30|asia|?|?|?",
-   "cells": 22,
-   "rules": 3,
-   "symbols": [
-    "EURGBP",
-    "GBPCHF",
-    "GBPDKK"
-   ],
-   "n_symbols": 3,
-   "mechanism": "source supplied exact recipe",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "miner_candidates.json": 16,
-    "alpha_registry": 6
-   },
-   "l3_group": null
-  },
-  {
-   "family_id": "F12acf2039574a488",
-   "key": "multi_speed_trend|@eurhkd|?|h1|london|?|?|?",
-   "cells": 22,
-   "rules": 9,
-   "symbols": [
-    "EURHKD",
-    "EURSGD",
-    "EURUSD",
-    "USDCZK",
-    "USDDKK",
-    "USDPLN",
-    "USDSEK",
-    "USDSGD",
-    "USDX"
-   ],
-   "n_symbols": 9,
-   "mechanism": "closing a NAMED breadth gap: every family, default parameters, every chart, every session.",
-   "mechanism_flag": null,
-   "mechanism_label": null,
-   "producers": {
-    "miner_candidates.json": 13,
-    "desks/mt5/research/breadth_sweep.py": 6,
-    "alpha_registry": 3
-   },
-   "l3_group": null
   }
  ],
  "families_published": 2000,
- "families_summarised": 1160184,
+ "families_summarised": 1153930,
  "family_size_bands": {
   "1": {
-   "families": 923489,
-   "cells": 923489
+   "families": 918128,
+   "cells": 918128
   },
   "2": {
-   "families": 128468,
-   "cells": 256936
+   "families": 127958,
+   "cells": 255916
   },
   "3-5": {
-   "families": 77940,
-   "cells": 272096
+   "families": 77689,
+   "cells": 271219
   },
   "6-20": {
-   "families": 29965,
-   "cells": 257162
+   "families": 29832,
+   "cells": 255934
   },
   "21-100": {
-   "families": 2222,
-   "cells": 78637
+   "families": 2223,
+   "cells": 78653
   },
   ">100": {
    "families": 100,
@@ -45292,38 +45264,38 @@
    "thinnest": [
     {
      "value": "forex exotics",
-     "families": 22511
+     "families": 22499
     },
     {
      "value": "metal",
-     "families": 84791
+     "families": 83984
     },
     {
      "value": "soft",
-     "families": 85781
+     "families": 84984
     },
     {
      "value": "crypto",
-     "families": 90186
+     "families": 89520
     },
     {
      "value": "fx major",
-     "families": 99832
+     "families": 99631
     },
     {
      "value": "index",
-     "families": 116242
+     "families": 115205
     },
     {
      "value": "fx cross",
-     "families": 173555
+     "families": 173279
     },
     {
      "value": "fx exotic",
-     "families": 567117
+     "families": 564376
     }
    ],
-   "families_inverse_simpson": 3.859
+   "families_inverse_simpson": 3.856
   },
   "timeframe": {
    "values": 7,
@@ -45333,34 +45305,34 @@
    "thinnest": [
     {
      "value": "D1",
-     "families": 5369
+     "families": 5406
     },
     {
      "value": "M1",
-     "families": 10451
+     "families": 10133
     },
     {
      "value": "H4",
-     "families": 26153
+     "families": 26451
     },
     {
      "value": "M5",
-     "families": 213446
+     "families": 211981
     },
     {
      "value": "M15",
-     "families": 230281
+     "families": 229090
     },
     {
      "value": "M30",
-     "families": 241451
+     "families": 239102
     },
     {
      "value": "H1",
-     "families": 435033
+     "families": 433767
     }
    ],
-   "families_inverse_simpson": 3.893
+   "families_inverse_simpson": 3.889
   },
   "alpha_cluster": {
    "values": 13,
@@ -45376,54 +45348,54 @@
     },
     {
      "value": "event_surprise",
-     "families": 6079
+     "families": 6014
     },
     {
      "value": "fixing_roll_calendar",
-     "families": 11755
+     "families": 11714
     },
     {
      "value": "crisis_drawdown",
-     "families": 13525
+     "families": 13442
     },
     {
      "value": "cross_sectional_fx",
-     "families": 16798
+     "families": 16593
     },
     {
      "value": "mean_reversion",
-     "families": 23083
+     "families": 23086
     },
     {
      "value": "macro_rates",
-     "families": 27179
+     "families": 25515
     },
     {
      "value": "trend",
-     "families": 28403
+     "families": 28449
     },
     {
      "value": "cross_asset_lead_lag",
-     "families": 39436
+     "families": 38532
     },
     {
      "value": "volatility_transition",
-     "families": 53434
+     "families": 53437
     },
     {
      "value": "session_liquidity",
-     "families": 90236
+     "families": 89667
     },
     {
      "value": "relative_value",
-     "families": 239864
+     "families": 238900
     },
     {
      "value": "UNCLASSIFIED",
-     "families": 610853
+     "families": 609042
     }
    ],
-   "families_inverse_simpson": 3.029
+   "families_inverse_simpson": 3.016
   },
   "producer": {
    "values": 8,
@@ -45431,7 +45403,7 @@
    "thinnest": [
     {
      "value": "deepened_candidates.json",
-     "families": 81
+     "families": 96
     },
     {
      "value": "external_backtest_results.json",
@@ -45439,30 +45411,30 @@
     },
     {
      "value": "orthogonal_candidates.json",
-     "families": 150
+     "families": 156
     },
     {
      "value": "session_chart_equivalents.py",
-     "families": 1307
+     "families": 1246
     },
     {
      "value": "desks/mt5/research/local_converter.py",
-     "families": 5783
+     "families": 3310
     },
     {
      "value": "desks/mt5/research/breadth_sweep.py",
-     "families": 30204
+     "families": 30158
     },
     {
      "value": "miner_candidates.json",
-     "families": 510136
+     "families": 507643
     },
     {
      "value": "alpha_registry",
-     "families": 660998
+     "families": 658980
     }
    ],
-   "families_inverse_simpson": 2.093
+   "families_inverse_simpson": 2.084
   },
   "family": {
    "values": 105,
@@ -45529,7 +45501,7 @@
      "families": 23
     }
    ],
-   "families_inverse_simpson": 14.019
+   "families_inverse_simpson": 14.049
   }
  },
  "l3_series_families": 234,
@@ -45537,11 +45509,11 @@
   "days": [
    {
     "day": "2026-08-28",
-    "raw_cells": 561,
-    "new_independent_cells": 453,
-    "new_independent_families": 350,
+    "raw_cells": 559,
+    "new_independent_cells": 451,
+    "new_independent_families": 348,
     "reaimed_cells": 0,
-    "duplicate_share": 0.1925
+    "duplicate_share": 0.1932
    },
    {
     "day": "2026-08-29",
@@ -45593,43 +45565,43 @@
    },
    {
     "day": "2026-09-22",
-    "raw_cells": 38302,
-    "new_independent_cells": 28065,
-    "new_independent_families": 16975,
+    "raw_cells": 38220,
+    "new_independent_cells": 28019,
+    "new_independent_families": 16940,
     "reaimed_cells": 0,
-    "duplicate_share": 0.2673
+    "duplicate_share": 0.2669
    },
    {
     "day": "2026-09-23",
-    "raw_cells": 21678,
-    "new_independent_cells": 16139,
-    "new_independent_families": 7946,
+    "raw_cells": 21656,
+    "new_independent_cells": 16122,
+    "new_independent_families": 7955,
     "reaimed_cells": 0,
     "duplicate_share": 0.2555
    },
    {
     "day": "2026-09-24",
-    "raw_cells": 165472,
-    "new_independent_cells": 133320,
-    "new_independent_families": 100681,
+    "raw_cells": 165252,
+    "new_independent_cells": 133197,
+    "new_independent_families": 100606,
     "reaimed_cells": 0,
-    "duplicate_share": 0.1943
+    "duplicate_share": 0.194
    },
    {
     "day": "2026-09-25",
-    "raw_cells": 751833,
-    "new_independent_cells": 615058,
-    "new_independent_families": 465847,
+    "raw_cells": 748898,
+    "new_independent_cells": 612319,
+    "new_independent_families": 463298,
     "reaimed_cells": 0,
-    "duplicate_share": 0.1819
+    "duplicate_share": 0.1824
    },
    {
     "day": "2026-09-27",
-    "raw_cells": 3352,
-    "new_independent_cells": 1659,
-    "new_independent_families": 927,
+    "raw_cells": 3282,
+    "new_independent_cells": 1590,
+    "new_independent_families": 899,
     "reaimed_cells": 0,
-    "duplicate_share": 0.5051
+    "duplicate_share": 0.5155
    },
    {
     "day": "2026-09-28",
@@ -45673,11 +45645,11 @@
    },
    {
     "day": "2026-10-03",
-    "raw_cells": 111970,
-    "new_independent_cells": 98120,
-    "new_independent_families": 70829,
+    "raw_cells": 111901,
+    "new_independent_cells": 98053,
+    "new_independent_families": 70778,
     "reaimed_cells": 0,
-    "duplicate_share": 0.1237
+    "duplicate_share": 0.1238
    },
    {
     "day": "2026-10-04",
@@ -45745,59 +45717,59 @@
    },
    {
     "day": "2026-10-18",
-    "raw_cells": 148305,
-    "new_independent_cells": 120904,
-    "new_independent_families": 87860,
+    "raw_cells": 148080,
+    "new_independent_cells": 120818,
+    "new_independent_families": 87826,
     "reaimed_cells": 0,
-    "duplicate_share": 0.1848
+    "duplicate_share": 0.1841
    },
    {
     "day": "2026-10-19",
-    "raw_cells": 11962,
-    "new_independent_cells": 9049,
-    "new_independent_families": 4810,
+    "raw_cells": 11954,
+    "new_independent_cells": 9041,
+    "new_independent_families": 4805,
     "reaimed_cells": 0,
-    "duplicate_share": 0.2435
+    "duplicate_share": 0.2437
    },
    {
     "day": "2026-10-20",
-    "raw_cells": 37300,
-    "new_independent_cells": 34667,
-    "new_independent_families": 26040,
+    "raw_cells": 37234,
+    "new_independent_cells": 34618,
+    "new_independent_families": 26016,
     "reaimed_cells": 0,
-    "duplicate_share": 0.0706
+    "duplicate_share": 0.0703
    },
    {
     "day": "2026-10-21",
-    "raw_cells": 33950,
-    "new_independent_cells": 30536,
-    "new_independent_families": 22520,
+    "raw_cells": 33818,
+    "new_independent_cells": 30427,
+    "new_independent_families": 22436,
     "reaimed_cells": 0,
-    "duplicate_share": 0.1006
+    "duplicate_share": 0.1003
    },
    {
     "day": "2026-10-22",
-    "raw_cells": 8263,
-    "new_independent_cells": 6014,
-    "new_independent_families": 3454,
+    "raw_cells": 8236,
+    "new_independent_cells": 5988,
+    "new_independent_families": 3430,
     "reaimed_cells": 0,
-    "duplicate_share": 0.2722
+    "duplicate_share": 0.2729
    },
    {
     "day": "2026-10-23",
-    "raw_cells": 4946,
-    "new_independent_cells": 3715,
-    "new_independent_families": 3119,
+    "raw_cells": 4941,
+    "new_independent_cells": 3710,
+    "new_independent_families": 3114,
     "reaimed_cells": 0,
-    "duplicate_share": 0.2489
+    "duplicate_share": 0.2491
    },
    {
     "day": "2026-10-24",
-    "raw_cells": 3450,
-    "new_independent_cells": 1817,
-    "new_independent_families": 1108,
+    "raw_cells": 3445,
+    "new_independent_cells": 1812,
+    "new_independent_families": 1104,
     "reaimed_cells": 0,
-    "duplicate_share": 0.4733
+    "duplicate_share": 0.474
    },
    {
     "day": "2026-10-25",
@@ -45825,74 +45797,74 @@
    },
    {
     "day": "2026-10-30",
-    "raw_cells": 190101,
-    "new_independent_cells": 189963,
-    "new_independent_families": 189795,
-    "reaimed_cells": 189347,
+    "raw_cells": 188484,
+    "new_independent_cells": 188346,
+    "new_independent_families": 188181,
+    "reaimed_cells": 187729,
     "duplicate_share": 0.0007
    },
    {
     "day": "2026-10-31",
-    "raw_cells": 4724,
-    "new_independent_cells": 4428,
-    "new_independent_families": 4140,
-    "reaimed_cells": 3699,
-    "duplicate_share": 0.0627
+    "raw_cells": 4671,
+    "new_independent_cells": 4375,
+    "new_independent_families": 4087,
+    "reaimed_cells": 3651,
+    "duplicate_share": 0.0634
    },
    {
     "day": "2026-11-02",
-    "raw_cells": 33032,
-    "new_independent_cells": 32374,
-    "new_independent_families": 31335,
-    "reaimed_cells": 1078,
-    "duplicate_share": 0.0199
+    "raw_cells": 33008,
+    "new_independent_cells": 32353,
+    "new_independent_families": 31313,
+    "reaimed_cells": 1054,
+    "duplicate_share": 0.0198
    },
    {
     "day": "2026-11-04",
-    "raw_cells": 3648,
-    "new_independent_cells": 2711,
-    "new_independent_families": 1825,
-    "reaimed_cells": 879,
-    "duplicate_share": 0.2569
+    "raw_cells": 3572,
+    "new_independent_cells": 2637,
+    "new_independent_families": 1757,
+    "reaimed_cells": 823,
+    "duplicate_share": 0.2618
    },
    {
     "day": "2026-11-05",
-    "raw_cells": 11993,
-    "new_independent_cells": 8673,
-    "new_independent_families": 5671,
-    "reaimed_cells": 1854,
-    "duplicate_share": 0.2768
+    "raw_cells": 11095,
+    "new_independent_cells": 7894,
+    "new_independent_families": 5031,
+    "reaimed_cells": 1495,
+    "duplicate_share": 0.2885
    },
    {
     "day": "2026-11-06",
-    "raw_cells": 206649,
-    "new_independent_cells": 168755,
-    "new_independent_families": 110979,
-    "reaimed_cells": 7248,
-    "duplicate_share": 0.1834
+    "raw_cells": 204803,
+    "new_independent_cells": 167098,
+    "new_independent_families": 110241,
+    "reaimed_cells": 6743,
+    "duplicate_share": 0.1841
    }
   ],
   "undated": {
-   "raw_cells": 2179,
-   "new_independent_cells": 1731,
-   "new_independent_families": 1320,
+   "raw_cells": 2091,
+   "new_independent_cells": 1540,
+   "new_independent_families": 1112,
    "reaimed_cells": 0,
-   "duplicate_share": 0.2056
+   "duplicate_share": 0.2635
   },
   "trend": {
    "raw_cells": {
-    "mean_last_7_days_present": 64420.43,
-    "mean_prior_7_days_present": 12675.14,
+    "mean_last_7_days_present": 63775.57,
+    "mean_prior_7_days_present": 12641.57,
     "direction": "UP"
    },
    "new_independent_cells": {
-    "mean_last_7_days_present": 58226.86,
-    "mean_prior_7_days_present": 11031.14,
+    "mean_last_7_days_present": 57626.71,
+    "mean_prior_7_days_present": 11003.43,
     "direction": "UP"
    },
    "new_independent_families": {
-    "mean_last_7_days_present": 49152.14,
-    "mean_prior_7_days_present": 8075.43,
+    "mean_last_7_days_present": 48704.29,
+    "mean_prior_7_days_present": 8055.29,
     "direction": "UP"
    }
   },
@@ -45962,50 +45934,52 @@
   ]
  },
  "intake": {
-  "at": "2026-11-06T08:14:22+00:00",
+  "at": "2026-11-06T15:44:22+00:00",
   "version": "family-reaim-v1",
-  "checked": 611344,
+  "checked": 613049,
   "by_status": {
-   "EXACT": 431710,
-   "NEAR": 32636,
-   "FAMILY": 50103,
-   "NOVEL": 96895
+   "EXACT": 434061,
+   "NEAR": 30818,
+   "FAMILY": 50215,
+   "NOVEL": 97955
   },
-  "duplicate_share": 0.8415,
-  "reaimed": 3486,
-  "no_lawful_empty_target": 281302,
+  "duplicate_share": 0.8402,
+  "reaimed": 2100,
+  "no_lawful_empty_target": 281713,
   "fail_closed": null,
-  "target_unrunnable_skips": 1327733,
-  "reaim_already_present": 6474,
-  "already_reaimed_parents": 223187,
+  "target_unrunnable_skips": 1325636,
+  "reaim_already_present": 5371,
+  "already_reaimed_parents": 225910,
   "by_producer": {
    "alpha_registry": {
-    "EXACT": 423306,
-    "FAMILY": 50006,
-    "NEAR": 32587,
-    "NOVEL": 96733
+    "EXACT": 425393,
+    "FAMILY": 50200,
+    "NEAR": 30816,
+    "NOVEL": 97923
    },
    "deepened_candidates.json": {
-    "EXACT": 46,
-    "NOVEL": 18,
-    "FAMILY": 3
+    "EXACT": 55,
+    "FAMILY": 3,
+    "NOVEL": 7,
+    "NEAR": 1
    },
    "external_backtest_results.json": {
     "EXACT": 131
    },
    "miner_candidates.json": {
-    "NOVEL": 144,
-    "FAMILY": 94,
-    "EXACT": 8226,
-    "NEAR": 49
+    "EXACT": 8478,
+    "NOVEL": 24,
+    "FAMILY": 12,
+    "NEAR": 1
    },
    "orthogonal_candidates.json": {
-    "EXACT": 1
+    "EXACT": 4,
+    "NOVEL": 1
    }
   },
   "mint_conservation": {
-   "fresh_in": 611344,
-   "rows_out": 614830,
+   "fresh_in": 613049,
+   "rows_out": 615149,
    "removed": 0
   },
   "rule": "a duplicate is KEPT and a re-aimed descendant is minted beside it; nothing is deleted, so the mint rate can only rise. Once per parent, ever: reaim_ledger.jsonl OR a child already in the docket",
