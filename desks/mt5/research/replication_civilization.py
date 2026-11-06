@@ -235,7 +235,8 @@ def load_bars(symbol: str, timeframe: str = "H1", universe: Path | None = None) 
         return None
     if len(t_ns) < 2:
         return None
-    return bars_from_arrays(np.asarray(t_ns, dtype="int64"), *arrs, cols=extra)
+    return bars_from_arrays(np.asarray(t_ns, dtype="int64"), arrs[0], arrs[1], arrs[2], arrs[3],
+                            cols=extra)
 
 
 # ------------------------------------------------------------------------------ indicators
