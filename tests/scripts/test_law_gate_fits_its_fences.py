@@ -62,14 +62,16 @@ def _row(hours_ago: float, elapsed: float, detail: str = "ok", ok: bool = True) 
 
 
 def test_a_heavy_fence_waits_and_the_cheap_ones_behind_it_finish(monkeypatch, tmp_path):
-    fences = {"a_first.py": 1500.0, "b_heavy.py": 400.0, "c_cheap.py": 10.0, "d_cheap.py": 10.0}
-    prior = {"a_first.py": _row(10, 1000), "b_heavy.py": _row(9, 400),
-             "c_cheap.py": _row(8, 10), "d_cheap.py": _row(7, 10)}
+    # three 550 s fences leave 150 s; the 400 s fence (need 600 s) waits, the cheap one runs
+    fences = {"a.py": 550.0, "b.py": 550.0, "c.py": 550.0, "b_heavy.py": 400.0,
+              "c_cheap.py": 10.0}
+    prior = {"a.py": _row(12, 400), "b.py": _row(11, 400), "c.py": _row(10, 400),
+             "b_heavy.py": _row(9, 400), "c_cheap.py": _row(8, 10)}
     clock, _ = _wire(monkeypatch, tmp_path, fences, prior)
     rep = lg.rotate_gate(tmp_path, budget_s=1800.0)
     ran = rep["rotation"]["ran_this_pass"]
     assert "b_heavy.py" in rep["rotation"]["deferred_needs_more_than_left"]
-    assert {"c_cheap.py", "d_cheap.py"} <= set(ran)
+    assert "c_cheap.py" in ran and "b_heavy.py" not in ran
     assert (clock.t - T0).total_seconds() <= 1800.0
     # the deferred fence keeps its old verdict and its age, so it leads the next pass
     assert rep["fences"]["b_heavy.py"]["ran_at"] == prior["b_heavy.py"]["ran_at"]
@@ -78,8 +80,9 @@ def test_a_heavy_fence_waits_and_the_cheap_ones_behind_it_finish(monkeypatch, tm
 def test_a_budget_cut_is_not_written_as_a_failed_verdict(monkeypatch, tmp_path):
     """A fence with no measured need starts on the floor; cut short by the budget, it leaves
     the prior verdict standing and is owed the full bound next pass."""
-    fences = {"a_first.py": 1650.0, "b_unknown.py": 300.0}
-    prior = {"a_first.py": _row(10, 1000), "b_unknown.py": _row(9, 0, "")}
+    fences = {"a.py": 550.0, "b.py": 550.0, "c.py": 550.0, "b_unknown.py": 300.0}
+    prior = {"a.py": _row(12, 400), "b.py": _row(11, 400), "c.py": _row(10, 400),
+             "b_unknown.py": _row(9, 0, "")}
     prior["b_unknown.py"].pop("elapsed_s")
     _wire(monkeypatch, tmp_path, fences, prior)
     rep = lg.rotate_gate(tmp_path, budget_s=1800.0)
