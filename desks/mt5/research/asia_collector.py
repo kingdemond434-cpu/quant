@@ -57,6 +57,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from collections import Counter
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -177,6 +178,46 @@ def _robots_allows(url: str, agent: str = "quant-desk-collector") -> tuple[bool,
         return (bool(rp.can_fetch(agent, url)), "robots.txt consulted")
     except Exception as exc:
         return True, f"robots.txt unreadable ({type(exc).__name__}); treated as allowing"
+
+
+#: Terms values under which a MODEL-NAMED (scouted) source may be fetched on a schedule.
+SCOUT_TERMS_OK = frozenset({"confirmed"})
+SCOUT_PORTS = frozenset({None, 80, 443})
+
+
+def scouted_admissible(rows: list[dict[str, Any]], public_url: Callable[[str], str],
+                       robots: Callable[[str], tuple[bool, str]] | None = None,
+                       ) -> tuple[list[dict[str, Any]], dict[str, str]]:
+    """The scouted rows this pass may collect, and why each other one is held.
+
+    A SCOUTED ROW IS A MODEL'S SUGGESTION, NOT A DECLARED SOURCE (audit of 538cb964, SF9). It
+    used to be fetched hourly with `terms: "to_confirm"`, its robots.txt read only once at scout
+    time, and any port. Now it is collected only once its terms are confirmed (unconfirmed terms
+    stay fail-closed), on a standard port, at a host that still resolves public, and only while
+    its robots.txt -- re-read every pass -- allows the URL. Declared registry rows are unchanged.
+    """
+    check = robots or (lambda u: _robots_allows(u, "quant-desk-source-scout/1.0"))
+    ok: list[dict[str, Any]] = []
+    held: dict[str, str] = {}
+    for s in rows:
+        sid, url = str(s.get("id")), str(s.get("url") or "")
+        try:
+            port = urllib.parse.urlsplit(url).port
+        except ValueError:
+            port = -1
+        if str(s.get("terms") or "") not in SCOUT_TERMS_OK:
+            held[sid] = f"terms {s.get('terms') or 'unstated'}: unconfirmed terms stay closed"
+        elif port not in SCOUT_PORTS:
+            held[sid] = f"non-standard port {port}"
+        elif public_url(url):
+            held[sid] = f"host no longer public: {public_url(url)}"
+        else:
+            allowed, why = check(url)
+            if not allowed or "unreadable" in why:
+                held[sid] = f"robots.txt: {why if allowed else 'disallows this URL'}"
+            else:
+                ok.append(s)
+    return ok, held
 
 
 def _vault(source_id: str, body: bytes, url: str, ctype: str) -> dict[str, Any]:
@@ -557,9 +598,13 @@ def main(argv: list[str] | None = None) -> int:
     if str(BASE.parents[1]) not in sys.path:
         sys.path.insert(0, str(BASE.parents[1]))    # the repo root, for libs/
     from libs.ops.public_host import public_url
-    sources += [s for s in (scouted.get("sources") or []) if isinstance(s, dict)
-                and s.get("probe") == "REACHABLE" and str(s.get("id")) not in known
-                and not public_url(str(s.get("url") or ""))]
+    admitted, held = scouted_admissible(
+        [s for s in (scouted.get("sources") or []) if isinstance(s, dict)
+         and s.get("probe") == "REACHABLE" and str(s.get("id")) not in known], public_url)
+    sources += admitted
+    if held:
+        print(f"asia collector: {len(held)} scouted source(s) held: "
+              + "; ".join(f"{k} {v}" for k, v in sorted(held.items())[:8]))
     derived = _derived_sources(sources)
     if derived:
         print(f"asia collector: {len(derived)} endpoint(s) handed back by the parser "
