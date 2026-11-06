@@ -1022,12 +1022,8 @@ def _need_s(row: dict[str, Any]) -> float:
     A fence last seen timing out needs the whole per-fence bound; one measured finishing needs
     half again its measured seconds (floored); one never measured gets the floor and is learned.
     """
-    if row.get("need_s") is not None:
-        try:
-            return min(ROTATION_FENCE_TIMEOUT_S, max(_ROTATION_FLOOR_S, float(row["need_s"])))
-        except (TypeError, ValueError):
-            pass
-    if "timed out" in str(row.get("detail") or ""):
+    if "timed out" in str(row.get("detail") or "") or row.get("need_s") is not None:
+        # A recorded need is only ever the full bound (a budget-truncated run); so is a timeout.
         return ROTATION_FENCE_TIMEOUT_S
     try:
         el = float(row.get("elapsed_s"))  # type: ignore[arg-type]
