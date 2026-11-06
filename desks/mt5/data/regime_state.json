@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-06T00:00:10.839372+00:00",
+  "swept_at": "2026-11-06T00:15:03.102543+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -625,7 +625,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1997,
+      "shadow_exp_r": -0.2116,
       "woke_on_shadow": false
     },
     "CHFDKK|carry_continuous": {
@@ -691,7 +691,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2976,
+      "shadow_exp_r": -0.3264,
       "woke_on_shadow": false
     },
     "CHFDKK|macro_conditional_continuous": {
@@ -1911,8 +1911,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 45,
-      "shadow_exp_r": -0.2158,
+      "shadow_n": 44,
+      "shadow_exp_r": -0.1951,
       "woke_on_shadow": false
     },
     "GBPAUD|cross_asset_residual_continuous": {
@@ -1956,7 +1956,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.141,
+      "shadow_exp_r": 0.0909,
       "woke_on_shadow": false
     },
     "GBPAUD|relative_value_continuous": {
