@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import sys
 import time
+import traceback
 from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
@@ -356,6 +357,15 @@ def daily() -> dict:
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
 
 
+def _innermost_frame(exc: BaseException) -> str:
+    """`file:line in func` of the frame that raised, for the leg's result record."""
+    tb = traceback.extract_tb(exc.__traceback__)
+    if not tb:
+        return ""
+    f = tb[-1]
+    return f"{Path(f.filename).name}:{f.lineno} in {f.name}"
+
+
 def record_tape() -> dict:
     """Persist broker-native ticks every hourly cycle before any research consumes them."""
     # TWO RECORDERS, TWO FATES. These were in one `try` and it hid the thing that matters: on
@@ -369,8 +379,12 @@ def record_tape() -> dict:
         try:
             rc = call()
         except Exception as exc:
-            print(f"tick tape {label} FAILED: {type(exc).__name__}: {exc}", flush=True)
+            # The traceback names the failing line. Without it, a numpy FloatingPointError
+            # from the tape (2026-11-05 14:42Z) logged only "overflow encountered in multiply".
+            print(f"tick tape {label} FAILED: {type(exc).__name__}: {exc}\n"
+                  f"{traceback.format_exc()}", flush=True)
             results[f"{label}_error"] = f"{type(exc).__name__}: {exc}"
+            results[f"{label}_where"] = _innermost_frame(exc)
             codes.append(1)
         else:
             results[f"{label}_exit_code"] = rc
