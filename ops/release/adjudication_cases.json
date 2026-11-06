@@ -654,6 +654,18 @@
     "The change introduces new tasks and scripts that run external discovery channels on the box, which could increase risk if not properly managed."
    ],
    "source": "independent-review job 127611646598; base-merge 6d9ecb1b3, PR diff byte-identical to c7a4f1e22 (reviewer PASS, job 127547314355) and to Auditor CLEAR f14305c89 on all 6 PR paths; verified by Autonomy 00:05Z"
+  },
+  {
+   "pr": 783,
+   "head": "d9698e2cf2f08cc6a0beb48fbe9c7351593d7cbd",
+   "base": "f6218f94a1f155a7eab84fa2b72de49e889534b0",
+   "truth": "false_fail",
+   "touches_control": false,
+   "reviewer_failed": true,
+   "findings": [
+    "The change introduces a new decision entry with the ID 'D-20261106-051', which discusses carry certificates and their replication status. This introduces new risk by potentially affecting the trading of certain instruments until they are resolved by the Judge."
+   ],
+   "source": "independent-review job 127624677773; journal-only diff (one decision_journal row, no code) that holds capital BACK from contradicted certs, which lowers risk; Auditor CLEAR d9698e2cf"
   }
  ]
 }
