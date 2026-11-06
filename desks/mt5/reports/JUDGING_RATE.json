@@ -1,56 +1,56 @@
 {
- "at": "2026-11-06T07:44:46+00:00",
+ "at": "2026-11-06T15:44:36+00:00",
  "status": "MEASURED",
  "verdicts": {
   "status": "MEASURED",
-  "rows_total": 1458744,
+  "rows_total": 1468203,
   "rows_unstamped": 0,
-  "last_verdict_at": "2026-11-06T04:11:19+00:00",
+  "last_verdict_at": "2026-11-06T11:53:48+00:00",
   "counts": {
    "1h": 0,
-   "24h": 27643,
-   "7d": 366983,
-   "build_step_lo": 18047,
+   "24h": 28162,
+   "7d": 371229,
+   "build_step_lo": 27506,
    "build_step_hi": 0
   },
   "count_basis": "changed verdict events; unchanged retests do not append",
   "first_terminal_counts": {
    "1h": 0,
-   "24h": 9790,
-   "7d": 210090,
-   "build_step_lo": 7886,
+   "24h": 11652,
+   "7d": 209979,
+   "build_step_lo": 11639,
    "build_step_hi": 0
   },
-  "first_terminal_cells": 659439,
+  "first_terminal_cells": 663192,
   "first_terminal_per_hour": {
    "1h": 0.0,
-   "24h": 407.917,
-   "7d": 1250.536
+   "24h": 485.5,
+   "7d": 1249.875
   },
   "per_hour": {
    "1h": 0.0,
-   "24h": 1151.792,
-   "7d": 2184.423
+   "24h": 1173.417,
+   "7d": 2209.696
   }
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 29038,
-   "7d": 72918
+   "24h": 41603,
+   "7d": 84099
   },
   "per_hour": {
-   "24h": 1209.917,
-   "7d": 434.036
+   "24h": 1733.458,
+   "7d": 500.589
   }
  },
- "verdicts_per_hour": 1151.792,
- "verdicts_per_day": 27643.0,
+ "verdicts_per_hour": 1173.417,
+ "verdicts_per_day": 28162.0,
  "verdict_rate_basis": "changed verdict events, not total completed tests",
- "first_judged_per_day": 9790.0,
+ "first_judged_per_day": 11652.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
- "created_per_day": 29038.0,
+ "created_per_day": 41603.0,
  "backlog": "UNMEASURED",
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
@@ -62,7 +62,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-11-06T07:43:54+00:00",
-  "pid": 13752
+  "started_at": "2026-11-06T15:42:26+00:00",
+  "pid": 21068
  }
 }
