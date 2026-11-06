@@ -1012,6 +1012,59 @@ SPEC_BOOK["spread_state"] = RuleSpec(
     _build_spread_state, rule_sets_side=True, session_in_params=True)
 
 
+def _trailing_mean(v: np.ndarray, n: int) -> np.ndarray:
+    """Mean of rows i-n+1 .. i; NaN unless all n are finite."""
+    out = np.full(v.size, np.nan)
+    if n < 1 or v.size < n:
+        return out
+    w = np.lib.stride_tricks.sliding_window_view(v, n)
+    full = np.isfinite(w).all(axis=1)
+    out[n - 1:] = np.where(full, np.where(np.isfinite(w), w, 0.0).mean(axis=1), np.nan)
+    return out
+
+
+def _build_jump(b: Bars, p: dict[str, Any]) -> list[Order]:
+    mode, lb, atr_n = str(p.get("mode") or ""), int(p["lookback"]), int(p["atr_n"])
+    if mode not in ("continue", "revert") or lb < 4 or len(b) < lb + atr_n + 3:
+        return []
+    with np.errstate(invalid="ignore", divide="ignore"):
+        r = np.concatenate([[np.nan], np.diff(np.log(b.c))])
+        absr = np.abs(r)
+        bip = _trailing_mean(absr * np.concatenate([[np.nan], absr[:-1]]), lb)
+        sigma = np.sqrt(np.concatenate([[np.nan], bip[:-1]]) * (np.pi / 2.0))
+        stat = absr / sigma
+    a = atr(b, atr_n)
+    flip = 1 if mode == "continue" else -1
+    k, cool = float(p["jump_k"]), int(p["cooldown_bars"])
+    stop_atr, rr, ttl = float(p["stop_atr"]), float(p["rr"]), int(p["ttl_bars"])
+    out: list[Order] = []
+    last = -(10 ** 9)
+    for i in range(lb + 1, len(b) - 1):
+        if not (np.isfinite(stat[i]) and stat[i] >= k and np.isfinite(r[i]) and r[i] != 0.0
+                and np.isfinite(a[i]) and a[i] > 0) or i - last < cool:
+            continue
+        last = i
+        side = flip * (1 if r[i] > 0 else -1)
+        px, sd = float(b.c[i]), stop_atr * float(a[i])
+        out.append(Order(int(b.t[i]), side, px - side * sd, px + side * sd * rr, ttl))
+    return out
+
+
+SPEC_BOOK["jump"] = RuleSpec(
+    "jump",
+    "Log close-to-close returns r. At bar i the jump statistic is |r_i| / sigma_i, with "
+    "sigma_i^2 = (pi/2) x the mean of |r_j||r_j-1| over the lookback bars ending at i - 1 "
+    "(bipower variation, bar i excluded; NaN unless every term exists). Stands aside on an "
+    "unknown mode, lookback < 4, or fewer than lookback + atr_n + 3 bars. From bar lookback + 1, "
+    "a statistic >= jump_k on a non-zero return with a positive ATR(atr_n) signals -- continue "
+    "with the return's sign, revert against it -- and no further signal for cooldown_bars "
+    "bars. Stop stop_atr x ATR and target rr x that from the signal close, entry next open, "
+    "time exit after ttl_bars. The session is the certificate's parameter.",
+    {"mode": "continue", "lookback": 48, "jump_k": 4.0, "cooldown_bars": 8, "atr_n": 20,
+     "stop_atr": 1.5, "rr": 1.5, "ttl_bars": 8},
+    _build_jump, rule_sets_side=True, session_in_params=True)
+
+
 #: Session selector -> [start, end) broker hours a non-breakout signal must fall in.
 SESSIONS: dict[str, tuple[int, int] | None] = {
     "asia": (0, 8), "london": (8, 16), "ny": (14, 22), "all": None, "continuous": None,
