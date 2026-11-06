@@ -1,16 +1,16 @@
 {
  "schema": "judge_prescreen/1.3",
- "generated_at": "2026-11-06T13:28:48+00:00",
+ "generated_at": "2026-11-06T19:14:32+00:00",
  "mode": "SHADOW",
- "rows": 1612613,
- "rows_already_ruled_not_screened": 783372,
+ "rows": 1605778,
+ "rows_already_ruled_not_screened": 773982,
  "would_kill": {
   "needs_data": 976,
   "chart_short": 0,
-  "sibling_dead": 249017
+  "sibling_dead": 249681
  },
- "would_kill_total": 249993,
- "would_kill_share": 0.155024,
+ "would_kill_total": 250657,
+ "would_kill_share": 0.156097,
  "removed_from_docket": 0,
  "holdout_sent_to_judge": 0,
  "rule_acts": {
@@ -21,14 +21,14 @@
  "sibling_k": 5,
  "sibling_canon_k": null,
  "sibling_would_kill_by_k": {
-  "5": 249017,
-  "10": 194363,
-  "20": 118215,
-  "40": 52907,
-  "80": 23250
+  "5": 249681,
+  "10": 194784,
+  "20": 118413,
+  "40": 53024,
+  "80": 23355
  },
- "ms_per_row": 0.50185,
- "seconds": 809.298,
+ "ms_per_row": 1.1541,
+ "seconds": 1853.225,
  "samples": {
   "needs_data": [
    {
@@ -209,6 +209,20 @@
     "k": 5
    },
    {
+    "cell": "AUDCHF@M5.volume_spike.p=c3cc0ce059518d50",
+    "bucket": "AUDCHF|M5|volume_spike",
+    "named_cells": 6,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "AUDCHF@M5.volume_spike.p=b051bf75a13732dd",
+    "bucket": "AUDCHF|M5|volume_spike",
+    "named_cells": 6,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
     "cell": "CHINAH@M5.overnight_drift.p=beda983d1cf3456a",
     "bucket": "CHINAH|M5|overnight_drift",
     "named_cells": 10,
@@ -319,27 +333,13 @@
     "named_cells": 8,
     "cleared_cells": 0,
     "k": 5
-   },
-   {
-    "cell": "COFROB@M15.volume_spike.p=1f82f7f6601431ed",
-    "bucket": "COFROB|M15|volume_spike",
-    "named_cells": 13,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "COFROB@M5.volume_spike.p=7c5057d691b54cd5",
-    "bucket": "COFROB|M5|volume_spike",
-    "named_cells": 8,
-    "cleared_cells": 0,
-    "k": 5
    }
   ]
  },
  "missed_growth": [
   {
    "day": "2026-11-06",
-   "at": "2026-11-06T13:28:48+00:00",
+   "at": "2026-11-06T19:14:32+00:00",
    "rail": "judge_prescreen",
    "side": "cost",
    "kind": "opportunity_cost",
@@ -354,13 +354,13 @@
    "would_act_sibling_dead": {
     "k": 5,
     "true_survivors_killed": 17,
-    "cleared_in_sample_killed": 1793,
+    "cleared_in_sample_killed": 1801,
     "basis": "MEASURED by the look-ahead-free ledger replay"
    }
   },
   {
    "day": "2026-11-06",
-   "at": "2026-11-06T13:28:48+00:00",
+   "at": "2026-11-06T19:14:32+00:00",
    "rail": "judge_prescreen",
    "side": "gain",
    "kind": "compute_freed",
@@ -368,8 +368,8 @@
    "verdict": "MEASURED",
    "units": "judge build seconds freed (rows removed x measured judge seconds per cell)",
    "rows_removed": 0,
-   "seconds_per_cell": 0.12220788919818046,
-   "would_free_seconds_if_all_rules_acted": 30551.1
+   "seconds_per_cell": 0.12187277836081113,
+   "would_free_seconds_if_all_rules_acted": 30548.3
   }
  ],
  "note": "SHADOW records what each rule WOULD remove and removes nothing; every row still reaches the sealed judge. CANON (a code constant) removes only rules marked rule_acts, minus a 1-in-20 holdout, and only after a durable KILL."
