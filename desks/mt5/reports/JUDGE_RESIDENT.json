@@ -17,15 +17,16 @@
  "uptime_s": 807704.0,
  "last_sweep_ended_utc": "2026-11-06T01:02:55+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-06T03:20:08+00:00",
+ "heartbeat_utc": "2026-11-06T03:35:09+00:00",
  "sweep_phase": {
   "pid": 23696,
   "sweep_started_utc": "2026-11-06T01:03:08+00:00",
   "phases": {
-   "plan": 1381.8
+   "plan": 1381.8,
+   "prewarm": 7714.4
   },
-  "phase": "prewarm",
-  "phase_started_utc": "2026-11-06T01:26:10+00:00",
+  "phase": "plan_handoff",
+  "phase_started_utc": "2026-11-06T03:34:44+00:00",
   "plan_steps": {
    "lane_and_docket": 72.1,
    "docket_grouping": 82.5,
@@ -33,16 +34,17 @@
    "preflight": 130.6,
    "cache_prune": 829.8,
    "order": 82.5,
-   "yield_allocation": 26.9
+   "yield_allocation": 26.9,
+   "prewarm": 7714.4
   },
-  "plan_step": "prewarm",
-  "plan_step_started_utc": "2026-11-06T01:26:10+00:00",
+  "plan_step": "plan_handoff",
+  "plan_step_started_utc": "2026-11-06T03:34:44+00:00",
   "plan_counts": {
    "docket_rows": 1730635,
    "unique_cells": 1729973,
    "gate0_advance": 1716764
   },
-  "plan_last_marker": "  docket order: 46626 never-judged cell(s) first, then 301794 in symbol-rotation order",
+  "plan_last_marker": "PRE-WARM: 15 worker(s) warmed 23973 cell(s) in 7714s (1282 already cached, 1 failed, 323164 not reached before the build budget); failures by kind {'NOT_RUN_BUILD_FAILED': 1}",
   "wall_profile": {
    "every_s": 10.0,
    "depth": 6,
@@ -88,27 +90,27 @@
      }
     },
     "prewarm": {
-     "samples": 666,
+     "samples": 762,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 662,
-       "share": 0.994
+       "n": 758,
+       "share": 0.995
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 4,
-       "share": 0.006
+       "share": 0.005
       }
      ],
      "process": {
-      "cpu_s": 193.3,
-      "page_faults": 11653436.0,
-      "read_bytes": 5056676.0,
-      "write_bytes": 12594225569.0,
-      "sampled_s": 6650.0,
+      "cpu_s": 231.3,
+      "page_faults": 14129287.0,
+      "read_bytes": 6241537.0,
+      "write_bytes": 15495813553.0,
+      "sampled_s": 7610.0,
       "rss_mb_max": 3478.5,
-      "cpu_share_of_wall": 0.029
+      "cpu_share_of_wall": 0.03
      }
     }
    }
