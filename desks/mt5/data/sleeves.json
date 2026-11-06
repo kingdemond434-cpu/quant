@@ -198,13 +198,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 1,
+        "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.003734,
-        "joined": "joined on 'xauusd|asia' (funded book)",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.37% heat"
+        "heat_earned": 0.0,
+        "joined": "joined on 'gold_asia_v2' (zeroed by this solve)",
+        "why": "same admission scan (2026-11-06T05:50:58.116468+00:00) as the last reading -- a second reading needs a new scan. standby on the current reading -- same signal as gold_asia (a second copy of one bet, not a variant): the allocator prices and funds gold_asia; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
-      "admit_streak": 1,
+      "admit_streak": 0,
       "admit_scan": "2026-11-06T05:50:58.116468+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-28T20:13:16+00:00",
@@ -238,13 +238,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 1,
+        "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.003734,
-        "joined": "joined on 'xauusd|asia' (funded book)",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.37% heat"
+        "heat_earned": 0.0,
+        "joined": "joined on 'gold_asia_v3' (zeroed by this solve)",
+        "why": "same admission scan (2026-11-06T05:50:58.116468+00:00) as the last reading -- a second reading needs a new scan. standby on the current reading -- same signal as gold_asia (a second copy of one bet, not a variant): the allocator prices and funds gold_asia; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
-      "admit_streak": 1,
+      "admit_streak": 0,
       "admit_scan": "2026-11-06T05:50:58.116468+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-28T20:13:16+00:00",
@@ -278,13 +278,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 1,
+        "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.003734,
-        "joined": "joined on 'xauusd|asia' (funded book)",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.37% heat"
+        "heat_earned": 0.0,
+        "joined": "joined on 'gold_asia_v4' (zeroed by this solve)",
+        "why": "same admission scan (2026-11-06T05:50:58.116468+00:00) as the last reading -- a second reading needs a new scan. standby on the current reading -- same signal as gold_asia (a second copy of one bet, not a variant): the allocator prices and funds gold_asia; this copy earns 0% so the bet is never bought twice. NOT retired."
       },
-      "admit_streak": 1,
+      "admit_streak": 0,
       "admit_scan": "2026-11-06T05:50:58.116468+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-28T20:13:16+00:00",
@@ -32042,13 +32042,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 1,
+        "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.003734,
-        "joined": "joined on 'xauusd|range_reversion|asia' (funded book)",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.37% heat"
+        "heat_earned": 0.0,
+        "joined": "joined on 'xauusd|range_reversion|asia' (zeroed by this solve)",
+        "why": "same admission scan (2026-11-06T05:50:58.116468+00:00) as the last reading -- a second reading needs a new scan. standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
       },
-      "admit_streak": 1,
+      "admit_streak": 0,
       "admit_scan": "2026-11-06T05:50:58.116468+00:00",
       "artifact": {
         "version_hash": "3b13d93f7cbf5cb0",
@@ -34215,13 +34215,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 1,
+        "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.003734,
-        "joined": "joined on 'xauusd|range_reversion|asia' (funded book)",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.37% heat"
+        "heat_earned": 0.0,
+        "joined": "joined on 'xauusd_range_reversion_asia_p_f83412948ea922b5' (zeroed by this solve)",
+        "why": "same admission scan (2026-11-06T05:50:58.116468+00:00) as the last reading -- a second reading needs a new scan. standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
       },
-      "admit_streak": 1,
+      "admit_streak": 0,
       "admit_scan": "2026-11-06T05:50:58.116468+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-25T10:45:03+00:00",
