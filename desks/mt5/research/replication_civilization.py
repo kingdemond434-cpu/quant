@@ -40,7 +40,7 @@ import os
 import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -146,6 +146,9 @@ class Bars:
     low: np.ndarray
     c: np.ndarray
     minutes: int
+    #: The broker's own per-bar columns when the file carries them (`spread`, `tick_volume`),
+    #: aligned to `t`. Only the rules that read the venue's state use them.
+    cols: dict[str, np.ndarray] = field(default_factory=dict)
 
     def __len__(self) -> int:
         return int(self.t.size)
@@ -164,7 +167,7 @@ class Bars:
 
 
 def bars_from_arrays(t_ns: np.ndarray, o: np.ndarray, h: np.ndarray, low: np.ndarray,
-                     c: np.ndarray) -> Bars:
+                     c: np.ndarray, cols: Mapping[str, np.ndarray] | None = None) -> Bars:
     t = np.asarray(t_ns, dtype="int64")
     order = np.argsort(t, kind="stable")
     t = t[order]
@@ -173,7 +176,12 @@ def bars_from_arrays(t_ns: np.ndarray, o: np.ndarray, h: np.ndarray, low: np.nda
     step = int(np.median(gaps)) if len(gaps) else 3_600_000_000_000
     return Bars(t, np.asarray(o, dtype="float64")[order], np.asarray(h, dtype="float64")[order],
                 np.asarray(low, dtype="float64")[order], np.asarray(c, dtype="float64")[order],
-                max(1, step // 60_000_000_000))
+                max(1, step // 60_000_000_000),
+                {k: np.asarray(v, dtype="float64")[order] for k, v in dict(cols or {}).items()})
+
+
+#: The broker's per-bar columns the lane carries beside OHLC when a file holds them.
+VENUE_COLUMNS = ("spread", "tick_volume")
 
 
 def load_bars(symbol: str, timeframe: str = "H1", universe: Path | None = None) -> Bars | None:
@@ -221,11 +229,13 @@ def load_bars(symbol: str, timeframe: str = "H1", universe: Path | None = None) 
         if t_ns is None:
             return None
         arrs = [frame[cols[k]].to_numpy(dtype="float64")[keep] for k in need]
+        extra = {k: frame[cols[k]].to_numpy(dtype="float64")[keep]
+                 for k in VENUE_COLUMNS if k in cols and cols[k] in frame.columns}
     except Exception:
         return None
     if len(t_ns) < 2:
         return None
-    return bars_from_arrays(np.asarray(t_ns, dtype="int64"), *arrs)
+    return bars_from_arrays(np.asarray(t_ns, dtype="int64"), *arrs, cols=extra)
 
 
 # ------------------------------------------------------------------------------ indicators
@@ -920,6 +930,85 @@ SPEC_BOOK["cross_asset_residual"] = RuleSpec(
      "entry_z": 2.0, "atr_n": 20, "stop_atr": 2.0, "rr": 1.5, "ttl_bars": 72,
      "side_mode": "revert", "active_hours": None},
     _build_cross_asset_residual, rule_sets_side=True, session_in_params=True)
+
+
+SPREAD_MODES = frozenset({"spike_reversion", "calm_continuation"})
+
+
+def _ffill(v: np.ndarray) -> np.ndarray:
+    """Each NaN takes the last finite value before it; leading NaNs stay NaN."""
+    ok = np.isfinite(v)
+    pos = np.where(ok, np.arange(v.size), -1)
+    np.maximum.accumulate(pos, out=pos)
+    return np.where(pos >= 0, v[np.maximum(pos, 0)], np.nan)
+
+
+def _trailing_rank(v: np.ndarray, n: int) -> np.ndarray:
+    """At row i >= n: the share of the n values before row i that are <= the value at row i
+    (a NaN compares false, so it counts in the denominator only); NaN before row n."""
+    out = np.full(v.size, np.nan)
+    if v.size <= n:
+        return out
+    w = np.lib.stride_tricks.sliding_window_view(v, n + 1)
+    with np.errstate(invalid="ignore"):
+        out[n:] = (w[:, :-1] <= w[:, -1:]).mean(axis=1)
+    return out
+
+
+def _build_spread_state(b: Bars, p: dict[str, Any]) -> list[Order]:
+    mode, nw = str(p.get("mode") or ""), int(p["norm_window"])
+    if mode not in SPREAD_MODES or "spread" not in b.cols or len(b) < nw * 3:
+        return []
+    spread = _ffill(b.cols["spread"])
+    fin = spread[np.isfinite(spread)]
+    if fin.size == 0 or not (fin.size > 1 and float(np.std(fin, ddof=1)) > 0):
+        return []
+    ret = np.concatenate([[np.nan], np.diff(b.c)])
+    a = atr(b, int(p["atr_n"]))
+    sp_rank = _trailing_rank(spread, nw)
+    has_vol = "tick_volume" in b.cols
+    act_rank = _trailing_rank(_ffill(b.cols["tick_volume"]), nw) if has_vol else None
+    hold, min_mv = int(p["hold_bars"]), float(p["min_move_atr"])
+    stop_atr, rr = float(p["stop_atr"]), float(p["rr"])
+    out: list[Order] = []
+    last = -10 ** 9
+    for i in range(nw, len(b) - 1):
+        if i - last < hold or not (np.isfinite(a[i]) and a[i] > 0):
+            continue
+        mv = float(ret[i])
+        if not np.isfinite(mv) or abs(mv) < min_mv * a[i] or not np.isfinite(sp_rank[i]):
+            continue
+        if mode == "spike_reversion":
+            if sp_rank[i] < float(p["spike_pct"]):
+                continue
+            side = -1 if mv > 0 else 1
+        else:
+            if sp_rank[i] > float(p["calm_pct"]):
+                continue
+            if act_rank is not None and not (np.isfinite(act_rank[i])
+                                             and act_rank[i] >= float(p["active_pct"])):
+                continue
+            side = 1 if mv > 0 else -1
+        px, sd = float(b.c[i]), stop_atr * float(a[i])
+        out.append(Order(int(b.t[i]), side, px - side * sd, px + side * sd * rr, hold))
+        last = i
+    return out
+
+
+SPEC_BOOK["spread_state"] = RuleSpec(
+    "spread_state",
+    "The broker's own per-bar spread (forward-filled over gaps) and, when the file has it, "
+    "tick_volume. Each is ranked at row i as the share of the norm_window values before it at "
+    "or below it. Stands aside with no spread column, a flat spread, an unknown mode, or fewer "
+    "than 3 x norm_window bars. From row norm_window on, a bar whose close-to-close move is at "
+    "least min_move_atr x ATR(atr_n) signals -- spike_reversion: spread rank >= spike_pct, "
+    "against the move; calm_continuation: spread rank <= calm_pct and (with volume) activity "
+    "rank >= active_pct, with the move -- then nothing for hold_bars bars. Stop stop_atr x ATR "
+    "and target rr x that from the signal close, entry next open, time exit after hold_bars.",
+    {"mode": "spike_reversion", "norm_window": 240, "spike_pct": 0.95, "calm_pct": 0.20,
+     "active_pct": 0.80, "min_move_atr": 0.5, "hold_bars": 6, "atr_n": 20, "stop_atr": 2.0,
+     "rr": 1.5},
+    _build_spread_state, rule_sets_side=True, session_in_params=True)
 
 
 #: Session selector -> [start, end) broker hours a non-breakout signal must fall in.
