@@ -1,16 +1,16 @@
 {
  "schema": "judge_prescreen/1.3",
- "generated_at": "2026-11-07T00:58:22+00:00",
+ "generated_at": "2026-11-07T07:26:10+00:00",
  "mode": "SHADOW",
- "rows": 1593358,
- "rows_already_ruled_not_screened": 762274,
+ "rows": 1598904,
+ "rows_already_ruled_not_screened": 762551,
  "would_kill": {
   "needs_data": 986,
   "chart_short": 0,
-  "sibling_dead": 250377
+  "sibling_dead": 251472
  },
- "would_kill_total": 251363,
- "would_kill_share": 0.157757,
+ "would_kill_total": 252458,
+ "would_kill_share": 0.157894,
  "removed_from_docket": 0,
  "holdout_sent_to_judge": 0,
  "rule_acts": {
@@ -21,14 +21,14 @@
  "sibling_k": 5,
  "sibling_canon_k": null,
  "sibling_would_kill_by_k": {
-  "5": 250377,
-  "10": 195451,
-  "20": 119006,
-  "40": 53625,
-  "80": 22881
+  "5": 251472,
+  "10": 196459,
+  "20": 119846,
+  "40": 54273,
+  "80": 23352
  },
- "ms_per_row": 0.59237,
- "seconds": 943.864,
+ "ms_per_row": 1.36989,
+ "seconds": 2190.317,
  "samples": {
   "needs_data": [
    {
@@ -181,6 +181,13 @@
     "k": 5
    },
    {
+    "cell": "E35@M5.session_range_breakout.p=5d6f011837469a6c",
+    "bucket": "E35|M5|session_range_breakout",
+    "named_cells": 5,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
     "cell": "AUDHUF@M5.session_range_breakout.p=4f569fbdd5c4c7f3",
     "bucket": "AUDHUF|M5|session_range_breakout",
     "named_cells": 39,
@@ -209,9 +216,30 @@
     "k": 5
    },
    {
+    "cell": "E35@M15.session_range_breakout.p=09ec998c9e70fe1f",
+    "bucket": "E35|M15|session_range_breakout",
+    "named_cells": 5,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "USCOCOA@M30.session_range_breakout.p=1d56f21d61d3dca1",
+    "bucket": "USCOCOA|M30|session_range_breakout",
+    "named_cells": 5,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
     "cell": "CHFSEK@M5.session_range_breakout.p=c2a7b8762db48f42",
     "bucket": "CHFSEK|M5|session_range_breakout",
     "named_cells": 41,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
+    "cell": "E35@M5.session_range_breakout.p=5f6de57b3811565b",
+    "bucket": "E35|M5|session_range_breakout",
+    "named_cells": 5,
     "cleared_cells": 0,
     "k": 5
    },
@@ -279,6 +307,13 @@
     "k": 5
    },
    {
+    "cell": "ADAUSD@M5.session_range_breakout.p=b769b3dfc7fb78b3",
+    "bucket": "ADAUSD|M5|session_range_breakout",
+    "named_cells": 44,
+    "cleared_cells": 0,
+    "k": 5
+   },
+   {
     "cell": "ADAUSD@M5.session_range_breakout.p=1b8a6220d730dd28",
     "bucket": "ADAUSD|M5|session_range_breakout",
     "named_cells": 44,
@@ -298,48 +333,13 @@
     "named_cells": 44,
     "cleared_cells": 0,
     "k": 5
-   },
-   {
-    "cell": "ADAUSD@M5.session_range_breakout.p=bdb667f189fc99d6",
-    "bucket": "ADAUSD|M5|session_range_breakout",
-    "named_cells": 44,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "ADAUSD@M5.session_range_breakout.p=d61b841a9f377382",
-    "bucket": "ADAUSD|M5|session_range_breakout",
-    "named_cells": 44,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "ADAUSD@M30.session_range_breakout.p=2b353a7badb667a3",
-    "bucket": "ADAUSD|M30|session_range_breakout",
-    "named_cells": 45,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "ADAUSD@M15.session_range_breakout.p=f9bbb22f780a6b5a",
-    "bucket": "ADAUSD|M15|session_range_breakout",
-    "named_cells": 44,
-    "cleared_cells": 0,
-    "k": 5
-   },
-   {
-    "cell": "ADAUSD@M5.session_range_breakout.p=177009bbf49eb989",
-    "bucket": "ADAUSD|M5|session_range_breakout",
-    "named_cells": 44,
-    "cleared_cells": 0,
-    "k": 5
    }
   ]
  },
  "missed_growth": [
   {
    "day": "2026-11-07",
-   "at": "2026-11-07T00:58:22+00:00",
+   "at": "2026-11-07T07:26:10+00:00",
    "rail": "judge_prescreen",
    "side": "cost",
    "kind": "opportunity_cost",
@@ -360,7 +360,7 @@
   },
   {
    "day": "2026-11-07",
-   "at": "2026-11-07T00:58:22+00:00",
+   "at": "2026-11-07T07:26:10+00:00",
    "rail": "judge_prescreen",
    "side": "gain",
    "kind": "compute_freed",
@@ -368,8 +368,8 @@
    "verdict": "MEASURED",
    "units": "judge build seconds freed (rows removed x measured judge seconds per cell)",
    "rows_removed": 0,
-   "seconds_per_cell": 0.12093117000906983,
-   "would_free_seconds_if_all_rules_acted": 30397.6
+   "seconds_per_cell": 0.12072839464770783,
+   "would_free_seconds_if_all_rules_acted": 30478.8
   }
  ],
  "note": "SHADOW records what each rule WOULD remove and removes nothing; every row still reaches the sealed judge. CANON (a code constant) removes only rules marked rule_acts, minus a 1-in-20 holdout, and only after a durable KILL."
