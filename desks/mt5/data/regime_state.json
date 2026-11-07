@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-07T07:45:03.008771+00:00",
+  "swept_at": "2026-11-07T15:00:02.420233+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -4816,7 +4816,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0292,
+      "shadow_exp_r": -0.072,
       "woke_on_shadow": false
     },
     "XAUAUD|momentum_volgate_continuous": {
