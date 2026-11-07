@@ -15,6 +15,8 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
+
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
 for _p in (str(ROOT), str(DESK), str(DESK / "research")):
@@ -24,6 +26,16 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
 import hourly_cycle  # noqa: E402
 
 from libs.ops import leg_rotation as LR  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _ledgers_in_tmp(monkeypatch, tmp_path):
+    """`_costed` records each leg it runs into the real compute ledger and event log; these tests
+    run `some_leg` through it, so both point at tmp (they leaked rows into desks/mt5/data before
+    2026-11-05)."""
+    from libs.ops import compute_ledger, events
+    monkeypatch.setattr(compute_ledger, "LEDGER", tmp_path / "compute_ledger.jsonl")
+    monkeypatch.setattr(events, "PATH", tmp_path / "events.jsonl")
 
 
 def _install(monkeypatch, admitted: set[str], deferred: set[str],

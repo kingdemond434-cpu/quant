@@ -263,6 +263,23 @@ def _install_provenance(d: Path, monkeypatch: Any) -> None:
 
 
 @pytest.fixture(autouse=True)
+def _control_plane_stores_in_tmp(tmp_path_factory, monkeypatch):
+    """THE LINEAGE STORE AND THE ACK LOG NEVER LAND IN THE REPO FROM A TEST (2026-11-05).
+    `libs.ops.control_plane` defaults `lease.ACK_LOG` to data/artifact_acks.jsonl and
+    `edges.LINEAGE_DB` to data/lineage.sqlite, and ~20 organs record into them as a side effect,
+    so any test that runs one wrote real desk files; `watermarks.WATERMARK_DIR` (data/watermarks/)
+    leaked the same way. Caught by the tree-state guard in test_hypothesis_families on #759,
+    ordering-dependent under xdist. All three defaults are read at
+    call time (`path or ACK_LOG`), so pointing them at a fresh tmp dir covers every caller; a
+    test of the store itself passes its own path, as before."""
+    from libs.ops.control_plane import edges, lease, watermarks
+    d = tmp_path_factory.mktemp("control_plane")
+    monkeypatch.setattr(lease, "ACK_LOG", d / "artifact_acks.jsonl")
+    monkeypatch.setattr(edges, "LINEAGE_DB", d / "lineage.sqlite")
+    monkeypatch.setattr(watermarks, "WATERMARK_DIR", d / "watermarks")
+
+
+@pytest.fixture(autouse=True)
 def _cross_account_books_in_tmp(tmp_path_factory, monkeypatch, _account_key_in_tmp):
     """THE CROSS-ACCOUNT FENCE'S (AND THE RAILS LEDGER'S) FILES NEVER LAND IN THE REPO FROM A
     TEST, AND EVERY TEST STARTS IN A READABLE WORLD. `mt5desk.cross_account` keeps both

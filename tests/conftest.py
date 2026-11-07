@@ -289,3 +289,17 @@ def _account_key_in_tmp(_account_key_file: Path, monkeypatch: pytest.MonkeyPatch
     test gets a throwaway key instead. A test about the absent key points the env elsewhere."""
     from libs.ops import provenance as _acct_prov
     monkeypatch.setenv(_acct_prov.KEY_ENV, str(_account_key_file))
+
+
+@pytest.fixture(autouse=True)
+def _control_plane_stores_in_tmp(tmp_path_factory, monkeypatch):
+    """The lineage store and the ack log never land in the repo from a test (2026-11-05); same
+    fixture and reason as desks/mt5/tests/conftest.py. Skipped where the package is absent."""
+    try:
+        from libs.ops.control_plane import edges, lease, watermarks
+    except ImportError:
+        return
+    d = tmp_path_factory.mktemp("control_plane")
+    monkeypatch.setattr(lease, "ACK_LOG", d / "artifact_acks.jsonl")
+    monkeypatch.setattr(edges, "LINEAGE_DB", d / "lineage.sqlite")
+    monkeypatch.setattr(watermarks, "WATERMARK_DIR", d / "watermarks")
