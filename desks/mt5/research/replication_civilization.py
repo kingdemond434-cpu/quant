@@ -286,6 +286,9 @@ class RuleSpec:
     defaults: dict[str, Any]
     build: Callable[[Bars, dict[str, Any]], list[Order]]
     selector_params: bool = False
+    #: The rule itself decides each order's side (a fade reverses the move it reads), so the
+    #: certificate's single `side` field must not filter its orders.
+    rule_sets_side: bool = False
 
 
 def _build_overnight_gap_decay(b: Bars, p: dict[str, Any]) -> list[Order]:
@@ -746,6 +749,68 @@ SPEC_BOOK.update({
 })
 
 
+#: The plumbing moments a clock_transition certificate may name. The lane reads the STAMP HOUR the
+#: certificate carries, never a time-zone conversion, so only the names are needed here.
+CLOCK_LABELS = frozenset({"london_fix", "ny_option_cut", "cme_fx_close", "cash_equity_close",
+                          "comex_settle", "tokyo_open", "london_open", "ny_open",
+                          "broker_rollover"})
+CLOCK_MODES = ("into", "out_of", "fade")
+
+
+def _build_clock_transition(b: Bars, p: dict[str, Any]) -> list[Order]:
+    label, mode = str(p.get("label") or ""), str(p.get("mode") or "")
+    side, hour = int(p.get("side") or 0), int(p.get("stamp_hour", -1))
+    if label not in CLOCK_LABELS or mode not in CLOCK_MODES or side not in (1, -1):
+        return []
+    if not 0 <= hour <= 23 or len(b) < max(1, 1440 // max(1, b.minutes)) * 60:
+        return []
+    at = np.flatnonzero(b.hour == hour)
+    if at.size < 40:
+        return []
+    lead, hold = int(p["lead_bars"]), int(p["hold_bars"])
+    stop_atr, rr = float(p["stop_atr"]), float(p["rr"])
+    a = atr(b, int(p["atr_n"]))
+    out: list[Order] = []
+    for i in at:
+        if mode == "into":
+            entry, ttl, s = int(i) - lead, lead, side
+            if entry < 1:
+                continue
+        elif mode == "out_of":
+            entry, ttl, s = int(i), hold, side
+        else:
+            j = int(i) - lead
+            if j < 1:
+                continue
+            move = float(b.c[i] - b.c[j])
+            if move == 0.0:
+                continue
+            entry, ttl, s = int(i), hold, (-1 if move > 0 else 1) * side
+        ai = float(a[entry])
+        if not np.isfinite(ai) or ai <= 0:
+            continue
+        px = float(b.c[entry])
+        out.append(Order(int(b.t[entry]), s, px - s * stop_atr * ai,
+                         px + s * stop_atr * ai * rr, max(1, ttl)))
+    return out
+
+
+SPEC_BOOK["clock_transition"] = RuleSpec(
+    "clock_transition",
+    "One named plumbing moment (label: london_fix, ny_option_cut, cme_fx_close, "
+    "cash_equity_close, comex_settle, tokyo_open, london_open, ny_open, broker_rollover) at the "
+    "broker STAMP hour the certificate names (stamp_hour). Stands aside on fewer than 60 days of "
+    "bars or fewer than 40 bars at that hour. At every bar i stamped at that hour: into -- signal "
+    "at bar i - lead_bars on `side`, time exit after lead_bars; out_of -- signal at bar i on "
+    "`side`, time exit after hold_bars; fade -- signal at bar i against the sign of close[i] - "
+    "close[i - lead_bars] (times `side`; no move, no signal), time exit after hold_bars. Stop "
+    "stop_atr x ATR(atr_n) and target rr x that from the signal close, entry next open; ATR "
+    "is the trailing mean true range, fewer bars allowed at the start.",
+    {"label": "", "stamp_hour": -1, "mode": "out_of", "side": 1, "lead_bars": 2,
+     "hold_bars": 4, "atr_n": 20, "stop_atr": 2.0, "rr": 1.5},
+    _build_clock_transition, rule_sets_side=True)
+
+
 #: Session selector -> [start, end) broker hours a non-breakout signal must fall in.
 SESSIONS: dict[str, tuple[int, int] | None] = {
     "asia": (0, 8), "london": (8, 16), "ny": (14, 22), "all": None, "continuous": None,
@@ -916,7 +981,7 @@ HUNT16_FAMILIES = frozenset({"dav_range_filter_adx", "hunt16_cell"})
 def rebuild(family: str, bars: Bars, p: Mapping[str, Any], cost_units: float
             ) -> tuple[list[Order], list[Fill]]:
     orders = SPEC_BOOK[family].build(bars, dict(p))
-    side = int(p.get("_side") or 0)
+    side = 0 if SPEC_BOOK[family].rule_sets_side else int(p.get("_side") or 0)
     if side:
         orders = [o for o in orders if o.side == side]
     win = p.get("_session")
