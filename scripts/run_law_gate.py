@@ -840,6 +840,33 @@ def _reap_stale_checkouts(root: Path, *, now: float | None = None) -> int:
     return reaped
 
 
+#: THE VARIABLES THAT TELL GIT WHICH REPOSITORY IT IS IN -- exactly `git rev-parse
+#: --local-env-vars`, the list git itself clears before it steps into a submodule.
+_REPO_LOCAL_GIT_ENV = (
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_CONFIG", "GIT_CONFIG_PARAMETERS",
+    "GIT_CONFIG_COUNT", "GIT_OBJECT_DIRECTORY", "GIT_DIR", "GIT_WORK_TREE",
+    "GIT_IMPLICIT_WORK_TREE", "GIT_GRAFT_FILE", "GIT_INDEX_FILE", "GIT_NO_REPLACE_OBJECTS",
+    "GIT_REPLACE_REF_BASE", "GIT_PREFIX", "GIT_SHALLOW_FILE", "GIT_COMMON_DIR")
+
+
+def _repo_free_env(extra: dict[str, str] | None = None) -> dict[str, str]:
+    """os.environ minus every variable that pins git to the CALLER'S repository.
+
+    THE DEFECT THIS CLOSES (2026-11-05, reproduced on git 2.43). Git runs hooks with GIT_DIR
+    (and on a linked worktree GIT_COMMON_DIR / GIT_INDEX_FILE) pointing at the pushing
+    checkout. `_at_head` inherited them, so `git -C <private checkout> sparse-checkout
+    disable` was told by GIT_DIR to act on the CALLER: it wrote core.sparseCheckout=false
+    into the builder's own config.worktree and every builder lost its sparse view on every
+    push. `-C` changes the directory, never a repository named by the environment. The same
+    leak let `restore` and the re-exec'd fences read the caller's index instead of HEAD's.
+    """
+    env = {k: v for k, v in os.environ.items()
+           if k not in _REPO_LOCAL_GIT_ENV and not k.startswith("GIT_CONFIG_KEY_")
+           and not k.startswith("GIT_CONFIG_VALUE_")}
+    env.update(extra or {})
+    return env
+
+
 def _at_head(root: Path) -> tuple[Path, str, list[str]]:
     """(where to run, what that place IS, why it is not HEAD). A pristine checkout when dirty.
 
@@ -858,9 +885,11 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
     """
     dirt = _dirty(root)
     sparse = subprocess.run(["git", "config", "--bool", "core.sparseCheckout"],
-                            cwd=root, capture_output=True, text=True, timeout=10)
+                            cwd=root, capture_output=True, text=True, timeout=10,
+                            env=_repo_free_env())
     if not dirt and sparse.stdout.strip() != "true":
         return root, "cwd==HEAD (tree clean)", []
+    clean = _repo_free_env()
     _reap_stale_checkouts(root)             # sweep our own dead before allocating another 150MB
     tmp = Path(tempfile.mkdtemp(prefix="lawgate-head-", dir=_checkout_base()))
     wt = tmp / "t"
@@ -870,7 +899,8 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
         # On timeout, stop git's reset child before removing its private tree.
         r = _checkout_run(["git", "-c", "checkout.workers=8", "worktree", "add",
                            "--detach", str(wt), "HEAD"],
-                          cwd=root, capture_output=True, text=True, timeout=300)
+                          cwd=root, capture_output=True, text=True, timeout=300,
+                          env=clean)
         if r.returncode != 0:
             raise OSError((r.stderr or r.stdout).strip()[:200])
         # Git copies the caller's sparse-checkout settings into a new worktree.
@@ -879,7 +909,8 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
         # Disable sparsity only in this private HEAD checkout; never in the caller.
         r = _checkout_run(["git", "-c", "checkout.workers=8", "-C", str(wt),
                            "sparse-checkout", "disable"],
-                          cwd=root, capture_output=True, text=True, timeout=300)
+                          cwd=root, capture_output=True, text=True, timeout=300,
+                          env=clean)
         if r.returncode != 0:
             raise OSError((r.stderr or r.stdout).strip()[:200])
         # Individually skipped files (for example a seal added with --sparse)
@@ -888,7 +919,8 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
         r = _checkout_run(["git", "-c", "checkout.workers=8", "-C", str(wt),
                            "restore", "--source=HEAD", "--worktree",
                            "--ignore-skip-worktree-bits", "--", "."],
-                          cwd=root, capture_output=True, text=True, timeout=300)
+                          cwd=root, capture_output=True, text=True, timeout=300,
+                          env=clean)
         if r.returncode != 0:
             raise OSError((r.stderr or r.stdout).strip()[:200])
     except (OSError, subprocess.SubprocessError) as exc:
@@ -924,8 +956,9 @@ def full_gate(root: Path | None = None, *, laws_only: bool = False,
                 # unknown --in-place makes an older copy die in argparse with empty stdout (this
                 # bug, hit on the first run); an unknown env var is ignored, and an older copy
                 # then does exactly what it always did -- judge in place, no recursion possible.
-                env = {**os.environ, "QUANT_LAWGATE_IN_PLACE": "1",
-                       "QUANT_LAWGATE_SOURCE_VIEW": "1"}
+                # Repo-free too: the fences run git inside the checkout and must see ITS HEAD.
+                env = _repo_free_env({"QUANT_LAWGATE_IN_PLACE": "1",
+                                      "QUANT_LAWGATE_SOURCE_VIEW": "1"})
                 r = subprocess.run([sys.executable, str(where / "scripts/run_law_gate.py"),
                                     "--laws-only", "--json"], cwd=where, env=env,
                                    capture_output=True, text=True, timeout=1800)
@@ -939,7 +972,8 @@ def full_gate(root: Path | None = None, *, laws_only: bool = False,
                         "generated": datetime.now(tz=UTC).isoformat()}
             finally:
                 subprocess.run(["git", "worktree", "remove", "--force", str(where)],
-                               cwd=root, capture_output=True, text=True, timeout=120)
+                               cwd=root, capture_output=True, text=True, timeout=120,
+                               env=_repo_free_env())
                 shutil.rmtree(where.parent, ignore_errors=True)
         head_note, head_why = subject, why
     else:
