@@ -9203,6 +9203,39 @@
    ],
    "gap": "BLOCKED_ON_TERMS: cnx_shfe and cnx_ine hold terms=refused (SHFE's statement grants only non-commercial browse/download; trading use is not granted; INE is SHFE's subsidiary and its own page is unreadable), so they are never fetched and name CFTC COT (axis_ingest.py) as the substitute, coverage UNMEASURED under the #152 law (no measured corr >= 0.5 with n). The DCE, CZCE, GFEX and CFFEX rows hold terms=to_confirm (pages unreadable from the build sandbox); the principal (or the box, reading the page) flips each row's `terms` to confirmed. Live yield, the exchanges' current URL paths and the exact release instants are UNMEASURED until the box runs the leg; no exchange host is reachable from the sandbox, so every parser is proven on hand-built fixtures in the documented layouts. Not built here: SGE (P1/P4), spot basis and delivery volumes (no free dated file found), CFFEX option IV.",
    "next_step": "Principal: settle exchange terms (one field per roster row). Box: first free_stack_hunt pass after the flip; read FREE_STACK_YIELD.json per cnx_* row and each day's missing_surfaces in data/free_stack/raw/cnx_*/ to see which URL template answers."
+  },
+  {
+   "id": "LLMY1",
+   "item": "LLM generator league: per model and per generator the calls, ok, empty, proposals, cells, judged, survivors and certificates, with output per call; RED on a silent success more than two runs running, a dead replacement, a lab that gave nothing, a stale lab clock or a chronic leg timeout; and the panel's call budget weighted by measured conversion",
+   "domain": "U",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:llm_yield",
+   "artifact": "desks/mt5/reports/LLM_YIELD.json",
+   "consumer": "libs/research/free_panel.py priority_weights() reads desks/mt5/data/llm_model_priority.json, which this leg writes",
+   "evidence": [
+    "desks/mt5/research/llm_yield.py:131-305 the per-model and per-generator sources, :314-346 violations, :348-375 priority, :384-428 run and the exit code (MEASURED)",
+    "libs/research/free_panel.py:1-80 the priority file read into the panel order (MEASURED)"
+   ],
+   "gap": "none",
+   "next_step": "none"
+  },
+  {
+   "id": "LLMB1",
+   "item": "LLM budget census: who spent the model seat today and what the spend bought, in requests and completions, with the waste between them owned",
+   "domain": "U",
+   "phase": 0,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:llm_budget_census",
+   "artifact": "desks/mt5/reports/LLM_BUDGET_CENSUS.json",
+   "consumer": "desks/mt5/research/llm_yield.py reads the same spend ledger; the census is the daily roll-up",
+   "evidence": [
+    "desks/mt5/research/llm_budget_census.py:1-60 why it exists, :109-258 census, :260-286 main (MEASURED)"
+   ],
+   "gap": "none",
+   "next_step": "none"
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

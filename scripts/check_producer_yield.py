@@ -149,15 +149,35 @@ REPLACEMENTS: dict[str, str] = {
                           "parents; llm_lab lab H (program_synthesis) once #332 lands",
     "kimi": "deepseek_cycle -- the same deep-forest seat shape on the free chain; kimi itself "
             "now donates per wave on a 1,020 s leg cap",
-    "lab_probability": "mathlab -- the stochastic_processes and extreme_value traditions; "
-                       "llm_lab lab C (mathematical) once #332 lands",
-    "lab_timeseries": "lab_crossasset -- the sibling lab of the same box writer; llm_lab lab G "
+    # A REPLACEMENT THAT IS ITSELF DEAD IS NO REPLACEMENT (hourly pass item 26, 2026-10-29). Both
+    # of these named a sibling that died with them: lab_probability -> mathlab (0 rows since
+    # 10-13) and lab_timeseries -> lab_crossasset (0 since 10-26). `audit` now flags any DEAD
+    # producer whose named inheritor is DEAD (`dead_with_a_dead_replacement`), so this cannot
+    # recur silently; the inheritors below were PRODUCING in PRODUCER_YIELD of 2026-10-29 11:43Z.
+    "lab_probability": "alpha_recombination -- the live formula/expression search, until mathlab "
+                       "(stochastic_processes, extreme_value) is revived; llm_lab lab C "
+                       "(mathematical) once #332 lands",
+    "lab_timeseries": "representation_forge -- the live feature-invention ground; llm_lab lab G "
                       "(representation) and role R (code_lab) once #332 lands",
+    "lab_crossasset": "dislocation_lab -- the live cross-asset shock ground; the lab_* writer "
+                      "is an unscheduled box process with no tracked code",
+    "lab_microstructure": "feed_clock_lab -- the live tape/impact lab on the desk's own ticks "
+                          "and fills (its impact pass donates seeds)",
+    "mathlab": "alpha_recombination -- the live expression search over measured parents, while "
+               "MATH_LAB.json's donation block says why mathlab gave nothing new",
+    "physics_lab": "alpha_recombination -- as mathlab: physics_lab donates through the same "
+                   "donated-once filter (math_lab.donation_rows)",
     "world_lab": "dislocation_lab -- the macro department's cross-asset shock ground; world_lab "
                  "reads a causal graph frozen since 2026-09-08 (causal_graph leg)",
     "literature": "academic -- academic_miner and seed_miners arxiv_qfin, the same "
                   "papers-with-a-mechanism ground; literature was a one-off 2026-09-16 hand seed",
 }
+
+
+def replacement_target(text: Any) -> str:
+    """The producer a free-text replacement names first (`"mathlab -- the ..."` -> mathlab)."""
+    head = str(text or "").split("--", 1)[0].strip()
+    return "" if not head or head.upper().startswith("NONE") else head.split()[0].strip(";,")
 
 
 def _rel(p: Path) -> str:
@@ -256,6 +276,13 @@ def audit(window_days: float = 3.0) -> dict[str, Any]:
     census = Counter(str(r["verdict"]) for r in rows)
     dead = [r for r in rows if r["verdict"] == "DEAD"]
     undeclared = [r for r in dead if "NONE DECLARED" in str(r.get("replacement"))]
+    verdict = {str(r["producer"]): r["verdict"] for r in rows}
+    dead_target = []
+    for r in dead:
+        target = replacement_target(r.get("replacement"))
+        if target and verdict.get(target) == "DEAD":
+            r["replacement_is_dead"] = True
+            dead_target.append({"producer": r["producer"], "replacement": target})
     return {
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "law": ("EVERY PRODUCER PRODUCES, OR IT IS REPLACED BY A NAMED ALTERNATIVE. Zero output "
@@ -266,6 +293,7 @@ def audit(window_days: float = 3.0) -> dict[str, Any]:
         "n_producers": len(rows),
         "census": dict(census),
         "dead_without_a_declared_replacement": undeclared,
+        "dead_with_a_dead_replacement": dead_target,
         "producers": sorted(rows, key=lambda r: (r["verdict"], -(r["rows_in_window"] or 0))),
     }
 

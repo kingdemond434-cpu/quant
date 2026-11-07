@@ -47,6 +47,10 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 PANEL_KEY = ROOT / "data" / "secrets" / "llm_panel.json"
 STATE = ROOT / "data" / "free_panel_state.json"
+# Written hourly by desks/mt5/research/llm_yield.py: model -> weight, from what each model's calls
+# turned into (compiled leads, gauntlet passes). Absent or unreadable = every model weighs 1.0,
+# which is the old least-used-first order exactly.
+PRIORITY = ROOT / "desks" / "mt5" / "data" / "llm_model_priority.json"
 ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 
 #: Verified answering on an overdrawn key, 2026-08-29. Ordered by capability within each tier.
@@ -165,13 +169,36 @@ def available(tier: tuple[str, ...]) -> list[str]:
     Least-used-first rather than random: free tiers rate-limit per model, so spreading calls
     evenly is what keeps thirteen models usable instead of hammering the first one until it 429s
     and then discovering the second.
+
+    Calls are divided by the model's conversion weight (`priority_weights`), so a model whose
+    calls compile into leads is asked proportionally more often, a silent one less, and a retired
+    one (weight 0) not at all -- unless every live model is weight 0, when the plain order stands
+    rather than a dark panel.
     """
     st = _state()
     now = time.time()
     limited = {m: t for m, t in (st.get("limited") or {}).items() if t > now}
     calls = st.get("calls") or {}
+    weights = priority_weights()
     live = [m for m in tier if m not in limited]
-    return sorted(live, key=lambda m: calls.get(m, 0))
+    weighted = [m for m in live if weights.get(m, 1.0) > 0] or live
+    return sorted(weighted, key=lambda m: calls.get(m, 0) / (weights.get(m, 1.0) or 1.0))
+
+
+def priority_weights() -> dict[str, float]:
+    """model -> weight from llm_yield; {} when the file is absent or unreadable."""
+    try:
+        doc = json.loads(PRIORITY.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    raw = doc.get("weights") if isinstance(doc, dict) else None
+    out: dict[str, float] = {}
+    for m, w in (raw or {}).items() if isinstance(raw, dict) else ():
+        try:
+            out[str(m)] = max(0.0, float(w))
+        except (TypeError, ValueError):
+            continue
+    return out
 
 
 @dataclass
