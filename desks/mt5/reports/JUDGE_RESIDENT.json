@@ -17,7 +17,7 @@
  "uptime_s": 923084.4,
  "last_sweep_ended_utc": "2026-11-07T09:05:55+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-07T09:34:39+00:00",
+ "heartbeat_utc": "2026-11-07T09:48:40+00:00",
  "sweep_phase": {
   "pid": 22240,
   "sweep_started_utc": "2026-11-07T09:06:07+00:00",
@@ -88,37 +88,37 @@
      }
     },
     "prewarm": {
-     "samples": 98,
+     "samples": 182,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 91,
-       "share": 0.929
+       "n": 156,
+       "share": 0.857
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
-       "n": 4,
-       "share": 0.041
+       "n": 17,
+       "share": 0.093
       },
       {
        "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
-       "n": 2,
-       "share": 0.02
+       "n": 8,
+       "share": 0.044
       },
       {
        "stack": "_base.py:_create_and_install_waiters:166 < _base.py:wait:297 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
        "n": 1,
-       "share": 0.01
+       "share": 0.005
       }
      ],
      "process": {
-      "cpu_s": 343.3,
-      "page_faults": 25473041.0,
-      "read_bytes": 11446952.0,
-      "write_bytes": 29123321412.0,
-      "sampled_s": 970.0,
+      "cpu_s": 1025.7,
+      "page_faults": 76055288.0,
+      "read_bytes": 33043497.0,
+      "write_bytes": 85300869195.0,
+      "sampled_s": 1810.0,
       "rss_mb_max": 3298.4,
-      "cpu_share_of_wall": 0.354
+      "cpu_share_of_wall": 0.567
      }
     }
    }
