@@ -151,19 +151,27 @@ PANEL_COLUMNS: tuple[str, ...] = ("cells", "unique_cells", "cells_reached_judge"
 #: megabytes on the trading box and `json.loads` of it would cost more RAM than the leg has --
 #: the same 8 GB that already stood `external_gauntlet` down twice.
 _CANDIDATE_ID = re.compile(r'"candidate_id"\s*:\s*"([^"]{1,200})"')
+#: The same pattern over BYTES: the scan reads the file in binary so a byte offset can be resumed.
+_CANDIDATE_ID_B = re.compile(rb'"candidate_id"\s*:\s*"([^"]{1,200})"')
 #: Read size for that scan. A chunk boundary can split a match, so each chunk keeps the last
 #: `_CHUNK_OVERLAP` characters as a prefix of the next -- longer than any candidate id can be.
 _CHUNK = 8 << 20
 _CHUNK_OVERLAP = 256
 
 
-def _judge_input_ids(path: Path | None = None) -> tuple[set[str], dict[str, Any]]:
+def _judge_input_ids(path: Path | None = None, budget: Any = None,
+                     resume: bool = False) -> tuple[set[str], dict[str, Any]]:
     """Every registry candidate id present in the file the sealed judge opens, and the census.
 
     NEVER RAISES and never returns a misleading empty set: an unreadable or absent input file
     yields `(set(), {...why})` and the caller publishes UNMEASURED rather than zero, because
     "the judge's input could not be read" and "this producer reached nobody" are opposite facts
     and the desk has paid for confusing them before (WS-005).
+
+    BOUNDED (2026-11-05). With a `budget` (`_Budget`), the deadline is checked after every chunk;
+    when it passes, the ids found so far and the byte offset are saved beside the census
+    (`REACH_SIDECAR`) and the status is PARTIAL. With `resume`, a scan of the SAME file (path,
+    size and mtime unchanged) continues from that offset; a rewritten file starts again.
     """
     target = path or JUDGE_INPUT
     meta: dict[str, Any] = {"path": str(target), "status": UNMEASURED,
@@ -178,16 +186,41 @@ def _judge_input_ids(path: Path | None = None) -> tuple[set[str], dict[str, Any]
         return set(), meta
     meta["bytes"] = int(stat.st_size)
     meta["age_hours"] = _age_hours(datetime.fromtimestamp(stat.st_mtime, tz=UTC).isoformat())
+    ident = {"path": str(target), "size": int(stat.st_size), "mtime": float(stat.st_mtime)}
+    side_meta = REACH_SIDECAR.with_suffix(".json")
+    offset = 0
+    if resume:
+        prev = _load_json(side_meta)
+        if isinstance(prev, dict) and all(prev.get(k) == v for k, v in ident.items()):
+            with contextlib.suppress(OSError):
+                found.update(x for x in REACH_SIDECAR.read_text("utf-8").split("\n") if x)
+                offset = int(prev.get("offset") or 0)
+    meta["resumed_from_byte"] = offset
     try:
-        with target.open("r", encoding="utf-8", errors="replace") as fh:
-            carry = ""
+        with target.open("rb") as fh:
+            fh.seek(offset)
+            carry = b""
             while True:
                 chunk = fh.read(_CHUNK)
                 if not chunk:
                     break
                 blob = carry + chunk
-                found.update(_CANDIDATE_ID.findall(blob))
+                found.update(m.decode("utf-8", "replace")
+                             for m in _CANDIDATE_ID_B.findall(blob))
                 carry = blob[-_CHUNK_OVERLAP:]
+                if budget is not None and budget.expired():
+                    pos = max(0, fh.tell() - _CHUNK_OVERLAP)
+                    meta.update({"status": "PARTIAL", "scanned_bytes": pos,
+                                 "candidate_ids_so_far": len(found),
+                                 "why": f"the budget deadline cut the scan at byte {pos:,} of "
+                                        f"{stat.st_size:,}; it resumes there next pass"})
+                    if resume:
+                        with contextlib.suppress(OSError):
+                            REACH_SIDECAR.parent.mkdir(parents=True, exist_ok=True)
+                            REACH_SIDECAR.write_text("\n".join(sorted(found)), "utf-8")
+                            side_meta.write_text(json.dumps({**ident, "offset": pos}),
+                                                 "utf-8")
+                    return found, meta
     except OSError as exc:
         meta["why"] = f"{type(exc).__name__} while streaming {target}"
         return set(), meta
@@ -371,10 +404,79 @@ def build_roster() -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
 
 # ------------------------------------------------------------------------------------- registry
 
+#: THE BUDGET IS ENFORCED INSIDE THE PASS (2026-11-05). `--budget-s` used to be read only AFTER
+#: the pass finished (`over_budget` was a label), so a registry grown 30x since 2026-09-24 could
+#: run the census past its 400 s leg cap, be killed before the write, and leave nothing: the box's
+#: PRODUCTIVITY_CENSUS.json was last written 2026-10-22T17:06Z, 14 days before this change. Now
+#: the registry scan is a list of named STEPS; a deadline is checked before each one and inside
+#: every SQL statement (sqlite's progress handler interrupts a running query), the census is
+#: ALWAYS written -- stamped `partial: true` with `scan.scanned`/`scan.total` when the deadline
+#: cut it -- and a resume cursor carries the finished steps into the next pass, so coverage
+#: completes over a few passes. A stage whose step did not run is UNMEASURED, never zero.
+CURSOR = REPORTS / "PRODUCTIVITY_CENSUS.cursor.json"
+REACH_SIDECAR = REPORTS / "PRODUCTIVITY_CENSUS.reach_ids.txt"
+#: The per-producer fields each step writes. A field of a step that did not run this cycle is
+#: UNMEASURED on every row of the census.
+STEP_FIELDS: dict[str, tuple[str, ...]] = {
+    "sources": ("sources_visited", "sources_crawled"),
+    "claims": ("documents_retained", "raw_mechanism_claims"),
+    "mechanisms": ("canonical_mechanisms", "canonical_mechanisms_proxy"),
+    "cells": ("raw_cells", "unique_cells", "unique_by_content_hash", "unique_mechanisms"),
+    "cells_stamped": ("raw_cells_stamped_on_candidate",),
+    "judged": ("cells_judged",),
+    "submitted": ("gauntlet_submitted",),
+    "reach": ("cells_reached_judge",),
+    "survivors": ("cheap_survivors",),
+    "discoveries": ("discoveries", "unique_discoveries"),
+    "yield_tables": ("yield_generated", "yield_donated", "yield_judged", "yield_survivors",
+                     "registry_compute_s", "source_survivors"),
+    "region_stamp": (),
+    "family_map": (),
+    "totals": (),
+}
+STEPS: tuple[str, ...] = tuple(STEP_FIELDS)
+#: A RESUMED CYCLE MAY NOT SPAN MORE THAN THIS. Steps carried by the cursor are snapshots of the
+#: registry at different times; past ~a day apart they no longer describe one desk, so a cursor
+#: whose cycle began longer ago than this is EXPIRED and the cycle restarts from step one. A
+#: complete census publishes its own span (`scan.cycle_span_h`, first to last step), and the
+#: fence tightens its ratchets only on a census whose span is inside this bound.
+CYCLE_MAX_AGE_H = 26.0
+#: How often (in sqlite VM instructions) the progress handler looks at the clock.
+_PROGRESS_EVERY = 20_000
+
+
+class _OutOfBudget(Exception):
+    """The deadline passed inside a step; the step is not finished and nothing it wrote counts."""
+
+
+class _Budget:
+    """A wall-clock deadline shared by the scan's SQL statements and its file scan."""
+
+    def __init__(self, deadline: float | None) -> None:
+        self.deadline = deadline
+        self.hit = False
+
+    def expired(self) -> bool:
+        if self.deadline is not None and time.time() >= self.deadline:
+            self.hit = True
+        return self.hit
+
+    def progress(self) -> int:
+        """sqlite3 progress handler: non-zero interrupts the running statement."""
+        return 1 if self.expired() else 0
+
+
+_BUDGET = _Budget(None)
+
+
 def _rows(cur: sqlite3.Cursor, sql: str) -> list[tuple[Any, ...]]:
+    """Rows, or [] on a schema error (a missing table is that table's own UNMEASURED). An
+    interrupt by the budget is NEVER an empty result: it raises, so the step stays unfinished."""
     try:
         return list(cur.execute(sql))
     except sqlite3.Error:
+        if _BUDGET.hit:
+            raise _OutOfBudget(sql[:80]) from None
         return []
 
 
@@ -383,33 +485,26 @@ def _table_count(cur: sqlite3.Cursor, table: str) -> int | None:
         row = cur.execute(f"select count(*) from {table}").fetchone()  # noqa: S608
         return int(row[0]) if row else None
     except sqlite3.Error:
+        if _BUDGET.hit:
+            raise _OutOfBudget(table) from None
         return None
 
 
-def measure_registry(db: Path) -> dict[str, Any]:
-    """Every funnel stage the alpha registry can answer, keyed by producer.
+_LINEAGE = ("lower(coalesce(nullif(d.generator,''), nullif(c.generator,''),"
+            "'_unattributed_generator'))")
+_JOINED = ("research_candidates c left join discoveries d "
+           "on d.discovery_id = c.discovery_id")
 
-    ONE CONNECTION, READ ONLY, NO WRITES. This organ measures the registry; a census that could
-    mutate the thing it counts would be worthless as evidence the first time anyone doubted it.
-    """
-    out: dict[str, Any] = {"available": False, "why": "", "by_producer": {},
-                           "totals": {}, "unmeasured": {}}
-    if not db.exists():
-        out["why"] = f"{UNMEASURED}: registry {db} does not exist on this host"
-        return out
-    try:
-        con = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=20.0)
-    except sqlite3.Error as exc:
-        out["why"] = f"{UNMEASURED}: registry unopenable ({type(exc).__name__}: {exc})"
-        return out
-    out["available"] = True
-    per: dict[str, dict[str, Any]] = defaultdict(lambda: defaultdict(float))
-    try:
-        cur = con.cursor()
 
-        # STAGE 1-2: sources visited, and the documents kept off them. `sources.discovered_via`
-        # names the producer that found the source; `claims.doc_id` is the retained document.
-        src_producer: dict[str, str] = {}
+def _step(name: str, cur: sqlite3.Cursor, ctx: dict[str, Any],
+          per: dict[str, dict[str, float]], extra: dict[str, Any]) -> None:
+    """Run ONE named step of the registry scan, writing per-producer fields into `per` and any
+    shared output into `extra`. `ctx` carries what earlier steps produced (the source map)."""
+    lineage, joined = _LINEAGE, _JOINED
+    src_producer: dict[str, str] = ctx.get("src_producer") or {}
+    unmeasured: dict[str, str] = extra.setdefault("unmeasured", {})
+    if name == "sources":
+        # STAGE 1: sources visited. `sources.discovered_via` names the producer that found it.
         src_region: dict[str, str] = {}
         for sid, via, country, last_crawled in _rows(
                 cur, "select source_id, discovered_via, country, last_crawled from sources"):
@@ -421,23 +516,32 @@ def measure_registry(db: Path) -> dict[str, Any]:
             per[key]["sources_visited"] += 1
             if last_crawled:
                 per[key]["sources_crawled"] += 1
-
+        # REGION, from the sources a producer actually touched.
+        reg_by_producer: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        for sid, key in src_producer.items():
+            r = src_region.get(sid)
+            if r:
+                reg_by_producer[key][r] += 1
+        extra["src_producer"] = dict(src_producer)
+        extra["region_hits"] = {k: dict(v) for k, v in reg_by_producer.items()}
+    elif name == "claims":
+        # STAGE 2: documents kept off those sources (`claims.doc_id` is the retained document).
         for sid, ndocs, nclaims in _rows(
                 cur, "select source_id, count(distinct doc_id), count(*) from claims "
                      "group by source_id"):
             key = src_producer.get(str(sid), "_unattributed_source")
             per[key]["documents_retained"] += int(ndocs or 0)
             per[key]["raw_mechanism_claims"] += int(nclaims or 0)
-
-        # STAGE 3: canonical mechanisms. The registry has a `mechanisms` table for exactly this;
-        # when it is EMPTY the stage is UNMEASURED with that sentence, never zero (L1.28a).
+    elif name == "mechanisms":
+        # STAGE 3: canonical mechanisms. An EMPTY `mechanisms` table is UNMEASURED, never zero.
         n_mech = _table_count(cur, "mechanisms")
+        extra["n_mech"] = n_mech
         if n_mech:
             for sid, n in _rows(cur, "select source_id, count(*) from mechanisms group by 1"):
                 per[src_producer.get(str(sid), "_unattributed_source")][
                     "canonical_mechanisms"] += int(n or 0)
         else:
-            out["unmeasured"]["canonical_mechanisms"] = (
+            unmeasured["canonical_mechanisms"] = (
                 "registry table `mechanisms` holds 0 rows on this host: no organ has written a "
                 "canonicalised mechanism, so this stage is UNMEASURED and not zero -- the "
                 "fallback below counts DISTINCT mechanism_id stamped on discoveries instead")
@@ -446,37 +550,12 @@ def measure_registry(db: Path) -> dict[str, Any]:
                          "where mechanism_id is not null and mechanism_id != '' group by 1"):
                 per[_norm(str(gen or "_unattributed_generator"))][
                     "canonical_mechanisms_proxy"] += int(n or 0)
-
-        # STAGE 4-5: raw cells and UNIQUE cells, AND THIS IS THE STAGE THE CENSUS EXISTS FOR.
-        #
-        # `content_hash` is the desk's dedup chain -- `enqueue_candidate` dedups on it -- and
-        # measuring the collapse on it returns exactly 1.00x, because the dedup is enforced AT
-        # THE DOOR and a duplicate hash never becomes a row. That number is worth publishing (it
-        # proves the door works) and it is USELESS as an answer to "did a hundred thousand
-        # documents collapse into twenty momentum rules", because two rows that differ in one
-        # parameter digit carry different hashes and are, as research, the same rule twice.
-        #
-        # So the census counts THREE identities and prints all three:
-        #   content_hash  -- the door. 1.00x by construction; a number above 1 is a door defect.
-        #   grid_cell     -- the docket coordinate the gauntlet actually sweeps. THE unique cell.
-        #   mechanism     -- the economic claim. The collapse a reader was asking about.
-        # `coalesce` makes an absent identity its OWN row rather than merging every unstamped
-        # candidate into one: absence never manufactures a duplicate (L1.28a).
-        #
-        # AND THE CREDIT GOES TO THE PRODUCER THAT CAUSED THE CELL, NOT THE COMPILER THAT STAMPED
-        # IT. That is not a new opinion -- `scripts/check_producer_yield._window_cells` already
-        # ruled it, and this census disagreeing with the desk's own fence about who made a cell is
-        # itself the defect. Cells reach `research_candidates` through `discovery_compiler`, which
-        # writes its OWN generator; reading the candidate's stamp alone credits one pass-through
-        # with the desk's whole output and reports every real producer as barren. The link that
-        # survives the compiler is `discovery_id`. Measured 2026-09-24 on the trading box: the
-        # candidate stamp knows 143 producers, the lineage knows 200 -- credit is ADDED, never
-        # moved off anybody, and the stamped count is published beside it so the pass-through
-        # remains visible.
-        lineage = ("lower(coalesce(nullif(d.generator,''), nullif(c.generator,''),"
-                   "'_unattributed_generator'))")
-        joined = ("research_candidates c left join discoveries d "
-                  "on d.discovery_id = c.discovery_id")
+    elif name == "cells":
+        # STAGE 4-5: raw cells and UNIQUE cells, the stage the census exists for. Three
+        # identities: content_hash (the door, 1.00x by construction), grid_cell (the docket
+        # coordinate the gauntlet sweeps) and mechanism (the economic claim). Credit goes to the
+        # producer that CAUSED the cell through `discovery_id`, never to the compiler that
+        # stamped it (the rule scripts/check_producer_yield._window_cells already applies).
         for gen, raw, uniq_h, uniq_c, uniq_m in _rows(
                 cur, f"select {lineage}, count(*), count(distinct c.content_hash), "  # noqa: S608
                      "count(distinct coalesce(nullif(c.grid_cell,''), c.content_hash)), "
@@ -487,16 +566,13 @@ def measure_registry(db: Path) -> dict[str, Any]:
             per[key]["unique_cells"] += int(uniq_c or 0)
             per[key]["unique_by_content_hash"] += int(uniq_h or 0)
             per[key]["unique_mechanisms"] += int(uniq_m or 0)
+    elif name == "cells_stamped":
         for gen, raw in _rows(
                 cur, "select generator, count(*) from research_candidates group by 1"):
             per[_norm(str(gen or "")) or "_unattributed_generator"][
                 "raw_cells_stamped_on_candidate"] += int(raw or 0)
-
-        # CELLS JUDGED -- the stage the panel names and the census never had. `gauntlet_submitted`
-        # below is the judge's DOOR (donated, claimed, retired, queued for judging); this is the
-        # count that came back out of it carrying a verdict, which is a different and smaller
-        # number: 1,228 of 356,085 on the trading box. Both are published, because reading one as
-        # the other is how a desk believes it has judged what it has only queued.
+    elif name == "judged":
+        # CELLS JUDGED: what came back OUT of the judge's door carrying a verdict.
         judged_expr = ("(c.judged_at is not null and c.judged_at != '') or "
                        "(c.terminal_gate is not null and c.terminal_gate != '')")
         for gen, n in _rows(
@@ -504,24 +580,21 @@ def measure_registry(db: Path) -> dict[str, Any]:
                      f"where {judged_expr} group by 1"):
             per[_norm(str(gen or "")) or "_unattributed_generator"][
                 "cells_judged"] += int(n or 0)
-
-        # STAGE 6-7: submitted to the gauntlet, and what cleared the cheap stages.
+    elif name == "submitted":
+        # STAGE 6: submitted to the gauntlet -- the judge's DOOR, a status a producer sets.
         for gen, n in _rows(
                 cur, "select generator, count(*) from research_candidates "
                      "where donated_cell is not null or status in "
                      "('donated','claimed','retired','judged') group by 1"):
             per[_norm(str(gen or "_unattributed_generator"))][
                 "gauntlet_submitted"] += int(n or 0)
-
-        # STAGE 6b: REACHED THE JUDGE. The stage between the two above, and the one the maths lab
-        # was lost in -- 8,677 objects generated, 33 donated, 51 candidate rows stamped
-        # `donated`, and for a long time not one of them in any file the sealed gauntlet opens.
-        # `gauntlet_submitted` is a status a producer sets on itself; this is the judge's actual
-        # input, read from `JUDGE_INPUT` by the candidate id `libs/moat/docket_feed` writes onto
-        # every row it feeds. A producer with cells and no reach is a DEFECT WITH A NAMED CAUSE
-        # (`reach_cause` on the row), never a quiet zero.
-        reached_ids, reach_meta = _judge_input_ids()
-        out["judge_input"] = reach_meta
+    elif name == "reach":
+        # STAGE 6b: REACHED THE JUDGE, read from the one file the sealed judge opens.
+        reached_ids, reach_meta = _judge_input_ids(budget=_BUDGET,
+                                                     resume=bool(ctx.get("resume")))
+        extra["judge_input"] = reach_meta
+        if reach_meta.get("status") == "PARTIAL":
+            raise _OutOfBudget("judge input scan")
         if reached_ids:
             cur.execute("create temp table if not exists _reached (id text primary key)")
             cur.execute("delete from _reached")
@@ -535,15 +608,12 @@ def measure_registry(db: Path) -> dict[str, Any]:
             with contextlib.suppress(sqlite3.Error):
                 cur.execute("drop table if exists _reached")
         else:
-            out["unmeasured"]["cells_reached_judge"] = reach_meta.get("why") or (
+            unmeasured["cells_reached_judge"] = reach_meta.get("why") or (
                 "the judge's input file names no registry candidate id, so reach is UNMEASURED "
                 "for every producer and not zero (L1.28a)")
-        # CHEAP-STAGE SURVIVORS, AND THE CASE WHERE THE COLUMN IS A LIE OF OMISSION. `survived`
-        # defaults to 0, so a registry in which NOTHING has ever been judged returns 0 survivors
-        # for every producer and reads exactly like a registry in which everything was judged and
-        # everything failed. Those are opposite facts. The census separates them: if no row
-        # carries a judge stamp at all, the stage is UNMEASURED with that sentence and the yield
-        # tables' own survivor counts are published as the named proxy (L1.28a, WS-005).
+    elif name == "survivors":
+        # CHEAP-STAGE SURVIVORS. `survived` defaults to 0, so a registry in which NOTHING was
+        # judged reads like one where everything failed; that case is UNMEASURED (WS-005).
         judged_any = _rows(cur, "select count(*) from research_candidates "
                                 "where judged_at is not null and judged_at != ''")
         n_judged = int(judged_any[0][0]) if judged_any else 0
@@ -554,26 +624,22 @@ def measure_registry(db: Path) -> dict[str, Any]:
                 per[_norm(str(gen or "_unattributed_generator"))][
                     "cheap_survivors"] += int(n or 0)
         else:
-            out["unmeasured"]["cheap_survivors"] = (
+            unmeasured["cheap_survivors"] = (
                 "no research_candidates row carries a judge stamp (`judged_at` null on all "
                 f"{_table_count(cur, 'research_candidates')} rows, `terminal_gate` likewise), so "
                 "`survived = 0` everywhere is the column's DEFAULT and not a verdict: the cheap "
                 "stage is UNMEASURED, not zero. Proxy published as `yield_survivors` from "
                 "generator_yield/source_yield, which the producers write themselves")
-
-        # Discoveries: the upstream shape of a cell, and the only stage a seat that donates prose
-        # rather than parameters ever reaches. Counted separately so a seat is never read as
-        # silent merely because the compiler, not the seat, owns the candidate row.
+    elif name == "discoveries":
         for gen, n, uniq in _rows(
                 cur, "select generator, count(*), count(distinct content_hash) "
                      "from discoveries group by 1"):
             key = _norm(str(gen or "")) or "_unattributed_generator"
             per[key]["discoveries"] += int(n or 0)
             per[key]["unique_discoveries"] += int(uniq or 0)
-
-        # COMPUTE, from the registry's own yield tables. These are seconds the producers charged
-        # themselves; the compute ledger below adds the seconds the CLOCK charged them, and the
-        # census keeps the two apart because they answer different questions.
+    elif name == "yield_tables":
+        # COMPUTE, from the registry's own yield tables (seconds the producers charged
+        # themselves; the compute ledger adds the seconds the CLOCK charged them).
         for gen, gen_n, don, judged, surv, comp in _rows(
                 cur, "select generator, generated, donated, judged, survivors, compute_s "
                      "from generator_yield"):
@@ -588,22 +654,8 @@ def measure_registry(db: Path) -> dict[str, Any]:
             key = src_producer.get(str(sid), "_unattributed_source")
             per[key]["registry_compute_s"] += float(comp or 0)
             per[key]["source_survivors"] += float(surv or 0)
-
-        # REGION, from the sources a producer actually touched. A producer whose sources carry no
-        # country reaches the region table only through its own name.
-        reg_by_producer: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
-        for sid, key in src_producer.items():
-            reg = src_region.get(sid)
-            if reg:
-                reg_by_producer[key][reg] += 1
-        out["region_hits"] = {k: dict(v) for k, v in reg_by_producer.items()}
-
-        # THE BIRTH STAMP, READ WHERE IT IS WRITTEN. `libs/research/attribution.attribute()` now
-        # stamps `region` on every row at both registry doors, and on the trading box 356,946 of
-        # 356,946 candidates and 79,634 of 79,634 discoveries carry one. The modal stamp over a
-        # producer's own rows is the region its evidence actually reached -- an answer no producer
-        # NAME could ever give. UNATTRIBUTABLE is deliberately not selectable here: it is the stamp
-        # saying it does not know, and the ladder in `build()` has further routes to try.
+    elif name == "region_stamp":
+        # THE BIRTH STAMP, READ WHERE IT IS WRITTEN: the modal `region` over a producer's rows.
         stamp_hits: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
         for gen, where, n in _rows(
                 cur, f"select {lineage}, "  # noqa: S608
@@ -613,14 +665,10 @@ def measure_registry(db: Path) -> dict[str, Any]:
             if str(where) in (*REGIONS, NOT_REGIONAL):
                 stamp_hits[_norm(str(gen or "")) or "_unattributed_generator"][
                     str(where)] += int(n or 0)
-        out["region_stamp"] = {k: max(v.items(), key=lambda kv: kv[1])[0]
-                               for k, v in stamp_hits.items() if v}
-
-        # THE LINEAGE A CERTIFICATE IS JOINED BY. A certificate names a cell
-        # (`external.XAUUSD.session_range_breakout`), not a producer; the only non-guess route
-        # back is the FAMILY, because `research_candidates` records which generator produced
-        # candidates of that family. Modal generator wins and the count rides along, so a reader
-        # can see how confident the attribution is instead of taking it on faith.
+        extra["region_stamp"] = {k: max(v.items(), key=lambda kv: kv[1])[0]
+                                 for k, v in stamp_hits.items() if v}
+    elif name == "family_map":
+        # THE LINEAGE A CERTIFICATE IS JOINED BY: modal generator per family.
         fam_gen: dict[str, tuple[str, int]] = {}
         for fam, gen, n in _rows(
                 cur, "select family, generator, count(*) from research_candidates "
@@ -632,12 +680,12 @@ def measure_registry(db: Path) -> dict[str, Any]:
             prev = fam_gen.get(fkey)
             if prev is None or int(n or 0) > prev[1]:
                 fam_gen[fkey] = (gkey, int(n or 0))
-        out["family_to_generator"] = {k: v[0] for k, v in fam_gen.items()}
-
-        out["totals"] = {
+        extra["family_to_generator"] = {k: v[0] for k, v in fam_gen.items()}
+    elif name == "totals":
+        totals: dict[str, Any] = {
             "sources": _table_count(cur, "sources"),
             "claims": _table_count(cur, "claims"),
-            "mechanisms": n_mech,
+            "mechanisms": _table_count(cur, "mechanisms"),
             "discoveries": _table_count(cur, "discoveries"),
             "research_candidates": _table_count(cur, "research_candidates"),
             "provenance_edges": _table_count(cur, "provenance"),
@@ -648,15 +696,164 @@ def measure_registry(db: Path) -> dict[str, Any]:
                  "count(distinct coalesce(nullif(mechanism,''), content_hash)) "
                  "from research_candidates")
         if uniq_all:
-            out["totals"]["unique_by_content_hash"] = int(uniq_all[0][0])
-            out["totals"]["unique_cells"] = int(uniq_all[0][1])
-            out["totals"]["unique_mechanisms"] = int(uniq_all[0][2])
+            totals["unique_by_content_hash"] = int(uniq_all[0][0])
+            totals["unique_cells"] = int(uniq_all[0][1])
+            totals["unique_mechanisms"] = int(uniq_all[0][2])
+        extra["totals"] = totals
+    else:                                                     # pragma: no cover - a typo guard
+        raise KeyError(name)
+
+
+def _parse_ts(stamp: Any) -> datetime | None:
+    if not isinstance(stamp, str) or not stamp:
+        return None
+    try:
+        dt = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+
+
+def _load_cursor(db: Path) -> dict[str, Any]:
+    doc = _load_json(CURSOR)
+    if not isinstance(doc, dict) or doc.get("db") != str(db):
+        return {}
+    return doc
+
+
+def _save_cursor(doc: dict[str, Any] | None) -> None:
+    """Write (or, with None, clear) the resume cursor. A failed write costs only a resume."""
+    with contextlib.suppress(OSError):
+        if doc is None:
+            CURSOR.unlink(missing_ok=True)
+            REACH_SIDECAR.unlink(missing_ok=True)
+            return
+        CURSOR.parent.mkdir(parents=True, exist_ok=True)
+        tmp = CURSOR.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(doc, default=str), encoding="utf-8")
+        os.replace(tmp, CURSOR)
+
+
+def measure_registry(db: Path, deadline: float | None = None,
+                     resume: bool = False) -> dict[str, Any]:
+    """Every funnel stage the alpha registry can answer, keyed by producer.
+
+    ONE CONNECTION, READ ONLY, NO WRITES. This organ measures the registry; a census that could
+    mutate the thing it counts would be worthless as evidence the first time anyone doubted it.
+
+    `deadline` (epoch seconds) bounds the scan INSIDE the pass: steps not finished by then are
+    listed in `scan.unscanned` and every field they own is in `unscanned_fields` (UNMEASURED on
+    each row). With `resume`, finished steps are carried to the next pass by the cursor, which
+    clears itself once every step of the cycle has run.
+    """
+    global _BUDGET
+    out: dict[str, Any] = {"available": False, "why": "", "by_producer": {},
+                           "totals": {}, "unmeasured": {}}
+    if not db.exists():
+        out["why"] = f"{UNMEASURED}: registry {db} does not exist on this host"
+        return out
+    try:
+        con = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=20.0)
+    except sqlite3.Error as exc:
+        out["why"] = f"{UNMEASURED}: registry unopenable ({type(exc).__name__}: {exc})"
+        return out
+    out["available"] = True
+    _BUDGET = _Budget(deadline)
+    if deadline is not None:
+        con.set_progress_handler(_BUDGET.progress, _PROGRESS_EVERY)
+    cursor = _load_cursor(db) if resume else {}
+    cursor_expired: dict[str, Any] | None = None
+    started_age = _age_hours(cursor.get("cycle_started")) if cursor else None
+    if cursor and (started_age is None or started_age > CYCLE_MAX_AGE_H):
+        cursor_expired = {"cycle_started": cursor.get("cycle_started"),
+                          "age_hours": None if started_age is None else round(started_age, 2),
+                          "why": f"the resumed cycle began more than {CYCLE_MAX_AGE_H:g}h ago "
+                                 "(or carries no readable start): its carried steps no longer "
+                                 "describe one registry, so the cycle restarts from step one"}
+        cursor = {}
+        with contextlib.suppress(OSError):
+            REACH_SIDECAR.unlink(missing_ok=True)
+    done: dict[str, Any] = dict(cursor.get("steps") or {})
+    cycle_started = cursor.get("cycle_started") or _now()
+    interrupted = dict(cursor.get("interrupted") or {})
+    now = _now()
+    ran: list[str] = []
+    cut: str | None = None
+    try:
+        cur = con.cursor()
+        for name in STEPS:
+            if name in done:
+                continue
+            if _BUDGET.expired():
+                break
+            per_s: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
+            extra: dict[str, Any] = {}
+            ctx = {"src_producer": dict((done.get("sources") or {}).get("extra", {})
+                                        .get("src_producer") or {}),
+                   "resume": resume}
+            try:
+                _step(name, cur, ctx, per_s, extra)
+            except _OutOfBudget:
+                cut = name
+                interrupted[name] = int(interrupted.get(name) or 0) + 1
+                break
+            done[name] = {"at": now, "per": {k: dict(v) for k, v in per_s.items()},
+                          "extra": extra}
+            ran.append(name)
     finally:
         con.close()
+
+    # ---------------------------------------------------------------- merge the finished steps
+    per: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
+    for name in STEPS:
+        step = done.get(name)
+        if not step:
+            continue
+        for key, fields in (step.get("per") or {}).items():
+            for f, v in fields.items():
+                per[key][f] += float(v)
+        ex = step.get("extra") or {}
+        out["unmeasured"].update(ex.get("unmeasured") or {})
+        for k in ("region_hits", "region_stamp", "family_to_generator", "totals",
+                  "judge_input"):
+            if k in ex:
+                out[k] = ex[k]
+    unscanned = [s for s in STEPS if s not in done]
+    for s in unscanned:
+        why = (f"not scanned this pass: the {deadline and 'budget'} deadline cut the registry "
+               f"scan before step `{s}` (resumes next pass)")
+        for f in STEP_FIELDS[s]:
+            out["unmeasured"].setdefault(f, why)
+    out["unscanned_fields"] = sorted({f for s in unscanned for f in STEP_FIELDS[s]})
+    stamps = [d for d in (_parse_ts((done.get(s) or {}).get("at")) for s in STEPS) if d]
+    span_h = (round((max(stamps) - min(stamps)).total_seconds() / 3600.0, 3)
+              if stamps and not unscanned else None)
+    out["scan"] = {
+        "partial": bool(unscanned), "scanned": len(STEPS) - len(unscanned),
+        "total": len(STEPS), "ran_this_pass": ran, "unscanned": unscanned,
+        "cut_at_step": cut, "cycle_started": cycle_started,
+        "step_at": {s: (done.get(s) or {}).get("at") for s in STEPS},
+        "interrupted_counts": interrupted,
+        # FIRST TO LAST step_at on a COMPLETE census (None while partial): how far apart in time
+        # the registry snapshots behind this census were taken. 0 for a one-pass census.
+        "cycle_span_h": span_h,
+        "cycle_max_age_h": CYCLE_MAX_AGE_H,
+        "cycle_span_within_bound": None if span_h is None else span_h <= CYCLE_MAX_AGE_H,
+        "cursor_expired": cursor_expired,
+        # A step the deadline has cut on three passes running cannot finish inside the budget
+        # at all; it is NAMED here so the stall is visible, never silent.
+        "cannot_finish_in_budget": sorted(s for s, n in interrupted.items()
+                                          if n >= 3 and s in unscanned),
+    }
+    if resume:
+        if unscanned:
+            _save_cursor({"db": str(db), "cycle_started": cycle_started, "steps": done,
+                          "interrupted": interrupted})
+        else:
+            _save_cursor(None)
     out["by_producer"] = {k: {kk: (int(vv) if float(vv).is_integer() else round(float(vv), 3))
                               for kk, vv in v.items()} for k, v in per.items()}
     return out
-
 
 # -------------------------------------------------------------------------------------- compute
 
@@ -1058,13 +1255,21 @@ def _resolve_region(key: str, name: str, meta: dict[str, Any], reg: dict[str, An
 
 
 def build(window_days: float = COMPUTE_WINDOW_DAYS,
-          db: Path | None = None) -> dict[str, Any]:
-    """The whole census: roster x funnel x ratios, rolled up by region, with the zero list."""
+          db: Path | None = None, budget_s: float | None = None,
+          resume: bool | None = None) -> dict[str, Any]:
+    """The whole census: roster x funnel x ratios, rolled up by region, with the zero list.
+
+    `budget_s` bounds the registry scan INSIDE the pass (see `measure_registry`); `resume`
+    (default: on whenever a budget is given) carries finished steps to the next pass.
+    """
     t0 = time.time()
     # Resolved here, not in the signature: a default argument freezes the registry path at import.
     db = REGISTRY_DB if db is None else db
     roster, roster_notes = build_roster()
-    reg = measure_registry(db)
+    deadline = None if budget_s is None else t0 + float(budget_s)
+    reg = measure_registry(db, deadline=deadline,
+                           resume=(budget_s is not None) if resume is None else resume)
+    unscanned = set(reg.get("unscanned_fields") or ())
     comp = measure_compute(window_days)
     term = measure_terminal(reg)
     ortho = measure_orthogonality()
@@ -1077,6 +1282,11 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
     # The distinction is the whole of L1.28a and it runs both ways: when the registry could NOT be
     # opened, every one of these stages stays UNMEASURED, which the block further down enforces.
     zero_if_scanned: Any = 0 if scanned else UNMEASURED
+
+    def _z(field: str) -> Any:
+        """The default for a producer the registry has no row for: a MEASURED zero only when
+        the step that owns `field` actually ran; UNMEASURED when the budget cut it."""
+        return UNMEASURED if field in unscanned else zero_if_scanned
 
     # Every key the registry has seen that no roster knows about is ITSELF a finding.
     per = reg.get("by_producer", {})
@@ -1096,10 +1306,10 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
         reg_h = float(m.get("registry_compute_s") or 0.0) / 3600.0
         total_h = round(ledger_h + reg_h, 4)
         name = str(meta.get("producer") or key)
-        raw = m.get("raw_cells", zero_if_scanned)
-        uniq = m.get("unique_cells", zero_if_scanned)
-        srcs = m.get("sources_visited", zero_if_scanned)
-        judged_cells = m.get("cells_judged", zero_if_scanned)
+        raw = m.get("raw_cells", _z("raw_cells"))
+        uniq = m.get("unique_cells", _z("unique_cells"))
+        srcs = m.get("sources_visited", _z("sources_visited"))
+        judged_cells = m.get("cells_judged", _z("cells_judged"))
         # BOTH CONDITIONS, AND THE SECOND ONE IS THE ONE THAT BITES. A judge input that opened
         # cleanly but carries NO `candidate_id` at all (the build box: 76 MB, 0 ids, because the
         # registry feed has never run here) is not a desk where nobody reached the judge -- it is
@@ -1114,8 +1324,8 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
         region, region_route = _resolve_region(key, name, meta, reg, stamped)
         funnel = {
             "sources_visited": srcs,
-            "documents_retained": m.get("documents_retained", zero_if_scanned),
-            "raw_mechanism_claims": m.get("raw_mechanism_claims", zero_if_scanned),
+            "documents_retained": m.get("documents_retained", _z("documents_retained")),
+            "raw_mechanism_claims": m.get("raw_mechanism_claims", _z("raw_mechanism_claims")),
             "canonical_mechanisms": (
                 m.get("canonical_mechanisms")
                 if "canonical_mechanisms" in m
@@ -1124,13 +1334,13 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
                       "proxy_distinct_mechanism_ids": m.get("canonical_mechanisms_proxy", 0)}),
             "raw_cells": raw,
             "raw_cells_stamped_on_candidate": m.get("raw_cells_stamped_on_candidate",
-                                                    zero_if_scanned),
+                                                    _z("raw_cells_stamped_on_candidate")),
             "unique_cells": uniq,
-            "gauntlet_submitted": m.get("gauntlet_submitted", zero_if_scanned),
+            "gauntlet_submitted": m.get("gauntlet_submitted", _z("gauntlet_submitted")),
             "cells_reached_judge": reached,
             "cells_judged": judged_cells,
             "cheap_survivors": (
-                m.get("cheap_survivors", zero_if_scanned)
+                m.get("cheap_survivors", _z("cheap_survivors"))
                 if "cheap_survivors" not in reg.get("unmeasured", {})
                 else {"verdict": UNMEASURED,
                       "why": reg["unmeasured"]["cheap_survivors"],
@@ -1156,7 +1366,7 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
             "region": region,
             "region_route": region_route,
             "funnel": funnel,
-            "discoveries": m.get("discoveries", zero_if_scanned),
+            "discoveries": m.get("discoveries", _z("discoveries")),
             "dedup_collapse": (round(float(raw) / float(uniq), 3)
                                if isinstance(raw, (int, float)) and isinstance(uniq, (int, float))
                                and raw and uniq else UNMEASURED),
@@ -1240,6 +1450,9 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
             continue
         if isinstance(disc, (int, float)) and disc > 0:
             continue
+        # A cell count the budget did not scan is not a zero: such a producer is not accused.
+        if not isinstance(uniq, (int, float)) or not isinstance(disc, (int, float)):
+            continue
         zero.append({
             "producer": row["producer"], "key": row["key"], "kind": row["kind"],
             "clock": row["clock"], "region": row["region"],
@@ -1302,9 +1515,16 @@ def build(window_days: float = COMPUTE_WINDOW_DAYS,
     productive = [r for r in rows if _cells(r) > 0]
     coverage = measurement_coverage(rows, ortho)
 
+    scan = reg.get("scan") or {"partial": False, "scanned": None, "total": len(STEPS)}
     census = {
         "at": _now(),
         "elapsed_s": round(time.time() - t0, 3),
+        # A PARTIAL CENSUS IS NEVER READ AS COMPLETE. `partial` is true when the budget cut the
+        # registry scan; `scan` names the steps that ran, the ones that did not, and the fields
+        # they own -- each UNMEASURED on every row (`unscanned_fields`). Readers that ratchet
+        # (scripts/check_productivity_census.py) judge only a complete census.
+        "partial": bool(scan.get("partial")),
+        "scan": {**scan, "unscanned_fields": sorted(unscanned)},
         "law": ("PRODUCTIVITY IS MEASURED PER PRODUCER OR IT IS NOT CLAIMED. Code that exists "
                 "and is scheduled is not code that produces cells; this census measures the "
                 "eleven-stage funnel and the four marginal ratios for every producer on the two "
@@ -1542,7 +1762,26 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     t0 = time.time()
-    census = build(window_days=args.window_days)
+    # THE SCAN GETS 80% OF THE BUDGET (and never more than the cycle's own cap less a minute):
+    # the rest is the roster, the artifact readers, the render and the write, which must always
+    # happen -- a census that is never written is the defect this budget exists to end.
+    scan_s = args.budget_s * 0.8
+    with contextlib.suppress(ValueError, TypeError):
+        cap = float(os.environ.get("QUANT_LEG_BUDGET_S") or "")
+        scan_s = max(5.0, min(scan_s, cap - 60.0))
+    prev = _load_json(OUT)
+    census = build(window_days=args.window_days, budget_s=scan_s,
+                   resume=not args.no_write)
+    # THE LAST COMPLETE CENSUS, carried across partial ones, so a reader can tell "partial this
+    # hour" from "never completes" (the fence fails the second past its window).
+    if not census["partial"]:
+        census["last_complete_at"] = census["at"]
+    elif isinstance(prev, dict):
+        census["last_complete_at"] = prev.get("last_complete_at") or (
+            prev.get("at") if not prev.get("partial") else None)
+    else:
+        census["last_complete_at"] = None
+    census["scan_budget_s"] = round(scan_s, 1)
     census["budget_s"] = args.budget_s
     census["over_budget"] = bool(time.time() - t0 > args.budget_s)
     if census["over_budget"]:
