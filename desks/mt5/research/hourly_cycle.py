@@ -218,7 +218,8 @@ def _hunt12_resident_health() -> dict:
         cpu = proc.cpu_times()
         if (time.time() - proc.create_time() < 300 or cpu.user + cpu.system > 0
                 or proc.children() or proc.open_files()):
-            return {**result, "note": "stopped resident requires review; active ownership preserved"}
+            return {**result,
+                    "note": "stopped resident requires review; active ownership preserved"}
         proc.resume()
         after = proc.status()
         return {**result, "alive": after != psutil.STATUS_STOPPED,
@@ -1328,7 +1329,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "effective_trials",
                      "occupancy_map", "dsr_inputs"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
-    **dict.fromkeys(("world_crawler", "deep_forest", "cell_emitter", "moat_miner",
+    **dict.fromkeys(("world_crawler", "world_strategy_hunt", "deep_forest", "cell_emitter",
+                     "moat_miner",
                      "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
@@ -1400,7 +1402,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "bar_clock_probe", "causal_graph",
-                     "residual_factors", "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
+                     "residual_factors", "weak_signals", "edges_macro_fusion_sweep",
+                     "strategy_paths",
                      "counterfactual_world", "opportunity_forecast", "forecast_contract",
                      "exposure_decomposition", "event_response_atlas", "causal_lab",
                      "event_graph_lab",
@@ -5869,6 +5872,11 @@ def main() -> None:
     pla = _costed("placebo_audit", lambda: _producer(
         "placebo_audit", "research/placebo_audit.py"))
     fr = _costed("frontier", frontier)
+    # THE WORLD STRATEGY HUNTER (hourly item 18, principal 2026-10-28/29), BEFORE the forest so
+    # the grounds it mints for the world map's GAP cells are worked on the same hour. Offline:
+    # it opens no socket, adds no judge path, and publishes WORLD_STRATEGY_HUNT.json.
+    wsh = _costed("world_strategy_hunt", lambda: _producer(
+        "world_strategy_hunter", "research/world_strategy_hunter.py"))
     df = _costed("deep_forest", deep_forest)
     # OPEN-SOURCE CODE -> CELLS: donates to data/intelligence/cell_emitter/, which the next
     # pass's `compile_candidates` reads. Network leg; self-stops inside its budget.
@@ -6510,8 +6518,8 @@ def main() -> None:
                     "stop_reverse": srx,
                     "forward_reconcile": fwr,
                     "model_skill": ms,
-                    "frontier": fr, "refresh_bars": rb, "deep_forest": df,
-                    "cell_emitter": cem,
+                    "frontier": fr, "refresh_bars": rb, "world_strategy_hunt": wsh,
+                    "deep_forest": df, "cell_emitter": cem,
                     "session_structure": ssm_leg,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
