@@ -17,7 +17,7 @@
  "uptime_s": 939813.8,
  "last_sweep_ended_utc": "2026-11-07T13:44:44+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-07T17:19:41+00:00",
+ "heartbeat_utc": "2026-11-07T17:34:41+00:00",
  "sweep_phase": {
   "pid": 19596,
   "sweep_started_utc": "2026-11-07T13:44:54+00:00",
@@ -256,37 +256,42 @@
      }
     },
     "merge_and_publish": {
-     "samples": 4,
+     "samples": 69,
      "top": [
       {
+       "stack": "<frozen abc>:__instancecheck__:117 < datetimes.py:_new_DatetimeIndex:78 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857",
+       "n": 24,
+       "share": 0.348
+      },
+      {
        "stack": "base.py:ensure_index:7659 < managers.py:__setstate__:1945 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857",
-       "n": 1,
-       "share": 0.25
+       "n": 9,
+       "share": 0.13
       },
       {
        "stack": "external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
-       "n": 1,
-       "share": 0.25
+       "n": 6,
+       "share": 0.087
       },
       {
-       "stack": "shutil.py:_copyfileobj_readinto:239 < shutil.py:copyfile:341 < run_sharded_gauntlet.py:snapshot_merge_outputs:1093 < run_sharded_gauntlet.py:_timed_dispatch:3728 < external_gauntlet.py:_run_shards:4807 < external_gauntlet.py:main:3857",
-       "n": 1,
-       "share": 0.25
+       "stack": "base.py:_reset_identity:832 < base.py:_simple_new:666 < datetimes.py:_new_DatetimeIndex:95 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808",
+       "n": 4,
+       "share": 0.058
       },
       {
-       "stack": "weakref.py:remove:311 < decoder.py:raw_decode:361 < decoder.py:decode:345 < __init__.py:loads:346 < __init__.py:load:293 < run_sharded_gauntlet.py:_parses:1045",
-       "n": 1,
-       "share": 0.25
+       "stack": "base.py:_simple_new:662 < datetimes.py:_new_DatetimeIndex:95 < external_gauntlet.py:_unpickle:4575 < external_gauntlet.py:_shard_collect:4723 < external_gauntlet.py:_run_shards:4808 < external_gauntlet.py:main:3857",
+       "n": 4,
+       "share": 0.058
       }
      ],
      "process": {
-      "cpu_s": 24.6,
-      "page_faults": 1377530.0,
-      "read_bytes": 699082798.0,
-      "write_bytes": 603895755.0,
-      "sampled_s": 30.0,
-      "rss_mb_max": 6610.7,
-      "cpu_share_of_wall": 0.821
+      "cpu_s": 716.7,
+      "page_faults": 2897065.0,
+      "read_bytes": 4572929069.0,
+      "write_bytes": 604066043.0,
+      "sampled_s": 680.0,
+      "rss_mb_max": 9889.1,
+      "cpu_share_of_wall": 1.054
      }
     }
    }
