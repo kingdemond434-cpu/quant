@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-11-07T13:15:02.148097+00:00",
+  "swept_at": "2026-11-07T13:30:02.343934+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1922,8 +1922,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 45,
-      "shadow_exp_r": -0.2142,
+      "shadow_n": 46,
+      "shadow_exp_r": -0.234,
       "woke_on_shadow": false
     },
     "GBPAUD|cross_asset_residual_continuous": {
@@ -5047,7 +5047,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0136,
+      "shadow_exp_r": -0.0199,
       "woke_on_shadow": false
     },
     "XAUEUR|macro_conditional_continuous": {
