@@ -17,7 +17,7 @@
  "uptime_s": 923084.4,
  "last_sweep_ended_utc": "2026-11-07T09:05:55+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-07T10:04:44+00:00",
+ "heartbeat_utc": "2026-11-07T10:20:15+00:00",
  "sweep_phase": {
   "pid": 22240,
   "sweep_started_utc": "2026-11-07T09:06:07+00:00",
@@ -88,37 +88,37 @@
      }
     },
     "prewarm": {
-     "samples": 278,
+     "samples": 362,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844",
-       "n": 244,
-       "share": 0.878
+       "n": 328,
+       "share": 0.906
       },
       {
        "stack": "connection.py:_send_bytes:295 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 23,
-       "share": 0.083
+       "share": 0.064
       },
       {
        "stack": "connection.py:_send_bytes:307 < connection.py:send_bytes:206 < process.py:wakeup:89 < process.py:submit:813 < external_gauntlet.py:_submit_next:2075 < external_gauntlet.py:_prewarm_cache:2119",
        "n": 10,
-       "share": 0.036
+       "share": 0.028
       },
       {
        "stack": "_base.py:_create_and_install_waiters:166 < _base.py:wait:297 < external_gauntlet.py:_prewarm_cache:2093 < external_gauntlet.py:main:3837 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3731",
        "n": 1,
-       "share": 0.004
+       "share": 0.003
       }
      ],
      "process": {
-      "cpu_s": 1583.8,
-      "page_faults": 117948348.0,
-      "read_bytes": 52327888.0,
-      "write_bytes": 133718233624.0,
-      "sampled_s": 2770.0,
+      "cpu_s": 1586.0,
+      "page_faults": 118068741.0,
+      "read_bytes": 52367317.0,
+      "write_bytes": 133817247752.0,
+      "sampled_s": 3610.0,
       "rss_mb_max": 3383.2,
-      "cpu_share_of_wall": 0.572
+      "cpu_share_of_wall": 0.439
      }
     }
    }
