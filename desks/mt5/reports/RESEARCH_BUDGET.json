@@ -1,5 +1,5 @@
 {
- "at": "2026-11-07T01:34:18+00:00",
+ "at": "2026-11-07T01:46:46+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,7 +9,7 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-11-07T01:34:06+00:00",
+   "at": "2026-11-07T01:46:30+00:00",
    "bandit_at": "2026-11-06T23:07:16.593311+00:00",
    "hour": "2026-11-07T01",
    "arm": "control",
@@ -18,17 +18,17 @@
    "extra_wanted_s": 240,
    "extra_due_s": 240,
    "extra_s": 0,
-   "surplus_s": 1441.3,
-   "surplus_why": "department 'discovery' measured spare 1441s/hour",
+   "surplus_s": 1413.3,
+   "surplus_why": "department 'discovery' measured spare 1413s/hour",
    "contract": {
     "n_treated": 25,
-    "n_control": 11,
+    "n_control": 12,
     "mean_treated": 0.4,
-    "mean_control": 0.181818,
-    "delta": 0.218182,
-    "t": 0.919,
+    "mean_control": 0.166667,
+    "delta": 0.233333,
+    "t": 1.032,
     "verdict": "UNDECIDED",
-    "why": "Welch t=0.919 over 25 treated vs 11 held-out leg-runs in the last 14 days",
+    "why": "Welch t=1.032 over 25 treated vs 12 held-out leg-runs in the last 14 days",
     "window_d": 14.0
    },
    "trial": true,
@@ -125,13 +125,13 @@
   "legs": {
    "alpha_evolution": {
     "n_treated": 25,
-    "n_control": 11,
+    "n_control": 12,
     "mean_treated": 0.4,
-    "mean_control": 0.181818,
-    "delta": 0.218182,
-    "t": 0.919,
+    "mean_control": 0.166667,
+    "delta": 0.233333,
+    "t": 1.032,
     "verdict": "UNDECIDED",
-    "why": "Welch t=0.919 over 25 treated vs 11 held-out leg-runs in the last 14 days",
+    "why": "Welch t=1.032 over 25 treated vs 12 held-out leg-runs in the last 14 days",
     "window_d": 14.0
    },
    "deepen": {
