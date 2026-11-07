@@ -552,8 +552,34 @@ def allocate(pool: list[dict[str, Any]], cap: int) -> list[dict[str, Any]]:
     return out
 
 
+def recorded_combinations() -> set[str]:
+    """Combination ids this seat already recorded as discoveries (`source_id` is
+    `<SEAT>:<combination_id>`). Read-only; an unreachable registry is the empty set (the old
+    behaviour), never a raise.
+
+    WHY THIS EXISTS (2026-11-05). `allocate` is deterministic, so with the pool larger than the
+    cap every hourly pass picked the SAME forty combinations, `enqueue_candidate` deduped them
+    onto their old rows, and the rest of the coherent pool (`n_crowded_out`) was never reached:
+    measured on the box, this seat created 0 new registry rows in 24h while its rows'
+    `search_count` had climbed to 12,801."""
+    try:
+        from libs.moat import registry as reg
+        conn = reg.connect()
+    except Exception:
+        return set()
+    try:
+        prefix = f"{SEAT}:"
+        return {str(r[0])[len(prefix):] for r in conn.execute(
+            "SELECT source_id FROM discoveries WHERE source_id LIKE ?", (prefix + "%",))}
+    except Exception:
+        return set()
+    finally:
+        conn.close()
+
+
 def combinations(genes: list[dict[str, Any]], table: dict[frozenset[str], str], *,
-                 cap: int, budget_s: float, t0: float
+                 cap: int, budget_s: float, t0: float,
+                 known: frozenset[str] | set[str] = frozenset()
                  ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """(combinations, refusal census). Every coherent combination is ENUMERATED, and the cap is
     then spent BREADTH FIRST: the shape with the fewest picks so far goes next, then the primary
@@ -570,7 +596,7 @@ def combinations(genes: list[dict[str, Any]], table: dict[frozenset[str], str], 
     samples: list[dict[str, Any]] = []
     pool: list[dict[str, Any]] = []
     seen: set[frozenset[str]] = set()
-    walked = 0
+    walked = already = 0
     for size in (2, min(MAX_GENES, 3)):
         for combo in itertools.combinations(genes, size):
             walked += 1
@@ -594,6 +620,9 @@ def combinations(genes: list[dict[str, Any]], table: dict[frozenset[str], str], 
                                                    "would fit better with nothing to defend it"})
                 continue
             seen.add(ids)
+            if hashlib.sha256("|".join(sorted(ids)).encode()).hexdigest()[:16] in known:
+                already += 1               # explored on an earlier pass: never re-spend the cap
+                continue
             built = express_best(list(combo))
             ordered = built["ordered"]
             primary = ordered[0]
@@ -614,7 +643,7 @@ def combinations(genes: list[dict[str, Any]], table: dict[frozenset[str], str], 
     out = allocate(pool, cap)
     return out, {"by_pair": dict(sorted(refused.items(), key=lambda kv: -kv[1])[:20]),
                  "n_refused": sum(refused.values()), "samples": samples,
-                 "n_coherent": len(pool), "n_walked": walked,
+                 "n_coherent": len(pool), "n_walked": walked, "n_already_recorded": already,
                  "n_crowded_out": max(0, len(pool) - len(out)),
                  "diversity_rule": "the cap is spent round-robin over mechanism-class shapes and "
                                    "then over primary genes, so every shape is reached before any "
@@ -716,7 +745,7 @@ def build(*, max_combinations: int = MAX_COMBINATIONS, budget_s: float = BUDGET_
     genes, unmeasured = collect(note)
     table, source = interaction_table()
     combos, refused = combinations(genes, table, cap=max(0, int(max_combinations)),
-                                   budget_s=budget_s, t0=t0)
+                                   budget_s=budget_s, t0=t0, known=recorded_combinations())
     by_lane: dict[str, int] = {}
     for g in genes:
         by_lane[g["lane"]] = by_lane.get(g["lane"], 0) + 1
