@@ -1,7 +1,7 @@
 {
- "at": "2026-11-07T04:20:40+00:00",
+ "at": "2026-11-07T13:52:57+00:00",
  "screened": 1500,
- "set_aside": 227,
+ "set_aside": 652,
  "rows": [
   {
    "sym": "AUDCAD",
@@ -164,6 +164,36 @@
    "family": "formula",
    "twin": "external.AUDCAD@M5.formula.p=3d3bf668857b19e0",
    "why": "every measurable dimension reads as a twin of external.AUDCAD@M5.formula.p=3d3bf668857b19e0 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "formula",
+   "twin": "external.AUDCAD@M5.formula.p=3d3bf668857b19e0",
+   "why": "every measurable dimension reads as a twin of external.AUDCAD@M5.formula.p=3d3bf668857b19e0 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "formula",
+   "twin": "external.AUDCAD@M5.formula.p=3d3bf668857b19e0",
+   "why": "every measurable dimension reads as a twin of external.AUDCAD@M5.formula.p=3d3bf668857b19e0 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "formula",
+   "twin": "external.AUDCAD@M5.formula.p=3d3bf668857b19e0",
+   "why": "every measurable dimension reads as a twin of external.AUDCAD@M5.formula.p=3d3bf668857b19e0 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "formula",
+   "twin": "external.AUDCAD@M5.formula.p=3d3bf668857b19e0",
+   "why": "every measurable dimension reads as a twin of external.AUDCAD@M5.formula.p=3d3bf668857b19e0 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "clock_transition",
+   "twin": "external.AUDCHF@M5.clock_transition.p=5ca4043f7f0d080d",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M5.clock_transition.p=5ca4043f7f0d080d (feature 1.00, semantic 1.00); the twin is NAMED rather tha"
   },
   {
    "sym": "AUDCHF",
@@ -407,9 +437,51 @@
   },
   {
    "sym": "AUDNZD",
-   "family": "macro_conditional",
-   "twin": "external.AUDNZD@M5.macro_conditional.p=f684da6d387d6ea6",
-   "why": "every measurable dimension reads as a twin of external.AUDNZD@M5.macro_conditional.p=f684da6d387d6ea6 (feature 1.00, semantic 1.00); the twin is NAMED rather th"
+   "family": "formula",
+   "twin": "external.AUDNZD@M5.formula.p=0b21bea2201c390d",
+   "why": "every measurable dimension reads as a twin of external.AUDNZD@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "AUDNZD",
+   "family": "formula",
+   "twin": "external.AUDNZD@M5.formula.p=0b21bea2201c390d",
+   "why": "every measurable dimension reads as a twin of external.AUDNZD@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "AUDNZD",
+   "family": "formula",
+   "twin": "external.AUDNZD@M5.formula.p=0b21bea2201c390d",
+   "why": "every measurable dimension reads as a twin of external.AUDNZD@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "AUDNZD",
+   "family": "formula",
+   "twin": "external.AUDNZD@M5.formula.p=0b21bea2201c390d",
+   "why": "every measurable dimension reads as a twin of external.AUDNZD@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "AUDNZD",
+   "family": "formula",
+   "twin": "external.AUDNZD@M5.formula.p=0b21bea2201c390d",
+   "why": "every measurable dimension reads as a twin of external.AUDNZD@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "AUDNZD",
+   "family": "formula",
+   "twin": "external.AUDNZD@M5.formula.p=0b21bea2201c390d",
+   "why": "every measurable dimension reads as a twin of external.AUDNZD@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "AUDNZD",
+   "family": "formula",
+   "twin": "external.AUDNZD@M5.formula.p=0b21bea2201c390d",
+   "why": "every measurable dimension reads as a twin of external.AUDNZD@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "AUDNZD",
+   "family": "formula",
+   "twin": "external.AUDNZD@M5.formula.p=0b21bea2201c390d",
+   "why": "every measurable dimension reads as a twin of external.AUDNZD@M5.formula.p=0b21bea2201c390d (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
   },
   {
    "sym": "AUDNZD",
@@ -428,6 +500,36 @@
    "family": "macro_conditional",
    "twin": "external.AUDNZD@M5.macro_conditional.p=f684da6d387d6ea6",
    "why": "every measurable dimension reads as a twin of external.AUDNZD@M5.macro_conditional.p=f684da6d387d6ea6 (feature 1.00, semantic 1.00); the twin is NAMED rather th"
+  },
+  {
+   "sym": "AUDNZD",
+   "family": "macro_conditional",
+   "twin": "external.AUDNZD@M5.macro_conditional.p=f684da6d387d6ea6",
+   "why": "every measurable dimension reads as a twin of external.AUDNZD@M5.macro_conditional.p=f684da6d387d6ea6 (feature 1.00, semantic 1.00); the twin is NAMED rather th"
+  },
+  {
+   "sym": "AUDSGD",
+   "family": "formula",
+   "twin": "external.AUDSGD@M5.formula.p=85ecb4ed48dce9d9",
+   "why": "every measurable dimension reads as a twin of external.AUDSGD@M5.formula.p=85ecb4ed48dce9d9 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "AUDSGD",
+   "family": "formula",
+   "twin": "external.AUDSGD@M5.formula.p=85ecb4ed48dce9d9",
+   "why": "every measurable dimension reads as a twin of external.AUDSGD@M5.formula.p=85ecb4ed48dce9d9 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "AUDSGD",
+   "family": "formula",
+   "twin": "external.AUDSGD@M5.formula.p=85ecb4ed48dce9d9",
+   "why": "every measurable dimension reads as a twin of external.AUDSGD@M5.formula.p=85ecb4ed48dce9d9 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "AUDSGD",
+   "family": "formula",
+   "twin": "external.AUDSGD@M5.formula.p=85ecb4ed48dce9d9",
+   "why": "every measurable dimension reads as a twin of external.AUDSGD@M5.formula.p=85ecb4ed48dce9d9 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
   },
   {
    "sym": "AUDSGD",
@@ -1018,10 +1120,100 @@
    "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
   },
   {
-   "sym": "AUDCAD",
+   "sym": "USDSGD",
    "family": "formula",
-   "twin": "external.AUDCAD@M15.formula.p=49bac000a84302db",
-   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=49bac000a84302db (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
+  },
+  {
+   "sym": "USDSGD",
+   "family": "formula",
+   "twin": "external.USDSGD@M5.formula.p=62d2558450b20630",
+   "why": "every measurable dimension reads as a twin of external.USDSGD@M5.formula.p=62d2558450b20630 (feature 1.00, semantic 0.93); the twin is NAMED rather than the can"
   },
   {
    "sym": "AUDCAD",
@@ -1130,6 +1322,48 @@
    "family": "formula",
    "twin": "external.AUDCAD@M15.formula.p=49bac000a84302db",
    "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=49bac000a84302db (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "formula",
+   "twin": "external.AUDCAD@M15.formula.p=49bac000a84302db",
+   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=49bac000a84302db (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "formula",
+   "twin": "external.AUDCAD@M15.formula.p=49bac000a84302db",
+   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=49bac000a84302db (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "formula",
+   "twin": "external.AUDCAD@M15.formula.p=49bac000a84302db",
+   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=49bac000a84302db (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "formula",
+   "twin": "external.AUDCAD@M15.formula.p=49bac000a84302db",
+   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=49bac000a84302db (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "formula",
+   "twin": "external.AUDCAD@M15.formula.p=49bac000a84302db",
+   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=49bac000a84302db (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCAD",
+   "family": "formula",
+   "twin": "external.AUDCAD@M15.formula.p=49bac000a84302db",
+   "why": "every measurable dimension reads as a twin of external.AUDCAD@M15.formula.p=49bac000a84302db (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "clock_transition",
+   "twin": "external.AUDCHF@M15.clock_transition.p=693864be674c5810",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.clock_transition.p=693864be674c5810 (feature 1.00, semantic 0.93); the twin is NAMED rather th"
   },
   {
    "sym": "AUDCHF",
@@ -1364,6 +1598,210 @@
    "family": "formula",
    "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
    "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDCHF",
+   "family": "formula",
+   "twin": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "every measurable dimension reads as a twin of external.AUDCHF@M15.formula.p=b14e229bfe2443d4 (feature 1.00, semantic 0.93); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDJPY",
+   "family": "formula",
+   "twin": "external.AUDJPY@M15.formula.p=41508d76291cb577",
+   "why": "every measurable dimension reads as a twin of external.AUDJPY@M15.formula.p=41508d76291cb577 (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDNZD",
+   "family": "formula",
+   "twin": "external.AUDNZD@M15.formula.p=a1dd01b8835b723b",
+   "why": "every measurable dimension reads as a twin of external.AUDNZD@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDNZD",
+   "family": "formula",
+   "twin": "external.AUDNZD@M15.formula.p=a1dd01b8835b723b",
+   "why": "every measurable dimension reads as a twin of external.AUDNZD@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDNZD",
+   "family": "formula",
+   "twin": "external.AUDNZD@M15.formula.p=a1dd01b8835b723b",
+   "why": "every measurable dimension reads as a twin of external.AUDNZD@M15.formula.p=a1dd01b8835b723b (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDSGD",
+   "family": "clock_transition",
+   "twin": "external.AUDSGD@M15.clock_transition.p=c3f9722b441ed329",
+   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.clock_transition.p=c3f9722b441ed329 (feature 1.00, semantic 1.00); the twin is NAMED rather th"
+  },
+  {
+   "sym": "AUDSGD",
+   "family": "formula",
+   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
+   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDSGD",
+   "family": "formula",
+   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
+   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDSGD",
+   "family": "formula",
+   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
+   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDSGD",
+   "family": "formula",
+   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
+   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDSGD",
+   "family": "formula",
+   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
+   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDSGD",
+   "family": "formula",
+   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
+   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDSGD",
+   "family": "formula",
+   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
+   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
+  },
+  {
+   "sym": "AUDSGD",
+   "family": "formula",
+   "twin": "external.AUDSGD@M15.formula.p=a97fca0fbcaf52df",
+   "why": "every measurable dimension reads as a twin of external.AUDSGD@M15.formula.p=a97fca0fbcaf52df (feature 1.00, semantic 1.00); the twin is NAMED rather than the ca"
   }
  ],
  "rule": "REDUNDANT on every measurable economic dimension, twin named"
