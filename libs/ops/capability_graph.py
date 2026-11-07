@@ -248,7 +248,9 @@ NODES: tuple[Node, ...] = (
     Node("pf_allocator", "desks/mt5/research/pf_allocator.py",
          writes=("desks/mt5/reports/ALLOCATOR_PROOF.json", "desks/mt5/data/pf_forecast_log.jsonl",
                  "desks/mt5/reports/pf_allocator.json", "desks/mt5/reports/pf_allocation.json",
-                 "desks/mt5/data/capital_modifier_ledger.jsonl"),
+                 "desks/mt5/data/capital_modifier_ledger.jsonl",
+                 # the sampled-worlds cache (pf_allocator.py `CACHE / "worlds.npz"`)
+                 "desks/mt5/data/pf_allocator_cache/worlds.npz"),
          reads=("desks/mt5/data/state_vector.json", "desks/mt5/reports/STATE_ADMISSION.json",
                 "backups/moat/shadow_ledgers/", "desks/mt5/data/universe/",
                 "desks/mt5/reports/hunt12_partial.json", "desks/mt5/data/rail_calibration.json",
@@ -918,6 +920,19 @@ NODES: tuple[Node, ...] = (
     Node("srb_uncorrelated_sweep", "desks/mt5/research/srb_uncorrelated_sweep.py",
          writes=("desks/mt5/reports/SRB_UNCORRELATED_SWEEP.json",),
          reads=("desks/mt5/data/sleeves.json", "desks/mt5/data/universe/universe.json")),
+    # THE E8 SECOND SLEEVE (BACKLOG 26): ranks every candidate beside gold_asia for the E8 book.
+    # Read by a person and the E8 book owner; it arms nothing.
+    Node("forward_enrolment", "desks/mt5/research/forward_enrolment.py",
+         writes=("desks/mt5/reports/FORWARD_ENROLMENT.json",),
+         reads=("desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
+                "desks/mt5/reports/shadow/shadow_state.json")),
+    Node("e8_second_sleeve", "desks/mt5/research/e8_second_sleeve.py",
+         writes=("desks/mt5/reports/E8_SECOND_SLEEVE.json",),
+         reads=("desks/mt5/data/pf_allocator_cache/worlds.npz",
+                "desks/mt5/data/CERT_BOOK_LIVE.json",
+                "desks/mt5/reports/FORWARD_ENROLMENT.json",
+                "desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
+                "desks/mt5/reports/shadow/shadow_state.json")),
     Node("srb_basket_judge", "desks/mt5/research/srb_basket_judge.py",
          writes=("desks/mt5/reports/SRB_BASKET_JUDGEMENT.json",
                  "desks/mt5/data/srb_basket_leg_costs.json",
@@ -933,6 +948,9 @@ HUMAN_READ = frozenset({
     # in-sample rules are labelled, and run_gauntlet here writes no certificate). A reader is
     # the follow-up; until then it is a report for a person, declared as such.
     "desks/mt5/reports/SRB_BASKET_JUDGEMENT.json",
+    # The E8 second-sleeve ranking (BACKLOG 26): read by the principal and the E8 book owner, who
+    # wire a winner into the CERT_BOOK_LIVE `e8` block by hand. No organ trades from it, by design.
+    "desks/mt5/reports/E8_SECOND_SLEEVE.json",
     # The weekly novelty count; its decision input is STYLE_NOVELTY.json above.
     "desks/mt5/reports/NOVELTY_WEEKLY.json",
     # merge_hypotheses writes a census receipt, not a decision input. Its executable
@@ -1058,6 +1076,9 @@ EXTERNAL_READERS = {
                                              "merge_hypotheses.breadth_order: the docket order "
                                              "the sealed gauntlet judges in"),
     "desks/mt5/data/prospector_targets.json": "world_crawler (side_channels)",
+    "desks/mt5/reports/FORWARD_ENROLMENT.json": ("scripts/check_forward_enrolment.py, the law "
+                                                 "gate that fails a clockless certificate or a "
+                                                 "re-introduced enrolment cap"),
     "desks/mt5/data/hypotheses/deepened_candidates.json": "external_gauntlet via compiler merge",
     "desks/mt5/data/state_fits.json": "state_vector_build (its own cache)",
     "desks/mt5/data/module_rent.jsonl": "module_rent (its own append-only window history)",
@@ -1199,6 +1220,9 @@ CONFIG_INPUTS = frozenset({
     "desks/mt5/data/repo_watchlist.json", "desks/mt5/data/deep_forest_sources.json",
     "desks/mt5/data/cell_emitter_sources.json",
     "desks/mt5/data/universe/universe.json",
+    # The principal's certified book (CERT_BOOK_LIVE.json): hand-pinned per account, no organ
+    # writes it; gateway / decision_core / prop allocators and e8_second_sleeve read it.
+    "desks/mt5/data/CERT_BOOK_LIVE.json",
     # Box-produced inputs: acquire_datasets fills this from the prospector's targets.
     "desks/mt5/data/acquired/",
     # Hand-written doctrine the research memory ingests as method and failure memories.
