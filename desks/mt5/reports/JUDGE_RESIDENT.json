@@ -17,7 +17,7 @@
  "uptime_s": 923084.4,
  "last_sweep_ended_utc": "2026-11-07T09:05:55+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-11-07T11:49:50+00:00",
+ "heartbeat_utc": "2026-11-07T12:04:53+00:00",
  "sweep_phase": {
   "pid": 22240,
   "sweep_started_utc": "2026-11-07T09:06:07+00:00",
@@ -156,27 +156,42 @@
      }
     },
     "build_shards": {
-     "samples": 17,
+     "samples": 113,
      "top": [
       {
        "stack": "threading.py:wait:373 < threading.py:wait:669 < _base.py:wait:299 < run_sharded_gauntlet.py:_admitted_wave:261 < run_sharded_gauntlet.py:dispatch:1406 < run_sharded_gauntlet.py:_timed_dispatch:3720",
-       "n": 16,
-       "share": 0.941
+       "n": 101,
+       "share": 0.894
       },
       {
-       "stack": "_pswindows.py:virtual_memory:194 < __init__.py:virtual_memory:2052 < run_sharded_gauntlet.py:_available_mb:74 < run_sharded_gauntlet.py:<lambda>:175 < run_sharded_gauntlet.py:admits:202 < run_sharded_gauntlet.py:_admitted_wave:255",
+       "stack": "_pswindows.py:cmdline:768 < _pswindows.py:wrapper:684 < _pswindows.py:wrapper:666 < __init__.py:cmdline:748 < run_sharded_gauntlet.py:_wave_children_rss_mb:149 < run_sharded_gauntlet.py:admits:202",
+       "n": 4,
+       "share": 0.035
+      },
+      {
+       "stack": "glob.py:scandir:529 < glob.py:select_wildcard:427 < run_sharded_gauntlet.py:_wave_peaks_mb:160 < run_sharded_gauntlet.py:estimate_mb:186 < run_sharded_gauntlet.py:admits:203 < run_sharded_gauntlet.py:_admitted_wave:255",
+       "n": 4,
+       "share": 0.035
+      },
+      {
+       "stack": "_pswindows.py:_get_raw_meminfo:791 < _pswindows.py:memory_info:817 < _pswindows.py:wrapper:666 < __init__.py:memory_info:1138 < _common.py:wrapper:375 < run_sharded_gauntlet.py:_wave_children_rss_mb:152",
+       "n": 2,
+       "share": 0.018
+      },
+      {
+       "stack": "__init__.py:children:978 < run_sharded_gauntlet.py:_wave_children_rss_mb:143 < run_sharded_gauntlet.py:admits:202 < run_sharded_gauntlet.py:_admitted_wave:255 < run_sharded_gauntlet.py:dispatch:1406 < run_sharded_gauntlet.py:_timed_dispatch:3720",
        "n": 1,
-       "share": 0.059
+       "share": 0.009
       }
      ],
      "process": {
-      "cpu_s": 19.1,
-      "page_faults": 730073.0,
+      "cpu_s": 129.0,
+      "page_faults": 5175284.0,
       "read_bytes": 0.0,
-      "write_bytes": 12251.0,
-      "sampled_s": 160.0,
+      "write_bytes": 107731.0,
+      "sampled_s": 1120.0,
       "rss_mb_max": 1338.3,
-      "cpu_share_of_wall": 0.12
+      "cpu_share_of_wall": 0.115
      }
     }
    }
