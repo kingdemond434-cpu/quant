@@ -2,14 +2,14 @@
   "label": "daily",
   "seed": 20260930,
   "docket": "C:\\opt\\quant\\desks\\mt5\\data\\hypotheses\\external_survivors.json",
-  "docket_unique_cells": 1648305,
+  "docket_unique_cells": 1632751,
   "sample": 6000,
   "overlay": [],
   "complete": false,
   "stage": "siblings_minted",
-  "utc_day": "2026-11-05",
-  "started_at": "2026-11-05T19:58:29+00:00",
-  "written_at": "2026-11-05T20:02:48+00:00",
+  "utc_day": "2026-11-07",
+  "started_at": "2026-11-07T02:58:57+00:00",
+  "written_at": "2026-11-07T03:00:20+00:00",
   "cells_planned": 6000,
   "cells_visited": 0,
   "judge": {
@@ -20,20 +20,21 @@
   },
   "coarse_proxy": false,
   "memory": {
-    "available_mb": 58531,
-    "rss_cap_mb": 14633,
-    "peak_rss_mb": 476
+    "available_mb": 23591,
+    "rss_cap_mb": 5898,
+    "peak_rss_mb": 523
   },
   "lockbox_cut": null,
   "lockbox_frac": null,
   "cells_carved_at_own_tail": null,
-  "elapsed_s": 236.1,
+  "elapsed_s": 80.8,
   "siblings": {
     "status": "MEASURED",
-    "peerless_rows": 16,
+    "peerless_rows": 20,
     "siblings": 0,
     "unfilled_by_family": {
-      "triangle": 15,
+      "triangle": 17,
+      "correlation_regime": 2,
       "cross_asset_residual": 1
     }
   },
